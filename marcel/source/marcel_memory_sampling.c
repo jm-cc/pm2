@@ -320,7 +320,9 @@ void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_mana
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
-    fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline);
+    if (fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
+      break;
+    }
 
 #ifdef PM2DEBUG
     if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {

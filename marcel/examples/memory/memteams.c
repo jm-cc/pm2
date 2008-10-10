@@ -83,8 +83,8 @@ void * f (void *arg) {
     
     /* Let's do the job. */
     for (j = 0; j < NB_ITER; j++) {
-      int dummy = tab[team][access_pattern_vector[i % ACCESS_PATTERN_SIZE]];
-      tab[team][access_pattern_vector[(NB_ITER - i) % ACCESS_PATTERN_SIZE]] = dummy;
+      int dummy = tab[team][access_pattern_vector[j % ACCESS_PATTERN_SIZE]];
+      tab[team][access_pattern_vector[(NB_ITER - j) % ACCESS_PATTERN_SIZE]] = dummy;
     }
   }
 

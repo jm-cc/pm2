@@ -20,6 +20,7 @@
 int main(int argc, char **argv) {
   int i;
   int minsource, maxsource, mindest, maxdest;
+  int extended_mode=0;
 
   marcel_init(&argc,argv);
 
@@ -39,9 +40,12 @@ int main(int argc, char **argv) {
       mindest = atoi(argv[i+1]);
       maxdest = atoi(argv[i+1]);
     }
+    else if (!strcmp(argv[i], "-ext")) {
+      extended_mode = 1;
+    }
   }
 
-  marcel_memory_sampling_of_memory_migration(minsource, maxsource, mindest, maxdest);
+  marcel_memory_sampling_of_memory_migration(minsource, maxsource, mindest, maxdest, extended_mode);
   return 0;
 }
 

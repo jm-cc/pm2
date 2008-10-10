@@ -61,7 +61,7 @@ void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, i
 }
 
 static
-void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages,
+void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages, int loops,
                                             void **pageaddrs, int *sources, int *dests, int *status,
                                             unsigned long pagesize, FILE *f) {
   int i;
@@ -73,7 +73,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
-  for(i=0 ; i<LOOPS_FOR_MEMORY_MIGRATION ; i++) {
+  for(i=0 ; i<loops ; i++) {
     ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
     ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
   }
@@ -88,7 +88,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
-  ns /= (LOOPS_FOR_MEMORY_MIGRATION * 2);
+  ns /= (loops * 2);
   bandwidth = ns / pages;
   fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
   printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
@@ -180,7 +180,7 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
   fclose(out);
 }
 
-void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest) {
+void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest, int extended_mode) {
   char filename[1024];
   FILE *out;
   int i;
@@ -232,29 +232,36 @@ void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigne
     for(i=0; i<25000 ; i++) dests[i] = dest;
     for(i=0; i<25000 ; i++) sources[i] = source;
 
-    for(pages=1; pages<10 ; pages++) {
-      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+    if (!extended_mode) {
+      for(pages=1; pages<=10000 ; pages*=10) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION/10, pageaddrs, sources, dests, status, pagesize, out);
+      }
     }
-    fflush(out);
-
-    for(pages=10; pages<100 ; pages+=10) {
-      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
+    else {
+      for(pages=1; pages<10 ; pages++) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+      }
       fflush(out);
-    }
 
-    for(pages=100; pages<1000 ; pages+=100) {
-      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-      fflush(out);
-    }
+      for(pages=10; pages<100 ; pages+=10) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        fflush(out);
+      }
 
-    for(pages=1000; pages<10000 ; pages+=1000) {
-      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-      fflush(out);
-    }
+      for(pages=100; pages<1000 ; pages+=100) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        fflush(out);
+      }
 
-    for(pages=10000; pages<=25000 ; pages+=5000) {
-      ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, pageaddrs, sources, dests, status, pagesize, out);
-      fflush(out);
+      for(pages=1000; pages<10000 ; pages+=1000) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        fflush(out);
+      }
+
+      for(pages=10000; pages<=25000 ; pages+=5000) {
+        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        fflush(out);
+      }
     }
 
     munmap(buffer, 25000 * pagesize);

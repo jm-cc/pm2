@@ -317,8 +317,13 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
  * @param maxsource
  * @param mindest
  * @param maxdest
+ * @param extended_mode
  */
-void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest);
+void marcel_memory_sampling_of_memory_migration(unsigned long minsource,
+                                                unsigned long maxsource,
+                                                unsigned long mindest,
+                                                unsigned long maxdest,
+                                                int extended_mode);
 
 /**
  * Performs the sampling for the memory access between all the nodes.

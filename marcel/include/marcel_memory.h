@@ -260,9 +260,9 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
  * @param address pointer to the memory to be located
  * @param node returns the location of the given memory, or -1 when not found
  */
-void marcel_memory_locate(marcel_memory_manager_t *memory_manager,
-			  void *address,
-			  int *node);
+int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
+                         void *address,
+                         int *node);
 
 /**
  * @param memory_manager pointer to the memory manager

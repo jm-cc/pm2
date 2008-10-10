@@ -424,11 +424,13 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
 }
 
 static
-void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node, marcel_memory_data_t **data) {
+int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node, marcel_memory_data_t **data) {
  LOG_IN();
   if (memory_tree==NULL) {
     // We did not find the address
     *node = -1;
+    errno = ENOENT;
+    return -errno;
   }
   else if (address >= memory_tree->data->startaddress && address < memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
@@ -437,22 +439,25 @@ void ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tre
     *node = memory_tree->data->nodes[offset / memory_manager->pagesize];
     mdebug_heap("Address %p is located on node %d\n", address, *node);
     if (data) *data = memory_tree->data;
+    return 0;
   }
   else if (address <= memory_tree->data->startaddress) {
-    ma_memory_locate(memory_manager, memory_tree->leftchild, address, node, data);
+    return ma_memory_locate(memory_manager, memory_tree->leftchild, address, node, data);
   }
   else if (address >= memory_tree->data->endaddress) {
-    ma_memory_locate(memory_manager, memory_tree->rightchild, address, node, data);
+    return ma_memory_locate(memory_manager, memory_tree->rightchild, address, node, data);
   }
   else {
     *node = -1;
+    errno = ENOENT;
+    return -errno;
   }
   LOG_OUT();
 }
 
-void marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address, int *node) {
+int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address, int *node) {
   marcel_memory_data_t *data = NULL;
-  ma_memory_locate(memory_manager, memory_manager->root, address, node, &data);
+  return ma_memory_locate(memory_manager, memory_manager->root, address, node, &data);
 }
 
 static

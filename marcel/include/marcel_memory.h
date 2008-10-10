@@ -357,11 +357,6 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
                                          void *buffer, size_t size);
 
-/**
- *
- */
-void marcel_memory_perror(char *msg, int err);
-
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

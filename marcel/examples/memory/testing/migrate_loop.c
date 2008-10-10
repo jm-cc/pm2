@@ -42,7 +42,7 @@ int marcel_main(int argc, char * argv[]) {
       err = marcel_memory_migrate_pages(&memory_manager, buffer, sizeof(buffer), 0);
     }
     if (err < 0) {
-      marcel_memory_perror("mami_migrate_pages", err);
+      perror("mami_migrate_pages");
       return 1;
     }
   }

@@ -569,11 +569,13 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
-    return -ENOENT;
+    errno = ENOENT;
+    return -errno;
   }
   else if (source == dest) {
     mdebug_heap("The address %p is already located at the required node.\n", buffer);
-    return -EBUSY;
+    errno = EALREADY;
+    return -errno;
   }
 
   mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
@@ -677,14 +679,6 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
-}
-
-void marcel_memory_perror(char *msg, int err) {
-  switch (err) {
-  case -ENOENT: marcel_printf("%s: Address not managed by MAMI\n", msg); break;
-  case -EBUSY:  marcel_printf("%s: Address already located at the required node\n", msg); break;
-  default: marcel_printf("%s: Unknown error (%d)\n", msg, err);
-  }
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

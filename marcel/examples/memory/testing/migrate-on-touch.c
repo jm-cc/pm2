@@ -137,7 +137,7 @@ alloc_backend_unlinked_shared(unsigned long length)
 }
 
 int
-main(int argc, char *argv[])
+marcel_main(int argc, char *argv[])
 {
   //  void * buffer;
   unsigned long pagesize = getpagesize();

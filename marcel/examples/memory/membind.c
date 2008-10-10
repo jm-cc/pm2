@@ -24,12 +24,17 @@
 #include <errno.h>
 #include <string.h>
 #include <malloc.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/uio.h>
 
 #define TAB_SIZE 1024*1024*64
-#define NB_ITER 1024*1024*4
-#define ACCESS_PATTERN_SIZE 1024*1024*4
+#define NB_ITER 1024*1024*8
+#define ACCESS_PATTERN_SIZE 1024*1024*8
 #define NB_TIMES 10
 
 enum mbind_policy {
@@ -64,17 +69,50 @@ static void print_welcoming_message (unsigned int nb_threads,
 				     enum mbind_policy mpol,
 				     unsigned int *memory_nodes,
 				     unsigned int nb_memory_nodes);
-static void 
-initialize_access_pattern_vectors (long **access_pattern, 
-				   unsigned int nb_threads,
-				   unsigned int access_pattern_len,
-				   unsigned int tab_size) {
+
+static int
+create_file (char *filename,
+	     long **access_pattern, 
+	     unsigned int nb_threads,
+	     unsigned int access_pattern_len,
+	     unsigned int tab_size) {
   unsigned int i, j;
+  int fileno = open (filename, O_CREAT | O_WRONLY, 0666);
+  if (fileno < 0) {
+    perror (filename);
+    exit (1);
+  }
+
   for (i = 0; i < nb_threads; i++) {
     for (j = 0; j < access_pattern_len; j++) {
       access_pattern[i][j] = marcel_random () % tab_size;
     }
   }
+  
+  for (i = 0; i < nb_threads; i++) {
+    write (fileno, access_pattern[i], access_pattern_len);
+  }
+  return fileno;
+} 
+
+static void 
+initialize_access_pattern_vectors_from_file (char *filename,
+					     long **access_pattern, 
+					     unsigned int nb_threads,
+					     unsigned int access_pattern_len,
+					     unsigned int tab_size) {
+  unsigned int i, j;
+  int fileno = open (filename, O_RDONLY);
+
+  if (fileno < 0) {
+    fileno = create_file (filename, access_pattern, nb_threads, access_pattern_len, tab_size);
+  } else {
+    for (i = 0; i < nb_threads; i++) {
+      read (fileno, access_pattern[i], access_pattern_len);
+    }
+  }
+
+  close (fileno);
   marcel_printf ("Access pattern vectors initialized!\n");
 }
 
@@ -179,7 +217,7 @@ main (int argc, char **argv)
   }
 
   /* Build the access pattern vectors */
-  initialize_access_pattern_vectors (access_pattern, nb_threads, ACCESS_PATTERN_SIZE, TAB_SIZE);
+  initialize_access_pattern_vectors_from_file ("membind_pattern.dat", access_pattern, nb_threads, ACCESS_PATTERN_SIZE, TAB_SIZE);
 
   marcel_attr_init (&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);

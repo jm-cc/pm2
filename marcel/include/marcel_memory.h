@@ -55,6 +55,11 @@ typedef int marcel_memory_data_status_t;
 #define MARCEL_MEMORY_DATA_INITIAL	((marcel_memory_data_status_t)0)
 #define MARCEL_MEMORY_DATA_NEXT_TOUCHED	((marcel_memory_data_status_t)1)
 
+typedef int marcel_memory_membind_policy_t;
+#define MARCEL_MEMORY_MEMBIND_POLICY_NONE              ((marcel_memory_membind_policy_t)0)
+#define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)1)
+#define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)2)
+
 #section structures
 
 #depend "linux_spinlock.h[types]"
@@ -139,6 +144,10 @@ struct marcel_memory_manager_s {
   int initially_preallocated_pages;
   /** \brief Cache line size */
   int cache_line_size;
+  /** \brief Current membind policy */
+  marcel_memory_membind_policy_t membind_policy;
+  /** \brief Node for the membind policy */
+  int membind_node;
 };
 
 #section marcel_functions
@@ -246,6 +255,13 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 			   size_t nmemb,
 			   size_t size);
+
+/**
+ *
+ */
+void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
+                           marcel_memory_membind_policy_t policy,
+                           int node);
 
 /**
  * Free the given memory.

@@ -35,6 +35,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   memory_manager->pagesize = getpagesize();
   memory_manager->initially_preallocated_pages = preallocatedpages;
   memory_manager->cache_line_size = 64;
+  memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
 
   // Preallocate memory on each node
   memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
@@ -392,8 +393,17 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
 
   LOG_IN();
 
-  numanode = marcel_current_node();
-  if (tbx_unlikely(numanode == -1)) numanode=0;
+  if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
+    numanode = marcel_current_node();
+    if (tbx_unlikely(numanode == -1)) numanode=0;
+  }
+  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE) {
+    numanode = memory_manager->membind_node;
+  }
+  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE) {
+    marcel_memory_select_node(memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &numanode);
+  }
+
   ptr = marcel_memory_allocate_on_node(memory_manager, size, numanode);
 
   LOG_OUT();
@@ -412,6 +422,16 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
 
   LOG_OUT();
   return ptr;
+}
+
+void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
+                           marcel_memory_membind_policy_t policy,
+                           int node) {
+  LOG_IN();
+  mdebug_heap("Set the current membind policy to %d (node %d)\n", policy, node);
+  memory_manager->membind_policy = policy;
+  memory_manager->membind_node = node;
+  LOG_OUT();
 }
 
 void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {

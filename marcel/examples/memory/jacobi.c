@@ -59,7 +59,7 @@ int marcel_main(int argc, char *argv[]) {
   out = fopen("output", "w");
   if (!out) {
     printf("Error when opening file <output>\n");
-    return;
+    return -1;
   }
 
   marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_no_migration(ns)\ttime_migrate_on_next_touch(ns)\ttime_migrate_on_first_touch(ns)\n");

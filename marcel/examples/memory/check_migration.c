@@ -20,6 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <numa.h>
 #include <numaif.h>
 
 int marcel_main(int argc, char **argv) {

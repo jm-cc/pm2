@@ -558,8 +558,8 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 }
 
 static
-void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
-                             void *buffer, size_t size, int dest) {
+int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
+                            void *buffer, size_t size, int dest) {
   int i, *dests, *status;
   int source;
   marcel_memory_data_t *data = NULL;
@@ -569,11 +569,11 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
-    return;
+    return -ENOENT;
   }
   else if (source == dest) {
     mdebug_heap("The address %p is already located at the required node.\n", buffer);
-    return;
+    return -EBUSY;
   }
 
   mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
@@ -587,15 +587,19 @@ void ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
 
   LOG_OUT();
+  return 0;
 }
 
-void marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
+int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                                  void *buffer, size_t size, int dest) {
+  int ret;
+
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_migrate_pages(memory_manager, buffer, size, dest);
+  ret = ma_memory_migrate_pages(memory_manager, buffer, size, dest);
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
+  return ret;
 }
 
 marcel_memory_manager_t *g_memory_manager = NULL;
@@ -673,6 +677,14 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
+}
+
+void marcel_memory_perror(char *msg, int err) {
+  switch (err) {
+  case -ENOENT: marcel_printf("%s: Address not managed by MAMI\n", msg); break;
+  case -EBUSY:  marcel_printf("%s: Address already located at the required node\n", msg); break;
+  default: marcel_printf("%s: Unknown error (%d)\n", msg, err);
+  }
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

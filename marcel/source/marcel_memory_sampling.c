@@ -163,9 +163,11 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
-  while (!feof(out)) {
-    fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth);
-
+  mdebug_heap("Reading line %s\n", line);
+  while (!(feof(out))) {
+    if (fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
+      break;
+    }
 #ifdef PM2DEBUG
     if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);

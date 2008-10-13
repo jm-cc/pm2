@@ -507,15 +507,16 @@ int marcel_sigmask(int how, __const marcel_sigset_t * set,
 restart:
 
 	ma_spin_lock_softirq(&cthread->siglock);
-	for (sig = 1; sig < MARCEL_NSIG; sig++)
-		if ((marcel_signandismember(&cthread->sigpending,
-			    &cthread->curmask, sig))) {
-			marcel_sigdelset(&cthread->sigpending, sig);
-			ma_spin_unlock_softirq(&cthread->siglock);
-			ma_set_current_state(MA_TASK_RUNNING);
-			marcel_call_function(sig);
-			goto restart;
-		}
+	if (!marcel_signandisempty(&cthread->sigpending, &cthread->curmask))
+		for (sig = 1; sig < MARCEL_NSIG; sig++)
+			if ((marcel_signandismember(&cthread->sigpending,
+				    &cthread->curmask, sig))) {
+				marcel_sigdelset(&cthread->sigpending, sig);
+				ma_spin_unlock_softirq(&cthread->siglock);
+				ma_set_current_state(MA_TASK_RUNNING);
+				marcel_call_function(sig);
+				goto restart;
+			}
 
    /*********modifs des masques******/
 	if (oset != NULL)

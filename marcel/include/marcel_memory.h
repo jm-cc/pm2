@@ -368,7 +368,8 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  */
 int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
-                                void *buffer, size_t size, int dest);
+                                void *buffer,
+                                int dest);
 
 /**
  * Mark the area to be migrated on next touch.

@@ -36,10 +36,10 @@ int marcel_main(int argc, char * argv[]) {
   // Migrate the buffer
   for(i=0 ; i<LOOPS ; i++) {
     if (i%2 == 0) {
-      err = marcel_memory_migrate_pages(&memory_manager, buffer, sizeof(buffer), 1);
+      err = marcel_memory_migrate_pages(&memory_manager, buffer, 1);
     }
     else {
-      err = marcel_memory_migrate_pages(&memory_manager, buffer, sizeof(buffer), 0);
+      err = marcel_memory_migrate_pages(&memory_manager, buffer, 0);
     }
     if (err < 0) {
       perror("mami_migrate_pages");

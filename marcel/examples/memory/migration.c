@@ -30,7 +30,7 @@ void allocation_and_migration(int cpu, int mem) {
   marcel_memory_locate(&memory_manager, buffer, &bnode);
   marcel_printf("Node before migration %d\n", bnode);
 
-  marcel_memory_migrate_pages(&memory_manager, buffer, size, cpu);
+  marcel_memory_migrate_pages(&memory_manager, buffer, cpu);
 
   marcel_memory_locate(&memory_manager, buffer, &anode);
   marcel_printf("Node after migration %d\n", anode);

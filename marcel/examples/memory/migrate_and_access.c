@@ -28,10 +28,10 @@ any_t t_migrate(any_t arg) {
   
   for(i=0 ; i<LOOPS ; i++) {
     if (i%2 == 0) {
-      marcel_memory_migrate_pages(&memory_manager, buffer, sizeof(buffer), 1);
+      marcel_memory_migrate_pages(&memory_manager, buffer, 1);
     }
     else {
-      marcel_memory_migrate_pages(&memory_manager, buffer, sizeof(buffer), 0);
+      marcel_memory_migrate_pages(&memory_manager, buffer, 0);
     }
     //if (i %1000) marcel_printf("Migrate ...\n");
   }

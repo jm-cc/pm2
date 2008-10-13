@@ -698,12 +698,12 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
+    errno = ENOENT;
     marcel_spin_unlock(&(memory_manager->lock));
     LOG_OUT();
-    errno = ENOENT;
     return -errno;
   }
-  
+
   data->status = MARCEL_MEMORY_INITIAL_STATUS;
   err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {

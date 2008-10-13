@@ -50,12 +50,12 @@ typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 typedef int marcel_memory_node_selection_policy_t;
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 
-/** \brief Type of a data status */
-typedef int marcel_memory_data_status_t;
+/** \brief Type of a memory status */
+typedef int marcel_memory_status_t;
 /** \brief Initial status: the memory has been allocated */
-#define MARCEL_MEMORY_DATA_INITIAL	((marcel_memory_data_status_t)0)
+#define MARCEL_MEMORY_INITIAL_STATUS	  ((marcel_memory_status_t)0)
 /** \brief The memory has been migrated following a next touch mark */
-#define MARCEL_MEMORY_DATA_NEXT_TOUCHED	((marcel_memory_data_status_t)1)
+#define MARCEL_MEMORY_NEXT_TOUCHED_STATUS ((marcel_memory_status_t)1)
 
 /** \brief Type of a memory location policy */
 typedef int marcel_memory_membind_policy_t;
@@ -91,7 +91,7 @@ struct marcel_memory_data_s {
   int *nodes;
 
   /** \brief Tag indicating the memory status */
-  marcel_memory_data_status_t status;
+  marcel_memory_status_t status;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */

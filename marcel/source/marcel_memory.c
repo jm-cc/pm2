@@ -143,7 +143,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->startaddress = pageaddrs[0];
   (*memory_data)->endaddress = pageaddrs[nbpages-1]+memory_manager->pagesize;
   (*memory_data)->size = size;
-  (*memory_data)->status = MARCEL_MEMORY_DATA_INITIAL;
+  (*memory_data)->status = MARCEL_MEMORY_INITIAL_STATUS;
   (*memory_data)->protection = protection;
 
   // Set the page addresses
@@ -655,8 +655,8 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
-  if (data->status != MARCEL_MEMORY_DATA_NEXT_TOUCHED) {
-    data->status = MARCEL_MEMORY_DATA_NEXT_TOUCHED;
+  if (data->status != MARCEL_MEMORY_NEXT_TOUCHED_STATUS) {
+    data->status = MARCEL_MEMORY_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
     ma_memory_migrate_pages(g_memory_manager, data->startaddress, data->size, dest);
     err = mprotect(data->startaddress, data->size, data->protection);
@@ -697,7 +697,7 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   g_memory_manager = memory_manager;
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
-  data->status = MARCEL_MEMORY_DATA_INITIAL;
+  data->status = MARCEL_MEMORY_INITIAL_STATUS;
   err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");

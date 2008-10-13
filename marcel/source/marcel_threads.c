@@ -172,6 +172,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->not_deviatable = attr->not_deviatable;
 	t->work = MARCEL_WORK_INIT;
 
+#ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_lock_init(&t->siglock);
 	marcel_sigemptyset(&t->sigpending);
 	//t->siginfo
@@ -182,6 +183,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	marcel_sigemptyset(&t->waitset);
 	t->waitsig = NULL;
 	t->waitinfo = NULL;
+#endif
 
 #ifdef MA__LIBPTHREAD
 	ma_spin_lock_init(&t->cancellock);
@@ -615,6 +617,7 @@ static void marcel_exit_internal(any_t val)
 	}
 #endif /* MARCEL_KEYS_ENABLED */
 
+#ifdef MARCEL_SIGNALS_ENABLED
 	/* Since it will die, we don't want this thread to be chosen for
 	 * delivering signals any more */
 	{
@@ -622,7 +625,8 @@ static void marcel_exit_internal(any_t val)
 		marcel_sigfillset(&set);
 		marcel_sigmask(SIG_BLOCK,&set,NULL);
 	}
-	
+#endif
+
 	cur->ret_val = val;
 
 	/* wait for scheduler stuff */

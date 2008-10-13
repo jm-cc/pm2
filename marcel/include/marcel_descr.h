@@ -222,7 +222,8 @@ struct marcel_task {
 	unsigned not_deviatable;
 	struct marcel_work work;
 
-	/* TODO: option de flavor, dépend de deviate */
+	/* TODO: dépend de deviate */
+#ifdef MARCEL_SIGNALS_ENABLED
 /*********signaux***********/
 	ma_spinlock_t siglock;
 	marcel_sigset_t sigpending;
@@ -235,6 +236,7 @@ struct marcel_task {
 	marcel_sigset_t waitset;
 	int *waitsig;
 	siginfo_t *waitinfo;
+#endif
 
 #ifdef MA__IFACE_PMARCEL
 	/*********attributs*********/

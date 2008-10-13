@@ -260,6 +260,14 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 #define pmarcel_signandismember marcel_signandismember
 #define pmarcel_sigequalset     marcel_sigequalset
 
+#ifdef MARCEL_SIGNALS_ENABLED
+#define MA_GET_INTERRUPTED() SELF_GETMEM(interrupted)
+#define MA_SET_INTERRUPTED(v) SELF_SETMEM(interrupted,(v))
+#else
+#define MA_GET_INTERRUPTED() 0
+#define MA_SET_INTERRUPTED(v) (void)0
+#endif
+
 #section functions
 void marcel_testset(__const marcel_sigset_t * set,char *what);
 

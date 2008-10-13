@@ -110,13 +110,13 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
 			s->last = &c;
 		}
 
-		SELF_GETMEM(interrupted) = 0;
+		MA_SET_INTERRUPTED(0);
 		while (c.blocked) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			ma_spin_unlock_bh(&s->lock);
 			ma_schedule();
 			ma_spin_lock_bh(&s->lock);
-			if (SELF_GETMEM(interrupted)) {
+			if (MA_GET_INTERRUPTED()) {
 				for (prev = &s->first; *prev != &c;
 				    prev = &(*prev)->next) ;
 				*prev = c.next;
@@ -274,13 +274,13 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 			s->last->next = &c;
 			s->last = &c;
 		}
-		SELF_GETMEM(interrupted) = 0;
+		MA_SET_INTERRUPTED(0);
 		do {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 			ma_spin_unlock_bh(&s->lock);
 			jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
 			ma_spin_lock_bh(&s->lock);
-			if (jiffies_timeout == 0 || SELF_GETMEM(interrupted)) {
+			if (jiffies_timeout == 0 || MA_GET_INTERRUPTED()) {
 				for (prev = &s->first; *prev != &c;
 				    prev = &(*prev)->next) ;
 				*prev = c.next;

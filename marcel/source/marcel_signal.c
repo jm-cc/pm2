@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#ifdef MARCEL_SIGNALS_ENABLED
+
 #include "marcel.h"
 #include <setjmp.h>
 #include <errno.h>
@@ -1550,4 +1552,6 @@ void (*pmarcel_sigset(int sig,void (*dispo)(int)))
 versioned_symbol(libpthread, pmarcel_sigset,
 	              sigset, GLIBC_2_1);
 #endif
+#endif
+
 #endif

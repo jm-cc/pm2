@@ -583,14 +583,10 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 }
 
 static
-int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager, void *buffer, int dest) {
+int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager, void *buffer, marcel_memory_data_t *data, int source, int dest) {
   int i, *dests, *status;
-  int source;
-  marcel_memory_data_t *data = NULL;
 
   LOG_IN();
-
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
     errno = ENOENT;
@@ -617,12 +613,14 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager, void *buffe
 }
 
 int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
-                                 void *buffer, int dest) {
-  int ret;
+                                void *buffer, int dest) {
+  int source, ret;
+  marcel_memory_data_t *data;
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
-  ret = ma_memory_migrate_pages(memory_manager, buffer, dest);
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  ret = ma_memory_migrate_pages(memory_manager, buffer, data, source, dest);
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
   return ret;
@@ -657,7 +655,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (data->status != MARCEL_MEMORY_NEXT_TOUCHED_STATUS) {
     data->status = MARCEL_MEMORY_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
-    ma_memory_migrate_pages(g_memory_manager, data->startaddress, dest);
+    ma_memory_migrate_pages(g_memory_manager, addr, data, source, dest);
     err = mprotect(data->startaddress, data->size, data->protection);
     if (err < 0) {
       char *msg = "mprotect(handler): ";

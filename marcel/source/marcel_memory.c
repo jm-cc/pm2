@@ -697,6 +697,7 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   g_memory_manager = memory_manager;
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  data->status = MARCEL_MEMORY_DATA_INITIAL;
   err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");

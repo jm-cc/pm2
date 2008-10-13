@@ -5,6 +5,7 @@ autogen-include
 *.so
 a.out
 TAGS
+tags
 cscope.out
 cscope.files
 core

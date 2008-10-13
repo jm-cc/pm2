@@ -179,21 +179,6 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 			   int node);
 
 /*
- * Deallocate the memory from the specified numa node.
- */
-void ma_memory_deallocate(marcel_memory_manager_t *memory_manager,
-			  marcel_memory_area_t **space,
-			  int node);
-
-/*
- *
- */
-void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
-			      void *buffer,
-			      int nbpages,
-			      int node);
-
-/*
  *
  */
 void ma_memory_check_pages_location(void **pageaddrs,

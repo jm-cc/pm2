@@ -107,6 +107,19 @@ void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
   LOG_OUT();
 }
 
+static
+void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
+  marcel_memory_area_t *ptr;
+
+  LOG_IN();
+  ptr  = (*space);
+  while (ptr != NULL) {
+    mdebug_heap("Unmapping memory area from %p\n", ptr->start);
+    munmap(ptr->start, ptr->nbpages * memory_manager->pagesize);
+    ptr = ptr->next;
+  }
+  LOG_OUT();
+}
 
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   int node, dest;
@@ -217,6 +230,22 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
   LOG_OUT();
 }
 
+static
+void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
+  marcel_memory_area_t *available;
+
+  LOG_IN();
+
+  mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
+  available = malloc(sizeof(marcel_memory_area_t));
+  available->start = buffer;
+  available->nbpages = nbpages;
+  available->next = memory_manager->heaps[node];
+  memory_manager->heaps[node] = available;
+
+  LOG_OUT();
+}
+
 void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree, void *buffer) {
   LOG_IN();
   if (*memory_tree!=NULL) {
@@ -283,19 +312,6 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space)->protection = PROT_READ|PROT_WRITE;
   (*space)->next = NULL;
 
-  LOG_OUT();
-}
-
-void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
-  marcel_memory_area_t *ptr;
-
-  LOG_IN();
-  ptr  = (*space);
-  while (ptr != NULL) {
-    mdebug_heap("Unmapping memory area from %p\n", ptr->start);
-    munmap(ptr->start, ptr->nbpages * memory_manager->pagesize);
-    ptr = ptr->next;
-  }
   LOG_OUT();
 }
 
@@ -370,21 +386,6 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
   LOG_OUT();
   return buffer;
-}
-
-void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node) {
-  marcel_memory_area_t *available;
-
-  LOG_IN();
-
-  mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
-  available = malloc(sizeof(marcel_memory_area_t));
-  available->start = buffer;
-  available->nbpages = nbpages;
-  available->next = memory_manager->heaps[node];
-  memory_manager->heaps[node] = available;
-
-  LOG_OUT();
 }
 
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size) {

@@ -18,7 +18,7 @@ dans marcel.h,
 ...
 ?
 
-ajouter des options pour alléger la structure marcel_descr & marcel_attr: migration, delayed_activation, postexit, atexit, cleanup, exceptions, keys, suspend, rwlock, deviatable, signals (dépend de deviatable), vpmask.
+ajouter des options pour alléger la structure marcel_descr & marcel_attr: delayed_activation, rwlock, deviatable, signals (dépend de deviatable), vpmask.
 
 Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des changements de libc/gcc, parfois changement de stratégie d'ordonnancement par défaut.
 

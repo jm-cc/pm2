@@ -374,10 +374,8 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
  * Mark the area to be migrated on next touch.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
- * @param size size of the memory area
  */
-void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
-                                         void *buffer, size_t size);
+int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

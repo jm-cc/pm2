@@ -291,11 +291,11 @@ void initialize_grids(int grid_size, int migration_policy) {
 
     if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
       for (i = 0; i <= grid_size+1; i++) {
-        marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], (grid_size+2) * sizeof(double));
-        marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i], (grid_size+2) * sizeof(double));
+        marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i]);
+        marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i]);
       }
-      //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1, (grid_size+2) * sizeof(double *));
-      //marcel_memory_migrate_on_next_touch(&memory_manager, grid2, (grid_size+2) * sizeof(double *));
+      //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1);
+      //marcel_memory_migrate_on_next_touch(&memory_manager, grid2);
     }
   }
 }

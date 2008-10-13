@@ -675,8 +675,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   marcel_spin_unlock(&(g_memory_manager->lock));
 }
 
-void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
-                                         void *buffer, size_t size) {
+int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
   int err, source;
   static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
@@ -697,14 +696,22 @@ void marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager
 
   g_memory_manager = memory_manager;
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  if (source == -1) {
+    mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
+    marcel_spin_unlock(&(memory_manager->lock));
+    LOG_OUT();
+    errno = ENOENT;
+    return -errno;
+  }
+  
   data->status = MARCEL_MEMORY_INITIAL_STATUS;
   err = mprotect(data->startaddress, data->size, PROT_NONE);
   if (err < 0) {
     perror("mprotect");
   }
-
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
+  return 0;
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

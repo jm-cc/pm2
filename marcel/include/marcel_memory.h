@@ -50,14 +50,20 @@ typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 typedef int marcel_memory_node_selection_policy_t;
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 
-/** \brief Data status */
+/** \brief Type of a data status */
 typedef int marcel_memory_data_status_t;
+/** \brief Initial status: the memory has been allocated */
 #define MARCEL_MEMORY_DATA_INITIAL	((marcel_memory_data_status_t)0)
+/** \brief The memory has been migrated following a next touch mark */
 #define MARCEL_MEMORY_DATA_NEXT_TOUCHED	((marcel_memory_data_status_t)1)
 
+/** \brief Type of a memory location policy */
 typedef int marcel_memory_membind_policy_t;
+/** \brief The memory will be allocated based on the policy specified through the malloc functionality */
 #define MARCEL_MEMORY_MEMBIND_POLICY_NONE              ((marcel_memory_membind_policy_t)0)
+/** \brief The memory will be allocated on the given node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)1)
+/** \brief The memory will be allocated on the least loaded node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)2)
 
 #section structures

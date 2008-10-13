@@ -58,6 +58,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
   printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
 }
 
+static
 void ma_memory_get_filename(char *type, char *filename, long source, long dest) {
   char directory[1024];
   char hostname[1024];
@@ -92,6 +93,7 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
   assert(rc < 1024);
 }
 
+static
 void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   marcel_memory_migration_cost_t *migration_cost;
 
@@ -104,7 +106,6 @@ void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_
 
   tbx_slist_push(migration_costs, migration_cost);
 }
-
 
 void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager) {
   char filename[1024];

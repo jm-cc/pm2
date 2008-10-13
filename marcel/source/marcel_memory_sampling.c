@@ -24,42 +24,6 @@
 #define LOOPS_FOR_MEMORY_MIGRATION  1000
 #define LOOPS_FOR_MEMORY_ACCESS     100000
 
-void ma_memory_sampling_check_pages_location(void **pageaddrs, int pages, int node) {
-  int *pagenodes;
-  int i;
-  int err;
-
-  mdebug_heap("check location is #%d\n", node);
-
-  pagenodes = malloc(pages * sizeof(int));
-  err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
-  if (err < 0) {
-    perror("move_pages (check_pages_location)");
-    exit(-1);
-  }
-
-  for(i=0; i<pages; i++) {
-    if (pagenodes[i] != node) {
-      printf("  page #%d is not located on node #%d\n", i, node);
-      exit(-1);
-    }
-  }
-  free(pagenodes);
-}
-
-void ma_memory_sampling_migrate_pages(void **pageaddrs, int pages, int *nodes, int *status) {
-  int err;
-
-  mdebug_heap("binding on numa node #%d\n", nodes[0]);
-
-  err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
-
-  if (err < 0) {
-    perror("move_pages (set_bind)");
-    exit(-1);
-  }
-}
-
 static
 void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages, int loops,
                                             void **pageaddrs, int *sources, int *dests, int *status,
@@ -69,22 +33,22 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
   unsigned long us, ns, bandwidth;
 
   // Check the location of the pages
-  ma_memory_sampling_check_pages_location(pageaddrs, pages, source);
+  ma_memory_check_pages_location(pageaddrs, pages, source);
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<loops ; i++) {
-    ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
-    ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
+    ma_memory_move_pages(pageaddrs, pages, dests, status);
+    ma_memory_move_pages(pageaddrs, pages, sources, status);
   }
-  ma_memory_sampling_migrate_pages(pageaddrs, pages, dests, status);
+  ma_memory_move_pages(pageaddrs, pages, dests, status);
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
-  ma_memory_sampling_check_pages_location(pageaddrs, pages, dest);
+  ma_memory_check_pages_location(pageaddrs, pages, dest);
 
   // Move the pages back to the node source
-  ma_memory_sampling_migrate_pages(pageaddrs, pages, sources, status);
+  ma_memory_move_pages(pageaddrs, pages, sources, status);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;

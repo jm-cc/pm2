@@ -443,6 +443,42 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_OUT();
 }
 
+void ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
+  int err;
+
+  mdebug_heap("binding on numa node #%d\n", nodes[0]);
+
+  err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+
+  if (err < 0) {
+    perror("move_pages (set_bind)");
+    exit(-1);
+  }
+}
+
+void ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
+  int *pagenodes;
+  int i;
+  int err;
+
+  mdebug_heap("check location is #%d\n", node);
+
+  pagenodes = malloc(pages * sizeof(int));
+  err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
+  if (err < 0) {
+    perror("move_pages (check_pages_location)");
+    exit(-1);
+  }
+
+  for(i=0; i<pages; i++) {
+    if (pagenodes[i] != node) {
+      printf("  page #%d is not located on node #%d\n", i, node);
+      exit(-1);
+    }
+  }
+  free(pagenodes);
+}
+
 static
 int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *address, int *node, marcel_memory_data_t **data) {
  LOG_IN();
@@ -583,7 +619,8 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 }
 
 static
-int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager, void *buffer, marcel_memory_data_t *data, int source, int dest) {
+int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
+                            void *buffer, marcel_memory_data_t *data, int source, int dest) {
   int i, *dests, *status;
 
   LOG_IN();
@@ -602,9 +639,9 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager, void *buffe
   dests = (int *) malloc(data->nbpages * sizeof(int));
   status = (int *) malloc(data->nbpages * sizeof(int));
   for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
-  ma_memory_sampling_migrate_pages(data->pageaddrs, data->nbpages, dests, status);
+  ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
 #ifdef PM2DEBUG
-  ma_memory_sampling_check_pages_location(data->pageaddrs, data->nbpages, dest);
+  ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
   for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
 

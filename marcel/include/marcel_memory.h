@@ -196,17 +196,17 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager,
 /*
  *
  */
-void ma_memory_sampling_check_pages_location(void **pageaddrs,
-                                             int pages,
-                                             int node);
+void ma_memory_check_pages_location(void **pageaddrs,
+                                    int pages,
+                                    int node);
 
 /*
  *
  */
-void ma_memory_sampling_migrate_pages(void **pageaddrs,
-                                      int pages,
-                                      int *nodes,
-                                      int *status);
+void ma_memory_move_pages(void **pageaddrs,
+                          int pages,
+                          int *nodes,
+                          int *status);
 
 /*
  *

@@ -602,15 +602,19 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
 	 e->init_holder; 
 	 e = &ma_bubble_holder(e->init_holder)->as_entity) {
       /* In here, we try to find these ancestors */
-      if (e->sched_holder->type == MA_RUNQUEUE_HOLDER)
-	if ((e->sched_holder == &common_rq->as_holder) 
-	    || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))
-	  break;
-      ancestors[nb_ancestors] = e;
-      nb_ancestors++;
+      if ((e->sched_holder->type == MA_RUNQUEUE_HOLDER) &&
+	  ((e->sched_holder == &common_rq->as_holder) || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))) {
+	/* We keep browsing up through the bubbles hierarchy. If we
+	   reached a bubble whose scheduling level is >= to the
+	   level we need to put ancestors on, our job is over. */
+	break;
+      } else {
+	ancestors[nb_ancestors] = e;
+	nb_ancestors++;
+      }
     }
   }
-
+  
   if (nb_ancestors) {
     /* Then we burst everyone of them, to let their content where it
        was scheduled, and we move them to the common_rq, covering the

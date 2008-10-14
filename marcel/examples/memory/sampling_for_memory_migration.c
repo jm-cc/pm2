@@ -19,7 +19,7 @@
 
 int main(int argc, char **argv) {
   marcel_memory_manager_t memory_manager;
-  int i;
+  int i, err;
   int minsource, maxsource, mindest, maxdest;
   int extended_mode=0;
 
@@ -47,8 +47,13 @@ int main(int argc, char **argv) {
     }
   }
 
-  marcel_memory_sampling_of_memory_migration(&memory_manager, minsource, maxsource, mindest, maxdest, extended_mode);
-  return 0;
+  err = marcel_memory_sampling_of_memory_migration(&memory_manager, minsource, maxsource, mindest, maxdest, extended_mode);
+  if (err < 0) perror("marcel_memory_sampling_of_memory_migration");
+
+  // Finish marcel
+  marcel_memory_exit(&memory_manager);
+  marcel_end();
+  return err;
 }
 
 #else

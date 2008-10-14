@@ -196,12 +196,12 @@ int ma_memory_move_pages(void **pageaddrs,
 /*
  *
  */
-void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager);
+int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager);
 
 /*
  *
  */
-void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
+int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
 
 #section functions
 
@@ -327,12 +327,12 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
  * @param maxdest
  * @param extended_mode
  */
-void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
-                                                unsigned long minsource,
-                                                unsigned long maxsource,
-                                                unsigned long mindest,
-                                                unsigned long maxdest,
-                                                int extended_mode);
+int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
+                                               unsigned long minsource,
+                                               unsigned long maxsource,
+                                               unsigned long mindest,
+                                               unsigned long maxdest,
+                                               int extended_mode);
 
 /**
  * Performs the sampling for the memory access between the specified nodes.
@@ -342,11 +342,11 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
  * @param mindest
  * @param maxdest
  */
-void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
-                                             unsigned long minsource,
-                                             unsigned long maxsource,
-                                             unsigned long mindest,
-                                             unsigned long maxdest);
+int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
+                                            unsigned long minsource,
+                                            unsigned long maxsource,
+                                            unsigned long mindest,
+                                            unsigned long maxdest);
 
 /**
  * Select the "best" node based on the given policy.

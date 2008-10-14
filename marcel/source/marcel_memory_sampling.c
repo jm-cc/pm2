@@ -17,6 +17,7 @@
 
 #include "marcel.h"
 #include <assert.h>
+#include <errno.h>
 #include <numa.h>
 #include <numaif.h>
 #include <sys/mman.h>
@@ -65,7 +66,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
 }
 
 static
-void ma_memory_get_filename(char *type, char *filename, long source, long dest) {
+int ma_memory_get_filename(char *type, char *filename, long source, long dest) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;
@@ -97,6 +98,7 @@ void ma_memory_get_filename(char *type, char *filename, long source, long dest) 
       snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
+  return 0;
 }
 
 static
@@ -113,7 +115,7 @@ void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_
   tbx_slist_push(migration_costs, migration_cost);
 }
 
-void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager) {
+int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -125,12 +127,17 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
   float intercept;
   float correlation;
   float bandwidth;
+  int err;
 
-  ma_memory_get_filename("model_for_memory_migration", filename, -1, -1);
+  err = ma_memory_get_filename("model_for_memory_migration", filename, -1, -1);
+  if (err < 0) {
+    perror("ma_memory_get_filename");
+    return -1;
+  }
   out = fopen(filename, "r");
   if (!out) {
     printf("The model for the cost of the memory migration is not available\n");
-    return;
+    return -1;
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
@@ -149,14 +156,15 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
     ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
   }
   fclose(out);
+  return 0;
 }
 
-void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
-                                                unsigned long minsource,
-                                                unsigned long maxsource,
-                                                unsigned long mindest,
-                                                unsigned long maxdest,
-                                                int extended_mode) {
+int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
+                                               unsigned long minsource,
+                                               unsigned long maxsource,
+                                               unsigned long mindest,
+                                               unsigned long maxdest,
+                                               int extended_mode) {
   char filename[1024];
   FILE *out;
   int i;
@@ -182,7 +190,7 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
     buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     if (buffer < 0) {
       perror("mmap");
-      exit(-1);
+      return (void *)(intptr_t)-errno;
     }
 
     // Set the memory policy on node source
@@ -190,7 +198,7 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
     err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
     if (err < 0) {
       perror("set_mempolicy");
-      exit(-1);
+      return (void *)(intptr_t)err;
     }
 
     // Fill in the whole memory
@@ -245,20 +253,25 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
     free(status);
     free(sources);
     free(dests);
-    return 0;
+    return NULL;
   }
 
   {
+    int err;
     long source = -1;
     long dest = -1;
     if (minsource == maxsource) source = minsource;
     if (mindest == maxdest) dest = mindest;
-    ma_memory_get_filename("sampling_for_memory_migration", filename, source, dest);
+    err = ma_memory_get_filename("sampling_for_memory_migration", filename, source, dest);
+    if (err < 0) {
+      perror("ma_memory_get_filename");
+      return -1;
+    }
   }
   out = fopen(filename, "w");
   if (!out) {
     printf("Error when opening file <%s>\n", filename);
-    return;
+    return -errno;
   }
   fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   printf("Source\tDest\tPages\tSize\tMigration_Time\n");
@@ -266,32 +279,43 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
   marcel_attr_init(&attr);
   for(source=minsource; source<=maxsource ; source++) {
     for(dest=mindest; dest<=maxdest ; dest++) {
+      any_t status;
 
       if (dest == source) continue;
 
       // Create a thread on node source
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
       marcel_create(&thread, &attr, migration, NULL);
-      marcel_join(thread, NULL);
+      marcel_join(thread, &status);
+      if (status) {
+        perror("error");
+        return -errno;
+      }
     }
   }
   fclose(out);
   printf("Sampling saved in <%s>\n", filename);
+  return 0;
 }
 
-void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager) {
+int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
   unsigned long source, dest;
   long long int size, wtime, rtime;
   float rcacheline, wcacheline;
+  int err;
 
-  ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
+  err = ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
+  if (err < 0) {
+    perror("ma_memory_get_filename");
+    return -1;
+  }
   out = fopen(filename, "r");
   if (!out) {
     printf("The model for the cost of the memory access is not available\n");
-    return;
+    return -1;
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
@@ -308,13 +332,14 @@ void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_mana
     memory_manager->writing_access_costs[source][dest].cost = wcacheline;
     memory_manager->reading_access_costs[source][dest].cost = rcacheline;
   }
+  return 0;
 }
 
-void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
-                                             unsigned long minsource,
-                                             unsigned long maxsource,
-                                             unsigned long mindest,
-                                             unsigned long maxdest) {
+int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
+                                            unsigned long minsource,
+                                            unsigned long maxsource,
+                                            unsigned long mindest,
+                                            unsigned long maxdest) {
   char filename[1024];
   FILE *out;
   unsigned long t, node;
@@ -358,16 +383,21 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
   marcel_attr_init(&attr);
 
   {
+    int err;
     long source = -1;
     long dest = -1;
     if (minsource == maxsource) source = minsource;
     if (mindest == maxdest) dest = mindest;
-    ma_memory_get_filename("sampling_for_memory_access", filename, source, dest);
+    err = ma_memory_get_filename("sampling_for_memory_access", filename, source, dest);
+    if (err < 0) {
+      perror("ma_memory_get_filename");
+      return -1;
+    }
   }
   out = fopen(filename, "w");
   if (!out) {
     printf("Error when opening file <%s>\n", filename);
-    return;
+    return -1;
   }
 
   rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
@@ -444,6 +474,7 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 
   fclose(out);
   printf("Sampling saved in <%s>\n", filename);
+  return 0;
 }
 
 #endif /* MAMI_ENABLED */

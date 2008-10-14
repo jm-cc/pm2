@@ -799,14 +799,6 @@ affinity_steal (unsigned int from_vp) {
 					 &args);
   ma_bubble_unlock_all (&marcel_root_bubble, marcel_topo_level(0,0));
   
-  /* If we didn't find anything, there's certainly some balance
-     issue... Let's shake everything and distribute again! The shake()
-     function starts with locking every entity and gather the
-     root_bubble, that's why we need to call it outside the
-     bubble_lock_all critical section. */
-  if ((smthg_to_steal == -1) && (n >= nvp))
-    marcel_bubble_shake ();
-  
   ma_resched_existing_threads (me);    
   ma_preempt_enable_no_resched ();
   ma_local_bh_enable ();

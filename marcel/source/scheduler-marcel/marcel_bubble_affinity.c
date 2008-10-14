@@ -26,6 +26,9 @@
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
+#undef bubble_sched_debug
+#define bubble_sched_debug marcel_printf
+
 static unsigned long ma_last_failed_steal = 0;
 static unsigned long ma_last_succeeded_steal = 0;
 static ma_atomic_t ma_succeeded_steals = MA_ATOMIC_INIT(0);
@@ -97,6 +100,7 @@ ma_attracting_levels_init (ma_attracting_level_t *attracting_levels,
     attracting_levels[i].level = from ? from->children[i] : NULL;
     attracting_levels[i].max_entities = nb_entities;
     attracting_levels[i].total_load = from ? ma_load_from_children (from->children[i]) : 0;
+
     MA_BUG_ON (!attracting_levels[i].entities);
   }
 }
@@ -332,13 +336,13 @@ ma_aff_distribute_entities_cache (struct marcel_topo_level *l,
 				attracting_levels, 
 				&load_balancing_entities);
   }
-  
+
   /* Then, we greedily distribute the unconstrained entities to balance
      the load. */
   ma_spread_load_balancing_entities (attracting_levels, 
 				     &load_balancing_entities, 
 				     arity);
-  
+
   /* At this point, we verify if every underlying topo_level will be
      occupied. If not, we even the load by taking entities from the
      most loaded levels to the least loaded ones. */
@@ -387,9 +391,10 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
   
   for (i = 0; i < ne; i++) {
     unsigned int k, tmp;
-    /* Put the bigger entity on the least-loaded level. */
+    /* Put the bigger entity on the least-loaded level. 
+     * We assume the _e_ array is sorted. */
     entities_per_level[0] += ma_entity_load (e[i]); 
-    
+
     /* Rearrange the entities_per_level array. */
     for (k = 0; k < arity - 1; k++) {
       if (entities_per_level[k] > entities_per_level[k + 1]) {
@@ -667,7 +672,7 @@ is_entity_worth_stealing (int *greater,
 	     marcel_entity_t **tested_entity) {
   int found = 0;
   /* We try to avoid currently running entities. */
-  //if (!ma_entity_is_running (*tested_entity)) {
+  if (!ma_entity_is_running (*tested_entity)) {
     long load = ma_entity_load (*tested_entity);
     if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
       if (load > *greater) {
@@ -682,13 +687,14 @@ is_entity_worth_stealing (int *greater,
 	 load balancing of OpenMP nested applications for example. */
       *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
     }
-    // }
+  }
+  
   return found;
 }
 
 /* This function browses the content of the _hold_ holder, in order to
    find something to steal (a bubble if possible) to the _source_
-   topo_level. It recursively look at bubbles content too. 
+   topo_level. It recursively looks at bubbles content too. 
 
    If we didn't find any bubble to steal, we resign to steal
    _thread_to_steal_, which can be seen as the guy you always choose
@@ -696,10 +702,11 @@ is_entity_worth_stealing (int *greater,
 static int
 browse_and_steal(ma_holder_t *hold, void *args) {
   marcel_entity_t *e, *bestbb = NULL; 
-  marcel_entity_t *thread_to_steal = (*(struct browse_and_steal_args *)args).thread_to_steal;
   int greater = 0, available_entities = 0;
-  struct marcel_topo_level *top = marcel_topo_level(0,0), *source = (*(struct browse_and_steal_args *)args).source;  
-
+  struct marcel_topo_level *top = marcel_topo_level(0,0); 
+  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;  
+  marcel_entity_t *thread_to_steal = (*(struct browse_and_steal_args *)args).thread_to_steal;
+  
   /* We don't want to browse runqueues and bubbles the same
      way. (i.e., we want to browse directly included entities first,
      to steal the upper bubble we find.) */
@@ -714,38 +721,43 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       available_entities++;
     }
   }
+  
   ma_runqueue_t *common_rq = NULL, *rq = NULL;
-  if (bestbb)
+  
+  if (bestbb) {
     rq = get_parent_rq(bestbb);
-  else if (thread_to_steal)
+  } else if (thread_to_steal) {
     rq = get_parent_rq(thread_to_steal);
+  }
 
   if (rq) {
-    PROF_EVENTSTR(sched_status, "stealing subtree");
+    PROF_EVENTSTR (sched_status, "stealing subtree");
     for (common_rq = rq->father; common_rq != &top->rq; common_rq = common_rq->father) {
       /* This only works because _source_ is the level vp_is_idle() is
 	 called from (i.e. it's one of the leaves in the topo_level
 	 tree). */
-      if (ma_rq_covers(common_rq, source->number))
+      if (ma_rq_covers (common_rq, source->number)) {
 	break;
+      }
     }
   }
  
   if (bestbb) {
-    if (available_entities > 1) 
-      return steal(bestbb, common_rq, &source->rq);
-    else {
+    if (available_entities > 1) { 
+      return steal (bestbb, common_rq, &source->rq);
+    } else {
       /* Browse the bubble */
       struct browse_and_steal_args new_args = {
 	.source = source,
 	.thread_to_steal = thread_to_steal,
       };
-      return browse_and_steal(&ma_bubble_entity(bestbb)->as_holder, &new_args);
+      
+      return browse_and_steal (&ma_bubble_entity(bestbb)->as_holder, &new_args);
     }
   } else if (thread_to_steal && (available_entities > 1)) {
     /* There are no more bubbles to browse... Let's steal the bad
        soccer player... */
-    return steal(thread_to_steal, common_rq, &source->rq);
+    return steal (thread_to_steal, common_rq, &source->rq);
   }
 
   return 0;
@@ -764,14 +776,14 @@ affinity_steal (unsigned int from_vp) {
 #endif
   
   if (!ma_idle_scheduler_is_running ()) {
-    bubble_sched_debug("===[Processor %u is idle but ma_idle_scheduler is off! (%d)]===\n", from_vp, ma_idle_scheduler_is_running ());
+    bubble_sched_debug ("===[Processor %u is idle but ma_idle_scheduler is off! (%d)]===\n", from_vp, ma_idle_scheduler_is_running ());
     return 0;
   }
   
   ma_deactivate_idle_scheduler ();
   marcel_threadslist (0, NULL, &n, NOT_BLOCKED_ONLY);
 
-  bubble_sched_debug("===[Processor %u is idle]===\n", from_vp);
+  bubble_sched_debug ("===[Processor %u is idle]===\n", from_vp);
 
   if (father) {
     arity = father->arity;
@@ -807,13 +819,13 @@ affinity_steal (unsigned int from_vp) {
   ma_activate_idle_scheduler ();
   
   if (smthg_to_steal) { 
-    bubble_sched_debug("We successfuly stole one or several entities !\n");
+    bubble_sched_debug ("We successfuly stole one or several entities !\n");
     ma_last_succeeded_steal = marcel_clock ();
     ma_atomic_inc (&ma_succeeded_steals);
     return 1;
   }
 
-  ma_last_failed_steal = marcel_clock();
+  ma_last_failed_steal = marcel_clock ();
   bubble_sched_debug ("We didn't manage to steal anything !\n");
   ma_atomic_inc (&ma_failed_steals);
   return 0;

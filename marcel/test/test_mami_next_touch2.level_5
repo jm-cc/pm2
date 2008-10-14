@@ -26,6 +26,7 @@ cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Address is located on node 0
 Address is located on node 0
 Address is located on node 1
+Address is located on node 1
 EOF
 
 # Creation de la flavor

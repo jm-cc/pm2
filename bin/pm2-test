@@ -47,6 +47,7 @@ Usage: $_PM2_TEST_PROGNAME { option } { modules }
     -l3,--advanced : run a lot of tests to check more advanced features
     -l4,--torture  : check each line of C code to search for hidden bugs ;-)))
     -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
+    --coverage     : perform coverage testing (requires GCC, GNU gcov, and Lcov)
     --tests XXX    : specify the tests to be run (by default all the tests of the specified level)
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
@@ -68,6 +69,7 @@ to_be_tested() # module
 
 do_the_test()
 {
+    test_script="$1"
     file_prefix="/tmp/pm2test_${USER}"
     file_expected="${file_prefix}_expected"
     file_result="${file_prefix}_result"
@@ -77,13 +79,23 @@ do_the_test()
     nbl=`wc -l < ${file_expected}`
     nbl=`expr $nbl + 0`
 
+    gcov_dir="$(pm2-config --flavor=$flavor --builddir)/coverage/$test_script"
+
     # Compilation
     echo "Compiling program $prog..."
     CC=${CC:-$(pm2-config --flavor=$flavor --cc)}
-    (cd $appdir && ${PM2_MAKE:-make} "CC=$CC" $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
+    (cd $appdir && CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
     [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 
     # Execution
+
+    if [ "$_coverage" = "yes" ]
+    then
+	# Remove previous gcov output.
+	find "$(pm2-config --flavor=$flavor --builddir)"	\
+	  -name \*.gcda -exec rm {} \;
+    fi
+
     echo "Running program $prog..."
     ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
     if [ -z "$net" ] ; then
@@ -118,6 +130,34 @@ do_the_test()
 	pm2_test_error_file "Test failed: unexpected result (see $file_result)" $file_filtered
     fi
 
+    # Coverage testing.
+    if [ "$_coverage" = "yes" ]
+    then
+	# Feed all `.gcda' files through lcov to produce lcov `.info'
+	# files.
+	echo "collecting gcov output under \`$gcov_dir'..."
+	rm -rf "$gcov_dir"
+	mkdir -p "$gcov_dir"
+
+	for dir in "$(pm2-config --flavor=$flavor --builddir)"/*
+	do
+	    if [ -d "$dir/obj" ]
+	    then
+		module_name="$(basename $dir)"
+		if [ "$module_name" = "examples" ]
+		then
+		    base_dir="$PM2_ROOT/$_m/examples"
+		else
+		    base_dir="$PM2_ROOT/$module_name"
+		fi
+
+		echo "writing lcov file \`$gcov_dir/$module_name.info'..."
+		lcov -c -d "$dir/obj" -b "$base_dir" \
+		    > "$gcov_dir/$module_name.info"
+	    fi
+	done
+    fi
+
     # Destruction des fichiers residuels
     rm -rf ${file_prefix}_*
 }
@@ -127,6 +167,7 @@ do_the_test()
 _init_level=1 # first level to test
 _level=2 # normal
 _output_redirect=""
+_coverage="no"
 jobs=""
 
 while [ $# -gt 0 ]; do
@@ -154,6 +195,9 @@ while [ $# -gt 0 ]; do
 	    _level=4
 	    shift
 	    ;;
+	--coverage)
+	    _coverage=yes
+	    shift;;
 	-L1)
 	    _level=1
 	    _init_level=$_level
@@ -244,6 +288,14 @@ for _m in $_to_test ; do
     esac
 done
 
+if [ "$_coverage" = "yes" ]
+then
+    # XXX: We have to use `CPPFLAGS', not `CFLAGS', because defining
+    # `CFLAGS' overrides the makefile-provided `CFLAGS'.
+    CPPFLAGS="--coverage $CPPFLAGS"
+    LDFLAGS="--coverage $LDFLAGS"
+fi
+
 _to_test="$_prefix $_suffix"
 
 _l=$_init_level
@@ -281,7 +333,7 @@ while [ $_l -le $_level ]; do
                         . ./$_f
 
 		        # Compilation, execution et verification des resultats
-                        eval do_the_test $_output_redirect
+                        eval do_the_test "$_f" $_output_redirect
 
                         echo "   [$_tst_name] did succeed."
 
@@ -292,6 +344,38 @@ while [ $_l -le $_level ]; do
 		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
 	    fi
 
+	    
+	    if [ "$_coverage" = "yes" ]
+	    then
+		# Enumerate all the lcov-generated `.info' files.
+		lcov_options=""
+		for gcov_dir in $(dirname $(pm2-config --builddir))/*/coverage/*
+		do
+		    if [ -d "$gcov_dir" ]
+		    then
+			for file in "$gcov_dir"/*.info
+			do
+			    if [ -s "$file" ]
+			    then
+				lcov_options="$lcov_options -a $file"
+			    fi
+			done
+		    fi
+		done
+
+		lcov_html_report_dir="$(dirname $(pm2-config --builddir))/coverage/$_m"
+		rm -rf "$lcov_html_report_dir"
+		mkdir -p "$lcov_html_report_dir"
+
+		# Aggregate all the lcov-generated `.info' files.
+		lcov_global_info_file="$lcov_html_report_dir/${_m}.info"
+		#echo "lcov_options: $lcov_options"
+		lcov $lcov_options > "$lcov_global_info_file"
+
+		# Generate the HTML report.
+		echo "generating HTML coverage report under \`$lcov_html_report_dir'..."
+		genhtml -o "lcov_html_report_dir" "$lcov_global_info_file"
+	    fi
 	fi
     done
 

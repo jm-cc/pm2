@@ -144,10 +144,8 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
 static
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-                                void **pageaddrs, int nbpages, size_t size, int *nodes, int protection,
+                                void **pageaddrs, int nbpages, size_t size, int node, int protection,
                                 marcel_memory_data_t **memory_data) {
-  int err;
-
   LOG_IN();
 
   *memory_data = malloc(sizeof(marcel_memory_data_t));
@@ -158,43 +156,12 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->size = size;
   (*memory_data)->status = MARCEL_MEMORY_INITIAL_STATUS;
   (*memory_data)->protection = protection;
+  (*memory_data)->node = node;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
   (*memory_data)->pageaddrs = malloc((*memory_data)->nbpages * sizeof(void *));
   memcpy((*memory_data)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
-
-  // fill in the nodes
-  (*memory_data)->nodes = malloc((*memory_data)->nbpages * sizeof(int));
-  if (nodes) {
-    memcpy((*memory_data)->nodes, nodes, nbpages*sizeof(int));
-  }
-  else {
-    err = move_pages(0, (*memory_data)->nbpages, (*memory_data)->pageaddrs, NULL, (*memory_data)->nodes, 0);
-    if (err < 0) {
-      if (errno == ENOSYS) {
-	marcel_printf("Warning: Function not implemented. Assume the value 0\n");
-      }
-      else {
-        perror("move_pages");
-        exit(-1);
-      }
-    }
-  }
-  mdebug_heap("Location of the new pages: %d\n", (*memory_data)->nodes[0]);
-
-//#ifdef PM2DEBUG
-// {
-//   int i;
-//   // Display information
-//   for(i=0; i<(*memory_data)->nbpages; i++) {
-//     if ((*memory_data)->nodes[i] == -ENOENT)
-//       mdebug_heap("  page #%d is not allocated\n", i);
-//     else
-//       mdebug_heap("  page #%d is on node #%d\n", i, (*memory_data)->nodes[i]);
-//   }
-// }
-//#endif
 
   LOG_OUT();
 }
@@ -253,11 +220,10 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       marcel_memory_data_t *data = (*memory_tree)->data;
       mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       // Free memory
-      ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->nodes[0]);
+      ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node);
 
       // Delete corresponding tree
 //      free(data->pageaddrs);
-//      free(data->nodes);
 //      free(data);
       ma_memory_delete_tree(memory_manager, memory_tree);
     }
@@ -271,19 +237,19 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
 
 static
 void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
-			void **pageaddrs, int nbpages, size_t size, int *nodes, int protection) {
+			void **pageaddrs, int nbpages, size_t size, int node, int protection) {
   LOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = malloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, nodes, protection, &((*memory_tree)->data));
+    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, nodes, protection);
+      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection);
     else
-      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, nodes, protection);
+      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection);
   }
   LOG_OUT();
 }
@@ -322,7 +288,6 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   int i, nbpages;
   size_t realsize;
   void **pageaddrs;
-  int *nodes;
 
   LOG_IN();
 
@@ -369,18 +334,15 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
     heap->nbpages -= nbpages;
   }
 
-  // Set the page addresses and the node location
+  // Set the page addresses
   pageaddrs = malloc(nbpages * sizeof(void *));
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->pagesize;
-  nodes = malloc(nbpages * sizeof(int));
-  for(i=0; i<nbpages ; i++) nodes[i] = node;
 
   // Register memory
   mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-  ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, nodes, heap->protection);
+  ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, heap->protection);
 
   free(pageaddrs);
-  free(nodes);
 
   marcel_spin_unlock(&(memory_manager->lock));
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
@@ -491,9 +453,8 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   }
   else if (address >= memory_tree->data->startaddress && address < memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
-    int offset = address - memory_tree->data->startaddress;
     mdebug_heap("Found address %p in [%p:%p]\n", address, memory_tree->data->startaddress, memory_tree->data->endaddress);
-    *node = memory_tree->data->nodes[offset / memory_manager->pagesize];
+    *node = memory_tree->data->node;
     mdebug_heap("Address %p is located on node %d\n", address, *node);
     if (data) *data = memory_tree->data;
     return 0;
@@ -644,7 +605,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 #ifdef PM2DEBUG
   ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
-  for(i=0 ; i<data->nbpages ; i++) data->nodes[i] = dest;
+  data->node = dest;
 
   LOG_OUT();
   return 0;

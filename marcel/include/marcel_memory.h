@@ -87,8 +87,8 @@ struct marcel_memory_data_s {
   void **pageaddrs;
   /** \brief Number of pages holding the memory area */
   int nbpages;
-  /** \brief Nodes where the memory area is located */
-  int *nodes;
+  /** \brief Node where the memory area is located */
+  int node;
 
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;

@@ -20,6 +20,8 @@ appdir="${PM2_ROOT}/marcel/examples/memory"
 prog="next_touch"
 args=""
 hosts="localhost"
+check_all_lines=1
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Address is located on node 0
 Address is located on node 0

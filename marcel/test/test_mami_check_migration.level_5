@@ -20,6 +20,8 @@ appdir="${PM2_ROOT}/marcel/examples/memory"
 prog="check_migration"
 args=""
 hosts="localhost"
+check_all_lines=1
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 move pages to node 1
   page #0 returned the status -2

@@ -20,6 +20,8 @@ appdir="${PM2_ROOT}/marcel/examples/memory"
 prog="migration_error"
 args=""
 hosts="localhost"
+check_all_lines=1
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 marcel_memory_migrate_pages: Operation already in progress
 marcel_memory_migrate_pages: No such file or directory

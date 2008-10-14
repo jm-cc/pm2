@@ -26,6 +26,9 @@
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
+#undef bubble_sched_debug
+#define bubble_sched_debug printf
+
 static unsigned long ma_last_failed_steal = 0;
 static unsigned long ma_last_succeeded_steal = 0;
 static ma_atomic_t ma_succeeded_steals = MA_ATOMIC_INIT(0);
@@ -763,7 +766,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 
 static int
 affinity_steal (unsigned int from_vp) {
-  struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father, *top = marcel_topo_level (0,0);
+  struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father;
   unsigned int arity, smthg_to_steal = 0;
   int n;
 

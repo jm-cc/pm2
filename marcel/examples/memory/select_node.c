@@ -34,9 +34,9 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &node);
   marcel_printf("The least loaded node is: %d\n", node);
 
-  marcel_memory_exit(&memory_manager);
-
   // Finish marcel
+  marcel_memory_free(&memory_manager, ptr);
+  marcel_memory_exit(&memory_manager);
   marcel_end();
   return 0;
 }

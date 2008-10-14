@@ -35,6 +35,8 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_migrate_pages");
 
   // Finish marcel
+  marcel_memory_free(&memory_manager, buffer);
+  free(buffer2);
   marcel_memory_exit(&memory_manager);
   marcel_end();
   return 0;

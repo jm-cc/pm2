@@ -1641,7 +1641,7 @@ synth_make_children(struct marcel_topo_level *level, unsigned count,
 		level->children[i]->type = type;
 		level->children[i]->merged_type = 1 << (int) type;
 
-		if (type == MARCEL_LEVEL_VP) {
+		if (type == MARCEL_LEVEL_CORE) {
 			level->children[i]->os_cpu =
 					level->children[i]->os_die = level->children[i]->os_node = -1;
 			level->children[i]->os_core =

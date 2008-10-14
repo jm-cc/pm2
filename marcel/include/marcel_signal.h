@@ -37,7 +37,7 @@ struct marcel_sigaction {
 #section marcel_macros
 #define MARCEL_NSIG 32
 
-#ifdef MA__LIBPTHREAD
+#if defined(MA__LIBPTHREAD) && defined(MARCEL_SIGNALS_ENABLED)
 #ifdef LINUX_SYS
 #include <sys/syscall.h>
 #include <unistd.h>

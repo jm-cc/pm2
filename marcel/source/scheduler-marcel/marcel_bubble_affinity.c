@@ -668,22 +668,19 @@ is_entity_worth_stealing (int *greater,
 	     marcel_entity_t **thread_to_steal, 
 	     marcel_entity_t **tested_entity) {
   int found = 0;
-  /* We try to avoid currently running entities. */
-  if (!ma_entity_is_running (*tested_entity)) {
-    long load = ma_entity_load (*tested_entity);
-    if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
-      if (load > *greater) {
-	*greater = load;
-	*bestbb = *tested_entity;
-	found = 1;
-      }
-    } else {
-      /* If we don't find any bubble to steal, we may steal a
-	 thread. In that case, we try to steal the higher thread we
-	 find in the entities hierarchy. This kind of behaviour favors
-	 load balancing of OpenMP nested applications for example. */
-      *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
+  long load = ma_entity_load (*tested_entity);
+  if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
+    if (load > *greater) {
+      *greater = load;
+      *bestbb = *tested_entity;
+      found = 1;
     }
+  } else {
+    /* If we don't find any bubble to steal, we may steal a
+       thread. In that case, we try to steal the higher thread we
+       find in the entities hierarchy. This kind of behaviour favors
+       load balancing of OpenMP nested applications for example. */
+    *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
   }
   
   return found;

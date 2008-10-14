@@ -139,6 +139,18 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   }
   free(memory_manager->migration_costs);
 
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    free(memory_manager->reading_access_costs[node]);
+    free(memory_manager->writing_access_costs[node]);
+  }
+  free(memory_manager->reading_access_costs);
+  free(memory_manager->writing_access_costs);
+
+  if (!memory_manager->root) {
+    marcel_printf("Some memory areas have not been free-d\n");
+    marcel_memory_print(memory_manager);
+  }
+
   LOG_OUT();
 }
 

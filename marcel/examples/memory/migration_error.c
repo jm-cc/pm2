@@ -17,33 +17,25 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
-
 int marcel_main(int argc, char * argv[]) {
-  int node, err;
-  void *ptr;
+  marcel_memory_manager_t memory_manager;
+  void *buffer, *buffer2;
+  int err;
 
-  marcel_init(&argc,argv);
+  // Initialise marcel
+  marcel_init(&argc, argv);
   marcel_memory_init(&memory_manager, 1000);
 
-  ptr = marcel_memory_allocate_on_node(&memory_manager, 1000, 0);
-  err = marcel_memory_locate(&memory_manager, ptr, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
+  buffer = marcel_memory_allocate_on_node(&memory_manager, 100, 0);
+  err = marcel_memory_migrate_pages(&memory_manager, buffer, 0);
+  if (err < 0) perror("marcel_memory_migrate_pages");
 
-  err = marcel_memory_locate(&memory_manager, NULL, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
-  if (err < 0) marcel_printf("marcel_memory_locate: error %d\n", err);
-
-  marcel_memory_free(&memory_manager, ptr);
-
-  ptr = malloc(1000);
-  err = marcel_memory_locate(&memory_manager, ptr, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
-  if (err < 0) marcel_printf("marcel_memory_locate: error %d\n", err);
-
-  marcel_memory_exit(&memory_manager);
+  buffer2 = malloc(100);
+  err = marcel_memory_migrate_pages(&memory_manager, buffer2, 0);
+  if (err < 0) perror("marcel_memory_migrate_pages");
 
   // Finish marcel
+  marcel_memory_exit(&memory_manager);
   marcel_end();
   return 0;
 }
@@ -51,5 +43,6 @@ int marcel_main(int argc, char * argv[]) {
 #else
 int marcel_main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MAMI to be enabled\n");
+  return 0;
 }
 #endif

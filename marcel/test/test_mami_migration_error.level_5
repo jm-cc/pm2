@@ -17,16 +17,12 @@
 # Configuration
 flavor="test_marcel_mami"
 appdir="${PM2_ROOT}/marcel/examples/memory"
-prog="locate"
+prog="migration_error"
 args=""
 hosts="localhost"
-
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-The memory is located on node #0
-The memory is located on node #-1
-marcel_memory_locate: error -2
-The memory is located on node #-1
-marcel_memory_locate: error -2
+marcel_memory_migrate_pages: Operation already in progress
+marcel_memory_migrate_pages: No such file or directory
 EOF
 
 # Creation de la flavor

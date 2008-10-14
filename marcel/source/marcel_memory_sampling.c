@@ -145,7 +145,12 @@ void ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_m
   fclose(out);
 }
 
-void marcel_memory_sampling_of_memory_migration(unsigned long minsource, unsigned long maxsource, unsigned long mindest, unsigned long maxdest, int extended_mode) {
+void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
+                                                unsigned long minsource,
+                                                unsigned long maxsource,
+                                                unsigned long mindest,
+                                                unsigned long maxdest,
+                                                int extended_mode) {
   char filename[1024];
   FILE *out;
   int i;

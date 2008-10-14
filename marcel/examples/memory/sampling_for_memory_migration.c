@@ -18,11 +18,13 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int main(int argc, char **argv) {
+  marcel_memory_manager_t memory_manager;
   int i;
   int minsource, maxsource, mindest, maxdest;
   int extended_mode=0;
 
   marcel_init(&argc,argv);
+  marcel_memory_init(&memory_manager, 1000);
 
   minsource = 0;
   maxsource = marcel_nbnodes-1;
@@ -45,7 +47,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  marcel_memory_sampling_of_memory_migration(minsource, maxsource, mindest, maxdest, extended_mode);
+  marcel_memory_sampling_of_memory_migration(&memory_manager, minsource, maxsource, mindest, maxdest, extended_mode);
   return 0;
 }
 

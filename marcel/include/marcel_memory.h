@@ -320,13 +320,15 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
 
 /**
  * Performs the sampling for the memory migration between the specified nodes.
+ * @param memory_manager pointer to the memory manager
  * @param minsource
  * @param maxsource
  * @param mindest
  * @param maxdest
  * @param extended_mode
  */
-void marcel_memory_sampling_of_memory_migration(unsigned long minsource,
+void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
+                                                unsigned long minsource,
                                                 unsigned long maxsource,
                                                 unsigned long mindest,
                                                 unsigned long maxdest,
@@ -363,7 +365,8 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  */
-int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer);
+int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
+                                        void *buffer);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

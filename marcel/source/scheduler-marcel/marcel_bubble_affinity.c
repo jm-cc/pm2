@@ -764,7 +764,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 static int
 affinity_steal (unsigned int from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father, *top = marcel_topo_level (0,0);
-  unsigned int arity, smthg_to_steal = 0, nvp = marcel_vpset_weight (&top->vpset);
+  unsigned int arity, smthg_to_steal = 0;
   int n;
 
 #if 0

@@ -181,17 +181,17 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 /*
  *
  */
-void ma_memory_check_pages_location(void **pageaddrs,
-                                    int pages,
-                                    int node);
+int ma_memory_check_pages_location(void **pageaddrs,
+                                   int pages,
+                                   int node);
 
 /*
  *
  */
-void ma_memory_move_pages(void **pageaddrs,
-                          int pages,
-                          int *nodes,
-                          int *status);
+int ma_memory_move_pages(void **pageaddrs,
+                         int pages,
+                         int *nodes,
+                         int *status);
 
 /*
  *

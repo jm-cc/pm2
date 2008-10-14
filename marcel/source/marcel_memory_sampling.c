@@ -28,27 +28,33 @@ static
 void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages, int loops,
                                             void **pageaddrs, int *sources, int *dests, int *status,
                                             unsigned long pagesize, FILE *f) {
-  int i;
+  int i, err;
   struct timeval tv1, tv2;
   unsigned long us, ns, bandwidth;
 
   // Check the location of the pages
-  ma_memory_check_pages_location(pageaddrs, pages, source);
+  err = ma_memory_check_pages_location(pageaddrs, pages, source);
+  if (err < 0) perror("ma_memory_check_pages_location");
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<loops ; i++) {
-    ma_memory_move_pages(pageaddrs, pages, dests, status);
-    ma_memory_move_pages(pageaddrs, pages, sources, status);
+    err = ma_memory_move_pages(pageaddrs, pages, dests, status);
+    if (err < 0) perror("ma_memory_move_pages");
+    err = ma_memory_move_pages(pageaddrs, pages, sources, status);
+    if (err < 0) perror("ma_memory_move_pages");
   }
-  ma_memory_move_pages(pageaddrs, pages, dests, status);
+  err = ma_memory_move_pages(pageaddrs, pages, dests, status);
+  if (err < 0) perror("ma_memory_move_pages");
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
-  ma_memory_check_pages_location(pageaddrs, pages, dest);
+  err = ma_memory_check_pages_location(pageaddrs, pages, dest);
+  if (err < 0) perror("ma_memory_check_pages_location");
 
   // Move the pages back to the node source
-  ma_memory_move_pages(pageaddrs, pages, sources, status);
+  err = ma_memory_move_pages(pageaddrs, pages, sources, status);
+  if (err < 0) perror("ma_memory_move_pages");
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;

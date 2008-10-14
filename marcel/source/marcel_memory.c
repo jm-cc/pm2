@@ -406,32 +406,26 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_OUT();
 }
 
-void ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
-  int err;
+int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
+  int err=0;
 
   mdebug_heap("binding on numa node #%d\n", nodes[0]);
 
   err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
-
-  if (err < 0) {
-    perror("move_pages (set_bind)");
-    exit(-1);
-  }
+  if (err < 0) perror("move_pages (set_bind)");
+  return -err;
 }
 
-void ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
+int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   int *pagenodes;
   int i;
-  int err;
+  int err=0;
 
   mdebug_heap("check location is #%d\n", node);
 
   pagenodes = malloc(pages * sizeof(int));
   err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
-  if (err < 0) {
-    perror("move_pages (check_pages_location)");
-    exit(-1);
-  }
+  if (err < 0) perror("move_pages (check_pages_location)");
 
   for(i=0; i<pages; i++) {
     if (pagenodes[i] != node) {
@@ -440,6 +434,7 @@ void ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
     }
   }
   free(pagenodes);
+  return -err;
 }
 
 static
@@ -584,31 +579,32 @@ static
 int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                             void *buffer, marcel_memory_data_t *data, int source, int dest) {
   int i, *dests, *status;
+  int err=0;
 
   LOG_IN();
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
-    errno = ENOENT;
-    return -errno;
+    err = ENOENT;
   }
   else if (source == dest) {
     mdebug_heap("The address %p is already located at the required node.\n", buffer);
-    errno = EALREADY;
-    return -errno;
+    err = EALREADY;
+  }
+  else {
+    mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
+    dests = (int *) malloc(data->nbpages * sizeof(int));
+    status = (int *) malloc(data->nbpages * sizeof(int));
+    for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
+    err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
+#ifdef PM2DEBUG
+    ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
+#endif /* PM2DEBUG */
+    data->node = dest;
   }
 
-  mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
-  dests = (int *) malloc(data->nbpages * sizeof(int));
-  status = (int *) malloc(data->nbpages * sizeof(int));
-  for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
-  ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
-#ifdef PM2DEBUG
-  ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
-#endif /* PM2DEBUG */
-  data->node = dest;
-
   LOG_OUT();
-  return 0;
+  errno = err;
+  return -err;
 }
 
 int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,

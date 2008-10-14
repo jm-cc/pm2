@@ -335,10 +335,18 @@ void marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_
                                                 int extended_mode);
 
 /**
- * Performs the sampling for the memory access between all the nodes.
+ * Performs the sampling for the memory access between the specified nodes.
  * @param memory_manager pointer to the memory manager
+ * @param minsource
+ * @param maxsource
+ * @param mindest
+ * @param maxdest
  */
-void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager);
+void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
+                                             unsigned long minsource,
+                                             unsigned long maxsource,
+                                             unsigned long mindest,
+                                             unsigned long maxdest);
 
 /**
  * Select the "best" node based on the given policy.

@@ -19,11 +19,31 @@
 
 int marcel_main(int argc, char **argv) {
   marcel_memory_manager_t memory_manager;
+  int i;
+  int minsource, maxsource, mindest, maxdest;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
 
-  marcel_memory_sampling_of_memory_access(&memory_manager);
+  minsource = 0;
+  maxsource = marcel_nbnodes-1;
+  mindest = 0;
+  maxdest = marcel_nbnodes-1;
+
+  for(i=1 ; i<argc ; i++) {
+    if (!strcmp(argv[i], "-src")) {
+      if (i+1 >= argc) abort();
+      minsource = atoi(argv[i+1]);
+      maxsource = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-dest")) {
+      if (i+1 >= argc) abort();
+      mindest = atoi(argv[i+1]);
+      maxdest = atoi(argv[i+1]);
+    }
+  }
+
+  marcel_memory_sampling_of_memory_access(&memory_manager, minsource, maxsource, mindest, maxdest);
 
   // Finish marcel
   marcel_memory_exit(&memory_manager);

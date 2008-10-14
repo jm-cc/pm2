@@ -304,7 +304,11 @@ void ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_mana
   }
 }
 
-void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager) {
+void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
+                                             unsigned long minsource,
+                                             unsigned long maxsource,
+                                             unsigned long mindest,
+                                             unsigned long maxdest) {
   char filename[1024];
   FILE *out;
   unsigned long t, node;
@@ -347,7 +351,13 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 
   marcel_attr_init(&attr);
 
-  ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
+  {
+    long source = -1;
+    long dest = -1;
+    if (minsource == maxsource) source = minsource;
+    if (mindest == maxdest) dest = mindest;
+    ma_memory_get_filename("sampling_for_memory_access", filename, source, dest);
+  }
   out = fopen(filename, "w");
   if (!out) {
     printf("Error when opening file <%s>\n", filename);
@@ -368,8 +378,8 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
   }
 
   // Create a thread on node t to work on memory allocated on node node
-  for(t=0 ; t<marcel_nbnodes ; t++) {
-    for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(t=minsource ; t<=maxsource ; t++) {
+    for(node=mindest; node<=maxdest ; node++) {
       struct timeval tv1, tv2;
       unsigned long us;
 
@@ -388,8 +398,8 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
   }
 
   // Create a thread on node t to work on memory allocated on node node
-  for(t=0 ; t<marcel_nbnodes ; t++) {
-    for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(t=minsource ; t<=maxsource ; t++) {
+    for(node=mindest ; node<=maxdest ; node++) {
       struct timeval tv1, tv2;
       unsigned long us;
 
@@ -409,8 +419,8 @@ void marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_man
 
   printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
-  for(t=0 ; t<marcel_nbnodes ; t++) {
-    for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(t=minsource ; t<=maxsource ; t++) {
+    for(node=mindest ; node<=maxdest ; node++) {
       printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
              t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
              rtimes[node][t],

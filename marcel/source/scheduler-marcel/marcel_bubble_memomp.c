@@ -125,15 +125,15 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 	}
 	/* We're already on the right node, we can now try to favour
 	   cache memory affinity within this node. */
-/* 	long dest = ma_favourite_vp (e[i]); */
-/* 	ma_runqueue_t *from_rq = &from->rq; */
-/* 	if (dest == -2) { */
-/* 	  MA_BUG_ON (e[i]->type != MA_BUBBLE_ENTITY); */
-/* 	  ma_burst_bubble (ma_bubble_entity (e[i])); */
-/* 	  return ma_memory_schedule_from (from); */
-/* 	} */
-/* 	if ((dest != -1) && (ma_rq_covers (from_rq, dest))) */
-/* 	  ma_move_entity (e[i], &(&marcel_topo_vp_level[dest])->rq.as_holder); */
+	long dest = ma_favourite_vp (e[i]);
+	ma_runqueue_t *from_rq = &from->rq;
+	if (dest == -2) {
+	  MA_BUG_ON (e[i]->type != MA_BUBBLE_ENTITY);
+	  ma_burst_bubble (ma_bubble_entity (e[i]));
+	  return ma_memory_schedule_from (from);
+	}
+	if ((dest != -1) && (ma_rq_covers (from_rq, dest)))
+	  ma_move_entity (e[i], &(&marcel_topo_vp_level[dest])->rq.as_holder);
       }
    }
     /* If the considered entity has no favourite location, just leave
@@ -157,13 +157,6 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
 
   ma_bubble_lock_all (bubble, from);
   ma_memory_schedule_from (from);
-
-  /* Ugly call to Affinity's internal distribution algorithm, to
-     distribute the remaining entities. */
-  if (marcel_bubble_affinity_sched.priv) {
-    ((void (*) (struct marcel_topo_level *)) marcel_bubble_affinity_sched.priv) (marcel_topo_level (0,0));
-  }
-
   ma_resched_existing_threads (from);
   ma_bubble_unlock_all (bubble, from);  
 

@@ -45,9 +45,9 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   }
 
   // Load the model for the migration costs
-  memory_manager->migration_costs = (p_tbx_slist_t **) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
+  memory_manager->migration_costs = malloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->migration_costs[node] = (p_tbx_slist_t *) malloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
+    memory_manager->migration_costs[node] = malloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
     for(dest=0 ; dest<marcel_nbnodes ; dest++) {
       memory_manager->migration_costs[node][dest] = tbx_slist_nil();
     }
@@ -55,13 +55,13 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   ma_memory_load_model_for_memory_migration(memory_manager);
 
   // Load the model for the access costs
-  memory_manager->writing_access_costs = (marcel_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
+  memory_manager->writing_access_costs = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->writing_access_costs[node] = (marcel_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    memory_manager->writing_access_costs[node] = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
-  memory_manager->reading_access_costs = (marcel_access_cost_t **) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
+  memory_manager->reading_access_costs = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->reading_access_costs[node] = (marcel_access_cost_t *) malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    memory_manager->reading_access_costs[node] = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
   ma_memory_load_model_for_memory_access(memory_manager);
 
@@ -604,8 +604,8 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   }
   else {
     mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
-    dests = (int *) malloc(data->nbpages * sizeof(int));
-    status = (int *) malloc(data->nbpages * sizeof(int));
+    dests = malloc(data->nbpages * sizeof(int));
+    status = malloc(data->nbpages * sizeof(int));
     for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
     err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
 #ifdef PM2DEBUG

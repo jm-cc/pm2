@@ -301,6 +301,11 @@ create_flavor() {
     else
         ${PM2_ROOT}/bin/pm2-clean --refresh "$name"
     fi
+    pm2-flavor check --flavor="$name"
+    if [ $? != 0 ] ; then
+	echo "Delete flavor $name..."
+	pm2-flavor delete --flavor="$name"
+    fi
 }
 
 set -- --source-mode

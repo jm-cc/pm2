@@ -400,14 +400,14 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
     return -1;
   }
 
-  rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
-  wtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
+  rtimes = malloc(marcel_nbnodes * sizeof(unsigned long long *));
+  wtimes = malloc(marcel_nbnodes * sizeof(unsigned long long *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    rtimes[node] = (unsigned long long *) malloc(marcel_nbnodes * sizeof(unsigned long long));
-    wtimes[node] = (unsigned long long *) malloc(marcel_nbnodes * sizeof(unsigned long long));
+    rtimes[node] = malloc(marcel_nbnodes * sizeof(unsigned long long));
+    wtimes[node] = malloc(marcel_nbnodes * sizeof(unsigned long long));
   }
 
-  buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
+  buffers = malloc(marcel_nbnodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
     buffers[node] = marcel_memory_allocate_on_node(memory_manager, size*sizeof(int), node);

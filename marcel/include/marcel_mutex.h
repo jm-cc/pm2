@@ -235,6 +235,6 @@ extern int marcel_once (marcel_once_t *__once_control,
                          void (*__init_routine) (void)) __THROW;
 #  ifdef MA__IFACE_PMARCEL
 extern int pmarcel_once (pmarcel_once_t *__once_control,
-                         void (*__init_routine) (void)) __THROW;
+                         void (*__init_routine) (void));
 #  endif
 #endif /* MARCEL_ONCE_ENABLED */

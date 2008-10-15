@@ -60,6 +60,9 @@ balance-ldflags := -lm
 
 barrier-1-cflags := -I$(PM2_ROOT)/marcel/include/pthread
 
+simple-cpp-ldflags := -lstdc++
+simple-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
+
 hello: CC=g++
 
 # Applications dont le nom n'a pas de .c correspondant

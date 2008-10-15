@@ -73,7 +73,10 @@ registering_flavors() {
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=pmarcel --marcel=enable_stats --marcel=bubble_sched_null
+	--marcel=pmarcel --marcel=enable_stats --marcel=bubble_sched_null \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_signals
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" --all=build_static --common=static \
@@ -182,7 +185,10 @@ registering_flavors() {
     register_flavor pmarcel \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_static \
 	--marcel=smp \
-	--marcel=marcel_main --marcel=pmarcel
+	--marcel=marcel_main --marcel=pmarcel \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_signals
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \

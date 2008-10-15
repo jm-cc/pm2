@@ -714,7 +714,10 @@ is_entity_worth_stealing (int *greater,
 	 thread. In that case, we try to steal the higher thread we
 	 find in the entities hierarchy. This kind of behaviour favors
 	 load balancing of OpenMP nested applications for example. */
-      *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
+      if (*thread_to_steal ==  NULL) {
+	*thread_to_steal = *tested_entity;
+	found = 1;
+      }
     }
   }
 
@@ -746,7 +749,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       }
     for_each_entity_scheduled_in_bubble_end () 
   } else {
-    list_for_each_entry(e, &hold->sched_list, sched_list) {
+    list_for_each_entry (e, &hold->sched_list, sched_list) {
       if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
 	available_entities++;
       }

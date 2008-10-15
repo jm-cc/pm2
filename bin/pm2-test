@@ -139,17 +139,22 @@ do_the_test()
 	rm -rf "$gcov_dir"
 	mkdir -p "$gcov_dir"
 
-	for dir in "$(pm2-config --flavor=$flavor --builddir)"/*
+        build_dir=$(pm2-config --flavor=$flavor --builddir)
+        dirs=$(find $(pm2-config --flavor=$flavor --builddir) -type d)
+	for dir in $dirs
 	do
 	    if [ -d "$dir/obj" ]
 	    then
+                is_examples=$(echo $dir | grep examples)
+                if [ "$is_examples" != "" ]
+                then
+                    command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT/$_m":'")
+                else
+                    command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT":'")
+                fi
+                base_dir=$(eval $command)
+                echo $base_dir
 		module_name="$(basename $dir)"
-		if [ "$module_name" = "examples" ]
-		then
-		    base_dir="$PM2_ROOT/$_m/examples"
-		else
-		    base_dir="$PM2_ROOT/$module_name"
-		fi
 
 		echo "writing lcov file \`$gcov_dir/$module_name.info'..."
 		lcov -c -d "$dir/obj" -b "$base_dir" \
@@ -349,7 +354,8 @@ while [ $_l -le $_level ]; do
 	    then
 		# Enumerate all the lcov-generated `.info' files.
 		lcov_options=""
-		for gcov_dir in $(dirname $(pm2-config --builddir))/*/coverage/*
+                gcov_dirs=$(find $(pm2-config --flavor=$flavor --builddir) -name coverage -type d)
+		for gcov_dir in $gcov_dirs/*
 		do
 		    if [ -d "$gcov_dir" ]
 		    then

@@ -22,6 +22,10 @@
 #define NB_BUBBLES 2
 #define THREADS_PER_BUBBLE 2
 
+static ma_bubble_sched_vp_is_idle aff_steal = NULL;
+static ma_atomic_t first_team_is_dead = MA_ATOMIC_INIT (0);
+static ma_atomic_t die_later_signal = MA_ATOMIC_INIT (0);
+
 static unsigned int vp_levels[2], expected_result[2]; 
 static marcel_mutex_t write_lock;
 
@@ -51,14 +55,21 @@ thread_entry_point (void *arg) {
 	return NULL;
 }
 
+static int
+my_steal (unsigned int from_vp) {
+	if (ma_atomic_read (&first_team_is_dead)) {
+		aff_steal (from_vp);
+		/* Set the last threads free. */
+		ma_atomic_inc (&die_later_signal);
+	}
+}
+
 int
 main (int argc, char *argv[]) {
 	int ret;
 	unsigned int i;
 	char **new_argv;
 	ma_atomic_t die_first_signal = MA_ATOMIC_INIT (0);
-	ma_atomic_t die_later_signal = MA_ATOMIC_INIT (0);
-	ma_bubble_sched_vp_is_idle aff_steal;
 
 	/* A dual-core computer */
   static const char topology_description[] = "2";
@@ -112,17 +123,17 @@ main (int argc, char *argv[]) {
 		}
 	}
 
-	/* Intercept Bubble Sched vp_is_idle function to call it only
-		 once... */
-	aff_steal = marcel_bubble_affinity_sched.vp_is_idle;
-	if (aff_steal == NULL) {
+	if (marcel_bubble_affinity_sched.vp_is_idle == NULL) {
 		marcel_printf ("Oops! No work stealing algorithm available!\n"); 
 		marcel_printf ("Did you forget to set the MA_AFFINITY_USE_WORK_STEALING constant to 1? (see marcel_bubble_affinity.c)\n");
 		exit (1);
 	}
-	/* ... by turning the current algorithm off. */
-	marcel_bubble_affinity_sched.vp_is_idle = NULL;
 
+	/* Intercept Affinity's work stealing algorithm to assure it's
+		 called before all threads have died. */
+	aff_steal = marcel_bubble_affinity_sched.vp_is_idle;
+	marcel_bubble_affinity_sched.vp_is_idle = my_steal;
+	
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();
 
@@ -130,17 +141,13 @@ main (int argc, char *argv[]) {
 	ma_atomic_inc (&die_first_signal);
 	
 	/* Wait for them to die. */
-	marcel_threadslist (0, NULL, &nb_threads, NOT_BLOCKED_ONLY);
+	marcel_threadslist (0, NULL, &nb_threads, ALL_THREADS);
 	while (nb_threads > 2) {
-		marcel_threadslist (0, NULL, &nb_threads, NOT_BLOCKED_ONLY);
+		marcel_threadslist (0, NULL, &nb_threads, ALL_THREADS);
 	}
 
-	/* Now, everyone is dead in team 1. Let's call
-		 the work stealing algorithm from vp 1. */
-	aff_steal (1);
-
-	/* Set the last threads free. */
-	ma_atomic_inc (&die_later_signal);
+	/* Inform our work stealing function the first team is dead. */
+	ma_atomic_inc (&first_team_is_dead);
 
 	/* The main has to do its work like everyone else. */
 	thread_entry_point (ta);

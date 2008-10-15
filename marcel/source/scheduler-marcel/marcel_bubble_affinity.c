@@ -280,13 +280,16 @@ static int
 ma_global_load_balance (ma_attracting_level_t *attracting_levels, unsigned int arity, unsigned int load_per_level) {
   int least_loaded = ma_attracting_levels_least_loaded_index (attracting_levels, arity);
   int most_loaded = ma_attracting_levels_most_loaded_index (attracting_levels, arity);
+
   /* If the most loaded level is also the least one, it means that
      every underlying level already has the same amount of work, and we
-     can't do anything else. */
-  if (least_loaded == most_loaded) {
-    return 1;
-  }
-  while (attracting_levels[least_loaded].total_load < load_per_level) {
+     can't do anything else.  Furthermore, we want to avoid entering
+     an endless balancing oscillation, so load balancing terminates
+     when the most loaded level's load is that of the least loaded
+     plus 1.  */
+
+  while ((attracting_levels[least_loaded].total_load + 1 < attracting_levels[most_loaded].total_load)
+	 && (attracting_levels[least_loaded].total_load < load_per_level)) {
     if (attracting_levels[most_loaded].nb_entities > 1) {
       ma_attracting_levels_add_tail (ma_attracting_levels_remove_tail (&attracting_levels[most_loaded]), 
 				  &attracting_levels[least_loaded]);

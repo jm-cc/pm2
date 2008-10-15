@@ -45,52 +45,47 @@ any_t memory(any_t arg) {
 }
 
 any_t memory2(any_t arg) {
-  int *c;
   int i, node;
+  void **buffers;
+  void **buffers2;
+  int maxnode = marcel_nbnodes;
 
-  c = malloc(sizeof(char));
-  marcel_memory_locate(&memory_manager, c, &node);
-  printf("Address %p is located on node %d\n", c, node);
-  free(c);
-
-  {
-    void **buffers;
-    void **buffers2;
-    int maxnode = marcel_nbnodes;
-    buffers = malloc(maxnode * sizeof(void *));
-    buffers2 = malloc(maxnode * sizeof(void *));
-    for(i=1 ; i<=5 ; i++) {
-      for(node=0 ; node<maxnode ; node++)
-	buffers[node] = marcel_memory_allocate_on_node(&memory_manager, i*memory_manager.pagesize, node);
-      for(node=0 ; node<maxnode ; node++)
-      	marcel_memory_free(&memory_manager, buffers[node]);
-    }
-    for(node=0 ; node<maxnode ; node++) {
-      buffers[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
-      buffers2[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
-    }
-    for(node=0 ; node<maxnode ; node++) {
+  buffers = malloc(maxnode * sizeof(void *));
+  buffers2 = malloc(maxnode * sizeof(void *));
+  for(i=1 ; i<=5 ; i++) {
+    for(node=0 ; node<maxnode ; node++)
+      buffers[node] = marcel_memory_allocate_on_node(&memory_manager, i*memory_manager.pagesize, node);
+    for(node=0 ; node<maxnode ; node++)
       marcel_memory_free(&memory_manager, buffers[node]);
-      marcel_memory_free(&memory_manager, buffers2[node]);
-    }
-    free(buffers);
-    free(buffers2);
   }
+  for(node=0 ; node<maxnode ; node++) {
+    buffers[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
+    buffers2[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.pagesize, node);
+  }
+  for(node=0 ; node<maxnode ; node++) {
+    marcel_memory_free(&memory_manager, buffers[node]);
+    marcel_memory_free(&memory_manager, buffers2[node]);
+  }
+  free(buffers);
+  free(buffers2);
   return 0;
 }
 
 void memory_bis() {
   marcel_memory_manager_t memory_manager;
-  void *b;
+  void *b[7];
+  int i;
 
   marcel_memory_init(&memory_manager, 2);
-  b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 2*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 2*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
-  b = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b[0] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b[1] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b[2] = marcel_memory_malloc(&memory_manager, 2*memory_manager.pagesize);
+  b[3] = marcel_memory_malloc(&memory_manager, 2*memory_manager.pagesize);
+  b[4] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b[5] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+  b[6] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
+
+  for(i=0 ; i<7 ; i++) marcel_memory_free(&memory_manager, b[i]);
   marcel_memory_exit(&memory_manager);
 }
 
@@ -117,7 +112,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[1], NULL);
 
   // Start the thread on the last VP
-  marcel_attr_setid(&attr, 1);
+  marcel_attr_setid(&attr, 2);
   marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
   marcel_create(&threads[1], &attr, memory2, NULL);
   marcel_join(threads[1], NULL);

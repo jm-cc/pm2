@@ -374,7 +374,8 @@ while [ $_l -le $_level ]; do
 
 		# Generate the HTML report.
 		echo "generating HTML coverage report under \`$lcov_html_report_dir'..."
-		genhtml -o "lcov_html_report_dir" "$lcov_global_info_file"
+		genhtml -o "$lcov_html_report_dir" "$lcov_global_info_file" && \
+		echo "HTML coverage report available under \`$lcov_html_report_dir'..."
 	    fi
 	fi
     done

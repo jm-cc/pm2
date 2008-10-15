@@ -80,6 +80,8 @@ define PROGRAM_template
 endef
 define OBJECT_template
  $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CFLAGS += $$($(1)-cflags)
+ $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CPPFLAGS += $$($(1)-cppflags)
+ $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CXXFLAGS += $$($(1)-cxxflags)
  $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
 endef
 

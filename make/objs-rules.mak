@@ -148,6 +148,7 @@ endif
 #---------------------------------------------------------------------
 $(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS) -DSTATIC_BUILD
 $(MOD_C_OBJECTS): CFLAGS+=$($<-cflags)
+$(MOD_C_OBJECTS): CPPFLAGS+=$($<-cppflags)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: $(MOD_GEN_C_INC)
 $(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.c
 	$(COMMON_BUILD)
@@ -174,6 +175,8 @@ $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 # Dependances vers *.cpp
 #---------------------------------------------------------------------
 $(MOD_CXX_OBJECTS): CXXFLAGS+=$(MOD_CFLAGS) $(MOD_CXXFLAGS)
+$(MOD_CXX_OBJECTS): CXXFLAGS+=$($<-cflags)
+$(MOD_CXX_OBJECTS): CXXFLAGS+=$($<-cxxflags)
 $(MOD_CXX_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.cpp
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@

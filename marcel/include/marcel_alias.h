@@ -58,9 +58,15 @@
  * Déclarations
  */
 
+/* Note: we usually do not declare pmarcel_name as they are declared in
+ * include/marcel_pmarcel.h with a pthread API (which is not compatible with
+ * the marcel API, notably marcel_t/pmarcel_t) */
+
+/* Declare __marcel_name given the declaration of marcel_name */
 #define DEC_LOCAL_MARCEL(name) \
   extern __typeof__(MARCEL_NAME(name)) LOCAL_MARCEL_NAME(name) LOCAL_ATTRIBUTE
 
+/* Declare __pmarcel_name given the declaration of pmarcel_name */
 #ifdef MA__IFACE_PMARCEL
 # define DEC_LOCAL_POSIX(name) \
     extern __typeof__(POSIX_NAME(name)) LOCAL_POSIX_NAME(name);
@@ -68,15 +74,18 @@
 #  define DEC_LOCAL_POSIX(name)
 #endif
 
+/* Declare marcel_name, __marcel_name and __pmarcel_name */
 #define DEC_MARCEL_POSIX(rtype, name, proto) \
   extern rtype MARCEL_NAME(name) proto; \
   DEC_LOCAL_POSIX(name) \
   DEC_LOCAL_MARCEL(name)
 
+/* Declare marcel_name and __marcel_name */
 #define DEC_MARCEL(rtype, name, proto) \
   extern rtype MARCEL_NAME(name) proto; \
   DEC_LOCAL_MARCEL(name)
 
+/* Declare pmarcel_name and __pmarcel_name */
 #ifdef MA__IFACE_PMARCEL
 #define DEC_POSIX(rtype, name, proto) \
   extern rtype POSIX_NAME(name) proto; \
@@ -85,12 +94,14 @@
 #define DEC_POSIX(rtype, name, proto)
 #endif
 
+/* Declare an inline marcel_name, __inline_marcel_name, __marcel_name, and __pmarcel_name */
 #define DECINLINE_MARCEL_POSIX(rtype, name, proto, code) \
   extern __tbx_inline__ rtype MARCEL_NAME(name) proto code; \
   DEC_LOCAL_POSIX(name) \
   DEC_LOCAL_MARCEL(name); \
   static __tbx_inline__ rtype MARCEL_INLINE_NAME(name) proto code
 
+/* Declare an inline marcel_name, __inline_marcel_name, and __marcel_name */
 #define DECINLINE_MARCEL(rtype, name, proto) \
   static __tbx_inline__ rtype MARCEL_NAME(name) proto code \
   DEC_LOCAL_MARCEL(name); \
@@ -101,9 +112,11 @@
  */
 
 #ifdef MA__IFACE_PMARCEL
+/* Define an alias __pmarcel_name -> __marcel_name */
 # define DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
     TBX_FUN_ALIAS(rtype, LOCAL_POSIX_NAME(name), \
       LOCAL_MARCEL_NAME(name), proto, args);
+/* Define an alias pmarcel_name -> __pmarcel_name */
 # define DEF_ALIAS_POSIX(rtype, name, proto, args) \
     TBX_FUN_ALIAS(rtype, POSIX_NAME(name), \
       LOCAL_POSIX_NAME(name), proto, args);
@@ -113,24 +126,29 @@
 # define DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args)
 # define DEF_ALIAS_POSIX(rtype, name, proto, args)
 #endif
+/* Define an alias marcel_name -> __marcel_name */
 #define DEF_ALIAS_MARCEL(rtype, name, proto, args) \
   TBX_FUN_ALIAS(rtype, MARCEL_NAME(name), \
     LOCAL_MARCEL_NAME(name), proto, args);
+/* Define an alias __marcel_name -> marcel_name */
 #define DEF_ALIAS_LOCAL_MARCEL(rtype, name, proto, args) \
   TBX_FUN_ALIAS(rtype, LOCAL_MARCEL_NAME(name), \
     MARCEL_NAME(name), proto, args);
 
 
+/* Define marcel_name, __marcel_name, pmarcel_name, and __pmarcel_name */
 #define DEF_MARCEL_POSIX(rtype, name, proto, args, code) \
   rtype LOCAL_MARCEL_NAME(name) proto code \
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
   DEF_ALIAS_POSIX_OF_MARCEL(rtype, name, proto, args) \
   DEF_ALIAS_POSIX(rtype, name, proto, args)
 
+/* Define marcel_name and __marcel_name */
 #define DEF_MARCEL(rtype, name, proto, args, code) \
   rtype LOCAL_MARCEL_NAME(name) proto code \
   DEF_ALIAS_MARCEL(rtype, name, proto, args) \
 
+/* Define pmarcel_name and __pmarcel_name */
 #ifdef MA__IFACE_PMARCEL
 #define DEF_POSIX(rtype, name, proto, args, code) \
   rtype LOCAL_POSIX_NAME(name) proto code \
@@ -138,7 +156,8 @@
 #else
 #define DEF_POSIX(rtype, name, proto, args, code)
 #endif
-  
+
+/* Define inlines for marcel_name, __marcel_name, pmarcel_name, and __pmarcel_name */
 #define DEFINLINE_MARCEL_POSIX(rtype, name, proto, args) \
   TBX_FUN_ALIAS(rtype, MARCEL_NAME(name), \
     MARCEL_INLINE_NAME(name), proto, args); \
@@ -170,14 +189,21 @@
 #endif
 
 #section marcel_macros
+/*
+ * To be used when the pmarcel ABI is the same as the system's libpthread ABI
+ */
 #ifdef MA__LIBPTHREAD
+/* Define a strong alias pthread_name -> pmarcel_name */
 #define DEF_PTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
+/* Define a weak alias pthread_name -> pmarcel_name */
 #define DEF_PTHREAD_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, POSIX_NAME(name), PTHREAD_NAME(name), proto, args)
+/* Define a strong alias __pthread_name -> pmarcel_name */
 #define DEF___PTHREAD_STRONG(rtype, name, proto, args) \
   extern __typeof__(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_STRONG_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
+/* Define a weak alias __pthread_name -> pmarcel_name */
 #define DEF___PTHREAD_WEAK(rtype, name, proto, args) \
   extern __typeof__(POSIX_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, POSIX_NAME(name), __PTHREAD_NAME(name), proto, args)
@@ -188,19 +214,24 @@
 #define DEF___PTHREAD_WEAK(rtype, name, proto, args)
 #endif
 
+/* Define strong aliases by default */
 #define DEF_PTHREAD(rtype, name, proto, args) \
   DEF_PTHREAD_STRONG(rtype, name, proto, args)
 #define DEF___PTHREAD(rtype, name, proto, args) \
   DEF___PTHREAD_STRONG(rtype, name, proto, args)
 
 #ifdef MA__LIBPTHREAD
+/* Define a strong alias name -> pmarcel_name */
 #define DEF_C_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, POSIX_NAME(name), LIBC_NAME(name), proto, args)
+/* Define a weak alias name -> pmarcel_name */
 #define DEF_C_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, POSIX_NAME(name), LIBC_NAME(name), proto, args)
+/* Define a strong __alias name -> pmarcel_name */
 #define DEF___C_STRONG(rtype, name, proto, args) \
   extern __typeof__(POSIX_NAME(name)) __LIBC_NAME(name); \
   DEF_STRONG_T(rtype, POSIX_NAME(name), __LIBC_NAME(name), proto, args)
+/* Define a weak __alias name -> pmarcel_name */
 #define DEF___C_WEAK(rtype, name, proto, args) \
   extern __typeof__(POSIX_NAME(name)) __LIBC_NAME(name); \
   DEF_WEAK_T(rtype, POSIX_NAME(name), __LIBC_NAME(name), proto, args)
@@ -211,19 +242,28 @@
 #define DEF___C_WEAK(rtype, name, proto, args)
 #endif
 
+/* Define strong aliases by default */
 #define DEF_C(rtype, name, proto, args) \
   DEF_C_STRONG(rtype, name, proto, args)
 #define DEF___C(rtype, name, proto, args) \
   DEF___C_STRONG(rtype, name, proto, args)
 
+/*
+ * To be used when the pmarcel ABI is NOT the same as the system's libpthread
+ * ABI, when then define lpt_name functions to provide the system's ABI
+ */
 #ifdef MA__LIBPTHREAD
+/* Define a strong alias pthread_name -> lpt_name */
 #define DEF_LIBPTHREAD_STRONG(rtype, name, proto, args) \
   DEF_STRONG_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
+/* Define a weak alias pthread_name -> lpt_name */
 #define DEF_LIBPTHREAD_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, LPT_NAME(name), PTHREAD_NAME(name), proto, args)
+/* Define a strong alias __pthread_name -> lpt_name */
 #define DEF___LIBPTHREAD_STRONG(rtype, name, proto, args) \
   extern __typeof__(LPT_NAME(name)) __PTHREAD_NAME(name); \
   DEF_STRONG_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
+/* Define a weak alias __pthread_name -> lpt_name */
 #define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args) \
   extern __typeof__(LPT_NAME(name)) __PTHREAD_NAME(name); \
   DEF_WEAK_T(rtype, LPT_NAME(name), __PTHREAD_NAME(name), proto, args)
@@ -234,19 +274,28 @@
 #define DEF___LIBPTHREAD_WEAK(rtype, name, proto, args)
 #endif
 
+/* Define strong aliases by default */
 #define DEF_LIBPTHREAD(rtype, name, proto, args) \
   DEF_LIBPTHREAD_STRONG(rtype, name, proto, args)
 #define DEF___LIBPTHREAD(rtype, name, proto, args) \
   DEF___LIBPTHREAD_STRONG(rtype, name, proto, args)
 
+/* Note that libc always has versioned symbols, thus setting GLIBC_2_0 by
+ * default (which is leveraged to the correct version automatically according
+ * to the architecture) */
+
+/* Define a strong alias name -> lpt_name */
 #ifdef MA__LIBPTHREAD
 #define DEF_LIBC_STRONG(rtype, name, proto, args) \
   versioned_symbol(libpthread, LPT_NAME(name), LIBC_NAME(name), GLIBC_2_0);
+/* Define a weak alias name -> lpt_name */
 #define DEF_LIBC_WEAK(rtype, name, proto, args) \
   DEF_WEAK_T(rtype, LPT_NAME(name), LIBC_NAME(name), proto, args)
+/* Define a strong alias __name -> lpt_name */
 #define DEF___LIBC_STRONG(rtype, name, proto, args) \
   extern __typeof__(LPT_NAME(name)) __LIBC_NAME(name); \
   DEF_STRONG_T(rtype, LPT_NAME(name), __LIBC_NAME(name), proto, args)
+/* Define a weak alias __name -> lpt_name */
 #define DEF___LIBC_WEAK(rtype, name, proto, args) \
   extern __typeof__(LPT_NAME(name)) __LIBC_NAME(name); \
   DEF_WEAK_T(rtype, LPT_NAME(name), __LIBC_NAME(name), proto, args)
@@ -257,6 +306,7 @@
 #define DEF___LIBC_WEAK(rtype, name, proto, args)
 #endif
 
+/* Define strong aliases by default */
 #define DEF_LIBC(rtype, name, proto, args) \
   DEF_LIBC_STRONG(rtype, name, proto, args)
 #define DEF___LIBC(rtype, name, proto, args) \
@@ -270,6 +320,7 @@
 
 #ifdef MA__LIBPTHREAD
 
+/* Default minimum glibc versions */
 #if defined(X86_ARCH)
 #define MA_GLIBC_VERSION_MINIMUM	20000
 #define GLIBC_MINI			GLIBC_2.0

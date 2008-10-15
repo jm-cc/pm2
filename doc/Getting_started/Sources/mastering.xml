@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE TEXT SYSTEM "file:../xml2html/data/xml/DOCUMENT.dtd">
+
+<TEXT>
+
+<SUBSECTION TITLE="Mastering Marcel">
+
+<P>
+Marcel has some functionalities which are disabled by default: 
+
+<UL>
+<LI> The support of the <TT>once</TT> function,</LI>
+<LI> The support of the keys/thread-specific data handling mechanisms,</LI>
+<LI> The support of the signals mechanism.</LI>
+</UL>
+
+To enable them, you need to change your PM2 flavor by adding the
+options <TT>enable_once</TT>, <TT>enable_keys</TT> and <TT>enable_signals</TT>.
+</P>
+
+</SUBSECTION>
+
+</TEXT>

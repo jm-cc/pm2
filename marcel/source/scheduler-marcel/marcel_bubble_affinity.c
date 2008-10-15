@@ -710,13 +710,15 @@ browse_and_steal(ma_holder_t *hold, void *args) {
      to steal the upper bubble we find.) */
   if (hold->type == MA_BUBBLE_HOLDER) {
     for_each_entity_scheduled_in_bubble_begin (e, ma_bubble_holder(hold)) 
-      is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e);
-      available_entities++;
+      if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
+	available_entities++;
+      }
     for_each_entity_scheduled_in_bubble_end () 
   } else {
     list_for_each_entry(e, &hold->sched_list, sched_list) {
-      is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e);
-      available_entities++;
+      if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
+	available_entities++;
+      }
     }
   }
   

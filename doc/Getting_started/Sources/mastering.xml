@@ -9,13 +9,29 @@
 Marcel has some functionalities which are disabled by default: 
 
 <UL>
-<LI> The support of the <TT>once</TT> function,</LI>
+<LI> The support of the <TT>atexit</TT> function,</LI>
+<LI> The support of blocking system calls,</LI>
+<LI> The support of the cleanup functions,</LI>
+<LI> The support of marcel exceptions,</LI>
 <LI> The support of the keys/thread-specific data handling mechanisms,</LI>
-<LI> The support of the signals mechanism.</LI>
+<LI> The support of the <TT>once</TT> function,</LI>
+<LI> The support of the <TT>postexit</TT> function,</LI>
+<LI> The support of the signals mechanism,</LI>
+<LI> The support of the <TT>suspend</TT> function,</LI>
+<LI> The support of the userspace mechanism.</LI>
 </UL>
 
-To enable them, you need to change your PM2 flavor by adding the
-options <TT>enable_once</TT>, <TT>enable_keys</TT> and <TT>enable_signals</TT>.
+To enable them, you need to change your PM2 flavor by adding the options
+<TT>enable_atexit</TT>,
+<TT>enable_blocking</TT>,
+<TT>enable_cleanup</TT>,
+<TT>enable_exceptions</TT>,
+<TT>enable_keys</TT>,
+<TT>enable_once</TT>,
+<TT>enable_postexit</TT>,
+<TT>enable_signals</TT>,
+<TT>enable_suspend</TT>,
+or <TT>enable_userspace</TT>.
 </P>
 
 </SUBSECTION>

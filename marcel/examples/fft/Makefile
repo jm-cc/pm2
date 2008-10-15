@@ -27,3 +27,5 @@ MACROS = c.m4.marcel
 PROGS = fft
 
 include $(PM2_ROOT)/make/apps.mak
+
+fft.o: fft.c

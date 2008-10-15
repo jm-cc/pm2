@@ -1,7 +1,7 @@
 divert(-1)
-define(BARRIER, `marcel_barrier_np(&$1, $2)')
-define(BARDEC,  `marcel_bar_t_np $1;')
-define(BARINIT, `marcel_barinit_np(&$1)')
+define(BARRIER, `marcel_barrier_wait(&$1)')
+define(BARDEC,  `marcel_barrier_t $1;')
+define(BARINIT, `marcel_barrier_init(&$1, NULL, $2)')
       
 define(LOCKDEC, `marcel_mutex_t $1;')
 define(LOCKINIT, `marcel_mutex_init(&$1, NULL)')
@@ -43,13 +43,15 @@ define(SIGNAL_END, `marcel_signal_end_np($1, $2);')
 define(CREATE, `marcel_create_np($1)')
 
 define(MAIN_INITENV, `marcel_init(&argc, argv);marcel_mutex_init(&marcel_end_lock_np, NULL);marcel_cond_init(&marcel_end_cond_np, NULL);')
-define(MAIN_END, `marcel_end_np()')
-define(MAIN_ENV, `#include <marcel_np.h>
+define(MAIN_END, `marcel_exit(NULL)')
+define(MAIN_ENV, `#include "marcel_np.h"
+                  #include "time.h"
                   marcel_mutex_t marcel_end_lock_np;
                   marcel_cond_t marcel_end_cond_np;
                   int marcel_end_np_np = 0;')
 define(MAIN_ENV_END, `')
-define(EXTERN_ENV, `#include <marcel_np.h>
+define(EXTERN_ENV, `#include "marcel_np.h"
+                    #include "time.h"
                     extern marcel_mutex_t marcel_end_lock_np;
                     extern marcel_cond_t marcel_end_cond_np;
                     extern int marcel_end_np_np;')

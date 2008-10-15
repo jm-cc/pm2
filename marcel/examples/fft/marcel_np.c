@@ -1,4 +1,4 @@
-#include <marcel_np.h>
+#include "marcel_np.h"
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -50,23 +50,4 @@ void marcel_signal_end_np(int self, int p)
 #endif
      marcel_mutex_unlock(&marcel_end_lock_np); 
      marcel_cond_signal(&marcel_end_cond_np); 
-}
-
-void marcel_barinit_np(marcel_bar_t_np *bar)
-{
-  marcel_sem_init(&bar->mutex, 1);
-  marcel_sem_init(&bar->wait, 0);
-  bar->nb = 0;
-}
-
-void marcel_barrier_np(marcel_bar_t_np *bar, int p)
-{
-  marcel_sem_P(&bar->mutex);
-  if(++bar->nb == p) {
-    marcel_sem_unlock_all(&bar->wait);
-    bar->nb = 0;
-    marcel_sem_V(&bar->mutex);
-  } else {
-    marcel_sem_VP(&bar->mutex, &bar->wait);
-  }
 }

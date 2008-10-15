@@ -1,5 +1,3 @@
-include $(MARCEL_ROOT)/make/common.mak
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 # 
@@ -14,34 +12,18 @@ include $(MARCEL_ROOT)/make/common.mak
 # General Public License for more details.
 
 
-CFLAGS = $(MAR_CFLAGS) -I. 
-LDFLAGS = $(MAR_LFLAGS) $(MAR_LLIB) -lm
-
-
-TARGET = fft
-OBJS = fft.o marcel_np.o 
+fft-objs := fft.o marcel_np.o
 MACROS = c.m4.marcel
 
-x = *
-
-$(TARGET): $(OBJS) $(MAR_LIB)
-	gcc $(OBJS) $(CFLAGS) -o $(TARGET) $(LDFLAGS)
-
 .SUFFIXES:
-.SUFFIXES:	.o .c .C .h .H
+.SUFFIXES:	.c .cm4 .h .hm4
 
-.H.h:
-	m4 ${MACROS} $*.H > $*.h
+.hm4.h:
+	m4 ${MACROS} $*.hm4 > $*.h
 
-.C.c:
-	m4 $(MACROS) $*.C > $*.c
+.cm4.c:
+	m4 $(MACROS) $*.cm4 > $*.c
 
-.c.o:
-	gcc -c $(CFLAGS) $*.c
+PROGS = fft
 
-.C.o:
-	m4 $(MACROS) $*.C > $*.c
-	gcc -c $(CFLAGS) $*.c
-
-clean:
-	rm -f $(OBJS) $(TARGET) fft.c *~ #*
+include $(PM2_ROOT)/make/apps.mak

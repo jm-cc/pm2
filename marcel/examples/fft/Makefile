@@ -12,19 +12,40 @@
 # General Public License for more details.
 
 
-fft-objs := fft.o marcel_np.o
-MACROS = c.m4.marcel
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    export FLAVOR:=$(FLAVOR_DEFAULT)
+  endif # PM2_FLAVOR
+endif # FLAVOR
 
 .SUFFIXES:
 .SUFFIXES:	.c .cm4 .h .hm4
 
-.hm4.h:
+CFLAGS		:= $(shell pm2-config --flavor=${FLAVOR} --cflags)
+LDFLAGS		:= $(shell pm2-config --flavor=${FLAVOR} --libs)
+CC		:= $(shell pm2-config --flavor=${FLAVOR} --cc)
+BUILD		:= $(shell pm2-config --flavor=${FLAVOR} --builddir)
+
+OFILES		:= fft.o marcel_np.o
+
+TARGET		:= ${BUILD}/examples/fft/bin/fft
+
+fft: ${OFILES}
+	${CC} ${CFLAGS} ${OFILES} ${LDFLAGS} -lm -o ${TARGET}
+
+clean:
+	-rm ${TARGET} ${OFILES}
+
+MACROS = c.m4.marcel
+
+%.o: %.c
+	$(CC) -c $< $(CFLAGS) -o $@
+
+%h: %.hm4
 	m4 ${MACROS} $*.hm4 > $*.h
 
-.cm4.c:
+%.c: %.cm4
 	m4 $(MACROS) $*.cm4 > $*.c
-
-PROGS = fft
-
-include $(PM2_ROOT)/make/apps.mak
 

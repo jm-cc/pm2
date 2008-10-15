@@ -368,7 +368,7 @@ while [ $_l -le $_level ]; do
 		    fi
 		done
 
-		lcov_html_report_dir="$(dirname $(pm2-config --builddir))/coverage/$_m"
+		lcov_html_report_dir="$(dirname $(pm2-config --flavor=$flavor --builddir))/coverage/$_m"
 		rm -rf "$lcov_html_report_dir"
 		mkdir -p "$lcov_html_report_dir"
 

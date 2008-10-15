@@ -37,7 +37,7 @@
  * @{
  */
 
-#section marcel_types
+#section types
 /** \brief Holder types: runqueue or bubble */
 enum marcel_holder {
 	/** \brief holder */

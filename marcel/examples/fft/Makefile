@@ -33,6 +33,7 @@ OFILES		:= fft.o marcel_np.o
 TARGET		:= ${BUILD}/examples/fft/bin/fft
 
 fft: ${OFILES}
+	-mkdir -p ${BUILD}/examples/fft/bin/
 	${CC} ${CFLAGS} ${OFILES} ${LDFLAGS} -lm -o ${TARGET}
 
 clean:

@@ -22,7 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef MA__LIBPTHREAD
+#if defined(MA__LIBPTHREAD) && defined(MARCEL_SIGNALS_ENABLED)
 #include <sys/syscall.h>
 #define sigaction ma_kernel_sigaction
 #define sigsuspend(mask) syscall(SYS_rt_sigsuspend,mask,_NSIG/8)

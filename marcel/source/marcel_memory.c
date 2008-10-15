@@ -38,16 +38,16 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
 
   // Preallocate memory on each node
-  memory_manager->heaps = malloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
+  memory_manager->heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), node);
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
   // Load the model for the migration costs
-  memory_manager->migration_costs = malloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
+  memory_manager->migration_costs = tmalloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->migration_costs[node] = malloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
+    memory_manager->migration_costs[node] = tmalloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
     for(dest=0 ; dest<marcel_nbnodes ; dest++) {
       memory_manager->migration_costs[node][dest] = tbx_slist_nil();
     }
@@ -55,13 +55,13 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocate
   ma_memory_load_model_for_memory_migration(memory_manager);
 
   // Load the model for the access costs
-  memory_manager->writing_access_costs = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
+  memory_manager->writing_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->writing_access_costs[node] = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    memory_manager->writing_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
-  memory_manager->reading_access_costs = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
+  memory_manager->reading_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->reading_access_costs[node] = malloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    memory_manager->reading_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
   }
   ma_memory_load_model_for_memory_access(memory_manager);
 
@@ -100,7 +100,7 @@ void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
   LOG_IN();
   while (tbx_slist_is_nil(migration_costs) == tbx_false) {
     marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
-    free(ptr);
+    tfree(ptr);
   }
   tbx_slist_clear(migration_costs);
   tbx_slist_free(migration_costs);
@@ -129,22 +129,22 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
   }
-  free(memory_manager->heaps);
+  tfree(memory_manager->heaps);
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
     for(dest=0 ; dest<marcel_nbnodes ; dest++) {
       ma_memory_sampling_free(memory_manager->migration_costs[node][dest]);
     }
-    free(memory_manager->migration_costs[node]);
+    tfree(memory_manager->migration_costs[node]);
   }
-  free(memory_manager->migration_costs);
+  tfree(memory_manager->migration_costs);
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    free(memory_manager->reading_access_costs[node]);
-    free(memory_manager->writing_access_costs[node]);
+    tfree(memory_manager->reading_access_costs[node]);
+    tfree(memory_manager->writing_access_costs[node]);
   }
-  free(memory_manager->reading_access_costs);
-  free(memory_manager->writing_access_costs);
+  tfree(memory_manager->reading_access_costs);
+  tfree(memory_manager->writing_access_costs);
 
   if (memory_manager->root) {
     marcel_printf("Some memory areas have not been free-d\n");
@@ -160,7 +160,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
                                 marcel_memory_data_t **memory_data) {
   LOG_IN();
 
-  *memory_data = malloc(sizeof(marcel_memory_data_t));
+  *memory_data = tmalloc(sizeof(marcel_memory_data_t));
 
   // Set the interval addresses and the length
   (*memory_data)->startaddress = pageaddrs[0];
@@ -172,7 +172,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
-  (*memory_data)->pageaddrs = malloc((*memory_data)->nbpages * sizeof(void *));
+  (*memory_data)->pageaddrs = tmalloc((*memory_data)->nbpages * sizeof(void *));
   memcpy((*memory_data)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
 
   LOG_OUT();
@@ -216,7 +216,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   LOG_IN();
 
   mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
-  available = malloc(sizeof(marcel_memory_area_t));
+  available = tmalloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
   available->nbpages = nbpages;
   available->next = memory_manager->heaps[node];
@@ -235,8 +235,8 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node);
 
       // Delete corresponding tree
-//      free(data->pageaddrs);
-//      free(data);
+//      tfree(data->pageaddrs);
+//      tfree(data);
       ma_memory_delete_tree(memory_manager, memory_tree);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
@@ -252,7 +252,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_t
 			void **pageaddrs, int nbpages, size_t size, int node, int protection) {
   LOG_IN();
   if (*memory_tree==NULL) {
-    *memory_tree = malloc(sizeof(marcel_memory_tree_t));
+    *memory_tree = tmalloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
     ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, &((*memory_tree)->data));
@@ -284,7 +284,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   }
   buffer = memset(buffer, 0, length);
 
-  (*space) = malloc(sizeof(marcel_memory_area_t));
+  (*space) = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
   (*space)->nbpages = memory_manager->initially_preallocated_pages;
   (*space)->protection = PROT_READ|PROT_WRITE;
@@ -347,14 +347,14 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   }
 
   // Set the page addresses
-  pageaddrs = malloc(nbpages * sizeof(void *));
+  pageaddrs = tmalloc(nbpages * sizeof(void *));
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->pagesize;
 
   // Register memory
   mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
   ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, heap->protection);
 
-  free(pageaddrs);
+  tfree(pageaddrs);
 
   marcel_spin_unlock(&(memory_manager->lock));
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
@@ -435,7 +435,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
   mdebug_heap("check location is #%d\n", node);
 
-  pagenodes = malloc(pages * sizeof(int));
+  pagenodes = tmalloc(pages * sizeof(int));
   err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
   if (err < 0) perror("move_pages (check_pages_location)");
 
@@ -445,7 +445,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
       exit(-1);
     }
   }
-  free(pagenodes);
+  tfree(pagenodes);
   return -err;
 }
 
@@ -604,8 +604,8 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   }
   else {
     mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
-    dests = malloc(data->nbpages * sizeof(int));
-    status = malloc(data->nbpages * sizeof(int));
+    dests = tmalloc(data->nbpages * sizeof(int));
+    status = tmalloc(data->nbpages * sizeof(int));
     for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
     err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
 #ifdef PM2DEBUG

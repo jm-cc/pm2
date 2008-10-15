@@ -61,8 +61,8 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
   ns = us * 1000;
   ns /= (loops * 2);
   bandwidth = ns / pages;
-  fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
-  printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
+  marcel_fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
+  marcel_printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
 }
 
 static
@@ -78,24 +78,24 @@ int ma_memory_get_filename(char *type, char *filename, long source, long dest) {
   }
   pathname = getenv("PM2_SAMPLING_DIR");
   if (pathname) {
-    rc = snprintf(directory, 1024, "%s/marcel", pathname);
+    rc = marcel_snprintf(directory, 1024, "%s/marcel", pathname);
   }
   else {
-    rc = snprintf(directory, 1024, "/var/local/pm2/marcel");
+    rc = marcel_snprintf(directory, 1024, "/var/local/pm2/marcel");
   }
   assert(rc < 1024);
 
   if (source == -1) {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
+      marcel_snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
     else
-      snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
+      marcel_snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
   }
   else {
     if (dest == -1)
-      snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
+      marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
     else
-      snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
+      marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
   return 0;
@@ -105,7 +105,7 @@ static
 void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   marcel_memory_migration_cost_t *migration_cost;
 
-  migration_cost = malloc(sizeof(marcel_memory_migration_cost_t));
+  migration_cost = tmalloc(sizeof(marcel_memory_migration_cost_t));
   migration_cost->size_min = size_min;
   migration_cost->size_max = size_max;
   migration_cost->slope = slope;
@@ -134,16 +134,16 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
     perror("ma_memory_get_filename");
     return -1;
   }
-  out = fopen(filename, "r");
+  out = marcel_fopen(filename, "r");
   if (!out) {
-    printf("The model for the cost of the memory migration is not available\n");
+    marcel_printf("The model for the cost of the memory migration is not available\n");
     return -1;
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   mdebug_heap("Reading line %s\n", line);
   while (!(feof(out))) {
-    if (fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
+    if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
     }
 #ifdef PM2DEBUG
@@ -155,7 +155,7 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
     ma_memory_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
     ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
   }
-  fclose(out);
+  marcel_fclose(out);
   return 0;
 }
 
@@ -205,14 +205,14 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
     memset(buffer, 0, 25000*pagesize);
 
     // Set the page addresses
-    pageaddrs = malloc(25000 * sizeof(void *));
+    pageaddrs = tmalloc(25000 * sizeof(void *));
     for(i=0; i<25000; i++)
       pageaddrs[i] = buffer + i*pagesize;
 
     // Set the other variables
-    status = malloc(25000 * sizeof(int));
-    sources = malloc(25000 * sizeof(int));
-    dests = malloc(25000 * sizeof(int));
+    status = tmalloc(25000 * sizeof(int));
+    sources = tmalloc(25000 * sizeof(int));
+    dests = tmalloc(25000 * sizeof(int));
     for(i=0; i<25000 ; i++) dests[i] = dest;
     for(i=0; i<25000 ; i++) sources[i] = source;
 
@@ -249,10 +249,10 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
     }
 
     munmap(buffer, 25000 * pagesize);
-    free(pageaddrs);
-    free(status);
-    free(sources);
-    free(dests);
+    tfree(pageaddrs);
+    tfree(status);
+    tfree(sources);
+    tfree(dests);
     return NULL;
   }
 
@@ -268,13 +268,13 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
       return -1;
     }
   }
-  out = fopen(filename, "w");
+  out = marcel_fopen(filename, "w");
   if (!out) {
-    printf("Error when opening file <%s>\n", filename);
+    marcel_printf("Error when opening file <%s>\n", filename);
     return -errno;
   }
-  fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
-  printf("Source\tDest\tPages\tSize\tMigration_Time\n");
+  marcel_fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
+  marcel_printf("Source\tDest\tPages\tSize\tMigration_Time\n");
 
   marcel_attr_init(&attr);
   for(source=minsource; source<=maxsource ; source++) {
@@ -293,8 +293,8 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
       }
     }
   }
-  fclose(out);
-  printf("Sampling saved in <%s>\n", filename);
+  marcel_fclose(out);
+  marcel_printf("Sampling saved in <%s>\n", filename);
   return 0;
 }
 
@@ -312,15 +312,15 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
     perror("ma_memory_get_filename");
     return -1;
   }
-  out = fopen(filename, "r");
+  out = marcel_fopen(filename, "r");
   if (!out) {
-    printf("The model for the cost of the memory access is not available\n");
+    marcel_printf("The model for the cost of the memory access is not available\n");
     return -1;
   }
   mdebug_heap("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
-    if (fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
+    if (marcel_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
       break;
     }
 
@@ -394,20 +394,20 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
       return -1;
     }
   }
-  out = fopen(filename, "w");
+  out = marcel_fopen(filename, "w");
   if (!out) {
-    printf("Error when opening file <%s>\n", filename);
+    marcel_printf("Error when opening file <%s>\n", filename);
     return -1;
   }
 
-  rtimes = malloc(marcel_nbnodes * sizeof(unsigned long long *));
-  wtimes = malloc(marcel_nbnodes * sizeof(unsigned long long *));
+  rtimes = tmalloc(marcel_nbnodes * sizeof(unsigned long long *));
+  wtimes = tmalloc(marcel_nbnodes * sizeof(unsigned long long *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    rtimes[node] = malloc(marcel_nbnodes * sizeof(unsigned long long));
-    wtimes[node] = malloc(marcel_nbnodes * sizeof(unsigned long long));
+    rtimes[node] = tmalloc(marcel_nbnodes * sizeof(unsigned long long));
+    wtimes[node] = tmalloc(marcel_nbnodes * sizeof(unsigned long long));
   }
 
-  buffers = malloc(marcel_nbnodes * sizeof(int *));
+  buffers = tmalloc(marcel_nbnodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
     buffers[node] = marcel_memory_allocate_on_node(memory_manager, size*sizeof(int), node);
@@ -453,27 +453,27 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
     }
   }
 
-  printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
-  fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  marcel_fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=minsource ; t<=maxsource ; t++) {
     for(node=mindest ; node<=maxdest ; node++) {
-      printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-             t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
-             rtimes[node][t],
-             (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
-             wtimes[node][t],
-             (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
-      fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-              t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
-              rtimes[node][t],
-              (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
-              wtimes[node][t],
-              (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
+      marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+                    t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
+                    rtimes[node][t],
+                    (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
+                    wtimes[node][t],
+                    (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
+      marcel_fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+                     t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
+                     rtimes[node][t],
+                     (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
+                     wtimes[node][t],
+                     (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
     }
   }
 
-  fclose(out);
-  printf("Sampling saved in <%s>\n", filename);
+  marcel_fclose(out);
+  marcel_printf("Sampling saved in <%s>\n", filename);
   return 0;
 }
 

@@ -121,21 +121,36 @@ int _marcel_raise_exception(marcel_exception_t ex)
 }
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#ifndef MA__LIBPTHREAD
-/* if MA__LIBPTHREAD is defined, marcel_extlib_protect/unprotect are
-   defined as (empty) macros instead since they are useless in that case */
+/* When calling external libraries, we have to disable preemption, to make sure
+ * that they will not see a kernel thread change, in case they take a kernel
+ * thread mutex for instance.
+ *
+ * When we do not use posix threads to create our kernel threads (i.e. we
+ * directly use clone) and do not provide the libpthread interface, external
+ * libraries aren't even aware that there is concurrency, so we have to protect
+ * them ourselves.
+ */
+#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
+static marcel_mutex_t ma_extlib_lock = MARCEL_MUTEX_INITIALIZER;
+#endif
 int marcel_extlib_protect(void)
 {
+#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
+	marcel_mutex_lock(&extlib_lock);
+#endif
 	ma_local_bh_disable();
 	return 0;
 }
 
+#
 int marcel_extlib_unprotect(void)
 {
+#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
+	marcel_mutex_unlock(&extlib_lock);
+#endif
 	ma_local_bh_enable();
 	return 0;
 }
-#endif /* MA__LIBPTHREAD */
 
 void marcel_start_playing(void) {
 	PROF_EVENT(fut_start_playing);

@@ -20,13 +20,8 @@
  *
  * Cela désactive la préemption et les traitants de signaux
  */
-#ifdef MA__LIBPTHREAD
-#  define marcel_extlib_protect()
-#  define marcel_extlib_unprotect()
-#else
 extern int marcel_extlib_protect(void);
 extern int marcel_extlib_unprotect(void);
-#endif
 
 /* The `malloc' family of functions is a particular example of extern library
    functions that must be "protected", i.e., must not be preempted, otherwise

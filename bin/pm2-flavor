@@ -579,6 +579,11 @@ do_set() {
 	msg="Creating flavor $flavor"
     fi
     create_flavor "$msg"
+    do_check_aux --flavor=$flavor
+    if [ $check_result != 0 ] ; then
+	echo failure
+	do_delete --flavor=$flavor
+    fi
     exit 0
 }
 
@@ -681,7 +686,7 @@ add_option() { # Option(--"module"=opt) liste_to_ignore
 	esac
 }
 
-do_check() {
+do_check_aux() {
     do_add
     while test $# -gt 0; do
 	case "$1" in
@@ -748,6 +753,10 @@ do_check() {
     do_read_provide
     do_check_depend
     do_check_confict
+}
+
+do_check() {
+    do_check_aux ${@:+"$@"}
     exit $check_result
 }
 
@@ -811,7 +820,14 @@ EDIT_MODE="normal"
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
-    version|set|delete|list|get|help|check|regenerate|find)
+    set)
+	shift
+	$DEBUG "Executing $CMD"
+	eval do_$CMD '${@:+"$@"}'
+	do_check '${@:+"$@"}'
+	exit 0
+	;;
+    version|delete|list|get|help|check|regenerate|find)
 	shift
 	$DEBUG "Executing $CMD"
 	eval do_$CMD '${@:+"$@"}'

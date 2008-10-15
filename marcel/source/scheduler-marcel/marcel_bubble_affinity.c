@@ -707,6 +707,7 @@ is_entity_worth_stealing (int *greater,
       if (load > *greater) {
 	*greater = load;
 	*bestbb = *tested_entity;
+	/* We found a bubble bigger than bestbb. */
 	found = 1;
       }
     } else {
@@ -716,8 +717,9 @@ is_entity_worth_stealing (int *greater,
 	 load balancing of OpenMP nested applications for example. */
       if (*thread_to_steal ==  NULL) {
 	*thread_to_steal = *tested_entity;
-	found = 1;
       }
+      /* We found a non-blocked thread. */
+      found = 1;
     }
   }
 

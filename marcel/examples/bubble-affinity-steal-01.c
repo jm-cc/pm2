@@ -129,6 +129,9 @@ main (int argc, char *argv[]) {
 		exit (1);
 	}
 
+	/* Make sure we're currently testing the Affinity scheduler. */
+	marcel_bubble_change_sched (&marcel_bubble_affinity_sched);
+
 	/* Intercept Affinity's work stealing algorithm to assure it's
 		 called before all threads have died. */
 	aff_steal = marcel_bubble_affinity_sched.vp_is_idle;

@@ -496,20 +496,38 @@
 #define CPU_COUNT_S(cpu) PMARCEL_CPU_COUNT_S(cpu)
 
 #if defined(__cplusplus)
+#undef pthread_once
 #define pthread_once pmarcel_once
+#undef pthread_getspecific
 #define pthread_getspecific pmarcel_getspecific
+#undef pthread_setspecific
 #define pthread_setspecific pmarcel_setspecific
+#undef pthread_create
 #define pthread_create pmarcel_create
+#undef pthread_cancel
 #define pthread_cancel pmarcel_cancel
+#undef pthread_mutex_lock
 #define pthread_mutex_lock pmarcel_mutex_lock
+#undef pthread_mutex_trylock
 #define pthread_mutex_trylock pmarcel_mutex_trylock
+#undef pthread_mutex_unlock
 #define pthread_mutex_unlock pmarcel_mutex_unlock
+#undef pthread_mutex_init
 #define pthread_mutex_init pmarcel_mutex_init
+#undef pthread_key_create
 #define pthread_key_create pmarcel_key_create
+#undef pthread_key_delete
 #define pthread_key_delete pmarcel_key_delete
+#undef pthread_mutexattr_init
 #define pthread_mutexattr_init pmarcel_mutexattr_init
+#undef pthread_mutexattr_settype
 #define pthread_mutexattr_settype pmarcel_mutexattr_settype
+#undef pthread_mutexattr_destroy
 #define pthread_mutexattr_destroy pmarcel_mutexattr_destroy
+#undef pthread_cond_broadcast
+#define pthread_cond_broadcast pmarcel_cond_broadcast
+#undef pthread_cond_wait
+#define pthread_cond_wait pmarcel_cond_wait
 #endif /* __cpluscplus */
 
 #endif  /*_MARCEL_PTHREAD_H*/

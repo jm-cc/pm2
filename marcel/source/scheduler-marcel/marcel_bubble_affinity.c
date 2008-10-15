@@ -661,6 +661,28 @@ struct browse_and_steal_args {
   marcel_entity_t *thread_to_steal;
 };
 
+/* Returns 1 if the _e_ entity is blocked. If _e_ is a bubble, the
+   function returns 1 if the whole set of included entities is
+   blocked. */
+static int
+is_blocked (marcel_entity_t *e) {
+  if (e->type == MA_BUBBLE_ENTITY) {
+    marcel_entity_t *inner_e;
+    for_each_entity_held_in_bubble (inner_e, ma_bubble_entity (e)) {
+      if ((inner_e->type != MA_BUBBLE_ENTITY) 
+	  && !MA_TASK_IS_BLOCKED (ma_task_entity (inner_e))) {
+	/* We found a non-blocked thread! */
+	return 0;
+      }
+    }
+  } else {
+    if (!MA_TASK_IS_BLOCKED (ma_task_entity (e))) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 /* This function is just a way to factorize the code called by
    _browse_and_steal_ when testing if an entity is worth to be
    stolen. It tests if the load of _tested_entity_ is greater than
@@ -673,20 +695,26 @@ is_entity_worth_stealing (int *greater,
 	     marcel_entity_t **tested_entity) {
   int found = 0;
   long load = ma_entity_load (*tested_entity);
-  if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
-    if (load > *greater) {
-      *greater = load;
-      *bestbb = *tested_entity;
-      found = 1;
-    }
-  } else {
-    /* If we don't find any bubble to steal, we may steal a
-       thread. In that case, we try to steal the higher thread we
-       find in the entities hierarchy. This kind of behaviour favors
-       load balancing of OpenMP nested applications for example. */
-    *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
-  }
   
+  /* We don't want to pick blocked entities, otherwise the starving vp
+     will still be idle. */
+  if (!is_blocked (*tested_entity)) {
+    /* If we have the choice, pick the most loaded bubble. */
+    if ((*tested_entity)->type == MA_BUBBLE_ENTITY) {
+      if (load > *greater) {
+	*greater = load;
+	*bestbb = *tested_entity;
+	found = 1;
+      }
+    } else {
+      /* If we don't find any bubble to steal, we may steal a
+	 thread. In that case, we try to steal the higher thread we
+	 find in the entities hierarchy. This kind of behaviour favors
+	 load balancing of OpenMP nested applications for example. */
+      *thread_to_steal = (*thread_to_steal == NULL) ? *tested_entity : *thread_to_steal;
+    }
+  }
+
   return found;
 }
 

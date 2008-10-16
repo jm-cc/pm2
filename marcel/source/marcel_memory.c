@@ -182,11 +182,13 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
   LOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
     marcel_memory_tree_t *temp = (*memory_tree);
+    free(temp->data);
     (*memory_tree) = (*memory_tree)->rightchild;
     free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
     marcel_memory_tree_t *temp = *memory_tree;
+    free(temp->data);
     (*memory_tree) = (*memory_tree)->leftchild;
     free(temp);
   }
@@ -201,7 +203,8 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
     }
 
     // copy the value from the in-order predecessor to the original node
-    (*memory_tree)->data = temp->data;
+    free((*memory_tree)->data);
+    ma_memory_init_memory_data(memory_manager, temp->data->pageaddrs, temp->data->nbpages, temp->data->size, temp->data->node, temp->data->protection, &((*memory_tree)->data));
 
     // then delete the predecessor
     ma_memory_delete(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);

@@ -64,6 +64,7 @@
  * @{ */
 
 #section common
+#include <stdio.h>
 #include "tbx_compiler.h"
 
 #section variables

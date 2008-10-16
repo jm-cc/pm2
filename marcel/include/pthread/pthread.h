@@ -554,6 +554,13 @@ ma_initialize_pmarcel (void)
 	}
 }
 
+/* Automatically terminate applications that use Marcel's <pthread.h>.  */
+static void __attribute__ ((__destructor__))
+ma_terminate_pmarcel (void)
+{
+	marcel_end ();
+}
+
 #endif
 
 

@@ -15,6 +15,60 @@
 #define realloc(ptr, size)  trealloc(ptr, size)
 #define free(ptr)           tfree(ptr)
 
+#ifdef __cplusplus
+
+/* C++ replacements for the new/delete operator family.  */
+
+#include <new>
+#include <cstddef>
+
+extern "C++" {
+
+	inline void *
+	operator new (size_t _size) throw(std::bad_alloc) {
+		void *mem = marcel_malloc (_size, __FILE__, __LINE__);
+		if (tbx_unlikely (mem == NULL))
+			throw std::bad_alloc ();
+		return mem;
+	}
+
+	inline void *
+	operator new (size_t _size, const std::nothrow_t &_nt) throw() {
+		return marcel_malloc (_size, __FILE__, __LINE__);
+	}
+	inline void *
+	operator new[] (size_t _size) throw(std::bad_alloc) {
+		void *mem = marcel_malloc (_size, __FILE__, __LINE__);
+		if (tbx_unlikely (mem == NULL))
+			throw std::bad_alloc ();
+		return mem;
+	}
+	inline void *
+	operator new[] (size_t _size, const std::nothrow_t &_nt) throw() {
+		return marcel_malloc (_size, __FILE__, __LINE__);
+	}
+
+	inline void
+	operator delete (void *mem) throw() {
+		marcel_free (mem);
+	}
+	inline void
+	operator delete (void *mem, const std::nothrow_t &_nt) throw() {
+		marcel_free (mem);
+	}
+	inline void
+	operator delete [] (void *mem) throw() {
+		marcel_free (mem);
+	}
+	inline void
+	operator delete [] (void *mem, const std::nothrow_t &_nt) throw() {
+		marcel_free (mem);
+	}
+}
+
+#endif /* __cplusplus */
+
+
 #ifndef MA__IFACE_PMARCEL
 #warning "This file can't be used without the pmarcel option in the flavor"
 #endif

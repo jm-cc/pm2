@@ -86,14 +86,18 @@ export flavor
 CPPFLAGS="$(pm2-config --flavor=$flavor --cflags)"
 CPPFLAGS="$CPPFLAGS -DMARCEL_INTERNAL_INCLUDE"
 
+CC="${CC:-$(pm2-config --flavor=$flavor --cc)}"
+CPP="${CPP:-$CC -E}"
+
 hash_prog="$(find_hash_program)"
 
 debug_log "using PM2 flavor \`$flavor' and header file \`$header_file'"
 debug_log "using hash program \`$hash_prog'"
 debug_log "PM2_ROOT: \`$PM2_ROOT"
 debug_log "CPPFLAGS: \`$CPPFLAGS'"
+debug_log "CPP:      \`$CPP'"
 
-cat "$header_file" | cpp $CPPFLAGS		\
+cat "$header_file" | $CPP $CPPFLAGS -		\
 | filter_out_external_headers "$PM2_ROOT"	\
 | $hash_prog | grep -o '\([[:xdigit:]]\+\)'
 

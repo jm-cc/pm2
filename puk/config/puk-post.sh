@@ -1,0 +1,6 @@
+
+if [ x${PM2_PUK_ENABLE_PUKABI} = xyes ]; then
+    PM2_PUK_CONFIGURE_EXTRA_FLAGS="$PM2_PUK_CONFIGURE_EXTRA_FLAGS --enable-pukabi"
+else
+    PM2_PUK_CONFIGURE_EXTRA_FLAGS="$PM2_PUK_CONFIGURE_EXTRA_FLAGS --disable-pukabi"
+fi

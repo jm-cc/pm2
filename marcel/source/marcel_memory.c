@@ -181,14 +181,14 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree) {
   LOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
-    //marcel_memory_tree_t *temp = (*memory_tree);
+    marcel_memory_tree_t *temp = (*memory_tree);
     (*memory_tree) = (*memory_tree)->rightchild;
-    //free(temp);
+    free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
-    //marcel_memory_tree_t *temp = *memory_tree;
+    marcel_memory_tree_t *temp = *memory_tree;
     (*memory_tree) = (*memory_tree)->leftchild;
-    //free(temp);
+    free(temp);
   }
   else {
     // In-order predecessor (rightmost child of left subtree)

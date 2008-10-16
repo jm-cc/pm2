@@ -26,16 +26,7 @@ extern int marcel_extlib_unprotect(void);
 /* The `malloc' family of functions is a particular example of extern library
    functions that must be "protected", i.e., must not be preempted, otherwise
    assumptions of the underlying may be violated and Bad Things may happen.
-   The following macros are meant to handle these cases.
+   The following macros are meant to handle these cases.  */
 
-   On GNU systems, this is handled transparently using glibc's malloc hooks,
-   so this macros are a no-op in this case.  On other systems, they have the
-   same effect as `extlib_{protect,unprotect}'.  */
-
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-#  define marcel_malloc_protect()
-#  define marcel_malloc_unprotect()
-#else
-#  define marcel_malloc_protect()    marcel_extlib_protect()
-#  define marcel_malloc_unprotect()  marcel_extlib_unprotect()
-#endif
+#define marcel_malloc_protect()    marcel_extlib_protect()
+#define marcel_malloc_unprotect()  marcel_extlib_unprotect()

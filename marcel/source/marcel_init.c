@@ -89,10 +89,6 @@ enter_malloc_section(void)
 	marcel_mutex_lock(&malloc_hook_mutex);
 	INSTALL_INITIAL_MALLOC_HOOKS();
 
-	/* Disable preemption so that libc's malloc functions can execute
-		 without being preempted.  */
-	marcel_extlib_protect();
-
 	ASSERT_LWP_NOT_IN_LIBC_MALLOC();
 	__ma_get_lwp_var(in_libc_malloc)++;
 }
@@ -103,8 +99,6 @@ static __tbx_inline__ void
 leave_malloc_section(void)
 {
 	__ma_get_lwp_var(in_libc_malloc)--;
-
-	marcel_extlib_unprotect();
 
 	INSTALL_MARCEL_MALLOC_HOOKS();
 	marcel_mutex_unlock(&malloc_hook_mutex);

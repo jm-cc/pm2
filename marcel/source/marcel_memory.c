@@ -19,9 +19,6 @@
 #include <errno.h>
 #include <numaif.h>
 #include <sys/mman.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);

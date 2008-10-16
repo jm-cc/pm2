@@ -22,94 +22,76 @@ PUK_INSTALLDIR := $(PUK_ROOT)
 
 PADICO_ROOT    := $(PUK_ROOT)
 
-CONFIG_FILES   := externals/configure.ac externals/configure externals/Puk/padico_config.h.in VERSION
+CONFIG_FILES   := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
 
 # ## front-end rules
 # ##
 
-libs:
-	$(MAKE) $(PUK_BUILDDIR)/config.status
-	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk
-	-@/bin/mkdir $(PM2_BUILD_DIR)/lib/
+
+libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
 	@/bin/cp $(PADICO_ROOT)/lib/libPadicoPuk.a $(PM2_BUILD_DIR)/lib/
 
-link: install
+link:
 
-dot_h: install
+dot_h: $(PUK_BUILDDIR)/config.status
 
-init-packaging: $(PADICO_ROOT)/etc/padico-setup.sh
+clean:
+	-/bin/rm $(CONFIG_FILES)
+	-/bin/rm -r $(PUK_ROOT)/puk
 
-config: $(CONFIG_FILES)
+flavormaks: $(CONFIG_FILES)
 
-configure: $(PUK_BUILDDIR)/config.status
 
-install: $(PADICO_ROOT)/lib/libPadicoPuk.a
-
-clean: clean-config clean-build
-
-flavormaks:
-
-# ## packaging tools
+# ## init packaging framework and generate base config files
 # ##
 
-$(PADICO_ROOT)/etc/padico-setup.sh:
-	@echo "# Installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
+$(CONFIG_FILES): externals/packaging-tools/padico-setup.sh.in configure.ac externals/building-tools/*.m4
+	@echo "    generating Puk version file..."
+	@echo "0.4.0" > VERSION
+	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
 	@echo
-	@./externals/packaging-tools/padico-init admindir=$(PUK_SRCDIR)/externals/packaging-tools installdir=$(PADICO_ROOT) srcdir=$(PUK_SRCDIR) builddir=$(PUK_BUILDDIR) logdir=$(PUK_BUILDDIR)/log padico_dialog=whiptail
+	@./externals/packaging-tools/padico-init \
+          admindir=$(PUK_SRCDIR)/externals/packaging-tools \
+          installdir=$(PADICO_ROOT) \
+          srcdir=$(PUK_SRCDIR) \
+          builddir=$(PUK_BUILDDIR) \
+          logdir=$(PUK_BUILDDIR)/log \
+          padico_dialog=whiptail
+	@echo "    checking config tools versions..."
+	@( autoconf_ver="`$${AUTOCONF:-autoconf} --version | grep 'GNU Autoconf'`"; \
+           if [ "x$$autoconf_ver" = "x" ]; then echo "Bad autoconf version (should be at least GNU 2.50)"; exit 1; \
+           else echo "      - $$autoconf_ver"; fi )
+	@( autoheader_ver="`$${AUTOHEADER:-autoheader} --version | grep 'GNU Autoconf'`"; \
+           if [ "x$$autoheader_ver" = "x" ]; then echo "Bad autoheader version (should be GNU)"; exit 1; \
+           else echo "      - $$autoheader_ver"; fi )
+	@echo "    generating externals/configure [autoconf] ..."
+	@/bin/cp configure.ac externals/
+	@( cd externals ; $${AUTOCONF:-autoconf} )
+	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
+	@( cd externals ; $${AUTOHEADER:-autoheader} )
+	-@/bin/mkdir $(PUK_BUILDDIR)
+	-@/bin/mkdir $(PM2_BUILD_DIR)/lib/
 
 # ## configure
 # ##
 
-check-config-tools:
-	@echo "# Checking config tools versions..."
-	@( autoconf_ver="`$${AUTOCONF:-autoconf} --version | grep 'GNU Autoconf'`"; \
-           if [ "x$$autoconf_ver" = "x" ]; then echo "Bad autoconf version (should be at least GNU 2.50)"; exit 1; \
-           else echo "  $$autoconf_ver"; fi )
-	@( autoheader_ver="`$${AUTOHEADER:-autoheader} --version | grep 'GNU Autoconf'`"; \
-           if [ "x$$autoheader_ver" = "x" ]; then echo "Bad autoheader version (should be GNU)"; exit 1; \
-           else echo "  $$autoheader_ver"; fi )
+PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
 
-VERSION:
-	@echo "0.4.0" > VERSION
-
-externals/Puk/padico_config.h.in: externals/configure.ac
-	@echo "# Generating $@ ..."
-	@$(MAKE) check-config-tools
-	( cd externals ; $${AUTOHEADER:-autoheader} )
-
-externals/configure.ac: configure.ac
-	/bin/cp configure.ac externals/
-
-externals/configure: externals/configure.ac externals/building-tools/*.m4
-	@echo "# Generating $@ ..."
-	@$(MAKE) check-config-tools
-	( cd externals ; $${AUTOCONF:-autoconf} )
-
-PM2_PUK_CONFIGURE_EXTRA_FLAGS=$(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
-
-$(PUK_BUILDDIR)/config.status: $(CONFIG_FILES) $(PADICO_ROOT)/etc/padico-setup.sh
-	mkdir -p $(PUK_BUILDDIR)
-	( cd $(PUK_BUILDDIR) ; $(PUK_SRCDIR)/externals/configure --disable-pukabi --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
+$(PUK_BUILDDIR)/config.status: $(CONFIG_FILES)
+	( cd $(PUK_BUILDDIR) ; \
+           $(PUK_SRCDIR)/externals/configure LDFLAGS= CFLAGS= --disable-pukabi --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
 
 # ## build
 # ##
 
-build: $(PUK_BUILDDIR)/config.status
+$(PUK_BUILDDIR)/Puk/libPadicoPuk.a: $(PUK_BUILDDIR)/config.status
 	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk
 
 # ## install
 # ##
 
-$(PADICO_ROOT)/lib/libPadicoPuk.a: $(PUK_BUILDDIR)/config.status
+$(PADICO_ROOT)/lib/libPadicoPuk.a: $(PUK_BUILDDIR)/Puk/libPadicoPuk.a
 	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk install
 
-# ## clean
-# ##
-
-clean-config:
-	-/bin/rm $(CONFIG_FILES)
-
-clean-build:
-	-/bin/rm -r $(PUK_ROOT)/puk
 

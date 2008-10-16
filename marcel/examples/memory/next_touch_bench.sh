@@ -1,5 +1,6 @@
 bench() {
     pages=$1
+    rm -f /tmp/next_touch_bench_$pages.dat
     for i in $(seq 1 1 10) ; do
         pm2-load next_touch_bench -src 0 -dest 1 -pages $pages >> /tmp/next_touch_bench_$pages.dat
     done

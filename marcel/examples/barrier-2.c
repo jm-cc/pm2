@@ -24,6 +24,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef MARCEL_VERSION
+# error "We're not using Marcel's <pthread.h>."
+#endif
+
 #define NTHREADS 20
 
 #define ROUNDS 20

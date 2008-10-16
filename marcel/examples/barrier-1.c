@@ -21,6 +21,9 @@
 #include <pthread.h>
 #include <stdio.h>
 
+#ifndef MARCEL_VERSION
+# error "We're not using Marcel's <pthread.h>."
+#endif
 
 int
 main (int argc, char *argv[])

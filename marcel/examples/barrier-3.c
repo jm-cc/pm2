@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#ifndef MARCEL_VERSION
+# error "We're not using Marcel's <pthread.h>."
+#endif
+
 static pthread_barrier_t b1;
 static pthread_barrier_t b2;
 

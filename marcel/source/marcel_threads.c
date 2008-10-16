@@ -42,6 +42,12 @@ extern void *_dl_allocate_tls_init(void *) libc_internal_function;
  */
 #define MARCEL_NOT_CANCELED 0
 
+
+/* Whether Marcel has been automatically initialized (when in `pmarcel'
+ * mode, see Marcel's <pthread.h>).  */
+tbx_bool_t ma_pmarcel_is_initialized = tbx_false;
+
+
 /****************************************************************/
 /****************************************************************
  *                Création des threads

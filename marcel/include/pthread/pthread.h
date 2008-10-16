@@ -530,4 +530,31 @@
 #define pthread_cond_wait pmarcel_cond_wait
 #endif /* __cpluscplus */
 
+#ifdef __GNUC__
+
+/* Whether Marcel has been automatically initialized.  */
+extern tbx_bool_t ma_pmarcel_is_initialized;
+
+/* Automatically initialize Marcel, so that applications that include
+   this file don't have to explicitly call `marcel_init ()'.
+
+	 XXX: This hack doesn't work on non-GCC or non-ELF platforms such as
+	 Mac OS X.  */
+static void	__attribute__ ((__constructor__))
+ma_initialize_pmarcel (void)
+{
+	if (!ma_pmarcel_is_initialized) {
+		static int ma_pmarcel_argc = 0;
+		static char *ma_pmarcel_argv[] = { "pmarcel-program", NULL };
+
+		ma_pmarcel_is_initialized = tbx_true;
+		marcel_init (&ma_pmarcel_argc, ma_pmarcel_argv);
+
+		marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
+	}
+}
+
+#endif
+
+
 #endif  /*_MARCEL_PTHREAD_H*/

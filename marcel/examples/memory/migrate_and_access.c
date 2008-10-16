@@ -17,7 +17,6 @@
 #include <sys/mman.h>
 #include <numaif.h>
 
-#define LOOPS 100000
 #define SIZE  100000
 
 int *buffer;
@@ -25,8 +24,9 @@ marcel_memory_manager_t memory_manager;
 
 any_t t_migrate(any_t arg) {
   int i;
-  
-  for(i=0 ; i<LOOPS ; i++) {
+  int *loops = (int *) arg;
+
+  for(i=0 ; i<*loops ; i++) {
     if (i%2 == 0) {
       marcel_memory_migrate_pages(&memory_manager, buffer, 1);
     }
@@ -40,9 +40,10 @@ any_t t_migrate(any_t arg) {
 
 any_t t_access(any_t arg) {
   int i;
+  int *loops = (int *) arg;
   int res=0;
 
-  for(i=0 ; i<LOOPS ; i++) {
+  for(i=0 ; i<*loops ; i++) {
     if (i%2 == 0) {
       res += buffer[i];
     }
@@ -56,16 +57,21 @@ any_t t_access(any_t arg) {
 
 int marcel_main(int argc, char * argv[]) {
   marcel_t threads[2];
+  int loops=1000;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager, 1000);
+
+  if (argc == 2) {
+    loops = atoi(argv[1]);
+  }
 
   // Allocate the buffer
   buffer = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int));
 
   // Start the threads
-  marcel_create(&threads[0], NULL, t_migrate, NULL);
-  marcel_create(&threads[1], NULL, t_access, NULL);
+  marcel_create(&threads[0], NULL, t_migrate, (any_t) &loops);
+  marcel_create(&threads[1], NULL, t_access, (any_t) &loops);
 
   // Wait for the threads to complete
   marcel_join(threads[0], NULL);

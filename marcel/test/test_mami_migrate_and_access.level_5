@@ -18,7 +18,7 @@
 flavor="test_marcel_mami"
 appdir="${PM2_ROOT}/marcel/examples/memory"
 prog="migrate_and_access"
-args=""
+args="100000"
 hosts="localhost"
 check_all_lines=1
 

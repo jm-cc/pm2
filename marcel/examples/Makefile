@@ -66,7 +66,6 @@ barrier-3-cflags := -I$(PM2_ROOT)/marcel/include/pthread
 barrier-4-cflags := -I$(PM2_ROOT)/marcel/include/pthread
 
 simple-cpp-ldflags := -lstdc++
-simple-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 
 hello: CC=g++
 

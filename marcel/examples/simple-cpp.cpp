@@ -14,21 +14,28 @@
  * General Public License for more details.
  */
 
-#include <pthread.h>
+/* Make sure that C++ programs can be compiled when using Marcel.  */
+
 #include <marcel.h>
+
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 
-void *f(void *foo) {
+static void *f(void *foo) {
 	return NULL;
 }
 
 int main(int argc, char *argv[]) {
-	pthread_t t;
+	int err;
+	marcel_t t;
+
 	marcel_init(&argc, argv);
-	pthread_create(&t,NULL,f,NULL);
+	err = marcel_create(&t,NULL,f,NULL);
+	MA_BUG_ON(err != 0);
 	marcel_end();
+
 	return 0;
 }

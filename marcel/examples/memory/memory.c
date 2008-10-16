@@ -17,6 +17,7 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
+//#define PRINT
 #define PAGES 2
 marcel_memory_manager_t memory_manager;
 
@@ -32,9 +33,16 @@ any_t memory(any_t arg) {
   buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.pagesize);
 
   marcel_memory_locate(&memory_manager, &(buffer[0]), &node);
-  printf("[%d] Address %p is located on node %d\n", marcel_self()->id, &(buffer[0]), node);
+  if (node == marcel_self()->id) {
+    marcel_printf("[%d] Address is located on the correct node %d\n", marcel_self()->id, node);
+  }
+  else {
+    marcel_printf("[%d] Address is NOT located on the correct node %d\n", marcel_self()->id, node);
+  }
 
+#ifdef PRINT
   marcel_memory_print(&memory_manager);
+#endif /* PRINT */
 
   marcel_memory_free(&memory_manager, c);
   marcel_memory_free(&memory_manager, b);
@@ -97,14 +105,14 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager, 1000);
   marcel_attr_init(&attr);
 
-  // Start the 1st thread on the first VP
+  // Start the 1st thread on the node #0
   marcel_attr_setid(&attr, 0);
-  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[0]);
+  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
   marcel_create(&threads[0], &attr, memory, NULL);
 
-  // Start the 2nd thread on the last VP
+  // Start the 2nd thread on the node #1
   marcel_attr_setid(&attr, 1);
-  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
+  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
   marcel_create(&threads[1], &attr, memory, NULL);
 
   // Wait for the threads to complete

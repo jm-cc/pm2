@@ -1,0 +1,17 @@
+
+PROGS := pukabi-mini
+
+
+all: $(PROGS)
+
+pukabi-mini.o: pukabi-mini.c
+
+include $(PM2_ROOT)/make/apps.mak
+
+
+LIBDIR   := $(shell pm2-config --libdir puk)
+PRELOAD  := $(LIBDIR)/libPukABI.so
+TESTPROG := $(shell pm2-which pukabi-mini)
+
+run:
+	env LD_LIBRARY_PATH=$(LIBDIR) LD_PRELOAD=$(PRELOAD) $(TESTPROG)

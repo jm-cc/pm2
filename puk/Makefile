@@ -24,13 +24,20 @@ PADICO_ROOT    := $(PUK_ROOT)
 
 CONFIG_FILES   := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
+PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a
+
+PUK_ENABLE_PUKABI := $(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
+ifeq ($(PUK_ENABLE_PUKABI),yes)
+  PUK_LIBS += $(PADICO_ROOT)/lib/PukABI/libPukABI.so
+endif
+
 
 # ## front-end rules
 # ##
 
 
 libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
-	@/bin/cp $(PADICO_ROOT)/lib/libPadicoPuk.a $(PM2_BUILD_DIR)/lib/
+	@/bin/cp $(PUK_LIBS) $(PM2_BUILD_DIR)/lib/
 
 link:
 

@@ -56,12 +56,11 @@ int marcel_main(int argc, char * argv[]) {
   // Start the thread on the numa node #1
   marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
   marcel_create(&threads[1], &attr, reader, NULL);
+  marcel_join(threads[1], NULL);
 
   // Start the thread on the numa node #2
   marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
   marcel_create(&threads[2], &attr, reader, NULL);
-
-  marcel_join(threads[1], NULL);
   marcel_join(threads[2], NULL);
 
   // Finish marcel

@@ -237,9 +237,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       // Free memory
       ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node);
 
-      // Delete corresponding tree
-//      tfree(data->pageaddrs);
-//      tfree(data);
+      // Delete tree
       ma_memory_delete_tree(memory_manager, memory_tree);
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
@@ -389,14 +387,11 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
 }
 
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb, size_t size) {
-  int numanode;
   void *ptr;
 
   LOG_IN();
 
-  numanode = marcel_current_node();
-  if (tbx_unlikely(numanode == -1)) numanode=0;
-  ptr = marcel_memory_allocate_on_node(memory_manager, nmemb*size, numanode);
+  ptr = marcel_memory_malloc(memory_manager, nmemb*size);
 
   LOG_OUT();
   return ptr;
@@ -444,7 +439,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
   for(i=0; i<pages; i++) {
     if (pagenodes[i] != node) {
-      printf("  page #%d is not located on node #%d\n", i, node);
+      marcel_printf("  page #%d is not located on node #%d\n", i, node);
       exit(-1);
     }
   }

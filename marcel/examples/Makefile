@@ -58,7 +58,12 @@ tsp-ldflags := -lm
 
 balance-ldflags := -lm
 
+# The `barrier' tests use `pmarcel', so they need to see Marcel's
+# <pthread.h>, not the system's <pthread.h>
 barrier-1-cflags := -I$(PM2_ROOT)/marcel/include/pthread
+barrier-2-cflags := -I$(PM2_ROOT)/marcel/include/pthread
+barrier-3-cflags := -I$(PM2_ROOT)/marcel/include/pthread
+barrier-4-cflags := -I$(PM2_ROOT)/marcel/include/pthread
 
 simple-cpp-ldflags := -lstdc++
 simple-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread

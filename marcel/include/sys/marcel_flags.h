@@ -162,10 +162,5 @@
 #  define MA__HAS_SUBSECTION
 #endif
 
-#if defined(LINUX_SYS) || defined(GNU_SYS)
-/* XXX: Should really be "#ifdef __GLIBC__".  */
-#  define MA__HAS_GNU_MALLOC_HOOKS
-#endif
-
 #endif /* MARCEL_FLAGS_EST_DEF */
 

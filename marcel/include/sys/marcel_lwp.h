@@ -92,13 +92,6 @@ struct marcel_lwp {
 	int need_resched;
 #  endif
 #endif
-
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-	/* Indicate whether this LWP is currently executing one of libc's
-		 `malloc'-related functions.  This allows Marcel to make sure the LWP is
-		 not preempted while invoking one of these functions.  */
-	int in_libc_malloc;
-#endif
 };
 
 #ifdef MA__LWPS

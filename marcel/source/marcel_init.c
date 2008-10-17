@@ -27,179 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-# include <malloc.h>
-#endif
-
 tbx_flag_t marcel_activity = tbx_flag_clear;
-
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-
-/* Malloc hooks.  */
-
-static void * (* previous_malloc_hook) (size_t, const void *);
-static void * (* previous_realloc_hook) (void *, size_t, const void *);
-static void (* previous_free_hook) (void *, const void *);
-static void * (* previous_memalign_hook) (size_t, size_t, const void *);
-
-static void *ma_malloc_hook(size_t size, const void *caller);
-static void *ma_realloc_hook(void *ptr, size_t size, const void *caller);
-static void  ma_free_hook(void *ptr, const void *caller);
-static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller);
-
-/* Mutex to synchronize accesses to glibc's malloc hooks.  */
-static marcel_mutex_t malloc_hook_mutex = MARCEL_MUTEX_INITIALIZER;
-
-
-/* Install the `malloc' hooks that were current before Marcel was
-	 initialized.  */
-#define INSTALL_INITIAL_MALLOC_HOOKS()					\
-  do {																					\
-		__malloc_hook = previous_malloc_hook;				\
-		__realloc_hook = previous_realloc_hook;			\
-		__free_hook = previous_free_hook;						\
-		__memalign_hook = previous_memalign_hook;		\
-	} while (0)
-
-/* Install Marcel's own `malloc' hooks.  */
-#define INSTALL_MARCEL_MALLOC_HOOKS()						\
-  do {																					\
-		__malloc_hook = ma_malloc_hook;							\
-		__realloc_hook = ma_realloc_hook;						\
-		__free_hook = ma_free_hook;									\
-		__memalign_hook = ma_memalign_hook;					\
-	} while (0)
-
-/* Make sure the current LWP is not executing one of libc's `malloc'-related
-	 functions.  The goal is to make sure LWPs are not preempted while
-	 executing such functions.  */
-#define ASSERT_LWP_NOT_IN_LIBC_MALLOC()												\
-  do {																												\
-		if (__ma_get_lwp_var(in_libc_malloc))											\
-			abort();																								\
-		/* MA_BUG_ON(!marcel_thread_is_preemption_disabled()); */	\
-	} while (0)
-
-
-/* Enter a non-preemptible "malloc section" within a glibc malloc
-	 hook.  */
-static __tbx_inline__ void
-enter_malloc_section(void)
-{
-	marcel_mutex_lock(&malloc_hook_mutex);
-	INSTALL_INITIAL_MALLOC_HOOKS();
-
-	ASSERT_LWP_NOT_IN_LIBC_MALLOC();
-	__ma_get_lwp_var(in_libc_malloc)++;
-}
-
-/* Leave a non-preemptible "malloc section" within a glibc malloc
-	 hook.  */
-static __tbx_inline__ void
-leave_malloc_section(void)
-{
-	__ma_get_lwp_var(in_libc_malloc)--;
-
-	INSTALL_MARCEL_MALLOC_HOOKS();
-	marcel_mutex_unlock(&malloc_hook_mutex);
-}
-
-
-static void *ma_malloc_hook(size_t size, const void *caller)
-{
-	void *result;
-
-	enter_malloc_section();
-
-	if (__malloc_hook != NULL) {
-		MA_BUG_ON(__malloc_hook == ma_malloc_hook);
-		result = __malloc_hook(size, caller);
-	}
-	else
-		result = malloc(size);
-
-	leave_malloc_section();
-
-	return result;
-}
-
-static void *ma_realloc_hook(void *ptr, size_t size, const void *caller)
-{
-	void *result;
-
-	enter_malloc_section();
-
-	if (__realloc_hook != NULL) {
-		MA_BUG_ON(__realloc_hook == ma_realloc_hook);
-		result = __realloc_hook(ptr, size, caller);
-	}
-	else
-		result = realloc(ptr, size);
-
-	leave_malloc_section();
-
-	return result;
-}
-
-static void ma_free_hook(void *ptr, const void *caller)
-{
-	enter_malloc_section();
-
-	if (__free_hook != NULL) {
-		MA_BUG_ON(__free_hook == ma_free_hook);
-		__free_hook(ptr, caller);
-	}
-	else
-		free(ptr);
-
-	leave_malloc_section();
-}
-
-static void *ma_memalign_hook(size_t alignment, size_t size, const void *caller)
-{
-	void *result;
-
-	enter_malloc_section();
-
-	if (__memalign_hook != NULL) {
-		MA_BUG_ON(__memalign_hook == ma_memalign_hook);
-		result = __memalign_hook(alignment, size, caller);
-	}
-	else
-		result = memalign(alignment, size);
-
-	leave_malloc_section();
-
-	return result;
-}
-
-#endif
-
-/* Initialize Marcel's `malloc' debugging tools.  */
-static void marcel_malloc_debug_init(void)
-{
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-	/* Use glibc's malloc hooks to protect uses of `malloc ()',
-		 `free ()' and friends so they are not preempted.  This is
-		 required as glibc's low-level locks, which are used in these
-		 functions are oblivious to Marcel threads and don't play well
-		 with them.  */
-	previous_malloc_hook = __malloc_hook;
-	previous_realloc_hook = __realloc_hook;
-	previous_free_hook = __free_hook;
-	previous_memalign_hook = __memalign_hook;
-
-	INSTALL_MARCEL_MALLOC_HOOKS ();
-#endif
-}
-
-/* Reinstall the initial `malloc' hooks.  */
-static void marcel_malloc_debug_finish(void)
-{
-#ifdef MA__HAS_GNU_MALLOC_HOOKS
-	INSTALL_INITIAL_MALLOC_HOOKS ();
-#endif
-}
 
 
 
@@ -509,8 +337,6 @@ void marcel_init_data(int *argc, char *argv[])
 	// Initialize debug facilities
 	marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
-	marcel_malloc_debug_init();
-
 	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
@@ -541,7 +367,6 @@ void marcel_purge_cmdline(int *argc, char *argv[])
 void marcel_finish_prepare(void)
 {
 	marcel_gensched_shutdown();
-	marcel_malloc_debug_finish();
 }
 
 void marcel_finish(void)

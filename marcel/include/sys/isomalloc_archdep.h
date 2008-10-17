@@ -27,7 +27,7 @@
 /* Warning: ASM_THREAD_SLOT_SIZE must be a power of two, and be at least twice
  * as much as PTHREAD_STACK_MIN, must be usable in assembly source */
 
-#if MARCEL_THREAD_SLOT_SIZE
+#ifdef MARCEL_THREAD_SLOT_SIZE
   #define ASM_THREAD_SLOT_SIZE MARCEL_THREAD_SLOT_SIZE
 #else
 /* Note: for x86_64 with TLS or valgrind, we have to restrict to 32bit, thus

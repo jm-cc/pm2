@@ -26,25 +26,17 @@
 #include <nm_mad3_private.h>
 #endif
 
-/* Choose a scheduler
- */
 #include <tbx.h>
 #include <nm_public.h>
-#include <nm_so_public.h>
-#include "nm_so_pkt_wrap.h"
-
-
-/* Choose a driver
- */
-#include <nm_drivers.h>
+#include <nm_private.h>
 
 #define TAG0 128
 #define TAG1 129
 
-static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
+static int data_handler(struct nm_pkt_wrap *p_so_pw,
                         void *ptr,
                         void *header, uint32_t len,
-                        uint8_t proto_id, uint8_t seq,
+                        nm_tag_t proto_id, uint8_t seq,
                         uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   printf("Data header : data = %p [%s], len = %u, tag = %d, seq = %u, chunk_offset = %u, is_last_chunk = %u\n", ptr, (char *)ptr, len, proto_id, seq, chunk_offset, is_last_chunk);
@@ -52,9 +44,9 @@ static int data_handler(struct nm_so_pkt_wrap *p_so_pw,
   return NM_SO_HEADER_MARK_UNREAD;
 }
 
-static int rdv_handler(struct nm_so_pkt_wrap *p_so_pw,
+static int rdv_handler(struct nm_pkt_wrap *p_so_pw,
                        void *rdv,
-                       uint8_t tag_id, uint8_t seq,
+                       nm_tag_t tag_id, uint8_t seq,
                        uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   printf("Rdv header : tag = %d, seq = %u, len = %u, chunk_offset = %u, is_last_chunk = %u\n",
@@ -67,12 +59,12 @@ int
 main(int	  argc,
      char	**argv)
 {
-  struct nm_core *p_core = NULL;
+  nm_core_t p_core = NULL;
   int err;
   tbx_tick_t t1, t2;
   int k;
 
-  err = nm_core_init(&argc, argv, &p_core, nm_so_load);
+  err = nm_core_init(&argc, argv, &p_core);
   if (err != NM_ESUCCESS) {
     printf("nm_core_init returned err = %d\n", err);
     goto out;
@@ -80,7 +72,7 @@ main(int	  argc,
 
   for(k = 0; k < 5; k++)
   {
-    struct nm_so_pkt_wrap *p_so_pw;
+    struct nm_pkt_wrap *p_so_pw;
     NM_SO_ALIGN_TYPE buf[NM_SO_PREALLOC_BUF_LEN / sizeof(NM_SO_ALIGN_TYPE)];
     struct iovec *vec;
     void *ptr;
@@ -116,21 +108,21 @@ main(int	  argc,
 
     TBX_GET_TICK(t2);
 
-    printf("Total length = %llu\n", p_so_pw->pw.length);
-    for(i=0; i<p_so_pw->pw.v_nb; i++)
+    printf("Total length = %llu\n", p_so_pw->length);
+    for(i=0; i<p_so_pw->v_nb; i++)
       printf("iovec[%d] contains %d bytes (@ = %p)\n",
-	     i, p_so_pw->pw.v[i].iov_len, p_so_pw->pw.v[i].iov_base);
+	     i, p_so_pw->v[i].iov_len, p_so_pw->v[i].iov_base);
 
-    printf("Iteration sur le wrapper d'emission :\n");
+    printf("Iterating on sender-side wrapper:\n");
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
 				  NULL, NULL);
 
 
-    vec = p_so_pw->pw.v;
+    vec = p_so_pw->v;
     ptr = buf;
-    for(i=0; i<p_so_pw->pw.v_nb; i++) {
+    for(i=0; i<p_so_pw->v_nb; i++) {
       memcpy(ptr, vec->iov_base, vec->iov_len);
       ptr += vec->iov_len;
       vec++;
@@ -153,7 +145,7 @@ main(int	  argc,
       goto out;
     }
 
-    printf("Iteration sur le wrapper de reception :\n");
+    printf("Iterating on receiver-side wrapper:\n");
     nm_so_pw_iterate_over_headers(p_so_pw,
 				  data_handler,
 				  rdv_handler,
@@ -164,7 +156,7 @@ main(int	  argc,
   }
 
 
-  printf("time = %lf\n", TBX_TIMING_DELAY(t1, t2));
+  printf("time = %lf usec.\n", TBX_TIMING_DELAY(t1, t2));
 
  out:
         return err;

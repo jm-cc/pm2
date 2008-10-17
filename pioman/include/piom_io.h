@@ -1,4 +1,4 @@
-
+/* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -14,6 +14,9 @@
  * General Public License for more details.
  */
 
+#ifndef PIOM_IO_H
+#define PIOM_IO_H
+
 #include <unistd.h>
 #include <sys/time.h>
 #ifdef __MINGW32__
@@ -28,7 +31,7 @@ int piom_read(int fildes, void *buf, size_t nbytes);
 int piom_write(int fildes, const void *buf, size_t nbytes);
 
 int piom_select(int nfds, fd_set * __restrict rfds,
-		 fd_set * __restrict wfds);
+		fd_set * __restrict wfds);
 
 #ifndef __MINGW32__
 int piom_readv(int fildes, const struct iovec *iov, int iovcnt);
@@ -50,3 +53,5 @@ int piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 
 void piom_io_init(void);
 void piom_io_stop(void);
+
+#endif /* PIOM_IO_H */

@@ -1,4 +1,4 @@
-
+/* -*- Mode: C; c-basic-offset:4 ; -*- */
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -13,6 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
+#ifndef PIOM_DEBUG_H
+#define PIOM_DEBUG_H
+
 #include <sys/types.h>
 #include <signal.h>
 
@@ -25,7 +28,7 @@
 #define PIOM_STACK_ERROR "PIOM_STACK_ERROR: Stack Overflow"
 #define PIOM_TIME_OUT "TIME OUT while being blocked on a semaphor"
 #define PIOM_NOT_IMPLEMENTED "PIOM_NOT_IMPLEMENTED (sorry)"
-#define PIOM_USE_ERROR "PIOM_USE_ERROR: XPaulette was not compiled to enable this functionality"
+#define PIOM_USE_ERROR "PIOM_USE_ERROR: PIOMan was not compiled to enable this functionality"
 #define PIOM_CALLBACK_ERROR "PIOM_CALLBACK_ERROR: no callback defined"
 #define PIOM_LWP_ERROR "PIOM_LWP_ERROR: no lwp available"
 
@@ -34,19 +37,21 @@
 #define PIOM_WARN_ON(cond) (void) (0)
 #else
 
-#define PIOM_BUG_ON(cond) \
-  do { \
-       if (cond) { \
-         fprintf(stderr,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-         *(int*)0=0;\
-       } \
-  } while (0)
-#define PIOM_WARN_ON(cond) \
-  do { \
-	if (cond) { \
-		fprintf(stderr,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
-	} \
-  } while (0)
+#define PIOM_BUG_ON(cond)						         \
+    do {								         \
+	if (cond) {							         \
+	    fprintf(stderr,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
+	    *(int*)0=0;							         \
+	}								         \
+    } while (0)
 
-#endif
+#define PIOM_WARN_ON(cond)						          \
+    do {								          \
+	if (cond) {							          \
+	    fprintf(stderr,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
+	}								          \
+    } while (0)
 
+#endif /* PM2_OPT */
+
+#endif /* PIOM_DEBUG_H */

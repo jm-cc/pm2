@@ -51,39 +51,24 @@
 #ifndef NM_CORE_H
 #define NM_CORE_H
 
-#include "nm_public.h"
-#include "nm_gate.h"
-#include "nm_drv.h"
-
-struct nm_sched;
-
 /** Core NewMadeleine structure.
  */
-struct nm_core {
+struct nm_core
+{
+  /** Number of gates. */
+  int nb_gates;
 
-        /** Number of gates.
-         */
-        nm_gate_id_t             nb_gates;
+  /** Array of gates. */
+  struct nm_gate gate_array[NUMBER_OF_GATES];
 
-        /** Array of gates.
-         */
-        struct nm_gate		 gate_array[NUMBER_OF_GATES];
+  /** Number of drivers. */
+  uint8_t nb_drivers;
 
-        /** Number of drivers.
-         */
-        uint8_t			 nb_drivers;
+  /** Array of drivers. */
+  struct nm_drv driver_array[NM_DRV_MAX];
 
-        /** Array of drivers.
-         */
-        struct nm_drv	 	 driver_array[NUMBER_OF_DRIVERS];
-
-        /** Compiled-in scheduler.
-         */
-        struct nm_sched 	*p_sched;
-#ifdef PIOMAN
-	struct piom_server       server;
-	struct piom_req          req;
-#endif
+  /** SchedOpt scheduler */
+  struct nm_so_sched so_sched;
 
 };
 

@@ -18,50 +18,39 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <pm2_common.h>
-
 #include "nm_private.h"
-#include "nm_public.h"
-#include "nm_core.h"
-#include "nm_log.h"
-#include "nm_errno.h"
 
 /** Main function of the core scheduler loop.
  *
  * This is the heart of NewMadeleine...
  */
-int
-nm_schedule(struct nm_core *p_core) {
+int nm_schedule(struct nm_core *p_core)
+{
 #ifdef PIOMAN
-	return 0;
+  return 0;
 #else
-        int err;
-        int g;
-
-        /* send
-         */
-        for (g = 0; g < p_core->nb_gates; g++) {
-                err = nm_sched_out_gate(p_core->gate_array + g);
-
-                if (err < 0) {
-                        NM_DISPF("nm_sched_out_gate(%d) returned %d",
-                             g, err);
-                }
-        }
-
-        /* receive
-         */
-        err	= nm_sched_in(p_core);
-
-        if (err < 0) {
-                NM_DISPF("nm_sched_in_gate(%d) returned %d",
-                     g, err);
-        }
-
-
-        NM_TRACEF("\n");
-        err = NM_ESUCCESS;
-
-        return err;
+  int err;
+  
+  /* send
+   */
+  err = nm_sched_out(p_core);
+    
+  if (err < 0) {
+    NM_DISPF("nm_sched_out returned %d", err);
+  }
+  
+  /* receive
+   */
+  err = nm_sched_in(p_core);
+  
+  if (err < 0) {
+    NM_DISPF("nm_sched_in returned %d", err);
+  }
+  
+  
+  NM_TRACEF("\n");
+  err = NM_ESUCCESS;
+  
+  return err;
 #endif
 }

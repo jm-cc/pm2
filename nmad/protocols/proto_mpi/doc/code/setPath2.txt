@@ -1,1 +1,0 @@
-% export PATH=${PM2_ROOT}/nmad/protocols/proto_mpi/scripts:${PATH}

@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE TEXT SYSTEM "file:./xml2html/data/xml/DOCUMENT.dtd">
+
+<TEXT>
+
+<SUBSECTION TITLE="Getting Access to the Source Code">
+
+<P>
+<MACRO NAME="madmpi"/> files are hosted by the project PM2 on the
+InriaGforge at <URL>https://gforge.inria.fr/projects/pm2/</URL>.
+
+The source code is managed by a <TT>Subversion</TT> server hosted by
+the InriaGforge. To get the source code, you need:
+</P>
+
+<OL>
+<LI>
+<P>
+To install the client side of the software <TT>Subversion</TT> if it
+is not already available on your system. The software can be obtained
+from <URL>http://subversion.tigris.org/</URL>.
+</P>
+</LI>
+
+<LI>
+<P>
+To become a member of the project <TT>pm2</TT>. For this, you first
+need to get an account to the gForge server. You can then become a
+member of the project by contacting one of the project administrators.
+The list of the project administrators is available from the main
+project page.
+</P>
+<P>
+You can also choose to check out the project's SVN repository through
+anonymous access. In this case, you do not need to become a member,
+and you will have limited access to the repository.
+</P>
+</LI>
+</OL>
+
+<P>
+More information on how to get a gForge account, to become a member of
+the specified project, or on any other related task can be obtained
+from the InriaGforge at <URL>https://gforge.inria.fr/</URL>. The most
+important thing is to upload your public SSH key on the gForge server
+(see the FAQ at
+<URL>http://siteadmin.gforge.inria.fr/FAQ.html#Q6</URL> for
+instructions).
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Required Development Tools" LABEL="sec:tools">
+
+<P>
+The following development tools are required to compile <MACRO
+NAME="madmpi"/>:
+</P>
+
+<UL>
+<LI>
+<P>
+GNU C Compiler <TT>gcc</TT> (version <TT>3.2</TT> and higher).
+</P>
+</LI>
+
+<LI>
+<P>
+GNU <TT>make</TT> (version <TT>3.81</TT> and higher).
+</P>
+</LI>
+
+<LI>
+<P>
+GNU Bison (<URL>http://www.gnu.org/software/bison/</URL>) and Flex (<URL>http://www.gnu.org/software/flex/</URL>).
+</P>
+</LI>
+</UL>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Prerequisites">
+
+<P>
+To use Myrinet and Quadrics, you must get the appropriate drivers.
+<MACRO NAME="madmpi"/> supports Myrinet networks through the MX driver
+and Quadrics networks through the ELAN driver.
+</P>
+
+<IGNORE>
+<P>
+The default installation directories for these drivers are:
+</P>
+
+<UL>
+<LI> <TT>/opt/mx</TT> for Myrinet/MX; </LI>
+<LI> <TT>/opt/DIS</TT> for SCI/SISCI. </LI>
+</UL>
+
+<P>
+In case, your installation differs from these directories, you will
+need to set the following environment variables to point to your own
+installation directories:
+</P>
+</IGNORE>
+
+<CODE FILE="./code/setDrivers.txt"/>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Installing PM2">
+
+<P>
+Here are the required steps to install PM2.
+</P>
+
+<OL>
+<LI>
+<P>
+Choose an installation directory for PM2, and set the environment
+variable <TT>PM2_ROOT</TT> to this directory.
+</P>
+<CODE FILE="./code/setenvPm2.txt"/>
+</LI>
+
+<LI>
+<P>
+Go in the parent directory of the directory <TT>PM2_ROOT</TT> and
+check out the latest version from the <TT>Subversion</TT> server
+</P>
+  <UL>
+  <LI>
+  <P>
+  using the anonymous access.
+  </P>
+  <CODE FILE="./code/svnPm2anon.txt"/>
+  </LI>
+  <LI>
+  <P>
+  or using your gForge account.
+  </P>
+  <CODE FILE="./code/svnPm2.txt"/>
+  </LI>
+  </UL>
+
+<P>
+You should end up with a directory named <TT>pm2</TT>.
+</P>
+</LI>
+
+<LI>
+<P>
+You need to add to your <TT>PATH</TT> the directory <TT>pm2/bin</TT>.
+</P>
+
+<CODE FILE="./code/setPath.txt"/>
+</LI>
+
+<LI>
+<P>
+PM2 is installed.
+</P>
+</LI>
+</OL>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Installing Mad-MPI" LABEL="installMadMpi">
+
+<P>
+Here are the required steps to install <MACRO NAME="madmpi"/>.
+</P>
+
+<OL>
+<LI>
+<P>
+Create the PM2 flavor tuned for <MACRO NAME="madmpi"/>.
+</P>
+<CODE FILE="./code/createFlavor.txt"/>
+<P>
+By default, the only network protocol selected is TCP. To enable more
+protocols, see Section <REF LABEL="networkProtocols"/>.
+</P>
+</LI>
+
+<LI>
+<P>
+Compile <MACRO NAME="madmpi"/>.
+</P>
+<CODE FILE="./code/compileMadMpi.txt"/>
+</LI>
+
+<LI>
+<P>
+You need to provide a network configuration file, located in
+<LATEX>\begin{quote}</LATEX>
+<TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>
+<LATEX>\end{quote}</LATEX>
+This file is
+mandatory but users can select another location by defining the
+appropriate environment variable (see Section <REF
+LABEL="advanced"/>). When loading a <MACRO NAME="madmpi"/>
+application, the network configuration file is read to determine which
+network links to use between the different machines involved in the
+execution. The sample file
+<LATEX>\begin{quote}</LATEX>
+<TT>$PM2_ROOT/leonie/examples/networks.cfg</TT>
+<LATEX>\end{quote}</LATEX>
+can be used as a model
+to describe your network configuration.
+</P>
+</LI>
+
+<LI> 
+<P>
+Users should add to their <TT>PATH</TT> the element
+<TT>nmad/interfaces/mpi/scripts/</TT> in order to easily access the
+commands <TT>mpicc</TT> and <TT>mpirun</TT>.
+</P>
+<CODE FILE="./code/setPath2.txt"/>
+</LI>
+</OL>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Network Protocols" LABEL="networkProtocols">
+
+<P>
+<B>
+This section can be ignored if you plan to use the TCP protocol
+only.
+</B>
+</P>
+
+<P>
+By default, the flavor for Mad-MPI only enables the TCP network
+protocol. To enable more protocols such as MX or Quadrics, you need
+to modify the flavor. This can be done easily by starting the tool
+<TT>ezflavor</TT>. 
+</P>
+
+<CODE FILE="./code/ezflavor.txt"/>
+
+<P>
+Once the graphical interface <TT>ezflavor</TT> is started, click on
+drop-down menu in the <TT>Flavors</TT> panel, select the flavor
+<TT>nmad-mpi</TT> and click on the <TT>Load</TT> button in the same
+panel.
+</P>
+
+<P>
+The flavor is now loaded and can be modified. You can see in the
+right-hand side panel <TT>Modules</TT> all the modules involved in
+the implementation of Mad-MPI as well as all the options selected for
+these modules.
+</P>
+
+<P>
+In the <TT>Modules</TT> panel, select the <TT>nmad</TT> tab, the
+options for this module will show up in the underneath panel. By using
+the scrollbar on the right-hand side of this panel, you can scroll
+down to the section showing the network protocols. Select the ones
+which are available to you.
+</P>
+
+<P>
+Click on the <TT>Save</TT> button in the <TT>Flavors</TT> panel to
+record your modifications. You can now quit <TT>ezflavor</TT> by
+pressing <TT>Ctrl-Q</TT>, or by selecting in the toolbar menu,
+<TT>Flavor</TT>, and <TT>Quit</TT>.
+</P>
+
+</SUBSECTION>
+
+<SUBSECTION TITLE="Summary of Environment Variables" LABEL="variables">
+
+<P>
+Here the list of environment variables you need to set (preferably in
+your login files such as <TT>$HOME/.bashrc</TT>) before being able to
+compile and execute <MACRO NAME="madmpi"/> applications.
+</P>
+
+<CODE FILE="./code/variables.txt"/>
+</SUBSECTION>
+
+</TEXT>
+

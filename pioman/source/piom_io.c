@@ -14,14 +14,14 @@
  * General Public License for more details.
  */
 
-/* TODO: utiliser poll au lieu de select (+ voir scalabilité) */
+/* TODO: use poll instead of select */
 
 #include "pioman.h"
 
 #ifdef MARCEL
 #include "marcel.h"
 #include "marcel_timer.h"
-#endif				// MARCEL
+#endif	/* MARCEL */
 
 #include "piom.h"
 #include <sys/time.h>
@@ -39,6 +39,9 @@
    }))
 #endif
 
+/* implementation-specific server structure
+ * contains a server + usefull variables (fd_sets, etc.)
+ */
 typedef struct piom_io_server {
 	struct piom_server server;
 	fd_set polling_rfds, polling_wfds;
@@ -67,10 +70,12 @@ typedef enum {
 #  define NFDS nfds
 #endif
 
+/* implementation-specific request */
 typedef struct piom_tcp_ev {
 	struct piom_req inst;
 	piom_poll_op_t op;
 	int ret_val;
+	/* file descriptor(s) to poll */
 	union {
 		int fd;
 		struct {
@@ -81,13 +86,14 @@ typedef struct piom_tcp_ev {
 	} MA_GCC_NAME;
 } *piom_tcp_ev_t;
 
+/* initialize the server */
 static struct piom_io_server piom_io_server = {
 	.server =
 	PIOM_SERVER_INIT(piom_io_server.server, "Unix TCP I/O"),
 };
 
 #ifdef MA__LWPS
-
+/* TODO: useless ? */
 //#define MAX_REQS 50
 typedef struct {
 	int n;
@@ -98,11 +104,15 @@ typedef struct {
 //	struct list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
 } requete;
 
-#endif
+#endif	/* MA__LWPS */
 
-static int piom_io_group(piom_server_t server,
-			  piom_op_t _op,
-			  piom_req_t req, int nb_ev, int option)
+/* Add a request to a group of requests
+ * Used to poll all the requests with *one* select/poll
+ */
+static int 
+piom_io_group(piom_server_t server,
+	      piom_op_t _op,
+	      piom_req_t req, int nb_ev, int option)
 {
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
@@ -151,10 +161,14 @@ static int piom_io_group(piom_server_t server,
 	return 0;
 }
 
+/* TODO: use PIOM_BLOCKING_CALLS instead */
 #ifdef MA__LWPS
-static int piom_io_syscall_group(piom_server_t server,
-			  piom_op_t _op,
-			  piom_req_t req, int nb_ev, int option)
+
+/* Add a request to a group of requests */
+static int 
+piom_io_syscall_group(piom_server_t server,
+		      piom_op_t _op,
+		      piom_req_t req, int nb_ev, int option)
 {
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
@@ -165,7 +179,7 @@ static int piom_io_syscall_group(piom_server_t server,
 	FD_ZERO(&uid->syscall_rfds);
 	FD_ZERO(&uid->syscall_wfds);
 	
-	/* vide la liste des requete groupees pour le polling */
+	/* empty the list of grouped requests for polling */
 	uid->polling_nb=0;
 
 	FOREACH_REQ_BLOCKING(ev, server, inst) {
@@ -209,10 +223,13 @@ static int piom_io_syscall_group(piom_server_t server,
 }
 #endif
 
-__tbx_inline__ static void piom_io_check_select(piom_io_serverid_t uid,
- 					 piom_tcp_ev_t ev,
-					 fd_set * __restrict rfds,
-					 fd_set * __restrict wfds)
+/* Determine which request of a fdset is successfull */
+__tbx_inline__ 
+static void 
+piom_io_check_select(piom_io_serverid_t uid,
+		     piom_tcp_ev_t ev,
+		     fd_set * __restrict rfds,
+		     fd_set * __restrict wfds)
 {
 	PIOM_LOGF("Checking select for IO poll (at least one success)\n");
 
@@ -277,11 +294,14 @@ __tbx_inline__ static void piom_io_check_select(piom_io_serverid_t uid,
 #ifdef MA__LWPS
 
 
-/* option : fd à surveiller (passage de commandes) */
-static int piom_io_block(piom_server_t server,
-			  piom_op_t _op,
-			  piom_req_t req, int nb_ev, int option)
-{				// a preciser
+/* Block until a request succeeds
+ * option contains a fd to watch (in order to add a fd to the fdset)
+ */
+static int 
+piom_io_block(piom_server_t server,
+	      piom_op_t _op,
+	      piom_req_t req, int nb_ev, int option)
+{
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
 	piom_tcp_ev_t ev;
@@ -299,7 +319,7 @@ static int piom_io_block(piom_server_t server,
 	tv.tv_usec = 0;
 	ptv = &tv;
 
-	/* Ajoute le descripteur du tube pour pouvoir etre interrompu par une autre commande */
+	/* Add the pipe's fd in order to be interruptible */
 	FD_SET(option, &uid->syscall_rfds);
 	if(option+1>uid->syscall_nb)
 		uid->syscall_nb=option+1;
@@ -357,11 +377,14 @@ static int piom_io_block(piom_server_t server,
 }
 
 
-/* option : fd à surveiller (passage de commandes) */
-static int piom_io_blockone(piom_server_t server,
-			  piom_op_t _op,
-			  piom_req_t req, int nb_ev, int option)
-{				// a preciser
+/* Block until req succeeds
+ * option contains a fd to watch (in order to add a fd to the fdset)
+ */
+static int 
+piom_io_blockone(piom_server_t server,
+		 piom_op_t _op,
+		 piom_req_t req, int nb_ev, int option)
+{
 
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
@@ -401,7 +424,7 @@ static int piom_io_blockone(piom_server_t server,
 		PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
 	}
 
-	/* Ajoute le descripteur du tube pour pouvoir etre interrompu par une autre commande */
+	/* Add the pipe's fd in order to be interruptible */
 	FD_SET(option, &rfds);
 	if(option + 1 > nb)
 		nb=option+1;
@@ -422,11 +445,13 @@ static int piom_io_blockone(piom_server_t server,
 	PROF_EVENT(piom_blockone_exit);
 	return 0;
 }
-#endif				// MA__LWPS
+#endif	/* MA__LWPS */
 
-static int piom_io_poll(piom_server_t server,
-			 piom_op_t _op,
-			 piom_req_t req, int nb_ev, int option)
+/* Poll a group of requests */
+static int 
+piom_io_poll(piom_server_t server,
+	     piom_op_t _op,
+	     piom_req_t req, int nb_ev, int option)
 {
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
@@ -438,7 +463,7 @@ static int piom_io_poll(piom_server_t server,
 #ifdef MARCEL
 	PIOM_LOGF("Polling function called on LWP %d\n",
 		marcel_current_vp());
-#endif				// MARCEL
+#endif	/* MARCEL */
 
 	timerclear(&tv);
 	tv.tv_sec = 0;
@@ -490,9 +515,11 @@ static int piom_io_poll(piom_server_t server,
 	return 0;
 }
 
-static int piom_io_fast_poll(piom_server_t server,
-			      piom_op_t _op,
-			      piom_req_t req, int nb_ev, int option)
+/* Poll one request */
+static int 
+piom_io_fast_poll(piom_server_t server,
+		  piom_op_t _op,
+		  piom_req_t req, int nb_ev, int option)
 {
 	piom_io_serverid_t uid =
 	    struct_up(server, struct piom_io_server, server);
@@ -505,7 +532,7 @@ static int piom_io_fast_poll(piom_server_t server,
 #ifdef MARCEL
 	PIOM_LOGF("Fast Polling function called on LWP %d\n",
 		marcel_current_vp());
-#endif				// MARCEL
+#endif	/* MARCEL */
 
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
@@ -550,7 +577,9 @@ static int piom_io_fast_poll(piom_server_t server,
 	return 0;
 }
 
-int piom_read(int fildes, void *buf, size_t nbytes)
+/* Function that reads a fd and uses PIOMan */
+int 
+piom_read(int fildes, void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_ev ev;
@@ -558,7 +587,7 @@ int piom_read(int fildes, void *buf, size_t nbytes)
 	LOG_IN();
 
 	PROF_EVENT(piom_read_entry);
-	/* Pour eviter de demander à un serveur qui n'est pas lancé */
+	/* If the server is not running, just perform a classical read */
 	if(piom_io_server.server.state==PIOM_SERVER_STATE_LAUNCHED)
 	{
 		
@@ -578,7 +607,8 @@ int piom_read(int fildes, void *buf, size_t nbytes)
 }
 
 #ifndef __MINGW32__
-int piom_readv(int fildes, const struct iovec *iov, int iovcnt)
+int 
+piom_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
@@ -593,7 +623,8 @@ int piom_readv(int fildes, const struct iovec *iov, int iovcnt)
 }
 #endif
 
-int piom_write(int fildes, const void *buf, size_t nbytes)
+int 
+piom_write(int fildes, const void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_ev ev;
@@ -624,7 +655,8 @@ int piom_write(int fildes, const void *buf, size_t nbytes)
 }
 
 #ifndef __MINGW32__
-int piom_writev(int fildes, const struct iovec *iov, int iovcnt)
+int 
+piom_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
@@ -638,7 +670,8 @@ int piom_writev(int fildes, const struct iovec *iov, int iovcnt)
 }
 #endif
 
-int piom_select(int nfds, fd_set * __restrict rfds,
+int 
+piom_select(int nfds, fd_set * __restrict rfds,
 		 fd_set * __restrict wfds)
 {
 	struct piom_tcp_ev ev;
@@ -661,7 +694,8 @@ int piom_select(int nfds, fd_set * __restrict rfds,
 }
 
 /* To force the reading/writing of an exact number of bytes */
-int piom_read_exactly(int fildes, void *buf, size_t nbytes)
+int 
+piom_read_exactly(int fildes, void *buf, size_t nbytes)
 {
 	size_t to_read = nbytes, n;
 
@@ -678,13 +712,15 @@ int piom_read_exactly(int fildes, void *buf, size_t nbytes)
 }
 
 #ifndef __MINGW32__
-int piom_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
+int 
+piom_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
 {
 	return piom_readv(fildes, iov, iovcnt);
 }
 #endif
 
-int piom_write_exactly(int fildes, const void *buf, size_t nbytes)
+int 
+piom_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
 	size_t to_write = nbytes, n;
 
@@ -701,7 +737,8 @@ int piom_write_exactly(int fildes, const void *buf, size_t nbytes)
 }
 
 #ifndef __MINGW32__
-int piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
+int 
+piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 {
 	return piom_writev(fildes, iov, iovcnt);
 }
@@ -749,6 +786,7 @@ int piom_tselect(int width, fd_set * __restrict readfds,
 	return res;
 }
 
+/* Initialize the server and specifies the callbacks */
 void piom_io_init(void)
 {
 	LOG_IN();
@@ -757,6 +795,7 @@ void piom_io_init(void)
 //	piom_server_start_lwp(&piom_io_server.server, 1);
 #endif /* MA__LWPS */
 	piom_io_server.server.stopable=1;
+	/* The server can be called on CPU idleness and timer interrupt */
 	piom_server_set_poll_settings(&piom_io_server.server,
 				       PIOM_POLL_AT_TIMER_SIG
 				       | PIOM_POLL_AT_IDLE, 1, -1);
@@ -779,7 +818,7 @@ void piom_io_init(void)
 				  (piom_pcallback_t) {
 				  .func = &piom_io_block,.speed =
 				  PIOM_CALLBACK_SLOWEST});
-#endif
+#endif	/* MA__LWPS */
 
 #ifndef MARCEL_DO_NOT_GROUP_TCP
 	piom_server_add_callback(&piom_io_server.server,
@@ -792,7 +831,7 @@ void piom_io_init(void)
 				  (piom_pcallback_t) {
 				  .func = &piom_io_poll,.speed =
 				  PIOM_CALLBACK_SLOWEST});
-#endif
+#endif	/* MARCEL_DO_NOT_GROUP_TCP */
 	piom_server_add_callback(&piom_io_server.server,
 				  PIOM_FUNCTYPE_POLL_POLLONE,
 				  (piom_pcallback_t) {
@@ -803,7 +842,8 @@ void piom_io_init(void)
 	LOG_OUT();
 }
 
-void piom_io_stop()
+void 
+piom_io_stop()
 {
 	piom_server_stop(&piom_io_server.server);
 }

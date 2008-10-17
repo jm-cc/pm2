@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include "mpi.h"
+#include <mpi.h>
 
 #define NB_LINES 10
 #define SMALL 64

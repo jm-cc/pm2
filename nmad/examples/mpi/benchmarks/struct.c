@@ -13,7 +13,8 @@
  * General Public License for more details.
  */
 
-#include "mpi.h"
+#include <stdlib.h>
+#include <mpi.h>
 #include "structType.h"
 
 int main(int argc, char *argv[]) {

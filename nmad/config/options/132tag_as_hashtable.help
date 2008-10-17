@@ -1,0 +1,2 @@
+Use Puk hashtables for tables indexed by tags.
+It brings a 32 bits sparse tag space, but adds an extra 100ns overhead on the critical path.

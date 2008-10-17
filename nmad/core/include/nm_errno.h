@@ -13,8 +13,8 @@
  * General Public License for more details.
  */
 
-#ifndef CORE_NM_ERRNO
-#define CORE_NM_ERRNO
+#ifndef NM_ERRNO_H
+#define NM_ERRNO_H
 
 /** Error codes.
  */
@@ -41,6 +41,7 @@ enum nm_errno {
                                          * unreachable		*/
         NM_ECANCELED		= 14,	/* operation canceled	*/
         NM_EABORTED		= 15,	/* operation aborted	*/
+	NM_EBUSY                = 16    /* gate/track is busy   */
 };
 
-#endif /* CORE_NM_ERRNO */
+#endif /* NM_ERRNO_H */

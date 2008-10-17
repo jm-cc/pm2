@@ -13,21 +13,6 @@
 
 export FLAVOR_DEFAULT:=nmad
 
-# copied from common-vars because we need FLAVOR early for computing NMAD_SCHED
-ifndef FLAVOR
-  ifdef PM2_FLAVOR
-    export FLAVOR:=$(PM2_FLAVOR)
-  else # PM2_FLAVOR
-    ifdef FLAVOR_DEFAULT
-      export FLAVOR:=$(FLAVOR_DEFAULT)
-    else # FLAVOR_DEFAULT
-      export FLAVOR:=default
-    endif # FLAVOR_DEFAULT
-  endif # PM2_FLAVOR
-endif # FLAVOR
-
-NMAD_SCHED := $(shell pm2-config --flavor=$(FLAVOR) --schedulers)
-
 MOD_SRC += $(PM2_ROOT)/nmad/sampling
 
 include $(PM2_ROOT)/make/apps.mak

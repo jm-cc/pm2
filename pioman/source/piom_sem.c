@@ -34,12 +34,12 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	LOG_IN();
-	/* set highest priority so that the thread 
-	   is scheduled (almost) immediatly when done */
 	if(cond->value & mask)
 		return ;
 	__piom_check_polling(PIOM_POLL_WHEN_FORCED);
 
+	/* set highest priority so that the thread 
+	   is scheduled (almost) immediatly when done */
 	struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
 	struct marcel_sched_param old_param;
 	marcel_sched_getparam(MARCEL_SELF, &old_param);
@@ -75,10 +75,10 @@ __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
 	cond->value&=mask;
 }
 
-#else
-/** Attention : on part du principe qu'il n'y a pas 
- *  Marcel donc pas d'autres threads.
- *  ces fonctions ne sont pas réentrantes.
+#else  /* MARCEL */
+
+/* Warning: we assume that Marcel is not running and there is no thread here
+ * these functions are not reentrant
  */
 __tbx_inline__ void piom_sem_P(piom_sem_t *sem){
 	(*sem)--;

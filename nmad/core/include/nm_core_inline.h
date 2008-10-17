@@ -16,373 +16,198 @@
 #ifndef NM_CORE_INLINE_H
 #define NM_CORE_INLINE_H
 
-#include "nm_pkt_wrap.h"
-#include "nm_core.h"
-#include "nm_sched.h"
-#include "nm_log.h"
 
-extern p_tbx_memory_t nm_core_pw_mem	;
-extern p_tbx_memory_t nm_core_iov1_mem	;
-extern p_tbx_memory_t nm_core_iov2_mem	;
+/* ** Receive functions ************************************ */
+/* ********************************************************* */
 
-
-/** Allocate a pkt wrapper struct.
+/** Places a packet in the receive requests list. 
+ * The actual post_recv operation will be done on next 
+ * nmad scheduling (immediately with vanilla PIOMan, 
+ * maybe later with PIO-offloading, on next nm_schedule()
+ * without PIOMan).
  */
-static
-__inline__
-int
-nm_pkt_wrap_alloc(struct nm_core	 *p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	**pp_pkt_wrap,
-                  uint8_t		  proto_id,
-                  uint8_t		  seq) {
-        struct nm_pkt_wrap	*p_pw	= NULL;
-        int			 err;
+static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
+					     nm_trk_id_t trk_id, int drv_id)
+{
+  p_pw->p_gate = p_gate;
 
-        p_pw	= tbx_malloc(nm_core_pw_mem);
-        if (!p_pw) {
-                err	= -NM_ENOMEM;
-                goto out;
-        }
+  /* Packet is assigned to given track */
+  p_pw->p_drv = (p_pw->p_gdrv =
+		 p_gate->p_gate_drv_array[drv_id])->p_drv;
+  p_pw->trk_id = trk_id;
 
-        memset(p_pw, 0, sizeof(struct nm_pkt_wrap));
-        p_pw->proto_id	= proto_id;
-        p_pw->seq	= seq;
+  /* append pkt to scheduler post list */
+  tbx_slist_append(p_gate->p_core->so_sched.post_recv_req, p_pw);
 
-        *pp_pkt_wrap	= p_pw;
+  p_gate->p_so_gate->active_recv[drv_id][trk_id] = 1;
+}
 
-        err = NM_ESUCCESS;
+static __tbx_inline__ int nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
+{
+  int err;
+  struct nm_pkt_wrap *p_so_pw;
 
+  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER |
+		       NM_SO_DATA_PREPARE_RECV,
+		       &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
+
+  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_SMALL, drv_id);
+
+  err = NM_ESUCCESS;
  out:
-        return err;
+  return err;
 }
 
-/** Free a pkt wrapper struct.
- */
-static
-__inline__
-int
-nm_pkt_wrap_free(struct nm_core		*p_core TBX_UNUSED,
-                 struct nm_pkt_wrap	*p_pw) {
-        int	err;
+static __tbx_inline__ int nm_so_refill_regular_recv(struct nm_gate *p_gate)
+{
+  int err = NM_ESUCCESS;
+  const int nb_drivers = p_gate->p_core->nb_drivers;
+  int drv;
 
-        tbx_free(nm_core_pw_mem, p_pw);
-        err = NM_ESUCCESS;
-
-        return err;
+  for(drv = 0; drv < nb_drivers; drv++)
+    if(!p_gate->p_so_gate->active_recv[drv][NM_TRK_SMALL])
+      {
+	err = nm_so_post_regular_recv(p_gate, drv);
+      }
+  
+  return err;
 }
 
-/** Allocate a custom-sized iovec. */
-static
-__inline__
-int
-nm_iov_alloc(struct nm_core	 	*p_core TBX_UNUSED,
-               struct nm_pkt_wrap	*p_pw,
-               uint32_t			 v_size) {
-        int	err;
 
-        assert(!p_pw->v);
-        assert(v_size);
+static __tbx_inline__ int nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
+						nm_tag_t tag, uint8_t seq,
+						void *data, uint32_t len)
+{
+  int err;
+  struct nm_pkt_wrap *p_so_pw = NULL;
 
-        switch (v_size) {
-        case 1:
-                p_pw->v	= tbx_malloc(nm_core_iov1_mem);
-                break;
-        case 2:
-                p_pw->v	= tbx_malloc(nm_core_iov2_mem);
-                break;
-        default:
-                p_pw->v	= TBX_MALLOC(v_size*sizeof(struct iovec));
-        }
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
+                                          data, len,
+                                          0, 0, NM_SO_DATA_DONT_USE_HEADER,
+                                          &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
 
-        if (!p_pw->v) {
-                err	= -NM_ENOMEM;
-                goto out;
-        }
+  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
 
-        memset(p_pw->v, 0, v_size*sizeof(struct iovec));
-
-        p_pw->v_size	= v_size;
-        p_pw->v_first	= 0;
-        p_pw->v_nb	= 0;
-
-        err = NM_ESUCCESS;
-
+  err = NM_ESUCCESS;
  out:
-        return	err;
+  return err;
 }
 
-/** Free a custom sized iovec.
- */
-static
-__inline__
-int
-nm_iov_free(struct nm_core	*p_core TBX_UNUSED,
-            struct nm_pkt_wrap	*p_pw) {
-        int	err;
+static __tbx_inline__ int nm_so_post_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src, struct nm_gate *p_gate,
+								   int drv_id, nm_tag_t tag, uint8_t seq,
+								   uint32_t len, struct DLOOP_Segment *segp)
+{
+  int err;
+  struct nm_pkt_wrap *p_so_pw = NULL;
+  void *data = NULL;
 
-        switch (p_pw->v_size) {
-        case 1:
-                tbx_free(nm_core_iov1_mem, p_pw->v);
-                break;
-        case 2:
-                tbx_free(nm_core_iov2_mem, p_pw->v);
-                break;
-        default:
-                TBX_FREE(p_pw->v);
-                break;
-        }
+  data = TBX_MALLOC(len);
 
-        p_pw->v		= NULL;
-        p_pw->v_size	=    0;
-        p_pw->v_first	=    0;
-        p_pw->v_nb	=    0;
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
+                                          data, len,
+                                          0, 0, NM_SO_DATA_DONT_USE_HEADER,
+                                          &p_so_pw);
+  if(err != NM_ESUCCESS)
+    goto out;
 
-        err = NM_ESUCCESS;
+  p_so_pw->segp = segp;
 
-        return	err;
-}
+  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
 
-/** Allocate iovec-corresponding entries for storing meta-data.
- */
-static
-__inline__
-int
-nm_iov_meta_alloc(struct nm_core	*p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	*p_pw) {
-        int	err;
+  if(is_any_src)
+    {
+      nm_so_any_src_get(&p_gate->p_so_gate->p_so_sched->any_src, tag-128)->status |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+    }
+  else
+    {
+      nm_so_tag_get(&p_gate->p_so_gate->tags, tag - 128)->status[seq] |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+    }
 
-        assert(p_pw->v);
-        assert(!p_pw->nm_v);
-
-        p_pw->nm_v	=
-                TBX_CALLOC(p_pw->v_size, sizeof(struct nm_iovec));
-
-        if (!p_pw->nm_v) {
-                err	= -NM_ENOMEM;
-                goto out;
-        }
-
-        err = NM_ESUCCESS;
-
+  err = NM_ESUCCESS;
  out:
-        return	err;
+  return err;
 }
 
-/** Free iovec meta-data.
- */
-static
-__inline__
-int
-nm_iov_meta_free(struct nm_core		*p_core TBX_UNUSED,
-                 struct nm_pkt_wrap	*p_pw) {
-        int	err;
+static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
+						       struct nm_pkt_wrap *p_so_pw)
+{
+  int err;
 
-        TBX_FREE(p_pw->nm_v);
+  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
 
-        p_pw->nm_v	= NULL;
-
-        err = NM_ESUCCESS;
-
-        return	err;
+  err = NM_ESUCCESS;
+  return err;
 }
 
-/** Append a buffer to the iovec.
- */
-static
-__inline__
-int
-nm_iov_append_buf(struct nm_core	*p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	*p_pw,
-                  void			*ptr,
-                  uint64_t		 len) {
-        uint32_t	o;
-        int	err;
+static __tbx_inline__ int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
+							nm_tag_t tag, uint8_t seq, void *data,
+							int nb_drv, nm_drv_id_t *drv_ids, uint32_t *chunk_lens)
+{
+  uint32_t offset = 0;
+  int i;
 
-        o = p_pw->v_first+p_pw->v_nb;
-
-        assert(p_pw->v_size);
-        assert(p_pw->v);
-        assert(o < p_pw->v_size);
-
-        p_pw->v[o].iov_base	= ptr;
-        p_pw->v[o].iov_len	= len;
-
-        p_pw->v_nb++;
-        p_pw->length += len;
-
-        err = NM_ESUCCESS;
-
-        return	err;
+  for(i = 0; i < nb_drv; i++){
+    nm_so_post_large_recv(p_gate, drv_ids[i], tag, seq, data + offset, chunk_lens[i]);
+    offset += chunk_lens[i];
+  }
+  return NM_ESUCCESS;
 }
 
-/** Prepend a buffer to the iovec.
- */
-static
-__inline__
-int
-nm_iov_prepend_buf(struct nm_core	*p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	*p_pw,
-                  void			*ptr,
-                  uint64_t		 len) {
-        uint32_t	o;
-        int	err;
+static __tbx_inline__ int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
+						      struct nm_pkt_wrap *p_so_pw,
+						      int nb_drv, nm_drv_id_t *drv_ids, uint32_t *chunk_lens)
+{
+  struct nm_pkt_wrap *p_so_pw2 = NULL;
+  int i;
 
-        assert(p_pw->v_size);
-        assert(p_pw->v);
-        assert(p_pw->v_first);
+  for(i = 0; i < nb_drv; i++){
+    nm_so_pw_split(p_so_pw, &p_so_pw2, chunk_lens[i]);
 
-        p_pw->v_first--;
-        o = p_pw->v_first;
+    nm_so_direct_post_large_recv(p_gate, drv_ids[i], p_so_pw);
 
-        p_pw->v[o].iov_base	= ptr;
-        p_pw->v[o].iov_len	= len;
+    p_so_pw = p_so_pw2;
+  }
+  return NM_ESUCCESS;
 
-        p_pw->v_nb++;
-        p_pw->length += len;
-
-        err = NM_ESUCCESS;
-
-        return	err;
 }
 
-/** Append an already existing iovec to another iovec.
+
+
+
+/* ** Sending functions ************************************ */
+/* ********************************************************* */
+
+/** Places a packet in the send request list.
+ * The actual post_send operation will be done on next
+ * nmad scheduling (immediately with vanilla PIOMan, 
+ * maybe later with PIO-offloading, on next nm_schedule()
+ * without PIOMan).
  */
-static
-__inline__
-int
-nm_iov_append_iov(struct nm_core	*p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	*p_pw,
-                  struct iovec		*iov,
-                  struct nm_iovec	*nm_iov,
-                  uint32_t		 iov_size,
-                  uint64_t		 iov_len) {
-        uint32_t	o;
-        int	err;
+static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
+					     struct nm_pkt_wrap *p_pw,
+					     nm_trk_id_t trk_id, nm_drv_id_t drv_id)
+{
+  struct nm_core*p_core = p_gate->p_core;
 
-        o = p_pw->v_first+p_pw->v_nb;
+  NM_SO_TRACE_LEVEL(3, "Packet posted on track %d\n", trk_id);
 
-        assert(p_pw->v_size);
-        assert(p_pw->v);
-        assert(o + iov_size <= p_pw->v_size);
+  FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate->id, p_pw, drv_id, trk_id );
 
-        memcpy(p_pw->v + o, iov, iov_size*sizeof(struct iovec));
+  /* Packet is assigned to given track, driver, and gate */
+  p_pw->p_drv = (p_pw->p_gdrv = p_gate->p_gate_drv_array[drv_id])->p_drv;
+  p_pw->trk_id = trk_id;
+  p_pw->p_gate = p_gate;
 
-        if (nm_iov) {
-                assert(p_pw->nm_v);
-                memcpy(p_pw->nm_v + o, nm_iov,
-                       iov_size*sizeof(struct nm_iovec));
-        }
+  /* append pkt to scheduler post list */
+  //#warning vérifier le nb max de requetes concurrentes autorisées!!!!(dans nm_trk_cap.h -> max_pending_send_request)
 
-        p_pw->length	+= iov_len;
-        p_pw->v_nb	+= iov_size;
+  tbx_slist_append(p_core->so_sched.post_sched_out_list, p_pw);
 
-        err = NM_ESUCCESS;
-
-        return	err;
-}
-
-/** Prepend an already existing iovec to another iovec.
- */
-static
-__inline__
-int
-nm_iov_prepend_iov(struct nm_core	*p_core TBX_UNUSED,
-                  struct nm_pkt_wrap	*p_pw,
-                  void			*iov,
-                  struct nm_iovec	*nm_iov,
-                  uint32_t		 iov_size,
-                  uint64_t		 iov_len) {
-        uint32_t	o;
-        int	err;
-
-        assert(p_pw->v_size);
-        assert(p_pw->v);
-        assert(iov_size <= p_pw->v_first);
-
-        p_pw->v_first -= iov_size;
-        o = p_pw->v_first;
-
-        memcpy(p_pw->v + o, iov, iov_size*sizeof(struct iovec));
-
-        if (nm_iov) {
-                assert(p_pw->nm_v);
-                memcpy(p_pw->nm_v + o, nm_iov,
-                       iov_size*sizeof(struct nm_iovec));
-        }
-
-        p_pw->length	+= iov_len;
-        p_pw->v_nb	+= iov_size;
-
-        err = NM_ESUCCESS;
-
-        return	err;
-}
-
-/** Prepare a pre-filled pkt_wrap struct.
-   - gate_id == -1 means 'any gate'
- */
-static
-__inline__
-int
-__nm_core_wrap_buffer	(struct nm_core		 *p_core,
-                         nm_gate_id_t  		  gate_id,
-                         uint8_t		  proto_id,
-                         uint8_t		  seq,
-                         void			 *buf,
-                         uint64_t		  len,
-                         struct nm_pkt_wrap	**pp_pw) {
-        struct nm_pkt_wrap	*p_pw	= NULL;
-        struct nm_gate		*p_gate	= NULL;
-        int err;
-
-        /* check gate_id range
-           -1 is for 'any gate'
-         */
-        if (gate_id < NM_ANY_GATE || gate_id >= p_core->nb_gates) {
-                err	= -NM_EINVAL;
-                goto out;
-        }
-
-        if (gate_id >= 0) {
-                p_gate	= p_core->gate_array + gate_id;
-                if (!p_gate) {
-                        err	= -NM_EINVAL;
-                        goto out;
-                }
-        }
-
-        /* allocate packet wrapper
-         */
-        err	= nm_pkt_wrap_alloc(p_core, &p_pw, proto_id, seq);
-        if (err != NM_ESUCCESS)
-                goto out;
-
-        /* allocate iov
-         */
-        err	= nm_iov_alloc(p_core, p_pw, 1);
-        if (err != NM_ESUCCESS) {
-                nm_pkt_wrap_free(p_core, p_pw);
-                goto out;
-        }
-
-        /* append buffer to iovec
-         */
-        err	= nm_iov_append_buf(p_core, p_pw, buf, len);
-        if (err != NM_ESUCCESS) {
-                NM_DISPF("nm_iov_append_buf returned %d", err);
-        }
-
-        /* initialize other fields
-         */
-        p_pw->p_gate	= p_gate;
-
-        /* done
-         */
-        *pp_pw	= p_pw;
-        err = NM_ESUCCESS;
-
- out:
-        return err;
+  p_gate->p_so_gate->active_send[drv_id][trk_id]++;
 }
 
 

@@ -32,31 +32,31 @@ compile_leonie()
 
 # Creation de la flavor
 if [ "${ext}" == "pioman" ] ; then
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
-	--modules=\"puk nmad tbx ntbx init pioman marcel\" \
-	--init=\"debug gdb\" \
-	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu\" \
-	--ntbx=\"debug gdb\" \
-	--tbx=\"debug gdb\" \
-	--puk=\"disable_output\" \
-	--marcel=\"debug mono standard_main\" \
-	--common=\"debug gdb fortran_target_none\" \
-	--all=\"build_static\"
+    modules="puk nmad tbx ntbx init pioman marcel"
+    options="--marcel=debug --marcel=mono --marcel=standard_main"
 else
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
-	--modules=\"puk nmad tbx ntbx init \" \
-	--init=\"debug gdb\" \
-	--nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu\" \
-	--ntbx=\"debug gdb\" \
-	--tbx=\"debug gdb\" \
-	--puk=\"disable_output\" \
-	--common=\"debug gdb fortran_target_none\" \
-	--all=\"build_static\"
+    modules="puk nmad tbx ntbx init"
 fi
+tag="tag_as_flat_array"
+if [ "$mpi" == "mpi_emu" ] ; then
+    tag="tag_as_hashtable"
+fi
+
+eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+    --ext=\"\" \
+    --modules=\"$modules\" \
+    --init=\"debug gdb\" \
+    --nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu $tag\" \
+    --ntbx=\"debug gdb\" \
+    --tbx=\"debug gdb\" \
+    --puk=\"disable_output\" \
+    $options \
+    --common=\"debug gdb fortran_target_none\" \
+    --all=\"build_static\"
+
 nmad-driver-conf -f --${net}
 nmad-strategy-conf -f --strategy=${strat}
+
 # should compare all the lines of the output and not only the number
 # of lines present in the expected output file
 check_all_lines=1

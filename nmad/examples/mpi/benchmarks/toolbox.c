@@ -14,7 +14,7 @@
  */
 
 #include "toolbox.h"
-#include "mpi.h"
+#include <mpi.h>
 
 int checkArguments(int argc, char **argv, int startPos, int *use_hindex, int *short_message, int *minSize, int *maxSize, int *stride, int *blocks, int *size, char *tests) {
   int i=startPos;

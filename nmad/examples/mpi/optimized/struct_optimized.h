@@ -24,7 +24,7 @@ typedef struct {
   float z;
 } particle_t;
 
-void pingpong_datatype_struct(nm_so_pack_interface interface,
+void pingpong_datatype_struct(nm_core_t            p_core,
                               nm_gate_id_t         gate_id,
                               int                  number_of_elements,
                               int                  client);
@@ -32,12 +32,12 @@ void pingpong_datatype_struct(nm_so_pack_interface interface,
 void init_datatype_struct(struct MPIR_DATATYPE *datatype,
                           int                   number_of_elements);
 
-void pack_datatype_struct(nm_so_pack_interface  interface,
+void pack_datatype_struct(nm_core_t             p_core,
                           nm_gate_id_t          gate_id,
                           struct MPIR_DATATYPE *datatype,
                           particle_t           *s_ptr);
 
-void unpack_datatype_struct(nm_so_pack_interface interface,
+void unpack_datatype_struct(nm_core_t            p_core,
                             nm_gate_id_t         gate_id,
                             particle_t          *r_ptr);
 

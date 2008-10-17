@@ -23,12 +23,8 @@
 #include <unistd.h>
 #include <math.h>
 
-#include <tbx.h>
-
 #include <nm_public.h>
-#include <nm_so_public.h>
-
-#include <nm_so_pack_interface.h>
+#include <nm_pack_interface.h>
 
 #define MIN_SIZE   4
 #define MAX_SIZE   1024 * 1024 * 4
@@ -39,15 +35,7 @@
 #define RWAIT
 //#define NO_RWAIT
 
-#if defined(CONFIG_MULTI_RAIL)
-#  define STRATEGY "multi_rail"
-#elif defined(CONFIG_STRAT_DEFAULT)
-#  define STRATEGY "strat_default"
-#elif defined(CONFIG_STRAT_AGGREG)
-#  define STRATEGY "strat_aggreg"
-#else
-#  define STRATEGY "strat_default"
-#endif
+#define STRATEGY "strat_custom"
 
 //#define PRINTF(...) { printf(__VA_ARGS__) ; }
 #define PRINTF(...) { }
@@ -58,7 +46,7 @@
 #define DEBUG_OPTIMIZED(...) { fprintf(stderr,__VA_ARGS__) ; }
 #undef LOOPS
 #define LOOPS 1
-#undef MAX_SIZE 
+#undef MAX_SIZE
 #define MAX_SIZE 16
 #else /* ! DEBUG */
 #define DEBUG_OPTIMIZED(...) { }

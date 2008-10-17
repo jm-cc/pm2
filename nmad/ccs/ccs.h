@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 /* CCS API */
 
@@ -21,7 +22,7 @@ typedef unsigned CCS_node_t;
 
 typedef unsigned long long CCS_atomic_type_t;
 
-typedef CCS_aint_t CCS_datadesc_t;
+typedef intptr_t CCS_datadesc_t;
 
 #define CCS_DATA_NULL   ((CCS_datadesc_t)0x000)
 #define CCS_DATA8       ((CCS_datadesc_t)0x001)

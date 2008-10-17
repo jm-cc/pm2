@@ -44,7 +44,6 @@ Directories pm2-libs was configured to
 Other options
   --ext         : extension used
   --protocols   : communication libraries used
-  --schedulers  : communication scheduler used
   --launcher    : launcher used
   --modules     : modules included in the flavor
   --profmods    : modules which have the 'profile' functionality enabled
@@ -356,10 +355,6 @@ pm2_config_set_vars()
     _PM2_CONFIG_PROTOCOLS="$PM2_PROTOCOLS"
     export _PM2_CONFIG_PROTOCOLS
 
-    # Communication schedulers
-    _PM2_CONFIG_SCHEDULERS="$PM2_NMAD_SCHED"
-    export _PM2_CONFIG_SCHEDULERS
-
     # Launcher
     _PM2_CONFIG_LAUNCHER="$PM2_NMAD_LAUNCHER"
     export _PM2_CONFIG_LAUNCHER
@@ -544,7 +539,7 @@ pm2_config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--schedulers|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path)
+    --ext|--protocols|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path)
 	_other=$1
 	;;
      --getvar=*)
@@ -620,10 +615,6 @@ pm2_config_parse_cmdline() # args
 	    --protocols)
                 # TODO : trouver une façon plus joli de faire la meme chose...
 		echo $_PM2_CONFIG_PROTOCOLS |sed 's/ /\n/g' |gawk -F mad- '{print $2}' |tr '\012' ' '; echo
-		exit 0
-		;;
-            --schedulers)
-	        echo $_PM2_CONFIG_SCHEDULERS
 		exit 0
 		;;
             --launcher)

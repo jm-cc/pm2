@@ -36,3 +36,4 @@ TODO NewMad
 
 * info VP mask par gate
 
+* remonter info taille effectivement reçue dans nm_sr_recv_success

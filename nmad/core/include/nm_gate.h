@@ -16,118 +16,49 @@
 #ifndef NM_GATE_H
 #define NM_GATE_H
 
-#include "nm_drv.h"
-#include "nm_public.h"
 
 struct nm_drv;
-struct nm_trk;
 struct nm_core;
 struct nm_sched;
 struct nm_gate_drv;
 struct nm_pkt_wrap;
-struct nm_gate_trk;
 
-/** Per track gate related data.
- */
-struct nm_gate_trk {
-
-        /** Track.
-         */
-        struct nm_trk 		*p_trk;
-
-        /** Related gate driver.
-         */
-        struct nm_gate_drv	*p_gdrv;
-
-        /** Preallocated outgoing request.
-         */
-        struct nm_pkt_wrap	*p_out_rq;
-
-        /** Reference to current incoming request, or NULL.
-         */
-        struct nm_pkt_wrap		*p_in_rq;
-};
 
 /** Per driver gate related data. */
 struct nm_gate_drv {
 
-        /** Driver.
-         */
-        struct nm_drv           *p_drv;
-        struct puk_receptacle_NewMad_Driver_s receptacle;
-        puk_instance_t instance;
-
-        /** Array of gate track struct.
-         */
-        struct nm_gate_trk	**p_gate_trk_array;
-
-        /** Cumulated number of pending out requests on this driver for
-           this gate.
-         */
-        uint16_t		   out_req_nb;
+  /** Driver.
+   */
+  struct nm_drv           *p_drv;
+  struct puk_receptacle_NewMad_Driver_s receptacle;
+  puk_instance_t instance;
+  
+  /** Array of reference to current incoming requests, (indexed by trk_id).
+   */
+  struct nm_pkt_wrap	**p_in_rq_array;
+  
+  /** Cumulated number of pending out requests on this driver for
+      this gate.
+  */
+  uint16_t		   out_req_nb;
 };
 
 /** Connexion to another process.
  */
 struct nm_gate {
 
-        /** NM core object.
-         */
-        struct nm_core		 *p_core;
-
-         /** Gate id.
-          */
-        uint8_t			  id;
-
-
-        /*
-         * implementation dependent fields *
-         */
-
-        /** Scheduler managing this gate.
-         */
-        struct nm_sched *p_sched;
-
-        /** Scheduler private field.
-         */
-        void *sch_private;
-
-
-        /*
-         * connectivity structures *
-         */
-
-        /** Gate data for each driver.
-         */
-        struct nm_gate_drv	 *p_gate_drv_array[NUMBER_OF_DRIVERS];
-
-        /* packet scheduling structures					*/
-
-
-
-        /*
-         * outgoing *
-         */
-
-        /** Post-scheduler outgoing packet wrap lists.
-           - list filled by the implementation-dependent scheduling code
-	*/
-        p_tbx_slist_t post_sched_out_list;
-
-
-        /** Outgoing active requests.
-         */
-        struct nm_pkt_wrap *out_req_list[256];
-
-        /** number of outgoing active rq */
-        uint16_t out_req_nb;
-
-
-        /*
-         * incoming *
-         */
-
-        /* nothing for now */
+  /** NM core object. */
+  struct nm_core		 *p_core;
+  
+  /** Gate id. */
+  uint8_t			  id;
+  
+  /** SchedOpt fields. */
+  struct nm_so_gate*p_so_gate;
+  
+  /** Gate data for each driver. */
+  struct nm_gate_drv*p_gate_drv_array[NM_DRV_MAX];
+ 
 };
 
 #endif /* NM_GATE_H */

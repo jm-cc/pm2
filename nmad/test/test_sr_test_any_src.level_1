@@ -21,7 +21,7 @@ strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}_${strat}"
 
-appdir="${PM2_ROOT}/nmad/examples/sched_opt"
+appdir="${PM2_ROOT}/nmad/examples/sendrecv"
 prog="sr_test_any_src"
 args="--x --p --l"
 
@@ -29,7 +29,7 @@ rm -f /tmp/pm2test_"${USER}"_expected
 (cat <<EOF
 Got msg 1!
 Got msg 2!
-Got correct msg 3 from gate 0
+Got correct msg 3 from peer #1
 Got correct msg 4
 EOF
 ) > /tmp/pm2test_"${USER}"_expected

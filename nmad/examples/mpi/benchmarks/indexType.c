@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "mpi.h"
+#include <mpi.h>
 #include "toolbox.h"
 #include "indexType.h"
 #include <stdio.h>

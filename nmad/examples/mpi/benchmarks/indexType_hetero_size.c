@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "mpi.h"
+#include <mpi.h>
 #include "toolbox.h"
 
 #define NB_TESTS 100

@@ -1,0 +1,2 @@
+Provide: nmad_tag_container
+Conflict: nmad_tag_container

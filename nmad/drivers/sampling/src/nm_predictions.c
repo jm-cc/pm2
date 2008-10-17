@@ -19,13 +19,8 @@
 #include <sys/uio.h>
 #include <math.h>
 
-#include "pm2_common.h"
-#include "nm_drv.h"
-#include "nm_drv_cap.h"
-#include "nm_core.h"
-#include "nm_pkt_wrap.h"
+#include <nm_private.h>
 #include "nm_predictions.h"
-#include "nm_errno.h"
 
 #define LAT_IDX 2
 
@@ -36,8 +31,8 @@
 //#define STRAT_ISO_SPLIT
 //#define STRAT_HCW_SPLIT
 
-static uint8_t *ordered_drv_id_by_lat;
-static uint8_t *ordered_drv_id_by_bw;
+static nm_drv_id_t *ordered_drv_id_by_lat;
+static nm_drv_id_t *ordered_drv_id_by_bw;
 #ifdef SAMPLING
 static double *drv_bws;
 static double *drv_lats;
@@ -46,9 +41,9 @@ static double *drv_lats;
 #ifdef SAMPLING
 static int compare_lat(const void *drv1, const void *drv2){
 
-  if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] > 0)
+  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] > 0)
     return -1;
-  if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] < 0)
+  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] < 0)
     return 1;
   return 0;
 }
@@ -77,9 +72,9 @@ static int order_lat(int nb_drivers){
 #ifdef SAMPLING
 static int compare_bw(const void *drv1, const void *drv2){
 
-  if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] > 0)
+  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] > 0)
     return 1;
-  if(drv_lats[*(uint8_t *)drv2] - drv_lats[*(uint8_t *)drv1] < 0)
+  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] < 0)
     return -1;
   return 0;
 }
@@ -148,10 +143,10 @@ nm_ns_init(struct nm_core *p_core){
 #endif
 
   /* 2 - ordonner les bw et les lats */
-  ordered_drv_id_by_bw  = TBX_MALLOC(nb_drivers * sizeof(uint8_t));
+  ordered_drv_id_by_bw  = TBX_MALLOC(nb_drivers * sizeof(nm_drv_id_t));
   order_bw(nb_drivers);
 
-  ordered_drv_id_by_lat = TBX_MALLOC(nb_drivers * sizeof(uint8_t));
+  ordered_drv_id_by_lat = TBX_MALLOC(nb_drivers * sizeof(nm_drv_id_t));
   order_lat(nb_drivers);
 
 
@@ -206,7 +201,7 @@ nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw){
 
 int
 nm_ns_dec_bws(struct nm_core *p_core,
-             uint8_t **drv_ids){
+	      nm_drv_id_t **drv_ids){
   *drv_ids = ordered_drv_id_by_bw;
 
   return NM_ESUCCESS;
@@ -214,7 +209,7 @@ nm_ns_dec_bws(struct nm_core *p_core,
 
 int
 nm_ns_inc_lats(struct nm_core *p_core,
-               uint8_t **drv_ids){
+               nm_drv_id_t **drv_ids){
   *drv_ids = ordered_drv_id_by_lat;
 
   return NM_ESUCCESS;
@@ -222,7 +217,7 @@ nm_ns_inc_lats(struct nm_core *p_core,
 
 int
 nm_ns_split_ratio(uint32_t len_to_send,
-                  struct nm_core *p_core, int drv1_id, int drv2_id,
+                  struct nm_core *p_core, nm_drv_id_t drv1_id, nm_drv_id_t drv2_id,
                   uint32_t *offset){
 
 #ifdef STRAT_ISO_SPLIT
@@ -259,7 +254,7 @@ nm_ns_split_ratio(uint32_t len_to_send,
 int
 nm_ns_multiple_split_ratio(uint32_t len_to_send,
                            struct nm_core *p_core,
-                           int nb_drv, uint8_t *drv_ids,
+                           int nb_drv, nm_drv_id_t *drv_ids,
                            uint32_t *chunk_lens,
                            int *final_nb_drv){
 

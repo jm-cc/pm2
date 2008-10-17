@@ -22,7 +22,7 @@
 //#include <fcntl.h>
 //#include <execinfo.h>
 
-#include "mpi.h"
+#include <mpi.h>
 
 #define NB_PACKS 4
 #define MIN     (NB_PACKS * 4)

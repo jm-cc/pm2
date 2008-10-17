@@ -20,7 +20,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "mpi.h"
+#include <mpi.h>
 
 #define CHUNK_SIZE_MIN 128
 #define CHUNK_SIZE_MAX 1024

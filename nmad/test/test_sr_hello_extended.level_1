@@ -21,7 +21,7 @@ strat="strat_aggreg_extended"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}_${strat}"
 
-appdir="${PM2_ROOT}/nmad/examples/sched_opt"
+appdir="${PM2_ROOT}/nmad/examples/sendrecv"
 prog="sr_hello_extended"
 args="--x --p --l"
 

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "mpi.h"
+#include <mpi.h>
 
 void hello(int ncpu, int nthread, int procid, int threadid) {
   char processor_name[MPI_MAX_PROCESSOR_NAME];

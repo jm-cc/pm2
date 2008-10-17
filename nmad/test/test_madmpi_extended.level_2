@@ -30,8 +30,8 @@ rm -f /tmp/pm2test_"${USER}"_expected
 nb_hosts=$(echo $hosts | wc -w)
 (
 for f in $(seq 1 2 $nb_hosts) ; do
-    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
-    echo "nm_so_sr_isend_extended, The current strategy does not provide a extended pack"
+    echo "nm_so_pack_extended, The current strategy does not provide an extended pack"
+    echo "nm_so_pack_extended, The current strategy does not provide an extended pack"
 done
 for f in $(seq 1 2 $nb_hosts) ; do
     echo "The answer to life, the universe, and everything is 42"

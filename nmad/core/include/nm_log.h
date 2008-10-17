@@ -61,6 +61,18 @@
 #define NM_TRACE_STR(str, str2) (void)(0)
 #endif
 
+extern debug_type_t debug_nm_so_trace;
+
+#define NM_SO_TRACE(fmt, args...) \
+    debug_printf(&debug_nm_so_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
+
+#define NM_SO_TRACE_LEVEL(level, fmt, args...) \
+    debug_printfl(&debug_nm_so_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
+
+
+void nm_so_debug_init(int* argc, char** argv, int debug_flags);
+
+
 /* Profiling/post-portem analysis
  */
 #ifdef PROFILE

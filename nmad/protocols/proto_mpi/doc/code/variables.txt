@@ -1,8 +1,0 @@
-## Directory where PM2 is installed
-export PM2_ROOT=$HOME/soft/pm2
-
-## Access to the PM2 commands
-export PATH=${PM2_ROOT}/bin:${PATH}
-
-## Access to the Mad-MPI commands
-export PATH=${PM2_ROOT}/nmad/protocols/proto_mpi/scripts:${PATH}

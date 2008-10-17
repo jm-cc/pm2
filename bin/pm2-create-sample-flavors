@@ -131,31 +131,25 @@ registering_flavors() {
     register_flavor nmad \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_custom --nmad=tcp
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS \
 	--puk=disable_output \
         --marcel=mono --marcel=standard_main \
-	--nmad=sched_opt --nmad=strat_custom --nmad=tcp
-
-    register_flavor nmad-basic \
-	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
-	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_default --nmad=proto_basic --nmad=tcp \
-        --common=fortran_target_none
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-mpi \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --marcel=smp --marcel=standard_main \
         --common=fortran_target_none
@@ -163,20 +157,20 @@ registering_flavors() {
     register_flavor nmad-distrib \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
+        --nmad=tag_as_hashtable --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-qos \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
+        --nmad=tag_as_hashtable --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --nmad=quality_of_service \
         --common=fortran_target_none
 
     register_flavor nmad-open-mx \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS \
 	--puk=disable_output \
-	--nmad=sched_opt --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
+        --nmad=tag_as_flat_array --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
 
     register_flavor ezflavor \
 	--modules="ezflavor" $COMMON_OPTIONS \

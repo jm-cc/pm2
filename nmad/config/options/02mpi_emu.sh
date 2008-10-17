@@ -1,11 +1,11 @@
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -DCONFIG_PROTO_MPI -DMAD_MPI"
-PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/protocols/proto_mpi/include"
+PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/mpi/include"
 
 if [ "$PM2_COMMON_FORTRAN_TARGET" != "none" ] ; then
-    PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/protocols/proto_mpi/include/f90base"
+    PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/mpi/include/f90base"
 fi
 
-PM2_NMAD_PROTO="$PM2_NMAD_PROTO proto_mpi"
+PM2_NMAD_INTERFACES="$PM2_NMAD_INTERFACES mpi"
 
 PM2_NMAD_LAUNCHER="leonie"
 

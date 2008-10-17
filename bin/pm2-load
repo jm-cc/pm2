@@ -433,12 +433,12 @@ if [ $sampling_activated -eq 1 ] ; then
     for protocol in $protocols
       do
 
-      sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}_samplings.nm_ns"
+      sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}.nm_ns"
       if [ ! -f $sampling_file ] ; then
 	  log "Launching of sampling.sh"
 	  (cd ${PM2_ROOT}/nmad/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
       else
-	  log "${protocol}_${arch}_samplings.nm_ns already exists"
+	  log "${protocol}_${arch}.nm_ns already exists"
       fi
     done
 fi

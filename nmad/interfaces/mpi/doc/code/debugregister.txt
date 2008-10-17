@@ -1,0 +1,39 @@
+% mpirun -machinefile mac -np 2 cpi --debug:register
+##### bolero.labri.fr
+##### bolero.labri.fr
+register debug name: register [default] (show=5) /* Here! */
+register debug name: mpi_nmad_log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: default [default] (show=2) /* Here! */
+register debug name: log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nmad-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: tbx-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: ntbx-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nmad-trace [trace] (show=DEFAULT (2)) /* Here! */
+register debug name: ntbx-trace [trace] (show=DEFAULT (2)) /* Here! */
+register debug name: register [default] (show=5) /* Here! */
+register debug name: mpi_nmad_log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: default [default] (show=2) /* Here! */
+register debug name: log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nmad-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: tbx-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: ntbx-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nmad-trace [trace] (show=DEFAULT (2)) /* Here! */
+register debug name: ntbx-trace [trace] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_sr_log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_sr_log [default] (show=DEFAULT (2)) /* Here! */
+register debug name: mpi_nmad_trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: mpi_nmad_transfer [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_so_trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_sr_trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: mpi_nmad_trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: mpi_nmad_transfer [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_sr_trace [default] (show=DEFAULT (2)) /* Here! */
+register debug name: nm_so_trace [default] (show=DEFAULT (2)) /* Here! */
+pi is approximately 3.1415926544231318, Error is 0.0000000008333387
+wall clock time = 0.003131
+register debug name: init-log [log] (show=DEFAULT (2)) /* Here! */
+register debug name: init-log [log] (show=DEFAULT (2)) /* Here! */
+% 
+

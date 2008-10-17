@@ -123,7 +123,7 @@ do_the_test()
         # expected output file
         head_command="head -$nbl"
     fi
-    grep -v '^####' $file_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
+    grep -v '^#' $file_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
     if diff -u $file_expected $file_filtered ; then
 	echo "Test ok!"
     else

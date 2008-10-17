@@ -21,10 +21,10 @@ struct nm_core;
 extern int nm_ns_init(struct nm_core *p_core);
 extern int nm_ns_exit(struct nm_core *p_core);
 
-extern int nm_ns_dec_bws(struct nm_core *p_core, uint8_t **drv_ids);
-extern int nm_ns_inc_lats(struct nm_core *p_core, uint8_t **drv_ids);
+extern int nm_ns_dec_bws(struct nm_core *p_core, nm_drv_id_t **drv_ids);
+extern int nm_ns_inc_lats(struct nm_core *p_core, nm_drv_id_t **drv_ids);
 
-extern int nm_ns_split_ratio(uint32_t len_to_send, struct nm_core *p_core, int drv1_id, int drv2_id, uint32_t *offset);
-extern int nm_ns_multiple_split_ratio(uint32_t len_to_send, struct nm_core *p_core, int nb_drv, uint8_t *drv_ids, uint32_t *chunk_lens, int *final_nb_drv);
+extern int nm_ns_split_ratio(uint32_t len_to_send, struct nm_core *p_core, nm_drv_id_t drv1_id, nm_drv_id_t drv2_id, uint32_t *offset);
+extern int nm_ns_multiple_split_ratio(uint32_t len_to_send, struct nm_core *p_core, int nb_drv, nm_drv_id_t *drv_ids, uint32_t *chunk_lens, int *final_nb_drv);
 
 #endif

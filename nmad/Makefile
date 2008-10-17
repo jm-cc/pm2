@@ -18,26 +18,25 @@ LIBDOC=newmadeleine
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-MOD_SRC := $(PM2_ROOT)/nmad/core/src
 include $(PM2_ROOT)/make/libs-vars.mak
 
-# Inclusion du cache specifique a madeleine
-#---------------------------------------------------------------------
-ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/nmad-specific.mak
-endif
 
-# Gestion du scheduler : prise en compte de fichiers sources supplémentaires
-#---------------------------------------------------------------------
-MOD_SRC += $(foreach SCHED, $(NMAD_SCHEDULERS), $(PM2_ROOT)/nmad/schedulers/$(SCHED)/src)
+# NewMad core
+# ----------------------------------------------------------
+MOD_SRC += $(PM2_ROOT)/nmad/core/src
 
-# Gestion des drivers : prise en compte des fichiers sources supplémentaires
-#---------------------------------------------------------------------
-MOD_SRC += $(foreach PROT, $(NMAD_PROTOCOLS), $(PM2_ROOT)/nmad/drivers/$(PROT)/src)
+# Drivers
+#-----------------------------------------------------------
+MOD_SRC += $(foreach DRV, $(NMAD_DRIVERS), $(PM2_ROOT)/nmad/drivers/$(DRV) )
 
-# Emulation mad3 : prise en compte des fichiers sources supplémentaires
+# Strategies
+#-----------------------------------------------------------
+MOD_SRC += $(foreach STRAT, $(NMAD_STRATEGIES), $(PM2_ROOT)/nmad/strategies/strat_$(STRAT))
+
+# Interfaces
 #---------------------------------------------------------------------
-MOD_SRC += $(foreach PROT, $(NMAD_PROTO), $(PM2_ROOT)/nmad/protocols/$(PROT)/src)
+MOD_SRC += $(foreach INTERFACE, $(NMAD_INTERFACES), $(PM2_ROOT)/nmad/interfaces/$(INTERFACE)/src)
+
 
 # Datatype de MPICH
 #---------------------------------------------------------------------
@@ -51,10 +50,3 @@ MOD_SRC += $(PM2_ROOT)/nmad/drivers/sampling/src
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak
 
-# Construction du cache specifique a NewMadeleine 
-#---------------------------------------------------------------------
-$(PM2_MAK_DIR)/nmad-specific.mak: $(MOD_STAMP_FLAVOR)
-	$(COMMON_HIDE)_PM2_OUTPUT=`$(PM2_CONFIG) --protocols $(MODULE)`;\
-	if [ -n "$$_PM2_OUTPUT" ]; then mkdir -p `dirname $@`; \
-	echo "NMAD_PROTOCOLS := $$_PM2_OUTPUT" > $@ ;\
-	fi;

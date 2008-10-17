@@ -37,7 +37,7 @@ initialize_bench()
 {
 	dev=$1
 	shift
-	
+
 	if [ ! -f ${bench_setting_file} ]; then
 		echo "bench setting file \"${bench_setting_file}\" not found"
 		return 1
@@ -63,7 +63,7 @@ initialize_bench()
         eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
          --ext=\"\" \
          --modules=\"puk init nmad ntbx tbx pioman\" \
-         --nmad=\"sched_opt strat_default mad3_emu mpi_emu ${dev} nuioa\" \
+         --nmad=\"sched_opt strat_default mad3_emu ${dev} nuioa\" \
          --common=\"fortran_target_none\" \
          --all=\"build_static opt\" $flavor_options
 

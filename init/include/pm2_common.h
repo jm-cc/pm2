@@ -32,13 +32,15 @@ typedef struct _struct_common_attr_t common_attr_t;
     !defined(MAD1_KERNEL)   && \
     !defined(PROFILE_KERNEL)
 
+
+#ifdef PIOMAN
+#define MARCEL_INTERNAL_INCLUDE
+#endif
+
 #ifdef TBX
 #include "tbx.h"
 #endif /* TBX */
 
-#ifdef PIOMAN
-#include "pioman.h"
-#endif /* PIOMAN */
 /*
  * If compiler is GNU C, we rename the application 'main'
  * to the expanded value of tbx_main
@@ -58,6 +60,10 @@ main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */
+
+#ifdef PIOMAN
+#include "pioman.h"
+#endif /* PIOMAN */
 
 #if defined(MAD) || (defined(NMAD) && defined(CONFIG_PROTO_MAD3))
 #include "madeleine.h"

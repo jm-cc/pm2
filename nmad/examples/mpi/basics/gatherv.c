@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "mpi.h"
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

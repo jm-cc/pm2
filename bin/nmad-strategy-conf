@@ -6,6 +6,7 @@ STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
 NM_SO_MAX_SMALL="32726"
 NM_SO_COPY_ON_SEND_THRESHOLD="32726"
 ACTION="write"
+FORCE=no
 CHOSEN_STRATEGY=""
 
 # Help functions
@@ -65,7 +66,7 @@ while test $# -gt 0; do
 	    ACTION="gen_default"
 	    ;;
 	--overwrite-files|-f)
-	    ACTION="force_write"
+	    FORCE=yes
 	    ;;
 	--default-strategy|--default|-d)
 	    CHOSEN_STRATEGY=default
@@ -118,17 +119,17 @@ nmad_strat_write() {
 	mkdir -p ${STRAT_DIR}
     fi
 # Write XML strat files if they don't exist
-if [ ! -e  ${strat_file} ] || [ "${ACTION}" = "force_write" ] ; then
+if [ ! -e  ${strat_file} ] || [ "${FORCE}" = "yes" ] ; then
     echo -n "Writing strategy file: ${strat}... " 1>&2
 cat > ${strat_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
 <puk:composite id="strategy-${strat}">
-  <puk:component id="0" name="Nm_strategy_${strat}">
+  <puk:component id="0" name="NewMad_Strategy_${strat}">
     <puk:attr label="nm_so_max_small">${NM_SO_MAX_SMALL}</puk:attr>
     <puk:attr label="nm_so_copy_on_send_threshold">${NM_SO_COPY_ON_SEND_THRESHOLD}</puk:attr>
   </puk:component>
-  <puk:entry-point iface="NmStrategy" provider-id="0"/>
+  <puk:entry-point iface="NewMad_Strategy" provider-id="0"/>
 </puk:composite>
 EOF
     echo "done." 1>&2
@@ -156,7 +157,7 @@ case ${ACTION} in
 	readlink ${STRAT_DIR}/strategy_custom.xml | sed -e "s,${STRAT_DIR}/strategy_\(.*\).xml,\1,g"
 	;;
 
-    write|force_write)
+    write)
 
 	if [ -z "$CHOSEN_STRATEGY" ] ; then
 	    usage

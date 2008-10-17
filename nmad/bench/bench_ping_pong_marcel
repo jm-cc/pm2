@@ -17,8 +17,8 @@
 
 # pm2-bench settings
 flavor="bench_nmad_marcel"
-flavor_options="--modules=marcel --marcel=\"opt mono marcel_main\""
-appdir="${PM2_ROOT}/nmad/examples/sched_opt"
+flavor_options="--nmad=tag_as_flat_array --modules=marcel --marcel=\"opt mono marcel_main\""
+appdir="${PM2_ROOT}/nmad/examples/sendrecv"
 prog="sr_bench"
 loop=${BENCHNET:-tcp}
 

@@ -1,6 +1,6 @@
-Examples for the default nmad flavor are located in the directory sched_opt.
+Examples for the sendrecv interface are located in the directory senderecv.
 
 Examples on top of the MPI interface i.e. using the flavor nmad-mpi are
 located in the directory mpi/.
 
-Examples for the flavor nmad-basic are located in the directory basic.
+Examples for direct access to the core (sched_opt) are located in the directory sched_opt.

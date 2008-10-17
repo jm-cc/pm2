@@ -16,24 +16,19 @@
 #ifndef NM_CNX_REQ_H
 #define NM_CNX_REQ_H
 
-struct nm_gate;
-struct nm_drv;
-struct nm_trk;
-
 /** Request for connecting/disconnecting a gate with a driver. */
-struct nm_cnx_rq {
-
-        struct	nm_gate		*p_gate;
-        struct	nm_drv		*p_drv;
-        struct	nm_trk		*p_trk;
-
-        /** Remote driver url.
-         */
-        char			*remote_drv_url;
-
-        /** Remote track url.
-         */
-        char			*remote_trk_url;
+struct nm_cnx_rq
+{
+  
+  struct nm_gate *p_gate;
+  struct nm_drv  *p_drv;
+  nm_trk_id_t trk_id;
+  
+  /** Remote driver url.  */
+  char *remote_drv_url;
+  
+  /** Remote track url. */
+  char *remote_trk_url;
 };
 
 #endif /* NM_CNX_REQ_H */

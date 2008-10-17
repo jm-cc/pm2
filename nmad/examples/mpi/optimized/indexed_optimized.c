@@ -46,7 +46,7 @@ void check_correctness_datatype_indexed(struct MPIR_DATATYPE *datatype,
   DEBUG_OPTIMIZED("Received buffer is correct\n");
 }
 
-void pingpong_datatype_indexed(nm_so_pack_interface interface,
+void pingpong_datatype_indexed(nm_core_t            p_core,
                                nm_gate_id_t         gate_id,
                                int                  number_of_elements,
                                int                  number_of_blocks,
@@ -74,8 +74,8 @@ void pingpong_datatype_indexed(nm_so_pack_interface interface,
     tbx_tick_t t1, t2;
     TBX_GET_TICK(t1);
     for(k = 0 ; k<LOOPS ; k++) {
-      pack_datatype_indexed(interface, gate_id, datatype_indexed, buffer);
-      unpack_datatype_indexed(interface, gate_id, r_buffer);
+      pack_datatype_indexed(p_core, gate_id, datatype_indexed, buffer);
+      unpack_datatype_indexed(p_core, gate_id, r_buffer);
     }
     TBX_GET_TICK(t2);
 
@@ -89,8 +89,8 @@ void pingpong_datatype_indexed(nm_so_pack_interface interface,
   }
   else { /* server */
     for(k = 0 ; k<LOOPS ; k++) {
-      unpack_datatype_indexed(interface, gate_id, r_buffer);
-      pack_datatype_indexed(interface, gate_id, datatype_indexed, buffer);
+      unpack_datatype_indexed(p_core, gate_id, r_buffer);
+      pack_datatype_indexed(p_core, gate_id, datatype_indexed, buffer);
     }
   }
 
@@ -138,11 +138,11 @@ void init_datatype_indexed(struct MPIR_DATATYPE *datatype,
 
 }
 
-void pack_datatype_indexed(nm_so_pack_interface  interface,
+void pack_datatype_indexed(nm_core_t             p_core,
                            nm_gate_id_t          gate_id,
                            struct MPIR_DATATYPE *datatype,
                            float                *s_ptr) {
-  struct nm_so_cnx cnx;
+  nm_pack_cnx_t cnx;
   float           *tmp_buf;
   int              size, numberOfBlocks, numberOfElements, i, j;
 
@@ -159,25 +159,25 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
   DEBUG_OPTIMIZED("Elements = %d -- Blocks = %d\n", numberOfElements, numberOfBlocks);
 
   /*  Pack the needed information to unpack on the other side (number of blocks, size of each element) */
-  nm_so_begin_packing(interface, gate_id, 0, &cnx);
-  nm_so_pack(&cnx, &numberOfBlocks, sizeof(int));
-  nm_so_pack(&cnx, &size, sizeof(int));
+  nm_begin_packing(p_core, gate_id, 0, &cnx);
+  nm_pack(&cnx, &numberOfBlocks, sizeof(int));
+  nm_pack(&cnx, &size, sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_packing(&cnx);
+  nm_end_packing(&cnx);
 #endif /* NO_RWAIT */
 
   /*  pack the number of elements in the blocks */
 #if defined(NO_RWAIT)
-  nm_so_begin_packing(interface, gate_id, 0, &cnx);
+  nm_begin_packing(p_core, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
-  nm_so_pack(&cnx, datatype->blocklens, numberOfBlocks*sizeof(int));
+  nm_pack(&cnx, datatype->blocklens, numberOfBlocks*sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_packing(&cnx);
+  nm_end_packing(&cnx);
 #endif /* NO_RWAIT */
 
   /*  pack the elements for each block */
 #if defined(NO_RWAIT)
-  nm_so_begin_packing(interface, gate_id, 0, &cnx);
+  nm_begin_packing(p_core, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     tmp_buf = s_ptr + datatype->indices[i];
@@ -185,55 +185,55 @@ void pack_datatype_indexed(nm_so_pack_interface  interface,
     DEBUG_OPTIMIZED("Values: ");
     for(j=0 ; j<datatype->blocklens[i] ; j++) DEBUG_OPTIMIZED("%3.2f ", tmp_buf[j]);
     DEBUG_OPTIMIZED("\n");
-    nm_so_pack(&cnx, tmp_buf, datatype->blocklens[i]*size);
+    nm_pack(&cnx, tmp_buf, datatype->blocklens[i]*size);
   }
-  nm_so_end_packing(&cnx);
+  nm_end_packing(&cnx);
 }
 
-void unpack_datatype_indexed(nm_so_pack_interface interface,
+void unpack_datatype_indexed(nm_core_t            p_core,
                              nm_gate_id_t         gate_id,
                              float               *r_ptr) {
-  struct nm_so_cnx cnx;
+  nm_pack_cnx_t cnx;
   float          **tmp_buf;
   int              numberOfBlocks, size, *numberOfElements, i;
 
   DEBUG_OPTIMIZED("Receiving (h)indexed datatype at address %p...\n", r_ptr);
 
   /*  Unpack the following information : number of blocks, size of each element */
-  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
-  nm_so_unpack(&cnx, &numberOfBlocks, sizeof(int));
-  nm_so_unpack(&cnx, &size, sizeof(int));
+  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
+  nm_unpack(&cnx, &numberOfBlocks, sizeof(int));
+  nm_unpack(&cnx, &size, sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_unpacking(&cnx);
+  nm_end_unpacking(&cnx);
 #else
-  nm_so_flush_unpacks(&cnx);
+  nm_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   DEBUG_OPTIMIZED("Number of blocks %d Size %d\n", numberOfBlocks, size);
 
   /*  unpack the number of elements in the blocks */
   numberOfElements = malloc(numberOfBlocks * sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
 #endif /* NO_RWAIT */
-  nm_so_unpack(&cnx, numberOfElements, numberOfBlocks*sizeof(int));
+  nm_unpack(&cnx, numberOfElements, numberOfBlocks*sizeof(int));
 #if defined(NO_RWAIT)
-  nm_so_end_unpacking(&cnx);
+  nm_end_unpacking(&cnx);
 #endif /* NO_RWAIT */
 
   /*  unpack the elements for each block */
   tmp_buf = malloc((numberOfBlocks+1) * sizeof(float *));
   tmp_buf[0] = r_ptr;
 #if defined(NO_RWAIT)
-  nm_so_begin_unpacking(interface, gate_id, 0, &cnx);
+  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
 #else
-  nm_so_flush_unpacks(&cnx);
+  nm_flush_unpacks(&cnx);
 #endif /* NO_RWAIT */
   for(i=0 ; i<numberOfBlocks ; i++) {
     DEBUG_OPTIMIZED("Going to unpack block %d with %d elements of size %d at address %p\n", i, numberOfElements[i], size, tmp_buf[i]);
-    nm_so_unpack(&cnx, tmp_buf[i], numberOfElements[i]*size);
+    nm_unpack(&cnx, tmp_buf[i], numberOfElements[i]*size);
     tmp_buf[i+1] = tmp_buf[i] + numberOfElements[i];
   }
-  nm_so_end_unpacking(&cnx);
+  nm_end_unpacking(&cnx);
   free(tmp_buf);
 
   free(numberOfElements);

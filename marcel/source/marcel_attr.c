@@ -54,7 +54,9 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 {
 	LOG_IN();
 	if ((stack < sizeof(marcel_task_t)) || (stack > THREAD_SLOT_SIZE)) {
-		mdebug("(p)marcel_attr_setstacksize : stack size error\n");
+		mdebug("(p)marcel_attr_setstacksize : stack size error: "
+					 "requested %u B but `THREAD_SLOT_SIZE' is only %lu B\n",
+					 (unsigned int) stack, THREAD_SLOT_SIZE);
 		LOG_RETURN(EINVAL);
 	}
 

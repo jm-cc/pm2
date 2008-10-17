@@ -29,7 +29,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
 	--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
 	--marcel="standard_main"					\
 	--marcel="enable_keys"						\
-	 --marcel="enable_cleanup" --marcel="enable_once"		\
-	--marcel="bug_on" --marcel="malloc_preempt_debug"		\
-	--tbx="safe_malloc" --tbx="parano_malloc"			\
+        --marcel="enable_cleanup" --marcel="enable_once"		\
+	--marcel="bug_on"						\
 	--all="gdb" --all="build_static" $_output_redirect

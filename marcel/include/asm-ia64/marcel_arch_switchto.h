@@ -15,7 +15,9 @@
  */
 
 #section common
+#ifndef MA__PROVIDE_TLS
 #define MA__INTERRUPT_FIX_LWP
+#endif
 
 #ifndef MA__INTERRUPT_FIX_LWP
 #depend "asm-generic/marcel_arch_switchto.h[]"
@@ -23,7 +25,6 @@
 
 #section marcel_macros
 #ifdef MA__INTERRUPT_FIX_LWP
-/* TODO: ne pas le faire lorsqu'on fournit la TLS */
 
 /* When delivering a signal, the kernel will have saved r13 (the TLS pointer)
  * on the current thread's stack.

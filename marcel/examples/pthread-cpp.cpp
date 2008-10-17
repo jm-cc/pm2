@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+/* Test whether Marcel's <pthread.h> works when used in C++ programs.  */
+
 #include <pthread.h>
 
 #ifndef MARCEL_VERSION

@@ -601,9 +601,6 @@ extern "C++" {
 
 #ifdef __GNUC__
 
-/* Whether Marcel has been automatically initialized.  */
-extern tbx_bool_t ma_pmarcel_is_initialized;
-
 /* Automatically initialize Marcel, so that applications that include
    this file don't have to explicitly call `marcel_init ()'.
 
@@ -612,13 +609,11 @@ extern tbx_bool_t ma_pmarcel_is_initialized;
 static void	__attribute__ ((__constructor__))
 ma_initialize_pmarcel (void)
 {
-	if (!ma_pmarcel_is_initialized) {
+	if (!marcel_test_activity ()) {
 		static int ma_pmarcel_argc = 0;
 		static char *ma_pmarcel_argv[] = { "pmarcel-program", NULL };
 
-		ma_pmarcel_is_initialized = tbx_true;
 		marcel_init (&ma_pmarcel_argc, ma_pmarcel_argv);
-
 		marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 	}
 }
@@ -627,7 +622,8 @@ ma_initialize_pmarcel (void)
 static void __attribute__ ((__destructor__))
 ma_terminate_pmarcel (void)
 {
-	marcel_end ();
+	if (marcel_test_activity ())
+		marcel_end ();
 }
 
 #endif

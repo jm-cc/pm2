@@ -61,6 +61,9 @@ struct piom_server {
     struct list_head list_req_to_export;
     /* Liste des requêtes exportées */
     struct list_head list_req_exported;
+
+    /* spinlock to modify the lists of lwp */
+    ma_spinlock_t lwp_lock;
     /* List of ready LWPs */
     struct list_head list_lwp_ready;
     /* List of working LWPs */
@@ -147,6 +150,7 @@ struct piom_server {
 	    .list_req_block_grouped=LIST_HEAD_INIT((var).list_req_block_grouped),    \
 	    .list_req_to_export=LIST_HEAD_INIT((var).list_req_to_export),            \
 	    .list_req_exported=LIST_HEAD_INIT((var).list_req_exported),              \
+            .lwp_lock=MA_SPIN_LOCK_UNLOCKED,                                         \
 	    .list_lwp_ready=LIST_HEAD_INIT((var).list_lwp_ready),	             \
 	    .list_lwp_working=LIST_HEAD_INIT((var).list_lwp_working),	             \
 	    .req_poll_grouped_nb=0,					             \

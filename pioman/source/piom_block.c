@@ -21,8 +21,7 @@
  * return 0 if we should use polling
  * 1 owerwise
  */
-__tbx_inline__ 
-static int 
+int 
 __piom_need_export(piom_server_t server, piom_req_t req,
 		   piom_wait_t wait, piom_time_t timeout)
 {
@@ -61,8 +60,7 @@ __piom_need_export(piom_server_t server, piom_req_t req,
 
 
 /* Try to group requests (syscall version) */
-__tbx_inline__ 
-static int 
+int 
 __piom_block_group(piom_server_t server,
 		   piom_req_t req)
 {
@@ -112,6 +110,7 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
     __piom_register_block(server, req);
 
     /* Pick up a LWP from the pool */
+    _piom_spin_lock(&server->lwp_lock);
     do {
 	if(!list_empty(server->list_lwp_ready.next))
 	    lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
@@ -119,10 +118,12 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
 	    lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 	else 		
 	    /* Create another LWP (warning: this is *very* expensive !) */
+	    _piom_spin_unlock(&server->lwp_lock);	
 	    piom_server_start_lwp(server, 1);
+	    _piom_spin_lock(&server->lwp_lock);
     }while(! lwp);
 
-    /* wake up LWP */
+    /* wake up the LWP */
     PIOM_LOGF("Waiking up comm LWP #%d\n",lwp->vp_nb);
     PROF_EVENT(writing_tube);
     write(lwp->fds[1], &foo, 1);
@@ -193,6 +194,8 @@ __piom_syscall_loop(void * param)
     piom_req_t prev, tmp, req=NULL;
     int foo=0;
     marcel_task_t *lock;
+
+    lwp->state=PIOM_LWP_STATE_LAUNCHED;
 #ifdef EXPORT_THREADS
 
     /* On met la priorite au minimum */
@@ -217,12 +220,14 @@ __piom_syscall_loop(void * param)
 	fprintf(stderr, "couldn't lower my priority\n");
     }
 #endif	/* EXPORT_THREADS */
-    lock = piom_ensure_trylock_server(server);
+    
     /* Main loop: wait for commands until the server is halted */
     do {
+	_piom_spin_lock(&server->lwp_lock);
 	list_del_init(&lwp->chain_lwp_working);
 	list_add_tail(&lwp->chain_lwp_ready, &server->list_lwp_ready);
-	__piom_tryunlock_server(server);
+	lwp->state=PIOM_LWP_STATE_READY;
+	_piom_spin_unlock(&server->lwp_lock);
 
 	/* Wait for a command */		
 	PROF_EVENT2(syscall_waiting, lwp->vp_nb, lwp->fds[0]);
@@ -233,20 +238,27 @@ __piom_syscall_loop(void * param)
 #else
 	read(lwp->fds[0], &foo, 1); 
 #endif	/* EXPORT_THREADS */
+
+    process_blocking_call:
 	PROF_EVENT2(syscall_read_done, lwp->vp_nb, lwp->fds[0]);
 	PIOM_LOGF("Comm LWP #%d is working\n",lwp->vp_nb);
 
+	_piom_spin_lock(&server->lwp_lock);
 	/* Check the server's state */
 	if( lwp->server->state == PIOM_SERVER_STATE_HALTED ){
 	    list_del_init(&lwp->chain_lwp_ready);
+	    _piom_spin_unlock(&server->lwp_lock);
 	    return NULL;
 	}
 		
-	lock = piom_ensure_trylock_server(server);
-
+	/* Remove the LWP from the ready list and add it to the working list */
+	lwp->state=PIOM_LWP_STATE_WORKING;
 	list_del_init(&lwp->chain_lwp_ready);
 	list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 		
+	_piom_spin_unlock(&server->lwp_lock);
+	lock = piom_ensure_trylock_server(server);
+
 	/* Get the requests to be posted */
 	if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
 	    {
@@ -292,10 +304,9 @@ __piom_syscall_loop(void * param)
 	}
 	/* handle completed requests */
 	__piom_manage_ready(server);
-	lock = piom_ensure_trylock_server(server);
+	__piom_tryunlock_server(server);
 
     } while(lwp->server->state!=PIOM_SERVER_STATE_HALTED);
-    __piom_tryunlock_server(server);
     return NULL;
 }
 
@@ -319,10 +330,13 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 	    PIOM_LOGF("Creating a lwp for server %p\n", server);
 	    piom_comm_lwp_t lwp=(piom_comm_lwp_t) malloc(sizeof(struct piom_comm_lwp));
 	    __piom_init_lwp(lwp);
+	    lwp->state=PIOM_LWP_STATE_NONE;
 	    lwp->server=server;
 
 	    /* The LWP is set as Working during initialization */
+	    _piom_spin_lock(&server->lwp_lock);
 	    list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+	    _piom_spin_unlock(&server->lwp_lock);
 
 	    lwp->vp_nb = marcel_add_lwp();
 	    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(lwp->vp_nb));
@@ -331,17 +345,20 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 		perror("pipe");
 		exit(EXIT_FAILURE);
 	    }
+	    lwp->state=PIOM_LWP_STATE_INITIALIZED;
 	    /* Create a (user-level) thread on top of this LWP */
 	    marcel_create(&lwp->pid, &attr, (void*) &__piom_syscall_loop, lwp);
-
+	    /* Wait for the lwp to be ready before continuing */
+	    while(lwp->state!=PIOM_LWP_STATE_READY);
 	}
 
 }
-#endif /* PIOM_BLOCKING_CALLS */
-
+#else
 /* Create nb_lwps new LWP */
 void 
 piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 {
 
 }
+#endif /* PIOM_BLOCKING_CALLS */
+

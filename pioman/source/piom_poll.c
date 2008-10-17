@@ -168,6 +168,9 @@ void
 piom_poll_timer(unsigned long hid)
 {
     piom_server_t server = (piom_server_t) hid;
+
+    if(server->state == PIOM_SERVER_STATE_HALTED)
+	return;
 #ifdef MARCEL
     PIOM_LOGF("Timer function for [%s]\n", server->name);
     ma_tasklet_schedule(&server->poll_tasklet);

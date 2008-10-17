@@ -160,12 +160,21 @@ piom_server_stop(piom_server_t server)
 #ifdef MARCEL
     marcel_task_t *lock;
     lock = piom_ensure_lock_server(server);
+    server->state = PIOM_SERVER_STATE_HALTED;
+    piom_restore_lock_server_locked(server, lock);
+    __piom_poll_stop(server);
+    
+    ma_tasklet_kill(&server->poll_tasklet);
+    
+    lock = piom_ensure_lock_server(server);
+    ma_tasklet_disable(&server->poll_tasklet);
+    
     /* peut être la solution d'un bug... */
     //lock = piom_ensure_trylock_from_tasklet(server);
 #endif	/* MARCEL */
 
-    piom_verify_server_state(server);
-    server->state = PIOM_SERVER_STATE_HALTED;
+    //piom_verify_server_state(server);
+    //server->state = PIOM_SERVER_STATE_HALTED;
     PIOM_LOGF("server %p is stopped\n", server);
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -173,14 +182,16 @@ piom_server_stop(piom_server_t server)
     piom_comm_lwp_t lwp;
 
     while(!list_empty(server->list_lwp_ready.next)){
-	char foo=42;
+	char foo=43;
 	lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
 	write(lwp->fds[1], &foo, 1);
+	sched_yield();
     }
     while(!list_empty(server->list_lwp_working.next)){
-	char foo=42;
+	char foo=44;
 	lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 	write(lwp->fds[1], &foo, 1);
+	sched_yield(); 
     }
 #endif	/* PIOM_BLOCKING_CALLS */
 #ifndef ECANCELED
@@ -198,7 +209,9 @@ piom_server_stop(piom_server_t server)
     __piom_wake_id_waiters(server, -ECANCELED);
 
 #ifdef MARCEL
-    piom_restore_lock_server_locked(server, lock);
+     //_piom_spin_unlock_softirq(&piom_poll_lock);
+      ma_tasklet_enable(&server->poll_tasklet);
+      piom_restore_lock_server_locked(server, lock);
 #endif	/* MARCEL */
 
     LOG_RETURN(0);

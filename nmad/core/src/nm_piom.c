@@ -156,17 +156,18 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
 {
   nmad_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->wait_send_iov(r->_status, p_pw);
+  int err = r->driver->poll_send_iov(r->_status, p_pw);
   nmad_lock();
-  
   if (err != -NM_EAGAIN)
     {
-      piom_req_success(&p_pw->inst);
+      if (tbx_unlikely(err < 0))
+	{
+	  NM_DISPF("poll_send returned %d", err);
+	}
       nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
-      tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.out_req_list, NULL, p_pw);
     }
-  return err;
-}
+  return err; 
+ }
 
 int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
 {
@@ -230,7 +231,7 @@ int nm_piom_block_any(piom_server_t            server,
 	{
 	  piom_req_success(&p_pw->inst);
 	  nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
-	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.out_req_list, NULL, p_pw);
+//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.out_req_list, NULL, p_pw);
       
 	}
     }
@@ -240,7 +241,7 @@ int nm_piom_block_any(piom_server_t            server,
 	{
 	  piom_req_success(&p_pw->inst);
 	  /* supprimer la req de la liste des requetes pending */
-	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.pending_recv_req, NULL, p_pw);
+//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.pending_recv_req, NULL, p_pw);
 	  /* process complete request */
 	  err = nm_process_complete_recv_rq(p_pw->p_gate->p_core, p_pw, err);
 	  

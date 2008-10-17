@@ -21,6 +21,15 @@
 /* LWP used to perform blocking calls without blocking over user-lveel threads */
 typedef struct piom_comm_lwp *piom_comm_lwp_t;
 
+/* Available kinds of callbacks */
+typedef enum {
+       PIOM_LWP_STATE_NONE,    /* LWP not initialized */
+       PIOM_LWP_STATE_INITIALIZED,/* LWP initialized but not running*/
+       PIOM_LWP_STATE_LAUNCHED, /* LWP is running, but not yet ready */
+       PIOM_LWP_STATE_WORKING, /* LWP is running but performing a blocling call*/
+       PIOM_LWP_STATE_READY    /* LWP is running and waiting for work */
+} piom_lwp_state_t;
+
 /* Communications specialized LWP */
 struct piom_comm_lwp {
 	int vp_nb; 		/* LWP number */
@@ -29,14 +38,28 @@ struct piom_comm_lwp {
 	struct list_head chain_lwp_working;
 	piom_server_t server;
 	marcel_t pid;
+        volatile piom_lwp_state_t state;    
 };
 
 /* Wake up a LWP to export a request and perform a blocking call */
-int 
-piom_wakeup_lwp(piom_server_t server, piom_req_t req);
+int piom_wakeup_lwp(piom_server_t server, piom_req_t req);
 #endif
 
 /* Create a pool of nb_lwps LWPs */
 void piom_server_start_lwp(piom_server_t server, unsigned nb_lwps);
+
+
+/* Check if it is interesting to use a blocking syscall 
+ * return 0 if we should use polling
+ * 1 owerwise
+ */
+int 
+__piom_need_export(piom_server_t server, piom_req_t req,
+		   piom_wait_t wait, piom_time_t timeout);
+
+int 
+__piom_block_group(piom_server_t server,
+		   piom_req_t req);
+
 
 #endif	/* PIOM_BLOCK_H */

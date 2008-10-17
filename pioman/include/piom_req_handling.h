@@ -158,6 +158,12 @@ int __piom_del_success_req(piom_server_t server,
  */
 int __piom_register_poll(piom_server_t server, piom_req_t req);
 
+#ifdef PIOM_BLOCKING_CALLS
+/* Add a request to the list of requests a syscall is waiting for */
+int 
+__piom_register_block(piom_server_t server, piom_req_t req);
+#endif
+
 /* Initialize a request */
 void __piom_init_req(piom_req_t req);
 

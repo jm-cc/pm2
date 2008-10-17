@@ -131,7 +131,7 @@ piom_req_init(piom_req_t req)
 
 #ifdef PIOM_BLOCKING_CALLS
 /* Add a request to the list of requests a syscall is waiting for */
-static int 
+int 
 __piom_register_block(piom_server_t server, piom_req_t req)
 {
     LOG_IN();
@@ -259,7 +259,7 @@ piom_req_submit(piom_server_t server, piom_req_t req)
 
     if (__piom_need_export(server, req, NULL, NULL) )
 	{
-	    piom_callback_will_block(server, req);
+	    piom_wakeup_lwp(server, req);
 	}
     else
 #endif /* PIOM_BLOCKING_CALLS */

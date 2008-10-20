@@ -432,6 +432,7 @@ mad_init(int   *argc,
 
   LOG_IN();
   common_pre_init(argc, argv, NULL);
+  common_post_init(argc, argv, NULL);
   mad_memory_manager_init(*argc, argv);
   madeleine = mad_object_init(*argc, argv);
   mad_cmd_line_init(madeleine, *argc, argv);
@@ -441,7 +442,6 @@ mad_init(int   *argc,
   mad_drivers_init(madeleine, argc, &argv);
   mad_purge_command_line(madeleine, argc, argv);
   mad_channels_init(madeleine);
-  common_post_init(argc, argv, NULL);
   LOG_OUT();
 
   return madeleine;

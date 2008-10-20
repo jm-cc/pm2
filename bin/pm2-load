@@ -257,6 +257,11 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_DEBUG=on
 	    ;;
+	-cf|--corefile)
+	    shift
+	    PM2_COREFILE="$1"
+	    shift
+	    ;;
 	-vg|--valgrind)
 	    shift
 	    PM2_VALGRIND=on
@@ -562,6 +567,9 @@ esac
 # Debug
 if [ "$PM2_DEBUG" = on ]; then
     _prescript_args="$_prescript_args --debug"
+    if [ -n "$PM2_COREFILE" ]; then
+        _prescript_args="$_prescript_args --corefile ${PM2_COREFILE}"
+    fi
 fi
 
 if [ "$PM2_VALGRIND" = on ]; then

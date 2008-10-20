@@ -94,6 +94,11 @@ while [ $# -gt 0 ]; do
 	    done
 	    log "Using debug mode"
 	    ;;
+	--corefile)
+	    shift
+	    corefile="$1"
+	    shift
+	    ;;
 	--strace)
 	    shift
 	    # tempo file
@@ -207,8 +212,8 @@ if [ -n "$valgrind" ]; then
 
 elif [ -n "$debug_file" ]; then
 
-    log "Executing: gdb -x $debug_file $prog"
-    gdb -x $debug_file $prog
+    log "Executing: gdb -x $debug_file $prog $corefile"
+    gdb -x $debug_file $prog $corefile
 
     rm -f $debug_file
 

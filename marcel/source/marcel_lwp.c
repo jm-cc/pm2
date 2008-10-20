@@ -140,11 +140,16 @@ static void *lwp_kthread_start_func(void *arg)
 		level = ma_lwp_vpaffinity_level(lwp);
 		marcel_kthread_mutex_lock(&level->kmutex);
 		ma_clr_lwp_vpnum(MA_LWP_SELF);
-		if (level->spare) {
-			mdebug("and there are still %d spare LWPs, waking one\n", level->spare);
-			/* we don't care about overwrites */
-			level->needed = vpnum;
-			marcel_kthread_cond_signal(&level->kneed);
+		while (level->spare) {
+			mdebug("and there are still %d spare LWPs\n", level->spare);
+			if (level->needed == -1) {
+				mdebug("waking one\n");
+				level->needed = vpnum;
+				marcel_kthread_cond_signal(&level->kneed);
+				break;
+			}
+			mdebug("VP %d is already waiting for its spare LWP, wait for that to complete\n", level->needed);
+			marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
 		}
 		marcel_kthread_mutex_unlock(&level->kmutex);
 	} else {

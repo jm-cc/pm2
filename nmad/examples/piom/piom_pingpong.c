@@ -124,7 +124,7 @@ server(any_t arg) {
   } 
 }
 
-int 
+void
 client(any_t arg) {
   int        my_pos = *(int*)arg;
   nm_tag_t   tag    = (nm_tag_t)my_pos;
@@ -186,13 +186,13 @@ client(any_t arg) {
     marcel_sem_V(&ready_sem); 	
   }
 }
+
 int
 main(int	  argc,
      char	**argv) {
   int		 i, j;
 #ifdef MARCEL
   marcel_t      *pid;
-  static pmarcel_sem_t bourrin_ready;
   marcel_attr_t attr;
 #endif
 

@@ -118,7 +118,6 @@ main(int	  argc,
   int		 i;
 #ifdef MARCEL
   marcel_t      *pid;
-  static pmarcel_sem_t bourrin_ready;
   marcel_attr_t attr;
 #endif
 

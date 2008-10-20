@@ -142,13 +142,12 @@ int marcel_extlib_protect(void)
 	return 0;
 }
 
-#
 int marcel_extlib_unprotect(void)
 {
+	ma_local_bh_enable();
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
 	marcel_mutex_unlock(&ma_extlib_lock);
 #endif
-	ma_local_bh_enable();
 	return 0;
 }
 

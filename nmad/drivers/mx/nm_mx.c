@@ -145,6 +145,7 @@ static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
@@ -177,6 +178,8 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .poll_send_any_iov  = NULL,
     .poll_recv_any_iov  = NULL,
 #endif
+
+    .cancel_recv_iov    = &nm_mx_cancel_recv_iov,
 
     .get_driver_url     = &nm_mx_get_driver_url,
     .get_track_url      = &nm_mx_get_track_url,
@@ -937,6 +940,25 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
   
   return nm_mx_get_err(p_pw, status, mx_ret);
 }
+
+/** cancel a recv operation */
+static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  int err = -NM_ENOTIMPL;
+  struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;;
+  uint32_t result;
+  mx_return_t mx_ret = mx_cancel(*(p_mx_pw->p_ep), &p_mx_pw->rq, &result);
+  if(mx_ret == 0 && result != 0)
+    {
+      err = NM_ESUCCESS;
+    }
+  else
+    {
+      err = -NM_EINPROGRESS;
+    }
+  return err;
+}
+
 
 #if MX_API >= 0x301
 /** Poll the completion of any iov request in MX */

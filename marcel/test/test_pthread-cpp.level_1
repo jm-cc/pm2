@@ -14,7 +14,7 @@
 
 
 # Configuration
-flavor="test_marcel_pthread_c++"
+flavor="test_marcel_pthread_cpp"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="pthread-cpp"
 args=""

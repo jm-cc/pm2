@@ -87,11 +87,11 @@ registering_flavors() {
 	--all=debug --all=gdb --all=noinline
 
     register_flavor marcel-forestgomp-opt \
-        --modules="marcel tbx init" $COMMON_OPTIONS \
+        --modules="marcel tbx init" \
 	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_affinity --marcel=enable_keys \
-	--all=build_both
+	--all=opt --all=build_both
 
     register_flavor marcel-forestgomp-debug \
         --modules="marcel tbx init" \

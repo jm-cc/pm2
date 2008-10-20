@@ -44,6 +44,7 @@ any_t f(any_t arg)
 void bench_cond(unsigned nb)
 {
   marcel_t pid;
+  marcel_attr_t attr;
   any_t status;
   register int n;
 
@@ -53,13 +54,21 @@ void bench_cond(unsigned nb)
   n = nb >> 1;
   n++;
 
+  marcel_attr_init(&attr);
+#ifdef MA__LWPS
+  if (marcel_nbvps() >= 2) {
+    marcel_vpset_t vpset = MARCEL_VPSET_VP(0);
+    marcel_apply_vpset(&vpset);
+    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(1));
+  }
+#endif
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
   marcel_cond_init(&cond, NULL);
   marcel_mutex_init(&mutex, NULL);
   marcel_sem_init(&sem, 0);
-  marcel_create(&pid, NULL, f, (any_t)(intptr_t)n);
+  marcel_create(&pid, &attr, f, (any_t)(intptr_t)n);
 
   marcel_sem_P(&sem);
   marcel_mutex_lock(&mutex);

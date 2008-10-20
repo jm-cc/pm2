@@ -237,8 +237,6 @@ void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 void ma_lwp_wait_active(void);
 int ma_lwp_block(void);
 marcel_lwp_t *ma_lwp_wait_vp_active(void);
-#else
-#  define ma_lwp_wait_active() (void)0
 #endif
 
 #section functions

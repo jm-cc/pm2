@@ -846,7 +846,6 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
       p_pw->p_gate = p_pw->p_drv->p_core->gate_array
 	+ p_mx_trk->gate_map[status.match_info];
     }
-  tbx_free(mx_pw_mem, p_mx_pw);
   
   if (tbx_unlikely(status.code != MX_SUCCESS)) {
     WARN("MX driver: request completed with non-successful status: %s",
@@ -945,11 +944,13 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   int err = -NM_ENOTIMPL;
-  struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;;
+  struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;
   uint32_t result;
   mx_return_t mx_ret = mx_cancel(*(p_mx_pw->p_ep), &p_mx_pw->rq, &result);
-  if(mx_ret == 0 && result != 0)
+  if(mx_ret == MX_SUCCESS && result != 0)
     {
+      tbx_free(mx_pw_mem, p_mx_pw);
+      p_pw->drv_priv = NULL;
       err = NM_ESUCCESS;
     }
   else

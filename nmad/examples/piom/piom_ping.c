@@ -247,7 +247,7 @@ main(int	  argc,
     }
 #ifdef MARCEL
     marcel_vpset_t mask;
-    marcel_vpset_all_but_vp(&mask,  i%marcel_nbvps());
+    marcel_vpset_vp(&mask,  i%marcel_nbvps());
     marcel_attr_setvpset(&attr,  mask);
     marcel_create(&pid[i], &attr, (void*)greedy_func, NULL);
 /* wait for the thread to be actually launched before we continue */

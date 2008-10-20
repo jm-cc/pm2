@@ -357,7 +357,7 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	for (vp = 0; vp < marcel_nbvps(); vp++)
 		if ((lwp = ma_vp_lwp[vp]))
 			break;
-	if (!lwp && level->spare && level->needed) {
+	if (!lwp && level->spare && level->needed != -1) {
 		marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
 		for (vp = 0; vp < marcel_nbvps(); vp++)
 			if ((lwp = ma_vp_lwp[vp]))

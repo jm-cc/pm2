@@ -43,7 +43,7 @@ __piom_need_export(piom_server_t server, piom_req_t req,
     /* the application forces the polling */
     if (req->func_to_use == PIOM_FUNC_POLLING)
 	return 0;
-	
+    
     /* the application forces the syscall */
     if(req->func_to_use==PIOM_FUNC_SYSCALL)
 	return 1;
@@ -116,12 +116,14 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
 	    lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
 	else if( server->stopable && !list_empty(server->list_lwp_working.next))
 	    lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
-	else 		
+	else {
 	    /* Create another LWP (warning: this is *very* expensive !) */
 	    _piom_spin_unlock(&server->lwp_lock);	
 	    piom_server_start_lwp(server, 1);
 	    _piom_spin_lock(&server->lwp_lock);
+	}
     }while(! lwp);
+    _piom_spin_unlock(&server->lwp_lock);
 
     /* wake up the LWP */
     PIOM_LOGF("Waiking up comm LWP #%d\n",lwp->vp_nb);
@@ -255,7 +257,7 @@ __piom_syscall_loop(void * param)
 	lwp->state=PIOM_LWP_STATE_WORKING;
 	list_del_init(&lwp->chain_lwp_ready);
 	list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
-		
+
 	_piom_spin_unlock(&server->lwp_lock);
 	lock = piom_ensure_trylock_server(server);
 

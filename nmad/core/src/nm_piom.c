@@ -156,7 +156,7 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
 {
   nmad_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->poll_send_iov(r->_status, p_pw);
+  int err = r->driver->wait_send_iov(r->_status, p_pw);
   nmad_lock();
   if (err != -NM_EAGAIN)
     {
@@ -167,7 +167,7 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
       nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
     }
   return err; 
- }
+}
 
 int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
 {
@@ -201,6 +201,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
   return err;
 }
 
+#if 0
 int nm_piom_block_any(piom_server_t            server,
 		     piom_op_t                _op,
 		     piom_req_t               req,
@@ -253,7 +254,7 @@ int nm_piom_block_any(piom_server_t            server,
   nmad_unlock();
   return err;
 }
-
+#endif /* 0 */
 #endif
 
 #endif /* PIOMAN */

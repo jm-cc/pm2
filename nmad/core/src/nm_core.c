@@ -93,11 +93,13 @@ int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
 				 .func = &nm_piom_block,
 				 .speed = PIOM_CALLBACK_NORMAL_SPEED
 			       });
+#if 0
       piom_server_add_callback(&p_drv->server, PIOM_FUNCTYPE_BLOCK_WAITANY,
 			       (piom_pcallback_t) {
 				 .func = &nm_piom_block_any,
 				 .speed = PIOM_CALLBACK_NORMAL_SPEED
 			       });
+#endif
 
     }
 #endif /* PIOM_BLOCKING_CALLS */

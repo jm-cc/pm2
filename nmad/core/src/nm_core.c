@@ -456,7 +456,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
 #ifdef PIOMAN
+      nmad_unlock();
       piom_server_stop(&p_drv->server);
+      nmad_lock();
 #endif /* PIOMAN */
     }
 

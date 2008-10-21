@@ -439,7 +439,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		/* upcall_new_task est venue ici ? */
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
-	ma_set_thread_flag(TIF_POLLING_NRFLAG);
+        //ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
 		MA_BUG_ON(lwp != MA_LWP_SELF);
 		if (ma_vpnum(lwp) == -1) {

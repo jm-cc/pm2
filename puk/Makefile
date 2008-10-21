@@ -22,7 +22,8 @@ PUK_INSTALLDIR := $(PUK_ROOT)
 
 PADICO_ROOT    := $(PUK_ROOT)
 
-CONFIG_FILES   := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
+SRC_CONFIG_FILES := externals/packaging-tools/padico-setup.sh.in configure.ac # $(wildcard externals/building-tools/*.m4)
+GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
 PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a
 
@@ -44,16 +45,16 @@ link:
 dot_h: $(PUK_BUILDDIR)/config.status
 
 clean:
-	-/bin/rm $(CONFIG_FILES)
+	-/bin/rm $(GEN_CONFIG_FILES)
 	-/bin/rm -r $(PUK_ROOT)/puk
 
-flavormaks: $(CONFIG_FILES)
+flavormaks: $(GEN_CONFIG_FILES)
 
 
 # ## init packaging framework and generate base config files
 # ##
 
-$(CONFIG_FILES): externals/packaging-tools/padico-setup.sh.in configure.ac externals/building-tools/*.m4
+$(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 	@echo "    generating Puk version file..."
 	@echo "0.4.0" > VERSION
 	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
@@ -85,7 +86,7 @@ $(CONFIG_FILES): externals/packaging-tools/padico-setup.sh.in configure.ac exter
 
 PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
 
-$(PUK_BUILDDIR)/config.status: $(CONFIG_FILES)
+$(PUK_BUILDDIR)/config.status: $(GEN_CONFIG_FILES)
 	( cd $(PUK_BUILDDIR) ; \
            $(PUK_SRCDIR)/externals/configure LDFLAGS= CFLAGS= --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
 
@@ -100,5 +101,6 @@ $(PUK_BUILDDIR)/Puk/libPadicoPuk.a: $(PUK_BUILDDIR)/config.status
 
 $(PADICO_ROOT)/lib/libPadicoPuk.a: $(PUK_BUILDDIR)/Puk/libPadicoPuk.a
 	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PUK_BUILDDIR)/Puk install
+	@touch $(PADICO_ROOT)/lib/libPadicoPuk.a
 
 

@@ -637,7 +637,7 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 #ifdef MARCEL_SMT_IDLE
 static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	if ((level = ma_per_lwp(core_level,lwp)) level->arity)
+	if ((level = ma_per_lwp(core_level,lwp)) && level->arity)
 		ma_atomic_inc(&level->nbidle);
 }
 

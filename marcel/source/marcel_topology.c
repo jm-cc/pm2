@@ -790,6 +790,28 @@ static void __marcel_init look_sysfscpu(void) {
 	}
 }
 
+static unsigned long ma_sysfs_node_meminfo_to_hugepagefree(const char * path)
+{
+	char string[64];
+	FILE *fd;
+
+	fd = fopen(path, "r");
+	if (!fd)
+		return 0;
+
+	while (fgets(string, sizeof(string), fd) && *string != '\0') {
+		int node;
+		unsigned long hugepagefree;
+		if (sscanf(string, "Node %d HugePages_Free: %ld kB", &node, &hugepagefree) == 2) {
+			fclose(fd);
+			return hugepagefree;
+		}
+	}
+
+	fclose(fd);
+	return 0;
+}
+
 static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
 {
 	char string[64];
@@ -848,6 +870,7 @@ static void __marcel_init look_sysfsnode(void) {
 		char nodepath[NUMA_NODE_STRLEN];
 		marcel_vpset_t cpuset;
 		unsigned long size;
+                unsigned long hpfree;
 		int j;
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", i);
@@ -856,10 +879,12 @@ static void __marcel_init look_sysfsnode(void) {
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", i);
 		size = ma_sysfs_node_meminfo_to_memsize(nodepath);
+		hpfree = ma_sysfs_node_meminfo_to_hugepagefree(nodepath);
 
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
 		ma_topo_set_os_numbers(&node_level[i], node, i);
 		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
+                node_level[i].huge_page_free = hpfree;
 
 		node_level[i].cpuset = cpuset;
 		for(j=0;j<MARCEL_NBMAXCPUS;j++)
@@ -913,6 +938,7 @@ static void __marcel_init look_libnuma(void) {
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
 		ma_topo_set_os_numbers(&node_level[i], node, radid);
 		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
+                node_level[i].huge_page_free = 0;
 
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
@@ -969,6 +995,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			case MARCEL_LEVEL_NODE:
 				rad_level[r].os_node = r;
 				rad_level[r].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
+                                rad_level[r].huge_page_free = 0;
 				break;
 			case MARCEL_LEVEL_L2:
 				rad_level[r].os_l2 = r;

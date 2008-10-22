@@ -90,16 +90,21 @@ int marcel_main(int argc, char **argv) {
   unsigned long maxnode;
   unsigned long nodemask;
   int dest, node, realnode;
+  pid_t pid;
+  char filename[1024];
 
   node = atoi(argv[1]);
   dest = atoi(argv[2]);
   maxnode = numa_max_node();
   size = 5 * gethugepagesize();
+  pid = getpid();
+
+  snprintf(filename, 1024, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
 
   // Set the buffers on the nodes
   nodemask = (1<<node);
 
-  file = open("/hugetlbfs/mami", O_CREAT, S_IRWXU);
+  file = open(filename, O_CREAT, S_IRWXU);
   if (file == -1) {
     perror("open");
     return -1;
@@ -153,7 +158,7 @@ int marcel_main(int argc, char **argv) {
     perror("close");
     return -1;
   }
-  err = unlink("/hugetlbfs/mami");
+  err = unlink(filename);
   if (err < 0) {
     perror("unlink");
     return -1;

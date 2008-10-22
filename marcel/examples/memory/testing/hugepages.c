@@ -104,7 +104,7 @@ int marcel_main(int argc, char **argv) {
   size = 5 * gethugepagesize();
   pid = getpid();
 
-  snprintf(filename, 1024, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
+  sprintf(filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
 
   // Set the buffers on the nodes
   nodemask = (1<<node);

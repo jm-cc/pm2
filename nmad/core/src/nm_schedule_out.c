@@ -37,7 +37,7 @@ __inline__ int nm_process_complete_send_rq(struct nm_gate	*p_gate,
   NM_TRACEF("send request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
 	    p_pw->p_gate->id,
 	    p_pw->p_drv->id,
-	    p_pw->p_trk->id,
+	    p_pw->trk_id,
 	    p_pw->proto_id,
 	    p_pw->seq);
   
@@ -48,7 +48,7 @@ __inline__ int nm_process_complete_send_rq(struct nm_gate	*p_gate,
 #endif
   
   if (_err == NM_ESUCCESS) {
-    FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->p_trk->id);
+    FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
     err = nm_so_out_process_success_rq(p_gate->p_core, p_pw);
     if (err < 0) {
       NM_DISPF("process_successful_send_rq returned %d", err);
@@ -92,11 +92,11 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
   p_pw->p_drv->out_req_nb++;
     
   /* ready to send					*/
-  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->p_trk->id);
+  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   NM_TRACEF("posting new send request: gate %d, drv %d, trk %d, proto %d, seq %d",
 	    p_pw->p_gate->id,
 	    p_pw->p_drv->id,
-	    p_pw->p_trk->id,
+	    p_pw->trk_id,
 	    p_pw->proto_id,
 	    p_pw->seq);
 #ifdef PIOMAN
@@ -119,7 +119,7 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
       NM_TRACEF("new request pending: gate %d, drv %d, trk %d, proto %d, seq %d",
 		p_pw->p_gate->id,
 		p_pw->p_drv->id,
-		p_pw->p_trk->id,
+		p_pw->trk_id,
 		p_pw->proto_id,
 		p_pw->seq);
 #ifdef PIOMAN

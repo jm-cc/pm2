@@ -74,7 +74,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
   NM_TRACEF("polling inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
 	    p_pw->p_gate?p_pw->p_gate->id:-1,
 	    p_pw->p_drv->id,
-	    p_pw->p_trk->id,
+	    p_pw->trk_id,
 	    p_pw->proto_id,
 	    p_pw->seq);
   /* poll request 					*/
@@ -128,7 +128,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
       NM_TRACEF("posting new recv request: gate %d, drv %d, trk %d, proto %d, seq %d",
 		p_pw->p_gate?p_pw->p_gate->id:-1,
 		p_pw->p_drv->id,
-		p_pw->p_trk->id,
+		p_pw->trk_id,
 		p_pw->proto_id,
 		p_pw->seq);
 #ifdef PIOMAN
@@ -154,7 +154,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	  NM_TRACEF("new recv request pending: gate %d, drv %d, trk %d, proto %d, seq %d",
 		    p_pw->p_gate?p_pw->p_gate->id:-1,
 		    p_pw->p_drv->id,
-		    p_pw->p_trk->id,
+		    p_pw->trk_id,
 		    p_pw->proto_id,
 		    p_pw->seq);
 #ifdef PIOMAN

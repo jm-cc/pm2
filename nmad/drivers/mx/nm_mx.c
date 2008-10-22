@@ -764,7 +764,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
       p_dst++;
     }
     
-    NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->p_trk->id, p_pw->length);
+    NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
     
     mx_ret	= mx_isend(p_mx_drv->ep,
 			   seg_list,

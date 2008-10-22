@@ -50,6 +50,14 @@ int check_pages_location(void **pageaddrs, int nbpages, int node) {
   return node;
 }
 
+int my_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
+  int err=0;
+
+  err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+  if (err < 0) perror("move_pages");
+  return err;
+}
+
 unsigned long gethugepagesize(void) {
   return 2*1024*1024;
 }
@@ -62,7 +70,7 @@ int marcel_main(int argc, char **argv) {
   int nbpages;
   unsigned long maxnode;
   unsigned long nodemask;
-  int node, realnode;
+  int dest, node, realnode;
 
   node = atoi(argv[1]);
   maxnode = numa_max_node();
@@ -111,6 +119,15 @@ int marcel_main(int argc, char **argv) {
     }
   }
 
+  {
+    int *dests = malloc(nbpages * sizeof(int));
+    int *statuses = malloc(nbpages * sizeof(int));
+    int i;
+    for(i=0 ; i<nbpages ; i++) dests[i] = dest;
+    my_move_pages(pageaddrs, nbpages, dests, statuses);
+    print_pages(pageaddrs, nbpages);
+  }
+  
   err = close(file);
   if (err < 0) {
     perror("close");

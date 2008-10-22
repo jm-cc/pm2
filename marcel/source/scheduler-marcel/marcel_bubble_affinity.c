@@ -802,7 +802,8 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 static int
 affinity_steal (unsigned int from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father;
-  unsigned int arity, smthg_to_steal = 0;
+  unsigned int arity;
+  int smthg_to_steal = 0;
   int n;
 
 #if 0
@@ -846,7 +847,7 @@ affinity_steal (unsigned int from_vp) {
   ma_local_bh_enable ();
   ma_activate_idle_scheduler ();
   
-  if (smthg_to_steal) { 
+  if (smthg_to_steal > 0) { 
     bubble_sched_debug ("We successfuly stole one or several entities !\n");
     ma_last_succeeded_steal = marcel_clock ();
     ma_atomic_inc (&ma_succeeded_steals);

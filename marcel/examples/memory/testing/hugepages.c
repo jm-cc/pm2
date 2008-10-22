@@ -73,6 +73,7 @@ int marcel_main(int argc, char **argv) {
   int dest, node, realnode;
 
   node = atoi(argv[1]);
+  dest = atoi(argv[2]);
   maxnode = numa_max_node();
   size = 5 * gethugepagesize();
 

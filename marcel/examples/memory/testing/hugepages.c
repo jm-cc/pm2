@@ -1,3 +1,4 @@
+#include "marcel.h"
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -98,11 +99,17 @@ int marcel_main(int argc, char **argv) {
   pid_t pid;
   char filename[1024];
 
+  marcel_init(&argc, argv);
+
   node = atoi(argv[1]);
   dest = atoi(argv[2]);
   maxnode = numa_max_node();
   size = 5 * gethugepagesize();
   pid = getpid();
+
+  for(i=0 ; i<marcel_nbnodes ; i++) {
+    printf("Hugepages on node #%d = %d\n", i, marcel_topo_node_level[i].huge_page_free);
+  }
 
   sprintf(filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
 

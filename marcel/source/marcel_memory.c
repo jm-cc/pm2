@@ -37,7 +37,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), node);
+    ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node);
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
@@ -264,7 +264,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_t
   LOG_OUT();
 }
 
-void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
+void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int nbpages, int node) {
   unsigned long nodemask;
   size_t length;
   void *buffer;
@@ -273,7 +273,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   LOG_IN();
 
   nodemask = (1<<node);
-  length = memory_manager->initially_preallocated_pages * memory_manager->pagesize;
+  length = nbpages * memory_manager->pagesize;
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
   err = mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
@@ -284,7 +284,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
 
   (*space) = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
-  (*space)->nbpages = memory_manager->initially_preallocated_pages;
+  (*space)->nbpages = nbpages;
   (*space)->protection = PROT_READ|PROT_WRITE;
   (*space)->next = NULL;
 
@@ -320,8 +320,10 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
     heap = heap->next;
   }
   if (heap == NULL) {
-    mdebug_heap("not enough space, let's allocate some more\n");
-    ma_memory_preallocate(memory_manager, &heap, node);
+    int preallocatedpages = memory_manager->initially_preallocated_pages;
+    while (nbpages > preallocatedpages) preallocatedpages *= 2;
+    mdebug_heap("not enough space, let's allocate %d extra pages\n", preallocatedpages);
+    ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
 
     if (prev == NULL) {
       memory_manager->heaps[node] = heap;
@@ -335,7 +337,7 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   buffer = heap->start;
   if (nbpages == heap->nbpages) {
     if (prev == heap)
-      memory_manager->heaps[node] = NULL;
+      memory_manager->heaps[node] = prev->next;
     else
       prev->next = heap->next;
   }

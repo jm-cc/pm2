@@ -176,6 +176,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager,
  */
 void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 			   marcel_memory_area_t **space,
+                           int nbpages,
 			   int node);
 
 /*

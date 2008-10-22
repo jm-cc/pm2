@@ -58,8 +58,27 @@ int my_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
   return err;
 }
 
+static unsigned long hugepagesize=-1;
 unsigned long gethugepagesize(void) {
-  return 2*1024*1024;
+  if (hugepagesize == -1) {
+    char line[1024];
+    FILE *f;
+
+    printf("Reading /proc/meminfo\n");
+    f = fopen("/proc/meminfo", "r");
+    while (!(feof(f))) {
+      fgets(line, 1024, f);
+      if (!strncmp(line, "Hugepagesize:", 13)) {
+        char *c, *endptr;
+        unsigned long size;
+
+        c = strchr(line, ':') + 1;
+        size = strtol(c, &endptr, 0);
+        hugepagesize = size * 1024;
+      }
+    }
+  }
+  return hugepagesize;
 }
 
 int marcel_main(int argc, char **argv) {
@@ -128,7 +147,7 @@ int marcel_main(int argc, char **argv) {
     my_move_pages(pageaddrs, nbpages, dests, statuses);
     print_pages(pageaddrs, nbpages);
   }
-  
+
   err = close(file);
   if (err < 0) {
     perror("close");

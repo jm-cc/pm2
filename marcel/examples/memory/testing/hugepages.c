@@ -50,10 +50,14 @@ int check_pages_location(void **pageaddrs, int nbpages, int node) {
   return node;
 }
 
+unsigned long gethugepagesize(void) {
+  return 2*1024*1024;
+}
+
 int marcel_main(int argc, char **argv) {
   int i, err, file;
   void *buffer;
-  size_t size = 10*1024*1024;
+  size_t size;
   void **pageaddrs;
   int nbpages;
   unsigned long maxnode;
@@ -62,6 +66,8 @@ int marcel_main(int argc, char **argv) {
 
   node = atoi(argv[1]);
   maxnode = numa_max_node();
+  size = 5 * gethugepagesize();
+
   // Set the buffers on the nodes
   nodemask = (1<<node);
 
@@ -88,10 +94,10 @@ int marcel_main(int argc, char **argv) {
   printf("Memory memset\n");
 
   // Set the page addresses
-  nbpages = size / getpagesize();
-  if (nbpages * getpagesize() != size) nbpages++;
+  nbpages = size / gethugepagesize();
+  if (nbpages * gethugepagesize() != size) nbpages++;
   pageaddrs = malloc(nbpages * sizeof(void *));
-  for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*getpagesize();
+  for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*gethugepagesize();
 
   realnode = check_pages_location(pageaddrs, nbpages, node);
   if (realnode == node) {

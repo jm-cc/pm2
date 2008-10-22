@@ -63,6 +63,7 @@ unsigned long gethugepagesize(void) {
   if (hugepagesize == -1) {
     char line[1024];
     FILE *f;
+    unsigned long size=-1;
 
     printf("Reading /proc/meminfo\n");
     f = fopen("/proc/meminfo", "r");
@@ -70,12 +71,16 @@ unsigned long gethugepagesize(void) {
       fgets(line, 1024, f);
       if (!strncmp(line, "Hugepagesize:", 13)) {
         char *c, *endptr;
-        unsigned long size;
 
         c = strchr(line, ':') + 1;
         size = strtol(c, &endptr, 0);
         hugepagesize = size * 1024;
       }
+    }
+    fclose(f);
+    if (size == -1) {
+      printf("Hugepagesize information not available.");
+      exit(-1);
     }
   }
   return hugepagesize;

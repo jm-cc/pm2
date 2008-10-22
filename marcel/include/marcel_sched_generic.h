@@ -116,6 +116,24 @@ static __tbx_inline__ void ma_about_to_idle(void) {
 }
 #endif
 
+#ifdef MA__LWPS
+/* To be called from idle only, call marcel_sig_pause after making sure that
+ * we have announced other LWPs that we stopped polling */
+static __tbx_inline__ void ma_sched_sig_pause(void) {
+	MA_BUG_ON(MARCEL_SELF != __ma_get_lwp_var(idle_task));
+	/* Tell other LWPs that we will stop polling need_resched */
+	ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+	/* Make sure people see that we won't poll any more after that */
+	ma_smp_mb__after_clear_bit();
+	/* Make a last check once we've announced that */
+	if (!ma_get_need_resched())
+		marcel_sig_pause();
+	/* Either we have need_resched or got a signal, re-announce that we
+	 * will be polling */
+	ma_set_thread_flag(TIF_POLLING_NRFLAG);
+}
+#endif
+
 static __tbx_inline__ void ma_entering_idle(void) {
 #ifdef MA__LWPS
 	PROF_EVENT1(sched_idle_start,ma_vpnum(MA_LWP_SELF));
@@ -124,7 +142,7 @@ static __tbx_inline__ void ma_entering_idle(void) {
 		marcel_sig_disable_interrupts();
 		ma_topology_lwp_idle_start(MA_LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(MA_LWP_SELF)))
-			marcel_sig_pause();
+			ma_sched_sig_pause();
 		marcel_sig_enable_interrupts();
 	}
 #  endif
@@ -140,7 +158,7 @@ static __tbx_inline__ void ma_still_idle(void) {
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
 		marcel_sig_disable_interrupts();
 		if (!ma_topology_lwp_idle_core(MA_LWP_SELF))
-			marcel_sig_pause();
+			ma_sched_sig_pause();
 		marcel_sig_enable_interrupts();
 	}
 #  endif

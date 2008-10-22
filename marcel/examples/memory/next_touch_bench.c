@@ -57,7 +57,7 @@ int marcel_main(int argc, char * argv[]) {
   int source=-1, dest=-1, nbpages=-1;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
   for(i=1 ; i<argc ; i+=2) {

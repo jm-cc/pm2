@@ -24,7 +24,7 @@ int marcel_main(int argc, char * argv[]) {
   void *ptr;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &node);
   marcel_printf("The least loaded node is: %d\n", node);

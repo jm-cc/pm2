@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   int extended_mode=0;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   minsource = 0;
   maxsource = marcel_nbnodes-1;

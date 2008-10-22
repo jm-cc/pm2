@@ -24,7 +24,7 @@ int marcel_main(int argc, char * argv[]) {
   void *ptr, *ptr2, *ptr3, *ptr4;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   ptr = marcel_memory_malloc(&memory_manager, 100);
   marcel_memory_locate(&memory_manager, ptr, &node);

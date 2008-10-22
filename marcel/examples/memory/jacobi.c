@@ -50,7 +50,7 @@ int marcel_main(int argc, char *argv[]) {
   FILE *out;
 
   marcel_init(&argc, argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   /* initialize mutex and condition variable */
   marcel_mutex_init(&mutex, NULL);

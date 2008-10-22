@@ -23,7 +23,7 @@ int marcel_main(int argc, char * argv[]) {
   int err;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   b = malloc(100);
   err = marcel_memory_migrate_on_next_touch(&memory_manager, b);

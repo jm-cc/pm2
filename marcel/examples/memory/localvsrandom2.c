@@ -67,7 +67,7 @@ int marcel_main(int argc, char * argv[]) {
   unsigned long long **rtimes, **wtimes;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
   rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));

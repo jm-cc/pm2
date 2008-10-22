@@ -208,10 +208,8 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
- * @param preallocatedpages number of initially preallocated pages on each node
  */
-void marcel_memory_init(marcel_memory_manager_t *memory_manager,
-			int preallocatedpages);
+void marcel_memory_init(marcel_memory_manager_t *memory_manager);
 
 /**
  * Shutdowns the memory manager.

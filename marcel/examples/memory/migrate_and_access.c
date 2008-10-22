@@ -60,7 +60,7 @@ int marcel_main(int argc, char * argv[]) {
   int loops=1000;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   if (argc == 2) {
     loops = atoi(argv[1]);

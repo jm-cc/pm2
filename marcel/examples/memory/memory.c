@@ -84,7 +84,8 @@ void memory_bis() {
   void *b[7];
   int i;
 
-  marcel_memory_init(&memory_manager, 2);
+  marcel_memory_init(&memory_manager);
+  memory_manager.initially_preallocated_pages = 2;
   b[0] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
   b[1] = marcel_memory_malloc(&memory_manager, 1*memory_manager.pagesize);
   b[2] = marcel_memory_malloc(&memory_manager, 2*memory_manager.pagesize);
@@ -102,7 +103,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_t attr;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
   // Start the 1st thread on the node #0

@@ -23,14 +23,14 @@
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
-void marcel_memory_init(marcel_memory_manager_t *memory_manager, int preallocatedpages) {
+void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   int node, dest;
 
   LOG_IN();
   memory_manager->root = NULL;
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->pagesize = getpagesize();
-  memory_manager->initially_preallocated_pages = preallocatedpages;
+  memory_manager->initially_preallocated_pages = 1024;
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
 

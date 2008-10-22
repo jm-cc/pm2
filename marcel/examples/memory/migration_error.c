@@ -24,7 +24,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Initialise marcel
   marcel_init(&argc, argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   buffer = marcel_memory_allocate_on_node(&memory_manager, 100, 0);
   err = marcel_memory_migrate_pages(&memory_manager, buffer, 0);

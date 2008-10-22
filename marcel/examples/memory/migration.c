@@ -70,7 +70,7 @@ int marcel_main(int argc, char * argv[]) {
   // Initialise marcel
   marcel_init(&argc, argv);
   marcel_attr_init(&attr);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
 
   if (argc == 3) {
     allocation_and_migration(atoi(argv[1]), atoi(argv[2]));

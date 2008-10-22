@@ -51,7 +51,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_t attr;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
   // Start the thread on the numa node #0

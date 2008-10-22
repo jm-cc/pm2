@@ -57,7 +57,7 @@ int marcel_main(int argc, char * argv[]) {
   unsigned long benefit;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager, 1000);
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
   marcel_attr_init(&attr2);
 

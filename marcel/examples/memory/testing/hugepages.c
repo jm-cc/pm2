@@ -29,7 +29,7 @@ void print_pages(void **pageaddrs, int nbpages) {
   }
 }
 
-void check_pages_location(void **pageaddrs, int nbpages, int node) {
+int check_pages_location(void **pageaddrs, int nbpages, int node) {
   int *statuses;
   int i, err;
 
@@ -43,10 +43,11 @@ void check_pages_location(void **pageaddrs, int nbpages, int node) {
   // Display information
   for(i=0; i<nbpages; i++) {
     if (statuses[i] != node) {
-      printf("  page #%d is NOT on node #%d\n", i, statuses[i]);
-      exit(-1);
+      printf("  page #%d is NOT on node #%d but on node #%d\n", i, node, statuses[i]);
+      return statuses[i];
     }
   }
+  return node;
 }
 
 int marcel_main(int argc, char **argv) {
@@ -57,7 +58,7 @@ int marcel_main(int argc, char **argv) {
   int nbpages;
   unsigned long maxnode;
   unsigned long nodemask;
-  int node;
+  int node, realnode;
 
   node = atoi(argv[1]);
   maxnode = numa_max_node();
@@ -70,7 +71,7 @@ int marcel_main(int argc, char **argv) {
     return -1;
   }
   printf("File opened\n");
-  err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
+  err = set_mempolicy(MPOL_PREFERRED, &nodemask, maxnode+2);
   if (err < 0) {
     perror("set_mempolicy");
     return -1;
@@ -92,8 +93,17 @@ int marcel_main(int argc, char **argv) {
   pageaddrs = malloc(nbpages * sizeof(void *));
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*getpagesize();
 
-  check_pages_location(pageaddrs, nbpages, node);
-  printf("All pages are located on node #%d\n", node);
+  realnode = check_pages_location(pageaddrs, nbpages, node);
+  if (realnode == node) {
+    printf("All pages are located on node #%d\n", node);
+  }
+  else {
+    node = realnode;
+    realnode = check_pages_location(pageaddrs, nbpages, node);
+    if (realnode == node) {
+      printf("All pages are located on node #%d\n", node);
+    }
+  }
 
   err = close(file);
   if (err < 0) {

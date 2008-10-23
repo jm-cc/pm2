@@ -21,7 +21,7 @@
 #include "../marcel_stream.h"
 
 #define TAB_SIZE 1024*1024*16
-#define NB_TIMES 10
+#define NB_TIMES 100
 
 enum mbind_policy {
   BIND_POL,
@@ -187,7 +187,9 @@ main (int argc, char **argv)
   free (b);
   free (c);
 
-  marcel_printf ("Test computed in %lfs!\n", (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000));
+  double average_time = (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000);
+  marcel_printf ("Test computed in %lfs!\n", average_time);
+  marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 
   marcel_end ();
   return 0;

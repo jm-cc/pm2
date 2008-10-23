@@ -43,6 +43,9 @@ typedef struct marcel_access_cost_s marcel_access_cost_t;
 /** \brief Type of a memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s marcel_memory_migration_cost_t;
 
+/** \brief Type representing the huge pages per node */
+typedef struct marcel_memory_huge_pages_s marcel_memory_huge_pages_t;
+
 /** \brief Type of a memory manager */
 typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 
@@ -65,6 +68,8 @@ typedef int marcel_memory_membind_policy_t;
 #define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)1)
 /** \brief The memory will be allocated on the least loaded node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)2)
+/** \brief The memory will be allocated via huge pages */
+#define MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES        ((marcel_memory_membind_policy_t)3)
 
 #section structures
 
@@ -110,6 +115,8 @@ struct marcel_memory_area_s {
   void *start;
   /** \brief Number of pages of the memory area */
   int nbpages;
+  /** \brief Page size */
+  unsigned long pagesize;
   /** \brief Protection of the memory area */
   int protection;
   /** \brief Next pre-allocated space */
@@ -130,6 +137,11 @@ struct marcel_memory_migration_cost_s {
   float correlation;
 };
 
+/** \brief Structure representing the huge pages per node */
+struct marcel_memory_huge_pages_s {
+  unsigned long free;
+};
+
 /** \brief Structure of a memory manager */
 struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
@@ -142,10 +154,14 @@ struct marcel_memory_manager_s {
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas */
   marcel_memory_area_t **heaps;
+  /** \brief List of the huge pages structures */
+  marcel_memory_huge_pages_t *huge_pages;
   /** \brief Lock to manipulate the data */
   marcel_spinlock_t lock;
   /** \brief System page size */
-  int pagesize;
+  unsigned long normalpagesize;
+  /** \brief System huge page size */
+  unsigned long hugepagesize;
   /** \brief Number of initially pre-allocated pages */
   int initially_preallocated_pages;
   /** \brief Cache line size */

@@ -27,7 +27,7 @@ extern long move_pages(int pid, unsigned long count,
 static unsigned long gethugepagesize(void) {
   char line[1024];
   FILE *f;
-  unsigned long hugepagesize, size=-1;
+  unsigned long hugepagesize=0, size=-1;
 
   mdebug_heap("Reading /proc/meminfo\n");
   f = fopen("/proc/meminfo", "r");
@@ -179,9 +179,14 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
-    ma_memory_deallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
   }
   tfree(memory_manager->heaps);
+
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    if (memory_manager->huge_pages_heaps[node]) {
+      ma_memory_deallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    }
+  }
   tfree(memory_manager->huge_pages_heaps);
 
   for(node=0 ; node<marcel_nbnodes ; node++) {

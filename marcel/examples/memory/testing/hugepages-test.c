@@ -116,7 +116,7 @@ int marcel_main(int argc, char **argv) {
   // Set the buffers on the nodes
   nodemask = (1<<node);
 
-  file = open(filename, O_CREAT, S_IRWXU);
+  file = open(filename, O_CREAT|O_RDWR, S_IRWXU);
   if (file == -1) {
     perror("open");
     return -1;

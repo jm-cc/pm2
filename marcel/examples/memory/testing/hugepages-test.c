@@ -87,62 +87,100 @@ unsigned long gethugepagesize(void) {
   return hugepagesize;
 }
 
-int marcel_main(int argc, char **argv) {
-  int i, err, file;
+typedef struct huge_memory_s huge_memory_t;
+
+struct huge_memory_s {
   void *buffer;
-  size_t size;
-  void **pageaddrs;
-  int nbpages;
+  char *filename;
+  int file;
+};
+
+char *getfilename(int node) {
+  char *filename;
+  pid_t pid;
+
+  filename = malloc(1024 * sizeof(char));
+  pid = getpid();
+  sprintf(filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
+  return filename;
+}
+
+void free_with_huge_pages(huge_memory_t *memory) {
+  int err;
+
+  err = close(memory->file);
+  if (err < 0) {
+    perror("close");
+    exit(-1);
+  }
+  err = unlink(memory->filename);
+  if (err < 0) {
+    perror("unlink");
+    exit(-1);
+  }
+}
+
+huge_memory_t *malloc_with_huge_pages(size_t size, int node) {
+  huge_memory_t *memory;
+  int err;
   unsigned long maxnode;
   unsigned long nodemask;
-  int dest, node, realnode;
-  pid_t pid;
-  char filename[1024];
 
-  marcel_init(&argc, argv);
-
-  node = atoi(argv[1]);
-  dest = atoi(argv[2]);
+  memory = malloc(sizeof(huge_memory_t));
   maxnode = numa_max_node();
-  size = 5 * gethugepagesize();
-  pid = getpid();
-
-  for(i=0 ; i<marcel_nbnodes ; i++) {
-    printf("Hugepages on node #%d = %d\n", i, marcel_topo_node_level[i].huge_page_free);
-  }
-
-  sprintf(filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
-
+  memory->filename = getfilename(node);
   // Set the buffers on the nodes
   nodemask = (1<<node);
 
-  file = open(filename, O_CREAT|O_RDWR, S_IRWXU);
-  if (file == -1) {
+  memory->file = open(memory->filename, O_CREAT|O_RDWR, S_IRWXU);
+  if (memory->file == -1) {
     perror("open");
-    return -1;
+    exit(-1);
   }
   printf("File opened\n");
   err = set_mempolicy(MPOL_PREFERRED, &nodemask, maxnode+2);
   if (err < 0) {
     perror("set_mempolicy");
-    return -1;
+    exit(-1);
   }
   printf("Memory policy set\n");
-  buffer = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, file, 0);
-  if (buffer == MAP_FAILED) {
+  memory->buffer = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, memory->file, 0);
+  if (memory->buffer == MAP_FAILED) {
     perror("mmap");
-    return -1;
+    exit(-1);
   }
   printf("Memory map\n");
 
-  memset(buffer, 0, size);
+  memset(memory->buffer, 0, size);
   printf("Memory memset\n");
+  return memory;
+}
+
+int marcel_main(int argc, char **argv) {
+  int i, err;
+  huge_memory_t *memory;
+  void **pageaddrs;
+  int nbpages;
+  int dest, node, realnode;
+  size_t size;
+
+  marcel_init(&argc, argv);
+
+  node = atoi(argv[1]);
+  dest = atoi(argv[2]);
+
+  for(i=0 ; i<marcel_nbnodes ; i++) {
+    printf("Hugepages on node #%d = %d\n", i, marcel_topo_node_level[i].huge_page_free);
+  }
+
+  size = 5 * gethugepagesize();
+  memory = malloc_with_huge_pages(size, node);
 
   // Set the page addresses
   nbpages = size / gethugepagesize();
   if (nbpages * gethugepagesize() != size) nbpages++;
   pageaddrs = malloc(nbpages * sizeof(void *));
-  for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*gethugepagesize();
+  for(i=0; i<nbpages ; i++) pageaddrs[i] = memory->buffer + i*gethugepagesize();
 
   realnode = check_pages_location(pageaddrs, nbpages, node);
   if (realnode == node) {
@@ -165,14 +203,5 @@ int marcel_main(int argc, char **argv) {
     print_pages(pageaddrs, nbpages);
   }
 
-  err = close(file);
-  if (err < 0) {
-    perror("close");
-    return -1;
-  }
-  err = unlink(filename);
-  if (err < 0) {
-    perror("unlink");
-    return -1;
-  }
+  free_with_huge_pages(memory);
 }

@@ -138,18 +138,18 @@ huge_memory_t *malloc_with_huge_pages(size_t size, int node) {
     exit(-1);
   }
   printf("File opened\n");
-  err = set_mempolicy(MPOL_PREFERRED, &nodemask, maxnode+2);
-  if (err < 0) {
-    perror("set_mempolicy");
-    exit(-1);
-  }
-  printf("Memory policy set\n");
   memory->buffer = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, memory->file, 0);
   if (memory->buffer == MAP_FAILED) {
     perror("mmap");
     exit(-1);
   }
   printf("Memory map\n");
+  err = set_mempolicy(MPOL_PREFERRED, &nodemask, maxnode+2);
+  if (err < 0) {
+    perror("set_mempolicy");
+    exit(-1);
+  }
+  printf("Memory policy set\n");
 
   memset(memory->buffer, 0, size);
   printf("Memory memset\n");

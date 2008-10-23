@@ -13,27 +13,14 @@
  * General Public License for more details.
  */
 
-/* This test creates two threads that will work on the same chunk of
- * memory, previously distributed upon the closest nodes of the one
- * the first thread is running on. The second thread location is user
- * defined. */
-
 #include <marcel.h>
 #include <numa.h>
 #include <numaif.h>
 #include <errno.h>
-#include <string.h>
 #include <malloc.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/types.h>
-#include <sys/uio.h>
+#include "../marcel_stream.h"
 
-#define TAB_SIZE 1024*1024*64
-#define NB_ITERATIONS 1024*1024*256
+#define TAB_SIZE 1024*1024*16
 #define NB_TIMES 10
 
 enum mbind_policy {
@@ -46,7 +33,7 @@ enum sched_policy {
   DISTRIBUTED_POL
 };
 
-static int *tab;
+static double *a, *b, *c;
 static int begin = 0;
 static marcel_barrier_t barrier;
 
@@ -69,52 +56,6 @@ static void print_welcoming_message (unsigned int nb_threads,
 				     unsigned int *memory_nodes,
 				     unsigned int nb_memory_nodes);
 
-static int
-create_file (char *filename,
-	     long **access_pattern, 
-	     unsigned int nb_threads,
-	     unsigned int access_pattern_len,
-	     unsigned int tab_size) {
-  unsigned int i, j;
-  int fileno = open (filename, O_CREAT | O_WRONLY, 0666);
-  if (fileno < 0) {
-    perror (filename);
-    exit (1);
-  }
-
-  for (i = 0; i < nb_threads; i++) {
-    for (j = 0; j < access_pattern_len; j++) {
-      access_pattern[i][j] = marcel_random () % tab_size;
-    }
-  }
-  
-  for (i = 0; i < nb_threads; i++) {
-    write (fileno, access_pattern[i], access_pattern_len);
-  }
-  return fileno;
-} 
-
-static void 
-initialize_access_pattern_vectors_from_file (char *filename,
-					     long **access_pattern, 
-					     unsigned int nb_threads,
-					     unsigned int access_pattern_len,
-					     unsigned int tab_size) {
-  unsigned int i, j;
-  int fileno = open (filename, O_RDONLY);
-
-  if (fileno < 0) {
-    fileno = create_file (filename, access_pattern, nb_threads, access_pattern_len, tab_size);
-  } else {
-    for (i = 0; i < nb_threads; i++) {
-      read (fileno, access_pattern[i], access_pattern_len);
-    }
-  }
-
-  close (fileno);
-  marcel_printf ("Access pattern vectors initialized!\n");
-}
-
 static 
 void * f (void *arg) {
   long *access_pattern = (long *)arg;
@@ -124,10 +65,10 @@ void * f (void *arg) {
     marcel_barrier_wait (&barrier);
     
     /* Let's do the job. */
-    for (j = 0; j < NB_ITERATIONS; j++) {
-      int dummy = tab[access_pattern[j]];
-      tab[access_pattern[NB_ITERATIONS - j - 1]] = dummy;
-    }
+    STREAM_copy ();
+    STREAM_scale (3.0);
+    STREAM_add ();
+    STREAM_triad (3.0);
   }
 
   return 0;
@@ -136,12 +77,10 @@ void * f (void *arg) {
 int
 main (int argc, char **argv) 
 {
-  marcel_attr_t thread_attr;
-  unsigned long tab_len = TAB_SIZE * sizeof (int);
+  unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned long nodemask = 0;
   unsigned long maxnode = numa_max_node () + 1;
   unsigned int nb_nodes, i;
-  long **access_pattern;
   tbx_tick_t t1, t2;
 
   marcel_init (&argc, argv);
@@ -197,35 +136,40 @@ main (int argc, char **argv)
     nodemask |= (1 << memory_nodes[i]);
   }
 
-  /* Bind the access pattern vectors next to the accessing threads. */
-  access_pattern = numa_alloc_onnode (nb_threads * sizeof (long *), threads_nodes[0]);
-  for (i = 0; i < nb_threads; i++) {
-    access_pattern[i] = numa_alloc_onnode (NB_ITERATIONS * sizeof (long), spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]);
-  }
-
   /* Bind the accessed data to the nodes. */
-  tab = memalign (getpagesize(), tab_len);
+  a = memalign (getpagesize(), tab_len);
+  b = memalign (getpagesize(), tab_len);
+  c = memalign (getpagesize(), tab_len);
+
   int err_mbind;
   if (mpol == BIND_POL) {
-    err_mbind = mbind (tab, tab_len, MPOL_BIND, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind = mbind (a, tab_len, MPOL_BIND, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind += mbind (b, tab_len, MPOL_BIND, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind += mbind (c, tab_len, MPOL_BIND, &nodemask, maxnode + 1, MPOL_MF_MOVE);
   } else {
-    err_mbind = mbind (tab, tab_len, MPOL_INTERLEAVE, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind = mbind (a, tab_len, MPOL_INTERLEAVE, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind += mbind (b, tab_len, MPOL_INTERLEAVE, &nodemask, maxnode + 1, MPOL_MF_MOVE);
+    err_mbind += mbind (c, tab_len, MPOL_INTERLEAVE, &nodemask, maxnode + 1, MPOL_MF_MOVE);
   }
   if (err_mbind < 0) {
     perror ("mbind");
   }
 
-  /* Build the access pattern vectors */
-  initialize_access_pattern_vectors_from_file ("membind_pattern.dat", access_pattern, nb_threads, NB_ITERATIONS, TAB_SIZE);
-
-  marcel_attr_init (&thread_attr);
-  marcel_attr_setpreemptible (&thread_attr, tbx_false);
+  /* Initialize the STREAM library. */
+  STREAM_init (nb_threads, TAB_SIZE, a, b, c);
+  
+  /* Disable preemption on the main thread. */
   marcel_thread_preemption_disable ();
 
+  marcel_attr_t thread_attr[nb_threads];
+  
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
-    marcel_attr_settopo_level (&thread_attr, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
-    marcel_create (working_threads + i, &thread_attr, f, access_pattern[i]);
+    marcel_attr_init (thread_attr + i);
+    marcel_attr_setid (thread_attr + i, i);
+    marcel_attr_setpreemptible (thread_attr + i, tbx_false);
+    marcel_attr_settopo_level (thread_attr + i, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
+    marcel_create (working_threads + i, thread_attr + i, f, NULL);
   }
   
   TBX_GET_TICK (t1);
@@ -239,11 +183,9 @@ main (int argc, char **argv)
     marcel_join (working_threads[i], NULL);
   }
 
-  for (i = 0; i < nb_threads; i++) {
-    numa_free (access_pattern[i], NB_ITERATIONS * sizeof (long));
-  }
-  numa_free (access_pattern, nb_threads * sizeof (long *));
-  free (tab);
+  free (a);
+  free (b);
+  free (c);
 
   marcel_printf ("Test computed in %lfs!\n", (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000));
 

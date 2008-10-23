@@ -24,7 +24,7 @@ void allocation_and_migration(int cpu, int mem) {
   size_t size;
   int bnode, anode;
 
-  size = memory_manager.pagesize * 2;
+  size = memory_manager.normalpagesize * 2;
 
   buffer = marcel_memory_allocate_on_node(&memory_manager, size, mem);
   marcel_memory_locate(&memory_manager, buffer, &bnode);
@@ -42,7 +42,7 @@ any_t migration(any_t arg) {
   float migration_cost, reading_cost;
 
   cpu = marcel_self()->id;
-  size = memory_manager.pagesize * 10000;
+  size = memory_manager.normalpagesize * 10000;
 
   for(mem=0 ; mem<marcel_nbnodes ; mem++) {
     if (mem == cpu) continue;

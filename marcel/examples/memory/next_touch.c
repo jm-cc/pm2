@@ -22,7 +22,7 @@ marcel_memory_manager_t memory_manager;
 int *b;
 
 any_t writer(any_t arg) {
-  b = marcel_memory_malloc(&memory_manager, 3*memory_manager.pagesize);
+  b = marcel_memory_malloc(&memory_manager, 3*memory_manager.normalpagesize);
   return 0;
 }
 

@@ -21,6 +21,7 @@ double *stream_c;
 
 /* Gather information for the STREAM interface */
 void STREAM_init (unsigned int nb_threads, unsigned int array_size, double *t1, double *t2, double *t3) {
+  unsigned int i;
   stream_nb_threads = nb_threads;
   stream_array_size = array_size;
   stream_chunk_size = stream_array_size / stream_nb_threads;
@@ -28,6 +29,12 @@ void STREAM_init (unsigned int nb_threads, unsigned int array_size, double *t1, 
   stream_a = t1;
   stream_b = t2;
   stream_c = t3;
+
+  for (i = 0; i < array_size; i++) {
+    a[i] = 1.0;
+    b[i] = 2.0;
+    c[i] = 0.0;
+  }
 }
 
 /* Copy stream_a into stream_c */

@@ -43,8 +43,8 @@ typedef struct marcel_access_cost_s marcel_access_cost_t;
 /** \brief Type of a memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s marcel_memory_migration_cost_t;
 
-/** \brief Type representing the huge pages per node */
-typedef struct marcel_memory_huge_pages_s marcel_memory_huge_pages_t;
+/** \brief Type of a preallocated space with huge pages */
+typedef struct marcel_memory_huge_pages_area_s marcel_memory_huge_pages_area_t;
 
 /** \brief Type of a memory manager */
 typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
@@ -87,6 +87,8 @@ struct marcel_memory_data_s {
   size_t size;
   /** \brief Protection of the memory area */
   int protection;
+  /** \brief Is the memory based on huge pages */
+  int with_huge_pages;
 
   /** \brief Page addresses of the memory area */
   void **pageaddrs;
@@ -137,9 +139,12 @@ struct marcel_memory_migration_cost_s {
   float correlation;
 };
 
-/** \brief Structure representing the huge pages per node */
-struct marcel_memory_huge_pages_s {
-  unsigned long free;
+/** \brief Structure of a preallocated space with huge pages */
+struct marcel_memory_huge_pages_area_s {
+  void *buffer;
+  char *filename;
+  int file;
+  size_t size;
 };
 
 /** \brief Structure of a memory manager */
@@ -152,10 +157,10 @@ struct marcel_memory_manager_s {
   marcel_access_cost_t **writing_access_costs;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
+  /** \brief List of pre-allocated memory areas for huge pages */
+  marcel_memory_huge_pages_area_t **huge_pages_heaps;
   /** \brief List of pre-allocated memory areas */
   marcel_memory_area_t **heaps;
-  /** \brief List of the huge pages structures */
-  marcel_memory_huge_pages_t *huge_pages;
   /** \brief Lock to manipulate the data */
   marcel_spinlock_t lock;
   /** \brief System page size */
@@ -194,6 +199,13 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
 			   marcel_memory_area_t **space,
                            int nbpages,
 			   int node);
+
+/*
+ *
+ */
+void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager,
+                                      marcel_memory_huge_pages_area_t **space,
+                                      int node);
 
 /*
  *

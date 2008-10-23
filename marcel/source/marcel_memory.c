@@ -17,6 +17,7 @@
 
 #include "marcel.h"
 #include <errno.h>
+#include <fcntl.h>
 #include <numaif.h>
 #include <sys/mman.h>
 
@@ -68,11 +69,11 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
-  // Load the huge pages informations
-  memory_manager->huge_pages = tmalloc(marcel_nbnodes * sizeof(marcel_memory_huge_pages_t *));
+  // Preallocate memory with huge pages on each node
+  memory_manager->huge_pages_heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_huge_pages_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->huge_pages[node].free = marcel_topo_node_level[node].huge_page_free;
-    mdebug_heap("Number of free huge pages on node #%d = %lu\n", node, memory_manager->huge_pages[node].free);
+    ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    mdebug_heap("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
   }
 
   // Load the model for the migration costs
@@ -139,6 +140,25 @@ void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
 }
 
 static
+void ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
+  int err;
+
+  LOG_IN();
+  mdebug_heap("Releasing huge pages %s\n", (*space)->filename);
+
+  err = close((*space)->file);
+  if (err < 0) {
+    perror("close");
+  }
+  err = unlink((*space)->filename);
+  if (err < 0) {
+    perror("unlink");
+  }
+
+  LOG_OUT();
+}
+
+static
 void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
   marcel_memory_area_t *ptr;
 
@@ -159,8 +179,10 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
+    ma_memory_deallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
   }
   tfree(memory_manager->heaps);
+  tfree(memory_manager->huge_pages_heaps);
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
     for(dest=0 ; dest<marcel_nbnodes ; dest++) {
@@ -187,7 +209,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
 static
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-                                void **pageaddrs, int nbpages, size_t size, int node, int protection,
+                                void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages,
                                 marcel_memory_data_t **memory_data) {
   LOG_IN();
 
@@ -200,6 +222,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->status = MARCEL_MEMORY_INITIAL_STATUS;
   (*memory_data)->protection = protection;
   (*memory_data)->node = node;
+  (*memory_data)->with_huge_pages = with_huge_pages;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -235,7 +258,8 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
 
     // copy the value from the in-order predecessor to the original node
     free((*memory_tree)->data);
-    ma_memory_init_memory_data(memory_manager, temp->data->pageaddrs, temp->data->nbpages, temp->data->size, temp->data->node, temp->data->protection, &((*memory_tree)->data));
+    ma_memory_init_memory_data(memory_manager, temp->data->pageaddrs, temp->data->nbpages, temp->data->size, temp->data->node,
+                               temp->data->protection, temp->data->with_huge_pages, &((*memory_tree)->data));
 
     // then delete the predecessor
     ma_memory_delete(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
@@ -267,7 +291,9 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       marcel_memory_data_t *data = (*memory_tree)->data;
       mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       // Free memory
-      ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node);
+      if (!(data->with_huge_pages)) {
+        ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node);
+      }
 
       // Delete tree
       ma_memory_delete_tree(memory_manager, memory_tree);
@@ -282,20 +308,57 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
 
 static
 void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
-			void **pageaddrs, int nbpages, size_t size, int node, int protection) {
+			void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages) {
   LOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, &((*memory_tree)->data));
+    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, with_huge_pages, &((*memory_tree)->data));
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection);
+      ma_memory_register(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection, with_huge_pages);
     else
-      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection);
+      ma_memory_register(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection, with_huge_pages);
   }
+  LOG_OUT();
+}
+
+void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
+  int nbpages;
+  pid_t pid;
+
+  LOG_IN();
+  nbpages = marcel_topo_node_level[node].huge_page_free;
+  if (!nbpages) {
+    mdebug_heap("No huge pages on node #%d\n", node);
+    *space = NULL;
+    return;
+  }
+
+  (*space) = tmalloc(sizeof(marcel_memory_huge_pages_area_t));
+  (*space)->size = nbpages * memory_manager->hugepagesize;
+  (*space)->filename = malloc(1024 * sizeof(char));
+  pid = getpid();
+  sprintf((*space)->filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
+
+  (*space)->file = open((*space)->filename, O_CREAT|O_RDWR, S_IRWXU);
+  if ((*space)->file == -1) {
+    tfree(*space);
+    *space = NULL;
+    perror("open");
+    return;
+  }
+
+  (*space)->buffer = mmap(NULL, (*space)->size, PROT_READ|PROT_WRITE, MAP_PRIVATE, (*space)->file, 0);
+  if ((*space)->buffer == MAP_FAILED) {
+    perror("mmap");
+    tfree(*space);
+    *space = NULL;
+    return;
+  }
+
   LOG_OUT();
 }
 
@@ -325,6 +388,41 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space)->next = NULL;
 
   LOG_OUT();
+}
+
+static void* marcel_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
+  marcel_memory_huge_pages_area_t *heap = memory_manager->huge_pages_heaps[node];
+  void *buffer = NULL;
+  unsigned long nodemask;
+  int err;
+
+  if (heap == NULL) {
+    mdebug_heap("No huge pages are available on node #%d\n", node);
+    return NULL;
+  }
+
+  mdebug_heap("Requiring space from huge pages area of size=%lu on node #%d\n", heap->size, node);
+
+  if (size >= heap->size) {
+    mdebug_heap("Not enough huge pages are available on node #%d\n", node);
+    return NULL;
+  }
+
+  buffer = heap->buffer;
+  heap->size = 0;
+
+  nodemask = (1<<node);
+  err = set_mempolicy(MPOL_BIND, &nodemask, marcel_nbnodes+2);
+  if (err < 0) {
+    perror("set_mempolicy");
+  }
+  memset(buffer, 0, size);
+  err = set_mempolicy(MPOL_DEFAULT, NULL, 0);
+  if (err < 0) {
+    perror("set_mempolicy");
+  }
+
+  return buffer;
 }
 
 static void* marcel_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
@@ -391,19 +489,24 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
     buffer = marcel_memory_get_buffer_from_heap(memory_manager, node, nbpages, realsize);
   }
   else {
-    buffer = NULL;
+    buffer = marcel_memory_get_buffer_from_huge_pages_heap(memory_manager, node, nbpages, realsize);
   }
 
-  // Set the page addresses
-  pageaddrs = tmalloc(nbpages * sizeof(void *));
-  for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
+  if (!buffer) {
+    errno = ENOMEM;
+  }
+  else {
+    // Set the page addresses
+    pageaddrs = tmalloc(nbpages * sizeof(void *));
+    for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
 
-  // Register memory
-  mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-  ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection);
+    // Register memory
+    mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
+    ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages);
 
-  tfree(pageaddrs);
-
+    tfree(pageaddrs);
+  }
+  
   marcel_spin_unlock(&(memory_manager->lock));
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
   LOG_OUT();

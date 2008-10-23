@@ -31,9 +31,9 @@ void STREAM_init (unsigned int nb_threads, unsigned int array_size, double *t1, 
   stream_c = t3;
 
   for (i = 0; i < array_size; i++) {
-    a[i] = 1.0;
-    b[i] = 2.0;
-    c[i] = 0.0;
+    stream_a[i] = 1.0;
+    stream_b[i] = 2.0;
+    stream_c[i] = 0.0;
   }
 }
 

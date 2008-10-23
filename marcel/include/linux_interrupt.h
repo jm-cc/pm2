@@ -110,7 +110,7 @@ struct ma_tasklet_struct {
 
 #section marcel_macros
 #ifdef MARCEL_REMOTE_TASKLETS
-#  define MA_REMOTE_TASKLET_INIT		.vp_set=MARCEL_VPSET_ZERO,
+#  define MA_REMOTE_TASKLET_INIT		.vp_set=MARCEL_VPSET_FULL,
 #else /* MARCEL_REMOTE_TASKLETS */
 #  define MA_REMOTE_TASKLET_INIT
 #endif /* MARCEL_REMOTE_TASKLETS */

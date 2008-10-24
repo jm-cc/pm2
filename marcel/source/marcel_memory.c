@@ -275,8 +275,10 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
 }
 
 static
-void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int nbpages, int node, int with_huge_pages) {
+void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int nbpages, int node, int protection, int with_huge_pages) {
   marcel_memory_area_t *available;
+  marcel_memory_area_t **ptr;
+  marcel_memory_area_t **prev;
 
   LOG_IN();
 
@@ -288,13 +290,55 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   available->nbpages = nbpages;
   if (with_huge_pages) {
     available->pagesize = memory_manager->hugepagesize;
-    available->next = memory_manager->huge_pages_heaps[node]->heap;
-    memory_manager->huge_pages_heaps[node]->heap = available;
   }
   else {
     available->pagesize = memory_manager->normalpagesize;
-    available->next = memory_manager->heaps[node];
-    memory_manager->heaps[node] = available;
+  }
+  available->protection = protection;
+  available->next = NULL;
+
+  // Insert the new area at the right place
+  if (with_huge_pages) {
+    ptr = &(memory_manager->huge_pages_heaps[node]->heap);
+  }
+  else {
+    ptr = &(memory_manager->heaps[node]);
+  }
+  if (*ptr == NULL) *ptr = available;
+  else {
+    prev = ptr;
+    while (*ptr != NULL && ((*ptr)->start < available->start)) {
+      prev = ptr;
+      ptr = &((*ptr)->next);
+    }
+    if (prev == ptr) {
+      available->next = *ptr;
+      *ptr = available;
+    }
+    else {
+      available->next = (*prev)->next;
+      (*prev)->next = available;
+    }
+  }
+
+  // Defragment the areas
+  if (with_huge_pages) {
+    ptr = &(memory_manager->huge_pages_heaps[node]->heap);
+  }
+  else {
+    ptr = &(memory_manager->heaps[node]);
+  }
+  while ((*ptr)->next != NULL) {
+    if (((*ptr)->end == (*ptr)->next->start) &&
+        ((*ptr)->protection == (*ptr)->next->protection)) {
+      mdebug_heap("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
+                  (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
+      (*ptr)->end = (*ptr)->next->end;
+      (*ptr)->nbpages += (*ptr)->next->nbpages;
+      (*ptr)->next = (*ptr)->next->next;
+    }
+    else
+      ptr = &((*ptr)->next);
   }
 
   LOG_OUT();
@@ -308,7 +352,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
       // Free memory
-      ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->with_huge_pages);
+      ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
 
       // Delete tree
       ma_memory_delete_tree(memory_manager, memory_tree);

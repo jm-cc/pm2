@@ -149,7 +149,9 @@ main (int argc, char **argv)
   marcel_free (b);
   marcel_free (c);
   
-  double average_time = (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000);
+  /* Avoid the first iteration, in which we only measure the time we
+     need to cross the barrier. */
+  double average_time = (double)TBX_TIMING_DELAY(t1, t2) / ((NB_TIMES-1) * 1000000);
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 

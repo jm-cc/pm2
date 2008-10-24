@@ -19,14 +19,10 @@
 #include <numa.h>
 #include <numaif.h>
 #include <errno.h>
-#include <string.h>
-#include <assert.h>
 #include <malloc.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include "../marcel_stream.h" 
 
-#define TAB_SIZE 1024*1024*64
-#define NB_ITERATIONS 1024*1024*16
+#define TAB_SIZE 1024*1024*16
 #define NB_TIMES 20
 
 enum mbind_policy {
@@ -39,14 +35,8 @@ enum sched_policy {
   DISTRIBUTED_POL
 };
 
-static int **tab;
-static int begin = 0;
+static double **a, **b, **c;
 static marcel_barrier_t barrier;
-
-struct thread_args {
-  unsigned int team;
-  unsigned long *access_pattern_vector;
-};
 
 static void usage (void);
 static int parse_command_line_arguments (unsigned int nb_args, 
@@ -60,31 +50,21 @@ static void print_welcoming_message (unsigned int nb_teams,
 				     enum sched_policy spol,
 				     enum mbind_policy mpol);
 
-static void 
-initialize_access_pattern_vector (unsigned long *access_pattern_vector, 
-				   unsigned int access_pattern_len,
-				   unsigned int tab_size) {
-  unsigned int team, thread, i;
-  for (i = 0; i < access_pattern_len; i++) {
-    access_pattern_vector[i] = marcel_random () % tab_size;
-  }
-}
-
 static 
 void * f (void *arg) {
-  struct thread_args *ta = (struct thread_args *)arg;
-  unsigned long *access_pattern_vector = ta->access_pattern_vector;
-  unsigned int team = ta->team;
-  unsigned int i, j;
+  stream_struct_t *stream_struct = (stream_struct_t *)arg;
+  unsigned int i;
+  
+  MA_BUG_ON (marcel_self ()->id > 1);
 
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
     
     /* Let's do the job. */
-    for (j = 0; j < NB_ITERATIONS; j++) {
-      int dummy = tab[team][access_pattern_vector[j]];
-      tab[team][access_pattern_vector[NB_ITERATIONS - j - 1]] = dummy;
-    }
+    STREAM_copy (stream_struct);
+    STREAM_scale (stream_struct, 3.0);
+    STREAM_add (stream_struct);
+    STREAM_triad (stream_struct, 3.0);
   }
 
   return 0;
@@ -93,8 +73,7 @@ void * f (void *arg) {
 int
 main (int argc, char **argv) 
 {
-  marcel_attr_t thread_attr;
-  unsigned long tab_len = TAB_SIZE * sizeof (int);
+  unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
   tbx_tick_t t1, t2;
 
@@ -122,8 +101,8 @@ main (int argc, char **argv)
   print_welcoming_message (nb_teams, nb_threads, spol, mpol);
 
   marcel_t working_threads[nb_teams][nb_threads];
+  marcel_attr_t thread_attr[nb_teams][nb_threads];
   unsigned long nodemasks[nb_teams];
-  unsigned long ***access_pattern;
   marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams) + 1);
 
   /* Set the nodemask according to the memory policy passed in
@@ -143,51 +122,41 @@ main (int argc, char **argv)
   }
 
   /* Bind the accessed data to the nodes. */
-  tab = memalign (getpagesize (), nb_teams * sizeof (int *));
-  for (team = 0; team < nb_teams; team++) {    
-    tab[team] = memalign (getpagesize (), tab_len);
+  a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+  b = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+  c = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+  
+  for (i = 0; i < nb_teams; i++) {
+    a[i] = memalign (getpagesize(), tab_len);
+    b[i] = memalign (getpagesize(), tab_len);
+    c[i] = memalign (getpagesize(), tab_len);
+    
     int err_mbind;
-    if (mpol == BIND_POL) {
-      err_mbind = mbind (tab[team], 
-			 tab_len, 
-			 MPOL_BIND, 
-			 nodemasks + team, 
-			 numa_max_node () + 2, 
-			 MPOL_MF_MOVE);
-    } else {
-      err_mbind = mbind (tab[team], 
-			 tab_len, 
-			 MPOL_INTERLEAVE, 
-			 nodemasks + team, 
-			 numa_max_node () + 2, 
-			 MPOL_MF_MOVE);
-    }
+    err_mbind = mbind (a[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+    err_mbind += mbind (b[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+    err_mbind += mbind (c[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+    
     if (err_mbind < 0) {
       perror ("mbind");
       exit (1);
     }
   }
-
-  marcel_attr_init (&thread_attr);
-  marcel_attr_setpreemptible (&thread_attr, tbx_false);
   marcel_thread_preemption_disable ();
 
-  access_pattern = numa_alloc_onnode (nb_teams * sizeof (unsigned long **), 0);
+  stream_struct_t stream_struct[nb_teams];
 
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
-    access_pattern[team] = numa_alloc_onnode (nb_threads * sizeof (unsigned long *), 0);
+    STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
+
     for (i = 0; i < nb_threads; i++) {
       unsigned int dest_node = spol == LOCAL_POL ? team : ((team * nb_threads) + i) % (numa_max_node () + 1);
-      access_pattern[team][i] = numa_alloc_onnode (NB_ITERATIONS * sizeof (unsigned long), dest_node);
-      initialize_access_pattern_vector (access_pattern[team][i], NB_ITERATIONS, TAB_SIZE);
-      struct thread_args ta = {
-	.team = team,
-	.access_pattern_vector = access_pattern[team][i]
-      };
-      marcel_attr_settopo_level (&thread_attr, 
+      marcel_attr_init (&thread_attr[team][i]);
+      marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
+      marcel_attr_setid (&thread_attr[team][i], i);
+      marcel_attr_settopo_level (&thread_attr[team][i], 
 				 &marcel_topo_node_level[dest_node]);
-      marcel_create (&working_threads[team][i], &thread_attr, f, &ta);
+      marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
     }
   }
   marcel_printf ("Threads created and ready to work!\n");
@@ -205,12 +174,19 @@ main (int argc, char **argv)
     }
   }
 
-  for (team = 0; team < nb_teams; team++) {
-    free (tab[team]);
+  for (i = 0; i < nb_teams; i++) {
+    free (a[i]);
+    free (b[i]);
+    free (c[i]);
   }
-  free (tab);
+  
+  marcel_free (a);
+  marcel_free (b);
+  marcel_free (c);
 
-  marcel_printf ("Test computed in %lfs!\n", (double)TBX_TIMING_DELAY(t1, t2) / (NB_TIMES * 1000000));
+  double average_time = (double)TBX_TIMING_DELAY(t1, t2) / ((NB_TIMES-1) * 1000000);
+  marcel_printf ("Test computed in %lfs!\n", average_time);
+  marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 
   marcel_end ();
   return 0;
@@ -219,8 +195,8 @@ main (int argc, char **argv)
 static void
 usage () {
   marcel_fprintf (stderr, "Usage: ./memteams <sched policy> <mbind policy>\n");
-  marcel_fprintf (stderr, "                 -sched policy: The way the created teams will be scheduled (can be 'local' for moving the whole team of threads to the same numa node or 'distributed' to distribute the threads over the nodes).\n");
-  marcel_fprintf (stderr, "                 -mbind policy: The mbind policy used to bind accessed data (can be 'bind' to bind each array on each node or 'interleave' to distribute them over the nodes).\n");
+  marcel_fprintf (stderr, "            -sched policy: The way the created teams will be scheduled (can be 'local' for moving the whole team of threads to the same numa node or 'distributed' to distribute the threads over the nodes).\n");
+  marcel_fprintf (stderr, "            -mbind policy: The mbind policy used to bind accessed data (can be 'bind' to bind each array on each node or 'interleave' to distribute them over the nodes).\n");
 }
 
 static void

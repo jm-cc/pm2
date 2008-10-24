@@ -275,7 +275,7 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
 }
 
 static
-void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, int nbpages, int node, int with_huge_pages) {
+void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int nbpages, int node, int with_huge_pages) {
   marcel_memory_area_t *available;
 
   LOG_IN();
@@ -284,6 +284,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
 
   available = tmalloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
+  available->end = buffer + size;
   available->nbpages = nbpages;
   if (with_huge_pages) {
     available->pagesize = memory_manager->hugepagesize;
@@ -307,7 +308,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
       mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
       // Free memory
-      ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node, data->with_huge_pages);
+      ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->with_huge_pages);
 
       // Delete tree
       ma_memory_delete_tree(memory_manager, memory_tree);
@@ -377,6 +378,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
 
   (*space)->heap = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->heap->start = (*space)->buffer;
+  (*space)->heap->end = (*space)->buffer + (*space)->size;
   (*space)->heap->nbpages = nbpages;
   (*space)->heap->protection = PROT_READ|PROT_WRITE;
   (*space)->heap->pagesize = memory_manager->hugepagesize;
@@ -413,6 +415,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   (*space) = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
+  (*space)->end = buffer + length;
   (*space)->nbpages = nbpages;
   (*space)->protection = PROT_READ|PROT_WRITE;
   (*space)->pagesize = memory_manager->normalpagesize;

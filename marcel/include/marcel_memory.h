@@ -115,6 +115,8 @@ struct marcel_memory_tree_s {
 struct marcel_memory_area_s {
   /** \brief Start address of the memory area */
   void *start;
+  /** \brief End address of the memory area */
+  void *end;
   /** \brief Number of pages of the memory area */
   int nbpages;
   /** \brief Page size */

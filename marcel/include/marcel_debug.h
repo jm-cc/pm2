@@ -112,6 +112,7 @@ extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
 
 extern debug_type_t marcel_heap_debug;
+extern debug_type_t marcel_mami_debug;
 #endif
 
 #section macros
@@ -131,6 +132,8 @@ extern debug_type_t marcel_heap_debug;
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 #define mdebug_heap(fmt, ...) \
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
+#define mdebug_mami(fmt, ...) \
+    debug_printf(&marcel_mami_debug, fmt , ##__VA_ARGS__)
 
 #ifdef PM2_BUG_ON
 #depend "marcel_signal.h[marcel_macros]"

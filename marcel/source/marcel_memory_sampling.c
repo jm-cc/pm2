@@ -139,15 +139,15 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
     marcel_printf("The model for the cost of the memory migration is not available\n");
     return -1;
   }
-  mdebug_heap("Reading file %s\n", filename);
+  mdebug_mami("Reading file %s\n", filename);
   fgets(line, 1024, out);
-  mdebug_heap("Reading line %s\n", line);
+  mdebug_mami("Reading line %s\n", line);
   while (!(feof(out))) {
     if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
     }
 #ifdef PM2DEBUG
-    if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
     }
 #endif /* PM2DEBUG */
@@ -317,7 +317,7 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
     marcel_printf("The model for the cost of the memory access is not available\n");
     return -1;
   }
-  mdebug_heap("Reading file %s\n", filename);
+  mdebug_mami("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
     if (marcel_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
@@ -325,7 +325,7 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
     }
 
 #ifdef PM2DEBUG
-    if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
     }
 #endif /* PM2DEBUG */

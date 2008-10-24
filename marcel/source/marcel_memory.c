@@ -29,7 +29,7 @@ static unsigned long gethugepagesize(void) {
   FILE *f;
   unsigned long hugepagesize=0, size=-1;
 
-  mdebug_heap("Reading /proc/meminfo\n");
+  mdebug_mami("Reading /proc/meminfo\n");
   f = fopen("/proc/meminfo", "r");
   while (!(feof(f))) {
     fgets(line, 1024, f);
@@ -39,12 +39,12 @@ static unsigned long gethugepagesize(void) {
       c = strchr(line, ':') + 1;
       size = strtol(c, &endptr, 0);
       hugepagesize = size * 1024;
-      mdebug_heap("Huge page size : %lu\n", hugepagesize);
+      mdebug_mami("Huge page size : %lu\n", hugepagesize);
     }
   }
   fclose(f);
   if (size == -1) {
-    mdebug_heap("Hugepagesize information not available.");
+    mdebug_mami("Hugepagesize information not available.");
     return 0;
   }
   return hugepagesize;
@@ -66,7 +66,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node);
-    mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
+    mdebug_mami("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
   // Initialise space with huge pages on each node
@@ -97,7 +97,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   ma_memory_load_model_for_memory_access(memory_manager);
 
 #ifdef PM2DEBUG
-  if (marcel_heap_debug.show > PM2DEBUG_STDLEVEL) {
+  if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
       for(dest=0 ; dest<marcel_nbnodes ; dest++) {
         p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
@@ -143,7 +143,7 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
   int err;
 
   LOG_IN();
-  mdebug_heap("Releasing huge pages %s\n", (*space)->filename);
+  mdebug_mami("Releasing huge pages %s\n", (*space)->filename);
 
   err = close((*space)->file);
   if (err < 0) {
@@ -167,7 +167,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   LOG_IN();
   ptr  = (*space);
   while (ptr != NULL) {
-    mdebug_heap("Unmapping memory area from %p\n", ptr->start);
+    mdebug_mami("Unmapping memory area from %p\n", ptr->start);
     munmap(ptr->start, ptr->nbpages * ptr->pagesize);
     ptr = ptr->next;
   }
@@ -282,7 +282,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
 
   LOG_IN();
 
-  mdebug_heap("Freeing space from %p with %d pages\n", buffer, nbpages);
+  mdebug_mami("Freeing space from %p with %d pages\n", buffer, nbpages);
 
   available = tmalloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
@@ -331,7 +331,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   while ((*ptr)->next != NULL) {
     if (((*ptr)->end == (*ptr)->next->start) &&
         ((*ptr)->protection == (*ptr)->next->protection)) {
-      mdebug_heap("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
+      mdebug_mami("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
                   (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
       (*ptr)->end = (*ptr)->next->end;
       (*ptr)->nbpages += (*ptr)->next->nbpages;
@@ -349,7 +349,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       marcel_memory_data_t *data = (*memory_tree)->data;
-      mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
+      mdebug_mami("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
       VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
       // Free memory
       ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
@@ -391,7 +391,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   LOG_IN();
   nbpages = marcel_topo_node_level[node].huge_page_free;
   if (!nbpages) {
-    mdebug_heap("No huge pages on node #%d\n", node);
+    mdebug_mami("No huge pages on node #%d\n", node);
     *space = NULL;
     return -1;
   }
@@ -481,29 +481,29 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
     if (err < 0) {
       return NULL;
     }
-    mdebug_heap("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
+    mdebug_mami("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
     heap = memory_manager->huge_pages_heaps[node];
   }
 
   if (heap == NULL) {
-    mdebug_heap("No huge pages are available on node #%d\n", node);
+    mdebug_mami("No huge pages are available on node #%d\n", node);
     return NULL;
   }
 
-  mdebug_heap("Requiring space from huge pages area of size=%lu on node #%d\n", heap->size, node);
+  mdebug_mami("Requiring space from huge pages area of size=%lu on node #%d\n", heap->size, node);
 
   // Look for a space big enough
   hheap = heap->heap;
   prev = hheap;
   while (hheap != NULL) {
-    mdebug_heap("Current space from %p with %d pages\n", hheap->start, hheap->nbpages);
+    mdebug_mami("Current space from %p with %d pages\n", hheap->start, hheap->nbpages);
     if (hheap->nbpages >= nbpages)
       break;
     prev = hheap;
     hheap = hheap->next;
   }
   if (hheap == NULL) {
-    mdebug_heap("Not enough huge pages are available on node #%d\n", node);
+    mdebug_mami("Not enough huge pages are available on node #%d\n", node);
     return NULL;
   }
 
@@ -540,12 +540,12 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
   marcel_memory_area_t *prev = NULL;
   void *buffer;
 
-  mdebug_heap("Requiring space of %d pages from heap %p on node %d\n", nbpages, heap, node);
+  mdebug_mami("Requiring space of %d pages from heap %p on node %d\n", nbpages, heap, node);
 
   // Look for a space big enough
   prev = heap;
   while (heap != NULL) {
-    mdebug_heap("Current space from %p with %d pages\n", heap->start, heap->nbpages);
+    mdebug_mami("Current space from %p with %d pages\n", heap->start, heap->nbpages);
     if (heap->nbpages >= nbpages)
       break;
     prev = heap;
@@ -556,7 +556,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
 
     preallocatedpages = memory_manager->initially_preallocated_pages;
     while (nbpages > preallocatedpages) preallocatedpages *= 2;
-    mdebug_heap("not enough space, let's allocate %d extra pages\n", preallocatedpages);
+    mdebug_mami("not enough space, let's allocate %d extra pages\n", preallocatedpages);
     err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
     if (err < 0) {
       return NULL;
@@ -615,7 +615,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
     for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
 
     // Register memory
-    mdebug_heap("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
+    mdebug_mami("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
     ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages);
 
     tfree(pageaddrs);
@@ -623,7 +623,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
   }
 
   marcel_spin_unlock(&(memory_manager->lock));
-  mdebug_heap("Allocating %p on node #%d\n", buffer, node);
+  mdebug_mami("Allocating %p on node #%d\n", buffer, node);
   LOG_OUT();
   return buffer;
 }
@@ -682,7 +682,7 @@ void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
                            marcel_memory_membind_policy_t policy,
                            int node) {
   LOG_IN();
-  mdebug_heap("Set the current membind policy to %d (node %d)\n", policy, node);
+  mdebug_mami("Set the current membind policy to %d (node %d)\n", policy, node);
   memory_manager->membind_policy = policy;
   memory_manager->membind_node = node;
   LOG_OUT();
@@ -690,7 +690,7 @@ void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
 
 void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   LOG_IN();
-  mdebug_heap("Freeing [%p]\n", buffer);
+  mdebug_mami("Freeing [%p]\n", buffer);
   marcel_spin_lock(&(memory_manager->lock));
   ma_memory_delete(memory_manager, &(memory_manager->root), buffer);
   marcel_spin_unlock(&(memory_manager->lock));
@@ -700,7 +700,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
 int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
   int err=0;
 
-  mdebug_heap("binding on numa node #%d\n", nodes[0]);
+  mdebug_mami("binding on numa node #%d\n", nodes[0]);
 
   err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) perror("move_pages (set_bind)");
@@ -712,7 +712,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   int i;
   int err=0;
 
-  mdebug_heap("check location is #%d\n", node);
+  mdebug_mami("check location is #%d\n", node);
 
   pagenodes = tmalloc(pages * sizeof(int));
   err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
@@ -739,9 +739,9 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   }
   else if (address >= memory_tree->data->startaddress && address < memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
-    mdebug_heap("Found address %p in [%p:%p]\n", address, memory_tree->data->startaddress, memory_tree->data->endaddress);
+    mdebug_mami("Found address %p in [%p:%p]\n", address, memory_tree->data->startaddress, memory_tree->data->endaddress);
     *node = memory_tree->data->node;
-    mdebug_heap("Address %p is located on node %d\n", address, *node);
+    mdebug_mami("Address %p is located on node %d\n", address, *node);
     if (data) *data = memory_tree->data;
     return 0;
   }
@@ -777,9 +777,9 @@ void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent) {
 
 void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   LOG_IN();
-  mdebug_heap("******************** TREE BEGIN *********************************\n");
+  mdebug_mami("******************** TREE BEGIN *********************************\n");
   ma_memory_print(memory_manager->root, 0);
-  mdebug_heap("******************** TREE END *********************************\n");
+  mdebug_mami("******************** TREE END *********************************\n");
   LOG_OUT();
 }
 
@@ -874,15 +874,15 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   if (source == -1) {
-    mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
+    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
     err = ENOENT;
   }
   else if (source == dest) {
-    mdebug_heap("The address %p is already located at the required node.\n", buffer);
+    mdebug_mami("The address %p is already located at the required node.\n", buffer);
     err = EALREADY;
   }
   else {
-    mdebug_heap("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
+    mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
     dests = tmalloc(data->nbpages * sizeof(int));
     status = tmalloc(data->nbpages * sizeof(int));
     for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
@@ -983,7 +983,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   g_memory_manager = memory_manager;
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
-    mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
+    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
     errno = ENOENT;
     err = -errno;
   }

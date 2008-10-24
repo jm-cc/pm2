@@ -69,11 +69,10 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
     mdebug_heap("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
-  // Preallocate memory with huge pages on each node
+  // Initialise space with huge pages on each node
   memory_manager->huge_pages_heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_huge_pages_area_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
-    mdebug_heap("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
+    memory_manager->huge_pages_heaps[node] = NULL;
   }
 
   // Load the model for the migration costs
@@ -400,6 +399,13 @@ static void* marcel_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager
   void *buffer = NULL;
   unsigned long nodemask;
   int err;
+
+  if (memory_manager->huge_pages_heaps[node] == NULL) {
+    ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    mdebug_heap("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
+    heap = memory_manager->huge_pages_heaps[node];
+  }
+
 
   if (heap == NULL) {
     mdebug_heap("No huge pages are available on node #%d\n", node);

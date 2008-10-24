@@ -558,14 +558,18 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
       *pp_gate = p_gate;
     }
 
+ out: 
+  return err;
+}
+
+int nm_core_post_init(nm_core_t p_core)
+{
 #ifdef PIOMAN
   int i;
   for(i = 0; i < p_core->nb_drivers; i++)
     nm_core_init_piom_drv(p_core,& p_core->driver_array[i]);
 #endif
-
- out:
-  return err;
+  return 0;
 }
 
 /** Connect the process through a gate using a specified driver.

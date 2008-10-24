@@ -86,6 +86,8 @@ int nm_launcher_init(int *argc, char**argv)
     (*r.driver->get_gates)(r._status, gates);
   }
 
+  (*r.driver->post_init)(r._status);
+
   return NM_ESUCCESS;
 }
 

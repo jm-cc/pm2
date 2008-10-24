@@ -51,6 +51,7 @@ static int       mad_launcher_get_size(void*_status);
 static int       mad_launcher_get_rank(void*_status);
 static nm_core_t mad_launcher_get_core(void*_status);
 static void      mad_launcher_get_gates(void*_status, nm_gate_t*gates);
+static void      mad_launcher_post_init(void*_status);
 
 const static struct newmad_launcher_driver_s mad_launcher_driver =
   {
@@ -58,7 +59,8 @@ const static struct newmad_launcher_driver_s mad_launcher_driver =
     .get_size  = &mad_launcher_get_size,
     .get_rank  = &mad_launcher_get_rank,
     .get_core  = &mad_launcher_get_core,
-    .get_gates = &mad_launcher_get_gates
+    .get_gates = &mad_launcher_get_gates,
+    .post_init = &mad_launcher_post_init
   };
 
 
@@ -81,6 +83,12 @@ static void mad_launcher_destroy(void*_status)
       status->madeleine = NULL;
     }
   padico_free(_status);
+}
+
+static void mad_launcher_post_init(void*_status)
+{
+  struct mad_launcher_status_s*status = _status;
+  nm_core_post_init(status->p_core);
 }
 
 /* ********************************************************* */

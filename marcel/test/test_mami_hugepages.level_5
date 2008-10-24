@@ -24,8 +24,8 @@ check_all_lines=1
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 marcel_memory_malloc: Cannot allocate memory
-marcel_memory_malloc: Cannot allocate memory
 ptr[10]=10
+ptr2[20]=20
 EOF
 
 # Creation de la flavor

@@ -21,7 +21,7 @@ marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
   int node, err;
-  int *ptr, *ptr2;
+  int *ptr, *ptr2, *ptr3;
   size_t bigsize;
 
   marcel_init(&argc,argv);
@@ -30,19 +30,26 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES, 0);
 
   bigsize =  marcel_topo_node_level[0].huge_page_free * memory_manager.hugepagesize;
-  ptr = marcel_memory_malloc(&memory_manager, bigsize);
+  ptr = marcel_memory_malloc(&memory_manager, bigsize+1);
   perror("marcel_memory_malloc");
 
-  ptr = marcel_memory_malloc(&memory_manager, 10000);
+  ptr = marcel_memory_malloc(&memory_manager, bigsize/2);
   if (!ptr) {
     perror("marcel_memory_malloc");
   }
   else {
-    ptr2 =  marcel_memory_malloc(&memory_manager, 10000);
-    perror("marcel_memory_malloc");
-
     ptr[10] = 10;
     marcel_printf("ptr[10]=%d\n", ptr[10]);
+
+    ptr2 =  marcel_memory_malloc(&memory_manager, bigsize/2);
+    if (!ptr2) {
+      perror("marcel_memory_malloc");
+    }
+    else {
+      ptr2[20] = 20;
+      marcel_printf("ptr2[20]=%d\n", ptr2[20]);
+      marcel_memory_free(&memory_manager, ptr2);
+    }
     marcel_memory_free(&memory_manager, ptr);
   }
 

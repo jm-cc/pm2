@@ -145,6 +145,7 @@ struct marcel_memory_huge_pages_area_s {
   char *filename;
   int file;
   size_t size;
+  marcel_memory_area_t *heap;
 };
 
 /** \brief Structure of a memory manager */

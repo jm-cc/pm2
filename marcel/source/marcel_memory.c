@@ -139,7 +139,7 @@ void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
 }
 
 static
-void ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
+int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
   int err;
 
   LOG_IN();
@@ -148,13 +148,16 @@ void ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   err = close((*space)->file);
   if (err < 0) {
     perror("close");
+    return -errno;
   }
   err = unlink((*space)->filename);
   if (err < 0) {
     perror("unlink");
+    return -errno;
   }
 
   LOG_OUT();
+  return 0;
 }
 
 static
@@ -329,7 +332,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager, marcel_memory_t
   LOG_OUT();
 }
 
-void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
+int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
   int nbpages;
   pid_t pid;
 
@@ -352,7 +355,7 @@ void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, m
     tfree(*space);
     *space = NULL;
     perror("open");
-    return;
+    return -errno;
   }
 
   (*space)->buffer = mmap(NULL, (*space)->size, PROT_READ|PROT_WRITE, MAP_PRIVATE, (*space)->file, 0);
@@ -360,13 +363,14 @@ void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, m
     perror("mmap");
     tfree(*space);
     *space = NULL;
-    return;
+    return -errno;
   }
 
   LOG_OUT();
+  return 0;
 }
 
-void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int nbpages, int node) {
+int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int nbpages, int node) {
   unsigned long nodemask;
   size_t length;
   void *buffer;
@@ -381,6 +385,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   err = mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
   if (err < 0) {
     perror("mbind");
+    return -errno;
   }
   buffer = memset(buffer, 0, length);
 
@@ -392,6 +397,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   (*space)->next = NULL;
 
   LOG_OUT();
+  return 0;
 }
 
 static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
@@ -401,11 +407,13 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   int err;
 
   if (memory_manager->huge_pages_heaps[node] == NULL) {
-    ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    int err = ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    if (err < 0) {
+      return NULL;
+    }
     mdebug_heap("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
     heap = memory_manager->huge_pages_heaps[node];
   }
-
 
   if (heap == NULL) {
     mdebug_heap("No huge pages are available on node #%d\n", node);
@@ -426,11 +434,13 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   err = set_mempolicy(MPOL_BIND, &nodemask, marcel_nbnodes+2);
   if (err < 0) {
     perror("set_mempolicy");
+    return NULL;
   }
   memset(buffer, 0, size);
   err = set_mempolicy(MPOL_DEFAULT, NULL, 0);
   if (err < 0) {
     perror("set_mempolicy");
+    return NULL;
   }
 
   return buffer;
@@ -453,11 +463,15 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
     heap = heap->next;
   }
   if (heap == NULL) {
-    int preallocatedpages = memory_manager->initially_preallocated_pages;
+    int err, preallocatedpages;
+
+    preallocatedpages = memory_manager->initially_preallocated_pages;
     while (nbpages > preallocatedpages) preallocatedpages *= 2;
     mdebug_heap("not enough space, let's allocate %d extra pages\n", preallocatedpages);
-    ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
-
+    err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
+    if (err < 0) {
+      return NULL;
+    }
     if (prev == NULL) {
       memory_manager->heaps[node] = heap;
       prev = heap;
@@ -517,7 +531,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 
     tfree(pageaddrs);
   }
-  
+
   marcel_spin_unlock(&(memory_manager->lock));
   mdebug_heap("Allocating %p on node #%d\n", buffer, node);
   LOG_OUT();
@@ -855,7 +869,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 }
 
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
-  int err, source;
+  int err=0, source;
   static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
 
@@ -870,6 +884,9 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     err = sigaction(SIGSEGV, &act, NULL);
     if (err < 0) {
       perror("sigaction");
+      marcel_spin_unlock(&(memory_manager->lock));
+      LOG_OUT();
+      return -errno;
     }
   }
 
@@ -878,19 +895,18 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   if (source == -1) {
     mdebug_heap("The address %p is not managed by MAMI.\n", buffer);
     errno = ENOENT;
-    marcel_spin_unlock(&(memory_manager->lock));
-    LOG_OUT();
-    return -errno;
+    err = -errno;
   }
-
-  data->status = MARCEL_MEMORY_INITIAL_STATUS;
-  err = mprotect(data->startaddress, data->size, PROT_NONE);
-  if (err < 0) {
-    perror("mprotect");
+  else {
+    data->status = MARCEL_MEMORY_INITIAL_STATUS;
+    err = mprotect(data->startaddress, data->size, PROT_NONE);
+    if (err < 0) {
+      perror("mprotect");
+    }
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
-  return 0;
+  return err;
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

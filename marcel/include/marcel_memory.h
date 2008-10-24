@@ -195,17 +195,17 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager,
 /*
  * Preallocates some memory (in number of pages) on the specified numa node.
  */
-void ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
-			   marcel_memory_area_t **space,
-                           int nbpages,
-			   int node);
+int ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
+                          marcel_memory_area_t **space,
+                          int nbpages,
+                          int node);
 
 /*
  *
  */
-void ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager,
-                                      marcel_memory_huge_pages_area_t **space,
-                                      int node);
+int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager,
+                                     marcel_memory_huge_pages_area_t **space,
+                                     int node);
 
 /*
  *

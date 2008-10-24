@@ -305,6 +305,7 @@ void ma_memory_delete(marcel_memory_manager_t *memory_manager, marcel_memory_tre
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       marcel_memory_data_t *data = (*memory_tree)->data;
       mdebug_heap("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
+      VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
       // Free memory
       ma_memory_free_from_node(memory_manager, buffer, data->nbpages, data->node, data->with_huge_pages);
 
@@ -371,6 +372,8 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
     *space = NULL;
     return -errno;
   }
+  /* mark the memory as unaccessible until it gets allocated to the application */
+  VALGRIND_MAKE_MEM_NOACCESS((*space)->buffer, (*space)->size);
 
   (*space)->heap = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->heap->start = (*space)->buffer;
@@ -405,6 +408,8 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     return -errno;
   }
   buffer = memset(buffer, 0, length);
+  /* mark the memory as unaccessible until it gets allocated to the application */
+  VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
 
   (*space) = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
@@ -567,6 +572,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
     ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages);
 
     tfree(pageaddrs);
+    VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
   }
 
   marcel_spin_unlock(&(memory_manager->lock));

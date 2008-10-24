@@ -58,17 +58,17 @@ static void print_welcoming_message (unsigned int nb_threads,
 
 static 
 void * f (void *arg) {
-  long *access_pattern = (long *)arg;
+  stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i, j;
   
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
     
     /* Let's do the job. */
-    STREAM_copy ();
-    STREAM_scale (3.0);
-    STREAM_add ();
-    STREAM_triad (3.0);
+    STREAM_copy (stream_struct);
+    STREAM_scale (stream_struct, 3.0);
+    STREAM_add (stream_struct);
+    STREAM_triad (stream_struct, 3.0);
   }
 
   return 0;
@@ -156,7 +156,8 @@ main (int argc, char **argv)
   }
 
   /* Initialize the STREAM library. */
-  STREAM_init (nb_threads, TAB_SIZE, a, b, c);
+  stream_struct_t stream_struct;
+  STREAM_init (&stream_struct, nb_threads, TAB_SIZE, a, b, c);
   
   /* Disable preemption on the main thread. */
   marcel_thread_preemption_disable ();
@@ -169,7 +170,7 @@ main (int argc, char **argv)
     marcel_attr_setid (thread_attr + i, i);
     marcel_attr_setpreemptible (thread_attr + i, tbx_false);
     marcel_attr_settopo_level (thread_attr + i, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
-    marcel_create (working_threads + i, thread_attr + i, f, NULL);
+    marcel_create (working_threads + i, thread_attr + i, f, &stream_struct);
   }
   
   TBX_GET_TICK (t1);

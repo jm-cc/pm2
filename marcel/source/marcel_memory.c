@@ -382,6 +382,10 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   length = nbpages * memory_manager->normalpagesize;
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  if (buffer == MAP_FAILED) {
+    perror("mmap");
+    return -errno;
+  }
   err = mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
   if (err < 0) {
     perror("mbind");

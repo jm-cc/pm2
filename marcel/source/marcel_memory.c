@@ -394,7 +394,7 @@ void ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memor
   LOG_OUT();
 }
 
-static void* marcel_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
+static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
   marcel_memory_huge_pages_area_t *heap = memory_manager->huge_pages_heaps[node];
   void *buffer = NULL;
   unsigned long nodemask;
@@ -436,7 +436,7 @@ static void* marcel_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager
   return buffer;
 }
 
-static void* marcel_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
+static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
   marcel_memory_area_t *heap = memory_manager->heaps[node];
   marcel_memory_area_t *prev = NULL;
   void *buffer;
@@ -497,10 +497,10 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
   realsize = nbpages * pagesize;
 
   if (!with_huge_pages) {
-    buffer = marcel_memory_get_buffer_from_heap(memory_manager, node, nbpages, realsize);
+    buffer = ma_memory_get_buffer_from_heap(memory_manager, node, nbpages, realsize);
   }
   else {
-    buffer = marcel_memory_get_buffer_from_huge_pages_heap(memory_manager, node, nbpages, realsize);
+    buffer = ma_memory_get_buffer_from_huge_pages_heap(memory_manager, node, nbpages, realsize);
   }
 
   if (!buffer) {
@@ -525,7 +525,10 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 }
 
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
-  return ma_memory_allocate_on_node(memory_manager, size, memory_manager->normalpagesize, node, 0);
+  int with_huge_pages;
+
+  with_huge_pages = (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES);
+  return ma_memory_allocate_on_node(memory_manager, size, memory_manager->normalpagesize, node, with_huge_pages);
 }
 
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size) {

@@ -42,13 +42,17 @@ static void usage (void);
 static int parse_command_line_arguments (unsigned int nb_args, 
 					 char **args, 
 					 enum sched_policy *spol, 
-					 enum mbind_policy *mpol);
+					 enum mbind_policy *mpol,
+					 unsigned int *nb_memory_nodes,
+					 unsigned int *memory_nodes);
 					 
 
 static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int nb_threads,
 				     enum sched_policy spol,
-				     enum mbind_policy mpol);
+				     enum mbind_policy mpol,
+				     unsigned int nb_memory_nodes,
+				     unsigned int *memory_nodes);
 
 static 
 void * f (void *arg) {
@@ -90,15 +94,17 @@ main (int argc, char **argv)
   unsigned int nb_threads = marcel_vpset_weight (&marcel_topo_node_level[0].vpset);
   enum sched_policy spol;
   enum mbind_policy mpol;
+  unsigned int nb_memory_nodes = 0;
+  unsigned int memory_nodes[numa_max_node () + 1];
 
-  int err_parse = parse_command_line_arguments (argc, argv, &spol, &mpol);
+  int err_parse = parse_command_line_arguments (argc, argv, &spol, &mpol, &nb_memory_nodes, memory_nodes);
   if (err_parse < 0) {
     usage ();
     exit (1);
   }
 
  /* Print a pretty and welcoming message */
-  print_welcoming_message (nb_teams, nb_threads, spol, mpol);
+  print_welcoming_message (nb_teams, nb_threads, spol, mpol, nb_memory_nodes, memory_nodes);
 
   marcel_t working_threads[nb_teams][nb_threads];
   marcel_attr_t thread_attr[nb_teams][nb_threads];
@@ -117,7 +123,7 @@ main (int argc, char **argv)
   } else {
     for (team = 0; team < nb_teams; team++) {
       nodemasks[team] = 0;
-      nodemasks[team] |= (1 << team);
+      nodemasks[team] |= (1 << memory_nodes[team]);
     }
   }
 
@@ -196,16 +202,19 @@ main (int argc, char **argv)
 
 static void
 usage () {
-  marcel_fprintf (stderr, "Usage: ./memteams <sched policy> <mbind policy>\n");
+  marcel_fprintf (stderr, "Usage: ./memteams <sched policy> <mbind policy> node1 node2 .. nodeN\n");
   marcel_fprintf (stderr, "            -sched policy: The way the created teams will be scheduled (can be 'local' for moving the whole team of threads to the same numa node or 'distributed' to distribute the threads over the nodes).\n");
   marcel_fprintf (stderr, "            -mbind policy: The mbind policy used to bind accessed data (can be 'bind' to bind each array on each node or 'interleave' to distribute them over the nodes).\n");
+  marcel_fprintf (stderr, "            node1 node2 .. nodeN: The list of nodes you want the arrays to be bound to (arrayi is bound to nodei, if the memory policy is 'interleave', this list is ignored).\n");
 }
 
 static void
 print_welcoming_message (unsigned int nb_teams,
 			 unsigned int nb_threads,
 			 enum sched_policy spol,
-			 enum mbind_policy mpol) {
+			 enum mbind_policy mpol,
+			 unsigned int nb_memory_nodes,
+			 unsigned int *memory_nodes) {
   unsigned int i;
   marcel_printf ("Launching memteams with %u %s of %u %s %s.\n", 
 		 nb_teams,
@@ -213,15 +222,22 @@ print_welcoming_message (unsigned int nb_teams,
 		 nb_threads,
 		 nb_threads > 1 ? "threads" : "thread",
 		 spol == LOCAL_POL ? "scheduled together" : "spreaded over the machine");
-  marcel_printf ("The global arrays are %s.", (mpol == BIND_POL) ? "locally allocated" : "distributed over the nodes");
-  marcel_printf ("\n\n");
+   marcel_printf ("The global array is %s %s", (mpol == BIND_POL) ? "bound to" : "distributed over",
+		 nb_memory_nodes > 0 ? "nodes " : "the whole set of nodes the target machine holds ");
+  for (i = 0; i < nb_memory_nodes; i++) {
+    marcel_printf ("%u ", memory_nodes[i]);
+  }
+  marcel_printf (".\n\n");
+
 }
 
 static int
 parse_command_line_arguments (unsigned int nb_args,
 			      char **args,
 			      enum sched_policy *spol,
-			      enum mbind_policy *mpol) {
+			      enum mbind_policy *mpol,
+			      unsigned int *nb_memory_nodes,
+			      unsigned int *memory_nodes) {
   unsigned int i;
 
   /* First remove the application's name from the arguments */
@@ -242,7 +258,7 @@ parse_command_line_arguments (unsigned int nb_args,
   }
   nb_args--;
   args++;
-
+        
   /* Fill the mbind policy */
   if (!nb_args)
     return -1;
@@ -251,6 +267,27 @@ parse_command_line_arguments (unsigned int nb_args,
   } else if (!strcmp (args[0], "interleave")) {
     *mpol = INTERLEAVE_POL;
   } else {
+    return -1;
+  }
+  nb_args--;
+  args++;
+
+  if (*mpol == INTERLEAVE_POL) {
+    if (nb_args) {
+      marcel_printf ("'interleave' option detected, ignoring node list.\n");
+    }
+    return 0;
+  }
+  
+  /* Eventually fill the nodes array */
+  *nb_memory_nodes = 0;
+  for (i = 0; (i < nb_args) && (*nb_memory_nodes < numa_max_node () + 2); i++) {
+    memory_nodes[i] = atoi(args[i]);
+    *nb_memory_nodes = *nb_memory_nodes + 1;
+  }
+
+  if (*nb_memory_nodes != numa_max_node () + 1) {
+    marcel_printf ("Error: you specified %i nodes, but %i were expected.\n", *nb_memory_nodes, numa_max_node () + 1);
     return -1;
   }
 

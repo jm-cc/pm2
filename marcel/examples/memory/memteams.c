@@ -114,11 +114,12 @@ main (int argc, char **argv)
   /* Set the nodemask according to the memory policy passed in
      argument. */
   if (mpol ==  INTERLEAVE_POL) {
-    for (team = 0; team < nb_teams; team++) {
-      nodemasks[team] = 0;
-      for (i = 0; i < numa_max_node () + 1; i++) {
-	nodemasks[team] |= (1 << i);
-      }
+    nodemasks[0] = 0;
+    for (i = 0; i < numa_max_node () + 1; i++) {
+      nodemasks[0] |= (1 << i);
+    }
+    for (team = 1; team < nb_teams; team++) {
+      nodemasks[team] = nodemasks[0];
     }
   } else {
     for (team = 0; team < nb_teams; team++) {

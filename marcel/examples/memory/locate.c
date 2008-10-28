@@ -41,6 +41,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_printf("The memory is located on node #%d\n", node);
   if (err < 0) marcel_printf("marcel_memory_locate: error %d\n", err);
 
+  free(ptr);
   marcel_memory_exit(&memory_manager);
 
   // Finish marcel

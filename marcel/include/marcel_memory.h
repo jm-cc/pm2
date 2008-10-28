@@ -99,6 +99,8 @@ struct marcel_memory_data_s {
 
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;
+  /** \bried Entity which is attached to the memory area */
+  marcel_t *owner;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */
@@ -405,6 +407,16 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
  */
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
                                         void *buffer);
+
+/**
+ * Attach the memory to the specified thread
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param owner thread
+ */
+int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
+                         void *buffer,
+                         marcel_t *owner);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

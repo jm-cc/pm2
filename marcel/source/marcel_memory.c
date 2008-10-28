@@ -890,6 +890,10 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 #ifdef PM2DEBUG
     ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
+    if (data->owner) {
+      ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[data->node] -= data->size;
+      ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[dest] += data->size;
+    }
     data->node = dest;
   }
 
@@ -993,6 +997,30 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     if (err < 0) {
       perror("mprotect");
     }
+  }
+  marcel_spin_unlock(&(memory_manager->lock));
+  LOG_OUT();
+  return err;
+}
+
+int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
+                         void *buffer,
+                         marcel_t *owner) {
+  int err=0, source;
+  marcel_memory_data_t *data = NULL;
+
+  marcel_spin_lock(&(memory_manager->lock));
+  LOG_IN();
+
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  if (source == -1) {
+    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
+    errno = ENOENT;
+    err = -errno;
+  }
+  else {
+    data->owner = owner;
+    ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[data->node] += data->size;
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();

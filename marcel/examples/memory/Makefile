@@ -17,4 +17,6 @@ export FLAVOR_DEFAULT:=marcel-mami
 
 include $(PM2_ROOT)/make/apps.mak
 
+membind-ldflags := -lrt
+memteams-ldflags := -lrt
 memteams-bubbles-ldflags := -lrt

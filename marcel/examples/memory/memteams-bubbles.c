@@ -21,26 +21,27 @@
 #include <errno.h>
 #include <malloc.h>
 #include <time.h>
-#include "../marcel_stream.h" 
+#include "../marcel_stream.h"
 
 #define TAB_SIZE 1024*1024*16
 #define NB_TIMES 20
 
 enum mbind_policy {
   BIND_POL,
-  INTERLEAVE_POL
+  INTERLEAVE_POL,
+  MAMI_NEXT_TOUCH
 };
 
 static double **a, **b, **c;
 static marcel_barrier_t barrier;
 
 static void usage (void);
-static int parse_command_line_arguments (unsigned int nb_args, 
-					 char **args, 
+static int parse_command_line_arguments (unsigned int nb_args,
+					 char **args,
 					 enum mbind_policy *mpol,
 					 unsigned int *nb_memory_nodes,
 					 unsigned int *memory_nodes);
-					 
+
 
 static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int nb_threads,
@@ -48,19 +49,19 @@ static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int nb_memory_nodes,
 				     unsigned int *memory_nodes);
 
-static 
+static
 double my_delay (struct timespec *t1, struct timespec *t2) {
   return ((double) t2->tv_sec + (double) t2->tv_nsec * 1.E-09) - ((double) t1->tv_sec + (double) t1->tv_nsec * 1.E-09);
 }
 
-static 
+static
 void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
-  
+
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
-    
+
     /* Let's do the job. */
     STREAM_copy (stream_struct);
     STREAM_scale (stream_struct, 3.0);
@@ -72,13 +73,15 @@ void * f (void *arg) {
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
   struct timespec t1, t2;
+  marcel_memory_manager_t memory_manager;
 
   marcel_init (&argc, argv);
+  marcel_memory_init(&memory_manager);
 
   if (argc < 3) {
     usage ();
@@ -126,29 +129,43 @@ main (int argc, char **argv)
   }
 
   /* Bind the accessed data to the nodes. */
-  a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
-  b = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
-  c = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
-  
+  if (mpol == MAMI_NEXT_TOUCH) {
+    a = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
+    b = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
+    c = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
+  }
+  else {
+    a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+    b = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+    c = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
+  }
+
   for (i = 0; i < nb_teams; i++) {
-    a[i] = memalign (getpagesize(), tab_len);
-    b[i] = memalign (getpagesize(), tab_len);
-    c[i] = memalign (getpagesize(), tab_len);
-    
-    int err_mbind;
-    err_mbind = mbind (a[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
-    err_mbind += mbind (b[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
-    err_mbind += mbind (c[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
-    
-    if (err_mbind < 0) {
-      perror ("mbind");
-      exit (1);
+    if (mpol == MAMI_NEXT_TOUCH) {
+      a[i] = marcel_memory_malloc(&memory_manager, tab_len);
+      b[i] = marcel_memory_malloc(&memory_manager, tab_len);
+      c[i] = marcel_memory_malloc(&memory_manager, tab_len);
+    }
+    else {
+      a[i] = memalign (getpagesize(), tab_len);
+      b[i] = memalign (getpagesize(), tab_len);
+      c[i] = memalign (getpagesize(), tab_len);
+
+      int err_mbind;
+      err_mbind = mbind (a[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+      err_mbind += mbind (b[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+      err_mbind += mbind (c[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
+
+      if (err_mbind < 0) {
+        perror ("mbind");
+        exit (1);
+      }
     }
   }
   marcel_thread_preemption_disable ();
 
   stream_struct_t stream_struct[nb_teams];
-  
+
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
@@ -157,6 +174,12 @@ main (int argc, char **argv)
     marcel_bubble_init (&bubbles[team]);
     marcel_bubble_insertbubble (&main_bubble, &bubbles[team]);
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
+
+    if (mpol == MAMI_NEXT_TOUCH) {
+      marcel_memory_migrate_on_next_touch(&memory_manager, a[team]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, b[team]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, c[team]);
+    }
 
     for (i = 0; i < nb_threads; i++) {
       unsigned int node;
@@ -180,22 +203,33 @@ main (int argc, char **argv)
     marcel_barrier_wait (&barrier);
   }
   clock_gettime (CLOCK_MONOTONIC, &t2);
-    
+
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {
     marcel_bubble_join (&bubbles[team]);
   }
   marcel_bubble_join (&main_bubble);
 
-  for (i = 0; i < nb_teams; i++) {
-    free (a[i]);
-    free (b[i]);
-    free (c[i]);
+  if (mpol == MAMI_NEXT_TOUCH) {
+    for (i = 0; i < nb_teams; i++) {
+      marcel_memory_free(&memory_manager, a[i]);
+      marcel_memory_free(&memory_manager, b[i]);
+      marcel_memory_free(&memory_manager, c[i]);
+    }
+    marcel_memory_free(&memory_manager, a);
+    marcel_memory_free(&memory_manager, b);
+    marcel_memory_free(&memory_manager, c);
   }
-  
-  marcel_free (a);
-  marcel_free (b);
-  marcel_free (c);
+  else {
+    for (i = 0; i < nb_teams; i++) {
+      free (a[i]);
+      free (b[i]);
+      free (c[i]);
+    }
+    marcel_free (a);
+    marcel_free (b);
+    marcel_free (c);
+  }
 
   /* Avoid the first iteration, in which we only measure the time we
      need to cross the barrier. */
@@ -203,6 +237,7 @@ main (int argc, char **argv)
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 
+  marcel_memory_exit(&memory_manager);
   marcel_end ();
   return 0;
 }
@@ -210,8 +245,11 @@ main (int argc, char **argv)
 static void
 usage () {
   marcel_fprintf (stderr, "Usage: ./memteams <mbind policy> node1 node2 .. nodeN\n");
-  marcel_fprintf (stderr, "            -mbind policy: The mbind policy used to bind accessed data (can be 'bind' to bind each array on each node or 'interleave' to distribute them over the nodes).\n");
-  marcel_fprintf (stderr, "            -node1 node2 .. nodeN: The list of nodes you want the arrays to be bound to (arrayi is bound to nodei, if the memory policy is 'interleave', this list is ignored).\n");
+  marcel_fprintf (stderr, "            -<mbind policy>: The mbind policy used to bind accessed data\n");
+  marcel_fprintf (stderr, "               'bind' to bind each array on each node\n");
+  marcel_fprintf (stderr, "               'interleave' to distribute them over the nodes\n");
+  marcel_fprintf (stderr, "               'mami_next_touch' to use mami and the policy next touch\n");
+  marcel_fprintf (stderr, "            -<node1 node2 .. nodeN>: The list of nodes you want the arrays to be bound to (arrayi is bound to nodei, if the memory policy is 'interleave', this list is ignored).\n");
 }
 
 static void
@@ -221,7 +259,7 @@ print_welcoming_message (unsigned int nb_teams,
 			 unsigned int nb_memory_nodes,
 			 unsigned int *memory_nodes) {
   unsigned int i;
-  marcel_printf ("Launching memteams-bubbles with %u %s of %u %s.\n", 
+  marcel_printf ("Launching memteams-bubbles with %u %s of %u %s.\n",
 		 nb_teams,
 		 nb_teams > 1 ? "bubbles" : "bubble",
 		 nb_threads,
@@ -248,7 +286,7 @@ parse_command_line_arguments (unsigned int nb_args,
     return -1;
   nb_args--;
   args++;
-          
+
   /* Fill the mbind policy */
   if (!nb_args)
     return -1;
@@ -256,19 +294,21 @@ parse_command_line_arguments (unsigned int nb_args,
     *mpol = BIND_POL;
   } else if (!strcmp (args[0], "interleave")) {
     *mpol = INTERLEAVE_POL;
+  } else if (!strcmp (args[0], "mami_next_touch")) {
+    *mpol = MAMI_NEXT_TOUCH;
   } else {
     return -1;
   }
   nb_args--;
   args++;
 
-  if (*mpol == INTERLEAVE_POL) {
+  if (*mpol == INTERLEAVE_POL || *mpol == MAMI_NEXT_TOUCH) {
     if (nb_args) {
-      marcel_printf ("'interleave' option detected, ignoring node list.\n");
+      marcel_printf ("'interleave' or 'mami_next_touch' option detected, ignoring node list.\n");
     }
     return 0;
   }
-  
+
   /* Eventually fill the nodes array */
   *nb_memory_nodes = 0;
   for (i = 0; (i < nb_args) && (*nb_memory_nodes < numa_max_node () + 2); i++) {

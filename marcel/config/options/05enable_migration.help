@@ -1,1 +1,1 @@
-Enable the migration mechanism of Marcel.
+Permit Marcel threads to be migrated between machines.

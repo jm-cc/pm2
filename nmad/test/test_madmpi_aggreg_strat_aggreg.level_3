@@ -19,7 +19,7 @@ net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_aggreg"
 net2=$(echo $net | tr ' ' '_')
-flavor="test_nmad_${mpi}_${net2}_${strat}"
+flavor="test_nmad_${mpi}_${net2}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="aggreg"
@@ -39,5 +39,3 @@ done
 
 . ./include/nmad_default
 
-# Verification et compilation du lanceur leonie
-compile_leonie

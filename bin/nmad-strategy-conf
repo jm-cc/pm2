@@ -43,7 +43,7 @@ options <opt> are among:
                         set NM_SO_MAX_SMALL value.
   --overwrite-files, -f force overwriting existing strategy files
 
- By default: 
+ By default:
     * NM_SO_COPY_ON_SEND_THRESHOLD is set to $NM_SO_COPY_ON_SEND_THRESHOLD
     * NM_SO_MAX_SMALL is set to $NM_SO_MAX_SMALL
 
@@ -119,9 +119,9 @@ nmad_strat_write() {
 	mkdir -p ${STRAT_DIR}
     fi
 # Write XML strat files if they don't exist
-if [ ! -e  ${strat_file} ] || [ "${FORCE}" = "yes" ] ; then
-    echo -n "Writing strategy file: ${strat}... " 1>&2
-cat > ${strat_file} <<EOF
+    if [ ! -e  ${strat_file} ] || [ "${FORCE}" = "yes" ] ; then
+	echo -n "# Writing strategy file: ${strat}... " 1>&2
+	cat > ${strat_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
 <puk:composite id="strategy-${strat}">
@@ -132,12 +132,11 @@ cat > ${strat_file} <<EOF
   <puk:entry-point iface="NewMad_Strategy" provider-id="0"/>
 </puk:composite>
 EOF
-    echo "done." 1>&2
-fi
+	echo "done." 1>&2
+    fi
 }
 
 nmad_strat_write_default() {
-    
     nmad_strat_write default
     nmad_strat_write split_balance
     nmad_strat_write aggreg
@@ -147,7 +146,7 @@ nmad_strat_write_default() {
 }
 
 case ${ACTION} in
-    
+
     gen_default)
 	echo "Generating default nmad strategy files..." 1>&2
 	nmad_strat_write_default
@@ -163,11 +162,11 @@ case ${ACTION} in
 	    usage
 	    exit 1
 	fi
-	
 
-	nmad_strat_write_default
-	
-# Link the chosen strategy
+
+	nmad_strat_write $CHOSEN_STRATEGY
+
+	# Link the chosen strategy
 	if [ ! -r ${STRAT_DIR}/strategy_${CHOSEN_STRATEGY}.xml ]; then
 	    echo "$0: strategy \"${CHOSEN_STRATEGY}\" does not exist."
 	    echo

@@ -13,50 +13,32 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-compile_leonie()
-{
-    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie
+create_test_flavor() {
+    # Creation de la flavor
+    modules=""
+    options=""
+    if [ "${ext}" == "pioman" ] ; then
+	modules="marcel pioman"
+	options="--marcel=\"mono standard_main\""
     fi
-    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'
-        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
-            exit 1
-        fi
+    tag="tag_as_flat_array"
+    if [ "$mpi" == "mpi_emu" ] ; then
+	tag="tag_as_hashtable"
     fi
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--ext=\"\" \
+	--modules=\"puk nmad tbx ntbx init $modules\" \
+	--nmad=\"${net} sched_opt strat_custom ${mpi} mad3_emu $tag\" \
+	--puk=\"disable_output\" \
+	$options \
+	--common=\"fortran_target_none\" \
+	--all=\"debug gdb build_static\"
 }
 
-# Creation de la flavor
-if [ "${ext}" == "pioman" ] ; then
-    modules="puk nmad tbx ntbx init pioman marcel"
-    options="--marcel=debug --marcel=mono --marcel=standard_main"
-else
-    modules="puk nmad tbx ntbx init"
-fi
-tag="tag_as_flat_array"
-if [ "$mpi" == "mpi_emu" ] ; then
-    tag="tag_as_hashtable"
-fi
-
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-    --ext=\"\" \
-    --modules=\"$modules\" \
-    --init=\"debug gdb\" \
-    --nmad=\"debug gdb ${net} sched_opt ${strat} ${mpi} mad3_emu $tag\" \
-    --ntbx=\"debug gdb\" \
-    --tbx=\"debug gdb\" \
-    --puk=\"disable_output\" \
-    $options \
-    --common=\"debug gdb fortran_target_none\" \
-    --all=\"build_static\"
-
-nmad-driver-conf -f --${net}
-nmad-strategy-conf -f --strategy=${strat}
-
-# should compare all the lines of the output and not only the number
-# of lines present in the expected output file
-check_all_lines=1
+prerun_test() {
+    nmad-driver-conf -f --${net}
+    nmad-strategy-conf -f --strategy=${strat}
+    # should compare all the lines of the output and not only the number
+    # of lines present in the expected output file
+    check_all_lines=1
+}

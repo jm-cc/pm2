@@ -25,7 +25,8 @@ Sum from 1 to 100 = 5050
 EOF
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+create_test_flavor() {
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"standard_main\" \
@@ -37,3 +38,4 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--all=\"gdb\" --all=\"opt\" \
 	--all=\"build_static\" --marcel=\"build_dynamic\" \
 	--sub --marcel=\"build_static\" $_output_redirect
+}

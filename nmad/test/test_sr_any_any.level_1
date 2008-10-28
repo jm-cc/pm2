@@ -19,7 +19,7 @@ net=${TESTNET:-tcp}
 mpi=""
 strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
-flavor="test_nmad_${mpi}_${net2}_${strat}"
+flavor="test_nmad_${mpi}_${net2}"
 
 appdir="${PM2_ROOT}/nmad/examples/sendrecv"
 prog="sr_any_any"
@@ -32,5 +32,3 @@ done
 
 . ./include/nmad_default
 
-# Verification et compilation du lanceur leonie
-compile_leonie

@@ -219,6 +219,20 @@ mad3()
 	fi
     fi
 
+    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
+    if [ "$x" == "" ] ; then
+        pm2-create-sample-flavors leonie > /tmp/leonie 2>&1
+    fi
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie > /tmp/leonie 2>&1
+        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+            echo "Could not compile leonie. Aborting"
+            exit 1
+        fi
+    fi
+
     $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE $LEONIE_ARGS "${prog_args[@]}"
 
     exit $?

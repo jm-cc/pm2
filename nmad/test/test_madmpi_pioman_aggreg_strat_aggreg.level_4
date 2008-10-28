@@ -20,7 +20,7 @@ mpi="mpi_emu"
 strat="strat_aggreg"
 net2=$(echo $net | tr ' ' '_')
 ext="pioman"
-flavor="test_nmad_${mpi}_${net2}_${strat}_${ext}"
+flavor="test_nmad_${mpi}_${net2}_${ext}"
 
 appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
 prog="aggreg"
@@ -40,5 +40,3 @@ done
 
 . ./include/nmad_default
 
-# Verification et compilation du lanceur leonie
-compile_leonie

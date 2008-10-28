@@ -81,13 +81,11 @@ do_the_test()
 
     gcov_dir="$(pm2-config --flavor=$flavor --builddir)/coverage/$test_script"
 
-    # Compilation
-    echo "Compiling program $prog..."
-    CC=${CC:-$(pm2-config --flavor=$flavor --cc)}
-    (cd $appdir && CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
-
     # Execution
+    is_function_defined=$(declare -f prerun_test)
+    if [ "$is_function_defined" != "" ] ; then
+	prerun_test | sed -e 's/^/..../'
+    fi
 
     if [ "$_coverage" = "yes" ]
     then
@@ -123,7 +121,7 @@ do_the_test()
         # expected output file
         head_command="head -$nbl"
     fi
-    grep -v '^#' $file_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
+    grep -v '^#' $file_result | grep -v Puk: | grep -v PadicoTM | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
     if diff -u $file_expected $file_filtered ; then
 	echo "Test ok!"
     else
@@ -302,6 +300,74 @@ fi
 
 _to_test="$_prefix $_suffix"
 
+rm -rf /tmp/tests_database/
+mkdir /tmp/tests_database/
+_l=$_init_level
+while [ $_l -le $_level ]; do
+
+    echo "*** Initialising level $_l tests ***"
+
+    for _m in $_to_test ; do
+
+	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
+
+	    cd ${PM2_ROOT}/modules/$_m/test
+	    _tests=`ls test_*.level_$_l 2> /dev/null`
+	    if [ -n "$_tests" ]; then
+
+		for _f in $_tests ; do
+
+                    # Affichage
+                    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
+
+                    is_test_selected=1
+                    if [ -n "$PM2_TESTS" ] ; then
+                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep $_tst_name)" == "" ] ; then
+                            is_test_selected=0
+                        fi
+                    fi
+
+                    if [ $is_test_selected == 1 ] ; then
+                        echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
+
+		        # Source
+                        . ./$_f
+
+		        # Compilation, execution et verification des resultats
+			pm2-flavor get --flavor=$flavor > /dev/null 2>/dev/null
+			if [ $? == 1 ] ; then
+			    create_test_flavor | sed -e 's/^/..../'
+			fi
+			appdir2=$(echo $appdir | tr '/' ':')
+			echo $prog >> /tmp/tests_database/${flavor}-${appdir2}.dat
+                    fi
+
+                done
+
+	    fi
+	fi
+    done
+    _l=`expr $_l + 1`
+done
+
+for f in /tmp/tests_database/*.dat ; do
+    d_filename=$(basename $f .dat)
+    d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
+    d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')
+
+    CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
+    file_status="/tmp/pm2test_${USER}_status"
+
+    echo "Compiling flavor \"$d_flavor\"..."
+    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor -C $PM2_ROOT; echo "$?" > $file_status ) | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+
+    d_progs=`cat $f | tr '\012' ' '`
+    echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
+    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+done
+
 _l=$_init_level
 while [ $_l -le $_level ]; do
 
@@ -348,7 +414,7 @@ while [ $_l -le $_level ]; do
 		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
 	    fi
 
-	    
+
 	    if [ "$_coverage" = "yes" ]
 	    then
 		# Enumerate all the lcov-generated `.info' files.

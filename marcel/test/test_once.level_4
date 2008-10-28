@@ -25,10 +25,12 @@ Salut les gars !
 EOF
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+create_test_flavor() {
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
 	--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+}

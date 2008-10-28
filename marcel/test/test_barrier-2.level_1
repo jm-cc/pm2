@@ -43,8 +43,9 @@ joined threads 19
 all OK
 EOF
 
+create_test_flavor() {
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
 	--ext=""							\
 	--modules="\"marcel tbx init\"" --marcel="mono"			\
 	--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
@@ -52,3 +53,4 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"		\
 	--tbx="safe_malloc" --tbx="parano_malloc"			\
 	--all="gdb" --all="build_static" $_output_redirect
+}

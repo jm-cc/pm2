@@ -31,7 +31,8 @@ PASS: scheduling entities were distributed as expected
 EOF
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+create_test_flavor() {
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 	--ext=""						\
 	--modules="\"marcel tbx init\"" --marcel="numa"		\
 	--marcel="spinlock" --marcel="marcel_main"		\
@@ -41,6 +42,7 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" --all="build_static" $_output_redirect
+}
 
 # Local Variables:
 # tab-width: 8

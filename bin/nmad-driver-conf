@@ -86,7 +86,7 @@ nmad_driver_write() {
     fi
 # Write XML driver files if they don't exist
     if [ ! -e  ${driver_file} ] || [ ${ACTION} = "force_write" ] ; then
-	echo -n "Writing driver file: ${driver}... " 1>&2
+	echo -n "# Writing driver file: ${driver}... " 1>&2
 	cat > ${driver_file} <<EOF
 <?xml version="1.0"?>
 <!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
@@ -122,10 +122,10 @@ case ${ACTION} in
 	    usage
 	    exit 1
 	fi
-		
-	nmad_driver_write_default
 
-# Link the choosen driver
+	nmad_driver_write $CHOSEN_DRIVER
+
+	# Link the chosen driver
 	if [ ! -r ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ]; then
 	    echo "$0: driver \"${CHOSEN_DRIVER}\" does not exist."
 	    echo

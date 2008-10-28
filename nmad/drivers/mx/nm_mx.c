@@ -835,7 +835,9 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
 			 mx_status_t        status,
 			 mx_return_t         mx_ret)
 {
+#ifdef PROFILE
   struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;
+#endif
   int err;
   
   if (tbx_unlikely(!p_pw->p_gate))

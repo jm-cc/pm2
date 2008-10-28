@@ -194,8 +194,15 @@ main (int argc, char **argv)
       marcel_attr_setinitbubble (&thread_attr[team][i], &bubbles[team]);
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
-      for (node = 0; node < marcel_nbnodes; node++) {
-	((long *) ma_task_stats_get (working_threads[team][i], ma_stats_memnode_offset))[node] = (node == memory_nodes[team]) ? tab_len : 0;
+      if (mpol == MAMI || mpol == MAMI_NEXT_TOUCH) {
+        marcel_memory_attach(&memory_manager, a[i], &working_threads[team][i]);
+        marcel_memory_attach(&memory_manager, b[i], &working_threads[team][i]);
+        marcel_memory_attach(&memory_manager, c[i], &working_threads[team][i]);
+      }
+      else {
+        for (node = 0; node < marcel_nbnodes; node++) {
+          ((long *) ma_task_stats_get (working_threads[team][i], ma_stats_memnode_offset))[node] = (node == memory_nodes[team]) ? tab_len : 0;
+        }
       }
     }
   }

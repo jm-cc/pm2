@@ -52,8 +52,6 @@ void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
   
-  MA_BUG_ON (marcel_self ()->id > 1);
-
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
     
@@ -156,11 +154,15 @@ main (int argc, char **argv)
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     for (i = 0; i < nb_threads; i++) {
+      unsigned int node;
       marcel_attr_init (&thread_attr[team][i]);
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
       marcel_attr_setinitbubble (&thread_attr[team][i], &bubbles[team]);
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
+      for (node = 0; node < marcel_nbnodes; node++) {
+	((long *) ma_task_stats_get (working_threads[team][i], ma_stats_memnode_offset))[node] = (node == memory_nodes[team]) ? tab_len : 0;
+      }
     }
   }
 

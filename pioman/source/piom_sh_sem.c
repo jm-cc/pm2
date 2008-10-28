@@ -45,7 +45,6 @@ int piom_shs_poll(){
 	}
 	ma_read_unlock(&piom_shs_lock);			
 	
- out:	
 	return 0;
 
  retry:	

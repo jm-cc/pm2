@@ -162,7 +162,7 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
 
 static
 void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
-  marcel_memory_area_t *ptr;
+  marcel_memory_area_t *ptr, *ptr2;
 
   LOG_IN();
   ptr  = (*space);
@@ -170,6 +170,12 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     mdebug_mami("Unmapping memory area from %p\n", ptr->start);
     munmap(ptr->start, ptr->nbpages * ptr->pagesize);
     ptr = ptr->next;
+  }
+  ptr  = (*space);
+  while (ptr != NULL) {
+    ptr2 = ptr;
+    ptr = ptr->next;
+    tfree(ptr2);
   }
   LOG_OUT();
 }
@@ -905,7 +911,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                                 void *buffer, int dest) {
   int source, ret;
-  marcel_memory_data_t *data;
+  marcel_memory_data_t *data = NULL;
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));

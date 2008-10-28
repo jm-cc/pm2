@@ -385,6 +385,12 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
+	{
+	  unsigned node;
+	  for (node = 0; node < marcel_nbnodes; node++) {
+	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
+	  }
+	}
 #endif /* MARCEL_STATS_ENABLED */
 #ifdef MA__NUMA_MEMORY
 	ma_spin_lock_init(&t->as_entity.memory_areas_lock);
@@ -412,6 +418,12 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
+	{
+	  unsigned node;
+	  for (node = 0; node < marcel_nbnodes; node++) {
+	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
+	  }
+	}
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
 	t->bubble.as_entity.init_holder = NULL;
@@ -434,6 +446,13 @@ marcel_sched_init_thread_seed(marcel_task_t* t,
 	marcel_sched_internal_init_marcel_task(t, attr);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 1);
+	{
+	  unsigned node;
+	  for (node = 0; node < marcel_nbnodes; node++) {
+	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
+	  }
+	}
+	
 	LOG_OUT();
 }
 

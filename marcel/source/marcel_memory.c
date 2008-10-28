@@ -169,10 +169,6 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   while (ptr != NULL) {
     mdebug_mami("Unmapping memory area from %p\n", ptr->start);
     munmap(ptr->start, ptr->nbpages * ptr->pagesize);
-    ptr = ptr->next;
-  }
-  ptr  = (*space);
-  while (ptr != NULL) {
     ptr2 = ptr;
     ptr = ptr->next;
     tfree(ptr2);

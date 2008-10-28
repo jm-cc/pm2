@@ -20,6 +20,7 @@
 #include <numaif.h>
 #include <errno.h>
 #include <malloc.h>
+#include <time.h>
 #include "../marcel_stream.h" 
 
 #define TAB_SIZE 1024*1024*16
@@ -55,6 +56,11 @@ static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int *memory_nodes);
 
 static 
+double my_delay (struct timespec *t1, struct timespec *t2) {
+  return ((double) t2->tv_sec + (double) t2->tv_nsec * 1.E-09) - ((double) t1->tv_sec + (double) t1->tv_nsec * 1.E-09);
+}
+
+static 
 void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
@@ -77,11 +83,10 @@ main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
-  tbx_tick_t t1, t2;
+  struct timespec t1, t2;
 
   marcel_init (&argc, argv);
-  tbx_timing_init ();
-
+  
   if (argc < 3) {
     usage ();
     return -1;
@@ -165,12 +170,12 @@ main (int argc, char **argv)
     }
   }
   marcel_printf ("Threads created and ready to work!\n");
-
-  TBX_GET_TICK (t1);
+  
+  clock_gettime (CLOCK_MONOTONIC, &t1);
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
   }
-  TBX_GET_TICK (t2); 
+  clock_gettime (CLOCK_MONOTONIC, &t2);
     
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {
@@ -191,7 +196,7 @@ main (int argc, char **argv)
 
   /* Avoid the first iteration, in which we only measure the time we
      need to cross the barrier. */
-  double average_time = (double)TBX_TIMING_DELAY(t1, t2) / ((NB_TIMES-1) * 1000000);
+  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES-1);
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 

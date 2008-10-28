@@ -29,6 +29,7 @@
 enum mbind_policy {
   BIND_POL,
   INTERLEAVE_POL,
+  MAMI,
   MAMI_NEXT_TOUCH
 };
 
@@ -129,7 +130,7 @@ main (int argc, char **argv)
   }
 
   /* Bind the accessed data to the nodes. */
-  if (mpol == MAMI_NEXT_TOUCH) {
+  if (mpol == MAMI_NEXT_TOUCH || mpol == MAMI) {
     a = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
     b = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
     c = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
@@ -145,6 +146,11 @@ main (int argc, char **argv)
       a[i] = marcel_memory_malloc(&memory_manager, tab_len);
       b[i] = marcel_memory_malloc(&memory_manager, tab_len);
       c[i] = marcel_memory_malloc(&memory_manager, tab_len);
+    }
+    else if (mpol == MAMI) {
+      a[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      b[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      c[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
     }
     else {
       a[i] = memalign (getpagesize(), tab_len);
@@ -210,7 +216,7 @@ main (int argc, char **argv)
   }
   marcel_bubble_join (&main_bubble);
 
-  if (mpol == MAMI_NEXT_TOUCH) {
+  if (mpol == MAMI_NEXT_TOUCH || mpol == MAMI) {
     for (i = 0; i < nb_teams; i++) {
       marcel_memory_free(&memory_manager, a[i]);
       marcel_memory_free(&memory_manager, b[i]);
@@ -248,7 +254,8 @@ usage () {
   marcel_fprintf (stderr, "            -<mbind policy>: The mbind policy used to bind accessed data\n");
   marcel_fprintf (stderr, "               'bind' to bind each array on each node\n");
   marcel_fprintf (stderr, "               'interleave' to distribute them over the nodes\n");
-  marcel_fprintf (stderr, "               'mami_next_touch' to use mami and the policy next touch\n");
+  marcel_fprintf (stderr, "               'mami' to use mami to allocate the memory\n");
+  marcel_fprintf (stderr, "               'mami_next_touch' to use mami and the policy migrate on next touch\n");
   marcel_fprintf (stderr, "            -<node1 node2 .. nodeN>: The list of nodes you want the arrays to be bound to (arrayi is bound to nodei, if the memory policy is 'interleave', this list is ignored).\n");
 }
 
@@ -296,6 +303,8 @@ parse_command_line_arguments (unsigned int nb_args,
     *mpol = INTERLEAVE_POL;
   } else if (!strcmp (args[0], "mami_next_touch")) {
     *mpol = MAMI_NEXT_TOUCH;
+  } else if (!strcmp (args[0], "mami")) {
+    *mpol = MAMI;
   } else {
     return -1;
   }

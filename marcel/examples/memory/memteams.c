@@ -59,8 +59,6 @@ void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
   
-  MA_BUG_ON (marcel_self ()->id > 1);
-
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
     

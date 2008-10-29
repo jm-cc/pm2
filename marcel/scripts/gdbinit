@@ -248,13 +248,13 @@ define marcel-allthreads
   set $first = &ma_list_lwp_head
   set $lwp = (ma_lwp_t) $first->next
   while $lwp != $first
-    marcel-printthread $lwp->postexit_task
+    marcel-printthread $lwp->ksoftirqd_task
     set $lwp = (ma_lwp_t) $lwp->lwp_list.next
   end
   set $first = &ma_list_lwp_head
   set $lwp = (ma_lwp_t) $first->next
   while $lwp != $first
-    marcel-printthread $lwp->ksoftirqd_task
+    marcel-printthread $lwp->postexit_task
     set $lwp = (ma_lwp_t) $lwp->lwp_list.next
   end
 end

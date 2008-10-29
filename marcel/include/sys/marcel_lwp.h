@@ -60,8 +60,9 @@ struct marcel_lwp {
 	marcel_task_t *idle_task;
 #endif
 
-	/* TODO: option */
+#ifdef MARCEL_POSTEXIT_ENABLED
 	marcel_task_t *postexit_task;
+#endif /* MARCEL_POSTEXIT_ENABLED */
 
 	marcel_task_t *ksoftirqd_task;
 

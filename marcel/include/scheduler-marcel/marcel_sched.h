@@ -382,7 +382,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_reset(&t->as_entity);
-	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
+	ma_task_stats_set(long, t, marcel_stats_load_offset, MA_TASK_NOT_COUNTED_IN_RUNNING(t));
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
 	{

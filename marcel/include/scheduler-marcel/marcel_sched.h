@@ -415,6 +415,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	LOG_IN();
 	t->as_entity.type = MA_THREAD_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, attr);
+#ifdef MARCEL_STATS_ENABLED
 	ma_task_stats_set(long, t, marcel_stats_load_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 0);
@@ -424,6 +425,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
 	  }
 	}
+#endif /* MARCEL_STATS_ENABLED */
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
 	t->bubble.as_entity.init_holder = NULL;
@@ -444,6 +446,7 @@ marcel_sched_init_thread_seed(marcel_task_t* t,
 	LOG_IN();
 	t->as_entity.type = MA_THREAD_SEED_ENTITY;
 	marcel_sched_internal_init_marcel_task(t, attr);
+#ifdef MARCEL_STATS_ENABLED
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbthreadseeds_offset, 1);
 	{
@@ -452,6 +455,7 @@ marcel_sched_init_thread_seed(marcel_task_t* t,
 	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
 	  }
 	}
+#endif /* MARCEL_STATS_ENABLED */
 	
 	LOG_OUT();
 }

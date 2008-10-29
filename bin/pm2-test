@@ -300,8 +300,8 @@ fi
 
 _to_test="$_prefix $_suffix"
 
-rm -rf /tmp/tests_database/
-mkdir /tmp/tests_database/
+rm -rf /tmp/tests_${USER}_database/
+mkdir /tmp/tests_${USER}_database/
 _l=$_init_level
 while [ $_l -le $_level ]; do
 
@@ -339,7 +339,7 @@ while [ $_l -le $_level ]; do
 			    create_test_flavor | sed -e 's/^/..../'
 			fi
 			appdir2=$(echo $appdir | tr '/' ':')
-			echo $prog >> /tmp/tests_database/${flavor}-${appdir2}.dat
+			echo $prog >> /tmp/tests_${USER}_database/${flavor}-${appdir2}.dat
                     fi
 
                 done
@@ -350,7 +350,7 @@ while [ $_l -le $_level ]; do
     _l=`expr $_l + 1`
 done
 
-for f in /tmp/tests_database/*.dat ; do
+for f in /tmp/tests_${USER}_database/*.dat ; do
     d_filename=$(basename $f .dat)
     d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
     d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')

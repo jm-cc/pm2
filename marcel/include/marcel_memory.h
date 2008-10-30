@@ -418,6 +418,16 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
                          void *buffer,
                          marcel_t *owner);
 
+/**
+ * Unattach the memory to the specified thread
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param owner thread
+ */
+int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
+                           void *buffer,
+                           marcel_t *owner);
+
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

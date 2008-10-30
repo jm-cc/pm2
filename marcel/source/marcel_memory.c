@@ -242,17 +242,24 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   LOG_OUT();
 }
 
+static
+void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
+  tbx_slist_free((*memory_data)->owners);
+  free((*memory_data)->pageaddrs);
+  free(*memory_data);
+}
+
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree) {
   LOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
     marcel_memory_tree_t *temp = (*memory_tree);
-    free(temp->data);
+    ma_memory_clean_memory_data(&(temp->data));
     (*memory_tree) = (*memory_tree)->rightchild;
     free(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
     marcel_memory_tree_t *temp = *memory_tree;
-    free(temp->data);
+    ma_memory_clean_memory_data(&(temp->data));
     (*memory_tree) = (*memory_tree)->leftchild;
     free(temp);
   }
@@ -267,7 +274,7 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
     }
 
     // copy the value from the in-order predecessor to the original node
-    free((*memory_tree)->data);
+    ma_memory_clean_memory_data(&((*memory_tree)->data));
     ma_memory_init_memory_data(memory_manager, temp->data->pageaddrs, temp->data->nbpages, temp->data->size, temp->data->node,
                                temp->data->protection, temp->data->with_huge_pages, &((*memory_tree)->data));
 
@@ -1024,12 +1031,45 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = ENOENT;
+    errno = EFAULT;
     err = -errno;
   }
   else {
     tbx_slist_push(data->owners, owner);
     ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] += data->size;
+  }
+  marcel_spin_unlock(&(memory_manager->lock));
+  LOG_OUT();
+  return err;
+}
+
+int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
+                           void *buffer,
+                           marcel_t *owner) {
+  int err=0, source;
+  marcel_memory_data_t *data = NULL;
+
+  marcel_spin_lock(&(memory_manager->lock));
+  LOG_IN();
+
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  if (source == -1) {
+    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
+    errno = EFAULT;
+    err = -errno;
+  }
+  else {
+    marcel_t *res;
+
+    res = tbx_slist_search_and_extract(data->owners, NULL, owner);
+    if (res == owner) {
+      ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] -= data->size;
+    }
+    else {
+      mdebug_mami("The entity %p is not attached the memory area %p.\n", owner, buffer);
+      errno = ENOENT;
+      err = -errno;
+    }
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();

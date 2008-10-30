@@ -263,6 +263,17 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
   entities = 0;
   for_each_entity_scheduled_on_runqueue (e, &level->rq)
     {
+			if (e->type == MA_THREAD_ENTITY)
+				{
+					marcel_t thread;
+
+					thread = ma_task_entity (e);
+					if (MA_TASK_NOT_COUNTED_IN_RUNNING (thread))
+						/* THREAD is an internal thread (e.g., `ksoftirqd') so we
+							 should not take it into account here.  */
+						continue;
+				}
+
       if (entities >= expected->entity_count)
 				{
 					level_log (stderr, level,"more entities than expected (%lu, expected %u)",

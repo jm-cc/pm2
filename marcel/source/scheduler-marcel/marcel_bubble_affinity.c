@@ -537,7 +537,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
   ma_attracting_levels_destroy (attracting_levels, arity);
 }
 
-void 
+static void
 marcel_bubble_affinity (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
   

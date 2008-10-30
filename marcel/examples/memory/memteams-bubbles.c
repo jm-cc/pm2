@@ -84,7 +84,7 @@ main (int argc, char **argv)
   marcel_init (&argc, argv);
   marcel_memory_init(&memory_manager);
 
-  if (argc < 3) {
+  if (argc < 2) {
     usage ();
     return -1;
   }

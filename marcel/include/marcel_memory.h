@@ -99,8 +99,8 @@ struct marcel_memory_data_s {
 
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;
-  /** \bried Entity which is attached to the memory area */
-  marcel_t *owner;
+  /** \bried Entities which are attached to the memory area */
+  p_tbx_slist_t owners;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */

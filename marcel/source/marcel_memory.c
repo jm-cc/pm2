@@ -232,6 +232,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->protection = protection;
   (*memory_data)->node = node;
   (*memory_data)->with_huge_pages = with_huge_pages;
+  (*memory_data)->owners = tbx_slist_nil();
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -892,9 +893,15 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 #ifdef PM2DEBUG
     ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
-    if (data->owner) {
-      ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[data->node] -= data->size;
-      ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[dest] += data->size;
+    if (!tbx_slist_is_nil(data->owners)) {
+          tbx_slist_ref_to_head(data->owners);
+          do {
+            marcel_t *object = NULL;
+            object = tbx_slist_ref_get(data->owners);
+
+            ((long *) ma_task_stats_get (*object, ma_stats_memnode_offset))[data->node] -= data->size;
+            ((long *) ma_task_stats_get (*object, ma_stats_memnode_offset))[dest] += data->size;
+          } while (tbx_slist_ref_forward(data->owners));
     }
     data->node = dest;
   }
@@ -1021,8 +1028,8 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
     err = -errno;
   }
   else {
-    data->owner = owner;
-    ((long *) ma_task_stats_get (*(data->owner), ma_stats_memnode_offset))[data->node] += data->size;
+    tbx_slist_push(data->owners, owner);
+    ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] += data->size;
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();

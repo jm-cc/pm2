@@ -15,6 +15,8 @@
 
 #include "marcel.h"
 
+#if defined(MARCEL_MAMI_ENABLED)
+
 #define JACOBI_MIGRATE_NOTHING        0
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH  1
 #define JACOBI_MIGRATE_ON_FIRST_TOUCH 2
@@ -312,3 +314,9 @@ void barrier(int nb_workers) {
   }
   marcel_mutex_unlock(&mutex);
 }
+
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
+#endif

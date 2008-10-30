@@ -21,6 +21,8 @@
 #include <time.h>
 #include "../marcel_stream.h"
 
+#if defined(MARCEL_MAMI_ENABLED)
+
 #define TAB_SIZE 1024*1024*16
 #define NB_TIMES 100
 
@@ -310,3 +312,9 @@ parse_command_line_arguments (unsigned int nb_args,
 
   return 0;
 }
+
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
+#endif

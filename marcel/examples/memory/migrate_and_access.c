@@ -17,6 +17,8 @@
 #include <sys/mman.h>
 #include <numaif.h>
 
+#if defined(MARCEL_MAMI_ENABLED)
+
 #define SIZE  100000
 
 int *buffer;
@@ -83,3 +85,9 @@ int marcel_main(int argc, char * argv[]) {
   marcel_end();
   return 0;
 }
+
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
+#endif

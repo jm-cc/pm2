@@ -23,6 +23,8 @@
 #include <numa.h>
 #include <numaif.h>
 
+#if defined(MARCEL_MAMI_ENABLED)
+
 int marcel_main(int argc, char **argv) {
   int nbpages=4;
   void *buffer;
@@ -79,3 +81,9 @@ int marcel_main(int argc, char **argv) {
 
   return 0;
 }
+
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
+#endif

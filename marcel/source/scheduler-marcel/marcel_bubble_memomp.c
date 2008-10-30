@@ -196,6 +196,7 @@ warning_start () {
 
 struct ma_bubble_sched_struct marcel_bubble_memomp_sched = {
   .start = warning_start,
+  .submit = warning_start,
 };
 
 #endif /* MA__NUMA_MEMORY */

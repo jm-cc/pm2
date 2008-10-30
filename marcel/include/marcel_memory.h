@@ -51,6 +51,7 @@ typedef struct marcel_memory_manager_s  marcel_memory_manager_t;
 
 /** \brief Node selection policy */
 typedef int marcel_memory_node_selection_policy_t;
+/** \brief Selects the least loaded node */
 #define MARCEL_MEMORY_LEAST_LOADED_NODE      ((marcel_memory_node_selection_policy_t)0)
 
 /** \brief Type of a memory status */
@@ -99,7 +100,7 @@ struct marcel_memory_data_s {
 
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;
-  /** \bried Entities which are attached to the memory area */
+  /** \brief Entities which are attached to the memory area */
   p_tbx_slist_t owners;
 };
 

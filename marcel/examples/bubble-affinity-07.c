@@ -48,7 +48,7 @@ main (int argc, char *argv[])
 #undef BUBBLE
 
 	return test_marcel_bubble_scheduler (argc, argv,
-																			 &marcel_bubble_affinity_sched,
+																			 &marcel_bubble_cache_sched,
 																			 topology_description,
 																			 bubble_hierarchy_description,
 																			 &result_root);

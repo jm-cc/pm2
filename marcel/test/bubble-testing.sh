@@ -38,7 +38,7 @@ create_test_flavor() {
 	--marcel="spinlock" --marcel="marcel_main"		\
 	--marcel="standard_main" --marcel="pmarcel"		\
 	--marcel="enable_stats"					\
-	--marcel="bubble_sched_affinity"			\
+	--marcel="bubble_sched_cache"			\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" --all="build_static" $_output_redirect

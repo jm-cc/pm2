@@ -744,7 +744,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   if (memory_tree==NULL) {
     // We did not find the address
     *node = -1;
-    errno = ENOENT;
+    errno = EFAULT;
     return -errno;
   }
   else if (address >= memory_tree->data->startaddress && address < memory_tree->data->endaddress) {
@@ -763,7 +763,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   }
   else {
     *node = -1;
-    errno = ENOENT;
+    errno = EFAULT;
     return -errno;
   }
   LOG_OUT();
@@ -885,7 +885,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   LOG_IN();
   if (source == -1) {
     mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    err = ENOENT;
+    err = EFAULT;
   }
   else if (source == dest) {
     mdebug_mami("The address %p is already located at the required node.\n", buffer);
@@ -1004,7 +1004,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
   if (source == -1) {
     mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = ENOENT;
+    errno = EFAULT;
     err = -errno;
   }
   else {

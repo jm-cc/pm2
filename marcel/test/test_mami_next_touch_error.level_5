@@ -23,7 +23,7 @@ hosts="localhost"
 check_all_lines=1
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_migrate_on_next_touch: No such file or directory
+marcel_memory_migrate_on_next_touch: Bad address
 EOF
 
 create_test_flavor() {

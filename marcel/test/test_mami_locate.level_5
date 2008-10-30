@@ -25,9 +25,9 @@ check_all_lines=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 The memory is located on node #0
 The memory is located on node #-1
-marcel_memory_locate: error -2
+marcel_memory_locate: error -14
 The memory is located on node #-1
-marcel_memory_locate: error -2
+marcel_memory_locate: error -14
 EOF
 
 create_test_flavor() {

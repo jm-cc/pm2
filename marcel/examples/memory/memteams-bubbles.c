@@ -110,7 +110,10 @@ main (int argc, char **argv)
   marcel_bubble_t bubbles[nb_teams];
   marcel_bubble_t main_bubble;
   unsigned long nodemasks[nb_teams];
-  marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams) + 1);
+  marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams));
+
+  /* The main thread is thread 0 of team 0. */ 
+  working_threads[0][0] = marcel_self ();
 
   /* Set the nodemask according to the memory policy passed in
      argument. */
@@ -174,11 +177,16 @@ main (int argc, char **argv)
 
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
-
+ 
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
     marcel_bubble_init (&bubbles[team]);
     marcel_bubble_insertbubble (&main_bubble, &bubbles[team]);
+    /* Make the main thread part of team 0. */
+    if (team == 0) {
+      marcel_self ()->id = 0;
+      marcel_bubble_inserttask (&bubbles[team], marcel_self ());
+    } 
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     if (mpol == MAMI_NEXT_TOUCH) {
@@ -189,11 +197,16 @@ main (int argc, char **argv)
 
     for (i = 0; i < nb_threads; i++) {
       unsigned int node;
+      if (team == 0 && i == 0) {
+	/* Avoid creating the main thread again :-) */
+	goto attach_mem;
+      }
       marcel_attr_init (&thread_attr[team][i]);
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
       marcel_attr_setinitbubble (&thread_attr[team][i], &bubbles[team]);
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
+    attach_mem:
       if (mpol == MAMI || mpol == MAMI_NEXT_TOUCH) {
 	/* FIXME: marcel_memory_attach () can't be called more than once on the same data. */
         marcel_memory_attach(&memory_manager, a[team], &working_threads[team][i]);
@@ -213,10 +226,12 @@ main (int argc, char **argv)
   marcel_printf ("Threads created and ready to work!\n");
 
   clock_gettime (CLOCK_MONOTONIC, &t1);
-  for (i = 0; i < NB_TIMES; i++) {
-    marcel_barrier_wait (&barrier);
-  }
+  /* The main thread has to do his job like everyone else. */
+  f (&stream_struct[0]);
   clock_gettime (CLOCK_MONOTONIC, &t2);
+
+  /* Put the main thread back to the root bubble before joining team 0. */
+  marcel_bubble_inserttask (&marcel_root_bubble, marcel_self ());
 
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {

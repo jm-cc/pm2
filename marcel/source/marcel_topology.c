@@ -1738,7 +1738,7 @@ synth_populate_topology(struct marcel_topo_level *level,
 			level->vpset |= level->children[i]->vpset;
 
 		/* XXX: We don't pay attention to the CPU set as it doesn't seem to be
-			 used output of `marcel_topology.c'; we just initialize it so that it's
+			 used outside of `marcel_topology.c'; we just initialize it so that it's
 			 non-zero.  */
 		level->cpuset = level->vpset;
 	} else {

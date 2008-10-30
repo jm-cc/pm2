@@ -122,7 +122,7 @@ main (int argc, char **argv)
     for (team = 1; team < nb_teams; team++) {
       nodemasks[team] = nodemasks[0];
     }
-  } else {
+  } else if (mpol == BIND_POL) {
     for (team = 0; team < nb_teams; team++) {
       nodemasks[team] = 0;
       nodemasks[team] |= (1 << memory_nodes[team]);

@@ -23,7 +23,6 @@ unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesi
 	unsigned long offset;
 	size = (size + sizeof(void(*)())-1) & ~(sizeof(void(*)())-1);
 	offset = ma_per_sth_alloc(&stats_cur, size);
-	MA_BUG_ON (offset >= MARCEL_STATS_ROOM);
 	ma_stats_reset_func(offset) = reset_function;
 	ma_stats_synthesis_func(offset) = synthesis_function;
 	ma_stats_size(offset) = size;
@@ -49,6 +48,7 @@ void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict
 		*dest_data = *src_data;
 }
 
+#ifdef MA__NUMA_MEMORY
 void ma_stats_memnode_sum_reset(void *dest) {
   memset (dest, 0, marcel_nbnodes * sizeof (long));
 }
@@ -58,6 +58,7 @@ void ma_stats_memnode_sum_synthesis(void * __restrict dest, const void * __restr
     ((long *)dest)[i] += ((long *)src)[i];
   }
 }
+#endif /* MA__NUMA_MEMORY */
 
 void ma_stats_last_vp_sum_reset (void *dest) {
   long *data = dest;

@@ -55,10 +55,12 @@ extern unsigned long marcel_stats_load_offset;
 /* TODO: Watch out! We make this available outside of Marcel for now
    to be able to set artificial memory guidelines in example
    programs. This should move to the marcel_variable section soon. */
+#ifdef MA__NUMA_MEMORY
 /** \brief Offset of the "per node allocated memory" (i.e. the total
     amount of memory per node allocated by the considered entity)
     statistics*/
 extern unsigned long ma_stats_memnode_offset;
+#endif /* MA__NUMA_MEMORY */
 
 #section marcel_variables
 /** \brief Offset of the "number of thread" statistics */
@@ -150,12 +152,14 @@ ma_stats_reset_t ma_stats_long_sum_reset;
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
 /** \brief "Max" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_max_reset;
+#ifdef MA__NUMA_MEMORY
 /** \brief "Sum" synthesis function for the array of long describing
     the amount of memory allocated on each node. */
 ma_stats_synthesis_t ma_stats_memnode_sum_synthesis;
 /** \brief "Sum" reset function for the array of long describing the
     amount of memory allocated on each node. */
 ma_stats_reset_t ma_stats_memnode_sum_reset;
+#endif /* MA__NUMA_MEMORY */
 /** \brief "Sum" synthesis function for the last_vp statistics. */ 
 ma_stats_synthesis_t ma_stats_last_vp_sum_synthesis;
 /** \brief "Sum" reset function for the last_vp statistics (set to -1) */

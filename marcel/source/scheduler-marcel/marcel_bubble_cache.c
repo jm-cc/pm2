@@ -20,8 +20,8 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_AFFINITY_USE_WORK_STEALING 0
-#define MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS 0
+#define MA_CACHE_USE_WORK_STEALING 0
+#define MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
@@ -178,7 +178,7 @@ ma_attracting_levels_most_loaded_index (ma_attracting_level_t *attracting_levels
   return res;
 }
 
-#if MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS
+#if MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS
 /* Debugging function that prints the address of every entity on each
    attracting level included in _attracting_levels_. */
 static void
@@ -193,7 +193,7 @@ ma_print_attracting_levels (ma_attracting_level_t *attracting_levels, unsigned i
     }
   }
 }
-#endif /* MA_AFFINITY_NEEDS_DEBUGGING_FUNCTIONS */
+#endif /* MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS */
 
 /* This function translates a vp index into a from->children
    index. (i.e., sometimes you're not distributing on vp-level
@@ -429,7 +429,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
     return;
   }
   
-  bubble_sched_debug ("count in __marcel_bubble__affinity\n");
+  bubble_sched_debug ("count in __marcel_bubble__cache\n");
   ne = ma_count_entities_on_rq (&l->rq);
   bubble_sched_debug ("ne = %d on runqueue %p\n", ne, &l->rq);  
 
@@ -439,7 +439,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
     return;
   }
 
-  bubble_sched_debug ("affinity found %d entities to distribute.\n", ne);
+  bubble_sched_debug ("cache found %d entities to distribute.\n", ne);
   
   ma_attracting_level_t attracting_levels[arity];
   ma_attracting_levels_init (attracting_levels, l, arity, ne);
@@ -538,7 +538,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
 }
 
 static void
-marcel_bubble_affinity (marcel_bubble_t *b, struct marcel_topo_level *l) {
+marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats (b);
@@ -557,7 +557,7 @@ marcel_bubble_affinity (marcel_bubble_t *b, struct marcel_topo_level *l) {
 }
 
 static int
-affinity_sched_init () {
+cache_sched_init () {
   ma_last_succeeded_steal = 0;
   ma_last_failed_steal = 0;
   ma_atomic_init (&ma_succeeded_steals, 0);
@@ -566,7 +566,7 @@ affinity_sched_init () {
 }
 
 static int
-affinity_sched_exit () {
+cache_sched_exit () {
   bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n", 
 		     ma_atomic_read (&ma_succeeded_steals), 
 		     ma_atomic_read (&ma_failed_steals));
@@ -576,18 +576,18 @@ affinity_sched_exit () {
 static marcel_bubble_t *b = &marcel_root_bubble;
 
 static int
-affinity_sched_submit (marcel_entity_t *e) {
+cache_sched_submit (marcel_entity_t *e) {
   struct marcel_topo_level *l = marcel_topo_level (0,0);
   b = ma_bubble_entity (e);
   if (!ma_atomic_read (&ma_init))
-    marcel_bubble_affinity (b, l);
+    marcel_bubble_cache (b, l);
   else 
     ma_aff_sched_submit (&e, 1, l);
   
   return 0;
 }
 
-#if MA_AFFINITY_USE_WORK_STEALING
+#if MA_CACHE_USE_WORK_STEALING
 /* This function moves _entity_to_steal_ to the _starving_rq_
    runqueue, while moving everything that needs to be moved to avoid
    locking issues. */
@@ -800,7 +800,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 }
 
 static int
-affinity_steal (unsigned int from_vp) {
+cache_steal (unsigned int from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father;
   unsigned int arity;
   int smthg_to_steal = 0;
@@ -859,14 +859,14 @@ affinity_steal (unsigned int from_vp) {
   ma_atomic_inc (&ma_failed_steals);
   return 0;
 }
-#endif /* MA_AFFINITY_USE_WORK_STEALING */
+#endif /* MA_CACHE_USE_WORK_STEALING */
 
-struct ma_bubble_sched_struct marcel_bubble_affinity_sched = {
-  .init = affinity_sched_init,
-  .exit = affinity_sched_exit,
-  .submit = affinity_sched_submit,
-#if MA_AFFINITY_USE_WORK_STEALING
-  .vp_is_idle = affinity_steal,
-#endif /* MA_AFFINITY_USE_WORK_STEALING */
+struct ma_bubble_sched_struct marcel_bubble_cache_sched = {
+  .init = cache_sched_init,
+  .exit = cache_sched_exit,
+  .submit = cache_sched_submit,
+#if MA_CACHE_USE_WORK_STEALING
+  .vp_is_idle = cache_steal,
+#endif /* MA_CACHE_USE_WORK_STEALING */
 };
 #endif /* MA__BUBBLES */

@@ -31,9 +31,9 @@ ma_bubble_sched_t current_sched =
 #elif defined(BUBBLE_SCHED_MSPREAD) && defined(MA__NUMA_MEMORY)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mmspread[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_mspread_sched;
-#elif defined(BUBBLE_SCHED_AFFINITY)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32maffinity[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_affinity_sched;
+#elif defined(BUBBLE_SCHED_CACHE)
+#warning "[1;33m<<< [1;37mBubble scheduler [1;32mcache[1;37m selected[1;33m >>>[0m"
+	&marcel_bubble_cache_sched;
 #elif defined(BUBBLE_SCHED_MEMORY)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemory[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_memory_sched;

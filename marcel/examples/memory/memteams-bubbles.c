@@ -23,7 +23,7 @@
 #include <time.h>
 #include "../marcel_stream.h"
 
-#define TAB_SIZE 1024*1024*16
+#define TAB_SIZE 1024*1024*64
 #define NB_TIMES 20
 
 enum mbind_policy {
@@ -260,9 +260,7 @@ main (int argc, char **argv)
     marcel_free (c);
   }
 
-  /* Avoid the first iteration, in which we only measure the time we
-     need to cross the barrier. */
-  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES-1);
+  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES);
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 

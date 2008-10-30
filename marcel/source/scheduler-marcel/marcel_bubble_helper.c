@@ -23,10 +23,14 @@ volatile unsigned long init_phase = 1;
 
 long ma_entity_load(marcel_entity_t *e) 
 {
-  if (e->type == MA_BUBBLE_ENTITY)
-    return *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), marcel_stats_load_offset);
-  else
-    return *(long*)ma_task_stats_get(ma_task_entity(e), marcel_stats_load_offset);
+  switch (e->type) {
+    case MA_BUBBLE_ENTITY:
+      return *(long*)ma_bubble_hold_stats_get(ma_bubble_entity(e), marcel_stats_load_offset);
+    case MA_THREAD_ENTITY:
+      return *(long*)ma_task_stats_get(ma_task_entity(e), marcel_stats_load_offset);
+    default:
+      abort ();
+  }
 }
 
 unsigned ma_is_a_seed(marcel_entity_t *e)

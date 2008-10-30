@@ -20,8 +20,8 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_CACHE_USE_WORK_STEALING 0
-#define MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS 0
+#define MA_CACHE_BSCHED_USE_WORK_STEALING 0
+#define MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
@@ -33,10 +33,10 @@ static ma_atomic_t ma_failed_steals = MA_ATOMIC_INIT(0);
 
 /* Submits a set of entities on a marcel_topo_level */
 static void
-ma_aff_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
+ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
   unsigned int i;
   bubble_sched_debug ("Submitting entities on runqueue %p:\n", &l->rq);
-  ma_debug_show_entities ("ma_aff_sched_submit", e, ne);
+  ma_debug_show_entities ("ma_cache_sched_submit", e, ne);
   for (i = 0; i < ne; i++) {	      
     if (e[i]) {
       int state = ma_get_entity (e[i]);
@@ -178,7 +178,7 @@ ma_attracting_levels_most_loaded_index (ma_attracting_level_t *attracting_levels
   return res;
 }
 
-#if MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS
+#if MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
 /* Debugging function that prints the address of every entity on each
    attracting level included in _attracting_levels_. */
 static void
@@ -193,7 +193,7 @@ ma_print_attracting_levels (ma_attracting_level_t *attracting_levels, unsigned i
     }
   }
 }
-#endif /* MA_CACHE_NEEDS_DEBUGGING_FUNCTIONS */
+#endif /* MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
 
 /* This function translates a vp index into a from->children
    index. (i.e., sometimes you're not distributing on vp-level
@@ -316,7 +316,7 @@ ma_distribute_according_to_attracting_levels (ma_attracting_level_t *attracting_
 
 /* Distributes a set of entities regarding cache affinities */
 static int
-ma_aff_distribute_entities_cache (struct marcel_topo_level *l, 
+ma_cache_distribute_entities_cache (struct marcel_topo_level *l, 
 				  marcel_entity_t *e[], 
 				  int ne,
 				  ma_attracting_level_t *attracting_levels) {
@@ -360,7 +360,7 @@ ma_aff_distribute_entities_cache (struct marcel_topo_level *l,
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
 static int
-ma_aff_has_enough_entities (struct marcel_topo_level *l, 
+ma_cache_has_enough_entities (struct marcel_topo_level *l, 
 			    marcel_entity_t *e[], 
 			    unsigned int ne, 
 			    const ma_attracting_level_t *attracting_levels) {
@@ -419,7 +419,7 @@ ma_aff_has_enough_entities (struct marcel_topo_level *l,
 }
 
 static 
-void ma_aff_distribute_from (struct marcel_topo_level *l) {  
+void ma_cache_distribute_from (struct marcel_topo_level *l) {  
   unsigned int ne, nvp = marcel_vpset_weight(&l->vpset);
   unsigned int arity = l->arity;
   unsigned int i, k;
@@ -435,7 +435,7 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
 
   if (!ne) {
     for (k = 0; k < arity; k++)
-      ma_aff_distribute_from (l->children[k]);
+      ma_cache_distribute_from (l->children[k]);
     return;
   }
 
@@ -445,17 +445,17 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
   ma_attracting_levels_init (attracting_levels, l, arity, ne);
   
   marcel_entity_t *e[ne];
-  bubble_sched_debug ("get in ma_aff_distribute_from\n");
+  bubble_sched_debug ("get in ma_cache_distribute_from\n");
   ma_get_entities_from_rq (&l->rq, e, ne);
 
   bubble_sched_debug ("Entities were taken from runqueue %p:\n", &l->rq);
-  ma_debug_show_entities ("ma_aff_distribute_from", e, ne);
+  ma_debug_show_entities ("ma_cache_distribute_from", e, ne);
 
   qsort (e, ne, sizeof(e[0]), &ma_increasing_order_entity_load_compar);
    
   if (ne < nvp) {
-    if (ma_aff_has_enough_entities (l, e, ne, attracting_levels))
-      ma_aff_distribute_entities_cache (l, e, ne, attracting_levels);
+    if (ma_cache_has_enough_entities (l, e, ne, attracting_levels))
+      ma_cache_distribute_entities_cache (l, e, ne, attracting_levels);
     else {
       /* We really have to explode at least one bubble */
       bubble_sched_debug ("We have to explode bubbles...\n");
@@ -485,9 +485,9 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
       }
       
       if (!bubble_has_exploded) {
-	ma_aff_distribute_entities_cache (l, e, ne, attracting_levels);
+	ma_cache_distribute_entities_cache (l, e, ne, attracting_levels);
 	for (k = 0; k < arity; k++)
-	  ma_aff_distribute_from (l->children[k]);
+	  ma_cache_distribute_from (l->children[k]);
 	ma_attracting_levels_destroy (attracting_levels, arity);
 	return;
       }
@@ -520,19 +520,19 @@ void ma_aff_distribute_from (struct marcel_topo_level *l) {
       }
       MA_BUG_ON (new_ne != j);
       
-      ma_aff_sched_submit (new_e, new_ne, l);
+      ma_cache_sched_submit (new_e, new_ne, l);
       ma_attracting_levels_destroy (attracting_levels, arity);
-      return ma_aff_distribute_from (l);
+      return ma_cache_distribute_from (l);
     }
   } else { /* ne >= nvp */ 
     /* We can delay bubble explosion ! */
     bubble_sched_debug ("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
-    ma_aff_distribute_entities_cache (l, e, ne, attracting_levels);
+    ma_cache_distribute_entities_cache (l, e, ne, attracting_levels);
   }
   
   /* Keep distributing on the underlying levels */
   for (i = 0; i < arity; i++)
-    ma_aff_distribute_from (l->children[i]);
+    ma_cache_distribute_from (l->children[i]);
 
   ma_attracting_levels_destroy (attracting_levels, arity);
 }
@@ -546,7 +546,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_local_bh_disable ();
   
   ma_bubble_lock_all (b, l);
-  ma_aff_distribute_from (l);
+  ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */
   ma_bubble_snapshot ();
@@ -582,12 +582,12 @@ cache_sched_submit (marcel_entity_t *e) {
   if (!ma_atomic_read (&ma_init))
     marcel_bubble_cache (b, l);
   else 
-    ma_aff_sched_submit (&e, 1, l);
+    ma_cache_sched_submit (&e, 1, l);
   
   return 0;
 }
 
-#if MA_CACHE_USE_WORK_STEALING
+#if MA_CACHE_BSCHED_USE_WORK_STEALING
 /* This function moves _entity_to_steal_ to the _starving_rq_
    runqueue, while moving everything that needs to be moved to avoid
    locking issues. */
@@ -859,14 +859,14 @@ cache_steal (unsigned int from_vp) {
   ma_atomic_inc (&ma_failed_steals);
   return 0;
 }
-#endif /* MA_CACHE_USE_WORK_STEALING */
+#endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
 
 struct ma_bubble_sched_struct marcel_bubble_cache_sched = {
   .init = cache_sched_init,
   .exit = cache_sched_exit,
   .submit = cache_sched_submit,
-#if MA_CACHE_USE_WORK_STEALING
+#if MA_CACHE_BSCHED_USE_WORK_STEALING
   .vp_is_idle = cache_steal,
-#endif /* MA_CACHE_USE_WORK_STEALING */
+#endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
 };
 #endif /* MA__BUBBLES */

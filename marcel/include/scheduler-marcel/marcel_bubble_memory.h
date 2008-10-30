@@ -16,4 +16,4 @@
 
 #section variables
 #depend "marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_memomp_sched;
+extern marcel_bubble_sched_t marcel_bubble_memory_sched;

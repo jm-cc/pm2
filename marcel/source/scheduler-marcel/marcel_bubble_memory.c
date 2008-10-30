@@ -182,7 +182,7 @@ memory_sched_submit (marcel_entity_t *e) {
 }
 
 
-struct ma_bubble_sched_struct marcel_bubble_memomp_sched = {
+struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .start = memory_sched_start,
   .submit = memory_sched_submit,
 };
@@ -194,7 +194,7 @@ warning_start () {
   marcel_printf ("WARNING: You're currently trying to use the memory bubble scheduler, but as the enable_numa_memory option is not activated in the current flavor, the bubble scheduler won't do anything! Please activate enable_numa_memory in your flavor.\n");
 }
 
-struct ma_bubble_sched_struct marcel_bubble_memomp_sched = {
+struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .start = warning_start,
   .submit = warning_start,
 };

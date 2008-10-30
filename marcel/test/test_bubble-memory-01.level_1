@@ -13,10 +13,11 @@
 # General Public License for more details.
 
 # Configuration
-flavor="test_marcel_bubble_memomp"
+flavor="test_marcel_bubble_memory"
 appdir="${PM2_ROOT}/marcel/examples"
 args=""
 hosts="localhost"
+prog="bubble-memory-01"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 PASS: scheduling entities were distributed as expected
 EOF
@@ -29,7 +30,7 @@ create_test_flavor() {
 	--marcel="spinlock" --marcel="marcel_main"		\
 	--marcel="standard_main" --marcel="pmarcel"		\
 	--marcel="enable_stats"	--marcel="enable_numa_memory"	\
-	--marcel="bubble_sched_memomp"			\
+	--marcel="bubble_sched_memory"			\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" --all="build_static" $_output_redirect

@@ -1091,9 +1091,8 @@ int marcel_yield_to(marcel_t next)
 
 /* This function tries to yield to one of the threads contained in
    _team_. Candidates are determined by the _mask_, and have to be on
-   the same runqueue to respect cache affinity relations.  The
-   _padding_ argument represents the "gap" between two values in
-   _mask_.*/
+   the same runqueue to respect affinity relations.  The _padding_
+   argument represents the "gap" between two values in _mask_.*/
 int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned nb_teammates) {
   unsigned i;
 
@@ -1124,7 +1123,7 @@ int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned 
 
     /* Hurray ! We finally found someone !*/
     if (marcel_yield_to(team[i]) == 0) {
-      sched_debug("marcel_yield_to_team: We succesfully yielded to thread %d::%p\n", i, team[i]);
+      sched_debug("marcel_yield_to_team: We successfully yielded to thread %d::%p\n", i, team[i]);
       return 0;
     }
   }

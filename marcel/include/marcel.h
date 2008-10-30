@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#define MARCEL_VERSION 0x020000 /* Version 2.0000 */
+#define MARCEL_VERSION 0x020001 /* Version 2.0001 */
 
 #include <sys/types.h>
 

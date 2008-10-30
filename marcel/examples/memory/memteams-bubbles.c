@@ -195,9 +195,10 @@ main (int argc, char **argv)
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
       if (mpol == MAMI || mpol == MAMI_NEXT_TOUCH) {
-        marcel_memory_attach(&memory_manager, a[i], &working_threads[team][i]);
-        marcel_memory_attach(&memory_manager, b[i], &working_threads[team][i]);
-        marcel_memory_attach(&memory_manager, c[i], &working_threads[team][i]);
+	/* FIXME: marcel_memory_attach () can't be called more than once on the same data. */
+        marcel_memory_attach(&memory_manager, a[team], &working_threads[team][i]);
+        marcel_memory_attach(&memory_manager, b[team], &working_threads[team][i]);
+        marcel_memory_attach(&memory_manager, c[team], &working_threads[team][i]);
       }
       else {
         for (node = 0; node < marcel_nbnodes; node++) {

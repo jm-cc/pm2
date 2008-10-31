@@ -22,10 +22,8 @@
 #ifdef MA__IFACE_PMARCEL
 
 /* 
- * WARNING: don't edit this file. It is a mere usual pthread.h, with pthread_
- * replaced by pmarcel_.
- * This file is only intended to check for type incompatibilities, not for
- * pmarcel_ declarations
+ * WARNING: don't edit this file. It is a mere usual pthread.h + semaphore.h, with pthread_
+ * replaced by pmarcel_, so as to make sure we stick to the standard declarations.
  */
 
 #ifdef LINUX_SYS
@@ -725,6 +723,49 @@ extern int pmarcel_mutex_setprioceiling(pmarcel_mutex_t *__restrict mutex,
        int prioceiling, int *__restrict old_ceiling); 
 
 __TBX_END_DECLS
+
+
+/* Initialize semaphore object SEM to VALUE.  If PSHARED then share it
+   with other processes.  */
+extern int pmarcel_sem_init (pmarcel_sem_t *__sem, int __pshared, unsigned int __value)
+     __THROW;
+/* Free resources associated with semaphore object SEM.  */
+extern int pmarcel_sem_destroy (pmarcel_sem_t *__sem) __THROW;
+
+/* Open a named semaphore NAME with open flags OFLAG.  */
+extern pmarcel_sem_t *pmarcel_sem_open (__const char *__name, int __oflag, ...) __THROW;
+
+/* Close descriptor for named semaphore SEM.  */
+extern int pmarcel_sem_close (pmarcel_sem_t *__sem) __THROW;
+
+/* Remove named semaphore NAME.  */
+extern int pmarcel_sem_unlink (__const char *__name) __THROW;
+
+/* Wait for SEM being posted.
+
+   This function is a cancellation point and therefore not marked with
+   __THROW.  */
+extern int pmarcel_sem_wait (pmarcel_sem_t *__sem);
+
+/* #ifdef __USE_XOPEN2K */
+/* Similar to `sem_wait' but wait only until ABSTIME.
+
+   This function is a cancellation point and therefore not marked with
+   __THROW.  */
+extern int pmarcel_sem_timedwait (pmarcel_sem_t *__restrict __sem,
+			  __const struct timespec *__restrict __abstime);
+/* #endif */
+
+/* Test whether SEM is posted.  */
+extern int pmarcel_sem_trywait (pmarcel_sem_t *__sem) __THROW;
+
+/* Post SEM.  */
+extern int pmarcel_sem_post (pmarcel_sem_t *__sem) __THROW;
+
+/* Get current value of SEM and store it in *SVAL.  */
+extern int pmarcel_sem_getvalue (pmarcel_sem_t *__restrict __sem, int *__restrict __sval)
+     __THROW;
+
 
 #endif
 

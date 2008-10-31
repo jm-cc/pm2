@@ -88,7 +88,6 @@
 /* Declare pmarcel_name and __pmarcel_name */
 #ifdef MA__IFACE_PMARCEL
 #define DEC_POSIX(rtype, name, proto) \
-  extern rtype POSIX_NAME(name) proto; \
   DEC_LOCAL_POSIX(name)
 #else
 #define DEC_POSIX(rtype, name, proto)

@@ -261,16 +261,12 @@ int pthread_setschedprio(pthread_t thread, int prio) __THROW;
 
 /** Set the scheduling params of the specified thread.
  */
-DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
-                                     __const struct marcel_sched_param *__restrict param) __THROW);
-DEC_POSIX(int, setschedparam,(pmarcel_t thread, int policy,
+DEC_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
 
 /** Get the scheduling params of the specified thread.
  */
-DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
-                                     struct marcel_sched_param *__restrict param) __THROW);
-DEC_POSIX(int, getschedparam,(pmarcel_t thread, int *__restrict policy,
+DEC_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
 
 DEC_POSIX(int, getcpuclockid, (pmarcel_t thread, clockid_t *clock_id) __THROW);

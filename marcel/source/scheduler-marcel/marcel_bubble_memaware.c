@@ -34,7 +34,7 @@ ma_spinlock_t to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
 extern marcel_bubble_t *ma_registered_bubble;
 
 /* Regarde si une entite est deja contenue dans une autre */
-int ma_check_inentity(marcel_entity_t *entity, marcel_entity_t *inentity)
+static int ma_check_inentity(marcel_entity_t *entity, marcel_entity_t *inentity)
 {
 	marcel_entity_t *downentity;
 	
@@ -75,7 +75,7 @@ void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level)
 	ma_spin_unlock(&to_spread_lock);
 }
 
-void ma_clear_spread(void)
+static void ma_clear_spread(void)
 {
 		ma_spin_lock(&to_spread_lock);
 		int i;
@@ -90,7 +90,7 @@ void ma_clear_spread(void)
 
 /* Permet de remonter les entites d'un niveau ainsi que des sous-niveau de celui-ci. *
  * On place aussi les entites remontees dans un tableau de SPREAD */
-void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_level *level, int recurse)
+static void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_level *level, int recurse)
 {
 	ma_runqueue_t *rqlevel = &level->rq;
 
@@ -119,7 +119,7 @@ void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_topo_leve
 /******************** Voir si équilibré **********************/
 
 /* Compter les entités dans une bulle */
-void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
+static void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 {
 	//marcel_fprintf(stderr,"bubble entity %p\n", &bubble->sched);	
 	marcel_entity_t *downentity;
@@ -137,7 +137,7 @@ void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 }
 
 /* Travail équilibré sous un niveau */
-void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *sum)
+static void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *sum)
 {
 	//marcel_fprintf(stderr,"down me %p\n",me);
 	/* Calcul du nombre d'entités sur me */
@@ -177,7 +177,7 @@ void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *su
 #define MA_MORE_THREADS 8
 
 /* Test d'équilibrage */
-int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menumber, int mesum, struct marcel_topo_level **uplevel)
+static int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menumber, int mesum, struct marcel_topo_level **uplevel)
 {
 	//marcel_fprintf(stderr,"vp %d, up me %p, menumber %d\n",vp,me,menumber);
 	struct marcel_topo_level *father = me->father;
@@ -241,7 +241,7 @@ int cspread = 0;
 #define MA_RATIO_THREADS_VPS 1.2
 
 /* Fonction de redistribution du travail */
-int __memaware(unsigned vp) {
+static int __memaware(unsigned vp) {
 #ifdef MA__LWPS
 	int gotwork = 0;
 	struct marcel_topo_level *me = &marcel_topo_vp_level[vp];		
@@ -330,7 +330,7 @@ ma_spinlock_t remix_lock = MA_SPIN_LOCK_UNLOCKED;
 /* La fonction qui decide si on redistribue du travail */
 static int want[MA_NR_LWPS];
 
-int memaware(unsigned vp)
+static int memaware(unsigned vp)
 {
 	_ma_raw_spin_lock(&remix_lock);
 
@@ -367,7 +367,7 @@ int memaware(unsigned vp)
 /*************************** Fonctions de debut **************************/
 
 /* Debuggage : permet de lister les levels */
-void ma_see_level(struct marcel_topo_level *level, int recurse)
+static void ma_see_level(struct marcel_topo_level *level, int recurse)
 {
 	marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level);
 	int i;
@@ -391,7 +391,7 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 	for_each_entity_scheduled_in_bubble_end()
 }
 
-int memaware_sched_submit(marcel_entity_t *e)
+static int memaware_sched_submit(marcel_entity_t *e)
 {
 	marcel_fprintf(stderr, "memaware_sched_submit\n");
 	marcel_stop_idle_memaware();

@@ -364,6 +364,7 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
 int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 
 extern void __ma_bubble_sched_start(void);
+extern void ma_bubble_sched_init2(void);
 
 /* Called on marcel shutdown */
 void marcel_sched_exit(marcel_t t);

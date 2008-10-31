@@ -520,7 +520,6 @@ extern const __ma_init_info_t ma_init_info_marcel_slot_init;
 extern const __ma_init_info_t ma_init_info_linux_sched_init;
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
-extern void ma_bubble_sched_init2(void);
 #endif // MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_softirq_init;
 extern const __ma_init_info_t ma_init_info_marcel_io_init;

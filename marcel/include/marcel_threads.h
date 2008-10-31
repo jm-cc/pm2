@@ -340,6 +340,14 @@ static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t);
 #define	marcel_thread_preemption_disable() marcel_some_thread_preemption_disable(MARCEL_SELF)
 #define	marcel_thread_is_preemption_disabled() marcel_some_thread_is_preemption_disabled(MARCEL_SELF)
 
+#ifdef MA__DEBUG
+
+extern void marcel_print_thread(marcel_t pid);
+extern void marcel_print_jmp_buf(char *name, jmp_buf buf);
+
+#endif /* MA__DEBUG */
+
+
 #section inline
 /* Pour ma_barrier */
 #depend "marcel_compiler.h[marcel_macros]"

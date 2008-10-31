@@ -211,6 +211,8 @@ extern int pmarcel_mutex_timedlock (pmarcel_mutex_t *__restrict __mutex,
                                     __const struct timespec *__restrict
                                     __abstime) __THROW;
 extern int pmarcel_mutex_unlock (pmarcel_mutex_t *__mutex) __THROW;
+extern int pmarcel_mutex_unlock_usercnt (pmarcel_mutex_t * mutex,
+					 int decr) __THROW;
 extern int pmarcel_mutexattr_init (pmarcel_mutexattr_t *__attr) __THROW;
 extern int pmarcel_mutexattr_destroy (pmarcel_mutexattr_t *__attr) __THROW;
 extern int pmarcel_mutexattr_getpshared (__const pmarcel_mutexattr_t *

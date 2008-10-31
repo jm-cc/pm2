@@ -156,7 +156,7 @@ const char * marcel_topo_level_string(enum marcel_topo_level_e l)
   return "Unknown";
 }
 
-void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode)
+static void ma_print_level_description(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode)
 {
   unsigned long type = l->merged_type;
   const char * separator = " + ";
@@ -207,7 +207,7 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 
 void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode,
 			const char *separator, const char *indexprefix, const char* labelseparator, const char* levelterm) {
-  marcel_print_level_description(l, output, txt_mode, verbose_mode);
+  ma_print_level_description(l, output, txt_mode, verbose_mode);
   marcel_fprintf(output, "%s", labelseparator);
 #ifdef MA__NUMA
   if (l->os_node != -1) marcel_fprintf(output, "%sNode%s%u(%ld%s)", separator, indexprefix, l->os_node,

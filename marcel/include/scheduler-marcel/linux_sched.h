@@ -65,6 +65,9 @@ extern void ma_wait_task_inactive(marcel_task_t * p);
 #else
 #  define ma_wait_task_inactive(p)	do { } while (0)
 #endif
+
+extern void marcel_bind_to_topo_level(marcel_topo_level_t *level);
+
 int marcel_idle_lwp(ma_lwp_t lwp);
 int marcel_task_prio(marcel_task_t *p);
 int marcel_task_curr(marcel_task_t *p);

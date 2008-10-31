@@ -429,6 +429,11 @@ int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
                            void *buffer,
                            marcel_t *owner);
 
+/**
+ * Indicates if huge pages are available on the system.
+ */
+int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager);
+
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

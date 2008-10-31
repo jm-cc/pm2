@@ -1099,4 +1099,8 @@ int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
+int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager) {
+  return (memory_manager->hugepagesize != 0);
+}
+
 #endif /* MARCEL_MAMI_ENABLED */

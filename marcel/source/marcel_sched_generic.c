@@ -573,7 +573,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(generic_sched, MA_INIT_GENSCHED_IDLE);
 MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT, MA_INIT_GENSCHED_PREEMPT_PRIO);
 
 #ifdef MA__LWPS
-void __marcel_init marcel_gensched_start_lwps(void)
+static void __marcel_init marcel_gensched_start_lwps(void)
 {
 	int i;
 	LOG_IN();

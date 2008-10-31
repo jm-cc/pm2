@@ -482,7 +482,7 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(lwp, MA_INIT_LWP_MAIN_STRUCT,
 				     MA_INIT_LWP_MAIN_STRUCT_PRIO);
 MA_LWP_NOTIFIER_CALL_ONLINE(lwp, MA_INIT_LWP);
 
-void __marcel_init marcel_lwp_finished(void)
+static void __marcel_init marcel_lwp_finished(void)
 {
 #ifdef MA__LWPS
 	MA_LWP_SELF->pid=marcel_kthread_self();

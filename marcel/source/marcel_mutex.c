@@ -19,12 +19,12 @@
 #include "marcel_fastlock.h"
 
 int marcel_mutex_init (marcel_mutex_t *mutex, 
-		const marcel_mutexattr_t * mutexattr) {
+		const marcel_mutexattr_t * mutexattr TBX_UNUSED) {
 	mdebug("initializing mutex %p by %p\n", mutex, marcel_self());
 	__marcel_init_lock(&mutex->__data.__lock);
 	return 0;
 }
-int marcel_mutex_destroy(marcel_mutex_t * mutex) {
+int marcel_mutex_destroy(marcel_mutex_t * mutex TBX_UNUSED) {
 	return 0;
 }
 int marcel_mutex_lock(marcel_mutex_t * mutex) {
@@ -38,10 +38,10 @@ int marcel_mutex_trylock(marcel_mutex_t * mutex) {
 int marcel_mutex_unlock(marcel_mutex_t * mutex) {
 	return __marcel_unlock(&mutex->__data.__lock);
 }
-int marcel_mutexattr_init(marcel_mutexattr_t * attr)	{
+int marcel_mutexattr_init(marcel_mutexattr_t * attr TBX_UNUSED)	{
 	return 0;
 }
-int marcel_mutexattr_destroy(marcel_mutexattr_t * attr)	{
+int marcel_mutexattr_destroy(marcel_mutexattr_t * attr TBX_UNUSED)	{
 	return 0;
 }
 
@@ -60,7 +60,7 @@ int pmarcel_mutex_init (pmarcel_mutex_t *mutex,
 	__pmarcel_init_lock(&mutex->__data.__lock);
 	LOG_RETURN(0);
 }
-int pmarcel_mutex_destroy(pmarcel_mutex_t * mutex) {
+int pmarcel_mutex_destroy(pmarcel_mutex_t * mutex TBX_UNUSED) {
 	LOG_IN();
 	LOG_RETURN(0);
 }
@@ -291,7 +291,7 @@ int pmarcel_mutexattr_init(pmarcel_mutexattr_t * attr) {
 	attr->__data.mutexkind = PMARCEL_MUTEX_NORMAL;
 	LOG_RETURN(0);
 }
-int pmarcel_mutexattr_destroy(pmarcel_mutexattr_t * attr) {
+int pmarcel_mutexattr_destroy(pmarcel_mutexattr_t * attr TBX_UNUSED) {
 	LOG_IN();
 	LOG_RETURN(0);
 }

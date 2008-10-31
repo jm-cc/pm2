@@ -22,7 +22,7 @@
 #warning "marcel/pmarcel/pthread_spin_lock won't work in mono mode"
 #endif
 
-DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared),(lock,pshared),
+DEF_MARCEL_POSIX(int, spin_init,(marcel_spinlock_t *lock, int pshared TBX_UNUSED),(lock,pshared),
 {
 #ifdef MA__DEBUG
 	if ((pshared != MARCEL_PROCESS_SHARED)

@@ -1233,7 +1233,7 @@ void marcel_apply_vpset(const marcel_vpset_t *vpset)
 #endif
 }
 
-DEF_POSIX(int, setaffinity_np, (pmarcel_t pid, size_t cpusetsize, const pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+DEF_POSIX(int, setaffinity_np, (pmarcel_t pid, size_t cpusetsize TBX_UNUSED, const pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
 {
 	MA_BUG_ON((marcel_t) pid != marcel_self());
 	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
@@ -1254,7 +1254,7 @@ int lpt_setaffinity_np(pthread_t pid, size_t cpusetsize, const cpu_set_t *cpuset
 versioned_symbol(libpthread, lpt_setaffinity_np, pthread_setaffinity_np, GLIBC_2_3_4);
 #endif
 
-DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
 {
 #ifdef MA__LWPS
 	marcel_t task = (marcel_t) pid;

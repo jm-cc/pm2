@@ -54,7 +54,7 @@ explode_sched_submit(marcel_entity_t *e)
 }
 
 static int
-explode_sched_vp_is_idle(unsigned vp)
+explode_sched_vp_is_idle(unsigned vp TBX_UNUSED)
 {
   /* Forcer une remontée ? */
   return 0;
@@ -156,7 +156,7 @@ les #ifdef dans les arguments de macro...
 }
 
 static int
-explode_sched_tick(marcel_bubble_t *b)
+explode_sched_tick(marcel_bubble_t *b TBX_UNUSED)
 {
   /* TODO: gather bubble */
   return 0;

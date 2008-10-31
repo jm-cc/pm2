@@ -329,7 +329,7 @@ int marcel_attr_setvpset(marcel_attr_t * attr, marcel_vpset_t vpset)
 	return 0;
 }
 
-DEF_POSIX(int, attr_setaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize, const pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
+DEF_POSIX(int, attr_setaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize TBX_UNUSED, const pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
 {
 	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
 	return marcel_attr_setvpset(attr, *cpuset);
@@ -357,7 +357,7 @@ int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
 	return 0;
 }
 
-DEF_POSIX(int, attr_getaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize, pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
+DEF_POSIX(int, attr_getaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
 {
 	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
 	return marcel_attr_getvpset(attr, cpuset);

@@ -197,7 +197,7 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 
-int marcel_bubble_steal_work(unsigned vp) {
+int marcel_bubble_steal_work(unsigned vp TBX_UNUSED) {
 #ifdef MA__LWPS
 	ma_spin_lock(&ma_idle_scheduler_lock);
 	if (ma_atomic_read (&ma_idle_scheduler)) {

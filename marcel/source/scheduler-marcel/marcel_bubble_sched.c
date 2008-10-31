@@ -188,7 +188,7 @@ void marcel_bubble_shake (void) {
   current_sched->submit (&marcel_root_bubble.as_entity);
 }
 
-int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
+int marcel_bubble_setid(marcel_bubble_t *bubble TBX_UNUSED, int id TBX_UNUSED) {
 	PROF_EVENT2(bubble_setid,bubble, id);
 	return 0;
 }

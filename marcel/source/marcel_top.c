@@ -337,7 +337,7 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
 	}
 }
 
-static void marcel_top_tick(unsigned long foo) {
+static void marcel_top_tick(unsigned long foo TBX_UNUSED) {
 	marcel_show_top();
 	timer.expires += JIFFIES_FROM_US(TOP_SEC * 1000000);
 	ma_add_timer(&timer);

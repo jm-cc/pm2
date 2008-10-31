@@ -26,7 +26,7 @@ int marcel_barrierattr_init(marcel_barrierattr_t *attr) {
 	attr->mode	= MA_BARRIER_SLEEP_MODE;
 	LOG_RETURN(0);
 }
-int marcel_barrierattr_destroy (marcel_barrierattr_t *attr) {
+int marcel_barrierattr_destroy (marcel_barrierattr_t *attr TBX_UNUSED) {
 	LOG_IN();
 	LOG_RETURN(0);
 }

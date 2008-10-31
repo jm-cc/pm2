@@ -410,7 +410,7 @@ void *ma_obj_allocator_malloc(void *arg)
 	return res;
 }
 
-void ma_obj_allocator_free(void *obj, void *foo)
+void ma_obj_allocator_free(void *obj, void *foo TBX_UNUSED)
 {
 	TBX_FREE(obj);
 }
@@ -424,7 +424,7 @@ void *__ma_obj_allocator_malloc(void *arg)
 	return res;
 }
 
-void __ma_obj_allocator_free(void *obj, void *foo)
+void __ma_obj_allocator_free(void *obj, void *foo TBX_UNUSED)
 {
 	__marcel_free(obj);
 }

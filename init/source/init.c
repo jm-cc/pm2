@@ -22,7 +22,7 @@ static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
 #endif
 
-void common_attr_init(common_attr_t *attr)
+void common_attr_init(common_attr_t *attr TBX_UNUSED)
 {
 #if defined (MAD3)
   attr->madeleine = NULL;
@@ -563,7 +563,7 @@ void common_post_init(int *_argc, char *_argv[],
 #endif /* PROFILE */
 
 #ifdef MARCEL
-  marcel_start_sched(argc, argv);
+  marcel_start_sched();
 #endif /* MARCEL */
 
 #if defined (MAD3)

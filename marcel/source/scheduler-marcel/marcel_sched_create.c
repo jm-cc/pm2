@@ -34,7 +34,7 @@ void marcel_sched_internal_create_dontstart_son(void) TBX_NORETURN;
 
 int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 		marcel_task_t *new_task,
-		 __const marcel_attr_t *attr,
+		 __const marcel_attr_t *attr TBX_UNUSED,
 		 __const int dont_schedule,
 		 __const unsigned long base_stack) {
 	LOG_IN();
@@ -109,8 +109,8 @@ void marcel_sched_internal_create_dontstart_son (void) {
 void marcel_sched_internal_create_start_son(void) TBX_NORETURN;
 int marcel_sched_internal_create_start(marcel_task_t *cur,
 		marcel_task_t *new_task,
-		 __const marcel_attr_t *attr,
-		 __const int dont_schedule,
+		 __const marcel_attr_t *attr TBX_UNUSED,
+		 __const int dont_schedule TBX_UNUSED,
 		 __const unsigned long base_stack) {
 	ma_holder_t *h;
 #ifdef MA__BUBBLES

@@ -73,7 +73,6 @@ any_t TBX_NORETURN marcel_gang_scheduler(any_t runqueue) {
 		PROF_EVENTSTR(sched_status,"gang scheduler: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
-	return NULL;
 }
 
 #if 0
@@ -186,7 +185,7 @@ static int gang_sched_exit(void) {
 }
 
 static int
-gang_vp_is_idle(unsigned vp)
+gang_vp_is_idle(unsigned vp TBX_UNUSED)
 {
 	/* This lwp is idle... TODO: check other that other LWPs of the same controller are idle too, and get another gang (that gang terminated) */
 	return 0;

@@ -786,7 +786,7 @@ void marcel_print_jmp_buf(char *name, jmp_buf buf)
 //PROF_NAME(on_security_stack)
 
 /************************join****************************/
-static int TBX_UNUSED check_join(marcel_t tid, any_t *status)
+static int TBX_UNUSED check_join(marcel_t tid)
 {
 	/* conflit entre ESRCH et EINVAL selon l'ordre */
 	/* en effet ESRCH regarde aussi le champ detached */
@@ -807,7 +807,7 @@ DEF_MARCEL(int, join, (marcel_t pid, any_t *status), (pid, status),
 {
 	LOG_IN();
 #ifdef MA__DEBUG
-	int err = check_join(pid, status);
+	int err = check_join(pid);
 	if (err)
 		LOG_RETURN(err);;
 #endif
@@ -836,7 +836,7 @@ DEF_POSIX(int, join, (pmarcel_t ptid, any_t *status), (ptid, status),
 	marcel_t tid = (marcel_t) ptid;
 
 	/* codes d'erreur */
-	int err = check_join(tid, status);
+	int err = check_join(tid);
 	if (err)
 		LOG_RETURN(err);
 
@@ -1220,7 +1220,7 @@ DEF_PTHREAD(int,getconcurrency,(void),())
 DEF___PTHREAD(int,getconcurrency,(void),())
 
 /***************************setcancelstate************************/
-static int TBX_UNUSED check_setcancelstate(int state, int *oldstate)
+static int TBX_UNUSED check_setcancelstate(int state)
 {
 	if ((state != MARCEL_CANCEL_ENABLE) && (state != MARCEL_CANCEL_DISABLE)) {
 		mdebug
@@ -1237,7 +1237,7 @@ DEF_POSIX(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
 	marcel_t cthread = marcel_self();
 
 	/* error checking */
-	int ret = check_setcancelstate(state, oldstate);
+	int ret = check_setcancelstate(state);
 	if (ret)
 		LOG_RETURN(ret);
 	/* error checking end */
@@ -1255,7 +1255,7 @@ DEF_PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
 DEF___PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
 
 /****************************setcanceltype************************/
-static int TBX_UNUSED check_setcanceltype(int type, int *oldtype)
+static int TBX_UNUSED check_setcanceltype(int type)
 {
 	if ((type != MARCEL_CANCEL_ASYNCHRONOUS)
 	    && (type != MARCEL_CANCEL_DEFERRED)) {
@@ -1273,7 +1273,7 @@ DEF_POSIX(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
 	cthread = marcel_self();
 
 	/* error checking */
-	int ret = check_setcanceltype(type, oldtype);
+	int ret = check_setcanceltype(type);
 	if (ret)
 		LOG_RETURN(ret);
 	/* error checking end */
@@ -1500,7 +1500,7 @@ DEF___PTHREAD(int, getschedparam, (pthread_t thread, int *__restrict policy,
    struct sched_param *__restrict param), (thread, policy, param))
 
 /**********************getcpuclockid****************************/
-DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id),(thread_id,clock_id),
+DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id TBX_UNUSED, clockid_t *clock_id),(thread_id,clock_id),
 {
 	LOG_IN();
 	clock_getcpuclockid(0, clock_id);

@@ -60,7 +60,7 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace_timer=
 
 #endif //PM2DEBUG
 
-void marcel_debug_init(int* argc, char** argv, int debug_flags)
+void marcel_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_flags TBX_UNUSED)
 {
 	static int called=0;
 	if (called) 

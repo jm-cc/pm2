@@ -75,7 +75,7 @@ static int gscope_flag, private_futex;
 #endif
 
 /* Allocate a new slot but don't map it yet */
-static void *unmapped_slot_alloc(void *foo)
+static void *unmapped_slot_alloc(void *foo TBX_UNUSED)
 {
 	void *ptr;
 
@@ -95,7 +95,7 @@ static void *unmapped_slot_alloc(void *foo)
 }
 
 /* Map a new slot */
-static void *mapped_slot_alloc(void *foo)
+static void *mapped_slot_alloc(void *foo TBX_UNUSED)
 {
 	void *ptr;
 	void *res;
@@ -143,7 +143,7 @@ static void *mapped_slot_alloc(void *foo)
 
 /* Allocate a TLS area for the slot */
 #ifdef MA__PROVIDE_TLS
-static void *tls_slot_alloc(void *foo) {
+static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
 	marcel_t t = ma_slot_task(ptr);
 #if defined(LINUX_SYS)
@@ -187,7 +187,7 @@ static void *tls_slot_alloc(void *foo) {
 }
 
 /* Free TLS area of the slot */
-static void tls_slot_free(void *slot, void *foo) {
+static void tls_slot_free(void *slot, void *foo TBX_UNUSED) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	_dl_deallocate_tls(tcb, 0);
@@ -196,7 +196,7 @@ static void tls_slot_free(void *slot, void *foo) {
 #endif /* MA__PROVIDE_TLS */
 
 /* Unmap the slot */
-static void mapped_slot_free(void *slot, void *foo)
+static void mapped_slot_free(void *slot, void *foo TBX_UNUSED)
 {
 	if (munmap(slot, THREAD_SLOT_SIZE) == -1)
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
@@ -675,9 +675,9 @@ int ma_node_entity(marcel_entity_t *entity)
 void* marcel_malloc(size_t size, const char *file, unsigned line)
 {
 	//if (!ma_is_numa_available())
-	return ma_malloc_nonuma(size, __FILE__ , __LINE__);
+	return ma_malloc_nonuma(size, file , line);
 	//else
-	//return ma_malloc(size, __FILE__ , __LINE__);
+	//return ma_malloc(size, file , line);
 }
 
 void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, unsigned line)
@@ -806,7 +806,7 @@ void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 	}	
 }
 
-void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
+void ma_memory_attach(marcel_entity_t *e TBX_UNUSED, void *data TBX_UNUSED, size_t size TBX_UNUSED, int level TBX_UNUSED)
 {
 #ifdef MA__NUMA_MEMORY
 	struct memory_area *area;
@@ -830,7 +830,7 @@ void ma_memory_attach(marcel_entity_t *e, void *data, size_t size, int level)
 #endif /* MA__NUMA_MEMORY */
 }
 
-void ma_memory_detach(marcel_entity_t *e, void *data, int level)
+void ma_memory_detach(marcel_entity_t *e TBX_UNUSED, void *data TBX_UNUSED, int level TBX_UNUSED)
 {
 #ifdef MA__NUMA_MEMORY
 	struct memory_area *area;

@@ -487,7 +487,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 	}
 }
 /* Idle function for supplementary VPs: don't poll on idle */
-static any_t TBX_NORETURN idle_func(any_t hlwp)
+static any_t TBX_NORETURN idle_func(any_t hlwp TBX_UNUSED)
 {
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
@@ -502,7 +502,6 @@ static any_t TBX_NORETURN idle_func(any_t hlwp)
 		ma_sched_sig_pause();
 		marcel_sig_enable_interrupts();
 	}
-	return NULL;
 }
 #endif
 

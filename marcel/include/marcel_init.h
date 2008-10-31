@@ -47,7 +47,7 @@ void marcel_init_data(int *argc, char *argv[]);
 
 /*  May start some internal threads. */
 /*  When completed, fork calls are prohibited. */
-void marcel_start_sched(int *argc, char *argv[]);
+void marcel_start_sched(void);
 
 void marcel_init_section(int section);
 

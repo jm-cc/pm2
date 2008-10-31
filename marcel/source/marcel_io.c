@@ -65,9 +65,9 @@ static struct unix_io_server unix_io_server = {
 };
 
 static int unix_io_group(marcel_ev_server_t server, 
-			  marcel_ev_op_t _op,
-			  marcel_ev_req_t req, 
-			  int nb_ev, int option)
+			  marcel_ev_op_t _op TBX_UNUSED,
+			  marcel_ev_req_t req TBX_UNUSED, 
+			  int nb_ev TBX_UNUSED, int option TBX_UNUSED)
 {
 	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
 	tcp_ev_t ev;
@@ -166,9 +166,9 @@ inline static void unix_io_check_select(unix_io_serverid_t uid, tcp_ev_t ev,
 
 #define ma_timerclear(tv) ((tv)->tv_sec = (tv)->tv_usec = 0)
 static int unix_io_poll(marcel_ev_server_t server, 
-			marcel_ev_op_t _op,
-			marcel_ev_req_t req, 
-			int nb_ev, int option)
+			marcel_ev_op_t _op TBX_UNUSED,
+			marcel_ev_req_t req TBX_UNUSED, 
+			int nb_ev TBX_UNUSED, int option TBX_UNUSED)
 {
 	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
 	tcp_ev_t ev;
@@ -226,9 +226,9 @@ static int unix_io_poll(marcel_ev_server_t server,
 }
 
 static int unix_io_fast_poll(marcel_ev_server_t server, 
-			      marcel_ev_op_t _op,
+			      marcel_ev_op_t _op TBX_UNUSED,
 			      marcel_ev_req_t req, 
-			      int nb_ev, int option)
+			      int nb_ev, int option TBX_UNUSED)
 {
 	unix_io_serverid_t uid=tbx_container_of(server, struct unix_io_server, server);
 	tcp_ev_t ev=tbx_container_of(req, struct tcp_ev, inst);

@@ -166,7 +166,7 @@ static int rand_lwp_init(ma_lwp_t lwp) {
 	return 0;
 }
 
-static int rand_lwp_start(ma_lwp_t lwp) {
+static int rand_lwp_start(ma_lwp_t lwp TBX_UNUSED) {
 	return 0;
 }
 

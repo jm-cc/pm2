@@ -320,7 +320,7 @@ DEF_PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 DEF___PTHREAD(int, rwlock_rdlock, (pthread_rwlock_t *rwlock), (rwlock))
 
 
-static int marcel_rwlock_suspend(marcel_rwlock_t * rwlock,const struct timespec *abstime)
+static int marcel_rwlock_suspend(const struct timespec *abstime)
 {
         struct timeval now, tv;
         unsigned long int timeout;
@@ -370,7 +370,7 @@ DEF_MARCEL_POSIX(int, rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
 			break;
 		enqueue(&rwlock->__rw_read_waiting, self);
 		__marcel_unlock(&rwlock->__rw_lock);
-		ret = marcel_rwlock_suspend(rwlock, abstime);
+		ret = marcel_rwlock_suspend(abstime);
 		if (ret)
 			LOG_RETURN(ETIMEDOUT);
 	}
@@ -484,7 +484,7 @@ DEF_MARCEL_POSIX(int,rwlock_timedwrlock,(marcel_rwlock_t * __restrict rwlock,
 		enqueue(&rwlock->__rw_write_waiting, self);
 		__marcel_unlock(&rwlock->__rw_lock);
 
-		int ret = marcel_rwlock_suspend(rwlock, abstime);
+		int ret = marcel_rwlock_suspend(abstime);
 		if (ret)
 			LOG_RETURN(ETIMEDOUT);
 	}
@@ -617,7 +617,7 @@ DEF_MARCEL_POSIX(int,
 DEF_PTHREAD(int, rwlockattr_init, (pthread_rwlockattr_t *attr), (attr))
 
 DEF_MARCEL_POSIX(int,
-		 rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr),
+		 rwlockattr_destroy, (marcel_rwlockattr_t *attr TBX_UNUSED), (attr),
 {
         LOG_IN();
         LOG_RETURN(0);

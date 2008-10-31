@@ -1938,7 +1938,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 #  endif /* MA__NUMA */
 }
 
-static void topology_lwp_start(ma_lwp_t lwp) {
+static void topology_lwp_start(ma_lwp_t lwp TBX_UNUSED) {
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(topology, 400, "Topology",

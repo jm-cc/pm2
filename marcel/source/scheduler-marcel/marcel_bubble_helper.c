@@ -311,7 +311,7 @@ ma_burst_bubble (marcel_bubble_t *bubble) {
 /* Debug function that prints information about the _ne_ entities
    stored in _e_ */
 void
-ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne) {
+ma_debug_show_entities(const char *func_name TBX_UNUSED, marcel_entity_t *e[], int ne) {
   int k;
   bubble_sched_debug("in %s: There are %d entities: adresses :\n(", func_name, ne);
   for (k = 0; k < ne; k++)

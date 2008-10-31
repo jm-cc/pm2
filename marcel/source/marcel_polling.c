@@ -160,7 +160,7 @@ inline static int __add_success_req(marcel_ev_server_t server,
 }
 
 /* Réveils pour l'événement */
-inline static int __wake_req_waiters(marcel_ev_server_t server,
+inline static int __wake_req_waiters(marcel_ev_server_t server TBX_UNUSED,
 				     marcel_ev_req_t req, int code)
 {
 	marcel_ev_wait_t wait, tmp;
@@ -427,7 +427,7 @@ void __marcel_check_polling(unsigned polling_point)
  */
 
 
-inline static void verify_server_state(marcel_ev_server_t server) {
+inline static void verify_server_state(marcel_ev_server_t server TBX_UNUSED) {
 #ifdef MA__DEBUG
 	MA_BUG_ON(server->state!=MA_EV_SERVER_STATE_LAUNCHED);
 #endif

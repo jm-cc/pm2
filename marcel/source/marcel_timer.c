@@ -73,7 +73,7 @@ unsigned long marcel_clock(void)
 }
 
 // Softirq appellée par le timer
-static void timer_action(struct ma_softirq_action *a)
+static void timer_action(struct ma_softirq_action *a TBX_UNUSED)
 {
 #ifdef MA__DEBUG
 	static unsigned long tick = 0;
@@ -176,7 +176,7 @@ static sigset_t sigalrmset, sigeptset;
 // Fonction appelée à chaque fois que SIGALRM est délivré au LWP
 // courant
 #ifdef SA_SIGINFO
-static void timer_interrupt(int sig, siginfo_t *info, void *uc)
+static void timer_interrupt(int sig, siginfo_t *info, void *uc TBX_UNUSED)
 #else
 static void timer_interrupt(int sig)
 #endif
@@ -442,7 +442,7 @@ void marcel_sig_stop_itimer(void)
 #endif
 }
 
-static void sig_stop_timer(ma_lwp_t lwp)
+static void sig_stop_timer(ma_lwp_t lwp TBX_UNUSED)
 {
 	struct sigaction sa;
 	LOG_IN();

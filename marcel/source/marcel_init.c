@@ -335,7 +335,7 @@ void marcel_init_data(int *argc, char *argv[])
 	marcel_parse_cmdline_early(argc, argv, tbx_true);
 
 	// Windows/Cygwin specific stuff
-	marcel_win_sys_init(argc, argv);
+	marcel_win_sys_init();
 
 	marcel_init_section(MA_INIT_SCHEDULER);
 
@@ -347,7 +347,7 @@ void marcel_init_data(int *argc, char *argv[])
 
 // When completed, some threads may be started
 // Fork calls are now prohibited in non libpthread versions
-void marcel_start_sched(int *argc, char *argv[])
+void marcel_start_sched(void)
 {
 	// Start scheduler (i.e. run LWP/activations, start timer)
 	marcel_init_section(MA_INIT_START_LWPS);

@@ -370,14 +370,14 @@ DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sva
 })
 DEF_C(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval));
 
-void marcel_sem_VP(marcel_sem_t *s1, marcel_sem_t *s2)
+void marcel_sem_VP(marcel_sem_t *s1 TBX_UNUSED, marcel_sem_t *s2 TBX_UNUSED)
 {
 	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
 		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
 	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 }
 
-void marcel_sem_unlock_all(marcel_sem_t *s)
+void marcel_sem_unlock_all(marcel_sem_t *s TBX_UNUSED)
 {
 	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
 		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
@@ -385,7 +385,7 @@ void marcel_sem_unlock_all(marcel_sem_t *s)
 }
 
 /********************sem_close**************************/
-DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem),(sem),
+DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem TBX_UNUSED),(sem),
 {
 	LOG_IN();
 	fprintf(stderr, "!! sem_close not implemented\n");
@@ -397,7 +397,7 @@ DEF_C(int,sem_close,(sem_t *sem),(sem))
 DEF___C(int,sem_close,(sem_t *sem),(sem))
 
 /********************sem_open***************************/
-DEF_POSIX(sem_t*,sem_open,(const char *name, int flags,...),(name,flags,...),
+DEF_POSIX(sem_t*,sem_open,(const char *name TBX_UNUSED, int flags TBX_UNUSED,...),(name,flags,...),
 {
 	LOG_IN();
 	fprintf(stderr, "!! sem_open not implemented\n");
@@ -409,7 +409,7 @@ DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
 
 /*******************sem_unlink**************************/
-DEF_POSIX(int,sem_unlink,(const char *name),(name),
+DEF_POSIX(int,sem_unlink,(const char *name TBX_UNUSED),(name),
 {
 	LOG_IN();
 	fprintf(stderr, "!! sem_unlink not implemented\n");

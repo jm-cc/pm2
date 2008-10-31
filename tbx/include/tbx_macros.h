@@ -358,10 +358,10 @@ do { \
 #    define __TBX_REALLOC(p, s, f, l) tbx_safe_realloc ((p), (s), (f), (l))
 #    define __TBX_FREE(s, f, l)       tbx_safe_free    ((s), (f), (l))
 #  else  /* TBX_SAFE_MALLOC */
-#    define __TBX_MALLOC(s, f, l)     malloc  ((s))
-#    define __TBX_CALLOC(n, s, f, l)  calloc  ((n), (s))
-#    define __TBX_REALLOC(p, s, f, l) realloc ((p), (s))
-#    define __TBX_FREE(s, f, l)       free    ((s))
+#    define __TBX_MALLOC(s, f, l)     ((void) f, (void)l, malloc  ((s)))
+#    define __TBX_CALLOC(n, s, f, l)  ((void) f, (void)l, calloc  ((n), (s)))
+#    define __TBX_REALLOC(p, s, f, l) ((void) f, (void)l, realloc ((p), (s)))
+#    define __TBX_FREE(s, f, l)       ((void) f, (void)l, free    ((s)))
 #  endif /* TBX_SAFE_MALLOC */
 #endif /* MARCEL */
 

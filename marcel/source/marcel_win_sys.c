@@ -44,7 +44,7 @@ int win_munmap(void *__addr, size_t __len)
 
 #endif				// WIN_SYS
 
-void marcel_win_sys_init(int *argc, char *argv[])
+void marcel_win_sys_init(void)
 {
 #ifdef WIN_SYS
 #ifdef __CYGWIN__

@@ -378,13 +378,13 @@ repeat:
 }
 
 static inline void do_process_times(struct marcel_task *p,
-	unsigned long user, unsigned long system)
+	unsigned long user TBX_UNUSED, unsigned long system TBX_UNUSED)
 {
 	ma_atomic_inc(&p->top_utime);
 }
 
 static void update_one_process(struct marcel_task *p, unsigned long user,
-			unsigned long system, ma_lwp_t lwp)
+			unsigned long system, ma_lwp_t lwp TBX_UNUSED)
 {
 	do_process_times(p, user, system);
 }	
@@ -415,7 +415,7 @@ void ma_update_process_times(int user_tick)
 /*
  * This function runs timers and the timer-tq in bottom half context.
  */
-static void run_timer_softirq(struct ma_softirq_action *h)
+static void run_timer_softirq(struct ma_softirq_action *h TBX_UNUSED)
 {
 	ma_tvec_base_t *base = &__ma_get_lwp_var(tvec_bases);
 

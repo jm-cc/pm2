@@ -22,7 +22,7 @@
 #define ETIMEDOUT EAGAIN
 #endif
 
-void marcel_win_sys_init(int *argc, char *argv[]);
+void marcel_win_sys_init(void);
 
 #ifdef WIN_SYS
 

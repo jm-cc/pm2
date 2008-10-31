@@ -29,12 +29,12 @@ int marcel_condattr_init (marcel_condattr_t *attr) {
 	memset (attr, '\0', sizeof (*attr));
 	LOG_RETURN(0);
 }
-int marcel_condattr_destroy (marcel_condattr_t *attr) {
+int marcel_condattr_destroy (marcel_condattr_t *attr TBX_UNUSED) {
         LOG_IN();
         LOG_RETURN(0);
 }
 int marcel_cond_init (marcel_cond_t * __restrict cond,
-	const marcel_condattr_t * __restrict attr) {
+	const marcel_condattr_t * __restrict attr TBX_UNUSED) {
 	LOG_IN();
 	cond->__data.__lock =
 	    (struct _marcel_fastlock) MA_MARCEL_FASTLOCK_UNLOCKED;

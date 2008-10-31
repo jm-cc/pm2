@@ -359,12 +359,12 @@ for f in /tmp/tests_${USER}_database/*.dat ; do
     file_status="/tmp/pm2test_${USER}_status"
 
     echo "Compiling flavor \"$d_flavor\"..."
-    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor -C $PM2_ROOT; echo "$?" > $file_status ) | sed -e 's/^/..../'
+    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
     [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 
     d_progs=`cat $f | tr '\012' ' '`
     echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
-    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
+    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
     [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 done
 

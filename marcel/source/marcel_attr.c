@@ -61,7 +61,7 @@ DEF_MARCEL_POSIX(int, attr_setstacksize, (marcel_attr_t *attr, size_t stack), (a
 	}
 
 	if (attr->__stackaddr)
-		attr->__stackaddr += stack - attr->__stacksize;
+		attr->__stackaddr = (char *) attr->__stackaddr + stack - attr->__stacksize;
 
 	attr->__stacksize = stack;
 	LOG_RETURN(0);
@@ -91,7 +91,7 @@ DEF_MARCEL(int, attr_setstackaddr, (marcel_attr_t *attr, void *addr), (attr, add
 {
 	LOG_IN();
 	/* addr est le bas de la pile */
-	attr->__stackaddr = addr + attr->__stacksize;
+	attr->__stackaddr = (char *) addr + attr->__stacksize;
 	LOG_RETURN(0);
 })
 
@@ -131,7 +131,7 @@ DEF_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t sta
 	}
 	/* stackaddr est le bas de la pile */
 	attr->__stacksize = stacksize;
-	attr->__stackaddr = stackaddr + stacksize;
+	attr->__stackaddr = (char *) stackaddr + stacksize;
 	LOG_RETURN(0);
 })
 
@@ -151,7 +151,7 @@ DEF_POSIX(int, attr_getstack, (__const marcel_attr_t * __restrict attr,
 	LOG_IN();
 	/* stackaddr est le bas de la pile */
 	*stacksize = attr->__stacksize;
-	*stackaddr = attr->__stackaddr - attr->__stacksize;
+	*stackaddr = (char *) attr->__stackaddr - attr->__stacksize;
 	LOG_RETURN(0);
 })
 

@@ -41,7 +41,7 @@ ma_allocator_t *memory_area_allocator;
 ma_allocator_t *heapinfo_allocator;
 unsigned long ma_stats_memory_offset;
 
-static void *next_slot;
+static char *next_slot;
 static ma_spinlock_t next_slot_lock = MA_SPIN_LOCK_UNLOCKED;
 
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)
@@ -77,7 +77,7 @@ static int gscope_flag, private_futex;
 /* Allocate a new slot but don't map it yet */
 static void *unmapped_slot_alloc(void *foo TBX_UNUSED)
 {
-	void *ptr;
+	char *ptr;
 
 	ma_spin_lock(&next_slot_lock);
 	if ((unsigned long)next_slot <= SLOT_AREA_BOTTOM) {
@@ -97,7 +97,7 @@ static void *unmapped_slot_alloc(void *foo TBX_UNUSED)
 /* Map a new slot */
 static void *mapped_slot_alloc(void *foo TBX_UNUSED)
 {
-	void *ptr;
+	char *ptr;
 	void *res;
 	int nb_try_left=1000;
 
@@ -227,7 +227,7 @@ static void __marcel_init marcel_slot_init(void)
 	__zero_fd = open("/dev/zero", O_RDWR);
 #endif
 	
-	next_slot = (void *)SLOT_AREA_TOP;
+	next_slot = (char *)SLOT_AREA_TOP;
 	/* SLOT_AREA_TOP doit être un multiple de THREAD_SLOT_SIZE
 	 * et THREAD_SLOT_SIZE doit être une puissance de deux (non vérifié
 	 * ici)

@@ -287,7 +287,8 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 			(*ppinfo)->mempolicy = HEAP_UNSPECIFIED_POLICY;
 			(*ppinfo)->weight = HEAP_UNSPECIFIED_WEIGHT;
 			(*ppinfo)->maxnode = 0;
-			(*ppinfo)->nodemask = heap->iterator+sizeof(ma_pinfo_t);
+			(*ppinfo)->nodemask =
+				(unsigned long *) ((char *) heap->iterator + sizeof(ma_pinfo_t));
 
 			/* reset iterator, some node may have changed */
 			current_heap = heap;
@@ -381,7 +382,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 					/* if page is not touched */
 					//if (current_heap->pages[i] == 0)
 					//{
-					addr[0] = (void*)current_heap+i*pagesize;
+					addr[0] = (char *) current_heap + i*pagesize;
 					//		addr[0] = (void*)current_heap+0;
 					//	mdebug_heap("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
 					node = -1;
@@ -428,7 +429,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 								/* if page is not touched */
 								//if (current_heap->pages[i] == 0)
 								//{
-								addr[0] = (void*)current_bloc_used->data+i*pagesize;
+								addr[0] = (char *) current_bloc_used->data + i*pagesize;
 								//	addr[0] = (void*)current_bloc_used->data;
 #ifndef __NR_move_pages
 #warning __NR_move_pages unknown

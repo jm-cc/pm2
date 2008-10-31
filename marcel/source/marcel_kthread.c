@@ -93,10 +93,10 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	LOG_IN();
 	if (!sp) {
 		stack_base = marcel_slot_alloc();
-		sp = stack_base + THREAD_SLOT_SIZE;
+		sp = (char *) stack_base + THREAD_SLOT_SIZE;
 		mdebug("Allocating stack for kthread at %p\n", stack_base);
 	}
-	sp -= 64;
+	sp = (char *) sp - 64;
 	mdebug("Stack for kthread set at %p\n", sp);
 
 #ifdef IA64_ARCH

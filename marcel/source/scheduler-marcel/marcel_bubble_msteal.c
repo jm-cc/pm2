@@ -96,7 +96,7 @@ static int ma_entity_is_active(marcel_entity_t *e)
 #define MA_LIFE_LOAD 50
 
 /* Find an entity in a bubble */
-void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload, int penalty, int *score, 
+static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload, int penalty, int *score, 
 														marcel_entity_t **stolen, int recurse) {
 	int current_score;
 	marcel_entity_t *e;
@@ -207,7 +207,7 @@ void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload, int pe
 }
 
 /* Find entity on runqueue */
-void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int penalty, int *score, 
+static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int penalty, int *score, 
 														  marcel_entity_t **stolen, struct marcel_topo_level **fromlevel, int recurse) {
 	int current_score;
 	marcel_entity_t *e;
@@ -320,7 +320,7 @@ void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalload, int 
 
 
 /* Find an entity on level */
-void ma_see(struct marcel_topo_level *level, int *totalload, int penalty, int *score, marcel_entity_t **stolen, struct marcel_topo_level **fromlevel) 
+static void ma_see(struct marcel_topo_level *level, int *totalload, int penalty, int *score, marcel_entity_t **stolen, struct marcel_topo_level **fromlevel) 
 {
 	ma_runqueue_t *rq = &level->rq;
 	
@@ -334,7 +334,7 @@ void ma_see(struct marcel_topo_level *level, int *totalload, int penalty, int *s
 
 
 /* Find an entity under level */
-void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me, 
+static void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me, 
 					  int *totalload, int penalty, int *score, marcel_entity_t **stolen, 
 					  struct marcel_topo_level **otherlevel, struct marcel_topo_level **fromlevel)
 {
@@ -402,7 +402,7 @@ void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_level *me,
 
 
 /* Put bubble holder stolen entity on common level (start and finish) */
- void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct marcel_topo_level* father, struct marcel_topo_level* otherlevel, struct marcel_topo_level *fromlevel)
+static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct marcel_topo_level* father, struct marcel_topo_level* otherlevel, struct marcel_topo_level *fromlevel)
 {
 	marcel_entity_t *upentity, *downentity;
 	

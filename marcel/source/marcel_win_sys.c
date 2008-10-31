@@ -38,6 +38,10 @@ int win_munmap(void *__addr, size_t __len)
 	return 0;
 }
 
+#else
+
+#include <marcel.h>
+
 #endif				// WIN_SYS
 
 void marcel_win_sys_init(int *argc, char *argv[])

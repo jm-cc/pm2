@@ -47,14 +47,14 @@ registering_flavors() {
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
-        --marcel=enable_mami
+        --marcel=enable_mami --marcel=enable_numa_memory
 
     register_flavor marcel-mami-debug \
 	--modules="marcel tbx init" \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
-        --marcel=enable_mami \
+        --marcel=enable_mami --marcel=enable_numa_memory \
 	--all=debug --all=gdb --all=noinline --all=build_both
 
     register_flavor marcel \

@@ -444,7 +444,7 @@ int tselect(int width, fd_set * __restrict readfds,
 	return res;
 }
 
-void __marcel_init marcel_io_init(void)
+static void __marcel_init marcel_io_init(void)
 {
 	LOG_IN();
 	marcel_ev_server_set_poll_settings(&unix_io_server.server, 

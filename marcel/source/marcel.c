@@ -83,7 +83,7 @@ marcel_exception_t
 #ifdef MA__DEBUG
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
-void marcel_breakpoint()
+void marcel_breakpoint(void)
 {
 	/* Lieu ideal ;-) pour un point d'arret */
 }

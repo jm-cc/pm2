@@ -181,10 +181,11 @@ static int pmarcel_mutex_blockcell(pmarcel_mutex_t * mutex,const struct timespec
 	LOG_RETURN(0);
 }
 int pmarcel_mutex_timedlock(pmarcel_mutex_t * mutex,const struct timespec *abstime) {
+	marcel_t cthread;
+	int ret;
 	LOG_IN();
 
-	marcel_t cthread = marcel_self();
-	int ret;
+	cthread = marcel_self();
 
 	if (__builtin_expect (abstime->tv_nsec, 0) < 0
 			|| __builtin_expect (abstime->tv_nsec, 0) >= 1000000000) {

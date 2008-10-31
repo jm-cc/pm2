@@ -29,8 +29,8 @@ static unsigned marcel_last_key=0;
 DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 				    __const void* value), (key, value),
 {
-	LOG_IN();
 	int ret = 0;
+	LOG_IN();
 	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);
@@ -46,8 +46,8 @@ DEF___PTHREAD(int, setspecific, (pthread_key_t key, __const void* value), (key, 
 
 DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key),
 {
-	LOG_IN();
 	any_t ret;
+	LOG_IN();
 	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);

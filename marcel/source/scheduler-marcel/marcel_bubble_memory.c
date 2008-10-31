@@ -190,8 +190,9 @@ struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
 #else /* MA__NUMA_MEMORY */
 
 static int
-warning_start () {
+warning_start (void) {
   marcel_printf ("WARNING: You're currently trying to use the memory bubble scheduler, but as the enable_numa_memory option is not activated in the current flavor, the bubble scheduler won't do anything! Please activate enable_numa_memory in your flavor.\n");
+  return 0;
 }
 
 struct ma_bubble_sched_struct marcel_bubble_memory_sched = {

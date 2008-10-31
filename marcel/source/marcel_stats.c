@@ -21,7 +21,7 @@ static ma_per_sth_cur_t stats_cur = MA_PER_STH_CUR_INITIALIZER(MARCEL_STATS_ROOM
 ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size) {
 	unsigned long offset;
-	size = (size + sizeof(void(*)())-1) & ~(sizeof(void(*)())-1);
+	size = (size + sizeof(void(*)(void))-1) & ~(sizeof(void(*)(void))-1);
 	offset = ma_per_sth_alloc(&stats_cur, size);
 	ma_stats_reset_func(offset) = reset_function;
 	ma_stats_synthesis_func(offset) = synthesis_function;

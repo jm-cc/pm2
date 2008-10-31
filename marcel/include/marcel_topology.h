@@ -498,14 +498,14 @@ struct marcel_topo_level {
 };
 
 #define ma_topo_set_empty_os_numbers(l) do { \
-		struct marcel_topo_level *__l = (l); \
-		__l->os_node = -1; \
-		__l->os_die  = -1;  \
-		__l->os_l3   = -1;  \
-		__l->os_l2   = -1;  \
-		__l->os_core = -1; \
-		__l->os_l1   = -1;  \
-		__l->os_cpu  = -1;  \
+		struct marcel_topo_level *___l = (l); \
+		___l->os_node = -1; \
+		___l->os_die  = -1;  \
+		___l->os_l3   = -1;  \
+		___l->os_l2   = -1;  \
+		___l->os_core = -1; \
+		___l->os_l1   = -1;  \
+		___l->os_cpu  = -1;  \
 	} while(0)
 
 #define ma_topo_set_os_numbers(l, _field, _val) do { \

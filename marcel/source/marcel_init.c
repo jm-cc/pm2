@@ -144,12 +144,14 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 			if (do_not_strip) {
-				marcel_cpu_stride = atoi(argv[i + 1]);
-				if (marcel_cpu_stride < 0) {
+				int stride;
+				stride = atoi(argv[i + 1]);
+				if (stride < 0) {
 					fprintf(stderr,
 					    "Error: CPU stride should be positive\n");
 					exit(1);
 				}
+				marcel_cpu_stride = stride;
 				argv[j++] = argv[i++];
 				argv[j++] = argv[i++];
 			} else
@@ -163,12 +165,14 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 			if (do_not_strip) {
-				marcel_first_cpu = atoi(argv[i + 1]);
-				if (marcel_first_cpu < 0) {
+				int first_cpu;
+				first_cpu = atoi(argv[i + 1]);
+				if (first_cpu < 0) {
 					fprintf(stderr,
 					    "Error: CPU number should be positive\n");
 					exit(1);
 				}
+				marcel_first_cpu = first_cpu;
 				argv[j++] = argv[i++];
 				argv[j++] = argv[i++];
 			} else
@@ -184,12 +188,13 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 			if (do_not_strip) {
-				marcel_topo_max_arity = atoi(argv[i + 1]);
-				if (marcel_topo_max_arity < 0) {
+				int topo_max_arity = atoi(argv[i + 1]);
+				if (topo_max_arity < 0) {
 					fprintf(stderr,
 					    "Error: Maximum topology arity should be positive\n");
 					exit(1);
 				}
+				marcel_topo_max_arity = topo_max_arity;
 				argv[j++] = argv[i++];
 				argv[j++] = argv[i++];
 			} else
@@ -484,7 +489,7 @@ int main(int argc, char *argv[])
 
 typedef struct {
 	int prio;
-	char* debug;
+	const char* debug;
 } TBX_ALIGNED __ma_init_index_t;
 
 typedef struct {

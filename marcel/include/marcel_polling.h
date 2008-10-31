@@ -358,7 +358,7 @@ struct marcel_ev_server {
 	/* État du serveur */
 	int state;
 	/* Nom (utilisé pour le débug) */
-	char* name;
+	const char* name;
 };
 
 #section macros

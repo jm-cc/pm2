@@ -39,7 +39,7 @@
  *  A boolean 
  *  \sa tbx_bool_t, p_tbx_bool_t
  */
-#if (defined __cplusplus) || (__STDC_VERSION__ >= 199901L)
+#if (defined __cplusplus) || (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))
 
 /* C++ and C99 have their own boolean type, which we must use to allow
    `tbx_bool_t' to be used as the native `bool' type.  Otherwise, problems

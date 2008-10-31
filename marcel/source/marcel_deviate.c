@@ -79,7 +79,7 @@ void marcel_execute_deviate_work(void)
 	}
 }
 
-static void insertion_relai(handler_func_t f, void *arg)
+static void TBX_NORETURN insertion_relai(handler_func_t f, void *arg)
 {
 	marcel_ctx_t back;
 	marcel_t cur = marcel_self();

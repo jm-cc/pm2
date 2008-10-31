@@ -73,7 +73,7 @@ void common_attr_init(common_attr_t *attr)
   char quoted = '\0';							\
   int separated;							\
   static int null_argc;							\
-  static char *null_argv[] = { "prog", NULL };				\
+  static char *null_argv[] = { "prog", NULL };			\
   if (!_argc) {								\
     _argc = &null_argc;							\
     _argv = null_argv;							\

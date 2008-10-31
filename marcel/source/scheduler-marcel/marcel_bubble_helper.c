@@ -29,7 +29,7 @@ long ma_entity_load(marcel_entity_t *e)
     case MA_THREAD_ENTITY:
       return *(long*)ma_task_stats_get(ma_task_entity(e), marcel_stats_load_offset);
     default:
-      abort ();
+      MA_BUG ();
   }
 }
 
@@ -90,8 +90,8 @@ ma_last_ran (marcel_entity_t *e) {
 
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2) 
 {
-	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
-	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
+	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
+	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
 	long l1 = ma_entity_load(e1);
 	long l2 = ma_entity_load(e2);
 	return l2 - l1; /* decreasing order */
@@ -99,8 +99,8 @@ int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2)
 
 int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2) 
 {
-	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
-	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
+	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
+	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
 	long l1 = ma_entity_load(e1);
 	long l2 = ma_entity_load(e2);
 	return l1 - l2; /* increasing order */
@@ -274,8 +274,8 @@ int ma_count_threads_in_entity(marcel_entity_t *entity)
 
 int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2) 
 {
-	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
-	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
+	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
+	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
 	long l1 =  ma_count_threads_in_entity(e1);
 	long l2 =  ma_count_threads_in_entity(e2);
 	return l2 - l1; /* decreasing order */
@@ -283,8 +283,8 @@ int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2)
 
 int ma_increasing_order_threads_compar(const void *_e1, const void *_e2) 
 {
-	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
-	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
+	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
+	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
 	long l1 =  ma_count_threads_in_entity(e1);
 	long l2 =  ma_count_threads_in_entity(e2);
 	return l1 - l2; /* increasing order */

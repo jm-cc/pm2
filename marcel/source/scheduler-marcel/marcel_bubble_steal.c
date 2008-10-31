@@ -244,7 +244,7 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 }
 
 static int
-steal_sched_start()
+steal_sched_start(void)
 {
 	ma_activate_idle_scheduler();
 	return 0;

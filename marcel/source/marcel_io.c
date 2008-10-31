@@ -33,7 +33,7 @@ typedef enum {
 } poll_op_t;
 
 #undef NFDS
-#if __GNU__ < 3
+#if __GNUC__ < 3
 #  define MA_GCC_NAME __ma_gcc
 #  define FD MA_GCC_NAME.fd
 #  define RFDS MA_GCC_NAME.MA_GCC_NAME.rfds
@@ -369,7 +369,8 @@ int marcel_select(int nfds, fd_set * __restrict rfds, fd_set * __restrict wfds)
 
 int marcel_read_exactly(int fildes, void *buf, size_t nbytes)
 {
-	size_t to_read = nbytes, n;
+	size_t to_read = nbytes;
+	ssize_t n;
 
 	LOG_IN();
 	do {
@@ -392,7 +393,8 @@ int marcel_readv_exactly(int fildes, const struct iovec *iov, int iovcnt)
 
 int marcel_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
-	size_t to_write = nbytes, n;
+	size_t to_write = nbytes;
+	ssize_t n;
 
 	LOG_IN();
 	do {

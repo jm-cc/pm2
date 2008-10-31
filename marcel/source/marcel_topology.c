@@ -208,7 +208,7 @@ void marcel_print_level_description(struct marcel_topo_level *l, FILE *output, i
 void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode, int verbose_mode,
 			const char *separator, const char *indexprefix, const char* labelseparator, const char* levelterm) {
   marcel_print_level_description(l, output, txt_mode, verbose_mode);
-  marcel_fprintf(output, labelseparator);
+  marcel_fprintf(output, "%s", labelseparator);
 #ifdef MA__NUMA
   if (l->os_node != -1) marcel_fprintf(output, "%sNode%s%u(%ld%s)", separator, indexprefix, l->os_node,
 				       marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]),
@@ -391,16 +391,16 @@ static void ma_process_cpumap(const char *mappath, const char * mapname, unsigne
 		       unsigned *nr_ids, unsigned givenid)
 {
 	marcel_vpset_t set;
-	int k;
+	int j,k;
 
 	ma_parse_cpumap(mappath, &set);
 
-	for(k=0; k<=nr_procs; k++) {
-		if (marcel_vpset_isset(&set, k)) {
+	for(j=0; j<=nr_procs; j++) {
+		if (marcel_vpset_isset(&set, j)) {
 			/* we found a cpu in the map */
 			unsigned newid;
 
-			if (ids[k] != -1)
+			if (ids[j] != -1)
 				/* already got this map, stop using it */
 				break;
 
@@ -1581,7 +1581,7 @@ static void topo_discover(void) {
 	/* This is the only one which isn't empty by default */
 	marcel_vpset_zero(&marcel_machine_level[0].vpset);
 	for (i=0; i<marcel_nbvps(); i++) {
-		struct marcel_topo_level *level = &marcel_topo_vp_level[i];
+		level = &marcel_topo_vp_level[i];
 		while (level) {
 			marcel_vpset_set(&level->vpset, i);
 			level = level->father;

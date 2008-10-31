@@ -96,11 +96,10 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 
 /* Fonction du thread run_task pour le démarrage d'un LWP
  */
-static void* lwp_start_func(void* arg)
+static void* TBX_NORETURN lwp_start_func(void* arg)
 {
 	marcel_lwp_start(MA_LWP_SELF);
 	marcel_exit_special(0);
-	return NULL; /* For gcc */
 }
 
 #ifdef MA__LWPS

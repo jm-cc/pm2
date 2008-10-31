@@ -22,7 +22,7 @@
 #include <semaphore.h>
 
 DEF_POSIX(pmarcel_t, self, (void), (), {
-    LOG_IN(); LOG_OUT(); return (pmarcel_t) marcel_self();}
+    LOG_IN(); LOG_RETURN((pmarcel_t)(marcel_self()));}
 
 )
 

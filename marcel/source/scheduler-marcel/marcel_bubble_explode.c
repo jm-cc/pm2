@@ -33,13 +33,13 @@ static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_leve
 }
 
 static int
-explode_sched_init()
+explode_sched_init(void)
 {
   return 0;
 }
 
 static int
-explode_sched_exit()
+explode_sched_exit(void)
 {
   return 0;
 }
@@ -66,6 +66,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 	int max_prio;
 	ma_runqueue_t *currq;
 	marcel_entity_t *e;
+	marcel_bubble_t *bubble;
 	/* sur smp, descendre l'entité si besoin est */
 	if (/*ma_idle_scheduler &&*/ nextent->sched_level > rq->level) {
 		/* s'assurer d'abord que personne n'a activé une entité d'une
@@ -125,7 +126,7 @@ explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **n
 	if (nextent->type != MA_BUBBLE_ENTITY)
 		LOG_RETURN(nextent);
 
-	marcel_bubble_t *bubble = ma_bubble_entity(nextent);
+	bubble = ma_bubble_entity(nextent);
 
 	/* maintenant on peut s'occuper de la bulle */
 	/* l'enlever de la queue */

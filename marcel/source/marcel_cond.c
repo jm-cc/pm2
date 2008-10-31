@@ -85,10 +85,10 @@ int marcel_cond_timedwait(marcel_cond_t * __restrict cond,
 	marcel_mutex_t * __restrict mutex,
 	const struct timespec * __restrict abstime)
 {
-	LOG_IN();
 	struct timeval now, tv;
 	unsigned long timeout;
 	int ret = 0;
+	LOG_IN();
 
 	tv.tv_sec = abstime->tv_sec;
 	tv.tv_usec = abstime->tv_nsec / 1000;
@@ -151,6 +151,7 @@ int pmarcel_condattr_getpshared (const pmarcel_condattr_t * __restrict attr,
         LOG_RETURN(0);
 }
 int pmarcel_condattr_setpshared (pmarcel_condattr_t *attr, int pshared) {
+	int *valuep;
 	LOG_IN();
 	if (pshared != PMARCEL_PROCESS_PRIVATE
 	    && __builtin_expect(pshared != PMARCEL_PROCESS_SHARED, 0)) {
@@ -162,7 +163,7 @@ int pmarcel_condattr_setpshared (pmarcel_condattr_t *attr, int pshared) {
 		LOG_RETURN(ENOTSUP);
 	}
 
-	int *valuep = &(attr)->__data.value;
+	valuep = &(attr)->__data.value;
 	*valuep = (*valuep & ~1) | (pshared != PMARCEL_PROCESS_PRIVATE);
 	LOG_RETURN(0);
 }
@@ -206,10 +207,10 @@ int pmarcel_cond_timedwait(pmarcel_cond_t * __restrict cond,
 	pmarcel_mutex_t * __restrict mutex,
 	const struct timespec * __restrict abstime)
 {
-	LOG_IN();
 	struct timeval now, tv;
 	unsigned long timeout;
 	int ret = 0;
+	LOG_IN();
 
 	tv.tv_sec = abstime->tv_sec;
 	tv.tv_usec = abstime->tv_nsec / 1000;

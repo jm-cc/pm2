@@ -246,7 +246,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
 ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 {
-	if (mode < 0 || mode > 2)
+	if (mode > 2)
 		printf
 		    ("Erreur : le mode n'est pas bien defini -- ma_get_container\n");
 
@@ -433,7 +433,7 @@ unsigned long ma_per_sth_alloc(ma_per_sth_cur_t * cur, size_t size)
 {
 	unsigned long ret;
 	ma_spin_lock(&cur->lock);
-	size = (size + sizeof(void(*)())-1) & ~(sizeof(void(*)())-1);
+	size = (size + sizeof(void(*)(void))-1) & ~(sizeof(void(*)(void))-1);
 	ret = cur->cur;
 	cur->cur += size;
 	MA_BUG_ON(cur->cur > cur->max);

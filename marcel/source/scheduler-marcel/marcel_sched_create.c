@@ -191,7 +191,7 @@ void marcel_sched_internal_create_start_son(void) {
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
 
-void *marcel_sched_seed_runner(void *arg) {
+void * TBX_NORETURN marcel_sched_seed_runner(void *arg) {
 #ifdef MA__BUBBLES
 	ma_holder_t *h;
 #endif
@@ -263,5 +263,4 @@ restart:
 	marcel_exit_canreturn(ret);
 
 	goto restart;
-	return NULL;
 }

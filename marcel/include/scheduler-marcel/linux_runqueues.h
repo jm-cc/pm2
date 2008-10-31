@@ -285,6 +285,6 @@ static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
 #endif
 
 #section marcel_functions
-extern void ma_init_rq(ma_runqueue_t *rq, char *name);
+extern void ma_init_rq(ma_runqueue_t *rq, const char *name);
 
 /* @} */

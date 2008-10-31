@@ -42,7 +42,7 @@ tbx_tick_t         tbx_new_event ;
 tbx_tick_t         tbx_last_event;
 
 void
-tbx_timing_init()
+tbx_timing_init(void)
 {
   static tbx_tick_t t1, t2;
   int i;
@@ -86,7 +86,7 @@ tbx_timing_init()
 }
 
 void
-tbx_timing_exit()
+tbx_timing_exit(void)
 {
   LOG_IN();
   /* nothing */

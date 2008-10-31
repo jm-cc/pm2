@@ -15,7 +15,7 @@
  */
 
 #section functions
-int marcel_init_top(char *);
+int marcel_init_top(const char *);
 void marcel_exit_top(void);
 void marcel_show_top(void);
 #section marcel_functions

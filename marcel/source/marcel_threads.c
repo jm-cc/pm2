@@ -1129,7 +1129,6 @@ void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f,
 static void __marcel_init main_thread_init(void)
 {
 	marcel_attr_t attr;
-	char *name="main";
 
 	LOG_IN();
 	if (__main_thread == NULL) {
@@ -1143,7 +1142,7 @@ static void __marcel_init main_thread_init(void)
 #endif
 
 	marcel_attr_init(&attr);
-	marcel_attr_setname(&attr,name);
+	marcel_attr_setname(&attr,"main");
 	marcel_attr_setdetachstate(&attr, MARCEL_CREATE_JOINABLE);
 #ifdef MARCEL_MIGRATION_ENABLED
 	marcel_attr_setmigrationstate(&attr, tbx_false);

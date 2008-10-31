@@ -23,7 +23,7 @@
 
 ma_runqueue_t ma_dontsched_runqueue;
 
-void ma_init_rq(ma_runqueue_t *rq, char *name)
+void ma_init_rq(ma_runqueue_t *rq, const char *name)
 {
 	int j, k;
 	ma_prio_array_t *array;

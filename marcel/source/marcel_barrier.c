@@ -101,8 +101,9 @@ int marcel_barrier_addcount(marcel_barrier_t *b, int v) {
 int marcel_barrier_init(marcel_barrier_t *b,
 		__const marcel_barrierattr_t *attr,
 		unsigned int count) {
+	ma_barrier_mode_t mode;
 	LOG_IN();
-	ma_barrier_mode_t mode = MA_BARRIER_SLEEP_MODE;
+	mode = MA_BARRIER_SLEEP_MODE;
 	if (__builtin_expect(count == 0, 0)) {
 		LOG_RETURN(EINVAL);
 	}
@@ -181,6 +182,7 @@ int marcel_barrier_wait(marcel_barrier_t *b) {
 	LOG_RETURN(ret);
 }
 int marcel_barrier_wait_begin(marcel_barrier_t *b) {
+	int ret;
 	LOG_IN();
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
@@ -204,7 +206,7 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 	else
 		while(ma_atomic_read(&b->leftE))
 			marcel_yield();
-	int ret = ma_atomic_dec_return(&b->leftB);
+	ret = ma_atomic_dec_return(&b->leftB);
 	if (!ret) {
 		if (b->mode == MA_BARRIER_SLEEP_MODE) {
 #ifdef MA_BARRIER_USE_MUTEX
@@ -225,6 +227,7 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 	LOG_RETURN(ret);
 }
 int marcel_barrier_wait_end(marcel_barrier_t *b) {
+	int ret;
 	LOG_IN();
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
@@ -249,7 +252,7 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 		while(!ma_atomic_read(&b->leftE))
 			marcel_yield();
 	}
-	int ret = ma_atomic_dec_return(&b->leftE);
+	ret = ma_atomic_dec_return(&b->leftE);
 	if (b->mode == MA_BARRIER_SLEEP_MODE) {
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_cond_signal(&b->c);

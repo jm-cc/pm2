@@ -37,8 +37,8 @@ static struct ma_lwp_usage_stat totlst;
 static int bubbles = 0;
 #endif
 
-static int top_printf (char *fmt, ...) TBX_FORMAT(printf, 1, 2);
-static int top_printf (char *fmt, ...) {
+static int top_printf (const char *fmt, ...) TBX_FORMAT(printf, 1, 2);
+static int top_printf (const char *fmt, ...) {
 	char buf[120];
 	va_list va;
 	int n;
@@ -49,7 +49,7 @@ static int top_printf (char *fmt, ...) {
 	return n;
 }
 
-static char *get_holder_name(ma_holder_t *h, char *buf, int size) {
+static const char *get_holder_name(ma_holder_t *h, char *buf, int size) {
 	if (!h)
 		return "nil";
 
@@ -221,7 +221,7 @@ void ma_top_del_bubble(marcel_bubble_t *b) {
 }
 #endif
 
-void marcel_show_top() {
+void marcel_show_top(void) {
         marcel_lwp_t *lwp;
         unsigned long now;
 #define NBPIDS 22
@@ -343,7 +343,7 @@ static void marcel_top_tick(unsigned long foo) {
 	ma_add_timer(&timer);
 }
 
-int marcel_init_top(char *outfile) {
+int marcel_init_top(const char *outfile) {
 	int fl;
 
 #ifndef MA__TIMER

@@ -28,8 +28,9 @@
  */
 DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
-        LOG_IN();
         unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
+	int todosleep;
+        LOG_IN();
 
         if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0)) {
                 mdebug("(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
@@ -38,7 +39,7 @@ DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmt
    }
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-   int todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
+   todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
 
         if (rmtp) {
 	   nsec = todosleep*(1000*marcel_gettimeslice());
@@ -72,7 +73,7 @@ DEF_POSIX(int,usleep,(unsigned long usec),(usec),
 {
 	LOG_IN();
 
-	if ((usec < 0) || (usec > 1000000)) {
+	if (usec > 1000000) {
 		mdebug("(p)marcel_usleep : valeur usec(%ld) invalide\n", usec);
 		errno = EINVAL;
 		LOG_RETURN(-1);
@@ -172,7 +173,7 @@ unsigned marcel_nbthreads(void)
 	return num + 1;		/* + 1 pour le main */
 }
 
-unsigned marcel_per_lwp_nbthreads()
+unsigned marcel_per_lwp_nbthreads(void)
 {
 	unsigned num = 0;
 	struct marcel_topo_level *vp;
@@ -486,7 +487,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 	}
 }
 /* Idle function for supplementary VPs: don't poll on idle */
-static any_t idle_func(any_t hlwp)
+static any_t TBX_NORETURN idle_func(any_t hlwp)
 {
 	ma_set_thread_flag(TIF_POLLING_NRFLAG);
 	for(;;) {
@@ -588,8 +589,8 @@ __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création
 
 int marcel_time_suspend(const struct timespec *abstime)
 {
-        LOG_IN();
         unsigned long long nsec = abstime->tv_nsec + 1000000000*abstime->tv_sec;
+        LOG_IN();
         if ((abstime->tv_nsec<0)||(abstime->tv_nsec > 999999999)||(abstime->tv_sec < 0)) {
                 mdebug("marcel_time_suspend : valeur nsec(%ld) invalide\n",abstime->tv_nsec);
                 errno = EINVAL;

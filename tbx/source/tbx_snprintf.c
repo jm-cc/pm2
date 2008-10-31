@@ -238,6 +238,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 				case ' ': flags |= SPACE; goto repeat;
 				case '#': flags |= SPECIAL; goto repeat;
 				case '0': flags |= ZEROPAD; goto repeat;
+				default: abort();
 			}
 
 		/* get field width */

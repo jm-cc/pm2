@@ -1256,11 +1256,11 @@ versioned_symbol(libpthread, lpt_setaffinity_np, pthread_setaffinity_np, GLIBC_2
 
 DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
 {
-	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
 #ifdef MA__LWPS
 	marcel_t task = (marcel_t) pid;
 	ma_holder_t *h = ma_task_sched_holder(task);
 	ma_runqueue_t *rq = ma_to_rq_holder(h);
+	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
 	if (!rq)
 		return EIO;
 	*cpuset = rq->vpset;
@@ -1454,8 +1454,8 @@ unsigned long ma_stats_memnode_offset;
 
 static void __marcel_init linux_sched_init(void)
 {
-	LOG_IN();
 	ma_holder_t *h;
+	LOG_IN();
 
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));

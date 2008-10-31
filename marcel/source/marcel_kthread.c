@@ -86,6 +86,8 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 {
 #ifdef IA64_ARCH
 	size_t stack_size;
+#else
+	int TBX_UNUSED ret;
 #endif
 
 	LOG_IN();
@@ -107,7 +109,7 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 	    arg, pid, &dummy, pid);
 	MA_BUG_ON(ret == -1);
 #else
-	int TBX_UNUSED ret = clone((int (*)(void *)) func,
+	ret = clone((int (*)(void *)) func,
 	    sp,
 	    CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_DETACHED |
 	    CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_THREAD,
@@ -119,8 +121,9 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 
 void marcel_kthread_join(marcel_kthread_t * pid)
 {
+	pid_t the_pid;
 	LOG_IN();
-	pid_t the_pid = *pid;
+	the_pid = *pid;
 	if (the_pid)
 		/* not dead yet, wait for it (Linux wakes that futex because of the CLONE_CHILD_CLEARTID flag) */
 		while (syscall(SYS_futex, pid, FUTEX_WAIT, the_pid, NULL) == -1) {
@@ -251,9 +254,8 @@ void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 		case -1:
 			perror("futex(WAKE) in kthread_cond_broadcast");
 			MA_BUG();
-			break;
 		case 0:
-			break;
+			return;
 		default:
 			if (res > 0 && res <= nbwake)
 				nbwake -= res;

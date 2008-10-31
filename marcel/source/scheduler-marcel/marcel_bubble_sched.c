@@ -98,7 +98,7 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 /* Turns idle scheduler on. This function returns 1 if an idle
    scheduler was already running. */
 int
-ma_activate_idle_scheduler () {
+ma_activate_idle_scheduler (void) {
   int ret = 1;
   if (!ma_idle_scheduler_is_running ()) {
     ma_spin_lock (&ma_idle_scheduler_lock);
@@ -114,7 +114,7 @@ ma_activate_idle_scheduler () {
 /* Turns idle scheduler off. This function returns 1 if no idle
    scheduler was previously running. */
 int
-ma_deactivate_idle_scheduler () {
+ma_deactivate_idle_scheduler (void) {
   int ret = 1;
   if (ma_idle_scheduler_is_running ()) {
     ma_spin_lock (&ma_idle_scheduler_lock);
@@ -129,14 +129,14 @@ ma_deactivate_idle_scheduler () {
 
 /* Checks whether an idle scheduler is currently running. */
 int
-ma_idle_scheduler_is_running () {
+ma_idle_scheduler_is_running (void) {
   return ma_atomic_read (&ma_idle_scheduler);
 }
 
  /* Application is entering steady state, let's start
     thread/bubble distribution and active work stealing
     algorithm */ 
-void marcel_bubble_sched_begin () {
+void marcel_bubble_sched_begin (void) {
   if (ma_atomic_read (&ma_init)) {
     ma_spin_lock (&ma_init_lock);
     if (ma_atomic_read (&ma_init)) {
@@ -171,7 +171,7 @@ marcel_bubble_submit (marcel_bubble_t *b) {
 
  /* Application is entering ending state, let's prevent idle
     schedulers from stealing anything. */ 
-void marcel_bubble_sched_end () {
+void marcel_bubble_sched_end (void) {
   if (!ma_atomic_read(&ma_ending)) {
     ma_spin_lock (&ma_ending_lock);
     if (!ma_atomic_read (&ma_ending)) {
@@ -182,7 +182,7 @@ void marcel_bubble_sched_end () {
   }
 }
 
-void marcel_bubble_shake () {
+void marcel_bubble_shake (void) {
   ma_bubble_synthesize_stats (&marcel_root_bubble);
   ma_bubble_gather (&marcel_root_bubble);
   current_sched->submit (&marcel_root_bubble.as_entity);
@@ -578,7 +578,7 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
    updating the last_topo_level statistics of every scheduled
    entity. */
 void
-ma_bubble_snapshot () {
+ma_bubble_snapshot (void) {
 #ifdef MARCEL_STATS_ENABLED
   unsigned int i, j;
   for (i = 0; i < marcel_topo_nblevels; i++) {
@@ -966,7 +966,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
  *
  */
 
-static void __marcel_init bubble_sched_init() {
+static void __marcel_init bubble_sched_init(void) {
         marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.as_holder;
 	ma_activate_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);

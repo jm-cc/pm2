@@ -151,8 +151,8 @@ extern debug_type_t marcel_mami_debug;
 	} \
   } while (0)
 #else 
-#define MA_BUG_ON(cond)
-#define MA_WARN_ON(cond)
+#define MA_BUG_ON(cond) (void)0
+#define MA_WARN_ON(cond) (void)0
 #endif /* PM2_BUG_ON */
 
 #define MA_ALWAYS_BUG_ON(cond) \

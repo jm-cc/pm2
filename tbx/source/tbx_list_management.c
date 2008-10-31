@@ -41,7 +41,7 @@ p_tbx_memory_t tbx_list_manager_memory = NULL;
  * --------------
  */
 void
-tbx_list_manager_init()
+tbx_list_manager_init(void)
 {
   tbx_malloc_init(&tbx_list_manager_memory,
 		  sizeof(tbx_list_element_t),
@@ -54,7 +54,7 @@ tbx_list_manager_init()
  * --------------
  */
 void
-tbx_list_manager_exit()
+tbx_list_manager_exit(void)
 {
   tbx_malloc_clean(tbx_list_manager_memory);
 }

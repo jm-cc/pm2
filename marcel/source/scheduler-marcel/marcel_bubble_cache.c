@@ -47,7 +47,7 @@ ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l
 
 static int 
 decreasing_int_compar (const void *_e1, const void *_e2) {
-  return *(int *)_e1 - *(int *)_e2;
+  return *(const int *)_e1 - *(const int *)_e2;
 }
 
 static unsigned int
@@ -557,7 +557,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
 }
 
 static int
-cache_sched_init () {
+cache_sched_init (void) {
   ma_last_succeeded_steal = 0;
   ma_last_failed_steal = 0;
   ma_atomic_init (&ma_succeeded_steals, 0);
@@ -566,7 +566,7 @@ cache_sched_init () {
 }
 
 static int
-cache_sched_exit () {
+cache_sched_exit (void) {
   bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n", 
 		     ma_atomic_read (&ma_succeeded_steals), 
 		     ma_atomic_read (&ma_failed_steals));

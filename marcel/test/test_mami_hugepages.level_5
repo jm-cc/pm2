@@ -15,12 +15,9 @@
 
 
 # Configuration
-flavor="test_marcel_mami"
-appdir="${PM2_ROOT}/marcel/examples/memory"
 prog="hugepages"
 args=""
 hosts="localhost"
-check_all_lines=1
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 marcel_memory_malloc: Cannot allocate memory
@@ -28,11 +25,4 @@ ptr[10]=10
 ptr2[20]=20
 EOF
 
-create_test_flavor() {
-# Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
-	--modules=\"marcel tbx init\" \
-	--marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_mami enable_stats\" \
-	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
-}
+. ./mami.sh

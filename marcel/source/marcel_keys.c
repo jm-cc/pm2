@@ -31,7 +31,7 @@ DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 {
 	LOG_IN();
 	int ret = 0;
-	if ((key < 0) || (key >= MAX_KEY_SPECIFIC)
+	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);
 		mdebug("(p)marcel_setspecific : valeur key(%d) invalide\n",
@@ -48,7 +48,7 @@ DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key),
 {
 	LOG_IN();
 	any_t ret;
-	if ((key < 0) || (key >= MAX_KEY_SPECIFIC)
+	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);
 		mdebug("(p)marcel_setspecific : valeur key(%d) invalide\n",

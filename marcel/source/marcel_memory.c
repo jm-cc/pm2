@@ -611,6 +611,12 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 
   marcel_spin_lock(&(memory_manager->lock));
 
+  if (!size) {
+    marcel_spin_unlock(&(memory_manager->lock));
+    LOG_OUT();
+    return NULL;
+  }
+
   // Round-up the size
   nbpages = size / pagesize;
   if (nbpages * pagesize != size) nbpages++;
@@ -709,6 +715,11 @@ int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
   LOG_IN();
   if (tbx_unlikely(node >= marcel_nbnodes)) {
     mdebug_mami("Node #%d invalid\n", node);
+    errno = EINVAL;
+    err = -errno;
+  }
+  else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES && memory_manager->hugepagesize == 0) {
+    mdebug("Huge pages are not available. Cannot set memory policy.\n");
     errno = EINVAL;
     err = -errno;
   }

@@ -39,6 +39,9 @@ int marcel_main(int argc, char * argv[]) {
     if (!ptr2) perror("marcel_memory_malloc");
     marcel_memory_free(&memory_manager, ptr2);
   }
+  else {
+    printf("Failure. Could not allocated with huge pages.\n");
+  }
 
   marcel_memory_exit(&memory_manager);
 

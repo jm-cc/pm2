@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 
 
@@ -79,14 +80,14 @@ main (int argc, char *argv[])
 
       if (i != (intptr_t) ret)
 	{
-	  printf ("got %i instead of %i\n", (intptr_t) ret, i);
+	  printf ("got %"PRIiPTR" instead of %i\n", (intptr_t) ret, i);
 	  return 3;
 	}
     }
 
   if (tls_data != -1)
     {
-      printf ("main thread got %i instead of -1\n", tls_data);
+      printf ("main thread got %"PRIiPTR" instead of -1\n", tls_data);
       return 4;
     }
 

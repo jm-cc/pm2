@@ -454,6 +454,11 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
     }
   }
 
+  // Deallocate memory on each node
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    marcel_memory_free(memory_manager, buffers[node]);
+  }
+
   marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   marcel_fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=minsource ; t<=maxsource ; t++) {

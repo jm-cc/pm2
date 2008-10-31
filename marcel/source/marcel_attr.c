@@ -159,7 +159,7 @@ DEF_PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackaddr,
 DEF___PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackaddr, size_t *stacksize), (attr, stackaddr, stacksize))
 
 /********************attr_set/getdetachstate**********************/
-static int inline TBX_UNUSED check_attr_setdetachstate(int detached)
+static inline int TBX_UNUSED check_attr_setdetachstate(int detached)
 {
 	LOG_IN();
 	if ((detached != MARCEL_CREATE_DETACHED)

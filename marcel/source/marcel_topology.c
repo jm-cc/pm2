@@ -391,16 +391,16 @@ static void ma_process_cpumap(const char *mappath, const char * mapname, unsigne
 		       unsigned *nr_ids, unsigned givenid)
 {
 	marcel_vpset_t set;
-	int j,k;
+	int k;
 
 	ma_parse_cpumap(mappath, &set);
-
-	for(j=0; j<=nr_procs; j++) {
-		if (marcel_vpset_isset(&set, j)) {
+#warning To be fixed: 2 nested loops on the same indice is not a good idea!
+	for(k=0; k<=nr_procs; k++) {
+		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */
 			unsigned newid;
 
-			if (ids[j] != -1)
+			if (ids[k] != -1)
 				/* already got this map, stop using it */
 				break;
 

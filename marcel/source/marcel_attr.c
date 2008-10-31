@@ -726,6 +726,7 @@ DEF_PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, str
 DEF___PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *__restrict param),(attr,param))
 
 /*************************getattr_np***********************/
+#ifdef MA__IFACE_PMARCEL
 int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)
 {
 	marcel_attr_t *attr;
@@ -755,4 +756,5 @@ int lpt_getattr_np(lpt_t t,lpt_attr_t *__attr)
 }
 versioned_symbol (libpthread, lpt_getattr_np,
                   pthread_getattr_np, GLIBC_2_2_3);
+#endif
 #endif

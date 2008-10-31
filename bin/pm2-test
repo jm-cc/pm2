@@ -102,7 +102,7 @@ do_the_test()
         protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
         (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
     fi
-    [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution failed" $file_result
+    [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
 
     # Le moment de verite
     echo "Checking results..."
@@ -125,7 +125,7 @@ do_the_test()
     if diff -u $file_expected $file_filtered ; then
 	echo "Test ok!"
     else
-	pm2_test_error_file "Test failed: unexpected result (see $file_result)" $file_filtered
+	pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
     fi
 
     # Coverage testing.

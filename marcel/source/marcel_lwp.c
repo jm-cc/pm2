@@ -75,7 +75,7 @@ void marcel_lwp_fix_nb_vps(unsigned nb_vp)
 /* Fonction exécutée dans le thread run_task au démarrage d'un LWP
  * quelque soit ce LWP, sauf le premier.
  */
-void marcel_lwp_start(marcel_lwp_t *lwp)
+static void marcel_lwp_start(marcel_lwp_t *lwp)
 {
 	int ret;
 	LOG_IN();

@@ -80,7 +80,7 @@ extern debug_type_aligned_t __ma_debug_start[];
 extern debug_type_aligned_t __ma_debug_end[];
 #endif
 
-void __marcel_init marcel_debug_init_auto(void)
+static void __marcel_init marcel_debug_init_auto(void)
 {
 #ifdef PM2DEBUG
 	debug_type_aligned_t *var;

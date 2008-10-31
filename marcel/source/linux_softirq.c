@@ -126,7 +126,7 @@ void TBX_EXTERN ma_local_bh_enable(void) {
 	}
 }
 
-inline void __ma_raise_softirq_bhoff(unsigned int nr) {
+static inline void __ma_raise_softirq_bhoff(unsigned int nr) {
 	ma_set_bit(nr, &ma_local_softirq_pending());
 }
 /*

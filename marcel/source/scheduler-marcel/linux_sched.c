@@ -173,7 +173,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
  *
  * returns failure only if the task is already active.
  */
-int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_holder_t *h)
+static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, ma_holder_t *h)
 {
 	int success = 0;
 	long old_state;
@@ -586,7 +586,9 @@ out:
 	(void)0;
 }
 
-void ma_scheduling_functions_start_here(void) { }
+
+
+/* Scheduling functions start here.  */
 
 
 static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now) {

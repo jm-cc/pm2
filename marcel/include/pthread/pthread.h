@@ -146,6 +146,9 @@ extern "C++" {
 #undef sem_t
 #define sem_t pmarcel_sem_t
 
+#undef SEM_FAILED
+#define SEM_FAILED PMARCEL_SEM_FAILED
+
 #undef cpu_set_t
 #define cpu_set_t pmarcel_cpu_set_t
 

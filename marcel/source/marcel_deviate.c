@@ -90,10 +90,12 @@ static void TBX_NORETURN insertion_relai(handler_func_t f, void *arg)
 	/* set the current path to here */
 	if (MA_THR_SETJMP(cur) == FIRST_RETURN) {
 		/* and return at once to father */
+		cur = marcel_self();
 		marcel_ctx_set_tls_reg(cur->father);
 		marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
 	} else {
 		/* later on, actually do the work */
+		cur = marcel_self();
 		MA_THR_DESTROYJMP(cur);
 		MA_THR_RESTARTED(cur, "Deviation");
 		MA_BUG_ON(!ma_in_atomic());

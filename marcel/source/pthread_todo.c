@@ -33,9 +33,11 @@ static int TBX_UNUSED infile=0;
 #ifdef MA__LIBPTHREAD
 #define NDP(prefix,function) \
         ND(prefix##pthread_##function) \
+        int prefix##pmarcel_##function(void); \
         ND(prefix##pmarcel_##function)
 #elif defined(MA__IFACE_PMARCEL)
 #define NDP(prefix,function) \
+        int prefix##pmarcel_##function(void); \
         ND(prefix##pmarcel_##function)
 #else
 #define NDP(prefix,function)

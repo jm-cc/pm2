@@ -294,6 +294,7 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 	}
 	return self;
 }
+DEC_POSIX(pmarcel_t, self, (void));
 
 
 #section functions

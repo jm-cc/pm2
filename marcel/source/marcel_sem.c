@@ -384,16 +384,16 @@ DEF_C(int,sem_close,(sem_t *sem),(sem))
 DEF___C(int,sem_close,(sem_t *sem),(sem))
 
 /********************sem_open***************************/
-DEF_POSIX(sem_t*,sem_open,(const char *name TBX_UNUSED, int flags TBX_UNUSED,...),(name,flags,...),
+DEF_POSIX(pmarcel_sem_t*,sem_open,(const char *name TBX_UNUSED, int flags TBX_UNUSED,...),(name,flags,...),
 {
 	LOG_IN();
 	fprintf(stderr, "!! sem_open not implemented\n");
 	errno = ENOTSUP;
-	LOG_RETURN(SEM_FAILED);
+	LOG_RETURN(PMARCEL_SEM_FAILED);
 })
 
-DEF_C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
-DEF___C(int,sem_open,(const char *name, int flags,...),(name,flags,...))
+DEF_C(sem_t *,sem_open,(const char *name, int flags,...),(name,flags,...))
+DEF___C(sem_t *,sem_open,(const char *name, int flags,...),(name,flags,...))
 
 /*******************sem_unlink**************************/
 DEF_POSIX(int,sem_unlink,(const char *name TBX_UNUSED),(name),

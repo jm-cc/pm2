@@ -42,6 +42,8 @@ struct semaphor_struct {
 	.lock = MA_SPIN_LOCK_UNLOCKED \
 }
 
+#define PMARCEL_SEM_FAILED ((pmarcel_sem_t *) 0)
+
 #section types
 typedef struct semaphor_struct marcel_sem_t;
 typedef marcel_sem_t pmarcel_sem_t;
@@ -54,14 +56,14 @@ void marcel_sem_V(marcel_sem_t *s);
 int marcel_sem_try_V(marcel_sem_t *s);
 int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
 
-int pmarcel_sem_init(pmarcel_sem_t *s, int pshared, unsigned int initial) __THROW;
-int pmarcel_sem_destroy(pmarcel_sem_t *s) __THROW;
-int pmarcel_sem_wait(pmarcel_sem_t *s) __THROW;
-int pmarcel_sem_trywait(pmarcel_sem_t *s) __THROW;
-int pmarcel_sem_timedwait(pmarcel_sem_t *__restrict sem, 
-                          const struct timespec *__restrict abs_timeout) __THROW;
-int pmarcel_sem_post(pmarcel_sem_t *s) __THROW;
-int pmarcel_sem_getvalue(pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW;
+DEC_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial) __THROW);
+DEC_POSIX(int, sem_destroy, (pmarcel_sem_t *s) __THROW);
+DEC_POSIX(int, sem_wait, (pmarcel_sem_t *s) __THROW);
+DEC_POSIX(int, sem_trywait, (pmarcel_sem_t *s) __THROW);
+DEC_POSIX(int, sem_timedwait, (pmarcel_sem_t *__restrict sem, 
+                          const struct timespec *__restrict abs_timeout) __THROW);
+DEC_POSIX(int, sem_post, (pmarcel_sem_t *s) __THROW);
+DEC_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW);
 
 static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline
@@ -72,12 +74,7 @@ static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s)
 }
 
 #section functions
-int marcel_sem_close(marcel_sem_t *sem);
-int pmarcel_sem_close(pmarcel_sem_t *sem);
-
-marcel_sem_t* marcel_sem_open(const char *name, int flags, ...);
-marcel_sem_t* pmarcel_sem_open(const char *name, int flags, ...);
-
-int marcel_sem_unlink(const char *name);
-int pmarcel_sem_unlink(const char *name);
+DEC_POSIX(int, sem_close, (pmarcel_sem_t *sem));
+DEC_POSIX(pmarcel_sem_t*, sem_open, (const char *name, int flags, ...));
+DEC_POSIX(int, sem_unlink, (const char *name));
 

@@ -218,7 +218,7 @@ DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (at
 DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
 
  /********************attr_set/getguardsize**********************/
-DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr TBX_UNUSED, size_t guardsize), (attr, guardsize), 
+DEF_POSIX(int, attr_setguardsize, (marcel_attr_t * attr TBX_UNUSED, size_t guardsize), (attr, guardsize), 
 {
 	LOG_IN();
 	if (marcel_attr_setguardsize(attr, guardsize)) {
@@ -231,7 +231,7 @@ DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr TBX_UNUSED, size_t guar
 DEF_PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
 DEF___PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
 
-DEF_POSIX(int, attr_getguardsize, (__const pthread_attr_t * __restrict attr TBX_UNUSED,
+DEF_POSIX(int, attr_getguardsize, (__const marcel_attr_t * __restrict attr TBX_UNUSED,
     size_t * __restrict guardsize), (attr, guardsize),
 {
 	LOG_IN();
@@ -357,13 +357,13 @@ int marcel_attr_getvpset(__const marcel_attr_t * __restrict attr,
 	return 0;
 }
 
-DEF_POSIX(int, attr_getaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
+DEF_POSIX(int, attr_getaffinity_np, (const pmarcel_attr_t *attr, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (attr, cpusetsize, cpuset),
 {
 	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
 	return marcel_attr_getvpset(attr, cpuset);
 })
 #ifdef MA__LIBPTHREAD
-int lpt_attr_getaffinity_np(lpt_attr_t *__attr, size_t cpusetsize, cpu_set_t *cpuset)
+int lpt_attr_getaffinity_np(const lpt_attr_t *__attr, size_t cpusetsize, cpu_set_t *cpuset)
 {
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
 	marcel_vpset_t *vpset;
@@ -507,7 +507,7 @@ DEF___LIBPTHREAD(int,attr_destroy,(pthread_attr_t * attr),(attr))
 #endif
 
 /***********************get/setinheritsched***********************/
-DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr,inheritsched),
+DEF_POSIX(int,attr_setinheritsched,(pmarcel_attr_t * attr,int inheritsched),(attr,inheritsched),
 {
 	LOG_IN();
 
@@ -530,10 +530,10 @@ DEF_POSIX(int,attr_setinheritsched,(marcel_attr_t * attr,int inheritsched),(attr
 		attr->__flags &= ~MA_ATTR_FLAG_INHERITSCHED;
 	LOG_RETURN(0);
 })
-DEF_PTHREAD(int,attr_setinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
-DEF___PTHREAD(int,attr_setinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
+DEF_PTHREAD(int,attr_setinheritsched,(pthread_attr_t *attr, int *inheritshed),(attr,inheritsched))
+DEF___PTHREAD(int,attr_setinheritsched,(pthread_attr_t *attr, int *inheritshed),(attr,inheritsched))
    
-DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * attr,int * inheritsched),(attr,inheritsched),
+DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * __restrict attr,int * __restrict inheritsched),(attr,inheritsched),
 {
 	LOG_IN();
 	if (!attr) {
@@ -545,11 +545,11 @@ DEF_POSIX(int,attr_getinheritsched,(__const pmarcel_attr_t * attr,int * inherits
 	*inheritsched = !!(attr->__flags & MA_ATTR_FLAG_INHERITSCHED);
 	LOG_RETURN(0);
 })
-DEF_PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
-DEF___PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *inheritshed),(attr,inheritsched))
+DEF_PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *__restrict inheritshed),(attr,inheritsched))
+DEF___PTHREAD(int,attr_getinheritsched,(pthread_attr_t *__restrict attr, int *__restrict inheritshed),(attr,inheritsched))
 
 /***************************get/setscope**************************/
-DEF_MARCEL_POSIX(int,attr_setscope,(pmarcel_attr_t *__restrict attr, int contentionscope),(attr,contentionscope),
+DEF_MARCEL_POSIX(int,attr_setscope,(pmarcel_attr_t *attr, int contentionscope),(attr,contentionscope),
 {
 	LOG_IN();
 
@@ -632,7 +632,7 @@ DEF_PTHREAD(int,attr_getschedpolicy,(__const pthread_attr_t *__restrict attr, in
 DEF___PTHREAD(int,attr_getschedpolicy,(__const pthread_attr_t *__restrict attr, int *policy),(attr,policy))
 
 /*************************attr_get/setschedparam***********************/
-DEF_MARCEL(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sched_param *param),(attr,param),
+DEF_MARCEL(int,attr_setschedparam,(marcel_attr_t * __restrict attr, __const struct marcel_sched_param * __restrict param),(attr,param),
 {
 	LOG_IN();
 	if ((param == NULL) || (attr == NULL)) {
@@ -645,7 +645,7 @@ DEF_MARCEL(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sc
 	LOG_RETURN(0);
 })
 
-DEF_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sched_param *param),(attr,param),
+DEF_POSIX(int,attr_setschedparam,(pmarcel_attr_t * __restrict attr, __const struct marcel_sched_param * __restrict param),(attr,param),
 {
 	int policy;
 	int ret;
@@ -683,10 +683,10 @@ DEF_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sch
 	LOG_RETURN(0);
 })
    
-DEF_PTHREAD(int,attr_setschedparam,(pthread_attr_t *__restrict attr, const struct sched_param param),(attr,param))
-DEF___PTHREAD(int,attr_setschedparam,(pthread_attr_t *__restrict attr, const struct sched_param param),(attr,param))
+DEF_PTHREAD(int,attr_setschedparam,(pthread_attr_t *__restrict attr, const struct sched_param *__restrict param),(attr,param))
+DEF___PTHREAD(int,attr_setschedparam,(pthread_attr_t *__restrict attr, const struct sched_param *__restrict param),(attr,param))
  
-DEF_MARCEL(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param),(attr,param),
+DEF_MARCEL(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct marcel_sched_param *__restrict param),(attr,param),
 {
 	LOG_IN();
 	if ((param == NULL) || (attr == NULL)) {
@@ -697,7 +697,7 @@ DEF_MARCEL(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struc
 	LOG_RETURN(0);
 })
 
-DEF_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param),(attr,param),
+DEF_POSIX(int,attr_getschedparam,(__const pmarcel_attr_t *__restrict attr, struct marcel_sched_param *__restrict param),(attr,param),
 {
 	int policy;
 	int ret;
@@ -722,8 +722,8 @@ DEF_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct
 
 	LOG_RETURN(0);
 })
-DEF_PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *param),(attr,param))
-DEF___PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *param),(attr,param))
+DEF_PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *__restrict param),(attr,param))
+DEF___PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, struct sched_param *__restrict param),(attr,param))
 
 /*************************getattr_np***********************/
 int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)

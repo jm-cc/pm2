@@ -260,21 +260,20 @@ DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
 int pthread_setschedprio(pthread_t thread, int prio) __THROW;
 
 /** Set the scheduling params of the specified thread.
-    Note:
-    - why not DEC_MARCEL_POSIX instead?
-    - BECAUSE of the sched_param structure. Ideally we should have a
-      pmarcel_sched_param structure typedefed to marcel_sched_param, and a
-      #define sched_param pmarcel_sched_param in include/pthread/sched.h, but
-      it's tricky because we then have to define all sched.h functions, etc.
  */
 DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
                                      __const struct marcel_sched_param *__restrict param) __THROW);
+DEC_POSIX(int, setschedparam,(pmarcel_t thread, int policy,
+                                     __const struct marcel_sched_param *__restrict param) __THROW);
 
 /** Get the scheduling params of the specified thread.
-    Same note as above.
  */
 DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
+DEC_POSIX(int, getschedparam,(pmarcel_t thread, int *__restrict policy,
+                                     struct marcel_sched_param *__restrict param) __THROW);
+
+DEC_POSIX(int, getcpuclockid, (pmarcel_t thread, clockid_t *clock_id) __THROW);
 
 /** Prepare a set of threads for a subsequent migration.
  */

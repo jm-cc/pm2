@@ -229,12 +229,12 @@ extern int pmarcel_attr_setguardsize (pmarcel_attr_t *__attr,
 /* Return in *PARAM the scheduling parameters of *ATTR.  */
 extern int pmarcel_attr_getschedparam (__const pmarcel_attr_t *__restrict
 				       __attr,
-				       struct sched_param *__restrict __param)
+				       struct marcel_sched_param *__restrict __param)
      __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Set scheduling parameters (priority, etc) in *ATTR according to PARAM.  */
 extern int pmarcel_attr_setschedparam (pmarcel_attr_t *__restrict __attr,
-				       __const struct sched_param *__restrict
+				       __const struct marcel_sched_param *__restrict
 				       __param) __THROW __tbx_attribute_nonnull__ ((1, 2));
 
 /* Return in *POLICY the scheduling policy of *ATTR.  */
@@ -308,14 +308,14 @@ extern int pmarcel_attr_setstack (pmarcel_attr_t *__attr, void *__stackaddr,
    the processors represented in CPUSET.  */
 extern int pmarcel_attr_setaffinity_np (pmarcel_attr_t *__attr,
 					size_t __cpusetsize,
-					__const marcel_vpset_t *__cpuset)
+					__const pmarcel_cpu_set_t *__cpuset)
      __THROW __tbx_attribute_nonnull__ ((1, 3));
 
 /* Get bit set in CPUSET representing the processors threads created with
    ATTR can run on.  */
 extern int pmarcel_attr_getaffinity_np (__const pmarcel_attr_t *__attr,
 					size_t __cpusetsize,
-					marcel_vpset_t *__cpuset)
+					pmarcel_cpu_set_t *__cpuset)
      __THROW __tbx_attribute_nonnull__ ((1, 3));
 
 
@@ -332,13 +332,13 @@ extern int pmarcel_getattr_np (pmarcel_t __th, pmarcel_attr_t *__attr)
 /* Set the scheduling parameters for TARGET_THREAD according to POLICY
    and *PARAM.  */
 extern int pmarcel_setschedparam (pmarcel_t __target_thread, int __policy,
-				  __const struct sched_param *__param)
+				  __const struct marcel_sched_param *__param)
      __THROW __tbx_attribute_nonnull__ ((3));
 
 /* Return in *POLICY and *PARAM the scheduling parameters for TARGET_THREAD. */
 extern int pmarcel_getschedparam (pmarcel_t __target_thread,
 				  int *__restrict __policy,
-				  struct sched_param *__restrict __param)
+				  struct marcel_sched_param *__restrict __param)
      __THROW __tbx_attribute_nonnull__ ((2, 3));
 
 /* Set the scheduling priority for TARGET_THREAD.  */

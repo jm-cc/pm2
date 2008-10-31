@@ -242,6 +242,10 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setseed(marcel_attr_t *attr, int seed);
 int marcel_attr_getseed(__const marcel_attr_t * __restrict attr,
 			 int * __restrict seed);
+
+DEC_POSIX(int, attr_setguardsize, (marcel_attr_t *attr, size_t guardsize) __THROW);
+DEC_POSIX(int, attr_getguardsize, (__const marcel_attr_t *attr, size_t *guardsize) __THROW);
+
 #ifdef PM2STACKSGUARD
 #define marcel_attr_setguardsize(attr, guardsize) ((guardsize)>THREAD_SLOT_SIZE)
 #define marcel_attr_getguardsize(attr, guardsize) (*(guardsize) = THREAD_SLOT_SIZE, 0)
@@ -251,11 +255,17 @@ int marcel_attr_getseed(__const marcel_attr_t * __restrict attr,
 #endif
 
 DEC_MARCEL_POSIX(int, attr_setinheritsched, (marcel_attr_t * attr,int inheritsched) __THROW);
-DEC_MARCEL_POSIX(int, attr_getinheritsched, (marcel_attr_t * attr,int * inheritsched) __THROW);
-DEC_MARCEL_POSIX(int, attr_setscope, (pmarcel_attr_t *__restrict attr, int contentionscope) __THROW);
-DEC_MARCEL_POSIX(int, attr_getscope, (__const pmarcel_attr_t *__restrict attr, int *contentionscope) __THROW);
-DEC_MARCEL(int, attr_setschedparam, (marcel_attr_t *attr, __const struct marcel_sched_param *param) __THROW);
-DEC_MARCEL(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param) __THROW);
+DEC_MARCEL_POSIX(int, attr_getinheritsched, (marcel_attr_t * __restrict attr,int * __restrict inheritsched) __THROW);
+DEC_MARCEL_POSIX(int, attr_setscope, (marcel_attr_t *attr, int contentionscope) __THROW);
+DEC_MARCEL_POSIX(int, attr_getscope, (__const marcel_attr_t *__restrict attr, int *contentionscope) __THROW);
+DEC_MARCEL_POSIX(int, attr_setschedparam, (marcel_attr_t * __restrict attr, __const struct marcel_sched_param * __restrict param) __THROW);
+DEC_MARCEL_POSIX(int, attr_getschedparam, (__const marcel_attr_t *__restrict attr, struct marcel_sched_param * __restrict param) __THROW);
+DEC_POSIX(int, attr_setschedpolicy, (pmarcel_attr_t *__restrict attr, int policy) __THROW);
+DEC_POSIX(int, attr_getschedpolicy, (__const pmarcel_attr_t *__restrict attr, int * __restrict policy) __THROW);
+
+DEC_POSIX(int, attr_setaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize, __const pmarcel_cpu_set_t *cpuset));
+DEC_POSIX(int, attr_getaffinity_np, (__const pmarcel_attr_t *attr, size_t cpusetsize, pmarcel_cpu_set_t *cpuset));
+
 DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
 
 int marcel_attr_settopo_level(marcel_attr_t * attr, marcel_topo_level_t *topo_level);

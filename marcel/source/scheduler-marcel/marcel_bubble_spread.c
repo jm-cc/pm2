@@ -277,7 +277,7 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 
 static marcel_bubble_t *b = &marcel_root_bubble;
 
-int
+static int
 spread_sched_submit(marcel_entity_t *e)
 {
   struct marcel_topo_level *l = marcel_topo_level(0,0);
@@ -287,7 +287,7 @@ spread_sched_submit(marcel_entity_t *e)
   return 0;
 }
 
-int
+static int
 spread_sched_vp_is_idle(unsigned vp)
 {
   if (!vp) return 0;

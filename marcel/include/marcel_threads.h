@@ -198,6 +198,7 @@ static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 #define pmarcel_equal(t1,t2) ((t1) == (t2))
 
 #section functions
+#depend "marcel_topology.h[types]"
 
 /** Posix setconcurrency.
  */
@@ -218,6 +219,14 @@ DEC_MARCEL_POSIX(int, setcanceltype,(int type, int *oldtype) __THROW);
 /** Posix testcancel.
  */
 DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
+
+/** GNU setaffinity_np.
+ */
+DEC_MARCEL_POSIX(int, setaffinity_np, (marcel_t pid, size_t cpusetsize, const pmarcel_cpu_set_t *cpuset));
+
+/** GNU getaffinity_np.
+ */
+DEC_MARCEL_POSIX(int, getaffinity_np, (marcel_t pid, size_t cpusetsize, pmarcel_cpu_set_t *cpuset));
 
 
 #depend "asm/linux_linkage.h[marcel_macros]"

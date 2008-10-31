@@ -29,4 +29,7 @@
 #depend "scheduler/marcel_bubble_sched_interface.h[types]"
 extern marcel_bubble_sched_t marcel_bubble_spread_sched;
 
+#section functions
+extern void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l);
+
 /* @} */

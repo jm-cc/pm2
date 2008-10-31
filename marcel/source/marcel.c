@@ -80,12 +80,14 @@ marcel_exception_t
     "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
+#ifdef MA__DEBUG
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
    LORSQUE L'ON VEUT EXECUTER PAS A PAS... */
 void marcel_breakpoint()
 {
 	/* Lieu ideal ;-) pour un point d'arret */
 }
+#endif
 
 /* returns the amount of mem between the base of the current thread stack and
    its stack pointer */

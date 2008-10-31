@@ -42,9 +42,7 @@
 
 #section common
 #include "tbx_compiler.h"
-#section sched_marcel_functions [no-depend-previous]
 
-#section sched_marcel_inline
 
 /****************************************************************/
 /* Attributs
@@ -202,7 +200,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #depend "scheduler/marcel_holder.h[marcel_macros]"
 #depend "scheduler/marcel_bubble_sched.h[types]"
 #depend "[marcel_variables]"
-__tbx_inline__ ma_runqueue_t *
+static __tbx_inline__ ma_runqueue_t *
 marcel_sched_select_runqueue(marcel_task_t* t,
 		const marcel_attr_t *attr) {
 	ma_runqueue_t *rq;
@@ -518,7 +516,7 @@ extern void ma_unfreeze_thread(marcel_task_t * tsk);
 /* ==== miscelaneous private defs ==== */
 
 #ifdef MA__DEBUG
-extern void marcel_breakpoint();
+extern void marcel_breakpoint(void);
 #endif
 
 marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t *lwp);
@@ -531,7 +529,7 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t *lwp);
 /**************************************************************************/
 /**************************************************************************/
 
-#section sched_marcel_functions
+#section marcel_functions
 static __tbx_setjmp_inline__
 int marcel_sched_internal_create(marcel_task_t *cur, 
 					       marcel_task_t *new_task,
@@ -550,7 +548,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 					       __const int dont_schedule,
 					       __const unsigned long base_stack);
 
-#section sched_marcel_inline
+#section marcel_inline
 static __tbx_setjmp_inline__
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 				 __const marcel_attr_t *attr,

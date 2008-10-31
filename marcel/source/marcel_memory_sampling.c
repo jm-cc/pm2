@@ -136,7 +136,7 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
   }
   out = marcel_fopen(filename, "r");
   if (!out) {
-    marcel_printf("The model for the cost of the memory migration is not available\n");
+    mdebug_mami("The model for the cost of the memory migration is not available\n");
     return -1;
   }
   mdebug_mami("Reading file %s\n", filename);
@@ -314,7 +314,7 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
   }
   out = marcel_fopen(filename, "r");
   if (!out) {
-    marcel_printf("The model for the cost of the memory access is not available\n");
+    mdebug_mami("The model for the cost of the memory access is not available\n");
     return -1;
   }
   mdebug_mami("Reading file %s\n", filename);

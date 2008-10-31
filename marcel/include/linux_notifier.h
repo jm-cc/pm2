@@ -25,7 +25,7 @@ struct ma_notifier_block
 struct ma_notifier_chain
 {
 	struct ma_notifier_block *chain;
-	char* name;
+	const char* name;
 };
 
 #section marcel_macros

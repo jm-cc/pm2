@@ -370,19 +370,6 @@ DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sva
 })
 DEF_C(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval));
 
-void marcel_sem_VP(marcel_sem_t *s1 TBX_UNUSED, marcel_sem_t *s2 TBX_UNUSED)
-{
-	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
-		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
-	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-}
-
-void marcel_sem_unlock_all(marcel_sem_t *s TBX_UNUSED)
-{
-	marcel_printf("Use marcel_cond_wait/marcel_cond_signal"
-		      " instead of marcel_sem_VP/marcel_sem_unlock_all\n");
-	MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
-}
 
 /********************sem_close**************************/
 DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem TBX_UNUSED),(sem),

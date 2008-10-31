@@ -655,6 +655,7 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
 
   pagesize = memory_manager->normalpagesize;
   with_huge_pages = 0;
+  numanode = 0;
   if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
     numanode = marcel_current_node();
     if (tbx_unlikely(numanode == -1)) numanode=0;

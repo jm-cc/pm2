@@ -394,7 +394,6 @@ static void ma_process_cpumap(const char *mappath, const char * mapname, unsigne
 	int k;
 
 	ma_parse_cpumap(mappath, &set);
-#warning To be fixed: 2 nested loops on the same indice is not a good idea!
 	for(k=0; k<=nr_procs; k++) {
 		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */

@@ -76,8 +76,9 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 	return NULL;
 }
 
+#if 0
 /* Cleaner: cleans jobs from work_rq */
-any_t marcel_gang_cleaner(any_t foo) {
+static any_t marcel_gang_cleaner(any_t foo) {
 	marcel_entity_t *e, *ee;
 	ma_runqueue_t *work_rq = (void*) foo;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
@@ -109,8 +110,9 @@ any_t marcel_gang_cleaner(any_t foo) {
 	}
 	return NULL;
 }
+#endif
 
-marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int sys) {
+static marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int sys) {
 	marcel_attr_t attr;
 	marcel_t t;
 	marcel_attr_init(&attr);
@@ -127,7 +129,7 @@ marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq, int s
 	}
 	return t;
 }
-marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
+static marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
 	return __marcel_start_gang_scheduler(marcel_gang_scheduler, rq, sys);
 }
 

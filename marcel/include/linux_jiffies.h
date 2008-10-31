@@ -30,7 +30,7 @@
 extern ma_u64 ma_jiffies_64;
 extern unsigned long volatile ma_jiffies;
 
-#if (BITS_PER_LONG < 64)
+#if (MA_BITS_PER_LONG < 64)
 ma_u64 ma_get_jiffies_64(void);
 #else
 static __tbx_inline__ ma_u64 ma_get_jiffies_64(void)

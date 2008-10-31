@@ -267,10 +267,6 @@ DEC_MARCEL(int, setschedparam,(marcel_t thread, int policy,
 DEC_MARCEL(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
 
-/** Posix getcpuclockid.
- */
-DEC_POSIX(int,getcpuclockid,(pmarcel_t thread_id, clockid_t *clock_id) __THROW);
-
 /** Prepare a set of threads for a subsequent migration.
  */
 void marcel_freeze(marcel_t *pids, int nb);

@@ -599,7 +599,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 #section marcel_functions
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
-static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
+static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq TBX_UNUSED) {
 	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->run_holder_data);
 	MA_BUG_ON(e->run_holder != &rq->as_holder);
 }
@@ -665,7 +665,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 #section marcel_functions
 static __tbx_inline__ void ma_task_check(marcel_task_t *t);
 #section marcel_inline
-static __tbx_inline__ void ma_task_check(marcel_task_t *t) {
+static __tbx_inline__ void ma_task_check(marcel_task_t *t TBX_UNUSED) {
 #ifdef PM2_BUG_ON
 	if (MA_TASK_IS_READY(t)) {
 		/* check that it is reachable from some runqueue */

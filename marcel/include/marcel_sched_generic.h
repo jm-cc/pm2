@@ -209,7 +209,7 @@ void marcel_snapshot(snapshot_func_t f);
 #section functions
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 void marcel_per_lwp_threadslist(int max, marcel_t *pids, int *nb, int which);
-unsigned marcel_per_lwp_nbthreads();
+unsigned marcel_per_lwp_nbthreads(void);
 int pmarcel_sched_get_priority_max(int policy);
 DEC_MARCEL_POSIX(int,sched_get_priority_max,(int policy) __THROW);
 int pmarcel_sched_get_priority_min(int policy);

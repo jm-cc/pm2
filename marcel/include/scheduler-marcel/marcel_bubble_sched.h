@@ -146,12 +146,12 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 
 /** \brief Informs the scheduler that the application initialization
     phase has terminated */
-void marcel_bubble_sched_begin ();
+void marcel_bubble_sched_begin (void);
 /** \brief Informs the scheduler that the application is entering
     ending phase */
-void marcel_bubble_sched_end ();
+void marcel_bubble_sched_end (void);
 /** \brief Re-distributes the active entities on the topology */
-void marcel_bubble_shake ();
+void marcel_bubble_shake (void);
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
 
@@ -440,7 +440,7 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 	e->run_holder_data = (void *)1;
 #endif
 }
-static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
+static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b TBX_UNUSED) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	list_del(&e->run_list);

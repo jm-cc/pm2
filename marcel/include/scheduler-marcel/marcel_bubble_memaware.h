@@ -35,7 +35,7 @@ int marcel_stop_idle_memaware(void);
 void marcel_start_checkload(void);
 void marcel_stop_checkload(void);
 extern void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level);
-extern void ma_clear_spread();
+extern void ma_clear_spread(void);
 extern void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number);
 /* @} */
 

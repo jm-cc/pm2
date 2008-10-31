@@ -257,8 +257,8 @@ void __memory_barrier(void);
  * specific implementations come from the above header files
  */
 
-#define tbx_likely(x)	__builtin_expect(!!(x), 1)
-#define tbx_unlikely(x)	__builtin_expect(!!(x), 0)
+#define tbx_likely(x)	__builtin_expect((long)!!(x), 1L)
+#define tbx_unlikely(x)	__builtin_expect((long)!!(x), 0L)
 
 /*
  * Allow us to mark functions as 'deprecated' and have gcc emit a nice

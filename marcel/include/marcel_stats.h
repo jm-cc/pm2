@@ -90,9 +90,6 @@ extern unsigned long ma_stats_last_vp_offset;
     schedulers to keep track of where the entities were scheduled
     before. */
 extern unsigned long ma_stats_last_topo_level_offset;
-/* TODO: Never used! Remove it? */
-/** \brief Offset of the "memory attraction" statistics */
-extern unsigned long ma_stats_attraction_offset;
 
 #section marcel_types
 #include "tbx_compiler.h"

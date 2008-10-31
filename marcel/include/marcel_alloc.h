@@ -59,6 +59,8 @@ static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
 	case MA_NO_STACK:
 		ma_obj_free(marcel_thread_seed_allocator, task);
 		break;
+	default:
+		MA_BUG();
 	}
 }
 
@@ -87,9 +89,6 @@ struct nodtab {
 #define LW 10
 #define MA_CACHE_SIZE 16384
 #define LOCAL_NODE 1
-
-#section marcel_variables
-extern unsigned long ma_stats_attraction_offset;
 
 #section functions
 #ifdef MA__NUMA_MEMORY

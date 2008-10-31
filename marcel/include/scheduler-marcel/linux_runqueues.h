@@ -260,7 +260,7 @@ static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marc
 static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq);
 #define ma_array_enqueue_task_list ma_array_enqueue_entity_list
 #section marcel_inline
-static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq)
+static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq TBX_UNUSED)
 {
 	list_splice(head, ma_array_queue(array, prio));
 	__ma_set_bit(prio, array->bitmap);

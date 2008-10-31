@@ -42,8 +42,6 @@ void ma_container_add(ma_container_t * container, void * obj);
 
 void * ma_container_get(ma_container_t * container);
 
-void ma_container_fini(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg );
-
 int ma_container_nb_element(ma_container_t * container);
 
 int ma_container_plein(ma_container_t * container);

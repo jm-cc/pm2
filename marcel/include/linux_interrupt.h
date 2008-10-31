@@ -305,6 +305,8 @@ static __tbx_inline__ void ma_tasklet_hi_schedule(struct ma_tasklet_struct *t) {
 	case (1<<MA_TASKLET_STATE_RUN)|(1<<MA_TASKLET_STATE_SCHED):
 		/* already running somewhere and still schedule, let there handle it (again) */
 		break;
+	default:
+		MA_BUG();
 	}
 }
 

@@ -53,9 +53,6 @@ DEC_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 				    __const void* value));
 DEC_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key));
 
-#section marcel_variables
-extern int marcel_key_present[MAX_KEY_SPECIFIC];
-
 #section marcel_functions
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
 
@@ -65,7 +62,7 @@ static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_ke
 #depend "marcel_descr.h[marcel_inline]"
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
-	if ((key < 0) || (key >= MAX_KEY_SPECIFIC)
+	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key]))
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	return &pid->key[key];

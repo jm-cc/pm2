@@ -445,7 +445,7 @@ TBX_UNUSED;
 #section marcel_inline
 void TBX_EXTERN __marcel_check_polling(unsigned polling_point);
 
-static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
+static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point TBX_UNUSED)
 {
 	return !list_empty(&ma_ev_list_poll);
 }

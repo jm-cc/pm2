@@ -45,7 +45,7 @@ do { \
 #section functions
 #if defined(MA__LWPS)
 void ma_bind_on_processor(unsigned target);
-void ma_unbind_from_processor();
+void ma_unbind_from_processor(void);
 #endif
 
 #ifdef MA__LWPS
@@ -57,7 +57,7 @@ TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
 extern void ma_free_node(void *ptr, size_t size,
 		char * __restrict file,  unsigned line);
 extern void ma_migrate_mem(void *ptr, size_t size, int node);
-extern int ma_is_numa_available();
+extern int ma_is_numa_available(void);
 
 #ifndef MA__NUMA_MEMORY
 //refaire un malloc bas de gamme non numa

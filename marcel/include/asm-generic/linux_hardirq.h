@@ -67,8 +67,10 @@
  * space for potentially all IRQ sources in the system
  * nesting on a single CPU:
  */
+#ifdef MA_NR_IRQS
 #if (1 << MA_HARDIRQ_BITS) < MA_NR_IRQS
 # error HARDIRQ_BITS is too low!
+#endif
 #endif
 
 /*

@@ -24,16 +24,22 @@
 #ifdef MARCEL_MONO
 #  undef MARCEL_MONO
 #  define MARCEL_MONO 1
+#else
+#  define MARCEL_MONO 0
 #endif
 
 #ifdef MARCEL_SMP
 #  undef MARCEL_SMP
 #  define MARCEL_SMP 1
+#else
+#  define MARCEL_SMP 0
 #endif
 
 #ifdef MARCEL_NUMA
 #  undef MARCEL_NUMA
 #  define MARCEL_NUMA 1
+#else
+#  define MARCEL_NUMA 0
 #endif
 
 #if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA) == 0)

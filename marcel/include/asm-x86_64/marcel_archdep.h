@@ -57,8 +57,8 @@
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
 ({ \
-  register unsigned long sp asm("rsp"); \
-  sp; \
+  register unsigned long __sp asm("rsp"); \
+  __sp; \
 })
 #else
 #depend "asm-generic/marcel_archdep.h[marcel_macros]"
@@ -66,8 +66,8 @@
 
 #define get_bp() \
 ({ \
-  register unsigned long bp asm("rbp"); \
-  bp; \
+  register unsigned long __bp asm("rbp"); \
+  __bp; \
 })
 
 #define set_sp(val) \

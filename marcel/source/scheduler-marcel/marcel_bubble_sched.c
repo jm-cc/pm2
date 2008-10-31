@@ -818,7 +818,7 @@ void __ma_bubble_lock(marcel_bubble_t *b) {
 	__ma_bubble_lock_subbubbles(b);
 }
 
-void __ma_bubble_unlock_subbubbles(marcel_bubble_t *b) {
+static void __ma_bubble_unlock_subbubbles(marcel_bubble_t *b) {
 	marcel_entity_t *e;
 	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
 		if (e->type == MA_BUBBLE_ENTITY) {

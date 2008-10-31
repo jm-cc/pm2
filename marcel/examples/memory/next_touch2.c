@@ -48,20 +48,25 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
-  // Start the thread on the numa node #0
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
-  marcel_create(&threads[0], &attr, writer, NULL);
-  marcel_join(threads[0], NULL);
+  if (marcel_nbnodes < 3) {
+    marcel_printf("This application needs at least three NUMA nodes.\n");
+  }
+  else {
+    // Start the thread on the numa node #0
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
+    marcel_create(&threads[0], &attr, writer, NULL);
+    marcel_join(threads[0], NULL);
 
-  // Start the thread on the numa node #1
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
-  marcel_create(&threads[1], &attr, reader, NULL);
-  marcel_join(threads[1], NULL);
+    // Start the thread on the numa node #1
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
+    marcel_create(&threads[1], &attr, reader, NULL);
+    marcel_join(threads[1], NULL);
 
-  // Start the thread on the numa node #2
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
-  marcel_create(&threads[2], &attr, reader, NULL);
-  marcel_join(threads[2], NULL);
+    // Start the thread on the numa node #2
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
+    marcel_create(&threads[2], &attr, reader, NULL);
+    marcel_join(threads[2], NULL);
+  }
 
   // Finish marcel
   marcel_memory_free(&memory_manager, b);

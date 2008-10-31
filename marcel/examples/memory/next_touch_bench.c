@@ -76,6 +76,7 @@ int marcel_main(int argc, char * argv[]) {
   }
   if (source == -1 || dest == -1 || nbpages == -1) {
     marcel_printf("Error. Argument missing\n");
+    marcel_memory_exit(&memory_manager);
     marcel_end();
     return  -1;
   }

@@ -20,6 +20,7 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
+Success
 EOF
 
 . ./mami.sh

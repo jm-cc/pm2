@@ -34,6 +34,7 @@ void allocation_and_migration(int cpu, int mem) {
 
   marcel_memory_locate(&memory_manager, buffer, &anode);
   marcel_printf("Node after migration %d\n", anode);
+  marcel_memory_free(&memory_manager, buffer);
 }
 
 any_t migration(any_t arg) {

@@ -42,6 +42,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_exit(&memory_manager);
 
   // Finish marcel
+  marcel_printf("Success\n");
   marcel_end();
   return 0;
 }

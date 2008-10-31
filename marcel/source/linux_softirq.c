@@ -192,7 +192,7 @@ fastcall TBX_EXTERN void __ma_tasklet_hi_schedule(struct ma_tasklet_struct *t) {
 	ma_local_bh_enable();
 }
 
-static void tasklet_action(struct ma_softirq_action *a) {
+static void tasklet_action(struct ma_softirq_action *a TBX_UNUSED) {
 	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
 	struct ma_tasklet_struct *list;
 
@@ -238,7 +238,7 @@ static void tasklet_action(struct ma_softirq_action *a) {
 	}
 }
 
-static void tasklet_hi_action(struct ma_softirq_action *a) {
+static void tasklet_hi_action(struct ma_softirq_action *a TBX_UNUSED) {
 	struct marcel_topo_vpdata * const vp = ma_topo_vpdata_self();
 	struct ma_tasklet_struct *list;
 
@@ -318,7 +318,7 @@ __ma_initfunc(softirq_init, MA_INIT_SOFTIRQ, "Initialisation des SoftIrq");
 
 #define ma_kthread_should_stop() 0
 
-static int ksoftirqd(void * __bind_cpu) {
+static int ksoftirqd(void * __bind_cpu TBX_UNUSED) {
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
  
 	while (!ma_kthread_should_stop()) {
@@ -375,7 +375,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
 	LOG_RETURN(lwp->ksoftirqd_task);
 }
 
-static void ksoftirqd_init(ma_lwp_t lwp) {
+static void ksoftirqd_init(ma_lwp_t lwp TBX_UNUSED) {
 	if (ma_spare_lwp_ext(lwp))
 		return;
 	MA_BUG_ON(ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),tasklet_vec).list);

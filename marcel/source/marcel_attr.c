@@ -159,7 +159,7 @@ DEF_PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackaddr,
 DEF___PTHREAD(int, attr_getstack, (__const pthread_attr_t *attr, void* *stackaddr, size_t *stacksize), (attr, stackaddr, stacksize))
 
 /********************attr_set/getdetachstate**********************/
-static int TBX_UNUSED check_attr_setdetachstate(marcel_attr_t *attr, int detached)
+static int inline TBX_UNUSED check_attr_setdetachstate(int detached)
 {
 	LOG_IN();
 	if ((detached != MARCEL_CREATE_DETACHED)
@@ -175,7 +175,7 @@ DEF_MARCEL(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr,
 {
 	LOG_IN();
 #ifdef MA__DEBUG
-	int ret = check_attr_setdetachstate(attr, detached);
+	int ret = check_attr_setdetachstate(detached);
 	if (ret) {
 		LOG_RETURN(ret);
 	}
@@ -189,9 +189,10 @@ DEF_MARCEL(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr,
 
 DEF_POSIX(int, attr_setdetachstate, (marcel_attr_t *attr, int detached), (attr, detached),
 {
+	int ret;
 	LOG_IN();
 	/* error checking */
-	int ret = check_attr_setdetachstate(attr, detached);
+	ret = check_attr_setdetachstate(detached);
 	if (ret) {
 		LOG_RETURN(ret);
 	}
@@ -217,7 +218,7 @@ DEF_PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (at
 DEF___PTHREAD(int, attr_getdetachstate, (pthread_attr_t *attr, int *detached), (attr, detached))
 
  /********************attr_set/getguardsize**********************/
-DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr, size_t guardsize), (attr, guardsize), 
+DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr TBX_UNUSED, size_t guardsize), (attr, guardsize), 
 {
 	LOG_IN();
 	if (marcel_attr_setguardsize(attr, guardsize)) {
@@ -230,7 +231,7 @@ DEF_POSIX(int, attr_setguardsize, (pthread_attr_t * attr, size_t guardsize), (at
 DEF_PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
 DEF___PTHREAD(int, attr_setguardsize, (pthread_attr_t *attr, size_t guardsize), (attr, guardsize))
 
-DEF_POSIX(int, attr_getguardsize, (__const pthread_attr_t * __restrict attr,
+DEF_POSIX(int, attr_getguardsize, (__const pthread_attr_t * __restrict attr TBX_UNUSED,
     size_t * __restrict guardsize), (attr, guardsize),
 {
 	LOG_IN();
@@ -646,14 +647,15 @@ DEF_MARCEL(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sc
 
 DEF_POSIX(int,attr_setschedparam,(marcel_attr_t *attr, __const struct marcel_sched_param *param),(attr,param),
 {
+	int policy;
+	int ret;
 	LOG_IN();
 	if ((param == NULL) || (attr == NULL)) {
 		mdebug("pmarcel_attr_setschedparam : attr ou param NULL\n");
 		LOG_RETURN(EINVAL);
 	}
 
-	int policy;
-	int ret = pmarcel_attr_getschedpolicy(attr, &policy);
+	ret = pmarcel_attr_getschedpolicy(attr, &policy);
 
 	if (ret == -1) {
 		mdebug("et quelle police ?\n");
@@ -697,14 +699,15 @@ DEF_MARCEL(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struc
 
 DEF_POSIX(int,attr_getschedparam,(__const marcel_attr_t *__restrict attr, struct marcel_sched_param *param),(attr,param),
 {
+	int policy;
+	int ret;
 	LOG_IN();
 	if ((param == NULL) || (attr == NULL)) {
 		mdebug("(p)marcel_attr_getschedparam : attr ou param NULL\n");
 		LOG_RETURN(EINVAL);
 	}
 
-	int policy;
-	int ret = pmarcel_attr_getschedpolicy(attr, &policy);
+	ret = pmarcel_attr_getschedpolicy(attr, &policy);
 	if (ret == -1) {
 		mdebug
 		    ("pmarcel_attr_getschedpolicy retourne une police invalide\n");
@@ -725,9 +728,11 @@ DEF___PTHREAD(int,attr_getschedparam,(__const pthread_attr_t *__restrict attr, s
 /*************************getattr_np***********************/
 int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)
 {
+	marcel_attr_t *attr;
+	marcel_t t;
         LOG_IN();
-        marcel_attr_t *attr = (marcel_attr_t *)__attr;
-        marcel_t t = (marcel_t) __t;
+        attr = (marcel_attr_t *)__attr;
+        t = (marcel_t) __t;
         marcel_attr_init(__attr);
 	if (t->detached)
 		attr->__flags |= MA_ATTR_FLAG_DETACHSTATE;

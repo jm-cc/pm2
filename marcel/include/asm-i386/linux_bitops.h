@@ -30,8 +30,6 @@
  * bit 0 is the LSB of addr; bit 32 is the LSB of (addr+1).
  */
 
-#define ADDR (*(volatile long *) addr)
-
 #section marcel_functions
 /**
  * ma_set_bit - Atomically set a bit in memory
@@ -49,7 +47,7 @@ static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btsl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 
@@ -70,7 +68,7 @@ static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__(
 		"btsl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 
@@ -92,7 +90,7 @@ static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btrl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 
@@ -100,7 +98,7 @@ static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__(
 		"btrl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 #section marcel_macros
@@ -123,7 +121,7 @@ static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr
 {
 	__asm__ __volatile__(
 		"btcl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 
@@ -143,7 +141,7 @@ static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
 {
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btcl %1,%0"
-		:"=m" (ADDR)
+		:"=m" (*addr)
 		:"dIr" (nr));
 }
 
@@ -164,7 +162,7 @@ static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * a
 
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btsl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr) : "memory");
 	return oldbit;
 }
@@ -187,7 +185,7 @@ static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *
 
 	__asm__(
 		"btsl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr));
 	return oldbit;
 }
@@ -209,7 +207,7 @@ static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *
 
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btrl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr) : "memory");
 	return oldbit;
 }
@@ -233,7 +231,7 @@ static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long
 
 	__asm__(
 		"btrl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr));
 	return oldbit;
 }
@@ -245,7 +243,7 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 
 	__asm__ __volatile__(
 		"btcl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr) : "memory");
 	return oldbit;
 }
@@ -267,7 +265,7 @@ static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long*
 
 	__asm__ __volatile__( MA_LOCK_PREFIX
 		"btcl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (ADDR)
+		:"=r" (oldbit),"=m" (*addr)
 		:"dIr" (nr) : "memory");
 	return oldbit;
 }
@@ -297,7 +295,7 @@ static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned l
 	__asm__ __volatile__(
 		"btl %2,%1\n\tsbbl %0,%0"
 		:"=r" (oldbit)
-		:"m" (ADDR),"dIr" (nr));
+		:"m" (*addr),"dIr" (nr));
 	return oldbit;
 }
 
@@ -306,9 +304,6 @@ static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned l
 (__builtin_constant_p(nr) ? \
  ma_constant_test_bit((nr),(addr)) : \
  ma_variable_test_bit((nr),(addr)))
-
-#section common
-#undef ADDR
 
 #section marcel_functions
 /**

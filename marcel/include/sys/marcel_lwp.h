@@ -385,7 +385,7 @@ void marcel_leave_blocking_section(void);
 				        TWO, two, two_help, \
 					a, b, c, d \
 					) \
-  static int name##_notify(struct ma_notifier_block *self, \
+  static int name##_notify(struct ma_notifier_block *self TBX_UNUSED, \
 		           unsigned long action, void *hlwp) \
   { \
 	ma_lwp_t lwp = (ma_lwp_t)hlwp; \
@@ -411,7 +411,7 @@ void marcel_leave_blocking_section(void);
   }; \
   static MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(name##_nb, name##_notify, \
 	prio, help, 4, name##_helps); \
-  void __marcel_init marcel_##name##_notifier_register(void) \
+  static void __marcel_init marcel_##name##_notifier_register(void) \
   { \
         ma_register_lwp_notifier(&name##_nb); \
   } \
@@ -429,7 +429,7 @@ void marcel_leave_blocking_section(void);
 #define MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(name, section, prio) \
   MA_LWP_NOTIFIER_CALL(name, section, prio, ONLINE)
 #define MA_LWP_NOTIFIER_CALL(name, section, prio, PART) \
-  void __marcel_init marcel_##name##_call_##PART(void) \
+  static void __marcel_init marcel_##name##_call_##PART(void) \
   { \
 	name##_notify(&name##_nb, (unsigned long)MA_LWP_##PART, \
 		   (void *)(ma_lwp_t)MA_LWP_SELF); \

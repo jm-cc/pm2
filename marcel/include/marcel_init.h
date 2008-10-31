@@ -86,7 +86,7 @@ typedef struct __ma_init_info {
         int section;
 	char prio;
 	const char **debug;
-	char *file;
+	const char *file;
 } TBX_ALIGNED __ma_init_info_t;
 
 #section marcel_macros

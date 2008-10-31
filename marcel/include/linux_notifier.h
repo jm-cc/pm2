@@ -17,7 +17,7 @@ struct ma_notifier_block
 	int (*notifier_call)(struct ma_notifier_block *self, unsigned long, void *);
 	struct ma_notifier_block *next;
 	int priority;
-	char* name;
+	const char* name;
 	int nb_actions;
 	const char **actions_name;
 };

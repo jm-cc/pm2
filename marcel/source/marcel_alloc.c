@@ -358,94 +358,10 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 	return data;
 }
 
-void* marcel_calloc_customized(size_t nmemb, size_t size, enum pinfo_weight access, int local, int node, int level)
-{
-	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
-	marcel_entity_t *upentity = entity;
-	ma_holder_t *h;
-	while (level--) {
-		h = upentity->init_holder;
-		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
-			break;
-		upentity = &ma_bubble_holder(h)->as_entity;
-	}
-
-	if (!upentity->heap)
-		upentity->heap = ma_hcreate_heap();
-	
-	unsigned long node_mask;
-	mask_zero(&node_mask, sizeof(unsigned long));
-
-	int local_node = ma_node_entity(upentity);
-
-	if (local)
-	{
-		mask_set(&node_mask, local_node);
-	}
-	else
-	{
-		mask_set(&node_mask, node);
-	}
-
-	int policy = CYCLIC;
-	//int policy = LESS_LOADED;
-	//int policy = SMALL_ACCESSED;
-
-	//enum pinfo_weight weight = ma_mem_access(access, size);
-	enum pinfo_weight weight = access;
-	void *data = ma_hcalloc(nmemb, size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
-	
-	return data;
-}
-
-void *marcel_realloc_customized(void *ptr, unsigned size)
-{
-	return ma_hrealloc(ptr,size);
-}
-
 /* Free memory */
 void marcel_free_customized(void *data)
 {
 	ma_hfree(data);
-}
-
-/* Attach static memory */
-void marcel_attach_memory(void *data, int size, enum pinfo_weight access, int local, int node, int level)
-{
-	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
-	marcel_entity_t *upentity = entity;
-	ma_holder_t *h;
-	while (level--) {
-		h = upentity->init_holder;
-		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
-			break;
-		upentity = &ma_bubble_holder(h)->as_entity;
-	}
-
-	if (!upentity->heap)
-		upentity->heap = ma_hcreate_heap();
-	
-	unsigned long node_mask;
-	mask_zero(&node_mask, sizeof(unsigned long));
-	
-	int local_node = ma_node_entity(upentity);
-
-	if (local)
-	{
-		mask_set(&node_mask, local_node);
-	}
-	else
-	{
-		mask_set(&node_mask, node);
-	}
-
-	int policy = CYCLIC;
-	//int policy = LESS_LOADED;
-	//int policy = SMALL_ACCESSED;
-
-	//enum pinfo_weight weight = ma_mem_access(access, size);
-	enum pinfo_weight weight = access;
-	ma_hattach_memory(data, size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
 }
 
 /* Minimise access if small data */

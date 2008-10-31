@@ -283,9 +283,9 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 /**
  *
  */
-void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
-                           marcel_memory_membind_policy_t policy,
-                           int node);
+int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
+                          marcel_memory_membind_policy_t policy,
+                          int node);
 
 /**
  * Free the given memory.

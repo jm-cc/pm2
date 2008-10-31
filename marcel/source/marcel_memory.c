@@ -165,6 +165,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   marcel_memory_area_t *ptr, *ptr2;
 
   LOG_IN();
+  mdebug_mami("Deallocating memory for node %d\n", node);
   ptr  = (*space);
   while (ptr != NULL) {
     mdebug_mami("Unmapping memory area from %p\n", ptr->start);
@@ -641,6 +642,11 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
   int with_huge_pages;
 
+  if (tbx_unlikely(node >= marcel_nbnodes)) {
+    mdebug_mami("Node #%d invalid\n", node);
+    return NULL;
+  }
+
   with_huge_pages = (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES);
   return ma_memory_allocate_on_node(memory_manager, size, memory_manager->normalpagesize, node, with_huge_pages);
 }
@@ -689,14 +695,24 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
   return ptr;
 }
 
-void marcel_memory_membind(marcel_memory_manager_t *memory_manager,
-                           marcel_memory_membind_policy_t policy,
-                           int node) {
+int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
+                          marcel_memory_membind_policy_t policy,
+                          int node) {
+  int err=0;
+
   LOG_IN();
-  mdebug_mami("Set the current membind policy to %d (node %d)\n", policy, node);
-  memory_manager->membind_policy = policy;
-  memory_manager->membind_node = node;
+  if (tbx_unlikely(node >= marcel_nbnodes)) {
+    mdebug_mami("Node #%d invalid\n", node);
+    errno = EINVAL;
+    err = -errno;
+  }
+  else {
+    mdebug_mami("Set the current membind policy to %d (node %d)\n", policy, node);
+    memory_manager->membind_policy = policy;
+    memory_manager->membind_node = node;
+  }
   LOG_OUT();
+  return -err;
 }
 
 void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {

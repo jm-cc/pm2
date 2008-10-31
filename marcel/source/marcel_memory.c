@@ -89,10 +89,16 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->writing_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     memory_manager->writing_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+      memory_manager->writing_access_costs[node][dest].cost = 0;
+    }
   }
   memory_manager->reading_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
   for(node=0 ; node<marcel_nbnodes ; node++) {
     memory_manager->reading_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
+    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+      memory_manager->reading_access_costs[node][dest].cost = 0;
+    }
   }
   ma_memory_load_model_for_memory_access(memory_manager);
 

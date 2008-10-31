@@ -45,6 +45,8 @@ extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 #define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
 
 #section marcel_functions
+extern void ma_linux_sched_init0(void);
+
 extern unsigned long ma_nr_ready(void);
 asmlinkage TBX_EXTERN int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);

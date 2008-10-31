@@ -513,7 +513,6 @@ extern const __ma_init_info_t ma_init_info_main_thread_init;
 extern const __ma_init_info_t ma_init_info_marcel_debug_init_auto;
 extern const __ma_init_info_t ma_init_info_marcel_slot_init;
 extern const __ma_init_info_t ma_init_info_linux_sched_init;
-extern void ma_linux_sched_init0(void);
 #ifdef MA__BUBBLES
 extern const __ma_init_info_t ma_init_info_bubble_sched_init;
 extern void ma_bubble_sched_init2(void);
@@ -564,9 +563,6 @@ extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 // Section MA_INIT_START_LWPS
 #ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
-#endif
-#ifdef MA__BUBBLES
-extern void __ma_bubble_sched_start(void);
 #endif
 
 __ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS+1] = {{MA_INIT_SELF, "Init self"},

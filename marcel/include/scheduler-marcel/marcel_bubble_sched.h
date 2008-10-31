@@ -363,6 +363,8 @@ int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
 /* Réveille la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */
 int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 
+extern void __ma_bubble_sched_start(void);
+
 /* Called on marcel shutdown */
 void marcel_sched_exit(marcel_t t);
 #ifndef MA__BUBBLES

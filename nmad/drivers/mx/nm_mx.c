@@ -43,49 +43,55 @@ struct nm_mx_drv
   int nb_trks;                  /**< number of tracks */
 };
 
-struct nm_mx_trk {
-	/** Next value to use for match info */
-	uint16_t next_peer_id;
-	/** Match info to gate id reverse mapping */
-	uint8_t *gate_map;
+struct nm_mx_trk 
+{
+  /** Next value to use for match info */
+  uint16_t next_peer_id;
+  /** Match info to gate id reverse mapping */
+  uint8_t *gate_map;
 };
 
 /** MX specific connection data */
-struct nm_mx_cnx {
-	/** Remote endpoint addr */
-	mx_endpoint_addr_t r_ep_addr;
-	/** Remote endpoint id */
-	uint32_t r_ep_id;
-	/** MX match info (when sending) */
-	uint64_t send_match_info;
-	/** MX match info (when receiving) */
-	uint64_t recv_match_info;
+struct nm_mx_cnx 
+{
+  /** Remote endpoint addr */
+  mx_endpoint_addr_t r_ep_addr;
+  /** Remote endpoint id */
+  uint32_t r_ep_id;
+  /** MX match info (when sending) */
+  uint64_t send_match_info;
+  /** MX match info (when receiving) */
+  uint64_t recv_match_info;
 };
 
 /** MX specific gate data */
-struct nm_mx {
-	struct nm_mx_cnx cnx_array[NM_SO_MAX_TRACKS];
+struct nm_mx 
+{
+  struct nm_mx_cnx cnx_array[NM_SO_MAX_TRACKS];
 };
 
 /** MX specific packet wrapper data */
-struct nm_mx_pkt_wrap {
-	mx_endpoint_t *p_ep;
-	mx_request_t rq;
+struct nm_mx_pkt_wrap 
+{
+  mx_endpoint_t *p_ep;
+  mx_request_t rq;
 #ifdef PROFILE
-        int send_bool;
+  int send_bool;
 #endif
 };
 
 /** MX specific first administrative packet data */
-struct nm_mx_adm_pkt_1 {
-	uint64_t match_info;
-	char drv_url[MX_MAX_HOSTNAME_LEN];
-	char trk_url[16];
+struct nm_mx_adm_pkt_1 
+{
+  uint64_t match_info;
+  char drv_url[MX_MAX_HOSTNAME_LEN];
+  char trk_url[16];
 };
 
 /** MX specific second administrative packet data */
-struct nm_mx_adm_pkt_2 {
-	uint64_t match_info;
+struct nm_mx_adm_pkt_2 
+{
+  uint64_t match_info;
 };
 
 /** Endpoint filter */
@@ -258,43 +264,45 @@ static const char*nm_mx_get_track_url(struct nm_drv*p_drv, nm_trk_id_t trk_id)
 /** Display the MX return value */
 static __tbx_inline__
 void
-nm_mx_check_return(const char *msg, mx_return_t return_code) {
-	if (tbx_unlikely(return_code != MX_SUCCESS)) {
-		const char *msg_mx = NULL;
+nm_mx_check_return(const char *msg, mx_return_t return_code) 
+{
+  if (tbx_unlikely(return_code != MX_SUCCESS)) {
+    const char *msg_mx = NULL;
 
-		msg_mx = mx_strerror(return_code);
+    msg_mx = mx_strerror(return_code);
 
-		DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
-	}
+    DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
+  }
 }
 
 
 #ifdef PM2_NUIOA
 /** Return the preferred NUMA node of the board */
 static
-int nm_mx_get_numa_node(uint32_t board_number)
+int 
+nm_mx_get_numa_node(uint32_t board_number)
 {
 #if MX_API >= 0x301
-	mx_return_t ret;
-	uint32_t numa_node = PM2_NUIOA_ANY_NODE;
-	uint32_t line_speed;
+  mx_return_t ret;
+  uint32_t numa_node = PM2_NUIOA_ANY_NODE;
+  uint32_t line_speed;
 
-	/* get the type of link */
-	ret = mx_get_info(NULL, MX_LINE_SPEED, &board_number, sizeof(board_number), &line_speed, sizeof(line_speed));
-	if (ret != MX_SUCCESS)
-		return PM2_NUIOA_ANY_NODE;
-
-	/* if myrinet 2000, numa effect are negligible, do not return any numa indication */
-	if (line_speed == MX_SPEED_2G)
-		return PM2_NUIOA_ANY_NODE;
-
-	ret = mx_get_info(NULL, MX_NUMA_NODE, &board_number, sizeof(board_number), &numa_node, sizeof(numa_node));
-	if (ret != MX_SUCCESS)
-		return PM2_NUIOA_ANY_NODE;
-	else
-		return numa_node == -1 ? PM2_NUIOA_ANY_NODE : (int) numa_node;
+  /* get the type of link */
+  ret = mx_get_info(NULL, MX_LINE_SPEED, &board_number, sizeof(board_number), &line_speed, sizeof(line_speed));
+  if (ret != MX_SUCCESS)
+    return PM2_NUIOA_ANY_NODE;
+  
+  /* if myrinet 2000, numa effect are negligible, do not return any numa indication */
+  if (line_speed == MX_SPEED_2G)
+    return PM2_NUIOA_ANY_NODE;
+  
+  ret = mx_get_info(NULL, MX_NUMA_NODE, &board_number, sizeof(board_number), &numa_node, sizeof(numa_node));
+  if (ret != MX_SUCCESS)
+    return PM2_NUIOA_ANY_NODE;
+  else
+    return numa_node == -1 ? PM2_NUIOA_ANY_NODE : (int) numa_node;
 #else /* MX_API < 0x301 */
-	return PM2_NUIOA_ANY_NODE;
+    return PM2_NUIOA_ANY_NODE;
 #endif /* MX_API < 0x301 */
 }
 #endif /* PM2_NUIOA */
@@ -308,27 +316,27 @@ static
 int
 nm_mx_init_boards(void)
 {
-        mx_return_t	mx_ret	= MX_SUCCESS;
-	int err;
-
-	/* find number of boards */
-	mx_ret = mx_get_info(NULL, MX_NIC_COUNT, NULL, 0, &boards, sizeof(boards));
-	nm_mx_check_return("mx_get_info", mx_ret);
-
-	/* init total usage counters */
-	total_use_count = 0;
-
-	/* allocate usage counters */
-	board_use_count = TBX_CALLOC(boards, sizeof(*board_use_count));
-	if (!board_use_count) {
-		err = -NM_ENOMEM;
-		goto out;
-	}
-
-        err = NM_ESUCCESS;
-
+  mx_return_t	mx_ret	= MX_SUCCESS;
+  int err;
+  
+  /* find number of boards */
+  mx_ret = mx_get_info(NULL, MX_NIC_COUNT, NULL, 0, &boards, sizeof(boards));
+  nm_mx_check_return("mx_get_info", mx_ret);
+  
+  /* init total usage counters */
+  total_use_count = 0;
+  
+  /* allocate usage counters */
+  board_use_count = TBX_CALLOC(boards, sizeof(*board_use_count));
+  if (!board_use_count) {
+    err = -NM_ENOMEM;
+    goto out;
+  }
+  
+  err = NM_ESUCCESS;
+	
  out:
-        return err;
+  return err;
 }
 
 /** Query MX resources */
@@ -336,94 +344,95 @@ static
 int
 nm_mx_query		(struct nm_drv *p_drv,
                          struct nm_driver_query_param *params,
-			 int nparam) {
-        mx_return_t	mx_ret	= MX_SUCCESS;
-	uint32_t board_number;
-	int i;
-	int err;
-        struct nm_mx_drv*p_mx_drv = NULL;
+			 int nparam) 
+{
+  mx_return_t	mx_ret	= MX_SUCCESS;
+  uint32_t board_number;
+  int i;
+  int err;
+  struct nm_mx_drv*p_mx_drv = NULL;
+  
+  /* private data                                                 */
+  p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
+  if (!p_mx_drv) {
+    err = -NM_ENOMEM;
+    goto out;
+  }
 
-	/* private data                                                 */
-	p_mx_drv	= TBX_MALLOC(sizeof (struct nm_mx_drv));
-	if (!p_mx_drv) {
-		err = -NM_ENOMEM;
-		goto out;
-	}
+  memset(p_mx_drv, 0, sizeof (struct nm_mx_drv));
+  
+  /* init MX */
+  mx_set_error_handler(MX_ERRORS_RETURN);
+  mx_ret	= mx_init();
+  if (mx_ret != MX_ALREADY_INITIALIZED)
+    /* special return code only used by mx_init() */
+    nm_mx_check_return("mx_init", mx_ret);
 
-        memset(p_mx_drv, 0, sizeof (struct nm_mx_drv));
+  if (!board_use_count) {
+    err = nm_mx_init_boards();
+    if (err < 0)
+      goto out;
+  }
 
-	/* init MX */
-        mx_set_error_handler(MX_ERRORS_RETURN);
-        mx_ret	= mx_init();
-	if (mx_ret != MX_ALREADY_INITIALIZED)
-		/* special return code only used by mx_init() */
-		nm_mx_check_return("mx_init", mx_ret);
+  board_number = 0xFFFFFFFF;
+  for(i=0; i<nparam; i++) {
+    switch (params[i].key) {
+    case NM_DRIVER_QUERY_BY_INDEX:
+	    board_number = params[i].value.index;
+	    break;
+    case NM_DRIVER_QUERY_BY_NOTHING:
+	    break;
+    default:
+	    err = -NM_EINVAL;
+	    goto out;
+    }
+  }
 
-	if (!board_use_count) {
-		err = nm_mx_init_boards();
-		if (err < 0)
-			goto out;
-	}
-
-	board_number = 0xFFFFFFFF;
-	for(i=0; i<nparam; i++) {
-		switch (params[i].key) {
-		case NM_DRIVER_QUERY_BY_INDEX:
-			board_number = params[i].value.index;
-			break;
-		case NM_DRIVER_QUERY_BY_NOTHING:
-			break;
-		default:
-			err = -NM_EINVAL;
-			goto out;
-		}
-	}
-
-	if (board_number == 0xFFFFFFFF) {
-		/* find the least used board */
-		int min_count = INT_MAX;
-		int min_index = -1;
-                uint32_t j;
-		for(j=0; j<boards; j++) {
-			if (board_use_count[j] < min_count) {
-				min_index = j;
-				min_count = board_use_count[j];
-			}
-		}
-		board_number = min_index;
-
-	} else if (board_number >= boards) {
-		/* if a was has been chosen before, check the number */
-		err = -NM_EINVAL;
-		goto out;
-	}
-
-	p_mx_drv->board_number = board_number;
-
-	/* register the board here so that load_init_some may query multiple boards
-         * before initializing them */
-	board_use_count[p_mx_drv->board_number]++;
-	total_use_count++;
-
-        /* driver capabilities encoding					*/
-        p_mx_drv->caps.has_trk_rq_dgram			= 1;
-        p_mx_drv->caps.has_selective_receive		= 1;
-        p_mx_drv->caps.has_concurrent_selective_receive	= 0;
+  if (board_number == 0xFFFFFFFF) {
+    /* find the least used board */
+    int min_count = INT_MAX;
+    int min_index = -1;
+    uint32_t j;
+    for(j=0; j<boards; j++) {
+      if (board_use_count[j] < min_count) {
+        min_index = j;
+	min_count = board_use_count[j];
+      }
+    }
+    board_number = min_index;
+    
+  } else if (board_number >= boards) {
+    /* if a was has been chosen before, check the number */
+    err = -NM_EINVAL;
+    goto out;
+  }
+  
+  p_mx_drv->board_number = board_number;
+  
+  /* register the board here so that load_init_some may query multiple boards
+   * before initializing them */
+  board_use_count[p_mx_drv->board_number]++;
+  total_use_count++;
+  
+  /* driver capabilities encoding					*/
+  p_mx_drv->caps.has_trk_rq_dgram			= 1;
+  p_mx_drv->caps.has_selective_receive		= 1;
+  p_mx_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PIOM_BLOCKING_CALLS
-	/* disabled for now because mx_wait doesn't work very well... */
-	p_mx_drv->caps.is_exportable                    = 1;
+  /* disabled for now because mx_wait doesn't work very well... */
+  p_mx_drv->caps.is_exportable                    = 1;
 #endif
 #ifdef PM2_NUIOA
-	p_mx_drv->caps.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
-	p_mx_drv->caps.latency = 269 ; /* from sr_ping */ 
-	p_mx_drv->caps.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
+  p_mx_drv->caps.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
+  p_mx_drv->caps.latency = 269 ; /* from sr_ping */ 
+  p_mx_drv->caps.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
 #endif
 
-        p_drv->priv = p_mx_drv;
-        err = NM_ESUCCESS;
-
+  p_drv->priv = p_mx_drv;
+  err = NM_ESUCCESS;
+  
  out:
-        return err;
+  return err;
 }
 
 static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
@@ -730,10 +739,11 @@ static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
 static
 int
 nm_mx_disconnect	(void*_status,
-			 struct nm_cnx_rq *p_crq) {
-        int err = NM_ESUCCESS;
-
-        return err;
+			 struct nm_cnx_rq *p_crq) 
+{
+  int err = NM_ESUCCESS;
+  
+  return err;
 }
 
 /** Post a iov send request to MX */

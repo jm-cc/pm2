@@ -20,7 +20,7 @@
 marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
-  int node, err;
+  int err;
   void *ptr=NULL;
   marcel_t self;
 

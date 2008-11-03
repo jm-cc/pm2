@@ -32,7 +32,7 @@ any_t reader(any_t arg) {
   int snode, dnode;
   int *nbpages = (int *) arg;
   struct timeval tv1, tv2;
-  unsigned long us, ns, bandwidth;
+  unsigned long us, ns;
 
   marcel_memory_locate(&memory_manager, b, &snode);
 

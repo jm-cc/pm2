@@ -79,7 +79,7 @@ any_t memory2(any_t arg) {
   return 0;
 }
 
-void memory_bis() {
+void memory_bis(void) {
   marcel_memory_manager_t memory_manager;
   void *b[7];
   int i;

@@ -20,8 +20,7 @@
 marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
-  int node, err;
-  int *ptr, *ptr2, *ptr3;
+  int *ptr, *ptr2;
   size_t bigsize;
 
   marcel_init(&argc,argv);

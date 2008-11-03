@@ -22,7 +22,6 @@
 
 marcel_memory_manager_t memory_manager;
 int **buffers;
-int **buffers;
 
 any_t compute(any_t arg) {
   int *buffer;

@@ -18,7 +18,6 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int node, err;
   void *ptr1, *ptr2, *ptr3, *ptr4, *ptr5;
   size_t size;
   marcel_memory_manager_t memory_manager;

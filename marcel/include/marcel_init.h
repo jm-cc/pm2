@@ -57,8 +57,6 @@ void marcel_finish_prepare(void);
 
 void marcel_finish(void);
 
-void marcel_strip_cmdline(int *argc, char *argv[]);
-
 #section functions
 #ifdef STANDARD_MAIN
 #define marcel_main main

@@ -311,7 +311,7 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv,
 	argv[j] = NULL;
 }
 
-void marcel_strip_cmdline(int *argc, char *argv[])
+static void marcel_strip_cmdline(int *argc, char *argv[])
 {
 	marcel_parse_cmdline_early(argc, argv, tbx_false);
 

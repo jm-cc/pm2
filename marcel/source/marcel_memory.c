@@ -601,6 +601,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
   return buffer;
 }
 
+static
 void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, unsigned long pagesize, int node, int with_huge_pages) {
   void *buffer;
   int i, nbpages;
@@ -857,8 +858,9 @@ void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
                                        int dest,
                                        size_t size,
                                        float *cost) {
+  marcel_access_cost_t access_cost;
   LOG_IN();
-  marcel_access_cost_t access_cost = memory_manager->writing_access_costs[source][dest];
+  access_cost = memory_manager->writing_access_costs[source][dest];
   *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
   LOG_OUT();
 }
@@ -868,8 +870,9 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        int dest,
                                        size_t size,
                                        float *cost) {
+  marcel_access_cost_t access_cost;
   LOG_IN();
-  marcel_access_cost_t access_cost = memory_manager->reading_access_costs[source][dest];
+  access_cost = memory_manager->reading_access_costs[source][dest];
   *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
   LOG_OUT();
 }
@@ -966,6 +969,7 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   return ret;
 }
 
+static
 marcel_memory_manager_t *g_memory_manager = NULL;
 
 static
@@ -998,7 +1002,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     ma_memory_migrate_pages(g_memory_manager, addr, data, source, dest);
     err = mprotect(data->startaddress, data->size, data->protection);
     if (err < 0) {
-      char *msg = "mprotect(handler): ";
+      const char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
       switch (errno) {
       case -EACCES: write(2, "The memory cannot be given the specified access.\n", 50);
@@ -1021,8 +1025,8 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   LOG_IN();
 
   if (!handler_set) {
-    handler_set = 1;
     struct sigaction act;
+    handler_set = 1;
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = ma_memory_segv_handler;
     err = sigaction(SIGSEGV, &act, NULL);

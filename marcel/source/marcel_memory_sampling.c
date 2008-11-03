@@ -66,7 +66,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
 }
 
 static
-int ma_memory_get_filename(char *type, char *filename, long source, long dest) {
+int ma_memory_get_filename(const char *type, char *filename, long source, long dest) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;

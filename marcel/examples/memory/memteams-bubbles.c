@@ -25,7 +25,7 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-#define TAB_SIZE 1024*1024*64
+#define TAB_SIZE 1024*1024*16
 #define NB_TIMES 20
 
 enum mbind_policy {

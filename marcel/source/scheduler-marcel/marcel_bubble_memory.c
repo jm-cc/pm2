@@ -118,25 +118,15 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 	   let's put it there. */
 	ma_move_entity (e[i], &favourite_location->rq.as_holder);
       } else {
+	/* We're already on the right location. */
 	if (favourite_location->type != MARCEL_LEVEL_NODE) {
 	  if (e[i]->type == MA_BUBBLE_ENTITY) {
 	    ma_burst_bubble (ma_bubble_entity (e[i]));
 	    return ma_memory_schedule_from (from);
 	  }
 	}
-	/* We're already on the right node, we can now try to favour
-	   cache memory affinity within this node. */
-	long dest = ma_favourite_vp (e[i]);
-	ma_runqueue_t *from_rq = &from->rq;
-	if (dest == -2) {
-	  MA_BUG_ON (e[i]->type != MA_BUBBLE_ENTITY);
-	  ma_burst_bubble (ma_bubble_entity (e[i]));
-	  return ma_memory_schedule_from (from);
-	}
-	if ((dest != -1) && (ma_rq_covers (from_rq, dest)))
-	  ma_move_entity (e[i], &(&marcel_topo_vp_level[dest])->rq.as_holder);
       }
-   }
+    }
     /* If the considered entity has no favourite location, just leave
        it here to ensure load balancing. */
   }

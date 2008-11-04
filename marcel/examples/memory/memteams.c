@@ -167,7 +167,7 @@ main (int argc, char **argv)
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_attr_settopo_level (&thread_attr[team][i], 
-				 &marcel_topo_node_level[dest_node]);
+				 &marcel_topo_vp_level[dest_node * nb_threads + i]);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
     }
   }

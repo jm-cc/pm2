@@ -33,25 +33,6 @@ int num_to_spread = 0;
 ma_spinlock_t to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
 extern marcel_bubble_t *ma_registered_bubble;
 
-/* Regarde si une entite est deja contenue dans une autre */
-static int ma_check_inentity(marcel_entity_t *entity, marcel_entity_t *inentity)
-{
-	marcel_entity_t *downentity;
-	
-	if (inentity == entity)
-		return 1;
-	if (inentity->type != MA_BUBBLE_ENTITY)
-		return 0;
-	else
-	{
-		MA_BUG_ON(inentity->type != MA_BUBBLE_ENTITY);
-		for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(inentity))
-			if (ma_check_inentity(entity, downentity))
-				return 1;
-		for_each_entity_scheduled_in_bubble_end()
-	}
-	return 0;
-}
 
 /* Place une entite dans un tableau de spread et fait attention que l'entite
 	n'est pas deje  presente quelquepart au sein d'une autre entite */
@@ -365,17 +346,6 @@ static int memaware(unsigned vp)
 }
 
 /*************************** Fonctions de debut **************************/
-
-/* Debuggage : permet de lister les levels */
-static void ma_see_level(struct marcel_topo_level *level, int recurse)
-{
-	marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level);
-	int i;
-	for ( i = 0 ; i < level->arity ; i++)
-	{
-		ma_see_level(level->children[i],recurse + 1);
-	}
-}
 
 /* Debogage : permet de lister la structure de bulles */
 void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)

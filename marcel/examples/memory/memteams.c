@@ -114,8 +114,12 @@ main (int argc, char **argv)
   marcel_t working_threads[nb_teams][nb_threads];
   marcel_attr_t thread_attr[nb_teams][nb_threads];
   unsigned long nodemasks[nb_teams];
-  marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams) + 1);
+  marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams));
 
+  /* The main thread is thread 0 of team 0. */ 
+  working_threads[0][0] = marcel_self ();
+  marcel_self ()->id = 0;   
+  
   /* Set the nodemask according to the memory policy passed in
      argument. */
   if (mpol ==  INTERLEAVE_POL) {
@@ -156,12 +160,16 @@ main (int argc, char **argv)
   marcel_thread_preemption_disable ();
 
   stream_struct_t stream_struct[nb_teams];
-
+  
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     for (i = 0; i < nb_threads; i++) {
+      if (team == 0 && i == 0) {
+	/* Avoid creating the main thread again :-) */
+	continue;
+      }
       unsigned int dest_node = spol == LOCAL_POL ? team : ((team * nb_threads) + i) % (numa_max_node () + 1);
       marcel_attr_init (&thread_attr[team][i]);
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
@@ -174,14 +182,17 @@ main (int argc, char **argv)
   marcel_printf ("Threads created and ready to work!\n");
   
   clock_gettime (CLOCK_MONOTONIC, &t1);
-  for (i = 0; i < NB_TIMES; i++) {
-    marcel_barrier_wait (&barrier);
-  }
+  /* The main thread has to do his job like everyone else. */
+  f (&stream_struct[0]);
   clock_gettime (CLOCK_MONOTONIC, &t2);
     
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {
     for (i = 0; i < nb_threads; i++) {
+      /* Avoid the main thread. */
+      if (team == 0 && i == 0) {
+	continue;
+      }
       marcel_join (working_threads[team][i], NULL);
     }
   }
@@ -196,9 +207,7 @@ main (int argc, char **argv)
   marcel_free (b);
   marcel_free (c);
 
-  /* Avoid the first iteration, in which we only measure the time we
-     need to cross the barrier. */
-  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES-1);
+  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES);
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 

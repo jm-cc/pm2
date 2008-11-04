@@ -614,7 +614,8 @@ ma_initialize_pmarcel (void)
 {
 	if (!marcel_test_activity ()) {
 		static int ma_pmarcel_argc = 0;
-		static char *ma_pmarcel_argv[] = { "pmarcel-program", NULL };
+		static const char ma_program_name[] = "pmarcel-program";
+		static char *ma_pmarcel_argv[] = { (char *) ma_program_name, NULL };
 
 		marcel_init (&ma_pmarcel_argc, ma_pmarcel_argv);
 		marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);

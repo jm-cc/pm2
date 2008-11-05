@@ -401,16 +401,16 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
     return -1;
   }
 
-  rtimes = tmalloc(marcel_nbnodes * sizeof(unsigned long long *));
-  wtimes = tmalloc(marcel_nbnodes * sizeof(unsigned long long *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    rtimes[node] = tmalloc(marcel_nbnodes * sizeof(unsigned long long));
-    wtimes[node] = tmalloc(marcel_nbnodes * sizeof(unsigned long long));
+  rtimes = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
+  wtimes = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    rtimes[node] = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long));
+    wtimes[node] = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long));
   }
 
-  buffers = tmalloc(marcel_nbnodes * sizeof(int *));
+  buffers = tmalloc(memory_manager->nb_nodes * sizeof(int *));
   // Allocate memory on each node
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     buffers[node] = marcel_memory_allocate_on_node(memory_manager, size*sizeof(int), node);
   }
 
@@ -455,7 +455,7 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
   }
 
   // Deallocate memory on each node
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     marcel_memory_free(memory_manager, buffers[node]);
   }
 

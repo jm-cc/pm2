@@ -155,6 +155,8 @@ struct marcel_memory_huge_pages_area_s {
 
 /** \brief Structure of a memory manager */
 struct marcel_memory_manager_s {
+  /** \brief Number of nodes */
+  unsigned nb_nodes;
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */

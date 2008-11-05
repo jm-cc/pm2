@@ -61,42 +61,44 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->initially_preallocated_pages = 1024;
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
+  memory_manager->nb_nodes = marcel_nbnodes;
+  if (!memory_manager->nb_nodes) memory_manager->nb_nodes=1;
 
   // Preallocate memory on each node
-  memory_manager->heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_area_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  memory_manager->heaps = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_area_t *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node);
     mdebug_mami("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
   }
 
   // Initialise space with huge pages on each node
-  memory_manager->huge_pages_heaps = tmalloc(marcel_nbnodes * sizeof(marcel_memory_huge_pages_area_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  memory_manager->huge_pages_heaps = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_huge_pages_area_t *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     memory_manager->huge_pages_heaps[node] = NULL;
   }
 
   // Load the model for the migration costs
-  memory_manager->migration_costs = tmalloc(marcel_nbnodes * sizeof(p_tbx_slist_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->migration_costs[node] = tmalloc(marcel_nbnodes * sizeof(p_tbx_slist_t));
-    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+  memory_manager->migration_costs = tmalloc(memory_manager->nb_nodes * sizeof(p_tbx_slist_t *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->migration_costs[node] = tmalloc(memory_manager->nb_nodes * sizeof(p_tbx_slist_t));
+    for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       memory_manager->migration_costs[node][dest] = tbx_slist_nil();
     }
   }
   ma_memory_load_model_for_memory_migration(memory_manager);
 
   // Load the model for the access costs
-  memory_manager->writing_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->writing_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
-    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+  memory_manager->writing_access_costs = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->writing_access_costs[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t));
+    for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       memory_manager->writing_access_costs[node][dest].cost = 0;
     }
   }
-  memory_manager->reading_access_costs = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t *));
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    memory_manager->reading_access_costs[node] = tmalloc(marcel_nbnodes * sizeof(marcel_access_cost_t));
-    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+  memory_manager->reading_access_costs = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t *));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->reading_access_costs[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t));
+    for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       memory_manager->reading_access_costs[node][dest].cost = 0;
     }
   }
@@ -104,8 +106,8 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
 #ifdef PM2DEBUG
   if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
-    for(node=0 ; node<marcel_nbnodes ; node++) {
-      for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
         p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
         if (!tbx_slist_is_nil(migration_costs)) {
           tbx_slist_ref_to_head(migration_costs);
@@ -119,8 +121,8 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
       }
     }
 
-    for(node=0 ; node<marcel_nbnodes ; node++) {
-      for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
         marcel_access_cost_t wcost = memory_manager->writing_access_costs[node][dest];
         marcel_access_cost_t rcost = memory_manager->writing_access_costs[node][dest];
         marcel_printf("[%d:%d] %f %f\n", node, dest, wcost.cost, rcost.cost);
@@ -188,27 +190,27 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
   LOG_IN();
 
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
   }
   tfree(memory_manager->heaps);
 
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     if (memory_manager->huge_pages_heaps[node]) {
       ma_memory_deallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
     }
   }
   tfree(memory_manager->huge_pages_heaps);
 
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    for(dest=0 ; dest<marcel_nbnodes ; dest++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       ma_memory_sampling_free(memory_manager->migration_costs[node][dest]);
     }
     tfree(memory_manager->migration_costs[node]);
   }
   tfree(memory_manager->migration_costs);
 
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     tfree(memory_manager->reading_access_costs[node]);
     tfree(memory_manager->writing_access_costs[node]);
   }
@@ -453,7 +455,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   unsigned long nodemask;
   size_t length;
   void *buffer;
-  int err;
+  int err=0;
 
   LOG_IN();
 
@@ -463,16 +465,19 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
   if (buffer == MAP_FAILED) {
     perror("mmap");
-    return -errno;
+    err = -errno;
   }
-  err = mbind(buffer, length, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
-  if (err < 0) {
-    perror("mbind");
-    return -errno;
+  else {
+    err = mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+    if (err < 0) {
+      perror("mbind");
+    }
+    else {
+      buffer = memset(buffer, 0, length);
+      /* mark the memory as unaccessible until it gets allocated to the application */
+      VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
+    }
   }
-  buffer = memset(buffer, 0, length);
-  /* mark the memory as unaccessible until it gets allocated to the application */
-  VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
 
   (*space) = tmalloc(sizeof(marcel_memory_area_t));
   (*space)->start = buffer;
@@ -483,7 +488,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   (*space)->next = NULL;
 
   LOG_OUT();
-  return 0;
+  return err;
 }
 
 static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
@@ -537,7 +542,7 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   }
 
   nodemask = (1<<node);
-  err = set_mempolicy(MPOL_BIND, &nodemask, marcel_nbnodes+2);
+  err = set_mempolicy(MPOL_BIND, &nodemask, memory_manager->nb_nodes+2);
   if (err < 0) {
     perror("set_mempolicy");
     return NULL;
@@ -655,7 +660,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
   int with_huge_pages;
 
-  if (tbx_unlikely(node >= marcel_nbnodes)) {
+  if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
     mdebug_mami("Node #%d invalid\n", node);
     return NULL;
   }
@@ -714,7 +719,7 @@ int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
   int err=0;
 
   LOG_IN();
-  if (tbx_unlikely(node >= marcel_nbnodes)) {
+  if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
     mdebug_mami("Node #%d invalid\n", node);
     errno = EINVAL;
     err = -errno;
@@ -900,7 +905,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
   if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
     int i, space, maxspace;
     maxspace = 0;
-    for(i=0 ; i<marcel_nbnodes ; i++) {
+    for(i=0 ; i<memory_manager->nb_nodes ; i++) {
       ma_memory_get_free_space(memory_manager, i, &space);
       if (space > maxspace) {
         maxspace = space;

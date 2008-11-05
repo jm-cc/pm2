@@ -249,7 +249,6 @@ free_bubble (marcel_bubble_t *bubble)
 	for (i = 0; i < bubble_count; i++)
 		free_bubble (bubbles[i]);
 
-	marcel_printf ("joining %p\n", bubble);
 	marcel_bubble_join (bubble);
 
 	marcel_free (bubble);

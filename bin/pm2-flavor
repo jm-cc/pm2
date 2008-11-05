@@ -218,7 +218,7 @@ set_option() { # option max_val filtre null_allowed
 	if [ ! -z "$3" ]; then
 	    optverif="${optarg//[^$3]}"
 	    if [ "$optverif" != "$optarg" ]; then
-		echo "Invalid caracters in parameter --$optname : $optarg" 1>&2
+		echo "Invalid characters in parameter --$optname : $optarg" 1>&2
 		exit 1
 	    fi
 	fi

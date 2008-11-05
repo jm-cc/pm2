@@ -3,12 +3,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -220,8 +220,8 @@ erreur() {
 FORCE=no
 LIST_FLAVORS=""
 PRINT=":"
-SHOW_LIST=no
-EXPANSION=off
+SHOW_LIST="no"
+EXPANSION="off"
 
 while [ $# != 0 ]; do
     case "$1" in
@@ -233,9 +233,9 @@ while [ $# != 0 ]; do
     -v|--verbose)
         PRINT=echo;;
     -l|--list)
-	SHOW_LIST=yes;;
+	SHOW_LIST="yes";;
     -x|--expansion)
-	EXPANSION=on;;
+	EXPANSION="on";;
     -*)
     	erreur "Unknown option $1"
 	usage
@@ -267,20 +267,20 @@ create_flavor() {
 
     case " $REGISTERED_FLAVORS " in
         *" $name "*)
-	    SAMPLE_FLAVOR=yes;;
+	    SAMPLE_FLAVOR="yes";;
 	*)
-	    SAMPLE_FLAVOR=no;;
+	    SAMPLE_FLAVOR="no";;
     esac
     case " $($PM2_CREATE_FLAVOR list) " in
         *" $name "*)
-	    SAMPLE_FLAVOR_EXIST=yes;;
+	    SAMPLE_FLAVOR_EXIST="yes";;
 	*)
-	    SAMPLE_FLAVOR_EXIST=no;;
+	    SAMPLE_FLAVOR_EXIST="no";;
     esac
 
-    if [ $SAMPLE_FLAVOR = yes \
-         -a \( $FORCE = yes \
-	       -o $SAMPLE_FLAVOR_EXIST = no \) ]; then
+    if [ $SAMPLE_FLAVOR == "yes" \
+         -a \( $FORCE == "yes" \
+	       -o $SAMPLE_FLAVOR_EXIST == "no" \) ]; then
 	# No existing flavor yet
 	echo "Creating initial sample flavor $name..."
 
@@ -309,15 +309,15 @@ set -- --source-mode
 . ${PM2_ROOT}/bin/pm2-flavor-file
 
 PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
-    
+
 registering_flavors
 
-if [ $SHOW_LIST = yes ]; then
+if [ $SHOW_LIST == "yes" ]; then
     echo "$REGISTERED_FLAVORS"
     exit 0
 fi
 
-if [ $EXPANSION = on ] ; then
+if [ $EXPANSION == "on" ] ; then
     NEW_LIST_FLAVORS=""
     for flavor in $LIST_FLAVORS ; do
 	TMP_FLAVORS=$(echo $REGISTERED_FLAVORS | tr ' ' '\012' | grep $flavor)

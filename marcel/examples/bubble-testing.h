@@ -227,6 +227,57 @@ make_simple_bubble_hierarchy (const unsigned *level_breadth,
   return &marcel_root_bubble;
 }
 
+
+/* Free BUBBLE after joint it and freeing its children, recursively.  This
+	 function is not tail-recursive, so it consumes stack space proportional to
+	 the hierarchy depth.  */
+#define MAX 123
+static void
+free_bubble (marcel_bubble_t *bubble)
+{
+	marcel_entity_t *entity;
+	marcel_bubble_t *bubbles[MAX];
+	unsigned int bubble_count = 0, i;
+
+	for_each_entity_held_in_bubble (entity, bubble)
+		{
+			assert (entity != ma_entity_bubble (bubble));
+			if (entity->type == MA_BUBBLE_ENTITY)
+				bubbles[bubble_count++] = ma_bubble_entity (entity);
+		}
+
+	for (i = 0; i < bubble_count; i++)
+		free_bubble (bubbles[i]);
+
+	marcel_printf ("joining %p\n", bubble);
+	marcel_bubble_join (bubble);
+
+	marcel_free (bubble);
+}
+
+/* Free the bubble hierarchy rooted at ROOT.  */
+static void
+free_bubble_hierarchy (void)
+{
+	marcel_entity_t *entity;
+	marcel_bubble_t *bubbles[MAX];
+	unsigned int bubble_count = 0, i;
+
+	/* Move the main thread to the root bubble so that we can safely join the
+		 other bubbles.  */
+	marcel_bubble_inserttask (&marcel_root_bubble, marcel_self ());
+
+	/* Free the root bubble's children.  */
+	for_each_entity_held_in_bubble (entity, &marcel_root_bubble)
+		{
+			if (entity->type == MA_BUBBLE_ENTITY)
+				bubbles[bubble_count++] = ma_bubble_entity (entity);
+		}
+
+	for (i = 0; i < bubble_count; i++)
+		free_bubble (bubbles[i]);
+}
+
 
 /* Poor man's pattern matching.  This provides the tools that allow us to
    check whether the scheduling entity distribution produced by a bubble
@@ -393,6 +444,8 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 
 	/* Tell threads to leave.  */
 	ma_atomic_inc (&thread_exit_signal);
+
+	free_bubble_hierarchy ();
 
 	marcel_end ();
 

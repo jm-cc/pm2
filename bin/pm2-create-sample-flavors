@@ -55,7 +55,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
         --marcel=enable_mami --marcel=enable_numa_memory \
-	--all=debug --all=gdb --all=noinline --all=build_both
+	--all=debug --all=gdb --all=noinline --all=build_static
 
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \

@@ -193,7 +193,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 
 					for (i = 0; i < *level_breadth; i++)
 						{
-							child = malloc (sizeof (*child));
+							child = marcel_malloc (sizeof (*child), __FILE__, __LINE__);
 							if (child != NULL)
 								{
 									marcel_bubble_init (child);

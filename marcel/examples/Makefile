@@ -69,6 +69,8 @@ simple-cpp-ldflags := -lstdc++
 
 pthread-cpp-ldflags := -lstdc++
 pthread-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
+pthread-cpp-initializer-ldflags := -lstdc++
+pthread-cpp-initializer-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 
 hello: CC=g++
 

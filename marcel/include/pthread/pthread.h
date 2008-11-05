@@ -23,12 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#define printf(format, ...)          marcel_printf(format,##__VA_ARGS__)
-#define fprintf(stream, format, ...) marcel_fprintf(stream, format,##__VA_ARGS__)
-#define malloc(size)        tmalloc(size)
-#define calloc(nmemb, size) tcalloc(nmemb, size)
-#define realloc(ptr, size)  trealloc(ptr, size)
-#define free(ptr)           tfree(ptr)
+
 
 #ifdef __cplusplus
 
@@ -37,11 +32,21 @@
 #include <new>
 #include <cstddef>
 
+/* The code below needs to access libc's `malloc ()' and `free ()'.  */
+#undef malloc
+#undef free
+
 extern "C++" {
 
 	inline void *
 	operator new (size_t _size) throw(std::bad_alloc) {
-		void *mem = marcel_malloc (_size, __FILE__, __LINE__);
+		void *mem;
+
+		if (tbx_likely (marcel_test_activity ()))
+			mem = marcel_malloc (_size, __FILE__, __LINE__);
+		else
+			mem = malloc (_size);
+
 		if (tbx_unlikely (mem == NULL))
 			throw std::bad_alloc ();
 		return mem;
@@ -53,35 +58,66 @@ extern "C++" {
 	}
 	inline void *
 	operator new[] (size_t _size) throw(std::bad_alloc) {
-		void *mem = marcel_malloc (_size, __FILE__, __LINE__);
+		void *mem;
+
+		if (tbx_likely (marcel_test_activity ()))
+			mem = marcel_malloc (_size, __FILE__, __LINE__);
+		else
+			mem = malloc (_size);
+
 		if (tbx_unlikely (mem == NULL))
 			throw std::bad_alloc ();
 		return mem;
 	}
 	inline void *
 	operator new[] (size_t _size, const std::nothrow_t &_nt) throw() {
-		return marcel_malloc (_size, __FILE__, __LINE__);
+		if (tbx_likely (marcel_test_activity ()))
+			return marcel_malloc (_size, __FILE__, __LINE__);
+		else
+			return malloc (_size);
 	}
 
 	inline void
 	operator delete (void *mem) throw() {
-		marcel_free (mem);
+		if (tbx_likely (marcel_test_activity ()))
+			marcel_free (mem);
+		else
+			free (mem);
 	}
 	inline void
 	operator delete (void *mem, const std::nothrow_t &_nt) throw() {
-		marcel_free (mem);
+		if (tbx_likely (marcel_test_activity ()))
+			marcel_free (mem);
+		else
+			free (mem);
 	}
 	inline void
 	operator delete [] (void *mem) throw() {
-		marcel_free (mem);
+		if (tbx_likely (marcel_test_activity ()))
+			marcel_free (mem);
+		else
+			free (mem);
 	}
 	inline void
 	operator delete [] (void *mem, const std::nothrow_t &_nt) throw() {
-		marcel_free (mem);
+		if (tbx_likely (marcel_test_activity ()))
+			marcel_free (mem);
+		else
+			free (mem);
 	}
 }
 
 #endif /* __cplusplus */
+
+
+/* Standard C replacements.  */
+
+#define printf(format, ...)          marcel_printf(format,##__VA_ARGS__)
+#define fprintf(stream, format, ...) marcel_fprintf(stream, format,##__VA_ARGS__)
+#define malloc(size)                 tmalloc(size)
+#define calloc(nmemb, size)          tcalloc(nmemb, size)
+#define realloc(ptr, size)           trealloc(ptr, size)
+#define free(ptr)                    tfree(ptr)
 
 
 #ifndef MA__IFACE_PMARCEL

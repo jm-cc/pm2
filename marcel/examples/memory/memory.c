@@ -106,25 +106,30 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
 
-  // Start the 1st thread on the node #0
-  marcel_attr_setid(&attr, 0);
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
-  marcel_create(&threads[0], &attr, memory, NULL);
+  if (marcel_nbnodes < 2) {
+    marcel_printf("This application needs at least two NUMA nodes.\n");
+  }
+  else {
+    // Start the 1st thread on the node #0
+    marcel_attr_setid(&attr, 0);
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
+    marcel_create(&threads[0], &attr, memory, NULL);
 
-  // Start the 2nd thread on the node #1
-  marcel_attr_setid(&attr, 1);
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
-  marcel_create(&threads[1], &attr, memory, NULL);
+    // Start the 2nd thread on the node #1
+    marcel_attr_setid(&attr, 1);
+    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
+    marcel_create(&threads[1], &attr, memory, NULL);
 
-  // Wait for the threads to complete
-  marcel_join(threads[0], NULL);
-  marcel_join(threads[1], NULL);
+    // Wait for the threads to complete
+    marcel_join(threads[0], NULL);
+    marcel_join(threads[1], NULL);
 
-  // Start the thread on the last VP
-  marcel_attr_setid(&attr, 2);
-  marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
-  marcel_create(&threads[1], &attr, memory2, NULL);
-  marcel_join(threads[1], NULL);
+    // Start the thread on the last VP
+    marcel_attr_setid(&attr, 2);
+    marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
+    marcel_create(&threads[1], &attr, memory2, NULL);
+    marcel_join(threads[1], NULL);
+  }
 
   marcel_memory_exit(&memory_manager);
 

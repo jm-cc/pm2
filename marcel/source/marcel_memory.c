@@ -840,18 +840,23 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   *cost = -1;
-  migration_costs = memory_manager->migration_costs[source][dest];
-  if (!tbx_slist_is_nil(migration_costs)) {
-    tbx_slist_ref_to_head(migration_costs);
-    do {
-      marcel_memory_migration_cost_t *object = NULL;
-      object = tbx_slist_ref_get(migration_costs);
+  if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
+    mdebug_mami("Invalid node id\n");
+  }
+  else {
+    migration_costs = memory_manager->migration_costs[source][dest];
+    if (!tbx_slist_is_nil(migration_costs)) {
+      tbx_slist_ref_to_head(migration_costs);
+      do {
+	marcel_memory_migration_cost_t *object = NULL;
+	object = tbx_slist_ref_get(migration_costs);
 
-      if (size >= object->size_min && size <= object->size_max) {
-	*cost = (object->slope * size) + object->intercept;
-	break;
-      }
-    } while (tbx_slist_ref_forward(migration_costs));
+	if (size >= object->size_min && size <= object->size_max) {
+	  *cost = (object->slope * size) + object->intercept;
+	  break;
+	}
+      } while (tbx_slist_ref_forward(migration_costs));
+    }
   }
   LOG_OUT();
 }
@@ -863,8 +868,14 @@ void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost) {
   marcel_access_cost_t access_cost;
   LOG_IN();
-  access_cost = memory_manager->writing_access_costs[source][dest];
-  *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
+  if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
+    mdebug_mami("Invalid node id\n");
+    *cost = -1;
+  }
+  else {
+    access_cost = memory_manager->writing_access_costs[source][dest];
+    *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
+  }
   LOG_OUT();
 }
 
@@ -875,8 +886,14 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
                                        float *cost) {
   marcel_access_cost_t access_cost;
   LOG_IN();
-  access_cost = memory_manager->reading_access_costs[source][dest];
-  *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
+  if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
+    mdebug_mami("Invalid node id\n");
+    *cost = -1;
+  }
+  else {
+    access_cost = memory_manager->reading_access_costs[source][dest];
+    *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
+  }
   LOG_OUT();
 }
 

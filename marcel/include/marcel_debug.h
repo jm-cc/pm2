@@ -132,8 +132,8 @@ extern debug_type_t marcel_mami_debug;
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 #define mdebug_heap(fmt, ...) \
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
-#define mdebug_mami(fmt, ...) \
-    debug_printf(&marcel_mami_debug, fmt , ##__VA_ARGS__)
+#define mdebug_mami(fmt, args...) \
+    debug_printf(&marcel_mami_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 
 #ifdef PM2_BUG_ON
 #depend "marcel_signal.h[marcel_macros]"

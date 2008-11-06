@@ -136,11 +136,10 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 static
 void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
   LOG_IN();
-  while (tbx_slist_is_nil(migration_costs) == tbx_false) {
+  while (!tbx_slist_is_nil(migration_costs)) {
     marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
     tfree(ptr);
   }
-  tbx_slist_clear(migration_costs);
   tbx_slist_free(migration_costs);
   LOG_OUT();
 }

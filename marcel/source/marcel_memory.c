@@ -1075,11 +1075,11 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     if (!tbx_slist_is_nil(data->owners)) {
           tbx_slist_ref_to_head(data->owners);
           do {
-            marcel_t *object = NULL;
+            marcel_entity_t *object = NULL;
             object = tbx_slist_ref_get(data->owners);
 
-            ((long *) ma_task_stats_get (*object, ma_stats_memnode_offset))[data->node] -= data->size;
-            ((long *) ma_task_stats_get (*object, ma_stats_memnode_offset))[dest] += data->size;
+            ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
+            ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
           } while (tbx_slist_ref_forward(data->owners));
     }
     data->node = dest;
@@ -1192,9 +1192,9 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
-int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
-                         void *buffer,
-                         marcel_t *owner) {
+int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
+                              void *buffer,
+                              marcel_t *owner) {
   int err=0, source;
   marcel_memory_data_t *data = NULL;
 
@@ -1208,7 +1208,9 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
     err = -errno;
   }
   else {
-    tbx_slist_push(data->owners, owner);
+    marcel_entity_t *entity;
+    entity = ma_entity_task(*owner);
+    tbx_slist_push(data->owners, entity);
     mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
     ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] += data->size;
   }
@@ -1217,9 +1219,9 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
-int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
-                           void *buffer,
-                           marcel_t *owner) {
+int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
+                                void *buffer,
+                                marcel_t *owner) {
   int err=0, source;
   marcel_memory_data_t *data = NULL;
 
@@ -1233,10 +1235,11 @@ int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
     err = -errno;
   }
   else {
-    marcel_t *res;
+    marcel_entity_t *eowner, *eres;
 
-    res = tbx_slist_search_and_extract(data->owners, NULL, owner);
-    if (res == owner) {
+    eowner = ma_entity_task(*owner);
+    eres = tbx_slist_search_and_extract(data->owners, NULL, eowner);
+    if (eres == eowner) {
       ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] -= data->size;
     }
     else {

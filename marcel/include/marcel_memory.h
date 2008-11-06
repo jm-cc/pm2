@@ -451,9 +451,9 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param owner thread
  */
-int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
-                         void *buffer,
-                         marcel_t *owner);
+int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
+                              void *buffer,
+                              marcel_t *owner);
 
 /**
  * Unattach the memory to the specified thread
@@ -461,9 +461,9 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param owner thread
  */
-int marcel_memory_unattach(marcel_memory_manager_t *memory_manager,
-                           void *buffer,
-                           marcel_t *owner);
+int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
+                                void *buffer,
+                                marcel_t *owner);
 
 /**
  * Indicates if huge pages are available on the system.

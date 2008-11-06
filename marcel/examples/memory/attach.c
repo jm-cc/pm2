@@ -27,16 +27,16 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  err = marcel_memory_attach(&memory_manager, ptr, &self);
-  if (err < 0) perror("marcel_memory_attach");
+  err = marcel_memory_task_attach(&memory_manager, ptr, &self);
+  if (err < 0) perror("marcel_memory_task_attach");
 
   ptr = marcel_memory_allocate_on_node(&memory_manager, 1000, 0);
   self = marcel_self();
-  err = marcel_memory_attach(&memory_manager, ptr, &self);
-  if (err < 0) perror("marcel_memory_attach");
+  err = marcel_memory_task_attach(&memory_manager, ptr, &self);
+  if (err < 0) perror("marcel_memory_task_attach");
 
-  err = marcel_memory_unattach(&memory_manager, ptr, &self);
-  if (err < 0) perror("marcel_memory_unattach");
+  err = marcel_memory_task_unattach(&memory_manager, ptr, &self);
+  if (err < 0) perror("marcel_memory_task_unattach");
 
   marcel_memory_free(&memory_manager, ptr);
   marcel_memory_exit(&memory_manager);

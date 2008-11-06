@@ -34,13 +34,13 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   self = marcel_self();
-  err = marcel_memory_attach(&memory_manager, ptr, &self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, &self);
   if (err < 0) {
-    perror("marcel_memory_attach");
+    perror("marcel_memory_task_attach");
   }
-  err = marcel_memory_unattach(&memory_manager, ptr, &self);
+  err = marcel_memory_task_unattach(&memory_manager, ptr, &self);
   if (err < 0) {
-    perror("marcel_memory_unattach");
+    perror("marcel_memory_task_unattach");
   }
 
   err = marcel_memory_unregister(&memory_manager, ptr);

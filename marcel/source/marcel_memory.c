@@ -802,6 +802,63 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
+int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
+			  void *buffer,
+			  unsigned int subareas,
+			  void ***newbuffers) {
+  marcel_memory_data_t *data = NULL;
+  int err=0;
+  int source;
+
+  LOG_IN();
+  marcel_spin_lock(&(memory_manager->lock));
+
+  ma_memory_locate(memory_manager, memory_manager->root, buffer, &source, &data);
+  if (source == -1) {
+    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
+    errno = EFAULT;
+    err = -errno;
+  }
+  else {
+    size_t subsize;
+    int subpages, i;
+    void **pageaddrs;
+
+    subpages = data->nbpages / subareas;
+    if (!subpages) {
+      mdebug_mami("Memory area from %p not big enough to be split in %d subareas\n", data->startaddress, subareas);
+      errno = EINVAL;
+      err = -errno;
+    }
+    else {
+      mdebug_mami("Splitting area from %p in %d areas of %d pages\n", data->startaddress, subareas, subpages);
+      *newbuffers = malloc(subareas * sizeof(void *));
+
+      // Register new subareas
+      pageaddrs = data->pageaddrs+subpages;
+      if (data->with_huge_pages)
+	subsize = subpages * memory_manager->hugepagesize;
+      else
+	subsize = subpages * memory_manager->normalpagesize;
+      for(i=1 ; i<subareas ; i++) {
+	(*newbuffers)[i] = pageaddrs[0];
+	ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->protection,
+			   data->with_huge_pages, data->mami_allocated);
+	pageaddrs += subpages;
+      }
+
+      // Modify initial memory area
+      (*newbuffers)[0] = buffer;
+      data->nbpages = subpages;
+      data->endaddress = data->startaddress + subsize;
+      data->size = subsize;
+    }
+  }
+  marcel_spin_unlock(&(memory_manager->lock));
+  LOG_OUT();
+  return err;
+}
+
 int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
                           marcel_memory_membind_policy_t policy,
                           int node) {
@@ -1154,6 +1211,7 @@ int marcel_memory_attach(marcel_memory_manager_t *memory_manager,
   }
   else {
     tbx_slist_push(data->owners, owner);
+    mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
     ((long *) ma_task_stats_get (*owner, ma_stats_memnode_offset))[data->node] += data->size;
   }
   marcel_spin_unlock(&(memory_manager->lock));

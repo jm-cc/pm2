@@ -98,6 +98,8 @@ struct marcel_memory_data_s {
   /** \brief Node where the memory area is located */
   int node;
 
+  /** \brief Tag indicating if the memory has been allocated by MAMI */
+  int mami_allocated;
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;
   /** \brief Entities which are attached to the memory area */
@@ -196,9 +198,9 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 /*
  *
  */
-void ma_memory_delete(marcel_memory_manager_t *memory_manager,
-		      marcel_memory_tree_t **memory_tree,
-		      void *buffer);
+void ma_memory_unregister(marcel_memory_manager_t *memory_manager,
+			  marcel_memory_tree_t **memory_tree,
+			  void *buffer);
 
 /*
  * Preallocates some memory (in number of pages) on the specified numa node.
@@ -281,6 +283,26 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 			   size_t nmemb,
 			   size_t size);
+
+/**
+ * Register a memory area which has not been allocated by MAMI.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param size size of the memory area
+ * @param node location of the memory area
+ */
+int marcel_memory_register(marcel_memory_manager_t *memory_manager,
+			   void *buffer,
+			   size_t size,
+			   int node);
+
+/**
+ * Unregister a memory area which has not been allocated by MAMI.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ */
+int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
+			     void *buffer);
 
 /**
  *

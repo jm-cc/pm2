@@ -466,6 +466,26 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
                                 marcel_t *owner);
 
 /**
+ * Attach the memory to the specified bubble
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param owner bubble
+ */
+int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
+                                void *buffer,
+                                marcel_bubble_t *owner);
+
+/**
+ * Unattach the memory to the specified bubble
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param owner bubble
+ */
+int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
+                                  void *buffer,
+                                  marcel_bubble_t *owner);
+
+/**
  * Indicates if huge pages are available on the system.
  */
 int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager);

@@ -95,6 +95,11 @@ int marcel_main(int argc, char * argv[]) {
   }
   gettimeofday(&random_tv2, NULL);
 
+  // Deallocate memory on each node
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    marcel_memory_free(&memory_manager, buffers[node]);
+  }
+
   local_us = (local_tv2.tv_sec - local_tv1.tv_sec) * 1000000 + (local_tv2.tv_usec - local_tv1.tv_usec);
   local_ns = local_us * 1000;
   random_us = (random_tv2.tv_sec - random_tv1.tv_sec) * 1000000 + (random_tv2.tv_usec - random_tv1.tv_usec);

@@ -123,6 +123,11 @@ int marcel_main(int argc, char * argv[]) {
     }
   }
 
+  // Deallocate memory on each node
+  for(node=0 ; node<marcel_nbnodes ; node++) {
+    marcel_memory_free(&memory_manager, buffers[node]);
+  }
+
   printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {

@@ -510,7 +510,7 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
     return NULL;
   }
 
-  mdebug_mami("Requiring space from huge pages area of size=%lu on node #%d\n", heap->size, node);
+  mdebug_mami("Requiring space from huge pages area of size=%lu on node #%d\n", (long unsigned)heap->size, node);
 
   // Look for a space big enough
   hheap = heap->heap;

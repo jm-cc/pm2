@@ -62,7 +62,6 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
   memory_manager->nb_nodes = marcel_nbnodes;
-  if (!memory_manager->nb_nodes) memory_manager->nb_nodes=1;
 
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_area_t *));

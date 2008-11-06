@@ -805,7 +805,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
 int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
 			  void *buffer,
 			  unsigned int subareas,
-			  void ***newbuffers) {
+			  void **newbuffers) {
   marcel_memory_data_t *data = NULL;
   int err=0;
   int source;
@@ -832,7 +832,6 @@ int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
     }
     else {
       mdebug_mami("Splitting area from %p in %d areas of %d pages\n", data->startaddress, subareas, subpages);
-      *newbuffers = malloc(subareas * sizeof(void *));
 
       // Register new subareas
       pageaddrs = data->pageaddrs+subpages;
@@ -841,14 +840,14 @@ int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
       else
 	subsize = subpages * memory_manager->normalpagesize;
       for(i=1 ; i<subareas ; i++) {
-	(*newbuffers)[i] = pageaddrs[0];
+	newbuffers[i] = pageaddrs[0];
 	ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->protection,
 			   data->with_huge_pages, data->mami_allocated);
 	pageaddrs += subpages;
       }
 
       // Modify initial memory area
-      (*newbuffers)[0] = buffer;
+      newbuffers[0] = buffer;
       data->nbpages = subpages;
       data->endaddress = data->startaddress + subsize;
       data->size = subsize;

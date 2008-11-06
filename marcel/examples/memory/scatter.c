@@ -63,7 +63,8 @@ void scatter(void *ptr) {
   void **newptrs;
 
   attach(ptr);
-  err = marcel_memory_scatter(&memory_manager, ptr, 10, &newptrs);
+  newptrs = malloc(10 * sizeof(void **));
+  err = marcel_memory_scatter(&memory_manager, ptr, 10, newptrs);
   if (err < 0) {
     perror("marcel_memory_scatter");
   }

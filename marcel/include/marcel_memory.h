@@ -314,7 +314,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
 int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
 			  void *buffer,
 			  unsigned int subareas,
-			  void ***newbuffers);
+			  void **newbuffers);
 
 /**
  *

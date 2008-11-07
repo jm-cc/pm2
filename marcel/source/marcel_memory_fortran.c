@@ -17,27 +17,6 @@
 
 #include "marcel.h"
 
-void marcel_memory_init_(int *memory_manager);
-void marcel_memory_exit_(int *memory_manager);
-void marcel_memory_malloc_(int *memory_manager,
-			   int *size,
-			   int *buffer);
-void marcel_memory_free_(int *memory_manager,
-			 int *buffer);
-void marcel_memory_register_(int *memory_manager,
-			     int *buffer,
-			     int *size,
-			     int *node,
-			     int *err);
-void marcel_memory_unregister_(int *memory_manager,
-			       int *buffer,
-			       int *err);
-void marcel_memory_locate_(int *memory_manager,
-			   int *address,
-			   int *node,
-			   int *err);
-void marcel_memory_print_(int *memory_manager);
-
 void marcel_memory_init_(int *memory_manager) {
   marcel_memory_manager_t *manager = TBX_MALLOC(sizeof(marcel_memory_manager_t));
   marcel_memory_init(manager);

@@ -28,6 +28,7 @@ program launch
   print *,'node=',node
 
   call marcel_memory_print(memory_manager)
+  call marcel_memory_free(memory_manager, buffer)
   call marcel_memory_exit(memory_manager)
   call marcel_end()
 

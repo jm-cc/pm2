@@ -20,7 +20,7 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_migrate_on_next_touch: Bad address
+marcel_memory_migrate_on_next_touch: Invalid argument
 EOF
 
 . ./mami.sh

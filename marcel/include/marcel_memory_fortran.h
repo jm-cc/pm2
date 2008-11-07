@@ -19,24 +19,31 @@
 #section functions
 
 void marcel_memory_init_(int *memory_manager);
+
 void marcel_memory_exit_(int *memory_manager);
+
 void marcel_memory_malloc_(int *memory_manager,
 			   int *size,
 			   int *buffer);
+
 void marcel_memory_free_(int *memory_manager,
 			 int *buffer);
+
 void marcel_memory_register_(int *memory_manager,
 			     int *buffer,
 			     int *size,
 			     int *node,
 			     int *err);
+
 void marcel_memory_unregister_(int *memory_manager,
 			       int *buffer,
 			       int *err);
+
 void marcel_memory_locate_(int *memory_manager,
 			   int *address,
 			   int *node,
 			   int *err);
+
 void marcel_memory_print_(int *memory_manager);
 
 #section common

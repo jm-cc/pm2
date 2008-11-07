@@ -366,6 +366,8 @@ pm2_config_set_vars()
     # Fortran Compiler Target
     if [ "${PM2_COMMON_FORTRAN_TARGET}" == "none" ] ; then
         _PM2_CONFIG_FC="gfortran"
+    else
+        _PM2_CONFIG_FC="${PM2_COMMON_FORTRAN_TARGET}"
     fi
     export _PM2_CONFIG_FC
 

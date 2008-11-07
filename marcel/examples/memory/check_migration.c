@@ -13,6 +13,8 @@
  * General Public License for more details.
  */
 
+#include "marcel.h"
+
 #include <sys/mman.h>
 #include <errno.h>
 #include <stdarg.h>

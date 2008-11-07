@@ -924,6 +924,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *address, int *node) {
   marcel_memory_data_t *data = NULL;
+  mdebug_mami("Trying to locate address %p\n", address);
   return ma_memory_locate(memory_manager, memory_manager->root, address, node, &data);
 }
 

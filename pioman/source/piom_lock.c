@@ -112,13 +112,13 @@ piom_ensure_lock_server(piom_server_t server)
 marcel_task_t *
 piom_ensure_trylock_from_tasklet(piom_server_t server)
 {
-    if(!server->lock_owner) {
+    if(!(server->lock_owner)) {
 	server->lock_owner = MARCEL_SELF;
 	__piom_trylock_server(server, MARCEL_SELF);
-	LOG_RETURN(MARCEL_SELF);
+	LOG_RETURN(NULL);
     } else if (server->lock_owner == MARCEL_SELF )
 	LOG_RETURN(MARCEL_SELF);
-    ma_tasklet_disable(&server->poll_tasklet);
+
     ma_spin_lock_softirq(&server->lock);
     server->lock_owner = MARCEL_SELF;
     return NULL;
@@ -159,10 +159,8 @@ piom_restore_trylocked_from_tasklet(piom_server_t server,
 				    marcel_task_t *old_owner)
 {
     if(!old_owner){
-	__piom_unlock_server(server);	
-    } else {
 	__piom_tryunlock_server(server);	
-    }
+    } 
 }
 
 void 

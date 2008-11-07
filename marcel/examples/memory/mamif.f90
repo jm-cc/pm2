@@ -16,7 +16,7 @@
 program launch
 
   integer node, ierr
-  integer memory_manager(4)
+  integer memory_manager
   integer buffer(100)
 
   call marcel_init()

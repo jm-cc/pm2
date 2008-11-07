@@ -24,6 +24,14 @@ void marcel_memory_malloc_(int *memory_manager,
 			   int *buffer);
 void marcel_memory_free_(int *memory_manager,
 			 int *buffer);
+void marcel_memory_register_(int *memory_manager,
+			     int *buffer,
+			     int *size,
+			     int *node,
+			     int *err);
+void marcel_memory_unregister_(int *memory_manager,
+			       int *buffer,
+			       int *err);
 void marcel_memory_locate_(int *memory_manager,
 			   int *address,
 			   int *node,
@@ -53,6 +61,27 @@ void marcel_memory_free_(int *memory_manager,
 			 int *buffer) {
   marcel_memory_manager_t *manager = (void *)*memory_manager;
   marcel_memory_free(manager, (void *)*buffer);
+}
+
+void marcel_memory_register_(int *memory_manager,
+			     int *buffer,
+			     int *size,
+			     int *node,
+			     int *err) {
+  int _err;
+  marcel_memory_manager_t *manager = (void *)*memory_manager;
+  _err = marcel_memory_register(manager, (void *)*buffer, *size, *node);
+  *err = _err;
+}
+
+void marcel_memory_unregister_(int *memory_manager,
+			       int *buffer,
+			       int *err) {
+
+  int _err;
+  marcel_memory_manager_t *manager = (void *)*memory_manager;
+  _err = marcel_memory_unregister(manager, (void *)*buffer);
+  *err = _err;
 }
 
 void marcel_memory_locate_(int *memory_manager,

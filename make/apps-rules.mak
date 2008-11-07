@@ -85,6 +85,12 @@ define OBJECT_template
  $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
 endef
 
+GF	:= $(shell pm2-config --flavor=$(FLAVOR) --fc)
+GFLAGS	:= $(shell pm2-config --flavor=$(FLAVOR) --cflags)
+
+$(MOD_GEN_OBJ)/%.o: %.f90
+	$(GF) -c $(GFLAGS) $< -o $@
+
 #$(foreach prog, $(APPS_LIST),$(warning $(call PROGRAM_template,$(prog))))
 $(foreach prog, $(APPS_LIST),$(eval    $(call PROGRAM_template,$(prog))))
 #$(foreach obj,  $(MOD_BASE), $(warning $(call  OBJECT_template,$(obj))))

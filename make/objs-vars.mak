@@ -71,6 +71,7 @@ MOD_REP_TO_BUILD := \
 #---------------------------------------------------------------------
 MOD_C_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.c))
 MOD_CXX_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.cpp))
+MOD_F_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.f90))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
@@ -121,14 +122,16 @@ MOD_C_BASE = $(foreach I, $(MOD_GEN_C_SOURCES) $(MOD_C_SOURCES), \
 			$(notdir $(basename $I)))
 MOD_CXX_BASE = $(foreach I, $(MOD_CXX_SOURCES), $(notdir $(basename $I)))
 MOD_S_BASE = $(foreach I, $(MOD_S_SOURCES), $(notdir $(basename $I)))
-MOD_BASE   = $(MOD_C_BASE) $(MOD_CXX_BASE) $(MOD_S_BASE)
+MOD_F_BASE = $(foreach I, $(MOD_F_SOURCES), $(notdir $(basename $I)))
+MOD_BASE   = $(MOD_C_BASE) $(MOD_CXX_BASE) $(MOD_S_BASE) $(MOD_F_BASE)
 
 # Objets
 #---------------------------------------------------------------------
 MOD_C_OBJECTS = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
 MOD_CXX_OBJECTS = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
 MOD_S_OBJECTS = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
-MOD_OBJECTS   = $(MOD_C_OBJECTS) $(MOD_CXX_OBJECTS) $(MOD_S_OBJECTS)
+MOD_F_OBJECTS = $(foreach I, $(MOD_F_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
+MOD_OBJECTS   = $(MOD_C_OBJECTS) $(MOD_CXX_OBJECTS) $(MOD_S_OBJECTS) $(MOD_F_OBJECTS)
 
 # PICS - librairies dynamiques
 #---------------------------------------------------------------------

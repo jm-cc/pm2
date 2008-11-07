@@ -57,6 +57,15 @@ registering_flavors() {
         --marcel=enable_mami --marcel=enable_numa_memory \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
+    register_flavor marcel-mami-fortran-debug \
+	--modules="marcel tbx init" \
+	--marcel=numa --marcel=standard_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=bubble_sched_null \
+        --marcel=enable_mami --marcel=enable_numa_memory --marcel=fortran \
+        --common=fortran_target_gfortran \
+	--all=debug --all=gdb --all=noinline --all=build_static
+
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main

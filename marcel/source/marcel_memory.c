@@ -759,6 +759,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
+  mdebug_mami("Registering address interval [%p:%p]\n", buffer, buffer+size);
 
   with_huge_pages = 0;
   protection = PROT_READ|PROT_WRITE;

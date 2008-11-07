@@ -103,6 +103,7 @@ void tbx_fortran_init(int *argc, char ***argv) {
 ///* Nothing */
 #else
 void tbx_fortran_init(int *argc TBX_UNUSED, char ***argv TBX_UNUSED) {
+  abort();
 }
 //#  error unknown FORTRAN TARGET
 #endif

@@ -91,3 +91,9 @@ APPS :=
 
 include $(PM2_ROOT)/make/apps.mak
 
+GF	:= $(shell pm2-config --flavor=$(FLAVOR) --fc)
+GFLAGS	:= $(shell pm2-config --flavor=$(FLAVOR) --cflags)
+GLIBS	:= $(shell pm2-config --flavor=$(FLAVOR) --libs)
+
+simple: simple.f90
+	$(GF) $(GFLAGS) $< $(GLIBS) -o $@

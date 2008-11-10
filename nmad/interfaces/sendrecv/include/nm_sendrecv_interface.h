@@ -30,22 +30,55 @@
 
 #include <sys/uio.h>
 
+
+typedef uint8_t nm_sr_status_t;
+
+#define NM_SR_STATUS_SEND_COMPLETED  ((uint8_t)0x01)
+#define NM_SR_STATUS_RECV_COMPLETED  ((uint8_t)0x02)
+/** operation (send or recv) was canceled */
+#define NM_SR_STATUS_RECV_CANCELLED  ((uint8_t)0x04)
+
+#define NM_SR_STATUS_SEND_POSTED     ((uint8_t)0x08)
+#define NM_SR_STATUS_RECV_POSTED     ((uint8_t)0x10)
+
+
+#define NM_SR_EVENT_RECV_UNEXPECTED ((nm_sr_status_t)0x80)
+#define NM_SR_EVENT_RECV_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
+#define NM_SR_EVENT_SEND_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
+#define NM_SR_EVENT_RECV_CANCELLED  NM_SR_STATUS_RECV_CANCELLED
+
+
 #ifdef PIOMAN
-typedef piom_cond_t nm_sr_status_t;
+typedef piom_cond_t nm_sr_cond_t;
 #else /* PIOMAN */
-typedef volatile uint8_t nm_sr_status_t;
+typedef volatile nm_sr_status_t nm_sr_cond_t;
 #endif /* PIOMAN */
+
+typedef struct nm_sr_request_s nm_sr_request_t;
+
+typedef void (*nm_sr_request_notifier_t)(nm_sr_request_t *p_request, nm_sr_status_t event, nm_gate_t p_gate);
+
+typedef struct
+{
+  nm_sr_status_t mask;
+  nm_sr_request_notifier_t notifier;
+} nm_sr_request_monitor_t;
+
+#define NM_SR_REQUEST_MONITOR_NULL ((nm_sr_request_monitor_t){ .mask = 0, .notifier = NULL })
 
 struct nm_sr_request_s
 {
-  nm_sr_status_t status;
+  nm_sr_cond_t status;
   uint8_t seq;
   nm_gate_t p_gate;
   nm_tag_t tag;
+  nm_sr_request_monitor_t monitor;
   void *ref;
   struct list_head _link;
 };
-typedef struct nm_sr_request_s nm_sr_request_t;
+
+
+
 
 /** Transfer types for isend/irecv */
 enum nm_sr_transfer_type
@@ -321,6 +354,13 @@ extern int nm_sr_recv_source(nm_core_t p_core,
  */
 extern int nm_sr_probe(nm_core_t p_core,
 		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag);
+
+
+extern int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
+				 nm_sr_status_t mask, nm_sr_request_notifier_t notifier);
+
+/* extern int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t event); */
+
 
 /** Poll for any completed recv request (any source, any tag).
  * @note Only nm_sr_recv*_with_ref functions (with ref != NULL) generate such an event.

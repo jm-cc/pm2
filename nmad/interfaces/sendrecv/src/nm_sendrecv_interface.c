@@ -23,52 +23,55 @@
 
 /* ** Status *********************************************** */
 
-#define NM_SR_STATUS_SEND_COMPLETED  ((uint8_t)0x01)
-#define NM_SR_STATUS_RECV_COMPLETED  ((uint8_t)0x02)
-/** operation (send or recv) was canceled */
-#define NM_SR_STATUS_CANCELED        ((uint8_t)0x04)
-
-#define NM_SR_STATUS_SEND_POSTED     ((uint8_t)0x08)
-#define NM_SR_STATUS_RECV_POSTED     ((uint8_t)0x10)
-
 
 #ifdef PIOMAN
 #define nm_sr_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
 #define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
 #define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
-#define nm_sr_status_signal(STATUS, BITMASK)     piom_cond_signal((STATUS), (BITMASK))
 #define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+{
+  piom_cond_signal(p_request->status, bitmask);
+  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
+    {
+      (*p_request->monitor.notifier)(p_request, mask, p_gate);
+    }
+}
 /** Post PIOMan poll requests (except when offloading PIO)
  */
-static inline void nm_so_post_all(struct nm_core*p_core)
+static inline void nm_so_post_all(nm_core_t p_core)
 {
 }
 /** Post PIOMan poll requests even when offloading PIO.
  * This avoids scheduling a tasklet on another lwp
  */
-static inline void nm_so_post_all_force(struct nm_core*p_core)
+static inline void nm_so_post_all_force(nm_core_t p_core)
 {
 	/* todo: add a kind of ma_tasklet_schedule here */
 //  nm_piom_post_all(p_core);
 }
 #else /* PIOMAN */
-static inline void  nm_sr_status_init(nm_sr_status_t*status, uint8_t bitmask)
+static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
 {
   *status = bitmask;
 }
-static inline int  nm_sr_status_test(nm_sr_status_t*status, uint8_t bitmask)
+static inline int  nm_sr_status_test(nm_sr_cond_t*status, nm_sr_status_t bitmask)
 {
   return ((*status) & bitmask);
 }
-static inline void nm_sr_status_mask(nm_sr_status_t*status, uint8_t bitmask)
+static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask)
 {
   *status &= bitmask;
 }
-static inline void nm_sr_status_signal(nm_sr_status_t*status, uint8_t bitmask)
+static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
 {
-  *status |= bitmask;
+  p_request->status |= mask;
+  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
+    {
+      (*p_request->monitor.notifier)(p_request, mask, p_gate);
+    }
 }
-static inline void nm_sr_status_wait(nm_sr_status_t*status, uint8_t bitmask, struct nm_core*p_core)
+static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
 {
   if(status != NULL)
     {
@@ -77,9 +80,9 @@ static inline void nm_sr_status_wait(nm_sr_status_t*status, uint8_t bitmask, str
       }
     }
 }
-static inline void nm_so_post_all(struct nm_core*p_core)
+static inline void nm_so_post_all(nm_core_t p_core)
 { /* do nothing */ }
-static inline void nm_so_post_all_force(struct nm_core*p_core)
+static inline void nm_so_post_all_force(nm_core_t p_core)
 { /* do nothing */ }
 #endif /* PIOMAN */
 
@@ -133,7 +136,6 @@ NM_TAG_TABLE_TYPE(nm_sr_anysrc, struct nm_sr_anysrc_s);
  */
 static struct nm_sr_anysrc_table_s any_src;
 
-static p_tbx_memory_t nm_sr_ref_mem;
 static struct list_head completed_rreq;
 
 /* ** Debug ************************************************ */
@@ -205,8 +207,6 @@ int nm_sr_exit(struct nm_core *p_core)
 {
   NM_SO_SR_LOG_IN();
 
-  tbx_malloc_clean(nm_sr_ref_mem);
-
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
@@ -237,8 +237,9 @@ int nm_sr_isend_generic(struct nm_core *p_core,
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->seq    = seq;
   p_request->p_gate = p_gate;
-  p_request->ref    = NULL;
   p_request->tag    = tag;
+  p_request->ref    = NULL;
+  p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
   p_sr_tag->sreqs[seq] = p_request;
   
   switch(sending_type)
@@ -409,10 +410,11 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 	}
       nmad_lock();
       nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-      p_request->p_gate = NM_GATE_NONE;
-      p_request->ref    = ref;
-      p_request->tag    = tag;
-      p_request->seq    = -1;
+      p_request->p_gate  = NM_GATE_NONE;
+      p_request->ref     = ref;
+      p_request->tag     = tag;
+      p_request->seq     = -1;
+      p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
       p_sr_anysrc->rreq = p_request;
 
       NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_sr_anysrc->rreq);
@@ -456,10 +458,11 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
       seq = p_so_tag->recv_seq_number++;
       
       nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-      p_request->seq    = seq;
-      p_request->p_gate = p_gate;
-      p_request->ref    = ref;
-      p_request->tag    = tag;
+      p_request->seq     = seq;
+      p_request->p_gate  = p_gate;
+      p_request->ref     = ref;
+      p_request->tag     = tag;
+      p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
       p_sr_tag->rreqs[seq] = p_request;
 
       NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate = %p request %p\n", tag, seq, p_gate, p_sr_tag->rreqs[seq]);
@@ -520,7 +523,7 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
 
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
-      if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_CANCELED))
+      if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
 	{
 	  rc = -NM_ECANCELED;
 	}
@@ -652,6 +655,13 @@ int nm_sr_probe(struct nm_core *p_core,
   return -NM_EAGAIN;
 }
 
+int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
+			  nm_sr_status_t mask, nm_sr_request_notifier_t notifier)
+{
+  p_request->monitor.mask = mask;
+  p_request->monitor.notifier = notifier;
+  return NM_ESUCCESS;
+}
 
 int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
@@ -709,7 +719,7 @@ static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, n
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , tag, seq);
 
-  nm_sr_status_signal(&p_request->status, NM_SR_STATUS_SEND_COMPLETED);
+  nm_sr_request_event(p_request, NM_SR_STATUS_SEND_COMPLETED, p_gate);
 
   NM_SO_SR_LOG_OUT();
 }
@@ -744,9 +754,9 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
   uint8_t sr_event = NM_SR_STATUS_RECV_COMPLETED;
   if(event & NM_SO_STATUS_UNPACK_CANCELLED)
     {
-      sr_event |= NM_SR_STATUS_CANCELED;
+      sr_event |= NM_SR_STATUS_RECV_CANCELLED;
     }
-  nm_sr_status_signal(&p_request->status, sr_event);
+  nm_sr_request_event(p_request, sr_event, p_gate);
   if(p_request && p_request->ref)
     {
       list_add_tail(&p_request->_link, &completed_rreq);

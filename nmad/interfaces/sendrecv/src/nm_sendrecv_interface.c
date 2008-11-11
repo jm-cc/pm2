@@ -31,7 +31,7 @@
 #define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
 static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
 {
-  piom_cond_signal(p_request->status, bitmask);
+  piom_cond_signal(&p_request->status, mask);
   if(mask & p_request->monitor.mask && p_request->monitor.notifier)
     {
       (*p_request->monitor.notifier)(p_request, mask, p_gate);

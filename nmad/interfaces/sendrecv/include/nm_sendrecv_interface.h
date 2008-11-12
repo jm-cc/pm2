@@ -33,27 +33,33 @@
 
 typedef uint8_t nm_sr_status_t;
 
-#define NM_SR_STATUS_SEND_COMPLETED  ((uint8_t)0x01)
-#define NM_SR_STATUS_RECV_COMPLETED  ((uint8_t)0x02)
-/** operation (send or recv) was canceled */
-#define NM_SR_STATUS_RECV_CANCELLED  ((uint8_t)0x04)
+/** a posted send has completed */
+#define NM_SR_STATUS_SEND_COMPLETED  ((nm_sr_status_t)0x01)
+/** a posted recv has completed */
+#define NM_SR_STATUS_RECV_COMPLETED  ((nm_sr_status_t)0x02)
+/** recv operation was canceled */
+#define NM_SR_STATUS_RECV_CANCELLED  ((nm_sr_status_t)0x04)
+/** a send is posted */
+#define NM_SR_STATUS_SEND_POSTED     ((nm_sr_status_t)0x08)
+/** a recv is posted */
+#define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)0x10)
 
-#define NM_SR_STATUS_SEND_POSTED     ((uint8_t)0x08)
-#define NM_SR_STATUS_RECV_POSTED     ((uint8_t)0x10)
-
-
-#define NM_SR_EVENT_RECV_UNEXPECTED ((nm_sr_status_t)0x80)
+/** an unexpected packet has arrived. Post a recv to get data */
+#define NM_SR_EVENT_RECV_UNEXPECTED  ((nm_sr_status_t)0x80)
 #define NM_SR_EVENT_RECV_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
 #define NM_SR_EVENT_SEND_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
 #define NM_SR_EVENT_RECV_CANCELLED  NM_SR_STATUS_RECV_CANCELLED
 
 
 #ifdef PIOMAN
+/** a status with synchronization- PIOMan version */
 typedef piom_cond_t nm_sr_cond_t;
 #else /* PIOMAN */
+/** a status with synchronization- PIOMan-less version */
 typedef volatile nm_sr_status_t nm_sr_cond_t;
 #endif /* PIOMAN */
 
+/** a sendrecv request object. Supposedly opaque for applications.*/
 typedef struct nm_sr_request_s nm_sr_request_t;
 
 typedef void (*nm_sr_request_notifier_t)(nm_sr_request_t *p_request, nm_sr_status_t event, nm_gate_t p_gate);
@@ -66,6 +72,7 @@ typedef struct
 
 #define NM_SR_REQUEST_MONITOR_NULL ((nm_sr_request_monitor_t){ .mask = 0, .notifier = NULL })
 
+/** internal defintion of the sendrecv request */
 struct nm_sr_request_s
 {
   nm_sr_cond_t status;

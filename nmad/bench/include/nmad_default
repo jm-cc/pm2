@@ -13,25 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-compile_leonie()
-{
-    echo "Compiling Leonie"
-    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie
-    fi
-    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie | sed -e 's/^/..../'
-        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
-            exit 1
-        fi
-    fi
-}
-
 # args: loop variable
 initialize_bench()
 {
@@ -122,13 +103,16 @@ EOF
 # args: loop variable
 finalize_bench()
 {
-	true
+    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
+    if [ "$BENCHDIR" != "" ] && [ -d $BENCHDIR ] ; then
+	if [ -z "$result_file" ] ; then
+            cp $file_result $BENCHDIR/
+	else
+	    cp $file_result $BENCHDIR/$result_file
+	fi
+    fi
 }
 
 ####################
 
-# Compilation du lanceur leonie
-compile_leonie 2>&1 | sed -e 's/^/..../'
-
-#
-
+result_file=""

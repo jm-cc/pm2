@@ -15,10 +15,24 @@
 
 export FLAVOR_DEFAULT:=marcel-mami
 
-include $(PM2_ROOT)/make/apps.mak
+ifndef FLAVOR
+  ifdef PM2_FLAVOR
+    export FLAVOR:=$(PM2_FLAVOR)
+  else # PM2_FLAVOR
+    export FLAVOR:=$(FLAVOR_DEFAULT)
+  endif # PM2_FLAVOR
+endif # FLAVOR
+
+FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep fortran)
+ifeq (,$(FLAVOR_WITH_FORTRAN))
+APPS_EXCLUDE += $(basename $(wildcard *.f90))
+endif
 
 membind-ldflags := -lrt
 memteams-ldflags := -lrt
 memteams-bubbles-ldflags := -lrt
 
 mamif: CC=gfortran
+
+include $(PM2_ROOT)/make/apps.mak
+

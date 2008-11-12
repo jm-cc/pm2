@@ -12,8 +12,9 @@
 
 /* This benchmark evaluate the cost of invoking a polling tasklet */
 
-#define POLLING_LOOPS 1000000
 #define SYSCALL_LOOPS 100
+#define INNER_LOOPS 1000
+#define POLLING_LOOPS (10000000/INNER_LOOPS)
 
 piom_cond_t cond;
 
@@ -39,7 +40,12 @@ static int piom_test_pollone(piom_server_t server,
 			  piom_op_t _op,
 			  piom_req_t req, int nb_ev, int option)
 {
-	piom_cond_signal(&cond, 1);
+	static int inner_loops=0;
+	inner_loops++;
+	if(inner_loops>=INNER_LOOPS) {
+		piom_cond_signal(&cond, 1);
+		inner_loops=0;
+	}
 }
 
 
@@ -108,7 +114,7 @@ int main(int argc, char ** argv)
 		piom_test_read();
 	}
 	TBX_GET_TICK(t2);
-	fprintf(stderr, "Polling : %f us\n", tbx_tick2usec(TBX_TICK_RAW_DIFF(t1, t2))/(POLLING_LOOPS));
+	fprintf(stderr, "Polling : %f us\n", tbx_tick2usec(TBX_TICK_RAW_DIFF(t1, t2))/(POLLING_LOOPS*INNER_LOOPS));
 	common_exit(NULL);
 	return 0;
 }

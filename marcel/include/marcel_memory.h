@@ -289,12 +289,10 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
- * @param node location of the memory area
  */
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 			   void *buffer,
-			   size_t size,
-			   int node);
+			   size_t size);
 
 /**
  * Unregister a memory area which has not been allocated by MAMI.

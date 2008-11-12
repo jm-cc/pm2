@@ -38,7 +38,7 @@ int marcel_main(int argc, char * argv[]) {
   ptr = malloc(50*getpagesize());
   scatter(ptr);
 
-  err = marcel_memory_register(&memory_manager, ptr, 50*getpagesize(), 0);
+  err = marcel_memory_register(&memory_manager, ptr, 50*getpagesize());
   if (err < 0) {
     perror("marcel_memory_register");
   }

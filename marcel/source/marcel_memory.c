@@ -751,11 +751,11 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
 
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 			   void *buffer,
-			   size_t size,
-			   int node) {
+			   size_t size) {
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
-  int i;
+  int i, node;
+  int *statuses;
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
@@ -771,6 +771,15 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   // Set the page addresses
   pageaddrs = malloc(nbpages * sizeof(void *));
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->normalpagesize;
+
+  // Find out where the pages are
+  statuses = malloc(nbpages * sizeof(int));
+  ma_memory_move_pages(pageaddrs, nbpages, NULL, statuses);
+  if (statuses[0] == -ENOENT) {
+    mdebug_mami("Could not locate pages\n");
+  }
+  node = statuses[0];
+#warning todo: what if pages are on different nodes
 
   ma_memory_register(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, 0);
 

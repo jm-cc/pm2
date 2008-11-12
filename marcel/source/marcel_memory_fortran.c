@@ -79,4 +79,24 @@ void marcel_memory_print_(int *memory_manager) {
   marcel_memory_print(manager);
 }
 
+void marcel_memory_task_attach_(int *memory_manager,
+				int *buffer,
+				marcel_t *owner,
+				int *err) {
+  int _err;
+  marcel_memory_manager_t *manager = (void *)*memory_manager;
+  _err = marcel_memory_task_attach(manager, (void *)*buffer, owner);
+  *err = _err;
+}
+
+void marcel_memory_task_unattach_(int *memory_manager,
+				  int *buffer,
+				  marcel_t *owner,
+				  int *err) {
+  int _err;
+  marcel_memory_manager_t *manager = (void *)*memory_manager;
+  _err = marcel_memory_task_unattach(manager, (void *)*buffer, owner);
+  *err = _err;
+}
+
 #endif

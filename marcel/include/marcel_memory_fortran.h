@@ -46,6 +46,16 @@ void marcel_memory_locate_(int *memory_manager,
 
 void marcel_memory_print_(int *memory_manager);
 
+void marcel_memory_task_attach_(int *memory_manager,
+				int *buffer,
+				marcel_t *owner,
+				int *err);
+
+void marcel_memory_task_unattach_(int *memory_manager,
+				  int *buffer,
+				  marcel_t *owner,
+				  int *err);
+
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

@@ -350,7 +350,8 @@ while [ $_l -le $_level ]; do
     _l=`expr $_l + 1`
 done
 
-for f in `ls /tmp/tests_${USER}_database/*.dat` ; do
+shopt -s nullglob
+for f in /tmp/tests_${USER}_database/*.dat ; do
     d_filename=$(basename $f .dat)
     d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
     d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')

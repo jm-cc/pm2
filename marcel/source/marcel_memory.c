@@ -399,19 +399,21 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
 
 static
 void ma_memory_register_pages(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
-                              void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages, int mami_allocated) {
+                              void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages, int mami_allocated,
+                              marcel_memory_data_t **data) {
   LOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
     ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
+    if (data) *data = (*memory_tree)->data;
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      ma_memory_register_pages(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated);
+      ma_memory_register_pages(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
     else
-      ma_memory_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated);
+      ma_memory_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
   }
   LOG_OUT();
 }
@@ -657,7 +659,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 
     // Register memory
     mdebug_mami("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages, 1);
+    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
@@ -757,7 +759,8 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
 void ma_memory_register(marcel_memory_manager_t *memory_manager,
                         void *buffer,
                         size_t size,
-                        int mami_allocated) {
+                        int mami_allocated,
+                        marcel_memory_data_t **data) {
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
   int i, node;
@@ -785,7 +788,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   node = statuses[0];
 #warning todo: what if pages are on different nodes
 
-  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated);
+  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
 }
 
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,
@@ -795,7 +798,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_register(memory_manager, buffer, size, 0);
+  ma_memory_register(memory_manager, buffer, size, 0, NULL);
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
   return 0;
@@ -856,7 +859,7 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
       for(i=1 ; i<subareas ; i++) {
 	newbuffers[i] = pageaddrs[0];
 	ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->protection,
-                                 data->with_huge_pages, data->mami_allocated);
+                                 data->with_huge_pages, data->mami_allocated, NULL);
 	pageaddrs += subpages;
       }
 
@@ -1212,7 +1215,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
                             size_t size,
                             marcel_entity_t *owner) {
   int err=0, source;
-  marcel_memory_data_t *data = NULL;
+  marcel_memory_data_t *data;
 
   marcel_spin_lock(&(memory_manager->lock));
   LOG_IN();
@@ -1226,8 +1229,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
     if (err < 0) {
       mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", buffer, buffer+size);
-      ma_memory_register(memory_manager, buffer, size, 0);
-      err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
+      ma_memory_register(memory_manager, buffer, size, 0, &data);
     }
     else if (size < data->size) {
       size_t newsize;
@@ -1244,9 +1246,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
         data->nbpages = size/memory_manager->normalpagesize;
         data->endaddress = data->startaddress + size;
         data->size = size;
-        ma_memory_register(memory_manager, buffer+size, newsize, data->mami_allocated);
-
-        err = ma_memory_locate(memory_manager, memory_manager->root, buffer+size, newsize, &source, &next_data);
+        ma_memory_register(memory_manager, buffer+size, newsize, data->mami_allocated, &next_data);
         data->next = next_data;
       }
     }

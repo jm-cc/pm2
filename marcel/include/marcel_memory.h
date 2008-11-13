@@ -198,7 +198,8 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 void ma_memory_register(marcel_memory_manager_t *memory_manager,
                         void *buffer,
                         size_t size,
-                        int mami_allocated);
+                        int mami_allocated,
+                        marcel_memory_data_t **data);
 
 void ma_memory_unregister(marcel_memory_manager_t *memory_manager,
 			  marcel_memory_tree_t **memory_tree,

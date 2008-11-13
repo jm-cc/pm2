@@ -819,10 +819,10 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
-int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
-			  void *buffer,
-			  unsigned int subareas,
-			  void **newbuffers) {
+int marcel_memory_split(marcel_memory_manager_t *memory_manager,
+                        void *buffer,
+                        unsigned int subareas,
+                        void **newbuffers) {
   marcel_memory_data_t *data = NULL;
   int err=0;
   int source;

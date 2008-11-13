@@ -296,10 +296,10 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
  * @param subareas number of subareas
  * @param newbuffers addresses of the new memory areas
  */
-int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
-			  void *buffer,
-			  unsigned int subareas,
-			  void **newbuffers);
+int marcel_memory_split(marcel_memory_manager_t *memory_manager,
+                        void *buffer,
+                        unsigned int subareas,
+                        void **newbuffers);
 
 /**
  *

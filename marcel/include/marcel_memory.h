@@ -189,15 +189,13 @@ struct marcel_memory_manager_s {
 
 #section marcel_functions
 
-/*
- *
- */
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 			   marcel_memory_tree_t **memory_tree);
 
-/*
- *
- */
+void ma_memory_register(marcel_memory_manager_t *memory_manager,
+                        void *buffer,
+                        size_t size);
+
 void ma_memory_unregister(marcel_memory_manager_t *memory_manager,
 			  marcel_memory_tree_t **memory_tree,
 			  void *buffer);
@@ -210,36 +208,21 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
                           int nbpages,
                           int node);
 
-/*
- *
- */
 int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager,
                                      marcel_memory_huge_pages_area_t **space,
                                      int node);
 
-/*
- *
- */
 int ma_memory_check_pages_location(void **pageaddrs,
                                    int pages,
                                    int node);
 
-/*
- *
- */
 int ma_memory_move_pages(void **pageaddrs,
                          int pages,
                          int *nodes,
                          int *status);
 
-/*
- *
- */
 int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager);
 
-/*
- *
- */
 int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
 
 #section functions

@@ -722,8 +722,7 @@ static
 int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *buffer, size_t size, int *node, marcel_memory_data_t **data) {
  LOG_IN();
   if (memory_tree==NULL) {
-    // We did not find the address
-    *node = -1;
+    mdebug_mami("The interval [%p:%p] is not managed by MAMI.\n", buffer, buffer+size);
     errno = EINVAL;
     return -errno;
   }
@@ -742,7 +741,6 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     return ma_memory_locate(memory_manager, memory_tree->rightchild, buffer, size, node, data);
   }
   else {
-    *node = -1;
     errno = EINVAL;
     return -errno;
   }
@@ -799,13 +797,8 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
 
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = EINVAL;
-    err = -errno;
-  }
-  else {
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  if (err >= 0) {
     ma_memory_unregister(memory_manager, &(memory_manager->root), buffer);
   }
   marcel_spin_unlock(&(memory_manager->lock));
@@ -826,13 +819,8 @@ int marcel_memory_scatter(marcel_memory_manager_t *memory_manager,
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
 
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = EINVAL;
-    err = -errno;
-  }
-  else {
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  if (err >= 0) {
     size_t subsize;
     int subpages, i;
     void **pageaddrs;
@@ -1113,8 +1101,10 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
-  ret = ma_memory_migrate_pages(memory_manager, buffer, data, source, dest);
+  ret = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  if (ret >= 0) {
+    ret = ma_memory_migrate_pages(memory_manager, buffer, data, source, dest);
+  }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
   return ret;
@@ -1127,7 +1117,7 @@ static
 void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   ucontext_t *context = _context;
   void *addr;
-  int err, source, dest;
+  int err, source=0, dest;
   marcel_memory_data_t *data = NULL;
 
   marcel_spin_lock(&(g_memory_manager->lock));
@@ -1140,8 +1130,8 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 #error Unsupported architecture
 #endif
 
-  ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, 1, &source, &data);
-  if (source == -1) {
+  err = ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, 1, &source, &data);
+  if (err < 0) {
     // The address is not managed by MAMI. Reset the segv handler to its default action, to cause a segfault
     struct sigaction act;
     act.sa_handler = SIG_DFL;
@@ -1190,13 +1180,8 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   }
 
   g_memory_manager = memory_manager;
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = EINVAL;
-    err = -errno;
-  }
-  else {
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  if (err >= 0) {
     data->status = MARCEL_MEMORY_INITIAL_STATUS;
     err = mprotect(data->startaddress, data->size, PROT_NONE);
     if (err < 0) {
@@ -1219,13 +1204,8 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
   marcel_spin_lock(&(memory_manager->lock));
   LOG_IN();
 
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = EINVAL;
-    err = -errno;
-  }
-  else {
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
+  if (err >= 0) {
     tbx_slist_push(data->owners, owner);
     mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
     ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
@@ -1245,13 +1225,8 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   marcel_spin_lock(&(memory_manager->lock));
   LOG_IN();
 
-  ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    errno = EINVAL;
-    err = -errno;
-  }
-  else {
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  if (err >= 0) {
     marcel_entity_t *res;
 
     res = tbx_slist_search_and_extract(data->owners, NULL, owner);

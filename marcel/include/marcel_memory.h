@@ -332,7 +332,8 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
 /**
  * @param memory_manager pointer to the memory manager
  * @param buffer pointer to the memory to be located
- * @param node returns the location of the given memory, or -1 when not found
+ * @param node returns the location of the given memory
+ * @return a negative value and set errno to EINVAL when address not found
  */
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
                          void *buffer,

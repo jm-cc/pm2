@@ -27,8 +27,10 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
 
   ptr = marcel_memory_allocate_on_node(&memory_manager, 1000, 0);
+
   err = marcel_memory_locate(&memory_manager, ptr, 1000, &node);
   marcel_printf("The memory is located on node #%d\n", node);
+  if (err < 0) marcel_printf("marcel_memory_locate: error %d\n", err);
 
   err = marcel_memory_locate(&memory_manager, NULL, 0, &node);
   marcel_printf("The memory is located on node #%d\n", node);

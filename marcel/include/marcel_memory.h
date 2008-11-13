@@ -104,6 +104,9 @@ struct marcel_memory_data_s {
   marcel_memory_status_t status;
   /** \brief Entities which are attached to the memory area */
   p_tbx_slist_t owners;
+
+  /** \brief */
+  marcel_memory_data_t *next;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */
@@ -194,7 +197,8 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 
 void ma_memory_register(marcel_memory_manager_t *memory_manager,
                         void *buffer,
-                        size_t size);
+                        size_t size,
+                        int mami_allocated);
 
 void ma_memory_unregister(marcel_memory_manager_t *memory_manager,
 			  marcel_memory_tree_t **memory_tree,

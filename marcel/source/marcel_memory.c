@@ -242,6 +242,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->with_huge_pages = with_huge_pages;
   (*memory_data)->mami_allocated = mami_allocated;
   (*memory_data)->owners = tbx_slist_nil();
+  (*memory_data)->next = NULL;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -368,6 +369,7 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       marcel_memory_data_t *data = (*memory_tree)->data;
+      marcel_memory_data_t *next_data = data->next;
 
       if (data->mami_allocated) {
 	mdebug_mami("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
@@ -376,11 +378,16 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
 	ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
       }
       else {
-	mdebug_mami("Address %p not allocated by MAMI.\n", buffer);
+	mdebug_mami("Address %p is not allocated by MAMI.\n", buffer);
       }
 
       // Delete tree
       ma_memory_delete_tree(memory_manager, memory_tree);
+
+      if (next_data) {
+        mdebug_mami("Needs to unregister the next memory area\n");
+        ma_memory_unregister(memory_manager, &(memory_manager->root), next_data->startaddress);
+      }
     }
     else if (buffer < (*memory_tree)->data->pageaddrs[0])
       ma_memory_unregister(memory_manager, &((*memory_tree)->leftchild), buffer);
@@ -749,7 +756,8 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
 
 void ma_memory_register(marcel_memory_manager_t *memory_manager,
                         void *buffer,
-                        size_t size) {
+                        size_t size,
+                        int mami_allocated) {
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
   int i, node;
@@ -777,7 +785,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   node = statuses[0];
 #warning todo: what if pages are on different nodes
 
-  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, 0);
+  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated);
 }
 
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,
@@ -787,7 +795,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_register(memory_manager, buffer, size);
+  ma_memory_register(memory_manager, buffer, size, 0);
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();
   return 0;
@@ -1218,12 +1226,35 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
     if (err < 0) {
       mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", buffer, buffer+size);
-      ma_memory_register(memory_manager, buffer, size);
+      ma_memory_register(memory_manager, buffer, size, 0);
       err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
     }
-    tbx_slist_push(data->owners, owner);
-    mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
-    ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
+    else if (size < data->size) {
+      size_t newsize;
+      marcel_memory_data_t *next_data;
+
+      if (size % memory_manager->normalpagesize) {
+        mdebug_mami("The size must be a multiple of a page size\n");
+        errno = EINVAL;
+        err = -errno;
+      }
+      else {
+        mdebug_mami("The memory area needs to be split\n");
+        newsize = data->size-size;
+        data->nbpages = size/memory_manager->normalpagesize;
+        data->endaddress = data->startaddress + size;
+        data->size = size;
+        ma_memory_register(memory_manager, buffer+size, newsize, data->mami_allocated);
+
+        err = ma_memory_locate(memory_manager, memory_manager->root, buffer+size, newsize, &source, &next_data);
+        data->next = next_data;
+      }
+    }
+    if (err >= 0) {
+      tbx_slist_push(data->owners, owner);
+      mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
+      ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
+    }
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();

@@ -17,10 +17,10 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
+static marcel_memory_manager_t memory_manager;
 
-void split(void *ptr, size_t size);
-void attach(void *ptr, size_t size);
+static void split(void *ptr, size_t size);
+static void attach(void *ptr, size_t size);
 
 int marcel_main(int argc, char * argv[]) {
   int err;
@@ -58,7 +58,7 @@ int marcel_main(int argc, char * argv[]) {
   return 0;
 }
 
-void split(void *ptr, size_t size) {
+static void split(void *ptr, size_t size) {
   int err, i;
   void **newptrs;
 
@@ -75,7 +75,7 @@ void split(void *ptr, size_t size) {
   }
 }
 
-void attach(void *ptr, size_t size) {
+static void attach(void *ptr, size_t size) {
   marcel_t self;
   int err, i;
   long *stats;

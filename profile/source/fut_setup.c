@@ -34,6 +34,8 @@
 #include "fxt/fxt-tools.h"
 #include "pm2_fxt-tools.h"
 
+#include <tbx.h>
+
 #ifdef MARCEL
 #  include "sys/marcel_flags.h"
 #endif
@@ -100,7 +102,7 @@ int fut_setup( unsigned int nlongs, unsigned int keymask, unsigned int threadid 
 
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
-		free(bufptr);
+		TBX_FREE(bufptr);
 		/* nothing allocated now */
 		bufptr = NULL;
 		nallocated = 0;
@@ -108,7 +110,7 @@ int fut_setup( unsigned int nlongs, unsigned int keymask, unsigned int threadid 
 
 	/*	allocate buffer */
 	nbytes = nlongs * sizeof(long);		/* force multiple of 4/8 bytes */
-	if( (bufptr = (char *)malloc(nbytes)) == NULL )
+	if( (bufptr = (char *)TBX_MALLOC(nbytes)) == NULL )
 		return -ENOMEM;
 	nallocated = nbytes;
 	nlongs = nbytes / sizeof(long);
@@ -198,7 +200,7 @@ int fut_done( void )
 	fut_active = 0;
 	if( bufptr != NULL )
 		{/* previous allocation region was not released, do it now */
-		free(bufptr);
+		TBX_FREE(bufptr);
 		bufptr = NULL;			/* nothing allocated now */
 		nallocated = 0;
 		}

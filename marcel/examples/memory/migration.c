@@ -27,12 +27,12 @@ void allocation_and_migration(int cpu, int mem) {
   size = memory_manager.normalpagesize * 2;
 
   buffer = marcel_memory_allocate_on_node(&memory_manager, size, mem);
-  marcel_memory_locate(&memory_manager, buffer, &bnode);
+  marcel_memory_locate(&memory_manager, buffer, size, &bnode);
   marcel_printf("Node before migration %d\n", bnode);
 
   marcel_memory_migrate_pages(&memory_manager, buffer, cpu);
 
-  marcel_memory_locate(&memory_manager, buffer, &anode);
+  marcel_memory_locate(&memory_manager, buffer, size, &anode);
   marcel_printf("Node after migration %d\n", anode);
   marcel_memory_free(&memory_manager, buffer);
 }

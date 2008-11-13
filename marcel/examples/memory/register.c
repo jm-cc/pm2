@@ -34,7 +34,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, &self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, &self);
   if (err < 0) {
     perror("marcel_memory_task_attach");
   }

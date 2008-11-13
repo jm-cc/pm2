@@ -331,11 +331,12 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
 
 /**
  * @param memory_manager pointer to the memory manager
- * @param address pointer to the memory to be located
+ * @param buffer pointer to the memory to be located
  * @param node returns the location of the given memory, or -1 when not found
  */
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
-                         void *address,
+                         void *buffer,
+                         size_t size,
                          int *node);
 
 /**
@@ -451,6 +452,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
  */
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               void *buffer,
+                              size_t size,
                               marcel_t *owner);
 
 /**
@@ -471,6 +473,7 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
  */
 int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,
+                                size_t size,
                                 marcel_bubble_t *owner);
 
 /**

@@ -34,13 +34,13 @@ any_t reader(any_t arg) {
   struct timeval tv1, tv2;
   unsigned long us, ns;
 
-  marcel_memory_locate(&memory_manager, b, &snode);
+  marcel_memory_locate(&memory_manager, b, 0, &snode);
 
   gettimeofday(&tv1, NULL);
   b[1] = 42;
   gettimeofday(&tv2, NULL);
 
-  marcel_memory_locate(&memory_manager, b, &dnode);
+  marcel_memory_locate(&memory_manager, b, 0, &dnode);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;

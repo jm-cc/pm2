@@ -211,9 +211,9 @@ main (int argc, char **argv)
     attach_mem:
       if (mpol == MAMI || mpol == MAMI_NEXT_TOUCH) {
 	/* FIXME: marcel_memory_attach () can't be called more than once on the same data. */
-        marcel_memory_task_attach(&memory_manager, a[team], &working_threads[team][i]);
-        marcel_memory_task_attach(&memory_manager, b[team], &working_threads[team][i]);
-        marcel_memory_task_attach(&memory_manager, c[team], &working_threads[team][i]);
+        marcel_memory_task_attach(&memory_manager, a[team], tab_len, &working_threads[team][i]);
+        marcel_memory_task_attach(&memory_manager, b[team], tab_len, &working_threads[team][i]);
+        marcel_memory_task_attach(&memory_manager, c[team], tab_len, &working_threads[team][i]);
       }
       else {
         for (node = 0; node < marcel_nbnodes; node++) {

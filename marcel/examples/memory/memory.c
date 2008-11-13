@@ -32,7 +32,7 @@ any_t memory(any_t arg) {
   e = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
   buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize);
 
-  marcel_memory_locate(&memory_manager, &(buffer[0]), &node);
+  marcel_memory_locate(&memory_manager, &(buffer[0]), 0, &node);
   if (node == marcel_self()->id) {
     marcel_printf("[%d] Address is located on the correct node %d\n", marcel_self()->id, node);
   }

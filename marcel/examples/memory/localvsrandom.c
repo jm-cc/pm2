@@ -32,7 +32,7 @@ any_t compute(any_t arg) {
   marcel_fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", marcel_self()->id, marcel_current_node(), marcel_current_vp());
   buffer = buffers[node];
 
-  marcel_memory_locate(&memory_manager, buffer, &where);
+  marcel_memory_locate(&memory_manager, buffer, 0, &where);
   marcel_fprintf(stderr,"[%d] Memory on node #%d\n", marcel_self()->id, where);
 
   for(j=0 ; j<LOOPS ; j++) {

@@ -19,8 +19,8 @@
 
 marcel_memory_manager_t memory_manager;
 
-void scatter(void *ptr);
-void attach(void *ptr);
+void scatter(void *ptr, size_t size);
+void attach(void *ptr, size_t size);
 
 int marcel_main(int argc, char * argv[]) {
   int err;
@@ -31,12 +31,12 @@ int marcel_main(int argc, char * argv[]) {
 
   marcel_printf("Scattering memory area allocated by MAMI\n");
   ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize());
-  scatter(ptr);
+  scatter(ptr, 10*getpagesize());
   marcel_memory_free(&memory_manager, ptr);
 
   marcel_printf("\nScattering unknown memory area\n");
   ptr = malloc(50*getpagesize());
-  scatter(ptr);
+  scatter(ptr, 50*getpagesize());
 
   err = marcel_memory_register(&memory_manager, ptr, 50*getpagesize());
   if (err < 0) {
@@ -44,7 +44,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   marcel_printf("\nScattering memory area not allocated by MAMI\n");
-  scatter(ptr);
+  scatter(ptr, 50*getpagesize());
   err = marcel_memory_unregister(&memory_manager, ptr);
   if (err < 0) {
     perror("marcel_memory_unregister");
@@ -58,11 +58,11 @@ int marcel_main(int argc, char * argv[]) {
   return 0;
 }
 
-void scatter(void *ptr) {
+void scatter(void *ptr, size_t size) {
   int err, i;
   void **newptrs;
 
-  attach(ptr);
+  attach(ptr, size);
   newptrs = malloc(10 * sizeof(void **));
   err = marcel_memory_scatter(&memory_manager, ptr, 10, newptrs);
   if (err < 0) {
@@ -70,18 +70,18 @@ void scatter(void *ptr) {
   }
   else {
     for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);
-    attach(ptr);
+    attach(ptr, size);
     for(i=1 ; i<10 ; i++) marcel_memory_free(&memory_manager, newptrs[i]);
   }
 }
 
-void attach(void *ptr) {
+void attach(void *ptr, size_t size) {
   marcel_t self;
   int err, i;
   long *stats;
 
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, &self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, size, &self);
   if (err < 0) {
     perror("marcel_memory_task_attach");
   }

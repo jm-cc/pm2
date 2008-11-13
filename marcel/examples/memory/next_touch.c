@@ -29,17 +29,17 @@ any_t writer(any_t arg) {
 any_t reader(any_t arg) {
   int node;
 
-  marcel_memory_locate(&memory_manager, b, &node);
+  marcel_memory_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
   marcel_memory_migrate_on_next_touch(&memory_manager, b);
 
-  marcel_memory_locate(&memory_manager, b, &node);
+  marcel_memory_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
   b[1] = 42;
 
-  marcel_memory_locate(&memory_manager, b, &node);
+  marcel_memory_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
   marcel_memory_free(&memory_manager, b);

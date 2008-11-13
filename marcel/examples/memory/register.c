@@ -17,12 +17,11 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
-
 int marcel_main(int argc, char * argv[]) {
   int err;
   void *ptr;
   marcel_t self;
+  marcel_memory_manager_t memory_manager;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);

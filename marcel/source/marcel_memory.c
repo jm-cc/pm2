@@ -24,6 +24,8 @@
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
+#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) & (~(pagesize - 1))) + ((((uintptr_t) address) & (pagesize >> 1)) << 1))
+
 static unsigned long gethugepagesize(void) {
   char line[1024];
   FILE *f;
@@ -1220,38 +1222,44 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
   marcel_spin_lock(&(memory_manager->lock));
   LOG_IN();
 
+  mdebug_mami("Attaching [%p:%p] to entity %p\n", buffer, buffer+size, owner);
+
   if (!buffer) {
     mdebug_mami("Cannot attach NULL buffer\n");
     errno = EINVAL;
     err = -errno;
   }
   else {
+    void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+    void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+    size_t aligned_size = aligned_endbuffer-aligned_buffer;
+
+    if (!aligned_size) {
+      aligned_endbuffer = aligned_buffer + memory_manager->normalpagesize;
+      aligned_size = memory_manager->normalpagesize;
+    }
+
     err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
     if (err < 0) {
-      mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", buffer, buffer+size);
-      ma_memory_register(memory_manager, buffer, size, 0, &data);
+      mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
+      ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
       err = 0;
     }
     else if (size < data->size) {
       size_t newsize;
       marcel_memory_data_t *next_data;
 
-      if (size % memory_manager->normalpagesize) {
-        mdebug_mami("The size must be a multiple of a page size\n");
-        errno = EINVAL;
-        err = -errno;
-      }
-      else {
-        mdebug_mami("The memory area needs to be split\n");
-        newsize = data->size-size;
-        data->nbpages = size/memory_manager->normalpagesize;
-        data->endaddress = data->startaddress + size;
-        data->size = size;
-        ma_memory_register(memory_manager, buffer+size, newsize, data->mami_allocated, &next_data);
-        data->next = next_data;
-      }
+      mdebug_mami("The memory area needs to be split\n");
+      newsize = data->size-aligned_size;
+      data->nbpages = aligned_size/memory_manager->normalpagesize;
+      data->endaddress = data->startaddress + aligned_size;
+      data->size = aligned_size;
+      ma_memory_register(memory_manager, aligned_endbuffer, newsize, data->mami_allocated, &next_data);
+      data->next = next_data;
     }
+
     if (err >= 0) {
+      mdebug_mami("Adding entity %p to data %p\n", owner, data);
       tbx_slist_push(data->owners, owner);
       mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
       ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
@@ -1276,8 +1284,10 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   if (err >= 0) {
     marcel_entity_t *res;
 
+    mdebug_mami("Removing entity %p from data %p\n", owner, data);
+
     if (tbx_slist_is_nil(data->owners)) {
-      mdebug_mami("The entity %p is not attached to the memory area %p.\n", owner, buffer);
+      mdebug_mami("The entity %p is not attached to the memory area %p(1).\n", owner, buffer);
       errno = ENOENT;
       err = -errno;
     }

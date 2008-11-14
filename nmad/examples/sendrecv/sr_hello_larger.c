@@ -22,7 +22,13 @@
 
 #include "helper.h"
 
-static void process(char *msg) {
+/*
+ * This example tests the case where where the actual received 
+ * message size is smaller than the expected (posted) size.
+ */
+
+static void process(char *msg)
+{
   uint64_t len;
 
   if (is_server) {
@@ -37,14 +43,12 @@ static void process(char *msg) {
 
     len *= 2;
 
-    //nm_sr_irecv(p_core, gate_id, 0, buf, len, &request1);
     nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request1);
     nm_sr_rwait(p_core, &request1);
 
     sleep(2);
 
-    //nm_sr_irecv(p_core, gate_id, 0, buf2, len, &request2);
-    nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf2, len, &request2);
+    nm_sr_irecv(p_core, gate_id, 0, buf2, len, &request2);
     nm_sr_rwait(p_core, &request2);
 
     if (!strcmp(buf, msg) && !strcmp(buf2, msg)) {
@@ -74,7 +78,8 @@ const char *msg_beg   = "hello";
 const char *msg_end   = "world!";
 #define SIZE  (32 * 1024)
 
-int main(int argc, char	**argv) {
+int main(int argc, char	**argv)
+{
 
   init(&argc, argv);
 

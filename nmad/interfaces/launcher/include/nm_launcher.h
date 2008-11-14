@@ -33,8 +33,6 @@ struct newmad_launcher_driver_s
   nm_core_t (*get_core)(void*_status);
 
   void      (*get_gates)(void*_status, nm_gate_t*gates);
-
-  void      (*post_init)(void*_status);
 };
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);

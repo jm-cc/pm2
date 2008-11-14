@@ -1152,8 +1152,6 @@ int MPI_Init(int *argc,
   puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
   (*r.driver->init)(r._status, argc, *argv, "Mad-MPI");
 
-  (*r.driver->post_init)(r._status);
-
   /*
    * Internal initialisation
    */

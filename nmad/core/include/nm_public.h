@@ -93,8 +93,6 @@ int nm_core_init(int	   *argc,
 		 char	   *argv[],
 		 nm_core_t *pp_core);
 
-int nm_core_post_init(nm_core_t p_core);
-
 int nm_core_exit(nm_core_t p_core);
 
 int nm_core_driver_load(nm_core_t         p_core,

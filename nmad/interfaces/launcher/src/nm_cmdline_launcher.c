@@ -29,7 +29,6 @@ static int       nm_cmdline_launcher_get_size(void*_status);
 static int       nm_cmdline_launcher_get_rank(void*_status);
 static nm_core_t nm_cmdline_launcher_get_core(void*_status);
 static void      nm_cmdline_launcher_get_gates(void*_status, nm_gate_t*gates);
-static void      nm_cmdline_launcher_post_init(void*_status);
 
 const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
   {
@@ -37,8 +36,7 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
     .get_size  = &nm_cmdline_launcher_get_size,
     .get_rank  = &nm_cmdline_launcher_get_rank,
     .get_core  = &nm_cmdline_launcher_get_core,
-    .get_gates = &nm_cmdline_launcher_get_gates, 
-    .post_init = &nm_cmdline_launcher_post_init
+    .get_gates = &nm_cmdline_launcher_get_gates
   };
 
 extern void nm_cmdline_launcher_declare(void)
@@ -395,11 +393,6 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 
  out_err:
   exit(EXIT_FAILURE);
-}
-
-void nm_cmdline_launcher_post_init(void*_status)
-{
-  nm_core_post_init(p_core);
 }
 
 int nm_cmdline_launcher_exit(void)

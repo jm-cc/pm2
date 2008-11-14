@@ -1230,6 +1230,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     if (err < 0) {
       mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", buffer, buffer+size);
       ma_memory_register(memory_manager, buffer, size, 0, &data);
+      err = 0;
     }
     else if (size < data->size) {
       size_t newsize;

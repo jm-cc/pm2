@@ -29,19 +29,13 @@ int marcel_main(int argc, char * argv[]) {
   ptr = malloc(1000);
   self = marcel_self();
   err = marcel_memory_task_attach(&memory_manager, ptr, 1000, &self);
-  if (err < 0) {
-    perror("marcel_memory_task_attach");
-  }
+  marcel_printf("marcel_memory_task_attach with unregistered memory: %d\n", err);
+
   err = marcel_memory_task_unattach(&memory_manager, ptr, &self);
-  if (err < 0) {
-    perror("marcel_memory_task_unattach");
-  }
+  marcel_printf("marcel_memory_task_unattach: %d\n", err);
 
   err = marcel_memory_unregister(&memory_manager, ptr);
-  if (err < 0) {
-    perror("marcel_memory_unregister");
-  }
-  free(ptr);
+  marcel_printf("marcel_memory_task_unregister: %d\n", err);
 
   marcel_memory_exit(&memory_manager);
 

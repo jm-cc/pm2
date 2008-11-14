@@ -43,10 +43,7 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
     .pack_ctrl_chunk    = &strat_aggreg_pack_ctrl_chunk,
     .pack_extended_ctrl = &strat_aggreg_pack_extended_ctrl,
     .pack_extended_ctrl_end = &strat_aggreg_pack_extended_ctrl_end,
-    .try                = NULL,
-    .commit             = NULL,
     .try_and_commit     = &strat_aggreg_try_and_commit,
-    .cancel             = NULL,
 #ifdef NMAD_QOS
     .ack_callback       = NULL,
 #endif /* NMAD_QOS */

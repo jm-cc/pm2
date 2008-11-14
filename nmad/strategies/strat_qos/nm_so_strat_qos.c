@@ -42,10 +42,7 @@ static const struct nm_strategy_iface_s nm_so_strat_qos_driver =
   {
     .pack           = &strat_qos_pack,
     .pack_ctrl      = &strat_qos_pack_ctrl,
-    .try            = NULL,
-    .commit         = NULL,
     .try_and_commit = &strat_qos_try_and_commit,
-    .cancel         = NULL,
     .ack_callback   = &strat_qos_ack_callback,
     .rdv_accept     = &strat_qos_rdv_accept
   };

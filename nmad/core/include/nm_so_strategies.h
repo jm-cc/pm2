@@ -63,23 +63,10 @@ struct nm_strategy_iface_s
                                 struct nm_gate *p_gate,
                                 struct nm_pkt_wrap *p_so_pw);
 
-  /** Compute the best possible packet rearrangement with no side-effect
-      on pre_list */
-  int (*try)(void*_status,
-	     struct nm_gate *p_gate,
-	     unsigned *score);
-
-  /** Apply the "already computed" strategy on pre_list and return next
-      packet to send */
-  int (*commit)(void*_status);
-
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
   int (*try_and_commit)(void*_status,
 			struct nm_gate *p_gate);
-
-  /** Forget the pre-computed stuff */
-  int (*cancel)(void*_status);
 
   /** Allow (or not) the acknowledgement of a Rendez-Vous request.
       @warning drv_id and trk_id are IN/OUT parameters. They initially

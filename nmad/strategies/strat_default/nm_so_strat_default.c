@@ -42,10 +42,7 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .pack_ctrl_chunk    = &strat_default_pack_ctrl_chunk,
     .pack_extended_ctrl = &strat_default_pack_extended_ctrl,
     .pack_extended_ctrl_end = &strat_default_pack_extended_ctrl_end,
-    .try                = NULL,
-    .commit             = NULL,
     .try_and_commit     = &strat_default_try_and_commit,
-    .cancel             = NULL,
 #ifdef NMAD_QOS
     .ack_callback    = NULL,
 #endif /* NMAD_QOS */

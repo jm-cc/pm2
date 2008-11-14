@@ -436,6 +436,11 @@ int nm_core_driver_exit(struct nm_core *p_core)
     {
       struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       int i;
+#ifdef PIOMAN
+      nmad_unlock();
+      piom_server_stop(&p_drv->server);
+      nmad_lock();
+#endif /* PIOMAN */
       for(i = 0; i < p_core->nb_gates; i++)
 	{
 	  struct nm_gate*p_gate = &p_core->gate_array[i];
@@ -455,11 +460,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	      nm_so_pw_free(p_pw);
 	    }
 	}
-#ifdef PIOMAN
-      nmad_unlock();
-      piom_server_stop(&p_drv->server);
-      nmad_lock();
-#endif /* PIOMAN */
     }
 
   /* disconnect all gates */

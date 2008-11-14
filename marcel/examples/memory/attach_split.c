@@ -29,16 +29,11 @@ int marcel_main(int argc, char * argv[]) {
   ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize());
   self = marcel_self();
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, 10, &self);
-  if (err < 0) marcel_printf("marcel_memory_attach: error %d\n", err);
-  marcel_printf("First attach failure\n");
-
-  err = marcel_memory_task_attach(&memory_manager, ptr, 2*getpagesize(), &self);
-  if (err < 0) marcel_printf("marcel_memory_attach: error %d\n", err);
-  marcel_printf("Second attach success\n");
+  err = marcel_memory_task_attach(&memory_manager, ptr, (2*getpagesize())-10, &self);
+  marcel_printf("marcel_memory_attach: %d\n", err);
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, &self);
-  if (err < 0) marcel_printf("marcel_memory_unattach: error %d\n", err);
+  marcel_printf("marcel_memory_unattach: %d\n", err);
 
   marcel_memory_free(&memory_manager, ptr);
   marcel_memory_exit(&memory_manager);

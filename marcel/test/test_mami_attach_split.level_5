@@ -20,9 +20,8 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_attach: error -22
-First attach failure
-Second attach success
+marcel_memory_attach: 0
+marcel_memory_unattach: 0
 EOF
 
 . ./mami.sh

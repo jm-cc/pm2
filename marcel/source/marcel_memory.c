@@ -811,13 +811,16 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
   int err=0;
   int source;
+  void *aligned_buffer;
 
   LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
 
+  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
   if (err >= 0) {
-    ma_memory_unregister(memory_manager, &(memory_manager->root), buffer);
+    mdebug_mami("Unregistering [%p:%p]\n", buffer,buffer+data->size);
+    ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
   }
   marcel_spin_unlock(&(memory_manager->lock));
   LOG_OUT();

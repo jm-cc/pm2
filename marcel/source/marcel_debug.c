@@ -41,15 +41,11 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_heap_debug=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mami-debug", &marcel_debug);
 
-#ifdef DEBUG_SCHED
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
-#endif
 
-#ifdef DEBUG_BUBBLE_SCHED
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_bubble_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-bubble-sched", &marcel_debug);
-#endif
 
 #ifdef MARCEL_TRACE
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace=

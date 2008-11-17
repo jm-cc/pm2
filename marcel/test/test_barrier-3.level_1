@@ -29,7 +29,7 @@ create_test_flavor() {
 	--modules="\"marcel tbx init\"" --marcel="mono"			\
 	--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
 	--marcel="standard_main" --marcel="stacksize:1024"		\
-	--marcel="bug_on" --marcel="debug_sched"			\
+	--marcel="bug_on" 			                        \
 	--tbx="safe_malloc" --tbx="parano_malloc"			\
 	--all="gdb" --all="build_static" $_output_redirect
 }

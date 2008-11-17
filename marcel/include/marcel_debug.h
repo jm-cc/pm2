@@ -134,6 +134,12 @@ extern debug_type_t marcel_mami_debug;
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
 #define mdebug_mami(fmt, args...) \
     debug_printf(&marcel_mami_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#define bubble_sched_debug(fmt, args...) \
+    debug_printf(&marcel_bubble_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#define bubble_sched_debugl(level, fmt, args...) \
+  debug_printfl(&marcel_bubble_sched_debug, (level), "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#define sched_debug(fmt, args...) \
+    debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 
 #ifdef PM2_BUG_ON
 #depend "marcel_signal.h[marcel_macros]"
@@ -173,23 +179,6 @@ extern debug_type_t marcel_mami_debug;
 	MA_ALWAYS_BUG_ON(1); \
 	abort(); \
 } while (0)
-
-#ifdef DEBUG_SCHED
-#  define sched_debug(fmt, ...) debug_printf(&marcel_sched_debug, \
-        fmt, ##__VA_ARGS__)
-#else
-#  define sched_debug(fmt, ...) (void)0
-#endif
-
-#ifdef DEBUG_BUBBLE_SCHED
-#  define bubble_sched_debug(fmt, ...) debug_printf(&marcel_bubble_sched_debug, \
-        (fmt), ##__VA_ARGS__)
-#  define bubble_sched_debugl(level, fmt, ...) debug_printfl(&marcel_bubble_sched_debug, (level), \
-        (fmt), ##__VA_ARGS__)
-#else
-#  define bubble_sched_debug(fmt, ...) (void)0
-#  define bubble_sched_debugl(level, fmt, ...) (void)0
-#endif
 
 #ifndef MARCEL_TRACE
 #  define MTRACE(msg, pid) (void)0

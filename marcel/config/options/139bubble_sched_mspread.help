@@ -1,0 +1,1 @@
+Very basic greedy scheduler that spreads a given bubble hierarchy over a given topology level while taking load indications into account

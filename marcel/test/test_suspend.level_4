@@ -30,7 +30,7 @@ create_test_flavor() {
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa\" --marcel=\"marcel_main\" \
 	--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
-	--marcel=\"enable_suspend\" \
+	--marcel=\"enable_suspend\" --marcel=\"enable_deviation\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 }

@@ -85,7 +85,7 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=enable_stats --marcel=bubble_sched_null \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_signals
+	--marcel=enable_deviation --marcel=enable_signals
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum" --all=build_static --common=static \
@@ -194,7 +194,7 @@ registering_flavors() {
 	--marcel=marcel_main --marcel=pmarcel \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_signals
+	--marcel=enable_deviation --marcel=enable_signals
 
     register_flavor libpthread \
 	--modules="marcel tbx init stackalign" --all=opt --all=build_dynamic \
@@ -202,7 +202,7 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_signals \
+	--marcel=enable_deviation --marcel=enable_signals \
 	--common=link_pm2_shared \
 	--marcel=enable_stats --marcel=bubble_sched_null
 

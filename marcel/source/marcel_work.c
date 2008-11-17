@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_DEVIATION_ENABLED
 void ma_do_work(marcel_t self)
 {
 	if (HAS_DEVIATE_WORK(self)) {
@@ -25,4 +26,4 @@ void ma_do_work(marcel_t self)
 
 	MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 }
-
+#endif /* MARCEL_DEVIATION_ENABLED */

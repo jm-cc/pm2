@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_DEVIATION_ENABLED
 #define MAX_RECORDS    1024
 
 static ma_allocator_t * deviate_records;
@@ -211,3 +212,4 @@ void marcel_disable_deviation(void)
 	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 }
+#endif /* MARCEL_DEVIATION_ENABLED */

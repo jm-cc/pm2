@@ -171,8 +171,10 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->spinlock_backtrace = 0;
 #endif
 
+#ifdef MARCEL_DEVIATION_ENABLED
 	t->not_deviatable = attr->not_deviatable;
 	t->work = MARCEL_WORK_INIT;
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 #ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_lock_init(&t->siglock);
@@ -187,12 +189,14 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	t->waitinfo = NULL;
 #endif
 
+#ifdef MARCEL_DEVIATION_ENABLED
 #ifdef MA__LIBPTHREAD
 	ma_spin_lock_init(&t->cancellock);
 	t->cancelstate = MARCEL_CANCEL_ENABLE;
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
 	t->canceled = MARCEL_NOT_CANCELED;
 #endif
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 	//t->tls
 
@@ -847,6 +851,7 @@ DEF___PTHREAD(int, join, (pthread_t tid, void **status), (tid, status))
 
 /*************pthread_cancel**********************************/
 
+#ifdef MARCEL_DEVIATION_ENABLED
 DEF_MARCEL(int, cancel, (marcel_t pid), (pid),
 {
 	LOG_IN();
@@ -890,6 +895,7 @@ DEF_POSIX(int, cancel, (pmarcel_t ptid), (ptid),
 })
 
 DEF_PTHREAD(int, cancel, (pthread_t pid), (pid))
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 /************************detach*********************/
 
@@ -1095,7 +1101,11 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 		(*transf) (t, depl, blk, arg);
 
 		if (!fork) {
+#ifdef MARCEL_DEVIATION_ENABLED
 			marcel_cancel(t);
+#else /* MARCEL_DEVIATION_ENABLED */
+			MA_BUG();
+#endif /* MARCEL_DEVIATION_ENABLED */
 		}
 	}
 }
@@ -1119,8 +1129,12 @@ void marcel_end_hibernation(marcel_t __restrict t, post_migration_func_t f,
 	} else
 		ma_wake_up_thread(t);
 
+#ifdef MARCEL_DEVIATION_ENABLED
 	if (f != NULL)
 		marcel_deviate(t, f, arg);
+#else /* MARCEL_DEVIATION_ENABLED */
+	MA_BUG_ON(f);
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 	ma_preempt_enable();
 }
@@ -1220,6 +1234,7 @@ DEF_PTHREAD(int,getconcurrency,(void),())
 DEF___PTHREAD(int,getconcurrency,(void),())
 
 /***************************setcancelstate************************/
+#ifdef MARCEL_DEVIATION_ENABLED
 static int TBX_UNUSED check_setcancelstate(int state)
 {
 	if ((state != MARCEL_CANCEL_ENABLE) && (state != MARCEL_CANCEL_DISABLE)) {
@@ -1333,6 +1348,8 @@ strong_alias(__pmarcel_enable_asynccancel, __pthread_enable_asynccancel);
 strong_alias(__pmarcel_disable_asynccancel, __pthread_disable_asynccancel);
 #endif
 #endif
+
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 /***********************setprio_posix2marcel******************/
 static int setprio_posix2marcel(marcel_t thread,int prio,int policy)

@@ -180,7 +180,9 @@ DEC_MARCEL_POSIX(int, detach, (marcel_t pid) __THROW);
 
 /** Posix cancel.
  */
+#ifdef MARCEL_DEVIATION_ENABLED
 DEC_MARCEL_POSIX(int, cancel, (marcel_t pid) __THROW);
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 #section functions
 static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2);
@@ -208,6 +210,7 @@ DEC_MARCEL_POSIX(int, setconcurrency, (int newlevel) __THROW);
  */
 DEC_MARCEL_POSIX(int, getconcurrency, (void) __THROW);
 
+#ifdef MARCEL_DEVIATION_ENABLED
 /** Posix setcancelstate.
  */
 DEC_MARCEL_POSIX(int, setcancelstate,(int state, int *oldstate) __THROW);
@@ -219,6 +222,7 @@ DEC_MARCEL_POSIX(int, setcanceltype,(int type, int *oldtype) __THROW);
 /** Posix testcancel.
  */
 DEC_MARCEL_POSIX(void, testcancel,(void) __THROW);
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 /** GNU setaffinity_np.
  */
@@ -244,7 +248,7 @@ DEC_MARCEL_POSIX(int, getaffinity_np, (marcel_t pid, size_t cpusetsize, pmarcel_
 int fastcall __pmarcel_enable_asynccancel (void);
 void fastcall __pmarcel_disable_asynccancel(int old);
 
-#ifndef MA__IFACE_PMARCEL
+#if !defined(MA__IFACE_PMARCEL) || !defined(MARCEL_DEVIATION_ENABLED)
 #  define __pmarcel_enable_asynccancel() 0
 #  define __pmarcel_disable_asynccancel(old) (void)(old)
 #endif

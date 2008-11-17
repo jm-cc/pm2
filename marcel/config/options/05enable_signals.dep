@@ -1,1 +1,2 @@
 Provide: marcel_signals
+Depend: marcel_deviation

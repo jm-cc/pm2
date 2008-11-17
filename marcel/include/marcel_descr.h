@@ -216,12 +216,12 @@ struct marcel_task {
 	int spinlock_backtrace;
 #endif
 
-	/* TODO: option + attr->not_deviatable */
+#ifdef MARCEL_DEVIATION_ENABLED
 	/* travaux en cours (deviate, signaux, ...) */
 	unsigned not_deviatable;
 	struct marcel_work work;
+#endif /* MARCEL_DEVIATION_ENABLED */
 
-	/* TODO: dépend de deviate */
 #ifdef MARCEL_SIGNALS_ENABLED
 /*********signaux***********/
 	ma_spinlock_t siglock;
@@ -237,6 +237,7 @@ struct marcel_task {
 	siginfo_t *waitinfo;
 #endif
 
+#ifdef MARCEL_DEVIATION_ENABLED
 #ifdef MA__IFACE_PMARCEL
 	/*********attributs*********/
 	ma_spinlock_t cancellock;
@@ -244,6 +245,7 @@ struct marcel_task {
 	int canceltype;
 	int canceled;
 #endif
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 #ifdef MA__PROVIDE_TLS
 	/* TLS Exec (non dynamique) */

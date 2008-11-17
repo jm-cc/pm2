@@ -56,7 +56,9 @@ struct __marcel_attr_s {
 #ifdef MARCEL_MIGRATION_ENABLED
 	unsigned not_migratable;
 #endif /* MARCEL_MIGRATION_ENABLED */
+#ifdef MARCEL_DEVIATION_ENABLED
 	unsigned not_deviatable;
+#endif /* MARCEL_DEVIATION_ENABLED */
 	int not_preemptible;
 	/* int sched_policy; */
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
@@ -102,6 +104,13 @@ struct __marcel_attr_s {
 #  define MARCEL_ATTR_MIGRATION_INITIALIZER
 #endif /* MARCEL_MIGRATION_ENABLED */
 
+#ifdef MARCEL_DEVIATION_ENABLED
+#  define MARCEL_ATTR_DEVIATION_INITIALIZER \
+        .not_deviatable= 0,
+#else /* MARCEL_DEVIATION_ENABLED */
+#  define MARCEL_ATTR_DEVIATION_INITIALIZER
+#endif /* MARCEL_DEVIATION_ENABLED */
+
 #define MARCEL_ATTR_INITIALIZER { \
   .__schedparam= {MA_DEF_PRIO,}, \
   .__schedpolicy= SCHED_OTHER, \
@@ -113,7 +122,7 @@ struct __marcel_attr_s {
   .__cpusetsize = 0, \
   MARCEL_ATTR_USERSPACE_INITIALIZER \
   MARCEL_ATTR_MIGRATION_INITIALIZER \
-  .not_deviatable= 0, \
+  MARCEL_ATTR_DEVIATION_INITIALIZER \
   .not_preemptible= 0, \
   .vpset= MARCEL_VPSET_FULL, \
   .flags= 0, \
@@ -144,6 +153,13 @@ struct __marcel_attr_s {
 #  define MARCEL_ATTR_MIGRATION_DESTROYER
 #endif /* MARCEL_MIGRATION_ENABLED */
 
+#ifdef MARCEL_DEVIATION_ENABLED
+#  define MARCEL_ATTR_DEVIATION_DESTROYER \
+        .not_deviatable = -1,
+#else /* MARCEL_DEVIATION_ENABLED */
+#  define MARCEL_ATTR_DEVIATION_DESTROYER
+#endif /* MARCEL_DEVIATION_ENABLED */
+
 #define MARCEL_ATTR_DESTROYER { \
   .__schedparam= {-1,}, \
   .__schedpolicy= MARCEL_SCHED_INVALID, \
@@ -155,7 +171,7 @@ struct __marcel_attr_s {
   .__cpusetsize = -1, \
   MARCEL_ATTR_USERSPACE_DESTROYER \
   MARCEL_ATTR_MIGRATION_DESTROYER \
-  .not_deviatable= -1, \
+  MARCEL_ATTR_DEVIATION_DESTROYER \
   .not_preemptible= -1, \
   .vpset= MARCEL_VPSET_ZERO, \
   .flags= -1, \
@@ -204,9 +220,11 @@ int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
                                   tbx_bool_t * __restrict migratable);
 #endif /* MARCEL_MIGRATION_ENABLED */
 
+#ifdef MARCEL_DEVIATION_ENABLED
 int marcel_attr_setdeviationstate(marcel_attr_t *attr, tbx_bool_t deviatable);
 int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
                                   tbx_bool_t * __restrict deviatable);
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 int marcel_attr_setprio(marcel_attr_t *attr, int prio);
 int marcel_attr_getprio(__const marcel_attr_t * __restrict attr,

@@ -24,15 +24,17 @@
 
 #ifdef MA__BUBBLES
 ma_runqueue_t ma_gang_rq;
+static int keep_running;
+marcel_sem_t schedulers = MARCEL_SEM_INITIALIZER(0);
 
-any_t TBX_NORETURN marcel_gang_scheduler(any_t runqueue) {
+any_t marcel_gang_scheduler(any_t runqueue) {
 	marcel_entity_t *e, *ee;
 	marcel_bubble_t *b;
 	ma_runqueue_t *work_rq = (void*) runqueue;
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_gang_rq);
 	/* Attendre un tout petit peu que la création de threads se fasse */
 	marcel_usleep(1);
-	while(1) {
+	while (keep_running) {
 		/* First clean the work_rq runqueue */
 		PROF_EVENT1(rq_lock,work_rq);
 		ma_holder_lock_softirq(&work_rq->as_holder);
@@ -73,6 +75,8 @@ any_t TBX_NORETURN marcel_gang_scheduler(any_t runqueue) {
 		PROF_EVENTSTR(sched_status,"gang scheduler: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE*marcel_gettimeslice()/1000);
 	}
+	marcel_sem_V(&schedulers);
+	return NULL;
 }
 
 #if 0
@@ -140,6 +144,7 @@ static int gang_sched_init(void) {
 static marcel_t gang_thread, clean_thread, gang_thread1, gang_thread2, gang_thread3, gang_thread4;
 
 static int gang_sched_start(void) {
+	keep_running = 1;
 #if 1
 	/* un seul gang scheduler */
 	gang_thread = marcel_start_gang_scheduler(&ma_main_runqueue, 1);
@@ -163,8 +168,9 @@ static int gang_sched_start(void) {
 
 static int gang_sched_exit(void) {
 	marcel_entity_t *e, *ee;
+	keep_running = 0;
 
-#define CANCEL(var) if (var) { marcel_cancel(var); var = NULL; }
+#define CANCEL(var) if (var) { marcel_sem_P(&schedulers); var = NULL; }
 	CANCEL(gang_thread)
 	CANCEL(clean_thread)
 	CANCEL(gang_thread1)

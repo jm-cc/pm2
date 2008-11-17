@@ -394,6 +394,7 @@ extern int pmarcel_once (pmarcel_once_t *__once_control,
    exception in C++ code.  If cancellation is implemented by unwinding
    this is necessary to have the compiler generate the unwind information.  */
 
+#ifdef MARCEL_DEVIATION_ENABLED
 /* Set cancelability state of current thread to STATE, returning old
    state in *OLDSTATE if OLDSTATE is not NULL.  */
 extern int pmarcel_setcancelstate (int __state, int *__oldstate);
@@ -409,6 +410,7 @@ extern int pmarcel_cancel (pmarcel_t __th);
    the thread as per pmarcel_exit(PMARCEL_CANCELED) if it has been
    cancelled.  */
 extern void pmarcel_testcancel (void);
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 
 

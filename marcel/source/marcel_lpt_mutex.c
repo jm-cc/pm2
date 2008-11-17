@@ -422,6 +422,7 @@ static int fork_generation = 0;	/* Child process increments this after fork. */
 
 enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
 
+#ifdef MARCEL_DEVIATION_ENABLED
 static void marcel_once_cancelhandler(void *arg)
 {
 	marcel_once_t *once_control = arg;
@@ -431,6 +432,7 @@ static void marcel_once_cancelhandler(void *arg)
 	marcel_mutex_unlock(&once_masterlock);
 	marcel_cond_broadcast(&once_finished);
 }
+#endif /* MARCEL_DEVIATION_ENABLED */
 int lpt_once(lpt_once_t * once_control, 
 	void (*init_routine)(void)) {
         LOG_IN();
@@ -468,9 +470,13 @@ int lpt_once(lpt_once_t * once_control,
 	if (*once_control == NEVER) {
 		*once_control = IN_PROGRESS | fork_generation;
 		marcel_mutex_unlock(&once_masterlock);
+#ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_push(marcel_once_cancelhandler, once_control);
+#endif /* MARCEL_DEVIATION_ENABLED */
 		init_routine();
+#ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_pop(0);
+#endif /* MARCEL_DEVIATION_ENABLED */
 		marcel_mutex_lock(&once_masterlock);
 		WRITE_MEMORY_BARRIER();
 		*once_control = DONE;

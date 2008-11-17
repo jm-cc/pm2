@@ -284,6 +284,7 @@ int marcel_attr_getmigrationstate(__const marcel_attr_t * __restrict attr,
 }
 #endif /* MARCEL_MIGRATION_ENABLED */
 
+#ifdef MARCEL_DEVIATION_ENABLED
 int marcel_attr_setdeviationstate(marcel_attr_t * attr, tbx_bool_t deviatable)
 {
 	attr->not_deviatable = (deviatable ? 0 : 1);
@@ -296,6 +297,7 @@ int marcel_attr_getdeviationstate(__const marcel_attr_t * __restrict attr,
 	*deviatable = (attr->not_deviatable ? tbx_false : tbx_true);
 	return 0;
 }
+#endif /* MARCEL_DEVIATION_ENABLED */
 
 int marcel_attr_setprio(marcel_attr_t * attr, int prio)
 {

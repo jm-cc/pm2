@@ -623,7 +623,9 @@ void marcel_init_section(int sec)
 #endif				// MA__LWPS
 		} else if (section == MA_INIT_MAIN_LWP) {
 			ma_allocator_init();
+#ifdef MARCEL_DEVIATION_ENABLED
 			ma_deviate_init();
+#endif /* MARCEL_DEVIATION_ENABLED */
 #ifdef MARCEL_SIGNALS_ENABLED
 			ma_signals_init();
 #endif

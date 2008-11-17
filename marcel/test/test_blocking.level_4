@@ -29,7 +29,7 @@ create_test_flavor() {
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"smp\" --marcel=\"marcel_main\" \
-	--marcel=\"bubble_sched_null\" --marcel=\"enable_blocking\" \
+	--marcel=\"bubble_sched_null\" --marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
 	--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 }

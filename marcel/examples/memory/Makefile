@@ -23,7 +23,7 @@ ifndef FLAVOR
   endif # PM2_FLAVOR
 endif # FLAVOR
 
-FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep fortran)
+FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep marcel=fortran)
 ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif

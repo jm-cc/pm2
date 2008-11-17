@@ -632,5 +632,22 @@ void marcel_bubble_spread_entities(marcel_entity_t *e[], int ne, struct marcel_t
 	ma_spin_unlock_softirq(&spread_lock);
 }
 
+static marcel_bubble_t *b = &marcel_root_bubble;
+
+static int
+mspread_sched_submit(marcel_entity_t *e)
+{
+  struct marcel_topo_level *l = marcel_topo_level(0,0);
+  b = ma_bubble_entity(e);
+  marcel_bubble_mspread(b, l);
+
+  return 0;
+}
+
+struct ma_bubble_sched_struct marcel_bubble_mspread_sched = {
+  .submit = mspread_sched_submit,
+  //.vp_is_idle = spread_sched_vp_is_idle,
+};
+
 #endif /* MA__BUBBLES */
 #endif /* MA__NUMA_MEMORY */

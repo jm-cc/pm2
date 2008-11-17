@@ -116,14 +116,18 @@ restart:
 	__ma_local_bh_enable();
 }
 
-void TBX_EXTERN ma_local_bh_enable(void) {
+void TBX_EXTERN ma_local_bh_enable_no_resched(void) {
 	__ma_local_bh_enable();
-	if (!ma_spare_lwp()) {
+	if (tbx_likely(!ma_spare_lwp())) {
 		if (tbx_unlikely(!ma_in_interrupt() &&
 					ma_local_softirq_pending()))
 			ma_do_softirq();
-		ma_preempt_check_resched(0);
 	}
+}
+
+void TBX_EXTERN ma_local_bh_enable(void) {
+	ma_local_bh_enable_no_resched();
+	ma_preempt_check_resched(0);
 }
 
 static inline void __ma_raise_softirq_bhoff(unsigned int nr) {

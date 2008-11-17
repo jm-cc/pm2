@@ -854,8 +854,8 @@ siginfo_t *__restrict info,const struct timespec *__restrict timeout),
 
 waiting:
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-	ma_spin_unlock_softirq(&gsiglock);
-	ma_spin_unlock_softirq(&cthread->siglock);
+	ma_spin_unlock_softirq_no_resched(&gsiglock);
+	ma_spin_unlock_softirq_no_resched(&cthread->siglock);
 
 	waittime = ma_schedule_timeout(waittime);
 

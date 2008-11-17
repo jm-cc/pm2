@@ -332,7 +332,7 @@ retry:
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 		if (ma_topo_vpdata_l(vp,nb_tasks)) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
+			ma_spin_unlock_softirq_no_resched(&ma_topo_vpdata_l(vp,threadlist_lock));
 			ma_schedule();
 			goto retry;
 		}

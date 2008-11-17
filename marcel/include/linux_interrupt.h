@@ -36,6 +36,7 @@
 
 #section marcel_functions
 extern void TBX_EXTERN ma_local_bh_enable(void);
+extern void TBX_EXTERN ma_local_bh_enable_no_resched(void);
 
 #section marcel_types
 enum {

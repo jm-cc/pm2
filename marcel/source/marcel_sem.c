@@ -82,7 +82,7 @@ void marcel_sem_P(marcel_sem_t *s)
 		}
 
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    ma_spin_unlock_bh(&s->lock), ma_spin_lock_bh(&s->lock));
+		    ma_spin_unlock_bh_no_resched(&s->lock), ma_spin_lock_bh(&s->lock));
 	}
 	ma_spin_unlock_bh(&s->lock);
 
@@ -113,7 +113,7 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
 		MA_SET_INTERRUPTED(0);
 		while (c.blocked) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_bh(&s->lock);
+			ma_spin_unlock_bh_no_resched(&s->lock);
 			ma_schedule();
 			ma_spin_lock_bh(&s->lock);
 			if (MA_GET_INTERRUPTED()) {
@@ -201,7 +201,7 @@ int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 		}
 		do {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_bh(&s->lock);
+			ma_spin_unlock_bh_no_resched(&s->lock);
 			jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
 			ma_spin_lock_bh(&s->lock);
 			if (c.blocked) {
@@ -277,7 +277,7 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 		MA_SET_INTERRUPTED(0);
 		do {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock_bh(&s->lock);
+			ma_spin_unlock_bh_no_resched(&s->lock);
 			jiffies_timeout = ma_schedule_timeout(jiffies_timeout);
 			ma_spin_lock_bh(&s->lock);
 			if (jiffies_timeout == 0 || MA_GET_INTERRUPTED()) {

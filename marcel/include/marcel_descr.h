@@ -160,7 +160,6 @@ struct marcel_task {
 #endif /* MARCEL_ATEXIT_ENABLED */
 
 #ifdef MARCEL_CLEANUP_ENABLED
-	/* TODO: option de flavor */
 	/*         cleanup */
 	struct _marcel_cleanup_buffer *last_cleanup;
 #endif /* MARCEL_CLEANUP_ENABLED */

@@ -456,7 +456,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
 
 #define MA_MOVE_MEMORY_MIN 50000
 /* Find an entity to stole up */
-int ma_see_up(struct marcel_topo_level *level)
+int marcel_bubble_msteal_see_up(struct marcel_topo_level *level)
 {
 	/* NUMA penalties */
 	int penalty = MA_DEFAULT_PENALTY;
@@ -533,7 +533,7 @@ int ma_see_up(struct marcel_topo_level *level)
 		return 1;
 	}
 	else {
-		int ret = ma_see_up(father);
+		int ret = marcel_bubble_msteal_see_up(father);
 		return ret;
 	}
 }

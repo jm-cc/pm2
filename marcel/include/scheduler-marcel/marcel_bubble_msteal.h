@@ -30,7 +30,7 @@
  */
 
 #section functions
-extern int ma_see_up(struct marcel_topo_level *level);
+extern int marcel_bubble_msteal_see_up(struct marcel_topo_level *level);
 
 #section common
 #endif /* MA__NUMA_MEMORY */

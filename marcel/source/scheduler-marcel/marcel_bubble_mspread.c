@@ -26,7 +26,7 @@ marcel_bubble_t *registered_bubble;
 /* Spread entities e on topology levels l */
 /* e has ne items, l has nl items */
 static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl,
-												int recurse) {
+                                    int recurse) {
         /*** First part : Analyse, break, count, and recurse in levels or entities ***/
         //marcel_fprintf(stderr,"\nmspread : %d entities on %d level\n",ne,nl);
 
@@ -578,7 +578,7 @@ void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 }
 
 /* Spread entities on levels with memory information */
-void marcel_bubble_spread_entities(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl)
+void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl)
 {
 	ma_spin_lock_softirq(&spread_lock);
 	__marcel_bubble_mspread(e, ne, l, nl, 0);

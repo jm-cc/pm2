@@ -229,7 +229,7 @@ static int __memaware(unsigned vp) {
 
 			/* On remonte les entités, on les verrouille et on respread */
 			ma_lifton_entities(uplevel, uplevel, 0);
-			marcel_bubble_spread_entities(to_spread, num_to_spread, &uplevel, 1);
+			marcel_bubble_mspread_entities(to_spread, num_to_spread, &uplevel, 1);
 
 			ma_clear_spread();
 			ma_topo_unlock_levels(uplevel);
@@ -247,7 +247,7 @@ static int __memaware(unsigned vp) {
 			if (MA_RATIO_THREADS_VPS * allthreads >= nvp) {
 				nbsteals ++;
 				//marcel_fprintf(stderr,"msteal numero %d\n", nbsteals);
-				gotwork = ma_see_up(me);
+				gotwork = marcel_bubble_msteal_see_up(me);
 			}
 			else {
 				nbnots ++;

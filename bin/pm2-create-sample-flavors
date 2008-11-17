@@ -109,7 +109,7 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
-	--marcel=debug_bubblesched --marcel=valgrind --marcel=bug_on \
+	--marcel=valgrind --marcel=bug_on \
 	--all=debug --all=gdb --all=noinline --all=build_both
 
     register_flavor marcel-forestgomp-fxtdebug \
@@ -118,7 +118,7 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
-	--marcel=debug_bubblesched --marcel=profile --marcel=bug_on \
+	--marcel=profile --marcel=bug_on \
 	--profile=autostart \
 	--all=debug --all=gdb --all=noinline --all=build_both
 

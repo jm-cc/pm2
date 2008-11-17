@@ -364,11 +364,23 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 	for_each_entity_scheduled_in_bubble_end()
 }
 
+/* Debuggage : permet de lister les levels */ 	 
+static void ma_see_level(struct marcel_topo_level *level, int recurse) 	 
+{ 	 
+        marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level); 	 
+        int i; 	 
+        for ( i = 0 ; i < level->arity ; i++) { 	 
+                ma_see_level(level->children[i],recurse + 1); 	 
+        } 	 
+}
+
 static int memaware_sched_submit(marcel_entity_t *e)
 {
 	marcel_fprintf(stderr, "memaware_sched_submit\n");
 	marcel_stop_idle_memaware();
-	//ma_see_level(marcel_topo_level(0,0),0);
+#ifdef PM2DEBUG
+	ma_see_level(marcel_topo_level(0,0),0);
+#endif
 	//marcel_see_bubble(ma_bubble_entity(e), 0, 1);
 	if (marcel_topo_node_level != NULL)
 		ma_bubble_memaware_nodelevel = marcel_topo_node_level[0].level;

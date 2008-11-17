@@ -37,7 +37,7 @@ static int ma_stolen_score(marcel_entity_t *entity, int penalty)
 
 	if (entity->type == MA_BUBBLE_ENTITY)
 		ma_bubble_lock(ma_bubble_entity(entity));
-	if (!checkload)
+	if (!ma_bubble_memaware_checkload)
 		load = MA_LOAD_SCORE * log10((double) MA_DEFAULT_LOAD * ma_count_threads_in_entity(entity));
 	if (entity->type == MA_BUBBLE_ENTITY)
 		ma_bubble_unlock(ma_bubble_entity(entity));
@@ -134,7 +134,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
 
 		if (ma_entity_is_active(e) == 0) {
 			current_score = ma_stolen_score(e, penalty);
-			if (checkload)
+			if (ma_bubble_memaware_checkload)
 				*totalload += ma_entity_load(e);
 			else
 				*totalload += MA_DEFAULT_LOAD;
@@ -176,7 +176,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
 
 			/* Best score entity */
 			current_score = ma_stolen_score(e, penalty);
-			if (checkload)
+			if (ma_bubble_memaware_checkload)
 				*totalload += ma_entity_load(e);
 			else
 				*totalload += MA_DEFAULT_LOAD;
@@ -232,7 +232,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
                                 /* One non active entity on runqueue */
                                 current_score = ma_stolen_score(e, penalty);
 
-                                if (checkload)
+                                if (ma_bubble_memaware_checkload)
                                         *totalload += ma_entity_load(e);
                                 else
                                         *totalload += MA_DEFAULT_LOAD;
@@ -273,7 +273,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
                         else {
                                 current_score = ma_stolen_score(e, penalty);
 
-                                if (checkload)
+                                if (ma_bubble_memaware_checkload)
                                         *totalload += ma_entity_load(e);
                                 else
                                         *totalload += MA_DEFAULT_LOAD;
@@ -460,7 +460,7 @@ int marcel_bubble_msteal_see_up(struct marcel_topo_level *level)
 {
 	/* NUMA penalties */
 	int penalty = MA_DEFAULT_PENALTY;
-	if (level->level >= nodelevel) {
+	if (level->level >= ma_bubble_memaware_nodelevel) {
 		/* Out the node */
 		penalty = MA_NODE_LEVEL_PENALTY;
 	}

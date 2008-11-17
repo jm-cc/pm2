@@ -34,21 +34,23 @@ int marcel_start_idle_memaware(void);
 int marcel_stop_idle_memaware(void);
 void marcel_start_checkload(void);
 void marcel_stop_checkload(void);
-extern void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level);
-extern void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number);
+void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number);
 /* @} */
+
+#section marcel_functions
+void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level);
 
 #section marcel_variables
 #depend "marcel_bubble_sched_interface.h[types]"
 extern marcel_bubble_sched_t marcel_bubble_memaware_sched;
 
-extern int nodelevel;
-extern marcel_entity_t * to_spread[256];
-extern int num_to_spread;
-extern ma_spinlock_t to_spread_lock;
+extern int ma_bubble_memaware_nodelevel;
+extern marcel_entity_t * ma_bubble_memaware_to_spread[256];
+extern int ma_bubble_memaware_num_to_spread;
+extern ma_spinlock_t ma_bubble_memaware_to_spread_lock;
 
-extern int checkload;
-extern int maxload;
+extern int ma_bubble_memaware_checkload;
+extern int ma_bubble_memaware_maxload;
 
 #section marcel_macros
 #define MA_DEFAULT_LOAD 1000

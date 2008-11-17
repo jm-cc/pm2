@@ -24,47 +24,68 @@
 #ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
-int checkload = 1;
-int nodelevel = -1;
-int vplevel = -1;
-int maxload = 0;
-marcel_entity_t * to_spread[256];
-int num_to_spread = 0;
-ma_spinlock_t to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
-extern marcel_bubble_t *ma_registered_bubble;
+int ma_bubble_memaware_checkload = 1;
+int ma_bubble_memaware_nodelevel = -1;
+int ma_bubble_memaware_vplevel = -1;
+int ma_bubble_memaware_maxload = 0;
+marcel_entity_t * ma_bubble_memaware_to_spread[256];
+int ma_bubble_memaware_num_to_spread = 0;
+ma_spinlock_t ma_bubble_memaware_to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
 
+/* Regarde si une entite est deja contenue dans une autre */
+#ifdef PM2DEBUG
+static int ma_check_inentity(marcel_entity_t *entity, marcel_entity_t *inentity)
+{
+         marcel_entity_t *downentity;
+
+         if (inentity == entity)
+                 return 1;
+         if (inentity->type != MA_BUBBLE_ENTITY)
+                 return 0;
+         else {
+                 MA_BUG_ON(inentity->type != MA_BUBBLE_ENTITY);
+                 for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(inentity))
+                         if (ma_check_inentity(entity, downentity))
+                                 return 1;
+                 for_each_entity_scheduled_in_bubble_end()
+         }
+         return 0;
+}
+#endif
 
 /* Place une entite dans un tableau de spread et fait attention que l'entite
 	n'est pas deje  presente quelquepart au sein d'une autre entite */
 void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level)
 {
-	ma_spin_lock(&to_spread_lock);
+	ma_spin_lock(&ma_bubble_memaware_to_spread_lock);
 
-#ifdef PM2_DEBUG
-	for (i = 0 ; i < num_to_spread ; i++) {
-		MA_BUG_ON(ma_check_inentity(entity, to_spread[i]));
+#ifdef PM2DEBUG
+        int i, already=0;
+	for (i = 0 ; i < ma_bubble_memaware_num_to_spread ; i++) {
+                already = ma_check_inentity(entity, ma_bubble_memaware_to_spread[i]);
+		MA_BUG_ON(already);
 	}
-	if (!already)
+        if (already)
 #endif
-	{
-		to_spread[num_to_spread] = entity;
-		num_to_spread++;
-		if (level)
+        {
+                ma_bubble_memaware_to_spread[ma_bubble_memaware_num_to_spread] = entity;
+                ma_bubble_memaware_num_to_spread++;
+                if (level)
                         ma_stats_set (long, entity, ma_stats_last_vp_offset, level->number * marcel_vpset_weight(&level->vpset));
-	}
-	ma_spin_unlock(&to_spread_lock);
+        }
+        ma_spin_unlock(&ma_bubble_memaware_to_spread_lock);
 }
 
 static void ma_clear_spread(void)
 {
-        ma_spin_lock(&to_spread_lock);
+        ma_spin_lock(&ma_bubble_memaware_to_spread_lock);
         int i;
-        for (i = 0 ; i < num_to_spread ; i++) {
-                if (to_spread[i]->type == MA_BUBBLE_ENTITY)
-                        ma_bubble_unlock_all_but_levels(ma_bubble_entity(to_spread[i]));
+        for (i = 0 ; i < ma_bubble_memaware_num_to_spread ; i++) {
+                if (ma_bubble_memaware_to_spread[i]->type == MA_BUBBLE_ENTITY)
+                        ma_bubble_unlock_all_but_levels(ma_bubble_entity(ma_bubble_memaware_to_spread[i]));
         }
-        num_to_spread = 0;
-        ma_spin_unlock(&to_spread_lock);
+        ma_bubble_memaware_num_to_spread = 0;
+        ma_spin_unlock(&ma_bubble_memaware_to_spread_lock);
 }
 
 /* Permet de remonter les entites d'un niveau ainsi que des sous-niveau de celui-ci. *
@@ -125,7 +146,7 @@ static void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, 
                 /* charge totale */
                 if (e->type == MA_BUBBLE_ENTITY)
                         ma_bubble_synthesize_stats(ma_bubble_entity(e));
-                (*sum) += (checkload ? ma_entity_load(e) : MA_DEFAULT_LOAD *  ma_count_threads_in_entity(e));
+                (*sum) += (ma_bubble_memaware_checkload ? ma_entity_load(e) : MA_DEFAULT_LOAD *  ma_count_threads_in_entity(e));
                 /* nb threads */
                 if (e->type == MA_BUBBLE_ENTITY) {
                         ma_count_in_bubble(ma_bubble_entity(e),number);
@@ -229,7 +250,7 @@ static int __memaware(unsigned vp) {
 
 			/* On remonte les entités, on les verrouille et on respread */
 			ma_lifton_entities(uplevel, uplevel, 0);
-			marcel_bubble_mspread_entities(to_spread, num_to_spread, &uplevel, 1);
+			marcel_bubble_mspread_entities(ma_bubble_memaware_to_spread, ma_bubble_memaware_num_to_spread, &uplevel, 1);
 
 			ma_clear_spread();
 			ma_topo_unlock_levels(uplevel);
@@ -277,12 +298,12 @@ int marcel_stop_idle_memaware(void)
 /* Permet de quantifier les charges */
 void marcel_start_checkload(void)
 {
-	checkload = 1;
+	ma_bubble_memaware_checkload = 1;
 }
 
 void marcel_stop_checkload(void)
 {
-	checkload = 0;
+	ma_bubble_memaware_checkload = 0;
 }
 
 unsigned long lastmix[32];
@@ -350,13 +371,13 @@ static int memaware_sched_submit(marcel_entity_t *e)
 	//ma_see_level(marcel_topo_level(0,0),0);
 	//marcel_see_bubble(ma_bubble_entity(e), 0, 1);
 	if (marcel_topo_node_level != NULL)
-		nodelevel = marcel_topo_node_level[0].level;
+		ma_bubble_memaware_nodelevel = marcel_topo_node_level[0].level;
 	else
-		nodelevel = -1;
+		ma_bubble_memaware_nodelevel = -1;
 	if (marcel_topo_vp_level != NULL)
-		vplevel = marcel_topo_vp_level[0].level;
+		ma_bubble_memaware_vplevel = marcel_topo_vp_level[0].level;
 	else
-		vplevel = 100;
+		ma_bubble_memaware_vplevel = 100;
 	marcel_bubble_mspread(ma_bubble_entity(e),marcel_topo_level(0,0));
 	//marcel_start_idle_memaware();
 	return 0;

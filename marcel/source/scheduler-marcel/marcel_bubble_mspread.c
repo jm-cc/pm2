@@ -64,7 +64,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 	}
 
 	/* Leave small entities on level */
-	if (checkload) {
+	if (ma_bubble_memaware_checkload) {
 		/* Compute valid entity number */
 		int valid_ne = 0;
 		for (i=0; i<ne; i++) {
@@ -99,7 +99,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 	/* Total load and per_item load */
 	totload = 0;
 	for (i=0; i<ne; i++) {
-                if (checkload)
+                if (ma_bubble_memaware_checkload)
                         totload += ma_entity_load(e[i]);
                 else
                         totload += MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]);
@@ -110,7 +110,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
 	/* Different sorts : by load, by attraction or by both */
 	int big_load;
-	if (checkload) {
+	if (ma_bubble_memaware_checkload) {
 		qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
 		big_load = ma_entity_load(e[0]);
 	}
@@ -120,7 +120,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 	}
 
 	/* The least thick entities first */
-	if (l[0]->type >= nodelevel)
+	if (l[0]->type >= ma_bubble_memaware_nodelevel)
 		qsort(e, ne, sizeof(e[0]), &increasing_order_entity_attraction_compar);
 
 	/** Break biggest and lightest entities **/
@@ -137,7 +137,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		for (i=0; i<ne; i++) {
 			broken = 0;
 			affinity = (e[i]->type == MA_BUBBLE_ENTITY ? ma_bubble_memory_affinity(ma_bubble_entity(e[i])) : 0);
-			load = (checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
+			load = (ma_bubble_memaware_checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
 
 			//if (e[i]->type == MA_BUBBLE_ENTITY)
 				//marcel_fprintf(stderr,"bubble ");
@@ -145,8 +145,8 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
 			/* Load difference against thickness on or upon node levels */
 			if (e[i]->type == MA_BUBBLE_ENTITY && (load > per_item_load || ne < nl)) {
-				if ((affinity < MA_AFFINITY_BREAK && l[0]->level <= nodelevel)
-                                    || (affinity >= MA_AFFINITY_BREAK && l[0]->level > nodelevel)
+				if ((affinity < MA_AFFINITY_BREAK && l[0]->level <= ma_bubble_memaware_nodelevel)
+                                    || (affinity >= MA_AFFINITY_BREAK && l[0]->level > ma_bubble_memaware_nodelevel)
                                     || load > 1.5 * per_item_load)
 					broken = 1;
 				/* Not enough entities for levels, be large with <= */
@@ -176,12 +176,12 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 			for (i=0; i<ne; i++) {
 				broken = 0;
 				affinity = (e[i]->type == MA_BUBBLE_ENTITY ? ma_bubble_memory_affinity(ma_bubble_entity(e[i])) : 0);
-				load = (checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
+				load = (ma_bubble_memaware_checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
 
 				/* Load difference against thickness on or upon node levels */
 				if (e[i]->type == MA_BUBBLE_ENTITY && (load > per_item_load || ne < nl)) {
-					if ((affinity < MA_AFFINITY_BREAK && l[0]->level <= nodelevel)
-                                            || (affinity >= MA_AFFINITY_BREAK && l[0]->level > nodelevel)
+					if ((affinity < MA_AFFINITY_BREAK && l[0]->level <= ma_bubble_memaware_nodelevel)
+                                            || (affinity >= MA_AFFINITY_BREAK && l[0]->level > ma_bubble_memaware_nodelevel)
                                             || load > MA_TO_BIG * per_item_load)
 						broken = 1;
 					if (ne + new_ne <= nl)
@@ -218,7 +218,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
 	/*** Second part : entities placement by memory, my cache, by load ***/
 
-	if (l[0]->type >= nodelevel)
+	if (l[0]->type >= ma_bubble_memaware_nodelevel)
 		//qsort(e, ne, sizeof(e[0]), &decreasing_order_entity_both_compar);
 		qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
 
@@ -259,7 +259,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		//marcel_fprintf(stderr,"entity %p : sumload %d, totload %ld, totload*MA_RATIO %f\n", e[i], sumload, totload, MA_RATIO * totload);
 
 		/** First case : node **/
-		if (l_l[0]->level <= nodelevel /* On or upon nodes */
+		if (l_l[0]->level <= ma_bubble_memaware_nodelevel /* On or upon nodes */
                     && total > MA_ATTRACTION_MIN
                     && preferred_node != -1) /* Preferred node */ {
 			/* Is the preferred node under a present level */
@@ -296,7 +296,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		}
 		else {
 			/** Second case : cache **/
-			if (l_l[0]->level > nodelevel /* Inside node */
+			if (l_l[0]->level > ma_bubble_memaware_nodelevel /* Inside node */
 			    && ma_favourite_vp (e[0]) != -1)/* Preferred vp */ {
                                 bubble_sched_debug("\n********* mode VP : last_vp = %ld *********\n", ma_favourite_vp (e[0]));
 				int mvp = -1;
@@ -352,7 +352,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		/* Entity on level */
 		list_add_tail(&e[i]->next,&l_dist[begin]);
 		/* Load on level */
-		l_load[begin] += (checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
+		l_load[begin] += (ma_bubble_memaware_checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
 		/* One entity more on level */
 		l_n[begin]++;
 
@@ -425,7 +425,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		/* An entity done */
 		overnumber --;
 		/* Load put on level */
-		sumload += (checkload ? ma_entity_load(e[i]) : (ma_entity_load(e[i]) > MA_LIFE_LOAD ?MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]) : 0));
+		sumload += (ma_bubble_memaware_checkload ? ma_entity_load(e[i]) : (ma_entity_load(e[i]) > MA_LIFE_LOAD ?MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]) : 0));
 	}
 
 	for (i=0;i<nl;i++) {
@@ -440,7 +440,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 		/* Entity on level */
 		list_add_tail(&later[i]->next,&l_dist[0]);
 		/* Load on level */
-		l_load[0] += (checkload ? ma_entity_load(later[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(later[i]));
+		l_load[0] += (ma_bubble_memaware_checkload ? ma_entity_load(later[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(later[i]));
 		/* One entity more on level */
 		l_n[0]++;
 

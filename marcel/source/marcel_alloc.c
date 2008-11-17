@@ -587,7 +587,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 					break;
 
 				case MEDIUM_WEIGHT :
-					if (checkload)
+					if (ma_bubble_memaware_checkload)
 						load = ma_entity_load(entity);
 					else
 						load = MA_DEFAULT_LOAD * ma_count_threads_in_entity(entity);
@@ -651,12 +651,12 @@ int ma_node_entity(marcel_entity_t *entity)
 	struct marcel_topo_level *level
 		= tbx_container_of(rq, struct marcel_topo_level, rq);
 		
-	if (nodelevel == -1)
+	if (ma_bubble_memaware_nodelevel == -1)
 	{
 		//marcel_fprintf(stderr,"pas de nodelevel : level %p, level->level %d, level->number %d\n",level,level->level,level->number);
 		return level->number;
 	}
-	while (level->level > nodelevel)
+	while (level->level > ma_bubble_memaware_nodelevel)
 	{
 		//marcel_fprintf(stderr,"level %p, level->level %d, level->number %d\n",level,level->level,level->number);
 		if (level->father == NULL)

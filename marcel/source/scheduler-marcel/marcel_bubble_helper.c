@@ -299,9 +299,10 @@ ma_burst_bubble (marcel_bubble_t *bubble) {
   
   if ((&bubble->as_entity)->sched_holder->type == MA_RUNQUEUE_HOLDER) {
     ma_holder_t *target_holder = (&bubble->as_entity)->sched_holder;
-    for_each_entity_scheduled_in_bubble_begin (e, bubble)
+    for_each_entity_scheduled_in_bubble_begin (e, bubble) {
       ma_move_entity (e, target_holder);
       extracted_entities++;
+    }
     for_each_entity_scheduled_in_bubble_end ()
   }
   

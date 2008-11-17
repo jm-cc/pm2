@@ -44,9 +44,10 @@ static int ma_check_inentity(marcel_entity_t *entity, marcel_entity_t *inentity)
                  return 0;
          else {
                  MA_BUG_ON(inentity->type != MA_BUBBLE_ENTITY);
-                 for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(inentity))
+                 for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(inentity)) {
                          if (ma_check_inentity(entity, downentity))
                                  return 1;
+                 }
                  for_each_entity_scheduled_in_bubble_end()
          }
          return 0;
@@ -122,13 +123,14 @@ static void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 	//marcel_fprintf(stderr,"bubble entity %p\n", &bubble->sched);
 	marcel_entity_t *downentity;
 	ma_holder_lock(&bubble->as_holder);
-	for_each_entity_scheduled_in_bubble_begin(downentity,bubble)
+	for_each_entity_scheduled_in_bubble_begin(downentity,bubble) {
                 if (downentity->type == MA_BUBBLE_ENTITY)
                         ma_count_in_bubble(ma_bubble_entity(downentity),number);
                 else {
                         //marcel_fprintf(stderr,"task entity %p\n", downentity);
                         (*number) ++;
                 }
+        }
 	for_each_entity_scheduled_in_bubble_end();
         ma_holder_unlock(&bubble->as_holder);
 }
@@ -356,11 +358,12 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 	marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse, number, &bubble->as_entity);
 	marcel_entity_t *downentity;
 	int downnumber = 0;
-	for_each_entity_scheduled_in_bubble_begin(downentity,bubble)
+	for_each_entity_scheduled_in_bubble_begin(downentity,bubble) {
 		if (downentity->type == MA_BUBBLE_ENTITY)
 			marcel_see_bubble(ma_bubble_entity(downentity), recurse + 1, downnumber++);
 		else
 			marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse + 1, downnumber++, downentity);
+        }
 	for_each_entity_scheduled_in_bubble_end()
 }
 

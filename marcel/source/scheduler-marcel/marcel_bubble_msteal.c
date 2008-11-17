@@ -101,10 +101,10 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
 	MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
 
 	int number = 0;
-	for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h))
-		/* Almost empty bubble */
-		if (e->type == MA_BUBBLE_ENTITY) {
-			if (ma_bubble_entity(e)->old == 0) {
+	for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h)) {
+                /* Almost empty bubble */
+                if (e->type == MA_BUBBLE_ENTITY) {
+                        if (ma_bubble_entity(e)->old == 0) {
 				if (ma_entity_load(e) < MA_LIFE_LOAD)
 					ma_bubble_entity(e)->old = 1;
 				else
@@ -114,6 +114,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
 		else
 			if (e->init_holder)
 				number ++;
+        }
         for_each_entity_scheduled_in_bubble_end();
 
 	if (!number)
@@ -121,71 +122,71 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
 
 	if (number == 1) {
 		/* Only one entity in bubble. */
-		for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h))
-
-			if (e->sched_holder != h)
+		for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h)) {
+                        if (e->sched_holder != h)
 				continue;
-		if (e->type == MA_BUBBLE_ENTITY)
-			if (ma_bubble_entity(e)->old)
-				continue;
+                        if (e->type == MA_BUBBLE_ENTITY)
+                                if (ma_bubble_entity(e)->old)
+                                        continue;
 
-		if (!e->init_holder)
-			return;
+                        if (!e->init_holder)
+                                return;
 
-		if (ma_entity_is_active(e) == 0) {
-			current_score = ma_stolen_score(e, penalty);
-			if (ma_bubble_memaware_checkload)
-				*totalload += ma_entity_load(e);
-			else
-				*totalload += MA_DEFAULT_LOAD;
+                        if (ma_entity_is_active(e) == 0) {
+                                current_score = ma_stolen_score(e, penalty);
+                                if (ma_bubble_memaware_checkload)
+                                        *totalload += ma_entity_load(e);
+                                else
+                                        *totalload += MA_DEFAULT_LOAD;
 
-			if (current_score >= *score) {
-				*score = current_score;
-				*stolen = e;
-			}
-			return;
-		}
-		else {
-			/* Active entity, look into */
+                                if (current_score >= *score) {
+                                        *score = current_score;
+                                        *stolen = e;
+                                }
+                                return;
+                        }
+                        else {
+                                /* Active entity, look into */
 
-			if (e->type != MA_BUBBLE_ENTITY)
-				return;
-			else {
-				if (!ma_bubble_entity(e)->old) {
-					MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
-					ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
-					ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->as_holder, totalload, penalty, score, stolen, recurse + 1);
-					ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
-				}
-			}
-			for_each_entity_scheduled_in_bubble_end();
-		}
+                                if (e->type != MA_BUBBLE_ENTITY)
+                                        return;
+                                else {
+                                        if (!ma_bubble_entity(e)->old) {
+                                                MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
+                                                ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
+                                                ma_find_interesting_entity_in_bubble(&ma_bubble_entity(e)->as_holder, totalload, penalty, score, stolen, recurse + 1);
+                                                ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
+                                        }
+                                }
+                        }
+                }
+                for_each_entity_scheduled_in_bubble_end();
 	}
 	else {
-		for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h))
-
-			if (e->type == MA_BUBBLE_ENTITY)
+		for_each_entity_scheduled_in_bubble_begin(e,ma_bubble_holder(h)) {
+                        if (e->type == MA_BUBBLE_ENTITY)
 				if (ma_bubble_entity(e)->old)
 					continue;
 
-		if (ma_entity_is_active(e))
-			continue;
-		else {
-			if (!e->init_holder)
-				continue;
+                        if (ma_entity_is_active(e))
+                                continue;
+                        else {
+                                if (!e->init_holder)
+                                        continue;
 
-			/* Best score entity */
-			current_score = ma_stolen_score(e, penalty);
-			if (ma_bubble_memaware_checkload)
-				*totalload += ma_entity_load(e);
-			else
-				*totalload += MA_DEFAULT_LOAD;
+                                /* Best score entity */
+                                current_score = ma_stolen_score(e, penalty);
+                                if (ma_bubble_memaware_checkload)
+                                        *totalload += ma_entity_load(e);
+                                else
+                                        *totalload += MA_DEFAULT_LOAD;
 
-			if (current_score >= *score) {
-				*score = current_score;
-				*stolen = e;
-			}
-		}
+                                if (current_score >= *score) {
+                                        *score = current_score;
+                                        *stolen = e;
+                                }
+                        }
+                }
 		for_each_entity_scheduled_in_bubble_end();
 	}
 }
@@ -420,7 +421,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
 				ma_holder_rawunlock(holder);
 
 			/* We leave here scheduled entities we found on the bubble  we want to lift */
-			for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(family[number]))
+			for_each_entity_scheduled_in_bubble_begin(downentity,ma_bubble_entity(family[number])) {
 				/* To avoid bubble on mother bubble runqueue */
                                 if (rqholder != &marcel_topo_level(0,0)->rq.as_holder) {
 					state = ma_get_entity(downentity);
@@ -429,8 +430,9 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
 					else
 						ma_put_entity(downentity, rqholder, state);
 				}
-			if (downentity->type == MA_BUBBLE_ENTITY)
-				__ma_bubble_unlock(ma_bubble_entity(downentity));
+                                if (downentity->type == MA_BUBBLE_ENTITY)
+                                        __ma_bubble_unlock(ma_bubble_entity(downentity));
+                        }
 			for_each_entity_scheduled_in_bubble_end();
 
 			if (rqholder)

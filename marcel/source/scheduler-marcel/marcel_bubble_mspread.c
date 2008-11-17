@@ -21,8 +21,6 @@
 
 /* Bouger la memoire avec les entites */
 
-marcel_bubble_t *registered_bubble;
-
 /* Spread entities e on topology levels l */
 /* e has ne items, l has nl items */
 static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl,

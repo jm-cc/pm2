@@ -97,7 +97,7 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
     struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
     struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
 
-    int seq = p_so_tag->recv_seq_number;
+    const int seq = p_so_tag->recv_seq_number;
     nm_so_status_t*status = &p_so_tag->status[seq];
 
     if(*status & NM_SO_STATUS_PACKET_HERE) {
@@ -107,8 +107,7 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
       *status = 0;
       p_so_tag->recv_seq_number++;
 
-      any_src->status |= NM_SO_STATUS_UNPACK_HERE;
-      any_src->status |= flag;
+      nm_so_status_event(p_core, NM_SO_STATUS_UNPACK_HERE | flag, p_gate, tag, seq, tbx_true);
 
       any_src->data = data_description;
       any_src->p_gate = p_gate;
@@ -126,8 +125,7 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
 
   NM_SO_TRACE("No data chunk already in - gate_id initialized at -1\n");
   any_src->status = 0;
-  any_src->status |= NM_SO_STATUS_UNPACK_HERE;
-  any_src->status |= flag;
+  nm_so_status_event(p_core, NM_SO_STATUS_UNPACK_HERE | flag, NM_GATE_NONE, tag, 0, tbx_true);
 
   any_src->data = data_description;
   any_src->p_gate = NM_ANY_GATE;
@@ -182,7 +180,8 @@ int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
       p_so_tag->recv[seq].unpack_here.cumulated_len = 0;
     }
 
-  *status = NM_SO_STATUS_UNPACK_HERE | flag;
+  *status = 0;
+  nm_so_status_event(p_gate->p_core, NM_SO_STATUS_UNPACK_HERE | flag, p_gate, tag, seq, tbx_false);
 
   p_so_tag->recv[seq].unpack_here.data = data_description;
 
@@ -213,7 +212,6 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 	}
       else if(seq == p_so_tag->recv_seq_number - 1)
 	{
-	  *status = NM_SO_STATUS_UNPACK_CANCELLED;
 	  nm_so_status_event(p_core, NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
 			     p_gate, tag, seq, tbx_false);
 	  p_so_tag->recv[seq].unpack_here.expected_len = 0;
@@ -362,12 +360,8 @@ static int store_data_or_rdv(tbx_bool_t rdv,
       
       list_add_tail(&chunk->link, p_so_tag->recv[seq].pkt_here.chunks);
     }
-  
-  p_so_tag->status[seq]|= NM_SO_STATUS_PACKET_HERE;
-  if(rdv)
-    {
-      p_so_tag->status[seq] |= NM_SO_STATUS_RDV_HERE;
-    }
+  const nm_so_status_t status = rdv ? (NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE) : NM_SO_STATUS_PACKET_HERE;
+  nm_so_status_event(p_pw->p_gate->p_core, status, p_pw->p_gate, tag, seq, tbx_false);
 
   return NM_SO_HEADER_MARK_UNREAD;
 }
@@ -487,7 +481,7 @@ static int ack_callback(struct nm_pkt_wrap *p_pw,
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   p_so_gate->pending_unpacks--;
-  p_so_tag->status[seq] |= NM_SO_STATUS_ACK_HERE;
+  nm_so_status_event(p_gate->p_core, NM_SO_STATUS_ACK_HERE, p_gate, tag, seq, tbx_false);
 
   list_for_each_entry(p_so_large_pw, &p_so_tag->pending_large_send, link) {
     NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n", p_so_large_pw->seq, p_so_large_pw->chunk_offset);

@@ -28,10 +28,6 @@
 #section common
 #ifdef MA__NUMA_MEMORY
 
-#section variables
-#depend "scheduler/marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_mspread_sched;
-
 #section functions
 int load_spread_scheduler();
 void ma_bubble_register(marcel_bubble_t *b);

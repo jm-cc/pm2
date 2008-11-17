@@ -23,6 +23,20 @@
  * include/linux/spinlock.h - generic locking declarations
  */
 
+/*
+ * Taking a spin lock usually also disable preemption (since else other
+ * spinners would wait for our being rescheduled): ma_*_lock/unlock
+ *
+ * If a spin lock is to be taken from a bottom half or softirq as well, these
+ * have to be disabled as well: ma_*_lock/unlock_softirq/bh
+ *
+ * When releasing a spin lock, we need to check whether we should have been
+ * preempted in the meanwhile, and thus the unlock functions may call
+ * schedule(). If we are to call ma_schedule() shortly (e.g. in a
+ * INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING loop), then we can use the
+ * *_no_resched version to avoid calling ma_schedule() twice.
+ */
+
 #section marcel_macros
 /*
  * Must define these before including other files, inline functions need them

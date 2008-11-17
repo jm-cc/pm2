@@ -31,12 +31,17 @@
 		ma_barrier();  \
 	} while (0)
 
+/* Actual lowlevel bottom-halves enabling. Doesn't check for pending bottom halves */
 #define __ma_local_bh_enable() \
 	do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)
 
 #section marcel_functions
-extern void TBX_EXTERN ma_local_bh_enable(void);
+/* Enable bottom-halves, check for pending bottom halves, but do not try to
+ * reschedule, i.e. the caller promises that he will call schedule shortly. */
 extern void TBX_EXTERN ma_local_bh_enable_no_resched(void);
+/* Enable bottom-halves, check for pending bottom halves, and possibly
+ * reschedule */
+extern void TBX_EXTERN ma_local_bh_enable(void);
 
 #section marcel_types
 enum {

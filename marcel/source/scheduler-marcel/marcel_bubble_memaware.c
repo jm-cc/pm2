@@ -31,6 +31,14 @@ int ma_bubble_memaware_maxload = 0;
 marcel_entity_t * ma_bubble_memaware_to_spread[256];
 int ma_bubble_memaware_num_to_spread = 0;
 ma_spinlock_t ma_bubble_memaware_to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
+/* Nombre de vols, spreads et riens */
+int ma_bubble_memaware_nbsteals = 0;
+int ma_bubble_memaware_nbspreads = 0;
+int ma_bubble_memaware_cspread = 0;
+int ma_bubble_memaware_nbnots = 0;
+unsigned long ma_bubble_memaware_lastmix[32];
+ma_spinlock_t ma_bubble_memaware_remix_lock = MA_SPIN_LOCK_UNLOCKED;
+static int ma_bubble_memaware_want[MA_NR_LWPS];
 
 /* Regarde si une entite est deja contenue dans une autre */
 #ifdef PM2DEBUG
@@ -224,12 +232,6 @@ static int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menu
 
 /************************************************************/
 
-/* Nombre de vols, spreads et riens */
-int nbsteals = 0;
-int nbspreads = 0;
-int nbnots = 0;
-int cspread = 0;
-
 /* Nombre de threads par rapport aux nombre de vps pour voler */
 #define MA_RATIO_THREADS_VPS 1.2
 
@@ -245,9 +247,9 @@ static int __memaware(unsigned vp) {
 		struct marcel_topo_level *uplevel = NULL;
 		int balanced = ma_work_is_balanced_up(vp, me, 0, 0, &uplevel);
 
-		if (!balanced && !cspread) {
+		if (!balanced && !ma_bubble_memaware_cspread) {
 			marcel_fprintf(stderr,"spread\n");
-			nbspreads++;
+			ma_bubble_memaware_nbspreads++;
 			ma_topo_lock_levels(uplevel);
 
 			/* On remonte les entités, on les verrouille et on respread */
@@ -257,24 +259,24 @@ static int __memaware(unsigned vp) {
 			ma_clear_spread();
 			ma_topo_unlock_levels(uplevel);
 
-			cspread = 3;
+			ma_bubble_memaware_cspread = 3;
 			gotwork = 1;
 		}
 		else { /* Vol de travail */
-			cspread --;
+			ma_bubble_memaware_cspread --;
 			marcel_fprintf(stderr,"steal\n");
 			int allthreads, nvp;
 			nvp = marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 			marcel_threadslist(0, NULL, &allthreads, NOT_BLOCKED_ONLY);
 
 			if (MA_RATIO_THREADS_VPS * allthreads >= nvp) {
-				nbsteals ++;
-				//marcel_fprintf(stderr,"msteal numero %d\n", nbsteals);
+				ma_bubble_memaware_nbsteals ++;
+				//marcel_fprintf(stderr,"msteal numero %d\n", ma_bubble_memaware_nbsteals);
 				gotwork = marcel_bubble_msteal_see_up(me);
 			}
 			else {
-				nbnots ++;
-				//marcel_fprintf(stderr,"no mspread, no msteal : %d\n", nbnots);
+				ma_bubble_memaware_nbnots ++;
+				//marcel_fprintf(stderr,"no mspread, no msteal : %d\n", ma_bubble_memaware_nbnots);
 			}
 		}
 	}
@@ -308,25 +310,20 @@ void marcel_stop_checkload(void)
 	ma_bubble_memaware_checkload = 0;
 }
 
-unsigned long lastmix[32];
-ma_spinlock_t remix_lock = MA_SPIN_LOCK_UNLOCKED;
-
 /* gerer un timer pour chaque vp */
 #define MA_TIME_REMIX_AGAIN 50
 /* timer en fonction du nombre de non-vol */
 #define MA_COEF_NOT 0.2
 
 /* La fonction qui decide si on redistribue du travail */
-static int want[MA_NR_LWPS];
-
 static int memaware(unsigned vp)
 {
-	_ma_raw_spin_lock(&remix_lock);
+	_ma_raw_spin_lock(&ma_bubble_memaware_remix_lock);
 
-	if (!want[vp]) {
+	if (!ma_bubble_memaware_want[vp]) {
 		/* First try, or someone did the job for us, abort */
-		want[vp] = 1;
-		_ma_raw_spin_unlock(&remix_lock);
+		ma_bubble_memaware_want[vp] = 1;
+		_ma_raw_spin_unlock(&ma_bubble_memaware_remix_lock);
 		return 1;
 	}
 
@@ -334,10 +331,10 @@ static int memaware(unsigned vp)
 	unsigned long now = marcel_clock();
 
 	int vpnum = (int)vp;
-	if (now - lastmix[vpnum] > (MA_COEF_NOT * nbnots + 1)*MA_TIME_REMIX_AGAIN) {
+	if (now - ma_bubble_memaware_lastmix[vpnum] > (MA_COEF_NOT * ma_bubble_memaware_nbnots + 1)*MA_TIME_REMIX_AGAIN) {
 		if (!__memaware(vp)) {
 			/* pas de travail au moment start */
-			lastmix[vpnum] = marcel_clock();
+			ma_bubble_memaware_lastmix[vpnum] = marcel_clock();
 		}
 	}
 	else {
@@ -345,8 +342,8 @@ static int memaware(unsigned vp)
                    car cherche trop souvent du travail */
 	}
 	/* tell others that we did the job */
-	memset(want, 0, marcel_nbvps()*sizeof(*want));
-	_ma_raw_spin_unlock(&remix_lock);
+	memset(ma_bubble_memaware_want, 0, marcel_nbvps()*sizeof(*ma_bubble_memaware_want));
+	_ma_raw_spin_unlock(&ma_bubble_memaware_remix_lock);
 	return 1;
 }
 

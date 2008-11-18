@@ -27,7 +27,7 @@ extern long move_pages(int pid, unsigned long count,
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */
-#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (((uintptr_t) address) & (pagesize-1))) & (~(pagesize-1)))
+#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
 
 static unsigned long gethugepagesize(void) {
   char line[1024];

@@ -1257,8 +1257,9 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       size_t newsize;
       marcel_memory_data_t *next_data;
 
-      mdebug_mami("The memory area needs to be split\n");
       newsize = data->size-aligned_size;
+      mdebug_mami("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
+                  data->startaddress,data->startaddress+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
       data->nbpages = aligned_size/memory_manager->normalpagesize;
       data->endaddress = data->startaddress + aligned_size;
       data->size = aligned_size;

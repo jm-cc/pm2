@@ -24,20 +24,20 @@
 #ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
-int ma_bubble_memaware_checkload = 1;
-int ma_bubble_memaware_nodelevel = -1;
-int ma_bubble_memaware_vplevel = -1;
-int ma_bubble_memaware_maxload = 0;
-marcel_entity_t * ma_bubble_memaware_to_spread[256];
-int ma_bubble_memaware_num_to_spread = 0;
-ma_spinlock_t ma_bubble_memaware_to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
+static int ma_bubble_memaware_checkload = 1;
+static int ma_bubble_memaware_nodelevel = -1;
+static int ma_bubble_memaware_vplevel = -1;
+static int ma_bubble_memaware_maxload = 0;
+static marcel_entity_t * ma_bubble_memaware_to_spread[256];
+static int ma_bubble_memaware_num_to_spread = 0;
+static ma_spinlock_t ma_bubble_memaware_to_spread_lock = MA_SPIN_LOCK_UNLOCKED;
 /* Nombre de vols, spreads et riens */
-int ma_bubble_memaware_nbsteals = 0;
-int ma_bubble_memaware_nbspreads = 0;
-int ma_bubble_memaware_cspread = 0;
-int ma_bubble_memaware_nbnots = 0;
-unsigned long ma_bubble_memaware_lastmix[32];
-ma_spinlock_t ma_bubble_memaware_remix_lock = MA_SPIN_LOCK_UNLOCKED;
+static int ma_bubble_memaware_nbsteals = 0;
+static int ma_bubble_memaware_nbspreads = 0;
+static int ma_bubble_memaware_cspread = 0;
+static int ma_bubble_memaware_nbnots = 0;
+static unsigned long ma_bubble_memaware_lastmix[32];
+static ma_spinlock_t ma_bubble_memaware_remix_lock = MA_SPIN_LOCK_UNLOCKED;
 static int ma_bubble_memaware_want[MA_NR_LWPS];
 
 /* Regarde si une entite est deja contenue dans une autre */
@@ -364,14 +364,14 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 	for_each_entity_scheduled_in_bubble_end()
 }
 
-/* Debuggage : permet de lister les levels */ 	 
-static void ma_see_level(struct marcel_topo_level *level, int recurse) 	 
-{ 	 
-        marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level); 	 
-        int i; 	 
-        for ( i = 0 ; i < level->arity ; i++) { 	 
-                ma_see_level(level->children[i],recurse + 1); 	 
-        } 	 
+/* Debuggage : permet de lister les levels */
+static void ma_see_level(struct marcel_topo_level *level, int recurse)
+{
+        marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level);
+        int i;
+        for ( i = 0 ; i < level->arity ; i++) {
+                ma_see_level(level->children[i],recurse + 1);
+        }
 }
 
 static int memaware_sched_submit(marcel_entity_t *e)

@@ -113,6 +113,7 @@ extern debug_type_t marcel_mtrace_timer;
 
 extern debug_type_t marcel_heap_debug;
 extern debug_type_t marcel_mami_debug;
+extern debug_type_t marcel_mami_log;
 #endif
 
 #section macros
@@ -140,6 +141,14 @@ extern debug_type_t marcel_mami_debug;
   debug_printfl(&marcel_bubble_sched_debug, (level), "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define sched_debug(fmt, args...) \
     debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+
+#if defined(PM2DEBUG)
+#  define MAMI_LOG_IN()  debug_printf(&marcel_mami_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MAMI_LOG_OUT() debug_printf(&marcel_mami_log, "%s: <--\n", __TBX_FUNCTION__)
+#else
+#  define MAMI_LOG_IN()
+#  define MAMI_LOG_OUT()
+#endif
 
 #ifdef PM2_BUG_ON
 #depend "marcel_signal.h[marcel_macros]"

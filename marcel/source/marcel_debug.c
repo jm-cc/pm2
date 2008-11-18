@@ -40,6 +40,8 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_heap_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-heap-debug", &marcel_debug);
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mami-debug", &marcel_debug);
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_log=
+  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mami-log", &marcel_debug);
 
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);

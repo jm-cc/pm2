@@ -44,16 +44,8 @@ int nm_core_init_piom(struct nm_core *p_core)
   return 0;
 }
 
-int nm_core_exit_piom(struct nm_core *p_core)
-{
-  int i;
-  for(i=0;i<p_core->nb_drivers;i++)
-    piom_server_stop(&p_core->driver_array[i].server);
-  return NM_ESUCCESS;
-}
-
 /* Initialisation du serveur utilisé pour les drivers */
-int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
+static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
 {
   LOG_IN();
   piom_server_init(&p_drv->server, "NMad IO Server");
@@ -284,10 +276,9 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
   /* encode URL */
   const char*drv_url = p_drv->driver->get_driver_url ? p_drv->driver->get_driver_url(p_drv) : NULL;
   p_tbx_string_t url = tbx_string_init_to_cstring(drv_url?:"-");
-  nm_trk_id_t i;
-  for(i = 0; i < p_drv->nb_tracks; i++)
+  for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
     {
-      const char*trk_url = p_drv->driver->get_track_url ? p_drv->driver->get_track_url(p_drv, i) : NULL;
+      const char*trk_url = p_drv->driver->get_track_url ? p_drv->driver->get_track_url(p_drv, trk_id) : NULL;
       tbx_string_append_char(url, '#');
       tbx_string_append_cstring(url, trk_url?:"-");
     }
@@ -295,6 +286,10 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
   tbx_string_free(url);
   FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
+
+#ifdef PIOMAN
+  nm_core_init_piom_drv(p_core, p_drv);
+#endif
 
   err = NM_ESUCCESS;
 
@@ -558,12 +553,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
     {
       *pp_gate = p_gate;
     }
-
-#ifdef PIOMAN
-  int i;
-  for(i = 0; i < p_core->nb_drivers; i++)
-    nm_core_init_piom_drv(p_core,& p_core->driver_array[i]);
-#endif
 
  out:
   return err;

@@ -1320,17 +1320,17 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               void *buffer,
                               size_t size,
-                              marcel_t *owner) {
+                              marcel_t owner) {
   marcel_entity_t *entity;
-  entity = ma_entity_task(*owner);
+  entity = ma_entity_task(owner);
   return ma_memory_entity_attach(memory_manager, buffer, size, entity);
 }
 
 int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,
-                                marcel_t *owner) {
+                                marcel_t owner) {
   marcel_entity_t *entity;
-  entity = ma_entity_task(*owner);
+  entity = ma_entity_task(owner);
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
 }
 

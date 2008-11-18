@@ -442,7 +442,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               void *buffer,
                               size_t size,
-                              marcel_t *owner);
+                              marcel_t owner);
 
 /**
  * Unattach the memory to the specified thread
@@ -452,7 +452,7 @@ int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
  */
 int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,
-                                marcel_t *owner);
+                                marcel_t owner);
 
 /**
  * Attach the memory to the specified bubble

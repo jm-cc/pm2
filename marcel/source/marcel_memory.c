@@ -630,7 +630,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
 static
 void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, unsigned long pagesize, int node, int with_huge_pages) {
   void *buffer;
-  int i, nbpages, protection;
+  int i, nbpages, protection=0;
   size_t realsize;
   void **pageaddrs;
 

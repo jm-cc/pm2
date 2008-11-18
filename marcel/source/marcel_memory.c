@@ -1259,7 +1259,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
 
       newsize = data->size-aligned_size;
       if (!newsize) {
-        mdebug_heap("Cannot split a page\n");
+        mdebug_mami("Cannot split a page\n");
       }
       else {
         mdebug_mami("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,

@@ -38,7 +38,7 @@ mpirun [mpirun_options...] <progname> [options...]
     -t      Testing - do not actually run, just print what would be
             executed
     -v      Verbose - throw in some comments
-    -dbg    Start processes under the gdb debugger.
+    -debug  Start processes under the gdb debugger.
     -valgrind
             Start processes under valgrind.
     -log
@@ -95,7 +95,7 @@ while [ 1 -le $# ] ; do
         machineDir="$1"
 	shift
 	;;
-    -h)
+    -h|-help|--help)
         PrintHelp
       	exit 1
 	;;
@@ -106,7 +106,7 @@ while [ 1 -le $# ] ; do
       	just_testing=1
 	Show=echo
 	;;
-    -dbg | -dbg=* | --dbg=*)
+    -dbg|-debug|--debug|-dbg=*|--dbg=*)
         debugger="yes"
 	;;
     -valgrind)

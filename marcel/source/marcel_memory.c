@@ -1258,13 +1258,18 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       marcel_memory_data_t *next_data;
 
       newsize = data->size-aligned_size;
-      mdebug_mami("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
-                  data->startaddress,data->startaddress+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
-      data->nbpages = aligned_size/memory_manager->normalpagesize;
-      data->endaddress = data->startaddress + aligned_size;
-      data->size = aligned_size;
-      ma_memory_register(memory_manager, aligned_endbuffer, newsize, data->mami_allocated, &next_data);
-      data->next = next_data;
+      if (!newsize) {
+        mdebug_heap("Cannot split a page\n");
+      }
+      else {
+        mdebug_mami("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
+                    data->startaddress,data->startaddress+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
+        data->nbpages = aligned_size/memory_manager->normalpagesize;
+        data->endaddress = data->startaddress + aligned_size;
+        data->size = aligned_size;
+        ma_memory_register(memory_manager, aligned_endbuffer, newsize, data->mami_allocated, &next_data);
+        data->next = next_data;
+      }
     }
 
     if (err >= 0) {

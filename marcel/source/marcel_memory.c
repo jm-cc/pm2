@@ -24,7 +24,12 @@
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
-#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) & (~(pagesize - 1))) + ((((uintptr_t) address) & (pagesize >> 1)) << 1))
+/* align a application-given address to the closest page-boundary:
+ * - keep all bits above pagesize + the next bit
+ * - add this next bit again
+ * so we get all bits above page + 2* the next bit => all bits above page + 0 or 1
+ */
+#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) & (~((pagesize>>1) - 1))) + (((uintptr_t) address) & (pagesize >> 1)))
 
 static unsigned long gethugepagesize(void) {
   char line[1024];

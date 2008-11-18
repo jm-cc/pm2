@@ -94,31 +94,33 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
   first = p_so_sched->next_gate_id;
   do {
     struct nm_gate *p_gate = &p_core->gate_array[p_so_sched->next_gate_id];
-    struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-    struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
-
-    const int seq = p_so_tag->recv_seq_number;
-    nm_so_status_t*status = &p_so_tag->status[seq];
-
-    if(*status & NM_SO_STATUS_PACKET_HERE) {
-      /* Wow! At least one data chunk already in! */
-      NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
-
-      *status = 0;
-      p_so_tag->recv_seq_number++;
-
-      nm_so_status_event(p_core, NM_SO_STATUS_UNPACK_HERE | flag, p_gate, tag, seq, tbx_true);
-
-      any_src->data = data_description;
-      any_src->p_gate = p_gate;
-      any_src->seq = seq;
-
-      p_so_sched->pending_any_src_unpacks++;
-
-      nm_so_process_unexpected(tbx_true, p_gate, tag, seq, len, data_description);
-      goto out;
-    }
-
+    if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+      {
+	struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+	struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	
+	const int seq = p_so_tag->recv_seq_number;
+	nm_so_status_t*status = &p_so_tag->status[seq];
+	
+	if(*status & NM_SO_STATUS_PACKET_HERE) {
+	  /* Wow! At least one data chunk already in! */
+	  NM_SO_TRACE("At least one data chunk already in on gate %u\n", p_gate->id);
+	  
+	  *status = 0;
+	  p_so_tag->recv_seq_number++;
+	  
+	  nm_so_status_event(p_core, NM_SO_STATUS_UNPACK_HERE | flag, p_gate, tag, seq, tbx_true);
+	  
+	  any_src->data = data_description;
+	  any_src->p_gate = p_gate;
+	  any_src->seq = seq;
+	  
+	  p_so_sched->pending_any_src_unpacks++;
+	  
+	  nm_so_process_unexpected(tbx_true, p_gate, tag, seq, len, data_description);
+	  goto out;
+	}
+      }
     p_so_sched->next_gate_id = (p_so_sched->next_gate_id + 1) % p_core->nb_gates;
 
   } while(p_so_sched->next_gate_id != first);
@@ -137,7 +139,13 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
 
   /* Make sure that each gate has a posted receive */
   for(i = 0; i < p_core->nb_gates; i++)
-    nm_so_refill_regular_recv(&p_core->gate_array[i]);
+    {
+      struct nm_gate*p_gate = &p_core->gate_array[i];
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	{
+	  nm_so_refill_regular_recv(p_gate);
+	}
+    }
 
  out:
 

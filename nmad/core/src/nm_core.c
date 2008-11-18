@@ -466,6 +466,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
   for(i = 0 ; i < p_core->nb_gates ; i++)
     {
       struct nm_gate *p_gate = &p_core->gate_array[i];
+      p_gate->status = NM_GATE_STATUS_DISCONNECTED;
       for(j = 0 ; j < NM_DRV_MAX ; j++)
 	{
 	  if (p_gate->p_gate_drv_array[j] != NULL)
@@ -528,7 +529,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
  */
 int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 {
-  struct nm_gate *p_gate = NULL;
   int err = NM_ESUCCESS;
 
   if (p_core->nb_gates == NUMBER_OF_GATES) {
@@ -536,14 +536,15 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
     goto out;
   }
 
-  p_gate	= p_core->gate_array + p_core->nb_gates;
+  struct nm_gate *p_gate = &p_core->gate_array[p_core->nb_gates];
+
+  p_core->nb_gates++;
 
   memset(p_gate, 0, sizeof(struct nm_gate));
 
+  p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->id	 = p_core->nb_gates;
   p_gate->p_core = p_core;
-
-  p_core->nb_gates++;
 
   FUT_DO_PROBE1(FUT_NMAD_INIT_GATE, p_gate->id);
 
@@ -589,6 +590,8 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
   char	*urls[255];
   nm_trk_id_t trk_id;
   int err;
+
+  p_gate->status = NM_GATE_STATUS_CONNECTING;
 
   /* set gate */
   rq.p_gate = p_gate;
@@ -650,29 +653,26 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 	err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, &rq);
 	if (err != NM_ESUCCESS) {
 	  NM_DISPF("drv.ops.connect returned %d", err);
-	  goto out_free;
+	  goto out;
 	}
       } else {
 	err = p_gdrv->receptacle.driver->accept(p_gdrv->receptacle._status, &rq);
 	if (err != NM_ESUCCESS) {
 	  NM_DISPF("drv.ops.accept returned %d", err);
-	  goto out_free;
+	  goto out;
 	}
       }
 
     }
 
   err = NM_ESUCCESS;
-  goto out_free;
+  p_gate->status = NM_GATE_STATUS_CONNECTED;
 
  out:
-  return err;
-
- out_free:
   if (rq.remote_drv_url) {
     TBX_FREE(rq.remote_drv_url);
   }
-  goto out;
+  return err;
 
 }
 

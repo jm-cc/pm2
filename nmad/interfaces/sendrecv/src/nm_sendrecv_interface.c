@@ -357,7 +357,10 @@ static inline int nm_sr_flush(struct nm_core *p_core)
   for(i = 0 ; i < p_core->nb_gates ; i++)
     {
       struct nm_gate *p_gate = &p_core->gate_array[i];
-      ret = nm_so_flush(p_gate);
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	{
+	  ret = nm_so_flush(p_gate);
+	}
     } 
   return ret;
 }
@@ -607,7 +610,7 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
 }
 
 int nm_sr_probe(struct nm_core *p_core,
-		   nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
+		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
 {
   int i;
   NM_SO_SR_LOG_IN();
@@ -616,7 +619,25 @@ int nm_sr_probe(struct nm_core *p_core,
     {
       for(i = 0; i < p_core->nb_gates; i++)
 	{
-	  p_gate = p_core->gate_array + i;
+	  p_gate = &p_core->gate_array[i];
+	  if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	    {
+	      struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	      uint8_t seq = p_so_tag->recv_seq_number;
+	      volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
+	      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
+		*pp_out_gate = p_gate;
+		NM_SO_SR_LOG_OUT();
+		return NM_ESUCCESS;
+	      }
+	    }
+	}
+    }
+  else
+    {
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	{
 	  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
 	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
 	  uint8_t seq = p_so_tag->recv_seq_number;
@@ -628,23 +649,15 @@ int nm_sr_probe(struct nm_core *p_core,
 	  }
 	}
     }
-  else
-    {
-      struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
-      uint8_t seq = p_so_tag->recv_seq_number;
-      volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
-      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
-	*pp_out_gate = p_gate;
-	NM_SO_SR_LOG_OUT();
-	return NM_ESUCCESS;
-      }
-    }
 
   nmad_lock();
   // Nothing on none of the gates
   for(i = 0; i < p_core->nb_gates; i++) {
-    nm_so_refill_regular_recv(&p_core->gate_array[i]);
+    p_gate = &p_core->gate_array[i];
+    if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+      {
+	nm_so_refill_regular_recv(p_gate);
+      }
   }
   nmad_unlock();
 #ifndef PIOMAN

@@ -170,10 +170,13 @@ int nm_sched_out(struct nm_core *p_core)
   for(g = 0; g < p_core->nb_gates; g++)
     {
       struct nm_gate*p_gate = &p_core->gate_array[g];
-      err = nm_so_out_schedule_gate(p_gate);
-      if (err < 0)
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  NM_DISPF("sched.schedule_out returned %d", err);
+	  err = nm_so_out_schedule_gate(p_gate);
+	  if (err < 0)
+	    {
+	      NM_DISPF("sched.schedule_out returned %d", err);
+	    }
 	}
     }
   

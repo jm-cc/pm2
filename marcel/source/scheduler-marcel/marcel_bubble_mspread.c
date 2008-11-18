@@ -551,10 +551,10 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
 /**********************************************************/
 
-ma_spinlock_t spread_lock = MA_SPIN_LOCK_UNLOCKED;
+static ma_spinlock_t ma_bubble_mspread_lock = MA_SPIN_LOCK_UNLOCKED;
 /* Spread a bubble on a level with memory information */
 void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
-	ma_spin_lock_softirq(&spread_lock);
+	ma_spin_lock_softirq(&ma_bubble_mspread_lock);
 	unsigned vp;
 	marcel_entity_t *e = &b->as_entity;
 	ma_bubble_synthesize_stats(b);
@@ -572,13 +572,13 @@ void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
         marcel_vpset_foreach_end()
         ma_bubble_unlock_all(b, l);
 
-	ma_spin_unlock_softirq(&spread_lock);
+	ma_spin_unlock_softirq(&ma_bubble_mspread_lock);
 }
 
 /* Spread entities on levels with memory information */
 void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl)
 {
-	ma_spin_lock_softirq(&spread_lock);
+	ma_spin_lock_softirq(&ma_bubble_mspread_lock);
 	__marcel_bubble_mspread(e, ne, l, nl, 0);
 
 	int i,vp;
@@ -589,7 +589,7 @@ void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_
 		marcel_vpset_foreach_end()
 	}
 
-	ma_spin_unlock_softirq(&spread_lock);
+	ma_spin_unlock_softirq(&ma_bubble_mspread_lock);
 }
 
 #endif /* MA__BUBBLES */

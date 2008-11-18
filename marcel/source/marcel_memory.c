@@ -507,7 +507,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   return err;
 }
 
-static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
+static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
   marcel_memory_huge_pages_area_t *heap = memory_manager->huge_pages_heaps[node];
   marcel_memory_area_t *hheap = NULL, *prev = NULL;
   void *buffer = NULL;
@@ -546,6 +546,7 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   }
 
   buffer = hheap->start;
+  *protection = hheap->protection;
   if (nbpages == hheap->nbpages) {
     if (prev == hheap)
       heap->heap = prev->next;
@@ -573,7 +574,7 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   return buffer;
 }
 
-static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size) {
+static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
   marcel_memory_area_t *heap = memory_manager->heaps[node];
   marcel_memory_area_t *prev = NULL;
   void *buffer;
@@ -609,6 +610,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
   }
 
   buffer = heap->start;
+  *protection = heap->protection;
   if (nbpages == heap->nbpages) {
     if (prev == heap)
       memory_manager->heaps[node] = prev->next;
@@ -625,7 +627,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
 static
 void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, unsigned long pagesize, int node, int with_huge_pages) {
   void *buffer;
-  int i, nbpages;
+  int i, nbpages, protection;
   size_t realsize;
   void **pageaddrs;
 
@@ -645,10 +647,10 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
   realsize = nbpages * pagesize;
 
   if (!with_huge_pages) {
-    buffer = ma_memory_get_buffer_from_heap(memory_manager, node, nbpages, realsize);
+    buffer = ma_memory_get_buffer_from_heap(memory_manager, node, nbpages, realsize, &protection);
   }
   else {
-    buffer = ma_memory_get_buffer_from_huge_pages_heap(memory_manager, node, nbpages, realsize);
+    buffer = ma_memory_get_buffer_from_huge_pages_heap(memory_manager, node, nbpages, realsize, &protection);
   }
 
   if (!buffer) {
@@ -661,7 +663,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 
     // Register memory
     mdebug_mami("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
-    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, memory_manager->heaps[node]->protection, with_huge_pages, 1, NULL);
+    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);

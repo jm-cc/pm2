@@ -107,6 +107,9 @@ struct marcel_memory_data_s {
 
   /** \brief */
   marcel_memory_data_t *next;
+
+  /** \brief */
+  struct list_head list;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */
@@ -474,6 +477,14 @@ int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
 int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
                                   void *buffer,
                                   marcel_bubble_t *owner);
+
+/**
+ * Unattach all the memory areas attached to the specified thread.
+ * @param memory_manager pointer to the memory manager
+ * @param owner thread
+ */
+int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
+                                    marcel_t owner);
 
 /**
  * Indicates if huge pages are available on the system.

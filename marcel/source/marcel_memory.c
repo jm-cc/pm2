@@ -1277,6 +1277,10 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       tbx_slist_push(data->owners, owner);
       mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
       ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
+
+      ma_spin_lock(&(owner->memory_areas_lock));
+      list_add(&(data->list), &(owner->memory_areas));
+      ma_spin_unlock(&(owner->memory_areas_lock));
     }
   }
   marcel_spin_unlock(&(memory_manager->lock));
@@ -1310,6 +1314,10 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
       if (res == owner) {
         mdebug_mami("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
         ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] -= data->size;
+
+        ma_spin_lock(&(owner->memory_areas_lock));
+        list_del(&(data->list));
+        ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {
         mdebug_mami("The entity %p is not attached the memory area %p.\n", owner, buffer);
@@ -1321,6 +1329,21 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   marcel_spin_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return err;
+}
+
+static
+int ma_memory_entity_unattach_all(marcel_memory_manager_t *memory_manager,
+                                  marcel_entity_t *owner) {
+  marcel_memory_data_t *data, *ndata;
+
+  MAMI_LOG_IN();
+  //ma_spin_lock(&(owner->memory_areas_lock));
+  list_for_each_entry_safe(data, ndata, &(owner->memory_areas), list) {
+    ma_memory_entity_unattach(memory_manager, data->startaddress, owner);
+  }
+  //ma_spin_unlock(&(owner->memory_areas_lock));
+  MAMI_LOG_OUT();
+  return 0;
 }
 
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
@@ -1355,6 +1378,13 @@ int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
   marcel_entity_t *entity;
   entity = ma_entity_bubble(owner);
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
+}
+
+int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
+                                    marcel_t owner) {
+  marcel_entity_t *entity;
+  entity = ma_entity_bubble(owner);
+  return ma_memory_entity_unattach_all(memory_manager, entity);
 }
 
 int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager) {

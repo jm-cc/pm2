@@ -37,6 +37,11 @@ int marcel_main(int argc, char * argv[]) {
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);
   if (err < 0) perror("marcel_memory_task_unattach");
 
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self);
+  if (err < 0) perror("marcel_memory_task_attach");
+  err = marcel_memory_task_unattach_all(&memory_manager, self);
+  if (err < 0) perror("marcel_memory_task_unattach_all");
+
   marcel_memory_free(&memory_manager, ptr);
   marcel_memory_exit(&memory_manager);
 

@@ -123,26 +123,19 @@ int nm_so_close_gate		(struct nm_core	 *p_core,
 /** Schedule and post new outgoing buffers */
 int nm_so_out_schedule_gate	(struct nm_gate *p_gate);
 
-/** Process complete successful outgoing request */
-int nm_so_out_process_success_rq	(struct nm_core	*p_core,
-                                         struct nm_pkt_wrap *p_pw);
 
-/** Process complete failed outgoing request */
-int nm_so_out_process_failed_rq	(struct nm_core	*p_core,
-				 struct nm_pkt_wrap *p_pw,
-				 int		_err);
+/** Process complete outgoing request */
+int nm_so_process_complete_send(struct nm_core	*p_core,
+				struct nm_pkt_wrap *p_pw,
+				int _err);
 
 
-/** Process complete successful incoming request.
+/** Process complete incoming request.
  */
-int nm_so_in_process_success_rq	(struct nm_core	*p_core,
-				 struct nm_pkt_wrap *p_pw);
+int nm_so_process_complete_recv(struct nm_core	*p_core,
+				struct nm_pkt_wrap *p_pw,
+				int _err);
 
-/** Process complete failed incoming request.
- */
-int nm_so_in_process_failed_rq	(struct nm_core	*p_core,
-				 struct nm_pkt_wrap *p_pw,
-				 int		     _err);
 
 
 #endif /* NM_PRIVATE_H */

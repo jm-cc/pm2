@@ -21,50 +21,6 @@
 #include <nm_private.h>
 
 
-/** Handle incoming requests that have been processed by the driver-dependent
-   code.
-   - requests may be successful or failed, and should be handled appropriately
-    --> this function is responsible for the processing common to both cases
-*/
-__inline__ int nm_process_complete_recv_rq(struct nm_core     *p_core,
-					   struct nm_pkt_wrap *p_pw,
-					   int		      _err)
-{
-  int err;
-  
-  NM_TRACEF("recv request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
-	    p_pw->p_gate->id,
-	    p_pw->p_drv->id,
-	    p_pw->trk_id,
-	    p_pw->proto_id,
-	    p_pw->seq);
-  
-  /* clear the input request field in gate track */
-  if (p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw) {
-    p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
-  }
-
-#ifdef PIOMAN
-  piom_req_success(&p_pw->inst);
-#endif
-
-  if (_err == NM_ESUCCESS) {
-    err	= nm_so_in_process_success_rq(p_core, p_pw);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("process_successful_recv_rq returned %d", err);
-    }
-  } else {
-    err	= nm_so_in_process_failed_rq(p_core, p_pw, _err);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("process_failed_recv_rq returned %d", err);
-    }
-  }
-  
-  err = NM_ESUCCESS;
-  
-  return err;
-}
-
 /** Poll active incoming requests in poll_slist.
  */
 __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
@@ -90,7 +46,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
    
   if(err == NM_ESUCCESS)
     {
-      err = nm_process_complete_recv_rq(p_pw->p_gate->p_core, p_pw, err);
+      err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
     }
   else if (err != -NM_EAGAIN)
     {
@@ -178,7 +134,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	  if (err != NM_ESUCCESS) {
 	    NM_DISPF("drv->post_recv returned %d", err);
 	  }
-	  nm_process_complete_recv_rq(p_pw->p_gate->p_core, p_pw, err);
+	  nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
 	}
     }
   

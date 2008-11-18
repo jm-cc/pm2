@@ -637,17 +637,38 @@ ack_chunk_callback(struct nm_pkt_wrap *p_pw,
   TBX_FAILURE("PANIC!\n");
 }
 
-/** Process a complete successful incoming request.
+/** Process a complete incoming request.
  */
-int nm_so_in_process_success_rq(struct nm_core *p_core,
-				struct nm_pkt_wrap *p_pw)
+int nm_so_process_complete_recv(struct nm_core *p_core,
+				struct nm_pkt_wrap *p_pw, int _err)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
   int err;
 
-  NM_SO_TRACE("Packet %p received completely (on track %d, gate %d)!\n", p_pw, p_pw->trk_id, (int)p_gate->id);
+  NM_TRACEF("recv request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
+	    p_pw->p_gate->id,
+	    p_pw->p_drv->id,
+	    p_pw->trk_id,
+	    p_pw->proto_id,
+	    p_pw->seq);
+
+  /* clear the input request field in gate track */
+  if (p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+    {
+      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+    }
+
+#ifdef PIOMAN
+  piom_req_success(&p_pw->inst);
+#endif
+
+  if (_err != NM_ESUCCESS)
+    {
+      TBX_FAILUREF("nm_so_process_complete_recv failed- err = %d", _err);
+      goto out;
+    }
 
   if(p_pw->trk_id == NM_TRK_SMALL) {
     /* Track 0 */
@@ -894,12 +915,4 @@ int nm_so_in_process_success_rq(struct nm_core *p_core,
   return err;
 }
 
-/** Process a failed incoming request.
- */
-int nm_so_in_process_failed_rq(struct nm_core *p_core,
-			       struct nm_pkt_wrap	*p_pw,
-			       int		_err TBX_UNUSED)
-{
-  TBX_FAILURE("nm_so_in_process_failed_rq");
-  return nm_so_in_process_success_rq(p_core, p_pw);
-}
+

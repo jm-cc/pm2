@@ -21,49 +21,6 @@
 #include <nm_private.h>
 
 
-
-/** Handle outgoing requests that have been processed by the driver-dependent
- * code.
- *
- * - requests may be successful or failed, and should be handled appropriately
- * --> this function is responsible for the processing common to both cases
- */
-__inline__ int nm_process_complete_send_rq(struct nm_gate	*p_gate,
-					   struct nm_pkt_wrap	*p_pw,
-					   int		 	_err)
-{
-  int err;
-  
-  NM_TRACEF("send request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
-	    p_pw->p_gate->id,
-	    p_pw->p_drv->id,
-	    p_pw->trk_id,
-	    p_pw->proto_id,
-	    p_pw->seq);
-  
-  p_pw->p_drv ->out_req_nb--;
-  p_pw->p_gdrv->out_req_nb--;
-#ifdef PIOMAN
-  piom_req_success(&p_pw->inst);
-#endif
-  
-  if (_err == NM_ESUCCESS) {
-    FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
-    err = nm_so_out_process_success_rq(p_gate->p_core, p_pw);
-    if (err < 0) {
-      NM_DISPF("process_successful_send_rq returned %d", err);
-    }
-  } else {
-    /* error or connection closed, do something */
-    err	= nm_so_out_process_failed_rq(p_gate->p_core, p_pw, _err);
-    if (err < 0) {
-      NM_DISPF("nm_so_out_process_failed_rq returned %d", err);
-    }
-  }
-  
-  return err;
-}
-
 /** Poll an active outgoing request.
  */
 __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
@@ -76,7 +33,7 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 	{
 	  NM_DISPF("poll_send returned %d", err);
 	}
-      nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
+      nm_so_process_complete_send(p_pw->p_gate, p_pw, err);
     }
   return err;
 }
@@ -148,9 +105,9 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
 	NM_DISPF("drv->post_send returned %d", err);
       }
       
-      err = nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
+      err = nm_so_process_complete_send(p_pw->p_gate, p_pw, err);
       if (err < 0) {
-	NM_DISPF("nm_process_complete send_rq returned %d", err);
+	NM_DISPF("nm_so_process_complete send returned %d", err);
       }
     }
   

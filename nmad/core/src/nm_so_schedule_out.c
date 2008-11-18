@@ -64,12 +64,32 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 
 /** Process a complete successful outgoing request.
  */
-int nm_so_out_process_success_rq(struct nm_core *p_core TBX_UNUSED,
-				 struct nm_pkt_wrap *p_pw)
+int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
+				struct nm_pkt_wrap *p_pw,
+				int _err)
 {
   int err;
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+
+  NM_TRACEF("send request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
+	    p_pw->p_gate->id,
+	    p_pw->p_drv->id,
+	    p_pw->trk_id,
+	    p_pw->proto_id,
+	    p_pw->seq);
+  
+  p_pw->p_drv ->out_req_nb--;
+  p_pw->p_gdrv->out_req_nb--;
+#ifdef PIOMAN
+  piom_req_success(&p_pw->inst);
+#endif
+  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
+  
+  if (_err != NM_ESUCCESS) 
+    {
+      TBX_FAILUREF("nm_so_process_complete_send failed- err = %d", _err);
+    }
 
   p_so_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
 
@@ -100,12 +120,3 @@ int nm_so_out_process_success_rq(struct nm_core *p_core TBX_UNUSED,
   return err;
 }
 
-/** Process a failed outgoing request.
- */
-int nm_so_out_process_failed_rq(struct nm_core *p_core,
-				struct nm_pkt_wrap	*p_pw,
-				int		 	_err TBX_UNUSED)
-{
-    TBX_FAILURE("nm_so_out_process_failed_rq");
-    return nm_so_out_process_success_rq(p_core, p_pw);
-}

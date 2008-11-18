@@ -81,7 +81,7 @@ static void attach(void *ptr, size_t size) {
   long *stats;
 
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, size, &self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, size, self);
   if (err < 0) {
     perror("marcel_memory_task_attach");
   }
@@ -89,7 +89,7 @@ static void attach(void *ptr, size_t size) {
   stats = (long *) (ma_task_stats_get (self, ma_stats_memnode_offset));
   for(i=0 ; i<marcel_nbnodes; i++) marcel_printf("Stat for node #%d = %ld\n", i, stats[i]);
 
-  err = marcel_memory_task_unattach(&memory_manager, ptr, &self);
+  err = marcel_memory_task_unattach(&memory_manager, ptr, self);
   if (err < 0) {
     perror("marcel_memory_task_unattach");
   }

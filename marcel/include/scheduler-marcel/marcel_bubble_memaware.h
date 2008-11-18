@@ -45,12 +45,7 @@ void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level);
 extern marcel_bubble_sched_t marcel_bubble_memaware_sched;
 
 extern int ma_bubble_memaware_nodelevel;
-extern marcel_entity_t * ma_bubble_memaware_to_spread[256];
-extern int ma_bubble_memaware_num_to_spread;
-extern ma_spinlock_t ma_bubble_memaware_to_spread_lock;
-
 extern int ma_bubble_memaware_checkload;
-extern int ma_bubble_memaware_maxload;
 
 #section marcel_macros
 #define MA_DEFAULT_LOAD 1000

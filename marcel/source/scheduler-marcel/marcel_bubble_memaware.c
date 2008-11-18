@@ -24,8 +24,8 @@
 #ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
 
-static int ma_bubble_memaware_checkload = 1;
-static int ma_bubble_memaware_nodelevel = -1;
+int ma_bubble_memaware_checkload = 1;
+int ma_bubble_memaware_nodelevel = -1;
 static int ma_bubble_memaware_vplevel = -1;
 static int ma_bubble_memaware_maxload = 0;
 static marcel_entity_t * ma_bubble_memaware_to_spread[256];

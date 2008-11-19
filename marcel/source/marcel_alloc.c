@@ -783,9 +783,13 @@ void* ma_malloc_nonuma(size_t size, const char *file, unsigned line)
 {
 	void *p;
 	if (size) {
-		marcel_malloc_protect();
+		if (tbx_likely(marcel_test_activity()))
+			marcel_malloc_protect();
+
 		p = __TBX_MALLOC(size, file, line);
-		marcel_malloc_unprotect();
+
+		if (tbx_likely(marcel_test_activity()))
+			marcel_malloc_unprotect();
 
 		if(p == NULL)
 			MARCEL_EXCEPTION_RAISE(MARCEL_STORAGE_ERROR);
@@ -800,9 +804,13 @@ void* ma_malloc_nonuma(size_t size, const char *file, unsigned line)
 void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 {
 	if(data) {
-		marcel_malloc_protect();
+		if (tbx_likely(marcel_test_activity()))
+			marcel_malloc_protect();
+
 		__TBX_FREE(data, file, line);
-		marcel_malloc_unprotect();
+
+		if (tbx_likely(marcel_test_activity()))
+			marcel_malloc_unprotect();
 	}	
 }
 

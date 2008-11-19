@@ -221,8 +221,8 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   tfree(memory_manager->writing_access_costs);
 
   if (memory_manager->root) {
-    marcel_printf("Some memory areas have not been free-d\n");
-    marcel_memory_print(memory_manager);
+    marcel_fprintf(stderr, "Some memory areas have not been free-d\n");
+    marcel_memory_fprint(stderr, memory_manager);
   }
 
   MAMI_LOG_OUT();
@@ -958,22 +958,30 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
 }
 
 static
-void ma_memory_print(marcel_memory_tree_t *memory_tree, int indent) {
+void ma_memory_print(FILE *stream, marcel_memory_tree_t *memory_tree, int indent) {
   if (memory_tree) {
     int x;
-    ma_memory_print(memory_tree->leftchild, indent+2);
+    ma_memory_print(stream, memory_tree->leftchild, indent+2);
     for(x=0 ; x<indent ; x++) printf(" ");
-    printf("[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
-    ma_memory_print(memory_tree->rightchild, indent+2);
+    fprintf(stream, "[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
+    ma_memory_print(stream, memory_tree->rightchild, indent+2);
   }
 }
 
 void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
   mdebug_mami("******************** TREE BEGIN *********************************\n");
-  ma_memory_print(memory_manager->root, 0);
+  ma_memory_print(stdout, memory_manager->root, 0);
   mdebug_mami("******************** TREE END *********************************\n");
   MAMI_LOG_OUT();
+}
+
+void marcel_memory_fprint(FILE *stream, marcel_memory_manager_t *memory_manager) {
+  LOG_IN();
+  mdebug_mami("******************** TREE BEGIN *********************************\n");
+  ma_memory_print(stream, memory_manager->root, 0);
+  mdebug_mami("******************** TREE END *********************************\n");
+  LOG_OUT();
 }
 
 void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,

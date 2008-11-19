@@ -337,6 +337,11 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);
 
 /**
+ * @param memory_manager pointer to the memory manager
+ */
+void marcel_memory_fprint(FILE *stream, marcel_memory_manager_t *memory_manager);
+
+/**
  * Indicates the migration cost for SIZE bits from node SOURCE to node DEST.
  * @param memory_manager pointer to the memory manager
  * @param source source node

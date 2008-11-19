@@ -248,6 +248,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->mami_allocated = mami_allocated;
   (*memory_data)->owners = tbx_slist_nil();
   (*memory_data)->next = NULL;
+  INIT_LIST_HEAD(&((*memory_data)->list));
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -1287,7 +1288,13 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
 
       ma_spin_lock(&(owner->memory_areas_lock));
-      list_add(&(data->list), &(owner->memory_areas));
+      if (!(list_empty(&(data->list)))) {
+        mdebug_mami("Data %p already registered in an entity\n", data);
+      }
+      else {
+        mdebug_mami("Adding data %p to entity %p\n", data, owner);
+        list_add(&(data->list), &(owner->memory_areas));
+      }
       ma_spin_unlock(&(owner->memory_areas_lock));
     }
   }
@@ -1324,7 +1331,8 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
         ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] -= data->size;
 
         ma_spin_lock(&(owner->memory_areas_lock));
-        list_del(&(data->list));
+        mdebug_mami("Removing data %p from entity %p\n", data, owner);
+        list_del_init(&(data->list));
         ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {

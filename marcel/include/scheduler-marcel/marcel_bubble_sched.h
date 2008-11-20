@@ -173,12 +173,6 @@ int marcel_bubble_submit (marcel_bubble_t *b);
 extern ma_atomic_t ma_idle_scheduler;
 /* \brief Central lock for the idle scheduler */
 extern ma_spinlock_t ma_idle_scheduler_lock;
-/* \brief Whether the scheduled application is in a init/ending
-   phase */
-extern ma_atomic_t ma_init;
-extern ma_spinlock_t ma_init_lock;
-extern ma_atomic_t ma_ending;
-extern ma_spinlock_t ma_ending_lock;
 
 #section functions
 /* \brief Turns idle scheduler on. */

@@ -161,14 +161,9 @@ static marcel_bubble_t *b = &marcel_root_bubble;
 
 static int
 memory_sched_submit (marcel_entity_t *e) {
-  struct marcel_topo_level *l = marcel_topo_level (0,0);
-  b = ma_bubble_entity (e);
-  if (!ma_atomic_read (&ma_init))
-    ma_memory_sched_submit (b, l);
-  else 
-    ma_move_entity (e, &l->rq.as_holder);
-  
-  return 0;
+  MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+  bubble_sched_debug ("Memory: Submitting entities!\n");
+  return ma_memory_sched_submit (ma_bubble_entity (e), marcel_topo_level (0, 0));
 }
 
 

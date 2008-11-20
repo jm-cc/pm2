@@ -17,10 +17,6 @@
 
 ma_atomic_t ma_idle_scheduler = MA_ATOMIC_INIT(0);
 ma_spinlock_t ma_idle_scheduler_lock = MA_SPIN_LOCK_UNLOCKED;
-ma_atomic_t ma_init = MA_ATOMIC_INIT(1);
-ma_spinlock_t ma_init_lock = MA_SPIN_LOCK_UNLOCKED;
-ma_atomic_t ma_ending = MA_ATOMIC_INIT(0);
-ma_spinlock_t ma_ending_lock = MA_SPIN_LOCK_UNLOCKED;
 #ifdef MA__BUBBLES
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
@@ -132,27 +128,9 @@ ma_idle_scheduler_is_running (void) {
 
  /* Application is entering steady state, let's start
     thread/bubble distribution and active work stealing
-    algorithm */ 
+    algorithm. */ 
 void marcel_bubble_sched_begin (void) {
-  if (ma_atomic_read (&ma_init)) {
-    ma_spin_lock (&ma_init_lock);
-    if (ma_atomic_read (&ma_init)) {
-      ma_atomic_dec (&ma_init);
-      ma_spin_unlock (&ma_init_lock);
-      /* Make sure the root bubble is located on the top level before
-	 calling the bubble scheduler distribution algorithm */
-      ma_bubble_gather (&marcel_root_bubble);
-      ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
-      if (current_sched) {
-	if (current_sched->submit) {
-	  current_sched->submit (&marcel_root_bubble.as_entity);
-	}
-      }
-      ma_activate_idle_scheduler ();
-    } else {
-      ma_spin_unlock (&ma_init_lock);
-    }
-  }
+  marcel_bubble_shake ();
 }
 
 int
@@ -169,20 +147,26 @@ marcel_bubble_submit (marcel_bubble_t *b) {
  /* Application is entering ending state, let's prevent idle
     schedulers from stealing anything. */ 
 void marcel_bubble_sched_end (void) {
-  if (!ma_atomic_read(&ma_ending)) {
-    ma_spin_lock (&ma_ending_lock);
-    if (!ma_atomic_read (&ma_ending)) {
-      ma_atomic_inc (&ma_ending);
-      ma_deactivate_idle_scheduler ();
-    }
-    ma_spin_unlock (&ma_ending_lock);
-  }
+  ma_deactivate_idle_scheduler ();
 }
 
+/* Explicit way of asking the underlying bubble scheduler to
+   distribute threads and bubbles from scratch. */
 void marcel_bubble_shake (void) {
-  ma_bubble_synthesize_stats (&marcel_root_bubble);
+  ma_deactivate_idle_scheduler ();
+
+ /* Make sure the root bubble is located on the top level before
+    calling the bubble scheduler distribution algorithm */
   ma_bubble_gather (&marcel_root_bubble);
-  current_sched->submit (&marcel_root_bubble.as_entity);
+  ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
+ 
+  if (current_sched) {
+    if (current_sched->submit) {
+      current_sched->submit (&marcel_root_bubble.as_entity);
+    }
+  }
+  
+  ma_activate_idle_scheduler ();
 }
 
 int marcel_bubble_setid(marcel_bubble_t *bubble TBX_UNUSED, int id TBX_UNUSED) {

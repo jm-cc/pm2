@@ -573,17 +573,12 @@ cache_sched_exit (void) {
   return 0;
 }
 
-static marcel_bubble_t *b = &marcel_root_bubble;
-
 static int
 cache_sched_submit (marcel_entity_t *e) {
-  struct marcel_topo_level *l = marcel_topo_level (0,0);
-  b = ma_bubble_entity (e);
-  if (!ma_atomic_read (&ma_init))
-    marcel_bubble_cache (b, l);
-  else 
-    ma_cache_sched_submit (&e, 1, l);
-  
+  MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+  bubble_sched_debug ("Cache: Submitting entities!\n");
+  marcel_bubble_cache (ma_bubble_entity (e), marcel_topo_level (0, 0));
+
   return 0;
 }
 

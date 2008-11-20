@@ -28,6 +28,9 @@
 #ifdef MARCEL_MAMI_ENABLED
 
 #section types
+/** \brief Type of a link for a list of tree nodes */
+typedef struct marcel_memory_data_link_s marcel_memory_data_link_t;
+
 /** \brief Type of a tree node */
 typedef struct marcel_memory_data_s marcel_memory_data_t;
 
@@ -77,6 +80,12 @@ typedef int marcel_memory_membind_policy_t;
 #depend "linux_spinlock.h[types]"
 #depend "marcel_spin.h[types]"
 #include "tbx_pointers.h"
+
+/** \brief Structure of a link for a list of tree nodes */
+struct marcel_memory_data_link_s {
+  struct list_head list;
+  marcel_memory_data_t *data;
+};
 
 /** \brief Structure of a tree node */
 struct marcel_memory_data_s {

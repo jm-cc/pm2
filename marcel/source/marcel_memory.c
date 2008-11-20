@@ -24,6 +24,9 @@
 extern long move_pages(int pid, unsigned long count,
                        void **pages, const int *nodes, int *status, int flags);
 
+static
+marcel_memory_manager_t *g_memory_manager = NULL;
+
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */
@@ -1146,9 +1149,6 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 }
 
 static
-marcel_memory_manager_t *g_memory_manager = NULL;
-
-static
 void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   ucontext_t *context = _context;
   void *addr;
@@ -1282,19 +1282,18 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     }
 
     if (err >= 0) {
+      marcel_memory_data_link_t *area;
+
       mdebug_mami("Adding entity %p to data %p\n", owner, data);
       tbx_slist_push(data->owners, owner);
       mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
       ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
 
+      area = tmalloc(sizeof(marcel_memory_data_link_t));
+      area->data = data;
+      INIT_LIST_HEAD(&(area->list));
       ma_spin_lock(&(owner->memory_areas_lock));
-      if (!(list_empty(&(data->list)))) {
-        mdebug_mami("Data %p already registered in an entity\n", data);
-      }
-      else {
-        mdebug_mami("Adding data %p to entity %p\n", data, owner);
-        list_add(&(data->list), &(owner->memory_areas));
-      }
+      list_add(&(area->list), &(owner->memory_areas));
       ma_spin_unlock(&(owner->memory_areas_lock));
     }
   }
@@ -1327,12 +1326,19 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
     else {
       res = tbx_slist_search_and_extract(data->owners, NULL, owner);
       if (res == owner) {
+        marcel_memory_data_link_t *area;
         mdebug_mami("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
         ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] -= data->size;
 
-        ma_spin_lock(&(owner->memory_areas_lock));
         mdebug_mami("Removing data %p from entity %p\n", data, owner);
-        list_del_init(&(data->list));
+	ma_spin_lock(&(owner->memory_areas_lock));
+	list_for_each_entry(area, &(owner->memory_areas), list) {
+          if (area->data == data) {
+            list_del_init(&area->list);
+            tfree(area);
+            break;
+          }
+        }
         ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {
@@ -1350,12 +1356,13 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 static
 int ma_memory_entity_unattach_all(marcel_memory_manager_t *memory_manager,
                                   marcel_entity_t *owner) {
-  marcel_memory_data_t *data, *ndata;
+  marcel_memory_data_link_t *area, *narea;
 
   MAMI_LOG_IN();
+  mdebug_mami("Unattaching all memory areas from entity %p\n", owner);
   //ma_spin_lock(&(owner->memory_areas_lock));
-  list_for_each_entry_safe(data, ndata, &(owner->memory_areas), list) {
-    ma_memory_entity_unattach(memory_manager, data->startaddress, owner);
+  list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
+    ma_memory_entity_unattach(memory_manager, area->data->startaddress, owner);
   }
   //ma_spin_unlock(&(owner->memory_areas_lock));
   MAMI_LOG_OUT();

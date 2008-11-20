@@ -200,7 +200,7 @@ typedef marcel_vpset_t pmarcel_cpu_set_t;
 
 /** \brief Initialize VP set */
 void marcel_vpset_init(marcel_vpset_t * set);
-#define marcel_vpset_init(m)        marcel_vpset_empty(m)
+#define marcel_vpset_init(m)        marcel_vpset_zero(m)
 
 #section functions
 /** \brief Empty VP set */

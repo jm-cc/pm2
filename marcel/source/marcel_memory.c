@@ -21,8 +21,23 @@
 #include <numaif.h>
 #include <sys/mman.h>
 
-extern long move_pages(int pid, unsigned long count,
-                       void **pages, const int *nodes, int *status, int flags);
+#ifndef __NR_move_pages
+
+#  ifdef X86_64_ARCH
+#    define __NR_move_pages 279
+#  elif IA64_ARCH
+#    define __NR_move_pages 1276
+#  elif X86_ARCH
+#    define __NR_move_pages 317
+#  elif PPC_ARCH
+#    define __NR_move_pages 301
+#  elif PPC64_ARCH
+#    define __NR_move_pages 301
+#  else
+#    error Syscall move pages undefined
+#  endif
+
+#endif /* __NR_move_pages */
 
 static
 marcel_memory_manager_t *g_memory_manager = NULL;
@@ -944,9 +959,13 @@ int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
 
   if (nodes) mdebug_mami("binding on numa node #%d\n", nodes[0]);
 
-  err = move_pages(0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+#if defined (X86_64_ARCH) && defined (X86_ARCH)
+  err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+#else
+  err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+#endif
   if (err < 0) perror("move_pages (set_bind)");
-  return -err;
+  return err;
 }
 
 int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {

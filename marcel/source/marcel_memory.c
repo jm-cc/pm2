@@ -191,10 +191,26 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   MAMI_LOG_OUT();
 }
 
+void ma_memory_clean_memory(marcel_memory_manager_t *memory_manager) {
+  while (memory_manager->root) {
+    marcel_memory_free(memory_manager, memory_manager->root->data->startaddress);
+  }
+}
+
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   int node, dest;
 
   MAMI_LOG_IN();
+
+  if (memory_manager->root) {
+    marcel_fprintf(stderr, "Warning: some memory areas have not been free-d\n");
+#ifdef PM2DEBUG
+    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+      marcel_memory_fprint(stderr, memory_manager);
+    }
+#endif /* PM2DEBUG */
+    ma_memory_clean_memory(memory_manager);
+  }
 
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
@@ -222,11 +238,6 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   }
   tfree(memory_manager->reading_access_costs);
   tfree(memory_manager->writing_access_costs);
-
-  if (memory_manager->root) {
-    marcel_fprintf(stderr, "Some memory areas have not been free-d\n");
-    marcel_memory_fprint(stderr, memory_manager);
-  }
 
   MAMI_LOG_OUT();
 }
@@ -263,6 +274,11 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 
 static
 void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
+  if (!(tbx_slist_is_nil((*memory_data)->owners))) {
+    marcel_fprintf(stderr, "Warning: some threads are still attached to the memory area [%p:%p]\n",
+                   (*memory_data)->startaddress, (*memory_data)->endaddress);
+    tbx_slist_clear((*memory_data)->owners);
+  }
   tbx_slist_free((*memory_data)->owners);
   free((*memory_data)->pageaddrs);
   free(*memory_data);

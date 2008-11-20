@@ -32,12 +32,6 @@
 #endif
 #endif
 
-struct memory_area {
-	struct list_head list;
-	void *data;
-	size_t size;
-};
-ma_allocator_t *memory_area_allocator;
 ma_allocator_t *heapinfo_allocator;
 unsigned long ma_stats_memory_offset;
 
@@ -240,10 +234,6 @@ static void __marcel_init marcel_slot_init(void)
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 							    mapped_slot_alloc, NULL, mapped_slot_free, NULL,
 							    POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
-	memory_area_allocator = ma_new_obj_allocator(0, ma_obj_allocator_malloc,
-						     (void*) (sizeof(struct memory_area)), ma_obj_allocator_free, NULL,
-						     POLICY_HIERARCHICAL_MEMORY, 0);
-
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 #endif /* MARCEL_STATS_ENABLED */
@@ -814,54 +804,3 @@ void ma_free_nonuma(void *data, const char * __restrict file, unsigned line)
 	}	
 }
 
-void ma_memory_attach(marcel_entity_t *e TBX_UNUSED, void *data TBX_UNUSED, size_t size TBX_UNUSED, int level TBX_UNUSED)
-{
-#ifdef MA__NUMA_MEMORY
-	struct memory_area *area;
-	if (!e)
-		e = &MARCEL_SELF->as_entity;
-#ifdef MA__BUBBLES
-	while (level--) {
-		ma_holder_t *h;
-		h = e->init_holder;
-		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
-		e = &ma_bubble_holder(h)->as_entity;
-	}
-#endif
-	area = ma_obj_alloc(memory_area_allocator);
-	area->size = size;
-	area->data = data;
-	ma_spin_lock(&e->memory_areas_lock);
-	list_add(&area->list, &e->memory_areas);
-	ma_spin_unlock(&e->memory_areas_lock);
-	ma_stats_add(long, e, ma_stats_memory_offset, size);
-#endif /* MA__NUMA_MEMORY */
-}
-
-void ma_memory_detach(marcel_entity_t *e TBX_UNUSED, void *data TBX_UNUSED, int level TBX_UNUSED)
-{
-#ifdef MA__NUMA_MEMORY
-	struct memory_area *area;
-	if (!e)
-		e = &MARCEL_SELF->as_entity;
-#ifdef MA__BUBBLES
-	while (level--) {
-		ma_holder_t *h;
-		h = e->init_holder;
-		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
-		e = &ma_bubble_holder(h)->as_entity;
-	}
-#endif
-	ma_spin_lock(&e->memory_areas_lock);
-	list_for_each_entry(area, &e->memory_areas, list)
-		if (area->data == data) {
-			data = NULL;
-			list_del(&area->list);
-			break;
-		}
-	MA_BUG_ON(data);
-	ma_spin_unlock(&e->memory_areas_lock);
-	ma_stats_sub(long, e, ma_stats_memory_offset, area->size);
-	ma_obj_free(memory_area_allocator, area);
-#endif /* MA__NUMA_MEMORY */
-}

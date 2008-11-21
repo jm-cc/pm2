@@ -157,8 +157,6 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   return 0;
 }
 
-static marcel_bubble_t *b = &marcel_root_bubble;
-
 static int
 memory_sched_submit (marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);

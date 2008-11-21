@@ -206,6 +206,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   MAMI_LOG_OUT();
 }
 
+static
 void ma_memory_clean_memory(marcel_memory_manager_t *memory_manager) {
   while (memory_manager->root) {
     marcel_memory_free(memory_manager, memory_manager->root->data->startaddress);

@@ -20,7 +20,7 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Warning: some memory areas have not been free-d
+MaMI Warning: some memory areas have not been free-d
 EOF
 
 . ./mami.sh

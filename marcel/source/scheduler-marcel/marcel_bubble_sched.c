@@ -126,15 +126,25 @@ ma_idle_scheduler_is_running (void) {
   return ma_atomic_read (&ma_idle_scheduler);
 }
 
- /* Application is entering steady state, let's start
-    thread/bubble distribution and active work stealing
-    algorithm. */ 
-void marcel_bubble_sched_begin (void) {
-  marcel_bubble_shake ();
+static void ma_bubble_move_top_and_submit (marcel_bubble_t *b) {
+  ma_deactivate_idle_scheduler ();
+  
+  ma_bubble_gather (b);
+  ma_move_entity (&b->as_entity, &marcel_topo_level(0,0)->rq.as_holder);
+  marcel_bubble_submit (b);
+  
+  ma_activate_idle_scheduler ();  
 }
 
-int
-marcel_bubble_submit (marcel_bubble_t *b) {
+/* Application is entering steady state, let's start
+   thread/bubble distribution and active work stealing
+   algorithm. */ 
+void marcel_bubble_sched_begin (void) {
+  ma_bubble_move_top_and_submit (&marcel_root_bubble);
+}
+
+/* Calls the `submit' function of the current bubble scheduler. */
+int marcel_bubble_submit (marcel_bubble_t *b) {
   if (current_sched) {
     if (current_sched->submit) {
       current_sched->submit (&b->as_entity);
@@ -144,8 +154,8 @@ marcel_bubble_submit (marcel_bubble_t *b) {
   return 1;
 }
 
- /* Application is entering ending state, let's prevent idle
-    schedulers from stealing anything. */ 
+/* Application is entering ending state, let's prevent idle
+   schedulers from stealing anything. */ 
 void marcel_bubble_sched_end (void) {
   ma_deactivate_idle_scheduler ();
 }
@@ -161,15 +171,7 @@ void marcel_bubble_shake (void) {
     }
   } else {
     /* Default behavior for shake (). */
-    ma_deactivate_idle_scheduler ();
-    
-    /* Make sure the root bubble is located on the top level before
-    calling the bubble scheduler distribution algorithm */
-    ma_bubble_gather (&marcel_root_bubble);
-    ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
-    marcel_bubble_submit (&marcel_root_bubble);
-    
-    ma_activate_idle_scheduler ();
+    ma_bubble_move_top_and_submit (&marcel_root_bubble);
   }
 }
 

@@ -41,6 +41,7 @@ marcel dont_use_pthread: ajouter les hooks pour prévenir gdb quand on appelle cl
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 
 Utiliser les builtin atomics __sync_* de gcc >= 4.1 (dans info gcc, C Extensions, Atomic builtins). Vérifier s'ils sont au moins aussi efficaces que nos static inline, auquel cas enlever ces derniers.
+Ou bien utiliser plutôt la libatomic-ops (en l'incluant dans les sources pour les nombreux cas où il n'est pas dispo sur la machine de compil) et lui ajouter le support des builtin atomics de gcc. Attention, il leur manque des opérations par rapport à ce que l'on a (e.g. alpha)
 
 Déplacer dans tbx les trucs qui n'ont rien à faire dans marcel (atomic, bitops, testandset, compareexchange, spinlock de base).
 

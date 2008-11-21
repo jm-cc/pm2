@@ -153,15 +153,24 @@ void marcel_bubble_sched_end (void) {
 /* Explicit way of asking the underlying bubble scheduler to
    distribute threads and bubbles from scratch. */
 void marcel_bubble_shake (void) {
-  ma_deactivate_idle_scheduler ();
-
- /* Make sure the root bubble is located on the top level before
+  /* First try to call the bubble scheduler specific `shake'
+     function. */
+  if (current_sched) {
+    if (current_sched->shake) {
+      current_sched->shake (&marcel_root_bubble);
+    }
+  } else {
+    /* Default behavior for shake (). */
+    ma_deactivate_idle_scheduler ();
+    
+    /* Make sure the root bubble is located on the top level before
     calling the bubble scheduler distribution algorithm */
-  ma_bubble_gather (&marcel_root_bubble);
-  ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
-  marcel_bubble_submit (&marcel_root_bubble);
-
-  ma_activate_idle_scheduler ();
+    ma_bubble_gather (&marcel_root_bubble);
+    ma_move_entity (&marcel_root_bubble.as_entity, &marcel_topo_level(0,0)->rq.as_holder);
+    marcel_bubble_submit (&marcel_root_bubble);
+    
+    ma_activate_idle_scheduler ();
+  }
 }
 
 int marcel_bubble_setid(marcel_bubble_t *bubble TBX_UNUSED, int id TBX_UNUSED) {

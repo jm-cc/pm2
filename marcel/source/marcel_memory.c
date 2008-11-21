@@ -817,6 +817,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   MAMI_LOG_OUT();
 }
 
+static
 int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
   int nbpages_query;
   int statuses[nbpages];

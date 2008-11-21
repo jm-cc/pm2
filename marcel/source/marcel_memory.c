@@ -511,7 +511,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   unsigned long nodemask;
   size_t length;
   void *buffer;
-  int err=0;
+  int i, err=0;
 
   MAMI_LOG_IN();
 
@@ -529,7 +529,12 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
       perror("mbind");
     }
     err = 0;
-    buffer = memset(buffer, 0, length);
+
+    for(i=0 ; i<nbpages ; i++) {
+      int *ptr = buffer+i*memory_manager->normalpagesize;
+      *ptr = 0;
+    }
+    //    buffer = memset(buffer, 0, length);
     /* mark the memory as unaccessible until it gets allocated to the application */
     VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
   }
@@ -765,6 +770,7 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
   MAMI_LOG_IN();
 
   ptr = marcel_memory_malloc(memory_manager, nmemb*size);
+  ptr = memset(ptr, 0, nmemb*size);
 
   MAMI_LOG_OUT();
   return ptr;

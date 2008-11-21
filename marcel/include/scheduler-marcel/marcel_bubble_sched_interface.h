@@ -27,8 +27,8 @@ typedef int (*ma_bubble_sched_exit)(void);
 /* Submission of a set of entities to be scheduled */
 typedef int (*ma_bubble_sched_submit)(marcel_entity_t *);
 
-/* Called to force a new distribution of entities. */
-typedef int (*ma_bubble_sched_shake)(marcel_entity_t *);
+/* Called to force a new distribution from a specific bubble. */
+typedef int (*ma_bubble_sched_shake)(marcel_bubble_t *);
 
 /* Called when a vp is idle.  Preemption and bottom halves are already disabled.  */
 typedef int (*ma_bubble_sched_vp_is_idle)(unsigned);

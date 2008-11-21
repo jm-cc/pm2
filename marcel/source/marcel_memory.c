@@ -534,7 +534,6 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
       int *ptr = buffer+i*memory_manager->normalpagesize;
       *ptr = 0;
     }
-    //    buffer = memset(buffer, 0, length);
     /* mark the memory as unaccessible until it gets allocated to the application */
     VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
   }

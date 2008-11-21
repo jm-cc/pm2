@@ -806,7 +806,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
   int i, node;
-  int *statuses;
+  int statuses[2], nbpages_query;
 
   mdebug_mami("Registering address interval [%p:%p]\n", buffer, buffer+size);
 
@@ -822,13 +822,21 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->normalpagesize;
 
   // Find out where the pages are
-  statuses = malloc(nbpages * sizeof(int));
-  ma_memory_move_pages(pageaddrs, nbpages, NULL, statuses);
+#warning todo: check location for all pages and what if pages are on different nodes
+  if (nbpages == 1) nbpages_query = 1; else nbpages_query = 2;
+  ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses);
   if (statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
   }
-  node = statuses[0];
-#warning todo: what if pages are on different nodes
+  if (nbpages_query == 2) {
+    if (statuses[0] != statuses[1]) {
+      marcel_printf("MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
+    }
+    node = statuses[1];
+  }
+  else {
+    node = statuses[0];
+  }
 
   ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
 }

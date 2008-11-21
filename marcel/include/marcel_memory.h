@@ -118,9 +118,6 @@ struct marcel_memory_data_s {
 
   /** \brief */
   marcel_memory_data_t *next;
-
-  /** \brief */
-  struct list_head list;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */

@@ -279,8 +279,6 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->mami_allocated = mami_allocated;
   (*memory_data)->owners = tbx_slist_nil();
   (*memory_data)->next = NULL;
-  INIT_LIST_HEAD(&((*memory_data)->list));
-
   if (node == memory_manager->nb_nodes) {
     (*memory_data)->node = -1;
   }

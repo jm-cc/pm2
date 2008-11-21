@@ -74,6 +74,8 @@ typedef int marcel_memory_membind_policy_t;
 #define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)2)
 /** \brief The memory will be allocated via huge pages */
 #define MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES        ((marcel_memory_membind_policy_t)3)
+/** \brief The memory will not be bound to any node */
+#define MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH       ((marcel_memory_membind_policy_t)4)
 
 #section structures
 

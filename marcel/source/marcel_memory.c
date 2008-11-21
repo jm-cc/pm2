@@ -515,7 +515,6 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   MAMI_LOG_IN();
 
-  nodemask = (1<<node);
   length = nbpages * memory_manager->normalpagesize;
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
@@ -524,6 +523,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     err = -errno;
   }
   else {
+    nodemask = (1<<node);
     err = mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
     if (err < 0) {
       perror("mbind");
@@ -536,15 +536,15 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     }
     /* mark the memory as unaccessible until it gets allocated to the application */
     VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
-  }
 
-  (*space) = tmalloc(sizeof(marcel_memory_area_t));
-  (*space)->start = buffer;
-  (*space)->end = buffer + length;
-  (*space)->nbpages = nbpages;
-  (*space)->protection = PROT_READ|PROT_WRITE;
-  (*space)->pagesize = memory_manager->normalpagesize;
-  (*space)->next = NULL;
+    (*space) = tmalloc(sizeof(marcel_memory_area_t));
+    (*space)->start = buffer;
+    (*space)->end = buffer + length;
+    (*space)->nbpages = nbpages;
+    (*space)->protection = PROT_READ|PROT_WRITE;
+    (*space)->pagesize = memory_manager->normalpagesize;
+    (*space)->next = NULL;
+  }
 
   MAMI_LOG_OUT();
   return err;

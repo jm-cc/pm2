@@ -219,7 +219,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
 
   if (memory_manager->root) {
-    marcel_fprintf(stderr, "Warning: some memory areas have not been free-d\n");
+    marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
 #ifdef PM2DEBUG
     if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_memory_fprint(stderr, memory_manager);
@@ -291,7 +291,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 static
 void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
   if (!(tbx_slist_is_nil((*memory_data)->owners))) {
-    marcel_fprintf(stderr, "Warning: some threads are still attached to the memory area [%p:%p]\n",
+    marcel_fprintf(stderr, "MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
                    (*memory_data)->startaddress, (*memory_data)->endaddress);
     tbx_slist_clear((*memory_data)->owners);
   }
@@ -831,7 +831,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   }
   if (nbpages_query == 2) {
     if (statuses[0] != statuses[1]) {
-      marcel_printf("MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
+      marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
     }
     node = statuses[1];
   }
@@ -990,7 +990,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
   for(i=0; i<pages; i++) {
     if (pagenodes[i] != node) {
-      marcel_printf("  page #%d is not located on node #%d\n", i, node);
+      marcel_printf("MaMI Warning: page #%d is not located on node #%d\n", i, node);
       exit(-1);
     }
   }

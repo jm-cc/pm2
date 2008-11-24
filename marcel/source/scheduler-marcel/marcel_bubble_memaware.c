@@ -27,7 +27,6 @@
 int ma_bubble_memaware_checkload = 1;
 int ma_bubble_memaware_nodelevel = -1;
 static int ma_bubble_memaware_vplevel = -1;
-static int ma_bubble_memaware_maxload = 0;
 static marcel_entity_t * ma_bubble_memaware_to_spread[256];
 static int ma_bubble_memaware_num_to_spread = 0;
 static ma_spinlock_t ma_bubble_memaware_to_spread_lock = MA_SPIN_LOCK_UNLOCKED;

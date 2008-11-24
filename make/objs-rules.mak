@@ -305,7 +305,7 @@ targethelplibs:
 #	@echo "  distclean: clean module source tree for all flavors"
 
 # paths pour éviter d'avoir à spécifier le chemin exact tout le temps
-# permet de rajouter facilement d'autres répertoires sources (cf mad2) 
+# permet de rajouter facilement d'autres répertoires sources
 #---------------------------------------------------------------------
 vpath %.c $(MOD_SRC)
 vpath %.cpp $(MOD_SRC)

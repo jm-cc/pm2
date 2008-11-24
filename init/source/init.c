@@ -264,7 +264,7 @@ void common_pre_init(int *_argc, char *_argv[],
    * ------------------------------
    *
    * Provides:
-   * - Mad2 initialization from command line arguments
+   * - Madeleine initialization from command line arguments
    * - directory
    * - drivers initialization
    *
@@ -321,7 +321,7 @@ void common_post_init(int *_argc, char *_argv[],
    * - command line clean-up
    *
    * Requires:
-   * - Mad2 initialization from command line arguments
+   * - Mad3 initialization from command line arguments
    */
   mad_purge_command_line(attr->madeleine, argc, argv);
 #endif /* MAD3 */

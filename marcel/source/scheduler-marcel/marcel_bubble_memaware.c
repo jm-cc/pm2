@@ -363,6 +363,7 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 	for_each_entity_scheduled_in_bubble_end()
 }
 
+#ifdef PM2DEBUG
 /* Debuggage : permet de lister les levels */
 static void ma_see_level(struct marcel_topo_level *level, int recurse)
 {
@@ -372,6 +373,7 @@ static void ma_see_level(struct marcel_topo_level *level, int recurse)
                 ma_see_level(level->children[i],recurse + 1);
         }
 }
+#endif /* PM2DEBUG */
 
 static int memaware_sched_submit(marcel_entity_t *e)
 {

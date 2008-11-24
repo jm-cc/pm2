@@ -327,7 +327,7 @@ static void ma_see_down(struct marcel_topo_level *level, struct marcel_topo_leve
 	int down_totalload = 0;
 	int down_score = 0;
 	marcel_entity_t *see_stolen, *down_stolen;
-	struct marcel_topo_level *see_fromlevel, *down_fromlevel;
+	struct marcel_topo_level *see_fromlevel=NULL, *down_fromlevel=NULL;
 
 	while (n--) {
 		/* In brothers */

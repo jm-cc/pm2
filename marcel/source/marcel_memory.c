@@ -368,9 +368,13 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   if (with_huge_pages) {
     ptr = &(memory_manager->huge_pages_heaps[node]->heap);
   }
+  else if (node == -1) {
+    ptr = &(memory_manager->heaps[memory_manager->nb_nodes]);
+  }
   else {
     ptr = &(memory_manager->heaps[node]);
   }
+
   if (*ptr == NULL) *ptr = available;
   else {
     prev = ptr;
@@ -391,6 +395,9 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   // Defragment the areas
   if (with_huge_pages) {
     ptr = &(memory_manager->huge_pages_heaps[node]->heap);
+  }
+  else if (node == -1) {
+    ptr = &(memory_manager->heaps[memory_manager->nb_nodes]);
   }
   else {
     ptr = &(memory_manager->heaps[node]);
@@ -419,7 +426,8 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
       marcel_memory_data_t *next_data = data->next;
 
       if (data->mami_allocated) {
-	mdebug_mami("Removing [%p, %p]\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size);
+	mdebug_mami("Removing [%p, %p] from node %d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
+                    data->node);
 	VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
 	// Free memory
 	ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);

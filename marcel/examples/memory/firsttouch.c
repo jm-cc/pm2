@@ -29,7 +29,9 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_membind");
 
   ptr = marcel_memory_malloc(&memory_manager, 100);
+  marcel_memory_free(&memory_manager, ptr);
 
+  ptr = marcel_memory_malloc(&memory_manager, 100);
   err = marcel_memory_locate(&memory_manager, ptr, 100, &node);
   if (err < 0) perror("marcel_memory_membind");
   marcel_printf("Before first touch, memory located on node %d\n", node);

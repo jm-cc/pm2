@@ -57,16 +57,16 @@ How to write a module Makefile ?
 ================================
 It is quite simple: see modules/marcel/Makefile for example.
 
-You have to define LIBRARY: the name of the module (mad2 for mad2)
+You have to define LIBRARY: the name of the module (mad3 for mad3)
 You can define LIBNAME if different of the previvous: the name of the
-library generated (mad for mad2)
+library generated (mad for mad3)
 You can define $(LIBRARY)_CC and/or $(LIBRARY)_AS (default CC and AS defined
 in config.mak)
 
 You include $(PM2_ROOT)/make/libs.mak
 
 If you have more complexe things to do, you can refere to the Makefile of pm2
-and mad2.
+and mad3.
 
 How to write a examples Makefile ?
 ==================================

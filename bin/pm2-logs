@@ -60,7 +60,6 @@ for i
 do
     case $i in
       pm2) mod='pm2'; break;;
-      mad2) mod='mad2'; break;; 
     esac
 done
 

@@ -224,11 +224,7 @@ void pm2_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     pointer p;
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self 
-#ifdef MAD2
-       && !mad_can_send_to_self()
-#endif
-	    )
+    if(module == __pm2_self)
       MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -330,11 +326,7 @@ void pm2_quick_rpc_call(int module, int num, pm2_attr_t *pm2_attr,
     pointer p;
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self 
-#ifdef MAD2
-       && !mad_can_send_to_self()
-#endif
-	    )
+    if(module == __pm2_self)
       MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -427,11 +419,7 @@ void pm2_async_rpc(int module, int num, pm2_attr_t *pm2_attr, any_t args)
   } else {
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self 
-#ifdef MAD2
-       && !mad_can_send_to_self()
-#endif
-	    )
+    if(module == __pm2_self)
       MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -545,11 +533,7 @@ void pm2_multi_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_attr,
       } else {
 
 #ifdef PM2DEBUG
-        if(modules[i] == __pm2_self 
-#ifdef MAD2
-           && !mad_can_send_to_self()
-#endif
-	        )
+        if(modules[i] == __pm2_self)
           MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -604,11 +588,7 @@ void pm2_quick_async_rpc(int module, int num, pm2_attr_t *pm2_attr,
   } else {
 
 #ifdef PM2DEBUG
-    if(module == __pm2_self 
-#ifdef MAD2
-       && !mad_can_send_to_self()
-#endif
-	    )
+    if(module == __pm2_self)
       MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 
@@ -682,11 +662,7 @@ void pm2_multi_quick_async_rpc(int *modules, int nb, int num, pm2_attr_t *pm2_at
       } else {
 
 #ifdef PM2DEBUG
-        if(modules[i] == __pm2_self 
-#ifdef MAD2
-           && !mad_can_send_to_self()
-#endif
-	    )
+        if(modules[i] == __pm2_self)
           MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 

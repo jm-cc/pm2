@@ -35,8 +35,6 @@ eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--marcel=\"mono poll\" --marcel=\"marcel_main\" \
 	--mad3=\"tcp\" \
 	--all=\"opt\" --all=\"build_static\" $_output_redirect
-#	--modules=\"marcel mad2 ntbx tbx pm2 init\" \
-#	--mad2=\"auto_spawn\" --mad2=\"tcp\" \
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [n1] Hello world!

@@ -17,7 +17,7 @@
 
 static common_attr_t default_static_attr;
 
-#if defined(MAD2) || defined(PM2)
+#if defined(PM2)
 static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
 #endif
@@ -27,15 +27,6 @@ void common_attr_init(common_attr_t *attr TBX_UNUSED)
 #if defined (MAD3)
   attr->madeleine = NULL;
 #endif
-
-#ifdef MAD2
-  attr->madeleine = NULL;
-  attr->rank = 0;
-  attr->adapter_set = NULL;
-#ifdef APPLICATION_SPAWN
-  attr->url = NULL;
-#endif // APPLICATION_SPAWN
-#endif // MAD2
 }
 
 #define parse(doquote, doblank, doword) \
@@ -214,20 +205,6 @@ void common_pre_init(int *_argc, char *_argv[],
   ntbx_init(*argc, argv);
 #endif /* NTBX */
 
-#ifdef MAD2
-  /*
-   * Mad2 memory manager
-   * -------------------
-   *
-   * Provides:
-   * - memory management for MadII internal buffer structure
-   *
-   * Requires:
-   * - TBX services
-   */
-  mad_memory_manager_init(*argc, argv);
-#endif /* MAD2 */
-
 #if defined (MAD3)
   /*
    * Mad3 memory managers
@@ -246,34 +223,6 @@ void common_pre_init(int *_argc, char *_argv[],
   mad_mux_memory_manager_init(*argc, argv);
 #endif // MARCEL
 #endif /* MAD3 */
-
-#ifdef MAD2
-  /*
-   * Mad2 core initialization
-   * ------------------------
-   *
-   * Provides:
-   * - Mad2 core objects initialization
-   * - the `madeleine' object
-   *
-   * Requires:
-   * - NTBX services
-   * - Mad2 memory manager services
-   *
-   * Problemes:
-   * - argument "configuration file"
-   * - argument "adapter_set"
-   */
-
-  {
-    void *configuration_file = NULL;
-    void *adapter_set        =
-      (attr && attr->adapter_set) ? attr->adapter_set : NULL;
-
-    attr->madeleine          =
-      mad_object_init(*argc, argv, configuration_file, adapter_set);
-  }
-#endif /* MAD2 */
 
 #if defined (MAD3)
   /*
@@ -295,7 +244,7 @@ void common_pre_init(int *_argc, char *_argv[],
 
 #if defined(PM2)
   /*
-   * PM2 mad2/3 interface layer initialization
+   * PM2 mad3 interface layer initialization
    * ------------------------------------------------
    *
    * Provides:
@@ -303,30 +252,11 @@ void common_pre_init(int *_argc, char *_argv[],
    * - Initializes some internal mutexes
    *
    * Requires:
-   * - Mad2/3 core initialization
+   * - Mad3 core initialization
    * - Marcel Data Initialization
    */
   pm2_mad_init(attr->madeleine);
 #endif /* PM2 */
-
-#if defined(MAD2) && defined(EXTERNAL_SPAWN)
-  /*
-   * Mad2 spawn driver initialization
-   * --------------------------------
-   *
-   * Provides:
-   * - Mad2 initialization from driver info
-   *
-   * Should provide:
-   * - node rank
-   * - pm2self
-   * - pm2_conf_size
-   *
-   * Requires:
-   * - the `madeleine' object
-   */
-  mad_spawn_driver_init(attr->madeleine, argc, argv);
-#endif /* MAD2 && EXTERNAL_SPAWN */
 
 #if defined (MAD3)
   /*
@@ -357,99 +287,6 @@ void common_pre_init(int *_argc, char *_argv[],
 #endif /* PM2 */
 #endif /* MAD3 */
 
-#ifdef MAD2
-  /*
-   * Mad2 command line parsing
-   * -------------------------
-   *
-   * Provides:
-   * - Mad2 initialization from command line arguments
-   * - node rank
-   * - pm2self
-   *
-   * Requires:
-   * - the `madeleine' object
-   */
-  mad_cmd_line_init(attr->madeleine, *argc, argv);
-
-#ifdef PM2
-  pm2self = attr->madeleine->configuration->local_host_id;
-#endif
-
-  if (attr)
-    attr->rank = attr->madeleine->configuration->local_host_id;
-#endif /* MAD2 */
-
-#ifdef MAD2
-  /*
-   * Mad2 output redirection
-   * -------------------------
-   *
-   * Provides:
-   * - Output redirection to log files
-   *
-   * Requires:
-   * - the `madeleine' object
-   * - the node rank
-   * - high priority
-   */
-  mad_output_redirection_init(attr->madeleine, *argc, argv);
-#endif /* MAD2 */
-
-#ifdef MAD2
-  /*
-   * Mad2 session configuration initialization
-   * -----------------------------------------
-   *
-   * Provides:
-   * - session configuration information
-   * - pm2_conf_size
-   *
-   * Requires:
-   * - the `madeleine' object
-   */
-  mad_configuration_init(attr->madeleine, *argc, argv);
-
-#ifdef PM2
-  pm2_conf_size = attr->madeleine->configuration->size;
-#endif
-
-#endif /* MAD2 */
-
-#ifdef MAD2
-  /*
-   * Mad2 network components initialization
-   * --------------------------------------
-   *
-   * Provides:
-   * - MadII network components ready to be connected
-   * - connection data
-   *
-   * Requires:
-   * - the `madeleine' object
-   * - session configuration information
-   */
-  mad_network_components_init(attr->madeleine, *argc, argv);
-#endif /* MAD2 */
-
-#if defined(MAD2) && defined(APPLICATION_SPAWN)
-  if (attr && !attr->rank)
-    {
-      // url: shall we store it or display it?
-      if (attr->url)
-	{
-	  strcpy(attr->url, mad_generate_url(attr->madeleine));
-	}
-      else
-	{
-	  DISP("Run slave processes this way:");
-	  DISP("   pm2-load %s --mad-slave --mad-url '%s' "
-	       "--mad-rank <r> <arg0>...", getenv("PM2_PROG_NAME"),
-	       mad_generate_url(attr->madeleine));
-	}
-    }
-#endif /* MAD2 && APPLICATION_SPAWN */
- 
 #ifdef PIOMAN
   /*
    * PIOMan IO initialization
@@ -475,14 +312,9 @@ void common_post_init(int *_argc, char *_argv[],
   if (!attr)
     attr = &default_static_attr;
 
-#if defined(MAD2) && defined(APPLICATION_SPAWN)
-  if (attr->rank)
-    mad_parse_url(attr->madeleine);
-#endif /* MAD2 && APPLICATION_SPAWN */
-
-#if defined(MAD2) || defined(MAD3)
+#if defined(MAD3)
   /*
-   * Mad2/3 command line clean-up
+   * Mad3 command line clean-up
    * --------------------------
    *
    * Provides:
@@ -492,49 +324,13 @@ void common_post_init(int *_argc, char *_argv[],
    * - Mad2 initialization from command line arguments
    */
   mad_purge_command_line(attr->madeleine, argc, argv);
-#endif /* MAD2/3 */
-
-#ifdef MAD2
-
-#if !defined(EXTERNAL_SPAWN) && !defined(LEONIE_SPAWN) && !defined(APPLICATION_SPAWN)
-  /*
-   * Mad2 slave nodes spawn
-   * ----------------------
-   *
-   * Provides:
-   * - slave nodes
-   *
-   * Requires:
-   * - command line clean-up
-   * - MadII network components ready to be connected
-   * - connection data
-   */
-  mad_slave_spawn(attr->madeleine, *argc, argv);
-#endif /* EXTERNAL_SPAWN && LEONIE_SPAWN && APPLICATION_SPAWN */
-
-#endif /* MAD 2 */
-
-#ifdef MAD2
-  /*
-   * Mad2 network connection
-   * -----------------------
-   *
-   * Provides:
-   * - network connection
-   *
-   * Requires:
-   * - slave nodes
-   * - MadII network components ready to be connected
-   * - connection data
-   */
-  mad_connect(attr->madeleine, *argc, argv);
-#endif /* MAD2 */
+#endif /* MAD3 */
 
 #ifdef PM2
   pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
 
-#if defined(PROFILE) && (defined(PM2) || defined(MAD2))
+#if defined(PROFILE) && defined(PM2)
   profile_set_tracefile("/tmp/prof_file_%d", pm2self);
 #endif /* PROFILE */
 #if defined(PROFILE) && defined(MAD3)
@@ -700,11 +496,6 @@ common_exit(common_attr_t *attr)
   mad_memory_manager_exit();
 
 #endif // MAD3
-
-#ifdef MAD2
-  mad_exit(attr->madeleine);
-  attr->madeleine = NULL;
-#endif // MAD2
 
 #ifdef NTBX
   //

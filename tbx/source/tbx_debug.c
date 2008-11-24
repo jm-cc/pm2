@@ -84,12 +84,6 @@ DEBUG_DECLARE(marcel)
 #ifdef PIOMAN
 DEBUG_DECLARE(pioman)
 #endif
-#ifdef MAD1
-DEBUG_DECLARE(mad1)
-#endif
-#ifdef MAD2
-DEBUG_DECLARE(mad2)
-#endif
 #ifdef MAD3
 DEBUG_DECLARE(mad3)
 #endif
@@ -342,12 +336,6 @@ void pm2debug_init_base(void)
 	DEBUG_INIT(init);
 #ifdef MARCEL
 	DEBUG_INIT(marcel);
-#endif
-#ifdef MAD1
-	DEBUG_INIT(mad1);
-#endif
-#ifdef MAD2
-	DEBUG_INIT(mad2);
 #endif
 #ifdef MAD3
 	DEBUG_INIT(mad3);

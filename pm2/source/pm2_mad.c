@@ -68,35 +68,7 @@ pm2_begin_packing(p_mad_channel_t channel,
   marcel_setspecific(pm2_mad_send_key, out);
   LOG_OUT();
 }
-#elif defined (MAD2)
-#if 0
-void mad_init(int *argc, char *argv[])
-{
-  p_mad_adapter_set_t   adapter_set;
-  
-  LOG_IN();
-
-  adapter_set =
-    mad_adapter_set_init(1, MAD2_MAD1_MAIN_PROTO, MAD2_MAD1_MAIN_PROTO_PARAM);
-
-  main_madeleine = mad2_init(argc, argv, NULL, adapter_set);
-
-  LOG_OUT();
-}
-#endif //0
-
-void
-pm2_begin_packing(p_mad_channel_t channel,
-		  int             rank)
-{
-  p_mad_connection_t out = NULL;
-  
-  LOG_IN();
-  out = mad_begin_packing(channel, rank);
-  marcel_setspecific(pm2_mad_send_key, out);
-  LOG_OUT();
-}
-#endif // MADII
+#endif // MADIII
 
 
 void

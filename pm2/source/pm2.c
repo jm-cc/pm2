@@ -199,11 +199,7 @@ void pm2_rawrpc_begin(int module, int num,
 		      pm2_attr_t *pm2_attr)
 {
 #ifdef PM2DEBUG
-  if(module == __pm2_self 
-#ifdef MAD2
-     && !mad_can_send_to_self()
-#endif
-	  )
+  if(module == __pm2_self)
 	  MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 #endif // PM2DEBUG
 

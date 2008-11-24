@@ -23,7 +23,6 @@ typedef struct _struct_common_attr_t common_attr_t;
 
 #if !defined(MARCEL_KERNEL) && \
     !defined(MAD3_KERNEL)   && \
-    !defined(MAD2_KERNEL)   && \
     !defined(PM2_KERNEL)    && \
     !defined(PIOM_KERNEL)   && \
     !defined(TBX_KERNEL)    && \
@@ -64,20 +63,6 @@ typedef struct _struct_common_attr_t common_attr_t;
 #endif /* PM2 */
 
 struct _struct_common_attr_t {
-
-#if defined(MAD)
-  p_mad_madeleine_t    madeleine;   // OUT
-#endif // MAD
-
-#ifdef MAD2
-  int                  rank;        // OUT
-  p_mad_adapter_set_t  adapter_set; // IN
-
-#ifdef APPLICATION_SPAWN
-  char                *url;         // IN/OUT
-#endif // APPLICATION_SPAWN
-#endif // MAD2
-
 };
 
 #endif // *_KERNEL

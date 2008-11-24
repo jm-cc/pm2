@@ -1,4 +1,4 @@
 ravel % pm2-flavor list
-default ezflavor leonie leoparse libpthread mad2 mad3 nmad marcel
+default ezflavor leonie leoparse libpthread mad3 nmad marcel
 marcel-act marcel-actsmp marcel-bubblegum marcel-bubbles
 marcel-mono marcel-prof marcel-smp pm2 sigmund

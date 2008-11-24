@@ -80,8 +80,8 @@ $(PM2_MAK_DIR)/%-config.mak: $(MAIN_STAMP_FLAVOR)
 # Construction d'un fichier de tags pour les éditeurs de fichiers
 #---------------------------------------------------------------------
 tags:
-	$(CTAGS) --recurse=yes --exclude=build --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include --exclude=mad1 --exclude=mad2 --exclude=mad3 -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
-	$(ETAGS) --recurse=yes --exclude=build --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include --exclude=mad1 --exclude=mad2 --exclude=mad3 -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
+	$(CTAGS) --recurse=yes --exclude=build --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include --exclude=mad3 -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
+	$(ETAGS) --recurse=yes --exclude=build --exclude=modules --exclude=SCCS --exclude=BitKeeper --exclude=ChangeSet --exclude=autogen-include --exclude=mad3 -I DEF_MARCEL,DEF_POSIX,DEF_MARCEL_POSIX,DEF_PTHREAD+,DEF___PTHREAD+,DEF_LIBPTHREAD+,DEF___LIBPTHREAD+,DEF_ALIAS_POSIX+,DEF_STRONG_T+,DEF_C+,DEF_LIBC+,DEF___C+,DEF___LIBC+ .
 
 # Annulation de la règle implicite avec SCCS (pose des problèmes avec marcel.lds)
 #---------------------------------------------------------------------

@@ -26,8 +26,6 @@ PM2_GEN_MAK_OPTIONS += --type lib
 
 # Nom de la librairie
 #---------------------------------------------------------------------
-# Note dans quel cas est-ce necessaire ?
-# Tous sauf mad1 et mad2
 LIBRARY ?= $(MODULE)
 LIBNAME ?= $(LIBRARY)
 

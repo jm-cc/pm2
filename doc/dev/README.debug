@@ -37,7 +37,7 @@ alors le désactiver par la ligne de commande).
   Ces macros utilisent les noms 'mod'-disp, 'mod'-log et 'mod'-trace
 pour la ligne de commande et les variables debug_'mod'_disp,
 debug_'mod'_log et debug_'mod'_trace dans le programme. Par défaut,
-mod vaut marcel, mad1, mad2, pm2, dsm, tbx, ntbx ou app suivant si
+mod vaut marcel, mad3, pm2, dsm, tbx, ntbx ou app suivant si
 l'on est en train de compiler le module correspondant ou l'application
 (pour app).
 
@@ -167,7 +167,7 @@ void calcul_debug_init(int* argc, char** argv, int debug_flags)
   Ensuite, on peut utiliser CALCUL_TRACE() de la même façon que
 printf(). 
   Remarque: l'initialisation (appel à pm2debug_init_ext) est déjà
-faite par les modules marcel, mad1, mad2, pm2. Il est inutile de la
+faite par les modules marcel, mad3, pm2. Il est inutile de la
 refaire pour un programme inclu dans pm2. Il suffit d'enregistrer la
 variable avec pm2debug_register() (avant ou après l'appel à
 pm2debug_init_ext : il n'y a pas d'ordre imposé)

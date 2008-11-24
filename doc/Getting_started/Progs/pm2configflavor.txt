@@ -13,9 +13,9 @@ Commands:
 ravel% pm2-config-flavor --text
 ================= Flavors management ==================
 Existing flavors :
-default leonie leoparse mad1 mad2 
+default leonie leoparse mad3 
 marcel marcel_act marcel_actsmp marcel_mono marcel_smp 
-pm2 pm2_mad1 pm2_mad2 pm2_marcel
+pm2 pm2_mad3 pm2_marcel
 
 ******************************************************
 You can :

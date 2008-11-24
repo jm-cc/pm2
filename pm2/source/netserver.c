@@ -333,20 +333,7 @@ pm2_net_init_channels(int   *argc,
 	tbx_slist_append(slist, channel);
       }
   }
-#else // MAD2
-  {
-    p_mad_madeleine_t madeleine = NULL;
-    int               i         =    0;
-
-    madeleine = mad_get_madeleine();
-
-    for (i = 0; i < pm2_net_server_nb; i++)
-      {
-	pm2_net_channel_array[i] = mad_open_channel(madeleine, 0);
-	LOG_VAL("Created channel", i);
-      }
-  }
-#endif // MAD2
+#endif // MAD3
 
  end:
   LOG_OUT();
@@ -450,12 +437,7 @@ pm2_channel_alloc(pm2_channel_t *channel,
     tbx_slist_append(pm2_net_channel_slist, name);
     tbx_htable_add(pm2_net_channel_htable, name, name);
   }
-#else // MAD2
-  {
-    if (name)
-      TBX_FAILURE("channel naming unsupported with MadII");
-  }
-#endif // MAD2
+#endif // MAD3
 
   *channel = pm2_net_server_nb++;
   LOG_OUT();

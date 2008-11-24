@@ -87,77 +87,79 @@ do_the_test()
 	prerun_test | sed -e 's/^/..../'
     fi
 
-    if [ "$_coverage" = "yes" ]
-    then
+    if [  "$_perform_test" == "yes" ] ; then
+        if [ "$_coverage" = "yes" ]
+        then
 	# Remove previous gcov output.
-	find "$(pm2-config --flavor=$flavor --builddir)"	\
-	  -name \*.gcda -exec rm {} \;
-    fi
+	    find "$(pm2-config --flavor=$flavor --builddir)"	\
+	        -name \*.gcda -exec rm {} \;
+        fi
 
-    echo "Running program $prog..."
-    ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
-    if [ -z "$net" ] ; then
-        (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
-    else
-        protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-        (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
-    fi
-    [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
+        echo "Running program $prog..."
+        ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
+        if [ -z "$net" ] ; then
+            (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+        else
+            protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
+            (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+        fi
+        [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
 
-    # Le moment de verite
-    echo "Checking results..."
-    if [ "$sort_output" == "1" ] ; then
-        echo "Sorting output"
-        sort_command="sort --ignore-case"
-    else
-        sort_command="cat"
-    fi
-    if [ "$check_all_lines" == "1" ] ; then
-        # will compare all the lines of the output and not only the number
-        # of lines present in the expected output file
-        head_command="cat"
-    else
-        # will only compare the number of lines present in the
-        # expected output file
-        head_command="head -$nbl"
-    fi
-    grep -v '^#' $file_result | grep -v Puk: | grep -v PadicoTM | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
-    if diff -u $file_expected $file_filtered ; then
-	echo "Test ok!"
-    else
-	pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
-    fi
+        # Le moment de verite
+        echo "Checking results..."
+        if [ "$sort_output" == "1" ] ; then
+            echo "Sorting output"
+            sort_command="sort --ignore-case"
+        else
+            sort_command="cat"
+        fi
+        if [ "$check_all_lines" == "1" ] ; then
+            # will compare all the lines of the output and not only the number
+            # of lines present in the expected output file
+            head_command="cat"
+        else
+            # will only compare the number of lines present in the
+            # expected output file
+            head_command="head -$nbl"
+        fi
+        grep -v '^#' $file_result | grep -v Puk: | grep -v PadicoTM | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $head_command | $sort_command > $file_filtered
+        if diff -u $file_expected $file_filtered ; then
+	    echo "Test ok!"
+        else
+	    pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
+        fi
 
-    # Coverage testing.
-    if [ "$_coverage" = "yes" ]
-    then
-	# Feed all `.gcda' files through lcov to produce lcov `.info'
-	# files.
-	echo "collecting gcov output under \`$gcov_dir'..."
-	rm -rf "$gcov_dir"
-	mkdir -p "$gcov_dir"
+        # Coverage testing.
+        if [ "$_coverage" = "yes" ]
+        then
+	    # Feed all `.gcda' files through lcov to produce lcov `.info'
+	    # files.
+	    echo "collecting gcov output under \`$gcov_dir'..."
+	    rm -rf "$gcov_dir"
+	    mkdir -p "$gcov_dir"
 
-        build_dir=$(pm2-config --flavor=$flavor --builddir)
-        dirs=$(find $(pm2-config --flavor=$flavor --builddir) -type d)
-	for dir in $dirs
-	do
-	    if [ -d "$dir/obj" ]
-	    then
-                is_examples=$(echo $dir | grep examples)
-                if [ "$is_examples" != "" ]
-                then
-                    command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT/$_m":'")
-                else
-                    command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT":'")
-                fi
-                base_dir=$(eval $command)
-		module_name="$(basename $dir)"
+            build_dir=$(pm2-config --flavor=$flavor --builddir)
+            dirs=$(find $(pm2-config --flavor=$flavor --builddir) -type d)
+	    for dir in $dirs
+	    do
+	        if [ -d "$dir/obj" ]
+	        then
+                    is_examples=$(echo $dir | grep examples)
+                    if [ "$is_examples" != "" ]
+                    then
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT/$_m":'")
+                    else
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT":'")
+                    fi
+                    base_dir=$(eval $command)
+		    module_name="$(basename $dir)"
 
-		echo "writing lcov file \`$gcov_dir/$module_name.info'..."
-		lcov -c -d "$dir/obj" -b "$base_dir" \
-		    > "$gcov_dir/$module_name.info"
-	    fi
-	done
+		    echo "writing lcov file \`$gcov_dir/$module_name.info'..."
+		    lcov -c -d "$dir/obj" -b "$base_dir" \
+		        > "$gcov_dir/$module_name.info"
+	        fi
+	    done
+        fi
     fi
 
     # Destruction des fichiers residuels
@@ -171,6 +173,7 @@ _level=2 # normal
 _output_redirect=""
 _coverage="no"
 jobs=""
+_perform_test="yes"
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -238,6 +241,10 @@ while [ $# -gt 0 ]; do
             shift
             PM2_TESTS=$1
             shift
+            ;;
+        --compile)
+            shift
+            _perform_test="no"
             ;;
 	--)
 	    shift; break

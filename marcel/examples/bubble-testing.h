@@ -366,35 +366,6 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
 
 /* High-level test framework.  */
 
-static void
-print_entities_children (const struct marcel_topo_level *level) {
-  marcel_entity_t *e;
-  unsigned entities, child;
-
-  entities = 0;
-  for_each_entity_scheduled_on_runqueue (e, &level->rq)
-    {
-			if (e->type == MA_THREAD_ENTITY)
-				{
-					marcel_t thread;
-
-					thread = ma_task_entity (e);
-					if (MA_TASK_NOT_COUNTED_IN_RUNNING (thread))
-						/* THREAD is an internal thread (e.g., `ksoftirqd') so we
-							 should not take it into account here.  */
-						continue;
-				}
-
-      entities++;
-    }
-  level_log (verbose_output, level, "%u entit%s, %u child%s", entities, entities>1?"ies":"y", level->arity, level->arity?"ren":"");
-
-  for (child = 0; child < level->arity; child++)
-    {
-      print_entities_children(level->children[child]);
-    }
-}
-
 /* Run a test program that checks whether distributing the bubble hierarchy
 	 described by BUBBLE_HIERARCHY_DESCRIPTION over the topology described by
 	 TOPOLOGY_DESCRIPTION yields the entity distribution described by
@@ -452,22 +423,16 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 		 examine it.  */
 	marcel_thread_preemption_disable ();
 	ma_bubble_lock_all (&marcel_root_bubble, marcel_machine_level);
-  
-  if (expected_result) {
-    matches_p = topology_matches_tree_p (marcel_machine_level, expected_result);
-  }
-  else {
-    print_entities_children(marcel_machine_level);
-  }
+
+	matches_p = topology_matches_tree_p (marcel_machine_level, expected_result);
+
 	ma_bubble_unlock_all (&marcel_root_bubble, marcel_machine_level);
 	marcel_thread_preemption_enable ();
 
-  if (expected_result) {
-    if (matches_p)
-      printf ("PASS: scheduling entities were distributed as expected\n");
-    else
-      printf ("FAIL: scheduling entities were NOT distributed as expected\n");
-  }
+	if (matches_p)
+		printf ("PASS: scheduling entities were distributed as expected\n");
+	else
+		printf ("FAIL: scheduling entities were NOT distributed as expected\n");
 
 	if ((!verbose_output) && (!matches_p))
 		/* Give feedback as to what failed.  */

@@ -172,8 +172,9 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
   unsigned long dest;
   marcel_t thread;
   marcel_attr_t attr;
+  auto any_t migration(any_t arg);
 
-  any_t migration(any_t arg) {
+  auto any_t migration(any_t arg) {
     void *buffer;
     unsigned long nodemask;
     void **pageaddrs;
@@ -349,8 +350,10 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
   marcel_attr_t attr;
   int **buffers;
   long long int size=100;
+  auto any_t writer(any_t arg);
+  auto any_t reader(any_t arg);
 
-  any_t writer(any_t arg) {
+  auto any_t writer(any_t arg) {
     int *buffer;
     int i, j, node;
     unsigned int gold = 1.457869;
@@ -365,7 +368,7 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
     }
     return NULL;
   }
-  any_t reader(any_t arg) {
+  auto any_t reader(any_t arg) {
     int *buffer;
     int i, j, node;
 

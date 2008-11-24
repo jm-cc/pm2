@@ -713,7 +713,7 @@ void *main_thread(thread_infos_t * info)
 }
 
 int
-tbx_main(int argc, char *argv[])
+marcel_main(int argc, char *argv[])
 {
   p_mad_madeleine_t madeleine = NULL;
   p_mad_session_t   session   = NULL;

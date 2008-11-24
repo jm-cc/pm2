@@ -41,18 +41,6 @@ typedef struct _struct_common_attr_t common_attr_t;
 #include "tbx.h"
 #endif /* TBX */
 
-/*
- * If compiler is GNU C, we rename the application 'main'
- * to the expanded value of tbx_main
- */
-#if defined(MARCEL) && !defined(STANDARD_MAIN)
-#ifdef __GNUC__
-int
-main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(tbx_main) );
-#endif /* __GNUC__ */
-#endif /* MARCEL && !STANDARD_MAIN */
-
-
 #ifdef NTBX
 #include "ntbx.h"
 #endif /* NTBX */

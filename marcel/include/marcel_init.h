@@ -66,6 +66,14 @@ int go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
 #else  /* MARCEL_MAIN_AS_FUNC */
 #ifdef MARCEL_KERNEL
 extern int marcel_main(int argc, char *argv[]);
+#else
+#ifdef __GNUC__
+/*
+ * If compiler is GNU C, we can rename the application's 'main' into
+ * marcel_main automatically, saving the user a conditional rename.
+ */
+int main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(TBX_REAL_SYMBOL_NAME(marcel_main)));
+#endif /* __GNUC__ */
 #endif /* MARCEL_KERNEL */
 #endif /* MARCEL_MAIN_AS_FUNC */
 #endif /* STANDARD_MAIN */

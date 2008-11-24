@@ -23,13 +23,12 @@ main (int argc, char *argv[])
      cores.  */
   static const char topology_description[] = "2 2 4";
 
-	/* A flat bubble hierarchy.  */
+  /* A flat bubble hierarchy.  */
   static const unsigned bubble_hierarchy_description[] =
     { 16, 0 };
 
-
   /* The expected result, i.e., the scheduling entity distribution that we
-     expect from Affinity.  */
+     expect from memaware.  */
 
 #define BUBBLE MA_BUBBLE_ENTITY
 #define THREAD MA_THREAD_ENTITY

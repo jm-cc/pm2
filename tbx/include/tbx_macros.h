@@ -279,9 +279,9 @@ do { \
 #define tbx_flag_is_clear(f)   (!*(f))
 
 #if defined(__GNUC__) && ( defined(__APPLE_CPP__) || defined(__APPLE_CC__) || defined(__MACOS_CLASSIC__) )
-#define DEFINE_TBX_MAIN(name) _ ## name
+#define TBX_REAL_SYMBOL_NAME(name) _ ## name
 #else
-#define DEFINE_TBX_MAIN(name) name
+#define TBX_REAL_SYMBOL_NAME(name) name
 #endif
 
 /*
@@ -290,9 +290,9 @@ do { \
  */
 #if defined (MARCEL)       /*# Thread sync : Marcel mode */
 #  if defined(STANDARD_MAIN) || defined(MARCEL_MAIN_AS_FUNC)
-#    define tbx_main DEFINE_TBX_MAIN(main)
+#    define tbx_main TBX_REAL_SYMBOL_NAME(main)
 #  else  /* STANDARD_MAIN */
-#    define tbx_main DEFINE_TBX_MAIN(marcel_main)
+#    define tbx_main TBX_REAL_SYMBOL_NAME(marcel_main)
 #  endif /* STANDARD_MAIN */
 #  define TBX_CRITICAL_SECTION(name)              marcel_mutex_t __tbx_section_ ## name = MARCEL_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        marcel_mutex_lock(&(__tbx_section_ ## name))
@@ -308,7 +308,7 @@ do { \
 #  define TBX_UNLOCK()           unlock_task()
 #  define TBX_YIELD()            marcel_yield()
 #elif defined (_REENTRANT) /*# Thread sync : Pthread mode */
-#  define tbx_main DEFINE_TBX_MAIN(main)
+#  define tbx_main TBX_REAL_SYMBOL_NAME(main)
 #  define TBX_CRITICAL_SECTION(name)              pthread_mutex_t __tbx_section_ ## name = PTHREAD_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        pthread_mutex_lock(&(__tbx_section_ ## name))
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name) pthread_mutex_trylock(&(__tbx_section_ ## name))
@@ -327,7 +327,7 @@ do { \
 #    define TBX_YIELD()           pthread_yield()
 #  endif                        /*# pthread yield : end */
 #else                         /*# Threads sync : no thread mode */
-#  define tbx_main DEFINE_TBX_MAIN(main)
+#  define tbx_main TBX_REAL_SYMBOL_NAME(main)
 
 #  define TBX_CRITICAL_SECTION(name) const int __tbx_section_ ## name = 0
 #  define TBX_CRITICAL_SECTION_ENTER(name)

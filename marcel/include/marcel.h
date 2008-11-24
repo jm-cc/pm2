@@ -170,7 +170,7 @@ TBX_VISIBILITY_POP
 
 /* ========== once objects ============ */
 
-#define marcel_once_init { 0 }
+#define MARCEL_ONCE_INITIALIZER { 0 }
 
 /* ============== stack ============= */
 

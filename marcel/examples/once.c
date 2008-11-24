@@ -26,7 +26,7 @@ void f(void)
 
 int marcel_main(int argc, char *argv[])
 {
-  marcel_once_t once = marcel_once_init;
+  marcel_once_t once = MARCEL_ONCE_INITIALIZER;
 
   marcel_init(&argc, argv);
 

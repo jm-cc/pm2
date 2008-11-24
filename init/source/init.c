@@ -376,17 +376,9 @@ void common_post_init(int *_argc, char *_argv[],
   pm2_init_thread_related(argc, argv);
 #endif /* PM2 */
 
-#ifdef DSM
-  dsm_pm2_init_before_startup_funcs(pm2self, pm2_conf_size);
-#endif /* DSM */
-
 #ifdef PM2
   pm2_init_exec_startup_funcs(argc, argv);
 #endif
-
-#ifdef DSM
-   dsm_pm2_init_after_startup_funcs(pm2self, pm2_conf_size);
-#endif /* DSM */
 
 #ifdef PM2
   pm2_net_init_channels(argc, argv);
@@ -469,10 +461,6 @@ common_exit(common_attr_t *attr)
 #ifdef PM2
   pm2_thread_exit();
   block_exit();
-
-#ifdef DSM
-  dsm_pm2_exit();
-#endif // DSM
 #endif // PM2
 
 #ifdef MARCEL

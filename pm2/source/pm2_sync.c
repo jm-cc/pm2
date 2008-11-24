@@ -17,12 +17,6 @@
 #include "pm2.h"
 #include "pm2_sync.h"
 
-/* the following is needed for TOKEN_LOCK_NONE */
-#ifdef DSM
-#include "token_lock.h"
-#endif
-
-
 //#define BARRIER_TRACE
 
 //#define TRACE_SYNC
@@ -202,25 +196,7 @@ void pm2_thread_barrier(pm2_thread_barrier_t *bar)
 
   marcel_mutex_lock(&bar->mutex);
   if(++bar->nb == bar->local) {
-#ifdef DSM
-    int i;
-
-    /* Here we handle consistency (first phase: release) */
-    for (i = 0; i < bar->nb_prot; i++) 
-      {
-	if (dsm_get_release_func(bar->prot[i]) != NULL)
-	  (*dsm_get_release_func(bar->prot[i]))(TOKEN_LOCK_NONE);
-      }
-#endif
     pm2_barrier(&bar->node_barrier);
-#ifdef DSM
-    /* Here we handle consistency (second phase: acquire) */
-    for (i = 0; i < bar->nb_prot; i++) 
-      {
-	if (dsm_get_acquire_func(bar->prot[i]) != NULL)
-	  (*dsm_get_acquire_func(bar->prot[i]))(TOKEN_LOCK_NONE);
-      }
-#endif
     marcel_cond_broadcast(&bar->cond);
     bar->nb = 0;
   } else {

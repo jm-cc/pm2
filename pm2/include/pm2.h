@@ -34,10 +34,6 @@ extern "C" {
 #include "pm2_sync.h"
 #include "tbx_compiler.h"
 
-#ifdef DSM
-#include "dsm_pm2.h"
-#endif
-
 // Initialisation
 #include "pm2_common.h"
 

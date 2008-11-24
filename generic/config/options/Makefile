@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-LIBS := pm2 marcel xpaulette mad3 tbx ntbx dsm init leoparse profile bubblelib pioman
+LIBS := pm2 marcel mad3 tbx ntbx init leoparse profile bubblelib pioman
 # mad1
 MODULES := leonie stackalign bubbles bubblegum
 

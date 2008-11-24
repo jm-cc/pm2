@@ -20,7 +20,7 @@ ROOTTEXFILES	:= start.tex
 STYFILES	:= start.sty
 
 TO_SPLIT	:= rpc-threads1 migration3 migrate-group \
-		dsm dsm1 dsm2 freeze mutex semaphore condition
+		freeze mutex semaphore condition
 
 CFILES		:= $(wildcard Progs/*.c)
 EMPHCFILES_TO_SPLIT	:= $(TO_SPLIT:%=Progs/%.c-emph)

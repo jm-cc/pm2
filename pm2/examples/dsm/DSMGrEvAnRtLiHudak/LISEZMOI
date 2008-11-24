@@ -1,8 +1,0 @@
------------------------------------------------------------------------
-
- Ce programme se veut une démonstartion graphique de DSM-PM2. Il nécessite la présence d'un serveur X-Window et n'a été testé qu'avec X11R6.
-La compilation nécessite pour l'instant d'ajouter à la main le chemin des en-tete de la librairie X (par example en ajoutant -L/usr/X11R6/lib/ dans une ligne de compilation) et de lier à la main le fichier objet avec la librairie X (-lX11).Le programme nécessite également que l'utilisateur aille changer à la main la ligne '#define DISPLAY' du code source et lui assigne la valeur voulue, c'est à dire le chemin du serveur X.
-Commandes clavier:
-La touche 'c' devrait créer un nouveau thread, la touche 'b' fait passer la balle d'un noeud à un autre, et la touche 'r' tire au hasard la direction de la balle.
-
-Dernière mise à jour: 15/06/00.

@@ -23,8 +23,6 @@
 #include "sys/bitmap.h"
 #include "marcel.h"
 
-/* #define DSM_DEBUG */
-
 #define SET_BIT_IN_WORD(word, bit_rel_index) \
         word |= 1 << bit_rel_index
 
@@ -194,9 +192,6 @@ void set_bits_to_1(unsigned int start, unsigned int n,  unsigned int *crt_bitmap
               last_word = (end - 1) >> 5;
  if (n <= 0)
    return;
-#ifdef DSM_DEBUG 
- fprintf(stderr,"set_bits_to_1: %d from %d; touched from %p to %p\n",n,start, &crt_bitmap[first_word], &crt_bitmap[last_word]);
-#endif
 
  if (first_word == last_word)
      /* 
@@ -229,9 +224,6 @@ void reset_bits_to_0(unsigned int start, unsigned int n, unsigned int *crt_bitma
  unsigned int end = start + n, 
               first_word = start >> 5,
               last_word = (end - 1 ) >> 5;
-#ifdef DSM_DEBUG 
- fprintf(stderr,"reset to 0: touches from %p to %p\n", &crt_bitmap[first_word], &crt_bitmap[last_word]);
-#endif 
  if (first_word == last_word)
    crt_bitmap[first_word] &= ~(((1 << n) - 1) << (start % 32));
  else
@@ -444,10 +436,6 @@ int first_bits_to_1_aligned(unsigned int n, unsigned int *crt_bitmap, unsigned i
  unsigned int mask, remainder_mask;
  int remainder, k = 0, k1;
  int i;
-
-#ifdef DSM_DEBUG 
- fprintf(stderr,"aligned: n = %d, align = %d\n", n, align);
-#endif
 
  if (align < WORD_SIZE)
    {
@@ -704,9 +692,6 @@ void set_cyclic_sequences(unsigned int start, unsigned int bits_to_1, unsigned i
 
   for (j = 0 ; j < nb_cycles; j++, start += period)
     set_bits_to_1(start, bits_to_1, crt_bitmap);
-#ifdef DSM_DEBUG
-  fprintf(stderr, "last local slot: %d\n", start + bits_to_1 - 1);
-#endif
 }
 
 int bitmap_is_empty(unsigned int *crt_bitmap, int size)

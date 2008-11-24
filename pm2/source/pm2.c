@@ -30,11 +30,6 @@
 
 #include "pm2_timing.h"
 
-#ifdef DSM
-#include "dsm_slot_alloc.h"
-#include "dsm_pm2.h"
-#endif
-
 #ifdef PROFILE
 #include "pm2_profile.h"
 #endif
@@ -288,11 +283,7 @@ void pm2_completion_signal_end(void)
 void *pm2_malloc(size_t size, isoaddr_attr_t *attr)
 {
   switch(attr->status){
-#ifdef DSM
-  case ISO_SHARED: return dsm_slot_alloc(size, NULL, NULL, attr); break;
-#else
   case ISO_SHARED: MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);break;
-#endif
   case ISO_PRIVATE:
   case ISO_DEFAULT:return block_alloc((block_descr_t *)marcel_getspecific(_pm2_block_key), size, attr); break;
   default: MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);

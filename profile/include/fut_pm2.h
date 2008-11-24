@@ -23,10 +23,9 @@
 #define MARCEL_PROF_MASK  0x01
 #define MAD_PROF_MASK     0x02
 #define PM2_PROF_MASK     0x04
-#define DSM_PROF_MASK     0x08
 #define TBX_PROF_MASK     0x10
 #define NTBX_PROF_MASK    0x20
-#define XPAUL_PROF_MASK     0x40
+#define PIOMAN_PROF_MASK     0x40
 #define USER_APP_MASK     0x80
 
 #if defined(MARCEL_KERNEL)
@@ -35,10 +34,8 @@
 #define PROFILE_KEYMASK MAD_PROF_MASK
 #elif defined(PM2_KERNEL)
 #define PROFILE_KEYMASK PM2_PROF_MASK
-#elif defined(XPAUL_KERNEL)
-#define PROFILE_KEYMASK XPAUL_PROF_MASK
-#elif defined(DSM_KERNEL)
-#define PROFILE_KEYMASK DSM_PROF_MASK
+#elif defined(PIOMAN_KERNEL)
+#define PROFILE_KEYMASK PIOMAN_PROF_MASK
 #elif defined(TBX_KERNEL)
 #define PROFILE_KEYMASK TBX_PROF_MASK
 #elif defined(NTBX_KERNEL)

@@ -1,7 +1,0 @@
------------------------------------------------------------------------
-
- This program is intended as a graphical demonstration of DSM-PM2. It requires a X-Window server and has currently only been tested with X11R6.
-The building process currently requires to manually add the headers path for Xlib (-L/usr/X11R6/lib/ , for example) and to manually link the object file with Xlib (-lX11),a way or another. The program also currently requires the user to manually change the '#define DISPLAY' string at the beginning of the source code to the requested value.
-Keyboard commands: The 'c' key should create a new thread, the 'b' key serves to move the ball from a node to another, the 'r' key randomize the direction of the ball.
-
-Last Updated: 06/15/00.

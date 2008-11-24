@@ -9,10 +9,9 @@ Current settings:
 flavor name: pm2debug
 builddir   : $flavor
 extension  :
-modules    : pm2 dsm marcel mad3 tbx ntbx init appli
+modules    : pm2 marcel mad3 tbx ntbx init appli
   Common options             : opt build_static static
   Module pm2    with options: opt build_static
-  Module dsm    with options: opt build_static
   Module marcel with options: opt build_static mono marcel_main
   Module mad3   with options: opt build_static tcp
   Module tbx    with options: opt build_static

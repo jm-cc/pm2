@@ -34,9 +34,6 @@ void pm2_rpc_init(void);
 #define END_LRPC_LIST	;
 
 #include "sys/console.h"
-#ifdef DSM
-#include "dsm_rpc.h"
-#endif
 
 #define LRPC_REQ(name) _##name##_req
 #define LRPC_RES(name) _##name##_res

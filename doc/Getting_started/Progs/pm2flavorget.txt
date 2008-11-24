@@ -2,10 +2,9 @@ ravel% pm2-flavor get --flavor=pm2
  --flavor=pm2
  --builddir=$flavor
  --ext=
- --modules=pm2 --modules=dsm --modules=marcel --modules=mad3 --modules=tbx
+ --modules=pm2 --modules=marcel --modules=mad3 --modules=tbx
        --modules=ntbx --modules=init
  --pm2=opt --pm2=build_static
- --dsm=opt --dsm=build_static
  --marcel=opt --marcel=build_static --marcel=mono 
      --marcel=smp_shared_queue --marcel=marcel_main
  --mad3=opt --mad3=build_static --mad3=tcp

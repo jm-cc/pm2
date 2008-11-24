@@ -54,13 +54,7 @@
 #  error THREAD_SLOT_SIZE is too small for TLS_AREA_SIZE, please increase it in marcel/include/sys/isomalloc_archdep.h
 #endif
 
-#define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)
-
-#ifdef DSM
-#  define DYN_DSM_AREA_SIZE             (ISOADDR_PAGES * 4096)
-#else
-#  define DYN_DSM_AREA_SIZE             0
-#endif
+#define SLOT_AREA_TOP                 ((unsigned long) ISOADDR_AREA_TOP)
 
 #ifdef SOLARIS_SYS
 extern int __zero_fd;

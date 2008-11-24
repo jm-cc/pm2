@@ -96,9 +96,6 @@ DEBUG_DECLARE(leonie)
 #ifdef LEOPARSE
 DEBUG_DECLARE(leoparse)
 #endif
-#ifdef SWANN
-DEBUG_DECLARE(swann)
-#endif
 #ifdef PM2
 DEBUG_DECLARE(pm2)
 #endif
@@ -107,9 +104,6 @@ DEBUG_DECLARE(tbx)
 #endif
 #ifdef NTBX
 DEBUG_DECLARE(ntbx)
-#endif
-#ifdef DSM
-DEBUG_DECLARE(dsm)
 #endif
 #ifdef PROFILE
 DEBUG_DECLARE(profile)
@@ -349,9 +343,6 @@ void pm2debug_init_base(void)
 #ifdef LEOPARSE
 	DEBUG_INIT(leoparse);
 #endif
-#ifdef SWANN
-	DEBUG_INIT(swann);
-#endif
 #ifdef PM2
 	DEBUG_INIT(pm2);
 #endif
@@ -360,9 +351,6 @@ void pm2debug_init_base(void)
 #endif
 #ifdef NTBX
 	DEBUG_INIT(ntbx);
-#endif
-#ifdef DSM
-	DEBUG_INIT(dsm);
 #endif
 	DEBUG_INIT(app);
 

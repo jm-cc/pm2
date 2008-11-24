@@ -592,9 +592,6 @@ void block_unpack_all()
        */
        old_mad_unpack_byte(MAD_IN_HEADER, (char *)&slot_header, sizeof(slot_header_t));
        old_mad_unpack_byte(MAD_IN_HEADER, (char*)&attr.status, sizeof(int));
-#ifdef DSM
-       attr.protocol = slot_header.prot;
-#endif   /* DSM */
        attr.atomic = slot_header.atomic;
        /* 
 	  allocate memory for the slot 
@@ -774,9 +771,6 @@ void ISOMALLOC_LRPC_SEND_SPECIAL_SLOT_threaded_func()
        */
        pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char *)&slot_header, sizeof(slot_header_t));
        pm2_unpack_byte(SEND_CHEAPER, RECV_EXPRESS, (char*)&attr.status, sizeof(int));
-#ifdef DSM
-       attr.protocol = slot_header.prot;
-#endif   /* DSM */
        attr.atomic = slot_header.atomic;
        /* 
 	  allocate memory for the slot 

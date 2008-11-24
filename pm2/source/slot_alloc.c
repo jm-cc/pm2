@@ -27,9 +27,6 @@
 #include "sys/isomalloc_archdep.h"
 #include "magic.h"
 #include "slot_alloc.h"
-#ifdef DSM
-#include "dsm_protocol_policy.h"   /* for DSM_DEFAULT_PROTOCOL */
-#endif   /* DSM */
 
 
 
@@ -115,11 +112,7 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
   size_t overall_size;
   slot_header_t *header_ptr;
 
-#ifdef DSM
-  static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, DSM_DEFAULT_PROTOCOL, 1, 32, 0};
-#else
   static isoaddr_attr_t default_isoaddr_attr = {ISO_PRIVATE, 1, 32, 0};
-#endif
 
   LOG_IN();
 
@@ -143,9 +136,6 @@ static void *slot_alloc(slot_descr_t *descr, size_t req_size, size_t *granted_si
 #ifdef ASSERT
   header_ptr->magic_number = SLOT_MAGIC_NUM;
 #endif
-#ifdef DSM
-  header_ptr->prot = attr->protocol;
-#endif   /* DSM */
   header_ptr->atomic = attr->atomic;
   header_ptr->special = attr->special; 
   /* 
@@ -421,87 +411,6 @@ size_t slot_get_header_size()
 }
 
 #endif // ifndef ISOMALLOC_USE_MACROS
-
-#ifdef DSM
-
-#include "dsm_page_manager.h"
-
-void slot_set_shared(void *addr)
-{
-  int i, master = isoaddr_page_get_master(isoaddr_page_index(addr));
-  slot_header_t *header_ptr = (slot_header_t *)isoaddr_page_addr(master);
-
-#ifdef ISOADDR_INFO_TRACE
-   fprintf(stderr,"Slot_set_shared: unchaining... descr = %p\n",header_ptr->thread_slot_descr);
-   slot_print_list(header_ptr->thread_slot_descr);
-#endif
-  /* 
-     get the slot out of the thread list if linked 
-  */
-  if(header_ptr->thread_slot_descr != NULL){
-    
-    if (header_ptr->prev != NULL)
-      header_ptr->prev->next = header_ptr->next;
-    else 
-      /* 
-	 the slot to suppress is the head of the list 
-      */
-      header_ptr->thread_slot_descr->slots = header_ptr->next;
-    if (header_ptr->next != NULL)
-      header_ptr->next->prev = header_ptr->prev;
-    else
-      { 
-      /*
-	the slot to suppress is the tail of the list 
-      */
-	if (header_ptr->prev != NULL)
-	/* 
-	   the slot to suppress is not the only one in the list 
-	   */
-	  header_ptr->prev->next = NULL;
-	
-	/*
-	  update the address of the last slot in the list
-	  */
-	header_ptr->thread_slot_descr->last_slot = header_ptr->prev;
-      }
-  }
-#ifdef ISOADDR_INFO_TRACE
-   fprintf(stderr,"Slot_set_shared: unchained... descr = %p\n", 
-	   header_ptr->thread_slot_descr);
-   slot_print_list(header_ptr->thread_slot_descr);
-#endif
-
-#ifdef ISOADDR_INFO_TRACE
-   fprintf(stderr,"Slot_set_shared: master = %d\n", master);
-#endif
-
-   isoaddr_page_set_status(master, ISO_SHARED);
-   i= master;
-
-   if (header_ptr->atomic)
-     {
-       while (isoaddr_page_get_master(i) == master) 
-	 i--;
-       
-       dsm_enable_page_entry(dsm_isoaddr_page_index(master), pm2_self(), 
-			     header_ptr->prot, isoaddr_page_addr(master), 
-			     (master - i)*DSM_PAGE_SIZE, tbx_false);
-     }
-   else
-     {
-     while (isoaddr_page_get_master(i) == master) 
-       {
-	 dsm_enable_page_entry(dsm_isoaddr_page_index(i), pm2_self(), 
-			       header_ptr->prot, isoaddr_page_addr(i), 
-			       DSM_PAGE_SIZE, tbx_false);
-	 i--;
-       }
-     }
-
-
-}
-#endif //DSM
 
 slot_header_t *slot_detach(void *addr)
 {

@@ -698,10 +698,6 @@ void pm2_rpc_init(void)
   pm2_barrier_init_rpc();
   block_init_rpc();
 
-#ifdef DSM
-  dsm_pm2_init_rpc();
-#endif
-
 #if 0
   for(i=0; i<nb_of_channels; i++) {
     pm2_channel_alloc(&pm2_rpc_channel[i].channel[0]);

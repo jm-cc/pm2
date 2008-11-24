@@ -221,26 +221,3 @@ each thread being migrated to a specific processing node. Also, it
 should be stressed that the series of operations described above at
 the origin node can be made atomic if desired, using specific PM2
 routines.
-
-PM2 features an additional functionality to provide threads with a
-uniform access to data, whatever their physical location. It is called
-DSM-PM2. The idea is that the programmer can register certain global
-data in to be \emph{uniformly shared} by all the threads. This can be
-done \emph{statically} by using a special declaration for the global
-variables of the program, or \emph{dynamically} by allocating memory
-areas with a specific allocation function. Exactly like the
-\|pm2_isomalloc| function above, the system guarantees that all
-pointers remain valid on all nodes, so that these memory areas can be
-used completely transparently by the programmer.  DSM-PM2 is
-parameterized by the consistency protocol to be used for managing
-shared data. A number of built-in protocols are provided in the
-standard distribution for various consistency models, including
-\emph{sequential consistency} ones (for instance, Li-Hudak), and
-\emph{release consistency}, with several alternative protocols for
-each of them. The protocol to be used is actually specified within the
-prelude phase (before the call to \|pm2_init|) using a special routine
-called \|dsm_set_default_protocol|. The user may thus switch from one
-protocol to another without recompiling the program! Also, additional
-protocols can be dynamically constructed by the user using the basic
-blocks provided by the library. A typical protocol may be specified at
-this level within a few hundreds of lines.

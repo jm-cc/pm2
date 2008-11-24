@@ -238,8 +238,8 @@ flavor that we will called <TT>pm2debug</TT> based on the
 
 <P>
 Select the <TT>debug</TT> option in the <TT>pm2</TT> module.  Do it
-also for the application, and for the <TT>mad3</TT> and <TT>dsm</TT>
-modules. Change the name of this new flavor from <TT>pm2</TT> to
+also for the application, and for the <TT>mad3</TT> module.
+Change the name of this new flavor from <TT>pm2</TT> to
 <TT>pm2debug</TT>, and save it (see Figure <REF LABEL="fig:ezflavor-create"/>).
 </P>
 

@@ -47,7 +47,7 @@ consumes time and resources.
 
 These two motivations have led to the notion of \emph{PM2 flavors}. A PM2
 flavor is simply a set of compiling and linking options for the user
-program and the various modules of PM2: Marcel, Madeleine, DSM, and
+program and the various modules of PM2: Marcel, Madeleine, and
 various other ancillary modules. It is always assumed that the user
 program and the modules have been compiled and linked with the
 \emph{same} flavor. Unfortunately, there is no easy way to enforce
@@ -172,8 +172,8 @@ fully-fledged debugging facilities. That's right: what you need is a
 \|pm2_debug| flavor, man! 
 
 Check in the \|debug| option in the \|pm2| module.  Do
-it for the application, too, and also for the \|mad3| module and
-the \|dsm| module, too. Edit the name of the new flavor from \|pm2| to
+it for the application, too, and also for the \|mad3| module.
+Edit the name of the new flavor from \|pm2| to
 \|pm2_debug|, and save it. The new flavor is checked for consistency
 and saved under into the \|${PM2_HOME}/.pm2/flavors/pm2_debug|
 file. You may check that the file actually contains the modified
@@ -298,9 +298,8 @@ may be detected early. You may also wish to concentrate on memory
 allocations by enabling the \|safe_malloc| and the \|parano_malloc|
 options of module \|tbx|, the toolbox common to all PM2 modules. If
 you suspect a problem with synchronization objects, you will find
-useful options in the \|marcel| module, and in the \|dsm| module for
-the inter-node synchronization actions induced by the DSM consistency
-protocols. I you wish to use the \|valgrind| debugger on a program using
+useful options in the \|marcel| module.
+I you wish to use the \|valgrind| debugger on a program using
 \|marcel|, you need to set the \|valgrind| option of the \|marcel|
 module to let \|valgrind| know about \|marcel| stacks. If your version
 of \|valgrind| is older than 3.0, you will also need to recompile it

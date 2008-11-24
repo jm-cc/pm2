@@ -66,10 +66,6 @@ void slot_print_list(slot_descr_t *descr);
 
 void slot_print_header(slot_header_t *ptr);
 
-#ifdef DSM
-void slot_set_shared(void *addr);
-#endif
-
 slot_header_t *slot_detach(void *addr);
 
 void slot_attach(slot_descr_t *descr, slot_header_t *header_ptr);

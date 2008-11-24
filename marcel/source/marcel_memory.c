@@ -1030,8 +1030,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
   for(i=0; i<pages; i++) {
     if (pagenodes[i] != node) {
-      marcel_printf("MaMI Warning: page #%d is not located on node #%d\n", i, node);
-      exit(-1);
+      marcel_printf("MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
     }
   }
   tfree(pagenodes);
@@ -1184,16 +1183,12 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 
 static
 int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
-                            void *buffer, marcel_memory_data_t *data, int source, int dest) {
+                            void *buffer, marcel_memory_data_t *data, int dest) {
   int i, *dests, *status;
   int err=0;
 
   MAMI_LOG_IN();
-  if (source == -1) {
-    mdebug_mami("The address %p is not managed by MAMI.\n", buffer);
-    err = EINVAL;
-  }
-  else if (source == dest) {
+  if (data->node == dest) {
     mdebug_mami("The address %p is already located at the required node.\n", buffer);
     err = EALREADY;
   }
@@ -1233,7 +1228,7 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   marcel_spin_lock(&(memory_manager->lock));
   ret = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
   if (ret >= 0) {
-    ret = ma_memory_migrate_pages(memory_manager, buffer, data, source, dest);
+    ret = ma_memory_migrate_pages(memory_manager, buffer, data, dest);
   }
   marcel_spin_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
@@ -1267,7 +1262,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (data->status != MARCEL_MEMORY_NEXT_TOUCHED_STATUS) {
     data->status = MARCEL_MEMORY_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
-    ma_memory_migrate_pages(g_memory_manager, addr, data, source, dest);
+    ma_memory_migrate_pages(g_memory_manager, addr, data, dest);
     err = mprotect(data->startaddress, data->size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";
@@ -1309,6 +1304,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   g_memory_manager = memory_manager;
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
   if (err >= 0) {
+    mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     data->status = MARCEL_MEMORY_INITIAL_STATUS;
     err = mprotect(data->startaddress, data->size, PROT_NONE);
     if (err < 0) {

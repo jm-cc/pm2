@@ -992,10 +992,13 @@ int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
 }
 
 void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
+  void *aligned_buffer;
+
   MAMI_LOG_IN();
+  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
   mdebug_mami("Freeing [%p]\n", buffer);
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_unregister(memory_manager, &(memory_manager->root), buffer);
+  ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
   marcel_spin_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
 }
@@ -1037,9 +1040,17 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int *node) {
   marcel_memory_data_t *data = NULL;
-  mdebug_mami("Trying to locate address %p\n", buffer);
-  if (!size) size=1;
-  return ma_memory_locate(memory_manager, memory_manager->root, buffer, size, node, &data);
+  void *aligned_buffer, *aligned_endbuffer;
+  size_t aligned_size;
+
+  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  aligned_size = aligned_endbuffer-aligned_buffer;
+  if (!aligned_size) aligned_size=1;
+
+  mdebug_mami("Trying to locate address %p (aligned %p)\n", buffer, aligned_buffer);
+
+  return ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, node, &data);
 }
 
 static
@@ -1395,18 +1406,20 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
                               marcel_entity_t *owner) {
   int err=0, source;
   marcel_memory_data_t *data = NULL;
+  void *aligned_buffer;
 
   marcel_spin_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
+  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
 
-  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &source, &data);
   if (err >= 0) {
     marcel_entity_t *res;
 
     mdebug_mami("Removing entity %p from data %p\n", owner, data);
 
     if (tbx_slist_is_nil(data->owners)) {
-      mdebug_mami("The entity %p is not attached to the memory area %p(1).\n", owner, buffer);
+      mdebug_mami("The entity %p is not attached to the memory area %p(1).\n", owner, aligned_buffer);
       errno = ENOENT;
       err = -errno;
     }
@@ -1429,7 +1442,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
         ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {
-        mdebug_mami("The entity %p is not attached the memory area %p.\n", owner, buffer);
+        mdebug_mami("The entity %p is not attached the memory area %p.\n", owner, aligned_buffer);
         errno = ENOENT;
         err = -errno;
       }

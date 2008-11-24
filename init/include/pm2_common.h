@@ -63,6 +63,9 @@ typedef struct _struct_common_attr_t common_attr_t;
 #endif /* PM2 */
 
 struct _struct_common_attr_t {
+#if defined(MAD)
+  p_mad_madeleine_t    madeleine;   // OUT
+#endif // MAD
 };
 
 #endif // *_KERNEL

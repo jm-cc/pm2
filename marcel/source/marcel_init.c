@@ -350,8 +350,8 @@ void marcel_init_data(int *argc, char *argv[])
 void marcel_start_sched(void)
 {
 	// Start scheduler (i.e. run LWP/activations, start timer)
-	marcel_init_section(MA_INIT_START_LWPS);
 	marcel_activity = tbx_flag_set;
+	marcel_init_section(MA_INIT_START_LWPS);
 }
 
 void marcel_purge_cmdline(int *argc, char *argv[])
@@ -372,13 +372,13 @@ void marcel_purge_cmdline(int *argc, char *argv[])
 void marcel_finish_prepare(void)
 {
 	marcel_gensched_shutdown();
+	marcel_activity = tbx_flag_clear;
 }
 
 void marcel_finish(void)
 {
 	marcel_slot_exit();
 	ma_topo_exit();
-	marcel_activity = tbx_flag_clear;
 }
 
 static const char valid_header_hash[] = MARCEL_HEADER_HASH;

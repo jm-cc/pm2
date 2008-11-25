@@ -428,7 +428,6 @@ void marcel_gensched_shutdown(void)
 #endif
 	marcel_sig_exit();
 
-	tbx_flag_clear(&marcel_activity);
 	LOG_OUT();
 }
 

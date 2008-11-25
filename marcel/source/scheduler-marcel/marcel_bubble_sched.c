@@ -39,7 +39,7 @@ ma_bubble_sched_t current_sched =
 #elif defined(BUBBLE_SCHED_STEAL)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32msteal[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_steal_sched;
-#elif defined(BUBBLE_SCHED_MEMAWARE) && defined(MA__NUMA_MEMORY)
+#elif defined(BUBBLE_SCHED_MEMAWARE)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemaware[1;37m selected[1;33m >>>[0m"
 &marcel_bubble_memaware_sched;
 #elif defined(BUBBLE_SCHED_GANG)

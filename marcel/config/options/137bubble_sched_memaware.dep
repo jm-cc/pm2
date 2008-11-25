@@ -1,2 +1,3 @@
 Provide: marcel_bubble_sched_type
 Conflict: marcel_bubble_sched_type
+Depend: marcel_numa_memory

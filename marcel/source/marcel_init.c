@@ -378,6 +378,7 @@ void marcel_finish(void)
 {
 	marcel_slot_exit();
 	ma_topo_exit();
+	marcel_activity = tbx_flag_clear;
 }
 
 static const char valid_header_hash[] = MARCEL_HEADER_HASH;

@@ -170,11 +170,11 @@ struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .submit = memory_sched_submit,
 };
 
-#else /* MA__NUMA_MEMORY */
+#else /* MARCEL_MAMI_ENABLED */
 
 static int
 warning_start (void) {
-  marcel_printf ("WARNING: You're currently trying to use the memory bubble scheduler, but as the enable_numa_memory option is not activated in the current flavor, the bubble scheduler won't do anything! Please activate enable_numa_memory in your flavor.\n");
+  marcel_printf ("WARNING: You're currently trying to use the memory bubble scheduler, but as the enable_mami option is not activated in the current flavor, the bubble scheduler won't do anything! Please activate enable_mami in your flavor.\n");
   return 0;
 }
 

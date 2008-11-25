@@ -127,14 +127,14 @@ static void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_to
 /* Compter les entités dans une bulle */
 static void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 {
-	//marcel_fprintf(stderr,"bubble entity %p\n", &bubble->sched);
+	//bubble_sched_debug("bubble entity %p\n", &bubble->sched);
 	marcel_entity_t *downentity;
 	ma_holder_lock(&bubble->as_holder);
 	for_each_entity_scheduled_in_bubble_begin(downentity,bubble) {
                 if (downentity->type == MA_BUBBLE_ENTITY)
                         ma_count_in_bubble(ma_bubble_entity(downentity),number);
                 else {
-                        //marcel_fprintf(stderr,"task entity %p\n", downentity);
+                        bubble_sched_debug("task entity %p\n", downentity);
                         (*number) ++;
                 }
         }
@@ -145,7 +145,7 @@ static void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 /* Travail équilibré sous un niveau */
 static void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, int *sum)
 {
-	//marcel_fprintf(stderr,"down me %p\n",me);
+	bubble_sched_debug("down me %p\n",me);
 	/* Calcul du nombre d'entités sur me */
 	ma_runqueue_t *rq =&me->rq;
 	ma_holder_t *h = &rq->as_holder;
@@ -181,7 +181,7 @@ static void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, 
 /* Test d'équilibrage */
 static int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menumber, int mesum, struct marcel_topo_level **uplevel)
 {
-	//marcel_fprintf(stderr,"vp %d, up me %p, menumber %d\n",vp,me,menumber);
+	bubble_sched_debug("vp %d, up me %p, menumber %d\n",vp,me,menumber);
 	struct marcel_topo_level *father = me->father;
 	int nbthreads;
 	marcel_threadslist(0, NULL, &nbthreads, NOT_BLOCKED_ONLY);
@@ -212,8 +212,8 @@ static int ma_work_is_balanced_up(int vp, struct marcel_topo_level *me, int menu
 		weight += marcel_vpset_weight(&father->children[i]->vpset);
 	}
 
-	/* marcel_fprintf(stderr,"ma_work_ibup : father %p, menumber %d, mesum %d, number %d, sum %d\n",  */
-        /* 						father, menumber, mesum, number, sum); */
+	bubble_sched_debug("ma_work_ibup : father %p, menumber %d, mesum %d, number %d, sum %d\n",
+                           father, menumber, mesum, number, sum);
 	/* Test de l'équilibrage : difference de threads + rapport de charge */
 
 	if (MA_MORE_THREADS + menumber < number
@@ -247,7 +247,7 @@ static int __memaware(unsigned vp) {
 		int balanced = ma_work_is_balanced_up(vp, me, 0, 0, &uplevel);
 
 		if (!balanced && !ma_bubble_memaware_cspread) {
-			marcel_fprintf(stderr,"spread\n");
+			bubble_sched_debug("spread\n");
 			ma_bubble_memaware_nbspreads++;
 			ma_topo_lock_levels(uplevel);
 
@@ -263,19 +263,19 @@ static int __memaware(unsigned vp) {
 		}
 		else { /* Vol de travail */
 			ma_bubble_memaware_cspread --;
-			marcel_fprintf(stderr,"steal\n");
+			bubble_sched_debug("steal\n");
 			int allthreads, nvp;
 			nvp = marcel_vpset_weight(&marcel_topo_level(0,0)->vpset);
 			marcel_threadslist(0, NULL, &allthreads, NOT_BLOCKED_ONLY);
 
 			if (MA_RATIO_THREADS_VPS * allthreads >= nvp) {
 				ma_bubble_memaware_nbsteals ++;
-				//marcel_fprintf(stderr,"msteal numero %d\n", ma_bubble_memaware_nbsteals);
+				bubble_sched_debug("msteal numero %d\n", ma_bubble_memaware_nbsteals);
 				gotwork = marcel_bubble_msteal_see_up(me);
 			}
 			else {
 				ma_bubble_memaware_nbnots ++;
-				//marcel_fprintf(stderr,"no mspread, no msteal : %d\n", ma_bubble_memaware_nbnots);
+				bubble_sched_debug("no mspread, no msteal : %d\n", ma_bubble_memaware_nbnots);
 			}
 		}
 	}
@@ -351,14 +351,14 @@ static int memaware(unsigned vp)
 /* Debogage : permet de lister la structure de bulles */
 void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 {
-	marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse, number, &bubble->as_entity);
+	bubble_sched_debug("entity %d %d -> %p\n", recurse, number, &bubble->as_entity);
 	marcel_entity_t *downentity;
 	int downnumber = 0;
 	for_each_entity_scheduled_in_bubble_begin(downentity,bubble) {
 		if (downentity->type == MA_BUBBLE_ENTITY)
 			marcel_see_bubble(ma_bubble_entity(downentity), recurse + 1, downnumber++);
 		else
-			marcel_fprintf(stderr,"entity %d %d -> %p\n", recurse + 1, downnumber++, downentity);
+			bubble_sched_debug("entity %d %d -> %p\n", recurse + 1, downnumber++, downentity);
         }
 	for_each_entity_scheduled_in_bubble_end()
 }
@@ -367,7 +367,7 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number)
 /* Debuggage : permet de lister les levels */
 static void ma_see_level(struct marcel_topo_level *level, int recurse)
 {
-        marcel_fprintf(stderr,"level %d %d -> %p\n", recurse, level->number, level);
+        bubble_sched_debug("level %d %d -> %p\n", recurse, level->number, level);
         int i;
         for ( i = 0 ; i < level->arity ; i++) {
                 ma_see_level(level->children[i],recurse + 1);
@@ -377,7 +377,7 @@ static void ma_see_level(struct marcel_topo_level *level, int recurse)
 
 static int memaware_sched_submit(marcel_entity_t *e)
 {
-	marcel_fprintf(stderr, "memaware_sched_submit\n");
+	bubble_sched_debug("memaware_sched_submit\n");
 	marcel_stop_idle_memaware();
 #ifdef PM2DEBUG
 	ma_see_level(marcel_topo_level(0,0),0);

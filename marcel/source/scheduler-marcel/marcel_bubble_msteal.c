@@ -508,7 +508,7 @@ int marcel_bubble_msteal_see_up(struct marcel_topo_level *level)
 		holder = &marcel_topo_vp_level[vp].rq.as_holder;
 
 		ma_holder_rawlock(holder);
-		marcel_fprintf(stderr,"MOVE : !!put stolen entity %p onto vp %d\n", stolen, vp);
+		bubble_sched_debug("MOVE : !!put stolen entity %p onto vp %d\n", stolen, vp);
 		ma_put_entity(stolen, holder, state);
 		ma_holder_rawunlock(holder);
 

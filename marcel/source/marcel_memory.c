@@ -802,7 +802,8 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     errno = EINVAL;
     return -errno;
   }
-  else if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
+  //mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
+  if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
     mdebug_mami("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
     *node = memory_tree->data->node;
@@ -1039,17 +1040,9 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int *node) {
   marcel_memory_data_t *data = NULL;
-  void *aligned_buffer, *aligned_endbuffer;
-  size_t aligned_size;
+  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
 
-  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-  aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
-  aligned_size = aligned_endbuffer-aligned_buffer;
-  if (!aligned_size) aligned_size=1;
-
-  mdebug_mami("Trying to locate address %p (aligned %p)\n", buffer, aligned_buffer);
-
-  return ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, node, &data);
+  return ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, size, node, &data);
 }
 
 static
@@ -1193,25 +1186,40 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     err = EALREADY;
   }
   else {
-    mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
-    dests = tmalloc(data->nbpages * sizeof(int));
-    status = tmalloc(data->nbpages * sizeof(int));
-    for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
-    err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
-#ifdef PM2DEBUG
-    ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
-#endif /* PM2DEBUG */
-    if (!tbx_slist_is_nil(data->owners)) {
-          tbx_slist_ref_to_head(data->owners);
-          do {
-            marcel_entity_t *object = NULL;
-            object = tbx_slist_ref_get(data->owners);
+    if (data->node == -1) {
+      unsigned long nodemask;
 
-            ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
-            ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
-          } while (tbx_slist_ref_forward(data->owners));
+      mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
+      nodemask = (1<<dest);
+      err = mbind(buffer, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+#warning todo: how do we check the memory is properly bound
     }
-    data->node = dest;
+    else {
+      mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
+      dests = tmalloc(data->nbpages * sizeof(int));
+      status = tmalloc(data->nbpages * sizeof(int));
+      for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
+      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
+#ifdef PM2DEBUG
+      ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
+#endif /* PM2DEBUG */
+    }
+    if (err < 0) {
+      mdebug_mami("Error when mbinding or migrating: %d\n", err);
+    }
+    else {
+      data->node = dest;
+      if (!tbx_slist_is_nil(data->owners)) {
+        tbx_slist_ref_to_head(data->owners);
+        do {
+          marcel_entity_t *object = NULL;
+          object = tbx_slist_ref_get(data->owners);
+
+          ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
+          ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
+        } while (tbx_slist_ref_forward(data->owners));
+      }
+    }
   }
 
   MAMI_LOG_OUT();

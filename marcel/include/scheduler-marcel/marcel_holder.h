@@ -210,15 +210,18 @@ struct ma_entity {
 	ma_stats_t stats;
 #endif /* MARCEL_STATS_ENABLED */
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MARCEL_MAMI_ENABLED
 	/** \brief List of attached memory areas */
 	struct list_head memory_areas;
 	/** \brief Lock for ::memory_areas */
 	ma_spinlock_t memory_areas_lock;
 
+#endif /* MARCEL_MAMI_ENABLED */
+
+#ifdef MA__NUMA_MEMORY
 	/* heap allocator */
 	ma_heap_t *heap;
-#endif
+#endif /* MA__NUMA_MEMORY */
 
 #ifdef MA__BUBBLES
 	/** \brief General-purpose list link for bubble schedulers */
@@ -276,14 +279,17 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #else
 #define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif
-#ifdef MA__NUMA_MEMORY
+#ifdef MARCEL_MAMI_ENABLED
 #define MA_SCHED_MEMORY_AREA_INIT(e) \
 	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.memory_areas = LIST_HEAD_INIT((e).memory_areas),
+#else
+#define MA_SCHED_MEMORY_AREA_INIT(e)
+#endif
+#ifdef MA__NUMA_MEMORY
 #define MA_SCHED_ENTITY_HEAP_INIT(e) \
 	.heap = NULL,
 #else
-#define MA_SCHED_MEMORY_AREA_INIT(e)
 #define MA_SCHED_ENTITY_HEAP_INIT(e)
 #endif
 

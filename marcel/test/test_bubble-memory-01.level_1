@@ -29,8 +29,8 @@ create_test_flavor() {
 	--modules="\"marcel tbx init\"" --marcel="numa"		\
 	--marcel="spinlock" --marcel="marcel_main"		\
 	--marcel="standard_main" --marcel="pmarcel"		\
-	--marcel="enable_stats"	--marcel="enable_numa_memory"	\
-	--marcel="bubble_sched_memory"			\
+	--marcel="enable_stats"	--marcel="enable_mami"	        \
+	--marcel="bubble_sched_memory"			        \
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" --all="build_static" $_output_redirect

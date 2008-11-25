@@ -40,12 +40,12 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<loops ; i++) {
-    err = ma_memory_move_pages(pageaddrs, pages, dests, status);
+    err = ma_memory_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
     if (err < 0) perror("ma_memory_move_pages");
-    err = ma_memory_move_pages(pageaddrs, pages, sources, status);
+    err = ma_memory_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
     if (err < 0) perror("ma_memory_move_pages");
   }
-  err = ma_memory_move_pages(pageaddrs, pages, dests, status);
+  err = ma_memory_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
   if (err < 0) perror("ma_memory_move_pages");
   gettimeofday(&tv2, NULL);
 
@@ -54,7 +54,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
   if (err < 0) perror("ma_memory_check_pages_location");
 
   // Move the pages back to the node source
-  err = ma_memory_move_pages(pageaddrs, pages, sources, status);
+  err = ma_memory_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
   if (err < 0) perror("ma_memory_move_pages");
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
@@ -185,7 +185,7 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
     unsigned long pagesize;
 
     pagesize = getpagesize();
-    maxnode = numa_max_node();
+    maxnode = memory_manager->nb_nodes;
 
     // Allocate the pages
     buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
@@ -196,7 +196,7 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
 
     // Set the memory policy on node source
     nodemask = (1<<source);
-    err = set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
+    err = ma_memory_set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
     if (err < 0) {
       perror("set_mempolicy");
       return (void *)(intptr_t)err;

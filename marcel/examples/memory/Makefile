@@ -28,9 +28,11 @@ ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
 
-membind-ldflags := -lrt
-memteams-ldflags := -lrt
-memteams-bubbles-ldflags := -lrt
+membind-ldflags := -lrt -lnuma
+memteams-ldflags := -lrt -lnuma
+memteams-bubbles-ldflags := -lrt -lnuma
+check_migration-ldflags := -lnuma
+crossing_access-ldflags := -lnuma
 
 mamif: CC=gfortran
 

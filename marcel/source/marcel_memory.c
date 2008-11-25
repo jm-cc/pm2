@@ -21,7 +21,7 @@
 #include <numaif.h>
 #include <sys/mman.h>
 
-#ifndef __NR_move_pages
+#if !defined(__NR_move_pages)
 
 #  ifdef X86_64_ARCH
 #    define __NR_move_pages 279
@@ -38,6 +38,42 @@
 #  endif
 
 #endif /* __NR_move_pages */
+
+#if !defined(__NR_mbind)
+
+#  ifdef X86_64_ARCH
+#    define __NR_mbind 237
+#  elif IA64_ARCH
+#    define __NR_mbind 1259
+#  elif X86_ARCH
+#    define __NR_mbind 274
+#  elif PPC_ARCH
+#    define __NR_mbind 259
+#  elif PPC64_ARCH
+#    define __NR_mbind 259
+#  else
+#    error Syscall mbind undefined
+#  endif
+
+#endif /* __NR_mbind */
+
+#if !defined(__NR_set_mempolicy)
+
+#  ifdef X86_64_ARCH
+#    define __NR_set_mempolicy 238
+#  elif IA64_ARCH
+#    define __NR_set_mempolicy 1261
+#  elif X86_ARCH
+#    define __NR_set_mempolicy 276
+#  elif PPC_ARCH
+#    define __NR_set_mempolicy 261
+#  elif PPC64_ARCH
+#    define __NR_set_mempolicy 261
+#  else
+#    error Syscall set_mempolicy undefined
+#  endif
+
+#endif /* __NR_set_mempolicy */
 
 static
 marcel_memory_manager_t *g_memory_manager = NULL;
@@ -539,7 +575,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   else {
     if (node != -1) {
       nodemask = (1<<node);
-      err = mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+      err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
       if (err < 0) {
         perror("mbind");
         err = 0;
@@ -618,13 +654,13 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   }
 
   nodemask = (1<<node);
-  err = set_mempolicy(MPOL_BIND, &nodemask, memory_manager->nb_nodes+2);
+  err = ma_memory_set_mempolicy(MPOL_BIND, &nodemask, memory_manager->nb_nodes+2);
   if (err < 0) {
     perror("set_mempolicy");
     return NULL;
   }
   memset(buffer, 0, size);
-  err = set_mempolicy(MPOL_DEFAULT, NULL, 0);
+  err = ma_memory_set_mempolicy(MPOL_DEFAULT, NULL, 0);
   if (err < 0) {
     perror("set_mempolicy");
     return NULL;
@@ -832,7 +868,7 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
 
 #warning todo: check location for all pages and what if pages are on different nodes
   if (nbpages == 1) nbpages_query = 1; else nbpages_query = 2;
-  ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses);
+  ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses, 0);
   if (statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     *node = -1;
@@ -1004,17 +1040,37 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   MAMI_LOG_OUT();
 }
 
-int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status) {
+int ma_memory_mbind(void *start, unsigned long len, int mode, 
+                    const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
+  int err = 0;
+
+#if defined (X86_64_ARCH) && defined (X86_ARCH)
+  err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+#else
+  err = syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+#endif
+  if (err < 0) perror("mbind");
+  return err;
+}
+
+int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag) {
   int err=0;
 
   if (nodes) mdebug_mami("binding on numa node #%d\n", nodes[0]);
 
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
-  err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+  err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #else
-  err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, MPOL_MF_MOVE);
+  err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #endif
-  if (err < 0) perror("move_pages (set_bind)");
+  if (err < 0) perror("move_pages");
+  return err;
+}
+
+int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode) {
+  int err=0;
+  err = syscall(__NR_set_mempolicy, mode, nmask, maxnode);
+  if (err < 0) perror("set_mempolicy");
   return err;
 }
 
@@ -1026,7 +1082,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   mdebug_mami("check location is #%d\n", node);
 
   pagenodes = tmalloc(pages * sizeof(int));
-  err = move_pages(0, pages, pageaddrs, NULL, pagenodes, 0);
+  err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);
   if (err < 0) perror("move_pages (check_pages_location)");
 
   for(i=0; i<pages; i++) {
@@ -1191,7 +1247,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
       mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
       nodemask = (1<<dest);
-      err = mbind(buffer, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+      err = ma_memory_mbind(buffer, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
 #warning todo: how do we check the memory is properly bound
     }
     else {
@@ -1199,7 +1255,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
       dests = tmalloc(data->nbpages * sizeof(int));
       status = tmalloc(data->nbpages * sizeof(int));
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
-      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status);
+      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
 #ifdef PM2DEBUG
       ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */

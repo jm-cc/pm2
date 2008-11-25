@@ -235,7 +235,13 @@ int ma_memory_check_pages_location(void **pageaddrs,
 int ma_memory_move_pages(void **pageaddrs,
                          int pages,
                          int *nodes,
-                         int *status);
+                         int *status,
+                         int flag);
+
+int ma_memory_mbind(void *start, unsigned long len, int mode, 
+                    const unsigned long *nmask, unsigned long maxnode, unsigned flags);
+
+int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode);
 
 int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager);
 

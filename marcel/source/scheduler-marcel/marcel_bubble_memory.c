@@ -16,7 +16,7 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
-#ifdef MA__NUMA_MEMORY
+#ifdef MARCEL_MAMI_ENABLED
 
 static int
 memory_sched_start () {
@@ -183,5 +183,5 @@ struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .submit = warning_start,
 };
 
-#endif /* MA__NUMA_MEMORY */
+#endif /* MARCEL_MAMI_ENABLED */
 #endif /* MA__BUBBLES */

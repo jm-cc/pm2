@@ -90,9 +90,10 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
     }
   }
 
-  if(is_any_src){
-    any_src->status |= NM_SO_STATUS_RDV_IN_PROGRESS;
-  }
+  if(is_any_src)
+    {
+      nm_so_status_event(p_gate->p_core, NM_SO_STATUS_RDV_IN_PROGRESS, p_gate, tag, seq, tbx_true);
+    }
 
   if(is_any_src && any_src->p_gate == NM_ANY_GATE)
     {

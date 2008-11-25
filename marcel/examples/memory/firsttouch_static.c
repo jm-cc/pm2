@@ -17,23 +17,44 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
+static void first_touch(int *buffer, size_t size, int elems);
+static marcel_memory_manager_t memory_manager;
+
 int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
-  int ptr[10000], i;
+  //int ptr[10000];
   int *buffer;
-  int err, node=-2;
-  size_t size;
+  int err;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
+  // Case with user-allocated memory
+  buffer=memalign(memory_manager.normalpagesize, 10000*sizeof(int));
+  first_touch(buffer, 10000*sizeof(int), 10000);
+  marcel_memory_unregister(&memory_manager, buffer);
+  free(buffer);
+
   err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("marcel_memory_membind");
 
-  //buffer=ptr;
-  size=10000*sizeof(int);
-  //buffer=memalign(memory_manager.normalpagesize, size);
-  buffer = marcel_memory_malloc(&memory_manager, size);
+  // Case with mami-allocated memory
+  buffer = marcel_memory_malloc(&memory_manager, 10000*sizeof(int));
+  first_touch(buffer, 10000*sizeof(int), 10000);
+  marcel_memory_free(&memory_manager, buffer);
+
+  // Case with static memory  
+  //  buffer=ptr;
+  //  first_touch(buffer, 10000*sizeof(int), 10000);
+
+  // Finish marcel
+  marcel_memory_exit(&memory_manager);
+  marcel_end();
+  return 0;
+}
+
+static void first_touch(int *buffer, size_t size, int elems) {
+  int i, err;
+  int node=-2;
 
   err = marcel_memory_task_attach(&memory_manager, buffer, size, marcel_self());
   if (err < 0) perror("marcel_memory_task_attach");
@@ -53,12 +74,6 @@ int marcel_main(int argc, char * argv[]) {
 
   err = marcel_memory_task_unattach(&memory_manager, buffer, marcel_self());
   if (err < 0) perror("marcel_memory_task_unattach");
-  marcel_memory_free(&memory_manager, buffer);
-  marcel_memory_exit(&memory_manager);
-
-  // Finish marcel
-  marcel_end();
-  return 0;
 }
 
 #else

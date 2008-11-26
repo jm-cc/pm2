@@ -19,7 +19,7 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_task_attach: Invalid argument
+marcel_memory_task_attach successfully fails: Invalid argument
 EOF
 
 . ./mami.sh

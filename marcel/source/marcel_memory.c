@@ -757,7 +757,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
     for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
 
     // Register memory
-    mdebug_mami("Registering [%p, %p]\n", pageaddrs[0], pageaddrs[0]+size);
+    mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, size);
     ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
@@ -838,7 +838,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     errno = EINVAL;
     return -errno;
   }
-  //mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
+  mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
   if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
     mdebug_mami("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
@@ -897,7 +897,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   int nbpages, protection, with_huge_pages;
   int i, node;
 
-  mdebug_mami("Registering address interval [%p:%p]\n", buffer, buffer+size);
+  mdebug_mami("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, size);
 
   with_huge_pages = 0;
   protection = PROT_READ|PROT_WRITE;
@@ -1097,8 +1097,16 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int *node) {
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  size_t aligned_size = aligned_endbuffer-aligned_buffer;
+  int err;
 
-  return ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, size, node, &data);
+  MAMI_LOG_IN();
+  if (aligned_size > size) aligned_size = size;
+  mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, node, &data);
+  MAMI_LOG_OUT();
+  return err;
 }
 
 static
@@ -1347,6 +1355,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   int err=0, source;
   static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
+  void *aligned_buffer;
 
   marcel_spin_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
@@ -1366,7 +1375,9 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   }
 
   g_memory_manager = memory_manager;
-  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+1, 1);
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &source, &data);
   if (err >= 0) {
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     data->status = MARCEL_MEMORY_INITIAL_STATUS;
@@ -1408,7 +1419,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       aligned_size = memory_manager->normalpagesize;
     }
 
-    err = ma_memory_locate(memory_manager, memory_manager->root, buffer, size, &source, &data);
+    err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &source, &data);
     if (err < 0) {
       mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
       ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
@@ -1502,7 +1513,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
         ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {
-        mdebug_mami("The entity %p is not attached the memory area %p.\n", owner, aligned_buffer);
+        mdebug_mami("The entity %p is not attached to the memory area %p.\n", owner, aligned_buffer);
         errno = ENOENT;
         err = -errno;
       }

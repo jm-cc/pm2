@@ -21,7 +21,8 @@ static void first_touch(int *buffer, size_t size, int elems);
 static marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
-  //int ptr[10000];
+  //  int ptr2[100]; // That variable is only used as a buffer to avoid a segfault when mprotecting ptr as MaMI aligns on page boundaries
+  int ptr[10000];
   int *buffer;
   int err;
 
@@ -31,7 +32,8 @@ int marcel_main(int argc, char * argv[]) {
   // Case with user-allocated memory
   buffer=memalign(memory_manager.normalpagesize, 10000*sizeof(int));
   first_touch(buffer, 10000*sizeof(int), 10000);
-  marcel_memory_unregister(&memory_manager, buffer);
+  err = marcel_memory_unregister(&memory_manager, buffer);
+  if (err < 0) perror("marcel_memory_unregister");
   free(buffer);
 
   err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
@@ -43,8 +45,10 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_free(&memory_manager, buffer);
 
   // Case with static memory  
-  //  buffer=ptr;
-  //  first_touch(buffer, 10000*sizeof(int), 10000);
+//  buffer=ptr;
+//  first_touch(buffer, 10000*sizeof(int), 10000);
+//  err = marcel_memory_unregister(&memory_manager, buffer);
+//  if (err < 0) perror("marcel_memory_unregister");
 
   // Finish marcel
   marcel_memory_exit(&memory_manager);

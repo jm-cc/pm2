@@ -940,7 +940,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   marcel_spin_lock(&(memory_manager->lock));
 
   aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &source, &data);
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &source, &data);
   if (err >= 0) {
     mdebug_mami("Unregistering [%p:%p]\n", buffer,buffer+data->size);
     ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);

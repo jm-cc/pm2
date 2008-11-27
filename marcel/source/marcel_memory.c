@@ -542,6 +542,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
     *space = NULL;
     return -errno;
   }
+#warning todo: readv pour prefaulter
   /* mark the memory as unaccessible until it gets allocated to the application */
   VALGRIND_MAKE_MEM_NOACCESS((*space)->buffer, (*space)->size);
 

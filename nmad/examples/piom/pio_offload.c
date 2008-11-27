@@ -26,7 +26,7 @@
 #define INCR_DEFAULT	0
 #define WARMUPS_DEFAULT	100
 #define LOOPS_DEFAULT	200
-
+#define COMPUTE_DEFAULT 20
 #define DATA_CONTROL_ACTIVATED 0
 
 static __inline__
@@ -47,6 +47,7 @@ static void usage_ping(void) {
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
+  fprintf(stderr, "-C compute_time - computation time [%d]\n", COMPUTE_DEFAULT);
 }
 
 static void compute(unsigned usec){
@@ -110,6 +111,7 @@ main(int	  argc,
   uint32_t	 increment	= INCR_DEFAULT;
   int		 iterations	= LOOPS_DEFAULT;
   int		 warmups	= WARMUPS_DEFAULT;
+  int		 compute_time	= COMPUTE_DEFAULT;
   int		 i;
 
   init(&argc, argv);
@@ -139,6 +141,9 @@ main(int	  argc,
     else if (!strcmp(argv[i], "-W")) {
       warmups = atoi(argv[i+1]);
     }
+    else if (!strcmp(argv[i], "-C")) {
+      compute_time = atoi(argv[i+1]);
+    }
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
@@ -147,6 +152,8 @@ main(int	  argc,
     }
   }
 
+  marcel_vpset_t vpset= MARCEL_VPSET_VP(1);
+  marcel_apply_vpset(&vpset);
   buf = malloc(end_len);
   clear_buffer(buf, end_len);
 
@@ -206,7 +213,7 @@ main(int	  argc,
 	TBX_GET_TICK(t1);
       
         nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-	compute(100);
+	compute(compute_time);
         nm_sr_swait(p_core, &request);
 	TBX_GET_TICK(t2);
 	sum += TBX_TIMING_DELAY(t1, t2);

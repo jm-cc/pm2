@@ -45,11 +45,10 @@ void marcel_memory_free_(int *memory_manager,
 void marcel_memory_register_(int *memory_manager,
 			     int *buffer,
 			     int *size,
-			     int *node,
 			     int *err) {
   int _err;
   marcel_memory_manager_t *manager = (void *)*memory_manager;
-  _err = marcel_memory_register(manager, (void *)*buffer, *size, *node);
+  _err = marcel_memory_register(manager, (void *)*buffer, *size);
   *err = _err;
 }
 
@@ -65,11 +64,12 @@ void marcel_memory_unregister_(int *memory_manager,
 
 void marcel_memory_locate_(int *memory_manager,
 			   int *address,
+                           int *size,
 			   int *node,
 			   int *err) {
   int _node, _err;
   marcel_memory_manager_t *manager = (void *)*memory_manager;
-  _err = marcel_memory_locate(manager, (void *)*address, &_node);
+  _err = marcel_memory_locate(manager, (void *)*address, *size, &_node);
   *err = _err;
   *node = _node;
 }
@@ -81,11 +81,14 @@ void marcel_memory_print_(int *memory_manager) {
 
 void marcel_memory_task_attach_(int *memory_manager,
 				int *buffer,
+                                int *size,
 				marcel_t *owner,
+                                int *node,
 				int *err) {
-  int _err;
+  int _err, _node;
   marcel_memory_manager_t *manager = (void *)*memory_manager;
-  _err = marcel_memory_task_attach(manager, (void *)*buffer, owner);
+  _err = marcel_memory_task_attach(manager, (void *)*buffer, *size, *owner, &_node);
+  *node = _node;
   *err = _err;
 }
 
@@ -95,7 +98,7 @@ void marcel_memory_task_unattach_(int *memory_manager,
 				  int *err) {
   int _err;
   marcel_memory_manager_t *manager = (void *)*memory_manager;
-  _err = marcel_memory_task_unattach(manager, (void *)*buffer, owner);
+  _err = marcel_memory_task_unattach(manager, (void *)*buffer, *owner);
   *err = _err;
 }
 

@@ -32,7 +32,6 @@ void marcel_memory_free_(int *memory_manager,
 void marcel_memory_register_(int *memory_manager,
 			     int *buffer,
 			     int *size,
-			     int *node,
 			     int *err);
 
 void marcel_memory_unregister_(int *memory_manager,
@@ -41,6 +40,7 @@ void marcel_memory_unregister_(int *memory_manager,
 
 void marcel_memory_locate_(int *memory_manager,
 			   int *address,
+                           int *size,
 			   int *node,
 			   int *err);
 
@@ -48,7 +48,9 @@ void marcel_memory_print_(int *memory_manager);
 
 void marcel_memory_task_attach_(int *memory_manager,
 				int *buffer,
+                                int *size,
 				marcel_t *owner,
+                                int *node,
 				int *err);
 
 void marcel_memory_task_unattach_(int *memory_manager,

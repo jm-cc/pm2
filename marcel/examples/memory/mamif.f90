@@ -24,8 +24,8 @@ program launch
   call marcel_memory_init(memory_manager)
   call marcel_self(self)
 
-  call marcel_memory_register(memory_manager, buffer, 100, 0, ierr)
-  call marcel_memory_locate(memory_manager, buffer, node, ierr)
+  call marcel_memory_register(memory_manager, buffer, 100, ierr)
+  call marcel_memory_locate(memory_manager, buffer, 100, node, ierr)
 
   print *,'node=',node
 
@@ -33,7 +33,7 @@ program launch
 
   print *,'buffer(10)=',buffer(10)
 
-  call marcel_memory_task_attach(memory_manager, buffer, self, ierr)
+  call marcel_memory_task_attach(memory_manager, buffer, 100, self, node, ierr)
   call marcel_memory_print(memory_manager)
 
   call marcel_memory_task_unattach(memory_manager, buffer, self, ierr)

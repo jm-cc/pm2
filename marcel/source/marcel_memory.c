@@ -1081,14 +1081,16 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   pagenodes = tmalloc(pages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);
   if (err < 0) perror("move_pages (check_pages_location)");
-
-  for(i=0; i<pages; i++) {
-    if (pagenodes[i] != node) {
-      marcel_printf("MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
+  else {
+    for(i=0; i<pages; i++) {
+      if (pagenodes[i] != node) {
+        marcel_printf("MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
+        err = -EINVAL;
+      }
     }
   }
   tfree(pagenodes);
-  return -err;
+  return err;
 }
 
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int *node) {
@@ -1107,7 +1109,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
   return err;
 }
 
-int marcel_memory_check_location(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int node) {
+int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int node) {
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
@@ -1118,9 +1120,9 @@ int marcel_memory_check_location(marcel_memory_manager_t *memory_manager, void *
   if (aligned_size > size) aligned_size = size;
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
-    if (data->node != node) {
-      marcel_printf("MaMI: Checking (%d) pages are on node #%d\n", data->nbpages, data->node);
-      ma_memory_check_pages_location(data->pageaddrs, data->nbpages, data->node);
+    err = ma_memory_check_pages_location(data->pageaddrs, data->nbpages, node);
+    if (err < 0) {
+      marcel_printf("MaMI: (%d) pages are NOT on node #%d\n", data->nbpages, node);
     }
     else {
       marcel_printf("MaMI: (%d) Pages are on node #%d\n", data->nbpages, node);

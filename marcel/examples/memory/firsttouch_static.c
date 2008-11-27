@@ -76,8 +76,8 @@ static void first_touch(int *buffer, size_t size, int elems) {
   if (err < 0) perror("marcel_memory_locate");
   marcel_printf("Memory located on node %d\n", node);
 
-  err = marcel_memory_check_location(&memory_manager, buffer, size, node);
-  if (err < 0) perror("marcel_memory_check_location");
+  err = marcel_memory_check_pages_location(&memory_manager, buffer, size, node);
+  if (err < 0) perror("marcel_memory_check_pages_location");
 
   err = marcel_memory_task_unattach(&memory_manager, buffer, marcel_self());
   if (err < 0) perror("marcel_memory_task_unattach");

@@ -513,10 +513,10 @@ int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager);
 /**
  * Checks the location of the memory area.
  */
-int marcel_memory_check_location(marcel_memory_manager_t *memory_manager,
-                                 void *buffer,
-                                 size_t size,
-                                 int node);
+int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager,
+                                       void *buffer,
+                                       size_t size,
+                                       int node);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

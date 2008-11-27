@@ -81,7 +81,8 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */
-#define ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
+#define __ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
+#define ALIGN_ON_PAGE(memory_manager, address, pagesize) (memory_manager->alignment?__ALIGN_ON_PAGE(address, pagesize):address)
 
 static unsigned long gethugepagesize(void) {
   char line[1024];
@@ -121,6 +122,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
   memory_manager->nb_nodes = marcel_nbnodes;
+  memory_manager->alignment = 1;
 
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc((memory_manager->nb_nodes+1) * sizeof(marcel_memory_area_t *));
@@ -294,6 +296,14 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   tfree(memory_manager->writing_access_costs);
 
   MAMI_LOG_OUT();
+}
+
+void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager) {
+  memory_manager->alignment = 1;
+}
+
+void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager) {
+  memory_manager->alignment = 0;
 }
 
 static
@@ -938,7 +948,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   MAMI_LOG_IN();
   marcel_spin_lock(&(memory_manager->lock));
 
-  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_mami("Unregistering [%p:%p]\n", buffer,buffer+data->size);
@@ -1030,7 +1040,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   void *aligned_buffer;
 
   MAMI_LOG_IN();
-  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_mami("Freeing [%p]\n", buffer);
   marcel_spin_lock(&(memory_manager->lock));
   ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
@@ -1096,8 +1106,8 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
 int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int *node) {
   marcel_memory_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err;
 
@@ -1112,8 +1122,8 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
 
 int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int node) {
   marcel_memory_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err;
 
@@ -1137,8 +1147,8 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
                                         void *buffer,
                                         size_t size) {
   marcel_memory_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err;
 
@@ -1423,7 +1433,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   }
 
   g_memory_manager = memory_manager;
-  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_mami("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
@@ -1459,8 +1469,8 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     err = -errno;
   }
   else {
-    void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
-    void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+    void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+    void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
     size_t aligned_size = aligned_endbuffer-aligned_buffer;
     marcel_memory_data_link_t *area;
 
@@ -1531,7 +1541,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 
   marcel_spin_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
-  aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {

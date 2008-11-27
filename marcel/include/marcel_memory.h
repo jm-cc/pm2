@@ -199,6 +199,8 @@ struct marcel_memory_manager_s {
   marcel_memory_membind_policy_t membind_policy;
   /** \brief Node for the membind policy */
   int membind_node;
+  /** \brief Are memory addresses aligned on page boundaries or not? */
+  int alignment;
 };
 
 #section marcel_functions
@@ -260,6 +262,18 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager);
  * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager);
+
+/**
+ * Indicates memory addresses given to MaMI should be aligned to page boundaries.
+ * @param memory_manager pointer to the memory manager
+ */
+void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager);
+
+/**
+ * Indicates memory addresses given to MaMI should NOT be aligned to page boundaries.
+ * @param memory_manager pointer to the memory manager
+ */
+void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
  * Allocates memory on a specific node. Size will be rounded up to the system page size.

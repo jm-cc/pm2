@@ -22,10 +22,10 @@ static marcel_memory_manager_t memory_manager;
 
 any_t attach(any_t arg) {
   marcel_t self;
-  int err;
+  int err, node;
 
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
   if (err < 0) perror("marcel_memory_task_attach");
 }
 

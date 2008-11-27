@@ -18,7 +18,7 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int err;
+  int err, node;
   void *ptr=NULL;
   marcel_t self;
   marcel_memory_manager_t memory_manager;
@@ -29,7 +29,7 @@ int marcel_main(int argc, char * argv[]) {
   ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize());
   self = marcel_self();
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, (2*getpagesize())-10, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, (2*getpagesize())-10, self, &node);
   marcel_printf("marcel_memory_attach: %d\n", err);
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);

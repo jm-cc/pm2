@@ -1291,21 +1291,23 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
       ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
     }
+
     if (err < 0) {
       mdebug_mami("Error when mbinding or migrating: %d\n", err);
     }
     else {
-      data->node = dest;
       if (!tbx_slist_is_nil(data->owners)) {
         tbx_slist_ref_to_head(data->owners);
         do {
           marcel_entity_t *object = NULL;
           object = tbx_slist_ref_get(data->owners);
 
-          ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
+          mdebug_mami("Moving data from node %d to node %d\n", data->node, dest);
+          if (data->node >= 0) ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
           ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
         } while (tbx_slist_ref_forward(data->owners));
       }
+      data->node = dest;
     }
   }
 
@@ -1418,7 +1420,8 @@ static
 int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
                             void *buffer,
                             size_t size,
-                            marcel_entity_t *owner) {
+                            marcel_entity_t *owner,
+                            int *node) {
   int err=0;
   marcel_memory_data_t *data;
 
@@ -1436,6 +1439,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
     void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
     size_t aligned_size = aligned_endbuffer-aligned_buffer;
+    marcel_memory_data_link_t *area;
 
     if (!aligned_size) {
       aligned_endbuffer = aligned_buffer + memory_manager->normalpagesize;
@@ -1473,21 +1477,21 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       }
     }
 
-    if (err >= 0) {
-      marcel_memory_data_link_t *area;
+    mdebug_mami("Adding entity %p to data %p\n", owner, data);
+    tbx_slist_push(data->owners, owner);
 
-      mdebug_mami("Adding entity %p to data %p\n", owner, data);
-      tbx_slist_push(data->owners, owner);
-      mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, data->node);
-      ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] += data->size;
-
-      area = tmalloc(sizeof(marcel_memory_data_link_t));
-      area->data = data;
-      INIT_LIST_HEAD(&(area->list));
-      ma_spin_lock(&(owner->memory_areas_lock));
-      list_add(&(area->list), &(owner->memory_areas));
-      ma_spin_unlock(&(owner->memory_areas_lock));
+    *node = data->node;
+    if (*node >= 0) {
+      mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
+      ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[*node] += data->size;
     }
+
+    area = tmalloc(sizeof(marcel_memory_data_link_t));
+    area->data = data;
+    INIT_LIST_HEAD(&(area->list));
+    ma_spin_lock(&(owner->memory_areas_lock));
+    list_add(&(area->list), &(owner->memory_areas));
+    ma_spin_unlock(&(owner->memory_areas_lock));
   }
   marcel_spin_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
@@ -1566,10 +1570,11 @@ int ma_memory_entity_unattach_all(marcel_memory_manager_t *memory_manager,
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               void *buffer,
                               size_t size,
-                              marcel_t owner) {
+                              marcel_t owner,
+                              int *node) {
   marcel_entity_t *entity;
   entity = ma_entity_task(owner);
-  return ma_memory_entity_attach(memory_manager, buffer, size, entity);
+  return ma_memory_entity_attach(memory_manager, buffer, size, entity, node);
 }
 
 int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
@@ -1583,10 +1588,11 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
 int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,
                                 size_t size,
-                                marcel_bubble_t *owner) {
+                                marcel_bubble_t *owner,
+                                int *node) {
   marcel_entity_t *entity;
   entity = ma_entity_bubble(owner);
-  return ma_memory_entity_attach(memory_manager, buffer, size, entity);
+  return ma_memory_entity_attach(memory_manager, buffer, size, entity, node);
 }
 
 int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,

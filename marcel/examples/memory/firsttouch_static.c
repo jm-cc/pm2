@@ -58,14 +58,17 @@ int marcel_main(int argc, char * argv[]) {
 
 static void first_touch(int *buffer, size_t size, int elems) {
   int i, err;
-  int node=-2;
+  int node;
 
-  err = marcel_memory_task_attach(&memory_manager, buffer, size, marcel_self());
+  err = marcel_memory_task_attach(&memory_manager, buffer, size, marcel_self(), &node);
   if (err < 0) perror("marcel_memory_task_attach");
 
   err = marcel_memory_locate(&memory_manager, buffer, size, &node);
   if (err < 0) perror("marcel_memory_locate");
-  marcel_printf("Memory located on node %d\n", node);
+  marcel_fprintf(stderr, "Memory located on node %d\n", node);
+
+  //  err = marcel_memory_check_pages_location(&memory_manager, buffer, size, node);
+  //  if (err < 0) perror("marcel_memory_check_pages_location");
 
   err = marcel_memory_migrate_on_next_touch(&memory_manager, buffer);
   if (err < 0) perror("marcel_memory_migrate_on_next_touch");
@@ -74,7 +77,7 @@ static void first_touch(int *buffer, size_t size, int elems) {
 
   err = marcel_memory_locate(&memory_manager, buffer, size, &node);
   if (err < 0) perror("marcel_memory_locate");
-  marcel_printf("Memory located on node %d\n", node);
+  marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
   err = marcel_memory_check_pages_location(&memory_manager, buffer, size, node);
   if (err < 0) perror("marcel_memory_check_pages_location");

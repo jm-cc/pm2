@@ -77,11 +77,11 @@ static void split(void *ptr, size_t size) {
 
 static void attach(void *ptr, size_t size) {
   marcel_t self;
-  int err, i;
+  int err, i, node;
   long *stats;
 
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, size, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, size, self, &node);
   if (err < 0) {
     perror("marcel_memory_task_attach");
   }

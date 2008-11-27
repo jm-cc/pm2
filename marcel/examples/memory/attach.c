@@ -18,7 +18,7 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int err;
+  int err, node;
   void *ptr=NULL;
   void *ptr2;
   marcel_t self;
@@ -28,20 +28,20 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
   self = marcel_self();
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, 100, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 100, self, &node);
   if (err < 0) perror("marcel_memory_task_attach successfully fails");
 
   ptr = marcel_memory_allocate_on_node(&memory_manager, 1000, 0);
   ptr2 = marcel_memory_allocate_on_node(&memory_manager, 1000, 0);
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
   if (err < 0) perror("marcel_memory_task_attach should not fail");
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);
   if (err < 0) perror("marcel_memory_task_unattach should not fail");
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
   if (err < 0) perror("marcel_memory_task_attach should not fail");
-  err = marcel_memory_task_attach(&memory_manager, ptr2, 1000, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr2, 1000, self, &node);
   if (err < 0) perror("marcel_memory_task_attach should not fail");
   err = marcel_memory_task_unattach_all(&memory_manager, self);
   if (err < 0) perror("marcel_memory_task_unattach_all should not fail");

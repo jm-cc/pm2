@@ -18,7 +18,7 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int err;
+  int err, node;
   void *ptr;
   marcel_t self;
   marcel_memory_manager_t memory_manager;
@@ -28,7 +28,7 @@ int marcel_main(int argc, char * argv[]) {
 
   ptr = malloc(1000);
   self = marcel_self();
-  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self);
+  err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
   marcel_printf("marcel_memory_task_attach with unregistered memory: %d\n", err);
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);

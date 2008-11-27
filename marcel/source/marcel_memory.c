@@ -1107,6 +1107,29 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
   return err;
 }
 
+int marcel_memory_check_location(marcel_memory_manager_t *memory_manager, void *buffer, size_t size, int node) {
+  marcel_memory_data_t *data = NULL;
+  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  size_t aligned_size = aligned_endbuffer-aligned_buffer;
+  int err;
+
+  MAMI_LOG_IN();
+  if (aligned_size > size) aligned_size = size;
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
+  if (err >= 0) {
+    if (data->node != node) {
+      marcel_printf("MaMI: Checking (%d) pages are on node #%d\n", data->nbpages, data->node);
+      ma_memory_check_pages_location(data->pageaddrs, data->nbpages, data->node);
+    }
+    else {
+      marcel_printf("MaMI: (%d) Pages are on node #%d\n", data->nbpages, node);
+    }
+  }
+  MAMI_LOG_OUT();
+  return err;
+}
+
 static
 void ma_memory_print(FILE *stream, marcel_memory_tree_t *memory_tree, int indent) {
   if (memory_tree) {

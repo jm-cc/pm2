@@ -21,8 +21,6 @@ static void first_touch(int *buffer, size_t size, int elems);
 static marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
-  //  int ptr2[100]; // That variable is only used as a buffer to avoid a segfault when mprotecting ptr as MaMI aligns on page boundaries
-  int ptr[10000];
   int *buffer;
   int err;
 
@@ -44,12 +42,6 @@ int marcel_main(int argc, char * argv[]) {
   first_touch(buffer, 10000*sizeof(int), 10000);
   marcel_memory_free(&memory_manager, buffer);
 
-  // Case with static memory
-//  buffer=ptr;
-//  first_touch(buffer, 10000*sizeof(int), 10000);
-//  err = marcel_memory_unregister(&memory_manager, buffer);
-//  if (err < 0) perror("marcel_memory_unregister");
-
   // Finish marcel
   marcel_memory_exit(&memory_manager);
   marcel_end();
@@ -66,9 +58,6 @@ static void first_touch(int *buffer, size_t size, int elems) {
   err = marcel_memory_locate(&memory_manager, buffer, size, &node);
   if (err < 0) perror("marcel_memory_locate");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
-
-  //  err = marcel_memory_check_pages_location(&memory_manager, buffer, size, node);
-  //  if (err < 0) perror("marcel_memory_check_pages_location");
 
   err = marcel_memory_migrate_on_next_touch(&memory_manager, buffer);
   if (err < 0) perror("marcel_memory_migrate_on_next_touch");

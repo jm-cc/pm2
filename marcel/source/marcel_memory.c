@@ -1122,10 +1122,10 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, 
   if (err >= 0) {
     err = ma_memory_check_pages_location(data->pageaddrs, data->nbpages, node);
     if (err < 0) {
-      marcel_printf("MaMI: (%d) pages are NOT on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: (%d) pages are NOT on node #%d\n", data->nbpages, node);
     }
     else {
-      marcel_printf("MaMI: (%d) Pages are on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: (%d) Pages are on node #%d\n", data->nbpages, node);
     }
   }
   MAMI_LOG_OUT();

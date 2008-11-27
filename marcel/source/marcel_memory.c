@@ -1122,10 +1122,32 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, 
   if (err >= 0) {
     err = ma_memory_check_pages_location(data->pageaddrs, data->nbpages, node);
     if (err < 0) {
-      marcel_fprintf(stderr, "MaMI: (%d) pages are NOT on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: All the %d pages are NOT on node #%d\n", data->nbpages, node);
     }
     else {
-      marcel_fprintf(stderr, "MaMI: (%d) Pages are on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: All the %d pages are on node #%d\n", data->nbpages, node);
+    }
+  }
+  MAMI_LOG_OUT();
+  return err;
+}
+
+int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
+                                        void *buffer,
+                                        size_t size) {
+  marcel_memory_data_t *data = NULL;
+  void *aligned_buffer = ALIGN_ON_PAGE(buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(buffer+size, memory_manager->normalpagesize);
+  size_t aligned_size = aligned_endbuffer-aligned_buffer;
+  int err;
+
+  MAMI_LOG_IN();
+  if (aligned_size > size) aligned_size = size;
+  err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
+  if (err >= 0) {
+    if (data->node < 0) {
+      mdebug_mami("Need to find out the location of the memory area\n");
+      ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &(data->node));
     }
   }
   MAMI_LOG_OUT();
@@ -1453,7 +1475,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       err = 0;
     }
     else {
-      if (data->node == -1) {
+      if (data->node < 0) {
         mdebug_mami("Need to find out the location of the memory area\n");
         ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &(data->node));
       }

@@ -520,6 +520,13 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager,
                                        size_t size,
                                        int node);
 
+/**
+ * Updates the location of the memory area.
+ */
+int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
+                                        void *buffer,
+                                        size_t size);
+
 #section common
 #endif /* MARCEL_MAMI_ENABLED */
 

@@ -28,6 +28,11 @@ void marcel_memory_exit_(int *memory_manager) {
   marcel_memory_exit(manager);
 }
 
+void marcel_memory_unset_alignment_(int *memory_manager) {
+  marcel_memory_manager_t *manager = (void *)*memory_manager;
+  marcel_memory_unset_alignment(manager);
+}
+
 void marcel_memory_malloc_(int *memory_manager,
 			   int *size,
 			   int *buffer) {

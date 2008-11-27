@@ -24,6 +24,7 @@ program launch
   call marcel_memory_init(memory_manager)
   call marcel_self(self)
 
+  call marcel_memory_unset_alignment(memory_manager)
   call marcel_memory_register(memory_manager, buffer, 100, ierr)
   call marcel_memory_locate(memory_manager, buffer, 100, node, ierr)
 

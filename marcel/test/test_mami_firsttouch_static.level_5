@@ -21,8 +21,10 @@ hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Memory located on node -1
 Memory located on node 0
+MaMI: (10) Pages are on node #0
 Memory located on node -1
 Memory located on node 0
+MaMI: (10) Pages are on node #0
 EOF
 
 . ./mami.sh

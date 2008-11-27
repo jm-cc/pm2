@@ -178,3 +178,24 @@ int nm_sched_out(struct nm_core *p_core)
 }
 
 
+
+#ifdef PIOM_BLOCKING_CALLS
+
+int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
+{
+  nmad_unlock();
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  int err = r->driver->wait_send_iov(r->_status, p_pw);
+  nmad_lock();
+  if (err != -NM_EAGAIN)
+    {
+      if (tbx_unlikely(err < 0))
+	{
+	  NM_DISPF("poll_send returned %d", err);
+	}
+      nm_so_process_complete_send(p_pw->p_gate, p_pw, err);
+    }
+  return err; 
+}
+
+#endif /* PIOM_BLOCKING_CALLS */

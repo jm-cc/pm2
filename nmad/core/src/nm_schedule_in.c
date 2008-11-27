@@ -199,3 +199,38 @@ int nm_sched_in(struct nm_core *p_core)
   
   return err;
 }
+
+#ifdef PIOM_BLOCKING_CALLS
+
+int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
+{
+  NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
+	    p_pw->p_gate?p_pw->p_gate->id:-1,
+	    p_pw->p_drv->id,
+	    p_pw->trk_id,
+	    p_pw->proto_id,
+	    p_pw->seq);
+  
+  nmad_unlock();
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  int err = r->driver->wait_recv_iov(r->_status, p_pw);
+  nmad_lock();
+  
+  /* process poll command status				*/
+  if (err == -NM_EAGAIN) {
+    /* not complete, try again later
+       - leave the request in the list and go to next
+    */
+    return err;
+  }
+  
+  if (err != NM_ESUCCESS) {
+    NM_LOGF("drv->wait_recv returned %d", err);
+  }
+  piom_req_success(&p_pw->inst);
+  /* process complete request */
+  err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
+  
+  return err;
+}
+#endif /* PIOM_BLOCKING_CALLS */

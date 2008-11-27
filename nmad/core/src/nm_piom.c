@@ -152,55 +152,6 @@ int nm_piom_block(piom_server_t server,
   return err;
 }
 
-int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
-{
-  nmad_unlock();
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->wait_send_iov(r->_status, p_pw);
-  nmad_lock();
-  if (err != -NM_EAGAIN)
-    {
-      if (tbx_unlikely(err < 0))
-	{
-	  NM_DISPF("poll_send returned %d", err);
-	}
-      nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
-    }
-  return err; 
-}
-
-int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
-{
-  NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
-	    p_pw->p_gate?p_pw->p_gate->id:-1,
-	    p_pw->p_drv->id,
-	    p_pw->trk_id,
-	    p_pw->proto_id,
-	    p_pw->seq);
-  
-  nmad_unlock();
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->wait_recv_iov(r->_status, p_pw);
-  nmad_lock();
-  
-  /* process poll command status				*/
-  if (err == -NM_EAGAIN) {
-    /* not complete, try again later
-       - leave the request in the list and go to next
-    */
-    return err;
-  }
-  
-  if (err != NM_ESUCCESS) {
-    NM_LOGF("drv->wait_recv returned %d", err);
-  }
-  piom_req_success(&p_pw->inst);
-  /* process complete request */
-  err = nm_process_complete_recv_rq(p_pw->p_gate->p_core, p_pw, err);
-  
-  return err;
-}
-
 #if 0
 int nm_piom_block_any(piom_server_t            server,
 		     piom_op_t                _op,

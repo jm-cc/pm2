@@ -14,7 +14,7 @@
 
 
 # Configuration
-prog="firsttouch_static"
+prog="firsttouch_migrate"
 args=""
 hosts="localhost"
 

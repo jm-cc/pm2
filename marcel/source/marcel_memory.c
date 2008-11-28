@@ -933,7 +933,6 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
-  int err;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;

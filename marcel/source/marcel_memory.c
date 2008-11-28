@@ -1545,6 +1545,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   int err=0;
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer;
+  marcel_memory_data_link_t *area = NULL;
 
   marcel_spin_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
@@ -1564,7 +1565,6 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
     else {
       res = tbx_slist_search_and_extract(data->owners, NULL, owner);
       if (res == owner) {
-        marcel_memory_data_link_t *area;
         mdebug_mami("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
         ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] -= data->size;
 
@@ -1573,7 +1573,6 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 	list_for_each_entry(area, &(owner->memory_areas), list) {
           if (area->data == data) {
             list_del_init(&area->list);
-            tfree(area);
             break;
           }
         }
@@ -1587,6 +1586,8 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
     }
   }
   marcel_spin_unlock(&(memory_manager->lock));
+  if (!area) tfree(area);
+
   MAMI_LOG_OUT();
   return err;
 }

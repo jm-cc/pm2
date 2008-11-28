@@ -182,7 +182,7 @@ memory_sched_shake () {
   for_each_entity_scheduled_in_bubble_end ()
 
   if (shake) {
-    ma_bubble_move_top_and_submit (holding_bubble);
+    ma_bubble_move_top_and_submit (&marcel_root_bubble);
     ret = 1;
   }
 

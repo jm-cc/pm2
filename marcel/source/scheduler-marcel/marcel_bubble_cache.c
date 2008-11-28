@@ -632,23 +632,6 @@ steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t
 #undef MAX_ANCESTORS
 }
 
-/* Returns the runqueue the entity is scheduled on. If the entity is
-   scheduled inside a bubble, the function returns the runqueue the
-   holding bubble is scheduled on. */
-static ma_runqueue_t *
-get_parent_rq (marcel_entity_t *e) {
-  if (e) {
-    ma_holder_t *sh = e->sched_holder;
-    if (sh && (sh->type == MA_RUNQUEUE_HOLDER))
-      return ma_to_rq_holder(sh);
-    
-    marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
-    MA_BUG_ON (upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
-    return ma_to_rq_holder (upper_e->sched_holder);
-  }
-  return NULL;
-}
-
 /* This structure contains arguments to pass the browse_and_steal
    function. */
 struct browse_and_steal_args {

@@ -69,6 +69,23 @@ unsigned ma_entity_is_running (marcel_entity_t *e) {
   return 0;
 }
 
+/* Returns the runqueue the entity is scheduled on. If the entity is
+   scheduled inside a bubble, the function returns the runqueue the
+   holding bubble is scheduled on. */
+ma_runqueue_t *
+ma_get_parent_rq (marcel_entity_t *e) {
+  if (e) {
+    ma_holder_t *sh = e->sched_holder;
+    if (sh && (sh->type == MA_RUNQUEUE_HOLDER))
+      return ma_to_rq_holder(sh);
+    
+    marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
+    MA_BUG_ON (upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
+    return ma_to_rq_holder (upper_e->sched_holder);
+  }
+  return NULL;
+}
+
 /* This function is called by bubble schedulers to determine the
   "cache friendly" runqueues where entities should be attracted to, if
   possible. */

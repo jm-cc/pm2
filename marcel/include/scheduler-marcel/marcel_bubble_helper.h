@@ -22,6 +22,11 @@ enum lock_mode { UNLOCKED_MODE, LOCKED_MODE };
    A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
 
+/* Returns the runqueue the entity is scheduled on. If the entity is
+   scheduled inside a bubble, the function returns the runqueue the
+   holding bubble is scheduled on. */
+ma_runqueue_t *ma_get_parent_rq (marcel_entity_t *e);
+
 /* Returns the last vp the entity was running on. Returns
    MA_VPSTATS_NO_LAST_VP if the entity has never been executed, and
    MA_VPSTATS_CONFLICT if the entity is a bubble containing

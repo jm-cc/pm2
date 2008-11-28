@@ -30,7 +30,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Allocate the buffer
   buffer = marcel_memory_allocate_on_node(&memory_manager, SIZE*getpagesize(), 0);
-  marcel_memory_locate(&memory_manager, buffer, &node);
+  marcel_memory_locate(&memory_manager, buffer, SIZE*getpagesize(), &node);
   marcel_printf("Buffer located on node %d\n", node);
 
   // Migrate the buffer

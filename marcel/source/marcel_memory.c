@@ -115,6 +115,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
   MAMI_LOG_IN();
   memory_manager->root = NULL;
+#warning use a mutex to avoid bad scheduling while atomic
   marcel_spin_init(&(memory_manager->lock), 0);
   memory_manager->normalpagesize = getpagesize();
   memory_manager->hugepagesize = gethugepagesize();

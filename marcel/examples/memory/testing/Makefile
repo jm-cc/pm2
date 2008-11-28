@@ -15,5 +15,7 @@
 
 export FLAVOR_DEFAULT:=marcel-mami
 
+hugepages-test-ldflags := -lnuma
+
 include $(PM2_ROOT)/make/apps.mak
 

@@ -17,7 +17,7 @@ void print_pages(void **pageaddrs, int nbpages) {
   statuses = malloc(nbpages * sizeof(int));
   err = move_pages(0, nbpages, pageaddrs, NULL, statuses, 0);
   if (err < 0) {
-    perror("move_pages");
+    perror("move_pages (print_pages)");
     exit(-1);
   }
 
@@ -37,7 +37,7 @@ int check_pages_location(void **pageaddrs, int nbpages, int node) {
   statuses = malloc(nbpages * sizeof(int));
   err = move_pages(0, nbpages, pageaddrs, NULL, statuses, 0);
   if (err < 0) {
-    perror("move_pages");
+    perror("move_pages (check_pages_location)");
     exit(-1);
   }
 
@@ -165,6 +165,12 @@ int marcel_main(int argc, char **argv) {
   size_t size;
 
   marcel_init(&argc, argv);
+
+  if (argc < 2) {
+    marcel_printf("Error. Syntax: hugepages-test <node> <dest>\n");
+    marcel_end();
+    exit(1);
+  }
 
   node = atoi(argv[1]);
   dest = atoi(argv[2]);

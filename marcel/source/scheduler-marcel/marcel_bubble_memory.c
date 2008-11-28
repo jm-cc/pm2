@@ -174,7 +174,7 @@ memory_sched_shake () {
   ma_bubble_synthesize_stats (holding_bubble);  
   for_each_entity_scheduled_in_bubble_begin (e, holding_bubble)
   {
-    if (e->sched_holder != &ma_favourite_location (e)->rq.as_holder) {
+    if (ma_get_parent_rq (e) != &ma_favourite_location (e)->rq) {
       shake = 1;
       break;
     }

@@ -348,8 +348,8 @@ void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
     tbx_slist_clear((*memory_data)->owners);
   }
   tbx_slist_free((*memory_data)->owners);
-  free((*memory_data)->pageaddrs);
-  free(*memory_data);
+  tfree((*memory_data)->pageaddrs);
+  tfree(*memory_data);
 }
 
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree) {
@@ -358,13 +358,13 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
     marcel_memory_tree_t *temp = (*memory_tree);
     ma_memory_clean_memory_data(&(temp->data));
     (*memory_tree) = (*memory_tree)->rightchild;
-    free(temp);
+    tfree(temp);
   }
   else if ((*memory_tree)->rightchild == NULL) {
     marcel_memory_tree_t *temp = *memory_tree;
     ma_memory_clean_memory_data(&(temp->data));
     (*memory_tree) = (*memory_tree)->leftchild;
-    free(temp);
+    tfree(temp);
   }
   else {
     // In-order predecessor (rightmost child of left subtree)

@@ -126,7 +126,7 @@ ma_idle_scheduler_is_running (void) {
   return ma_atomic_read (&ma_idle_scheduler);
 }
 
-static void ma_bubble_move_top_and_submit (marcel_bubble_t *b) {
+void ma_bubble_move_top_and_submit (marcel_bubble_t *b) {
   ma_deactivate_idle_scheduler ();
   
   ma_bubble_gather (b);

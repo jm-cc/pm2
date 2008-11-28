@@ -155,7 +155,6 @@ void marcel_bubble_shake (void);
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
 
-
 /* @} */
 
 /**
@@ -297,6 +296,10 @@ void ma_bubble_gather(marcel_bubble_t *b);
 void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
 /* Same as ma_bubble_gather, but asserts that the bubble hierarchy is held under level \e level and \e level is already locked */
 void ma_bubble_gather_here(marcel_bubble_t *b, struct marcel_topo_level *level);
+
+/** \Brief Gathers bubble b, move it to the top-level runqueue, and
+    call the bubble scheduler distribution algorithm from there. */
+void ma_bubble_move_top_and_submit (marcel_bubble_t *b);
 
 /** \brief Locks a whole bubble hierarchy.  Also locks the whole level hierarchy.  */
 void ma_bubble_lock_all(marcel_bubble_t *b, struct marcel_topo_level *level);

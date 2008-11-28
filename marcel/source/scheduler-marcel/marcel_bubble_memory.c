@@ -164,10 +164,35 @@ memory_sched_submit (marcel_entity_t *e) {
   return ma_memory_sched_submit (ma_bubble_entity (e), marcel_topo_level (0, 0));
 }
 
+static int
+memory_sched_shake () {
+  int ret = 0, shake = 0;
+  marcel_bubble_t *holding_bubble = ma_bubble_holder (ma_entity_task (marcel_self ())->init_holder);
+  marcel_entity_t *e;
+  MA_BUG_ON (holding_bubble == NULL);
+
+  ma_bubble_synthesize_stats (holding_bubble);  
+  for_each_entity_scheduled_in_bubble_begin (e, holding_bubble)
+  {
+    if (e->sched_holder != &ma_favourite_location (e)->rq.as_holder) {
+      shake = 1;
+      break;
+    }
+  }
+  for_each_entity_scheduled_in_bubble_end ()
+
+  if (shake) {
+    ma_bubble_move_top_and_submit (holding_bubble);
+    ret = 1;
+  }
+
+  return ret;
+}
 
 struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .start = memory_sched_start,
   .submit = memory_sched_submit,
+  .shake = memory_sched_shake,
 };
 
 #else /* MARCEL_MAMI_ENABLED */
@@ -181,6 +206,7 @@ warning_start (void) {
 struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .start = warning_start,
   .submit = warning_start,
+  .shake = warning_start,
 };
 
 #endif /* MARCEL_MAMI_ENABLED */

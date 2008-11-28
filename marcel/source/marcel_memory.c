@@ -508,6 +508,7 @@ void ma_memory_register_pages(marcel_memory_manager_t *memory_manager, marcel_me
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
     ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
+    mdebug_mami("Adding data %p into tree\n", (*memory_tree)->data);
     if (data) *data = (*memory_tree)->data;
   }
   else {
@@ -929,11 +930,17 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 			   void *buffer,
 			   size_t size) {
-#warning todo vérifier que buffer et size sont alignés sur une page
+  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+  size_t aligned_size = aligned_endbuffer-aligned_buffer;
+  int err;
 
   MAMI_LOG_IN();
+  if (aligned_size > size) aligned_size = size;
+#warning todo vérifier que buffer et size sont alignés sur une page
   marcel_spin_lock(&(memory_manager->lock));
-  ma_memory_register(memory_manager, buffer, size, 0, NULL);
+  mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
+  ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
   marcel_spin_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return 0;

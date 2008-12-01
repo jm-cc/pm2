@@ -30,13 +30,14 @@ int marcel_main(int argc, char * argv[]) {
   self = marcel_self();
 
   err = marcel_memory_task_attach(&memory_manager, ptr, (2*getpagesize())-10, self, &node);
-  marcel_printf("marcel_memory_attach: %d\n", err);
+  if (err < 0) perror("marcel_memory_attach unexpectedly failed");
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);
-  marcel_printf("marcel_memory_unattach: %d\n", err);
+  if (err < 0) perror("marcel_memory_unattach unexpectedly failed");
 
   marcel_memory_free(&memory_manager, ptr);
   marcel_memory_exit(&memory_manager);
+  marcel_printf("Success\n");
 
   // Finish marcel
   marcel_end();

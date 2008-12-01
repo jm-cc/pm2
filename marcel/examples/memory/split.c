@@ -40,14 +40,14 @@ int marcel_main(int argc, char * argv[]) {
 
   err = marcel_memory_register(&memory_manager, ptr, 50*getpagesize());
   if (err < 0) {
-    perror("marcel_memory_register");
+    perror("marcel_memory_register unexpectedly failed");
   }
 
   marcel_printf("\nSpliting memory area not allocated by MAMI\n");
   split(ptr, 50*getpagesize());
   err = marcel_memory_unregister(&memory_manager, ptr);
   if (err < 0) {
-    perror("marcel_memory_unregister");
+    perror("marcel_memory_unregister unexpectedly failed");
   }
   free(ptr);
 
@@ -66,7 +66,7 @@ static void split(void *ptr, size_t size) {
   newptrs = malloc(10 * sizeof(void **));
   err = marcel_memory_split(&memory_manager, ptr, 10, newptrs);
   if (err < 0) {
-    perror("marcel_memory_split");
+    perror("marcel_memory_split unexpectedly failed");
   }
   else {
     for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);
@@ -83,7 +83,7 @@ static void attach(void *ptr, size_t size) {
   self = marcel_self();
   err = marcel_memory_task_attach(&memory_manager, ptr, size, self, &node);
   if (err < 0) {
-    perror("marcel_memory_task_attach");
+    perror("marcel_memory_task_attach unexpectedly failed");
   }
 
   stats = (long *) (ma_task_stats_get (self, ma_stats_memnode_offset));
@@ -91,7 +91,7 @@ static void attach(void *ptr, size_t size) {
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);
   if (err < 0) {
-    perror("marcel_memory_task_unattach");
+    perror("marcel_memory_task_unattach unexpectedly failed");
   }
 }
 

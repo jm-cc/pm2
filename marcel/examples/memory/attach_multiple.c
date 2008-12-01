@@ -26,7 +26,7 @@ any_t attach(any_t arg) {
 
   self = marcel_self();
   err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
-  if (err < 0) perror("marcel_memory_task_attach");
+  if (err < 0) perror("marcel_memory_task_attach unexpectedly failed");
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -47,9 +47,9 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[1], NULL);
 
   err = marcel_memory_task_unattach_all(&memory_manager, threads[0]);
-  if (err < 0) perror("marcel_memory_task_unattach_all");
+  if (err < 0) perror("marcel_memory_task_unattach_all unexpectedly failed");
   err = marcel_memory_task_unattach_all(&memory_manager, threads[1]);
-  if (err < 0) perror("marcel_memory_task_unattach_all");
+  if (err < 0) perror("marcel_memory_task_unattach_all unexpectedly failed");
 
   marcel_memory_free(&memory_manager, ptr);
   marcel_printf("Success\n");

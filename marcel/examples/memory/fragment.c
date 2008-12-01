@@ -39,7 +39,7 @@ int marcel_main(int argc, char * argv[]) {
       marcel_memory_free(&memory_manager, ptr);
       marcel_memory_free(&memory_manager, ptr2);
       ptr2 = marcel_memory_malloc(&memory_manager, bigsize);
-      if (!ptr2) perror("marcel_memory_malloc");
+      if (!ptr2) perror("marcel_memory_malloc unexpectedly failed");
       marcel_memory_free(&memory_manager, ptr2);
     }
     else {

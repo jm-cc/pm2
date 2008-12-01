@@ -29,39 +29,39 @@ int marcel_main(int argc, char * argv[]) {
 
   size=10000*sizeof(int);
   err = marcel_memory_task_attach(&memory_manager, ptr, size, marcel_self(), &node);
-  if (err < 0) perror("marcel_memory_task_attach");
+  if (err < 0) perror("marcel_memory_task_attach unexpectedly failed");
 
   err = marcel_memory_locate(&memory_manager, ptr, size, &node);
-  if (err < 0) perror("marcel_memory_locate");
+  if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
   err = marcel_memory_check_pages_location(&memory_manager, ptr, size, node);
-  if (err < 0) perror("marcel_memory_check_pages_location");
+  if (err < 0) perror("marcel_memory_check_pages_location unexpectedly failed");
 
   err = marcel_memory_migrate_on_next_touch(&memory_manager, ptr);
-  if (err < 0) perror("marcel_memory_migrate_on_next_touch");
+  if (err < 0) perror("marcel_memory_migrate_on_next_touch unexpectedly failed");
 
   for(i=0 ; i<10000 ; i++) ptr[i] = 12;
 
   err = marcel_memory_locate(&memory_manager, ptr, size, &node);
-  if (err < 0) perror("marcel_memory_locate");
+  if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
   err = marcel_memory_check_pages_location(&memory_manager, ptr, size, node);
   if (err < 0) {
-    perror("marcel_memory_check_pages_location");
+    perror("marcel_memory_check_pages_location unexpectedly failed");
     err = marcel_memory_update_pages_location(&memory_manager, ptr, size);
-    if (err < 0) perror("marcel_memory_update_pages_location");
+    if (err < 0) perror("marcel_memory_update_pages_location unexpectedly failed");
     err = marcel_memory_locate(&memory_manager, ptr, size, &node);
-    if (err < 0) perror("marcel_memory_locate");
+    if (err < 0) perror("marcel_memory_locate unexpectedly failed");
     marcel_fprintf(stderr, "Memory located on node %d\n", node);
   }
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, marcel_self());
-  if (err < 0) perror("marcel_memory_task_unattach");
+  if (err < 0) perror("marcel_memory_task_unattach unexpectedly failed");
 
   err = marcel_memory_unregister(&memory_manager, ptr);
-  if (err < 0) perror("marcel_memory_unregister");
+  if (err < 0) perror("marcel_memory_unregister unexpectedly failed");
 
   // Finish marcel
   marcel_memory_exit(&memory_manager);

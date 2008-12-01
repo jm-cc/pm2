@@ -115,7 +115,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
   MAMI_LOG_IN();
   memory_manager->root = NULL;
-  marcel_mutex_init(&(memory_manager->lock), 0);
+  marcel_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
   memory_manager->hugepagesize = gethugepagesize();
   memory_manager->initially_preallocated_pages = 1024;

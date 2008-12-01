@@ -44,7 +44,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, 2);
   }
 
-  ptr3 = marcel_memory_allocate_on_node(&memory_manager, 100, 1);
+  ptr3 = marcel_memory_malloc_on_node(&memory_manager, 100, 1);
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &least_loaded_node);
   marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE, 0);
   ptr4 = marcel_memory_malloc(&memory_manager, 100);

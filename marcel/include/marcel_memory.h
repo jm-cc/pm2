@@ -280,9 +280,9 @@ void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
  * @param size size of the required memory
  * @param node identifier of the node
  */
-void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager,
-				     size_t size,
-				     int node);
+void* marcel_memory_malloc_on_node(marcel_memory_manager_t *memory_manager,
+                                   size_t size,
+                                   int node);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.

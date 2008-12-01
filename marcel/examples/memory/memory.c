@@ -62,13 +62,13 @@ any_t memory2(any_t arg) {
   buffers2 = malloc(maxnode * sizeof(void *));
   for(i=1 ; i<=5 ; i++) {
     for(node=0 ; node<maxnode ; node++)
-      buffers[node] = marcel_memory_allocate_on_node(&memory_manager, i*memory_manager.normalpagesize, node);
+      buffers[node] = marcel_memory_malloc_on_node(&memory_manager, i*memory_manager.normalpagesize, node);
     for(node=0 ; node<maxnode ; node++)
       marcel_memory_free(&memory_manager, buffers[node]);
   }
   for(node=0 ; node<maxnode ; node++) {
-    buffers[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.normalpagesize, node);
-    buffers2[node] = marcel_memory_allocate_on_node(&memory_manager, memory_manager.normalpagesize, node);
+    buffers[node] = marcel_memory_malloc_on_node(&memory_manager, memory_manager.normalpagesize, node);
+    buffers2[node] = marcel_memory_malloc_on_node(&memory_manager, memory_manager.normalpagesize, node);
   }
   for(node=0 ; node<maxnode ; node++) {
     marcel_memory_free(&memory_manager, buffers[node]);

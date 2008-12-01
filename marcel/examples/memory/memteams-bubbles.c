@@ -153,9 +153,9 @@ main (int argc, char **argv)
       c[i] = marcel_memory_malloc(&memory_manager, tab_len);
     }
     else if (mpol == MAMI) {
-      a[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
-      b[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
-      c[i] = marcel_memory_allocate_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      a[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      b[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      c[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
     }
     else {
       a[i] = memalign (getpagesize(), tab_len);

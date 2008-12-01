@@ -732,7 +732,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
 }
 
 static
-void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, unsigned long pagesize, int node, int with_huge_pages) {
+void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, unsigned long pagesize, int node, int with_huge_pages) {
   void *buffer;
   int i, nbpages, protection=0;
   size_t realsize;
@@ -782,7 +782,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
   return buffer;
 }
 
-void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
+void* marcel_memory_malloc_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
   int with_huge_pages;
 
   if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
@@ -791,7 +791,7 @@ void* marcel_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, si
   }
 
   with_huge_pages = (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES);
-  return ma_memory_allocate_on_node(memory_manager, size, memory_manager->normalpagesize, node, with_huge_pages);
+  return ma_memory_malloc(memory_manager, size, memory_manager->normalpagesize, node, with_huge_pages);
 }
 
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size) {
@@ -824,7 +824,7 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
     node = memory_manager->nb_nodes;
   }
 
-  ptr = ma_memory_allocate_on_node(memory_manager, size, pagesize, node, with_huge_pages);
+  ptr = ma_memory_malloc(memory_manager, size, pagesize, node, with_huge_pages);
 
   MAMI_LOG_OUT();
   return ptr;

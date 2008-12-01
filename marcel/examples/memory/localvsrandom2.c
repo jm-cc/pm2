@@ -80,7 +80,7 @@ int marcel_main(int argc, char * argv[]) {
   buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    buffers[node] = marcel_memory_allocate_on_node(&memory_manager, SIZE*sizeof(int), node);
+    buffers[node] = marcel_memory_malloc_on_node(&memory_manager, SIZE*sizeof(int), node);
   }
 
   // Create a thread on node t to work on memory allocated on node node

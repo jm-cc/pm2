@@ -79,8 +79,7 @@ typedef int marcel_memory_membind_policy_t;
 
 #section structures
 
-#depend "linux_spinlock.h[types]"
-#depend "marcel_spin.h[types]"
+#depend "marcel_mutex.h[types]"
 #include "tbx_pointers.h"
 
 /** \brief Structure of a link for a list of tree nodes */
@@ -186,7 +185,7 @@ struct marcel_memory_manager_s {
   /** \brief List of pre-allocated memory areas */
   marcel_memory_area_t **heaps;
   /** \brief Lock to manipulate the data */
-  marcel_spinlock_t lock;
+  marcel_mutex_t lock;
   /** \brief System page size */
   unsigned long normalpagesize;
   /** \brief System huge page size */

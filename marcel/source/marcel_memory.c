@@ -115,8 +115,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
   MAMI_LOG_IN();
   memory_manager->root = NULL;
-#warning use a mutex to avoid bad scheduling while atomic
-  marcel_spin_init(&(memory_manager->lock), 0);
+  marcel_mutex_init(&(memory_manager->lock), 0);
   memory_manager->normalpagesize = getpagesize();
   memory_manager->hugepagesize = gethugepagesize();
   memory_manager->initially_preallocated_pages = 1024;
@@ -741,10 +740,10 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
 
   MAMI_LOG_IN();
 
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
 
   if (!size) {
-    marcel_spin_unlock(&(memory_manager->lock));
+    marcel_mutex_unlock(&(memory_manager->lock));
     MAMI_LOG_OUT();
     return NULL;
   }
@@ -777,7 +776,7 @@ void* ma_memory_allocate_on_node(marcel_memory_manager_t *memory_manager, size_t
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
   }
 
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   mdebug_mami("Allocating %p on node #%d\n", buffer, node);
   MAMI_LOG_OUT();
   return buffer;
@@ -938,10 +937,10 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
 #warning todo vérifier que buffer et size sont alignés sur une page
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
   ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return 0;
 }
@@ -953,7 +952,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer;
 
   MAMI_LOG_IN();
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
 
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
@@ -961,7 +960,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
     mdebug_mami("Unregistering [%p:%p]\n", buffer,buffer+data->size);
     ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return err;
 }
@@ -976,7 +975,7 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
 #warning todo vérifier que subareas donne des sous-buffers alignés sur une page
 
   MAMI_LOG_IN();
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
 
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
   if (err >= 0) {
@@ -1013,7 +1012,7 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
       data->size = subsize;
     }
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return err;
 }
@@ -1049,9 +1048,9 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   MAMI_LOG_IN();
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_mami("Freeing [%p]\n", buffer);
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   ma_memory_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
 }
 
@@ -1283,7 +1282,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                                marcel_memory_node_selection_policy_t policy,
                                int *node) {
   MAMI_LOG_IN();
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
 
   if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
     int i, space, maxspace;
@@ -1297,7 +1296,7 @@ void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
     }
   }
 
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
 }
 
@@ -1362,12 +1361,12 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
 
   MAMI_LOG_IN();
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   ret = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
   if (ret >= 0) {
     ret = ma_memory_migrate_pages(memory_manager, buffer, data, dest);
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return ret;
 }
@@ -1379,7 +1378,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   int err, dest;
   marcel_memory_data_t *data = NULL;
 
-  marcel_spin_lock(&(g_memory_manager->lock));
+  marcel_mutex_lock(&(g_memory_manager->lock));
 
 #ifdef __x86_64__
   addr = (void *)(context->uc_mcontext.gregs[REG_CR2]);
@@ -1413,7 +1412,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
       }
     }
   }
-  marcel_spin_unlock(&(g_memory_manager->lock));
+  marcel_mutex_unlock(&(g_memory_manager->lock));
 }
 
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
@@ -1422,7 +1421,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer;
 
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
 
   if (!handler_set) {
@@ -1433,7 +1432,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     err = sigaction(SIGSEGV, &act, NULL);
     if (err < 0) {
       perror("sigaction");
-      marcel_spin_unlock(&(memory_manager->lock));
+      marcel_mutex_unlock(&(memory_manager->lock));
       MAMI_LOG_OUT();
       return -errno;
     }
@@ -1451,7 +1450,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
       perror("mprotect");
     }
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return err;
 }
@@ -1465,7 +1464,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
   int err=0;
   marcel_memory_data_t *data;
 
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
 
   mdebug_mami("Attaching [%p:%p] to entity %p\n", buffer, buffer+size, owner);
@@ -1533,7 +1532,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     list_add(&(area->list), &(owner->memory_areas));
     ma_spin_unlock(&(owner->memory_areas_lock));
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return err;
 }
@@ -1547,7 +1546,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer;
   marcel_memory_data_link_t *area = NULL;
 
-  marcel_spin_lock(&(memory_manager->lock));
+  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
@@ -1585,7 +1584,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
       }
     }
   }
-  marcel_spin_unlock(&(memory_manager->lock));
+  marcel_mutex_unlock(&(memory_manager->lock));
   if (!area) tfree(area);
 
   MAMI_LOG_OUT();

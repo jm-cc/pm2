@@ -39,25 +39,15 @@ static void print_hierarchy(const struct marcel_topo_level *level) {
 }
 
 int main (int argc, char *argv[]) {
-  int ret, matches_p, i;
   char **new_argv;
   marcel_bubble_t *root_bubble;
   ma_atomic_t thread_exit_signal;
 
-  /* A simple topology: 2 nodes, each of which has 2 CPUs, each of which has 4
-     cores.  */
+  /* A simple topology: 2 nodes, each of which has 2 CPUs, each of which has 4 cores.  */
   static const char topology_description[] = "2 2 4";
 
   /* A flat bubble hierarchy.  */
-  static const unsigned bubble_hierarchy_description[] =
-    { 16, 0 };
-
-
-//  return test_marcel_bubble_scheduler (argc, argv,
-//                                       &marcel_bubble_memaware_sched,
-//                                       topology_description,
-//                                       bubble_hierarchy_description,
-//                                       &result_root);
+  static const unsigned bubble_hierarchy_description[] = { 16, 0 };
 
   /* Pass the topology description to Marcel.  Yes, it looks hackish to
      communicate with the library via command-line arguments.  */
@@ -74,7 +64,7 @@ int main (int argc, char *argv[]) {
   marcel_ensure_abi_compatibility(MARCEL_HEADER_HASH);
 
   print_topology (&marcel_machine_level[0], stdout, 0);
-
+ 
   /* Before creating any threads, initialize the variable that they'll
      poll.  */
   ma_atomic_init (&thread_exit_signal, 0);
@@ -89,7 +79,6 @@ int main (int argc, char *argv[]) {
   marcel_bubble_sched_begin ();
 
   /* Print the hierarchy */
-
   marcel_thread_preemption_disable ();
   ma_bubble_lock_all (&marcel_root_bubble, marcel_machine_level);
   print_hierarchy(marcel_machine_level);

@@ -703,7 +703,10 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
     preallocatedpages = memory_manager->initially_preallocated_pages;
     while (nbpages > preallocatedpages) preallocatedpages *= 2;
     mdebug_mami("not enough space, let's allocate %d extra pages\n", preallocatedpages);
-    err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
+    if (node == memory_manager->nb_nodes)
+      err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, -1);
+    else
+      err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
     if (err < 0) {
       return NULL;
     }

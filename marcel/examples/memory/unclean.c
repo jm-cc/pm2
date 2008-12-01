@@ -24,7 +24,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 100);
+  ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_exit(&memory_manager);
 
   // Finish marcel

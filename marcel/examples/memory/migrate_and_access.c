@@ -69,7 +69,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Allocate the buffer
-  buffer = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int));
+  buffer = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   // Start the threads
   marcel_create(&threads[0], NULL, t_migrate, (any_t) &loops);

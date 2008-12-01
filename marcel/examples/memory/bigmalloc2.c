@@ -24,7 +24,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, memory_manager.initially_preallocated_pages*memory_manager.normalpagesize);
+  ptr = marcel_memory_malloc(&memory_manager, memory_manager.initially_preallocated_pages*memory_manager.normalpagesize,
+                             MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_free(&memory_manager, ptr);
 
   // Finish marcel

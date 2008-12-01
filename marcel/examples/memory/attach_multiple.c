@@ -38,7 +38,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_init(&attr);
   marcel_memory_init(&memory_manager);
 
-  ptr = marcel_memory_malloc_on_node(&memory_manager, 1000, 0);
+  ptr = marcel_memory_malloc(&memory_manager, 1000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
   marcel_create(&threads[0], &attr, attach, NULL);
   marcel_create(&threads[1], &attr, attach, NULL);

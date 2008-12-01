@@ -25,7 +25,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 9*memory_manager.normalpagesize);
+  ptr = marcel_memory_malloc(&memory_manager, 9*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   for(i=0 ; i<9 ; i+=3 ) {
     marcel_memory_task_attach(&memory_manager, ptr+(i*memory_manager.normalpagesize), 3*memory_manager.normalpagesize, marcel_self(), &node);

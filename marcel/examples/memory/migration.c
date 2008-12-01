@@ -26,7 +26,7 @@ void allocation_and_migration(int cpu, int mem) {
 
   size = memory_manager.normalpagesize * 2;
 
-  buffer = marcel_memory_malloc_on_node(&memory_manager, size, mem);
+  buffer = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, mem);
   marcel_memory_locate(&memory_manager, buffer, size, &bnode);
   marcel_printf("Node before migration %d\n", bnode);
 

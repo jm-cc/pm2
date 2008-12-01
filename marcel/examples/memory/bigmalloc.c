@@ -26,11 +26,11 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
 
   size = memory_manager.initially_preallocated_pages * memory_manager.normalpagesize;
-  ptr1 = marcel_memory_malloc(&memory_manager, size+1);
-  ptr2 = marcel_memory_malloc(&memory_manager, size/2);
-  ptr3 = marcel_memory_malloc(&memory_manager, size/2);
-  ptr4 = marcel_memory_malloc(&memory_manager, 4);
-  ptr5 = marcel_memory_malloc(&memory_manager, size);
+  ptr1 = marcel_memory_malloc(&memory_manager, size+1, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr2 = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr3 = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr4 = marcel_memory_malloc(&memory_manager, 4, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr5 = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   marcel_memory_free(&memory_manager, ptr1);
   marcel_memory_free(&memory_manager, ptr2);

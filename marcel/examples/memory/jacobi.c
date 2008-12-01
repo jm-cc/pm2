@@ -266,11 +266,11 @@ void initialize_grids(int grid_size, int migration_policy) {
     }
   }
   else {
-    grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
-    grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *));
+    grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     for (i = 0; i <= grid_size+1; i++) {
-      grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double));
-      grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double));
+      grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+      grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     }
 
     for (i = 0; i <= grid_size+1; i++)

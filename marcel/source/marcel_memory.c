@@ -785,20 +785,7 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
   return buffer;
 }
 
-void* marcel_memory_malloc_on_node(marcel_memory_manager_t *memory_manager, size_t size, int node) {
-  int with_huge_pages;
-
-  if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
-    mdebug_mami("Node #%d invalid\n", node);
-    return NULL;
-  }
-
-  with_huge_pages = (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES);
-  return ma_memory_malloc(memory_manager, size, memory_manager->normalpagesize, node, with_huge_pages);
-}
-
-void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size) {
-  int node;
+void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, marcel_memory_membind_policy_t policy, int node) {
   void *ptr;
   int with_huge_pages;
   unsigned long pagesize;
@@ -807,23 +794,23 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
 
   pagesize = memory_manager->normalpagesize;
   with_huge_pages = 0;
-  node = 0;
-  if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
+  if (policy == MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT) {
+    policy = memory_manager->membind_policy;
+    node = memory_manager->membind_node;
+  }
+
+  if (policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
     node = marcel_current_node();
     if (tbx_unlikely(node == -1)) node=0;
   }
-  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE) {
-    node = memory_manager->membind_node;
-  }
-  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE) {
+  else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE) {
     marcel_memory_select_node(memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &node);
   }
-  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES) {
-    node = memory_manager->membind_node;
+  else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES) {
     pagesize = memory_manager->hugepagesize;
     with_huge_pages = 1;
   }
-  else if (memory_manager->membind_policy == MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH) {
+  else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH) {
     node = memory_manager->nb_nodes;
   }
 
@@ -833,12 +820,13 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size)
   return ptr;
 }
 
-void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb, size_t size) {
+void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb, size_t size,
+                           marcel_memory_membind_policy_t policy, int node) {
   void *ptr;
 
   MAMI_LOG_IN();
 
-  ptr = marcel_memory_malloc(memory_manager, nmemb*size);
+  ptr = marcel_memory_malloc(memory_manager, nmemb*size, policy, node);
   ptr = memset(ptr, 0, nmemb*size);
 
   MAMI_LOG_OUT();

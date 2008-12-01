@@ -25,7 +25,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 100);
+  ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_locate(&memory_manager, ptr, 100, &node);
   if (node == marcel_current_node()) {
     marcel_printf("Memory allocated on current node\n");
@@ -35,7 +35,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 2);
-  ptr2 = marcel_memory_malloc(&memory_manager, 100);
+  ptr2 = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_locate(&memory_manager, ptr2, 100, &node);
   if (node == 2) {
     marcel_printf("Memory allocated on given node\n");
@@ -44,10 +44,10 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, 2);
   }
 
-  ptr3 = marcel_memory_malloc_on_node(&memory_manager, 100, 1);
+  ptr3 = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 1);
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &least_loaded_node);
   marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE, 0);
-  ptr4 = marcel_memory_malloc(&memory_manager, 100);
+  ptr4 = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_locate(&memory_manager, ptr4, 100, &node);
   if (node == least_loaded_node) {
     marcel_printf("Memory allocated on least loaded node\n");

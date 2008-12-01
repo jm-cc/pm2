@@ -36,10 +36,10 @@ int marcel_main(int argc, char * argv[]) {
     }
     else {
       bigsize =  marcel_topo_node_level[0].huge_page_free * memory_manager.hugepagesize;
-      ptr = marcel_memory_malloc(&memory_manager, bigsize+1);
+      ptr = marcel_memory_malloc(&memory_manager, bigsize+1, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
       perror("marcel_memory_malloc succesfully failed");
 
-      ptr = marcel_memory_malloc(&memory_manager, bigsize/2);
+      ptr = marcel_memory_malloc(&memory_manager, bigsize/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
       if (!ptr) {
 	perror("marcel_memory_malloc unexpectedly failed");
       }
@@ -47,7 +47,7 @@ int marcel_main(int argc, char * argv[]) {
 	ptr[10] = 10;
 	marcel_printf("ptr[10]=%d\n", ptr[10]);
 
-	ptr2 =  marcel_memory_malloc(&memory_manager, bigsize/2);
+	ptr2 =  marcel_memory_malloc(&memory_manager, bigsize/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 	if (!ptr2) {
 	  perror("marcel_memory_malloc unexpectedly failed");
 	}

@@ -136,9 +136,9 @@ main (int argc, char **argv)
 
   /* Bind the accessed data to the nodes. */
   if (mpol == MAMI_NEXT_TOUCH || mpol == MAMI) {
-    a = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
-    b = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
-    c = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *));
+    a = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    b = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    c = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   }
   else {
     a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
@@ -148,14 +148,14 @@ main (int argc, char **argv)
 
   for (i = 0; i < nb_teams; i++) {
     if (mpol == MAMI_NEXT_TOUCH) {
-      a[i] = marcel_memory_malloc(&memory_manager, tab_len);
-      b[i] = marcel_memory_malloc(&memory_manager, tab_len);
-      c[i] = marcel_memory_malloc(&memory_manager, tab_len);
+      a[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+      b[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+      c[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     }
     else if (mpol == MAMI) {
-      a[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
-      b[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
-      c[i] = marcel_memory_malloc_on_node(&memory_manager, tab_len, memory_nodes[i]);
+      a[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
+      b[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
+      c[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
     }
     else {
       a[i] = memalign (getpagesize(), tab_len);

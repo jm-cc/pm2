@@ -31,8 +31,8 @@ int marcel_main(int argc, char * argv[]) {
   err = marcel_memory_task_attach(&memory_manager, ptr, 100, self, &node);
   if (err < 0) perror("marcel_memory_task_attach successfully failed");
 
-  ptr = marcel_memory_malloc_on_node(&memory_manager, 1000, 0);
-  ptr2 = marcel_memory_malloc_on_node(&memory_manager, 1000, 0);
+  ptr = marcel_memory_malloc(&memory_manager, 1000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr2 = marcel_memory_malloc(&memory_manager, 1000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
   err = marcel_memory_task_attach(&memory_manager, ptr, 1000, self, &node);
   if (err < 0) perror("marcel_memory_task_attach unexpectedly failed");

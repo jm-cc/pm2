@@ -26,11 +26,11 @@ any_t memory(any_t arg) {
   char *buffer;
   int node;
 
-  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int));
-  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize);
+  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   marcel_memory_locate(&memory_manager, &(buffer[0]), 0, &node);
   if (node == marcel_self()->id) {
@@ -62,13 +62,13 @@ any_t memory2(any_t arg) {
   buffers2 = malloc(maxnode * sizeof(void *));
   for(i=1 ; i<=5 ; i++) {
     for(node=0 ; node<maxnode ; node++)
-      buffers[node] = marcel_memory_malloc_on_node(&memory_manager, i*memory_manager.normalpagesize, node);
+      buffers[node] = marcel_memory_malloc(&memory_manager, i*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
     for(node=0 ; node<maxnode ; node++)
       marcel_memory_free(&memory_manager, buffers[node]);
   }
   for(node=0 ; node<maxnode ; node++) {
-    buffers[node] = marcel_memory_malloc_on_node(&memory_manager, memory_manager.normalpagesize, node);
-    buffers2[node] = marcel_memory_malloc_on_node(&memory_manager, memory_manager.normalpagesize, node);
+    buffers[node] = marcel_memory_malloc(&memory_manager, memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers2[node] = marcel_memory_malloc(&memory_manager, memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
   for(node=0 ; node<maxnode ; node++) {
     marcel_memory_free(&memory_manager, buffers[node]);
@@ -86,13 +86,13 @@ void memory_bis(void) {
 
   marcel_memory_init(&memory_manager);
   memory_manager.initially_preallocated_pages = 2;
-  b[0] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize);
-  b[1] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize);
-  b[2] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize);
-  b[3] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize);
-  b[4] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize);
-  b[5] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize);
-  b[6] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize);
+  b[0] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[1] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[2] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[3] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[4] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[5] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[6] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   for(i=0 ; i<7 ; i++) marcel_memory_free(&memory_manager, b[i]);
   marcel_memory_exit(&memory_manager);

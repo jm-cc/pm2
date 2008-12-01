@@ -67,15 +67,17 @@ typedef int marcel_memory_status_t;
 /** \brief Type of a memory location policy */
 typedef int marcel_memory_membind_policy_t;
 /** \brief The memory will be allocated based on the policy specified through the malloc functionality */
-#define MARCEL_MEMORY_MEMBIND_POLICY_NONE              ((marcel_memory_membind_policy_t)0)
+#define MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT           ((marcel_memory_membind_policy_t)0)
+/** \brief The memory will be allocated based on the policy specified through the malloc functionality */
+#define MARCEL_MEMORY_MEMBIND_POLICY_NONE              ((marcel_memory_membind_policy_t)2)
 /** \brief The memory will be allocated on the given node */
-#define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)1)
+#define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)4)
 /** \brief The memory will be allocated on the least loaded node */
-#define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)2)
+#define MARCEL_MEMORY_MEMBIND_POLICY_LEAST_LOADED_NODE ((marcel_memory_membind_policy_t)8)
 /** \brief The memory will be allocated via huge pages */
-#define MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES        ((marcel_memory_membind_policy_t)3)
+#define MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES        ((marcel_memory_membind_policy_t)16)
 /** \brief The memory will not be bound to any node */
-#define MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH       ((marcel_memory_membind_policy_t)4)
+#define MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH       ((marcel_memory_membind_policy_t)32)
 
 #section structures
 
@@ -275,22 +277,14 @@ void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager);
 void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
- * Allocates memory on a specific node. Size will be rounded up to the system page size.
- * @param memory_manager pointer to the memory manager
- * @param size size of the required memory
- * @param node identifier of the node
- */
-void* marcel_memory_malloc_on_node(marcel_memory_manager_t *memory_manager,
-                                   size_t size,
-                                   int node);
-
-/**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
  * @param memory_manager pointer to the memory manager
  * @param size size of the required memory
  */
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
-			   size_t size);
+			   size_t size,
+                           marcel_memory_membind_policy_t policy,
+                           int node);
 
 /**
  * Allocates memory on the current node. Size will be rounded up to the system page size.
@@ -300,7 +294,9 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
  */
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 			   size_t nmemb,
-			   size_t size);
+			   size_t size,
+                           marcel_memory_membind_policy_t policy,
+                           int node);
 
 /**
  * Register a memory area which has not been allocated by MAMI.

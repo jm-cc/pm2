@@ -38,7 +38,7 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_membind unexpectedly failed");
 
   // Case with mami-allocated memory
-  buffer = marcel_memory_malloc(&memory_manager, 10000*sizeof(int));
+  buffer = marcel_memory_malloc(&memory_manager, 10000*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   first_touch(buffer, 10000*sizeof(int), 10000);
   marcel_memory_free(&memory_manager, buffer);
 

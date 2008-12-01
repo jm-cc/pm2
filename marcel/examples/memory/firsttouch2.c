@@ -30,8 +30,8 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_membind unexpectedly failed");
 
   size = memory_manager.initially_preallocated_pages * memory_manager.normalpagesize;
-  ptr = marcel_memory_malloc(&memory_manager, size/2);
-  ptr2 = marcel_memory_malloc(&memory_manager, size);
+  ptr = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr2 = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
   marcel_memory_free(&memory_manager, ptr);
   marcel_memory_free(&memory_manager, ptr2);

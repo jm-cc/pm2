@@ -30,7 +30,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
 
   marcel_printf("Spliting memory area allocated by MAMI\n");
-  ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize());
+  ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   split(ptr, 10*getpagesize());
   marcel_memory_free(&memory_manager, ptr);
 

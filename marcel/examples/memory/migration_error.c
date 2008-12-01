@@ -26,7 +26,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc, argv);
   marcel_memory_init(&memory_manager);
 
-  buffer = marcel_memory_malloc_on_node(&memory_manager, 100, 0);
+  buffer = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
   err = marcel_memory_migrate_pages(&memory_manager, buffer, 0);
   if (err < 0) perror("marcel_memory_migrate_pages");
 

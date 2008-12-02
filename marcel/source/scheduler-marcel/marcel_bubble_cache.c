@@ -540,9 +540,11 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats (b);
+
+  /* Make sure bubbles can't be modified behind our back.  */
   ma_preempt_disable ();
   ma_local_bh_disable ();
-  
+
   ma_bubble_lock_all (b, l);
   ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);

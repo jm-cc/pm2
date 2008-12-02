@@ -83,33 +83,30 @@ typedef struct ma_attracting_level ma_attracting_level_t;
 /* Initialize an array of ma_attracting_level_t describing the relations
    between the _nb_entities_ entities scheduled on level _from_ and
    the underlying runqueues (from->children). */
-static void
-ma_attracting_levels_init (ma_attracting_level_t *attracting_levels,
-			const struct marcel_topo_level *from,
-			unsigned int arity,
-			unsigned int nb_entities) {
-  unsigned int i;
-  arity = arity ? arity : 1;
-  for (i = 0; i < arity; i++) {
-    attracting_levels[i].entities = marcel_malloc (nb_entities * sizeof (ma_entity_ptr_t),
-						    __FILE__, __LINE__);
-    attracting_levels[i].nb_entities = 0;
-    attracting_levels[i].level = from ? from->children[i] : NULL;
-    attracting_levels[i].max_entities = nb_entities;
-    attracting_levels[i].total_load = from ? ma_load_from_children (from->children[i]) : 0;
-
-    MA_BUG_ON (!attracting_levels[i].entities);
-  }
-}
+#define ma_attracting_levels_init(levels, from, arity, _nb_entities)	\
+do									\
+  {									\
+    unsigned int __i;							\
+									\
+    for (__i = 0; __i < ((arity) ? (arity) : 1); __i++) {		\
+      (levels)[__i].entities =						\
+	(ma_entity_ptr_t *) alloca ((_nb_entities) *			\
+				    (sizeof (*(levels)[0].entities)));	\
+      (levels)[__i].nb_entities = 0;					\
+      (levels)[__i].level = (from != NULL) ? (from)->children[__i] : NULL; \
+      (levels)[__i].max_entities = (_nb_entities);			\
+      (levels)[__i].total_load = (from != NULL)				\
+	? ma_load_from_children ((from)->children[__i])			\
+	: 0;								\
+									\
+      MA_BUG_ON (!(levels)[__i].entities);				\
+    }									\
+  }									\
+ while (0)
 
 /* Destroy an array of _arity_ elements of ma_attracting_level_t. */
-static void
-ma_attracting_levels_destroy (ma_attracting_level_t *attracting_levels, unsigned int arity) {
-  unsigned int i;
-  for (i = 0; i < arity; i++) {
-    marcel_free (attracting_levels[i].entities);
-  }
-}
+#define ma_attracting_levels_destroy(attracting_levels, arity)	\
+  do { } while (0)
 
 /* Add the _e_ entity at the tail of the _attracting_level_->entities
    array. */
@@ -322,7 +319,8 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
 				  ma_attracting_level_t *attracting_levels) {
   unsigned int i, arity = l->arity, entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
   ma_attracting_level_t load_balancing_entities;
-  ma_attracting_levels_init (&load_balancing_entities, NULL, 0, ne);
+  ma_attracting_levels_init (&load_balancing_entities,
+			     (struct marcel_topo_level *)NULL, 0, ne);
   
   /* First, we add each entity stored in _e[]_ to the
      _attracting_levels_ structure, by putting it into the array

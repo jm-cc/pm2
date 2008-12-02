@@ -35,6 +35,7 @@ Usage: $_PM2_BENCH_PROGNAME { option } { modules }
     -h,--help      : show this help
     -q,--quiet     : do not be verbose
     -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
+    --dir XXX      : specify a sub-directory in module/bench to run benchmarks from
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -101,6 +102,7 @@ do_the_bench()
 
 _output_redirect=""
 jobs=""
+PM2_BENCHMARKS_DIR=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -120,6 +122,11 @@ while [ $# -gt 0 ]; do
 	    jobs=$1
 	    shift
 	    ;;
+        --dir)
+            shift
+            PM2_BENCHMARKS_DIR=$1
+            shift
+            ;;
 	--)
 	    shift; break
 	    ;;
@@ -177,11 +184,11 @@ for _m in $_to_bench ; do
 
     if [ -d ${PM2_ROOT}/modules/$_m/bench ]; then
 
-        cd ${PM2_ROOT}/modules/$_m/bench
+        cd ${PM2_ROOT}/modules/$_m/bench/$PM2_BENCHMARKS_DIR
         _benchs=`ls bench_*|grep -v \~ 2> /dev/null`
         if [ -n "$_benchs" ]; then
 
-    	for _f in $_benchs ; do
+    	    for _f in $_benchs ; do
 
     	    # Affichage
     	    _bench_name=`echo $_f | sed -e 's/bench_\(.*\)/\1/g'`

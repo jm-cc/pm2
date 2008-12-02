@@ -177,7 +177,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
             marcel_memory_migration_cost_t *object = NULL;
             object = tbx_slist_ref_get(migration_costs);
 
-            marcel_printf("[%d:%d] [%ld:%ld] %f %f %f\n", node, dest, (long)object->size_min, (long)object->size_max, object->slope, object->intercept, object->correlation);
+            marcel_fprintf(stderr, "[%d:%d] [%ld:%ld] %f %f %f\n", node, dest, (long)object->size_min, (long)object->size_max, object->slope, object->intercept, object->correlation);
           } while (tbx_slist_ref_forward(migration_costs));
         }
       }
@@ -187,7 +187,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
       for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
         marcel_access_cost_t wcost = memory_manager->writing_access_costs[node][dest];
         marcel_access_cost_t rcost = memory_manager->writing_access_costs[node][dest];
-        marcel_printf("[%d:%d] %f %f\n", node, dest, wcost.cost, rcost.cost);
+        marcel_fprintf(stderr, "[%d:%d] %f %f\n", node, dest, wcost.cost, rcost.cost);
       }
     }
   }
@@ -841,7 +841,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     errno = EINVAL;
     return -errno;
   }
-  mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
+  //mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
   if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
     mdebug_mami("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
@@ -927,7 +927,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
-#warning todo vérifier que buffer et size sont alignés sur une page
+#warning todo verifier que buffer et size sont alignes sur une page
   marcel_mutex_lock(&(memory_manager->lock));
   mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
   ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
@@ -963,7 +963,7 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
   int err=0;
 
-#warning todo vérifier que subareas donne des sous-buffers alignés sur une page
+#warning todo verifier que subareas donne des sous-buffers alignes sur une page
 
   MAMI_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));

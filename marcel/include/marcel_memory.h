@@ -66,9 +66,9 @@ typedef int marcel_memory_status_t;
 
 /** \brief Type of a memory location policy */
 typedef int marcel_memory_membind_policy_t;
-/** \brief The memory will be allocated based on the policy specified through the malloc functionality */
+/** \brief The memory will be allocated with the policy specified by the last call to marcel_memory_membind() */
 #define MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT           ((marcel_memory_membind_policy_t)0)
-/** \brief The memory will be allocated based on the policy specified through the malloc functionality */
+/** \brief The memory will be allocated on the current node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_NONE              ((marcel_memory_membind_policy_t)2)
 /** \brief The memory will be allocated on the given node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE     ((marcel_memory_membind_policy_t)4)

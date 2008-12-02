@@ -1,0 +1,54 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# args: loop variable
+initialize_bench()
+{
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--modules=\"marcel tbx init\" \
+	--marcel=numa --marcel=marcel_main --marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=bubble_sched_null \
+        --marcel=enable_mami \
+        --all=\"opt build_static static\"
+    ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
+}
+
+# args: -
+run_bench()
+{
+    # wait for NFS to propagate the new compiled program
+    sleep 10
+
+    ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args
+}
+
+# args: loop variable
+finalize_bench()
+{
+    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
+    if [ "$BENCHDIR" != "" ] && [ -d $BENCHDIR ] ; then
+        cp $file_result $BENCHDIR
+    fi
+}
+
+hosts=${BENCHHOST:-"localhost"}
+flavor="bench_marcel_mami_${hosts}"
+appdir="${PM2_ROOT}/marcel/examples/memory"
+loop="marcel"
+
+prog="mami_bench"
+args="1000000"
+
+

@@ -743,13 +743,12 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
 
   MAMI_LOG_IN();
 
-  marcel_mutex_lock(&(memory_manager->lock));
-
   if (!size) {
-    marcel_mutex_unlock(&(memory_manager->lock));
     MAMI_LOG_OUT();
     return NULL;
   }
+
+  marcel_mutex_lock(&(memory_manager->lock));
 
   // Round-up the size
   nbpages = size / pagesize;

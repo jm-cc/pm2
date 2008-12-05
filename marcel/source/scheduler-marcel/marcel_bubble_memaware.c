@@ -129,7 +129,7 @@ static void ma_count_in_bubble(marcel_bubble_t *bubble, int *number)
 {
   marcel_entity_t *downentity;
 
-  bubble_sched_debug("bubble entity %p\n", &bubble->sched);
+  //  bubble_sched_debug("bubble entity %p\n", &bubble->sched);
   ma_holder_lock(&bubble->as_holder);
   for_each_entity_scheduled_in_bubble_begin(downentity,bubble) {
     if (downentity->type == MA_BUBBLE_ENTITY)

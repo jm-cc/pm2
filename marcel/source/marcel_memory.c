@@ -271,6 +271,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ma_memory_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
   }
+  ma_memory_deallocate(memory_manager, &(memory_manager->heaps[memory_manager->nb_nodes]), -1);
   tfree(memory_manager->heaps);
 
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {

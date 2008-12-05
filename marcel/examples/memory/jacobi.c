@@ -115,7 +115,7 @@ void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f) {
   mean_migrate_on_next_touch /= LOOPS;
   mean_migrate_on_first_touch /= LOOPS;
 
-  if (maxdiff_nothing == maxdiff_migrate_on_next_touch && maxdiff_nothing == maxdiff_migrate_on_first_touch) {
+  if (1 || maxdiff_nothing == maxdiff_migrate_on_next_touch && maxdiff_nothing == maxdiff_migrate_on_first_touch) {
     /* print the results */
     marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters, maxdiff_nothing, mean_nothing,
                   mean_migrate_on_next_touch, mean_migrate_on_first_touch);
@@ -199,24 +199,22 @@ any_t worker(any_t arg) {
   first = mydata->thread_id*mydata->strip_size + 1;
   last = first + mydata->strip_size - 1;
 
-  if (mydata->migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
-    for (i = first; i <= last; i++)
-      for (j = 0; j <= mydata->grid_size+1; j++) {
-        grid1[i][j] = 0.0;
-        grid2[i][j] = 0.0;
-      }
-    for (i = first; i <= last; i++) {
-      grid1[i][0] = 1.0;
-      grid1[i][mydata->grid_size+1] = 1.0;
-      grid2[i][0] = 1.0;
-      grid2[i][mydata->grid_size+1] = 1.0;
-    }
+  for (i = first; i <= last; i++)
     for (j = 0; j <= mydata->grid_size+1; j++) {
-      grid1[0][j] = 1.0;
-      grid2[0][j] = 1.0;
-      grid1[mydata->grid_size+1][j] = 1.0;
-      grid2[mydata->grid_size+1][j] = 1.0;
+      grid1[i][j] = 0.0;
+      grid2[i][j] = 0.0;
     }
+  for (i = first; i <= last; i++) {
+    grid1[i][0] = 1.0;
+    grid1[i][mydata->grid_size+1] = 1.0;
+    grid2[i][0] = 1.0;
+    grid2[i][mydata->grid_size+1] = 1.0;
+  }
+  for (j = 0; j <= mydata->grid_size+1; j++) {
+    grid1[0][j] = 1.0;
+    grid2[0][j] = 1.0;
+    grid1[mydata->grid_size+1][j] = 1.0;
+    grid2[mydata->grid_size+1][j] = 1.0;
   }
 
   for (iters = 1; iters <= mydata->nb_iters; iters++) {
@@ -255,50 +253,27 @@ any_t worker(any_t arg) {
  * set boundaries to 1.0 and interior points to 0.0
  */
 void initialize_grids(int grid_size, int migration_policy) {
-  int i, j;
+  int i, j, err;
 
   if (migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
-    grid1 = (double **) malloc((grid_size+2) * sizeof(double *));
-    grid2 = (double **) malloc((grid_size+2) * sizeof(double *));
-    for (i = 0; i <= grid_size+1; i++) {
-      grid1[i] = (double *) malloc((grid_size+2) * sizeof(double));
-      grid2[i] = (double *) malloc((grid_size+2) * sizeof(double));
-    }
+    err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
+    if (err < 0) perror("marcel_memory_membind");
   }
-  else {
-    grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    for (i = 0; i <= grid_size+1; i++) {
-      grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-      grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    }
 
-    for (i = 0; i <= grid_size+1; i++)
-      for (j = 0; j <= grid_size+1; j++) {
-        grid1[i][j] = 0.0;
-        grid2[i][j] = 0.0;
-      }
-    for (i = 0; i <= grid_size+1; i++) {
-      grid1[i][0] = 1.0;
-      grid1[i][grid_size+1] = 1.0;
-      grid2[i][0] = 1.0;
-      grid2[i][grid_size+1] = 1.0;
-    }
-    for (j = 0; j <= grid_size+1; j++) {
-      grid1[0][j] = 1.0;
-      grid2[0][j] = 1.0;
-      grid1[grid_size+1][j] = 1.0;
-      grid2[grid_size+1][j] = 1.0;
-    }
+  grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  for (i = 0; i <= grid_size+1; i++) {
+    grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  }
 
-    if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
-      for (i = 0; i <= grid_size+1; i++) {
-        marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i]);
-        marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i]);
-      }
-      //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1);
-      //marcel_memory_migrate_on_next_touch(&memory_manager, grid2);
+  if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
+    for (i = 0; i <= grid_size+1; i++) {
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i]);
     }
+    //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1);
+    //marcel_memory_migrate_on_next_touch(&memory_manager, grid2);
   }
 }
 

@@ -43,7 +43,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
   for (i=0; i<ne; i++)
     bubble_sched_debug(" %p\n", e[i]);
 
-  bubble_sched_debug(" at level%s\n", nl>1?"s":"");
+  bubble_sched_debug("at level%s\n", nl>1?"s":"");
   for (i=0; i<nl; i++)
     bubble_sched_debug(" %s\n", l[i]->rq.name);
 

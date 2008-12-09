@@ -21,7 +21,7 @@
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH  1
 #define JACOBI_MIGRATE_ON_FIRST_TOUCH 2
 
-#define LOOPS 10
+#define LOOPS 2
 
 typedef struct jacobi_s {
   int thread_id;
@@ -77,16 +77,19 @@ int marcel_main(int argc, char *argv[]) {
   else {
     nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
     // small matrix
-    for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(128, nb_workers, nb_iters, out);
+    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
+      //compare_jacobi(128, nb_workers, nb_iters, out);
+      compare_jacobi(4000, nb_workers, nb_iters, out);
     }
     // medium matrix
-    for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(1024, nb_workers, nb_iters, out);
+    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
+      //compare_jacobi(1024, nb_workers, nb_iters, out);
+      compare_jacobi(8000, nb_workers, nb_iters, out);
     }
     // big matrix
-    for(nb_iters=100 ; nb_iters<=1000 ; nb_iters+=100) {
-      compare_jacobi(4096, nb_workers, nb_iters, out);
+    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
+      //compare_jacobi(4096, nb_workers, nb_iters, out);
+      compare_jacobi(16000, nb_workers, nb_iters, out);
     }
   }
 
@@ -193,7 +196,7 @@ any_t worker(any_t arg) {
   int i, j, iters;
   int first, last;
 
-  //marcel_printf("Thread #%d located on node #%d\n", myid, marcel_current_node());
+  //  marcel_printf("Thread #%d located on node #%d\n", mydata->thread_id, marcel_current_node());
 
   /* determine first and last rows of my strip of the grids */
   first = mydata->thread_id*mydata->strip_size + 1;
@@ -216,6 +219,18 @@ any_t worker(any_t arg) {
     grid1[mydata->grid_size+1][j] = 1.0;
     grid2[mydata->grid_size+1][j] = 1.0;
   }
+
+#if 0
+  if (mydata->migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
+    int err;
+    for (i = first; i <= last; i++) {
+      err = marcel_memory_check_pages_location(&memory_manager, grid1[i], (mydata->grid_size+2) * sizeof(double), marcel_current_node());
+      if (err < 0) perror("marcel_memory_check_pages_location");
+      err = marcel_memory_check_pages_location(&memory_manager, grid2[i], (mydata->grid_size+2) * sizeof(double), marcel_current_node());
+      if (err < 0) perror("marcel_memory_check_pages_location");
+    }
+  }
+#endif
 
   for (iters = 1; iters <= mydata->nb_iters; iters++) {
     /* update my points */
@@ -255,10 +270,10 @@ any_t worker(any_t arg) {
 void initialize_grids(int grid_size, int migration_policy) {
   int i, j, err;
 
-  if (migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
+  //  if (migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
     err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
     if (err < 0) perror("marcel_memory_membind");
-  }
+    //  }
 
   grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);

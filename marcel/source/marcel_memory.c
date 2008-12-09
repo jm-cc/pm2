@@ -1147,15 +1147,16 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
-  int err;
+  int err, node;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
-    if (data->node < 0) {
-      mdebug_mami("Need to find out the location of the memory area\n");
-      ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &(data->node));
+    ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node);
+    if (node != data->node) {
+      mdebug_mami("Updating pages location from node #%d to node #%d\n", data->node, node);
+      data->node = node;
     }
   }
   MAMI_LOG_OUT();
@@ -1436,7 +1437,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   if (err >= 0) {
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     data->status = MARCEL_MEMORY_INITIAL_STATUS;
-#todo in-kernel migration
+#warning todo: in-kernel migration
 #if 1
     err = mprotect(data->startaddress, data->size, PROT_NONE);
     if (err < 0) {

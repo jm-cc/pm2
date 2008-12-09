@@ -1122,7 +1122,7 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, 
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
-  int err;
+  int err=0;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
@@ -1130,10 +1130,10 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager, 
   if (err >= 0) {
     err = ma_memory_check_pages_location(data->pageaddrs, data->nbpages, node);
     if (err < 0) {
-      marcel_fprintf(stderr, "MaMI: All the %d pages are NOT on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: The %d pages are NOT all on node #%d\n", data->nbpages, node);
     }
     else {
-      marcel_fprintf(stderr, "MaMI: All the %d pages are on node #%d\n", data->nbpages, node);
+      marcel_fprintf(stderr, "MaMI: The %d pages are all on node #%d\n", data->nbpages, node);
     }
   }
   MAMI_LOG_OUT();

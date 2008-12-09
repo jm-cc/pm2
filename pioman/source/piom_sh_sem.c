@@ -19,7 +19,7 @@
 /* list of pending sh_sems that need to be polled */
 static LIST_HEAD(piom_list_shs);
 
-inline int piom_shs_polling_is_required() {
+int piom_shs_polling_is_required() {
 	return !list_empty(&piom_list_shs);
 }
 
@@ -71,25 +71,26 @@ int piom_shs_P(piom_sh_sem_t *sem){
 	if(ma_atomic_dec_return(&sem->value) >= 0)
 		goto out;	
 
+	ma_atomic_inc(&sem->value);
+
 	/* first: poll for one usec */
 	/* TODO: make this optional */
 	tbx_tick_t t1, t2;
 	TBX_GET_TICK(t1);
 	do{
 		piom_shs_poll();
-		if(ma_atomic_dec_return(&sem->value) >= 0)
-			goto out;	
+		if(ma_atomic_read(&sem->value)>0)
+			goto out;
 		TBX_GET_TICK(t2);
 	}while(TBX_TIMING_DELAY(t1, t2)<1);
-
-	ma_atomic_inc(&sem->value);
 
 	while(ma_atomic_read(&sem->value)<=0){
 		ma_write_lock(&piom_shs_lock);
 		list_add_tail(&sem->pending_shs, &piom_list_shs);
 		ma_write_unlock(&piom_shs_lock);
-		
+
 		piom_sem_P(&sem->local_sem);
+		
 		ma_write_lock(&piom_shs_lock);
 		list_del_init(&(sem)->pending_shs);
 		ma_write_unlock(&piom_shs_lock);

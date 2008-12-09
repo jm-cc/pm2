@@ -22,15 +22,20 @@ marcel_memory_manager_t memory_manager;
 int *b;
 
 any_t reader(any_t arg) {
-  int node;
+  int i, node;
 
   marcel_memory_locate(&memory_manager, b, 0, &node);
-  marcel_printf("Address is located on node %d\n", node);
+  marcel_fprintf(stderr, "Address is located on node %d\n", node);
 
-  b[1] = 42;
+  for(i=0 ; i<(3*memory_manager.normalpagesize)/sizeof(int) ; i++)
+    b[i] = 42;
+
+  marcel_memory_update_pages_location(&memory_manager, b, 0);
 
   marcel_memory_locate(&memory_manager, b, 0, &node);
-  marcel_printf("Address is located on node %d\n", node);
+  marcel_fprintf(stderr, "Address is located on node %d\n", node);
+
+  marcel_memory_check_pages_location(&memory_manager, b, 0, marcel_current_node());
 
   return 0;
 }
@@ -47,7 +52,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("This application needs at least two NUMA nodes.\n");
   }
   else {
-    b = marcel_memory_malloc(&memory_manager, 3*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+    b = marcel_memory_malloc(&memory_manager, 3*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
 
     marcel_memory_migrate_on_next_touch(&memory_manager, b);
 

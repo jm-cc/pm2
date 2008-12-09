@@ -465,6 +465,15 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
                                         void *buffer);
 
 /**
+ * Move the area to the specified node.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ */
+int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
+                                  void *buffer,
+                                  int node);
+
+/**
  * Attach the memory to the specified thread
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area

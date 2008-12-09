@@ -1459,6 +1459,24 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
+int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
+                                  void *buffer,
+                                  int node) {
+  marcel_memory_data_t *data = NULL;
+  int err;
+
+  marcel_mutex_lock(&(memory_manager->lock));
+  MAMI_LOG_IN();
+
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
+  if (err >= 0) {
+    err = ma_memory_migrate_pages(memory_manager, buffer, data, node);
+  }
+  marcel_mutex_unlock(&(g_memory_manager->lock));
+  MAMI_LOG_IN();
+  return err;
+}
+
 static
 int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
                             void *buffer,

@@ -22,35 +22,6 @@
 #include <nm_errno.h>
 #include <nm_log.h>
 
-/* ** SchedOpt status flags */
-
-typedef uint16_t nm_so_status_t;
-/* for now, flags are included in status */
-typedef nm_so_status_t nm_so_flag_t;
-
-/** sending operation has completed */
-#define NM_SO_STATUS_PACK_COMPLETED           ((nm_so_status_t)0x0001)
-/** unpack operation has completed */
-#define NM_SO_STATUS_UNPACK_COMPLETED         ((nm_so_status_t)0x0002)
-/** data has arrived */
-#define NM_SO_STATUS_PACKET_HERE              ((nm_so_status_t)0x0004)
-/** recv is posted */
-#define NM_SO_STATUS_UNPACK_HERE              ((nm_so_status_t)0x0008)
-/** rendez-vous has arrived */
-#define NM_SO_STATUS_RDV_HERE                 ((nm_so_status_t)0x0010)
-/** rendez-vous is in progress */
-#define NM_SO_STATUS_RDV_IN_PROGRESS          ((nm_so_status_t)0x0020)
-/** ACK for rendez-vous has arrived */
-#define NM_SO_STATUS_ACK_HERE                 ((nm_so_status_t)0x0040)
-/** unpack operation has been cancelled */
-#define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0080)
-/** flag: unpack is an iovec */
-#define NM_SO_STATUS_UNPACK_IOV               ((nm_so_flag_t)0x0100)
-/** flag: unpack is a datatype */
-#define NM_SO_STATUS_IS_DATATYPE              ((nm_so_flag_t)0x0200)
-/* flag: unpack datatype through a temporary buffer */
-#define NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE ((nm_so_flag_t)0x0400)
-
 /* ** Core ************************************************* */
 
 typedef struct nm_core*nm_core_t;

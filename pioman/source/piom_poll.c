@@ -188,6 +188,7 @@ piom_poll_timer(unsigned long hid)
 void 
 __piom_check_polling(unsigned polling_point)
 {
+    piom_shs_poll(); 
     if( list_empty(&piom_list_poll))
 	return;	
 

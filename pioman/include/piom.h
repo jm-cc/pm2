@@ -18,7 +18,7 @@
 #define PIOM_H
 
 #include "pm2_list.h"
-
+#include "piom_sh_sem.h"
 
 /* List of servers currently doing some polling
  * (state == 2 and tasks waiting for polling) 
@@ -173,7 +173,7 @@ void __piom_check_polling(unsigned polling_point);
  */
 static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
 {
-	return !list_empty(&piom_list_poll);
+	return (!list_empty(&piom_list_poll)) || piom_shs_polling_is_required();
 }
 
 /* Try to poll

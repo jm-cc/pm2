@@ -120,6 +120,16 @@ extern int nm_sr_init(nm_core_t p_core);
  */
 extern int nm_sr_exit(nm_core_t p_core);
 
+#ifdef PIOMAN
+/** Attach a piom_sem_t to a request. This piom_sem_t is woken 
+ *  up when the request is completed.
+ *  @param p_request a pointer to a NM/SO request to be filled.
+ *  @param p_sem a pointer to the piom_sem_t to attach.
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
+#endif
 
 extern void nm_sr_debug_init(int* argc, char** argv, int debug_flags);
 

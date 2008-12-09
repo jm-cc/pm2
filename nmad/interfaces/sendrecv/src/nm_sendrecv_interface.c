@@ -162,7 +162,20 @@ static inline void nm_so_post_all_force(nm_core_t p_core)
 { /* do nothing */ }
 #endif /* PIOMAN */
 
-
+#ifdef PIOMAN
+/** Attach a piom_sem_t to a request. This piom_sem_t is woken 
+ *  up when the request is completed.
+ *  @param p_request a pointer to a NM/SO request to be filled.
+ *  @param p_sem a pointer to the piom_sem_t to attach.
+ *  @return The NM status.
+ */
+extern int
+nm_so_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem) {
+	return (piom_cond_attach_sem(&p_request->status , p_sem) ? 
+		NM_ESUCCESS: 
+		NM_EAGAIN);
+}
+#endif /* PIOMAN */
 
 /* ** Debug ************************************************ */
 

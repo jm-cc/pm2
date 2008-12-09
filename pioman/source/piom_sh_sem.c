@@ -70,8 +70,20 @@ int piom_shs_init(piom_sh_sem_t *sem){
 int piom_shs_P(piom_sh_sem_t *sem){
 	if(ma_atomic_dec_return(&sem->value) >= 0)
 		goto out;	
+
+	/* first: poll for one usec */
+	/* TODO: make this optional */
+	tbx_tick_t t1, t2;
+	TBX_GET_TICK(t1);
+	do{
+		piom_shs_poll();
+		if(ma_atomic_dec_return(&sem->value) >= 0)
+			goto out;	
+		TBX_GET_TICK(t2);
+	}while(TBX_TIMING_DELAY(t1, t2)<1);
+
 	ma_atomic_inc(&sem->value);
-	
+
 	while(ma_atomic_read(&sem->value)<=0){
 		ma_write_lock(&piom_shs_lock);
 		list_add_tail(&sem->pending_shs, &piom_list_shs);

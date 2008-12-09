@@ -16,9 +16,6 @@
 
 #include "pioman.h"
 
-//static tbx_tick_t t1, t2;
-
-
 #ifdef MARCEL
 __tbx_inline__ void piom_sem_P(piom_sem_t *sem){
 	marcel_sem_P(sem);
@@ -75,6 +72,15 @@ __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
 	cond->value&=mask;
 }
 
+int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
+	if(cond->alt_sem){
+		return 1;
+	}
+	/* do not initialize it since it can be already initialized */
+	cond->alt_sem = sh_sem;
+	return 0;
+}
+
 #else  /* MARCEL */
 
 /* Warning: we assume that Marcel is not running and there is no thread here
@@ -111,6 +117,14 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
 
 __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
 	*cond &=mask;
+}
+
+int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
+	if(cond->alt_sem)
+		return 1;
+	/* do not initialize it since it can be already initialized */
+	cond->alt_sem = sh_sem;
+	return 0;
 }
 
 #endif /* MARCEL */

@@ -580,7 +580,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   length = nbpages * memory_manager->normalpagesize;
 
-  buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   if (buffer == MAP_FAILED) {
     perror("mmap");
     err = -errno;

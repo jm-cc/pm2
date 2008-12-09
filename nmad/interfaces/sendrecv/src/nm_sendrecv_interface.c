@@ -21,71 +21,7 @@
 #include "nm_sendrecv_interface.h"
 
 
-/* ** Status *********************************************** */
-
-
-#ifdef PIOMAN
-#define nm_sr_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
-#define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
-#define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
-#define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
-static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
-{
-  piom_cond_signal(&p_request->status, mask);
-  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
-    {
-      (*p_request->monitor.notifier)(p_request, mask, p_gate);
-    }
-}
-/** Post PIOMan poll requests (except when offloading PIO)
- */
-static inline void nm_so_post_all(nm_core_t p_core)
-{
-}
-/** Post PIOMan poll requests even when offloading PIO.
- * This avoids scheduling a tasklet on another lwp
- */
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{
-	/* todo: add a kind of ma_tasklet_schedule here */
-//  nm_piom_post_all(p_core);
-}
-#else /* PIOMAN */
-static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  *status = bitmask;
-}
-static inline int  nm_sr_status_test(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  return ((*status) & bitmask);
-}
-static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  *status &= bitmask;
-}
-static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
-{
-  p_request->status |= mask;
-  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
-    {
-      (*p_request->monitor.notifier)(p_request, mask, p_gate);
-    }
-}
-static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
-{
-  if(status != NULL)
-    {
-      while(!((*status) & bitmask)) {
-	nm_schedule(p_core);
-      }
-    }
-}
-static inline void nm_so_post_all(nm_core_t p_core)
-{ /* do nothing */ }
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{ /* do nothing */ }
-#endif /* PIOMAN */
-
+/* ** Tags ************************************************* */
 
 struct nm_sr_tag_s
 {
@@ -132,11 +68,101 @@ static inline void nm_sr_anysrc_dtor(struct nm_sr_anysrc_s*p_sr_anysrc)
 }
 NM_TAG_TABLE_TYPE(nm_sr_anysrc, struct nm_sr_anysrc_s);
 
-/** Tag-indexed table of any_src_status structs. One entry per tag.
- */
-static struct nm_sr_anysrc_table_s any_src;
 
-static struct list_head completed_rreq;
+/** Structure that contains all sendrecv-related static variables.
+ */
+static struct
+{
+  /** Tag-indexed table of any_src_status structs. One entry per tag. */
+  struct nm_sr_anysrc_table_s any_src;
+  
+  struct list_head completed_rreq;
+
+  /** vector of event monitors */
+  struct nm_sr_monitor_vect_s monitors;
+  /** flags whether sendrecv init has already been done */
+  int init_done;
+} nm_sr_data = { .init_done = 0 };
+
+
+
+/* ** Status *********************************************** */
+
+static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+{
+  nm_sr_monitor_vect_itor_t i;
+  for(i  = nm_sr_monitor_vect_begin(&nm_sr_data.monitors);
+      i != nm_sr_monitor_vect_end(&nm_sr_data.monitors);
+      i  = nm_sr_monitor_vect_next(i))
+    {
+      if(i->mask & mask)
+	{
+	  (*i->notifier)(p_request, mask, p_gate);
+	}
+    }
+  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
+    {
+      (*p_request->monitor.notifier)(p_request, mask, p_gate);
+    }
+}
+
+#ifdef PIOMAN
+#define nm_sr_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
+#define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
+#define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
+#define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
+static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+{
+  piom_cond_signal(&p_request->status, mask);
+  nm_sr_monitor_notify(p_request, mask, p_gate);
+}
+/** Post PIOMan poll requests (except when offloading PIO)
+ */
+static inline void nm_so_post_all(nm_core_t p_core)
+{
+}
+/** Post PIOMan poll requests even when offloading PIO.
+ * This avoids scheduling a tasklet on another lwp
+ */
+static inline void nm_so_post_all_force(nm_core_t p_core)
+{
+	/* todo: add a kind of ma_tasklet_schedule here */
+//  nm_piom_post_all(p_core);
+}
+#else /* PIOMAN */
+static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
+{
+  *status = bitmask;
+}
+static inline int  nm_sr_status_test(nm_sr_cond_t*status, nm_sr_status_t bitmask)
+{
+  return ((*status) & bitmask);
+}
+static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask)
+{
+  *status &= bitmask;
+}
+static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+{
+  p_request->status |= mask;
+  nm_sr_monitor_notify(p_request, mask, p_gate);
+}
+static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
+{
+  if(status != NULL)
+    {
+      while(!((*status) & bitmask)) {
+	nm_schedule(p_core);
+      }
+    }
+}
+static inline void nm_so_post_all(nm_core_t p_core)
+{ /* do nothing */ }
+static inline void nm_so_post_all_force(nm_core_t p_core)
+{ /* do nothing */ }
+#endif /* PIOMAN */
+
+
 
 /* ** Debug ************************************************ */
 
@@ -183,21 +209,21 @@ static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed =
 
 int nm_sr_init(struct nm_core *p_core)
 {
-  static int init_done = 0;
-
   NM_SO_SR_LOG_IN();
 
-  if(!init_done)
+  if(!nm_sr_data.init_done)
     {
       /* Fill-in scheduler callbacks */
       nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       
-      INIT_LIST_HEAD(&completed_rreq);
+      INIT_LIST_HEAD(&nm_sr_data.completed_rreq);
       
-      nm_sr_anysrc_table_init(&any_src);
+      nm_sr_anysrc_table_init(&nm_sr_data.any_src);
 
-      init_done = 1;
+      nm_sr_monitor_vect_init(&nm_sr_data.monitors);
+
+      nm_sr_data.init_done = 1;
     }
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
@@ -404,7 +430,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 
   if(p_gate == NM_ANY_GATE)
     {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&any_src, tag);
+      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
       if(p_sr_anysrc->rreq)
 	{
 	  /* ensure that there is no other pending any_src request. */
@@ -573,7 +599,7 @@ int nm_sr_get_size(struct nm_core *p_core,
 
   if (p_request->p_gate == NM_ANY_GATE)
     {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&any_src, tag);
+      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
       *size = nm_so_any_src_get(&p_core->so_sched.any_src, tag)->expected_len;
     }
   else 
@@ -598,7 +624,7 @@ int nm_sr_get_ref(nm_core_t p_core, nm_sr_request_t *p_request, void**ref)
 int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
   const nm_tag_t tag = p_request->tag;
-  struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&any_src, tag);
+  struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
 
   NM_SO_SR_LOG_IN();
 
@@ -608,6 +634,7 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
+
 
 int nm_sr_probe(struct nm_core *p_core,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
@@ -668,6 +695,14 @@ int nm_sr_probe(struct nm_core *p_core,
   return -NM_EAGAIN;
 }
 
+int nm_sr_monitor(nm_core_t p_core, nm_sr_status_t mask, nm_sr_request_notifier_t notifier)
+{
+  nm_sr_request_monitor_t m = { .mask = mask, .notifier = notifier };
+  nm_sr_monitor_vect_push_back(&nm_sr_data.monitors, m);
+  return NM_ESUCCESS;
+}
+
+
 int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 			  nm_sr_status_t mask, nm_sr_request_notifier_t notifier)
 {
@@ -679,10 +714,10 @@ int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
   nm_schedule(p_core);
-  if(!list_empty(&completed_rreq))
+  if(!list_empty(&nm_sr_data.completed_rreq))
     {
-      nm_sr_request_t *p_request = tbx_container_of(completed_rreq.next, struct nm_sr_request_s, _link);
-      list_del(completed_rreq.next);
+      nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_rreq.next, struct nm_sr_request_s, _link);
+      list_del(nm_sr_data.completed_rreq.next);
       *out_req = p_request;
       return NM_ESUCCESS;
     } 
@@ -756,7 +791,7 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
 
   if(is_any_src) 
     {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&any_src, tag);
+      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
       p_sr_anysrc->p_gate = p_gate;
       p_request = p_sr_anysrc->rreq;
     } 
@@ -772,7 +807,7 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
   nm_sr_request_event(p_request, sr_event, p_gate);
   if(p_request && p_request->ref)
     {
-      list_add_tail(&p_request->_link, &completed_rreq);
+      list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
 
   NM_SO_SR_LOG_OUT();

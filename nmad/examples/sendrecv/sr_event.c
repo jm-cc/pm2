@@ -45,15 +45,27 @@ int main(int argc, char **argv)
     {
       /* ** server */
       nm_sr_request_t request;
+
+      /* per-request event. */
       memset(buf, 0, len);
       nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
+      /* warning: race-condition here- if packet arrives before nm_sr_request_monitor, no event is fired */
       nm_sr_request_monitor(p_core, &request, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
       nm_sr_rwait(p_core, &request);
+
+      /* global event (all requests) */
+      memset(buf, 0, len);
+      nm_sr_monitor(p_core,NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
+      nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
+      nm_sr_rwait(p_core, &request);
+
     }
   else
     {
       /* ** client */
       nm_sr_request_t request;
+      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
+      nm_sr_swait(p_core, &request);
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
       nm_sr_swait(p_core, &request);
     }

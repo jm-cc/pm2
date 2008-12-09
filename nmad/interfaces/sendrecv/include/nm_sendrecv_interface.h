@@ -44,7 +44,11 @@ typedef uint8_t nm_sr_status_t;
 /** a recv is posted */
 #define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)0x10)
 
-/** an unexpected packet has arrived. Post a recv to get data */
+/* ** events for nm_sr_monitor() */
+
+/** an unexpected packet has arrived. Post a recv to get data
+ * @note not supported yet
+ */
 #define NM_SR_EVENT_RECV_UNEXPECTED  ((nm_sr_status_t)0x80)
 #define NM_SR_EVENT_RECV_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
 #define NM_SR_EVENT_SEND_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
@@ -72,6 +76,8 @@ typedef struct
 
 #define NM_SR_REQUEST_MONITOR_NULL ((nm_sr_request_monitor_t){ .mask = 0, .notifier = NULL })
 
+PUK_VECT_TYPE(nm_sr_monitor, nm_sr_request_monitor_t);
+
 /** internal defintion of the sendrecv request */
 struct nm_sr_request_s
 {
@@ -83,8 +89,6 @@ struct nm_sr_request_s
   void *ref;
   struct list_head _link;
 };
-
-
 
 
 /** Transfer types for isend/irecv */
@@ -363,10 +367,10 @@ extern int nm_sr_probe(nm_core_t p_core,
 		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag);
 
 
+extern int nm_sr_monitor(nm_core_t p_core, nm_sr_status_t mask, nm_sr_request_notifier_t notifier);
+
 extern int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 				 nm_sr_status_t mask, nm_sr_request_notifier_t notifier);
-
-/* extern int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t event); */
 
 
 /** Poll for any completed recv request (any source, any tag).

@@ -52,7 +52,6 @@ int marcel_main(int argc, char *argv[]) {
   FILE *out;
 
   marcel_init(&argc, argv);
-  marcel_memory_init(&memory_manager);
 
   /* initialize mutex and condition variable */
   marcel_mutex_init(&mutex, NULL);
@@ -142,6 +141,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
   struct timeval tv1, tv2;
   unsigned long us;
 
+  marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
@@ -183,6 +183,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
   marcel_memory_free(&memory_manager, grid2);
   free(workerid);
   free(local_max_diff);
+  marcel_memory_exit(&memory_manager);
 }
 
 /*

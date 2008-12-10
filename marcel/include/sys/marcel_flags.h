@@ -59,7 +59,7 @@
 /* MA__TIMER : if set, we use the unix timer (signals) for periodic
  * preemption.
  * */
-#ifdef MA__TIMER
+#ifndef MA__TIMER
 #  define MA__TIMER
 #endif
 

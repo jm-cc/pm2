@@ -63,6 +63,8 @@ typedef int marcel_memory_status_t;
 #define MARCEL_MEMORY_INITIAL_STATUS	  ((marcel_memory_status_t)0)
 /** \brief The memory has been migrated following a next touch mark */
 #define MARCEL_MEMORY_NEXT_TOUCHED_STATUS ((marcel_memory_status_t)1)
+/** \brief The memory has been tagged for a kernel migration */
+#define MARCEL_MEMORY_KERNEL_MIGRATION_STATUS ((marcel_memory_status_t)2)
 
 /** \brief Type of a memory location policy */
 typedef int marcel_memory_membind_policy_t;
@@ -462,7 +464,8 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
  * @param buffer address of the memory area
  */
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
-                                        void *buffer);
+                                        void *buffer,
+                                        int kernel);
 
 /**
  * Move the area to the specified node.

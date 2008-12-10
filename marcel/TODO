@@ -1,5 +1,7 @@
 TODOs dans le code :)
 
+sem_P/sem_V est coûteux par rapport à un yield
+
 pmarcel + valgrind a l'air de merder sur la TLS: valgrind met 0x3 pour le gs du main, mais dans le traitant de signal on se retrouve avec un gs = 0
 
 Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle marcel_extlib_protect puis __printf, __malloc, etc.

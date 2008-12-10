@@ -41,11 +41,12 @@ run_bench()
     ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args
 }
 
+dest_result="."
 # args: loop variable
 finalize_bench()
 {
     file_result="/tmp/pm2_bench_${prog}_${USER}_result"
     if [ "$BENCHDIR" != "" ] && [ -d $BENCHDIR ] ; then
-        cp $file_result $BENCHDIR
+        cp $file_result $BENCHDIR/$dest_result
     fi
 }

@@ -59,7 +59,7 @@ static void first_touch(int *buffer, size_t size, int elems) {
   if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
-  err = marcel_memory_migrate_on_next_touch(&memory_manager, buffer);
+  err = marcel_memory_migrate_on_next_touch(&memory_manager, buffer, 0);
   if (err < 0) perror("marcel_memory_migrate_on_next_touch unexpectedly failed");
 
   for(i=0 ; i<10000 ; i++) buffer[i] = 12;

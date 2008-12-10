@@ -126,6 +126,7 @@ void bench_contsw(unsigned long nb)
   register long n;
   marcel_attr_t attr;
   marcel_attr_init(&attr);
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
@@ -153,6 +154,9 @@ void bench_contsw2(unsigned long nb)
   marcel_t pid;
   any_t status;
   register long n;
+  marcel_attr_t attr;
+  marcel_attr_init(&attr);
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 
   if(!nb)
     return;
@@ -160,7 +164,7 @@ void bench_contsw2(unsigned long nb)
   n = nb >> 1;
   n++;
 
-  marcel_create(&pid, NULL, f2, (any_t)n);
+  marcel_create(&pid, &attr, f2, (any_t)n);
   marcel_yield();
 
   while(--n) {
@@ -180,6 +184,7 @@ void bench_contsw3(unsigned long nb)
   register long n = nb;
   marcel_attr_t attr;
   marcel_attr_init(&attr);
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
@@ -201,6 +206,7 @@ void bench_contsw4(unsigned long nb)
   register long n;
   marcel_attr_t attr;
   marcel_attr_init(&attr);
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
@@ -228,6 +234,8 @@ int marcel_main(int argc, char *argv[])
   int essais = 3;
 
   marcel_init(&argc, argv);
+  marcel_vpset_t vpset = MARCEL_VPSET_VP(0);
+  marcel_apply_vpset(&vpset);
 
   main_thread = marcel_self();
   if(argc != 2) {

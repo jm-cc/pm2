@@ -120,10 +120,11 @@ __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
 }
 
 int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
-	if(cond->alt_sem)
-		return 1;
-	/* do not initialize it since it can be already initialized */
-	cond->alt_sem = sh_sem;
+/* TODO: fix me! alt_sem is not defined */
+//	if(cond->alt_sem)
+//		return 1;
+//	/* do not initialize it since it can be already initialized */
+//	cond->alt_sem = sh_sem;
 	return 0;
 }
 

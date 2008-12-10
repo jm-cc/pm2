@@ -1472,8 +1472,8 @@ int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
   if (err >= 0) {
     err = ma_memory_migrate_pages(memory_manager, buffer, data, node);
   }
-  marcel_mutex_unlock(&(g_memory_manager->lock));
-  MAMI_LOG_IN();
+  marcel_mutex_unlock(&(memory_manager->lock));
+  MAMI_LOG_OUT();
   return err;
 }
 

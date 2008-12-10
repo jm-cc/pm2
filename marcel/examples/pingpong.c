@@ -35,7 +35,7 @@ any_t f(any_t arg)
   return NULL;
 }
 
-void bench_pingpong(unsigned long nb)
+void bench_pingpong(unsigned long nb, unsigned vp)
 {
   marcel_attr_t attr;
   marcel_t pid;
@@ -50,7 +50,7 @@ void bench_pingpong(unsigned long nb)
 
   marcel_attr_init(&attr);
 #ifdef MA__LWPS
-  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(1 % marcel_nbvps()));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(vp));
 #endif
   marcel_create(&pid, &attr, f, (any_t)n);
 
@@ -68,16 +68,18 @@ int marcel_main(int argc, char *argv[])
 
   marcel_init(&argc, argv);
 
-  if(argc != 2) {
-    marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+  if(argc < 2 || argc > 3) {
+    marcel_fprintf(stderr, "Usage: %s <nb> <vp>\n", argv[0]);
     exit(1);
   }
 
   marcel_vpset_t vpset = MARCEL_VPSET_VP(0);
   marcel_apply_vpset(&vpset);
-
+  unsigned vp=1;
+  if(argc == 3)
+	  vp=atoi(argv[2]);
   while(essais--)
-    bench_pingpong(atol(argv[1]));
+	  bench_pingpong(atol(argv[1]), vp);
 
   marcel_end();
 

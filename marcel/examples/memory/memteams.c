@@ -21,11 +21,12 @@
 #include <errno.h>
 #include <malloc.h>
 #include <time.h>
+# include <float.h>
 #include "../marcel_stream.h" 
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-#define TAB_SIZE 1024*1024*16
+#define TAB_SIZE 1024*1024*4
 #define NB_TIMES 20
 
 enum mbind_policy {
@@ -38,7 +39,29 @@ enum sched_policy {
   DISTRIBUTED_POL
 };
 
+# ifndef MIN
+# define MIN(x,y) ((x)<(y)?(x):(y))
+# endif
+# ifndef MAX
+# define MAX(x,y) ((x)>(y)?(x):(y))
+# endif
+
+# define HLINE "-------------------------------------------------------------\n"
+
 static double **a, **b, **c;
+static double	avgtime[4] = {0}, maxtime[4] = {0},
+  mintime[4] = {FLT_MAX,FLT_MAX,FLT_MAX,FLT_MAX};
+
+static char	*label[4] = {"Copy:      ", "Scale:     ",
+			     "Add:       ", "Triad:     "};
+
+static double	bytes[4] = {
+  2 * sizeof(double) * TAB_SIZE,
+  2 * sizeof(double) * TAB_SIZE,
+  3 * sizeof(double) * TAB_SIZE,
+  3 * sizeof(double) * TAB_SIZE
+};
+
 static marcel_barrier_t barrier;
 
 static void usage (void);
@@ -57,9 +80,14 @@ static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int nb_memory_nodes,
 				     unsigned int *memory_nodes);
 
-static 
-double my_delay (struct timespec *t1, struct timespec *t2) {
-  return ((double) t2->tv_sec + (double) t2->tv_nsec * 1.E-09) - ((double) t1->tv_sec + (double) t1->tv_nsec * 1.E-09);
+double mysecond()
+{
+  struct timeval tp;
+  struct timezone tzp;
+  int i;
+
+  i = gettimeofday(&tp,&tzp);
+  return ( (double) tp.tv_sec + (double) tp.tv_usec * 1.e-6 );
 }
 
 static 
@@ -67,14 +95,18 @@ void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
   
-  for (i = 0; i < NB_TIMES; i++) {
-    marcel_barrier_wait (&barrier);
-    
+  marcel_barrier_wait (&barrier);
+
+  for (i = 0; i < NB_TIMES; i++) {    
     /* Let's do the job. */
     STREAM_copy (stream_struct);
+    marcel_barrier_wait (&barrier);
     STREAM_scale (stream_struct, 3.0);
+    marcel_barrier_wait (&barrier); 
     STREAM_add (stream_struct);
+    marcel_barrier_wait (&barrier);
     STREAM_triad (stream_struct, 3.0);
+    marcel_barrier_wait (&barrier);
   }
 
   return 0;
@@ -85,7 +117,7 @@ main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
-  struct timespec t1, t2;
+  double times[4][NB_TIMES];
 
   marcel_init (&argc, argv);
   
@@ -181,10 +213,30 @@ main (int argc, char **argv)
   }
   marcel_printf ("Threads created and ready to work!\n");
   
-  clock_gettime (CLOCK_MONOTONIC, &t1);
+  marcel_barrier_wait (&barrier);
+
   /* The main thread has to do his job like everyone else. */
-  f (&stream_struct[0]);
-  clock_gettime (CLOCK_MONOTONIC, &t2);
+  for (i = 0; i < NB_TIMES; i++) {
+    times[0][i] = mysecond();
+    STREAM_copy (&stream_struct[0]);
+    marcel_barrier_wait (&barrier);
+    times[0][i] = mysecond() - times[0][i];
+
+    times[1][i] = mysecond();
+    STREAM_scale (&stream_struct[0], 3.0);
+    marcel_barrier_wait (&barrier);
+    times[1][i] = mysecond() - times[1][i];
+
+    times[2][i] = mysecond();
+    STREAM_add (&stream_struct[0]);
+    marcel_barrier_wait (&barrier);
+    times[2][i] = mysecond() - times[2][i];
+
+    times[3][i] = mysecond();
+    STREAM_triad (&stream_struct[0], 3.0);
+    marcel_barrier_wait (&barrier);
+    times[3][i] = mysecond() - times[3][i];
+ }
     
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {
@@ -207,9 +259,32 @@ main (int argc, char **argv)
   marcel_free (b);
   marcel_free (c);
 
-  double average_time = my_delay (&t1, &t2) / (double)(NB_TIMES);
-  marcel_printf ("Test computed in %lfs!\n", average_time);
-  marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
+ /*	--- SUMMARY --- */
+
+  for (i = 1; i < NB_TIMES; i++) 
+    {
+      int j;
+      for (j=0; j<4; j++)
+	{
+	  avgtime[j] = avgtime[j] + times[j][i];
+	  mintime[j] = MIN(mintime[j], times[j][i]);
+	  maxtime[j] = MAX(maxtime[j], times[j][i]);
+	}
+    }
+    
+  /* First phase results */
+  printf("Function      Rate (MB/s)   Avg time     Min time     Max time\n");
+  int j;
+  for (j=0; j<4; j++) {
+    avgtime[j] = avgtime[j]/(double)(NB_TIMES-1);
+
+    printf("%s%11.4f  %11.4f  %11.4f  %11.4f\n", label[j],
+	   1.0E-06 * bytes[j]/mintime[j],
+	   avgtime[j],
+	   mintime[j],
+	   maxtime[j]);
+  }
+  printf(HLINE);
 
   marcel_end ();
   return 0;

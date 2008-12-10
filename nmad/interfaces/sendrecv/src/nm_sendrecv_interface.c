@@ -100,7 +100,7 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
 	  (*i->notifier)(p_request, mask, p_gate);
 	}
     }
-  if(mask & p_request->monitor.mask && p_request->monitor.notifier)
+  if((mask & p_request->monitor.mask) && p_request && p_request->monitor.notifier)
     {
       (*p_request->monitor.notifier)(p_request, mask, p_gate);
     }
@@ -205,6 +205,7 @@ void nm_sr_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_fl
 
 static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
 static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
+static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
 
 static const struct nm_so_monitor_s nm_sr_monitor_pack_completed = 
   {
@@ -218,6 +219,12 @@ static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed =
     .mask = NM_SO_STATUS_UNPACK_COMPLETED
   };
 
+static const struct nm_so_monitor_s nm_sr_monitor_unexpected = 
+  {
+    .notifier = &nm_sr_event_unexpected,
+    .mask = NM_SO_STATUS_PACKET_HERE 
+  };
+
 /* User interface */
 
 int nm_sr_init(struct nm_core *p_core)
@@ -229,6 +236,7 @@ int nm_sr_init(struct nm_core *p_core)
       /* Fill-in scheduler callbacks */
       nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
+      nm_so_monitor_add(p_core, &nm_sr_monitor_unexpected);
       
       INIT_LIST_HEAD(&nm_sr_data.completed_rreq);
       
@@ -785,6 +793,11 @@ static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, n
   NM_SO_SR_LOG_OUT();
 }
 
+static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t is_any_src)
+{
+  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, p_gate);
+}
+
 /** Check the status for a receive request (gate/is_any_src,tag,seq).
  *  @param p_gate the pointer to the gate object or @c NULL if @p is_any_src is @c true.
  *  @param tag the message tag.
@@ -822,7 +835,6 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
     {
       list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
-
   NM_SO_SR_LOG_OUT();
 }
 

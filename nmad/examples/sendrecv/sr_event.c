@@ -30,8 +30,12 @@ static void request_notifier(nm_sr_request_t*p_request, nm_sr_status_t event, nm
   if(event &  NM_SR_EVENT_RECV_COMPLETED)
     {
       printf("got event NM_SR_EVENT_RECV_COMPLETED.\n");
+      printf("buffer contents: %s\n", buf);
     }
-  printf("buffer contents: %s\n", buf);
+  if(event &  NM_SR_EVENT_RECV_UNEXPECTED)
+    {
+      printf("got event NM_SR_EVENT_RECV_UNEXPECTED.\n");
+    }
 }
 
 int main(int argc, char **argv)
@@ -44,20 +48,25 @@ int main(int argc, char **argv)
   if(is_server)
     {
       /* ** server */
-      nm_sr_request_t request;
+      nm_sr_request_t request0, request1;
 
       /* per-request event. */
       memset(buf, 0, len);
-      nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
+      nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request0);
       /* warning: race-condition here- if packet arrives before nm_sr_request_monitor, no event is fired */
-      nm_sr_request_monitor(p_core, &request, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_request_monitor(p_core, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
+      nm_sr_rwait(p_core, &request0);
 
       /* global event (all requests) */
       memset(buf, 0, len);
-      nm_sr_monitor(p_core,NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
-      nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
+      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
+
+      nm_sr_irecv(p_core, NM_ANY_GATE, 1, buf, len, &request1);
+      nm_sr_rwait(p_core, &request1);
+
+      nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request0);
+      nm_sr_rwait(p_core, &request0);
 
     }
   else
@@ -67,6 +76,8 @@ int main(int argc, char **argv)
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
       nm_sr_swait(p_core, &request);
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
+      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_core, gate_id, 1, buf, len, &request);
       nm_sr_swait(p_core, &request);
     }
   

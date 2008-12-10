@@ -45,72 +45,79 @@
 #  error You must define at most one of MARCEL_MONO, MARCEL_SMP or MARCEL_NUMA Marcel options in the flavor
 #endif
 
-/* MA__LWPS : indique que l'on a plusieurs entités ordonnancées par
- * le noyau en parallèle.
+
+/*
+ * Options implemented by Marcel
+ */
+
+/* MA__LWPS : if set, we use several kernel threads running concurrently.
  * */
 #ifdef MA__LWPS
 #  undef MA__LWPS
 #endif
 
-/* MA__TIMER : indique qu'il faut utiliser le timer unix (signaux)
- * pour la préemption.
+/* MA__TIMER : if set, we use the unix timer (signals) for periodic
+ * preemption.
  * */
 #ifdef MA__TIMER
-#  undef MA__TIMER
+#  define MA__TIMER
 #endif
 
-/* MA__INTERRUPTS_FIX_LWP : indique que l'on doit tranférer le LWP de la
- * libpthread à l'aide des macros
+/* MA__INTERRUPTS_FIX_LWP : if set, we need to fix the libpthread LWP
+ * state in the timer handler thanks to
  * MA_ARCH_(SWITCHTO|INTERRUPT_(ENTER|EXIT))_LWP_FIX
- * Suppose MA__LWPS && !MA__LIBPTHREAD
+ * Assumes MA__LWPS && !MA__LIBPTHREAD
  * */
 #ifdef MA__INTERRUPTS_FIX_LWP
 #  undef MA__INTERRUPTS_FIX_LWP
 #endif
 
-/* MA__IFACE_PMARCEL : définit les symboles/structures pmarcel_...
- * (compatible API avec la norme POSIX)
+/* MA__IFACE_PMARCEL : if set, we define pmarcel_* structures and symbols
+ * (API-compatible with POSIX)
  * */
 #ifdef MA__IFACE_PMARCEL
 #  undef MA__IFACE_PMARCEL
 #endif
 
-/* MA__IFACE_LPT : définit les symboles/structures lpt_...
- * (compatible binaire avec la libpthread)
+/* MA__IFACE_LPT : if set, we define lpt_* structures and symbols
+ * (ABI-compatible with libpthread)
  * */
 #ifdef MA__IFACE_LPT
 #  undef MA__IFACE_LPT
 #endif
 
-/* MA__LIBPTHREAD : définit les fonctions pthread_...
- * et tout ce qu'il faut pour obtenir une libpthread
+/* MA__LIBPTHREAD : if set, we define pthread_* functions and everything
+ * needed for a libpthread.
  * */
 #ifdef MA__LIBPTHREAD
 #  undef MA__LIBPTHREAD
 #endif
 
-/* MA__FUT_RECORD_TID : definit si on enregistre ou pas les tid dans les traces
+/* MA__FUT_RECORD_TID : if set, we record tids in traces.
  * */
 #ifdef MA__FUT_RECORD_TID
 #  undef MA__FUT_RECORD_TID
 #endif
 
-/* MA__PROVIDE_TLS : définit si on fournit le mécanisme de TLS pour l'application (et la glibc) */
+/* MA__PROVIDE_TLS : if set, we provide per-marcel-thread TLS for the application and glibc etc. */
 #ifdef MA__PROVIDE_TLS
 #  undef MA__PROVIDE_TLS
 #endif
 
-#ifdef MARCEL_MONO /* Marcel Mono */
-#  define MA__TIMER
-#endif /* Fin Marcel Mono */
 
-#if defined(MARCEL_SMP) || defined(MARCEL_NUMA) /* Marcel SMP */
+/*
+ * Options chosen by the User, activating options implemented by Marcel
+ */
+
+/* SMP/NUMA needs kernel threads */
+#if defined(MARCEL_SMP) || defined(MARCEL_NUMA)
 #  define MA__LWPS
-#  define MA__TIMER
-#endif /* Fin Marcel SMP */
+#endif
 
 #if defined(MARCEL_NUMA)
 #  define MA__NUMA
+   /* Always enable bubbles in NUMA */
+#  define MA__BUBBLES
 #endif
 
 #if defined(MARCEL_NUMA_MEMORY)
@@ -121,20 +128,24 @@
 #  define MA__IFACE_PMARCEL
 #endif
 
+/* If we do not use posix kernel threads, we can implement TLS ourselves
+ */
 #ifdef MARCEL_DONT_USE_POSIX_THREADS
 #  define MA__PROVIDE_TLS
 #endif
 
+/* If we want a libpthread, we need lpt_* functions and the whole libpthread stuff */
 #ifdef MARCEL_LIBPTHREAD
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD
 #endif
 
+/* If we have kernel threads and do not provide libpthread ourselves, we need to fix the LWP libpthread state in the timer handler */
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)
 #  define MA__INTERRUPTS_FIX_LWP
 #endif
 
-/* On peut ne pas vouloir de signaux quand même */
+/* We may not want timer signals */
 #if defined(MA_DO_NOT_LAUNCH_SIGNAL_TIMER) || defined(__MINGW32__)
 #ifdef PM2_DEV
 #warning NO SIGNAL TIMER ENABLE
@@ -143,17 +154,12 @@
 #  undef MA__TIMER
 #endif
 
-/* Les tid sont en fait toujours enregistrés. On en a besoin pour détecter
- * les interruptions entre l'enregistrement du switch_to et le switch_to
- * effectif 
+/* Actually we need to always record tids, as we need them to detect
+ * interruptions between the switch_to record and the actual thread switch
  * */
 #define MA__FUT_RECORD_TID
 
-/* Pour l'instant, toujours activer les bulles en NUMA */
-#ifdef MA__NUMA
-#  define MA__BUBBLES
-#endif
-
+/* Not all systems have the .subsection assembly directive */
 #ifdef MA__HAS_SUBSECTION
 #  undef MA__HAS_SUBSECTION
 #endif

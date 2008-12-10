@@ -76,8 +76,6 @@ struct ma_holder {
 	struct list_head sched_list;
 	/** \brief Number of entities in the list above */
 	unsigned long nr_ready;
-	/** \brief Number of interruptibly blocked held entities (probably broken) */
-	unsigned long nr_uninterruptible;
 
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Synthesis of statistics of contained entities */
@@ -104,7 +102,6 @@ enum marcel_holder ma_holder_type(ma_holder_t *h);
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
 	.sched_list = LIST_HEAD_INIT((h).sched_list), \
 	.nr_ready = 0, \
-	.nr_uninterruptible = 0, \
 }
 
 #section marcel_functions
@@ -114,7 +111,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
 	INIT_LIST_HEAD(&h->sched_list);
-	h->nr_ready = h->nr_uninterruptible = 0;
+	h->nr_ready = 0;
 }
 
 #section marcel_functions
@@ -649,8 +646,6 @@ static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holde
 	else
 		bubble_sched_debugl(7,"deactivating running %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_deactivate_running_entity(&p->as_entity,h);
-	if (p->state == MA_TASK_INTERRUPTIBLE)
-		h->nr_uninterruptible++;
 }
 
 /*

@@ -197,15 +197,6 @@ static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, 
 #ifdef PM2_DEV
 #warning TODO
 #endif
-			if (old_state == MA_TASK_UNINTERRUPTIBLE){
-				h->nr_uninterruptible--;
-				/*
-				 * Tasks on involuntary sleep don't earn
-				 * sleep_avg beyond just interactive state.
-				 */
-//				p->activated = -1;
-			}
-
 			/* Attention ici: h peut être une bulle, auquel cas
 			 * activate_task peut lâcher la bulle pour verrouiller
 			 * une runqueue */
@@ -476,11 +467,10 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 }
 
 /*
- * nr_ready, nr_uninterruptible and nr_context_switches:
+ * nr_ready:
  *
  * externally visible scheduler statistics: current number of runnable
- * threads, current number of uninterruptible-sleeping threads, total
- * number of context switches performed since bootup.
+ * threads
  */
 unsigned long ma_nr_ready(void)
 {

@@ -1407,7 +1407,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   marcel_mutex_unlock(&(g_memory_manager->lock));
 }
 
-int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
+int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer, int kernel) {
   int err=0;
   static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
@@ -1436,23 +1436,25 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
-    data->status = MARCEL_MEMORY_INITIAL_STATUS;
-#warning todo: in-kernel migration
-#if 1
-    err = mprotect(data->startaddress, data->size, PROT_NONE);
-    if (err < 0) {
-      perror("mprotect");
+    if (kernel != 1) { // user-space migration
+      data->status = MARCEL_MEMORY_INITIAL_STATUS;
+      err = mprotect(data->startaddress, data->size, PROT_NONE);
+      if (err < 0) {
+        perror("mprotect");
+      }
     }
-#else
-//    err = mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
-//    if (err < 0) {
-//      perror("mbind");
-//    }
-    err = madvise(data->startaddress, data->size, 12);
-    if (err < 0) {
-      perror("madvise");
+    else { // in-kernel migration
+#warning todo: comment mettre a jour la localite des pages
+      data->status = MARCEL_MEMORY_KERNEL_MIGRATION_STATUS;
+      err = ma_memory_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
+      if (err < 0) {
+        perror("mbind");
+      }
+      err = madvise(data->startaddress, data->size, 12);
+      if (err < 0) {
+        perror("madvise");
+      }
     }
-#endif
   }
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();

@@ -34,6 +34,12 @@ memteams-bubbles-ldflags := -lrt -lnuma
 check_migration-ldflags := -lnuma
 crossing_access-ldflags := -lnuma
 
+BLAS_AVAILABLE	:= $(shell if test -f /usr/include/cblas.h && test -f /usr/lib/libblas.a ; then echo blas ; fi)
+ifeq (,$(BLAS_AVAILABLE))
+APPS_EXCLUDE += sgemm
+endif
+sgemm-ldflags := -lblas
+
 mamif: CC=gfortran
 
 include $(PM2_ROOT)/make/apps.mak

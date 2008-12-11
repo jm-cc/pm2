@@ -34,8 +34,23 @@ memteams-bubbles-ldflags := -lrt -lnuma
 check_migration-ldflags := -lnuma
 crossing_access-ldflags := -lnuma
 
-BLAS_AVAILABLE	:= $(shell if test -f /usr/include/cblas.h && test -f /usr/lib/libblas.a ; then echo blas ; fi)
-ifeq (,$(BLAS_AVAILABLE))
+all: $(APPS_LIST)
+config: .config/blas
+
+# Include the file that tells whether BLAS is available.
+-include .config/blas
+
+# Determine whether BLAS is available.
+.config/blas:
+	@mkdir -p "$(dir $@)"
+	@echo "#include <cblas.h>" > ,,conftest.c
+	@echo "int main (int argc, char *argv[]) { int x=CblasRowMajor; return 0; }" >> ,,conftest.c
+	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas;	\
+	then echo "HAVE_BLAS = yes" > "$@" ;								\
+	else echo "HAVE_BLAS = no" > "$@" ; fi
+	@rm -f ,,conftest{,.c}
+
+ifeq (no,$(HAVE_BLAS))
 APPS_EXCLUDE += sgemm
 endif
 sgemm-ldflags := -lblas
@@ -43,4 +58,3 @@ sgemm-ldflags := -lblas
 mamif: CC=gfortran
 
 include $(PM2_ROOT)/make/apps.mak
-

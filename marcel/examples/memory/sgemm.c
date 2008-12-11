@@ -10,41 +10,48 @@
 #define SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL     1
 #define SGEMM_MIGRATE_ON_FIRST_TOUCH           2
 
+#define SGEMM_INIT_GLOBALE 0
+#define SGEMM_INIT_LOCALE  1
+
 float **matA, **matB, **matC;
-void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns);
+void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy, unsigned long *ns);
 any_t sgemm(any_t arg);
 
 typedef struct sgemm_s {
   int thread_id;
   int matrix_size;
+  int initialisation_policy;
 } sgemm_t;
 
 int marcel_main(int argc, char **argv) {
-  int matrix_size, migration_policy;
+  int matrix_size, migration_policy, initialisation_policy;
   unsigned long ns;
   char *migration_policy_texts[3] = {"NEXT_TOUCH_USERSPACE",
                                      "NEXT_TOUCH_KERNEL   ",
                                      "FIRST_TOUCH         "};
+  char *initialisation_policy_texts[3] = {"GLOBAL_INITIALISATION",
+                                          "LOCAL_INITIALISATION "};
 
   marcel_init(&argc, argv);
 
-  if (argc != 3) {
-    marcel_printf("Error. Syntax: pm2-load sgemm <matrix_size> <migration_policy>\n");
+  if (argc != 4) {
+    marcel_printf("Error. Syntax: pm2-load sgemm <matrix_size> <migration_policy> <initialisation_policy>\n");
     marcel_end();
     return -1;
   }
   matrix_size = atoi(argv[1]);
   migration_policy = atoi(argv[2]);
+  initialisation_policy = atoi(argv[3]);
 
-  test_sgemm(matrix_size, migration_policy, &ns);
-  marcel_printf("%10d\t%s\t%20ld\n", matrix_size, migration_policy_texts[migration_policy], ns);
+  test_sgemm(matrix_size, migration_policy, initialisation_policy, &ns);
+  marcel_printf("%10d\t%s\t%s\t%20ld\n", matrix_size, migration_policy_texts[migration_policy], initialisation_policy_texts[initialisation_policy], ns);
 
   // Finish marcel
   marcel_end();
   return 0;
 }
 
-void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
+void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy, unsigned long *ns) {
   marcel_t *worker_id;
   int nb_workers, nb_cores, err;
   marcel_attr_t attr;
@@ -71,11 +78,13 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
     matB[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     matC[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
 
-    for (j = 0; j < matrix_size; j++) {
-      for (i = 0; i < matrix_size; i++) {
-        matA[k][i+matrix_size*j] = 1.0f;
-        matB[k][i+matrix_size*j] = 1.0f;
-        matC[k][i+matrix_size*j] = 1.0;
+    if (initialisation_policy == SGEMM_INIT_GLOBALE) {
+      for (j = 0; j < matrix_size; j++) {
+        for (i = 0; i < matrix_size; i++) {
+          matA[k][i+matrix_size*j] = 1.0f;
+          matB[k][i+matrix_size*j] = 1.0f;
+          matC[k][i+matrix_size*j] = 1.0;
+        }
       }
     }
 
@@ -94,6 +103,7 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
   for (k=0; k<nb_workers; k++) {
     args[k].thread_id = k;
     args[k].matrix_size = matrix_size;
+    args[k].initialisation_policy = initialisation_policy;
     marcel_attr_settopo_level(&attr, &marcel_topo_core_level[k%nb_cores]);
     marcel_create(&worker_id[k], &attr, sgemm, (any_t) &args[k]);
   }
@@ -113,6 +123,17 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
 
 any_t sgemm(any_t arg) {
   sgemm_t *mydata = (sgemm_t *) arg;
+  unsigned i, j;
+
+  if (mydata->initialisation_policy == SGEMM_INIT_LOCALE) {
+    for (j = 0; j < mydata->matrix_size; j++) {
+      for (i = 0; i < mydata->matrix_size; i++) {
+        matA[mydata->thread_id][i+mydata->matrix_size*j] = 1.0f;
+        matB[mydata->thread_id][i+mydata->matrix_size*j] = 1.0f;
+        matC[mydata->thread_id][i+mydata->matrix_size*j] = 1.0;
+      }
+    }
+  }
 
   cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
               mydata->matrix_size, mydata->matrix_size, mydata->matrix_size,

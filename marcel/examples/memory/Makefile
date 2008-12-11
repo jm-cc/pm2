@@ -45,7 +45,7 @@ config: .config/blas
 	@mkdir -p "$(dir $@)"
 	@echo "#include <cblas.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { int x=CblasRowMajor; return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas;	\
+	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
 	then echo "HAVE_BLAS = yes" > "$@" ;								\
 	else echo "HAVE_BLAS = no" > "$@" ; fi
 	@rm -f ,,conftest{,.c}

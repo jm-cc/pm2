@@ -32,7 +32,7 @@ typedef struct jacobi_s {
   int migration_policy;
 } jacobi_t;
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f);
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, FILE *f);
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns);
 any_t worker(any_t arg);
 void initialize_grids(int grid_size, int migration_policy);
@@ -48,7 +48,7 @@ double *local_max_diff;
 double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
-  int grid_size, nb_workers, nb_iters;
+  int grid_size, nb_workers, nb_iters, migration_policy;
   FILE *out;
 
   marcel_init(&argc, argv);
@@ -66,29 +66,31 @@ int marcel_main(int argc, char *argv[]) {
   marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_migrate_on_next_touch_userspace(ns)\ttime_migrate_on_next_touch_kernel(ns)\ttime_migrate_on_first_touch(ns)\n");
   fprintf(out, "# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_migrate_on_next_touch_userspace(ns)\ttime_migrate_on_next_touch_kernel(ns)\ttime_migrate_on_first_touch(ns)\n");
 
-  if (argc == 4) {
+  migration_policy = -1;
+  if (argc == 4 || argc == 5) {
     grid_size = atoi(argv[1]);
     nb_workers = atoi(argv[2]);
     nb_iters = atoi(argv[3]);
+    if (argc == 5) migration_policy = atoi(argv[4]);
 
-    compare_jacobi(grid_size, nb_workers, nb_iters, out);
+    compare_jacobi(grid_size, nb_workers, nb_iters, migration_policy, out);
   }
   else {
     nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
     // small matrix
     for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
       //compare_jacobi(128, nb_workers, nb_iters, out);
-      compare_jacobi(4000, nb_workers, nb_iters, out);
+      compare_jacobi(4000, nb_workers, nb_iters, migration_policy, out);
     }
     // medium matrix
     for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
       //compare_jacobi(1024, nb_workers, nb_iters, out);
-      compare_jacobi(8000, nb_workers, nb_iters, out);
+      compare_jacobi(8000, nb_workers, nb_iters, migration_policy, out);
     }
     // big matrix
     for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
       //compare_jacobi(4096, nb_workers, nb_iters, out);
-      compare_jacobi(16000, nb_workers, nb_iters, out);
+      compare_jacobi(16000, nb_workers, nb_iters, migration_policy, out);
     }
   }
 
@@ -98,46 +100,41 @@ int marcel_main(int argc, char *argv[]) {
   return 0;
 }
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters, FILE *f) {
+void compare_jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, FILE *f) {
   double maxdiff_migrate_on_next_touch_userspace=0.0, maxdiff_migrate_on_next_touch_kernel=0.0, maxdiff_migrate_on_first_touch=0.0;
   unsigned long time_migrate_on_next_touch_userspace[LOOPS], time_migrate_on_next_touch_kernel[LOOPS], time_migrate_on_first_touch[LOOPS];
   unsigned long mean_migrate_on_next_touch_userspace=0, mean_migrate_on_next_touch_kernel=0, mean_migrate_on_first_touch=0;
   int i;
 
   for(i=0 ; i<LOOPS ; i++) {
-    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE,
-           &maxdiff_migrate_on_next_touch_userspace, &time_migrate_on_next_touch_userspace[i]);
-    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL,
-           &maxdiff_migrate_on_next_touch_kernel, &time_migrate_on_next_touch_kernel[i]);
-    jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_FIRST_TOUCH,
-           &maxdiff_migrate_on_first_touch, &time_migrate_on_first_touch[i]);
+    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE) {
+      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE,
+             &maxdiff_migrate_on_next_touch_userspace, &time_migrate_on_next_touch_userspace[i]);
+      mean_migrate_on_next_touch_userspace += time_migrate_on_next_touch_userspace[i];
+    }
+    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
+      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL,
+             &maxdiff_migrate_on_next_touch_kernel, &time_migrate_on_next_touch_kernel[i]);
+      mean_migrate_on_next_touch_kernel += time_migrate_on_next_touch_kernel[i];
+    }
+    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
+      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_FIRST_TOUCH,
+             &maxdiff_migrate_on_first_touch, &time_migrate_on_first_touch[i]);
+      mean_migrate_on_first_touch += time_migrate_on_first_touch[i];
+    }
   }
 
-  for(i=0 ; i<LOOPS ; i++) {
-    mean_migrate_on_next_touch_userspace += time_migrate_on_next_touch_userspace[i];
-    mean_migrate_on_next_touch_kernel += time_migrate_on_next_touch_kernel[i];
-    mean_migrate_on_first_touch += time_migrate_on_first_touch[i];
-  }
   mean_migrate_on_next_touch_userspace /= LOOPS;
   mean_migrate_on_next_touch_kernel /= LOOPS;
   mean_migrate_on_first_touch /= LOOPS;
 
-  if (1 || maxdiff_migrate_on_next_touch_userspace == maxdiff_migrate_on_next_touch_kernel
-      && maxdiff_migrate_on_next_touch_userspace == maxdiff_migrate_on_first_touch) {
-    /* print the results */
-    marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
-                  maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
-                  mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
-    fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
-            maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
-            mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
-  }
-  else {
-    marcel_printf("#Results differ: %11d %14d %13d\t%e\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_migrate_on_next_touch_userspace,
-                  maxdiff_migrate_on_next_touch_kernel, maxdiff_migrate_on_first_touch);
-    fprintf(f, "#Results differ: %11d %14d %13d\t%e\t%e\t%e\n", grid_size, nb_workers, nb_iters, maxdiff_migrate_on_next_touch_userspace,
-            maxdiff_migrate_on_next_touch_kernel, maxdiff_migrate_on_first_touch);
-  }
+  /* print the results */
+  marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
+                maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
+                mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
+  fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
+          maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
+          mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
   fflush(f);
 }
 

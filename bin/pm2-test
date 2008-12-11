@@ -95,7 +95,7 @@ do_the_test()
 	        -name \*.gcda -exec rm {} \;
         fi
 
-        echo "Running program $prog..."
+        echo "Running program <$prog> with flavor <$flavor>..."
         ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
         if [ -z "$net" ] ; then
             (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
@@ -354,30 +354,27 @@ while [ $_l -le $_level ]; do
 	    fi
 	fi
     done
-    _l=`expr $_l + 1`
-done
 
-shopt -s nullglob
-for f in /tmp/tests_${USER}_database/*.dat ; do
-    d_filename=$(basename $f .dat)
-    d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
-    d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')
+    echo "*** Compiling level $_l tests ***"
 
-    CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
-    file_status="/tmp/pm2test_${USER}_status"
+    shopt -s nullglob
+    for f in /tmp/tests_${USER}_database/*.dat ; do
+	d_filename=$(basename $f .dat)
+	d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
+	d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')
 
-    echo "Compiling flavor \"$d_flavor\"..."
-    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+	CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
+	file_status="/tmp/pm2test_${USER}_status"
 
-    d_progs=`cat $f | tr '\012' ' '`
-    echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
-    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
-    [ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
-done
+	echo "Compiling flavor \"$d_flavor\"..."
+	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
+	[ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
 
-_l=$_init_level
-while [ $_l -le $_level ]; do
+	d_progs=`cat $f | tr '\012' ' '`
+	echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
+	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
+	[ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+    done
 
     echo "*** Performing level $_l tests ***"
 

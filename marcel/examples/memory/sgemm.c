@@ -53,6 +53,7 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
   sgemm_t *args;
   struct timeval tv1, tv2;
   unsigned long us;
+  unsigned i,j;
 
   marcel_memory_init(&memory_manager);
   nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
@@ -69,6 +70,14 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
     matA[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     matB[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     matC[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+
+    for (j = 0; j < matrix_size; j++) {
+      for (i = 0; i < matrix_size; i++) {
+        matA[k][i+matrix_size*j] = 1.0f;
+        matB[k][i+matrix_size*j] = 1.0f;
+        matC[k][i+matrix_size*j] = 1.0;
+      }
+    }
 
     if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
       marcel_memory_migrate_on_next_touch(&memory_manager, matA[k], migration_policy);
@@ -104,16 +113,6 @@ void test_sgemm(int matrix_size, int migration_policy, unsigned long *ns) {
 
 any_t sgemm(any_t arg) {
   sgemm_t *mydata = (sgemm_t *) arg;
-  int res=0;
-  unsigned i,j;
-
-  for (j = 0; j < mydata->matrix_size; j++) {
-    for (i = 0; i < mydata->matrix_size; i++) {
-      matA[mydata->thread_id][i+mydata->matrix_size*j] = 1.0f;
-      matB[mydata->thread_id][i+mydata->matrix_size*j] = 1.0f;
-      matC[mydata->thread_id][i+mydata->matrix_size*j] = 1.0;
-    }
-  }
 
   cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
               mydata->matrix_size, mydata->matrix_size, mydata->matrix_size,

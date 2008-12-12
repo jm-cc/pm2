@@ -52,8 +52,10 @@ config: .config/blas
 
 ifeq (no,$(HAVE_BLAS))
 APPS_EXCLUDE += sgemm
+APPS_EXCLUDE += saxpy
 endif
 sgemm-ldflags := -lblas
+saxpy-ldflags := -lblas
 
 mamif: CC=gfortran
 

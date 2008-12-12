@@ -24,6 +24,12 @@
 char *migration_policy_texts[3] = {"NEXT_TOUCH_USERSPACE",
                                    "NEXT_TOUCH_KERNEL   ",
                                    "FIRST_TOUCH         "};
+#define JACOBI_INIT_GLOBALE 0
+#define JACOBI_INIT_LOCALE  1
+
+char *initialisation_policy_texts[2] = {"GLOBAL_INITIALISATION",
+                                        "LOCAL_INITIALISATION "};
+
 typedef struct jacobi_s {
   int thread_id;
   int grid_size;
@@ -31,9 +37,10 @@ typedef struct jacobi_s {
   int nb_iters;
   int strip_size;
   int migration_policy;
+  int initialisation_policy;
 } jacobi_t;
 
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, int initialisation_policy);
 any_t worker(any_t arg);
 void barrier(int nb_workers);
 
@@ -45,19 +52,20 @@ double *local_max_diff;
 double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
-  int grid_size, nb_workers, nb_iters, migration_policy;
+  int grid_size, nb_workers, nb_iters, migration_policy, initialisation_policy;
 
   marcel_init(&argc, argv);
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
-  if (argc == 5) {
+  if (argc == 6) {
     grid_size = atoi(argv[1]);
     nb_workers = atoi(argv[2]);
     nb_iters = atoi(argv[3]);
     migration_policy = atoi(argv[4]);
+    initialisation_policy = atoi(argv[5]);
 
-    jacobi(grid_size, nb_workers, nb_iters, migration_policy);
+    jacobi(grid_size, nb_workers, nb_iters, migration_policy, initialisation_policy);
   }
 
   // Finish marcel
@@ -65,10 +73,10 @@ int marcel_main(int argc, char *argv[]) {
   return 0;
 }
 
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, int initialisation_policy) {
   marcel_t *workerid;
   marcel_attr_t attr;
-  int i, err;
+  int i, j, err;
   int nb_cores;
   jacobi_t *args;
   struct timeval tv1, tv2;
@@ -93,7 +101,25 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
     grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
     grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   }
-
+  if (initialisation_policy == JACOBI_INIT_GLOBALE) {
+    for (i = 0; i <= grid_size+1; i++)
+      for (j = 0; j <= grid_size+1; j++) {
+        grid1[i][j] = 0.0;
+        grid2[i][j] = 0.0;
+      }
+    for (i = 0; i <= grid_size+1; i++) {
+      grid1[i][0] = 1.0;
+      grid1[i][grid_size+1] = 1.0;
+      grid2[i][0] = 1.0;
+      grid2[i][grid_size+1] = 1.0;
+    }
+    for (j = 0; j <= grid_size+1; j++) {
+      grid1[0][j] = 1.0;
+      grid2[0][j] = 1.0;
+      grid1[grid_size+1][j] = 1.0;
+      grid2[grid_size+1][j] = 1.0;
+    }
+  }
   if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
     for (i = 0; i <= grid_size+1; i++) {
       marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], migration_policy);
@@ -110,6 +136,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
     args[i].thread_id = i;
     args[i].strip_size = grid_size/nb_workers;
     args[i].migration_policy = migration_policy;
+    args[i].initialisation_policy = initialisation_policy;
     marcel_attr_settopo_level(&attr, &marcel_topo_core_level[i%nb_cores]);
     marcel_create(&workerid[i], &attr, worker, (any_t) &args[i]);
   }
@@ -138,8 +165,9 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   marcel_memory_exit(&memory_manager);
 
   // print the results
-  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmigration_policy\tmax_diff\ttime(ns)\n");
-  marcel_printf("%11d %14d %13d\t%s\t%10e %10ld\n", grid_size, nb_workers, nb_iters, migration_policy_texts[migration_policy], maxdiff, ns);
+  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmigration_policy\tinitialisation_policy\tmax_diff\ttime(ns)\n");
+  marcel_printf("%11d %14d %13d\t%s\t%s\t%10e %10ld\n", grid_size, nb_workers, nb_iters,
+                migration_policy_texts[migration_policy], initialisation_policy_texts[initialisation_policy], maxdiff, ns);
 }
 
 /*
@@ -159,22 +187,24 @@ any_t worker(any_t arg) {
   first = mydata->thread_id*mydata->strip_size + 1;
   last = first + mydata->strip_size - 1;
 
-  for (i = first; i <= last; i++)
-    for (j = 0; j <= mydata->grid_size+1; j++) {
-      grid1[i][j] = 0.0;
-      grid2[i][j] = 0.0;
+  if (mydata->initialisation_policy == JACOBI_INIT_LOCALE) {
+    for (i = first; i <= last; i++)
+      for (j = 0; j <= mydata->grid_size+1; j++) {
+        grid1[i][j] = 0.0;
+        grid2[i][j] = 0.0;
+      }
+    for (i = first; i <= last; i++) {
+      grid1[i][0] = 1.0;
+      grid1[i][mydata->grid_size+1] = 1.0;
+      grid2[i][0] = 1.0;
+      grid2[i][mydata->grid_size+1] = 1.0;
     }
-  for (i = first; i <= last; i++) {
-    grid1[i][0] = 1.0;
-    grid1[i][mydata->grid_size+1] = 1.0;
-    grid2[i][0] = 1.0;
-    grid2[i][mydata->grid_size+1] = 1.0;
-  }
-  for (j = 0; j <= mydata->grid_size+1; j++) {
-    grid1[0][j] = 1.0;
-    grid2[0][j] = 1.0;
-    grid1[mydata->grid_size+1][j] = 1.0;
-    grid2[mydata->grid_size+1][j] = 1.0;
+    for (j = 0; j <= mydata->grid_size+1; j++) {
+      grid1[0][j] = 1.0;
+      grid2[0][j] = 1.0;
+      grid1[mydata->grid_size+1][j] = 1.0;
+      grid2[mydata->grid_size+1][j] = 1.0;
+    }
   }
 
   for (iters = 1; iters <= mydata->nb_iters; iters++) {

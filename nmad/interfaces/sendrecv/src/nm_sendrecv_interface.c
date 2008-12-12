@@ -78,8 +78,8 @@ static struct
   
   struct list_head completed_rreq;
 
-  /** vector of event monitors */
-  struct nm_sr_monitor_vect_s monitors;
+  /** vector of sendrecv event monitors */
+  struct nm_sr_event_monitor_vect_s monitors;
   /** flags whether sendrecv init has already been done */
   int init_done;
 } nm_sr_data = { .init_done = 0 };
@@ -88,21 +88,37 @@ static struct
 
 /* ** Status *********************************************** */
 
-static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, nm_gate_t p_gate, nm_tag_t tag)
 {
-  nm_sr_monitor_vect_itor_t i;
-  for(i  = nm_sr_monitor_vect_begin(&nm_sr_data.monitors);
-      i != nm_sr_monitor_vect_end(&nm_sr_data.monitors);
-      i  = nm_sr_monitor_vect_next(i))
+  nm_sr_event_info_t info;
+  if(event == NM_SR_EVENT_RECV_UNEXPECTED)
     {
-      if(i->mask & mask)
+      info.recv_unexpected.p_gate = p_gate;
+      info.recv_unexpected.tag = tag;
+    }
+  else if(event == NM_SR_EVENT_RECV_COMPLETED)
+    {
+      info.recv_completed.p_request = p_request;
+      info.recv_completed.p_gate = p_gate;
+    }
+  else if(event == NM_SR_EVENT_SEND_COMPLETED)
+    {
+      info.send_completed.p_request = p_request;
+    }
+
+  nm_sr_event_monitor_vect_itor_t i;
+  for(i  = nm_sr_event_monitor_vect_begin(&nm_sr_data.monitors);
+      i != nm_sr_event_monitor_vect_end(&nm_sr_data.monitors);
+      i  = nm_sr_event_monitor_vect_next(i))
+    {
+      if(event & i->mask)
 	{
-	  (*i->notifier)(p_request, mask, p_gate);
+	  (*i->notifier)(event, &info);
 	}
     }
-  if((mask & p_request->monitor.mask) && p_request && p_request->monitor.notifier)
+  if(p_request && (event & p_request->monitor.mask) && p_request->monitor.notifier)
     {
-      (*p_request->monitor.notifier)(p_request, mask, p_gate);
+      (*p_request->monitor.notifier)(event, &info);
     }
 }
 
@@ -114,7 +130,7 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
 static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
 {
   piom_cond_signal(&p_request->status, mask);
-  nm_sr_monitor_notify(p_request, mask, p_gate);
+  nm_sr_monitor_notify(p_request, mask, p_gate, p_request->tag);
 }
 /** Post PIOMan poll requests (except when offloading PIO)
  */
@@ -145,7 +161,7 @@ static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask
 static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
 {
   p_request->status |= mask;
-  nm_sr_monitor_notify(p_request, mask, p_gate);
+  nm_sr_monitor_notify(p_request, mask, p_gate, p_request->tag);
 }
 static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
 {
@@ -169,11 +185,11 @@ static inline void nm_so_post_all_force(nm_core_t p_core)
  *  @param p_sem a pointer to the piom_sem_t to attach.
  *  @return The NM status.
  */
-extern int
-nm_so_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem) {
-	return (piom_cond_attach_sem(&p_request->status , p_sem) ? 
-		NM_ESUCCESS: 
-		NM_EAGAIN);
+extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem)
+{
+  return (piom_cond_attach_sem(&p_request->status , p_sem) ? 
+	  NM_ESUCCESS: 
+	  NM_EAGAIN);
 }
 #endif /* PIOMAN */
 
@@ -242,7 +258,7 @@ int nm_sr_init(struct nm_core *p_core)
       
       nm_sr_anysrc_table_init(&nm_sr_data.any_src);
 
-      nm_sr_monitor_vect_init(&nm_sr_data.monitors);
+      nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
 
       nm_sr_data.init_done = 1;
     }
@@ -286,7 +302,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
   p_request->p_gate = p_gate;
   p_request->tag    = tag;
   p_request->ref    = NULL;
-  p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_sr_tag->sreqs[seq] = p_request;
   
   switch(sending_type)
@@ -464,7 +480,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
       p_request->ref     = ref;
       p_request->tag     = tag;
       p_request->seq     = -1;
-      p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
+      p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
       p_sr_anysrc->rreq = p_request;
 
       NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_sr_anysrc->rreq);
@@ -512,7 +528,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
       p_request->p_gate  = p_gate;
       p_request->ref     = ref;
       p_request->tag     = tag;
-      p_request->monitor = NM_SR_REQUEST_MONITOR_NULL;
+      p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
       p_sr_tag->rreqs[seq] = p_request;
 
       NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate = %p request %p\n", tag, seq, p_gate, p_sr_tag->rreqs[seq]);
@@ -634,14 +650,6 @@ int nm_sr_get_size(struct nm_core *p_core,
   return NM_ESUCCESS;
 }
 
-int nm_sr_get_ref(nm_core_t p_core, nm_sr_request_t *p_request, void**ref)
-{
-  *ref = p_request->ref;
-  return NM_ESUCCESS;
-}
-
-
-
 int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
   const nm_tag_t tag = p_request->tag;
@@ -716,17 +724,18 @@ int nm_sr_probe(struct nm_core *p_core,
   return -NM_EAGAIN;
 }
 
-int nm_sr_monitor(nm_core_t p_core, nm_sr_status_t mask, nm_sr_request_notifier_t notifier)
+int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
-  nm_sr_request_monitor_t m = { .mask = mask, .notifier = notifier };
-  nm_sr_monitor_vect_push_back(&nm_sr_data.monitors, m);
+  nm_sr_event_monitor_t m = { .mask = mask, .notifier = notifier };
+  nm_sr_event_monitor_vect_push_back(&nm_sr_data.monitors, m);
   return NM_ESUCCESS;
 }
 
 
 int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
-			  nm_sr_status_t mask, nm_sr_request_notifier_t notifier)
+			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
+  assert(p_request->monitor.notifier == NULL);
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
   return NM_ESUCCESS;
@@ -795,7 +804,7 @@ static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, n
 
 static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t is_any_src)
 {
-  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, p_gate);
+  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, p_gate, tag);
 }
 
 /** Check the status for a receive request (gate/is_any_src,tag,seq).

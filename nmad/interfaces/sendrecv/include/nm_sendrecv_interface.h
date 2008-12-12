@@ -44,15 +44,17 @@ typedef uint8_t nm_sr_status_t;
 /** a recv is posted */
 #define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)0x10)
 
-/* ** events for nm_sr_monitor() */
-
-/** an unexpected packet has arrived. Post a recv to get data
- * @note not supported yet
- */
-#define NM_SR_EVENT_RECV_UNEXPECTED  ((nm_sr_status_t)0x80)
-#define NM_SR_EVENT_RECV_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
-#define NM_SR_EVENT_SEND_COMPLETED  NM_SR_STATUS_RECV_COMPLETED
-#define NM_SR_EVENT_RECV_CANCELLED  NM_SR_STATUS_RECV_CANCELLED
+/** events for nm_sr_monitor() */
+typedef enum
+  {
+    /** an unexpected packet has arrived. Post a recv to get data
+     * @note not supported yet
+     */
+    NM_SR_EVENT_RECV_UNEXPECTED = ((nm_sr_status_t)0x80),
+    NM_SR_EVENT_RECV_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,
+    NM_SR_EVENT_SEND_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,
+    NM_SR_EVENT_RECV_CANCELLED  = NM_SR_STATUS_RECV_CANCELLED
+  } nm_sr_event_t;
 
 
 #ifdef PIOMAN
@@ -66,17 +68,37 @@ typedef volatile nm_sr_status_t nm_sr_cond_t;
 /** a sendrecv request object. Supposedly opaque for applications.*/
 typedef struct nm_sr_request_s nm_sr_request_t;
 
-typedef void (*nm_sr_request_notifier_t)(nm_sr_request_t *p_request, nm_sr_status_t event, nm_gate_t p_gate);
+/** information field for sendrecv events */
+typedef union
+{
+  struct
+  {
+    nm_gate_t p_gate;
+    nm_tag_t tag;
+  } recv_unexpected;
+  struct
+  {
+    nm_sr_request_t*p_request;
+    nm_gate_t p_gate;
+  } recv_completed;
+  struct
+  {
+    nm_sr_request_t*p_request;
+  } send_completed;
+} nm_sr_event_info_t;
+
+/** notification function for sendrecv events */
+typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, nm_sr_event_info_t*event_info);
 
 typedef struct
 {
-  nm_sr_status_t mask;
-  nm_sr_request_notifier_t notifier;
-} nm_sr_request_monitor_t;
+  nm_sr_event_t mask;
+  nm_sr_event_notifier_t notifier;
+} nm_sr_event_monitor_t;
 
-#define NM_SR_REQUEST_MONITOR_NULL ((nm_sr_request_monitor_t){ .mask = 0, .notifier = NULL })
+#define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })
 
-PUK_VECT_TYPE(nm_sr_monitor, nm_sr_request_monitor_t);
+PUK_VECT_TYPE(nm_sr_event_monitor, nm_sr_event_monitor_t);
 
 /** internal defintion of the sendrecv request */
 struct nm_sr_request_s
@@ -85,7 +107,7 @@ struct nm_sr_request_s
   uint8_t seq;
   nm_gate_t p_gate;
   nm_tag_t tag;
-  nm_sr_request_monitor_t monitor;
+  nm_sr_event_monitor_t monitor;
   void *ref;
   struct list_head _link;
 };
@@ -127,8 +149,7 @@ extern int nm_sr_exit(nm_core_t p_core);
  *  @param p_sem a pointer to the piom_sem_t to attach.
  *  @return The NM status.
  */
-extern int
-nm_so_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
+extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
 #endif
 
 extern void nm_sr_debug_init(int* argc, char** argv, int debug_flags);
@@ -376,11 +397,12 @@ extern int nm_sr_recv_source(nm_core_t p_core,
 extern int nm_sr_probe(nm_core_t p_core,
 		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag);
 
+/** monitors sendrecv events globally */
+extern int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
-extern int nm_sr_monitor(nm_core_t p_core, nm_sr_status_t mask, nm_sr_request_notifier_t notifier);
-
+/** monitors sendrecv events for a given request */
 extern int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
-				 nm_sr_status_t mask, nm_sr_request_notifier_t notifier);
+				 nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
 
 /** Poll for any completed recv request (any source, any tag).
@@ -402,9 +424,23 @@ extern int nm_sr_get_size(nm_core_t p_core,
 
 /** Retrieve the 'ref' from a completed receive request.
  */
-extern int nm_sr_get_ref(nm_core_t p_core,
-			 nm_sr_request_t *request,
-			 void**ref);
+static inline int nm_sr_get_ref(nm_core_t p_core,
+				nm_sr_request_t *p_request,
+				void**ref)
+{
+  *ref = p_request->ref;
+  return NM_ESUCCESS;
+}
+
+/** Retrieve the tag from a sendreceive request.
+ */
+static inline int nm_sr_get_tag(nm_core_t p_core,
+				nm_sr_request_t *p_request,
+				nm_tag_t*tag)
+{
+  *tag = p_request->tag;
+  return NM_ESUCCESS;
+}
 
 
 /* @} */

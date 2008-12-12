@@ -21,8 +21,9 @@
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL     1
 #define JACOBI_MIGRATE_ON_FIRST_TOUCH           2
 
-#define LOOPS 2
-
+char *migration_policy_texts[3] = {"NEXT_TOUCH_USERSPACE",
+                                   "NEXT_TOUCH_KERNEL   ",
+                                   "FIRST_TOUCH         "};
 typedef struct jacobi_s {
   int thread_id;
   int grid_size;
@@ -32,8 +33,7 @@ typedef struct jacobi_s {
   int migration_policy;
 } jacobi_t;
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, FILE *f);
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns);
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
 any_t worker(any_t arg);
 void initialize_grids(int grid_size, int migration_policy);
 void barrier(int nb_workers);
@@ -57,94 +57,28 @@ int marcel_main(int argc, char *argv[]) {
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
-  out = fopen("output", "w");
-  if (!out) {
-    printf("Error when opening file <output>\n");
-    return -1;
-  }
-
-  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_migrate_on_next_touch_userspace(ns)\ttime_migrate_on_next_touch_kernel(ns)\ttime_migrate_on_first_touch(ns)\n");
-  fprintf(out, "# grid_size\tnb_workers\tnb_iters\tmax_diff\ttime_migrate_on_next_touch_userspace(ns)\ttime_migrate_on_next_touch_kernel(ns)\ttime_migrate_on_first_touch(ns)\n");
-
-  migration_policy = -1;
-  if (argc == 4 || argc == 5) {
+  if (argc == 5) {
     grid_size = atoi(argv[1]);
     nb_workers = atoi(argv[2]);
     nb_iters = atoi(argv[3]);
-    if (argc == 5) migration_policy = atoi(argv[4]);
+    migration_policy = atoi(argv[4]);
 
-    compare_jacobi(grid_size, nb_workers, nb_iters, migration_policy, out);
-  }
-  else {
-    nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
-    // small matrix
-    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
-      //compare_jacobi(128, nb_workers, nb_iters, out);
-      compare_jacobi(4000, nb_workers, nb_iters, migration_policy, out);
-    }
-    // medium matrix
-    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
-      //compare_jacobi(1024, nb_workers, nb_iters, out);
-      compare_jacobi(8000, nb_workers, nb_iters, migration_policy, out);
-    }
-    // big matrix
-    for(nb_iters=10 ; nb_iters<=100 ; nb_iters+=10) {
-      //compare_jacobi(4096, nb_workers, nb_iters, out);
-      compare_jacobi(16000, nb_workers, nb_iters, migration_policy, out);
-    }
+    jacobi(grid_size, nb_workers, nb_iters, migration_policy);
   }
 
-  fclose(out);
   // Finish marcel
   marcel_end();
   return 0;
 }
 
-void compare_jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, FILE *f) {
-  double maxdiff_migrate_on_next_touch_userspace=0.0, maxdiff_migrate_on_next_touch_kernel=0.0, maxdiff_migrate_on_first_touch=0.0;
-  unsigned long time_migrate_on_next_touch_userspace[LOOPS], time_migrate_on_next_touch_kernel[LOOPS], time_migrate_on_first_touch[LOOPS];
-  unsigned long mean_migrate_on_next_touch_userspace=0, mean_migrate_on_next_touch_kernel=0, mean_migrate_on_first_touch=0;
-  int i;
-
-  for(i=0 ; i<LOOPS ; i++) {
-    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE) {
-      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE,
-             &maxdiff_migrate_on_next_touch_userspace, &time_migrate_on_next_touch_userspace[i]);
-      mean_migrate_on_next_touch_userspace += time_migrate_on_next_touch_userspace[i];
-    }
-    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL,
-             &maxdiff_migrate_on_next_touch_kernel, &time_migrate_on_next_touch_kernel[i]);
-      mean_migrate_on_next_touch_kernel += time_migrate_on_next_touch_kernel[i];
-    }
-    if (migration_policy == -1 || migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
-      jacobi(grid_size, nb_workers, nb_iters, JACOBI_MIGRATE_ON_FIRST_TOUCH,
-             &maxdiff_migrate_on_first_touch, &time_migrate_on_first_touch[i]);
-      mean_migrate_on_first_touch += time_migrate_on_first_touch[i];
-    }
-  }
-
-  mean_migrate_on_next_touch_userspace /= LOOPS;
-  mean_migrate_on_next_touch_kernel /= LOOPS;
-  mean_migrate_on_first_touch /= LOOPS;
-
-  /* print the results */
-  marcel_printf("%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
-                maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
-                mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
-  fprintf(f, "%11d %14d %13d\t%e\t%ld\t\t\t%ld\t\t\t\t%ld\n", grid_size, nb_workers, nb_iters,
-          maxdiff_migrate_on_next_touch_userspace, mean_migrate_on_next_touch_userspace,
-          mean_migrate_on_next_touch_kernel, mean_migrate_on_first_touch);
-  fflush(f);
-}
-
-void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, double *maxdiff, unsigned long *ns) {
+void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   marcel_t *workerid;
   marcel_attr_t attr;
   int i, nb_cores;
   jacobi_t *args;
   struct timeval tv1, tv2;
-  unsigned long us;
+  unsigned long us, ns;
+  double maxdiff;
 
   marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
@@ -172,12 +106,12 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
   gettimeofday(&tv2, NULL);
 
   for (i = 0; i < nb_workers; i++) {
-    if (*maxdiff < local_max_diff[i]) *maxdiff = local_max_diff[i];
+    if (maxdiff < local_max_diff[i]) maxdiff = local_max_diff[i];
   }
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
-  *ns = us * 1000;
-  *ns /= nb_iters;
+  ns = us * 1000;
+  ns /= nb_iters;
 
   // Free the memory
   for (i = 0; i <= grid_size+1; i++) {
@@ -189,6 +123,10 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, d
   free(workerid);
   free(local_max_diff);
   marcel_memory_exit(&memory_manager);
+
+  /* print the results */
+  marcel_printf("# grid_size\tnb_workers\tnb_iters\tmigration_policy\tmax_diff\ttime(ns)\n");
+  marcel_printf("%11d %14d %13d\t%s\t%10e %10ld\n", grid_size, nb_workers, nb_iters, migration_policy_texts[migration_policy], maxdiff, ns);
 }
 
 /*
@@ -276,10 +214,8 @@ any_t worker(any_t arg) {
 void initialize_grids(int grid_size, int migration_policy) {
   int i, j, err;
 
-  //  if (migration_policy == JACOBI_MIGRATE_ON_FIRST_TOUCH) {
-    err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-    if (err < 0) perror("marcel_memory_membind");
-    //  }
+  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("marcel_memory_membind");
 
   grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);

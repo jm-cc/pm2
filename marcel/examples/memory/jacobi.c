@@ -35,25 +35,19 @@ typedef struct jacobi_s {
 
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy);
 any_t worker(any_t arg);
-void initialize_grids(int grid_size, int migration_policy);
 void barrier(int nb_workers);
 
 marcel_mutex_t mutex;  /* mutex semaphore for the barrier */
 marcel_cond_t go;      /* condition variable for leaving */
 int nb_arrived = 0;    /* count of the number who have arrived */
 
-marcel_memory_manager_t memory_manager;
-
 double *local_max_diff;
 double **grid1, **grid2;
 
 int marcel_main(int argc, char *argv[]) {
   int grid_size, nb_workers, nb_iters, migration_policy;
-  FILE *out;
 
   marcel_init(&argc, argv);
-
-  /* initialize mutex and condition variable */
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 
@@ -74,21 +68,40 @@ int marcel_main(int argc, char *argv[]) {
 void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   marcel_t *workerid;
   marcel_attr_t attr;
-  int i, nb_cores;
+  int i, err;
+  int nb_cores;
   jacobi_t *args;
   struct timeval tv1, tv2;
   unsigned long us, ns;
   double maxdiff;
+  marcel_memory_manager_t memory_manager;
 
   marcel_memory_init(&memory_manager);
   marcel_attr_init(&attr);
   local_max_diff = (double *) malloc(nb_workers * sizeof(double));
   workerid = (marcel_t *) malloc(nb_workers * sizeof(marcel_t));
   args = (jacobi_t *) malloc(nb_workers * sizeof(jacobi_t));
-  initialize_grids(grid_size, migration_policy);
   nb_cores=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
-  /* create the workers, then wait for them to finish */
+  // Initialise the grids
+  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("marcel_memory_membind");
+
+  grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  for (i = 0; i <= grid_size+1; i++) {
+    grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  }
+
+  if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
+    for (i = 0; i <= grid_size+1; i++) {
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], migration_policy);
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i], migration_policy);
+    }
+  }
+
+  // create the workers, then wait for them to finish
   gettimeofday(&tv1, NULL);
   for (i = 0; i < nb_workers; i++) {
     args[i].grid_size = grid_size;
@@ -124,7 +137,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy) {
   free(local_max_diff);
   marcel_memory_exit(&memory_manager);
 
-  /* print the results */
+  // print the results
   marcel_printf("# grid_size\tnb_workers\tnb_iters\tmigration_policy\tmax_diff\ttime(ns)\n");
   marcel_printf("%11d %14d %13d\t%s\t%10e %10ld\n", grid_size, nb_workers, nb_iters, migration_policy_texts[migration_policy], maxdiff, ns);
 }
@@ -164,18 +177,6 @@ any_t worker(any_t arg) {
     grid2[mydata->grid_size+1][j] = 1.0;
   }
 
-#if 0
-  if (mydata->migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH) {
-    int err;
-    for (i = first; i <= last; i++) {
-      err = marcel_memory_check_pages_location(&memory_manager, grid1[i], (mydata->grid_size+2) * sizeof(double), marcel_current_node());
-      if (err < 0) perror("marcel_memory_check_pages_location");
-      err = marcel_memory_check_pages_location(&memory_manager, grid2[i], (mydata->grid_size+2) * sizeof(double), marcel_current_node());
-      if (err < 0) perror("marcel_memory_check_pages_location");
-    }
-  }
-#endif
-
   for (iters = 1; iters <= mydata->nb_iters; iters++) {
     /* update my points */
     for (i = first; i <= last; i++) {
@@ -205,33 +206,6 @@ any_t worker(any_t arg) {
   }
   local_max_diff[mydata->thread_id] = maxdiff;
   return 0;
-}
-
-/*
- * Initialize the grids (grid1 and grid2)
- * set boundaries to 1.0 and interior points to 0.0
- */
-void initialize_grids(int grid_size, int migration_policy) {
-  int i, j, err;
-
-  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("marcel_memory_membind");
-
-  grid1 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  grid2 = (double **) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  for (i = 0; i <= grid_size+1; i++) {
-    grid1[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    grid2[i] = (double *) marcel_memory_malloc(&memory_manager, (grid_size+2) * sizeof(double), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  }
-
-  if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-    for (i = 0; i <= grid_size+1; i++) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], migration_policy);
-      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i], migration_policy);
-    }
-    //  marcel_memory_migrate_on_next_touch(&memory_manager, grid1);
-    //marcel_memory_migrate_on_next_touch(&memory_manager, grid2);
-  }
 }
 
 void barrier(int nb_workers) {

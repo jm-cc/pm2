@@ -216,12 +216,12 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
 
   err = close((*space)->file);
   if (err < 0) {
-    perror("close");
+    perror("(ma_memory_deallocate_huge_pages) close");
     return -errno;
   }
   err = unlink((*space)->filename);
   if (err < 0) {
-    perror("unlink");
+    perror("(ma_memory_deallocate_huge_pages) unlink");
     return -errno;
   }
 
@@ -543,13 +543,13 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   if ((*space)->file == -1) {
     tfree(*space);
     *space = NULL;
-    perror("open");
+    perror("(ma_memory_preallocate_huge_pages) open");
     return -errno;
   }
 
   (*space)->buffer = mmap(NULL, (*space)->size, PROT_READ|PROT_WRITE, MAP_PRIVATE, (*space)->file, 0);
   if ((*space)->buffer == MAP_FAILED) {
-    perror("mmap");
+    perror("(ma_memory_preallocate_huge_pages) mmap");
     tfree(*space);
     *space = NULL;
     return -errno;
@@ -582,7 +582,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   if (buffer == MAP_FAILED) {
-    perror("mmap");
+    perror("(ma_memory_preallocate) mmap");
     err = -errno;
   }
   else {
@@ -590,7 +590,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
       nodemask = (1<<node);
       err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
       if (err < 0) {
-        perror("mbind");
+        perror("(ma_memory_preallocate) mbind");
         err = 0;
       }
 
@@ -669,13 +669,13 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   nodemask = (1<<node);
   err = ma_memory_set_mempolicy(MPOL_BIND, &nodemask, memory_manager->nb_nodes+2);
   if (err < 0) {
-    perror("set_mempolicy");
+    perror("(ma_memory_get_buffer_from_huge_pages_heap) set_mempolicy");
     return NULL;
   }
   memset(buffer, 0, size);
   err = ma_memory_set_mempolicy(MPOL_DEFAULT, NULL, 0);
   if (err < 0) {
-    perror("set_mempolicy");
+    perror("(ma_memory_get_buffer_from_huge_pages_heap) set_mempolicy");
     return NULL;
   }
 
@@ -1054,7 +1054,7 @@ int ma_memory_mbind(void *start, unsigned long len, int mode,
 #else
   err = syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #endif
-  if (err < 0) perror("mbind");
+  if (err < 0) perror("(ma_memory_mbind) mbind");
   return err;
 }
 
@@ -1068,14 +1068,14 @@ int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, i
 #else
   err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #endif
-  if (err < 0) perror("move_pages");
+  if (err < 0) perror("(ma_memory_move_pages) move_pages");
   return err;
 }
 
 int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode) {
   int err=0;
   err = syscall(__NR_set_mempolicy, mode, nmask, maxnode);
-  if (err < 0) perror("set_mempolicy");
+  if (err < 0) perror("(ma_memory_set_mempolicy) set_mempolicy");
   return err;
 }
 
@@ -1088,7 +1088,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
 
   pagenodes = tmalloc(pages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);
-  if (err < 0) perror("move_pages (check_pages_location)");
+  if (err < 0) perror("(ma_memory_check_pages_location) move_pages");
   else {
     for(i=0; i<pages; i++) {
       if (pagenodes[i] != node) {
@@ -1423,7 +1423,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     act.sa_sigaction = ma_memory_segv_handler;
     err = sigaction(SIGSEGV, &act, NULL);
     if (err < 0) {
-      perror("sigaction");
+      perror("(marcel_memory_migrate_on_next_touch) sigaction");
       marcel_mutex_unlock(&(memory_manager->lock));
       MAMI_LOG_OUT();
       return -errno;
@@ -1440,7 +1440,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
       data->status = MARCEL_MEMORY_INITIAL_STATUS;
       err = mprotect(data->startaddress, data->size, PROT_NONE);
       if (err < 0) {
-        perror("mprotect");
+        perror("(marcel_memory_migrate_on_next_touch) mprotect");
       }
     }
     else { // in-kernel migration
@@ -1448,11 +1448,11 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
       data->status = MARCEL_MEMORY_KERNEL_MIGRATION_STATUS;
       err = ma_memory_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
       if (err < 0) {
-        perror("mbind");
+        perror("(marcel_memory_migrate_on_next_touch) mbind");
       }
       err = madvise(data->startaddress, data->size, 12);
       if (err < 0) {
-        perror("madvise");
+        perror("(marcel_memory_migrate_on_next_touch) madvise");
       }
     }
   }

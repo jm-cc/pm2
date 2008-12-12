@@ -1309,7 +1309,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
       mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
       nodemask = (1<<dest);
-      err = ma_memory_mbind(buffer, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+      err = ma_memory_mbind(data->startaddress, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
 #warning todo: how do we check the memory is properly bound
     }
     else {

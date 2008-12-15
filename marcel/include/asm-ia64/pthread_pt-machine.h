@@ -14,10 +14,6 @@
  * General Public License for more details.
  */
 
+#section common
+#depend "asm-generic/pthread_pt-machine.h[]"
 #section marcel_macros
-
-#include <ia64intrin.h>
-
-/* Memory barrier */
-#define MEMORY_BARRIER() __sync_synchronize ()
-                                                                                

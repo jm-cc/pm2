@@ -455,9 +455,9 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
  * @param policy selection policy
  * @param node returns the id of the node
  */
-void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
-                               marcel_memory_node_selection_policy_t policy,
-                               int *node);
+int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
+                              marcel_memory_node_selection_policy_t policy,
+                              int *node);
 
 /**
  * Migrate the pages to the specified node.

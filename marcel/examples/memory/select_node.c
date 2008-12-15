@@ -18,20 +18,24 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int node;
+  int anode, bnode;
   void *ptr;
   marcel_memory_manager_t memory_manager;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &node);
-  marcel_printf("The least loaded node is: %d\n", node);
+  marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &anode);
+  ptr = marcel_memory_malloc(&memory_manager, 1000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, anode);
 
-  ptr = marcel_memory_malloc(&memory_manager, 1000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
-
-  marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &node);
-  marcel_printf("The least loaded node is: %d\n", node);
+  marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &bnode);
+  if (anode != bnode) {
+    marcel_printf("Success\n");
+  }
+  else {
+    marcel_printf("The least loaded anode is: %d\n", anode);
+    marcel_printf("The least loaded anode is: %d\n", bnode);
+  }
 
   // Finish marcel
   marcel_memory_free(&memory_manager, ptr);

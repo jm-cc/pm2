@@ -1266,40 +1266,34 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
   MAMI_LOG_OUT();
 }
 
-static
-void ma_memory_get_free_space(marcel_memory_manager_t *memory_manager,
-                              int node,
-                              int *space) {
-  marcel_memory_area_t *heap = memory_manager->heaps[node];
-  MAMI_LOG_IN();
-  *space = 0;
-  while (heap != NULL) {
-    *space += heap->nbpages;
-    heap = heap->next;
-  }
-  MAMI_LOG_OUT();
-}
-
-void marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
-                               marcel_memory_node_selection_policy_t policy,
-                               int *node) {
+int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
+                              marcel_memory_node_selection_policy_t policy,
+                              int *node) {
+  int err;
   MAMI_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
-    int i, space, maxspace;
-    maxspace = 0;
-    for(i=0 ; i<memory_manager->nb_nodes ; i++) {
-      ma_memory_get_free_space(memory_manager, i, &space);
-      if (space > maxspace) {
-        maxspace = space;
+    int i;
+    unsigned long maxspace=memory_manager->memfree[0];
+    *node = 0;
+    for(i=1 ; i<memory_manager->nb_nodes ; i++) {
+      if (memory_manager->memfree[i] > maxspace) {
+        maxspace = memory_manager->memfree[i];
         *node = i;
       }
     }
   }
+  else {
+    mdebug_mami("Policy #%d unknown\n", policy);
+    errno = EINVAL;
+    err = -errno;
+  }
+
 
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
+  return err;
 }
 
 static

@@ -252,7 +252,7 @@ struct marcel_task {
 	char tls[MA_TLS_AREA_SIZE];
 #endif
 
-#ifdef ENABLE_STACK_JUMPING
+#if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	void *dummy; /*  Doit rester le _dernier_ champ */
 #endif
 };
@@ -267,6 +267,17 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
 #section marcel_inline
+#ifdef MA__SELF_VAR
+extern TBX_EXTERN
+#ifdef MA__USE_TLS
+	__thread
+#endif
+	marcel_t ma_self;
+MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
+{
+	return ma_self;
+}
+#else
 #depend "[marcel_macros]"
 #depend "asm/marcel_archdep.h[marcel_macros]"
 #depend "marcel_threads.h[marcel_macros]"
@@ -295,6 +306,7 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
 	}
 	return self;
 }
+#endif
 DEC_POSIX(pmarcel_t, self, (void));
 
 

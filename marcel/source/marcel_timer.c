@@ -199,7 +199,7 @@ static void timer_interrupt(int sig)
 	PROF_EVENT(timer_interrupt);
 
 	/* check that stack isn't overflowing */
-#ifndef ENABLE_STACK_JUMPING
+#if !defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	if (marcel_stackbase(MARCEL_SELF))
 		if (get_sp() < (unsigned long) marcel_stackbase(MARCEL_SELF) + (THREAD_SLOT_SIZE / 0x10)) {
 			mdebugl(0,"SP reached %lx while stack extends from %p to %p. Either you have a stack overflow in your program, or you just need to make THREAD_SLOT_SIZE bigger than 0x%lx in marcel/include/sys/isomalloc_archdep.c\n",get_sp(),marcel_stackbase(MARCEL_SELF),marcel_stackbase(MARCEL_SELF)+THREAD_SLOT_SIZE, THREAD_SLOT_SIZE);

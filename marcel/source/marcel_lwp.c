@@ -41,6 +41,8 @@ static int ma_call_lwp_notifier(unsigned long val, ma_lwp_t lwp)
 
 #endif
 
+marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
+
 LIST_HEAD(ma_list_lwp_head);
 
 #ifdef MA__LWPS
@@ -48,6 +50,11 @@ LIST_HEAD(ma_list_lwp_head);
 ma_rwlock_t __ma_lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
 marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
+
+#ifdef MA__SELF_VAR
+__thread marcel_lwp_t *ma_lwp_self = &__main_lwp;
+#endif
+
 #endif
 
 //#endif
@@ -112,6 +119,11 @@ static void *lwp_kthread_start_func(void *arg)
 	struct marcel_topo_level *level;
 	marcel_lwp_t *lwp = (marcel_lwp_t *)arg;
 	int vpnum;
+
+#ifdef MA__SELF_VAR
+	ma_lwp_self = lwp;
+	ma_self = ma_per_lwp(run_task,lwp);
+#endif
 
 	PROF_NEW_LWP(ma_vpnum(lwp), ma_per_lwp(run_task,lwp));
 

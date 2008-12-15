@@ -39,6 +39,11 @@ enum {
     MTRACE(info, current);             \
   } while(0)
 
+#ifdef MA__SELF_VAR
+#  define MA_SET_SELF(self)	do { ma_self = (self); } while(0)
+#else
+#  define MA_SET_SELF(self)	((void)0)
+#endif
 /* on effectue un longjmp. Le thread courrant ET le suivant doivent
  * être RUNNING. La variable previous_task doit être correctement
  * positionnée pour pouvoir annuler la propriété RUNNING du thread
@@ -47,6 +52,7 @@ enum {
 #define MA_THR_LONGJMP(cur_num, next, ret) \
   do {                                     \
     PROF_SWITCH_TO(cur_num, next); \
+    MA_SET_SELF(next); \
     call_ST_FLUSH_WINDOWS();               \
     marcel_ctx_set_tls_reg(next); \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \

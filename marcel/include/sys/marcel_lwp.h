@@ -130,6 +130,10 @@ extern TBX_EXTERN ma_atomic_t ma__last_vp;
 extern TBX_EXTERN ma_rwlock_t __ma_lwp_list_lock;
 extern struct list_head ma_list_lwp_head;
 
+#ifdef MA__SELF_VAR
+extern TBX_EXTERN __thread marcel_lwp_t *ma_lwp_self;
+#endif
+
 #endif
 
 #section marcel_functions
@@ -341,7 +345,16 @@ void marcel_leave_blocking_section(void);
 		} \
 	ma_for_all_lwp_from_end()
 
-#define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
+#ifdef MA__LWPS
+  #ifdef MA__SELF_VAR
+    #define MA_LWP_SELF				(ma_lwp_self)
+  #else
+    #define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
+  #endif
+#else
+  #define MA_LWP_SELF				(&__main_lwp)
+#endif
+
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)
 #define ma_softirq_pending(lwp) \

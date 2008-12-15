@@ -133,6 +133,16 @@ DEF_C(int,sched_get_priority_min,(int policy),(policy));
 DEF___C(int,sched_get_priority_min,(int policy),(policy));
 
 
+#ifdef MA__SELF_VAR
+#ifdef MA__USE_TLS
+__thread
+#endif
+	marcel_t ma_self
+#ifdef STANDARD_MAIN
+		= &__main_thread_struct
+#endif
+		;
+#endif
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
 	MA_BUG_ON(!ma_in_atomic());
@@ -151,8 +161,6 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 	}
 	return cur;
 }
-
-marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 
 /**************************************************************************/
 /**************************************************************************/

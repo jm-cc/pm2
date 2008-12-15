@@ -104,10 +104,27 @@
 #  undef MA__PROVIDE_TLS
 #endif
 
+/* MA__USE_TLS : if set, use TLS provided by system */
+#ifdef MA__USE_TLS
+#  undef MA__USE_TLS
+#endif
+
+/* MA__SELF_VAR : if set, store marcel_self in the ma_self variable */
+#ifdef MA__SELF_VAR
+#  undef MA__SELF_VAR
+#endif
+
+
 
 /*
  * Options chosen by the User, activating options implemented by Marcel
  */
+
+/* In mono, we can just store self in a global variable */
+#ifdef MARCEL_MONO
+#  define MA__SELF_VAR
+#  undef MA__USE_TLS
+#endif
 
 /* SMP/NUMA needs kernel threads */
 #if defined(MARCEL_SMP) || defined(MARCEL_NUMA)
@@ -139,6 +156,12 @@
 #  define MA__IFACE_LPT
 #  define MA__LIBPTHREAD
 #endif
+
+#ifdef MARCEL_USE_TLS
+#  define MA__SELF_VAR
+#  define MA__USE_TLS
+#endif
+
 
 /* If we have kernel threads and do not provide libpthread ourselves, we need to fix the LWP libpthread state in the timer handler */
 #if defined(MA__LWPS) && !defined(MA__LIBPTHREAD)

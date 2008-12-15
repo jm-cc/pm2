@@ -444,6 +444,9 @@ int main(int argc, char *argv[])
 	if(!marcel_ctx_setjmp(__ma_initial_main_ctx)) {
 		struct rlimit rlim;
 
+#ifdef MA__SELF_VAR
+		ma_self =
+#endif
 		__main_thread = (marcel_t)((((unsigned long)get_sp() - 128) &
 					    ~(THREAD_SLOT_SIZE-1)) -
 					   MAL(sizeof(marcel_task_t)));

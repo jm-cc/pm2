@@ -28,14 +28,18 @@ static __tbx_inline__ void marcel_set_stack_jump(marcel_t m);
 #ifdef ENABLE_STACK_JUMPING
 static __tbx_inline__ void marcel_prepare_stack_jump(void *stack)
 {
+#ifndef MA__SELF_VAR
   char *s = (char *)stack;
   *(marcel_t *)(s + THREAD_SLOT_SIZE - sizeof(char *)) = marcel_self();
+#endif
 }
 
 static __tbx_inline__ void marcel_set_stack_jump(marcel_t m)
 {
+#ifndef MA__SELF_VAR
   register unsigned long sp = get_sp();
 
   *(marcel_t *)((sp & ~(THREAD_SLOT_SIZE-1)) + THREAD_SLOT_SIZE - sizeof(void *)) = m;
+#endif
 }
 #endif

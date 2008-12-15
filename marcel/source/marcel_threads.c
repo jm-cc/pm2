@@ -200,7 +200,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 
 	//t->tls
 
-#ifdef ENABLE_STACK_JUMPING
+#if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	*((marcel_t *) (ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif
 
@@ -1151,7 +1151,7 @@ static void __marcel_init main_thread_init(void)
 	}
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
-#ifdef ENABLE_STACK_JUMPING
+#if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	*((marcel_t *)(ma_task_slot_top(__main_thread) - sizeof(void *))) = __main_thread;
 #endif
 

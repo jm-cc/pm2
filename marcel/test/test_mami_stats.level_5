@@ -20,7 +20,7 @@ hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [before attach]  stats=0
-[after attach]   stats=100
+[after attach]   stats=4096
 [after unattach] stats=0
 [before attach]  stats=0
 [after attach]   stats=0

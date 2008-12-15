@@ -49,7 +49,7 @@ do { \
         ma_preempt_count()--; \
 	if (ma_preempt_count() & MA_PREEMPT_BUGMASK) { \
 		ma_show_preempt_backtrace(); \
-		MA_BUG(); \
+		MA_BUG_ON(1); \
 	} \
 } while (0)
 

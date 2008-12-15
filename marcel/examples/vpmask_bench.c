@@ -25,7 +25,7 @@ any_t f_busy(any_t arg)
 {
   marcel_printf("I'm alive\n");
   started = 1;
-  ma_mb();
+  ma_smp_mb();
   while (!finished);
   marcel_printf("I'm dead\n");
 
@@ -36,7 +36,7 @@ any_t f_idle(any_t arg)
 {
   marcel_printf("I'm idle (2)\n");
   started = 1;
-  ma_mb();
+  ma_smp_mb();
   while (!finished) marcel_sleep(1);
   marcel_printf("I'm dead (2)\n");
 

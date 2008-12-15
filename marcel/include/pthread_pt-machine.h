@@ -21,12 +21,12 @@
 
 #depend "asm/linux_system.h[]"
 #ifndef MEMORY_BARRIER
-#  define MEMORY_BARRIER ma_mb()
+#  define MEMORY_BARRIER ma_smp_mb()
 #endif
 #ifndef READ_MEMORY_BARRIER
-#  define READ_MEMORY_BARRIER() ma_rmb()
+#  define READ_MEMORY_BARRIER() ma_smp_rmb()
 #endif
 #ifndef WRITE_MEMORY_BARRIER
-#  define WRITE_MEMORY_BARRIER() ma_wmb()
+#  define WRITE_MEMORY_BARRIER() ma_smp_wmb()
 #endif
 

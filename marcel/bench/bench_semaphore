@@ -24,6 +24,6 @@ loop="marcel"
 
 prog="pingpong"
 args="1000000 0"
-dest_result="semaphore"
+dest_result="pm2_bench_semaphore_${USER}_result"
 
 

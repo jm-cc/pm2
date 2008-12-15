@@ -81,6 +81,13 @@ typedef int marcel_memory_membind_policy_t;
 /** \brief The memory will not be bound to any node */
 #define MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH       ((marcel_memory_membind_policy_t)32)
 
+/** \brief Type of a statistic */
+typedef int marcel_memory_stats_t;
+/** \brief The total amount of memory */
+#define MARCEL_MEMORY_STAT_MEMORY_TOTAL      ((marcel_memory_stats_t)0)
+/** \brief The free amount of memory */
+#define MARCEL_MEMORY_STAT_MEMORY_FREE       ((marcel_memory_stats_t)1)
+
 #section structures
 
 #depend "marcel_mutex.h[types]"
@@ -188,6 +195,10 @@ struct marcel_memory_manager_s {
   marcel_memory_huge_pages_area_t **huge_pages_heaps;
   /** \brief List of pre-allocated memory areas */
   marcel_memory_area_t **heaps;
+  /** \brief Total memory per node */
+  unsigned long *memtotal;
+  /** \brief Free memory per node */
+  unsigned long *memfree;
   /** \brief Lock to manipulate the data */
   marcel_mutex_t lock;
   /** \brief System page size */
@@ -547,6 +558,14 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager,
 int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
                                         void *buffer,
                                         size_t size);
+
+/**
+ * Indicates the value of the statistic STAT for the node NODE
+ */
+int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
+                        int node,
+                        marcel_memory_stats_t stat,
+                        unsigned long *value);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

@@ -124,6 +124,14 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->nb_nodes = marcel_nbnodes;
   memory_manager->alignment = 1;
 
+  // How much total and free memory per node
+  memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
+  memory_manager->memfree = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+    memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+  }
+
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc((memory_manager->nb_nodes+1) * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
@@ -420,6 +428,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   }
   else {
     ptr = &(memory_manager->heaps[node]);
+    memory_manager->memfree[node] += size;
   }
 
   if (*ptr == NULL) *ptr = available;
@@ -732,6 +741,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
     heap->start += size;
     heap->nbpages -= nbpages;
   }
+  memory_manager->memfree[node] -= size;
   return buffer;
 }
 
@@ -773,7 +783,7 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
 
     // Register memory
     mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, size);
-    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, 1, NULL);
+    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
@@ -1092,7 +1102,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   else {
     for(i=0; i<pages; i++) {
       if (pagenodes[i] != node) {
-        marcel_printf("MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
+        marcel_fprintf(stderr, "MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
         err = -EINVAL;
       }
     }
@@ -1678,6 +1688,38 @@ int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
 
 int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager) {
   return (memory_manager->hugepagesize != 0);
+}
+
+int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
+                        int node,
+                        marcel_memory_stats_t stat,
+                        unsigned long *value) {
+  int err=0;
+
+  MAMI_LOG_IN();
+
+  if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
+    mdebug_mami("Node #%d invalid\n", node);
+    errno = EINVAL;
+    err = -errno;
+  }
+
+  marcel_mutex_lock(&(memory_manager->lock));
+  if (stat == MARCEL_MEMORY_STAT_MEMORY_TOTAL) {
+    *value = memory_manager->memtotal[node];
+  }
+  else if (stat == MARCEL_MEMORY_STAT_MEMORY_FREE) {
+    *value = memory_manager->memfree[node];
+  }
+  else {
+    mdebug_mami("Statistic #%d unknown\n", stat);
+    errno = EINVAL;
+    err = -errno;
+  }
+  marcel_mutex_unlock(&(memory_manager->lock));
+
+  MAMI_LOG_OUT();
+  return err;
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

@@ -17,6 +17,8 @@
 #include "marcel.h"
 #include "marcel_sem.h"
 
+#ifdef MARCEL_DEVIATION_ENABLED
+
 static marcel_sem_t sem1;
 static marcel_sem_t sem2;
 
@@ -118,3 +120,13 @@ int marcel_main(int argc, char *argv[])
 
   return 0;
 }
+#else /* MARCEL_DEVIATION_ENABLED */
+#  warning Marcel deviation must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel deviation' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_DEVIATION_ENABLED */

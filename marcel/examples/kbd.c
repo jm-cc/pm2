@@ -20,6 +20,8 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_DEVIATION_ENABLED
+
 struct termios tinit, tchg;
 
 void passer_en_mode_interactif()
@@ -79,3 +81,13 @@ int marcel_main(int argc, char *argv[])
    repasser_en_mode_normal();
    return 0;
 }
+#else /* MARCEL_DEVIATION_ENABLED */
+#  warning Marcel deviation must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel deviation' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_DEVIATION_ENABLED */

@@ -303,6 +303,8 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   }
   tfree(memory_manager->reading_access_costs);
   tfree(memory_manager->writing_access_costs);
+  tfree(memory_manager->memtotal);
+  tfree(memory_manager->memfree);
 
   MAMI_LOG_OUT();
 }

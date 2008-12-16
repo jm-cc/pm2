@@ -121,14 +121,20 @@ DEF_POSIX(int, attr_setstack, (marcel_attr_t *attr, void * stackaddr, size_t sta
                     (attr, stackaddr, stacksize),
 {
 	LOG_IN();
-	if ((stacksize < PMARCEL_STACK_MIN) || (stacksize > THREAD_SLOT_SIZE)) {
+	if ((stacksize < PMARCEL_STACK_MIN)
+#ifndef MA__SELF_VAR
+		|| (stacksize > THREAD_SLOT_SIZE)
+#endif
+		) {
 		mdebug("pthread_attr_setstack : taille de pile invalide !!\n");
 		LOG_RETURN(EINVAL);
 	}
+#ifndef MA__SELF_VAR
 	if ((uintptr_t) stackaddr % THREAD_SLOT_SIZE != 0) {
 		mdebug("pthread_attr_setstack : pile non alignee !!\n");
 		LOG_RETURN(EINVAL);
 	}
+#endif
 	/* stackaddr est le bas de la pile */
 	attr->__stacksize = stacksize;
 	attr->__stackaddr = (char *) stackaddr + stacksize;

@@ -17,6 +17,8 @@
 
 #include <pthread.h>
 
+#ifdef MA__IFACE_PMARCEL
+
 #ifndef MARCEL_VERSION
 # error "We're not using Marcel's <pthread.h>."
 #endif
@@ -65,3 +67,14 @@ main (int argc, char *argv[])
 
 	return 0;
 }
+#else
+#  warning Marcel must be compiled in "pmarcel" mode for this program
+int main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'pmarcel' mode not selected in the flavor\n");
+
+  return 0;
+}
+#endif
+

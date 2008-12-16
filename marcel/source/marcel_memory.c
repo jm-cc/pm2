@@ -467,6 +467,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
                   (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
       (*ptr)->end = (*ptr)->next->end;
       (*ptr)->nbpages += (*ptr)->next->nbpages;
+      tfree((*ptr)->next);
       (*ptr)->next = (*ptr)->next->next;
     }
     else

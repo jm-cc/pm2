@@ -205,8 +205,8 @@ warning_start (void) {
 
 struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
   .start = warning_start,
-  .submit = warning_start,
-  .shake = warning_start,
+  .submit = (void*)warning_start,
+  .shake = (void*)warning_start,
 };
 
 #endif /* MARCEL_MAMI_ENABLED */

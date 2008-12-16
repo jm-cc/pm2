@@ -16,7 +16,7 @@
 
 #include "marcel.h"
 
-#ifdef MARCEL_EXCEPTIONS_ENABLED
+#if defined(MARCEL_EXCEPTIONS_ENABLED) && defined(MARCEL_DEVIATION_ENABLED)
 marcel_exception_t USER_ERROR = "USER_ERROR";
 
 void deviation(void *arg)
@@ -59,10 +59,10 @@ int marcel_main(int argc, char *argv[])
    return 0;
 }
 #else
-#  warning Marcel exceptions must be enabled for this program
+#  warning Marcel exceptions and deviation must be enabled for this program
 int marcel_main(int argc, char *argv[])
 {
-  fprintf(stderr, "'marcel exceptions' feature disabled in the flavor\n");
+  fprintf(stderr, "'marcel exceptions' or 'deviation' features disabled in the flavor\n");
   return 0;
 }
 #endif

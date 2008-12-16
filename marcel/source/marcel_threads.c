@@ -312,7 +312,10 @@ marcel_create_internal(marcel_t * __restrict pid,
 
 	if (attr->__stackaddr) {
 		register unsigned long top = ((unsigned long) attr->__stackaddr)
-		    & ~(THREAD_SLOT_SIZE - 1);
+#ifndef MA__SELF_VAR
+		    & ~(THREAD_SLOT_SIZE - 1)
+#endif
+		    ;
 		mdebug("top=%lx, stack_top=%p\n", top, attr->__stackaddr);
 		new_task = ma_slot_top_task(top);
 		if ((unsigned long) new_task <=

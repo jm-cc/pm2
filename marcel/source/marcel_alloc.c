@@ -160,6 +160,7 @@ static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 	MA_BUG_ON((unsigned long) ptr >= (1ul<<32));
 #endif
 	struct user_desc desc = {
+		/* TODO: need an entry allocator for user-provided stacks */
 		.entry_number = (SLOT_AREA_TOP - (unsigned long) ptr) / THREAD_SLOT_SIZE - 1,
 		.base_addr = (unsigned long) tcb,
 		.limit = 0xfffffffful,

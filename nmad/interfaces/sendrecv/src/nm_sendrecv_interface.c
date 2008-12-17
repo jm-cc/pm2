@@ -636,7 +636,6 @@ int nm_sr_get_size(struct nm_core *p_core,
 
   if (p_request->p_gate == NM_ANY_GATE)
     {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
       *size = nm_so_any_src_get(&p_core->so_sched.any_src, tag)->expected_len;
     }
   else 

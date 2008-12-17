@@ -124,7 +124,7 @@ void mpir_op_sum(void *invec,
     case MPI_DOUBLE_COMPLEX : {
       double *i_invec = (double *) invec;
       double *i_inoutvec = (double *) inoutvec;
-      for(i=0 ; i<*len*2 ; i++) {
+      for(i=0 ; i<*len ; i++) {
         i_inoutvec[i] += i_invec[i];
       }
       break;
@@ -132,7 +132,7 @@ void mpir_op_sum(void *invec,
     case MPI_LONG : {
       long *i_invec = (long *) invec;
       long *i_inoutvec = (long *) inoutvec;
-      for(i=0 ; i<*len*2 ; i++) {
+      for(i=0 ; i<*len ; i++) {
         i_inoutvec[i] += i_invec[i];
       }
       break;

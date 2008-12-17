@@ -29,7 +29,7 @@ create_test_flavor() {
 	--modules="\"marcel tbx init\"" --marcel="mono"			\
 	--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
 	--marcel="standard_main"					\
-	--marcel="enable_keys"						\
+	--marcel="enable_keys" --marcel="enable_deviation"		\
         --marcel="enable_cleanup" --marcel="enable_once"		\
 	--marcel="bug_on"						\
 	--all="gdb" --all="build_static" $_output_redirect

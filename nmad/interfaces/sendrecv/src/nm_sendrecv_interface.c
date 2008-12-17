@@ -829,6 +829,7 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
       struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
       p_sr_anysrc->p_gate = p_gate;
       p_request = p_sr_anysrc->rreq;
+      p_sr_anysrc->rreq = NULL;
     } 
   else 
     {

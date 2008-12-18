@@ -26,7 +26,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
 
   b = malloc(100);
-  err = marcel_memory_migrate_on_next_touch(&memory_manager, b, 0);
+  memory_manager.kernel_nexttouch_migration = 0;
+  err = marcel_memory_migrate_on_next_touch(&memory_manager, b);
   if (err < 0) {
     perror("marcel_memory_migrate_on_next_touch");
   }

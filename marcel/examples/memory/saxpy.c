@@ -84,8 +84,9 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
     }
 
     if (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, vectorA[k], migration_policy);
-      marcel_memory_migrate_on_next_touch(&memory_manager, vectorB[k], migration_policy);
+      memory_manager.kernel_nexttouch_migration = (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      marcel_memory_migrate_on_next_touch(&memory_manager, vectorA[k]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, vectorB[k]);
     }
   }
 

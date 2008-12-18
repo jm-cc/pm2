@@ -32,7 +32,8 @@ any_t reader(any_t arg) {
   marcel_memory_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
-  marcel_memory_migrate_on_next_touch(&memory_manager, b, 0);
+  memory_manager.kernel_nexttouch_migration = 0;
+  marcel_memory_migrate_on_next_touch(&memory_manager, b);
 
   marcel_memory_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);

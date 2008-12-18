@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <numaif.h>
 #include <sys/mman.h>
+#include <malloc.h>
 
 #if !defined(__NR_move_pages)
 
@@ -112,6 +113,8 @@ static unsigned long gethugepagesize(void) {
 
 void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   int node, dest;
+  void *ptr;
+  int err;
 
   MAMI_LOG_IN();
   memory_manager->root = NULL;
@@ -123,6 +126,13 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
   memory_manager->nb_nodes = marcel_nbnodes;
   memory_manager->alignment = 1;
+
+  // Is in-kernel migration available
+  ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
+  err = madvise(ptr, memory_manager->normalpagesize, 12);
+  memory_manager->kernel_nexttouch_migration = (err>=0);
+  free(ptr);
+  mdebug_mami("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration);
 
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
@@ -1058,7 +1068,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
   MAMI_LOG_OUT();
 }
 
-int ma_memory_mbind(void *start, unsigned long len, int mode, 
+int ma_memory_mbind(void *start, unsigned long len, int mode,
                     const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
   int err = 0;
 
@@ -1414,7 +1424,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   marcel_mutex_unlock(&(g_memory_manager->lock));
 }
 
-int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer, int kernel) {
+int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
   int err=0;
   static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
@@ -1423,34 +1433,14 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
 
-  if (!handler_set) {
-    struct sigaction act;
-    handler_set = 1;
-    act.sa_flags = SA_SIGINFO;
-    act.sa_sigaction = ma_memory_segv_handler;
-    err = sigaction(SIGSEGV, &act, NULL);
-    if (err < 0) {
-      perror("(marcel_memory_migrate_on_next_touch) sigaction");
-      marcel_mutex_unlock(&(memory_manager->lock));
-      MAMI_LOG_OUT();
-      return -errno;
-    }
-  }
-
   g_memory_manager = memory_manager;
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_mami("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
-    if (kernel != 1) { // user-space migration
-      data->status = MARCEL_MEMORY_INITIAL_STATUS;
-      err = mprotect(data->startaddress, data->size, PROT_NONE);
-      if (err < 0) {
-        perror("(marcel_memory_migrate_on_next_touch) mprotect");
-      }
-    }
-    else { // in-kernel migration
+    if (memory_manager->kernel_nexttouch_migration == 1 && data->mami_allocated) {
+      // in-kernel migration
 #warning todo: comment mettre a jour la localite des pages
       data->status = MARCEL_MEMORY_KERNEL_MIGRATION_STATUS;
       err = ma_memory_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
@@ -1460,6 +1450,26 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
       err = madvise(data->startaddress, data->size, 12);
       if (err < 0) {
         perror("(marcel_memory_migrate_on_next_touch) madvise");
+      }
+    }
+    else { // user-space migration
+      if (!handler_set) {
+        struct sigaction act;
+        handler_set = 1;
+        act.sa_flags = SA_SIGINFO;
+        act.sa_sigaction = ma_memory_segv_handler;
+        err = sigaction(SIGSEGV, &act, NULL);
+        if (err < 0) {
+          perror("(marcel_memory_migrate_on_next_touch) sigaction");
+          marcel_mutex_unlock(&(memory_manager->lock));
+          MAMI_LOG_OUT();
+          return -errno;
+        }
+      }
+      data->status = MARCEL_MEMORY_INITIAL_STATUS;
+      err = mprotect(data->startaddress, data->size, PROT_NONE);
+      if (err < 0) {
+        perror("(marcel_memory_migrate_on_next_touch) mprotect");
       }
     }
   }

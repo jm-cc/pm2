@@ -192,9 +192,9 @@ main (int argc, char **argv)
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     if (mpol == MAMI_NEXT_TOUCH) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, a[team], 0);
-      marcel_memory_migrate_on_next_touch(&memory_manager, b[team], 0);
-      marcel_memory_migrate_on_next_touch(&memory_manager, c[team], 0);
+      marcel_memory_migrate_on_next_touch(&memory_manager, a[team]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, b[team]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, c[team]);
     }
 
     for (i = 0; i < nb_threads; i++) {

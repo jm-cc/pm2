@@ -215,6 +215,8 @@ struct marcel_memory_manager_s {
   int membind_node;
   /** \brief Are memory addresses aligned on page boundaries or not? */
   int alignment;
+  /** \brief Is the kernel next touch migration available */
+  int kernel_nexttouch_migration;
 };
 
 #section marcel_functions
@@ -475,8 +477,7 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
  * @param buffer address of the memory area
  */
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
-                                        void *buffer,
-                                        int kernel);
+                                        void *buffer);
 
 /**
  * Move the area to the specified node.

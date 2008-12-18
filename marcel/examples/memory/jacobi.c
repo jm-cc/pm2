@@ -122,8 +122,9 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, i
   }
   if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
     for (i = 0; i <= grid_size+1; i++) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i], migration_policy);
-      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i], migration_policy);
+      memory_manager.kernel_nexttouch_migration = (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid1[i]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, grid2[i]);
     }
   }
 

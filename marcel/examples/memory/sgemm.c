@@ -89,9 +89,10 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
     }
 
     if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, matA[k], migration_policy);
-      marcel_memory_migrate_on_next_touch(&memory_manager, matB[k], migration_policy);
-      marcel_memory_migrate_on_next_touch(&memory_manager, matC[k], migration_policy);
+      memory_manager.kernel_nexttouch_migration = (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      marcel_memory_migrate_on_next_touch(&memory_manager, matA[k]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, matB[k]);
+      marcel_memory_migrate_on_next_touch(&memory_manager, matC[k]);
     }
   }
 

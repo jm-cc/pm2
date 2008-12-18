@@ -38,7 +38,8 @@ int marcel_main(int argc, char * argv[]) {
   err = marcel_memory_check_pages_location(&memory_manager, ptr, size, node);
   if (err < 0) perror("marcel_memory_check_pages_location unexpectedly failed");
 
-  err = marcel_memory_migrate_on_next_touch(&memory_manager, ptr, 0);
+  memory_manager.kernel_nexttouch_migration = 0;
+  err = marcel_memory_migrate_on_next_touch(&memory_manager, ptr);
   if (err < 0) perror("marcel_memory_migrate_on_next_touch unexpectedly failed");
 
   for(i=0 ; i<10000 ; i++) ptr[i] = 12;

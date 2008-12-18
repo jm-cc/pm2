@@ -132,6 +132,13 @@ write
 #  include <asm/unistd.h>
 #endif
 
+/* GCC may define `__i686' as a macro, which interferes with its use in
+   assembly code.  See http://sourceware.org/bugzilla/show_bug.cgi?id=4507
+   for details.  */
+#if (defined __ASSEMBLER__ ) && (defined __i686)
+# undef __i686
+#endif
+
 #define SYSCALL1(name) \
     .text;\
     .globl __libc_##name;\

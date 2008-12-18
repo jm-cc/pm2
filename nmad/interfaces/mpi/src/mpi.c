@@ -1870,7 +1870,7 @@ int MPI_Test(MPI_Request *request,
     if (mpir_request->request_ptr != NULL) {
       FREE_AND_SET_NULL(mpir_request->request_ptr);
     }
-    
+
     // Release one active communication for that type
     if (mpir_request->request_datatype > MPI_PACKED) {
       err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
@@ -2011,6 +2011,9 @@ int MPI_Request_free(MPI_Request *request) {
   MPI_NMAD_LOG_IN();
   mpir_request->request_type = MPI_REQUEST_ZERO;
   mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
+  if (mpir_request->contig_buffer != NULL) {
+    FREE_AND_SET_NULL(mpir_request->contig_buffer);
+  }
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;

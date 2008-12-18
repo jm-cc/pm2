@@ -72,6 +72,15 @@ pthread-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 pthread-cpp-initializer-ldflags := -lstdc++
 pthread-cpp-initializer-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 
+# Linking against Marcel's libpthread.  Use
+# `--undefined=marcel_create' to make sure we use Marcel's libpthread
+# at run-time.
+# XXX: GNU ld is assumed.
+pthread-abi-simple-ldflags :=						\
+  -Wl,--undefined=marcel_create						\
+  -Wl,--rpath="`pm2-config --flavor=$(PM2_FLAVOR) --libdir marcel`"
+
+
 hello: CC=g++
 
 # Applications dont le nom n'a pas de .c correspondant

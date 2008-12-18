@@ -361,15 +361,15 @@ int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_
 
 void __cleanup_fct_attribute
 __pthread_register_cancel(__pthread_unwind_buf_t *buf)
-{ abort(); }
+{ MA_BUG(); }
 
 void __cleanup_fct_attribute
 __pthread_unregister_cancel(__pthread_unwind_buf_t *buf)
-{ abort(); }
+{ MA_BUG(); }
 
 void __cleanup_fct_attribute
 __pthread_unwind_next(__pthread_unwind_buf_t *buf)
-{ abort(); }
+{ MA_BUG(); }
 
 #endif
 

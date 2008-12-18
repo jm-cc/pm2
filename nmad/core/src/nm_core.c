@@ -481,6 +481,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
 		  p_gdrv->p_in_rq_array[trk_id] = NULL;
 		}
+	      p_gdrv->receptacle.driver->close(p_drv);
 	      TBX_FREE(p_gdrv->p_in_rq_array);
 	      p_gdrv->p_in_rq_array = NULL;
 	    }

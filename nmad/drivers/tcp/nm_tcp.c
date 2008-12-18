@@ -117,6 +117,7 @@ struct nm_tcp_pkt_wrap {
 /** Tcp NewMad Driver */
 static int nm_tcp_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_tcp_exit(struct nm_drv* p_drv);
 static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq);
@@ -133,6 +134,7 @@ static const struct nm_drv_iface_s nm_tcp_driver =
   {
     .query              = &nm_tcp_query,
     .init               = &nm_tcp_init,
+    .close              = &nm_tcp_exit,
 
     .connect		= &nm_tcp_connect,
     .accept		= &nm_tcp_accept,
@@ -407,10 +409,9 @@ nm_tcp_exit		(struct nm_drv *p_drv)
   
   p_tcp_drv->nb_gates--;
   TBX_FREE(p_tcp_drv->url);
-  SYSCALL(close(p_tcp_drv->server_fd));
-  TBX_FREE(p_tcp_drv);
+/*   SYSCALL(close(p_tcp_drv->server_fd)); */
   
-  /* close trakcs */
+  /* close tracks */
   int i;
   for(i = 0; i < p_tcp_drv->nb_trks; i++)
     {
@@ -418,6 +419,7 @@ nm_tcp_exit		(struct nm_drv *p_drv)
       TBX_FREE(p_tcp_drv->trks_array[i].gate_map);
     }
   TBX_FREE(p_tcp_drv->trks_array);
+  TBX_FREE(p_tcp_drv);
 
   return NM_ESUCCESS;
 }

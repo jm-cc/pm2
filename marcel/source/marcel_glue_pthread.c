@@ -351,4 +351,26 @@ int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_
 	return 0;
 }
 
+
+#ifdef __GLIBC__
+
+/* Glibc/NPTL cleanup function stubs.  These symbols are required, e.g., by
+   `librt.so' from Glibc 2.7, with version `GLIBC_2.3.3'.
+
+   FIXME: Implement them.  */
+
+void __cleanup_fct_attribute
+__pthread_register_cancel(__pthread_unwind_buf_t *buf)
+{ abort(); }
+
+void __cleanup_fct_attribute
+__pthread_unregister_cancel(__pthread_unwind_buf_t *buf)
+{ abort(); }
+
+void __cleanup_fct_attribute
+__pthread_unwind_next(__pthread_unwind_buf_t *buf)
+{ abort(); }
+
+#endif
+
 #endif /* MA__LIBPTHREAD */

@@ -38,15 +38,15 @@ endif
 
 
 libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
-	@/bin/cp $(PUK_LIBS) $(PM2_BUILD_DIR)/lib/
+	@cp $(PUK_LIBS) $(PM2_BUILD_DIR)/lib/
 
 link:
 
 dot_h: $(PUK_BUILDDIR)/config.status
 
 clean:
-	-/bin/rm $(GEN_CONFIG_FILES)
-	-/bin/rm -r $(PUK_ROOT)/puk
+	-rm $(GEN_CONFIG_FILES)
+	-rm -r $(PUK_ROOT)/puk
 
 flavormaks: $(GEN_CONFIG_FILES)
 
@@ -74,12 +74,12 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
            if [ "x$$autoheader_ver" = "x" ]; then echo "Bad autoheader version (should be GNU)"; exit 1; \
            else echo "      - $$autoheader_ver"; fi )
 	@echo "    generating externals/configure [autoconf] ..."
-	@/bin/cp configure.ac externals/
+	@cp configure.ac externals/
 	@( cd externals ; $${AUTOCONF:-autoconf} )
 	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
 	@( cd externals ; $${AUTOHEADER:-autoheader} )
-	-@/bin/mkdir $(PUK_BUILDDIR)
-	-@/bin/mkdir $(PM2_BUILD_DIR)/lib/
+	-@mkdir $(PUK_BUILDDIR)
+	-@mkdir $(PM2_BUILD_DIR)/lib/
 
 # ## configure
 # ##

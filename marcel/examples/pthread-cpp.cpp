@@ -78,3 +78,8 @@ int main(int argc, char *argv[])
 }
 #endif
 
+/*
+   Local Variables:
+   tab-width: 2
+   End:
+ */

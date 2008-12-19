@@ -17,8 +17,8 @@
 
 if [ -z "$prog" ]
 then
-		echo "error: \`\$prog' is undefined."
-		exit 1
+    echo "error: \`\$prog' is undefined."
+    exit 1
 fi
 
 # Configuration

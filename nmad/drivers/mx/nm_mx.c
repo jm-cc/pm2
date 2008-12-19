@@ -907,6 +907,8 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
     
     goto out;
   }
+  tbx_free(mx_pw_mem, p_mx_pw);
+  p_pw->drv_priv = NULL;
   err = NM_ESUCCESS;
   
  out:

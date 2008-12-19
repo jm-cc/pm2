@@ -454,6 +454,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 #endif /* PIOMAN */
 	      nm_so_pw_free(p_pw);
 	    }
+	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	}
     }
 
@@ -481,7 +482,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
 		  p_gdrv->p_in_rq_array[trk_id] = NULL;
 		}
-	      p_gdrv->receptacle.driver->close(p_drv);
 	      TBX_FREE(p_gdrv->p_in_rq_array);
 	      p_gdrv->p_in_rq_array = NULL;
 	    }
@@ -506,6 +506,14 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	      TBX_FREE(p_gdrv);
 	      p_gate->p_gate_drv_array[j] = NULL;
 	    }
+	}
+    }
+  for(i = 0; i < p_core->nb_drivers; i++)
+    {
+      struct nm_drv*p_drv = &p_core->driver_array[i];
+      if(p_drv->driver->close)
+	{
+	  (*p_drv->driver->close)(p_drv);
 	}
     }
   /* close all gates */

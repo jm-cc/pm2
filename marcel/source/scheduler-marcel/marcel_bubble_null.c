@@ -30,8 +30,8 @@ null_sched_vp_is_idle(unsigned vp)
 }
 #endif
 
-struct ma_bubble_sched_struct marcel_bubble_null_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (null,
 //	.vp_is_idle = null_sched_vp_is_idle,
-};
+);
 
 #endif /* MA__BUBBLES */

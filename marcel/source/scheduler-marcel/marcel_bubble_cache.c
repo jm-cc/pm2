@@ -839,12 +839,12 @@ cache_steal (unsigned int from_vp) {
 }
 #endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
 
-struct ma_bubble_sched_struct marcel_bubble_cache_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (cache,
   .init = cache_sched_init,
   .exit = cache_sched_exit,
   .submit = cache_sched_submit,
 #if MA_CACHE_BSCHED_USE_WORK_STEALING
   .vp_is_idle = cache_steal,
 #endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
-};
+);
 #endif /* MA__BUBBLES */

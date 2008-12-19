@@ -320,9 +320,9 @@ spread_sched_vp_is_idle(unsigned vp)
   return 1;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_spread_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (spread,
   .submit = spread_sched_submit,
   //.vp_is_idle = spread_sched_vp_is_idle,
-};
+);
 
 #endif

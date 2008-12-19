@@ -189,11 +189,11 @@ memory_sched_shake () {
   return ret;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
   .start = memory_sched_start,
   .submit = memory_sched_submit,
   .shake = memory_sched_shake,
-};
+);
 
 #else /* MARCEL_MAMI_ENABLED */
 
@@ -203,11 +203,11 @@ warning_start (void) {
   return 0;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_memory_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
   .start = warning_start,
   .submit = (void*)warning_start,
   .shake = (void*)warning_start,
-};
+);
 
 #endif /* MARCEL_MAMI_ENABLED */
 #endif /* MA__BUBBLES */

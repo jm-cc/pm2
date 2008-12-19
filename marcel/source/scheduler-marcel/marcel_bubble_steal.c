@@ -250,10 +250,10 @@ steal_sched_start(void)
 	return 0;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_steal_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (steal,
 	.start = steal_sched_start,
 	.sched = steal_sched_sched,
 	.vp_is_idle = marcel_bubble_steal_work,
-};
+);
 
 #endif

@@ -196,10 +196,10 @@ gang_vp_is_idle(unsigned vp TBX_UNUSED)
 	/* This lwp is idle... TODO: check other that other LWPs of the same controller are idle too, and get another gang (that gang terminated) */
 	return 0;
 }
-struct ma_bubble_sched_struct marcel_bubble_gang_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (gang,
 	.init = gang_sched_init,
 	.start = gang_sched_start,
 	.exit = gang_sched_exit,
 	.vp_is_idle = gang_vp_is_idle,
-};
+);
 #endif

@@ -162,14 +162,14 @@ explode_sched_tick(marcel_bubble_t *b TBX_UNUSED)
   return 0;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_explode_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (explode,
   .init = explode_sched_init,
   .exit = explode_sched_exit,
   .submit = explode_sched_submit,
   .vp_is_idle = explode_sched_vp_is_idle,
   .tick = explode_sched_tick,
   .sched = explode_sched_sched,
-};
+);
 
 #endif /* MA__BUBBLES */
 

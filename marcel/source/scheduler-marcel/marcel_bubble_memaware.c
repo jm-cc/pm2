@@ -21,8 +21,8 @@
  *
  */
 
-#ifdef MA__NUMA_MEMORY
 #ifdef MA__BUBBLES
+#ifdef MA__NUMA_MEMORY
 
 int ma_bubble_memaware_checkload = 1;
 int ma_bubble_memaware_nodelevel = -1;
@@ -398,10 +398,15 @@ static int memaware_sched_submit(marcel_entity_t *e)
   return 0;
 }
 
-struct ma_bubble_sched_struct marcel_bubble_memaware_sched = {
+MARCEL_DEFINE_BUBBLE_SCHEDULER (memaware,
   .submit = memaware_sched_submit,
   .vp_is_idle = memaware,
-};
+);
 
+#else /* !MA__NUMA_MEMORY */
+
+/* Define an empty scheduler.  */
+MARCEL_DEFINE_BUBBLE_SCHEDULER (memaware);
+
+#endif /* !MA__NUMA_MEMORY */
 #endif /* BUBBLES */
-#endif /* MA__NUMA_MEMORY */

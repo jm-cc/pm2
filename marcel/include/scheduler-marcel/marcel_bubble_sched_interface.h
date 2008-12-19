@@ -57,6 +57,18 @@ struct ma_bubble_sched_struct {
 #section types
 typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 
+#section macros
+
+/** \brief Define a bubble scheduler named \param name, whose
+ * \code marcel_bubble_sched_t is initialized with
+ * \param field_initializers.  */
+#define MARCEL_DEFINE_BUBBLE_SCHEDULER(_name, _field_initializers...)	\
+  marcel_bubble_sched_t marcel_bubble_ ## _name ## _sched =		\
+    {									\
+      _field_initializers						\
+    }
+
+
 #section marcel_types
 #depend "[marcel_structures]"
 typedef struct ma_bubble_sched_struct *ma_bubble_sched_t;

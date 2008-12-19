@@ -222,6 +222,24 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			}
 		} else
 #endif
+#ifdef MA__BUBBLES
+		if (!strcmp (argv[i], "--marcel-bubble-scheduler")) {
+			const marcel_bubble_sched_t *scheduler;
+			if (i == *argc - 1) {
+				fprintf(stderr,
+								"Fatal error: --marcel-bubble-scheduler option must be followed "
+								"by the name of a bubble scheduler.\n");
+				exit(1);
+			}
+			scheduler = marcel_lookup_bubble_scheduler(argv[++i]);
+			if (scheduler == NULL) {
+				fprintf (stderr,
+								 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i]);
+				exit(1);
+			}
+			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
+		} else
+#endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"
 			    "--marcel-top file		Dump a top-like output to file\n"
@@ -242,6 +260,9 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #ifdef MA__NUMA
 			    "--marcel-maxarity arity	Insert fake levels until topology arity is at most arity\n"
 #endif
+#endif
+#ifdef MA__BUBBLES
+					"--marcel-bubble-scheduler sched   Use the given bubble scheduler\n"
 #endif
 					"--marcel-synthetic-topology topo  Create a synthetic or \"fake\" topology\n"
 					"                                  according to the given description\n"

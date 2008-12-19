@@ -155,7 +155,7 @@ static void *ldt_alloc(void *foo TBX_UNUSED)
 }
 #endif
 
-static void tls_attach(marcel_t t) {
+void marcel_tls_attach(marcel_t t) {
 #if defined(LINUX_SYS)
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	_dl_allocate_tls(tcb);
@@ -197,10 +197,17 @@ static void tls_attach(marcel_t t) {
 #endif
 }
 
+void marcel_tls_detach(marcel_t t) {
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+	if (t->tls_desc)
+		ma_obj_free(marcel_ldt_allocator, (void *) (uintptr_t) (t->tls_desc / 8 + 1));
+#endif
+}
+
 static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
 	marcel_t t = ma_slot_task(ptr);
-	tls_attach(t);
+	marcel_tls_attach(t);
 	return ptr;
 }
 
@@ -208,10 +215,7 @@ static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 static void tls_slot_free(void *slot, void *foo TBX_UNUSED) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
-#if defined(X86_ARCH) || defined(X86_64_ARCH)
-	if (t->tls_desc)
-		ma_obj_free(marcel_ldt_allocator, (void *) (uintptr_t) (t->tls_desc / 8 + 1));
-#endif
+	marcel_tls_detach(t);
 	_dl_deallocate_tls(tcb, 0);
 	ma_obj_free(marcel_mapped_slot_allocator, slot);
 }

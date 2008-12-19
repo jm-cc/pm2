@@ -18,6 +18,11 @@
 extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
 #ifdef MA__PROVIDE_TLS
 extern ma_allocator_t *marcel_tls_slot_allocator;
+void marcel_tls_attach(marcel_t t);
+void marcel_tls_detach(marcel_t t);
+#else
+#define marcel_tls_attach(t) ((void) 0)
+#define marcel_tls_detach(t) ((void) 0)
 #endif
 extern ma_allocator_t *marcel_thread_seed_allocator;
 
@@ -55,6 +60,7 @@ static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
 		marcel_tls_slot_free(marcel_stackbase(task));
 		break;
 	case MA_STATIC_STACK:
+		marcel_tls_detach(task);
 		break;
 	case MA_NO_STACK:
 		ma_obj_free(marcel_thread_seed_allocator, task);

@@ -115,8 +115,7 @@ extern unsigned long __main_thread_tls_base;
     if (new_task == __main_thread) { \
       syscall(SYS_arch_prctl, ARCH_SET_FS, __main_thread_tls_base); \
     } else { \
-      val = ((SLOT_AREA_TOP - (((unsigned long)(new_task)) & ~(THREAD_SLOT_SIZE-1))) / THREAD_SLOT_SIZE - 1) * 8 | 0x4; \
-    asm volatile ("movw %w0, %%fs" : : "q" (val)); \
+      asm volatile ("movw %w0, %%fs" : : "q" (new_task->tls_desc)); \
     } \
   } while(0)
 #else

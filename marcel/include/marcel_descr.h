@@ -185,7 +185,12 @@ struct marcel_task {
 	/* marcel-top */
 	ma_atomic_t top_utime/*, top_stime*/;
 
-#ifndef MA__PROVIDE_TLS
+#ifdef MA__PROVIDE_TLS
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+	/* On x86/x86_64, LDT descriptor to handle the TLS segment of this thread */
+	unsigned short tls_desc;
+#endif
+#else
 	int __errno;
 	int __h_errno;
 #endif

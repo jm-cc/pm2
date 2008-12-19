@@ -56,12 +56,11 @@ extern void _dl_deallocate_tls(void *, int) libc_internal_function;
 extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp) libc_internal_function;
 extern void _rtld_global_ro;
 ma_allocator_t *marcel_tls_slot_allocator;
-#if defined(X86_ARCH)
-unsigned short __main_thread_desc;
-#elif defined(X86_64_ARCH) || defined(IA64_ARCH)
+#if defined(X86_64_ARCH) || defined(IA64_ARCH)
 unsigned long __main_thread_tls_base;
 #endif
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
+ma_allocator_t *marcel_ldt_allocator;
 static uintptr_t sysinfo;
 static unsigned long stack_guard, pointer_guard;
 static int gscope_flag, private_futex;
@@ -137,14 +136,35 @@ static void *mapped_slot_alloc(void *foo TBX_UNUSED)
 
 /* Allocate a TLS area for the slot */
 #ifdef MA__PROVIDE_TLS
-static void *tls_slot_alloc(void *foo TBX_UNUSED) {
-	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
-	marcel_t t = ma_slot_task(ptr);
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+/* Allocate an LDT entry */
+static void *ldt_alloc(void *foo TBX_UNUSED)
+{
+	static ma_spinlock_t next_ldt_lock = MA_SPIN_LOCK_UNLOCKED;
+	static uintptr_t next_ldt = 0;
+	uintptr_t ret;
+
+	ma_spin_lock(&next_ldt_lock);
+	if (next_ldt >= 8192) {
+		fprintf(stderr,"no more LDT entries\n");
+		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
+	} else
+		ret = next_ldt++;
+	ma_spin_unlock(&next_ldt_lock);
+	return (void*) (ret + 1);
+}
+#endif
+
+static void tls_attach(marcel_t t) {
 #if defined(LINUX_SYS)
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	_dl_allocate_tls(tcb);
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
+	int ldt_entry = ((uintptr_t) ma_obj_alloc(marcel_ldt_allocator)) - 1;
+
+	t->tls_desc = ldt_entry * 8 | 0x4;
+
 	tcb->tcb = tcb;
 	tcb->multiple_threads = 1;
 	tcb->sysinfo = sysinfo;
@@ -152,16 +172,13 @@ static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 	tcb->pointer_guard = pointer_guard;
 	tcb->gscope_flag = gscope_flag;
 	tcb->private_futex = private_futex;
-#endif
 
-#if defined(X86_ARCH) || defined(X86_64_ARCH)
 #ifdef X86_64_ARCH
 	/* because else we can't use ldt */
-	MA_BUG_ON((unsigned long) ptr >= (1ul<<32));
+	MA_ALWAYS_BUG_ON((unsigned long) tcb >= (1ul<<32));
 #endif
 	struct user_desc desc = {
-		/* TODO: need an entry allocator for user-provided stacks */
-		.entry_number = (SLOT_AREA_TOP - (unsigned long) ptr) / THREAD_SLOT_SIZE - 1,
+		.entry_number = ldt_entry,
 		.base_addr = (unsigned long) tcb,
 		.limit = 0xfffffffful,
 		.seg_32bit = 1,
@@ -178,6 +195,12 @@ static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 	}
 #endif
 #endif
+}
+
+static void *tls_slot_alloc(void *foo TBX_UNUSED) {
+	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
+	marcel_t t = ma_slot_task(ptr);
+	tls_attach(t);
 	return ptr;
 }
 
@@ -185,6 +208,10 @@ static void *tls_slot_alloc(void *foo TBX_UNUSED) {
 static void tls_slot_free(void *slot, void *foo TBX_UNUSED) {
 	marcel_t t = ma_slot_task(slot);
 	lpt_tcb_t *tcb = marcel_tcb(t);
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+	if (t->tls_desc)
+		ma_obj_free(marcel_ldt_allocator, (void *) (uintptr_t) (t->tls_desc / 8 + 1));
+#endif
 	_dl_deallocate_tls(tcb, 0);
 	ma_obj_free(marcel_mapped_slot_allocator, slot);
 }
@@ -255,7 +282,7 @@ static void __marcel_init marcel_slot_init(void)
 	 *   optimized out as long as the program does not create any extra LWP.
 	 * */
 #ifdef X86_ARCH
-	asm("movw %%gs, %w0" : "=q" (__main_thread_desc));
+	asm("movw %%gs, %w0" : "=q" (__main_thread->tls_desc));
 	asm("movl %0, %%gs:(0x0c)"::"r" (1)); /* multiple_threads */
 	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
 	asm("movl %%gs:(0x14), %0":"=r" (stack_guard));
@@ -264,6 +291,7 @@ static void __marcel_init marcel_slot_init(void)
 	asm("movl %%gs:(0x20), %0":"=r" (private_futex));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
+	__main_thread->tls_desc = 0;
 	asm("movl %0, %%fs:(0x18)"::"r" (1)); /* multiple_threads */
 	asm("movl %%fs:(0x1c), %0":"=r" (gscope_flag));
 	asm("movq %%fs:(0x20), %0":"=r" (sysinfo));
@@ -275,6 +303,10 @@ static void __marcel_init marcel_slot_init(void)
 	__main_thread_tls_base = base;
 #else
 #error TODO
+#endif
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+	/* LDT entries allocator */
+	marcel_ldt_allocator = ma_new_obj_allocator(1, ldt_alloc, NULL, NULL, NULL, POLICY_HIERARCHICAL, 32);
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,

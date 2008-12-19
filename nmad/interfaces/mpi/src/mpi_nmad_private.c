@@ -1054,7 +1054,6 @@ int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
     mpir_dec_nb_incoming_msg(mpir_internal_data);
     err = nm_sr_rcancel(mpir_internal_data->p_core, &mpir_request->request_nmad);
-    printf("j'ai appele nm_sr_cancel et il m'a dit %d\n", err);
   }
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
     mpir_dec_nb_outgoing_msg(mpir_internal_data);

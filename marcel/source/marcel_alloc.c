@@ -287,21 +287,21 @@ static void __marcel_init marcel_slot_init(void)
 	 * */
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread->tls_desc));
-	asm("movl %0, %%gs:(0x0c)"::"r" (1)); /* multiple_threads */
-	asm("movl %%gs:(0x10), %0":"=r" (sysinfo));
-	asm("movl %%gs:(0x14), %0":"=r" (stack_guard));
-	asm("movl %%gs:(0x18), %0":"=r" (pointer_guard));
-	asm("movl %%gs:(0x1c), %0":"=r" (gscope_flag));
-	asm("movl %%gs:(0x20), %0":"=r" (private_futex));
+	asm("movl %0, %%gs:(%c1)"::"r" (1), "i" (tbx_offset_of(lpt_tcb_t, multiple_threads)));
+	asm("movl %%gs:(%c1), %0":"=r" (sysinfo): "i" (tbx_offset_of(lpt_tcb_t, sysinfo)));
+	asm("movl %%gs:(%c1), %0":"=r" (stack_guard): "i" (tbx_offset_of(lpt_tcb_t, stack_guard)));
+	asm("movl %%gs:(%c1), %0":"=r" (pointer_guard): "i" (tbx_offset_of(lpt_tcb_t, pointer_guard)));
+	asm("movl %%gs:(%c1), %0":"=r" (gscope_flag): "i" (tbx_offset_of(lpt_tcb_t, gscope_flag)));
+	asm("movl %%gs:(%c1), %0":"=r" (private_futex): "i" (tbx_offset_of(lpt_tcb_t, private_futex)));
 #elif defined(X86_64_ARCH)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
 	__main_thread->tls_desc = 0;
-	asm("movl %0, %%fs:(0x18)"::"r" (1)); /* multiple_threads */
-	asm("movl %%fs:(0x1c), %0":"=r" (gscope_flag));
-	asm("movq %%fs:(0x20), %0":"=r" (sysinfo));
-	asm("movq %%fs:(0x28), %0":"=r" (stack_guard));
-	asm("movq %%fs:(0x30), %0":"=r" (pointer_guard));
-	asm("movl %%fs:(0x48), %0":"=r" (private_futex));
+	asm("movl %0, %%fs:(%c1)"::"r" (1), "i" (tbx_offset_of(lpt_tcb_t, multiple_threads)));
+	asm("movl %%fs:(%c1), %0":"=r" (gscope_flag): "i" (tbx_offset_of(lpt_tcb_t, gscope_flag)));
+	asm("movq %%fs:(%c1), %0":"=r" (sysinfo): "i" (tbx_offset_of(lpt_tcb_t, sysinfo)));
+	asm("movq %%fs:(%c1), %0":"=r" (stack_guard): "i" (tbx_offset_of(lpt_tcb_t, stack_guard)));
+	asm("movq %%fs:(%c1), %0":"=r" (pointer_guard): "i" (tbx_offset_of(lpt_tcb_t, pointer_guard)));
+	asm("movl %%fs:(%c1), %0":"=r" (private_futex): "i" (tbx_offset_of(lpt_tcb_t, private_futex)));
 #elif defined(IA64_ARCH)
 	register unsigned long base asm("r13");
 	__main_thread_tls_base = base;

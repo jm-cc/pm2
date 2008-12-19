@@ -100,6 +100,29 @@ $(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 	echo "# define MARCEL_HEADER_HASH \"$$hash\"" ;			\
 	echo "#endif" ) > "$@"
 
+
+MOD_GEN_C_INC += $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
+
+$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/*.c)
+	$(COMMON_BUILD)
+	@( schedulers=`								\
+	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER *( *[A-Za-z0-9_]\+ *,' $^	\
+	 | cut -d '(' -f 2							\
+	 | grep -o '[A-Za-z0-9_]\+'						\
+	 | sort | uniq` ;							\
+	echo "/* Automatically generated, do not edit.  */" ;			\
+	echo "struct ma_bubble_sched_desc {" ;					\
+	echo "  const char *name; const marcel_bubble_sched_t *sched;" ;	\
+	echo "};" ;								\
+	echo "static const struct ma_bubble_sched_desc" ;			\
+	echo "ma_bubble_schedulers[] = {" ;					\
+	for sched in $$schedulers ;						\
+	do									\
+	  echo "  { \"$$sched\", &marcel_bubble_$${sched}_sched }," ;		\
+	done ;									\
+	echo "  { NULL, NULL }" ;						\
+	echo "};" ) > "$@"
+
 dot_h: symlinks $(MOD_GEN_INC)/marcel_abi.h
 
 symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler

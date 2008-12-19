@@ -174,12 +174,20 @@ extern ma_atomic_t ma_idle_scheduler;
 extern ma_spinlock_t ma_idle_scheduler_lock;
 
 #section functions
+#depend "marcel_bubble_sched_interface.h[types]"
+
 /* \brief Turns idle scheduler on. */
 int ma_activate_idle_scheduler (void);
 /* \brief Turns idle scheduler off. */
 int ma_deactivate_idle_scheduler (void);
 /* \brief Checks whether an idle scheduler is running. */
 int ma_idle_scheduler_is_running (void);
+
+/* \brief Return the bubble scheduler named \param name, or \code NULL if not
+ * found.  */
+extern const marcel_bubble_sched_t *
+marcel_lookup_bubble_scheduler(const char *name);
+
 
 #section structures
 #depend "pm2_list.h"
@@ -247,6 +255,7 @@ struct marcel_bubble {
 }
 
 
+
 #section marcel_macros
 /** \brief Gets a statistic value of a bubble */
 #define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->as_entity, (offset))
@@ -331,6 +340,7 @@ void __ma_bubble_lock(marcel_bubble_t *b);
 void ma_bubble_unlock(marcel_bubble_t *b);
 void __ma_bubble_unlock(marcel_bubble_t *b);
 
+
 /******************************************************************************
  * internal view
  */

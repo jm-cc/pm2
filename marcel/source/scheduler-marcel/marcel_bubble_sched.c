@@ -947,6 +947,26 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	LOG_RETURN(nextent);
 }
 
+
+/* Bubble scheduler lookup.  */
+
+
+/* Include the automatically generated name-to-scheduler mapping.  */
+#include <marcel_bubble_sched_lookup.h>
+
+const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
+	const struct ma_bubble_sched_desc *it;
+
+	for(it = &ma_bubble_schedulers[0]; it->name != NULL; it++) {
+		if (!strcmp(name, it->name))
+			return it->sched;
+	}
+
+	return NULL;
+}
+
+
+
 /******************************************************************************
  *
  * Initialisation

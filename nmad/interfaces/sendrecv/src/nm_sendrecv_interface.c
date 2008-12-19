@@ -775,6 +775,11 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
   else
     {
       err = nm_so_cancel_unpack(p_core, p_request->p_gate, p_request->tag, p_request->seq);
+      if(err == NM_ESUCCESS && p_request->p_gate == NULL)
+	{
+	  struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, p_request->tag);
+	  p_sr_anysrc->rreq = NULL;
+	}
     }
   nmad_unlock();
   return err;

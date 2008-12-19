@@ -27,7 +27,6 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-#define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
 #ifdef __GNUC__
 #ifndef __INTEL_COMPILER
 #define get_sp_fresh() \
@@ -58,7 +57,6 @@ static __tbx_inline__ unsigned long get_bsp(void)
 }
 #define set_sp(val) \
   do { \
-    SET_MARCEL_SELF_FROM_SP(val); \
     __asm__ __volatile__( \
 		    ";; \n\t" \
 		    "mov sp = %0 \n\t" \
@@ -69,7 +67,6 @@ static __tbx_inline__ unsigned long get_bsp(void)
 #define rRSC "%1"
 #define set_sp_bsp(val, bsp) \
   do { \
-    SET_MARCEL_SELF_FROM_SP(val); \
     __asm__ __volatile__( \
 		    ";; \n\t" \
 		    "flushrs \n\t" \
@@ -104,9 +101,11 @@ __ma_u64 __getReg(const int whichReg);
 
 #ifdef MA__PROVIDE_TLS
 typedef struct {
+  /* LPT binary compatibility */
   void *dtv;
   void *__private;
-  char padding[128]; //pour la structure thread de nptl...
+  char padding[128]; //for the NPTL thread structure
+  /* LPT binary compatibility end */
 } lpt_tcb_t;
 
 extern unsigned long __main_thread_tls_base;
@@ -117,7 +116,7 @@ extern unsigned long __main_thread_tls_base;
 
 #define marcel_ctx_set_tls_reg(new_task) \
   do { \
-    void *tcb; \
+    lpt_tcb_t *tcb; \
     if (new_task == __main_thread) \
       tcb = (void*) __main_thread_tls_base; \
     else \

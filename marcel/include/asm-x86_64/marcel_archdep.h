@@ -52,7 +52,6 @@
 #endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
-#define SET_MARCEL_SELF_FROM_SP(sp) ((void)0)
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
@@ -81,7 +80,6 @@
   do { \
     unsigned long __sp = (unsigned long)(sp); \
     unsigned long __bp = (unsigned long)(bp); \
-    SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movq %0, %%rsp;\n\t" \
 			 "movq %1, %%rbp;" \
                        : : "r" (__sp), "r" (__bp) : "memory", "rsp" ); \
@@ -91,6 +89,7 @@
 #include <stdint.h>
 /* nptl/sysdeps/x86_64/tls.h */
 typedef struct {
+  /* LPT binary compatibility */
   void *tcb;
   void *dtv;
   void *self;
@@ -101,7 +100,8 @@ typedef struct {
   uintptr_t pointer_guard;
   unsigned long int vgetcpu_cache[2];
   int private_futex;
-  char padding[128]; //pour la structure thread de nptl...
+  char padding[128]; //for the NPTL thread structure
+  /* LPT binary compatibility end */
 } lpt_tcb_t;
 
 extern unsigned long __main_thread_tls_base;
@@ -111,7 +111,6 @@ extern unsigned long __main_thread_tls_base;
   ((void*)(&(new_task)->tls[MA_TLS_AREA_SIZE - sizeof(lpt_tcb_t)]))
 #define marcel_ctx_set_tls_reg(new_task) \
   do { \
-    unsigned short val; \
     if (new_task == __main_thread) { \
       syscall(SYS_arch_prctl, ARCH_SET_FS, __main_thread_tls_base); \
     } else { \
@@ -121,4 +120,3 @@ extern unsigned long __main_thread_tls_base;
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
-

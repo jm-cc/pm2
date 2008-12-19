@@ -35,8 +35,6 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-#define SET_MARCEL_SELF_FROM_SP(val) (void)(0)
-
 #include "tbx_compiler.h"
 static __tbx_inline__ long get_gs(void)
 {
@@ -66,7 +64,6 @@ static __tbx_inline__ long get_gs(void)
 #define set_sp(val) \
   do { \
     __typeof__(val) value=(val); \
-    SET_MARCEL_SELF_FROM_SP(value); \
     __asm__ __volatile__("movl %0, %%esp" \
                        : : "m" (value) : "memory", "esp" ); \
   } while (0)
@@ -75,7 +72,6 @@ static __tbx_inline__ long get_gs(void)
   do { \
     unsigned long __sp = (unsigned long)(sp); \
     unsigned long __bp = (unsigned long)(bp); \
-    SET_MARCEL_SELF_FROM_SP(__sp); \
     __asm__ __volatile__("movl %0, %%esp;\n\t" \
 			 "movl %1, %%ebp;" \
                        : : "r" (__sp), "r" (__bp) : "memory", "esp" ); \
@@ -86,6 +82,7 @@ extern unsigned short __main_thread_desc;
 #ifdef MA__PROVIDE_TLS
 #include <stdint.h>
 typedef struct {
+  /* LPT binary compatibility */
   void *tcb;
   void *dtv;
   void *self;
@@ -95,7 +92,8 @@ typedef struct {
   uintptr_t pointer_guard;
   int gscope_flag;
   int private_futex;
-  char padding[128]; //pour la structure thread de nptl...
+  char padding[128]; //for the NPTL thread structure
+  /* LPT binary compatibility end */
 } lpt_tcb_t;
 
 // Variante II
@@ -106,4 +104,3 @@ typedef struct {
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
-

@@ -51,7 +51,7 @@ ma_rwlock_t __ma_lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
 marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
 
-#ifdef MA__SELF_VAR
+#if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
 __thread marcel_lwp_t *ma_lwp_self = &__main_lwp;
 #endif
 
@@ -118,11 +118,16 @@ static void *lwp_kthread_start_func(void *arg)
 {
 	struct marcel_topo_level *level;
 	marcel_lwp_t *lwp = (marcel_lwp_t *)arg;
+	marcel_t self = ma_per_lwp(run_task, lwp);
 	int vpnum;
+	(void) self;
 
-#ifdef MA__SELF_VAR
+	marcel_ctx_set_tls_reg(self);
+#if defined(MA__SELF_VAR)
+#if !defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS)
 	ma_lwp_self = lwp;
-	ma_self = ma_per_lwp(run_task,lwp);
+#endif
+	ma_self = self;
 #endif
 
 	PROF_NEW_LWP(ma_vpnum(lwp), ma_per_lwp(run_task,lwp));

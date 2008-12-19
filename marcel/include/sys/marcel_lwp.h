@@ -130,7 +130,7 @@ extern TBX_EXTERN ma_atomic_t ma__last_vp;
 extern TBX_EXTERN ma_rwlock_t __ma_lwp_list_lock;
 extern struct list_head ma_list_lwp_head;
 
-#ifdef MA__SELF_VAR
+#if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
 extern TBX_EXTERN __thread marcel_lwp_t *ma_lwp_self;
 #endif
 
@@ -346,7 +346,7 @@ void marcel_leave_blocking_section(void);
 	ma_for_all_lwp_from_end()
 
 #ifdef MA__LWPS
-  #ifdef MA__SELF_VAR
+  #if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
     #define MA_LWP_SELF				(ma_lwp_self)
   #else
     #define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))

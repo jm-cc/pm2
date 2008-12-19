@@ -1,1 +1,1 @@
-Use the system's kernel threads' TLS to store per-LWP data instead of computing from the SP value.
+Use TLS to store marcel_self instead of computing from the SP value.

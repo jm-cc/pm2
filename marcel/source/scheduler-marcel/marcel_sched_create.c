@@ -74,7 +74,6 @@ int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
 	 * fonction dans la pile et la position courante
 	 */
 	PROF_SWITCH_TO(cur->number, new_task);
-	MA_SET_SELF(new_task);
 	marcel_ctx_set_new_stack(new_task, 
 				 new_task->initial_sp,
 				 base_stack);
@@ -92,9 +91,9 @@ void marcel_sched_internal_create_dontstart_son (void) {
 		marcel_t father = SELF_GETMEM(father);
 		// On rend la main au père
 		PROF_SWITCH_TO(SELF_GETMEM(number), father);
-		MA_SET_SELF(father);
 		call_ST_FLUSH_WINDOWS();
 		marcel_ctx_set_tls_reg(father);
+		MA_SET_SELF(father);
 		marcel_ctx_longjmp(father->ctx_yield,
 				   NORMAL_RETURN);
 	}
@@ -167,7 +166,6 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	ma_task_stats_set(long, new_task, ma_stats_nbready_offset, 1);
 
 	PROF_SWITCH_TO(cur->number, new_task);
-	MA_SET_SELF(new_task);
 	marcel_ctx_set_new_stack(new_task,
 				 new_task->initial_sp,
 				 base_stack);

@@ -28,6 +28,7 @@
     /* marqueur de fin de pile */ \
     *_bp = 0; \
     marcel_ctx_set_tls_reg(new_task); \
+    MA_SET_INITIAL_SELF(new_task); \
     set_sp_bp(_sp, _bp); \
   } while (0)
 

@@ -40,8 +40,14 @@ enum {
   } while(0)
 
 #ifdef MA__SELF_VAR
-#  define MA_SET_SELF(self)	do { ma_self = (self); } while(0)
+#  define MA_SET_INITIAL_SELF(self)	do { ma_self = (self); } while(0)
+#  if defined(MA__LWPS) && defined(MARCEL_DONT_USE_POSIX_THREADS)
+#    define MA_SET_SELF(self)	((void)0)
+#  else
+#    define MA_SET_SELF(self)	MA_SET_INITIAL_SELF(self)
+#  endif
 #else
+#  define MA_SET_INITIAL_SELF(self)	((void)0)
 #  define MA_SET_SELF(self)	((void)0)
 #endif
 /* on effectue un longjmp. Le thread courrant ET le suivant doivent
@@ -52,9 +58,9 @@ enum {
 #define MA_THR_LONGJMP(cur_num, next, ret) \
   do {                                     \
     PROF_SWITCH_TO(cur_num, next); \
-    MA_SET_SELF(next); \
     call_ST_FLUSH_WINDOWS();               \
     marcel_ctx_set_tls_reg(next); \
+    MA_SET_SELF(next); \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)
 

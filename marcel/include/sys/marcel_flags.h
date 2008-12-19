@@ -109,7 +109,7 @@
 #  undef MA__USE_TLS
 #endif
 
-/* MA__SELF_VAR : if set, store marcel_self in the ma_self variable */
+/* MA__SELF_VAR : if set, store marcel_self in a variable (kernel or marcel TLS) */
 #ifdef MA__SELF_VAR
 #  undef MA__SELF_VAR
 #endif

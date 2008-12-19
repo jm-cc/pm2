@@ -26,6 +26,7 @@ int marcel_main(int argc, char * argv[]) {
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
+  memory_manager.kernel_nexttouch_migration = 0;
 
   // Case with user-allocated memory
   buffer=memalign(memory_manager.normalpagesize, 10000*sizeof(int));

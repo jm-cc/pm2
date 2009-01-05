@@ -67,6 +67,20 @@ to_be_tested() # module
     esac
 }
 
+create_test_hosts()
+{
+    hosts=${TESTCONFIG:-"localhost"}
+    nbhost=`echo $hosts | wc -w`;
+
+    while [ $nbhost -lt $1 ]
+    do
+      hosts="$hosts $hosts";
+      nbhost=`echo $hosts | wc -w`;
+    done
+
+    hosts="`echo $hosts | cut -f 1-$1 -d ' '`";
+}
+
 do_the_test()
 {
     test_script="$1"

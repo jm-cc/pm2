@@ -34,6 +34,30 @@ To enable them, you need to change your PM2 flavor by adding the options
 or <TT>enable_userspace</TT>.
 </P>
 
+<P>
+Marcel can be made to use part of the machine's processors: adding
+<TT>--marcel-nvp 4</TT> to the command line will make it use only 4 processors.
+By default, Marcel tries to <I>spread</I> over the machine, i.e. when using 4
+processors of a quad-quad core machine, it will use one core of each of the 4
+dies. To use <I>adjacent</I> processors, append <TT>--marcel-cpustride 1</TT>
+to the command line. Eventually, appending the <TT>--marcel-firstcpu 4</TT>
+option makes Marcel use processors from the fifth processor. For instance, on a
+quad-quad core machine, one could run 4 Marcel applications this way:
+
+<UL>
+<LI>appli1 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 0
+<LI>appli2 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 4
+<LI>appli3 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 8
+<LI>appli4 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 12
+</UL>
+
+Each application will get bound to a die.
+</P>
+
+<P>
+Other Marcel options are available, append <TT>--marcel-help</TT> to the command line to get some help.
+</P>
+
 </SUBSECTION>
 
 </TEXT>

@@ -160,7 +160,7 @@ void l1_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L1)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L1 %u - %dKB", level->os_l1, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]);
+    snprintf(text, sizeof(text), "L1 %u - %ldKB", level->os_l1, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]);
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -205,7 +205,7 @@ void l2_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L2)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L2 %u - %dMB", level->os_l2, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] >> 10);
+    snprintf(text, sizeof(text), "L2 %u - %ldMB", level->os_l2, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] >> 10);
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -226,7 +226,7 @@ void l3_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L3)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L3 %u - %dMB", level->os_l3, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3] >> 10);
+    snprintf(text, sizeof(text), "L3 %u - %ldMB", level->os_l3, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3] >> 10);
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -266,7 +266,7 @@ void node_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
 
   if (level->merged_type & (1 << MARCEL_LEVEL_NODE)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "Node %u - %uGB", level->os_node, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] >> 20);
+    snprintf(text, sizeof(text), "Node %u - %luGB", level->os_node, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] >> 20);
     fig_text(output, 0, FONT_SIZE, depth-2, x + 2 * UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + 2*UNIT;
   }
@@ -378,7 +378,7 @@ int marcel_main(int argc, char **argv) {
       marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");
       marcel_fprintf(output, "\\usepackage{fullpage}\n");
       marcel_fprintf(output, "\\usepackage{pst-tree}\n");
-      marcel_fprintf(output, "% Macro to define one level\n");
+      marcel_fprintf(output, "%% Macro to define one level\n");
       marcel_fprintf(output, "\\newcommand{\\Level}[3][]{\\TR[#1]{\\setlength{\\tabcolsep}{0mm}\\begin{tabular}[t]{#2}#3\\end{tabular}}}\n\n");
       marcel_fprintf(output, "\\begin{document}\n");
       marcel_fprintf(output, "\\title{%s: Topology}\n", hostname);

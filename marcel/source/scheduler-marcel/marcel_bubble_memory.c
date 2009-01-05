@@ -18,6 +18,13 @@
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
 
+#define MA_MEMORY_NEEDS_DEBUGGING 0
+
+#if MA_MEMORY_NEEDS_DEBUGGING
+static void ma_memory_print_affinities (marcel_bubble_t *bubble);
+static void ma_memory_print_previous_location (marcel_bubble_t *bubble);
+#endif 
+
 static int
 memory_sched_start () {
   return 0;
@@ -143,6 +150,12 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
   
   ma_bubble_synthesize_stats (bubble);
+
+#if MA_MEMORY_NEEDS_DEBUGGING
+  ma_memory_print_previous_location (bubble);
+  ma_memory_print_affinities (bubble);
+#endif 
+  
   ma_preempt_disable ();
   ma_local_bh_disable ();
 
@@ -208,6 +221,51 @@ MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
   .submit = (void*)warning_start,
   .shake = (void*)warning_start,
 );
+
+#if MA_MEMORY_NEEDS_DEBUGGING
+static void
+ma_memory_print_affinities (marcel_bubble_t *bubble) {
+  unsigned int i;
+  marcel_entity_t *e;
+  
+  marcel_fprintf (stderr, "Printing memory affinity hints for bubble %p:\n", bubble);
+  for_each_entity_scheduled_in_bubble_begin (e, bubble);
+  if (e->type != MA_BUBBLE_ENTITY) {
+    marcel_fprintf (stderr, "Entity %p (%s): [ ", e, ma_task_entity (e)->name);
+    long * nodes = (long *) ma_stats_get (e, ma_stats_memnode_offset);
+    for (i = 0; i < marcel_nbnodes; i++) {
+      marcel_fprintf (stderr, "%8ld%s", nodes[i], (i == (marcel_nbnodes - 1)) ? " ]\n" : ", ");
+    }
+  } else {
+    marcel_fprintf (stderr, "Entity %p (%s): [ ", e, "bubble");
+    long * nodes = (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_memnode_offset);
+    for (i = 0; i < marcel_nbnodes; i++) {
+      marcel_fprintf (stderr, "%8ld%s", nodes[i], (i == (marcel_nbnodes - 1)) ? " ]\n" : ", ");
+    }
+  }
+  for_each_entity_scheduled_in_bubble_end ();
+}
+
+static void
+ma_memory_print_previous_location (marcel_bubble_t *bubble) {
+  unsigned int i;
+  marcel_entity_t *e;
+  
+  marcel_fprintf (stderr, "Printing previous location of threads scheduling in bubble %p:\n", bubble);
+  for_each_entity_scheduled_in_bubble_begin (e, bubble);
+  if (e->type != MA_BUBBLE_ENTITY) {
+    marcel_fprintf (stderr, "Entity %p (%s): ", e, ma_task_entity (e)->name);
+    long vp = *(long *) ma_stats_get (e, ma_stats_last_vp_offset);
+    marcel_fprintf (stderr, "%ld\n", vp);
+  } else {
+    marcel_fprintf (stderr, "Entity %p (%s): [ ", e, "bubble");
+    long vp = *(long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_last_vp_offset);
+    marcel_fprintf (stderr, "%ld\n", vp);
+  }
+  for_each_entity_scheduled_in_bubble_end ();
+}
+#endif /* MA_MEMORY_NEEDS_DEBUGGING */
+
 
 #endif /* MARCEL_MAMI_ENABLED */
 #endif /* MA__BUBBLES */

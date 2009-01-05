@@ -40,7 +40,7 @@ void fig_box(FILE *output, int color, unsigned depth, unsigned x, unsigned width
 }
 
 void fig_text(FILE *output, int color, int size, unsigned depth, unsigned x, unsigned y, const char *text) {
-  marcel_fprintf(output, "4 0 %d %u -1 0 %u 0.0 4 %u %u %u %u %s\\001\n", color, depth, size, size * 10, strlen(text) * size * 10, x, y + size * 10, text);
+  marcel_fprintf(output, "4 0 %d %u -1 0 %u 0.0 4 %u %u %u %u %s\\001\n", color, depth, size, size * 10, (unsigned) strlen(text) * size * 10, x, y + size * 10, text);
 }
 
 void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
@@ -120,7 +120,7 @@ void vp_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
   char text[64];
 
   if (level->merged_type & (1 << MARCEL_LEVEL_VP)) {
-    snprintf(text, sizeof(text), "VP %u", level->number);
+    snprintf(text, sizeof(text), "VP%u", level->number);
     fig_text(output, 0, FONT_SIZE, depth-1, x, y + myheight, text);
     myheight += FONT_SIZE*10;
   }
@@ -137,7 +137,7 @@ void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
   char text[64];
 
   myheight += UNIT;
-  snprintf(text, sizeof(text), "CPU %u", level->os_cpu);
+  snprintf(text, sizeof(text), "CPU%u", level->os_cpu);
   fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
   myheight += FONT_SIZE*10 + UNIT;
 
@@ -145,7 +145,7 @@ void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
   RECURSE(MARCEL_LEVEL_VP, vp_fig, 0);
   maxheight += UNIT;
 #else
-  totwidth = 4*UNIT;
+  totwidth = 3*UNIT;
 #endif
 
   *retwidth = totwidth + UNIT;

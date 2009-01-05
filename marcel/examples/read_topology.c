@@ -76,8 +76,9 @@ int marcel_main(int argc, char **argv) {
     output = stdout;
   }
   else {
-    gethostname(hostname, 256);
-    marcel_sprintf(filename, "%s_topology.tex", hostname);
+    gethostname(hostname, sizeof(hostname)-1);
+    hostname[sizeof(hostname)-1] = 0;
+    marcel_snprintf(filename, sizeof(filename), "%s_topology.tex", hostname);
     output = marcel_fopen(filename, "w");
 
     marcel_fprintf(output, "\\documentclass[landscape,a4paper,10pt]{article}\n");

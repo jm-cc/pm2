@@ -64,11 +64,6 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
 }
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
 
-#if MA_MEMORY_NEEDS_DEBUGGING
-static void ma_memory_print_affinities (marcel_bubble_t *bubble);
-static void ma_memory_print_previous_location (marcel_bubble_t *bubble);
-#endif 
-
 static int
 memory_sched_start () {
   return 0;

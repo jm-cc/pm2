@@ -141,7 +141,7 @@ void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
   fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
   myheight += FONT_SIZE*10 + UNIT;
 
-#if 1
+#if 0
   RECURSE(MARCEL_LEVEL_VP, vp_fig, 0);
   maxheight += UNIT;
 #else

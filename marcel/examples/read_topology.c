@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef MA__NUMA
 #define EPOXY_COLOR 32
 #define MEMORY_COLOR 34
 #define DIE_COLOR 33
@@ -293,6 +294,7 @@ void fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned
     fig_box(output, EPOXY_COLOR, depth, x, totwidth, y, 2*UNIT + FONT_SIZE*10);
   ENDIF_RECURSE(node_fig);
 }
+#endif
 
 #define indent(output, i) \
   marcel_fprintf(output, "%*s", 2*i, "");
@@ -338,10 +340,12 @@ int marcel_main(int argc, char **argv) {
   while (argc >= 2) {
     if (!strcmp(argv[1], "-l") || !strcmp(argv[1], "--latex")) {
       txt_mode = 0;
+#ifdef MA__NUMA
     } else if (!strcmp(argv[1], "-f") || !strcmp(argv[1], "--fig")) {
       txt_mode = 0;
       fig_mode = 1;
       suffix = "fig";
+#endif
     } else if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--verbose")) {
       verbose_mode = 1;
     } else {
@@ -388,9 +392,11 @@ int marcel_main(int argc, char **argv) {
     }
   }
 
+#ifdef MA__NUMA
   if (fig_mode)
     fig(marcel_topo_level(0,0), output, 100, 0, 0);
   else
+#endif
     f(marcel_topo_level(0, 0), output, 0, txt_mode, verbose_mode);
 
   if (!txt_mode) {

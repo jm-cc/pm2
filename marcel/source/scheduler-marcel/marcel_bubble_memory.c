@@ -46,7 +46,6 @@ ma_memory_print_affinities (marcel_bubble_t *bubble) {
 
 static void
 ma_memory_print_previous_location (marcel_bubble_t *bubble) {
-  unsigned int i;
   marcel_entity_t *e;
   
   marcel_fprintf (stderr, "Printing previous location of threads scheduling in bubble %p:\n", bubble);

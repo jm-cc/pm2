@@ -1315,28 +1315,6 @@ static void topo_discover(void) {
 	marcel_vpset_zero(&vp_level[i].cpuset);
 	marcel_vpset_zero(&vp_level[i].vpset);
 
-	/* Now see where we will put it. Usually marcel_cpu_stride is 1 and hence we get at bottom */
-	for (l=marcel_topo_nblevels-1; l>0; l--) {
-		if (marcel_vpset_weight(&marcel_topo_levels[l][0].cpuset) >= marcel_cpu_stride) {
-			break;
-		}
-	}
-	l++;
-	/* Discard levels below */
-	while (marcel_topo_nblevels-1 >= l) {
-#  ifdef MA__NUMA
-		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_cpu_level)
-			marcel_topo_cpu_level = NULL;
-		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_core_level)
-			marcel_topo_core_level = NULL;
-		if (marcel_topo_levels[marcel_topo_nblevels-1] == marcel_topo_node_level)
-			marcel_topo_node_level = NULL;
-#  endif
-		__marcel_free(marcel_topo_levels[marcel_topo_nblevels-1]);
-		marcel_topo_nblevels--;
-		marcel_topo_levels[marcel_topo_nblevels] = NULL;
-	}
-
 	/* And add this one */
 	marcel_topo_level_nbitems[marcel_topo_nblevels] = marcel_nbvps();
 	marcel_topo_levels[marcel_topo_nblevels++] = vp_level;

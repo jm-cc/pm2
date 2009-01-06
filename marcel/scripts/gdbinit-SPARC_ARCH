@@ -1,0 +1,11 @@
+define __save-ctx
+  set $marcel_saved_fp=$fp
+  set $marcel_saved_sp=$sp
+  set $marcel_saved_pc=$pc
+end
+
+define __rest-ctx
+  set $fp=$marcel_saved_fp
+  set $sp=$marcel_saved_sp
+  set $pc=$marcel_saved_pc
+end

@@ -1,0 +1,5 @@
+define __set-ctx
+  set $fp=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[1]
+  set $sp=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[0]
+  set $pc=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[2]
+end

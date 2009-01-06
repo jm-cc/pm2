@@ -91,9 +91,9 @@ void marcel_sched_internal_create_dontstart_son (void) {
 		marcel_t father = SELF_GETMEM(father);
 		// On rend la main au père
 		PROF_SWITCH_TO(SELF_GETMEM(number), father);
-		call_ST_FLUSH_WINDOWS();
 		marcel_ctx_set_tls_reg(father);
 		MA_SET_SELF(father);
+		call_ST_FLUSH_WINDOWS();
 		marcel_ctx_longjmp(father->ctx_yield,
 				   NORMAL_RETURN);
 	}

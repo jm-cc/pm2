@@ -13,7 +13,7 @@
 # General Public License for more details.
 
 # Configuration
-hosts=${TESTCONFIG:-"localhost localhost"}
+create_test_hosts 2;
 net=${TESTNET:-tcp}
 mpi="mpi_emu"
 strat="strat_default"

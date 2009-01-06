@@ -28,6 +28,7 @@
 #define TBX_MACROS_H
 
 #include "tbx_debug.h"
+#include <alloca.h>
 
 /** \defgroup macros general purpose macros
  *

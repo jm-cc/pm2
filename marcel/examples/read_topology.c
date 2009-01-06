@@ -69,72 +69,47 @@ void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct
 }
 
 /*
- * given a LEVEL, return all its (possibly non-direct) sublevels of type TYPE
- * in SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc.
+ * foo_fig functions take a LEVEL, draw things about it (chip draw, cache size
+ * information etc) at (X,Y), recurse into sublevels, and return in RETWIDTH
+ * and RETHEIGHT the amount of space that the drawing took.
  */
-int get_sublevels_type(struct marcel_topo_level *level, enum marcel_topo_level_e type, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
-  unsigned n = 1, n2;
-  struct marcel_topo_level **l = tmalloc(sizeof(*l)), **l2;
-  l[0] = level;
 
-  while(1) {
-    if (l[0]->merged_type & (1 << type)) {
-      *sublevels = l;
-      *numsublevels = n;
-      return 1;
-    }
-    if (l[0]->arity <= 1) {
-      tfree(l);
-      return 0;
-    }
-    get_sublevels(l, n, &l2, &n2);
-    free(l);
-    l = l2;
-    n = n2;
-  }
-}
+typedef void (*foo_fig)(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight);
+
+int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun);
 
 /*
- * Helper to recurse into sublevels of a given type
+ * Helper to recurse into sublevels
  */
 
-#define IF_RECURSE(type) { \
+#define IF_RECURSE() { \
   struct marcel_topo_level **sublevels; \
   unsigned numsublevels; \
   unsigned width, height; \
-  if (get_sublevels_type(level, type, &sublevels, &numsublevels)) { \
+  foo_fig fun; \
+  if (get_sublevels_type(level, &sublevels, &numsublevels, &merged_type, &fun)) { \
     int i;
 
-#define LAST_RECURSE(next, sep) \
+#define LAST_RECURSE(sep) \
     for (i = 0; i < numsublevels; i++) { \
-      next(sublevels[i], output, depth-1, x + totwidth, &width, y + myheight, &height); \
+      fun(sublevels[i], merged_type, output, depth-1, x + totwidth, &width, y + myheight, &height); \
       totwidth += width + sep; \
       if (height > maxheight) \
 	maxheight = height; \
     } \
     totwidth -= sep;
 
-#define ENDIF_RECURSE(next) \
+#define ENDIF_RECURSE() \
     tfree(sublevels); \
-  } else { \
-    next(level, output, depth-1, x + totwidth, &width, y + myheight, &height); \
-    maxheight = height; \
-    totwidth += width; \
   } \
 }
 
-#define RECURSE(type, next, sep) \
-  IF_RECURSE(type) \
-  LAST_RECURSE(next, sep) \
-  ENDIF_RECURSE(next)
+#define RECURSE(sep) \
+  IF_RECURSE() \
+  LAST_RECURSE(sep) \
+  ENDIF_RECURSE()
 
-/*
- * foo_fig functions take a LEVEL, draw things about it (chip draw, cache size
- * information etc) at (X,Y), recurse into sublevels, and return in RETWIDTH
- * and RETHEIGHT the amount of space that the drawing took.
- */
-
-void vp_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void vp_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -151,7 +126,7 @@ void vp_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
   *retheight = myheight + maxheight;
 }
 
-void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void proc_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -162,7 +137,7 @@ void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
   myheight += FONT_SIZE*10 + UNIT;
 
 #if 0
-  RECURSE(MARCEL_LEVEL_VP, vp_fig, 0);
+  RECURSE(0);
   maxheight += UNIT;
 #else
   totwidth = 3*UNIT;
@@ -173,7 +148,7 @@ void proc_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
   fig_box(output, THREAD_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void l1_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void l1_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -185,7 +160,7 @@ void l1_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_PROC, proc_fig, 0);
+  RECURSE(0);
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L1)) {
     if (totwidth < 7*UNIT)
@@ -200,7 +175,7 @@ void l1_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
   }
 }
 
-void core_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void core_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -211,14 +186,14 @@ void core_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
     myheight += FONT_SIZE*10 + UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_L1, l1_fig, 0);
+  RECURSE(0);
 
   *retwidth = totwidth + UNIT;
   *retheight = myheight + maxheight + (maxheight?UNIT:0);
   fig_box(output, CORE_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void l2_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void l2_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -230,7 +205,7 @@ void l2_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_CORE, core_fig, 0);
+  RECURSE(UNIT);
 
   *retwidth = totwidth;
   *retheight = myheight + maxheight;
@@ -239,7 +214,7 @@ void l2_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
   }
 }
 
-void l3_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void l3_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -251,7 +226,7 @@ void l3_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_L2, l2_fig, UNIT);
+  RECURSE(UNIT);
 
   *retwidth = totwidth;
   *retheight = myheight + maxheight;
@@ -260,7 +235,7 @@ void l3_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsig
   }
 }
 
-void die_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void die_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -271,7 +246,7 @@ void die_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsi
     myheight += FONT_SIZE*10 + UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_L3, l3_fig, UNIT);
+  RECURSE(UNIT);
   maxheight += UNIT;
 
   *retwidth = totwidth + UNIT;
@@ -279,7 +254,7 @@ void die_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsi
   fig_box(output, DIE_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void node_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+void node_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -291,7 +266,7 @@ void node_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
     myheight += FONT_SIZE*10 + 2*UNIT;
   }
 
-  RECURSE(MARCEL_LEVEL_DIE, die_fig, UNIT);
+  RECURSE(UNIT);
   maxheight += UNIT;
 
   *retwidth = totwidth + UNIT;
@@ -305,13 +280,49 @@ void node_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, uns
 void fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned y) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
+  unsigned long merged_type = level->merged_type;
 
-  IF_RECURSE(MARCEL_LEVEL_NODE)
-    myheight = 2*UNIT + FONT_SIZE*10 + UNIT;
-  LAST_RECURSE(node_fig, UNIT)
-    fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + UNIT, "Interconnect");
-    fig_box(output, EPOXY_COLOR, depth, x, totwidth, y, 2*UNIT + FONT_SIZE*10);
-  ENDIF_RECURSE(node_fig);
+  RECURSE(UNIT);
+}
+
+/*
+ * given a LEVEL and a mask of accepted level types, return all its (possibly
+ * non-direct) sublevels in SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc,
+ * and a pointer FUN to the function that draws it.
+ */
+int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun) {
+  unsigned n = 1, n2;
+  struct marcel_topo_level **l = tmalloc(sizeof(*l)), **l2;
+  l[0] = level;
+
+  while (1) {
+#define DO(type, _fun) \
+    if (*merged_type & (1 << MARCEL_LEVEL_##type)) { \
+      *merged_type &= ~(1 << MARCEL_LEVEL_##type); \
+      *fun = _fun; \
+      *levels = l; \
+      *numsublevels = n; \
+      return 1; \
+    }
+    *merged_type &= ~(1 << MARCEL_LEVEL_MACHINE);
+    DO(NODE, node_fig)
+    DO(DIE, die_fig)
+    DO(L3, l3_fig)
+    DO(L2, l2_fig)
+    DO(CORE, core_fig)
+    DO(L1, l1_fig)
+    DO(PROC, proc_fig)
+    DO(VP, vp_fig)
+    if ((*merged_type) & ~(1 << MARCEL_LEVEL_FAKE))
+      fprintf(stderr,"urgl, merged type %x?! Skipping\n", *merged_type);
+    if (!l[0]->children)
+      return 0;
+    get_sublevels(l, n, &l2, &n2);
+    free(l);
+    l = l2;
+    n = n2;
+    *merged_type = l[0]->merged_type;
+  }
 }
 #endif
 

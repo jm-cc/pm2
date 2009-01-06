@@ -96,9 +96,9 @@ struct marcel_lwp {
 };
 
 #ifdef MA__LWPS
-#  define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { }
+#  define MA_LWP_INITIALIZER(lwp) { }
 #else
-#  define MA_LWP_INITIALIZER(lwp) (marcel_lwp_t) { \
+#  define MA_LWP_INITIALIZER(lwp) { \
 	.vp_level = &marcel_machine_level[0], \
 }
 #endif

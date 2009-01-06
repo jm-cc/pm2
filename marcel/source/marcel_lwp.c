@@ -191,7 +191,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 
 	lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node[vpnum == -1 ? 0 : vpnum]);
 	/* initialiser le lwp *avant* de l'enregistrer */
-	*lwp = MA_LWP_INITIALIZER(lwp);
+	*lwp = (marcel_lwp_t) MA_LWP_INITIALIZER(lwp);
 
 	ma_init_lwp_vpnum(vpnum, lwp);
 

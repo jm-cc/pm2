@@ -63,6 +63,7 @@ int TBX_NORETURN ma_ia64_longjmp(const ucontext_t *ucp, int ret);
     unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
     call_ST_FLUSH_WINDOWS(); \
     marcel_ctx_set_tls_reg(new_task); \
+    MA_SET_INITIAL_SELF(new_task); \
     set_sp_bsp(_sp, new_task->stack_base); \
   } while (0)
 

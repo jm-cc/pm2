@@ -17,6 +17,7 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <alloca.h>
 
 #ifdef MA__BUBBLES
 

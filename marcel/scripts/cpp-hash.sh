@@ -83,13 +83,13 @@ flavor="$1"
 header_file="$2"
 
 export flavor
-CPPFLAGS="$(pm2-config --flavor=$flavor --cflags)"
+CPPFLAGS="`pm2-config --flavor=$flavor --cflags`"
 CPPFLAGS="$CPPFLAGS -DMARCEL_INTERNAL_INCLUDE"
 
-CC="${CC:-$(pm2-config --flavor=$flavor --cc)}"
+CC="${CC:-`pm2-config --flavor=$flavor --cc`}"
 CPP="${CPP:-$CC -E}"
 
-hash_prog="$(find_hash_program)"
+hash_prog="`find_hash_program`"
 
 debug_log "using PM2 flavor \`$flavor' and header file \`$header_file'"
 debug_log "using hash program \`$hash_prog'"

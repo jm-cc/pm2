@@ -134,9 +134,9 @@ typedef struct {
 
 #section marcel_macros
 
-#define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { 0, 0, 0 }
+#define MA_RW_LOCK_UNLOCKED { 0, 0, 0 }
 
-#define ma_rwlock_init(x)		do { *(x) = MA_RW_LOCK_UNLOCKED; } while(0)
+#define ma_rwlock_init(x)		do { *(x) = (ma_rwlock_t) MA_RW_LOCK_UNLOCKED; } while(0)
 #define ma_rwlock_is_locked(x)	(*(volatile int *) (x) != 0)
 
 /* From processor.h */

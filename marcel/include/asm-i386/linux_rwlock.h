@@ -60,9 +60,9 @@ typedef struct {
 #ifdef MA__LWPS
 #define MA_RW_LOCK_BIAS		 0x01000000
 #define MA_RW_LOCK_BIAS_STR	"0x01000000"
-#define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { MA_RW_LOCK_BIAS }
+#define MA_RW_LOCK_UNLOCKED { MA_RW_LOCK_BIAS }
 
-#define ma_rwlock_init(x)	do { *(x) = MA_RW_LOCK_UNLOCKED; } while(0)
+#define ma_rwlock_init(x)	do { *(x) = (ma_rwlock_t) MA_RW_LOCK_UNLOCKED; } while(0)
 
 #define ma_rwlock_is_locked(x) ((x)->lock != MA_RW_LOCK_BIAS)
 

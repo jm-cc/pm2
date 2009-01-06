@@ -235,10 +235,10 @@ typedef struct {
 
 #if (__GNUC__ > 2)
   typedef struct { } ma_rwlock_t;
-  #define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { }
+  #define MA_RW_LOCK_UNLOCKED { }
 #else
   typedef struct { int gcc_is_buggy; } ma_rwlock_t;
-  #define MA_RW_LOCK_UNLOCKED (ma_rwlock_t) { 0 }
+  #define MA_RW_LOCK_UNLOCKED { 0 }
 #endif
 
 #define ma_rwlock_init(lock)	do { (void)(lock); } while(0)

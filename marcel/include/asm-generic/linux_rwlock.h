@@ -60,7 +60,7 @@ typedef ma_atomic_t ma_rwlock_t;
 #section marcel_macros
 #depend "asm/linux_atomic.h[]"
 #ifdef MA__LWPS
-#define MA_RW_LOCK_UNLOCKED MA_ATOMIC_INIT(MA_RW_LOCK_BIAS);
+#define MA_RW_LOCK_UNLOCKED MA_ATOMIC_INIT(MA_RW_LOCK_BIAS)
 
 #define ma_rwlock_init(x)	do { ma_atomic_set(x, MA_RW_LOCK_BIAS); } while(0)
 

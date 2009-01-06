@@ -14,6 +14,7 @@
  */
 
 #include "pm2_common.h"
+#include <alloca.h>
 
 static common_attr_t default_static_attr;
 

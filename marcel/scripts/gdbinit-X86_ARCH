@@ -4,12 +4,6 @@ define __save-ctx
   set $marcel_saved_pc=$eip
 end
 
-define __set-ctx
-  set $ebp=((marcel_t)$arg0)->ctx_yield[0].jbuf[3]
-  set $esp=((marcel_t)$arg0)->ctx_yield[0].jbuf[4]
-  set $eip=((marcel_t)$arg0)->ctx_yield[0].jbuf[5]
-end
-
 define __rest-ctx
   set $ebp=$marcel_saved_bp
   set $esp=$marcel_saved_sp

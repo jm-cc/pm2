@@ -20,8 +20,11 @@ then
 	shift
 	GDB=gdb
 	. $PM2_ROOT/bin/pm2-arch --source-mode
+	. $PM2_ROOT/bin/pm2-sys --source-mode
 	for mod in $(pm2-config --modules)
 	do
+		gdbinit_arch_sys=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH-$PM2_SYS
+		[ -r $gdbinit_arch_sys ] && GDB="$GDB -x $gdbinit_arch_sys"
 		gdbinit_arch=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH
 		[ -r $gdbinit_arch ] && GDB="$GDB -x $gdbinit_arch"
 		gdbinit=$PM2_ROOT/modules/$mod/scripts/gdbinit

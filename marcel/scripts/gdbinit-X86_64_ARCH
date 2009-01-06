@@ -4,12 +4,6 @@ define __save-ctx
   set $marcel_saved_pc=$rip
 end
 
-define __set-ctx
-  set $rbp=((marcel_t)$arg0)->ctx_yield[0].jbuf[1]
-  set $rsp=((marcel_t)$arg0)->ctx_yield[0].jbuf[6]
-  set $rip=((marcel_t)$arg0)->ctx_yield[0].jbuf[7]
-end
-
 define __rest-ctx
   set $rbp=$marcel_saved_bp
   set $rsp=$marcel_saved_sp

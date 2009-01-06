@@ -45,7 +45,10 @@ title="$prog.$HOST"
 echo "set environment DISPLAY $DISPLAY" >> $file
 
 . "$PM2_ROOT/bin/pm2-arch" --source-mode
+. "$PM2_ROOT/bin/pm2-sys" --source-mode
 for i in $_PM2_CONFIG_MODULES ; do
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
     gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
     gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"

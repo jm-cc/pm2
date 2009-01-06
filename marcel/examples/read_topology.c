@@ -44,6 +44,11 @@ void fig_text(FILE *output, int color, int size, unsigned depth, unsigned x, uns
   marcel_fprintf(output, "4 0 %d %u -1 0 %u 0.0 4 %u %u %u %u %s\\001\n", color, depth, size, size * 10, (unsigned) strlen(text) * size * 10, x, y + size * 10, text);
 }
 
+/*
+ * given LEVELS[0..NUMLEVELS-1], return all their direct sublevels in
+ * SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc.
+ */
+
 void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
   unsigned alloced = numlevels * levels[0]->arity;
   struct marcel_topo_level **l = tmalloc(alloced * sizeof(*l));
@@ -63,6 +68,10 @@ void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct
   *numsublevels = n;
 }
 
+/*
+ * given a LEVEL, return all its (possibly non-direct) sublevels of type TYPE
+ * in SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc.
+ */
 int get_sublevels_type(struct marcel_topo_level *level, enum marcel_topo_level_e type, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
   unsigned n = 1, n2;
   struct marcel_topo_level **l = tmalloc(sizeof(*l)), **l2;
@@ -84,6 +93,10 @@ int get_sublevels_type(struct marcel_topo_level *level, enum marcel_topo_level_e
     n = n2;
   }
 }
+
+/*
+ * Helper to recurse into sublevels of a given type
+ */
 
 #define IF_RECURSE(type) { \
   struct marcel_topo_level **sublevels; \
@@ -114,6 +127,12 @@ int get_sublevels_type(struct marcel_topo_level *level, enum marcel_topo_level_e
   IF_RECURSE(type) \
   LAST_RECURSE(next, sep) \
   ENDIF_RECURSE(next)
+
+/*
+ * foo_fig functions take a LEVEL, draw things about it (chip draw, cache size
+ * information etc) at (X,Y), recurse into sublevels, and return in RETWIDTH
+ * and RETHEIGHT the amount of space that the drawing took.
+ */
 
 void vp_fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;

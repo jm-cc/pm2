@@ -63,6 +63,11 @@ _syscall3(int, sched_setaffinity, pid_t, pid, unsigned int, lg,
 #ifdef AIX_SYS
 #include <sys/processor.h>
 #endif
+#ifdef SOLARIS_SYS
+#include <sys/types.h>
+#include <sys/processor.h>
+#include <sys/procset.h>
+#endif
 #endif
 
 #if defined(MA__LWPS)

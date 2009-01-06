@@ -357,7 +357,13 @@ void marcel_sig_enable_interrupts(void)
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-	sigrelse(sig);
+#ifdef MA__TIMER
+	sigrelse(MARCEL_TIMER_SIGNAL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	sigrelse(MARCEL_TIMER_USERSIGNAL);
+#endif
+#endif
+	sigrelse(MARCEL_RESCHED_SIGNAL);
 #else
 	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #endif
@@ -370,7 +376,13 @@ void marcel_sig_disable_interrupts(void)
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #else
 #if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-	sighold(sig);
+#ifdef MA__TIMER
+	sighold(MARCEL_TIMER_SIGNAL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	sighold(MARCEL_TIMER_USERSIGNAL);
+#endif
+#endif
+	sighold(MARCEL_RESCHED_SIGNAL);
 #else
 	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
 #endif

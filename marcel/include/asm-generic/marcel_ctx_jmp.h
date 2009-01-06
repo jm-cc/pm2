@@ -67,6 +67,7 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
     unsigned long _sp = ((unsigned long)(top)) - MAL(_local1); \
     unsigned long _fp = ((unsigned long)(top)) - MAL(_local2); \
     marcel_ctx_set_tls_reg(new_task); \
+    MA_SET_INITIAL_SELF(new_task); \
     set_sp_fp(_sp, _fp); \
   } while (0)
 #else

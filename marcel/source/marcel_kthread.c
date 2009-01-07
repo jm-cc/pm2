@@ -165,7 +165,7 @@ void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 
 void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared TBX_UNUSED, unsigned int value)
 {
-	ma_atomic_set(sem,value);
+	ma_atomic_init(sem,value);
 }
 
 void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock)

@@ -290,7 +290,7 @@ TBX_EXTERN void ma_tasklet_init(struct ma_tasklet_struct *t,
 		     void (*func)(unsigned long), unsigned long data, int preempt) {
 	t->next = NULL;
 	t->state = 0;
-	ma_atomic_set(&t->count, 0);
+	ma_atomic_init(&t->count, 0);
 	t->func = func;
 	t->data = data;
 	t->preempt = preempt;

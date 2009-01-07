@@ -362,7 +362,7 @@ static void ma_setup_core_topo_level(int numprocs, unsigned numcores, unsigned *
 		ma_topo_set_os_numbers(&core_level[j], core, oscoreids[j]);
 		ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, numprocs);
 #      ifdef MARCEL_SMT_IDLE
-		ma_atomic_set(&core_level[j].nbidle, 0);
+		ma_atomic_init(&core_level[j].nbidle, 0);
 #      endif
 		mdebug("core %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,core_level[j].cpuset,
 				tbx_i2smb(core_level[j].cpuset));
@@ -1156,7 +1156,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 		rad_level[r].father=NULL;
 #      ifdef MARCEL_SMT_IDLE
 		if (level == MARCEL_LEVEL_CORE)
-			ma_atomic_set(&rad_level[r].nbidle, 0);
+			ma_atomic_init(&rad_level[r].nbidle, 0);
 #      endif
 		r++;
 	}

@@ -320,6 +320,66 @@ struct marcel_topo_level *marcel_topo_core_level;
 struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
 
+#    if defined(LINUX_SYS) || defined(SOLARIS_SYS)
+static void ma_setup_die_topo_level(int numprocs, unsigned numdies, unsigned *osphysids, unsigned *proc_physids)
+{
+	struct marcel_topo_level *die_level;
+	int j;
+
+	mdebug("%d dies\n", numdies);
+	die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level));
+	MA_BUG_ON(!die_level);
+
+	for (j = 0; j < numdies; j++) {
+		ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
+		ma_topo_set_os_numbers(&die_level[j], die, osphysids[j]);
+		ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, numprocs);
+		mdebug("die %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,die_level[j].cpuset,
+				tbx_i2smb(die_level[j].cpuset));
+	}
+	mdebug("\n");
+
+	marcel_vpset_zero(&die_level[j].vpset);
+	marcel_vpset_zero(&die_level[j].cpuset);
+
+	marcel_topo_level_nbitems[discovering_level]=numdies;
+	mdebug("--- die level has number %d\n", discovering_level);
+	marcel_topo_levels[discovering_level++]=die_level;
+	mdebug("\n");
+}
+
+static void ma_setup_core_topo_level(int numprocs, unsigned numcores, unsigned *oscoreids, unsigned *proc_coreids)
+{
+	struct marcel_topo_level *core_level;
+	int j;
+
+	mdebug("%d cores\n", numcores);
+	core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level));
+	MA_BUG_ON(!core_level);
+
+	for (j = 0; j < numcores; j++) {
+		ma_topo_setup_level(&core_level[j], MARCEL_LEVEL_CORE);
+		ma_topo_set_os_numbers(&core_level[j], core, oscoreids[j]);
+		ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, numprocs);
+#      ifdef MARCEL_SMT_IDLE
+		ma_atomic_set(&core_level[j].nbidle, 0);
+#      endif
+		mdebug("core %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,core_level[j].cpuset,
+				tbx_i2smb(core_level[j].cpuset));
+	}
+
+	mdebug("\n");
+
+	marcel_vpset_zero(&core_level[j].vpset);
+	marcel_vpset_zero(&core_level[j].cpuset);
+
+	marcel_topo_level_nbitems[discovering_level]=numcores;
+	mdebug("--- core level has number %d\n", discovering_level);
+	marcel_topo_core_level = marcel_topo_levels[discovering_level++]=core_level;
+	mdebug("\n");
+}
+#endif
+
 #    ifdef LINUX_SYS
 #      define PROCESSOR	"processor"
 #      define PHYSID		"physical id"
@@ -709,31 +769,9 @@ static void __marcel_init look_sysfscpu(void) {
 	if (numcores>1)
 		mdebug("%d cores\n", numcores);
 
-	struct marcel_topo_level *die_level;
-
 	mdebug("\n\n * cpusets details *\n\n");
-	if (numdies>1) {
-		mdebug("%d dies\n", numdies);
-		die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level));
-		MA_BUG_ON(!die_level);
-
-		for (j = 0; j < numdies; j++) {
-			ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
-			ma_topo_set_os_numbers(&die_level[j], die, osphysids[j]);
-			ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, numprocs);
-			mdebug("die %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,die_level[j].cpuset,
-					tbx_i2smb(die_level[j].cpuset));
-		}
-		mdebug("\n");
-
-		marcel_vpset_zero(&die_level[j].vpset);
-		marcel_vpset_zero(&die_level[j].cpuset);
-
-		marcel_topo_level_nbitems[discovering_level]=numdies;
-		mdebug("--- die level has number %d\n", discovering_level);
-		marcel_topo_levels[discovering_level++]=die_level;
-		mdebug("\n");
-	}
+	if (numdies>1)
+		ma_setup_die_topo_level(numprocs, numdies, osphysids, proc_physids);
 
 	for(j=0; j<CACHE_LEVEL_MAX; j++) {
 		numcaches[j] = 0;
@@ -754,34 +792,8 @@ static void __marcel_init look_sysfscpu(void) {
 		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
 
-	struct marcel_topo_level *core_level;
-
-	if (numcores>1) {
-		mdebug("%d cores\n", numcores);
-		core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level));
-		MA_BUG_ON(!core_level);
-
-		for (j = 0; j < numcores; j++) {
-			ma_topo_setup_level(&core_level[j], MARCEL_LEVEL_CORE);
-			ma_topo_set_os_numbers(&core_level[j], core, oscoreids[j]);
-			ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, numprocs);
-#      ifdef MARCEL_SMT_IDLE
-			ma_atomic_set(&core_level[j].nbidle, 0);
-#      endif
-			mdebug("core %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,core_level[j].cpuset,
-					tbx_i2smb(core_level[j].cpuset));
-		}
-
-		mdebug("\n");
-
-		marcel_vpset_zero(&core_level[j].vpset);
-		marcel_vpset_zero(&core_level[j].cpuset);
-
-		marcel_topo_level_nbitems[discovering_level]=numcores;
-		mdebug("--- core level has number %d\n", discovering_level);
-		marcel_topo_core_level = marcel_topo_levels[discovering_level++]=core_level;
-		mdebug("\n");
-	}
+	if (numcores>1)
+		ma_setup_core_topo_level(numprocs, numcores, oscoreids, proc_coreids);
 
 	if (numcaches[0] > 0) {
 		/* setup L1 caches */
@@ -955,6 +967,128 @@ static void __marcel_init look_libnuma(void) {
 		marcel_topo_node_level = node_level;
 }
 #    endif /* OSF_SYS */
+
+#    ifdef SOLARIS_SYS
+#      include <sys/lgrp_user.h>
+static void show(lgrp_cookie_t cookie, lgrp_id_t lgrp) {
+	processorid_t cpuids[32];
+	lgrp_id_t lgrps[32];
+	int i, n;
+	n = lgrp_cpus(cookie, lgrp, cpuids, 32, LGRP_CONTENT_ALL);
+	for (i = 0; i < n ; i++) {
+		mdebug("%ld has %d\n", lgrp, cpuids[i]);
+	}
+	n = lgrp_children(cookie, lgrp, lgrps, 32);
+	mdebug("%ld %d children\n", lgrp, n);
+	for (i = 0; i < n ; i++) {
+		show(cookie, lgrps[i]);
+	}
+	mdebug("%ld children done\n", lgrp);
+}
+
+static void __marcel_init look_lgrp(void) {
+	lgrp_cookie_t cookie = lgrp_init(LGRP_VIEW_OS);
+	lgrp_id_t root;
+	if (cookie == LGRP_COOKIE_NONE) {
+		mdebug("lgrp_init failed: %s\n", strerror(errno));
+		return;
+	}
+	root = lgrp_root(cookie);
+	show(cookie, root);
+	/* TODO */
+	lgrp_fini(cookie);
+}
+
+#include <kstat.h>
+static void __marcel_init look_kstat(void) {
+	kstat_ctl_t *kc = kstat_open();
+	kstat_t *ksp;
+	kstat_named_t *stat;
+	unsigned proc_physids[MARCEL_NBMAXCPUS];
+	unsigned proc_osphysids[MARCEL_NBMAXCPUS];
+	unsigned osphysids[MARCEL_NBMAXCPUS];
+	unsigned proc_coreids[MARCEL_NBMAXCPUS];
+	unsigned proc_oscoreids[MARCEL_NBMAXCPUS];
+	unsigned oscoreids[MARCEL_NBMAXCPUS];
+	unsigned core_osphysids[MARCEL_NBMAXCPUS];
+	unsigned physid, coreid;
+	unsigned numprocs = 0;
+	unsigned numdies = 0;
+	unsigned numcores = 0;
+	unsigned i;
+
+	if (!kc) {
+		mdebug("kstat_open failed: %s\n", strerror(errno));
+		return;
+	}
+	for (ksp = kc->kc_chain; ksp; ksp = ksp->ks_next) {
+		if (strncmp("cpu_info", ksp->ks_module, 8))
+			continue;
+
+		if (ksp->ks_instance != numprocs) {
+			fprintf(stderr, "kstat instances not in CPU order: %d comes %d\n", ksp->ks_instance, numprocs);
+			goto out;
+		}
+		if (kstat_read(kc, ksp, NULL) == -1) {
+			fprintf(stderr, "kstat_read failed for CPU%d: %s\n", numprocs, strerror(errno));
+			goto out;
+		}
+		stat = (kstat_named_t *) kstat_data_lookup(ksp, "chip_id");
+		if (!stat) {
+			if (numdies) {
+				fprintf(stderr, "could not read die id for CPU%d: %s\n", numprocs, strerror(errno));
+				goto out;
+			}
+		} else {
+			if (stat->data_type != KSTAT_DATA_INT32) {
+				fprintf(stderr, "chip_id is not an INT32\n");
+				goto out;
+			}
+			proc_osphysids[numprocs] = physid = stat->value.i32;
+			for (i = 0; i < numdies; i++)
+				if (physid == osphysids[i])
+					break;
+			proc_physids[numprocs] = i;
+			mdebug("%u on die %u (%u)\n", numprocs, i, physid);
+			if (i == numdies)
+				osphysids[numdies++] = physid;
+		}
+
+		stat = (kstat_named_t *) kstat_data_lookup(ksp, "core_id");
+		if (!stat) {
+			if (numcores) {
+				fprintf(stderr, "could not read core id for CPU%d: %s\n", numprocs, strerror(errno));
+				goto out;
+			}
+		} else {
+			if (stat->data_type != KSTAT_DATA_INT32) {
+				fprintf(stderr, "core_id is not an INT32\n");
+				goto out;
+			}
+			proc_oscoreids[numprocs] = coreid = stat->value.i32;
+			for (i = 0; i < numcores; i++)
+				if (coreid == oscoreids[i] && proc_osphysids[numprocs] == core_osphysids[i])
+					break;
+			proc_coreids[numprocs] = i;
+			mdebug("%u on core %u (%u)\n", numprocs, i, coreid);
+			if (i == numcores) {
+				core_osphysids[numcores] = proc_osphysids[numprocs];
+				oscoreids[numcores++] = coreid;
+			}
+		}
+
+		numprocs++;
+	}
+
+	if (numdies > 1)
+		ma_setup_die_topo_level(numprocs, numdies, osphysids, proc_physids);
+
+	if (numcores > 1)
+		ma_setup_core_topo_level(numprocs, numcores, oscoreids, proc_coreids);
+out:
+	kstat_close(kc);
+}
+#    endif /* SOLARIS_SYS */
 
 #    ifdef AIX_SYS
 #      include <sys/rset.h>
@@ -1241,6 +1375,10 @@ static void topo_discover(void) {
 		}
 	}
 #    endif /* AIX_SYS */
+#    ifdef SOLARIS_SYS
+	look_lgrp();
+	look_kstat();
+#    endif /* SOLARIS_SYS */
 	look_cpu();
 #  endif /* MA__NUMA */
 

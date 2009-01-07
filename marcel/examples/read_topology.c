@@ -109,6 +109,9 @@ int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level
   LAST_RECURSE(sep) \
   ENDIF_RECURSE()
 
+#define size_value(size) (size < 4*1024 && size % 1024 ? size : size < 4*1024*1024 && (size / 1024) % 1024 ? size / 1024 : size / (1024*1024))
+#define size_unit(size) (size < 4*1024 && size % 1024 ? "KB" : size < 4*1024*1024 && (size / 1024) % 1024 ? "MB" : "GB")
+
 void vp_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = UNIT, maxheight = 0;
@@ -155,7 +158,9 @@ void l1_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L1)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L1 %u - %ldKB", level->os_l1, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]);
+    snprintf(text, sizeof(text), "L1 %u - %ld%s", level->os_l1,
+		    size_value(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]),
+		    size_unit(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]));
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -200,7 +205,9 @@ void l2_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L2)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L2 %u - %ldMB", level->os_l2, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] >> 10);
+    snprintf(text, sizeof(text), "L2 %u - %ld%s", level->os_l2,
+		    size_value(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2]),
+		    size_unit(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2]));
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -221,7 +228,9 @@ void l3_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
 
   if (level->merged_type & (1 << MARCEL_LEVEL_L3)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "L3 %u - %ldMB", level->os_l3, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3] >> 10);
+    snprintf(text, sizeof(text), "L3 %u - %ld%s", level->os_l3,
+		    size_value(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3]),
+		    size_unit(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3]));
     fig_text(output, 0, FONT_SIZE, depth-1, x + UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + UNIT + UNIT;
   }
@@ -261,7 +270,9 @@ void node_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *
 
   if (level->merged_type & (1 << MARCEL_LEVEL_NODE)) {
     myheight += UNIT;
-    snprintf(text, sizeof(text), "Node %u - %luGB", level->os_node, level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] >> 20);
+    snprintf(text, sizeof(text), "Node %u - %ld%s", level->os_node,
+		    size_value(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]),
+		    size_unit(level->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]));
     fig_text(output, 0, FONT_SIZE, depth-2, x + 2 * UNIT, y + myheight, text);
     myheight += FONT_SIZE*10 + 2*UNIT;
   }

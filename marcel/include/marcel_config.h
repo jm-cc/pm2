@@ -49,8 +49,6 @@
 #ifdef MA__LWPS
 #define MARCEL_NBMAXCPUS	32
 #ifdef MA__NUMA
-#define MARCEL_NBMAXCORES	16
-#define MARCEL_NBMAXDIES	8
 #define MARCEL_NBMAXNODES	8
 #endif
 #else

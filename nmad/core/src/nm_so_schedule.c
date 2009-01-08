@@ -116,6 +116,8 @@ int nm_so_schedule_exit (struct nm_core *p_core)
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
 
+  nm_so_monitor_vect_destroy(&p_core->so_sched.monitors);
+
   tbx_malloc_clean(nm_so_chunk_mem);
 
   /* free requests lists */
@@ -141,6 +143,8 @@ int nm_so_schedule_exit (struct nm_core *p_core)
 int nm_so_close_gate(struct nm_core *p_core, struct nm_gate *p_gate)
 {
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+
+  nm_so_tag_table_destroy(&p_so_gate->tags);
 
   puk_instance_destroy(p_so_gate->strategy_instance);
 

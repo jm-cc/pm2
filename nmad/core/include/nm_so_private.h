@@ -132,6 +132,8 @@ static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 }
 static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 {
+  if(so_tag->p_sr_tag)
+    TBX_FREE(so_tag->p_sr_tag);
 }
 NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 

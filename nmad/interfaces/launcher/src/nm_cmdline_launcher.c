@@ -24,6 +24,15 @@
 
 /* ** Cmd line launcher ************************************ */
 
+static void*     nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c);
+static void      nm_cmdline_launcher_destroy(void*_status);
+
+const static struct puk_adapter_driver_s nm_cmdline_launcher_adapter_driver =
+  {
+    .instanciate = &nm_cmdline_launcher_instanciate,
+    .destroy     = &nm_cmdline_launcher_destroy
+  };
+
 static void      nm_cmdline_launcher_init(void*_status, int*argc, char**argv, const char*group_name);
 static int       nm_cmdline_launcher_get_size(void*_status);
 static int       nm_cmdline_launcher_get_rank(void*_status);
@@ -42,6 +51,7 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
 extern void nm_cmdline_launcher_declare(void)
 {
   puk_adapter_declare("NewMad_Launcher",
+                      puk_adapter_provides("PadicoAdapter", &nm_cmdline_launcher_adapter_driver),
                       puk_adapter_provides("NewMad_Launcher", &nm_cmdline_launcher_driver ));
 
 }
@@ -51,10 +61,55 @@ extern void nm_cmdline_launcher_declare(void)
 #else
 #define RAIL_MAX 1
 #endif
-static nm_core_t p_core = NULL;
-static nm_gate_t gate   = NULL;
-static int is_server    = 0;
+struct nm_cmdline_launcher_status_s
+{
+  nm_core_t p_core;
+  nm_gate_t gate;
+  int is_server;
+  char *l_url[RAIL_MAX];
+  int nr_rails;
+};
 
+static void*nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c)
+{
+  struct nm_cmdline_launcher_status_s*status = TBX_MALLOC(sizeof(struct nm_cmdline_launcher_status_s));
+  status->p_core = NULL;
+  status->gate = NM_GATE_NONE;
+  status->is_server = 0;
+  status->nr_rails = 0;
+  return status;
+}
+
+static void nm_cmdline_launcher_destroy(void*_status)
+{
+  struct nm_cmdline_launcher_status_s*status = _status;
+  int j, err, ret = NM_ESUCCESS;
+
+  for(j = 0; j < status->nr_rails; j++) {
+    free(status->l_url[j]);
+  }
+
+  err = nm_ns_exit(status->p_core);
+  if(err != NM_ESUCCESS) {
+    fprintf(stderr, "launcher: nm_ns_exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+  err = nm_core_driver_exit(status->p_core);
+  if(err != NM_ESUCCESS) {
+    fprintf(stderr, "launcher: nm_core_driver_exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+  err = nm_core_exit(status->p_core);
+  if(err != NM_ESUCCESS) {
+    fprintf(stderr, "launcher: nm_core__exit return err = %d\n", err);
+    ret = EXIT_FAILURE;
+  }
+
+  TBX_FREE(status);
+
+  common_exit(NULL);
+
+}
 
 static void usage(void)
 {
@@ -83,7 +138,8 @@ static void usage(void)
 
 static int nm_cmdline_launcher_get_rank(void*_status)
 {
-  return is_server ? 0 : 1;
+  struct nm_cmdline_launcher_status_s*status = _status;
+  return status->is_server ? 0 : 1;
 }
 
 static int nm_cmdline_launcher_get_size(void*_status)
@@ -93,15 +149,17 @@ static int nm_cmdline_launcher_get_size(void*_status)
 
 static nm_core_t nm_cmdline_launcher_get_core(void*_status)
 {
-  return p_core;
+  struct nm_cmdline_launcher_status_s*status = _status;
+  return status->p_core;
 }
 
 static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)
 {
-  int self = nm_cmdline_launcher_get_rank(_status);
+  struct nm_cmdline_launcher_status_s*status = _status;
+  int self = nm_cmdline_launcher_get_rank(status);
   int peer = 1 - self;
   _gates[self] = NULL;
-  _gates[peer] = gate;
+  _gates[peer] = status->gate;
 }
 
 static inline puk_component_t load_driver(const char *driver_name)
@@ -240,11 +298,9 @@ static int get_railstring_driver_assemblies(puk_component_t*assemblies,
   return cur_nr_drivers;
 }
 
-static char *l_url[RAIL_MAX];
-static int nr_rails = 0;
-
 void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_label)
 {
+  struct nm_cmdline_launcher_status_s*status = _status;
   int i,j, err;
   /* rails */
   char *railstring = NULL;
@@ -266,7 +322,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   nm_so_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
   nm_sr_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
 
-  err = nm_core_init(argc, argv, &p_core);
+  err = nm_core_init(argc, argv, &status->p_core);
   if (err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core_init returned err = %d\n", err);
     goto out_err;
@@ -307,18 +363,18 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   if (railstring) 
     {
       /* parse railstring to get drivers */
-      nr_rails = get_railstring_driver_assemblies(driver_assemblies, params, railstring);
+      status->nr_rails = get_railstring_driver_assemblies(driver_assemblies, params, railstring);
     }
   else
     {
       /* use default drivers */
-      nr_rails = get_default_driver_assemblies(driver_assemblies);
-      if (nr_rails < 0)
+      status->nr_rails = get_default_driver_assemblies(driver_assemblies);
+      if (status->nr_rails < 0)
 	{
 	  fprintf(stderr, "launcher: failed to select default drivers automatically.\n");
 	  usage();
 	}
-      if(nr_rails == 0)
+      if(status->nr_rails == 0)
 	{
 	  fprintf(stderr, "launcher: no driver enabled.\n");
 	  usage();
@@ -327,51 +383,51 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 
 #ifndef CONFIG_MULTI_RAIL
   /* Check the number of drivers in single-rail */
-  if (nr_rails > 1)
+  if (status->nr_rails > 1)
     {
       fprintf(stderr, "launcher: the selected strategy does not support multi-rail. Only 1 driver supported.\n");
       usage();
     }
 #endif
 
-  is_server = (!nr_r_urls);
+  status->is_server = (!nr_r_urls);
 
   /* if client, we need as many url as drivers */
-  if (!is_server && nr_r_urls < nr_rails) {
-    fprintf(stderr, "launcher: need %d url for these %d rails\n", nr_r_urls, nr_rails);
+  if (!status->is_server && nr_r_urls < status->nr_rails) {
+    fprintf(stderr, "launcher: need %d url for these %d rails\n", nr_r_urls, status->nr_rails);
     usage();
   }
 
-  if (is_server) {
+  if (status->is_server) {
     printf("# launcher: running as server\n");
   } else {
     printf("# launcher: running as client using remote url:");
-    for(j=0; j<nr_rails; j++)
+    for(j = 0; j < status->nr_rails; j++)
       printf(" %s", r_url[j]);
     printf("\n");
   }
 
-  err = nm_core_driver_load_init_some_with_params(p_core, nr_rails, driver_assemblies, params_array, nparam_array, drv_id, l_url);
+  err = nm_core_driver_load_init_some_with_params(status->p_core, status->nr_rails, driver_assemblies, params_array, nparam_array, drv_id, status->l_url);
   if (err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core_driver_load_init_some returned err = %d\n", err);
     goto out_err;
   }
-  for(j=0; j<nr_rails; j++) {
-    printf("# launcher: local url[%d]: '%s'\n", j, l_url[j]);
+  for(j = 0; j < status->nr_rails; j++) {
+    printf("# launcher: local url[%d]: '%s'\n", j, status->l_url[j]);
   }
 
-  nm_ns_init(p_core);
+  nm_ns_init(status->p_core);
 
-  err = nm_core_gate_init(p_core, &gate);
+  err = nm_core_gate_init(status->p_core, &status->gate);
   if (err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core_gate_init returned err = %d\n", err);
     goto out_err;
   }
 
-  if (is_server) {
+  if (status->is_server) {
     /* server  */
-    for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_accept(p_core, gate, drv_id[j], NULL);
+    for(j = 0; j < status->nr_rails; j++) {
+      err = nm_core_gate_accept(status->p_core, status->gate, drv_id[j], NULL);
       if (err != NM_ESUCCESS) {
 	fprintf(stderr, "launcher: nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -379,8 +435,8 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
     }
   } else {
     /* client */
-    for(j=0; j<nr_rails; j++) {
-      err = nm_core_gate_connect(p_core, gate, drv_id[j], r_url[j]);
+    for(j = 0; j < status->nr_rails; j++) {
+      err = nm_core_gate_connect(status->p_core, status->gate, drv_id[j], r_url[j]);
       if (err != NM_ESUCCESS) {
 	fprintf(stderr, "launcher: nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -395,32 +451,4 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   exit(EXIT_FAILURE);
 }
 
-int nm_cmdline_launcher_exit(void)
-{
-  int j, err, ret = NM_ESUCCESS;
-
-  for(j=0; j<nr_rails; j++) {
-    free(l_url[j]);
-  }
-
-  err = nm_ns_exit(p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_ns_exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
-  err = nm_core_driver_exit(p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core_driver_exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
-  err = nm_core_exit(p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core__exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
-
-  common_exit(NULL);
-
-  return ret;
-}
 

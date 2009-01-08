@@ -93,6 +93,7 @@ int nm_launcher_exit(void)
 {
   free(gates);
   puk_instance_destroy(launcher_instance);
+  padico_puk_shutdown();
   return NM_ESUCCESS;
 }
 

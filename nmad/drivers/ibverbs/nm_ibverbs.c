@@ -458,6 +458,11 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
 
 static void nm_ibverbs_destroy(void*_status)
 {
+  struct nm_ibverbs*status = _status;
+  if(status->cnx_array)
+    {
+      TBX_FREE(status->cnx_array);
+    }
   TBX_FREE(_status);
 }
 
@@ -640,7 +645,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   }
   
   /* find IB device */
-  struct ibv_device*const*dev_list = ibv_get_device_list(&dev_amount);
+  struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) {
     fprintf(stderr, "Infiniband: no device found.\n");
     err = -NM_ENOTFOUND;
@@ -675,6 +680,8 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
     err = -NM_ESCFAILD;
     goto out;
   }
+
+  ibv_free_device_list(dev_list);
   
   /* driver capabilities encoding */
   p_ibverbs_drv->caps.has_trk_rq_dgram			= 1;

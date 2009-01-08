@@ -53,6 +53,10 @@ __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
 	LOG_IN();
 	cond->value|=mask;
 	marcel_sem_V(&cond->sem);
+	/* TODO: make this optional to save a few cycles */
+	if(cond->alt_sem){
+		piom_shs_poll_success(cond->alt_sem);
+	}
 	LOG_OUT();
 }
 
@@ -63,6 +67,7 @@ __tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask){
 __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
 	
 	cond->value=initial;
+	cond->alt_sem=NULL;
 	marcel_sem_init(&cond->sem, 0);
 	ma_spin_lock_init(&cond->lock);
 	marcel_cond_init(&cond->cond,NULL);

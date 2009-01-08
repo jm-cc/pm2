@@ -844,11 +844,12 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
     {
       sr_event |= NM_SR_STATUS_RECV_CANCELLED;
     }
-  nm_sr_request_event(p_request, sr_event, p_gate);
   if(p_request && p_request->ref)
     {
       list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
+  nm_sr_request_event(p_request, sr_event, p_gate);
+
   NM_SO_SR_LOG_OUT();
 }
 

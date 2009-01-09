@@ -39,6 +39,7 @@ MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM);
 
 void __marcel_init ma_allocator_init(void)
 {
+        MALLOCATOR_LOG_IN();
 	lwp_container_allocator = ma_new_obj_allocator(1, (void *(*)(void *))
                                                        ma_per_lwp_alloc, (void *)
                                                        sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
@@ -50,16 +51,19 @@ void __marcel_init ma_allocator_init(void)
 	ma_node_allocator = ma_new_obj_allocator(0, __ma_obj_allocator_malloc,
                                                  (void *) sizeof(ma_node_t),
                                                  __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
+        MALLOCATOR_LOG_OUT();
 }
 
 void ma_allocator_exit(void)
 {
+        MALLOCATOR_LOG_IN();
 	ma_obj_allocator_fini(level_container_allocator);
 	ma_obj_allocator_fini(lwp_container_allocator);
 	//ma_obj_allocator_fini(ma_node_allocator);
 	ma_node_allocator = NULL;
 	lwp_container_allocator = NULL;
 	level_container_allocator = NULL;
+        MALLOCATOR_LOG_OUT();
 }
 
 /**
@@ -71,6 +75,7 @@ ma_allocator_t *ma_new_obj_allocator(int conservative,
                                      void (*destroy) (void *, void *),
                                      void *destroy_arg, enum ma_policy_t policy, int max_size)
 {
+        MALLOCATOR_LOG_IN();
 	/* Initialisation de la structure de l'allocateur selon les parametres */
 	ma_allocator_t *allocator = __marcel_malloc(sizeof(ma_allocator_t));
 	allocator->create = create;
@@ -83,6 +88,7 @@ ma_allocator_t *ma_new_obj_allocator(int conservative,
 	allocator->init = 0;
 	allocator->container.obj = NULL;
 	ma_obj_allocator_init(allocator);
+        MALLOCATOR_LOG_OUT();
 	return allocator;
 }
 
@@ -90,6 +96,8 @@ void *ma_obj_alloc(ma_allocator_t * allocator)
 {
 	void *obj = NULL;
 	ma_container_t *container;
+
+        MALLOCATOR_LOG_IN();
 	container = ma_get_container(allocator, ALLOC_METHOD);
 
 	if (container)
@@ -101,12 +109,15 @@ void *ma_obj_alloc(ma_allocator_t * allocator)
 	if (!obj)
 		obj = allocator->create(allocator->create_arg);
 
+        MALLOCATOR_LOG_OUT();
 	return obj;
 }
 
 void ma_obj_free(ma_allocator_t * allocator, void *obj)
 {
 	ma_container_t *container;
+
+        MALLOCATOR_LOG_IN();
 	container = ma_get_container(allocator, allocator->destroy?FREE_METHOD:NO_FREE_METHOD);
 
 	if (container && !(ma_container_plein(container))) {
@@ -118,6 +129,7 @@ void ma_obj_free(ma_allocator_t * allocator, void *obj)
 	else
 		/* shouldn't ever happen */
 		MA_WARN_ON(1);
+        MALLOCATOR_LOG_OUT();
 }
 
 void ma_obj_allocator_fini(ma_allocator_t * allocator)
@@ -125,6 +137,8 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 #ifdef MA__LWPS
 	int i, j;
 #endif
+
+        MALLOCATOR_LOG_IN();
 
 	switch (allocator->policy) {
         case POLICY_GLOBAL: {
@@ -173,6 +187,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
                 break;
         }
 	}
+        MALLOCATOR_LOG_OUT();
 }
 
 void ma_obj_allocator_init(ma_allocator_t * allocator)
@@ -181,8 +196,11 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 	int i, j;
 #endif
 
-	if (!allocator)
+        MALLOCATOR_LOG_IN();
+	if (!allocator) {
+                MALLOCATOR_LOG_OUT();
 		return;
+        }
 
 	if (!(allocator->init)) {
                 switch (allocator->policy) {
@@ -228,6 +246,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 
 		ma_obj_allocator_init(ma_node_allocator);
 	}
+        MALLOCATOR_LOG_OUT();
 }
 
 ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)

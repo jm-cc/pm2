@@ -112,6 +112,7 @@ extern debug_type_t marcel_mtrace;
 extern debug_type_t marcel_mtrace_timer;
 
 extern debug_type_t marcel_allocator_debug;
+extern debug_type_t marcel_allocator_log;
 extern debug_type_t marcel_heap_debug;
 extern debug_type_t marcel_mami_debug;
 extern debug_type_t marcel_mami_log;
@@ -148,9 +149,13 @@ extern debug_type_t marcel_mami_log;
 #if defined(PM2DEBUG)
 #  define MAMI_LOG_IN()  debug_printf(&marcel_mami_log, "%s: -->\n", __TBX_FUNCTION__)
 #  define MAMI_LOG_OUT() debug_printf(&marcel_mami_log, "%s: <--\n", __TBX_FUNCTION__)
+#  define MALLOCATOR_LOG_IN()  debug_printf(&marcel_allocator_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MALLOCATOR_LOG_OUT() debug_printf(&marcel_allocator_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
 #  define MAMI_LOG_IN()
 #  define MAMI_LOG_OUT()
+#  define MALLOCATOR_LOG_IN()
+#  define MALLOCATOR_LOG_OUT()
 #endif
 
 #ifdef PM2_BUG_ON

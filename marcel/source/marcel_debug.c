@@ -36,6 +36,9 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_deviate=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug_sched_q=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug-sched-q", &marcel_debug);
 
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_allocator_debug=
+  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-allocator-debug", &marcel_debug);
+
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_heap_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-heap-debug", &marcel_debug);
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_debug=

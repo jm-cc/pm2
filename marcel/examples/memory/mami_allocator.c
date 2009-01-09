@@ -44,6 +44,7 @@ int marcel_main(int argc, char * argv[]) {
   record->imaginary = 13.0;
   ma_obj_free(mami_records, record);
 
+  ma_obj_allocator_fini(mami_records);
   marcel_memory_exit(&memory_manager);
 
   // Finish marcel

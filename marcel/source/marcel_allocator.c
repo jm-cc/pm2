@@ -40,18 +40,16 @@ MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM);
 void __marcel_init ma_allocator_init(void)
 {
 	lwp_container_allocator = ma_new_obj_allocator(1, (void *(*)(void *))
-	    ma_per_lwp_alloc, (void *)
-	    sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
-	level_container_allocator =
-	    ma_new_obj_allocator(1, (void *(*)(void *)) ma_per_level_alloc,
-	    (void *) sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
+                                                       ma_per_lwp_alloc, (void *)
+                                                       sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
+	level_container_allocator = ma_new_obj_allocator(1, (void *(*)(void *)) ma_per_level_alloc,
+                                                         (void *) sizeof(ma_container_t), NULL, NULL, POLICY_GLOBAL, 0);
 
 	/* We bypass potential safe_malloc checks for the node allocator
 	   as the node allocator is not freed for now */
-	ma_node_allocator =
-	    ma_new_obj_allocator(0, __ma_obj_allocator_malloc,
-	    (void *) sizeof(ma_node_t),
-	    __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
+	ma_node_allocator = ma_new_obj_allocator(0, __ma_obj_allocator_malloc,
+                                                 (void *) sizeof(ma_node_t),
+                                                 __ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
 }
 
 void ma_allocator_exit(void)
@@ -65,9 +63,9 @@ void ma_allocator_exit(void)
 }
 
 ma_allocator_t *ma_new_obj_allocator(int conservative,
-    void *(*create) (void *), void *create_arg,
-    void (*destroy) (void *, void *),
-    void *destroy_arg, enum ma_policy_t policy, int max_size)
+                                     void *(*create) (void *), void *create_arg,
+                                     void (*destroy) (void *, void *),
+                                     void *destroy_arg, enum ma_policy_t policy, int max_size)
 {
 	/* Initialisation de la structure de l'allocateur selon les parametres */
 	ma_allocator_t *allocator = __marcel_malloc(sizeof(ma_allocator_t));
@@ -123,52 +121,51 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 #endif
 
 	switch (allocator->policy) {
-	case POLICY_GLOBAL:
-		{
-			ma_container_fini(ma_get_container
-			    (allocator, ALLOC_METHOD),
-			    allocator->destroy, allocator->destroy_arg);
-			__marcel_free(allocator->container.obj);
-		}
-		break;
+        case POLICY_GLOBAL: {
+                ma_container_fini(ma_get_container
+                                  (allocator, ALLOC_METHOD),
+                                  allocator->destroy, allocator->destroy_arg);
+                __marcel_free(allocator->container.obj);
+                break;
+        }
 
 #ifdef MA__LWPS
-	case POLICY_LOCAL:{
-			struct marcel_topo_level *vp;
-			for_all_vp(vp) {
-				ma_container_fini(ma_per_level_data
-				    (vp, allocator->container.offset),
-				    allocator->destroy, allocator->destroy_arg);
-			}
-			ma_obj_free(lwp_container_allocator,
-			    (void *) allocator->container.offset);
-			break;
-		}
-
-	case POLICY_HIERARCHICAL:
-	case POLICY_HIERARCHICAL_MEMORY:
-		for (j = marcel_topo_nblevels-1; j >= 0; --j) {
-			for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
-				ma_container_fini(ma_per_level_data
-				    (&marcel_topo_levels[j][i],
-					(allocator->container.
-					    offset)),
-				    allocator->destroy, allocator->destroy_arg);
-			}
+        case POLICY_LOCAL: {
+                struct marcel_topo_level *vp;
+                for_all_vp(vp) {
+                        ma_container_fini(ma_per_level_data
+                                          (vp, allocator->container.offset),
+                                          allocator->destroy, allocator->destroy_arg);
+                }
+                ma_obj_free(lwp_container_allocator,
+                            (void *) allocator->container.offset);
+                break;
+        }
+        case POLICY_HIERARCHICAL:
+	case POLICY_HIERARCHICAL_MEMORY: {
+                for (j = marcel_topo_nblevels-1; j >= 0; --j) {
+                        for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
+                                ma_container_fini(ma_per_level_data
+                                                  (&marcel_topo_levels[j][i],
+                                                   (allocator->container.
+                                                    offset)),
+                                                  allocator->destroy, allocator->destroy_arg);
+                        }
 #ifdef MA__NUMA
-			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
-				/* Last memory level, stop here */
-				break;
+                        if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+                            (marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
+                                /* Last memory level, stop here */
+                                break;
 #endif
-		}
-		ma_obj_free(level_container_allocator,
-		    (void *) allocator->container.offset);
-		break;
+                }
+                ma_obj_free(level_container_allocator, (void *) allocator->container.offset);
+                break;
+        }
 #endif
-	default:
-		printf("la politique est mal choisie\n");
-		break;
+	default: {
+                printf("la politique est mal choisie\n");
+                break;
+        }
 	}
 }
 
@@ -182,78 +179,58 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 		return;
 
 	if (!(allocator->init)) {
-
-		switch (allocator->policy) {
-		case POLICY_GLOBAL:
-			allocator->container.obj =
-			    __marcel_malloc(sizeof(ma_container_t));
-			ma_container_init(allocator->container.obj,
-			    allocator->conservative, allocator->max_size);
-			break;
-
+                switch (allocator->policy) {
+                case POLICY_GLOBAL:
+                        allocator->container.obj = __marcel_malloc(sizeof(ma_container_t));
+                        ma_container_init(allocator->container.obj,
+                                          allocator->conservative, allocator->max_size);
+                        break;
 #ifdef MA__LWPS
-		case POLICY_LOCAL:{
-				struct marcel_topo_level *vp;
-				allocator->container.offset = (unsigned long)
-				    ma_obj_alloc(lwp_container_allocator);
-
-				for_all_vp(vp) {
-					ma_container_init(ma_per_level_data
-					    (vp, (allocator->
-						    container.offset)),
-					    allocator->
-					    conservative, allocator->max_size);
-				}
-				break;
-			}
-
-		case POLICY_HIERARCHICAL:
-		case POLICY_HIERARCHICAL_MEMORY:
-
-			allocator->container.offset = (unsigned long)
-			    ma_obj_alloc(level_container_allocator);
-			for (j = marcel_topo_nblevels-1; j >= 0; --j) {
-				for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
-					ma_container_init(ma_per_level_data
-					    (&marcel_topo_levels
-						[j][i],
-						(allocator->
-						    container.offset)),
-					    allocator->
-					    conservative, allocator->max_size);
-				}
+                case POLICY_LOCAL: {
+                        struct marcel_topo_level *vp;
+                        allocator->container.offset = (unsigned long) ma_obj_alloc(lwp_container_allocator);
+                        for_all_vp(vp) {
+                                ma_container_init(ma_per_level_data
+                                                  (vp, (allocator->container.offset)),
+                                                  allocator->conservative, allocator->max_size);
+                        }
+                        break;
+                }
+                case POLICY_HIERARCHICAL:
+                case POLICY_HIERARCHICAL_MEMORY: {
+                        allocator->container.offset = (unsigned long) ma_obj_alloc(level_container_allocator);
+                        for (j = marcel_topo_nblevels-1; j >= 0; --j) {
+                                for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
+                                        ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i],
+                                                                            (allocator->container.offset)),
+                                                          allocator->conservative, allocator->max_size);
+                                }
 #ifdef MA__NUMA
-				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-						(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
-					/* Last memory level, stop here */
-					break;
+                                if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
+                                    (marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
+                                        /* Last memory level, stop here */
+                                        break;
 #endif
-			}
-
-			break;
+                        }
+                        break;
+                }
 #endif
-
-		default:
-			printf("La politique n'est pas bien choisie\n");
-		}
-
-		allocator->init = 1;
+                default:
+                        printf("La politique n'est pas bien choisie\n");
+                }
+                allocator->init = 1;
 
 		ma_obj_allocator_init(ma_node_allocator);
-
 	}
 }
 
 ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 {
 	if (mode > 2)
-		printf
-		    ("Erreur : le mode n'est pas bien defini -- ma_get_container\n");
+		printf("Erreur : le mode n'est pas bien defini -- ma_get_container\n");
 
 	//mode 0 pour FREE_METHOD
 	//mode 1 pour ALLOC_METHOD
-
-	//On peut transformer tout ca avec un switch !
 
 	if (allocator->policy == POLICY_GLOBAL) {
 		return allocator->container.obj;
@@ -266,38 +243,33 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 
 		return ma_per_lwp_self_data(allocator->container.offset);
 	}
-	// On fait une boucle while qui remonte le niveau hierarchique 
+	// On fait une boucle while qui remonte le niveau hierarchique
 	// jusqu'a ce que l'on trouve un container qui a un nombre d'element > 0.
-	// Si on ne trouve pas de container plein sur toute la topologie, on 
-	// retourne le container de niveau le plus bas (= le plus proche du processeur). 
+	// Si on ne trouve pas de container plein sur toute la topologie, on
+	// retourne le container de niveau le plus bas (= le plus proche du processeur).
 
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && mode == ALLOC_METHOD) {
-		struct marcel_topo_level *niveau_courant =
-		    ma_per_lwp(vp_level, MA_LWP_SELF);
+		struct marcel_topo_level *niveau_courant = ma_per_lwp(vp_level, MA_LWP_SELF);
 
 		if (ma_vpnum(MA_LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
 			if (niveau_courant) {
 				return ma_per_level_data(niveau_courant, allocator->container.offset);
-			} else {
-				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
-					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
-				} else {
-					return ma_per_level_data(marcel_machine_level, allocator->container.offset);
-				}
-			}
-		}
+			} else if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+                                return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+                        } else {
+                                return ma_per_level_data(marcel_machine_level, allocator->container.offset);
+                        }
+                }
 
 		while (niveau_courant) {
 			ma_container_t *container_courant;
-			container_courant =
-			    ma_per_level_data(niveau_courant,
-			    allocator->container.offset);
+			container_courant = ma_per_level_data(niveau_courant, allocator->container.offset);
 			if (ma_container_nb_element(container_courant) > 0)
 				return container_courant;
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-				    (niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE)))
+                            (niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE)))
 				/* Last memory level, stop here */
 				break;
 #endif
@@ -305,41 +277,36 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 		}
 		return NULL;
 	}
-	// Dans ce cas la, le container a retourner en premier est celui de niveau le plus 
-	// bas si il est vide, sinon si il est rempli au-dela d'un certain niveau, il faut retourner 
-	// le container au-dessus (dans la hierarchie) et ainsi de suite, 
-	// 
+	// Dans ce cas la, le container a retourner en premier est celui de niveau le plus
+	// bas si il est vide, sinon si il est rempli au-dela d'un certain niveau, il faut retourner
+	// le container au-dessus (dans la hierarchie) et ainsi de suite,
+	//
 	// Nota: désactivé pour les mesures:
-	// si les containers sont tous 
+	// si les containers sont tous
 	// pleins on retoune quand meme le container de plus proche du processeur : donc il va deborder...
 
 	if ((allocator->policy == POLICY_HIERARCHICAL || allocator->policy == POLICY_HIERARCHICAL_MEMORY) && (mode == FREE_METHOD || mode == NO_FREE_METHOD)) {
-		struct marcel_topo_level *niveau_courant =
-		    ma_per_lwp(vp_level, MA_LWP_SELF);
+		struct marcel_topo_level *niveau_courant = ma_per_lwp(vp_level, MA_LWP_SELF);
 
 		if (ma_vpnum(MA_LWP_SELF) >= marcel_nbvps()) {
 			/* Complètement arbitraire, il faudrait voir ce qu'on fait pour les LWP supplémentaires. Sans doute au moins choisir le bon noeud NUMA, ou au moins allouer de manière cyclique */
 			if (niveau_courant) {
 				return ma_per_level_data(niveau_courant, allocator->container.offset);
-			} else {
-				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
-					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
-				} else {
-					return ma_per_level_data(marcel_machine_level, allocator->container.offset);
-				}
+			} else if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+                                return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+                        } else {
+                                return ma_per_level_data(marcel_machine_level, allocator->container.offset);
 			}
 		}
 
 		while (niveau_courant) {
 			ma_container_t *container_courant;
-			container_courant =
-			    ma_per_level_data(niveau_courant,
-			    allocator->container.offset);
+			container_courant = ma_per_level_data(niveau_courant, allocator->container.offset);
 			if (!ma_container_plein(container_courant))
 				return container_courant;
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					(niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE)))
+                            (niveau_courant->merged_type & (1<<MARCEL_LEVEL_NODE)))
 				/* Last memory level, stop here */
 				break;
 #endif
@@ -350,15 +317,11 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 			return NULL;
 		} else {
 			if (niveau_courant) {
-				return ma_per_level_data(niveau_courant,
-						allocator->container.offset);
-			} else {
-				if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
-					return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
-				} else {
-					return ma_per_level_data(marcel_machine_level,
-							allocator->container.offset);
-				}
+				return ma_per_level_data(niveau_courant, allocator->container.offset);
+			} else if (allocator->policy == POLICY_HIERARCHICAL_MEMORY) {
+                                return ma_per_level_data(&marcel_topo_vp_level[0], allocator->container.offset);
+                        } else {
+                                return ma_per_level_data(marcel_machine_level, allocator->container.offset);
 			}
 		}
 	}
@@ -395,7 +358,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 			fprintf(stderr,"\n");
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
-					(marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
+                            (marcel_topo_levels[j][0].merged_type & (1<<MARCEL_LEVEL_NODE)))
 				/* Last memory level, stop here */
 				break;
 #endif

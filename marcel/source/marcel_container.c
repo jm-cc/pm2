@@ -97,6 +97,7 @@ void ma_container_fini(ma_container_t * container, void (*destroy) (void *,
 			ma_obj_free(ma_node_allocator, ptr2);
 		}
 	}
+	ma_unlock_container(container);
 }
 
 int ma_container_nb_element(ma_container_t * container)

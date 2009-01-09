@@ -62,6 +62,10 @@ void ma_allocator_exit(void)
 	level_container_allocator = NULL;
 }
 
+/**
+ *
+ * @param max_size if 0, the container will have a infinite size, i.e it will never be full
+ */
 ma_allocator_t *ma_new_obj_allocator(int conservative,
                                      void *(*create) (void *), void *create_arg,
                                      void (*destroy) (void *, void *),

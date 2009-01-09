@@ -120,7 +120,7 @@ void ma_obj_free(ma_allocator_t * allocator, void *obj)
         MALLOCATOR_LOG_IN();
 	container = ma_get_container(allocator, allocator->destroy?FREE_METHOD:NO_FREE_METHOD);
 
-	if (container && !(ma_container_plein(container))) {
+	if (container && !(ma_container_is_full(container))) {
                 mdebug_allocator("Put the object back in the container (%d)\n", ma_container_nb_element(container));
 		ma_container_add(container, obj);
         }
@@ -142,9 +142,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 
 	switch (allocator->policy) {
         case POLICY_GLOBAL: {
-                ma_container_fini(ma_get_container
-                                  (allocator, ALLOC_METHOD),
-                                  allocator->destroy, allocator->destroy_arg);
+                ma_container_clear(ma_get_container
+                                   (allocator, ALLOC_METHOD),
+                                   allocator->destroy, allocator->destroy_arg);
                 __marcel_free(allocator->container.obj);
                 break;
         }
@@ -153,9 +153,9 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
         case POLICY_LOCAL: {
                 struct marcel_topo_level *vp;
                 for_all_vp(vp) {
-                        ma_container_fini(ma_per_level_data
-                                          (vp, allocator->container.offset),
-                                          allocator->destroy, allocator->destroy_arg);
+                        ma_container_clear(ma_per_level_data
+                                           (vp, allocator->container.offset),
+                                           allocator->destroy, allocator->destroy_arg);
                 }
                 ma_obj_free(lwp_container_allocator,
                             (void *) allocator->container.offset);
@@ -165,11 +165,11 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 	case POLICY_HIERARCHICAL_MEMORY: {
                 for (j = marcel_topo_nblevels-1; j >= 0; --j) {
                         for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
-                                ma_container_fini(ma_per_level_data
-                                                  (&marcel_topo_levels[j][i],
-                                                   (allocator->container.
-                                                    offset)),
-                                                  allocator->destroy, allocator->destroy_arg);
+                                ma_container_clear(ma_per_level_data
+                                                   (&marcel_topo_levels[j][i],
+                                                    (allocator->container.
+                                                     offset)),
+                                                   allocator->destroy, allocator->destroy_arg);
                         }
 #ifdef MA__NUMA
                         if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&
@@ -327,7 +327,7 @@ ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 		while (niveau_courant) {
 			ma_container_t *container_courant;
 			container_courant = ma_per_level_data(niveau_courant, allocator->container.offset);
-			if (!ma_container_plein(container_courant))
+			if (!ma_container_is_full(container_courant))
 				return container_courant;
 #ifdef MA__NUMA
 			if (allocator->policy == POLICY_HIERARCHICAL_MEMORY &&

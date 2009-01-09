@@ -77,8 +77,7 @@ void *ma_container_get(ma_container_t * container)
 	return obj;
 }
 
-void ma_container_fini(ma_container_t * container, void (*destroy) (void *,
-	void *), void *destroy_arg)
+void ma_container_clear(ma_container_t * container, void (*destroy) (void *, void *), void *destroy_arg)
 {
 	ma_node_t *ptr1, *ptr2;
 
@@ -105,7 +104,7 @@ int ma_container_nb_element(ma_container_t * container)
 	return container->nb_element;
 }
 
-int ma_container_plein(ma_container_t * container)
+int ma_container_is_full(ma_container_t * container)
 {
         // A container of size=0 is by definition never full ...
         return container->max_size && ma_container_nb_element(container) >= container->max_size;
@@ -122,7 +121,7 @@ void ma_unlock_container(ma_container_t * container)
 }
 
 void ma_container_init(ma_container_t * container, int conservative,
-    int max_size)
+                       int max_size)
 {
 	container->first_node = NULL;
 	container->nb_element = 0;

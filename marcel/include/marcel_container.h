@@ -44,7 +44,7 @@ void * ma_container_get(ma_container_t * container);
 
 int ma_container_nb_element(ma_container_t * container);
 
-int ma_container_plein(ma_container_t * container);
+int ma_container_is_full(ma_container_t * container);
 
 void ma_lock_container(ma_container_t * container);
 
@@ -52,4 +52,4 @@ void ma_unlock_container(ma_container_t * container);
 
 void ma_container_init(ma_container_t * container, int conservative, int max_size);
 
-void ma_container_fini(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg );
+void ma_container_clear(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg );

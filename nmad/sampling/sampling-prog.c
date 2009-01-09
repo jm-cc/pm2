@@ -32,12 +32,6 @@ static const int param_min_size = 2;
 static const int param_max_size = (8*1024*1024);
 static const int param_nb_samples = 1000;
 
-static void nm_ns_print_errno(char *msg, int err)
-{
-  err = (err > 0 ? err : -err);
-
-}
-
 static int nm_ns_initialize_pw(struct nm_core *p_core,
 			       struct nm_drv  *p_drv,
 			       struct nm_gate *p_gate,
@@ -49,15 +43,17 @@ static int nm_ns_initialize_pw(struct nm_core *p_core,
   const nm_tag_t tag = 0;
   const uint8_t seq = 0;
   int err = nm_so_pw_alloc(flags, &p_pw);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_initialize_pw - nm_so_pw_alloc", err);
-    goto out;
-  }
+  if(err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
+      abort();
+    }
   err = nm_so_pw_add_data(p_pw, tag, seq, ptr, param_min_size, 0, 1, flags);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_initialize_pw - nm_so_pw_add_data", err);
-    goto out;
-  }
+  if(err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
+      abort();
+    }
 
   p_pw->p_gate = p_gate;
   p_pw->p_drv  = p_drv;
@@ -82,229 +78,109 @@ static void nm_ns_fill_pw_data(struct nm_pkt_wrap *p_pw)
   }
 }
 
-static void nm_ns_update_pw(struct nm_pkt_wrap *p_pw, unsigned char *ptr, int len)
-{
-  p_pw->v[0].iov_base	= ptr;
-  p_pw->v[0].iov_len	= len;
-
-  p_pw->drv_priv   = NULL;
-  p_pw->gate_priv  = NULL;
-}
-
-static void nm_ns_free(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
+static inline void nm_ns_free(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
 {
   nm_so_pw_free(p_pw);
 }
 
-
-static int nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate, void *status, FILE*sampling_file)
+static inline void nm_ns_pw_send(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_Driver_s*r, void*ptr, size_t len)
 {
-  const struct nm_drv_iface_s *drv_ops = driver->driver;
+  int err;
+  p_pw->v[0].iov_base = ptr;
+  p_pw->v[0].iov_len  = len;
+  err = r->driver->post_send_iov(r->_status, p_pw);
+  while(err == -NM_EAGAIN)
+    {
+      err = r->driver->poll_send_iov(r->_status, p_pw);
+    }
+  if(err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "sampling: error %d while sending.\n");
+      abort();
+    }
+}
+
+static inline void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_Driver_s*r, void*ptr, size_t len)
+{
+  int err;
+  p_pw->v[0].iov_base = ptr;
+  p_pw->v[0].iov_len  = len;
+  err = r->driver->post_recv_iov(r->_status, p_pw);
+  while(err == -NM_EAGAIN)
+    {
+      err = r->driver->poll_recv_iov(r->_status, p_pw);
+    }
+  if(err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "sampling: error %d while receiving.\n");
+      abort();
+    }
+}
+
+
+static int nm_ns_ping(struct nm_drv *driver, struct nm_gate *p_gate, FILE*sampling_file)
+{
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[0]->receptacle;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
-  unsigned char *data_send	= NULL;
-  unsigned char *data_recv 	= NULL;
-  int nb_samples = 0;
+  unsigned char *data_send = TBX_MALLOC(param_max_size);
+  unsigned char *data_recv = TBX_MALLOC(param_max_size);
   int size = 0;
-  int err;
-  int i = 0;
 
-  data_send = TBX_MALLOC(param_max_size);
-  err = nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_send, &sending_pw);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_ping - nm_ns_initialize_sending_pw",
-                      err);
-    goto out;
-  }
-
+  nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_send, &sending_pw);
   nm_ns_fill_pw_data(sending_pw);
+  nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_recv, &receiving_pw);
 
-  data_recv = TBX_MALLOC(param_max_size);
-  err = nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_recv, &receiving_pw);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_ping - nm_ns_initialize_receiving_pw",
-                      err);
-    goto out;
-  }
-
-  double sum, lat, bw_million_byte, bw_mbyte;
-  tbx_tick_t t1, t2;
-
-  for (i = 0, size = param_min_size; size <= param_max_size; i++, size*= 2) {
-
-    nm_ns_update_pw(sending_pw, data_send, size);
-    nm_ns_update_pw(receiving_pw, data_recv, size);
-
-    TBX_GET_TICK(t1);
-    while (nb_samples++ < param_nb_samples) {
-
-      err = drv_ops->post_send_iov(status, sending_pw);
-      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-        nm_ns_print_errno("nm_ns_ping - post_send_iov",
-                          err);
-        goto out;
-      }
-
-      while(err != NM_ESUCCESS){
-        err = drv_ops->poll_send_iov(status, sending_pw);
-
-        if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-          nm_ns_print_errno("nm_ns_ping - poll_send_iov",
-                            err);
-
-          goto out;
-        }
-
-      }
-      nm_ns_update_pw(sending_pw,  data_send, size);
-
-
-      err = drv_ops->post_recv_iov(status, receiving_pw);
-      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-        nm_ns_print_errno("nm_ns_ping - post_recv_iov",
-                          err);
-        goto out;
-      }
-
-      while(err != NM_ESUCCESS){
-        err = drv_ops->poll_recv_iov(status, receiving_pw);
-        if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-          nm_ns_print_errno("nm_ns_ping - poll_recv_iov",
-                            err);
-          goto out;
-        }
-      }
-      nm_ns_update_pw(receiving_pw, data_recv, size);
-
+  for (size = param_min_size; size <= param_max_size; size*= 2)
+    {
+      int nb_samples;
+      tbx_tick_t t1, t2;
+      TBX_GET_TICK(t1);
+      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
+	{
+	  nm_ns_pw_send(sending_pw, r, data_send, size);
+	  nm_ns_pw_recv(receiving_pw, r, data_recv, size);
+	}
+      TBX_GET_TICK(t2);
+      
+      double sum = TBX_TIMING_DELAY(t1, t2);
+      double lat = sum / (2 * param_nb_samples);
+      double bw_million_byte = size * (param_nb_samples / (sum / 2));
+      double bw_mbyte        = bw_million_byte / 1.048576;
+      
+      fprintf(stderr, "%d\t%lf\t%lf\n", size, lat, bw_mbyte);
+      fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
+      
+      size = (size==0? 1:size);
     }
-    TBX_GET_TICK(t2);
 
-    sum = TBX_TIMING_DELAY(t1, t2);
-    lat	            = sum / (2 * param_nb_samples);
-    bw_million_byte = size * (param_nb_samples / (sum / 2));
-    bw_mbyte        = bw_million_byte / 1.048576;
-
-    fprintf(stderr, "%d\t%lf\t%lf\n", size, lat, bw_mbyte);
-    fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
-
-    nb_samples = 0;
-    sum = 0.0;
-    size = (size==0? 1:size);
-  }
   nm_ns_free(driver->p_core, sending_pw);
   nm_ns_free(driver->p_core, receiving_pw);
 
-  err = NM_ESUCCESS;
-
- out:
-  return err;
+  return NM_ESUCCESS;
 }
 
-static int nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate, void *status)
+static int nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate)
 {
-  const struct nm_drv_iface_s *drv_ops = driver->driver;
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[0]->receptacle;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
-  unsigned char *data_send          = NULL;
-  unsigned char *data_recv          = NULL;
-  int nb_samples = 0;
+  unsigned char *data_send = TBX_MALLOC(param_max_size);
+  unsigned char *data_recv = TBX_MALLOC(param_max_size);
   int size = 0;
-  int err;
-  int i = 0;
 
-  data_send = TBX_MALLOC(param_max_size);
-  err = nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_send, &sending_pw);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_pong - nm_ns_initialize_sending_pw",
-                      err);
-    goto out;
-  }
-
+  nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_send, &sending_pw);
   nm_ns_fill_pw_data(sending_pw);
+  nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_recv, &receiving_pw);
 
-  data_recv = TBX_MALLOC(param_max_size);
-  err = nm_ns_initialize_pw(driver->p_core, driver, p_gate, data_recv, &receiving_pw);
-  if(err != NM_ESUCCESS){
-    nm_ns_print_errno("nm_ns_pong - nm_ns_initialize_receiving_pw",
-                      err);
-    goto out;
-  }
-
-  for (i = 0, size = param_min_size; size <= param_max_size; i++, size*= 2)
+  for (size = param_min_size; size <= param_max_size; size*= 2)
     {
-      nm_ns_update_pw(sending_pw,    data_send, size);
-      nm_ns_update_pw(receiving_pw, data_recv, size);
-      
-      err = drv_ops->post_recv_iov(status, receiving_pw);
-      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	nm_ns_print_errno("nm_ns_pong - post_recv_iov",
-			  err);
-	goto out;
-      }
-      while(err != NM_ESUCCESS){
-	err = drv_ops->poll_recv_iov(status, receiving_pw);
-	if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	  nm_ns_print_errno("nm_ns_pong - poll_recv_iov",
-			    err);
-	}
-      }
-      nm_ns_update_pw(receiving_pw, data_recv, size);
-      
-      while (nb_samples++ < param_nb_samples - 1) 
+     int nb_samples;
+      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
 	{
-	  err = drv_ops->post_send_iov(status, sending_pw);
-	  if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	    nm_ns_print_errno("nm_ns_pong - post_send_iov",
-			      err);
-	    goto out;
-	  }
-	  while(err != NM_ESUCCESS)
-	    {
-	      err = drv_ops->poll_send_iov(status, sending_pw);
-	      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-		nm_ns_print_errno("nm_ns_pong - poll_send_iov",
-				  err);
-		goto out;
-	      }
-	    }
-	  nm_ns_update_pw(sending_pw,  data_send, size);
-	  
-	  err = drv_ops->post_recv_iov(status, receiving_pw);
-	  if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	    nm_ns_print_errno("nm_ns_pong - post_recv_iov",
-			      err);
-	    goto out;
-	  }
-	  while(err != NM_ESUCCESS)
-	    {
-	      err = drv_ops->poll_recv_iov(status, receiving_pw);
-	      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-		nm_ns_print_errno("nm_ns_pong - poll_recv_iov",
-				  err);
-		goto out;
-	      }
-	    }
-	  nm_ns_update_pw(receiving_pw, data_recv, size);
+	  nm_ns_pw_recv(receiving_pw, r, data_recv, size);
+	  nm_ns_pw_send(sending_pw, r, data_send, size);
 	}
-
-      err = drv_ops->post_send_iov(status, sending_pw);
-      if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	nm_ns_print_errno("nm_ns_pong - post_send_iov",
-			  err);
-	goto out;
-      }
-      while(err != NM_ESUCCESS)
-	{
-	  err = drv_ops->poll_send_iov(status, sending_pw);
-	  if(err != NM_ESUCCESS && err != -NM_EAGAIN){
-	    nm_ns_print_errno("nm_ns_pong - poll_send_iov",
-			      err);
-	    goto out;
-	  }
-	}
-      nm_ns_update_pw(sending_pw,  data_send, size);
-      
-      nb_samples = 0;
       size = (size==0? 1:size);
     }
   
@@ -313,35 +189,20 @@ static int nm_ns_pong(struct nm_drv *driver, struct nm_gate *p_gate, void *statu
   TBX_FREE(data_send);
   TBX_FREE(data_recv);
 
-  err = NM_ESUCCESS;
-
- out:
-
-  return err;
+  return NM_ESUCCESS;
 }
 
 int main(int argc, char **argv)
 {
-  p_mad_madeleine_t       madeleine = NULL;
-  p_mad_session_t         session   = NULL;
-  int                     is_server = -1;
-
-  struct nm_core          *p_core     = NULL;
-  struct nm_drv           *p_drv = NULL;
-  struct nm_gate          *p_gate = NULL;
-  struct nm_gate_drv      *p_gdrv = NULL;
-
   /* Initialisation de l'émulation */
-  madeleine    = mad_init(&argc, argv);
-  session      = madeleine->session;
-  is_server    = session->process_rank;
+  p_mad_madeleine_t madeleine = mad_init(&argc, argv);
+  p_mad_session_t   session   = madeleine->session;
+  int               is_server = session->process_rank;
 
   /* Initialisation de Nmad */
-  p_core = mad_nmad_get_core();
-
-  p_drv  = &p_core->driver_array[0];
-  p_gate = &p_core->gate_array[0];
-  p_gdrv = p_gate->p_gate_drv_array[0];
+  struct nm_core  *p_core = mad_nmad_get_core();
+  struct nm_drv   *p_drv  = &p_core->driver_array[0];
+  struct nm_gate  *p_gate = &p_core->gate_array[0];
 
   if(!is_server)
     {
@@ -353,12 +214,12 @@ int main(int argc, char **argv)
 	  fprintf(stderr, "# ## sampling: cannot write file %s.\n", filename);
 	  abort();
 	}
-      nm_ns_ping(p_drv, p_gate, p_gdrv->receptacle._status, sampling_file);
+      nm_ns_ping(p_drv, p_gate, sampling_file);
       fclose(sampling_file);
     }
   else
     {
-      nm_ns_pong(p_drv, p_gate, p_gdrv->receptacle._status);
+      nm_ns_pong(p_drv, p_gate);
     }
 
   mad_exit(madeleine);

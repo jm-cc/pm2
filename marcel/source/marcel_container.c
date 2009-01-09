@@ -106,8 +106,7 @@ int ma_container_nb_element(ma_container_t * container)
 
 int ma_container_plein(ma_container_t * container)
 {
-	return container->max_size
-	    && ma_container_nb_element(container) >= container->max_size;
+	return ma_container_nb_element(container) >= container->max_size;
 }
 
 void ma_lock_container(ma_container_t * container)

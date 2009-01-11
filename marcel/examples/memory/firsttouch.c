@@ -17,16 +17,11 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
+marcel_memory_manager_t memory_manager;
+
+any_t firsttouch(any_t arg) {
   int *ptr;
   int err, node;
-
-  marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
-
-  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("marcel_memory_membind unexpectedly failed");
 
   ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_free(&memory_manager, ptr);
@@ -42,15 +37,32 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_task_attach unexpectedly failed");
 
   err = marcel_memory_locate(&memory_manager, ptr, 100, &node);
-  if (err < 0) perror("marcel_memory_membind unexpectedly failed");
+  if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   marcel_printf("After first touch, memory located on node %d\n", node);
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, marcel_self());
   if (err < 0) perror("marcel_memory_task_unattach unexpectedly failed");
   marcel_memory_free(&memory_manager, ptr);
-  marcel_memory_exit(&memory_manager);
+}
+
+int marcel_main(int argc, char * argv[]) {
+  int err;
+  marcel_t thread;
+  marcel_attr_t attr;
+
+  marcel_init(&argc,argv);
+  marcel_attr_init(&attr);
+  marcel_memory_init(&memory_manager);
+
+  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("marcel_memory_membind unexpectedly failed");
+
+  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
+  marcel_create(&thread, &attr, firsttouch, NULL);
+  marcel_join(thread, NULL);
 
   // Finish marcel
+  marcel_memory_exit(&memory_manager);
   marcel_end();
   return 0;
 }

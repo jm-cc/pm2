@@ -34,8 +34,7 @@ ma_allocator_t *ma_node_allocator = NULL;
 static ma_allocator_t *lwp_container_allocator = NULL;
 static ma_allocator_t *level_container_allocator = NULL;
 ma_per_sth_cur_t ma_per_lwp_cur = MA_PER_STH_CUR_INITIALIZER(MA_PER_LWP_ROOM);
-ma_per_sth_cur_t ma_per_level_cur =
-MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM);
+ma_per_sth_cur_t ma_per_level_cur = MA_PER_STH_CUR_INITIALIZER(MA_PER_LEVEL_ROOM);
 
 void __marcel_init ma_allocator_init(void)
 {
@@ -142,8 +141,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 
 	switch (allocator->policy) {
         case POLICY_GLOBAL: {
-                ma_container_clear(ma_get_container
-                                   (allocator, ALLOC_METHOD),
+                ma_container_clear(ma_get_container(allocator, ALLOC_METHOD),
                                    allocator->destroy, allocator->destroy_arg);
                 __marcel_free(allocator->container.obj);
                 break;
@@ -153,8 +151,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
         case POLICY_LOCAL: {
                 struct marcel_topo_level *vp;
                 for_all_vp(vp) {
-                        ma_container_clear(ma_per_level_data
-                                           (vp, allocator->container.offset),
+                        ma_container_clear(ma_per_level_data(vp, allocator->container.offset),
                                            allocator->destroy, allocator->destroy_arg);
                 }
                 ma_obj_free(lwp_container_allocator,
@@ -165,10 +162,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
 	case POLICY_HIERARCHICAL_MEMORY: {
                 for (j = marcel_topo_nblevels-1; j >= 0; --j) {
                         for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
-                                ma_container_clear(ma_per_level_data
-                                                   (&marcel_topo_levels[j][i],
-                                                    (allocator->container.
-                                                     offset)),
+                                ma_container_clear(ma_per_level_data(&marcel_topo_levels[j][i], allocator->container.offset),
                                                    allocator->destroy, allocator->destroy_arg);
                         }
 #ifdef MA__NUMA
@@ -183,7 +177,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
         }
 #endif
 	default: {
-                printf("la politique est mal choisie\n");
+                fprintf(stderr, "la politique est mal choisie\n");
                 break;
         }
 	}
@@ -214,8 +208,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
                         struct marcel_topo_level *vp;
                         allocator->container.offset = (unsigned long) ma_obj_alloc(lwp_container_allocator);
                         for_all_vp(vp) {
-                                ma_container_init(ma_per_level_data
-                                                  (vp, (allocator->container.offset)),
+                                ma_container_init(ma_per_level_data(vp, allocator->container.offset),
                                                   allocator->conservative, allocator->max_size);
                         }
                         break;
@@ -225,8 +218,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
                         allocator->container.offset = (unsigned long) ma_obj_alloc(level_container_allocator);
                         for (j = marcel_topo_nblevels-1; j >= 0; --j) {
                                 for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
-                                        ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i],
-                                                                            (allocator->container.offset)),
+                                        ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], allocator->container.offset),
                                                           allocator->conservative, allocator->max_size);
                                 }
 #ifdef MA__NUMA
@@ -240,7 +232,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
                 }
 #endif
                 default:
-                        printf("La politique n'est pas bien choisie\n");
+                        fprintf(stderr, "La politique n'est pas bien choisie\n");
                 }
                 allocator->init = 1;
 
@@ -252,7 +244,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
 ma_container_t *ma_get_container(ma_allocator_t * allocator, enum mode mode)
 {
 	if (mode > 2)
-		printf("Erreur : le mode n'est pas bien defini -- ma_get_container\n");
+		fprintf(stderr, "Erreur : le mode n'est pas bien defini -- ma_get_container\n");
 
 	//mode 0 pour FREE_METHOD
 	//mode 1 pour ALLOC_METHOD

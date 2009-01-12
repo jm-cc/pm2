@@ -26,7 +26,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_init(&memory_manager);
 
   marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES, 0);
-  if (!marcel_topo_node_level) {
+  if (!marcel_topo_node_level || marcel_topo_node_level[0].huge_page_free == 0) {
     marcel_printf("NUMA node topology not accessible.\n");
   }
   else {

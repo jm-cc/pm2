@@ -561,7 +561,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   (*space)->size = nbpages * memory_manager->hugepagesize;
   (*space)->filename = malloc(1024 * sizeof(char));
   pid = getpid();
-  sprintf((*space)->filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
+  marcel_sprintf((*space)->filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
 
   (*space)->file = open((*space)->filename, O_CREAT|O_RDWR, S_IRWXU);
   if ((*space)->file == -1) {

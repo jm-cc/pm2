@@ -137,9 +137,11 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
   memory_manager->memfree = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
-  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
-    memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+  if (marcel_topo_node_level) {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+      memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+    }
   }
 
   // Preallocate memory on each node
@@ -893,8 +895,8 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
 
 #warning todo: check location for all pages and what if pages are on different nodes
   if (nbpages == 1) nbpages_query = 1; else nbpages_query = 2;
-  ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses, 0);
-  if (statuses[0] == -ENOENT) {
+  err = ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses, 0);
+  if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     *node = -1;
     err = ENOENT;
@@ -902,7 +904,7 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
   else {
     if (nbpages_query == 2) {
       if (statuses[0] != statuses[1]) {
-        marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
+	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
       }
       *node = statuses[1];
     }

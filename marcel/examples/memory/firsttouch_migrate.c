@@ -14,6 +14,7 @@
  */
 
 #include "marcel.h"
+#include <malloc.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 

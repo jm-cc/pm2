@@ -1193,8 +1193,8 @@ void ma_memory_print(FILE *stream, marcel_memory_tree_t *memory_tree, int indent
   if (memory_tree) {
     int x;
     ma_memory_print(stream, memory_tree->leftchild, indent+2);
-    for(x=0 ; x<indent ; x++) fprintf(stream, " ");
-    fprintf(stream, "[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
+    for(x=0 ; x<indent ; x++) marcel_fprintf(stream, " ");
+    marcel_fprintf(stream, "[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
     ma_memory_print(stream, memory_tree->rightchild, indent+2);
   }
 }

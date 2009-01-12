@@ -30,8 +30,12 @@ BubbleMovie movie;
 #define RQ_XMARGIN 20.
 #define RQ_YMARGIN 10.
 
+#define BUBBLES_MAXHEIGHT 3
+#define BUBBLES_MAXTHREADS 5
+
 int DISPPRIO = 0;
 int DISPNAME = 0;
+int DISPSIZE = 1;
 int showEmptyBubbles = 1;
 
 float thick = 4.;
@@ -106,7 +110,7 @@ extern void bad_type_in_gasp(void);
 /*******************************************************************************
  * Entity
  */
-static void setEntityRecur(BubbleShape shape, entity_t *e);
+static void setEntityRecur(BubbleShape shape, entity_t *e, int hide, int origx, int origy);
 static void growInHolderBegin(entity_t *e, float dx, float dy);
 static void growInHolderBegin2(entity_t *e);
 static void growInHolderStep(entity_t *e, float step);
@@ -316,7 +320,7 @@ static void setExplodedBubble(BubbleShape shape, bubble_t *b) {
 	setBubble(shape,b);
 }
 
-static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
+static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, int origy) {
 	if (BubbleSetBubble)
 		BubbleSetBubble(shape, b->entity.id, b->entity.x, b->entity.y, b->entity.width, b->entity.height);
 	if (b->exploded)
@@ -325,7 +329,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
 		setPlainBubble(shape,b);
 	BubbleDisplayItem_moveTo(b->entity.lastitem,b->entity.x,b->entity.y);
 }
-static void setThreadRecur(BubbleShape shape, thread_t *t) {
+static void setThreadRecur(BubbleShape shape, thread_t *t, int hide) {
 	if (BubbleSetThread)
 		BubbleSetThread(shape, t->entity.id, t->entity.x, t->entity.y, t->entity.width, t->entity.height);
 	setThread(shape,t);
@@ -334,42 +338,114 @@ static void setThreadRecur(BubbleShape shape, thread_t *t) {
 
 #endif /* BUBBLES */
 #ifdef TREES
+
+/* Measure the size of a bubble hierarchy on a runqueue */
+static int bubble_measure(bubble_t *b, int *nbthreads) {
+	int maxheight = 0;
+	entity_t *e;
+	list_for_each_entry(e, &b->heldentities, entity_list) {
+		if (e->holder != &b->entity)
+			continue;
+		if (e->type == THREAD) {
+			(*nbthreads)++;
+		} else {
+			int height = bubble_measure(bubble_of_entity(e), nbthreads);
+			if (height > maxheight)
+				maxheight = height;
+		}
+	}
+	return maxheight + 1;
+}
+
 /* in the case of trees, only the root bubble gets drawn, and should draw its
  * children */
-static void setBubbleRecur(BubbleShape shape, bubble_t *b) {
+static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, int origy) {
+	int height, nbthreads = 0;
+
 	entity_t *e;
 	if (!showEmptyBubbles && list_empty(&b->heldentities))
 		return;
-	BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
-	BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
-	BubbleShape_drawCircle(shape,CURVE/2);
-	if (DISPPRIO && b->entity.prio) {
-		BubbleShape_movePenTo(shape,b->entity.x-CURVE,b->entity.y-CURVE);
-		BubbleShape_drawSizedGlyph(shape,'0'+b->entity.prio,CURVE);
-	}
-	list_for_each_entry(e,&b->heldentities,entity_list) {
+	if (!hide) {
 		BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
 		BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
-		BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
-		BubbleShape_movePen(shape,-CURVE/2,0);
-		setEntityRecur(shape,e);
+		BubbleShape_drawCircle(shape,CURVE/2);
+		if (DISPPRIO && b->entity.prio) {
+			BubbleShape_movePenTo(shape,b->entity.x-CURVE,b->entity.y-CURVE);
+			BubbleShape_drawSizedGlyph(shape,'0'+b->entity.prio,CURVE);
+		}
 	}
-	if (b->insertion) {
-		/* fake entity */
-		BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
-		BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
-		BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
-		BubbleShape_movePen(shape,-CURVE/2,0);
-		setEntityRecur(shape,b->insertion);
+	height = bubble_measure(b, &nbthreads);
+	if (!hide && height <= BUBBLES_MAXHEIGHT && nbthreads <= BUBBLES_MAXTHREADS) {
+		list_for_each_entry(e,&b->heldentities,entity_list) {
+			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
+			BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
+			BubbleShape_movePen(shape,-CURVE/2,0);
+			setEntityRecur(shape,e,0,0,0);
+		}
+		if (b->insertion) {
+			/* fake entity */
+			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
+			BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
+			BubbleShape_movePen(shape,-CURVE/2,0);
+			setEntityRecur(shape,b->insertion,0,0,0);
+		}
+	} else {
+		if (!hide) {
+			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
+			BubbleShape_drawLineTo(shape,b->entity.x-CURVE/2,b->entity.y+(3*CURVE)/2);
+			BubbleShape_drawLineTo(shape,b->entity.x+(3*CURVE)/2,b->entity.y+(3*CURVE)/2);
+			BubbleShape_drawLineTo(shape,b->entity.x+CURVE/2,b->entity.y);
+
+			if (DISPSIZE) {
+				BubbleShape_movePenTo(shape,b->entity.x,b->entity.y+2*CURVE);
+				while (height) {
+					BubbleShape_drawSizedGlyph(shape,'0'+height%10,CURVE);
+					height/=10;
+					BubbleShape_movePen(shape,-CURVE,0);
+				}
+
+				BubbleShape_movePenTo(shape,b->entity.x+(2+log10(nbthreads))*CURVE,b->entity.y+2*CURVE);
+				while (nbthreads) {
+					BubbleShape_drawSizedGlyph(shape,'0'+nbthreads%10,CURVE);
+					nbthreads/=10;
+					BubbleShape_movePen(shape,-CURVE,0);
+				}
+			}
+			origx = b->entity.x+CURVE/2;
+			origy = b->entity.y+(3*CURVE)/2;
+		}
+
+		list_for_each_entry(e,&b->heldentities,entity_list) {
+			if (e != b->insertion && e->holder == &b->entity)
+				setEntityRecur(shape,e,1,origx,origy);
+			else {
+				BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+				BubbleShape_movePenTo(shape,origx,origy);
+				BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
+				BubbleShape_movePen(shape,-CURVE/2,0);
+				setEntityRecur(shape,e,0,0,0);
+			}
+		}
+		if (b->insertion) {
+			/* fake entity */
+			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_movePenTo(shape,origx,origy);
+			BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
+			BubbleShape_movePen(shape,-CURVE/2,0);
+			setEntityRecur(shape,b->insertion,0,0,0);
+		}
 	}
 }
-static void setThreadRecur(BubbleShape shape, thread_t *t) {
-	setThread(shape, t);
+static void setThreadRecur(BubbleShape shape, thread_t *t, int hide) {
+	if (!hide)
+		setThread(shape, t);
 }
-static void setEntityRecur(BubbleShape shape, entity_t *e) {
+static void setEntityRecur(BubbleShape shape, entity_t *e, int hide, int origx, int origy) {
 	switch(e->type) {
-		case THREAD: return setThreadRecur(shape,thread_of_entity(e));
-		case BUBBLE: return setBubbleRecur(shape,bubble_of_entity(e));
+		case THREAD: return setThreadRecur(shape,thread_of_entity(e),hide);
+		case BUBBLE: return setBubbleRecur(shape,bubble_of_entity(e),hide,origx,origy);
 		case RUNQUEUE: return setRunqueue(shape,rq_of_entity(e));
 	}
 }
@@ -385,7 +461,7 @@ static void doEntity(entity_t *e) {
 #endif
 
 			e->lastitem = BubbleMovie_add(movie,(BubbleBlock)shape);
-			setBubbleRecur(shape,b);
+			setBubbleRecur(shape,b,0,0,0);
 #ifndef TREES
 			list_for_each_entry(el,&b->heldentities,entity_list)
 				showEntity(el);
@@ -397,7 +473,7 @@ static void doEntity(entity_t *e) {
 		break;
 		case THREAD: {
 			thread_t *t = thread_of_entity(e);
-			setThreadRecur(shape,t);
+			setThreadRecur(shape,t,0);
 			e->lastitem = BubbleMovie_add(movie,(BubbleBlock)shape);
 			BubbleDisplayItem_moveTo(e->lastitem,e->x,e->y);
 		}
@@ -498,7 +574,7 @@ static void bubbleMorphBegin(bubble_t *b) {
 			b->morph = newBubbleMorphShape();
 			b->entity.lastitem = BubbleMovie_add(movie,(BubbleBlock)b->morph);
 			shape = BubbleMorph_getShape1(b->morph);
-			setBubbleRecur(shape,b);
+			setBubbleRecur(shape,b,0,0,0);
 		}
 	}
 #ifdef TREES
@@ -511,7 +587,7 @@ static void bubbleMorphBegin(bubble_t *b) {
 static void bubbleMorphBegin2(bubble_t *b) {
 	if (b->morphRecurse) {
 		if (!(--b->morphRecurse))
-			setBubbleRecur(BubbleMorph_getShape2(b->morph),b);
+			setBubbleRecur(BubbleMorph_getShape2(b->morph),b,0,0,0);
 	}
 #ifdef TREES
 	else

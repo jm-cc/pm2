@@ -40,7 +40,7 @@ int marcel_main(int argc, char **argv) {
 
   maxnode = numa_max_node();
   if (!maxnode) {
-    printf("Need more than one NUMA node. Abort\n");
+    marcel_printf("Need more than one NUMA node. Abort\n");
     exit(1);
   }
 
@@ -60,13 +60,13 @@ int marcel_main(int argc, char **argv) {
   pageaddrs[2] = buffer;
   pageaddrs[3] = buffer+pagesize;
 
-  printf("move pages to node %d\n", 1);
+  marcel_printf("move pages to node %d\n", 1);
   for(i=0; i<nbpages ; i++) nodes[i] = 1;
 
   err = move_pages(0, nbpages, pageaddrs, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     if (errno == ENOENT) {
-      printf("warning. cannot move pages which have not been allocated\n");
+      marcel_printf("warning. cannot move pages which have not been allocated\n");
     }
     else {
       perror("move_pages");
@@ -76,9 +76,9 @@ int marcel_main(int argc, char **argv) {
 
   for(i=0; i<nbpages; i++) {
     if (status[i] < 0)
-      printf("  page #%d returned the status %d\n", i, status[i]);
+      marcel_printf("  page #%d returned the status %d\n", i, status[i]);
     else
-      printf("  page #%d is on node #%d\n", i, status[i]);
+      marcel_printf("  page #%d is on node #%d\n", i, status[i]);
   }
 
   return 0;
@@ -86,6 +86,6 @@ int marcel_main(int argc, char **argv) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

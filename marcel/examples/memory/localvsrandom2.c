@@ -128,15 +128,15 @@ int marcel_main(int argc, char * argv[]) {
     marcel_memory_free(&memory_manager, buffers[node]);
   }
 
-  printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=0 ; t<marcel_nbnodes ; t++) {
     for(node=0 ; node<marcel_nbnodes ; node++) {
-      printf("%d\t%d\t%d\t%lld\t%f\t%lld\t%f\n",
-             t, node, LOOPS*SIZE*4,
-             rtimes[node][t],
-             (float)(rtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE,
-             wtimes[node][t],
-             (float)(wtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE);
+      marcel_printf("%d\t%d\t%d\t%lld\t%f\t%lld\t%f\n",
+		    t, node, LOOPS*SIZE*4,
+		    rtimes[node][t],
+		    (float)(rtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE,
+		    wtimes[node][t],
+		    (float)(wtimes[node][t]) / (float)(LOOPS*SIZE*4) / CACHE_LINE_SIZE);
     }
   }
 
@@ -148,7 +148,7 @@ int marcel_main(int argc, char * argv[]) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif
 

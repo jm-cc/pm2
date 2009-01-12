@@ -144,9 +144,9 @@ any_t sgemm(any_t arg) {
               0.0f,
               matC[mydata->thread_id], mydata->matrix_size);
 
-//  printf("matA[%d][0] = %f\n", mydata->thread_id, matA[mydata->thread_id][0+0]);
-//  printf("matB[%d][0] = %f\n", mydata->thread_id, matB[mydata->thread_id][0+0]);
-//  printf("matC[%d][0] = %f\n", mydata->thread_id, matC[mydata->thread_id][0+0]);
+  //  marcel_printf("matA[%d][0] = %f\n", mydata->thread_id, matA[mydata->thread_id][0+0]);
+  //  marcel_printf("matB[%d][0] = %f\n", mydata->thread_id, matB[mydata->thread_id][0+0]);
+  //  marcel_printf("matC[%d][0] = %f\n", mydata->thread_id, matC[mydata->thread_id][0+0]);
 }
 
 #else

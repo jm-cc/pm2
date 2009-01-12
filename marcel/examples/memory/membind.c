@@ -136,7 +136,7 @@ main (int argc, char **argv)
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < nb_memory_nodes; i++) {
     if (memory_nodes[i] > numa_max_node ()) {
-      fprintf (stderr, "Specified node out of bounds [0 - %u]\n", numa_max_node ());
+      marcel_fprintf (stderr, "Specified node out of bounds [0 - %u]\n", numa_max_node ());
       return -1;
     }
     nodemask |= (1 << memory_nodes[i]);
@@ -315,6 +315,6 @@ parse_command_line_arguments (unsigned int nb_args,
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

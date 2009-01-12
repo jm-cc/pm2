@@ -35,14 +35,14 @@ static marcel_barrier_t barrier;
 static void usage (void);
 static int parse_command_line_arguments (unsigned int nb_args, char **args, unsigned int *nodes);
 
-static 
+static
 void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
-  
+
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
-    
+
     /* Let's do the job. */
     STREAM_copy (stream_struct);
     STREAM_scale (stream_struct, 3.0);
@@ -54,29 +54,29 @@ void * f (void *arg) {
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned long nodemask[2] = {0, 0};
   unsigned int nodes[2], i;
   unsigned int maxnode = numa_max_node () + 1;
   tbx_tick_t t1, t2;
-  
+
   marcel_init (&argc, argv);
-  
+
   if (argc < 3) {
     usage ();
     marcel_end ();
     exit (1);
   }
-  
+
   tbx_timing_init ();
-  
+
   marcel_t working_threads[2];
   marcel_barrier_init (&barrier, NULL, 3);
-  
+
   parse_command_line_arguments (argc, argv, nodes);
-  
+
   /* Set the nodemask to contain the nodes passed in argument. */
   for (i = 0; i < 2; i++) {
     if (nodes[1 - i] > maxnode - 1) {
@@ -86,23 +86,23 @@ main (int argc, char **argv)
     }
     nodemask[i] |= (1 << nodes[1 - i]);
   }
-  
+
   /* Bind the accessed data to the nodes. */
   a = marcel_malloc (2 * sizeof (double *), __FILE__, __LINE__);
   b = marcel_malloc (2 * sizeof (double *), __FILE__, __LINE__);
   c = marcel_malloc (2 * sizeof (double *), __FILE__, __LINE__);
-  
+
   for (i = 0; i < 2; i++) {
     a[i] = memalign (getpagesize (), tab_len);
     b[i] = memalign (getpagesize (), tab_len);
     c[i] = memalign (getpagesize (), tab_len);
   }
-  
+
   int err_mbind;
   err_mbind = mbind (a[0], tab_len, MPOL_BIND, nodemask, maxnode + 1, MPOL_MF_MOVE);
   err_mbind += mbind (b[0], tab_len, MPOL_BIND, nodemask, maxnode + 1, MPOL_MF_MOVE);
   err_mbind += mbind (c[0], tab_len, MPOL_BIND, nodemask, maxnode + 1, MPOL_MF_MOVE);
-  
+
   err_mbind += mbind (a[1], tab_len, MPOL_BIND, nodemask + 1, maxnode + 1, MPOL_MF_MOVE);
   err_mbind += mbind (b[1], tab_len, MPOL_BIND, nodemask + 1, maxnode + 1, MPOL_MF_MOVE);
   err_mbind += mbind (c[1], tab_len, MPOL_BIND, nodemask + 1, maxnode + 1, MPOL_MF_MOVE);
@@ -110,17 +110,17 @@ main (int argc, char **argv)
   if (err_mbind < 0) {
     perror ("mbind");
   }
-  
+
   /* Initialize the STREAM data structures. */
   stream_struct_t stream_struct[2];
   STREAM_init (stream_struct, 1, TAB_SIZE, a[0], b[0], c[0]);
   STREAM_init (stream_struct + 1, 1, TAB_SIZE, a[1], b[1], c[1]);
-  
+
   /* Disable preemption on the main thread. */
   marcel_thread_preemption_disable ();
 
   marcel_attr_t thread_attr[2];
-  
+
   /* Create the working threads. */
   for (i = 0; i < 2; i++) {
     marcel_attr_init (thread_attr + i);
@@ -129,13 +129,13 @@ main (int argc, char **argv)
     marcel_attr_settopo_level (thread_attr + i, &marcel_topo_node_level[nodes[i]]);
     marcel_create (working_threads + i, thread_attr + i, f, stream_struct + i);
   }
-  
+
   TBX_GET_TICK (t1);
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
   }
-  TBX_GET_TICK (t2); 
-    
+  TBX_GET_TICK (t2);
+
   /* Wait for the working threads to finish. */
   for (i = 0; i < 2; i++) {
     marcel_join (working_threads[i], NULL);
@@ -150,7 +150,7 @@ main (int argc, char **argv)
   marcel_free (a);
   marcel_free (b);
   marcel_free (c);
-  
+
   /* Avoid the first iteration, in which we only measure the time we
      need to cross the barrier. */
   double average_time = (double)TBX_TIMING_DELAY(t1, t2) / ((NB_TIMES-1) * 1000000);
@@ -167,8 +167,8 @@ usage () {
 }
 
 static int
-parse_command_line_arguments (unsigned int nb_args, 
-			      char **args, 
+parse_command_line_arguments (unsigned int nb_args,
+			      char **args,
 			      unsigned int *nodes) {
   unsigned int i;
 
@@ -177,7 +177,7 @@ parse_command_line_arguments (unsigned int nb_args,
     return -1;
   nb_args--;
   args++;
-  
+
   /* Fill the nodes array */
   for (i = 0; i < nb_args; i++) {
     nodes[i] = atoi(args[i]);
@@ -189,6 +189,6 @@ parse_command_line_arguments (unsigned int nb_args,
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

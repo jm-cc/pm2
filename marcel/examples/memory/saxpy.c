@@ -130,8 +130,8 @@ any_t saxpy(any_t arg) {
               vectorA[mydata->thread_id], 1,
               vectorB[mydata->thread_id], 1);
 
-  //  printf("vectorA[%d][0] = %f\n", mydata->thread_id, vectorA[mydata->thread_id][0+0]);
-  //  printf("vectorB[%d][0] = %f\n", mydata->thread_id, vectorB[mydata->thread_id][0+0]);
+  //  marcel_printf("vectorA[%d][0] = %f\n", mydata->thread_id, vectorA[mydata->thread_id][0+0]);
+  //  marcel_printf("vectorB[%d][0] = %f\n", mydata->thread_id, vectorB[mydata->thread_id][0+0]);
 }
 
 #else

@@ -43,7 +43,7 @@ int marcel_main(int argc, char * argv[]) {
       marcel_memory_free(&memory_manager, ptr2);
     }
     else {
-      printf("Failure. Could not allocated with huge pages.\n");
+      marcel_printf("Failure. Could not allocated with huge pages.\n");
     }
   }
 
@@ -56,6 +56,6 @@ int marcel_main(int argc, char * argv[]) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

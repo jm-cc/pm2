@@ -22,7 +22,7 @@
 #include <malloc.h>
 #include <time.h>
 # include <float.h>
-#include "../marcel_stream.h" 
+#include "../marcel_stream.h"
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -65,13 +65,13 @@ static double	bytes[4] = {
 static marcel_barrier_t barrier;
 
 static void usage (void);
-static int parse_command_line_arguments (unsigned int nb_args, 
-					 char **args, 
-					 enum sched_policy *spol, 
+static int parse_command_line_arguments (unsigned int nb_args,
+					 char **args,
+					 enum sched_policy *spol,
 					 enum mbind_policy *mpol,
 					 unsigned int *nb_memory_nodes,
 					 unsigned int *memory_nodes);
-					 
+
 
 static void print_welcoming_message (unsigned int nb_teams,
 				     unsigned int nb_threads,
@@ -90,19 +90,19 @@ double mysecond()
   return ( (double) tp.tv_sec + (double) tp.tv_usec * 1.e-6 );
 }
 
-static 
+static
 void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i;
-  
+
   marcel_barrier_wait (&barrier);
 
-  for (i = 0; i < NB_TIMES; i++) {    
+  for (i = 0; i < NB_TIMES; i++) {
     /* Let's do the job. */
     STREAM_copy (stream_struct);
     marcel_barrier_wait (&barrier);
     STREAM_scale (stream_struct, 3.0);
-    marcel_barrier_wait (&barrier); 
+    marcel_barrier_wait (&barrier);
     STREAM_add (stream_struct);
     marcel_barrier_wait (&barrier);
     STREAM_triad (stream_struct, 3.0);
@@ -113,14 +113,14 @@ void * f (void *arg) {
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
   double times[4][NB_TIMES];
 
   marcel_init (&argc, argv);
-  
+
   if (argc < 3) {
     usage ();
     return -1;
@@ -148,10 +148,10 @@ main (int argc, char **argv)
   unsigned long nodemasks[nb_teams];
   marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams));
 
-  /* The main thread is thread 0 of team 0. */ 
+  /* The main thread is thread 0 of team 0. */
   working_threads[0][0] = marcel_self ();
-  marcel_self ()->id = 0;   
-  
+  marcel_self ()->id = 0;
+
   /* Set the nodemask according to the memory policy passed in
      argument. */
   if (mpol ==  INTERLEAVE_POL) {
@@ -173,17 +173,17 @@ main (int argc, char **argv)
   a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
   b = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
   c = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
-  
+
   for (i = 0; i < nb_teams; i++) {
     a[i] = memalign (getpagesize(), tab_len);
     b[i] = memalign (getpagesize(), tab_len);
     c[i] = memalign (getpagesize(), tab_len);
-    
+
     int err_mbind;
     err_mbind = mbind (a[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
     err_mbind += mbind (b[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
     err_mbind += mbind (c[i], tab_len, mpol == BIND_POL ? MPOL_BIND : MPOL_INTERLEAVE, nodemasks + i, numa_max_node () + 2, MPOL_MF_MOVE);
-    
+
     if (err_mbind < 0) {
       perror ("mbind");
       exit (1);
@@ -192,7 +192,7 @@ main (int argc, char **argv)
   marcel_thread_preemption_disable ();
 
   stream_struct_t stream_struct[nb_teams];
-  
+
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
@@ -206,13 +206,13 @@ main (int argc, char **argv)
       marcel_attr_init (&thread_attr[team][i]);
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
       marcel_attr_setid (&thread_attr[team][i], i);
-      marcel_attr_settopo_level (&thread_attr[team][i], 
+      marcel_attr_settopo_level (&thread_attr[team][i],
 				 &marcel_topo_vp_level[dest_node * nb_threads + i]);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
     }
   }
   marcel_printf ("Threads created and ready to work!\n");
-  
+
   marcel_barrier_wait (&barrier);
 
   /* The main thread has to do his job like everyone else. */
@@ -237,7 +237,7 @@ main (int argc, char **argv)
     marcel_barrier_wait (&barrier);
     times[3][i] = mysecond() - times[3][i];
  }
-    
+
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {
     for (i = 0; i < nb_threads; i++) {
@@ -254,14 +254,14 @@ main (int argc, char **argv)
     free (b[i]);
     free (c[i]);
   }
-  
+
   marcel_free (a);
   marcel_free (b);
   marcel_free (c);
 
  /*	--- SUMMARY --- */
 
-  for (i = 1; i < NB_TIMES; i++) 
+  for (i = 1; i < NB_TIMES; i++)
     {
       int j;
       for (j=0; j<4; j++)
@@ -271,20 +271,20 @@ main (int argc, char **argv)
 	  maxtime[j] = MAX(maxtime[j], times[j][i]);
 	}
     }
-    
+
   /* First phase results */
-  printf("Function      Rate (MB/s)   Avg time     Min time     Max time\n");
+  marcel_printf("Function      Rate (MB/s)   Avg time     Min time     Max time\n");
   int j;
   for (j=0; j<4; j++) {
     avgtime[j] = avgtime[j]/(double)(NB_TIMES-1);
 
-    printf("%s%11.4f  %11.4f  %11.4f  %11.4f\n", label[j],
-	   1.0E-06 * bytes[j]/mintime[j],
-	   avgtime[j],
-	   mintime[j],
-	   maxtime[j]);
+    marcel_printf("%s%11.4f  %11.4f  %11.4f  %11.4f\n", label[j],
+		  1.0E-06 * bytes[j]/mintime[j],
+		  avgtime[j],
+		  mintime[j],
+		  maxtime[j]);
   }
-  printf(HLINE);
+  marcel_printf(HLINE);
 
   marcel_end ();
   return 0;
@@ -306,7 +306,7 @@ print_welcoming_message (unsigned int nb_teams,
 			 unsigned int nb_memory_nodes,
 			 unsigned int *memory_nodes) {
   unsigned int i;
-  marcel_printf ("Launching memteams with %u %s of %u %s %s.\n", 
+  marcel_printf ("Launching memteams with %u %s of %u %s %s.\n",
 		 nb_teams,
 		 nb_teams > 1 ? "teams" : "team",
 		 nb_threads,
@@ -335,7 +335,7 @@ parse_command_line_arguments (unsigned int nb_args,
     return -1;
   nb_args--;
   args++;
-  
+
   /* Fill the scheduling policy */
   if (!nb_args)
     return -1;
@@ -348,7 +348,7 @@ parse_command_line_arguments (unsigned int nb_args,
   }
   nb_args--;
   args++;
-        
+
   /* Fill the mbind policy */
   if (!nb_args)
     return -1;
@@ -368,7 +368,7 @@ parse_command_line_arguments (unsigned int nb_args,
     }
     return 0;
   }
-  
+
   /* Eventually fill the nodes array */
   *nb_memory_nodes = 0;
   for (i = 0; (i < nb_args) && (*nb_memory_nodes < numa_max_node () + 2); i++) {
@@ -386,6 +386,6 @@ parse_command_line_arguments (unsigned int nb_args,
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

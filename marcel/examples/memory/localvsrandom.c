@@ -107,7 +107,7 @@ int marcel_main(int argc, char * argv[]) {
 
   benefit = local_ns / random_ns * 100;
 
-  printf("%ld\t%ld\t%ld\n", local_ns, random_ns, benefit);
+  marcel_printf("%ld\t%ld\t%ld\n", local_ns, random_ns, benefit);
 
   // Finish marcel
   marcel_memory_exit(&memory_manager);
@@ -117,6 +117,6 @@ int marcel_main(int argc, char * argv[]) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

@@ -797,7 +797,7 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
     for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
 
     // Register memory
-    mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, size);
+    mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, (long)size);
     ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
@@ -924,7 +924,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   int nbpages, protection, with_huge_pages;
   int i, node;
 
-  mdebug_mami("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, size);
+  mdebug_mami("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, (long)size);
 
   with_huge_pages = 0;
   protection = PROT_READ|PROT_WRITE;
@@ -954,7 +954,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   if (aligned_size > size) aligned_size = size;
 #warning todo verifier que buffer et size sont alignes sur une page
   marcel_mutex_lock(&(memory_manager->lock));
-  mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
+  mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
@@ -1135,7 +1135,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
-  mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, aligned_size);
+  mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) *node = data->node;
   MAMI_LOG_OUT();

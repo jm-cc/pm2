@@ -26,6 +26,8 @@ void marcel_memory_unset_alignment_(int *memory_manager);
 
 void marcel_memory_malloc_(int *memory_manager,
 			   int *size,
+                           int *policy,
+                           int *node,
 			   int *buffer);
 
 void marcel_memory_free_(int *memory_manager,

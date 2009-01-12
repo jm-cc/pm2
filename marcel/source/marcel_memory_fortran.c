@@ -35,9 +35,11 @@ void marcel_memory_unset_alignment_(int *memory_manager) {
 
 void marcel_memory_malloc_(int *memory_manager,
 			   int *size,
+                           int *policy,
+                           int *node,
 			   int *buffer) {
   marcel_memory_manager_t *manager = (void *)*memory_manager;
-  int *_buffer = marcel_memory_malloc(manager, *size*sizeof(int));
+  int *_buffer = marcel_memory_malloc(manager, *size*sizeof(int), *policy, *node);
   *buffer = (int)_buffer;
 }
 

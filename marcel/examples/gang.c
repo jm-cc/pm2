@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#ifdef MA__BUBBLES
+#if defined(MARCEL_MAMI_ENABLED) && defined(MA__BUBBLES)
 
 #define GANGS 5
 #define THREADS 5
@@ -27,6 +27,7 @@
 //#define BARRIER
 
 extern ma_runqueue_t ma_gang_rq;
+marcel_memory_manager_t memory_manager;
 
 #ifdef BARRIER
 marcel_barrier_t barrier[GANGS];
@@ -34,8 +35,9 @@ marcel_barrier_t barrier[GANGS];
 
 any_t work(any_t arg) {
   int n = (int)(intptr_t) arg;
+  int node;
   *marcel_stats_get(marcel_self(), load) = rand()%10;
-  marcel_task_memory_attach(NULL,NULL,(rand()%10)<<20,rand()%2);
+  marcel_memory_task_attach(&memory_manager,NULL,(rand()%10)<<20,NULL,&node);
   while(1);
   marcel_printf("%d done\n",n);
   return NULL;
@@ -58,6 +60,7 @@ int marcel_main(int argc, char **argv)
   //marcel_t gangsched;
 
   marcel_init(&argc, argv);
+  marcel_memory_init(&memory_manager);
 
   marcel_sched_setparam(marcel_self(), &p);
 
@@ -114,9 +117,9 @@ int marcel_main(int argc, char **argv)
   return 0;
 }
 
-#else /* MA__BUBBLES */
+#else /* MARCEL_MAMI_ENABLED && MA__BUBBLES */
 int main(int argc, char *argv[]) {
-   fprintf(stderr,"%s needs bubbles\n",argv[0]);
+   fprintf(stderr,"%s needs bubbles and MaMI\n",argv[0]);
    return 0;
 }
-#endif /* MA__BUBBLES */
+#endif /* MARCEL_MAMI_ENABLED && MA__BUBBLES */

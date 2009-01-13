@@ -24,7 +24,7 @@ for network in $*; do
     # flavor creation
     pm2-flavor set --flavor=$flavor --modules="init nmad tbx ntbx puk" \
         --common="fortran_target_none" --all="opt build_static" \
-        --nmad="$network sched_opt strat_default mad3_emu tag_as_flat_array"
+        --nmad="$network sched_opt strat_default mad3_emu tag_as_flat_array" --puk=disable_output
 
     #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
     ssh $machine1 arch > architecture

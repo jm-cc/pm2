@@ -18,10 +18,17 @@ prog="hugepages"
 args=""
 hosts="localhost"
 
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
+hugepages_free=$(grep HugePages_Free: /sys/devices/system/node/node0/meminfo | awk '{print $NF}')
+if [ "$hugepages_free" == "0" ] ; then
+    cat > /tmp/pm2test_"${USER}"_expected <<EOF
+NUMA node topology not accessible.
+EOF
+else
+    cat > /tmp/pm2test_"${USER}"_expected <<EOF
 marcel_memory_malloc succesfully failed: Cannot allocate memory
 ptr[10]=10
 ptr2[20]=20
 EOF
+fi
 
 . ./mami.sh

@@ -435,14 +435,16 @@ static void marcel_once_cancelhandler(void *arg)
 #endif /* MARCEL_DEVIATION_ENABLED */
 int lpt_once(lpt_once_t * once_control, 
 	void (*init_routine)(void)) {
+
         LOG_IN();
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
-	static int _inited = 0;
-	if (!_inited) {
-		marcel_init_section(MA_INIT_MAIN_LWP);
-		_inited = 1;
+	if (!marcel_test_activity()) {
+		/* We're in single-threaded mode, so we can safely call INIT_ROUTINE.  */
+		init_routine();
+		*once_control = DONE;
+		return 0;
 	}
 
 	/* Test without locking first for speed */

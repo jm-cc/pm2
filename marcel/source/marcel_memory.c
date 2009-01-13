@@ -903,9 +903,11 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
   }
   else {
     if (nbpages_query == 2) {
+#ifdef PM2DEBUG
       if (statuses[0] != statuses[1]) {
 	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
       }
+#endif
       *node = statuses[1];
     }
     else {

@@ -98,7 +98,7 @@ LINK_CMD=$(LD) $(SONAMEFLAGS)\
 ifeq ($(LINK_OTHER_LIBS),yes)
 # if we want to link this module against all other modules, we have to depend on
 # them. Of course, only one should.
-$(LIB_LIB_SO_MAJ_MIN): $(foreach name,$(MOD_PM2_SHLIBS), \
+$(LIB_LIB_SO_MAJ_MIN): $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), \
 		$(MOD_GEN_STAMP)/stamp-build-$(name).so)
 # Additional -L and -l to link against all other modules
 LINK_CMD+=$(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \

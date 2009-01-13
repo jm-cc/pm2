@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#define _ATFILE_SOURCE
 #include "marcel.h"
 
 #include <stdio.h>
@@ -21,6 +22,7 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #ifdef MA__NUMA
 #  include <math.h>
@@ -235,6 +237,56 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 unsigned marcel_nbnodes = 1;
 
 #ifdef MA__LWPS
+
+#ifdef __GLIBC__
+# define HAVE_OPENAT
+#endif
+
+#ifdef HAVE_OPENAT
+
+/* The file descriptor for the file system root, used when browsing, e.g.,
+	 Linux' sysfs and procfs.  */
+static int fsys_root_fd = -1;
+
+int ma_topology_set_fsys_root(const char *path) {
+	int root;
+
+	root = open(path, O_RDONLY | O_DIRECTORY);
+	if (root < 0)
+		return -1;
+
+	fsys_root_fd = root;
+	return 0;
+}
+
+static FILE *ma_fopenat(const char *path, const char *mode) {
+	int fd;
+	const char *relative_path;
+
+	MA_BUG_ON(fsys_root_fd < 0);
+
+	/* Skip leading slashes.  */
+	for (relative_path = path; *relative_path == '/'; relative_path++);
+
+	fd = openat (fsys_root_fd, relative_path, O_RDONLY);
+	if (fd == -1)
+		return NULL;
+
+	return fdopen(fd, mode);
+}
+
+/* Use our own `fopen ()'.  */
+#define fopen ma_fopenat
+
+#else /* !HAVE_OPENAT */
+
+int ma_topology_set_fsys_root(const char *path) {
+	mdebug("`ma_topology_set_fsys_root ()' not implemented\n");
+	errno = ENOSYS;
+	return -1;
+}
+
+#endif /* !HAVE_OPENAT */
 
 static int discovering_level = 1;
 unsigned marcel_nbprocessors = 1;
@@ -1326,6 +1378,16 @@ static void topo_discover(void) {
 	unsigned m,n;
 #  endif
 	struct marcel_topo_level *level;
+
+#ifdef HAVE_OPENAT
+	if (fsys_root_fd < 0) {
+		/* Get a file descriptor to the file system root.  */
+		if (ma_topology_set_fsys_root("/")) {
+			perror ("opening file system root");
+			MA_BUG();
+		}
+	}
+#endif
 
 	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_LWPS) {
 		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_LWPS);

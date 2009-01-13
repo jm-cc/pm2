@@ -621,6 +621,7 @@ marcel_topo_level_t *ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_t
 			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = &marcel_topo_vp_level[0]; }))
 #define ma_per_vp(vp, field) (marcel_topo_vp[vp].(field))
 
+
 #section marcel_functions
 #ifdef MARCEL_SMT_IDLE
 /*  return whether one should sleep (because other siblings are working) */
@@ -633,6 +634,11 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 #define ma_topology_lwp_idle_end(lwp) (void)0
 #endif
 
+/** \brief Use \param path as the file system root when browsing, e.g., Linux
+ * sysfs and procfs to determine the topology.  */
+extern int ma_topology_set_fsys_root(const char *path);
+
+
 #section marcel_inline
 #ifdef MARCEL_SMT_IDLE
 static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp) {

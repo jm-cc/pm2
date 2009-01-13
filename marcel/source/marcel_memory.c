@@ -1284,7 +1284,7 @@ void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
 int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                               marcel_memory_node_selection_policy_t policy,
                               int *node) {
-  int err;
+  int err=0;
   MAMI_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
@@ -1323,7 +1323,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     err = EALREADY;
   }
   else {
-    if (data->node == -1) {
+    if (data->node < 0) {
       unsigned long nodemask;
 
       mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
@@ -1442,7 +1442,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   if (err >= 0) {
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     if (memory_manager->kernel_nexttouch_migration == 1 && data->mami_allocated) {
-      // in-kernel migration
+      mdebug_mami("... using in-kernel migration\n");
 #warning todo: comment mettre a jour la localite des pages
       data->status = MARCEL_MEMORY_KERNEL_MIGRATION_STATUS;
       err = ma_memory_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
@@ -1454,7 +1454,8 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
         perror("(marcel_memory_migrate_on_next_touch) madvise");
       }
     }
-    else { // user-space migration
+    else {
+      mdebug_mami("... using user-space migration\n");
       if (!handler_set) {
         struct sigaction act;
         handler_set = 1;

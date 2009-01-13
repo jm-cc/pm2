@@ -823,8 +823,7 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size,
     policy = memory_manager->membind_policy;
     node = memory_manager->membind_node;
   }
-
-  if (policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
+  else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_NONE) {
     node = marcel_current_node();
     if (tbx_unlikely(node == -1)) node=0;
   }

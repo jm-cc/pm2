@@ -19,10 +19,10 @@ args=""
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Memory located on node -1
+Memory not located on any node
 Memory located on node 0
 MaMI: The 10 pages are all on node #0
-Memory located on node -1
+Memory not located on any node
 Memory located on node 0
 MaMI: The 10 pages are all on node #0
 EOF

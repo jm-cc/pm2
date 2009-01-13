@@ -49,12 +49,6 @@ int marcel_once(marcel_once_t * once_control,
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
-	static int _inited = 0;
-	if (!_inited) {
-		marcel_init_section(MA_INIT_MAIN_LWP);
-		_inited = 1;
-	}
-
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {
 		READ_MEMORY_BARRIER();
@@ -107,12 +101,6 @@ int pmarcel_once(pmarcel_once_t * once_control,
         LOG_IN();
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
-
-	static int _inited = 0;
-	if (!_inited) {
-		marcel_init_section(MA_INIT_MAIN_LWP);
-		_inited = 1;
-	}
 
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {

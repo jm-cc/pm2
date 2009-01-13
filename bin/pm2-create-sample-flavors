@@ -209,7 +209,6 @@ registering_flavors() {
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
 	--marcel=enable_deviation --marcel=enable_signals \
-	--common=link_pm2_shared \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor tbx \

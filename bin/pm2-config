@@ -245,12 +245,8 @@ pm2_config_set_vars()
 	eval _PM2_CONFIG_${_lib}_INCLUDE_DIR=$_PM2_CONFIG_BUILD/${_lib}/include${_PM2_CONFIG_EXT}
 	eval export _PM2_CONFIG_${_lib}_INCLUDE_DIR
 
-	if [ "$PM2_COMMON_LINK_PM2_SHARED" = yes ]; then
-	    eval _PM2_CONFIG_${_lib}_LINK_DYNAMIC=pm2
-	    if [ "$PM2_COMMON_LINK_SHARED" = yes ]; then
-		eval _PM2_CONFIG_${_lib}_LINK_DYNAMIC=all
-	    fi
-	fi
+	eval _PM2_CONFIG_${_lib}_LINK_OTHERS='$'PM2_${_LIB}_LINK_OTHERS
+	eval export _PM2_CONFIG_${_lib}_LINK_OTHERS
 	
 	eval _STAMP_FILES='$'PM2_${_LIB}_STAMP_FILES
 	eval _obj='$'_PM2_CONFIG_${_lib}_OBJ_DIR

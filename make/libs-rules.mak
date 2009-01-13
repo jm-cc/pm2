@@ -95,12 +95,22 @@ LINK_CMD=$(LD) $(SONAMEFLAGS)\
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
 		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBRARY)_link.pic, $(filter %.pic, $(MOD_PICS)))
+ifeq ($(LINK_OTHER_LIBS),yes)
+# if we want to link this module against all other modules, we have to depend on
+# them. Of course, only one should.
+$(LIB_LIB_SO_MAJ_MIN): $(foreach name,$(MOD_PM2_SHLIBS), \
+		$(MOD_GEN_STAMP)/stamp-build-$(name).so)
+# Additional -L and -l to link against all other modules
+LINK_CMD+=$(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
+		$(addprefix -Xlinker -l,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))
+endif
 $(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_LIB_SO_MAP)
 	$(COMMON_LINK)
 	$(COMMON_HIDE) rm -f $@
 	$(COMMON_MAIN) $(LINK_CMD)
 	$(COMMON_HIDE) touch $(STAMP_BUILD_LIB_SO)
 	$(COMMON_HIDE) touch $(STAMP_BUILD_LIB)
+	$(COMMON_HIDE) touch $(STAMP_LINK_LIB)
 
 ifneq ($(LIB_LIB_SO_MAJ_MIN),$(LIB_LIB_SO_MAJ))
 $(LIB_LIB_SO_MAJ): 
@@ -113,21 +123,6 @@ $(LIB_LIB_SO): $(LIB_LIB_SO_MAJ)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ln -sf $(notdir $(LIB_LIB_SO_MAJ)) $@
 endif
-
-link: $(LINK_LIB)
-linkdynamic: $(STAMP_LINK_LIB)
-
-ifeq ($(LINK_DYNAMIC_LIBS),pm2)
-
-endif
-
-$(STAMP_LINK_LIB): $(foreach name,$(MOD_PM2_SHLIBS), \
-			$(MOD_GEN_STAMP)/stamp-build-$(name).so)
-	$(COMMON_LINK)
-	$(COMMON_MAIN) $(LINK_CMD) $(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
-		$(addprefix -Xlinker -l,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))
-	$(COMMON_HIDE)touch $(STAMP_LINK_LIB)
-
 
 # Test suite
 #-----------

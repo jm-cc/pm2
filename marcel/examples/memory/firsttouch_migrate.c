@@ -79,6 +79,6 @@ static void first_touch(int *buffer, size_t size, int elems) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  marcel_fprintf(stderr, "This application needs MAMI to be enabled\n");
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
 }
 #endif

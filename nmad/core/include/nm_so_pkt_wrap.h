@@ -32,10 +32,9 @@
 static __inline__
 uint32_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_so_pw)
 {
-  //**register struct iovec *vec = p_so_pw->header_index;
   register struct iovec *vec = p_so_pw->prealloc_v;
 
-  return NM_SO_PREALLOC_BUF_LEN -
+  return NM_SO_MAX_UNEXPECTED -
            ((vec->iov_base + vec->iov_len) - (void *)p_so_pw->buf);
 }
 

@@ -73,7 +73,7 @@ main(int	  argc,
   for(k = 0; k < 5; k++)
   {
     struct nm_pkt_wrap *p_so_pw;
-    NM_SO_ALIGN_TYPE buf[NM_SO_PREALLOC_BUF_LEN / sizeof(NM_SO_ALIGN_TYPE)];
+    NM_SO_ALIGN_TYPE buf[NM_SO_MAX_UNEXPECTED / sizeof(NM_SO_ALIGN_TYPE)];
     struct iovec *vec;
     void *ptr;
     uint32_t len;
@@ -135,7 +135,7 @@ main(int	  argc,
     nm_so_pw_free(p_so_pw);
 
     err = nm_so_pw_alloc_and_fill_with_data(0, 0,
-                                            buf, NM_SO_PREALLOC_BUF_LEN,
+                                            buf, NM_SO_MAX_UNEXPECTED,
 			                    0,
                                             1,
                                             NM_SO_DATA_DONT_USE_HEADER,

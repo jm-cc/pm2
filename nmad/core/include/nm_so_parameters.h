@@ -29,6 +29,7 @@
 #if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
 #  define NM_SO_MAX_UNEXPECTED                (1024 * 1024)
 #else
+/** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
 #  define NM_SO_MAX_UNEXPECTED                (32 * 1024)
 #endif
 
@@ -36,9 +37,6 @@
 #define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED -	\
 					     NM_SO_GLOBAL_HEADER_SIZE - \
 					     NM_SO_DATA_HEADER_SIZE)
-
-/* Maximum size of the (preallocated) header zone within packet wrappers */
-#define NM_SO_PREALLOC_BUF_LEN              NM_SO_MAX_UNEXPECTED
 
 /* Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 16

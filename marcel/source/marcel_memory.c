@@ -418,7 +418,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
 
   MAMI_LOG_IN();
 
-  mdebug_mami("Freeing space from %p with %d pages\n", buffer, nbpages);
+  mdebug_mami("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size,nbpages);
 
   available = tmalloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
@@ -633,6 +633,8 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     (*space)->protection = PROT_READ|PROT_WRITE;
     (*space)->pagesize = memory_manager->normalpagesize;
     (*space)->next = NULL;
+
+    mdebug_mami("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, node);
   }
 
   MAMI_LOG_OUT();
@@ -725,8 +727,11 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
   if (heap == NULL) {
     int err, preallocatedpages;
 
-    preallocatedpages = memory_manager->initially_preallocated_pages;
-    while (nbpages > preallocatedpages) preallocatedpages *= 2;
+    preallocatedpages = nbpages;
+    if (preallocatedpages < 1000) {
+      preallocatedpages = memory_manager->initially_preallocated_pages;
+      while (nbpages > preallocatedpages) preallocatedpages *= 2;
+    }
     mdebug_mami("not enough space, let's allocate %d extra pages\n", preallocatedpages);
     if (node == memory_manager->nb_nodes)
       err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, -1);

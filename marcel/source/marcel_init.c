@@ -278,10 +278,12 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #ifdef MA__BUBBLES
 					"--marcel-bubble-scheduler sched   Use the given bubble scheduler\n"
 #endif
+#ifdef MA__NUMA
 					"--marcel-synthetic-topology topo  Create a synthetic or \"fake\" topology\n"
 					"                                  according to the given description\n"
 					"--marcel-topology-fsys-root path  Use the given path as the root directory\n"
 					"                                  when accessing, e.g., `/sys' on Linux\n"
+#endif
 			    );
 			exit(1);
 		} else

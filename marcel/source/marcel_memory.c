@@ -85,7 +85,8 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 #define __ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
 #define ALIGN_ON_PAGE(memory_manager, address, pagesize) (memory_manager->alignment?__ALIGN_ON_PAGE(address, pagesize):address)
 
-static unsigned long gethugepagesize(void) {
+static
+unsigned long gethugepagesize(void) {
   char line[1024];
   FILE *f;
   unsigned long hugepagesize=0, size=-1;
@@ -254,7 +255,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   marcel_memory_area_t *ptr, *ptr2;
 
   MAMI_LOG_IN();
-  mdebug_mami("Deallocating memory for node %d\n", node);
+  mdebug_mami("Deallocating memory for node #%d\n", node);
   ptr  = (*space);
   while (ptr != NULL) {
     mdebug_mami("Unmapping memory area from %p\n", ptr->start);
@@ -418,7 +419,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
 
   MAMI_LOG_IN();
 
-  mdebug_mami("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size,nbpages);
+  mdebug_mami("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size, nbpages);
 
   available = tmalloc(sizeof(marcel_memory_area_t));
   available->start = buffer;
@@ -473,8 +474,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
     ptr = &(memory_manager->heaps[node]);
   }
   while ((*ptr)->next != NULL) {
-    if (((*ptr)->end == (*ptr)->next->start) &&
-        ((*ptr)->protection == (*ptr)->next->protection)) {
+    if (((*ptr)->end == (*ptr)->next->start) && ((*ptr)->protection == (*ptr)->next->protection)) {
       mdebug_mami("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
                   (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
       (*ptr)->end = (*ptr)->next->end;
@@ -497,7 +497,7 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
       marcel_memory_data_t *next_data = data->next;
 
       if (data->mami_allocated) {
-	mdebug_mami("Removing [%p, %p] from node %d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
+	mdebug_mami("Removing [%p, %p] from node #%d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
                     data->node);
 	VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
 	// Free memory
@@ -641,15 +641,16 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   return err;
 }
 
-static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
+static
+void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
   marcel_memory_huge_pages_area_t *heap = memory_manager->huge_pages_heaps[node];
   marcel_memory_area_t *hheap = NULL, *prev = NULL;
   void *buffer = NULL;
   unsigned long nodemask;
-  int err;
+  int err=0;
 
   if (memory_manager->huge_pages_heaps[node] == NULL) {
-    int err = ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
+    err = ma_memory_preallocate_huge_pages(memory_manager, &(memory_manager->huge_pages_heaps[node]), node);
     if (err < 0) {
       return NULL;
     }
@@ -708,12 +709,13 @@ static void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *
   return buffer;
 }
 
-static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
+static
+void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
   marcel_memory_area_t *heap = memory_manager->heaps[node];
   marcel_memory_area_t *prev = NULL;
   void *buffer;
 
-  mdebug_mami("Requiring space of %d pages from heap %p on node %d\n", nbpages, heap, node);
+  mdebug_mami("Requiring space of %d pages from heap %p on node #%d\n", nbpages, heap, node);
 
   // Look for a space big enough
   prev = heap;
@@ -874,7 +876,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
   if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
     mdebug_mami("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
-    mdebug_mami("Interval [%p:%p] is located on node %d\n", buffer, buffer+size, memory_tree->data->node);
+    mdebug_mami("Interval [%p:%p] is located on node #%d\n", buffer, buffer+size, memory_tree->data->node);
     *data = memory_tree->data;
     return 0;
   }
@@ -903,7 +905,8 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     *node = -1;
-    err = ENOENT;
+    errno = ENOENT;
+    err = -errno;
   }
   else {
     if (nbpages_query == 2) {
@@ -1051,17 +1054,17 @@ int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
     err = -errno;
   }
   else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_HUGE_PAGES && memory_manager->hugepagesize == 0) {
-    mdebug("Huge pages are not available. Cannot set memory policy.\n");
+    mdebug_mami("Huge pages are not available. Cannot set memory policy.\n");
     errno = EINVAL;
     err = -errno;
   }
   else {
-    mdebug_mami("Set the current membind policy to %d (node %d)\n", policy, node);
+    mdebug_mami("Set the current membind policy to %d (node #%d)\n", policy, node);
     memory_manager->membind_policy = policy;
     memory_manager->membind_node = node;
   }
   MAMI_LOG_OUT();
-  return -err;
+  return err;
 }
 
 void marcel_memory_free(marcel_memory_manager_t *memory_manager, void *buffer) {
@@ -1358,7 +1361,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
           marcel_entity_t *object = NULL;
           object = tbx_slist_ref_get(data->owners);
 
-          mdebug_mami("Moving data from node %d to node %d\n", data->node, dest);
+          mdebug_mami("Moving data from node #%d to node #%d\n", data->node, dest);
           if (data->node >= 0) ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
           ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
         } while (tbx_slist_ref_forward(data->owners));

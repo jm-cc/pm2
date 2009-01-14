@@ -172,10 +172,10 @@ void marcel_bubble_shake (void) {
   if (current_sched) {
     if (current_sched->shake) {
       current_sched->shake (&marcel_root_bubble);
+    } else {
+      /* Default behavior for shake (). */
+      ma_bubble_move_top_and_submit (&marcel_root_bubble);
     }
-  } else {
-    /* Default behavior for shake (). */
-    ma_bubble_move_top_and_submit (&marcel_root_bubble);
   }
 }
 

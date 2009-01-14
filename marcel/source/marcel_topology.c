@@ -2151,12 +2151,12 @@ synth_install_topology (void) {
 
 static void
 initialize_topology(void) {
-	if (!ma_use_synthetic_topology || ma_synthetic_topology_description[0] == 0)
-		topo_discover();
 #ifdef MA__NUMA
-	else
+	if (ma_use_synthetic_topology && ma_synthetic_topology_description[0] != 0)
 		synth_install_topology();
+	else
 #endif
+		topo_discover();
 
 	/* Now we can set VP levels for main LWP */
 	ma_init_lwp_vpnum(0, &__main_lwp);

@@ -19,6 +19,10 @@
 #include <stdlib.h>
 
 #ifdef MA__NUMA
+
+
+/* Fig back-end.  */
+
 #define EPOXY_COLOR 32
 #define MEMORY_COLOR 34
 #define DIE_COLOR 33
@@ -30,7 +34,7 @@
 #define UNIT 200
 #define FONT_SIZE 12
 
-void fig_box(FILE *output, int color, unsigned depth, unsigned x, unsigned width, unsigned y, unsigned height) {
+static void fig_box(FILE *output, int color, unsigned depth, unsigned x, unsigned width, unsigned y, unsigned height) {
   marcel_fprintf(output, "2 2 0 1 0 %d %u -1 20 0.0 0 0 -1 0 0 5\n\t", color, depth);
   marcel_fprintf(output, " %u %u", x, y);
   marcel_fprintf(output, " %u %u", x + width, y);
@@ -40,7 +44,7 @@ void fig_box(FILE *output, int color, unsigned depth, unsigned x, unsigned width
   marcel_fprintf(output, "\n");
 }
 
-void fig_text(FILE *output, int color, int size, unsigned depth, unsigned x, unsigned y, const char *text) {
+static void fig_text(FILE *output, int color, int size, unsigned depth, unsigned x, unsigned y, const char *text) {
   marcel_fprintf(output, "4 0 %d %u -1 0 %u 0.0 4 %u %u %u %u %s\\001\n", color, depth, size, size * 10, (unsigned) strlen(text) * size * 10, x, y + size * 10, text);
 }
 
@@ -49,7 +53,7 @@ void fig_text(FILE *output, int color, int size, unsigned depth, unsigned x, uns
  * SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc.
  */
 
-void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
+static void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct marcel_topo_level ***sublevels, unsigned *numsublevels) {
   unsigned alloced = numlevels * levels[0]->arity;
   struct marcel_topo_level **l = tmalloc(alloced * sizeof(*l));
   unsigned i, j, n;
@@ -76,7 +80,7 @@ void get_sublevels(struct marcel_topo_level **levels, unsigned numlevels, struct
 
 typedef void (*foo_fig)(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight);
 
-int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun);
+static int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun);
 
 /*
  * Helper to recurse into sublevels
@@ -112,7 +116,7 @@ int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level
 #define size_value(size) (size < 4*1024 && size % 1024 ? size : size < 4*1024*1024 && (size / 1024) % 1024 ? size / 1024 : size / (1024*1024))
 #define size_unit(size) (size < 4*1024 && size % 1024 ? "KB" : size < 4*1024*1024 && (size / 1024) % 1024 ? "MB" : "GB")
 
-void vp_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void vp_fig(struct marcel_topo_level *level, unsigned long merged_type TBX_UNUSED, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -129,7 +133,7 @@ void vp_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
   *retheight = myheight + maxheight;
 }
 
-void proc_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void proc_fig(struct marcel_topo_level *level, unsigned long merged_type TBX_UNUSED, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -151,7 +155,7 @@ void proc_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *
   fig_box(output, THREAD_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void l1_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void l1_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -180,7 +184,7 @@ void l1_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
   }
 }
 
-void core_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void core_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -198,7 +202,7 @@ void core_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *
   fig_box(output, CORE_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void l2_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void l2_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -221,7 +225,7 @@ void l2_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
   }
 }
 
-void l3_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void l3_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   char text[64];
@@ -244,7 +248,7 @@ void l3_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *ou
   }
 }
 
-void die_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void die_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -263,7 +267,7 @@ void die_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *o
   fig_box(output, DIE_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void node_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
+static void node_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *output, unsigned depth, unsigned x, unsigned *retwidth, unsigned y, unsigned *retheight) {
   unsigned myheight = UNIT;
   unsigned totwidth = UNIT, maxheight = 0;
   char text[64];
@@ -288,7 +292,7 @@ void node_fig(struct marcel_topo_level *level, unsigned long merged_type, FILE *
   fig_box(output, EPOXY_COLOR, depth, x, *retwidth, y, *retheight);
 }
 
-void fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned y) {
+static void fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned x, unsigned y) {
   unsigned myheight = 0;
   unsigned totwidth = 0, maxheight = 0;
   unsigned long merged_type = level->merged_type;
@@ -301,7 +305,7 @@ void fig(struct marcel_topo_level *level, FILE *output, unsigned depth, unsigned
  * non-direct) sublevels in SUBLEVELS[0..NUMSUBLEVELS-1], allocated by tmalloc,
  * and a pointer FUN to the function that draws it.
  */
-int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun) {
+static int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level ***levels, unsigned *numsublevels, unsigned long *merged_type, foo_fig *fun) {
   unsigned n = 1, n2;
   struct marcel_topo_level **l = tmalloc(sizeof(*l)), **l2;
   l[0] = level;
@@ -325,7 +329,7 @@ int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level
     DO(PROC, proc_fig)
     DO(VP, vp_fig)
     if ((*merged_type) & ~(1 << MARCEL_LEVEL_FAKE))
-      fprintf(stderr,"urgl, merged type %x?! Skipping\n", *merged_type);
+      fprintf(stderr,"urgl, merged type %lx?! Skipping\n", *merged_type);
     if (!l[0]->children)
       return 0;
     get_sublevels(l, n, &l2, &n2);
@@ -337,10 +341,13 @@ int get_sublevels_type(struct marcel_topo_level *level, struct marcel_topo_level
 }
 #endif
 
+
+/* Text and TeX back-ends.  */
+
 #define indent(output, i) \
   marcel_fprintf(output, "%*s", 2*i, "");
 
-void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
+static void output_topology(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbose_mode) {
   int x;
   const char * separator = txt_mode ? " " : "\\\\";
   const char * indexprefix = txt_mode ? "#" : "\\#";
@@ -361,7 +368,7 @@ void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbo
       marcel_fprintf(output, "{\n");
     }
     for(x=0; x<l->arity; x++)
-      f(l->children[x], output, i+1, txt_mode, verbose_mode);
+      output_topology(l->children[x], output, i+1, txt_mode, verbose_mode);
     if (!txt_mode) {
       indent(output, i);
       marcel_fprintf(output, "}\n");
@@ -369,6 +376,7 @@ void f(struct marcel_topo_level *l, FILE *output, int i, int txt_mode, int verbo
   }
 }
 
+
 int marcel_main(int argc, char **argv) {
   char hostname[256], filename[256];
   FILE *output;
@@ -438,7 +446,7 @@ int marcel_main(int argc, char **argv) {
     fig(marcel_topo_level(0,0), output, 100, 0, 0);
   else
 #endif
-    f(marcel_topo_level(0, 0), output, 0, txt_mode, verbose_mode);
+    output_topology(marcel_topo_level(0, 0), output, 0, txt_mode, verbose_mode);
 
   if (!txt_mode) {
     if (!fig_mode)

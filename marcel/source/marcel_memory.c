@@ -728,7 +728,7 @@ static void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_mana
     int err, preallocatedpages;
 
     preallocatedpages = nbpages;
-    if (preallocatedpages < 1000) {
+    if (preallocatedpages < memory_manager->initially_preallocated_pages) {
       preallocatedpages = memory_manager->initially_preallocated_pages;
       while (nbpages > preallocatedpages) preallocatedpages *= 2;
     }

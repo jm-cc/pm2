@@ -236,8 +236,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 
 unsigned marcel_nbnodes = 1;
 
-#ifdef MA__LWPS
-
+
 #ifdef __GLIBC__
 # define HAVE_OPENAT
 #endif
@@ -287,6 +286,9 @@ int ma_topology_set_fsys_root(const char *path) {
 }
 
 #endif /* !HAVE_OPENAT */
+
+
+#ifdef MA__LWPS
 
 static int discovering_level = 1;
 unsigned marcel_nbprocessors = 1;

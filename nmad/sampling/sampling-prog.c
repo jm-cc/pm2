@@ -190,6 +190,18 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
       fprintf(stderr, "sampling: error %d while receiving.\n", err);
       abort();
     }
+  if(len <= NM_SO_MAX_SMALL)
+    {
+      /* very rough header decoder... should be sufficient for our basic use here. */
+      struct nm_so_global_header*gh = p_pw->v[0].iov_base;
+      nm_tag_t proto_id = *(nm_tag_t*)(gh + 1);
+      if(proto_id >= NM_SO_PROTO_DATA_FIRST)
+	{
+	  struct nm_so_data_header*dh = (struct nm_so_data_header*)(gh + 1);
+	  size_t data_len = dh->len;
+	  memcpy(ptr, dh + 1, data_len);
+	}
+    }
   nm_so_pw_free(p_pw);
 }
 

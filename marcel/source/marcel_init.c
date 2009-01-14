@@ -240,7 +240,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
 		} else
 #endif
-#if(defined(MA__LWPS) && defined(__GLIBC__))
 		if (!strcmp(argv[i], "--marcel-topology-fsys-root")) {
 			if (i == *argc - 1) {
 				fprintf(stderr,
@@ -253,7 +252,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 		} else
-#endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"
 			    "--marcel-top file		Dump a top-like output to file\n"
@@ -280,10 +278,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #endif
 					"--marcel-synthetic-topology topo  Create a synthetic or \"fake\" topology\n"
 					"                                  according to the given description\n"
-#ifdef __GLIBC__
 					"--marcel-topology-fsys-root path  Use the given path as the root directory\n"
 					"                                  when accessing, e.g., `/sys' on Linux\n"
-#endif
 			    );
 			exit(1);
 		} else

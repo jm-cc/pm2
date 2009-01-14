@@ -94,7 +94,7 @@ static int parse_synthetic_topology_description(const char *description) {
 
 
 static void marcel_parse_cmdline_early(int *argc, char **argv,
-    tbx_bool_t do_not_strip)
+    tbx_bool_t just_strip)
 {
 	int i, j;
 
@@ -104,167 +104,169 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 	i = j = 1;
 
 	while (i < *argc) {
+		/* Handled in marcel_parse_cmdline_lastly, don't spit an error and don't drop them either */
 		if (!strcmp(argv[i], "--marcel-top")) {
-			argv[j++] = argv[i++];
-			argv[j++] = argv[i++];
-			continue;
+			if (just_strip) {
+				argv[j++] = argv[i++];
+				argv[j++] = argv[i++];
+			} else
+				i += 2;
 		} else if (!strcmp(argv[i], "--marcel-xtop")) {
-			argv[j++] = argv[i++];
-			continue;
+			if (just_strip)
+				argv[j++] = argv[i++];
+			else
+				i++;
 		} else
 #ifdef MA__LWPS
 		if (!strcmp(argv[i], "--marcel-nvp")) {
-			if (i == *argc - 1) {
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 				    "Fatal error: --marcel-nvp option must be followed "
 				    "by <nb_of_virtual_processors>.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				ma__nb_vp = atoi(argv[i + 1]);
-				if (ma__nb_vp < 1 || ma__nb_vp > MA_NR_LWPS) {
-					fprintf(stderr,
-					    "Error: nb of VP should be between 1 and %ld\n",
-					    (long) MA_NR_LWPS);
-					exit(1);
-				}
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
-			continue;
+			if (just_strip)
+				continue;
+
+			ma__nb_vp = atoi(argv[i - 1]);
+			if (ma__nb_vp < 1 || ma__nb_vp > MA_NR_LWPS) {
+				fprintf(stderr,
+				    "Error: nb of VP should be between 1 and %ld\n",
+				    (long) MA_NR_LWPS);
+				exit(1);
+			}
 		} else if (!strcmp(argv[i], "--marcel-cpustride")) {
-			if (i == *argc - 1) {
+			int stride;
+
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 				    "Fatal error: --marcel-cpustride option must be followed "
 				    "by <nb_of_processors_to_seek>.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				int stride;
-				stride = atoi(argv[i + 1]);
-				if (stride < 0) {
-					fprintf(stderr,
-					    "Error: CPU stride should be positive\n");
-					exit(1);
-				}
-				marcel_cpu_stride = stride;
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
-			continue;
+			if (just_strip)
+				continue;
+
+			stride = atoi(argv[i - 1]);
+			if (stride < 0) {
+				fprintf(stderr,
+				    "Error: CPU stride should be positive\n");
+				exit(1);
+			}
+			marcel_cpu_stride = stride;
 		} else if (!strcmp(argv[i], "--marcel-firstcpu")) {
-			if (i == *argc - 1) {
+			int first_cpu;
+
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 				    "Fatal error: --marcel-firstcpu option must be followed "
 				    "by <num_of_first_processor>.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				int first_cpu;
-				first_cpu = atoi(argv[i + 1]);
-				if (first_cpu < 0) {
-					fprintf(stderr,
-					    "Error: CPU number should be positive\n");
-					exit(1);
-				}
-				marcel_first_cpu = first_cpu;
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
-			continue;
+			if (just_strip)
+				continue;
+
+			first_cpu = atoi(argv[i - 1]);
+			if (first_cpu < 0) {
+				fprintf(stderr,
+				    "Error: CPU number should be positive\n");
+				exit(1);
+			}
+			marcel_first_cpu = first_cpu;
 		} else
 #ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-maxarity")) {
-			if (i == *argc - 1) {
+			int topo_max_arity;
+
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 				    "Fatal error: --marcel-maxarity option must be followed "
 				    "by <maximum_topology_arity>.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				int topo_max_arity = atoi(argv[i + 1]);
-				if (topo_max_arity < 0) {
-					fprintf(stderr,
-					    "Error: Maximum topology arity should be positive\n");
-					exit(1);
-				}
-				marcel_topo_max_arity = topo_max_arity;
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
-			continue;
+			if (just_strip)
+				continue;
+
+			topo_max_arity = atoi(argv[i - 1]);
+			if (topo_max_arity < 0) {
+				fprintf(stderr,
+				    "Error: Maximum topology arity should be positive\n");
+				exit(1);
+			}
+			marcel_topo_max_arity = topo_max_arity;
 		} else
 #endif
 #endif
 #ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-synthetic-topology")) {
-			if (i == *argc - 1) {
+			int err;
+
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 								"Fatal error: --marcel-synthetic-topology option must be followed "
 								"by <topology-description>.\n");
 				show_synthetic_topology_help();
 				exit(1);
 			}
-			if (do_not_strip) {
-				int err = parse_synthetic_topology_description(argv[i + 1]);
-				if (err) {
-					fprintf (stderr,
-									 "Fatal error: invalid argument for --marcel-synthetic-topology.\n");
-					show_synthetic_topology_help();
-					exit(1);
-				}
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
+			if (just_strip)
+				continue;
+
+			err = parse_synthetic_topology_description(argv[i - 1]);
+			if (err) {
+				fprintf (stderr,
+								 "Fatal error: invalid argument for --marcel-synthetic-topology.\n");
+				show_synthetic_topology_help();
+				exit(1);
+			}
 		} else
 #endif
 #ifdef MA__BUBBLES
 		if (!strcmp (argv[i], "--marcel-bubble-scheduler")) {
-			if (i == *argc - 1) {
+			const marcel_bubble_sched_t *scheduler;
+
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 								"Fatal error: --marcel-bubble-scheduler option must be followed "
 								"by the name of a bubble scheduler.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				const marcel_bubble_sched_t *scheduler = marcel_lookup_bubble_scheduler(argv[i + 1]);
-				if (scheduler == NULL) {
-					fprintf (stderr,
-									 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i]);
-					exit(1);
-				}
-				marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
+			if (just_strip)
+				continue;
+
+			scheduler = marcel_lookup_bubble_scheduler(argv[i - 1]);
+			if (scheduler == NULL) {
+				fprintf (stderr,
+								 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i]);
+				exit(1);
+			}
+			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
 		} else
 #endif
 #ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-topology-fsys-root")) {
-			if (i == *argc - 1) {
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 								"Fatal error: --marcel-topology-fsys-root option must be followed "
 								"by the path of a directory.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				if (ma_topology_set_fsys_root(argv[++i])) {
-					fprintf(stderr, "failed to set root directory to `%s': %m\n", argv[i]);
-					exit(1);
-				}
+			if (just_strip)
+				continue;
 
-				/* Notify Marcel that we are using a "virtual" topology.  */
-				ma_use_synthetic_topology = 1;
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
+			if (ma_topology_set_fsys_root(argv[i - 1])) {
+				fprintf(stderr, "failed to set root directory to `%s': %m\n", argv[i - 1]);
+				exit(1);
+			}
+
+			/* Notify Marcel that we are using a "virtual" topology.  */
+			ma_use_synthetic_topology = 1;
 		} else
 #endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
@@ -299,13 +301,18 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #endif
 			    );
 			exit(1);
-		} else
-			argv[j++] = argv[i++];
+		} else {
+			if (just_strip)
+				argv[j++] = argv[i++];
+			else
+				i++;
+		}
 	}
-	*argc = j;
-	argv[j] = NULL;
 
-	if (do_not_strip) {
+	if (just_strip) {
+		*argc = j;
+		argv[j] = NULL;
+	} else  {
 #ifdef MA__LWPS
 		mdebug
 		    ("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d, first %d>\n",
@@ -314,8 +321,9 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 	}
 }
 
+/* Options that need Marcel to be alread up and running */
 static void marcel_parse_cmdline_lastly(int *argc, char **argv,
-    tbx_bool_t do_not_strip)
+    tbx_bool_t just_strip)
 {
 	int i, j;
 
@@ -326,49 +334,53 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv,
 
 	while (i < *argc) {
 		if (!strcmp(argv[i], "--marcel-top")) {
-			if (i == *argc - 1) {
+			i += 2;
+			if (i > *argc) {
 				fprintf(stderr,
 				    "Fatal error: --marcel-top option must be followed "
 				    "by <out_file>.\n");
 				exit(1);
 			}
-			if (do_not_strip) {
-				if (marcel_init_top(argv[i + 1])) {
-					fprintf(stderr,
-					    "Error: invalid top out_file %s\n",
-					    argv[i + 1]);
-					exit(1);
-				}
-				argv[j++] = argv[i++];
-				argv[j++] = argv[i++];
-			} else
-				i += 2;
-			continue;
+			if (just_strip)
+				continue;
+
+			if (marcel_init_top(argv[i - 1])) {
+				fprintf(stderr,
+				    "Error: invalid top out_file %s\n",
+				    argv[i - 1]);
+				exit(1);
+			}
 		} else if (!strcmp(argv[i], "--marcel-xtop")) {
-			if (do_not_strip) {
-				if (marcel_init_top
-				    ("|xterm -S//0 -geometry 120x26")) {
-					fprintf(stderr,
-					    "Error: can't launch xterm\n");
-					exit(1);
-				}
+			i++;
+			if (just_strip)
+				continue;
+
+			if (marcel_init_top
+			    ("|xterm -S//0 -geometry 120x26")) {
+				fprintf(stderr,
+				    "Error: can't launch xterm\n");
+				exit(1);
+			}
+		} else {
+			if (just_strip)
 				argv[j++] = argv[i++];
-			} else
+			else
 				i++;
-		} else
-			argv[j++] = argv[i++];
+		}
 	}
-	*argc = j;
-	argv[j] = NULL;
+	if (just_strip) {
+		*argc = j;
+		argv[j] = NULL;
+	}
 }
 
 static void marcel_strip_cmdline(int *argc, char *argv[])
 {
-	marcel_parse_cmdline_early(argc, argv, tbx_false);
+	marcel_parse_cmdline_early(argc, argv, tbx_true);
 
 	marcel_debug_init(argc, argv, PM2DEBUG_CLEAROPT);
 
-	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
+	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
 // Does not start any internal threads.
@@ -383,7 +395,7 @@ void marcel_init_data(int *argc, char *argv[])
 	already_called = tbx_true;
 
 	// Parse command line
-	marcel_parse_cmdline_early(argc, argv, tbx_true);
+	marcel_parse_cmdline_early(argc, argv, tbx_false);
 
 	// Windows/Cygwin specific stuff
 	marcel_win_sys_init();
@@ -393,7 +405,7 @@ void marcel_init_data(int *argc, char *argv[])
 	// Initialize debug facilities
 	marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
-	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
+	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 }
 
 // When completed, some threads may be started
@@ -763,7 +775,7 @@ void
 marcel_constructor(void) {
 	if (!marcel_test_activity()) {
 		LOG_IN();
-		marcel_init(0, NULL);
+		marcel_init(NULL, NULL);
 		LOG_OUT();
 	}
 }

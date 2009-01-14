@@ -115,7 +115,6 @@ int nm_so_pw_exit(void)
 
 static void nm_so_pw_reset(struct nm_pkt_wrap * __restrict__ p_pw)
 {
-  p_pw->gate_priv	= NULL;
   p_pw->drv_priv	= NULL;
 }
 
@@ -131,7 +130,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->proto_id = 0;
   p_pw->seq = 0;
   p_pw->drv_priv   = NULL;
-  p_pw->gate_priv  = NULL;
 
   p_pw->pkt_priv_flags = 0;
   p_pw->length = 0;

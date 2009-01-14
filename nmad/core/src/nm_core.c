@@ -101,9 +101,6 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   /* Very ugly for now */
   /* todo: "unugly" me ! */
   struct nm_pkt_wrap *post_rq = TBX_MALLOC(sizeof(struct nm_pkt_wrap));
-  post_rq->gate_priv	= NULL;
-  post_rq->drv_priv	= NULL;
-
 
   post_rq->p_drv  = p_drv;
   post_rq->trk_id = -1;
@@ -112,7 +109,6 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   post_rq->proto_id = 0;
   post_rq->seq = 0;
   post_rq->drv_priv   = NULL;
-  post_rq->gate_priv  = NULL;
 
   post_rq->pkt_priv_flags = 0;
   post_rq->length = 0;

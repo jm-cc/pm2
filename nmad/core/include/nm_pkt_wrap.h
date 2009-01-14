@@ -98,9 +98,6 @@ struct nm_pkt_wrap
   /** Driver implementation data.  */
   void			*drv_priv;
   
-  /** Gate data. */
-  void			*gate_priv;
-  
   
   /* Packet related fields.					*/
   

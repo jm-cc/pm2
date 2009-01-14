@@ -836,8 +836,7 @@ nm_gm_post_send_iov		(void*_status,
         p_trk		= p_pw->p_trk;
 
         p_gm_trk	= p_trk->priv;
-        p_pw->gate_priv	= _status;
-        status	= p_pw->gate_priv;
+        status	= _status;
         p_gm_cnx	= status->cnx_array + p_trk->id;
 
         p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
@@ -898,10 +897,6 @@ nm_gm_post_recv_iov		(void*_status,
         p_trk		= p_pw->p_trk;
 
         p_gm_trk	= p_trk->priv;
-
-        if (p_gate) {
-	  p_pw->gate_priv	= p_drv->priv;
-        }
 
         p_gm_pw		= TBX_MALLOC(sizeof(struct nm_gm_pkt_wrap));
         p_pw->drv_priv	= p_gm_pw;

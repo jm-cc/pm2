@@ -248,6 +248,9 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				fprintf(stderr, "failed to set root directory to `%s': %m\n", argv[i]);
 				exit(1);
 			}
+
+			/* Notify Marcel that we are using a "virtual" topology.  */
+			ma_use_synthetic_topology = 1;
 		} else
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"

@@ -2149,7 +2149,7 @@ synth_install_topology (void) {
 
 static void
 initialize_topology(void) {
-	if (!ma_use_synthetic_topology)
+	if (!ma_use_synthetic_topology || ma_synthetic_topology_description[0] == 0)
 		topo_discover();
 #ifdef MA__NUMA
 	else

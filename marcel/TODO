@@ -4,9 +4,8 @@ sem_P/sem_V est coûteux par rapport à un yield
 
 pmarcel + valgrind a l'air de merder sur la TLS: valgrind met 0x3 pour le gs du main, mais dans le traitant de signal on se retrouve avec un gs = 0
 
-Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle marcel_extlib_protect puis __printf, __malloc, etc.
-
-Pouvoir choisir l'ordonnanceur à bulle par une option --marcel-.
+Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle
+marcel_extlib_protect puis __printf, __malloc, etc. -> pukabi
 
 examples/create: mesurer séparément création sur le même processeur et sur un autre processeur
 
@@ -20,7 +19,28 @@ dans marcel.h,
 ...
 ?
 
-ajouter des options pour alléger la structure marcel_descr & marcel_attr: delayed_activation, rwlock, deviatable, signals (dépend de deviatable), vpmask.
+Faire une libtopology, du genre pouvoir faire
+const struct topo_info *info;
+int i,j;
+libtopo_init();
+for (i = 0; i < libtopo_nblevels(); i++) {
+	printf("level %d has %d items\n", libtopo_level_nbelems(i));
+	for (j = 0; j < libtopo_level_nbelems(i); j++) {
+		info = libtopo_item(i,j);
+		printf("%*s: \n", 2*i, "", j);
+		switch(info->type) {
+		case LIBTOPO_NODE: printf("node %lu", info->node.num); break;
+		case LIBTOPO_CORE: printf("core %lu", info->core.num); break;
+		...
+		}
+	}
+}
+i = libtopo_node_level();
+for (j = 0; j < libtopo_level_nbelems(i); j++) {
+	info = libtopo_item(i,j);
+	printf("node %lu has %luGB mem\n", info->node.num, info->node.mem>>20);
+}
+libtopo_fini();
 
 Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des changements de libc/gcc, parfois changement de stratégie d'ordonnancement par défaut.
 

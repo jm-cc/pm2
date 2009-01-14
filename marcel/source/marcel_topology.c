@@ -22,7 +22,10 @@
 #include <limits.h>
 #include <string.h>
 #include <errno.h>
+
 #include <fcntl.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #ifdef MA__NUMA
 #  include <math.h>
@@ -274,8 +277,35 @@ static FILE *ma_fopenat(const char *path, const char *mode) {
 	return fdopen(fd, mode);
 }
 
-/* Use our own `fopen ()'.  */
-#define fopen ma_fopenat
+static int ma_accessat(const char *path, int mode) {
+	const char *relative_path;
+
+	MA_BUG_ON(fsys_root_fd < 0);
+
+	/* Skip leading slashes.  */
+	for (relative_path = path; *relative_path == '/'; relative_path++);
+
+	return faccessat(fsys_root_fd, relative_path, O_RDONLY, 0);
+}
+
+static DIR *ma_opendirat(const char *path) {
+	int dir_fd;
+	const char *relative_path;
+
+	/* Skip leading slashes.  */
+	for (relative_path = path; *relative_path == '/'; relative_path++);
+
+	dir_fd = openat(fsys_root_fd, relative_path, O_RDONLY | O_DIRECTORY);
+	if (dir_fd < 0)
+		return NULL;
+
+	return fdopendir(dir_fd);
+}
+
+/* Use our own filesystem functions.  */
+#define fopen(p, m)   ma_fopenat(p, m)
+#define access(p, m)  ma_accessat(p, m)
+#define opendir(p)    ma_opendirat(p)
 
 #else /* !HAVE_OPENAT */
 
@@ -898,9 +928,6 @@ static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
 	fclose(fd);
 	return 0;
 }
-
-#include <dirent.h>
-#include <sys/types.h>
 
 static void __marcel_init look_sysfsnode(void) {
 	unsigned i;

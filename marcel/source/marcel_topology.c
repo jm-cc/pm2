@@ -757,6 +757,7 @@ static void look__sysfscpu(unsigned *nr_procs,
 	}
 
 	*nr_procs = i;
+	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
 /* Look at Linux' /proc/cpuinfo */
@@ -844,6 +845,7 @@ static void look_cpuinfo(unsigned *nr_procs,
 
 	/* setup the final number of procs */
 	*nr_procs = processor + 1;
+	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
 static void __marcel_init look_sysfscpu(void) {

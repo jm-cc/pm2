@@ -237,6 +237,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
 		} else
 #endif
+#ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-topology-fsys-root")) {
 			if (i == *argc - 1) {
 				fprintf(stderr,
@@ -252,6 +253,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			/* Notify Marcel that we are using a "virtual" topology.  */
 			ma_use_synthetic_topology = 1;
 		} else
+#endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
 			fprintf(stderr, "--marcel flags are:\n"
 			    "--marcel-top file		Dump a top-like output to file\n"

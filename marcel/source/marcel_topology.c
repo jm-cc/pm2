@@ -1897,10 +1897,14 @@ static enum marcel_topo_level_e
 synth_level_type (const unsigned *level_breadth)
 {
 	return (*(level_breadth + 1) == 0
-					? MARCEL_LEVEL_CORE
+					? MARCEL_LEVEL_PROC
 					: (*(level_breadth + 2) == 0
-						 ? MARCEL_LEVEL_NODE
-						 : MARCEL_LEVEL_FAKE));
+						 ? MARCEL_LEVEL_CORE
+						 : (*(level_breadth + 3) == 0
+								? MARCEL_LEVEL_DIE
+								: (*(level_breadth + 4) == 0
+									 ? MARCEL_LEVEL_NODE
+									 : MARCEL_LEVEL_FAKE))));
 }
 
 /* Recursively populate the topology starting from LEVEL according to
@@ -1921,8 +1925,8 @@ synth_populate_topology(struct marcel_topo_level *level,
 	if (*level_breadth > 0) {
 		unsigned siblings;
 
-		/* Cores don't have children.  */
-		MA_BUG_ON(level->type == MARCEL_LEVEL_CORE);
+		/* Processors don't have children.  */
+		MA_BUG_ON(level->type == MARCEL_LEVEL_PROC);
 
 		/* Determine the children level type.  */
 		type = synth_level_type (level_breadth);
@@ -1948,8 +1952,8 @@ synth_populate_topology(struct marcel_topo_level *level,
 			 non-zero.  */
 		level->cpuset = level->vpset;
 	} else {
-		/* Only cores have no children.  */
-		MA_BUG_ON(level->type != MARCEL_LEVEL_CORE);
+		/* Only processors have no children.  */
+		MA_BUG_ON(level->type != MARCEL_LEVEL_PROC);
 
 		level->merged_type |= 1 << MARCEL_LEVEL_VP;
 
@@ -1998,8 +2002,8 @@ synth_allocate_topology_levels(const unsigned *topology) {
 
 		/* Update the level type to level mapping.  */
 		ma_topo_type_depth[synth_level_type (level_breadth)] = level;
-		if (synth_level_type (level_breadth) == MARCEL_LEVEL_CORE)
-			/* We don't have a separate VP level, but the core level is
+		if (synth_level_type (level_breadth) == MARCEL_LEVEL_PROC)
+			/* We don't have a separate VP level, but the proc level is
 				 conceptually also the VP level.  */
 			ma_topo_type_depth[MARCEL_LEVEL_VP] = level;
 
@@ -2045,17 +2049,16 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	synth_populate_topology(root, topology_description, 0);
 	MA_BUG_ON(root->arity != *topology_description);
 
-	/* Set the total number of VPs and processors.  */
+	/* Set the total number of VPs and processors.
+	   FIXME: We currently ignore user settings via `--marcel-nvp'.  */
 	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_VP] == -1);
 	ma__nb_vp = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_VP]];
 
-#ifndef marcel_nbprocessors
-	if (ma_topo_type_depth[MARCEL_LEVEL_PROC] != -1)
-		/* Assume the next-to-last level is the PROC level.  */
-		marcel_nbprocessors = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_PROC]];
-	else
-		marcel_nbprocessors = ma__nb_vp;
-#endif
+	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_PROC] == -1);
+	marcel_nbprocessors = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_PROC]];
+
+	mdebug("%s: %u processors, chose %u VPs\n",
+				 __func__, marcel_nbprocessors, ma__nb_vp);
 
 	if (ma_topo_type_depth[MARCEL_LEVEL_NODE] != -1) {
 		/* Assume this level is the node level.  */

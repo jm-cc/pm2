@@ -240,7 +240,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
 		} else
 #endif
-#ifdef __GLIBC__
+#if(defined(MA__LWPS) && defined(__GLIBC__))
 		if (!strcmp(argv[i], "--marcel-topology-fsys-root")) {
 			if (i == *argc - 1) {
 				fprintf(stderr,

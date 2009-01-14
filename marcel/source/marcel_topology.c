@@ -1379,7 +1379,7 @@ static void topo_discover(void) {
 #  endif
 	struct marcel_topo_level *level;
 
-#ifdef HAVE_OPENAT
+#if(defined(HAVE_OPENAT) && defined(MA__LWPS))
 	if (fsys_root_fd < 0) {
 		/* Get a file descriptor to the file system root.  */
 		if (ma_topology_set_fsys_root("/")) {

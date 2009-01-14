@@ -64,7 +64,7 @@ void common_attr_init(common_attr_t *attr TBX_UNUSED)
   int pm2_argc = 0;							\
   char quoted = '\0';							\
   int separated;							\
-  static int null_argc;							\
+  static int null_argc = 1;						\
   static char *null_argv[] = { "prog", NULL };			\
   if (!_argc) {								\
     _argc = &null_argc;							\

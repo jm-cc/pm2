@@ -649,11 +649,7 @@ static void	__attribute__ ((__constructor__))
 ma_initialize_pmarcel (void)
 {
 	if (!marcel_test_activity ()) {
-		static int ma_pmarcel_argc = 1;
-		static const char ma_program_name[] = "pmarcel-program";
-		static char *ma_pmarcel_argv[] = { (char *) ma_program_name, NULL };
-
-		marcel_init (&ma_pmarcel_argc, ma_pmarcel_argv);
+		marcel_init (NULL, NULL);
 		marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 	}
 }

@@ -107,17 +107,9 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 extern int ma_vp_node[MA_NR_LWPS];
 
 #section functions
-/** \brief Fill ::marcel_nbprocessors with the number of available
- *  processors */
-extern void ma_set_nbprocessors(void);
-/** \brief Compute ::marcel_vps_per_cpu, and ::marcel_cpu_stride if not
- *  already set */
-extern void ma_set_processors(void);
 /** \brief Free all topology levels but the last one */
 extern void ma_topo_exit(void);
 #ifndef MA__LWPS
-#  define ma_set_nbprocessors() (void)0
-#  define ma_set_processors() (void)0
 #  define ma_topo_exit() (void)0
 #endif
 

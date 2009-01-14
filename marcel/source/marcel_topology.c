@@ -109,6 +109,37 @@ struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 };
 
 
+/* Getting the number of processors.  */
+
+#ifdef MA__LWPS
+
+/* Return the OS-provided number of processors.  Unlike other methods such as
+   reading sysfs on Linux, this method is not virtualizable; thus it's only
+   used as a fall-back method, allowing `ma_topology_set_fsys_root ()' to
+   have the desired effect.  */
+static unsigned ma_fallback_nbprocessors(void) {
+#if defined(_SC_NPROCESSORS_ONLN)
+	return sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined(_SC_NPROCESSORS_CONF)
+	return sysconf(_SC_NPROCESSORS_CONF);
+#elif defined(_SC_NPROC_CONF) || defined(IRIX_SYS)
+	return sysconf(_SC_NPROC_CONF);
+#elif defined(DARWIN_SYS)
+	struct host_basic_info info;
+	mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
+	host_info(mach_host_self(), HOST_BASIC_INFO, (integer_t*) &info, &count);
+	return info.avail_cpus;
+#else
+#warning No known way to discover number of available processors on this system
+#warning ma_fallback_nbprocessors will default to 1
+#warning use the --marcel-nvp option to set it by hand when running your program
+	return 1;
+#endif
+}
+
+#endif
+
+
 /* Support for synthetic topologies.  */
 
 #ifdef MA__NUMA
@@ -329,12 +360,10 @@ unsigned marcel_vps_per_cpu = 1;
 unsigned marcel_topo_max_arity = 4;
 #  endif
 
-void ma_set_nbprocessors(void) {
-	marcel_nbprocessors = ma_nbprocessors();
-	mdebug("%d processors available\n", marcel_nbprocessors);
-}
 
-void ma_set_processors(void) {
+/** \brief Compute ::marcel_vps_per_cpu, and ::marcel_cpu_stride if not
+ *  already set */
+static void distribute_vps(void) {
 	marcel_vps_per_cpu = (marcel_nbvps()+marcel_nbprocessors-1)/marcel_nbprocessors;
 	if (!marcel_cpu_stride) {
 		if (marcel_vps_per_cpu == 1)
@@ -883,6 +912,10 @@ static void __marcel_init look_sysfscpu(void) {
 		/* setup L1 caches */
 		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, proc_cachesizes);
 	}
+
+	/* Override the default returned by `ma_fallback_nbprocessors ()'.  */
+	marcel_nbprocessors = numprocs;
+	mdebug("%s: found %u procs\n", __func__, marcel_nbprocessors);
 }
 
 static unsigned long ma_sysfs_node_meminfo_to_hugepagefree(const char * path)
@@ -1326,7 +1359,7 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 	return array;
 }
 
-/* Use the value returned by ma_nbprocessors() */
+/* Use the value stored in marcel_nbprocessors.  */
 static void look_cpu(void) {
 	struct marcel_topo_level *cpu_level;
 	unsigned cpu;
@@ -1408,6 +1441,10 @@ static void topo_discover(void) {
 #  endif
 	struct marcel_topo_level *level;
 
+	/* Initialize the number of processor to some reasonable default, e.g.,
+		 obtained using sysconf(3).  */
+	marcel_nbprocessors = ma_fallback_nbprocessors ();
+
 #ifdef HAVE_OPENAT
 	if (fsys_root_fd < 0) {
 		/* Get a file descriptor to the file system root.  */
@@ -1475,6 +1512,14 @@ static void topo_discover(void) {
 
 	marcel_topo_nblevels=discovering_level;
 	mdebug("\n\n--> discovered %d levels\n\n", marcel_topo_nblevels);
+
+	/* Set the number of VPs, unless already specified.  */
+	if (ma__nb_vp == 0)
+		ma__nb_vp = marcel_nbprocessors;
+
+	mdebug("%s: chose %u VPs\n", __func__, ma__nb_vp);
+
+	distribute_vps();
 
 #  ifdef MA__NUMA
 
@@ -2075,7 +2120,7 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	}
 
 	/* Update `marcel_vps_per_cpu' et al. accordingly.  */
-	ma_set_processors();
+	distribute_vps();
 
 	/* Initialize information associated with VPs.  */
 	for (vp = &marcel_topo_vp_level[0];

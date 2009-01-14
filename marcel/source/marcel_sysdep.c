@@ -179,31 +179,6 @@ void ma_unbind_from_processor(void) {
 }
 #endif
 
-/*
- * How to get the number of processors
- */
-
-#ifdef MA__LWPS
-unsigned ma_nbprocessors(void) {
-#if defined(_SC_NPROCESSORS_ONLN)
-	return sysconf(_SC_NPROCESSORS_ONLN);
-#elif defined(_SC_NPROCESSORS_CONF)
-	return sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(_SC_NPROC_CONF) || defined(IRIX_SYS)
-	return sysconf(_SC_NPROC_CONF);
-#elif defined(DARWIN_SYS)
-	struct host_basic_info info;
-	mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
-	host_info(mach_host_self(), HOST_BASIC_INFO, (integer_t*) &info, &count);
-	return info.avail_cpus;
-#else
-#warning No known way to discover number of available processors on this system
-#warning ma_nbprocessors will default to 1
-#warning use the --marcel-nvp option to set it by hand when running your program
-	return 1;
-#endif
-}
-#endif
 
 /*
  * How to allocate memory on specific nodes

@@ -97,9 +97,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
     tbx_bool_t do_not_strip)
 {
 	int i, j;
-#ifdef MA__LWPS
-	unsigned __nb_lwp = 0;
-#endif
 
 	if (!argc)
 		return;
@@ -124,8 +121,8 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 			if (do_not_strip) {
-				__nb_lwp = atoi(argv[i + 1]);
-				if (__nb_lwp < 1 || __nb_lwp > MA_NR_LWPS) {
+				ma__nb_vp = atoi(argv[i + 1]);
+				if (ma__nb_vp < 1 || ma__nb_vp > MA_NR_LWPS) {
 					fprintf(stderr,
 					    "Error: nb of VP should be between 1 and %ld\n",
 					    (long) MA_NR_LWPS);
@@ -290,10 +287,9 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 
 	if (do_not_strip) {
 #ifdef MA__LWPS
-		marcel_lwp_fix_nb_vps(__nb_lwp);
 		mdebug
 		    ("\t\t\t<Suggested nb of Virtual Processors : %d, stride %d, first %d>\n",
-		     __nb_lwp, marcel_cpu_stride, marcel_first_cpu);
+		     ma__nb_vp, marcel_cpu_stride, marcel_first_cpu);
 #endif
 	}
 }

@@ -48,10 +48,6 @@ void ma_bind_on_processor(unsigned target);
 void ma_unbind_from_processor(void);
 #endif
 
-#ifdef MA__LWPS
-unsigned ma_nbprocessors(void);
-#endif
-
 TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
 		unsigned line);
 extern void ma_free_node(void *ptr, size_t size,

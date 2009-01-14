@@ -67,17 +67,7 @@ __thread marcel_lwp_t *ma_lwp_self = &__main_lwp;
 /**************************************************************************/
 /**************************************************************************/
 
-unsigned  ma__nb_vp = 1;
-
-#if defined(MA__LWPS)
-void marcel_lwp_fix_nb_vps(unsigned nb_vp)
-{
-	ma_set_nbprocessors();
-	// Choix du nombre de LWP
-	ma__nb_vp = (nb_vp ? nb_vp : marcel_nbprocessors);
-	ma_set_processors();
-}
-#endif /* MA__LWPS */
+unsigned  ma__nb_vp = 0;
 
 /* Fonction exécutée dans le thread run_task au démarrage d'un LWP
  * quelque soit ce LWP, sauf le premier.

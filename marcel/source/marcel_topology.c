@@ -1874,19 +1874,21 @@ synth_make_children(struct marcel_topo_level *level, unsigned count,
 		level->children[i]->type = type;
 		level->children[i]->merged_type = 1 << (int) type;
 
-		if (type == MARCEL_LEVEL_CORE) {
-			level->children[i]->os_cpu =
-					level->children[i]->os_die = level->children[i]->os_node = -1;
-			level->children[i]->os_core =
-					level->children[i]->os_l3 =
-					level->children[i]->os_l2 = level->children[i]->os_l1 = i;
-		} else {
-			level->children[i]->os_cpu =
-					level->children[i]->os_die =
-					level->children[i]->os_l3 =
-					level->children[i]->os_l2 =
-					level->children[i]->os_l1 = level->children[i]->os_core = -1;
-			level->children[i]->os_node = i;
+		switch(type) {
+		case MARCEL_LEVEL_PROC:
+			ma_topo_set_os_numbers(level->children[i], cpu, i);
+			break;
+		case MARCEL_LEVEL_CORE:
+			ma_topo_set_os_numbers(level->children[i], core, i);
+			break;
+		case MARCEL_LEVEL_DIE:
+			ma_topo_set_os_numbers(level->children[i], die, i);
+			break;
+		case MARCEL_LEVEL_NODE:
+			ma_topo_set_os_numbers(level->children[i], node, i);
+			break;
+		default:
+			ma_topo_set_empty_os_numbers(level->children[i]);
 		}
 	}
 }

@@ -23,6 +23,8 @@ ifndef FLAVOR
   endif # PM2_FLAVOR
 endif # FLAVOR
 
+CFLAGS ?= -Wall -Wmissing-prototypes
+
 # Fichiers C à ne pas considérer comme but
 #----------------------------------------------------------------------
 APPS_EXCLUDE = $(basename $(wildcard *-posix.c))

@@ -1,13 +1,10 @@
 #include <marcel.h>
 
-marcel_barrier_t borning_barrier, shake_barrier;
+marcel_barrier_t shake_barrier;
 
 static void *
 my_shake (void *arg)
 {
-  /* Inform the main thread we are ready to run. */
-  marcel_barrier_wait (&borning_barrier);
-
   /* Wait for the main thread to end its initial thread
      distribution. */
   marcel_barrier_wait (&shake_barrier);
@@ -31,14 +28,10 @@ main (int argc, char **argv)
   marcel_attr_setinitbubble (&thread_attr, &marcel_root_bubble);
   marcel_barrierattr_init (&barrier_attr);
   marcel_barrierattr_setmode (&barrier_attr, MA_BARRIER_YIELD_MODE);
-  marcel_barrier_init (&borning_barrier, &barrier_attr, 5);
   marcel_barrier_init (&shake_barrier, &barrier_attr, 5);
 
   for (i = 0; i < 4; i++)
     marcel_create (&tids[i], &thread_attr, my_shake, NULL);
-  
-  /* Make sure threads are ready before distributing them. */
-  marcel_barrier_wait (&borning_barrier);
 
   /* Distribute the threads. */
   marcel_bubble_sched_begin ();

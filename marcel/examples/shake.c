@@ -27,6 +27,7 @@ main (int argc, char **argv)
   marcel_t tids[4];
   
   marcel_init (&argc, argv);
+  marcel_attr_init (&thread_attr);
   marcel_attr_setinitbubble (&thread_attr, &marcel_root_bubble);
   marcel_barrierattr_init (&barrier_attr);
   marcel_barrierattr_setmode (&barrier_attr, MA_BARRIER_YIELD_MODE);

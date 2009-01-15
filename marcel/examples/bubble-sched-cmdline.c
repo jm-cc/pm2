@@ -20,7 +20,7 @@
 int
 main (int argc, char *argv[])
 {
-  char *new_argv[2];
+  char *new_argv[3];
   char  sched_opt[] = "--marcel-bubble-scheduler";
   char  sched_arg[] = "null";
   marcel_bubble_sched_t *prev_sched;

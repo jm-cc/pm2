@@ -22,13 +22,12 @@ main (int argc, char *argv[])
 {
   char *new_argv[3];
   char  sched_opt[] = "--marcel-bubble-scheduler";
-  char  sched_arg[] = "null";
   marcel_bubble_sched_t *prev_sched;
 
   argc = 3;
   new_argv[0] = argv[0];
   new_argv[1] = sched_opt;
-  new_argv[2] = sched_arg;
+  new_argv[2] = NULL;
 
   marcel_init (&argc, new_argv);
   marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);

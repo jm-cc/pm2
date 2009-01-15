@@ -125,9 +125,6 @@ void ma_obj_free(ma_allocator_t * allocator, void *obj)
         }
 	else if (allocator->destroy)
 		allocator->destroy(obj, allocator->destroy_arg);
-	else
-		/* shouldn't ever happen */
-		MA_WARN_ON(1);
         MALLOCATOR_LOG_OUT();
 }
 

@@ -32,7 +32,7 @@ typedef struct {
   int level;
 } job;
 
-marcel_attr_t attr;
+static marcel_attr_t attr;
 
 static __inline__ void job_init(job *j, int inf, int sup, int level)
 {
@@ -42,7 +42,7 @@ static __inline__ void job_init(job *j, int inf, int sup, int level)
   j->level = level;
 }
 
-any_t sum(any_t arg)
+static any_t sum(any_t arg)
 {
   job *j = (job *)arg;
   job j1, j2;
@@ -102,9 +102,9 @@ any_t sum(any_t arg)
   return NULL;
 }
 
-tbx_tick_t t1, t2;
+static tbx_tick_t t1, t2;
 
-void compute(job j) {
+static void compute(job j) {
   unsigned long temps;
 
   TBX_GET_TICK(t1);

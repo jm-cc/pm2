@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -370,7 +370,7 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
 	 described by BUBBLE_HIERARCHY_DESCRIPTION over the topology described by
 	 TOPOLOGY_DESCRIPTION yields the entity distribution described by
 	 EXPECTED_RESULT.  Return zero on success.  */
-static int
+static TBX_UNUSED int
 test_marcel_bubble_scheduler (int argc, char *argv[],
 															marcel_bubble_sched_t *bubble_scheduler,
 															const char *topology_description,

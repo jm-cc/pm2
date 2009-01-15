@@ -292,7 +292,7 @@ int ma_topology_set_fsys_root(const char *path) {
 	return 0;
 }
 
-static FILE *ma_fopenat(const char *path, const char *mode) {
+static TBX_UNUSED FILE *ma_fopenat(const char *path, const char *mode) {
 	int fd;
 	const char *relative_path;
 
@@ -308,7 +308,7 @@ static FILE *ma_fopenat(const char *path, const char *mode) {
 	return fdopen(fd, mode);
 }
 
-static int ma_accessat(const char *path, int mode) {
+static TBX_UNUSED int ma_accessat(const char *path, int mode) {
 	const char *relative_path;
 
 	MA_BUG_ON(fsys_root_fd < 0);
@@ -319,7 +319,7 @@ static int ma_accessat(const char *path, int mode) {
 	return faccessat(fsys_root_fd, relative_path, O_RDONLY, 0);
 }
 
-static DIR *ma_opendirat(const char *path) {
+static TBX_UNUSED DIR *ma_opendirat(const char *path) {
 	int dir_fd;
 	const char *relative_path;
 

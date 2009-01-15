@@ -119,12 +119,15 @@ void ma_obj_free(ma_allocator_t * allocator, void *obj)
         MALLOCATOR_LOG_IN();
 	container = ma_get_container(allocator, allocator->destroy?FREE_METHOD:NO_FREE_METHOD);
 
-	if (container && !(ma_container_is_full(container))) {
+	if (container) {
                 mdebug_allocator("Put the object back in the container (%d)\n", ma_container_nb_element(container));
 		ma_container_add(container, obj);
         }
 	else if (allocator->destroy)
-		allocator->destroy(obj, allocator->destroy_arg);
+                allocator->destroy(obj, allocator->destroy_arg);
+        else
+          /* shouldn't ever happen */
+                MA_WARN_ON(1);
         MALLOCATOR_LOG_OUT();
 }
 

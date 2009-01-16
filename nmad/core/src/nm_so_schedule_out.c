@@ -38,14 +38,19 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
 
   p_so_tag->send[seq] -= len;
 
-  if(p_so_tag->send[seq] <= 0)
+  if(p_so_tag->send[seq] == 0)
     {
       NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", tag, seq, len);
       nm_so_status_event(p_gate->p_core, NM_SO_STATUS_PACK_COMPLETED, p_gate, tag, seq, tbx_false);
     } 
-  else 
-    {
+  else if(p_so_tag->send[seq] > 0)
+     {
       NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_tag->send[seq], tag, seq);
+    }
+  else
+    {
+      TBX_FAILUREF("more bytes sent than posted on tag %d! (diff = %d; just sent = %d)\n",
+		   tag, p_so_tag->send[seq], len);
     }
  
 }

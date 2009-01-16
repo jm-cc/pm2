@@ -255,6 +255,8 @@ static int strat_aggreg_extended_pack(void*_status,
   int flags = 0;
   int err;
 
+  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] = len;
+
   if(len <= status->nm_so_max_small) {
     /* Small packet */
 
@@ -364,6 +366,8 @@ static int strat_aggreg_extended_pack_extended(void*_status,
   struct nm_so_strat_aggreg_extended*status = _status;
   int flags = 0;
   int err;
+
+  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] += len;
 
   if(len <= status->nm_so_max_small) {
     /* Small packet */

@@ -192,6 +192,8 @@ static int strat_aggreg_autoextended_pack(void*_status,
   int flags = 0;
   int err;
 
+  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] = len;
+
   if(len <= status->nm_so_max_small) {
     NM_SO_TRACE("Small packet\n");
 

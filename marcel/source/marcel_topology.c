@@ -550,7 +550,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS > MARCEL_NBMAXCPUS);
 
 	/* convert into a set */
-	for(i=0; i<nr_maps*KERNEL_CPU_MASK_BITS && i<MARCEL_NBMAXCPUS; i++)
+	for(i=0; i<nr_maps*KERNEL_CPU_MASK_BITS; i++)
 		if (maps[i/KERNEL_CPU_MASK_BITS] & 1<<(i%KERNEL_CPU_MASK_BITS))
 			marcel_vpset_set(set, i);
 

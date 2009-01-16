@@ -1047,7 +1047,7 @@ static void __marcel_init look_sysfsnode(void) {
 			if (marcel_vpset_isset(&cpuset, j))
 				ma_vp_node[j] = i;
 
-		mdebug("node %d (os %d) has cpuset %"MA_VPSET_x"\n", i, osnode, node_level[i].vpset);
+		mdebug("node %d (os %d) has cpuset %"MA_VPSET_x"\n", i, osnode, node_level[i].cpuset);
 		i++;
 	}
 	nbnodes = i;

@@ -704,12 +704,38 @@ static void look__sysfscpu(unsigned *nr_procs,
 	for(i=0; ; i++) {
 		marcel_vpset_t dieset, coreset;
 		unsigned mydieid, mycoreid;
+		FILE *fd;
+		char online[2];
 
-		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology", i);
-
-		if (access(string, R_OK) < 0
+		/* check whether the kernel knows another cpu */
+		sprintf(string, "/sys/devices/system/cpu/cpu%d", i);
+		if (access(string, X_OK) < 0
 		    && errno == ENOENT)
+			/* this CPU does not exist allow */
 			break;
+
+		/* check whether this processor is offline */
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/online", i);
+		fd = fopen(string, "r");
+	        if (fd) {
+			if (fgets(online, sizeof(online), fd)) {
+				if (atoi(online)) {
+					mdebug("os core %d is online\n", i);
+				} else {
+					mdebug("os core %d is offline\n", i);
+					fprintf(stderr, "core %d seems offline, cannot support more than the first %d cores\n", i, i);
+					break;
+				}
+			}
+			fclose(fd);
+		}
+
+		/* check whether the kernel exports topology information for this cpu */
+		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology", i);
+		if (access(string, X_OK) < 0
+		    && errno == ENOENT) {
+			break;
+		}
 
 		mydieid = 0; /* shut-up the compiler */
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/physical_package_id", i);

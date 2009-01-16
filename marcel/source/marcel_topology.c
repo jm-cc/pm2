@@ -991,7 +991,7 @@ static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
 }
 
 static void __marcel_init look_sysfsnode(void) {
-	unsigned i;
+	unsigned i, osnode;
 	unsigned nbnodes = 1;
 	struct marcel_topo_level *node_level;
 	DIR *dir;
@@ -1018,7 +1018,7 @@ static void __marcel_init look_sysfsnode(void) {
 	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
 	MA_BUG_ON(!node_level);
 
-	for (i=0;;i++) {
+	for (i=0, osnode=0;; osnode++) {
 #define NUMA_NODE_STRLEN (29+9+8+1)
 		char nodepath[NUMA_NODE_STRLEN];
 		marcel_vpset_t cpuset;
@@ -1026,25 +1026,29 @@ static void __marcel_init look_sysfsnode(void) {
                 unsigned long hpfree;
 		int j;
 
-		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", i);
+		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", osnode);
 		if (ma_parse_cpumap(nodepath, &cpuset) < 0)
 			break;
 
-		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", i);
+		if (!marcel_vpset_weight(&cpuset))
+			continue;
+
+		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", osnode);
 		size = ma_sysfs_node_meminfo_to_memsize(nodepath);
 		hpfree = ma_sysfs_node_meminfo_to_hugepagefree(nodepath);
 
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
-		ma_topo_set_os_numbers(&node_level[i], node, i);
+		ma_topo_set_os_numbers(&node_level[i], node, osnode);
 		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
-                node_level[i].huge_page_free = hpfree;
+		node_level[i].huge_page_free = hpfree;
 
 		node_level[i].cpuset = cpuset;
 		for(j=0;j<MARCEL_NBMAXCPUS;j++)
 			if (marcel_vpset_isset(&cpuset, j))
 				ma_vp_node[j] = i;
 
-		mdebug("node %d has cpuset %"MA_VPSET_x"\n", i, node_level[i].vpset);
+		mdebug("node %d (os %d) has cpuset %"MA_VPSET_x"\n", i, osnode, node_level[i].vpset);
+		i++;
 	}
 	nbnodes = i;
 

@@ -392,7 +392,7 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
   marcel_topo_level_t *l1 = NULL, *l2 = NULL;
 
   MA_BUG_ON (!lvl1 || !lvl2);
-  
+
   /* There can't be any upper level in that case. */
   if (!lvl1->father)
     return lvl1;
@@ -408,7 +408,7 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
      lift l1 up to the same level before going any further. */
   while (l1->level < l2->level)
     l1 = l1->father;
-    
+
   /* l1 and l2 should be at the same level now. */
   MA_BUG_ON (l1->level != l2->level);
 
@@ -881,7 +881,7 @@ static void __marcel_init look_sysfscpu(void) {
 	unsigned oscoreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned proc_cacheids[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned long proc_cachesizes[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = 0 };
-	int j,k;
+	int j;
 
 	unsigned numprocs=0;
 	unsigned numdies=0;
@@ -892,14 +892,14 @@ static void __marcel_init look_sysfscpu(void) {
 	    || access("/sys/devices/system/cpu/cpu0/topology/core_siblings", R_OK) < 0
 	    || access("/sys/devices/system/cpu/cpu0/topology/physical_package_id", R_OK) < 0
 	    || access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK) < 0) {
-	  /* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16) */
-	  look_cpuinfo(&numprocs, &numcores, &numdies,
-		       proc_physids, osphysids,
-		       proc_coreids, oscoreids);
+		/* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16) */
+		look_cpuinfo(&numprocs, &numcores, &numdies,
+			     proc_physids, osphysids,
+			     proc_coreids, oscoreids);
 	} else {
-	  look__sysfscpu(&numprocs, &numcores, &numdies,
-		       proc_physids, osphysids,
-		       proc_coreids, oscoreids);
+		look__sysfscpu(&numprocs, &numcores, &numdies,
+			       proc_physids, osphysids,
+			       proc_coreids, oscoreids);
 	}
 
 	mdebug("\n\n * Topology summary *\n\n");
@@ -1369,7 +1369,7 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 			 */
 			*subarity = 2;
 			*sublevels = 4;
-		
+
 			array[0] = 0;
 			array[1] = 0;
 			array[2] = 1;

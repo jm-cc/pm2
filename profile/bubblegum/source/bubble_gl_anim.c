@@ -34,8 +34,6 @@
 #include "bubblelib_fxt.h"
 #include "bubblelib_anim.h"
 
-BubbleMovie movie = NULL;
-
 /*! Draw modes. Since shape can have both filled regions or/and bordered
  *   regions, we need to have 2 passes on each shape :
  *      \li \c DRAW_MODE_FILL to draw filled regions ;

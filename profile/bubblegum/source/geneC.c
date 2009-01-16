@@ -79,7 +79,7 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
    fprintf(fw,"   if (!load) marcel_delay(1000);\n");
    fprintf(fw,"   for (n=0;n<load*10000000;n++) sum+=n;\n");
    fprintf(fw,"   marcel_printf(\"%%d done\\n\",id);\n");
-   fprintf(fw,"   return (void*)sum;\n}\n\n");
+   fprintf(fw,"   return (void*)(intptr_t)sum;\n}\n\n");
    fprintf(fw,"\nint main(int argc, char *argv[]) {");
    fprintf(fw,"\n\n   marcel_init(&argc,argv);");
    fprintf(fw,"\n#ifdef PROFILE");

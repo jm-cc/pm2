@@ -221,6 +221,12 @@ static int mySWFMovie_save(BubbleMovie movie, const char *filename) {
 	return SWFMovie_save(movie->swf, filename);
 }
 
+static void mySWFShape_drawSizedGlyph(BubbleShape shape, unsigned short c, int size) {
+	if (!font)
+		return;
+	SWFShape_drawSizedGlyph(shape, font, c, size);
+}
+
 static void mySWFMovie_status(BubbleMovie movie, const char *str) {
 	SWFShape shape;
 	int i;
@@ -231,17 +237,11 @@ static void mySWFMovie_status(BubbleMovie movie, const char *str) {
 	shape = newSWFShape();
 	SWFShape_setLine(shape,2,0,0,0,255);
 	for (i=0; i<strlen(str); i++) {
-		SWFShape_movePenTo(shape, i*20., 0);
-		SWFShape_drawSizedGlyph(shape, font, str[i], 20.);
+		SWFShape_movePenTo(shape, i*13., 0);
+		mySWFShape_drawSizedGlyph(shape, str[i], 20.);
 	}
 	movie->status_item = SWFMovie_add(movie->swf, (SWFBlock)shape);
 	SWFDisplayItem_moveTo(movie->status_item, CURVE+BSIZE, MOVIEY-20.);
-}
-
-static void mySWFShape_drawSizedGlyph(BubbleShape shape, unsigned short c, int size) {
-	if (!font)
-		return;
-	SWFShape_drawSizedGlyph(shape, font, c, size);
 }
 
 static void init(void) {

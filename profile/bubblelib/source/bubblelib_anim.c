@@ -370,7 +370,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 		BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 		BubbleShape_drawCircle(shape,CURVE/2);
 		if (DISPPRIO && b->entity.prio) {
-			BubbleShape_movePenTo(shape,b->entity.x-CURVE,b->entity.y-CURVE);
+			BubbleShape_movePenTo(shape,b->entity.x-CURVE,b->entity.y-CURVE/2);
 			BubbleShape_drawSizedGlyph(shape,'0'+b->entity.prio,CURVE);
 		}
 	}
@@ -399,14 +399,14 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 			BubbleShape_drawLineTo(shape,b->entity.x+CURVE/2,b->entity.y);
 
 			if (DISPSIZE) {
-				BubbleShape_movePenTo(shape,b->entity.x,b->entity.y+2*CURVE);
+				BubbleShape_movePenTo(shape,b->entity.x-CURVE/2,b->entity.y+(5*CURVE)/2);
 				while (height) {
 					BubbleShape_drawSizedGlyph(shape,'0'+height%10,CURVE);
 					height/=10;
 					BubbleShape_movePen(shape,-CURVE,0);
 				}
 
-				BubbleShape_movePenTo(shape,b->entity.x+(2+log10(nbthreads))*CURVE,b->entity.y+2*CURVE);
+				BubbleShape_movePenTo(shape,b->entity.x+(1+(int)log10(nbthreads))*CURVE,b->entity.y+(5*CURVE)/2);
 				while (nbthreads) {
 					BubbleShape_drawSizedGlyph(shape,'0'+nbthreads%10,CURVE);
 					nbthreads/=10;

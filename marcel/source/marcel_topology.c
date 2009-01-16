@@ -658,7 +658,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 	struct marcel_topo_level *level;
 	int j;
 
-	mdebug("%d L%d caches\n", cachelevel+1, numcaches[cachelevel]);
+	mdebug("%d L%d caches\n", numcaches[cachelevel], cachelevel+1);
 	level=__marcel_malloc((numcaches[cachelevel]+MARCEL_NBMAXVPSUP+1)*sizeof(*level));
 	MA_BUG_ON(!level);
 

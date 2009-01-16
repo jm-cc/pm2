@@ -37,6 +37,7 @@ typedef struct {
     /* todo: is there a need for 2 semaphores ? */    
     p_piom_sh_sem_t alt_sem;
     uint8_t value;
+    int cpt;
 } piom_cond_t;
 
 #else

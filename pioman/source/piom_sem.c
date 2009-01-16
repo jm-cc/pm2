@@ -41,10 +41,20 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	struct marcel_sched_param old_param;
 	marcel_sched_getparam(MARCEL_SELF, &old_param);
 	marcel_sched_setparam(MARCEL_SELF, &sched_param);
-
+#if 1
 	while(! (cond->value & mask)){
 		marcel_sem_P(&cond->sem);
 	}
+#else
+	while(! (cond->value & mask)){
+		cond->cpt++;
+		marcel_sem_P(&cond->sem);
+		cond->cpt--;
+		if(cond->cpt)
+			/* another thread is waiting for the same semaphore */
+			marcel_sem_V(&cond->sem);
+	}
+#endif
 	marcel_sched_setparam(MARCEL_SELF, &old_param);
 	LOG_OUT();
 }
@@ -68,6 +78,7 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
 	
 	cond->value=initial;
 	cond->alt_sem=NULL;
+	cond->cpt=0;
 	marcel_sem_init(&cond->sem, 0);
 	ma_spin_lock_init(&cond->lock);
 	marcel_cond_init(&cond->cond,NULL);

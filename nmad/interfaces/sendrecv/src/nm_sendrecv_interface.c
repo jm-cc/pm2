@@ -303,6 +303,10 @@ int nm_sr_isend_generic(struct nm_core *p_core,
   p_request->tag    = tag;
   p_request->ref    = NULL;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  if(p_sr_tag->sreqs[seq])
+    {
+      nm_sr_swait(p_core, p_sr_tag->sreqs[seq]);
+    }
   p_sr_tag->sreqs[seq] = p_request;
   
   switch(sending_type)
@@ -529,6 +533,10 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
       p_request->ref     = ref;
       p_request->tag     = tag;
       p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+      if(p_sr_tag->rreqs[seq])
+	{
+	  nm_sr_rwait(p_core, p_sr_tag->rreqs[seq]);
+	}
       p_sr_tag->rreqs[seq] = p_request;
 
       NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate = %p request %p\n", tag, seq, p_gate, p_sr_tag->rreqs[seq]);
@@ -803,6 +811,7 @@ static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, n
 
   nm_sr_request_event(p_request, NM_SR_STATUS_SEND_COMPLETED, p_gate);
 
+  p_sr_tag->sreqs[seq] = NULL;
   NM_SO_SR_LOG_OUT();
 }
 
@@ -838,6 +847,7 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
   else 
     {
       p_request = p_sr_tag->rreqs[seq];
+      p_sr_tag->rreqs[seq] = NULL;
     }
   uint8_t sr_event = NM_SR_STATUS_RECV_COMPLETED;
   if(event & NM_SO_STATUS_UNPACK_CANCELLED)

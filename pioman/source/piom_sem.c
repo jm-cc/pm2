@@ -41,7 +41,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	struct marcel_sched_param old_param;
 	marcel_sched_getparam(MARCEL_SELF, &old_param);
 	marcel_sched_setparam(MARCEL_SELF, &sched_param);
-#if 1
+#if 0
 	while(! (cond->value & mask)){
 		marcel_sem_P(&cond->sem);
 	}

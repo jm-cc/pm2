@@ -875,18 +875,18 @@ static void look_cpuinfo(unsigned *nr_procs,
 }
 
 static void __marcel_init look_sysfscpu(void) {
-	unsigned proc_physids[MARCEL_NBMAXCPUS];
-	unsigned osphysids[MARCEL_NBMAXCPUS];
-	unsigned proc_coreids[MARCEL_NBMAXCPUS];
-	unsigned oscoreids[MARCEL_NBMAXCPUS];
-	unsigned proc_cacheids[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
-	unsigned long proc_cachesizes[CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS];
+	unsigned proc_physids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
+	unsigned osphysids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
+	unsigned proc_coreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
+	unsigned oscoreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
+	unsigned proc_cacheids[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = -1 };
+	unsigned long proc_cachesizes[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = 0 };
 	int j,k;
 
 	unsigned numprocs=0;
 	unsigned numdies=0;
 	unsigned numcores=0;
-	unsigned numcaches[CACHE_LEVEL_MAX];
+	unsigned numcaches[] = { [0 ... CACHE_LEVEL_MAX-1] = 0 };
 
 	if (access("/sys/devices/system/cpu/cpu0/topology/core_id", R_OK) < 0
 	    || access("/sys/devices/system/cpu/cpu0/topology/core_siblings", R_OK) < 0
@@ -914,11 +914,6 @@ static void __marcel_init look_sysfscpu(void) {
 	if (numdies>1)
 		ma_setup_die_topo_level(numprocs, numdies, osphysids, proc_physids);
 
-	for(j=0; j<CACHE_LEVEL_MAX; j++) {
-		numcaches[j] = 0;
-		for(k=0; k<numprocs; k++)
-			proc_cacheids[j*MARCEL_NBMAXCPUS+k] = -1;
-	}
 	for(j=0; j<numprocs; j++) {
 		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, proc_cachesizes, numcaches);
 	}

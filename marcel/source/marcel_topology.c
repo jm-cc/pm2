@@ -559,9 +559,9 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	return 0;
 }
 
-static void ma_process_cpumap(const char *mappath, const char * mapname, unsigned long val,
-		       int nr_procs, unsigned *ids, unsigned long *vals,
-		       unsigned *nr_ids, unsigned givenid)
+static void ma_process_shared_cpu_map(const char *mappath, const char * mapname, unsigned long val,
+				      int nr_procs, unsigned *ids, unsigned long *vals,
+				      unsigned *nr_ids, unsigned givenid)
 {
 	marcel_vpset_t set;
 	int k;
@@ -584,7 +584,7 @@ static void ma_process_cpumap(const char *mappath, const char * mapname, unsigne
 				if (marcel_vpset_isset(&set, k)) {
 					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;
-					vals[k] = val;
+					vals[newid] = val;
 				}
 			}
 
@@ -596,7 +596,8 @@ static void ma_process_cpumap(const char *mappath, const char * mapname, unsigne
 #define CACHE_LEVEL_MAX 3
 
 static void
-ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids, unsigned long *cachesizes, unsigned *nr_caches)
+ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs,
+			       unsigned *cacheids, unsigned long *cachesizes, unsigned *nr_caches)
 {
 	int i;
 
@@ -644,10 +645,10 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs, unsigned *cacheids,
 
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, i);
 		sprintf(cachename, "L%d cache", level+1);
-		ma_process_cpumap(mappath, cachename, kB,
-				  nr_procs, cacheids+level*MARCEL_NBMAXCPUS,
-				  cachesizes+level*MARCEL_NBMAXCPUS,
-				  &nr_caches[level], -1);
+		ma_process_shared_cpu_map(mappath, cachename, kB,
+					  nr_procs, cacheids+level*MARCEL_NBMAXCPUS,
+					  cachesizes+level*MARCEL_NBMAXCPUS,
+					  &nr_caches[level], -1);
 	}
 }
 
@@ -880,7 +881,7 @@ static void __marcel_init look_sysfscpu(void) {
 	unsigned proc_coreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned oscoreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned proc_cacheids[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = -1 };
-	unsigned long proc_cachesizes[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = 0 };
+	unsigned long cache_sizes[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = 0 };
 	int j;
 
 	unsigned numprocs=0;
@@ -915,17 +916,17 @@ static void __marcel_init look_sysfscpu(void) {
 		ma_setup_die_topo_level(numprocs, numdies, osphysids, proc_physids);
 
 	for(j=0; j<numprocs; j++) {
-		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, proc_cachesizes, numcaches);
+		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, cache_sizes, numcaches);
 	}
 
 	if (numcaches[2] > 0) {
 		/* setup L3 caches */
-		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids, proc_cachesizes);
+		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	if (numcaches[1] > 0) {
 		/* setup L2 caches */
-		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, proc_cachesizes);
+		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	if (numcores>1)
@@ -933,7 +934,7 @@ static void __marcel_init look_sysfscpu(void) {
 
 	if (numcaches[0] > 0) {
 		/* setup L1 caches */
-		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, proc_cachesizes);
+		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	/* Override the default returned by `ma_fallback_nbprocessors ()'.  */

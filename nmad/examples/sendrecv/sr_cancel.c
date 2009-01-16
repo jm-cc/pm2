@@ -45,7 +45,7 @@ int main(int argc, char	**argv)
       int err = nm_sr_rcancel(p_core, &request);
       printf("nm_sr_cancel rc = %d \t(expected: -NM_EALREADY = %d)\n", err, -NM_EALREADY);
 
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
+      nm_sr_irecv(p_core, NM_GATE_NONE, 0, buf, len, &request);
       err = nm_sr_rcancel(p_core, &request);
       printf("nm_sr_cancel rc = %d \t(expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 

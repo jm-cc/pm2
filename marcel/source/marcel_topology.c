@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2004 "the PM2 team" (see AUTHORS file)
@@ -747,6 +746,7 @@ static void look__sysfscpu(unsigned *procid_max,
 		fd = fopen(string, "r");
 	        if (fd) {
 			if (fgets(online, sizeof(online), fd)) {
+				fclose(fd);
 				if (atoi(online)) {
 					mdebug("os proc %d is online\n", i);
 				} else {
@@ -754,10 +754,10 @@ static void look__sysfscpu(unsigned *procid_max,
 					marcel_vpset_set(offline_cpus_set, i);
 					nr_offline_cpus++;
 					continue;
-					/* FIXME fd leak */
 				}
+			} else {
+				fclose(fd);
 			}
-			fclose(fd);
 		}
 
 		/* check whether the kernel exports topology information for this cpu */

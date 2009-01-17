@@ -313,6 +313,17 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 #endif
 }
 
+#section functions
+/** \brief Clear set \e sub_set out of set \e super_set */
+static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *super_set,
+						  const marcel_vpset_t *sub_set);
+#section inline
+static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *super_set,
+						  const marcel_vpset_t *sub_set)
+{
+	*super_set &= ~*sub_set;
+}
+
 #section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);

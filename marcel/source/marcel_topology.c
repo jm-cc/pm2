@@ -561,12 +561,13 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 
 static void ma_process_shared_cpu_map(const char *mappath, const char * mapname, unsigned long val,
 				      int procid_max, unsigned *ids, unsigned long *vals,
-				      unsigned *nr_ids, unsigned givenid)
+				      unsigned *nr_ids, unsigned givenid, marcel_vpset_t *offline_cpus_set)
 {
 	marcel_vpset_t set;
 	int k;
 
 	ma_parse_cpumap(mappath, &set);
+	marcel_vpset_clearset(&set, offline_cpus_set);
 	for(k=0; k<=procid_max; k++) {
 		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */
@@ -596,7 +597,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 #define CACHE_LEVEL_MAX 3
 
 static void
-ma_parse_cache_shared_cpu_maps(int proc_index, int procid_max,
+ma_parse_cache_shared_cpu_maps(int proc_index, int procid_max, marcel_vpset_t *offline_cpus_set,
 			       unsigned *cacheids, unsigned long *cachesizes, unsigned *nr_caches)
 {
 	int i;
@@ -648,7 +649,7 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int procid_max,
 		ma_process_shared_cpu_map(mappath, cachename, kB,
 					  procid_max, cacheids+level*MARCEL_NBMAXCPUS,
 					  cachesizes+level*MARCEL_NBMAXCPUS,
-					  &nr_caches[level], -1);
+					  &nr_caches[level], -1, offline_cpus_set);
 	}
 }
 
@@ -705,6 +706,9 @@ static void look__sysfscpu(unsigned *procid_max,
 	unsigned nr_offline_cpus = 0;
 	int i,j,k;
 
+	/* FIXME: readdir /sys/devices/system/cpu/ to find procid_max */
+	/* FIXME: start with offline_cpus_set full and clear when finding a CPU */
+
 	for(i=0; ; i++) {
 		marcel_vpset_t dieset, coreset;
 		unsigned mydieid, mycoreid;
@@ -754,11 +758,13 @@ static void look__sysfscpu(unsigned *procid_max,
 		ma_parse_cpumap(string, &dieset);
 		/* make sure we are in the set, in case the cpumap was crap */
 		marcel_vpset_set(&dieset, i);
+		marcel_vpset_clearset(&dieset, offline_cpus_set);
 
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology/thread_siblings", i);
 		ma_parse_cpumap(string, &coreset);
 		/* make sure we are in the set, in case the cpumap was crap */
 		marcel_vpset_set(&coreset, i);
+		marcel_vpset_clearset(&coreset, offline_cpus_set);
 
 		for(j=0; j<i; j++)
 			if (marcel_vpset_isset(&dieset, j))
@@ -924,7 +930,7 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 		ma_setup_die_topo_level(procid_max, numdies, osphysids, proc_physids);
 
 	for(j=0; j<procid_max; j++) {
-		ma_parse_cache_shared_cpu_maps(j, procid_max, proc_cacheids, cache_sizes, numcaches);
+		ma_parse_cache_shared_cpu_maps(j, procid_max, offline_cpus_set, proc_cacheids, cache_sizes, numcaches);
 	}
 
 	if (numcaches[2] > 0) {

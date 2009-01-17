@@ -434,7 +434,7 @@ struct marcel_topo_level *marcel_topo_node_level;
 static struct marcel_topo_level *marcel_topo_cpu_level;
 
 #    if defined(LINUX_SYS) || defined(SOLARIS_SYS)
-static void ma_setup_die_topo_level(int numprocs, unsigned numdies, unsigned *osphysids, unsigned *proc_physids)
+static void ma_setup_die_topo_level(int procid_max, unsigned numdies, unsigned *osphysids, unsigned *proc_physids)
 {
 	struct marcel_topo_level *die_level;
 	int j;
@@ -446,7 +446,7 @@ static void ma_setup_die_topo_level(int numprocs, unsigned numdies, unsigned *os
 	for (j = 0; j < numdies; j++) {
 		ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
 		ma_topo_set_os_numbers(&die_level[j], die, osphysids[j]);
-		ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, numprocs);
+		ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, procid_max);
 		mdebug("die %d has cpuset %"MA_VPSET_x" \t(%s)\n",j,die_level[j].cpuset,
 				tbx_i2smb(die_level[j].cpuset));
 	}
@@ -461,7 +461,7 @@ static void ma_setup_die_topo_level(int numprocs, unsigned numdies, unsigned *os
 	mdebug("\n");
 }
 
-static void ma_setup_core_topo_level(int numprocs, unsigned numcores, unsigned *oscoreids, unsigned *proc_coreids)
+static void ma_setup_core_topo_level(int procid_max, unsigned numcores, unsigned *oscoreids, unsigned *proc_coreids)
 {
 	struct marcel_topo_level *core_level;
 	int j;
@@ -473,7 +473,7 @@ static void ma_setup_core_topo_level(int numprocs, unsigned numcores, unsigned *
 	for (j = 0; j < numcores; j++) {
 		ma_topo_setup_level(&core_level[j], MARCEL_LEVEL_CORE);
 		ma_topo_set_os_numbers(&core_level[j], core, oscoreids[j]);
-		ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, numprocs);
+		ma_topo_level_cpuset_from_array(&core_level[j], j, proc_coreids, procid_max);
 #      ifdef MARCEL_SMT_IDLE
 		ma_atomic_init(&core_level[j].nbidle, 0);
 #      endif
@@ -560,14 +560,14 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 }
 
 static void ma_process_shared_cpu_map(const char *mappath, const char * mapname, unsigned long val,
-				      int nr_procs, unsigned *ids, unsigned long *vals,
+				      int procid_max, unsigned *ids, unsigned long *vals,
 				      unsigned *nr_ids, unsigned givenid)
 {
 	marcel_vpset_t set;
 	int k;
 
 	ma_parse_cpumap(mappath, &set);
-	for(k=0; k<=nr_procs; k++) {
+	for(k=0; k<=procid_max; k++) {
 		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */
 			unsigned newid;
@@ -580,7 +580,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 			newid = nr_ids ? (*nr_ids)++ : givenid;
 
 			/* this cpu didn't have any such id yet, set this id for all cpus in the map */
-			for(; k<=nr_procs; k++) {
+			for(; k<=procid_max; k++) {
 				if (marcel_vpset_isset(&set, k)) {
 					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;
@@ -596,7 +596,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 #define CACHE_LEVEL_MAX 3
 
 static void
-ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs,
+ma_parse_cache_shared_cpu_maps(int proc_index, int procid_max,
 			       unsigned *cacheids, unsigned long *cachesizes, unsigned *nr_caches)
 {
 	int i;
@@ -646,14 +646,14 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int nr_procs,
 		sprintf(mappath, "/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_map", proc_index, i);
 		sprintf(cachename, "L%d cache", level+1);
 		ma_process_shared_cpu_map(mappath, cachename, kB,
-					  nr_procs, cacheids+level*MARCEL_NBMAXCPUS,
+					  procid_max, cacheids+level*MARCEL_NBMAXCPUS,
 					  cachesizes+level*MARCEL_NBMAXCPUS,
 					  &nr_caches[level], -1);
 	}
 }
 
 static void
-ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int nr_procs,
+ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int procid_max,
 			  unsigned *numcaches, unsigned *cacheids, unsigned long *cachesizes)
 {
 	struct marcel_topo_level *level;
@@ -675,10 +675,10 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 
 		level[j].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1+cachelevel] = cachesizes[cachelevel*MARCEL_NBMAXCPUS+j];
 
-		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], nr_procs);
+		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], procid_max);
 
-		mdebug("L%d cache %d has cpuset %"MA_VPSET_x" \t(%s)\n", cachelevel+1,
-		       j, level[j].cpuset, tbx_i2smb(level[j].cpuset));
+		mdebug("L%d cache %d has cpuset %"MA_VPSET_x" \t(%s)\n",
+		       cachelevel+1, j, level[j].cpuset, tbx_i2smb(level[j].cpuset));
 	}
 	mdebug("\n");
 	marcel_vpset_zero(&level[j].vpset);
@@ -690,7 +690,8 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 }
 
 /* Look at Linux' /sys/devices/system/cpu/cpu%d/topology/ */
-static void look__sysfscpu(unsigned *nr_procs,
+static void look__sysfscpu(unsigned *procid_max,
+			   unsigned *nr_procs,
 			   unsigned *nr_cores,
 			   unsigned *nr_dies,
 			   unsigned *proc_physids,
@@ -784,11 +785,13 @@ static void look__sysfscpu(unsigned *nr_procs,
 	}
 
 	*nr_procs = i;
+	*procid_max = i;
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
 /* Look at Linux' /proc/cpuinfo */
-static void look_cpuinfo(unsigned *nr_procs,
+static void look_cpuinfo(unsigned *procid_max,
+			 unsigned *nr_procs,
 			 unsigned *nr_cores,
 			 unsigned *nr_dies,
 			 unsigned *proc_physids,
@@ -872,6 +875,7 @@ static void look_cpuinfo(unsigned *nr_procs,
 
 	/* setup the final number of procs */
 	*nr_procs = processor + 1;
+	*procid_max = processor + 1;
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
@@ -884,6 +888,7 @@ static void __marcel_init look_sysfscpu(void) {
 	unsigned long cache_sizes[] = { [0 ... CACHE_LEVEL_MAX*MARCEL_NBMAXCPUS-1] = 0 };
 	int j;
 
+	unsigned procid_max=0;
 	unsigned numprocs=0;
 	unsigned numdies=0;
 	unsigned numcores=0;
@@ -894,17 +899,17 @@ static void __marcel_init look_sysfscpu(void) {
 	    || access("/sys/devices/system/cpu/cpu0/topology/physical_package_id", R_OK) < 0
 	    || access("/sys/devices/system/cpu/cpu0/topology/thread_siblings", R_OK) < 0) {
 		/* revert to reading cpuinfo only if /sys/.../topology unavailable (before 2.6.16) */
-		look_cpuinfo(&numprocs, &numcores, &numdies,
+		look_cpuinfo(&procid_max, &numprocs, &numcores, &numdies,
 			     proc_physids, osphysids,
 			     proc_coreids, oscoreids);
 	} else {
-		look__sysfscpu(&numprocs, &numcores, &numdies,
+		look__sysfscpu(&procid_max, &numprocs, &numcores, &numdies,
 			       proc_physids, osphysids,
 			       proc_coreids, oscoreids);
 	}
 
 	mdebug("\n\n * Topology summary *\n\n");
-	mdebug("%d processors\n", numprocs);
+	mdebug("%d processors (%d max id)\n", numprocs, procid_max);
 
 	if (numdies>1)
 		mdebug("%d dies\n", numdies);
@@ -913,28 +918,28 @@ static void __marcel_init look_sysfscpu(void) {
 
 	mdebug("\n\n * cpusets details *\n\n");
 	if (numdies>1)
-		ma_setup_die_topo_level(numprocs, numdies, osphysids, proc_physids);
+		ma_setup_die_topo_level(procid_max, numdies, osphysids, proc_physids);
 
-	for(j=0; j<numprocs; j++) {
-		ma_parse_cache_shared_cpu_maps(j, numprocs, proc_cacheids, cache_sizes, numcaches);
+	for(j=0; j<procid_max; j++) {
+		ma_parse_cache_shared_cpu_maps(j, procid_max, proc_cacheids, cache_sizes, numcaches);
 	}
 
 	if (numcaches[2] > 0) {
 		/* setup L3 caches */
-		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, numprocs, numcaches, proc_cacheids, cache_sizes);
+		ma_setup_cache_topo_level(2, MARCEL_LEVEL_L3, procid_max, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	if (numcaches[1] > 0) {
 		/* setup L2 caches */
-		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, numprocs, numcaches, proc_cacheids, cache_sizes);
+		ma_setup_cache_topo_level(1, MARCEL_LEVEL_L2, procid_max, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	if (numcores>1)
-		ma_setup_core_topo_level(numprocs, numcores, oscoreids, proc_coreids);
+		ma_setup_core_topo_level(procid_max, numcores, oscoreids, proc_coreids);
 
 	if (numcaches[0] > 0) {
 		/* setup L1 caches */
-		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, numprocs, numcaches, proc_cacheids, cache_sizes);
+		ma_setup_cache_topo_level(0, MARCEL_LEVEL_L1, procid_max, numcaches, proc_cacheids, cache_sizes);
 	}
 
 	/* Override the default returned by `ma_fallback_nbprocessors ()'.  */

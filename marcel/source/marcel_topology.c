@@ -691,6 +691,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 
 /* Look at Linux' /sys/devices/system/cpu/cpu%d/topology/ */
 static void look__sysfscpu(unsigned *procid_max,
+			   marcel_vpset_t *offline_cpus_set,
 			   unsigned *nr_procs,
 			   unsigned *nr_cores,
 			   unsigned *nr_dies,
@@ -701,6 +702,7 @@ static void look__sysfscpu(unsigned *procid_max,
 ) {
 #define CPU_TOPOLOGY_STR_LEN (27+9+29+1)
 	char string[CPU_TOPOLOGY_STR_LEN];
+	unsigned nr_offline_cpus = 0;
 	int i,j,k;
 
 	for(i=0; ; i++) {
@@ -725,8 +727,9 @@ static void look__sysfscpu(unsigned *procid_max,
 					mdebug("os core %d is online\n", i);
 				} else {
 					mdebug("os core %d is offline\n", i);
-					fprintf(stderr, "core %d seems offline, cannot support more than the first %d cores\n", i, i);
-					break;
+					nr_offline_cpus++;
+					marcel_vpset_set(offline_cpus_set, i);
+					continue;
 				}
 			}
 			fclose(fd);
@@ -784,7 +787,7 @@ static void look__sysfscpu(unsigned *procid_max,
 		}
 	}
 
-	*nr_procs = i;
+	*nr_procs = i - nr_offline_cpus;
 	*procid_max = i;
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
@@ -879,7 +882,7 @@ static void look_cpuinfo(unsigned *procid_max,
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
-static void __marcel_init look_sysfscpu(void) {
+static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 	unsigned proc_physids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned osphysids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned proc_coreids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
@@ -903,7 +906,7 @@ static void __marcel_init look_sysfscpu(void) {
 			     proc_physids, osphysids,
 			     proc_coreids, oscoreids);
 	} else {
-		look__sysfscpu(&procid_max, &numprocs, &numcores, &numdies,
+		look__sysfscpu(&procid_max, offline_cpus_set, &numprocs, &numcores, &numdies,
 			       proc_physids, osphysids,
 			       proc_coreids, oscoreids);
 	}
@@ -1393,21 +1396,24 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 }
 
 /* Use the value stored in marcel_nbprocessors.  */
-static void look_cpu(void) {
+static void look_cpu(marcel_vpset_t *offline_cpus_set) {
 	struct marcel_topo_level *cpu_level;
-	unsigned cpu;
+	unsigned oscpu,cpu;
 
 	cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level));
 	MA_BUG_ON(!cpu_level);
 
 	mdebug("\n\n * CPU cpusets *\n\n");
-	for (cpu=0; cpu<marcel_nbprocessors; cpu++) {
+	for (cpu=0,oscpu=0; cpu<marcel_nbprocessors; cpu++,oscpu++) {
+		while (marcel_vpset_isset(offline_cpus_set, oscpu))
+			oscpu++;
 		ma_topo_setup_level(&cpu_level[cpu], MARCEL_LEVEL_PROC);
-		ma_topo_set_os_numbers(&cpu_level[cpu], cpu, cpu);
+		ma_topo_set_os_numbers(&cpu_level[cpu], cpu, oscpu);
 
-		marcel_vpset_vp(&cpu_level[cpu].cpuset, cpu);
+		marcel_vpset_vp(&cpu_level[cpu].cpuset, oscpu);
 
-		mdebug("cpu %d has cpuset %"MA_VPSET_x" \t(%s)\n",cpu,cpu_level[cpu].cpuset, tbx_i2smb(cpu_level[cpu].cpuset));
+		mdebug("cpu %d (os %d) has cpuset %"MA_VPSET_x" \t(%s)\n",
+		       cpu, oscpu, cpu_level[cpu].cpuset, tbx_i2smb(cpu_level[cpu].cpuset));
 	}
 	marcel_vpset_zero(&cpu_level[cpu].vpset);
 	marcel_vpset_zero(&cpu_level[cpu].cpuset);
@@ -1499,13 +1505,15 @@ static void topo_discover(void) {
 	unsigned nbsublevels;
 	unsigned sublevelarity;
 	int dosplit;
+	marcel_vpset_t offline_cpus_set;
 
+	marcel_vpset_zero(&offline_cpus_set);
 	for (i = 0; i < marcel_nbvps() + MARCEL_NBMAXVPSUP; i++)
 		ma_vp_node[i]=-1;
 
 #    ifdef LINUX_SYS
 	look_sysfsnode();
-	look_sysfscpu();
+	look_sysfscpu(&offline_cpus_set);
 #    endif
 #    ifdef OSF_SYS
 	look_libnuma();
@@ -1540,7 +1548,7 @@ static void topo_discover(void) {
 	look_lgrp();
 	look_kstat();
 #    endif /* SOLARIS_SYS */
-	look_cpu();
+	look_cpu(&offline_cpus_set);
 #  endif /* MA__NUMA */
 
 	marcel_topo_nblevels=discovering_level;

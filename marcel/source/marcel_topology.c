@@ -703,13 +703,29 @@ static void look__sysfscpu(unsigned *procid_max,
 ) {
 #define CPU_TOPOLOGY_STR_LEN (27+9+29+1)
 	char string[CPU_TOPOLOGY_STR_LEN];
+	unsigned cpu_max = 1;
 	unsigned nr_offline_cpus = 0;
+	struct dirent *dirent;
+	DIR *dir;
 	int i,j,k;
 
-	/* FIXME: readdir /sys/devices/system/cpu/ to find procid_max */
-	/* FIXME: start with offline_cpus_set full and clear when finding a CPU */
+	dir = opendir("/sys/devices/system/cpu");
+	if (dir) {
+		while ((dirent = readdir(dir)) != NULL) {
+			unsigned long cpu;
+			if (strncmp(dirent->d_name, "cpu", 3))
+				continue;
+			cpu = strtoul(dirent->d_name+3, NULL, 0);
+			if (cpu_max < cpu+1)
+				cpu_max = cpu+1;
+		}
+		closedir(dir);
+	}
+	mdebug("found os proc id max %d\n", cpu_max);
 
-	for(i=0; ; i++) {
+	MA_BUG_ON(cpu_max > MARCEL_NBMAXCPUS);
+
+	for(i=0; i<cpu_max; i++) {
 		marcel_vpset_t dieset, coreset;
 		unsigned mydieid, mycoreid;
 		FILE *fd;
@@ -718,9 +734,13 @@ static void look__sysfscpu(unsigned *procid_max,
 		/* check whether the kernel knows another cpu */
 		sprintf(string, "/sys/devices/system/cpu/cpu%d", i);
 		if (access(string, X_OK) < 0
-		    && errno == ENOENT)
-			/* this CPU does not exist allow */
-			break;
+		    && errno == ENOENT) {
+			/* this CPU does not exist */
+			mdebug("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/\n", i, i);
+			marcel_vpset_set(offline_cpus_set, i);
+			nr_offline_cpus++;
+			continue;
+		}
 
 		/* check whether this processor is offline */
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/online", i);
@@ -728,12 +748,13 @@ static void look__sysfscpu(unsigned *procid_max,
 	        if (fd) {
 			if (fgets(online, sizeof(online), fd)) {
 				if (atoi(online)) {
-					mdebug("os core %d is online\n", i);
+					mdebug("os proc %d is online\n", i);
 				} else {
-					mdebug("os core %d is offline\n", i);
-					nr_offline_cpus++;
+					mdebug("os proc %d is offline\n", i);
 					marcel_vpset_set(offline_cpus_set, i);
+					nr_offline_cpus++;
 					continue;
+					/* FIXME fd leak */
 				}
 			}
 			fclose(fd);
@@ -743,7 +764,10 @@ static void look__sysfscpu(unsigned *procid_max,
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology", i);
 		if (access(string, X_OK) < 0
 		    && errno == ENOENT) {
-			break;
+			mdebug("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/topology\n", i, i);
+			marcel_vpset_set(offline_cpus_set, i);
+			nr_offline_cpus++;
+			continue;
 		}
 
 		mydieid = 0; /* shut-up the compiler */
@@ -793,8 +817,8 @@ static void look__sysfscpu(unsigned *procid_max,
 		}
 	}
 
-	*nr_procs = i - nr_offline_cpus;
-	*procid_max = i;
+	*nr_procs = cpu_max - nr_offline_cpus;
+	*procid_max = cpu_max;
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 

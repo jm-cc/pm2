@@ -1064,8 +1064,10 @@ static void __marcel_init look_sysfsnode(void) {
 		if (ma_parse_cpumap(nodepath, &cpuset) < 0)
 			break;
 
-		if (!marcel_vpset_weight(&cpuset))
-			continue;
+		/* FIXME: we should clearset offline_cpus_set in case the node cpumap
+		 * is not uptodate wrt to offline cpus. but offline_cpus_set isn't
+		 * ready yet.
+		 */
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", osnode);
 		size = ma_sysfs_node_meminfo_to_memsize(nodepath);

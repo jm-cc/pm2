@@ -46,6 +46,11 @@ ifeq (,$(FLAVOR_WITH_TLS))
 APPS_EXCLUDE += $(basename $(wildcard tls*.c))
 endif
 
+FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep fortran)
+ifeq (,$(FLAVOR_WITH_FORTRAN))
+APPS_EXCLUDE += $(basename $(wildcard *.f90))
+endif
+
 # Programmes multi-objects et flags spécifics
 #----------------------------------------------------------------------
 eclone-objs := clone.o eclone.o

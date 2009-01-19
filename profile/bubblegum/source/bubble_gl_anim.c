@@ -162,7 +162,7 @@ newBubbleMovieFromFxT (const char *trace, const char *out_file) {
     movie = newBubbleMovie();
     printf("OK\n");
 
-    BubbleMovie_startPlaying (movie, 1); /* -d bubbles cl arg. */
+    BubbleMovie_startPlaying (movie, 0); /* -d bubbles cl arg. */
 
     /*! \todo Check size values. */
     /*! \todo Must really this method be called there ? */

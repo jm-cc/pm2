@@ -567,7 +567,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 
 	ma_parse_cpumap(mappath, &set);
 	marcel_vpset_clearset(&set, offline_cpus_set);
-	for(k=0; k<=procid_max; k++) {
+	for(k=0; k<procid_max; k++) {
 		if (marcel_vpset_isset(&set, k)) {
 			/* we found a cpu in the map */
 			unsigned newid;
@@ -580,7 +580,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 			newid = nr_ids ? (*nr_ids)++ : givenid;
 
 			/* this cpu didn't have any such id yet, set this id for all cpus in the map */
-			for(; k<=procid_max; k++) {
+			for(; k<procid_max; k++) {
 				if (marcel_vpset_isset(&set, k)) {
 					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;

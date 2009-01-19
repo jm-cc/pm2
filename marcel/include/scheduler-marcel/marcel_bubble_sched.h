@@ -359,6 +359,10 @@ void ma_bubble_dequeue_task(marcel_task_t *t, marcel_bubble_t *b);
 void ma_bubble_dequeue_bubble(marcel_bubble_t *sb, marcel_bubble_t *b);
 #define ma_bubble_dequeue_task(t,b) ma_bubble_dequeue_entity(&t->entity,b)
 #define ma_bubble_dequeue_bubble(sb,b) ma_bubble_dequeue_entity(&sb->as_entity,b)
+/* to call after ma_bubble_enqueue_task instead of unlocking the bubble */
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_t *b);
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock(marcel_bubble_t *b);
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock_softirq(marcel_bubble_t *b);
 
 #section functions
 /* Endort la bulle (qui est verrouillée) */
@@ -380,7 +384,7 @@ void marcel_sched_exit(marcel_t t);
 #endif
 
 #section marcel_inline
-/* cette version (avec __) suppose que la runqueue contenant b est déjà verrouillée */
+/* This version (with __) assumes that the runqueue holding b is already locked  */
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
@@ -390,6 +394,7 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+			MA_BUG_ON(!ma_holder_is_locked(h));
 			if (!b->as_entity.run_holder_data)
 				ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 		}
@@ -410,6 +415,7 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 		ma_holder_t *h = b->as_entity.run_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
+			MA_BUG_ON(!ma_holder_is_locked(h));
 			if (b->as_entity.run_holder_data)
 				ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 		}
@@ -420,28 +426,14 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 #endif
 }
 
-/* cette version ne suppose pas que la runqueue contenant b est déjà verrouillée. Elle est donc obligée de déverrouiller la bulle pour pouvoir verrouiller la runqueue. */
+/* This version doesn't assume that the runqueue holding b is already locked.
+ * It thus can not wake the bubble when needed, so the caller has to call
+ * ma_bubble_try_to_wake_and_rawunlock() instead of unlocking it when it is done
+ * with it.
+ */
 static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->as_entity.run_holder;
-		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
-		if (h) {
-			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			if (!b->as_entity.run_holder_data) {
-				ma_holder_rawunlock(&b->as_holder);
-				h = ma_bubble_holder_rawlock(b);
-				ma_holder_rawlock(&b->as_holder);
-				if (list_empty(&b->queuedentities) && h) {
-					MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-					if (!b->as_entity.run_holder_data)
-						ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
-				}
-				ma_bubble_holder_rawunlock(h);
-			}
-		}
-	}
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->run_list, &b->queuedentities);
 	else
@@ -450,28 +442,60 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 	e->run_holder_data = (void *)1;
 #endif
 }
+
+/*
+ * B, still locked, has seen entities being enqueued on it by the
+ * ma_bubble_enqueue_entity() function above. We may have to wake b if it
+ * wasn't awake and these entities are awake. In that case we have to unlock
+ * the holding runqueue.
+ *
+ * Note: this function raw-unlocks b.
+ */
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_t *b)
+{
+#ifdef MA__BUBBLES
+	ma_holder_t *h = b->as_entity.run_holder;
+
+	if (list_empty(&b->queuedentities) || b->as_entity.run_holder_data || !h) {
+		/* No awake entity or B already awake, just unlock */
+		ma_holder_rawunlock(&b->as_holder);
+		return;
+	}
+
+	/* B holds awake entities but is not awake, we have to unlock it so as
+	 * to be able to lock the runqueue because of the locking conventions.
+	 */
+	bubble_sched_debugl(7,"waking up bubble %p because of its containing awake entities\n",b);
+
+	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+	ma_holder_rawunlock(&b->as_holder);
+	h = ma_bubble_holder_rawlock(b);
+	ma_holder_rawlock(&b->as_holder);
+	if (!list_empty(&b->queuedentities) && h) {
+		MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
+		if (!b->as_entity.run_holder_data)
+			ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
+	}
+	ma_bubble_holder_rawunlock(h);
+	ma_holder_rawunlock(&b->as_holder);
+#endif
+}
+
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock(marcel_bubble_t *b) {
+	ma_bubble_try_to_wake_up_and_rawunlock(b);
+	ma_preempt_enable();
+}
+
+static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock_softirq(marcel_bubble_t *b) {
+	ma_bubble_try_to_wake_up_and_rawunlock(b);
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+}
+
 static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b TBX_UNUSED) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	list_del(&e->run_list);
-#if 0 /* On ne peut pas se le permettre, ce n'est pas très gênant. */
-	if (list_empty(&b->queuedentities)) {
-		ma_holder_t *h = b->as_entity.run_holder;
-		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
-		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			if (b->as_entity.run_holder_data) {
-				ma_holder_rawunlock(&b->as_holder);
-				h = ma_bubble_holder_rawlock(b);
-				if (list_empty(&b->queuedentities) && h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-					if (b->as_entity.run_holder_data)
-						ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
-				}
-				ma_bubble_holder_rawunlock(h);
-				ma_holder_rawlock(&b->as_holder);
-			}
-		}
-	}
-#endif
 	MA_BUG_ON(!e->run_holder_data);
 	e->run_holder_data = NULL;
 	MA_BUG_ON(e->run_holder != &b->as_holder);

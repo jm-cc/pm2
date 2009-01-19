@@ -320,6 +320,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define ma_holder_trylock(h) _ma_raw_spin_trylock(&(h)->lock)
 #define ma_holder_rawlock(h) _ma_raw_spin_lock(&(h)->lock)
 #define ma_holder_lock(h) ma_spin_lock(&(h)->lock)
+#define ma_holder_is_locked(h) ma_spin_is_locked_nofail(&(h)->lock)
 /** \brief Locks holder \e h */
 void ma_holder_lock_softirq(ma_holder_t *h);
 #define ma_holder_lock_softirq(h) ma_spin_lock_softirq(&(h)->lock)
@@ -529,6 +530,11 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_
 	ma_array_enqueue_entity(e, rq->active);
 }
 
+/*
+ * Note: if h may be a bubble the caller has to call
+ * ma_bubble_try_to_wake_and_unlock() instead of unlocking it when it is done
+ * with it (else the bubble may be left asleep).
+ */
 #section marcel_functions
 static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h);
 void ma_enqueue_task(marcel_entity_t *e, ma_holder_t *h);
@@ -543,6 +549,10 @@ static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h)
 
 /*
  * ma_activate_entity - move an entity to the holder
+ *
+ * Note: if h may be a bubble the caller has to call
+ * ma_bubble_try_to_wake_and_unlock() instead of unlocking it when it is done
+ * with it (else the bubble may be left asleep).
  */
 #section marcel_functions
 static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h);
@@ -554,6 +564,34 @@ static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h
 		bubble_sched_debugl(7,"activating %p in bubble %p\n",e,ma_bubble_holder(h));
 	ma_activate_running_entity(e,h);
 	ma_enqueue_entity(e,h);
+}
+
+/*
+ * Call this instead of unlocking a holder if ma_activate_*() or ma_enqueue_*()
+ * was called on it, unless it is known to be a runqueue.
+ */
+#section marcel_functions
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_rawunlock(ma_holder_t *h);
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock(ma_holder_t *h);
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder_t *h);
+#section marcel_inline
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_rawunlock(ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		ma_holder_rawunlock(h);
+	else
+		ma_bubble_try_to_wake_up_and_rawunlock(ma_bubble_holder(h));
+}
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock(ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		ma_holder_unlock(h);
+	else
+		ma_bubble_try_to_wake_up_and_unlock(ma_bubble_holder(h));
+}
+static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder_t *h) {
+	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
+		ma_holder_unlock_softirq(h);
+	else
+		ma_bubble_try_to_wake_up_and_unlock_softirq(ma_bubble_holder(h));
 }
 
 /*

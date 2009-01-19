@@ -229,7 +229,7 @@ int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
 	int success;
 	ma_holder_t *h = ma_task_holder_lock_softirq(p);
 	success = __ma_try_to_wake_up(p, state, sync, h);
-	ma_task_holder_unlock_softirq(h);
+	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	return success;
 }
 
@@ -254,7 +254,7 @@ int fastcall ma_wake_up_thread_async(marcel_task_t * p)
 	}
 	success = __ma_try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
 				MA_TASK_UNINTERRUPTIBLE, 1, h);
-	ma_task_holder_unlock_softirq(h);
+	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	return success;
 }
 
@@ -334,7 +334,7 @@ retry:
 	 * on ne peut donc pas profiter de ses valeurs */
 	if (MA_TASK_IS_BLOCKED(p))
 		ma_activate_task(p, h);
-	ma_holder_unlock_softirq(h);
+	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		PROF_EVENT2(bubble_sched_switchrq, p, ma_rq_holder(h));
@@ -368,7 +368,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	t->as_entity.prio=prio;
 	if (requeue)
 		ma_enqueue_task(t,h);
-	ma_task_holder_unlock_softirq(h);
+	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	return 0;
 }
 
@@ -433,7 +433,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		int remove_from_bubble;
 		if ((remove_from_bubble = (prev->state & MA_TASK_DEAD)))
 			ma_task_sched_holder(prev) = NULL;
-		ma_task_holder_unlock_softirq(prevh);
+		ma_holder_try_to_wake_up_and_unlock_softirq(prevh);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
 		if (remove_from_bubble)
 			marcel_bubble_removetask(bubble, prev);
@@ -441,7 +441,7 @@ static void finish_task_switch(marcel_task_t *prev)
 #endif
 	{
 		/* on sort du mode interruption */
-		ma_task_holder_unlock_softirq(prevh);
+		ma_holder_try_to_wake_up_and_unlock_softirq(prevh);
 
 	}
 	if (tbx_unlikely(prev_task_state == MA_TASK_DEAD)) {

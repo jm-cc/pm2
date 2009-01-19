@@ -545,18 +545,7 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
  * the libc and compiler builtin ffs routines, therefore
  * differs in spirit from the above ma_ffz (man ffs).
  */
-static __tbx_inline__ unsigned long ma_ffs(unsigned long x);
-#section marcel_inline
-static __tbx_inline__ unsigned long ma_ffs(unsigned long x)
-{
-	unsigned long r;
-
-	__asm__("bsfq %1,%0\n\t"
-		"jnz 1f\n\t"
-		"movq $-1,%0\n"
-		"1:" : "=r" (r) : "rm" (x));
-	return r+1;
-}
+#define ma_ffs(x) ma_generic_ffs(x)
 
 #section marcel_macros
 /**

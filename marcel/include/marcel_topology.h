@@ -154,7 +154,7 @@ enum marcel_topo_level_memory_type_e {
 
 #section types
 #include <limits.h>
-#if !defined(MA__LWPS) || (1<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
+#if !defined(MA__LWPS) || (1ULL<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
 /** \brief Virtual processor set: defines the set of "allowed" LWP for a given thread */
 typedef unsigned marcel_vpset_t;
 /** \brief Typed unset bit constant. */
@@ -163,12 +163,12 @@ typedef unsigned marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_1	1U
 /** \brief Format string snippet suitable for the vpset datatype */
 #    define MA_VPSET_x			"x"
-#elif (1<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
+#elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
 typedef unsigned long marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_0	0UL
 #    define MARCEL_VPSET_CONST_1	1UL
 #    define MA_VPSET_x			"lx"
-#elif (1<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
+#elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
 typedef unsigned long long marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_0	0ULL
 #    define MARCEL_VPSET_CONST_1	1ULL

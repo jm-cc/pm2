@@ -37,7 +37,9 @@ marcel_barrier_t barrier[GANGS];
 
 any_t work(any_t arg) {
   int n = (int)(intptr_t) arg;
+#if defined(MARCEL_MAMI_ENABLED)
   int node;
+#endif
   *marcel_stats_get(marcel_self(), load) = rand()%10;
 #if defined(MARCEL_MAMI_ENABLED)
   marcel_memory_task_attach(&memory_manager,NULL,(rand()%10)<<20,NULL,&node);

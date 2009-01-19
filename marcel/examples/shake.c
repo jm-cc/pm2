@@ -1,5 +1,7 @@
 #include <marcel.h>
 
+#ifdef MA__BUBBLES
+
 marcel_barrier_t shake_barrier;
 
 static void *
@@ -48,3 +50,9 @@ main (int argc, char **argv)
 
   return 0;
 }
+#else /* MA__BUBBLES */
+int main(int argc, char *argv[]) {
+   fprintf(stderr,"%s needs bubbles\n",argv[0]);
+   return 0;
+}
+#endif /* MA__BUBBLES */

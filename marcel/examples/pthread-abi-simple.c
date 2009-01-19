@@ -15,6 +15,17 @@
 
 /* Test Marcel's libpthread ABI compatibility layer.  */
 
+#ifndef MARCEL_LIBPTHREAD
+#  warning Marcel pthread must be enabled for this program
+#include <stdio.h>
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr, "'marcel pthread' feature disabled in the flavor\n");
+
+  return 0;
+}
+#else
+
 /* Include the system's <pthread.h>, not Marcel's.  */
 #include <pthread.h>
 
@@ -95,3 +106,5 @@ main (int argc, char *argv[])
 
   return 0;
 }
+
+#endif /* MARCEL_LIBPTHREAD */

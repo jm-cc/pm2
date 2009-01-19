@@ -27,6 +27,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef MA__LIBPTHREAD
+# include <Padico/Puk-ABI.h>
+#endif
+
+
 tbx_flag_t marcel_activity = tbx_flag_clear;
 
 
@@ -406,6 +411,10 @@ void marcel_init_data(int *argc, char *argv[])
 	marcel_debug_init(argc, argv, PM2DEBUG_DO_OPT);
 
 	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
+
+#ifdef MA__LIBPTHREAD
+	puk_abi_init();
+#endif
 }
 
 // When completed, some threads may be started

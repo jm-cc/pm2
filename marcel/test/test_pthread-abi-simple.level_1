@@ -1,6 +1,6 @@
 #-*-sh-*-
 # PM2: Parallel Multithreaded Machine
-# Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+# Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 flavor="test_marcel_pthread_abi"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="pthread-abi-simple"
+ld_preload="$(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
 args=""
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
@@ -26,13 +27,14 @@ create_test_flavor() {
     # Creation de la flavor
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 	--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
-	--modules="\"marcel tbx init\"" --marcel="smp"		\
+	--modules="\"marcel tbx init stackalign puk\""		\
+	--marcel="smp"						\
 	--marcel="spinlock" --marcel="standard_main"		\
         --marcel="pmarcel" --marcel="pthread"			\
 	--marcel="enable_cleanup" --marcel="enable_deviation"	\
 	--marcel="enable_keys" --marcel="enable_signals"	\
 	--marcel="enable_once" --marcel="dont_use_pthread"	\
-	--marcel="bug_on"					\
+	--marcel="bug_on" --puk="enable_pukabi"			\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" $_output_redirect
 }

@@ -27,8 +27,31 @@
 #include <assert.h>
 #include <string.h>
 
+#include <dlfcn.h>
+
 
 #define THREADS 123
+
+/* Make sure we are actually using Marcel's `libpthread.so', loaded via
+   `LD_PRELOAD' or some such.  */
+static void
+assert_running_marcel (void)
+{
+  void *self, *sym;
+
+  self = dlopen (NULL, RTLD_NOW);
+  if (self)
+    {
+      sym = dlsym (self, "marcel_create");
+      dlclose (self);
+
+      if (sym)
+	return;
+    }
+
+  fprintf (stderr, "error: not using Marcel's libpthread\n");
+  abort ();
+}
 
 static void *
 thread_entry_point (void *arg)
@@ -43,6 +66,8 @@ main (int argc, char *argv[])
   int err;
   unsigned i;
   pthread_t threads[THREADS];
+
+  assert_running_marcel ();
 
   for (i = 0; i < THREADS; i++)
     {

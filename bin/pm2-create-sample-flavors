@@ -43,7 +43,8 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-topology \
-	--modules="marcel tbx init" $COMMON_OPTIONS \
+	--modules="marcel tbx init" --all=debug --all=dbg \
+	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null

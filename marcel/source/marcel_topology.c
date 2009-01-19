@@ -1590,6 +1590,8 @@ static void topo_discover(void) {
 	if (ma__nb_vp == 0)
 		ma__nb_vp = marcel_nbprocessors;
 
+	MA_BUG_ON(!marcel_nbprocessors);
+
 	mdebug("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
 	distribute_vps();

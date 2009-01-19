@@ -1,0 +1,86 @@
+#define MARCEL_INTERNAL_INCLUDE
+#include <marcel.h>
+
+static void start_new_team (void *(*fn) (void *), void *data, unsigned nthreads);
+
+static void *
+my_inner_job (void *arg)
+{
+  marcel_printf ("Hi!\n");
+  
+  return NULL;
+}
+
+static void *
+my_job (void *arg)
+{
+  int nb_threads = *(int *)arg;
+  
+  /* Nested bubble creation. */
+  start_new_team (my_inner_job, NULL, nb_threads - 1);
+  
+  return NULL;
+}
+
+static void
+start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
+{
+  /* Initialize the thread attributes. */
+  marcel_attr_t thread_attr;
+  marcel_attr_init (&thread_attr);
+  marcel_attr_setdetachstate (&thread_attr, tbx_true);
+  marcel_attr_setpreemptible (&thread_attr, 0);
+  marcel_attr_setprio (&thread_attr, MA_DEF_PRIO);
+
+  /* Initialize the borning bubble. */
+  marcel_bubble_t team_bubble;
+  marcel_bubble_init (&team_bubble);
+  marcel_bubble_setinithere (&team_bubble);
+  marcel_bubble_setprio (&team_bubble, MA_DEF_PRIO);
+  marcel_bubble_insertbubble (marcel_bubble_holding_task (marcel_self ()), &team_bubble);
+  marcel_bubble_inserttask (&team_bubble, marcel_self ());
+  
+  marcel_attr_setinitbubble (&thread_attr, &team_bubble);
+
+  unsigned int i;
+  marcel_t threads[nthreads];
+
+  /* Launch the threads. */
+  for (i = 0; i < nthreads; i++)
+    marcel_create (&threads[i], &thread_attr, fn, data);
+
+  /* The main thread does its part of the job too. */
+  fn (data);
+
+  /* Check the created threads' location. */
+  marcel_entity_t *e = NULL;
+  for_each_entity_held_in_bubble (e, &team_bubble)
+    MA_BUG_ON (e->sched_holder != &marcel_root_bubble.as_holder);
+
+  /* Close the current team. */
+  marcel_bubble_t *holding_bubble = marcel_bubble_holding_bubble (&team_bubble);
+  marcel_bubble_inserttask (holding_bubble, marcel_self ());
+  marcel_bubble_join (&team_bubble);
+  marcel_bubble_destroy (&team_bubble);    
+}
+
+int
+main (int argc, char **argv) 
+{
+  if (argc < 2)
+    {
+      marcel_fprintf (stderr, "Usage: ./setinithere <nb_threads> <nb_threads>\n");
+      return EXIT_FAILURE;
+    }
+  
+  int nb_teams = atoi (argv[1]);
+  int threads_per_team = atoi (argv[2]);
+
+  marcel_init (&argc, argv);
+  
+  start_new_team (my_job, &threads_per_team, nb_teams - 1);
+
+  marcel_end ();
+
+  return EXIT_SUCCESS;
+}

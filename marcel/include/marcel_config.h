@@ -47,7 +47,8 @@
 
 /* Max number of architecture elements */
 #ifdef MA__LWPS
-#define MARCEL_NBMAXCPUS	32
+//#define MARCEL_NBMAXCPUS	32
+#define MARCEL_NBMAXCPUS	64
 #ifdef MA__NUMA
 #define MARCEL_NBMAXNODES	8
 #endif

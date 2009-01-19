@@ -432,7 +432,7 @@ ma_fls (int x)
  * return zero.
  */
 #section marcel_macros
-#define ma_ffs(x)	__builtin_ffs(x)
+#define ma_ffs(x)	ma_generic_ffs(x)
 
 /*
  * hweightN: returns the hamming weight (i.e. the number

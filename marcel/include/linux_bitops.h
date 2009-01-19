@@ -30,9 +30,9 @@
  */
 
 #section marcel_functions
-static __tbx_inline__ long ma_generic_ffs(long x);
+static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x);
 #section marcel_inline
-static __tbx_inline__ long ma_generic_ffs(long x)
+static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x)
 {
 #if (__GNUC__ > 3)
 	return __builtin_ffsl(x);

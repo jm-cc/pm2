@@ -48,6 +48,10 @@
 
 #define USE_LIBNUMA 0
 
+#if USE_LIBNUMA
+# include <numa.h>
+#endif
+
 # define HLINE "-------------------------------------------------------------\n"
 
 # ifndef MIN
@@ -198,17 +202,17 @@ int marcel_main(int argc, char **argv)
   /* Get initial value for system clock. */
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      int id=(i*NB_NUMA_NODES)+j;
+      int id=(i*NB_THREADS_PER_TEAMS)+j;
       args[id].node = i;
       args[id].thread = j;
       marcel_attr_settopo_level(&attr, &marcel_topo_core_level[id]);
-      marcel_create(&threads[(i*NB_NUMA_NODES)+j], &attr, init_matrices, (any_t)&args[id]);
+      marcel_create(&threads[(i*NB_THREADS_PER_TEAMS)+j], &attr, init_matrices, (any_t)&args[id]);
     }
   }
 
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      marcel_join(threads[(i*NB_NUMA_NODES)+j], NULL);
+      marcel_join(threads[(i*NB_THREADS_PER_TEAMS)+j], NULL);
     }
   }
 
@@ -378,14 +382,14 @@ void tuned_STREAM_Copy() {
 
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      int id=(i*NB_NUMA_NODES)+j;
+      int id=(i*NB_THREADS_PER_TEAMS)+j;
       marcel_attr_settopo_level(&attr, &marcel_topo_core_level[id]);
-      marcel_create(&threads[(i*NB_NUMA_NODES)+j], &attr, copy_matrices, (any_t)&args[id]);
+      marcel_create(&threads[(i*NB_THREADS_PER_TEAMS)+j], &attr, copy_matrices, (any_t)&args[id]);
     }
   }
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      marcel_join(threads[(i*NB_NUMA_NODES)+j], NULL);
+      marcel_join(threads[(i*NB_THREADS_PER_TEAMS)+j], NULL);
     }
   }
 }
@@ -395,14 +399,14 @@ void tuned_STREAM_Scale(double scalar) {
 
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      int id=(i*NB_NUMA_NODES)+j;
+      int id=(i*NB_THREADS_PER_TEAMS)+j;
       marcel_attr_settopo_level(&attr, &marcel_topo_core_level[id]);
-      marcel_create(&threads[(i*NB_NUMA_NODES)+j], &attr, scale_matrices, (any_t)&args[id]);
+      marcel_create(&threads[(i*NB_THREADS_PER_TEAMS)+j], &attr, scale_matrices, (any_t)&args[id]);
     }
   }
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      marcel_join(threads[(i*NB_NUMA_NODES)+j], NULL);
+      marcel_join(threads[(i*NB_THREADS_PER_TEAMS)+j], NULL);
     }
   }
 }
@@ -412,14 +416,14 @@ void tuned_STREAM_Add() {
 
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      int id=(i*NB_NUMA_NODES)+j;
+      int id=(i*NB_THREADS_PER_TEAMS)+j;
       marcel_attr_settopo_level(&attr, &marcel_topo_core_level[id]);
-      marcel_create(&threads[(i*NB_NUMA_NODES)+j], &attr, add_matrices, (any_t)&args[id]);
+      marcel_create(&threads[(i*NB_THREADS_PER_TEAMS)+j], &attr, add_matrices, (any_t)&args[id]);
     }
   }
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      marcel_join(threads[(i*NB_NUMA_NODES)+j], NULL);
+      marcel_join(threads[(i*NB_THREADS_PER_TEAMS)+j], NULL);
     }
   }
 }
@@ -429,14 +433,14 @@ void tuned_STREAM_Triad(double scalar) {
 
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      int id=(i*NB_NUMA_NODES)+j;
+      int id=(i*NB_THREADS_PER_TEAMS)+j;
       marcel_attr_settopo_level(&attr, &marcel_topo_core_level[id]);
-      marcel_create(&threads[(i*NB_NUMA_NODES)+j], &attr, triadd_matrices, (any_t)&args[id]);
+      marcel_create(&threads[(i*NB_THREADS_PER_TEAMS)+j], &attr, triadd_matrices, (any_t)&args[id]);
     }
   }
   for (i = 0; i < NB_NUMA_NODES; i++) {
     for (j=0; j<NB_THREADS_PER_TEAMS; j++) {
-      marcel_join(threads[(i*NB_NUMA_NODES)+j], NULL);
+      marcel_join(threads[(i*NB_THREADS_PER_TEAMS)+j], NULL);
     }
   }
 }

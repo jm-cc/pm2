@@ -225,11 +225,11 @@ int marcel_main(int argc, char **argv)
   /*	--- MAIN LOOP --- repeat test cases NTIMES times --- */
   scalar = 3.0;
   for (k=0; k<NTIMES; k++) {
-//#pragma omp parallel for num_threads (NB_NUMA_NODES)
-//    //      for (i = 0; i < NB_NUMA_NODES; i++) {
-//    //	fgomp_set_current_thread_affinity (c[i], TAB_SIZE);
-//    //      }
-//
+    for (i = 0; i < NB_NUMA_NODES; i++) {
+      int node;
+      marcel_memory_task_attach(&memory_manager, c[i], TAB_SIZE, marcel_self(), &node);
+    }
+
     times[0][k] = mysecond();
     tuned_STREAM_Copy();
     times[0][k] = mysecond() - times[0][k];
@@ -245,6 +245,8 @@ int marcel_main(int argc, char **argv)
     times[3][k] = mysecond();
     tuned_STREAM_Triad(scalar);
     times[3][k] = mysecond() - times[3][k];
+
+    marcel_memory_task_unattach_all(&memory_manager, marcel_self());
   }
 
   /*	--- SUMMARY --- */

@@ -1,6 +1,8 @@
 #define MARCEL_INTERNAL_INCLUDE
 #include <marcel.h>
 
+#ifdef MA__BUBBLES
+
 static void start_new_team (void *(*fn) (void *), void *data, unsigned nthreads);
 
 static void *
@@ -84,3 +86,10 @@ main (int argc, char **argv)
 
   return EXIT_SUCCESS;
 }
+
+#else /* MA__BUBBLES */
+int main(int argc, char *argv[]) {
+   fprintf(stderr,"%s needs bubbles\n",argv[0]);
+   return 0;
+}
+#endif /* MA__BUBBLES */

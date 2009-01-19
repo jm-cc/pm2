@@ -18,7 +18,7 @@
 #ifndef MARCEL_LIBPTHREAD
 #  warning Marcel pthread must be enabled for this program
 #include <stdio.h>
-int marcel_main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   fprintf(stderr, "'marcel pthread' feature disabled in the flavor\n");
 

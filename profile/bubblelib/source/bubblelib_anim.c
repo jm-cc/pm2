@@ -392,14 +392,15 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 			setEntityRecur(shape,b->insertion,0,0,0);
 		}
 	} else {
+		/* Too big hierarchy, just show a triangle */
 		if (!hide) {
 			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
-			BubbleShape_drawLineTo(shape,b->entity.x-CURVE/2,b->entity.y+(3*CURVE)/2);
+			BubbleShape_drawLineTo(shape,b->entity.x+CURVE/2,b->entity.y+(3*CURVE)/2);
 			BubbleShape_drawLineTo(shape,b->entity.x+(3*CURVE)/2,b->entity.y+(3*CURVE)/2);
 			BubbleShape_drawLineTo(shape,b->entity.x+CURVE/2,b->entity.y);
 
 			if (DISPSIZE) {
-				BubbleShape_movePenTo(shape,b->entity.x-CURVE/2,b->entity.y+(5*CURVE)/2);
+				BubbleShape_movePenTo(shape,b->entity.x,b->entity.y+(5*CURVE)/2);
 				while (height) {
 					BubbleShape_drawSizedGlyph(shape,'0'+height%10,CURVE);
 					height/=10;

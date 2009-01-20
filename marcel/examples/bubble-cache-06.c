@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-/* This test checks Affinity's greedy distribution behaviour. */
+/* This test checks Cache's greedy distribution behaviour. */
 
 #include "bubble-testing.h"
 
@@ -96,7 +96,7 @@ main (int argc, char *argv[])
 	}
 
   /* The expected result, i.e., the scheduling entity distribution
-     that we expect from Affinity. Most loaded threads have to be
+     that we expect from Cache. Most loaded threads have to be
      distributed first, that's why we expect to see them scheduled on
      vps 0 and 2. */
 	expected_result[0] = expected_result[2] = BIG_LOAD; 

@@ -28,7 +28,7 @@ main (int argc, char *argv[])
 
 
   /* The expected result, i.e., the scheduling entity distribution that we
-     expect from Affinity.  */
+     expect from Cache.  */
 
 #define BUBBLE MA_BUBBLE_ENTITY
 #define THREAD MA_THREAD_ENTITY

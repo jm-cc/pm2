@@ -19,16 +19,15 @@
 int
 main (int argc, char *argv[])
 {
-	/* An opto-dual-core (e.g., `hagrid') with MARCEL_TOPO_MAX_ARITY >= 8.  */
-  static const char topology_description[] = "8 2";
+  /* 4 quad-core CPUs.  */
+  static const char topology_description[] = "4 4";
 
-	/* A two-level bubble hierarchy.  */
   static const unsigned bubble_hierarchy_description[] =
-    { 4, 4, 0 };
+    { 8, 2, 0 };
 
 
   /* The expected result, i.e., the scheduling entity distribution that we
-     expect from Affinity.  */
+     expect from Cache.  */
 
 #define BUBBLE MA_BUBBLE_ENTITY
 #define THREAD MA_THREAD_ENTITY
@@ -39,20 +38,18 @@ main (int argc, char *argv[])
       .entities = { THREAD } };
 
   static const tree_t result_cpu =
-    { .children_count = 2,
-      .children = { &result_core, &result_core },
-      .entity_count = 0 };
+    { .children_count =  4,
+      .children = { &result_core, &result_core,
+			              &result_core, &result_core },
+      .entity_count = 2,
+		  .entities = { BUBBLE, BUBBLE } };
 
   static const tree_t result_root = /* root of the expected result */
-    { .children_count = 8,
+    { .children_count = 4,
       .children = { &result_cpu, &result_cpu,
-			              &result_cpu, &result_cpu,
-			              &result_cpu, &result_cpu,
 			              &result_cpu, &result_cpu },
-      .entity_count = 5,
-      .entities = { BUBBLE, BUBBLE,
-			              BUBBLE, BUBBLE,
-			              BUBBLE } };
+      .entity_count = 1,
+      .entities = { BUBBLE } };
 
 #undef THREAD
 #undef BUBBLE

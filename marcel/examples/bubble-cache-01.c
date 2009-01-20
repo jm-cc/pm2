@@ -19,16 +19,17 @@
 int
 main (int argc, char *argv[])
 {
-	/* An unrealistic topology...  */
-  static const char topology_description[] = "5 1 3";
+  /* A simple topology: 2 nodes, each of which has 2 CPUs, each of which has 4
+     cores.  */
+  static const char topology_description[] = "2 2 4";
 
 	/* A flat bubble hierarchy.  */
   static const unsigned bubble_hierarchy_description[] =
-    { 15, 0 };
+    { 16, 0 };
 
 
   /* The expected result, i.e., the scheduling entity distribution that we
-     expect from Affinity.  */
+     expect from Cache.  */
 
 #define BUBBLE MA_BUBBLE_ENTITY
 #define THREAD MA_THREAD_ENTITY
@@ -39,21 +40,19 @@ main (int argc, char *argv[])
       .entities = { THREAD } };
 
   static const tree_t result_cpu =
-    { .children_count = 3,
+    { .children_count = 4,
       .children = { &result_core, &result_core,
                     &result_core, &result_core },
       .entity_count = 0 };
 
-	static const tree_t result_node =
-		{ .children_count = 1,
-			.children = { &result_cpu },
-			.entity_count = 0 };
+  static const tree_t result_node =
+    { .children_count =  2,
+      .children = { &result_cpu, &result_cpu },
+      .entity_count = 0 };
 
   static const tree_t result_root = /* root of the expected result */
-    { .children_count = 5,
-      .children = { &result_node, &result_node,
-			              &result_node, &result_node,
-			              &result_node },
+    { .children_count = 2,
+      .children = { &result_node, &result_node },
       .entity_count = 1,
       .entities = { BUBBLE } };
 

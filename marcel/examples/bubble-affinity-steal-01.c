@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-/* This test checks Affinity's work stealing algorithm behaviour. */
+/* This test checks Cache's work stealing algorithm behaviour. */
 
 #define MARCEL_INTERNAL_INCLUDE
 
@@ -123,19 +123,19 @@ main (int argc, char *argv[]) {
 		}
 	}
 
-	if (marcel_bubble_affinity_sched.vp_is_idle == NULL) {
+	if (marcel_bubble_cache_sched.vp_is_idle == NULL) {
 		marcel_printf ("Oops! No work stealing algorithm available!\n"); 
-		marcel_printf ("Did you forget to set the MA_AFFINITY_USE_WORK_STEALING constant to 1? (see marcel_bubble_affinity.c)\n");
+		marcel_printf ("Did you forget to set the MA_CACHE_USE_WORK_STEALING constant to 1? (see marcel_bubble_cache.c)\n");
 		exit (1);
 	}
 
-	/* Make sure we're currently testing the Affinity scheduler. */
-	marcel_bubble_change_sched (&marcel_bubble_affinity_sched);
+	/* Make sure we're currently testing the Cache scheduler. */
+	marcel_bubble_change_sched (&marcel_bubble_cache_sched);
 
-	/* Intercept Affinity's work stealing algorithm to assure it's
+	/* Intercept Cache's work stealing algorithm to assure it's
 		 called before all threads have died. */
-	aff_steal = marcel_bubble_affinity_sched.vp_is_idle;
-	marcel_bubble_affinity_sched.vp_is_idle = my_steal;
+	aff_steal = marcel_bubble_cache_sched.vp_is_idle;
+	marcel_bubble_cache_sched.vp_is_idle = my_steal;
 	
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();

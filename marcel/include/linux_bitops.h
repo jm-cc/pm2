@@ -34,8 +34,14 @@ static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x);
 #section marcel_inline
 static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x)
 {
-#ifdef __GNUC__
+#if (__GNUC__ > 3)
 	return __builtin_ffsl(x);
+#elif defined(__GNUC__)
+	return __builtin_ffs(x
+#if MA_BITS_PER_LONG >= 64
+			&0xffffffff)?:(__builtin_ffs(x>>32) + 32
+#endif
+		);
 #else
 	int r = 1;
 

@@ -163,6 +163,7 @@ typedef unsigned marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_1	1U
 /** \brief Format string snippet suitable for the vpset datatype */
 #    define MA_VPSET_x			"08x"
+#    define MA_VPSET_x_val(x)		(x)
 #elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
 typedef unsigned long marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_0	0UL
@@ -172,11 +173,13 @@ typedef unsigned long marcel_vpset_t;
 #else
 #    define MA_VPSET_x			"016lx"
 #endif
+#    define MA_VPSET_x_val(x)		(x)
 #elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
 typedef unsigned long long marcel_vpset_t;
 #    define MARCEL_VPSET_CONST_0	0ULL
 #    define MARCEL_VPSET_CONST_1	1ULL
 #    define MA_VPSET_x			"016llx"
+#    define MA_VPSET_x_val(x)		(x)
 #else
 #    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
 #endif

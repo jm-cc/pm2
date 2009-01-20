@@ -1254,7 +1254,7 @@ DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize TBX_UNUSED, pma
 	if (!rq)
 		return EIO;
 	*cpuset = rq->vpset;
-	fprintf(stderr,"%x\n", *cpuset);
+	fprintf(stderr,"%"MARCEL_PRIxVPSET"\n", MARCEL_VPSET_PRINTF_VALUE(*cpuset));
 #else
 	*cpuset = MARCEL_VPSET_VP(1);
 #endif

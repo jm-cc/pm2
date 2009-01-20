@@ -62,6 +62,8 @@ my_steal (unsigned int from_vp) {
 		/* Set the last threads free. */
 		ma_atomic_inc (&die_later_signal);
 	}
+
+	return 0;
 }
 
 int
@@ -91,7 +93,8 @@ main (int argc, char *argv[]) {
 	marcel_t threads[NB_BUBBLES * THREADS_PER_BUBBLE];
 	marcel_barrier_t team_barrier[NB_BUBBLES];
 	marcel_attr_t attr;
-	unsigned int team, nb_threads;
+	unsigned int team;
+	int nb_threads;
 
 	marcel_barrier_init (team_barrier + 0, NULL, THREADS_PER_BUBBLE);
 	marcel_barrier_init (team_barrier + 1, NULL, THREADS_PER_BUBBLE);

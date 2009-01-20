@@ -14,6 +14,6 @@
 
 
 # Configuration
-prog="bubble-affinity-05"
+prog="bubble-cache-02"
 
 source "bubble-testing.sh"

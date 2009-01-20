@@ -34,12 +34,12 @@ static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x);
 #section marcel_inline
 static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x)
 {
-#if (__GNUC__ > 3)
+#if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
 	return __builtin_ffsl(x);
 #elif defined(__GNUC__)
 	return __builtin_ffs(x
 #if MA_BITS_PER_LONG >= 64
-			&0xffffffff)?:(__builtin_ffs(x>>32) + 32
+		)	&0xffffffff)?:(__builtin_ffs(x>>32) + 32
 #endif
 		);
 #else
@@ -90,7 +90,7 @@ static __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
 
 	if (!x)
 		return 0;
-#if (__GNUC__ > 3)
+#if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
 	return r-__builtin_clzl(x);
 #else
 
@@ -133,7 +133,7 @@ static __tbx_inline__ unsigned int ma_generic_hweight32(unsigned int w);
 #section marcel_inline
 static __tbx_inline__ unsigned int ma_generic_hweight32(unsigned int w)
 {
-#if (__GNUC__ > 3)
+#if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
 	return __builtin_popcount(w);
 #else
         unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
@@ -170,7 +170,7 @@ static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w);
 #section marcel_inline
 static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w)
 {
-#if (__GNUC__ > 3)
+#if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
 	return __builtin_popcountll(w);
 #else
 #if MA_BITS_PER_LONG < 64

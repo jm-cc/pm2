@@ -248,7 +248,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
   if (l->os_node != -1) marcel_fprintf(output, "%sNode%s%u(%ld%s)", separator, indexprefix, l->os_node,
 				       marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]),
 				       marcel_memory_size_printf_unit(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]));
-  if (l->os_die != -1)  marcel_fprintf(output, "%sDie%s%u" , separator, indexprefix, l->os_die);
+  if (l->os_die != -1)  marcel_fprintf(output, "%sDie%s%u", separator, indexprefix, l->os_die);
   if (l->os_l3 != -1)   marcel_fprintf(output, "%sL3%s%u(%ld%s)", separator, indexprefix, l->os_l3,
 				       marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3]),
 				       marcel_memory_size_printf_unit(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3]));
@@ -259,7 +259,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
   if (l->os_l1 != -1)   marcel_fprintf(output, "%sL1%s%u(%ld%s)", separator, indexprefix, l->os_l1,
 				       marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]),
 				       marcel_memory_size_printf_unit(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]));
-  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU%s%u" , separator, indexprefix, l->os_cpu);
+  if (l->os_cpu != -1)  marcel_fprintf(output, "%sCPU%s%u", separator, indexprefix, l->os_cpu);
 #endif
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "%sVP %s%u", separator, indexprefix, l->number);

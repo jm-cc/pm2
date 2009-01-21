@@ -40,6 +40,8 @@
 # include <float.h>
 # include <marcel.h>
 
+#if defined(MARCEL_MAMI_ENABLED)
+
 # define N	3000000
 # define NTIMES	10
 # define OFFSET	0
@@ -446,3 +448,9 @@ void tuned_STREAM_Triad(double scalar) {
     }
   }
 }
+
+#else
+int marcel_main(int argc, char * argv[]) {
+  fprintf(stderr, "This application needs MAMI to be enabled\n");
+}
+#endif

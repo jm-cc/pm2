@@ -21,8 +21,8 @@ prog="read_topology"
 args="-v --marcel-topology-fsys-root $topology_chroot"
 hosts="localhost"
 
-if [ -d /soft/common/topology-chroot/strange1-subdudley ] ; then
-    cp /soft/common/topology-chroot/strange1-subdudley/output /tmp/pm2test_"${USER}"_expected
+if [ -d $topology_chroot ] ; then
+    cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected
 else
     echo Warning: topology $topology_chroot not available >&2
     prog="/bin/true"

@@ -1,0 +1,5 @@
+Disable PukABI's file descriptor virtualization mechanism (recommended
+if this feature is not needed).  By default, PukABI virtualizes file
+descriptors by mapping OS-provided file descriptors to potentially
+different integer values, allowing the use of unused integer values to
+implement pseudo-file descriptors at the application level.

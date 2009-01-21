@@ -130,12 +130,19 @@ void ma_bubble_move_top_and_submit (marcel_bubble_t *b) {
   ma_deactivate_idle_scheduler ();
   
   ma_bubble_gather (b);
+
+  ma_preempt_disable ();
+  ma_local_bh_disable ();
+
   /* TODO: Only lock what needs to be locked! */
   ma_bubble_lock_all (b, marcel_topo_level (0, 0));
   ma_move_entity (&b->as_entity, &marcel_topo_level(0,0)->rq.as_holder);
   /* TODO: Only unlock what needs to be unlocked! */
   ma_bubble_unlock_all (b, marcel_topo_level (0, 0));
   marcel_bubble_submit (b);
+
+  ma_preempt_enable_no_resched ();
+  ma_local_bh_enable ();
   
   ma_activate_idle_scheduler ();  
 }

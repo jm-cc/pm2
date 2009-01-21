@@ -51,5 +51,5 @@ static __tbx_inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volati
 #endif
 #section marcel_macros
 #ifndef MA_HAVE_COMPAREEXCHANGE
-#define pm2_spinlock_release(spinlock) (*(spinlock) = 0)
+#define pm2_spinlock_release(spinlock) do { ma_mb(); (*(spinlock) = 0); } while(0)
 #endif

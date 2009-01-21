@@ -35,5 +35,5 @@ static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlo
 
 #section marcel_macros
 #define pm2_spinlock_release(spinlock) \
-  __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0));
+  __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0):"memory")
 

@@ -543,8 +543,8 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_bubble_synthesize_stats (b);
 
   /* Make sure bubbles can't be modified behind our back.  */
-  ma_preempt_disable ();
   ma_local_bh_disable ();
+  ma_preempt_disable ();
 
   ma_bubble_lock_all (b, l);
   ma_cache_distribute_from (l);
@@ -805,8 +805,9 @@ cache_steal (unsigned int from_vp) {
     arity = father->arity;
   }
 
-  ma_preempt_disable ();
   ma_local_bh_disable ();  
+  ma_preempt_disable ();
+
   ma_bubble_synthesize_stats (&marcel_root_bubble);
   ma_bubble_lock_all (&marcel_root_bubble, marcel_topo_level (0, 0));
   struct browse_and_steal_args args = {

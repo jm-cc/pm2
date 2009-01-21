@@ -131,8 +131,8 @@ void ma_bubble_move_top_and_submit (marcel_bubble_t *b) {
   
   ma_bubble_gather (b);
 
-  ma_preempt_disable ();
   ma_local_bh_disable ();
+  ma_preempt_disable ();
 
   /* TODO: Only lock what needs to be locked! */
   ma_bubble_lock_all (b, marcel_topo_level (0, 0));

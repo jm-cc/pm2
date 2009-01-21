@@ -194,8 +194,8 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   ma_memory_print_affinities (bubble);
 #endif 
   
-  ma_preempt_disable ();
   ma_local_bh_disable ();
+  ma_preempt_disable ();
 
   ma_bubble_lock_all (bubble, from);
   ma_memory_schedule_from (from);
@@ -226,8 +226,9 @@ memory_sched_shake () {
   MA_BUG_ON (holding_bubble == NULL);
 
   ma_bubble_synthesize_stats (holding_bubble);
-  ma_preempt_disable ();
+
   ma_local_bh_disable ();
+  ma_preempt_disable ();
  
   for_each_entity_held_in_bubble (e, holding_bubble)
   {

@@ -847,5 +847,8 @@ MARCEL_DEFINE_BUBBLE_SCHEDULER (cache,
 #if MA_CACHE_BSCHED_USE_WORK_STEALING
   .vp_is_idle = cache_steal,
 #endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
+   /* TODO: This definetly is a crappy way to let other bubble
+      schedulers use the Cache scheduler distribution algorithm. */
+  .priv = ma_cache_distribute_from,
 );
 #endif /* MA__BUBBLES */

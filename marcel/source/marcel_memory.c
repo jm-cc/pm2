@@ -416,6 +416,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   marcel_memory_area_t *available;
   marcel_memory_area_t **ptr;
   marcel_memory_area_t **prev;
+  marcel_memory_area_t *next;
 
   MAMI_LOG_IN();
 
@@ -479,8 +480,9 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
                   (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
       (*ptr)->end = (*ptr)->next->end;
       (*ptr)->nbpages += (*ptr)->next->nbpages;
-      tfree((*ptr)->next);
+      next = (*ptr)->next;
       (*ptr)->next = (*ptr)->next->next;
+      tfree(next);
     }
     else
       ptr = &((*ptr)->next);

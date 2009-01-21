@@ -161,8 +161,12 @@ extern int __zero_fd;
 #elif defined(AIX_SYS)
 #    if defined(RS6K_ARCH) || defined(PPC_ARCH)
 #      define ISOADDR_AREA_TOP       (0xd0000000 - THREAD_SLOT_SIZE)
+#      define SLOT_AREA_BOTTOM       0x40000000
+#      define IS_ON_MAIN_STACK(sp)   ((sp) < SLOT_AREA_BOTTOM)
 #    elif defined(PPC64_ARCH)
 #      define ISOADDR_AREA_TOP       (0x0800000000000000 - THREAD_SLOT_SIZE)
+#      define SLOT_AREA_BOTTOM       0x100000000
+#      define IS_ON_MAIN_STACK(sp)   ((sp) < SLOT_AREA_BOTTOM)
 #    endif
 #    define FILE_TO_MAP            -1
 #    define MMAP_MASK              (MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS)

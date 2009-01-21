@@ -222,15 +222,25 @@ memory_sched_shake () {
   marcel_entity_t *e;
   MA_BUG_ON (holding_bubble == NULL);
 
-  ma_bubble_synthesize_stats (holding_bubble);  
-  for_each_entity_scheduled_in_bubble_begin (e, holding_bubble)
+  ma_bubble_synthesize_stats (holding_bubble);
+  ma_preempt_disable ();
+  ma_local_bh_disable ();
+ 
+  for_each_entity_held_in_bubble (e, holding_bubble)
   {
-    if (ma_get_parent_rq (e) != &ma_favourite_location (e)->rq) {
-      shake = 1;
-      break;
+    struct marcel_topo_level *parent_level = ma_get_parent_rq (e)->topolevel;
+    struct marcel_topo_level *favorite_location = ma_favourite_location (e);
+
+    if (parent_level && favorite_location) {
+      if (ma_topo_lower_ancestor (parent_level, favorite_location) != favorite_location) {
+	shake = 1;
+	break;
+      }
     }
   }
-  for_each_entity_scheduled_in_bubble_end ()
+  
+  ma_preempt_enable_no_resched ();
+  ma_local_bh_enable ();
 
   if (shake) {
     ma_bubble_move_top_and_submit (&marcel_root_bubble);

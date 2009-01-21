@@ -12,6 +12,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+[ "$PM2_SYS" != LINUX_SYS ] && continue
+[ "$PM2_ARCH" != X86_ARCH -a "$PM2_ARCH" != X86_64_ARCH ] && continue
+
 # Configuration
 flavor="test_marcel_bubble_memory"
 appdir="${PM2_ROOT}/marcel/examples"

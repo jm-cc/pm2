@@ -257,11 +257,13 @@ void fastcall __pmarcel_disable_asynccancel(int old);
  */
 DEC_MARCEL_POSIX(int, setschedprio,(marcel_t thread,int prio) __THROW);
 
+#if 0
 /** Posix-only setschedprio.
     Notes:
     Some systems may not have the definition.
  */
 int pthread_setschedprio(pthread_t thread, int prio) __THROW;
+#endif
 
 /** Set the scheduling params of the specified thread.
  */

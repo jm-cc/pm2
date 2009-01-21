@@ -1,12 +1,12 @@
 #-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -14,12 +14,22 @@
 
 
 # Configuration
+topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
 flavor="marcel-topology"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="read_topology"
-args="-v --marcel-topology-fsys-root /soft/common/topology-chroot/strange1-subdudley"
+args="-v --marcel-topology-fsys-root $topology_chroot"
 hosts="localhost"
-cp /soft/common/topology-chroot/strange1-subdudley/output /tmp/pm2test_"${USER}"_expected
+
+if [ -d /soft/common/topology-chroot/strange1-subdudley ] ; then
+    cp /soft/common/topology-chroot/strange1-subdudley/output /tmp/pm2test_"${USER}"_expected
+else
+    echo Warning: topology $topology_chroot not available >&2
+    prog="/bin/true"
+    rm -f /tmp/pm2test_"${USER}"_expected
+    touch /tmp/pm2test_"${USER}"_expected
+fi
+
 
 # Creation de la flavor
 create_test_flavor() {

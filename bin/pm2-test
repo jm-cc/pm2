@@ -369,7 +369,7 @@ while [ $_l -le $_level ]; do
 			    create_test_flavor | sed -e 's/^/..../'
 			fi
 			appdir2=$(echo $appdir | tr '/' ':')
-			echo $prog >> /tmp/tests_${USER}_database/${flavor}-${appdir2}.dat
+			echo $prog >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
                     fi
 
                 done
@@ -383,8 +383,8 @@ while [ $_l -le $_level ]; do
     shopt -s nullglob
     for f in /tmp/tests_${USER}_database/*.dat ; do
 	d_filename=$(basename $f .dat)
-	d_flavor=$(echo $d_filename | awk -F'-' '{print $1}')
-	d_appdir=$(echo $d_filename | sed 's/.*-:/:/' | tr ':' '/')
+	d_flavor=$(echo $d_filename | awk -F'.' '{print $1}')
+	d_appdir=$(echo $d_filename | awk -F'.' '{print $2}' | tr ':' '/')
 
 	CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
 	file_status="/tmp/pm2test_${USER}_status"

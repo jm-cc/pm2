@@ -48,7 +48,8 @@ main(int    argc,
 		printf("t[%d] = %p\n", i, t[i]);
 	}
 
-	for (i = 0; i < N; i++) {
+	/* Leave one block unfreed to make tbx_malloc_clean checker complain */
+	for (i = 0; i < N-1; i++) {
 		tbx_free(my_allocator, t[i]);
 	}
 

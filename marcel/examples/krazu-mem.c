@@ -16,7 +16,7 @@
 
 #include "marcel.h"
 
-#ifdef MARCEL_NUMA
+#if defined(MARCEL_NUMA) && defined(MARCEL_MAMI_ENABLED)
 #include <numa.h>
 
 #define NUM_THREADS 16
@@ -90,10 +90,10 @@ main (int argc, char **argv) {
   marcel_end ();
 }
 #else
-#  warning Option numa must be enabled for this program
+#  warning Options numa and MaMI must be enabled for this program
 int marcel_main(int argc, char *argv[])
 {
-  fprintf(stderr, "'numa' feature disabled in the flavor\n");
+  fprintf(stderr, "'numa' feature and MaMI disabled in the flavor\n");
   return 0;
 }
 #endif

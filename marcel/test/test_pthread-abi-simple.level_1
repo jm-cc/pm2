@@ -35,6 +35,7 @@ create_test_flavor() {
 	--marcel="enable_keys" --marcel="enable_signals"	\
 	--marcel="enable_once" --marcel="dont_use_pthread"	\
 	--marcel="bug_on" --puk="enable_pukabi"			\
+        --puk="disable_fd_virtualization"			\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	--all="gdb" $_output_redirect
 }

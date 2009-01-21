@@ -15,7 +15,9 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/mman.h>
+#ifdef LINUX_SYS
 #include <sys/syscall.h>
+#endif
 
 #include "marcel.h"
 

@@ -18,15 +18,15 @@
 #include "marcel.h"
 #include <stdio.h>
 
-volatile int started;
-volatile int finished;
+int started;
+int finished;
 
 any_t f_busy(any_t arg)
 {
   marcel_printf("I'm alive\n");
   started = 1;
   ma_smp_mb();
-  while (!finished);
+  while (!finished) ma_smp_rmb();
   marcel_printf("I'm dead\n");
 
   return NULL;
@@ -86,10 +86,10 @@ void bench_migrate(unsigned long nb, int active)
 
   finished = 0;
   started = 0;
-  ma_wmb();
+  ma_smp_wmb();
   marcel_create(&pid, &attr, active ? f_busy : f_idle, (any_t)n);
-  ma_rmb();
-  while (!started);
+  ma_smp_rmb();
+  while (!started) ma_smp_rmb();
 
 #ifdef MA__BUBBLES
   h[0] = &b.as_holder;
@@ -131,10 +131,10 @@ void bench_resched(unsigned long nb)
 
   finished = 0;
   started = 0;
-  ma_wmb();
+  ma_smp_wmb();
   marcel_create(&pid, &attr, f_busy, (any_t)n);
-  ma_rmb();
-  while (!started);
+  ma_smp_rmb();
+  while (!started) ma_smp_rmb();
 
   TBX_GET_TICK(t1);
   while(--n) {

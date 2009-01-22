@@ -64,7 +64,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 			/* and scope */
 			marcel_vpset_t vpset;
 			marcel_get_vpset(cthread, &vpset);
-			if (vpset == MARCEL_VPSET_FULL)
+			if (marcel_vpset_isfull(&vpset))
 				marcel_attr_setscope(&new_attr,
 				    PTHREAD_SCOPE_PROCESS);
 			else

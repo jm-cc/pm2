@@ -168,9 +168,9 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
 __tbx_inline__ static ma_runqueue_t *
 marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 {
-	if (tbx_unlikely(*vpset==MARCEL_VPSET_FULL))
+	if (tbx_unlikely(marcel_vpset_isfull(vpset)))
 		return &ma_main_runqueue;
-	else if (tbx_unlikely(*vpset==MARCEL_VPSET_ZERO))
+	else if (tbx_unlikely(marcel_vpset_iszero(vpset)))
 		return &ma_dontsched_runqueue;
 	else {
 		struct marcel_topo_level *level;
@@ -214,7 +214,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		MA_BUG_ON(!marcel_vpset_isincluded(&attr->vpset, &attr->topo_level->vpset));
 		return &attr->topo_level->rq;
 	}
-	if (attr->vpset != MARCEL_VPSET_FULL)
+	if (!marcel_vpset_isfull(&attr->vpset))
 		return marcel_sched_vpset_init_rq(&attr->vpset);
 	rq = NULL;
 #ifdef MA__LWPS

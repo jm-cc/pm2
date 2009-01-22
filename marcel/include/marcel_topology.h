@@ -306,6 +306,20 @@ static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
 #define PMARCEL_CPU_ISSET_S(cpu, setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_ISSET(cpu, cpusetp); })
 
 #section functions
+/** \brief Test whether set \e set is zero or full */
+static __tbx_inline__ int marcel_vpset_iszero(const marcel_vpset_t *set);
+static __tbx_inline__ int marcel_vpset_isfull(const marcel_vpset_t *set);
+#section inline
+static __tbx_inline__ int marcel_vpset_iszero(const marcel_vpset_t *set)
+{
+	return *set == MARCEL_VPSET_ZERO;
+}
+static __tbx_inline__ int marcel_vpset_isfull(const marcel_vpset_t *set)
+{
+	return *set == MARCEL_VPSET_FULL;
+}
+
+#section functions
 /** \brief Test whether set \e sub_set is part of set \e super_set */
 static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_set,
 						   const marcel_vpset_t *sub_set);

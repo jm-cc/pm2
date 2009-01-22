@@ -138,7 +138,11 @@ static marcel_mutex_t ma_extlib_lock = MARCEL_MUTEX_INITIALIZER;
 int marcel_extlib_protect(void)
 {
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-	marcel_mutex_lock(&ma_extlib_lock);
+	if (ma_in_atomic())
+		while (!marcel_mutex_trylock(&ma_extlib_lock))
+			cpu_relax();
+	else
+		marcel_mutex_lock(&ma_extlib_lock);
 #endif
 	ma_local_bh_disable();
 	return 0;

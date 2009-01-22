@@ -1580,6 +1580,9 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
       ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[*node] += data->size;
     }
+    else {
+      mdebug_mami("Cannot attach data as location undefined #%d\n", *node);
+    }
 
     area = tmalloc(sizeof(marcel_memory_data_link_t));
     area->data = data;

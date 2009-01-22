@@ -14,6 +14,7 @@
  */
 
 #include "marcel.h"
+#include <errno.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -43,7 +44,7 @@ int marcel_main(int argc, char * argv[]) {
     perror("marcel_memory_register unexpectedly failed");
   }
 
-  marcel_printf("\nSpliting memory area not allocated by MAMI\n");
+  marcel_printf("\nSpliting memory area (%ld) not allocated by MAMI\n", 50*getpagesize());
   split(ptr, 50*getpagesize());
   err = marcel_memory_unregister(&memory_manager, ptr);
   if (err < 0) {
@@ -62,11 +63,10 @@ static void split(void *ptr, size_t size) {
   int err, i;
   void **newptrs;
 
-  attach(ptr, size);
   newptrs = malloc(10 * sizeof(void **));
   err = marcel_memory_split(&memory_manager, ptr, 10, newptrs);
   if (err < 0) {
-    perror("marcel_memory_split unexpectedly failed");
+    marcel_fprintf(stderr, "marcel_memory_split fails %d <%m>\n", errno, errno);
   }
   else {
     for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);

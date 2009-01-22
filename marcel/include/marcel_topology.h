@@ -335,14 +335,14 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 }
 
 #section functions
-/** \brief Clear set \e sub_set out of set \e super_set */
-static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *super_set,
-						  const marcel_vpset_t *sub_set);
+/** \brief Clear set \e modifier_set out of set \e set */
+static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *set,
+						  const marcel_vpset_t *modifier_set);
 #section inline
-static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *super_set,
-						  const marcel_vpset_t *sub_set)
+static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *set,
+						  const marcel_vpset_t *modifier_set)
 {
-	*super_set &= ~*sub_set;
+	*set &= ~*modifier_set;
 }
 
 #section marcel_functions

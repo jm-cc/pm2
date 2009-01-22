@@ -355,6 +355,7 @@ static int ksoftirqd(void * __bind_cpu TBX_UNUSED) {
 inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
 	int err;
 	marcel_attr_t attr;
+	marcel_vpset_t vpset;
 	char name[MARCEL_MAXNAMESIZE];
 
 	LOG_IN();
@@ -363,7 +364,8 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
 	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%2d",ma_vpnum(lwp));
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(ma_vpnum(lwp)));
+	marcel_vpset_vp(&vpset, ma_vpnum(lwp));
+	marcel_attr_setvpset(&attr, vpset);
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2

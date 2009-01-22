@@ -394,7 +394,7 @@ void marcel_gensched_shutdown(void)
 	while ((lwp = ma_lwp_wait_vp_active())) {
 		if (lwp == &__main_lwp) {
 			mdebug("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
-			vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
+			marcel_vpset_vp(&vpset, ma_vpnum(lwp));
 			/* To match ma_lwp_block() above */
 			ma_preempt_enable();
 			marcel_apply_vpset(&vpset);

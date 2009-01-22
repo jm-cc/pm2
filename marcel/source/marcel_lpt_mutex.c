@@ -449,7 +449,7 @@ int lpt_once(lpt_once_t * once_control,
 
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {
-		READ_MEMORY_BARRIER();
+		ma_smp_rmb();
                 LOG_RETURN(0);
 	}
 	/* Lock and test again */
@@ -480,7 +480,7 @@ int lpt_once(lpt_once_t * once_control,
 		marcel_cleanup_pop(0);
 #endif /* MARCEL_DEVIATION_ENABLED */
 		marcel_mutex_lock(&once_masterlock);
-		WRITE_MEMORY_BARRIER();
+		ma_smp_wmb();
 		*once_control = DONE;
 		state_changed = 1;
 	}

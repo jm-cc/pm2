@@ -2130,8 +2130,8 @@ synth_allocate_topology_levels(const unsigned *topology) {
 		MA_BUG_ON(marcel_topo_levels[level] == NULL);
 
 		/* Each level is terminated by an item with zeroed VP sets.  */
-		marcel_topo_levels[level][total_level_breadth].vpset = 0;
-		marcel_topo_levels[level][total_level_breadth].cpuset = 0;
+		marcel_vpset_zero(&marcel_topo_levels[level][total_level_breadth].vpset);
+		marcel_vpset_zero(&marcel_topo_levels[level][total_level_breadth].cpuset);
 
 		/* Update the level type to level mapping.  */
 		ma_topo_type_depth[synth_level_type (level_breadth)] = level;

@@ -14,9 +14,6 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "asm/pthread_pt-machine.h[]"
-
 #section marcel_macros
 
 #depend "asm/linux_system.h[]"

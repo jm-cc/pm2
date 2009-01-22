@@ -346,6 +346,16 @@ static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *super_set,
 }
 
 #section marcel_functions
+/** \brief Compute the first VP in VP mask */
+static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset);
+#section marcel_inline
+#depend "asm/linux_bitops.h[marcel_inline]"
+static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
+{
+	return ma_ffs(*vpset)-1;
+}
+
+#section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 #section marcel_inline

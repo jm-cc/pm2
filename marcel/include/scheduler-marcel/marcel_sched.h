@@ -174,7 +174,7 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		return &ma_dontsched_runqueue;
 	else {
 		struct marcel_topo_level *level;
-		unsigned int first_vp=ma_ffs(*vpset)-1;
+		unsigned int first_vp = marcel_vpset_first(vpset);
 		MA_BUG_ON(first_vp >= marcel_nbvps() && first_vp>=marcel_nballvps());
 		level = &marcel_topo_vp_level[first_vp];
 		/* start from here up to the root of the tree to find the level vpset

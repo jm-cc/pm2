@@ -1503,7 +1503,7 @@ static void topo_connect(void) {
 #  ifdef MA__NUMA
 static int compar(const void *_l1, const void *_l2) {
   const struct marcel_topo_level *l1 = _l1, *l2 = _l2;
-  return ma_ffs(l1->cpuset) - ma_ffs(l2->cpuset);
+  return marcel_vpset_first(&l1->cpuset) - marcel_vpset_first(&l2->cpuset);
 }
 #  endif
 
@@ -1640,7 +1640,7 @@ static void topo_discover(void) {
 		MA_BUG_ON(cpu>=marcel_nbprocessors);
 		marcel_vpset_t oscpuset = marcel_topo_levels[marcel_topo_nblevels-1][cpu].cpuset;
 		MA_BUG_ON(marcel_vpset_weight(&oscpuset) != 1);
-		unsigned oscpu = ma_ffs(oscpuset)-1;
+		unsigned oscpu = marcel_vpset_first(&oscpuset);
 #  else
 		unsigned oscpu = cpu;
 #  endif

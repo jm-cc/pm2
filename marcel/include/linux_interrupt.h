@@ -239,10 +239,10 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 		ma_clear_bit(MA_TASKLET_STATE_RUN, &(t)->state);
 		ma_remote_tasklet_unlock(&vp->tasklet_lock);
 
-		target_vp_num_plus_one = ma_ffs(t->vp_set);
-		MA_BUG_ON (!target_vp_num_plus_one);
+		target_vp_num = marcel_vpset_first(&t->vp_set);
+		MA_BUG_ON (!(target_vp_num+1));
 
-		__ma_tasklet_remote_schedule(t, target_vp_num_plus_one-1);
+		__ma_tasklet_remote_schedule(t, target_vp_num);
 		break;
 	}
 	case 1<<MA_TASKLET_STATE_SCHED:

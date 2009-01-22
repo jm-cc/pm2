@@ -1471,7 +1471,7 @@ static void __marcel_init linux_sched_init(void)
 #ifdef MA__NUMA
 		unsigned i,j;
 		for (i=1;i<marcel_topo_nblevels-1;i++) {
-			for (j=0; marcel_topo_levels[i][j].vpset; j++);
+			for (j=0; !marcel_vpset_iszero(&marcel_topo_levels[i][j].vpset); j++);
 			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLEVEL,1),j);
 		}
 #endif

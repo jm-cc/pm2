@@ -1479,7 +1479,7 @@ static void split(unsigned arity, unsigned * __restrict sublevelarity, unsigned 
 static void topo_connect(void) {
 	int l, i, j, m;
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 			if (marcel_topo_levels[l][i].arity) {
 				mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 				       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
@@ -1487,7 +1487,7 @@ static void topo_connect(void) {
 				MA_BUG_ON(!marcel_topo_levels[l][i].children);
 
 				m=0;
-				for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
+				for (j=0; !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
 					if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset)) {
 						MA_BUG_ON(m >= marcel_topo_levels[l][i].arity);
 						marcel_topo_levels[l][i].children[m]=
@@ -1612,7 +1612,7 @@ static void topo_discover(void) {
 			for (j=k; j<marcel_topo_level_nbitems[l+1]; j++) {
 				marcel_vpset_t set = level_set;
 				set = set & marcel_topo_levels[l+1][j].cpuset;
-				if (set) {
+				if (!marcel_vpset_iszero(&set)) {
 					/* Sublevel j is part of level i, put it at k.  */
 					struct marcel_topo_level level = marcel_topo_levels[l+1][j];
 					memmove(&marcel_topo_levels[l+1][k+1], &marcel_topo_levels[l+1][k], (j-k)*sizeof(*marcel_topo_levels[l+1]));
@@ -1678,7 +1678,7 @@ static void topo_discover(void) {
 			marcel_topo_levels[l][i].cpuset &= cpuset;
 			mdebug("level %u,%u: cpuset becomes %"MARCEL_PRIxVPSET"\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset));
-			if (!marcel_topo_levels[l][i].cpuset) {
+			if (marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset)) {
 				mdebug("became empty, dropping it\n");
 				marcel_topo_level_nbitems[l]--;
 				memcpy(&marcel_topo_levels[l][i], &marcel_topo_levels[l][i+1], sizeof(marcel_topo_levels[l][i]) * (marcel_topo_level_nbitems[l]-i+1));
@@ -1704,11 +1704,11 @@ static void topo_discover(void) {
 #  ifdef MA__NUMA
 	/* merge identical levels */
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++);
-		for (j=0; j<i && marcel_topo_levels[l+1][j].cpuset; j++)
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++);
+		for (j=0; j<i && !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
 			if (marcel_topo_levels[l+1][j].cpuset != marcel_topo_levels[l][j].cpuset)
 				break;
-		if (j==i && !marcel_topo_levels[l+1][j].cpuset) {
+		if (j==i && marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset)) {
 			mdebug("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");
 			if (marcel_topo_levels[l+1] == marcel_topo_cpu_level)
 				marcel_topo_cpu_level = marcel_topo_levels[l];
@@ -1757,16 +1757,16 @@ static void topo_discover(void) {
 
 	/* Compute arity */
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 			marcel_topo_levels[l][i].arity=0;
-			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
+			for (j=0; !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
 				if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset))
 					marcel_topo_levels[l][i].arity++;
 			mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 		}
 	}
-	for (i=0; marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset; i++)
+	for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset); i++)
 		mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" leaf\n",
 		       marcel_topo_nblevels-1, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset));
 	mdebug("arity done.\n");
@@ -1783,7 +1783,7 @@ static void topo_discover(void) {
 			unsigned level_width = 0;
 			dosplit = 0;
 			/* Look at each item, check for max_arity */
-			for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+			for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 				split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
 				if (marcel_topo_levels[l][i].arity > marcel_topo_max_arity) {
 					mdebug("will split level %u,%u because %d > %d\n", l, i, marcel_topo_levels[l][i].arity, marcel_topo_max_arity);
@@ -1799,7 +1799,7 @@ static void topo_discover(void) {
 				marcel_topo_level_nbitems[l+1] = level_width;
 				marcel_topo_levels[l+1] = __marcel_malloc((level_width+MARCEL_NBMAXVPSUP+1)*sizeof(**marcel_topo_levels));
 				/* fill it with split items */
-				for (i=0,j=0; marcel_topo_levels[l][i].cpuset; i++) {
+				for (i=0,j=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 					/* split one item */
 
 					unsigned * quirk_array;
@@ -1943,11 +1943,11 @@ static void topo_discover(void) {
 #  ifdef MA__NUMA
 	if (marcel_topo_node_level)
 #  endif
-		for (level = &marcel_topo_node_level[0]; level->vpset; level++)
+		for (level = &marcel_topo_node_level[0]; !marcel_vpset_iszero(&level->vpset); level++)
 			level->nodedata = (struct marcel_topo_nodedata) MARCEL_TOPO_NODEDATA_INITIALIZER(&level->nodedata);
 
 	for (l=0; l<marcel_topo_nblevels; l++)
-		for (i=0; marcel_topo_levels[l][i].vpset; i++)
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++)
 			marcel_topo_levels[l][i].level = l;
 }
 
@@ -1955,7 +1955,7 @@ void ma_topo_exit(void) {
 	unsigned l,i;
 	/* Last level is not freed because we need it in various places */
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
-		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 			TBX_FREE(marcel_topo_levels[l][i].children);
 			marcel_topo_levels[l][i].children = NULL;
 		}
@@ -2252,7 +2252,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 #  ifdef MA__NUMA
 	int i;
 	if (marcel_topo_node_level) {
-		for (i=0; marcel_topo_node_level[i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_node_level[i].cpuset); i++) {
 			if (marcel_vpset_isset(&marcel_topo_node_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(node_level,lwp) = &marcel_topo_node_level[i];
 				break;
@@ -2260,7 +2260,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 		}
 	}
 	if (marcel_topo_core_level) {
-		for (i=0; marcel_topo_core_level[i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_core_level[i].cpuset); i++) {
 			if (marcel_vpset_isset(&marcel_topo_core_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(core_level,lwp) = &marcel_topo_core_level[i];
 				break;
@@ -2268,7 +2268,7 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 		}
 	}
 	if (marcel_topo_cpu_level) {
-		for (i=0; marcel_topo_cpu_level[i].cpuset; i++) {
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_cpu_level[i].cpuset); i++) {
 			if (marcel_vpset_isset(&marcel_topo_cpu_level[i].cpuset,ma_vpnum(lwp))) {
 				ma_per_lwp(cpu_level,lwp) = &marcel_topo_cpu_level[i];
 				break;

@@ -161,7 +161,7 @@ void ma_obj_allocator_fini(ma_allocator_t * allocator)
         case POLICY_HIERARCHICAL:
 	case POLICY_HIERARCHICAL_MEMORY: {
                 for (j = marcel_topo_nblevels-1; j >= 0; --j) {
-                        for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
+                        for (i = 0; !marcel_vpset_iszero(&marcel_topo_levels[j][i].vpset); ++i) {
                                 ma_container_clear(ma_per_level_data(&marcel_topo_levels[j][i], allocator->container.offset),
                                                    allocator->destroy, allocator->destroy_arg);
                         }
@@ -217,7 +217,7 @@ void ma_obj_allocator_init(ma_allocator_t * allocator)
                 case POLICY_HIERARCHICAL_MEMORY: {
                         allocator->container.offset = (unsigned long) ma_obj_alloc(level_container_allocator);
                         for (j = marcel_topo_nblevels-1; j >= 0; --j) {
-                                for (i = 0; marcel_topo_levels[j][i].vpset; ++i) {
+                                for (i = 0; !marcel_vpset_iszero(&marcel_topo_levels[j][i].vpset); ++i) {
                                         ma_container_init(ma_per_level_data(&marcel_topo_levels[j][i], allocator->container.offset),
                                                           allocator->conservative, allocator->max_size);
                                 }
@@ -367,10 +367,10 @@ void ma_obj_allocator_print(ma_allocator_t * allocator) {
 		int i,j;
 		fprintf(stderr,"hierarchical\n");
 		for (j = marcel_topo_nblevels-1; j >= 0; --j) {
-			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
+			for (i = 0; !marcel_vpset_iszero(&marcel_topo_levels[j][i].vpset); ++i)
 				fprintf(stderr,"%4d",marcel_topo_levels[j][i].number);
 			fprintf(stderr,"\n");
-			for (i = 0; marcel_topo_levels[j][i].vpset; ++i)
+			for (i = 0; !marcel_vpset_iszero(&marcel_topo_levels[j][i].vpset); ++i)
 				fprintf(stderr,"%4d",((ma_container_t*)ma_per_level_data(&marcel_topo_levels[j][i],(allocator->container.offset)))->nb_element);
 			fprintf(stderr,"\n");
 #ifdef MA__NUMA

@@ -1611,7 +1611,7 @@ static void topo_discover(void) {
 			marcel_vpset_t level_set = marcel_topo_levels[l][i].cpuset;
 			for (j=k; j<marcel_topo_level_nbitems[l+1]; j++) {
 				marcel_vpset_t set = level_set;
-				set = set & marcel_topo_levels[l+1][j].cpuset;
+				marcel_vpset_andset(&set, &marcel_topo_levels[l+1][j].cpuset);
 				if (!marcel_vpset_iszero(&set)) {
 					/* Sublevel j is part of level i, put it at k.  */
 					struct marcel_topo_level level = marcel_topo_levels[l+1][j];
@@ -1675,7 +1675,7 @@ static void topo_discover(void) {
 	/* Now filter out CPUs from levels. */
 	for (l=0; l<marcel_topo_nblevels; l++) {
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
-			marcel_topo_levels[l][i].cpuset &= cpuset;
+			marcel_vpset_andset(&marcel_topo_levels[l][i].cpuset, &cpuset);
 			mdebug("level %u,%u: cpuset becomes %"MARCEL_PRIxVPSET"\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset));
 			if (marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset)) {
@@ -1833,8 +1833,7 @@ static void topo_discover(void) {
 							unsigned quirk_father = quirk_array[n];
 							unsigned child_index;
 							level = &marcel_topo_levels[l+1][j+quirk_father];
-							level->cpuset |=
-								marcel_topo_levels[l][i].children[n]->cpuset;
+							marcel_vpset_orset(&level->cpuset, &marcel_topo_levels[l][i].children[n]->cpuset);
 							child_index = level->arity;
 							level->children[child_index] = marcel_topo_levels[l][i].children[n];
 							marcel_topo_levels[l][i].children[n]->index = child_index;
@@ -1853,8 +1852,7 @@ static void topo_discover(void) {
 						m = 0;
 						for (n=0; n<marcel_topo_levels[l][i].arity; n++) {
 							level = &marcel_topo_levels[l+1][j+k];
-							level->cpuset |=
-								marcel_topo_levels[l][i].children[n]->cpuset;
+							marcel_vpset_orset(&level->cpuset, &marcel_topo_levels[l][i].children[n]->cpuset);
 							level->arity++;
 							level->children[m] = marcel_topo_levels[l][i].children[n];
 							marcel_topo_levels[l][i].children[n]->index = m;
@@ -2076,7 +2074,7 @@ synth_populate_topology(struct marcel_topo_level *level,
 		/* Aggregate the VP sets of our kids.  */
 		marcel_vpset_zero(&level->vpset);
 		for (i = 0; i < *level_breadth; i++)
-			level->vpset |= level->children[i]->vpset;
+			marcel_vpset_orset(&level->vpset, &level->children[i]->vpset);
 
 		/* XXX: We don't pay attention to the CPU set as it doesn't seem to be
 			 used outside of `marcel_topology.c'; we just initialize it so that it's

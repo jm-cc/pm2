@@ -335,6 +335,28 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 }
 
 #section functions
+/** \brief Or set \e modifier_set into set \e set */
+static __tbx_inline__ void marcel_vpset_orset (marcel_vpset_t *set,
+					       const marcel_vpset_t *modifier_set);
+#section inline
+static __tbx_inline__ void marcel_vpset_orset (marcel_vpset_t *set,
+					       const marcel_vpset_t *modifier_set)
+{
+	*set |= *modifier_set;
+}
+
+#section functions
+/** \brief And set \e modifier_set into set \e set */
+static __tbx_inline__ void marcel_vpset_andset (marcel_vpset_t *set,
+						const marcel_vpset_t *modifier_set);
+#section inline
+static __tbx_inline__ void marcel_vpset_andset (marcel_vpset_t *set,
+						const marcel_vpset_t *modifier_set)
+{
+	*set &= *modifier_set;
+}
+
+#section functions
 /** \brief Clear set \e modifier_set out of set \e set */
 static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *set,
 						  const marcel_vpset_t *modifier_set);

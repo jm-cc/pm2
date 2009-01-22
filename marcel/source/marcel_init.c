@@ -414,6 +414,9 @@ void marcel_init_data(int *argc, char *argv[])
 
 #ifdef MA__LIBPTHREAD
 	puk_abi_init();
+
+	/* Tell PukABI how to protect libc calls.  */
+	puk_abi_set_spinlock_handlers (marcel_extlib_protect, marcel_extlib_unprotect, NULL);
 #endif
 }
 

@@ -343,3 +343,5 @@ __ma_cmpxchg(volatile void *ptr, unsigned long old, unsigned long repl, int size
   })
 
 #endif
+
+#define ma_cpu_relax() ma_barrier()

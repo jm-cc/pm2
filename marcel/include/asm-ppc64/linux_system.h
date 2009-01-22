@@ -199,3 +199,12 @@ __xchg_local(volatile void *ptr, unsigned long x, unsigned int size)
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+/* Macros for adjusting thread priority (hardware multi-threading) */
+#define HMT_very_low()   asm volatile("or 31,31,31   # very low priority")
+#define HMT_low()>------ asm volatile("or 1,1,1>     # low priority")
+#define HMT_medium_low() asm volatile("or 6,6,6      # medium low priority")
+#define HMT_medium()>--- asm volatile("or 2,2,2>     # medium priority")
+#define HMT_medium_high() asm volatile("or 5,5,5      # medium high priority")
+#define HMT_high()>----- asm volatile("or 3,3,3>     # high priority")
+
+#define ma_cpu_relax() do { HMT_low(); HMT_medium(); barrier(); } while (0)

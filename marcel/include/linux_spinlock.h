@@ -524,8 +524,7 @@ static __tbx_inline__ void ma_bit_spin_lock(int bitnum, unsigned long *addr)
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	while (ma_test_and_set_bit(bitnum, addr)) {
 		while (ma_test_bit(bitnum, addr))
-			;
-			//cpu_relax();
+			ma_cpu_relax();
 	}
 #endif
 }

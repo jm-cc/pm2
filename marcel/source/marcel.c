@@ -140,7 +140,11 @@ int marcel_extlib_protect(void)
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
 	if (ma_in_atomic())
 		while (!marcel_mutex_trylock(&ma_extlib_lock))
-			cpu_relax();
+			/* Another LWP is already doing an external call, so we
+			 * have to wait for its completion, but we are in an
+			 * atomic section so can not sleep! Make the LWP sleep
+			 * instead */
+			ma_lwp_relax();
 	else
 		marcel_mutex_lock(&ma_extlib_lock);
 #endif

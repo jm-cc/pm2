@@ -269,3 +269,5 @@ do {						\
 
 #define ma_ia64_platform_is(x) (strcmp(x, platform_name) == 0)
 
+/* From processor.h */
+#define ma_cpu_relax()    ma_ia64_hint(ma_ia64_hint_pause)

@@ -1529,8 +1529,7 @@ void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 		if (ma_spin_is_locked(lock)) {
 			PROF_EVENT(spin_lock_busy);
 			while (ma_spin_is_locked(lock))
-				;
-				//cpu_relax();
+				ma_cpu_relax();
 		}
 		ma_preempt_disable();
 	} while (!_ma_raw_spin_trylock(lock));
@@ -1560,7 +1559,7 @@ TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock)
 		if (ma_rwlock_is_locked(lock)) {
 			PROF_EVENT(rwlock_lock_busy);
 			while (ma_rwlock_is_locked(lock))
-				;//cpu_relax();
+				ma_cpu_relax();
 		}
 		ma_preempt_disable();
 	} while (!_ma_raw_write_trylock(lock));

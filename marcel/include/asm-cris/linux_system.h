@@ -79,3 +79,4 @@
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+#define ma_cpu_relax() ma_barrier()

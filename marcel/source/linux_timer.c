@@ -284,7 +284,7 @@ del_again:
 		base = &ma_per_lwp(tvec_bases, lwp);
 		if (base->running_timer == timer) {
 			while (base->running_timer == timer) {
-				cpu_relax();
+				ma_cpu_relax();
 				ma_preempt_check_resched(0);
 			}
 			break;

@@ -176,3 +176,4 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, 
 
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
+#define ma_cpu_relax() asm volatile("rep; nop" ::: "memory")

@@ -40,7 +40,7 @@ do { \
 #  endif
 #endif /*  MA__LWP */
 
-#define cpu_relax() SCHED_YIELD()
+#define ma_lwp_relax() SCHED_YIELD()
 
 #section functions
 #if defined(MA__LWPS)

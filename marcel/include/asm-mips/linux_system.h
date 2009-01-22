@@ -412,3 +412,5 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr,
 }
 
 #define ma_cmpxchg(ptr,old,replace) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(replace),sizeof(*(ptr))))
+
+#define ma_cpu_relax() ma_barrier()

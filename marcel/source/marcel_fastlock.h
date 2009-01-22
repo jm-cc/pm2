@@ -322,6 +322,9 @@ __tbx_inline__ static int __lpt_lock(struct _lpt_fastlock * lock,
 __tbx_inline__ static int __marcel_trylock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
+  ma_mb();
+  if(lock->__status)
+    return 0;
 
   ma_spin_lock(&lock->__spinlock);
 

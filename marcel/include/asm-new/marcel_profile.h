@@ -18,5 +18,9 @@
 #depend "sys/isomalloc_archdep.h"
 
 #ifdef DO_PROFILE
+/*
+ * How to get the current TID in assembly, for tracing purpose. Not used
+ * at the moment as the switch events are enough to know it.
+ */
 //#define MA_PROFILE_ASM_GET_TID(reg)
 #endif

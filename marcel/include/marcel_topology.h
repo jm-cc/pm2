@@ -320,6 +320,17 @@ static __tbx_inline__ int marcel_vpset_isfull(const marcel_vpset_t *set)
 }
 
 #section functions
+/** \brief Test whether set \e set1 is equal to set \e set2 */
+static __tbx_inline__ int marcel_vpset_isequal (const marcel_vpset_t *set1,
+						const marcel_vpset_t *set2);
+#section inline
+static __tbx_inline__ int marcel_vpset_isequal (const marcel_vpset_t *set1,
+						const marcel_vpset_t *set2)
+{
+	return *set1 == *set2;
+}
+
+#section functions
 /** \brief Test whether set \e sub_set is part of set \e super_set */
 static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_set,
 						   const marcel_vpset_t *sub_set);

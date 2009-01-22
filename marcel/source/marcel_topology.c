@@ -1706,7 +1706,7 @@ static void topo_discover(void) {
 	for (l=0; l+1<marcel_topo_nblevels; l++) {
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++);
 		for (j=0; j<i && !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
-			if (marcel_topo_levels[l+1][j].cpuset != marcel_topo_levels[l][j].cpuset)
+			if (!marcel_vpset_isequal(&marcel_topo_levels[l+1][j].cpuset, &marcel_topo_levels[l][j].cpuset))
 				break;
 		if (j==i && marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset)) {
 			mdebug("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");

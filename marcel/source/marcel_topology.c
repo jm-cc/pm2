@@ -1488,8 +1488,7 @@ static void topo_connect(void) {
 
 				m=0;
 				for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
-					if (!(marcel_topo_levels[l+1][j].cpuset &
-						~(marcel_topo_levels[l][i].cpuset))) {
+					if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset)) {
 						MA_BUG_ON(m >= marcel_topo_levels[l][i].arity);
 						marcel_topo_levels[l][i].children[m]=
 							&marcel_topo_levels[l+1][j];
@@ -1761,8 +1760,7 @@ static void topo_discover(void) {
 		for (i=0; marcel_topo_levels[l][i].cpuset; i++) {
 			marcel_topo_levels[l][i].arity=0;
 			for (j=0; marcel_topo_levels[l+1][j].cpuset; j++)
-				if (!(marcel_topo_levels[l+1][j].cpuset &
-					~(marcel_topo_levels[l][i].cpuset)))
+				if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset))
 					marcel_topo_levels[l][i].arity++;
 			mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);

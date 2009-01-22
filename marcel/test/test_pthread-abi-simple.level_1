@@ -29,7 +29,7 @@ create_test_flavor() {
     # Creation de la flavor
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 	--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
-	--modules="\"marcel tbx init stackalign puk\""		\
+	--modules="\"marcel tbx init puk\""			\
 	--marcel="smp"						\
 	--marcel="spinlock" --marcel="standard_main"		\
         --marcel="pmarcel" --marcel="pthread"			\

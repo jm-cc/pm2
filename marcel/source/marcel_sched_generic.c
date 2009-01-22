@@ -594,17 +594,3 @@ static void __marcel_init marcel_gensched_start_lwps(void)
 
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");
 #endif /* MA__LWPS */
-
-int marcel_time_suspend(const struct timespec *abstime)
-{
-        unsigned long long nsec = abstime->tv_nsec + 1000000000*abstime->tv_sec;
-        LOG_IN();
-        if ((abstime->tv_nsec<0)||(abstime->tv_nsec > 999999999)||(abstime->tv_sec < 0)) {
-                mdebug("marcel_time_suspend : valeur nsec(%ld) invalide\n",abstime->tv_nsec);
-                errno = EINVAL;
-                LOG_RETURN(-1);
-        }
-
-        ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-        LOG_RETURN(ma_schedule_timeout(nsec/(1000*marcel_gettimeslice())));
-}

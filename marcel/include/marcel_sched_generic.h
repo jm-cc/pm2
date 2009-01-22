@@ -36,19 +36,6 @@
 
 /****************************************************************/
 #section functions
-/** \brief Suspend the scheduling of the calling thread for at least the
- * specified time, unless a signal is delivered to the thread (i.e.
- * thread state is set to TASK_INTERRUPTIBLE)
- *
- * - WHY is there a need for this function (which does not seem to be
- *   used) besides the sleep functions?
- * - probably BECAUSE of historical reasons. Should probably be deprecated.
- *
- * Note: there is no behavior difference with posix functions except the
- * function interface.
- */
-int marcel_time_suspend(const struct timespec *abstime);
-
 /* ==== `sleep' functions ==== */
 int pmarcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp);
 /** \fn int marcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp)

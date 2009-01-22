@@ -219,20 +219,20 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
 static
 void ma_memory_sampling_free(p_tbx_slist_t migration_costs) {
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   while (!tbx_slist_is_nil(migration_costs)) {
     marcel_memory_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
     tfree(ptr);
   }
   tbx_slist_free(migration_costs);
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
 int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
   int err;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   mdebug_mami("Releasing huge pages %s\n", (*space)->filename);
 
   err = close((*space)->file);
@@ -246,7 +246,7 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
     return -errno;
   }
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return 0;
 }
 
@@ -254,7 +254,7 @@ static
 void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int node) {
   marcel_memory_area_t *ptr, *ptr2;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   mdebug_mami("Deallocating memory for node #%d\n", node);
   ptr  = (*space);
   while (ptr != NULL) {
@@ -264,7 +264,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     ptr = ptr->next;
     tfree(ptr2);
   }
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
@@ -335,7 +335,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
                                 void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages,
 				int mami_allocated,
                                 marcel_memory_data_t **memory_data) {
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
 
   *memory_data = tmalloc(sizeof(marcel_memory_data_t));
 
@@ -361,7 +361,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->pageaddrs = tmalloc((*memory_data)->nbpages * sizeof(void *));
   memcpy((*memory_data)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
@@ -377,7 +377,7 @@ void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
 }
 
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree) {
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
     marcel_memory_tree_t *temp = (*memory_tree);
     ma_memory_clean_memory_data(&(temp->data));
@@ -408,7 +408,7 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
     // then delete the predecessor
     ma_memory_unregister(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
   }
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
@@ -418,7 +418,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   marcel_memory_area_t **prev;
   marcel_memory_area_t *next;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
 
   mdebug_mami("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size, nbpages);
 
@@ -488,11 +488,11 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
       ptr = &((*ptr)->next);
   }
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree, void *buffer) {
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       marcel_memory_data_t *data = (*memory_tree)->data;
@@ -522,14 +522,14 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
     else
       ma_memory_unregister(memory_manager, &((*memory_tree)->rightchild), buffer);
   }
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
 void ma_memory_register_pages(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
                               void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages, int mami_allocated,
                               marcel_memory_data_t **data) {
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
@@ -544,14 +544,14 @@ void ma_memory_register_pages(marcel_memory_manager_t *memory_manager, marcel_me
     else
       ma_memory_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
   }
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, marcel_memory_huge_pages_area_t **space, int node) {
   int nbpages;
   pid_t pid;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   nbpages = marcel_topo_node_level[node].huge_page_free;
   if (!nbpages) {
     mdebug_mami("No huge pages on node #%d\n", node);
@@ -592,7 +592,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   (*space)->heap->pagesize = memory_manager->hugepagesize;
   (*space)->heap->next = NULL;
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return 0;
 }
 
@@ -602,7 +602,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   void *buffer;
   int i, err=0;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
 
   length = nbpages * memory_manager->normalpagesize;
 
@@ -639,7 +639,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     mdebug_mami("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, node);
   }
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return err;
 }
 
@@ -775,10 +775,10 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
   size_t realsize;
   void **pageaddrs;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
 
   if (!size) {
-    MAMI_LOG_OUT();
+    MAMI_ILOG_OUT();
     return NULL;
   }
 
@@ -814,7 +814,7 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
 
   marcel_mutex_unlock(&(memory_manager->lock));
   mdebug_mami("Allocating %p on node #%d\n", buffer, node);
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return buffer;
 }
 
@@ -868,7 +868,7 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
 
 static
 int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *buffer, size_t size, marcel_memory_data_t **data) {
- MAMI_LOG_IN();
+ MAMI_ILOG_IN();
   if (memory_tree==NULL) {
     mdebug_mami("The interval [%p:%p] is not managed by MAMI.\n", buffer, buffer+size);
     errno = EINVAL;
@@ -892,7 +892,7 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     errno = EINVAL;
     return -errno;
   }
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
 }
 
 static
@@ -1012,7 +1012,8 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
 
     subpages = data->nbpages / subareas;
     if (!subpages) {
-      mdebug_mami("Memory area from %p not big enough to be split in %d subareas\n", data->startaddress, subareas);
+      mdebug_mami("Memory area from %p with size %ld and %d pages not big enough to be split in %d subareas\n",
+                  data->startaddress, (long) data->size, data->nbpages, subareas);
       errno = EINVAL;
       err = -errno;
     }
@@ -1328,7 +1329,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
   int i, *dests, *status;
   int err=0;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   if (data->node == dest) {
     mdebug_mami("The address %p is already located at the required node.\n", buffer);
     err = EALREADY;
@@ -1372,7 +1373,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     }
   }
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   errno = err;
   return -err;
 }
@@ -1520,9 +1521,9 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data;
 
   marcel_mutex_lock(&(memory_manager->lock));
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
 
-  mdebug_mami("Attaching [%p:%p] to entity %p\n", buffer, buffer+size, owner);
+  mdebug_mami("Attaching [%p:%p:%ld] to entity %p\n", buffer, buffer+size, (long)size, owner);
 
   if (!buffer) {
     mdebug_mami("Cannot attach NULL buffer\n");
@@ -1588,7 +1589,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     ma_spin_unlock(&(owner->memory_areas_lock));
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return err;
 }
 
@@ -1602,7 +1603,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_link_t *area = NULL;
 
   marcel_mutex_lock(&(memory_manager->lock));
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
@@ -1644,7 +1645,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   marcel_mutex_unlock(&(memory_manager->lock));
   if (!area) tfree(area);
 
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return err;
 }
 
@@ -1653,14 +1654,14 @@ int ma_memory_entity_unattach_all(marcel_memory_manager_t *memory_manager,
                                   marcel_entity_t *owner) {
   marcel_memory_data_link_t *area, *narea;
 
-  MAMI_LOG_IN();
+  MAMI_ILOG_IN();
   mdebug_mami("Unattaching all memory areas from entity %p\n", owner);
   //ma_spin_lock(&(owner->memory_areas_lock));
   list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
     ma_memory_entity_unattach(memory_manager, area->data->startaddress, owner);
   }
   //ma_spin_unlock(&(owner->memory_areas_lock));
-  MAMI_LOG_OUT();
+  MAMI_ILOG_OUT();
   return 0;
 }
 

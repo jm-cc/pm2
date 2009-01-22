@@ -116,6 +116,7 @@ extern debug_type_t marcel_allocator_log;
 extern debug_type_t marcel_heap_debug;
 extern debug_type_t marcel_mami_debug;
 extern debug_type_t marcel_mami_log;
+extern debug_type_t marcel_mami_ilog;
 #endif
 
 #section macros
@@ -147,13 +148,17 @@ extern debug_type_t marcel_mami_log;
     debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 
 #if defined(PM2DEBUG)
-#  define MAMI_LOG_IN()  debug_printf(&marcel_mami_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MAMI_LOG_OUT() debug_printf(&marcel_mami_log, "%s: <--\n", __TBX_FUNCTION__)
+#  define MAMI_LOG_IN()        debug_printf(&marcel_mami_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MAMI_LOG_OUT()       debug_printf(&marcel_mami_log, "%s: <--\n", __TBX_FUNCTION__)
+#  define MAMI_ILOG_IN()       debug_printf(&marcel_mami_ilog, "%s: -->\n", __TBX_FUNCTION__)
+#  define MAMI_ILOG_OUT()      debug_printf(&marcel_mami_ilog, "%s: <--\n", __TBX_FUNCTION__)
 #  define MALLOCATOR_LOG_IN()  debug_printf(&marcel_allocator_log, "%s: -->\n", __TBX_FUNCTION__)
 #  define MALLOCATOR_LOG_OUT() debug_printf(&marcel_allocator_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
 #  define MAMI_LOG_IN()
 #  define MAMI_LOG_OUT()
+#  define MAMI_ILOG_IN()
+#  define MAMI_ILOG_OUT()
 #  define MALLOCATOR_LOG_IN()
 #  define MALLOCATOR_LOG_OUT()
 #endif

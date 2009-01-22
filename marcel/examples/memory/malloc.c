@@ -18,7 +18,7 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  int node, least_loaded_node;
+  int node, least_loaded_node, maxnode;
   void *ptr, *ptr2, *ptr3, *ptr4;
   marcel_memory_manager_t memory_manager;
 
@@ -34,14 +34,15 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, marcel_current_node());
   }
 
-  marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 2);
+  maxnode = marcel_nbnodes-1;
+  marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, maxnode);
   ptr2 = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   marcel_memory_locate(&memory_manager, ptr2, 100, &node);
-  if (node == 2) {
+  if (node == maxnode) {
     marcel_printf("Memory allocated on given node\n");
   }
   else {
-    marcel_printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, 2);
+    marcel_printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, maxnode);
   }
 
   ptr3 = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 1);

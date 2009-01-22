@@ -15,7 +15,7 @@
 
 # Configuration
 prog="migrate_and_access"
-args="100000"
+args="10000"
 hosts="localhost"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF

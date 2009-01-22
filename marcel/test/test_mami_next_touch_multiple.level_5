@@ -18,6 +18,10 @@ prog="next_touch_multiple"
 args=""
 hosts="localhost"
 
+if [ ! -d /sys/devices/system/node/node2 ] ; then
+    continue
+fi
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Address is located on node -1
 Address is located on node 1

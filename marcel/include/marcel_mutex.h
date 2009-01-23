@@ -20,6 +20,8 @@
 #section macros
 #define MARCEL_MUTEX_INITIALIZER \
   {.__data = {.__lock=MA_MARCEL_FASTLOCK_UNLOCKED}}
+#define MARCEL_RECURSIVEMUTEX_INITIALIZER \
+  {.__data = {.__lock=MA_MARCEL_FASTLOCK_UNLOCKED,.owner=NULL,.__count=0}}
 
 /* pour pthread_mutexattr_setprotocol */
 #define PMARCEL_PRIO_NONE 0
@@ -105,21 +107,34 @@ enum {
 
 /* pas PTHREAD car déjà dans pthread.h, pas MARCEL car il a son propre initializer */
 #section structures
-#depend "marcel_threads.h[types]"
 /* Attribute for mutex.  */
 struct marcel_mutexattr {
-	int mutexkind;
+};
+struct marcel_recursivemutexattr {
 };
 
+#ifdef MA__IFACE_PMARCEL
+struct pmarcel_mutexattr {
+	int mutexkind;
+};
+#endif
+
 #section types
-#depend "marcel_mutex.h[structures]"
+#depend "[structures]"
 typedef union {
 	struct marcel_mutexattr __data;
 	long int __align;
 } marcel_mutexattr_t;
+typedef union {
+	struct marcel_recursivemutexattr __data;
+	long int __align;
+} marcel_recursivemutexattr_t;
 
 #ifdef MA__IFACE_PMARCEL
-typedef marcel_mutexattr_t pmarcel_mutexattr_t;
+typedef union {
+	struct pmarcel_mutexattr __data;
+	long int __align;
+} pmarcel_mutexattr_t;
 #endif
 
 typedef union
@@ -130,6 +145,17 @@ typedef union
 	} __data;
 	long int __align;
 } marcel_mutex_t;
+
+typedef union
+{
+	struct
+	{
+		unsigned int __count;
+		marcel_t owner;
+		struct _marcel_fastlock __lock;
+	} __data;
+	long int __align;
+} marcel_recursivemutex_t;
 
 #ifdef MA__IFACE_PMARCEL
 typedef union {
@@ -179,24 +205,38 @@ extern int marcel_mutexattr_init (marcel_mutexattr_t *__attr) __THROW;
 /* Destroy mutex attribute object ATTR.  */
 extern int marcel_mutexattr_destroy (marcel_mutexattr_t *__attr) __THROW;
 
-/* Get the process-shared flag of the mutex attribute ATTR.  */
-extern int marcel_mutexattr_getpshared (__const marcel_mutexattr_t *
-                                         __restrict __attr,
-                                         int *__restrict __pshared) __THROW;
 
-/* Set the process-shared flag of the mutex attribute ATTR.  */
-extern int marcel_mutexattr_setpshared (marcel_mutexattr_t *__attr,
-                                         int __pshared) __THROW;
-
-/* Return in *KIND the mutex kind attribute in *ATTR.  */
-extern int marcel_mutexattr_gettype (__const marcel_mutexattr_t *__restrict
-                                      __attr, int *__restrict __kind) __THROW;
-
-/* Set the mutex kind attribute in *ATTR to KIND (either MARCEL_MUTEX_NORMAL,
-   MARCEL_MUTEX_RECURSIVE, MARCEL_MUTEX_ERRORCHECK, or
-   MARCEL_MUTEX_DEFAULT).  */
-extern int marcel_mutexattr_settype (marcel_mutexattr_t *__attr, int __kind)
+/* Initialize a mutex.  */
+extern int marcel_recursivemutex_init (marcel_recursivemutex_t * __restrict __mutex,
+                               __const marcel_recursivemutexattr_t * __restrict __mutexattr)
      __THROW;
+
+/* Destroy a mutex.  */
+extern int marcel_recursivemutex_destroy (marcel_recursivemutex_t *__mutex) __THROW;
+
+/* Try locking a mutex.  */
+extern int marcel_recursivemutex_trylock (marcel_recursivemutex_t *_mutex) __THROW;
+
+/* Lock a mutex.  */
+extern int marcel_recursivemutex_lock (marcel_recursivemutex_t *__mutex) __THROW;
+
+/* Wait until lock becomes available, or specified time passes. */
+extern int marcel_recursivemutex_timedlock (marcel_recursivemutex_t *__restrict __mutex,
+                                    __const struct timespec *__restrict
+                                    __abstime) __THROW;
+
+/* Unlock a mutex.  */
+extern int marcel_recursivemutex_unlock (marcel_recursivemutex_t *__mutex) __THROW;
+
+
+/* Functions for handling mutex attributes.  */
+
+/* Initialize mutex attribute object ATTR with default attributes
+   (kind is PMARCEL_MUTEX_RECURSIVE_NP).  */
+extern int marcel_recursivemutexattr_init (marcel_recursivemutexattr_t *__attr) __THROW;
+
+/* Destroy mutex attribute object ATTR.  */
+extern int marcel_recursivemutexattr_destroy (marcel_recursivemutexattr_t *__attr) __THROW;
 
 /* PART PMARCEL */
 /*#line 146 "include/marcel_mutex.h.m4"*/

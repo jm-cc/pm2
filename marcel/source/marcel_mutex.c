@@ -45,6 +45,57 @@ int marcel_mutexattr_destroy(marcel_mutexattr_t * attr TBX_UNUSED)	{
 	return 0;
 }
 
+int marcel_recursivemutex_init (marcel_recursivemutex_t *mutex, 
+		const marcel_recursivemutexattr_t * mutexattr TBX_UNUSED) {
+	mdebug("initializing mutex %p by %p\n", mutex, marcel_self());
+	mutex->__data.owner = NULL;
+	mutex->__data.__count = 0;
+	__marcel_init_lock(&mutex->__data.__lock);
+	return 0;
+}
+int marcel_recursivemutex_destroy(marcel_recursivemutex_t * mutex TBX_UNUSED) {
+	return 0;
+}
+int marcel_recursivemutex_lock(marcel_recursivemutex_t * mutex) {
+	struct marcel_task *id = MARCEL_SELF;
+	if (mutex->__data.owner == id) {
+		mutex->__data.__count++;
+		return 0;
+	}
+	__marcel_lock(&mutex->__data.__lock, id);
+	mutex->__data.owner = id;
+	/* and __count is 0 */
+	return 0;
+}
+int marcel_recursivemutex_trylock(marcel_recursivemutex_t * mutex) {
+	struct marcel_task *id = MARCEL_SELF;
+	if (mutex->__data.owner == id) {
+		mutex->__data.__count++;
+		return 1;
+	}
+	if (!__marcel_trylock(&mutex->__data.__lock))
+		return 0;
+	__marcel_lock(&mutex->__data.__lock, id);
+	mutex->__data.owner = id;
+	/* and __count is 0 */
+	return 1;
+}
+int marcel_recursivemutex_unlock(marcel_recursivemutex_t * mutex) {
+	if (mutex->__data.__count) {
+		mutex->__data.__count--;
+		return 0;
+	}
+	mutex->__data.owner = NULL;
+	__marcel_unlock(&mutex->__data.__lock);
+	return 0;
+}
+int marcel_recursivemutexattr_init(marcel_recursivemutexattr_t * attr TBX_UNUSED)	{
+	return 0;
+}
+int marcel_recursivemutexattr_destroy(marcel_recursivemutexattr_t * attr TBX_UNUSED)	{
+	return 0;
+}
+
 #ifdef MA__IFACE_PMARCEL
 static const pmarcel_mutexattr_t pmarcel_default_attr = {
 	/* Default is a normal mutex, not shared between processes.  */

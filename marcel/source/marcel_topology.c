@@ -508,7 +508,7 @@ static int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
 		return -1;
 
 	fgets(string, 11, fd);
-	*value = strtol(string, NULL, 10);
+	*value = strtoul(string, NULL, 10);
 
 	fclose(fd);
 
@@ -536,7 +536,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 
 	/* parse the whole mask */
 	while (fgets(string, KERNEL_CPU_MAP_LEN, fd) && *string != '\0') { /* read one kernel cpu mask and the ending comma */
-		unsigned long map = strtol(string, NULL, 16);
+		unsigned long map = strtoul(string, NULL, 16);
 		if (!map && !nr_maps)
 			/* ignore the first map if it's empty */
 			continue;
@@ -614,7 +614,7 @@ ma_parse_cache_shared_cpu_maps(int proc_index, int procid_max, marcel_vpset_t *o
 		fd = fopen(mappath, "r");
 		if (fd) {
 			if (fgets(string,sizeof(string), fd))
-				level = strtol(string, NULL, 10)-1;
+				level = strtoul(string, NULL, 10)-1;
 			else
 				continue;
 			fclose(fd);
@@ -860,7 +860,7 @@ static void look_cpuinfo(unsigned *procid_max,
 #      define getprocnb_begin(field, var) \
 		if ( !strncmp(field,string,strlen(field))) { \
 			char *c = strchr(string, ':')+1; \
-			var = strtol(c,&endptr,0); \
+			var = strtoul(c,&endptr,0); \
 			if (endptr==c) { \
 				fprintf(stderr,"no number in "field" field of /proc/cpuinfo\n"); \
 				break; \

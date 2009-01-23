@@ -295,6 +295,8 @@ void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
  * Allocates memory on the current node. Size will be rounded up to the system page size.
  * @param memory_manager pointer to the memory manager
  * @param size size of the required memory
+ * @param policy
+ * @param node
  */
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
 			   size_t size,
@@ -306,6 +308,8 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param nmemb number of elements to allocate
  * @param size size of a single element
+ * @param policy memory allocation policy
+ * @param node
  */
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
 			   size_t nmemb,
@@ -361,6 +365,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
 /**
  * @param memory_manager pointer to the memory manager
  * @param buffer pointer to the memory to be located
+ * @param size size of the memory area to be located
  * @param node returns the location of the given memory
  * @return a negative value and set errno to EINVAL when address not found
  */
@@ -375,6 +380,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);
 
 /**
+ * @param stream
  * @param memory_manager pointer to the memory manager
  */
 void marcel_memory_fprint(FILE *stream, marcel_memory_manager_t *memory_manager);
@@ -483,6 +489,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
  * Move the area to the specified node.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
+ * @param node destination
  */
 int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
                                   void *buffer,
@@ -492,7 +499,9 @@ int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
  * Attach the memory to the specified thread
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
+ * @param size size of the memory area
  * @param owner thread
+ * @param node
  */
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               void *buffer,
@@ -514,7 +523,9 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
  * Attach the memory to the specified bubble
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
+ * @param size size of the memory area
  * @param owner bubble
+ * @param node will contain the node id where the data is located
  */
 int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,

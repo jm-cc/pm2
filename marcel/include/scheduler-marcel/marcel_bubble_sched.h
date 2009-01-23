@@ -306,7 +306,7 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble);
 /* Same as ma_bubble_gather, but asserts that the bubble hierarchy is held under level \e level and \e level is already locked */
 void ma_bubble_gather_here(marcel_bubble_t *b, struct marcel_topo_level *level);
 
-/** \Brief Gathers bubble b, move it to the top-level runqueue, and
+/** \brief Gathers bubble b, move it to the top-level runqueue, and
     call the bubble scheduler distribution algorithm from there. */
 void ma_bubble_move_top_and_submit (marcel_bubble_t *b);
 

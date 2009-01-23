@@ -75,7 +75,6 @@ int marcel_recursivemutex_trylock(marcel_recursivemutex_t * mutex) {
 	}
 	if (!__marcel_trylock(&mutex->__data.__lock))
 		return 0;
-	__marcel_lock(&mutex->__data.__lock, id);
 	mutex->__data.owner = id;
 	/* and __count is 0 */
 	return 1;

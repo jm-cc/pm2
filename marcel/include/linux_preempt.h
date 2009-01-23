@@ -96,10 +96,3 @@ do { \
 #section marcel_macros
 
 #define MA_PREEMPT_ACTIVE  (1UL << 25)
-
-/* Protection pour la réentrance du code de marcel avec les
- * bibliothèques extérieures (glibc par exemple)
- * DÉPRÉCIÉ, utilisez marcel_extlib_un?protect()
- */
-#define	ma_enter_lib() marcel_extlib_protect()
-#define	ma_exit_lib()  marcel_extlib_unprotect()

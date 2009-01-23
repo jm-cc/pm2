@@ -67,7 +67,7 @@ int isoaddr_addr(void *addr)
 #if 0
   fprintf(stderr,"isoaddr(%p)? -> %d (top = %p, bottom = %p, dyn = %ld)\n", addr,((int)addr < ISOADDR_AREA_TOP && (int)addr > (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE)), ISOADDR_AREA_TOP,  (ISOADDR_AREA_TOP - DYN_DSM_AREA_SIZE), DYN_DSM_AREA_SIZE); 
 #endif
-  return (int)(((char *)addr < (char *)ISOADDR_AREA_TOP) && ((char *)addr > ((char *)ISOADDR_AREA_TOP - (int)DYN_DSM_AREA_SIZE)));
+  return (int)(((char *)addr < (char *)ISOADDR_AREA_TOP) && ((char *)addr > ((char *)ISOADDR_AREA_TOP)));
 //return (unsigned long)addr > (unsigned long)((long int)ISOADDR_AREA_TOP - (long int)DYN_DSM_AREA_SIZE);
 }
 

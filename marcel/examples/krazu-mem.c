@@ -99,6 +99,7 @@ main (int argc, char **argv) {
     marcel_memory_free (&krazu_manager, tabs[i]);
   marcel_memory_free (&krazu_manager, tabs);
 
+  marcel_memory_exit (&krazu_manager);
   marcel_end ();
 
   return EXIT_SUCCESS;

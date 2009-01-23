@@ -129,7 +129,7 @@ mad3()
 
     networks_name=""
     for p in $protocols ; do
-        dev=`echo $p | sed 's/nmad-//'`
+        dev=`echo $p | sed 's/mad-//'`
         log "Device: $dev"
         network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
         log "Network $network_name"

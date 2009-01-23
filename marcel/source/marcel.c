@@ -133,20 +133,20 @@ int _marcel_raise_exception(marcel_exception_t ex)
  * them ourselves.
  */
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-static marcel_mutex_t ma_extlib_lock = MARCEL_MUTEX_INITIALIZER;
+static marcel_recursivemutex_t ma_extlib_lock = MARCEL_RECURSIVEMUTEX_INITIALIZER;
 #endif
 int marcel_extlib_protect(void)
 {
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
 	if (ma_in_atomic())
-		while (!marcel_mutex_trylock(&ma_extlib_lock))
+		while (!marcel_recursivemutex_trylock(&ma_extlib_lock))
 			/* Another LWP is already doing an external call, so we
 			 * have to wait for its completion, but we are in an
 			 * atomic section so can not sleep! Make the LWP sleep
 			 * instead */
 			ma_lwp_relax();
 	else
-		marcel_mutex_lock(&ma_extlib_lock);
+		marcel_recursivemutex_lock(&ma_extlib_lock);
 #endif
 	ma_local_bh_disable();
 	return 0;
@@ -155,7 +155,7 @@ int marcel_extlib_protect(void)
 int marcel_extlib_unprotect(void)
 {
 #if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-	marcel_mutex_unlock(&ma_extlib_lock);
+	marcel_recursivemutex_unlock(&ma_extlib_lock);
 #endif
 	/* Release preemption after releasing the mutex, in case we'd try to
 	 * immediately schedule a thread that calls marcel_extlib_protect(),

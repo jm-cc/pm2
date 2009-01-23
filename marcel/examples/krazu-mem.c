@@ -14,10 +14,12 @@
  * General Public License for more details.
  */
 
-#include "marcel.h"
+#include <stdlib.h>
 
-#if defined(MARCEL_NUMA) && defined(MARCEL_MAMI_ENABLED)
-#include <numa.h>
+#include <marcel.h>
+#include <marcel_memory.h> 
+
+#if defined(MARCEL_MAMI_ENABLED)
 
 #define NUM_THREADS 16
 #define TAB_SIZE 1024*1024*64
@@ -55,27 +57,37 @@ main (int argc, char **argv) {
   marcel_bubble_t main_bubble;
   marcel_t threads[NUM_THREADS];
   marcel_attr_t thread_attr;
+  marcel_memory_manager_t krazu_manager;
+
+  marcel_memory_init (&krazu_manager);
 
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
-  tabs = marcel_malloc (NUM_THREADS * sizeof (int *), __FILE__, __LINE__);
+  tabs = marcel_memory_malloc (&krazu_manager, 
+			       NUM_THREADS * sizeof (int *), 
+			       MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 
+			       0);
+
   for (i = 0; i < NUM_THREADS; i++) {
-    unsigned int node = i % (numa_max_node () + 1);
-    tabs[i] = numa_alloc_onnode (TAB_SIZE * sizeof (int), node);
+    unsigned int node = i % (marcel_nbnodes + 1);
+    tabs[i] = marcel_memory_malloc (&krazu_manager, 
+				    TAB_SIZE * sizeof (int), 
+				    MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 
+				    node);
   }
 
-  marcel_attr_init(&thread_attr);
+  marcel_attr_init (&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);
-  marcel_thread_preemption_disable();
+  marcel_thread_preemption_disable ();
   marcel_attr_setinitbubble (&thread_attr, &main_bubble);
 
   for (i = 0; i < NUM_THREADS; i++) {
     marcel_attr_setid (&thread_attr, i);
     marcel_create (threads + i, &thread_attr, f, NULL);
-    for (j = 0; j < numa_max_node() + 1; j++) {
+    for (j = 0; j < marcel_nbnodes + 1; j++) {
       ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] =
-	(j == i % (numa_max_node () + 1)) ? TAB_SIZE : 0;
+	(j == i % (marcel_nbnodes + 1)) ? TAB_SIZE : 0;
     }
   }
 
@@ -84,16 +96,18 @@ main (int argc, char **argv) {
   marcel_bubble_join (&main_bubble);
 
   for (i = 0; i < NUM_THREADS; i++)
-    numa_free (tabs[i], TAB_SIZE);
-  free (tabs);
+    marcel_memory_free (&krazu_manager, tabs[i]);
+  marcel_memory_free (&krazu_manager, tabs);
 
   marcel_end ();
+
+  return EXIT_SUCCESS;
 }
 #else
-#  warning Options numa and MaMI must be enabled for this program
+#  warning Option MaMI must be enabled for this program
 int marcel_main(int argc, char *argv[])
 {
-  fprintf(stderr, "'numa' feature and MaMI disabled in the flavor\n");
-  return 0;
+  fprintf(stderr, "MaMI disabled in the flavor\n");
+  return EXIT_SUCCESS;
 }
 #endif

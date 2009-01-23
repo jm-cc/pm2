@@ -37,18 +37,18 @@ or <TT>enable_userspace</TT>.
 <P>
 Marcel can be made to use part of the machine's processors: adding
 <TT>--marcel-nvp 4</TT> to the command line will make it use only 4 processors.
-By default, Marcel tries to <I>spread</I> over the machine, i.e. when using 4
+By default, Marcel tries to <EM>spread</EM> over the machine, i.e. when using 4
 processors of a quad-quad core machine, it will use one core of each of the 4
-dies. To use <I>adjacent</I> processors, append <TT>--marcel-cpustride 1</TT>
+dies. To use <EM>adjacent</EM> processors, append <TT>--marcel-cpustride 1</TT>
 to the command line. Eventually, appending the <TT>--marcel-firstcpu 4</TT>
 option makes Marcel use processors from the fifth processor. For instance, on a
 quad-quad core machine, one could run 4 Marcel applications this way:
 
 <UL>
-<LI>appli1 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 0
-<LI>appli2 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 4
-<LI>appli3 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 8
-<LI>appli4 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 12
+<LI>appli1 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 0</LI>
+<LI>appli2 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 4</LI>
+<LI>appli3 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 8</LI>
+<LI>appli4 --marcel-nvp 4 --marcel-cpustride 1 --marcel-firstcpu 12</LI>
 </UL>
 
 Each application will get bound to a die.

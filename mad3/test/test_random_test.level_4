@@ -1,4 +1,4 @@
-
+#-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -13,7 +13,7 @@
 # General Public License for more details.
 
 # Configuration
-flavor="test_mad3"
+flavor="test_mad3_marcel"
 appdir="${PM2_ROOT}/mad3/examples"
 prog="mad_random_test"
 args="-w --x --p --l"

@@ -153,33 +153,24 @@ enum marcel_topo_level_memory_type_e {
 /****************************************************************/
 
 #section types
-#include <limits.h>
-#if !defined(MA__LWPS) || (1ULL<<(MARCEL_NBMAXCPUS-1) < UINT_MAX)
+#include <stdint.h>
+
+#if !defined(MA__LWPS) || MARCEL_NBMAXCPUS <= 32
 /** \brief Virtual processor set: defines the set of "allowed" LWP for a given thread */
-typedef unsigned marcel_vpset_t;
+typedef uint32_t marcel_vpset_t; /* FIXME: uint_fast32_t if available? */
 /** \brief Typed unset bit constant. */
-#    define MARCEL_VPSET_CONST_0	0U
+#    define MARCEL_VPSET_CONST_0	((marcel_vpset_t) 0U)
 /** \brief Typed set bit constant. */
-#    define MARCEL_VPSET_CONST_1	1U
+#    define MARCEL_VPSET_CONST_1	((marcel_vpset_t) 1U)
 /** \brief Format string snippet suitable for the vpset datatype */
 #    define MARCEL_PRIxVPSET			"08x"
-#    define MARCEL_VPSET_PRINTF_VALUE(x)	(x)
-#elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULONG_MAX)
-typedef unsigned long marcel_vpset_t;
-#    define MARCEL_VPSET_CONST_0	0UL
-#    define MARCEL_VPSET_CONST_1	1UL
-#if BITS_PER_LONG == 32
-#    define MARCEL_PRIxVPSET			"08lx"
-#else
-#    define MARCEL_PRIxVPSET			"016lx"
-#endif
-#    define MARCEL_VPSET_PRINTF_VALUE(x)	(x)
-#elif (1ULL<<(MARCEL_NBMAXCPUS-1) < ULLONG_MAX)
-typedef unsigned long long marcel_vpset_t;
-#    define MARCEL_VPSET_CONST_0	0ULL
-#    define MARCEL_VPSET_CONST_1	1ULL
+#    define MARCEL_VPSET_PRINTF_VALUE(x)	((unsigned)(x))
+#elif MARCEL_NBMAXCPUS <= 64
+typedef uint64_t marcel_vpset_t;
+#    define MARCEL_VPSET_CONST_0	((marcel_vpset_t) 0ULL)
+#    define MARCEL_VPSET_CONST_1	((marcel_vpset_t) 1ULL)
 #    define MARCEL_PRIxVPSET			"016llx"
-#    define MARCEL_VPSET_PRINTF_VALUE(x)	(x)
+#    define MARCEL_VPSET_PRINTF_VALUE(x)	((unsigned long long)(x))
 #else
 #    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
 #endif
@@ -385,6 +376,8 @@ static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset);
 #depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
 {
+	/* FIXME: 64bits vpsets on 32bits arch need ma_ffs64 */
+	MA_BUG_ON (MA_BITS_PER_LONG == 32 && sizeof(marcel_vpset_t) > sizeof(long));
 	return ma_ffs(*vpset)-1;
 }
 
@@ -396,6 +389,8 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 {
 #ifdef MA__LWPS
+	/* FIXME: 64bits vpsets on 32bits arch need ma_ffs64 */
+	MA_BUG_ON (MA_BITS_PER_LONG == 32 && sizeof(marcel_vpset_t) > sizeof(long));
 	return ma_hweight_long(*vpset);
 #else
 	return *vpset;

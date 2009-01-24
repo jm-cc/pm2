@@ -376,9 +376,19 @@ static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset);
 #depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
 {
-	/* FIXME: 64bits vpsets on 32bits arch need ma_ffs64 */
-	MA_BUG_ON (MA_BITS_PER_LONG == 32 && sizeof(marcel_vpset_t) > sizeof(long));
+#if MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
+	/* FIXME: return ma_ffs64(*vpset)-1 */
+	int i;
+	i = ma_ffs(((unsigned*)vpset)[0]);
+	if (i>0)
+		return i-1;
+	i = ma_ffs(((unsigned*)vpset)[1]);
+	if (i>0)
+		return i+32-1;
+	return -1;
+#else
 	return ma_ffs(*vpset)-1;
+#endif
 }
 
 #section marcel_functions
@@ -389,9 +399,11 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 {
 #ifdef MA__LWPS
-	/* FIXME: 64bits vpsets on 32bits arch need ma_ffs64 */
-	MA_BUG_ON (MA_BITS_PER_LONG == 32 && sizeof(marcel_vpset_t) > sizeof(long));
+#if MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
+	return ma_hweight64(*vpset);
+#else
 	return ma_hweight_long(*vpset);
+#endif
 #else
 	return *vpset;
 #endif

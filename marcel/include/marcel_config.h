@@ -47,12 +47,16 @@
 
 /* Max number of architecture elements */
 #ifdef MA__LWPS
-#define MARCEL_NBMAXCPUS	32
-#ifdef MA__NUMA
-#define MARCEL_NBMAXNODES	8
-#endif
+#  ifndef MARCEL_NBMAXCPUS /* not enforced in the flavor */
+#    define MARCEL_NBMAXCPUS	32
+#  endif
+#  ifdef MA__NUMA
+#    ifndef MARCEL_NBMAXNODES /* not enforced in the flavor */
+#      define MARCEL_NBMAXNODES	8
+#    endif
+#  endif
 #else
-#define MARCEL_NBMAXCPUS	1
+#  define MARCEL_NBMAXCPUS	1
 #endif
 
 /* Max number of marcel_add_lwp() calls */

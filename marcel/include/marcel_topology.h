@@ -155,6 +155,22 @@ enum marcel_topo_level_memory_type_e {
 #section types
 #include <stdint.h>
 
+#ifndef MARCEL_NBMAXCPUS
+#error MARCEL_NBMAXCPUS undefined!
+#endif
+#if !MARCEL_NBMAXCPUS
+#error MARCEL_NBMAXCPUS is zero!
+#endif
+
+#ifdef MA__NUMA
+#ifndef MARCEL_NBMAXNODES
+#error MARCEL_NBMAXNODES undefined!
+#endif
+#if !MARCEL_NBMAXNODES
+#error MARCEL_NBMAXNODES is zero!
+#endif
+#endif
+
 #if !defined(MA__LWPS) || MARCEL_NBMAXCPUS <= 32
 /** \brief Virtual processor set: defines the set of "allowed" LWP for a given thread */
 typedef uint32_t marcel_vpset_t; /* FIXME: uint_fast32_t if available? */

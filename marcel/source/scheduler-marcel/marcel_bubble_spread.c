@@ -287,7 +287,7 @@ spread_sched_submit(marcel_entity_t *e)
   return 0;
 }
 
-static int
+static int TBX_UNUSED /* disabled below for now */
 spread_sched_vp_is_idle(unsigned vp)
 {
   if (!vp) return 0;
@@ -322,7 +322,7 @@ spread_sched_vp_is_idle(unsigned vp)
 
 MARCEL_DEFINE_BUBBLE_SCHEDULER (spread,
   .submit = spread_sched_submit,
-  //.vp_is_idle = spread_sched_vp_is_idle,
+  //.vp_is_idle = spread_sched_vp_is_idle, /* remove TBX_UNUSED above when reenabling this */
 );
 
 #endif

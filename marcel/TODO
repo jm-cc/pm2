@@ -50,7 +50,7 @@ Benchs OpenMP EPCC.
 
 Signaux: SA_RESETHAND
 
-topology: implémenter un tri topologique pour qu'on n'ait pas à donner les niveaux dans l'ordre. Aller lire /sys/devices/system/cpu/cpu*/cache/index*/shared_cpu_map pour le partage de cache. Aller lire /sys/Devices/system/cpu/cpu*/topology/* plutôt que parser /proc/cpuinfo qui n'est pas portable.
+topology: implémenter un tri topologique pour qu'on n'ait pas à donner les niveaux dans l'ordre.
 
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
@@ -85,5 +85,8 @@ RCU lists
 
 Utiliser /dev/rtc sous linux pour avoir une fréquence de préemption plus grande que par défaut (100-1000Hz).
 
+Tout ce qui est dans marcel_config.h devrait etre configurable dans la flavor.
+
 Windows-smp:
 Accepter une pile fournie par l'os pour les kthread.
+

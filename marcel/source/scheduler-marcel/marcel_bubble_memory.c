@@ -18,7 +18,7 @@
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
 
-#define MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 1
+#define MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
 static void
@@ -247,11 +247,8 @@ memory_sched_shake () {
   ma_local_bh_enable ();
 
   if (shake) {
-    marcel_printf ("Shaking for real!\n");
     ma_bubble_move_top_and_submit (&marcel_root_bubble);
     ret = 1;
-  } else {
-    marcel_printf ("No need to shake!\n");
   }
 
   return ret;

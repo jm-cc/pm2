@@ -1403,7 +1403,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 				 level->children[i]->number);
 		newrq = &level->children[i]->rq;
 		ma_init_rq(newrq, name);
-		rq->topolevel = level;
+		newrq->topolevel = level->children[i];
 		newrq->level = levelnum;
 		newrq->father = rq;
 		newrq->vpset = level->children[i]->vpset;

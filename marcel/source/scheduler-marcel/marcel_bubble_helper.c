@@ -74,16 +74,23 @@ unsigned ma_entity_is_running (marcel_entity_t *e) {
    holding bubble is scheduled on. */
 ma_runqueue_t *
 ma_get_parent_rq (marcel_entity_t *e) {
+  ma_runqueue_t *parent_rq = NULL;
+  
   if (e) {
     ma_holder_t *sh = e->sched_holder;
-    if (sh && (sh->type == MA_RUNQUEUE_HOLDER))
-      return ma_to_rq_holder(sh);
-    
-    marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
-    MA_BUG_ON (upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
-    return ma_to_rq_holder (upper_e->sched_holder);
+    if (sh && (sh->type == MA_RUNQUEUE_HOLDER)) {
+      /* _e_ is directly scheduled on a runqueue, return it. */
+      parent_rq = ma_to_rq_holder(sh);
+    } else {
+      /* _e_ is scheduled from a bubble, return the runqueue the
+	 bubble is scheduled on. */
+      marcel_entity_t *upper_e = &ma_bubble_holder(sh)->as_entity;
+      MA_BUG_ON (upper_e->sched_holder->type != MA_RUNQUEUE_HOLDER);
+      parent_rq = ma_to_rq_holder (upper_e->sched_holder);
+    }
   }
-  return NULL;
+
+  return parent_rq;
 }
 
 /* This function is called by bubble schedulers to determine the

@@ -65,6 +65,7 @@
 
 #section common
 #include <stdio.h>
+#include <string.h>
 #include "tbx_compiler.h"
 
 #section variables
@@ -174,29 +175,72 @@ enum marcel_topo_level_memory_type_e {
 #if !defined(MA__LWPS) || MARCEL_NBMAXCPUS <= 32
 /** \brief Virtual processor set: defines the set of "allowed" LWP for a given thread */
 typedef uint32_t marcel_vpset_t; /* FIXME: uint_fast32_t if available? */
-/** \brief Typed unset bit constant. */
-#    define MARCEL_VPSET_CONST_0	((marcel_vpset_t) 0U)
-/** \brief Typed set bit constant. */
-#    define MARCEL_VPSET_CONST_1	((marcel_vpset_t) 1U)
+/** \brief Set with no or all LWP selected. */
+#    define MARCEL_VPSET_ZERO		((marcel_vpset_t) 0U)
+#    define MARCEL_VPSET_FULL		((marcel_vpset_t) ~0U)
+/** \brief Set with only \e vp in selected. */
+#    define MARCEL_VPSET_VP(vp)		((marcel_vpset_t)(1U<<(vp)))
 /** \brief Format string snippet suitable for the vpset datatype */
 #    define MARCEL_PRIxVPSET			"08x"
 #    define MARCEL_VPSET_PRINTF_VALUE(x)	((unsigned)(x))
+
 #elif MARCEL_NBMAXCPUS <= 64
 typedef uint64_t marcel_vpset_t;
-#    define MARCEL_VPSET_CONST_0	((marcel_vpset_t) 0ULL)
-#    define MARCEL_VPSET_CONST_1	((marcel_vpset_t) 1ULL)
+#    define MARCEL_VPSET_ZERO		((marcel_vpset_t) 0ULL)
+#    define MARCEL_VPSET_FULL		((marcel_vpset_t) ~0ULL)
+#    define MARCEL_VPSET_VP(vp)		((marcel_vpset_t)(1ULL<<(vp)))
 #    define MARCEL_PRIxVPSET			"016llx"
 #    define MARCEL_VPSET_PRINTF_VALUE(x)	((unsigned long long)(x))
-#else
-#    error MARCEL_NBMAXCPUS is too big, change it in marcel_config.h
-#endif
-typedef marcel_vpset_t pmarcel_cpu_set_t;
 
-/** \brief Set with no LWP selected. */
-#define MARCEL_VPSET_ZERO           ((marcel_vpset_t)  MARCEL_VPSET_CONST_0)
-#define MARCEL_VPSET_FULL	    (~MARCEL_VPSET_ZERO)
-/** \brief Set with only \e vp in selected. */
-#define MARCEL_VPSET_VP(vp)         ((marcel_vpset_t)(  MARCEL_VPSET_CONST_1 << (vp)) )
+#else /* large vpset using an array of unsigned long subsets */
+#    define MA_HAVE_VPSUBSET		1 /* marker for VPSUBSET being enabled */
+/* size and count of subsets within a set */
+#    define MA_VPSUBSET_SIZE		(8*sizeof(long))
+#    define MA_VPSUBSET_COUNT		((MARCEL_NBMAXCPUS+MA_VPSUBSET_SIZE-1)/MA_VPSUBSET_SIZE)
+typedef struct { unsigned long s[MA_VPSUBSET_COUNT]; } marcel_vpset_t;
+/* extract a subset from a set using an index or a vp */
+#    define MA_VPSUBSET_SUBSET(set,x)	((set).s[x])
+#    define MA_VPSUBSET_INDEX(vp)	((vp)/(MA_VPSUBSET_SIZE))
+#    define MA_VPSUBSET_VPSUBSET(set,vp)	MA_VPSUBSET_SUBSET(set,MA_VPSUBSET_INDEX(vp))
+/* predefined subset values */
+#    define MA_VPSUBSET_VAL(vp)		(1UL<<((vp)%(MA_VPSUBSET_SIZE)))
+#    define MA_VPSUBSET_ZERO		0UL
+#    define MA_VPSUBSET_FULL		~0UL
+/* actual whole-vpset values */
+#    define MARCEL_VPSET_ZERO		(marcel_vpset_t){ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_ZERO }
+#    define MARCEL_VPSET_FULL		(marcel_vpset_t){ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_FULL }
+#    define MARCEL_VPSET_VP(vp)		({ marcel_vpset_t __set = MARCEL_VPSET_ZERO; MA_VPSUBSET_VPSUBSET(__set,vp) = MA_VPSUBSET_VAL(vp); __set; })
+/* displaying vpsets */
+#if MA_BITS_PER_LONG == 32
+#    define MA_PRIxVPSUBSET		"%08lx"
+#else
+#    define MA_PRIxVPSUBSET		"%016lx"
+#endif
+#    define MA_VPSUBSET_STRING_LENGTH	(MA_BITS_PER_LONG/4)
+#    define MARCEL_VPSET_STRING_LENGTH	(MA_VPSUBSET_COUNT*(MA_VPSUBSET_STRING_LENGTH+1))
+#    define MARCEL_PRIxVPSET		"s"
+#    define MARCEL_VPSET_PRINTF_VALUE(x)	({			\
+	char *__buf = alloca(MARCEL_VPSET_STRING_LENGTH+1);		\
+	char *__tmp = __buf;						\
+	int __i;							\
+	for(__i=MA_VPSUBSET_COUNT-1; __i>=0; __i--)			\
+	  __tmp += sprintf(__tmp, MA_PRIxVPSUBSET ",", (x).s[__i]);	\
+	*(__tmp-1) = '\0';						\
+	__buf;								\
+     })
+#endif /* large vpset using an array of unsigned long subsets */
+
+#ifndef MA_HAVE_VPSUBSET
+#   define MA_VPSUBSET_SIZE 		0 /* useless */
+#   define MA_VPSUBSET_COUNT		1
+#   define MA_VPSUBSET_SUBSET(set,x)	(set)
+#   define MA_VPSUBSET_VPSUBSET(set,vp)	(set)
+#   define MA_VPSUBSET_VAL(vp)		MARCEL_VPSET_VP(vp)
+#   define MA_VPSUBSET_ZERO		MARCEL_VPSET_ZERO
+#   define MA_VPSUBSET_FULL		MARCEL_VPSET_FULL
+#endif
+
+typedef marcel_vpset_t pmarcel_cpu_set_t;
 
 #define PMARCEL_CPU_SETSIZE MARCEL_NBMAXCPUS
 
@@ -214,7 +258,9 @@ static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set);
 #section inline
 static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set)
 {
-	*set = MARCEL_VPSET_ZERO;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		MA_VPSUBSET_SUBSET(*set,i) = MA_VPSUBSET_ZERO;
 }
 
 #define PMARCEL_CPU_ZERO(cpusetp) marcel_vpset_zero(cpusetp)
@@ -226,7 +272,9 @@ static __tbx_inline__ void marcel_vpset_fill(marcel_vpset_t * set);
 #section inline
 static __tbx_inline__ void marcel_vpset_fill(marcel_vpset_t * set)
 {
-	*set = MARCEL_VPSET_FULL;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		MA_VPSUBSET_SUBSET(*set,i) = MA_VPSUBSET_FULL;
 }
 
 #section functions
@@ -238,7 +286,12 @@ static __tbx_inline__ void marcel_vpset_vp(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
+#ifndef MA_HAVE_VPSUBSET
 	*set = MARCEL_VPSET_VP(vp);
+#else
+	marcel_vpset_zero(set);
+	MA_VPSUBSET_VPSUBSET(*set,vp) |= MA_VPSUBSET_VAL(vp);
+#endif
 #else
 	marcel_vpset_fill(set);
 #endif
@@ -253,7 +306,12 @@ static __tbx_inline__ void marcel_vpset_all_but_vp(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
+#ifndef MA_HAVE_VPSUBSET
 	*set = ~MARCEL_VPSET_VP(vp);
+#else
+	marcel_vpset_fill(set);
+	MA_VPSUBSET_VPSUBSET(*set,vp) &= ~MA_VPSUBSET_VAL(vp);
+#endif
 #else
 	marcel_vpset_zero(set);
 #endif
@@ -268,7 +326,11 @@ static __tbx_inline__ void marcel_vpset_set(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
+#ifndef MA_HAVE_VPSUBSET
 	*set |= MARCEL_VPSET_VP(vp);
+#else
+	MA_VPSUBSET_VPSUBSET(*set,vp) |= MA_VPSUBSET_VAL(vp);
+#endif
 #else
 	marcel_vpset_fill(set);
 #endif
@@ -285,7 +347,11 @@ static __tbx_inline__ void marcel_vpset_clr(marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
+#ifndef MA_HAVE_VPSUBSET
 	*set &= ~(MARCEL_VPSET_VP(vp));
+#else
+	MA_VPSUBSET_VPSUBSET(*set,vp) &= ~MA_VPSUBSET_VAL(vp);
+#endif
 #else
 	marcel_vpset_zero(set);
 #endif
@@ -303,7 +369,11 @@ static __tbx_inline__ int marcel_vpset_isset(const marcel_vpset_t * set,
     unsigned vp)
 {
 #ifdef MA__LWPS
+#ifndef MA_HAVE_VPSUBSET
 	return 1 & (*set >> vp);
+#else
+	return (MA_VPSUBSET_VPSUBSET(*set,vp) & MA_VPSUBSET_VAL(vp)) != 0;
+#endif
 #else
 	return *set;
 #endif
@@ -319,11 +389,19 @@ static __tbx_inline__ int marcel_vpset_isfull(const marcel_vpset_t *set);
 #section inline
 static __tbx_inline__ int marcel_vpset_iszero(const marcel_vpset_t *set)
 {
-	return *set == MARCEL_VPSET_ZERO;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		if (MA_VPSUBSET_SUBSET(*set,i) != MA_VPSUBSET_ZERO)
+			return 0;
+	return 1;
 }
 static __tbx_inline__ int marcel_vpset_isfull(const marcel_vpset_t *set)
 {
-	return *set == MARCEL_VPSET_FULL;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		if (MA_VPSUBSET_SUBSET(*set,i) != MA_VPSUBSET_FULL)
+			return 0;
+	return 1;
 }
 
 #section functions
@@ -334,7 +412,11 @@ static __tbx_inline__ int marcel_vpset_isequal (const marcel_vpset_t *set1,
 static __tbx_inline__ int marcel_vpset_isequal (const marcel_vpset_t *set1,
 						const marcel_vpset_t *set2)
 {
-	return *set1 == *set2;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		if (MA_VPSUBSET_SUBSET(*set1,i) != MA_VPSUBSET_SUBSET(*set2,i))
+			return 0;
+	return 1;
 }
 
 #section functions
@@ -346,7 +428,11 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 						   const marcel_vpset_t *sub_set)
 {
 #ifdef MA__LWPS
-        return (*super_set == (*super_set | *sub_set));
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		if (MA_VPSUBSET_SUBSET(*super_set,i) != (MA_VPSUBSET_SUBSET(*super_set,i) | MA_VPSUBSET_SUBSET(*sub_set,i)))
+			return 0;
+	return 1;
 #else
 	return *super_set;
 #endif
@@ -360,7 +446,9 @@ static __tbx_inline__ void marcel_vpset_orset (marcel_vpset_t *set,
 static __tbx_inline__ void marcel_vpset_orset (marcel_vpset_t *set,
 					       const marcel_vpset_t *modifier_set)
 {
-	*set |= *modifier_set;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		MA_VPSUBSET_SUBSET(*set,i) |= MA_VPSUBSET_SUBSET(*modifier_set,i);
 }
 
 #section functions
@@ -371,7 +459,9 @@ static __tbx_inline__ void marcel_vpset_andset (marcel_vpset_t *set,
 static __tbx_inline__ void marcel_vpset_andset (marcel_vpset_t *set,
 						const marcel_vpset_t *modifier_set)
 {
-	*set &= *modifier_set;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		MA_VPSUBSET_SUBSET(*set,i) &= MA_VPSUBSET_SUBSET(*modifier_set,i);
 }
 
 #section functions
@@ -382,7 +472,9 @@ static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *set,
 static __tbx_inline__ void marcel_vpset_clearset (marcel_vpset_t *set,
 						  const marcel_vpset_t *modifier_set)
 {
-	*set &= ~*modifier_set;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		MA_VPSUBSET_SUBSET(*set,i) &= ~MA_VPSUBSET_SUBSET(*modifier_set,i);
 }
 
 #section marcel_functions
@@ -392,7 +484,7 @@ static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset);
 #depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
 {
-#if MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
+#if (!defined MA_HAVE_VPSUBSET) && MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
 	/* FIXME: return ma_ffs64(*vpset)-1 */
 	int i;
 	i = ma_ffs(((unsigned*)vpset)[0]);
@@ -403,7 +495,14 @@ static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
 		return i+32-1;
 	return -1;
 #else
-	return ma_ffs(*vpset)-1;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++) {
+		int ffs = ma_ffs(MA_VPSUBSET_SUBSET(*vpset,i));
+		if (ffs>0)
+			return ffs - 1 + MA_VPSUBSET_SIZE*i;
+	}
+
+	return -1;
 #endif
 }
 
@@ -415,10 +514,14 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 {
 #ifdef MA__LWPS
-#if MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
+#if (!defined MA_HAVE_VPSUBSET) && MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
 	return ma_hweight64(*vpset);
 #else
-	return ma_hweight_long(*vpset);
+	int weight=0;
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		weight += ma_hweight_long(MA_VPSUBSET_SUBSET(*vpset,i));
+	return weight;
 #endif
 #else
 	return *vpset;

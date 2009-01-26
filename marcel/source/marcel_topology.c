@@ -516,9 +516,10 @@ static int ma_parse_sysfs_unsigned(const char *mappath, unsigned *value)
 	return 0;
 }
 
-#define MAX_KERNEL_CPU_MASK 8
+/* kernel cpumaps are composed of an array of 32bits cpumasks */
 #define KERNEL_CPU_MASK_BITS 32
 #define KERNEL_CPU_MAP_LEN (KERNEL_CPU_MASK_BITS/4+2)
+#define MAX_KERNEL_CPU_MASK ((MARCEL_NBMAXCPUS+KERNEL_CPU_MASK_BITS-1)/KERNEL_CPU_MASK_BITS)
 
 static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 {
@@ -537,10 +538,14 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 
 	/* parse the whole mask */
 	while (fgets(string, KERNEL_CPU_MAP_LEN, fd) && *string != '\0') { /* read one kernel cpu mask and the ending comma */
-		unsigned long map = strtoul(string, NULL, 16);
+		unsigned long map;
+		MA_BUG_ON(nr_maps == MAX_KERNEL_CPU_MASK); /* too many cpumasks in this cpumap */
+
+		map = strtoul(string, NULL, 16);
 		if (!map && !nr_maps)
 			/* ignore the first map if it's empty */
 			continue;
+
 		memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
 		maps[0] = map;
 		nr_maps++;

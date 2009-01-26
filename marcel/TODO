@@ -3,6 +3,8 @@ TODOs dans le code :)
 sem_P/sem_V est coûteux par rapport à un yield
 
 pmarcel + valgrind a l'air de merder sur la TLS: valgrind met 0x3 pour le gs du main, mais dans le traitant de signal on se retrouve avec un gs = 0
+Possible que ce soit simplement
+https://bugs.kde.org/show_bug.cgi?id=175984
 
 Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle
 marcel_extlib_protect puis __printf, __malloc, etc. -> pukabi
@@ -47,6 +49,18 @@ Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des 
 Mettre en place un cron qui lance posixtestsuite et trace un courbe
 
 Benchs OpenMP EPCC.
+
+un mode PM2_BEGINNER avec des asserts partout
+
+Compteurs de perfs: coloriser IPC -> séparer spinlock/rwlock/reste
+
+cond_signal / mutex_unlock : attribut pour dire de passer la main tout de suite
+
+mutex: attribut "prise courte (protection d'un objet)" -> endormissement "court"
+pour les politiques de redistribution
+
+piles des threads: localité par rapport aux n½uds, voire entre mami et
+l'allocateur hiérarchique.
 
 Signaux: SA_RESETHAND
 

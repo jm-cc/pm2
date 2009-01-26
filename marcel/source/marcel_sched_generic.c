@@ -363,11 +363,6 @@ void marcel_gensched_shutdown(void)
 
 	if(MARCEL_SELF != __main_thread)
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
-	if (ma_in_atomic()) {
-		pm2debug("bad: shutdown while atomic (%06x)! Did you forget to unlock a spinlock?\n", ma_preempt_count());
-		ma_show_preempt_backtrace();
-		MA_BUG();
-	}
 
 	wait_all_tasks_end();
 

@@ -1350,7 +1350,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
       err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
 #ifdef PM2DEBUG
-      ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
+      //ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
     }
 
@@ -1645,9 +1645,10 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
       }
     }
   }
+
   marcel_mutex_unlock(&(memory_manager->lock));
   if (!area) tfree(area);
-
+  
   MAMI_ILOG_OUT();
   return err;
 }

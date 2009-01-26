@@ -398,15 +398,16 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
   if (!lvl2->father)
     return lvl2;
 
-  /* We always store the lower level in l1 to simplify the following
+  /* We always store the lower-depthed topo_level (the upper level in
+     the topo_level hierarchy) in l1 to simplify the following
      code. */
   l1 = (lvl1->level < lvl2->level) ? lvl1 : lvl2;
   l2 = (lvl1->level < lvl2->level) ? lvl2 : lvl1;
 
-  /* We already know that l2 is the uppered-level topo_level, let's
-     lift l1 up to the same level before going any further. */
+  /* We already know that l1 is the upper topo_level, let's
+     lift l2 up to the same level before going any further. */
   while (l1->level < l2->level)
-    l1 = l1->father;
+    l2 = l2->father;
 
   /* l1 and l2 should be at the same level now. */
   MA_BUG_ON (l1->level != l2->level);

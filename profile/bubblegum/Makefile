@@ -15,6 +15,7 @@
 
 FLAVOR_DEFAULT:=marcel-bubblegum
 CFLAGS += -I${MOD_GEN_INC}
+CFLAGS += -I$(shell pm2-config --flavor=$(FLAVOR) --includedir bubblelib)
 
 .PHONY: default
 include $(PM2_ROOT)/make/progs.mak

@@ -1,2 +1,1 @@
 PM2_TBX_LIBNAME=tbx
-PM2_TBX_LD_PATH=-L/lib

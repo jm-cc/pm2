@@ -121,7 +121,7 @@ void ma_bind_on_processor(unsigned target) {
 #else
 	/* TODO: GNU_SYS, FREEBSD_SYS, DARWIN_SYS, IRIX_SYS */
 	/* IRIX: voir _DSM_MUSTRUN */
-#warning "don't know how to bind on processors on this system, please disable smp_bind_proc in flavor"
+#warning "don't know how to bind on processors on this system"
 #endif
 }
 void ma_unbind_from_processor(void) {

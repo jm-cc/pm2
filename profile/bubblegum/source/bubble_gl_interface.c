@@ -442,7 +442,7 @@ destroyBGLDisplayItem (BubbleDisplayItem item) {
  *  \todo Not yet implemented.
  */
 static void
-BGLDisplayItem_rotateTo (BubbleDisplayItem item, float degrees) {
+BGLDisplayItem_rotateTo (BubbleDisplayItem item, coordinate_t degrees) {
     IN();
     OUT();
 }
@@ -466,7 +466,7 @@ BGLDisplayItem_remove (BubbleDisplayItem item) {
  *  \param y        A float that represnets the ordinate position.
  */
 static void
-BGLDisplayItem_moveTo (BubbleDisplayItem item, float x, float y) {
+BGLDisplayItem_moveTo (BubbleDisplayItem item, coordinate_t x, coordinate_t y) {
     IN();
     item->current.x = x;
     item->current.y = y;
@@ -757,7 +757,7 @@ BGLMovie_add (BubbleMovie movie, BubbleBlock block) {
  *                  seconds.
  */
 static void
-BGLMovie_pause (BubbleMovie movie, float sec) {
+BGLMovie_pause (BubbleMovie movie, coordinate_t sec) {
     IN();
     BGLMovie_get_current_frame (movie)->duration += sec;
     OUT();
@@ -1144,7 +1144,7 @@ BGLShape_setRightFillStyle (BubbleShape shape, BubbleFillStyle style) {
  *  \sa BGLShape_movePen().
  */
 static void
-BGLShape_movePenTo (BubbleShape shape, float x, float y) {
+BGLShape_movePenTo (BubbleShape shape, coordinate_t x, coordinate_t y) {
     IN();
     bgl_action_movepen_t *action;
 
@@ -1172,7 +1172,7 @@ BGLShape_movePenTo (BubbleShape shape, float x, float y) {
  *  \sa BGLShape_movePenTo().
  */
 static void
-BGLShape_movePen (BubbleShape shape, float dx, float dy) {
+BGLShape_movePen (BubbleShape shape, coordinate_t dx, coordinate_t dy) {
     IN();
     BGLShape_movePenTo (shape, shape->pen.x + dx, shape->pen.y + dy);
     OUT();
@@ -1188,7 +1188,7 @@ BGLShape_movePen (BubbleShape shape, float dx, float dy) {
  *  \sa BGLShape_drawLine().
  */
 static void
-BGLShape_drawLineTo (BubbleShape shape, float x, float y) {
+BGLShape_drawLineTo (BubbleShape shape, coordinate_t x, coordinate_t y) {
     IN();
     bgl_action_drawline_t *action;
 
@@ -1219,7 +1219,7 @@ BGLShape_drawLineTo (BubbleShape shape, float x, float y) {
  *  \sa BGLShape_drawLineTo().
  */
 static void
-BGLShape_drawLine (BubbleShape shape, float dx, float dy) {
+BGLShape_drawLine (BubbleShape shape, coordinate_t dx, coordinate_t dy) {
     IN();
     BGLShape_drawLineTo (shape, shape->pen.x + dx, shape->pen.y + dy);
     OUT();
@@ -1232,7 +1232,7 @@ BGLShape_drawLine (BubbleShape shape, float dx, float dy) {
  *  \param r        A float that represents the radius of the circle.
  */
 static void
-BGLShape_drawCircle (BubbleShape shape, float r) {
+BGLShape_drawCircle (BubbleShape shape, coordinate_t r) {
     IN();
     bgl_action_drawcircle_t *action;
 
@@ -1286,8 +1286,8 @@ BGLShape_setLine (BubbleShape shape, unsigned short width,
  */
 static void
 BGLShape_drawCurve (BubbleShape shape,
-                    float controldx, float controldy,
-                    float anchordx, float anchordy) {
+                    coordinate_t controldx, coordinate_t controldy,
+                    coordinate_t anchordx, coordinate_t anchordy) {
     IN();
     bgl_action_drawcurve_t *action;
 
@@ -1428,8 +1428,8 @@ BGLMorph_getShape2 (BubbleMorph morph) {
  *  /todo Not yet implemented. Propotype must be redesigned before.
  */
 static void
-BGLsetThread (BubbleShape shape, int id, float x, float y,
-              float width, float height) {
+BGLsetThread (BubbleShape shape, int id, coordinate_t x, coordinate_t y,
+              coordinate_t width, coordinate_t height) {
     IN();
     OUT();
 }
@@ -1439,8 +1439,8 @@ BGLsetThread (BubbleShape shape, int id, float x, float y,
  *  /todo Not yet implemented. Propotype must be redesigned before.
  */
 static void
-BGLsetBubble (BubbleShape shape, int id, float x, float y,
-              float width, float height) {
+BGLsetBubble (BubbleShape shape, int id, coordinate_t x, coordinate_t y,
+              coordinate_t width, coordinate_t height) {
     IN();
     OUT();
 }

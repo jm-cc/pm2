@@ -39,6 +39,30 @@ typedef SWFBlock BubbleBlock;
 #include "bubblelib_output.h"
 #include "bubblelib_anim.h"
 
+#if (BUBBLES_MING_VERSION_MAJOR == 0) && (BUBBLES_MING_VERSION_MINOR <= 3)
+#define mySWFButton_addCharacter(button, shape, flags) \
+	SWFButton_addShape((button), (void*)(shape), (flags))
+#define mynewSWFAction(script) \
+	compileSWFActionCode(script)
+#define mynewSWFFont_fromFile(filename) ({ \
+		SWFFont *__font = NULL; \
+		FILE *__f = fopen((filename), "r"); \
+		if (__f) { \
+			__font = (SWFFont) loadSWFFontFromFile(__f); \
+			if (!__font) \
+				perror("can't load font"); \
+		} \
+		__font; \
+	})
+#else
+#define mySWFButton_addCharacter(button, shape, flags) \
+	SWFButton_addCharacter((button), (void*)(shape), (flags))
+#define mynewSWFAction(script) \
+	newSWFAction(script)
+#define mynewSWFFont_fromFile(filename) \
+	newSWFFont_fromFile(filename)
+#endif
+
 /* movie size */
 int MOVIEX = 1024;
 int MOVIEY = 768;
@@ -118,39 +142,39 @@ static BubbleMovie mynewSWFMovie(void) {
 		SWFShape_drawLineTo(shape,MOVIEX,MOVIEY);
 		SWFShape_drawLineTo(shape,MOVIEX,0);
 		SWFShape_drawLineTo(shape,0,0);
-		SWFButton_addShape(button, (void*)shape, SWFBUTTON_HIT);
+		mySWFButton_addCharacter(button, shape, SWFBUTTON_HIT);
 		SWFButton_addAction(button, stop, SWFBUTTON_MOUSEUP);
 		item = SWFMovie_add(movie->swf,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,0,0);
 
 		button = newSWFButton();
-		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,1), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		mySWFButton_addCharacter(button, newArrow(BSIZE,BSIZE,1), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" nextFrame(); if (!stopped) play();")
+	mynewSWFAction(" nextFrame(); if (!stopped) play();")
 				, SWFBUTTON_MOUSEDOWN|SWFBUTTON_OVERDOWNTOIDLE);
 		item = SWFMovie_add(movie->swf,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-BSIZE,MOVIEY-BSIZE);
 
 		button = newSWFButton();
-		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,1), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		mySWFButton_addCharacter(button, newArrow(BSIZE,BSIZE,1), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" for (i=0;i<16;i++) nextFrame(); if (!stopped) play(); ")
+	mynewSWFAction(" for (i=0;i<16;i++) nextFrame(); if (!stopped) play(); ")
 				, SWFBUTTON_MOUSEUP);
 		item = SWFMovie_add(movie->swf,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-2*BSIZE,MOVIEY-BSIZE);
 
 		button = newSWFButton();
-		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,0), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		mySWFButton_addCharacter(button, newArrow(BSIZE,BSIZE,0), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" for (i=0;i<16;i++) prevFrame();  if (!stopped) play();")
+	mynewSWFAction(" for (i=0;i<16;i++) prevFrame();  if (!stopped) play();")
 				, SWFBUTTON_MOUSEUP);
 		item = SWFMovie_add(movie->swf,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-3*BSIZE,MOVIEY-BSIZE);
 
 		button = newSWFButton();
-		SWFButton_addShape(button, (void*)newArrow(BSIZE,BSIZE,0), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		mySWFButton_addCharacter(button, newArrow(BSIZE,BSIZE,0), SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
 		SWFButton_addAction(button, 
-	compileSWFActionCode(" prevFrame();  if (!stopped) play();")
+	mynewSWFAction(" prevFrame();  if (!stopped) play();")
 				, SWFBUTTON_MOUSEDOWN|SWFBUTTON_OVERDOWNTOIDLE);
 		item = SWFMovie_add(movie->swf,(SWFBlock)button);
 		SWFDisplayItem_moveTo(item,MOVIEX-4*BSIZE,MOVIEY-BSIZE);
@@ -200,8 +224,8 @@ static void mySWFMovie_pause(BubbleMovie movie, coordinate_t sec) {
 		SWFShape_drawLineTo(shape,BSIZE,BSIZE);
 		SWFShape_drawLineTo(shape,(BSIZE*2)/3,BSIZE);
 		SWFShape_drawLineTo(shape,(BSIZE*2)/3,0);
-		SWFButton_addShape(button, (void*)shape, SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
-		SWFButton_addAction(button, compileSWFActionCode("stopped=1; stop();"), 0xff);
+		mySWFButton_addCharacter(button, shape, SWFBUTTON_UP|SWFBUTTON_DOWN|SWFBUTTON_OVER|SWFBUTTON_HIT);
+		SWFButton_addAction(button, mynewSWFAction("stopped=1; stop();"), 0xff);
 		item = SWFMovie_add(movie->swf, (SWFBlock)button);
 		SWFDisplayItem_moveTo(item, CURVE, MOVIEY-BSIZE);
 
@@ -245,7 +269,6 @@ static void mySWFMovie_status(BubbleMovie movie, const char *str) {
 }
 
 static void init(void) {
-	FILE *f;
 	char *fontpath;
 
 	Ming_init();
@@ -263,23 +286,17 @@ static void init(void) {
 		strncpy(fontpath + strlen(root), path, strlen(path)+1);
 	}
 
-	f = fopen(fontpath,"r");
-
-	if (!f) {
+	font = mynewSWFFont_fromFile(fontpath);
+	if (!font) {
 		perror("Warning: could not open font file, will not able to print thread name, priority and scheduler status");
 		fprintf(stderr,"(tried %s. Use -f option for changing this. fdb files can be generated from fft files by using makefdb, and fft files can be generated from ttf files by using ttftofft)\n",fontpath);
-	} else {
-	/* used font */
-		font = (SWFFont) loadSWFFontFromFile(f);
-		if (!font)
-			perror("can't load font");
 	}
 
 	if (!SWF_fontfile)
 		free(fontpath);
 
 	/* pause macro */
-	stop = compileSWFActionCode(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
+	stop = mynewSWFAction(" if (!stopped) { stop(); stopped=1; } else { play(); stopped=0; }");
 }
 
 static void fini(void) {

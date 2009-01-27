@@ -30,7 +30,7 @@ typedef struct BubbleMorph_s *BubbleMorph;
 typedef struct BubbleBlock_s *BubbleBlock;
 #endif
 
-#if (BUBBLES_MING_VERSION_MAJOR == 0) && (BUBBLES_MING_VERSION_MINOR == 3)
+#if (BUBBLES_MING_VERSION_MAJOR == 0) && (BUBBLES_MING_VERSION_MINOR <= 3)
 
 typedef float coordinate_t;
 

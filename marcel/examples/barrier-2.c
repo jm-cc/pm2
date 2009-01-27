@@ -112,7 +112,7 @@ worker (void *arg)
   return result;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
   pthread_t threads[NTHREADS];
   int i;

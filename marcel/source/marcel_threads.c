@@ -1518,6 +1518,7 @@ DEF_PTHREAD(int, getschedparam, (pthread_t thread, int *__restrict policy,
 DEF___PTHREAD(int, getschedparam, (pthread_t thread, int *__restrict policy, 
    struct sched_param *__restrict param), (thread, policy, param))
 
+#if !defined(MARCEL_DONT_USE_POSIX_THREADS) || defined(MA__LIBPTHREAD)
 #ifdef _POSIX_CPUTIME
 /**********************getcpuclockid****************************/
 DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id TBX_UNUSED, clockid_t *clock_id),(thread_id,clock_id),
@@ -1526,6 +1527,7 @@ DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id TBX_UNUSED, clockid_t *clock_id
 	clock_getcpuclockid(0, clock_id);
 	LOG_RETURN(0);
 })
+#endif
 
 DEF_PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));
 DEF___PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));

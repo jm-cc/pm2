@@ -20,6 +20,14 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
     fi
 fi
 
+# since it pulls libpthread, we can not use -lrt if we are not to either use or
+# provide a libpthread
+if [ "$PM2_SYS" = LINUX_SYS ] &&
+   not_defined_in MARCEL_DONT_USE_POSIX_THREADS PM2_MARCEL_CFLAGS &&
+   defined_in MARCEL_POSIX PM2_MARCEL_CFLAGS ; then
+    PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lrt"
+fi
+
 if defined_in MARCEL_NUMA PM2_MARCEL_CFLAGS; then
     PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lm"
 fi

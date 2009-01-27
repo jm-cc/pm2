@@ -126,7 +126,9 @@ $(STAMP_LINK_LIB): $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), \
 			$(MOD_GEN_STAMP)/stamp-build-$(name).so)
 	$(COMMON_LINK)
 # Additional -L and -l to link against all other modules
-	$(COMMON_MAIN) $(LINK_CMD) $(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
+	$(COMMON_MAIN) $(LINK_CMD) \
+		$(shell $(PM2_CONFIG) --libs-only-L) \
+		$(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
 		$(addprefix -Xlinker -l,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))
 	$(COMMON_HIDE)touch $(STAMP_LINK_LIB)
 

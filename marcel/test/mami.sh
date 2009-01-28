@@ -17,7 +17,7 @@
 
 if [ ! -d /sys/devices/system/node/node0 ] ; then
     echo "The machine does not seem to be NUMA-aware"
-    continue
+    pm2_skip_test
 fi
 
 flavor="test_marcel_mami"

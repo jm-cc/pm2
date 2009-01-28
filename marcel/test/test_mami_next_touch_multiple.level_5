@@ -19,7 +19,7 @@ args=""
 hosts="localhost"
 
 if [ ! -d /sys/devices/system/node/node2 ] ; then
-    continue
+    pm2_skip_test
 fi
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF

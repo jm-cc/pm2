@@ -12,7 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-[ "$PM2_SYS" != LINUX_SYS -a "$PM2_SYS" != AIX_SYS ] && continue
+[ "$PM2_SYS" != LINUX_SYS -a "$PM2_SYS" != AIX_SYS ] && pm2_skip_test
 
 # Configuration
 flavor="test_marcel_pthread_cpp"

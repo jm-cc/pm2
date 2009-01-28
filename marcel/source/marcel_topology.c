@@ -270,7 +270,7 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 unsigned marcel_nbnodes = 1;
 
 
-#ifdef __GLIBC__
+#if (__GLIBC__ > 2) || (__GLIBC_MINOR__ >= 4)
 # define HAVE_OPENAT
 #endif
 

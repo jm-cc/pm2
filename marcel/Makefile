@@ -26,7 +26,8 @@ DO_NOT_GENERATE_MAK_FILES += _clean_autogen_
 # TODO LIBNAME devrait provenir des fichiers de la flavor
 #---------------------------------------------------------------------
 ifeq ($(LIBPTHREAD),true)
-LIBNAME=pthread
+LIBNAME := pthread
+LINK_LDFLAGS += -Wl,--rpath="$(shell pm2-config --flavor=$(FLAVOR) --libdir puk)"
 endif
 
 SCHED_NAME=marcel

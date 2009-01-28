@@ -119,10 +119,10 @@ do_the_test()
 	fi
 
         if [ -z "$net" ] ; then
-            (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+            (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         else
             protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-            (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^####'
+            (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
         [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
 

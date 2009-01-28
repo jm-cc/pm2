@@ -388,6 +388,78 @@ static void marcel_strip_cmdline(int *argc, char *argv[])
 	marcel_parse_cmdline_lastly(argc, argv, tbx_true);
 }
 
+#ifdef MA__LIBPTHREAD
+
+#include <dlfcn.h>
+
+/* Issue a warning if Marcel and PukABI symbols don't prevail over
+   libpthread/libc symbols, i.e., if they were not preloaded.  */
+static void
+assert_preloaded (void) {
+	void *self;
+	tbx_bool_t determined = tbx_false;
+
+	self = dlopen(NULL, RTLD_LAZY);
+
+	if (self != NULL) {
+		void *marcel, *pukabi;
+
+		marcel = dlopen("libpthread.so", RTLD_LAZY);
+		if(marcel != NULL) {
+			void *global_pcreate, *marcel_pcreate;
+
+			global_pcreate = dlsym(self, "pthread_create");
+			marcel_pcreate = dlsym(marcel, "pthread_create");
+
+			if (marcel_pcreate != NULL && global_pcreate != NULL) {
+				determined = tbx_true;
+				if (marcel_pcreate != global_pcreate) {
+					/* This is unlikely.  It would mean that somehow two different
+						 `libpthread.so' were loaded.  */
+					fprintf(stderr, "[Marcel] it appears that Marcel's libpthread "
+						"was not preloaded\n");
+					fprintf(stderr, "[Marcel] make sure to preload it "
+						"using the `LD_PRELOAD' environment variable\n");
+					abort();
+				}
+			}
+
+			dlclose (marcel);
+		}
+
+		pukabi = dlopen("libPukABI.so", RTLD_LAZY);
+		if (pukabi != NULL) {
+			void *global_malloc, *pukabi_malloc;
+
+			global_malloc = dlsym(self, "malloc");
+			pukabi_malloc = dlsym(pukabi, "malloc");
+
+			if (pukabi_malloc != NULL && global_malloc != NULL) {
+				determined = tbx_true;
+				if (pukabi_malloc != global_malloc) {
+					fprintf(stderr, "[Marcel] it appears that PukABI "
+						"was not preloaded\n");
+					fprintf(stderr, "[Marcel] make sure to preload it "
+						"using the `LD_PRELOAD' environment variable\n");
+				}
+			}
+
+			dlclose (pukabi);
+		}
+
+		dlclose (self);
+	}
+
+	if (!determined) {
+		fprintf(stderr, "[Marcel] unable to determine whether "
+			"libpthread and/or PukABI were correctly preloaded");
+		fprintf(stderr, "[Marcel] are both libraries in the loader "
+			"search path?\n");
+	}
+}
+
+#endif
+
 // Does not start any internal threads.
 // When completed, fork calls are still allowed.
 void marcel_init_data(int *argc, char *argv[])
@@ -417,6 +489,8 @@ void marcel_init_data(int *argc, char *argv[])
 
 	/* Tell PukABI how to protect libc calls.  */
 	puk_abi_set_spinlock_handlers (marcel_extlib_protect, marcel_extlib_unprotect, NULL);
+
+	assert_preloaded ();
 #endif
 }
 

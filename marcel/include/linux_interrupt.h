@@ -190,7 +190,7 @@ static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t) {
 #else
 #  define ma_tasklet_trylock(t)			(1)
 #  define ma_tasklet_unlock_wait(t)		do { } while (0)
-#  define ma_tasklet_unlock(t)			(0)
+#  define ma_tasklet_unlock(t)			((void)0)
 #endif
 
 #section marcel_functions

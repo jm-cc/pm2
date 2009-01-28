@@ -112,10 +112,10 @@ do_the_test()
         echo "Running program <$prog> with flavor <$flavor>..."
         ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 
-	save_PM2_CONFIG_PRELOAD="$_PM2_CONFIG_PRELOAD"
+	save_PM2_LD_PRELOAD="$PM2_LD_PRELOAD"
 	if [ ! -z "$ld_preload" ]; then
 	    # Use the test-specific `LD_PRELOAD' settings.
-	    _PM2_CONFIG_PRELOAD="$ld_preload"
+	    export PM2_LD_PRELOAD="$ld_preload"
 	fi
 
         if [ -z "$net" ] ; then
@@ -126,7 +126,7 @@ do_the_test()
         fi
         [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
 
-	_PM2_CONFIG_PRELOAD="$save_PM2_CONFIG_PRELOAD"
+	PM2_LD_PRELOAD="$save_PM2_LD_PRELOAD"
 
         # Le moment de verite
         echo "Checking results..."

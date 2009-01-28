@@ -43,21 +43,21 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-topology-32 \
-	--modules="marcel tbx init" --all=debug --all=dbg \
+	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:32 \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-topology \
-	--modules="marcel tbx init" --all=debug --all=dbg \
+	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:64 \
 	--marcel=enable_stats --marcel=bubble_sched_null
 
     register_flavor marcel-topology-256 \
-	--modules="marcel tbx init" --all=debug --all=dbg \
+	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \

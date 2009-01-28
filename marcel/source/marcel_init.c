@@ -488,7 +488,9 @@ void marcel_init_data(int *argc, char *argv[])
 	puk_abi_init();
 
 	/* Tell PukABI how to protect libc calls.  */
-	puk_abi_set_spinlock_handlers (marcel_extlib_protect, marcel_extlib_unprotect, NULL);
+	puk_abi_set_spinlock_handlers((void (*) (void)) marcel_extlib_protect,
+																(void (*) (void)) marcel_extlib_unprotect,
+																NULL);
 
 	assert_preloaded ();
 #endif

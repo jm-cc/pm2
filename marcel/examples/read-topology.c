@@ -414,7 +414,7 @@ int marcel_main(int argc, char **argv) {
     output = marcel_fopen(filename, "w");
 
     if (fig_mode) {
-      marcel_fprintf(output, "#FIG 3.2  Produced by PM2's read_topology\n");
+      marcel_fprintf(output, "#FIG 3.2  Produced by PM2's read-topology\n");
       marcel_fprintf(output, "Landscape\n");
       marcel_fprintf(output, "Center\n");
       marcel_fprintf(output, "Inches\n");

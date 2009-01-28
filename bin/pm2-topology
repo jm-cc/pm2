@@ -41,12 +41,12 @@ if [ -z "$flavor" ] ; then
 fi
 
 # Compile the application
-$SSH make -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read_topology
+$SSH make -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read-topology
 echo
 echo
 
 # Execute the application
-$SSH $($SSH pm2-which --flavor marcel-topology read_topology) --verbose $args > /tmp/topology_$$.out
+$SSH $($SSH pm2-which --flavor marcel-topology read-topology) --verbose $args > /tmp/topology_$$.out
 cat /tmp/topology_$$.out
 
 # If the application has been launched remotely, download the file and run latex on it

@@ -17,7 +17,7 @@
 topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
 flavor="marcel-topology"
 appdir="${PM2_ROOT}/marcel/examples"
-prog="read_topology"
+prog="read-topology"
 args="-v --marcel-topology-fsys-root $topology_chroot"
 hosts="localhost"
 

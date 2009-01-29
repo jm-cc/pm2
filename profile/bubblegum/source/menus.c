@@ -42,7 +42,7 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Nouveau), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
 
-   menu_item = gtk_image_menu_item_new_with_mnemonic("_Ouvrir");
+   menu_item = gtk_image_menu_item_new_with_mnemonic("_Ouvrir...");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), ouvrir);
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Ouvrir), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
@@ -53,7 +53,7 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
 
 
-   menu_item = gtk_image_menu_item_new_with_mnemonic("Enregi_strer sous");
+   menu_item = gtk_image_menu_item_new_with_mnemonic("Enregi_strer sous...");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), enregistrerSous);
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(EnregistrerSous), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);

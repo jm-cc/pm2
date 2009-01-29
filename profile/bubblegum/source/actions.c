@@ -618,7 +618,7 @@ generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
 
-  runCommand ("pm2-load " GENEC_NAME " --marcel-nvp 4 --marcel-maxarity 2");
+  runCommand ("pm2-load " GENEC_NAME);
   
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
   gtk_main_iteration_do(FALSE);

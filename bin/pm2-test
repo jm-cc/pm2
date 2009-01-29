@@ -365,7 +365,7 @@ while [ $_l -le $_level ]; do
                     if [ $is_test_selected == 1 ] ; then
                         echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
 
-			alias pm2_skip_test='echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue'
+			alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
 
 		        # Source
                         . ./$_f

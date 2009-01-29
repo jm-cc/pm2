@@ -492,6 +492,9 @@ void marcel_init_data(int *argc, char *argv[])
 																(void (*) (void)) marcel_extlib_unprotect,
 																NULL);
 
+	puk_abi_set_errno_handler(&marcel___errno_location);
+	puk_abi_seterrno(0);
+
 	assert_preloaded ();
 #endif
 }

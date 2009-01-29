@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-
+#include <stdlib.h>
 #include <memory.h>
 #include <GL/gl.h>
 #include <GL/glu.h>

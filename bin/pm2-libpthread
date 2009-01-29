@@ -2,7 +2,7 @@
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# Copyright (C) 2006, 2007, 2009 "the PM2 team" (see AUTHORS file)
 # 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +13,20 @@
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
+
+# Default to the `libpthread' flavor.
+PM2_FLAVOR="${PM2_FLAVOR:-libpthread}"
+export PM2_FLAVOR
+
+marcel_libpthread="`pm2-config --libdir marcel`/libpthread.so"
+
+if [ ! -f "$marcel_libpthread" ]
+then
+    echo "`basename $0`: error: file \`$marcel_libpthread' is missing" >&2
+    echo "`basename $0`: error: possibly flavor \`$PM2_FLAVOR' lacks Marcel/libpthread support" >&2
+    exit 1
+fi
+
 
 GDB=""
 if [ "$1" = -d ]

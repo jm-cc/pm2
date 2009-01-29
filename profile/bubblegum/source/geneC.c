@@ -26,7 +26,9 @@ int parcourir_bulle(Element* bulle, int mybid)
             fprintf(fw,"   marcel_bubble_init(&b%d);\n",id);
 	    fprintf(fw,"   marcel_bubble_setid(&b%d, %d);\n",id,id);
 	    if (mybid>0)
-                fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",mybid,id);
+	      fprintf(fw,"   marcel_bubble_insertbubble(&b%d, &b%d);\n",mybid,id);
+	    else
+	      fprintf(fw,"   marcel_bubble_insertbubble(&marcel_root_bubble, &b%d);\n",id);
             //fprintf(fw,"   marcel_bubble_setprio(&b%d,%d);\n\n",id,GetPrioriteBulle(element_i));
             parcourir_bulle(element_i,id);
       }  
@@ -91,38 +93,9 @@ int gen_fichier_C(const char * fichier, Element * bullemere)
   
    fprintf(fw,"   marcel_start_playing();\n");
 
-   ListeElement *liste;
-   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
-   {
-      Element *element_i = liste->element;
-      TypeElement type = GetTypeElement(element_i);
-      int id = GetId(element_i);
-      if (type == BULLE) {
-         fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
-         fprintf(fw,"      marcel_bubble_setinitlevel(&b%d, marcel_topo_level(0,0));\n", id);
-         fprintf(fw,"#endif\n");
-         fprintf(fw,"      marcel_wake_up_bubble(&b%d);\n", id);
-      }
-   }
-
-   fprintf(fw,"#ifdef MARCEL_BUBBLE_SPREAD\n");
-   fprintf(fw,"   int i = 5;\n");
-   fprintf(fw,"   while(i--) {\n");
-
-   for (liste = FirstListeElement(bullemere); liste; liste = NextListeElement(liste))
-   {
-      Element *element_i = liste->element;
-      TypeElement type = GetTypeElement(element_i);
-      int id = GetId(element_i);
-      if (type == BULLE)
-         fprintf(fw,"      marcel_bubble_spread(&b%d, marcel_topo_level(0,0));\n", id);
-   }
-   fprintf(fw,"      marcel_delay(1000);\n");
-   fprintf(fw,"   }\n");
-   fprintf(fw,"#endif\n");
-  
+   fprintf(fw,"   marcel_bubble_sched_begin ();\n");
+   fprintf(fw,"   marcel_delay(1000);\n"); 
    fprintf(fw,"\n   marcel_printf(\"ok\\n\");\n");
-   //fprintf(fw,"\n   profile_stop();\n");
    fprintf(fw,"\n   marcel_end();\n");
    fprintf(fw,"   return 0;\n}\n");
 

@@ -30,6 +30,7 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
    GtkWidget *ouvrir = open_ico("ico/ouvrir.png");
    GtkWidget *enregistrer = open_ico("ico/enregistrer.png");
    GtkWidget *enregistrerSous = open_ico("ico/enregistrerSous.png");
+   GtkWidget *exporterProgramme = open_ico("ico/enregistrerSous.png");
    GtkWidget *quitter = gtk_image_new_from_stock (GTK_STOCK_QUIT, GTK_ICON_SIZE_LARGE_TOOLBAR);
 
    GtkWidget *annuler = open_ico("ico/annuler.png");
@@ -52,10 +53,14 @@ void Menu_fichier(GtkWidget *parent, GtkWidget *menubar)
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Enregistrer), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
 
-
    menu_item = gtk_image_menu_item_new_with_mnemonic("Enregi_strer sous...");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), enregistrerSous);
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(EnregistrerSous), parent);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
+
+   menu_item = gtk_image_menu_item_new_with_mnemonic("Exporter le programme...");
+   gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), exporterProgramme);
+   g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(ExporterProgramme), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
 
    menu_item = gtk_image_menu_item_new_with_mnemonic("_Annuler");

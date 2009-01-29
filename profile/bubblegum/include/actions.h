@@ -15,6 +15,7 @@ void NouveauTmp(GtkWidget *widget, gpointer data);
 void Ouvrir(GtkWidget *widget, gpointer data);
 void Enregistrer(GtkWidget *widget, gpointer data);
 void EnregistrerSous(GtkWidget *widget, gpointer data);
+void ExporterProgramme(GtkWidget *widget, gpointer data);
 void Executer(GtkWidget *widget, gpointer data);
 void ExecuterFlash(GtkWidget *widget, gpointer data);
 void Basculement_gauche(GtkWidget *widget, gpointer data);

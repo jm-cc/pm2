@@ -328,6 +328,39 @@ void EnregistrerSous(GtkWidget *widget, gpointer data)
   return;
 }
 
+void ExporterProgramme (GtkWidget *widget, gpointer data)
+{
+  GtkWidget *FileSelection;
+  char Chemin[128];
+  
+  if (widget == NULL)
+    return;
+  
+  strcpy(Chemin, "no path");
+
+  /* Creation de la fenetre de selection */
+  FileSelection = gtk_file_chooser_dialog_new("Enregistrer le programme généré sous...", GTK_WINDOW(data), GTK_FILE_CHOOSER_ACTION_SAVE,
+					      "_Annuler", GTK_RESPONSE_CANCEL,
+					      "_Sauvegarder", GTK_RESPONSE_OK, NULL);
+  gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OK);
+  strcpy(Chemin,DemanderFichier(FileSelection));
+  
+  if (strcmp(Chemin, "no path") == 0)
+    return;
+  else {
+    char command[256];
+    gen_fichier_C (GENEC_NAME ".c", iGaucheVars->bullePrincipale);
+    snprintf (command, 256, "cp %s.c %s", GENEC_NAME, Chemin);
+    system (command);
+    
+    /* met Ã  jour le chemin dans iGaucheVars */
+    sprintf(iGaucheVars->chemin, Chemin);
+  }
+  
+  return;
+}
+
+
 /*********************************************************************/
 /*! Fonction appelÃ©e lors d'un d'une demande de sauvegarde de fichier.
  *  C'est la fonction courante d'enregistrement de l'utilisateur.

@@ -45,6 +45,7 @@ extern unsigned int NumTmpMax;
 static char *bubble_scheduler_name;
 static char *synthetic_topology;
 static int chosen_bsched = 0;
+static gboolean txtViewTopoSensitive = FALSE;
 
 /*********************************************************************/
 /*! Demande confirmation avant de quitter le programme */
@@ -428,11 +429,21 @@ void Refaire(GtkWidget *widget, gpointer data) {
   return;
 }
 
+static void 
+activate_txtBox (GtkWidget *widget, gpointer data)
+{
+  txtViewTopoSensitive = !txtViewTopoSensitive;
+  gtk_widget_set_sensitive (GTK_WIDGET (data), txtViewTopoSensitive);
+  if (!txtViewTopoSensitive)
+    gtk_entry_set_text (GTK_ENTRY (data), "");
+}
+
 void Options (GtkWidget *widget, gpointer data)
 {
   GtkWidget *dialog;
   GtkWidget *hboxBubbleSched, *hboxTopo;
   GtkWidget *txtViewTopo;
+  GtkWidget *chkBtnTopo;
   GtkWidget *labelBubbleSched, *labelTopo;
   GtkWidget *comboBoxBubbleSched;
 
@@ -461,12 +472,18 @@ void Options (GtkWidget *widget, gpointer data)
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxBubbleSched, FALSE, FALSE, 5);
 
   hboxTopo = gtk_hbox_new (FALSE, 0);
+  chkBtnTopo = gtk_check_button_new_with_label ("Use a synthetic topology");
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (chkBtnTopo), txtViewTopoSensitive);
   txtViewTopo = gtk_entry_new ();
-  gtk_entry_set_text ((GtkEntry *)txtViewTopo, synthetic_topology);
+  gtk_widget_set_sensitive (GTK_WIDGET (txtViewTopo), txtViewTopoSensitive);
+  g_signal_connect (G_OBJECT(chkBtnTopo), "clicked", G_CALLBACK (activate_txtBox), txtViewTopo);
+  if(synthetic_topology)
+    gtk_entry_set_text ((GtkEntry *)txtViewTopo, synthetic_topology);
   labelTopo = gtk_label_new ("Synthetic Topology:");
                          
   gtk_box_pack_start (GTK_BOX (hboxTopo), labelTopo, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX (hboxTopo), txtViewTopo, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), chkBtnTopo, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxTopo, FALSE, FALSE, 5);
 
   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
@@ -480,7 +497,7 @@ void Options (GtkWidget *widget, gpointer data)
   if (bubble_scheduler_name != NULL)
     free (bubble_scheduler_name);
 
-  synthetic_topology = gtk_entry_get_text (GTK_ENTRY (txtViewTopo));
+  synthetic_topology = (char *)gtk_entry_get_text (GTK_ENTRY (txtViewTopo));
   if (*synthetic_topology == '\0')
     synthetic_topology = NULL;
   else
@@ -687,12 +704,12 @@ generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   pb_start += pb_step;
 
   asprintf (&pm2_command, 
-	    "pm2-load --marcel-bubble-scheduler \"%s\" %s%s%s %s", 
+	    "pm2-load  %s --marcel-bubble-scheduler \"%s\" %s%s%s", 
+	    GENEC_NAME,
 	    bubble_scheduler_name ? : "null", 
 	    synthetic_topology ? " --marcel-synthetic-topology \"" : "", 
 	    synthetic_topology ? : "",
-	    synthetic_topology ? "\"" : "",
-	    GENEC_NAME);
+	    synthetic_topology ? "\"" : "");
 
   printf ("%s\n", pm2_command);
   runCommand (pm2_command);

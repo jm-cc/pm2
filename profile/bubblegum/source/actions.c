@@ -460,11 +460,11 @@ void Options (GtkWidget *widget, gpointer data)
   /* Création de le hbox qui va contenir les informations */
   hboxBubbleSched = gtk_hbox_new (FALSE, 0);
   comboBoxBubbleSched = gtk_combo_box_new_text();
-  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "null"); 
-  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "cache");
-  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "memory");
-  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "spread");
-  gtk_combo_box_set_active ((GtkComboBox *)comboBoxBubbleSched, chosen_bsched);
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "null"); 
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "cache");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "memory");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "spread");
+  gtk_combo_box_set_active (GTK_COMBO_BOX (comboBoxBubbleSched), chosen_bsched);
   labelBubbleSched = gtk_label_new ("Bubble Scheduler:");
                          
   gtk_box_pack_start (GTK_BOX (hboxBubbleSched), labelBubbleSched, FALSE, FALSE, 5);
@@ -478,7 +478,7 @@ void Options (GtkWidget *widget, gpointer data)
   gtk_widget_set_sensitive (GTK_WIDGET (txtViewTopo), txtViewTopoSensitive);
   g_signal_connect (G_OBJECT(chkBtnTopo), "clicked", G_CALLBACK (activate_txtBox), txtViewTopo);
   if(synthetic_topology)
-    gtk_entry_set_text ((GtkEntry *)txtViewTopo, synthetic_topology);
+    gtk_entry_set_text (GTK_ENTRY (txtViewTopo), synthetic_topology);
   labelTopo = gtk_label_new ("Synthetic Topology:");
                          
   gtk_box_pack_start (GTK_BOX (hboxTopo), labelTopo, FALSE, FALSE, 5);

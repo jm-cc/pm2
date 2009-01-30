@@ -42,7 +42,9 @@
 extern unsigned int NumTmp;
 extern unsigned int NumTmpMax;
 
-
+static char *bubble_scheduler_name;
+static char *synthetic_topology;
+static int chosen_bsched = 0;
 
 /*********************************************************************/
 /*! Demande confirmation avant de quitter le programme */
@@ -426,6 +428,70 @@ void Refaire(GtkWidget *widget, gpointer data) {
   return;
 }
 
+void Options (GtkWidget *widget, gpointer data)
+{
+  GtkWidget *dialog;
+  GtkWidget *hboxBubbleSched, *hboxTopo;
+  GtkWidget *txtViewTopo;
+  GtkWidget *labelBubbleSched, *labelTopo;
+  GtkWidget *comboBoxBubbleSched;
+
+  if (widget == NULL)
+    return;
+
+  /* Création boîte de dialogue centrée avec boutton standard OK*/
+  dialog = gtk_dialog_new_with_buttons("Options", GTK_WINDOW(data),
+				       GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
+				       "_Ok", GTK_RESPONSE_OK, NULL);
+
+  gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
+   
+  /* Création de le hbox qui va contenir les informations */
+  hboxBubbleSched = gtk_hbox_new (FALSE, 0);
+  comboBoxBubbleSched = gtk_combo_box_new_text();
+  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "null"); 
+  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "cache");
+  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "memory");
+  gtk_combo_box_append_text ((GtkComboBox *)comboBoxBubbleSched, "spread");
+  gtk_combo_box_set_active ((GtkComboBox *)comboBoxBubbleSched, chosen_bsched);
+  labelBubbleSched = gtk_label_new ("Bubble Scheduler:");
+                         
+  gtk_box_pack_start (GTK_BOX (hboxBubbleSched), labelBubbleSched, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hboxBubbleSched), comboBoxBubbleSched, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxBubbleSched, FALSE, FALSE, 5);
+
+  hboxTopo = gtk_hbox_new (FALSE, 0);
+  txtViewTopo = gtk_entry_new ();
+  gtk_entry_set_text ((GtkEntry *)txtViewTopo, synthetic_topology);
+  labelTopo = gtk_label_new ("Synthetic Topology:");
+                         
+  gtk_box_pack_start (GTK_BOX (hboxTopo), labelTopo, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hboxTopo), txtViewTopo, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxTopo, FALSE, FALSE, 5);
+
+  gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+
+  gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
+  gtk_dialog_run(GTK_DIALOG(dialog));
+
+  if (synthetic_topology != NULL)
+    free (synthetic_topology);
+
+  if (bubble_scheduler_name != NULL)
+    free (bubble_scheduler_name);
+
+  synthetic_topology = gtk_entry_get_text (GTK_ENTRY (txtViewTopo));
+  if (*synthetic_topology == '\0')
+    synthetic_topology = NULL;
+  else
+    synthetic_topology = strdup (synthetic_topology);
+
+  bubble_scheduler_name = strdup (gtk_combo_box_get_active_text (GTK_COMBO_BOX (comboBoxBubbleSched)));
+  chosen_bsched = gtk_combo_box_get_active (GTK_COMBO_BOX (comboBoxBubbleSched));
+
+/*La seule action possible */
+  gtk_widget_destroy(dialog);
+}
 
 /*********************************************************************/
 /*! Permet de mettre en plein écran la fenêtre de gauche.
@@ -606,6 +672,8 @@ runCommand (const char *command_fmt, ...) {
  */
 static void
 generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {  
+  char *pm2_command;
+
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
@@ -618,7 +686,17 @@ generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
 
-  runCommand ("pm2-load " GENEC_NAME);
+  asprintf (&pm2_command, 
+	    "pm2-load --marcel-bubble-scheduler \"%s\" %s%s%s %s", 
+	    bubble_scheduler_name ? : "null", 
+	    synthetic_topology ? " --marcel-synthetic-topology \"" : "", 
+	    synthetic_topology ? : "",
+	    synthetic_topology ? "\"" : "",
+	    GENEC_NAME);
+
+  printf ("%s\n", pm2_command);
+  runCommand (pm2_command);
+  free (pm2_command);
   
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
   gtk_main_iteration_do(FALSE);

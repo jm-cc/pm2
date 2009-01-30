@@ -93,6 +93,7 @@ void Menu_actions(GtkWidget *parent, GtkWidget *menubar)
 {
    GtkWidget *executer = open_ico("ico/executer.png");
    GtkWidget *executer2 = open_ico("ico/executer2.png");
+   GtkWidget *options = gtk_image_new_from_stock (GTK_STOCK_PREFERENCES, GTK_ICON_SIZE_LARGE_TOOLBAR);
    
    menu = gtk_menu_new();
    
@@ -104,6 +105,11 @@ void Menu_actions(GtkWidget *parent, GtkWidget *menubar)
    menu_item = gtk_image_menu_item_new_with_mnemonic("E_xécuter Flash");
    gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), executer2);
    g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(ExecuterFlash), parent);
+   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
+
+   menu_item = gtk_image_menu_item_new_with_mnemonic("Options...");
+   gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), options);
+   g_signal_connect(G_OBJECT(menu_item), "activate", G_CALLBACK(Options), parent);
    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menu_item);
    
    menu_item = gtk_menu_item_new_with_mnemonic("_Actions");

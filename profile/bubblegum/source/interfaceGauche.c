@@ -199,23 +199,17 @@ interfaceGaucheVars* interfaceGauche()
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbarG),toolbarV,NULL,NULL);
 
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar),toolbarG,NULL,NULL);
-  /* Ajout des étiquettes charge-priorité-nom en vertical */
-   
-  toolbar2 = gtk_toolbar_new();
-  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar2),GTK_ORIENTATION_VERTICAL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new(""),NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new("Charge"),NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new(""),NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new("Priorité"),NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new(""),NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar2),gtk_label_new("Nom"),NULL,NULL);
+  
+/* Ajout des étiquettes charge-priorité-nom en vertical */
+  toolbar2 = gtk_vbox_new (TRUE, 10);
+  gtk_box_pack_start (GTK_BOX (toolbar2), gtk_label_new ("\n   Charge"), TRUE, TRUE, 5);
+  gtk_box_pack_start (GTK_BOX (toolbar2), gtk_label_new ("\n   Priorité"), TRUE, TRUE, 5);
+  gtk_box_pack_start (GTK_BOX (toolbar2), gtk_label_new ("Nom"), TRUE, TRUE, 5);
 
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar),toolbar2,NULL,NULL);
 
   /* Ajout des ascenceurs plus la zone texte pour le nom */
-
-  toolbar3 = gtk_toolbar_new();
-  gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbar3),GTK_ORIENTATION_VERTICAL);
+  toolbar3 = gtk_vbox_new (TRUE, 10);
   iGaucheVars->charge=gtk_hscale_new_with_range(0,MAX_CHARGE,10);
   gtk_range_set_value(GTK_RANGE(iGaucheVars->charge), iGaucheVars->defcharge);
   iGaucheVars->priorite=gtk_hscale_new_with_range(0,MAX_PRIO,1);
@@ -227,10 +221,9 @@ interfaceGaucheVars* interfaceGauche()
   g_signal_connect( GTK_OBJECT(iGaucheVars->priorite), "button-release-event", GTK_SIGNAL_FUNC(changepriorite), (gpointer) "coucou");
   g_signal_connect( GTK_OBJECT(iGaucheVars->nom),"key-release-event" ,GTK_SIGNAL_FUNC(changenom), (gpointer) "coucou");
 
-
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar3),iGaucheVars->charge,NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar3),iGaucheVars->priorite,NULL,NULL);
-  gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar3),iGaucheVars->nom,NULL,NULL);
+  gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->charge, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->priorite, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->nom, TRUE, TRUE, 0);
      
 
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar),toolbar3,NULL,NULL);

@@ -13,7 +13,7 @@
 #include "rearangement.h"
 
 
-#define WINDOW_WIDTH 890
+#define WINDOW_WIDTH 1100
 #define WINDOW_HEIGHT 600
 
 #define DEFLOAD 10

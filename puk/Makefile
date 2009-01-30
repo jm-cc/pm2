@@ -27,7 +27,7 @@ GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure exter
 
 PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a
 
-PUK_ENABLE_PUKABI := $(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
+PUK_ENABLE_PUKABI := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
 ifeq ($(PUK_ENABLE_PUKABI),yes)
   PUK_LIBS += $(PADICO_ROOT)/lib/PukABI/libPukABI.so
 endif
@@ -84,7 +84,7 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 # ## configure
 # ##
 
-PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell pm2-config --flavor=$(PM2_FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
+PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS )
 
 $(PUK_BUILDDIR)/config.status: $(GEN_CONFIG_FILES)
 	( cd $(PUK_BUILDDIR) ; \

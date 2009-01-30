@@ -464,6 +464,10 @@ void Options (GtkWidget *widget, gpointer data)
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "cache");
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "memory");
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "spread");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "gang");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "memaware");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "steal");
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "explode");
   gtk_combo_box_set_active (GTK_COMBO_BOX (comboBoxBubbleSched), chosen_bsched);
   labelBubbleSched = gtk_label_new ("Bubble Scheduler:");
                          

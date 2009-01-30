@@ -398,13 +398,9 @@ void Annuler(GtkWidget *widget, gpointer data) {
   NumTmp--;
   
   char chemin[128];
-  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);
-#if 0  
-  printf("DEBUG :%d\n", NumTmp);
-  printf("DEBUG :%s\n", chemin);
-#endif
-  
+  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);  
   chargerXml(chemin);
+
   return;
 }
 
@@ -417,15 +413,13 @@ void Refaire(GtkWidget *widget, gpointer data) {
     return;
   
   NouveauTmp(NULL, NULL);
-  char chemin[128];
+
   NumTmp++;
-  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);
-#if 0  
-  printf("DEBUG :%d\n", NumTmp);
-  printf("DEBUG :%s\n", chemin);
-#endif
-  
+
+  char chemin[128];
+  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);  
   chargerXml(chemin);
+
   return;
 }
 
@@ -801,21 +795,13 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   destroyBubbleMovie (mymovie);
 #endif
 
-  runCommand (
-#if 0
-	      "bubbles -x 1024 -y 800 -d %s && "
-#endif
-	      "%s %s &",
-#if 0
-	      tracefile,
-#endif
+  runCommand ("%s %s &",
 # ifdef DARWIN_SYS
 	      "open",
 # else
 	      "realplay",
 # endif
-	      out_file
-	      );
+	      out_file);
     
   destroyExecDialog (dialog, progress_bar, infos);
 }

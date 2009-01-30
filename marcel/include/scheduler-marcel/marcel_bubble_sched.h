@@ -143,6 +143,8 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 
 /** \brief Changes the current bubble scheduler, returns the old one. */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
+/* Same, but only to be used by marcel_init before Marcel is initialized */
+marcel_bubble_sched_t *marcel_bubble_set_sched(marcel_bubble_sched_t *new_sched);
 
 /** \brief Informs the scheduler that the application initialization
     phase has terminated */

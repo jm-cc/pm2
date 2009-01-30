@@ -88,6 +88,13 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	return old;
 }
 
+marcel_bubble_sched_t *marcel_bubble_set_sched(marcel_bubble_sched_t *new_sched) {
+	ma_bubble_sched_t old;
+	old = current_sched;
+	current_sched = new_sched;
+	return old;
+}
+
 /* Turns idle scheduler on. This function returns 1 if an idle
    scheduler was already running. */
 int

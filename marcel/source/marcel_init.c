@@ -250,7 +250,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 								 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i]);
 				exit(1);
 			}
-			marcel_bubble_change_sched((marcel_bubble_sched_t *)scheduler);
+			marcel_bubble_set_sched((marcel_bubble_sched_t *)scheduler);
 		} else
 #endif
 #ifdef MA__NUMA

@@ -15,7 +15,7 @@
 
 LIBNAME=bubblelib
 FLAVOR_DEFAULT:=marcel-bubbles
-CFLAGS += -I${MOD_GEN_INC} -I/usr/local/include
+CFLAGS += -I/usr/local/include
 
 include $(PM2_ROOT)/make/libs-vars.mak
 

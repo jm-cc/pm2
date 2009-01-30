@@ -481,8 +481,7 @@ void Options (GtkWidget *widget, gpointer data)
   txtViewTopo = gtk_entry_new ();
   gtk_widget_set_sensitive (GTK_WIDGET (txtViewTopo), txtViewTopoSensitive);
   g_signal_connect (G_OBJECT(chkBtnTopo), "clicked", G_CALLBACK (activate_txtBox), txtViewTopo);
-  if(synthetic_topology)
-    gtk_entry_set_text (GTK_ENTRY (txtViewTopo), synthetic_topology);
+  gtk_entry_set_text (GTK_ENTRY (txtViewTopo), synthetic_topology ? : "");
   labelTopo = gtk_label_new ("Synthetic Topology:");
                          
   gtk_box_pack_start (GTK_BOX (hboxTopo), labelTopo, FALSE, FALSE, 5);

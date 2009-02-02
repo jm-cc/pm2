@@ -84,7 +84,7 @@ add_static_functions (FILE *fd)
   fprintf (fd, "  *marcel_stats_get (*thread, load) = wload;\n}\n\n");
 
   /* Write down the f () function. */
-  fprintf (fd, "void *f (void *foo) {\n");
+  fprintf (fd, "static void *f (void *foo) {\n");
   fprintf (fd, "   int i = (intptr_t)foo;\n");
   fprintf (fd, "   int id = i / %d;\n", MAX_CHARGE);
   fprintf (fd, "   int load = i %% %d;\n", MAX_CHARGE);

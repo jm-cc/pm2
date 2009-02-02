@@ -26,6 +26,11 @@ shopt -s expand_aliases
 export PM2_SYS="`pm2-sys`"
 export PM2_ARCH="`pm2-arch`"
 
+pm2_test_name()
+{
+    echo "$1" | sed -e 's/test_\(.*\).level_.*/\1/g'
+}
+
 pm2_test_error() # msg
 {
     echo $* >&2
@@ -353,7 +358,7 @@ while [ $_l -le $_level ]; do
 		for _f in $_tests ; do
 
                     # Affichage
-                    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
+                    _tst_name="`pm2_test_name $_f`"
 
                     is_test_selected=1
                     if [ -n "$PM2_TESTS" ] ; then
@@ -425,7 +430,7 @@ while [ $_l -le $_level ]; do
 		for _f in $_tests ; do
 
                     # Affichage
-                    _tst_name=`echo $_f | sed -e 's/test_\(.*\).level_.*/\1/g'`
+                    _tst_name="`pm2_test_name $_f`"
 
                     is_test_selected=1
                     if [ -n "$PM2_TESTS" ] ; then

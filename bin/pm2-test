@@ -31,6 +31,22 @@ pm2_test_name()
     echo "$1" | sed -e 's/test_\(.*\).level_.*/\1/g'
 }
 
+pm2_debug()
+{
+    if [ -n "$PM2_SCRIPT_DEBUG" ]; then cat; else cat > /dev/null; fi
+}
+
+pm2_canonicalize_name()
+{
+    echo "$1" | tr -- '-[:blank:]/' '___'
+}
+
+pm2_ld_preload_var_name()
+{
+    _name="ld_preload_`pm2_test_name $1`"
+    echo "`pm2_canonicalize_name $_name`"
+}
+
 pm2_test_error() # msg
 {
     echo $* >&2
@@ -94,6 +110,8 @@ create_test_hosts()
 do_the_test()
 {
     test_script="$1"
+    base_name="`basename $test_script`"
+    test_name="`pm2_test_name $base_name`"
     file_prefix="/tmp/pm2test_${USER}"
     file_expected="${file_prefix}_expected"
     file_result="${file_prefix}_result"
@@ -123,9 +141,13 @@ do_the_test()
         ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 
 	save_PM2_LD_PRELOAD="$PM2_LD_PRELOAD"
-	if [ ! -z "$ld_preload" ]; then
+	_ld_preload_name="`pm2_ld_preload_var_name $test_name`"
+	_ld_preload_value="`eval echo \\$$_ld_preload_name`"
+	echo "per-test LD_PRELOAD settings: \$$_ld_preload_name = \`$_ld_preload_value'" | pm2_debug
+
+	if [ ! -z "$_ld_preload_value" ]; then
 	    # Use the test-specific `LD_PRELOAD' settings.
-	    export PM2_LD_PRELOAD="$ld_preload"
+	    export PM2_LD_PRELOAD="$_ld_preload_value"
 	fi
 
         if [ -z "$net" ] ; then
@@ -374,6 +396,8 @@ while [ $_l -le $_level ]; do
 
 		        # Source
                         . ./$_f
+			echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`'" | pm2_debug
+			eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
 
 		        # Compilation, execution et verification des resultats
 			

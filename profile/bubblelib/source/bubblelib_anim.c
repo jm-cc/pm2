@@ -14,6 +14,7 @@
  * General Public License for more details.
  */
 
+#include <stdlib.h>
 #include <math.h>
 #include "bubblelib_anim.h"
 #include "bubblelib_output.h"

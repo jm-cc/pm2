@@ -7,61 +7,84 @@ FILE * fw;
 
 /* Browse bubble _from_bubble_ and generates the code involved in the
    creation of the corresponding threads and bubbles tree. */
-static void generate_bubble_tree (Element* from_bubble, int mybid) 
+static void 
+generate_bubble_tree (Element* from_bubble, int mybid) 
 {
   int id;
   Element * element_i;
   ListeElement *liste;
   TypeElement type;
+  char *parent_bubble_id;
+
+  asprintf (&parent_bubble_id, "%i", mybid);
 
   for (liste = FirstListeElement (from_bubble); liste; liste = NextListeElement (liste))
     {
       element_i = liste->element;
       type = GetTypeElement (element_i);
       id = GetId (element_i);
+
       if (type == BULLE)
 	{
-	  fprintf (fw, "marcel_bubble_t b%d;\n", id);
 	  fprintf (fw, "   /* Creating bubble %d */\n", id);
-	  fprintf (fw, "   marcel_bubble_init (&b%d);\n", id);
-	  fprintf (fw, "   marcel_bubble_setid (&b%d, %d);\n", id, id);
-	  
-	  if (mybid > 0)
-	    fprintf (fw, "   marcel_bubble_insertbubble (&b%d, &b%d);\n", mybid, id);
-	  else
-	    fprintf (fw, "   marcel_bubble_insertbubble (&marcel_root_bubble, &b%d);\n", id);
+	  fprintf (fw, "   marcel_bubble_t b%d;\n", id);
+	  fprintf (fw, "   bubblegum_create_bubble (&b%d, %d, %s%s);\n", 
+		   id, 
+		   id, 
+		   mybid == 0 ? "&marcel_root_bubble" : "&b",
+		   mybid == 0 ? "" : parent_bubble_id);
 	  generate_bubble_tree (element_i, id);
 	}  
       if (type == THREAD)
 	{
-	  fprintf (fw, "marcel_t t%d;\n", id); 
+	  fprintf (fw, "   marcel_t t%d;\n", id); 
 	  fprintf (fw, "   /* Creating thread %d */\n", id);
-	  fprintf (fw, "   {\n");
-	  fprintf (fw, "      marcel_attr_t attr;\n");
-	  fprintf (fw, "      marcel_attr_init (&attr);\n");
-
-	  if (mybid > 0)
-	    fprintf (fw, "      marcel_attr_setinitbubble (&attr, &b%d);\n", mybid);
-
-	  fprintf (fw, "      marcel_attr_setid (&attr,%d);\n", id);
-	  fprintf (fw, "      marcel_attr_setprio (&attr,%d);\n", GetPrioriteThread (element_i));		  
-	  fprintf (fw, "      marcel_attr_setname (&attr,\"%s\");\n", GetNom (element_i));
-	  fprintf (fw, "      marcel_create (&t%d, &attr, f, (any_t)(intptr_t)%d);\n", id, id * MAX_CHARGE + GetCharge (element_i));
-	  fprintf (fw, "      *marcel_stats_get (t%d, load) = %d;\n", id, GetCharge (element_i));
-	  fprintf (fw, "   }\n\n");
+	  fprintf (fw, "   bubblegum_create_thread (&t%d, %d, \"%s\", %s, %d, %s%s);\n", 
+		   id, 
+		   id, 
+		   GetNom (element_i), 
+		   "f", 
+		   GetCharge (element_i), 
+		   mybid == 0 ? "&marcel_root_bubble" : "&b",
+		   mybid == 0 ? "" : parent_bubble_id);
 	}
     }
+
+  free (parent_bubble_id);
 }
 
-static void add_headers (FILE *fd)
+static void 
+add_headers (FILE *fd)
 {
   fprintf (fd, "#include <marcel.h>\n\n");  
 }
 
-static void add_static_functions (FILE *fd)
+static void 
+add_static_functions (FILE *fd)
 {
-  /* Write down the _f_ function. */
-  fprintf (fd, "any_t f (any_t foo) {\n");
+  /* Write down the bubblegum_create_bubble () function */
+  fprintf (fd, "static void bubblegum_create_bubble (marcel_bubble_t *bubble, int id, marcel_bubble_t *parent_bubble) {\n");
+  fprintf (fd, "  marcel_bubble_init (bubble);\n");
+  fprintf (fd, "  marcel_bubble_setid (bubble, id);\n\n");
+  fprintf (fd, "  marcel_bubble_insertbubble ((parent_bubble != NULL) ? parent_bubble : &marcel_root_bubble, bubble);\n}\n\n");
+
+  /* Write down the bubblegum_create_thread () function */  
+  fprintf (fd, "static void bubblegum_create_thread (marcel_t *thread,\n"); 
+  fprintf (fd, "                                     int id,\n"); 
+  fprintf (fd, "                                     char *name,\n"); 
+  fprintf (fd, "                                     void *(*start_routine)(void *),\n"); 
+  fprintf (fd, "                                     long wload,\n"); 
+  fprintf (fd, "                                     marcel_bubble_t *parent_bubble) {\n");
+  fprintf (fd, "  marcel_attr_t thread_attr;\n");
+  fprintf (fd, "  marcel_attr_init (&thread_attr);\n");
+  fprintf (fd, "  marcel_attr_setinitbubble (&thread_attr, parent_bubble);\n");
+  fprintf (fd, "  marcel_attr_setid (&thread_attr, id);\n");
+  fprintf (fd, "  marcel_attr_setname (&thread_attr, name);\n\n");
+  fprintf (fd, "  marcel_create (thread, &thread_attr, start_routine, (any_t)(intptr_t)wload);\n");
+  fprintf (fd, "  *marcel_stats_get (*thread, load) = wload;\n}\n\n");
+
+  /* Write down the f () function. */
+  fprintf (fd, "void *f (void *foo) {\n");
   fprintf (fd, "   int i = (intptr_t)foo;\n");
   fprintf (fd, "   int id = i / %d;\n", MAX_CHARGE);
   fprintf (fd, "   int load = i %% %d;\n", MAX_CHARGE);
@@ -73,10 +96,11 @@ static void add_static_functions (FILE *fd)
   fprintf (fd, "   for (n = 0; n < load * 10000000; n++)\n");
   fprintf (fd, "     sum += n;\n\n");
   fprintf (fd, "   marcel_printf (\"%%d done\\n\", id);\n\n");
-  fprintf (fd, "   return (void*)(intptr_t)sum;\n}\n\n");  
+  fprintf (fd, "   return (void*)(intptr_t)sum;\n}\n\n");
 }
 
-static void add_main_function (FILE *fd, Element *root_bubble)
+static void 
+add_main_function (FILE *fd, Element *root_bubble)
 {
   fprintf (fw, "int main (int argc, char *argv[]) {\n");
   fprintf (fw, "   marcel_init (&argc, argv);\n");
@@ -95,7 +119,8 @@ static void add_main_function (FILE *fd, Element *root_bubble)
   fprintf (fw, "   return 0;\n}\n");
 }
 
-static void generate_makefile (FILE *fd)
+static void 
+generate_makefile (FILE *fd)
 {
   printf ("**** Generating Makefile ****\n");
 
@@ -115,7 +140,8 @@ static void generate_makefile (FILE *fd)
 }
 
 /* Main function for generating the C example program. */
-int gen_fichier_C (const char * file, Element * root_bubble)
+int 
+gen_fichier_C (const char * file, Element * root_bubble)
 {
   assert (GetTypeElement (root_bubble) == BULLE);
 

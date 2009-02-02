@@ -42,7 +42,7 @@ libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
 
 link:
 
-dot_h: $(PUK_BUILDDIR)/config.status
+dot_h: $(PADICO_ROOT)/lib/libPadicoPuk.a
 
 clean:
 	-rm $(GEN_CONFIG_FILES)

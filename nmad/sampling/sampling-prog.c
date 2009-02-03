@@ -330,8 +330,16 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
 	}
       TBX_GET_TICK(t2);
       double rdv_lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
+
+      TBX_GET_TICK(t1);
+      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
+	{
+	  memcpy(data_recv, data_send, size);
+	}
+      TBX_GET_TICK(t2);
+      double memcpy_lat = TBX_TIMING_DELAY(t1, t2) / param_nb_samples;
       
-      fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\n", size, lat, bw_mbyte, eager_lat, rdv_lat);
+      fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\n", size, lat, bw_mbyte, eager_lat, rdv_lat, memcpy_lat);
       fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
       
       size = (size==0? 1:size);

@@ -144,6 +144,7 @@ char *argv[];
   CLOCK(start);
 
   MAIN_INITENV(,80000000);
+  P = PINIT;
 
   while ((c = getopt(argc, argv, "p:m:n:l:stoh")) != -1) {
     switch(c) {

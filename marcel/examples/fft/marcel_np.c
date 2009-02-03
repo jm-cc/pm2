@@ -51,3 +51,13 @@ void marcel_signal_end_np(int self, int p)
      marcel_mutex_unlock(&marcel_end_lock_np); 
      marcel_cond_signal(&marcel_end_cond_np); 
 }
+
+int marcel_nbvps_rounded_to_power_of_two()
+{
+  int val = marcel_nbvps();
+  int n = 1;
+  while (n < val) n <<= 1;
+  if (n > val) n /= 2;
+  return n;
+
+}

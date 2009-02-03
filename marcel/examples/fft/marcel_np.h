@@ -21,3 +21,5 @@ extern void marcel_create_np(void *(*func)(void));
 extern void marcel_wait_for_end_np(int p);
 
 extern void marcel_signal_end_np(int self, int p);
+
+extern int marcel_nbvps_rounded_to_power_of_two();

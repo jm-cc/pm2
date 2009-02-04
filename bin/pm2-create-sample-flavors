@@ -234,7 +234,6 @@ registering_flavors() {
 	--marcel=enable_once --marcel=enable_cleanup \
 	--marcel=enable_deviation --marcel=enable_signals \
 	--marcel=enable_stats --marcel=bubble_sched_null \
-	--marcel=standard_main \
 	--puk=enable_pukabi --puk=disable_output \
 	--puk=disable_fd_virtualization
 

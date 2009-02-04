@@ -1,4 +1,3 @@
-Depend: standard_main
 Depend: marcel_pmarcel
 Depend: marcel_dont_use_pthread
 Depend: marcel_signals

@@ -79,11 +79,11 @@ typedef struct {
   int completed;
 } job_t;
 
-static tube tube_1;
+static static tube tube_1;
 
 static marcel_attr_t glob_attr;
 
-void job_init(job_t *j, int inf, int sup)
+static void job_init(job_t *j, int inf, int sup)
 {
   j->inf = inf; j->sup = sup;
   marcel_mutex_init(&j->mutex, NULL);
@@ -91,7 +91,7 @@ void job_init(job_t *j, int inf, int sup)
   j->completed = 0;
 }
 
-void create_tube (tube *t)
+static void create_tube (tube *t)
 {
   marcel_mutex_init (&t->mutex, NULL) ;
   pipe (t->tub) ;
@@ -101,7 +101,7 @@ void create_tube (tube *t)
 #endif
 }
 
-int send_message (tube *t, char *message, int len)
+static int send_message (tube *t, char *message, int len)
 {
   int n;
 
@@ -124,7 +124,7 @@ int send_message (tube *t, char *message, int len)
   return n ;
 }
 
-int receive_message (tube *t, char *message, int len)
+static int receive_message (tube *t, char *message, int len)
 {
   int n;
 
@@ -143,17 +143,17 @@ int receive_message (tube *t, char *message, int len)
   return n ;
 }
 
-void send_to_server(job_t *j)
+static void send_to_server(job_t *j)
 {
   send_message(&tube_1, (char *)&j, sizeof(job_t *)) ;
 }
 
 /* ********************************************************* */
 
-void *compute(void *arg);
+static void *compute(void *arg);
 
 #ifndef NO_IO
-void *server(void * arg)
+static void *server(void * arg)
 {
   job_t *j;
   marcel_t pid;
@@ -169,7 +169,7 @@ void *server(void * arg)
 }
 #endif
 
-void create_new_thread(job_t *j)
+static void create_new_thread(job_t *j)
 {
 #ifdef NO_IO
   marcel_t pid;
@@ -179,7 +179,7 @@ void create_new_thread(job_t *j)
 #endif
 }
 
-void wait_thread(job_t *j)
+static void wait_thread(job_t *j)
 {
   marcel_mutex_lock(&j->mutex);
   while(!j->completed) {
@@ -188,7 +188,7 @@ void wait_thread(job_t *j)
   marcel_mutex_unlock(&j->mutex);
 }
 
-void wake_thread(job_t *j, int res)
+static void wake_thread(job_t *j, int res)
 {
   j->res = res;
   marcel_mutex_lock(&j->mutex);
@@ -197,7 +197,7 @@ void wake_thread(job_t *j, int res)
   marcel_mutex_unlock(&j->mutex);
 }
 
-void *compute(void *arg)
+static void *compute(void *arg)
 {
   job_t *j = (job_t *)arg;
 
@@ -222,7 +222,7 @@ void *compute(void *arg)
   return NULL;
 }
 
-int marcel_main(int argc, char **argv)
+static int marcel_main(int argc, char **argv)
 {
 #ifndef NO_IO
   marcel_t serv_pid;

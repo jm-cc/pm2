@@ -60,9 +60,9 @@ typedef struct {
   marcel_mutex_t mutex ;
 } tube ;
 
-tube tube_1, tube_2 ;
+static tube tube_1, tube_2 ;
 
-void create_tube (tube *t)
+static void create_tube (tube *t)
 {
   marcel_mutex_init (&t->mutex, NULL) ;
   pipe (t->tub) ;
@@ -72,7 +72,7 @@ void create_tube (tube *t)
 #endif
 }
 
-int send_message (tube *t, char *message, int len)
+static int send_message (tube *t, char *message, int len)
 {
   int n;
 
@@ -101,7 +101,7 @@ int send_message (tube *t, char *message, int len)
   return n ;
 }
 
-int receive_message (tube *t, char *message, int len)
+static int receive_message (tube *t, char *message, int len)
 {
   int n;
 
@@ -127,7 +127,7 @@ int receive_message (tube *t, char *message, int len)
   return n ;
 }
 
-void * producteur (void * arg)
+static void * producteur (void * arg)
 {
   int i, n;
 
@@ -142,7 +142,7 @@ void * producteur (void * arg)
 extern int nb;
 extern unsigned long temps_act;
 #endif
-void * consommateur (void * arg)
+static void * consommateur (void * arg)
 {
   int i, n ;
   tbx_tick_t t1, t2;
@@ -170,7 +170,7 @@ void * consommateur (void * arg)
 }
 
 
-int marcel_main(int argc, char **argv)
+static int marcel_main(int argc, char **argv)
 {
   marcel_attr_t attr;
   marcel_t pid[2];

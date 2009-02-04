@@ -49,7 +49,7 @@ fi
 
 BUILDDIR=`${PM2_ROOT}/bin/pm2-config --builddir`
 LD_LIBRARY_PATH="$LD_LIBRARY_PATH${LD_LIBRARY_PATH:+:}$BUILDDIR/lib"
-LD_PRELOAD="libPukABI.so:$marcel_libpthread"
+LD_PRELOAD="libPukABI.so $marcel_libpthread"
 export LD_LIBRARY_PATH LD_PRELOAD
 
 exec $GDB "$@"

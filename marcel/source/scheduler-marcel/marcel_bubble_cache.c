@@ -21,7 +21,7 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_CACHE_BSCHED_USE_WORK_STEALING 0
+#define MA_CACHE_BSCHED_USE_WORK_STEALING 1
 #define MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #define MA_FAILED_STEAL_COOLDOWN 1000
@@ -740,9 +740,9 @@ browse_and_steal(ma_holder_t *hold, void *args) {
   ma_runqueue_t *common_rq = NULL, *rq = NULL;
   
   if (bestbb) {
-    rq = get_parent_rq(bestbb);
+    rq = ma_get_parent_rq (bestbb);
   } else if (thread_to_steal) {
-    rq = get_parent_rq(thread_to_steal);
+    rq = ma_get_parent_rq (thread_to_steal);
   }
 
   if (rq) {

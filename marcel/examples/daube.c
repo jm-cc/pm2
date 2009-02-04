@@ -79,7 +79,7 @@ typedef struct {
   int completed;
 } job_t;
 
-static static tube tube_1;
+static tube tube_1;
 
 static marcel_attr_t glob_attr;
 

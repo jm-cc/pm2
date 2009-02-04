@@ -414,13 +414,13 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
 
   /* Maybe l2 is the one we're looking for! (i.e. l1 was originally
      somewhere behind l2, l2 is so the lower ancestor) */
-  if (l2->index == l1->index)
+  if (l2 == l1)
     return l2;
 
   /* If it's not the case, we have to look up until we find fathers
      with the same index (same level + same index = same
      topo_level! */
-  while (l2->index != l1->index) {
+  while (l2 != l1) {
     MA_BUG_ON (!l1->father || !l2->father);
     l1 = l1->father;
     l2 = l2->father;

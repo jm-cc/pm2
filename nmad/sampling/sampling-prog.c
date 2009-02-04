@@ -334,12 +334,23 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
       TBX_GET_TICK(t1);
       for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
 	{
+	  nm_ns_eager_send(p_drv, p_gate, data_send, size/2);
+	  nm_ns_eager_send(p_drv, p_gate, data_send + size/2, size/2);
+	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size/2);
+	  nm_ns_eager_recv(p_drv, p_gate, data_recv + size/2, size/2);
+	}
+      TBX_GET_TICK(t2);
+      double eager_noaggreg_lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
+
+      TBX_GET_TICK(t1);
+      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
+	{
 	  memcpy(data_recv, data_send, size);
 	}
       TBX_GET_TICK(t2);
       double memcpy_lat = TBX_TIMING_DELAY(t1, t2) / param_nb_samples;
       
-      fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\n", size, lat, bw_mbyte, eager_lat, rdv_lat, memcpy_lat);
+      fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", size, lat, bw_mbyte, eager_lat, rdv_lat, eager_noaggreg_lat, memcpy_lat);
       fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
       
       size = (size==0? 1:size);
@@ -388,6 +399,13 @@ static int nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
 	{
 	  nm_ns_rdv_recv(p_drv, p_gate, data_recv, size);
 	  nm_ns_rdv_send(p_drv, p_gate, data_send, size);
+	}
+      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
+	{
+	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size/2);
+	  nm_ns_eager_recv(p_drv, p_gate, data_recv + size/2, size/2);
+	  nm_ns_eager_send(p_drv, p_gate, data_send, size/2);
+	  nm_ns_eager_send(p_drv, p_gate, data_send + size/2, size/2);
 	}
       size = (size==0? 1:size);
     }

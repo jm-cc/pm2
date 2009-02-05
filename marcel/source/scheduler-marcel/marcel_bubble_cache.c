@@ -21,7 +21,7 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_CACHE_BSCHED_USE_WORK_STEALING 1
+#define MA_CACHE_BSCHED_USE_WORK_STEALING 0
 #define MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #define MA_FAILED_STEAL_COOLDOWN 1000
@@ -684,30 +684,10 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       }
     }
   }
-  
-  ma_runqueue_t *common_rq = NULL, *rq = NULL;
-  
-  if (bestbb) {
-    rq = ma_get_parent_rq (bestbb);
-  } else if (thread_to_steal) {
-    rq = ma_get_parent_rq (thread_to_steal);
-  }
-
-  if (rq) {
-    PROF_EVENTSTR (sched_status, "stealing subtree");
-    for (common_rq = rq->father; common_rq != &top->rq; common_rq = common_rq->father) {
-      /* This only works because _source_ is the level vp_is_idle() is
-	 called from (i.e. it's one of the leaves in the topo_level
-	 tree). */
-      if (ma_rq_covers (common_rq, source->number)) {
-	break;
-      }
-    }
-  }
  
   if (bestbb) {
     if (available_entities > 1) { 
-      return ma_bsched_steal (bestbb, common_rq, &source->rq);
+      return ma_bsched_steal (bestbb, source);
     } else {
       /* Browse the bubble */
       struct browse_and_steal_args new_args = {
@@ -720,7 +700,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
   } else if (thread_to_steal && (available_entities > 1)) {
     /* There are no more bubbles to browse... Let's steal the bad
        soccer player... */
-    return ma_bsched_steal (thread_to_steal, common_rq, &source->rq);
+    return ma_bsched_steal (thread_to_steal, source);
   }
 
   return 0;

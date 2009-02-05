@@ -82,11 +82,10 @@ int ma_count_threads_in_entity(marcel_entity_t *entity);
 int ma_burst_bubble (marcel_bubble_t *bubble);
 
 /* This function steals _entity_to_steal_ and moves it to
-   _starving_rq_, while moving up everything that needs to be, thus
-   avoiding hierachical locking issues. */
-int ma_bsched_steal (marcel_entity_t *entity_to_steal, 
-		     ma_runqueue_t *common_rq, 
-		     ma_runqueue_t *starving_rq);
+   _starving_level_, while moving up "everything that needs to be" (c), 
+   thus avoiding hierachical locking issues. */
+int ma_bsched_steal (marcel_entity_t *entity_to_steal,  
+		     struct marcel_topo_level *starving_level);
 
 /* Debug function that prints information about the _ne_ entities
    stored in _e_ */

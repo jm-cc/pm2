@@ -539,22 +539,18 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 static void
 marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
-  
+
+  /* Update the marcel statistics on any entity contained in b. */
   ma_bubble_synthesize_stats (b);
 
-  /* Make sure bubbles can't be modified behind our back.  */
-  ma_local_bh_disable ();
-  ma_preempt_disable ();
-
+  /* Make sure bubbles and runqueues can't be modified behind our
+     back.  */
   ma_bubble_lock_all (b, l);
   ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */
   ma_bubble_snapshot ();
   ma_bubble_unlock_all (b, l);  
-
-  ma_preempt_enable_no_resched ();
-  ma_local_bh_enable ();
 }
 
 static int

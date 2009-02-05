@@ -194,9 +194,6 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   ma_memory_print_affinities (bubble);
 #endif 
   
-  ma_local_bh_disable ();
-  ma_preempt_disable ();
-
   ma_bubble_lock_all (bubble, from);
   ma_memory_schedule_from (from);
   /* TODO: Crappy way to communicate with the Cache bubble
@@ -204,9 +201,6 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
   ((int (*) (struct marcel_topo_level *)) marcel_bubble_cache_sched.priv) (from);
   ma_resched_existing_threads (from);
   ma_bubble_unlock_all (bubble, from);  
-
-  ma_preempt_enable_no_resched ();
-  ma_local_bh_enable ();
 
   return 0;
 }

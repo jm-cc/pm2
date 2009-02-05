@@ -963,7 +963,6 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
-#warning todo verifier que buffer et size sont alignes sur une page
   marcel_mutex_lock(&(memory_manager->lock));
   mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
@@ -998,8 +997,6 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
                         void **newbuffers) {
   marcel_memory_data_t *data = NULL;
   int err=0;
-
-#warning todo verifier que subareas donne des sous-buffers alignes sur une page
 
   MAMI_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));

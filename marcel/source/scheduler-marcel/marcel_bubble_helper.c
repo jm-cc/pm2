@@ -333,6 +333,55 @@ ma_burst_bubble (marcel_bubble_t *bubble) {
   return extracted_entities;
 }
 
+/* This function moves _entity_to_steal_ to the _starving_rq_
+   runqueue, while moving everything that needs to be moved to avoid
+   locking issues. */
+int
+ma_bsched_steal (marcel_entity_t *entity_to_steal, ma_runqueue_t *common_rq, ma_runqueue_t *starving_rq) {
+#define MAX_ANCESTORS 128
+  int i, nb_ancestors = 0, nvp = marcel_vpset_weight (&common_rq->vpset);
+  marcel_entity_t *e, *ancestors[MAX_ANCESTORS];
+
+  /* The main thread doesn't have an `init_holder'.  */
+  if (entity_to_steal->init_holder) {
+    /* Before moving the target entity, we have to move up some of its
+       ancestors to avoid locking issues. */
+    for (e = &ma_bubble_holder(entity_to_steal->init_holder)->as_entity;
+	 e->init_holder; 
+	 e = &ma_bubble_holder(e->init_holder)->as_entity) {
+      /* In here, we try to find these ancestors */
+      if ((e->sched_holder->type == MA_RUNQUEUE_HOLDER) &&
+	  ((e->sched_holder == &common_rq->as_holder) || (marcel_vpset_weight (&(ma_rq_holder(e->sched_holder))->vpset) > nvp))) {
+	/* We keep browsing up through the bubbles hierarchy. If we
+	   reached a bubble whose scheduling level is >= to the
+	   level we need to put ancestors on, our job is over. */
+	break;
+      } else {
+	ancestors[nb_ancestors] = e;
+	nb_ancestors++;
+      }
+    }
+  }
+  
+  if (nb_ancestors) {
+    /* Then we burst everyone of them, to let their content where it
+       was scheduled, and we move them to the common_rq, covering the
+       source and destination runqueue. */
+    for (i = nb_ancestors - 1; i > -1; i--) {
+      MA_BUG_ON (ancestors[i]->type != MA_BUBBLE_ENTITY);
+      ma_burst_bubble (ma_bubble_entity (ancestors[i]));
+      ma_move_entity (ancestors[i], &common_rq->as_holder); 
+    }
+  }
+
+  /* Now that every ancestor is at the right place, we can steal the
+     target entity. */
+  ma_move_entity (entity_to_steal, &starving_rq->as_holder);
+
+  return 1;
+#undef MAX_ANCESTORS
+}
+
 /* Debug function that prints information about the _ne_ entities
    stored in _e_ */
 void

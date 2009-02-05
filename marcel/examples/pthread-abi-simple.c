@@ -68,6 +68,10 @@ assert_running_marcel (void)
 static void *
 thread_entry_point (void *arg)
 {
+  /* Make sure we have a working `pthread_self ()'.  */
+  if (* (pthread_t *) arg != pthread_self ())
+    abort ();
+
   return arg;
 }
 

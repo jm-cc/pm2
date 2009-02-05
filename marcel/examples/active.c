@@ -18,9 +18,9 @@
 
 #include "marcel.h"
 
-volatile tbx_bool_t have_to_work = tbx_true;
+static volatile tbx_bool_t have_to_work = tbx_true;
 
-any_t sample(any_t arg)
+static any_t sample(any_t arg)
 {
    tprintf("thread will sleep during 2 seconds...\n");
 

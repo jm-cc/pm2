@@ -614,7 +614,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
   else {
     if (node != -1) {
       nodemask = (1<<node);
-      err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
+      err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
       if (err < 0) {
         perror("(ma_memory_preallocate) mbind");
         err = 0;
@@ -1149,7 +1149,18 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
   if (aligned_size > size) aligned_size = size;
   mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
-  if (err >= 0) *node = data->node;
+  if (err >= 0) {
+    if (data->status == MARCEL_MEMORY_KERNEL_MIGRATION_STATUS) {
+      int node;
+      ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node);
+      if (node != data->node) {
+        mdebug_mami("Updating location of the pages after a kernel migration\n");
+        data->node = node;
+        data->status = MARCEL_MEMORY_INITIAL_STATUS;
+      }
+    }
+    *node = data->node;
+  }
   MAMI_LOG_OUT();
   return err;
 }
@@ -1340,8 +1351,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
       mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
       nodemask = (1<<dest);
-      err = ma_memory_mbind(data->startaddress, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE);
-#warning todo: how do we check the memory is properly bound
+      err = ma_memory_mbind(data->startaddress, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
     }
     else {
       mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
@@ -1455,15 +1465,16 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     if (memory_manager->kernel_nexttouch_migration == 1 && data->mami_allocated) {
       mdebug_mami("... using in-kernel migration\n");
-#warning todo: comment mettre a jour la localite des pages
       data->status = MARCEL_MEMORY_KERNEL_MIGRATION_STATUS;
       err = ma_memory_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
       if (err < 0) {
         perror("(marcel_memory_migrate_on_next_touch) mbind");
       }
-      err = madvise(data->startaddress, data->size, 12);
-      if (err < 0) {
-        perror("(marcel_memory_migrate_on_next_touch) madvise");
+      else {
+        err = madvise(data->startaddress, data->size, 12);
+        if (err < 0) {
+          perror("(marcel_memory_migrate_on_next_touch) madvise");
+        }
       }
     }
     else {

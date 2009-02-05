@@ -38,19 +38,20 @@
  *   -- bycopy: data is copied in a pre-allocated, pre-registered
  *      memory region, then sent through RDMA into a pre-registered
  *      memory region of the peer node.
- *   -- regrdma: memory is registered on the fly on both sides, the
- *      receiver sends an ACK with RDMA info (raddr, rkey), then 
- *      zero-copy RDMA is performed.
- *   -- adaptrdma: same as regrdma except that memory registration
- *      is done in an adaptive super-pipeline. Memory blocks are 
- *      registered as long as the previous RDMA send doesn't complete.
+ *   -- adaptrdma: data is copied in a pre-allocated, pre-registered
+ *      memory region, with an adaptive super-pipeline. Memory blocks are 
+ *      copied as long as the previous RDMA send doesn't complete.
  *      A guard check ensures that block size progression is at least
  *      2-base exponential to prevent artifacts to kill performance.
+ *   -- regrdma: memory is registered on the fly on both sides, using 
+ *      a pipeline with variable block size. For each block, the
+ *      receiver sends an ACK with RDMA info (raddr, rkey), then 
+ *      zero-copy RDMA is performed.
  *
  * Method is chosen as follows:
  *   -- tracks for small messages use always 'bycopy'
- *   -- tracks with rendez-vous use 'regrdma' for smaller messages 
- *      and 'adaptrdma' for larger messages. Usually, the threshold 
+ *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages 
+ *      and 'regrdma' for larger messages. Usually, the threshold 
  *      is 224kB (from empirical results about registration/send overlap)
  */
 
@@ -80,10 +81,10 @@
 
 /* *** method: 'regrdma' */
 
-static const int nm_ibverbs_regrdma_frag_base    = 128 * 1024;
-static const int nm_ibverbs_regrdma_frag_inc     = 256 * 1024;
+static const int nm_ibverbs_regrdma_frag_base    = 256 * 1024;
+static const int nm_ibverbs_regrdma_frag_inc     = 512 * 1024;
 static const int nm_ibverbs_regrdma_frag_overrun = 64  * 1024;
-static const int nm_ibverbs_regrdma_frag_max     = 1024 * 1024;
+static const int nm_ibverbs_regrdma_frag_max     = 4096 * 1024;
 
 /* *** method: 'adaptrdma' */
 
@@ -102,7 +103,7 @@ static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
 
 
-#define NM_IBVERBS_AUTO_THRESHOLD (2048 * 1024)
+#define NM_IBVERBS_AUTO_THRESHOLD (2 * 1024 * 1024 - 1)
 
 /** list of WRIDs used in the driver. */
 enum {
@@ -1875,7 +1876,7 @@ static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
   int kind = nm_ibverbs_get_kind(p_pw->p_drv, p_pw->trk_id);
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
   int err = -NM_EUNKNOWN;
-  switch(kind) 
+  switch(kind)
     {
     case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
     case NM_IBVERBS_TRK_AUTO:

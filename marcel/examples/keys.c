@@ -21,9 +21,9 @@
 #ifdef MARCEL_KEYS_ENABLED
 #define STACK_SIZE	10000
 
-marcel_key_t key;
+static marcel_key_t key;
 
-void imprime(void)
+static void imprime(void)
 {
   int i;
   char *str = (char *)marcel_getspecific(key);
@@ -34,7 +34,7 @@ void imprime(void)
    }
 }
 
-any_t writer1(any_t arg)
+static any_t writer1(any_t arg)
 {
    marcel_setspecific(key, (any_t)"Hi boys!\n");
 
@@ -43,7 +43,7 @@ any_t writer1(any_t arg)
    return NULL;
 }
 
-any_t writer2(any_t arg)
+static any_t writer2(any_t arg)
 {
    marcel_setspecific(key, (any_t)"Hi girls!\n");
 

@@ -170,7 +170,7 @@ static void * consommateur (void * arg)
 }
 
 
-static int marcel_main(int argc, char **argv)
+int marcel_main(int argc, char **argv)
 {
   marcel_attr_t attr;
   marcel_t pid[2];

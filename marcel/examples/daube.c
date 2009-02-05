@@ -222,7 +222,7 @@ static void *compute(void *arg)
   return NULL;
 }
 
-static int marcel_main(int argc, char **argv)
+int marcel_main(int argc, char **argv)
 {
 #ifndef NO_IO
   marcel_t serv_pid;

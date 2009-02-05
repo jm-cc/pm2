@@ -18,6 +18,7 @@
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
 
+#define MA_MEMORY_BSCHED_USE_WORK_STEALING 0
 #define MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
@@ -248,10 +249,142 @@ memory_sched_shake () {
   return ret;
 }
 
+#if MA_MEMORY_BSCHED_USE_WORK_STEALING
+struct memory_goodness_hints {
+
+  /* The topo_level we're trying to steal for. */
+  struct marcel_topo_level *from;
+
+  /* The number of the node that holds _from_. */
+  int from_node;
+
+  /* The best entity we have found yet. */
+  marcel_entity_t *best_entity;
+
+  /* The _best_entity_'s score. */
+  int best_score;
+
+  /* Let the scheduler know we're calling goodness () for the
+     first time. */
+  int first_call;
+};
+
+/* TODO: Tune them! */
+#define MA_MEMORY_SCHED_MAX_SCORE 500
+
+#define MA_MEMORY_SCHED_REMOTENESS_PENALTY -10
+
+#define MA_MEMORY_SCHED_LOAD_BONUS 10
+#define MA_MEMORY_SCHED_LAST_VP_BONUS 10
+#define MA_MEMORY_SCHED_LOCAL_MEM_BONUS 10
+
+static int
+memory_sched_compute_entity_score (marcel_entity_t *current_e, 
+				   struct memory_goodness_hints *hints) {
+  int computed_score;
+  int topo_max_depth = marcel_topo_vp_level[0].level;
+  long current_e_last_vp;
+  long *mem_stats;
+  struct marcel_topo_level *current_level = ma_get_parent_rq (current_e)->topolevel;
+
+  /* Initialize the current score. */
+  computed_score = MA_MEMORY_SCHED_MAX_SCORE;
+
+  /* Apply a penalty based on how far from _hints->from_ is located
+     the entity we consider. */
+  computed_score += (topo_max_depth - ma_topo_lower_ancestor (hints->from, current_level)->level) * MA_MEMORY_SCHED_REMOTENESS_PENALTY;
+
+  /* Apply a bonus according to how much threads the _current_e_
+     entity is holding. */
+  computed_score += ma_entity_load (current_e) * MA_MEMORY_SCHED_LOAD_BONUS;
+
+  /* Apply a bonus if _current_e_ was last executed from the
+     _hints_from_ topo_level. */
+  current_e_last_vp = *(long *) ma_stats_get (current_e, ma_stats_last_vp_offset);
+  computed_score += (&marcel_topo_vp_level[current_e_last_vp] == hints->from) ? MA_MEMORY_SCHED_LAST_VP_BONUS : 0;
+
+  /* Apply a bonus if _current_e_ accesses data allocated on the node
+     that holds _hints->from_. */
+  mem_stats = (current_e->type == MA_BUBBLE_ENTITY) ? 
+    (long *) ma_bubble_hold_stats_get (ma_bubble_entity (current_e), ma_stats_memnode_offset)
+    : (long *) ma_stats_get (current_e, ma_stats_memnode_offset);
+  computed_score += mem_stats[hints->from_node] * MA_MEMORY_SCHED_LOCAL_MEM_BONUS;
+
+  if (hints->first_call) {
+    hints->first_call = 0;
+    hints->best_score = computed_score;
+    hints->best_entity = current_e;
+  }
+
+  if (hints->best_score < computed_score) {
+    hints->best_score = computed_score;
+    hints->best_entity = current_e;
+  }
+
+  return computed_score;
+}
+
+static void 
+say_hello (marcel_entity_t *e, int current_score) {
+  marcel_printf ("Looking at entity %s%s (%p), score = %i\n", 
+		 (e->type == MA_BUBBLE_ENTITY) ? "bubble" : "thread ", 
+		 (e->type == MA_BUBBLE_ENTITY) ? "" : ma_task_entity (e)->name, 
+		 e,
+		 current_score);
+}
+
+static int
+goodness (ma_holder_t *hold, void *args) {
+  struct memory_goodness_hints *hints = (struct memory_goodness_hints *)args;
+  marcel_entity_t *e;
+  int current_score;
+  
+  list_for_each_entry (e, &hold->sched_list, sched_list) {
+    if (hold->nr_ready > 1)
+      current_score = memory_sched_compute_entity_score (e, hints);
+    else
+      current_score = -1;
+    say_hello (e, current_score);
+    if (e->type == MA_BUBBLE_ENTITY)
+      goodness (&ma_bubble_entity (e)->as_holder, hints);
+  }
+  
+  return 0;
+}
+
+static int
+memory_sched_steal (unsigned from_vp) {
+  int ret = 0;
+  struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
+  
+  struct memory_goodness_hints hints = {
+    .from = me,
+    .best_entity = NULL,
+    .first_call = 1,
+  };
+
+  ma_topo_level_browse (me,
+			MARCEL_LEVEL_MACHINE, 
+			goodness, 
+			&hints);
+  
+  marcel_printf ("[Work Stealing] Best entity = %p (score = %i)\n", hints.best_entity, hints.best_score);
+  
+  if (hints.best_entity)
+    /* Steal the entity for real! */
+    ma_bsched_steal (hints.best_entity, me);
+
+  return ret;
+}
+#endif /* MA_MEMORY_BSCHED_USE_WORK_STEALING */
+
 MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
   .start = memory_sched_start,
   .submit = memory_sched_submit,
   .shake = memory_sched_shake,
+#if MA_MEMORY_BSCHED_USE_WORK_STEALING
+  .vp_is_idle = memory_sched_steal,
+#endif
 );
 
 #else /* MARCEL_MAMI_ENABLED */

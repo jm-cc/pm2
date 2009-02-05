@@ -469,7 +469,7 @@ while [ $_l -le $_level ]; do
                         # by default, do not sort the output
                         sort_output=0
 
-			alias pm2_skip_test='echo "Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue'
+			alias pm2_skip_test='{ echo "Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
 
 		        # Source
                         . ./$_f

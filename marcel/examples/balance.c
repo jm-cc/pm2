@@ -40,19 +40,19 @@
 
 #endif
 
-int iterations = 3;
+static int iterations = 3;
 
 #ifdef BARRIER
-unsigned long works[]  = { 5000, 7000, 12000, 5000 };
-unsigned long delays[] = { 0, 0, 0, 5000 };
-marcel_barrier_t barrier[NWORKS];
+static unsigned long works[]  = { 5000, 7000, 12000, 5000 };
+static unsigned long delays[] = { 0, 0, 0, 5000 };
+static marcel_barrier_t barrier[NWORKS];
 #endif
 #ifdef PIPE
 #define DATASIZE (3000<<10)
 #endif
 
 #ifdef MA__BUBBLES
-marcel_bubble_t bubbles[
+static marcel_bubble_t bubbles[
 #ifdef TREE
 	(NWORKERS-1)*
 #endif
@@ -77,7 +77,7 @@ static volatile data_t data[NWORKS][CACHESIZE/sizeof(data_t)];
 static volatile float data[NWORKS][128];
 #endif
 
-any_t work(any_t arg) {
+static any_t work(any_t arg) {
 	int i = (int)(intptr_t) arg;
 	int group = i/NWORKERS;
 	int me = i%NWORKERS;
@@ -134,7 +134,7 @@ any_t work(any_t arg) {
 #endif
 
 #ifdef PIPE
-any_t producer(any_t arg) {
+static any_t producer(any_t arg) {
 	int i = (int) arg;
 	int group = i/NWORKERS;
 	int me = i%NWORKERS;
@@ -153,7 +153,7 @@ any_t producer(any_t arg) {
 	}
 	return NULL;
 }
-any_t consumer(any_t arg) {
+static any_t consumer(any_t arg) {
 	int i = (int) arg;
 	int group = i/NWORKERS;
 	int me = i%NWORKERS;
@@ -172,7 +172,7 @@ any_t consumer(any_t arg) {
 	}
 	return NULL;
 }
-any_t piper(any_t arg) {
+static any_t piper(any_t arg) {
 	int i = (int) arg;
 	int group = i/NWORKERS;
 	int me = i%NWORKERS;

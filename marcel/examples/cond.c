@@ -17,12 +17,12 @@
 #include "marcel.h"
 #include <stdio.h>
 
-volatile int a=0;
-marcel_cond_t cond;
-marcel_mutex_t mutex;
-marcel_sem_t sem;
+static volatile int a=0;
+static marcel_cond_t cond;
+static marcel_mutex_t mutex;
+static marcel_sem_t sem;
 
-any_t f(any_t arg)
+static any_t f(any_t arg)
 {
   register int n = (int)(intptr_t)arg;
   tbx_tick_t t1, t2;
@@ -41,7 +41,7 @@ any_t f(any_t arg)
   return NULL;
 }
 
-void bench_cond(unsigned nb)
+static void bench_cond(unsigned nb)
 {
   marcel_t pid;
   marcel_attr_t attr;

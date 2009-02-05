@@ -71,6 +71,18 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 				   marcel_key_destructor_t func), (key, func),
 {				/* pour l'instant, le destructeur n'est pas utilise */
 	LOG_IN();
+
+#ifdef MA__LIBPTHREAD
+	if (tbx_unlikely(!marcel_test_activity()))
+		/* This hack aims to work around a bootstrap problem: We may be called by
+		   the GNU C Library when PukABI is initializing (e.g., calling
+		   `dlsym()') but Marcel itself is not yet initialized.  Since we know
+		   the GNU C Library, specifically `init()' in
+		   `$(GLIBC)/dlfcn/dlerror.c', is able to gracefully handle a situation
+		   where `pthread_key_create(3)' fails, we shamelessly fail.  */
+		LOG_RETURN(EAGAIN);
+#endif
+
 	ma_spin_lock(&marcel_key_lock);
 	while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
 	    (marcel_key_present[marcel_last_key])) {

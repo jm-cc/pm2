@@ -1,0 +1,53 @@
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+[ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
+
+
+# Configuration
+flavor="test_marcel_pthread_abi_stackalign"
+appdir="${PM2_ROOT}/marcel/examples"
+prog="pthread-abi-simple"
+
+# Tell `pm2-test' to preload things in the right order.  Supposedly,
+# PukABI's directory is in libpthread's `RPATH' so the loader should
+# be able to find it even if we don't specify its full path.
+# Futhermore, we avoid specifying its full path to make sure the
+# loader applies the same search rules to find `libPukABI.so' as a
+# preloaded DSO *and* as a dependency of `libpthread.so', otherwise it
+# could end up loading two different copies of `libPukABI.so'.
+ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
+
+args=""
+hosts="localhost"
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+EOF
+
+create_test_flavor() {
+    # Creation de la flavor
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+	--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
+	--modules="\"marcel tbx init puk stackalign\""		\
+	--marcel="smp"						\
+	--marcel="spinlock" --marcel="main_as_func"		\
+        --marcel="pmarcel" --marcel="pthread"			\
+	--marcel="enable_cleanup" --marcel="enable_deviation"	\
+	--marcel="enable_keys" --marcel="enable_signals"	\
+	--marcel="enable_once" --marcel="dont_use_pthread"	\
+	--marcel="bug_on" --puk="enable_pukabi"			\
+        --puk="disable_fd_virtualization"			\
+	--tbx="safe_malloc" --tbx="parano_malloc"		\
+	--all="gdb" $_output_redirect
+}
+

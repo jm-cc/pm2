@@ -401,12 +401,11 @@ while [ $_l -le $_level ]; do
 			eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
 
 		        # Compilation, execution et verification des resultats
-			
+
 			# If the flavor doesn't exist or is older than the test,
                         # force its regeneration. Ideally we should also depend
                         # on the options' .sh files.
 			flavor_file=`pm2-flavor-file -f $flavor`
-			echo "$flavor_file" "$_f" $PWD
 			if [ ! -r "$flavor_file" ] || [ "$_f" -nt "$flavor_file" ] ; then
 			    rm -f "$flavor_file"
 			    create_test_flavor | sed -e 's/^/..../'

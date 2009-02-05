@@ -868,7 +868,6 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
 
 static
 int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *buffer, size_t size, marcel_memory_data_t **data) {
- MAMI_ILOG_IN();
   if (memory_tree==NULL) {
     mdebug_mami("The interval [%p:%p] is not managed by MAMI.\n", buffer, buffer+size);
     errno = EINVAL;
@@ -892,7 +891,6 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
     errno = EINVAL;
     return -errno;
   }
-  MAMI_ILOG_OUT();
 }
 
 static
@@ -1305,6 +1303,7 @@ int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                               marcel_memory_node_selection_policy_t policy,
                               int *node) {
   int err=0;
+
   MAMI_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
@@ -1324,7 +1323,6 @@ int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
     errno = EINVAL;
     err = -errno;
   }
-
 
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
@@ -1737,20 +1735,21 @@ int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
     errno = EINVAL;
     err = -errno;
   }
-
-  marcel_mutex_lock(&(memory_manager->lock));
-  if (stat == MARCEL_MEMORY_STAT_MEMORY_TOTAL) {
-    *value = memory_manager->memtotal[node];
-  }
-  else if (stat == MARCEL_MEMORY_STAT_MEMORY_FREE) {
-    *value = memory_manager->memfree[node];
-  }
   else {
-    mdebug_mami("Statistic #%d unknown\n", stat);
-    errno = EINVAL;
-    err = -errno;
+    marcel_mutex_lock(&(memory_manager->lock));
+    if (stat == MARCEL_MEMORY_STAT_MEMORY_TOTAL) {
+      *value = memory_manager->memtotal[node];
+    }
+    else if (stat == MARCEL_MEMORY_STAT_MEMORY_FREE) {
+      *value = memory_manager->memfree[node];
+    }
+    else {
+      mdebug_mami("Statistic #%d unknown\n", stat);
+      errno = EINVAL;
+      err = -errno;
+    }
+    marcel_mutex_unlock(&(memory_manager->lock));
   }
-  marcel_mutex_unlock(&(memory_manager->lock));
 
   MAMI_LOG_OUT();
   return err;

@@ -16,7 +16,7 @@
 
 #include "marcel.h"
 
-any_t worker(any_t arg) {
+static any_t worker(any_t arg) {
   int n = (intptr_t) arg;
   tbx_tick_t t1,t2;
 

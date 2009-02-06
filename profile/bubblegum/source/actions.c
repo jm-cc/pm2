@@ -768,7 +768,7 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   GtkWidget *progress_bar = NULL;
   GtkWidget *infos        = NULL;
   
-  gchar out_file[STRING_BUFFER_SIZE] = "/tmp/bubblegum/autobulles.swf";
+  gchar out_file[STRING_BUFFER_SIZE];
   GtkWidget *FileSelection;
   
   /* ask if user wants save */

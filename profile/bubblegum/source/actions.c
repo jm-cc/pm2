@@ -217,7 +217,7 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 {
   GtkWidget *FileSelection;
   GtkWidget *Dialog = NULL;
-  char *chemin;
+  char chemin[128], *ptr;
   gchar *Chemin;
   
   if (widget == NULL)
@@ -256,10 +256,9 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 	printf("erreur de chargement!\n");
 	/* Charge le dernier état connu */
 
-        chemin = malloc(128*sizeof(char));
-        get_tmp_bubblegum_file(NumTmp, &chemin);
+	ptr = (char *)chemin;
+        get_tmp_bubblegum_file(NumTmp, &ptr);
 	chargerXml(chemin);
-        free(chemin);
       }
       else {
 	/* met à jour le chemin dans iGaucheVars */
@@ -390,7 +389,7 @@ void Enregistrer(GtkWidget *widget, gpointer data)
 /*! Permet d'annuler une action effectuer 
  */
 void Annuler(GtkWidget *widget, gpointer data) {
-  char *chemin;
+  char chemin[128], *ptr;
 
   /* Si aucune action n'a été faite */
   if (NumTmp <= 0)
@@ -403,10 +402,9 @@ void Annuler(GtkWidget *widget, gpointer data) {
 
   NumTmp--;
   
-  chemin = malloc(128*sizeof(char));
-  get_tmp_bubblegum_file(NumTmp, &chemin);
+  ptr = (char *)chemin;
+  get_tmp_bubblegum_file(NumTmp, &ptr);
   chargerXml(chemin);
-  free(chemin);
 
   return;
 }
@@ -415,7 +413,7 @@ void Annuler(GtkWidget *widget, gpointer data) {
 /*! Permet de refaire une action annuler 
  */
 void Refaire(GtkWidget *widget, gpointer data) {
-  char *chemin;
+  char chemin[128], *ptr;
 
   /* Si le fichier n'existe pas, on ne fait rien */
   if (NumTmp >= NumTmpMax)
@@ -425,10 +423,9 @@ void Refaire(GtkWidget *widget, gpointer data) {
 
   NumTmp++;
 
-  chemin = malloc(128*sizeof(char));
-  get_tmp_bubblegum_file(NumTmp, &chemin);
+  ptr = (char *)chemin;
+  get_tmp_bubblegum_file(NumTmp, &ptr);
   chargerXml(chemin);
-  free(chemin);
 
   return;
 }

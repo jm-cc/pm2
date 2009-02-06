@@ -792,7 +792,6 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   initExecDialog (&dialog, &progress_bar, &infos, data);	
   
   generateTrace (progress_bar, 0, 0.2);
-  
   snprintf (tracefile, sizeof (tracefile),
 	    "/tmp/prof_file_user_%s", getenv ("USER"));
   
@@ -806,13 +805,17 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
 #endif
 
   runCommand ("%s %s &",
-# ifdef DARWIN_SYS
+#if defined(PM2_FLASH_PLAYER)
+#  define xstr(s) str(s)
+#  define str(s) #s
+	      xstr(PM2_FLASH_PLAYER),
+#elif defined(DARWIN_SYS)
 	      "open",
 # else
 	      "realplay",
 # endif
 	      out_file);
-    
+
   destroyExecDialog (dialog, progress_bar, infos);
 }
 

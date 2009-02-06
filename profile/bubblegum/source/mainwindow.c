@@ -122,12 +122,6 @@ int main (int argc, char **argv) {
    /* Affiche tous les Widgets de la fenêtre principale*/
    gtk_widget_show_all(main_window);
 
-   {
-     char tmpDirectory[STRING_BUFFER_SIZE];
-     snprintf (tmpDirectory, sizeof (tmpDirectory), "/tmp/bubblegum_user_%s", getenv ("USER"));
-     mkdir(tmpDirectory, 0775);
-   }
-
    /* Boucle principale */
    create_tmp_directory();
    gtk_main();

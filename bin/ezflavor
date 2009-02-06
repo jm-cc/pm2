@@ -147,7 +147,16 @@ else
 
     else
 
-        exec ${PROG} ${@:+"$@"}
+	if [ "$PM2_DEBUG" == "1" ] ; then
+
+            gdb ${PROG} ${@:+"$@"}
+
+	else
+
+	    exec ${PROG} ${@:+"$@"}
+
+	fi
+
     fi
 
 fi

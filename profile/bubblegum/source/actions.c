@@ -27,7 +27,7 @@
 #include "save.h"
 #include "geneC.h"
 #include "bulle.h"
-
+#include "util.h"
 
 #include "bubble_gl_anim.h"
 
@@ -217,6 +217,7 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 {
   GtkWidget *FileSelection;
   GtkWidget *Dialog = NULL;
+  char *chemin;
   gchar *Chemin;
   
   if (widget == NULL)
@@ -254,8 +255,11 @@ void Ouvrir(GtkWidget *widget, gpointer data)
 	gtk_dialog_run(GTK_DIALOG(Dialog));
 	printf("erreur de chargement!\n");
 	/* Charge le dernier état connu */
-	sprintf(Chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);
-	chargerXml(Chemin);
+
+        chemin = malloc(128*sizeof(char));
+        get_tmp_bubblegum_file(NumTmp, &chemin);
+	chargerXml(chemin);
+        free(chemin);
       }
       else {
 	/* met à jour le chemin dans iGaucheVars */
@@ -386,6 +390,8 @@ void Enregistrer(GtkWidget *widget, gpointer data)
 /*! Permet d'annuler une action effectuer 
  */
 void Annuler(GtkWidget *widget, gpointer data) {
+  char *chemin;
+
   /* Si aucune action n'a été faite */
   if (NumTmp <= 0)
     return;
@@ -397,9 +403,10 @@ void Annuler(GtkWidget *widget, gpointer data) {
 
   NumTmp--;
   
-  char chemin[128];
-  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);  
+  chemin = malloc(128*sizeof(char));
+  get_tmp_bubblegum_file(NumTmp, &chemin);
   chargerXml(chemin);
+  free(chemin);
 
   return;
 }
@@ -408,6 +415,8 @@ void Annuler(GtkWidget *widget, gpointer data) {
 /*! Permet de refaire une action annuler 
  */
 void Refaire(GtkWidget *widget, gpointer data) {
+  char *chemin;
+
   /* Si le fichier n'existe pas, on ne fait rien */
   if (NumTmp >= NumTmpMax)
     return;
@@ -416,9 +425,10 @@ void Refaire(GtkWidget *widget, gpointer data) {
 
   NumTmp++;
 
-  char chemin[128];
-  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp);  
+  chemin = malloc(128*sizeof(char));
+  get_tmp_bubblegum_file(NumTmp, &chemin);
   chargerXml(chemin);
+  free(chemin);
 
   return;
 }
@@ -898,10 +908,8 @@ void gtk_main_quit2(GtkWidget* widget, gpointer data)
 {
   widget = NULL;  // éviter le warning
   
-  /* efface les fichiers temporaire */
-  system("rm -rf /tmp/bubblegum/");
-  
   printf("Fin du programme\n");
+  remove_tmp_directory();
    
   gtk_main_quit();
 }

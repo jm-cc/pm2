@@ -18,6 +18,7 @@
 #include "save.h"
 #include "mainwindow.h"
 #include "actions.h"
+#include "util.h"
 
 unsigned int NumTmp = 0;
 unsigned int NumTmpMax = 0;
@@ -92,12 +93,11 @@ static gboolean changeprioritebulle(GtkWidget * w,GtkScrollType scroll,gdouble v
  *  \param NumTmpMax est une variable globale.
  */
 void enregistrerTmp(void) {
-  char chemin[128];
-
   NumTmp++;
   NumTmpMax = NumTmp;
   
-  sprintf(chemin, "/tmp/bubblegum/bubbblegumT%d.xml", NumTmp); 
+  char *chemin = malloc(128*sizeof(char));
+  get_tmp_bubblegum_file(NumTmp, &chemin);
 #if 0
   printf("DEBUG : Save %s\n", chemin);
   printf("DEBUG : NumTmp %d NumTmpMax %d\n", NumTmp, NumTmpMax);

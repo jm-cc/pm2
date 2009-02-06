@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
@@ -19,13 +18,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #ifdef MARCEL_FORTRAN
-void marcel_init_(){
+
+void marcel_init_(void) {
   int i, argc;
   char **argv;
 
-  tbx_fortran_init(&argc, &argv);  
+  tbx_fortran_init(&argc, &argv);
   marcel_init (&argc, argv);
 
   for(i = 0; i < argc; i++){
@@ -36,7 +35,7 @@ void marcel_init_(){
 }
 
 
-void marcel_end_ (){
+void marcel_end_ (void){
   marcel_end();
 }
 
@@ -56,7 +55,7 @@ void marcel_join_(marcel_t *pid){
 }
 
 
-void marcel_yield_(){
+void marcel_yield_(void) {
   marcel_yield();
 }
 
@@ -66,16 +65,16 @@ void marcel_set_load_(int *load) {
 }
 
 /* Utile pour debug */
-void marcel_rien_() {
+void marcel_rien_(void) {
 }
 
 #ifdef MA__BUBBLES
 /* TODO: rajouter la bulle qu'on soumet en parametre */
-void marcel_bubble_submit_() {
+void marcel_bubble_submit_(void) {
   current_sched->submit(&marcel_root_bubble.as_entity);
 }
 
-void marcel_spread_() {
+void marcel_spread_(void) {
   ma_bubble_sched_t previous = NULL;
   if (current_sched != &marcel_bubble_spread_sched)
     previous = marcel_bubble_change_sched(&marcel_bubble_spread_sched);

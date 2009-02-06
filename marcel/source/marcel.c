@@ -148,7 +148,7 @@ int marcel_extlib_protect(void)
 	else
 		marcel_recursivemutex_lock(&ma_extlib_lock);
 #endif
-	ma_local_bh_disable();
+	marcel_thread_preemption_disable();
 	return 0;
 }
 
@@ -160,7 +160,7 @@ int marcel_extlib_unprotect(void)
 	/* Release preemption after releasing the mutex, in case we'd try to
 	 * immediately schedule a thread that calls marcel_extlib_protect(),
 	 * thus requiring two useless context switches. */
-	ma_local_bh_enable();
+	marcel_thread_preemption_enable();
 	return 0;
 }
 

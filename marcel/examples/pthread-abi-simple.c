@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <dlfcn.h>
 
@@ -71,6 +72,12 @@ thread_entry_point (void *arg)
   /* Make sure we have a working `pthread_self ()'.  */
   if (* (pthread_t *) arg != pthread_self ())
     abort ();
+
+  /* This usleep(3) call should be handled by PukABI, which calls
+     `marcel_extlib_protect()' before calling usleep(3), which is then
+     handled by Marcel's libpthread.so by calling `marcel_usleep()'.  Make
+     sure the whole chain works as expected.  */
+  usleep (1000);
 
   return arg;
 }

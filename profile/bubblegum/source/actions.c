@@ -402,9 +402,11 @@ void Annuler(GtkWidget *widget, gpointer data) {
 
   NumTmp--;
   
-  ptr = (char *)chemin;
-  get_tmp_bubblegum_file(NumTmp, &ptr);
-  chargerXml(chemin);
+  if (NumTmp) {
+    ptr = (char *)chemin;
+    get_tmp_bubblegum_file(NumTmp, &ptr);
+    chargerXml(chemin);
+  }
 
   return;
 }

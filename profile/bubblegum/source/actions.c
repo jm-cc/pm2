@@ -767,7 +767,7 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   GtkWidget *progress_bar = NULL;
   GtkWidget *infos        = NULL;
 
-  gchar out_file[STRING_BUFFER_SIZE];
+  char out_file[STRING_BUFFER_SIZE] = "";
   GtkWidget *FileSelection;
 
   /* ask if user wants save */
@@ -803,17 +803,19 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   destroyBubbleMovie (mymovie);
 #endif
 
-  runCommand ("%s %s &",
+  if (strcmp(out_file, "")) {
+    runCommand ("%s %s &",
 #if defined(PM2_FLASH_PLAYER)
 #  define xstr(s) str(s)
 #  define str(s) #s
-	      xstr(PM2_FLASH_PLAYER),
+		xstr(PM2_FLASH_PLAYER),
 #elif defined(DARWIN_SYS)
-	      "open",
+		"open",
 # else
-	      "realplay",
+		"realplay",
 # endif
-	      out_file);
+		out_file);
+  }
 
   destroyExecDialog (dialog, progress_bar, infos);
 }

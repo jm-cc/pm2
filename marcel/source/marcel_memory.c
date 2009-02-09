@@ -19,7 +19,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#ifdef LINUX_SYS
 #include <malloc.h>
+#endif /* LINUX_SYS */
 
 #ifdef LINUX_SYS
 #include <linux/mempolicy.h>
@@ -145,10 +147,14 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->alignment = 1;
 
   // Is in-kernel migration available
+#ifdef LINUX_SYS
   ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
   err = madvise(ptr, memory_manager->normalpagesize, 12);
   memory_manager->kernel_nexttouch_migration = (err>=0);
   free(ptr);
+#else /* !LINUX_SYS */
+  memory_manager->kernel_nexttouch_migration = 0;
+#endif /* LINUX_SYS */
   mdebug_mami("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration);
 
   // How much total and free memory per node

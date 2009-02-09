@@ -214,10 +214,10 @@ extern int marcel_recursivemutex_init (marcel_recursivemutex_t * __restrict __mu
 /* Destroy a mutex.  */
 extern int marcel_recursivemutex_destroy (marcel_recursivemutex_t *__mutex) __THROW;
 
-/* Try locking a mutex.  */
+/* Try locking a mutex.  Return nesting level (number of times we now have it.)  */
 extern int marcel_recursivemutex_trylock (marcel_recursivemutex_t *_mutex) __THROW;
 
-/* Lock a mutex.  */
+/* Lock a mutex.  Return nesting level (number of times we now have it.)  */
 extern int marcel_recursivemutex_lock (marcel_recursivemutex_t *__mutex) __THROW;
 
 /* Wait until lock becomes available, or specified time passes. */
@@ -225,7 +225,7 @@ extern int marcel_recursivemutex_timedlock (marcel_recursivemutex_t *__restrict 
                                     __const struct timespec *__restrict
                                     __abstime) __THROW;
 
-/* Unlock a mutex.  */
+/* Unlock a mutex.  Return nesting level (number of times we still have it.)  */
 extern int marcel_recursivemutex_unlock (marcel_recursivemutex_t *__mutex) __THROW;
 
 

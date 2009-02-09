@@ -60,18 +60,18 @@ int marcel_recursivemutex_lock(marcel_recursivemutex_t * mutex) {
 	struct marcel_task *id = MARCEL_SELF;
 	if (mutex->__data.owner == id) {
 		mutex->__data.__count++;
-		return 0;
+		return mutex->__data.__count + 1;
 	}
 	__marcel_lock(&mutex->__data.__lock, id);
 	mutex->__data.owner = id;
 	/* and __count is 0 */
-	return 0;
+	return 1;
 }
 int marcel_recursivemutex_trylock(marcel_recursivemutex_t * mutex) {
 	struct marcel_task *id = MARCEL_SELF;
 	if (mutex->__data.owner == id) {
 		mutex->__data.__count++;
-		return 1;
+		return mutex->__data.__count + 1;
 	}
 	if (!__marcel_trylock(&mutex->__data.__lock))
 		return 0;
@@ -82,7 +82,7 @@ int marcel_recursivemutex_trylock(marcel_recursivemutex_t * mutex) {
 int marcel_recursivemutex_unlock(marcel_recursivemutex_t * mutex) {
 	if (mutex->__data.__count) {
 		mutex->__data.__count--;
-		return 0;
+		return mutex->__data.__count + 1;
 	}
 	mutex->__data.owner = NULL;
 	__marcel_unlock(&mutex->__data.__lock);

@@ -44,8 +44,10 @@ extern unsigned int NumTmpMax;
 
 static char *bubble_scheduler_name;
 static char *synthetic_topology;
+static char *additional_options;
 static int chosen_bsched = 0;
 static gboolean txtViewTopoSensitive = FALSE;
+static gboolean txtViewOptionsSensitive = FALSE;
 
 /*********************************************************************/
 /*! Demande confirmation avant de quitter le programme */
@@ -441,13 +443,22 @@ activate_txtBox (GtkWidget *widget, gpointer data)
     gtk_entry_set_text (GTK_ENTRY (data), "");
 }
 
+static void
+activate_txtOptionsBox (GtkWidget *widget, gpointer data)
+{
+  txtViewOptionsSensitive = !txtViewOptionsSensitive;
+  gtk_widget_set_sensitive (GTK_WIDGET (data), txtViewOptionsSensitive);
+  if (!txtViewOptionsSensitive)
+    gtk_entry_set_text (GTK_ENTRY (data), "");
+}
+
 void Options (GtkWidget *widget, gpointer data)
 {
   GtkWidget *dialog;
-  GtkWidget *hboxBubbleSched, *hboxTopo;
-  GtkWidget *txtViewTopo;
-  GtkWidget *chkBtnTopo;
-  GtkWidget *labelBubbleSched, *labelTopo;
+  GtkWidget *hboxBubbleSched, *hboxTopo, *hboxOptions;
+  GtkWidget *txtViewTopo, *txtViewOptions;
+  GtkWidget *chkBtnTopo, *chkBtnOptions;
+  GtkWidget *labelBubbleSched, *labelTopo, *labelOptions;
   GtkWidget *comboBoxBubbleSched;
 
   if (widget == NULL)
@@ -492,6 +503,20 @@ void Options (GtkWidget *widget, gpointer data)
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), chkBtnTopo, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxTopo, FALSE, FALSE, 5);
 
+  hboxOptions = gtk_hbox_new (FALSE, 0);
+  chkBtnOptions = gtk_check_button_new_with_label ("Define additional options when executing application");
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (chkBtnOptions), txtViewOptionsSensitive);
+  txtViewOptions = gtk_entry_new ();
+  gtk_widget_set_sensitive (GTK_WIDGET (txtViewOptions), txtViewOptionsSensitive);
+  g_signal_connect (G_OBJECT(chkBtnOptions), "clicked", G_CALLBACK (activate_txtOptionsBox), txtViewOptions);
+  gtk_entry_set_text (GTK_ENTRY (txtViewOptions), additional_options ? : "");
+  labelOptions = gtk_label_new ("Additional options:");
+
+  gtk_box_pack_start (GTK_BOX (hboxOptions), labelOptions, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX (hboxOptions), txtViewOptions, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), chkBtnOptions, FALSE, FALSE, 5);
+  gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxOptions, FALSE, FALSE, 5);
+
   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
 
   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
@@ -508,6 +533,12 @@ void Options (GtkWidget *widget, gpointer data)
     synthetic_topology = NULL;
   else
     synthetic_topology = strdup (synthetic_topology);
+
+  additional_options = (char *)gtk_entry_get_text (GTK_ENTRY (txtViewOptions));
+  if (*additional_options == '\0')
+    additional_options = NULL;
+  else
+    additional_options = strdup (additional_options);
 
   bubble_scheduler_name = strdup (gtk_combo_box_get_active_text (GTK_COMBO_BOX (comboBoxBubbleSched)));
   chosen_bsched = gtk_combo_box_get_active (GTK_COMBO_BOX (comboBoxBubbleSched));
@@ -710,8 +741,9 @@ generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   pb_start += pb_step;
 
   asprintf (&pm2_command,
-	    "pm2-load  %s --marcel-bubble-scheduler \"%s\" %s%s%s",
+	    "pm2-load  %s %s --marcel-bubble-scheduler \"%s\" %s%s%s",
 	    GENEC_NAME,
+	    additional_options ? : "",
 	    bubble_scheduler_name ? : "null",
 	    synthetic_topology ? " --marcel-synthetic-topology \"" : "",
 	    synthetic_topology ? : "",

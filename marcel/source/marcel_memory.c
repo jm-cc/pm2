@@ -18,9 +18,25 @@
 #include "marcel.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <numaif.h>
 #include <sys/mman.h>
 #include <malloc.h>
+
+#ifdef LINUX_SYS
+#include <linux/mempolicy.h>
+#else
+/* Policies */
+enum {
+	MPOL_DEFAULT,
+	MPOL_PREFERRED,
+	MPOL_BIND,
+	MPOL_INTERLEAVE,
+	MPOL_MAX,	/* always last member of enum */
+};
+
+/* Flags for mbind */
+#define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
+#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
+#endif /* LINUX_SYS */
 
 #if !defined(__NR_move_pages)
 

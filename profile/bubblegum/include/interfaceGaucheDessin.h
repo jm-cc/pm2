@@ -31,9 +31,9 @@ typedef struct interfaceGaucheVars_tag
   int mousePos_left_y;
 
   int idgeneral; // id pour les bulles et les threads, correspond à l'id maximum dans la configuration actuelle
-  
+
   char chemin[STRING_BUFFER_SIZE]; // chemin du fichier de sauvegarde
-  
+
   GtkWidget *interfaceGauche;
   GtkWidget *drawzone_left;
 
@@ -78,7 +78,7 @@ void       TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner);
 void       Clear();
 
 int SetId(gpointer data);
-/*Selection Simple */ 
+/*Selection Simple */
 #if 0
 void Copier(interfaceGaucheVars * iGaucheVars);
 void Deplacer(interfaceGaucheVars * iGaucheVars);

@@ -24,7 +24,7 @@ unsigned int NumTmp = 0;
 unsigned int NumTmpMax = 0;
 /* Selection Multiple*/
 #if 1
-extern interfaceGaucheVars* iGaucheVars; 
+extern interfaceGaucheVars* iGaucheVars;
 #endif
 /*Fin*/
 
@@ -36,7 +36,7 @@ static gboolean changecharge(GtkWidget * w,GtkScrollType scroll,gdouble value, g
     SetCharge(iGaucheVars->ThreadSelect,gtk_range_get_value(GTK_RANGE((DataAddThread*)iGaucheVars->charge)));
     enregistrerTmp();
   }
-  
+
   else
     iGaucheVars->defcharge=gtk_range_get_value(GTK_RANGE((DataAddThread*)iGaucheVars->charge));
 
@@ -49,11 +49,11 @@ static gboolean changecharge(GtkWidget * w,GtkScrollType scroll,gdouble value, g
 static gboolean changepriorite(GtkWidget * w,GtkScrollType scroll,gdouble value, gpointer data){
   if(iGaucheVars->ThreadSelect!=NULL){
     SetPrioriteThread(iGaucheVars->ThreadSelect,gtk_range_get_value(GTK_RANGE((DataAddThread*)iGaucheVars->priorite)));
-    enregistrerTmp();  
+    enregistrerTmp();
   }
   else
     iGaucheVars->defpriorite=gtk_range_get_value(GTK_RANGE((DataAddThread*)iGaucheVars->priorite));
-  
+
   return FALSE;
 }
 
@@ -64,14 +64,14 @@ static gboolean changenom(GtkWidget   *widget,  GdkEventKey *event, gpointer  us
   printf("changenom\n");
   if(iGaucheVars->ThreadSelect!=NULL){
     SetNom(iGaucheVars->ThreadSelect,gtk_entry_get_text(GTK_ENTRY((DataAddThread*)iGaucheVars->nom)));
-    enregistrerTmp();  
+    enregistrerTmp();
   }
   else
     iGaucheVars->defnom=gtk_entry_get_text(GTK_ENTRY((DataAddThread*)iGaucheVars->nom));
-  
+
   return FALSE;
 }
-   
+
 /*Change la priorité d'une bulle sélectionnée
  * \todo comm
  */
@@ -87,7 +87,7 @@ static gboolean changeprioritebulle(GtkWidget * w,GtkScrollType scroll,gdouble v
   return FALSE;
 }
 
-/*! Fonction qui fait les enregistrements temporaires 
+/*! Fonction qui fait les enregistrements temporaires
  *  afin de garder un historique des actions.
  *  \param NumTmp est une variable globale.
  *  \param NumTmpMax est une variable globale.
@@ -97,7 +97,7 @@ void enregistrerTmp(void) {
 
   NumTmp++;
   NumTmpMax = NumTmp;
-  
+
   ptr = (char *)chemin;
   get_tmp_bubblegum_file(NumTmp, &ptr);
 #if 0
@@ -120,7 +120,7 @@ interfaceGaucheVars* interfaceGauche()
   GtkWidget *toolbarB;
   GtkWidget *toolbarV;
   GtkWidget *toolbarG;
-   
+
   GtkWidget *toolbar_item;
   GtkWidget *menu;
   GtkWidget *item1;
@@ -151,24 +151,24 @@ interfaceGaucheVars* interfaceGauche()
   item1 = gtk_menu_item_new_with_label ("Option 1");
   gtk_menu_shell_append (GTK_MENU_SHELL(menu), item1);
   g_signal_connect_swapped (G_OBJECT(item1),"activate",G_CALLBACK(imprimer_rep), (gpointer) "L'option 1 a été cliquée.");
-   
+
   item2 = gtk_menu_item_new_with_label ("Option 2");
   gtk_menu_shell_append (GTK_MENU_SHELL(menu), item2);
   g_signal_connect_swapped (G_OBJECT(item2),"activate",G_CALLBACK(imprimer_rep), (gpointer) "L'option 2 a été cliquée.");
-   
+
   item3 = gtk_menu_item_new_with_label ("Option 3");
   gtk_menu_shell_append (GTK_MENU_SHELL(menu), item3);
   g_signal_connect_swapped (G_OBJECT(item3),"activate",G_CALLBACK(imprimer_rep), (gpointer) "L'option 3 a été cliquée.");
-   
+
   gtk_widget_show_all (menu);
 
   /*event box*/
   ev_box = gtk_event_box_new ();
   /*    gtk_container_add (GTK_CONTAINER(drawzone), ev_box); */
   g_signal_connect_swapped (G_OBJECT(ev_box), "event", G_CALLBACK(menuitem_rep), G_OBJECT(menu));
-   
+
   toolbar = gtk_toolbar_new();
- 
+
   toolbarG = gtk_toolbar_new();
   gtk_toolbar_set_orientation(GTK_TOOLBAR(toolbarG),GTK_ORIENTATION_VERTICAL);
 
@@ -187,7 +187,7 @@ interfaceGaucheVars* interfaceGauche()
 
 
   toolbarV = gtk_toolbar_new();
- 
+
   iGaucheVars->prioritebulle=gtk_hscale_new_with_range(0,10,1);
   gtk_range_set_value(GTK_RANGE(iGaucheVars->prioritebulle), iGaucheVars->defprioritebulle);
 
@@ -201,7 +201,7 @@ interfaceGaucheVars* interfaceGauche()
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbarG),toolbarV,NULL,NULL);
 
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar),toolbarG,NULL,NULL);
-  
+
 /* Ajout des étiquettes charge-priorité-nom en vertical */
   toolbar2 = gtk_vbox_new (TRUE, 10);
   gtk_box_pack_start (GTK_BOX (toolbar2), gtk_label_new ("\n   Charge"), TRUE, TRUE, 5);
@@ -226,14 +226,14 @@ interfaceGaucheVars* interfaceGauche()
   gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->charge, TRUE, TRUE, 0);
   gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->priorite, TRUE, TRUE, 0);
   gtk_box_pack_start (GTK_BOX (toolbar3), iGaucheVars->nom, TRUE, TRUE, 0);
-     
+
 
   gtk_toolbar_append_widget(GTK_TOOLBAR(toolbar),toolbar3,NULL,NULL);
 
 
   gtk_box_pack_end(GTK_BOX(iGaucheVars->interfaceGauche), toolbar, FALSE, FALSE, 0);
 
-  
+
   return iGaucheVars;
 }
 
@@ -277,7 +277,7 @@ void addThreadAutoOnOff(GtkWidget* pWidget, gpointer data)
   dataAddThread->popup = NULL;
   dataAddThread->iGaucheVars = iGaucheVars;
   AddThread(NULL, dataAddThread);
-   
+
   enregistrerTmp();
   return;
 }
@@ -326,7 +326,7 @@ void addBulleAutoOff(interfaceGaucheVars* data)
       /* Connexion du signal pour modification de l affichage */
       g_signal_connect(G_OBJECT(pScrollbar), "value-changed",
                        G_CALLBACK(OnScrollbarChange), (GtkWidget*)pLabel);
-   
+
 
       g_signal_connect(G_OBJECT(boutonOk), "clicked",
                        G_CALLBACK(AddBulle), dataAddBulle);
@@ -367,13 +367,13 @@ void  deleteRec(GtkWidget* pWidget, gpointer data)
 
 }
 #endif
-  
+
 #if 0
 void deleteRec(GtkWidget* pWidget, gpointer data)
 {
   //interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)(data);
   zone *tmp = iGaucheVars->head;
-  while(tmp != NULL){ 
+  while(tmp != NULL){
   if(iGaucheVars->zonePrincipale != iGaucheVars->zoneSelectionnee)
     {
       Effacer(iGaucheVars->bullePrincipale, iGaucheVars->zonePrincipale,
@@ -399,7 +399,7 @@ void deleteRec2(GtkWidget* pWidget, gpointer data)
 /*Selection Multiple*/
 #if 1
 /*! Encapsuler la sélection dans une bulle
- * 
+ *
  */
 void encapsuler(GtkWidget* pWidget, gpointer data)
 {
@@ -421,7 +421,7 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   nouvelleBulle = CreateBulle(iGaucheVars->defprioritebulle, SetId(iGaucheVars));
   tmp = iGaucheVars->head;
   while(tmp!=NULL && tmp != iGaucheVars->zonePrincipale){
-  
+
   /* Voilà l'élément sélectionné qu'on va encapsuler */
   p = TrouverParcours(iGaucheVars->zonePrincipale, tmp->posX + 1, tmp->posY + 1);
   /* wprintf(L"Trace parcours élément à déplacer\n");
@@ -449,10 +449,10 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   AddElement(elementParent, nouvelleBulle);
   /* printf("DEBUG : idbullePrincipale : %d\n", iGaucheVars->bullePrincipale->bulle.id); */
   /* printf("DEBUG : idParent : %d, idNouvelleBulle :%d\n", elementParent->bulle.id, nouvelleBulle->bulle.id); */
-  
+
   /* et on l'insère dans la zone conteneur */
   AjouterSousZones(ZoneParent, z_encapsulation);
-  
+
   /* copie de la sélection dans la nouvelleBulle avec copie des id */
   CopyElement(nouvelleBulle, z_encapsulation, elementSelectionne, iGaucheVarsTmp, 0);
   //iGaucheVars->zoneSelectionnee = tmp;
@@ -465,10 +465,10 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   //iGaucheVars->head = NULL;
   iGaucheVars->zoneSelectionnee = iGaucheVars->zonePrincipale;
   iGaucheVars->zoneSelectionnee = NULL;
-  iGaucheVars->head = iGaucheVars->zonePrincipale; 
-  iGaucheVars->head->next = NULL; 
+  iGaucheVars->head = iGaucheVars->zonePrincipale;
+  iGaucheVars->head->next = NULL;
   Rearanger(iGaucheVars->zonePrincipale);
- 
+
   return;
 }
 
@@ -479,7 +479,7 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
 /*Selection Simple*/
 #if 0
 /*! Encapsuler la sélection dans une bulle
- * 
+ *
  */
 void encapsuler(GtkWidget* pWidget, gpointer data)
 {
@@ -490,13 +490,13 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
   zone * ZoneSelectionnee, *ZoneParent, *z_encapsulation;
   Element* elementSelectionne, * elementParent, *nouvelleBulle;
-  
+
   if(iGaucheVars->zoneSelectionnee == iGaucheVars->zonePrincipale)
     {
       /* printf("DEBUG : encapsuler, zoneSelectionnee = zonePrincipale, encapsulation impossible\n"); */
       return;
     }
-  
+
   /* Voilà l'élément sélectionné qu'on va encapsuler */
   p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y);
   /* wprintf(L"Trace parcours élément à déplacer\n");
@@ -521,20 +521,20 @@ void encapsuler(GtkWidget* pWidget, gpointer data)
 
   /* Création de la bulle d'accueil avec pour paramètre la priorité par défaut d'une bulle et une nouvelle id */
   nouvelleBulle = CreateBulle(iGaucheVars->defprioritebulle, SetId(iGaucheVars));
-  
+
   /* on l'insère dans la bulle de destination qui est la bulle parent de l'élément sélectioné */
   AddElement(elementParent, nouvelleBulle);
   /* printf("DEBUG : idbullePrincipale : %d\n", iGaucheVars->bullePrincipale->bulle.id); */
   /* printf("DEBUG : idParent : %d, idNouvelleBulle :%d\n", elementParent->bulle.id, nouvelleBulle->bulle.id); */
-  
+
   /* on crée la zone qui va contenir cette nouvelle bulle */
   z_encapsulation = CreerZone(0,0,LARGEUR_B, HAUTEUR_B);
   /* et on l'insère dans la zone conteneur */
   AjouterSousZones(ZoneParent, z_encapsulation);
-  
+
   /* copie de la sélection dans la nouvelleBulle avec copie des id */
   CopyElement(nouvelleBulle, z_encapsulation, elementSelectionne, iGaucheVars, 0);
-  
+
   /* suppression de la sélection */
   deleteRec2(pWidget, data);
   iGaucheVars->zoneSelectionnee = NULL;
@@ -605,7 +605,7 @@ void AddBulle(GtkWidget* widget, DataAddBulle* data)
 
 
 /* fonction qui ne fait pour l'instant que récupérer les données
- * necéssaires à la création d'un thread et qui ferme la fenêtre 
+ * necéssaires à la création d'un thread et qui ferme la fenêtre
  */
 void AddThread(GtkWidget* widget, DataAddThread* data)
 {
@@ -648,7 +648,7 @@ void AddThread(GtkWidget* widget, DataAddThread* data)
 
 
 /* fonction qui mets à jour le label pour qu'il affiche la valeur de
- * la scrollbar correspondante 
+ * la scrollbar correspondante
  */
 void OnScrollbarChange(GtkWidget *pWidget, gpointer data)
 {
@@ -671,13 +671,13 @@ void OnScrollbarChange(GtkWidget *pWidget, gpointer data)
 int menuitem_rep(GtkWidget *widget,GdkEvent *event) {
   if (event->type == GDK_BUTTON_PRESS) {
     GdkEventButton *bevent = (GdkEventButton *) event;
-        
+
     if (bevent->button == 3) {
       gtk_menu_popup (GTK_MENU (widget), NULL, NULL, NULL, NULL, bevent->button, bevent->time);
       return TRUE;
     }
   }
-    
+
   return FALSE;
 }
 
@@ -715,8 +715,8 @@ void CopyElement(Element* bulleAccueil, zone* z_conteneur, Element* contenu, int
 	  /* on crée la bulle avec la même paramètre que l'originale */
           if (newid == 1)
             nouvelleBulle = CreateBulle(GetPrioriteBulle(contenu), SetId(iGaucheVars));
-          else 
-            nouvelleBulle = CreateBulle(GetPrioriteBulle(contenu), GetId(contenu)); 
+          else
+            nouvelleBulle = CreateBulle(GetPrioriteBulle(contenu), GetId(contenu));
 	  /* on l'insère dans la bulle de destination */
 	  AddElement(bulleAccueil, nouvelleBulle);
 	  /* on crée la zone qui va contenir cette nouvelle bulle */
@@ -735,7 +735,7 @@ void CopyElement(Element* bulleAccueil, zone* z_conteneur, Element* contenu, int
 	      liste = liste->suivant;
 	    }
 	}
-      
+
       else if (GetTypeElement(contenu) == THREAD)
 	{
           /* on génére un nouvel identifiant si newid == 1 */
@@ -751,11 +751,11 @@ void CopyElement(Element* bulleAccueil, zone* z_conteneur, Element* contenu, int
       return;
     }
   /* donc dans le cas où la bulle d'accueil n'est pas une bulle, on prévient quand même l'utilisateur/développeur. */
-  else 
+  else
     {
       printf("Erreur dans la fonction CopyElement\n");
       return;
     }
 }
 
-   
+

@@ -4,7 +4,7 @@
 #include<math.h>
 /* Selection Multiple*/
 #if 1
-extern interfaceGaucheVars* iGaucheVars; 
+extern interfaceGaucheVars* iGaucheVars;
 #endif
 /*Fin*/
 
@@ -37,7 +37,7 @@ void DessinerTout(interfaceGaucheVars *iGaucheVars)
 {
 
   Clear();
-  if(iGaucheVars->zonePrincipale != NULL) 
+  if(iGaucheVars->zonePrincipale != NULL)
     Dessiner(iGaucheVars, iGaucheVars->zonePrincipale);
 }
 
@@ -55,7 +55,7 @@ void Dessiner(interfaceGaucheVars *iGaucheVarsPar, zone * zonePrincipale)
       (sousZone = LireSousZones(zonePrincipale, i)) != NULL;
       i++)
     /*Selection Multiple*/
-   #if 1  
+   #if 1
    {
 
      if(isInside(iGaucheVars->head,sousZone) && iGaucheVars->head != zonePrincipale)
@@ -68,12 +68,12 @@ void Dessiner(interfaceGaucheVars *iGaucheVarsPar, zone * zonePrincipale)
    }
    #endif
   /*Fin*/
-  
+
   /*Slection Simple */
   #if 0
     Dessiner(iGaucheVarsPar, sousZone);
   #endif
-   /*Fin*/ 
+   /*Fin*/
   return;
 }
 
@@ -92,12 +92,12 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
   p = TrouverParcours(iGaucheVars->zonePrincipale, LireZoneX(zoneADessiner) + 1, LireZoneY(zoneADessiner) + 1);
   if(LireZoneParcours(iGaucheVars->zonePrincipale, p) != zoneADessiner)
     {
-      printf("Zone Principale posX : %d, posY : %d, largeur : %d, hauteur %d\n", 
-	     iGaucheVars->zonePrincipale->posX, iGaucheVars->zonePrincipale->posY, 
-	     iGaucheVars->zonePrincipale->largeur, iGaucheVars->zonePrincipale->hauteur); 
-      wprintf(L"Zone à dessiner posX : %d, posY : %d, largeur : %d, hauteur %d\n", 
-	     zoneADessiner->posX, zoneADessiner->posY, 
-	     zoneADessiner->largeur, zoneADessiner->hauteur); 
+      printf("Zone Principale posX : %d, posY : %d, largeur : %d, hauteur %d\n",
+	     iGaucheVars->zonePrincipale->posX, iGaucheVars->zonePrincipale->posY,
+	     iGaucheVars->zonePrincipale->largeur, iGaucheVars->zonePrincipale->hauteur);
+      wprintf(L"Zone à dessiner posX : %d, posY : %d, largeur : %d, hauteur %d\n",
+	     zoneADessiner->posX, zoneADessiner->posY,
+	     zoneADessiner->largeur, zoneADessiner->hauteur);
       printf("erreur dans Tracer zone!!!!!!!\n");
     }
 
@@ -254,7 +254,7 @@ void TracerZone(interfaceGaucheVars *iGaucheVars, zone* zoneADessiner)
                  LireZoneY(zoneADessiner) + LireZoneHauteur(zoneADessiner) - MARGE);
       glVertex2f(LireZoneX(zoneADessiner) + LireZoneLargeur(zoneADessiner) - MARGE,
                  LireZoneY(zoneADessiner) + MARGE);
-      
+
       glEnd();
 
 
@@ -385,7 +385,7 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
   /*    Element * bulle5; */
   /*    Element * bulle6; */
   /*    Element * bulle7; */
-   
+
   /*    bulle2 = CreateBulle(2); */
   /*    bulle3 = CreateBulle(3); */
   /*    bulle4 = CreateBulle(4); */
@@ -419,7 +419,7 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
   Rearanger(zonePrincipale);
 
   iGaucheVars->bullePrincipale = bullePrincipale;
-   
+
   iGaucheVars->zonePrincipale = zonePrincipale;
 
   iGaucheVars->zoneSelectionnee = zonePrincipale;
@@ -470,12 +470,12 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
 			GDK_POINTER_MOTION_MASK);
 
   /***************************** G_SIGNAL_CONNECT ***************************/
-   
+
   // quand la souris bouge sur la zone on a des trucs a regarder:
   g_signal_connect(G_OBJECT(drawzone), "button_press_event", G_CALLBACK(MouseMove_left_dz), iGaucheVars);
-   
+
 #if 0
-  // deplacement de bulles et de treads   
+  // deplacement de bulles et de treads
   g_signal_connect(G_OBJECT(drawzone), "motion_notify_event", G_CALLBACK(MouseMove_left_movebt), iGaucheVars);
 #endif
 
@@ -505,25 +505,25 @@ void make_left_drawable_zone(interfaceGaucheVars *iGaucheVars)
 void Realize_left_dz(GtkWidget *widget, gpointer data)
 {
   interfaceGaucheVars *iGaucheVars = (interfaceGaucheVars*)data;
-  
+
   GdkGLContext* glcontext = gtk_widget_get_gl_context(widget);
   GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(widget);
-  
-  
+
+
   if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
     {
       // zone d'initialisation des états opengl
-      
+
       glClearColor(0.0, 0.0, 0.0, 1.0);  // fond noir
       glDisable(GL_DEPTH);       // pas de zbuffer
-      
+
       glLoadIdentity();
       glEnable(GL_BLEND);   // transparence
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glDisable(GL_CULL_FACE);   // pas de culling
-      
+
       PushScreenCoordinateMatrix();   // coordonnées en pixels
-      
+
       int i;
       for (i = 0; i < 2; ++i)  // on nettoie une premiere fois les deux buffers
 	{
@@ -534,10 +534,10 @@ void Realize_left_dz(GtkWidget *widget, gpointer data)
 	  else
 	    glFlush ();
 	}
-      
+
       glScalef( 0.5, 0.5, 0.5);
       iGaucheVars->echelle = 0.5;
-      
+
       gdk_gl_drawable_gl_end(gldrawable);
     }
   else
@@ -551,24 +551,24 @@ void Realize_left_dz(GtkWidget *widget, gpointer data)
 gboolean Redraw_left_dz(gpointer data)
 {
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
-  
+
   GdkGLContext* glcontext = gtk_widget_get_gl_context(iGaucheVars->drawzone_left);
   GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(iGaucheVars->drawzone_left);
-  
+
   if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
     {
       DessinerTout(iGaucheVars);
-      
+
       if (gdk_gl_drawable_is_double_buffered(gldrawable))
 	gdk_gl_drawable_swap_buffers(gldrawable);
       else
 	glFlush ();
-      
+
       gdk_gl_drawable_gl_end(gldrawable);
     }
-  
+
   /*    Rearanger(iGaucheVars->zonePrincipale); */
-  
+
   return TRUE;
 }
 
@@ -578,20 +578,20 @@ gboolean Reshape_left_dz(GtkWidget* widget, GdkEventConfigure* ev, gpointer data
 {
   widget = NULL;  // inutilisé
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
-  
+
   GdkGLContext* glcontext = gtk_widget_get_gl_context(iGaucheVars->drawzone_left);
   GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(iGaucheVars->drawzone_left);
 
   // lorsque la fenêtre est redimensionnée, il faut redimensionner la zone opengl et adapter la projection.
   iGaucheVars->area_left_x = ev->width;
   iGaucheVars->area_left_y = ev->height;
-  
+
   if (gdk_gl_drawable_gl_begin(gldrawable, glcontext))
     {
       glViewport(0, 0, ev->width, ev->height);
       PopProjectionMatrix();
       PushScreenCoordinateMatrix();
-      
+
       gdk_gl_drawable_gl_end(gldrawable);
     }
   return TRUE;
@@ -604,18 +604,18 @@ zone *insertZoneSelected(zone *headZoneSelectionnee,zone *zoneSelected)
 	//printf("DEBUG:Insertion d'un elemnt selectionne\n");
 	zone *cur;
         if(zoneSelected->posX == 0 || zoneSelected->posY == 0 || abs(zoneSelected->posX) >= 1500 || abs(zoneSelected->posY) >= 1500 ) {
-             //deleteRec2(NULL,NULL); 
+             //deleteRec2(NULL,NULL);
            //printf("DEBUG:pas de zone principale dans l'insertion\n");
 		return headZoneSelectionnee;
         }
-    
+
 	if(zoneSelected == NULL ) {
            //printf("DEBUG:zoneselected ???NULL\n");
 		return headZoneSelectionnee;
         }
-	else{ 
+	else{
         if(headZoneSelectionnee == NULL){
-		//printf("DEBUG:NULL INSERTED\n"); 
+		//printf("DEBUG:NULL INSERTED\n");
 		headZoneSelectionnee = zoneSelected;
                 headZoneSelectionnee->next = NULL;
 		return headZoneSelectionnee;
@@ -664,7 +664,7 @@ zone* delete(zone *headZoneSelectionnee,zone *deletedZone)
 		iGaucheVars->last = cur;
  		//printf("DEBUG:Deleted\n");
 		if(prev == NULL){
-                  
+
                 //printf("DEBUG:prev NULL\n");
                         if(cur->next != NULL){
                           //printf("DEBUG:supp premier\n");
@@ -676,12 +676,12 @@ zone* delete(zone *headZoneSelectionnee,zone *deletedZone)
                         headZoneSelectionnee = iGaucheVars->zonePrincipale;
                         headZoneSelectionnee->next = NULL;
                         //printf("DEBUG:supp seul\n");
-                        }  
+                        }
                 }
 		else{
                         //printf("DEBUG:Action\n");
 			prev->next = cur->next;
-                        //return prev; 
+                        //return prev;
                }
 	//free(cur);
         }
@@ -711,7 +711,7 @@ gboolean isInside(zone *headZoneSelectionnee,zone *search)
 		{
  			///printf("DEBUG:I was found\n");
   			return TRUE;
-		}	
+		}
 		cur=cur->next;
 	}
 	//printf("DEBUG:Nothing\n");
@@ -732,8 +732,8 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
   ZoneCliquee = LireZoneParcours(iGaucheVarsTmp->zonePrincipale, p);
   /* D�placement court -> s�lection */
   if (iGaucheVarsTmp->mousePosClic_state & GDK_CONTROL_MASK )
-  {      
-  	
+  {
+
         //if(iGaucheVarsTmp->last != iGaucheVarsTmp->zonePrincipale && iGaucheVarsTmp->last!= NULL )
            //iGaucheVarsTmp->zoneSelectionnee = insertZoneSelected(iGaucheVarsTmp->zoneSelectionnee, iGaucheVarsTmp->last);
 
@@ -747,9 +747,9 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
               iGaucheVarsTmp->head  = delete(iGaucheVarsTmp->head , iGaucheVarsTmp->zonePrincipale);
         }else
 	   iGaucheVarsTmp->head  = delete(iGaucheVarsTmp->head , ZoneCliquee);
-        
+
      iGaucheVarsTmp->last = ZoneCliquee;
-     iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->head; 
+     iGaucheVarsTmp->zoneSelectionnee = iGaucheVarsTmp->head;
     elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }
   else{
@@ -767,7 +767,7 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
    iGaucheVarsTmp->last = ZoneCliquee;
    elementSelectionne = LireElementParcours(iGaucheVarsTmp->bullePrincipale, p);
   }
- }//fin de else 
+ }//fin de else
 
   if (elementSelectionne->type==THREAD)
     {
@@ -801,7 +801,7 @@ static void handleClic(interfaceGaucheVars* iGaucheVarsTmp, int clicX, int clicY
     printf("Debug eleselc 2 %s\n",iGaucheVarsTmp->defnom);
     gtk_range_set_value (GTK_RANGE(iGaucheVarsTmp->prioritebulle),iGaucheVarsTmp->defprioritebulle);
   }
-  
+
   if(elementSelectionne!=iGaucheVarsTmp->bullePrincipale && elementSelectionne->type==BULLE){
 
     wprintf(L"Zone bulle cliquée\n");
@@ -822,7 +822,7 @@ tempo = iGaucheVarsTmp->head;
 while(tempo != NULL){
  printf("%d %d \n",tempo->posX,tempo->posY);
  tempo = tempo->next;
- 
+
  i++;
  }
 
@@ -834,7 +834,7 @@ while(tempo != NULL){
 
 gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
- 
+
   parcours *p;
   zone * ZoneCliquee;
   interfaceGaucheVars* iGaucheVarsTmp = (interfaceGaucheVars*)data;
@@ -842,8 +842,8 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 
   iGaucheVarsTmp->mousePos_left_x = clicX = (ev->x) / iGaucheVarsTmp->echelle;
   iGaucheVarsTmp->mousePos_left_y = clicY = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
-  
-  // Pour test 
+
+  // Pour test
   iGaucheVarsTmp->mousePosClic_left_x =  clicX;
   iGaucheVarsTmp->mousePosClic_left_y =  clicY;
   iGaucheVarsTmp->mousePosClic_state = ev->state;
@@ -864,12 +864,12 @@ return TRUE;
 
 
 
-  
+
 /*!
  *
- * 
- * pour cette fonction, le mieux serait de sauvegarder 
- *  dans une structure les elements selectionnées 
+ *
+ * pour cette fonction, le mieux serait de sauvegarder
+ *  dans une structure les elements selectionnées
  */
 gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
@@ -879,8 +879,8 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
   Element* elementSelectionne, * elementParent, * elementAccueil;
   Bulle* bulleParent, * bulleAccueil;
-  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
-  
+  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */
+
   /* Mise à jour de iGaucheVarsTmp pour connaître les coordonnées du relâchement du clic */
   iGaucheVarsTmp->mousePos_left_x = (ev->x) / iGaucheVarsTmp->echelle;
   iGaucheVarsTmp->mousePos_left_y = (iGaucheVarsTmp->area_left_y - ev->y) / iGaucheVarsTmp->echelle;
@@ -934,10 +934,10 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   elementParent = LireElementParcours(iGaucheVarsTmp->bullePrincipale, pParent);
   bulleParent = &elementParent->bulle;
   EffacerParcours(pParent);
-  
+
   wprintf(L"Eléments sélectionné, parent et d'accueil calculés\n");
 
- 
+
   /* Ici les tests pour voir si on peut effectuer les déplacements */
   /* Pour test, on regarde si la ZoneSelectionnee est vide */
   if(ZoneSelectionnee == NULL)
@@ -945,7 +945,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
       wprintf(L"Zone sélectionnée vide\n");
       return FALSE;
     }
-  
+
   if (ZoneAccueil == NULL)
     {
       printf("Zone d'accueil vide\n");
@@ -972,13 +972,13 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
     {
       wprintf(L"Zone d'accueil comprise dans la zone sélectionnée, pas de déplacement.\n");
       return FALSE;
-    } 
+    }
   /* Finalement on fait le déplacement */
    /* On teste si le déplacement ou la copie est possible */
   //if (TestCopieDeplacement(iGaucheVarsTmp,clicX, clicY, lacheX, lacheY) == FALSE)
   //return FALSE;
-  
-  
+
+
    wprintf(L"Zones différentes, déplacement possible.\n");
    /* SI on appuie sur Control, ça fait une copie, sinon un déplacement */
   if (ev->state & GDK_CONTROL_MASK)
@@ -987,7 +987,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
 	     tmp->posX + 1, tmp->posY + 1,
 	     ZoneAccueil, elementAccueil, iGaucheVarsTmp);
       printf("DEBUG : Mouse_move_left_release_copy, Copier fait\n");
-     
+
     }
   else
     {
@@ -998,7 +998,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
     }
    printf("MouseP X : %d   MouseP Y : %d\n", tmp->posX + 1, tmp->posY + 1);
    printf("Mouse X : %d   Mouse Y : %d\n",  iGaucheVarsTmp->mousePos_left_x, iGaucheVarsTmp->mousePos_left_y);
- 
+
   tmp=tmp->next;
  }
   enregistrerTmp(); /* pour l'historique */
@@ -1009,7 +1009,7 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
 /***************************************************************************/
 /*! Copie la sélection vers une autre destination
  *
- * 
+ *
  *
  */
 void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * zdest, Element *bdest, interfaceGaucheVars * iGaucheVarsPar)
@@ -1017,7 +1017,7 @@ void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * z
   parcours * psrc;
   zone * zsrc, * zdep;
   Element * bsrc, * bdep;
-  /* dest : accueil / src : parent / dep : selectionnee */   
+  /* dest : accueil / src : parent / dep : selectionnee */
 
   psrc = TrouverParcours(zoneprinc, srcX, srcY);
   zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
@@ -1025,18 +1025,18 @@ void Copier(Element * bulleprinc, zone * zoneprinc, int srcX, int srcY, zone * z
   /* printf("DEBUG : Copier, Trace parcours élément Parent "); */
   traceParcours(psrc);
 
-   
+
   zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   /* wprintf(L"Trace parcours élément à déplacer\n");
      traceParcours(LirePosition(psrc, LireParcoursTaille(psrc))); */
-   
+
   /* Donc on ajoute l'élément courant (bdep) dans la liste de l'élément de destination (bdest) */
   CopyElement(bdest, zdest, bdep, iGaucheVarsPar, 1);
   /* printf("DEBUG : Copier, CopyElement fait\n"); */
 
   EffacerParcours(psrc);
-   
+
   Rearanger(zoneprinc);
   /* printf("DEBUG : Copier, Rearanger fait.\n\n"); */
 }
@@ -1054,20 +1054,20 @@ void Deplacer(interfaceGaucheVars * iGaucheVars, int srcX, int srcY, zone * zdes
 
   bulleprinc = iGaucheVars->bullePrincipale;
   zoneprinc = iGaucheVars->zonePrincipale;
- 
+
 
   psrc = TrouverParcours(zoneprinc, srcX, srcY);
   zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
   bsrc = LireElementParcoursPartiel(bulleprinc, psrc, LireParcoursTaille(psrc) - 1);
   /* wprintf(L"DEBUG : Deplacer, Trace parcours élément Parent ");
      traceParcours(psrc); */
-   
+
   zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   /* wprintf(L"Trace parcours élément à déplacer\n");
      traceParcours(LirePosition(psrc, LireParcoursTaille(psrc))); */
-  
-   
+
+
   EnleverSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   //TranslaterZone(zdep, destX - srcX, destY - srcY);
 
@@ -1096,7 +1096,7 @@ void Deplacer(interfaceGaucheVars * iGaucheVars, int srcX, int srcY, zone * zdes
 /***************************************************************************/
 /*! Met à jour la variable id general en l'incrémentant de 1 à chaque fois
  * qu'une bulle ou un thread est créé et renvoie la valeur de idgeneral.
- * 
+ *
  *
  */
 int SetId(gpointer data)
@@ -1111,7 +1111,7 @@ int SetId(gpointer data)
 
 /*Selection Simple*/
 #if 0
- 
+
 /* callback de "button_press_event" */
 gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
@@ -1121,14 +1121,14 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
   zone * nouvelleZoneSelectionnee;
   Element* elementSelectionne;
   char *tmp=malloc(20);
-  
+
   iGaucheVars->mousePos_left_x = (ev->x) / iGaucheVars->echelle;
   iGaucheVars->mousePos_left_y = (iGaucheVars->area_left_y - ev->y) / iGaucheVars->echelle;
 
   /* Pour test */
   iGaucheVars->mousePosClic_left_x =  iGaucheVars->mousePos_left_x;
   iGaucheVars->mousePosClic_left_y =  iGaucheVars->mousePos_left_y;
-  
+
   p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
   nouvelleZoneSelectionnee = LireZoneParcours(iGaucheVars->zonePrincipale, p);
   iGaucheVars->zoneSelectionnee = nouvelleZoneSelectionnee;
@@ -1168,7 +1168,7 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
     printf("Debug eleselc 2 %s\n",iGaucheVars->defnom);
     gtk_range_set_value (iGaucheVars->prioritebulle,iGaucheVars->defprioritebulle);
   }
-  
+
   if(elementSelectionne!=iGaucheVars->bullePrincipale && elementSelectionne->type==BULLE){
 
     wprintf(L"Zone bulle cliquée\n");
@@ -1194,7 +1194,7 @@ gboolean MouseMove_left_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 }
 
 /*! On vérifie que la sélection n'est pas vide
- *  Le clic gauche doit être pressé sur la sélection 
+ *  Le clic gauche doit être pressé sur la sélection
  *  et relaché au dessus d'une
  *  bulle ne faisant pas partie de la sélection
  */
@@ -1207,13 +1207,13 @@ gboolean MouseMove_left_movebt(GtkWidget* widget, GdkEventMotion* ev, gpointer d
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
   zone * nouvelleZoneSelectionnee;
   Element* elementSelectionne;
-  
+
   // wprintf(L"déplacement détecté %d\n",i);
   i++;
   return TRUE;
 }
 
-  
+
 /*! Gère les événements liés au relâchement de la souris (copie, déplacement)
  * \param widget
  * \param ev
@@ -1222,12 +1222,12 @@ gboolean MouseMove_left_movebt(GtkWidget* widget, GdkEventMotion* ev, gpointer d
  */
 gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer data)
 {
-  
+
   widget = NULL;  // inutilisé
   interfaceGaucheVars* iGaucheVars = (interfaceGaucheVars*)data;
 
-  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */ 
-  
+  int clicX, clicY, lacheX, lacheY; /*position du clic et du relachement du clic */
+
   /* Mise à jour de iGaucheVars pour connaître les coordonnées du relâchement du clic */
   iGaucheVars->mousePos_left_x = (ev->x) / iGaucheVars->echelle;
   iGaucheVars->mousePos_left_y = (iGaucheVars->area_left_y - ev->y) / iGaucheVars->echelle;
@@ -1235,11 +1235,11 @@ gboolean MouseMove_left_release(GtkWidget* widget, GdkEventMotion* ev, gpointer 
   clicY = iGaucheVars->mousePosClic_left_y; /* inutilisé en fait */
   lacheX = iGaucheVars->mousePos_left_x; /* inutilisé en fait */
   lacheY = iGaucheVars->mousePos_left_y; /* inutilisé en fait */
-  
+
   /* On teste si le déplacement ou la copie est possible */
   if (TestCopieDeplacement(iGaucheVars) == FALSE)
     return FALSE;
- 
+
   /* SI on appuie sur Control, ça fait une copie, sinon un déplacement */
   if (ev->state & GDK_CONTROL_MASK)
     {
@@ -1268,11 +1268,11 @@ void Copier(interfaceGaucheVars * iGaucheVars)
   zone * zoneprinc, * zsrc, * zdep, * zdest;
   Element * bulleprinc, * bsrc, * bdep, * bdest;
   int srcX, srcY, destX, destY;
-  /* dest : accueil / src : parent / dep : selectionnee */ 
-  
+  /* dest : accueil / src : parent / dep : selectionnee */
+
   bulleprinc = iGaucheVars->bullePrincipale;
   zoneprinc = iGaucheVars->zonePrincipale;
-  srcX = iGaucheVars->mousePosClic_left_x; 
+  srcX = iGaucheVars->mousePosClic_left_x;
   srcY = iGaucheVars->mousePosClic_left_y;
   destX = iGaucheVars->mousePos_left_x;
   destY = iGaucheVars->mousePos_left_y;
@@ -1280,20 +1280,20 @@ void Copier(interfaceGaucheVars * iGaucheVars)
   psrc = TrouverParcours(zoneprinc, srcX, srcY);
   zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
   bsrc = LireElementParcoursPartiel(bulleprinc, psrc, LireParcoursTaille(psrc) - 1);
-  /* wprintf(L"DEBUG : Copier, Trace parcours élément Parent "); 
+  /* wprintf(L"DEBUG : Copier, Trace parcours élément Parent ");
      traceParcours(psrc); */
 
-   
+
   zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   /* wprintf(L"Trace parcours élément à déplacer\n");
      traceParcours(LirePosition(psrc, LireParcoursTaille(psrc))); */
-   
+
   pdest = TrouverParcoursBulle(bulleprinc, zoneprinc, destX, destY);
   zdest = LireZoneParcours(zoneprinc, pdest);
   bdest = LireElementParcours(bulleprinc, pdest);
   /* wprintf(L"DEBUG : Copier, Trace parcours élément Accueil ");
-     traceParcours(pdest); */  
+     traceParcours(pdest); */
 
   /* Donc on ajoute l'élément courant (bdep) dans la liste de l'élément de destination (bdest) */
   CopyElement(bdest, zdest, bdep, iGaucheVars, 1);
@@ -1301,7 +1301,7 @@ void Copier(interfaceGaucheVars * iGaucheVars)
 
   EffacerParcours(psrc);
   EffacerParcours(pdest);
-   
+
   Rearanger(zoneprinc);
   /* printf("DEBUG : Copier, Rearanger fait.\n\n"); */
 }
@@ -1320,23 +1320,23 @@ void Deplacer(interfaceGaucheVars * iGaucheVars)
 
   bulleprinc = iGaucheVars->bullePrincipale;
   zoneprinc = iGaucheVars->zonePrincipale;
-  srcX = iGaucheVars->mousePosClic_left_x; 
+  srcX = iGaucheVars->mousePosClic_left_x;
   srcY = iGaucheVars->mousePosClic_left_y;
   destX = iGaucheVars->mousePos_left_x;
-  destY = iGaucheVars->mousePos_left_y;   
+  destY = iGaucheVars->mousePos_left_y;
 
   psrc = TrouverParcours(zoneprinc, srcX, srcY);
   zsrc = LireZoneParcoursPartiel(zoneprinc, psrc, LireParcoursTaille(psrc) - 1);
   bsrc = LireElementParcoursPartiel(bulleprinc, psrc, LireParcoursTaille(psrc) - 1);
   /* wprintf(L"DEBUG : Deplacer, Trace parcours élément Parent ");
      traceParcours(psrc); */
-   
+
   zdep = LireSousZones(zsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   bdep = GetElement(bsrc, LirePosition(psrc, LireParcoursTaille(psrc)));
   /* wprintf(L"Trace parcours élément à déplacer\n");
      traceParcours(LirePosition(psrc, LireParcoursTaille(psrc))); */
-  
-   
+
+
   pdest = TrouverParcoursBulle(bulleprinc, zoneprinc, destX, destY);
   zdest = LireZoneParcours(zoneprinc, pdest);
   bdest = LireElementParcours(bulleprinc, pdest);
@@ -1374,7 +1374,7 @@ gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars)
   zone * ZoneSelectionnee, *ZoneParent, * ZoneAccueil;
   Element* elementSelectionne, * elementParent, * elementAccueil;
   Bulle* bulleParent, * bulleAccueil;
- 
+
   /* CALCUL DES ELEMENTS SELECTIONNES, PARENT ET ACCUEIL */
   /* Voilà l'élément sélectionné qu'on va déplacer */
   p = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePosClic_left_x, iGaucheVars->mousePosClic_left_y);
@@ -1393,7 +1393,7 @@ gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars)
   elementParent = LireElementParcours(iGaucheVars->bullePrincipale, pParent);
   bulleParent = &elementParent->bulle;
   EffacerParcours(pParent);
-  
+
   /* Voilà l'élément d'accueil */
   pAccueil = TrouverParcours(iGaucheVars->zonePrincipale, iGaucheVars->mousePos_left_x, iGaucheVars->mousePos_left_y);
   /* wprintf(L"Trace parcours élément Accueil\n");
@@ -1405,7 +1405,7 @@ gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars)
 
   /* wprintf(L"Eléments sélectionné, parent et d'accueil calculés\n"); */
 
- 
+
   /* Ici les tests pour voir si on peut effectuer les déplacements */
   /* Pour test, on regarde si la ZoneSelectionnee est vide */
   if(ZoneSelectionnee == NULL)
@@ -1445,7 +1445,7 @@ gboolean TestCopieDeplacement(interfaceGaucheVars * iGaucheVars)
     {
       /* wprintf(L"Zone d'accueil comprise dans la zone sélectionnée, pas de déplacement.\n"); */
       return FALSE;
-    } 
+    }
   /* Finalement on fait le déplacement */
   /*  wprintf(L"Zones différentes, déplacement possible.\n"); */
 

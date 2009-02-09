@@ -73,33 +73,33 @@ void A_Propos(GtkWidget *widget, gpointer data)
 
   if (widget == NULL)
     return;
-    
+
   /* Création boite de dialogue centrée avec boutton standard OK*/
   dialog = gtk_dialog_new_with_buttons("A Propos ...", GTK_WINDOW(data),
 				       GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
 				       "_Ok", GTK_RESPONSE_OK, NULL);
-    
+
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
 
   /* Création de le hbox qui va contenir le logo et les informations */
   hbox = gtk_hbox_new(FALSE, 0);
-    
+
   logo = open_ico("ico/pfag6_logo.png");
   gtk_box_pack_start(GTK_BOX(hbox), logo, FALSE, FALSE, 10);
-             
+
   infos = gtk_label_new("Gestion des bulles et des threads\n\n"
 			"This program is free software and may be distributed according\n"
 			"to the terms of the GNU General Public License\n\n"
 			"Beta Version 1 - 2007 PFA Team");
-    
+
   gtk_box_pack_start(GTK_BOX(hbox), infos, FALSE, FALSE, 10);
- 
-  gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), hbox, FALSE, FALSE, 5); 
-  gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE); 
-        
+
+  gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), hbox, FALSE, FALSE, 5);
+  gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
+
   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
   gtk_dialog_run(GTK_DIALOG(dialog));
-    
+
   /*La seule action possible */
   gtk_widget_destroy(dialog);
 }
@@ -122,7 +122,7 @@ void Aide(GtkWidget *widget, gpointer data)
 				       "_Ok", GTK_RESPONSE_OK, NULL);
 
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-   
+
   /* Création de le hbox qui va contenir les informations */
   hbox = gtk_hbox_new(FALSE, 0);
 
@@ -147,7 +147,7 @@ void Aide(GtkWidget *widget, gpointer data)
 			"Ctrl+Z : Annuler la dernière action\n"
 			"Ctrl+Y : Refaire la dernière action\n"
 			);
-                         
+
   gtk_box_pack_start(GTK_BOX(hbox), infos, FALSE, FALSE, 10);
 
   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), hbox, FALSE, FALSE, 5);
@@ -164,17 +164,17 @@ void Aide(GtkWidget *widget, gpointer data)
 /*! Fonction appelé lors d'une demande d'une nouvelle page d'édition
  *  par l'utilisateur, elle a pour objectif d'initialiser toutes les
  *  variables globales et effacer l'arbre de threads et de bulles.
- */ 
+ */
 void Nouveau(GtkWidget *widget, gpointer data)
 {
   NouveauTmp(widget, data);
   /* Mise à jour valeurs pour l'historique */
   NumTmpMax = 0;
   NumTmp = 0;
-  
+
   /* Reset du chemin dans iGaucheVars */
   sprintf(iGaucheVars->chemin,"no path");
-  
+
   /* Reset la base id */
   iGaucheVars->idgeneral = 0;
 
@@ -184,7 +184,7 @@ void Nouveau(GtkWidget *widget, gpointer data)
 /*********************************************************************/
 /*! Fonction qui est appelé par d'autres fonctions pour effacer
  *  l'arbre de bulles et de threads, aussi bien à l'écran qu'en mémoire.
- *  Voir notatament: 
+ *  Voir notatament:
  *  # chargerXml
  *  # enregisterXml
  */
@@ -203,7 +203,7 @@ void NouveauTmp(GtkWidget *widget, gpointer data)
   iGaucheVars->zoneSelectionnee =  iGaucheVars->zonePrincipale;
   #endif
   /*Fin*/
-  
+
   return;
 }
 
@@ -219,37 +219,37 @@ void Ouvrir(GtkWidget *widget, gpointer data)
   GtkWidget *Dialog = NULL;
   char chemin[STRING_BUFFER_SIZE], *ptr;
   gchar *Chemin;
-  
+
   if (widget == NULL)
     return;
-  
+
   /* Creation de la fenetre de selection */
   FileSelection = gtk_file_chooser_dialog_new("Ouvrir/Importer un fichier", GTK_WINDOW(data), GTK_FILE_CHOOSER_ACTION_OPEN,
 					      "_Annuler", GTK_RESPONSE_CANCEL,
-					      "_Ouvrir", GTK_RESPONSE_OPEN, 
+					      "_Ouvrir", GTK_RESPONSE_OPEN,
 					      "_Importer", GTK_RESPONSE_MERGE, NULL);
   gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OPEN);
   gtk_window_set_position(GTK_WINDOW(FileSelection), GTK_WIN_POS_CENTER_ON_PARENT);
-   
+
   /* On limite les actions a cette fenetre */
   gtk_window_set_modal(GTK_WINDOW(FileSelection), TRUE);
-    
+
   /* Affichage fenetre */
   switch(gtk_dialog_run(GTK_DIALOG(FileSelection)))
     {
     case GTK_RESPONSE_OPEN:
       /* Recuperation du chemin */
       Chemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(FileSelection));
-      
+
       NouveauTmp(NULL, NULL);
-      
+
 
       /* Boite de dialogue, pour prévenir que le fichier n'est pas au format XML
-      ou que le chargement n'a pas fonctionné. 
+      ou que le chargement n'a pas fonctionné.
       */
       if(chargerXml(Chemin) == -1){
 	Dialog = gtk_message_dialog_new(GTK_WINDOW(FileSelection), GTK_DIALOG_MODAL,
-					GTK_MESSAGE_INFO, GTK_BUTTONS_OK, 
+					GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
 					"Problème d'ouverture du fichier :\n%s", Chemin);
 	gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_dialog_run(GTK_DIALOG(Dialog));
@@ -270,16 +270,16 @@ void Ouvrir(GtkWidget *widget, gpointer data)
       gtk_widget_destroy(FileSelection);
       g_free(Chemin);
       break;
-    
+
     case GTK_RESPONSE_MERGE:
       /* Recuperation du chemin */
       Chemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(FileSelection));
       /* Boite de dialogue, pour prévenir que le fichier n'est pas au format XML
-	 ou que le chargement n'a pas fonctionné. 
+	 ou que le chargement n'a pas fonctionné.
       */
       if(chargerXml(Chemin) == -1){
 	Dialog = gtk_message_dialog_new(GTK_WINDOW(FileSelection), GTK_DIALOG_MODAL,
-					GTK_MESSAGE_INFO, GTK_BUTTONS_OK, 
+					GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
 					"Problème d'ouverture du fichier :\n%s", Chemin);
 	gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_dialog_run(GTK_DIALOG(Dialog));
@@ -309,10 +309,10 @@ void EnregistrerSous(GtkWidget *widget, gpointer data)
 {
   GtkWidget *FileSelection;
   char Chemin[STRING_BUFFER_SIZE];
-  
+
   if (widget == NULL)
     return;
-  
+
   strcpy(Chemin, "no path");
 
   /* Creation de la fenetre de selection */
@@ -321,16 +321,16 @@ void EnregistrerSous(GtkWidget *widget, gpointer data)
 					      "_Sauvegarder", GTK_RESPONSE_OK, NULL);
   gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OK);
   strcpy(Chemin,DemanderFichier(FileSelection));
-  
+
   if (strcmp(Chemin, "no path") == 0)
     return;
   else {
     enregistrerXml(Chemin, iGaucheVars->bullePrincipale);
-    
+
     /* met à jour le chemin dans iGaucheVars */
     sprintf(iGaucheVars->chemin, Chemin);
   }
-  
+
   return;
 }
 
@@ -338,10 +338,10 @@ void ExporterProgramme (GtkWidget *widget, gpointer data)
 {
   GtkWidget *FileSelection;
   char Chemin[STRING_BUFFER_SIZE];
-  
+
   if (widget == NULL)
     return;
-  
+
   strcpy(Chemin, "no path");
 
   /* Creation de la fenetre de selection */
@@ -350,7 +350,7 @@ void ExporterProgramme (GtkWidget *widget, gpointer data)
 					      "_Sauvegarder", GTK_RESPONSE_OK, NULL);
   gtk_dialog_set_default_response(GTK_DIALOG(FileSelection), GTK_RESPONSE_OK);
   strcpy(Chemin,DemanderFichier(FileSelection));
-  
+
   if (strcmp(Chemin, "no path") == 0)
     return;
   else {
@@ -358,11 +358,11 @@ void ExporterProgramme (GtkWidget *widget, gpointer data)
     gen_fichier_C (GENEC_NAME ".c", iGaucheVars->bullePrincipale);
     snprintf (command, 256, "cp %s.c %s", GENEC_NAME, Chemin);
     system (command);
-    
+
     /* met à jour le chemin dans iGaucheVars */
     sprintf(iGaucheVars->chemin, Chemin);
   }
-  
+
   return;
 }
 
@@ -375,18 +375,18 @@ void Enregistrer(GtkWidget *widget, gpointer data)
 {
   if (widget == NULL)
     return;
-    
+
   if (strcmp(iGaucheVars->chemin,"no path") == 0)
     EnregistrerSous(widget, data);
   else
     enregistrerXml(iGaucheVars->chemin, iGaucheVars->bullePrincipale);
-  
+
 }
 
 /***************************************************************************
  * Pour l'historique
  */
-/*! Permet d'annuler une action effectuer 
+/*! Permet d'annuler une action effectuer
  */
 void Annuler(GtkWidget *widget, gpointer data) {
   char chemin[STRING_BUFFER_SIZE], *ptr;
@@ -394,14 +394,14 @@ void Annuler(GtkWidget *widget, gpointer data) {
   /* Si aucune action n'a été faite */
   if (NumTmp <= 0)
     return;
-  
+
   NouveauTmp(NULL, NULL);
   /* Pour la premiere action */
   if(NumTmp == 0)
     return;
 
   NumTmp--;
-  
+
   if (NumTmp) {
     ptr = (char *)chemin;
     get_tmp_bubblegum_file(NumTmp, &ptr);
@@ -412,7 +412,7 @@ void Annuler(GtkWidget *widget, gpointer data) {
 }
 
 /*********************************************************************/
-/*! Permet de refaire une action annuler 
+/*! Permet de refaire une action annuler
  */
 void Refaire(GtkWidget *widget, gpointer data) {
   char chemin[STRING_BUFFER_SIZE], *ptr;
@@ -420,7 +420,7 @@ void Refaire(GtkWidget *widget, gpointer data) {
   /* Si le fichier n'existe pas, on ne fait rien */
   if (NumTmp >= NumTmpMax)
     return;
-  
+
   NouveauTmp(NULL, NULL);
 
   NumTmp++;
@@ -432,7 +432,7 @@ void Refaire(GtkWidget *widget, gpointer data) {
   return;
 }
 
-static void 
+static void
 activate_txtBox (GtkWidget *widget, gpointer data)
 {
   txtViewTopoSensitive = !txtViewTopoSensitive;
@@ -459,11 +459,11 @@ void Options (GtkWidget *widget, gpointer data)
 				       "_Ok", GTK_RESPONSE_OK, NULL);
 
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
-   
+
   /* Création de le hbox qui va contenir les informations */
   hboxBubbleSched = gtk_hbox_new (FALSE, 0);
   comboBoxBubbleSched = gtk_combo_box_new_text();
-  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "null"); 
+  gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "null");
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "cache");
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "memory");
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "spread");
@@ -473,7 +473,7 @@ void Options (GtkWidget *widget, gpointer data)
   gtk_combo_box_append_text (GTK_COMBO_BOX (comboBoxBubbleSched), "explode");
   gtk_combo_box_set_active (GTK_COMBO_BOX (comboBoxBubbleSched), chosen_bsched);
   labelBubbleSched = gtk_label_new ("Bubble Scheduler:");
-                         
+
   gtk_box_pack_start (GTK_BOX (hboxBubbleSched), labelBubbleSched, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX (hboxBubbleSched), comboBoxBubbleSched, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), hboxBubbleSched, FALSE, FALSE, 5);
@@ -486,7 +486,7 @@ void Options (GtkWidget *widget, gpointer data)
   g_signal_connect (G_OBJECT(chkBtnTopo), "clicked", G_CALLBACK (activate_txtBox), txtViewTopo);
   gtk_entry_set_text (GTK_ENTRY (txtViewTopo), synthetic_topology ? : "");
   labelTopo = gtk_label_new ("Synthetic Topology:");
-                         
+
   gtk_box_pack_start (GTK_BOX (hboxTopo), labelTopo, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX (hboxTopo), txtViewTopo, FALSE, FALSE, 5);
   gtk_box_pack_start (GTK_BOX(GTK_DIALOG(dialog)->vbox), chkBtnTopo, FALSE, FALSE, 5);
@@ -605,29 +605,29 @@ initExecDialog (GtkWidget **pdialog, GtkWidget **pprogressBar,
 				GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
 				"_Progression de 20%", GTK_RESPONSE_ACCEPT,
 				"_Ok", GTK_RESPONSE_OK, NULL);
-                
+
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ON_PARENT);
   gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
-   
+
   infos = gtk_label_new("L'ordonnanceur PM2 est en train de s'exécuter\n"
 			"\n"
 			"Soyez patient ...");
 
   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), infos,
 		     TRUE, FALSE, 10);
-   
+
   progressBar = gtk_progress_bar_new();
   gtk_progress_bar_set_orientation(GTK_PROGRESS_BAR(progressBar),
 				   GTK_PROGRESS_LEFT_TO_RIGHT);
   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialog)->vbox), progressBar,
 		     TRUE, FALSE, 10);
-   
+
   gtk_widget_show_all(GTK_DIALOG(dialog)->vbox);
-	
+
   /* XXX: ne s'affiche pas car on n'appelle pas gtk_dialog_run */
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progressBar), 0);
   gtk_main_iteration_do(FALSE);
-  
+
   if (pdialog)
     *pdialog = dialog;
   if (pprogressBar)
@@ -636,7 +636,7 @@ initExecDialog (GtkWidget **pdialog, GtkWidget **pprogressBar,
     *pinfos = infos;
 }
 
-/*! Destroys the Dialog box. 
+/*! Destroys the Dialog box.
  *
  *  \param dialog   a pointer to a GtkWidget.
  *  \param progressBar
@@ -661,27 +661,27 @@ destroyExecDialog (GtkWidget *dialog, GtkWidget *progressBar,
 static void
 runCommand (const char *command_fmt, ...) {
   va_list vl;
-    
+
   gchar command[STRING_BUFFER_SIZE] = "";
   int ret;
-    
+
   va_start (vl, command_fmt);
-    
+
   /* TODO: dynamic size ? */
   vsnprintf (command, sizeof (command), command_fmt, vl);
-    
+
   ret = system (command);
-    
+
   if (!WIFEXITED (ret)) {
     if (WIFSIGNALED (ret)) {
       printf ("command got signal %d\n", WTERMSIG (ret));
-            
+
       if (WCOREDUMP (ret))
 	printf ("core dumped\n");
     } else
       printf ("return status %d\n", ret);
   }
-	
+
   va_end (vl);
 }
 
@@ -694,13 +694,13 @@ runCommand (const char *command_fmt, ...) {
  *  \param pb_step  an integer representing the step value for the progress bar.
  */
 static void
-generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {  
+generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   char *pm2_command;
 
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
-  
+
   gen_fichier_C (GENEC_NAME ".c", iGaucheVars->bullePrincipale);
 
   runCommand ("make -f " GENEC_MAKEFILE " " GENEC_NAME);
@@ -709,18 +709,18 @@ generateTrace (GtkWidget *progress_bar, float pb_start, float pb_step) {
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
 
-  asprintf (&pm2_command, 
-	    "pm2-load  %s --marcel-bubble-scheduler \"%s\" %s%s%s", 
+  asprintf (&pm2_command,
+	    "pm2-load  %s --marcel-bubble-scheduler \"%s\" %s%s%s",
 	    GENEC_NAME,
-	    bubble_scheduler_name ? : "null", 
-	    synthetic_topology ? " --marcel-synthetic-topology \"" : "", 
+	    bubble_scheduler_name ? : "null",
+	    synthetic_topology ? " --marcel-synthetic-topology \"" : "",
 	    synthetic_topology ? : "",
 	    synthetic_topology ? "\"" : "");
 
   printf ("%s\n", pm2_command);
   runCommand (pm2_command);
   free (pm2_command);
-  
+
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progress_bar), pb_start);
   gtk_main_iteration_do(FALSE);
   pb_start += pb_step;
@@ -735,13 +735,13 @@ void Executer(GtkWidget *widget, gpointer data) {
   GtkWidget *dialog       = NULL;
   GtkWidget *progress_bar = NULL;
   GtkWidget *infos        = NULL;
-    
+
   gchar tracefile[STRING_BUFFER_SIZE];
 
   BubbleMovie mymovie;
-    
+
   initExecDialog (&dialog, &progress_bar, &infos, data);
-    
+
   generateTrace (progress_bar, 0, 0.2);
 
   snprintf (tracefile, sizeof (tracefile),
@@ -766,34 +766,34 @@ void ExecuterFlash(GtkWidget *widget, gpointer data)
   GtkWidget *dialog       = NULL;
   GtkWidget *progress_bar = NULL;
   GtkWidget *infos        = NULL;
-  
+
   gchar out_file[STRING_BUFFER_SIZE];
   GtkWidget *FileSelection;
-  
+
   /* ask if user wants save */
   switch(DemanderConfirmation(data, "Enregistrement Flash", "Voulez-vous enregistrer la sortie flash?"))
     {
     case GTK_RESPONSE_YES:
       /* Creation de la fenetre de selection */
-      FileSelection = gtk_file_chooser_dialog_new("Sauvegarder un fichier", GTK_WINDOW(data), 
+      FileSelection = gtk_file_chooser_dialog_new("Sauvegarder un fichier", GTK_WINDOW(data),
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
 						  "_Annuler", GTK_RESPONSE_CANCEL,
 						  "_Sauvegarder", GTK_RESPONSE_OK, NULL);
-        
+
       snprintf (out_file, STRING_BUFFER_SIZE, DemanderFichier(FileSelection));
       break;
     }
-  
+
   BubbleMovie mymovie;
-  
+
   gchar tracefile[STRING_BUFFER_SIZE];
-  
-  initExecDialog (&dialog, &progress_bar, &infos, data);	
-  
+
+  initExecDialog (&dialog, &progress_bar, &infos, data);
+
   generateTrace (progress_bar, 0, 0.2);
   snprintf (tracefile, sizeof (tracefile),
 	    "/tmp/prof_file_user_%s", getenv ("USER"));
-  
+
   /* Generates BGLMovie */
   BubbleOps_setSWF();
 
@@ -841,15 +841,15 @@ const char * DemanderFichier(GtkWidget *FileSelection) {
       Chemin = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(FileSelection));
 
       Dialog = gtk_message_dialog_new(GTK_WINDOW(FileSelection), GTK_DIALOG_MODAL,
-				      GTK_MESSAGE_INFO, GTK_BUTTONS_OK, 
+				      GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
 				      "Sauvegarde du fichier :\n%s", Chemin);
       gtk_window_set_position(GTK_WINDOW(Dialog), GTK_WIN_POS_CENTER_ON_PARENT);
       gtk_dialog_run(GTK_DIALOG(Dialog));
-      
+
       /* On libère */
       gtk_widget_destroy(Dialog);
       gtk_widget_destroy(FileSelection);
-      
+
       return Chemin;
       break;
     default:
@@ -866,38 +866,38 @@ const char * DemanderFichier(GtkWidget *FileSelection) {
  *  \param message message d'action à confirmer.
  */
 int DemanderConfirmation(gpointer data, char* titre, char * message) {
-  GtkWidget *dialogQ; 
+  GtkWidget *dialogQ;
   GtkWidget *hbox;
   GtkWidget *icon;
   GtkWidget *Question;
   int confirm;
-  
+
   icon = gtk_image_new_from_stock(GTK_STOCK_DIALOG_QUESTION, GTK_ICON_SIZE_DIALOG);
-    
+
   dialogQ = gtk_dialog_new_with_buttons(titre, GTK_WINDOW(data),
 				       GTK_DIALOG_MODAL | GTK_DIALOG_NO_SEPARATOR,
 				       "_Oui", GTK_RESPONSE_YES, "_Non", GTK_RESPONSE_NO, NULL);
-                
+
   gtk_window_set_position(GTK_WINDOW(dialogQ), GTK_WIN_POS_CENTER_ON_PARENT);
-    
+
   /* hbox with question and icon */
   hbox = gtk_hbox_new(FALSE, 0);
-    
+
   gtk_box_pack_start(GTK_BOX(hbox), icon, FALSE, FALSE, 10);
-       
+
   Question = gtk_label_new(message);
-  
+
   gtk_box_pack_start(GTK_BOX(hbox), Question, FALSE, FALSE, 10);
- 
+
   gtk_box_pack_start(GTK_BOX(GTK_DIALOG(dialogQ)->vbox), hbox, FALSE, FALSE, 5);
-  gtk_window_set_resizable(GTK_WINDOW(dialogQ), FALSE);   
+  gtk_window_set_resizable(GTK_WINDOW(dialogQ), FALSE);
   gtk_widget_show_all(GTK_DIALOG(dialogQ)->vbox);
-  
-  
+
+
   confirm = gtk_dialog_run(GTK_DIALOG(dialogQ));
-  
+
   gtk_widget_destroy(dialogQ);
-  
+
   return confirm;
 }
 
@@ -909,9 +909,9 @@ int DemanderConfirmation(gpointer data, char* titre, char * message) {
 void gtk_main_quit2(GtkWidget* widget, gpointer data)
 {
   widget = NULL;  // éviter le warning
-  
+
   printf("Fin du programme\n");
   remove_tmp_directory();
-   
+
   gtk_main_quit();
 }

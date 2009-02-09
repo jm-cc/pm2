@@ -1430,6 +1430,8 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 
   marcel_mutex_lock(&(g_memory_manager->lock));
 
+#warning look at http://www.gnu.org/software/libsigsegv/
+
   addr = info->si_addr;
   err = ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, 1, &data);
   if (err < 0) {

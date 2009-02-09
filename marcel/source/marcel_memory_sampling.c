@@ -18,7 +18,6 @@
 #include "marcel.h"
 #include <assert.h>
 #include <errno.h>
-#include <numa.h>
 #include <numaif.h>
 #include <sys/mman.h>
 

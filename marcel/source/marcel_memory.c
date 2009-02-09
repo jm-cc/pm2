@@ -1430,14 +1430,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 
   marcel_mutex_lock(&(g_memory_manager->lock));
 
-#ifdef __x86_64__
-  addr = (void *)(context->uc_mcontext.gregs[REG_CR2]);
-#elif __i386__
-  addr = (void *)(context->uc_mcontext.cr2);
-#else
-#error Unsupported architecture
-#endif
-
+  addr = info->si_addr;
   err = ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, 1, &data);
   if (err < 0) {
     // The address is not managed by MAMI. Reset the segv handler to its default action, to cause a segfault

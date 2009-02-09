@@ -32,7 +32,7 @@ typedef struct interfaceGaucheVars_tag
 
   int idgeneral; // id pour les bulles et les threads, correspond à l'id maximum dans la configuration actuelle
   
-  char chemin[128]; // chemin du fichier de sauvegarde
+  char chemin[STRING_BUFFER_SIZE]; // chemin du fichier de sauvegarde
   
   GtkWidget *interfaceGauche;
   GtkWidget *drawzone_left;

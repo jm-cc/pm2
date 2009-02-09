@@ -93,11 +93,13 @@ static gboolean changeprioritebulle(GtkWidget * w,GtkScrollType scroll,gdouble v
  *  \param NumTmpMax est une variable globale.
  */
 void enregistrerTmp(void) {
+  char chemin[STRING_BUFFER_SIZE], *ptr;
+
   NumTmp++;
   NumTmpMax = NumTmp;
   
-  char *chemin = malloc(128*sizeof(char));
-  get_tmp_bubblegum_file(NumTmp, &chemin);
+  ptr = (char *)chemin;
+  get_tmp_bubblegum_file(NumTmp, &ptr);
 #if 0
   printf("DEBUG : Save %s\n", chemin);
   printf("DEBUG : NumTmp %d NumTmpMax %d\n", NumTmp, NumTmpMax);

@@ -120,42 +120,31 @@ fi
 
 export LD_LIBRARY_PATH="`${PM2_CONFIG} --flavor=$flavor --libdir $module`${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
-if [ `${PM2_ROOT}/bin/pm2-sys` = "DARWIN_SYS" -a -n "$X" ] ; then
+if [ "$LEO_DEBUG" == "1" ] && [ "$progname" == "leonie" ] ; then
 
-    if [ -n "$@" ] ; then
-	echo "Warning: option(s) \"$@\" ignored"
-    fi
-    exec open-x11 ${PROG}
+    file=/tmp/leo_debug.$$
+
+    args=""
+    while [ $# -gt 0 ] ; do
+        args="$args '$1'"
+        shift
+    done
+
+    echo "set args $args" > $file
+
+    [ -f ~/.leo_gdb_init ] && cat ~/.leo_gdb_init >> $file
+
+    gdb -x $file ${PROG}
 
 else
 
-    if [ "$LEO_DEBUG" == "1" ] && [ "$progname" == "leonie" ] ; then
+    if [ "$PM2_DEBUG" == "1" ] ; then
 
-        file=/tmp/leo_debug.$$
-
-        args=""
-        while [ $# -gt 0 ] ; do
-            args="$args '$1'"
-            shift
-        done
-
-        echo "set args $args" > $file
-
-        [ -f ~/.leo_gdb_init ] && cat ~/.leo_gdb_init >> $file
-
-        gdb -x $file ${PROG}
+        gdb ${PROG} ${@:+"$@"}
 
     else
 
-	if [ "$PM2_DEBUG" == "1" ] ; then
-
-            gdb ${PROG} ${@:+"$@"}
-
-	else
-
-	    exec ${PROG} ${@:+"$@"}
-
-	fi
+        exec ${PROG} ${@:+"$@"}
 
     fi
 

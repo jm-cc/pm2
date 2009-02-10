@@ -50,19 +50,6 @@ decreasing_int_compar (const void *_e1, const void *_e2) {
   return *(const int *)_e1 - *(const int *)_e2;
 }
 
-static unsigned int
-ma_load_from_children (struct marcel_topo_level *father) {
-  unsigned int arity = father->arity, ret = 0, i;
-  
-  if (arity) {
-    for (i = 0; i < arity; i++) {
-      ret += ma_load_from_children (father->children[i]);
-    } 
-  } 
-  ret += ma_load_on_rq (&father->rq);
-  return ret;
-}
-
 /* This function translates a vp index into a from->children
    index. (i.e., sometimes you're not distributing on vp-level
    runqueues, so you have to know which child topo_level covers the

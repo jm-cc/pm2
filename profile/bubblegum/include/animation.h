@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2007 Raphaël BOIS <mailto:bois@enseirb.fr>
+ * Copyright (C) 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <gtk/gtk.h>
-#include "mainwindow.h"
 #include "menus.h"
 #include "actions.h"
 #include "toolbars.h"
@@ -17,8 +16,6 @@
 #define WINDOW_HEIGHT 600
 
 #define DEFLOAD 10
-#define _tostr(s) #s
-#define tostr(s) _tostr(s)
 
 typedef struct BiWidget_tag
 {

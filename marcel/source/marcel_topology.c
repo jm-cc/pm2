@@ -428,6 +428,13 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
   return l2;
 }
 
+/* Returns true if _level_ is inside the subtree beginning with
+   _subtree_root_. */
+int
+ma_topo_is_in_subtree (marcel_topo_level_t *subtree_root, marcel_topo_level_t *level) {
+  return ma_topo_lower_ancestor (subtree_root, level) == subtree_root;
+}
+
 struct marcel_topo_level *marcel_topo_core_level;
 #    undef marcel_topo_node_level
 struct marcel_topo_level *marcel_topo_node_level;

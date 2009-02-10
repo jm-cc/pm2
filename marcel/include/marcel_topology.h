@@ -788,6 +788,10 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 /** \brief Returns the lower common father level to levels lvl1 and lvl2 */
 marcel_topo_level_t *ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2);
 
+/** \brief Returns true if _level_ is inside the subtree beginning
+    with _subtree_root_. */
+int ma_topo_is_in_subtree (marcel_topo_level_t *subtree_root, marcel_topo_level_t *level);
+
 #section marcel_macros
 /** \brief Iterate over VPs */
 #define for_all_vp(vp) \

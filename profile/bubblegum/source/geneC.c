@@ -3,12 +3,10 @@
 #include "geneC.h"
 #include "interfaceGauche.h"
 
-FILE * fw;
-
 /* Browse bubble _from_bubble_ and generates the code involved in the
    creation of the corresponding threads and bubbles tree. */
-static void 
-generate_bubble_tree (Element* from_bubble, int mybid) 
+static void
+generate_bubble_tree (FILE *fd, Element* from_bubble, int mybid)
 {
   int id;
   Element * element_i;
@@ -26,25 +24,25 @@ generate_bubble_tree (Element* from_bubble, int mybid)
 
       if (type == BULLE)
 	{
-	  fprintf (fw, "   /* Creating bubble %d */\n", id);
-	  fprintf (fw, "   marcel_bubble_t b%d;\n", id);
-	  fprintf (fw, "   bubblegum_create_bubble (&b%d, %d, %s%s);\n", 
-		   id, 
-		   id, 
+	  fprintf (fd, "   /* Creating bubble %d */\n", id);
+	  fprintf (fd, "   marcel_bubble_t b%d;\n", id);
+	  fprintf (fd, "   bubblegum_create_bubble (&b%d, %d, %s%s);\n",
+		   id,
+		   id,
 		   mybid == 0 ? "&marcel_root_bubble" : "&b",
 		   mybid == 0 ? "" : parent_bubble_id);
-	  generate_bubble_tree (element_i, id);
-	}  
+	  generate_bubble_tree (fd, element_i, id);
+	}
       if (type == THREAD)
 	{
-	  fprintf (fw, "   marcel_t t%d;\n", id); 
-	  fprintf (fw, "   /* Creating thread %d */\n", id);
-	  fprintf (fw, "   bubblegum_create_thread (&t%d, %d, \"%s\", %s, %d, %s%s);\n", 
-		   id, 
-		   id, 
-		   GetNom (element_i), 
-		   "f", 
-		   GetCharge (element_i), 
+	  fprintf (fd, "   marcel_t t%d;\n", id);
+	  fprintf (fd, "   /* Creating thread %d */\n", id);
+	  fprintf (fd, "   bubblegum_create_thread (&t%d, %d, \"%s\", %s, %d, %s%s);\n",
+		   id,
+		   id,
+		   GetNom (element_i),
+		   "f",
+		   GetCharge (element_i),
 		   mybid == 0 ? "&marcel_root_bubble" : "&b",
 		   mybid == 0 ? "" : parent_bubble_id);
 	}
@@ -53,13 +51,13 @@ generate_bubble_tree (Element* from_bubble, int mybid)
   free (parent_bubble_id);
 }
 
-static void 
+static void
 add_headers (FILE *fd)
 {
-  fprintf (fd, "#include <marcel.h>\n\n");  
+  fprintf (fd, "#include <marcel.h>\n\n");
 }
 
-static void 
+static void
 add_static_functions (FILE *fd)
 {
   /* Write down the bubblegum_create_bubble () function */
@@ -68,12 +66,12 @@ add_static_functions (FILE *fd)
   fprintf (fd, "  marcel_bubble_setid (bubble, id);\n\n");
   fprintf (fd, "  marcel_bubble_insertbubble ((parent_bubble != NULL) ? parent_bubble : &marcel_root_bubble, bubble);\n}\n\n");
 
-  /* Write down the bubblegum_create_thread () function */  
-  fprintf (fd, "static void bubblegum_create_thread (marcel_t *thread,\n"); 
-  fprintf (fd, "                                     int id,\n"); 
-  fprintf (fd, "                                     char *name,\n"); 
-  fprintf (fd, "                                     void *(*start_routine)(void *),\n"); 
-  fprintf (fd, "                                     long wload,\n"); 
+  /* Write down the bubblegum_create_thread () function */
+  fprintf (fd, "static void bubblegum_create_thread (marcel_t *thread,\n");
+  fprintf (fd, "                                     int id,\n");
+  fprintf (fd, "                                     char *name,\n");
+  fprintf (fd, "                                     void *(*start_routine)(void *),\n");
+  fprintf (fd, "                                     long wload,\n");
   fprintf (fd, "                                     marcel_bubble_t *parent_bubble) {\n");
   fprintf (fd, "  marcel_attr_t thread_attr;\n");
   fprintf (fd, "  marcel_attr_init (&thread_attr);\n");
@@ -91,7 +89,7 @@ add_static_functions (FILE *fd)
   fprintf (fd, "   int n;\n");
   fprintf (fd, "   int sum = 0;\n\n");
   fprintf (fd, "   marcel_printf (\"some work %%d in %%d\\n\", load, id);\n\n");
-  fprintf (fd, "   if (!load)\n"); 
+  fprintf (fd, "   if (!load)\n");
   fprintf (fd, "     marcel_delay (1000);\n\n");
   fprintf (fd, "   for (n = 0; n < load * 10000000; n++)\n");
   fprintf (fd, "     sum += n;\n\n");
@@ -99,76 +97,78 @@ add_static_functions (FILE *fd)
   fprintf (fd, "   return (void*)(intptr_t)sum;\n}\n\n");
 }
 
-static void 
+static void
 add_main_function (FILE *fd, Element *root_bubble)
 {
-  fprintf (fw, "int main (int argc, char *argv[]) {\n");
-  fprintf (fw, "   marcel_init (&argc, argv);\n");
-  fprintf (fw, "#ifdef PROFILE\n");
-  fprintf (fw, "   profile_activate (FUT_ENABLE, MARCEL_PROF_MASK, 0);\n");
-  fprintf (fw, "#endif\n\n");
-  fprintf (fw, "   marcel_printf (\"started\\n\");\n\n");
-  
-  generate_bubble_tree (root_bubble, 0);
-  
-  fprintf (fw, "   marcel_start_playing ();\n");
-  fprintf (fw, "   marcel_bubble_sched_begin ();\n");
-  fprintf (fw, "   marcel_delay (1000);\n"); 
-  fprintf (fw, "   marcel_printf (\"ok\\n\");\n");
-  fprintf (fw, "   marcel_end ();\n\n");
-  fprintf (fw, "   return 0;\n}\n");
+  fprintf (fd, "int main (int argc, char *argv[]) {\n");
+  fprintf (fd, "   marcel_init (&argc, argv);\n");
+  fprintf (fd, "#ifdef PROFILE\n");
+  fprintf (fd, "   profile_activate (FUT_ENABLE, MARCEL_PROF_MASK, 0);\n");
+  fprintf (fd, "#endif\n\n");
+  fprintf (fd, "   marcel_printf (\"started\\n\");\n\n");
+
+  generate_bubble_tree (fd, root_bubble, 0);
+
+  fprintf (fd, "   marcel_start_playing ();\n");
+  fprintf (fd, "   marcel_bubble_sched_begin ();\n");
+  fprintf (fd, "   marcel_delay (1000);\n");
+  fprintf (fd, "   marcel_printf (\"ok\\n\");\n");
+  fprintf (fd, "   marcel_end ();\n\n");
+  fprintf (fd, "   return 0;\n}\n");
 }
 
-static void 
+static void
 generate_makefile (FILE *fd)
 {
   printf ("**** Generating Makefile ****\n");
 
-  fprintf (fw, "CC\t=\t$(shell pm2-config --cc)\n");
-  fprintf (fw, "CFLAGS\t=\t$(shell pm2-config --cflags)\n");
-  fprintf (fw, "LIBS\t=\t$(shell pm2-config --libs)\n\n");
-  fprintf (fw, "modules\t\t:=\t$(shell pm2-config --modules)\n");
-  fprintf (fw, "stamplibs\t:=\t$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)\n\n");
+  fprintf (fd, "CC\t=\t$(shell pm2-config --cc)\n");
+  fprintf (fd, "CFLAGS\t=\t$(shell pm2-config --cflags)\n");
+  fprintf (fd, "LIBS\t=\t$(shell pm2-config --libs)\n\n");
+  fprintf (fd, "modules\t\t:=\t$(shell pm2-config --modules)\n");
+  fprintf (fd, "stamplibs\t:=\t$(shell for i in ${modules} ; do pm2-config --stampfile $$i ; done)\n\n");
 
-  fprintf (fw, "all: %s\n", GENEC_NAME);
-  fprintf (fw, "%s: %s.o ${stamplibs}\n", GENEC_NAME, GENEC_NAME);
-  fprintf (fw, "\t$(CC) $< $(LIBS) -o $@\n");
-  fprintf (fw, "%s.o: %s.c\n", GENEC_NAME, GENEC_NAME);
-  fprintf (fw, "\t$(CC) $(CFLAGS) -c $< -o $@\n");
+  fprintf (fd, "all: %s\n", GENEC_NAME);
+  fprintf (fd, "%s: %s.o ${stamplibs}\n", GENEC_NAME, GENEC_NAME);
+  fprintf (fd, "\t$(CC) $< $(LIBS) -o $@\n");
+  fprintf (fd, "%s.o: %s.c\n", GENEC_NAME, GENEC_NAME);
+  fprintf (fd, "\t$(CC) $(CFLAGS) -c $< -o $@\n");
 
   printf ("**** Makefile successfully generated ****\n");
 }
 
 /* Main function for generating the C example program. */
-int 
+int
 gen_fichier_C (const char * file, Element * root_bubble)
 {
+  FILE *fw;
+
   assert (GetTypeElement (root_bubble) == BULLE);
 
   fw = fopen (file, "w");
   if (fw == NULL)
     {
-      printf ("Error while loading file '%s'.\n", file); 
+      printf ("Error while loading file '%s'.\n", file);
       return -1;
     }
 
   printf ("**** Generating the '%s' file ****\n", file);
-   
+
   add_headers (fw);
   add_static_functions (fw);
   add_main_function (fw, root_bubble);
 
   fclose(fw);
-  
+
   printf ("**** File '%s' successfully generated ****\n\n", file);
 
   fw = fopen (GENEC_MAKEFILE, "w");
   if (fw == NULL)
     {
-      printf ("Error while loading file '%s'.\n", GENEC_MAKEFILE); 
+      printf ("Error while loading file '%s'.\n", GENEC_MAKEFILE);
       return -1;
     }
-  
+
   generate_makefile (fw);
 
   fclose (fw);

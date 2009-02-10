@@ -33,6 +33,19 @@ long ma_entity_load(marcel_entity_t *e)
   }
 }
 
+unsigned int
+ma_load_from_children (struct marcel_topo_level *father) {
+  unsigned int arity = father->arity, ret = 0, i;
+  
+  if (arity) {
+    for (i = 0; i < arity; i++) {
+      ret += ma_load_from_children (father->children[i]);
+    } 
+  } 
+  ret += ma_load_on_rq (&father->rq);
+  return ret;
+}
+
 unsigned ma_is_a_seed(marcel_entity_t *e)
 {
   long nb_seeds, nb_threads;

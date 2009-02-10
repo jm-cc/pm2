@@ -15,9 +15,13 @@
 
 #section marcel_functions
 #depend "scheduler/marcel_holder.h[types]"
-/* Recusively computes the considered entity's load. 
+/* Recursively computes the considered entity's load. 
    A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
+
+/* Recursively gathers the load of entities scheduled from the
+   _father_ level's children. */
+unsigned int ma_load_from_children (struct marcel_topo_level *father);
 
 /* Returns the runqueue the entity is scheduled on. If the entity is
    scheduled inside a bubble, the function returns the runqueue the

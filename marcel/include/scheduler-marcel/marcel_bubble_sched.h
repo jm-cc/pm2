@@ -220,16 +220,18 @@ struct marcel_bubble {
 
 	/** \brief Whether the bubble settled somewhere */
 	int settled;
-   /** \brief Barrier for the barrier operation */
+        /** \brief Barrier for the barrier operation */
 	marcel_barrier_t barrier;
 
 	/** \brief Whether the bubble is preemptible, i.e., whether one of its
 			threads can be preempted by a thread from another bubble.  */
 	tbx_bool_t not_preemptible;
 
-   /** \brief Dead bubbles (temporary field)*/
+        /** \brief Dead bubbles (temporary field)*/
 	int old;
 
+        /** bubble identifier */
+        int id;
 #endif
 
 };
@@ -253,7 +255,8 @@ struct marcel_bubble {
 	.settled = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
 	.not_preemptible = tbx_false, \
-   .old = 0, \
+        .old = 0,			      \
+        .id = 0,			      \
 }
 
 

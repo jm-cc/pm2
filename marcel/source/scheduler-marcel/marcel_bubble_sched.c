@@ -193,8 +193,9 @@ void marcel_bubble_shake (void) {
   }
 }
 
-int marcel_bubble_setid(marcel_bubble_t *bubble TBX_UNUSED, int id TBX_UNUSED) {
+int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 	PROF_EVENT2(bubble_setid,bubble, id);
+	bubble->id = id;
 	return 0;
 }
 
@@ -929,7 +930,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 	/* We generally manage to avoid this */
 	if (list_empty(&bubble->queuedentities)) {
-		bubble_sched_debug("warning: bubble %p empty\n", bubble);
+	  bubble_sched_debug("warning: bubble %d (%p) empty\n", bubble->id, bubble);
 		/* We shouldn't ever schedule a NOSCHED bubble */
 		MA_BUG_ON(bubble->as_entity.prio == MA_NOSCHED_PRIO);
 		if (bubble->as_entity.run_holder_data)

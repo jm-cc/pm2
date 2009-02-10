@@ -22,6 +22,33 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+/*
+ * doc/dev/posix/06-11-07-Jeuland/doc_marcel_posix.pdf provides (french) details
+ * about Marcel signal management.
+ */
+
+/*
+ * Signals come from several sources and to different targets.
+ *
+ * - Kernel or other processes to our process.  marcel_pidkill() handles the
+ *   signal by just setting ksiginfo and raising the MA_SIGNAL_SOFTIRQ.  The
+ *   softirq handler can then handle it less expectedly later: choose a thread
+ *   that doesn't block it, and deviate it into running marcel_deliver_sig.
+ * - kernel to an LWP (SIGSEGV for instance).  This actually is directed to the
+ *   marcel thread currently running on that LWP.  We can just synchronously
+ *   call the application's handler.
+ * - Marcel threads to marcel threads.  We can handle them internally, except
+ *   when the handler is SIG_DFL, in which case we raise it to the kernel so
+ *   that the default action is actually performed (e.g. crash the process)
+ * - Marcel threads to other processes.  We just let the real libc function do
+ *   it.
+ * - Marcel threads to our process.  We also just let the glibc function do it.
+ *   That goes through the kernel and back to us, which is fine and actually
+ *   simpler.
+ * - Marcel timers to our process.  We could call kill() ourselves, but we
+ *   simulate a reception from the kernel.
+ */
+
 /*********************MA__DEBUG******************************/
 #define MA__DEBUG
 /*********************variables globales*********************/
@@ -68,6 +95,9 @@ DEF_C(int,pause,(void),())
 DEF___C(int,pause,(void),())
 
 /*********************alarm**********************************/
+
+
+/* marcel timer handler that generates the SIGALARM signal for alarm( */
 static void alarm_timeout(unsigned long data)
 {
 	siginfo_t info;
@@ -120,6 +150,7 @@ static struct ma_timer_list itimer_timer = MA_TIMER_INITIALIZER(itimer_timeout, 
 unsigned long interval;
 unsigned long valeur;
 
+/* marcel timer handler that generates the SIGALARM signal for setitimer() */
 static void itimer_timeout(unsigned long data)
 {
 	siginfo_t info;
@@ -142,6 +173,7 @@ static void itimer_timeout(unsigned long data)
 	}
 }
 
+/* Common functions to check given values */
 static int check_itimer(int which)
 {
 	if ((which != ITIMER_REAL) && (which != ITIMER_VIRTUAL)
@@ -242,12 +274,14 @@ DEF_C(int, setitimer, (int which, const struct itimerval *value, struct itimerva
 DEF___C(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue))
 
 /*********************marcel_sigtransfer*********************/
+/* try to transfer process signals to threads */
 static void marcel_sigtransfer(struct ma_softirq_action *action)
 {
 	marcel_t t;
 	int sig;
 	int deliver;
 
+	/* Fetch signals from the various handlers */
 	ma_spin_lock_softirq(&gsiglock);
 	for (sig = 1; sig < MARCEL_NSIG; sig++) {
 		if (ksigpending[sig] == 1) {
@@ -262,14 +296,17 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 	struct marcel_topo_level *vp;
 	int number = ma_vpnum(MA_LWP_SELF);
 
+	/* Iterate over all threads */
 	for_all_vp_from_begin(vp, number) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));
 		list_for_each_entry(t, &ma_topo_vpdata_l(vp, all_threads),
 		    all_threads) {
 			ma_spin_lock_softirq(&t->siglock);
 			deliver = 0;
+			/* Iterate over all signals */
 			for (sig = 1; sig < MARCEL_NSIG; sig++) {
 				if (marcel_sigomnislash(&t->curmask, &gsigpending, &t->sigpending, sig)) {	//&(!1,2,!3)
+					/* This thread can take this signal */
 					marcel_sigaddset(&t->sigpending, sig);
 					marcel_sigdelset(&gsigpending, sig);
 #ifdef SA_SIGINFO
@@ -279,6 +316,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 				}
 			}
 			if (deliver)
+				/* Deliver all signals at once */
 				marcel_deviate(t,
 				    (handler_func_t) marcel_deliver_sig, NULL);
 			ma_spin_unlock_softirq(&t->siglock);
@@ -346,6 +384,7 @@ DEF___C(int,raise,(int sig),(sig))
 /*********************marcel_pidkill*************************/
 int nb_pidkill = 0;
 
+/* handler of signals coming from the kernel and other processes */
 #ifdef SA_SIGINFO
 static void marcel_pidkill(int sig, siginfo_t *info, void *uc)
 #else
@@ -553,12 +592,31 @@ restart:
 		LOG_RETURN(0);
 	}
 
+	/*
+	 * Letting the application block a signal with the default handler is
+	 * difficult: the threads that block it shouldn't get disturbed if they
+	 * receive it.  The threads that do not block it should get disturbed
+	 * (e.g. make the processus crash).
+	 *
+	 * If we do not request the kernel to block the signal (which is what
+	 * we are doing here for now), if we receive it and the default action
+	 * is to crash the process, we will crash, even if the signal was
+	 * directed to threads that had blocked it.
+	 *
+	 * If we request the kernel to block the signal, we indeed won't
+	 * disturb the threads that block it.  But then we do not have a way to
+	 * get the "make the process crash" behavior since the signal is
+	 * blocked.
+	 */
+
+	/* XXX hack to still let the very common but apparently not problematic
+	 * case go without a warning */
 	if (!marcel_sigisfullset(&cset)) 
 	for (sig = 1; sig < MARCEL_NSIG; sig++)
 		if (marcel_sigismember(&cset, sig))
 			if (csigaction[sig].marcel_sa_handler == SIG_DFL) {
 				fprintf(stderr,
-				    "pthread_sigmask ne supporte pas les signaux avec SIG_DFL pour sa_handler\n");
+						"pthread_sigmask doesn't support blocking signals with SIG_DFL as sa_handler\n");
 				break;
 			}
 
@@ -961,6 +1019,8 @@ DEF_LIBC(int, sigwait, (__const sigset_t *__restrict set, int *__restrict sig),(
 DEF___LIBC(int, sigwait, (__const sigset_t *__restrict set, int *__restrict sig),(set,sig));
 
 /************************distrib****************************/
+
+/* Try to provide the signal directly to a thread running sigwait or similar */
 int marcel_distribwait_sigext(siginfo_t *info)
 {
 	ma_spin_lock_softirq(&gsiglock);
@@ -991,6 +1051,7 @@ int marcel_distribwait_sigext(siginfo_t *info)
 	return 0;
 }
 
+/* Try to provide the signal directly to this thread if it is running sigwait or similar */
 int marcel_distribwait_thread(siginfo_t * info, marcel_t thread)
 {
 	int ret = 0;
@@ -1339,6 +1400,9 @@ DEF___LIBC(int,sigaction,(int sig, const struct sigaction *act,
 #endif
 
 /***********************marcel_deliver_sig**********************/
+
+/* Called in the context of a thread (either directly from sigmask or via
+ * deviation when it should deliver some signals */
 int marcel_deliver_sig(void)
 {
 	int sig;
@@ -1373,6 +1437,9 @@ deliver:
 }
 
 /*************************marcel_call_function******************/
+
+/* Actually deliver the signal: ignore if SIG_IGN, raise the signal to the
+ * kernel if SIG_DFL, else just call the function */
 int marcel_call_function(int sig)
 {
 	LOG_IN();

@@ -1423,7 +1423,6 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
 
 static
 void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
-  ucontext_t *context = _context;
   void *addr;
   int err, dest;
   marcel_memory_data_t *data = NULL;

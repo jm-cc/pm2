@@ -13,9 +13,6 @@
  * General Public License for more details.
  */
 
-#section marcel_types
-enum lock_mode { UNLOCKED_MODE, LOCKED_MODE };
-
 #section marcel_functions
 #depend "scheduler/marcel_holder.h[types]"
 /* Recusively computes the considered entity's load. 

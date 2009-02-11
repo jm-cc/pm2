@@ -20,10 +20,11 @@
 #ifndef BULLE_H
 #define BULLE_H
 
-#include<stdlib.h>
-#include<stdio.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <wchar.h>
 #include <string.h>
+#include "actions.h"
 
 typedef enum TypeElement_tag{
   BULLE,
@@ -42,7 +43,7 @@ typedef struct Bulle_tag
 typedef struct Thread_tag
 {
   int priorite;
-  char nom[20];
+  char nom[STRING_BUFFER_SIZE];
   int id;
   int charge;
 } Thread;

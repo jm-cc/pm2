@@ -61,7 +61,6 @@ static gboolean changepriorite(GtkWidget * w,GtkScrollType scroll,gdouble value,
  * \todo comm
  */
 static gboolean changenom(GtkWidget   *widget,  GdkEventKey *event, gpointer  user_data){
-  printf("changenom\n");
   if(iGaucheVars->ThreadSelect!=NULL){
     SetNom(iGaucheVars->ThreadSelect,gtk_entry_get_text(GTK_ENTRY((DataAddThread*)iGaucheVars->nom)));
     enregistrerTmp();

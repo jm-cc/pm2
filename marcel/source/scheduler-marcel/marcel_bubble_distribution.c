@@ -15,6 +15,8 @@
 
 #include <marcel.h>
 
+#ifdef MA__BUBBLES
+
 /* Add the _e_ entity at position _j_ in the
    _distribution_->entities array. */
 void 
@@ -109,3 +111,4 @@ ma_print_distribution (const ma_distribution_t *distribution, unsigned int arity
   }
 }
 
+#endif /* MA__BUBBLES */

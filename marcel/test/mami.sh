@@ -30,5 +30,5 @@ create_test_flavor() {
 	--ext=\"\" \
 	--modules=\"marcel tbx init\" \
 	--marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_mami enable_stats\" \
-	--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

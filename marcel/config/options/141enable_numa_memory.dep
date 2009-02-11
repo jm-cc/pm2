@@ -1,2 +1,4 @@
 Provide: marcel_numa_memory
 Depend: marcel_numa
+Provide: marcel_memory
+Conflict: marcel_memory

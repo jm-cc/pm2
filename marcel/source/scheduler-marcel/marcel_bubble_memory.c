@@ -83,47 +83,40 @@ memory_sched_start () {
    even better by scheduling it on the last vp it was running on, if
    this vp is on the considered numa node, to benefit from cache
    memory. */
-static struct marcel_topo_level * 
-ma_favourite_location (marcel_entity_t *e) {
-  int i, j;
-  long *nodes;
-  if (e->type == MA_THREAD_ENTITY) {
-    long greater_amount_of_mem = 0;
-    int best_node = -1;
-    nodes = (long *) ma_stats_get (e, ma_stats_memnode_offset);
-    for (i = 0; i < marcel_nbnodes; i++) {
-      if (nodes[i] > greater_amount_of_mem) {
-	greater_amount_of_mem = nodes[i];
-	best_node = i;
-      }
-    }
-    return (best_node != -1) ? &marcel_topo_node_level[best_node] : NULL;
-  } else {
-    /* The considered entity is a bubble, let's try to find the common
-       level to all favourite locations of the contained entities. */
-    MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
-    struct marcel_topo_level *from = NULL, *attraction_level = NULL;
-    nodes = (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_memnode_offset);
-    
-    for (i = 0; i < marcel_nbnodes; i++) {
-       if (nodes[i]) {
-	 from = &marcel_topo_node_level[i];
-	 break;
-       }
-     }
-    if (from) {
-      attraction_level = from;
-      for (j = marcel_nbnodes - 1; j > i; j--) {
-	if (nodes[j]) {
-	  if (attraction_level != &marcel_topo_node_level[j]) {
-	    attraction_level = ma_topo_lower_ancestor (attraction_level, &marcel_topo_node_level[j]);
-	  }
-	}
-      }
-    }
-    return attraction_level;
+static marcel_topo_level_t *
+ma_memory_favorite_level (marcel_entity_t *e) {
+  unsigned int node, best_node = 0; 
+  int first_node = -1, last_node = 0;
+  marcel_topo_level_t *favorite_level = NULL;
+  long *mem_stats = (e->type == MA_BUBBLE_ENTITY) ? 
+    (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_memnode_offset)
+    : (long *) ma_stats_get (e, ma_stats_memnode_offset);
+  
+  for (node = 0; node < marcel_nbnodes; node++) {
+    best_node = (mem_stats[node] > mem_stats[best_node]) ? node : best_node;
+    first_node = (first_node == -1 && mem_stats[node]) ? node : first_node;
+    last_node = mem_stats[node] ? node : last_node;
   }
-  return NULL;
+
+  if (!mem_stats[best_node])
+    return NULL;
+
+  switch (e->type) {
+  
+  case MA_THREAD_ENTITY:
+    favorite_level = &marcel_topo_node_level[best_node];
+    break;
+
+  case MA_BUBBLE_ENTITY:
+    favorite_level = ma_topo_lower_ancestor (&marcel_topo_node_level[first_node], 
+					     &marcel_topo_node_level[last_node]);
+    break;
+  
+  default:
+    MA_BUG ();
+  }
+
+  return favorite_level;
 }
 
 static int
@@ -157,7 +150,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
      been executed yet for example, and so benefit from the first
      touch allocation policy. */
   for (i = 0; i < ne; i++) {
-    struct marcel_topo_level *favourite_location = ma_favourite_location (e[i]);
+    struct marcel_topo_level *favourite_location = ma_memory_favorite_level (e[i]);
     if (favourite_location) {
       if (favourite_location != from) {
 	/* The e[i] entity hasn't reached its favourite location yet,
@@ -228,7 +221,7 @@ memory_sched_shake () {
   for_each_entity_held_in_bubble (e, holding_bubble)
   {
     struct marcel_topo_level *parent_level = ma_get_parent_rq (e)->topolevel;
-    struct marcel_topo_level *favorite_location = ma_favourite_location (e);
+    struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e);
 
     if (parent_level && favorite_location) {
       if (ma_topo_lower_ancestor (parent_level, favorite_location) != favorite_location) {

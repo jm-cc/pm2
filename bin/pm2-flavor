@@ -578,7 +578,6 @@ do_set() {
 	msg="Creating flavor $flavor"
     fi
     create_flavor "$msg"
-    exit 0
 }
 
 do_delete() {
@@ -810,6 +809,13 @@ EDIT_MODE="normal"
 while test $# -gt 0; do
     CMD="$1"
     case "$CMD" in
+    set)
+	shift
+	$DEBUG "Executing $CMD"
+	eval do_$CMD '${@:+"$@"}'
+	do_check ${@:+"$@"}
+	exit 0
+	;;
     version|set|delete|list|get|help|check|regenerate|find)
 	shift
 	$DEBUG "Executing $CMD"

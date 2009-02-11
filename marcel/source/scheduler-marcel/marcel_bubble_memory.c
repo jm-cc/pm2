@@ -69,15 +69,15 @@ memory_sched_start () {
   return 0;
 }
 
-/* This function returns the "favourite location" for the considered
+/* This function returns the "favorite location" for the considered
    entity. 
 
-   For now, we assume that the favourite location of:
+   For now, we assume that the favorite location of:
      - a thread is the topology level corresponding to the numa node 
        where the thread allocated the greatest amount of memory. 
 
      - a bubble is the topology level corresponding to the common 
-       ancestor of all the favourite locations of the contained entities. 
+       ancestor of all the favorite locations of the contained entities. 
 */
 /* TODO: Once a thread is located on the right numa node, we could do
    even better by scheduling it on the last vp it was running on, if
@@ -141,7 +141,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   marcel_entity_t *e[ne];
   ma_get_entities_from_rq (&from->rq, e, ne);
     
-  /* We _strictly for now_ move each entity to their favourite
+  /* We _strictly for now_ move each entity to their favorite
      location. */
   /* TODO: This offers an ideal distribution in terms of thread/memory
      location, but this could completely unbalance the
@@ -150,15 +150,15 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
      been executed yet for example, and so benefit from the first
      touch allocation policy. */
   for (i = 0; i < ne; i++) {
-    struct marcel_topo_level *favourite_location = ma_memory_favorite_level (e[i]);
-    if (favourite_location) {
-      if (favourite_location != from) {
-	/* The e[i] entity hasn't reached its favourite location yet,
+    struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e[i]);
+    if (favorite_location) {
+      if (favorite_location != from) {
+	/* The e[i] entity hasn't reached its favorite location yet,
 	   let's put it there. */
-	ma_move_entity (e[i], &favourite_location->rq.as_holder);
+	ma_move_entity (e[i], &favorite_location->rq.as_holder);
       } else {
 	/* We're already on the right location. */
-	if (favourite_location->type != MARCEL_LEVEL_NODE) {
+	if (favorite_location->type != MARCEL_LEVEL_NODE) {
 	  if (e[i]->type == MA_BUBBLE_ENTITY) {
 	    ma_burst_bubble (ma_bubble_entity (e[i]));
 	    return ma_memory_schedule_from (from);
@@ -166,7 +166,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 	}
       }
     }
-    /* If the considered entity has no favourite location, just leave
+    /* If the considered entity has no favorite location, just leave
        it here to ensure load balancing. */
   }
   

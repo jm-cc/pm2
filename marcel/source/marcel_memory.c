@@ -20,11 +20,11 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #ifdef LINUX_SYS
-#include <malloc.h>
+#  include <malloc.h>
 #endif /* LINUX_SYS */
 
 #ifdef LINUX_SYS
-#include <linux/mempolicy.h>
+#  include <linux/mempolicy.h>
 #else
 /* Policies */
 enum {
@@ -36,8 +36,8 @@ enum {
 };
 
 /* Flags for mbind */
-#define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
-#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
+#  define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
+#  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
 #endif /* LINUX_SYS */
 
 #if !defined(__NR_move_pages)
@@ -110,7 +110,7 @@ unsigned long gethugepagesize(void) {
   unsigned long hugepagesize=0, size=-1;
 
   mdebug_mami("Reading /proc/meminfo\n");
-  f = fopen("/proc/meminfo", "r");
+  f = marcel_fopen("/proc/meminfo", "r");
   while (!(feof(f))) {
     fgets(line, 1024, f);
     if (!strncmp(line, "Hugepagesize:", 13)) {
@@ -122,7 +122,7 @@ unsigned long gethugepagesize(void) {
       mdebug_mami("Huge page size : %lu\n", hugepagesize);
     }
   }
-  fclose(f);
+  marcel_fclose(f);
   if (size == -1) {
     mdebug_mami("Hugepagesize information not available.");
     return 0;

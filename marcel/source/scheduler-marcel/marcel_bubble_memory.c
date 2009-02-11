@@ -104,7 +104,7 @@ ma_memory_favorite_level (marcel_entity_t *e) {
     break;
 
   case MA_BUBBLE_ENTITY:
-    favorite_level = ma_topo_lower_ancestor (&marcel_topo_node_level[first_node],
+    favorite_level = ma_topo_common_ancestor (&marcel_topo_node_level[first_node],
 					     &marcel_topo_node_level[last_node]);
     break;
 
@@ -220,7 +220,7 @@ memory_sched_shake () {
     struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e);
 
     if (parent_level && favorite_location) {
-      if (ma_topo_lower_ancestor (parent_level, favorite_location) != favorite_location) {
+      if (ma_topo_common_ancestor (parent_level, favorite_location) != favorite_location) {
 	shake = 1;
 	break;
       }
@@ -281,7 +281,7 @@ memory_sched_compute_entity_score (marcel_entity_t *current_e,
 
   /* Apply a penalty based on how far from _hints->from_ is located
      the entity we consider. */
-  computed_score += (topo_max_depth - ma_topo_lower_ancestor (hints->from, current_level)->level) * MA_MEMORY_SCHED_REMOTENESS_PENALTY;
+  computed_score += (topo_max_depth - ma_topo_common_ancestor (hints->from, current_level)->level) * MA_MEMORY_SCHED_REMOTENESS_PENALTY;
 
   /* Apply a bonus according to how much threads the _current_e_
      entity is holding. */

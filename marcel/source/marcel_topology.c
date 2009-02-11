@@ -387,7 +387,7 @@ int ma_get_topo_type_depth (enum marcel_topo_level_e type) {
 }
 
 marcel_topo_level_t *
-ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
+ma_topo_common_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
   marcel_topo_level_t *l1 = NULL, *l2 = NULL;
 
   MA_BUG_ON (!lvl1 || !lvl2);
@@ -432,7 +432,7 @@ ma_topo_lower_ancestor (marcel_topo_level_t *lvl1, marcel_topo_level_t *lvl2) {
    _subtree_root_. */
 int
 ma_topo_is_in_subtree (marcel_topo_level_t *subtree_root, marcel_topo_level_t *level) {
-  return ma_topo_lower_ancestor (subtree_root, level) == subtree_root;
+  return ma_topo_common_ancestor (subtree_root, level) == subtree_root;
 }
 
 struct marcel_topo_level *marcel_topo_core_level;

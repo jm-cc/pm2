@@ -21,7 +21,7 @@
 
 volatile unsigned long init_phase = 1;
 
-long ma_entity_load(marcel_entity_t *e) 
+long ma_entity_load(marcel_entity_t *e)
 {
   switch (e->type) {
     case MA_BUBBLE_ENTITY:
@@ -36,12 +36,12 @@ long ma_entity_load(marcel_entity_t *e)
 unsigned int
 ma_load_from_children (struct marcel_topo_level *father) {
   unsigned int arity = father->arity, ret = 0, i;
-  
+
   if (arity) {
     for (i = 0; i < arity; i++) {
       ret += ma_load_from_children (father->children[i]);
-    } 
-  } 
+    }
+  }
   ret += ma_load_on_rq (&father->rq);
   return ret;
 }
@@ -49,7 +49,7 @@ ma_load_from_children (struct marcel_topo_level *father) {
 unsigned ma_is_a_seed(marcel_entity_t *e)
 {
   long nb_seeds, nb_threads;
-  
+
   if (e->type == MA_BUBBLE_ENTITY)
     {
       marcel_bubble_t *b = ma_bubble_entity(e);
@@ -88,7 +88,7 @@ unsigned ma_entity_is_running (marcel_entity_t *e) {
 ma_runqueue_t *
 ma_get_parent_rq (marcel_entity_t *e) {
   ma_runqueue_t *parent_rq = NULL;
-  
+
   if (e) {
     ma_holder_t *sh = e->sched_holder;
     if (sh && (sh->type == MA_RUNQUEUE_HOLDER)) {
@@ -109,23 +109,23 @@ ma_get_parent_rq (marcel_entity_t *e) {
 /* This function is called by bubble schedulers to determine the
   "cache friendly" runqueues where entities should be attracted to, if
   possible. */
-long 
+long
 ma_favourite_vp (marcel_entity_t *e) {
-  return e->type == MA_BUBBLE_ENTITY ?     
+  return e->type == MA_BUBBLE_ENTITY ?
     *(long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_last_vp_offset) :
     *(long *) ma_stats_get (e, ma_stats_last_vp_offset);
 }
 
 /* This function returns the last time the entity passed in argument
    was running. */
-long 
+long
 ma_last_ran (marcel_entity_t *e) {
-  return e->type == MA_BUBBLE_ENTITY ?     
+  return e->type == MA_BUBBLE_ENTITY ?
     *(long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_last_ran_offset) :
     *(long *) ma_stats_get (e, ma_stats_last_ran_offset);
 }
 
-int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2) 
+int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
@@ -134,7 +134,7 @@ int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2)
 	return l2 - l1; /* decreasing order */
 }
 
-int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2) 
+int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
@@ -143,20 +143,20 @@ int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2)
 	return l1 - l2; /* increasing order */
 }
 
-unsigned int 
+unsigned int
 ma_count_entities_on_rq (ma_runqueue_t *rq) {
   marcel_entity_t *ee;
   unsigned int ne = 0;
-  
+
   for_each_entity_scheduled_on_runqueue (ee, rq) {
-    if (ee->type == MA_BUBBLE_ENTITY) { 
+    if (ee->type == MA_BUBBLE_ENTITY) {
       if (!(ma_bubble_entity (ee))->as_holder.nr_ready) {
 	continue;
       }
-    }       
+    }
     ne++;
   }
-  
+
   return ne;
 }
 
@@ -164,11 +164,11 @@ unsigned int
 ma_load_on_rq (ma_runqueue_t *rq) {
   marcel_entity_t *ee;
   unsigned int load = 0;
-  
+
   for_each_entity_scheduled_on_runqueue (ee, rq) {
     load += ma_entity_load (ee);
   }
-  
+
   return load;
 }
 
@@ -188,7 +188,7 @@ int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne)
       else
 	e[i++] = ee;
     }
-   
+
   return i;
 }
 
@@ -197,7 +197,7 @@ ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq)
 {
   marcel_entity_t *e;
   int ret = 0;
-  
+
   for_each_entity_scheduled_on_runqueue(e, rq)
     {
       if (e->type == MA_BUBBLE_ENTITY)
@@ -207,12 +207,12 @@ ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq)
 	  ret = 1;
 	}
     }
-  
+
   return ret;
 }
 
 #ifdef MA__NUMA_MEMORY
-int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2) 
+int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
@@ -221,14 +221,14 @@ int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
 	enum pinfo_weight access_min = MEDIUM_WEIGHT;
-	
+
 	long a1 = ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long a2 = ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
 
 	return a2 - a1; /* decreasing order */
 }
 
-int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2) 
+int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t**) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
@@ -237,7 +237,7 @@ int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
 	enum pinfo_weight access_min = MEDIUM_WEIGHT;
-	
+
 	long a1 = ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long a2 = ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
 
@@ -251,12 +251,12 @@ int decreasing_order_entity_both_compar(const void *_e1, const void *_e2)
 	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
 	long l1 = ma_entity_load(e1);
 	long l2 = ma_entity_load(e2);
-	
+
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
 	enum pinfo_weight access_min = MEDIUM_WEIGHT;
-	
+
 	long v1 = MA_VOLUME_COEF * ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long v2 = MA_VOLUME_COEF * ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
 
@@ -269,12 +269,12 @@ int increasing_order_entity_both_compar(const void *_e1, const void *_e2)
 	marcel_entity_t *e2 = *(marcel_entity_t**) _e2;
 	long l1 = ma_entity_load(e1);
 	long l2 = ma_entity_load(e2);
-	
+
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
 	enum pinfo_weight access_min = MEDIUM_WEIGHT;
-	
+
 	long v1 = MA_VOLUME_COEF * ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long v2 = MA_VOLUME_COEF * ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
 
@@ -296,7 +296,7 @@ ma_resched_existing_threads(struct marcel_topo_level *l)
 /* Lock the entity ! */
 int ma_count_threads_in_entity(marcel_entity_t *entity)
 {
-	int nb = 0;	
+	int nb = 0;
 	/* entities in bubble */
 	if (entity->type == MA_BUBBLE_ENTITY)
 	{
@@ -309,7 +309,7 @@ int ma_count_threads_in_entity(marcel_entity_t *entity)
 	return nb;
 }
 
-int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2) 
+int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
@@ -318,7 +318,7 @@ int ma_decreasing_order_threads_compar(const void *_e1, const void *_e2)
 	return l2 - l1; /* decreasing order */
 }
 
-int ma_increasing_order_threads_compar(const void *_e1, const void *_e2) 
+int ma_increasing_order_threads_compar(const void *_e1, const void *_e2)
 {
 	marcel_entity_t *e1 = *(marcel_entity_t*const*) _e1;
 	marcel_entity_t *e2 = *(marcel_entity_t*const*) _e2;
@@ -332,8 +332,8 @@ ma_burst_bubble (marcel_bubble_t *bubble) {
   int extracted_entities = 0;
   marcel_entity_t *e;
 
-  MA_BUG_ON (!bubble); 
-  
+  MA_BUG_ON (!bubble);
+
   if ((&bubble->as_entity)->sched_holder->type == MA_RUNQUEUE_HOLDER) {
     ma_holder_t *target_holder = (&bubble->as_entity)->sched_holder;
     for_each_entity_scheduled_in_bubble_begin (e, bubble) {
@@ -342,7 +342,7 @@ ma_burst_bubble (marcel_bubble_t *bubble) {
     }
     for_each_entity_scheduled_in_bubble_end ()
   }
-  
+
   return extracted_entities;
 }
 
@@ -354,10 +354,10 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
 #define MAX_ANCESTORS 128
   int i, nvp, nb_ancestors = 0;
   marcel_entity_t *e, *ancestors[MAX_ANCESTORS];
-  struct marcel_topo_level *common_level, *source_level; 
-  
+  struct marcel_topo_level *common_level, *source_level;
+
   source_level = ma_get_parent_rq (entity_to_steal)->topolevel;
-  common_level = ma_topo_lower_ancestor (source_level, starving_level);
+  common_level = ma_topo_common_ancestor (source_level, starving_level);
   nvp = marcel_vpset_weight (&common_level->rq.vpset);
 
   /* The main thread doesn't have an `init_holder'.  */
@@ -365,7 +365,7 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
     /* Before moving the target entity, we have to move up some of its
        ancestors to avoid locking issues. */
     for (e = &ma_bubble_holder (entity_to_steal->init_holder)->as_entity;
-	 e->init_holder; 
+	 e->init_holder;
 	 e = &ma_bubble_holder (e->init_holder)->as_entity) {
       /* In here, we try to find these ancestors */
       if ((e->sched_holder->type == MA_RUNQUEUE_HOLDER) &&
@@ -380,7 +380,7 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
       }
     }
   }
-  
+
   if (nb_ancestors) {
     /* Then we burst everyone of them, to let their content where it
        was scheduled, and we move them to the common_rq, covering the
@@ -388,7 +388,7 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
     for (i = nb_ancestors - 1; i > -1; i--) {
       MA_BUG_ON (ancestors[i]->type != MA_BUBBLE_ENTITY);
       ma_burst_bubble (ma_bubble_entity (ancestors[i]));
-      ma_move_entity (ancestors[i], &common_level->rq.as_holder); 
+      ma_move_entity (ancestors[i], &common_level->rq.as_holder);
     }
   }
 
@@ -417,7 +417,7 @@ ma_debug_show_entities(const char *func_name TBX_UNUSED, marcel_entity_t *e[], i
       bubble_sched_debug("%s, ", ma_task_entity(e[k])->name);
     } else if (e[k]->type == MA_THREAD_SEED_ENTITY) {
       bubble_sched_debug("thread_seed, ");
-    } else { 
+    } else {
       bubble_sched_debug("unknown!, ");
     }
   }

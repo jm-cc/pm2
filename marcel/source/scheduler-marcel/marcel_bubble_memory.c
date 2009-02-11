@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "marcel.h"
+#include <marcel.h>
 
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
@@ -26,7 +26,7 @@ static void
 ma_memory_print_affinities (marcel_bubble_t *bubble) {
   unsigned int i;
   marcel_entity_t *e;
-  
+
   marcel_fprintf (stderr, "Printing memory affinity hints for bubble %p:\n", bubble);
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
   if (e->type != MA_BUBBLE_ENTITY) {
@@ -48,7 +48,7 @@ ma_memory_print_affinities (marcel_bubble_t *bubble) {
 static void
 ma_memory_print_previous_location (marcel_bubble_t *bubble) {
   marcel_entity_t *e;
-  
+
   marcel_fprintf (stderr, "Printing previous location of threads scheduling in bubble %p:\n", bubble);
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
   if (e->type != MA_BUBBLE_ENTITY) {
@@ -70,28 +70,24 @@ memory_sched_start () {
 }
 
 /* This function returns the "favorite location" for the considered
-   entity. 
+   entity.
 
    For now, we assume that the favorite location of:
-     - a thread is the topology level corresponding to the numa node 
-       where the thread allocated the greatest amount of memory. 
+     - a thread is the topology level corresponding to the numa node
+       where the thread allocated the greatest amount of memory.
 
-     - a bubble is the topology level corresponding to the common 
-       ancestor of all the favorite locations of the contained entities. 
+     - a bubble is the topology level corresponding to the common
+       ancestor of all the favorite locations of the contained entities.
 */
-/* TODO: Once a thread is located on the right numa node, we could do
-   even better by scheduling it on the last vp it was running on, if
-   this vp is on the considered numa node, to benefit from cache
-   memory. */
 static marcel_topo_level_t *
 ma_memory_favorite_level (marcel_entity_t *e) {
-  unsigned int node, best_node = 0; 
+  unsigned int node, best_node = 0;
   int first_node = -1, last_node = 0;
   marcel_topo_level_t *favorite_level = NULL;
-  long *mem_stats = (e->type == MA_BUBBLE_ENTITY) ? 
+  long *mem_stats = (e->type == MA_BUBBLE_ENTITY) ?
     (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_memnode_offset)
     : (long *) ma_stats_get (e, ma_stats_memnode_offset);
-  
+
   for (node = 0; node < marcel_nbnodes; node++) {
     best_node = (mem_stats[node] > mem_stats[best_node]) ? node : best_node;
     first_node = (first_node == -1 && mem_stats[node]) ? node : first_node;
@@ -102,16 +98,16 @@ ma_memory_favorite_level (marcel_entity_t *e) {
     return NULL;
 
   switch (e->type) {
-  
+
   case MA_THREAD_ENTITY:
     favorite_level = &marcel_topo_node_level[best_node];
     break;
 
   case MA_BUBBLE_ENTITY:
-    favorite_level = ma_topo_lower_ancestor (&marcel_topo_node_level[first_node], 
+    favorite_level = ma_topo_lower_ancestor (&marcel_topo_node_level[first_node],
 					     &marcel_topo_node_level[last_node]);
     break;
-  
+
   default:
     MA_BUG ();
   }
@@ -140,7 +136,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 
   marcel_entity_t *e[ne];
   ma_get_entities_from_rq (&from->rq, e, ne);
-    
+
   /* We _strictly for now_ move each entity to their favorite
      location. */
   /* TODO: This offers an ideal distribution in terms of thread/memory
@@ -169,32 +165,32 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
     /* If the considered entity has no favorite location, just leave
        it here to ensure load balancing. */
   }
-  
-  /* Recurse over underlying levels */ 
+
+  /* Recurse over underlying levels */
   for (i = 0; i < arity; i++)
     ma_memory_schedule_from (from->children[i]);
-  
+
   return 0;
 }
 
 static int
 ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from) {
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
-  
+
   ma_bubble_synthesize_stats (bubble);
 
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
   ma_memory_print_previous_location (bubble);
   ma_memory_print_affinities (bubble);
-#endif 
-  
+#endif
+
   ma_bubble_lock_all (bubble, from);
   ma_memory_schedule_from (from);
   /* TODO: Crappy way to communicate with the Cache bubble
      scheduler. Do it nicely in the future. */
   ((int (*) (struct marcel_topo_level *)) marcel_bubble_cache_sched.priv) (from);
   ma_resched_existing_threads (from);
-  ma_bubble_unlock_all (bubble, from);  
+  ma_bubble_unlock_all (bubble, from);
 
   return 0;
 }
@@ -217,7 +213,7 @@ memory_sched_shake () {
 
   ma_local_bh_disable ();
   ma_preempt_disable ();
- 
+
   for_each_entity_held_in_bubble (e, holding_bubble)
   {
     struct marcel_topo_level *parent_level = ma_get_parent_rq (e)->topolevel;
@@ -228,9 +224,9 @@ memory_sched_shake () {
 	shake = 1;
 	break;
       }
-    } 
+    }
   }
-  
+
   ma_preempt_enable_no_resched ();
   ma_local_bh_enable ();
 
@@ -272,7 +268,7 @@ struct memory_goodness_hints {
 #define MA_MEMORY_SCHED_LOCAL_MEM_BONUS 10
 
 static int
-memory_sched_compute_entity_score (marcel_entity_t *current_e, 
+memory_sched_compute_entity_score (marcel_entity_t *current_e,
 				   struct memory_goodness_hints *hints) {
   int computed_score;
   int topo_max_depth = marcel_topo_vp_level[0].level;
@@ -298,7 +294,7 @@ memory_sched_compute_entity_score (marcel_entity_t *current_e,
 
   /* Apply a bonus if _current_e_ accesses data allocated on the node
      that holds _hints->from_. */
-  mem_stats = (current_e->type == MA_BUBBLE_ENTITY) ? 
+  mem_stats = (current_e->type == MA_BUBBLE_ENTITY) ?
     (long *) ma_bubble_hold_stats_get (ma_bubble_entity (current_e), ma_stats_memnode_offset)
     : (long *) ma_stats_get (current_e, ma_stats_memnode_offset);
   computed_score += mem_stats[hints->from_node] * MA_MEMORY_SCHED_LOCAL_MEM_BONUS;
@@ -317,11 +313,11 @@ memory_sched_compute_entity_score (marcel_entity_t *current_e,
   return computed_score;
 }
 
-static void 
+static void
 say_hello (marcel_entity_t *e, int current_score) {
-  marcel_printf ("Looking at entity %s%s (%p), score = %i\n", 
-		 (e->type == MA_BUBBLE_ENTITY) ? "bubble" : "thread ", 
-		 (e->type == MA_BUBBLE_ENTITY) ? "" : ma_task_entity (e)->name, 
+  marcel_printf ("Looking at entity %s%s (%p), score = %i\n",
+		 (e->type == MA_BUBBLE_ENTITY) ? "bubble" : "thread ",
+		 (e->type == MA_BUBBLE_ENTITY) ? "" : ma_task_entity (e)->name,
 		 e,
 		 current_score);
 }
@@ -331,7 +327,7 @@ goodness (ma_holder_t *hold, void *args) {
   struct memory_goodness_hints *hints = (struct memory_goodness_hints *)args;
   marcel_entity_t *e;
   int current_score;
-  
+
   list_for_each_entry (e, &hold->sched_list, sched_list) {
     if (hold->nr_ready > 1)
       current_score = memory_sched_compute_entity_score (e, hints);
@@ -341,7 +337,7 @@ goodness (ma_holder_t *hold, void *args) {
     if (e->type == MA_BUBBLE_ENTITY)
       goodness (&ma_bubble_entity (e)->as_holder, hints);
   }
-  
+
   return 0;
 }
 
@@ -349,7 +345,7 @@ static int
 memory_sched_steal (unsigned from_vp) {
   int ret = 0;
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
-  
+
   struct memory_goodness_hints hints = {
     .from = me,
     .best_entity = NULL,
@@ -357,12 +353,12 @@ memory_sched_steal (unsigned from_vp) {
   };
 
   ma_topo_level_browse (me,
-			MARCEL_LEVEL_MACHINE, 
-			goodness, 
+			MARCEL_LEVEL_MACHINE,
+			goodness,
 			&hints);
-  
+
   marcel_printf ("[Work Stealing] Best entity = %p (score = %i)\n", hints.best_entity, hints.best_score);
-  
+
   if (hints.best_entity)
     /* Steal the entity for real! */
     ma_bsched_steal (hints.best_entity, me);

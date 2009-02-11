@@ -37,7 +37,7 @@ ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l
   unsigned int i;
   bubble_sched_debug ("Submitting entities on runqueue %p:\n", &l->rq);
   ma_debug_show_entities ("ma_cache_sched_submit", e, ne);
-  for (i = 0; i < ne; i++) {	      
+  for (i = 0; i < ne; i++) {
     if (e[i]) {
       int state = ma_get_entity (e[i]);
       ma_put_entity (e[i], &l->rq.as_holder, state);
@@ -45,7 +45,7 @@ ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l
   }
 }
 
-static int 
+static int
 decreasing_int_compar (const void *_e1, const void *_e2) {
   return *(const int *)_e1 - *(const int *)_e2;
 }
@@ -63,7 +63,7 @@ ma_translate_favorite_vp (int favorite_vp, marcel_entity_t *e, struct marcel_top
        last_vp informations, we try to attract this bubble to the last
        topo_level it was scheduled on. */
     MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
-    struct marcel_topo_level *last_topo_level = 
+    struct marcel_topo_level *last_topo_level =
       (struct marcel_topo_level *) ma_stats_get (e, ma_stats_last_topo_level_offset);
     if (last_topo_level) {
       for (i = 0; i < from->arity; i++) {
@@ -90,9 +90,9 @@ ma_translate_favorite_vp (int favorite_vp, marcel_entity_t *e, struct marcel_top
    attracting level (_load_balancing_entities_) that holds entities
    used for load balancing.*/
 static void
-ma_strict_cache_distribute (marcel_entity_t *e, 
-			 int favorite_vp, 
-			 ma_distribution_t *distribution, 
+ma_strict_cache_distribute (marcel_entity_t *e,
+			 int favorite_vp,
+			 ma_distribution_t *distribution,
 			 ma_distribution_t *load_balancing_entities) {
   if (favorite_vp == MA_VPSTATS_NO_LAST_VP) {
    ma_distribution_add_tail (e, load_balancing_entities);
@@ -103,11 +103,11 @@ ma_strict_cache_distribute (marcel_entity_t *e,
       unsigned int i, done = 0;
       unsigned long last_ran = ma_last_ran (e);
       for (i = 0; i < distribution[favorite_vp].nb_entities; i++) {
-      	if (last_ran > ma_last_ran (distribution[favorite_vp].entities[i])) {
-      	  ma_distribution_add (e, &distribution[favorite_vp], i);
-      	  done = 1;
+	if (last_ran > ma_last_ran (distribution[favorite_vp].entities[i])) {
+	  ma_distribution_add (e, &distribution[favorite_vp], i);
+	  done = 1;
 	  break;
-      	}
+	}
       }
       if (!done) {
 	ma_distribution_add_tail (e, &distribution[favorite_vp]);
@@ -119,7 +119,7 @@ ma_strict_cache_distribute (marcel_entity_t *e,
 /* Greedily distributes entities stored in _load_balancing_entities_
    over the _arity_ levels described in _distribution_.*/
 static void
-ma_spread_load_balancing_entities (ma_distribution_t *distribution, 
+ma_spread_load_balancing_entities (ma_distribution_t *distribution,
 				ma_distribution_t *load_balancing_entities,
 				unsigned int arity) {
   while (load_balancing_entities->nb_entities) {
@@ -131,7 +131,7 @@ ma_spread_load_balancing_entities (ma_distribution_t *distribution,
 /* Even the load by taking entities from the most loaded levels and
    put them on the least loaded levels, until each level holds more than
    _load_per_level_ entities. */
-static int 
+static int
 ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, unsigned int load_per_level) {
   int least_loaded = ma_distribution_least_loaded_index (distribution, arity);
   int most_loaded = ma_distribution_most_loaded_index (distribution, arity);
@@ -146,7 +146,7 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
   while ((distribution[least_loaded].total_load + 1 < distribution[most_loaded].total_load)
 	 && (distribution[least_loaded].total_load < load_per_level)) {
     if (distribution[most_loaded].nb_entities > 1) {
-      ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]), 
+      ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]),
 				  &distribution[least_loaded]);
       least_loaded = ma_distribution_least_loaded_index (distribution, arity);
       most_loaded = ma_distribution_most_loaded_index (distribution, arity);
@@ -159,54 +159,54 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
 
 /* Distributes a set of entities regarding cache affinities */
 static int
-ma_cache_distribute_entities_cache (struct marcel_topo_level *l, 
-				  marcel_entity_t *e[], 
+ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
+				  marcel_entity_t *e[],
 				  int ne,
 				  ma_distribution_t *distribution) {
   unsigned int i, arity = l->arity, entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
   ma_distribution_t load_balancing_entities;
   ma_distribution_init (&load_balancing_entities,
 			     (struct marcel_topo_level *)NULL, 0, ne);
-  
+
   /* First, we add each entity stored in _e[]_ to the
      _distribution_ structure, by putting it into the array
      corresponding to the level it's attracted to. */
   for (i = 0; i < ne; i++) {
-    long last_vp = ma_favourite_vp (e[i]), last_vp_index = -1; 
+    long last_vp = ma_favourite_vp (e[i]), last_vp_index = -1;
     last_vp_index = ma_translate_favorite_vp (last_vp, e[i], l);
-        
-    ma_strict_cache_distribute (e[i], 
-				last_vp_index, 
-				distribution, 
+
+    ma_strict_cache_distribute (e[i],
+				last_vp_index,
+				distribution,
 				&load_balancing_entities);
   }
 
   /* Then, we greedily distribute the unconstrained entities to balance
      the load. */
-  ma_spread_load_balancing_entities (distribution, 
-				     &load_balancing_entities, 
+  ma_spread_load_balancing_entities (distribution,
+				     &load_balancing_entities,
 				     arity);
 
   /* At this point, we verify if every underlying topo_level will be
      occupied. If not, we even the load by taking entities from the
      most loaded levels to the least loaded ones. */
   ma_global_load_balance (distribution, arity, entities_per_level);
-  
+
   /* We now have a satisfying logical distribution, let's physically
      move entities according it. */
   ma_apply_distribution (distribution, arity);
-  
+
   ma_distribution_destroy (&load_balancing_entities, 1);
 
-  return 0; 
+  return 0;
 }
 
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
 static int
-ma_cache_has_enough_entities (struct marcel_topo_level *l, 
-			    marcel_entity_t *e[], 
-			    unsigned int ne, 
+ma_cache_has_enough_entities (struct marcel_topo_level *l,
+			    marcel_entity_t *e[],
+			    unsigned int ne,
 			    const ma_distribution_t *distribution) {
   unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
   unsigned int arity = l->arity, per_item_entities = nvp / arity, entities_per_level[arity];
@@ -218,10 +218,10 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
       prev_state = 0;
     }
   }
-  
+
   if (prev_state) {
     return prev_state;
-  }  
+  }
 
   /* If not, initialize the entities_per_level array with the load of
      all entities scheduled in each topology subtree. */
@@ -232,12 +232,12 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
   /* Make sure that entities_per_level[0] always points to the
      least-loaded level. */
   qsort (entities_per_level, arity, sizeof(int), &decreasing_int_compar);
-  
+
   for (i = 0; i < ne; i++) {
     unsigned int k, tmp;
-    /* Put the bigger entity on the least-loaded level. 
+    /* Put the bigger entity on the least-loaded level.
      * We assume the _e_ array is sorted. */
-    entities_per_level[0] += ma_entity_load (e[i]); 
+    entities_per_level[0] += ma_entity_load (e[i]);
 
     /* Rearrange the entities_per_level array. */
     for (k = 0; k < arity - 1; k++) {
@@ -248,9 +248,9 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
       } else {
 	continue;
       }
-    } 
-  } 
-  
+    }
+  }
+
   /* Eventually checks if every underlying core will be occupied this
      way. */
   for (i = 0; i < arity; i++) {
@@ -258,24 +258,24 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
       ret = 0;
     }
   }
-  
+
   return ret;
 }
 
-static 
-void ma_cache_distribute_from (struct marcel_topo_level *l) {  
+static
+void ma_cache_distribute_from (struct marcel_topo_level *l) {
   unsigned int ne, nvp = marcel_vpset_weight(&l->vpset);
   unsigned int arity = l->arity;
   unsigned int i, k;
-  
+
   if (!arity) {
     bubble_sched_debug ("done: !arity\n");
     return;
   }
-  
+
   bubble_sched_debug ("count in __marcel_bubble__cache\n");
   ne = ma_count_entities_on_rq (&l->rq);
-  bubble_sched_debug ("ne = %d on runqueue %p\n", ne, &l->rq);  
+  bubble_sched_debug ("ne = %d on runqueue %p\n", ne, &l->rq);
 
   if (!ne) {
     for (k = 0; k < arity; k++)
@@ -284,10 +284,10 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
   }
 
   bubble_sched_debug ("cache found %d entities to distribute.\n", ne);
-  
+
   ma_distribution_t distribution[arity];
   ma_distribution_init (distribution, l, arity, ne);
-  
+
   marcel_entity_t *e[ne];
   bubble_sched_debug ("get in ma_cache_distribute_from\n");
   ma_get_entities_from_rq (&l->rq, e, ne);
@@ -296,27 +296,27 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
   ma_debug_show_entities ("ma_cache_distribute_from", e, ne);
 
   qsort (e, ne, sizeof(e[0]), &ma_increasing_order_entity_load_compar);
-   
+
   if (ne < nvp) {
     if (ma_cache_has_enough_entities (l, e, ne, distribution))
       ma_cache_distribute_entities_cache (l, e, ne, distribution);
     else {
       /* We really have to explode at least one bubble */
       bubble_sched_debug ("We have to explode bubbles...\n");
-      
+
       /* Let's start by counting sub-entities */
       unsigned int j, new_ne = 0, bubble_has_exploded = 0;
       for (i = 0; i < ne; i++) {
 	if (!e[i])
 	  continue;
-	
+
 	/* TODO: We could choose the next bubble to explode here,
 	   considering bubble thickness and other parameters. */
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  marcel_entity_t *ee;
 	  if (bb->as_holder.nr_ready && (ma_entity_load(e[i]) != 1)) {
-	    /* If the bubble is not empty, and contains more than one thread */ 
+	    /* If the bubble is not empty, and contains more than one thread */
 	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
 	      new_ne++;
 	    for_each_entity_scheduled_in_bubble_end ()
@@ -325,9 +325,9 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	    bubble_sched_debug ("counting: nr_ready: %ld, new_ne: %d\n", bb->as_holder.nr_ready, new_ne);
 	    break;
 	  }
-	} 
+	}
       }
-      
+
       if (!bubble_has_exploded) {
 	ma_cache_distribute_entities_cache (l, e, ne, distribution);
 	for (k = 0; k < arity; k++)
@@ -335,13 +335,13 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	ma_distribution_destroy (distribution, arity);
 	return;
       }
-	  
+
       if (!new_ne) {
 	bubble_sched_debug ("done: !new_ne\n");
 	ma_distribution_destroy (distribution, arity);
 	return;
       }
-      
+
       /* Now we can create the auxiliary list that will contain
 	 the new entities */
       marcel_entity_t *ee, *new_e[new_ne];
@@ -352,7 +352,7 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	   bubble to explode.*/
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity (e[i]);
-	  if (bb->as_holder.nr_ready) { 
+	  if (bb->as_holder.nr_ready) {
 	    bubble_sched_debug ("exploding bubble %p\n", bb);
 	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
 	      new_e[j++] = ee;
@@ -363,17 +363,17 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	}
       }
       MA_BUG_ON (new_ne != j);
-      
+
       ma_cache_sched_submit (new_e, new_ne, l);
       ma_distribution_destroy (distribution, arity);
       return ma_cache_distribute_from (l);
     }
-  } else { /* ne >= nvp */ 
+  } else { /* ne >= nvp */
     /* We can delay bubble explosion ! */
     bubble_sched_debug ("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
     ma_cache_distribute_entities_cache (l, e, ne, distribution);
   }
-  
+
   /* Keep distributing on the underlying levels */
   for (i = 0; i < arity; i++)
     ma_cache_distribute_from (l->children[i]);
@@ -395,7 +395,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */
   ma_bubble_snapshot ();
-  ma_bubble_unlock_all (b, l);  
+  ma_bubble_unlock_all (b, l);
 }
 
 static int
@@ -409,8 +409,8 @@ cache_sched_init (void) {
 
 static int
 cache_sched_exit (void) {
-  bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n", 
-		     ma_atomic_read (&ma_succeeded_steals), 
+  bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n",
+		     ma_atomic_read (&ma_succeeded_steals),
 		     ma_atomic_read (&ma_failed_steals));
   return 0;
 }
@@ -444,7 +444,7 @@ is_blocked (marcel_entity_t *e) {
   if (e->type == MA_BUBBLE_ENTITY) {
     marcel_entity_t *inner_e;
     for_each_entity_held_in_bubble (inner_e, ma_bubble_entity (e)) {
-      if ((inner_e->type != MA_BUBBLE_ENTITY) 
+      if ((inner_e->type != MA_BUBBLE_ENTITY)
 	  && !MA_TASK_IS_BLOCKED (ma_task_entity (inner_e))) {
 	/* We found a non-blocked thread! */
 	return 0;
@@ -464,13 +464,13 @@ is_blocked (marcel_entity_t *e) {
    _greater_. If so, the considered entity is backed up in
    _bestbb_. */
 static int
-is_entity_worth_stealing (int *greater, 
-	     marcel_entity_t **bestbb, 
-	     marcel_entity_t **thread_to_steal, 
+is_entity_worth_stealing (int *greater,
+	     marcel_entity_t **bestbb,
+	     marcel_entity_t **thread_to_steal,
 	     marcel_entity_t **tested_entity) {
   int found = 0;
   long load = ma_entity_load (*tested_entity);
-  
+
   /* We don't want to pick blocked entities, otherwise the starving vp
      will still be idle. */
   if (!is_blocked (*tested_entity)) {
@@ -500,28 +500,28 @@ is_entity_worth_stealing (int *greater,
 
 /* This function browses the content of the _hold_ holder, in order to
    find something to steal (a bubble if possible) to the _source_
-   topo_level. It recursively looks at bubbles content too. 
+   topo_level. It recursively looks at bubbles content too.
 
    If we didn't find any bubble to steal, we resign to steal
    _thread_to_steal_, which can be seen as the guy you always choose
    last when forming a soccer team with your pals. */
 static int
 browse_and_steal(ma_holder_t *hold, void *args) {
-  marcel_entity_t *e, *bestbb = NULL; 
+  marcel_entity_t *e, *bestbb = NULL;
   int greater = 0, available_entities = 0;
-  struct marcel_topo_level *top = marcel_topo_level(0,0); 
-  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;  
+  struct marcel_topo_level *top = marcel_topo_level(0,0);
+  struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;
   marcel_entity_t *thread_to_steal = (*(struct browse_and_steal_args *)args).thread_to_steal;
-  
+
   /* We don't want to browse runqueues and bubbles the same
      way. (i.e., we want to browse directly included entities first,
      to steal the upper bubble we find.) */
   if (hold->type == MA_BUBBLE_HOLDER) {
-    for_each_entity_scheduled_in_bubble_begin (e, ma_bubble_holder(hold)) 
+    for_each_entity_scheduled_in_bubble_begin (e, ma_bubble_holder(hold))
       if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
 	available_entities++;
       }
-    for_each_entity_scheduled_in_bubble_end () 
+    for_each_entity_scheduled_in_bubble_end ()
   } else {
     list_for_each_entry (e, &hold->sched_list, sched_list) {
       if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
@@ -529,9 +529,9 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       }
     }
   }
- 
+
   if (bestbb) {
-    if (available_entities > 1) { 
+    if (available_entities > 1) {
       return ma_bsched_steal (bestbb, source);
     } else {
       /* Browse the bubble */
@@ -539,7 +539,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 	.source = source,
 	.thread_to_steal = thread_to_steal,
       };
-      
+
       return browse_and_steal (&ma_bubble_entity(bestbb)->as_holder, &new_args);
     }
   } else if (thread_to_steal && (available_entities > 1)) {
@@ -563,12 +563,12 @@ cache_steal (unsigned int from_vp) {
       || (ma_last_succeeded_steal && ((marcel_clock() - ma_last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
     return 0;
 #endif
-  
+
   if (!ma_idle_scheduler_is_running ()) {
     bubble_sched_debug ("===[Processor %u is idle but ma_idle_scheduler is off! (%d)]===\n", from_vp, ma_idle_scheduler_is_running ());
     return 0;
   }
-  
+
   ma_deactivate_idle_scheduler ();
   marcel_threadslist (0, NULL, &n, NOT_BLOCKED_ONLY);
 
@@ -578,7 +578,7 @@ cache_steal (unsigned int from_vp) {
     arity = father->arity;
   }
 
-  ma_local_bh_disable ();  
+  ma_local_bh_disable ();
   ma_preempt_disable ();
 
   ma_bubble_synthesize_stats (&marcel_root_bubble);
@@ -589,18 +589,18 @@ cache_steal (unsigned int from_vp) {
   };
   /* We try to steal an interesting bubble from one of our neighbour
      runqueues (i.e. from our numa node) */
-  smthg_to_steal = ma_topo_level_browse (me, 
-					 ma_get_topo_type_depth (MARCEL_LEVEL_NODE), 
-					 browse_and_steal, 
+  smthg_to_steal = ma_topo_level_browse (me,
+					 ma_get_topo_type_depth (MARCEL_LEVEL_NODE),
+					 browse_and_steal,
 					 &args);
   ma_bubble_unlock_all (&marcel_root_bubble, marcel_topo_level(0,0));
-  
-  ma_resched_existing_threads (me);    
+
+  ma_resched_existing_threads (me);
   ma_preempt_enable_no_resched ();
   ma_local_bh_enable ();
   ma_activate_idle_scheduler ();
-  
-  if (smthg_to_steal > 0) { 
+
+  if (smthg_to_steal > 0) {
     bubble_sched_debug ("We successfuly stole one or several entities !\n");
     ma_last_succeeded_steal = marcel_clock ();
     ma_atomic_inc (&ma_succeeded_steals);

@@ -268,6 +268,7 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
     return -errno;
   }
 
+  tfree((*space)->filename);
   MAMI_ILOG_OUT();
   return 0;
 }
@@ -583,7 +584,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
 
   (*space) = tmalloc(sizeof(marcel_memory_huge_pages_area_t));
   (*space)->size = nbpages * memory_manager->hugepagesize;
-  (*space)->filename = malloc(1024 * sizeof(char));
+  (*space)->filename = tmalloc(1024 * sizeof(char));
   pid = getpid();
   marcel_sprintf((*space)->filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
 

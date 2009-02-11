@@ -67,7 +67,7 @@ static gboolean
 AnimationControl_seeking (GtkRange *range, gpointer p_data);
 
 /*! Builds the right part of the gui.
- *  
+ *
  *  \param p_anim   a pointer to an AnimationData structure.
  *
  *  \return A pointer to a VBox that contains right interface on succes. If an
@@ -124,7 +124,7 @@ right_window_init (AnimationData *p_anim) {
             right_status = gtk_statusbar_new ();
             right_status_context_id = gtk_statusbar_get_context_id(GTK_STATUSBAR(right_status), "Bubble scheduler status");
             gtk_statusbar_push(GTK_STATUSBAR(right_status), right_status_context_id, "");
-            
+
             gtk_statusbar_set_has_resize_grip(GTK_STATUSBAR(right_status), FALSE);
             gtk_box_pack_end (GTK_BOX (vbox_right), right_status, FALSE, FALSE, 0);
         } else {
@@ -284,7 +284,7 @@ init_right_toolbar (AnimationData *p_anim) {
                                 p_anim);
 
     gtk_toolbar_append_space (GTK_TOOLBAR (toolbar));
-    
+
     gtk_toolbar_append_element (GTK_TOOLBAR (toolbar), GTK_TOOLBAR_CHILD_BUTTON,
                                 NULL, NULL, "Convertir en Flash", NULL, convert,
                                 G_CALLBACK (AnimationControl_SaveAsFlash),
@@ -319,23 +319,23 @@ Realize_dz (GtkWidget *widget, gpointer data) {
     /* Initialize openGL default status. */
     glClearColor(1.0, 1.0, 1.0, 1.0); /* Black background color. */
     glDisable(GL_DEPTH);              /* No zbuffer. */
-    
+
     glLoadIdentity();
     glEnable(GL_BLEND);               /* Transparency. */
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_CULL_FACE);   /* No back face culling. */
-    
+
     PushScreenCoordinateMatrix(); /* Sets pixels coordinates. */
-    
+
 #if 0 /*! \todo remove texturing. No longer used. */
     /* Loads textures */
     anim->bulle_tex = open_texture("imgs/bulle-translucy.png");
     anim->thread_tex = open_texture("imgs/thread.png");
-    
+
     if (anim->bulle_tex == NULL || anim->thread_tex == NULL)
         exit(1);
 #endif
-    
+
     /* Clears buffers. */
     for (i = 0; i < 2; i++) {
         glClear (GL_COLOR_BUFFER_BIT);
@@ -345,10 +345,10 @@ Realize_dz (GtkWidget *widget, gpointer data) {
         else
             glFlush();
     }
-    
+
     g_snprintf (buf, sizeof (buf),
                "%s/profile/bubblegum/font/font.ttf", pm2_root());
-    
+
     // chargement de la police et des call lists:
 #if 0
     p_anim->pIfont = InitGPFont(buf, 10);
@@ -359,7 +359,7 @@ Realize_dz (GtkWidget *widget, gpointer data) {
 #endif
     /* End of configuration. */
     gdk_gl_drawable_gl_end (gldrawable);
-    
+
     redraw_data = (struct RedrawData *) malloc (sizeof (*redraw_data));
     redraw_data->drawzone = widget;
     redraw_data->p_anim   = p_anim;
@@ -377,26 +377,26 @@ Realize_dz (GtkWidget *widget, gpointer data) {
 static gboolean
 Redraw_dz (gpointer p_data) {
     struct RedrawData *rdata = (struct RedrawData *)p_data;
-    
+
     //    WorkOnAnimation((AnimationData *) p_data);
     GdkGLContext* glcontext = gtk_widget_get_gl_context(rdata->drawzone);
     GdkGLDrawable* gldrawable = gtk_widget_get_gl_drawable(rdata->drawzone);
-    
+
     if (gdk_gl_drawable_gl_begin(gldrawable, glcontext)) {
         glClear(GL_COLOR_BUFFER_BIT);
-        
+
         /* Display Frame. */
         AnimationData_display (rdata->p_anim);
-        
-        
+
+
         if (gdk_gl_drawable_is_double_buffered(gldrawable))
             gdk_gl_drawable_swap_buffers(gldrawable);
         else
             glFlush ();
-        
+
         gdk_gl_drawable_gl_end(gldrawable);
     }
-    
+
     return TRUE;
 }
 
@@ -419,14 +419,14 @@ Reshape_dz (GtkWidget* widget, GdkEventConfigure* ev, gpointer p_data) {
 
     if (gdk_gl_drawable_gl_begin (gldrawable, glcontext)) {
         glViewport (0, 0, ev->width, ev->height);
-        
+
         PopProjectionMatrix();
         PushScreenCoordinateMatrix();
-        
+
         gdk_gl_drawable_gl_end (gldrawable);
     }
-   
-    return TRUE;   
+
+    return TRUE;
 }
 
 
@@ -444,9 +444,9 @@ MouseMove_dz(GtkWidget* widget, GdkEventMotion* ev, gpointer p_data) {
 
 #if 0
     anim->mousePos.x = ev->x;
-    anim->mousePos.y = anim->area.y - ev->y;   
+    anim->mousePos.y = anim->area.y - ev->y;
 #endif
-   
+
     return TRUE;
 }
 
@@ -474,7 +474,7 @@ AnimationControl_seekStartEnd (GtkWidget *widget, GdkEventButton *event,
                                gpointer pdata) {
     if (event->button != 1)
         return FALSE;
-    
+
     if (event->type == GDK_BUTTON_PRESS) { /* Lock animation for seeking */
         AnimationData_setPlayStatus ((AnimationData *)pdata,
                                      ANIM_PLAY_UNCHANGED, -1, 1);

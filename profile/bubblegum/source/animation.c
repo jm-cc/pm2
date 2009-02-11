@@ -167,7 +167,7 @@ AnimationData_AdjustScale (AnimationData *pdata) {
     BubbleMovie movie = pdata->movie;
 
     /* Compute animation location */
-    
+
     if (movie) {
         scale = MIN (pdata->height / movie->height, pdata->width / movie->width);
         goff_x = (pdata->width - scale * movie->width) / 2;
@@ -266,22 +266,22 @@ AnimationData_display (AnimationData *pdata) {
 
     float frm_time = 0;
     int   chframe  = 0;
-    
+
     if (!pdata || !pdata->movie)
         return; /* Nothing to display. */
-    
+
     AnimationData_AdjustScale (pdata);
     gettimeofday (&tv, NULL);
-    
+
     elapsed_time = tv.tv_sec - pdata->ctime.tv_sec
         + 1e-6f * (tv.tv_usec - pdata->ctime.tv_usec);
-    
+
     if (pdata->cframe != -1) {
         frm_time = pdata->movie->frames_array[pdata->cframe]->duration
             / pdata->play_speed;
     } else
         pdata->cframe = 0;
-    
+
     /* In any case, we move by one frame max. */
     if (frm_time < elapsed_time) {
         if (!pdata->play_seeking) { /* If seeking, no automatic frame change. */
@@ -293,7 +293,7 @@ AnimationData_display (AnimationData *pdata) {
         }
         memcpy (&(pdata->ctime), &tv, sizeof (tv));
     }
-    
+
     if (pdata->cframe < 0) {
         pdata->cframe = 0;
         chframe = 0;

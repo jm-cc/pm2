@@ -58,7 +58,7 @@ Element* CreateBulle(int priorite, int id)
 Element* CreateThread(int priorite, int id, char* nom, int charge)
 {
   Element* element;
-   
+
   element = malloc(sizeof(Element));
   /*    printf("create THREAD : %p\n", element); */
 
@@ -176,7 +176,7 @@ void AddElement(Element* conteneur, Element* contenu)
  */
 
 
- 
+
 #if 0
 void MoveElement(Element * elmtSource,  Element * elmtDest,
 		 int positionSource, int positionDest)
@@ -186,9 +186,9 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
   ListeElement* liste2=NULL;
 
   /* on retrouve les peres */
-  
-  
-  
+
+
+
   if (positionDest == positionSrc){
     printf("pas de déplacement...\n");
     return;
@@ -196,13 +196,13 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
 
   /* on cherche à retrouver le pere */
 
-  
+
   if (elmtPere != NULL && elmtPere->type == BULLE
-      && position >= 1 
+      && position >= 1
       && position <= elmtPere->bulle.taille)
     {
       liste = elmtPere->bulle.liste;
-      
+
       /* liste2 va pointer sur l'élément avant l'élément à supprimer
 	 liste va pointer sur l'élément à supprimer
 	 méthode du trainard
@@ -214,11 +214,11 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
 	      printf("erreur dans remove element");
 	      return;
 	    }
-	 
+
 	  liste2 = liste;
 	  liste = liste->suivant;
 	}
-     
+
       if (liste->element->type == THREAD)
 	free(liste->element);
       else
@@ -228,28 +228,28 @@ void MoveElement(Element * elmtSource,  Element * elmtDest,
 	    {
 	      /* AddElement(conteneur, GetElement(liste->element, 0)); */
 	      liste->element->bulle.taille --;
-	      
+
 	    }
-	  
-	  liste->element->bulle.liste = NULL;		 
+
+	  liste->element->bulle.liste = NULL;
 	  free(liste->element);
 	}
-     
+
       if (liste2 == NULL) /* impossible A CORRIGER */
 	elmtPere->bulle.liste = liste->suivant;
       else
 	liste2->suivant = liste->suivant;
-     
+
       free(liste);
-     
-      elmtPere->bulle.taille --;      
+
+      elmtPere->bulle.taille --;
     }
   else /* conteneur->type == THREAD */
     wprintf(L"mauvais paramêtre dans RemoveElement\n");
-   
+
   return;
 }
-#endif 
+#endif
 
 /*********************************************************************
  * Supprime l'élément à la position 'position'
@@ -260,13 +260,13 @@ void RemoveElement(Element* conteneur, int position)
   int i;
   ListeElement* liste;
   ListeElement* liste2=NULL;
-   
+
   if (conteneur != NULL && conteneur->type == BULLE
-      && position >= 1 
+      && position >= 1
       && position <= conteneur->bulle.taille)
     {
       liste = conteneur->bulle.liste;
-     
+
       /* liste2 va pointer sur l'élément avant l'élément à supprimer
 	 liste va pointer sur l'élément à supprimer
 	 méthode du trainard
@@ -278,11 +278,11 @@ void RemoveElement(Element* conteneur, int position)
 	      printf("erreur dans remove element");
 	      return;
 	    }
-	 
+
 	  liste2 = liste;
 	  liste = liste->suivant;
 	}
-     
+
       if (liste->element->type == THREAD)
 	free(liste->element);
       else
@@ -292,29 +292,29 @@ void RemoveElement(Element* conteneur, int position)
 	    {
 	      /* AddElement(conteneur, GetElement(liste->element, 0)); */
 	      liste->element->bulle.taille --;
-	      
+
 	      /* liste3 = liste->element->bulle.liste; */
 	      /* free(liste->element->bulle.liste); */
-	      
+
 	      /* liste->element->bulle.liste = liste3; */
 	    }
-	  
-	  liste->element->bulle.liste = NULL;		 
+
+	  liste->element->bulle.liste = NULL;
 	  free(liste->element);
 	}
-     
+
       if (liste2 == NULL) /* impossible A CORRIGER */
 	conteneur->bulle.liste = liste->suivant;
       else
 	liste2->suivant = liste->suivant;
-     
+
       free(liste);
-     
-      conteneur->bulle.taille --;      
+
+      conteneur->bulle.taille --;
     }
   else /* conteneur->type == THREAD */
     wprintf(L"mauvais paramêtre dans RemoveElement\n");
-   
+
   return;
 }
 
@@ -322,25 +322,25 @@ void RemoveElement(Element* conteneur, int position)
 
 void RemoveElementOnCascade(Element* conteneur, int position)
 {
-  
+
   int i;
   ListeElement* liste;
   ListeElement* liste2=NULL;
-  
+
   if (conteneur != NULL && conteneur->type == BULLE
       && position >= 1 && position <= conteneur->bulle.taille)
     {
       liste = conteneur->bulle.liste;
-      
+
       for(i = 1; i < position; i++)
 	{
 	  if (liste->suivant == NULL)
             return;
-	  
+
 	  liste2 = liste;
 	  liste = liste->suivant;
 	}
-      
+
       if (liste->element->type == THREAD)
 	{
 	  free(liste->element);
@@ -349,22 +349,22 @@ void RemoveElementOnCascade(Element* conteneur, int position)
 	{
 	  while (liste->element->bulle.taille)
             RemoveElementOnCascade(liste->element, 1);
-	  
+
 	  free(liste->element);
 	}
-      
+
       if (liste2 == NULL)
 	conteneur->bulle.liste = liste->suivant;
       else
 	liste2->suivant = liste->suivant;
-      
+
       free(liste);
-      
-      conteneur->bulle.taille --;      
+
+      conteneur->bulle.taille --;
     }
   else
     wprintf(L"mauvais paramêtre dans RemoveElementOnCascade %d \n",conteneur->bulle.taille);
-  
+
   return;
 }
 
@@ -452,7 +452,7 @@ void SetPrioriteBulle(Element* bulle, int priorite)
 /*! Donne la position d'un élément dans ListeElement, fonction non testée et inutilisée
  *  \param bulleParent     bulleParent est la bulle parent de l'élément 'elementRecherche'
  *  \param elementRecherche    elementRecherche est un élément (bulle ou thread)
- * 
+ *
  *  \return La fonction retourne la position de l'élément dans ListeElement.
  */
 int GetElementPosition (Bulle * bulleParent, Element * elementRecherche)
@@ -469,7 +469,7 @@ int GetElementPosition (Bulle * bulleParent, Element * elementRecherche)
 }
 
 /*********************************************************************/
-/*! Donne la ListeElement de 'bulle' à la position 'position'. Par exemple, on veut la ListeElement 
+/*! Donne la ListeElement de 'bulle' à la position 'position'. Par exemple, on veut la ListeElement
  * dont element pointe sur le 3ème élément de ListeElement, on exécute pour cela
  * GetListeElementPosition(bulle, 3);
  * Fonction non testée et inutilisée.
@@ -502,7 +502,7 @@ ListeElement * GetListeElementPosition(Bulle * bulle, int position)
   return listeRetour;
 }
 
-/*********************************************************************/   
+/*********************************************************************/
 /*! Effectue un déplacement d'un élément d'une liste vers une autre liste
  * Fonction non testée et inutilisée.
  * \param bulleParent la bulle parent de elementADeplacer
@@ -516,29 +516,29 @@ void MoveElement (Bulle * bulleParent, Element * elementADeplacer, Bulle * bulle
   liste1 = NULL;
   liste2 = NULL;
   int i, position;
-  
+
   liste1 = bulleParent->liste;
   /* on obtient la position de elementADeplacer */
   position = GetElementPosition(bulleParent, elementADeplacer);
-   
-  /* méthode du trainard */   
+
+  /* méthode du trainard */
   for(i = 1; i < position; i++)
     {
       if (liste1->suivant == NULL)
 	return;
-	  
+
       liste2 = liste1;
       liste1 = liste1->suivant;
     }
-   
+
   if (liste2 == NULL)
     bulleParent->liste = NULL;
   else
     liste2->suivant = liste1->suivant;
   /* dans tous les cas */
   bulleParent->taille --;
-      
-   
+
+
   /* On insère elementADeplacer en tête de la ListeElement de bulleDAccueil */
   bulleDAccueil->liste->suivant = bulleDAccueil->liste;
   bulleDAccueil->liste->element = elementADeplacer;
@@ -564,8 +564,8 @@ void PrintElement(Element* element, int level, int numero)
 
       // et on affiche récursivement tout les élément contenus dans
       // cette bulle
-      for(i = 1; i <= GetNbElement(element); i++) 
-	PrintElement(GetElement(element, i), level + 1, i); 
+      for(i = 1; i <= GetNbElement(element); i++)
+	PrintElement(GetElement(element, i), level + 1, i);
 
     }
   else
@@ -592,13 +592,13 @@ void RemoveElement2(Element* conteneur, int position)
   int i;
   ListeElement* liste;
   ListeElement* liste2=NULL;
-   
+
   if (conteneur != NULL && conteneur->type == BULLE
-      && position >= 1 
+      && position >= 1
       && position <= conteneur->bulle.taille)
     {
       liste = conteneur->bulle.liste;
-     
+
       /* liste2 va pointer sur l'élément avant l'élément à supprimer
 	 liste va pointer sur l'élément à supprimer
 	 méthode du trainard
@@ -610,24 +610,24 @@ void RemoveElement2(Element* conteneur, int position)
 	      printf("erreur dans remove element");
 	      return;
 	    }
-	 
+
 	  liste2 = liste;
 	  liste = liste->suivant;
 	}
-      
+
       if (liste2 == NULL) /* impossible A CORRIGER */
 	conteneur->bulle.liste = liste->suivant;
       else
 	liste2->suivant = liste->suivant;
-     
+
       /* free(liste); */
-     
+
       conteneur->bulle.taille --;
-      printf("DEBUG : RemoveElement2, conteneur->bulle.taille : %d\n",conteneur->bulle.taille);      
+      printf("DEBUG : RemoveElement2, conteneur->bulle.taille : %d\n",conteneur->bulle.taille);
     }
   else /* conteneur->type == THREAD */
     wprintf(L"mauvais paramètre dans RemoveElement2\n");
-   
+
   return;
 }
 
@@ -709,13 +709,13 @@ int appartientElementParent(Element * parent, Element * fils)
 	{
 	  /* si on tombe sur une bulle, on parcourt ses fils */
 	  if(liste->element->type == BULLE)
-	    {  
-	      return appartientElementParent(liste->element, fils);    
+	    {
+	      return appartientElementParent(liste->element, fils);
 	    }
 	}
       liste2 = liste;
       liste = liste->suivant;
     }
   /* dans le cas où fils n'est pas fils de parent */
-  return 0; 
+  return 0;
 }

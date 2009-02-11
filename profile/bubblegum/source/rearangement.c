@@ -171,7 +171,7 @@ int Rearanger(zone * zone1)
 #endif
 
          ChangerZoneLargeur(zone1, largeurMax + MARGE);
-         
+
          if (LireZoneHauteur(zone1) < tabY[nMin] + MARGE)
             ChangerZoneHauteur(zone1, tabY[nMin] + MARGE);
       }
@@ -226,7 +226,7 @@ int TesterPositionnerZone(int* tabX, int *tabY,
    /* sinon, on test pour chacun des plateaux qui sont sur la largeur de la
     * sous zone lequel gène leplus la zone (est le plus haut) pour
     * déterminer à quelle hauteur minimale peut on placer la sous
-    * zone*/ 
+    * zone*/
    for(i = plateau + 1;
           (i < nPlateau ) && (tabX[i] < tabX[plateau] + largeurSousZone);
        i++)
@@ -234,7 +234,7 @@ int TesterPositionnerZone(int* tabX, int *tabY,
       if (tabY[i] > y)
          y = tabY[i];
    }
- 
+
    return y;
 }
 
@@ -252,7 +252,7 @@ int MAJTabPlateau(int* tabX, int *tabY,
    NbPlateauACreer = 1;
 
    /* on parcourt le tableau de plateau pour trouver le nombre (NbPlateauASupr) de
-    * plateau qui seront à supprimer par l'ajout du nouveau plateau 
+    * plateau qui seront à supprimer par l'ajout du nouveau plateau
     * (ceux qui sont dans le même intervalle de X). */
    for (i = plateau + 1; i< nPlateau; i++, NbPlateauASupr++)
    {

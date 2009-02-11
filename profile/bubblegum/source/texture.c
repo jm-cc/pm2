@@ -28,7 +28,7 @@ Texture* LoadTextureFromSurface(SDL_Surface* image)
    Texture* tex = (Texture*) malloc(sizeof(Texture));
    if (tex == NULL)
       fwprintf(stderr, L"LoadTexture : Impossible d'allouer de la mémoire\n");
-   else 
+   else
    {
       GLfloat texcoord[4];
       GLuint texID = SDL_GL_LoadTexture(image, texcoord);
@@ -117,7 +117,7 @@ GLuint SDL_GL_LoadTexture(SDL_Surface* surface, GLfloat* texcoord)
    w = NextPow2(surface->w);
    h = NextPow2(surface->h);
 
-    
+
    texcoord[0] = 0.0f;			/* Min X */
    texcoord[1] = 0.0f;			/* Min Y */
    texcoord[2] = (GLfloat)surface->w / w;	/* Max X */
@@ -127,14 +127,14 @@ GLuint SDL_GL_LoadTexture(SDL_Surface* surface, GLfloat* texcoord)
                                 w, h,
                                 32,
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN /* OpenGL RGBA masks */
-                                0x000000FF, 
-                                0x0000FF00, 
-                                0x00FF0000, 
+                                0x000000FF,
+                                0x0000FF00,
+                                0x00FF0000,
                                 0xFF000000
 #else
                                 0xFF000000,
-                                0x00FF0000, 
-                                0x0000FF00, 
+                                0x00FF0000,
+                                0x0000FF00,
                                 0x000000FF
 #endif
                                 );

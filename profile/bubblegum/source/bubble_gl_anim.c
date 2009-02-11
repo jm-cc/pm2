@@ -192,7 +192,7 @@ BubbleOps_setSWF() {
 
 
 /*! Sets GL parameters according to current mode.
- *  
+ *
  *  \param mode     Drawing mode
  *  \param pfill    a valid pointer to a #BGLFillStyle structure.
  *  \param pline    a valid pointer to a #BGLLineStyle structure.
@@ -257,13 +257,13 @@ bgl_anim_do_drawline (bgl_action_drawline_t *p_action,
             glEnd ();
             MYTRACE ("glEnd()");
         }
-        
+
         p_draw_state->fill = nfill;
     }
-    
+
     if (nfill || mode == DRAW_MODE_LINE) {
         bgl_set_mode_gl_params (mode, nfill, pline);
-        
+
         if (!fill || mode == DRAW_MODE_LINE) {
             glVertex3f (orig_x, orig_y, 0.0f);
             MYTRACE ("glVertex3f()");
@@ -353,7 +353,7 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
     if (nfill || mode == DRAW_MODE_LINE) {
 	p_draw_state->fill = nfill;
 	bgl_set_mode_gl_params (mode, nfill, pline);
-	
+
 	glEnable(GL_MAP1_VERTEX_3);
 	gluBeginCurve(nurbs);
 	gluNurbsCurve(nurbs,
@@ -380,13 +380,13 @@ bgl_anim_do_drawcurve (bgl_action_drawcurve_t *p_action,
             glEnd ();
             MYTRACE ("glEnd()");
         }
-        
+
         p_draw_state->fill = nfill;
     }
-    
+
     if (nfill || mode == DRAW_MODE_LINE) {
 	bgl_set_mode_gl_params (mode, nfill, pline);
-        
+
         if (!fill || mode == DRAW_MODE_LINE) {
             glVertex3f (orig_x, orig_y, 0.0f);
             MYTRACE ("glVertex3f()");
@@ -505,7 +505,7 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale,
             }
     }
 
-    
+
 }
 
 

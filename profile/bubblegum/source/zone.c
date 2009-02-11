@@ -344,7 +344,7 @@ void EffacerParcours(parcours * p)
   free(p);
 }
 
-/*! A partir d'une position d'une zone, la fonction retourne un pointeur de parcours. 
+/*! A partir d'une position d'une zone, la fonction retourne un pointeur de parcours.
  * \param zone *
  * \param x
  * \param y

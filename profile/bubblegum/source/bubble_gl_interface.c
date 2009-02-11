@@ -144,7 +144,7 @@ bgl_action_with_style_setRatio (bgl_action_with_style_t *action,
 }
 
 /*! Creates a new movepen action interpolation. This function chould not be
- *  called explicitly. 
+ *  called explicitly.
  *
  *  \param a1       a pointer to a move pen action.
  *  \param a2       a pointer to a move pen action.
@@ -165,7 +165,7 @@ bgl_action_movepen_setRatio (bgl_action_movepen_t *a1,
 }
 
 /*! Creates a new drawline action interpolation. This function chould not be
- *  called explicitly. 
+ *  called explicitly.
  *
  *  \param a1       a pointer to a drawline action.
  *  \param a2       a pointer to a drawline action.
@@ -187,7 +187,7 @@ bgl_action_drawline_setRatio (bgl_action_drawline_t *a1,
 }
 
 /*! Creates a new drawcircle action interpolation. This function chould not be
- *  called explicitly. 
+ *  called explicitly.
  *
  *  \param a1       a pointer to a drawcircle action.
  *  \param a2       a pointer to a drawcircle action.
@@ -208,7 +208,7 @@ bgl_action_drawcircle_setRatio (bgl_action_drawcircle_t *a1,
 }
 
 /*! Creates a new drawcurve action interpolation. This function chould not be
- *  called explicitly. 
+ *  called explicitly.
  *
  *  \param a1       a pointer to a drawcurve action.
  *  \param a2       a pointer to a drawcurve action.
@@ -272,7 +272,7 @@ bgl_action_setRatio (bgl_action_t *a1, bgl_action_t *a2, float ratio) {
 
 
 /*! Sets the style of an action.
- *  
+ *
  *  \param action   A valid pointer to an action.
  *  \param fill     A pointer to a fill style structure. Can be null.
  *  \param line     A valid pointer to a line style structure.
@@ -290,7 +290,7 @@ bgl_action_set_style (bgl_action_with_style_t *action,
 
 /*! Destroy an action. The structure pointed by \a fill (if any) will not be
  *  destroyed.
- *  
+ *
  *  \param action   A valid pointer to an action structure, or NULL.
  *
  *  \sa bgl_action_new().
@@ -312,7 +312,7 @@ bgl_action_free (bgl_action_t *action) {
 /*! Initializes a block structure.
  *
  *  \param block    A valid pointer to a block structure.
- *  \param type     The type of the block. 
+ *  \param type     The type of the block.
  *  \param free_fn  The free function to use for this block. This function
  *                  should release all memory used by the block.
  */
@@ -329,7 +329,7 @@ BGLBlock_init (BubbleBlock block, bgl_block_type_e_t type,
  *
  *  \param block    A valid pointer to a block structure.
  *
- *  \return A pointer to the block passed in argument. 
+ *  \return A pointer to the block passed in argument.
  */
 static BubbleBlock
 BGLBlock_ref (BubbleBlock block) {
@@ -383,7 +383,7 @@ newBGLDisplayItem (BubbleBlock block) {
         new_item->disp_block =
             BGLBlock_ref ((struct BGLBlock *)((struct BGLMorph *) block)->shape1);
     else
-        new_item->disp_block = BGLBlock_ref (block);        
+        new_item->disp_block = BGLBlock_ref (block);
 
     new_item->current.x = new_item->current.y = 0;
     new_item->scale.x = new_item->scale.y = 1.0;
@@ -486,7 +486,7 @@ static BubbleShape newBGLShape ();
  *  \todo Not yet implemented. Currently, this function displays only begining
  *        or ending shape depending on ratio value.
  */
-static void 
+static void
 BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
     IN();
     BubbleMorph morph  = NULL;
@@ -533,7 +533,7 @@ BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
           &(a2->action_list) != &(shape2->actions)) {
 
         bgl_action_t *nact = bgl_action_setRatio (a1, a2, ratio);
-        
+
         list_add_tail (&nact->action_list, &shp->actions);
 
         a1 = list_entry (a1->action_list.next, typeof (*a1), action_list);
@@ -907,7 +907,7 @@ BGLMovie_save (BubbleMovie movie, const char *filename TBX_UNUSED) {
 
 
 /*! Destroys a movie structure. It releases all memory used by movie
- * components. This means that 
+ * components. This means that
  *
  *  \param movie    A pointer to a movie or NULL.
  *
@@ -968,7 +968,7 @@ BGLColor_init (struct BGLColor *color, unsigned char r, unsigned char g,
 /*! Initializes a line style structure.
  *
  *  \param line     A valid pointer to a BGLLineStyle structure.
- *  \param width    An unsigned short that represents the width of the line. 
+ *  \param width    An unsigned short that represents the width of the line.
  *  \param r        A byte that represents the red style's color component.
  *  \param g        A byte that represents the green style's color component.
  *  \param b        A byte that represents the blue style's color component.
@@ -1058,7 +1058,7 @@ BGLShape_addSolidFillStyle (BubbleShape shape,
  */
 static void
 __destroyBGLShape (BubbleShape shape) {
-    
+
 }
 
 /*! Destroys a shape. Actually, it decreases the reference counter of the
@@ -1066,7 +1066,7 @@ __destroyBGLShape (BubbleShape shape) {
  * __destroyBGLShape().
  *
  *  \param shape    A valid pointer to a #BGLShape structure.
- * 
+ *
  *  \sa __destroyBGLShape().
  */
 static void
@@ -1254,7 +1254,7 @@ BGLShape_drawCircle (BubbleShape shape, coordinate_t r) {
 /*! Sets the shape line style for next actions.
  *
  *  \param shape    A valid pointer to a #BGLShape structure or NULL.
- *  \param width    An unsigned short that represents the width of the line. 
+ *  \param width    An unsigned short that represents the width of the line.
  *  \param r        A byte that represents the red line's color component.
  *  \param g        A byte that represents the green line's color component.
  *  \param b        A byte that represents the blue line's color component.
@@ -1278,7 +1278,7 @@ BGLShape_setLine (BubbleShape shape, unsigned short width,
  *                  point.
  *  \param controldy
  *                  A float that represents the relative ordinate of the control
- *                  point. 
+ *                  point.
  *  \param anchordx A float that represents the relative abscissa (from the
  *                  control point) of the anchor point.
  *  \param anchordy A float that represents the relative ordinate (from the
@@ -1301,16 +1301,16 @@ BGLShape_drawCurve (BubbleShape shape,
         shape->pen.y += controldy + anchordy;
         return;
     }
-  
+
     bgl_action_set_style (&action->hdr_styles,
                           shape->current_style, &shape->line);
 
     action->control.x = shape->pen.x + controldx;
     action->control.y = shape->pen.y + controldy;
-  
+
     shape->pen.x += controldx;
     shape->pen.y += controldy;
-  
+
     action->anchor.x = shape->pen.x + anchordx;
     action->anchor.y = shape->pen.y + anchordy;
 
@@ -1376,7 +1376,7 @@ destroyBGLMorph (BubbleMorph morph) {
  * __destroyBGLMorph().
  *
  *  \param morph     A valid pointer to a #BGLMorph structure.
- * 
+ *
  *  \sa __destroyBGLMorph().
  */
 static BubbleMorph
@@ -1484,7 +1484,7 @@ BubbleOps_setBGL() {
         .Movie_pause = BGLMovie_pause,
         .Movie_save = BGLMovie_save,
         .Movie_status = BGLMovie_status,
-	 
+
         /* Shape methods */
         .newShape = newBGLShape,
         .Shape_setRightFillStyle = BGLShape_setRightFillStyle,
@@ -1496,16 +1496,16 @@ BubbleOps_setBGL() {
         .Shape_setLine = BGLShape_setLine,
         .Shape_drawCurve = BGLShape_drawCurve,
         .Shape_drawSizedGlyph = BGLShape_drawSizedGlyph,
-	 
+
         /* FillStyle methods */
         .Shape_addSolidFillStyle = BGLShape_addSolidFillStyle,
-	 
+
         /* DisplayItem methods */
         .DisplayItem_rotateTo = BGLDisplayItem_rotateTo,
         .DisplayItem_remove = BGLDisplayItem_remove,
         .DisplayItem_moveTo = BGLDisplayItem_moveTo,
         .DisplayItem_setRatio = BGLDisplayItem_setRatio,
-	 
+
         /* Morph methods */
         .newMorphShape = newBGLMorphShape,
         .Morph_getShape1 = BGLMorph_getShape1,
@@ -1514,7 +1514,7 @@ BubbleOps_setBGL() {
         /* Misc methods */
         .init = BGLinit,
         .fini = BGLfini,
-	 
+
         /* Thread/Bubble-specific methods */
         .SetThread = BGLsetThread,
         .SetBubble = BGLsetBubble

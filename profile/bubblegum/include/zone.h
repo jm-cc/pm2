@@ -109,7 +109,7 @@ void EffacerListeZones(liste_zones * l);
 
 parcours * CreerParcours();
 void AjouterParcoursPosition(parcours * p, int position);
-int LireParcoursTaille(parcours * p); 
+int LireParcoursTaille(parcours * p);
 int LirePosition(parcours * p, int place);
 void EffacerParcours(parcours * p);
 

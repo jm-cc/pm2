@@ -47,13 +47,13 @@ int main (int argc, char **argv) {
 
    setlocale (LC_ALL,"");
 
-   /* Initialisation de gtk */ 
+   /* Initialisation de gtk */
    gtk_init (&argc, &argv);
 
    /* Initiliasation d'opengl */
    gtk_gl_init (&argc, &argv);
-   
-   /* Parametrage de la fenetre main_window */ 
+
+   /* Parametrage de la fenetre main_window */
    main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
    gtk_window_set_title (GTK_WINDOW (main_window), "BubbleGum");
    gtk_window_set_default_size (GTK_WINDOW (main_window),
@@ -64,35 +64,35 @@ int main (int argc, char **argv) {
    iGauche = iGaucheVars->interfaceGauche;   /* gtk_window_new(GTK_WINDOW_TOPLEVEL); */
 
 
-   
+
    /* Connexion au signal destroy */
    g_signal_connect (G_OBJECT(main_window), "destroy",
                      G_CALLBACK(gtk_main_quit2), NULL);
 
    g_signal_connect (G_OBJECT(main_window), "delete_event",
                      G_CALLBACK(gtk_main_quit2), NULL);
-   
+
    /* Création de la Vbox et ajout dans la main_window */
    vbox = gtk_vbox_new (FALSE, 0);
    gtk_container_add (GTK_CONTAINER (main_window), vbox);
-   
+
    /* Création de la barre de menus */
    menubar = gtk_menu_bar_new();
    gtk_box_pack_start (GTK_BOX (vbox), menubar, FALSE, FALSE, 0);
-   
+
    Menu_fichier (main_window, menubar);
    Menu_actions (main_window, menubar);
    Menu_aide (main_window, menubar);
 
    /* Création du découpeur vertical */
    hpane = gtk_hpaned_new();
-   
+
    /* Création de la toolbar */
    toolbar = gtk_toolbar_new();
    gtk_box_pack_start (GTK_BOX (vbox), toolbar, FALSE, FALSE, 0);
 
    main_toolbar (main_window, toolbar, hpane);
-   
+
    /* Connexion des raccourcis */
    Creer_raccourcis (main_window, hpane);
 
@@ -115,7 +115,7 @@ int main (int argc, char **argv) {
    gtk_paned_pack2 (GTK_PANED (hpane), right_viewport, TRUE, TRUE);
    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (right_viewport),
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-   
+
    /* Récupération de la vbox de droite par la fonction right_window() */
 
    p_anim = newAnimationData ();
@@ -133,13 +133,13 @@ int main (int argc, char **argv) {
    /*    statusbar = gtk_statusbar_new(); */
    /*    gtk_box_pack_end(GTK_BOX(vbox), statusbar, FALSE, FALSE, 0); */
    /*    iContextId = gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "ContextStack"); */
-   
+
    /* Affiche tous les Widgets de la fenêtre principale*/
    gtk_widget_show_all(main_window);
 
    /* Boucle principale */
    create_tmp_directory();
    gtk_main();
-   
-   return EXIT_SUCCESS; 
+
+   return EXIT_SUCCESS;
 }

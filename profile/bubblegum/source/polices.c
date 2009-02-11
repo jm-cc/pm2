@@ -53,7 +53,7 @@ GPFont* InitGPFont(const char* fontName, int ptSize)
    GPFont* gpfont = malloc(sizeof(GPFont));  // allocation dans le tas pour être retournée valide
    gpfont->bfsize = 1;
    gpfont->buf = malloc(1);
-   
+
    FT_Set_Char_Size(face, 0, ptSize << 6, 96, 96); // résolution courante des écrans: 96 dpi
 
    gpfont->listBase = glGenLists(256);  // on réserve des display lists
@@ -65,7 +65,7 @@ GPFont* InitGPFont(const char* fontName, int ptSize)
 #ifdef VERBOSE_GPF
    wprintf(L"police chargée. %ld glyphes.\n", face->num_glyphs);
 #endif
-   
+
    FT_Done_Face(face);
    FT_Done_FreeType(ftlib);
 
@@ -80,7 +80,7 @@ static void PreparePixMap(GPFont* ft, int ch, FT_Face face)
    FT_Bitmap* pgpix = &face->glyph->bitmap;  // raccourci
    int w, h;
    w = NextPow2(pgpix->width);   // on fait une texture alignée
-   h = NextPow2(pgpix->rows);   
+   h = NextPow2(pgpix->rows);
    // on alloue le pixmap (bitmap monochrome-alpha)
    GLubyte* pixmap = malloc(sizeof(GLubyte) * w * h * 2);
    // il faut remplir cet espace et copier la glyphe.
@@ -136,7 +136,7 @@ static void PreparePixMap(GPFont* ft, int ch, FT_Face face)
 #ifdef VERBOSE_GPF
       printf("%d:%c\n", ch, ch);
 #endif
-      
+
    }
    glEndList();
 
@@ -161,11 +161,11 @@ static void PrintCmn(GPFont* ft, const char* fmt, va_list vl)
 {
    glPushAttrib(GL_ALL_ATTRIB_BITS);
    glPushMatrix();
- 
+
    glEnable(GL_TEXTURE_2D);
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   
+
    int len = strlen(fmt);
    if ((signed)ft->bfsize <= len)
    {

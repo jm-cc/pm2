@@ -52,7 +52,7 @@ main (int argc, char *argv[]) {
   char **new_argv;
   ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
 
-  /* A bi-dual-core computer */
+  /* A dual-socket dual-core computer */
   static const char topology_description[] = "2 2 1 1";
 
   /* Pass the topology description to Marcel.  Yes, it looks hackish to

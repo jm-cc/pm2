@@ -13,7 +13,12 @@
  * General Public License for more details.
  */
 
-/* This test checks Memomp's distribution behaviour. */
+/* This test checks the Memory bubble scheduler's distribution
+   algorithm.
+
+   Here, three teams of two threads drawn to node 0, the last team is
+   drawn to node 1. This test checks whether the Memory bubble
+   scheduler manages to realize the corresponding distribution. */
 
 #define MARCEL_INTERNAL_INCLUDE
 

@@ -176,6 +176,11 @@ ma_stats_synthesis_t *ma_stats_synthesis_func(unsigned long offset);
 size_t *ma_stats_size(unsigned long offset);
 #endif
 
+/** \brief Recursive way to get a statistics of a Marcel entity (In
+    case of a bubble, this function returns a synthesized statistics
+    that reflects the statistics of all the contained entities.) */
+long *ma_cumulative_stats_get (marcel_entity_t *e, unsigned long offset);
+
 #section functions
 #depend "marcel_sched_generic.h[types]"
 

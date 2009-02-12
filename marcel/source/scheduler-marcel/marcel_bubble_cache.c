@@ -120,8 +120,8 @@ ma_strict_cache_distribute (marcel_entity_t *e,
    over the _arity_ levels described in _distribution_.*/
 static void
 ma_spread_load_balancing_entities (ma_distribution_t *distribution,
-				ma_distribution_t *load_balancing_entities,
-				unsigned int arity) {
+				   ma_distribution_t *load_balancing_entities,
+				   unsigned int arity) {
   while (load_balancing_entities->nb_entities) {
     unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
     ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
@@ -160,13 +160,12 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
 /* Distributes a set of entities regarding cache affinities */
 static int
 ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
-				  marcel_entity_t *e[],
-				  int ne,
-				  ma_distribution_t *distribution) {
+				    marcel_entity_t *e[],
+				    int ne,
+				    ma_distribution_t *distribution) {
   unsigned int i, arity = l->arity, entities_per_level = marcel_vpset_weight(&l->vpset) / arity;
   ma_distribution_t load_balancing_entities;
-  ma_distribution_init (&load_balancing_entities,
-			     (struct marcel_topo_level *)NULL, 0, ne);
+  ma_distribution_init (&load_balancing_entities, (struct marcel_topo_level *)NULL, 0, ne);
 
   /* First, we add each entity stored in _e[]_ to the
      _distribution_ structure, by putting it into the array

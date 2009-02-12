@@ -84,9 +84,7 @@ ma_memory_favorite_level (marcel_entity_t *e) {
   unsigned int node, best_node = 0;
   int first_node = -1, last_node = 0;
   marcel_topo_level_t *favorite_level = NULL;
-  long *mem_stats = (e->type == MA_BUBBLE_ENTITY) ?
-    (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), ma_stats_memnode_offset)
-    : (long *) ma_stats_get (e, ma_stats_memnode_offset);
+  long *mem_stats = ma_cumulative_stats_get (e, ma_stats_memnode_offset);
 
   for (node = 0; node < marcel_nbnodes; node++) {
     best_node = (mem_stats[node] > mem_stats[best_node]) ? node : best_node;
@@ -294,9 +292,7 @@ memory_sched_compute_entity_score (marcel_entity_t *current_e,
 
   /* Apply a bonus if _current_e_ accesses data allocated on the node
      that holds _hints->from_. */
-  mem_stats = (current_e->type == MA_BUBBLE_ENTITY) ?
-    (long *) ma_bubble_hold_stats_get (ma_bubble_entity (current_e), ma_stats_memnode_offset)
-    : (long *) ma_stats_get (current_e, ma_stats_memnode_offset);
+  mem_stats = ma_cumulative_stats_get (current_e, ma_stats_memnode_offset);
   computed_score += mem_stats[hints->from_node] * MA_MEMORY_SCHED_LOCAL_MEM_BONUS;
 
   if (hints->first_call) {

@@ -123,7 +123,14 @@ EOF
 # args: loop variable
 finalize_bench()
 {
-	true
+    if [ "$prog" == "piom_ping_bench" ] ; then
+	echo "################################# "
+	echo "################################# "
+	echo "################# Merci de corriger le segfault qui traine depuis 6 mois (Brice craque) ################ "
+	echo "################################# "
+	echo "################################# "
+    fi
+    true
 }
 
 ####################

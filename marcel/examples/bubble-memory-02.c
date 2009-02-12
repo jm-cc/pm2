@@ -13,7 +13,13 @@
  * General Public License for more details.
  */
 
-/* This test checks Memomp's distribution behaviour. */
+/* This test checks the Memory bubble scheduler's distribution
+   algorithm.
+
+   Here, all the threads are drawned to node 0. This test checks
+   whether the Memory bubble scheduler manages to occupy every core
+   anyway (see "ma_memory_global_balance ()" in
+   "marcel_bubble_memory.c"). */
 
 #define MARCEL_INTERNAL_INCLUDE
 

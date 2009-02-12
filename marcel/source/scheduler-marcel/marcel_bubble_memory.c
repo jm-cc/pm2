@@ -105,13 +105,129 @@ ma_memory_favorite_level (marcel_entity_t *e) {
   return favorite_level;
 }
 
+/* Greedily distributes entities stored in _load_balancing_entities_
+   over the _arity_ levels described in _distribution_.*/
+static void
+ma_memory_spread_load_balancing_entities (ma_distribution_t *distribution,
+					  ma_distribution_t *load_balancing_entities,
+					  unsigned int arity) {
+  while (load_balancing_entities->nb_entities) {
+    unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
+    ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
+  }
+}
+
+/* Compares how much data entities e1 and e2 have subscribed to. */
+static int
+ma_memory_mem_load_compar (const void *e1, const void *e2) {
+  marcel_entity_t *ent1 = (marcel_entity_t *) e1;
+  marcel_entity_t *ent2 = (marcel_entity_t *) e2;
+
+  long *mem_stats1 = ma_cumulative_stats_get (ent1, ma_stats_memnode_offset);
+  long *mem_stats2 = ma_cumulative_stats_get (ent2, ma_stats_memnode_offset); 
+
+  unsigned node, best_node = 0;
+  for (node = 0; node < marcel_nbnodes; node++) {
+    best_node = (mem_stats1[node] > mem_stats1[best_node]) ? node : best_node;
+  }
+
+  return (int)(mem_stats1[best_node] - mem_stats2[best_node]);
+}
+
+/* Pick bubbles in _e_ and burst them until the number of entities
+   exceeds arity. Sort the _e_ array in order to burst bubbles with
+   the fewest allocated data first. */
+static int
+ma_memory_burst_light_bubbles (marcel_entity_t **e, int ne, int arity) {
+  int i, new_ne = ne;
+  qsort (e, ne, sizeof (e[0]), ma_memory_mem_load_compar);
+
+  for (i = 0; i < new_ne && new_ne < arity; i++) {
+    if (e[i]->type == MA_BUBBLE_ENTITY)
+      new_ne += ma_burst_bubble (ma_bubble_entity (e[i])) - 1;
+  }
+
+  return new_ne;
+}
+
+/* Even the load by taking entities from the most loaded levels and
+   put them on the least loaded levels, until each level holds more than
+   _load_per_level_ entities. */
+static int
+ma_memory_global_balance (ma_distribution_t *distribution, unsigned int arity, unsigned int load_per_level) {
+  unsigned i;
+  int least_loaded = ma_distribution_least_loaded_index (distribution, arity);
+  int most_loaded = ma_distribution_most_loaded_index (distribution, arity);
+
+  /* Sort the entities so as to pick the one with the fewest allocated
+     data first. */
+  for (i = 0; i < arity; i++)
+    qsort (distribution[i].entities,
+	   distribution[i].nb_entities,
+	   sizeof (distribution[i].entities[0]),
+	   ma_memory_mem_load_compar);
+
+  while ((distribution[least_loaded].total_load + 1 < distribution[most_loaded].total_load)
+	 && (distribution[least_loaded].total_load < load_per_level)) {
+    if (distribution[most_loaded].nb_entities > 1) {
+      ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]),
+				&distribution[least_loaded]);
+      least_loaded = ma_distribution_least_loaded_index (distribution, arity);
+      most_loaded = ma_distribution_most_loaded_index (distribution, arity);
+    } else {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* Distribute the entities included in _e_ over the children of
+   topo_level _from_, considering this hints already set in
+   _distribution_. */
+static int
+ma_memory_distribute (marcel_topo_level_t *from,
+		      marcel_entity_t *e[],
+		      int ne,
+		      ma_distribution_t *distribution) {
+  unsigned int i, child, arity = from->arity, entities_per_level = marcel_vpset_weight(&from->vpset) / arity;
+  ma_distribution_t load_balancing_entities;
+  ma_distribution_init (&load_balancing_entities, (marcel_topo_level_t *)NULL, 0, ne);
+
+  /* Perform a first distribution according to strict memory
+     affinity. */
+  for (i = 0; i < ne; i++) {
+    marcel_topo_level_t *favorite_level = ma_memory_favorite_level (e[i]);
+    if (favorite_level) {
+      for (child = 0; child < from->arity; child++) {
+	if (ma_topo_is_in_subtree (from->children[child], favorite_level))
+	  ma_distribution_add_tail (e[i], &distribution[child]);
+      }
+    } else {
+      ma_distribution_add_tail (e[i], &load_balancing_entities);
+    }
+  }
+
+  /* Even the load by distributing the "load_balancing_entities". */
+  ma_memory_spread_load_balancing_entities (distribution, &load_balancing_entities, arity);
+
+  /* Rearrange the distribution until occupying every underlying
+     core. */
+  ma_memory_global_balance (distribution, arity, entities_per_level);
+
+  /* Physically apply the logical distribution we've just computed. */
+  ma_apply_distribution (distribution, arity);
+
+  ma_distribution_destroy (&load_balancing_entities, arity);
+
+  return 0;
+}
+
 static int
 ma_memory_schedule_from (struct marcel_topo_level *from) {
   unsigned int i, ne, arity = from->arity;
 
-  /* There are no other runqueues to browse underneath, distribution
-     is over. */
-  if (!arity)
+  /* We've reached the NUMA node level, distribution is over. */
+  if (from->type == MARCEL_LEVEL_NODE)
     return 0;
 
   ne = ma_count_entities_on_rq (&from->rq);
@@ -127,34 +243,37 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   marcel_entity_t *e[ne];
   ma_get_entities_from_rq (&from->rq, e, ne);
 
-  /* We _strictly for now_ move each entity to their favorite
-     location. */
-  /* TODO: This offers an ideal distribution in terms of thread/memory
-     location, but this could completely unbalance the
-     architecture. We should definitely have some work stealing
-     primitives to fill the blanks, by moving threads that have not
-     been executed yet for example, and so benefit from the first
-     touch allocation policy. */
+  if (ne < arity) {
+    /* We need at least one entity per children level. */
+    ma_memory_burst_light_bubbles (e, ne, arity);
+    return ma_memory_schedule_from (from);
+  } 
+  
+  ma_distribution_t distribution[arity];
+  ma_distribution_init (distribution, from, arity, ne);
+
+  tbx_bool_t try_again = tbx_false;
+
   for (i = 0; i < ne; i++) {
-    struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e[i]);
-    if (favorite_location) {
-      if (favorite_location != from) {
-	/* The e[i] entity hasn't reached its favorite location yet,
-	   let's put it there. */
-	ma_move_entity (e[i], &favorite_location->rq.as_holder);
-      } else {
-	/* We're already on the right location. */
-	if (favorite_location->type != MARCEL_LEVEL_NODE) {
-	  if (e[i]->type == MA_BUBBLE_ENTITY) {
-	    ma_burst_bubble (ma_bubble_entity (e[i]));
-	    return ma_memory_schedule_from (from);
-	  }
-	}
+   struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e[i]);
+    if (favorite_location && favorite_location == from) {
+      /* We're already on the right location, which type is different
+	 from MARCEL_LEVEL_NODE. Burst the bubble there to take into
+	 account the contained entities' favorite locations. */
+      if (e[i]->type == MA_BUBBLE_ENTITY) {
+	ma_burst_bubble (ma_bubble_entity (e[i]));
+	try_again = tbx_true;
       }
     }
-    /* If the considered entity has no favorite location, just leave
-       it here to ensure load balancing. */
   }
+
+  if (try_again)
+    return ma_memory_schedule_from (from);
+
+  /* Perform the threads and bubbles distribution. */
+  ma_memory_distribute (from, e, ne, distribution);
+
+  ma_distribution_destroy (distribution, arity);
 
   /* Recurse over underlying levels */
   for (i = 0; i < arity; i++)
@@ -175,10 +294,15 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
 #endif
 
   ma_bubble_lock_all (bubble, from);
-  ma_memory_schedule_from (from);
+  
+  /* Only call the Memory scheduler on a node-based computer. */
+  if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) >= 0)
+    ma_memory_schedule_from (from);
+
   /* TODO: Crappy way to communicate with the Cache bubble
      scheduler. Do it nicely in the future. */
   ((int (*) (struct marcel_topo_level *)) marcel_bubble_cache_sched.priv) (from);
+
   ma_resched_existing_threads (from);
   ma_bubble_unlock_all (bubble, from);
 

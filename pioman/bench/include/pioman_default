@@ -36,7 +36,7 @@ initialize_bench()
 {
 	dev=$1
 	shift
-	
+
 	if [ ! -f ${bench_setting_file} ]; then
 		echo "bench setting file \"${bench_setting_file}\" not found"
 		return 1
@@ -123,13 +123,6 @@ EOF
 # args: loop variable
 finalize_bench()
 {
-    if [ "$prog" == "piom_ping_bench" ] ; then
-	echo "################################# "
-	echo "################################# "
-	echo "################# Merci de corriger le segfault qui traine depuis 6 mois (Brice craque) ################ "
-	echo "################################# "
-	echo "################################# "
-    fi
     true
 }
 

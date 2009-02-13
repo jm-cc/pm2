@@ -2,12 +2,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -33,9 +33,9 @@ compile_leonie() {
 create_temp_file() { #prefix suffix directory
     temp_file=""
     if [ -x /bin/tempfile ] ; then
-	temp_file="$(/bin/tempfile -p $1 -s $2 -d $3)" 
-    elif [ -x /bin/mktemp ] ; then                  
-	temp_file="$(/bin/mktemp ${1}${2}.XXXXXX)" 
+	temp_file="$(/bin/tempfile -p $1 -s $2 -d $3)"
+    elif [ -x /bin/mktemp ] ; then
+	temp_file="$(/bin/mktemp ${1}${2}.XXXXXX)"
     elif [ -d /tmp ] ; then
 	temp_file="/tmp/${1}${2}.$$"
     else

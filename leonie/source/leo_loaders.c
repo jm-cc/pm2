@@ -216,7 +216,7 @@ leo_default_loader(p_leo_settings_t settings,
 	args = env_command->arguments;
 
 	if(settings->env_mode) //GM
-	   {	      
+	   {
 	      tbx_arguments_append_cstring(args, settings->env);
 	   }
 
@@ -482,7 +482,7 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	args = env_command->arguments;
 
 	if(settings->env_mode) //GM
-	   {	      
+	   {
 	      tbx_arguments_append_cstring(args, settings->env);
 	   }
 

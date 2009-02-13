@@ -122,7 +122,7 @@ endif
 link: $(LINK_LIB)
 linkdynamic: $(STAMP_LINK_LIB)
 
-$(STAMP_LINK_LIB): $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), \
+$(STAMP_LINK_LIB): $(STAMP_BUILD_LIB) $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), \
 			$(MOD_GEN_STAMP)/stamp-build-$(name).so)
 	$(COMMON_LINK)
 # Additional -L and -l to link against all other modules

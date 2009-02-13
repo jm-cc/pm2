@@ -31,13 +31,6 @@ LIBNAME ?= $(LIBRARY)
 
 # Noms des fichiers bibliothèques cibles
 #---------------------------------------------------------------------
-STAMP_BUILD_LIB=$(foreach name,$(LIBNAME) $(filter-out $(LIBNAME),$(LIBRARY)),\
-	$(MOD_GEN_STAMP)/stamp-build-$(name))
-STAMP_BUILD_LIB_A=$(addsuffix .a, $(STAMP_BUILD_LIB))
-STAMP_BUILD_LIB_SO=$(addsuffix .so, $(STAMP_BUILD_LIB))
-STAMP_LINK_LIB=$(foreach name,$(LIBNAME) $(filter-out $(LIBNAME),$(LIBRARY)), \
-	$(MOD_GEN_STAMP)/stamp-link-$(name))
-
 LIB_SO_MAJ?=0
 
 LIB_LIB_A=$(MOD_GEN_LIB)/lib$(LIBNAME)$(LIB_EXT).a
@@ -51,9 +44,6 @@ endif
 ifeq ($(BUILD_DYNAMIC_LIBS),yes)
 LIB_LIB += builddynamic
 LIB_SO_MAP = $(wildcard scripts/arch-$(MOD_ARCH)/lib$(LIBNAME).map)
-ifeq ($(LINK_OTHER_LIBS),yes)
-LINK_LIB += linkdynamic
-endif
 endif
 
 

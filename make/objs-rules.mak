@@ -304,6 +304,14 @@ targethelplibs:
 	@echo "  clean: clean module source tree for current flavor"
 #	@echo "  distclean: clean module source tree for all flavors"
 
+
+# GNU Flymake, for Emacs.
+#---------------------------------------------------------------------
+.PHONY: check-syntax
+check-syntax: CFLAGS += -S
+check-syntax: $(foreach obj,$(CHK_SOURCES:%.c=%.o),$(MOD_GEN_OBJ)/$(notdir $(obj)))
+	-rm -f $^
+
 # paths pour éviter d'avoir à spécifier le chemin exact tout le temps
 # permet de rajouter facilement d'autres répertoires sources
 #---------------------------------------------------------------------

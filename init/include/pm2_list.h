@@ -53,7 +53,7 @@ struct list_head {
  * list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static __tbx_inline__ int list_empty(struct list_head *head)
+static __tbx_inline__ int list_empty(const struct list_head *head)
 {
 	return head->next == head;
 }
@@ -369,12 +369,12 @@ struct hlist_node {
 #define INIT_HLIST_NODE(ptr) ((ptr)->next = NULL, (ptr)->pprev = NULL)
 #define THRASH_HLIST_NODE(ptr) ((ptr)->next = (struct hlist_node *)0x123, (ptr)->pprev = (struct hlist_node **)0x321)
 
-static __tbx_inline__ int hlist_unhashed(struct hlist_node *h) 
+static __tbx_inline__ int hlist_unhashed(const struct hlist_node *h) 
 { 
         return !h->pprev;
 } 
 
-static __tbx_inline__ int hlist_empty(struct hlist_head *h) 
+static __tbx_inline__ int hlist_empty(const struct hlist_head *h) 
 { 
         return !h->first;
 } 

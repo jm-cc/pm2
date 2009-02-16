@@ -71,12 +71,18 @@ main (int argc, char **argv)
 {
   if (argc < 2)
     {
-      marcel_fprintf (stderr, "Usage: ./setinithere <nb_threads> <nb_threads>\n");
+      marcel_fprintf (stderr, "Usage: ./setinithere <nb_teams> <nb_threads_per_team>\n");
       return EXIT_FAILURE;
     }
   
   int nb_teams = atoi (argv[1]);
   int threads_per_team = atoi (argv[2]);
+
+  if (!nb_teams || !threads_per_team)
+    {
+      marcel_fprintf (stderr, "Bad argument: nb_teams == 0 or nb_threads_per_team == 0\n");
+      return EXIT_FAILURE;
+    }   
 
   marcel_init (&argc, argv);
   
@@ -88,8 +94,10 @@ main (int argc, char **argv)
 }
 
 #else /* MA__BUBBLES */
-int main(int argc, char *argv[]) {
-   fprintf(stderr,"%s needs bubbles\n",argv[0]);
-   return 0;
+
+int main (int argc, char *argv[]) {
+  fprintf (stderr, "%s needs bubbles\n", argv[0]);
+  return 0;
 }
+
 #endif /* MA__BUBBLES */

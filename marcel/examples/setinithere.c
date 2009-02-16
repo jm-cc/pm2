@@ -3,13 +3,25 @@
 
 #ifdef MA__BUBBLES
 
+/* This example program tests whether threads and bubbles are created
+   at the right location.
+
+   The marcel_root_bubble is initially located on core 0. We create
+   bubbles in it, containing threads. These entities are NEVER
+   distributed by any bubble scheduler.
+
+   That's why we could infer that their sched_holder is constant
+   (actually, equal to the marcel_root_bubble, which is the lower node
+   of the entities tree to be directly scheduled on a runqueue.
+*/
+
 static void start_new_team (void *(*fn) (void *), void *data, unsigned nthreads);
 
 static void *
 my_inner_job (void *arg)
 {
   marcel_printf ("Hi!\n");
-  
+
   return NULL;
 }
 
@@ -17,10 +29,10 @@ static void *
 my_job (void *arg)
 {
   int nb_threads = *(int *)arg;
-  
+
   /* Nested bubble creation. */
   start_new_team (my_inner_job, NULL, nb_threads - 1);
-  
+
   return NULL;
 }
 
@@ -41,7 +53,7 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
   marcel_bubble_setprio (&team_bubble, MA_DEF_PRIO);
   marcel_bubble_insertbubble (marcel_bubble_holding_task (marcel_self ()), &team_bubble);
   marcel_bubble_inserttask (&team_bubble, marcel_self ());
-  
+
   marcel_attr_setinitbubble (&thread_attr, &team_bubble);
 
   unsigned int i;
@@ -63,18 +75,18 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
   marcel_bubble_t *holding_bubble = marcel_bubble_holding_bubble (&team_bubble);
   marcel_bubble_inserttask (holding_bubble, marcel_self ());
   marcel_bubble_join (&team_bubble);
-  marcel_bubble_destroy (&team_bubble);    
+  marcel_bubble_destroy (&team_bubble);
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   if (argc < 2)
     {
       marcel_fprintf (stderr, "Usage: ./setinithere <nb_teams> <nb_threads_per_team>\n");
       return EXIT_FAILURE;
     }
-  
+
   int nb_teams = atoi (argv[1]);
   int threads_per_team = atoi (argv[2]);
 
@@ -82,10 +94,10 @@ main (int argc, char **argv)
     {
       marcel_fprintf (stderr, "Bad argument: nb_teams == 0 or nb_threads_per_team == 0\n");
       return EXIT_FAILURE;
-    }   
+    }
 
   marcel_init (&argc, argv);
-  
+
   start_new_team (my_job, &threads_per_team, nb_teams - 1);
 
   marcel_end ();

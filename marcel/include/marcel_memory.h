@@ -556,6 +556,15 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
                                 marcel_t owner);
 
 /**
+ * Unattach all the memory areas attached to the specified thread.
+ * @param memory_manager pointer to the memory manager
+ * @param owner thread
+ */
+extern
+int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
+                                    marcel_t owner);
+
+/**
  * Migrate to the given nodes all the memory areas attached to the specified thread
  * @param memory_manager pointer to the memory manager
  * @param owner thread
@@ -593,6 +602,15 @@ int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
                                   marcel_bubble_t *owner);
 
 /**
+ * Unattach all the memory areas attached to the specified bubble.
+ * @param memory_manager pointer to the memory manager
+ * @param owner thread
+ */
+extern
+int marcel_memory_bubble_unattach_all(marcel_memory_manager_t *memory_manager,
+                                      marcel_bubble_t *owner);
+
+/**
  * Migrate to the given nodes all the memory areas attached to the specified bubble
  * @param memory_manager pointer to the memory manager
  * @param owner thread
@@ -602,15 +620,6 @@ extern
 int marcel_memory_bubble_migrate_all(marcel_memory_manager_t *memory_manager,
                                      marcel_bubble_t *owner,
                                      int node);
-
-/**
- * Unattach all the memory areas attached to the specified thread.
- * @param memory_manager pointer to the memory manager
- * @param owner thread
- */
-extern
-int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
-                                    marcel_t owner);
 
 /**
  * Indicates if huge pages are available on the system.

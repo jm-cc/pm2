@@ -1721,6 +1721,13 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
 }
 
+int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
+                                    marcel_t owner) {
+  marcel_entity_t *entity;
+  entity = ma_entity_task(owner);
+  return ma_memory_entity_unattach_all(memory_manager, entity);
+}
+
 int marcel_memory_task_migrate_all(marcel_memory_manager_t *memory_manager,
                                    marcel_t owner,
                                    int node) {
@@ -1747,19 +1754,19 @@ int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
 }
 
+int marcel_memory_bubble_unattach_all(marcel_memory_manager_t *memory_manager,
+                                      marcel_bubble_t *owner) {
+  marcel_entity_t *entity;
+  entity = ma_entity_bubble(owner);
+  return ma_memory_entity_unattach_all(memory_manager, entity);
+}
+
 int marcel_memory_bubble_migrate_all(marcel_memory_manager_t *memory_manager,
                                      marcel_bubble_t *owner,
                                      int node) {
   marcel_entity_t *entity;
   entity = ma_entity_bubble(owner);
   return ma_memory_entity_migrate_all(memory_manager, entity, node);
-}
-
-int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
-                                    marcel_t owner) {
-  marcel_entity_t *entity;
-  entity = ma_entity_bubble(owner);
-  return ma_memory_entity_unattach_all(memory_manager, entity);
 }
 
 int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager) {

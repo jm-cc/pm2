@@ -1671,7 +1671,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 
   marcel_mutex_unlock(&(memory_manager->lock));
   if (!area) tfree(area);
-  
+
   MAMI_ILOG_OUT();
   return err;
 }
@@ -1689,6 +1689,17 @@ int ma_memory_entity_unattach_all(marcel_memory_manager_t *memory_manager,
   }
   //ma_spin_unlock(&(owner->memory_areas_lock));
   MAMI_ILOG_OUT();
+  return 0;
+}
+
+static
+int ma_memory_entity_migrate_all(marcel_memory_manager_t *memory_manager,
+                                 marcel_entity_t *owner,
+                                 int node) {
+  marcel_memory_data_link_t *area, *narea;
+  list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
+    ma_memory_migrate_pages(memory_manager, area->data, node);
+  }
   return 0;
 }
 
@@ -1710,6 +1721,14 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
 }
 
+int marcel_memory_task_migrate_all(marcel_memory_manager_t *memory_manager,
+                                   marcel_t owner,
+                                   int node) {
+  marcel_entity_t *entity;
+  entity = ma_entity_task(owner);
+  return ma_memory_entity_migrate_all(memory_manager, entity, node);
+}
+
 int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
                                 void *buffer,
                                 size_t size,
@@ -1726,6 +1745,14 @@ int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
   marcel_entity_t *entity;
   entity = ma_entity_bubble(owner);
   return ma_memory_entity_unattach(memory_manager, buffer, entity);
+}
+
+int marcel_memory_bubble_migrate_all(marcel_memory_manager_t *memory_manager,
+                                     marcel_bubble_t *owner,
+                                     int node) {
+  marcel_entity_t *entity;
+  entity = ma_entity_bubble(owner);
+  return ma_memory_entity_migrate_all(memory_manager, entity, node);
 }
 
 int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,

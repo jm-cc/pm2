@@ -19,16 +19,16 @@
 
 /* Add the _e_ entity at position _j_ in the
    _distribution_->entities array. */
-void 
-ma_distribution_add (marcel_entity_t *e, 
-		     ma_distribution_t *distribution, 
+void
+ma_distribution_add (marcel_entity_t *e,
+		     ma_distribution_t *distribution,
 		     unsigned int position) {
   MA_BUG_ON (position >= distribution->nb_entities);
   MA_BUG_ON (distribution->nb_entities >= distribution->max_entities);
   if (distribution->entities[position]) {
     unsigned int size = sizeof (distribution->entities[0]);
     memmove (&distribution->entities[position+1],
-	     &distribution->entities[position], 
+	     &distribution->entities[position],
 	     (distribution->nb_entities - position) * size);
   }
   distribution->entities[position] = e;
@@ -38,7 +38,7 @@ ma_distribution_add (marcel_entity_t *e,
 
 /* Add the _e_ entity at the tail of the _distribution_->entities
    array. */
-void 
+void
 ma_distribution_add_tail (marcel_entity_t *e, ma_distribution_t *distribution) {
   MA_BUG_ON (distribution->nb_entities >= distribution->max_entities);
   distribution->entities[distribution->nb_entities] = e;
@@ -54,7 +54,7 @@ ma_distribution_remove_tail (ma_distribution_t *distribution) {
   marcel_entity_t *removed_entity = distribution->entities[distribution->nb_entities - 1];
   distribution->nb_entities--;
   distribution->total_load -= ma_entity_load (removed_entity);
-  
+
   return removed_entity;
 }
 
@@ -67,7 +67,7 @@ ma_distribution_least_loaded_index (const ma_distribution_t *distribution, unsig
     if (distribution[i].total_load < distribution[res].total_load)
       res = i;
   }
-  
+
   return res;
 }
 
@@ -80,7 +80,7 @@ ma_distribution_most_loaded_index (const ma_distribution_t *distribution, unsign
     if (distribution[i].total_load > distribution[res].total_load)
       res = i;
   }
-  
+
   return res;
 }
 
@@ -102,11 +102,11 @@ void
 ma_print_distribution (const ma_distribution_t *distribution, unsigned int arity) {
   unsigned int i, j;
   for (i = 0; i < arity; i++) {
-    fprintf (stderr, "children[%d] = {", i);
+    marcel_fprintf (stderr, "children[%d] = {", i);
     if (!distribution[i].nb_entities)
-      fprintf (stderr, " }\n");
+      marcel_fprintf (stderr, " }\n");
     for (j = 0; j < distribution[i].nb_entities; j++) {
-      fprintf (stderr, (j != distribution[i].nb_entities - 1) ? " %p, " : " %p }\n", distribution[i].entities[j]);
+      marcel_fprintf (stderr, (j != distribution[i].nb_entities - 1) ? " %p, " : " %p }\n", distribution[i].entities[j]);
     }
   }
 }

@@ -46,7 +46,7 @@ all: libs
 
 # Le module impose la construction des librairies (.a et/ou .so)
 #---------------------------------------------------------------------
-$(LIBRARY): $(LIB_LIB)
+$(LIBRARY): $(STAMP_BUILD_LIB)
 
 # Dependances communes
 #---------------------------------------------------------------------
@@ -54,13 +54,28 @@ $(MOD_DEPENDS): $(COMMON_DEPS)
 
 # Archivage librairie(s)
 #---------------------------------------------------------------------
+buildstatic: $(STAMP_BUILD_LIB_A)
+builddynamic: $(STAMP_BUILD_LIB_SO)
 
 .PHONY: buildstatic builddynamic
 
-buildstatic: $(LIB_LIB_A)
+ifeq ($(MOD_GEN_OBJ),)
+$(STAMP_BUILD_LIB):
+	@echo "The flavor $(FLAVOR) do not need this library"
+else
+$(STAMP_BUILD_LIB): $(LIB_LIB)
+endif
+
+$(STAMP_BUILD_LIB_A): $(LIB_LIB_A)
+	$(COMMON_HIDE)touch $(STAMP_BUILD_LIB_A)
+	$(COMMON_HIDE)touch $(STAMP_BUILD_LIB)
+
 $(LIB_LIB_A): $(MOD_OBJECTS)
 	$(COMMON_BUILD)
+	$(COMMON_HIDE) rm -f $@
 	$(COMMON_MAIN) $(AR) crs $@ $(filter-out %/_$(LIBRARY)_link.o, $(filter %.o, $^))
+
+$(STAMP_BUILD_LIB_SO): $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 
 VERSION_SCRIPT_OPT=-Xlinker --version-script=
 
@@ -80,21 +95,15 @@ LINK_CMD=$(LD) $(SONAMEFLAGS)\
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
 		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBRARY)_link.pic, $(filter %.pic, $(MOD_PICS)))
-
-ifeq ($(LINK_OTHER_LIBS),yes)
-# wait for the other libs
-$(LIB_LIB_SO_MAJ_MIN): $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), $(MOD_GEN_LIB)/lib$(name)$(LIB_EXT).so)
-# and link against them
-LINK_CMD+= $(shell $(PM2_CONFIG) --libs-only-L) \
-	   $(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
-	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS))))
-endif
-
-builddynamic: $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
-
-$(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_SO_MAP)
+$(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_LIB_SO_MAP)
+	$(COMMON_HIDE) rm -f $@
+# Do not link right now if we eventually want to link this module against others
+ifneq ($(LINK_OTHER_LIBS),yes)
 	$(COMMON_LINK)
 	$(COMMON_MAIN) $(LINK_CMD)
+endif
+	$(COMMON_HIDE) touch $(STAMP_BUILD_LIB_SO)
+	$(COMMON_HIDE) touch $(STAMP_BUILD_LIB)
 
 ifneq ($(LIB_LIB_SO_MAJ_MIN),$(LIB_LIB_SO_MAJ))
 $(LIB_LIB_SO_MAJ): 
@@ -107,6 +116,21 @@ $(LIB_LIB_SO): $(LIB_LIB_SO_MAJ)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ln -sf $(notdir $(LIB_LIB_SO_MAJ)) $@
 endif
+
+# When linking this module with other modules, there is an extra 'link' target
+# called after the libs target, during which we are sure that other libs have been compiled.
+link: $(LINK_LIB)
+linkdynamic: $(STAMP_LINK_LIB)
+
+$(STAMP_LINK_LIB): $(STAMP_BUILD_LIB) $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)), \
+			$(MOD_GEN_STAMP)/stamp-build-$(name).so)
+	$(COMMON_LINK)
+# Additional -L and -l to link against all other modules
+	$(COMMON_MAIN) $(LINK_CMD) \
+		$(shell $(PM2_CONFIG) --libs-only-L) \
+		$(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
+		$(addprefix -Xlinker -l,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))
+	$(COMMON_HIDE)touch $(STAMP_LINK_LIB)
 
 # Test suite
 #-----------

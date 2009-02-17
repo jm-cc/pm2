@@ -28,15 +28,15 @@ ma_memory_print_affinities (marcel_bubble_t *bubble) {
   marcel_entity_t *e;
 
   marcel_fprintf (stderr, "Printing memory affinity hints for bubble %p:\n", bubble);
-  
+
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
-    
+
   marcel_fprintf (stderr, "Entity %p (%s): [ ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : ma_task_entity (e)->name);
   long *nodes = ma_cumulative_stats_get (e, ma_stats_memnode_offset);
   for (i = 0; i < marcel_nbnodes; i++) {
     marcel_fprintf (stderr, "%8ld%s", nodes[i], (i == (marcel_nbnodes - 1)) ? " ]\n" : ", ");
   }
-  
+
   for_each_entity_scheduled_in_bubble_end ();
 }
 
@@ -47,11 +47,11 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
   marcel_fprintf (stderr, "Printing previous location of threads scheduling in bubble %p:\n", bubble);
 
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
-  
+
   marcel_fprintf (stderr, "Entity %p (%s): ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : ma_task_entity (e)->name);
   long vp = *(long *) ma_cumulative_stats_get (e, ma_stats_last_vp_offset);
   marcel_fprintf (stderr, "%ld\n", vp);
-  
+
   for_each_entity_scheduled_in_bubble_end ();
 }
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
@@ -120,18 +120,18 @@ ma_memory_spread_load_balancing_entities (ma_distribution_t *distribution,
 /* Compares how much data entities e1 and e2 have subscribed to. */
 static int
 ma_memory_mem_load_compar (const void *e1, const void *e2) {
-  marcel_entity_t *ent1 = (marcel_entity_t *) e1;
-  marcel_entity_t *ent2 = (marcel_entity_t *) e2;
+  marcel_entity_t **ent1 = (marcel_entity_t **) e1;
+  marcel_entity_t **ent2 = (marcel_entity_t **) e2;
 
-  long *mem_stats1 = ma_cumulative_stats_get (ent1, ma_stats_memnode_offset);
-  long *mem_stats2 = ma_cumulative_stats_get (ent2, ma_stats_memnode_offset); 
+  long *mem_stats1 = ma_cumulative_stats_get (*ent1, ma_stats_memnode_offset);
+  long *mem_stats2 = ma_cumulative_stats_get (*ent2, ma_stats_memnode_offset);
 
   unsigned node, best_node = 0;
   for (node = 0; node < marcel_nbnodes; node++) {
     best_node = (mem_stats1[node] > mem_stats1[best_node]) ? node : best_node;
   }
 
-  return (int)(mem_stats1[best_node] - mem_stats2[best_node]);
+  return (mem_stats1[best_node] <= mem_stats2[best_node]) - (mem_stats1[best_node] >= mem_stats2[best_node]);
 }
 
 /* Pick bubbles in _e_ and burst them until the number of entities
@@ -247,8 +247,8 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
     /* We need at least one entity per children level. */
     ma_memory_burst_light_bubbles (e, ne, arity);
     return ma_memory_schedule_from (from);
-  } 
-  
+  }
+
   ma_distribution_t distribution[arity];
   ma_distribution_init (distribution, from, arity, ne);
 
@@ -294,7 +294,7 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
 #endif
 
   ma_bubble_lock_all (bubble, from);
-  
+
   /* Only call the Memory scheduler on a node-based computer. */
   if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) >= 0)
     ma_memory_schedule_from (from);

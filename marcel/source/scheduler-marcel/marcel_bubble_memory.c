@@ -203,13 +203,15 @@ ma_memory_apply_memory_distribution (ma_distribution_t *distribution, unsigned i
 
       case MA_BUBBLE_ENTITY:
 	marcel_memory_bubble_migrate_all (current_mem_manager, ma_bubble_entity (distribution[i].entities[j]), i);
+	break;
 
       case MA_THREAD_ENTITY:
 	marcel_memory_task_migrate_all (current_mem_manager, ma_task_entity (distribution[i].entities[j]), i);
+	break;
 
       default:
 	MA_BUG ();
-
+	break;
       }
     }
   }

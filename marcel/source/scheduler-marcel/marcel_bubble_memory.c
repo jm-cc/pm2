@@ -59,9 +59,9 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
 
 /* Set the current memory manager to _memory_manager_. */
-int
+void
 marcel_bubble_set_memory_manager (marcel_memory_manager_t *memory_manager) {
-  return (current_mem_manager = memory_manager) ? 1 : 0;
+  current_mem_manager = memory_manager;
 }
 
 static int

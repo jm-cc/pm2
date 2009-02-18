@@ -58,7 +58,7 @@ pm2_test_error_file() # msg file
     echo "----------------------------------------" >&2
     cat $2
     echo "----------------------------------------" >&2
-    pm2_test_error $1
+    echo $1
 }
 
 pm2_test_usage() # exit_code
@@ -156,7 +156,7 @@ do_the_test()
             protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
             (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
-        [ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
+	[ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
 
 	PM2_LD_PRELOAD="$save_PM2_LD_PRELOAD"
 
@@ -181,6 +181,7 @@ do_the_test()
         if diff -u $file_expected $file_filtered ; then
 	    echo "Test ok!"
         else
+	    failures_per_module="$failures_per_module $prog"
 	    pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
         fi
 
@@ -365,6 +366,7 @@ _to_test="$_prefix $_suffix"
 rm -rf /tmp/tests_${USER}_database/
 mkdir /tmp/tests_${USER}_database/
 _l=$_init_level
+failures=""
 while [ $_l -le $_level ]; do
 
     echo "*** Initialising level $_l tests ***"
@@ -443,6 +445,7 @@ while [ $_l -le $_level ]; do
 
     echo "*** Performing level $_l tests ***"
 
+    failures_per_level=""
     for _m in $_to_test ; do
 
 	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
@@ -450,6 +453,8 @@ while [ $_l -le $_level ]; do
 	    cd ${PM2_ROOT}/modules/$_m/test
 	    _tests=`ls test_*.level_$_l 2> /dev/null`
 	    if [ -n "$_tests" ]; then
+
+		failures_per_module=""
 
 		for _f in $_tests ; do
 
@@ -483,7 +488,12 @@ while [ $_l -le $_level ]; do
 
                 done
 
-		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
+		if [ -z "$failures_per_module" ] ; then
+		    echo ">>> Level [$_l] tests for module [$_m] did succeed!"
+		else
+		    echo ">>> Some of the level [$_l] tests for module [$_m] did fail: $failures_per_module"
+		    failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
+		fi
 	    fi
 
 
@@ -520,17 +530,32 @@ while [ $_l -le $_level ]; do
 		genhtml -o "$lcov_html_report_dir" "$lcov_global_info_file" && \
 		echo "HTML coverage report available under \`$lcov_html_report_dir'..."
 	    fi
+
 	fi
+
     done
 
-    echo ">>>>>> All Level [$_l] tests did succeed!"
+    if [ -z "$failures_per_level" ] ; then
+	echo ">>>>>> All Level [$_l] tests did succeed!"
+    else
+	echo ">>>>>> Some of the Level [$_l] tests did fail: $failures_per_level"
+	failures="$failures [Level $_l: $failures_per_level]"
+    fi
 
     _l=`expr $_l + 1`
 done
 
-# ########## Happy end ##########
-echo "         ************************"
-echo "         *** Congratulations! ***"
-echo "         ************************"
-
+echo
+if [ -z "$failures " ] ; then
+    # ########## Happy end ##########
+    echo "         ************************"
+    echo "         *** Congratulations! ***"
+    echo "         ************************"
+else
+    echo "         ****************************"
+    echo "         *** Go and fix your code ***"
+    echo "         ****************************"
+    echo
+    echo "Failures: $failures"
+fi
 exit 0

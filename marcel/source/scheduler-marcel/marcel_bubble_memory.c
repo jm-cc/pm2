@@ -262,10 +262,6 @@ static int
 ma_memory_schedule_from (struct marcel_topo_level *from) {
   unsigned int i, ne, arity = from->arity;
 
-  /* We've reached the NUMA node level, distribution is over. */
-  if (from->type == MARCEL_LEVEL_NODE)
-    return 0;
-
   ne = ma_count_entities_on_rq (&from->rq);
 
   /* If nothing was found on the current runqueue, let's browse its
@@ -319,7 +315,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   ma_distribution_destroy (distribution, arity);
 
   /* Recurse over underlying levels */
-  for (i = 0; i < arity; i++)
+  for (i = 0; i < arity && !node_level_reached; i++)
     ma_memory_schedule_from (from->children[i]);
 
   return 0;

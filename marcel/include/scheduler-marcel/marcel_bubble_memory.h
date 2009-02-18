@@ -19,5 +19,10 @@
 extern marcel_bubble_sched_t marcel_bubble_memory_sched;
 
 #section functions
+
+#ifdef MARCEL_MAMI_ENABLED
+
 #depend "marcel_memory.h[types]"
-void marcel_bubble_set_memory_manager (marcel_memory_manager_t *);
+extern void marcel_bubble_set_memory_manager (marcel_memory_manager_t *);
+
+#endif

@@ -189,6 +189,34 @@ ma_memory_global_balance (ma_distribution_t *distribution, unsigned int arity, u
   return 0;
 }
 
+static int
+ma_memory_apply_memory_distribution (ma_distribution_t *distribution, unsigned int arity) {
+  unsigned int i, j;
+
+  if (!current_mem_manager)
+    return 1;
+
+  for (i = 0; i < arity; i++) {
+    for (j = 0; j < distribution[i].nb_entities; j++) {
+
+      switch (distribution[i].entities[j]->type) {
+
+      case MA_BUBBLE_ENTITY:
+	marcel_memory_bubble_migrate_all (current_mem_manager, ma_bubble_entity (distribution[i].entities[j]), i);
+
+      case MA_THREAD_ENTITY:
+	marcel_memory_task_migrate_all (current_mem_manager, ma_task_entity (distribution[i].entities[j]), i);
+
+      default:
+	MA_BUG ();
+
+      }
+    }
+  }
+
+  return 0;
+}
+
 /* Distribute the entities included in _e_ over the children of
    topo_level _from_, considering this hints already set in
    _distribution_. */
@@ -261,6 +289,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   ma_distribution_init (distribution, from, arity, ne);
 
   tbx_bool_t try_again = tbx_false;
+  tbx_bool_t node_level_reached = (distribution[0].level->type == MARCEL_LEVEL_NODE) ? tbx_true : tbx_false;
 
   for (i = 0; i < ne; i++) {
    struct marcel_topo_level *favorite_location = ma_memory_favorite_level (e[i]);
@@ -280,6 +309,12 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
 
   /* Perform the threads and bubbles distribution. */
   ma_memory_distribute (from, e, ne, distribution);
+
+ if (node_level_reached)
+   /* We've just distributed entities over the node-level runqueues,
+      we can now migrate memory areas to their new location, described
+      in _distribution_.*/
+    ma_memory_apply_memory_distribution (distribution, arity);
 
   ma_distribution_destroy (distribution, arity);
 

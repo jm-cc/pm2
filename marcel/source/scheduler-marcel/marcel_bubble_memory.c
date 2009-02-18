@@ -21,6 +21,8 @@
 #define MA_MEMORY_BSCHED_USE_WORK_STEALING 0
 #define MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
+static marcel_memory_manager_t *current_mem_manager = NULL;
+
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
 static void
 ma_memory_print_affinities (marcel_bubble_t *bubble) {
@@ -55,6 +57,12 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
   for_each_entity_scheduled_in_bubble_end ();
 }
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
+
+/* Set the current memory manager to _memory_manager_. */
+int
+marcel_bubble_set_memory_manager (marcel_memory_manager_t *memory_manager) {
+  return (current_mem_manager = memory_manager) ? 1 : 0;
+}
 
 static int
 memory_sched_start () {

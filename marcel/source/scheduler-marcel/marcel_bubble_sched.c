@@ -366,7 +366,16 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nbentities++;
 	entity->init_holder = &bubble->as_holder;
-	if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) {
+	/* FIXME: comment out the test until we make it clear why it was put here in the first place.
+	 *
+	 * Rationale:
+	 * 1. when marcel_bubble_insertentity(bubble B, entity E) is called, if the E is already
+	 * in another bubble (i.e. E->bubble_entity_list is not empty), it is first removed from that other bubble
+	 * with a call to marcel_bubble_removeentity(entity E)
+	 * 2. a side effect of marcel_bubble_removeentity is to put E on a runqueue holder
+	 * 3. thus the following test always fail in that case, which is probably not intended
+	 *
+	 * if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) */ {
 		ma_holder_t *sched_bubble = bubble->as_entity.sched_holder;
 		PROF_EVENTSTR(sched_status, "heriter du sched_holder de la bulle ou on insere");
 		/* si la bulle conteneuse est dans une autre bulle,

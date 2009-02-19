@@ -536,9 +536,9 @@ while [ $_l -le $_level ]; do
     done
 
     if [ -z "$failures_per_level" ] ; then
-	echo ">>>>>> All Level [$_l] tests did succeed!"
+	echo ">>>>>> Results for Level [$_l]: all tests have succeeded!"
     else
-	echo ">>>>>> Some of the Level [$_l] tests did fail: $failures_per_level"
+	echo ">>>>>> Results for Level [$_l]: some tests have failed: $failures_per_level"
 	failures="$failures [Level $_l: $failures_per_level]"
     fi
 

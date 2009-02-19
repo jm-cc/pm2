@@ -1,12 +1,12 @@
 #-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -34,20 +34,5 @@ hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 EOF
 
-create_test_flavor() {
-    # Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
-	--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
-	--modules="\"marcel tbx init puk stackalign\""		\
-	--marcel="smp"						\
-	--marcel="spinlock" --marcel="main_as_func"		\
-        --marcel="pmarcel" --marcel="pthread"			\
-	--marcel="enable_cleanup" --marcel="enable_deviation"	\
-	--marcel="enable_keys" --marcel="enable_signals"	\
-	--marcel="enable_once" --marcel="dont_use_pthread"	\
-	--marcel="bug_on" --puk="enable_pukabi"			\
-        --puk="disable_fd_virtualization"			\
-	--tbx="safe_malloc" --tbx="parano_malloc"		\
-	--all="gdb" $_output_redirect
-}
+. ./marcel.sh
 

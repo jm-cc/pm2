@@ -194,6 +194,70 @@ create_test_flavor() {
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
+	test_marcel_numa_stats)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_smp_blocking)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"smp\" --marcel=\"marcel_main\" \
+		--marcel=\"bubble_sched_null\" --marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_numa_stats_cleanup)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_numa_cleanup_once_stats)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_numa_stats_jump)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_numa_suspend_stats)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_suspend\" --marcel=\"enable_deviation\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
+	test_marcel_numa_userspace_stats)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" --marcel=\"enable_userspace\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
     esac
 }
 

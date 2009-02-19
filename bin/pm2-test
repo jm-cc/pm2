@@ -156,7 +156,11 @@ do_the_test()
             protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
             (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
-	[ `cat $file_status` -eq 0 ] || pm2_test_error_file "Execution of $prog failed" $file_result
+	if [ `cat $file_status` -ne 0 ] ; then
+	    failures_per_module="$failures_per_module $prog"
+	    pm2_test_error_file "Execution of $prog failed" $file_result
+	    return 1
+	fi
 
 	PM2_LD_PRELOAD="$save_PM2_LD_PRELOAD"
 
@@ -183,6 +187,7 @@ do_the_test()
         else
 	    failures_per_module="$failures_per_module $prog"
 	    pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
+	    return 1
         fi
 
         # Coverage testing.
@@ -220,6 +225,7 @@ do_the_test()
 
     # Destruction des fichiers residuels
     rm -rf ${file_prefix}_*
+    return 0
 }
 
 # Programme principal
@@ -480,9 +486,11 @@ while [ $_l -le $_level ]; do
                         . ./$_f
 
 		        # Compilation, execution et verification des resultats
-                        eval do_the_test "$_f" $_output_redirect
-
-                        echo "   [$_tst_name] did succeed."
+                        if eval do_the_test "$_f" $_output_redirect; then
+				echo "   [$_tst_name] did succeed."
+			else
+				echo "   [$_tst_name] did fail."
+			fi
 
                     fi
 

@@ -58,19 +58,19 @@ static void print_welcoming_message (unsigned int nb_threads,
 				     unsigned int *memory_nodes,
 				     unsigned int nb_memory_nodes);
 
-static 
+static
 double my_delay (struct timespec *t1, struct timespec *t2) {
   return ((double) t2->tv_sec + (double) t2->tv_nsec * 1.E-09) - ((double) t1->tv_sec + (double) t1->tv_nsec * 1.E-09);
 }
 
-static 
+static
 void * f (void *arg) {
   stream_struct_t *stream_struct = (stream_struct_t *)arg;
   unsigned int i, j;
-  
+
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
-    
+
     /* Let's do the job. */
     STREAM_copy (stream_struct);
     STREAM_scale (stream_struct, 3.0);
@@ -82,7 +82,7 @@ void * f (void *arg) {
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned long nodemask = 0;
@@ -91,7 +91,7 @@ main (int argc, char **argv)
   struct timespec t1, t2;
 
   marcel_init (&argc, argv);
- 
+
   if (argc < 5) {
     usage ();
     return -1;
@@ -107,14 +107,14 @@ main (int argc, char **argv)
   enum sched_policy spol;
   enum mbind_policy mpol;
 
-  int err_parse = parse_command_line_arguments (argc, 
-						argv, 
-						&nb_threads, 
-						&spol, 
-						threads_nodes, 
-						&nb_threads_nodes, 
-						&mpol, 
-						memory_nodes, 
+  int err_parse = parse_command_line_arguments (argc,
+						argv,
+						&nb_threads,
+						&spol,
+						threads_nodes,
+						&nb_threads_nodes,
+						&mpol,
+						memory_nodes,
 						&nb_memory_nodes);
   if (err_parse < 0) {
     usage();
@@ -122,12 +122,12 @@ main (int argc, char **argv)
   }
 
  /* Print a pretty and welcoming message */
-  print_welcoming_message (nb_threads, 
-			   spol, 
-			   threads_nodes, 
-			   nb_threads_nodes, 
-			   mpol, 
-			   memory_nodes, 
+  print_welcoming_message (nb_threads,
+			   spol,
+			   threads_nodes,
+			   nb_threads_nodes,
+			   mpol,
+			   memory_nodes,
 			   nb_memory_nodes);
 
   marcel_t working_threads[nb_threads];
@@ -164,12 +164,12 @@ main (int argc, char **argv)
   /* Initialize the STREAM library. */
   stream_struct_t stream_struct;
   STREAM_init (&stream_struct, nb_threads, TAB_SIZE, a, b, c);
-  
+
   /* Disable preemption on the main thread. */
   marcel_thread_preemption_disable ();
 
   marcel_attr_t thread_attr[nb_threads];
-  
+
   /* Create the working threads. */
   for (i = 0; i < nb_threads; i++) {
     marcel_attr_init (thread_attr + i);
@@ -178,13 +178,13 @@ main (int argc, char **argv)
     marcel_attr_settopo_level (thread_attr + i, &marcel_topo_node_level[spol == LOCAL_POL ? threads_nodes[0] : threads_nodes[i % nb_threads_nodes]]);
     marcel_create (working_threads + i, thread_attr + i, f, &stream_struct);
   }
-  
+
   clock_gettime (CLOCK_MONOTONIC, &t1);
   for (i = 0; i < NB_TIMES; i++) {
     marcel_barrier_wait (&barrier);
   }
   clock_gettime (CLOCK_MONOTONIC, &t2);
-   
+
   /* Wait for the working threads to finish. */
   for (i = 0; i < nb_threads; i++) {
     marcel_join (working_threads[i], NULL);
@@ -223,14 +223,14 @@ print_welcoming_message (unsigned int nb_threads,
 			 unsigned int *memory_nodes,
 			 unsigned int nb_memory_nodes) {
   unsigned int i;
-  marcel_printf ("Launching membind with %u %s %s %s ", 
+  marcel_printf ("Launching membind with %u %s %s %s ",
 		 nb_threads,
 		 nb_threads > 1 ? "threads" : "thread",
-		 spol == LOCAL_POL ? "bound to" : "distributed over", 
+		 spol == LOCAL_POL ? "bound to" : "distributed over",
 		 spol == LOCAL_POL ? "node" : "nodes");
   for (i = 0; i < nb_threads_nodes; i++) {
     marcel_printf ("%u ", threads_nodes[i]);
-  } 
+  }
   marcel_printf (".\n");
   marcel_printf ("The global array is %s %s", (mpol == BIND_POL) ? "bound to" : "distributed over",
 		 nb_memory_nodes == 1 ? "node " : "nodes ");
@@ -241,8 +241,8 @@ print_welcoming_message (unsigned int nb_threads,
 }
 
 static int
-parse_command_line_arguments (unsigned int nb_args, 
-			      char **args, 
+parse_command_line_arguments (unsigned int nb_args,
+			      char **args,
 			      unsigned int *nb_threads,
 			      enum sched_policy *spol,
 			      unsigned int *threads_nodes,
@@ -257,14 +257,14 @@ parse_command_line_arguments (unsigned int nb_args,
     return -1;
   nb_args--;
   args++;
-  
+
   /* Fill the number of threads */
   if (!nb_args)
     return -1;
   *nb_threads = atoi(args[0]);
   nb_args--;
   args++;
-  
+
   /* Fill the scheduling policy */
   if (!nb_args)
     return -1;

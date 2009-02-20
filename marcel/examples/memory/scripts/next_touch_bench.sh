@@ -23,7 +23,7 @@ rm -f /tmp/next_touch_bench.dat
 ) > /tmp/next_touch_bench.dat
 
 (
-cat <<EOF 
+cat <<EOF
 set logscale x 2
 set logscale y 2
 plot "/tmp/next_touch_bench.dat" using 3:4 with linespoints

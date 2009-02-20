@@ -114,7 +114,7 @@ main (int argc, char **argv)
   unsigned long nodemasks[nb_teams];
   marcel_barrier_init (&barrier, NULL, (nb_threads * nb_teams));
 
-  /* The main thread is thread 0 of team 0. */ 
+  /* The main thread is thread 0 of team 0. */
   working_threads[0][0] = marcel_self ();
 
   /* Set the nodemask according to the memory policy passed in
@@ -179,7 +179,7 @@ main (int argc, char **argv)
 
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
- 
+
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
     marcel_bubble_init (&bubbles[team]);
@@ -188,7 +188,7 @@ main (int argc, char **argv)
     if (team == 0) {
       marcel_self ()->id = 0;
       marcel_bubble_inserttask (&bubbles[team], marcel_self ());
-    } 
+    }
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     if (mpol == MAMI_NEXT_TOUCH) {

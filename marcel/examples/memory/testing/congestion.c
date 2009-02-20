@@ -62,7 +62,7 @@ void migrate(void **pageaddrs, int pages, int *nodes, int *status) {
 
 any_t congestion0(any_t arg) {
   int i;
-  
+
   /* Synchronise all the threads */
   marcel_barrier_init(&barrier, NULL, 2);
   marcel_barrier_wait(&allbarrier);
@@ -177,7 +177,7 @@ int marcel_main(int argc, char * argv[]) {
   // Check the location of the buffers
   check_location(pageaddrs0, MAX_PAGES, node0);
   check_location(pageaddrs1, MAX_PAGES, node1);
-  
+
   /* threads places */
   marcel_barrier_wait(&allbarrier);
 

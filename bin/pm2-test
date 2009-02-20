@@ -554,7 +554,7 @@ while [ $_l -le $_level ]; do
 done
 
 echo
-if [ -z "$failures " ] ; then
+if [ -z "$failures" ] ; then
     # ########## Happy end ##########
     echo "         ************************"
     echo "         *** Congratulations! ***"

@@ -13,16 +13,6 @@
  * General Public License for more details.
  */
 
-/* This test checks the Memory bubble scheduler's distribution algorithm.
-
-   This test behaves the same than bubble-memory-03, but let the
-   underlying bubble scheduler migrate the accessed data
-   automatically. We check whether every piece of memory is on the
-   right NUMA node at the end of the application.
-
-   Note that we attach a distinct memory area to each thread in this
-   example. */
-
 /*
  * TODO: This test uses a synthetic topology together with MaMI. MaMI
  * does not know about the synthetic topology and when asked to

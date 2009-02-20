@@ -1104,6 +1104,7 @@ int ma_memory_mbind(void *start, unsigned long len, int mode,
                     const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
   int err = 0;
 
+  if (ma_use_synthetic_topology) return err;
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
   err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #else
@@ -1116,6 +1117,7 @@ int ma_memory_mbind(void *start, unsigned long len, int mode,
 int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag) {
   int err=0;
 
+  if (ma_use_synthetic_topology) return err;
   if (nodes) mdebug_mami("binding on numa node #%d\n", nodes[0]);
 
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
@@ -1140,6 +1142,11 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   int err=0;
 
   mdebug_mami("check location of the %d pages is #%d\n", pages, node);
+
+  if (ma_use_synthetic_topology) {
+    mdebug_mami("Using synthethic topology. No need to check physically\n");
+    return err;
+  }
 
   pagenodes = tmalloc(pages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);

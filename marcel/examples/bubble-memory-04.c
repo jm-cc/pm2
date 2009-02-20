@@ -23,6 +23,13 @@
    Note that we attach a distinct memory area to each thread in this
    example. */
 
+/*
+ * TODO: This test uses a synthetic topology together with MaMI. MaMI
+ * does not know about the synthetic topology and when asked to
+ * migrate data to a "synthetic" node will fail unless a real
+ * corresponding node exists.
+ */
+
 #define MARCEL_INTERNAL_INCLUDE
 
 #include "bubble-testing.h"

@@ -30,7 +30,7 @@
 #define NB_BUBBLES 4
 #define THREADS_PER_BUBBLE 4
 
-static unsigned int node_levels[4], expected_result[4]; 
+static unsigned int node_levels[4], expected_result[4];
 static marcel_mutex_t write_lock;
 
 static void *
@@ -45,7 +45,7 @@ thread_entry_point (void *arg) {
   while (!ma_atomic_read (start));
 
   marcel_mutex_lock (&write_lock);
-  node_levels[current_node] += 1; 
+  node_levels[current_node] += 1;
   marcel_mutex_unlock (&write_lock);
 
   return NULL;
@@ -71,7 +71,7 @@ main (int argc, char *argv[]) {
   argc += 2;
 
   marcel_init (&argc, new_argv);
-  marcel_mutex_init (&write_lock, NULL); 
+  marcel_mutex_init (&write_lock, NULL);
 
   /* Make sure we're currently testing the memory scheduler. */
   marcel_bubble_change_sched (&marcel_bubble_memory_sched);
@@ -81,7 +81,7 @@ main (int argc, char *argv[]) {
   marcel_t threads[NB_BUBBLES * THREADS_PER_BUBBLE];
   marcel_attr_t attr;
   unsigned int team;
-	
+
   /* The main thread is thread 0 of team 0. */
   marcel_self ()->id = 0;
   threads[0] = marcel_self ();
@@ -89,7 +89,7 @@ main (int argc, char *argv[]) {
   marcel_attr_init (&attr);
 
   ((long *) ma_task_stats_get (marcel_self (), ma_stats_memnode_offset))[0] = 1024;
-	
+
   for (team = 0; team < NB_BUBBLES; team++) {
     marcel_bubble_init (bubbles + team);
     marcel_bubble_insertbubble (&marcel_root_bubble, bubbles + team);
@@ -97,7 +97,7 @@ main (int argc, char *argv[]) {
       marcel_bubble_inserttask (bubbles + team, marcel_self ());
     }
     marcel_attr_setinitbubble (&attr, bubbles + team);
-	
+
     for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
       /* Note: We can't use `dontsched' since THREAD would not appear
 	 on the runqueue.  */

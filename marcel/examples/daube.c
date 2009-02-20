@@ -139,7 +139,7 @@ static int receive_message (tube *t, char *message, int len)
 #else
   n = read (t->tub[0], message, len) ;
 #endif
-    
+
   return n ;
 }
 

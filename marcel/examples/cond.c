@@ -85,7 +85,7 @@ static void bench_cond(unsigned nb)
 }
 
 int marcel_main(int argc, char *argv[])
-{ 
+{
   int essais = 3;
 
   marcel_init(&argc, argv);

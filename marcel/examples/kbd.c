@@ -49,7 +49,7 @@ any_t ma_fonction(any_t arg)
 }
 
 int marcel_main(int argc, char *argv[])
-{ 
+{
   marcel_t pid; /* Identificateur de processus leger */
   any_t status; /* Code de retour */
 
@@ -61,12 +61,12 @@ int marcel_main(int argc, char *argv[])
    /* Creation d'un "thread" qui va executer ma_fonction("Hello") */
    marcel_create(&pid, NULL, ma_fonction, "Hello !");
 
-   /* On attend une touche au clavier, mais pendant ce temps, 
+   /* On attend une touche au clavier, mais pendant ce temps,
       le "thread" s'execute tranquillement... */
    getchar();
 
    /* Ici, on va tuer le thread. Je sais, c'est pas beau. Mais rien de vous
-      empeche de programmer une solution utilisant une variable globale ou 
+      empeche de programmer une solution utilisant une variable globale ou
       encore d'envoyer un signal au thread, mais ceci est une autre histoire... */
    marcel_cancel(pid);
 

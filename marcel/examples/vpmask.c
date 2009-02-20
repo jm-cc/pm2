@@ -57,7 +57,7 @@ int marcel_main(int argc, char *argv[])
   for(i=0; i<NB; i++) {
     // Uniquement pour les modes SMP/Activations : on demande le
     // placement du thread sur un processeur (virtuel) explicite
-    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps() - 1 - 
+    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps() - 1 -
 							  (i % marcel_nbvps())));
 
     marcel_create(&pid[i], &attr, writer, (any_t)mess[i]);

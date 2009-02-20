@@ -21,7 +21,7 @@
 #define BIG_LOAD    100
 #define LITTLE_LOAD 1
 
-static unsigned int vp_levels[4], expected_result[4]; 
+static unsigned int vp_levels[4], expected_result[4];
 
 static void *
 thread_entry_point (void *arg) {
@@ -31,7 +31,7 @@ thread_entry_point (void *arg) {
 	start = (ma_atomic_t *) arg;
 	while (!ma_atomic_read (start));
 
-	vp_levels[current_vp] += ma_entity_load (&marcel_self ()->as_entity); 
+	vp_levels[current_vp] += ma_entity_load (&marcel_self ()->as_entity);
 
 	return NULL;
 }
@@ -61,10 +61,10 @@ main (int argc, char *argv[])
 	/* Creating threads as leaves of the hierarchy.  */
 	marcel_t threads[NB_THREADS];
 	marcel_attr_t attr;
-	
+
 	marcel_attr_init (&attr);
 	marcel_attr_setinitbubble (&attr, &marcel_root_bubble);
-	
+
 	/* The main thread is one of the _heavy_ threads. */
 	ma_task_stats_set (unsigned long, marcel_self(), marcel_stats_load_offset, BIG_LOAD);
 	/* The main thread is thread 0. */
@@ -76,12 +76,12 @@ main (int argc, char *argv[])
 			 on the runqueue.  */
 		marcel_attr_setid (&attr, i);
 		marcel_create (threads + i, &attr, thread_entry_point, &start_signal);
-		ma_task_stats_set (unsigned long, 
-											 threads[i], 
-											 marcel_stats_load_offset, 
+		ma_task_stats_set (unsigned long,
+											 threads[i],
+											 marcel_stats_load_offset,
 											 (i == NB_THREADS - 1) ? BIG_LOAD : LITTLE_LOAD);
 	}
-	
+
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();
 
@@ -99,7 +99,7 @@ main (int argc, char *argv[])
      that we expect from Cache. Most loaded threads have to be
      distributed first, that's why we expect to see them scheduled on
      vps 0 and 2. */
-	expected_result[0] = expected_result[2] = BIG_LOAD; 
+	expected_result[0] = expected_result[2] = BIG_LOAD;
 	expected_result[1] = expected_result[3] = LITTLE_LOAD;
 
 	for (i = 0; i < NB_THREADS; i++) {

@@ -76,7 +76,7 @@ void put(matrix_t m, char *s)
     marcel_printf ("\n");
   }
 }
- 
+
 
 any_t bloc(any_t arg)
 {
@@ -91,7 +91,7 @@ any_t bloc(any_t arg)
     for(j=y; j<y+block_size; j++) {
       res = 0;
       for(k=0; k<SIZE; k++) {
-	res += a[i][k] * b[k][j] ; 
+	res += a[i][k] * b[k][j] ;
       }
       c[i][j] = res;
     }
@@ -101,7 +101,7 @@ any_t bloc(any_t arg)
 
 
 
-void mult() 
+void mult()
 {
   int i, j, x = 0;
   marcel_attr_t attr;
@@ -147,7 +147,7 @@ int marcel_main(int argc, char *argv[])
   get(a);
   get(b);
 
-  init_time(); 
+  init_time();
   mult();
   temps = cpu_time();
 

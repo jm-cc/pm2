@@ -123,7 +123,7 @@ static int receive_message (tube *t, char *message, int len)
   marcel_printf("After read %p\n", marcel_self());
 #endif
 #endif
-    
+
   return n ;
 }
 
@@ -133,7 +133,7 @@ static void * producteur (void * arg)
 
   for (i=0; i < ITERATIONS ; i++) {
     send_message (&tube_1, (char *)&i, sizeof(int)) ;
-    receive_message (&tube_2, (char *)&n, sizeof(int)) ; 
+    receive_message (&tube_2, (char *)&n, sizeof(int)) ;
   }
   return NULL;
 }
@@ -149,12 +149,12 @@ static void * consommateur (void * arg)
   unsigned long temps;
 
   for (i=0; i < 3 ; i++) {
-    receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
+    receive_message (&tube_1, (char *)&n, sizeof(int)) ;
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }
   TBX_GET_TICK(t1);
   for (i=3; i < ITERATIONS ; i++) {
-    receive_message (&tube_1, (char *)&n, sizeof(int)) ; 
+    receive_message (&tube_1, (char *)&n, sizeof(int)) ;
     send_message (&tube_2, (char *)&i, sizeof(int)) ;
   }
   TBX_GET_TICK(t2);

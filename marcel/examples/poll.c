@@ -36,7 +36,7 @@ any_t f(any_t arg)
   chaine[i] = 0;
   marcel_printf("Input from [keyboard] detected on LWP %d: %s",
 		marcel_current_vp(), chaine);
-   
+
   return NULL;
 }
 

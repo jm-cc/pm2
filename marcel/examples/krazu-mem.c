@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #include <marcel.h>
-#include <marcel_memory.h> 
+#include <marcel_memory.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -64,16 +64,16 @@ main (int argc, char **argv) {
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
-  tabs = marcel_memory_malloc (&krazu_manager, 
-			       NUM_THREADS * sizeof (int *), 
-			       MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 
+  tabs = marcel_memory_malloc (&krazu_manager,
+			       NUM_THREADS * sizeof (int *),
+			       MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH,
 			       0);
 
   for (i = 0; i < NUM_THREADS; i++) {
     unsigned int node = i % (marcel_nbnodes + 1);
-    tabs[i] = marcel_memory_malloc (&krazu_manager, 
-				    TAB_SIZE * sizeof (int), 
-				    MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 
+    tabs[i] = marcel_memory_malloc (&krazu_manager,
+				    TAB_SIZE * sizeof (int),
+				    MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE,
 				    node);
   }
 

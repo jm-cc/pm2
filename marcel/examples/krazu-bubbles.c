@@ -29,8 +29,8 @@ any_t f(any_t arg)
     for (i = 0; i < TAB_SIZE; i++)
       tabs[team][i] = 42;
 }
- 
-int 
+
+int
 marcel_main(int argc, char *argv[])
 {
   any_t status;
@@ -49,21 +49,21 @@ marcel_main(int argc, char *argv[])
 	{
 	  marcel_bubble_init(&b[i]);
 	  marcel_bubble_setid(&b[i], i);
-      
+
 	  marcel_bubble_insertbubble(&marcel_root_bubble, &b[i]);
 	}
     }
-       
-  for (i = 0; i < NB_THREADS; i++) 
+
+  for (i = 0; i < NB_THREADS; i++)
     {
       if (BUBBLE_MODE)
 	{
 	  int index = i%(NB_THREADS / 2);
-	  
+
 	  marcel_attr_setinitbubble(&attr, &b[index]);
 	  debug("id = %d, bubble = %d\n", i, index);
 	}
-            
+
       marcel_attr_setid(&attr, i);
       marcel_create(&pid[i], &attr, f, NULL);
     }

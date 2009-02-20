@@ -59,7 +59,7 @@ void bench_apply_vpset(unsigned nb)
 
   marcel_printf("apply vpset =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
- 
+
 }
 
 void bench_migrate(unsigned long nb, int active)
@@ -149,7 +149,7 @@ void bench_resched(unsigned long nb)
 }
 
 int marcel_main(int argc, char *argv[])
-{ 
+{
   int essais = 3;
 
   marcel_init(&argc, argv);

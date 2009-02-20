@@ -18,14 +18,14 @@ my_shake (void *arg)
 }
 
 int
-main (int argc, char **argv) 
+main (int argc, char **argv)
 {
   unsigned int i, nb_vps;
   marcel_attr_t thread_attr;
   marcel_barrierattr_t barrier_attr;
 
   marcel_init (&argc, argv);
-  
+
   nb_vps = marcel_nbvps ();
   marcel_t tids[nb_vps];
   marcel_attr_init (&thread_attr);
@@ -42,7 +42,7 @@ main (int argc, char **argv)
 
   /* Let the threads shake! */
   marcel_barrier_wait (&shake_barrier);
-  
+
   for (i = 0; i < nb_vps; i++)
     marcel_join (tids[i], NULL);
 

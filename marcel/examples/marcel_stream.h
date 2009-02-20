@@ -50,7 +50,7 @@ typedef struct {
   unsigned int array_size;
   /* Set of iterations to compute per thread */
   unsigned int chunk_size;
-  
+
   /* Arrays for the computation */
   double *a;
   double *b;
@@ -61,11 +61,11 @@ typedef struct {
 
 /* Note that the application programmer is in charge of allocating the
  * stream_struct data structure before calling STREAM_init. */
-void STREAM_init (stream_struct_t *stream_struct, 
-		  unsigned int nb_threads, 
-		  unsigned int array_size, 
-		  double *t1, 
-		  double *t2, 
+void STREAM_init (stream_struct_t *stream_struct,
+		  unsigned int nb_threads,
+		  unsigned int array_size,
+		  double *t1,
+		  double *t2,
 		  double *t3) {
   unsigned int i;
 

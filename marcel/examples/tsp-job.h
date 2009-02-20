@@ -25,7 +25,7 @@
 #    define MUTEX_UNLOCK(m)  pthread_mutex_unlock((m))
 #  endif
 #else
-#  define MUTEX_INIT(m, a) 
+#  define MUTEX_INIT(m, a)
 #  define MUTEX_LOCK(m)
 #  define MUTEX_UNLOCK(m)
 #endif

@@ -9,7 +9,7 @@ LIBS=-lpthread
 
 CC2=gcc -c $(ARCH) -o $@ $(SRC)/$(@F:.o=.c)
 
-LINK=gcc -o $@ $(OBJ)/$(@F).o 
+LINK=gcc -o $@ $(OBJ)/$(@F).o
 
 # executables :
 
@@ -22,11 +22,11 @@ $(BIN)/tsp: $(OBJ)/tsp.o $(OBJ)/job.o $(OBJ)/main.o $(LIB)
 $(OBJ)/tsp.o: $(SRC)/tsp.c $(SRC)/types.h $(SRC)/tsp.h
 	$(CC2) -DMT
 
-$(OBJ)/main.o: $(SRC)/main.c $(SRC)/types.h $(SRC)/tsp.h 
+$(OBJ)/main.o: $(SRC)/main.c $(SRC)/types.h $(SRC)/tsp.h
 	$(CC2) -DMT
 
-$(OBJ)/job.o: $(SRC)/job.c $(SRC)/types.h $(SRC)/tsp.h 
-	$(CC2) -DMT 
+$(OBJ)/job.o: $(SRC)/job.c $(SRC)/types.h $(SRC)/tsp.h
+	$(CC2) -DMT
 
 
 

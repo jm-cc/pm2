@@ -64,7 +64,7 @@ int main (int argc, char *argv[]) {
   marcel_ensure_abi_compatibility(MARCEL_HEADER_HASH);
 
   print_topology (&marcel_machine_level[0], stdout, 0);
- 
+
   /* Before creating any threads, initialize the variable that they'll
      poll.  */
   ma_atomic_init (&thread_exit_signal, 0);

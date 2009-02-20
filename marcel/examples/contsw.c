@@ -97,7 +97,7 @@ void bench_setjmp(unsigned nb)
 
   marcel_printf("setjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
- 
+
 }
 
 void bench_longjmp(unsigned nb)
@@ -116,7 +116,7 @@ void bench_longjmp(unsigned nb)
 
   marcel_printf("longjmp'time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
   return;
- 
+
 }
 
 void bench_contsw(unsigned long nb)
@@ -230,7 +230,7 @@ void bench_contsw4(unsigned long nb)
 }
 
 int marcel_main(int argc, char *argv[])
-{ 
+{
   int essais = 3;
 
   marcel_init(&argc, argv);

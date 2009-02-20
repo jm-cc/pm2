@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 #endif
   } else {
     // Execution interactive
-    for (;;) {	  
+    for (;;) {
       marcel_printf("Enter a rather small integer (0 to quit) : ");
       scanf("%d", &j.sup);
       if(j.sup <= 0)

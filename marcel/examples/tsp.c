@@ -96,18 +96,18 @@ void distributor (int hops, int len, Path_t path, struct s_tsp_queue *q)
       {
        path [hops] = city ;
        dist = distance.t[me][i].dist ;
-       distributor (hops+1, len+dist, path, q) ;       
+       distributor (hops+1, len+dist, path, q) ;
       }
     }
-  } 
+  }
 }
 
-void generate_jobs (void) 
+void generate_jobs (void)
 {
  Path_t path ;
 
  path [0] = 0 ;
- distributor (1, 0, path, &q) ; 
+ distributor (1, 0, path, &q) ;
 }
 
 void *worker (void *arg)
@@ -123,7 +123,7 @@ void *worker (void *arg)
  marcel_printf ("thread %p on LWP %d\n", marcel_self(), marcel_current_vp ()) ;
 #endif
 
- while (get_job (&q, &job)) 
+ while (get_job (&q, &job))
    {
     jobcount++ ;
     tsp (MAXHOPS, job.len, job.path, &cuts, num_worker) ;

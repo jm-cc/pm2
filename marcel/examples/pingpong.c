@@ -63,7 +63,7 @@ void bench_pingpong(unsigned long nb, unsigned vp)
 }
 
 int marcel_main(int argc, char *argv[])
-{ 
+{
   int essais = 3;
 
   marcel_init(&argc, argv);

@@ -73,7 +73,7 @@ int dx, dy, tmp ;
     }
   }
 }
- 
+
 void PrintDistTab ()
 {
  int i, j ;
@@ -132,7 +132,7 @@ int marcel_main (int argc, char **argv)
 
  init_queue (&q) ;
  distance.n = atoi (argv[2]) ;
- generate_map(&distance); 
+ generate_map(&distance);
 
  generate_jobs();
 

@@ -57,13 +57,13 @@ struct s_maillon {
 };
 
 /** \brief Queue of jobs
- */ 
+ */
 struct s_tsp_queue {
 	struct s_maillon *first;
 	struct s_maillon *last;
 	MUTEX_T(mutex);
 };
-		
+
 
 
 

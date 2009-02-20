@@ -26,7 +26,7 @@ static ma_bubble_sched_vp_is_idle aff_steal = NULL;
 static ma_atomic_t first_team_is_dead = MA_ATOMIC_INIT (0);
 static ma_atomic_t die_later_signal = MA_ATOMIC_INIT (0);
 
-static unsigned int vp_levels[2], expected_result[2]; 
+static unsigned int vp_levels[2], expected_result[2];
 static marcel_mutex_t write_lock;
 
 /* Arguments passed to marcel_create ().*/
@@ -49,7 +49,7 @@ thread_entry_point (void *arg) {
 	current_vp = *(unsigned long *) ma_task_stats_get (marcel_self (), ma_stats_last_vp_offset);
 
 	marcel_mutex_lock (&write_lock);
-	vp_levels[current_vp] += 1; 
+	vp_levels[current_vp] += 1;
 	marcel_mutex_unlock (&write_lock);
 
 	return NULL;
@@ -86,7 +86,7 @@ main (int argc, char *argv[]) {
 	argc += 2;
 
 	marcel_init (&argc, new_argv);
-	marcel_mutex_init (&write_lock, NULL); 
+	marcel_mutex_init (&write_lock, NULL);
 
 	/* Creating threads and bubbles hierarchy.  */
 	marcel_bubble_t bubbles[NB_BUBBLES];
@@ -102,11 +102,11 @@ main (int argc, char *argv[]) {
 	/* The main thread is thread 0 of team 0. */
 	marcel_self ()->id = 0;
 	threads[0] = marcel_self ();
-	
+
 	marcel_attr_init (&attr);
 
 	struct thread_args ta[NB_BUBBLES];
-	
+
 	for (team = 0; team < NB_BUBBLES; team++) {
 		marcel_bubble_init (bubbles + team);
 		marcel_bubble_insertbubble (&marcel_root_bubble, bubbles + team);
@@ -114,10 +114,10 @@ main (int argc, char *argv[]) {
 			marcel_bubble_inserttask (bubbles + team, marcel_self ());
 		}
 		marcel_attr_setinitbubble (&attr, bubbles + team);
-		
+
 		ta[team].start_signal = (team == 0) ? &die_later_signal : &die_first_signal;
 		ta[team].team_barrier = team_barrier + team;
-	
+
 		for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
 			if ((team == 0) && (i == 0)) {
 				continue; /* The main thread has already been created. */
@@ -127,7 +127,7 @@ main (int argc, char *argv[]) {
 	}
 
 	if (marcel_bubble_cache_sched.vp_is_idle == NULL) {
-		marcel_printf ("Oops! No work stealing algorithm available!\n"); 
+		marcel_printf ("Oops! No work stealing algorithm available!\n");
 		marcel_printf ("Did you forget to set the MA_CACHE_USE_WORK_STEALING constant to 1? (see marcel_bubble_cache.c)\n");
 		exit (1);
 	}
@@ -139,13 +139,13 @@ main (int argc, char *argv[]) {
 		 called before all threads have died. */
 	aff_steal = marcel_bubble_cache_sched.vp_is_idle;
 	marcel_bubble_cache_sched.vp_is_idle = my_steal;
-	
+
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();
 
 	/* Make the first team die */
 	ma_atomic_inc (&die_first_signal);
-	
+
 	/* Wait for them to die. */
 	marcel_threadslist (0, NULL, &nb_threads, ALL_THREADS);
 	while (nb_threads > 2) {
@@ -167,8 +167,8 @@ main (int argc, char *argv[]) {
 			marcel_join (threads[i], NULL);
 		}
 	}
-	
-  expected_result[0] = 1; 
+
+  expected_result[0] = 1;
 	expected_result[1] = 3;
 
 	for (i = 0; i < 2; i++) {

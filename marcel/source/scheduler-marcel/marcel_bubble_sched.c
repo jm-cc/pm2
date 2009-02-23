@@ -481,7 +481,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
 		ma_holder_t *h;
 		h = ma_entity_holder_lock_softirq(entity);
-		if (!entity->run_holder && entity->sched_holder->type == MA_RUNQUEUE_HOLDER)
+		if (!entity->run_holder)
 			ma_activate_running_entity(entity, entity->sched_holder);
 		if (entity->run_holder) {
 			MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);

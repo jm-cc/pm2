@@ -430,6 +430,8 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 		marcel_sem_P(&bubble->join);
 	}
 
+	/* FIXME: the preamble comment of the __do_bubble_insertentity function which reads
+	 *  "assume bubble is locked with softirq"  looks inconsistent with the following call */
 	ma_holder_lock_softirq(&bubble->as_holder);
 
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);

@@ -483,11 +483,9 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		h = ma_entity_holder_lock_softirq(entity);
 		if (!entity->run_holder)
 			ma_activate_running_entity(entity, entity->sched_holder);
-		if (entity->run_holder) {
-			MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);
-			if (!entity->run_holder_data)
-				ma_enqueue_entity(entity, entity->run_holder);
-		}
+		MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);
+		if (!entity->run_holder_data)
+			ma_enqueue_entity(entity, entity->run_holder);
 		PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->run_holder));
 		ma_entity_holder_unlock_softirq(h);
 	}

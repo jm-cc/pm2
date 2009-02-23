@@ -73,6 +73,9 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	marcel_mutex_unlock(&current_sched_mutex);
 }
 
+/* FIXME: - comment on the respective purpose of marcel_bubble_change_sched and marcel_bubble_set_sched
+ *        - explain why marcel_bubble_set_sched does not call init, start and exit methods
+ */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched) {
 	ma_bubble_sched_t old;
 	marcel_mutex_lock(&current_sched_mutex);
@@ -175,6 +178,8 @@ int marcel_bubble_submit (marcel_bubble_t *b) {
 /* Application is entering ending state, let's prevent idle
    schedulers from stealing anything. */ 
 void marcel_bubble_sched_end (void) {
+	/* FIXME: explain why marcel_bubble_sched_begin does not perform a 
+	 * corresponding call to ma_activate_idle_scheduler */
   ma_deactivate_idle_scheduler ();
 }
 
@@ -200,6 +205,8 @@ int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 }
 
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
+	/* FIXME: - explain why we set the sched_holder and not the init_holder here.
+	 *        - the name of the function is thus confusing */
 	bubble->as_entity.sched_holder = &rq->as_holder;
 	return 0;
 }
@@ -210,6 +217,7 @@ int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *lev
 }
 
 int marcel_bubble_setinithere(marcel_bubble_t *bubble) {
+	/* FIXME: comment on the purpose of the function, what does 'here' mean in the function name */
 	ma_holder_t *h = SELF_GETMEM(as_entity.sched_holder);
 	
 	MA_BUG_ON(!h);
@@ -223,6 +231,9 @@ int marcel_bubble_setinithere(marcel_bubble_t *bubble) {
 }
 
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level) {
+	/* FIXME: - comment on the purpose of the function, compare it to marcel_bubble_setinitlevel
+	 * which has a similar name and very different contents
+	 *        - explain why we do not set any init and/or sched holder here */
 #ifdef MA__LWPS
 	if (level>marcel_topo_nblevels-1)
 		level=marcel_topo_nblevels-1;

@@ -346,6 +346,70 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	}
 }
 
+static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *entity) {
+	/* Basically does a remove together with an insert but without using an
+	 * intermediate runqueue */
+	marcel_bubble_t *bubble_src;
+	int res;
+
+	MA_BUG_ON(entity->init_holder->type == MA_RUNQUEUE_HOLDER);
+	bubble_src = ma_bubble_holder(entity->init_holder);
+	if (bubble_src == bubble_dst)
+		return;
+
+	/* remove entity from bubble src */
+	ma_holder_lock_softirq(&bubble_src->as_holder);
+	MA_BUG_ON(entity->init_holder != &bubble_src->as_holder);
+	entity->init_holder = NULL;
+	entity->sched_holder = NULL;
+	list_del_init(&entity->bubble_entity_list);
+	marcel_barrier_addcount(&bubble_src->barrier, -1);
+	res = (!--bubble_src->nbentities);
+	ma_holder_rawunlock(&bubble_src->as_holder);
+
+	/* insert entity in bubble dst */
+	if (!bubble_dst->nbentities) {
+		MA_BUG_ON(!list_empty(&bubble_dst->heldentities));
+		marcel_sem_P(&bubble_dst->join);
+	}
+
+	ma_holder_lock_softirq(&bubble_dst->as_holder);
+
+	if (entity->type == MA_BUBBLE_ENTITY)
+		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
+	else
+		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
+	list_add_tail(&entity->bubble_entity_list, &bubble_dst->heldentities);
+	marcel_barrier_addcount(&bubble_dst->barrier, 1);
+	bubble_dst->nbentities++;
+	entity->init_holder = &bubble_dst->as_holder;
+	ma_holder_t *sched_bubble_h = bubble_dst->as_entity.sched_holder;
+	PROF_EVENTSTR(sched_status, "heriter du sched_holder de la bulle ou on insere");
+	if (!sched_bubble_h || ma_holder_type(sched_bubble_h) == MA_RUNQUEUE_HOLDER) {
+		PROF_EVENTSTR(sched_status, "c'est la bulle ou on insere qui sert d'ordonnancement");
+		sched_bubble_h = &bubble_dst->as_holder;
+	}
+	entity->sched_holder = sched_bubble_h;
+
+	ma_holder_unlock_softirq(&bubble_dst->as_holder);
+
+	/* change entity runholder too if needed */
+	ma_holder_t *h = ma_entity_holder_rawlock(entity);
+	if (h == &bubble_src->as_holder) {
+		/* we need to get this entity out of this bubble */
+		int state = ma_get_entity(entity);
+		ma_holder_rawunlock(h);
+		ma_holder_rawlock(entity->init_holder);
+		ma_put_entity(entity, entity->init_holder, state);
+		ma_holder_unlock_softirq(entity->init_holder);
+	} else
+		/* already out from the bubble, that's ok.  */
+		ma_entity_holder_unlock_softirq(h);
+
+	/* signal src bubble emptiness when applicable */
+	if (res)
+		marcel_sem_V(&bubble_src->join);
+}
 /* suppose bubble verrouillée avec softirq */
 static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	int ret = 1;
@@ -366,16 +430,9 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nbentities++;
 	entity->init_holder = &bubble->as_holder;
-	/* FIXME: comment out the test until we make it clear why it was put here in the first place.
-	 *
-	 * Rationale:
-	 * 1. when marcel_bubble_insertentity(bubble B, entity E) is called, if the E is already
-	 * in another bubble (i.e. E->bubble_entity_list is not empty), it is first removed from that other bubble
-	 * with a call to marcel_bubble_removeentity(entity E)
-	 * 2. a side effect of marcel_bubble_removeentity is to put E on a runqueue holder
-	 * 3. thus the following test always fail in that case, which is probably not intended
-	 *
-	 * if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) */ {
+	/* FIXME: add a comment to explain why entities with a runqueue sched_holder are left out.
+	 */
+	 if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) {
 		ma_holder_t *sched_bubble = bubble->as_entity.sched_holder;
 		PROF_EVENTSTR(sched_status, "heriter du sched_holder de la bulle ou on insere");
 		/* si la bulle conteneuse est dans une autre bulle,
@@ -396,15 +453,19 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_IN();
 
 	if (!list_empty(&entity->bubble_entity_list)) {
-		ma_holder_t *h = entity->init_holder;
-		if (ma_bubble_holder(h) == bubble)
-		  LOG_RETURN(0);
-		MA_BUG_ON(h->type == MA_RUNQUEUE_HOLDER);
-		marcel_bubble_removeentity(ma_bubble_holder(h),entity);
-	}
+		if (ma_bubble_holder(entity->init_holder) == bubble)
+			LOG_RETURN(0);
 
-	bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
-	if (__do_bubble_insertentity(bubble,entity) && entity->type == MA_BUBBLE_ENTITY && entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+		/* If the entity is already in a bubble, move it directly to
+		 * the destination bubble. We cannot use
+		 * marcel_bubble_removentity because a side effect of
+		 * marcel_bubble_removeentity is to put the entity on a
+		 * runqueue which causes trouble within a subsequent
+		 * __do_bubble_insertentity. Thus we use ma_bubble_moveentity
+		 * instead. */
+		ma_bubble_moveentity(bubble, entity);
+	} else if (__do_bubble_insertentity(bubble,entity) && entity->type == MA_BUBBLE_ENTITY && entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+		bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
 		/* sched holder was already set to something else, wake the bubble there */
 		PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
 		ma_holder_t *h;

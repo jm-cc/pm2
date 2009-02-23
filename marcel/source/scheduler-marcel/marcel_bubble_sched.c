@@ -506,7 +506,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 }
 
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
-	int res;
+	int bubble_becomes_empty;
 	LOG_IN();
 
 	/* Remove entity from bubble */
@@ -516,31 +516,31 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	entity->sched_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
-	res = (!--bubble->nbentities);
+	bubble_becomes_empty = (!--bubble->nbentities);
 	if ((entity)->type != MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_thread, (void*)ma_task_entity(entity), bubble);
 	else
 		PROF_EVENT2(bubble_sched_remove_bubble, (void*)ma_bubble_entity(entity), bubble);
 	ma_holder_rawunlock(&bubble->as_holder);
 
-	ma_holder_t *h;
 	/* Before announcing it, remove it scheduling-wise too */
-	h = ma_entity_holder_rawlock(entity);
+	ma_holder_t *h = ma_entity_holder_rawlock(entity);
 	if (h == &bubble->as_holder) {
-		/* we need to get this entity out of this bubble */
+		/* we need to get this entity out of this bubble 
+		 * and we put it on a runqueue, either the rq holder of the bubble
+		 * when possible, or the vp runqueue otherwise */
 		int state = ma_get_entity(entity);
-		ma_runqueue_t *new_holder;
 		ma_holder_rawunlock(h);
-		new_holder = ma_to_rq_holder(bubble->as_entity.sched_holder);
-		if (!new_holder)
-			new_holder = ma_lwp_vprq(MA_LWP_SELF);
-		ma_holder_rawlock(&new_holder->as_holder);
-		ma_put_entity(entity, &new_holder->as_holder, state);
-		ma_holder_unlock_softirq(&new_holder->as_holder);
+		ma_runqueue_t *rq = ma_to_rq_holder(bubble->as_entity.sched_holder);
+		if (!rq)
+			rq = ma_lwp_vprq(MA_LWP_SELF);
+		ma_holder_rawlock(&rq->as_holder);
+		ma_put_entity(entity, &rq->as_holder, state);
+		ma_holder_unlock_softirq(&rq->as_holder);
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);
-	if (res)
+	if (bubble_becomes_empty)
 		marcel_sem_V(&bubble->join);
 	LOG_OUT();
 	return 0;

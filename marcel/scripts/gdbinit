@@ -16,11 +16,17 @@ end
 
 define set-ctx
   set language c
-  if $marcel_saved==0
-    save-ctx
+  if ((marcel_t)$arg0)->preempt_count > 0  
+    if $marcel_saved==0
+      save-ctx
+    end
+    printf "switching to $arg0(0x%lx)\n", $arg0
+    __set-ctx $arg0
+  else
+    # The `ctx_yield' field of `marcel_t' is uninitialized, so we
+    # can't use it to switch contexts.
+    printf "don't know how to switch to $arg0(0x%lx)\n", $arg0
   end
-  printf "switching to $arg0(0x%lx)\n", $arg0
-  __set-ctx $arg0
 end
 document set-ctx
 Switch to another marcel thread's context

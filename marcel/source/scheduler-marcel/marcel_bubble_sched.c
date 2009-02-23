@@ -77,7 +77,7 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	ma_bubble_sched_t old;
 	marcel_mutex_lock(&current_sched_mutex);
 	old = current_sched;
-	if (old->exit)
+	if (old && old->exit)
 		old->exit();
 	current_sched = new_sched;
 	if (new_sched->init)

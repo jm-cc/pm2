@@ -49,6 +49,8 @@ define marcel-self
   # This command mimics "ma_slot_sp_task((unsigned long long)$ebp)".  GDB could
   # macro-expand `ma_slot_sp_task()' itself but it can only do it from the
   # right context, i.e., from a Marcel frame.
+
+  # TODO: handle the standard_main, stack_jumping and self_var cases
   marcel-sp
   p/x (marcel_task_t *)								\
    ((((unsigned long) $marcel_current_sp) & ~(THREAD_SLOT_SIZE - 1))		\

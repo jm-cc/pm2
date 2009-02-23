@@ -477,22 +477,25 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 		 * __do_bubble_insertentity. Thus we use ma_bubble_moveentity
 		 * instead. */
 		ma_bubble_moveentity(bubble, entity);
-	} else if (__do_bubble_insertentity(bubble,entity) && entity->type == MA_BUBBLE_ENTITY && entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+	} else {
 		bubble_sched_debugl(7,"inserting %p in bubble %p\n",entity,bubble);
-		/* sched holder was already set to something else, wake the bubble there */
-		PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
-		ma_holder_t *h;
-		h = ma_entity_holder_lock_softirq(entity);
-		if (!entity->run_holder)
-			ma_activate_running_entity(entity, entity->sched_holder);
-		MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);
-		if (!entity->run_holder_data)
-			ma_enqueue_entity(entity, entity->run_holder);
-		PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->run_holder));
-		ma_entity_holder_unlock_softirq(h);
+		int sched_holder_already_set = __do_bubble_insertentity(bubble,entity);
+		if (sched_holder_already_set &&
+				entity->type == MA_BUBBLE_ENTITY && entity->sched_holder->type == MA_RUNQUEUE_HOLDER) {
+			/* sched holder was already set to something else, wake the bubble there */
+			PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
+			ma_holder_t *h = ma_entity_holder_lock_softirq(entity);
+			if (!entity->run_holder)
+				ma_activate_running_entity(entity, entity->sched_holder);
+			MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);
+			if (!entity->run_holder_data)
+				ma_enqueue_entity(entity, entity->run_holder);
+			PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->run_holder));
+			ma_entity_holder_unlock_softirq(h);
+		}
+		bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 	}
 	/* TODO: dans le cas d'un thread, il faudrait aussi le déplacer dans son nouveau sched_holder s'il n'en avait pas déjà un, non ? */
-	bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
 
 	if (entity->type == MA_THREAD_ENTITY) {
 		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->bubble;

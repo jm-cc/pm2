@@ -1,3 +1,7 @@
+define marcel-sp
+  set $marcel_current_sp=$rbp
+end
+
 define __save-ctx
   set $marcel_saved_bp=$rbp
   set $marcel_saved_sp=$rsp

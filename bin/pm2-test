@@ -53,7 +53,12 @@ pm2_test_error() # msg
     exit 1
 }
 
-pm2_test_error_file() # msg file
+pm2_test_warning() # msg
+{
+    echo $* >&2
+}
+
+pm2_test_warning_file() # msg file
 {
     echo "----------------------------------------" >&2
     cat $2
@@ -158,7 +163,7 @@ do_the_test()
         fi
 	if [ `cat $file_status` -ne 0 ] ; then
 	    failures_per_module="$failures_per_module $prog"
-	    pm2_test_error_file "Execution of $prog failed" $file_result
+	    pm2_test_warning_file "Execution of $prog failed" $file_result
 	    return 1
 	fi
 
@@ -186,7 +191,7 @@ do_the_test()
 	    echo "Test ok!"
         else
 	    failures_per_module="$failures_per_module $prog"
-	    pm2_test_error_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
+	    pm2_test_warning_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
 	    return 1
         fi
 
@@ -441,12 +446,12 @@ while [ $_l -le $_level ]; do
 
 	echo "Compiling flavor \"$d_flavor\"..."
 	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
-	[ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+	[ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation failed"
 
 	d_progs=`cat $f | tr '\012' ' '`
 	echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
 	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
-	[ `cat $file_status` -eq 0 ] || pm2_test_error "Compilation failed"
+	[ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation failed"
     done
 
     echo "*** Performing level $_l tests ***"

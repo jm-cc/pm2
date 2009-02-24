@@ -549,6 +549,7 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 /* Détacher une bulle (et son contenu) de la bulle qui la contient, pour
  * pouvoir la placer ailleurs */
 int ma_bubble_detach(marcel_bubble_t *b) {
+	/* h, hb and hh are used only in MA_BUG_ON tests. This is intentional. */
 	ma_holder_t *h = b->as_entity.sched_holder;
 	marcel_bubble_t *hb;
 	ma_holder_t *hh;

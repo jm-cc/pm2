@@ -28,33 +28,33 @@ int marcel_sched_attr_init(marcel_sched_attr_t * attr)
 	return 0;
 }
 
-int marcel_sched_attr_setinitholder(marcel_sched_attr_t * attr, ma_holder_t * h)
+int marcel_sched_attr_setnaturalholder(marcel_sched_attr_t * attr, ma_holder_t * h)
 {
-	attr->init_holder = h;
+	attr->natural_holder = h;
 	return 0;
 }
 
-int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t * attr,
+int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t * attr,
     ma_holder_t ** h)
 {
-	*h = attr->init_holder;
+	*h = attr->natural_holder;
 	return 0;
 }
 
-int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t * attr,
+int marcel_sched_attr_getnaturalrq(__const marcel_sched_attr_t * attr,
     ma_runqueue_t ** rq)
 {
-	ma_holder_t *h = attr->init_holder;
+	ma_holder_t *h = attr->natural_holder;
 	MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
 	*rq = ma_rq_holder(h);
 	return 0;
 }
 
 #ifdef MA__BUBBLES
-int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t * attr,
+int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t * attr,
     marcel_bubble_t ** b)
 {
-	ma_holder_t *h = attr->init_holder;
+	ma_holder_t *h = attr->natural_holder;
 	MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
 	*b = ma_bubble_holder(h);
 	return 0;

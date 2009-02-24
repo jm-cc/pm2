@@ -360,7 +360,7 @@ memory_sched_submit (marcel_entity_t *e) {
 static int
 memory_sched_shake () {
   int ret = 0, shake = 0;
-  marcel_bubble_t *holding_bubble = ma_bubble_holder (ma_entity_task (marcel_self ())->init_holder);
+  marcel_bubble_t *holding_bubble = ma_bubble_holder (ma_entity_task (marcel_self ())->natural_holder);
   marcel_entity_t *e;
   MA_BUG_ON (holding_bubble == NULL);
 

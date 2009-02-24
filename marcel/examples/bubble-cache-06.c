@@ -63,7 +63,7 @@ main (int argc, char *argv[])
 	marcel_attr_t attr;
 
 	marcel_attr_init (&attr);
-	marcel_attr_setinitbubble (&attr, &marcel_root_bubble);
+	marcel_attr_setnaturalbubble (&attr, &marcel_root_bubble);
 
 	/* The main thread is one of the _heavy_ threads. */
 	ma_task_stats_set (unsigned long, marcel_self(), marcel_stats_load_offset, BIG_LOAD);

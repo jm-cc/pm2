@@ -1166,9 +1166,9 @@ static void __marcel_init main_thread_init(void)
 	marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
 #ifdef MA__BUBBLES
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
-	marcel_attr_setinitbubble(&attr, &marcel_root_bubble);
+	marcel_attr_setnaturalbubble(&attr, &marcel_root_bubble);
 #else
-	marcel_attr_setinitrq(&attr, &ma_main_runqueue);
+	marcel_attr_setnaturalrq(&attr, &ma_main_runqueue);
 #endif
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);

@@ -283,7 +283,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	ma_task_stats_set(long, p, ma_stats_nbready_offset, 1);
 #endif
 #ifdef MA__BUBBLES
-	h = ma_task_init_holder(p);
+	h = ma_task_natural_holder(p);
 
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
@@ -427,7 +427,7 @@ static void finish_task_switch(marcel_task_t *prev)
 	MA_BUG_ON(!(MA_TASK_IS_READY(prev) || MA_TASK_IS_BLOCKED(prev)));
 
 #ifdef MA__BUBBLES
-	if ((h = (ma_task_init_holder(prev)))
+	if ((h = (ma_task_natural_holder(prev)))
 		&& h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		int remove_from_bubble;
@@ -563,7 +563,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #ifdef MA__BUBBLES
 			marcel_bubble_t *b;
 			ma_holder_t *h;
-			if ((h = ma_task_init_holder(p)) && 
+			if ((h = ma_task_natural_holder(p)) && 
 					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);
 				if (ma_atomic_dec_and_test(&b->as_entity.time_slice) && current_sched->tick)
@@ -630,7 +630,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 		 right after it's been created (or woken up).  */
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 
-	marcel_attr_setinitrq(&attr, ma_lwp_rq(MA_LWP_SELF));
+	marcel_attr_setnaturalrq(&attr, ma_lwp_rq(MA_LWP_SELF));
 	marcel_attr_setpreemptible(&attr, tbx_false);
 
 	if (schedule)
@@ -1185,7 +1185,7 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
 	ma_holder_rawunlock(old_h);
 #ifdef MA__BUBBLES
-	old_h = ma_task_init_holder(MARCEL_SELF);
+	old_h = ma_task_natural_holder(MARCEL_SELF);
 	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
 		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
 #endif

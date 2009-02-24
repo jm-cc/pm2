@@ -437,7 +437,7 @@ static void lwp_init(ma_lwp_t lwp)
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
 	/* Elle doit prendre la main sur toute autre tâche de ce LWP */
 	marcel_attr_setprio(&attr, 0);
-	marcel_attr_setinitrq(&attr, ma_lwp_rq(lwp));
+	marcel_attr_setnaturalrq(&attr, ma_lwp_rq(lwp));
 #ifdef PM2
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);

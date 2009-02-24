@@ -54,7 +54,7 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
   marcel_bubble_insertbubble (marcel_bubble_holding_task (marcel_self ()), &team_bubble);
   marcel_bubble_inserttask (&team_bubble, marcel_self ());
 
-  marcel_attr_setinitbubble (&thread_attr, &team_bubble);
+  marcel_attr_setnaturalbubble (&thread_attr, &team_bubble);
 
   unsigned int i;
   marcel_t threads[nthreads];

@@ -56,7 +56,7 @@ typedef struct marcel_sched_attr marcel_sched_attr_t;
 #depend "scheduler/marcel_holder.h[types]"
 struct marcel_sched_attr {
 	int sched_policy;
-	ma_holder_t *init_holder;
+	ma_holder_t *natural_holder;
 	tbx_bool_t inheritholder;
 };
 
@@ -66,13 +66,13 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 #section macros
 #define MARCEL_SCHED_ATTR_INITIALIZER { \
 	.sched_policy = MARCEL_SCHED_DEFAULT, \
-	.init_holder = NULL, \
+	.natural_holder = NULL, \
 	.inheritholder = tbx_false, \
 }
 
 #define MARCEL_SCHED_ATTR_DESTROYER { \
    .sched_policy = -1, \
-	.init_holder = NULL, \
+	.natural_holder = NULL, \
 	.inheritholder = tbx_false, \
 }
 #section functions
@@ -80,39 +80,39 @@ int marcel_sched_attr_init(marcel_sched_attr_t *attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0
 
 
-int marcel_sched_attr_setinitholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW;
-/** Sets the initial holder for created thread */
-int marcel_attr_setinitholder(marcel_attr_t *attr, ma_holder_t *h) __THROW;
-#define marcel_attr_setinitholder(attr,holder) marcel_sched_attr_setinitholder(&(attr)->sched,holder)
+int marcel_sched_attr_setnaturalholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW;
+/** Sets the natural holder for created thread */
+int marcel_attr_setnaturalholder(marcel_attr_t *attr, ma_holder_t *h) __THROW;
+#define marcel_attr_setnaturalholder(attr,holder) marcel_sched_attr_setnaturalholder(&(attr)->sched,holder)
 
-int marcel_sched_attr_getinitholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW;
-/** Gets the initial holder for created thread */
-int marcel_attr_getinitholder(__const marcel_attr_t *attr, ma_holder_t **h) __THROW;
-#define marcel_attr_getinitholder(attr,holder) marcel_sched_attr_getinitholder(&(attr)->sched,holder)
+int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW;
+/** Gets the natural holder for created thread */
+int marcel_attr_getnaturalholder(__const marcel_attr_t *attr, ma_holder_t **h) __THROW;
+#define marcel_attr_getnaturalholder(attr,holder) marcel_sched_attr_getnaturalholder(&(attr)->sched,holder)
 
 
-int marcel_sched_attr_setinitrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
-#define marcel_sched_attr_setinitrq(attr, rq) marcel_sched_attr_setinitholder(attr, &(rq)->as_holder)
-/** Sets the initial runqueue for created thread */
-int marcel_attr_setinitrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
-#define marcel_attr_setinitrq(attr,rq) marcel_sched_attr_setinitrq(&(attr)->sched,rq)
+int marcel_sched_attr_setnaturalrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
+#define marcel_sched_attr_setnaturalrq(attr, rq) marcel_sched_attr_setnaturalholder(attr, &(rq)->as_holder)
+/** Sets the natural runqueue for created thread */
+int marcel_attr_setnaturalrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
+#define marcel_attr_setnaturalrq(attr,rq) marcel_sched_attr_setnaturalrq(&(attr)->sched,rq)
 
-int marcel_sched_attr_getinitrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
-/** Gets the initial runqueu for created thread */
-int marcel_attr_getinitrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
+int marcel_sched_attr_getnaturalrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
+/** Gets the initial runqueue for created thread */
+int marcel_attr_getnaturalrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
 #define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
 
 
 #ifdef MA__BUBBLES
-int marcel_sched_attr_setinitbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
-#define marcel_sched_attr_setinitbubble(attr, bubble) marcel_sched_attr_setinitholder(attr, &(bubble)->as_holder)
-/** Sets the initial bubbles for created thread */
-int marcel_attr_setinitbubble(marcel_attr_t *attr, marcel_bubble_t *bubble) __THROW;
-#define marcel_attr_setinitbubble(attr,bubble) marcel_sched_attr_setinitbubble(&(attr)->sched,bubble)
-int marcel_sched_attr_getinitbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
-/** Gets the initial bubbles for created thread */
-int marcel_attr_getinitbubble(__const marcel_attr_t *attr, marcel_bubble_t **bubble) __THROW;
-#define marcel_attr_getinitbubble(attr,bubble) marcel_sched_attr_getinitbubble(&(attr)->sched,bubble)
+int marcel_sched_attr_setnaturalbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
+#define marcel_sched_attr_setnaturalbubble(attr, bubble) marcel_sched_attr_setnaturalholder(attr, &(bubble)->as_holder)
+/** Sets the natural bubble for created thread */
+int marcel_attr_setnaturalbubble(marcel_attr_t *attr, marcel_bubble_t *bubble) __THROW;
+#define marcel_attr_setnaturalbubble(attr,bubble) marcel_sched_attr_setnaturalbubble(&(attr)->sched,bubble)
+int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+/** Gets the natural bubble for created thread */
+int marcel_attr_getnaturalbubble(__const marcel_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+#define marcel_attr_getnaturalbubble(attr,bubble) marcel_sched_attr_getnaturalbubble(&(attr)->sched,bubble)
 #endif
 
 int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
@@ -221,10 +221,10 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 #  ifdef MA__BUBBLES
 	if (SELF_GETMEM(cur_thread_seed)) {
 		ma_holder_t *h;
-		h = ma_task_init_holder(MARCEL_SELF);
+		h = ma_task_natural_holder(MARCEL_SELF);
 		if (!h)
 			h = &ma_main_runqueue.as_holder;
-		t->as_entity.sched_holder = t->as_entity.init_holder = h;
+		t->as_entity.sched_holder = t->as_entity.natural_holder = h;
 		rq = ma_to_rq_holder(h);
 		if (!rq)
 			rq = &ma_main_runqueue;
@@ -232,13 +232,13 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		return rq;
 	}
 	b = &SELF_GETMEM(bubble);
-	if (!b->as_entity.init_holder) {
+	if (!b->as_entity.natural_holder) {
 		ma_holder_t *h;
 		marcel_bubble_init(b);
-		h = ma_task_init_holder(MARCEL_SELF);
+		h = ma_task_natural_holder(MARCEL_SELF);
 		if (!h)
 			h = &ma_main_runqueue.as_holder;
-		b->as_entity.init_holder = h;
+		b->as_entity.natural_holder = h;
 		if (h->type != MA_RUNQUEUE_HOLDER) {
 			marcel_bubble_t *bb = ma_bubble_holder(h);
 			b->as_entity.sched_level = bb->as_entity.sched_level + 1;
@@ -343,17 +343,17 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 {
 	ma_holder_t *h = NULL;
 	LOG_IN();
-	if (attr->sched.init_holder) {
-		h = attr->sched.init_holder;
+	if (attr->sched.natural_holder) {
+		h = attr->sched.natural_holder;
 #ifdef MA__BUBBLES
 	} else if (attr->sched.inheritholder) {
 		/* TODO: on suppose ici que la bulle est éclatée et qu'elle ne sera pas refermée d'ici qu'on wake_up_created ce thread */
-		h = ma_task_init_holder(MARCEL_SELF);
+		h = ma_task_natural_holder(MARCEL_SELF);
 #endif
 	}
 	t->as_entity.sched_policy = attr->sched.sched_policy;
 	t->as_entity.run_holder=NULL;
-	t->as_entity.init_holder=NULL;
+	t->as_entity.natural_holder=NULL;
 	t->as_entity.run_holder_data=NULL;
 #ifdef MA__BUBBLES
 	INIT_LIST_HEAD(&t->as_entity.bubble_entity_list);
@@ -361,7 +361,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	if (h) {
 		t->as_entity.sched_holder = h;
 #ifdef MA__BUBBLES
-		t->as_entity.init_holder = h;
+		t->as_entity.natural_holder = h;
 #endif
 	} else {
 		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, attr);
@@ -422,7 +422,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
-	t->bubble.as_entity.init_holder = NULL;
+	t->bubble.as_entity.natural_holder = NULL;
 #endif
 	ma_atomic_init(&t->as_entity.time_slice,MARCEL_TASK_TIMESLICE);
 	LOG_OUT();
@@ -560,7 +560,7 @@ int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,
 #endif
 	LOG_IN();
 #ifdef MA__BUBBLES
-	if ((bh=ma_task_init_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
+	if ((bh=ma_task_natural_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
 		bh = NULL;
 #endif
 

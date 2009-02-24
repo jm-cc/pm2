@@ -44,8 +44,8 @@ static int ma_stolen_score(marcel_entity_t *entity, int penalty)
 
   /* Mother bubble shared memory */
   int affinity;
-  if (entity->init_holder)
-    affinity = MA_FATHER_AFFINITY_SCORE * log10((double)ma_bubble_memory_affinity(ma_bubble_holder(entity->init_holder)));
+  if (entity->natural_holder)
+    affinity = MA_FATHER_AFFINITY_SCORE * log10((double)ma_bubble_memory_affinity(ma_bubble_holder(entity->natural_holder)));
   else
     affinity = 0;
 
@@ -112,7 +112,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
       }
     }
     else
-      if (e->init_holder)
+      if (e->natural_holder)
         number ++;
   }
   for_each_entity_scheduled_in_bubble_end();
@@ -129,7 +129,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
         if (ma_bubble_entity(e)->old)
           continue;
 
-      if (!e->init_holder)
+      if (!e->natural_holder)
         return;
 
       if (ma_entity_is_active(e) == 0) {
@@ -170,7 +170,7 @@ static void ma_find_interesting_entity_in_bubble(ma_holder_t *h, int *totalload,
       if (ma_entity_is_active(e))
         continue;
       else {
-        if (!e->init_holder)
+        if (!e->natural_holder)
           continue;
 
         /* Best score entity */
@@ -213,7 +213,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
       }
     }
     else
-      if (e->init_holder)
+      if (e->natural_holder)
         number ++;
   }
 
@@ -226,7 +226,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
         if (ma_bubble_entity(e)->old)
           continue;
 
-      if (!e->init_holder)
+      if (!e->natural_holder)
         return;
       if (ma_entity_is_active(e) == 0) {
         /* One non active entity on runqueue */
@@ -266,7 +266,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
         if (ma_bubble_entity(e)->old)
           continue;
 
-      if (!e->init_holder)
+      if (!e->natural_holder)
         continue;
       if (ma_entity_is_active(e))
         continue;
@@ -371,7 +371,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
   int number = 1;
   upentity = entity;
   for (;;) {
-    if (upentity->init_holder == 0) {
+    if (upentity->natural_holder == 0) {
       break;
     }
 
@@ -379,7 +379,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
         && ma_rq_holder(upentity->sched_holder) == &father->rq)
       break;
 
-    upentity = &ma_bubble_holder(upentity->init_holder)->as_entity;
+    upentity = &ma_bubble_holder(upentity->natural_holder)->as_entity;
     number ++;
   }
 
@@ -387,7 +387,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
   number = 0;
   family[number] = entity;
   for (;;) {
-    if (family[number]->init_holder == 0) {
+    if (family[number]->natural_holder == 0) {
       break;
     }
 
@@ -395,7 +395,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
         && ma_rq_holder(family[number]->sched_holder) == &father->rq)
       break;
 
-    family[number+1] = &ma_bubble_holder(family[number]->init_holder)->as_entity;
+    family[number+1] = &ma_bubble_holder(family[number]->natural_holder)->as_entity;
     number ++;
   }
 
@@ -412,7 +412,7 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
       if (holder != rqholder)
         ma_holder_rawlock(holder);
       ma_bubble_lock(ma_bubble_entity(family[number]));
-      if (family[number]->init_holder)
+      if (family[number]->natural_holder)
         state = ma_get_entity(family[number]);
       if (holder != rqholder)
         ma_holder_rawunlock(holder);
@@ -422,8 +422,8 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
         /* To avoid bubble on mother bubble runqueue */
         if (rqholder != &marcel_topo_level(0,0)->rq.as_holder) {
           state = ma_get_entity(downentity);
-          if (&ma_to_rq_holder(downentity->init_holder)->as_holder == rqholder)
-            ma_put_entity(downentity, downentity->init_holder, state);
+          if (&ma_to_rq_holder(downentity->natural_holder)->as_holder == rqholder)
+            ma_put_entity(downentity, downentity->natural_holder, state);
           else
             ma_put_entity(downentity, rqholder, state);
         }
@@ -438,17 +438,17 @@ static void ma_work_on_entity(marcel_entity_t *entity, int is_stolen, struct mar
       ma_bubble_unlock(ma_bubble_entity(family[number]));
     }
     else {
-      if (family[number]->init_holder != holder) {
+      if (family[number]->natural_holder != holder) {
         ma_holder_rawlock(holder);
         state = ma_get_entity(family[number]);
         ma_holder_rawunlock(holder);
       }
     }
 
-    if (family[number]->init_holder) {
-      ma_holder_rawlock(family[number]->init_holder);
-      ma_put_entity(family[number],family[number]->init_holder,state);
-      ma_holder_rawunlock(family[number]->init_holder);
+    if (family[number]->natural_holder) {
+      ma_holder_rawlock(family[number]->natural_holder);
+      ma_put_entity(family[number],family[number]->natural_holder,state);
+      ma_holder_rawunlock(family[number]->natural_holder);
     }
     number --;
   }

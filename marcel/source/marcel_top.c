@@ -102,7 +102,7 @@ static void printtask(marcel_task_t *t) {
 			MARCEL_MAXNAMESIZE, t->name,
 			t->as_entity.prio, cpu/10UL, cpu%10UL,
 			state, schedstate, ma_get_task_vpnum(t),
-			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+			get_holder_name(ma_task_natural_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 
@@ -122,7 +122,7 @@ static void printtask(marcel_task_t *t) {
 			MARCEL_MAXNAMESIZE, "",
 			t->as_entity.prio,
 			schedstate,
-			get_holder_name(ma_task_init_holder(t),buf1,sizeof(buf1)),
+			get_holder_name(ma_task_natural_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
 			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
 
@@ -163,7 +163,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
         	MARCEL_MAXNAMESIZE-7, "",
 		buf4,
 		b->as_entity.prio,
-		get_holder_name(b->as_entity.init_holder,buf1,sizeof(buf1)),
+		get_holder_name(b->as_entity.natural_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->as_entity.sched_holder,buf2,sizeof(buf2)),
 		get_holder_name(b->as_entity.run_holder,buf3,sizeof(buf3)));
 #ifdef MARCEL_STATS_ENABLED

@@ -152,7 +152,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * qu'elle est en cours d'exécution. Sinon, c'est qu'elle est préemptée, prête
  * pour l'exécution dans la liste run_list.
  *
- * On peut ainsi avoir un thread contenu dans une bulle (init_holder), endormi
+ * On peut ainsi avoir un thread contenu dans une bulle (natural_holder), endormi
  * (donc run_holder == NULL), mais qui sera réveillé sur une certaine runqueue
  * (sched_holder).
  * */
@@ -161,9 +161,19 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
 /**
- * An entity is held in some initial holder (::init_holder), is put on some
- * scheduling holder (::sched_holder) by bubble schedulers, and is actually
- * still running in some running holder (::run_holder).
+ * An entity is (potentially):
+ * - held in some natural, application-structure-dependent, holder
+ *   (::natural_holder)
+ * - put on some application-state-dependent scheduling holder (::sched_holder)
+ *   by bubble scheduler algorithms, onto which it should migrate as soon as
+ *   _possible_ (but not necessarily immediately) if it is not already runnint
+ *   there
+ * - queued or running on some running holder (::run_holder).
+ * That is, the sched_holder and the run_holder work as a dampening team in a
+ * way similar to double buffering schemes where the run_holder represents the
+ * last instantiated scheduling decision while the sched_holder represents the
+ * upcoming scheduling decision that the scheduling algorithm is currently busy
+ * figuring out.
  *
  * ::run_holder_data is NULL when the entity is currently running. Else, it was
  * preempted and put in ::run_list.
@@ -171,11 +181,15 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 struct ma_entity {
 	/** \brief Entity type */
 	enum marcel_entity type;
-	/** \brief Initial holder, i.e. the one that the programmer provides (the holding bubble, typically). */
-	ma_holder_t *init_holder;
-	/** \brief Scheduling holder */
+	/** \brief Natural holder, i.e. the one that the programmer hinted out of the application structure
+	 * (the holding bubble, typically). */
+	ma_holder_t *natural_holder;
+	/** \brief Scheduling holder, i.e. the holder currently selected by the scheduling algorithms out
+	 * of application activity state. It may be modified independently from the run_holder, in which
+	 * case it constitutes a target toward which the entity should migrate in due time. */
 	ma_holder_t *sched_holder;
-	/** \brief Running holder */
+	/** \brief Running holder, i.e. the transient holder on which the entity is currently running or
+	 * queued as eligible for running once its turn comes. */
 	ma_holder_t *run_holder;
 	/** \brief Data for the running holder */
 	void *run_holder_data;
@@ -292,7 +306,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
-	.init_holder = NULL, .sched_holder = NULL, .run_holder = NULL, \
+	.natural_holder = NULL, .sched_holder = NULL, .run_holder = NULL, \
 	.run_holder_data = NULL, \
 	.run_list = LIST_HEAD_INIT((e).run_list), \
 	/*.sched_policy = */ \
@@ -306,7 +320,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 }
 
 #section marcel_macros
-#define ma_task_init_holder(p)	(THREAD_GETMEM(p,as_entity.init_holder))
+#define ma_task_natural_holder(p)	(THREAD_GETMEM(p,as_entity.natural_holder))
 #define ma_task_sched_holder(p)	(THREAD_GETMEM(p,as_entity.sched_holder))
 #define ma_task_run_holder(p)	(THREAD_GETMEM(p,as_entity.run_holder))
 #define ma_this_run_holder()	(ma_task_run_holder(MARCEL_SELF))
@@ -349,7 +363,7 @@ static __tbx_inline__ ma_holder_t *ma_entity_active_holder(marcel_entity_t *e)
 	if ((holder = e->sched_holder))
 		return holder;
         sched_debug("using default queue for %p\n",e);
-        return e->init_holder;
+        return e->natural_holder;
 #else
         return e->sched_holder;
 #endif
@@ -773,7 +787,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 static __tbx_inline__ void _ma_put_entity_check(marcel_entity_t *e, ma_holder_t *h) {
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {
-		MA_BUG_ON(h != e->init_holder);
+		MA_BUG_ON(h != e->natural_holder);
 		if (e->type == MA_BUBBLE_ENTITY)
 			PROF_EVENT2(bubble_sched_bubble_goingback, ma_bubble_entity(e), ma_bubble_holder(h));
 		else

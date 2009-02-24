@@ -541,7 +541,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	}
 #endif
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
-	marcel_attr_setinitrq(&attr, ma_dontsched_rq(lwp));
+	marcel_attr_setnaturalrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
 			ma_vpnum(lwp) == -1 || ma_vpnum(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
 			(void*)(ma_lwp_t)lwp);

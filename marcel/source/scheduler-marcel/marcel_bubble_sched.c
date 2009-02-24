@@ -205,7 +205,7 @@ int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 }
 
 int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
-	/* FIXME: - explain why we set the sched_holder and not the init_holder here.
+	/* FIXME: - explain why we set the sched_holder and not the natural_holder here.
 	 *        - the name of the function is thus confusing */
 	bubble->as_entity.sched_holder = &rq->as_holder;
 	return 0;
@@ -295,7 +295,7 @@ int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio) {
 }
 
 marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *e) {
-	ma_holder_t *h = e->init_holder;
+	ma_holder_t *h = e->natural_holder;
 	if (!h || h->type != MA_BUBBLE_HOLDER) {
 		h = e->sched_holder;
 		if (!h || ma_holder_type(h) != MA_BUBBLE_HOLDER)
@@ -363,15 +363,15 @@ static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *e
 	marcel_bubble_t *bubble_src;
 	int res;
 
-	MA_BUG_ON(entity->init_holder->type == MA_RUNQUEUE_HOLDER);
-	bubble_src = ma_bubble_holder(entity->init_holder);
+	MA_BUG_ON(entity->natural_holder->type == MA_RUNQUEUE_HOLDER);
+	bubble_src = ma_bubble_holder(entity->natural_holder);
 	if (bubble_src == bubble_dst)
 		return;
 
 	/* remove entity from bubble src */
 	ma_holder_lock_softirq(&bubble_src->as_holder);
-	MA_BUG_ON(entity->init_holder != &bubble_src->as_holder);
-	entity->init_holder = NULL;
+	MA_BUG_ON(entity->natural_holder != &bubble_src->as_holder);
+	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble_src->barrier, -1);
@@ -393,7 +393,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *e
 	list_add_tail(&entity->bubble_entity_list, &bubble_dst->heldentities);
 	marcel_barrier_addcount(&bubble_dst->barrier, 1);
 	bubble_dst->nbentities++;
-	entity->init_holder = &bubble_dst->as_holder;
+	entity->natural_holder = &bubble_dst->as_holder;
 	ma_holder_t *sched_bubble_h = bubble_dst->as_entity.sched_holder;
 	PROF_EVENTSTR(sched_status, "heriter du sched_holder de la bulle ou on insere");
 	if (!sched_bubble_h || ma_holder_type(sched_bubble_h) == MA_RUNQUEUE_HOLDER) {
@@ -410,9 +410,9 @@ static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *e
 		/* we need to get this entity out of this bubble */
 		int state = ma_get_entity(entity);
 		ma_holder_rawunlock(h);
-		ma_holder_rawlock(entity->init_holder);
-		ma_put_entity(entity, entity->init_holder, state);
-		ma_holder_unlock_softirq(entity->init_holder);
+		ma_holder_rawlock(entity->natural_holder);
+		ma_put_entity(entity, entity->natural_holder, state);
+		ma_holder_unlock_softirq(entity->natural_holder);
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);
@@ -442,7 +442,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	list_add_tail(&entity->bubble_entity_list, &bubble->heldentities);
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nbentities++;
-	entity->init_holder = &bubble->as_holder;
+	entity->natural_holder = &bubble->as_holder;
 	/* FIXME: add a comment to explain why entities with a runqueue sched_holder are left out.
 	 */
 	 if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) {
@@ -466,7 +466,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_IN();
 
 	if (!list_empty(&entity->bubble_entity_list)) {
-		if (ma_bubble_holder(entity->init_holder) == bubble)
+		if (ma_bubble_holder(entity->natural_holder) == bubble)
 			LOG_RETURN(0);
 
 		/* If the entity is already in a bubble, move it directly to
@@ -499,7 +499,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 
 	if (entity->type == MA_THREAD_ENTITY) {
 		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->bubble;
-		if (thread_bubble->as_entity.init_holder)
+		if (thread_bubble->as_entity.natural_holder)
 			marcel_bubble_insertentity(bubble,ma_entity_bubble(thread_bubble));
 	}
 	LOG_RETURN(0);
@@ -511,8 +511,8 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 
 	/* Remove entity from bubble */
 	ma_holder_lock_softirq(&bubble->as_holder);
-	MA_BUG_ON(entity->init_holder != &bubble->as_holder);
-	entity->init_holder = NULL;
+	MA_BUG_ON(entity->natural_holder != &bubble->as_holder);
+	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
 	list_del_init(&entity->bubble_entity_list);
 	marcel_barrier_addcount(&bubble->barrier, -1);
@@ -574,7 +574,7 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_holder_t *h;
 	LOG_IN();
 	/* FIXME: the comment below is confusing: why do we look for an initial runqueue in
-	 * the entity's sched_holder instead of its init_holder? */
+	 * the entity's sched_holder instead of its natural_holder? */
 	/* If no initial runqueue was specified, use the current one */
 	if (!(h = (bubble->as_entity.sched_holder))) {
 		h = ma_task_sched_holder(MARCEL_SELF);
@@ -614,7 +614,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 		ma_deactivate_running_entity(&bubble->as_entity, h);
 	}
 	ma_bubble_holder_unlock_softirq(h);
-	if ((h = bubble->as_entity.init_holder)
+	if ((h = bubble->as_entity.natural_holder)
 		&& h->type == MA_BUBBLE_HOLDER
 		&& h != &bubble->as_holder)
 		marcel_bubble_removeentity(ma_bubble_holder(h), &bubble->as_entity);
@@ -626,7 +626,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 #undef marcel_sched_exit
 void marcel_sched_exit(marcel_t t) {
 	marcel_bubble_t *b = &t->bubble;
-	if (b->as_entity.init_holder) {
+	if (b->as_entity.natural_holder) {
 		/* bubble initialized */
 		marcel_bubble_join(b);
 	}
@@ -715,7 +715,7 @@ void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 			/* déjà rassemblé */
 			continue;
 
-		MA_BUG_ON(e->init_holder != &b->as_holder);
+		MA_BUG_ON(e->natural_holder != &b->as_holder);
 		state = ma_get_entity(e);
 		mdebug("putting back %p in bubble %p(%p)\n", e, b, &b->as_holder);
 		PROF_EVENTSTR(sched_status,"gather: putting back entity");

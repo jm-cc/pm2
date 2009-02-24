@@ -360,13 +360,13 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
   common_level = ma_topo_common_ancestor (source_level, starving_level);
   nvp = marcel_vpset_weight (&common_level->rq.vpset);
 
-  /* The main thread doesn't have an `init_holder'.  */
-  if (entity_to_steal->init_holder) {
+  /* The main thread doesn't have an `natural_holder'.  */
+  if (entity_to_steal->natural_holder) {
     /* Before moving the target entity, we have to move up some of its
        ancestors to avoid locking issues. */
-    for (e = &ma_bubble_holder (entity_to_steal->init_holder)->as_entity;
-	 e->init_holder;
-	 e = &ma_bubble_holder (e->init_holder)->as_entity) {
+    for (e = &ma_bubble_holder (entity_to_steal->natural_holder)->as_entity;
+	 e->natural_holder;
+	 e = &ma_bubble_holder (e->natural_holder)->as_entity) {
       /* In here, we try to find these ancestors */
       if ((e->sched_holder->type == MA_RUNQUEUE_HOLDER) &&
 	  ((e->sched_holder == &common_level->rq.as_holder) || (marcel_vpset_weight (&ma_rq_holder (e->sched_holder)->vpset) > nvp))) {

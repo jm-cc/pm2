@@ -348,7 +348,7 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 	marcel_entity_t *upentity = entity;
 	ma_holder_t *h;
 	while (level--) {
-		h = upentity->init_holder;
+		h = upentity->natural_holder;
 		if (h == NULL || h->type == MA_RUNQUEUE_HOLDER)
 			break;
 		upentity = &ma_bubble_holder(h)->as_entity;

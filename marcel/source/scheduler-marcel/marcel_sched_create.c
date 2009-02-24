@@ -121,7 +121,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	LOG_IN();
 
 #ifdef MA__BUBBLES
-	if ((bh=ma_task_init_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
+	if ((bh=ma_task_natural_holder(new_task)) && bh->type != MA_BUBBLE_HOLDER)
 		bh = NULL;
 #endif
 
@@ -229,7 +229,7 @@ restart:
 
 	/* mimic his scheduling situation */
 #ifdef MA__BUBBLES
-	h = ma_task_init_holder(seed);
+	h = ma_task_natural_holder(seed);
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */

@@ -112,7 +112,7 @@ main (int argc, char *argv[])
     if (team == 0)
       marcel_bubble_inserttask (bubbles + team, marcel_self ());
 
-    marcel_attr_setinitbubble (&attr, bubbles + team);
+    marcel_attr_setnaturalbubble (&attr, bubbles + team);
 
     ta[team].signal = &start_signal;
     ta[team].team = team;

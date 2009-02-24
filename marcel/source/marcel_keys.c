@@ -106,7 +106,13 @@ DEF_PTHREAD(int, key_create, (pthread_key_t *key, void (*func)(void *)), (key, f
 				   void (*func)(void *)), (key, func))
 
 DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
-{				/* pour l'instant, le destructeur n'est pas utilise */
+{
+	/* Note: This function does *not* invoke KEY's destructors.  Quoting
+	   http://www.opengroup.org/onlinepubs/009695399/functions/pthread_key_delete.html,
+	   "It is the responsibility of the application to free any application
+	   storage or perform any cleanup actions for data structures related to
+	   the deleted key or associated thread-specific data in any threads".  */
+
 	LOG_IN();
 	ma_spin_lock(&marcel_key_lock);
 	if (marcel_key_present[key]) {

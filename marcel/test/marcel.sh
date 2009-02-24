@@ -1,6 +1,6 @@
 #-*-sh-*-
 # PM2: Parallel Multithreaded Machine
-# Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+# Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -117,12 +117,13 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_tls)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""							\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="bug_on" --marcel="spinlock" --marcel="marcel_main"	\
 		--marcel="standard_main" --marcel="dont_use_pthread"		\
 		--marcel="malloc_preempt_debug"					\
+		--marcel="enable_keys"						\
 		--tbx="safe_malloc" --tbx="parano_malloc"			\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;

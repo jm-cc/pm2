@@ -133,7 +133,7 @@ struct __marcel_attr_s {
 }
 
 /* #define MARCEL_SCHED_ATTR_DESTROYER { \ */
-/* 	.init_holder = NULL, \ /\* à voir *\/ */
+/* 	.natural_holder = NULL, \ /\* à voir *\/ */
 /* 	.prio = -1, \ */
 /* 	.inheritholder = tbx_false, \ /\* à voir *\/ */
 /* } */

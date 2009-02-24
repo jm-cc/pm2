@@ -225,7 +225,7 @@ define marcel-printthread
   if $arg0->lwp
     printf " %2d", $arg0->lwp->vpnum
   end
-  ma-printholder $arg0->as_entity.init_holder
+  ma-printholder $arg0->as_entity.natural_holder
   ma-printholder $arg0->as_entity.sched_holder
   ma-printholder $arg0->as_entity.run_holder
   printf "\n"

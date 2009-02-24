@@ -146,16 +146,6 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 }
 
 #section structures
-/* Une entité a un type (bulle/thread), a un conteneur initial (bulle ou
- * directement runqueue), un conteneur d'ordonnancement, et un conteneur où
- * elle est active (prête à être ordonnancé).  Si run_holder_data est NULL, c'est
- * qu'elle est en cours d'exécution. Sinon, c'est qu'elle est préemptée, prête
- * pour l'exécution dans la liste run_list.
- *
- * On peut ainsi avoir un thread contenu dans une bulle (natural_holder), endormi
- * (donc run_holder == NULL), mais qui sera réveillé sur une certaine runqueue
- * (sched_holder).
- * */
 #depend "[types]"
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"

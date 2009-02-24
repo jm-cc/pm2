@@ -77,7 +77,7 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 	@cp configure.ac externals/
 	@( cd externals ; $${AUTOCONF:-autoconf} )
 	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
-	@( cd externals ; $${AUTOHEADER:-autoheader} )
+	@( cd externals ; $${AUTOHEADER:-autoheader} -f )
 	-@mkdir $(PUK_BUILDDIR)
 	-@mkdir $(PM2_BUILD_DIR)/lib/
 

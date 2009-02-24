@@ -573,6 +573,8 @@ int ma_bubble_detach(marcel_bubble_t *b) {
 void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_holder_t *h;
 	LOG_IN();
+	/* FIXME: the comment below is confusing: why do we look for an initial runqueue in
+	 * the entity's sched_holder instead of its init_holder? */
 	/* If no initial runqueue was specified, use the current one */
 	if (!(h = (bubble->as_entity.sched_holder))) {
 		h = ma_task_sched_holder(MARCEL_SELF);

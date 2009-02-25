@@ -87,7 +87,9 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 		.needed = -1,
 #endif
 		.vpdata = MARCEL_TOPO_VPDATA_INITIALIZER(&marcel_machine_level[0].vpdata),
+#ifdef MA__NUMA
 		.nodedata = MARCEL_TOPO_NODEDATA_INITIALIZER(&marcel_machine_level[0].nodedata),
+#endif
 	},
 	{
 		.vpset = MARCEL_VPSET_ZERO,

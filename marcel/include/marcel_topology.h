@@ -678,7 +678,9 @@ struct marcel_topo_level {
 	int needed;
 #endif
 
+#ifdef MA__NUMA
 	struct marcel_topo_nodedata nodedata; /* for NUMA node levels */
+#endif
 	struct marcel_topo_vpdata vpdata; /* for VP levels */
 
 #ifdef MA__NUMA

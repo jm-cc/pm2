@@ -21,6 +21,7 @@ volatile int a=0;
 
 marcel_t main_thread;
 
+static
 any_t f(any_t arg)
 {
   register long n = (long)arg;
@@ -35,6 +36,7 @@ any_t f(any_t arg)
   return NULL;
 }
 
+static
 any_t f2(any_t arg)
 {
   register long n = (long)arg;
@@ -53,6 +55,7 @@ any_t f2(any_t arg)
   return NULL;
 }
 
+static
 any_t f3(any_t arg)
 {
   register long n = (long)arg;
@@ -67,6 +70,7 @@ any_t f3(any_t arg)
   return NULL;
 }
 
+static
 any_t f4(any_t arg)
 {
   register long n = (long)arg;
@@ -83,6 +87,7 @@ any_t f4(any_t arg)
 
 extern void stop_timer(void);
 
+static
 void bench_setjmp(unsigned nb)
 {
   tbx_tick_t t1, t2;
@@ -100,6 +105,7 @@ void bench_setjmp(unsigned nb)
 
 }
 
+static
 void bench_longjmp(unsigned nb)
 {
   tbx_tick_t t1, t2;
@@ -119,6 +125,7 @@ void bench_longjmp(unsigned nb)
 
 }
 
+static
 void bench_contsw(unsigned long nb)
 {
   marcel_t pid;
@@ -149,6 +156,7 @@ void bench_contsw(unsigned long nb)
   marcel_join(pid, &status);
 }
 
+static
 void bench_contsw2(unsigned long nb)
 {
   marcel_t pid;
@@ -177,6 +185,7 @@ void bench_contsw2(unsigned long nb)
   marcel_join(pid, &status);
 }
 
+static
 void bench_contsw3(unsigned long nb)
 {
   marcel_t pid;
@@ -199,6 +208,7 @@ void bench_contsw3(unsigned long nb)
   marcel_join(pid, &status);
 }
 
+static
 void bench_contsw4(unsigned long nb)
 {
   marcel_t pid;

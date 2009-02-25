@@ -21,13 +21,16 @@
 #ifdef MARCEL_CLEANUP_ENABLED
 #define STACK_SIZE	10000
 
+static
 char *mess[2] = { "boys", "girls" };
 
+static
 void bye(any_t arg)
 {
    tfprintf(stderr, "Bye bye %s!\n", (char*) arg);
 }
 
+static
 any_t writer(any_t arg)
 { int i;
 

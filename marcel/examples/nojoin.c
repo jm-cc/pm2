@@ -20,8 +20,10 @@
 
 #define NB    3
 
+static
 char *mess[NB] = { "boys", "girls", "people" };
 
+static
 any_t writer(any_t arg)
 {
   int i, j;

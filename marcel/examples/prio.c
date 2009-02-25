@@ -20,6 +20,7 @@
 
 volatile int finished;
 
+static
 any_t sample(any_t arg)
 {
    int i;

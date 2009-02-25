@@ -18,8 +18,10 @@
 
 #include "marcel.h"
 
+static
 marcel_sem_t sem;
 
+static
 void *
 f(void *arg) {
 	for (;;) {

@@ -22,6 +22,7 @@
 
 static marcel_sem_t sem[NB];
 
+static
 any_t thread_func(any_t arg)
 {
   unsigned long num = (long)arg;

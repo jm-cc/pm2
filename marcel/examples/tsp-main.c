@@ -29,6 +29,7 @@ int          nb_workers;
 struct s_tsp_queue     q;
 struct s_distance_table distance;
 
+static
 void generate_map(struct s_distance_table *map)
 {
 const int n = map->n;
@@ -74,6 +75,7 @@ int dx, dy, tmp ;
   }
 }
 
+static
 void PrintDistTab ()
 {
  int i, j ;

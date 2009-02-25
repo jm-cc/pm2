@@ -20,6 +20,7 @@
 
 static tbx_bool_t finished = tbx_false;
 
+static
 any_t looper(any_t arg)
 {
   marcel_fprintf(stderr, "Looper lauched on LWP %d\n",
@@ -31,6 +32,7 @@ any_t looper(any_t arg)
   return NULL;
 }
 
+static
 any_t f(any_t arg)
 {
   marcel_sem_V((marcel_sem_t *)arg);
@@ -42,6 +44,7 @@ extern void stop_timer(void);
 
 tbx_tick_t t1, t2;
 
+static
 any_t main_thread(void *arg)
 {
   marcel_attr_t attr;

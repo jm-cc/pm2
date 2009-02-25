@@ -22,8 +22,10 @@ any_t ALL_IS_OK = (any_t)123456789L;
 
 #define NB    3
 
+static
 char *mess[NB] = { "boys", "girls", "people" };
 
+static
 any_t writer(any_t arg)
 {
   int i;

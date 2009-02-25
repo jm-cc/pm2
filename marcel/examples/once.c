@@ -19,6 +19,7 @@
 #include "marcel.h"
 
 #ifdef MARCEL_ONCE_ENABLED
+static
 void f(void)
 {
    tprintf("Salut les gars !\n");

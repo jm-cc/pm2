@@ -23,6 +23,7 @@
 
 #define MESSAGE		"Hi boys !"
 
+static
 any_t writer(any_t arg)
 {
   int i, j;

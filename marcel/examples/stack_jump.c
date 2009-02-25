@@ -22,6 +22,7 @@
 
 static void *stack;
 
+static
 any_t thread_func(any_t arg)
 {
   marcel_detach(marcel_self());

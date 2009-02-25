@@ -137,7 +137,7 @@ void bench_contsw(unsigned long nb)
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
-  marcel_attr_setinitbubble(&attr, &b);
+  marcel_attr_setnaturalbubble(&attr, &b);
   marcel_wake_up_bubble(&b);
 #endif
 
@@ -197,7 +197,7 @@ void bench_contsw3(unsigned long nb)
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
-  marcel_attr_setinitbubble(&attr, &b);
+  marcel_attr_setnaturalbubble(&attr, &b);
   marcel_wake_up_bubble(&b);
 #endif
 
@@ -220,7 +220,7 @@ void bench_contsw4(unsigned long nb)
 #ifdef MA_BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
-  marcel_attr_setinitbubble(&attr, &b);
+  marcel_attr_setnaturalbubble(&attr, &b);
   marcel_wake_up_bubble(&b);
 #endif
 

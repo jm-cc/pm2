@@ -113,7 +113,7 @@ main (int argc, char *argv[]) {
 		if (team == 0) {
 			marcel_bubble_inserttask (bubbles + team, marcel_self ());
 		}
-		marcel_attr_setinitbubble (&attr, bubbles + team);
+		marcel_attr_setnaturalbubble (&attr, bubbles + team);
 
 		ta[team].start_signal = (team == 0) ? &die_later_signal : &die_first_signal;
 		ta[team].team_barrier = team_barrier + team;

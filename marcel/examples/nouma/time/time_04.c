@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 	{
 		marcel_attr_t attr;
 		marcel_attr_init(&attr);
-		marcel_attr_setinitbubble(&attr, &b1);
+		marcel_attr_setnaturalbubble(&attr, &b1);
 		marcel_attr_setid(&attr,0);
 		marcel_attr_setprio(&attr,0);
 		marcel_attr_setname(&attr,"thread");
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	{
 		marcel_attr_t attr;
 		marcel_attr_init(&attr);
-		marcel_attr_setinitbubble(&attr, &b1);
+		marcel_attr_setnaturalbubble(&attr, &b1);
 		marcel_attr_setid(&attr,0);
 		marcel_attr_setprio(&attr,0);
 		marcel_attr_setname(&attr,"thread");
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
 	{
 		marcel_attr_t attr;
 		marcel_attr_init(&attr);
-		marcel_attr_setinitbubble(&attr, &b2);
+		marcel_attr_setnaturalbubble(&attr, &b2);
 		marcel_attr_setid(&attr,0);
 		marcel_attr_setprio(&attr,0);
 		marcel_attr_setname(&attr,"thread");
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
 	{
 		marcel_attr_t attr;
 		marcel_attr_init(&attr);
-		marcel_attr_setinitbubble(&attr, &b2);
+		marcel_attr_setnaturalbubble(&attr, &b2);
 		marcel_attr_setid(&attr,0);
 		marcel_attr_setprio(&attr,0);
 		marcel_attr_setname(&attr,"thread");

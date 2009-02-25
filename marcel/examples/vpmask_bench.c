@@ -73,7 +73,7 @@ void bench_migrate(unsigned long nb, int active)
 #ifdef MA__BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
-  marcel_attr_setinitbubble(&attr, &b);
+  marcel_attr_setnaturalbubble(&attr, &b);
   marcel_bubble_setinitrq(&b, &marcel_topo_vp_level[2].rq);
   marcel_wake_up_bubble(&b);
 #endif

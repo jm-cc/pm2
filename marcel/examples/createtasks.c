@@ -53,7 +53,7 @@ any_t main_thread(void *arg)
   marcel_attr_setseed(&attr, seed);
   marcel_attr_setprio(&attr, MA_BATCH_PRIO);
 #ifdef MA__BUBBLES
-  marcel_attr_setinitbubble(&attr, &b);
+  marcel_attr_setnaturalbubble(&attr, &b);
 #else
   marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(0));
 #endif

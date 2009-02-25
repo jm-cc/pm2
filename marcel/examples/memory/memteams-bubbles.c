@@ -205,7 +205,7 @@ main (int argc, char **argv)
       }
       marcel_attr_init (&thread_attr[team][i]);
       marcel_attr_setpreemptible (&thread_attr[team][i], tbx_false);
-      marcel_attr_setinitbubble (&thread_attr[team][i], &bubbles[team]);
+      marcel_attr_setnaturalbubble (&thread_attr[team][i], &bubbles[team]);
       marcel_attr_setid (&thread_attr[team][i], i);
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
     attach_mem:

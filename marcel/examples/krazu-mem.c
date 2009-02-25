@@ -80,7 +80,7 @@ main (int argc, char **argv) {
   marcel_attr_init (&thread_attr);
   marcel_attr_setpreemptible (&thread_attr, tbx_false);
   marcel_thread_preemption_disable ();
-  marcel_attr_setinitbubble (&thread_attr, &main_bubble);
+  marcel_attr_setnaturalbubble (&thread_attr, &main_bubble);
 
   for (i = 0; i < NUM_THREADS; i++) {
     marcel_attr_setid (&thread_attr, i);

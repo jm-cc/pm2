@@ -254,7 +254,7 @@ int marcel_main(int argc, char *argv[]) {
 			snprintf(s,sizeof(s),"%d-%d",i,j);
 			marcel_attr_setname(&attr,s);
 #ifdef MA__BUBBLES
-			marcel_attr_setinitbubble(&attr,
+			marcel_attr_setnaturalbubble(&attr,
 #ifdef TREE
 					&bubbles[(NWORKERS-1)*i+m+j/2]
 #else

@@ -29,7 +29,7 @@ main (int argc, char **argv)
   nb_vps = marcel_nbvps ();
   marcel_t tids[nb_vps];
   marcel_attr_init (&thread_attr);
-  marcel_attr_setinitbubble (&thread_attr, &marcel_root_bubble);
+  marcel_attr_setnaturalbubble (&thread_attr, &marcel_root_bubble);
   marcel_barrierattr_init (&barrier_attr);
   marcel_barrierattr_setmode (&barrier_attr, MA_BARRIER_YIELD_MODE);
   marcel_barrier_init (&shake_barrier, &barrier_attr, nb_vps + 1);

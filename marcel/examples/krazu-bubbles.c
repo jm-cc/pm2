@@ -60,7 +60,7 @@ marcel_main(int argc, char *argv[])
 	{
 	  int index = i%(NB_THREADS / 2);
 
-	  marcel_attr_setinitbubble(&attr, &b[index]);
+	  marcel_attr_setnaturalbubble(&attr, &b[index]);
 	  debug("id = %d, bubble = %d\n", i, index);
 	}
 

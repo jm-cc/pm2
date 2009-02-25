@@ -94,7 +94,7 @@ int marcel_main(int argc, char **argv)
 #ifdef MARCEL_GANG_SCHEDULER
     marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
 #endif
-    marcel_attr_setinitbubble(&attr, &gang[i]);
+  marcel_attr_setnaturalbubble(&attr, &gang[i]);
 #ifdef DIFFERENT
     for (j=0; j<(i+1)%THREADS; j++) {
 #else

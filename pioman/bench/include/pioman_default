@@ -123,7 +123,14 @@ EOF
 # args: loop variable
 finalize_bench()
 {
-    true
+    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
+    if [ "$BENCHDIR" != "" ] && [ -d $BENCHDIR ] ; then
+	if [ -z "$result_file" ] ; then
+            cp $file_result $BENCHDIR/
+	else
+	    cp $file_result $BENCHDIR/$result_file
+	fi
+    fi
 }
 
 ####################

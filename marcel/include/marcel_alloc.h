@@ -99,7 +99,7 @@ struct nodtab {
 #section functions
 #ifdef MA__NUMA_MEMORY
 /* heap allocator */
-void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
+TBX_FMALLOC void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
 void marcel_free_customized(void *data);
 
 enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size);
@@ -118,9 +118,9 @@ int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum
 #endif /* MA__NUMA_MEMORY */
 
 /* malloc */
-void* marcel_malloc(size_t size, const char *file, unsigned line);
-void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, unsigned line);
-void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned line);
+TBX_FMALLOC void* marcel_malloc(size_t size, const char *file, unsigned line);
+TBX_FMALLOC void *marcel_realloc(void *ptr, unsigned size, const char * __restrict file, unsigned line);
+TBX_FMALLOC void *marcel_calloc(unsigned nelem, unsigned elsize, const char *file, unsigned line);
 void marcel_free(void *data);
 
 TBX_FMALLOC void *__marcel_malloc(unsigned size);
@@ -129,9 +129,9 @@ TBX_FMALLOC void *__marcel_calloc(unsigned nelem, unsigned elsize);
 void __marcel_free(void *ptr);
 
 /* malloc internes */
-void* ma_malloc(size_t size, const char * file, unsigned line);
+TBX_FMALLOC void* ma_malloc(size_t size, const char * file, unsigned line);
 void ma_free(void *data, const char * file, unsigned line);
 
 /* ancien malloc pour archi nonnuma */
-void* ma_malloc_nonuma(size_t size, const char *file, unsigned line);
+TBX_FMALLOC void* ma_malloc_nonuma(size_t size, const char *file, unsigned line);
 void ma_free_nonuma(void *data, const char * __restrict file, unsigned line);

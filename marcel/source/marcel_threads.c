@@ -286,6 +286,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 		new_task = ma_obj_alloc(marcel_thread_seed_allocator);
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
+
+		/* XXX: this is quite costly */
 		marcel_one_more_task(new_task);
 
 		/* Seeds are never scheduled directly but instead have support from a
@@ -580,6 +582,7 @@ static void marcel_exit_internal(any_t val)
 		if (!detached)
 			marcel_sem_V(&cur->cur_thread_seed->client);
 
+		/* XXX: this is quite costly */
 		marcel_one_task_less(cur->cur_thread_seed);
 
 		/* try to die */

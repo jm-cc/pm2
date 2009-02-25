@@ -1,5 +1,6 @@
 #include "marcel.h"
 #ifdef MA__BUBBLES
+static
 any_t f(any_t foo) {
    int i = (int)(intptr_t)foo;
    int id = i/100;
@@ -35,6 +36,26 @@ marcel_t t12;
 marcel_bubble_t b7;
 marcel_t t13;
 
+static
+void
+bubble_init(marcel_bubble_t *b_outer, marcel_bubble_t *b_inner) {
+	marcel_bubble_init(b_inner);
+	marcel_bubble_insertbubble(b_outer, b_inner);
+}
+
+static
+void
+thread_init(marcel_t *t, marcel_bubble_t *b, intptr_t arg) {
+	marcel_attr_t attr;
+	marcel_attr_init(&attr);
+	marcel_attr_setnaturalbubble(&attr, b);
+	marcel_attr_setid(&attr,0);
+	marcel_attr_setprio(&attr, MA_DEF_PRIO);
+	marcel_attr_setname(&attr,"thread");
+	marcel_create(t, &attr, f, (any_t)arg);
+	*marcel_stats_get(*t, load) = 10;
+}
+
 int main(int argc, char *argv[]) {
 
    marcel_init(&argc,argv);
@@ -44,184 +65,47 @@ int main(int argc, char *argv[]) {
    marcel_printf("started\n");
 
    //création de la bulle 0 :
-   marcel_bubble_init(&b0);
-   marcel_bubble_insertbubble(&marcel_root_bubble, &b0);
+   bubble_init(&marcel_root_bubble, &b0);
    //création de la bulle 1 :
-   marcel_bubble_init(&b1);
-   marcel_bubble_insertbubble(&b0, &b1);
+   bubble_init(&b0, &b1);
    //création de la bulle 2 :
-   marcel_bubble_init(&b2);
-   marcel_bubble_insertbubble(&b1, &b2);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b2);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t1, &attr, f, (any_t)2);
-      *marcel_stats_get(t1, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b2);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t2, &attr, f, (any_t)2);
-      *marcel_stats_get(t2, load) = 10;
-   }
-
+   bubble_init(&b1, &b2);
+   //création du thread id = 1 :
+   thread_init(&t1, &b2, 2);
+   //création du thread id = 2 :
+   thread_init(&t2, &b2, 2);
    //création de la bulle 3 :
-   marcel_bubble_init(&b3);
-   marcel_bubble_insertbubble(&b1, &b3);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b3);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t3, &attr, f, (any_t)50);
-      *marcel_stats_get(t3, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b3);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t4, &attr, f, (any_t)50);
-      *marcel_stats_get(t4, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b3);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t5, &attr, f, (any_t)50);
-      *marcel_stats_get(t5, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b3);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t6, &attr, f, (any_t)50);
-      *marcel_stats_get(t6, load) = 10;
-   }
-
+   bubble_init(&b1, &b3);
+   //création du thread id = 3 :
+   thread_init(&t3, &b3, 50);
+   //création du thread id = 4 :
+   thread_init(&t4, &b3, 50);
+   //création du thread id = 5 :
+   thread_init(&t5, &b3, 50);
+   //création du thread id = 6 :
+   thread_init(&t6, &b3, 50);
    //création de la bulle 4 :
-   marcel_bubble_init(&b4);
-   marcel_bubble_insertbubble(&b1, &b4);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b4);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t7, &attr, f, (any_t)50);
-      *marcel_stats_get(t7, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b4);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t8, &attr, f, (any_t)50);
-      *marcel_stats_get(t8, load) = 10;
-   }
-
+   bubble_init(&b1, &b4);
+   //création du thread id = 7 :
+   thread_init(&t7, &b4, 50);
+   //création du thread id = 8 :
+   thread_init(&t8, &b4, 50);
    //création de la bulle 5 :
-   marcel_bubble_init(&b5);
-   marcel_bubble_insertbubble(&b1, &b5);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b5);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t9, &attr, f, (any_t)50);
-      *marcel_stats_get(t9, load) = 10;
-   }
-
+   bubble_init(&b1, &b5);
+   //création du thread id = 9 :
+   thread_init(&t9, &b5, 50);
    //création de la bulle 6 :
-   marcel_bubble_init(&b6);
-   marcel_bubble_insertbubble(&b1, &b6);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b6);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t10, &attr, f, (any_t)50);
-      *marcel_stats_get(t10, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b6);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t11, &attr, f, (any_t)50);
-      *marcel_stats_get(t11, load) = 10;
-   }
-
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b6);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t12, &attr, f, (any_t)50);
-      *marcel_stats_get(t12, load) = 10;
-   }
-
+   bubble_init(&b1, &b6);
+   //création du thread id = 10 :
+   thread_init(&t10, &b6, 50);
+   //création du thread id = 11 :
+   thread_init(&t11, &b6, 50);
+   //création du thread id = 12 :
+   thread_init(&t12, &b6, 50);
    //création de la bulle 7 :
-   marcel_bubble_init(&b7);
-   marcel_bubble_insertbubble(&b1, &b7);
-   //création du thread id = 0 :
-   {
-      marcel_attr_t attr;
-      marcel_attr_init(&attr);
-      marcel_attr_setnaturalbubble(&attr, &b7);
-      marcel_attr_setid(&attr,0);
-      marcel_attr_setprio(&attr, MA_DEF_PRIO);
-      marcel_attr_setname(&attr,"thread");
-      marcel_create(&t13, &attr, f, (any_t)50);
-      *marcel_stats_get(t13, load) = 10;
-   }
+   bubble_init(&b1, &b7);
+   //création du thread id = 13 :
+   thread_init(&t13, &b7, 50);
 
    marcel_start_playing();
    marcel_bubble_sched_begin();

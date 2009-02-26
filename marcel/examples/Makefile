@@ -84,6 +84,8 @@ pthread-abi-simple-ldflags := -lpthread -ldl
 pthread-abi-simple: LDFLAGS :=
 keys-pthread-ldflags := -lpthread -ldl
 keys-pthread: LDFLAGS :=
+implicit-join-asleep-pthread-ldflags := -lpthread -ldl
+implicit-join-asleep-pthread: LDFLAGS :=
 
 hello: CC=g++
 

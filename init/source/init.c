@@ -16,7 +16,9 @@
 #include "pm2_common.h"
 #include <alloca.h>
 
-#include "nm_launcher.h"
+#ifdef NMAD
+#  include "nm_launcher.h"
+#endif
 
 static common_attr_t default_static_attr;
 

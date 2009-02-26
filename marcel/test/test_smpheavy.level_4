@@ -12,15 +12,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_numa_stats"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="smpheavy"
 args="32"
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Using 32 threads
 EOF
 
-. ./marcel.sh

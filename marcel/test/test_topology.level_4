@@ -12,14 +12,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
 flavor="marcel-topology"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="read-topology"
 args="-v --marcel-topology-fsys-root $topology_chroot"
-hosts="localhost"
 
 if [ -d $topology_chroot ] ; then
     cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected

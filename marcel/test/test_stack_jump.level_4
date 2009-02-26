@@ -12,14 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_numa_stats_jump"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="stack_jump"
-args=""
-hosts="localhost"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-EOF
 
-. ./marcel.sh

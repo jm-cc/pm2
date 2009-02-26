@@ -14,14 +14,11 @@
 
 [ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 
-# Configuration
+. ./common.sh
 flavor="test_marcel_options_numa_stats"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="sumtime"
 args="100"
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 100 = 5050
 EOF
 
-. ./marcel.sh

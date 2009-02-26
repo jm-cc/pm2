@@ -12,15 +12,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_numa_stats"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="daube"
-args=""
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 50 = 1275
 EOF
 
-. ./marcel.sh

@@ -13,15 +13,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="tsp"
 args="32 16 123"
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 nb_threads =  32 ncities =  16
 EOF
 
-. ./marcel.sh

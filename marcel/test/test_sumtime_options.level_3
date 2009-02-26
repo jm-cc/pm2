@@ -13,15 +13,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_virtual_timer"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="sumtime"
 args="100"
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 100 = 5050
 EOF
 
-. ./marcel.sh

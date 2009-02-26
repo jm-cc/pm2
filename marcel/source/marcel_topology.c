@@ -1955,9 +1955,9 @@ static void topo_discover(void) {
 		level->vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->vpdata);
 #  ifdef MA__NUMA
 	if (marcel_topo_node_level)
-#  endif
 		for (level = &marcel_topo_node_level[0]; !marcel_vpset_iszero(&level->vpset); level++)
 			level->nodedata = (struct marcel_topo_nodedata) MARCEL_TOPO_NODEDATA_INITIALIZER(&level->nodedata);
+#  endif
 
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++)

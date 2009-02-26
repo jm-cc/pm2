@@ -12,12 +12,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 prog="unclean"
-args=""
-hosts="localhost"
-
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 MaMI Warning: some memory areas have not been free-d
 EOF

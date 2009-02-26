@@ -321,7 +321,7 @@ void marcel_snapshot(snapshot_func_t f)
 
 // Attend que toutes les taches soient terminees. Cette fonction
 // _doit_ etre appelee par la tache "main".
-static void wait_all_tasks_end(void)
+void ma_wait_all_tasks_end(void)
 {
 	struct marcel_topo_level *vp;
 	LOG_IN();
@@ -352,7 +352,7 @@ retry:
 	LOG_OUT();
 }
 
-void marcel_gensched_shutdown(void)
+void ma_gensched_shutdown(void)
 {
 #ifdef MA__LWPS
 	marcel_lwp_t *lwp, *lwp_found;
@@ -363,8 +363,6 @@ void marcel_gensched_shutdown(void)
 
 	if(MARCEL_SELF != __main_thread)
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
-
-	wait_all_tasks_end();
 
 	marcel_exit_top();
 

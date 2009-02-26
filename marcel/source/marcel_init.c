@@ -525,7 +525,12 @@ void marcel_purge_cmdline(int *argc, char *argv[])
 
 void marcel_finish_prepare(void)
 {
-	marcel_gensched_shutdown();
+	if(MARCEL_SELF != __main_thread)
+		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
+
+	ma_wait_all_tasks_end();
+
+	ma_gensched_shutdown();
 	marcel_activity = tbx_flag_clear;
 }
 

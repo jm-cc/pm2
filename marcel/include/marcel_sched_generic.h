@@ -69,8 +69,10 @@ unsigned marcel_nbthreads(void);
 unsigned long marcel_createdthreads(void);
 
 #section marcel_functions
+/** \brief Wait for all application threads to terminate.  */
+void ma_wait_all_tasks_end(void);
 /** \brief Handler for graceful termination of a marcel session */
-void marcel_gensched_shutdown(void);
+void ma_gensched_shutdown(void);
 
 #ifdef MA__LWPS
 /** \brief Called by schedule before switching to idle thread. Last chance for

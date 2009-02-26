@@ -287,8 +287,11 @@ marcel_create_internal(marcel_t * __restrict pid,
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 
-		/* XXX: this is quite costly */
+#ifdef MA__DEBUG
+		/* NOTE: this is quite costly, only do it to get gdb's
+		 * marcel-threads & marcel_top working */
 		marcel_one_more_task(new_task);
+#endif
 
 		/* Seeds are never scheduled directly but instead have support from a
 			 "seed runner" thread.  Therefore, seeds are never actually
@@ -582,8 +585,11 @@ static void marcel_exit_internal(any_t val)
 		if (!detached)
 			marcel_sem_V(&cur->cur_thread_seed->client);
 
-		/* XXX: this is quite costly */
+#ifdef MA__DEBUG
+		/* NOTE: this is quite costly, only do it to get gdb's
+		 * marcel-threads & marcel_top working */
 		marcel_one_task_less(cur->cur_thread_seed);
+#endif
 
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);

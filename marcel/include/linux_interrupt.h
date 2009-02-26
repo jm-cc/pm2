@@ -225,7 +225,7 @@ static __tbx_inline__ void ma_tasklet_schedule(struct ma_tasklet_struct *t) {
 	old_state = ma_xchg(&t->state,(1<<MA_TASKLET_STATE_SCHED)|(1<<MA_TASKLET_STATE_RUN));
         switch (old_state) {
 	case 0: {
-		unsigned long target_vp_num_plus_one;
+		unsigned long target_vp_num;
 		//DISP("tasklet schedule, t = %p", t);
                 /* not running, not scheduled, schedule it here */
 		if( marcel_vpset_isset(&(t->vp_set),marcel_current_vp())) {

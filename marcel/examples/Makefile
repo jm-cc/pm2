@@ -82,6 +82,8 @@ pthread-cpp-initializer-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 # Link against the system libpthread.
 pthread-abi-simple-ldflags := -lpthread -ldl
 pthread-abi-simple: LDFLAGS :=
+keys-pthread-ldflags := -lpthread -ldl
+keys-pthread: LDFLAGS :=
 
 hello: CC=g++
 

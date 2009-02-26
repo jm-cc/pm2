@@ -12,14 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_barrier"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="barrier-native"
-args=""
-hosts="localhost"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-EOF
 
-. ./marcel.sh

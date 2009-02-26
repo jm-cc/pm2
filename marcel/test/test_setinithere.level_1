@@ -12,13 +12,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
-# Configuration
+. ./common.sh
 flavor="test_marcel_bubble"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="setinithere"
 args="2 2"
-hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Hi!
 Hi!
@@ -26,4 +23,3 @@ Hi!
 Hi!
 EOF
 
-. ./marcel.sh

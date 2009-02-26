@@ -12,9 +12,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-[ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 
-. ./common.sh
-flavor="test_marcel_tls"
-prog="tls"
+flavor="<undefined>"
+appdir="${PM2_ROOT}/marcel/examples"
+prog="<undefined>"
+args=""
+hosts="localhost"
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+EOF
+
+. ./marcel.sh
 

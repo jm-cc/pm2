@@ -14,13 +14,8 @@
 
 [ "$PM2_SYS" != LINUX_SYS -a "$PM2_SYS" != AIX_SYS ] && pm2_skip_test
 
+. ./common.sh
 # Configuration
 flavor="test_marcel_pthread_cpp"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="pthread-cpp-initializer"
-args=""
-hosts="localhost"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-EOF
 
-. ./marcel.sh

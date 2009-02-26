@@ -14,10 +14,9 @@
 
 [ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 
-
+. ./common.sh
 # Configuration
 flavor="test_marcel_pthread_abi_stackalign"
-appdir="${PM2_ROOT}/marcel/examples"
 prog="pthread-abi-simple"
 
 # Tell `pm2-test' to preload things in the right order.  Supposedly,
@@ -28,11 +27,4 @@ prog="pthread-abi-simple"
 # preloaded DSO *and* as a dependency of `libpthread.so', otherwise it
 # could end up loading two different copies of `libPukABI.so'.
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
-
-args=""
-hosts="localhost"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-EOF
-
-. ./marcel.sh
 

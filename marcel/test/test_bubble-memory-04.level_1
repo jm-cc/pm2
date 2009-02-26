@@ -15,11 +15,8 @@
 [ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 [ "$PM2_ARCH" != X86_ARCH -a "$PM2_ARCH" != X86_64_ARCH ] && pm2_skip_test
 
-# Configuration
+. ./common.sh
 flavor="test_marcel_bubble_memory"
-appdir="${PM2_ROOT}/marcel/examples"
-args=""
-hosts="localhost"
 prog="bubble-memory-04"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 MaMI: The 1 pages are all on node #1
@@ -28,8 +25,6 @@ MaMI: The 4 pages are all on node #3
 MaMI: The 8 pages are all on node #0
 PASS: scheduling entities and accessed data were distributed as expected
 EOF
-
-. ./marcel.sh
 
 # Local Variables:
 # tab-width: 8

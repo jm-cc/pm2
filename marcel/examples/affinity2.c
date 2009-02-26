@@ -71,41 +71,41 @@ int main(int argc, char *argv[]) {
    //création de la bulle 2 :
    bubble_init(&b1, &b2);
    //création du thread id = 1 :
-   thread_init(&t1, &b2, 2);
+   thread_init(&t1, &b2, 102);
    //création du thread id = 2 :
-   thread_init(&t2, &b2, 2);
+   thread_init(&t2, &b2, 202);
    //création de la bulle 3 :
    bubble_init(&b1, &b3);
    //création du thread id = 3 :
-   thread_init(&t3, &b3, 50);
+   thread_init(&t3, &b3, 350);
    //création du thread id = 4 :
-   thread_init(&t4, &b3, 50);
+   thread_init(&t4, &b3, 450);
    //création du thread id = 5 :
-   thread_init(&t5, &b3, 50);
+   thread_init(&t5, &b3, 550);
    //création du thread id = 6 :
-   thread_init(&t6, &b3, 50);
+   thread_init(&t6, &b3, 650);
    //création de la bulle 4 :
    bubble_init(&b1, &b4);
    //création du thread id = 7 :
-   thread_init(&t7, &b4, 50);
+   thread_init(&t7, &b4, 750);
    //création du thread id = 8 :
-   thread_init(&t8, &b4, 50);
+   thread_init(&t8, &b4, 850);
    //création de la bulle 5 :
    bubble_init(&b1, &b5);
    //création du thread id = 9 :
-   thread_init(&t9, &b5, 50);
+   thread_init(&t9, &b5, 950);
    //création de la bulle 6 :
    bubble_init(&b1, &b6);
    //création du thread id = 10 :
-   thread_init(&t10, &b6, 50);
+   thread_init(&t10, &b6, 1050);
    //création du thread id = 11 :
-   thread_init(&t11, &b6, 50);
+   thread_init(&t11, &b6, 1150);
    //création du thread id = 12 :
-   thread_init(&t12, &b6, 50);
+   thread_init(&t12, &b6, 1250);
    //création de la bulle 7 :
    bubble_init(&b1, &b7);
    //création du thread id = 13 :
-   thread_init(&t13, &b7, 50);
+   thread_init(&t13, &b7, 1350);
 
    marcel_start_playing();
    marcel_bubble_sched_begin();

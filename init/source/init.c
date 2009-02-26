@@ -16,6 +16,8 @@
 #include "pm2_common.h"
 #include <alloca.h>
 
+#include "nm_launcher.h"
+
 static common_attr_t default_static_attr;
 
 #if defined(PM2)
@@ -426,6 +428,17 @@ void
 common_exit(common_attr_t *attr)
 {
   LOG_IN();
+
+/* If several modules are activated (such as NMad + Marcel), 
+ * common_exit may be called several times. To avoid double-free problems
+ * let's return if common_exit as already been called.
+ */
+
+  static tbx_bool_t exiting = tbx_false;
+  if(exiting)
+    return;
+  exiting=tbx_true;
+
   if (!attr)
     {
       attr = &default_static_attr;
@@ -436,9 +449,9 @@ common_exit(common_attr_t *attr)
   pm2_net_wait_end();
 #endif // PM2
 
-#ifdef EV_SERV
-  // TODO : comms LWP finalization
-#endif // EV_SERV
+#ifdef NMAD
+  nm_launcher_exit();
+#endif
 
 #if defined (MAD3)
   //

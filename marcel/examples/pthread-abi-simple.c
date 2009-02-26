@@ -27,11 +27,7 @@ int main(int argc, char *argv[])
 #else
 
 /* Include the system's <pthread.h>, not Marcel's.  */
-#include <pthread.h>
-
-#ifdef MARCEL_VERSION
-# error "We are supposed to use the system pthread library header."
-#endif
+#include "pthread-abi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,32 +35,9 @@ int main(int argc, char *argv[])
 #include <string.h>
 #include <unistd.h>
 
-#include <dlfcn.h>
-
 
 #define THREADS 123
 
-/* Make sure we are actually using Marcel's `libpthread.so', loaded via
-   `LD_PRELOAD' or some such.  */
-static void
-assert_running_marcel (void)
-{
-  void *self, *sym;
-
-  self = dlopen (NULL, RTLD_NOW);
-  if (self)
-    {
-      sym = dlsym (self, "marcel_create");
-      dlclose (self);
-
-      if (sym)
-	return;
-    }
-
-  fprintf (stderr, "error: not using Marcel's libpthread (LD_PRELOAD=\"%s\")\n",
-	   getenv ("LD_PRELOAD"));
-  abort ();
-}
 
 static void *
 thread_entry_point (void *arg)

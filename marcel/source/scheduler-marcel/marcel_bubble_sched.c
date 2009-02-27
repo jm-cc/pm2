@@ -204,29 +204,36 @@ int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 	return 0;
 }
 
-int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
-	/* FIXME: - explain why we set the sched_holder and not the natural_holder here.
-	 *        - the name of the function is thus confusing */
+/* Temporarily bring the bubble on the runqueue RQ by setting its sched_holder accordingly.
+ * . The bubble's natural holder is left unchanged.
+ * . The actual move is deferred until the bubble is woken up. */
+int marcel_bubble_scheduleonrq(marcel_bubble_t *bubble, ma_runqueue_t *rq) {
 	bubble->as_entity.sched_holder = &rq->as_holder;
 	return 0;
 }
 
-int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level) {
-	marcel_bubble_setinitrq(bubble, &level->rq);
+/* Temporarily bring the bubble on level LEVEL's runqueue by setting its sched_holder accordingly.
+ * . The bubble's natural holder is left unchanged.
+ * . The actual move is deferred until the bubble is woken up. */
+int marcel_bubble_scheduleonlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level) {
+	marcel_bubble_scheduleonrq(bubble, &level->rq);
 	return 0;
 }
 
-int marcel_bubble_setinithere(marcel_bubble_t *bubble) {
-	/* FIXME: comment on the purpose of the function, what does 'here' mean in the function name */
+/* Temporarily bring the bubble on the current thread's holder by setting its sched_holder accordingly.
+ * Inheritence occurs only if the thread sched holder is a runqueue.
+ * . The bubble's natural holder is left unchanged.
+ * . The actual move is deferred until the bubble is woken up. */
+int marcel_bubble_scheduleonthreadholder(marcel_bubble_t *bubble) {
 	ma_holder_t *h = SELF_GETMEM(as_entity.sched_holder);
 	
 	MA_BUG_ON(!h);
 	if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 		// hériter du holder du thread courant
-		PROF_EVENTSTR(sched_status, "heriter du holder du thread courant");
+		PROF_EVENTSTR(sched_status, "inherit current thread sched holder");
 		bubble->as_entity.sched_holder = h;
 	}
-	PROF_EVENTSTR(sched_status, "ne pas heriter");
+	PROF_EVENTSTR(sched_status, "do not inherit current thread sched holder");
 	return 0;
 }
 

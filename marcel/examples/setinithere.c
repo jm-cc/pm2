@@ -49,7 +49,7 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
   /* Initialize the borning bubble. */
   marcel_bubble_t team_bubble;
   marcel_bubble_init (&team_bubble);
-  marcel_bubble_setinithere (&team_bubble);
+  marcel_bubble_scheduleonthreadholder (&team_bubble);
   marcel_bubble_setprio (&team_bubble, MA_DEF_PRIO);
   marcel_bubble_insertbubble (marcel_bubble_holding_task (marcel_self ()), &team_bubble);
   marcel_bubble_inserttask (&team_bubble, marcel_self ());

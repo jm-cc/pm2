@@ -100,20 +100,24 @@ int marcel_bubble_setprio_locked(marcel_bubble_t *bubble, int prio);
 /** \brief Gets the priority of bubble \e bubble, put into \e *prio. */
 int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
 
-/** \brief Sets the initial runqueue of bubble \e bubble to \e rq. When woken up (see
- * marcel_wake_up_bubble()), \e bubble will be put on runqueue \e rq.
- */
-int marcel_bubble_setinitrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
-/** \brief Sets the initial topology level of bubble \e bubble to \e level.
- * When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the
- * runqueue of topology level \e level.
- */
-int marcel_bubble_setinitlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level);
-/** \brief Sets the initial holder of bubble \e bubble to the calling thread's
- * current scheduling holder.
- * When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the corresponding runqueue.
- */
-int marcel_bubble_setinithere(marcel_bubble_t *bubble);
+/** \brief Temporarily bring bubble \e bubble on the runqueue \e rq by setting its sched_holder accordingly.
+ * . The bubble's natural holder is left unchange.d
+ * . The actual move is deferred until the bubble is woken up.  When woken up (see
+ *   marcel_wake_up_bubble()), \e bubble will be put on runqueue \e rq.*/
+int marcel_bubble_scheduleonrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
+/** \briefTemporarily bring the bubble \e bubble on level \e level 's runqueue by setting its sched_holder accordingly.
+ * . The bubble's natural holder is left unchanged.
+ * . The actual move is deferred until the bubble is woken up.
+ *   When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the
+ *   runqueue of topology level \e level. */
+int marcel_bubble_scheduleonlevel(marcel_bubble_t *bubble, marcel_topo_level_t *level);
+/** \brief Temporarily bring the bubble \e bubble on the current thread's holder by setting its sched_holder accordingly.
+ * Inheritence occurs only if the thread sched holder is a runqueue.
+ * . The bubble's natural holder is left unchanged.
+ * . The actual move is deferred until the bubble is woken up. When woken up
+ * (see marcel_wake_up_bubble()), \e bubble will be put on the corresponding
+ * runqueue. */
+int marcel_bubble_scheduleonthreadholder(marcel_bubble_t *bubble);
 
 /** \brief
  * Wakes bubble \e bubble up, i.e. puts it on its initial runqueue, and let the

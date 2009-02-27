@@ -43,7 +43,7 @@ any_t main_thread(void *arg)
 #ifdef MA__BUBBLES
   marcel_bubble_t b;
   marcel_bubble_init(&b);
-  marcel_bubble_setinitrq(&b,&marcel_topo_vp_level[0].rq);
+  marcel_bubble_scheduleonrq(&b,&marcel_topo_vp_level[0].rq);
   marcel_wake_up_bubble(&b);
   marcel_bubble_inserttask(&b, marcel_self());
 #endif

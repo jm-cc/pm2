@@ -92,7 +92,7 @@ int marcel_main(int argc, char **argv)
     marcel_bubble_init(&gang[i]);
     marcel_bubble_insertbubble(&marcel_root_bubble, &gang[i]);
 #ifdef MARCEL_GANG_SCHEDULER
-    marcel_bubble_setinitrq(&gang[i], &ma_gang_rq);
+    marcel_bubble_scheduleonrq(&gang[i], &ma_gang_rq);
 #endif
   marcel_attr_setnaturalbubble(&attr, &gang[i]);
 #ifdef DIFFERENT

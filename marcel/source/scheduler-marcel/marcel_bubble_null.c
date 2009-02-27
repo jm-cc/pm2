@@ -17,21 +17,6 @@
 
 #ifdef MA__BUBBLES
 
-#if 0
-static int
-null_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp)
-{
-#ifdef MARCEL_BUBBLE_STEAL
-  /* TODO: avoir un scheduler steal plutôt ? */
-  return marcel_bubble_steal_work(vp);
-#else
-  return 0;
-#endif
-}
-#endif
-
-MARCEL_DEFINE_BUBBLE_SCHEDULER (null,
-//	.vp_is_idle = null_sched_vp_is_idle,
-);
+MARCEL_DEFINE_BUBBLE_SCHEDULER (null);
 
 #endif /* MA__BUBBLES */

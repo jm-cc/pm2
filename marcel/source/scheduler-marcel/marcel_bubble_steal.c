@@ -197,7 +197,15 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 
-int marcel_bubble_steal_work(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED) {
+/** \brief Steal work
+ *
+ * This function may typically be called when a processor becomes idle. It will
+ * look for bubbles to steal first locally (neighbour processors), then more
+ * and more globally.
+ *
+ * \return 1 if it managed to steal work, 0 else.
+ */
+static int steal_work(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED) {
 #ifdef MA__LWPS
 	ma_spin_lock(&ma_idle_scheduler_lock);
 	if (ma_atomic_read (&ma_idle_scheduler)) {
@@ -253,7 +261,7 @@ steal_sched_start(marcel_bubble_sched_t *self)
 MARCEL_DEFINE_BUBBLE_SCHEDULER (steal,
 	.start = steal_sched_start,
 	.sched = steal_sched_sched,
-	.vp_is_idle = marcel_bubble_steal_work,
+	.vp_is_idle = steal_work
 );
 
 #endif

@@ -20,18 +20,6 @@
  * @{
  */
 
-#section marcel_functions
-/** \brief Steal work
- *
- * This function may typically be called when a processor becomes idle. It will
- * look for bubbles to steal first locally (neighbour processors), then more
- * and more globally.
- *
- * \return 1 if it managed to steal work, 0 else.
- */
-int marcel_bubble_steal_work(marcel_bubble_sched_t *self, unsigned vp);
-/* @} */
-
 #section variables
 #depend "marcel_bubble_sched_interface.h[types]"
 extern marcel_bubble_sched_t marcel_bubble_steal_sched;

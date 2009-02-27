@@ -387,9 +387,9 @@ static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *e
 	ma_holder_lock_softirq(&bubble_dst->as_holder);
 
 	if (entity->type == MA_BUBBLE_ENTITY)
-		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
+		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble_dst);
 	else
-		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
+		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble_dst);
 	list_add_tail(&entity->bubble_entity_list, &bubble_dst->heldentities);
 	marcel_barrier_addcount(&bubble_dst->barrier, 1);
 	bubble_dst->nbentities++;

@@ -74,9 +74,6 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	marcel_mutex_unlock(&current_sched_mutex);
 }
 
-/* FIXME: - comment on the respective purpose of marcel_bubble_change_sched and marcel_bubble_set_sched
- *        - explain why marcel_bubble_set_sched does not call init, start and exit methods
- */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched) {
 	marcel_bubble_sched_t *old;
 	marcel_mutex_lock(&current_sched_mutex);
@@ -91,6 +88,8 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	return old;
 }
 
+/* This function is meant to be called before Marcel is fully initialized,
+ * e.g., while command-line options are being parsed.  */
 marcel_bubble_sched_t *marcel_bubble_set_sched(marcel_bubble_sched_t *new_sched) {
 	marcel_bubble_sched_t *old;
 	old = current_sched;

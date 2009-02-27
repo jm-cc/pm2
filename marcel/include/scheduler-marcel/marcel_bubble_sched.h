@@ -143,9 +143,12 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->as_entity)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->as_entity)
 
-/** \brief Changes the current bubble scheduler, returns the old one. */
+/** \brief Change the current bubble scheduler to \e new_sched, return the
+ * previous one.  */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
-/* Same, but only to be used by marcel_init before Marcel is initialized */
+/** \brief Change the current bubble scheduler to \e new_sched, return the
+ * previous one.  This variant should only be used by marcel_init() before
+ * Marcel is fully initialized.  */
 marcel_bubble_sched_t *marcel_bubble_set_sched(marcel_bubble_sched_t *new_sched);
 
 /** \brief Informs the scheduler that the application initialization

@@ -14,7 +14,7 @@
 
 . ./common.sh
 flavor="test_marcel_bubble"
-prog="setinithere"
+prog="schedule-on-thread-holder"
 args="2 2"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Hi!

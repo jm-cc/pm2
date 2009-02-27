@@ -23,7 +23,7 @@ static nm_core_t p_core    = NULL;
 static nm_gate_t gate_id   = NULL;
 
 void nmad_exit() {
-  nm_launcher_exit();
+  common_exit(NULL);
 }
 
 void init(int *argc, char **argv) {

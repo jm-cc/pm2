@@ -1006,8 +1006,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	LOG_IN();
 
 	if (current_sched->sched) {
-		marcel_entity_t *next = current_sched->sched(nextent, rq, nexth, idx);
-		if (!next)
+		if (!current_sched->sched(nextent, rq, nexth, idx))
 			/* Bubble scheduler messed it up, restart */
 			LOG_RETURN(NULL);
 	}

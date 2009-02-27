@@ -29,7 +29,7 @@
  *
  * \return 1 if it managed to steal work, 0 else.
  */
-int marcel_bubble_steal_work(unsigned vp);
+int marcel_bubble_steal_work(marcel_bubble_sched_t *self, unsigned vp);
 /* @} */
 
 #section variables

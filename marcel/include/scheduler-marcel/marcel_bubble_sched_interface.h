@@ -15,33 +15,41 @@
 
 #section marcel_structures
 #depend "scheduler/marcel_holder.h[types]"
+
+/* Forward declaration.  */
+struct ma_bubble_sched_struct;
+
 /* Initialization */
-typedef int (*ma_bubble_sched_init)(void);
+typedef int (*ma_bubble_sched_init)(struct ma_bubble_sched_struct *);
 
 /* Start */
-typedef int (*ma_bubble_sched_start)(void);
+typedef int (*ma_bubble_sched_start)(struct ma_bubble_sched_struct *);
 
 /* Termination */
-typedef int (*ma_bubble_sched_exit)(void);
+typedef int (*ma_bubble_sched_exit)(struct ma_bubble_sched_struct *);
 
 /* Submission of a set of entities to be scheduled */
-typedef int (*ma_bubble_sched_submit)(marcel_entity_t *);
+typedef int (*ma_bubble_sched_submit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
 
 /* Called to force a new distribution from a specific bubble. */
-typedef int (*ma_bubble_sched_shake)(marcel_bubble_t *);
+typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
 
 /* Called when a vp is idle.  Preemption and bottom halves are already disabled.  */
-typedef int (*ma_bubble_sched_vp_is_idle)(unsigned);
+typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
 
 /* Called on bubble tick */
-typedef int (*ma_bubble_sched_tick)(marcel_bubble_t *);
+typedef int (*ma_bubble_sched_tick)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
 
 /* Called when basic scheduler encounters an entity on rq at priority idx.
  * Returns the next entity (must be thread) to be schedule (as well as its
  * locked holder in nexth), or NULL if ma_schedule() must restart (and in such
  * case nexth must have been unlocked. */
-typedef marcel_entity_t* (*ma_bubble_sched_sched)(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx);
+typedef marcel_entity_t *
+(*ma_bubble_sched_sched)(struct ma_bubble_sched_struct *,
+												 marcel_entity_t *nextent, ma_runqueue_t *rq,
+												 ma_holder_t **nexth, int idx);
 
+/** \brief Bubble scheduler instances.  */
 struct ma_bubble_sched_struct {
   ma_bubble_sched_init init;
   ma_bubble_sched_start start;
@@ -54,6 +62,7 @@ struct ma_bubble_sched_struct {
   void *priv;
 };
 
+
 #section types
 typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 

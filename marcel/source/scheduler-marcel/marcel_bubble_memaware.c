@@ -316,7 +316,7 @@ void marcel_stop_checkload(void)
 #define MA_COEF_NOT 0.2
 
 /* La fonction qui decide si on redistribue du travail */
-static int memaware(unsigned vp)
+static int memaware(marcel_bubble_sched_t *self, unsigned vp)
 {
   _ma_raw_spin_lock(&ma_bubble_memaware_remix_lock);
 
@@ -377,7 +377,7 @@ static void ma_see_level(struct marcel_topo_level *level, int recurse)
 }
 #endif /* PM2DEBUG */
 
-static int memaware_sched_submit(marcel_entity_t *e)
+static int memaware_sched_submit(marcel_bubble_sched_t *self, marcel_entity_t *e)
 {
   bubble_sched_debug("memaware_sched_submit\n");
   marcel_stop_idle_memaware();

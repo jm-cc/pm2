@@ -136,14 +136,14 @@ static marcel_t marcel_start_gang_scheduler(ma_runqueue_t *rq, int sys) {
 	return __marcel_start_gang_scheduler(marcel_gang_scheduler, rq, sys);
 }
 
-static int gang_sched_init(void) {
+static int gang_sched_init(marcel_bubble_sched_t *self) {
 	ma_init_rq(&ma_gang_rq, "gang");
 	return 0;
 }
 
 static marcel_t gang_thread, clean_thread, gang_thread1, gang_thread2, gang_thread3, gang_thread4;
 
-static int gang_sched_start(void) {
+static int gang_sched_start(marcel_bubble_sched_t *self) {
 	keep_running = 1;
 #if 1
 	/* un seul gang scheduler */
@@ -166,7 +166,7 @@ static int gang_sched_start(void) {
 	return 0;
 }
 
-static int gang_sched_exit(void) {
+static int gang_sched_exit(marcel_bubble_sched_t *self) {
 	marcel_entity_t *e, *ee;
 	keep_running = 0;
 
@@ -191,7 +191,7 @@ static int gang_sched_exit(void) {
 }
 
 static int
-gang_vp_is_idle(unsigned vp TBX_UNUSED)
+gang_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED)
 {
 	/* This lwp is idle... TODO: check other that other LWPs of the same controller are idle too, and get another gang (that gang terminated) */
 	return 0;

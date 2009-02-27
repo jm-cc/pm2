@@ -398,7 +398,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
 }
 
 static int
-cache_sched_init (void) {
+cache_sched_init (marcel_bubble_sched_t *self) {
   ma_last_succeeded_steal = 0;
   ma_last_failed_steal = 0;
   ma_atomic_init (&ma_succeeded_steals, 0);
@@ -407,7 +407,7 @@ cache_sched_init (void) {
 }
 
 static int
-cache_sched_exit (void) {
+cache_sched_exit (marcel_bubble_sched_t *self) {
   bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n",
 		     ma_atomic_read (&ma_succeeded_steals),
 		     ma_atomic_read (&ma_failed_steals));
@@ -415,7 +415,7 @@ cache_sched_exit (void) {
 }
 
 static int
-cache_sched_submit (marcel_entity_t *e) {
+cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   bubble_sched_debug ("Cache: Submitting entities!\n");
   marcel_bubble_cache (ma_bubble_entity (e), marcel_topo_level (0, 0));
@@ -551,7 +551,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 }
 
 static int
-cache_steal (unsigned int from_vp) {
+cache_steal (marcel_bubble_sched_t *self, unsigned int from_vp) {
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father;
   unsigned int arity;
   int smthg_to_steal = 0;

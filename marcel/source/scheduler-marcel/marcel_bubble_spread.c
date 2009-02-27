@@ -278,7 +278,7 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 static marcel_bubble_t *b = &marcel_root_bubble;
 
 static int
-spread_sched_submit(marcel_entity_t *e)
+spread_sched_submit(marcel_bubble_sched_t *self, marcel_entity_t *e)
 {
   struct marcel_topo_level *l = marcel_topo_level(0,0);
   b = ma_bubble_entity(e);
@@ -288,7 +288,7 @@ spread_sched_submit(marcel_entity_t *e)
 }
 
 static int TBX_UNUSED /* disabled below for now */
-spread_sched_vp_is_idle(unsigned vp)
+spread_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp)
 {
   if (!vp) return 0;
   if (!ma_idle_scheduler_is_running ()) 

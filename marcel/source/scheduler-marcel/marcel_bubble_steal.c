@@ -197,7 +197,7 @@ static int see_up(struct marcel_topo_level *level) {
 }
 
 
-int marcel_bubble_steal_work(unsigned vp TBX_UNUSED) {
+int marcel_bubble_steal_work(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED) {
 #ifdef MA__LWPS
 	ma_spin_lock(&ma_idle_scheduler_lock);
 	if (ma_atomic_read (&ma_idle_scheduler)) {
@@ -214,7 +214,7 @@ int marcel_bubble_steal_work(unsigned vp TBX_UNUSED) {
 }
 
 static marcel_entity_t *
-steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx) {
+steal_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx) {
 	if (nextent->type != MA_BUBBLE_ENTITY)
 		/* Don't touch tasks */
 		return nextent;
@@ -244,7 +244,7 @@ steal_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nex
 }
 
 static int
-steal_sched_start(void)
+steal_sched_start(marcel_bubble_sched_t *self)
 {
 	ma_activate_idle_scheduler();
 	return 0;

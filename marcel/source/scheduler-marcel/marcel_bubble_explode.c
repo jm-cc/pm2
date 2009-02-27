@@ -33,19 +33,19 @@ static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_leve
 }
 
 static int
-explode_sched_init(void)
+explode_sched_init(marcel_bubble_sched_t *self)
 {
   return 0;
 }
 
 static int
-explode_sched_exit(void)
+explode_sched_exit(marcel_bubble_sched_t *self)
 {
   return 0;
 }
 
 static int
-explode_sched_submit(marcel_entity_t *e)
+explode_sched_submit(marcel_bubble_sched_t *self, marcel_entity_t *e)
 {
   struct marcel_topo_level *l = marcel_topo_level(0,0);
   __sched_submit(&e, 1, &l);
@@ -54,14 +54,14 @@ explode_sched_submit(marcel_entity_t *e)
 }
 
 static int
-explode_sched_vp_is_idle(unsigned vp TBX_UNUSED)
+explode_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED)
 {
   /* Forcer une remontée ? */
   return 0;
 }
 
 static marcel_entity_t *
-explode_sched_sched(marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx)
+explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_runqueue_t *rq, ma_holder_t **nexth, int idx)
 {
 	int max_prio;
 	ma_runqueue_t *currq;
@@ -156,7 +156,7 @@ les #ifdef dans les arguments de macro...
 }
 
 static int
-explode_sched_tick(marcel_bubble_t *b TBX_UNUSED)
+explode_sched_tick(marcel_bubble_sched_t *self, marcel_bubble_t *b TBX_UNUSED)
 {
   /* TODO: gather bubble */
   return 0;

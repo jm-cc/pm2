@@ -63,7 +63,7 @@ int marcel_bubble_init(marcel_bubble_t *bubble) {
 void __marcel_init __ma_bubble_sched_start(void) {
 	marcel_mutex_lock(&current_sched_mutex);
 	if (current_sched->start)
-		current_sched->start();
+		current_sched->start(current_sched);
 	//if (current_sched->submit)
 	//current_sched->submit(&marcel_root_bubble.as_entity);
 	ma_bubble_gather(&marcel_root_bubble);
@@ -81,12 +81,12 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	marcel_mutex_lock(&current_sched_mutex);
 	old = current_sched;
 	if (old && old->exit)
-		old->exit();
+		old->exit(old);
 	current_sched = new_sched;
 	if (new_sched->init)
-		new_sched->init();
+		new_sched->init(new_sched);
 	if (new_sched->start)
-		new_sched->start();
+		new_sched->start(new_sched);
 	marcel_mutex_unlock(&current_sched_mutex);
 	return old;
 }
@@ -168,7 +168,7 @@ void marcel_bubble_sched_begin (void) {
 int marcel_bubble_submit (marcel_bubble_t *b) {
   if (current_sched) {
     if (current_sched->submit) {
-      current_sched->submit (&b->as_entity);
+      current_sched->submit (current_sched, &b->as_entity);
       return 0;
     }
   }
@@ -190,7 +190,7 @@ void marcel_bubble_shake (void) {
      function. */
   if (current_sched) {
     if (current_sched->shake) {
-      current_sched->shake (&marcel_root_bubble);
+      current_sched->shake (current_sched, &marcel_root_bubble);
     } else {
       /* Default behavior for shake (). */
       ma_bubble_move_top_and_submit (&marcel_root_bubble);
@@ -604,7 +604,7 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_holder_unlock_softirq(h);
 	ma_top_add_bubble(bubble);
 	if (current_sched->submit)
-	  current_sched->submit(&bubble->as_entity);
+	  current_sched->submit(current_sched, &bubble->as_entity);
 	LOG_OUT();
 }
 
@@ -1006,7 +1006,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	LOG_IN();
 
 	if (current_sched->sched) {
-		if (!current_sched->sched(nextent, rq, nexth, idx))
+		if (!current_sched->sched(current_sched, nextent, rq, nexth, idx))
 			/* Bubble scheduler messed it up, restart */
 			LOG_RETURN(NULL);
 	}
@@ -1100,7 +1100,7 @@ void ma_bubble_sched_init2(void) {
 
 	marcel_mutex_lock(&current_sched_mutex);
 	if (current_sched->init)
-		current_sched->init();
+		current_sched->init(current_sched);
 	marcel_mutex_unlock(&current_sched_mutex);
 }
 

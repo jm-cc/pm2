@@ -65,7 +65,7 @@ marcel_bubble_set_memory_manager (marcel_memory_manager_t *memory_manager) {
 }
 
 static int
-memory_sched_start () {
+memory_sched_start (marcel_bubble_sched_t *self) {
   return 0;
 }
 
@@ -351,14 +351,14 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
 }
 
 static int
-memory_sched_submit (marcel_entity_t *e) {
+memory_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   bubble_sched_debug ("Memory: Submitting entities!\n");
   return ma_memory_sched_submit (ma_bubble_entity (e), marcel_topo_level (0, 0));
 }
 
 static int
-memory_sched_shake () {
+memory_sched_shake (marcel_bubble_sched_t *self) {
   int ret = 0, shake = 0;
   marcel_bubble_t *holding_bubble = ma_bubble_holder (ma_entity_task (marcel_self ())->natural_holder);
   marcel_entity_t *e;
@@ -423,7 +423,8 @@ struct memory_goodness_hints {
 #define MA_MEMORY_SCHED_LOCAL_MEM_BONUS 10
 
 static int
-memory_sched_compute_entity_score (marcel_entity_t *current_e,
+memory_sched_compute_entity_score (marcel_bubble_sched_t *self,
+					 marcel_entity_t *current_e,
 				   struct memory_goodness_hints *hints) {
   int computed_score;
   int topo_max_depth = marcel_topo_vp_level[0].level;
@@ -495,7 +496,7 @@ goodness (ma_holder_t *hold, void *args) {
 }
 
 static int
-memory_sched_steal (unsigned from_vp) {
+memory_sched_steal (marcel_bubble_sched_t *self, unsigned from_vp) {
   int ret = 0;
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
 
@@ -532,7 +533,7 @@ MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
 #else /* MARCEL_MAMI_ENABLED */
 
 static int
-warning_start (void) {
+warning_start (marcel_bubble_sched_t *self) {
   marcel_printf ("WARNING: You're currently trying to use the memory bubble scheduler, but as the enable_mami option is not activated in the current flavor, the bubble scheduler won't do anything! Please activate enable_mami in your flavor.\n");
   return 0;
 }

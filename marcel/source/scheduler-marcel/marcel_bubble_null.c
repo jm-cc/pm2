@@ -19,7 +19,7 @@
 
 #if 0
 static int
-null_sched_vp_is_idle(unsigned vp)
+null_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp)
 {
 #ifdef MARCEL_BUBBLE_STEAL
   /* TODO: avoir un scheduler steal plutôt ? */

@@ -75,7 +75,7 @@ void marcel_bubble_submit_(void) {
 }
 
 void marcel_spread_(void) {
-  ma_bubble_sched_t previous = NULL;
+  marcel_bubble_sched_t *previous;
   previous = marcel_bubble_change_sched(&marcel_bubble_spread_sched);
   marcel_bubble_submit(ma_entity_bubble(&marcel_root_bubble));
   if (previous)

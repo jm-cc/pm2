@@ -21,7 +21,7 @@ ma_spinlock_t ma_idle_scheduler_lock = MA_SPIN_LOCK_UNLOCKED;
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 /** \brief The current bubble scheduler */
-static ma_bubble_sched_t current_sched = 
+static marcel_bubble_sched_t *current_sched = 
 #if defined(BUBBLE_SCHED_SPREAD)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mspread[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_spread_sched;
@@ -78,7 +78,7 @@ void __marcel_init __ma_bubble_sched_start(void) {
  *        - explain why marcel_bubble_set_sched does not call init, start and exit methods
  */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched) {
-	ma_bubble_sched_t old;
+	marcel_bubble_sched_t *old;
 	marcel_mutex_lock(&current_sched_mutex);
 	old = current_sched;
 	ma_bubble_exit();
@@ -92,7 +92,7 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 }
 
 marcel_bubble_sched_t *marcel_bubble_set_sched(marcel_bubble_sched_t *new_sched) {
-	ma_bubble_sched_t old;
+	marcel_bubble_sched_t *old;
 	old = current_sched;
 	current_sched = new_sched;
 	return old;

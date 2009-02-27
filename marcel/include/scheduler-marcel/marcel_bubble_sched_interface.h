@@ -79,8 +79,3 @@ typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
       _field_initializers						\
     }
 
-
-#section marcel_types
-#depend "[marcel_structures]"
-typedef struct ma_bubble_sched_struct *ma_bubble_sched_t;
-

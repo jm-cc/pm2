@@ -309,12 +309,17 @@ static int process_small_data(tbx_bool_t is_any_src,
 	  struct DLOOP_Segment *segp = is_any_src ? any_src->data : p_so_tag->recv[seq].unpack_here.data;
 	  CCSI_Segment_unpack(segp, chunk_offset, &last, ptr);
 	}
-      else
+      else if(! (*status & NM_SO_STATUS_UNPACK_CANCELLED))
 	{
 	  /* contiguous data */
 	  void *data = is_any_src ? (any_src->data + chunk_offset) : (p_so_tag->recv[seq].unpack_here.data + chunk_offset);
 	  memcpy(data, ptr, len);
 	}
+      else
+        {
+	  nm_so_pw_free(p_pw);
+	  return NM_SO_HEADER_MARK_UNREAD;
+        }
     }
 
   *p_cumulated_len += len;

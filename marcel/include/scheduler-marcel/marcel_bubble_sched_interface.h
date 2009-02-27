@@ -34,7 +34,9 @@ typedef int (*ma_bubble_sched_submit)(struct ma_bubble_sched_struct *, marcel_en
 /* Called to force a new distribution from a specific bubble. */
 typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
 
-/* Called when a vp is idle.  Preemption and bottom halves are already disabled.  */
+/* Called when a vp is idle.  Preemption and bottom halves are already
+ * disabled.  Return non-zero if the bubble scheduler's work stealing algorithm
+ * succeeded, zero otherwise.  */
 typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
 
 /* Called on bubble tick */

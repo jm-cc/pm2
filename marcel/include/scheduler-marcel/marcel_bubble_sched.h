@@ -37,8 +37,6 @@ typedef struct marcel_bubble marcel_bubble_t;
 
 #section marcel_variables
 #depend "scheduler/marcel_bubble_sched_interface.h[types]"
-/** \brief The current bubble scheduler */
-extern marcel_bubble_sched_t *current_sched;
 
 #section variables
 /** \brief The root bubble (default holding bubble) */
@@ -287,6 +285,18 @@ struct marcel_bubble {
  */
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *rq, ma_holder_t **nexth, int prio);
+
+/** \brief Frobnicate \e bubble.  FIXME: This is unused, undefined, and thus
+ * ought to be removed.  */
+int ma_bubble_tick(marcel_bubble_t *bubble);
+
+/** \brief Terminate the current scheduler.  Return zero on success.  */
+int ma_bubble_exit(void);
+
+/** \brief Notify the current bubble scheduler that VP \e vp has become idle.
+ * Return non-zero if the bubble scheduler's work stealing algorithm
+ * succeeded, zero otherwise.  */
+int ma_bubble_notify_idle_vp(unsigned int vp);
 
 /** \brief Synthesizes statistics of the entities contained in bubble \e bubble.
  * The synthesis of statistics can be read thanks to ma_bubble_hold_stats_get()

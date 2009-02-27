@@ -20,7 +20,8 @@ ma_spinlock_t ma_idle_scheduler_lock = MA_SPIN_LOCK_UNLOCKED;
 #ifdef MA__BUBBLES
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
-ma_bubble_sched_t current_sched = 
+/** \brief The current bubble scheduler */
+static ma_bubble_sched_t current_sched = 
 #if defined(BUBBLE_SCHED_SPREAD)
 #warning "[1;33m<<< [1;37mBubble scheduler [1;32mspread[1;37m selected[1;33m >>>[0m"
 	&marcel_bubble_spread_sched;
@@ -80,8 +81,7 @@ marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sch
 	ma_bubble_sched_t old;
 	marcel_mutex_lock(&current_sched_mutex);
 	old = current_sched;
-	if (old && old->exit)
-		old->exit(old);
+	ma_bubble_exit();
 	current_sched = new_sched;
 	if (new_sched->init)
 		new_sched->init(new_sched);
@@ -198,6 +198,34 @@ void marcel_bubble_shake (void) {
   }
 }
 
+int ma_bubble_notify_idle_vp(unsigned int vp) {
+	int ret;
+	if (current_sched->vp_is_idle)
+		ret = current_sched->vp_is_idle(current_sched, vp);
+	else
+		ret = 0;
+	return ret;
+}
+
+int ma_bubble_tick(marcel_bubble_t *bubble) {
+	int ret;
+	if (current_sched->tick)
+		ret = current_sched->tick(current_sched, bubble);
+	else
+		ret = 0;
+	return ret;
+}
+
+int ma_bubble_exit(void) {
+	int ret;
+	if (current_sched->exit)
+		ret = current_sched->exit(current_sched);
+	else
+		ret = 0;
+	return ret;
+}
+
+
 int marcel_bubble_setid(marcel_bubble_t *bubble, int id) {
 	PROF_EVENT2(bubble_setid,bubble, id);
 	bubble->id = id;

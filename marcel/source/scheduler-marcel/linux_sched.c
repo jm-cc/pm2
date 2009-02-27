@@ -566,8 +566,8 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			if ((h = ma_task_natural_holder(p)) && 
 					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);
-				if (ma_atomic_dec_and_test(&b->as_entity.time_slice) && current_sched->tick)
-					current_sched->tick(current_sched, b);
+				if (ma_atomic_dec_and_test(&b->as_entity.time_slice))
+					ma_bubble_tick(b);
 			}
 #endif
 		}
@@ -819,9 +819,9 @@ restart:
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES
 		if (ma_idle_scheduler_is_running ())
-		    if (current_sched->vp_is_idle && ma_vpnum(MA_LWP_SELF) < marcel_nbvps())
+		    if (ma_vpnum(MA_LWP_SELF) < marcel_nbvps())
 		    {
-		      if (current_sched->vp_is_idle(current_sched, ma_vpnum(MA_LWP_SELF)))
+		      if (ma_bubble_notify_idle_vp(ma_vpnum(MA_LWP_SELF)))
 			goto need_resched_atomic;
 		    }
 #endif

@@ -71,14 +71,13 @@ void marcel_rien_(void) {
 #ifdef MA__BUBBLES
 /* TODO: rajouter la bulle qu'on soumet en parametre */
 void marcel_bubble_submit_(void) {
-  current_sched->submit(&marcel_root_bubble.as_entity);
+  marcel_bubble_submit(ma_entity_bubble(&marcel_root_bubble));
 }
 
 void marcel_spread_(void) {
   ma_bubble_sched_t previous = NULL;
-  if (current_sched != &marcel_bubble_spread_sched)
-    previous = marcel_bubble_change_sched(&marcel_bubble_spread_sched);
-  current_sched->submit(&marcel_root_bubble.as_entity);
+  previous = marcel_bubble_change_sched(&marcel_bubble_spread_sched);
+  marcel_bubble_submit(ma_entity_bubble(&marcel_root_bubble));
   if (previous)
     marcel_bubble_change_sched(previous);
 }

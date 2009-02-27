@@ -368,8 +368,7 @@ void ma_gensched_shutdown(void)
 
 #ifdef MA__BUBBLES
 	ma_deactivate_idle_scheduler();
-	if (current_sched->exit)
-		current_sched->exit(current_sched);
+	ma_bubble_exit();
 #endif
 
 #ifdef MA__LWPS

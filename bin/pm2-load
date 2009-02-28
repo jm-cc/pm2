@@ -3,12 +3,12 @@
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -221,11 +221,11 @@ mad3()
 
     x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
     if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie > /tmp/leonie 2>&1
+        pm2-create-sample-flavors leonie > /tmp/leonie_$$ 2>&1
     fi
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie > /tmp/leonie 2>&1
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie > /tmp/leonie_$$ 2>&1
         LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
         if [ ! -x "$LEONIE_DIR"/leonie ] ; then
             echo "Could not compile leonie. Aborting"

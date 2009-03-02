@@ -16,7 +16,7 @@
 prog="firsttouch"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Before first touch, memory located on node -1
-After first touch, memory located on node 0
+After first touch, memory located on last node
 EOF
 
 . ./mami.sh

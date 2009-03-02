@@ -38,7 +38,10 @@ any_t firsttouch(any_t arg) {
 
   err = marcel_memory_locate(&memory_manager, ptr, 100, &node);
   if (err < 0) perror("marcel_memory_locate unexpectedly failed");
-  marcel_printf("After first touch, memory located on node %d\n", node);
+  if (node == marcel_nbnodes-1)
+    marcel_printf("After first touch, memory located on last node\n");
+  else
+    marcel_printf("After first touch, memory NOT located on last node but on node %d\n", node);
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, marcel_self());
   if (err < 0) perror("marcel_memory_task_unattach unexpectedly failed");
@@ -57,7 +60,7 @@ int marcel_main(int argc, char * argv[]) {
   err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("marcel_memory_membind unexpectedly failed");
 
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
+  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[marcel_nbnodes-1]);
   marcel_create(&thread, &attr, firsttouch, NULL);
   marcel_join(thread, NULL);
 

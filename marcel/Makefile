@@ -107,7 +107,7 @@ MOD_GEN_C_INC += $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/*.c)
 	$(COMMON_BUILD)
 	@( schedulers=`								\
-	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER *( *[A-Za-z0-9_]\+ *,' $^	\
+	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER *( *[A-Za-z0-9_]\+ *[,)]' $^ \
 	 | cut -d '(' -f 2							\
 	 | grep -o '[A-Za-z0-9_]\+'						\
 	 | sort | uniq` ;							\

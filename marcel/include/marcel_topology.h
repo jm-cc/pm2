@@ -105,7 +105,7 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 #section marcel_variables
 #depend "sys/marcel_lwp.h[marcel_macros]"
 /** \brief VP number to node number conversion array */
-extern int ma_vp_node[MA_NR_LWPS];
+extern int ma_vp_node[MA_NR_VPS];
 
 #section functions
 /** \brief Free all topology levels but the last one */

@@ -37,7 +37,7 @@ static int ma_bubble_memaware_cspread = 0;
 static int ma_bubble_memaware_nbnots = 0;
 static unsigned long ma_bubble_memaware_lastmix[32];
 static ma_spinlock_t ma_bubble_memaware_remix_lock = MA_SPIN_LOCK_UNLOCKED;
-static int ma_bubble_memaware_want[MA_NR_LWPS];
+static int ma_bubble_memaware_want[MA_NR_VPS];
 
 /* Regarde si une entite est deja contenue dans une autre */
 #ifdef PM2DEBUG

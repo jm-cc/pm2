@@ -479,7 +479,7 @@ unsigned long ma_nr_ready(void)
 #ifdef PM2_DEV
 #warning TODO: descendre dans les bulles ...
 #endif
-	for (i = 0; i < MA_NR_LWPS; i++)
+	for (i = 0; i < MA_NR_VPS; i++)
 		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->as_holder.nr_ready;
 	sum += ma_main_runqueue.as_holder.nr_ready;
 

@@ -496,6 +496,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	return ret;
 }
 
+/* Permanently bring the entity inside the bubble by setting its sched_holder and natural_holder accordingly. */
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	LOG_IN();
 
@@ -505,7 +506,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 
 		/* If the entity is already in a bubble, move it directly to
 		 * the destination bubble. We cannot use
-		 * marcel_bubble_removentity because a side effect of
+		 * marcel_bubble_removeentity because a side effect of
 		 * marcel_bubble_removeentity is to put the entity on a
 		 * runqueue which causes trouble within a subsequent
 		 * __do_bubble_insertentity. Thus we use ma_bubble_moveentity
@@ -539,6 +540,8 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_RETURN(0);
 }
 
+/* Removes entity from bubble.
+ * Put entity on bubble's holding runqueue as a fallback */
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	int bubble_becomes_empty;
 	LOG_IN();

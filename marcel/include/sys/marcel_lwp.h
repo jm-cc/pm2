@@ -107,14 +107,14 @@ struct marcel_lwp {
 
 #define MARCEL_LWP_EST_DEF
 #ifdef MA__LWPS
-#  define MA_NR_LWPS (MARCEL_NBMAXCPUS+MARCEL_NBMAXVPSUP)
+#  define MA_NR_VPS (MARCEL_NBMAXCPUS+MARCEL_NBMAXVPSUP)
 #else
-#  define MA_NR_LWPS 1
+#  define MA_NR_VPS 1
 #endif
 
 #section variables
 #ifdef MA__LWPS
-extern ma_lwp_t ma_vp_lwp[MA_NR_LWPS];
+extern ma_lwp_t ma_vp_lwp[MA_NR_VPS];
 extern unsigned  ma__nb_vp;
 #endif
 

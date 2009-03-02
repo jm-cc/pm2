@@ -123,13 +123,6 @@ int marcel_sched_getscheduler(marcel_t t)
 	return t->as_entity.sched_policy;
 }
 
-#ifdef MA__LWPS
-unsigned marcel_add_lwp(void)
-{
-	return marcel_lwp_add_vp();
-}
-#endif
-
 static int frozen_scheduler;
 
 void ma_freeze_thread(marcel_task_t * p)

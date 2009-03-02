@@ -49,7 +49,7 @@ LIST_HEAD(ma_list_lwp_head);
 // Verrou protégeant la liste chaînée des LWPs
 ma_rwlock_t __ma_lwp_list_lock = MA_RW_LOCK_UNLOCKED;
 
-marcel_lwp_t* ma_vp_lwp[MA_NR_LWPS]={&__main_lwp,};
+marcel_lwp_t* ma_vp_lwp[MA_NR_VPS]={&__main_lwp,};
 
 #if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
 __thread marcel_lwp_t *ma_lwp_self = &__main_lwp;
@@ -233,7 +233,7 @@ unsigned marcel_lwp_add_vp(void)
 	if (num >= marcel_nbvps() + MARCEL_NBMAXVPSUP)
 		MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");
 
-	if (num >= MA_NR_LWPS)
+	if (num >= MA_NR_VPS)
 		MARCEL_EXCEPTION_RAISE("Too many lwp\n");
 
 	return marcel_lwp_add_lwp(num);
@@ -357,7 +357,7 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	struct marcel_topo_level *level;
 	marcel_lwp_t *lwp = NULL;
 	unsigned vp;
-	for (vp = 0; vp < marcel_nbvps(); vp++)
+	for (vp = 0; vp < marcel_nballvps(); vp++)
 		if ((lwp = ma_vp_lwp[vp]))
 			return lwp;
 
@@ -365,12 +365,12 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	/* TODO: walk vpaffinity levels */
 	level = ma_lwp_vpaffinity_level(NULL);
 	marcel_kthread_mutex_lock(&level->kmutex);
-	for (vp = 0; vp < marcel_nbvps(); vp++)
+	for (vp = 0; vp < marcel_nballvps(); vp++)
 		if ((lwp = ma_vp_lwp[vp]))
 			break;
 	if (!lwp && level->spare && level->needed != -1) {
 		marcel_kthread_cond_wait(&level->kneeddone, &level->kmutex);
-		for (vp = 0; vp < marcel_nbvps(); vp++)
+		for (vp = 0; vp < marcel_nballvps(); vp++)
 			if ((lwp = ma_vp_lwp[vp]))
 				break;
 		MA_BUG_ON(!lwp);

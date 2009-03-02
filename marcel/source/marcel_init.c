@@ -135,10 +135,10 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				continue;
 
 			ma__nb_vp = atoi(argv[i - 1]);
-			if (ma__nb_vp < 1 || ma__nb_vp > MA_NR_LWPS) {
+			if (ma__nb_vp < 1 || ma__nb_vp > MA_NR_VPS) {
 				fprintf(stderr,
 				    "Error: nb of VP should be between 1 and %ld\n",
-				    (long) MA_NR_LWPS);
+				    (long) MA_NR_VPS);
 				exit(1);
 			}
 		} else if (!strcmp(argv[i], "--marcel-cpustride")) {

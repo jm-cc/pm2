@@ -68,8 +68,15 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	//if (current_sched->submit)
 	//current_sched->submit(&marcel_root_bubble.as_entity);
 	ma_bubble_gather(&marcel_root_bubble);
+	ma_holder_t *h = ma_bubble_holder_lock_softirq(&marcel_root_bubble);
+	ma_bubble_lock(&marcel_root_bubble);
 	int state = ma_get_entity(&marcel_root_bubble.as_entity);
-	ma_put_entity(&marcel_root_bubble.as_entity, &(&marcel_topo_vp_level[0])->rq.as_holder, state);
+	ma_bubble_unlock(&marcel_root_bubble);
+	ma_holder_rawunlock(h);
+	h = &(&marcel_topo_vp_level[0])->rq.as_holder;
+	ma_holder_rawlock(h);
+	ma_put_entity(&marcel_root_bubble.as_entity, h, state);
+	ma_holder_unlock_softirq(h);
 	
 	marcel_mutex_unlock(&current_sched_mutex);
 }
@@ -352,6 +359,7 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	marcel_entity_t *ee;
 	marcel_bubble_t *b;
 	ma_holder_t *h;
+	MA_BUG_ON(!ma_holder_check_locked(&bubble->as_holder));
 	
 	bubble_sched_debugl(7,"ma_set_sched_holder %p to bubble %p\n",e,bubble);
 	e->sched_holder = &bubble->as_holder;
@@ -445,6 +453,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *e
 		int state = ma_get_entity(entity);
 		ma_holder_rawunlock(h);
 		ma_holder_rawlock(entity->natural_holder);
+		/* FIXME: here we need to lock the bubble hierarchy and the runqueue containing the target bubble */
 		ma_put_entity(entity, entity->natural_holder, state);
 		ma_holder_unlock_softirq(entity->natural_holder);
 	} else
@@ -1115,16 +1124,22 @@ const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
 
 static void __marcel_init bubble_sched_init(void) {
         marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.as_holder;
+	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
 	ma_activate_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
+	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
 }
 
 void ma_bubble_sched_init2(void) {
 	/* Having main on the main runqueue is both faster and respects priorities */
+	ma_holder_lock_softirq(&marcel_root_bubble.as_holder);
 	ma_deactivate_running_entity(&MARCEL_SELF->as_entity, &marcel_root_bubble.as_holder);
+	ma_holder_rawunlock(&marcel_root_bubble.as_holder);
 	SELF_GETMEM(as_entity.sched_holder) = &ma_main_runqueue.as_holder;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
+	ma_holder_rawlock(&ma_main_runqueue.as_holder);
 	ma_activate_running_entity(&MARCEL_SELF->as_entity, &ma_main_runqueue.as_holder);
+	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 
 	marcel_mutex_lock(&current_sched_mutex);
 	if (current_sched->init)

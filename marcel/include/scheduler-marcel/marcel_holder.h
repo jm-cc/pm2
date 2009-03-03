@@ -72,7 +72,7 @@ struct ma_holder {
 	enum marcel_holder type;
 	/** \brief Lock of holder */
 	ma_spinlock_t lock;
-	/** \brief List of entities placed for schedule in this holder */
+	/** \brief List of entities running or ready to run in this holder */
 	struct list_head ready_entities;
 	/** \brief Number of entities in the list above */
 	unsigned long nb_ready_entities;
@@ -321,7 +321,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define ma_holder_trylock(h) _ma_raw_spin_trylock(&(h)->lock)
 #define ma_holder_rawlock(h) _ma_raw_spin_lock(&(h)->lock)
 #define ma_holder_lock(h) ma_spin_lock(&(h)->lock)
-#define ma_holder_is_locked(h) ma_spin_is_locked_nofail(&(h)->lock)
+#define ma_holder_check_locked(h) ma_spin_check_locked(&(h)->lock)
 /** \brief Locks holder \e h */
 void ma_holder_lock_softirq(ma_holder_t *h);
 #define ma_holder_lock_softirq(h) ma_spin_lock_softirq(&(h)->lock)
@@ -515,6 +515,10 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->run_holder_data);
 	MA_BUG_ON(e->run_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
+	/* TODO: fix bugs and then remove the ifdef */
+#ifdef ___LOCK_DEBUG
+	MA_BUG_ON(!ma_holder_check_locked(h));
+#endif
 	e->run_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->ready_entities_item, &h->ready_entities);
@@ -528,6 +532,7 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_
 #section marcel_inline
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
 	MA_BUG_ON(e->run_holder != &rq->as_holder);
+	MA_BUG_ON(!ma_holder_check_locked(&rq->as_holder));
 	ma_array_enqueue_entity(e, rq->active);
 }
 
@@ -633,6 +638,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder_data);
 	MA_BUG_ON(h->nb_ready_entities <= 0);
+	MA_BUG_ON(!ma_holder_check_locked(h));
 	h->nb_ready_entities--;
 	list_del(&e->ready_entities_item);
 	MA_BUG_ON(e->run_holder != h);
@@ -643,6 +649,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq TBX_UNUSED) {
+	MA_BUG_ON(!ma_holder_check_locked(&rq->as_holder));
 	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->run_holder_data);
 	MA_BUG_ON(e->run_holder != &rq->as_holder);
 }

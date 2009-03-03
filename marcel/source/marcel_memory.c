@@ -1668,6 +1668,7 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
 	list_for_each_entry(area, &(owner->memory_areas), list) {
           if (area->data == data) {
             list_del_init(&area->list);
+            tfree(area);
             break;
           }
         }

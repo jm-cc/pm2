@@ -1052,7 +1052,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	ma_holder_rawlock(&bubble->as_holder);
 
 	/* We generally manage to avoid this */
-	if (list_empty(&bubble->queuedentities)) {
+	if (list_empty(&bubble->cached_entities)) {
 	  bubble_sched_debug("warning: bubble %d (%p) empty\n", bubble->id, bubble);
 		/* We shouldn't ever schedule a NOSCHED bubble */
 		MA_BUG_ON(bubble->as_entity.prio == MA_NOSCHED_PRIO);
@@ -1079,7 +1079,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 	bubble->num_schedules++;
 
-	nextent = list_entry(bubble->queuedentities.next, marcel_entity_t, run_list);
+	nextent = list_entry(bubble->cached_entities.next, marcel_entity_t, run_list);
 	bubble_sched_debugl(7,"next entity to run %p\n",nextent);
 	MA_BUG_ON(nextent->type == MA_BUBBLE_ENTITY);
 

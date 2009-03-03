@@ -720,7 +720,7 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t TBX_UNUSED) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
 			MA_BUG_ON(!b->as_entity.run_holder);
 			MA_BUG_ON(!b->as_entity.run_holder_data);
-			MA_BUG_ON(list_empty(&b->queuedentities));
+			MA_BUG_ON(list_empty(&b->cached_entities));
 		}
 #endif
 	}

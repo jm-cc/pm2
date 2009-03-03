@@ -37,6 +37,7 @@ int marcel_main(int argc, char * argv[]) {
 
   marcel_printf("\nSpliting unknown memory area\n");
   ptr = malloc(50*getpagesize());
+  memset(ptr, 0, 50*getpagesize());
   split(ptr, 50*getpagesize());
 
   err = marcel_memory_register(&memory_manager, ptr, 50*getpagesize());
@@ -73,6 +74,7 @@ static void split(void *ptr, size_t size) {
     attach(ptr, size);
     for(i=1 ; i<10 ; i++) marcel_memory_free(&memory_manager, newptrs[i]);
   }
+  free(newptrs);
 }
 
 static void attach(void *ptr, size_t size) {

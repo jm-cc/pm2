@@ -15,6 +15,7 @@
 
 #include "marcel.h"
 #include <errno.h>
+#include <malloc.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 
@@ -36,7 +37,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_free(&memory_manager, ptr);
 
   marcel_printf("\nSpliting unknown memory area\n");
-  ptr = malloc(50*getpagesize());
+  ptr = memalign(getpagesize(), 50*getpagesize());
   memset(ptr, 0, 50*getpagesize());
   split(ptr, 50*getpagesize());
 
@@ -70,7 +71,17 @@ static void split(void *ptr, size_t size) {
     marcel_fprintf(stderr, "marcel_memory_split fails %d <%m>\n", errno, errno);
   }
   else {
-    for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);
+    err=0;
+    for(i=0 ; i<10 ; i++) {
+      if (newptrs[i] != ptr + i*(size/10)) err=1;
+    }
+    if (!err) {
+      marcel_fprintf(stderr, "Success when splitting memory area\n");
+    }
+    else {
+      marcel_fprintf(stderr, "Error when splitting memory area\n");
+      for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);
+    }
     attach(ptr, size);
     for(i=1 ; i<10 ; i++) marcel_memory_free(&memory_manager, newptrs[i]);
   }
@@ -89,7 +100,19 @@ static void attach(void *ptr, size_t size) {
   }
 
   stats = (long *) (ma_task_stats_get (self, ma_stats_memnode_offset));
-  for(i=0 ; i<marcel_nbnodes; i++) marcel_printf("Stat for node #%d = %ld\n", i, stats[i]);
+  err = 0;
+  if (stats[0] != size/10) err=1;
+  else {
+    for(i=1 ; i<marcel_nbnodes; i++) if (stats[i] != 0) err=1;
+  }
+  if (!err) {
+    marcel_fprintf(stderr, "Success when attaching memory area\n");
+  }
+  else {
+    marcel_fprintf(stderr, "Error when attaching memory area\n");
+    for(i=0 ; i<marcel_nbnodes; i++)
+      marcel_fprintf(stderr, "Stat for node #%d = %ld\n", i, stats[i]);
+  }
 
   err = marcel_memory_task_unattach(&memory_manager, ptr, self);
   if (err < 0) {

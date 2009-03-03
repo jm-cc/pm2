@@ -36,7 +36,7 @@ nb_sub_entities(marcel_entity_t *e[], int ne, int nl, float per_item_load, unsig
 	for (i=0; i<ne; i++) {
 		if (e[i]->type == MA_BUBBLE_ENTITY &&
 				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
-			unsigned nb = ma_bubble_entity(e[i])->nbentities;
+			unsigned nb = ma_bubble_entity(e[i])->nb_natural_entities;
 			if (nb) {
 				*recursed = 1;
 				new_ne += nb;
@@ -54,7 +54,7 @@ build_list(marcel_entity_t *e[], int ne, int nl, float per_item_load, marcel_ent
 				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
 			marcel_entity_t *ee;
 			marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-			list_for_each_entry(ee, &bb->heldentities, bubble_entity_list)
+			list_for_each_entry(ee, &bb->natural_entities, bubble_entity_list)
 				new_e[j++] = ee;
 		} else
 			new_e[j++] = e[i];

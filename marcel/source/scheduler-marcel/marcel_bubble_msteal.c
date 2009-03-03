@@ -77,7 +77,7 @@ static int ma_entity_is_active(marcel_entity_t *e)
     MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
     marcel_entity_t *downentity;
     ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
-    list_for_each_entry(downentity, &ma_bubble_entity(e)->heldentities, bubble_entity_list) {
+    list_for_each_entry(downentity, &ma_bubble_entity(e)->natural_entities, bubble_entity_list) {
       if (ma_entity_is_active(downentity) == 1) {
         ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
         return 1;

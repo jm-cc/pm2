@@ -463,7 +463,7 @@ int ma_entity_memory_volume(marcel_entity_t *entity, int recurse)
 		/* entities in bubble */
 		if (entity->type == MA_BUBBLE_ENTITY)
 		{
-			list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+			list_for_each_entry(downentity, &ma_bubble_entity(entity)->natural_entities, bubble_entity_list)
 				{
 					total += ma_entity_memory_volume(downentity, recurse + 1);
 				}
@@ -547,7 +547,7 @@ int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int
 	/* entities in bubble */
 	if (entity->type == MA_BUBBLE_ENTITY)
 	{
-		list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+		list_for_each_entry(downentity, &ma_bubble_entity(entity)->natural_entities, bubble_entity_list)
 			{
 				ma_most_attractive_node(downentity, allocated, weight_coef, access_min, recurse + 1);
 			}
@@ -646,7 +646,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 	marcel_entity_t *downentity;
 	if (entity->type == MA_BUBBLE_ENTITY)
 	{
-		list_for_each_entry(downentity, &ma_bubble_entity(entity)->heldentities, bubble_entity_list)
+		list_for_each_entry(downentity, &ma_bubble_entity(entity)->natural_entities, bubble_entity_list)
 			{
 				ma_move_entity_alldata(downentity, newnode);
 			}

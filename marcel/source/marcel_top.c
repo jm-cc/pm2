@@ -177,7 +177,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 	top_printf(" %ld", *(long *)ma_bubble_hold_stats_get(b, ma_stats_nbready_offset));
 #endif /* MARCEL_STATS_ENABLED */
 	top_printf("\r\n");
-	list_for_each_entry(e, &b->heldentities, bubble_entity_list) {
+	list_for_each_entry(e, &b->natural_entities, bubble_entity_list) {
 		if (e->type != MA_BUBBLE_ENTITY) {
 			top_printf("%*s", indent+1, "");
 			printtask(ma_task_entity(e));

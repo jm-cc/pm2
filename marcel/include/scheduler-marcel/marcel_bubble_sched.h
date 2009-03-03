@@ -217,10 +217,10 @@ struct marcel_bubble {
 	struct ma_entity as_entity;
 	/** \brief Holder information */
 	struct ma_holder as_holder;
-	/** \brief List of the held entities */
-	struct list_head heldentities;
+	/** \brief List of entities for which the bubble is a natural holder */
+	struct list_head natural_entities;
 	/** \brief Number of held entities */
-	unsigned nbentities;
+	unsigned nb_natural_entities;
 	/** \brief Semaphore for the join operation */
 	marcel_sem_t join;
 
@@ -258,8 +258,8 @@ struct marcel_bubble {
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
 	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
 	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
-	.heldentities = LIST_HEAD_INIT((b).heldentities), \
-	.nbentities = 0, \
+	.natural_entities = LIST_HEAD_INIT((b).natural_entities), \
+	.nb_natural_entities = 0, \
 	.join = MARCEL_SEM_INITIALIZER(1), \
 	.cached_entities = LIST_HEAD_INIT((b).cached_entities), \
 	.num_schedules = 0, \

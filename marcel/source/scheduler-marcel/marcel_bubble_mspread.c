@@ -151,8 +151,8 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
       }
 
       if (broken) {
-        bubble_sched_debug("eclatement de la bulle %p avec %d sub-entities\n",e[i],ma_bubble_entity(e[i])->nbentities);
-        unsigned nb = ma_bubble_entity(e[i])->nbentities;
+        bubble_sched_debug("eclatement de la bulle %p avec %d sub-entities\n",e[i],ma_bubble_entity(e[i])->nb_natural_entities);
+        unsigned nb = ma_bubble_entity(e[i])->nb_natural_entities;
         if (nb) {
           recursed = 1;
           new_ne += nb;
@@ -186,12 +186,12 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
         if (broken) {
           marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-          list_for_each_entry(ee, &bb->heldentities, bubble_entity_list) {
+          list_for_each_entry(ee, &bb->natural_entities, bubble_entity_list) {
             new_e[j++] = ee;
             bubble_sched_debug("entity %p load %ld\n",ee,ma_entity_load(ee));
           }
           /* Recount */
-          new_ne += ma_bubble_entity(e[i])->nbentities;
+          new_ne += ma_bubble_entity(e[i])->nb_natural_entities;
         }
         else {
           new_e[j++] = e[i];

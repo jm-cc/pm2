@@ -389,6 +389,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 
 static
 void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
+  mdebug_mami("Cleaning memory area %p\n", (*memory_data)->startaddress);
   if (!(tbx_slist_is_nil((*memory_data)->owners))) {
     marcel_fprintf(stderr, "MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
                    (*memory_data)->startaddress, (*memory_data)->endaddress);
@@ -972,7 +973,11 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   // Find out where the pages are
   ma_memory_get_pages_location(pageaddrs, nbpages, &node);
 
+  // Register the pages
   ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
+
+  // Free temporary array
+  free(pageaddrs);
 }
 
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,

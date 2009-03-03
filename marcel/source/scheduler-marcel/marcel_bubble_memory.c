@@ -482,8 +482,8 @@ goodness (ma_holder_t *hold, void *args) {
   marcel_entity_t *e;
   int current_score;
 
-  list_for_each_entry (e, &hold->sched_list, sched_list) {
-    if (hold->nr_ready > 1)
+  list_for_each_entry (e, &hold->ready_entities, ready_entities_item) {
+    if (hold->nb_ready_entities > 1)
       current_score = memory_sched_compute_entity_score (e, hints);
     else
       current_score = -1;

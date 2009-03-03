@@ -314,14 +314,14 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
 	  marcel_entity_t *ee;
-	  if (bb->as_holder.nr_ready && (ma_entity_load(e[i]) != 1)) {
+	  if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
 	    /* If the bubble is not empty, and contains more than one thread */
 	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
 	      new_ne++;
 	    for_each_entity_scheduled_in_bubble_end ()
 	    bubble_has_exploded = 1; /* We exploded one bubble,
 					it may be enough ! */
-	    bubble_sched_debug ("counting: nr_ready: %ld, new_ne: %d\n", bb->as_holder.nr_ready, new_ne);
+	    bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
 	    break;
 	  }
 	}
@@ -351,7 +351,7 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 	   bubble to explode.*/
 	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
 	  marcel_bubble_t *bb = ma_bubble_entity (e[i]);
-	  if (bb->as_holder.nr_ready) {
+	  if (bb->as_holder.nb_ready_entities) {
 	    bubble_sched_debug ("exploding bubble %p\n", bb);
 	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
 	      new_e[j++] = ee;
@@ -522,7 +522,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       }
     for_each_entity_scheduled_in_bubble_end ()
   } else {
-    list_for_each_entry (e, &hold->sched_list, sched_list) {
+    list_for_each_entry (e, &hold->ready_entities, ready_entities_item) {
       if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
 	available_entities++;
       }

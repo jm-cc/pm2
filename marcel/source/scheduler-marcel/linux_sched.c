@@ -467,12 +467,12 @@ asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 }
 
 /*
- * nr_ready:
+ * nb_ready_entities:
  *
  * externally visible scheduler statistics: current number of runnable
  * threads
  */
-unsigned long ma_nr_ready(void)
+unsigned long ma_nb_ready_entities(void)
 {
 	unsigned long i, sum = 0;
 
@@ -480,8 +480,8 @@ unsigned long ma_nr_ready(void)
 #warning TODO: descendre dans les bulles ...
 #endif
 	for (i = 0; i < MA_NR_VPS; i++)
-		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->as_holder.nr_ready;
-	sum += ma_main_runqueue.as_holder.nr_ready;
+		sum += ma_lwp_rq(ma_get_lwp_by_vpnum(i))->as_holder.nb_ready_entities;
+	sum += ma_main_runqueue.as_holder.nb_ready_entities;
 
 	return sum;
 }
@@ -771,7 +771,7 @@ restart:
 	sched_debug("default prio: %d\n",max_prio);
 	currq = &ma_main_runqueue;
 #endif
-		if (!currq->as_holder.nr_ready) {
+		if (!currq->as_holder.nb_ready_entities) {
 			sched_debug("apparently nobody in %s\n",currq->name);
 		} else {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);

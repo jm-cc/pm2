@@ -327,7 +327,7 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
       if (entities >= expected->entity_count)
 				{
 					level_log (stderr, level,"more entities than expected (%lu, expected %u)",
-										 level->rq.as_holder.nr_ready,
+										 level->rq.as_holder.nb_ready_entities,
 										 expected->entity_count);
 					return 0;
 				}

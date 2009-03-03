@@ -226,7 +226,7 @@ struct marcel_bubble {
 
 	/** \brief List of entities queued in the so-called "thread cache" */
 	struct list_head cached_entities;
-	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nr_ready. */
+	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nb_ready_entities. */
 	int num_schedules;
 
 	/** \brief Whether the bubble settled somewhere */

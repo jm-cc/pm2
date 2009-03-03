@@ -286,7 +286,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 				if (!ma_per_lwp(online, lwp))
 					continue;
 				rq2 = &vp->rq;
-				if (rq2->as_holder.nr_ready < THREAD_THRESHOLD_LOW) {
+				if (rq2->as_holder.nb_ready_entities < THREAD_THRESHOLD_LOW) {
 					rq = rq2;
 					break;
 				}
@@ -298,7 +298,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		case MARCEL_SCHED_BALANCE: {
 			/* Retourne le LWP le moins charge (ce qui
 			   oblige a parcourir toute la liste) */
-			unsigned best = ma_lwp_vprq(cur_lwp)->as_holder.nr_ready;
+			unsigned best = ma_lwp_vprq(cur_lwp)->as_holder.nb_ready_entities;
 			struct marcel_topo_level *vp;
 			ma_runqueue_t *rq2;
 			rq = ma_lwp_vprq(cur_lwp);
@@ -309,9 +309,9 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 				if (!ma_per_lwp(online, lwp))
 					continue;
 				rq2 = &vp->rq;
-				if (rq2->as_holder.nr_ready < best) {
+				if (rq2->as_holder.nb_ready_entities < best) {
 					rq = rq2;
-					best = rq2->as_holder.nr_ready;
+					best = rq2->as_holder.nb_ready_entities;
 				}
 			}
 			break;

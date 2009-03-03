@@ -47,7 +47,7 @@ extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 #section marcel_functions
 extern void ma_linux_sched_init0(void);
 
-extern unsigned long ma_nr_ready(void);
+extern unsigned long ma_nb_ready_entities(void);
 asmlinkage TBX_EXTERN int ma_schedule(void);
 asmlinkage void ma_schedule_tail(marcel_task_t *prev);
 extern int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync);

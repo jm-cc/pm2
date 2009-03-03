@@ -24,16 +24,16 @@
 
 #ifdef MA__BUBBLES
 
-static int total_nr_ready(marcel_bubble_t *b) {
-	int nr_ready = b->as_holder.nr_ready;
+static int total_nb_ready_entities(marcel_bubble_t *b) {
+	int nb_ready_entities = b->as_holder.nb_ready_entities;
 	marcel_entity_t *e;
 	// XXX: pas fiable du tout ! Il faudrait verrouiller la bulle !
 	ma_holder_rawlock(&b->as_holder);
 	list_for_each_entry(e, &b->natural_entities, natural_entities_item)
 		if (e->type == MA_BUBBLE_ENTITY)
-			nr_ready += total_nr_ready(ma_bubble_entity(e));
+			nb_ready_entities += total_nb_ready_entities(ma_bubble_entity(e));
 	ma_holder_rawunlock(&b->as_holder);
-	return nr_ready;
+	return nb_ready_entities;
 }
 
 static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power) {
@@ -44,14 +44,14 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 	//thread prêt...
 	marcel_entity_t *e;
 	marcel_bubble_t *b;
-	if (!rq->as_holder.nr_ready)
+	if (!rq->as_holder.nb_ready_entities)
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
 		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), run_list) {
 			if (e->type != MA_BUBBLE_ENTITY)
 				continue;
 			b = ma_bubble_entity(e);
-			if ((nbrun = total_nr_ready(b)) >= up_power) {
+			if ((nbrun = total_nb_ready_entities(b)) >= up_power) {
 				bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
 				return b;
 			}
@@ -82,7 +82,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 		return 0;
 	}
 	// XXX: calcul dupliqué ici
-	nbrun = total_nr_ready(b);
+	nbrun = total_nb_ready_entities(b);
 	for (rq2 = rq;
 			/* emmener juste assez haut pour moi */
 			!marcel_vpset_isset(&rq2->vpset, ma_vpnum(MA_LWP_SELF))

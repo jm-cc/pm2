@@ -201,7 +201,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
   *fromlevel = NULL;
 
   int number = 0;
-  list_for_each_entry(e, &h->sched_list, sched_list) {
+  list_for_each_entry(e, &h->ready_entities, ready_entities_item) {
     /* Almost empty bubble */
     if (e->type == MA_BUBBLE_ENTITY) {
       if (ma_bubble_entity(e)->old == 0) {
@@ -221,7 +221,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
     return;
 
   if (number == 1) {
-    list_for_each_entry(e, &h->sched_list, sched_list) {
+    list_for_each_entry(e, &h->ready_entities, ready_entities_item) {
       if (e->type == MA_BUBBLE_ENTITY)
         if (ma_bubble_entity(e)->old)
           continue;
@@ -261,7 +261,7 @@ static void ma_find_interesting_entity_on_runqueue(ma_holder_t *h, int *totalloa
     }
   }
   else {
-    list_for_each_entry(e, &h->sched_list, sched_list) {
+    list_for_each_entry(e, &h->ready_entities, ready_entities_item) {
       if (e->type == MA_BUBBLE_ENTITY)
         if (ma_bubble_entity(e)->old)
           continue;

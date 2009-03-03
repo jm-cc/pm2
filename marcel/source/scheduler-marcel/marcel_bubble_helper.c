@@ -150,7 +150,7 @@ ma_count_entities_on_rq (ma_runqueue_t *rq) {
 
   for_each_entity_scheduled_on_runqueue (ee, rq) {
     if (ee->type == MA_BUBBLE_ENTITY) {
-      if (!(ma_bubble_entity (ee))->as_holder.nr_ready) {
+      if (!(ma_bubble_entity (ee))->as_holder.nb_ready_entities) {
 	continue;
       }
     }
@@ -182,7 +182,7 @@ int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne)
       if (ee->type == MA_BUBBLE_ENTITY)
 	{
 	  marcel_bubble_t *bb = ma_bubble_entity(ee);
-	  if (bb->as_holder.nr_ready)
+	  if (bb->as_holder.nb_ready_entities)
 	    e[i++] = ee;
 	}
       else

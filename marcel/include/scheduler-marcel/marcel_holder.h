@@ -73,9 +73,9 @@ struct ma_holder {
 	/** \brief Lock of holder */
 	ma_spinlock_t lock;
 	/** \brief List of entities placed for schedule in this holder */
-	struct list_head sched_list;
+	struct list_head ready_entities;
 	/** \brief Number of entities in the list above */
-	unsigned long nr_ready;
+	unsigned long nb_ready_entities;
 
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Synthesis of statistics of contained entities */
@@ -100,8 +100,8 @@ enum marcel_holder ma_holder_type(ma_holder_t *h);
 #define MA_HOLDER_INITIALIZER(h, t) { \
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
-	.sched_list = LIST_HEAD_INIT((h).sched_list), \
-	.nr_ready = 0, \
+	.ready_entities = LIST_HEAD_INIT((h).ready_entities), \
+	.nb_ready_entities = 0, \
 }
 
 #section marcel_functions
@@ -110,8 +110,8 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder type) {
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
-	INIT_LIST_HEAD(&h->sched_list);
-	h->nr_ready = 0;
+	INIT_LIST_HEAD(&h->ready_entities);
+	h->nb_ready_entities = 0;
 }
 
 #section marcel_functions
@@ -196,7 +196,7 @@ struct ma_entity {
 	struct list_head natural_entities_item;
 #endif
 	/** \brief List of entities placed for schedule in this holder */
-	struct list_head sched_list;
+	struct list_head ready_entities_item;
 
 #ifdef MA__LWPS
 	/** \brief Nesting level */
@@ -517,10 +517,10 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
 	e->run_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->sched_list, &h->sched_list);
+		list_add(&e->ready_entities_item, &h->ready_entities);
 	else
-		list_add_tail(&e->sched_list, &h->sched_list);
-	h->nr_ready++;
+		list_add_tail(&e->ready_entities_item, &h->ready_entities);
+	h->nb_ready_entities++;
 }
 
 #section marcel_functions
@@ -632,9 +632,9 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder_data);
-	MA_BUG_ON(h->nr_ready <= 0);
-	h->nr_ready--;
-	list_del(&e->sched_list);
+	MA_BUG_ON(h->nb_ready_entities <= 0);
+	h->nb_ready_entities--;
+	list_del(&e->ready_entities_item);
 	MA_BUG_ON(e->run_holder != h);
 	e->run_holder = NULL;
 }

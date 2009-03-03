@@ -635,6 +635,7 @@ static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_h
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->run_holder_data);
+	MA_BUG_ON(h->nr_ready <= 0);
 	h->nr_ready--;
 	list_del(&e->sched_list);
 	MA_BUG_ON(e->run_holder != h);

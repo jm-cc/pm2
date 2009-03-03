@@ -231,7 +231,7 @@ unsigned marcel_lwp_add_vp(void)
 		MARCEL_EXCEPTION_RAISE("Too many supplementary vps\n");
 
 	if (num >= MA_NR_VPS)
-		MARCEL_EXCEPTION_RAISE("Too many lwp\n");
+		MARCEL_EXCEPTION_RAISE("Too many vps\n");
 
 	return marcel_lwp_add_lwp(num);
 }

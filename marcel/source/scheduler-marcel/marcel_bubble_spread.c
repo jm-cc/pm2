@@ -54,7 +54,7 @@ build_list(marcel_entity_t *e[], int ne, int nl, float per_item_load, marcel_ent
 				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
 			marcel_entity_t *ee;
 			marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-			list_for_each_entry(ee, &bb->natural_entities, bubble_entity_list)
+			list_for_each_entry(ee, &bb->natural_entities, natural_entities_item)
 				new_e[j++] = ee;
 		} else
 			new_e[j++] = e[i];

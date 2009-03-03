@@ -287,7 +287,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
-		if (list_empty(&p->as_entity.bubble_entity_list))
+		if (list_empty(&p->as_entity.natural_entities_item))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 	}
 #endif

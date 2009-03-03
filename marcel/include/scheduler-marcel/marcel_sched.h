@@ -348,7 +348,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	t->as_entity.natural_holder=NULL;
 	t->as_entity.run_holder_data=NULL;
 #ifdef MA__BUBBLES
-	INIT_LIST_HEAD(&t->as_entity.bubble_entity_list);
+	INIT_LIST_HEAD(&t->as_entity.natural_entities_item);
 #endif
 	if (h) {
 		t->as_entity.sched_holder = h;

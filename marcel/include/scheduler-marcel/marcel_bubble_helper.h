@@ -96,7 +96,7 @@ void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne)
 
 /* Iterates over every entity directly scheduled in bubble b */
 #define for_each_entity_scheduled_in_bubble_begin(e,b) \
-	list_for_each_entry(e, &(b)->natural_entities, bubble_entity_list) {	\
+	list_for_each_entry(e, &(b)->natural_entities, natural_entities_item) {	\
       if(e->sched_holder)\
         if (e->sched_holder->type == MA_BUBBLE_HOLDER) { \
            /* scheduling holder of e is a bubble, that must be a ancestry of b */
@@ -107,7 +107,7 @@ void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne)
 
 /* Iterates over all the entities contained in bubble b */
 #define for_each_entity_held_in_bubble(e,b) \
-  list_for_each_entry(e, &(b)->natural_entities, bubble_entity_list)
+  list_for_each_entry(e, &(b)->natural_entities, natural_entities_item)
 
 /* Iterates over every entity scheduled on the runqueue r */
 #define for_each_entity_scheduled_on_runqueue(e,r) \

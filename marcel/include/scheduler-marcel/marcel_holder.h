@@ -193,7 +193,7 @@ struct ma_entity {
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
 	/** \brief List link of entities held in the containing bubble */
-	struct list_head bubble_entity_list;
+	struct list_head natural_entities_item;
 #endif
 	/** \brief List of entities placed for schedule in this holder */
 	struct list_head sched_list;
@@ -276,7 +276,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define MA_SCHED_LEVEL_INIT
 #endif
 #ifdef MA__BUBBLES
-#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) .bubble_entity_list = LIST_HEAD_INIT((e).bubble_entity_list),
+#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) .natural_entities_item = LIST_HEAD_INIT((e).natural_entities_item),
 #else
 #define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif

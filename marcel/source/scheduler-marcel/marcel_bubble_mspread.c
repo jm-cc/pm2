@@ -186,7 +186,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
         if (broken) {
           marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-          list_for_each_entry(ee, &bb->natural_entities, bubble_entity_list) {
+          list_for_each_entry(ee, &bb->natural_entities, natural_entities_item) {
             new_e[j++] = ee;
             bubble_sched_debug("entity %p load %ld\n",ee,ma_entity_load(ee));
           }

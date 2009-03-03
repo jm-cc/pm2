@@ -29,7 +29,7 @@ static int total_nr_ready(marcel_bubble_t *b) {
 	marcel_entity_t *e;
 	// XXX: pas fiable du tout ! Il faudrait verrouiller la bulle !
 	ma_holder_rawlock(&b->as_holder);
-	list_for_each_entry(e, &b->natural_entities, bubble_entity_list)
+	list_for_each_entry(e, &b->natural_entities, natural_entities_item)
 		if (e->type == MA_BUBBLE_ENTITY)
 			nr_ready += total_nr_ready(ma_bubble_entity(e));
 	ma_holder_rawunlock(&b->as_holder);
@@ -105,7 +105,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 	/* laisser d'abord ce qui est ordonnancé sur place */
 	ma_holder_rawlock(&b->as_holder);
-	list_for_each_entry(e, &b->natural_entities, bubble_entity_list) {
+	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			/* laisser la première bulle */
 			if (!first)
@@ -130,7 +130,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	ma_holder_rawlock(&rq2->as_holder);
 	ma_holder_rawlock(&b->as_holder);
 	/* b contient encore tout ce qui n'est pas ordonnancé, les distribuer */
-	list_for_each_entry(e, &b->natural_entities, bubble_entity_list) {
+	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->sched_holder == &b->as_holder)
 			continue;
 		/* encore dans la bulle, faire sortir cela */

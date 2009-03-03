@@ -170,9 +170,6 @@ static void *lwp_kthread_start_func(void *arg)
 	LOG_RETURN(NULL);
 }
 
-//static int lwp_notify(struct ma_notifier_block *self, unsigned long action, void *hlwp);
-//static struct ma_notifier_block lwp_nb;
-
 unsigned marcel_lwp_add_lwp(int vpnum)
 {
 	marcel_lwp_t *lwp;

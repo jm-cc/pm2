@@ -94,7 +94,7 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 			marcel_attr_setpreemptible(&new_attr, 0);
 
 		if (new_attr.__flags & MA_ATTR_FLAG_SCOPESYSTEM) {
-			unsigned lwp = marcel_add_lwp();
+			unsigned lwp = marcel_lwp_add_vp();
 			marcel_attr_setvpset(&new_attr,
 			    MARCEL_VPSET_VP(lwp));
 		}

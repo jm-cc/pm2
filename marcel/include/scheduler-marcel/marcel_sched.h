@@ -136,15 +136,7 @@ int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
 #define marcel_attr_getschedpolicy(attr,policy) marcel_sched_attr_getschedpolicy(&(attr)->sched,policy)
 
 
-
-
-#section functions
-#ifdef MA__LWPS
-unsigned marcel_add_lwp(void);
-#else
-#define marcel_add_lwp() (0)
-#endif
-
+
 /****************************************************************/
 /* Structure interne pour une tâche
  */

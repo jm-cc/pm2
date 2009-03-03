@@ -59,7 +59,7 @@ int marcel_main(int argc, char **argv)
   marcel_setname(marcel_self(),"main");
   marcel_printf("wait a bit (%p)\n",marcel_self());
   marcel_delay(1000);
-  lwp = marcel_add_lwp();
+  lwp = marcel_lwp_add_vp();
   marcel_printf("created additionnal LWP, wait a bit\n");
   marcel_delay(1000);
   marcel_attr_init(&attr);

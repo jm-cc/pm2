@@ -340,7 +340,7 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 	    list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 	    _piom_spin_unlock(&server->lwp_lock);
 
-	    lwp->vp_nb = marcel_add_lwp();
+	    lwp->vp_nb = marcel_lwp_add_vp();
 	    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(lwp->vp_nb));
 
 	    if (pipe(lwp->fds) == -1) {

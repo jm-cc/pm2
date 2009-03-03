@@ -198,9 +198,6 @@ struct ma_entity {
 	/** \brief List of entities placed for schedule in this holder */
 	struct list_head sched_list;
 
-   /** \brief List of entities on the fake vp */
-	struct list_head next_fake_sched;
-
 #ifdef MA__LWPS
 	/** \brief Nesting level */
 	int sched_level;

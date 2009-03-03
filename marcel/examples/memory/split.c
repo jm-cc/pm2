@@ -31,12 +31,12 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
-  marcel_printf("Spliting memory area allocated by MAMI\n");
+  marcel_fprintf(stderr, "Spliting memory area allocated by MAMI\n");
   ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
   split(ptr, 10*getpagesize());
   marcel_memory_free(&memory_manager, ptr);
 
-  marcel_printf("\nSpliting unknown memory area\n");
+  marcel_fprintf(stderr, "\nSpliting unknown memory area\n");
   ptr = memalign(getpagesize(), 50*getpagesize());
   memset(ptr, 0, 50*getpagesize());
   split(ptr, 50*getpagesize());
@@ -46,7 +46,7 @@ int marcel_main(int argc, char * argv[]) {
     perror("marcel_memory_register unexpectedly failed");
   }
 
-  marcel_printf("\nSpliting memory area (%ld) not allocated by MAMI\n", 50*getpagesize());
+  marcel_fprintf(stderr, "\nSpliting memory area (%ld) not allocated by MAMI\n", 50*getpagesize());
   split(ptr, 50*getpagesize());
   err = marcel_memory_unregister(&memory_manager, ptr);
   if (err < 0) {
@@ -80,7 +80,7 @@ static void split(void *ptr, size_t size) {
     }
     else {
       marcel_fprintf(stderr, "Error when splitting memory area\n");
-      for(i=0 ; i<10 ; i++) marcel_printf("New ptr[%d] = %p\n", i, newptrs[i]);
+      for(i=0 ; i<10 ; i++) marcel_fprintf(stderr, "New ptr[%d] = %p\n", i, newptrs[i]);
     }
     attach(ptr, size);
     for(i=1 ; i<10 ; i++) marcel_memory_free(&memory_manager, newptrs[i]);

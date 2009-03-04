@@ -40,41 +40,41 @@ registering_flavors() {
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats --marcel=bubble_sched_null
+	--marcel=enable_stats
 
     register_flavor marcel-topology-32 \
 	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:32 \
-	--marcel=enable_stats --marcel=bubble_sched_null
+	--marcel=enable_stats
 
     register_flavor marcel-topology \
 	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:64 \
-	--marcel=enable_stats --marcel=bubble_sched_null
+	--marcel=enable_stats
 
     register_flavor marcel-topology-256 \
 	--modules="marcel tbx init" --all=debug --all=gdb \
 	--all=build_static --common=static \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \
-	--marcel=enable_stats --marcel=bubble_sched_null
+	--marcel=enable_stats
 
     register_flavor marcel-mami-opt \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats --marcel=bubble_sched_null \
+	--marcel=enable_stats \
         --marcel=enable_mami
 
     register_flavor marcel-mami-debug \
 	--modules="marcel tbx init" \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats --marcel=bubble_sched_null --marcel=valgrind \
+	--marcel=enable_stats --marcel=valgrind \
         --marcel=enable_mami \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
@@ -82,7 +82,7 @@ registering_flavors() {
 	--modules="marcel tbx init" \
 	--marcel=numa --marcel=standard_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats --marcel=bubble_sched_null \
+	--marcel=enable_stats \
         --marcel=enable_mami --marcel=fortran \
         --common=fortran_target_gfortran \
 	--all=debug --all=gdb --all=noinline --all=build_static
@@ -96,14 +96,14 @@ registering_flavors() {
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
-	--marcel=enable_stats --marcel=bubble_sched_spread \
+	--marcel=enable_stats \
 	--bubbles=gdb --bubbles=noinline
 
     register_flavor marcel-distrib \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=pmarcel --marcel=enable_stats --marcel=bubble_sched_null \
+	--marcel=pmarcel --marcel=enable_stats \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
 	--marcel=enable_deviation --marcel=enable_signals
@@ -113,14 +113,14 @@ registering_flavors() {
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
-	--marcel=enable_stats --marcel=bubble_sched_spread \
+	--marcel=enable_stats \
 	--all=debug --all=gdb --all=noinline
 
     register_flavor marcel-forestgomp-opt \
         --modules="marcel tbx init" \
 	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=standard_main --marcel=dont_use_pthread \
-	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
+	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--all=opt --all=build_both
 
@@ -128,7 +128,7 @@ registering_flavors() {
         --modules="marcel tbx init" \
 	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=standard_main --marcel=dont_use_pthread \
-	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
+	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
 	--all=debug --all=gdb --all=noinline --all=build_both
@@ -137,7 +137,7 @@ registering_flavors() {
         --modules="marcel tbx init bubblelib bubbles profile" \
 	--marcel=numa --marcel=enable_numa_memory \
 	--marcel=standard_main --marcel=dont_use_pthread \
-	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
+	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=profile --marcel=bug_on \
 	--profile=autostart \
@@ -147,7 +147,7 @@ registering_flavors() {
         --modules="marcel tbx init" \
 	--marcel=numa --marcel=enable_mami \
 	--marcel=standard_main --marcel=dont_use_pthread \
-	--marcel=enable_stats --marcel=bubble_sched_cache --marcel=enable_keys \
+	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
 	--all=debug --all=gdb --all=noinline --all=build_both
@@ -233,7 +233,7 @@ registering_flavors() {
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
 	--marcel=enable_deviation --marcel=enable_signals \
-	--marcel=enable_stats --marcel=bubble_sched_null \
+	--marcel=enable_stats \
 	--marcel=standard_main \
 	--puk=enable_pukabi --puk=disable_output \
 	--puk=disable_fd_virtualization

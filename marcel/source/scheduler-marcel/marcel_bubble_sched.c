@@ -21,35 +21,9 @@ ma_spinlock_t ma_idle_scheduler_lock = MA_SPIN_LOCK_UNLOCKED;
 marcel_bubble_t marcel_root_bubble = MARCEL_BUBBLE_INITIALIZER(marcel_root_bubble);
 
 /** \brief The current bubble scheduler */
-static marcel_bubble_sched_t *current_sched = 
-#if defined(BUBBLE_SCHED_SPREAD)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mspread[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_spread_sched;
-#elif defined(BUBBLE_SCHED_CACHE)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mcache[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_cache_sched;
-#elif defined(BUBBLE_SCHED_MEMORY)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemory[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_memory_sched;
-#elif defined(BUBBLE_SCHED_NULL)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mnull[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_null_sched;
-#elif defined(BUBBLE_SCHED_EXPLODE)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mexplode[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_explode_sched;
-#elif defined(BUBBLE_SCHED_STEAL)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32msteal[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_steal_sched;
-#elif defined(BUBBLE_SCHED_MEMAWARE)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mmemaware[1;37m selected[1;33m >>>[0m"
-&marcel_bubble_memaware_sched;
-#elif defined(BUBBLE_SCHED_GANG)
-#warning "[1;33m<<< [1;37mBubble scheduler [1;32mgang[1;37m selected[1;33m >>>[0m"
-	&marcel_bubble_gang_sched;
-#else
-#error "No chosen bubble scheduler!"
-#endif
+static marcel_bubble_sched_t *current_sched = &marcel_bubble_null_sched;
 
+/** \brief Mutex protecting concurrent accesses to \e current_sched.  */
 static marcel_mutex_t current_sched_mutex = MARCEL_MUTEX_INITIALIZER;
 
 int marcel_bubble_init(marcel_bubble_t *bubble) {

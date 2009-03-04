@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2-sh
+#!/bin/sh
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -14,32 +14,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/uname \) ]; then
-        if [ -n "$PM2_HT" ] ; then
-                _ht="$PM2_HT"
-        else if [ -f /bin/uname ]; then
-                _ht="`/bin/uname -m`"
-	else
-                _ht="`/usr/bin/uname -m`"
-	fi
-        fi
+if [ -z "$PM2_ARCH" -o -z "$PM2_ASM" ]; then
+        _hosttype="`uname -sm`"
 
-	if [ -f /bin/uname ]; then
-		_os="`/bin/uname -s`"
-	else
-		_os="`/usr/bin/uname -s`"
-	fi
-
-	case "$_os,$_ht" in
-	SunOS,sun*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
-	*,sparc*)          PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
-	*,i86pc)           PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	*,i[3456]86*)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	*,x86_64)          PM2_ARCH=X86_64_ARCH ; PM2_ASM=x86_64 ;;
-	BSD/OS,i[3456]86)  PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	FreeBSD,i386)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	*,ia64)            PM2_ARCH=IA64_ARCH ; PM2_ASM=ia64 ;;
-	AIX*,*)            CPU=`lsdev -C -c processor -S available | sed 1q | awk '{ print $1 }'`
+	case "$_hosttype" in
+	"SunOS sun"*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
+	*" sparc"*)          PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
+	*" i86pc")           PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*" "i[3456]86*)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*" x86_64")          PM2_ARCH=X86_64_ARCH ; PM2_ASM=x86_64 ;;
+	"BSD/OS "i[3456]86)  PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	"FreeBSD i386")      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*" ia64")            PM2_ARCH=IA64_ARCH ; PM2_ASM=ia64 ;;
+	"AIX"*" "*)          CPU=`lsdev -C -c processor -S available | sed 1q | awk '{ print $1 }'`
 			   if lsattr -El $CPU | grep -q ' POWER' ;
 			   then
 			     PM2_ARCH=RS6K_ARCH ; PM2_ASM=rs8k ;
@@ -47,15 +34,15 @@ if [ \( -z "$PM2_ARCH" -o -z "$PM2_ASM" \) -a \( -f /bin/uname -o -f /usr/bin/un
 			     PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;
 			   fi
 			   ;;
-	*,alpha)           PM2_ARCH=ALPHA_ARCH ; PM2_ASM=alpha ;;
-	*,mips)            PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
-	*,IP*)             PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
-	*,ppc)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
-	Linux,ppc64)  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
-	*,ppc64)  	   PM2_ARCH=PPC64_ARCH ; PM2_ASM=ppc64 ;;
-        *,Power*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
-        *)                 echo "unknown arch $_os,$_ht, please set in bin/pm2-arch";
-	                   M2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
+	*" alpha")           PM2_ARCH=ALPHA_ARCH ; PM2_ASM=alpha ;;
+	*" mips")            PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
+	*" IP"*)             PM2_ARCH=MIPS_ARCH ; PM2_ASM=mips ;;
+	*" ppc")  	     PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+	"Linux ppc64")  	   PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+	*" ppc64")  	     PM2_ARCH=PPC64_ARCH ; PM2_ASM=ppc64 ;;
+        *" Power"*)          PM2_ARCH=PPC_ARCH ; PM2_ASM=ppc ;;
+        *)                   echo "unknown arch \`$_hosttype', please set in bin/pm2-arch";
+	                     PM2_ARCH=UNKNOWN_ARCH ; PM2_ASM=unknown ;;
 	esac
 fi
 

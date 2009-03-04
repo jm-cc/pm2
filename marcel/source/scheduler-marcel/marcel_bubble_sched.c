@@ -846,7 +846,7 @@ static void __ma_topo_lock(struct marcel_topo_level *level) {
 
 	/* Lock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -878,7 +878,7 @@ static void __ma_topo_unlock(struct marcel_topo_level *level) {
 
 	/* Unlock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -978,7 +978,7 @@ static void ma_topo_lock_bubbles(struct marcel_topo_level *level) {
 	int i;
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_lock_subbubbles(ma_bubble_entity(e));
 		}
@@ -1002,7 +1002,7 @@ static void ma_topo_unlock_bubbles(struct marcel_topo_level *level) {
 
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), run_list) {
+		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_subbubbles(ma_bubble_entity(e));
 		}
@@ -1086,7 +1086,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 	bubble->num_schedules++;
 
-	nextent = list_entry(bubble->cached_entities.next, marcel_entity_t, run_list);
+	nextent = list_entry(bubble->cached_entities.next, marcel_entity_t, cached_entities_item);
 	bubble_sched_debugl(7,"next entity to run %p\n",nextent);
 	MA_BUG_ON(nextent->type == MA_BUBBLE_ENTITY);
 

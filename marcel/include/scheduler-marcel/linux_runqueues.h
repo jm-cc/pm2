@@ -188,13 +188,13 @@ int ma_queue_empty(struct list_head *queue);
 #define ma_queue_empty(queue)	list_empty(queue)
 /** \brief First entity in queue \e queue */
 marcel_entity_t *ma_queue_entry(struct list_head *queue);
-#define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, run_list)
+#define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, cached_entities_item)
 
 /** \brief Iterate through the entities held in queue \e queue */
-#define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, run_list)
+#define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, cached_entities_item)
 /** \brief Same as ma_queue_for_each_entry(), but safe version against current
  * item removal: prefetches the next entity in \e ee. */
-#define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, run_list)
+#define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, cached_entities_item)
 
 /*
  * Adding/removing a task to/from a priority array:
@@ -208,7 +208,7 @@ static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *e, ma_prio_a
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
 	if (e->prio != MA_NOSCHED_PRIO)
 		array->nr_active--;
-	list_del(&e->run_list);
+	list_del(&e->cached_entities_item);
 	if (list_empty(ma_array_queue(array, e->prio))) {
 		sched_debug("array %p (prio %d) empty\n",array, e->prio);
 		__ma_clear_bit(e->prio, array->bitmap);
@@ -230,9 +230,9 @@ static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_a
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->run_list, ma_array_queue(array, e->prio));
+		list_add(&e->cached_entities_item, ma_array_queue(array, e->prio));
 	else
-		list_add_tail(&e->run_list, ma_array_queue(array, e->prio));
+		list_add_tail(&e->cached_entities_item, ma_array_queue(array, e->prio));
 	__ma_set_bit(e->prio, array->bitmap);
 	if (e->prio != MA_NOSCHED_PRIO)
 		array->nr_active++;
@@ -250,7 +250,7 @@ static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marc
 #section marcel_inline
 static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
 	MA_BUG_ON(e->ready_holder_data);
-	list_add_tail(&e->run_list, head);
+	list_add_tail(&e->cached_entities_item, head);
 	e->ready_holder_data = array;
 	MA_BUG_ON(e->ready_holder);
 	e->ready_holder = &rq->as_holder;

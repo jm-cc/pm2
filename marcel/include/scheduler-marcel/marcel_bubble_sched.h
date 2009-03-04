@@ -429,9 +429,9 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		}
 	}
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->run_list, &b->cached_entities);
+		list_add(&e->cached_entities_item, &b->cached_entities);
 	else
-		list_add_tail(&e->run_list, &b->cached_entities);
+		list_add_tail(&e->cached_entities_item, &b->cached_entities);
 	MA_BUG_ON(e->ready_holder_data);
 	e->ready_holder_data = (void *)1;
 #endif
@@ -440,7 +440,7 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	list_del(&e->run_list);
+	list_del(&e->cached_entities_item);
 	if (list_empty(&b->cached_entities)) {
 		ma_holder_t *h = b->as_entity.ready_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
@@ -466,9 +466,9 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->run_list, &b->cached_entities);
+		list_add(&e->cached_entities_item, &b->cached_entities);
 	else
-		list_add_tail(&e->run_list, &b->cached_entities);
+		list_add_tail(&e->cached_entities_item, &b->cached_entities);
 	MA_BUG_ON(e->ready_holder_data);
 	e->ready_holder_data = (void *)1;
 #endif
@@ -528,7 +528,7 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 #ifdef MA__BUBBLES
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
-	list_del(&e->run_list);
+	list_del(&e->cached_entities_item);
 	MA_BUG_ON(!e->ready_holder_data);
 	e->ready_holder_data = NULL;
 	MA_BUG_ON(e->ready_holder != &b->as_holder);

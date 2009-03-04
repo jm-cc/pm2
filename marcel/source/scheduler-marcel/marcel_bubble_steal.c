@@ -47,7 +47,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 	if (!rq->as_holder.nb_ready_entities)
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
-		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), run_list) {
+		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), cached_entities_item) {
 			if (e->type != MA_BUBBLE_ENTITY)
 				continue;
 			b = ma_bubble_entity(e);

@@ -166,7 +166,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * figuring out.
  *
  * ::ready_holder_data is NULL when the entity is currently running. Else, it was
- * preempted and put in ::run_list.
+ * preempted and put in ::cached_entities_item.
  */
 struct ma_entity {
 	/** \brief Entity type */
@@ -183,8 +183,8 @@ struct ma_entity {
 	ma_holder_t *ready_holder;
 	/** \brief Data for the running holder */
 	void *ready_holder_data;
-	/** \brief List link of ready entities */
-	struct list_head run_list;
+	/** \brief List link of ready entities, either linked to bubble's cached entities or runqueue's array of queues*/
+	struct list_head cached_entities_item;
 	/** \brief scheduling policy */
 	int sched_policy;
 	/** \brief priority */
@@ -295,7 +295,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	.type = t, \
 	.natural_holder = NULL, .sched_holder = NULL, .ready_holder = NULL, \
 	.ready_holder_data = NULL, \
-	.run_list = LIST_HEAD_INIT((e).run_list), \
+	.cached_entities_item = LIST_HEAD_INIT((e).cached_entities_item), \
 	/*.sched_policy = */ \
 	.prio = p, \
 	.time_slice = MA_ATOMIC_INIT(0), \

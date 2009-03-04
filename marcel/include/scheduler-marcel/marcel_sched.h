@@ -362,7 +362,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			MA_BUG_ON(!rq->name[0]);
 		}
 	}
-	INIT_LIST_HEAD(&t->as_entity.run_list);
+	INIT_LIST_HEAD(&t->as_entity.cached_entities_item);
 	t->as_entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&t->as_entity),t->as_entity.prio);
 	/* TODO: only for the spread scheduler */

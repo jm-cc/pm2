@@ -104,7 +104,7 @@ static void printtask(marcel_task_t *t) {
 			state, schedstate, ma_get_task_vpnum(t),
 			get_holder_name(ma_task_natural_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
-			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+			get_holder_name(ma_task_ready_holder(t),buf3,sizeof(buf3)));
 
 #ifdef MARCEL_STATS_ENABLED
 		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
@@ -124,7 +124,7 @@ static void printtask(marcel_task_t *t) {
 			schedstate,
 			get_holder_name(ma_task_natural_holder(t),buf1,sizeof(buf1)),
 			get_holder_name(ma_task_sched_holder(t),buf2,sizeof(buf2)),
-			get_holder_name(ma_task_run_holder(t),buf3,sizeof(buf3)));
+			get_holder_name(ma_task_ready_holder(t),buf3,sizeof(buf3)));
 
 #ifdef MARCEL_STATS_ENABLED
 		if ((load = *(long *)ma_task_stats_get(t, marcel_stats_load_offset)))
@@ -165,7 +165,7 @@ static void __printbubble(marcel_bubble_t *b, int indent) {
 		b->as_entity.prio,
 		get_holder_name(b->as_entity.natural_holder,buf1,sizeof(buf1)),
 		get_holder_name(b->as_entity.sched_holder,buf2,sizeof(buf2)),
-		get_holder_name(b->as_entity.run_holder,buf3,sizeof(buf3)));
+		get_holder_name(b->as_entity.ready_holder,buf3,sizeof(buf3)));
 #ifdef MARCEL_STATS_ENABLED
 	if ((load = *(long *)ma_bubble_hold_stats_get(b, marcel_stats_load_offset)))
 		top_printf(" (%ld)",load);

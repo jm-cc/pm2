@@ -295,12 +295,12 @@ int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level) {
 	int running; \
 	ma_holder_t *h
 #define RUNNING() \
-	h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER && bubble->as_entity.run_holder && bubble->as_entity.run_holder_data
+	h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER && bubble->as_entity.ready_holder && bubble->as_entity.ready_holder_data
 #define RAWLOCK_HOLDER() \
 	h = ma_bubble_holder_rawlock(bubble); \
 	running = RUNNING()
 #define HOLDER() \
-	h = bubble->as_entity.run_holder; \
+	h = bubble->as_entity.ready_holder; \
 	running = RUNNING()
 #define SETPRIO(_prio); \
 	if (running) \
@@ -364,11 +364,11 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	bubble_sched_debugl(7,"ma_set_sched_holder %p to bubble %p\n",e,bubble);
 	e->sched_holder = &bubble->as_holder;
 	if (e->type != MA_BUBBLE_ENTITY) {
-		if ((h = e->run_holder) && h != &bubble->as_holder) {
+		if ((h = e->ready_holder) && h != &bubble->as_holder) {
 			/* already enqueued */
 			/* Ici, on suppose que h est déjà verrouillé ainsi que
 			 * sa runqueue, et la runqueue de la bulle */
-			if (!(e->run_holder_data)) {
+			if (!(e->ready_holder_data)) {
 				/* and already running ! */
 				ma_deactivate_running_entity(e,h);
 				ma_activate_running_entity(e,&bubble->as_holder);
@@ -527,12 +527,12 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 			/* sched holder was already set to something else, wake the bubble there */
 			PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
 			ma_holder_t *h = ma_entity_holder_lock_softirq(entity);
-			if (!entity->run_holder)
+			if (!entity->ready_holder)
 				ma_activate_running_entity(entity, entity->sched_holder);
-			MA_BUG_ON(entity->run_holder->type != MA_RUNQUEUE_HOLDER);
-			if (!entity->run_holder_data)
-				ma_enqueue_entity(entity, entity->run_holder);
-			PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->run_holder));
+			MA_BUG_ON(entity->ready_holder->type != MA_RUNQUEUE_HOLDER);
+			if (!entity->ready_holder_data)
+				ma_enqueue_entity(entity, entity->ready_holder);
+			PROF_EVENT2(bubble_sched_switchrq, ma_bubble_entity(entity), ma_rq_holder(entity->ready_holder));
 			ma_entity_holder_unlock_softirq(h);
 		}
 		bubble_sched_debugl(7,"insertion %p in bubble %p done\n",entity,bubble);
@@ -652,8 +652,8 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 	h = ma_bubble_holder_lock_softirq(bubble);
 	MA_BUG_ON(bubble->nb_natural_entities);
 	MA_BUG_ON(!list_empty(&bubble->natural_entities));
-	if (bubble->as_entity.run_holder) {
-		if (bubble->as_entity.run_holder_data)
+	if (bubble->as_entity.ready_holder) {
+		if (bubble->as_entity.ready_holder_data)
 			ma_dequeue_entity(&bubble->as_entity, h);
 		ma_deactivate_running_entity(&bubble->as_entity, h);
 	}
@@ -799,7 +799,7 @@ static void __ma_bubble_lock_all(marcel_bubble_t *b, marcel_bubble_t *root_bubbl
 	} else {
 		/* Bubble by itself on a runqueue. If that's not the case, you probably forgot to call ma_put_entity at some point. */
 		MA_BUG_ON(b->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER);
-		if (!b->as_entity.run_holder_data) {
+		if (!b->as_entity.ready_holder_data) {
 			/* not queued, hence didn't get locked when running ma_topo_lock() */
 			ma_holder_rawlock(&b->as_holder);
 		}
@@ -828,7 +828,7 @@ static void __ma_bubble_unlock_all(marcel_bubble_t *b, marcel_bubble_t *root_bub
 		}
 		/* Bubble by itself on a runqueue. If that's not the case, you probably forgot to call ma_put_entity at some point. */
 		MA_BUG_ON(b->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER);
-		if (!b->as_entity.run_holder_data) {
+		if (!b->as_entity.ready_holder_data) {
 			/* not queued, hence won't get unlocked when running ma_topo_unlock() */
 			ma_holder_rawunlock(&b->as_holder);
 		}
@@ -1063,7 +1063,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	  bubble_sched_debug("warning: bubble %d (%p) empty\n", bubble->id, bubble);
 		/* We shouldn't ever schedule a NOSCHED bubble */
 		MA_BUG_ON(bubble->as_entity.prio == MA_NOSCHED_PRIO);
-		if (bubble->as_entity.run_holder_data)
+		if (bubble->as_entity.ready_holder_data)
 			ma_rq_dequeue_entity(&bubble->as_entity, rq);
 		sched_debug("unlock(%p)\n", rq);
 		ma_holder_rawunlock(&rq->as_holder);
@@ -1074,7 +1074,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	if (!bubble->not_preemptible && bubble->num_schedules >= bubble->as_holder.nb_ready_entities) {
 		/* we expired our threads, let others execute */
 		bubble->num_schedules = 0;
-		if (bubble->as_entity.run_holder_data) {
+		if (bubble->as_entity.ready_holder_data) {
 			/* by putting ourselves at the end of the list */
 			ma_rq_dequeue_entity(&bubble->as_entity, rq);
 			ma_rq_enqueue_entity(&bubble->as_entity, rq);

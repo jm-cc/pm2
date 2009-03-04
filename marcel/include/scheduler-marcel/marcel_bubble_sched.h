@@ -416,15 +416,15 @@ void marcel_sched_exit(marcel_t t);
 static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	MA_BUG_ON(e->run_holder != &b->as_holder);
+	MA_BUG_ON(e->ready_holder != &b->as_holder);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	if (list_empty(&b->cached_entities)) {
-		ma_holder_t *h = b->as_entity.run_holder;
+		ma_holder_t *h = b->as_entity.ready_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
 			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 			MA_BUG_ON(!ma_holder_check_locked(h));
-			if (!b->as_entity.run_holder_data)
+			if (!b->as_entity.ready_holder_data)
 				ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
@@ -432,8 +432,8 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		list_add(&e->run_list, &b->cached_entities);
 	else
 		list_add_tail(&e->run_list, &b->cached_entities);
-	MA_BUG_ON(e->run_holder_data);
-	e->run_holder_data = (void *)1;
+	MA_BUG_ON(e->ready_holder_data);
+	e->ready_holder_data = (void *)1;
 #endif
 }
 static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
@@ -442,17 +442,17 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	list_del(&e->run_list);
 	if (list_empty(&b->cached_entities)) {
-		ma_holder_t *h = b->as_entity.run_holder;
+		ma_holder_t *h = b->as_entity.ready_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
 			MA_BUG_ON(!ma_holder_check_locked(h));
-			if (b->as_entity.run_holder_data)
+			if (b->as_entity.ready_holder_data)
 				ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
 		}
 	}
-	MA_BUG_ON(!e->run_holder_data);
-	e->run_holder_data = NULL;
-	MA_BUG_ON(e->run_holder != &b->as_holder);
+	MA_BUG_ON(!e->ready_holder_data);
+	e->ready_holder_data = NULL;
+	MA_BUG_ON(e->ready_holder != &b->as_holder);
 #endif
 }
 
@@ -469,8 +469,8 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 		list_add(&e->run_list, &b->cached_entities);
 	else
 		list_add_tail(&e->run_list, &b->cached_entities);
-	MA_BUG_ON(e->run_holder_data);
-	e->run_holder_data = (void *)1;
+	MA_BUG_ON(e->ready_holder_data);
+	e->ready_holder_data = (void *)1;
 #endif
 }
 
@@ -485,10 +485,10 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_t *b)
 {
 #ifdef MA__BUBBLES
-	ma_holder_t *h = b->as_entity.run_holder;
+	ma_holder_t *h = b->as_entity.ready_holder;
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 
-	if (list_empty(&b->cached_entities) || b->as_entity.run_holder_data || !h) {
+	if (list_empty(&b->cached_entities) || b->as_entity.ready_holder_data || !h) {
 		/* No awake entity or B already awake, just unlock */
 		ma_holder_rawunlock(&b->as_holder);
 		return;
@@ -505,7 +505,7 @@ static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_
 	ma_holder_rawlock(&b->as_holder);
 	if (!list_empty(&b->cached_entities) && h) {
 		MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		if (!b->as_entity.run_holder_data)
+		if (!b->as_entity.ready_holder_data)
 			ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
 	}
 	ma_bubble_holder_rawunlock(h);
@@ -529,9 +529,9 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	list_del(&e->run_list);
-	MA_BUG_ON(!e->run_holder_data);
-	e->run_holder_data = NULL;
-	MA_BUG_ON(e->run_holder != &b->as_holder);
+	MA_BUG_ON(!e->ready_holder_data);
+	e->ready_holder_data = NULL;
+	MA_BUG_ON(e->ready_holder != &b->as_holder);
 #endif
 }
 

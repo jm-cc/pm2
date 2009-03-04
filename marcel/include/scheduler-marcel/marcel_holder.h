@@ -158,14 +158,14 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  *   by bubble scheduler algorithms, onto which it should migrate as soon as
  *   _possible_ (but not necessarily immediately) if it is not already runnint
  *   there
- * - queued or running on some running holder (::run_holder).
- * That is, the sched_holder and the run_holder work as a dampening team in a
- * way similar to double buffering schemes where the run_holder represents the
+ * - queued or running on some ready holder (::ready_holder).
+ * That is, the sched_holder and the ready_holder work as a dampening team in a
+ * way similar to double buffering schemes where the ready_holder represents the
  * last instantiated scheduling decision while the sched_holder represents the
  * upcoming scheduling decision that the scheduling algorithm is currently busy
  * figuring out.
  *
- * ::run_holder_data is NULL when the entity is currently running. Else, it was
+ * ::ready_holder_data is NULL when the entity is currently running. Else, it was
  * preempted and put in ::run_list.
  */
 struct ma_entity {
@@ -175,14 +175,14 @@ struct ma_entity {
 	 * (the holding bubble, typically). */
 	ma_holder_t *natural_holder;
 	/** \brief Scheduling holder, i.e. the holder currently selected by the scheduling algorithms out
-	 * of application activity state. It may be modified independently from the run_holder, in which
+	 * of application activity state. It may be modified independently from the ready_holder, in which
 	 * case it constitutes a target toward which the entity should migrate in due time. */
 	ma_holder_t *sched_holder;
-	/** \brief Running holder, i.e. the transient holder on which the entity is currently running or
+	/** \brief Ready holder, i.e. the transient holder on which the entity is currently running or
 	 * queued as eligible for running once its turn comes. */
-	ma_holder_t *run_holder;
+	ma_holder_t *ready_holder;
 	/** \brief Data for the running holder */
-	void *run_holder_data;
+	void *ready_holder_data;
 	/** \brief List link of ready entities */
 	struct list_head run_list;
 	/** \brief scheduling policy */
@@ -293,8 +293,8 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 
 #define MA_SCHED_ENTITY_INITIALIZER(e,t,p) { \
 	.type = t, \
-	.natural_holder = NULL, .sched_holder = NULL, .run_holder = NULL, \
-	.run_holder_data = NULL, \
+	.natural_holder = NULL, .sched_holder = NULL, .ready_holder = NULL, \
+	.ready_holder_data = NULL, \
 	.run_list = LIST_HEAD_INIT((e).run_list), \
 	/*.sched_policy = */ \
 	.prio = p, \
@@ -309,13 +309,13 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #section marcel_macros
 #define ma_task_natural_holder(p)	(THREAD_GETMEM(p,as_entity.natural_holder))
 #define ma_task_sched_holder(p)	(THREAD_GETMEM(p,as_entity.sched_holder))
-#define ma_task_run_holder(p)	(THREAD_GETMEM(p,as_entity.run_holder))
-#define ma_this_run_holder()	(ma_task_run_holder(MARCEL_SELF))
-#define ma_task_run_holder_data(p)  (THREAD_GETMEM(p,as_entity.run_holder_data))
+#define ma_task_ready_holder(p)	(THREAD_GETMEM(p,as_entity.ready_holder))
+#define ma_this_ready_holder()	(ma_task_ready_holder(MARCEL_SELF))
+#define ma_task_ready_holder_data(p)  (THREAD_GETMEM(p,as_entity.ready_holder_data))
 
-#define MA_TASK_IS_RUNNING(tsk) (ma_task_run_holder(tsk)&&!ma_task_run_holder_data(tsk))
-#define MA_TASK_IS_READY(tsk) (ma_task_run_holder(tsk)&&ma_task_run_holder_data(tsk))
-#define MA_TASK_IS_BLOCKED(tsk) (!ma_task_run_holder(tsk))
+#define MA_TASK_IS_RUNNING(tsk) (ma_task_ready_holder(tsk)&&!ma_task_ready_holder_data(tsk))
+#define MA_TASK_IS_READY(tsk) (ma_task_ready_holder(tsk)&&ma_task_ready_holder_data(tsk))
+#define MA_TASK_IS_BLOCKED(tsk) (!ma_task_ready_holder(tsk))
 
 #define ma_holder_preempt_lock(h) __ma_preempt_spin_lock(&(h)->lock)
 #define ma_holder_trylock(h) _ma_raw_spin_trylock(&(h)->lock)
@@ -341,7 +341,7 @@ ma_holder_t *ma_task_active_holder(marcel_task_t *e);
 static __tbx_inline__ ma_holder_t *ma_entity_active_holder(marcel_entity_t *e)
 {
         ma_holder_t *holder;
-        if ((holder = e->run_holder))
+        if ((holder = e->ready_holder))
 		/* currently ready */
                 return holder;
 	/* not ready, current runqueue */
@@ -488,9 +488,9 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 	ma_holder_t *hh;
 #ifdef MA__BUBBLES
 	for (hh=h; hh && ma_holder_type(hh) != MA_RUNQUEUE_HOLDER; ) {
-		/* TODO: n'a plus de sens, enlever run_holder */
-		if (ma_bubble_holder(hh)->as_entity.run_holder != hh)
-			hh = ma_bubble_holder(hh)->as_entity.run_holder;
+		/* TODO: n'a plus de sens, enlever ready_holder */
+		if (ma_bubble_holder(hh)->as_entity.ready_holder != hh)
+			hh = ma_bubble_holder(hh)->as_entity.ready_holder;
 		else if (ma_bubble_holder(hh)->as_entity.sched_holder != hh)
 			hh = ma_bubble_holder(hh)->as_entity.sched_holder;
 		else break;
@@ -512,14 +512,14 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
-	MA_BUG_ON(e->run_holder_data);
-	MA_BUG_ON(e->run_holder);
+	MA_BUG_ON(e->ready_holder_data);
+	MA_BUG_ON(e->ready_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
+	e->ready_holder = h;
 	/* TODO: fix bugs and then remove the ifdef */
 #ifdef ___LOCK_DEBUG
 	MA_BUG_ON(!ma_holder_check_locked(h));
 #endif
-	e->run_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->ready_entities_item, &h->ready_entities);
 	else
@@ -531,7 +531,7 @@ static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_hol
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq);
 #section marcel_inline
 static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_t *rq) {
-	MA_BUG_ON(e->run_holder != &rq->as_holder);
+	MA_BUG_ON(e->ready_holder != &rq->as_holder);
 	MA_BUG_ON(!ma_holder_check_locked(&rq->as_holder));
 	ma_array_enqueue_entity(e, rq->active);
 }
@@ -636,13 +636,13 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
-	MA_BUG_ON(e->run_holder_data);
+	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(h->nb_ready_entities <= 0);
 	MA_BUG_ON(!ma_holder_check_locked(h));
 	h->nb_ready_entities--;
 	list_del(&e->ready_entities_item);
-	MA_BUG_ON(e->run_holder != h);
-	e->run_holder = NULL;
+	MA_BUG_ON(e->ready_holder != h);
+	e->ready_holder = NULL;
 }
 
 #section marcel_functions
@@ -650,8 +650,8 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_
 #section marcel_inline
 static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_t *rq TBX_UNUSED) {
 	MA_BUG_ON(!ma_holder_check_locked(&rq->as_holder));
-	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->run_holder_data);
-	MA_BUG_ON(e->run_holder != &rq->as_holder);
+	ma_array_dequeue_entity(e, (ma_prio_array_t *) e->ready_holder_data);
+	MA_BUG_ON(e->ready_holder != &rq->as_holder);
 }
 
 #section marcel_functions
@@ -717,13 +717,13 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t TBX_UNUSED) {
 #ifdef PM2_BUG_ON
 	if (MA_TASK_IS_READY(t)) {
 		/* check that it is reachable from some runqueue */
-		ma_holder_t *h = ma_task_run_holder(t);
+		ma_holder_t *h = ma_task_ready_holder(t);
 		MA_BUG_ON(!h);
 #ifdef MA__BUBBLES
 		if (h->type == MA_BUBBLE_HOLDER) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
-			MA_BUG_ON(!b->as_entity.run_holder);
-			MA_BUG_ON(!b->as_entity.run_holder_data);
+			MA_BUG_ON(!b->as_entity.ready_holder);
+			MA_BUG_ON(!b->as_entity.ready_holder_data);
 			MA_BUG_ON(list_empty(&b->cached_entities));
 		}
 #endif
@@ -750,10 +750,10 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 	ma_holder_t *h;
 
 	ret = MA_ENTITY_SLEEPING;
-	if ((h = e->run_holder)) {
+	if ((h = e->ready_holder)) {
 		sched_debug("getting entity %p from holder %p\n", e, h);
 
-		if (e->run_holder_data) {
+		if (e->ready_holder_data) {
 			ret = MA_ENTITY_READY;
 			ma_dequeue_entity(e, h);
 		} else

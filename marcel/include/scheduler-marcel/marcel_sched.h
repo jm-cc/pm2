@@ -344,9 +344,9 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #endif
 	}
 	t->as_entity.sched_policy = attr->sched.sched_policy;
-	t->as_entity.run_holder=NULL;
+	t->as_entity.ready_holder=NULL;
 	t->as_entity.natural_holder=NULL;
-	t->as_entity.run_holder_data=NULL;
+	t->as_entity.ready_holder_data=NULL;
 #ifdef MA__BUBBLES
 	INIT_LIST_HEAD(&t->as_entity.natural_entities_item);
 #endif

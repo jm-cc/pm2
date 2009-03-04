@@ -131,7 +131,7 @@ void ma_freeze_thread(marcel_task_t * p)
 	if (!frozen_scheduler)
 		h = ma_task_holder_lock_softirq(p);
 	else
-		h = ma_task_run_holder(p);
+		h = ma_task_ready_holder(p);
 
 	if (MA_TASK_IS_FROZEN(p)) {
 		if (!frozen_scheduler)

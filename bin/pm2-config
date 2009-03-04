@@ -747,7 +747,8 @@ pm2_config_parse_cmdline() # args
 # (`pm2-config --cflags' is typically 3 times faster in `C' than in
 # `en_US.UTF-8' here).
 LANG=C
-export LANG
+LC_ALL=C
+export LANG LC_ALL
 
 _PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse puk pm2 mad3 nmad marcel pioman tbx ntbx init stackalign leonie ezflavor bubblelib bubbles bubblegum"
 

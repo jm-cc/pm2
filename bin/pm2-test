@@ -381,6 +381,7 @@ failures=""
 while [ $_l -le $_level ]; do
 
     echo "*** Initialising level $_l tests ***"
+    rm -f /tmp/tests_${USER}_database/*.dat
 
     for _m in $_to_test ; do
 

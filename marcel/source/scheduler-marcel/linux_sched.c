@@ -357,17 +357,17 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	int requeue;
 	/* attention ici. Pour l'instant on n'a pas besoin de requeuer dans
 	 * une bulle */
-	/* quand on le voudra, il faudra faire attention que dequeue_task peut
+	/* quand on le voudra, il faudra faire attention que dequeue_entity peut
 	 * vouloir déverouiller la bulle pour pouvoir verrouiller la runqueue */
 	MA_BUG_ON(prio < 0 || prio >= MA_MAX_PRIO);
 	PROF_EVENT2(sched_setprio,t,prio);
 	h = ma_task_holder_lock_softirq(t);
 	if ((requeue = (MA_TASK_IS_READY(t) &&
 			ma_holder_type(h) == MA_RUNQUEUE_HOLDER)))
-		ma_dequeue_task(t,h);
+		ma_dequeue_entity(&t->as_entity,h);
 	t->as_entity.prio=prio;
 	if (requeue)
-		ma_enqueue_task(t,h);
+		ma_enqueue_entity(&t->as_entity,h);
 	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	return 0;
 }
@@ -406,7 +406,7 @@ static void finish_task_switch(marcel_task_t *prev)
 			PROF_EVENT2(sched_thread_wake, prev, prev->state);
 			ma_set_task_state(prev, MA_TASK_RUNNING);
 			/* still runnable */
-			ma_enqueue_task(prev,prevh);
+			ma_enqueue_entity(&prev->as_entity,prevh);
 			try_to_resched(prev, prevh);
 		} else {
 			/* yes, deactivate */
@@ -419,7 +419,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		}
 	} else {
 		MTRACE("still running",prev);
-		ma_enqueue_task(prev,prevh);
+		ma_enqueue_entity(&prev->as_entity,prevh);
 	}
 	/* shouldn't already be running since we just left it ! */
 	MA_BUG_ON(MA_TASK_IS_RUNNING(prev));
@@ -592,7 +592,7 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 	ma_task_stats_set(long, next, ma_stats_last_vp_offset, ma_vpnum (MA_LWP_SELF));
 #endif
 	__ma_get_lwp_var(current_thread) = next;
-	ma_dequeue_task(next, nexth);
+	ma_dequeue_entity(&next->as_entity, nexth);
 
 	sched_debug("unlock(%p)\n",nexth);
 	ma_holder_rawunlock(nexth);
@@ -939,7 +939,7 @@ restart:
 
 	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
 		/* A thread seed, take it */
-		ma_dequeue_task(next, nexth);
+		ma_dequeue_entity(&next->as_entity, nexth);
 		ma_holder_unlock(nexth);
 
 		if (prev->state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {
@@ -1049,7 +1049,7 @@ int marcel_yield_to(marcel_t next)
 			err = instantiate_thread_seed(next, tbx_false, &runner);
 			MA_BUG_ON(err != 0);
 
-			ma_dequeue_task(next, nexth);
+			ma_dequeue_entity(&next->as_entity, nexth);
 			ma_task_holder_unlock_softirq(nexth);
 
 			marcel_wake_up_created_thread(runner);
@@ -1490,7 +1490,7 @@ static void __marcel_init linux_sched_init(void)
 	marcel_wake_up_created_thread(MARCEL_SELF);
 	/* since it is actually already running */
 	h = ma_task_holder_lock(MARCEL_SELF);
-	ma_dequeue_task(MARCEL_SELF, h);
+	ma_dequeue_entity(&MARCEL_SELF->as_entity, h);
 	ma_task_holder_unlock(h);
 	LOG_OUT();
 }

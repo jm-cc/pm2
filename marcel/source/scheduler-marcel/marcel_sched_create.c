@@ -178,7 +178,7 @@ void marcel_sched_internal_create_start_son(void) {
 
 	/* ré-enqueuer le père */
 	h = ma_task_holder_rawlock(SELF_GETMEM(father));
-	ma_enqueue_task(SELF_GETMEM(father), h);
+	ma_enqueue_entity(&SELF_GETMEM(father)->as_entity, h);
 	ma_holder_try_to_wake_up_and_unlock_softirq(h); // sortie du mode interruption
 
 	MTRACE("Early start", marcel_self());

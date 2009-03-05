@@ -254,7 +254,10 @@ struct marcel_bubble {
 #depend "asm/linux_atomic.h"
 #depend "scheduler/marcel_holder.h[macros]"
 
-/* Attention: ne doit être utilisé que par marcel_bubble_init */
+/* Attention: ne doit être utilisé que par marcel_bubble_init
+ *
+ * Note: - only the root_bubble is statically initialized, thus we assume the root bubble for initializing the name fields,
+ * for other bubbles, these fields will be overwritten by marcel_bubble_init. */
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
 	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
 	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
@@ -268,6 +271,8 @@ struct marcel_bubble {
 	.not_preemptible = tbx_false, \
         .old = 0,			      \
         .id = 0,			      \
+	.as_holder.name = "root_bubble_h", \
+	.as_entity.name = "root_bubble_e" \
 }
 
 

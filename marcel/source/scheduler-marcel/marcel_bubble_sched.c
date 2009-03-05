@@ -32,6 +32,7 @@ int marcel_bubble_init(marcel_bubble_t *bubble) {
 	/* TODO: add logic for naming bubbles usefully */
 	snprintf(bubble->as_holder.name,MARCEL_MAXNAMESIZE,"bubble_h %p", bubble);
 	snprintf(bubble->as_entity.name,MARCEL_MAXNAMESIZE,"bubble_e %p", bubble);
+	sched_debug("bubble %p: as_entity = %p, as_holder = %p\n", bubble, &bubble->as_entity, &bubble->as_holder);
 	ma_stats_reset(&bubble->as_entity);
 	ma_stats_reset(&bubble->as_holder);
 	PROF_EVENT2(sched_setprio,bubble,bubble->as_entity.prio);

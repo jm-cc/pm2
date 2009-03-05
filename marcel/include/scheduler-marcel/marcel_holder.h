@@ -509,17 +509,17 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 /* activation */
 
 #section marcel_functions
-static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h);
+static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
-static __tbx_inline__ void ma_activate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(e->ready_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
-	e->ready_holder = h;
 	/* TODO: fix bugs and then remove the ifdef */
 #ifdef ___LOCK_DEBUG
 	MA_BUG_ON(!ma_holder_check_locked(h));
 #endif
+	e->ready_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->ready_entities_item, &h->ready_entities);
 	else
@@ -568,7 +568,7 @@ static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h
 		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
 	else
 		bubble_sched_debugl(7,"activating %p in bubble %p\n",e,ma_bubble_holder(h));
-	ma_activate_running_entity(e,h);
+	ma_account_ready_or_running_entity(e,h);
 	ma_enqueue_entity(e,h);
 }
 
@@ -601,21 +601,6 @@ static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder
 }
 
 /*
- * ma_activate_running_task - move a task to the holder, but don't enqueue it
- * because it is already running
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_running_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating running %d:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"activating running %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_activate_running_entity(&p->as_entity,h);
-}
-
-/*
  * ma_activate_task - move a task to the holder
  */
 #section marcel_functions
@@ -626,16 +611,16 @@ static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
 		sched_debug("activating %d:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
 	else
 		bubble_sched_debugl(7,"activating %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_activate_running_task(p,h);
+	ma_account_ready_or_running_entity(&p->as_entity,h);
 	ma_enqueue_task(p,h);
 }
 
 /* deactivation */
 
 #section marcel_functions
-static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h);
+static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
-static __tbx_inline__ void ma_deactivate_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(h->nb_ready_entities <= 0);
 	MA_BUG_ON(!ma_holder_check_locked(h));
@@ -677,22 +662,7 @@ static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t 
 	else
 		bubble_sched_debugl(7,"deactivating %p from bubble %p\n",e,ma_bubble_holder(h));
 	ma_dequeue_entity(e,h);
-	ma_deactivate_running_entity(e,h);
-}
-
-/*
- * ma_deactivate_running_task - move a task to the holder, but don't enqueue it
- * because it is already running
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_running_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("deactivating running %d:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"deactivating running %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_deactivate_running_entity(&p->as_entity,h);
+	ma_unaccount_ready_or_running_entity(e,h);
 }
 
 /*
@@ -707,7 +677,7 @@ static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) 
 	else
 		bubble_sched_debugl(7,"deactivating %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
 	ma_dequeue_task(p,h);
-	ma_deactivate_running_task(p,h);
+	ma_unaccount_ready_or_running_entity(&p->as_entity,h);
 }
 
 #section marcel_functions
@@ -758,7 +728,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 			ma_dequeue_entity(e, h);
 		} else
 			ret = MA_ENTITY_RUNNING;
-		ma_deactivate_running_entity(e, h);
+		ma_unaccount_ready_or_running_entity(e, h);
 	}
 
 #ifdef MA__BUBBLES
@@ -821,7 +791,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 #ifdef MA__BUBBLES
 	if (!(e->type == MA_BUBBLE_ENTITY && h->type == MA_BUBBLE_HOLDER))
 #endif
-		ma_activate_running_entity(e, h);
+		ma_account_ready_or_running_entity(e, h);
 
 	if (state == MA_ENTITY_READY) {
 #ifdef MA__BUBBLES

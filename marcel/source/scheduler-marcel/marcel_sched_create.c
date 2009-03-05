@@ -157,7 +157,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 	ma_set_task_lwp(new_task, MA_LWP_SELF);
 	MA_BUG_ON(new_task->state != MA_TASK_BORNING);
 	ma_set_task_state(new_task, MA_TASK_RUNNING);
-	ma_activate_running_task(new_task,h);
+	ma_account_ready_or_running_entity(&new_task->as_entity,h);
 	ma_holder_rawunlock(h);
 
 	ma_task_stats_set(long, MARCEL_SELF, ma_stats_last_ran_offset, marcel_clock());
@@ -242,13 +242,13 @@ restart:
 
 	/* get out of here */
 	h2 = ma_entity_holder_rawlock(ma_entity_task(MARCEL_SELF));
-	ma_deactivate_running_task(MARCEL_SELF, h2);
+	ma_unaccount_ready_or_running_entity(&MARCEL_SELF->as_entity,h2);
 	ma_entity_holder_rawunlock(h2);
 
 	/* and go there */
 	h3 = ma_entity_holder_rawlock(ma_entity_task(seed));
-	ma_deactivate_running_task(seed, h3);
-	ma_activate_running_task(MARCEL_SELF, h3);
+	ma_unaccount_ready_or_running_entity(&seed->as_entity,h3);
+	ma_account_ready_or_running_entity(&MARCEL_SELF->as_entity,h3);
 	ma_entity_holder_rawunlock(h3);
 
 	/* now we're ready */

@@ -552,25 +552,6 @@ static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h)
 }
 
 /*
- * ma_activate_entity - move an entity to the holder
- *
- * Note: if h may be a bubble the caller has to call
- * ma_bubble_try_to_wake_and_unlock() instead of unlocking it when it is done
- * with it (else the bubble may be left asleep).
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %p in %s\n",e,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"activating %p in bubble %p\n",e,ma_bubble_holder(h));
-	ma_account_ready_or_running_entity(e,h);
-	ma_enqueue_entity(e,h);
-}
-
-/*
  * Call this instead of unlocking a holder if ma_activate_*() or ma_enqueue_*()
  * was called on it, unless it is known to be a runqueue.
  */
@@ -630,20 +611,6 @@ static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h)
 		ma_rq_dequeue_entity(e, ma_rq_holder(h));
 	else
 		ma_bubble_dequeue_entity(e, ma_bubble_holder(h));
-}
-/*
- * ma_deactivate_entity - move an entity to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("deactivating %p from %s\n",e,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"deactivating %p from bubble %p\n",e,ma_bubble_holder(h));
-	ma_dequeue_entity(e,h);
-	ma_unaccount_ready_or_running_entity(e,h);
 }
 
 #section marcel_functions

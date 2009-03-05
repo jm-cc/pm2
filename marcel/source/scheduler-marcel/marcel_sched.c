@@ -144,8 +144,10 @@ void ma_freeze_thread(marcel_task_t * p)
 		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 	}
 
-	if (!MA_TASK_IS_BLOCKED(p))
-		ma_deactivate_entity(&p->as_entity, h);
+	if (!MA_TASK_IS_BLOCKED(p)) {
+		ma_dequeue_entity(&p->as_entity, h);
+		ma_unaccount_ready_or_running_entity(&p->as_entity, h);
+	}
 	MA_BUG_ON(!MA_TASK_IS_BLOCKED(p));
 	if (!frozen_scheduler)
 		ma_task_holder_unlock_softirq(h);

@@ -610,7 +610,8 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 		ma_set_sched_holder(&bubble->as_entity,ma_bubble_holder(h),1);
 	} else {
 		PROF_EVENT2(bubble_sched_wake,bubble,ma_rq_holder(h));
-		ma_activate_entity(&bubble->as_entity,h);
+		ma_account_ready_or_running_entity(&bubble->as_entity,h);
+		ma_enqueue_entity(&bubble->as_entity,h);
 	}
 	ma_holder_unlock_softirq(h);
 	ma_top_add_bubble(bubble);
@@ -1099,7 +1100,8 @@ const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
 static void __marcel_init bubble_sched_init(void) {
         marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.as_holder;
 	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
-	ma_activate_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
+	ma_account_ready_or_running_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
+	ma_enqueue_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
 	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
 }

@@ -92,7 +92,8 @@ explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_ru
 			}
 		}
 
-		ma_deactivate_entity(nextent,&rq->as_holder);
+		ma_dequeue_entity(nextent,&rq->as_holder);
+		ma_unaccount_ready_or_running_entity(nextent,&rq->as_holder);
 
 		/* nextent est RUNNING, on peut déverrouiller la runqueue,
 		 * personne n'y touchera */
@@ -115,7 +116,8 @@ explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_ru
 		/* on descend, l'ordre des adresses est donc correct */
 		ma_holder_rawlock(&currq->as_holder);
 		nextent->sched_holder = &currq->as_holder;
-		ma_activate_entity(nextent,&currq->as_holder);
+		ma_account_ready_or_running_entity(nextent,&currq->as_holder);
+		ma_enqueue_entity(nextent,&currq->as_holder);
 		ma_holder_rawunlock(&currq->as_holder);
 		if (rq != currq) {
 			ma_preempt_enable();

@@ -779,7 +779,7 @@ restart:
 		} else {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
-				sched_debug("found better prio %d in rq %s\n",idx,currq->as_holder.name);
+				sched_debug("found better prio %d in %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				max_prio = idx;
 				nexth = &currq->as_holder;
@@ -790,7 +790,7 @@ restart:
 			/* still wanted to schedule prev, but it needs resched
 			 * and this is same prio
 			 */
-				sched_debug("found same prio %d in rq %s\n",idx,currq->as_holder.name);
+				sched_debug("found same prio %d in %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				nexth = &currq->as_holder;
 			}

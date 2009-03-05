@@ -24,15 +24,12 @@ static marcel_memory_manager_t memory_manager;
 static void split(void *ptr, size_t size);
 static void attach(void *ptr, size_t size);
 
-int marcel_main(int argc, char * argv[]) {
+any_t my_thread(any_t arg) {
   int err;
   void *ptr;
 
-  marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
-
   marcel_fprintf(stderr, "Spliting memory area allocated by MAMI\n");
-  ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, marcel_nbnodes-1);
   split(ptr, 10*getpagesize());
   marcel_memory_free(&memory_manager, ptr);
 
@@ -53,6 +50,19 @@ int marcel_main(int argc, char * argv[]) {
     perror("marcel_memory_unregister unexpectedly failed");
   }
   free(ptr);
+}
+
+int marcel_main(int argc, char * argv[]) {
+  marcel_t thread;
+  marcel_attr_t attr;
+
+  marcel_init(&argc,argv);
+  marcel_attr_init(&attr);
+  marcel_memory_init(&memory_manager);
+
+  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[marcel_nbnodes-1]);
+  marcel_create(&thread, &attr, my_thread, NULL);
+  marcel_join(thread, NULL);
 
   marcel_memory_exit(&memory_manager);
 
@@ -101,9 +111,9 @@ static void attach(void *ptr, size_t size) {
 
   stats = (long *) (ma_task_stats_get (self, ma_stats_memnode_offset));
   err = 0;
-  if (stats[0] != size/10) err=1;
-  else {
-    for(i=1 ; i<marcel_nbnodes; i++) if (stats[i] != 0) err=1;
+  for(i=0 ; i<(marcel_nbnodes-1); i++) if (stats[i] != 0) err=1;
+  if (!err) {
+    if (stats[marcel_nbnodes-1] != size/10) err=1;
   }
   if (!err) {
     marcel_fprintf(stderr, "Success when attaching memory area\n");

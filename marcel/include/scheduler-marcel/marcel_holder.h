@@ -648,6 +648,34 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t TBX_UNUSED) {
 #define MA_ENTITY_RUNNING 2
 #define MA_ENTITY_READY 1
 #define MA_ENTITY_SLEEPING 0
+
+#section marcel_functions
+static __tbx_inline__ const char *ma_entity_state_msg(int state);
+#section marcel_inline
+static __tbx_inline__ const char *ma_entity_state_msg(int state) {
+	const char * r;
+
+	switch (state) {
+case MA_ENTITY_SLEEPING:
+		r = "sleeping";
+		break;
+
+case MA_ENTITY_READY:
+		r = "ready";
+		break;
+
+case MA_ENTITY_RUNNING:
+		r = "running";
+		break;
+
+default:
+		r = "unknown";
+		break;
+	}
+
+	return r;
+}
+
 #section marcel_functions
 /* Sets the sched holder of an entity to bubble (which is supposed to be
  * locked).  If that entity is a bubble, its hierarchy is supposed to be
@@ -659,29 +687,30 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e);
 #section marcel_inline
 static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity_t *e) {
-	int ret;
+	int state;
 	ma_holder_t *h;
 
-	ret = MA_ENTITY_SLEEPING;
+	state = MA_ENTITY_SLEEPING;
 	if ((h = e->ready_holder)) {
-		sched_debug("getting entity %p from holder %p\n", e, h);
 
 		if (e->ready_holder_data) {
-			ret = MA_ENTITY_READY;
+			state = MA_ENTITY_READY;
 			ma_dequeue_entity(e, h);
 		} else
-			ret = MA_ENTITY_RUNNING;
+			state = MA_ENTITY_RUNNING;
 		ma_unaccount_ready_or_running_entity(e, h);
 	}
 
 #ifdef MA__BUBBLES
 	if (e->type == MA_BUBBLE_ENTITY) {
 		/* detach bubble */
-		ret = MA_ENTITY_READY;
+		state = MA_ENTITY_READY;
 		ma_set_sched_holder(e, ma_bubble_entity(e), 0);
 	}
 #endif
-	return ret;
+	sched_debug("holder %p [%s]: getting entity %p [%s] with state %d [%s]\n", h, h->name, e, e->name, state, 
+			ma_entity_state_msg(state));
+	return state;
 }
 
 #section marcel_functions
@@ -714,6 +743,9 @@ static __tbx_inline__ void _ma_put_entity_check(marcel_entity_t *e, ma_holder_t 
 	}
 }
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
+	
+	sched_debug("holder %p [%s]: putting entity %p [%s] with state %d [%s]\n", h, h->name, e, e->name, state,
+			ma_entity_state_msg(state));
 	_ma_put_entity_check(e, h);
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER) {

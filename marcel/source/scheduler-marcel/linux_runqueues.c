@@ -31,7 +31,7 @@ void ma_init_rq(ma_runqueue_t *rq, const char *name)
 	LOG_IN();
 
 	ma_holder_init(&rq->as_holder, MA_RUNQUEUE_HOLDER);
-	snprintf((rq)->as_holder.name,MARCEL_MAXNAMESIZE,"rq %s [%p]",name,rq);
+	snprintf((rq)->as_holder.name,MARCEL_MAXNAMESIZE,"rq %s",name);
 	for (j = 0; j < 1; j++) {
 		array = rq->active + j;
 		array->nr_active = 0;

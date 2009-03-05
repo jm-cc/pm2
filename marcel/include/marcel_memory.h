@@ -186,9 +186,9 @@ struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */
-  marcel_access_cost_t **reading_access_costs;
+  marcel_access_cost_t **costs_for_read_access;
   /** \brief Writing access costs from all the nodes to all the nodes */
-  marcel_access_cost_t **writing_access_costs;
+  marcel_access_cost_t **costs_for_write_access;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas for huge pages */
@@ -426,7 +426,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   float *cost);
 
 /**
- * Indicates the writing access cost for SIZE bits from node SOURCE to node DEST.
+ * Indicates the cost for write accessing SIZE bits from node SOURCE to node DEST.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
@@ -434,14 +434,14 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
  * @param cost estimated cost of the access
  */
 extern
-void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
-                                       int source,
-                                       int dest,
-                                       size_t size,
-                                       float *cost);
+void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager,
+					 int source,
+					 int dest,
+					 size_t size,
+					 float *cost);
 
 /**
- * Indicates the reading access cost for SIZE bits from node SOURCE to node DEST.
+ * Indicates the cost for read accessing SIZE bits from node SOURCE to node DEST.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
@@ -449,11 +449,11 @@ void marcel_memory_writing_access_cost(marcel_memory_manager_t *memory_manager,
  * @param cost estimated cost of the access
  */
 extern
-void marcel_memory_reading_access_cost(marcel_memory_manager_t *memory_manager,
-                                       int source,
-                                       int dest,
-                                       size_t size,
-                                       float *cost);
+void marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
+					int source,
+					int dest,
+					size_t size,
+					float *cost);
 
 /**
  * Performs the sampling for the memory migration between the specified nodes.

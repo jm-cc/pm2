@@ -48,9 +48,9 @@ any_t migration(any_t arg) {
   for(mem=0 ; mem<marcel_nbnodes ; mem++) {
     if (mem == cpu) continue;
 
-    marcel_memory_reading_access_cost(&memory_manager,
-                                      cpu, mem,
-                                      size, &reading_cost);
+    marcel_memory_cost_for_read_access(&memory_manager,
+				       cpu, mem,
+				       size, &reading_cost);
     marcel_memory_migration_cost(&memory_manager,
                                  cpu, mem,
                                  size, &migration_cost);

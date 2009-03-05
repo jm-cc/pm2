@@ -345,8 +345,8 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
       marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
     }
 #endif /* PM2DEBUG */
-    memory_manager->writing_access_costs[source][dest].cost = wcacheline;
-    memory_manager->reading_access_costs[source][dest].cost = rcacheline;
+    memory_manager->costs_for_write_access[source][dest].cost = wcacheline;
+    memory_manager->costs_for_read_access[source][dest].cost = rcacheline;
   }
   marcel_fclose(out);
   return 0;

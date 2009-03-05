@@ -27,10 +27,10 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_migration_cost(&memory_manager, 0, 1, 100, &cost);
   marcel_printf("Cost for migrating %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
 
-  marcel_memory_writing_access_cost(&memory_manager, 0, 1, 100, &cost);
+  marcel_memory_cost_for_write_access(&memory_manager, 0, 1, 100, &cost);
   marcel_printf("Cost for writing %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
 
-  marcel_memory_reading_access_cost(&memory_manager, 0, 1, 100, &cost);
+  marcel_memory_cost_for_read_access(&memory_manager, 0, 1, 100, &cost);
   marcel_printf("Cost for reading %d bits from #%d to #%d = %f\n", 100, 0, 1, cost);
 
   marcel_memory_exit(&memory_manager);

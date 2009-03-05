@@ -101,7 +101,7 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	//t->stack_kind
 	//t->initial_sp
 
-	strncpy(t->name, attr->name, MARCEL_MAXNAMESIZE);
+	strncpy((t->as_entity).name, attr->name, MARCEL_MAXNAMESIZE);
 	t->id = attr->id;
 	PROF_EVENT2(set_thread_id, t, t->id);
 	//t->number above

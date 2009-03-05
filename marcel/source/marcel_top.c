@@ -54,14 +54,13 @@ static const char *get_holder_name(ma_holder_t *h, char *buf, int size) {
 		return "nil";
 
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		return ma_rq_holder(h)->name;
+		return h->name;
 
 #ifdef MA__BUBBLES
-	snprintf(buf,size,"%p",ma_bubble_holder(h));
-	return buf;
-#else
-	return "??";
+	if (ma_holder_type(h) == MA_BUBBLE_HOLDER)
+		return h->name;
 #endif
+	return "??";
 }
 
 static void printtask(marcel_task_t *t) {
@@ -99,7 +98,7 @@ static void printtask(marcel_task_t *t) {
 		cpu = djiffies?(utime*1000UL)/djiffies:0;
 		top_printf("%-#*lx %*s %2d %3lu.%1lu %c%c %2d %-10s %-10s %-10s",
 			(int) (2+2*sizeof(void*)), (unsigned long) t,
-			MARCEL_MAXNAMESIZE, t->name,
+			MARCEL_MAXNAMESIZE, t->as_entity.name,
 			t->as_entity.prio, cpu/10UL, cpu%10UL,
 			state, schedstate, ma_get_task_vpnum(t),
 			get_holder_name(ma_task_natural_holder(t),buf1,sizeof(buf1)),

@@ -427,14 +427,14 @@ int marcel_attr_getname(__const marcel_attr_t * __restrict attr,
 
 int marcel_setname(marcel_t __restrict pid, const char *__restrict name)
 {
-	setname(pid->name, name);
+	setname((pid->as_entity).name, name);
 	PROF_SET_THREAD_NAME(pid);
 	return 0;
 }
 
 int marcel_getname(marcel_t __restrict pid, char *__restrict name, size_t n)
 {
-	getname(name, pid->name, n);
+	getname(name, (pid->as_entity).name, n);
 	return 0;
 }
 

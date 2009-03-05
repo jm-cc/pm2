@@ -125,7 +125,6 @@ struct marcel_task {
 	long initial_sp;
 
 	/* Identification du thread */
-	char name[MARCEL_MAXNAMESIZE];
 	int id;
 	int number;
 

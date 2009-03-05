@@ -109,8 +109,6 @@ struct ma_runqueue {
 	struct ma_holder as_holder;
 	/* Number of switches */
 	//unsigned long long nr_switches;
-	/** \brief Name of the runqueue */
-	char name[16];
 	//unsigned long expired_timestamp, timestamp_last_tick;
 	/** \brief active arrays of queues */
 	ma_prio_array_t active[1];

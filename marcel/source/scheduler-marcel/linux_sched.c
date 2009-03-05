@@ -547,7 +547,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	// C'est normal quand le thread est en cours de migration par exemple. Il faudrait prendre le verrou pour faire cette vérification
 	if (0 && !MA_TASK_IS_RUNNING(p)) {
 		pm2debug("Strange: %s running, but not running (ready_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
-				p->name, ma_task_ready_holder(p),
+				p->as_entity.name, ma_task_ready_holder(p),
 				ma_task_ready_holder_data(p), __FILE__, __LINE__);
 		ma_set_need_resched(1);
 		goto out;

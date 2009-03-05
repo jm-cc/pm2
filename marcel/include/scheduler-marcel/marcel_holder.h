@@ -77,6 +77,9 @@ struct ma_holder {
 	/** \brief Number of entities in the list above */
 	unsigned long nb_ready_entities;
 
+	/** \brief Name of the holder */
+	char name[MARCEL_MAXNAMESIZE];
+
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
@@ -202,6 +205,9 @@ struct ma_entity {
 	/** \brief Nesting level */
 	int sched_level;
 #endif
+
+	/** \brief Name of the entity */
+	char name[MARCEL_MAXNAMESIZE];
 
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Statistics for the entity */

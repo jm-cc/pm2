@@ -529,7 +529,7 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 			my_print("(%12p:% 3d:%-15s) ", marcel_printf_allowed() ?
 			marcel_self():(void*)-1, marcel_printf_allowed() ?
 			marcel_self()->number:-99, marcel_printf_allowed() ?
-			marcel_self()->name:"");
+			marcel_self()->as_entity.name:"");
 		}
 #endif /* MARCEL */
 		va_start(ap, format);

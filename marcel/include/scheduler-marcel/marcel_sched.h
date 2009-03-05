@@ -359,7 +359,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, attr);
 		if (rq) {
 			t->as_entity.sched_holder = &rq->as_holder;
-			MA_BUG_ON(!rq->name[0]);
+			MA_BUG_ON(!rq->as_holder.name[0]);
 		}
 	}
 	INIT_LIST_HEAD(&t->as_entity.cached_entities_item);

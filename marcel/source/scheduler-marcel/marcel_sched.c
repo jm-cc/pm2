@@ -145,7 +145,7 @@ void ma_freeze_thread(marcel_task_t * p)
 	}
 
 	if (!MA_TASK_IS_BLOCKED(p))
-		ma_deactivate_task(p, h);
+		ma_deactivate_entity(&p->as_entity, h);
 	MA_BUG_ON(!MA_TASK_IS_BLOCKED(p));
 	if (!frozen_scheduler)
 		ma_task_holder_unlock_softirq(h);

@@ -598,21 +598,6 @@ static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder
 		ma_bubble_try_to_wake_up_and_unlock_softirq(ma_bubble_holder(h));
 }
 
-/*
- * ma_activate_task - move a task to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_activate_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("activating %d:%s in %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"activating %d:%s in bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_account_ready_or_running_entity(&p->as_entity,h);
-	ma_enqueue_entity(&p->as_entity,h);
-}
-
 /* deactivation */
 
 #section marcel_functions
@@ -659,21 +644,6 @@ static __tbx_inline__ void ma_deactivate_entity(marcel_entity_t *e, ma_holder_t 
 		bubble_sched_debugl(7,"deactivating %p from bubble %p\n",e,ma_bubble_holder(h));
 	ma_dequeue_entity(e,h);
 	ma_unaccount_ready_or_running_entity(e,h);
-}
-
-/*
- * ma_deactivate_task - move a task to the holder
- */
-#section marcel_functions
-static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h);
-#section marcel_inline
-static __tbx_inline__ void ma_deactivate_task(marcel_task_t *p, ma_holder_t *h) {
-	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
-		sched_debug("deactivating %d:%s from %s\n",p->number,p->name,ma_rq_holder(h)->name);
-	else
-		bubble_sched_debugl(7,"deactivating %d:%s from bubble %p\n",p->number,p->name,ma_bubble_holder(h));
-	ma_dequeue_entity(&p->as_entity,h);
-	ma_unaccount_ready_or_running_entity(&p->as_entity,h);
 }
 
 #section marcel_functions

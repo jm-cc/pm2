@@ -198,9 +198,9 @@ static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, 
 #warning TODO
 #endif
 			/* Attention ici: h peut être une bulle, auquel cas
-			 * activate_task peut lâcher la bulle pour verrouiller
+			 * activate_entity peut lâcher la bulle pour verrouiller
 			 * une runqueue */
-			ma_activate_task(p, h);
+			ma_activate_entity(&p->as_entity, h);
 			/*
 			 * Sync wakeups (i.e. those types of wakeups where the waker
 			 * has indicated that it will leave the CPU in short order)
@@ -333,7 +333,7 @@ retry:
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
 	if (MA_TASK_IS_BLOCKED(p))
-		ma_activate_task(p, h);
+		ma_activate_entity(&p->as_entity, h);
 	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)

@@ -45,12 +45,12 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
   bubble_sched_debug("at level%s\n", nl>1?"s":"");
   for (i=0; i<nl; i++)
-    bubble_sched_debug(" %s\n", l[i]->rq.name);
+    bubble_sched_debug(" %s\n", l[i]->rq.as_holder.name);
 
   /* One level, recurse in it */
   if (nl == 1) {
     /* Only only level */
-    bubble_sched_debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->rq.name);
+    bubble_sched_debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->rq.as_holder.name);
     if (l[0]->arity) {
       bubble_sched_debug("and recurse in levels\n");
       return __marcel_bubble_mspread(e, ne, l[0]->children, l[0]->arity, recurse+1);
@@ -266,7 +266,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
         }
       }
 
-      bubble_sched_debug("add to level %s(%ld)\n",l_l[mnode]->rq.name,l_load[mnode]);
+      bubble_sched_debug("add to level %s(%ld)\n",l_l[mnode]->rq.as_holder.name,l_load[mnode]);
       /* Rebalance when finishing */
       if (mnode != -1) {
         /* Not too loaded level */
@@ -349,7 +349,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     l_n[begin]++;
 
     /* Get entity and put it in new holder */
-    bubble_sched_debug("add to level %s(%ld)\n",l_l[begin]->rq.name,l_load[begin]);
+    bubble_sched_debug("add to level %s(%ld)\n",l_l[begin]->rq.as_holder.name,l_load[begin]);
     /* Add this entity (heaviest) to least loaded level item from begin */
     PROF_EVENTSTR(sched_status, "spread: add to level");
     int state = ma_get_entity(e[i]);
@@ -384,7 +384,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
         }
       }
 
-      bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[begin]->rq.name, l_load[begin], l_l[k]->rq.name, l_load[k]);
+      bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[begin]->rq.as_holder.name, l_load[begin], l_l[k]->rq.as_holder.name, l_load[k]);
       {
         unsigned long _l_load;
         struct list_head _l_dist;
@@ -437,7 +437,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     l_n[0]++;
 
     /* Get entity and put it in new holder */
-    bubble_sched_debug("add to level %s(%ld)\n",l_l[0]->rq.name,l_load[0]);
+    bubble_sched_debug("add to level %s(%ld)\n",l_l[0]->rq.as_holder.name,l_load[0]);
     /* Add this entity (heaviest) to least loaded level item from 0 */
     PROF_EVENTSTR(sched_status, "spread: add to level");
     int state = ma_get_entity(later[i]);
@@ -472,7 +472,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
         }
       }
 
-      bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->rq.name, l_load[0], l_l[k]->rq.name, l_load[k]);
+      bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->rq.as_holder.name, l_load[0], l_l[k]->rq.as_holder.name, l_load[k]);
       {
         unsigned long _l_load;
         struct list_head _l_dist;
@@ -509,7 +509,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
   /*** Fourth part : Migration if node level and recursion ***/
   for (i=0; i<nl; i++) {
-    bubble_sched_debug("recurse in %s\n",l_l[i]->rq.name);
+    bubble_sched_debug("recurse in %s\n",l_l[i]->rq.as_holder.name);
     marcel_entity_t *ne[l_n[i]];
     marcel_entity_t *e;
     j = 0;

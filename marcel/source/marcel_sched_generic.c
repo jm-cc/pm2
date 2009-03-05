@@ -155,7 +155,7 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 		}
 		debug_printf(&MA_DEBUG_VAR_NAME(default),
 			     "switchto(`%s' [%p], `%s' [%p]) on LWP(%d)\n",
-		       cur->name, cur, next->name, next, ma_vpnum(ma_get_task_lwp(cur)));
+		       cur->as_entity.name, cur, next->as_entity.name, next, ma_vpnum(ma_get_task_lwp(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
 	}

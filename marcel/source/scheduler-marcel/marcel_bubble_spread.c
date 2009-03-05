@@ -139,12 +139,12 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		bubble_sched_debug(" %p", e[i]);
 	bubble_sched_debug(" at level%s", nl>1?"s":"");
 	for (i=0; i<nl; i++)
-		bubble_sched_debug(" %s", l[i]->rq.name);
+		bubble_sched_debug(" %s", l[i]->rq.as_holder.name);
 	bubble_sched_debug("\n");
 
 	if (nl == 1) {
 		/* Only one level */
-		bubble_sched_debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->rq.name);
+		bubble_sched_debug("Ok, just leave %s on %s\n", ne>1?"them":"it", l[0]->rq.as_holder.name);
 		if (l[0]->arity) {
 			bubble_sched_debug("and recurse in levels\n");
 			return __marcel_bubble_spread(e, ne, l[0]->children, l[0]->arity, recurse+1);
@@ -224,7 +224,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 			ma_put_entity(e[i], &rq->as_holder, state);
 			continue;
 		}
-		bubble_sched_debug("add to level %s(%ld)",l_l[0]->rq.name,l_load[0]);
+		bubble_sched_debug("add to level %s(%ld)",l_l[0]->rq.as_holder.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
 		list_add_tail(&e[i]->next,&l_dist[0]);
@@ -236,12 +236,12 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		/* And sort */
 		if (nl > 1 && l_load[0] > l_load[1]) {
 			k = select_level(l_load, nl);
-			bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->rq.name, l_load[0], l_l[k]->rq.name, l_load[k]);
+			bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->rq.as_holder.name, l_load[0], l_l[k]->rq.as_holder.name, l_load[k]);
 			insert_level(l_l, l_dist, l_load, l_n, k);
 		}
 	}
 	for (i=0; i<nl; i++) {
-		bubble_sched_debug("recurse in %s\n",l_l[i]->rq.name);
+		bubble_sched_debug("recurse in %s\n",l_l[i]->rq.as_holder.name);
 		marcel_entity_t *ne[l_n[i]];
 		marcel_entity_t *e;
 		j = 0;
@@ -312,7 +312,7 @@ spread_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp)
   while (l->father && n >= 2*marcel_vpset_weight(&l->father->vpset)) {
 	  l = l->father;
   }
-  bubble_sched_debug("%d threads pour %d vps dans %s, on respread là\n", n, marcel_vpset_weight(&l->vpset), l->rq.name);
+  bubble_sched_debug("%d threads pour %d vps dans %s, on respread là\n", n, marcel_vpset_weight(&l->vpset), l->rq.as_holder.name);
 
   bubble_sched_debug("===========[repartition avec spread]===========\n");
   marcel_bubble_spread(&marcel_root_bubble, l);

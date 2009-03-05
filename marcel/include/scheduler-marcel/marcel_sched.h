@@ -389,9 +389,9 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	INIT_LIST_HEAD(&t->as_entity.memory_areas);
 #endif /* MARCEL_MAMI_ENABLED */
 	if (ma_holder_type(t->as_entity.sched_holder) == MA_RUNQUEUE_HOLDER)
-		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->name, ma_rq_holder(t->as_entity.sched_holder)->name, t->as_entity.prio);
+		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->as_entity.name, t->as_entity.sched_holder->name, t->as_entity.prio);
 	else
-		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->name, ma_bubble_holder(t->as_entity.sched_holder), t->as_entity.prio);
+		sched_debug("%p(%s)'s holder is bubble %p (prio %d)\n", t, t->as_entity.name, t->as_entity.sched_holder->name, t->as_entity.prio);
 	LOG_OUT();
 }
 

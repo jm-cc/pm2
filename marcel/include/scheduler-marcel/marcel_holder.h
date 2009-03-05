@@ -518,6 +518,7 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+	sched_debug("holder %p [%s]: accounting entity %p [%s]\n", h, h->name, e, e->name);
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(e->ready_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
@@ -551,6 +552,7 @@ static __tbx_inline__ void ma_rq_enqueue_entity(marcel_entity_t *e, ma_runqueue_
 static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_enqueue_entity(marcel_entity_t *e, ma_holder_t *h) {
+	sched_debug("holder %p [%s]: enqueuing entity %p [%s]\n", h, h->name, e, e->name);
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		ma_rq_enqueue_entity(e, ma_rq_holder(h));
 	else
@@ -591,6 +593,7 @@ static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder
 static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+	sched_debug("holder %p [%s]: unaccounting entity %p [%s]\n", h, h->name, e, e->name);
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(h->nb_ready_entities <= 0);
 	MA_BUG_ON(!ma_holder_check_locked(h));
@@ -613,6 +616,7 @@ static __tbx_inline__ void ma_rq_dequeue_entity(marcel_entity_t *e, ma_runqueue_
 static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
 static __tbx_inline__ void ma_dequeue_entity(marcel_entity_t *e, ma_holder_t *h) {
+	sched_debug("holder %p [%s]: dequeuing entity %p [%s]\n", h, h->name, e, e->name);
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)
 		ma_rq_dequeue_entity(e, ma_rq_holder(h));
 	else

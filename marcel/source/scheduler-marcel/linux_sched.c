@@ -775,11 +775,11 @@ restart:
 	currq = &ma_main_runqueue;
 #endif
 		if (!currq->as_holder.nb_ready_entities) {
-			sched_debug("apparently nobody in %s\n",currq->name);
+			sched_debug("apparently nobody in %s\n",currq->as_holder.name);
 		} else {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
-				sched_debug("found better prio %d in rq %s\n",idx,currq->name);
+				sched_debug("found better prio %d in rq %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				max_prio = idx;
 				nexth = &currq->as_holder;
@@ -790,7 +790,7 @@ restart:
 			/* still wanted to schedule prev, but it needs resched
 			 * and this is same prio
 			 */
-				sched_debug("found same prio %d in rq %s\n",idx,currq->name);
+				sched_debug("found same prio %d in rq %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				nexth = &currq->as_holder;
 			}
@@ -970,10 +970,7 @@ restart:
 	MA_BUG_ON(nextent->type != MA_THREAD_ENTITY);
 
 switch_tasks:
-	if (nexth->type == MA_RUNQUEUE_HOLDER)
-		sched_debug("prio %d in %s, next %p(%s)\n",idx,ma_rq_holder(nexth)->name,next,next->name);
-	else
-		sched_debug("prio %d in %p, next %p(%s)\n",idx,nexth,next,next->name);
+	sched_debug("prio %d in %s, next %p(%s)\n",idx,nexth->name,next,next->as_entity.name);
 	MTRACE("previous",prev);
 	MTRACE("next",next);
 
@@ -1342,7 +1339,7 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		}
 	}
 	if (rq->father)
-		mdebug("runqueue %s has father %s\n",name,rq->father->name);
+		mdebug("runqueue %s has father %s\n",name,rq->father->as_holder.name);
 	snprintf(name,sizeof(name),"dontsched%d",num);
 	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name);
 	rq->level = marcel_topo_nblevels-1;
@@ -1410,7 +1407,7 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		newrq->level = levelnum;
 		newrq->father = rq;
 		newrq->vpset = level->children[i]->vpset;
-		mdebug("runqueue %s has father %s\n", name, rq->name);
+		mdebug("runqueue %s has father %s\n", name, rq->as_holder.name);
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,newrq);
 		init_subrunqueues(level->children[i],newrq,levelnum+1);
 	}

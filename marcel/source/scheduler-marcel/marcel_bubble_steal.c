@@ -52,7 +52,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 				continue;
 			b = ma_bubble_entity(e);
 			if ((nbrun = total_nb_ready_entities(b)) >= up_power) {
-				bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->name, up_power);
+				bubble_sched_debug("bubble %p has %d running, better for rq father %s with power %d\n", b, nbrun, rq->father->as_holder.name, up_power);
 				return b;
 			}
 		}
@@ -90,17 +90,17 @@ static int see(struct marcel_topo_level *level, int up_power) {
 			/* et juste assez haut par rapport au nombre de threads */
 			&& marcel_vpset_weight(&rq2->father->vpset) <= nbrun
 			; rq2 = rq2->father)
-		bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->name);
+		bubble_sched_debugl(7,"looking up to rq %s\n", rq2->father->as_holder.name);
 	if (!rq2 ||
 			/* pas intéressant pour moi, on laisse les autres se débrouiller */
 			/* todo: le faire quand même ? */
 			!marcel_vpset_isset(&rq2->vpset,ma_vpnum(MA_LWP_SELF))) {
-		bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->name:"anything",nbrun);
+		bubble_sched_debug("%s doesn't suit for me and %d threads\n",rq2?rq2->as_holder.name:"anything",nbrun);
 		ma_holder_rawunlock(&rq->as_holder);
 		return 0;
 	}
 
-	bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->name, b);
+	bubble_sched_debug("rq %s seems good, stealing bubble %p\n", rq2->as_holder.name, b);
 	ret = 1;
 	PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 	/* laisser d'abord ce qui est ordonnancé sur place */
@@ -234,7 +234,7 @@ steal_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_runq
 		ma_runqueue_t *rq2 = ma_lwp_vprq(MA_LWP_SELF);
 		bubble->settled = 1;
 		if (rq != rq2) {
-			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->name);
+			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->as_holder.name);
 			ma_dequeue_entity(&bubble->as_entity, &rq->as_holder);
 			ma_unaccount_ready_or_running_entity(&bubble->as_entity, &rq->as_holder);
 			ma_holder_rawunlock(&rq->as_holder);

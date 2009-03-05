@@ -76,7 +76,7 @@ explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_ru
 		for (currq = ma_lwp_vprq(MA_LWP_SELF); currq != rq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx <= max_prio) {
-				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->name);
+				bubble_sched_debugl(7,"prio %d on lower rq %s in the meanwhile\n", idx, currq->as_holder.name);
 				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->as_holder);
 				return NULL;
@@ -85,7 +85,7 @@ explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_ru
 		for (; currq; currq = currq->father) {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
-				bubble_sched_debugl(7,"better prio %d on rq %s in the meanwhile\n", idx, currq->name);
+				bubble_sched_debugl(7,"better prio %d on rq %s in the meanwhile\n", idx, currq->as_holder.name);
 				sched_debug("unlock(%p)\n", rq);
 				ma_holder_unlock(&rq->as_holder);
 				return NULL;
@@ -111,7 +111,7 @@ explode_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_ru
 			(void*)ma_bubble_entity(nextent):
 			(void*)ma_task_entity(nextent),
 			currq);
-		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->name, rq, currq->name, currq);
+		bubble_sched_debug("entity %p going down from %s(%p) to %s(%p)\n", nextent, rq->as_holder.name, rq, currq->as_holder.name, currq);
 
 		/* on descend, l'ordre des adresses est donc correct */
 		ma_holder_rawlock(&currq->as_holder);

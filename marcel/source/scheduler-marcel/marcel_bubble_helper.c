@@ -414,7 +414,7 @@ ma_debug_show_entities(const char *func_name TBX_UNUSED, marcel_entity_t *e[], i
     if (e[k]->type == MA_BUBBLE_ENTITY) {
       bubble_sched_debug("bubble, ");
     } else if (e[k]->type == MA_THREAD_ENTITY) {
-      bubble_sched_debug("%s, ", ma_task_entity(e[k])->name);
+      bubble_sched_debug("%s, ", e[k]->name);
     } else if (e[k]->type == MA_THREAD_SEED_ENTITY) {
       bubble_sched_debug("thread_seed, ");
     } else {

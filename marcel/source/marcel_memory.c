@@ -530,7 +530,7 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
 	ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
       }
       else {
-	mdebug_mami("Address %p is not allocated by MAMI.\n", buffer);
+	mdebug_mami("Address %p is not allocated by MaMI.\n", buffer);
       }
 
       // Delete tree
@@ -1578,7 +1578,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
 
     err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
     if (err < 0) {
-      mdebug_mami("The address interval [%p:%p] is not managed by MAMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
+      mdebug_mami("The address interval [%p:%p] is not managed by MaMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
       ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
       err = 0;
     }

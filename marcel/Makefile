@@ -102,9 +102,11 @@ $(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 	echo "#endif" ) > "$@"
 
 
-MOD_GEN_C_INC += $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
+# The `marcel_bubble_sched_lookup.h' file is included solely by
+# `marcel_bubble_sched.c'.
+$(MOD_GEN_OBJ)/marcel_bubble_sched.o $(MOD_GEN_OBJ)/marcel_bubble_sched.pic: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 
-$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/*.c)
+$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/marcel_bubble_*.c)
 	$(COMMON_BUILD)
 	@( schedulers=`								\
 	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER *( *[A-Za-z0-9_]\+ *[,)]' $^ \

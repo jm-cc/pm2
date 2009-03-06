@@ -236,14 +236,14 @@ steal_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_runq
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->as_holder.name);
 			ma_dequeue_entity(&bubble->as_entity, &rq->as_holder);
-			ma_unaccount_ready_or_running_entity(&bubble->as_entity, &rq->as_holder);
+			ma_clear_ready_holder(&bubble->as_entity, &rq->as_holder);
 			ma_holder_rawunlock(&rq->as_holder);
 			ma_holder_rawunlock(&bubble->as_holder);
 
 			ma_holder_rawlock(&rq2->as_holder);
 			PROF_EVENT2(bubble_sched_switchrq, bubble, rq2);
 			ma_holder_rawlock(&bubble->as_holder);
-			ma_account_ready_or_running_entity(&bubble->as_entity,&rq2->as_holder);
+			ma_set_ready_holder(&bubble->as_entity,&rq2->as_holder);
 			ma_enqueue_entity(&bubble->as_entity,&rq2->as_holder);
 			ma_holder_rawunlock(&rq2->as_holder);
 			ma_holder_unlock(&bubble->as_holder);

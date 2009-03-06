@@ -200,7 +200,7 @@ static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, 
 			/* Attention ici: h peut être une bulle, auquel cas
 			 * account_ready_or_running_entity peut lâcher la bulle pour verrouiller
 			 * une runqueue */
-			ma_account_ready_or_running_entity(&p->as_entity,h);
+			ma_set_ready_holder(&p->as_entity,h);
 			ma_enqueue_entity(&p->as_entity,h);
 			/*
 			 * Sync wakeups (i.e. those types of wakeups where the waker
@@ -334,7 +334,7 @@ retry:
 	/* il est possible de démarrer sur une autre rq que celle de SELF,
 	 * on ne peut donc pas profiter de ses valeurs */
 	if (MA_TASK_IS_BLOCKED(p)) {
-		ma_account_ready_or_running_entity(&p->as_entity,h);
+		ma_set_ready_holder(&p->as_entity,h);
 		ma_enqueue_entity(&p->as_entity,h);
 	}
 	ma_holder_try_to_wake_up_and_unlock_softirq(h);
@@ -415,7 +415,7 @@ static void finish_task_switch(marcel_task_t *prev)
 			/* yes, deactivate */
 			MTRACE("going to sleep",prev);
 			sched_debug("%p going to sleep\n",prev);
-			ma_unaccount_ready_or_running_entity(&prev->as_entity,prevh);
+			ma_clear_ready_holder(&prev->as_entity,prevh);
 #ifdef MARCEL_STATS_ENABLED
 			ma_task_stats_set(long, prev, ma_stats_nbready_offset, 0);
 #endif
@@ -1181,7 +1181,7 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 		LOG_OUT();
 		return;
 	}
-	ma_unaccount_ready_or_running_entity(&MARCEL_SELF->as_entity,old_h);
+	ma_clear_ready_holder(&MARCEL_SELF->as_entity,old_h);
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
 	ma_holder_rawunlock(old_h);
 #ifdef MA__BUBBLES
@@ -1191,7 +1191,7 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 #endif
 	ma_holder_rawlock(&new_rq->as_holder);
 	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;
-	ma_account_ready_or_running_entity(&MARCEL_SELF->as_entity,&new_rq->as_holder);
+	ma_set_ready_holder(&MARCEL_SELF->as_entity,&new_rq->as_holder);
 	ma_holder_rawunlock(&new_rq->as_holder);
 	/* On teste si le LWP courant est interdit ou pas */
 	if (ma_spare_lwp() || !marcel_vpset_isset(vpset,ma_vpnum(MA_LWP_SELF))) {
@@ -1367,7 +1367,7 @@ static void linux_sched_lwp_start(ma_lwp_t lwp)
 	marcel_task_t *p = ma_per_lwp(run_task,lwp);
 	/* Cette tâche est en train d'être exécutée */
 	h=ma_task_holder_lock_softirq(p);
-	ma_account_ready_or_running_entity(&p->as_entity,h);
+	ma_set_ready_holder(&p->as_entity,h);
 	ma_task_holder_unlock_softirq(h);
 #ifdef MARCEL_STATS_ENABLED
 	ma_task_stats_set(long, p, ma_stats_nbrunning_offset, 1);

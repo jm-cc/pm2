@@ -348,15 +348,15 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 			 * sa runqueue, et la runqueue de la bulle */
 			if (!(e->ready_holder_data)) {
 				/* and already running ! */
-				ma_unaccount_ready_or_running_entity(e,h);
-				ma_account_ready_or_running_entity(e,&bubble->as_holder);
+				ma_clear_ready_holder(e,h);
+				ma_set_ready_holder(e,&bubble->as_holder);
 			} else {
 				if (ma_holder_type(h) == MA_BUBBLE_HOLDER)
 					__ma_bubble_dequeue_entity(e,ma_bubble_holder(h));
 				else
 					ma_rq_dequeue_entity(e,ma_rq_holder(h));
-				ma_unaccount_ready_or_running_entity(e,h);
-				ma_account_ready_or_running_entity(e,&bubble->as_holder);
+				ma_clear_ready_holder(e,h);
+				ma_set_ready_holder(e,&bubble->as_holder);
 				/* Ici, on suppose que la runqueue de bubble
 				 * est déjà verrouillée */
 				__ma_bubble_enqueue_entity(e,bubble);
@@ -506,7 +506,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 			PROF_EVENTSTR(sched_status, "sched holder was already set to something else, wake the bubble there");
 			ma_holder_t *h = ma_entity_holder_lock_softirq(entity);
 			if (!entity->ready_holder)
-				ma_account_ready_or_running_entity(entity, entity->sched_holder);
+				ma_set_ready_holder(entity, entity->sched_holder);
 			MA_BUG_ON(entity->ready_holder->type != MA_RUNQUEUE_HOLDER);
 			if (!entity->ready_holder_data)
 				ma_enqueue_entity(entity, entity->ready_holder);
@@ -614,7 +614,7 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 		ma_set_sched_holder(&bubble->as_entity,ma_bubble_holder(h),1);
 	} else {
 		PROF_EVENT2(bubble_sched_wake,bubble,ma_rq_holder(h));
-		ma_account_ready_or_running_entity(&bubble->as_entity,h);
+		ma_set_ready_holder(&bubble->as_entity,h);
 		ma_enqueue_entity(&bubble->as_entity,h);
 	}
 	ma_holder_unlock_softirq(h);
@@ -634,7 +634,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 	if (bubble->as_entity.ready_holder) {
 		if (bubble->as_entity.ready_holder_data)
 			ma_dequeue_entity(&bubble->as_entity, h);
-		ma_unaccount_ready_or_running_entity(&bubble->as_entity, h);
+		ma_clear_ready_holder(&bubble->as_entity, h);
 	}
 	ma_bubble_holder_unlock_softirq(h);
 	if ((h = bubble->as_entity.natural_holder)
@@ -1104,7 +1104,7 @@ const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
 static void __marcel_init bubble_sched_init(void) {
         marcel_root_bubble.as_entity.sched_holder = &ma_main_runqueue.as_holder;
 	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
-	ma_account_ready_or_running_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
+	ma_set_ready_holder(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
 	ma_enqueue_entity(&marcel_root_bubble.as_entity, &ma_main_runqueue.as_holder);
 	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 	PROF_EVENT2(bubble_sched_switchrq, &marcel_root_bubble, &ma_main_runqueue);
@@ -1113,12 +1113,12 @@ static void __marcel_init bubble_sched_init(void) {
 void ma_bubble_sched_init2(void) {
 	/* Having main on the main runqueue is both faster and respects priorities */
 	ma_holder_lock_softirq(&marcel_root_bubble.as_holder);
-	ma_unaccount_ready_or_running_entity(&MARCEL_SELF->as_entity, &marcel_root_bubble.as_holder);
+	ma_clear_ready_holder(&MARCEL_SELF->as_entity, &marcel_root_bubble.as_holder);
 	ma_holder_rawunlock(&marcel_root_bubble.as_holder);
 	SELF_GETMEM(as_entity.sched_holder) = &ma_main_runqueue.as_holder;
 	PROF_EVENT2(bubble_sched_switchrq, MARCEL_SELF, &ma_main_runqueue);
 	ma_holder_rawlock(&ma_main_runqueue.as_holder);
-	ma_account_ready_or_running_entity(&MARCEL_SELF->as_entity, &ma_main_runqueue.as_holder);
+	ma_set_ready_holder(&MARCEL_SELF->as_entity, &ma_main_runqueue.as_holder);
 	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);
 
 	marcel_mutex_lock(&current_sched_mutex);

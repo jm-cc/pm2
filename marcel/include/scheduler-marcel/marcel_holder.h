@@ -515,9 +515,9 @@ static __tbx_inline__ ma_runqueue_t *ma_to_rq_holder(ma_holder_t *h) {
 /* activation */
 
 #section marcel_functions
-static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
+static __tbx_inline__ void ma_set_ready_holder(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
-static __tbx_inline__ void ma_account_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+static __tbx_inline__ void ma_set_ready_holder(marcel_entity_t *e, ma_holder_t *h) {
 	sched_debug("holder %p [%s]: accounting entity %p [%s]\n", h, h->name, e, e->name);
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(e->ready_holder);
@@ -590,9 +590,9 @@ static __tbx_inline__ void ma_holder_try_to_wake_up_and_unlock_softirq(ma_holder
 /* deactivation */
 
 #section marcel_functions
-static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h);
+static __tbx_inline__ void ma_clear_ready_holder(marcel_entity_t *e, ma_holder_t *h);
 #section marcel_inline
-static __tbx_inline__ void ma_unaccount_ready_or_running_entity(marcel_entity_t *e, ma_holder_t *h) {
+static __tbx_inline__ void ma_clear_ready_holder(marcel_entity_t *e, ma_holder_t *h) {
 	sched_debug("holder %p [%s]: unaccounting entity %p [%s]\n", h, h->name, e, e->name);
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(h->nb_ready_entities <= 0);
@@ -698,7 +698,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 			ma_dequeue_entity(e, h);
 		} else
 			state = MA_ENTITY_RUNNING;
-		ma_unaccount_ready_or_running_entity(e, h);
+		ma_clear_ready_holder(e, h);
 	}
 
 #ifdef MA__BUBBLES
@@ -766,7 +766,7 @@ static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int
 #ifdef MA__BUBBLES
 	if (!(e->type == MA_BUBBLE_ENTITY && h->type == MA_BUBBLE_HOLDER))
 #endif
-		ma_account_ready_or_running_entity(e, h);
+		ma_set_ready_holder(e, h);
 
 	if (state == MA_ENTITY_READY) {
 #ifdef MA__BUBBLES

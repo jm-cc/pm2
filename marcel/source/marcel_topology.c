@@ -555,7 +555,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 			/* ignore the first map if it's empty */
 			continue;
 
-		memmove(&maps[1], &maps[0], (MAX_KERNEL_CPU_MASK-1)*sizeof(*maps));
+		memmove(&maps[1], &maps[0], nr_maps*sizeof(*maps));
 		maps[0] = map;
 		nr_maps++;
 	}

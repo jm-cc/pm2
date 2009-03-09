@@ -22,6 +22,11 @@
  */
 
 #ifdef MA__BUBBLES
+
+struct marcel_bubble_memaware_sched {
+	marcel_bubble_sched_t scheduler;
+};
+
 #ifdef MA__NUMA_MEMORY
 
 int ma_bubble_memaware_checkload = 1;
@@ -398,15 +403,28 @@ static int memaware_sched_submit(marcel_bubble_sched_t *self, marcel_entity_t *e
   return 0;
 }
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (memaware,
-  .submit = memaware_sched_submit,
-  .vp_is_idle = memaware,
-);
+static int
+make_default_scheduler(marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_memaware_sched_class;
+	scheduler->submit = memaware_sched_submit;
+  scheduler->vp_is_idle = memaware;
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memaware, make_default_scheduler);
 
 #else /* !MA__NUMA_MEMORY */
 
 /* Define an empty scheduler.  */
-MARCEL_DEFINE_BUBBLE_SCHEDULER (memaware);
+static int
+make_default_scheduler(marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_memaware_sched_class;
+	scheduler->submit = NULL;
+  scheduler->vp_is_idle = NULL;
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memaware, make_default_scheduler);
 
 #endif /* !MA__NUMA_MEMORY */
 #endif /* BUBBLES */

@@ -53,6 +53,8 @@ typedef marcel_entity_t *
 
 /** \brief Bubble scheduler instances.  */
 struct ma_bubble_sched_struct {
+	const struct ma_bubble_sched_class *klass;
+
   ma_bubble_sched_init init;
   ma_bubble_sched_start start;
   ma_bubble_sched_exit exit;
@@ -61,21 +63,46 @@ struct ma_bubble_sched_struct {
   ma_bubble_sched_vp_is_idle vp_is_idle;
   ma_bubble_sched_tick tick;
   ma_bubble_sched_sched sched;
-  void *priv;
 };
 
 
 #section types
+#depend "marcel_bubble_sched_interface.h[marcel_structures]"
+
+/** \brief A bubble scheduler class.  */
+struct ma_bubble_sched_class {
+	/** \brief The class name.  */
+	const char *name;
+
+	/** \brief The size (in bytes) of an instance of this class.  */
+	size_t instance_size;
+
+	/** \brief A method to initialize an instance of this class with default
+			parameter values.  */
+	int (*instantiate)(struct ma_bubble_sched_struct *);
+};
+
+typedef struct ma_bubble_sched_class  marcel_bubble_sched_class_t;
 typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 
+
 #section macros
 
-/** \brief Define a bubble scheduler named \param name, whose
- * \code marcel_bubble_sched_t is initialized with
- * \param field_initializers.  */
-#define MARCEL_DEFINE_BUBBLE_SCHEDULER(_name, _field_initializers...)	\
-  marcel_bubble_sched_t marcel_bubble_ ## _name ## _sched =		\
-    {									\
-      _field_initializers						\
-    }
+/**
+ * \brief Declare a bubble scheduler class named \param _name.  */
+#define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)										\
+  struct marcel_bubble_ ## _name ## _sched;															\
+  typedef struct marcel_bubble_ ## _name ## _sched											\
+          marcel_bubble_ ## _name ## _sched_t;													\
+  extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
 
+/**
+ * \brief Define a bubble scheduler class named \param _name, with \param
+ * _default_ctor the default initializer for instances of this class.  */
+#define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)			\
+  marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class =	\
+	  {																																		\
+			.name = TBX_STRING(_name),																				\
+			.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
+			.instantiate = _default_ctor																			\
+		};

@@ -26,8 +26,9 @@
  */
 
 #section variables
-#depend "scheduler/marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_spread_sched;
+#depend "scheduler/marcel_bubble_sched_interface.h[macros]"
+
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (spread);
 
 #section functions
 extern void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l);

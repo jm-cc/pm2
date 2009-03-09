@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ main (int argc, char *argv[]) {
   unsigned int i;
   char **new_argv;
   ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
+  marcel_bubble_sched_t *scheduler;
 
   /* A dual-socket dual-core computer */
   static const char topology_description[] = "2 2 1 1";
@@ -73,7 +74,13 @@ main (int argc, char *argv[]) {
   marcel_mutex_init (&write_lock, NULL);
 
   /* Make sure we're currently testing the memory scheduler. */
-  marcel_bubble_change_sched (&marcel_bubble_memory_sched);
+  scheduler =
+    alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memory_sched_class));
+  ret = marcel_bubble_memory_sched_init ((struct marcel_bubble_memory_sched *) scheduler,
+					 NULL, tbx_false);
+  MA_BUG_ON (ret != 0);
+
+  marcel_bubble_change_sched (scheduler);
 
   /* Creating threads and bubbles hierarchy.  */
   marcel_bubble_t bubbles[NB_BUBBLES];

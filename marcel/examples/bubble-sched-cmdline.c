@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@
 int
 main (int argc, char *argv[])
 {
+  int ret;
   char *new_argv[4];
   char  sched_opt[] = "--marcel-bubble-scheduler";
-  char  sched_arg[] = "null";
+  char  sched_arg[] = "cache";
   marcel_bubble_sched_t *prev_sched;
 
   argc = 3;
@@ -34,9 +35,13 @@ main (int argc, char *argv[])
   marcel_init (&argc, new_argv);
   marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
-  prev_sched = marcel_bubble_change_sched (&marcel_bubble_cache_sched);
+  prev_sched = marcel_bubble_change_sched (&marcel_bubble_null_sched);
+
+  ret = (prev_sched->klass == &marcel_bubble_cache_sched_class) ? 0 : 1;
+
+  marcel_free (prev_sched);
 
   marcel_end ();
 
-  return (prev_sched == &marcel_bubble_null_sched) ? 0 : 1;
+  return ret;
 }

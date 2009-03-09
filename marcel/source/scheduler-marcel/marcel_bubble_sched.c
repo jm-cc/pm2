@@ -1082,15 +1082,46 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 /* Include the automatically generated name-to-scheduler mapping.  */
 #include <marcel_bubble_sched_lookup.h>
 
-const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
+const marcel_bubble_sched_class_t *marcel_lookup_bubble_scheduler_class(const char *name) {
 	const struct ma_bubble_sched_desc *it;
 
 	for(it = &ma_bubble_schedulers[0]; it->name != NULL; it++) {
 		if (!strcmp(name, it->name))
-			return it->sched;
+			return it->klass;
 	}
 
 	return NULL;
+}
+
+int marcel_bubble_sched_instantiate(const marcel_bubble_sched_class_t *klass, marcel_bubble_sched_t *scheduler) {
+	int err;
+
+	memset(scheduler, 0, klass->instance_size);
+	err = klass->instantiate(scheduler);
+	if (!err)
+		scheduler->klass = klass;
+
+	return err;
+}
+
+const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
+	marcel_bubble_sched_t *scheduler = NULL;
+	const marcel_bubble_sched_class_t *klass;
+
+	klass = marcel_lookup_bubble_scheduler_class(name);
+	if (klass) {
+		int err;
+		scheduler = marcel_malloc(klass->instance_size, __FILE__, __LINE__);
+		if (scheduler) {
+			err = marcel_bubble_sched_instantiate(klass, scheduler);
+			if (err) {
+				marcel_free(scheduler);
+				scheduler = NULL;
+			}
+		}
+	}
+
+	return scheduler;
 }
 
 

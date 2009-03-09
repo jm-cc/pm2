@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ static void print_hierarchy(const struct marcel_topo_level *level) {
 int main (int argc, char *argv[]) {
   char **new_argv;
   marcel_bubble_t *root_bubble;
+  marcel_bubble_sched_t *scheduler;
   ma_atomic_t thread_exit_signal;
 
   /* A simple topology: 2 nodes, each of which has 2 CPUs, each of which has 4 cores.  */
@@ -73,7 +74,12 @@ int main (int argc, char *argv[]) {
   root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
                                               &thread_exit_signal);
 
-  marcel_bubble_change_sched(&marcel_bubble_memaware_sched);
+  scheduler =
+    alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memaware_sched_class));
+  ret = marcel_bubble_cache_sched_init (scheduler, tbx_true);
+  MA_BUG_ON (ret != 0);
+
+  marcel_bubble_change_sched (scheduler);
 
   /* Submit the generated bubble hierarchy to the scheduler.  */
   marcel_bubble_sched_begin ();

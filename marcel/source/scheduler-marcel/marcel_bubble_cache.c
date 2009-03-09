@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006, 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2006, 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,23 @@
 
 #ifdef MA__BUBBLES
 
-#define MA_CACHE_BSCHED_USE_WORK_STEALING 0
+/** \brief A cache bubble scheduler (inherits from
+ * `marcel_bubble_sched_t').  */
+struct marcel_bubble_cache_sched
+{
+  marcel_bubble_sched_t scheduler;
+
+  /** \brief Whether work stealing is enabled.  */
+  tbx_bool_t work_stealing;
+};
+
+
 #define MA_CACHE_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
+/* FIXME: Move these variables as fields of `marcel_bubble_cache_sched_t'.  */
 static unsigned long ma_last_failed_steal = 0;
 static unsigned long ma_last_succeeded_steal = 0;
 static ma_atomic_t ma_succeeded_steals = MA_ATOMIC_INIT(0);
@@ -423,7 +434,8 @@ cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   return 0;
 }
 
-#if MA_CACHE_BSCHED_USE_WORK_STEALING
+
+/* Work stealing.  */
 
 /* This structure contains arguments to pass the browse_and_steal
    function. */
@@ -508,7 +520,6 @@ static int
 browse_and_steal(ma_holder_t *hold, void *args) {
   marcel_entity_t *e, *bestbb = NULL;
   int greater = 0, available_entities = 0;
-  struct marcel_topo_level *top = marcel_topo_level(0,0);
   struct marcel_topo_level *source = (*(struct browse_and_steal_args *)args).source;
   marcel_entity_t *thread_to_steal = (*(struct browse_and_steal_args *)args).thread_to_steal;
 
@@ -551,11 +562,16 @@ browse_and_steal(ma_holder_t *hold, void *args) {
 }
 
 static int
-cache_steal (marcel_bubble_sched_t *self, unsigned int from_vp) {
+cache_steal (marcel_bubble_sched_t *sched, unsigned int from_vp) {
+  marcel_bubble_cache_sched_t *self = (marcel_bubble_cache_sched_t *) sched;
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp], *father = me->father;
   unsigned int arity;
   int smthg_to_steal = 0;
   int n;
+
+  if (!self->work_stealing)
+    /* Work stealing is disabled.  */
+    return 0;
 
 #if 0
   if ((ma_last_failed_steal && ((marcel_clock() - ma_last_failed_steal) < MA_FAILED_STEAL_COOLDOWN))
@@ -611,17 +627,40 @@ cache_steal (marcel_bubble_sched_t *self, unsigned int from_vp) {
   ma_atomic_inc (&ma_failed_steals);
   return 0;
 }
-#endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (cache,
-  .init = cache_sched_init,
-  .exit = cache_sched_exit,
-  .submit = cache_sched_submit,
-#if MA_CACHE_BSCHED_USE_WORK_STEALING
-  .vp_is_idle = cache_steal,
-#endif /* MA_CACHE_BSCHED_USE_WORK_STEALING */
-   /* TODO: This definetly is a crappy way to let other bubble
-      schedulers use the Cache scheduler distribution algorithm. */
-  .priv = ma_cache_distribute_from,
-);
+
+/* Instantiation.  */
+
+int
+marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
+				tbx_bool_t work_stealing) {
+  memset (scheduler, 0, sizeof (*scheduler));
+
+  scheduler->scheduler.klass = &marcel_bubble_cache_sched_class;
+
+  scheduler->scheduler.init = cache_sched_init;
+  scheduler->scheduler.exit = cache_sched_exit;
+  scheduler->scheduler.submit = cache_sched_submit;
+  scheduler->scheduler.vp_is_idle = cache_steal;
+
+  scheduler->work_stealing = work_stealing;
+
+  return 0;
+}
+
+/* Create a bubble scheduler with default parameters.  */
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  return marcel_bubble_cache_sched_init ((marcel_bubble_cache_sched_t *) scheduler,
+					 tbx_false);
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (cache, make_default_scheduler);
+
 #endif /* MA__BUBBLES */
+
+/*
+   Local Variables:
+   tab-width: 8
+   End:
+ */

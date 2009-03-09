@@ -23,6 +23,11 @@
  */
 
 #ifdef MA__BUBBLES
+
+struct marcel_bubble_gang_sched {
+	marcel_bubble_sched_t scheduler;
+};
+
 ma_runqueue_t ma_gang_rq;
 static int keep_running;
 marcel_sem_t schedulers = MARCEL_SEM_INITIALIZER(0);
@@ -196,10 +201,18 @@ gang_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp TBX_UNUSED)
 	/* This lwp is idle... TODO: check other that other LWPs of the same controller are idle too, and get another gang (that gang terminated) */
 	return 0;
 }
-MARCEL_DEFINE_BUBBLE_SCHEDULER (gang,
-	.init = gang_sched_init,
-	.start = gang_sched_start,
-	.exit = gang_sched_exit,
-	.vp_is_idle = gang_vp_is_idle,
-);
+
+
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_gang_sched_class;
+	scheduler->init = gang_sched_init;
+	scheduler->start = gang_sched_start;
+	scheduler->exit = gang_sched_exit;
+	scheduler->vp_is_idle = gang_vp_is_idle;
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (gang, make_default_scheduler);
+
 #endif

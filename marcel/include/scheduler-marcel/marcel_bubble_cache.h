@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006, 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2006, 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,5 +16,17 @@
 
 #section variables
 #depend "marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_cache_sched;
+
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (cache);
+
+/** \brief The class of a `cache' bubble scheduler.  */
+extern marcel_bubble_sched_class_t marcel_bubble_cache_sched_class;
+
+/** \brief Initialize \e scheduler, a `cache' bubble scheduler.  If \param
+ * work_stealing is true, then work stealing is enabled, otherwise it is
+ * disabled.  */
+extern int
+marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
+				tbx_bool_t work_stealing);
+
 

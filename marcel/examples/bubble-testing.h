@@ -372,7 +372,8 @@ topology_matches_tree_p (const struct marcel_topo_level *level,
 	 EXPECTED_RESULT.  Return zero on success.  */
 static TBX_UNUSED int
 test_marcel_bubble_scheduler (int argc, char *argv[],
-															marcel_bubble_sched_t *bubble_scheduler,
+															const marcel_bubble_sched_class_t *
+															      scheduler_class,
 															const char *topology_description,
 															const unsigned *bubble_hierarchy_description,
 															const tree_t *expected_result)
@@ -380,6 +381,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
   int ret, matches_p, i;
   char **new_argv;
   marcel_bubble_t *root_bubble;
+	marcel_bubble_sched_t *scheduler;
 	ma_atomic_t thread_exit_signal;
 
 	for (i = 1; i < argc; i++)
@@ -402,6 +404,15 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
   marcel_init (&argc, new_argv);
 	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
+	scheduler = alloca (marcel_bubble_sched_instance_size (scheduler_class));
+	ret = marcel_bubble_sched_instantiate (scheduler_class, scheduler);
+	if (ret != 0)
+		{
+			fprintf (stderr, "failed to instantiate scheduler of class `%s'\n",
+							 marcel_bubble_sched_class_name (scheduler_class));
+			return 1;
+		}
+
 	if (verbose_output)
 		print_topology (&marcel_machine_level[0], stdout, 0);
 
@@ -413,7 +424,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
   root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
 																							&thread_exit_signal);
 
-  marcel_bubble_change_sched (bubble_scheduler);
+  marcel_bubble_change_sched (scheduler);
 
 	/* Submit the generated bubble hierarchy to Affinity.  */
   marcel_bubble_sched_begin ();

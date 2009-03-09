@@ -15,4 +15,10 @@
 
 #section variables
 #depend "marcel_bubble_sched_interface.h[types]"
+
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (null);
+
+/**
+ * \brief The canonical instance of the `null' scheduler.  This instance is
+ * the one used by default when Marcel starts.  */
 extern marcel_bubble_sched_t marcel_bubble_null_sched;

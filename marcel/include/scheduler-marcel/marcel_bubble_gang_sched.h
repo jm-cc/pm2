@@ -78,7 +78,8 @@ any_t marcel_gang_scheduler(any_t runqueue);
 extern ma_runqueue_t ma_gang_rq;
 
 #section variables
-#depend "marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_gang_sched;
+#depend "marcel_bubble_sched_interface.h[macros]"
+
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(gang);
 
 /* @} */

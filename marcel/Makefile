@@ -109,19 +109,19 @@ $(MOD_GEN_OBJ)/marcel_bubble_sched.o $(MOD_GEN_OBJ)/marcel_bubble_sched.pic: $(M
 $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/marcel_bubble_*.c)
 	$(COMMON_BUILD)
 	@( schedulers=`								\
-	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER *( *[A-Za-z0-9_]\+ *[,)]' $^ \
+	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *[A-Za-z0-9_]\+ *,' $^ \
 	 | cut -d '(' -f 2							\
 	 | grep -o '[A-Za-z0-9_]\+'						\
 	 | sort | uniq` ;							\
 	echo "/* Automatically generated, do not edit.  */" ;			\
 	echo "struct ma_bubble_sched_desc {" ;					\
-	echo "  const char *name; const marcel_bubble_sched_t *sched;" ;	\
+	echo "  const char *name; const marcel_bubble_sched_class_t *klass;" ;	\
 	echo "};" ;								\
 	echo "static const struct ma_bubble_sched_desc" ;			\
 	echo "ma_bubble_schedulers[] = {" ;					\
 	for sched in $$schedulers ;						\
 	do									\
-	  echo "  { \"$$sched\", &marcel_bubble_$${sched}_sched }," ;		\
+	  echo "  { \"$$sched\", &marcel_bubble_$${sched}_sched_class }," ;		\
 	done ;									\
 	echo "  { NULL, NULL }" ;						\
 	echo "};" ) > "$@"

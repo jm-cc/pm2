@@ -41,8 +41,9 @@ void marcel_see_bubble(marcel_bubble_t *bubble, int recurse, int number);
 void ma_put_in_spread(marcel_entity_t *entity, struct marcel_topo_level *level);
 
 #section marcel_variables
-#depend "marcel_bubble_sched_interface.h[types]"
-extern marcel_bubble_sched_t marcel_bubble_memaware_sched;
+#depend "marcel_bubble_sched_interface.h[macros]"
+
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memaware);
 
 extern int ma_bubble_memaware_nodelevel;
 extern int ma_bubble_memaware_checkload;

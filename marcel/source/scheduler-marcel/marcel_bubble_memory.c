@@ -18,10 +18,28 @@
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
 
-#define MA_MEMORY_BSCHED_USE_WORK_STEALING 0
+/** \brief A cache bubble scheduler (inherits from
+ * `marcel_bubble_sched_t').  */
+struct marcel_bubble_memory_sched
+{
+  marcel_bubble_sched_t scheduler;
+
+  /** \brief Whether work stealing is enabled.  */
+  tbx_bool_t work_stealing;
+
+  /** \brief The associated memory manager.  It is used to determine the
+      amount of memory associated with a thread on a given node, which then
+      directs thread/memory migration decisions.  */
+  marcel_memory_manager_t *memory_manager;
+
+  /** \brief An associated `cache' scheduler that will be invoked to schedule
+      entities within each NUMA node.  */
+  marcel_bubble_sched_t *cache_scheduler;
+};
+
+
 #define MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS 0
 
-static marcel_memory_manager_t *current_mem_manager = NULL;
 
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
 static void
@@ -58,10 +76,10 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
 }
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
 
-/* Set the current memory manager to _memory_manager_. */
 void
-marcel_bubble_set_memory_manager (marcel_memory_manager_t *memory_manager) {
-  current_mem_manager = memory_manager;
+marcel_bubble_set_memory_manager (marcel_bubble_memory_sched_t *scheduler,
+				  marcel_memory_manager_t *memory_manager) {
+  scheduler->memory_manager = memory_manager;
 }
 
 static int
@@ -190,11 +208,15 @@ ma_memory_global_balance (ma_distribution_t *distribution, unsigned int arity, u
 }
 
 static int
-ma_memory_apply_memory_distribution (ma_distribution_t *distribution, unsigned int arity) {
+ma_memory_apply_memory_distribution (marcel_memory_manager_t *memory_manager,
+				     ma_distribution_t *distribution,
+				     unsigned int arity) {
   unsigned int i, j;
 
-  if (!current_mem_manager)
+  if (!memory_manager) {
+    bubble_sched_debug("`memory' scheduler: lacking a memory manager, nothing done\n");
     return 1;
+  }
 
   for (i = 0; i < arity; i++) {
     for (j = 0; j < distribution[i].nb_entities; j++) {
@@ -202,11 +224,11 @@ ma_memory_apply_memory_distribution (ma_distribution_t *distribution, unsigned i
       switch (distribution[i].entities[j]->type) {
 
       case MA_BUBBLE_ENTITY:
-	marcel_memory_bubble_migrate_all (current_mem_manager, ma_bubble_entity (distribution[i].entities[j]), i);
+	marcel_memory_bubble_migrate_all (memory_manager, ma_bubble_entity (distribution[i].entities[j]), i);
 	break;
 
       case MA_THREAD_ENTITY:
-	marcel_memory_task_migrate_all (current_mem_manager, ma_task_entity (distribution[i].entities[j]), i);
+	marcel_memory_task_migrate_all (memory_manager, ma_task_entity (distribution[i].entities[j]), i);
 	break;
 
       default:
@@ -261,7 +283,8 @@ ma_memory_distribute (marcel_topo_level_t *from,
 }
 
 static int
-ma_memory_schedule_from (struct marcel_topo_level *from) {
+ma_memory_schedule_from (marcel_bubble_memory_sched_t *scheduler,
+			 struct marcel_topo_level *from) {
   unsigned int i, ne, arity = from->arity;
 
   ne = ma_count_entities_on_rq (&from->rq);
@@ -270,7 +293,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
      children. */
   if (!ne) {
     for (i = 0; i < arity; i++)
-      ma_memory_schedule_from (from->children[i]);
+      ma_memory_schedule_from (scheduler, from->children[i]);
     return 0;
   }
 
@@ -280,7 +303,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   if (ne < arity) {
     /* We need at least one entity per children level. */
     ma_memory_burst_light_bubbles (e, ne, arity);
-    return ma_memory_schedule_from (from);
+    return ma_memory_schedule_from (scheduler, from);
   }
 
   ma_distribution_t distribution[arity];
@@ -303,7 +326,7 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
   }
 
   if (try_again)
-    return ma_memory_schedule_from (from);
+    return ma_memory_schedule_from (scheduler, from);
 
   /* Perform the threads and bubbles distribution. */
   ma_memory_distribute (from, e, ne, distribution);
@@ -312,19 +335,22 @@ ma_memory_schedule_from (struct marcel_topo_level *from) {
    /* We've just distributed entities over the node-level runqueues,
       we can now migrate memory areas to their new location, described
       in _distribution_.*/
-    ma_memory_apply_memory_distribution (distribution, arity);
+   ma_memory_apply_memory_distribution (scheduler->memory_manager,
+					distribution, arity);
 
   ma_distribution_destroy (distribution, arity);
 
   /* Recurse over underlying levels */
   for (i = 0; i < arity && !node_level_reached; i++)
-    ma_memory_schedule_from (from->children[i]);
+    ma_memory_schedule_from (scheduler, from->children[i]);
 
   return 0;
 }
 
 static int
-ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from) {
+ma_memory_sched_submit (struct marcel_bubble_memory_sched *self,
+			marcel_bubble_t *bubble,
+			struct marcel_topo_level *from) {
   bubble_sched_debug("marcel_root_bubble: %p \n", &marcel_root_bubble);
 
   ma_bubble_synthesize_stats (bubble);
@@ -338,14 +364,15 @@ ma_memory_sched_submit (marcel_bubble_t *bubble, struct marcel_topo_level *from)
 
   /* Only call the Memory scheduler on a node-based computer. */
   if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) >= 0)
-    ma_memory_schedule_from (from);
+    ma_memory_schedule_from (self, from);
 
-  /* TODO: Crappy way to communicate with the Cache bubble
-     scheduler. Do it nicely in the future. */
-  ((int (*) (struct marcel_topo_level *)) marcel_bubble_cache_sched.priv) (from);
-
-  ma_resched_existing_threads (from);
   ma_bubble_unlock_all (bubble, from);
+
+  /* Let the cache scheduler handle the rest of the topology (starting at
+     FROM).  XXX: There's a small window during which the bubble hierarchy
+     in unlocked.  */
+  self->cache_scheduler->submit (self->cache_scheduler,
+				 ma_entity_bubble (bubble));
 
   return 0;
 }
@@ -354,7 +381,8 @@ static int
 memory_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   bubble_sched_debug ("Memory: Submitting entities!\n");
-  return ma_memory_sched_submit (ma_bubble_entity (e), marcel_topo_level (0, 0));
+  return ma_memory_sched_submit ((struct marcel_bubble_memory_sched *) self,
+				 ma_bubble_entity (e), marcel_topo_level (0, 0));
 }
 
 static int
@@ -393,7 +421,9 @@ memory_sched_shake (marcel_bubble_sched_t *self) {
   return ret;
 }
 
-#if MA_MEMORY_BSCHED_USE_WORK_STEALING
+
+/* Work stealing.  */
+
 struct memory_goodness_hints {
 
   /* The topo_level we're trying to steal for. */
@@ -423,8 +453,7 @@ struct memory_goodness_hints {
 #define MA_MEMORY_SCHED_LOCAL_MEM_BONUS 10
 
 static int
-memory_sched_compute_entity_score (marcel_bubble_sched_t *self,
-					 marcel_entity_t *current_e,
+memory_sched_compute_entity_score (marcel_entity_t *current_e,
 				   struct memory_goodness_hints *hints) {
   int computed_score;
   int topo_max_depth = marcel_topo_vp_level[0].level;
@@ -471,7 +500,7 @@ static void
 say_hello (marcel_entity_t *e, int current_score) {
   marcel_printf ("Looking at entity %s%s (%p), score = %i\n",
 		 (e->type == MA_BUBBLE_ENTITY) ? "bubble" : "thread ",
-		 (e->type == MA_BUBBLE_ENTITY) ? "" : ma_task_entity (e)->name,
+		 (e->type == MA_BUBBLE_ENTITY) ? "" : e->name,
 		 e,
 		 current_score);
 }
@@ -496,8 +525,9 @@ goodness (ma_holder_t *hold, void *args) {
 }
 
 static int
-memory_sched_steal (marcel_bubble_sched_t *self, unsigned from_vp) {
+memory_sched_steal (marcel_bubble_sched_t *scheduler, unsigned from_vp) {
   int ret = 0;
+  marcel_bubble_memory_sched_t *self;
   struct marcel_topo_level *me = &marcel_topo_vp_level[from_vp];
 
   struct memory_goodness_hints hints = {
@@ -505,6 +535,11 @@ memory_sched_steal (marcel_bubble_sched_t *self, unsigned from_vp) {
     .best_entity = NULL,
     .first_call = 1,
   };
+
+  self = (marcel_bubble_memory_sched_t *) scheduler;
+  if (!self->work_stealing)
+    /* Work stealing is disabled.  */
+    return 0;
 
   ma_topo_level_browse (me,
 			MARCEL_LEVEL_MACHINE,
@@ -519,18 +554,79 @@ memory_sched_steal (marcel_bubble_sched_t *self, unsigned from_vp) {
 
   return ret;
 }
-#endif /* MA_MEMORY_BSCHED_USE_WORK_STEALING */
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
-  .start = memory_sched_start,
-  .submit = memory_sched_submit,
-  .shake = memory_sched_shake,
-#if MA_MEMORY_BSCHED_USE_WORK_STEALING
-  .vp_is_idle = memory_sched_steal,
-#endif
-);
+static int
+memory_sched_exit (marcel_bubble_sched_t *scheduler) {
+  marcel_bubble_memory_sched_t *self;
+
+  self = (marcel_bubble_memory_sched_t *) scheduler;
+
+  if (self->cache_scheduler->exit)
+    self->cache_scheduler->exit (self->cache_scheduler);
+  marcel_free (self->cache_scheduler);
+
+  scheduler->klass = NULL;
+
+  return 0;
+}
+
+int
+marcel_bubble_memory_sched_init (marcel_bubble_memory_sched_t *scheduler,
+				 marcel_memory_manager_t *memory_manager,
+				 tbx_bool_t work_stealing) {
+  int err;
+  marcel_bubble_cache_sched_t *cache_sched;
+
+  memset (scheduler, 0, sizeof (*scheduler));
+
+  cache_sched =
+    marcel_malloc (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class),
+		   __FILE__, __LINE__);
+  if (cache_sched)
+    {
+      /* Create a `cache' scheduler that will be invoked when `memory' can't
+	 do a better job, e.g., within NUMA nodes.  */
+      err = marcel_bubble_cache_sched_init (cache_sched, tbx_false);
+      if (err)
+	marcel_free (cache_sched);
+      else
+	{
+	  scheduler->cache_scheduler = (marcel_bubble_sched_t *) cache_sched;
+	  scheduler->work_stealing = work_stealing;
+	  scheduler->memory_manager = memory_manager;
+
+	  scheduler->scheduler.klass = &marcel_bubble_memory_sched_class;
+
+	  scheduler->scheduler.start = memory_sched_start;
+	  scheduler->scheduler.exit = memory_sched_exit;
+	  scheduler->scheduler.submit = memory_sched_submit;
+	  scheduler->scheduler.shake = memory_sched_shake;
+	  scheduler->scheduler.vp_is_idle = memory_sched_steal;
+	}
+    }
+  else
+    err = 1;
+
+  return err;
+}
+
+/* Initialize SCHEDULER as a `memory' scheduler with default parameter
+   values.  */
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  /* Note: We can't do much without a memory manager.  */
+  return marcel_bubble_memory_sched_init ((marcel_bubble_memory_sched_t *) scheduler,
+					  NULL, tbx_false);
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memory, make_default_scheduler);
 
 #else /* MARCEL_MAMI_ENABLED */
+
+struct marcel_bubble_memory_sched
+{
+  marcel_bubble_sched_t scheduler;
+};
 
 static int
 warning_start (marcel_bubble_sched_t *self) {
@@ -538,11 +634,22 @@ warning_start (marcel_bubble_sched_t *self) {
   return 0;
 }
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (memory,
-  .start = warning_start,
-  .submit = (void*)warning_start,
-  .shake = (void*)warning_start,
-);
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_memory_sched_class;
+  scheduler->start = warning_start;
+  scheduler->submit = (void*)warning_start;
+  scheduler->shake = (void*)warning_start;
+  return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memory, make_default_scheduler);
 
 #endif /* MARCEL_MAMI_ENABLED */
 #endif /* MA__BUBBLES */
+
+/*
+   Local Variables:
+   tab-width: 8
+   End:
+ */

@@ -17,6 +17,10 @@
 
 #ifdef MA__BUBBLES
 
+struct marcel_bubble_explode_sched {
+	marcel_bubble_sched_t scheduler;
+};
+
 static void __sched_submit(marcel_entity_t *e[], int ne, struct marcel_topo_level **l)
 {
   int i;
@@ -164,14 +168,22 @@ explode_sched_tick(marcel_bubble_sched_t *self, marcel_bubble_t *b TBX_UNUSED)
   return 0;
 }
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (explode,
-  .init = explode_sched_init,
-  .exit = explode_sched_exit,
-  .submit = explode_sched_submit,
-  .vp_is_idle = explode_sched_vp_is_idle,
-  .tick = explode_sched_tick,
-  .sched = explode_sched_sched,
-);
+
+static int
+make_default_scheduler(marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_explode_sched_class;
+
+  scheduler->init = explode_sched_init;
+  scheduler->exit = explode_sched_exit;
+  scheduler->submit = explode_sched_submit;
+  scheduler->vp_is_idle = explode_sched_vp_is_idle;
+  scheduler->tick = explode_sched_tick;
+  scheduler->sched = explode_sched_sched;
+
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (explode, make_default_scheduler);
 
 #endif /* MA__BUBBLES */
 

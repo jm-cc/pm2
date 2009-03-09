@@ -43,6 +43,7 @@ main (int argc, char *argv[])
 	unsigned int i;
 	char **new_argv;
 	ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
+	marcel_bubble_sched_t *scheduler;
 
 	/* A bi-dual-core computer */
   static const char topology_description[] = "2 2";
@@ -58,7 +59,13 @@ main (int argc, char *argv[])
 
 	marcel_init (&argc, new_argv);
 
-	marcel_bubble_change_sched (&marcel_bubble_cache_sched);
+	scheduler =
+		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
+	ret = marcel_bubble_cache_sched_init ((marcel_bubble_cache_sched_t *) scheduler,
+																				tbx_false);
+	MA_BUG_ON (ret != 0);
+
+	marcel_bubble_change_sched (scheduler);
 
 	/* Creating threads as leaves of the hierarchy.  */
 	marcel_t threads[NB_THREADS];

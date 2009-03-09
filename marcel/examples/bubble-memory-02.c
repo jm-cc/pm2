@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ main (int argc, char *argv[]) {
   int ret;
   unsigned int i;
   char **new_argv;
+  marcel_bubble_sched_t *scheduler;
   ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
 
   /* A quad-socket quad-core computer ("aka kwak" (tm)) */
@@ -74,7 +75,12 @@ main (int argc, char *argv[]) {
   marcel_mutex_init (&write_lock, NULL);
 
   /* Make sure we're currently testing the memory scheduler. */
-  marcel_bubble_change_sched (&marcel_bubble_memory_sched);
+  scheduler =
+    alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memory_sched_class));
+  ret = marcel_bubble_memory_sched_init (scheduler, NULL, tbx_false);
+  MA_BUG_ON (ret != 0);
+
+  marcel_bubble_change_sched (scheduler);
 
   /* Creating threads and bubbles hierarchy.  */
   marcel_bubble_t bubbles[NB_BUBBLES];

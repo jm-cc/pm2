@@ -24,6 +24,10 @@
 
 #ifdef MA__BUBBLES
 
+struct marcel_bubble_steal_sched {
+	marcel_bubble_sched_t scheduler;
+};
+
 static int total_nb_ready_entities(marcel_bubble_t *b) {
 	int nb_ready_entities = b->as_holder.nb_ready_entities;
 	marcel_entity_t *e;
@@ -260,10 +264,16 @@ steal_sched_start(marcel_bubble_sched_t *self)
 	return 0;
 }
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (steal,
-	.start = steal_sched_start,
-	.sched = steal_sched_sched,
-	.vp_is_idle = steal_work
-);
+
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_steal_sched_class;
+	scheduler->start = steal_sched_start;
+	scheduler->sched = steal_sched_sched;
+	scheduler->vp_is_idle = steal_work;
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (steal, make_default_scheduler);
 
 #endif

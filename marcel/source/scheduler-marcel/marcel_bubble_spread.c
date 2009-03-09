@@ -1,7 +1,7 @@
 
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006, 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2006, 2008, 2009 "the PM2 team" (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,12 @@
 #include "marcel.h"
 
 #ifdef MA__BUBBLES
+
+struct marcel_bubble_spread_sched {
+	marcel_bubble_sched_t scheduler;
+};
+
+
 static inline long
 sum_load(marcel_entity_t *e[], int ne) {
 	long load = 0;
@@ -320,9 +326,15 @@ spread_sched_vp_is_idle(marcel_bubble_sched_t *self, unsigned vp)
   return 1;
 }
 
-MARCEL_DEFINE_BUBBLE_SCHEDULER (spread,
-  .submit = spread_sched_submit,
+static int
+make_default_scheduler (marcel_bubble_sched_t *scheduler) {
+  scheduler->klass = &marcel_bubble_spread_sched_class;
+  scheduler->submit = spread_sched_submit;
   //.vp_is_idle = spread_sched_vp_is_idle, /* remove TBX_UNUSED above when reenabling this */
-);
+
+	return 0;
+}
+
+MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (spread, make_default_scheduler);
 
 #endif

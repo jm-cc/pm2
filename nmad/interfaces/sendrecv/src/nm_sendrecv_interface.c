@@ -219,9 +219,9 @@ void nm_sr_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_fl
 
 
 
-static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
-static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
-static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
+static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event);
+static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event);
+static void nm_sr_event_unexpected(const struct nm_so_event_s*const event);
 
 static const struct nm_so_monitor_s nm_sr_monitor_pack_completed = 
   {
@@ -799,25 +799,25 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
  *  @param seq the fragment sequence number.
  *  @return The NM status.
  */
-static void nm_sr_event_pack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src)
+static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_gate *p_so_gate = event->p_gate->p_so_gate;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, event->tag);
   struct nm_sr_tag_s*p_sr_tag = p_so_tag->p_sr_tag;
-  struct nm_sr_request_s *p_request = p_sr_tag->sreqs[seq];
+  struct nm_sr_request_s *p_request = p_sr_tag->sreqs[event->seq];
 
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , tag, seq);
+  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , event->tag, event->seq);
 
-  nm_sr_request_event(p_request, NM_SR_STATUS_SEND_COMPLETED, p_gate);
+  nm_sr_request_event(p_request, NM_SR_STATUS_SEND_COMPLETED, event->p_gate);
 
-  p_sr_tag->sreqs[seq] = NULL;
+  p_sr_tag->sreqs[event->seq] = NULL;
   NM_SO_SR_LOG_OUT();
 }
 
-static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t is_any_src)
+static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
 {
-  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, p_gate, tag);
+  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, event->p_gate, event->tag);
 }
 
 /** Check the status for a receive request (gate/is_any_src,tag,seq).
@@ -827,30 +827,30 @@ static void nm_sr_event_unexpected(nm_so_status_t event, nm_gate_t p_gate, nm_ta
  *  @param is_any_src whether to check for a specific gate or for any gate.
  *  @return The NM status.
  */
-static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate, nm_tag_t tag, uint8_t seq, tbx_bool_t is_any_src)
+static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_gate *p_so_gate = event->p_gate->p_so_gate;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, event->tag);
   struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
   struct nm_sr_request_s *p_request = NULL;
 
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("data received for request = %p - tag %d, seq %d\n", p_sr_tag->rreqs[seq], tag, seq);
+  NM_SO_SR_TRACE("data received for request = %p - tag %d, seq %d\n", p_sr_tag->rreqs[event->seq], event->tag, event->seq);
 
-  if(is_any_src) 
+  if(event->any_src) 
     {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
-      p_sr_anysrc->p_gate = p_gate;
+      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, event->tag);
+      p_sr_anysrc->p_gate = event->p_gate;
       p_request = p_sr_anysrc->rreq;
       p_sr_anysrc->rreq = NULL;
     } 
   else 
     {
-      p_request = p_sr_tag->rreqs[seq];
-      p_sr_tag->rreqs[seq] = NULL;
+      p_request = p_sr_tag->rreqs[event->seq];
+      p_sr_tag->rreqs[event->seq] = NULL;
     }
   uint8_t sr_event = NM_SR_STATUS_RECV_COMPLETED;
-  if(event & NM_SO_STATUS_UNPACK_CANCELLED)
+  if(event->status & NM_SO_STATUS_UNPACK_CANCELLED)
     {
       sr_event |= NM_SR_STATUS_RECV_CANCELLED;
     }
@@ -858,7 +858,7 @@ static void nm_sr_event_unpack_completed(nm_so_status_t event, nm_gate_t p_gate,
     {
       list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
-  nm_sr_request_event(p_request, sr_event, p_gate);
+  nm_sr_request_event(p_request, sr_event, event->p_gate);
 
   NM_SO_SR_LOG_OUT();
 }

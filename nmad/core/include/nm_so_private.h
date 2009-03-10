@@ -49,7 +49,8 @@ typedef nm_so_status_t nm_so_flag_t;
 #define NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE ((nm_so_flag_t)0x0400)
 
 /** an event notifier, fired upon status transition */
-typedef void (*nm_event_notifier_t)(nm_so_status_t event, nm_gate_t gate, nm_tag_t tag, uint8_t seq, tbx_bool_t any_src);
+typedef struct nm_so_event_s* nm_so_event_t;
+typedef void (*nm_event_notifier_t)(const struct nm_so_event_s* const event);
 /** monitor for status transitions */
 struct nm_so_monitor_s
 {

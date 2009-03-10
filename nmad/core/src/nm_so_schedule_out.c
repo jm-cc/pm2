@@ -41,7 +41,15 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
   if(p_so_tag->send[seq] == 0)
     {
       NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", tag, seq, len);
-      nm_so_status_event(p_gate->p_core, NM_SO_STATUS_PACK_COMPLETED, p_gate, tag, seq, tbx_false);
+      const struct nm_so_event_s event =
+	{
+	  .status = NM_SO_STATUS_PACK_COMPLETED,
+	  .p_gate = p_gate,
+	  .tag = tag,
+	  .seq = seq,
+	  .any_src = tbx_false
+	};
+      nm_so_status_event(p_gate->p_core, &event);
     } 
   else if(p_so_tag->send[seq] > 0)
      {

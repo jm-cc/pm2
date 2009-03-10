@@ -92,7 +92,15 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
 
   if(is_any_src)
     {
-      nm_so_status_event(p_gate->p_core, NM_SO_STATUS_RDV_IN_PROGRESS, p_gate, tag, seq, tbx_true);
+      const struct nm_so_event_s event = 
+	{
+	  .status = NM_SO_STATUS_RDV_IN_PROGRESS,
+	  .p_gate = p_gate,
+	  .tag = tag,
+	  .seq = seq,
+	  .any_src = tbx_true
+	};
+      nm_so_status_event(p_gate->p_core, &event);
     }
 
   if(is_any_src && any_src->p_gate == NM_ANY_GATE)

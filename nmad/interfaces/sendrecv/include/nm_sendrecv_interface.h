@@ -48,7 +48,6 @@ typedef uint8_t nm_sr_status_t;
 typedef enum
   {
     /** an unexpected packet has arrived. Post a recv to get data
-     * @note not supported yet
      */
     NM_SR_EVENT_RECV_UNEXPECTED = ((nm_sr_status_t)0x80),
     NM_SR_EVENT_RECV_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,

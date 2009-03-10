@@ -179,7 +179,15 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
       p_so_tag->status[seq] = 0;
     }
 
-    nm_so_status_event(p_gate->p_core, NM_SO_STATUS_UNPACK_COMPLETED, p_gate, tag, seq, is_any_src);
+    const struct nm_so_event_s event =
+      {
+	.status = NM_SO_STATUS_UNPACK_COMPLETED,
+	.p_gate = p_gate,
+	.tag = tag,
+	.seq = seq,
+	.any_src = is_any_src
+      };
+    nm_so_status_event(p_gate->p_core, &event);
 
     return NM_ESUCCESS;
   }

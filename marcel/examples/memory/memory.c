@@ -24,20 +24,21 @@ marcel_memory_manager_t memory_manager;
 any_t memory(any_t arg) {
   int *b, *c, *d, *e;
   char *buffer;
-  int node;
+  int node, id;
 
-  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  id = marcel_self()->id;
+  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
 
   marcel_memory_locate(&memory_manager, &(buffer[0]), 0, &node);
-  if (node == marcel_self()->id) {
-    marcel_printf("[%d] Address is located on the correct node %d\n", marcel_self()->id, node);
+  if (node == id) {
+    marcel_printf("[%d] Address is located on the correct node %d\n", id, node);
   }
   else {
-    marcel_printf("[%d] Address is NOT located on the correct node %d\n", marcel_self()->id, node);
+    marcel_printf("[%d] Address is NOT located on the correct node but on node %d\n", id, node);
   }
 
 #ifdef PRINT
@@ -125,7 +126,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_join(threads[1], NULL);
 
     // Start the thread on the last VP
-    marcel_attr_setid(&attr, 2);
+    marcel_attr_setid(&attr, marcel_nbvps()-1);
     marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
     marcel_create(&threads[1], &attr, memory2, NULL);
     marcel_join(threads[1], NULL);

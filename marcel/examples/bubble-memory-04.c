@@ -79,12 +79,12 @@ main (int argc, char *argv[])
 
   marcel_init (&argc, new_argv);
   marcel_memory_init (&memory_manager);
-  marcel_bubble_set_memory_manager (&memory_manager);
 
   /* Make sure we're currently testing the memory scheduler. */
   scheduler =
     alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memory_sched_class));
-  ret = marcel_bubble_memory_sched_init (scheduler, NULL, tbx_false);
+  ret = marcel_bubble_memory_sched_init ((struct marcel_bubble_memory_sched *) scheduler,
+					 &memory_manager, tbx_false);
   MA_BUG_ON (ret != 0);
 
   marcel_bubble_change_sched (scheduler);

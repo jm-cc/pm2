@@ -1073,7 +1073,6 @@ static void __marcel_init look_sysfsnode(void) {
 		marcel_vpset_t cpuset;
 		unsigned long size;
                 unsigned long hpfree;
-		int j;
 
 		sprintf(nodepath, "/sys/devices/system/node/node%d/cpumap", osnode);
 		if (ma_parse_cpumap(nodepath, &cpuset) < 0)
@@ -1092,11 +1091,7 @@ static void __marcel_init look_sysfsnode(void) {
 		ma_topo_set_os_numbers(&node_level[i], node, osnode);
 		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
 		node_level[i].huge_page_free = hpfree;
-
 		node_level[i].cpuset = cpuset;
-		for(j=0;j<MARCEL_NBMAXCPUS;j++)
-			if (marcel_vpset_isset(&cpuset, j))
-				ma_vp_node[j] = i;
 
 		mdebug("node %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 		       i, osnode, MARCEL_VPSET_PRINTF_VALUE(node_level[i].cpuset));
@@ -1935,6 +1930,12 @@ static void topo_discover(void) {
 			level = level->father;
 		}
 	}
+
+	/* We can fill ma_vp_node */
+	for (level = marcel_topo_node_level; !marcel_vpset_iszero(&level->cpuset); level++)
+	        for(j=0; j<marcel_nbvps(); j++)
+	                if (marcel_vpset_isset(&level->vpset, j))
+	                       ma_vp_node[j] = level->number;
 
 	/* Now add supplementary VPs on the last level. */
 	for (i=marcel_nbvps(); i<marcel_nbvps() + MARCEL_NBMAXVPSUP; i++) {

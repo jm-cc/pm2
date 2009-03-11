@@ -109,7 +109,7 @@ int marcel_bubble_getprio(__const marcel_bubble_t *bubble, int *prio);
  * . The actual move is deferred until the bubble is woken up.  When woken up (see
  *   marcel_wake_up_bubble()), \e bubble will be put on runqueue \e rq.*/
 int marcel_bubble_scheduleonrq(marcel_bubble_t *bubble, ma_runqueue_t *rq);
-/** \briefTemporarily bring the bubble \e bubble on level \e level 's runqueue by setting its sched_holder accordingly.
+/** \brief Temporarily bring the bubble \e bubble on level \e level 's runqueue by setting its sched_holder accordingly.
  * . The bubble's natural holder is left unchanged.
  * . The actual move is deferred until the bubble is woken up.
  *   When woken up (see marcel_wake_up_bubble()), \e bubble will be put on the

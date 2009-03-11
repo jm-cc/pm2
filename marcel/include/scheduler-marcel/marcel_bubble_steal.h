@@ -24,3 +24,5 @@
 #depend "marcel_bubble_sched_interface.h[macros]"
 
 MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (steal);
+
+/* @} */

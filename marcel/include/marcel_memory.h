@@ -14,10 +14,10 @@
  */
 
 /** \file
- * \brief MAMI: MArcel Memory Interface
+ * \brief MaMI: Marcel Memory Interface
  */
 
-/** \defgroup marcel_memory MAMI: MArcel Memory Interface
+/** \defgroup mami MaMI: Marcel Memory Interface
  *
  * This is the interface for memory management.
  *

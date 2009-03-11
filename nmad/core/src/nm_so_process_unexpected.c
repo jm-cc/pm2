@@ -54,10 +54,12 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
     }
   else
     {
+      assert(proto_id >= NM_SO_PROTO_DATA_FIRST);
       struct nm_so_data_header *h = header;
       tag = h->proto_id - 128;
       seq = h->seq;
       len = h->len;
+      assert(len <= NM_SO_MAX_UNEXPECTED);
       void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
       chunk_offset = h->chunk_offset;
       is_last_chunk = h->is_last_chunk;

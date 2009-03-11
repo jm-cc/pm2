@@ -23,6 +23,10 @@
 #include "tbx_compiler.h"
 
 #ifdef PM2DEBUG
+#  ifdef DARWIN_SYS
+     /* Unfortunately, the tricks below do not work with the Darwin linker */
+#    warning Marcel's debug is enabled but it will not work on Darwin
+#  else
 TBX_SECTION(".ma.debug.start") TBX_ALIGN(4096)	const int __ma_debug_start[0]={};
 TBX_SECTION(".ma.debug.var")			const int __ma_debug_var[0]={};
 TBX_SECTION(".ma.debug.end")			const int __ma_debug_end[0]={};
@@ -30,6 +34,7 @@ TBX_SECTION(".ma.debug.end")			const int __ma_debug_end[0]={};
 TBX_SECTION(".ma.debug.size") TBX_ALIGN(4096)	const int __ma_debug_size[0]={};
 TBX_SECTION(".ma.debug.size.0")			const int __ma_debug_size_0[0]={};
 TBX_SECTION(".ma.debug.size.1")			const int __ma_debug_size_1[0]={};
+#  endif
 #endif
 
 #endif

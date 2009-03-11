@@ -78,16 +78,19 @@ void marcel_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_f
 typedef struct { debug_type_t d;} TBX_ALIGNED debug_type_aligned_t;
 
 #ifdef PM2DEBUG
+#  ifndef DARWIN_SYS
 static debug_type_t ma_dummy1 TBX_SECTION(".ma.debug.size.0") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
 static debug_type_t ma_dummy2 TBX_SECTION(".ma.debug.size.1") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
 extern debug_type_aligned_t __ma_debug_pre_start[];
 extern debug_type_aligned_t __ma_debug_start[];
 extern debug_type_aligned_t __ma_debug_end[];
+#  endif
 #endif
 
 static void __marcel_init marcel_debug_init_auto(void)
 {
 #ifdef PM2DEBUG
+#  ifndef DARWIN_SYS
 	debug_type_aligned_t *var;
 	unsigned long __ma_debug_size_entry;
 	unsigned long TBX_UNUSED __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
@@ -100,6 +103,7 @@ static void __marcel_init marcel_debug_init_auto(void)
 	for(var=__ma_debug_start; var < __ma_debug_end; var++) {
 		pm2debug_register(&var->d);
 	}
+#  endif
 #endif
 }
 

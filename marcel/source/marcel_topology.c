@@ -1931,11 +1931,13 @@ static void topo_discover(void) {
 		}
 	}
 
+#ifdef MA__NUMA
 	/* We can fill ma_vp_node */
 	for (level = marcel_topo_node_level; !marcel_vpset_iszero(&level->cpuset); level++)
 	        for(j=0; j<marcel_nbvps(); j++)
 	                if (marcel_vpset_isset(&level->vpset, j))
 	                       ma_vp_node[j] = level->number;
+#endif /* MA__NUMA */
 
 	/* Now add supplementary VPs on the last level. */
 	for (i=marcel_nbvps(); i<marcel_nbvps() + MARCEL_NBMAXVPSUP; i++) {

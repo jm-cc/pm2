@@ -275,7 +275,11 @@ DEC_MARCEL_POSIX(int, setschedparam,(marcel_t thread, int policy,
 DEC_MARCEL_POSIX(int, getschedparam,(marcel_t thread, int *__restrict policy,
                                      struct marcel_sched_param *__restrict param) __THROW);
 
+#ifdef _POSIX_CPUTIME
+#  if _POSIX_CPUTIME >= 0
 DEC_POSIX(int, getcpuclockid, (pmarcel_t thread, clockid_t *clock_id) __THROW);
+#  endif
+#endif
 
 /** Prepare a set of threads for a subsequent migration.
  */

@@ -680,10 +680,14 @@ extern void _pmarcel_cleanup_pop_restore (struct _pmarcel_cleanup_buffer *__buff
 
 
 /* #ifdef __USE_XOPEN2K */
+#ifdef _POSIX_CPUTIME
+#  if _POSIX_CPUTIME >= 0
 /* Get ID of CPU-time clock for thread THREAD_ID.  */
 extern int pmarcel_getcpuclockid (pmarcel_t __thread_id,
 				  clockid_t *__clock_id)
      __THROW __tbx_attribute_nonnull__ ((2));
+#  endif
+#endif
 /* #endif */
 
 
@@ -713,10 +717,14 @@ extern int pmarcel_mutexattr_setprotocol(pmarcel_mutexattr_t *attr,
        int protocol);
 
 /* #ifdef __USE_XOPEN2K */
+#ifdef _POSIX_CPUTIME
+#  if _POSIX_CPUTIME >= 0
 extern int pmarcel_condattr_getclock(__const pmarcel_condattr_t *__restrict attr,
        clockid_t *__restrict clock_id);
 extern int pmarcel_condattr_setclock(pmarcel_condattr_t *attr,
        clockid_t clock_id); 
+#  endif
+#endif
 /* #endif */ /* __USE_XOPEN2K */
 
 extern int pmarcel_mutex_getprioceiling(__const pmarcel_mutex_t *__restrict mutex,

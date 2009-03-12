@@ -392,10 +392,10 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
-#ifdef DEBUG
+#ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
     TBX_FAILUREF("nm_sr_stest- req=%p no send posted!\n", p_request);
-#endif
+#endif /* NMAD_DEBUG */
 
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     goto exit;
@@ -580,10 +580,10 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
-#ifdef DEBUG
+#ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
     TBX_FAILUREF("nm_sr_rtest- req=%p no recv posted!\n", p_request);
-#endif
+#endif /* NMAD_DEBUG */
 
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {

@@ -28,29 +28,22 @@ int nm_schedule(struct nm_core *p_core)
 {
 #ifdef PIOMAN
   return 0;
-#else
-  int err;
-  
-  /* send
-   */
-  err = nm_sched_out(p_core);
+#else /* PIOMAN */
+
+#ifdef NMAD_DEBUG
+  static int scheduling_in_progress = 0;
+  assert(!scheduling_in_progress);
+  scheduling_in_progress = 1;  
+#endif /* NMAD_DEBUG */
+
+  nm_sched_out(p_core);
     
-  if (err < 0) {
-    NM_DISPF("nm_sched_out returned %d", err);
-  }
+  nm_sched_in(p_core);
   
-  /* receive
-   */
-  err = nm_sched_in(p_core);
-  
-  if (err < 0) {
-    NM_DISPF("nm_sched_in returned %d", err);
-  }
-  
-  
-  NM_TRACEF("\n");
-  err = NM_ESUCCESS;
-  
-  return err;
-#endif
+#ifdef NMAD_DEBUG
+  scheduling_in_progress = 0;
+#endif /* NMAD_DEBUG */
+
+  return NM_ESUCCESS;
+#endif /* PIOMAN */
 }

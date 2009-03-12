@@ -944,7 +944,8 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
   struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;;
   mx_status_t	status;
   uint32_t	result;
-  mx_return_t mx_ret= mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
+  assert(p_mx_pw != NULL);
+  mx_return_t mx_ret = mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
   nm_mx_check_return("mx_test", mx_ret);
   if (tbx_unlikely(!result))
     return -NM_EAGAIN;

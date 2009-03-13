@@ -60,6 +60,22 @@ struct nm_so_monitor_s
 PUK_VECT_TYPE(nm_so_monitor, const struct nm_so_monitor_s*);
 
 
+/** chunk of unexpected message to be stored */
+struct nm_so_chunk 
+{
+  void *header;
+  struct nm_pkt_wrap *p_pw;
+  struct list_head link;
+};
+
+/** fast allocator for struct nm_so_chunk */
+extern p_tbx_memory_t nm_so_chunk_mem;
+
+#define nm_l2chunk(l) \
+        ((struct nm_so_chunk *)((char *)(l) -\
+         (unsigned long)(&((struct nm_so_chunk *)0)->link)))
+
+
 /** tag-indexed type for 'any_src' requests */
 struct nm_so_any_src_s
 {
@@ -97,14 +113,9 @@ struct nm_so_tag_s
 
   /* ** receiving-related fields */
   uint8_t recv_seq_number;
-  union
+  struct
   {
-    struct
-    { /* unexpected packet */
-      void *header;
-      struct nm_pkt_wrap *p_so_pw;
-      struct list_head *chunks;
-    } pkt_here;
+    struct nm_so_chunk pkt_here; /**< unexpected packet */
     struct
     { /* expected packet (i.e. recv posted) */
       void *data;
@@ -171,22 +182,6 @@ struct nm_so_sched
 
   unsigned pending_any_src_unpacks;
 };
-
-
-
-/** chunk of message to be stored while the unpack is not posted */
-struct nm_so_chunk {
-  void *header;
-  struct nm_pkt_wrap *p_so_pw;
-  struct list_head link;
-};
-
-/** fast allocator for struct nm_so_chunk */
-extern p_tbx_memory_t nm_so_chunk_mem;
-
-#define nm_l2chunk(l) \
-        ((struct nm_so_chunk *)((char *)(l) -\
-         (unsigned long)(&((struct nm_so_chunk *)0)->link)))
 
 
 struct nm_so_gate

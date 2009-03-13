@@ -383,37 +383,27 @@ static int process_small_data(tbx_bool_t is_any_src,
   return NM_SO_HEADER_MARK_READ;
 }
 
-static int store_data_or_rdv(tbx_bool_t rdv,
+static int store_data_or_rdv(nm_so_status_t status,
 			     void *header, nm_tag_t tag, uint8_t seq,
 			     struct nm_pkt_wrap *p_pw)
 {
   struct nm_so_gate *p_so_gate = p_pw->p_gate->p_so_gate;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
-
-  if(!(p_so_tag->status[seq] & NM_SO_STATUS_PACKET_HERE))
+  struct nm_so_chunk *chunk = &p_so_tag->recv[seq].pkt_here;
+  if(!chunk->header)
     {
-      p_so_tag->recv[seq].pkt_here.header = header;
-      p_so_tag->recv[seq].pkt_here.p_so_pw = p_pw;
+      INIT_LIST_HEAD(&chunk->link);
     }
-  else 
+  else
     {
-      if(p_so_tag->recv[seq].pkt_here.chunks == NULL)
-	{
-	  p_so_tag->recv[seq].pkt_here.chunks = TBX_MALLOC(sizeof(struct list_head));
-	  INIT_LIST_HEAD(p_so_tag->recv[seq].pkt_here.chunks);
-	}
-      struct nm_so_chunk *chunk = tbx_malloc(nm_so_chunk_mem);
-      if (!chunk) {
-	TBX_FAILURE("chunk allocation - err = -NM_ENOMEM");
-      }
-      chunk->header = header;
-      chunk->p_so_pw = p_pw;
-      
-      list_add_tail(&chunk->link, p_so_tag->recv[seq].pkt_here.chunks);
+      chunk = tbx_malloc(nm_so_chunk_mem);
+      list_add_tail(&chunk->link, &p_so_tag->recv[seq].pkt_here.link);
     }
+  chunk->header = header;
+  chunk->p_pw = p_pw;
   const struct nm_so_event_s event =
     {
-      .status = rdv ? (NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE) : NM_SO_STATUS_PACKET_HERE,
+      .status = status,
       .p_gate = p_pw->p_gate,
       .tag = tag,
       .seq = seq,
@@ -434,10 +424,8 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 				    uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_sched *p_so_sched =  p_so_gate->p_so_sched;
-  nm_tag_t tag = proto_id - 128;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  const nm_tag_t tag = proto_id - 128;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->p_so_gate->tags, tag);
 
   NM_SO_TRACE("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u, offset = %u, is_last_chunk = %u\n",
 	      ptr, len, tag, seq, chunk_offset, is_last_chunk);
@@ -450,9 +438,8 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
     }
   else
     {
-      struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
-      if ((any_src->status & NM_SO_STATUS_UNPACK_HERE)
-	  &&
+      struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag);
+      if ((any_src->status & NM_SO_STATUS_UNPACK_HERE) &&
 	  ((any_src->p_gate == NM_ANY_GATE && p_so_tag->recv_seq_number == seq)
 	   || (any_src->p_gate == p_gate && any_src->seq == seq))) 
 	{
@@ -466,7 +453,7 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 	     recv array and keep the p_pw packet alive */
 	  NM_SO_TRACE("Store the data chunk with tag = %u, seq = %u\n", tag, seq);
 	  
-	  return store_data_or_rdv(tbx_false, header, tag, seq, p_pw);
+	  return store_data_or_rdv(NM_SO_STATUS_PACKET_HERE, header, tag, seq, p_pw);
 	}
     }
 }
@@ -479,10 +466,8 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
 			uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
-  nm_tag_t tag = tag_id - 128;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  const nm_tag_t tag = tag_id - 128;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->p_so_gate->tags, tag);
   nm_so_status_t *status = &(p_so_tag->status[seq]);
   int err;
 
@@ -498,7 +483,7 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
     }
   else 
     {
-      struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
+      struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag);
       if (( any_src->status & NM_SO_STATUS_UNPACK_HERE)
 	  &&
 	  ((any_src->p_gate == NM_ANY_GATE && p_so_tag->recv_seq_number == seq)
@@ -515,7 +500,7 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
 	  /* Store rdv request */
 	  NM_SO_TRACE("Store the RDV for tag = %d, seq = %u len = %u, offset = %u\n", tag, seq, len, chunk_offset);
 	  
-	  return store_data_or_rdv(tbx_true, rdv, tag, seq, p_pw);
+	  return store_data_or_rdv(NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE, rdv, tag, seq, p_pw);
 	}
     }
 

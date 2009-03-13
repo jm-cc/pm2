@@ -23,14 +23,12 @@
 #include <segment.h>
 
 
-static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
-			      void *dest_buffer,
-			      void *header,
-			      struct nm_pkt_wrap *p_so_pw)
+static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct nm_so_chunk*chunk)
 {
-  struct nm_gate *p_gate = p_so_pw->p_gate;
+  struct nm_gate *p_gate = chunk->p_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
+  const void*header = chunk->header;
   const nm_tag_t proto_id = *(nm_tag_t *)header;
 
   if(proto_id >= NM_SO_PROTO_DATA_FIRST)
@@ -97,10 +95,10 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
 		  tag, seq, len, chunk_offset);
       nm_so_rdv_success(is_any_src, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
     }
-
+  chunk->header = NULL;
   /* Decrement the packet wrapper reference counter. If no other
      chunks are still in use, the pw will be destroyed. */
-  nm_so_pw_dec_header_ref_count(p_so_pw);
+  nm_so_pw_dec_header_ref_count(chunk->p_pw);
 
   return NM_ESUCCESS;
 }
@@ -108,15 +106,14 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
 int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
 			     nm_tag_t tag, uint8_t seq, uint32_t len, void *data)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
-  void *first_header = p_so_tag->recv[seq].pkt_here.header;
-  struct nm_pkt_wrap *first_p_so_pw = p_so_tag->recv[seq].pkt_here.p_so_pw;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->p_so_gate->tags, tag);
   uint32_t expected_len = 0;
   uint32_t cumulated_len = 0;
-  struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag) : NULL;
+  struct nm_so_any_src_s*any_src = NULL;
+  struct nm_so_chunk *chunk = &p_so_tag->recv[seq].pkt_here;
 
   if(is_any_src){
+    any_src = nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag);
     any_src->expected_len = 0;
     any_src->cumulated_len = 0;
   } else {
@@ -126,19 +123,19 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
 
   p_so_tag->recv[seq].unpack_here.data = data;
 
-  _nm_so_treat_chunk(is_any_src, data, first_header, first_p_so_pw);
+  _nm_so_treat_chunk(is_any_src, data, chunk);
 
   /* copy of all the received chunks */
-  struct list_head *chunks = p_so_tag->recv[seq].pkt_here.chunks;
+  struct list_head *chunks = &chunk->link;
   if(chunks)
     {
       while(!list_empty(chunks))
 	{
-	  struct nm_so_chunk *chunk = nm_l2chunk(chunks->next);
-	  _nm_so_treat_chunk(is_any_src, data, chunk->header, chunk->p_so_pw);
-	list_del(chunks->next);
-	tbx_free(nm_so_chunk_mem, chunk);
-      }
+	  chunk = nm_l2chunk(chunks->next);
+	  _nm_so_treat_chunk(is_any_src, data, chunk);
+	  list_del(chunks->next);
+	  tbx_free(nm_so_chunk_mem, chunk);
+	}
     }
 
   if(is_any_src){

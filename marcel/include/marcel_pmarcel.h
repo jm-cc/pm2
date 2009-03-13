@@ -26,9 +26,7 @@
  * replaced by pmarcel_, so as to make sure we stick to the standard declarations.
  */
 
-#ifdef LINUX_SYS
-#include <features.h>
-#endif
+#include <unistd.h>
 #include <sched.h>
 #include <time.h>
 

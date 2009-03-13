@@ -14,6 +14,8 @@
  * General Public License for more details.
  */
 
+#section common
+#include <unistd.h>
 
 /****************************************************************/
 #section types

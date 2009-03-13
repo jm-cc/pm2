@@ -78,8 +78,7 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 /** Process a complete successful outgoing request.
  */
 int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
-				struct nm_pkt_wrap *p_pw,
-				int _err)
+				struct nm_pkt_wrap *p_pw)
 {
   int err;
   struct nm_gate *p_gate = p_pw->p_gate;
@@ -99,11 +98,6 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 #endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   
-  if (_err != NM_ESUCCESS) 
-    {
-      TBX_FAILUREF("nm_so_process_complete_send failed- err = %d", _err);
-    }
-
   p_so_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
 
   if(p_pw->trk_id == NM_TRK_SMALL) 
@@ -129,7 +123,6 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
   
   nm_so_out_schedule_gate(p_gate);
   
-  err = NM_ESUCCESS;
-  return err;
+  return NM_ESUCCESS;
 }
 

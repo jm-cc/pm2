@@ -696,8 +696,7 @@ ack_chunk_callback(struct nm_pkt_wrap *p_pw,
 
 /** Process a complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core *p_core,
-				struct nm_pkt_wrap *p_pw, int _err)
+int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
@@ -721,296 +720,274 @@ int nm_so_process_complete_recv(struct nm_core *p_core,
   piom_req_success(&p_pw->inst);
 #endif
 
-  if (_err != NM_ESUCCESS)
+  if(p_pw->trk_id == NM_TRK_SMALL)
     {
-      TBX_FAILUREF("nm_so_process_complete_recv failed- err = %d", _err);
-      goto out;
+      /* ** Small packets - track #0 *********************** */
+      NM_SO_TRACE("Reception of a small packet\n");
+      p_so_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
+      
+      nm_so_pw_iterate_over_headers(p_pw,
+				    data_completion_callback,
+				    rdv_callback,
+				    ack_callback,
+				    ack_chunk_callback);
+      
+      if(p_so_gate->pending_unpacks ||
+	 p_so_gate->p_so_sched->pending_any_src_unpacks)
+	{
+	  NM_LOG_VAL("pending_unpacks", p_so_gate->pending_unpacks);
+	  NM_LOG_VAL("pending_any_src_unpacks", p_so_gate->p_so_sched->pending_any_src_unpacks);
+	  /* Check if we should post a new recv packet */
+	  nm_so_refill_regular_recv(p_gate);
+	}
     }
+  else if(p_pw->trk_id == NM_TRK_LARGE)
+    {
+      /* ** Large packet - track #1 ************************ */
+      nm_drv_id_t drv_id = p_pw->p_drv->id;
+      const nm_tag_t tag = p_pw->proto_id - 128;
+      const uint8_t seq = p_pw->seq;
+      const uint32_t len = p_pw->length;
+      struct puk_receptacle_NewMad_Strategy_s*strategy = &p_so_gate->strategy_receptacle;
+      const int nb_drivers = p_gate->p_core->nb_drivers;
+      struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+      
+      NM_SO_TRACE("Reception of a large packet\n");
 
-  if(p_pw->trk_id == NM_TRK_SMALL) {
-    /* Track 0 */
-    NM_SO_TRACE("Reception of a small packet\n");
-    p_so_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
+      if(nb_drivers == 1)
+	{
+	  /* ** single rail, track #1 ********************** */
+	  if(p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE
+	     || any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE)
+	    {
+	      /* ** 1.1. Large packet, datatype -> extract data in temp buffer */
+	      DLOOP_Offset last = p_pw->length;
+	      /* unpack contigous data into their final destination */
+	      CCSI_Segment_unpack(p_pw->segp, 0, &last, p_pw->v[0].iov_base);
+	      if(last < p_pw->length)
+		{
+		  /* we are expecting more data */
+		  p_pw->v[0].iov_base += last;
+		  p_pw->v[0].iov_len -= last;
+		  nm_so_direct_post_large_recv(p_gate, p_pw->p_drv->id, p_pw);
+		  goto out;
+		}
+	      else
+		{
+		  TBX_FREE(p_pw->v[0].iov_base);
+		  if(any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE)
+		    {
+		      /* large packet, datatype, anysrc */
+		      any_src->status = 0;
+		      any_src->p_gate = NM_ANY_GATE;
+		      p_so_sched->pending_any_src_unpacks--;
+		      const struct nm_so_event_s event =
+			{
+			  .status = NM_SO_STATUS_UNPACK_COMPLETED,
+			  .p_gate = p_gate,
+			  .tag = tag,
+			  .seq = seq,
+			  .any_src = tbx_true
+			};
+		      nm_so_status_event(p_core, &event);
+		    }
+		  else 
+		    {
+		      /* large packet, datatype, known source */
+		      p_so_gate->pending_unpacks--;
+		      p_so_tag->recv[seq].pkt_here.header = NULL;
+		      p_so_tag->status[seq] = 0;
+		      const struct nm_so_event_s event =
+			{
+			  .status = NM_SO_STATUS_UNPACK_COMPLETED,
+			  .p_gate = p_gate,
+			  .tag = tag,
+			  .seq = seq,
+			  .any_src = tbx_false
+			};
+		      nm_so_status_event(p_core, &event);
+		    }
+		}
+	    }
+	  else if(any_src->status & NM_SO_STATUS_RDV_IN_PROGRESS)
+	    {
+	      /* ** 1.2. Large packet, anysrc */
+	      NM_SO_TRACE("Completion of a large any_src message with tag %d et seq %d\n", tag, seq);
+	      any_src->cumulated_len += len;
+	      if(any_src->cumulated_len >= any_src->expected_len)
+		{
+		  any_src->status = 0;
+		  any_src->p_gate = NM_ANY_GATE;
+		  p_so_sched->pending_any_src_unpacks--;
+		  const struct nm_so_event_s event =
+		    {
+		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
+		      .p_gate = p_gate,
+		      .tag = tag,
+		      .seq = seq,
+		      .any_src = tbx_true
+		    };
+		  nm_so_status_event(p_core, &event);
+		}
+	    }
+	  else
+	    {
+	      /* ** 1.3. data received directly in its final destination */
+	      NM_SO_TRACE("Completion of a large message on tag %d, seq %d and len = %d\n", tag, seq, len);
+	      p_so_tag->recv[seq].unpack_here.cumulated_len += len;
+	      if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len)
+		{
+		  NM_SO_TRACE("Wow! All data chunks in!\n");
+		  p_so_gate->pending_unpacks--;
+		  p_so_tag->recv[seq].pkt_here.header = NULL;
+		  p_so_tag->status[seq] = 0;
+		  const struct nm_so_event_s event =
+		    {
+		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
+		      .p_gate = p_gate,
+		      .tag = tag,
+		      .seq = seq,
+		      .any_src = tbx_false
+		    };
+		  nm_so_status_event(p_core, &event);
+		}
+	    }
+	}
+      else
+	{
+	  /* Track #1, multi-rail */
+	  if((any_src->status & NM_SO_STATUS_RDV_IN_PROGRESS) && (any_src->p_gate == p_gate) && (any_src->seq == seq))
+	    {
+	      /* Track #1, multi-rail, anysrc */
+	      NM_SO_TRACE("Completion of a large ANY_SRC message with tag %d et seq %d\n", tag, seq);
+	      any_src->cumulated_len += len;
+	      if(any_src->cumulated_len >= any_src->expected_len)
+		{
+		  any_src->status = 0;
+		  any_src->p_gate = NM_ANY_GATE;
+		  p_so_sched->pending_any_src_unpacks--;
+		  const struct nm_so_event_s event =
+		    {
+		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
+		      .p_gate = p_gate,
+		      .tag = tag,
+		      .seq = seq,
+		      .any_src = tbx_true
+		    };
+		  nm_so_status_event(p_core, &event);
+		}
+	    }
+	  else
+	    {
+	      /* Track #1, multi-rail, known source */
+	      NM_SO_TRACE("Completion of a large message - tag %d, seq %d\n", tag, seq);
+	      p_so_tag->recv[seq].unpack_here.cumulated_len += len;
+	      if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len)
+		{
+		  NM_SO_TRACE("Wow! All data chunks in!\n");
+		  p_so_gate->pending_unpacks--;
+		  p_so_tag->recv[seq].pkt_here.header = NULL;
+		  p_so_tag->status[seq] = 0;
+		  const struct nm_so_event_s event =
+		    {
+		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
+		      .p_gate = p_gate,
+		      .tag = tag,
+		      .seq = seq,
+		      .any_src = tbx_false
+		    };
+		  nm_so_status_event(p_core, &event);
+		}
+	    }
+	}
+      
+      p_so_gate->active_recv[drv_id][NM_TRK_LARGE] = 0;
 
-    nm_so_pw_iterate_over_headers(p_pw,
-				  data_completion_callback,
-				  rdv_callback,
-                                  ack_callback,
-                                  ack_chunk_callback);
+      /* Free the wrapper */
+      nm_so_pw_free(p_pw);
 
-    if(p_so_gate->pending_unpacks ||
-       p_so_gate->p_so_sched->pending_any_src_unpacks) {
+      /* ** Process postponed recv requests */
+      if(!list_empty(&p_so_gate->pending_large_recv))
+	{
+	  union nm_so_generic_ctrl_header ctrl;
+	  const nm_trk_id_t trk_id = NM_TRK_LARGE;
+	  struct nm_pkt_wrap *p_so_large_pw = nm_l2so(p_so_gate->pending_large_recv.next);
+	  NM_SO_TRACE("Retrieve wrapper waiting for a reception\n");
+	  if(nm_so_tag_get(&p_so_gate->tags, p_so_large_pw->proto_id - 128)->status[p_so_large_pw->seq]
+	     & NM_SO_STATUS_UNPACK_IOV
+	     || nm_so_any_src_get(&p_so_sched->any_src, p_so_large_pw->proto_id-128)->status & NM_SO_STATUS_UNPACK_IOV)
+	    {
+	      /* ** iov to be completed */
+	      list_del(p_so_gate->pending_large_recv.next);
+	      if(p_so_large_pw->prealloc_v[0].iov_len < p_so_large_pw->length)
+		{
+		  struct nm_pkt_wrap *p_so_large_pw2 = NULL;
+		  /* Only post the first entry */
+		  nm_so_pw_split(p_so_large_pw, &p_so_large_pw2, p_so_large_pw->prealloc_v[0].iov_len);
+		  list_add_tail(&p_so_large_pw2->link, &p_so_gate->pending_large_recv);
+		}
+	      nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
 
-      NM_LOG_VAL("pending_unpacks", p_so_gate->pending_unpacks);
-      NM_LOG_VAL("pending_any_src_unpacks", p_so_gate->p_so_sched->pending_any_src_unpacks);
-
-      /* Check if we should post a new recv packet */
-      nm_so_refill_regular_recv(p_gate);
+	      /* Launch the ACK */
+	      nm_so_build_multi_ack(p_gate, p_so_large_pw->proto_id, p_so_large_pw->seq, p_so_large_pw->chunk_offset, 1, &drv_id, (uint32_t *)(&p_so_large_pw->prealloc_v[0].iov_len));
+	    }
+	  else if ((nm_so_tag_get(&p_so_gate->tags, p_so_large_pw->proto_id - 128)->status[p_so_large_pw->seq]
+		    & NM_SO_STATUS_IS_DATATYPE
+		    || nm_so_any_src_get(&p_so_sched->any_src, p_so_large_pw->proto_id - 128)->status
+		    & NM_SO_STATUS_IS_DATATYPE)
+		   && p_so_large_pw->segp)
+	    {
+	      /* ** datatype to be completed */
+	      /* Post next iov entry on driver drv_id */
+	      list_del(p_so_gate->pending_large_recv.next);
+	      nm_so_init_large_datatype_recv_with_multi_ack(p_so_large_pw);
+	    }
+	  else 
+	    {
+	      /* regular pw with rdv */
+	      list_del(p_so_gate->pending_large_recv.next);
+	      if(nb_drivers == 1)
+		{
+		  nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
+		  nm_so_init_ack(&ctrl, p_so_large_pw->proto_id, p_so_large_pw->seq,
+				 drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
+		  err = strategy->driver->pack_ctrl(strategy->_status, p_gate, &ctrl);
+		}
+	      else
+		{
+		  int nb_drv = NM_DRV_MAX;
+		  nm_drv_id_t drv_ids[NM_DRV_MAX];
+		  uint32_t chunk_lens[NM_DRV_MAX];
+		  /* We ask the current strategy to find other available tracks for
+		     transfering this large data chunk. */
+		  err = strategy->driver->extended_rdv_accept(strategy->_status,
+							      p_gate, p_so_large_pw->length,
+							      &nb_drv, drv_ids, chunk_lens);
+		  
+		  if(err == NM_ESUCCESS)
+		    {
+		      if(nb_drv == 1)
+			{
+			  nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
+			  nm_so_init_ack(&ctrl, p_so_large_pw->proto_id, p_so_large_pw->seq,
+					 drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
+			  err = strategy->driver->pack_ctrl(strategy->_status, p_gate, &ctrl);
+			}
+		      else 
+			{
+			  err = nm_so_post_multiple_pw_recv(p_gate, p_so_large_pw, nb_drv, drv_ids, chunk_lens);
+			  err = nm_so_build_multi_ack(p_gate,
+						      p_so_large_pw->proto_id, p_so_large_pw->seq,
+						      p_so_large_pw->chunk_offset,
+						      nb_drv, drv_ids, chunk_lens);
+			}
+		    }
+		}
+	    }
+	}
     }
-
-  } else if(p_pw->trk_id == NM_TRK_LARGE) {
-
-    /* This is the completion of a large message. */
-    nm_drv_id_t drv_id = p_pw->p_drv->id;
-    nm_tag_t tag = p_pw->proto_id - 128;
-    uint8_t seq = p_pw->seq;
-    uint32_t len = p_pw->length;
-    struct puk_receptacle_NewMad_Strategy_s*strategy = &p_so_gate->strategy_receptacle;
-    const int nb_drivers = p_gate->p_core->nb_drivers;
-    struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
-    struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
-
-    NM_SO_TRACE("********Reception of a large packet\n");
-
-    if(nb_drivers == 1){
-
-      //1) C'est un datatype à extraire d'un tampon intermédiaire
-      if(p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE
-         || any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE){ //if(p_pw->segp != NULL){
-        DLOOP_Offset last = p_pw->length;
-
-        // Les données on été réçues en contigues -> il faut les redistribuer vers leur destination finale\n");
-        CCSI_Segment_unpack(p_pw->segp, 0, &last, p_pw->v[0].iov_base);
-
-        if(last < p_pw->length){
-          // on a pas reçu assez et on le sait car on a la taille exacte à recevoir dans le rdv
-          p_pw->v[0].iov_base += last; // idx global ou nb de bytes consommés?
-          p_pw->v[0].iov_len -= last;
-
-          nm_so_direct_post_large_recv(p_gate, p_pw->p_drv->id, p_pw);
-          goto out;
-
-        } else {
-          TBX_FREE(p_pw->v[0].iov_base);
-
-          if( any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE){
-            /* Completion of an ANY_SRC unpack */
-            any_src->status = 0;
-            any_src->p_gate = NM_ANY_GATE;
-
-            p_so_sched->pending_any_src_unpacks--;
-	    const struct nm_so_event_s event =
-	      {
-		.status = NM_SO_STATUS_UNPACK_COMPLETED,
-		.p_gate = p_gate,
-		.tag = tag,
-		.seq = seq,
-		.any_src = tbx_true
-	      };
-	    nm_so_status_event(p_core, &event);
-          } else {
-            p_so_gate->pending_unpacks--;
-
-            /* Reset the status matrix*/
-            p_so_tag->recv[seq].pkt_here.header = NULL;
-            p_so_tag->status[seq] = 0;
-	    const struct nm_so_event_s event =
-	      {
-		.status = NM_SO_STATUS_UNPACK_COMPLETED,
-		.p_gate = p_gate,
-		.tag = tag,
-		.seq = seq,
-		.any_src = tbx_false
-	      };
-	    nm_so_status_event(p_core, &event);
-          }
-
-        }
-        //2) C'est un any_src
-      } else if(any_src->status & NM_SO_STATUS_RDV_IN_PROGRESS) {
-        NM_SO_TRACE("Completion of a large any_src message with tag %d et seq %d\n", tag, seq);
-
-        any_src->cumulated_len += len;
-
-        if(any_src->cumulated_len >= any_src->expected_len){
-          /* Completion of an ANY_SRC unpack */
-          any_src->status = 0;
-          any_src->p_gate = NM_ANY_GATE;
-
-          p_so_sched->pending_any_src_unpacks--;
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .any_src = tbx_true
-	    };
-	  nm_so_status_event(p_core, &event);
-        }
-
-        // 3) On a reçu directement les données à leur destination finale
-      } else {
-        NM_SO_TRACE("****Completion of a large message on tag %d, seq %d and len = %d\n", tag, seq, len);
-
-        p_so_tag->recv[seq].unpack_here.cumulated_len += len;
-
-        /* Verify if the communication is done */
-        if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len){
-          NM_SO_TRACE("Wow! All data chunks in!\n");
-
-          p_so_gate->pending_unpacks--;
-
-          /* Reset the status matrix*/
-          p_so_tag->recv[seq].pkt_here.header = NULL;
-          p_so_tag->status[seq] = 0;
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .any_src = tbx_false
-	    };
-	  nm_so_status_event(p_core, &event);
-        }
-       }
-
-    } else { //Multirail case
-      if((any_src->status & NM_SO_STATUS_RDV_IN_PROGRESS)
-         &&
-         (any_src->p_gate == p_gate)
-         &&
-         (any_src->seq == seq)) {
-        NM_SO_TRACE("Completion of a large ANY_SRC message with tag %d et seq %d\n", tag, seq);
-
-        any_src->cumulated_len += len;
-        if(any_src->cumulated_len >= any_src->expected_len){
-          /* Completion of an ANY_SRC unpack */
-          any_src->status = 0;
-          any_src->p_gate = NM_ANY_GATE;
-
-          p_so_sched->pending_any_src_unpacks--;
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .any_src = tbx_true
-	    };
-	  nm_so_status_event(p_core, &event);
-        }
-
-      } else {
-        NM_SO_TRACE("Completion of a large message - tag %d, seq %d\n", tag, seq);
-
-        p_so_tag->recv[seq].unpack_here.cumulated_len += len;
-        /* Verify if the communication is done */
-        if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len){
-          NM_SO_TRACE("Wow! All data chunks in!\n");
-
-          p_so_gate->pending_unpacks--;
-
-          /* Reset the status matrix*/
-          p_so_tag->recv[seq].pkt_here.header = NULL;
-          p_so_tag->status[seq] = 0;
-
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_gate = p_gate,
-	      .tag = tag,
-	      .seq = seq,
-	      .any_src = tbx_false
-	    };
-	  nm_so_status_event(p_core, &event);
-        }
-      }
-    }
-
-    p_so_gate->active_recv[drv_id][NM_TRK_LARGE] = 0;
-
-    /* Free the wrapper */
-    nm_so_pw_free(p_pw);
-
-    /*--------------------------------------------*/
-    /* Check if some recv requests were postponed */
-    if(!list_empty(&p_so_gate->pending_large_recv)) {
-      union nm_so_generic_ctrl_header ctrl;
-      nm_trk_id_t trk_id = NM_TRK_LARGE;
-
-      struct nm_pkt_wrap *p_so_large_pw = nm_l2so(p_so_gate->pending_large_recv.next);
-
-      NM_SO_TRACE("Retrieve wrapper waiting for a reception\n");
-      // 1) C'est un iov à finir de recevoir
-      if(nm_so_tag_get(&p_so_gate->tags, p_so_large_pw->proto_id - 128)->status[p_so_large_pw->seq]
-         & NM_SO_STATUS_UNPACK_IOV
-         || nm_so_any_src_get(&p_so_sched->any_src, p_so_large_pw->proto_id-128)->status & NM_SO_STATUS_UNPACK_IOV){
-
-        /* Post next iov entry on driver drv_id */
-        list_del(p_so_gate->pending_large_recv.next);
-
-        if(p_so_large_pw->prealloc_v[0].iov_len < p_so_large_pw->length){
-          struct nm_pkt_wrap *p_so_large_pw2 = NULL;
-
-          /* Only post the first entry */
-          nm_so_pw_split(p_so_large_pw, &p_so_large_pw2, p_so_large_pw->prealloc_v[0].iov_len);
-
-          list_add_tail(&p_so_large_pw2->link, &p_so_gate->pending_large_recv);
-        }
-
-        nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
-
-        /* Launch the ACK */
-        nm_so_build_multi_ack(p_gate, p_so_large_pw->proto_id, p_so_large_pw->seq, p_so_large_pw->chunk_offset, 1, &drv_id, (uint32_t *)(&p_so_large_pw->prealloc_v[0].iov_len));
-
-
-
-      // 2) C'est un datatype à finir de recevoir
-      } else if ((nm_so_tag_get(&p_so_gate->tags, p_so_large_pw->proto_id - 128)->status[p_so_large_pw->seq]
-                  & NM_SO_STATUS_IS_DATATYPE
-                  || nm_so_any_src_get(&p_so_sched->any_src, p_so_large_pw->proto_id - 128)->status
-                  & NM_SO_STATUS_IS_DATATYPE)
-                 && p_so_large_pw->segp) {
-        /* Post next iov entry on driver drv_id */
-        list_del(p_so_gate->pending_large_recv.next);
-
-        nm_so_init_large_datatype_recv_with_multi_ack(p_so_large_pw);
-
-      // 3) C'est un wrapper normal dont on a reçu un RDV
-      } else {
-        list_del(p_so_gate->pending_large_recv.next);
-
-        if(nb_drivers == 1){ // we do not search to have more NICs
-          nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
-
-          nm_so_init_ack(&ctrl, p_so_large_pw->proto_id, p_so_large_pw->seq,
-                         drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
-          err = strategy->driver->pack_ctrl(strategy->_status, p_gate, &ctrl);
-
-        } else {
-          int nb_drv = NM_DRV_MAX;
-          nm_drv_id_t drv_ids[NM_DRV_MAX];
-          uint32_t chunk_lens[NM_DRV_MAX];
-
-          /* We ask the current strategy to find other available tracks for
-             transfering this large data chunk. */
-          err = strategy->driver->extended_rdv_accept(strategy->_status,
-						      p_gate, p_so_large_pw->length,
-						      &nb_drv, drv_ids, chunk_lens);
-
-          if(err == NM_ESUCCESS){
-            if(nb_drv == 1){ // le réseau qui vient de se libérer est le seul disponible
-              nm_so_direct_post_large_recv(p_gate, drv_id, p_so_large_pw);
-
-              nm_so_init_ack(&ctrl, p_so_large_pw->proto_id, p_so_large_pw->seq,
-                             drv_id * NM_SO_MAX_TRACKS + trk_id, p_so_large_pw->chunk_offset);
-              err = strategy->driver->pack_ctrl(strategy->_status, p_gate, &ctrl);
-
-            } else {
-              err = nm_so_post_multiple_pw_recv(p_gate, p_so_large_pw, nb_drv, drv_ids, chunk_lens);
-              err = nm_so_build_multi_ack(p_gate,
-                                          p_so_large_pw->proto_id, p_so_large_pw->seq,
-                                          p_so_large_pw->chunk_offset,
-                                          nb_drv, drv_ids, chunk_lens);
-            }
-          }
-        }
-      }
-    }
-  }
-
+  
  out:
   /* Hum... Well... We're done guys! */
   err = NM_ESUCCESS;

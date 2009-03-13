@@ -46,7 +46,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
    
   if(err == NM_ESUCCESS)
     {
-      err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
+      err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
     }
   else if (err != -NM_EAGAIN)
     {
@@ -126,15 +126,15 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	  tbx_slist_append(p_pw->p_gate->p_core->so_sched.pending_recv_req, p_pw);
 #endif /* PIOMAN */
 	}
-      else
+      else if(err == NM_ESUCCESS)
 	{
 	  /* immediate succes, process request completion */
 	  NM_TRACEF("request completed immediately");
-	  
-	  if (err != NM_ESUCCESS) {
-	    NM_DISPF("drv->post_recv returned %d", err);
-	  }
-	  nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
+	  nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+	}
+      else
+	{
+	  TBX_FAILUREF("nm_post_recv failed- err = %d", err);
 	}
     }
   
@@ -142,12 +142,10 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 }
 
 /** Main scheduler func for incoming requests.
-   - this function must be called once for each gate on a regular basis
+   - this function must be called on a regular basis
  */
 int nm_sched_in(struct nm_core *p_core)
 {
-  int err;
-  
 #ifndef PIOMAN
   /* poll pending requests */
   if (!tbx_slist_is_nil(p_core->so_sched.pending_recv_req))
@@ -158,7 +156,7 @@ int nm_sched_in(struct nm_core *p_core)
       do
 	{
 	  struct nm_pkt_wrap*p_pw = tbx_slist_ref_get(p_core->so_sched.pending_recv_req);
-	  err = nm_poll_recv(p_pw);
+	  const int err = nm_poll_recv(p_pw);
 	  if(err == NM_ESUCCESS)
 	    {
 	      todo = tbx_slist_ref_extract_and_forward(p_core->so_sched.pending_recv_req, NULL);
@@ -182,7 +180,7 @@ int nm_sched_in(struct nm_core *p_core)
       do
 	{
 	  struct nm_pkt_wrap*p_pw = tbx_slist_ref_get(p_core->so_sched.post_recv_req);
-	  err = nm_post_recv(p_pw);
+	  const int err = nm_post_recv(p_pw);
 	  if(err == -NM_EBUSY)
 	    {
 	      todo = tbx_slist_ref_forward(p_core->so_sched.post_recv_req);
@@ -195,9 +193,7 @@ int nm_sched_in(struct nm_core *p_core)
       while(todo);
     }
   
-  err = NM_ESUCCESS;
-  
-  return err;
+  return NM_ESUCCESS;
 }
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -229,7 +225,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
   }
   piom_req_success(&p_pw->inst);
   /* process complete request */
-  err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw, err);
+  err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
   
   return err;
 }

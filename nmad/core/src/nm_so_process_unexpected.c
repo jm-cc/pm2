@@ -31,65 +31,49 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
   struct nm_gate *p_gate = p_so_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
+  const nm_tag_t proto_id = *(nm_tag_t *)header;
 
-  nm_tag_t tag;
-  uint8_t seq, is_last_chunk;
-  uint32_t len, chunk_offset;
-  int err;
-
-  nm_tag_t proto_id = *(nm_tag_t *)header;
-
-  if(proto_id == NM_SO_PROTO_RDV)
+  if(proto_id >= NM_SO_PROTO_DATA_FIRST)
     {
-      struct nm_so_ctrl_rdv_header *rdv = header;
-      tag = rdv->tag_id - 128;
-      seq = rdv->seq;
-      len = rdv->len;
-      chunk_offset = rdv->chunk_offset;
-      is_last_chunk = rdv->is_last_chunk;
-      
-      NM_SO_TRACE("RDV recovered chunk : tag = %u, seq = %u, len = %u, chunk_offset = %u\n",
-		  tag, seq, len, chunk_offset);
-      err = nm_so_rdv_success(is_any_src, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
-    }
-  else
-    {
-      assert(proto_id >= NM_SO_PROTO_DATA_FIRST);
-      struct nm_so_data_header *h = header;
-      tag = h->proto_id - 128;
-      seq = h->seq;
-      len = h->len;
+      const struct nm_so_data_header *h = header;
+      const nm_tag_t tag = h->proto_id - 128;
+      const uint8_t seq = h->seq;
+      const uint32_t len = h->len;
       assert(len <= NM_SO_MAX_UNEXPECTED);
-      void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
-      chunk_offset = h->chunk_offset;
-      is_last_chunk = h->is_last_chunk;
-      struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_so_sched->any_src, tag) : NULL;
-      struct nm_so_tag_s*p_so_tag = (!is_any_src) ? nm_so_tag_get(&p_so_gate->tags, tag) : NULL;
-      
+      const void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
+      const uint32_t chunk_offset = h->chunk_offset;
+      const uint8_t is_last_chunk = h->is_last_chunk;
+      nm_so_status_t status = 0;
+
       NM_SO_TRACE("DATA recovered chunk: tag = %u, seq = %u, len = %u, chunk_offset = %u\n",
 		  tag, seq, len, chunk_offset);
       
-      if(is_any_src){
-	if(is_last_chunk){
-	  any_src->expected_len = chunk_offset + len;
+      if(is_any_src)
+	{
+	  struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
+	  if(is_last_chunk)
+	    {
+	      any_src->expected_len = chunk_offset + len;
+	    }
+	  any_src->cumulated_len += len;
+	  status = any_src->status;
 	}
-	any_src->cumulated_len += len;
-      }
       else 
 	{
-	  if(is_last_chunk){
-	    p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
-	  }
+	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	  if(is_last_chunk)
+	    {
+	      p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
+	    }
 	  p_so_tag->recv[seq].unpack_here.cumulated_len += len;
+	  status = p_so_tag->status[seq];
 	}
-      
-      if((!is_any_src && (p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_IOV))
-	 || (is_any_src && (any_src->status & NM_SO_STATUS_UNPACK_IOV)))
+      /* Copy data to its final destination */
+      if(status & NM_SO_STATUS_UNPACK_IOV)
 	{
 	  _nm_so_copy_data_in_iov(dest_buffer, chunk_offset, ptr, len);
 	}
-      else if((!is_any_src && (p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE))
-              || (is_any_src && (any_src->status & NM_SO_STATUS_IS_DATATYPE)))
+      else if(status & NM_SO_STATUS_IS_DATATYPE)
 	{
 	  struct DLOOP_Segment *segp = dest_buffer;
 	  DLOOP_Offset last = chunk_offset + len;
@@ -97,11 +81,23 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src,
 	}
       else
 	{
-	  /* Copy data to its final destination */
 	  memcpy(dest_buffer + chunk_offset, ptr, len);
 	}
     }
-  
+  else if(proto_id == NM_SO_PROTO_RDV)
+    {
+      const struct nm_so_ctrl_rdv_header *rdv = header;
+      const nm_tag_t tag = rdv->tag_id - 128;
+      const uint8_t seq = rdv->seq;
+      const uint32_t len = rdv->len;
+      const uint32_t chunk_offset = rdv->chunk_offset;
+      const uint8_t is_last_chunk = rdv->is_last_chunk;
+      
+      NM_SO_TRACE("RDV recovered chunk : tag = %u, seq = %u, len = %u, chunk_offset = %u\n",
+		  tag, seq, len, chunk_offset);
+      nm_so_rdv_success(is_any_src, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
+    }
+
   /* Decrement the packet wrapper reference counter. If no other
      chunks are still in use, the pw will be destroyed. */
   nm_so_pw_dec_header_ref_count(p_so_pw);
@@ -116,8 +112,6 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
   void *first_header = p_so_tag->recv[seq].pkt_here.header;
   struct nm_pkt_wrap *first_p_so_pw = p_so_tag->recv[seq].pkt_here.p_so_pw;
-  struct list_head *chunks = p_so_tag->recv[seq].pkt_here.chunks;
-  struct nm_so_chunk *chunk = NULL;
   uint32_t expected_len = 0;
   uint32_t cumulated_len = 0;
   struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag) : NULL;
@@ -135,18 +129,17 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
   _nm_so_treat_chunk(is_any_src, data, first_header, first_p_so_pw);
 
   /* copy of all the received chunks */
-  if(chunks != NULL){
-    while(!list_empty(chunks)){
-      chunk = nm_l2chunk(chunks->next);
-
-      _nm_so_treat_chunk(is_any_src, data,
-                         chunk->header, chunk->p_so_pw);
-
-      // next
-      list_del(chunks->next);
-      tbx_free(nm_so_chunk_mem, chunk);
+  struct list_head *chunks = p_so_tag->recv[seq].pkt_here.chunks;
+  if(chunks)
+    {
+      while(!list_empty(chunks))
+	{
+	  struct nm_so_chunk *chunk = nm_l2chunk(chunks->next);
+	  _nm_so_treat_chunk(is_any_src, data, chunk->header, chunk->p_so_pw);
+	list_del(chunks->next);
+	tbx_free(nm_so_chunk_mem, chunk);
+      }
     }
-  }
 
   if(is_any_src){
     expected_len  = any_src->expected_len;

@@ -126,16 +126,13 @@ int nm_so_out_schedule_gate	(struct nm_gate *p_gate);
 
 /** Process complete outgoing request */
 int nm_so_process_complete_send(struct nm_core	*p_core,
-				struct nm_pkt_wrap *p_pw,
-				int _err);
+				struct nm_pkt_wrap *p_pw);
 
 
 /** Process complete incoming request.
  */
 int nm_so_process_complete_recv(struct nm_core	*p_core,
-				struct nm_pkt_wrap *p_pw,
-				int _err);
-
+				struct nm_pkt_wrap *p_pw);
 
 
 #endif /* NM_PRIVATE_H */

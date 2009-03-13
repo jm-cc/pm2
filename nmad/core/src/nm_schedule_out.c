@@ -31,9 +31,9 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
     {
       if (tbx_unlikely(err < 0))
 	{
-	  NM_DISPF("poll_send returned %d", err);
+	  TBX_FAILUREF("poll_send failed- err = %d", err);
 	}
-      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw, err);
+      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
     }
   return err;
 }
@@ -96,19 +96,16 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
 #endif /* PIOMAN */
 
     } 
-  else 
+  else if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
       NM_TRACEF("request completed immediately");
       
-      if (err != NM_ESUCCESS) {
-	NM_DISPF("drv->post_send returned %d", err);
-      }
-      
-      err = nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw, err);
-      if (err < 0) {
-	NM_DISPF("nm_so_process_complete send returned %d", err);
-      }
+      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+    }
+  else
+    {
+      TBX_FAILUREF("post_send failed- err = %d", err);
     }
   
     err = NM_ESUCCESS;
@@ -193,7 +190,7 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
 	{
 	  NM_DISPF("poll_send returned %d", err);
 	}
-      nm_so_process_complete_send(p_pw->p_gate, p_pw, err);
+      nm_so_process_complete_send(p_pw->p_gate, p_pw);
     }
   return err; 
 }

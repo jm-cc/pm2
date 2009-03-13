@@ -456,6 +456,50 @@ int nm_sr_scancel(struct nm_core *p_core, nm_sr_request_t *p_request)
   return NM_ENOTIMPL;
 }
 
+static struct
+{
+  nm_sr_request_t*request;
+  void*data;
+  uint32_t len;
+} nm_sr_irecv_event_info =
+  {
+    .request = NULL,
+    .data = NULL,
+    .len = 0
+  };
+
+extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
+			     void*data, uint32_t len,
+			     nm_sr_request_t *p_request)
+{
+  nmad_lock();
+
+  nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
+  p_request->p_gate  = NM_GATE_NONE;
+  p_request->ref     = NULL;
+  p_request->tag     = tag;
+  p_request->seq     = -1;
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+
+  nm_sr_irecv_event_info.request = p_request;
+  nm_sr_irecv_event_info.data = data;
+  nm_sr_irecv_event_info.len = len;
+
+  int i;
+  for(i = 0; i < p_core->nb_gates; i++)
+    {
+      nm_gate_t p_gate = &p_core->gate_array[i];
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
+	{
+	  nm_so_refill_regular_recv(p_gate);
+	}
+    }
+  nm_so_post_all(p_core);
+  nmad_unlock();
+
+  return NM_ESUCCESS;
+}
+
 /* Receive operations */
 extern int nm_sr_irecv_generic(nm_core_t p_core,
 			       nm_gate_t p_gate, nm_tag_t tag,
@@ -817,7 +861,20 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 
 static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
 {
-  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, event->p_gate, event->tag);
+  if(nm_sr_irecv_event_info.request)
+    {
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->p_so_gate->tags, event->tag);
+      uint8_t seq = p_so_tag->recv_seq_number++;
+      struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
+      p_sr_tag->rreqs[seq] = nm_sr_irecv_event_info.request;
+      nm_sr_irecv_event_info.request = NULL;
+      int err = nm_so_unpack(event->p_gate, event->tag, seq,
+			     nm_sr_irecv_event_info.data, nm_sr_irecv_event_info.len);
+    }
+  else
+    {
+      nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, event->p_gate, event->tag);
+    }
 }
 
 /** Check the status for a receive request (gate/is_any_src,tag,seq).

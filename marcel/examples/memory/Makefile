@@ -57,7 +57,7 @@ saxpy-ldflags := -lblas
 	@mkdir -p "$(dir $@)"
 	@echo "#include <numa.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
+	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lnuma 2>/dev/null;	\
 	then echo "HAVE_NUMA = yes" > "$@" ;								\
 	else echo "HAVE_NUMA = no" > "$@" ; fi
 	@rm -f ,,conftest{,.c}

@@ -468,7 +468,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   }
   else {
     ptr = &(memory_manager->heaps[node]);
-    memory_manager->memfree[node] += size;
+    memory_manager->memfree[node] += (size/1024);
   }
 
   if (*ptr == NULL) *ptr = available;
@@ -788,7 +788,7 @@ void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, in
     heap->start += size;
     heap->nbpages -= nbpages;
   }
-  memory_manager->memfree[node] -= size;
+  memory_manager->memfree[node] -= (size/1024);
   return buffer;
 }
 

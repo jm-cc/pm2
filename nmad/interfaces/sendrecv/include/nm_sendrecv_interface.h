@@ -74,6 +74,7 @@ typedef union
   {
     nm_gate_t p_gate;
     nm_tag_t tag;
+    uint32_t len;
   } recv_unexpected;
   struct
   {
@@ -87,7 +88,7 @@ typedef union
 } nm_sr_event_info_t;
 
 /** notification function for sendrecv events */
-typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, nm_sr_event_info_t*event_info);
+typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info);
 
 typedef struct
 {

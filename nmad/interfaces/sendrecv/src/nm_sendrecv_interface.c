@@ -88,24 +88,8 @@ static struct
 
 /* ** Status *********************************************** */
 
-static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, nm_gate_t p_gate, nm_tag_t tag)
+static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, const nm_sr_event_info_t*info)
 {
-  nm_sr_event_info_t info;
-  if(event == NM_SR_EVENT_RECV_UNEXPECTED)
-    {
-      info.recv_unexpected.p_gate = p_gate;
-      info.recv_unexpected.tag = tag;
-    }
-  else if(event == NM_SR_EVENT_RECV_COMPLETED)
-    {
-      info.recv_completed.p_request = p_request;
-      info.recv_completed.p_gate = p_gate;
-    }
-  else if(event == NM_SR_EVENT_SEND_COMPLETED)
-    {
-      info.send_completed.p_request = p_request;
-    }
-
   nm_sr_event_monitor_vect_itor_t i;
   for(i  = nm_sr_event_monitor_vect_begin(&nm_sr_data.monitors);
       i != nm_sr_event_monitor_vect_end(&nm_sr_data.monitors);
@@ -113,12 +97,12 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
     {
       if(event & i->mask)
 	{
-	  (*i->notifier)(event, &info);
+	  (*i->notifier)(event, info);
 	}
     }
   if(p_request && (event & p_request->monitor.mask) && p_request->monitor.notifier)
     {
-      (*p_request->monitor.notifier)(event, &info);
+      (*p_request->monitor.notifier)(event, info);
     }
 }
 
@@ -127,10 +111,9 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
 #define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
 #define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
 #define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
-static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+static inline void nm_sr_request_signal(nm_sr_request_t*p_request, nm_sr_status_t mask)
 {
   piom_cond_signal(&p_request->status, mask);
-  nm_sr_monitor_notify(p_request, mask, p_gate, p_request->tag);
 }
 /** Post PIOMan poll requests (except when offloading PIO)
  */
@@ -158,10 +141,9 @@ static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask
 {
   *status &= bitmask;
 }
-static inline void nm_sr_request_event(nm_sr_request_t*p_request, nm_sr_status_t mask, nm_gate_t p_gate)
+static inline void nm_sr_request_signal(nm_sr_request_t*p_request, nm_sr_status_t mask)
 {
   p_request->status |= mask;
-  nm_sr_monitor_notify(p_request, mask, p_gate, p_request->tag);
 }
 static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
 {
@@ -852,8 +834,11 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , event->tag, event->seq);
-
-  nm_sr_request_event(p_request, NM_SR_STATUS_SEND_COMPLETED, event->p_gate);
+  
+  const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
+ 
+  nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
+  nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
 
   p_sr_tag->sreqs[event->seq] = NULL;
   NM_SO_SR_LOG_OUT();
@@ -873,7 +858,11 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
     }
   else
     {
-      nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, event->p_gate, event->tag);
+      const nm_sr_event_info_t info = { 
+	.recv_unexpected.p_gate = event->p_gate,
+	.recv_unexpected.tag = event->tag
+      };
+      nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
     }
 }
 
@@ -915,7 +904,12 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     {
       list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
-  nm_sr_request_event(p_request, sr_event, event->p_gate);
+  const nm_sr_event_info_t info = { 
+    .recv_completed.p_request = p_request,
+    .recv_completed.p_gate = event->p_gate
+  };
+  nm_sr_request_signal(p_request, sr_event);
+  nm_sr_monitor_notify(p_request, sr_event, &info);
 
   NM_SO_SR_LOG_OUT();
 }

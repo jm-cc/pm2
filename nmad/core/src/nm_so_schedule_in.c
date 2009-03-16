@@ -384,7 +384,7 @@ static int process_small_data(tbx_bool_t is_any_src,
 }
 
 static int store_data_or_rdv(nm_so_status_t status,
-			     void *header, nm_tag_t tag, uint8_t seq,
+			     void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
 			     struct nm_pkt_wrap *p_pw)
 {
   struct nm_so_gate *p_so_gate = p_pw->p_gate->p_so_gate;
@@ -407,6 +407,7 @@ static int store_data_or_rdv(nm_so_status_t status,
       .p_gate = p_pw->p_gate,
       .tag = tag,
       .seq = seq,
+      .len = len,
       .any_src = tbx_false
     };
   nm_so_status_event(p_pw->p_gate->p_core, &event);
@@ -453,7 +454,7 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 	     recv array and keep the p_pw packet alive */
 	  NM_SO_TRACE("Store the data chunk with tag = %u, seq = %u\n", tag, seq);
 	  
-	  return store_data_or_rdv(NM_SO_STATUS_PACKET_HERE, header, tag, seq, p_pw);
+	  return store_data_or_rdv(NM_SO_STATUS_PACKET_HERE, header, len, tag, seq, p_pw);
 	}
     }
 }
@@ -500,7 +501,7 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
 	  /* Store rdv request */
 	  NM_SO_TRACE("Store the RDV for tag = %d, seq = %u len = %u, offset = %u\n", tag, seq, len, chunk_offset);
 	  
-	  return store_data_or_rdv(NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE, rdv, tag, seq, p_pw);
+	  return store_data_or_rdv(NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE, rdv, len, tag, seq, p_pw);
 	}
     }
 

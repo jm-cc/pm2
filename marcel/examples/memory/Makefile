@@ -1,5 +1,3 @@
-
-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -28,14 +26,8 @@ ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
 
-membind-ldflags := -lrt -lnuma
-memteams-ldflags := -lrt -lnuma
-memteams-bubbles-ldflags := -lrt -lnuma
-check_migration-ldflags := -lnuma
-crossing_access-ldflags := -lnuma
-
 all: $(APPS_LIST)
-config: .config/blas
+config: .config/blas .config/numa
 
 # Include the file that tells whether BLAS is available.
 -include .config/blas
@@ -56,6 +48,32 @@ APPS_EXCLUDE += saxpy
 endif
 sgemm-ldflags := -lblas
 saxpy-ldflags := -lblas
+
+# Include the file that tells whether NUMA is available.
+-include .config/numa
+
+# Determine whether NUMA is available.
+.config/numa:
+	@mkdir -p "$(dir $@)"
+	@echo "#include <numa.h>" > ,,conftest.c
+	@echo "int main (int argc, char *argv[]) { return 0; }" >> ,,conftest.c
+	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
+	then echo "HAVE_NUMA = yes" > "$@" ;								\
+	else echo "HAVE_NUMA = no" > "$@" ; fi
+	@rm -f ,,conftest{,.c}
+
+ifeq (no,$(HAVE_NUMA))
+APPS_EXCLUDE += check_migration
+APPS_EXCLUDE += crossing_access
+APPS_EXCLUDE += membind
+APPS_EXCLUDE += memteams
+APPS_EXCLUDE += memteams-bubbles
+endif
+membind-ldflags := -lrt -lnuma
+memteams-ldflags := -lrt -lnuma
+memteams-bubbles-ldflags := -lrt -lnuma
+check_migration-ldflags := -lnuma
+crossing_access-ldflags := -lnuma
 
 mamif: CC=gfortran
 

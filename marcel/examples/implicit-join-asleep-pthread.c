@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 
 #define THREADS 123
@@ -47,7 +48,7 @@ main (int argc, char *argv[])
 
   for (i = 0; i < THREADS; i++)
     {
-      err = pthread_create (&threads[i], NULL, thread_entry_point, (void *) i);
+      err = pthread_create (&threads[i], NULL, thread_entry_point, (void *)(uintptr_t) i);
       if (err)
 	{
 	  perror ("pthread_create");

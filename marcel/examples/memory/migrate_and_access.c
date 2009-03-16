@@ -15,7 +15,6 @@
 
 #include "marcel.h"
 #include <sys/mman.h>
-#include <numaif.h>
 
 #if defined(MARCEL_MAMI_ENABLED)
 

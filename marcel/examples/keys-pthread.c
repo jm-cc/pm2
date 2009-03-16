@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #undef NDEBUG
 #include <assert.h>
@@ -35,7 +36,7 @@ key_destructor (void *arg)
 {
   unsigned int number;
 
-  number = (unsigned int) arg;
+  number = (uintptr_t) arg;
   assert (number < THREADS);
   printf ("%s %u\n", __func__, number);
   key_destroyed[number] = 1;
@@ -68,7 +69,7 @@ main (int argc, char *argv[])
 
   for (i = 0; i < THREADS; i++)
     {
-      err = pthread_create (&threads[i], NULL, thread_entry_point, (void *) i);
+      err = pthread_create (&threads[i], NULL, thread_entry_point, (void *)(uintptr_t) i);
       if (err)
 	{
 	  perror ("pthread_create");
@@ -89,7 +90,7 @@ main (int argc, char *argv[])
   	  exit (1);
   	}
 
-      assert ((int) result == i);
+      assert ((uintptr_t) result == i);
     }
 
   err = pthread_key_delete (key);

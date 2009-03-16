@@ -15,7 +15,15 @@
  */
 
 /*
- * This file is used as linker script, needs be included first while linking.
+ * This file is used as a replacement for marcel.lds for the systems where GNU
+ * ld is not available.  As such, it has to define __ma_debug_start and
+ * __ma_debug_end as the beginning and end of section .ma.debug.var, for
+ * marcel_debug.c to find it.  For that, we use zero-length arrays which
+ * (hopefully) define symbols but do not allocate room for them.
+ *
+ * It needs to be included first while linking, to let the linker's (hopefully)
+ * first-come first-served algorithm just allocate sections and thus symbols in
+ * the order we want.
  */
 #if !defined(LINUX_SYS) && !defined(GNU_SYS) && !defined(OSF_SYS)
 #include <sys/types.h>
@@ -24,8 +32,11 @@
 
 #ifdef PM2DEBUG
 #  ifdef DARWIN_SYS
-     /* Unfortunately, the tricks below do not work with the Darwin linker */
-#    warning Marcel's debug is enabled but it will not work on Darwin
+     /* Unfortunately, the Darwin linker does allocate some room for
+      * zero-length arrays, so we are out of luck and just disable the debug
+      * option, to at least produce a program that does not always crash on
+      * startup */
+#    warning Marcel's debug was enabled but it will not work on Darwin
 #  else
 TBX_SECTION(".ma.debug.start") TBX_ALIGN(4096)	const int __ma_debug_start[0]={};
 TBX_SECTION(".ma.debug.var")			const int __ma_debug_var[0]={};

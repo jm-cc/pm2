@@ -86,10 +86,12 @@ int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
 #define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->as_entity)
 #define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->as_entity)
 
-/** \brief Sets the "scheduling level" of entity \e entity to \e level. This
- * information is used by the Burst Scheduler.
+/** \brief Sets the "scheduling level" of entity \e entity to \e level, i.e.
+ * the depth (within the machine's topology) where it should be scheduled or
+ * burst. This information is used by the Burst Scheduler.
  */
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level);
+/** \brief Gets the "scheduling level" of entity \e. */
 int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 #define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->as_entity,level)

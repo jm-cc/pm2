@@ -249,10 +249,12 @@ int marcel_bubble_scheduleonthreadholder(marcel_bubble_t *bubble) {
 	return 0;
 }
 
+
+/** \brief Sets the "scheduling level" of entity \e entity to \e level, i.e.
+ * the depth (within the machine's topology) where it should be scheduled or
+ * burst. This information is used by the Burst Scheduler.
+ */
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level) {
-	/* FIXME: - comment on the purpose of the function, compare it to marcel_bubble_setinitlevel
-	 * which has a similar name and very different contents
-	 *        - explain why we do not set any init and/or sched holder here */
 #ifdef MA__LWPS
 	if (level>marcel_topo_nblevels-1)
 		level=marcel_topo_nblevels-1;
@@ -462,7 +464,12 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nb_natural_entities++;
 	entity->natural_holder = &bubble->as_holder;
-	/* FIXME: add a comment to explain why entities with a runqueue sched_holder are left out.
+	/* If an entity is already scheduled on some runqueue, we do not
+	 * reconsider that schedule, we only record the relation with the
+	 * bubble.
+	 *
+	 * TODO: maybe we could call the bubble scheduler to notify the
+	 * insertion in a bubble.
 	 */
 	 if (!entity->sched_holder || entity->sched_holder->type == MA_BUBBLE_HOLDER) {
 		ma_holder_t *sched_bubble = bubble->as_entity.sched_holder;
@@ -595,9 +602,8 @@ int ma_bubble_detach(marcel_bubble_t *b) {
 void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_holder_t *h;
 	LOG_IN();
-	/* FIXME: the comment below is confusing: why do we look for an initial runqueue in
-	 * the entity's sched_holder instead of its natural_holder? */
-	/* If no initial runqueue was specified, use the current one */
+	/* If no scheduling runqueue was initially specified, use the current
+	 * one */
 	if (!(h = (bubble->as_entity.sched_holder))) {
 		h = ma_task_sched_holder(MARCEL_SELF);
 		while (h->type == MA_BUBBLE_HOLDER) {

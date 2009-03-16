@@ -36,7 +36,7 @@
       * zero-length arrays, so we are out of luck and just disable the debug
       * option, to at least produce a program that does not always crash on
       * startup */
-#    warning Marcel's debug was enabled but it will not work on Darwin
+#    warning Marcel s debug was enabled but it will not work on Darwin
 #  else
 TBX_SECTION(".ma.debug.start") TBX_ALIGN(4096)	const int __ma_debug_start[0]={};
 TBX_SECTION(".ma.debug.var")			const int __ma_debug_var[0]={};

@@ -66,15 +66,17 @@ enum marcel_entity {
 #depend "marcel_barrier.h[types]"
 #depend "marcel_stats.h[marcel_types]"
 
-/** Holder information */
+/** \brief Virtual class of an entity holder. An \e holder is a container
+ * dedicated to contain \e entities of type ::ma_entity.  Examples of holder
+ * subclasses include runqueues (::ma_runqueue) and bubbles (::marcel_bubble). */
 struct ma_holder {
-	/** \brief Type of holder */
+	/** \brief Dynamic type of the effective holder subclass. */
 	enum marcel_holder type;
 	/** \brief Lock of holder */
 	ma_spinlock_t lock;
 	/** \brief List of entities running or ready to run in this holder */
 	struct list_head ready_entities;
-	/** \brief Number of entities in the list above */
+	/** \brief Number of entities in the ma_holder::ready_entities list above */
 	unsigned long nb_ready_entities;
 
 	/** \brief Name of the holder */
@@ -92,7 +94,7 @@ typedef struct ma_holder ma_holder_t;
 
 #section marcel_macros
 #ifdef MA__BUBBLES
-/** \brief Returns type of holder \e h */
+/** \brief Returns ::marcel_holder type of holder \e h */
 enum marcel_holder ma_holder_type(ma_holder_t *h);
 #define ma_holder_type(h) ((h)->type)
 #else
@@ -153,7 +155,9 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
-/**
+/** \brief Virtual class of a holder entity. An \e entity is a containee of a \e holder (::ma_holder).
+ * Examples of entity subclasses include tasks (::marcel_task) and bubbles (::marcel_bubble).
+ *
  * An entity is (potentially):
  * - held in some natural, application-structure-dependent, holder
  *   (::natural_holder)

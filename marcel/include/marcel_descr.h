@@ -14,6 +14,13 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Descriptors
+ *
+ * \defgroup marcel_descriptors Marcel thread descriptors
+ *
+ * @{
+ */
 
 /****************************************************************/
 
@@ -83,6 +90,7 @@ enum ma_stack_kind_t {
 	MA_NO_STACK,
 };
 
+/** \brief Common class of task entities. A task may for instance be a thread or a seed. */
 struct marcel_task {
 	/* =0 : preemption allowed, <0 : BUG */
 	int preempt_count;
@@ -339,3 +347,6 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 #define _TIF_POLLING_NRFLAG     (1<<TIF_POLLING_NRFLAG)
 #define _TIF_DEBUG_IN_PROGRESS  (1<<TIF_DEBUG_IN_PROGRESS)
 #define _TIF_BLOCK_HARDIRQ      (1<<TIF_BLOCK_HARDIRQ)
+
+/* @} */
+

@@ -28,8 +28,8 @@
  *
  * This is the user interface for manipulating bubbles.
  *
- * @{
  */
+/*@{*/
 
 #section types
 /** \brief Type of a bubble */
@@ -91,7 +91,7 @@ int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
  * burst. This information is used by the Burst Scheduler.
  */
 int marcel_entity_setschedlevel(marcel_entity_t *entity, int level);
-/** \brief Gets the "scheduling level" of entity \e. */
+/** \brief Gets the "scheduling level" of entity \e entity. */
 int marcel_entity_getschedlevel(__const marcel_entity_t *entity, int *level);
 
 #define marcel_bubble_setschedlevel(bubble,level) marcel_entity_setschedlevel(&(bubble)->as_entity,level)
@@ -170,7 +170,7 @@ void marcel_bubble_shake (void);
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
 
-/* @} */
+/*@}*/
 
 /**
  ******************************************************************************
@@ -179,8 +179,8 @@ int marcel_bubble_submit (marcel_bubble_t *b);
  *
  * This is the scheduler interface for manipulating bubbles.
  *
- * @{
  */
+/*@{*/
 
 #section marcel_variables
 /* \brief Whether an idle scheduler is running */
@@ -199,7 +199,7 @@ int ma_deactivate_idle_scheduler (void);
 int ma_idle_scheduler_is_running (void);
 
 /**
- * \brief Return the bubble scheduler class named \param name or \code NULL
+ * \brief Return the bubble scheduler class named \param name or \code NULL \endcode
  * if not found.  */
 extern const marcel_bubble_sched_class_t *
 marcel_lookup_bubble_scheduler_class(const char *name);
@@ -228,7 +228,7 @@ marcel_bubble_sched_instantiate(const marcel_bubble_sched_class_t *klass,
 	marcel_bubble_sched_t *scheduler);
 
 /**
- * \brief Return the bubble scheduler named \param name, or \code NULL if not
+ * \brief Return the bubble scheduler named \param name, or \code NULL \endcode if not
  * found.  */
 extern const marcel_bubble_sched_t *
 marcel_lookup_bubble_scheduler(const char *name);
@@ -240,7 +240,7 @@ marcel_lookup_bubble_scheduler(const char *name);
 #depend "marcel_sem.h[types]"
 #depend "marcel_sem.h[structures]"
 
-/** Structure of a bubble */
+/** \brief Structure of a bubble. */
 struct marcel_bubble {
 #ifdef MA__BUBBLES
 	/* garder en premier, pour que les conversions bubble / entity soient
@@ -590,4 +590,5 @@ static __tbx_inline__ tbx_bool_t marcel_bubble_is_preemptible(const marcel_bubbl
 #endif
 }
 
-/* @} */
+/*@}*/
+

@@ -199,20 +199,20 @@ int ma_deactivate_idle_scheduler (void);
 int ma_idle_scheduler_is_running (void);
 
 /**
- * \brief Return the bubble scheduler class named \param name or \code NULL \endcode
+ * \brief Return the bubble scheduler class named \param name or \p NULL
  * if not found.  */
 extern const marcel_bubble_sched_class_t *
 marcel_lookup_bubble_scheduler_class(const char *name);
 
 /**
- * \brief Return the size of an instance of \param klass.  */
+ * \brief Return the size of an instance of \param klass .  */
 static __tbx_inline__ size_t
 marcel_bubble_sched_instance_size(const marcel_bubble_sched_class_t *klass) {
 	return klass->instance_size;
 }
 
 /**
- * \brief Return the name of \param klass.  */
+ * \brief Return the name of \param klass .  */
 static __tbx_inline__ const char *
 marcel_bubble_sched_class_name(const marcel_bubble_sched_class_t *klass) {
 	return klass->name;
@@ -220,7 +220,7 @@ marcel_bubble_sched_class_name(const marcel_bubble_sched_class_t *klass) {
 
 
 /**
- * \brief Initialize \param scheduler as an instance of \param klass.  This
+ * \brief Initialize \param scheduler as an instance of \param klass .  This
  * assumes \param scheduler points to a memory region at least as large as
  * specified by marcel_bubble_sched_instance_size().  */
 extern int
@@ -228,7 +228,7 @@ marcel_bubble_sched_instantiate(const marcel_bubble_sched_class_t *klass,
 	marcel_bubble_sched_t *scheduler);
 
 /**
- * \brief Return the bubble scheduler named \param name, or \code NULL \endcode if not
+ * \brief Return the bubble scheduler named \param name or \p NULL if not
  * found.  */
 extern const marcel_bubble_sched_t *
 marcel_lookup_bubble_scheduler(const char *name);

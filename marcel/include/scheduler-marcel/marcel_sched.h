@@ -448,17 +448,18 @@ void *marcel_sched_seed_runner(void *arg);
 #section macros
 /* ==== SMP scheduling policies ==== */
 
+/** \brief Reserved code for an invalid scheduling policy */
 #define MARCEL_SCHED_INVALID	-1
-/** Creates the thread on the global runqueue */
+/** \brief Creates the thread on the global runqueue */
 #define MARCEL_SCHED_SHARED      0
-/** Creates the thread on another LWP (the next one, usually) */
+/** \brief Creates the thread on another LWP (the next one, usually) */
 #define MARCEL_SCHED_OTHER       1
-/** Creates the thread on a non-loaded LWP or the same LWP */
+/** \brief Creates the thread on a non-loaded LWP or the same LWP */
 #define MARCEL_SCHED_AFFINITY    2
-/** Creates the thread on the least loaded LWP */
+/** \brief Creates the thread on the least loaded LWP */
 #define MARCEL_SCHED_BALANCE     3
+/** \brief Number of available scheduling policies */
 #define __MARCEL_SCHED_AVAILABLE 4
-
 #section types
 #depend "marcel_threads.h[types]"
 typedef unsigned (*marcel_schedpolicy_func_t)(marcel_t pid,

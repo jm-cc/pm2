@@ -19,7 +19,8 @@
  *
  * \defgroup marcel_holders Marcel holders
  *
- * Holders (runqueues or bubbles) contain entities (threads or bubbles).
+ * Holders (runqueues [::ma_runqueue] or bubbles [::marcel_bubble]) contain
+ * entities (tasks [::marcel_task] or bubbles [::marcel_bubble]).
  * They must be locked before adding/removing entities.
  *
  * Locking convention is top-down, i.e. holder then holdee: the runqueue, then
@@ -40,10 +41,10 @@
 #section types
 /** \brief Holder types: runqueue or bubble */
 enum marcel_holder {
-	/** \brief holder */
+	/** \brief runqueue [::ma_runqueue] type holder. */
 	MA_RUNQUEUE_HOLDER,
 #ifdef MA__BUBBLES
-	/** \brief bubble */
+	/** \brief bubble [::marcel_bubble] type holder. */
 	MA_BUBBLE_HOLDER,
 #endif
 };
@@ -51,12 +52,12 @@ enum marcel_holder {
 /** \brief Entity types: bubble or thread */
 enum marcel_entity {
 #ifdef MA__BUBBLES
-	/** \brief bubble */
+	/** \brief bubble [::marcel_bubble] type entity. */
 	MA_BUBBLE_ENTITY,
 #endif
-	/** \brief thread */
+	/** \brief thread type entity (task [::marcel_task] subtype). */
 	MA_THREAD_ENTITY,
-	/** \brief thread seed */
+	/** \brief thread seed (task [::marcel_task] subtype)*/
 	MA_THREAD_SEED_ENTITY,
 };
 
@@ -89,12 +90,13 @@ struct ma_holder {
 };
 
 #section types
-/* \brief Holder type */
+/* \brief Holder type wrapper. */
 typedef struct ma_holder ma_holder_t;
 
 #section marcel_macros
 #ifdef MA__BUBBLES
-/** \brief Returns ::marcel_holder type of holder \e h */
+/** \brief Get effective dynamic type of \e h.
+ * Returns ::marcel_holder type of holder \e h */
 enum marcel_holder ma_holder_type(ma_holder_t *h);
 #define ma_holder_type(h) ((h)->type)
 #else
@@ -102,6 +104,7 @@ enum marcel_holder ma_holder_type(ma_holder_t *h);
 #endif
 
 #section marcel_macros
+/** \brief Static initializer for ::ma_holder structures. */
 #define MA_HOLDER_INITIALIZER(h, t) { \
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
@@ -112,6 +115,7 @@ enum marcel_holder ma_holder_type(ma_holder_t *h);
 #section marcel_functions
 static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder type);
 #section marcel_inline
+/** \brief Dynamic initializer for ::ma_holder structures. */
 static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder type) {
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
@@ -121,22 +125,29 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 
 #section marcel_functions
 #ifdef MA__BUBBLES
-/** \brief Converts ma_holder_t *h into marcel_bubble_t * (assumes that \e h is a bubble) */
+/** \brief Cast virtual class ::ma_holder \e h into subtype ::marcel_bubble.
+ * \attention Semantics assumes that \e h dynamic type is a bubble. 
+ * Programmer should not assume that returned pointer is equal to \e h. */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 #else
 #define ma_bubble_holder(h) NULL
 #endif
-/** \brief Converts ma_holder_t *h into ma_runqueue_t * (assumes that \e h is a runqueue) */
+/** \brief Cast virtual class ::ma_holder \e h into subtype ::ma_runqueue.
+ * \attention Semantics assumes that \e h dynamic type is a runqueue. 
+ * Programmer should not assume that returned pointer is equal to \e h. */
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
-/** \brief Converts marcel_bubble_t *b into ma_holder_t * */
+/** \brief Cast subtype ::marcel_bubble \e b into virtual class ::ma_holder.
+ * \attention Programmer should not assume that returned pointer is equal to \e b. */
 ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 #define ma_holder_bubble(b) (&(b)->as_holder)
-/** \brief Converts ma_runqueue_t *b into ma_holder_t * */
+/** \brief Cast subtype ::ma_runqueue \e rq into virtual class ::ma_holder.
+ * \attention Programmer should not assume that returned pointer is equal to \e rq. */
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->as_holder)
 
 #ifdef MA__NUMA_MEMORY
-/* \brief Find the number of the numa node where the entity is */ 
+/* \brief Get the number of the numa node where the entity is.
+ * \return a node number */ 
 int ma_node_entity(marcel_entity_t *entity);
 #endif
 
@@ -160,23 +171,25 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  *
  * An entity is (potentially):
  * - held in some natural, application-structure-dependent, holder
- *   (::natural_holder)
- * - put on some application-state-dependent scheduling holder (::sched_holder)
- *   by bubble scheduler algorithms, onto which it should migrate as soon as
- *   _possible_ (but not necessarily immediately) if it is not already runnint
+ *   (#natural_holder)
+ * - put on some application-state-dependent scheduling holder (#sched_holder)
+ *   by bubble scheduler algorithms, indicating a target onto which the entity 
+ *   should migrate as soon as
+ *   _possible_ (but not necessarily immediately) if it is not already running
  *   there
- * - queued or running on some ready holder (::ready_holder).
- * That is, the sched_holder and the ready_holder work as a dampening team in a
- * way similar to double buffering schemes where the ready_holder represents the
- * last instantiated scheduling decision while the sched_holder represents the
+ * - queued or running on some ready holder (#ready_holder).
+ *
+ * That is, the #sched_holder and the #ready_holder work as a dampening team in a
+ * way similar to double buffering schemes where the #ready_holder represents the
+ * last instantiated scheduling decision while the #sched_holder represents the
  * upcoming scheduling decision that the scheduling algorithm is currently busy
  * figuring out.
  *
- * ::ready_holder_data is NULL when the entity is currently running. Else, it was
- * preempted and put in ::cached_entities_item.
+ * If #ready_holder_data is \p NULL then the entity is currently running. Otherwise, it is 
+ * currently preempted out and can be found in #cached_entities_item.
  */
 struct ma_entity {
-	/** \brief Entity type */
+	/** \brief Dynamic type of the effective entity subclass. */
 	enum marcel_entity type;
 	/** \brief Natural holder, i.e. the one that the programmer hinted out of the application structure
 	 * (the holding bubble, typically). */
@@ -188,29 +201,36 @@ struct ma_entity {
 	/** \brief Ready holder, i.e. the transient holder on which the entity is currently running or
 	 * queued as eligible for running once its turn comes. */
 	ma_holder_t *ready_holder;
-	/** \brief Data for the running holder */
+	/** \brief Data for the running holder. If the ma_entity#ready_holder is a runqueue \e and if the entity
+	 * is \e not running, then the field is pointer to the runqueue's priority queue in which the entity
+	 * is currently enqueued */
 	void *ready_holder_data;
-	/** \brief List link of ready entities, either linked to bubble's cached entities or runqueue's array of queues*/
+	/** \brief Item linker to the list of cached/enqueued entities sorted for schedule in this holder.
+	 * The list is either marcel_bubble#cached_entities if the
+	 * ma_entity#ready_holder is a bubble or ma_runqueue#active if the holder is
+	 * a runqueue. */
 	struct list_head cached_entities_item;
-	/** \brief scheduling policy */
+	/** \brief Scheduling policy code (see #__MARCEL_SCHED_AVAILABLE). */
 	int sched_policy;
-	/** \brief priority */
+	/** \brief Current priority given to the entity. */
 	int prio;
-	/** \brief remaining time slice */
+	/** \brief Remaining time slice until the entity gets preempted out. */
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
-	/** \brief List link of entities held in the containing bubble */
+	/** \brief Item linker to the list of natural entities
+	 * (marcel_bubble#natural_entities)  in the entity's natural holding bubble. */
 	struct list_head natural_entities_item;
 #endif
-	/** \brief List of entities placed for schedule in this holder */
+	/** \brief Item linker to the cumulative list of ready and running entities
+	 * (ma_holder#ready_entities) in the entity's ma_entity#ready_holder. */
 	struct list_head ready_entities_item;
 
 #ifdef MA__LWPS
-	/** \brief Nesting level */
+	/** \brief Depth of the (direct or indirect) runqueue onto which the entity is currently scheduled. */
 	int sched_level;
 #endif
 
-	/** \brief Name of the entity */
+	/** \brief Name of the entity, for debugging purpose. */
 	char name[MARCEL_MAXNAMESIZE];
 
 #ifdef MARCEL_STATS_ENABLED
@@ -219,20 +239,20 @@ struct ma_entity {
 #endif /* MARCEL_STATS_ENABLED */
 
 #ifdef MARCEL_MAMI_ENABLED
-	/** \brief List of attached memory areas */
+	/** \brief List of memory areas attached to the entity.*/
 	struct list_head memory_areas;
-	/** \brief Lock for ::memory_areas */
+	/** \brief Lock for serializing access to ma_entity#memory_areas */
 	ma_spinlock_t memory_areas_lock;
 
 #endif /* MARCEL_MAMI_ENABLED */
 
 #ifdef MA__NUMA_MEMORY
-	/* heap allocator */
+	/** \brief Back pointer to the NUMA heap allocator used to allocated this object */
 	ma_heap_t *heap;
 #endif /* MA__NUMA_MEMORY */
 
 #ifdef MA__BUBBLES
-	/** \brief General-purpose list link for bubble schedulers */
+	/** \brief General-purpose list item linker for bubble schedulers */
 	struct list_head next;
 #endif
 };

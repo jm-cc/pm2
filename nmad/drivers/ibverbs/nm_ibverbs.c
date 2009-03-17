@@ -26,6 +26,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
 
 #include <nm_private.h>
 
@@ -756,19 +759,34 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   listen(p_ibverbs_drv->server_sock, 255);
 	
   /* driver url encoding */
-  char hostname[256];
-  rc = gethostname(hostname, 256);
-  const struct hostent*he = gethostbyname(hostname);
-  if(!he) {
-    fprintf(stderr, "Infiniband: cannot get local address\n");
-    err = -NM_EUNREACH;
-    goto out;
-  }
-  
-  char s_url[16];
-  snprintf(s_url, 16, "%08x%04x", htonl(((struct in_addr*)he->h_addr)->s_addr), addr.sin_port);
-  p_ibverbs_drv->url = tbx_strdup(s_url);
-  
+
+  struct ifaddrs*ifa_list = NULL;
+  rc = getifaddrs(&ifa_list);
+  if(rc == 0)
+    {
+      struct ifaddrs*i;
+      for(i = ifa_list; i != NULL; i = i->ifa_next)
+	{
+	  if (i->ifa_addr && i->ifa_addr->sa_family == AF_INET)
+	    {
+	      struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
+	      if(!(i->ifa_flags & IFF_LOOPBACK))
+		{
+		  char s_url[16];
+		  snprintf(s_url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr.sin_port);
+		  p_ibverbs_drv->url = tbx_strdup(s_url);
+		  break;
+		}
+	    }
+	}
+    }
+  else
+    {
+      fprintf(stderr, "Infiniband: cannot get local address\n");
+      err = -NM_EUNREACH;
+      goto out;
+     }
+
   /* IB capabilities */
   p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
   p_ibverbs_drv->ib_caps.max_qp_wr     = device_attr.max_qp_wr;

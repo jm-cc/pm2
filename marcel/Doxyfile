@@ -477,6 +477,7 @@ INPUT                  = \
                          ../marcel/include/marcel_heap_alloc.h \
                          ../marcel/include/marcel_heap_numa_alloc.h \
                          ../marcel/include/marcel_memory.h \
+                         ../marcel/include/marcel_attr.h \
                          ../marcel/include/marcel_descr.h
 
 # This tag can be used to specify the character encoding of the source files that

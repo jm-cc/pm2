@@ -70,7 +70,9 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #undef __need_res_state
 #endif
 
-/* Context info for read write locks. The marcel_rwlock_info structure
+/** \brief Context info for read write locks.
+
+   The marcel_rwlock_info structure
    is information about a lock that has been read-locked by the thread
    in whose list this structure appears. The marcel_rwlock_context
    is embedded in the thread context and contains a pointer to the
@@ -92,48 +94,92 @@ enum ma_stack_kind_t {
 
 /** \brief Common class of task entities. A task may for instance be a thread or a seed. */
 struct marcel_task {
-	/* =0 : preemption allowed, <0 : BUG */
+	/** \brief Preemption depth counter.
+	 *
+	 * - Value of \p 0 means preemption allowed
+	 * - Value \p <0 is not allowed and indicates a bug */
 	int preempt_count;
-	/* Idem, but just for timer preemption */
+
+	/** \brief Timer preemption depth counter.
+	 *
+	 * - Value of \p 0 means preemption allowed
+	 * - Value \p <0 is not allowed and indicates a bug */
 	int not_preemptible;
-	/* Données relatives au scheduler */
-	struct marcel_lwp *lwp; /* LWP sur lequel s'exécute la tâche */
-	marcel_vpset_t vpset; /* Constraints on the VPs eligible for running the task */
-	unsigned int state; /* État du thread */
+
+	/* Scheduler related data */
+
+	/** \brief LWP onto which the thread is running. */
+	struct marcel_lwp *lwp;
+
+	/** \brief Set of VP bits indicating on which VP(s) the thread is currently allowed to be scheduled. */
+	marcel_vpset_t vpset;
+
+	/** \brief Thread state code. */
+	unsigned int state;
+
+	/** \brief Entity virtual class. */
 	struct ma_entity as_entity;
 #ifdef MA__BUBBLES
-	/* bubble where we automatically put the children of this task */
+	/** \brief Bubble where children of this thread are automatically put */
 	marcel_bubble_t bubble;
 #endif
-	/* Changements de contexte (sauvegarde état) */
+	/** \brief Dedicated space for saving thread current context on context swiches. */
 	marcel_ctx_t ctx_yield, ctx_restart;
 
-	/* utilisé pour marquer les task idle, upcall, idle, ... */
+	/** \brief Thread state set of flags. 
+	 *
+	 * TODO: indicate valid flags */
 	volatile unsigned long flags;
-	/* Pour la création des threads */
-	marcel_t child, father;
+
+	/** \brief Pointer to created child during thread creation. */
+	marcel_t child;
+
+	/** \brief Pointer to created child during thread creation. */
+	marcel_t father;
+
+	/** \brief User function to call as the main thread job. */
 	marcel_func_t f_to_call;
+
+	/** \brief User arg to pass the the user function marcel_task::f_to_call. */
 	any_t arg;
 
 	//marcel_attr_t *shared_attr;
+	
+	/** \brief Pointer to the seed that a seed runner thread is currently running. */
 	marcel_t cur_thread_seed;
+
+	/** \brief Pointer to the seed runner thread that currently runs the seed. */
 	marcel_t cur_thread_seed_runner;
 
 	/* Gestion de la terminaison */
+	/** \brief Flag indicating whether the thread is currently detached (set) or joignable (unset). */
 	tbx_bool_t detached;
+	
+	/** \brief Semaphore for synchronizing a thread currently attempting to join this thread. */
 	marcel_sem_t client;
+
+	/** \brief The user return value of the completed thread. */
 	any_t ret_val; /* exit/join/cancel */
 
-	/* Timer pour ma_schedule_timeout */
+	/** \brief Timer for use in ma_schedule_timeout. */
 	struct ma_timer_list schedule_timeout_timer;
 
-	/* Pile */
+	/** \brief Base of the thread stack. */
 	any_t stack_base;
+	
+	/** \brief Code indicating how the thread stack memory block was allocated. */
 	enum ma_stack_kind_t stack_kind;
+
+	/** \brief Initial stack pointer.
+	 *
+	 * TODO: give some details about the purpose and use of the field. */
 	long initial_sp;
 
-	/* Identification du thread */
+	/** \brief ID number of the thread. */
 	int id;
+
+	/** \brief Yet another number of the thread. 
+	 * TODO: document respective pupose and use of \p id field and \p number field */
 	int number;
 
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */

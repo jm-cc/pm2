@@ -14,6 +14,11 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Thread attributes
+ * \defgroup marcel_thread_attributes Marcel thread attributes
+ * @{
+ */
 #section types
 #include <sys/types.h> /* pour size_t */
 typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
@@ -25,30 +30,55 @@ typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 #depend "marcel_topology.h[types]"
 #depend "scheduler/marcel_sched.h[types]"
 
-/* Attributes for threads.  */
+/** \brief Thread attributes. */
 struct __marcel_attr_s {
 	/* begin of pthread, don't modify */
-	/* Scheduler parameters and priority.  */
+
+	/** \brief Runtime-modifiable thread parameter set. 
+	 * \attention POSIX compatibility requires this to be a dedicated sub-struct */
 	struct marcel_sched_param __schedparam;
+
+	/** \brief SMP scheduling policy code */
 	int __schedpolicy;
-	/* Various flags like detachstate, scope, etc. */
+
+	/** \brief State flags.
+	 *
+	 * Valid flags are 
+	 * - #MA_ATTR_FLAG_DETACHSTATE 
+	 * - #MA_ATTR_FLAG_INHERITSCHED 
+	 * - #MA_ATTR_FLAG_SCOPESYSTEM
+	 *
+	 */
 	int __flags;
+
+	/** \brief State flag code indicating whether the thread is detached (bit set) or joignable (bit unset). */
 #define MA_ATTR_FLAG_DETACHSTATE	0x0001
+
+	/** \brief State flag code indicating whether the thread inherit its father priority, scope and policy (bit set) or not (bit unset). */
 #define MA_ATTR_FLAG_INHERITSCHED	0x0002
+
+	/** \brief State flag code indicating whether the thread scheduling scope is system-wide (bit set) or process-wide (bit unset). */
 #define MA_ATTR_FLAG_SCOPESYSTEM	0x0004
-	/* Size of guard area.  */
+
+	/** \brief User-set size of stack memory block guard area.  */
 	size_t __guardsize;
-	/* Stack handling.  */
+
+	/** \brief User-set base address of the thread stack memory block.  */
 	void *__stackaddr;
+
+	/** \brief User-set length of the thread stack memory block.  */
 	size_t __stacksize;
-	/* Affinity map.  */
+
+	/** \brief Affinity map.  */
 	marcel_vpset_t *__cpuset;
 	size_t __cpusetsize; /* Unused */
 
 	/* marcel attributes */
+
 	/* unsigned stack_size; */
 	/* char *stack_base; */
 	/*int tbx_bool_t detached; */
+
 #ifdef MARCEL_USERSPACE_ENABLED
 	unsigned user_space;
 	/*tbx_bool_t */ int immediate_activation;
@@ -59,16 +89,36 @@ struct __marcel_attr_s {
 #ifdef MARCEL_DEVIATION_ENABLED
 	unsigned not_deviatable;
 #endif /* MARCEL_DEVIATION_ENABLED */
+
+	/** \brief Flag indicating whether the thread is not preemptible (set) or preemptible (unset). */
 	int not_preemptible;
+
 	/* int sched_policy; */
 	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
-	/* TODO: option de flavor */
+
+	/** \brief Set of VP bits indicating on which VP(s) the thread is allowed to be scheduled.
+	 * TODO: option de flavor */
 	marcel_vpset_t vpset;
+
+	/** \brief Machine topology level on which the thread should be scheduled. */
 	marcel_topo_level_t *topo_level;
+
+	/** \brief Flags. 
+	 * TODO: document allowed flags, merge with other thread flag set */
 	int flags;
+
+	/** \brief Name of the thread, for debugging purpose. */
 	char name[MARCEL_MAXNAMESIZE];
+
+	/** \brief ID number of the thread. */
 	int id;
+
+	/** \brief Scheduler-specific attributes of the thread.
+	 * TODO: merge the structure */
 	marcel_sched_attr_t sched;
+
+	/** \brief Flag indicating whether the thread to create should actually be a seed (set) or a plain thread (unset).
+	 * TODO: merge with other set of flags? */
 	int seed;
 };
 
@@ -292,3 +342,6 @@ int marcel_attr_gettopo_level(__const marcel_attr_t * __restrict attr, marcel_to
 #section marcel_variables
 extern marcel_attr_t marcel_attr_default;
 extern marcel_attr_t marcel_attr_destroyer;
+
+/* @} */
+

@@ -26,7 +26,7 @@ static const char *msg	= "hello, world";
 static char *buf = NULL;
 static size_t len = 0;
 
-static void request_notifier(nm_sr_event_t event, nm_sr_event_info_t*info)
+static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
 {
   if(event &  NM_SR_EVENT_RECV_COMPLETED)
     {

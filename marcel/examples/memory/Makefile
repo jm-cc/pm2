@@ -30,10 +30,10 @@ all: $(APPS_LIST)
 config: .config/blas .config/numa
 
 # Include the file that tells whether BLAS is available.
--include .config/blas
+-include .config/blas_$(FLAVOR)
 
 # Determine whether BLAS is available.
-.config/blas:
+.config/blas_$(FLAVOR):
 	@mkdir -p "$(dir $@)"
 	@echo "#include <cblas.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { int x=CblasRowMajor; return 0; }" >> ,,conftest.c
@@ -50,10 +50,10 @@ sgemm-ldflags := -lblas
 saxpy-ldflags := -lblas
 
 # Include the file that tells whether NUMA is available.
--include .config/numa
+-include .config/numa_$(FLAVOR)
 
 # Determine whether NUMA is available.
-.config/numa:
+.config/numa_$(FLAVOR):
 	@mkdir -p "$(dir $@)"
 	@echo "#include <numa.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { return 0; }" >> ,,conftest.c

@@ -253,7 +253,7 @@ static void timer_interrupt(int sig)
 #if !defined(MA_BOGUS_SIGINFO_CODE)
 		if (!info || info->si_code > 0)
 #elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
-		if (IS_FIRST_LWP(MA_LWP_SELF))
+		if (ma_is_first_lwp(MA_LWP_SELF))
 #else
 		if (sig == MARCEL_TIMER_SIGNAL)
 #endif

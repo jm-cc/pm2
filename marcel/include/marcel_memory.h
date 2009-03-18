@@ -116,8 +116,11 @@ struct marcel_memory_data_s {
   void **pageaddrs;
   /** \brief Number of pages holding the memory area */
   int nbpages;
+
   /** \brief Node where the memory area is located */
   int node;
+  int *nodes;
+  //marcel_memory_location_status_t location_status;
 
   /** \brief Tag indicating if the memory has been allocated by MAMI */
   int mami_allocated;
@@ -652,6 +655,23 @@ int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
                         int node,
                         marcel_memory_stats_t stat,
                         unsigned long *value);
+
+/**
+ *
+ */
+extern
+int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
+                             void *buffer,
+                             int *nodes,
+                             int nb_nodes);
+
+/**
+ *
+ */
+extern
+int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
+                         void *buffer,
+                         int node);
 
 #section common
 #endif /* MARCEL_MAMI_ENABLED */

@@ -378,6 +378,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   else {
     (*memory_data)->node = node;
   }
+  (*memory_data)->nodes = NULL;
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -396,6 +397,7 @@ void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
     tbx_slist_clear((*memory_data)->owners);
   }
   tbx_slist_free((*memory_data)->owners);
+  if ((*memory_data)->nodes != NULL) tfree((*memory_data)->nodes);
   tfree((*memory_data)->pageaddrs);
   tfree(*memory_data);
 }
@@ -1189,7 +1191,10 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
         data->status = MARCEL_MEMORY_INITIAL_STATUS;
       }
     }
-    *node = data->node;
+    if (data->nodes != NULL) /* Pages are located on different nodes */
+      *node = -1;
+    else
+      *node = data->node;
   }
   MAMI_LOG_OUT();
   return err;
@@ -1817,6 +1822,108 @@ int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
 
   MAMI_LOG_OUT();
   return err;
+}
+
+int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
+                             void *buffer,
+                             int *nodes,
+                             int nb_nodes) {
+  marcel_memory_data_t *data;
+  int err, i, j, nbpages, node;
+
+  MAMI_LOG_IN();
+
+  marcel_mutex_lock(&(memory_manager->lock));
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
+
+  if (err >= 0) {
+    // For each node, move the corresponding pages
+    void ***pageaddrs;
+    pageaddrs = tmalloc(nb_nodes * sizeof(void **));
+    for(node=0 ; node<nb_nodes ; node++) {
+      if (nodes[node] == data->node) continue;
+
+      // Set the page addresses which need to be moved
+      pageaddrs[nodes[node]] = tmalloc(nb_nodes * sizeof(void *));
+      nbpages=0;
+      for(j=0 ; j<data->nbpages ; j++) {
+        if (nodes[j%nb_nodes] == nodes[node]) {
+          mdebug_mami("Migrate page %d on node %d\n", j, nodes[node]);
+          pageaddrs[nodes[node]][nbpages] = buffer + (j*memory_manager->normalpagesize);
+          nbpages++;
+        }
+      }
+      // If there is some pages to be moved, move them
+      if (nbpages != 0) {
+        int *dests = tmalloc(nbpages * sizeof(int));
+        int *status = tmalloc(nbpages * sizeof(int));
+        for(j=0 ; j<nbpages ; j++) dests[j] = nodes[node];
+        err = ma_memory_move_pages(pageaddrs[nodes[node]], nbpages, dests, status, MPOL_MF_MOVE);
+        tfree(dests);
+        tfree(status);
+      }
+      tfree(pageaddrs[nodes[node]]);
+    }
+    tfree(pageaddrs);
+
+    // Update the data->nodes information
+    if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
+    for(i=0 ; i<data->nbpages ; i++) {
+      data->nodes[i] = nodes[i%nb_nodes];
+    }
+
+    // Check the pages have been properly moved
+    int *status = tmalloc(data->nbpages * sizeof(int));
+    err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
+    for(i=0 ; i<data->nbpages ; i++) {
+      if (status[i] != data->nodes[i]) {
+	marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], data->nodes[i]);
+      }
+    }
+  }
+
+  marcel_mutex_unlock(&(memory_manager->lock));
+  return err;
+  MAMI_LOG_OUT();
+}
+
+int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
+                         void *buffer,
+                         int node) {
+  marcel_memory_data_t *data;
+  int err;
+
+  MAMI_LOG_IN();
+
+  marcel_mutex_lock(&(memory_manager->lock));
+  err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
+
+  if (err >= 0) {
+    if (data->nodes) {
+      int i, dests[data->nbpages], status[data->nbpages];
+      int nbpages = 0;
+      void *pageaddrs[data->nbpages];
+
+      for(i=0 ; i<data->nbpages ; i++) {
+        dests[i] = node;
+        if (data->nodes[i] != node) {
+          pageaddrs[nbpages] = data->pageaddrs[i];
+          nbpages ++;
+        }
+      }
+
+      err = ma_memory_move_pages(pageaddrs, nbpages, dests, status, MPOL_MF_MOVE);
+      if (err >= 0) {
+        data->node = node;
+        tfree(data->nodes);
+        data->nodes = NULL;
+      }
+    }
+  }
+
+  marcel_mutex_unlock(&(memory_manager->lock));
+  return err;
+  MAMI_LOG_OUT();
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

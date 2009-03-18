@@ -169,7 +169,8 @@ extern int nm_sr_isend_generic(struct nm_core *p_core,
 			       nm_sr_transfer_type_t sending_type,
 			       const void *data, uint32_t len,
 			       tbx_bool_t is_completed,
-			       nm_sr_request_t *p_request);
+			       nm_sr_request_t *p_request,
+			       void*ref);
 
 /** Post a non blocking send request.
  *  @param p_core a pointer to the NM core object.
@@ -185,7 +186,16 @@ static inline int nm_sr_isend(nm_core_t p_core,
 			      const void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request, NULL);
+}
+
+static inline int nm_sr_isend_with_ref(nm_core_t p_core,
+				       nm_gate_t p_gate, nm_tag_t tag,
+				       const void *data, uint32_t len,
+				       nm_sr_request_t *p_request,
+				       void*ref)
+{
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request, ref);
 }
 
 static inline int nm_sr_isend_extended(nm_core_t p_core,
@@ -194,7 +204,7 @@ static inline int nm_sr_isend_extended(nm_core_t p_core,
 				       tbx_bool_t is_completed,
 				       nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_extended_transfer, data, len, is_completed, p_request);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_extended_transfer, data, len, is_completed, p_request, NULL);
 }
 
 
@@ -228,7 +238,7 @@ static inline int nm_sr_isend_iov(nm_core_t p_core,
 				  const struct iovec *iov, int nb_entries,
 				  nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, tbx_false, p_request);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, tbx_false, p_request, NULL);
 
 }
 
@@ -245,7 +255,7 @@ static inline int nm_sr_isend_datatype(nm_core_t p_core,
 				       const struct DLOOP_Segment *segp,
 				       nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, tbx_false, p_request);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, tbx_false, p_request, NULL);
 
 }
 
@@ -327,9 +337,9 @@ static inline int nm_sr_irecv_iov(nm_core_t p_core,
 }
 
 static inline int nm_sr_irecv_iov_with_ref(nm_core_t p_core,
-				    nm_gate_t p_gate, nm_tag_t tag,
-				    struct iovec *iov, int nb_entries,
-				    nm_sr_request_t *p_request, void *ref)
+					   nm_gate_t p_gate, nm_tag_t tag,
+					   struct iovec *iov, int nb_entries,
+					   nm_sr_request_t *p_request, void *ref)
 {
   return nm_sr_irecv_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, p_request, ref);
 }
@@ -344,10 +354,10 @@ static inline int nm_sr_irecv_datatype(nm_core_t p_core,
 
 
 static inline int nm_sr_irecv_datatype_with_ref(struct nm_core *p_core,
-				     nm_gate_t p_gate, nm_tag_t tag,
-				     struct DLOOP_Segment *segp,
-				     nm_sr_request_t *p_request,
-				     void *ref)
+						nm_gate_t p_gate, nm_tag_t tag,
+						struct DLOOP_Segment *segp,
+						nm_sr_request_t *p_request,
+						void *ref)
 {
   return nm_sr_irecv_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, p_request, ref);
 }
@@ -409,6 +419,11 @@ extern int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
  * @note Only nm_sr_recv*_with_ref functions (with ref != NULL) generate such an event.
  */
 extern int nm_sr_recv_success(nm_core_t p_core, nm_sr_request_t **out_req);
+
+/** Poll for any completed send request.
+ * @note Only nm_sr_isend*_with_ref functions (with ref != NULL) generate such an event.
+ */
+extern int nm_sr_send_success(nm_core_t p_core, nm_sr_request_t **out_req);
 
 /** Returns the received size of the message with the specified
  *  request.

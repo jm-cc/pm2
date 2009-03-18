@@ -27,13 +27,13 @@ int main(int argc, char**argv)
   const char msg[] = "hello, world";
   const size_t len = 1 + strlen(msg);
   char *buf = malloc(len);
-  
+  char *ref = "ref";
+      
   init(&argc, argv);
   
   if (is_server)
     {
       nm_sr_request_t request;
-      char *ref	= "ref";
       nm_sr_request_t*req2 = NULL;
       
       /* server
@@ -47,25 +47,38 @@ int main(int argc, char**argv)
 	}
       while(!req2);
       
-      char*ref2 = NULL;
+      printf("received buffer: %s\n", buf);
+
+      char*ref2;
+      nm_sr_get_ref(p_core, req2, (void**)&ref2);
+      printf("ref = %s; ref2 = %s\n", ref, ref2);
+
       size_t size = 0;
-      nm_sr_get_ref(p_core, req2, &ref2);
       nm_sr_get_size(p_core, req2, &size);
-      
-      printf("ref2 = %s\n", ref2);
       printf("size = %zu\n", size);
-      printf("buffer contents: %s\n", buf);
       
+      nm_tag_t tag = 0;
+      nm_sr_get_tag(p_core, req2, &tag);
+      printf("tag = %lu", (unsigned long)tag);
     }
   else
     {
       nm_sr_request_t request;
+      nm_sr_request_t*req2 = NULL;
       /* client
        */
       strcpy(buf, msg);
       
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend_with_ref(p_core, gate_id, 0, buf, len, &request, ref);
+      do
+	{
+	  nm_sr_send_success(p_core, &req2);
+	}
+      while(!req2);
+
+      char*ref2;
+      nm_sr_get_ref(p_core, req2, (void**)&ref2);
+      printf("ref = %s; ref2 = %s\n", ref, ref2);
     }
   
   nmad_exit();

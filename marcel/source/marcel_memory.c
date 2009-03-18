@@ -1191,10 +1191,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
         data->status = MARCEL_MEMORY_INITIAL_STATUS;
       }
     }
-    if (data->nodes != NULL) /* Pages are located on different nodes */
-      *node = -1;
-    else
-      *node = data->node;
+    *node = data->node;
   }
   MAMI_LOG_OUT();
   return err;
@@ -1871,6 +1868,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
     for(i=0 ; i<data->nbpages ; i++) {
       data->nodes[i] = nodes[i%nb_nodes];
     }
+    data->node = -1;
 
     // Check the pages have been properly moved
     int *status = tmalloc(data->nbpages * sizeof(int));
@@ -1884,8 +1882,8 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  return err;
   MAMI_LOG_OUT();
+  return err;
 }
 
 int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
@@ -1923,8 +1921,8 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  return err;
   MAMI_LOG_OUT();
+  return err;
 }
 
 #endif /* MARCEL_MAMI_ENABLED */

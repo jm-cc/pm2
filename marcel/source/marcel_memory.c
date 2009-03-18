@@ -1880,6 +1880,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
 	marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], data->nodes[i]);
       }
     }
+    tfree(status);
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));

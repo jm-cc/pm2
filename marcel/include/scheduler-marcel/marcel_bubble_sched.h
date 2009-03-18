@@ -24,7 +24,7 @@
  * user view
  */
 
-/** \defgroup marcel_bubble_user Bubble User Interface
+/** \defgroup marcel_bubble_user Bubbles - application programming interface
  *
  * This is the user interface for manipulating bubbles.
  *
@@ -175,7 +175,7 @@ int marcel_bubble_submit (marcel_bubble_t *b);
 /**
  ******************************************************************************
  * scheduler view
- * \defgroup marcel_bubble_sched Bubble Scheduler Interface
+ * \defgroup marcel_bubble_sched Bubbles - scheduler programming interface
  *
  * This is the scheduler interface for manipulating bubbles.
  *

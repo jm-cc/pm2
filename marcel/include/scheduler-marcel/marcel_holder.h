@@ -17,7 +17,7 @@
 /** \file
  * \brief Holders
  *
- * \defgroup marcel_holders Marcel holders
+ * \defgroup marcel_holders Entities and holders
  *
  * Holders (runqueues [::ma_runqueue] or bubbles [::marcel_bubble]) contain
  * entities (tasks [::marcel_task] or bubbles [::marcel_bubble]).

@@ -16,7 +16,7 @@
 
 /** \file
  * \brief Thread attributes
- * \defgroup marcel_thread_attributes Marcel thread attributes
+ * \defgroup marcel_thread_attributes Thread attributes
  * @{
  */
 #section types

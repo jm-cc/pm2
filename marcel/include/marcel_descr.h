@@ -17,7 +17,7 @@
 /** \file
  * \brief Descriptors
  *
- * \defgroup marcel_descriptors Marcel thread descriptors
+ * \defgroup marcel_descriptors Thread descriptors
  *
  * @{
  */

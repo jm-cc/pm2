@@ -41,7 +41,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_TOTAL, &memtotal3);
   marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_FREE, &memfree3);
 
-  if (memfree1 == memfree3 && (memfree1-memfree2) == memory_manager.normalpagesize) {
+  if (memfree1 == memfree3 && (memfree1-memfree2) == (memory_manager.normalpagesize/1024)) {
     marcel_printf("Success\n");
   }
   else {

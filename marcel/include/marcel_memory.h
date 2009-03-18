@@ -117,10 +117,10 @@ struct marcel_memory_data_s {
   /** \brief Number of pages holding the memory area */
   int nbpages;
 
-  /** \brief Node where the memory area is located */
+  /** \brief Node where the memory area is located. Meaningful when all memory allocated on the same node. Otherwise value is -1 */
   int node;
+  /** \brief Nodes where the memory area is located. Used when pages allocated on different nodes */
   int *nodes;
-  //marcel_memory_location_status_t location_status;
 
   /** \brief Tag indicating if the memory has been allocated by MAMI */
   int mami_allocated;
@@ -657,7 +657,9 @@ int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
                         unsigned long *value);
 
 /**
- *
+ * Distributes pages of the given memory on the given set of nodes
+ * using a round robin policy. The first page is migrated to the first
+ * node, the second page to the second node, ....
  */
 extern
 int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
@@ -666,7 +668,8 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
                              int nb_nodes);
 
 /**
- *
+ * Inverse operation of marcel_memory_distribute. All the pages of the
+ * given memory are moved back to the given node.
  */
 extern
 int marcel_memory_gather(marcel_memory_manager_t *memory_manager,

@@ -460,6 +460,33 @@ assert_preloaded (void) {
 
 #endif
 
+#ifdef PUK
+
+/* Produce the body of `execv*' function FUNCTION, passing ACTUAL_PARAMS to
+ * the underlying function.  This disables Marcel's timer before calling
+ * FUNCTION such that the new program doesn't get SIGALRM signals.  */
+#define EXECV_BODY(FUNCTION, ACTUAL_PARAMS)			\
+{																								\
+	int ret;																			\
+																								\
+	marcel_sig_stop_itimer();											\
+  ret = PUK_ABI_REAL(FUNCTION) ACTUAL_PARAMS;		\
+	marcel_sig_reset_timer();											\
+																								\
+	return ret;																		\
+}
+
+static int ma_execve(const char *name, char *const argv[], char *const envp[])
+	EXECV_BODY(execve, (name, argv, envp))
+
+static int ma_execv(const char *name, char *const argv[])
+	EXECV_BODY(execv, (name, argv))
+
+static int ma_execvp(const char *name, char *const argv[])
+	EXECV_BODY(execvp, (name, argv))
+
+#endif
+
 // Does not start any internal threads.
 // When completed, fork calls are still allowed.
 void marcel_init_data(int *argc, char *argv[])
@@ -494,6 +521,10 @@ void marcel_init_data(int *argc, char *argv[])
 
 	puk_abi_set_errno_handler(&marcel___errno_location);
 	puk_abi_seterrno(0);
+
+	puk_abi_set_virtual(execve, ma_execve);
+	puk_abi_set_virtual(execvp, ma_execv);
+	puk_abi_set_virtual(execvp, ma_execvp);
 
 #ifdef MA__LIBPTHREAD
 	assert_preloaded ();

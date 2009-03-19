@@ -523,7 +523,7 @@ void marcel_init_data(int *argc, char *argv[])
 	puk_abi_seterrno(0);
 
 	puk_abi_set_virtual(execve, ma_execve);
-	puk_abi_set_virtual(execvp, ma_execv);
+	puk_abi_set_virtual(execv, ma_execv);
 	puk_abi_set_virtual(execvp, ma_execvp);
 
 #ifdef MA__LIBPTHREAD

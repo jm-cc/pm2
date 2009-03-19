@@ -692,6 +692,7 @@ extern const __ma_init_info_t ma_init_info_marcel_io_init;
 extern const __ma_init_info_t ma_init_info_sig_init;
 extern const __ma_init_info_t ma_init_info_marcel_sig_timer_notifier_register;
 #endif
+extern const __ma_init_info_t ma_init_info_fork_handling_init;
 extern const __ma_init_info_t ma_init_info_timer_start;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_finished;
 extern const __ma_init_info_t ma_init_info_marcel_lwp_notifier_register;
@@ -819,6 +820,7 @@ void marcel_init_section(int sec)
 #ifndef __MINGW32__
 			call_init_function(&ma_init_info_sig_init);
 #endif
+			call_init_function(&ma_init_info_fork_handling_init);
 			call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
 			call_init_function(&ma_init_info_softirq_init);
 			call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);

@@ -87,6 +87,10 @@ keys-pthread: LDFLAGS :=
 implicit-join-asleep-pthread-ldflags := -lpthread -ldl
 implicit-join-asleep-pthread: LDFLAGS :=
 
+pthread-abi-fork-ldflags := -lpthread -ldl
+pthread-abi-fork: LDFLAGS :=
+
+
 hello: CC=g++
 
 # Applications dont le nom n'a pas de .c correspondant

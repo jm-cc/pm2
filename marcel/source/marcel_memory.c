@@ -1851,7 +1851,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
     for(i=0 ; i<data->nbpages ; i++) {
       if ((data->node == -1 && data->nodes[i] != nodes[i%nb_nodes]) ||
           (data->node != -1 && data->node != nodes[i%nb_nodes])) {
-        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->nodes[i], nodes[i%nb_nodes]);
+        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->node != -1 ? data->node : data->nodes[i], nodes[i%nb_nodes]);
         pageaddrs[nbpages] = buffer + (i*memory_manager->normalpagesize);
         dests[nbpages] = nodes[i%nb_nodes];
         nbpages ++;

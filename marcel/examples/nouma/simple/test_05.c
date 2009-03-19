@@ -155,22 +155,22 @@ int main(int argc, char *argv[]) {
 	marcel_bubble_init(&b9);
 
 	fprintf(stderr,"bulle mere %p\n",&marcel_root_bubble);
-	marcel_bubble_insertbubble(&b0, &b1);
-	marcel_bubble_insertbubble(&b0, &b2);
+	marcel_bubble_insertentity(&b0, &b1.as_entity);
+	marcel_bubble_insertentity(&b0, &b2.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b1,&b2,&b0);
-	marcel_bubble_insertbubble(&b1, &b3);
-	marcel_bubble_insertbubble(&b1, &b4);
+	marcel_bubble_insertentity(&b1, &b3.as_entity);
+	marcel_bubble_insertentity(&b1, &b4.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b3,&b4,&b1);
 
 	fprintf(stderr,"bulle mere %p\n",&b5);
-	marcel_bubble_insertbubble(&b5, &b6);
-	marcel_bubble_insertbubble(&b5, &b7);
+	marcel_bubble_insertentity(&b5, &b6.as_entity);
+	marcel_bubble_insertentity(&b5, &b7.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b6,&b7,&b5);
-	marcel_bubble_insertbubble(&b6, &b8);
-	marcel_bubble_insertbubble(&b6, &b9);
+	marcel_bubble_insertentity(&b6, &b8.as_entity);
+	marcel_bubble_insertentity(&b6, &b9.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b8,&b9,&b6);
 
-	marcel_bubble_insertbubble(&b2, &b5);
+	marcel_bubble_insertentity(&b2, &b5.as_entity);
 	fprintf(stderr,"%p dans %p\n",&b5,&b2);
 
    /* lancement des threads pour allouer */

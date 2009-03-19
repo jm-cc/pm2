@@ -525,9 +525,14 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	/* TODO: dans le cas d'un thread, il faudrait aussi le déplacer dans son nouveau sched_holder s'il n'en avait pas déjà un, non ? */
 
 	if (entity->type == MA_THREAD_ENTITY) {
+		/* If the entity is a thread we, may need to move its marcel_task#default_children_bubble to
+		 * the new location too... */
 		marcel_bubble_t *children_bubble = &ma_task_entity(entity)->default_children_bubble;
-		if (children_bubble->as_entity.natural_holder)
+		if (children_bubble->as_entity.natural_holder) {
+			/* However, we do that only if the default_children_bubble is actually in use,
+			 * which is implicitely indicated by its \p as_entity.natural_holder field being not \p NULL */
 			marcel_bubble_insertentity(bubble,ma_entity_bubble(children_bubble));
+		}
 	}
 	LOG_RETURN(0);
 }

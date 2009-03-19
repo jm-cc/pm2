@@ -78,8 +78,8 @@ static any_t sum(any_t arg)
     marcel_bubble_init(&b2);
     marcel_bubble_setschedlevel(&b1,j->level);
     marcel_bubble_setschedlevel(&b2,j->level);
-    marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b1);
-    marcel_bubble_insertbubble(marcel_bubble_holding_task(marcel_self()),&b2);
+    marcel_bubble_insertentity(marcel_bubble_holding_task(marcel_self()),&b1.as_entity);
+    marcel_bubble_insertentity(marcel_bubble_holding_task(marcel_self()),&b2.as_entity);
     marcel_attr_setprio(&commattr, MA_BATCH_PRIO);
     marcel_attr_setnaturalbubble(&commattr, &b1);
     marcel_create(NULL, &commattr, sum, (any_t)&j1);

@@ -345,26 +345,26 @@ int main(int argc, char *argv[])
 	marcel_bubble_init(&b51);
 
 
-	marcel_bubble_insertbubble(&b0, &b1);
-	marcel_bubble_insertbubble(&b0, &b2);
-	marcel_bubble_insertbubble(&b0, &b3);
-	marcel_bubble_insertbubble(&b0, &b4);
-	marcel_bubble_insertbubble(&b0, &b5);
+	marcel_bubble_insertentity(&b0, &b1.as_entity);
+	marcel_bubble_insertentity(&b0, &b2.as_entity);
+	marcel_bubble_insertentity(&b0, &b3.as_entity);
+	marcel_bubble_insertentity(&b0, &b4.as_entity);
+	marcel_bubble_insertentity(&b0, &b5.as_entity);
 
-	marcel_bubble_insertbubble(&b1, &b11);
-	marcel_bubble_insertbubble(&b1, &b12);
-	marcel_bubble_insertbubble(&b1, &b13);
+	marcel_bubble_insertentity(&b1, &b11.as_entity);
+	marcel_bubble_insertentity(&b1, &b12.as_entity);
+	marcel_bubble_insertentity(&b1, &b13.as_entity);
 
-	marcel_bubble_insertbubble(&b2, &b21);
-	marcel_bubble_insertbubble(&b2, &b22);
+	marcel_bubble_insertentity(&b2, &b21.as_entity);
+	marcel_bubble_insertentity(&b2, &b22.as_entity);
 
-	marcel_bubble_insertbubble(&b3, &b31);
-	marcel_bubble_insertbubble(&b3, &b32);
+	marcel_bubble_insertentity(&b3, &b31.as_entity);
+	marcel_bubble_insertentity(&b3, &b32.as_entity);
 
-	marcel_bubble_insertbubble(&b4, &b41);
-	marcel_bubble_insertbubble(&b4, &b42);
+	marcel_bubble_insertentity(&b4, &b41.as_entity);
+	marcel_bubble_insertentity(&b4, &b42.as_entity);
 
-	marcel_bubble_insertbubble(&b5, &b51);
+	marcel_bubble_insertentity(&b5, &b51.as_entity);
 
    /* lancement des threads pour allouer */
    {

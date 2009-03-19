@@ -115,9 +115,9 @@ main (int argc, char *argv[])
   for (team = 0; team < NB_BUBBLES; team++) {
     marcel_bubble_init (bubbles + team);
     marcel_bubble_setid (bubbles + team, team);
-    marcel_bubble_insertbubble (&marcel_root_bubble, bubbles + team);
+    marcel_bubble_insertentity (&marcel_root_bubble, &(bubbles + team)->as_entity);
     if (team == 0)
-      marcel_bubble_inserttask (bubbles + team, marcel_self ());
+      marcel_bubble_insertentity (bubbles + team, &marcel_self ()->as_entity);
 
     marcel_attr_setnaturalbubble (&attr, bubbles + team);
 

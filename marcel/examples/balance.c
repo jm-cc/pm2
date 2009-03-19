@@ -234,7 +234,7 @@ int marcel_main(int argc, char *argv[]) {
 				marcel_bubble_setprio(b, MA_DEF_PRIO);
 				marcel_bubble_setschedlevel(b, j);
 				if (n)
-					marcel_bubble_insertbubble(&bubbles[(NWORKERS-1)*i+m+k/2], b);
+					marcel_bubble_insertentity(&bubbles[(NWORKERS-1)*i+m+k/2], &b->as_entity);
 			}
 			m = n;
 			n += 1<<j;

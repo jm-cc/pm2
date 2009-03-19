@@ -90,7 +90,7 @@ int marcel_main(int argc, char **argv)
     marcel_barrier_init(&barrier[i], NULL, (i+1)%THREADS);
 #endif
     marcel_bubble_init(&gang[i]);
-    marcel_bubble_insertbubble(&marcel_root_bubble, &gang[i]);
+    marcel_bubble_insertentity(&marcel_root_bubble, &gang[i].as_entity);
 #ifdef MARCEL_GANG_SCHEDULER
     marcel_bubble_scheduleonrq(&gang[i], &ma_gang_rq);
 #endif

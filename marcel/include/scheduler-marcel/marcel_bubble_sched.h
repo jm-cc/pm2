@@ -60,31 +60,13 @@ int marcel_bubble_destroy(marcel_bubble_t *bubble);
 /** \brief Sets an id for the bubble, useful for traces. */
 int marcel_bubble_setid(marcel_bubble_t *bubble, int id);
 
-/** Permanently bring the entity \e entity inside the bubble \e bubble by
+/** \brief Permanently bring the entity \e entity inside the bubble \e bubble by
  * setting its sched_holder and natural_holder accordingly. */
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
-/** Permanently bring the bubble \e little_bubble inside the bubble \e bubble by
- * setting its sched_holder and natural_holder accordingly. */
-int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
-/** Permanently bring the task \e task inside the bubble \e bubble by
- * setting its sched_holder and natural_holder accordingly. */
-int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
 
 /** \brief Removes entity \e entity from bubble \e bubble.
  * Put \e entity on \e bubble's holding runqueue as a fallback */
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
-/** \brief Removes bubble \e little_bubble from bubble \e bubble.
- * Put \e little_bubble on \e bubble's holding runqueue as a fallback  */
-int marcel_bubble_removebubble(marcel_bubble_t *bubble, marcel_bubble_t *little_bubble);
-/** \brief Removes thread \e task from bubble \e bubble.  
- *  Put \e task on \e bubble's holding runqueue as a fallback */
-int marcel_bubble_removetask(marcel_bubble_t *bubble, marcel_task_t *task);
-
-#define marcel_bubble_insertbubble(bubble, littlebubble) marcel_bubble_insertentity(bubble, &(littlebubble)->as_entity)
-#define marcel_bubble_inserttask(bubble, task) marcel_bubble_insertentity(bubble, &(task)->as_entity)
-
-#define marcel_bubble_removebubble(bubble, littlebubble) marcel_bubble_removeentity(bubble, &(littlebubble)->as_entity)
-#define marcel_bubble_removetask(bubble, task) marcel_bubble_removeentity(bubble, &(task)->as_entity)
 
 /** \brief Sets the "scheduling level" of entity \e entity to \e level, i.e.
  * the depth (within the machine's topology) where it should be scheduled or

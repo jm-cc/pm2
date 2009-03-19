@@ -127,11 +127,11 @@ int main(int argc, char *argv[]) {
 	marcel_bubble_init(&b4);
 
 	fprintf(stderr,"bulle mere %p\n",&marcel_root_bubble);
-	marcel_bubble_insertbubble(&b0, &b1);
-	marcel_bubble_insertbubble(&b0, &b2);
+	marcel_bubble_insertentity(&b0, &b1.as_entity);
+	marcel_bubble_insertentity(&b0, &b2.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b1,&b2,&b0);
-	marcel_bubble_insertbubble(&b1, &b3);
-	marcel_bubble_insertbubble(&b1, &b4);
+	marcel_bubble_insertentity(&b1, &b3.as_entity);
+	marcel_bubble_insertentity(&b1, &b4.as_entity);
 	fprintf(stderr,"%p et %p dans %p\n",&b3,&b4,&b1);
 
    /* lancement des threads pour allouer */

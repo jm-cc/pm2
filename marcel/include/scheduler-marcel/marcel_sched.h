@@ -251,7 +251,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 		if (h->type != MA_RUNQUEUE_HOLDER) {
 			marcel_bubble_t *bb = ma_bubble_holder(h);
 			b->as_entity.sched_level = bb->as_entity.sched_level + 1;
-			marcel_bubble_insertbubble(bb, b);
+			marcel_bubble_insertentity(bb, &b->as_entity);
 		}
 		if (b->as_entity.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
 			ma_runqueue_t *rq;

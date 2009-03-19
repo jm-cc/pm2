@@ -170,7 +170,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 							/* We must account for the main thread, thus we put it in the
 								 first bubble we create and we're left with fewer threads to
 								 create.  */
-							marcel_bubble_inserttask (bubble, marcel_self ());
+							marcel_bubble_insertentity (bubble, &marcel_self ()->as_entity);
 							thread_count -= 1;
 						}
 
@@ -197,7 +197,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 							if (child != NULL)
 								{
 									marcel_bubble_init (child);
-									marcel_bubble_insertbubble (bubble, child);
+									marcel_bubble_insertentity (bubble, &child->as_entity);
 
 									/* Recurse into CHILD.  */
 									populate_bubble_hierarchy (child, level_breadth + 1,
@@ -264,7 +264,7 @@ free_bubble_hierarchy (void)
 
 	/* Move the main thread to the root bubble so that we can safely join the
 		 other bubbles.  */
-	marcel_bubble_inserttask (&marcel_root_bubble, marcel_self ());
+	marcel_bubble_insertentity (&marcel_root_bubble, &marcel_self ()->as_entity);
 
 	/* Free the root bubble's children.  */
 	for_each_entity_held_in_bubble (entity, &marcel_root_bubble)

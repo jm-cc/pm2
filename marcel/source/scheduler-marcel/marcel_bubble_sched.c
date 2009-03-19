@@ -174,7 +174,7 @@ void marcel_bubble_shake (void) {
      function. */
   if (current_sched) {
     if (current_sched->shake) {
-      current_sched->shake (current_sched, &marcel_root_bubble);
+      current_sched->shake (current_sched);
     } else {
       /* Default behavior for shake (). */
       ma_bubble_move_top_and_submit (&marcel_root_bubble);

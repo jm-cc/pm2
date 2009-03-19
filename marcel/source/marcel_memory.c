@@ -355,8 +355,8 @@ void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager) {
 
 static
 void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
-                                void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages,
-				int mami_allocated,
+                                void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
+                                int protection, int with_huge_pages, int mami_allocated,
                                 marcel_memory_data_t **memory_data) {
   MAMI_ILOG_IN();
 
@@ -378,7 +378,11 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   else {
     (*memory_data)->node = node;
   }
-  (*memory_data)->nodes = NULL;
+  if (node != -1) (*memory_data)->nodes = NULL;
+  else {
+    (*memory_data)->nodes = tmalloc(nbpages * sizeof(int));
+    memcpy((*memory_data)->nodes, nodes, nbpages*sizeof(int));
+  }
 
   // Set the page addresses
   (*memory_data)->nbpages = nbpages;
@@ -429,7 +433,8 @@ void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager, marcel_memor
     // copy the value from the in-order predecessor to the original node
     ma_memory_clean_memory_data(&((*memory_tree)->data));
     ma_memory_init_memory_data(memory_manager, temp->data->pageaddrs, temp->data->nbpages, temp->data->size, temp->data->node,
-                               temp->data->protection, temp->data->with_huge_pages, temp->data->mami_allocated, &((*memory_tree)->data));
+                               temp->data->nodes, temp->data->protection, temp->data->with_huge_pages, temp->data->mami_allocated,
+                               &((*memory_tree)->data));
 
     // then delete the predecessor
     ma_memory_unregister(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
@@ -553,22 +558,26 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
 
 static
 void ma_memory_register_pages(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t **memory_tree,
-                              void **pageaddrs, int nbpages, size_t size, int node, int protection, int with_huge_pages, int mami_allocated,
+                              void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
+                              int protection, int with_huge_pages, int mami_allocated,
                               marcel_memory_data_t **data) {
   MAMI_ILOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(marcel_memory_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
-    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
+    ma_memory_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, nodes,
+                               protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
     mdebug_mami("Adding data %p into tree\n", (*memory_tree)->data);
     if (data) *data = (*memory_tree)->data;
   }
   else {
     if (pageaddrs[0] < (*memory_tree)->data->pageaddrs[0])
-      ma_memory_register_pages(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
+      ma_memory_register_pages(memory_manager, &((*memory_tree)->leftchild), pageaddrs, nbpages, size, node, nodes,
+                               protection, with_huge_pages, mami_allocated, data);
     else
-      ma_memory_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
+      ma_memory_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, nodes,
+                               protection, with_huge_pages, mami_allocated, data);
   }
   MAMI_ILOG_OUT();
 }
@@ -832,7 +841,8 @@ void* ma_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size, uns
 
     // Register memory
     mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, (long)size);
-    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, protection, with_huge_pages, 1, NULL);
+    ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, NULL,
+                             protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
@@ -920,14 +930,11 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
 }
 
 static
-int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
-  int nbpages_query;
+int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node, int **nodes) {
   int statuses[nbpages];
-  int err=0;
+  int i, err=0;
 
-#warning todo: check location for all pages and what if pages are on different nodes
-  if (nbpages == 1) nbpages_query = 1; else nbpages_query = 2;
-  err = ma_memory_move_pages(pageaddrs, nbpages_query, NULL, statuses, 0);
+  err = ma_memory_move_pages(pageaddrs, nbpages, NULL, statuses, 0);
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     *node = -1;
@@ -935,16 +942,17 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node) {
     err = -errno;
   }
   else {
-    if (nbpages_query == 2) {
+    *node = statuses[0];
+    for(i=1 ; i<nbpages ; i++) {
+      if (statuses[i] != statuses[0]) {
 #ifdef PM2DEBUG
-      if (statuses[0] != statuses[1]) {
-	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes (%d != %d)\n", statuses[0], statuses[1]);
-      }
+	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes\n");
 #endif
-      *node = statuses[1];
-    }
-    else {
-      *node = statuses[0];
+        *node = -1;
+        *nodes = tmalloc(nbpages * sizeof(int));
+        memcpy(*nodes, statuses, nbpages*sizeof(int));
+        break;
+      }
     }
   }
   return err;
@@ -957,7 +965,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
                         marcel_memory_data_t **data) {
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
-  int i, node;
+  int i, node, *nodes;
 
   mdebug_mami("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, (long)size);
 
@@ -973,10 +981,11 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->normalpagesize;
 
   // Find out where the pages are
-  ma_memory_get_pages_location(pageaddrs, nbpages, &node);
+  ma_memory_get_pages_location(pageaddrs, nbpages, &node, &nodes);
 
   // Register the pages
-  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, protection, with_huge_pages, mami_allocated, data);
+  ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, nodes,
+                           protection, with_huge_pages, mami_allocated, data);
 
   // Free temporary array
   free(pageaddrs);
@@ -1053,8 +1062,8 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
 	subsize = subpages * memory_manager->normalpagesize;
       for(i=1 ; i<subareas ; i++) {
 	newbuffers[i] = pageaddrs[0];
-	ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->protection,
-                                 data->with_huge_pages, data->mami_allocated, NULL);
+	ma_memory_register_pages(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->nodes,
+                                 data->protection, data->with_huge_pages, data->mami_allocated, NULL);
 	pageaddrs += subpages;
       }
 
@@ -1175,7 +1184,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
-  int err;
+  int err, *nodes;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
@@ -1184,7 +1193,7 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager, void *buffer, 
   if (err >= 0) {
     if (data->status == MARCEL_MEMORY_KERNEL_MIGRATION_STATUS) {
       int node;
-      ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node);
+      ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node, &nodes);
       if (node != data->node) {
         mdebug_mami("Updating location of the pages after a kernel migration\n");
         data->node = node;
@@ -1227,13 +1236,13 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
-  int err, node;
+  int err, node, *nodes;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
-    ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node);
+    ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &node, &nodes);
     if (node != data->node) {
       mdebug_mami("Updating pages location from node #%d to node #%d\n", data->node, node);
       data->node = node;
@@ -1587,7 +1596,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     else {
       if (data->node < 0) {
         mdebug_mami("Need to find out the location of the memory area\n");
-        ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &(data->node));
+        ma_memory_get_pages_location(data->pageaddrs, data->nbpages, &(data->node), &(data->nodes));
       }
       if (size < data->size) {
         size_t newsize;
@@ -1826,7 +1835,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
                              int *nodes,
                              int nb_nodes) {
   marcel_memory_data_t *data;
-  int err, i, j, nbpages, node;
+  int err, i, nbpages;
 
   MAMI_LOG_IN();
 
@@ -1834,50 +1843,36 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
 
   if (err >= 0) {
-    void ***pageaddrs;
-    int *dests, *status;
+    void *pageaddrs[data->nbpages];
+    int dests[data->nbpages], status[data->nbpages];
 
-    // For each node, move the corresponding pages
-    pageaddrs = tmalloc(nb_nodes * sizeof(void **));
-    for(node=0 ; node<nb_nodes ; node++) {
-      if (nodes[node] == data->node) continue;
-
-      // Set the page addresses which need to be moved
-      pageaddrs[nodes[node]] = tmalloc(nb_nodes * sizeof(void *));
-      nbpages=0;
-      for(j=0 ; j<data->nbpages ; j++) {
-        if (nodes[j%nb_nodes] == nodes[node]) {
-          mdebug_mami("Migrate page %d on node %d\n", j, nodes[node]);
-          pageaddrs[nodes[node]][nbpages] = buffer + (j*memory_manager->normalpagesize);
-          nbpages++;
-        }
-      }
-      // If there is some pages to be moved, move them
-      if (nbpages != 0) {
-        dests = tmalloc(nbpages * sizeof(int));
-        status = tmalloc(nbpages * sizeof(int));
-        for(j=0 ; j<nbpages ; j++) dests[j] = nodes[node];
-        err = ma_memory_move_pages(pageaddrs[nodes[node]], nbpages, dests, status, MPOL_MF_MOVE);
-        tfree(dests);
-        tfree(status);
-      }
-      tfree(pageaddrs[nodes[node]]);
-    }
-    tfree(pageaddrs);
-
-    // Check the pages have been properly moved and update the data->nodes information
-    if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
-    data->node = -1;
-    status = tmalloc(data->nbpages * sizeof(int));
-    err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
+    nbpages=0;
+    // Find out which pages have to be moved
     for(i=0 ; i<data->nbpages ; i++) {
-      if (status[i] != nodes[i%nb_nodes]) {
-	marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+      if ((data->node == -1 && data->nodes[i] != nodes[i%nb_nodes]) ||
+          (data->node != -1 && data->node != nodes[i%nb_nodes])) {
+        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->nodes[i], nodes[i%nb_nodes]);
+        pageaddrs[nbpages] = buffer + (i*memory_manager->normalpagesize);
+        dests[nbpages] = nodes[i%nb_nodes];
+        nbpages ++;
       }
-      data->nodes[i] = status[i];
-
     }
-    tfree(status);
+
+    // If there is some pages to be moved, move them
+    if (nbpages != 0) {
+      err = ma_memory_move_pages(pageaddrs, nbpages, dests, status, MPOL_MF_MOVE);
+
+      // Check the pages have been properly moved and update the data->nodes information
+      if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
+      data->node = -1;
+      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
+      for(i=0 ; i<data->nbpages ; i++) {
+        if (status[i] != nodes[i%nb_nodes]) {
+          marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+        }
+        data->nodes[i] = status[i];
+      }
+    }
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));

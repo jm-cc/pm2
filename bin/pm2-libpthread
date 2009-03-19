@@ -27,12 +27,15 @@ then
     exit 1
 fi
 
+BUILDDIR=`${PM2_ROOT}/bin/pm2-config --builddir`
 
-GDB=""
+pm2_ld_preload="libPukABI.so $marcel_libpthread"
+pm2_ld_library_path="$BUILDDIR/lib${LD_LIBRARY_PATH:+:}$LD_LIBRARY_PATH"
+
 if [ "$1" = -d ]
 then
 	shift
-	GDB=gdb
+	GDB="${GDB:-gdb}"
 	. $PM2_ROOT/bin/pm2-arch --source-mode
 	. $PM2_ROOT/bin/pm2-sys --source-mode
 	for mod in $(pm2-config --modules)
@@ -44,12 +47,22 @@ then
 		gdbinit=$PM2_ROOT/modules/$mod/scripts/gdbinit
 		[ -r $gdbinit ] && GDB="$GDB -x $gdbinit"
 	done
-	GDB="$GDB --args"
+	exec $GDB									\
+	     --eval-command "set environment LD_PRELOAD $pm2_ld_preload"		\
+	     --eval-command "set environment LD_LIBRARY_PATH $pm2_ld_library_path"	\
+	     --args "$@"
+elif [ "$1" = -s ]
+then
+    shift
+    STRACE="${STRACE:-strace}"
+    exec "${STRACE}" -E LD_PRELOAD="$pm2_ld_preload"		\
+                     -E LD_LIBRARY_PATH="$pm2_ld_library_path"	\
+		     -o "pm2-libpthread-strace" -f		\
+		     "$@"
+else
+    LD_PRELOAD="$pm2_ld_preload"
+    LD_LIBRARY_PATH="$pm2_ld_library_path"
+    export LD_LIBRARY_PATH LD_PRELOAD
+
+    exec "$@"
 fi
-
-BUILDDIR=`${PM2_ROOT}/bin/pm2-config --builddir`
-LD_LIBRARY_PATH="$LD_LIBRARY_PATH${LD_LIBRARY_PATH:+:}$BUILDDIR/lib"
-LD_PRELOAD="libPukABI.so $marcel_libpthread"
-export LD_LIBRARY_PATH LD_PRELOAD
-
-exec $GDB "$@"

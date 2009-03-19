@@ -45,9 +45,6 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
 {
   int err;
   
-  p_pw->p_gdrv->out_req_nb++;
-  p_pw->p_drv->out_req_nb++;
-    
   /* ready to send					*/
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   NM_TRACEF("posting new send request: gate %d, drv %d, trk %d, proto %d, seq %d",

@@ -37,9 +37,6 @@ struct nm_drv
   /** Number of tracks opened on this driver. */
   uint8_t nb_tracks;
  
-  /** Cumulated number of pending out requests on this driver. */
-  uint8_t out_req_nb;
-  
   /** Private structure of the driver. */
   void *priv;
   

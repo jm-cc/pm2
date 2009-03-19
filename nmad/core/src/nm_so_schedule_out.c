@@ -91,8 +91,6 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 	    p_pw->proto_id,
 	    p_pw->seq);
   
-  p_pw->p_drv ->out_req_nb--;
-  p_pw->p_gdrv->out_req_nb--;
 #ifdef PIOMAN
   piom_req_success(&p_pw->inst);
 #endif

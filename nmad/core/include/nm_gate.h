@@ -36,10 +36,6 @@ struct nm_gate_drv
    */
   struct nm_pkt_wrap	**p_in_rq_array;
   
-  /** Cumulated number of pending out requests on this driver for
-      this gate.
-  */
-  uint16_t		   out_req_nb;
 };
 
 /** status of a gate, used for dynamic connections */

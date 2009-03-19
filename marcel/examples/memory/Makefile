@@ -37,7 +37,7 @@ config: .config/blas_$(FLAVOR) .config/numa_$(FLAVOR)
 	@mkdir -p "$(dir $@)"
 	@echo "#include <cblas.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { int x=CblasRowMajor; return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
+	@if $(CC) $(CFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
 	then echo "HAVE_BLAS = yes" > "$@" ;								\
 	else echo "HAVE_BLAS = no" > "$@" ; fi
 	@rm -f ,,conftest{,.c}
@@ -57,7 +57,7 @@ saxpy-ldflags := -lblas
 	@mkdir -p "$(dir $@)"
 	@echo "#include <numa.h>" > ,,conftest.c
 	@echo "int main (int argc, char *argv[]) { return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) $(CPPFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lnuma 2>/dev/null;	\
+	@if $(CC) $(CFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lnuma 2>/dev/null;	\
 	then echo "HAVE_NUMA = yes" > "$@" ;								\
 	else echo "HAVE_NUMA = no" > "$@" ; fi
 	@rm -f ,,conftest{,.c}

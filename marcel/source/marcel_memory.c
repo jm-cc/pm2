@@ -1862,15 +1862,17 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
     if (nbpages != 0) {
       err = ma_memory_move_pages(pageaddrs, nbpages, dests, status, MPOL_MF_MOVE);
 
-      // Check the pages have been properly moved and update the data->nodes information
-      if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
-      data->node = -1;
-      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
-      for(i=0 ; i<data->nbpages ; i++) {
-        if (status[i] != nodes[i%nb_nodes]) {
-          marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+      if (err >= 0) {
+        // Check the pages have been properly moved and update the data->nodes information
+        if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
+        data->node = -1;
+        err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
+        for(i=0 ; i<data->nbpages ; i++) {
+          if (status[i] != nodes[i%nb_nodes]) {
+            marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+          }
+          data->nodes[i] = status[i];
         }
-        data->nodes[i] = status[i];
       }
     }
   }

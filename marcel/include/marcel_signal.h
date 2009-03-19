@@ -31,7 +31,9 @@ struct marcel_sigaction {
 	void (*marcel_sa_handler) (int);
 	marcel_sigset_t marcel_sa_mask;
 	int marcel_sa_flags;
+#ifdef SA_SIGINFO
 	void (*marcel_sa_sigaction) (int, siginfo_t *, void *);
+#endif
 };
 
 #section marcel_macros

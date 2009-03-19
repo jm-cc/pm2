@@ -35,6 +35,8 @@ DEF___PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*chil
 
 extern pid_t __libc_fork(void);
 
+/* We need to provide our own version of `fork()' since that's what Glibc's
+ * libpthread does.  */
 pid_t __fork(void)
 {
         return __libc_fork();

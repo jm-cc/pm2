@@ -361,7 +361,7 @@ DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
 })
 DEF_C(int, sem_post, (pmarcel_sem_t *s), (s));
 
-DEF_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
+DEF_MARCEL_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
 {
 	ma_spin_lock_bh(&s->lock);
 	*sval = s->value;

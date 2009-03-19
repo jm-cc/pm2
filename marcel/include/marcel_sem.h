@@ -63,7 +63,7 @@ DEC_POSIX(int, sem_trywait, (pmarcel_sem_t *s) __THROW);
 DEC_POSIX(int, sem_timedwait, (pmarcel_sem_t *__restrict sem, 
                           const struct timespec *__restrict abs_timeout) __THROW);
 DEC_POSIX(int, sem_post, (pmarcel_sem_t *s) __THROW);
-DEC_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW);
+DEC_MARCEL_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW);
 
 static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
 #section inline

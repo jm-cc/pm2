@@ -54,9 +54,26 @@ typedef struct marcel_sched_attr marcel_sched_attr_t;
 
 #section structures
 #depend "scheduler/marcel_holder.h[types]"
+/** \brief Scheduler-specific attributes.
+ *
+ * TODO: merge with main attributes structs */
 struct marcel_sched_attr {
+
+	/** \brief SMP scheduling policy code for controlling how to select a VP for the newly created thread. */
 	int sched_policy;
+
+	/** \brief Holder to explicitely use as the created thread's natural
+	 * holder.
+	 *
+	 * \attention Override to the marcel_sched_attr#inheritholder flag
+	 * and marcel_task#default_children_bubble implicit holder selection mechanisms. */
 	ma_holder_t *natural_holder;
+
+	/** \brief Flag indicating whether the newly created thread should inherit the natural holder of its creating thread (flag set) or not (flag unset).
+	 *
+	 * \attention Override the marcel_task#default_children_bubble implicit holder selection mechanism.
+	 *
+	 * \attention Is overridden by the marcel_sched_attr#natural_holder explicite holder selection mechanism. */
 	tbx_bool_t inheritholder;
 };
 
@@ -223,7 +240,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 
 		return rq;
 	}
-	b = &SELF_GETMEM(bubble);
+	b = &SELF_GETMEM(default_children_bubble);
 	if (!b->as_entity.natural_holder) {
 		ma_holder_t *h;
 		marcel_bubble_init(b);
@@ -414,7 +431,7 @@ marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
 
 #ifdef MA__BUBBLES
 	/* bulle non initialisée */
-	t->bubble.as_entity.natural_holder = NULL;
+	t->default_children_bubble.as_entity.natural_holder = NULL;
 #endif
 	ma_atomic_init(&t->as_entity.time_slice,MARCEL_TASK_TIMESLICE);
 	LOG_OUT();

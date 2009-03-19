@@ -525,9 +525,9 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	/* TODO: dans le cas d'un thread, il faudrait aussi le déplacer dans son nouveau sched_holder s'il n'en avait pas déjà un, non ? */
 
 	if (entity->type == MA_THREAD_ENTITY) {
-		marcel_bubble_t *thread_bubble = &ma_task_entity(entity)->bubble;
-		if (thread_bubble->as_entity.natural_holder)
-			marcel_bubble_insertentity(bubble,ma_entity_bubble(thread_bubble));
+		marcel_bubble_t *children_bubble = &ma_task_entity(entity)->default_children_bubble;
+		if (children_bubble->as_entity.natural_holder)
+			marcel_bubble_insertentity(bubble,ma_entity_bubble(children_bubble));
 	}
 	LOG_RETURN(0);
 }
@@ -654,7 +654,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 
 #undef marcel_sched_exit
 void marcel_sched_exit(marcel_t t) {
-	marcel_bubble_t *b = &t->bubble;
+	marcel_bubble_t *b = &t->default_children_bubble;
 	if (b->as_entity.natural_holder) {
 		/* bubble initialized */
 		marcel_bubble_join(b);

@@ -120,10 +120,17 @@ struct marcel_task {
 	/** \brief Entity virtual class. */
 	struct ma_entity as_entity;
 #ifdef MA__BUBBLES
-	/** \brief Bubble where children of this thread are automatically put */
-	marcel_bubble_t bubble;
+	/** \brief Bubble where children of this thread are automatically put by default. 
+	 *
+	 * Programmer may override this default on a per-created thread basis using either
+	 * the marcel_sched_attr#natural_holder attribute to fix the natural
+	 * holder of the created thread explicitely or the
+	 * marcel_sched_attr#inheritholder attribute to fix the natural holder
+	 * of the create thread implicitely to the natural holder of the
+	 * creating thread */
+	marcel_bubble_t default_children_bubble;
 #endif
-	/** \brief Dedicated space for saving thread current context on context swiches. */
+	/** \brief Dedicated space for saving thread current context on context switches. */
 	marcel_ctx_t ctx_yield, ctx_restart;
 
 	/** \brief Thread state set of flags. 

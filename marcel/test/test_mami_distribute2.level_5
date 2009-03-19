@@ -15,7 +15,6 @@
 . ./common.sh
 prog="distribute2"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_distribute successfully failed: Invalid argument
 Node is 1 as expected
 EOF
 

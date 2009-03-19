@@ -165,7 +165,14 @@ void marcel_bubble_sched_begin (void);
 /** \brief Informs the scheduler that the application is entering
     ending phase */
 void marcel_bubble_sched_end (void);
-/** \brief Re-distributes the active entities on the topology */
+/** \brief Call the bubble scheduler #ma_bubble_sched_struct::shake method to reset
+ * the current distribution of activities and start over a fresh new
+ * distribution of active entities on the topology.
+ *
+ * If the current bubble scheduler does not export a \p shake method, the
+ * default behaviour is to move the root bubble (#marcel_root_bubble) back to
+ * the top of the topology and then to call the \p submit method on that root
+ * bubble. */
 void marcel_bubble_shake (void);
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
@@ -175,10 +182,7 @@ int marcel_bubble_submit (marcel_bubble_t *b);
 /**
  ******************************************************************************
  * scheduler view
- * \defgroup marcel_bubble_sched Bubbles - scheduler programming interface
- *
- * This is the scheduler interface for manipulating bubbles.
- *
+ * \addtogroup marcel_bubble_sched
  */
 /*@{*/
 

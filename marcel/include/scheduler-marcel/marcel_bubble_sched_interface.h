@@ -13,56 +13,70 @@
  * General Public License for more details.
  */
 
+/** \file
+ * \brief Bubble scheduler interface
+ */
+
+/**
+ ******************************************************************************
+ * scheduler view
+ * \defgroup marcel_bubble_sched Bubbles - scheduler programming interface
+ *
+ * This is the scheduler interface for manipulating bubbles.
+ *
+ */
+/*@{*/
+
 #section marcel_structures
 #depend "scheduler/marcel_holder.h[types]"
 
-/* Forward declaration.  */
+/** \brief Forward declaration.  */
 struct ma_bubble_sched_struct;
 
-/* Initialization */
 typedef int (*ma_bubble_sched_init)(struct ma_bubble_sched_struct *);
-
-/* Start */
 typedef int (*ma_bubble_sched_start)(struct ma_bubble_sched_struct *);
-
-/* Termination */
 typedef int (*ma_bubble_sched_exit)(struct ma_bubble_sched_struct *);
-
-/* Submission of a set of entities to be scheduled */
 typedef int (*ma_bubble_sched_submit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
-
-/* Called to force a new distribution from the marcel_root_bubble bubble. */
 typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *);
-
-/* Called when a vp is idle.  Preemption and bottom halves are already
- * disabled.  Return non-zero if the bubble scheduler's work stealing algorithm
- * succeeded, zero otherwise.  */
 typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
-
-/* Called on bubble tick */
 typedef int (*ma_bubble_sched_tick)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
-
-/* Called when basic scheduler encounters an entity on rq at priority idx.
- * Returns the next entity (must be thread) to be schedule (as well as its
- * locked holder in nexth), or NULL if ma_schedule() must restart (and in such
- * case nexth must have been unlocked. */
 typedef marcel_entity_t *
 (*ma_bubble_sched_sched)(struct ma_bubble_sched_struct *,
-												 marcel_entity_t *nextent, ma_runqueue_t *rq,
-												 ma_holder_t **nexth, int idx);
+		marcel_entity_t *nextent, ma_runqueue_t *rq,
+		ma_holder_t **nexth, int idx);
 
 /** \brief Bubble scheduler instances.  */
 struct ma_bubble_sched_struct {
 	const struct ma_bubble_sched_class *klass;
 
-  ma_bubble_sched_init init;
-  ma_bubble_sched_start start;
-  ma_bubble_sched_exit exit;
-  ma_bubble_sched_submit submit;
-  ma_bubble_sched_shake shake;
-  ma_bubble_sched_vp_is_idle vp_is_idle;
-  ma_bubble_sched_tick tick;
-  ma_bubble_sched_sched sched;
+	/** \brief Initialization */
+	ma_bubble_sched_init init;
+
+	/** \brief Start */
+	ma_bubble_sched_start start;
+
+	/** \brief Termination */
+	ma_bubble_sched_exit exit;
+
+	/** \brief Submission of a set of entities to be scheduled */
+	ma_bubble_sched_submit submit;
+
+	/** \brief Called to force a new distribution from a specific bubble. */
+	ma_bubble_sched_shake shake;
+
+	/** \brief Called when a vp is idle.  Preemption and bottom halves are already
+	 * disabled.  Return non-zero if the bubble scheduler's work stealing algorithm
+	 * succeeded, zero otherwise.  */
+	ma_bubble_sched_vp_is_idle vp_is_idle;
+
+	/** \brief Called on bubble tick */
+	ma_bubble_sched_tick tick;
+
+	/* Called when basic scheduler encounters an entity on rq at priority idx.
+	 * Returns the next entity (must be thread) to be schedule (as well as its
+	 * locked holder in nexth), or NULL if ma_schedule() must restart (and in such
+	 * case nexth must have been unlocked. */
+	ma_bubble_sched_sched sched;
 };
 
 
@@ -89,7 +103,7 @@ typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 #section macros
 
 /**
- * \brief Declare a bubble scheduler class named \param _name.  */
+ * \brief Declare a bubble scheduler class named \a _name.  */
 #define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)										\
   struct marcel_bubble_ ## _name ## _sched;															\
   typedef struct marcel_bubble_ ## _name ## _sched											\
@@ -97,8 +111,8 @@ typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
   extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
 
 /**
- * \brief Define a bubble scheduler class named \param _name, with \param
- * _default_ctor the default initializer for instances of this class.  */
+ * \brief Define a bubble scheduler class named \a _name, with \a _default_ctor 
+ * the default initializer for instances of this class.  */
 #define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)			\
   marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class =	\
 	  {																																		\
@@ -106,3 +120,6 @@ typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 			.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
 			.instantiate = _default_ctor																			\
 		};
+
+/*@}*/
+

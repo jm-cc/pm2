@@ -464,6 +464,7 @@ WARN_LOGFILE           =
 
 INPUT                  = \
                          ../marcel/include/scheduler-marcel/marcel_bubble_sched.h \
+                         ../marcel/include/scheduler-marcel/marcel_bubble_sched_interface.h \
                          ../marcel/include/scheduler-marcel/marcel_sched.h \
                          ../marcel/include/scheduler-marcel/marcel_holder.h \
                          ../marcel/include/scheduler-marcel/linux_runqueues.h \

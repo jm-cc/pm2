@@ -42,23 +42,23 @@ typedef nm_gate_t nm_gate_id_t;
 /* ** Tags ************************************************* */
 
 #if defined(CONFIG_TAG_AS_FLAT_ARRAY)
+/* 8 bits, contained in flat array  */
 #  define NM_TAGS_AS_FLAT_ARRAY
+typedef uint8_t nm_tag_t;
+#  define NM_SO_MAX_TAGS 128 /**< Maximum number of tags */
 #elif defined(CONFIG_TAG_AS_HASHTABLE)
+/* 32 bits, contained in hashtable */
 #  define NM_TAGS_AS_HASHTABLE
+typedef uint32_t nm_tag_t;
+#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT32_MAX - 128ULL) /**< Maximum number of tags  */
+#elif defined(CONFIG_TAG_HUGE)
+/* 64 bits, contained in hashtable */
+#  define NM_TAGS_AS_HASHTABLE
+#  define NM_TAGS_HUGE
+typedef uint64_t nm_tag_t;
+#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT64_MAX - 128ULL);
 #else
 #  error NewMad: no container type defined for tag-indexed tables
-#endif
-
-#ifdef NM_TAGS_AS_FLAT_ARRAY
-typedef uint8_t nm_tag_t;
-/** Maximum number of tags */
-#define NM_SO_MAX_TAGS 128
-#endif 
-
-#ifdef NM_TAGS_AS_HASHTABLE
-typedef uint32_t nm_tag_t;
-/** Maximum number of tags  */
-#define NM_SO_MAX_TAGS (nm_tag_t)(127UL * 256UL * 256UL * 256UL)
 #endif
 
 #define NM_TAGS_PREALLOC 128

@@ -60,7 +60,7 @@
 
 /* Implementation of tag-indexed container: as a Puk hashtable */
 
-#ifdef NM_TAGS_AS_HASHTABLE
+#if defined(NM_TAGS_AS_HASHTABLE)
 static uint32_t nm_tag_hash(const void*_tag)
 {
   /* use the tag itself as a hashing key, since patterns or

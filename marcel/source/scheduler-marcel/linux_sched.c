@@ -289,7 +289,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		if (list_empty(&p->as_entity.natural_entities_item))
-			marcel_bubble_insertentity(ma_bubble_holder(h),&p->as_entity);
+			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 	}
 #endif
 #ifdef MA__LWPS
@@ -439,7 +439,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		ma_holder_try_to_wake_up_and_unlock_softirq(prevh);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
 		if (remove_from_bubble)
-			marcel_bubble_removeentity(bubble, &prev->as_entity);
+			marcel_bubble_removetask(bubble, prev);
 	} else
 #endif
 	{
@@ -1187,7 +1187,7 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 #ifdef MA__BUBBLES
 	old_h = ma_task_natural_holder(MARCEL_SELF);
 	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
-		marcel_bubble_removeentity(ma_bubble_holder(old_h),&MARCEL_SELF->as_entity);
+		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
 #endif
 	ma_holder_rawlock(&new_rq->as_holder);
 	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;

@@ -178,16 +178,16 @@ main (int argc, char **argv)
   stream_struct_t stream_struct[nb_teams];
 
   marcel_bubble_init (&main_bubble);
-  marcel_bubble_insertentity (&marcel_root_bubble, &main_bubble.as_entity);
+  marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
   /* Create the working threads. */
   for (team = 0; team < nb_teams; team++) {
     marcel_bubble_init (&bubbles[team]);
-    marcel_bubble_insertentity (&main_bubble, &bubbles[team].as_entity);
+    marcel_bubble_insertbubble (&main_bubble, &bubbles[team]);
     /* Make the main thread part of team 0. */
     if (team == 0) {
       marcel_self ()->id = 0;
-      marcel_bubble_insertentity (&bubbles[team], &marcel_self ()->as_entity);
+      marcel_bubble_inserttask (&bubbles[team], marcel_self ());
     }
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
@@ -233,7 +233,7 @@ main (int argc, char **argv)
   clock_gettime (CLOCK_MONOTONIC, &t2);
 
   /* Put the main thread back to the root bubble before joining team 0. */
-  marcel_bubble_insertentity (&marcel_root_bubble, &marcel_self ()->as_entity);
+  marcel_bubble_inserttask (&marcel_root_bubble, marcel_self ());
 
   /* Wait for the working threads to finish. */
   for (team = 0; team < nb_teams; team++) {

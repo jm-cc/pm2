@@ -51,8 +51,8 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
   marcel_bubble_init (&team_bubble);
   marcel_bubble_scheduleonthreadholder (&team_bubble);
   marcel_bubble_setprio (&team_bubble, MA_DEF_PRIO);
-  marcel_bubble_insertentity (marcel_bubble_holding_task (marcel_self ()), &team_bubble.as_entity);
-  marcel_bubble_insertentity (&team_bubble, &marcel_self ()->as_entity);
+  marcel_bubble_insertbubble (marcel_bubble_holding_task (marcel_self ()), &team_bubble);
+  marcel_bubble_inserttask (&team_bubble, marcel_self ());
 
   marcel_attr_setnaturalbubble (&thread_attr, &team_bubble);
 
@@ -73,7 +73,7 @@ start_new_team (void *(*fn) (void *), void *data, unsigned nthreads)
 
   /* Close the current team. */
   marcel_bubble_t *holding_bubble = marcel_bubble_holding_bubble (&team_bubble);
-  marcel_bubble_insertentity (holding_bubble, &marcel_self ()->as_entity);
+  marcel_bubble_inserttask (holding_bubble, marcel_self ());
   marcel_bubble_join (&team_bubble);
   marcel_bubble_destroy (&team_bubble);
 }

@@ -146,12 +146,12 @@ int main(int argc, char *argv[]) {
 	marcel_bubble_init(&b5);
 	marcel_bubble_init(&b6);
 
-	marcel_bubble_insertentity(&b0,&b1.as_entity);
-	marcel_bubble_insertentity(&b0,&b2.as_entity);
-	marcel_bubble_insertentity(&b1,&b3.as_entity);
-	marcel_bubble_insertentity(&b1,&b4.as_entity);
-	marcel_bubble_insertentity(&b2,&b5.as_entity);
-	marcel_bubble_insertentity(&b2,&b6.as_entity);
+	marcel_bubble_insertbubble(&b0,&b1);
+	marcel_bubble_insertbubble(&b0,&b2);
+	marcel_bubble_insertbubble(&b1,&b3);
+	marcel_bubble_insertbubble(&b1,&b4);
+	marcel_bubble_insertbubble(&b2,&b5);
+	marcel_bubble_insertbubble(&b2,&b6);
 
 	/* lancement des threads pour allouer */
 	{

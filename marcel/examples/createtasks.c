@@ -45,7 +45,7 @@ any_t main_thread(void *arg)
   marcel_bubble_init(&b);
   marcel_bubble_scheduleonrq(&b,&marcel_topo_vp_level[0].rq);
   marcel_wake_up_bubble(&b);
-  marcel_bubble_insertentity(&b, &marcel_self()->as_entity);
+  marcel_bubble_inserttask(&b, marcel_self());
 #endif
 
   marcel_attr_init(&attr);
@@ -75,7 +75,7 @@ any_t main_thread(void *arg)
     marcel_printf("exec   =  %fus\n", TBX_TIMING_DELAY(t2, t3) / (long)arg);
   }
 #ifdef MA__BUBBLES
-  marcel_bubble_removeentity(&b, &marcel_self()->as_entity);
+  marcel_bubble_removetask(&b, marcel_self());
   marcel_bubble_join(&b);
 #endif
 

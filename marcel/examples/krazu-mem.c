@@ -62,7 +62,7 @@ main (int argc, char **argv) {
   marcel_memory_init (&krazu_manager);
 
   marcel_bubble_init (&main_bubble);
-  marcel_bubble_insertentity (&marcel_root_bubble, &main_bubble->as_entity);
+  marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
   tabs = marcel_memory_malloc (&krazu_manager,
 			       NUM_THREADS * sizeof (int *),

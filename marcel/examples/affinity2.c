@@ -40,7 +40,7 @@ static
 void
 bubble_init(marcel_bubble_t *b_outer, marcel_bubble_t *b_inner) {
 	marcel_bubble_init(b_inner);
-	marcel_bubble_insertentity(b_outer, &b_inner->as_entity);
+	marcel_bubble_insertbubble(b_outer, b_inner);
 }
 
 static

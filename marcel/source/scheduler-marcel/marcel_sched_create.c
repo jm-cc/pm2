@@ -146,7 +146,7 @@ int marcel_sched_internal_create_start(marcel_task_t *cur,
 
 #ifdef MA__BUBBLES
 	if (bh)
-		marcel_bubble_insertentity(ma_bubble_holder(bh),&new_task->as_entity);
+		marcel_bubble_inserttask(ma_bubble_holder(bh),new_task);
 #endif
 
 	//PROF_IN_EXT(newborn_thread);
@@ -233,9 +233,9 @@ restart:
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
-		marcel_bubble_insertentity(bubble, &MARCEL_SELF->as_entity);
+		marcel_bubble_inserttask(bubble, MARCEL_SELF);
 		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
-		marcel_bubble_removeentity(bubble, &seed->as_entity);
+		marcel_bubble_removetask(bubble, seed);
 	} else
 #endif
 		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);

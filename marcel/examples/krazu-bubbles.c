@@ -50,7 +50,7 @@ marcel_main(int argc, char *argv[])
 	  marcel_bubble_init(&b[i]);
 	  marcel_bubble_setid(&b[i], i);
 
-	  marcel_bubble_insertentity(&marcel_root_bubble, &b[i].as_entity);
+	  marcel_bubble_insertbubble(&marcel_root_bubble, &b[i]);
 	}
     }
 

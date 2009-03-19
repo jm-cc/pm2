@@ -1834,8 +1834,10 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
 
   if (err >= 0) {
-    // For each node, move the corresponding pages
     void ***pageaddrs;
+    int *dests, *status;
+
+    // For each node, move the corresponding pages
     pageaddrs = tmalloc(nb_nodes * sizeof(void **));
     for(node=0 ; node<nb_nodes ; node++) {
       if (nodes[node] == data->node) continue;
@@ -1852,8 +1854,8 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
       }
       // If there is some pages to be moved, move them
       if (nbpages != 0) {
-        int *dests = tmalloc(nbpages * sizeof(int));
-        int *status = tmalloc(nbpages * sizeof(int));
+        dests = tmalloc(nbpages * sizeof(int));
+        status = tmalloc(nbpages * sizeof(int));
         for(j=0 ; j<nbpages ; j++) dests[j] = nodes[node];
         err = ma_memory_move_pages(pageaddrs[nodes[node]], nbpages, dests, status, MPOL_MF_MOVE);
         tfree(dests);
@@ -1863,20 +1865,17 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
     }
     tfree(pageaddrs);
 
-    // Update the data->nodes information
+    // Check the pages have been properly moved and update the data->nodes information
     if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
-    for(i=0 ; i<data->nbpages ; i++) {
-      data->nodes[i] = nodes[i%nb_nodes];
-    }
     data->node = -1;
-
-    // Check the pages have been properly moved
-    int *status = tmalloc(data->nbpages * sizeof(int));
+    status = tmalloc(data->nbpages * sizeof(int));
     err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
     for(i=0 ; i<data->nbpages ; i++) {
-      if (status[i] != data->nodes[i]) {
-	marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], data->nodes[i]);
+      if (status[i] != nodes[i%nb_nodes]) {
+	marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
       }
+      data->nodes[i] = status[i];
+
     }
     tfree(status);
   }

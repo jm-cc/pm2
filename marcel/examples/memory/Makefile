@@ -27,7 +27,7 @@ APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
 
 all: $(APPS_LIST)
-config: .config/blas .config/numa
+config: .config/blas_$(FLAVOR) .config/numa_$(FLAVOR)
 
 # Include the file that tells whether BLAS is available.
 -include .config/blas_$(FLAVOR)

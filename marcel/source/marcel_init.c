@@ -484,7 +484,7 @@ void marcel_init_data(int *argc, char *argv[])
 
 	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 
-#ifdef MA__LIBPTHREAD
+#ifdef PUK
 	puk_abi_init();
 
 	/* Tell PukABI how to protect libc calls.  */
@@ -495,7 +495,9 @@ void marcel_init_data(int *argc, char *argv[])
 	puk_abi_set_errno_handler(&marcel___errno_location);
 	puk_abi_seterrno(0);
 
+#ifdef MA__LIBPTHREAD
 	assert_preloaded ();
+#endif
 #endif
 }
 

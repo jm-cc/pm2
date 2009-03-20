@@ -109,7 +109,7 @@ versioned_symbol(libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
 /*********************pthread_self***************************/
 
-lpt_t lpt_self(void)
+lpt_t LPT_NAME(self)(void)
 {
 	LOG_IN();
 	LOG_RETURN((lpt_t) pmarcel_self());
@@ -213,7 +213,7 @@ void ma_check_lpt_sizes(void) {
 }
 
 #define cancellable_call_generic(ret, name, invocation, ver, proto, ...) \
-ret lpt_##name proto {\
+ret LPT_NAME(name) proto { \
 	if (tbx_unlikely(!marcel_createdthreads())) { \
 		return invocation; \
 	} else { \

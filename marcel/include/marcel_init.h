@@ -41,6 +41,8 @@ extern void marcel_ensure_abi_compatibility(const char *header_hash);
 int  marcel_test_activity(void);
 extern tbx_flag_t marcel_activity;
 
+void marcel_initialize(int* argc, char**argv);
+
 /*  When completed, calls to marcel_self() are ok, etc. */
 /*  So do calls to the Unix Fork primitive. */
 void marcel_init_data(int *argc, char *argv[]);

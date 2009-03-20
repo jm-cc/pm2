@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MA__LIBPTHREAD
+#ifdef PUK
 # include <Padico/Puk-ABI.h>
 #endif
 
@@ -462,7 +462,7 @@ assert_preloaded (void) {
 
 #endif
 
-#ifdef PUK
+#ifdef PADICO_ENABLE_PUKABI
 
 /* Produce the body of `execv*' function FUNCTION, passing ACTUAL_PARAMS to
  * the underlying function.  This disables Marcel's timer before calling
@@ -513,7 +513,7 @@ void marcel_init_data(int *argc, char *argv[])
 
 	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 
-#ifdef PUK
+#ifdef PADICO_ENABLE_PUKABI
 	puk_abi_init();
 
 	/* Tell PukABI how to protect libc calls.  */

@@ -8,7 +8,7 @@ if [ -z "$x" ] ; then
         --ext=\"\" \
         --modules=\"init marcel tbx\" \
         --common=\"fortran_target_none\" \
-        --marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_mami enable_numa_memory enable_stats\" \
+        --marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_mami enable_stats\" \
         --all=\"build_static opt\"
 fi
 

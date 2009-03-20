@@ -56,11 +56,8 @@ extern void nm_cmdline_launcher_declare(void)
 
 }
 
-#ifdef CONFIG_MULTI_RAIL
 #define RAIL_MAX NM_DRV_MAX
-#else
-#define RAIL_MAX 1
-#endif
+
 struct nm_cmdline_launcher_status_s
 {
   nm_core_t p_core;
@@ -380,15 +377,6 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	  usage();
 	}
     }
-
-#ifndef CONFIG_MULTI_RAIL
-  /* Check the number of drivers in single-rail */
-  if (status->nr_rails > 1)
-    {
-      fprintf(stderr, "launcher: the selected strategy does not support multi-rail. Only 1 driver supported.\n");
-      usage();
-    }
-#endif
 
   status->is_server = (!nr_r_urls);
 

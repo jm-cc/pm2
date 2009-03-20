@@ -937,6 +937,8 @@ int ma_memory_get_pages_location(void **pageaddrs, int nbpages, int *node, int *
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     *node = -1;
+    *nodes = tmalloc(nbpages * sizeof(int));
+    memcpy(*nodes, statuses, nbpages*sizeof(int));
     errno = ENOENT;
     err = -errno;
   }

@@ -161,14 +161,16 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
     if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
     }
-#ifdef PM2DEBUG
-    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
-      marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
-    }
-#endif /* PM2DEBUG */
 
-    ma_memory_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
-    ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
+    if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
+#ifdef PM2DEBUG
+      if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+	marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
+      }
+#endif /* PM2DEBUG */
+      ma_memory_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
+      ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
+    }
   }
   marcel_fclose(out);
   return 0;
@@ -340,13 +342,15 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
       break;
     }
 
+    if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
-    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
-      marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
-    }
+      if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+	marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
+      }
 #endif /* PM2DEBUG */
-    memory_manager->costs_for_write_access[source][dest].cost = wcacheline;
-    memory_manager->costs_for_read_access[source][dest].cost = rcacheline;
+      memory_manager->costs_for_write_access[source][dest].cost = wcacheline;
+      memory_manager->costs_for_read_access[source][dest].cost = rcacheline;
+    }
   }
   marcel_fclose(out);
   return 0;

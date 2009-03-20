@@ -212,20 +212,23 @@ void ma_check_lpt_sizes(void) {
 	MA_BUG_ON(sizeof(lpt_barrierattr_t) > sizeof(pthread_barrierattr_t));
 }
 
-#define cancellable_call_ext(ret, name, sysnr, ver, proto, ...) \
+#define cancellable_call_generic(ret, name, invocation, ver, proto, ...) \
 ret lpt_##name proto {\
 	if (tbx_unlikely(!marcel_createdthreads())) { \
-		return syscall(sysnr, ##__VA_ARGS__); \
+		return invocation; \
 	} else { \
 		int old = __pmarcel_enable_asynccancel(); \
 		ret res; \
-		res = syscall(sysnr, ##__VA_ARGS__); \
+		res = invocation; \
 		__pmarcel_disable_asynccancel(old); \
 		return res; \
 	} \
 } \
 versioned_symbol(libpthread, LPT_NAME(name), LIBC_NAME(name), ver); \
 DEF___LIBC(ret, name, proto, (args))
+
+#define cancellable_call_ext(ret, name, sysnr, ver, proto, ...)					\
+  cancellable_call_generic(ret, name, syscall(sysnr, ##__VA_ARGS__), ver, proto, ##__VA_ARGS__)
 
 #define cancellable_call(ret, name, proto, ...) \
 	cancellable_call_ext(ret, name, SYS_##name, GLIBC_2_0, proto, ##__VA_ARGS__)

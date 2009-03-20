@@ -159,11 +159,8 @@ mad_object_init(int    argc TBX_UNUSED,
   madeleine->dir                 = mad_directory_cons();
   madeleine->old_dir             = NULL;
   madeleine->new_dir             = NULL;
-#ifdef CONFIG_MULTI_RAIL
   madeleine->cnx_darray		 = tbx_darray_init();
   madeleine->master_channel_id   = -1;
-#endif
-
 
   mad_driver_register(madeleine);
 

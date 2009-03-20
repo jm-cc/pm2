@@ -1183,9 +1183,7 @@ mad_object_exit(p_mad_madeleine_t madeleine TBX_UNUSED)
       madeleine->dynamic = NULL;
     }
 
-#ifdef CONFIG_MULTI_RAIL
   tbx_darray_free(madeleine->cnx_darray);
-#endif /* CONFIG_MULTI_RAIL */
 
   TBX_FREE(madeleine);
   LOG_OUT();

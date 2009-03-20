@@ -241,6 +241,7 @@ DEF___LIBC(ret, name, proto, (args))
 
 /*********************lseek***************************/
 
+cancellable_call(off_t, lseek, (int fd, off_t offset, int whence), fd, offset, whence)
 #if MA_BITS_PER_LONG < 64
 extern off64_t __lseek64(int, off64_t, int);
 off64_t __lseek64(int fd, off64_t offset, int whence) {
@@ -271,12 +272,14 @@ loff_t __llseek(int fd, loff_t offset, int whence) {
 	return ret ? ret : res;
 }
 strong_alias(__llseek, llseek)
+#else
+weak_alias(LPT_NAME(lseek), lseek64);
+weak_alias(LPT_NAME(lseek), llseek);
 #endif
 
 cancellable_call(int, close, (int fd), (fd))
 cancellable_call(int, fcntl, (int fd, int cmd, long arg), fd, cmd, arg)
 cancellable_call(int, fsync, (int fd), (fd))
-cancellable_call(off_t, lseek, (int fd, off_t offset, int whence), fd, offset, whence)
 cancellable_call(int, open, (const char *path, int flags, mode_t mode), path, flags, mode)
 cancellable_call_ext(int, open64, SYS_open, GLIBC_2_2, (const char *path, int flags, mode_t mode), path, flags, mode)
 #ifdef SYS_pread

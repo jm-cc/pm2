@@ -16,7 +16,7 @@ end
 
 define set-ctx
   set language c
-  if ((marcel_t)$arg0)->preempt_count > 0  
+  if ((marcel_t)$arg0)->preempt_count > 0
     if $marcel_saved==0
       save-ctx
     end
@@ -118,7 +118,7 @@ end
 
 define ma-printrq
   set language c
-  printf " %s", ($arg0)->name
+  printf " %s", ($arg0)->as_holder.name
 end
 
 define ma_rq_holder
@@ -211,8 +211,8 @@ define marcel-printthread
   if $arg0->state == 256
     set $state='B'
   end
-  if $arg0->as_entity.run_holder
-    if $arg0->as_entity.run_holder_data
+  if $arg0->as_entity.ready_holder
+    if $arg0->as_entity.ready_holder_data
       set $sched_state='r'
     else
       set $sched_state='R'
@@ -221,13 +221,13 @@ define marcel-printthread
     set $sched_state='B'
   end
   printf "0x%lx %16s %2d %c%c", \
-    $arg0, $arg0->name, $arg0->as_entity.prio, $state, $sched_state
+    $arg0, $arg0->as_entity.name, $arg0->as_entity.prio, $state, $sched_state
   if $arg0->lwp
     printf " %2d", $arg0->lwp->vpnum
   end
   ma-printholder $arg0->as_entity.natural_holder
   ma-printholder $arg0->as_entity.sched_holder
-  ma-printholder $arg0->as_entity.run_holder
+  ma-printholder $arg0->as_entity.ready_holder
   printf "\n"
 end
 document marcel-printthread

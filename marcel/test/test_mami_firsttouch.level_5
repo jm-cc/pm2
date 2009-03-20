@@ -13,10 +13,11 @@
 # General Public License for more details.
 
 . ./common.sh
+. ./mami.sh
+
 prog="firsttouch"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Before first touch, memory located on node -1
+Before first touch, memory located on node $NB_NODES
 After first touch, memory located on last node
 EOF
 
-. ./mami.sh

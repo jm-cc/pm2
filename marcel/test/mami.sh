@@ -20,6 +20,7 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
     pm2_skip_test
 fi
 
+NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
 flavor="test_marcel_mami"
 appdir="${PM2_ROOT}/marcel/examples/memory"
 check_all_lines=1

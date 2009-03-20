@@ -107,6 +107,8 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 #define FIRST_TOUCH_NODE memory_manager->nb_nodes
 /* Node id used when memory area located on several nodes */
 #define MULTIPLE_LOCATION_NODE -2
+/* Node id used when unknown location */
+#define UNKNOWN_LOCATION_NODE -1
 
 static
 unsigned long gethugepagesize(void) {
@@ -530,7 +532,7 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
                     data->node);
 	VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
 	// Free memory
-        if (data->node != -1)
+        if (data->node != UNKNOWN_LOCATION_NODE)
           ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
       }
       else {
@@ -932,7 +934,7 @@ int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void *
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
     if (*node != FIRST_TOUCH_NODE) {
-      *node = -1;
+      *node = UNKNOWN_LOCATION_NODE;
     }
     errno = ENOENT;
     err = -errno;
@@ -1385,7 +1387,7 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
     err = EALREADY;
   }
   else {
-    if (data->node == FIRST_TOUCH_NODE || data->node == -1) {
+    if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
       unsigned long nodemask;
 
       mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
@@ -1592,7 +1594,7 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
       err = 0;
     }
     else {
-      if (data->node == FIRST_TOUCH_NODE) {
+      if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
         mdebug_mami("Need to find out the location of the memory area\n");
         ma_memory_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &(data->node), &(data->nodes));
       }

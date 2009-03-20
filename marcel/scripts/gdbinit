@@ -20,12 +20,12 @@ define set-ctx
     if $marcel_saved==0
       save-ctx
     end
-    printf "switching to $arg0(0x%lx)\n", $arg0
+    printf "switching to $arg0(%p)\n", $arg0
     __set-ctx $arg0
   else
     # The `ctx_yield' field of `marcel_t' is uninitialized, so we
     # can't use it to switch contexts.
-    printf "don't know how to switch to $arg0(0x%lx)\n", $arg0
+    printf "don't know how to switch to $arg0(%p)\n", $arg0
   end
 end
 document set-ctx
@@ -118,7 +118,7 @@ end
 
 define ma-printrq
   set language c
-  printf " %s", ($arg0)->as_holder.name
+  printf " %16s", ($arg0)->as_holder.name
 end
 
 define ma_rq_holder
@@ -183,7 +183,7 @@ define ma-printholder
     set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
     ma-printrq $rq
   else
-    printf " 0x%lx", $arg0
+    printf " %16p", $arg0
   end
 end
 
@@ -220,10 +220,10 @@ define marcel-printthread
   else
     set $sched_state='B'
   end
-  printf "0x%lx %16s %2d %c%c", \
+  printf "%16p %16s %4d %4c%c", \
     $arg0, $arg0->as_entity.name, $arg0->as_entity.prio, $state, $sched_state
   if $arg0->lwp
-    printf " %2d", $arg0->lwp->vpnum
+    printf " %3d", $arg0->lwp->vpnum
   end
   ma-printholder $arg0->as_entity.natural_holder
   ma-printholder $arg0->as_entity.sched_holder
@@ -236,7 +236,7 @@ end
 
 define marcel-threads
   set language c
-  printf "marcel_t         NAME PRIO ST CPU INIT   SCHED   RUN\n"
+  printf "        marcel_t             name prio status cpu   natural_holder     sched_holder     ready_holder\n"
   set $num=0
   while $num<ma__nb_vp
     set $vp=&marcel_topo_vp_level[$num]

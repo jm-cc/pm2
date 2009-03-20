@@ -380,8 +380,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   }
   if (node != -1) (*memory_data)->nodes = NULL;
   else {
-    (*memory_data)->nodes = tmalloc(nbpages * sizeof(int));
-    memcpy((*memory_data)->nodes, nodes, nbpages*sizeof(int));
+    (*memory_data)->nodes = nodes;
   }
 
   // Set the page addresses

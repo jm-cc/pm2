@@ -429,20 +429,25 @@ assert_preloaded (void) {
 
 		pukabi = dlopen("libPukABI.so", RTLD_LAZY);
 		if (pukabi != NULL) {
-			void *global_malloc, *pukabi_malloc;
+			void *global_malloc, *pukabi_malloc, *real_malloc;
 
-			/* Note: GNU Bash provides its own `malloc', which makes this test fail
-			 * when running bash.  */
 			global_malloc = dlsym(self, "malloc");
+			real_malloc   = dlsym (self, "__libc_malloc");
 			pukabi_malloc = dlsym(pukabi, "malloc");
 
 			if (pukabi_malloc != NULL && global_malloc != NULL) {
 				determined = tbx_true;
 				if (pukabi_malloc != global_malloc) {
-					fprintf(stderr, "[Marcel] it appears that PukABI "
-						"was not preloaded\n");
-					fprintf(stderr, "[Marcel] make sure to preload it "
-						"using the `LD_PRELOAD' environment variable\n");
+					if (real_malloc != NULL && global_malloc != real_malloc) {
+						/* GNU Bash, for instance, provides its own `malloc'.  */
+						fprintf(stderr, "[Marcel] this program appears to provide its own malloc(3)"
+							", which may not be thread-safe\n");
+					} else {
+						fprintf(stderr, "[Marcel] it appears that PukABI "
+							"was not preloaded\n");
+						fprintf(stderr, "[Marcel] make sure to preload it "
+							"using the `LD_PRELOAD' environment variable\n");
+					}
 				}
 			}
 

@@ -129,6 +129,7 @@ DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 
 #ifdef MA__LIBPTHREAD
 /* Return thread specific resolver state.  */
+extern struct __res_state *lpt___res_state(void);
 struct __res_state *lpt___res_state(void)
 {
 	struct __res_state *res;

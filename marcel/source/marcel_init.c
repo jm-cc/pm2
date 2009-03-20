@@ -707,9 +707,6 @@ typedef struct {
 int ma_init_done[MA_INIT_MAX_PARTS+1]={0,};
 
 // Section MA_INIT_SELF
-#ifdef MA__LIBPTHREAD
-extern void ma_check_lpt_sizes(void);
-#endif
 #ifdef MA__LWPS
 extern const __ma_init_info_t ma_init_info_initialize_topology;
 extern const __ma_init_info_t ma_init_info_marcel_topology_notifier_register;

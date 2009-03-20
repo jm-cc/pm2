@@ -39,6 +39,7 @@ DEF_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr), (attr),
 })
 
 #ifdef MA__LIBPTHREAD
+extern int lpt_attr_init (lpt_attr_t *);
 int lpt_attr_init (lpt_attr_t *__attr)
 {
 	LOG_IN();
@@ -343,6 +344,7 @@ DEF_POSIX(int, attr_setaffinity_np, (pmarcel_attr_t *attr, size_t cpusetsize TBX
 	return marcel_attr_setvpset(attr, *cpuset);
 })
 #ifdef MA__LIBPTHREAD
+extern int lpt_attr_setaffinity_np(lpt_attr_t *, size_t, const cpu_set_t *);
 int lpt_attr_setaffinity_np(lpt_attr_t *__attr, size_t cpusetsize, const cpu_set_t *cpuset)
 {
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
@@ -371,6 +373,7 @@ DEF_POSIX(int, attr_getaffinity_np, (const pmarcel_attr_t *attr, size_t cpusetsi
 	return marcel_attr_getvpset(attr, cpuset);
 })
 #ifdef MA__LIBPTHREAD
+extern int lpt_attr_getaffinity_np(const lpt_attr_t *, size_t, cpu_set_t *);
 int lpt_attr_getaffinity_np(const lpt_attr_t *__attr, size_t cpusetsize, cpu_set_t *cpuset)
 {
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
@@ -499,6 +502,7 @@ DEF_MARCEL_POSIX(int,attr_destroy,(marcel_attr_t * attr),(attr),
 })
 
 #ifdef MA__LIBPTHREAD
+extern int lpt_attr_destroy(lpt_attr_t *);
 int lpt_attr_destroy(lpt_attr_t * __attr)
 {
 	marcel_attr_t *attr = (marcel_attr_t *) __attr;
@@ -751,6 +755,7 @@ int pmarcel_getattr_np(pmarcel_t __t,pmarcel_attr_t *__attr)
 }
 
 #ifdef MA__LIBPTHREAD
+extern int lpt_getattr_np(lpt_t, lpt_attr_t *);
 int lpt_getattr_np(lpt_t t,lpt_attr_t *__attr)
 {
 	LOG_IN();

@@ -29,6 +29,8 @@ DEF_POSIX(pmarcel_t, self, (void), (), {
 #ifdef MA__LIBPTHREAD
 #include <sys/syscall.h>
 
+extern int __pthread_create_2_1(pthread_t *, const pthread_attr_t *, void *(*) (void *), void *);
+
 int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
     void *(*start_routine) (void *), void *arg)
 {
@@ -109,6 +111,7 @@ versioned_symbol(libpthread, __pthread_create_2_1, pthread_create, GLIBC_2_1);
 
 /*********************pthread_self***************************/
 
+extern lpt_t LPT_NAME(self)(void);
 lpt_t LPT_NAME(self)(void)
 {
 	LOG_IN();
@@ -124,8 +127,8 @@ DEF_PTHREAD(pthread_t, self, (void), ())
 extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 #endif
 
-//static void pthread_initialize() __attribute__((constructor));
 /* Appelé par la libc pour initialiser de manière basique. */
+extern void __pthread_initialize_minimal(void);
 void __pthread_initialize_minimal(void)
 {
 #ifdef STATIC_BUILD
@@ -180,6 +183,7 @@ void _pthread_cleanup_pop(struct _pthread_cleanup_buffer *buffer, int execute)
 	LOG_RETURN(marcel_cleanup_pop(execute));
 }
 #endif
+extern int __pthread_clock_settime(clockid_t, const struct timespec *);
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
 	LOG_IN();
 	/* Extension Real-Time non supportée */
@@ -187,6 +191,7 @@ int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
 	LOG_RETURN(-1);
 }
 
+extern int __pthread_clock_gettime(clockid_t, struct timespec *);
 int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
 	LOG_IN();
 	/* Extension Real-Time non supportée */
@@ -213,6 +218,7 @@ void ma_check_lpt_sizes(void) {
 }
 
 #define cancellable_call_generic(ret, name, invocation, ver, proto, ...) \
+extern ret LPT_NAME(name) proto ; \
 ret LPT_NAME(name) proto { \
 	if (tbx_unlikely(!marcel_createdthreads())) { \
 		return invocation; \
@@ -236,6 +242,7 @@ DEF___LIBC(ret, name, proto, (args))
 /*********************lseek***************************/
 
 #if MA_BITS_PER_LONG < 64
+extern off64_t __lseek64(int, off64_t, int);
 off64_t __lseek64(int fd, off64_t offset, int whence) {
 	off64_t res;
 	int ret;
@@ -250,6 +257,7 @@ off64_t __lseek64(int fd, off64_t offset, int whence) {
 }
 strong_alias(__lseek64, lseek64)
 
+extern loff_t __llseek(int, loff_t, int);
 loff_t __llseek(int fd, loff_t offset, int whence) {
 	loff_t res;
 	int ret;

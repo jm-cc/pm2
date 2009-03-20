@@ -285,7 +285,8 @@ int lpt_mutex_timedlock(lpt_mutex_t * mutex,const struct timespec *abstime) {
         __lpt_lock(&mutex->__data.__lock, NULL);
         LOG_RETURN(0);
 }
-int lpt_mutex_unlock_usercnt(lpt_mutex_t * mutex, int decr) {
+
+static int lpt_mutex_unlock_usercnt(lpt_mutex_t * mutex, int decr) {
         LOG_IN();
 
         switch (__builtin_expect (mutex->__data.__kind, LPT_MUTEX_TIMED_NP)) {

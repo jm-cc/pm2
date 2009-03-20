@@ -105,6 +105,8 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 
 /* Node id used for first touch allocated memory */
 #define FIRST_TOUCH_NODE memory_manager->nb_nodes
+/* Node id used when memory area located on several nodes */
+#define MULTIPLE_LOCATION_NODE -2
 
 static
 unsigned long gethugepagesize(void) {
@@ -377,7 +379,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->next = NULL;
   (*memory_data)->node = node;
 
-  if (node != -1) (*memory_data)->nodes = NULL;
+  if (node != MULTIPLE_LOCATION_NODE) (*memory_data)->nodes = NULL;
   else {
     (*memory_data)->nodes = nodes;
   }
@@ -931,8 +933,6 @@ int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void *
     mdebug_mami("Could not locate pages\n");
     if (*node != FIRST_TOUCH_NODE) {
       *node = -1;
-      *nodes = tmalloc(nbpages * sizeof(int));
-      memcpy(*nodes, statuses, nbpages*sizeof(int));
     }
     errno = ENOENT;
     err = -errno;
@@ -945,7 +945,7 @@ int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void *
 	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes\n");
 #endif
         if (*node != FIRST_TOUCH_NODE) {
-          *node = -1;
+          *node = MULTIPLE_LOCATION_NODE;
           *nodes = tmalloc(nbpages * sizeof(int));
           memcpy(*nodes, statuses, nbpages*sizeof(int));
         }
@@ -1847,9 +1847,9 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
     nbpages=0;
     // Find out which pages have to be moved
     for(i=0 ; i<data->nbpages ; i++) {
-      if ((data->node == -1 && data->nodes[i] != nodes[i%nb_nodes]) ||
-          (data->node != -1 && data->node != nodes[i%nb_nodes])) {
-        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->node != -1 ? data->node : data->nodes[i], nodes[i%nb_nodes]);
+      if ((data->node == MULTIPLE_LOCATION_NODE && data->nodes[i] != nodes[i%nb_nodes]) ||
+          (data->node != MULTIPLE_LOCATION_NODE && data->node != nodes[i%nb_nodes])) {
+        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->node != MULTIPLE_LOCATION_NODE ? data->node : data->nodes[i], nodes[i%nb_nodes]);
         pageaddrs[nbpages] = buffer + (i*memory_manager->normalpagesize);
         dests[nbpages] = nodes[i%nb_nodes];
         nbpages ++;
@@ -1863,7 +1863,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
       if (err >= 0) {
         // Check the pages have been properly moved and update the data->nodes information
         if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
-        data->node = -1;
+        data->node = MULTIPLE_LOCATION_NODE;
         err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
         for(i=0 ; i<data->nbpages ; i++) {
           if (status[i] != nodes[i%nb_nodes]) {

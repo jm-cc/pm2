@@ -45,10 +45,10 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("marcel_memory_distribute unexpectedly failed");
   else {
     marcel_memory_locate(&memory_manager, ptr, 50000, &node);
-    if (node == -1)
+    if (node == -2)
       marcel_fprintf(stderr, "Node is %d as expected\n", node);
     else
-      marcel_fprintf(stderr, "Node is NOT -1 as expected but %d\n", node);
+      marcel_fprintf(stderr, "Node is NOT -2 as expected but %d\n", node);
 
     marcel_memory_gather(&memory_manager, ptr, 0);
     marcel_memory_locate(&memory_manager, ptr, 50000, &node);

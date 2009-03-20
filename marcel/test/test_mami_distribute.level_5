@@ -17,7 +17,7 @@ prog="distribute"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 marcel_memory_distribute successfully failed: Invalid argument
 Node is 1 as expected
-Node is -1 as expected
+Node is -2 as expected
 Node is 0 as expected
 MaMI: The 13 pages are all on node #0
 EOF

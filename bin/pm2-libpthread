@@ -51,7 +51,7 @@ then
 	     --eval-command "set environment LD_PRELOAD $pm2_ld_preload"		\
 	     --eval-command "set environment LD_LIBRARY_PATH $pm2_ld_library_path"	\
 	     --args "$@"
-elif [ "$1" = -s ]
+elif [ "$1" = -t ]
 then
     shift
     STRACE="${STRACE:-strace}"

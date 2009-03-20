@@ -17,11 +17,11 @@
 #section macros
 
 # define MARCEL_RWLOCK_INITIALIZER \
-  { .__rw_lock=MA_SPIN_LOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
+  { .__rw_lock=MA_MARCEL_FASTLOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
     .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
     .__rw_kind=MARCEL_RWLOCK_DEFAULT_NP, .__rw_pshared=MARCEL_PROCESS_PRIVATE }
 # define MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP \
-  { .__rw_lock=MA_SPIN_LOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
+  { .__rw_lock=MA_MARCEL_FASTLOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
     .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
     .__rw_kind=MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, 		      \
     .__rw_pshared=MARCEL_PROCESS_PRIVATE }

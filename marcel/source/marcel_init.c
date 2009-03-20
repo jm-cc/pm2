@@ -431,6 +431,8 @@ assert_preloaded (void) {
 		if (pukabi != NULL) {
 			void *global_malloc, *pukabi_malloc;
 
+			/* Note: GNU Bash provides its own `malloc', which makes this test fail
+			 * when running bash.  */
 			global_malloc = dlsym(self, "malloc");
 			pukabi_malloc = dlsym(pukabi, "malloc");
 

@@ -167,10 +167,14 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
   memory_manager->memfree = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
-  if (marcel_topo_node_level) {
-    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    if (marcel_topo_node_level) {
       memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
       memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+    }
+    else {
+      memory_manager->memtotal[node] = 0;
+      memory_manager->memfree[node] = 0;
     }
   }
 

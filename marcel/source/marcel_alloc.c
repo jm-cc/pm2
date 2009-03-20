@@ -276,7 +276,7 @@ static void __marcel_init marcel_slot_init(void)
 	_dl_get_tls_static_info(&static_tls_size, &static_tls_align);
 	MA_BUG_ON(static_tls_align > MARCEL_ALIGN);
 	if (static_tls_size + sizeof(lpt_tcb_t) > MA_TLS_AREA_SIZE) {
-		fprintf(stderr,"Marcel has only %lu bytes for TLS while %ld are needed, please increase MA_TLS_AREA_SIZE. Aborting.\n", MA_TLS_AREA_SIZE, (unsigned long) (static_tls_size + sizeof(lpt_tcb_t)));
+		fprintf(stderr,"Marcel has only %lu bytes for TLS while %ld are needed, please increase MA_TLS_AREA_SIZE in marcel_config.h. Aborting.\n", MA_TLS_AREA_SIZE, (unsigned long) (static_tls_size + sizeof(lpt_tcb_t)));
 		abort();
 	}
 	/* Record the main thread's TLS register

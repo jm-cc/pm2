@@ -251,56 +251,48 @@ nm_ns_split_ratio(uint32_t len_to_send,
   return NM_ESUCCESS;
 }
 
-int
-nm_ns_multiple_split_ratio(uint32_t len_to_send,
-                           struct nm_core *p_core,
-                           int nb_drv, nm_drv_id_t *drv_ids,
-                           uint32_t *chunk_lens,
-                           int *final_nb_drv){
-
+int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
+			       int*nb_chunks, struct nm_rdv_chunk*chunks)
+{
 #ifdef STRAT_ISO_SPLIT
   {
     int assigned_len = 0;
-    int cur_nb_drv = 0;
-    int chunk_len = tbx_aligned(len_to_send / nb_drv, sizeof(uint32_t));
+    int chunk_index = 0;
+    int chunk_len = tbx_aligned(len / *nb_chunks, sizeof(uint32_t));
 
-    while(cur_nb_drv < nb_drv-1 && assigned_len + chunk_len < len_to_send){
-      chunk_lens[cur_nb_drv] = chunk_len;
-      cur_nb_drv ++;
-      assigned_len+=chunk_len;
-    }
-
-    if(assigned_len < len_to_send){
-      chunk_lens[cur_nb_drv] = len_to_send - assigned_len;
-      cur_nb_drv++;
-    }
-
-    *final_nb_drv = cur_nb_drv;
+    while(chunk_index < *nb_chunks - 1 && assigned_len + chunk_len < len)
+      {
+	chunks[chunk_index].len = chunk_len;
+	chunk_index++;
+	assigned_len += chunk_len;
+      }
+    if(assigned_len < len)
+      {
+	chunks[chunk_index].len = len - assigned_len;
+	chunk_index++;
+      }
+    *nb_chunks = chunk_index;
   }
 #else
   {
     // warning : on suppose qu'un fragment est obligatoirement envoyé sur chaque driver.
     // à la stratégie de déterminer s'il est judicieux
     // d'employer ou non l'ensemble des drivers disponibles
-    int sum_bw = 0, drv_bw, pending_len = 0;
+    int sum_bw = 0;
     int i;
-
-    for(i = 0; i < nb_drv; i++){
-      sum_bw += drv_bws[drv_ids[i]];
-    }
-    pending_len = len_to_send;
-
-    for(i = 0; i < nb_drv - 1; i++){
-      drv_bw = drv_bws[drv_ids[i]];
-
-      chunk_lens[i] = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
-
-      pending_len -= chunk_lens[i];
-      sum_bw -= drv_bw;
-    }
-    chunk_lens[i] = tbx_aligned(pending_len, sizeof(uint32_t));
-
-    *final_nb_drv = nb_drv;
+    for(i = 0; i < *nb_chunks; i++)
+      {
+	sum_bw += drv_bws[chunks[i].drv_id];
+      }
+    int pending_len = len;
+    for(i = 0; i < *nb_chunks - 1; i++)
+      {
+	const int drv_bw = drv_bws[chunks[i].drv_id];
+	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
+	pending_len -= chunk_lens[i];
+	sum_bw -= drv_bw;
+      }
+    chunks[i].len = tbx_aligned(pending_len, sizeof(uint32_t));
   }
 #endif
 

@@ -80,7 +80,6 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 				struct nm_pkt_wrap *p_pw)
 {
-  int err;
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
 

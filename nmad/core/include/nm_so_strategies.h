@@ -16,8 +16,17 @@
 #ifndef NM_SO_STRATEGIES_H
 #define NM_SO_STRATEGIES_H
 
-#include <Padico/Puk.h>
-#include "nm_so_headers.h"
+/** a chunk of rdv data. 
+ * Use one for regular rendezvous; use nb_driver chunks for multi-rail.
+ */
+struct nm_rdv_chunk
+{
+  nm_drv_id_t drv_id;
+  nm_trk_id_t trk_id;
+  uint32_t len;
+};
+
+typedef const union nm_so_generic_ctrl_header*nm_generic_header_t;
 
 /* Driver for 'NewMad_Strategy' component interface
  */
@@ -47,16 +56,16 @@ struct nm_strategy_iface_s
 
   int (*pack_ctrl)(void*_status,
                    struct nm_gate *p_gate,
-		   const union nm_so_generic_ctrl_header *p_ctrl);
-
+		   nm_generic_header_t p_ctrl);
+  
   int (*pack_ctrl_chunk)(void*_status,
 			 struct nm_pkt_wrap *p_so_pw,
-			 const union nm_so_generic_ctrl_header *p_ctrl);
+			 nm_generic_header_t p_ctrl);
 
   int (*pack_extended_ctrl)(void*_status,
                             struct nm_gate *p_gate,
                             uint32_t cumulated_header_len,
-                            const union nm_so_generic_ctrl_header *p_ctrl,
+			    nm_generic_header_t p_ctrl,
                             struct nm_pkt_wrap **pp_so_pw);
 
   int (*pack_extended_ctrl_end)(void*_status,
@@ -73,15 +82,9 @@ struct nm_strategy_iface_s
       hold values "suggested" by the caller. */
   int (*rdv_accept)(void*_status,
 		    struct nm_gate *p_gate,
-		    nm_drv_id_t *drv_id,
-		    nm_trk_id_t *trk_id);
-
-  int (*extended_rdv_accept)(void*_status,
-                             struct nm_gate *p_gate,
-                             uint32_t len_to_send,
-                             int * nb_drv,
-                             nm_drv_id_t *drv_ids,
-                             uint32_t *chunk_lens);
+		    uint32_t len,
+		    int*nb_chunks,
+		    struct nm_rdv_chunk*chunks);
 
   int (*flush)(void*_status,
                struct nm_gate *p_gate);

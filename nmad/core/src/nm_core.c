@@ -435,7 +435,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
       for(i = 0; i < p_core->nb_gates; i++)
 	{
 	  struct nm_gate*p_gate = &p_core->gate_array[i];
-	  struct nm_gate_drv*p_gdrv = p_gate->p_gate_drv_array[drv_id];
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_id);
 	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw)
 	    {
@@ -461,9 +461,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
       for(j = 0 ; j < NM_DRV_MAX ; j++)
 	{
-	  if (p_gate->p_gate_drv_array[j] != NULL)
+	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, j);
+	  if (p_gdrv != NULL)
 	    {
-	      struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[j];
 	      struct nm_drv *p_drv = p_drv = p_gdrv->p_drv;
 	      nm_trk_id_t trk_id;
 	      for(trk_id = 0 ; trk_id < p_drv->nb_tracks; trk_id++)
@@ -489,9 +489,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
       struct nm_gate *p_gate = &p_core->gate_array[i];
       for(j = 0 ; j < NM_DRV_MAX ; j++)
 	{
-	  if (p_gate->p_gate_drv_array[j] != NULL)
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, j);
+	  if (p_gdrv != NULL)
 	    {
-	      struct nm_gate_drv *p_gdrv = p_gate->p_gate_drv_array[j];
 	      struct nm_drv *p_drv = p_gdrv->p_drv;
 	      p_drv->nb_tracks = 0;
 	      if(p_gdrv->instance != NULL)
@@ -500,7 +500,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  p_gdrv->instance = NULL;
 		}
 	      TBX_FREE(p_gdrv);
-	      p_gate->p_gate_drv_array[j] = NULL;
 	    }
 	}
     }
@@ -613,7 +612,7 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
     err	= -NM_ENOMEM;
     goto out;
   }
-  rq.p_gate->p_gate_drv_array[drv_id] = p_gdrv;
+  p_gate->p_gate_drv_array[drv_id] = p_gdrv;
 
   /* split drv/trk url */
   if (drv_trk_url)

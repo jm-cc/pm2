@@ -18,7 +18,6 @@
 #include <assert.h>
 
 #include <nm_private.h>
-#include <nm_predictions.h>
 
 /* Components structures:
  */
@@ -33,9 +32,7 @@ static int strat_split_balance_pack_extended_ctrl_end(void*,
                                                 struct nm_gate *p_gate,
                                                 struct nm_pkt_wrap *p_so_pw);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
-static int strat_split_balance_rdv_accept(void*, struct nm_gate*, nm_drv_id_t*, nm_trk_id_t*);
-static int strat_split_balance_extended_rdv_accept(void*, struct nm_gate *, uint32_t, int *,
-						   nm_drv_id_t *, uint32_t *);
+static int strat_split_balance_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
   {
@@ -52,7 +49,6 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
     .ack_callback    = NULL,
 #endif /* NMAD_QOS */
     .rdv_accept          = &strat_split_balance_rdv_accept,
-    .extended_rdv_accept = &strat_split_balance_extended_rdv_accept,
     .flush               = NULL
 };
 
@@ -593,80 +589,64 @@ strat_split_balance_try_and_commit(void *_status,
 
 /* Warning: drv_id and trk_id are IN/OUT parameters. They initially
    hold values "suggested" by the caller. */
-static int
-strat_split_balance_rdv_accept(void *_status,
-			       struct nm_gate *p_gate,
-			       nm_drv_id_t *drv_id,
-			       nm_trk_id_t *trk_id){
+static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate, uint32_t len,
+					  int*nb_chunks, struct nm_rdv_chunk*chunks)
+
+{
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  int nb_drivers = p_gate->p_core->nb_drivers;
-  nm_drv_id_t n;
 
-  /* Is there any large data track available? */
-  for(n = 0; n < nb_drivers; n++) {
-
-    /* We explore the drivers in sequence. 
-     * We assume they are registered in order from the fastest to the slowest. */
-    *drv_id = n;
-    /* TODO: we should use latency/bandwdith information from drivers capabilities */
-
-    if(p_so_gate->active_recv[*drv_id][*trk_id] == 0) {
-      /* Cool! The suggested track is available! */
-      return NM_ESUCCESS;
+  if(*nb_chunks == 1)
+    {
+      /* Is there any large data track available? */
+      nm_drv_id_t n;
+      for(n = 0; n < *nb_chunks; n++)
+	{
+	  /* We explore the drivers in sequence. 
+	   * We assume they are registered in order from the fastest to the slowest. 
+	   * TODO: we should use latency/bandwdith information from drivers capabilities
+	   */
+	  if(p_so_gate->active_recv[n][NM_TRK_LARGE] == 0)
+	    {
+	      chunks[0].len    = len;
+	      chunks[0].drv_id = n;
+	      chunks[0].trk_id = NM_TRK_LARGE;
+	      return NM_ESUCCESS;
+	    }
+	}
     }
-  }
+  else
+    {
+      const int nb_drivers = p_gate->p_core->nb_drivers;
+      int chunk_index = 0;
+      const nm_trk_id_t trk_id = NM_TRK_LARGE;
+      nm_drv_id_t *ordered_drv_id_by_bw = NULL;
+      nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw);
 
-  /* We're forced to postpone the acknowledgement. */
+      int i;
+      for(i = 0; i < nb_drivers; i++)
+	{
+	  if(p_so_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0)
+	    {
+	      chunks[chunk_index].drv_id = i;
+	      chunks[chunk_index].trk_id = NM_TRK_LARGE;
+	      chunk_index++;
+	    }
+	}
+      *nb_chunks = chunk_index;
+      if(chunk_index == 1)
+	{
+	  chunks[0].len = len;
+	  return NM_ESUCCESS;
+	}
+      else if(chunk_index > 1)
+	{
+	  nm_ns_multiple_split_ratio(len, p_gate->p_core, nb_chunks, chunks);
+	  return NM_ESUCCESS;
+	}      
+    }
+
+  /* postpone the acknowledgement. */
   return -NM_EAGAIN;
 }
 
-
-//#warning ajouter le n° de la track a utiliser pour chaque driver
-static int
-strat_split_balance_extended_rdv_accept(void *_status,
-					struct nm_gate *p_gate,
-					uint32_t len_to_send,
-					int * nb_drv,
-					nm_drv_id_t *drv_ids,
-					uint32_t *chunk_lens){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  int nb_drivers = p_gate->p_core->nb_drivers;
-  nm_drv_id_t *ordered_drv_id_by_bw = NULL;
-  int cur_drv_idx = 0;
-  nm_trk_id_t trk_id = NM_TRK_LARGE;
-  int err;
-  int i;
-
-  nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw);
-
-  for(i = 0; i < nb_drivers; i++){
-    if(p_so_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0) {
-      drv_ids[cur_drv_idx] = i;
-      cur_drv_idx++;
-    }
-  }
-
-  *nb_drv = cur_drv_idx;
-
-  if(cur_drv_idx == 0){
-    /* We're forced to postpone the acknowledgement. */
-    err = -NM_EAGAIN;
-  } else if(cur_drv_idx == 1){
-    err = NM_ESUCCESS;
-  } else {
-    int final_nb_drv = 0;
-
-    nm_ns_multiple_split_ratio(len_to_send,
-                               p_gate->p_core,
-                               cur_drv_idx, drv_ids,
-                               chunk_lens,
-                               &final_nb_drv);
-
-    *nb_drv = final_nb_drv;
-
-    err = NM_ESUCCESS;
-  }
-
-  return err;
-}
 

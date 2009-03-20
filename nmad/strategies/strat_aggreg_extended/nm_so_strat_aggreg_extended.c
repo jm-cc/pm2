@@ -26,7 +26,7 @@ static int strat_aggreg_extended_pack(void*, struct nm_gate*, nm_tag_t, uint8_t,
 static int strat_aggreg_extended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_extended_pack_extended(void*, struct nm_gate* , nm_tag_t, uint8_t, const void*, uint32_t, tbx_bool_t);
 static int strat_aggreg_extended_try_and_commit(void*, struct nm_gate *);
-static int strat_aggreg_extended_rdv_accept(void*, struct nm_gate*, nm_drv_id_t*, nm_trk_id_t*);
+static int strat_aggreg_extended_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
 
 static const struct nm_strategy_iface_s nm_so_strat_aggreg_extended_driver =
   {
@@ -126,18 +126,21 @@ static void strat_aggreg_extended_destroy(void*status)
  *  @param trk_id the suggested track id.
  *  @return The NM status.
  */
-static int strat_aggreg_extended_rdv_accept(void*_status,
-					    struct nm_gate *p_gate,
-					    nm_drv_id_t *drv_id,
-					    nm_trk_id_t *trk_id)
+static int strat_aggreg_extended_rdv_accept(void*_status, struct nm_gate *p_gate, uint32_t len,
+					    int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
   struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-
-  if(p_so_gate->active_recv[*drv_id][*trk_id] == 0)
-    /* Cool! The suggested track is available! */
-    return NM_ESUCCESS;
+  *nb_chunks = 1;
+  if(p_so_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
+    {
+      /* The large-packet track is available! */
+      chunks[0].len = len;
+      chunks[0].drv_id = NM_DRV_DEFAULT;
+      chunks[0].trk_id = NM_TRK_LARGE;
+      return NM_ESUCCESS;
+    }
   else
-    /* We decide to postpone the acknowledgement. */
+    /* postpone the acknowledgement. */
     return -NM_EAGAIN;
 }
 

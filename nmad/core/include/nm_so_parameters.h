@@ -63,5 +63,10 @@
 #define NM_SO_DATATYPE_BLOCKSIZE (2*1024)
 
 
+#define NM_SO_ALIGN_TYPE      uint32_t
+#define NM_SO_ALIGN_FRONTIER  sizeof(NM_SO_ALIGN_TYPE)
+#define nm_so_aligned(x)      tbx_aligned((x), NM_SO_ALIGN_FRONTIER)
+
+
 #endif /* NM_SO_PARAMETERS_H */
 

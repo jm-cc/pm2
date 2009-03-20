@@ -75,7 +75,6 @@ extern p_tbx_memory_t nm_so_chunk_mem;
         ((struct nm_so_chunk *)((char *)(l) -\
          (unsigned long)(&((struct nm_so_chunk *)0)->link)))
 
-
 /** tag-indexed type for 'any_src' requests */
 struct nm_so_any_src_s
 {

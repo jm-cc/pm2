@@ -31,9 +31,9 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
 {
   p_pw->p_gate = p_gate;
 
+  /* Packet is assigned to given driver */
+  p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
   /* Packet is assigned to given track */
-  p_pw->p_drv = (p_pw->p_gdrv =
-		 p_gate->p_gate_drv_array[drv_id])->p_drv;
   p_pw->trk_id = trk_id;
 
   /* append pkt to scheduler post list */
@@ -75,63 +75,6 @@ static __tbx_inline__ int nm_so_refill_regular_recv(struct nm_gate *p_gate)
   return err;
 }
 
-
-static __tbx_inline__ int nm_so_post_large_recv(struct nm_gate *p_gate, int drv_id,
-						nm_tag_t tag, uint8_t seq,
-						void *data, uint32_t len)
-{
-  int err;
-  struct nm_pkt_wrap *p_so_pw = NULL;
-
-  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
-                                          data, len,
-                                          0, 0, NM_SO_DATA_DONT_USE_HEADER,
-                                          &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
-
-static __tbx_inline__ int nm_so_post_large_datatype_recv_to_tmpbuf(tbx_bool_t is_any_src, struct nm_gate *p_gate,
-								   int drv_id, nm_tag_t tag, uint8_t seq,
-								   uint32_t len, struct DLOOP_Segment *segp)
-{
-  int err;
-  struct nm_pkt_wrap *p_so_pw = NULL;
-  void *data = NULL;
-
-  data = TBX_MALLOC(len);
-
-  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
-                                          data, len,
-                                          0, 0, NM_SO_DATA_DONT_USE_HEADER,
-                                          &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  p_so_pw->segp = segp;
-
-  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
-
-  if(is_any_src)
-    {
-      nm_so_any_src_get(&p_gate->p_so_gate->p_so_sched->any_src, tag-128)->status |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
-    }
-  else
-    {
-      nm_so_tag_get(&p_gate->p_so_gate->tags, tag - 128)->status[seq] |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
-    }
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
-
 static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
 						       struct nm_pkt_wrap *p_so_pw)
 {
@@ -142,39 +85,6 @@ static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, i
   err = NM_ESUCCESS;
   return err;
 }
-
-static __tbx_inline__ int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
-							nm_tag_t tag, uint8_t seq, void *data,
-							int nb_drv, nm_drv_id_t *drv_ids, uint32_t *chunk_lens)
-{
-  uint32_t offset = 0;
-  int i;
-
-  for(i = 0; i < nb_drv; i++){
-    nm_so_post_large_recv(p_gate, drv_ids[i], tag, seq, data + offset, chunk_lens[i]);
-    offset += chunk_lens[i];
-  }
-  return NM_ESUCCESS;
-}
-
-static __tbx_inline__ int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
-						      struct nm_pkt_wrap *p_so_pw,
-						      int nb_drv, nm_drv_id_t *drv_ids, uint32_t *chunk_lens)
-{
-  struct nm_pkt_wrap *p_so_pw2 = NULL;
-  int i;
-
-  for(i = 0; i < nb_drv; i++){
-    nm_so_pw_split(p_so_pw, &p_so_pw2, chunk_lens[i]);
-
-    nm_so_direct_post_large_recv(p_gate, drv_ids[i], p_so_pw);
-
-    p_so_pw = p_so_pw2;
-  }
-  return NM_ESUCCESS;
-
-}
-
 
 
 
@@ -198,7 +108,7 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
   FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate->id, p_pw, drv_id, trk_id );
 
   /* Packet is assigned to given track, driver, and gate */
-  p_pw->p_drv = (p_pw->p_gdrv = p_gate->p_gate_drv_array[drv_id])->p_drv;
+  p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
   p_pw->trk_id = trk_id;
   p_pw->p_gate = p_gate;
 

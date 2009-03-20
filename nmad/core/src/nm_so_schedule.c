@@ -20,8 +20,6 @@
 
 #include <nm_private.h>
 
-#include <nm_predictions.h>
-
 
 #define INITIAL_CHUNK_NUM (NM_TAGS_PREALLOC * NM_SO_PENDING_PACKS_WINDOW)
 

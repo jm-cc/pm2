@@ -26,9 +26,9 @@ int marcel_main(int argc, char **argv) {
   marcel_memory_init(&memory_manager);
 
   minsource = 0;
-  maxsource = marcel_nbnodes-1;
+  maxsource = memory_manager.nb_nodes-1;
   mindest = 0;
-  maxdest = marcel_nbnodes-1;
+  maxdest = memory_manager.nb_nodes-1;
 
   for(i=1 ; i<argc ; i++) {
     if (!strcmp(argv[i], "-src")) {

@@ -474,7 +474,7 @@ void ma_memory_free_from_node(marcel_memory_manager_t *memory_manager, void *buf
   }
   else {
     ptr = &(memory_manager->heaps[node]);
-    if (node != FIRST_TOUCH_NODE) {
+    if (node >= 0 && node < memory_manager->nb_nodes) {
       memory_manager->memfree[node] += (size/1024);
     }
   }
@@ -532,7 +532,7 @@ void ma_memory_unregister(marcel_memory_manager_t *memory_manager, marcel_memory
                     data->node);
 	VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
 	// Free memory
-        if (data->node != UNKNOWN_LOCATION_NODE)
+        if (data->node >= 0 && data->node <= memory_manager->nb_nodes)
           ma_memory_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
       }
       else {
@@ -795,7 +795,9 @@ void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, in
     heap->start += size;
     heap->nbpages -= nbpages;
   }
-  memory_manager->memfree[node] -= (size/1024);
+  if (node >= 0 && node < memory_manager->nb_nodes) {
+    memory_manager->memfree[node] -= (size/1024);
+  }
   return buffer;
 }
 
@@ -1153,7 +1155,7 @@ int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long 
 }
 
 int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
-  int *pagenodes;
+  int pagenodes[pages];
   int i;
   int err=0;
 
@@ -1164,7 +1166,6 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
     return err;
   }
 
-  pagenodes = tmalloc(pages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);
   if (err < 0) perror("(ma_memory_check_pages_location) move_pages");
   else {
@@ -1175,7 +1176,6 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
       }
     }
   }
-  tfree(pagenodes);
   return err;
 }
 

@@ -16,3 +16,6 @@ PM2_CC="gcc -maix64 -mcpu=powerpc64"
 PM2_ARCH=PPC64_ARCH
 PM2_ASM=ppc64
 export PM2_CC PM2_ARCH PM2_ASM PM2_AR
+
+Note: after setting PM2_CC, run make clean to clear the generated Makefiles that
+record the PM2_CC value

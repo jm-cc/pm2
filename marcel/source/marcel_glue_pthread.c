@@ -286,7 +286,16 @@ cancellable_call_ext(ssize_t, pwrite64, SYS_pwrite64, GLIBC_2_2, (int fd, const 
 cancellable_call(ssize_t, read, (int fd, void *buf, size_t count), fd, buf, count)
 #ifdef SYS_waitpid
 cancellable_call(pid_t, waitpid, (pid_t pid, int *status, int options), pid, status, options)
+#elif SYS_wait4
+/* On `x86_64-unknown-linux-gnu', waitpid(2) is implemented in terms of
+ * wait4(2).  */
+cancellable_call_generic (pid_t, waitpid,
+				syscall (SYS_wait4, pid, status, options, NULL),
+				GLIBC_2_2_5,
+				(pid_t pid, int *status, int options),
+				pid, status, options)
 #endif
+
 cancellable_call(ssize_t, write, (int fd, const void *buf, size_t count), fd, buf, count)
 
 #ifdef SYS_connect

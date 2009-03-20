@@ -2,7 +2,6 @@ MARCEL {
     MARCEL_*;
     __main_lwp;
     __main_thread_struct;
-    cur_lwp;
     go_marcel_main;
     _marcel_*;
     __marcel_*;

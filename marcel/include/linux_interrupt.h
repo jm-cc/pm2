@@ -51,6 +51,7 @@ enum {
 	MA_TASKLET_SOFTIRQ,
 #ifdef MARCEL_SIGNALS_ENABLED
 	MA_SIGNAL_SOFTIRQ,
+	MA_SIGMASK_SOFTIRQ,
 #endif
 	MA_NR_SOFTIRQs
 };
@@ -216,7 +217,7 @@ static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct
 	if (t->preempt) {
 		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vpnum);
 		//DISP("sending signal to vp %d", (int)vpnum);
-		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+		MA_LWP_RESCHED(lwp);
 	}
 
 	

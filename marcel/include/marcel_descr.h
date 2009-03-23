@@ -292,7 +292,13 @@ struct marcel_task {
 	ma_spinlock_t siglock;
 	marcel_sigset_t sigpending;
 	siginfo_t siginfo[MARCEL_NSIG];      
+	/* Thread's signal mask as seen by the application.  */
 	marcel_sigset_t curmask;
+	/* kernel version, synced with curmask, to optimize context-switches.  */
+#ifdef __GLIBC__
+	sigset_t kcurmask;
+#endif
+
 	int interrupted;
 	int delivering_sig;
 	int restart_deliver_sig;

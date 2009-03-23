@@ -57,6 +57,11 @@ ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
 /* Unité : microsecondes */
 static volatile unsigned long time_slice = MARCEL_DEFAULT_TIME_SLICE;
 
+#ifdef MARCEL_SIGNALS_ENABLED
+sigset_t ma_timer_sigmask;
+ma_spinlock_t ma_timer_sigmask_lock = MA_SPIN_LOCK_UNLOCKED;
+#endif
+
 // Fréquence des messages de debug dans timer_interrupt
 #ifndef TICK_RATE
 #define TICK_RATE 1
@@ -353,39 +358,25 @@ unsigned long marcel_gettimeslice(void)
 #ifndef __MINGW32__
 void marcel_sig_enable_interrupts(void)
 {
-#ifdef MA__LWPS
+#ifdef MARCEL_SIGNALS_ENABLED
+	ma_spin_lock_softirq(&ma_timer_sigmask_lock);
+	sigemptyset(&ma_timer_sigmask);
+#endif
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#else
-#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-#ifdef MA__TIMER
-	sigrelse(MARCEL_TIMER_SIGNAL);
-#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
-	sigrelse(MARCEL_TIMER_USERSIGNAL);
-#endif
-#endif
-	sigrelse(MARCEL_RESCHED_SIGNAL);
-#else
-	sigprocmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
+#ifdef MARCEL_SIGNALS_ENABLED
+	ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
 #endif
 }
 
 void marcel_sig_disable_interrupts(void)
 {
-#ifdef MA__LWPS
+#ifdef MARCEL_SIGNALS_ENABLED
+	ma_spin_lock_softirq(&ma_timer_sigmask_lock);
+	ma_timer_sigmask = sigalrmset;
+#endif
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
-#else
-#if defined(SOLARIS_SYS) || defined(UNICOS_SYS)
-#ifdef MA__TIMER
-	sighold(MARCEL_TIMER_SIGNAL);
-#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
-	sighold(MARCEL_TIMER_USERSIGNAL);
-#endif
-#endif
-	sighold(MARCEL_RESCHED_SIGNAL);
-#else
-	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
-#endif
+#ifdef MARCEL_SIGNALS_ENABLED
+	ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
 #endif
 }
 
@@ -429,11 +420,6 @@ static void sig_start_timer(ma_lwp_t lwp)
 #endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
-#ifdef MA__LWPS
-#ifdef DISTRIBUTE_SIGALRM
-	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
-#endif
-#endif
 	marcel_sig_enable_interrupts();
 
 #ifdef DISTRIBUTE_SIGALRM
@@ -512,7 +498,14 @@ static void __marcel_init sig_init(void)
 #ifdef MA__LWPS
 	/* Block signals before starting LWPs, so that LWPs started by the
 	 * pthread library do not get signals at first. */
-	sigprocmask(SIG_BLOCK, &sigalrmset, NULL);
+#ifdef MARCEL_SIGNALS_ENABLED
+	ma_timer_sigmask = sigalrmset;
+#endif
+	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
+#else
+#ifdef MARCEL_SIGNALS_ENABLED
+	sigemptyset(&ma_timer_sigmask);
+#endif
 #endif
 }
 __ma_initfunc(sig_init, MA_INIT_TIMER_SIG_DATA, "Signal static data");

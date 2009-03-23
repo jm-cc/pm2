@@ -152,13 +152,13 @@ create_test_flavor() {
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
-	test_marcel_cpp_pmarcel)
+	test_marcel_pmarcel)
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"smp\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"enable_keys\" \
-		--marcel=\"pmarcel\" \
+		--marcel=\"pmarcel\" --marcel=\"enable_signals\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;

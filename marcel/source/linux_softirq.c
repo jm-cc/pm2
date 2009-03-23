@@ -195,10 +195,10 @@ fastcall TBX_EXTERN void ma_raise_softirq_lwp(ma_lwp_t lwp, unsigned int nr) {
 #ifdef MA__LWPS
 	if (lwp == MA_LWP_SELF)
 #endif
-		ma_wakeup_vp_softirqd();
+		ma_wakeup_lwp_softirqd();
 #ifdef MA__LWPS
 	else
-		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+		MA_LWP_RESCHED(lwp);
 #endif
 	ma_preempt_enable();
 }

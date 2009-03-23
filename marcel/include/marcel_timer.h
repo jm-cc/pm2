@@ -56,6 +56,13 @@ static __tbx_inline__ void enable_preemption(void);
 static __tbx_inline__ unsigned int preemption_enabled(void);
 #section marcel_variables
 extern TBX_EXTERN ma_atomic_t __ma_preemption_disabled;
+#ifdef MARCEL_SIGNALS_ENABLED
+/* Mask currently used for the timer and preemption signals, for
+ * marcel_signal.c to apply them as well. Protected by ma_timer_sigmask_lock
+ * below.  */
+extern sigset_t ma_timer_sigmask;
+extern ma_spinlock_t ma_timer_sigmask_lock;
+#endif
 #section marcel_inline
 static __tbx_inline__ void disable_preemption(void)
 {

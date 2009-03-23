@@ -148,11 +148,6 @@ marcel_kthread_t marcel_kthread_self(void)
 	return marcel_gettid();
 }
 
-void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
-{
-	sigprocmask(how, newmask, oldmask);
-}
-
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
 	if (syscall(SYS_tkill, pid, sig) == -1) {
@@ -379,12 +374,6 @@ marcel_kthread_t marcel_kthread_self(void)
 	return pthread_self();
 }
 
-void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
-{
-	int ret TBX_UNUSED = pthread_sigmask(how, newmask, oldmask);
-	MA_BUG_ON(ret);
-}
-
 void marcel_kthread_kill(marcel_kthread_t pid, int sig)
 {
 	int ret TBX_UNUSED = pthread_kill(pid, sig);
@@ -468,3 +457,14 @@ void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*c
 #endif
 
 #endif // MA__LWPS
+
+void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask)
+{
+	int ret TBX_UNUSED;
+#if defined(MA__LWPS) && !defined(MARCEL_DONT_USE_POSIX_THREADS)
+	ret = pthread_sigmask(how, newmask, oldmask);
+#else
+	ret = sigprocmask(how, newmask, oldmask);
+#endif // MA__LWPS
+	MA_BUG_ON(ret);
+}

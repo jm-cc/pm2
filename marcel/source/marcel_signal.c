@@ -33,7 +33,8 @@
  * - Kernel or other processes to our process.  marcel_pidkill() handles the
  *   signal by just setting ksiginfo and raising the MA_SIGNAL_SOFTIRQ.  The
  *   softirq handler can then handle it less expectedly later: choose a thread
- *   that doesn't block it, and deviate it into running marcel_deliver_sig.
+ *   that doesn't block it (marcel_sigtransfer), and deviate it into running
+ *   marcel_deliver_sig.
  * - kernel to an LWP (SIGSEGV for instance).  This actually is directed to the
  *   marcel thread currently running on that LWP.  We can just synchronously
  *   call the application's handler.
@@ -47,13 +48,22 @@
  *   simpler.
  * - Marcel timers to our process.  We could call kill() ourselves, but we
  *   simulate a reception from the kernel.
+ *
+ * Letting the application block a signal with the default handler is
+ * difficult: the threads that block it shouldn't get disturbed if they receive
+ * it.  The threads that do not block it _should_ get disturbed (e.g. make the
+ * processus crash).  We want to avoid changing the kernel signal mask on each
+ * context switch, so we only do so for signals that have the SIG_DFL handler.
+ * When sigaction is called, that means we have to notify other LWPs that the
+ * signal mask should be changed and wait for them to actually do it.
  */
 
 /*********************MA__DEBUG******************************/
 #define MA__DEBUG
 /*********************variables globales*********************/
 static struct marcel_sigaction csigaction[MARCEL_NSIG];
-static ma_rwlock_t rwlock = MA_RW_LOCK_UNLOCKED;
+/* Protects csigaction updates.  */
+static marcel_rwlock_t rwlock = MARCEL_RWLOCK_INITIALIZER;
 /* sigpending processus */
 static int ksigpending[MARCEL_NSIG];
 static siginfo_t ksiginfo[MARCEL_NSIG];
@@ -61,6 +71,9 @@ static marcel_sigset_t gsigpending;
 static siginfo_t gsiginfo[MARCEL_NSIG];
 static ma_spinlock_t gsiglock = MA_SPIN_LOCK_UNLOCKED;
 static ma_twblocked_t *list_wthreads;
+
+static marcel_sigset_t ma_dfl_sigs;
+static sigset_t ma_dfl_ksigs;
 
 int marcel_deliver_sig(void);
 
@@ -183,7 +196,7 @@ static int check_itimer(int which)
 		return -1;
 	}
 	if (which != ITIMER_REAL) {
-		fprintf(stderr,
+		marcel_fprintf(stderr,
 		    "set/getitimer : value which not supported !\n");
 		errno = ENOTSUP;
 		return -1;
@@ -298,10 +311,10 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 
 	/* Iterate over all threads */
 	for_all_vp_from_begin(vp, number) {
-		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));
+		_ma_raw_spin_lock(&ma_topo_vpdata_l(vp, threadlist_lock));
 		list_for_each_entry(t, &ma_topo_vpdata_l(vp, all_threads),
 		    all_threads) {
-			ma_spin_lock_softirq(&t->siglock);
+			_ma_raw_spin_lock(&t->siglock);
 			deliver = 0;
 			/* Iterate over all signals */
 			for (sig = 1; sig < MARCEL_NSIG; sig++) {
@@ -319,16 +332,17 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 				/* Deliver all signals at once */
 				marcel_deviate(t,
 				    (handler_func_t) marcel_deliver_sig, NULL);
-			ma_spin_unlock_softirq(&t->siglock);
+			_ma_raw_spin_unlock(&t->siglock);
 			if (marcel_sigisemptyset(&gsigpending))
 				break;
 		}
-		ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp, threadlist_lock));	//verrou de liste des threads
+		_ma_raw_spin_unlock(&ma_topo_vpdata_l(vp, threadlist_lock));	//verrou de liste des threads
 		if (marcel_sigisemptyset(&gsigpending))
 			break;
 	}
 	for_all_vp_from_end(vp, number)
-	    ma_spin_unlock_softirq(&gsiglock);
+
+	ma_spin_unlock_softirq(&gsiglock);
 
 	LOG_OUT();
 	return;
@@ -431,6 +445,78 @@ static void marcel_pidkill(int sig)
 
 	ma_irq_exit();
 	/* TODO: check preempt */
+}
+
+/* We have either changed some sigaction to/from SIG_DFL or switched to another
+ * thread or called sigmask.  We may need to update our blocked mask.
+ *
+ * Note: we do not protect ourselves from a concurrent call to sigaction that
+ * would modify ma_dfl_sigs.  That is fine as sigaction will notify us later
+ * anyway.  */
+
+void ma_update_lwp_blocked_signals(void) {
+	marcel_sigset_t should_block;
+	marcel_sigandset(&should_block, &ma_dfl_sigs, &SELF_GETMEM(curmask));
+	if (!marcel_sigequalset(&should_block, &__ma_get_lwp_var(curmask))) {
+		/* We have to update the LWP's sigmask */
+		sigset_t kshould_block;
+		/* _softirq also disables the MA_SIGMASK_SOFTIRQ, to make sure
+		 * we do not miss a ma_dfl_ksigs change between our read and
+		 * the actual call to kthread_sigmask*/
+		ma_spin_lock_softirq(&ma_timer_sigmask_lock);
+#ifdef __GLIBC__
+		sigandset(&kshould_block, &ma_dfl_ksigs, &SELF_GETMEM(kcurmask));
+		sigorset(&kshould_block, &kshould_block, &ma_timer_sigmask);
+#else
+		int sig;
+
+		sigemptyset(&kshould_block);
+		for (sig = 1; sig < MARCEL_NSIG; sig++)
+			if (marcel_sigismember(&ma_dfl_sigs, sig) &&
+				marcel_sigismember(&SELF_GETMEM(curmask), sig) ||
+				sigismember(&ma_timer_sigmask))
+				sigaddset(&kshould_block, sig);
+#endif
+		marcel_kthread_sigmask(SIG_SETMASK, &kshould_block, NULL);
+		ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
+		__ma_get_lwp_var(curmask) = should_block;
+	}
+}
+
+/* Number of LWPs pending an update of blocked signals.  */
+static ma_atomic_t nr_pending_blocked_signals_updates;
+static marcel_sem_t blocked_signals_sem = MARCEL_SEM_INITIALIZER(0);;
+
+static void update_lwp_blocked_signals_softirq(struct ma_softirq_action *action) {
+	ma_update_lwp_blocked_signals();
+	if (!ma_atomic_dec_return(&nr_pending_blocked_signals_updates))
+		marcel_sem_V(&blocked_signals_sem);
+}
+
+/* We have changed some sigaction to/from SIG_DFL, we may need to make other
+ * LWPs update their blocked mask before continuing.  */
+static void update_lwps_blocked_signals(int wait) {
+	ma_lwp_t lwp;
+	/* First make sure other processors see the new set of signals with
+	 * SIG_DFL */
+	ma_smp_mb();
+	int res;
+
+	MA_BUG_ON(ma_atomic_read(&nr_pending_blocked_signals_updates));
+	marcel_sem_getvalue(&blocked_signals_sem,&res);
+	MA_BUG_ON(res);
+	/* Make sure no two LWPs run sem_V */
+	ma_atomic_inc(&nr_pending_blocked_signals_updates);
+	ma_for_all_lwp(lwp) {
+		if (lwp == MA_LWP_SELF)
+			ma_update_lwp_blocked_signals();
+		else {
+			ma_raise_softirq_lwp(lwp, MA_SIGMASK_SOFTIRQ);
+			ma_atomic_inc(&nr_pending_blocked_signals_updates);
+		}
+	}
+	if (ma_atomic_dec_return(&nr_pending_blocked_signals_updates))
+		marcel_sem_P(&blocked_signals_sem);
 }
 
 /*********************pthread_kill***************************/
@@ -592,35 +678,13 @@ restart:
 		LOG_RETURN(0);
 	}
 
-	/*
-	 * Letting the application block a signal with the default handler is
-	 * difficult: the threads that block it shouldn't get disturbed if they
-	 * receive it.  The threads that do not block it should get disturbed
-	 * (e.g. make the processus crash).
-	 *
-	 * If we do not request the kernel to block the signal (which is what
-	 * we are doing here for now), if we receive it and the default action
-	 * is to crash the process, we will crash, even if the signal was
-	 * directed to threads that had blocked it.
-	 *
-	 * If we request the kernel to block the signal, we indeed won't
-	 * disturb the threads that block it.  But then we do not have a way to
-	 * get the "make the process crash" behavior since the signal is
-	 * blocked.
-	 */
-
-	/* XXX hack to still let the very common but apparently not problematic
-	 * case go without a warning */
-	if (!marcel_sigisfullset(&cset)) 
+	cthread->curmask = cset;
+#ifdef __GLIBC__
+	sigemptyset(&cthread->kcurmask);
 	for (sig = 1; sig < MARCEL_NSIG; sig++)
 		if (marcel_sigismember(&cset, sig))
-			if (csigaction[sig].marcel_sa_handler == SIG_DFL) {
-				fprintf(stderr,
-						"pthread_sigmask doesn't support blocking signals with SIG_DFL as sa_handler\n");
-				break;
-			}
-
-	cthread->curmask = cset;
+			sigaddset(&cthread->kcurmask, sig);
+#endif
 
    /***************traitement des signaux************/
 	if (!marcel_signandisempty(&gsigpending, &cset)) {
@@ -653,7 +717,17 @@ restart:
 	}
 	ma_spin_unlock_softirq(&cthread->siglock);
 
+	ma_update_lwp_blocked_signals();
+
 	LOG_RETURN(0);
+}
+
+void ma_sigexit(void) {
+	/* Since it will die, we don't want this thread to be chosen for
+	 * delivering signals any more */
+	ma_spin_lock_softirq(&SELF_GETMEM(siglock));
+	marcel_sigfillset(&SELF_GETMEM(curmask));
+	ma_spin_unlock_softirq(&SELF_GETMEM(siglock));
 }
 
 int pmarcel_sigmask(int how, __const marcel_sigset_t * set,
@@ -710,7 +784,7 @@ int lpt_sigprocmask(int how, __const sigset_t * set, sigset_t * oset)
 	LOG_IN();
 
 	if (marcel_createdthreads() != 0)
-		fprintf(stderr,
+		marcel_fprintf(stderr,
 		    "sigprocmask : multithreading here ! lpt_sigmask used instead\n");
 	int ret = lpt_sigmask(how, set, oset);
 	if (ret) {
@@ -1257,6 +1331,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 	LOG_IN();
 	ma_kernel_sigaction_t kact;
 	void *handler;
+	void *ohandler;
 
 	if ((sig < 1) || (sig >= MARCEL_NSIG)) {
 		mdebug
@@ -1267,16 +1342,18 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 	}
 
 	if (sig == MARCEL_RESCHED_SIGNAL)
-		fprintf(stderr, "!! warning: signal %d not supported\n", sig);
-
-	ma_read_lock(&rwlock);
-	if (oact != NULL)
-		*oact = csigaction[sig];
-	ma_read_unlock(&rwlock);
+		marcel_fprintf(stderr, "!! warning: signal %d not supported\n", sig);
 
 	if (!act) {
+		/* Just reading the current sigaction */
+		marcel_rwlock_rdlock(&rwlock);
+		if (oact != NULL)
+			*oact = csigaction[sig];
+		marcel_rwlock_unlock(&rwlock);
 		LOG_RETURN(0);
 	}
+
+	/* Really writing */
 #ifdef SA_SIGINFO
 	if (act->marcel_sa_flags & SA_SIGINFO)
 		handler = act->marcel_sa_sigaction;
@@ -1297,20 +1374,46 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 			LOG_RETURN(-1);
 		}
 
-	ma_write_lock(&rwlock);
+	/* Serialize sigaction operations */
+	marcel_rwlock_wrlock(&rwlock);
+
+	/* Record old action */
+	if (oact != NULL)
+		*oact = csigaction[sig];
+
+#ifdef SA_SIGINFO
+	if (csigaction[sig].marcel_sa_flags & SA_SIGINFO)
+		ohandler = csigaction[sig].marcel_sa_sigaction;
+	else
+#endif
+		ohandler = csigaction[sig].marcel_sa_handler;
+
+	/* Record new action */
 	csigaction[sig] = *act;
-	ma_write_unlock(&rwlock);
 
 	/* don't modify kernel handling for signals that we use */
 	if (
-#ifdef MARCEL_TIMER_SIGNAL
+#ifdef MA__TIMER
 	    (sig == MARCEL_TIMER_SIGNAL) ||
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	    (sig == MARCEL_TIMER_USERSIGNAL) ||
+#endif
 #endif
 	    (sig == MARCEL_RESCHED_SIGNAL)) {
+		marcel_rwlock_unlock(&rwlock);
 		LOG_RETURN(0);
 	}
 
-	/* else, set the kernel handler */
+	/* Before changing the kernel handler to the default behavior (which
+	 * could be dangerous for our process), block the signal on LWPs that
+	 * should */
+	if (handler == SIG_DFL) {
+		marcel_sigaddset(&ma_dfl_sigs, sig);
+		sigaddset(&ma_dfl_ksigs, sig);
+		update_lwps_blocked_signals(1);
+	}
+
+	/* set the kernel handler */
 	sigemptyset(&kact.sa_mask);
 	if (handler == SIG_IGN || handler == SIG_DFL)
 #ifdef SA_SIGINFO
@@ -1335,6 +1438,16 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 		mdebug("!! sortie erreur de marcel_sigaction\n");
 		LOG_RETURN(-1);
 	}
+
+	/* After changing the kernel handler, we can unblock the signal on LWPs
+	 * that should */
+	if (ohandler == SIG_DFL && handler != SIG_DFL) {
+		marcel_sigdelset(&ma_dfl_sigs, sig);
+		sigdelset(&ma_dfl_ksigs, sig);
+		update_lwps_blocked_signals(0);
+	}
+
+	marcel_rwlock_unlock(&rwlock);
 
 	LOG_RETURN(0);
 })
@@ -1451,9 +1564,9 @@ int marcel_call_function(int sig)
 	}
 
 	struct marcel_sigaction cact;
-	ma_read_lock(&rwlock);
+	marcel_rwlock_rdlock(&rwlock);
 	cact = csigaction[sig];
-	ma_read_unlock(&rwlock);
+	marcel_rwlock_unlock(&rwlock);
 
 	void (*handler) (int);
 
@@ -1503,6 +1616,19 @@ __marcel_init void ma_signals_init(void)
 {
 	LOG_IN();
 	ma_open_softirq(MA_SIGNAL_SOFTIRQ, marcel_sigtransfer, NULL);
+	ma_open_softirq(MA_SIGMASK_SOFTIRQ, update_lwp_blocked_signals_softirq, NULL);
+	marcel_sigfillset(&ma_dfl_sigs);
+	sigfillset(&ma_dfl_ksigs);
+#ifdef MA__TIMER
+	marcel_sigdelset(&ma_dfl_sigs, MARCEL_TIMER_SIGNAL);
+	sigdelset(&ma_dfl_ksigs, MARCEL_TIMER_SIGNAL);
+#if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
+	marcel_sigdelset(&ma_dfl_sigs, MARCEL_TIMER_USERSIGNAL);
+	sigdelset(&ma_dfl_ksigs, MARCEL_TIMER_USERSIGNAL);
+#endif
+#endif
+	marcel_sigdelset(&ma_dfl_sigs, MARCEL_RESCHED_SIGNAL);
+	sigdelset(&ma_dfl_ksigs, MARCEL_RESCHED_SIGNAL);
 	LOG_OUT();
 }
 
@@ -1510,13 +1636,13 @@ __marcel_init void ma_signals_init(void)
 void marcel_testset(__const marcel_sigset_t * set, char *what)
 {
 	int i;
-	fprintf(stderr, "signaux du set %s : ", what);
+	marcel_fprintf(stderr, "signaux du set %s : ", what);
 	for (i = 1; i < MARCEL_NSIG; i++)
 		if (marcel_sigismember(set, i))
-			fprintf(stderr, "1");
+			marcel_fprintf(stderr, "1");
 		else
-			fprintf(stderr, "0");
-	fprintf(stderr, "\n");
+			marcel_fprintf(stderr, "0");
+	marcel_fprintf(stderr, "\n");
 }
 
 /****************autres fonctions******************/
@@ -1620,5 +1746,18 @@ versioned_symbol(libpthread, pmarcel_sigset,
 	              sigset, GLIBC_2_1);
 #endif
 #endif
+
+static void signal_init(ma_lwp_t lwp) {
+	marcel_sigemptyset(&lwp->curmask);
+}
+
+static void signal_start(ma_lwp_t lwp) {
+}
+
+MA_DEFINE_LWP_NOTIFIER_START(signal, "signal",
+			     signal_init, "Initialize signal masks",
+			     signal_start, "Start signal handling");
+MA_LWP_NOTIFIER_CALL_UP_PREPARE(signal, MA_INIT_MAIN_LWP);
+MA_LWP_NOTIFIER_CALL_ONLINE(signal, MA_INIT_MAIN_LWP);
 
 #endif

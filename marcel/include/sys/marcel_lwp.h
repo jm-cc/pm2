@@ -94,6 +94,10 @@ struct marcel_lwp {
 	int need_resched;
 #  endif
 #endif
+#ifdef MARCEL_SIGNALS_ENABLED
+	/* Signal mask currently applied to the LWP.  */
+	marcel_sigset_t curmask;
+#endif
 };
 
 #ifdef MA__LWPS
@@ -359,7 +363,7 @@ void marcel_leave_blocking_section(void);
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)
 #define ma_softirq_pending_lwp(lwp) \
-	ma_topo_vpdata_l(ma_per_lwp(vp_level, (lwp)),softirq_pending)
+	ma_per_lwp(softirq_pending, (lwp))
 #define ma_local_softirq_pending() \
 	__ma_get_lwp_var(softirq_pending)
 

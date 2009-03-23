@@ -70,8 +70,6 @@ void marcel_kthread_exit(void *retval);
 
 marcel_kthread_t marcel_kthread_self(void);
 
-void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask);
-
 void marcel_kthread_kill(marcel_kthread_t pid, int sig);
 
 void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock);
@@ -89,5 +87,7 @@ void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond);
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex);
 void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
 #endif // MA__LWPS
+
+void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask);
 
 

@@ -181,6 +181,9 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	marcel_sigemptyset(&t->sigpending);
 	//t->siginfo
 	t->curmask = MARCEL_SELF->curmask;
+#ifdef __GLIBC__
+	t->kcurmask = MARCEL_SELF->kcurmask;
+#endif
 	//t->interrupted
 	t->delivering_sig = 0;
 	t->restart_deliver_sig = 0;
@@ -634,15 +637,7 @@ static void marcel_exit_internal(any_t val)
 	}
 #endif /* MARCEL_KEYS_ENABLED */
 
-#ifdef MARCEL_SIGNALS_ENABLED
-	/* Since it will die, we don't want this thread to be chosen for
-	 * delivering signals any more */
-	{
-		marcel_sigset_t set;
-		marcel_sigfillset(&set);
-		marcel_sigmask(SIG_BLOCK,&set,NULL);
-	}
-#endif
+	ma_sigexit();
 
 	cur->ret_val = val;
 

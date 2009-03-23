@@ -15,5 +15,9 @@
 
 . ./common.sh
 flavor="test_marcel_pmarcel"
-prog="simple-cpp"
+prog="dflsigblock"
+
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+got signal 10
+EOF
 

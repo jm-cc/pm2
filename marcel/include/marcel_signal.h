@@ -160,14 +160,14 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
 #section marcel_macros
 
 /* Return a mask that includes the bit for SIG only.  */
-#define ma_sigmask(sig) \
+#define marcel_sigoneset(sig) \
   (1UL << ((sig) - 1))
 
 #define marcel_sigemptyset(set) \
   ({ *(set) = 0; \
      0;})
 
-#define MARCEL_SIGSET_FULL (0xffffffffUL - ma_sigmask(SIGKILL) - ma_sigmask(SIGSTOP))
+#define MARCEL_SIGSET_FULL (0xffffffffUL - marcel_sigoneset(SIGKILL) - marcel_sigoneset(SIGSTOP))
 
 #define marcel_sigfillset(set) \
   ({ *(set) = MARCEL_SIGSET_FULL;    \
@@ -180,17 +180,17 @@ typedef unsigned int marcel_sigset_t, pmarcel_sigset_t;
   ({ (*(set) == MARCEL_SIGSET_FULL); })
 
 #define marcel_sigismember(set,sig)        \
-  ({ unsigned int mask = ma_sigmask(sig);  \
+  ({ unsigned int mask = marcel_sigoneset(sig);  \
     ((*(set)&mask) ? 1 : 0); })
 
 #define marcel_sigaddset(set,sig)          \
-  ({ unsigned int mask = ma_sigmask(sig);  \
+  ({ unsigned int mask = marcel_sigoneset(sig);  \
      marcel_sigset_t *__set = (set);       \
      *__set = *__set|mask;                 \
      0; })
      
 #define marcel_sigdelset(set,sig)          \
-  ({ unsigned int mask = ma_sigmask(sig);  \
+  ({ unsigned int mask = marcel_sigoneset(sig);  \
      marcel_sigset_t *__set = (set);       \
      if ((*__set&mask) == mask)            \
          *__set = *__set&~mask;            \
@@ -287,3 +287,15 @@ int pmarcel_sigpause(int sig);
 DEC_MARCEL_POSIX(int,sigpause,(int sig) __THROW);
 
 void (*pmarcel_sigset(int sig,void (*dispo)(int)));
+
+#section marcel_functions
+void ma_update_lwp_blocked_signals(void);
+#ifndef MARCEL_SIGNALS_ENABLED
+#define ma_update_lwp_blocked_signals() ((void)0)
+#endif
+
+/* Called on thread termination */
+void ma_sigexit(void);
+#ifndef MARCEL_SIGNALS_ENABLED
+#define ma_sigexit() ((void)0)
+#endif

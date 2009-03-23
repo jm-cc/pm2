@@ -49,7 +49,10 @@ enum {
 	MA_HI_SOFTIRQ,
 	MA_TIMER_SOFTIRQ,
 	MA_TASKLET_SOFTIRQ,
-	MA_SIGNAL_SOFTIRQ
+#ifdef MARCEL_SIGNALS_ENABLED
+	MA_SIGNAL_SOFTIRQ,
+#endif
+	MA_NR_SOFTIRQs
 };
 
 #section marcel_structures
@@ -64,11 +67,13 @@ extern TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
 extern TBX_EXTERN void FASTCALL(ma_raise_softirq(unsigned int nr));
+extern TBX_EXTERN void FASTCALL(ma_raise_softirq_lwp(ma_lwp_t lwp, unsigned int nr));
 
 #depend "sys/marcel_lwp.h[marcel_structures]"
 #depend "marcel_topology.h[marcel_variables]"
 #depend "asm/linux_bitops.h[marcel_inline]"
 static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) {
+	MA_BUG_ON(nr >= MA_NR_SOFTIRQs);
 	ma_set_bit(nr, &ma_softirq_pending_vp(vp));
 }
 

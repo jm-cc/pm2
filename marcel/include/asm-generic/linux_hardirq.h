@@ -96,7 +96,7 @@
 do {									\
 		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;			\
 		MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
-		if (!ma_spare_lwp() && !ma_in_interrupt() && ma_local_softirq_pending()) \
+		if (!ma_in_interrupt() && (ma_local_softirq_pending() || (ma_vpnum(MA_LWP_SELF) != -1 && ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF))))) \
 			ma_do_softirq();					\
 		ma_preempt_enable_no_resched();				\
 } while (0)

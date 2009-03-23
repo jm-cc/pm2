@@ -65,6 +65,7 @@ struct marcel_lwp {
 #endif /* MARCEL_POSTEXIT_ENABLED */
 
 	marcel_task_t *ksoftirqd_task;
+	unsigned long softirq_pending;
 
 #if defined(IA64_ARCH) && !defined(MA__PROVIDE_TLS)
 	unsigned long *ma_ia64_tp;
@@ -357,10 +358,10 @@ void marcel_leave_blocking_section(void);
 
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)
-#define ma_softirq_pending(lwp) \
+#define ma_softirq_pending_lwp(lwp) \
 	ma_topo_vpdata_l(ma_per_lwp(vp_level, (lwp)),softirq_pending)
 #define ma_local_softirq_pending() \
-	ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),softirq_pending)
+	__ma_get_lwp_var(softirq_pending)
 
 #define ma_lwp_node(lwp)			ma_vp_node[ma_vpnum(lwp)]
 

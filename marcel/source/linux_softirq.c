@@ -39,7 +39,7 @@
    - Tasklets: serialized wrt itself.
  */
 
-static struct ma_softirq_action softirq_vec[32];
+static struct ma_softirq_action softirq_vec[MA_NR_SOFTIRQs];
 
 /*
  * we cannot loop indefinitely here to avoid userspace starvation,
@@ -47,10 +47,19 @@ static struct ma_softirq_action softirq_vec[32];
  * to the pending events, so lets the scheduler to balance
  * the softirq load for us.
  */
-static inline void ma_wakeup_softirqd(void) {
+static inline void ma_wakeup_vp_softirqd(void) {
 	/* Interrupts are disabled: no need to stop preemption */
 	/* Avec marcel, seul la preemption est supprimée */
 	marcel_task_t *tsk = ma_topo_vpdata_l(__ma_get_lwp_var(vp_level),ksoftirqd);
+
+	if (tsk && tsk->state != MA_TASK_RUNNING)
+		ma_wake_up_thread(tsk);
+}
+
+static inline void ma_wakeup_lwp_softirqd(void) {
+	/* Interrupts are disabled: no need to stop preemption */
+	/* Avec marcel, seul la preemption est supprimée */
+	marcel_task_t *tsk = __ma_get_lwp_var(ksoftirqd_task);
 
 	if (tsk && tsk->state != MA_TASK_RUNNING)
 		ma_wake_up_thread(tsk);
@@ -75,44 +84,63 @@ inline static unsigned long local_softirq_pending_hardirq(void) {
 	return v;
 }
 
+inline static unsigned long vp_softirq_pending_hardirq(void) {
+	unsigned long v;
+	do {
+		v=ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF));
+	} while (v != ma_cmpxchg(&ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)), v, 0));
+	return v;
+}
+
 asmlinkage TBX_EXTERN void ma_do_softirq(void) {
-	int max_restart = MAX_SOFTIRQ_RESTART;
+	int max_restart;
 	unsigned long pending;
+	ma_lwp_t lwp = MA_LWP_SELF;
+	unsigned vp = ma_vpnum(lwp);
+
+	MA_BUG_ON(!ma_in_atomic());
 
 	if (ma_in_interrupt())
 		return;
 
 	if (ma_spare_lwp())
 		return;
-	
+
 	ma_local_bh_disable();
-	pending = local_softirq_pending_hardirq();
 
-	if (pending) {
-		struct ma_softirq_action *h;
-
-restart:
-		h = softirq_vec;
-
-		do {
-			if (pending & 1)
-				h->action(h);
-			h++;
-			pending >>= 1;
-		} while (pending);
-		
-		pending = local_softirq_pending_hardirq();
-		if (pending && --max_restart)
-			goto restart;
-		if (pending) {
-			/* On remet les pending en place... */
-			ma_local_softirq_pending() |= pending;
-			ma_smp_wmb();
-			ma_wakeup_softirqd();
-		}
+#define DO_SOFTIRQ(local_pending,level) \
+	max_restart = MAX_SOFTIRQ_RESTART; \
+	pending = local_pending(); \
+\
+	if (pending) { \
+		struct ma_softirq_action *h; \
+\
+restart##level: \
+		h = softirq_vec; \
+\
+		do { \
+			if (pending & 1) \
+				h->action(h); \
+			h++; \
+			pending >>= 1; \
+		} while (pending); \
+		 \
+		pending = local_pending(); \
+		if (pending && --max_restart) \
+			goto restart##level; \
+		if (pending) { \
+			/* Too much work, let's stop for now and just let the \
+			 * softirq daemon handle them */ \
+			ma_softirq_pending_##level(level) |= pending; \
+			ma_smp_wmb(); \
+			ma_wakeup_##level##_softirqd(); \
+		} \
 	}
 
-	/* S'il reste des softirq, il ne FAUT PAS les traiter maintenant */
+	DO_SOFTIRQ(local_softirq_pending_hardirq, lwp)
+	DO_SOFTIRQ(vp_softirq_pending_hardirq, vp)
+
+	/* Do not process still pending softirqs */
 	__ma_local_bh_enable();
 }
 
@@ -131,8 +159,15 @@ void TBX_EXTERN ma_local_bh_enable(void) {
 }
 
 static inline void __ma_raise_softirq_bhoff(unsigned int nr) {
-	ma_set_bit(nr, &ma_local_softirq_pending());
+	MA_BUG_ON(nr >= MA_NR_SOFTIRQs);
+	ma_set_bit(nr, &ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)));
 }
+
+static inline void __ma_raise_softirq_bhoff_lwp(ma_lwp_t lwp, unsigned int nr) {
+	MA_BUG_ON(nr >= MA_NR_SOFTIRQs);
+	ma_set_bit(nr, &ma_softirq_pending_lwp(lwp));
+}
+
 /*
  * This function must run with irqs disabled!
  * En fait, avec la préemption désactivée
@@ -151,7 +186,21 @@ inline fastcall TBX_EXTERN void ma_raise_softirq_bhoff(unsigned int nr) {
 	 * schedule the softirq soon.
 	 */
 	if (!ma_in_interrupt())
-		ma_wakeup_softirqd();
+		ma_wakeup_vp_softirqd();
+}
+
+fastcall TBX_EXTERN void ma_raise_softirq_lwp(ma_lwp_t lwp, unsigned int nr) {
+	ma_preempt_disable();
+	__ma_raise_softirq_bhoff_lwp(lwp, nr);
+#ifdef MA__LWPS
+	if (lwp == MA_LWP_SELF)
+#endif
+		ma_wakeup_vp_softirqd();
+#ifdef MA__LWPS
+	else
+		marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+#endif
+	ma_preempt_enable();
 }
 
 fastcall TBX_EXTERN void ma_raise_softirq(unsigned int nr) {
@@ -322,17 +371,21 @@ __ma_initfunc(softirq_init, MA_INIT_SOFTIRQ, "Initialisation des SoftIrq");
 
 #define ma_kthread_should_stop() 0
 
-static int ksoftirqd(void * __bind_cpu TBX_UNUSED) {
+static int ksoftirqd(void * foo TBX_UNUSED) {
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
- 
+	ma_preempt_disable();
+
 	while (!ma_kthread_should_stop()) {
-		if (tbx_unlikely(ma_in_atomic())) {
-			pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
-			ma_show_preempt_backtrace();
-			MA_BUG();
-		}
-		if (!ma_local_softirq_pending())
+		if (!ma_local_softirq_pending() && !ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF))) {
+			ma_preempt_enable();
+			if (tbx_unlikely(ma_in_atomic())) {
+				pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
+				ma_show_preempt_backtrace();
+				MA_BUG();
+			}
 			ma_schedule();
+			ma_preempt_disable();
+		}
 
 		__ma_set_current_state(MA_TASK_RUNNING);
 
@@ -340,10 +393,7 @@ static int ksoftirqd(void * __bind_cpu TBX_UNUSED) {
 			/* Preempt disable stops cpu going offline.
 			   If already offline, we'll be on wrong CPU:
 			   don't process */
-			ma_preempt_disable();
 			ma_do_softirq();
-			ma_preempt_enable();
-			ma_cond_resched();
 		}
 
 		__ma_set_current_state(MA_TASK_INTERRUPTIBLE);
@@ -352,18 +402,25 @@ static int ksoftirqd(void * __bind_cpu TBX_UNUSED) {
 	return 0;
 }
 
-inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
+inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp, int vp, const char *fmt, ...) {
 	int err;
+	marcel_t t;
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
+	va_list ap;
 
 	LOG_IN();
 	/* Démarrage du thread responsable des terminaisons */
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"ksoftirqd/%2d",ma_vpnum(lwp));
+	va_start(ap, fmt);
+	vsnprintf(name,MARCEL_MAXNAMESIZE,fmt,ap);
+	va_end(ap);
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(ma_vpnum(lwp)));
+	if (lwp)
+		marcel_attr_setnaturalrq(&attr, ma_lwp_rq(lwp));
+	else
+		marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(vp));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 #ifdef PM2
@@ -373,10 +430,10 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp) {
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
 #endif
-	err = marcel_create_special(&lwp->ksoftirqd_task, &attr, (void*(*)(void*))ksoftirqd, lwp);
+	err = marcel_create_special(&t, &attr, (void*(*)(void*))ksoftirqd, NULL);
 	MA_BUG_ON(err != 0);
 
-	LOG_RETURN(lwp->ksoftirqd_task);
+	return t;
 }
 
 static void ksoftirqd_init(ma_lwp_t lwp TBX_UNUSED) {
@@ -390,9 +447,12 @@ static void ksoftirqd_start(ma_lwp_t lwp) {
 	marcel_task_t *p;
 	if (ma_spare_lwp_ext(lwp))
 		return;
-	p=ksofirqd_start(lwp);
+	p=ksofirqd_start(NULL, ma_vpnum(lwp), "ksoftirqd/vp%2d",ma_vpnum(lwp));
 	marcel_wake_up_created_thread(p);
 	ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),ksoftirqd) = p;
+	p=ksofirqd_start(lwp, -1, "ksoftirqd/lwp%p",lwp);
+	marcel_wake_up_created_thread(p);
+	ma_per_lwp(ksoftirqd_task, lwp) = p;
 }
 
 MA_DEFINE_LWP_NOTIFIER_START(ksoftirqd, "ksoftirqd",

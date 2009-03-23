@@ -927,6 +927,62 @@ static void look_cpuinfo(unsigned *procid_max,
 	mdebug("%s: found %u procs\n", __func__, *nr_procs);
 }
 
+static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
+  char filename[20] = "/proc/self/cpuset";
+  char cpufile[64];
+  char string[64];
+  char cpuset[50];
+  char *token, *subtoken;
+  FILE *fd;
+  int first, last, i;
+
+  /* check whether a cpuset is enabled */
+  fd = fopen(filename, "r");
+  if (fd) {
+    fgets(cpufile, sizeof(cpufile), fd);
+    fclose(fd);
+
+    /* read the cpuset */
+    cpufile[strlen(cpufile)-1] = '\0';
+    sprintf(string, "/dev/cpuset%s/cpus", cpufile);
+    fd = fopen(string, "r");
+    if (fd) {
+      fgets(cpuset, sizeof(cpuset), fd);
+      fclose(fd);
+
+      mdebug("The cpuset is %s\n", cpuset);
+      token = malloc(50 * sizeof(char));
+      subtoken = malloc(50 * sizeof(char));
+      token = strtok(cpuset, ",");
+
+      first=0;
+      last=strtoul(token, NULL, 0)-1;
+      if (last >= 0) {
+	mdebug("The cpus [%d:%d] are not in the cpuset\n", first, last);
+	for(i=first ; i<=last ; i++) {
+	  marcel_vpset_set(offline_cpus_set, i);
+	  *nrprocs = *nrprocs - 1;
+	}
+      }
+      while (token != NULL) {
+	subtoken = strchr(token, '-');
+	if (subtoken) first=strtoul(subtoken+1, NULL, 0) + 1;
+	else first=strtoul(token, NULL, 0) + 1;
+
+	token = strtok(NULL, ",");
+	if (!token) last=marcel_nbprocessors-1;
+	else last=strtoul(token, NULL, 0) - 1;
+
+	mdebug("The cpus [%d:%d] are not in the cpuset\n", first, last);
+	for(i=first ; i<=last ; i++) {
+	  marcel_vpset_set(offline_cpus_set, i);
+	  *nrprocs = *nrprocs - 1;
+	}
+      }
+    }
+  }
+}
+
 static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 	unsigned proc_physids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
 	unsigned osphysids[] = { [0 ... MARCEL_NBMAXCPUS-1] = -1 };
@@ -955,6 +1011,8 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 			       proc_physids, osphysids,
 			       proc_coreids, oscoreids);
 	}
+
+	look_cpuset(offline_cpus_set, &numprocs);
 
 	mdebug("\n\n * Topology summary *\n\n");
 	mdebug("%d processors (%d max id)\n", numprocs, procid_max);

@@ -379,70 +379,115 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	}
 }
 
-static void ma_bubble_moveentity(marcel_bubble_t *bubble_dst, marcel_entity_t *entity) {
+static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *entity) {
 	/* Basically does a remove together with an insert but without using an
 	 * intermediate runqueue */
-	marcel_bubble_t *bubble_src;
+	marcel_bubble_t *src_bubble;
 	int res;
 
-	MA_BUG_ON(entity->natural_holder->type == MA_RUNQUEUE_HOLDER);
-	bubble_src = ma_bubble_holder(entity->natural_holder);
-	if (bubble_src == bubble_dst)
+	MA_BUG_ON(entity->natural_holder->type != MA_BUBBLE_HOLDER);
+	src_bubble = ma_bubble_holder(entity->natural_holder);
+	if (src_bubble == dst_bubble)
 		return;
 
 	/* remove entity from bubble src */
-	ma_holder_lock_softirq(&bubble_src->as_holder);
-	MA_BUG_ON(entity->natural_holder != &bubble_src->as_holder);
+	ma_holder_lock_softirq(&src_bubble->as_holder);
+	MA_BUG_ON(entity->natural_holder != &src_bubble->as_holder);
 	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
 	list_del_init(&entity->natural_entities_item);
-	marcel_barrier_addcount(&bubble_src->barrier, -1);
-	res = (!--bubble_src->nb_natural_entities);
-	ma_holder_rawunlock(&bubble_src->as_holder);
+	marcel_barrier_addcount(&src_bubble->barrier, -1);
+	res = (!--src_bubble->nb_natural_entities);
+	ma_holder_rawunlock(&src_bubble->as_holder);
 
 	/* insert entity in bubble dst */
-	if (!bubble_dst->nb_natural_entities) {
-		MA_BUG_ON(!list_empty(&bubble_dst->natural_entities));
-		marcel_sem_P(&bubble_dst->join);
+	if (!dst_bubble->nb_natural_entities) {
+		MA_BUG_ON(!list_empty(&dst_bubble->natural_entities));
+		marcel_sem_P(&dst_bubble->join);
 	}
 
-	ma_holder_lock_softirq(&bubble_dst->as_holder);
-
+	ma_holder_rawlock(&dst_bubble->as_holder);
 	if (entity->type == MA_BUBBLE_ENTITY)
-		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble_dst);
+		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),dst_bubble);
 	else
-		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble_dst);
-	list_add_tail(&entity->natural_entities_item, &bubble_dst->natural_entities);
-	marcel_barrier_addcount(&bubble_dst->barrier, 1);
-	bubble_dst->nb_natural_entities++;
-	entity->natural_holder = &bubble_dst->as_holder;
-	ma_holder_t *sched_bubble_h = bubble_dst->as_entity.sched_holder;
+		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),dst_bubble);
+
+	/* change entity natural_holder */
+	list_add_tail(&entity->natural_entities_item, &dst_bubble->natural_entities);
+	marcel_barrier_addcount(&dst_bubble->barrier, 1);
+	dst_bubble->nb_natural_entities++;
+	entity->natural_holder = &dst_bubble->as_holder;
+
+	/* change entity sched_holder */
+	ma_holder_t *sched_bubble_h = dst_bubble->as_entity.sched_holder;
 	PROF_EVENTSTR(sched_status, "heriter du sched_holder de la bulle ou on insere");
 	if (!sched_bubble_h || ma_holder_type(sched_bubble_h) == MA_RUNQUEUE_HOLDER) {
 		PROF_EVENTSTR(sched_status, "c'est la bulle ou on insere qui sert d'ordonnancement");
-		sched_bubble_h = &bubble_dst->as_holder;
+		sched_bubble_h = &dst_bubble->as_holder;
 	}
 	entity->sched_holder = sched_bubble_h;
+	ma_holder_rawunlock(&dst_bubble->as_holder);
 
-	ma_holder_unlock_softirq(&bubble_dst->as_holder);
-
-	/* change entity runholder too if needed */
-	ma_holder_t *h = ma_entity_holder_rawlock(entity);
-	if (h == &bubble_src->as_holder) {
-		/* we need to get this entity out of this bubble */
+	/* change entity ready_holder too if needed */
+	ma_holder_t *src_entity_h = ma_entity_holder_rawlock(entity);
+	if (src_entity_h == &src_bubble->as_holder) {
+		/* dequeue the entity from its source bubble */
 		int state = ma_get_entity(entity);
-		ma_holder_rawunlock(h);
-		ma_holder_rawlock(entity->natural_holder);
-		/* FIXME: here we need to lock the bubble hierarchy and the runqueue containing the target bubble */
+		ma_holder_rawunlock(src_entity_h);
+
+		/* find the top of the bubble hierarchy and the containing runqueue */
+		ma_holder_t *top_sched_bubble_h;
+		ma_holder_t *rq_h;
+		for (;;) {
+			/* take a transient snapshot of the containing runqueue and the key bubbles in the hierarchy */
+			ma_holder_rawlock(entity->natural_holder);
+			top_sched_bubble_h = sched_bubble_h;
+			while (ma_bubble_holder(top_sched_bubble_h)->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER) {
+				top_sched_bubble_h = ma_bubble_holder(top_sched_bubble_h)->as_entity.sched_holder;
+			}
+			rq_h = ma_bubble_holder(top_sched_bubble_h)->as_entity.sched_holder;
+			ma_holder_rawunlock(entity->natural_holder);
+
+			/* lock the containing runqueue and the key bubbles in the hierarchy */
+			ma_holder_rawlock(rq_h);
+			ma_holder_rawlock(top_sched_bubble_h);
+			if (sched_bubble_h != top_sched_bubble_h)
+				ma_holder_rawlock(sched_bubble_h);
+
+			/* situation may have changed in-between 1) the locking
+			 * block right above where we looked for the top bubble
+			 * and runqueue, and 2) the current locking block
+			 *
+			 * if the situation is the same, leave the loop and go
+			 * on with moving the entity
+			 *
+			 * if the situation is not the same anymore, unlock
+			 * everything, and start-over until whatever comes first between
+			 * a stable situation or the end of time :-)
+			 */
+			if ((&ma_to_rq_holder(sched_bubble_h)->as_holder == rq_h))
+				break;
+
+			if (sched_bubble_h != top_sched_bubble_h)
+				ma_holder_rawunlock(sched_bubble_h);
+			ma_holder_rawunlock(top_sched_bubble_h);
+			ma_holder_rawunlock(rq_h);
+		}
+
+		/* now put entity on the natural holder */
 		ma_put_entity(entity, entity->natural_holder, state);
-		ma_holder_unlock_softirq(entity->natural_holder);
+
+		if (sched_bubble_h != top_sched_bubble_h)
+			ma_holder_rawunlock(sched_bubble_h);
+		ma_holder_rawunlock(top_sched_bubble_h);
+		ma_holder_unlock_softirq(rq_h);
 	} else
 		/* already out from the bubble, that's ok.  */
-		ma_entity_holder_unlock_softirq(h);
+		ma_entity_holder_unlock_softirq(src_entity_h);
 
 	/* signal src bubble emptiness when applicable */
 	if (res)
-		marcel_sem_V(&bubble_src->join);
+		marcel_sem_V(&src_bubble->join);
 }
 
 static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {

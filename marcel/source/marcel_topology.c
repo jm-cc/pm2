@@ -927,67 +927,117 @@ static void look_cpuinfo(unsigned *procid_max,
 	mdebug_topology("%s: found %u procs\n", __func__, *nr_procs);
 }
 
-static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
+static int look_cpuset(char *type, char **info) {
   char filename[20] = "/proc/self/cpuset";
   char cpufile[64];
   char string[64];
-  char cpuset[50];
-  char *token, *subtoken;
   FILE *fd;
-  int first, last, i;
 
   /* check whether a cpuset is enabled */
   fd = fopen(filename, "r");
-  if (fd) {
+  if (!fd) return 0;
+  else {
     fgets(cpufile, sizeof(cpufile), fd);
     fclose(fd);
 
     /* read the cpuset */
     cpufile[strlen(cpufile)-1] = '\0';
-    sprintf(string, "/dev/cpuset%s/cpus", cpufile);
+    sprintf(string, "/dev/cpuset%s/%s", cpufile, type);
     mdebug_topology("Trying to read file  <%s>\n", string);
     fd = fopen(string, "r");
     if (!fd) {
-      sprintf(string, "/cpusets%s/cpus", cpufile);
+      sprintf(string, "/cpusets%s/%s", cpufile, type);
       mdebug_topology("Trying to read file  <%s>\n", string);
       fd = fopen(string, "r");
     }
 
-    if (fd) {
-      fgets(cpuset, sizeof(cpuset), fd);
+    if (!fd) return 0;
+    else {
+      fgets(*info, sizeof(*info), fd);
       fclose(fd);
+      return 1;
+    }
+  }
+}
 
-      mdebug_topology("The cpuset is %s\n", cpuset);
-      token = malloc(50 * sizeof(char));
-      subtoken = malloc(50 * sizeof(char));
-      token = strtok(cpuset, ",");
+static void look_cpuset_mems(marcel_vpset_t *offline_mems_set) {
+  char *memset;
+  char *token, *subtoken;
+  int first, last, i, ret;
 
-      first=0;
-      last=strtoul(token, NULL, 0)-1;
-      if (last >= 0) {
-	mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
-	for(i=first ; i<=last ; i++) {
-	  marcel_vpset_set(offline_cpus_set, i);
-	  *nrprocs = *nrprocs - 1;
-	}
+  memset = tmalloc(50 * sizeof(char));
+  ret = look_cpuset("mems", &memset);
+  if (ret) {
+    mdebug_topology("The memset is %s\n", memset);
+    token = malloc(50 * sizeof(char));
+    subtoken = malloc(50 * sizeof(char));
+    token = strtok(memset, ",");
+
+    first=0;
+    last=strtoul(token, NULL, 0)-1;
+    if (last >= 0) {
+      mdebug_topology("The mems [%d:%d] are not in the memset\n", first, last);
+      for(i=first ; i<=last ; i++) {
+        marcel_vpset_set(offline_mems_set, i);
       }
-      while (token != NULL) {
-	subtoken = strchr(token, '-');
-	if (subtoken) first=strtoul(subtoken+1, NULL, 0) + 1;
-	else first=strtoul(token, NULL, 0) + 1;
+    }
+    while (token != NULL) {
+      subtoken = strchr(token, '-');
+      if (subtoken) first=strtoul(subtoken+1, NULL, 0) + 1;
+      else first=strtoul(token, NULL, 0) + 1;
 
-	token = strtok(NULL, ",");
-	if (!token) last=marcel_nbprocessors-1;
-	else last=strtoul(token, NULL, 0) - 1;
+      token = strtok(NULL, ",");
+      if (!token) last=marcel_nbprocessors-1;
+      else last=strtoul(token, NULL, 0) - 1;
 
-	mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
-	for(i=first ; i<=last ; i++) {
-	  marcel_vpset_set(offline_cpus_set, i);
-	  *nrprocs = *nrprocs - 1;
-	}
+      mdebug_topology("The mems [%d:%d] are not in the memset\n", first, last);
+      for(i=first ; i<=last ; i++) {
+        marcel_vpset_set(offline_mems_set, i);
       }
     }
   }
+  tfree(memset);
+}
+
+static void look_cpuset_cpus(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
+  char *cpuset;
+  char *token, *subtoken;
+  int first, last, i, ret;
+
+  cpuset = tmalloc(50 * sizeof(char));
+  ret = look_cpuset("cpus", &cpuset);
+  if (ret) {
+    mdebug_topology("The cpuset is %s\n", cpuset);
+    token = malloc(50 * sizeof(char));
+    subtoken = malloc(50 * sizeof(char));
+    token = strtok(cpuset, ",");
+
+    first=0;
+    last=strtoul(token, NULL, 0)-1;
+    if (last >= 0) {
+      mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
+      for(i=first ; i<=last ; i++) {
+        marcel_vpset_set(offline_cpus_set, i);
+        *nrprocs = *nrprocs - 1;
+      }
+    }
+    while (token != NULL) {
+      subtoken = strchr(token, '-');
+      if (subtoken) first=strtoul(subtoken+1, NULL, 0) + 1;
+      else first=strtoul(token, NULL, 0) + 1;
+
+      token = strtok(NULL, ",");
+      if (!token) last=marcel_nbprocessors-1;
+      else last=strtoul(token, NULL, 0) - 1;
+
+      mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
+      for(i=first ; i<=last ; i++) {
+        marcel_vpset_set(offline_cpus_set, i);
+        *nrprocs = *nrprocs - 1;
+      }
+    }
+  }
+  tfree(cpuset);
 }
 
 static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
@@ -1019,7 +1069,7 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 			       proc_coreids, oscoreids);
 	}
 
-	look_cpuset(offline_cpus_set, &numprocs);
+	look_cpuset_cpus(offline_cpus_set, &numprocs);
 
 	mdebug_topology("\n\n * Topology summary *\n\n");
 	mdebug_topology("%d processors (%d max id)\n", numprocs, procid_max);
@@ -1110,6 +1160,7 @@ static void __marcel_init look_sysfsnode(void) {
 	struct marcel_topo_level *node_level;
 	DIR *dir;
 	struct dirent *dirent;
+	marcel_vpset_t offline_mems_set;
 
 	dir = opendir("/sys/devices/system/node");
 	if (dir) {
@@ -1128,6 +1179,9 @@ static void __marcel_init look_sysfsnode(void) {
 		ma_numa_not_available=1;
 		return;
 	}
+
+        marcel_vpset_zero(&offline_mems_set);
+        look_cpuset_mems(&offline_mems_set);
 
 	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
 	MA_BUG_ON(!node_level);
@@ -1148,15 +1202,22 @@ static void __marcel_init look_sysfsnode(void) {
 		 * ready yet.
 		 */
 
-		sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", osnode);
-		size = ma_sysfs_node_meminfo_to_memsize(nodepath);
-		hpfree = ma_sysfs_node_meminfo_to_hugepagefree(nodepath);
-
 		ma_topo_setup_level(&node_level[i], MARCEL_LEVEL_NODE);
 		ma_topo_set_os_numbers(&node_level[i], node, osnode);
-		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
-		node_level[i].huge_page_free = hpfree;
 		node_level[i].cpuset = cpuset;
+
+                if (marcel_vpset_isset(&offline_mems_set, osnode)) {
+                  node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0;
+                  node_level[i].huge_page_free = 0;
+                }
+                else {
+                  sprintf(nodepath, "/sys/devices/system/node/node%d/meminfo", osnode);
+                  size = ma_sysfs_node_meminfo_to_memsize(nodepath);
+                  hpfree = ma_sysfs_node_meminfo_to_hugepagefree(nodepath);
+
+                  node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = size;
+                  node_level[i].huge_page_free = hpfree;
+                }
 
 		mdebug_topology("node %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 		       i, osnode, MARCEL_VPSET_PRINTF_VALUE(node_level[i].cpuset));

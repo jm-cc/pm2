@@ -38,7 +38,7 @@ pm2_debug()
 
 pm2_canonicalize_name()
 {
-    echo "$1" | tr -- '-[:blank:]/' '___'
+    echo "$1" | tr -- '-+[:blank:]/' '____'
 }
 
 pm2_ld_preload_var_name()

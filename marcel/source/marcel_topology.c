@@ -342,7 +342,7 @@ static TBX_UNUSED DIR *ma_opendirat(const char *path) {
 #else /* !HAVE_OPENAT */
 
 int ma_topology_set_fsys_root(const char *path) {
-	mdebug("`ma_topology_set_fsys_root ()' not implemented\n");
+	mdebug_topology("`ma_topology_set_fsys_root ()' not implemented\n");
 	errno = ENOSYS;
 	return -1;
 }
@@ -377,7 +377,7 @@ static void distribute_vps(void) {
 		fprintf(stderr,"More VPs that CPUs doesn't make sense with a stride\n");
 		exit(1);
 	}
-	mdebug("%d LWP%s per cpu, stride %d, from %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride, marcel_first_cpu);
+	mdebug_topology("%d LWP%s per cpu, stride %d, from %d\n", marcel_vps_per_cpu, marcel_vps_per_cpu == 1 ? "" : "s", marcel_cpu_stride, marcel_first_cpu);
 }
 
 #  ifdef MA__NUMA
@@ -448,7 +448,7 @@ static void ma_setup_die_topo_level(int procid_max, unsigned numdies, unsigned *
 	struct marcel_topo_level *die_level;
 	int j;
 
-	mdebug("%d dies\n", numdies);
+	mdebug_topology("%d dies\n", numdies);
 	die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level));
 	MA_BUG_ON(!die_level);
 
@@ -456,18 +456,18 @@ static void ma_setup_die_topo_level(int procid_max, unsigned numdies, unsigned *
 		ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
 		ma_topo_set_os_numbers(&die_level[j], die, osphysids[j]);
 		ma_topo_level_cpuset_from_array(&die_level[j], j, proc_physids, procid_max);
-		mdebug("die %d has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("die %d has cpuset %"MARCEL_PRIxVPSET"\n",
 		       j, MARCEL_VPSET_PRINTF_VALUE(die_level[j].cpuset));
 	}
-	mdebug("\n");
+	mdebug_topology("\n");
 
 	marcel_vpset_zero(&die_level[j].vpset);
 	marcel_vpset_zero(&die_level[j].cpuset);
 
 	marcel_topo_level_nbitems[discovering_level]=numdies;
-	mdebug("--- die level has number %d\n", discovering_level);
+	mdebug_topology("--- die level has number %d\n", discovering_level);
 	marcel_topo_levels[discovering_level++]=die_level;
-	mdebug("\n");
+	mdebug_topology("\n");
 }
 
 static void ma_setup_core_topo_level(int procid_max, unsigned numcores, unsigned *oscoreids, unsigned *proc_coreids)
@@ -475,7 +475,7 @@ static void ma_setup_core_topo_level(int procid_max, unsigned numcores, unsigned
 	struct marcel_topo_level *core_level;
 	int j;
 
-	mdebug("%d cores\n", numcores);
+	mdebug_topology("%d cores\n", numcores);
 	core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level));
 	MA_BUG_ON(!core_level);
 
@@ -486,19 +486,19 @@ static void ma_setup_core_topo_level(int procid_max, unsigned numcores, unsigned
 #      ifdef MARCEL_SMT_IDLE
 		ma_atomic_init(&core_level[j].nbidle, 0);
 #      endif
-		mdebug("core %d has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("core %d has cpuset %"MARCEL_PRIxVPSET"\n",
 		       j, MARCEL_VPSET_PRINTF_VALUE(core_level[j].cpuset));
 	}
 
-	mdebug("\n");
+	mdebug_topology("\n");
 
 	marcel_vpset_zero(&core_level[j].vpset);
 	marcel_vpset_zero(&core_level[j].cpuset);
 
 	marcel_topo_level_nbitems[discovering_level]=numcores;
-	mdebug("--- core level has number %d\n", discovering_level);
+	mdebug_topology("--- core level has number %d\n", discovering_level);
 	marcel_topo_core_level = marcel_topo_levels[discovering_level++]=core_level;
-	mdebug("\n");
+	mdebug_topology("\n");
 }
 #endif
 
@@ -597,7 +597,7 @@ static void ma_process_shared_cpu_map(const char *mappath, const char * mapname,
 			/* this cpu didn't have any such id yet, set this id for all cpus in the map */
 			for(; k<procid_max; k++) {
 				if (marcel_vpset_isset(&set, k)) {
-					mdebug("--- proc %d has %s number %d\n", k, mapname, newid);
+					mdebug_topology("--- proc %d has %s number %d\n", k, mapname, newid);
 					ids[k] = newid;
 					vals[newid] = val;
 				}
@@ -674,7 +674,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 	struct marcel_topo_level *level;
 	int j;
 
-	mdebug("%d L%d caches\n", numcaches[cachelevel], cachelevel+1);
+	mdebug_topology("%d L%d caches\n", numcaches[cachelevel], cachelevel+1);
 	level=__marcel_malloc((numcaches[cachelevel]+MARCEL_NBMAXVPSUP+1)*sizeof(*level));
 	MA_BUG_ON(!level);
 
@@ -692,16 +692,16 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 
 		ma_topo_level_cpuset_from_array(&level[j], j, &cacheids[cachelevel*MARCEL_NBMAXCPUS], procid_max);
 
-		mdebug("L%d cache %d has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("L%d cache %d has cpuset %"MARCEL_PRIxVPSET"\n",
 		       cachelevel+1, j, MARCEL_VPSET_PRINTF_VALUE(level[j].cpuset));
 	}
-	mdebug("\n");
+	mdebug_topology("\n");
 	marcel_vpset_zero(&level[j].vpset);
 	marcel_vpset_zero(&level[j].cpuset);
 	marcel_topo_level_nbitems[discovering_level]=numcaches[cachelevel];
-	mdebug("--- shared L%d level has number %d\n", cachelevel+1, discovering_level);
+	mdebug_topology("--- shared L%d level has number %d\n", cachelevel+1, discovering_level);
 	marcel_topo_levels[discovering_level++]=level;
-	mdebug("\n");
+	mdebug_topology("\n");
 }
 
 /* Look at Linux' /sys/devices/system/cpu/cpu%d/topology/ */
@@ -735,7 +735,7 @@ static void look__sysfscpu(unsigned *procid_max,
 		}
 		closedir(dir);
 	}
-	mdebug("found os proc id max %d\n", cpu_max);
+	mdebug_topology("found os proc id max %d\n", cpu_max);
 
 	MA_BUG_ON(cpu_max > MARCEL_NBMAXCPUS);
 
@@ -750,7 +750,7 @@ static void look__sysfscpu(unsigned *procid_max,
 		if (access(string, X_OK) < 0
 		    && errno == ENOENT) {
 			/* this CPU does not exist */
-			mdebug("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/\n", i, i);
+			mdebug_topology("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/\n", i, i);
 			marcel_vpset_set(offline_cpus_set, i);
 			nr_offline_cpus++;
 			continue;
@@ -763,9 +763,9 @@ static void look__sysfscpu(unsigned *procid_max,
 			if (fgets(online, sizeof(online), fd)) {
 				fclose(fd);
 				if (atoi(online)) {
-					mdebug("os proc %d is online\n", i);
+					mdebug_topology("os proc %d is online\n", i);
 				} else {
-					mdebug("os proc %d is offline\n", i);
+					mdebug_topology("os proc %d is offline\n", i);
 					marcel_vpset_set(offline_cpus_set, i);
 					nr_offline_cpus++;
 					continue;
@@ -779,7 +779,7 @@ static void look__sysfscpu(unsigned *procid_max,
 		sprintf(string, "/sys/devices/system/cpu/cpu%d/topology", i);
 		if (access(string, X_OK) < 0
 		    && errno == ENOENT) {
-			mdebug("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/topology\n", i, i);
+			mdebug_topology("os proc %d has no accessible /sys/devices/system/cpu/cpu%d/topology\n", i, i);
 			marcel_vpset_set(offline_cpus_set, i);
 			nr_offline_cpus++;
 			continue;
@@ -813,7 +813,7 @@ static void look__sysfscpu(unsigned *procid_max,
 			for(k=i; k<MARCEL_NBMAXCPUS; k++)
 				if (marcel_vpset_isset(&dieset, k))
 					proc_physids[k] = (*nr_dies);
-			mdebug("die %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
+			mdebug_topology("die %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 			       (*nr_dies), mydieid, MARCEL_VPSET_PRINTF_VALUE(dieset));
 			osphysids[(*nr_dies)++] = mydieid;
 		}
@@ -826,7 +826,7 @@ static void look__sysfscpu(unsigned *procid_max,
 			for(k=i; k<MARCEL_NBMAXCPUS; k++)
 				if (marcel_vpset_isset(&coreset, k))
 					proc_coreids[k] = (*nr_cores);
-			mdebug("core %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
+			mdebug_topology("core %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 			       (*nr_cores), mycoreid, MARCEL_VPSET_PRINTF_VALUE(coreset));
 			oscoreids[(*nr_cores)++] = mycoreid;
 		}
@@ -834,7 +834,7 @@ static void look__sysfscpu(unsigned *procid_max,
 
 	*nr_procs = cpu_max - nr_offline_cpus;
 	*procid_max = cpu_max;
-	mdebug("%s: found %u procs\n", __func__, *nr_procs);
+	mdebug_topology("%s: found %u procs\n", __func__, *nr_procs);
 }
 
 /* Look at Linux' /proc/cpuinfo */
@@ -870,7 +870,7 @@ static void look_cpuinfo(unsigned *procid_max,
 
 	/* Just record information and count number of dies and cores */
 
-	mdebug("\n\n * Topology extraction from /proc/cpuinfo *\n\n");
+	mdebug_topology("\n\n * Topology extraction from /proc/cpuinfo *\n\n");
 	while (fgets(string,sizeof(string),fd)!=NULL) {
 #      define getprocnb_begin(field, var) \
 		if ( !strncmp(field,string,strlen(field))) { \
@@ -886,7 +886,7 @@ static void look_cpuinfo(unsigned *procid_max,
 				fprintf(stderr,"too big "field" number in /proc/cpuinfo\n"); \
 				break; \
 			} \
-			mdebug(field " %ld\n", var)
+			mdebug_topology(field " %ld\n", var)
 #      define getprocnb_end() \
 		}
 		getprocnb_begin(PROCESSOR,processor);
@@ -897,7 +897,7 @@ static void look_cpuinfo(unsigned *procid_max,
 				if (physid == osphysids[i])
 					break;
 			proc_physids[processor]=i;
-			mdebug("%ld on die %d (%lx)\n", processor, i, physid);
+			mdebug_topology("%ld on die %d (%lx)\n", processor, i, physid);
 			if (i==*nr_dies)
 				osphysids[(*nr_dies)++] = physid;
 		getprocnb_end() else
@@ -907,7 +907,7 @@ static void look_cpuinfo(unsigned *procid_max,
 				if (coreid == oscoreids[i] && proc_osphysids[processor] == core_osphysids[i])
 					break;
 			proc_coreids[processor]=i;
-			mdebug("%ld on core %d (%lx:%x)\n", processor, i, coreid, proc_osphysids[processor]);
+			mdebug_topology("%ld on core %d (%lx:%x)\n", processor, i, coreid, proc_osphysids[processor]);
 			if (i==*nr_cores) {
 				core_osphysids[*nr_cores] = proc_osphysids[processor];
 				oscoreids[*nr_cores] = coreid;
@@ -924,7 +924,7 @@ static void look_cpuinfo(unsigned *procid_max,
 	/* setup the final number of procs */
 	*nr_procs = processor + 1;
 	*procid_max = processor + 1;
-	mdebug("%s: found %u procs\n", __func__, *nr_procs);
+	mdebug_topology("%s: found %u procs\n", __func__, *nr_procs);
 }
 
 static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
@@ -945,11 +945,11 @@ static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
     /* read the cpuset */
     cpufile[strlen(cpufile)-1] = '\0';
     sprintf(string, "/dev/cpuset%s/cpus", cpufile);
-    mdebug("Trying to read file  <%s>\n", string);
+    mdebug_topology("Trying to read file  <%s>\n", string);
     fd = fopen(string, "r");
     if (!fd) {
       sprintf(string, "/cpusets%s/cpus", cpufile);
-      mdebug("Trying to read file  <%s>\n", string);
+      mdebug_topology("Trying to read file  <%s>\n", string);
       fd = fopen(string, "r");
     }
 
@@ -957,7 +957,7 @@ static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
       fgets(cpuset, sizeof(cpuset), fd);
       fclose(fd);
 
-      mdebug("The cpuset is %s\n", cpuset);
+      mdebug_topology("The cpuset is %s\n", cpuset);
       token = malloc(50 * sizeof(char));
       subtoken = malloc(50 * sizeof(char));
       token = strtok(cpuset, ",");
@@ -965,7 +965,7 @@ static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
       first=0;
       last=strtoul(token, NULL, 0)-1;
       if (last >= 0) {
-	mdebug("The cpus [%d:%d] are not in the cpuset\n", first, last);
+	mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
 	for(i=first ; i<=last ; i++) {
 	  marcel_vpset_set(offline_cpus_set, i);
 	  *nrprocs = *nrprocs - 1;
@@ -980,7 +980,7 @@ static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
 	if (!token) last=marcel_nbprocessors-1;
 	else last=strtoul(token, NULL, 0) - 1;
 
-	mdebug("The cpus [%d:%d] are not in the cpuset\n", first, last);
+	mdebug_topology("The cpus [%d:%d] are not in the cpuset\n", first, last);
 	for(i=first ; i<=last ; i++) {
 	  marcel_vpset_set(offline_cpus_set, i);
 	  *nrprocs = *nrprocs - 1;
@@ -1021,15 +1021,15 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 
 	look_cpuset(offline_cpus_set, &numprocs);
 
-	mdebug("\n\n * Topology summary *\n\n");
-	mdebug("%d processors (%d max id)\n", numprocs, procid_max);
+	mdebug_topology("\n\n * Topology summary *\n\n");
+	mdebug_topology("%d processors (%d max id)\n", numprocs, procid_max);
 
 	if (numdies>1)
-		mdebug("%d dies\n", numdies);
+		mdebug_topology("%d dies\n", numdies);
 	if (numcores>1)
-		mdebug("%d cores\n", numcores);
+		mdebug_topology("%d cores\n", numcores);
 
-	mdebug("\n\n * cpusets details *\n\n");
+	mdebug_topology("\n\n * cpusets details *\n\n");
 	if (numdies>1)
 		ma_setup_die_topo_level(procid_max, numdies, osphysids, proc_physids);
 
@@ -1057,7 +1057,7 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 
 	/* Override the default returned by `ma_fallback_nbprocessors ()'.  */
 	marcel_nbprocessors = numprocs;
-	mdebug("%s: found %u procs\n", __func__, marcel_nbprocessors);
+	mdebug_topology("%s: found %u procs\n", __func__, marcel_nbprocessors);
 }
 
 static unsigned long ma_sysfs_node_meminfo_to_hugepagefree(const char * path)
@@ -1158,7 +1158,7 @@ static void __marcel_init look_sysfsnode(void) {
 		node_level[i].huge_page_free = hpfree;
 		node_level[i].cpuset = cpuset;
 
-		mdebug("node %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("node %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 		       i, osnode, MARCEL_VPSET_PRINTF_VALUE(node_level[i].cpuset));
 		i++;
 	}
@@ -1213,7 +1213,7 @@ static void __marcel_init look_libnuma(void) {
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
 			marcel_vpset_set(&node_level[i].cpuset,cpuid);
 
-		mdebug("node %d has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("node %d has cpuset %"MARCEL_PRIxVPSET"\n",
 		       i, MARCEL_VPSET_PRINTF_VALUE(node_level[i].cpuset));
 		i++;
 	}
@@ -1235,21 +1235,21 @@ static void show(lgrp_cookie_t cookie, lgrp_id_t lgrp) {
 	int i, n;
 	n = lgrp_cpus(cookie, lgrp, cpuids, 32, LGRP_CONTENT_ALL);
 	for (i = 0; i < n ; i++) {
-		mdebug("%ld has %d\n", lgrp, cpuids[i]);
+		mdebug_topology("%ld has %d\n", lgrp, cpuids[i]);
 	}
 	n = lgrp_children(cookie, lgrp, lgrps, 32);
-	mdebug("%ld %d children\n", lgrp, n);
+	mdebug_topology("%ld %d children\n", lgrp, n);
 	for (i = 0; i < n ; i++) {
 		show(cookie, lgrps[i]);
 	}
-	mdebug("%ld children done\n", lgrp);
+	mdebug_topology("%ld children done\n", lgrp);
 }
 
 static void __marcel_init look_lgrp(void) {
 	lgrp_cookie_t cookie = lgrp_init(LGRP_VIEW_OS);
 	lgrp_id_t root;
 	if (cookie == LGRP_COOKIE_NONE) {
-		mdebug("lgrp_init failed: %s\n", strerror(errno));
+		mdebug_topology("lgrp_init failed: %s\n", strerror(errno));
 		return;
 	}
 	root = lgrp_root(cookie);
@@ -1277,7 +1277,7 @@ static void __marcel_init look_kstat(void) {
 	unsigned i;
 
 	if (!kc) {
-		mdebug("kstat_open failed: %s\n", strerror(errno));
+		mdebug_topology("kstat_open failed: %s\n", strerror(errno));
 		return;
 	}
 	for (ksp = kc->kc_chain; ksp; ksp = ksp->ks_next) {
@@ -1308,7 +1308,7 @@ static void __marcel_init look_kstat(void) {
 				if (physid == osphysids[i])
 					break;
 			proc_physids[numprocs] = i;
-			mdebug("%u on die %u (%u)\n", numprocs, i, physid);
+			mdebug_topology("%u on die %u (%u)\n", numprocs, i, physid);
 			if (i == numdies)
 				osphysids[numdies++] = physid;
 		}
@@ -1329,7 +1329,7 @@ static void __marcel_init look_kstat(void) {
 				if (coreid == oscoreids[i] && proc_osphysids[numprocs] == core_osphysids[i])
 					break;
 			proc_coreids[numprocs] = i;
-			mdebug("%u on core %u (%u)\n", numprocs, i, coreid);
+			mdebug_topology("%u on core %u (%u)\n", numprocs, i, coreid);
 			if (i == numcores) {
 				core_osphysids[numcores] = proc_osphysids[numprocs];
 				oscoreids[numcores++] = coreid;
@@ -1409,7 +1409,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 			if (rs_op(RS_TESTRESOURCE, rad, NULL, R_PROCS, j))
 				marcel_vpset_set(&rad_level[r].cpuset,j);
 		}
-		mdebug("node %d has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("node %d has cpuset %"MARCEL_PRIxVPSET"\n",
 		       r, MARCEL_VPSET_PRINTF_VALUE(rad_level[r].cpuset));
 		rad_level[r].arity=0;
 		rad_level[r].children=NULL;
@@ -1478,7 +1478,7 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 			|| !strncasecmp(device, "S4885", 5)
 			|| !strncasecmp(device, "S4985", 5))) {
 
-			mdebug("splitting machine->numanode on Tyan 8 opteron board, apply split quirk\n");
+			mdebug_topology("splitting machine->numanode on Tyan 8 opteron board, apply split quirk\n");
 
 			array = malloc(8*sizeof(*array));
 			MA_BUG_ON(!array);
@@ -1513,7 +1513,7 @@ static void look_cpu(marcel_vpset_t *offline_cpus_set) {
 	cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level));
 	MA_BUG_ON(!cpu_level);
 
-	mdebug("\n\n * CPU cpusets *\n\n");
+	mdebug_topology("\n\n * CPU cpusets *\n\n");
 	for (cpu=0,oscpu=0; cpu<marcel_nbprocessors; cpu++,oscpu++) {
 		while (marcel_vpset_isset(offline_cpus_set, oscpu))
 			oscpu++;
@@ -1522,7 +1522,7 @@ static void look_cpu(marcel_vpset_t *offline_cpus_set) {
 
 		marcel_vpset_vp(&cpu_level[cpu].cpuset, oscpu);
 
-		mdebug("cpu %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("cpu %d (os %d) has cpuset %"MARCEL_PRIxVPSET"\n",
 		       cpu, oscpu, MARCEL_VPSET_PRINTF_VALUE(cpu_level[cpu].cpuset));
 	}
 	marcel_vpset_zero(&cpu_level[cpu].vpset);
@@ -1556,7 +1556,7 @@ static void topo_connect(void) {
 	for (l=0; l<marcel_topo_nblevels-1; l++) {
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 			if (marcel_topo_levels[l][i].arity) {
-				mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
+				mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 				       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 				marcel_topo_levels[l][i].children=TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *));
 				MA_BUG_ON(!marcel_topo_levels[l][i].children);
@@ -1631,25 +1631,25 @@ static void topo_discover(void) {
 #    ifdef  AIX_SYS
 	for (i=0; i<=rs_getinfo(NULL, R_MAXSDL, 0); i++) {
 		if (i == rs_getinfo(NULL, R_MCMSDL, 0)) {
-			mdebug("looking AIX node sdl %d\n",i);
+			mdebug_topology("looking AIX node sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_NODE);
 		}
 #      ifdef R_L2CSDL
 		if (i == rs_getinfo(NULL, R_L2CSDL, 0)) {
-			mdebug("looking AIX L2 sdl %d\n",i);
+			mdebug_topology("looking AIX L2 sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_L2);
 		}
 #      endif
 #      ifdef R_PCORESDL
 		if (i == rs_getinfo(NULL, R_PCORESDL, 0)) {
-			mdebug("looking AIX core sdl %d\n",i);
+			mdebug_topology("looking AIX core sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_CORE);
 		}
 #      endif
 		if (i == rs_getinfo(NULL, R_SMPSDL, 0))
-			mdebug("not looking AIX \"SMP\" sdl %d\n",i);
+			mdebug_topology("not looking AIX \"SMP\" sdl %d\n",i);
 		if (i == rs_getinfo(NULL, R_MAXSDL, 0)) {
-			mdebug("looking AIX max sdl %d\n",i);
+			mdebug_topology("looking AIX max sdl %d\n",i);
 			look_rset(i, MARCEL_LEVEL_PROC);
 		}
 	}
@@ -1662,7 +1662,7 @@ static void topo_discover(void) {
 #  endif /* MA__NUMA */
 
 	marcel_topo_nblevels=discovering_level;
-	mdebug("\n\n--> discovered %d levels\n\n", marcel_topo_nblevels);
+	mdebug_topology("\n\n--> discovered %d levels\n\n", marcel_topo_nblevels);
 
 	/* Set the number of VPs, unless already specified.  */
 	if (ma__nb_vp == 0)
@@ -1670,7 +1670,7 @@ static void topo_discover(void) {
 
 	MA_BUG_ON(!marcel_nbprocessors);
 
-	mdebug("%s: chose %u VPs\n", __func__, ma__nb_vp);
+	mdebug_topology("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
 	distribute_vps();
 
@@ -1709,7 +1709,7 @@ static void topo_discover(void) {
 	unsigned cpu = marcel_first_cpu;
 	unsigned vps = 0;
 
-	mdebug("\n\n * VP mapping details *\n\n");
+	mdebug_topology("\n\n * VP mapping details *\n\n");
 	for (i=0; i<marcel_nbvps(); i++)  {
 #  ifdef MA__NUMA
 		MA_BUG_ON(cpu>=marcel_nbprocessors);
@@ -1725,7 +1725,7 @@ static void topo_discover(void) {
 		marcel_vpset_vp(&vp_level[i].cpuset, oscpu);
 		marcel_vpset_set(&cpuset, oscpu);
 
-		mdebug("VP %d on %dth proc with cpuset %"MARCEL_PRIxVPSET"\n",
+		mdebug_topology("VP %d on %dth proc with cpuset %"MARCEL_PRIxVPSET"\n",
 		       i, cpu, MARCEL_VPSET_PRINTF_VALUE(vp_level[i].cpuset));
 
 		/* Follow the machine as nicely as possible, for instance, with two bicore chips and 6 vps:
@@ -1739,7 +1739,7 @@ static void topo_discover(void) {
 			vps = 0;
 		}
 	}
-	mdebug("\n\n");
+	mdebug_topology("\n\n");
 	marcel_vpset_zero(&vp_level[i].cpuset);
 	marcel_vpset_zero(&vp_level[i].vpset);
 
@@ -1751,10 +1751,10 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++) {
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
 			marcel_vpset_andset(&marcel_topo_levels[l][i].cpuset, &cpuset);
-			mdebug("level %u,%u: cpuset becomes %"MARCEL_PRIxVPSET"\n",
+			mdebug_topology("level %u,%u: cpuset becomes %"MARCEL_PRIxVPSET"\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset));
 			if (marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset)) {
-				mdebug("became empty, dropping it\n");
+				mdebug_topology("became empty, dropping it\n");
 				marcel_topo_level_nbitems[l]--;
 				memcpy(&marcel_topo_levels[l][i], &marcel_topo_levels[l][i+1], sizeof(marcel_topo_levels[l][i]) * (marcel_topo_level_nbitems[l]-i+1));
 				i--;
@@ -1766,14 +1766,14 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++) {
 			marcel_topo_levels[l][i].number = i;
-			mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET"\n",
+			mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET"\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset));
 		}
 
 	/* And show debug again */
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; i<marcel_topo_level_nbitems[l]; i++)
-			mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET"\n",
+			mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET"\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset));
 
 #  ifdef MA__NUMA
@@ -1784,7 +1784,7 @@ static void topo_discover(void) {
 			if (!marcel_vpset_isequal(&marcel_topo_levels[l+1][j].cpuset, &marcel_topo_levels[l][j].cpuset))
 				break;
 		if (j==i && marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset)) {
-			mdebug("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");
+			mdebug_topology("merging levels %u and %u since same %d item%s\n", l, l+1, i, i>=2?"s":"");
 			if (marcel_topo_levels[l+1] == marcel_topo_cpu_level)
 				marcel_topo_cpu_level = marcel_topo_levels[l];
 			else if (marcel_topo_levels[l+1] == marcel_topo_core_level)
@@ -1837,18 +1837,18 @@ static void topo_discover(void) {
 			for (j=0; !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
 				if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset))
 					marcel_topo_levels[l][i].arity++;
-			mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
+			mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 			       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 		}
 	}
 	for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset); i++)
-		mdebug("level %u,%u: cpuset %"MARCEL_PRIxVPSET" leaf\n",
+		mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET" leaf\n",
 		       marcel_topo_nblevels-1, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[marcel_topo_nblevels-1][i].cpuset));
-	mdebug("arity done.\n");
+	mdebug_topology("arity done.\n");
 
 	/* and finally connect levels */
 	topo_connect();
-	mdebug("connecting done.\n");
+	mdebug_topology("connecting done.\n");
 
 #  ifdef MA__NUMA
 	/* Split hi-arity levels */
@@ -1861,7 +1861,7 @@ static void topo_discover(void) {
 			for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++) {
 				split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
 				if (marcel_topo_levels[l][i].arity > marcel_topo_max_arity) {
-					mdebug("will split level %u,%u because %d > %d\n", l, i, marcel_topo_levels[l][i].arity, marcel_topo_max_arity);
+					mdebug_topology("will split level %u,%u because %d > %d\n", l, i, marcel_topo_levels[l][i].arity, marcel_topo_max_arity);
 					dosplit=1;
 				}
 				level_width += nbsublevels;
@@ -1883,7 +1883,7 @@ static void topo_discover(void) {
 					if (!quirk_array)
 						split(marcel_topo_levels[l][i].arity,&sublevelarity,&nbsublevels);
 
-					mdebug("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelarity);
+					mdebug_topology("splitting level %u,%u into %u sublevels of size at most %u\n", l, i, nbsublevels, sublevelarity);
 					/* initialize subitems */
 					for (k=0; k<nbsublevels; k++) {
 						level = &marcel_topo_levels[l+1][j+k];
@@ -1950,7 +1950,7 @@ static void topo_discover(void) {
 					for (k=0; k<nbsublevels; k++)
 						marcel_topo_levels[l][i].children[k] = &marcel_topo_levels[l+1][j+k];
 
-					mdebug("now level %u,%u: cpuset %"MARCEL_PRIxVPSET" has arity %u\n",
+					mdebug_topology("now level %u,%u: cpuset %"MARCEL_PRIxVPSET" has arity %u\n",
 					       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 					j += nbsublevels;
 				}
@@ -2202,7 +2202,7 @@ synth_allocate_topology_levels(const unsigned *topology) {
 			/* Things like `for_all_vp ()' except that many elements.  */
 			count += MARCEL_NBMAXVPSUP;
 
-		mdebug("synthetic topology: creating level %u with breadth %u (%u children per father)\n",
+		mdebug_topology("synthetic topology: creating level %u with breadth %u (%u children per father)\n",
 					 marcel_topo_nblevels, total_level_breadth, *level_breadth);
 		marcel_topo_levels[level] =
 			__marcel_malloc(count * sizeof(marcel_topo_levels[0][0]));
@@ -2225,7 +2225,7 @@ synth_allocate_topology_levels(const unsigned *topology) {
 
 	MA_BUG_ON(marcel_topo_nblevels <= 1);
 
-	mdebug("synthetic topology: total number of levels: %u\n",
+	mdebug_topology("synthetic topology: total number of levels: %u\n",
 				 marcel_topo_nblevels);
 
 	/* The leaves of the topology tree are assumed to be VPs.  */
@@ -2270,7 +2270,7 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_PROC] == -1);
 	marcel_nbprocessors = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_PROC]];
 
-	mdebug("%s: %u processors, chose %u VPs\n",
+	mdebug_topology("%s: %u processors, chose %u VPs\n",
 				 __func__, marcel_nbprocessors, ma__nb_vp);
 
 	if (ma_topo_type_depth[MARCEL_LEVEL_NODE] != -1) {
@@ -2295,7 +2295,7 @@ synth_make_simple_topology(const unsigned *topology_description) {
 		vp->vpdata =
 			(struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&vp->vpdata);
 
-	mdebug("synthetic topology: %u levels, %u VPs, %u processors\n",
+	mdebug_topology("synthetic topology: %u levels, %u VPs, %u processors\n",
 				 marcel_topo_nblevels, ma__nb_vp, marcel_nbprocessors);
 
 	return root;

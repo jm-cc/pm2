@@ -50,6 +50,9 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_log=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mami_ilog=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mami-ilog", &marcel_debug);
 
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_topology_debug=
+  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-topology-debug", &marcel_debug);
+
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
 

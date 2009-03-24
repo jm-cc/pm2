@@ -117,6 +117,7 @@ extern debug_type_t marcel_heap_debug;
 extern debug_type_t marcel_mami_debug;
 extern debug_type_t marcel_mami_log;
 extern debug_type_t marcel_mami_ilog;
+extern debug_type_t marcel_topology_debug;
 #endif
 
 #section macros
@@ -140,6 +141,8 @@ extern debug_type_t marcel_mami_ilog;
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
 #define mdebug_mami(fmt, args...) \
     debug_printf(&marcel_mami_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#define mdebug_topology(fmt, args...) \
+    debug_printf(&marcel_topology_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define bubble_sched_debug(fmt, args...) \
     debug_printf(&marcel_bubble_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define bubble_sched_debugl(level, fmt, args...) \

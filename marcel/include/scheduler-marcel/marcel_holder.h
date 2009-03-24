@@ -546,10 +546,7 @@ static __tbx_inline__ void ma_set_ready_holder(marcel_entity_t *e, ma_holder_t *
 	MA_BUG_ON(e->ready_holder_data);
 	MA_BUG_ON(e->ready_holder);
 	MA_BUG_ON(e->sched_holder && ma_holder_type(h) != ma_holder_type(e->sched_holder));
-	/* TODO: fix bugs and then remove the ifdef */
-#ifdef ___LOCK_DEBUG
 	MA_BUG_ON(!ma_holder_check_locked(h));
-#endif
 	e->ready_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
 		list_add(&e->ready_entities_item, &h->ready_entities);

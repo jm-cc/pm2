@@ -386,6 +386,6 @@ parse_command_line_arguments (unsigned int nb_args,
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

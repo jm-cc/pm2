@@ -929,7 +929,7 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager, size_t nmemb
 static
 int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree_t *memory_tree, void *buffer, size_t size, marcel_memory_data_t **data) {
   if (memory_tree==NULL) {
-    mdebug_mami("The interval [%p:%p] is not managed by MAMI.\n", buffer, buffer+size);
+    mdebug_mami("The interval [%p:%p] is not managed by MaMI.\n", buffer, buffer+size);
     errno = EINVAL;
     return -errno;
   }
@@ -1484,7 +1484,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   addr = info->si_addr;
   err = ma_memory_locate(g_memory_manager, g_memory_manager->root, addr, 1, &data);
   if (err < 0) {
-    // The address is not managed by MAMI. Reset the segv handler to its default action, to cause a segfault
+    // The address is not managed by MaMI. Reset the segv handler to its default action, to cause a segfault
     struct sigaction act;
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);

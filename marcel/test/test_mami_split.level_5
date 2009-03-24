@@ -15,14 +15,14 @@
 . ./common.sh
 prog="split"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Spliting memory area allocated by MAMI
+Spliting memory area allocated by MaMI
 Success when splitting memory area
 Success when attaching memory area
 
 Spliting unknown memory area
 marcel_memory_split fails 22 <Invalid argument>
 
-Spliting memory area (204800) not allocated by MAMI
+Spliting memory area (204800) not allocated by MaMI
 Success when splitting memory area
 Success when attaching memory area
 EOF

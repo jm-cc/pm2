@@ -28,7 +28,7 @@ any_t my_thread(any_t arg) {
   int err;
   void *ptr;
 
-  marcel_fprintf(stderr, "Spliting memory area allocated by MAMI\n");
+  marcel_fprintf(stderr, "Spliting memory area allocated by MaMI\n");
   ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, marcel_nbnodes-1);
   split(ptr, 10*getpagesize());
   marcel_memory_free(&memory_manager, ptr);
@@ -43,7 +43,7 @@ any_t my_thread(any_t arg) {
     perror("marcel_memory_register unexpectedly failed");
   }
 
-  marcel_fprintf(stderr, "\nSpliting memory area (%ld) not allocated by MAMI\n", 50*getpagesize());
+  marcel_fprintf(stderr, "\nSpliting memory area (%ld) not allocated by MaMI\n", 50*getpagesize());
   split(ptr, 50*getpagesize());
   err = marcel_memory_unregister(&memory_manager, ptr);
   if (err < 0) {
@@ -132,6 +132,6 @@ static void attach(void *ptr, size_t size) {
 
 #else
 int marcel_main(int argc, char * argv[]) {
-  fprintf(stderr, "This application needs MAMI to be enabled\n");
+  fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

@@ -122,7 +122,7 @@ struct marcel_memory_data_s {
   /** \brief Nodes where the memory area is located. Used when pages allocated on different nodes */
   int *nodes;
 
-  /** \brief Tag indicating if the memory has been allocated by MAMI */
+  /** \brief Tag indicating if the memory has been allocated by MaMI */
   int mami_allocated;
   /** \brief Tag indicating the memory status */
   marcel_memory_status_t status;
@@ -339,7 +339,7 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
                            int node);
 
 /**
- * Registers a memory area which has not been allocated by MAMI.
+ * Registers a memory area which has not been allocated by MaMI.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
@@ -350,7 +350,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 			   size_t size);
 
 /**
- * Unregisters a memory area which has not been allocated by MAMI.
+ * Unregisters a memory area which has not been allocated by MaMI.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  */

@@ -2092,6 +2092,19 @@ static void topo_discover(void) {
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++)
 			marcel_topo_levels[l][i].level = l;
+
+        {
+                int node, marcel_nbnodes_aux = 0;
+                for(node=0 ; node<marcel_nbnodes ; node++)
+                        if (!marcel_vpset_iszero(&marcel_topo_node_level[node].cpuset)) {
+                                marcel_nbnodes_aux ++;
+                                mdebug_topology("Node %d is enabled\n", node);
+                        }
+                if (marcel_nbnodes_aux != marcel_nbnodes) {
+                        mdebug_topology("Fixing number of nodes from %d to %d\n", marcel_nbnodes, marcel_nbnodes_aux);
+                        marcel_nbnodes = marcel_nbnodes_aux;
+                }
+        }
 }
 
 void ma_topo_exit(void) {

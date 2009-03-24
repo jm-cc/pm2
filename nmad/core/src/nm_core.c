@@ -544,6 +544,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   p_gate->status = NM_GATE_STATUS_INIT;
   p_gate->id	 = p_core->nb_gates;
   p_gate->p_core = p_core;
+  p_gate->ref    = NULL;
 
   FUT_DO_PROBE1(FUT_NMAD_INIT_GATE, p_gate->id);
 

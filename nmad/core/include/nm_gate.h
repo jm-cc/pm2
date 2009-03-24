@@ -67,12 +67,28 @@ struct nm_gate
   
   /** Gate data for each driver. */
   struct nm_gate_drv*p_gate_drv_array[NM_DRV_MAX];
+
+  /* user reference */
+  void*ref;
 };
 
+/** Get the driver-specific per-gate data */
 static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_id_t drv_id)
 {
   assert(drv_id >= 0 && drv_id < NM_DRV_MAX);
   return p_gate->p_gate_drv_array[drv_id];
+}
+
+/** Get the user-registered per-gate data */
+static inline void*nm_gate_ref_get(struct nm_gate*p_gate)
+{
+  return p_gate->ref;
+}
+
+/** Set the user-registered per-gate data */
+static inline void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
+{
+  p_gate->ref = ref;
 }
 
 #endif /* NM_GATE_H */

@@ -945,7 +945,14 @@ static void look_cpuset(marcel_vpset_t *offline_cpus_set, unsigned *nrprocs) {
     /* read the cpuset */
     cpufile[strlen(cpufile)-1] = '\0';
     sprintf(string, "/dev/cpuset%s/cpus", cpufile);
+    mdebug("Trying to read file  <%s>\n", string);
     fd = fopen(string, "r");
+    if (!fd) {
+      sprintf(string, "/cpusets%s/cpus", cpufile);
+      mdebug("Trying to read file  <%s>\n", string);
+      fd = fopen(string, "r");
+    }
+
     if (fd) {
       fgets(cpuset, sizeof(cpuset), fd);
       fclose(fd);

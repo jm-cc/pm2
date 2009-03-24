@@ -533,6 +533,10 @@ void marcel_init_data(int *argc, char *argv[])
 	puk_abi_set_virtual(execv, ma_execv);
 	puk_abi_set_virtual(execvp, ma_execvp);
 
+	/* Note: We don't need to explicitly handle the vararg functions of the
+	 * `execv*' family because PukABI implements them in terms of the
+	 * non-vararg functions above.  */
+
 #ifdef MA__LIBPTHREAD
 	assert_preloaded ();
 #endif

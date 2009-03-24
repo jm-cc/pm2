@@ -105,6 +105,7 @@ $(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 # The `marcel_bubble_sched_lookup.h' file is included solely by
 # `marcel_bubble_sched.c'.
 $(MOD_GEN_OBJ)/marcel_bubble_sched.o $(MOD_GEN_OBJ)/marcel_bubble_sched.pic: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
+$(MOD_GEN_CPP)/marcel_bubble_sched.i: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 
 $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/marcel_bubble_*.c)
 	$(COMMON_BUILD)

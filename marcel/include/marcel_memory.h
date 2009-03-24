@@ -247,7 +247,8 @@ extern
 int ma_memory_preallocate(marcel_memory_manager_t *memory_manager,
                           marcel_memory_area_t **space,
                           int nbpages,
-                          int node);
+                          int vnode,
+                          int pnode);
 
 extern
 int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager,

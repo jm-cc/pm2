@@ -23,7 +23,7 @@
 #  include <malloc.h>
 #endif /* LINUX_SYS */
 
-#ifdef LINUX_SYS
+#if defined(LINUX_SYS)
 #  include <linux/mempolicy.h>
 #else
 /* Policies */
@@ -151,6 +151,15 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
   memory_manager->nb_nodes = marcel_nbnodes;
+
+  memory_manager->nb_nodes = 0;
+  for(node=0 ; node<marcel_nbnodes ; node++)
+    if (!marcel_vpset_iszero(&marcel_topo_node_level[node].cpuset)) {
+      memory_manager->nb_nodes ++;
+      mdebug_mami("Node %d is enabled\n", node);
+    }
+  mdebug_mami("MaMI is managing %d node(s) (initially %d)\n", memory_manager->nb_nodes, marcel_nbnodes);
+
   memory_manager->alignment = 1;
 
   // Is in-kernel migration available
@@ -181,10 +190,10 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc((memory_manager->nb_nodes+1) * sizeof(marcel_memory_area_t *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node);
-    mdebug_mami("Preallocating %p for node #%d\n", memory_manager->heaps[node]->start, node);
+    ma_memory_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, marcel_topo_node_level[node].os_node);
+    mdebug_mami("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
   }
-  ma_memory_preallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, FIRST_TOUCH_NODE);
+  ma_memory_preallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, FIRST_TOUCH_NODE, FIRST_TOUCH_NODE);
   mdebug_mami("Preallocating %p for anonymous heap\n", memory_manager->heaps[FIRST_TOUCH_NODE]->start);
 
   // Initialise space with huge pages on each node
@@ -634,7 +643,7 @@ int ma_memory_preallocate_huge_pages(marcel_memory_manager_t *memory_manager, ma
   return 0;
 }
 
-int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int nbpages, int node) {
+int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory_area_t **space, int nbpages, int vnode, int pnode) {
   unsigned long nodemask;
   size_t length;
   void *buffer;
@@ -642,41 +651,48 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   MAMI_ILOG_IN();
 
-  length = nbpages * memory_manager->normalpagesize;
-
-  buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-  if (buffer == MAP_FAILED) {
-    perror("(ma_memory_preallocate) mmap");
-    err = -errno;
+  if (memory_manager->memtotal[vnode] == 0) {
+    mdebug_mami("No memory available on node #%d, os_node #%d\n", vnode, pnode);
+    err = -EINVAL;
+    buffer = NULL;
+    length = 0;
   }
   else {
-    if (node != FIRST_TOUCH_NODE) {
-      nodemask = (1<<node);
-      err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
-      if (err < 0) {
-        perror("(ma_memory_preallocate) mbind");
-        err = 0;
-      }
-
-      for(i=0 ; i<nbpages ; i++) {
-        int *ptr = buffer+i*memory_manager->normalpagesize;
-        *ptr = 0;
-      }
+    length = nbpages * memory_manager->normalpagesize;
+    buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+    if (buffer == MAP_FAILED) {
+      perror("(ma_memory_preallocate) mmap");
+      err = -errno;
     }
-    /* mark the memory as unaccessible until it gets allocated to the application */
-    VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
+    else {
+      if (vnode != FIRST_TOUCH_NODE) {
+        nodemask = (1<<pnode);
+        mdebug_mami("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, pnode+2);
+        err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, pnode+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+        if (err < 0) {
+          perror("(ma_memory_preallocate) mbind");
+          err = 0;
+        }
 
-    (*space) = tmalloc(sizeof(marcel_memory_area_t));
-    (*space)->start = buffer;
-    (*space)->end = buffer + length;
-    (*space)->nbpages = nbpages;
-    (*space)->protection = PROT_READ|PROT_WRITE;
-    (*space)->pagesize = memory_manager->normalpagesize;
-    (*space)->next = NULL;
-
-    mdebug_mami("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, node);
+        for(i=0 ; i<nbpages ; i++) {
+          int *ptr = buffer+i*memory_manager->normalpagesize;
+          *ptr = 0;
+        }
+      }
+      /* mark the memory as unaccessible until it gets allocated to the application */
+      VALGRIND_MAKE_MEM_NOACCESS(buffer, length);
+    }
   }
 
+  (*space) = tmalloc(sizeof(marcel_memory_area_t));
+  (*space)->start = buffer;
+  (*space)->end = buffer + length;
+  (*space)->nbpages = nbpages;
+  (*space)->protection = PROT_READ|PROT_WRITE;
+  (*space)->pagesize = memory_manager->normalpagesize;
+  (*space)->next = NULL;
+
+  mdebug_mami("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, pnode);
   MAMI_ILOG_OUT();
   return err;
 }
@@ -759,14 +775,14 @@ void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, in
 
   // Look for a space big enough
   prev = heap;
-  while (heap != NULL) {
+  while (heap != NULL && heap->start != NULL) {
     mdebug_mami("Current space from %p with %d pages\n", heap->start, heap->nbpages);
     if (heap->nbpages >= nbpages)
       break;
     prev = heap;
     heap = heap->next;
   }
-  if (heap == NULL) {
+  if (heap == NULL || heap->start == NULL) {
     int err, preallocatedpages;
 
     preallocatedpages = nbpages;
@@ -774,7 +790,7 @@ void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, in
       preallocatedpages = memory_manager->initially_preallocated_pages;
     }
     mdebug_mami("not enough space, let's allocate %d extra pages\n", preallocatedpages);
-    err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node);
+    err = ma_memory_preallocate(memory_manager, &heap, preallocatedpages, node, marcel_topo_node_level[node].os_node);
     if (err < 0) {
       return NULL;
     }
@@ -883,6 +899,12 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size,
   }
   else if (policy == MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH) {
     node = FIRST_TOUCH_NODE;
+  }
+
+  if (tbx_unlikely(policy != MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH && node >= memory_manager->nb_nodes)) {
+    mdebug_mami("Node %d not managed by MaMI\n", node);
+    MAMI_ILOG_OUT();
+    return NULL;
   }
 
   ptr = ma_memory_malloc(memory_manager, size, pagesize, node, with_huge_pages);

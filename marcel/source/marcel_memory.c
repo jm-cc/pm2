@@ -1279,28 +1279,28 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
 }
 
 static
-void ma_memory_print(FILE *stream, marcel_memory_tree_t *memory_tree, int indent) {
+void ma_memory_print(marcel_memory_tree_t *memory_tree, FILE *stream, int indent) {
   if (memory_tree) {
     int x;
-    ma_memory_print(stream, memory_tree->leftchild, indent+2);
+    ma_memory_print(memory_tree->leftchild, stream, indent+2);
     for(x=0 ; x<indent ; x++) marcel_fprintf(stream, " ");
     marcel_fprintf(stream, "[%p, %p]\n", memory_tree->data->startaddress, memory_tree->data->endaddress);
-    ma_memory_print(stream, memory_tree->rightchild, indent+2);
+    ma_memory_print(memory_tree->rightchild, stream, indent+2);
   }
 }
 
 void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
   mdebug_mami("******************** TREE BEGIN *********************************\n");
-  ma_memory_print(stdout, memory_manager->root, 0);
+  ma_memory_print(memory_manager->root, stdout, 0);
   mdebug_mami("******************** TREE END *********************************\n");
   MAMI_LOG_OUT();
 }
 
-void marcel_memory_fprint(FILE *stream, marcel_memory_manager_t *memory_manager) {
+void marcel_memory_fprint(marcel_memory_manager_t *memory_manager, FILE *stream) {
   LOG_IN();
   mdebug_mami("******************** TREE BEGIN *********************************\n");
-  ma_memory_print(stream, memory_manager->root, 0);
+  ma_memory_print(memory_manager->root, stream, 0);
   mdebug_mami("******************** TREE END *********************************\n");
   LOG_OUT();
 }

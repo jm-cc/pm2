@@ -297,25 +297,25 @@ extern
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager);
 
 /**
- * Indicates memory addresses given to MaMI should be aligned to page boundaries.
+ * Indicates that memory addresses given to MaMI should be aligned to page boundaries.
  * @param memory_manager pointer to the memory manager
  */
 extern
 void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
- * Indicates memory addresses given to MaMI should NOT be aligned to page boundaries.
+ * Indicates that memory addresses given to MaMI should NOT be aligned to page boundaries.
  * @param memory_manager pointer to the memory manager
  */
 extern
 void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
- * Allocates memory on the current node. Size will be rounded up to the system page size.
+ * Allocates memory w.r.t the specified allocation policy. Size will be rounded up to the system page size.
  * @param memory_manager pointer to the memory manager
  * @param size size of the required memory
- * @param policy
- * @param node
+ * @param policy allocation policy
+ * @param node allocation node
  */
 extern
 void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
@@ -324,12 +324,12 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager,
                            int node);
 
 /**
- * Allocates memory on the current node. Size will be rounded up to the system page size.
+ * Allocates memory w.r.t the specified allocation policy. Size will be rounded up to the system page size.
  * @param memory_manager pointer to the memory manager
  * @param nmemb number of elements to allocate
  * @param size size of a single element
  * @param policy memory allocation policy
- * @param node
+ * @param node allocation node
  */
 extern
 void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
@@ -339,7 +339,7 @@ void* marcel_memory_calloc(marcel_memory_manager_t *memory_manager,
                            int node);
 
 /**
- * Register a memory area which has not been allocated by MAMI.
+ * Registers a memory area which has not been allocated by MAMI.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
@@ -350,7 +350,7 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
 			   size_t size);
 
 /**
- * Unregister a memory area which has not been allocated by MAMI.
+ * Unregisters a memory area which has not been allocated by MAMI.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  */
@@ -359,7 +359,7 @@ int marcel_memory_unregister(marcel_memory_manager_t *memory_manager,
 			     void *buffer);
 
 /**
- * Split a memory area into subareas.
+ * Splits a memory area into subareas.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param subareas number of subareas
@@ -372,7 +372,10 @@ int marcel_memory_split(marcel_memory_manager_t *memory_manager,
                         void **newbuffers);
 
 /**
- *
+ * Sets the default allocation policy.
+ * @param memory_manager pointer to the memory manager
+ * @param policy new default allocation policy
+ * @param node new default allocation node
  */
 extern
 int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
@@ -380,7 +383,7 @@ int marcel_memory_membind(marcel_memory_manager_t *memory_manager,
                           int node);
 
 /**
- * Free the given memory.
+ * Frees the given memory.
  * @param memory_manager pointer to the memory manager
  * @param buffer pointer to the memory
  */
@@ -389,6 +392,7 @@ void marcel_memory_free(marcel_memory_manager_t *memory_manager,
 			void *buffer);
 
 /**
+ * Locates the given memory.
  * @param memory_manager pointer to the memory manager
  * @param buffer pointer to the memory to be located
  * @param size size of the memory area to be located
@@ -402,17 +406,19 @@ int marcel_memory_locate(marcel_memory_manager_t *memory_manager,
                          int *node);
 
 /**
+ * Prints on the standard output the currently managed memory areas.
  * @param memory_manager pointer to the memory manager
  */
 extern
 void marcel_memory_print(marcel_memory_manager_t *memory_manager);
 
 /**
- * @param stream
+ * Prints in the given file the currently managed memory areas.
  * @param memory_manager pointer to the memory manager
+ * @param stream
  */
 extern
-void marcel_memory_fprint(FILE *stream, marcel_memory_manager_t *memory_manager);
+void marcel_memory_fprint(marcel_memory_manager_t *memory_manager, FILE *stream);
 
 /**
  * Indicates the migration cost for SIZE bits from node SOURCE to node DEST.
@@ -492,7 +498,7 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
                                             unsigned long maxdest);
 
 /**
- * Select the "best" node based on the given policy.
+ * Selects the "best" node based on the given policy.
  * @param memory_manager pointer to the memory manager
  * @param policy selection policy
  * @param node returns the id of the node
@@ -503,7 +509,7 @@ int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
                               int *node);
 
 /**
- * Migrate the pages to the specified node.
+ * Migrates the pages to the specified node.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the buffer to be migrated
  * @param dest identifier of the destination node
@@ -514,7 +520,7 @@ int marcel_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                                 int dest);
 
 /**
- * Mark the area to be migrated on next touch.
+ * Marks the area to be migrated on next touch.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  */
@@ -523,7 +529,7 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
                                         void *buffer);
 
 /**
- * Move the area to the specified node.
+ * Migrates the area to the specified node.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param node destination
@@ -534,12 +540,12 @@ int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
                                   int node);
 
 /**
- * Attach the memory to the specified thread
+ * Attaches the memory to the specified thread
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
  * @param owner thread
- * @param node
+ * @param node will contain the node id where the data is located
  */
 extern
 int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
@@ -549,7 +555,7 @@ int marcel_memory_task_attach(marcel_memory_manager_t *memory_manager,
                               int *node);
 
 /**
- * Unattach the memory to the specified thread
+ * Unattaches the memory from the specified thread
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner thread
@@ -560,7 +566,7 @@ int marcel_memory_task_unattach(marcel_memory_manager_t *memory_manager,
                                 marcel_t owner);
 
 /**
- * Unattach all the memory areas attached to the specified thread.
+ * Unattaches all the memory areas attached to the specified thread.
  * @param memory_manager pointer to the memory manager
  * @param owner thread
  */
@@ -569,10 +575,10 @@ int marcel_memory_task_unattach_all(marcel_memory_manager_t *memory_manager,
                                     marcel_t owner);
 
 /**
- * Migrate to the given nodes all the memory areas attached to the specified thread
+ * Migrates all the memory areas attached to the specified thread to the given node.
  * @param memory_manager pointer to the memory manager
  * @param owner thread
- * @param node
+ * @param node destination
  */
 extern
 int marcel_memory_task_migrate_all(marcel_memory_manager_t *memory_manager,
@@ -580,7 +586,7 @@ int marcel_memory_task_migrate_all(marcel_memory_manager_t *memory_manager,
                                    int node);
 
 /**
- * Attach the memory to the specified bubble
+ * Attaches the memory to the specified bubble
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
@@ -595,7 +601,7 @@ int marcel_memory_bubble_attach(marcel_memory_manager_t *memory_manager,
                                 int *node);
 
 /**
- * Unattach the memory to the specified bubble
+ * Unattaches the memory from the specified bubble
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner bubble
@@ -606,19 +612,19 @@ int marcel_memory_bubble_unattach(marcel_memory_manager_t *memory_manager,
                                   marcel_bubble_t *owner);
 
 /**
- * Unattach all the memory areas attached to the specified bubble.
+ * Unattaches all the memory areas attached to the specified bubble.
  * @param memory_manager pointer to the memory manager
- * @param owner thread
+ * @param owner bubble
  */
 extern
 int marcel_memory_bubble_unattach_all(marcel_memory_manager_t *memory_manager,
                                       marcel_bubble_t *owner);
 
 /**
- * Migrate to the given nodes all the memory areas attached to the specified bubble
+ * Migrates to the given node all the memory areas attached to the specified bubble
  * @param memory_manager pointer to the memory manager
- * @param owner thread
- * @param node
+ * @param owner bubble
+ * @param node destination
  */
 extern
 int marcel_memory_bubble_migrate_all(marcel_memory_manager_t *memory_manager,
@@ -627,12 +633,17 @@ int marcel_memory_bubble_migrate_all(marcel_memory_manager_t *memory_manager,
 
 /**
  * Indicates if huge pages are available on the system.
+ * @param memory_manager pointer to the memory manager
  */
 extern
 int marcel_memory_huge_pages_available(marcel_memory_manager_t *memory_manager);
 
 /**
- * Checks the location of the memory area.
+ * Checks if the location of the memory area is the given node.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param size size of the memory area
+ * @param node location to be checked
  */
 extern
 int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager,
@@ -642,6 +653,9 @@ int marcel_memory_check_pages_location(marcel_memory_manager_t *memory_manager,
 
 /**
  * Updates the location of the memory area.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param size size of the memory area
  */
 extern
 int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
@@ -650,6 +664,10 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
 
 /**
  * Indicates the value of the statistic STAT for the node NODE
+ * @param memory_manager pointer to the memory manager
+ * @param node node identifier
+ * @param stat statistic
+ * @param value will contain the value of the given statistic for the given node
  */
 extern
 int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
@@ -661,6 +679,10 @@ int marcel_memory_stats(marcel_memory_manager_t *memory_manager,
  * Distributes pages of the given memory on the given set of nodes
  * using a round robin policy. The first page is migrated to the first
  * node, the second page to the second node, ....
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param nodes destination nodes
+ * @param nb_nodes number of nodes in the nodes array
  */
 extern
 int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
@@ -671,6 +693,9 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
 /**
  * Inverse operation of marcel_memory_distribute. All the pages of the
  * given memory are moved back to the given node.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param node destination node
  */
 extern
 int marcel_memory_gather(marcel_memory_manager_t *memory_manager,

@@ -213,16 +213,16 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   ma_memory_load_model_for_memory_migration(memory_manager);
 
   // Load the model for the access costs
-  memory_manager->costs_for_write_access = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t *));
+  memory_manager->costs_for_write_access = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_access_cost_t *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    memory_manager->costs_for_write_access[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t));
+    memory_manager->costs_for_write_access[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_access_cost_t));
     for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       memory_manager->costs_for_write_access[node][dest].cost = 0;
     }
   }
-  memory_manager->costs_for_read_access = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t *));
+  memory_manager->costs_for_read_access = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_access_cost_t *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    memory_manager->costs_for_read_access[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_access_cost_t));
+    memory_manager->costs_for_read_access[node] = tmalloc(memory_manager->nb_nodes * sizeof(marcel_memory_access_cost_t));
     for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
       memory_manager->costs_for_read_access[node][dest].cost = 0;
     }
@@ -248,8 +248,8 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
 
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
       for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
-        marcel_access_cost_t wcost = memory_manager->costs_for_write_access[node][dest];
-        marcel_access_cost_t rcost = memory_manager->costs_for_write_access[node][dest];
+        marcel_memory_access_cost_t wcost = memory_manager->costs_for_write_access[node][dest];
+        marcel_memory_access_cost_t rcost = memory_manager->costs_for_write_access[node][dest];
         marcel_fprintf(stderr, "[%d:%d] %f %f\n", node, dest, wcost.cost, rcost.cost);
       }
     }
@@ -1340,7 +1340,7 @@ void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager
 					 int dest,
 					 size_t size,
 					 float *cost) {
-  marcel_access_cost_t access_cost;
+  marcel_memory_access_cost_t access_cost;
   MAMI_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_mami("Invalid node id\n");
@@ -1358,7 +1358,7 @@ void marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
 					int dest,
 					size_t size,
 					float *cost) {
-  marcel_access_cost_t access_cost;
+  marcel_memory_access_cost_t access_cost;
   MAMI_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_mami("Invalid node id\n");

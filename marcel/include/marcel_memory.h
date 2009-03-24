@@ -41,7 +41,7 @@ typedef struct marcel_memory_tree_s marcel_memory_tree_t;
 typedef struct marcel_memory_area_s marcel_memory_area_t;
 
 /** \brief Type of a reading or writing access cost from node to node */
-typedef struct marcel_access_cost_s marcel_access_cost_t;
+typedef struct marcel_memory_access_cost_s marcel_memory_access_cost_t;
 
 /** \brief Type of a memory migration cost from node to node */
 typedef struct marcel_memory_migration_cost_s marcel_memory_migration_cost_t;
@@ -160,7 +160,7 @@ struct marcel_memory_area_s {
 };
 
 /** \brief Structure of a reading or writing access cost from node to node */
-struct marcel_access_cost_s {
+struct marcel_memory_access_cost_s {
   float cost;
 };
 
@@ -189,9 +189,9 @@ struct marcel_memory_manager_s {
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */
-  marcel_access_cost_t **costs_for_read_access;
+  marcel_memory_access_cost_t **costs_for_read_access;
   /** \brief Writing access costs from all the nodes to all the nodes */
-  marcel_access_cost_t **costs_for_write_access;
+  marcel_memory_access_cost_t **costs_for_write_access;
   /** \brief Tree containing all the allocated memory areas */
   marcel_memory_tree_t *root;
   /** \brief List of pre-allocated memory areas for huge pages */

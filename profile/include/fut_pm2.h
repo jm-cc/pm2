@@ -274,7 +274,7 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 
 #define PROF_SET_THREAD_NAME(thr)                                   \
  PROF_START                                                         \
-      unsigned long *__name = (unsigned long *) &thr->name;         \
+      unsigned long *__name = (unsigned long *) &thr->as_entity.name;         \
       FUT_DO_PROBE5(FUT_SET_THREAD_NAME_CODE,                       \
 		 thr,                                               \
                  __name[0],                                         \

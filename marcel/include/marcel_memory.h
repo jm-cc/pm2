@@ -421,7 +421,7 @@ extern
 void marcel_memory_fprint(marcel_memory_manager_t *memory_manager, FILE *stream);
 
 /**
- * Indicates the migration cost for SIZE bits from node SOURCE to node DEST.
+ * Indicates the migration cost for \e size bits from node \e source to node \e dest.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
@@ -436,7 +436,7 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   float *cost);
 
 /**
- * Indicates the cost for write accessing SIZE bits from node SOURCE to node DEST.
+ * Indicates the cost for write accessing \e size bits from node \e source to node \e dest.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
@@ -451,7 +451,7 @@ void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager
 					 float *cost);
 
 /**
- * Indicates the cost for read accessing SIZE bits from node SOURCE to node DEST.
+ * Indicates the cost for read accessing \e size bits from node \e source to node \e dest.
  * @param memory_manager pointer to the memory manager
  * @param source source node
  * @param dest destination node
@@ -663,7 +663,7 @@ int marcel_memory_update_pages_location(marcel_memory_manager_t *memory_manager,
                                         size_t size);
 
 /**
- * Indicates the value of the statistic STAT for the node NODE
+ * Indicates the value of the statistic \e stat for the node \e node
  * @param memory_manager pointer to the memory manager
  * @param node node identifier
  * @param stat statistic

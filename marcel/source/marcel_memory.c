@@ -326,7 +326,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
     marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
 #ifdef PM2DEBUG
     if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
-      marcel_memory_fprint(stderr, memory_manager);
+      marcel_memory_fprint(memory_manager, stderr);
     }
 #endif /* PM2DEBUG */
     ma_memory_clean_memory(memory_manager);
@@ -651,7 +651,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   MAMI_ILOG_IN();
 
-  if (memory_manager->memtotal[vnode] == 0) {
+  if (vnode != FIRST_TOUCH_NODE && memory_manager->memtotal[vnode] == 0) {
     mdebug_mami("No memory available on node #%d, os_node #%d\n", vnode, pnode);
     err = -EINVAL;
     buffer = NULL;

@@ -151,15 +151,6 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;
   memory_manager->nb_nodes = marcel_nbnodes;
-
-  memory_manager->nb_nodes = 0;
-  for(node=0 ; node<marcel_nbnodes ; node++)
-    if (!marcel_vpset_iszero(&marcel_topo_node_level[node].cpuset)) {
-      memory_manager->nb_nodes ++;
-      mdebug_mami("Node %d is enabled\n", node);
-    }
-  mdebug_mami("MaMI is managing %d node(s) (initially %d)\n", memory_manager->nb_nodes, marcel_nbnodes);
-
   memory_manager->alignment = 1;
 
   // Is in-kernel migration available

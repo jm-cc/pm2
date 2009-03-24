@@ -400,13 +400,14 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	res = (!--src_bubble->nb_natural_entities);
 	ma_holder_rawunlock(&src_bubble->as_holder);
 
+	ma_holder_rawlock(&dst_bubble->as_holder);
+
 	/* insert entity in bubble dst */
 	if (!dst_bubble->nb_natural_entities) {
 		MA_BUG_ON(!list_empty(&dst_bubble->natural_entities));
 		marcel_sem_P(&dst_bubble->join);
 	}
 
-	ma_holder_rawlock(&dst_bubble->as_holder);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),dst_bubble);
 	else
@@ -492,13 +493,14 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 
 static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	int ret = 1;
+
+	ma_holder_lock_softirq(&bubble->as_holder);
+
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nb_natural_entities) {
 		MA_BUG_ON(!list_empty(&bubble->natural_entities));
 		marcel_sem_P(&bubble->join);
 	}
-
-	ma_holder_lock_softirq(&bubble->as_holder);
 
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
 	if (entity->type == MA_BUBBLE_ENTITY)

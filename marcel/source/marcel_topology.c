@@ -297,7 +297,7 @@ static TBX_UNUSED FILE *ma_fopenat(const char *path, const char *mode) {
 	int fd;
 	const char *relative_path;
 
-	MA_BUG_ON(fsys_root_fd < 0);
+	MA_ALWAYS_BUG_ON(fsys_root_fd < 0);
 
 	/* Skip leading slashes.  */
 	for (relative_path = path; *relative_path == '/'; relative_path++);
@@ -312,7 +312,7 @@ static TBX_UNUSED FILE *ma_fopenat(const char *path, const char *mode) {
 static TBX_UNUSED int ma_accessat(const char *path, int mode) {
 	const char *relative_path;
 
-	MA_BUG_ON(fsys_root_fd < 0);
+	MA_ALWAYS_BUG_ON(fsys_root_fd < 0);
 
 	/* Skip leading slashes.  */
 	for (relative_path = path; *relative_path == '/'; relative_path++);
@@ -450,7 +450,7 @@ static void ma_setup_die_topo_level(int procid_max, unsigned numdies, unsigned *
 
 	mdebug_topology("%d dies\n", numdies);
 	die_level=__marcel_malloc((numdies+MARCEL_NBMAXVPSUP+1)*sizeof(*die_level));
-	MA_BUG_ON(!die_level);
+	MA_ALWAYS_BUG_ON(!die_level);
 
 	for (j = 0; j < numdies; j++) {
 		ma_topo_setup_level(&die_level[j], MARCEL_LEVEL_DIE);
@@ -477,7 +477,7 @@ static void ma_setup_core_topo_level(int procid_max, unsigned numcores, unsigned
 
 	mdebug_topology("%d cores\n", numcores);
 	core_level=__marcel_malloc((numcores+MARCEL_NBMAXVPSUP+1)*sizeof(*core_level));
-	MA_BUG_ON(!core_level);
+	MA_ALWAYS_BUG_ON(!core_level);
 
 	for (j = 0; j < numcores; j++) {
 		ma_topo_setup_level(&core_level[j], MARCEL_LEVEL_CORE);
@@ -548,7 +548,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	/* parse the whole mask */
 	while (fgets(string, KERNEL_CPU_MAP_LEN, fd) && *string != '\0') { /* read one kernel cpu mask and the ending comma */
 		unsigned long map;
-		MA_BUG_ON(nr_maps == MAX_KERNEL_CPU_MASK); /* too many cpumasks in this cpumap */
+		MA_ALWAYS_BUG_ON(nr_maps == MAX_KERNEL_CPU_MASK); /* too many cpumasks in this cpumap */
 
 		map = strtoul(string, NULL, 16);
 		if (!map && !nr_maps)
@@ -561,7 +561,7 @@ static int ma_parse_cpumap(const char *mappath, marcel_vpset_t *set)
 	}
 
 	/* check that the map can be stored in our vpset */
-	MA_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS > MARCEL_NBMAXCPUS);
+	MA_ALWAYS_BUG_ON(nr_maps*KERNEL_CPU_MASK_BITS > MARCEL_NBMAXCPUS);
 
 	/* convert into a set */
 	for(i=0; i<nr_maps*KERNEL_CPU_MASK_BITS; i++)
@@ -676,7 +676,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 
 	mdebug_topology("%d L%d caches\n", numcaches[cachelevel], cachelevel+1);
 	level=__marcel_malloc((numcaches[cachelevel]+MARCEL_NBMAXVPSUP+1)*sizeof(*level));
-	MA_BUG_ON(!level);
+	MA_ALWAYS_BUG_ON(!level);
 
 	for (j = 0; j < numcaches[cachelevel]; j++) {
 		ma_topo_setup_level(&level[j], topotype);
@@ -685,7 +685,7 @@ ma_setup_cache_topo_level(int cachelevel, enum marcel_topo_level_e topotype, int
 		case 2: ma_topo_set_os_numbers(&level[j], l3, j); break;
 		case 1: ma_topo_set_os_numbers(&level[j], l2, j); break;
 		case 0: ma_topo_set_os_numbers(&level[j], l1, j); break;
-		default: MA_BUG_ON(1);
+		default: MA_ALWAYS_BUG_ON(1);
 		}
 
 		level[j].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1+cachelevel] = cachesizes[cachelevel*MARCEL_NBMAXCPUS+j];
@@ -737,7 +737,7 @@ static void look__sysfscpu(unsigned *procid_max,
 	}
 	mdebug_topology("found os proc id max %d\n", cpu_max);
 
-	MA_BUG_ON(cpu_max > MARCEL_NBMAXCPUS);
+	MA_ALWAYS_BUG_ON(cpu_max > MARCEL_NBMAXCPUS);
 
 	for(i=0; i<cpu_max; i++) {
 		marcel_vpset_t dieset, coreset;
@@ -1184,7 +1184,7 @@ static void __marcel_init look_sysfsnode(void) {
         look_cpuset_mems(&offline_mems_set);
 
 	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
-	MA_BUG_ON(!node_level);
+	MA_ALWAYS_BUG_ON(!node_level);
 
 	for (i=0, osnode=0;; osnode++) {
 #define NUMA_NODE_STRLEN (29+9+8+1)
@@ -1252,10 +1252,10 @@ static void __marcel_init look_libnuma(void) {
 		return;
 	}
 
-	MA_BUG_ON(nbnodes==0);
+	MA_ALWAYS_BUG_ON(nbnodes==0);
 
 	node_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*node_level));
-	MA_BUG_ON(!node_level);
+	MA_ALWAYS_BUG_ON(!node_level);
 
 	cpusetcreate(&cpuset);
 	for (radid = 0; radid < nbnodes; radid++) {
@@ -1429,10 +1429,10 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 	if (nbnodes == 1)
 		return;
 
-	MA_BUG_ON(nbnodes == 0);
+	MA_ALWAYS_BUG_ON(nbnodes == 0);
 
 	rad_level=__marcel_malloc((nbnodes+MARCEL_NBMAXVPSUP+1)*sizeof(*rad_level));
-	MA_BUG_ON(!rad_level);
+	MA_ALWAYS_BUG_ON(!rad_level);
 
 	for (r = 0, i = 0; i < nbnodes; i++) {
 		if (rs_getrad(rset, rad, sdl, i, 0)) {
@@ -1542,7 +1542,7 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 			mdebug_topology("splitting machine->numanode on Tyan 8 opteron board, apply split quirk\n");
 
 			array = malloc(8*sizeof(*array));
-			MA_BUG_ON(!array);
+			MA_ALWAYS_BUG_ON(!array);
 
 			/* create 4 fake levels with 2 nodes that are
 			 * actually connected through a single link
@@ -1572,7 +1572,7 @@ static void look_cpu(marcel_vpset_t *offline_cpus_set) {
 	unsigned oscpu,cpu;
 
 	cpu_level=__marcel_malloc((marcel_nbprocessors+MARCEL_NBMAXVPSUP+1)*sizeof(*cpu_level));
-	MA_BUG_ON(!cpu_level);
+	MA_ALWAYS_BUG_ON(!cpu_level);
 
 	mdebug_topology("\n\n * CPU cpusets *\n\n");
 	for (cpu=0,oscpu=0; cpu<marcel_nbprocessors; cpu++,oscpu++) {
@@ -1620,12 +1620,12 @@ static void topo_connect(void) {
 				mdebug_topology("level %u,%u: cpuset %"MARCEL_PRIxVPSET" arity %u\n",
 				       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 				marcel_topo_levels[l][i].children=TBX_MALLOC(marcel_topo_levels[l][i].arity*sizeof(void *));
-				MA_BUG_ON(!marcel_topo_levels[l][i].children);
+				MA_ALWAYS_BUG_ON(!marcel_topo_levels[l][i].children);
 
 				m=0;
 				for (j=0; !marcel_vpset_iszero(&marcel_topo_levels[l+1][j].cpuset); j++)
 					if (marcel_vpset_isincluded(&marcel_topo_levels[l][i].cpuset, &marcel_topo_levels[l+1][j].cpuset)) {
-						MA_BUG_ON(m >= marcel_topo_levels[l][i].arity);
+						MA_ALWAYS_BUG_ON(m >= marcel_topo_levels[l][i].arity);
 						marcel_topo_levels[l][i].children[m]=
 							&marcel_topo_levels[l+1][j];
 						marcel_topo_levels[l+1][j].father = &marcel_topo_levels[l][i];
@@ -1729,7 +1729,7 @@ static void topo_discover(void) {
 	if (ma__nb_vp == 0)
 		ma__nb_vp = marcel_nbprocessors;
 
-	MA_BUG_ON(!marcel_nbprocessors);
+	MA_ALWAYS_BUG_ON(!marcel_nbprocessors);
 
 	mdebug_topology("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
@@ -1763,7 +1763,7 @@ static void topo_discover(void) {
 
 	/* create the VP level: now we decide which CPUs we will really use according to nvp and stride */
 	struct marcel_topo_level *vp_level = __marcel_malloc((marcel_nbvps()+MARCEL_NBMAXVPSUP+1)*sizeof(*vp_level));
-	MA_BUG_ON(!vp_level);
+	MA_ALWAYS_BUG_ON(!vp_level);
 
 	marcel_vpset_t cpuset = MARCEL_VPSET_ZERO;
 	/* do not initialize supplementary VPs yet, since they may end up on the machine level on a single-CPU machine */
@@ -1773,9 +1773,9 @@ static void topo_discover(void) {
 	mdebug_topology("\n\n * VP mapping details *\n\n");
 	for (i=0; i<marcel_nbvps(); i++)  {
 #  ifdef MA__NUMA
-		MA_BUG_ON(cpu>=marcel_nbprocessors);
+		MA_ALWAYS_BUG_ON(cpu>=marcel_nbprocessors);
 		marcel_vpset_t oscpuset = marcel_topo_levels[marcel_topo_nblevels-1][cpu].cpuset;
-		MA_BUG_ON(marcel_vpset_weight(&oscpuset) != 1);
+		MA_ALWAYS_BUG_ON(marcel_vpset_weight(&oscpuset) != 1);
 		unsigned oscpu = marcel_vpset_first(&oscpuset);
 #  else
 		unsigned oscpu = cpu;
@@ -1858,7 +1858,7 @@ static void topo_discover(void) {
 					marcel_topo_levels[l][i].os_##component = marcel_topo_levels[l+1][i].os_##component; \
 				else \
 					if (marcel_topo_levels[l+1][i].os_##component != -1) \
-						MA_BUG_ON(marcel_topo_levels[l][i].os_##component != marcel_topo_levels[l+1][i].os_##component);
+						MA_ALWAYS_BUG_ON(marcel_topo_levels[l][i].os_##component != marcel_topo_levels[l+1][i].os_##component);
 				merge_os_components(node);
 				merge_os_components(die);
 				merge_os_components(l3);
@@ -1869,7 +1869,7 @@ static void topo_discover(void) {
 
 #    define merge_memory_kB(_type) \
 				if (marcel_topo_levels[l+1][i].merged_type & (1<<MARCEL_LEVEL_##_type)) { \
-					MA_BUG_ON(marcel_topo_levels[l][i].merged_type & (1<<MARCEL_LEVEL_##_type)); \
+					MA_ALWAYS_BUG_ON(marcel_topo_levels[l][i].merged_type & (1<<MARCEL_LEVEL_##_type)); \
 					marcel_topo_levels[l][i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_##_type] \
 						= marcel_topo_levels[l+1][i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_##_type]; \
 				}
@@ -1975,7 +1975,7 @@ static void topo_discover(void) {
 							marcel_topo_levels[l][i].children[n]->index = child_index;
 							marcel_topo_levels[l][i].children[n]->father = level;
 							level->arity++;
-							MA_BUG_ON(level->arity > sublevelarity);
+							MA_ALWAYS_BUG_ON(level->arity > sublevelarity);
 						}
 						free(quirk_array);
 
@@ -2001,7 +2001,7 @@ static void topo_discover(void) {
 						if (m)
 							/* Incomplete last level */
 							k++;
-						MA_BUG_ON(k!=nbsublevels);
+						MA_ALWAYS_BUG_ON(k!=nbsublevels);
 					}
 
 					/* reconnect */
@@ -2015,7 +2015,7 @@ static void topo_discover(void) {
 					       l, i, MARCEL_VPSET_PRINTF_VALUE(marcel_topo_levels[l][i].cpuset), marcel_topo_levels[l][i].arity);
 					j += nbsublevels;
 				}
-				MA_BUG_ON(j!=level_width);
+				MA_ALWAYS_BUG_ON(j!=level_width);
 				marcel_vpset_zero(&marcel_topo_levels[l+1][j].cpuset);
 				marcel_vpset_zero(&marcel_topo_levels[l+1][j].vpset);
 				if (++marcel_topo_nblevels ==
@@ -2043,7 +2043,7 @@ static void topo_discover(void) {
 	}
 #  endif /* MA__NUMA */
 
-	MA_BUG_ON(marcel_topo_level_nbitems[marcel_topo_nblevels-1] != marcel_nbvps());
+	MA_ALWAYS_BUG_ON(marcel_topo_level_nbitems[marcel_topo_nblevels-1] != marcel_nbvps());
 	marcel_topo_vp_level = marcel_topo_levels[marcel_topo_nblevels-1];
 
 	/* Set VP sets */
@@ -2144,11 +2144,11 @@ synth_make_children(struct marcel_topo_level *level, unsigned count,
 	unsigned i;
 
 	level->children = TBX_CALLOC(count, sizeof(*level->children));
-	MA_BUG_ON(level->children == NULL);
+	MA_ALWAYS_BUG_ON(level->children == NULL);
 
 	for (i = 0; i < count; i++) {
 		level->children[i] = &node_pool[i];
-		MA_BUG_ON(level->children[i] == NULL);
+		MA_ALWAYS_BUG_ON(level->children[i] == NULL);
 
 		level->arity = count;
 
@@ -2215,7 +2215,7 @@ synth_populate_topology(struct marcel_topo_level *level,
 		unsigned siblings;
 
 		/* Processors don't have children.  */
-		MA_BUG_ON(level->type == MARCEL_LEVEL_PROC);
+		MA_ALWAYS_BUG_ON(level->type == MARCEL_LEVEL_PROC);
 
 		/* Determine the children level type.  */
 		type = synth_level_type (level_breadth);
@@ -2242,7 +2242,7 @@ synth_populate_topology(struct marcel_topo_level *level,
 		level->cpuset = level->vpset;
 	} else {
 		/* Only processors have no children.  */
-		MA_BUG_ON(level->type != MARCEL_LEVEL_PROC);
+		MA_ALWAYS_BUG_ON(level->type != MARCEL_LEVEL_PROC);
 
 		level->merged_type |= 1 << MARCEL_LEVEL_VP;
 
@@ -2283,7 +2283,7 @@ synth_allocate_topology_levels(const unsigned *topology) {
 		marcel_topo_levels[level] =
 			__marcel_malloc(count * sizeof(marcel_topo_levels[0][0]));
 
-		MA_BUG_ON(marcel_topo_levels[level] == NULL);
+		MA_ALWAYS_BUG_ON(marcel_topo_levels[level] == NULL);
 
 		/* Each level is terminated by an item with zeroed VP sets.  */
 		marcel_vpset_zero(&marcel_topo_levels[level][total_level_breadth].vpset);
@@ -2299,7 +2299,7 @@ synth_allocate_topology_levels(const unsigned *topology) {
 		marcel_topo_nblevels++;
 	}
 
-	MA_BUG_ON(marcel_topo_nblevels <= 1);
+	MA_ALWAYS_BUG_ON(marcel_topo_nblevels <= 1);
 
 	mdebug_topology("synthetic topology: total number of levels: %u\n",
 				 marcel_topo_nblevels);
@@ -2336,14 +2336,14 @@ synth_make_simple_topology(const unsigned *topology_description) {
 			root->os_l2 = root->os_l1 = root->os_core = root->os_node = -1;
 
 	synth_populate_topology(root, topology_description, 0);
-	MA_BUG_ON(root->arity != *topology_description);
+	MA_ALWAYS_BUG_ON(root->arity != *topology_description);
 
 	/* Set the total number of VPs and processors.
 	   FIXME: We currently ignore user settings via `--marcel-nvp'.  */
-	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_VP] == -1);
+	MA_ALWAYS_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_VP] == -1);
 	ma__nb_vp = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_VP]];
 
-	MA_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_PROC] == -1);
+	MA_ALWAYS_BUG_ON (ma_topo_type_depth[MARCEL_LEVEL_PROC] == -1);
 	marcel_nbprocessors = marcel_topo_level_nbitems[ma_topo_type_depth[MARCEL_LEVEL_PROC]];
 
 	mdebug_topology("%s: %u processors, chose %u VPs\n",

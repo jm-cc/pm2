@@ -220,6 +220,8 @@ struct marcel_memory_manager_s {
   int alignment;
   /** \brief Is the kernel next touch migration available */
   int kernel_nexttouch_migration;
+  /** \brief Is the migration available */
+  int migration_flag;
 };
 
 #section marcel_functions

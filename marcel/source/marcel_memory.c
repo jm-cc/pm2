@@ -23,9 +23,7 @@
 #  include <malloc.h>
 #endif /* LINUX_SYS */
 
-#if defined(LINUX_SYS)
-#  include <linux/mempolicy.h>
-#else
+/* The following is normally defined in <linux/mempolicy.h>. But that file is not always available. */
 /* Policies */
 enum {
 	MPOL_DEFAULT,
@@ -34,11 +32,9 @@ enum {
 	MPOL_INTERLEAVE,
 	MPOL_MAX,	/* always last member of enum */
 };
-
 /* Flags for mbind */
 #  define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
 #  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
-#endif /* LINUX_SYS */
 
 #if !defined(__NR_move_pages)
 
@@ -163,6 +159,17 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->kernel_nexttouch_migration = 0;
 #endif /* LINUX_SYS */
   mdebug_mami("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration);
+
+  // Is migration available
+  {
+      unsigned long nodemask;
+      nodemask = (1<<marcel_topo_node_level[0].os_node);
+      ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
+      err = ma_memory_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_MOVE);
+      memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
+      free(ptr);
+      mdebug_mami("Migration: %d\n", memory_manager->migration_flag);
+  }
 
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
@@ -658,8 +665,8 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
     else {
       if (vnode != FIRST_TOUCH_NODE) {
         nodemask = (1<<pnode);
-        mdebug_mami("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, pnode+2);
-        err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, pnode+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+        mdebug_mami("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2);
+        err = ma_memory_mbind(buffer, length, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_STRICT|memory_manager->migration_flag);
         if (err < 0) {
           perror("(ma_memory_preallocate) mbind");
           err = 0;

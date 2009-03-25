@@ -33,6 +33,27 @@ error()
     echo $@ 2>&1
 }
 
+# topology_cpu_count TOPOLOGY-DIR
+#
+# Print the number of CPUs listed in the sysfs hierarchy under
+# TOPOLOGY-DIR.
+topology_cpu_count()
+{
+    ( cd "$1"/sys/devices/system/cpu ; echo cpu[0-9]* | wc -w )
+}
+
+# flavor_max_cpu_count
+#
+# Print the maximum number of CPUs supported in the current flavor's
+# CPU set implementation.  Default to 32.
+flavor_max_cpu_count()
+{
+    local options="`pm2-flavor get | grep 'nbmaxcpus:' \
+       | sed -e's/.*nbmaxcpus:\([0-9]\+\).*$/\1/g'`"
+
+    echo "${options:-32}"
+}
+
 # test_topology NAME TOPOLOGY-DIR
 #
 # Test the topology under TOPOLOGY-DIR.  Return true on success.
@@ -57,6 +78,19 @@ test_topology ()
 
     return $result
 }
+
+# test_eligible TOPOLOGY-DIR
+#
+# Return true if the topology under TOPOLOGY-DIR is eligible for
+# testing with the current flavor.
+test_eligible()
+{
+    local dir="$1"
+
+    [ -d "$dir" -a -f "$dir/output" ] &&				\
+	[ `flavor_max_cpu_count` -ge `topology_cpu_count "$dir"` ]
+}
+
 
 if [ ! -d "$topology_dir" ]
 then
@@ -83,7 +117,7 @@ do
     else
 	actual_dir="`echo "$dir"/*`"
 
-	if [ -d "$actual_dir" -a -f "$actual_dir/output" ]
+	if test_eligible "$actual_dir"
 	then
 	    test_count="`expr $test_count + 1`"
 

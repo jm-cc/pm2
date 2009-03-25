@@ -2093,7 +2093,8 @@ static void topo_discover(void) {
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++)
 			marcel_topo_levels[l][i].level = l;
 
-        {
+#  ifdef MA__NUMA
+        if (marcel_topo_node_level) {
                 int node, marcel_nbnodes_aux = 0;
                 for(node=0 ; node<marcel_nbnodes ; node++)
                         if (!marcel_vpset_iszero(&marcel_topo_node_level[node].cpuset)) {
@@ -2105,6 +2106,7 @@ static void topo_discover(void) {
                         marcel_nbnodes = marcel_nbnodes_aux;
                 }
         }
+#  endif
 }
 
 void ma_topo_exit(void) {

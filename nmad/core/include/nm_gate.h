@@ -53,7 +53,7 @@ typedef enum nm_gate_status_e nm_gate_status_t;
  */
 struct nm_gate
 {
-  /** current status of the gate */
+  /** current status of the gate (connected / not connected) */
   nm_gate_status_t status;
 
   /** NM core object. */
@@ -77,18 +77,6 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_i
 {
   assert(drv_id >= 0 && drv_id < NM_DRV_MAX);
   return p_gate->p_gate_drv_array[drv_id];
-}
-
-/** Get the user-registered per-gate data */
-static inline void*nm_gate_ref_get(struct nm_gate*p_gate)
-{
-  return p_gate->ref;
-}
-
-/** Set the user-registered per-gate data */
-static inline void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
-{
-  p_gate->ref = ref;
 }
 
 #endif /* NM_GATE_H */

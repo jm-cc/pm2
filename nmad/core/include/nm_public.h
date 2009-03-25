@@ -186,6 +186,12 @@ int nm_core_gate_connect(nm_core_t p_core,
 			 nm_drv_id_t drv_id,
 			 const char *drv_trk_url);
 
+/** Get the user-registered per-gate data */
+void*nm_gate_ref_get(struct nm_gate*p_gate);
+
+/** Set the user-registered per-gate data */
+void nm_gate_ref_set(struct nm_gate*p_gate, void*ref);
+
 
 int nm_schedule(nm_core_t p_core);
 

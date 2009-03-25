@@ -690,6 +690,19 @@ int nm_core_gate_connect(nm_core_t p_core,
   return nm_core_gate_connect_accept(p_core, p_gate, drv_id, drv_trk_url, !0);
 }
 
+/** Get the user-registered per-gate data */
+void*nm_gate_ref_get(struct nm_gate*p_gate)
+{
+  return p_gate->ref;
+}
+
+/** Set the user-registered per-gate data */
+void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
+{
+  p_gate->ref = ref;
+}
+
+
 /** Load a newmad component from disk. The actual path loaded is
  * ${PM2_CONF_DIR}/'entity'/'entity'_'driver'.xml
  */

@@ -242,6 +242,16 @@ static inline int nm_sr_isend_iov(nm_core_t p_core,
 
 }
 
+static inline int nm_sr_isend_iov_with_ref(nm_core_t p_core,
+					   nm_gate_t p_gate, nm_tag_t tag,
+					   const struct iovec *iov, int nb_entries,
+					   nm_sr_request_t *p_request,
+					   void*ref)
+{
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, tbx_false, p_request, ref);
+
+}
+
 /** Test for the completion of a non blocking send request.
  *  @param p_core a pointer to the NM core object
  *  @param p_gate a pointer to the destination gate.

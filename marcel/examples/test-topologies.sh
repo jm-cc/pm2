@@ -19,6 +19,8 @@
 # the Linux sysfs hierarchies available under `topology-sysfs/'.
 # Return true on success.
 
+PM2_FLAVOR="${PM2_FLAVOR:-marcel-topology}"
+export PM2_FLAVOR
 
 builddir="`pm2-config --builddir marcel`"
 read_topology="$builddir/examples/bin/read-topology"

@@ -285,11 +285,12 @@ static void __marcel_init marcel_slot_init(void)
 	 *   --> see glibc-2.7/nptl/sysdeps/<ARCH>/tls.h for the NPTL's TCB layout
 	 * - set the 'multiple_threads' field to 1; otherwise the NPTL's atomic ops are
 	 *   optimized out as long as the program does not create any extra LWP.
-	 * */
+	 *
+	 * Note: we do not initialize `self' because glibc has already initialized
+	 * it and seems to depend on its value not changing. */
 #ifdef X86_ARCH
 	asm("movw %%gs, %w0" : "=q" (__main_thread->tls_desc));
 	asm("movl %0, %%gs:(%c1)"::"r" (1), "i" (tbx_offset_of(lpt_tcb_t, multiple_threads)));
-	asm("movl %0, %%gs:(%c1)"::"r" (__main_thread), "i" (tbx_offset_of(lpt_tcb_t, self)));
 	asm("movl %%gs:(%c1), %0":"=r" (sysinfo): "i" (tbx_offset_of(lpt_tcb_t, sysinfo)));
 	asm("movl %%gs:(%c1), %0":"=r" (stack_guard): "i" (tbx_offset_of(lpt_tcb_t, stack_guard)));
 	asm("movl %%gs:(%c1), %0":"=r" (pointer_guard): "i" (tbx_offset_of(lpt_tcb_t, pointer_guard)));
@@ -299,7 +300,6 @@ static void __marcel_init marcel_slot_init(void)
 	syscall(SYS_arch_prctl, ARCH_GET_FS, &__main_thread_tls_base);
 	__main_thread->tls_desc = 0;
 	asm("movl %0, %%fs:(%c1)"::"r" (1), "i" (tbx_offset_of(lpt_tcb_t, multiple_threads)));
-	asm("movq %0, %%fs:(%c1)"::"r" (__main_thread), "i" (tbx_offset_of(lpt_tcb_t, self)));
 	asm("movl %%fs:(%c1), %0":"=r" (gscope_flag): "i" (tbx_offset_of(lpt_tcb_t, gscope_flag)));
 	asm("movq %%fs:(%c1), %0":"=r" (sysinfo): "i" (tbx_offset_of(lpt_tcb_t, sysinfo)));
 	asm("movq %%fs:(%c1), %0":"=r" (stack_guard): "i" (tbx_offset_of(lpt_tcb_t, stack_guard)));

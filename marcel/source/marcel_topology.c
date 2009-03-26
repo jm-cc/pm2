@@ -1508,8 +1508,7 @@ ma_split_quirk(enum marcel_topo_level_e ptype, unsigned arity, enum marcel_topo_
 {
 	unsigned * array = NULL;
 #ifdef MA__NUMA
-	if (0 && /* disabled for now */
-	    ptype == MARCEL_LEVEL_MACHINE && ctype == MARCEL_LEVEL_NODE) {
+	if (ptype == MARCEL_LEVEL_MACHINE && ctype == MARCEL_LEVEL_NODE) {
 		/* splitting machine->numanode arity */
 
 #ifdef LINUX_SYS

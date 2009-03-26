@@ -1132,6 +1132,26 @@ static unsigned long ma_sysfs_node_meminfo_to_hugepagefree(const char * path)
 	return 0;
 }
 
+static unsigned long ma_meminfo_to_hugepagesize(void) {
+        char line[1024];
+        FILE *f;
+
+        f = fopen("/proc/meminfo", "r");
+        while (!(feof(f))) {
+                fgets(line, 1024, f);
+                if (!strncmp(line, "Hugepagesize:", 13)) {
+                        char *c, *endptr;
+                        unsigned long size=-1;
+
+                        c = strchr(line, ':') + 1;
+                        size = strtol(c, &endptr, 0);
+                        return size * 1024;
+                }
+        }
+        fclose(f);
+        return 0;
+}
+
 static unsigned long ma_sysfs_node_meminfo_to_memsize(const char * path)
 {
 	char string[64];
@@ -1224,6 +1244,12 @@ static void __marcel_init look_sysfsnode(void) {
 		i++;
 	}
 	nbnodes = i;
+        {
+                unsigned long hpsize = ma_meminfo_to_hugepagesize();
+                for (i=0 ; i<nbnodes; i++) {
+                        node_level[i].huge_page_size = hpsize;
+                }
+        }
 
 	marcel_vpset_zero(&node_level[nbnodes].vpset);
 	marcel_vpset_zero(&node_level[nbnodes].cpuset);
@@ -1269,6 +1295,7 @@ static void __marcel_init look_libnuma(void) {
 		ma_topo_set_os_numbers(&node_level[i], node, radid);
 		node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
                 node_level[i].huge_page_free = 0;
+                node_level[i].huge_page_size = 0;
 
 		cursor = SET_CURSOR_INIT;
 		while((cpuid = cpu_foreach(cpuset, 0, &cursor)) != CPU_NONE)
@@ -1449,6 +1476,7 @@ static void __marcel_init look_rset(int sdl, enum marcel_topo_level_e level) {
 				rad_level[r].os_node = r;
 				rad_level[r].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 0; /* unknown */
                                 rad_level[r].huge_page_free = 0;
+                                rad_level[r].huge_page_size = 0;
 				break;
 			case MARCEL_LEVEL_L2:
 				rad_level[r].os_l2 = r;

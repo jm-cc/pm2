@@ -689,6 +689,7 @@ struct marcel_topo_level {
 #ifdef MA__NUMA
 	unsigned long memory_kB[MARCEL_TOPO_LEVEL_MEMORY_TYPE_MAX];
         unsigned long huge_page_free;
+        unsigned long huge_page_size;
 #endif
 
 	/* allocated by ma_per_level_alloc() */

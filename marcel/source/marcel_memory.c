@@ -106,33 +106,6 @@ marcel_memory_manager_t *g_memory_manager = NULL;
 /* Node id used when unknown location */
 #define UNKNOWN_LOCATION_NODE -1
 
-static
-unsigned long gethugepagesize(void) {
-  char line[1024];
-  FILE *f;
-  unsigned long hugepagesize=0, size=-1;
-
-  mdebug_mami("Reading /proc/meminfo\n");
-  f = marcel_fopen("/proc/meminfo", "r");
-  while (!(feof(f))) {
-    fgets(line, 1024, f);
-    if (!strncmp(line, "Hugepagesize:", 13)) {
-      char *c, *endptr;
-
-      c = strchr(line, ':') + 1;
-      size = strtol(c, &endptr, 0);
-      hugepagesize = size * 1024;
-      mdebug_mami("Huge page size : %lu\n", hugepagesize);
-    }
-  }
-  marcel_fclose(f);
-  if (size == -1) {
-    mdebug_mami("Hugepagesize information not available.");
-    return 0;
-  }
-  return hugepagesize;
-}
-
 void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   int node, dest;
   void *ptr;
@@ -142,7 +115,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   memory_manager->root = NULL;
   marcel_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
-  memory_manager->hugepagesize = gethugepagesize();
+  memory_manager->hugepagesize = marcel_topo_node_level[0].huge_page_size;
   memory_manager->initially_preallocated_pages = 1024;
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MARCEL_MEMORY_MEMBIND_POLICY_NONE;

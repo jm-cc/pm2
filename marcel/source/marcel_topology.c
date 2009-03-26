@@ -1136,7 +1136,7 @@ static unsigned long ma_meminfo_to_hugepagesize(void) {
         char line[1024];
         FILE *f;
 
-        f = fopen("/proc/meminfo", "r");
+        f = marcel_fopen("/proc/meminfo", "r");
         while (!(feof(f))) {
                 fgets(line, 1024, f);
                 if (!strncmp(line, "Hugepagesize:", 13)) {
@@ -1145,10 +1145,11 @@ static unsigned long ma_meminfo_to_hugepagesize(void) {
 
                         c = strchr(line, ':') + 1;
                         size = strtol(c, &endptr, 0);
+                        marcel_fclose(f);
                         return size * 1024;
                 }
         }
-        fclose(f);
+        marcel_fclose(f);
         return 0;
 }
 

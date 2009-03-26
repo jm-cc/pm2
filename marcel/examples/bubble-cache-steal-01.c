@@ -55,10 +55,15 @@ thread_entry_point (void *arg) {
 	return NULL;
 }
 
+
+/* The underlying `cache' scheduler.  */
+static marcel_bubble_sched_t *scheduler;
+
+/* Our own implementation of the `vp_is_idle' scheduler method.  */
 static int
 my_steal (unsigned int from_vp) {
 	if (ma_atomic_read (&first_team_is_dead)) {
-		aff_steal (from_vp);
+		aff_steal (scheduler, from_vp);
 		/* Set the last threads free. */
 		ma_atomic_inc (&die_later_signal);
 	}
@@ -66,6 +71,7 @@ my_steal (unsigned int from_vp) {
 	return 0;
 }
 
+
 int
 main (int argc, char *argv[]) {
 	int ret;
@@ -89,7 +95,6 @@ main (int argc, char *argv[]) {
 	marcel_mutex_init (&write_lock, NULL);
 
 	/* Creating threads and bubbles hierarchy.  */
-	marcel_bubble_sched_t *scheduler;
 	marcel_bubble_t bubbles[NB_BUBBLES];
 	marcel_t threads[NB_BUBBLES * THREADS_PER_BUBBLE];
 	marcel_barrier_t team_barrier[NB_BUBBLES];
@@ -127,21 +132,23 @@ main (int argc, char *argv[]) {
 		}
 	}
 
-	/* Make sure we're currently testing the Cache scheduler. */
+	/* Make sure we're currently testing the Cache scheduler, with work
+		 stealing enabled.  */
 	scheduler =
 		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
-	ret = marcel_bubble_cache_sched_init (scheduler, tbx_true);
+	ret = marcel_bubble_cache_sched_init ((struct marcel_bubble_cache_sched *) scheduler,
+																				tbx_true);
 	MA_BUG_ON (ret != 0);
 
 	/* We asked for work stealing, so it should be available.  */
-	MA_BUG_ON (scheduler.vp_is_idle == NULL);
+	MA_BUG_ON (scheduler->vp_is_idle == NULL);
 
 	marcel_bubble_change_sched (scheduler);
 
 	/* Intercept Cache's work stealing algorithm to assure it's
 		 called before all threads have died. */
-	aff_steal = scheduler.vp_is_idle;
-	scheduler.vp_is_idle = my_steal;
+	aff_steal = scheduler->vp_is_idle;
+	scheduler->vp_is_idle = my_steal;
 
 	/* Threads have been created, let's distribute them. */
 	marcel_bubble_sched_begin ();

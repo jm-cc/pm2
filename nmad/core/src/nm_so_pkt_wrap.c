@@ -842,8 +842,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
   void *data = NULL;
 
 #ifdef NMAD_QOS
-  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_pw->p_gate->p_so_gate;
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_so_gate->strategy_receptacle;
+  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pw->p_gate->strategy_receptacle;
   unsigned ack_received = 0;
 #endif /* NMAD_QOS */
 

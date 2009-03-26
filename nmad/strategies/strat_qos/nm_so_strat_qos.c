@@ -290,11 +290,10 @@ static int strat_qos_try_and_commit(void*_status,
                                     struct nm_gate *p_gate)
 {
   struct nm_so_strat_qos *status = _status;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   int err = NM_ESUCCESS;
   uint8_t policy;
 
-  if(p_so_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
      NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
     /* We're done */
     goto out;
@@ -314,9 +313,8 @@ static int strat_qos_try_and_commit(void*_status,
 static int strat_qos_rdv_accept(void *_status, struct nm_gate *p_gate, uint32_t len,
 				int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   *nb_chunks = 1;
-  if(p_so_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
+  if(p_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
     {
       /* The large-packet track is available! */
       chunks[0].len = len;
@@ -336,7 +334,6 @@ static int strat_qos_ack_callback(void *_status,
 {
   struct nm_so_strat_qos *status = _status;
   struct nm_gate *p_gate = p_so_pw->p_gate;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_pkt_wrap *p_so_large_pw;
   nm_tag_t tag = tag_id - 128;
   uint8_t i;
@@ -365,9 +362,9 @@ static int strat_qos_ack_callback(void *_status,
 
 	      NM_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
-	      p_so_gate->pending_unpacks--;
+	      p_gate->pending_unpacks--;
 
-	      list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send, link)
+	      list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_gate->tags, tag)->pending_large_send, link)
 		{
 		  if(p_so_large_pw->seq == seq)
 		    {

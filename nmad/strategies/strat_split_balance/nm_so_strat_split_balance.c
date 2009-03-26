@@ -117,8 +117,8 @@ strat_split_balance_pack_extended_ctrl(void *_status,
 				       struct nm_gate *p_gate,
 				       uint32_t cumulated_header_len,
 				       const union nm_so_generic_ctrl_header *p_ctrl,
-				       struct nm_pkt_wrap **pp_so_pw){
-
+				       struct nm_pkt_wrap **pp_so_pw)
+{
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_split_balance*status = _status;
   uint32_t h_rlen;
@@ -151,8 +151,8 @@ strat_split_balance_pack_extended_ctrl(void *_status,
 static int
 strat_split_balance_pack_ctrl_chunk(void *_status,
 				    struct nm_pkt_wrap *p_so_pw,
-				    const union nm_so_generic_ctrl_header *p_ctrl){
-
+				    const union nm_so_generic_ctrl_header *p_ctrl)
+{
   int err;
 
   err = nm_so_pw_add_control(p_so_pw, p_ctrl);
@@ -163,7 +163,8 @@ strat_split_balance_pack_ctrl_chunk(void *_status,
 static int
 strat_split_balance_pack_extended_ctrl_end(void *_status,
 					   struct nm_gate *p_gate,
-					   struct nm_pkt_wrap *p_so_pw){
+					   struct nm_pkt_wrap *p_so_pw)
+{
   struct nm_so_strat_split_balance*status = _status;
 
   /* Add the control packet to the BEGINING of out_list */
@@ -177,7 +178,8 @@ strat_split_balance_pack_extended_ctrl_end(void *_status,
 static int
 strat_split_balance_pack_ctrl(void *_status,
 			      struct nm_gate *p_gate,
-			      const union nm_so_generic_ctrl_header *p_ctrl){
+			      const union nm_so_generic_ctrl_header *p_ctrl)
+{
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_split_balance*status = _status;
   int err;
@@ -222,8 +224,8 @@ static int
 strat_split_balance_launch_large_chunk(void *_status,
 				       struct nm_gate *p_gate,
 				       nm_tag_t tag, uint8_t seq,
-				       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+				       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+{
   struct nm_pkt_wrap *p_so_pw = NULL;
   int err;
 
@@ -241,10 +243,10 @@ strat_split_balance_launch_large_chunk(void *_status,
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 1, p_so_pw);
 
   /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send));
+  list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
   /* Signal we're waiting for an ACK */
-  p_so_gate->pending_unpacks++;
+  p_gate->pending_unpacks++;
 
   /* Finally, generate a RdV request */
   {
@@ -270,7 +272,8 @@ static int
 strat_split_balance_try_to_agregate_small(void *_status,
 					  struct nm_gate *p_gate,
 					  nm_tag_t tag, uint8_t seq,
-					  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
+					  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+{
   struct nm_pkt_wrap *p_so_pw;
   struct nm_so_strat_split_balance*status = _status;
   int flags = 0;
@@ -332,11 +335,11 @@ static int
 strat_split_balance_pack(void *_status,
 			 struct nm_gate *p_gate,
 			 nm_tag_t tag, uint8_t seq,
-			 const void *data, uint32_t len){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+			 const void *data, uint32_t len)
+{
   int err;
 
-  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] = len;
+  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
 
   if(len <= NM_SO_MAX_SMALL) {
     NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u\n", tag, seq, len);
@@ -358,13 +361,13 @@ static int
 strat_split_balance_packv(void *_status,
 			  struct nm_gate *p_gate,
 			  nm_tag_t tag, uint8_t seq,
-			  const struct iovec *iov, int nb_entries){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+			  const struct iovec *iov, int nb_entries)
+{
 
   uint32_t offset = 0;
   uint8_t last_chunk = 0;
   int i;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   p_so_tag->send[seq] = 0;
 
@@ -393,7 +396,8 @@ strat_split_balance_packv(void *_status,
 static int
 strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
 				      nm_tag_t tag, uint8_t seq,
-				      uint32_t len, const struct DLOOP_Segment *segp){
+				      uint32_t len, const struct DLOOP_Segment *segp)
+{
 
   struct nm_pkt_wrap *p_so_pw;
   struct nm_so_strat_split_balance*status = _status;
@@ -440,9 +444,9 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
 static int
 strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
 					  nm_tag_t tag, uint8_t seq,
-					  uint32_t len, const struct DLOOP_Segment *segp){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+					  uint32_t len, const struct DLOOP_Segment *segp)
+{
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   struct nm_pkt_wrap *p_so_pw = NULL;
   int err;
 
@@ -463,7 +467,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
   list_add_tail(&p_so_pw->link, &(p_so_tag->pending_large_send));
 
   /* Signal we're waiting for an ACK */
-  p_so_gate->pending_unpacks++;
+  p_gate->pending_unpacks++;
 
   /* Finally, generate a RdV request */
   {
@@ -493,9 +497,9 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
 static int
 strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 				  nm_tag_t tag, uint8_t seq,
-				  const struct DLOOP_Segment *segp){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+				  const struct DLOOP_Segment *segp)
+{
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   DLOOP_Handle handle;
   int data_sz;
@@ -527,8 +531,8 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
    return next packet to send */
 static int
 strat_split_balance_try_and_commit(void *_status,
-				   struct nm_gate *p_gate){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
+				   struct nm_gate *p_gate)
+{
   struct nm_so_strat_split_balance*status = _status;
   struct list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
@@ -544,16 +548,16 @@ strat_split_balance_try_and_commit(void *_status,
 
   if(nb_drivers == 1){
     drv_id = 0;
-    if (p_so_gate->active_send[drv_id][NM_TRK_SMALL] +
-	p_so_gate->active_send[drv_id][NM_TRK_LARGE] == 0)
+    if (p_gate->active_send[drv_id][NM_TRK_SMALL] +
+	p_gate->active_send[drv_id][NM_TRK_LARGE] == 0)
       /* We found an idle NIC */
       goto next;
   }
 
   nm_ns_inc_lats(p_gate->p_core, &drv_ids);
   while(n < nb_drivers){
-    if (p_so_gate->active_send[drv_ids[n]][NM_TRK_SMALL] +
-        p_so_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0){
+    if (p_gate->active_send[drv_ids[n]][NM_TRK_SMALL] +
+        p_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0){
       /* We found an idle NIC */
       drv_id = drv_ids[n];
       n++;
@@ -593,8 +597,6 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
 					  int*nb_chunks, struct nm_rdv_chunk*chunks)
 
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-
   if(*nb_chunks == 1)
     {
       /* Is there any large data track available? */
@@ -605,7 +607,7 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
 	   * We assume they are registered in order from the fastest to the slowest. 
 	   * TODO: we should use latency/bandwdith information from drivers capabilities
 	   */
-	  if(p_so_gate->active_recv[n][NM_TRK_LARGE] == 0)
+	  if(p_gate->active_recv[n][NM_TRK_LARGE] == 0)
 	    {
 	      chunks[0].len    = len;
 	      chunks[0].drv_id = n;
@@ -625,7 +627,7 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
       int i;
       for(i = 0; i < nb_drivers; i++)
 	{
-	  if(p_so_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0)
+	  if(p_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0)
 	    {
 	      chunks[chunk_index].drv_id = i;
 	      chunks[chunk_index].trk_id = NM_TRK_LARGE;

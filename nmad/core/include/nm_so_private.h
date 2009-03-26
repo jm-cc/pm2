@@ -182,29 +182,6 @@ struct nm_so_sched
   unsigned pending_any_src_unpacks;
 };
 
-
-struct nm_so_gate
-{
-  struct nm_so_sched *p_so_sched;
-
-  /* Actually counts the number of expected small messages, including
-     RdV requests for large messages */
-  unsigned pending_unpacks;
-
-  unsigned active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
-  unsigned active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
-
-  /** table of tag status */
-  struct nm_so_tag_table_s tags;
-
-  /* For large messages waiting for Track 1 (or 2) to be free */
-  struct list_head pending_large_recv;
-
-  /* Strategy components elements */
-  struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
-  puk_instance_t strategy_instance;
-};
-
 int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len);
 
 int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
@@ -233,98 +210,6 @@ static inline int datatype_size(const struct DLOOP_Segment *segp)
   int data_sz;
   CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
   return data_sz;
-}
-
-static inline int nm_so_unpack(struct nm_gate *p_gate,
-			       nm_tag_t tag, uint8_t seq,
-			       void *data, uint32_t len)
-{
-  /* Nothing special to flag for the contiguous reception */
-  const nm_so_flag_t flag = 0;
-  return __nm_so_unpack(p_gate, tag, seq, flag, data, len);
-}
-
-static inline int nm_so_unpackv(struct nm_gate *p_gate,
-				nm_tag_t tag, uint8_t seq,
-				struct iovec *iov, int nb_entries)
-{
-  /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
-  return __nm_so_unpack(p_gate, tag, seq, flag, iov, iov_len(iov, nb_entries));
-}
-
-static inline int nm_so_unpack_datatype(struct nm_gate *p_gate,
-					nm_tag_t tag, uint8_t seq,
-					struct DLOOP_Segment *segp)
-{
-  /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
-  return __nm_so_unpack(p_gate, tag, seq, flag, segp, datatype_size(segp));
-}
-
-static inline int nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, void *data, uint32_t len)
-{
-    /* Nothing special to flag for the contiguous reception */
-  const nm_so_flag_t flag = 0;
-  return __nm_so_unpack_any_src(p_core, tag, flag, data, len);
-}
-
-
-static inline int nm_so_unpackv_any_src(struct nm_core *p_core, nm_tag_t tag, struct iovec *iov, int nb_entries)
-{
-  /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
-  return __nm_so_unpack_any_src(p_core, tag, flag, iov, iov_len(iov, nb_entries));
-}
-
-static inline int nm_so_unpack_datatype_any_src(struct nm_core *p_core, nm_tag_t tag, struct DLOOP_Segment *segp){
-
-  /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
-  return __nm_so_unpack_any_src(p_core, tag, flag, segp, datatype_size(segp));
-}
-
-static inline int nm_so_pack(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, int len)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
-}
-
-static inline int nm_so_packv(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct iovec*iov, int len)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  return (*r->driver->packv)(r->_status, p_gate, tag, seq, iov, len);
-}
-
-static inline int nm_so_pack_datatype(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct DLOOP_Segment*segp)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  return (*r->driver->pack_datatype)(r->_status, p_gate, tag, seq, segp);
-}
-
-static inline int nm_so_pack_extended(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, uint32_t len, tbx_bool_t is_completed)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  if(r->driver->pack_extended)
-    {
-      return (*r->driver->pack_extended)(r->_status, p_gate, tag, seq, data, len, is_completed);
-    }
-  else
-    {
-      NM_DISPF("The current strategy does not provide an extended pack");
-      return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
-    }
-}
-
-static inline int nm_so_flush(nm_gate_t p_gate)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  if(tbx_unlikely(r->driver->flush))
-    {
-      return (*r->driver->flush)(r->_status, p_gate);
-    }
-  else
-    return -NM_ENOTIMPL;
 }
 
 

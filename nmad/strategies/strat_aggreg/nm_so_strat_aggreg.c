@@ -191,10 +191,9 @@ static int strat_aggreg_pack(void*_status,
 			     const void *data, uint32_t len)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   int err;
 
-  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] = len;
+  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
 
   if(len <= status->nm_so_max_small) {
     /* Small packet */
@@ -325,7 +324,6 @@ launch_large_chunk(void *_status,
                    nm_tag_t tag, uint8_t seq,
                    const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
   struct nm_pkt_wrap *p_so_pw = NULL;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   int err;
 
   /* Large packets can not be sent immediately : we have to issue a RdV request. */
@@ -338,10 +336,10 @@ launch_large_chunk(void *_status,
     goto out;
 
   /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send));
+  list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
   /* Signal we're waiting for an ACK */
-  p_so_gate->pending_unpacks++;
+  p_gate->pending_unpacks++;
 
   /* Finally, generate a RdV request */
   {
@@ -369,9 +367,8 @@ strat_aggreg_packv(void *_status,
 		   struct nm_gate *p_gate,
 		   nm_tag_t tag, uint8_t seq,
 		   const struct iovec *iov, int nb_entries){
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_strat_aggreg_gate *status = _status;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   uint32_t offset = 0;
   uint8_t last_chunk = 0;
   int i;
@@ -411,13 +408,12 @@ strat_aggreg_packv(void *_status,
 static int strat_aggreg_try_and_commit(void *_status,
 				       struct nm_gate *p_gate)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_strat_aggreg_gate *status = _status;
   struct list_head *out_list =
     &(status)->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
-  if(p_so_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
      NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
     /* We're done */
     goto out;
@@ -452,9 +448,8 @@ static int strat_aggreg_try_and_commit(void *_status,
 static int strat_aggreg_rdv_accept(void*_status, struct nm_gate *p_gate, uint32_t len,
 				   int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   *nb_chunks = 1;
-  if(p_so_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
+  if(p_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
     {
       /* The large-packet track is available! */
       chunks[0].len = len;

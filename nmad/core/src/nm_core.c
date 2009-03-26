@@ -425,9 +425,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
   nm_drv_id_t drv_id;
   for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
     {
-      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       int i;
 #ifdef PIOMAN
+      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       nmad_unlock();
       piom_server_stop(&p_drv->server);
       nmad_lock();
@@ -515,7 +515,8 @@ int nm_core_driver_exit(struct nm_core *p_core)
   for(i = 0 ; i < p_core->nb_gates ; i++)
     {
       struct nm_gate *p_gate = &p_core->gate_array[i];
-      err = nm_so_close_gate(p_core, p_gate);
+      nm_so_tag_table_destroy(&p_gate->tags);
+      puk_instance_destroy(p_gate->strategy_instance);
     }
   nmad_unlock();
   return err;
@@ -548,16 +549,20 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   FUT_DO_PROBE1(FUT_NMAD_INIT_GATE, p_gate->id);
 
-  err = nm_so_init_gate(p_core, p_gate);
-  if (err != NM_ESUCCESS) {
-    NM_DISPF("sched.init_gate returned %d", err);
-    goto out;
-  }
+  nm_so_tag_table_init(&p_gate->tags);
 
-  if (pp_gate)
-    {
-      *pp_gate = p_gate;
-    }
+  memset(p_gate->active_recv, 0, sizeof(p_gate->active_recv));
+  memset(p_gate->active_send, 0, sizeof(p_gate->active_send));
+
+  p_gate->pending_unpacks = 0;
+
+  INIT_LIST_HEAD(&p_gate->pending_large_recv);
+
+  p_gate->strategy_instance = puk_adapter_instanciate(p_core->so_sched.strategy_adapter);
+  puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
+					&p_gate->strategy_receptacle);
+
+  *pp_gate = p_gate;
 
  out:
   return err;

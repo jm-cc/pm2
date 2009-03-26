@@ -267,8 +267,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 			nm_sr_request_t *p_request,
 			void*ref)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
   uint8_t seq;
   int ret;
@@ -280,7 +279,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 
   assert((sending_type != nm_sr_iov_transfer) || (len < NM_SO_PREALLOC_IOV_LEN));
 
-  seq = nm_so_tag_get(&p_so_gate->tags, tag)->send_seq_number++;
+  seq = nm_so_tag_get(&p_gate->tags, tag)->send_seq_number++;
 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->seq    = seq;
@@ -352,8 +351,7 @@ int nm_sr_rsend(struct nm_core *p_core,
     nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
 
 #else
-    struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-    volatile nm_so_status_t *status = &(nm_so_tag_get(&p_so_gate->tags, tag)->status[p_request->seq]);
+    volatile nm_so_status_t *status = &(nm_so_tag_get(&p_gate->tags, tag)->status[p_request->seq]);
 
     NM_SO_SR_TRACE("Waiting for status %p\n", status);
     nm_sr_status_wait(status, NM_SO_STATUS_ACK_HERE, p_core);
@@ -547,9 +545,8 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   else
     {
       nmad_lock();
-      struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
       uint8_t seq;
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
       struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
   
       nm_sr_flush(p_core);
@@ -677,8 +674,7 @@ int nm_sr_get_size(struct nm_core *p_core,
     }
   else 
     {
-      struct nm_so_gate *p_so_gate = p_request->p_gate->p_so_gate;
-      *size = nm_so_tag_get(&p_so_gate->tags, tag)->recv[p_request->seq].unpack_here.expected_len;
+      *size = nm_so_tag_get(&p_request->p_gate->tags, tag)->recv[p_request->seq].unpack_here.expected_len;
     }
 
   NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %p --> %zd\n", tag, p_request->seq, p_request->p_gate, *size);
@@ -714,8 +710,7 @@ int nm_sr_probe(struct nm_core *p_core,
 	  p_gate = &p_core->gate_array[i];
 	  if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	    {
-	      struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 	      uint8_t seq = p_so_tag->recv_seq_number;
 	      volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
 	      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
@@ -730,8 +725,7 @@ int nm_sr_probe(struct nm_core *p_core,
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 	  uint8_t seq = p_so_tag->recv_seq_number;
 	  volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
 	  if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
@@ -847,7 +841,7 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
  */
 static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->p_so_gate->tags, event->tag);
+  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
   nm_sr_request_t**const sreq = &p_so_tag->p_sr_tag->sreqs[event->seq];
   nm_sr_request_t *const p_request = *sreq;
 
@@ -870,7 +864,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
 {
   if(nm_sr_irecv_event_info.request)
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->p_so_gate->tags, event->tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
       uint8_t seq = p_so_tag->recv_seq_number++;
       struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
       p_sr_tag->rreqs[seq] = nm_sr_irecv_event_info.request;
@@ -896,7 +890,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
  */
 static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->p_so_gate->tags, event->tag);
+  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
   struct nm_sr_tag_s*const p_sr_tag = nm_sr_tag_init(p_so_tag);
   nm_sr_request_t**const rreq = &p_sr_tag->rreqs[event->seq];
   nm_sr_request_t *p_request = NULL;

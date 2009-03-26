@@ -129,9 +129,8 @@ static void strat_aggreg_extended_destroy(void*status)
 static int strat_aggreg_extended_rdv_accept(void*_status, struct nm_gate *p_gate, uint32_t len,
 					    int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   *nb_chunks = 1;
-  if(p_so_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
+  if(p_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
     {
       /* The large-packet track is available! */
       chunks[0].len = len;
@@ -253,12 +252,11 @@ static int strat_aggreg_extended_pack(void*_status,
 				      const void *data, uint32_t len)
 {
   struct nm_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_strat_aggreg_extended*status = _status;
   int flags = 0;
   int err;
 
-  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] = len;
+  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
 
   if(len <= status->nm_so_max_small) {
     /* Small packet */
@@ -319,10 +317,10 @@ static int strat_aggreg_extended_pack(void*_status,
     /* Then place it into the appropriate list of large pending
        "sends". */
     list_add_tail(&p_so_pw->link,
-                  &(nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send));
+                  &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
     /* Signal we're waiting for an ACK */
-    p_so_gate->pending_unpacks++;
+    p_gate->pending_unpacks++;
 
     /* Finally, generate a RdV request */
     {
@@ -365,12 +363,11 @@ static int strat_aggreg_extended_pack_extended(void*_status,
 					       tbx_bool_t is_completed)
 {
   struct nm_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct nm_so_strat_aggreg_extended*status = _status;
   int flags = 0;
   int err;
 
-  nm_so_tag_get(&p_so_gate->tags, tag)->send[seq] += len;
+  nm_so_tag_get(&p_gate->tags, tag)->send[seq] += len;
 
   if(len <= status->nm_so_max_small) {
     /* Small packet */
@@ -445,10 +442,10 @@ static int strat_aggreg_extended_pack_extended(void*_status,
     /* Then place it into the appropriate list of large pending
        "sends". */
     list_add_tail(&p_so_pw->link,
-                  &(nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send));
+                  &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
     /* Signal we're waiting for an ACK */
-    p_so_gate->pending_unpacks++;
+    p_gate->pending_unpacks++;
 
     /* Finally, generate a RdV request */
     {
@@ -484,12 +481,11 @@ static int strat_aggreg_extended_pack_extended(void*_status,
 static int strat_aggreg_extended_try_and_commit(void*_status,
 						struct nm_gate *p_gate)
 {
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   struct list_head *out_list =
     &((struct nm_so_strat_aggreg_extended*)_status)->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
-  if(p_so_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
      NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
     /* We're done */
     goto out;

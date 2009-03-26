@@ -72,7 +72,6 @@ pack(struct nm_gate *p_gate, void *private,
   struct list_head *out_list =
     &((struct nm_so_policy_priority_gate *)private)->out_list[priority];
   struct nm_pkt_wrap *p_so_pw;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
   int flags = 0;
   int err;
 
@@ -135,11 +134,11 @@ pack(struct nm_gate *p_gate, void *private,
     /* Then place it into the appropriate list of large pending
        "sends". */
     list_add_tail(&p_so_pw->link,
-                  &(nm_so_tag_get(&p_so_gate->tags, tag)->pending_large_send));
+                  &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
 
     /* Signal we're waiting for an ACK */
-    p_so_gate->pending_unpacks++;
+    p_gate->pending_unpacks++;
 
     /* Finally, generate a RdV request */
     {

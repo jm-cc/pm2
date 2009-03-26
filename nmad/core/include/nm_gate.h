@@ -62,9 +62,23 @@ struct nm_gate
   /** Gate id. */
   uint8_t id;
   
-  /** SchedOpt fields. */
-  struct nm_so_gate*p_so_gate;
-  
+  /** table of tag status */
+  struct nm_so_tag_table_s tags;
+
+  /* Actually counts the number of expected small messages, including
+     RdV requests for large messages */
+  unsigned pending_unpacks;
+
+  unsigned active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
+  unsigned active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
+
+  /* For large messages waiting for Track 1 (or 2) to be free */
+  struct list_head pending_large_recv;
+
+  /* Strategy components elements */
+  struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;
+  puk_instance_t strategy_instance;
+
   /** Gate data for each driver. */
   struct nm_gate_drv*p_gate_drv_array[NM_DRV_MAX];
 

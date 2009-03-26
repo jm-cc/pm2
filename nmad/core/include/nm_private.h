@@ -45,7 +45,6 @@ typedef int8_t nm_trk_id_t;
 #include "nm_drv_cap.h"
 #include "nm_trk_cap.h"
 #include "nm_drv.h"
-#include "nm_gate.h"
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"
 #include "nm_errno.h"
@@ -58,6 +57,7 @@ typedef int8_t nm_trk_id_t;
 #include "nm_so_strategies.h"
 #include "nm_so_headers.h"
 #include "nm_so_private.h"
+#include "nm_gate.h"
 #include "nm_core.h"
 #include "nm_event.h"
 
@@ -103,22 +103,6 @@ int nm_so_schedule_init			(struct nm_core *p_core);
 /** Shutdown the scheduler module.
  */
 int nm_so_schedule_exit			(struct nm_core *p_core);
-
-
-/** Initialize the scheduler structures for a new gate.
- */
-int nm_so_init_gate		(struct nm_core	 *p_core,
-				 struct nm_gate	 *p_gate);
-
-
-/** Clean-up the scheduler structures for a gate.
- */
-int nm_so_close_gate		(struct nm_core	 *p_core,
-				 struct nm_gate	 *p_gate);
-
-
-/** Schedule and post new outgoing buffers */
-int nm_so_out_schedule_gate	(struct nm_gate *p_gate);
 
 
 /** Process complete outgoing request */

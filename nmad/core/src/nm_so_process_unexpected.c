@@ -26,8 +26,7 @@
 static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct nm_so_chunk*chunk)
 {
   struct nm_gate *p_gate = chunk->p_pw->p_gate;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_sched *p_so_sched = p_so_gate->p_so_sched;
+  struct nm_so_sched *p_so_sched = &p_gate->p_core->so_sched;
   const void*header = chunk->header;
   const nm_tag_t proto_id = *(nm_tag_t *)header;
 
@@ -58,7 +57,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
 	}
       else 
 	{
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 	  if(is_last_chunk)
 	    {
 	      p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
@@ -106,7 +105,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
 int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
 			     nm_tag_t tag, uint8_t seq, uint32_t len, void *data)
 {
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->p_so_gate->tags, tag);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   uint32_t expected_len = 0;
   uint32_t cumulated_len = 0;
   struct nm_so_any_src_s*any_src = NULL;

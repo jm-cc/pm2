@@ -20,21 +20,12 @@
 
 #include <nm_private.h>
 
-/** Schedule outbound requests.
- */
-int nm_so_out_schedule_gate(struct nm_gate *p_gate)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->p_so_gate->strategy_receptacle;
-  return r->driver->try_and_commit(r->_status, p_gate);
-}
-
 /** Process a data request completion.
  */
 static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto_id, uint8_t seq, uint32_t len)
 {
   const nm_tag_t tag = proto_id - 128;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_so_gate->tags, tag);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   p_so_tag->send[seq] -= len;
 
@@ -81,7 +72,6 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 				struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_so_gate *p_so_gate = p_gate->p_so_gate;
 
   NM_TRACEF("send request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
 	    p_pw->p_gate->id,
@@ -95,7 +85,7 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 #endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   
-  p_so_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
+  p_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
 
   if(p_pw->trk_id == NM_TRK_SMALL) 
     {

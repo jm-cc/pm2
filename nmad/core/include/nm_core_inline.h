@@ -39,7 +39,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   /* append pkt to scheduler post list */
   tbx_slist_append(p_gate->p_core->so_sched.post_recv_req, p_pw);
 
-  p_gate->p_so_gate->active_recv[drv_id][trk_id] = 1;
+  p_gate->active_recv[drv_id][trk_id] = 1;
 }
 
 static __tbx_inline__ int nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
@@ -60,19 +60,16 @@ static __tbx_inline__ int nm_so_post_regular_recv(struct nm_gate *p_gate, int dr
   return err;
 }
 
-static __tbx_inline__ int nm_so_refill_regular_recv(struct nm_gate *p_gate)
+static __tbx_inline__ void nm_so_refill_regular_recv(struct nm_gate *p_gate)
 {
-  int err = NM_ESUCCESS;
   const int nb_drivers = p_gate->p_core->nb_drivers;
-  int drv;
+  nm_drv_id_t drv;
 
   for(drv = 0; drv < nb_drivers; drv++)
-    if(!p_gate->p_so_gate->active_recv[drv][NM_TRK_SMALL])
+    if(!p_gate->active_recv[drv][NM_TRK_SMALL])
       {
-	err = nm_so_post_regular_recv(p_gate, drv);
+	nm_so_post_regular_recv(p_gate, drv);
       }
-  
-  return err;
 }
 
 static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
@@ -85,7 +82,6 @@ static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, i
   err = NM_ESUCCESS;
   return err;
 }
-
 
 
 /* ** Sending functions ************************************ */
@@ -117,7 +113,110 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 
   tbx_slist_append(p_core->so_sched.post_sched_out_list, p_pw);
 
-  p_gate->p_so_gate->active_send[drv_id][trk_id]++;
+  p_gate->active_send[drv_id][trk_id]++;
+}
+
+
+/** Schedule and post new outgoing buffers
+ */
+static inline int nm_so_out_schedule_gate(struct nm_gate *p_gate)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  return r->driver->try_and_commit(r->_status, p_gate);
+}
+
+/* ** Pack/unpack ****************************************** */
+
+static inline int nm_so_unpack(struct nm_gate *p_gate,
+			       nm_tag_t tag, uint8_t seq,
+			       void *data, uint32_t len)
+{
+  /* Nothing special to flag for the contiguous reception */
+  const nm_so_flag_t flag = 0;
+  return __nm_so_unpack(p_gate, tag, seq, flag, data, len);
+}
+
+static inline int nm_so_unpackv(struct nm_gate *p_gate,
+				nm_tag_t tag, uint8_t seq,
+				struct iovec *iov, int nb_entries)
+{
+  /* Data will be receive in an iovec tab */
+  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
+  return __nm_so_unpack(p_gate, tag, seq, flag, iov, iov_len(iov, nb_entries));
+}
+
+static inline int nm_so_unpack_datatype(struct nm_gate *p_gate,
+					nm_tag_t tag, uint8_t seq,
+					struct DLOOP_Segment *segp)
+{
+  /* Data will be receive through a datatype */
+  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
+  return __nm_so_unpack(p_gate, tag, seq, flag, segp, datatype_size(segp));
+}
+
+static inline int nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, void *data, uint32_t len)
+{
+    /* Nothing special to flag for the contiguous reception */
+  const nm_so_flag_t flag = 0;
+  return __nm_so_unpack_any_src(p_core, tag, flag, data, len);
+}
+
+
+static inline int nm_so_unpackv_any_src(struct nm_core *p_core, nm_tag_t tag, struct iovec *iov, int nb_entries)
+{
+  /* Data will be receive in an iovec tab */
+  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
+  return __nm_so_unpack_any_src(p_core, tag, flag, iov, iov_len(iov, nb_entries));
+}
+
+static inline int nm_so_unpack_datatype_any_src(struct nm_core *p_core, nm_tag_t tag, struct DLOOP_Segment *segp){
+
+  /* Data will be receive through a datatype */
+  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
+  return __nm_so_unpack_any_src(p_core, tag, flag, segp, datatype_size(segp));
+}
+
+static inline int nm_so_pack(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, int len)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
+}
+
+static inline int nm_so_packv(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct iovec*iov, int len)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  return (*r->driver->packv)(r->_status, p_gate, tag, seq, iov, len);
+}
+
+static inline int nm_so_pack_datatype(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct DLOOP_Segment*segp)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  return (*r->driver->pack_datatype)(r->_status, p_gate, tag, seq, segp);
+}
+
+static inline int nm_so_pack_extended(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, uint32_t len, tbx_bool_t is_completed)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(r->driver->pack_extended)
+    {
+      return (*r->driver->pack_extended)(r->_status, p_gate, tag, seq, data, len, is_completed);
+    }
+  else
+    {
+      NM_DISPF("The current strategy does not provide an extended pack");
+      return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
+    }
+}
+
+static inline int nm_so_flush(nm_gate_t p_gate)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(tbx_unlikely(r->driver->flush))
+    {
+      return (*r->driver->flush)(r->_status, p_gate);
+    }
+  else
+    return -NM_ENOTIMPL;
 }
 
 

@@ -36,7 +36,7 @@ static inline void nm_so_status_event(nm_core_t p_core, const struct nm_so_event
     }
   else
     {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->p_so_gate->tags, event->tag);
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
       p_so_tag->status[event->seq] |= event->status;
     }
   puk_vect_foreach(i, nm_so_monitor, &p_core->so_sched.monitors)

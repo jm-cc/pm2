@@ -231,12 +231,12 @@ make_simple_bubble_hierarchy (const unsigned *level_breadth,
 /* Free BUBBLE after joint it and freeing its children, recursively.  This
 	 function is not tail-recursive, so it consumes stack space proportional to
 	 the hierarchy depth.  */
-#define MAX 123
+#define MAX_BUBBLES 123
 static void
 free_bubble (marcel_bubble_t *bubble)
 {
 	marcel_entity_t *entity;
-	marcel_bubble_t *bubbles[MAX];
+	marcel_bubble_t *bubbles[MAX_BUBBLES];
 	unsigned int bubble_count = 0, i;
 
 	for_each_entity_held_in_bubble (entity, bubble)
@@ -259,7 +259,7 @@ static void
 free_bubble_hierarchy (void)
 {
 	marcel_entity_t *entity;
-	marcel_bubble_t *bubbles[MAX];
+	marcel_bubble_t *bubbles[MAX_BUBBLES];
 	unsigned int bubble_count = 0, i;
 
 	/* Move the main thread to the root bubble so that we can safely join the
@@ -276,6 +276,7 @@ free_bubble_hierarchy (void)
 	for (i = 0; i < bubble_count; i++)
 		free_bubble (bubbles[i]);
 }
+#undef MAX_BUBBLES
 
 
 /* Poor man's pattern matching.  This provides the tools that allow us to

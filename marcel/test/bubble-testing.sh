@@ -24,7 +24,7 @@ fi
 # Configuration
 flavor="test_marcel_bubble"
 appdir="${PM2_ROOT}/marcel/examples"
-script=""
+script="<undefined>"
 args=""
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF

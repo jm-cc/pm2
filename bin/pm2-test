@@ -142,6 +142,9 @@ do_the_test()
 	        -name \*.gcda -exec rm {} \;
         fi
 
+        if [ "$script" != "<undefined>" ] ; then
+            prog=$script
+        fi
         echo "Running program <$prog> with flavor <$flavor>..."
         ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 
@@ -414,8 +417,6 @@ while [ $_l -le $_level ]; do
 			echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`' = \`$ld_preload'" | pm2_debug
 			eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
 
-		        # Compilation, execution et verification des resultats
-
 			# If the flavor doesn't exist or is older than the test,
                         # force its regeneration. Ideally we should also depend
                         # on the options' .sh files.
@@ -424,6 +425,7 @@ while [ $_l -le $_level ]; do
 			    rm -f "$flavor_file"
 			    create_test_flavor | sed -e 's/^/..../'
 			fi
+
 			appdir2=$(echo $appdir | tr '/' ':')
 			echo $prog >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
                     fi
@@ -491,7 +493,7 @@ while [ $_l -le $_level ]; do
 		        # Source
                         . ./$_f
 
-		        # Compilation, execution et verification des resultats
+		        # Execution et verification des resultats
                         if eval do_the_test "$_f" $_output_redirect; then
 				echo "   [$_tst_name] did succeed."
 			else

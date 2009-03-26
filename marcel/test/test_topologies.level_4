@@ -18,18 +18,7 @@ prog="read-topology"
 script="$PM2_ROOT/marcel/examples/test-topologies.sh"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-PASS: 16amd64-8nd2c.tar.gz
-PASS: 16em64t-4d2c2t.tar.gz
-PASS: 2amd64-2nd.tar.gz
-PASS: 2ps3-1d2t.tar.gz
-PASS: 4ia64-4d.tar.gz
-PASS: 4ppc-1d4c.tar.gz
-PASS: 64fake-4n2d2\$2c2t.tar.gz
-PASS: 8amd64-4nd2c.tar.gz
-PASS: 8em64t-1nd4c2t.tar.gz
-PASS: 8ia64-2nd2d2d.tar.gz
-PASS: 8ia64-4d2c.tar.gz
-11/11 tests passed
+Success: All tests passed
 EOF
 
 # Creation de la flavor

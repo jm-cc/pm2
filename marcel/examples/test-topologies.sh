@@ -124,17 +124,20 @@ do
 	    if test_topology "`basename $topology`" "$actual_dir"
 	    then
 		tests_passed="`expr $tests_passed + 1`"
-		echo "PASS: `basename $topology`"
+		echo "#PASS: `basename $topology`"
 	    else
 		echo "FAIL: `basename $topology`"
 	    fi
 	else
-	    echo "SKIP: `basename $topology`"
+	    echo "#SKIP: `basename $topology`"
 	fi
     fi
 
     rm -rf "$dir"
 done
 
-echo "$tests_passed/$test_count tests passed"
-exec test $tests_passed -eq $test_count
+if [ $tests_passed -eq $test_count ] ; then
+    echo "Success: All tests passed"
+else
+    echo "Failure: Some tests failed"
+fi

@@ -294,7 +294,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
 
   if (memory_manager->root) {
-    marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
+    marcel_fprintf(stderr, "#MaMI Warning: some memory areas have not been free-d\n");
 #ifdef PM2DEBUG
     if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_memory_fprint(memory_manager, stderr);
@@ -382,7 +382,7 @@ static
 void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
   mdebug_mami("Cleaning memory area %p\n", (*memory_data)->startaddress);
   if (!(tbx_slist_is_nil((*memory_data)->owners))) {
-    marcel_fprintf(stderr, "MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
+    marcel_fprintf(stderr, "#MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
                    (*memory_data)->startaddress, (*memory_data)->endaddress);
     tbx_slist_clear((*memory_data)->owners);
   }
@@ -943,7 +943,7 @@ int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void *
     for(i=1 ; i<nbpages ; i++) {
       if (statuses[i] != statuses[0]) {
 #ifdef PM2DEBUG
-	marcel_fprintf(stderr, "MaMI Warning: Memory located on different nodes\n");
+	marcel_fprintf(stderr, "#MaMI Warning: Memory located on different nodes\n");
 #endif
         if (*node != FIRST_TOUCH_NODE) {
           *node = MULTIPLE_LOCATION_NODE;
@@ -980,6 +980,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->normalpagesize;
 
   // Find out where the pages are
+  node=0;
   ma_memory_get_pages_location(memory_manager, pageaddrs, nbpages, &node, &nodes);
 
   // Register the pages
@@ -1168,7 +1169,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   else {
     for(i=0; i<pages; i++) {
       if (pagenodes[i] != node) {
-        marcel_fprintf(stderr, "MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
+        marcel_fprintf(stderr, "#MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
         err = -EINVAL;
       }
     }
@@ -1396,10 +1397,43 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
       dests = tmalloc(data->nbpages * sizeof(int));
       status = tmalloc(data->nbpages * sizeof(int));
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
-      err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
+
+      if (data->node != MULTIPLE_LOCATION_NODE) {
+        err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
 #ifdef PM2DEBUG
-      ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
+        ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
 #endif /* PM2DEBUG */
+      }
+      else {
+        void *pageaddrs_to_be_moved[data->nbpages];
+        int nbpages_to_be_moved=0;
+        unsigned long nodemask;
+
+        nodemask = (1<<dest);
+        mdebug_mami("Pages on different locations. Check which ones need to be moved and which ones need to be bound\n");
+        // Some pages might already be at the right location */
+        for(i=0 ; i<data->nbpages ; i++) {
+          if (data->nodes[i] == -ENOENT) {
+            mdebug_mami("Mbinding page %d (%p) to node #%d\n", i, data->pageaddrs[i], dest);
+            err = ma_memory_mbind(data->pageaddrs[i], memory_manager->normalpagesize, MPOL_BIND, &nodemask,
+                                  memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+          }
+          else if (data->nodes[i] != dest) {
+            pageaddrs_to_be_moved[nbpages_to_be_moved] = data->pageaddrs[i];
+            nbpages_to_be_moved ++;
+          }
+        }
+        mdebug_mami("%d page(s) need to be moved\n", nbpages_to_be_moved);
+        if (nbpages_to_be_moved) {
+          err = ma_memory_move_pages(pageaddrs_to_be_moved, nbpages_to_be_moved, dests, status, MPOL_MF_MOVE);
+        }
+#ifdef PM2DEBUG
+        if (nbpages_to_be_moved == data->nbpages) {
+          ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
+        }
+#endif /* PM2DEBUG */
+
+      }
     }
 
     if (err < 0) {
@@ -1866,7 +1900,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
         err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
         for(i=0 ; i<data->nbpages ; i++) {
           if (status[i] != nodes[i%nb_nodes]) {
-            marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+            marcel_fprintf(stderr, "#MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
           }
           data->nodes[i] = status[i];
         }

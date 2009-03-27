@@ -195,13 +195,6 @@ extern ma_spinlock_t ma_idle_scheduler_lock;
 #section functions
 #depend "marcel_bubble_sched_interface.h[types]"
 
-/* \brief Turns idle scheduler on. */
-int ma_activate_idle_scheduler (void);
-/* \brief Turns idle scheduler off. */
-int ma_deactivate_idle_scheduler (void);
-/* \brief Checks whether an idle scheduler is running. */
-int ma_idle_scheduler_is_running (void);
-
 /**
  * \brief Return the bubble scheduler class named \param name or \p NULL
  * if not found.  */
@@ -408,6 +401,14 @@ void __ma_bubble_lock(marcel_bubble_t *b);
 /** \brief Unlocks a bubble hierarchy.  Stops at bubbles held on other runqueues */
 void ma_bubble_unlock(marcel_bubble_t *b);
 void __ma_bubble_unlock(marcel_bubble_t *b);
+
+/* \brief Turns idle scheduler on. */
+int ma_activate_idle_scheduler (void);
+/* \brief Turns idle scheduler off. */
+int ma_deactivate_idle_scheduler (void);
+/* \brief Checks whether an idle scheduler is running. */
+int ma_idle_scheduler_is_running (void);
+
 
 
 /******************************************************************************

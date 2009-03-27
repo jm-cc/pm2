@@ -673,7 +673,7 @@ int ma_memory_preallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 }
 
 static
-void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
+void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, size_t size, int *protection) {
   marcel_memory_huge_pages_area_t *heap = memory_manager->huge_pages_heaps[node];
   marcel_memory_area_t *hheap = NULL, *prev = NULL;
   void *buffer = NULL;
@@ -741,7 +741,7 @@ void* ma_memory_get_buffer_from_huge_pages_heap(marcel_memory_manager_t *memory_
 }
 
 static
-void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, int size, int *protection) {
+void* ma_memory_get_buffer_from_heap(marcel_memory_manager_t *memory_manager, int node, int nbpages, size_t size, int *protection) {
   marcel_memory_area_t *heap = memory_manager->heaps[node];
   marcel_memory_area_t *prev = NULL;
   void *buffer;
@@ -1287,7 +1287,7 @@ int marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   size_t size,
                                   float *cost) {
   p_tbx_slist_t migration_costs;
-  int err;
+  int err=0;
 
   MAMI_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {

@@ -303,14 +303,14 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager);
  * @param memory_manager pointer to the memory manager
  */
 extern
-void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager);
+int marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
  * Indicates that memory addresses given to MaMI should NOT be aligned to page boundaries.
  * @param memory_manager pointer to the memory manager
  */
 extern
-void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
+int marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager);
 
 /**
  * Allocates memory w.r.t the specified allocation policy. Size will be rounded up to the system page size.
@@ -431,11 +431,11 @@ void marcel_memory_fprint(marcel_memory_manager_t *memory_manager, FILE *stream)
  * @param cost estimated cost of the migration
  */
 extern
-void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
-                                  int source,
-                                  int dest,
-                                  size_t size,
-                                  float *cost);
+int marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
+                                 int source,
+                                 int dest,
+                                 size_t size,
+                                 float *cost);
 
 /**
  * Indicates the cost for write accessing \e size bits from node \e source to node \e dest.
@@ -446,11 +446,11 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
  * @param cost estimated cost of the access
  */
 extern
-void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager,
-					 int source,
-					 int dest,
-					 size_t size,
-					 float *cost);
+int marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager,
+                                        int source,
+                                        int dest,
+                                        size_t size,
+                                        float *cost);
 
 /**
  * Indicates the cost for read accessing \e size bits from node \e source to node \e dest.
@@ -461,11 +461,11 @@ void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager
  * @param cost estimated cost of the access
  */
 extern
-void marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
-					int source,
-					int dest,
-					size_t size,
-					float *cost);
+int marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost);
 
 /**
  * Performs the sampling for the memory migration between the specified nodes.

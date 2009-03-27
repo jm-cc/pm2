@@ -251,17 +251,19 @@ int ma_memory_deallocate_huge_pages(marcel_memory_manager_t *memory_manager, mar
   err = close((*space)->file);
   if (err < 0) {
     perror("(ma_memory_deallocate_huge_pages) close");
-    return -errno;
+    err = -errno;
   }
-  err = unlink((*space)->filename);
-  if (err < 0) {
-    perror("(ma_memory_deallocate_huge_pages) unlink");
-    return -errno;
+  else {
+    err = unlink((*space)->filename);
+    if (err < 0) {
+      perror("(ma_memory_deallocate_huge_pages) unlink");
+      err = -errno;
+    }
   }
 
   tfree((*space)->filename);
   MAMI_ILOG_OUT();
-  return 0;
+  return err;
 }
 
 static
@@ -270,7 +272,7 @@ void ma_memory_deallocate(marcel_memory_manager_t *memory_manager, marcel_memory
 
   MAMI_ILOG_IN();
   mdebug_mami("Deallocating memory for node #%d\n", node);
-  ptr  = (*space);
+  ptr = (*space);
   while (ptr != NULL) {
     mdebug_mami("Unmapping memory area from %p\n", ptr->start);
     munmap(ptr->start, ptr->nbpages * ptr->pagesize);
@@ -336,12 +338,14 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_OUT();
 }
 
-void marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager) {
+int marcel_memory_set_alignment(marcel_memory_manager_t *memory_manager) {
   memory_manager->alignment = 1;
+  return 0;
 }
 
-void marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager) {
+int marcel_memory_unset_alignment(marcel_memory_manager_t *memory_manager) {
   memory_manager->alignment = 0;
+  return 0;
 }
 
 static
@@ -874,7 +878,7 @@ void* marcel_memory_malloc(marcel_memory_manager_t *memory_manager, size_t size,
 
   if (tbx_unlikely(policy != MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH && node >= memory_manager->nb_nodes)) {
     mdebug_mami("Node %d not managed by MaMI\n", node);
-    MAMI_ILOG_OUT();
+    MAMI_LOG_OUT();
     return NULL;
   }
 
@@ -1270,24 +1274,26 @@ void marcel_memory_print(marcel_memory_manager_t *memory_manager) {
 }
 
 void marcel_memory_fprint(marcel_memory_manager_t *memory_manager, FILE *stream) {
-  LOG_IN();
+  MAMI_LOG_IN();
   mdebug_mami("******************** TREE BEGIN *********************************\n");
   ma_memory_print(memory_manager->root, stream, 0);
   mdebug_mami("******************** TREE END *********************************\n");
-  LOG_OUT();
+  MAMI_LOG_OUT();
 }
 
-void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
+int marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
                                   int source,
                                   int dest,
                                   size_t size,
                                   float *cost) {
   p_tbx_slist_t migration_costs;
+  int err;
 
   MAMI_LOG_IN();
-  *cost = -1;
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_mami("Invalid node id\n");
+    errno = EINVAL;
+    err = -errno;
   }
   else {
     migration_costs = memory_manager->migration_costs[source][dest];
@@ -1305,42 +1311,51 @@ void marcel_memory_migration_cost(marcel_memory_manager_t *memory_manager,
     }
   }
   MAMI_LOG_OUT();
+  return err;
 }
 
-void marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager,
-					 int source,
-					 int dest,
-					 size_t size,
-					 float *cost) {
+int marcel_memory_cost_for_write_access(marcel_memory_manager_t *memory_manager,
+                                        int source,
+                                        int dest,
+                                        size_t size,
+                                        float *cost) {
   marcel_memory_access_cost_t access_cost;
+  int err;
+
   MAMI_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_mami("Invalid node id\n");
-    *cost = -1;
+    errno = EINVAL;
+    err = -errno;
   }
   else {
     access_cost = memory_manager->costs_for_write_access[source][dest];
     *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
   }
   MAMI_LOG_OUT();
+  return err;
 }
 
-void marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
-					int source,
-					int dest,
-					size_t size,
-					float *cost) {
+int marcel_memory_cost_for_read_access(marcel_memory_manager_t *memory_manager,
+                                       int source,
+                                       int dest,
+                                       size_t size,
+                                       float *cost) {
   marcel_memory_access_cost_t access_cost;
+  int err;
+
   MAMI_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_mami("Invalid node id\n");
-    *cost = -1;
+    errno = EINVAL;
+    err = -errno;
   }
   else {
     access_cost = memory_manager->costs_for_read_access[source][dest];
     *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
   }
   MAMI_LOG_OUT();
+  return err;
 }
 
 int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
@@ -1522,8 +1537,8 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer;
 
-  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
+  marcel_mutex_lock(&(memory_manager->lock));
 
   g_memory_manager = memory_manager;
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
@@ -1578,8 +1593,8 @@ int marcel_memory_migrate_on_node(marcel_memory_manager_t *memory_manager,
   marcel_memory_data_t *data = NULL;
   int err;
 
-  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_LOG_IN();
+  marcel_mutex_lock(&(memory_manager->lock));
 
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
   if (err >= 0) {
@@ -1599,8 +1614,8 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
   int err=0;
   marcel_memory_data_t *data;
 
-  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_ILOG_IN();
+  marcel_mutex_lock(&(memory_manager->lock));
 
   mdebug_mami("Attaching [%p:%p:%ld] to entity %p\n", buffer, buffer+size, (long)size, owner);
 
@@ -1684,8 +1699,8 @@ int ma_memory_entity_unattach(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer;
   marcel_memory_data_link_t *area = NULL;
 
-  marcel_mutex_lock(&(memory_manager->lock));
   MAMI_ILOG_IN();
+  marcel_mutex_lock(&(memory_manager->lock));
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
   err = ma_memory_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);

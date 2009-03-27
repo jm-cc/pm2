@@ -26,7 +26,8 @@
 #include <pm2_list.h>
 #include <nm_public.h>
 
-#include <ccs_public.h>
+/*#include <ccs_public.h>*/
+struct CCSI_Segment;
 
 #include <sys/uio.h>
 
@@ -262,7 +263,7 @@ static inline int nm_sr_isend_iov_with_ref(nm_core_t p_core,
  */
 static inline int nm_sr_isend_datatype(nm_core_t p_core,
 				       nm_gate_t p_gate, nm_tag_t tag,
-				       const struct DLOOP_Segment *segp,
+				       const struct CCSI_Segment *segp,
 				       nm_sr_request_t *p_request)
 {
   return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, tbx_false, p_request, NULL);
@@ -356,7 +357,7 @@ static inline int nm_sr_irecv_iov_with_ref(nm_core_t p_core,
 
 static inline int nm_sr_irecv_datatype(nm_core_t p_core,
 				nm_gate_t p_gate, nm_tag_t tag,
-				struct DLOOP_Segment *segp,
+				struct CCSI_Segment *segp,
 				nm_sr_request_t *p_request)
 {
   return nm_sr_irecv_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, p_request, NULL);
@@ -365,7 +366,7 @@ static inline int nm_sr_irecv_datatype(nm_core_t p_core,
 
 static inline int nm_sr_irecv_datatype_with_ref(struct nm_core *p_core,
 						nm_gate_t p_gate, nm_tag_t tag,
-						struct DLOOP_Segment *segp,
+						struct CCSI_Segment *segp,
 						nm_sr_request_t *p_request,
 						void *ref)
 {

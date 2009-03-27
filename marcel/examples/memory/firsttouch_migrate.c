@@ -18,7 +18,7 @@
 
 #if defined(MARCEL_MAMI_ENABLED)
 
-static void first_touch(int *buffer, size_t size, int elems);
+static void first_touch(int *buffer, int nb);
 static marcel_memory_manager_t memory_manager;
 
 int marcel_main(int argc, char * argv[]) {
@@ -31,7 +31,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Case with user-allocated memory
   buffer=memalign(memory_manager.normalpagesize, 10000*sizeof(int));
-  first_touch(buffer, 10000*sizeof(int), 10000);
+  first_touch(buffer, 10000);
   err = marcel_memory_unregister(&memory_manager, buffer);
   if (err < 0) perror("marcel_memory_unregister unexpectedly failed");
   free(buffer);
@@ -41,7 +41,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Case with mami-allocated memory
   buffer = marcel_memory_malloc(&memory_manager, 10000*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  first_touch(buffer, 10000*sizeof(int), 10000);
+  first_touch(buffer, 10000);
   marcel_memory_free(&memory_manager, buffer);
 
   // Finish marcel
@@ -50,14 +50,14 @@ int marcel_main(int argc, char * argv[]) {
   return 0;
 }
 
-static void first_touch(int *buffer, size_t size, int elems) {
+static void first_touch(int *buffer, int nb) {
   int i, err;
   int node;
 
-  err = marcel_memory_task_attach(&memory_manager, buffer, size, marcel_self(), &node);
+  err = marcel_memory_task_attach(&memory_manager, buffer, nb*sizeof(int), marcel_self(), &node);
   if (err < 0) perror("marcel_memory_task_attach unexpectedly failed");
 
-  err = marcel_memory_locate(&memory_manager, buffer, size, &node);
+  err = marcel_memory_locate(&memory_manager, buffer, nb*sizeof(int), &node);
   if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   if (node < 0)
     marcel_fprintf(stderr, "Memory not located on any node\n");
@@ -67,13 +67,13 @@ static void first_touch(int *buffer, size_t size, int elems) {
   err = marcel_memory_migrate_on_next_touch(&memory_manager, buffer);
   if (err < 0) perror("marcel_memory_migrate_on_next_touch unexpectedly failed");
 
-  for(i=0 ; i<10000 ; i++) buffer[i] = 12;
+  for(i=0 ; i<nb ; i++) buffer[i] = 12;
 
-  err = marcel_memory_locate(&memory_manager, buffer, size, &node);
+  err = marcel_memory_locate(&memory_manager, buffer, nb*sizeof(int), &node);
   if (err < 0) perror("marcel_memory_locate unexpectedly failed");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
-  err = marcel_memory_check_pages_location(&memory_manager, buffer, size, node);
+  err = marcel_memory_check_pages_location(&memory_manager, buffer, nb*sizeof(int), node);
   if (err < 0) perror("marcel_memory_check_pages_location unexpectedly failed");
 
   err = marcel_memory_task_unattach(&memory_manager, buffer, marcel_self());

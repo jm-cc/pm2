@@ -56,12 +56,9 @@ thread_entry_point (void *arg) {
 }
 
 
-/* The underlying `cache' scheduler.  */
-static marcel_bubble_sched_t *scheduler;
-
 /* Our own implementation of the `vp_is_idle' scheduler method.  */
 static int
-my_steal (unsigned int from_vp) {
+my_steal (marcel_bubble_sched_t *scheduler, unsigned int from_vp) {
 	if (ma_atomic_read (&first_team_is_dead)) {
 		aff_steal (scheduler, from_vp);
 		/* Set the last threads free. */
@@ -77,6 +74,7 @@ main (int argc, char *argv[]) {
 	int ret;
 	unsigned int i;
 	char **new_argv;
+	marcel_bubble_sched_t *scheduler;
 	ma_atomic_t die_first_signal = MA_ATOMIC_INIT (0);
 
 	/* A dual-core computer */

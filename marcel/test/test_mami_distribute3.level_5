@@ -15,7 +15,6 @@
 . ./common.sh
 prog="distribute3"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-MaMI Warning: Memory located on different nodes
 Node is 1 as expected
 MaMI: The 12 pages are all on node #1
 EOF

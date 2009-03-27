@@ -18,16 +18,17 @@
 #if defined(MARCEL_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
+  marcel_memory_manager_t memory_manager;
   int anode, bnode;
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  size_t size;
 
   marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &anode);
-  ptr = marcel_memory_malloc(&memory_manager, marcel_topo_node_level[anode].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] * 1024 / 2,
-                             MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, anode);
+  size = marcel_topo_node_level[anode].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]/1024*2;
+  ptr = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, anode);
 
   marcel_memory_select_node(&memory_manager, MARCEL_MEMORY_LEAST_LOADED_NODE, &bnode);
   if (anode != bnode) {

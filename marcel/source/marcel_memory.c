@@ -294,7 +294,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
 
   if (memory_manager->root) {
-    marcel_fprintf(stderr, "#MaMI Warning: some memory areas have not been free-d\n");
+    marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
 #ifdef PM2DEBUG
     if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
       marcel_memory_fprint(memory_manager, stderr);
@@ -382,7 +382,7 @@ static
 void ma_memory_clean_memory_data(marcel_memory_data_t **memory_data) {
   mdebug_mami("Cleaning memory area %p\n", (*memory_data)->startaddress);
   if (!(tbx_slist_is_nil((*memory_data)->owners))) {
-    marcel_fprintf(stderr, "#MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
+    marcel_fprintf(stderr, "MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
                    (*memory_data)->startaddress, (*memory_data)->endaddress);
     tbx_slist_clear((*memory_data)->owners);
   }
@@ -1169,7 +1169,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   else {
     for(i=0; i<pages; i++) {
       if (pagenodes[i] != node) {
-        marcel_fprintf(stderr, "#MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
+        marcel_fprintf(stderr, "MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
         err = -EINVAL;
       }
     }
@@ -1354,8 +1354,10 @@ int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
   if (policy == MARCEL_MEMORY_LEAST_LOADED_NODE) {
     int i;
     unsigned long maxspace=memory_manager->memfree[0];
+    mdebug_mami("Space on node %d = %ld\n", 0, maxspace);
     *node = 0;
     for(i=1 ; i<memory_manager->nb_nodes ; i++) {
+      mdebug_mami("Space on node %d = %ld\n", i, memory_manager->memfree[i]);
       if (memory_manager->memfree[i] > maxspace) {
         maxspace = memory_manager->memfree[i];
         *node = i;
@@ -1900,7 +1902,7 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
         err = ma_memory_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
         for(i=0 ; i<data->nbpages ; i++) {
           if (status[i] != nodes[i%nb_nodes]) {
-            marcel_fprintf(stderr, "#MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
+            marcel_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
           }
           data->nodes[i] = status[i];
         }

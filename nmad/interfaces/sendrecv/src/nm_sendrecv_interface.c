@@ -444,17 +444,25 @@ static struct
   nm_sr_request_t*request;
   void*data;
   uint32_t len;
+  int missed;
 } nm_sr_irecv_event_info =
   {
     .request = NULL,
     .data = NULL,
-    .len = 0
+    .len = 0,
+    .missed = 0
   };
 
 extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
 			     void*data, uint32_t len,
 			     nm_sr_request_t *p_request)
 {
+  if(nm_sr_irecv_event_info.missed)
+    {
+      nm_sr_irecv_event_info.missed--;
+      return nm_sr_irecv(p_core, NM_ANY_GATE, tag, data, len, p_request);
+    }
+
   nmad_lock();
 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
@@ -464,11 +472,18 @@ extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
   p_request->seq     = -1;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
 
+  if(nm_sr_irecv_event_info.request != NULL)
+    {
+      TBX_FAILURE("sendrecv: concurrent nm_sr_irecv_event detected\n");
+    }
+
   nm_sr_irecv_event_info.request = p_request;
   nm_sr_irecv_event_info.data = data;
   nm_sr_irecv_event_info.len = len;
 
   nmad_unlock();
+
+  nm_schedule(p_core);
 
   return NM_ESUCCESS;
 }
@@ -853,6 +868,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
     }
   else
     {
+      nm_sr_irecv_event_info.missed++;
       const nm_sr_event_info_t info = { 
 	.recv_unexpected.p_gate = event->p_gate,
 	.recv_unexpected.tag = event->tag

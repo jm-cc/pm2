@@ -131,6 +131,9 @@ struct marcel_memory_data_s {
 
   /** \brief */
   marcel_memory_data_t *next;
+
+  /** \brief Size of the area to use when calling mprotect */
+  size_t mprotect_size;
 };
 
 /** \brief Structure of a sorted-binary tree of allocated memory areas */

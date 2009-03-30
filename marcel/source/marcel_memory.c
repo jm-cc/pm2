@@ -361,6 +361,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
   (*memory_data)->startaddress = pageaddrs[0];
   (*memory_data)->endaddress = pageaddrs[0]+size;
   (*memory_data)->size = size;
+  (*memory_data)->mprotect_size = size;
   (*memory_data)->status = MARCEL_MEMORY_INITIAL_STATUS;
   (*memory_data)->protection = protection;
   (*memory_data)->with_huge_pages = with_huge_pages;
@@ -1001,12 +1002,18 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
+  marcel_memory_data_t *data = NULL;
 
   MAMI_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   marcel_mutex_lock(&(memory_manager->lock));
   mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
-  ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, NULL);
+  ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
+
+  if (aligned_endbuffer > buffer+size) {
+    data->mprotect_size = data->size - memory_manager->normalpagesize;
+  }
+
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
   return 0;
@@ -1137,7 +1144,11 @@ int ma_memory_mbind(void *start, unsigned long len, int mode,
 int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag) {
   int err=0;
 
-  if (ma_use_synthetic_topology) return err;
+  MAMI_ILOG_IN();
+  if (ma_use_synthetic_topology) {
+      MAMI_ILOG_OUT();
+      return err;
+  }
   if (nodes) mdebug_mami("binding on numa node #%d\n", nodes[0]);
 
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
@@ -1146,6 +1157,7 @@ int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, i
   err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #endif
   if (err < 0) perror("(ma_memory_move_pages) move_pages");
+  MAMI_ILOG_OUT();
   return err;
 }
 
@@ -1161,6 +1173,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
   int i;
   int err=0;
 
+  MAMI_ILOG_IN();
   mdebug_mami("check location of the %d pages is #%d\n", pages, node);
 
   if (ma_use_synthetic_topology) {
@@ -1178,6 +1191,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
       }
     }
   }
+  MAMI_ILOG_OUT();
   return err;
 }
 
@@ -1515,7 +1529,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     data->status = MARCEL_MEMORY_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
     ma_memory_migrate_pages(g_memory_manager, data, dest);
-    err = mprotect(data->startaddress, data->size, data->protection);
+    err = mprotect(data->startaddress, data->mprotect_size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
@@ -1575,8 +1589,10 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
           return -errno;
         }
       }
+      mdebug_mami("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->startaddress, data->startaddress+data->mprotect_size,
+		  data->mprotect_size, data->startaddress, data->endaddress, data->size);
       data->status = MARCEL_MEMORY_INITIAL_STATUS;
-      err = mprotect(data->startaddress, data->size, PROT_NONE);
+      err = mprotect(data->startaddress, data->mprotect_size, PROT_NONE);
       if (err < 0) {
         perror("(marcel_memory_migrate_on_next_touch) mprotect");
       }
@@ -1639,6 +1655,11 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
     if (err < 0) {
       mdebug_mami("The address interval [%p:%p] is not managed by MaMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
       ma_memory_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
+
+      if (aligned_endbuffer > buffer+size) {
+	data->mprotect_size = data->size - memory_manager->normalpagesize;
+      }
+
       err = 0;
     }
     else {

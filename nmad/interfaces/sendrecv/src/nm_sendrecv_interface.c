@@ -468,16 +468,6 @@ extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
   nm_sr_irecv_event_info.data = data;
   nm_sr_irecv_event_info.len = len;
 
-  int i;
-  for(i = 0; i < p_core->nb_gates; i++)
-    {
-      nm_gate_t p_gate = &p_core->gate_array[i];
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  nm_so_refill_regular_recv(p_gate);
-	}
-    }
-  nm_so_post_all(p_core);
   nmad_unlock();
 
   return NM_ESUCCESS;
@@ -736,16 +726,6 @@ int nm_sr_probe(struct nm_core *p_core,
 	}
     }
 
-  nmad_lock();
-  // Nothing on none of the gates
-  for(i = 0; i < p_core->nb_gates; i++) {
-    p_gate = &p_core->gate_array[i];
-    if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-      {
-	nm_so_refill_regular_recv(p_gate);
-      }
-  }
-  nmad_unlock();
 #ifndef PIOMAN
   nm_schedule(p_core);
 #endif

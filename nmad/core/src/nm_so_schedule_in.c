@@ -121,8 +121,6 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
 	  any_src->p_gate = p_gate;
 	  any_src->seq = seq;
 	  
-	  p_so_sched->pending_any_src_unpacks++;
-	  
 	  nm_so_process_unexpected(tbx_true, p_gate, tag, seq, len, data_description);
 	  goto out;
 	}
@@ -148,18 +146,6 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
 
   any_src->expected_len  = len;
   any_src->cumulated_len = 0;
-
-  p_so_sched->pending_any_src_unpacks++;
-
-  /* Make sure that each gate has a posted receive */
-  for(i = 0; i < p_core->nb_gates; i++)
-    {
-      struct nm_gate*p_gate = &p_core->gate_array[i];
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  nm_so_refill_regular_recv(p_gate);
-	}
-    }
 
  out:
 
@@ -214,11 +200,6 @@ int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
 
   p_so_tag->recv[seq].unpack_here.data = data_description;
 
-  p_gate->pending_unpacks++;
-
-  /* Check if we should post a new recv packet */
-  nm_so_refill_regular_recv(p_gate);
-
   err = NM_ESUCCESS;
 
  out:
@@ -251,7 +232,6 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 	  nm_so_status_event(p_core, &event);
 	  p_so_tag->recv[seq].unpack_here.expected_len = 0;
 	  p_so_tag->recv[seq].unpack_here.data = NULL;
-	  p_gate->pending_unpacks--;
 	  p_so_tag->recv_seq_number--;
 	  err = NM_ESUCCESS;
 	}
@@ -273,7 +253,6 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 	  any_src->status = 0;
 	  any_src->data = NULL;
 	  any_src->expected_len = 0;
-	  p_core->so_sched.pending_any_src_unpacks--;
 	  err = NM_ESUCCESS;
 	}
     }
@@ -358,12 +337,10 @@ static int process_small_data(tbx_bool_t is_any_src,
 
     if(is_any_src)
       {
-	p_so_sched->pending_any_src_unpacks--;
 	any_src->p_gate = NM_ANY_GATE;
       }
     else 
       {
-	p_gate->pending_unpacks--;
 	p_so_tag->recv[seq].pkt_here.header = NULL;
       }
     const struct nm_so_event_s event =
@@ -517,7 +494,6 @@ static int ack_callback(struct nm_pkt_wrap *p_pw,
 
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
-  p_gate->pending_unpacks--;
   const struct nm_so_event_s event =
     {
       .status = NM_SO_STATUS_ACK_HERE,
@@ -645,8 +621,6 @@ ack_chunk_callback(struct nm_pkt_wrap *p_pw,
           p_so_large_pw2->chunk_offset = p_so_large_pw2->datatype_offset;
 
           list_add(&p_so_large_pw2->link, &p_so_tag->pending_large_send);
-        } else {
-          p_gate->pending_unpacks--;
         }
 
       // Les données sont envoyées depuis un buffer contigu ou un iov
@@ -658,8 +632,6 @@ ack_chunk_callback(struct nm_pkt_wrap *p_pw,
 	  FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT, p_so_large_pw,
 	  		p_so_large_pw2, chunk_len, p_gate->id, 1/* outlist*/);
           list_add(&p_so_large_pw2->link, &p_so_tag->pending_large_send);
-        } else {
-          p_gate->pending_unpacks--;
         }
       }
 
@@ -710,14 +682,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 				    rdv_callback,
 				    ack_callback,
 				    ack_chunk_callback);
-      if(p_gate->pending_unpacks ||
-	 p_so_sched->pending_any_src_unpacks)
-	{
-	  NM_LOG_VAL("pending_unpacks", p_gate->pending_unpacks);
-	  NM_LOG_VAL("pending_any_src_unpacks", p_so_sched->pending_any_src_unpacks);
-	  /* Check if we should post a new recv packet */
-	  nm_so_refill_regular_recv(p_gate);
-	}
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {
@@ -756,7 +720,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 		      /* large packet, datatype, anysrc */
 		      any_src->status = 0;
 		      any_src->p_gate = NM_ANY_GATE;
-		      p_so_sched->pending_any_src_unpacks--;
 		      const struct nm_so_event_s event =
 			{
 			  .status = NM_SO_STATUS_UNPACK_COMPLETED,
@@ -770,7 +733,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 		  else 
 		    {
 		      /* large packet, datatype, known source */
-		      p_gate->pending_unpacks--;
 		      p_so_tag->recv[seq].pkt_here.header = NULL;
 		      p_so_tag->status[seq] = 0;
 		      const struct nm_so_event_s event =
@@ -794,7 +756,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 		{
 		  any_src->status = 0;
 		  any_src->p_gate = NM_ANY_GATE;
-		  p_so_sched->pending_any_src_unpacks--;
 		  const struct nm_so_event_s event =
 		    {
 		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
@@ -814,7 +775,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	      if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len)
 		{
 		  NM_SO_TRACE("Wow! All data chunks in!\n");
-		  p_gate->pending_unpacks--;
 		  p_so_tag->recv[seq].pkt_here.header = NULL;
 		  p_so_tag->status[seq] = 0;
 		  const struct nm_so_event_s event =
@@ -841,7 +801,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 		{
 		  any_src->status = 0;
 		  any_src->p_gate = NM_ANY_GATE;
-		  p_so_sched->pending_any_src_unpacks--;
 		  const struct nm_so_event_s event =
 		    {
 		      .status = NM_SO_STATUS_UNPACK_COMPLETED,
@@ -861,7 +820,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	      if(p_so_tag->recv[seq].unpack_here.cumulated_len >= p_so_tag->recv[seq].unpack_here.expected_len)
 		{
 		  NM_SO_TRACE("Wow! All data chunks in!\n");
-		  p_gate->pending_unpacks--;
 		  p_so_tag->recv[seq].pkt_here.header = NULL;
 		  p_so_tag->status[seq] = 0;
 		  const struct nm_so_event_s event =

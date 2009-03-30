@@ -48,7 +48,6 @@ int nm_so_schedule_init(struct nm_core *p_core)
   /* any src */
   nm_so_any_src_table_init(&p_so_sched->any_src);
   p_so_sched->next_gate_id = 0;
-  p_so_sched->pending_any_src_unpacks = 0;
 
   /* which strategy is going to be used */
   const char*strategy_name = NULL;

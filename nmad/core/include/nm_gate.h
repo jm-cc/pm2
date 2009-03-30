@@ -41,10 +41,11 @@ struct nm_gate_drv
 /** status of a gate, used for dynamic connections */
 enum nm_gate_status_e
   {
-    NM_GATE_STATUS_INIT,        /**< gate created, not connected */
-    NM_GATE_STATUS_CONNECTING,  /**< connection establishment is in progress */
-    NM_GATE_STATUS_CONNECTED,   /**< gate actually connected, may be used/polled */
-    NM_GATE_STATUS_DISCONNECTED /**< gate has been disconnected, do not use */
+    NM_GATE_STATUS_INIT,          /**< gate created, not connected */
+    NM_GATE_STATUS_CONNECTING,    /**< connection establishment is in progress */
+    NM_GATE_STATUS_CONNECTED,     /**< gate actually connected, may be used/polled */
+    NM_GATE_STATUS_DISCONNECTING, /**< gate will be disconnected, do not post new request */
+    NM_GATE_STATUS_DISCONNECTED   /**< gate has been disconnected, do not use */
   };
 typedef enum nm_gate_status_e nm_gate_status_t;
 
@@ -64,10 +65,6 @@ struct nm_gate
   
   /** table of tag status */
   struct nm_so_tag_table_s tags;
-
-  /* Actually counts the number of expected small messages, including
-     RdV requests for large messages */
-  unsigned pending_unpacks;
 
   unsigned active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
   unsigned active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];

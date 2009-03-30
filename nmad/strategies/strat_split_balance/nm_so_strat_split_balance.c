@@ -245,9 +245,6 @@ strat_split_balance_launch_large_chunk(void *_status,
   /* Then place it into the appropriate list of large pending "sends". */
   list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
-  /* Signal we're waiting for an ACK */
-  p_gate->pending_unpacks++;
-
   /* Finally, generate a RdV request */
   {
     union nm_so_generic_ctrl_header ctrl;
@@ -259,10 +256,6 @@ strat_split_balance_launch_large_chunk(void *_status,
     if(err != NM_ESUCCESS)
       goto out;
   }
-
-  /* Check if we should post a new recv packet: we're waiting for an ACK! */
-  nm_so_refill_regular_recv(p_gate);
-
   err = NM_ESUCCESS;
  out:
   return err;
@@ -466,9 +459,6 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
   /* Then place it into the appropriate list of large pending "sends". */
   list_add_tail(&p_so_pw->link, &(p_so_tag->pending_large_send));
 
-  /* Signal we're waiting for an ACK */
-  p_gate->pending_unpacks++;
-
   /* Finally, generate a RdV request */
   {
     union nm_so_generic_ctrl_header ctrl;
@@ -480,10 +470,6 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
     if(err != NM_ESUCCESS)
       goto out;
   }
-
-  /* Check if we should post a new recv packet: we're waiting for an ACK! */
-  nm_so_refill_regular_recv(p_gate);
-
   err = NM_ESUCCESS;
  out:
   return err;

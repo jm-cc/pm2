@@ -48,6 +48,17 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
     {
       err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
     }
+  else if(err == -NM_ECLOSED)
+    {
+      struct nm_gate*p_gate = p_pw->p_gate;
+      p_gate->status = NM_GATE_STATUS_DISCONNECTING;
+      p_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
+      if (p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+	{
+	  p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+	}
+      nm_so_pw_free(p_pw);
+    }
   else if (err != -NM_EAGAIN)
     {
       NM_DISPF("drv->poll_recv returned %d", err);
@@ -132,7 +143,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	  NM_TRACEF("request completed immediately");
 	  nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
 	}
-      else
+      else if(err != -NM_ECLOSED)
 	{
 	  TBX_FAILUREF("nm_post_recv failed- err = %d", err);
 	}
@@ -146,6 +157,27 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
  */
 int nm_sched_in(struct nm_core *p_core)
 {
+  /* refill input requests */
+  const int nb_drivers = p_core->nb_drivers;
+  const int nb_gates = p_core->nb_gates;
+  nm_drv_id_t drv;
+
+  for(drv = 0; drv < nb_drivers; drv++)
+    {
+      int i;
+      for(i = 0; i < nb_gates; i++)
+	{
+	  struct nm_gate*p_gate = &p_core->gate_array[i];
+	  if(p_gate->status == NM_GATE_STATUS_CONNECTED && !p_gate->active_recv[drv][NM_TRK_SMALL])
+	    {
+	      struct nm_pkt_wrap *p_pw;
+	      nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER |
+		       NM_SO_DATA_PREPARE_RECV,
+		       &p_pw);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, drv);
+	    }
+	}
+    }
 #ifndef PIOMAN
   /* poll pending requests */
   if (!tbx_slist_is_nil(p_core->so_sched.pending_recv_req))
@@ -157,7 +189,7 @@ int nm_sched_in(struct nm_core *p_core)
 	{
 	  struct nm_pkt_wrap*p_pw = tbx_slist_ref_get(p_core->so_sched.pending_recv_req);
 	  const int err = nm_poll_recv(p_pw);
-	  if(err == NM_ESUCCESS)
+	  if(err == NM_ESUCCESS || err == -NM_ECLOSED)
 	    {
 	      todo = tbx_slist_ref_extract_and_forward(p_core->so_sched.pending_recv_req, NULL);
 	    }

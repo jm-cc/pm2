@@ -164,8 +164,6 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
       any_src->status = 0;
       any_src->p_gate = NM_ANY_GATE;
 
-      p_gate->p_core->so_sched.pending_any_src_unpacks--;
-
     } else {
       p_so_tag->status[seq] = 0;
     }

@@ -42,36 +42,6 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   p_gate->active_recv[drv_id][trk_id] = 1;
 }
 
-static __tbx_inline__ int nm_so_post_regular_recv(struct nm_gate *p_gate, int drv_id)
-{
-  int err;
-  struct nm_pkt_wrap *p_so_pw;
-
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER |
-		       NM_SO_DATA_PREPARE_RECV,
-		       &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_SMALL, drv_id);
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
-
-static __tbx_inline__ void nm_so_refill_regular_recv(struct nm_gate *p_gate)
-{
-  const int nb_drivers = p_gate->p_core->nb_drivers;
-  nm_drv_id_t drv;
-
-  for(drv = 0; drv < nb_drivers; drv++)
-    if(!p_gate->active_recv[drv][NM_TRK_SMALL])
-      {
-	nm_so_post_regular_recv(p_gate, drv);
-      }
-}
-
 static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
 						       struct nm_pkt_wrap *p_so_pw)
 {

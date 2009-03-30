@@ -419,19 +419,20 @@ int nm_core_driver_exit(struct nm_core *p_core)
 
   nmad_lock();
 
-  /* cancel any pending active recv request which may have
-   * been posted by nm_so_refill_regular_recv
-   */
   nm_drv_id_t drv_id;
   for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
     {
       int i;
 #ifdef PIOMAN
+      /* stop polling
+       */
       struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       nmad_unlock();
       piom_server_stop(&p_drv->server);
       nmad_lock();
 #endif /* PIOMAN */
+      /* cancel any pending active recv request 
+       */
       for(i = 0; i < p_core->nb_gates; i++)
 	{
 	  struct nm_gate*p_gate = &p_core->gate_array[i];
@@ -451,6 +452,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	      nm_so_pw_free(p_pw);
 	    }
 	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+	  p_gate->active_recv[drv_id][NM_TRK_SMALL] = 0;
 	}
     }
 
@@ -553,8 +555,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   memset(p_gate->active_recv, 0, sizeof(p_gate->active_recv));
   memset(p_gate->active_send, 0, sizeof(p_gate->active_send));
-
-  p_gate->pending_unpacks = 0;
 
   INIT_LIST_HEAD(&p_gate->pending_large_recv);
 

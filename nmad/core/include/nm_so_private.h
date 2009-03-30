@@ -178,8 +178,6 @@ struct nm_so_sched
   struct nm_so_any_src_table_s any_src;
   /** next gate_id to poll for any_src */
   int next_gate_id;
-
-  unsigned pending_any_src_unpacks;
 };
 
 int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len);

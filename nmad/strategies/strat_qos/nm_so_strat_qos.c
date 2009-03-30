@@ -362,8 +362,6 @@ static int strat_qos_ack_callback(void *_status,
 
 	      NM_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
-	      p_gate->pending_unpacks--;
-
 	      list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_gate->tags, tag)->pending_large_send, link)
 		{
 		  if(p_so_large_pw->seq == seq)

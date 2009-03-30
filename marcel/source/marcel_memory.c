@@ -359,6 +359,7 @@ void ma_memory_init_memory_data(marcel_memory_manager_t *memory_manager,
 
   // Set the interval addresses and the length
   (*memory_data)->startaddress = pageaddrs[0];
+  (*memory_data)->mprotect_startaddress = pageaddrs[0];
   (*memory_data)->endaddress = pageaddrs[0]+size;
   (*memory_data)->size = size;
   (*memory_data)->mprotect_size = size;
@@ -1013,6 +1014,10 @@ int marcel_memory_register(marcel_memory_manager_t *memory_manager,
   if (aligned_endbuffer > buffer+size) {
     data->mprotect_size = data->size - memory_manager->normalpagesize;
   }
+  if (aligned_buffer < buffer) {
+    data->mprotect_startaddress += memory_manager->normalpagesize;
+    data->mprotect_size -= memory_manager->normalpagesize;
+  }
 
   marcel_mutex_unlock(&(memory_manager->lock));
   MAMI_LOG_OUT();
@@ -1529,7 +1534,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
     data->status = MARCEL_MEMORY_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
     ma_memory_migrate_pages(g_memory_manager, data, dest);
-    err = mprotect(data->startaddress, data->mprotect_size, data->protection);
+    err = mprotect(data->mprotect_startaddress, data->mprotect_size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";
       write(2, msg, strlen(msg));
@@ -1589,10 +1594,10 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
           return -errno;
         }
       }
-      mdebug_mami("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->startaddress, data->startaddress+data->mprotect_size,
+      mdebug_mami("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_startaddress, data->startaddress+data->mprotect_size,
 		  data->mprotect_size, data->startaddress, data->endaddress, data->size);
       data->status = MARCEL_MEMORY_INITIAL_STATUS;
-      err = mprotect(data->startaddress, data->mprotect_size, PROT_NONE);
+      err = mprotect(data->mprotect_startaddress, data->mprotect_size, PROT_NONE);
       if (err < 0) {
         perror("(marcel_memory_migrate_on_next_touch) mprotect");
       }
@@ -1658,6 +1663,10 @@ int ma_memory_entity_attach(marcel_memory_manager_t *memory_manager,
 
       if (aligned_endbuffer > buffer+size) {
 	data->mprotect_size = data->size - memory_manager->normalpagesize;
+      }
+      if (aligned_buffer < buffer) {
+	data->mprotect_startaddress += memory_manager->normalpagesize;
+	data->mprotect_size -= memory_manager->normalpagesize;
       }
 
       err = 0;

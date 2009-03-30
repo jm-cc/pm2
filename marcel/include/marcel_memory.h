@@ -132,6 +132,8 @@ struct marcel_memory_data_s {
   /** \brief */
   marcel_memory_data_t *next;
 
+  /** \brief Start address of the area to use when calling mprotect */
+  void *mprotect_startaddress;
   /** \brief Size of the area to use when calling mprotect */
   size_t mprotect_size;
 };

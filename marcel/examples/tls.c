@@ -80,7 +80,7 @@ main (int argc, char *argv[])
 
       if (i != (intptr_t) ret)
 	{
-	  printf ("got %"PRIiPTR" instead of %i\n", (intptr_t) ret, i);
+	  printf ("got %"PRIiPTR" instead of %"PRIiPTR"\n", (intptr_t) ret, i);
 	  return 3;
 	}
     }

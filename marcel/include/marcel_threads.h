@@ -402,6 +402,7 @@ static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t) 
 #ifdef MARCEL_CLEANUP_ENABLED
 /** Linked list of buffers for thread clean-up handlers.
  */
+/* NOTE: ABI-compatible with NPTL, see its __pthread_cleanup_buffer */
 struct _marcel_cleanup_buffer
 {
   void (*__routine) (void *);		  /* Function to call.  */

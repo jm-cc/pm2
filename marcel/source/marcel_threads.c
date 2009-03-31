@@ -992,6 +992,12 @@ DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict 
 DEF_PTHREAD(void, cleanup_push,(struct _pthread_cleanup_buffer *__buffer,
 				     void (*__routine)(void *), void * __arg),
 		(__buffer, __routine, __arg))
+#ifdef PM2_DEV
+#warning TODO: _pthread_cleanup_push_defer,pop_restore
+/* _defer and _restore version have to handle cancellation. See NPTL's
+ * cleanup_defer_compat.c */
+#endif
+strong_alias(_pthread_cleanup_push, _pthread_cleanup_push_defer);
 
 DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 				tbx_bool_t execute), (__buffer, execute),
@@ -1009,6 +1015,8 @@ DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 })
 DEF_PTHREAD(void, cleanup_pop,(struct _pthread_cleanup_buffer *__buffer,
 				     int __execute), (__buffer, __execute))
+strong_alias(_pthread_cleanup_pop, _pthread_cleanup_pop_restore);
+
 #undef NAME_PREFIX
 #define NAME_PREFIX
 #endif /* MARCEL_CLEANUP_ENABLED */

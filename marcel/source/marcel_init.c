@@ -912,6 +912,9 @@ void
 marcel_constructor(void) {
 	if (!marcel_test_activity()) {
 		LOG_IN();
+#ifndef STATIC_BUILD
+		__pthread_initialize_minimal();
+#endif
 		marcel_init(NULL, NULL);
 		LOG_OUT();
 	}

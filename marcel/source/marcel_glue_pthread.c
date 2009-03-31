@@ -126,9 +126,6 @@ DEF_PTHREAD(pthread_t, self, (void), ())
 extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 #endif
 
-/* Appelé par la libc pour initialiser de manière basique. */
-extern void __pthread_initialize_minimal(void);
-
 /*
  * In principle, our pthread_* symbols already override glibc's, so
  * we should not need to have to give them to glibc.  Let's still MA_BUG in
@@ -264,8 +261,8 @@ static struct pthread_functions
 	.ptr___pthread_key_create = (void*) error_stub,
 	.ptr___pthread_getspecific = (void*) error_stub,
 	.ptr___pthread_setspecific = (void*) error_stub,
-	.ptr__pthread_cleanup_push_defer = (void*) error_stub,
-	.ptr__pthread_cleanup_pop_restore = (void*) error_stub,
+	.ptr__pthread_cleanup_push_defer = _pthread_cleanup_push_defer,
+	.ptr__pthread_cleanup_pop_restore = _pthread_cleanup_pop_restore,
 	.ptr_nthreads = &nthreads,
 	.ptr___pthread_unwind = (void*) error_stub,
 	.ptr__nptl_deallocate_tsd = (void*) error_stub,
@@ -337,27 +334,6 @@ int pthread_equal(pthread_t thread1, pthread_t thread2)
 	LOG_RETURN(thread1 == thread2);
 }
 
-#ifdef PM2_DEV
-#warning _pthread_cleanup_push,restore à écrire
-#endif
-#if 0
-strong_alias(_pthread_cleanup_push_defer, _pthread_cleanup_push);
-strong_alias(_pthread_cleanup_pop_restore, _pthread_cleanup_pop);
-
-#warning _pthread_cleanup_push,restore à vérifier
-void _pthread_cleanup_push(struct _pthread_cleanup_buffer *buffer,
-    void (*routine) (void *), void *arg)
-{
-	LOG_IN();
-	LOG_RETURN(marcel_cleanup_push(routine, arg));
-}
-
-void _pthread_cleanup_pop(struct _pthread_cleanup_buffer *buffer, int execute)
-{
-	LOG_IN();
-	LOG_RETURN(marcel_cleanup_pop(execute));
-}
-#endif
 extern int __pthread_clock_settime(clockid_t, const struct timespec *);
 int __pthread_clock_settime(clockid_t clock_id, const struct timespec *tp) {
 	LOG_IN();

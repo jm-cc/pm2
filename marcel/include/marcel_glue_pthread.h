@@ -19,8 +19,22 @@
 
 #ifdef MA__LIBPTHREAD
 extern void ma_check_lpt_sizes(void);
+
+/** Convert an OS cpuset into a Marcel vpset */
 int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset);
+/** Convert a Marcel vpset into an OS cpuset */
 int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_t *cpuset);
+
+/* pthread_cleanup_push_defer/pop_restore() handlers for glibc.  */
+void _pthread_cleanup_push_defer(struct _pthread_cleanup_buffer *buffer,
+    void (*routine) (void *), void *arg);
+void _pthread_cleanup_pop_restore(struct _pthread_cleanup_buffer *buffer, int execute);
+
+/*
+ * When statically linked, this is called directly by the libc.
+ * When dynamically linked, it is called by our constructor.
+ */
+void __pthread_initialize_minimal(void);
 #endif
 
 #section marcel_variables

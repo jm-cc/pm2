@@ -61,8 +61,6 @@ static int TBX_UNUSED infile=0;
 #define NDC(function)
 #endif
 
-NDSP(cleanup_pop_restore)
-NDSP(cleanup_push_defer)
 NDC(recvmsg)
 NDP(,kill_other_threads_np)
 

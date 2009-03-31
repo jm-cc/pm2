@@ -68,7 +68,8 @@ registering_flavors() {
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats \
-        --marcel=enable_mami
+        --marcel=dont_use_pthread \
+        --marcel=enable_mami 
 
     register_flavor marcel-mami-debug \
 	--modules="marcel tbx init" \
@@ -76,6 +77,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=valgrind \
         --marcel=enable_mami \
+        --marcel=dont_use_pthread \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
     register_flavor marcel-mami-fortran-debug \
@@ -85,6 +87,7 @@ registering_flavors() {
 	--marcel=enable_stats \
         --marcel=enable_mami --marcel=fortran \
         --common=fortran_target_gfortran \
+        --marcel=dont_use_pthread \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
     register_flavor marcel \

@@ -27,7 +27,9 @@
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
 #define WARMUPS_DEFAULT 100
-#define LOOPS_DEFAULT   2000
+#define LOOPS_DEFAULT   5000
+
+#define MAX_DATA        (100ULL * 1024ULL * 1024ULL) /* 100 MB */
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -38,6 +40,19 @@ uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
     return len*multiplier+increment;
 }
 
+static uint32_t _iterations(int iterations, uint32_t len)
+{
+  uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
+  if(data_size  > MAX_DATA)
+    {
+      iterations = (MAX_DATA / (uint64_t)len);
+      if(iterations < 2)
+	iterations = 2;
+    }
+  return iterations;
+}
+
+
 static void usage_ping(void) {
   fprintf(stderr, "-S start_len - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len - ending length [%d]\n", MAX_DEFAULT);
@@ -47,6 +62,18 @@ static void usage_ping(void) {
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
+}
+
+static void fill_buffer(char *buffer, int len) {
+  int i = 0;
+
+  for (i = 0; i < len; i++) {
+    buffer[i] = 'a'+(i%26);
+  }
+}
+
+static void clear_buffer(char *buffer, int len) {
+  memset(buffer, 0, len);
 }
 
 int
@@ -98,13 +125,14 @@ main(int	  argc,
         }
 
         buf = malloc(end_len);
-	memset(buf, 0, end_len);
 
         if (is_server) {
 	  int k;
                 /* server
                  */
 		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
+		  clear_buffer(buf, len);
+		  iterations = _iterations(iterations, len);
 		  for(k = 0; k < iterations + warmups; k++) {
 		    nm_sr_request_t request;
 
@@ -125,6 +153,9 @@ main(int	  argc,
                 printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
 
 		for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
+
+		  iterations = _iterations(iterations, len);
+		  fill_buffer(buf, len);
 
 		  for(k = 0; k < warmups; k++) {
 		    nm_sr_request_t request;

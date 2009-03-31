@@ -5,16 +5,6 @@ if defined_in MARCEL_SMP PM2_MARCEL_CFLAGS || defined_in MARCEL_NUMA PM2_MARCEL_
 	# Yes, we should
 	PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -D_REENTRANT"
 	PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lpthread"
-	if [ "$PM2_SYS" = LINUX_SYS -a "$PM2_ARCH" != IA64_ARCH ]; then
-	    if nm `ldd /bin/ls | grep pthread` 2> /dev/null | grep -sq tls ; then
-		# pthread with TLS used on this system, nothing to do
-		:
-	    else
-		# old libpthread used.
-		# Need a specific one to be able to move the stack
-		PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$PM2_ROOT/lib/$PM2_SYS/$PM2_ARCH/libpthread.so"
-	    fi
-	fi
 	# For being able to bind kernel threads to cpus.
 	[ "$PM2_SYS" = OSF_SYS ] && PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lnuma"
     fi

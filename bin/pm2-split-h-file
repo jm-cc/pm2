@@ -759,7 +759,6 @@ sub openfile {
 	    $show and print "[";
 	}
 	open(OUT, ">$file$new_ext") or die "Unable to write file $file$new_ext: $!\n";
-	chmod 0444, $file.$new_ext;
 	openfile_make($hashkey);
     }
 }

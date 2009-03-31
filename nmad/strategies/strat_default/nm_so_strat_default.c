@@ -37,7 +37,6 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
     .pack               = &strat_default_pack,
     .packv              = &strat_default_packv,
-    .pack_extended      = NULL,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .pack_ctrl_chunk    = &strat_default_pack_ctrl_chunk,
     .pack_extended_ctrl = &strat_default_pack_extended_ctrl,

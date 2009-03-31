@@ -307,10 +307,6 @@ int nm_sr_isend_generic(struct nm_core *p_core,
       ret = nm_so_pack_datatype(p_gate, tag, seq, data);
       break;
 
-    case nm_sr_extended_transfer:
-      ret = nm_so_pack_extended(p_gate, tag, seq, data, len, is_completed);
-      break;
-      
     default:
       TBX_FAILURE("Unkown sending type.");
       break;

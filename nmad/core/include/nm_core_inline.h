@@ -164,20 +164,6 @@ static inline int nm_so_pack_datatype(nm_gate_t p_gate, nm_tag_t tag, int seq, c
   return (*r->driver->pack_datatype)(r->_status, p_gate, tag, seq, segp);
 }
 
-static inline int nm_so_pack_extended(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, uint32_t len, tbx_bool_t is_completed)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  if(r->driver->pack_extended)
-    {
-      return (*r->driver->pack_extended)(r->_status, p_gate, tag, seq, data, len, is_completed);
-    }
-  else
-    {
-      NM_DISPF("The current strategy does not provide an extended pack");
-      return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
-    }
-}
-
 static inline int nm_so_flush(nm_gate_t p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;

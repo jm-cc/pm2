@@ -205,8 +205,6 @@ typedef int MPI_Op;
 /** @name Extended modes */
 /* @{ */
 typedef int MPI_Communication_Mode;
-#define MPI_IS_NOT_COMPLETED    ((MPI_Communication_Mode)0)
-#define MPI_IS_COMPLETED        ((MPI_Communication_Mode)1)
 #define MPI_IMMEDIATE_MODE      ((MPI_Communication_Mode)-1)
 #define MPI_READY_MODE          ((MPI_Communication_Mode)-2)
 /* @} */

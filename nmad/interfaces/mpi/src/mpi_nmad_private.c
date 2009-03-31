@@ -568,9 +568,7 @@ static inline int mpir_isend_wrapper(mpir_internal_data_t *mpir_internal_data,
                          mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
   }
   else {
-    err = nm_sr_isend_extended(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
-                                  mpir_request->count * mpir_datatype->size, mpir_request->communication_mode,
-                                  &(mpir_request->request_nmad));
+    TBX_FAILUREF("Unkown mode %d for isend", mpir_request->communication_mode);
   }
 
   MPI_NMAD_TRANSFER("Sent finished\n");

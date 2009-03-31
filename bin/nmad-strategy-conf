@@ -35,14 +35,12 @@ where mandatory <action> is among:
   --get, -g             display the current strategy
   --gen-default         generate default strategy files
   --strat=strat_<strat> choose strategy <strat>, e.g. --strat=strat_default
-    possible <strat> values are: default, aggreg, aggreg_extended, split_balance, qos
+    possible <strat> values are: default, aggreg, split_balance, qos
     Shortcuts are available:
       --default-strategy, --default, -d
                         for strategy 'default'
       --aggreg-strategy, --aggreg, -a
                         for strategy 'aggreg'
-      --aggreg-extended-strategy, --aggreg-ext, -e
-                        for strategy 'aggreg_extended'
       --aggreg-autoextended-strategy, --aggreg-autoext, -ae
                         for strategy 'aggreg_autoextended'
       --split-balance-strategy, --split-balance, -b
@@ -87,9 +85,6 @@ while test $# -gt 0; do
 	    ;;
 	--aggreg-strategy|--aggreg|-a)
 	    CHOSEN_STRATEGY=aggreg
-	    ;;
-	--aggreg-extended-strategy|--aggreg-ext|-e)
-	    CHOSEN_STRATEGY=aggreg_extended
 	    ;;
         --aggreg-autoextended-strategy|--aggreg-autoext |-ae)
 	    CHOSEN_STRATEGY=aggreg_autoextended
@@ -154,7 +149,6 @@ nmad_strat_write_default() {
     nmad_strat_write default
     nmad_strat_write split_balance
     nmad_strat_write aggreg
-    nmad_strat_write aggreg_extended
     nmad_strat_write aggreg_autoextended
     nmad_strat_write qos
 }

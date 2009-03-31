@@ -119,8 +119,7 @@ enum nm_sr_transfer_type
   {
     nm_sr_datatype_transfer,
     nm_sr_iov_transfer,
-    nm_sr_contiguous_transfer,
-    nm_sr_extended_transfer /* only for the sending side */
+    nm_sr_contiguous_transfer
   };
 typedef enum nm_sr_transfer_type nm_sr_transfer_type_t;
 
@@ -198,16 +197,6 @@ static inline int nm_sr_isend_with_ref(nm_core_t p_core,
 {
   return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request, ref);
 }
-
-static inline int nm_sr_isend_extended(nm_core_t p_core,
-				       nm_gate_t p_gate, nm_tag_t tag,
-				       const void *data, uint32_t len,
-				       tbx_bool_t is_completed,
-				       nm_sr_request_t *p_request)
-{
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_extended_transfer, data, len, is_completed, p_request, NULL);
-}
-
 
 /** Post a ready send request. When seading a large packet requiring a
  *  RDV, waits for completion of RDV, i.e returns when the matching

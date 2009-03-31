@@ -38,7 +38,6 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
   {
     .pack               = &strat_aggreg_pack,
     .packv              = &strat_aggreg_packv,
-    .pack_extended      = NULL,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .pack_ctrl_chunk    = &strat_aggreg_pack_ctrl_chunk,
     .pack_extended_ctrl = &strat_aggreg_pack_extended_ctrl,

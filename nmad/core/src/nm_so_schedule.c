@@ -57,8 +57,6 @@ int nm_so_schedule_init(struct nm_core *p_core)
   strategy_name = "default";
 #elif defined(CONFIG_STRAT_AGGREG)
   strategy_name = "aggreg";
-#elif defined(CONFIG_STRAT_AGGREG_EXTENDED)
-  strategy_name = "aggreg_extended";
 #elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
   strategy_name = "aggreg_autoextended";
 #elif defined(CONFIG_STRAT_QOS)

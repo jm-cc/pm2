@@ -39,7 +39,6 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
     .pack               = &strat_split_balance_pack,
     .packv              = &strat_split_balance_packv,
     .pack_datatype      = &strat_split_balance_pack_datatype,
-    .pack_extended      = NULL,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .pack_ctrl_chunk    = &strat_split_balance_pack_ctrl_chunk,
     .pack_extended_ctrl = &strat_split_balance_pack_extended_ctrl,

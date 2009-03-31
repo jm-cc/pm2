@@ -17,7 +17,7 @@
 create_test_hosts 2;
 net=${TESTNET:-tcp}
 mpi="mpi_emu"
-strat="strat_aggreg_extended"
+strat="strat_aggreg"
 net2=$(echo $net | tr ' ' '_')
 ext="pioman"
 flavor="test_nmad_${mpi}_${net2}_${ext}"

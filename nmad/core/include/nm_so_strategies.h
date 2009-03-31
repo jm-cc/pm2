@@ -48,12 +48,6 @@ struct nm_strategy_iface_s
 		       nm_tag_t tag, uint8_t seq,
 		       const struct DLOOP_Segment *segp);
 
-  int (*pack_extended)(void*_status,
-		       struct nm_gate *p_gate,
-		       nm_tag_t tag, uint8_t seq,
-		       const void *data, uint32_t len,
-		       tbx_bool_t is_completed);
-
   int (*pack_ctrl)(void*_status,
                    struct nm_gate *p_gate,
 		   nm_generic_header_t p_ctrl);

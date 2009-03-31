@@ -1413,44 +1413,6 @@ int MPI_Get_version(int *version,
   return MPI_SUCCESS;
 }
 
-int MPI_Esend(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Communication_Mode is_completed,
-              MPI_Comm comm,
-              MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
-  mpir_communicator_t  *mpir_communicator;
-  int err;
-
-  MPI_NMAD_LOG_IN();
-  MPI_NMAD_TRACE("Esending message to %d of datatype %d with tag %d\n", dest, datatype, tag);
-
-  if (tbx_unlikely(tag == MPI_ANY_TAG)) {
-    ERROR("<Using MPI_ANY_TAG> not implemented yet!");
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
-
-  mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
-  mpir_request->request_type = MPI_REQUEST_SEND;
-  mpir_request->request_persistent_type = MPI_REQUEST_ZERO;
-  mpir_request->request_ptr = NULL;
-  mpir_request->contig_buffer = NULL;
-  mpir_request->request_datatype = datatype;
-  mpir_request->buffer = buffer;
-  mpir_request->count = count;
-  mpir_request->user_tag = tag;
-  mpir_request->communication_mode = is_completed;
-
-  err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
-
-  MPI_NMAD_LOG_OUT();
-  return err;
-}
-
 int MPI_Send(void *buffer,
              int count,
              MPI_Datatype datatype,

@@ -98,28 +98,6 @@ int MPI_Ssend(void* buffer,
               MPI_Comm comm);
 
 /**
- * This function does not belong to the MPI standard: Performs a
- * extended send.
- * @param buffer initial address of send buffer
- * @param count number of elements in send buffer
- * @param datatype datatype of each send buffer element
- * @param dest rank of destination
- * @param tag message tag
- * @param is_completed communication mode
- * @param comm communicator
- * @param request pointer to request
- * @return MPI status
- */
-int MPI_Esend(void *buffer,
-              int count,
-              MPI_Datatype datatype,
-              int dest,
-              int tag,
-              MPI_Communication_Mode is_completed,
-              MPI_Comm comm,
-              MPI_Request *request);
-
-/**
  * Packs a message specified by inbuf, incount, datatype, comm into
  * the buffer space specified by outbuf and outsize. The input buffer
  * can be any communication buffer allowed in MPI_SEND. The output

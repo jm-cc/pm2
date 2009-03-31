@@ -128,8 +128,10 @@ extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 
 /*
  * In principle, our pthread_* symbols already override glibc's, so
- * we should not need to have to give them to glibc.  Let's still MA_BUG in
- * that case.
+ * we can just fill the pthread_functions table with the plain symbols.
+ *
+ * A few cases are not handled (compatibility symbols notably). Let's MA_BUG in
+ * these cases.
  */
 static void error_stub(void) {
 	MA_BUG();
@@ -215,52 +217,52 @@ static struct pthread_functions
   int (*ptr__nptl_setxid) (void /*struct xid_command*/ *);
   void (*ptr_freeres) (void);
 } const ptr_pthread_functions = {
-	.ptr_pthread_attr_destroy = (void*) error_stub,
+	.ptr_pthread_attr_destroy = (void*) pthread_attr_destroy,
 	.ptr___pthread_attr_init_2_0 = (void*) error_stub,
-	.ptr___pthread_attr_init_2_1 = (void*) error_stub,
-	.ptr_pthread_attr_getdetachstate = (void*) error_stub,
-	.ptr_pthread_attr_setdetachstate = (void*) error_stub,
-	.ptr_pthread_attr_getinheritsched = (void*) error_stub,
-	.ptr_pthread_attr_setinheritsched = (void*) error_stub,
-	.ptr_pthread_attr_getschedparam = (void*) error_stub,
-	.ptr_pthread_attr_setschedparam = (void*) error_stub,
-	.ptr_pthread_attr_getschedpolicy = (void*) error_stub,
-	.ptr_pthread_attr_setschedpolicy = (void*) error_stub,
-	.ptr_pthread_attr_getscope = (void*) error_stub,
-	.ptr_pthread_attr_setscope = (void*) error_stub,
-	.ptr_pthread_condattr_destroy = (void*) error_stub,
-	.ptr_pthread_condattr_init = (void*) error_stub,
-	.ptr___pthread_cond_broadcast = (void*) error_stub,
-	.ptr___pthread_cond_destroy = (void*) error_stub,
-	.ptr___pthread_cond_init = (void*) error_stub,
-	.ptr___pthread_cond_signal = (void*) error_stub,
-	.ptr___pthread_cond_wait = (void*) error_stub,
-	.ptr___pthread_cond_timedwait = (void*) error_stub,
+	.ptr___pthread_attr_init_2_1 = (void*) pthread_attr_init,
+	.ptr_pthread_attr_getdetachstate = (void*) pthread_attr_getdetachstate,
+	.ptr_pthread_attr_setdetachstate = (void*) pthread_attr_setdetachstate,
+	.ptr_pthread_attr_getinheritsched = (void*) pthread_attr_getinheritsched,
+	.ptr_pthread_attr_setinheritsched = (void*) pthread_attr_setinheritsched,
+	.ptr_pthread_attr_getschedparam = (void*) pthread_attr_getschedparam,
+	.ptr_pthread_attr_setschedparam = (void*) pthread_attr_setschedparam,
+	.ptr_pthread_attr_getschedpolicy = (void*) pthread_attr_getschedpolicy,
+	.ptr_pthread_attr_setschedpolicy = (void*) pthread_attr_setschedpolicy,
+	.ptr_pthread_attr_getscope = (void*) pthread_attr_getscope,
+	.ptr_pthread_attr_setscope = (void*) pthread_attr_setscope,
+	.ptr_pthread_condattr_destroy = (void*) pthread_condattr_destroy,
+	.ptr_pthread_condattr_init = (void*) pthread_condattr_init,
+	.ptr___pthread_cond_broadcast = (void*) pthread_cond_broadcast,
+	.ptr___pthread_cond_destroy = (void*) pthread_cond_destroy,
+	.ptr___pthread_cond_init = (void*) pthread_cond_init,
+	.ptr___pthread_cond_signal = (void*) pthread_cond_signal,
+	.ptr___pthread_cond_wait = (void*) pthread_cond_wait,
+	.ptr___pthread_cond_timedwait = (void*) pthread_cond_timedwait,
 	.ptr___pthread_cond_broadcast_2_0 = (void*) error_stub,
 	.ptr___pthread_cond_destroy_2_0 = (void*) error_stub,
 	.ptr___pthread_cond_init_2_0 = (void*) error_stub,
 	.ptr___pthread_cond_signal_2_0 = (void*) error_stub,
 	.ptr___pthread_cond_wait_2_0 = (void*) error_stub,
 	.ptr___pthread_cond_timedwait_2_0 = (void*) error_stub,
-	.ptr_pthread_equal = (void*) error_stub,
-	.ptr___pthread_exit = (void*) error_stub,
-	.ptr_pthread_getschedparam = (void*) error_stub,
-	.ptr_pthread_setschedparam = (void*) error_stub,
-	.ptr_pthread_mutex_destroy = (void*) error_stub,
-	.ptr_pthread_mutex_init = (void*) error_stub,
-	.ptr_pthread_mutex_lock = (void*) error_stub,
-	.ptr_pthread_mutex_unlock = (void*) error_stub,
-	.ptr_pthread_self = (void*) error_stub,
-	.ptr_pthread_setcancelstate = (void*) error_stub,
-	.ptr_pthread_setcanceltype = (void*) error_stub,
+	.ptr_pthread_equal = (void*) pthread_equal,
+	.ptr___pthread_exit = (void*) pthread_exit,
+	.ptr_pthread_getschedparam = (void*) pthread_getschedparam,
+	.ptr_pthread_setschedparam = (void*) pthread_setschedparam,
+	.ptr_pthread_mutex_destroy = (void*) pthread_mutex_destroy,
+	.ptr_pthread_mutex_init = (void*) pthread_mutex_init,
+	.ptr_pthread_mutex_lock = (void*) pthread_mutex_lock,
+	.ptr_pthread_mutex_unlock = (void*) pthread_mutex_unlock,
+	.ptr_pthread_self = (void*) pthread_self,
+	.ptr_pthread_setcancelstate = (void*) pthread_setcancelstate,
+	.ptr_pthread_setcanceltype = (void*) pthread_setcanceltype,
 	.ptr___pthread_cleanup_upto = (void*) error_stub,
-	.ptr___pthread_once = (void*) error_stub,
-	.ptr___pthread_rwlock_rdlock = (void*) error_stub,
-	.ptr___pthread_rwlock_wrlock = (void*) error_stub,
-	.ptr___pthread_rwlock_unlock = (void*) error_stub,
-	.ptr___pthread_key_create = (void*) error_stub,
-	.ptr___pthread_getspecific = (void*) error_stub,
-	.ptr___pthread_setspecific = (void*) error_stub,
+	.ptr___pthread_once = (void*) pthread_once,
+	.ptr___pthread_rwlock_rdlock = (void*) pthread_rwlock_rdlock,
+	.ptr___pthread_rwlock_wrlock = (void*) pthread_rwlock_wrlock,
+	.ptr___pthread_rwlock_unlock = (void*) pthread_rwlock_unlock,
+	.ptr___pthread_key_create = (void*) pthread_key_create,
+	.ptr___pthread_getspecific = (void*) pthread_getspecific,
+	.ptr___pthread_setspecific = (void*) pthread_setspecific,
 	.ptr__pthread_cleanup_push_defer = _pthread_cleanup_push_defer,
 	.ptr__pthread_cleanup_pop_restore = _pthread_cleanup_pop_restore,
 	.ptr_nthreads = &nthreads,
@@ -284,9 +286,11 @@ ma_libc_internal_function;
 
 void __pthread_initialize_minimal(void)
 {
+#if 0
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 /* Pointer to the libc variable set to a nonzero value if more than one thread runs or ran. */
 	int *libc_multiple_threads_ptr;
+#endif
 #endif
 
 #ifdef STATIC_BUILD
@@ -302,6 +306,7 @@ void __pthread_initialize_minimal(void)
 	__asm __volatile ("");
 #endif
 
+#if 0
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 	libc_multiple_threads_ptr =
 #endif
@@ -315,6 +320,11 @@ void __pthread_initialize_minimal(void)
 
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 	*libc_multiple_threads_ptr = 1;
+#endif
+#else
+#  ifdef PM2_DEV
+#    warning TODO: fix our pthread_functions and then enable them
+#  endif
 #endif
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }

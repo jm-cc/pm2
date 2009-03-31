@@ -34,6 +34,12 @@
 #include "marcel_fastlock.h" //VD:
 #include "pthread_queue.h" //VD:
 
+#ifdef MA__LIBPTHREAD
+#  ifdef PM2_DEV
+#    warning FIXME: Need to use lpt_rwlock_t instead of Marcel s type
+#  endif
+#endif
+
 #if 0 //VD:
 /* Function called by marcel_cancel to remove the thread from
    waiting inside marcel_rwlock_timedrdlock or marcel_rwlock_timedwrlock. */

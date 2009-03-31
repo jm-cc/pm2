@@ -18,6 +18,18 @@
 #include "marcel.h"
 #include "tbx_compiler.h"
 
+#ifdef MARCEL_GDB
+/*
+ * Dumb variables to let gdb scripts know which Marcel options are configured.
+ */
+int ma_gdb_postexit_enabled =
+#ifdef MARCEL_POSTEXIT_ENABLED
+	1;
+#else
+	0;
+#endif
+#endif
+
 #ifdef PM2DEBUG
 MA_DEBUG_DEFINE_NAME_DEPEND(default, &marcel_mdebug);
 

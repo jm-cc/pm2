@@ -65,3 +65,37 @@
  * How to set the stack pointer register
  */
 #define set_sp(val)
+
+#ifdef MA__PROVIDE_TLS
+typedef struct {
+  /* LPT binary compatibility */
+
+  /* Needs to be the same as glibc's tcbhead_t structure, see glibc/nptl/sysdeps/<yourarch>/tls.h */
+  /* Fill the various fields from marcel/source/marcel_alloc.c */
+
+  /* LPT binary compatibility end */
+} lpt_tcb_t;
+
+/*
+ * Define this if it is defined in glibc/nptl/sysdeps/<yourarch>/tls.h>,
+ * meaning that the multiple_threads flag is in the TCB described above and not
+ * in the global variable whose address is returned by __libc_pthread_init().
+ */
+/* #define MA_TLS_MULTIPLE_THREADS_IN_TCB */
+
+/*
+ * Define this according to your TLS variant
+ * See marcel/include/asm-ia64/marcel_archdep.h for a Variant I example, and
+ * marcel/include/asm-i386/marcel_archdep.h for a Variant II example
+ * See Drepper's paper about TLS for the details and which one your arch uses.
+ */
+#define marcel_tcb(new_task)
+
+/*
+ * How to set the arch-specific TLS reg for the new task
+ */
+#define marcel_ctx_set_tls_reg(new_task)
+
+#else
+#define marcel_ctx_set_tls_reg(new_task) (void)0
+#endif

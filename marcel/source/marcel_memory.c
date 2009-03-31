@@ -292,8 +292,12 @@ void ma_memory_clean_memory(marcel_memory_manager_t *memory_manager) {
 
 void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   int node, dest;
+  struct sigaction act;
 
   MAMI_LOG_IN();
+
+  act.sa_handler = SIG_DFL;
+  sigaction(SIGSEGV, &act, NULL);
 
   if (memory_manager->root) {
     marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");

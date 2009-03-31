@@ -44,6 +44,9 @@ static int ma_call_lwp_notifier(unsigned long val, ma_lwp_t lwp)
 marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 
 LIST_HEAD(ma_list_lwp_head);
+#ifdef MARCEL_GDB
+LIST_HEAD(ma_list_lwp_head_dead);
+#endif
 
 #ifdef MA__LWPS
 // Verrou protégeant la liste chaînée des LWPs
@@ -164,6 +167,9 @@ static void *lwp_kthread_start_func(void *arg)
 
 	ma_lwp_list_lock_write();
 	list_del(&lwp->lwp_list);	
+#ifdef MARCEL_GDB
+	list_add_tail(&lwp->lwp_list, &ma_list_lwp_head_dead);
+#endif
 	ma_lwp_list_unlock_write();
 
 	marcel_kthread_exit(NULL);
@@ -263,8 +269,10 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 		/* La structure devrait être libérée ainsi que
 		 * les piles des threads résidents... 
 		 */
+#ifndef MARCEL_GDB
 		marcel_free_node(lwp, sizeof(marcel_lwp_t),
 		    ma_vp_node[ma_vpnum(lwp)]);
+#endif
 	}
 
 	LOG_OUT();

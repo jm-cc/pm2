@@ -255,35 +255,40 @@ document marcel-threads
 Prints a list of marcel threads
 end
 
-define marcel-allthreads
-  set language c
-  marcel-threads
-  set $first = &ma_list_lwp_head
+define marcel-lwplist-threads
+  set $first = $arg0
   set $lwp = (ma_lwp_t) $first->next
   while $lwp != $first
     marcel-printthread $lwp->idle_task
     set $lwp = (ma_lwp_t) $lwp->lwp_list.next
   end
-  set $first = &ma_list_lwp_head
+  set $first = $arg0
   set $lwp = (ma_lwp_t) $first->next->next
   while $lwp != $first
     marcel-printthread $lwp->run_task
     set $lwp = (ma_lwp_t) $lwp->lwp_list.next
   end
-  set $first = &ma_list_lwp_head
+  set $first = $arg0
   set $lwp = (ma_lwp_t) $first->next
   while $lwp != $first
     marcel-printthread $lwp->ksoftirqd_task
     set $lwp = (ma_lwp_t) $lwp->lwp_list.next
   end
   if ma_gdb_postexit_enabled == 1
-    set $first = &ma_list_lwp_head
+    set $first = $arg0
     set $lwp = (ma_lwp_t) $first->next
     while $lwp != $first
       marcel-printthread $lwp->postexit_task
       set $lwp = (ma_lwp_t) $lwp->lwp_list.next
     end
   end
+end
+
+define marcel-allthreads
+  set language c
+  marcel-threads
+  marcel-lwplist-threads &ma_list_lwp_head
+  marcel-lwplist-threads &ma_list_lwp_head_dead
 end
 
 document marcel-threads

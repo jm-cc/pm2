@@ -37,10 +37,8 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 	LOG_IN();
 	marcel_attr_t new_attr;
 
-	if (__builtin_expect(marcel_activity, tbx_true) == tbx_false) {
+	if (__builtin_expect(marcel_activity, tbx_true) == tbx_false)
 		marcel_init(NULL, NULL);
-  		// TODO: call libc_pthread_init
-	}
 
 	if (attr != NULL) {
 		int policy;
@@ -122,6 +120,7 @@ DEF_PTHREAD(pthread_t, self, (void), ())
     DEF___PTHREAD(pthread_t, self, (void), ())
 
 
+
 #ifdef STATIC_BUILD
 #pragma weak __libc_setup_tls
 extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
@@ -129,8 +128,170 @@ extern void __libc_setup_tls (size_t tcbsize, size_t tcbalign);
 
 /* Appelé par la libc pour initialiser de manière basique. */
 extern void __pthread_initialize_minimal(void);
+
+/*
+ * In principle, our pthread_* symbols already override glibc's, so
+ * we should not need to have to give them to glibc.  Let's still MA_BUG in
+ * that case.
+ */
+static void error_stub(void) {
+	MA_BUG();
+}
+
+/*
+ * Glibc uses this to know whether when canceling the main thread it should
+ * kill the process (because there are no threads any more) or just kill the
+ * main thread and let others orphaned.  We already handle that ourselves, so
+ * just expose a safe value which reminds glibc that there is concurrency.
+ */
+static unsigned int nthreads = 2;
+
+static struct pthread_functions
+{
+  /* Taken from NPTL.  */
+  int (*ptr_pthread_attr_destroy) (pthread_attr_t *);
+  int (*ptr___pthread_attr_init_2_0) (pthread_attr_t *);
+  int (*ptr___pthread_attr_init_2_1) (pthread_attr_t *);
+  int (*ptr_pthread_attr_getdetachstate) (const pthread_attr_t *, int *);
+  int (*ptr_pthread_attr_setdetachstate) (pthread_attr_t *, int);
+  int (*ptr_pthread_attr_getinheritsched) (const pthread_attr_t *, int *);
+  int (*ptr_pthread_attr_setinheritsched) (pthread_attr_t *, int);
+  int (*ptr_pthread_attr_getschedparam) (const pthread_attr_t *,
+					 struct sched_param *);
+  int (*ptr_pthread_attr_setschedparam) (pthread_attr_t *,
+					 const struct sched_param *);
+  int (*ptr_pthread_attr_getschedpolicy) (const pthread_attr_t *, int *);
+  int (*ptr_pthread_attr_setschedpolicy) (pthread_attr_t *, int);
+  int (*ptr_pthread_attr_getscope) (const pthread_attr_t *, int *);
+  int (*ptr_pthread_attr_setscope) (pthread_attr_t *, int);
+  int (*ptr_pthread_condattr_destroy) (pthread_condattr_t *);
+  int (*ptr_pthread_condattr_init) (pthread_condattr_t *);
+  int (*ptr___pthread_cond_broadcast) (pthread_cond_t *);
+  int (*ptr___pthread_cond_destroy) (pthread_cond_t *);
+  int (*ptr___pthread_cond_init) (pthread_cond_t *,
+				  const pthread_condattr_t *);
+  int (*ptr___pthread_cond_signal) (pthread_cond_t *);
+  int (*ptr___pthread_cond_wait) (pthread_cond_t *, pthread_mutex_t *);
+  int (*ptr___pthread_cond_timedwait) (pthread_cond_t *, pthread_mutex_t *,
+				       const struct timespec *);
+  /* Let's be lazy and not try to emulate glibc 2.0 ABI.  */
+  int (*ptr___pthread_cond_broadcast_2_0) (void /*pthread_cond_2_0_t*/ *);
+  int (*ptr___pthread_cond_destroy_2_0) (void /*pthread_cond_2_0_t*/ *);
+  int (*ptr___pthread_cond_init_2_0) (void /*pthread_cond_2_0_t*/ *,
+				      const pthread_condattr_t *);
+  int (*ptr___pthread_cond_signal_2_0) (void /*pthread_cond_2_0_t*/ *);
+  int (*ptr___pthread_cond_wait_2_0) (void /*pthread_cond_2_0_t*/ *, pthread_mutex_t *);
+  int (*ptr___pthread_cond_timedwait_2_0) (void /*pthread_cond_2_0_t*/ *,
+					   pthread_mutex_t *,
+					   const struct timespec *);
+  int (*ptr_pthread_equal) (pthread_t, pthread_t);
+  void (*ptr___pthread_exit) (void *);
+  int (*ptr_pthread_getschedparam) (pthread_t, int *, struct sched_param *);
+  int (*ptr_pthread_setschedparam) (pthread_t, int,
+				    const struct sched_param *);
+  int (*ptr_pthread_mutex_destroy) (pthread_mutex_t *);
+  int (*ptr_pthread_mutex_init) (pthread_mutex_t *,
+				 const pthread_mutexattr_t *);
+  int (*ptr_pthread_mutex_lock) (pthread_mutex_t *);
+  int (*ptr_pthread_mutex_unlock) (pthread_mutex_t *);
+  pthread_t (*ptr_pthread_self) (void);
+  int (*ptr_pthread_setcancelstate) (int, int *);
+  int (*ptr_pthread_setcanceltype) (int, int *);
+  void (*ptr___pthread_cleanup_upto) (__jmp_buf, char *);
+  int (*ptr___pthread_once) (pthread_once_t *, void (*) (void));
+  int (*ptr___pthread_rwlock_rdlock) (pthread_rwlock_t *);
+  int (*ptr___pthread_rwlock_wrlock) (pthread_rwlock_t *);
+  int (*ptr___pthread_rwlock_unlock) (pthread_rwlock_t *);
+  int (*ptr___pthread_key_create) (pthread_key_t *, void (*) (void *));
+  void *(*ptr___pthread_getspecific) (pthread_key_t);
+  int (*ptr___pthread_setspecific) (pthread_key_t, const void *);
+  void (*ptr__pthread_cleanup_push_defer) (struct _pthread_cleanup_buffer *,
+					   void (*) (void *), void *);
+  void (*ptr__pthread_cleanup_pop_restore) (struct _pthread_cleanup_buffer *,
+					    int);
+#define HAVE_PTR_NTHREADS
+  unsigned int *ptr_nthreads;
+  void (*ptr___pthread_unwind) (__pthread_unwind_buf_t *)
+       __attribute ((noreturn)) __cleanup_fct_attribute;
+  void (*ptr__nptl_deallocate_tsd) (void);
+  /* TODO implement setxid commands */
+  int (*ptr__nptl_setxid) (void /*struct xid_command*/ *);
+  void (*ptr_freeres) (void);
+} const ptr_pthread_functions = {
+	.ptr_pthread_attr_destroy = (void*) error_stub,
+	.ptr___pthread_attr_init_2_0 = (void*) error_stub,
+	.ptr___pthread_attr_init_2_1 = (void*) error_stub,
+	.ptr_pthread_attr_getdetachstate = (void*) error_stub,
+	.ptr_pthread_attr_setdetachstate = (void*) error_stub,
+	.ptr_pthread_attr_getinheritsched = (void*) error_stub,
+	.ptr_pthread_attr_setinheritsched = (void*) error_stub,
+	.ptr_pthread_attr_getschedparam = (void*) error_stub,
+	.ptr_pthread_attr_setschedparam = (void*) error_stub,
+	.ptr_pthread_attr_getschedpolicy = (void*) error_stub,
+	.ptr_pthread_attr_setschedpolicy = (void*) error_stub,
+	.ptr_pthread_attr_getscope = (void*) error_stub,
+	.ptr_pthread_attr_setscope = (void*) error_stub,
+	.ptr_pthread_condattr_destroy = (void*) error_stub,
+	.ptr_pthread_condattr_init = (void*) error_stub,
+	.ptr___pthread_cond_broadcast = (void*) error_stub,
+	.ptr___pthread_cond_destroy = (void*) error_stub,
+	.ptr___pthread_cond_init = (void*) error_stub,
+	.ptr___pthread_cond_signal = (void*) error_stub,
+	.ptr___pthread_cond_wait = (void*) error_stub,
+	.ptr___pthread_cond_timedwait = (void*) error_stub,
+	.ptr___pthread_cond_broadcast_2_0 = (void*) error_stub,
+	.ptr___pthread_cond_destroy_2_0 = (void*) error_stub,
+	.ptr___pthread_cond_init_2_0 = (void*) error_stub,
+	.ptr___pthread_cond_signal_2_0 = (void*) error_stub,
+	.ptr___pthread_cond_wait_2_0 = (void*) error_stub,
+	.ptr___pthread_cond_timedwait_2_0 = (void*) error_stub,
+	.ptr_pthread_equal = (void*) error_stub,
+	.ptr___pthread_exit = (void*) error_stub,
+	.ptr_pthread_getschedparam = (void*) error_stub,
+	.ptr_pthread_setschedparam = (void*) error_stub,
+	.ptr_pthread_mutex_destroy = (void*) error_stub,
+	.ptr_pthread_mutex_init = (void*) error_stub,
+	.ptr_pthread_mutex_lock = (void*) error_stub,
+	.ptr_pthread_mutex_unlock = (void*) error_stub,
+	.ptr_pthread_self = (void*) error_stub,
+	.ptr_pthread_setcancelstate = (void*) error_stub,
+	.ptr_pthread_setcanceltype = (void*) error_stub,
+	.ptr___pthread_cleanup_upto = (void*) error_stub,
+	.ptr___pthread_once = (void*) error_stub,
+	.ptr___pthread_rwlock_rdlock = (void*) error_stub,
+	.ptr___pthread_rwlock_wrlock = (void*) error_stub,
+	.ptr___pthread_rwlock_unlock = (void*) error_stub,
+	.ptr___pthread_key_create = (void*) error_stub,
+	.ptr___pthread_getspecific = (void*) error_stub,
+	.ptr___pthread_setspecific = (void*) error_stub,
+	.ptr__pthread_cleanup_push_defer = (void*) error_stub,
+	.ptr__pthread_cleanup_pop_restore = (void*) error_stub,
+	.ptr_nthreads = &nthreads,
+	.ptr___pthread_unwind = (void*) error_stub,
+	.ptr__nptl_deallocate_tsd = (void*) error_stub,
+	.ptr__nptl_setxid = (void*) error_stub,
+	.ptr_freeres = (void*) error_stub,
+};
+
+#ifdef MA_TLS_MULTIPLE_THREADS_IN_TCB
+extern void __libc_pthread_init (unsigned long int *ptr,
+				 void (*reclaim) (void),
+				 const struct pthread_functions *functions)
+ma_libc_internal_function;
+#else
+extern int *__libc_pthread_init (unsigned long int *ptr,
+				 void (*reclaim) (void),
+				 const struct pthread_functions *functions)
+ma_libc_internal_function;
+#endif
+
 void __pthread_initialize_minimal(void)
 {
+#ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
+/* Pointer to the libc variable set to a nonzero value if more than one thread runs or ran. */
+	int *libc_multiple_threads_ptr;
+#endif
+
 #ifdef STATIC_BUILD
 	/* Unlike in the dynamically linked case the dynamic linker has not
 	   taken care of initializing the TLS data structures.  */
@@ -144,6 +305,20 @@ void __pthread_initialize_minimal(void)
 	__asm __volatile ("");
 #endif
 
+#ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
+	libc_multiple_threads_ptr =
+#endif
+	/* Like NPTL does
+	 * - give glibc a pointer to our generation counter.
+	 * - we do not give a reclaiming function, to let pthread_ptfork.c do
+	 *   everything.
+	 * - provide pthread_* functions
+	 */
+	__libc_pthread_init(&ma_fork_generation, NULL, &ptr_pthread_functions);
+
+#ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
+	*libc_multiple_threads_ptr = 1;
+#endif
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }
 

@@ -26,12 +26,7 @@
 #include <errno.h>
 
 #if defined(MA__PROVIDE_TLS)
-#if defined(X86_ARCH)
-#  define libc_internal_function __attribute__((regparm (3), stdcall))
-#else
-#  define libc_internal_function
-#endif
-extern void *_dl_allocate_tls_init(void *) libc_internal_function;
+extern void *_dl_allocate_tls_init(void *) ma_libc_internal_function;
 #endif
 
 /** Canceled state value of internal marcel_t->canceled field.

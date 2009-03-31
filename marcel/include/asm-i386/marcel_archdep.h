@@ -96,6 +96,8 @@ typedef struct {
   /* LPT binary compatibility end */
 } lpt_tcb_t;
 
+#define MA_TLS_MULTIPLE_THREADS_IN_TCB
+
 // Variante II
 #define marcel_tcb(new_task) \
   ((void*)(&(new_task)->tls[MA_TLS_AREA_SIZE - sizeof(lpt_tcb_t)]))

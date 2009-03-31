@@ -185,8 +185,8 @@
 /* On some platforms we can make internal function calls (i.e., calls of
    functions not exported) a bit faster by using a different calling
    convention.  */
-#ifndef internal_function
-# define internal_function	/* empty */
+#ifndef ma_libc_internal_function
+# define ma_libc_internal_function	/* empty */
 #endif
 
 /* Prepare for the case that `__builtin_expect' is not available.  */

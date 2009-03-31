@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/* Child process increments this after fork.  */
+unsigned long int ma_fork_generation = 0;
+
 extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
 
 DEF_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child),

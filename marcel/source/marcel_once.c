@@ -23,7 +23,6 @@
 // XXX Vince, à corriger. On n'a pas lpt_mutex sur toutes les archis pour l'instant, donc j'ai mis un pmarcel_mutex pour que ça marchouille.
 static marcel_mutex_t once_masterlock = MARCEL_MUTEX_INITIALIZER;
 static marcel_cond_t once_finished = MARCEL_COND_INITIALIZER;
-static int fork_generation = 0;	/* Child process increments this after fork. */
 
 enum { NEVER = 0, IN_PROGRESS = 1, DONE = 2 };
 
@@ -62,7 +61,7 @@ int marcel_once(marcel_once_t * once_control,
 	
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
-	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != fork_generation)
+	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != ma_fork_generation)
 		*once_control = NEVER;
 	
 	/* If init_routine is being called from another routine, wait until
@@ -72,7 +71,7 @@ int marcel_once(marcel_once_t * once_control,
 	}
 	/* Here *once_control is stable and either NEVER or DONE. */
 	if (*once_control == NEVER) {
-		*once_control = IN_PROGRESS | fork_generation;
+		*once_control = IN_PROGRESS | ma_fork_generation;
 		marcel_mutex_unlock(&once_masterlock);
 #ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_push(marcel_once_cancelhandler, once_control);
@@ -115,7 +114,7 @@ int pmarcel_once(pmarcel_once_t * once_control,
 	
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
-	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != fork_generation)
+	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != ma_fork_generation)
 		*once_control = NEVER;
 	
 	/* If init_routine is being called from another routine, wait until
@@ -125,7 +124,7 @@ int pmarcel_once(pmarcel_once_t * once_control,
 	}
 	/* Here *once_control is stable and either NEVER or DONE. */
 	if (*once_control == NEVER) {
-		*once_control = IN_PROGRESS | fork_generation;
+		*once_control = IN_PROGRESS | ma_fork_generation;
 		marcel_mutex_unlock(&once_masterlock);
 #ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_push(marcel_once_cancelhandler, once_control);

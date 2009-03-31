@@ -76,7 +76,7 @@ __TBX_BEGIN_DECLS
 /*#  include "marcel_pthread.h"*/
 #endif
 
-#ifdef MA__LIBPTHREAD
+#if defined(MA__LIBPTHREAD) || defined(MA__PROVIDE_TLS)
 #  include "pthread_libc-symbols.h"
 #endif
 

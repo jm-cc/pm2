@@ -22,3 +22,6 @@ extern void ma_check_lpt_sizes(void);
 int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset);
 int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_t *cpuset);
 #endif
+
+#section marcel_variables
+extern unsigned long int ma_fork_generation;

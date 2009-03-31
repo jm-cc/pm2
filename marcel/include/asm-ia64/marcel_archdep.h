@@ -110,6 +110,8 @@ typedef struct {
 
 extern unsigned long __main_thread_tls_base;
 
+#define MA_TLS_MULTIPLE_THREADS_IN_TCB
+
 /* Variante I */
 #define marcel_tcb(new_task) \
   ((void*)(&(new_task)->tls))

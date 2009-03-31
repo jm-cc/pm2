@@ -46,14 +46,9 @@ ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
 ma_allocator_t *marcel_thread_seed_allocator;
 
 #if defined(MA__PROVIDE_TLS)
-#if defined(X86_ARCH)
-#  define libc_internal_function __attribute__((regparm (3), stdcall))
-#else
-#  define libc_internal_function
-#endif
-extern void *_dl_allocate_tls(void *) libc_internal_function;
-extern void _dl_deallocate_tls(void *, int) libc_internal_function;
-extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp) libc_internal_function;
+extern void *_dl_allocate_tls(void *) ma_libc_internal_function;
+extern void _dl_deallocate_tls(void *, int) ma_libc_internal_function;
+extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp) ma_libc_internal_function;
 extern void _rtld_global_ro;
 ma_allocator_t *marcel_tls_slot_allocator;
 #if defined(X86_64_ARCH) || defined(IA64_ARCH)

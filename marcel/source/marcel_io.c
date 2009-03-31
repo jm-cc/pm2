@@ -450,7 +450,9 @@ static void __marcel_init marcel_io_init(void)
 {
 	LOG_IN();
 	marcel_ev_server_set_poll_settings(&unix_io_server.server, 
-					   MARCEL_EV_POLL_AT_TIMER_SIG,
+					   MARCEL_EV_POLL_AT_TIMER_SIG 
+	//				   | MARCEL_EV_POLL_AT_YIELD
+					   | MARCEL_EV_POLL_AT_IDLE,
 					   1);
 #ifndef MARCEL_DO_NOT_GROUP_TCP
 	marcel_ev_server_add_callback(&unix_io_server.server,

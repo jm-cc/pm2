@@ -412,7 +412,7 @@ while [ $_l -le $_level ]; do
 
                     is_test_selected=1
                     if [ -n "$PM2_TESTS" ] ; then
-                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep $_tst_name)" == "" ] ; then
+                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep -e '^'$_tst_name'$')" == "" ] ; then
                             is_test_selected=0
                         fi
                     fi
@@ -488,7 +488,7 @@ while [ $_l -le $_level ]; do
 
                     is_test_selected=1
                     if [ -n "$PM2_TESTS" ] ; then
-                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep $_tst_name)" == "" ] ; then
+                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep -e '^'$_tst_name'$')" == "" ] ; then
                             is_test_selected=0
                         fi
                     fi

@@ -519,8 +519,6 @@ void marcel_init_data(int *argc, char *argv[])
 	marcel_parse_cmdline_lastly(argc, argv, tbx_false);
 
 #ifdef PADICO_ENABLE_PUKABI
-	puk_abi_init();
-
 	/* Tell PukABI how to protect libc calls.  */
 	puk_abi_set_spinlock_handlers((void (*) (void)) marcel_extlib_protect,
 																(void (*) (void)) marcel_extlib_unprotect,

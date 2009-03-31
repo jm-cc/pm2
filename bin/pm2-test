@@ -56,6 +56,9 @@ pm2_test_error() # msg
 pm2_test_warning() # msg
 {
     echo $* >&2
+    if [ "$_abort_on_error" == "yes" ] ; then
+	exit 1
+    fi
 }
 
 pm2_test_warning_file() # msg file
@@ -64,6 +67,9 @@ pm2_test_warning_file() # msg file
     cat $2
     echo "----------------------------------------" >&2
     echo $1
+    if [ "$_abort_on_error" == "yes" ] ; then
+	exit 1
+    fi
 }
 
 pm2_test_usage() # exit_code
@@ -80,6 +86,7 @@ Usage: $_PM2_TEST_PROGNAME { option } { modules }
     -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
     --coverage     : perform coverage testing (requires GCC, GNU gcov, and Lcov)
     --tests XXX    : specify the tests to be run (by default all the tests of the specified level)
+    --abort-on-error : abort when the compilation or the execution of a test fails
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -242,6 +249,7 @@ _init_level=1 # first level to test
 _level=2 # normal
 _output_redirect=""
 _coverage="no"
+_abort_on_error="no"
 jobs=""
 _perform_test="yes"
 
@@ -272,6 +280,9 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--coverage)
 	    _coverage=yes
+	    shift;;
+	--abort-on-error)
+	    _abort_on_error=yes
 	    shift;;
 	-L1)
 	    _level=1

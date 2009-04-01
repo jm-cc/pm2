@@ -263,7 +263,6 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 			nm_gate_t p_gate, nm_tag_t tag,
 			nm_sr_transfer_type_t sending_type,
 			const void *data, uint32_t len,
-			tbx_bool_t is_completed,
 			nm_sr_request_t *p_request,
 			void*ref)
 {
@@ -329,7 +328,7 @@ int nm_sr_rsend(struct nm_core *p_core,
   
   NM_SO_SR_LOG_IN();
   
-  ret = nm_sr_isend_generic(p_core, p_gate, tag, tt, data, len, tbx_false, p_request, NULL);
+  ret = nm_sr_isend_generic(p_core, p_gate, tag, tt, data, len, p_request, NULL);
 
   if (ret != NM_ESUCCESS)
     goto exit;

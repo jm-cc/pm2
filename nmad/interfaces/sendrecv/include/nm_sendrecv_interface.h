@@ -168,7 +168,6 @@ extern int nm_sr_isend_generic(struct nm_core *p_core,
 			       nm_gate_t p_gate, nm_tag_t tag,
 			       nm_sr_transfer_type_t sending_type,
 			       const void *data, uint32_t len,
-			       tbx_bool_t is_completed,
 			       nm_sr_request_t *p_request,
 			       void*ref);
 
@@ -186,7 +185,7 @@ static inline int nm_sr_isend(nm_core_t p_core,
 			      const void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request, NULL);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, NULL);
 }
 
 static inline int nm_sr_isend_with_ref(nm_core_t p_core,
@@ -195,7 +194,7 @@ static inline int nm_sr_isend_with_ref(nm_core_t p_core,
 				       nm_sr_request_t *p_request,
 				       void*ref)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, tbx_false, p_request, ref);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, ref);
 }
 
 /** Post a ready send request. When seading a large packet requiring a
@@ -228,7 +227,7 @@ static inline int nm_sr_isend_iov(nm_core_t p_core,
 				  const struct iovec *iov, int nb_entries,
 				  nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, tbx_false, p_request, NULL);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, p_request, NULL);
 
 }
 
@@ -238,7 +237,7 @@ static inline int nm_sr_isend_iov_with_ref(nm_core_t p_core,
 					   nm_sr_request_t *p_request,
 					   void*ref)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, tbx_false, p_request, ref);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, p_request, ref);
 
 }
 
@@ -255,7 +254,7 @@ static inline int nm_sr_isend_datatype(nm_core_t p_core,
 				       const struct CCSI_Segment *segp,
 				       nm_sr_request_t *p_request)
 {
-  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, tbx_false, p_request, NULL);
+  return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_datatype_transfer, segp, 0, p_request, NULL);
 
 }
 

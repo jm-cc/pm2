@@ -92,6 +92,8 @@ enum {
 
 static
 marcel_memory_manager_t *g_memory_manager = NULL;
+static
+int memory_manager_sigsegv_handler_set = 0;
 
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
@@ -296,8 +298,10 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
 
   MAMI_LOG_IN();
 
-  act.sa_handler = SIG_DFL;
-  sigaction(SIGSEGV, &act, NULL);
+  if (memory_manager_sigsegv_handler_set) {
+    act.sa_handler = SIG_DFL;
+    sigaction(SIGSEGV, &act, NULL);
+  }
 
   if (memory_manager->root) {
     marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
@@ -936,9 +940,10 @@ int ma_memory_locate(marcel_memory_manager_t *memory_manager, marcel_memory_tree
 
 static
 int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void **pageaddrs, int nbpages, int *node, int **nodes) {
-  int statuses[nbpages];
+  int *statuses;
   int i, err=0;
 
+  statuses = tmalloc(nbpages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, nbpages, NULL, statuses, 0);
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_mami("Could not locate pages\n");
@@ -964,6 +969,7 @@ int ma_memory_get_pages_location(marcel_memory_manager_t *memory_manager, void *
       }
     }
   }
+  tfree(statuses);
   return err;
 }
 
@@ -1178,7 +1184,7 @@ int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long 
 }
 
 int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
-  int pagenodes[pages];
+  int *pagenodes;
   int i;
   int err=0;
 
@@ -1190,6 +1196,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
     return err;
   }
 
+  pagenodes = tmalloc(pages * sizeof(int));
   err = ma_memory_move_pages(pageaddrs, pages, NULL, pagenodes, 0);
   if (err < 0) perror("(ma_memory_check_pages_location) move_pages");
   else {
@@ -1200,6 +1207,7 @@ int ma_memory_check_pages_location(void **pageaddrs, int pages, int node) {
       }
     }
   }
+  tfree(pagenodes);
   MAMI_ILOG_OUT();
   return err;
 }
@@ -1416,7 +1424,6 @@ int marcel_memory_select_node(marcel_memory_manager_t *memory_manager,
 static
 int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
                             marcel_memory_data_t *data, int dest) {
-  int i, *dests, *status;
   int err=0;
 
   MAMI_ILOG_IN();
@@ -1433,16 +1440,13 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
       err = ma_memory_mbind(data->startaddress, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
     }
     else {
+      int i, dests[data->nbpages], status[data->nbpages];
+
       mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
-      dests = tmalloc(data->nbpages * sizeof(int));
-      status = tmalloc(data->nbpages * sizeof(int));
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
 
       if (data->node != MULTIPLE_LOCATION_NODE) {
         err = ma_memory_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
-#ifdef PM2DEBUG
-        ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
-#endif /* PM2DEBUG */
       }
       else {
         void *pageaddrs_to_be_moved[data->nbpages];
@@ -1467,12 +1471,6 @@ int ma_memory_migrate_pages(marcel_memory_manager_t *memory_manager,
         if (nbpages_to_be_moved) {
           err = ma_memory_move_pages(pageaddrs_to_be_moved, nbpages_to_be_moved, dests, status, MPOL_MF_MOVE);
         }
-#ifdef PM2DEBUG
-        if (nbpages_to_be_moved == data->nbpages) {
-          ma_memory_check_pages_location(data->pageaddrs, data->nbpages, dest);
-        }
-#endif /* PM2DEBUG */
-
       }
     }
 
@@ -1531,6 +1529,7 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (err < 0) {
     // The address is not managed by MaMI. Reset the segv handler to its default action, to cause a segfault
     struct sigaction act;
+    act.sa_flags = SA_SIGINFO;
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
@@ -1556,7 +1555,6 @@ void ma_memory_segv_handler(int sig, siginfo_t *info, void *_context) {
 
 int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager, void *buffer) {
   int err=0;
-  static int handler_set = 0;
   marcel_memory_data_t *data = NULL;
   void *aligned_buffer;
 
@@ -1585,9 +1583,9 @@ int marcel_memory_migrate_on_next_touch(marcel_memory_manager_t *memory_manager,
     }
     else {
       mdebug_mami("... using user-space migration\n");
-      if (!handler_set) {
+      if (!memory_manager_sigsegv_handler_set) {
         struct sigaction act;
-        handler_set = 1;
+        memory_manager_sigsegv_handler_set = 1;
         act.sa_flags = SA_SIGINFO;
         act.sa_sigaction = ma_memory_segv_handler;
         err = sigaction(SIGSEGV, &act, NULL);
@@ -1925,9 +1923,12 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
   err = ma_memory_locate(memory_manager, memory_manager->root, buffer, 1, &data);
 
   if (err >= 0) {
-    void *pageaddrs[data->nbpages];
-    int dests[data->nbpages], status[data->nbpages];
+    void **pageaddrs;
+    int *dests, *status;
 
+    dests = tmalloc(data->nbpages * sizeof(int));
+    status = tmalloc(data->nbpages * sizeof(int));
+    pageaddrs = tmalloc(data->nbpages * sizeof(void *));
     nbpages=0;
     // Find out which pages have to be moved
     for(i=0 ; i<data->nbpages ; i++) {
@@ -1957,6 +1958,9 @@ int marcel_memory_distribute(marcel_memory_manager_t *memory_manager,
         }
       }
     }
+    tfree(dests);
+    tfree(status);
+    tfree(pageaddrs);
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
@@ -1977,9 +1981,13 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
 
   if (err >= 0) {
     if (data->nodes) {
-      int i, dests[data->nbpages], status[data->nbpages];
+      int i, *dests, *status;
       int nbpages = 0;
-      void *pageaddrs[data->nbpages];
+      void **pageaddrs;
+
+      dests = tmalloc(data->nbpages * sizeof(int));
+      status = tmalloc(data->nbpages * sizeof(int));
+      pageaddrs  = tmalloc(data->nbpages * sizeof(void *));
 
       for(i=0 ; i<data->nbpages ; i++) {
         dests[i] = node;
@@ -1995,6 +2003,10 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
         tfree(data->nodes);
         data->nodes = NULL;
       }
+
+      tfree(dests);
+      tfree(status);
+      tfree(pageaddrs);
     }
   }
 

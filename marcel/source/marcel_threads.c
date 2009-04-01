@@ -174,11 +174,14 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 #ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_lock_init(&t->siglock);
 	marcel_sigemptyset(&t->sigpending);
-	//t->siginfo
-	t->curmask = MARCEL_SELF->curmask;
+
+	if (t != MARCEL_SELF) {
+		t->curmask = MARCEL_SELF->curmask;
 #ifdef __GLIBC__
-	t->kcurmask = MARCEL_SELF->kcurmask;
+		t->kcurmask = MARCEL_SELF->kcurmask;
 #endif
+	}
+
 	//t->interrupted
 	t->delivering_sig = 0;
 	t->restart_deliver_sig = 0;

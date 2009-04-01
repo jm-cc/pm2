@@ -141,9 +141,6 @@ struct nm_pkt_wrap
   uint8_t			*len_v;
   
   
-  /** IO vector internal flags. */
-  uint32_t		 iov_priv_flags;
-  
   /** IO vector size. */
   uint32_t		 v_size;
   

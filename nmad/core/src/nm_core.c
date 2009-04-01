@@ -117,7 +117,6 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   post_rq->data = NULL;
   post_rq->len_v = NULL;
 
-  post_rq->iov_priv_flags  = 0;
   post_rq->v_size          = 0;
   post_rq->v_first         = 0;
   post_rq->v_nb            = 0;
@@ -341,7 +340,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
       int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
       if (node != PM2_NUIOA_ANY_NODE) {
 	/* if this driver wants something */
-	DISP("marking nuioa node %d as preferred for driver %d", node, id);
+	DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, id);
 
 	if (nuioa_with_latency) {
 	  /* choosing by latency: take this network if it's the first one
@@ -389,8 +388,8 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
     nodemask_zero(&mask);
     nodemask_set(&mask, preferred_node);
     numa_bind(&mask);
-    DISP("binding to nuioa node %d", preferred_node);
 #endif
+    DISP("# nmad: binding to nuioa node %d", preferred_node);
   }
 #endif /* PM2_NUIOA */
 

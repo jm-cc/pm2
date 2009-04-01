@@ -138,7 +138,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->data = NULL;
   p_pw->len_v = NULL;
 
-  p_pw->iov_priv_flags  = 0;
   p_pw->v_size          = 0;
   p_pw->v_first         = 0;
   p_pw->v_nb            = 0;

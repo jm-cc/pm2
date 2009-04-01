@@ -1000,7 +1000,9 @@ DEF_PTHREAD(void, cleanup_push,(struct _pthread_cleanup_buffer *__buffer,
 /* _defer and _restore version have to handle cancellation. See NPTL's
  * cleanup_defer_compat.c */
 #endif
+#ifdef MA__LIBPTHREAD
 strong_alias(_pthread_cleanup_push, _pthread_cleanup_push_defer);
+#endif
 
 DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 				tbx_bool_t execute), (__buffer, execute),
@@ -1018,7 +1020,9 @@ DEF_MARCEL_POSIX(void, cleanup_pop,(struct _marcel_cleanup_buffer *__buffer,
 })
 DEF_PTHREAD(void, cleanup_pop,(struct _pthread_cleanup_buffer *__buffer,
 				     int __execute), (__buffer, __execute))
+#ifdef MA__LIBPTHREAD
 strong_alias(_pthread_cleanup_pop, _pthread_cleanup_pop_restore);
+#endif
 
 #undef NAME_PREFIX
 #define NAME_PREFIX

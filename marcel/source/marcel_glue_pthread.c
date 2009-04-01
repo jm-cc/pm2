@@ -287,6 +287,7 @@ ma_libc_internal_function;
 void __pthread_initialize_minimal(void)
 {
 #if 0
+	// See 20 lines below.
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 /* Pointer to the libc variable set to a nonzero value if more than one thread runs or ran. */
 	int *libc_multiple_threads_ptr;
@@ -306,6 +307,9 @@ void __pthread_initialize_minimal(void)
 	__asm __volatile ("");
 #endif
 
+#  ifdef PM2_DEV
+#    warning TODO: fix our pthread_functions and then enable them
+#  endif
 #if 0
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 	libc_multiple_threads_ptr =
@@ -321,10 +325,6 @@ void __pthread_initialize_minimal(void)
 #ifndef MA_TLS_MULTIPLE_THREADS_IN_TCB
 	*libc_multiple_threads_ptr = 1;
 #endif
-#else
-#  ifdef PM2_DEV
-#    warning TODO: fix our pthread_functions and then enable them
-#  endif
 #endif
 	mdebug("Initialisation mini libpthread marcel-based\n");
 }

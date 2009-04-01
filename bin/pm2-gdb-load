@@ -26,6 +26,13 @@ file=/tmp/pm2debug.$num
 prog=$1
 shift
 
+core=""
+if [ "$1" == "-core" ] ; then
+    core=$2
+    shift
+    shift
+fi
+
 echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
 args=""
 while [ $# -gt 0 ] ; do
@@ -60,7 +67,7 @@ fi
 
 [ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
 
-${LEO_XTERM} -title $title -e gdb -x $file $prog
+${LEO_XTERM} -title $title -e gdb -x $file $prog $core
 
 rm -f $file
 

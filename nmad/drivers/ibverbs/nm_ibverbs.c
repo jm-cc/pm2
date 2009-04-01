@@ -601,6 +601,8 @@ static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
   if (numa_available() < 0) {
     return PM2_NUIOA_ANY_NODE;
   }
+
+#if 0 /* FIXME when libnuma will have an API to do bitmask -> integer or char* */
   
   sprintf(file, "/sys/class/infiniband/%s/device/local_cpus", ibv_get_device_name(ib_dev));
   sysfile = fopen(file, "r");
@@ -619,6 +621,7 @@ static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
       if (strtoul(line, NULL, 16) == mask)
 	return i;
     }
+#endif /* 0 */
 #endif /* LINUX_SYS */
   
   return PM2_NUIOA_ANY_NODE;

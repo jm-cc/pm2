@@ -992,7 +992,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
   if (nbpages * memory_manager->normalpagesize != size) nbpages++;
 
   // Set the page addresses
-  pageaddrs = malloc(nbpages * sizeof(void *));
+  pageaddrs = tmalloc(nbpages * sizeof(void *));
   for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*memory_manager->normalpagesize;
 
   // Find out where the pages are
@@ -1004,7 +1004,7 @@ void ma_memory_register(marcel_memory_manager_t *memory_manager,
                            protection, with_huge_pages, mami_allocated, data);
 
   // Free temporary array
-  free(pageaddrs);
+  tfree(pageaddrs);
 }
 
 int marcel_memory_register(marcel_memory_manager_t *memory_manager,

@@ -48,7 +48,7 @@ extern void *_dl_allocate_tls_init(void *) ma_libc_internal_function;
 /****************************************************************
  *                Initialisation des structures
  */
-static __inline__ void init_marcel_thread(marcel_t __restrict t, 
+static __inline__ void init_marcel_thread(marcel_t t, 
 					  __const marcel_attr_t * __restrict attr)
 {
 	LOG_IN();
@@ -175,7 +175,12 @@ static __inline__ void init_marcel_thread(marcel_t __restrict t,
 	ma_spin_lock_init(&t->siglock);
 	marcel_sigemptyset(&t->sigpending);
 
-	if (t != MARCEL_SELF) {
+	if (t == __main_thread) {
+		marcel_sigemptyset(&t->curmask);
+#ifdef __GLIBC__
+		sigemptyset(&t->kcurmask);
+#endif
+	} else {
 		t->curmask = MARCEL_SELF->curmask;
 #ifdef __GLIBC__
 		t->kcurmask = MARCEL_SELF->kcurmask;

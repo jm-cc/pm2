@@ -299,6 +299,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   MAMI_LOG_IN();
 
   if (memory_manager_sigsegv_handler_set) {
+    act.sa_flags = SA_SIGINFO;
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }

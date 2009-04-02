@@ -1147,7 +1147,12 @@ int ma_memory_mbind(void *start, unsigned long len, int mode,
                     const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
   int err = 0;
 
-  if (ma_use_synthetic_topology) return err;
+  MAMI_ILOG_IN();
+  if (ma_use_synthetic_topology) {
+      MAMI_ILOG_OUT();
+      return err;
+  }
+  mdebug_mami("binding on mask %ld\n", nmask);
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
   err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #else
@@ -1179,8 +1184,15 @@ int ma_memory_move_pages(void **pageaddrs, int pages, int *nodes, int *status, i
 
 int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode) {
   int err=0;
+
+  MAMI_ILOG_IN();
+  if (ma_use_synthetic_topology) {
+    MAMI_ILOG_OUT();
+    return err;
+  }
   err = syscall(__NR_set_mempolicy, mode, nmask, maxnode);
   if (err < 0) perror("(ma_memory_set_mempolicy) set_mempolicy");
+  MAMI_ILOG_OUT();
   return err;
 }
 

@@ -127,6 +127,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   piom_req_init(&post_rq->inst);
   post_rq->inst.server=&p_drv->server;
   post_rq->which=NONE;
+  post_rq->inst.priority=PIOM_REQ_PRIORITY_LOW;
   post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
   piom_req_submit(&p_drv->server, &post_rq->inst);
 

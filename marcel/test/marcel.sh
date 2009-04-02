@@ -47,6 +47,21 @@ create_test_flavor() {
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
+	test_marcel_pukabi)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
+		--modules="\"marcel tbx init puk\""			\
+		--marcel="smp"						\
+		--marcel="spinlock" --marcel="standard_main"		\
+		--marcel="pmarcel"					\
+		--marcel="enable_cleanup" --marcel="enable_deviation"	\
+		--marcel="enable_signals"				\
+		--marcel="dont_use_pthread"				\
+		--marcel="bug_on" --puk="enable_pukabi"			\
+		--puk="disable_fd_virtualization"			\
+		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		--all="gdb" $_output_redirect
+	    ;;
 	test_marcel_pthread_abi)
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\

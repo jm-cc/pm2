@@ -322,7 +322,7 @@ nm_tcp_query		(struct nm_drv *p_drv,
 	p_tcp_drv->nb_gates = 0;
 
         /* driver capabilities encoding					*/
-        p_tcp_drv->caps.has_trk_rq_stream			= 1;
+        p_tcp_drv->caps.has_trk_rq_dgram		= 1;
         p_tcp_drv->caps.has_selective_receive		= 1;
         p_tcp_drv->caps.has_concurrent_selective_receive	= 1;
 #ifdef PIOM_BLOCKING_CALLS
@@ -381,7 +381,7 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
     {
       memset(&p_tcp_drv->trks_array[i], 0, sizeof(struct nm_tcp_trk));
       /* track capabilities encoding */
-      trk_caps[i].rq_type	= nm_trk_rq_stream;
+      trk_caps[i].rq_type	= nm_trk_rq_dgram;
       trk_caps[i].iov_type	= nm_trk_iov_both_assym;
       trk_caps[i].max_pending_send_request	= 1;
       trk_caps[i].max_pending_recv_request	= 1;

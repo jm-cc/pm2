@@ -22,11 +22,6 @@ struct nm_drv_cap {
 
         /* track request types						*/
 
-
-        /** Request boundaries not preserved.
-         */
-        uint8_t has_trk_rq_stream;
-
         /** Request boundaries preserved.
          */
         uint8_t has_trk_rq_dgram;
@@ -35,16 +30,6 @@ struct nm_drv_cap {
          * with rendez-vous.
          */
         uint8_t has_trk_rq_rdv;
-
-        /** Headerless zero copy remote put track
-         * with rendez-vous.
-         */
-        uint8_t has_trk_rq_put;
-
-        /** Headerless zero copy remote get track
-         * with rendez-vous.
-         */
-        uint8_t has_trk_rq_get;
 
 	/** Preferred length for switching to rendez-vous.
 	 */

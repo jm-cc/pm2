@@ -22,30 +22,17 @@ enum nm_trk_request_type {
 
         /** Uninitialized.
          */
-        nm_trk_rq_unspecified	=  0,
-
-        /** Request boundaries not preserved.
-         */
-        nm_trk_rq_stream	=  1,
+        nm_trk_rq_unspecified,
 
         /** Request boundaries preserved.
          */
-        nm_trk_rq_dgram		=  2,
+        nm_trk_rq_dgram,
 
         /** Headerless zero copy send/receive track
          * with rendez-vous.
          */
-        nm_trk_rq_rdv		=  3,
+        nm_trk_rq_rdv,
 
-        /** Headerless zero copy remote put track
-         * with rendez-vous.
-         */
-        nm_trk_rq_put		=  4,
-
-        /** Headerless zero copy remote get track
-         * with rendez-vous.
-         */
-        nm_trk_rq_get		=  5,
 };
 
 /** IOVEC capabilities supported on the track.

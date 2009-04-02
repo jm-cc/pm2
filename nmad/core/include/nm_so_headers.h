@@ -33,7 +33,9 @@
 #define NM_SO_PROTO_DATA_UNUSED 0
 #define NM_SO_PROTO_CTRL_UNUSED 1
 
-struct nm_so_global_header {
+/** Global header for every packet sent on the network */
+struct nm_so_global_header
+{
   uint32_t len;
 };
 
@@ -80,7 +82,8 @@ struct nm_so_ctrl_ack_chunk_header {
   uint32_t chunk_len;
 };
 
-// The following definition is useful for handling a uniform ctrl header size
+/** a unified control header type
+ */
 union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header r;
   struct nm_so_ctrl_ack_header a;

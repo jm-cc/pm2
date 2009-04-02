@@ -209,8 +209,8 @@ fi
 if [ -n "$valgrind" ]; then
 
     VALGRIND_OPTIONS=${PM2_VALGRIND_OPTIONS:--v -q --show-reachable=yes --leak-check=yes --db-attach=no}
-    log "Executing: valgrind $VALGRIND_OPTIONS"
-    valgrind $VALGRIND_OPTIONS $prog $*
+    log "Executing: valgrind $VALGRIND_OPTIONS $prog ${@:+"$@"}"
+    valgrind $VALGRIND_OPTIONS $prog ${@:+"$@"}
 
     rm -f $debug_file
 

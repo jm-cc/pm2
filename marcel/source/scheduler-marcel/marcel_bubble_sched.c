@@ -59,6 +59,14 @@ void __marcel_init __ma_bubble_sched_start(void) {
 	marcel_mutex_unlock(&current_sched_mutex);
 }
 
+marcel_bubble_sched_t *marcel_bubble_current_sched (void) {
+	marcel_bubble_sched_t *sched;
+	marcel_mutex_lock(&current_sched_mutex);
+	sched = current_sched;
+	marcel_mutex_unlock(&current_sched_mutex);
+	return sched;
+}
+
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched) {
 	marcel_bubble_sched_t *old;
 	marcel_mutex_lock(&current_sched_mutex);

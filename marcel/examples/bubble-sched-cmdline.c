@@ -16,6 +16,7 @@
 /* Test the `marcel_lookup_bubble_scheduler ()' function.  */
 
 #include <marcel.h>
+#include <stdlib.h>
 
 int
 main (int argc, char *argv[])
@@ -37,7 +38,9 @@ main (int argc, char *argv[])
 
   prev_sched = marcel_bubble_change_sched (&marcel_bubble_null_sched);
 
-  ret = (prev_sched->klass == &marcel_bubble_cache_sched_class) ? 0 : 1;
+  ret = (marcel_bubble_current_sched () == &marcel_bubble_null_sched
+	 && marcel_bubble_sched_class (prev_sched) == &marcel_bubble_cache_sched_class)
+    ? EXIT_SUCCESS : EXIT_FAILURE;
 
   marcel_free (prev_sched);
 

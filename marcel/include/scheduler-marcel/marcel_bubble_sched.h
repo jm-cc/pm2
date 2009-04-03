@@ -151,6 +151,8 @@ marcel_bubble_t *marcel_bubble_holding_entity(marcel_entity_t *entity);
 #define marcel_bubble_holding_bubble(b) marcel_bubble_holding_entity(&(b)->as_entity)
 #define marcel_bubble_holding_task(t) marcel_bubble_holding_entity(&(t)->as_entity)
 
+/** \brief Return the current bubble scheduler.  */
+marcel_bubble_sched_t *marcel_bubble_current_sched (void);
 /** \brief Change the current bubble scheduler to \e new_sched, return the
  * previous one.  */
 marcel_bubble_sched_t *marcel_bubble_change_sched(marcel_bubble_sched_t *new_sched);
@@ -229,6 +231,13 @@ marcel_bubble_sched_instantiate(const marcel_bubble_sched_class_t *klass,
  * found.  */
 extern const marcel_bubble_sched_t *
 marcel_lookup_bubble_scheduler(const char *name);
+
+/**
+ * \brief Return the class of \param scheduler.  */
+static __tbx_inline__ const marcel_bubble_sched_class_t *
+marcel_bubble_sched_class(const marcel_bubble_sched_t *scheduler) {
+	return scheduler->klass;
+}
 
 
 #section structures

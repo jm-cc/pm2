@@ -25,6 +25,7 @@ registering_flavors() {
 	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main \
 	--marcel=enable_keys --marcel=enable_migration \
+	--marcel=enable_postexit --marcel=enable_userspace --marcel=enable_atexit --marcel=enable_deviation \
 	--mad3=tcp
 
     register_flavor marcel-mono \

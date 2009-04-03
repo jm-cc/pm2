@@ -89,6 +89,8 @@ implicit-join-asleep-pthread: LDFLAGS :=
 
 pthread-abi-fork-ldflags := -lpthread -ldl
 pthread-abi-fork: LDFLAGS :=
+pthread-abi-fork+exec-ldflags := -lpthread -ldl
+pthread-abi-fork+exec: LDFLAGS :=
 
 
 hello: CC=g++

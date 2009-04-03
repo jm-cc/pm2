@@ -90,7 +90,7 @@ END(ma_ia64_spinlock_contention_pre3_4)
 #else
 
 GLOBAL_ENTRY(ma_ia64_spinlock_contention)
-	.hidden ma_ia64_spinlock_contention
+//	.hidden ma_ia64_spinlock_contention
 	.prologue
 	.altrp b6
 	.body

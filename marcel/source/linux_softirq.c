@@ -148,7 +148,8 @@ void TBX_EXTERN ma_local_bh_enable_no_resched(void) {
 	__ma_local_bh_enable();
 	if (tbx_likely(!ma_spare_lwp())) {
 		if (tbx_unlikely(!ma_in_interrupt() &&
-					ma_local_softirq_pending()))
+				(ma_local_softirq_pending() ||
+				 (ma_vpnum(MA_LWP_SELF) != -1 && ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF))))))
 			ma_do_softirq();
 	}
 }
@@ -376,7 +377,7 @@ static int ksoftirqd(void * foo TBX_UNUSED) {
 	ma_preempt_disable();
 
 	while (!ma_kthread_should_stop()) {
-		if (!ma_local_softirq_pending() && !ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF))) {
+		if (!ma_local_softirq_pending() && (ma_vpnum(MA_LWP_SELF) == -1 || !ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)))) {
 			ma_preempt_enable();
 			if (tbx_unlikely(ma_in_atomic())) {
 				pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
@@ -389,7 +390,7 @@ static int ksoftirqd(void * foo TBX_UNUSED) {
 
 		__ma_set_current_state(MA_TASK_RUNNING);
 
-		while (ma_local_softirq_pending()) {
+		while (ma_local_softirq_pending() || (ma_vpnum(MA_LWP_SELF) != -1 && !ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)))) {
 			/* Preempt disable stops cpu going offline.
 			   If already offline, we'll be on wrong CPU:
 			   don't process */

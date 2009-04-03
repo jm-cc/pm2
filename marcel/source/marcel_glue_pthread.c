@@ -211,7 +211,7 @@ static struct pthread_functions
 #define HAVE_PTR_NTHREADS
   unsigned int *ptr_nthreads;
   void (*ptr___pthread_unwind) (__pthread_unwind_buf_t *)
-       __attribute ((noreturn)) __cleanup_fct_attribute;
+       __attribute ((noreturn)) __ma_cleanup_fct_attribute;
   void (*ptr__nptl_deallocate_tsd) (void);
   /* TODO implement setxid commands */
   int (*ptr__nptl_setxid) (void /*struct xid_command*/ *);
@@ -543,15 +543,15 @@ int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_
 
    FIXME: Implement them.  */
 
-void __cleanup_fct_attribute
+void __ma_cleanup_fct_attribute
 __pthread_register_cancel(__pthread_unwind_buf_t *buf)
 { MA_BUG(); }
 
-void __cleanup_fct_attribute
+void __ma_cleanup_fct_attribute
 __pthread_unregister_cancel(__pthread_unwind_buf_t *buf)
 { MA_BUG(); }
 
-void __cleanup_fct_attribute
+void __ma_cleanup_fct_attribute
 __pthread_unwind_next(__pthread_unwind_buf_t *buf)
 { MA_BUG(); }
 

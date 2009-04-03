@@ -163,3 +163,6 @@ typedef union
   char __size[__SIZEOF_LPT_BARRIERATTR_T];
   int __align;
 } lpt_barrierattr_t;
+
+#section marcel_macros
+#define __ma_cleanup_fct_attribute

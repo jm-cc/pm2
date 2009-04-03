@@ -13,20 +13,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-/* This file comes from the nptl library */
+/* This file should be taken from the nptl library's
+ * sysdeps/unix/sysv/linux/<yourarch>/bits/pthreadtypes.h, see i386 for
+ * instance */
 
 #section macros
 
-#define __SIZEOF_LPT_ATTR_T 36
-#define __SIZEOF_LPT_MUTEX_T 24
-#define __SIZEOF_LPT_MUTEXATTR_T 4
-#define __SIZEOF_LPT_COND_T 48
-#define __SIZEOF_LPT_COND_COMPAT_T 12
-#define __SIZEOF_LPT_CONDATTR_T 4
-#define __SIZEOF_LPT_RWLOCK_T 32
-#define __SIZEOF_LPT_RWLOCKATTR_T 8
-#define __SIZEOF_LPT_BARRIER_T 20
-#define __SIZEOF_LPT_BARRIERATTR_T 4
+#define __SIZEOF_LPT_ATTR_T 
+#define __SIZEOF_LPT_MUTEX_T 
+#define __SIZEOF_LPT_MUTEXATTR_T 
+#define __SIZEOF_LPT_COND_T 
+#define __SIZEOF_LPT_COND_COMPAT_T 
+#define __SIZEOF_LPT_CONDATTR_T 
+#define __SIZEOF_LPT_RWLOCK_T 
+#define __SIZEOF_LPT_RWLOCKATTR_T 
+#define __SIZEOF_LPT_BARRIER_T 
+#define __SIZEOF_LPT_BARRIERATTR_T 
 
 #section types
 /* Thread identifiers.  The structure of the attribute type is not
@@ -155,4 +157,7 @@ typedef union {
 } lpt_barrierattr_t;
 
 #section marcel_macros
+/* Currently only used on i386
 #define __ma_cleanup_fct_attribute __attribute ((regparm (1)))
+*/
+#define __ma_cleanup_fct_attribute

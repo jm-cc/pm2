@@ -169,3 +169,5 @@ typedef union
 } lpt_barrierattr_t;
 
 
+#section marcel_macros
+#define __ma_cleanup_fct_attribute

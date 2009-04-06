@@ -156,6 +156,24 @@ typedef union {
   int __align;
 } lpt_barrierattr_t;
 
+
+/* Check that the size of our data structures is compatible with those of
+   NPTL.  */
+static __inline__ void
+lpt_check_abi_compatibility (void)
+{
+  char test[sizeof (lpt_attr_t) > __SIZEOF_LPT_ATTR_T
+	    || sizeof (lpt_mutex_t) > __SIZEOF_LPT_MUTEX_T
+	    || sizeof (lpt_mutexattr_t) > __SIZEOF_LPT_MUTEXATTR_T
+	    || sizeof (lpt_cond_t) > __SIZEOF_LPT_COND_T
+	    || sizeof (lpt_condattr_t) > __SIZEOF_LPT_CONDATTR_T
+	    || sizeof (lpt_rwlock_t) > __SIZEOF_LPT_RWLOCK_T
+	    || sizeof (lpt_rwlockattr_t) > __SIZEOF_LPT_RWLOCKATTR_T
+	    || sizeof (lpt_barrier_t) > __SIZEOF_LPT_BARRIER_T
+	    || sizeof (lpt_barrierattr_t) > __SIZEOF_LPT_BARRIERATTR_T
+	    ? -1 : 1] __attribute__ ((__unused__));
+}
+
 #section marcel_macros
 /* Currently only used on i386
 #define __ma_cleanup_fct_attribute __attribute ((regparm (1)))

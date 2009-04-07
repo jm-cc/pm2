@@ -79,30 +79,24 @@ pthread-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 pthread-cpp-initializer-ldflags := -lstdc++
 pthread-cpp-initializer-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
 
-# Link against the system libpthread.
-pthread-abi-simple-ldflags := -lpthread -ldl
-pthread-abi-simple: LDFLAGS :=
-keys-pthread-ldflags := -lpthread -ldl
-keys-pthread: LDFLAGS :=
-implicit-join-asleep-pthread-ldflags := -lpthread -ldl
-implicit-join-asleep-pthread: LDFLAGS :=
+# Programs that test Marcel's ABI-compatible libpthread and must be
+# linked against the system libpthread.
+pthread-abi-programs :=						\
+  pthread-abi-simple keys-pthread implicit-join-asleep-pthread	\
+  pthread-abi-fork pthread-abi-fork+exec			\
+  pthread-abi-mutex1 pthread-abi-mutex2 pthread-abi-mutex3	\
+  pthread-abi-cond1 pthread-abi-cond2
 
-pthread-abi-fork-ldflags := -lpthread -ldl
-pthread-abi-fork: LDFLAGS :=
-pthread-abi-fork+exec-ldflags := -lpthread -ldl
-pthread-abi-fork+exec: LDFLAGS :=
+# make-pthread-abi-rules PROGRAM
+#
+# Make rules to have PROGRAM linked against the system libpthread.
+define make-pthread-abi-rules
+$(1)-ldflags  := -lpthread -ldl
+$(1): LDFLAGS :=
+endef
 
-pthread-abi-mutex1-ldflags := -lpthread -ldl
-pthread-abi-mutex1: LDFLAGS :=
-pthread-abi-mutex2-ldflags := -lpthread -ldl
-pthread-abi-mutex2: LDFLAGS :=
-pthread-abi-mutex3-ldflags := -lpthread -ldl
-pthread-abi-mutex3: LDFLAGS :=
-pthread-abi-cond1-ldflags := -lpthread -ldl
-pthread-abi-cond1: LDFLAGS :=
-pthread-abi-cond2-ldflags := -lpthread -ldl
-pthread-abi-cond2: LDFLAGS :=
-
+$(foreach program,$(pthread-abi-programs),		\
+   $(eval $(call make-pthread-abi-rules,$(program))))
 
 
 hello: CC=g++

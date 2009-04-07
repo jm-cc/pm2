@@ -25,7 +25,7 @@ if [ -z "$PM2_ARCH" -o -z "$PM2_ASM" ]; then
 	"SunOS sun"*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
 	*" sparc"*)          PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;
 	*" i86pc")           PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
-	*" "i[3456]86*)      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
+	*i[3456]86*)         PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
 	*" x86_64")          PM2_ARCH=X86_64_ARCH ; PM2_ASM=x86_64 ;;
 	"BSD/OS "i[3456]86)  PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;
 	"FreeBSD i386")      PM2_ARCH=X86_ARCH ; PM2_ASM=i386 ;;

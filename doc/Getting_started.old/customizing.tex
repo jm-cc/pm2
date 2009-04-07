@@ -431,7 +431,11 @@ context switch so as to get correct \texttt{PC} and \texttt{SP},
 \texttt{continue}-like commands automatically switch back to the
 current running thread\footnote{In theory, the PM2 process should
 then continue properly, but it seems gdb does not yet let this work
-correctly}.
+correctly}. Sometimes gdb has troubles with switching stacks, it emits
+a \texttt{Couldn't write registers: Input/output error.} error. In such
+case, one can use the three \textt{__set-ctx1}, \textt{__set-ctx2}, and
+\textt{__set-ctx3} commands one after the other, repeating them as many
+times as necessary until they all worked at least once.
 
 The user should be aware that some of the names of PM2 routine are in
 fact on-line definitions in internal header files. Thus, one has to

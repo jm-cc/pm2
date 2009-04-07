@@ -1,5 +1,17 @@
-define __set-ctx
+define __set-ctx1
   set $fp=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[1]
+end
+
+define __set-ctx2
   set $sp=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[0]
+end
+
+define __set-ctx3
   set $pc=((marcel_t)$arg0)->ctx_yield[0].__jmpbuf[2]
+end
+
+define __set-ctx
+  __set-ctx1 $arg0
+  __set-ctx2 $arg0
+  __set-ctx3 $arg0
 end

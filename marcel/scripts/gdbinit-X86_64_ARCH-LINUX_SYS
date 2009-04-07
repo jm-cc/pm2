@@ -1,5 +1,15 @@
-define __set-ctx
+define __set-ctx1
   set $rbp=((marcel_t)$arg0)->ctx_yield[0].jbuf[1]
+end
+define __set-ctx2
   set $rsp=((marcel_t)$arg0)->ctx_yield[0].jbuf[6]
+end
+define __set-ctx3
   set $rip=((marcel_t)$arg0)->ctx_yield[0].jbuf[7]
+end
+
+define __set-ctx
+  __set-ctx1 $arg0
+  __set-ctx2 $arg0
+  __set-ctx3 $arg0
 end

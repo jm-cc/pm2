@@ -1,21 +1,19 @@
-For cross-compiling, you need to override PM2_ARCH, PM2_ASM, PM2_CC (and even
+For cross-compiling, you need to override PM2_AR, PM2_CC, and PM2_HT (and even
 PM2_SYS if needed):
 
 For instance, for compiling x86_64 binaries on x86:
 
 PM2_AR=ar
 PM2_CC="gcc -m64"
-PM2_ARCH=X86_64_ARCH
-PM2_ASM=x86_64
-export PM2_CC PM2_ARCH PM2_ASM PM2_AR
+PM2_HT=x86_64
+export PM2_CC PM2_HT PM2_AR
 
 And for compiling PPC64 binaries on AIX:
 
 PM2_AR="ar -X64"
 PM2_CC="gcc -maix64 -mcpu=powerpc64"
-PM2_ARCH=PPC64_ARCH
-PM2_ASM=ppc64
-export PM2_CC PM2_ARCH PM2_ASM PM2_AR
+PM2_HT=ppc64
+export PM2_CC PM2_HT PM2_AR
 
 Note: after setting PM2_CC, run make clean to clear the generated Makefiles that
 record the PM2_CC value

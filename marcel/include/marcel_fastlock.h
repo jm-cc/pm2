@@ -40,3 +40,20 @@ struct _lpt_fastlock
   long int __spinlock;  /* Used by compare_and_swap emulation. Also,
 			  adaptive SMP lock stores spin count here. */
 };
+
+/* Return true if LOCK is marked as taken.  */
+#define MA_LPT_FASTLOCK_TAKEN(_lock)		\
+  ((_lock)->__status != 0)
+
+/* If TAKEN is true, mark LOCK as taken, otherwise mark it as free.  */
+#define MA_LPT_FASTLOCK_SET_STATUS(_lock, _taken)			\
+  ((_lock)->__status = ((_lock)->__status & ~1L) | ((_taken) ? 1 : 0))
+
+/* Return the head of LOCK's wait list.  */
+#define MA_LPT_FASTLOCK_WAIT_LIST(_lock)	\
+  ((blockcell *) ((_lock)->__status & ~1L))
+
+/* Set LOCK's wait list head to CELL, a `blockcell' pointer, and change
+   LOCK's status to "taken".  */
+#define MA_LPT_FASTLOCK_SET_WAIT_LIST(_lock, _cell)	\
+  ((_lock)->__status = 1L | ((long) (_cell)))

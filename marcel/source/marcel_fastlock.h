@@ -92,10 +92,10 @@ __tbx_inline__ static int __lpt_register_spinlocked(struct _lpt_fastlock * lock,
   c->next = NULL;
   c->blocked = tbx_true;
   c->task = (self)?:marcel_self();
-  first=(blockcell*)(lock->__status & ~1);
+  first = MA_LPT_FASTLOCK_WAIT_LIST(lock);
   if(first == NULL) {
     /* On est le premier à attendre */
-    lock->__status = 1 | ((unsigned long)c);
+    MA_LPT_FASTLOCK_SET_WAIT_LIST(lock, c);
     first=c;
   } else {
     first->last->next=c;
@@ -148,25 +148,22 @@ __tbx_inline__ static int __lpt_unregister_spinlocked(struct _lpt_fastlock * loc
 {
   blockcell *first, *prev;
 
-  //LOG_IN();
   mdebug("unregistering %p (cell %p) in lock %p\n", c->task, c, lock);
-  first=NULL;
-  first=(blockcell*)(lock->__status & ~1);
+  first = MA_LPT_FASTLOCK_WAIT_LIST(lock);
   if (first == NULL) {
-    /* Il n'y a rien */
+    /* Nobody here.  */
   } else if (first==c) {
-    /* On est en premier */
-    lock->__status= (unsigned long)first->next|1;
+    /* C is the head of LOCK's wait list.  */
+    MA_LPT_FASTLOCK_SET_WAIT_LIST(lock, first->next);
     if (first->next) {
       first->next->last=first->last;
     }
   } else {
-    /* On doit être plus loin */
+    /* C must be somewhere down the list.  */
     prev=first;
     while (prev->next != c) {
       prev = prev->next;
       if (! prev) {
-	//LOG_OUT();
 	return 1;
       }
     }
@@ -175,7 +172,7 @@ __tbx_inline__ static int __lpt_unregister_spinlocked(struct _lpt_fastlock * loc
       first->last=prev;
     }
   }
-  //LOG_OUT();
+
   return 0;
 }
 
@@ -212,7 +209,7 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 	int ret=0;
 
 	//LOG_IN();
-	if(lock->__status != 0) { /* busy */
+	if (MA_LPT_FASTLOCK_TAKEN(lock)) {
 		blockcell c;
 
 		ret=__lpt_register_spinlocked(lock, self, &c);
@@ -224,9 +221,8 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 			lpt_lock_acquire(&lock->__spinlock));
 		lpt_lock_release(&lock->__spinlock);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
-		
 	} else { /* was free */
-		lock->__status = 1;
+		MA_LPT_FASTLOCK_SET_STATUS(lock, 1);
 		lpt_lock_release(&lock->__spinlock);
 	}
 	mdebug("getting lock %p in task %p\n", lock, self);
@@ -267,10 +263,9 @@ __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
   int ret;
   blockcell *first;
 
-  //LOG_IN();
-  first=(blockcell*)(lock->__status & ~1);
+  first = MA_LPT_FASTLOCK_WAIT_LIST(lock);
   if(first != 0) { /* waiting threads */
-    lock->__status= (unsigned long)first->next|1;
+    MA_LPT_FASTLOCK_SET_WAIT_LIST(lock, first->next);
     if (first->next) {
       first->next->last=first->last;
     }
@@ -282,11 +277,10 @@ __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
     ret=1;
   } else {
     mdebug("releasing lock %p in task %p\n", lock, marcel_self());
-    lock->__status = 0; /* free */
+    MA_LPT_FASTLOCK_SET_STATUS(lock, 0); /* free */
     ret=0;
   }
 
-  //LOG_OUT();
   return ret;
 }
 
@@ -346,20 +340,21 @@ __tbx_inline__ static int __pmarcel_trylock(struct _marcel_fastlock * lock)
 
 __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
 {
-  //LOG_IN();
+  int taken;
 
   lpt_lock_acquire(&lock->__spinlock);
 
-  if(lock->__status == 0) { /* free */
-    lock->__status = 1;
-    lpt_lock_release(&lock->__spinlock);
-    //LOG_OUT();
-    return 1;
+  if(!MA_LPT_FASTLOCK_TAKEN(lock)) {
+    /* LOCK was free, take it.  */
+    MA_LPT_FASTLOCK_SET_STATUS(lock, 1);
+    taken = 1;
   } else {
-    lpt_lock_release(&lock->__spinlock);
-    //LOG_OUT();
-    return 0;
+    taken = 0;
   }
+
+  lpt_lock_release(&lock->__spinlock);
+
+  return taken;
 }
 
 __tbx_inline__ static int __marcel_unlock(struct _marcel_fastlock * lock)

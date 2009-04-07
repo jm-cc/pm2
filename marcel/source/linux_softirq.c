@@ -98,8 +98,6 @@ asmlinkage TBX_EXTERN void ma_do_softirq(void) {
 	ma_lwp_t lwp = MA_LWP_SELF;
 	unsigned vp = ma_vpnum(lwp);
 
-	MA_BUG_ON(!ma_in_atomic());
-
 	if (ma_in_interrupt())
 		return;
 

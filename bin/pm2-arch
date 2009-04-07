@@ -15,7 +15,11 @@
 # General Public License for more details.
 
 if [ -z "$PM2_ARCH" -o -z "$PM2_ASM" ]; then
-        _hosttype="`uname -sm`"
+        if [ -n "$PM2_HT" ] ; then
+	    _hosttype="$PM2_HT"
+	else
+	    _hosttype="`uname -sm`"
+	fi
 
 	case "$_hosttype" in
 	"SunOS sun"*)        PM2_ARCH=SPARC_ARCH ; PM2_ASM=sparc ;;

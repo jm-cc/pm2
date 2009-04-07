@@ -155,7 +155,7 @@ int lpt_cond_wait (lpt_cond_t * __restrict cond,
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
 	lpt_lock_release(&mutex->__data.__lock.__spinlock);
 	{
-		blockcell c;
+		lpt_blockcell_t c;
 
 		__lpt_register_spinlocked(&cond->__data.__lock,
 		    marcel_self(), &c);
@@ -200,7 +200,7 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
 	lpt_lock_release(&mutex->__data.__lock.__spinlock);
 	{
-		blockcell c;
+		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&cond->__data.__lock,
 		    marcel_self(), &c);
 

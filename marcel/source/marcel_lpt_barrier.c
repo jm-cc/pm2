@@ -109,7 +109,7 @@ int lpt_barrier_destroy (lpt_barrier_t *_b) {
 	LOG_IN();
 	lpt_lock_acquire(&b->lock.__spinlock);
 	while (ma_atomic_read(&b->leftE)) {
-		blockcell c;
+		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
@@ -135,7 +135,7 @@ int lpt_barrier_wait_begin(lpt_barrier_t *_b) {
 	LOG_IN();
 	lpt_lock_acquire(&b->lock.__spinlock);
 	while (ma_atomic_read(&b->leftE)) {
-		blockcell c;
+		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
@@ -156,7 +156,7 @@ int lpt_barrier_wait_end(lpt_barrier_t *_b) {
 	LOG_IN();
 	lpt_lock_acquire(&b->lock.__spinlock);
 	while (!ma_atomic_read(&b->leftE)) {
-		blockcell c;
+		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,

@@ -200,7 +200,7 @@ static int lpt_mutex_blockcell(lpt_mutex_t * mutex,const struct timespec *abstim
         lpt_lock_acquire(&mutex->__data.__lock.__spinlock); 
 
         {
-                blockcell c;
+                lpt_blockcell_t c;
 
                 __lpt_register_spinlocked(&mutex->__data.__lock,
         		          marcel_self(), &c);

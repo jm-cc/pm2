@@ -37,12 +37,15 @@ __tbx_inline__ static int lpt_lock_release(long int *lock)
 #define pmarcel_lock_acquire(lock)		ma_spin_lock(lock)
 #define pmarcel_lock_release(lock)		ma_spin_unlock(lock)
 
-typedef struct blockcell_struct {
+struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
   struct blockcell_struct *last; /* Valide uniquement dans la cellule de tête */
   volatile tbx_bool_t blocked;
-} blockcell;
+};
+
+typedef struct blockcell_struct blockcell;
+typedef struct blockcell_struct lpt_blockcell_t;
 
 __tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)
 {
@@ -86,7 +89,7 @@ __tbx_inline__ static int __marcel_register_spinlocked(struct _marcel_fastlock *
 __tbx_inline__ static int __lpt_register_spinlocked(struct _lpt_fastlock * lock,
 					       marcel_t self, blockcell*c)
 {
-  blockcell *first;
+  lpt_blockcell_t *first;
 
   //LOG_IN();
   c->next = NULL;
@@ -146,7 +149,7 @@ __tbx_inline__ static int __marcel_unregister_spinlocked(struct _marcel_fastlock
 __tbx_inline__ static int __lpt_unregister_spinlocked(struct _lpt_fastlock * lock,
 						 blockcell *c)
 {
-  blockcell *first, *prev;
+  lpt_blockcell_t *first, *prev;
 
   mdebug("unregistering %p (cell %p) in lock %p\n", c->task, c, lock);
   first = MA_LPT_FASTLOCK_WAIT_LIST(lock);
@@ -210,7 +213,7 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 
 	//LOG_IN();
 	if (MA_LPT_FASTLOCK_TAKEN(lock)) {
-		blockcell c;
+		lpt_blockcell_t c;
 
 		ret=__lpt_register_spinlocked(lock, self, &c);
 
@@ -261,7 +264,7 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
 __tbx_inline__ static int __lpt_unlock_spinlocked(struct _lpt_fastlock * lock)
 {
   int ret;
-  blockcell *first;
+  lpt_blockcell_t *first;
 
   first = MA_LPT_FASTLOCK_WAIT_LIST(lock);
   if(first != 0) { /* waiting threads */

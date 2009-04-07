@@ -41,6 +41,17 @@ struct _lpt_fastlock
 			  adaptive SMP lock stores spin count here. */
 };
 
+/* Make sure that the `__status' field of `_lpt_fastlock' is large enough to
+   hold a pointer.  */
+static __inline__ void
+lpt_check_fastlock_type (void)
+{
+  char test[sizeof (long int) < sizeof (void *)
+	    ? -1 : 1]
+    __attribute__ ((__unused__));
+}
+
+
 /* Return true if LOCK is marked as taken.  */
 #define MA_LPT_FASTLOCK_TAKEN(_lock)		\
   ((_lock)->__status != 0)

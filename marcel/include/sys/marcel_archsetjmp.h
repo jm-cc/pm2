@@ -69,9 +69,12 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
   __asm__ __volatile__ (
 #ifdef MA__DEBUG
 		       /* Before blindly jumping, */
-		       /* check validity of EBP */
+#if 0
+		       /* check validity of EBP, not by default as it may crash
+			* with code compiled with -fno-frame-pointer */
 		       "movl 12(%0), %%ebx\n\t"
 		       "movl 0(%%ebx), %%ebx\n\t"
+#endif
 		       /* check validity of RSP */
 		       "movl 16(%0), %%ebx\n\t"
 		       "movl 0(%%ebx), %%ebx\n\t"
@@ -118,9 +121,12 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
   __asm__ __volatile__ (
 #ifdef MA__DEBUG
 		       /* Before blindly jumping, */
-		       /* check validity of RBP */
+#if 0
+		       /* check validity of RBP, not by default as it may crash
+			* with code compiled with -fno-frame-pointer */
 		       "movq 8(%0), %%rbx\n\t"
 		       "movq 0(%%rbx), %%rbx\n\t"
+#endif
 		       /* check validity of RSP */
 		       "movq 48(%0), %%rbx\n\t"
 		       "movq 0(%%rbx), %%rbx\n\t"

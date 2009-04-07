@@ -484,7 +484,7 @@ void ma_update_lwp_blocked_signals(void) {
 }
 
 /* Number of LWPs pending an update of blocked signals.  */
-static ma_atomic_t nr_pending_blocked_signals_updates;
+static ma_atomic_t nr_pending_blocked_signals_updates = MA_ATOMIC_INIT(0);
 static marcel_sem_t blocked_signals_sem = MARCEL_SEM_INITIALIZER(0);;
 
 static void update_lwp_blocked_signals_softirq(struct ma_softirq_action *action) {
@@ -502,9 +502,11 @@ static void update_lwps_blocked_signals(int wait) {
 	ma_smp_mb();
 	int res;
 
+	/* Check that we did not miss anybody last time.  */
 	MA_BUG_ON(ma_atomic_read(&nr_pending_blocked_signals_updates));
 	marcel_sem_getvalue(&blocked_signals_sem,&res);
 	MA_BUG_ON(res);
+
 	/* Make sure no two LWPs run sem_V */
 	ma_atomic_inc(&nr_pending_blocked_signals_updates);
 	ma_for_all_lwp(lwp) {
@@ -517,6 +519,11 @@ static void update_lwps_blocked_signals(int wait) {
 	}
 	if (ma_atomic_dec_return(&nr_pending_blocked_signals_updates))
 		marcel_sem_P(&blocked_signals_sem);
+
+	/* Check that we did not miss anybody.  */
+	MA_BUG_ON(ma_atomic_read(&nr_pending_blocked_signals_updates));
+	marcel_sem_getvalue(&blocked_signals_sem,&res);
+	MA_BUG_ON(res);
 }
 
 /*********************pthread_kill***************************/

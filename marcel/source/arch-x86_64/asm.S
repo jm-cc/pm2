@@ -32,7 +32,7 @@ ma_setjmp:
         movq    %r13, 24(%rdi)
         movq    %r14, 32(%rdi)
         movq    %r15, 40(%rdi)
-	popq	%rdx
+        popq    %rdx
         movq    %rsp, 48(%rdi)
         movq    %rdx, 56(%rdi)
         xorq    %rax, %rax
@@ -51,8 +51,9 @@ __sigsetjmp:
         movq    %r13, 24(%rdi)
         movq    %r14, 32(%rdi)
         movq    %r15, 40(%rdi)
-	movq	(%rsp), %rdx
-        movq    %rsp, 48(%rdi)
+        lea     0x8(%rsp),%rdx
+        movq    %rdx, 48(%rdi)
+        movq    (%rsp), %rdx
         movq    %rdx, 56(%rdi)
 
 #ifdef __PIC__

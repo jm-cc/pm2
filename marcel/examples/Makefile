@@ -92,6 +92,18 @@ pthread-abi-fork: LDFLAGS :=
 pthread-abi-fork+exec-ldflags := -lpthread -ldl
 pthread-abi-fork+exec: LDFLAGS :=
 
+pthread-abi-mutex1-ldflags := -lpthread -ldl
+pthread-abi-mutex1: LDFLAGS :=
+pthread-abi-mutex2-ldflags := -lpthread -ldl
+pthread-abi-mutex2: LDFLAGS :=
+pthread-abi-mutex3-ldflags := -lpthread -ldl
+pthread-abi-mutex3: LDFLAGS :=
+pthread-abi-cond1-ldflags := -lpthread -ldl
+pthread-abi-cond1: LDFLAGS :=
+pthread-abi-cond2-ldflags := -lpthread -ldl
+pthread-abi-cond2: LDFLAGS :=
+
+
 
 hello: CC=g++
 

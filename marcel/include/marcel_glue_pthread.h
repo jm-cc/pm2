@@ -18,7 +18,6 @@
 #include <sched.h>
 
 #ifdef MA__LIBPTHREAD
-extern void ma_check_lpt_sizes(void);
 
 /** Convert an OS cpuset into a Marcel vpset */
 int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset);

@@ -362,20 +362,47 @@ int __pthread_clock_gettime(clockid_t clock_id, struct timespec *tp) {
 
 /********************************************************/
 
-void ma_check_lpt_sizes(void) {
-	MA_BUG_ON(sizeof(pmarcel_sem_t) > sizeof(sem_t));
-	MA_BUG_ON(sizeof(lpt_attr_t) > sizeof(pthread_attr_t));
-	MA_BUG_ON(sizeof(lpt_mutex_t) > sizeof(pthread_mutex_t));
-	MA_BUG_ON(sizeof(lpt_mutexattr_t) > sizeof(pthread_mutexattr_t));
-	MA_BUG_ON(sizeof(lpt_cond_t) > sizeof(pthread_cond_t));
-	MA_BUG_ON(sizeof(lpt_condattr_t) > sizeof(pthread_condattr_t));
-	MA_BUG_ON(sizeof(lpt_key_t) > sizeof(pthread_key_t));
-	MA_BUG_ON(sizeof(lpt_once_t) > sizeof(pthread_once_t));
-	MA_BUG_ON(sizeof(lpt_rwlock_t) > sizeof(pthread_rwlock_t));
-	MA_BUG_ON(sizeof(lpt_rwlockattr_t) > sizeof(pthread_rwlockattr_t));
-	MA_BUG_ON(sizeof(lpt_spinlock_t) > sizeof(pthread_spinlock_t));
-	MA_BUG_ON(sizeof(lpt_barrier_t) > sizeof(pthread_barrier_t));
-	MA_BUG_ON(sizeof(lpt_barrierattr_t) > sizeof(pthread_barrierattr_t));
+static void ma_check_lpt_sizes(void) TBX_UNUSED;
+static void ma_check_lpt_alignment(void) TBX_UNUSED;
+
+/* Check at compile-time whether the `lpt_' types are smaller than or as
+ * large as NPTL's types.  */
+static void ma_check_lpt_sizes(void) {
+	char test[sizeof(pmarcel_sem_t) > sizeof(sem_t)
+		|| sizeof(lpt_attr_t) > sizeof(pthread_attr_t)
+		|| sizeof(lpt_mutex_t) > sizeof(pthread_mutex_t)
+		|| sizeof(lpt_mutexattr_t) > sizeof(pthread_mutexattr_t)
+		|| sizeof(lpt_cond_t) > sizeof(pthread_cond_t)
+		|| sizeof(lpt_condattr_t) > sizeof(pthread_condattr_t)
+		|| sizeof(lpt_key_t) > sizeof(pthread_key_t)
+		|| sizeof(lpt_once_t) > sizeof(pthread_once_t)
+		|| sizeof(lpt_rwlock_t) > sizeof(pthread_rwlock_t)
+		|| sizeof(lpt_rwlockattr_t) > sizeof(pthread_rwlockattr_t)
+		|| sizeof(lpt_spinlock_t) > sizeof(pthread_spinlock_t)
+		|| sizeof(lpt_barrier_t) > sizeof(pthread_barrier_t)
+		|| sizeof(lpt_barrierattr_t) > sizeof(pthread_barrierattr_t)
+		? -1 : 1]
+		TBX_UNUSED;
+}
+
+/* Check at compile-time whether the alignment constraints of the `lpt_'
+ * types are compatible with those of NPTL's types.  */
+static void ma_check_lpt_alignment(void) {
+	char test[__alignof(pmarcel_sem_t) > __alignof(sem_t)
+		|| __alignof(lpt_attr_t) > __alignof(pthread_attr_t)
+		|| __alignof(lpt_mutex_t) > __alignof(pthread_mutex_t)
+		|| __alignof(lpt_mutexattr_t) > __alignof(pthread_mutexattr_t)
+		|| __alignof(lpt_cond_t) > __alignof(pthread_cond_t)
+		|| __alignof(lpt_condattr_t) > __alignof(pthread_condattr_t)
+		|| __alignof(lpt_key_t) > __alignof(pthread_key_t)
+		|| __alignof(lpt_once_t) > __alignof(pthread_once_t)
+		|| __alignof(lpt_rwlock_t) > __alignof(pthread_rwlock_t)
+		|| __alignof(lpt_rwlockattr_t) > __alignof(pthread_rwlockattr_t)
+		|| __alignof(lpt_spinlock_t) > __alignof(pthread_spinlock_t)
+		|| __alignof(lpt_barrier_t) > __alignof(pthread_barrier_t)
+		|| __alignof(lpt_barrierattr_t) > __alignof(pthread_barrierattr_t)
+		? -1 : 1]
+		TBX_UNUSED;
 }
 
 #define cancellable_call_generic(ret, name, invocation, ver, proto, ...) \

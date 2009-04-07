@@ -815,9 +815,6 @@ void marcel_init_section(int sec)
 			profile_init();
 #endif
 			ma_linux_sched_init0();
-#ifdef MA__LIBPTHREAD
-			ma_check_lpt_sizes();
-#endif
 			call_init_function(&ma_init_info_main_thread_init);
 #ifdef MA__LWPS
 			call_init_function(&ma_init_info_initialize_topology);

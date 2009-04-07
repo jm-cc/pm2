@@ -68,10 +68,14 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
 #ifdef MA__DEBUG
+		       /* Before blindly jumping, */
+		       /* check validity of EBP */
 		       "movl 12(%0), %%ebx\n\t"
 		       "movl 0(%%ebx), %%ebx\n\t"
+		       /* check validity of RSP */
 		       "movl 16(%0), %%ebx\n\t"
 		       "movl 0(%%ebx), %%ebx\n\t"
+		       /* check validity of PC */
 		       "movl 20(%0), %%ebx\n\t"
 		       "movl 0(%%ebx), %%ebx\n\t"
 #endif
@@ -113,10 +117,14 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 {
   __asm__ __volatile__ (
 #ifdef MA__DEBUG
+		       /* Before blindly jumping, */
+		       /* check validity of RBP */
 		       "movq 8(%0), %%rbx\n\t"
 		       "movq 0(%%rbx), %%rbx\n\t"
+		       /* check validity of RSP */
 		       "movq 48(%0), %%rbx\n\t"
 		       "movq 0(%%rbx), %%rbx\n\t"
+		       /* check validity of PC */
 		       "movq 56(%0), %%rbx\n\t"
 		       "movq 0(%%rbx), %%rbx\n\t"
 #endif

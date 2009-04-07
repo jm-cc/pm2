@@ -1235,7 +1235,9 @@ DEF_MARCEL_POSIX(void, siglongjmp, (sigjmp_buf env, int val), (env,val),
 	}
 	// TODO: vérifier qu'on longjumpe bien dans le même thread !!
 
-#ifdef X86_ARCH
+#if defined(X86_ARCH) || defined(X86_64_ARCH)
+	/* We define our own sigsetjmp using our own setjmp function, so
+	 * use our own longjmp.  */
 	longjmp(env->__jmpbuf, val);
 #else
 	__libc_longjmp(env, val);

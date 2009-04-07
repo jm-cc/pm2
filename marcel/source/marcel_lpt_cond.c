@@ -140,20 +140,20 @@ int lpt_cond_signal (lpt_cond_t *cond)
 int lpt_cond_broadcast (lpt_cond_t *cond)
 {
 	LOG_IN();
-	lpt_lock_acquire(&cond->__data.__lock.__spinlock);
+	lpt_lock_acquire(&cond->__data.__lock.__status);
 	do { } while (__lpt_unlock_spinlocked(&cond->__data.__lock));
-	lpt_lock_release(&cond->__data.__lock.__spinlock);
+	lpt_lock_release(&cond->__data.__lock.__status);
 	LOG_RETURN(0);
 }
 int lpt_cond_wait (lpt_cond_t * __restrict cond,
 	lpt_mutex_t * __restrict mutex)
 {
 	LOG_IN();
-	lpt_lock_acquire(&mutex->__data.__lock.__spinlock);
-	lpt_lock_acquire(&cond->__data.__lock.__spinlock);
+	lpt_lock_acquire(&mutex->__data.__lock.__status);
+	lpt_lock_acquire(&cond->__data.__lock.__status);
 	mutex->__data.__owner = 0;
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
-	lpt_lock_release(&mutex->__data.__lock.__spinlock);
+	lpt_lock_release(&mutex->__data.__lock.__status);
 	{
 		lpt_blockcell_t c;
 
@@ -163,9 +163,9 @@ int lpt_cond_wait (lpt_cond_t * __restrict cond,
 		mdebug("blocking %p (cell %p) in lpt_cond_wait %p\n",
 		    marcel_self(), &c, cond);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    lpt_lock_release(&cond->__data.__lock.__spinlock),
-		    lpt_lock_acquire(&cond->__data.__lock.__spinlock));
-		lpt_lock_release(&cond->__data.__lock.__spinlock);
+		    lpt_lock_release(&cond->__data.__lock.__status),
+		    lpt_lock_acquire(&cond->__data.__lock.__status));
+		lpt_lock_release(&cond->__data.__lock.__status);
 		mdebug("unblocking %p (cell %p) in lpt_cond_wait %p\n",
 		    marcel_self(), &c, cond);
 	}
@@ -194,11 +194,11 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 	timeout = JIFFIES_FROM_US(((tv.tv_sec * 1e6 + tv.tv_usec) -
 		(now.tv_sec * 1e6 + now.tv_usec)));
 
-	lpt_lock_acquire(&mutex->__data.__lock.__spinlock);
-	lpt_lock_acquire(&cond->__data.__lock.__spinlock);
+	lpt_lock_acquire(&mutex->__data.__lock.__status);
+	lpt_lock_acquire(&cond->__data.__lock.__status);
 	mutex->__data.__owner = 0;
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
-	lpt_lock_release(&mutex->__data.__lock.__spinlock);
+	lpt_lock_release(&mutex->__data.__lock.__status);
 	{
 		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&cond->__data.__lock,
@@ -208,9 +208,9 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 		    marcel_self(), &c, cond);
 		while (c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			lpt_lock_release(&cond->__data.__lock.__spinlock);
+			lpt_lock_release(&cond->__data.__lock.__status);
 			timeout = ma_schedule_timeout(timeout);
-			lpt_lock_acquire(&cond->__data.__lock.__spinlock);
+			lpt_lock_acquire(&cond->__data.__lock.__status);
 		}
 		if (c.blocked) {
 			if (__lpt_unregister_spinlocked(&cond->__data.__lock,
@@ -221,7 +221,7 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 			}
 			ret = ETIMEDOUT;
 		}
-		lpt_lock_release(&cond->__data.__lock.__spinlock);
+		lpt_lock_release(&cond->__data.__lock.__status);
 		mdebug("unblocking %p (cell %p) in lpt_cond_timedwait %p\n",
 		    marcel_self(), &c, cond);
 	}

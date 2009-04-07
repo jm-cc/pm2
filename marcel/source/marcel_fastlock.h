@@ -18,7 +18,7 @@ __tbx_inline__ static int lpt_lock_acquire(long int *lock)
 {
 	ma_preempt_disable();
 #ifdef MA__LWPS
-	ma_bit_spin_lock(1, (unsigned long int*)lock);
+	ma_bit_spin_lock(0, (unsigned long int*)lock);
 #endif
 	return 0;
 }
@@ -26,7 +26,7 @@ __tbx_inline__ static int lpt_lock_acquire(long int *lock)
 __tbx_inline__ static int lpt_lock_release(long int *lock)
 {
 #ifdef MA__LWPS
-	ma_bit_spin_unlock(1, (unsigned long int*)lock);
+	ma_bit_spin_unlock(0, (unsigned long int*)lock);
 #endif
 	ma_preempt_enable();
 	return 0;
@@ -45,8 +45,14 @@ struct blockcell_struct {
 };
 
 typedef struct blockcell_struct blockcell;
-typedef struct blockcell_struct lpt_blockcell_t;
 
+/* `lpt_blockcell_t' objects must be 4-byte aligned.  See `struct
+   _lpt_fastlock' for details.  */
+typedef struct blockcell_struct lpt_blockcell_t
+  __attribute__ ((__aligned__ ((4))));
+
+
+
 __tbx_inline__ static int __marcel_init_lock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
@@ -220,13 +226,13 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
-			lpt_lock_release(&lock->__spinlock),
-			lpt_lock_acquire(&lock->__spinlock));
-		lpt_lock_release(&lock->__spinlock);
+			lpt_lock_release(&lock->__status),
+			lpt_lock_acquire(&lock->__status));
+		lpt_lock_release(&lock->__status);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 	} else { /* was free */
 		MA_LPT_FASTLOCK_SET_STATUS(lock, 1);
-		lpt_lock_release(&lock->__spinlock);
+		lpt_lock_release(&lock->__status);
 	}
 	mdebug("getting lock %p in task %p\n", lock, self);
 	//LOG_OUT();
@@ -310,7 +316,7 @@ __tbx_inline__ static int __lpt_lock(struct _lpt_fastlock * lock,
   int ret;
 
   //LOG_IN();
-  lpt_lock_acquire(&lock->__spinlock);
+  lpt_lock_acquire(&lock->__status);
   ret=__lpt_lock_spinlocked(lock, self);
   //LOG_OUT();
   return ret;
@@ -345,7 +351,7 @@ __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
 {
   int taken;
 
-  lpt_lock_acquire(&lock->__spinlock);
+  lpt_lock_acquire(&lock->__status);
 
   if(!MA_LPT_FASTLOCK_TAKEN(lock)) {
     /* LOCK was free, take it.  */
@@ -355,7 +361,7 @@ __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
     taken = 0;
   }
 
-  lpt_lock_release(&lock->__spinlock);
+  lpt_lock_release(&lock->__status);
 
   return taken;
 }
@@ -381,9 +387,9 @@ __tbx_inline__ static int __lpt_unlock(struct _lpt_fastlock * lock)
   int ret;
 
   //LOG_IN();
-  lpt_lock_acquire(&lock->__spinlock);
+  lpt_lock_acquire(&lock->__status);
   ret=__lpt_unlock_spinlocked(lock);
-  lpt_lock_release(&lock->__spinlock);
+  lpt_lock_release(&lock->__status);
   //LOG_OUT();
   return ret;
 }

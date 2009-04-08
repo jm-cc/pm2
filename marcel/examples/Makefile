@@ -85,7 +85,9 @@ pthread-abi-programs :=						\
   pthread-abi-simple keys-pthread implicit-join-asleep-pthread	\
   pthread-abi-fork pthread-abi-fork+exec			\
   pthread-abi-mutex1 pthread-abi-mutex2 pthread-abi-mutex3	\
-  pthread-abi-cond1 pthread-abi-cond2
+  pthread-abi-cond1 pthread-abi-cond2				\
+  pthread-abi-rwlock1 pthread-abi-rwlock2 pthread-abi-rwlock3	\
+  pthread-abi-rwlock4 pthread-abi-rwlock6 pthread-abi-rwlock7
 
 # make-pthread-abi-rules PROGRAM
 #

@@ -232,4 +232,85 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 #endif
 
 
+
+/* Low-level sort-of condition variables à la `lll_futex_{wait,wake}()'.  */
 
+void __lpt_lock_wait(struct _lpt_fastlock * lock)
+{
+	lpt_blockcell_t c;
+
+	lpt_lock_acquire(&lock->__status);
+	__lpt_register_spinlocked(lock, marcel_self(), &c);
+	lpt_lock_release(&lock->__status);
+
+	while (c.blocked) {
+		ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+		ma_schedule();
+	}
+
+	lpt_lock_acquire(&lock->__status);
+	__lpt_unregister_spinlocked(lock, &c);
+	lpt_lock_release(&lock->__status);
+}
+
+int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout)
+{
+	int result;
+	unsigned long int timeout_jiffies;
+	lpt_blockcell_t c;
+
+	timeout_jiffies = MA_TIMESPEC_TO_JIFFIES(timeout);
+
+	lpt_lock_acquire(&lock->__status);
+	__lpt_register_spinlocked(lock, marcel_self(), &c);
+
+	/* Loop until we're unblocked or time is up.  */
+	while(c.blocked && timeout_jiffies) {
+		lpt_lock_release(&lock->__status);
+		ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+		timeout_jiffies = ma_schedule_timeout(timeout_jiffies + 1);
+		lpt_lock_acquire(&lock->__status);
+	}
+
+	if (c.blocked) {
+		/* Time is up.  */
+		if (__lpt_unregister_spinlocked(lock, &c)) {
+			MA_BUG();
+		}
+		result = ETIMEDOUT;
+	}
+	else result = 0;
+
+	lpt_lock_release(&lock->__status);
+
+	return result;
+}
+
+void __lpt_lock_signal(struct _lpt_fastlock * lock)
+{
+	lpt_blockcell_t *cell;
+
+	lpt_lock_acquire(&lock->__status);
+
+	cell = MA_LPT_FASTLOCK_WAIT_LIST(lock);
+	if (cell != NULL) {
+		cell->blocked = 0;
+		ma_wake_up_thread(cell->task);
+	}
+
+	lpt_lock_release(&lock->__status);
+}
+
+void __lpt_lock_broadcast(struct _lpt_fastlock * lock)
+{
+	lpt_blockcell_t *cell;
+
+	lpt_lock_acquire(&lock->__status);
+
+	for (cell = MA_LPT_FASTLOCK_WAIT_LIST(lock); cell != NULL; cell = cell->next) {
+		cell->blocked = 0;
+		ma_wake_up_thread(cell->task);
+	}
+
+	lpt_lock_release(&lock->__status);
+}

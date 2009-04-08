@@ -460,12 +460,15 @@ while [ $_l -le $_level ]; do
 
 	echo "Compiling flavor \"$d_flavor\"..."
 	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
-	[ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation failed"
 
 	d_progs=`cat $f | tr '\012' ' '`
-	echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
-	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
-	[ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation failed"
+	if [ `cat $file_status` -eq 0 ] ; then
+	    echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
+	    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
+	    [ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation of the applications failed"
+	else
+	    pm2_test_warning "Compilation of the library failed. Applications \"$d_progs\" cannot be compiled"
+	fi
     done
 
     echo "*** Performing level $_l tests ***"

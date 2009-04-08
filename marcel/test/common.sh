@@ -18,6 +18,7 @@ appdir="${PM2_ROOT}/marcel/examples"
 prog="<undefined>"
 script="<undefined>"
 args=""
+ld_preload=""
 hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 EOF

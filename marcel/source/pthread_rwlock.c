@@ -615,6 +615,7 @@ lpt_rwlock_wrlock (rwlock)
 
 /* Aliases.  */
 
+#ifdef MA__LIBPTHREAD
 strong_alias (lpt_rwlockattr_init, pthread_rwlockattr_init)
 strong_alias (lpt_rwlockattr_destroy, pthread_rwlockattr_destroy)
 strong_alias (lpt_rwlockattr_getkind_np, pthread_rwlockattr_getkind_np)
@@ -631,6 +632,7 @@ strong_alias (lpt_rwlock_tryrdlock, pthread_rwlock_tryrdlock)
 strong_alias (lpt_rwlock_trywrlock, pthread_rwlock_trywrlock)
 strong_alias (lpt_rwlock_unlock, pthread_rwlock_unlock)
 strong_alias (lpt_rwlock_wrlock, pthread_rwlock_wrlock)
+#endif
 
 /*
    Local Variables:

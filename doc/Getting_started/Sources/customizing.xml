@@ -519,7 +519,12 @@ context switch so as to get correct <TT>PC</TT> and <TT>SP</TT>,
 <TT>continue</TT>-like commands automatically switch back to the
 current running thread<FOOTNOTE>In theory, the PM2 process should
 then continue properly, but it seems gdb does not yet let this work
-correctly</FOOTNOTE>.
+correctly</FOOTNOTE>. Sometimes gdb has troubles with switching
+stacks, it emits a <TT>Couldn't write registers: Input/output
+  error.</TT> error. In such case, one can use the three
+<TT>__set-ctx1</TT>, <TT>__set-ctx2</TT>, and <TT>__set-ctx3</TT>
+commands one after the other, repeating them as many times as
+necessary until they all worked at least once.
 </P>
 
 <P>

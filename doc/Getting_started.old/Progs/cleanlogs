@@ -1,5 +1,0 @@
-
-for HOST in faure debussy ravel
-do
-	(set -x; rsh $HOST rm /tmp/bouge-pm2log-\*)
-done

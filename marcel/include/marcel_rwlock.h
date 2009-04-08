@@ -50,8 +50,9 @@ typedef struct _marcel_rwlock_t
 } marcel_rwlock_t, pmarcel_rwlock_t;
 
 
-/* Attribute for read-write locks.  */
-typedef struct
+/* Attribute for read-write locks (from glibc's
+ * `sysdeps/unix/sysv/linux/internaltypes.h').  */
+typedef struct marcel_rwlockattr
 {
   int __lockkind;
   int __pshared;

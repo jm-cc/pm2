@@ -110,19 +110,19 @@ typedef union
 {
   struct
   {
-    int __lock;
+    long int __lock;
     unsigned int __nr_readers;
-    unsigned int __readers_wakeup;
-    unsigned int __writer_wakeup;
+    struct _lpt_fastlock __readers_wakeup;
+    struct _lpt_fastlock __writer_wakeup;
     unsigned int __nr_readers_queued;
     unsigned int __nr_writers_queued;
-    int __writer;
-    int __pad1;
-    unsigned long int __pad2;
-    unsigned long int __pad3;
     /* FLAGS must stay at this position in the structure to maintain
        binary compatibility.  */
-    unsigned int __flags;
+    unsigned char __flags;
+    unsigned char __shared;
+    unsigned char __pad1;
+    unsigned char __pad2;
+    marcel_t __writer;
   } __data;
   char __size[__SIZEOF_LPT_RWLOCK_T];
   long int __align;

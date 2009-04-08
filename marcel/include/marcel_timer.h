@@ -81,3 +81,13 @@ static __tbx_inline__ unsigned int preemption_enabled(void)
 
 #section marcel_macros
 #define MA_LWP_RESCHED(lwp) marcel_kthread_kill((lwp)->pid, MARCEL_RESCHED_SIGNAL)
+
+/** \brief Return the number of microseconds corresponding to \param ts, a
+ * `struct timespec' pointer.  */
+#define MA_TIMESPEC_TO_USEC(_ts)								\
+  ((_ts)->tv_sec * 1e6 + (_ts)->tv_nsec / 1e3)
+
+/** \brief Return the number of jiffies corresponding to \param ts, a pointer
+ * to a `struct timespec' denoting a time interval.  */
+#define MA_TIMESPEC_TO_JIFFIES(_ts)							\
+  (JIFFIES_FROM_US (MA_TIMESPEC_TO_USEC (_ts)))

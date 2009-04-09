@@ -71,6 +71,8 @@ static void do_execute_deviate_work(void)
 // préemption désactivée lorsque l'on exécute cette fonction
 void marcel_execute_deviate_work(void)
 {
+	MA_BUG_ON(!ma_in_atomic());
+
 	if (!SELF_GETMEM(not_deviatable)) {
 		ma_spin_lock(&deviate_lock);
 

@@ -210,10 +210,10 @@ extern void ma_process_timeout(unsigned long __data);
 
 #section macros
 #define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
-	while((cond)) { \
+	while((cond) && ((timeout) > 0)) {	\
 		ma_set_current_state(MA_TASK_##STATE); \
 		release; \
-		ma_schedule_timeout(timeout*1000/marcel_gettimeslice()); \
+		(timeout) = ma_schedule_timeout(JIFFIES_FROM_US(timeout)); \
 		get; \
 	}
 

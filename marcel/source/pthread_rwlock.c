@@ -51,6 +51,7 @@ static const struct marcel_rwlockattr default_attr =
   };
 
 
+DEF_PTHREAD (int, rwlockattr_init, (marcel_rwlockattr_t *attr), (attr))
 DEF_MARCEL_POSIX (int, rwlockattr_init, (marcel_rwlockattr_t *attr), (attr),
 {
   attr->__lockkind = MARCEL_RWLOCK_DEFAULT_NP;
@@ -59,6 +60,7 @@ DEF_MARCEL_POSIX (int, rwlockattr_init, (marcel_rwlockattr_t *attr), (attr),
   return 0;
 })
 
+DEF_PTHREAD (int, rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr))
 DEF_MARCEL_POSIX (int, rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr),
 {
   /* Nothing to do.  For now.  */
@@ -66,6 +68,9 @@ DEF_MARCEL_POSIX (int, rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr),
   return 0;
 })
 
+DEF_PTHREAD (int, rwlockattr_getkind_np,
+	     (const marcel_rwlockattr_t *attr, int *pref),
+	     (attr, pref))
 DEF_MARCEL_POSIX (int, rwlockattr_getkind_np,
 		  (const marcel_rwlockattr_t *attr, int *pref),
 		  (attr, pref),
@@ -75,6 +80,9 @@ DEF_MARCEL_POSIX (int, rwlockattr_getkind_np,
   return 0;
 })
 
+DEF_PTHREAD (int, rwlockattr_getpshared,
+	     (const marcel_rwlockattr_t *attr, int *pshared),
+	     (attr, pshared))
 DEF_MARCEL_POSIX (int, rwlockattr_getpshared,
 		  (const marcel_rwlockattr_t *attr, int *pshared),
 		  (attr, pshared),
@@ -84,6 +92,9 @@ DEF_MARCEL_POSIX (int, rwlockattr_getpshared,
   return 0;
 })
 
+DEF_PTHREAD (int, rwlockattr_setkind_np,
+	     (marcel_rwlockattr_t *attr, int pref),
+	     (attr, pref))
 DEF_MARCEL_POSIX (int, rwlockattr_setkind_np,
 		  (marcel_rwlockattr_t *attr, int pref),
 		  (attr, pref),
@@ -101,6 +112,9 @@ DEF_MARCEL_POSIX (int, rwlockattr_setkind_np,
   return 0;
 })
 
+DEF_PTHREAD (int, rwlockattr_setpshared,
+	     (marcel_rwlockattr_t *attr, int pshared),
+	     (attr, pshared))
 DEF_MARCEL_POSIX (int, rwlockattr_setpshared,
 		  (marcel_rwlockattr_t *attr, int pshared),
 		  (attr, pshared),
@@ -124,6 +138,9 @@ DEF_MARCEL_POSIX (int, rwlockattr_setpshared,
   ((rwlock)->__data.__flags == 0)
 
 
+DEF_PTHREAD (int, rwlock_init,
+	     (lpt_rwlock_t *rwlock, const marcel_rwlockattr_t *attr),
+	     (rwlock, attr))
 DEF_MARCEL_POSIX (int, rwlock_init,
 		  (lpt_rwlock_t *rwlock, const marcel_rwlockattr_t *attr),
 		  (rwlock, attr),
@@ -178,6 +195,7 @@ DEF_MARCEL_POSIX (int, rwlock_init,
   return 0;
 })
 
+DEF_PTHREAD (int, rwlock_destroy, (lpt_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_destroy, (lpt_rwlock_t *rwlock), (rwlock),
 {
   /* Nothing to be done.  For now.  */
@@ -185,6 +203,7 @@ DEF_MARCEL_POSIX (int, rwlock_destroy, (lpt_rwlock_t *rwlock), (rwlock),
 })
 
 /* Acquire read lock for RWLOCK.  */
+DEF_PTHREAD (int, rwlock_rdlock, (lpt_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_rdlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = 0;
@@ -248,6 +267,9 @@ DEF_MARCEL_POSIX (int, rwlock_rdlock, (lpt_rwlock_t *rwlock), (rwlock),
 })
 
 /* Try to acquire read lock for RWLOCK or return after specfied time.  */
+DEF_PTHREAD (int, rwlock_timedrdlock,
+	     (lpt_rwlock_t *rwlock, const struct timespec *abstime),
+	     (rwlock, abstime))
 DEF_MARCEL_POSIX (int, rwlock_timedrdlock,
 		  (lpt_rwlock_t *rwlock, const struct timespec *abstime),
 		  (rwlock, abstime),
@@ -356,6 +378,9 @@ DEF_MARCEL_POSIX (int, rwlock_timedrdlock,
 })
 
 /* Try to acquire write lock for RWLOCK or return after specfied time.	*/
+DEF_PTHREAD (int, rwlock_timedwrlock,
+	     (lpt_rwlock_t *rwlock, const struct timespec *abstime),
+	     (rwlock, abstime))
 DEF_MARCEL_POSIX (int, rwlock_timedwrlock,
 		  (lpt_rwlock_t *rwlock, const struct timespec *abstime),
 		  (rwlock, abstime),
@@ -453,6 +478,7 @@ DEF_MARCEL_POSIX (int, rwlock_timedwrlock,
   return result;
 })
 
+DEF_PTHREAD (int, rwlock_tryrdlock, (lpt_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_tryrdlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = EBUSY;
@@ -477,6 +503,7 @@ DEF_MARCEL_POSIX (int, rwlock_tryrdlock, (lpt_rwlock_t *rwlock), (rwlock),
   return result;
 })
 
+DEF_PTHREAD (int, rwlock_trywrlock, (lpt_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_trywrlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = EBUSY;
@@ -495,6 +522,7 @@ DEF_MARCEL_POSIX (int, rwlock_trywrlock, (lpt_rwlock_t *rwlock), (rwlock),
 })
 
 /* Unlock RWLOCK.  */
+DEF_PTHREAD (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   lpt_lock_acquire (&rwlock->__data.__lock);
@@ -525,6 +553,7 @@ DEF_MARCEL_POSIX (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock),
 
 
 /* Acquire write lock for RWLOCK.  */
+DEF_PTHREAD (int, rwlock_wrlock, (lpt_rwlock_t *rwlock),  (rwlock))
 DEF_MARCEL_POSIX (int, rwlock_wrlock, (lpt_rwlock_t *rwlock),  (rwlock),
 {
   int result = 0;

@@ -118,15 +118,13 @@ typedef union
   struct
   {
     long int __lock;
-    unsigned int __nr_readers;
     struct _lpt_fastlock __readers_wakeup;
     struct _lpt_fastlock __writer_wakeup;
     unsigned int __nr_readers_queued;
     unsigned int __nr_writers_queued;
     marcel_t __writer;
+    unsigned int __nr_readers;
     int __shared;
-    unsigned long int __pad1;
-    unsigned long int __pad2;
     /* FLAGS must stay at this position in the structure to maintain
        binary compatibility with static initializers.  */
     unsigned int __flags;

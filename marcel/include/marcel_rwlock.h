@@ -16,15 +16,16 @@
 
 #section macros
 
-# define MARCEL_RWLOCK_INITIALIZER \
-  { .__rw_lock=MA_MARCEL_FASTLOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
-    .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
-    .__rw_kind=MARCEL_RWLOCK_DEFAULT_NP, .__rw_pshared=MARCEL_PROCESS_PRIVATE }
-# define MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP \
-  { .__rw_lock=MA_MARCEL_FASTLOCK_UNLOCKED, .__rw_readers=0, .__rw_writer=NULL,     \
-    .__rw_read_waiting=NULL, .__rw_write_waiting=NULL,			      \
-    .__rw_kind=MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP, 		      \
-    .__rw_pshared=MARCEL_PROCESS_PRIVATE }
+/** \brief Static initializer for `marcel_rwlock_t' objects.  */
+#define MARCEL_RWLOCK_INITIALIZER				\
+  { { 0, 0,							\
+      MA_LPT_FASTLOCK_UNLOCKED, MA_LPT_FASTLOCK_UNLOCKED,	\
+      0, 0, 0, 0, 0, 0, 0 } }
+
+/* FIXME: `MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP' not provided
+ * yet.  Being architecture-dependent, it's not a good fit for this header
+ * (see Glibc's `nptl/sysdep/pthread/pthread.h').  */
+/* #undef MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP */
 
 enum
 {
@@ -38,17 +39,7 @@ enum
 #depend "marcel_threads.h[types]"
 
 /* Read-write locks.  */
-typedef struct _marcel_rwlock_t
-{
-  struct _marcel_fastlock __rw_lock; /* Lock to guarantee mutual exclusion */
-  int __rw_readers;                   /* Number of readers */
-  p_marcel_task_t __rw_writer;         /* Identity of writer, or NULL if none */
-  p_marcel_task_t __rw_read_waiting;   /* Threads waiting for reading */
-  p_marcel_task_t __rw_write_waiting;  /* Threads waiting for writing */
-  int __rw_kind;                      /* Reader/Writer preference selection */
-  int __rw_pshared;                   /* Shared between processes or not */
-} marcel_rwlock_t, pmarcel_rwlock_t;
-
+typedef lpt_rwlock_t marcel_rwlock_t, pmarcel_rwlock_t;
 
 /* Attribute for read-write locks (from glibc's
  * `sysdeps/unix/sysv/linux/internaltypes.h').  */

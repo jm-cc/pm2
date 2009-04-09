@@ -51,56 +51,43 @@ static const struct marcel_rwlockattr default_attr =
   };
 
 
-int
-lpt_rwlockattr_init (attr)
-     lpt_rwlockattr_t *attr;
+DEF_MARCEL_POSIX (int, rwlockattr_init, (marcel_rwlockattr_t *attr), (attr),
 {
-  struct marcel_rwlockattr *iattr;
-
-  iattr = (struct marcel_rwlockattr *) attr;
-
-  iattr->__lockkind = MARCEL_RWLOCK_DEFAULT_NP;
-  iattr->__pshared = MARCEL_PROCESS_PRIVATE;
+  attr->__lockkind = MARCEL_RWLOCK_DEFAULT_NP;
+  attr->__pshared = MARCEL_PROCESS_PRIVATE;
 
   return 0;
-}
+})
 
-int
-lpt_rwlockattr_destroy (attr)
-     lpt_rwlockattr_t *attr;
+DEF_MARCEL_POSIX (int, rwlockattr_destroy, (marcel_rwlockattr_t *attr), (attr),
 {
   /* Nothing to do.  For now.  */
 
   return 0;
-}
+})
 
-int
-lpt_rwlockattr_getkind_np (attr, pref)
-     const lpt_rwlockattr_t *attr;
-     int *pref;
+DEF_MARCEL_POSIX (int, rwlockattr_getkind_np,
+		  (const marcel_rwlockattr_t *attr, int *pref),
+		  (attr, pref),
 {
   *pref = ((const struct marcel_rwlockattr *) attr)->__lockkind;
 
   return 0;
-}
+})
 
-int
-lpt_rwlockattr_getpshared (attr, pshared)
-     const lpt_rwlockattr_t *attr;
-     int *pshared;
+DEF_MARCEL_POSIX (int, rwlockattr_getpshared,
+		  (const marcel_rwlockattr_t *attr, int *pshared),
+		  (attr, pshared),
 {
   *pshared = ((const struct marcel_rwlockattr *) attr)->__pshared;
 
   return 0;
-}
+})
 
-int
-lpt_rwlockattr_setkind_np (attr, pref)
-     lpt_rwlockattr_t *attr;
-     int pref;
+DEF_MARCEL_POSIX (int, rwlockattr_setkind_np,
+		  (marcel_rwlockattr_t *attr, int pref),
+		  (attr, pref),
 {
-  struct marcel_rwlockattr *iattr;
-
   /* FIXME: Check whether the MARCEL_RWLOCK* constants are equal to NPTL's
      PTHREAD_RWLOCK* constants.  */
 
@@ -109,30 +96,25 @@ lpt_rwlockattr_setkind_np (attr, pref)
       && __builtin_expect  (pref != MARCEL_RWLOCK_PREFER_WRITER_NP, 0))
     return EINVAL;
 
-  iattr = (struct marcel_rwlockattr *) attr;
-
-  iattr->__lockkind = pref;
+  attr->__lockkind = pref;
 
   return 0;
-}
+})
 
-int
-lpt_rwlockattr_setpshared (attr, pshared)
-     lpt_rwlockattr_t *attr;
-     int pshared;
+DEF_MARCEL_POSIX (int, rwlockattr_setpshared,
+		  (marcel_rwlockattr_t *attr, int pshared),
+		  (attr, pshared),
 {
-  struct marcel_rwlockattr *iattr;
-
   if (pshared != MARCEL_PROCESS_SHARED
       && __builtin_expect (pshared != MARCEL_PROCESS_PRIVATE, 0))
     return EINVAL;
 
-  iattr = (struct marcel_rwlockattr *) attr;
+  attr = (struct marcel_rwlockattr *) attr;
 
-  iattr->__pshared = pshared;
+  attr->__pshared = pshared;
 
   return 0;
-}
+})
 
 
 /* RW locks.  */
@@ -142,14 +124,13 @@ lpt_rwlockattr_setpshared (attr, pshared)
   ((rwlock)->__data.__flags == 0)
 
 
-int
-lpt_rwlock_init (rwlock, attr)
-     lpt_rwlock_t *rwlock;
-     const lpt_rwlockattr_t *attr;
+DEF_MARCEL_POSIX (int, rwlock_init,
+		  (lpt_rwlock_t *rwlock, const marcel_rwlockattr_t *attr),
+		  (rwlock, attr),
 {
   const struct marcel_rwlockattr *iattr;
 
-  iattr = ((const struct marcel_rwlockattr *) attr) ?: &default_attr;
+  iattr = attr ?: &default_attr;
 
   rwlock->__data.__lock = 0;
   rwlock->__data.__nr_readers = 0;
@@ -195,20 +176,16 @@ lpt_rwlock_init (rwlock, attr)
   rwlock->__data.__pad2 = 0;
 
   return 0;
-}
+})
 
-int
-lpt_rwlock_destroy (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_destroy, (lpt_rwlock_t *rwlock), (rwlock),
 {
   /* Nothing to be done.  For now.  */
   return 0;
-}
+})
 
 /* Acquire read lock for RWLOCK.  */
-int
-lpt_rwlock_rdlock (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_rdlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = 0;
 
@@ -268,13 +245,12 @@ lpt_rwlock_rdlock (rwlock)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
 /* Try to acquire read lock for RWLOCK or return after specfied time.  */
-int
-lpt_rwlock_timedrdlock (rwlock, abstime)
-     lpt_rwlock_t *rwlock;
-     const struct timespec *abstime;
+DEF_MARCEL_POSIX (int, rwlock_timedrdlock,
+		  (lpt_rwlock_t *rwlock, const struct timespec *abstime),
+		  (rwlock, abstime),
 {
   int result = 0;
 
@@ -377,13 +353,12 @@ lpt_rwlock_timedrdlock (rwlock, abstime)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
 /* Try to acquire write lock for RWLOCK or return after specfied time.	*/
-int
-lpt_rwlock_timedwrlock (rwlock, abstime)
-     lpt_rwlock_t *rwlock;
-     const struct timespec *abstime;
+DEF_MARCEL_POSIX (int, rwlock_timedwrlock,
+		  (lpt_rwlock_t *rwlock, const struct timespec *abstime),
+		  (rwlock, abstime),
 {
   int result = 0;
 
@@ -476,11 +451,9 @@ lpt_rwlock_timedwrlock (rwlock, abstime)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
-int
-lpt_rwlock_tryrdlock (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_tryrdlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = EBUSY;
 
@@ -502,11 +475,9 @@ lpt_rwlock_tryrdlock (rwlock)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
-int
-lpt_rwlock_trywrlock (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_trywrlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   int result = EBUSY;
 
@@ -521,12 +492,10 @@ lpt_rwlock_trywrlock (rwlock)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
 /* Unlock RWLOCK.  */
-int
-lpt_rwlock_unlock (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock),
 {
   lpt_lock_acquire (&rwlock->__data.__lock);
   if (rwlock->__data.__writer)
@@ -552,13 +521,11 @@ lpt_rwlock_unlock (rwlock)
     }
   lpt_lock_release (&rwlock->__data.__lock);
   return 0;
-}
+})
 
 
 /* Acquire write lock for RWLOCK.  */
-int
-lpt_rwlock_wrlock (rwlock)
-     lpt_rwlock_t *rwlock;
+DEF_MARCEL_POSIX (int, rwlock_wrlock, (lpt_rwlock_t *rwlock),  (rwlock),
 {
   int result = 0;
 
@@ -610,29 +577,8 @@ lpt_rwlock_wrlock (rwlock)
   lpt_lock_release (&rwlock->__data.__lock);
 
   return result;
-}
+})
 
-
-/* Aliases.  */
-
-#ifdef MA__LIBPTHREAD
-strong_alias (lpt_rwlockattr_init, pthread_rwlockattr_init)
-strong_alias (lpt_rwlockattr_destroy, pthread_rwlockattr_destroy)
-strong_alias (lpt_rwlockattr_getkind_np, pthread_rwlockattr_getkind_np)
-strong_alias (lpt_rwlockattr_getpshared, pthread_rwlockattr_getpshared)
-strong_alias (lpt_rwlockattr_setkind_np, pthread_rwlockattr_setkind_np)
-strong_alias (lpt_rwlockattr_setpshared, pthread_rwlockattr_setpshared)
-
-strong_alias (lpt_rwlock_init, pthread_rwlock_init)
-strong_alias (lpt_rwlock_destroy, pthread_rwlock_destroy)
-strong_alias (lpt_rwlock_rdlock, pthread_rwlock_rdlock)
-strong_alias (lpt_rwlock_timedrdlock, pthread_rwlock_timedrdlock)
-strong_alias (lpt_rwlock_timedwrlock, pthread_rwlock_timedwrlock)
-strong_alias (lpt_rwlock_tryrdlock, pthread_rwlock_tryrdlock)
-strong_alias (lpt_rwlock_trywrlock, pthread_rwlock_trywrlock)
-strong_alias (lpt_rwlock_unlock, pthread_rwlock_unlock)
-strong_alias (lpt_rwlock_wrlock, pthread_rwlock_wrlock)
-#endif
 
 /*
    Local Variables:

@@ -230,7 +230,7 @@ extern void ma_process_timeout(unsigned long __data);
                 INTERRUPTIBLE, \
                 cond, \
                 release, \
-                { ma_check_work(); get; } )
+                get)
 
 #section functions
 /* ==== explicit preemption ==== */

@@ -22,10 +22,12 @@
 
 #define __SIZEOF_LPT_ATTR_T 56
 #define __SIZEOF_LPT_MUTEX_T 40
+#define __OFFSETOF_LPT_MUTEX_KIND 16
 #define __SIZEOF_LPT_MUTEXATTR_T 4
 #define __SIZEOF_LPT_COND_T 48
 #define __SIZEOF_LPT_CONDATTR_T 4
 #define __SIZEOF_LPT_RWLOCK_T 56
+#define __OFFSETOF_LPT_RWLOCK_FLAGS 48
 #define __SIZEOF_LPT_RWLOCKATTR_T 8
 #define __SIZEOF_LPT_BARRIER_T 32
 #define __SIZEOF_LPT_BARRIERATTR_T 4
@@ -54,7 +56,7 @@ typedef union
     unsigned int __count;
     marcel_t __owner;
     /* KIND must stay at this position in the structure to maintain
-       binary compatibility.  */
+       binary compatibility with static initializers.  */
     int __kind;
     struct _lpt_fastlock __lock;
   } __data;
@@ -112,17 +114,15 @@ typedef union
   {
     long int __lock;
     unsigned int __nr_readers;
+    int __shared;
     struct _lpt_fastlock __readers_wakeup;
     struct _lpt_fastlock __writer_wakeup;
     unsigned int __nr_readers_queued;
     unsigned int __nr_writers_queued;
-    /* FLAGS must stay at this position in the structure to maintain
-       binary compatibility.  */
-    unsigned char __flags;
-    unsigned char __shared;
-    unsigned char __pad1;
-    unsigned char __pad2;
     marcel_t __writer;
+    /* FLAGS must stay at this position in the structure to maintain
+       binary compatibility with static initializers.  */
+    unsigned int __flags;
   } __data;
   char __size[__SIZEOF_LPT_RWLOCK_T];
   long int __align;
@@ -175,10 +175,12 @@ lpt_check_abi_compatibility (void)
 {
   char test[sizeof (lpt_attr_t) > __SIZEOF_LPT_ATTR_T
 	    || sizeof (lpt_mutex_t) > __SIZEOF_LPT_MUTEX_T
+	    || tbx_offset_of(lpt_mutex_t,__data.__kind) != __OFFSETOF_LPT_MUTEX_KIND
 	    || sizeof (lpt_mutexattr_t) > __SIZEOF_LPT_MUTEXATTR_T
 	    || sizeof (lpt_cond_t) > __SIZEOF_LPT_COND_T
 	    || sizeof (lpt_condattr_t) > __SIZEOF_LPT_CONDATTR_T
 	    || sizeof (lpt_rwlock_t) > __SIZEOF_LPT_RWLOCK_T
+	    || tbx_offset_of(lpt_rwlock_t,__data.__flags) != __OFFSETOF_LPT_RWLOCK_FLAGS
 	    || sizeof (lpt_rwlockattr_t) > __SIZEOF_LPT_RWLOCKATTR_T
 	    || sizeof (lpt_barrier_t) > __SIZEOF_LPT_BARRIER_T
 	    || sizeof (lpt_barrierattr_t) > __SIZEOF_LPT_BARRIERATTR_T

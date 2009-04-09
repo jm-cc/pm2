@@ -189,8 +189,13 @@ DEF_MARCEL_POSIX (int, rwlock_init,
 #endif
 #endif
 
+#if 0
+  /* There is no strict need to initialize them, and we actually need the extra
+   * room on some architectures to cope with marcel_t and _lpt_fastlock being
+   * 64bits.  */
   rwlock->__data.__pad1 = 0;
   rwlock->__data.__pad2 = 0;
+#endif
 
   return 0;
 })

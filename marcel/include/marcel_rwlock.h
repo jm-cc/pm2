@@ -18,9 +18,10 @@
 
 /** \brief Static initializer for `marcel_rwlock_t' objects.  */
 #define MARCEL_RWLOCK_INITIALIZER				\
-  { { 0, 0,							\
-      MA_LPT_FASTLOCK_UNLOCKED, MA_LPT_FASTLOCK_UNLOCKED,	\
-      0, 0, 0, 0, 0, 0, 0 } }
+  {.__data = { \
+    .__readers_wakeup=MA_LPT_FASTLOCK_UNLOCKED, \
+    .__writer_wakeup=MA_LPT_FASTLOCK_UNLOCKED, \
+  }}
 
 /* FIXME: `MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP' not provided
  * yet.  Being architecture-dependent, it's not a good fit for this header

@@ -21,7 +21,7 @@
 #define MARCEL_MUTEX_INITIALIZER \
   {.__data = {.__lock=MA_MARCEL_FASTLOCK_UNLOCKED}}
 #define MARCEL_RECURSIVEMUTEX_INITIALIZER \
-  {.__data = {.__lock=MA_MARCEL_FASTLOCK_UNLOCKED,.owner=NULL,.__count=0}}
+  {.__data = {.__lock=MA_MARCEL_FASTLOCK_UNLOCKED}}
 
 /* pour pthread_mutexattr_setprotocol */
 #define PMARCEL_PRIO_NONE 0

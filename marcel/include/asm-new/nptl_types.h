@@ -21,11 +21,13 @@
 
 #define __SIZEOF_LPT_ATTR_T 
 #define __SIZEOF_LPT_MUTEX_T 
+#define __OFFSETOF_LPT_MUTEX_KIND 
 #define __SIZEOF_LPT_MUTEXATTR_T 
 #define __SIZEOF_LPT_COND_T 
 #define __SIZEOF_LPT_COND_COMPAT_T 
 #define __SIZEOF_LPT_CONDATTR_T 
 #define __SIZEOF_LPT_RWLOCK_T 
+#define __OFFSETOF_LPT_RWLOCK_FLAGS 
 #define __SIZEOF_LPT_RWLOCKATTR_T 
 #define __SIZEOF_LPT_BARRIER_T 
 #define __SIZEOF_LPT_BARRIERATTR_T 
@@ -54,7 +56,7 @@ typedef union
     unsigned int __count;
     marcel_t __owner;
     /* KIND must stay at this position in the structure to maintain
-       binary compatibility.  */
+       binary compatibility with static initializers.  */
     int __kind;
     struct _lpt_fastlock __lock;
   } __data;
@@ -117,7 +119,7 @@ typedef union
     unsigned int __nr_readers_queued;
     unsigned int __nr_writers_queued;
     /* FLAGS must stay at this position in the structure to maintain
-       binary compatibility.  */
+       binary compatibility with static initializers.  */
     unsigned int __flags;
     marcel_t __writer;
   } __data;
@@ -164,10 +166,12 @@ lpt_check_abi_compatibility (void)
 {
   char test[sizeof (lpt_attr_t) > __SIZEOF_LPT_ATTR_T
 	    || sizeof (lpt_mutex_t) > __SIZEOF_LPT_MUTEX_T
+	    || tbx_offset_of(lpt_mutex_t,__data.__kind) != __OFFSETOF_LPT_MUTEX_KIND
 	    || sizeof (lpt_mutexattr_t) > __SIZEOF_LPT_MUTEXATTR_T
 	    || sizeof (lpt_cond_t) > __SIZEOF_LPT_COND_T
 	    || sizeof (lpt_condattr_t) > __SIZEOF_LPT_CONDATTR_T
 	    || sizeof (lpt_rwlock_t) > __SIZEOF_LPT_RWLOCK_T
+	    || tbx_offset_of(lpt_rwlock_t,__data.__flags) != __OFFSETOF_LPT_RWLOCK_FLAGS
 	    || sizeof (lpt_rwlockattr_t) > __SIZEOF_LPT_RWLOCKATTR_T
 	    || sizeof (lpt_barrier_t) > __SIZEOF_LPT_BARRIER_T
 	    || sizeof (lpt_barrierattr_t) > __SIZEOF_LPT_BARRIERATTR_T

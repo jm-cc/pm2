@@ -173,10 +173,16 @@ extern debug_type_t marcel_topology_debug;
    Return 1.  */
 
 # ifdef __cplusplus
+
+extern "C++" {
+
 template <int w>
   struct verify_type__ { unsigned int verify_error_if_negative_size__: w; };
 #  define MA_VERIFY_TRUE(R) \
-     (!!sizeof (verify_type__<(R) ? 1 : -1>))
+     (sizeof (verify_type__<(R) ? 1 : -1>) != 0)
+
+}
+
 # else
 #  define MA_VERIFY_TRUE(R) \
      (!!sizeof \

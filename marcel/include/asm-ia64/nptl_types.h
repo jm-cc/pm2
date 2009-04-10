@@ -42,6 +42,8 @@
 
 #section structures
 #depend "marcel_fastlock.h[structures]"
+#include <stddef.h>
+
 typedef union
 {
   char __size[__SIZEOF_LPT_ATTR_T];
@@ -177,12 +179,12 @@ typedef union
 
 MA_VERIFY (sizeof (lpt_attr_t) <= __SIZEOF_LPT_ATTR_T);
 MA_VERIFY (sizeof (lpt_mutex_t) <= __SIZEOF_LPT_MUTEX_T);
-MA_VERIFY (tbx_offset_of (lpt_mutex_t,__data.__kind) == __OFFSETOF_LPT_MUTEX_KIND);
+MA_VERIFY (offsetof (lpt_mutex_t,__data.__kind) == __OFFSETOF_LPT_MUTEX_KIND);
 MA_VERIFY (sizeof (lpt_mutexattr_t) <= __SIZEOF_LPT_MUTEXATTR_T);
 MA_VERIFY (sizeof (lpt_cond_t) <= __SIZEOF_LPT_COND_T);
 MA_VERIFY (sizeof (lpt_condattr_t) <= __SIZEOF_LPT_CONDATTR_T);
 MA_VERIFY (sizeof (lpt_rwlock_t) <= __SIZEOF_LPT_RWLOCK_T);
-MA_VERIFY (tbx_offset_of (lpt_rwlock_t,__data.__flags) == __OFFSETOF_LPT_RWLOCK_FLAGS);
+MA_VERIFY (offsetof (lpt_rwlock_t,__data.__flags) == __OFFSETOF_LPT_RWLOCK_FLAGS);
 MA_VERIFY (sizeof (lpt_rwlockattr_t) <= __SIZEOF_LPT_RWLOCKATTR_T);
 MA_VERIFY (sizeof (lpt_barrier_t) <= __SIZEOF_LPT_BARRIER_T);
 MA_VERIFY (sizeof (lpt_barrierattr_t) <= __SIZEOF_LPT_BARRIERATTR_T);

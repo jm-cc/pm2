@@ -166,6 +166,29 @@ extern debug_type_t marcel_topology_debug;
 #  define MALLOCATOR_LOG_OUT()
 #endif
 
+
+/* Compile-time assertions.  Taken from Gnulib's LGPLv2+ `verify' module.  */
+
+/* Verify requirement R at compile-time, as an integer constant expression.
+   Return 1.  */
+
+# ifdef __cplusplus
+template <int w>
+  struct verify_type__ { unsigned int verify_error_if_negative_size__: w; };
+#  define MA_VERIFY_TRUE(R) \
+     (!!sizeof (verify_type__<(R) ? 1 : -1>))
+# else
+#  define MA_VERIFY_TRUE(R) \
+     (!!sizeof \
+      (struct { unsigned int verify_error_if_negative_size__: (R) ? 1 : -1; }))
+# endif
+
+/** \brief Verify requirement \param R at compile-time, as a declaration
+ * without a trailing ';'.  */
+# define MA_VERIFY(R) extern int (* verify_function__ (void)) [MA_VERIFY_TRUE (R)]
+
+
+
 #ifdef PM2_BUG_ON
 #depend "marcel_signal.h[marcel_macros]"
 #define MA_BUG_ON(cond) \

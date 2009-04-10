@@ -35,14 +35,10 @@
 
 /* We use `struct marcel_rwlockattr' as the internal structure that underlies
    `lpt_rwlockattr_t'.  Make sure they are compatible.  */
-static __inline__ void
-lpt_check_rwlockattr_type (void)
-{
-  char test[sizeof (struct marcel_rwlockattr) > sizeof (lpt_rwlockattr_t)
-	    || __alignof (struct marcel_rwlockattr) > sizeof (lpt_rwlockattr_t)
-	    ? -1 : 1]
-    TBX_UNUSED;
-}
+
+MA_VERIFY (sizeof (struct marcel_rwlockattr) <= sizeof (lpt_rwlockattr_t));
+MA_VERIFY (__alignof (struct marcel_rwlockattr) <= sizeof (lpt_rwlockattr_t));
+
 
 static const struct marcel_rwlockattr default_attr =
   {

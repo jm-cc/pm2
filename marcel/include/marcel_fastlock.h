@@ -53,13 +53,7 @@ struct _lpt_fastlock
 
 /* Make sure that the `__status' field of `_lpt_fastlock' is large enough to
    hold a pointer.  */
-static __inline__ void
-lpt_check_fastlock_type (void)
-{
-  char test[sizeof (long int) < sizeof (void *)
-	    ? -1 : 1]
-    __attribute__ ((__unused__));
-}
+MA_VERIFY (sizeof (long int) >= sizeof (void *));
 
 
 /* Return true if LOCK is marked as taken.  */

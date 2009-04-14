@@ -1754,6 +1754,8 @@ static void topo_discover(void) {
 	marcel_topo_nblevels=discovering_level;
 	mdebug_topology("\n\n--> discovered %d levels\n\n", marcel_topo_nblevels);
 
+	/* TODO: filter out processors that are not in sched_getaffinity */
+
 	/* Set the number of VPs, unless already specified.  */
 	if (ma__nb_vp == 0)
 		ma__nb_vp = marcel_nbprocessors;

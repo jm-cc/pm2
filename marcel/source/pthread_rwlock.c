@@ -134,6 +134,30 @@ DEF_MARCEL_POSIX (int, rwlockattr_setpshared,
   ((rwlock)->__data.__flags == 0)
 
 
+/* A "generation number" is associated with each RW lock.  This is used in
+   the `timed{rd,wr}lock' variants so that we can know whether someone
+   unlocked the RWLOCK by the time we actually start waiting, in which case
+   we just start again the timed lock operation.  */
+
+/* Return the generation number of RWLOCK.  */
+#define MA_RWLOCK_GENERATION_NUMBER(_rwlock)	\
+  ((_rwlock)->__data.__lock & ~1UL)
+
+/* Increment the generation number of RWLOCK, assuming it's already
+   locked.  */
+#define MA_RWLOCK_INCREMENT_GENERATION_NUMBER(_rwlock)			\
+  do									\
+    {									\
+      /* XXX: We're assuming that `lpt_lock_acquire ()' uses a bit-spinlock \
+	 on bit 0.  */							\
+      MA_BUG_ON (!ma_bit_spin_is_locked					\
+		 (0, (unsigned long *) &(_rwlock)->__data.__lock));	\
+      (_rwlock)->__data.__lock =					\
+	(MA_RWLOCK_GENERATION_NUMBER (_rwlock) + 2) | 1UL;		\
+    }									\
+  while (0)
+
+
 DEF_PTHREAD (int, rwlock_init,
 	     (lpt_rwlock_t *rwlock, const marcel_rwlockattr_t *attr),
 	     (rwlock, attr))
@@ -352,11 +376,14 @@ DEF_MARCEL_POSIX (int, rwlock_timedrdlock,
 	  break;
 	}
 
+      int waitval = MA_RWLOCK_GENERATION_NUMBER (rwlock);
+
       /* Free the lock.  */
       lpt_lock_release (&rwlock->__data.__lock);
 
       /* Wait for the writer to finish.  */
-      err = __lpt_lock_timed_wait (&rwlock->__data.__readers_wakeup, &rt);
+      err = __lpt_lock_timed_wait (&rwlock->__data.__readers_wakeup, &rt,
+				   &rwlock->__data.__lock, waitval);
 
       /* Get the lock.  */
       lpt_lock_acquire (&rwlock->__data.__lock);
@@ -453,11 +480,14 @@ DEF_MARCEL_POSIX (int, rwlock_timedwrlock,
 	  break;
 	}
 
+      int waitval = MA_RWLOCK_GENERATION_NUMBER (rwlock);
+
       /* Free the lock.  */
       lpt_lock_release (&rwlock->__data.__lock);
 
       /* Wait for the writer or reader(s) to finish.  */
-      err = __lpt_lock_timed_wait (&rwlock->__data.__writer_wakeup, &rt);
+      err = __lpt_lock_timed_wait (&rwlock->__data.__writer_wakeup, &rt,
+				   &rwlock->__data.__lock, waitval);
 
       /* Get the lock.  */
       lpt_lock_acquire (&rwlock->__data.__lock);
@@ -535,14 +565,14 @@ DEF_MARCEL_POSIX (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock),
     {
       if (rwlock->__data.__nr_writers_queued)
 	{
-	  /* ++rwlock->__data.__writer_wakeup; */
+	  MA_RWLOCK_INCREMENT_GENERATION_NUMBER (rwlock);
 	  lpt_lock_release (&rwlock->__data.__lock);
 	  __lpt_lock_signal (&rwlock->__data.__writer_wakeup);
 	  return 0;
 	}
       else if (rwlock->__data.__nr_readers_queued)
 	{
-	  /* ++rwlock->__data.__readers_wakeup; */
+	  MA_RWLOCK_INCREMENT_GENERATION_NUMBER (rwlock);
 	  lpt_lock_release (&rwlock->__data.__lock);
 	  __lpt_lock_broadcast (&rwlock->__data.__readers_wakeup);
 	  return 0;

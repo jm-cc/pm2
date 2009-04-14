@@ -251,7 +251,7 @@ void __lpt_lock_wait(struct _lpt_fastlock * lock)
 	lpt_lock_release(&lock->__status);
 }
 
-int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout)
+int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout, long *value, long expected_value)
 {
 	int result;
 	unsigned long int timeout_us;
@@ -260,6 +260,14 @@ int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout)
 	timeout_us = MA_TIMESPEC_TO_USEC(timeout);
 
 	lpt_lock_acquire(&lock->__status);
+
+	if (*value != expected_value) {
+		/* Mimic the futex(2) `FUTEX_WAIT' behavior: since VALUE changed in the
+		 * mean time, just return `EWOULDBLOCK'.  */
+		lpt_lock_release(&lock->__status);
+		return EWOULDBLOCK;
+	}
+
 	__lpt_register_spinlocked(lock, marcel_self(), &c);
 
 	/* Loop until we're unblocked or time is up.  */

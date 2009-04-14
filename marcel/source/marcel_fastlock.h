@@ -401,10 +401,12 @@ __tbx_inline__ static int __lpt_unlock(struct _lpt_fastlock * lock)
  * made.  */
 extern void __lpt_lock_wait(struct _lpt_fastlock * lock);
 
-/** \brief Wait on \param lock until a signal() or broadcast() call is
- * made or \param abstime is reached.  In the latter case, return \e
- * ETIMEDOUT.  */
-extern int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *abstime);
+/** \brief If \param value and \param expected_value are equal, wait on
+ * \param lock until a signal() or broadcast() call is made or \param abstime
+ * is reached.  In the latter case, return \e ETIMEDOUT; otherwise return \e
+ * EWOULDBLOCK.  This is similar to the \e futex(2) \e FUTEX_WAIT
+ * behavior.  */
+extern int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *abstime, long *value, long expected_value);
 
 /** \brief Wake up every thread waiting on \param lock.  */
 extern void __lpt_lock_broadcast(struct _lpt_fastlock * lock);

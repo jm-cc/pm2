@@ -15,7 +15,7 @@
 
 LIBS := pm2 marcel mad3 tbx ntbx init leoparse profile bubblelib pioman
 # mad1
-MODULES := leonie stackalign bubbles bubblegum
+MODULES := leonie stackalign bubbles bubblegum fut2paje
 
 # Directement dans les sources:
 # stackalign

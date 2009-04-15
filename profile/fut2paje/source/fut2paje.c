@@ -39,11 +39,6 @@ struct fxt_ev_64 ev;
 
 static unsigned first_event = 1;
 static uint64_t start_time = 0;
-static uint64_t end_time = 0;
-
-#ifndef MAX
-#define MAX(a,b)	((a)<(b)?(b):(a))
-#endif
 
 /*
  * Paje trace file tools
@@ -294,7 +289,6 @@ main (int argc, char **argv)
       switch (ev.code)
 	{
 	case FUT_SWITCH_TO_CODE:
-	  end_time = MAX (end_time, ev.time);
 	  handle_switch_to ();
 	  break;
 

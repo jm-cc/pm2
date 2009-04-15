@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 #include <search.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -162,7 +163,8 @@ handle_thread_birth (void)
 static int
 handle_new_lwp (void)
 {
-  fprintf (out_paje_file, "7       %f C_VP%lu      CT_VP      C_Machine       \"VP%lu\" \n", (float)(start_time-start_time), ev.param[0], ev.param[0]);
+  fprintf (out_paje_file, "7       %f C_VP%lu      CT_VP      C_Machine       \"VP%lu\" \n",
+	   (float)(start_time-start_time), ev.param[0], ev.param[0]);
 
   return 0;
 }
@@ -172,7 +174,10 @@ handle_switch_to (void)
 {
   int thread_id = find_thread_id (ev.param[0]);
 
-  fprintf (events_file, "10       %f	ST_VPState     VP%lu      %c\n", (float)((ev.time-start_time)/1000000.0), ev.param[2], thread_name[thread_id][0] != 'm' ? thread_name[thread_id][0] : 'u');
+  fprintf (events_file, "10       %f	ST_VPState     VP%lu      %c\n",
+	   (float)((ev.time-start_time)/1000000.0),
+	   ev.param[2],
+	   thread_name[thread_id][0] != 'm' ? thread_name[thread_id][0] : 'u');
 
   return 0;
 }
@@ -206,40 +211,44 @@ main (int argc, char **argv)
   char *filename, *filenameout = NULL;
   int ret;
   int fd_in, fd_out;
-
   int use_stdout = 1;
 
-  if (argc < 2) {
-    fprintf(stderr, "Usage : %s input_filename [-o output_filename]\n", argv[0]);
-    exit(-1);
-  }
+  if (argc < 2)
+    {
+      fprintf (stderr, "Usage : %s input_filename [-o output_filename]\n", argv[0]);
+      exit (-1);
+    }
 
   filename = argv[1];
 
   fd_in = open (filename, O_RDONLY);
-  if (fd_in < 0) {
-    perror("open failed :");
-    exit(-1);
-  }
-
-  if (argc > 2) {
-    filenameout = argv[2];
-    use_stdout = 0;
-    fd_out = open(filenameout, O_RDWR);
-    if (fd_out < 0) {
-      perror("open (out) failed :");
-      exit(-1);
+  if (fd_in < 0)
+    {
+      perror ("open failed :");
+      exit (-1);
     }
-  }
 
-  fut = fxt_fdopen(fd_in);
-  if (!fut) {
-    perror("fxt_fdopen :");
-    exit(-1);
-  }
+  if (argc > 2)
+    {
+      filenameout = argv[2];
+      use_stdout = 0;
+      fd_out = open (filenameout, O_RDWR);
+      if (fd_out < 0)
+	{
+	  perror ("open (out) failed :");
+	  exit (-1);
+	}
+    }
+
+  fut = fxt_fdopen (fd_in);
+  if (!fut)
+    {
+      perror ("fxt_fdopen :");
+      exit (-1);
+    }
 
   fxt_blockev_t block;
-  block = fxt_blockev_enter(fut);
+  block = fxt_blockev_enter (fut);
 
   /* create a htable to identify each worker(tid) */
   hcreate (MAX_THREADS);
@@ -248,58 +257,56 @@ main (int argc, char **argv)
 
   paje_output_file_init ();
 
-  while (1) {
-    ret = fxt_next_ev(block, FXT_EV_TYPE_64, (struct fxt_ev *)&ev);
-    if (ret != FXT_EV_OK) {
-      fprintf(stderr, "no more block ...\n");
-      break;
-    }
+  while (true)
+    {
+      ret = fxt_next_ev (block, FXT_EV_TYPE_64, (struct fxt_ev *)&ev);
+      if (ret != FXT_EV_OK)
+	break;
 
-    if (ev.code == FUT_SET_THREAD_NAME_CODE)
-      handle_set_thread_name ();
-    else if (ev.code == FUT_THREAD_BIRTH_CODE)
-      handle_thread_birth ();
-  }
+      if (ev.code == FUT_SET_THREAD_NAME_CODE)
+	handle_set_thread_name ();
+      else if (ev.code == FUT_THREAD_BIRTH_CODE)
+	handle_thread_birth ();
+    }
 
   fxt_rewind (block);
 
-  while(1) {
-    ret = fxt_next_ev(block, FXT_EV_TYPE_64, (struct fxt_ev *)&ev);
-    if (ret != FXT_EV_OK) {
-      fprintf(stderr, "no more block ...\n");
-      break;
+  while (true)
+    {
+      ret = fxt_next_ev (block, FXT_EV_TYPE_64, (struct fxt_ev *)&ev);
+      if (ret != FXT_EV_OK)
+	break;
+
+      __attribute__ ((unused)) int nbparam = ev.nb_params;
+
+      if (first_event)
+	{
+	  first_event = 0;
+	  start_time = ev.time;
+
+	  /* Write the Machine level. */
+	  fprintf (out_paje_file, "7       %f C_Machine      CT_M      0       \"Machine\" \n", (float)(start_time-start_time));
+
+	  /* Write the LWP running the main thread. */
+	  fprintf (out_paje_file, "7       %f C_VP0      CT_VP      C_Machine       \"VP0\" \n", (float)(start_time-start_time));
+	}
+
+      switch (ev.code)
+	{
+	case FUT_SWITCH_TO_CODE:
+	  end_time = MAX (end_time, ev.time);
+	  handle_switch_to ();
+	  break;
+
+	case FUT_NEW_LWP_CODE:
+	  handle_new_lwp ();
+	  break;
+
+	default:
+	  fprintf (stderr, "unknown event.. %x at time %llx\n", (unsigned)ev.code, (long long unsigned)ev.time);
+	  break;
+	}
     }
-
-    __attribute__ ((unused)) int nbparam = ev.nb_params;
-
-    if (first_event)
-      {
-	first_event = 0;
-	start_time = ev.time;
-
-	/* Write the Machine level. */
-	fprintf (out_paje_file, "7       %f C_Machine      CT_M      0       \"Machine\" \n", (float)(start_time-start_time));
-
-	/* Write the LWP running the main thread. */
-	fprintf (out_paje_file, "7       %f C_VP0      CT_VP      C_Machine       \"VP0\" \n", (float)(start_time-start_time));
-      }
-
-    switch (ev.code) {
-
-    case FUT_SWITCH_TO_CODE:
-      end_time = MAX (end_time, ev.time);
-      handle_switch_to ();
-      break;
-
-    case FUT_NEW_LWP_CODE:
-      handle_new_lwp ();
-      break;
-
-    default:
-      fprintf(stderr, "unknown event.. %x at time %llx\n", (unsigned)ev.code, (long long unsigned)ev.time);
-      break;
-    }
-  }
 
   free (thread_name);
 

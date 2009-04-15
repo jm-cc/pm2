@@ -69,14 +69,16 @@ void common_attr_init(common_attr_t *attr TBX_UNUSED)
   char quoted = '\0';							\
   int separated;							\
   static int null_argc = 1;						\
-  static char *null_argv[] = { "prog", NULL };			\
+  static char *null_argv[] = { "prog", NULL };				\
   if (!_argc) {								\
     _argc = &null_argc;							\
     _argv = null_argv;							\
   }									\
   pm2_args = getenv("PM2_ARGS");					\
   if (pm2_args) {							\
-    pm2_args = strdup(pm2_args);					\
+    char *new_pm2_args = alloca(strlen(pm2_args) + 1);			\
+    strcpy(new_pm2_args, pm2_args);					\
+    pm2_args = new_pm2_args;						\
     parse(,,pm2_argc++);						\
   }									\
   if (quoted)								\
@@ -101,8 +103,7 @@ void common_attr_init(common_attr_t *attr TBX_UNUSED)
     memcpy(_argv, argv, last * sizeof(char*)); \
     _argv[last] = NULL; \
     *_argc = last; \
-  } \
-  free(pm2_args);
+  }
 
 void common_pre_init(int *_argc, char *_argv[],
 		     common_attr_t *attr)

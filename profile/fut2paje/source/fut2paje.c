@@ -51,6 +51,13 @@ static FILE *out_paje_file, *events_file;
 static void write_paje_header (FILE *);
 
 static void
+perror_and_exit (const char *message, int exit_code)
+{
+  perror (message);
+  exit (exit_code);
+}
+
+static void
 paje_output_file_init (void)
 {
   out_paje_file = fopen (out_paje_path, "w+");
@@ -139,18 +146,12 @@ handle_thread_birth (void)
   res = hsearch (item, FIND);
 
   if (res != NULL)
-    {
-      perror ("ANALYSING PROF_FILE ERROR : thread_birth");
-      return -1;
-    }
+    perror_and_exit ("ANALYSING PROF_FILE ERROR : thread_birth", -1);
 
   res = hsearch(item, ENTER);
 
   if (res == NULL)
-    {
-      perror ("ANALYSING PROF_FILE ERROR : thread_birth");
-      return -1;
-    }
+    perror_and_exit ("ANALYSING PROF_FILE ERROR : thread_birth", -1);
 
   return 0;
 }
@@ -218,10 +219,7 @@ main (int argc, char **argv)
 
   fd_in = open (filename, O_RDONLY);
   if (fd_in < 0)
-    {
-      perror ("open failed :");
-      exit (-1);
-    }
+    perror_and_exit ("open failed :", -1);
 
   if (argc > 2)
     {
@@ -229,18 +227,12 @@ main (int argc, char **argv)
       use_stdout = 0;
       fd_out = open (filenameout, O_RDWR);
       if (fd_out < 0)
-	{
-	  perror ("open (out) failed :");
-	  exit (-1);
-	}
+	perror_and_exit ("open (out) failed :", -1);
     }
 
   fut = fxt_fdopen (fd_in);
   if (!fut)
-    {
-      perror ("fxt_fdopen :");
-      exit (-1);
-    }
+    perror_and_exit ("fxt_fdopen :", -1);
 
   fxt_blockev_t block;
   block = fxt_blockev_enter (fut);

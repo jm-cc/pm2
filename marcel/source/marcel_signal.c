@@ -514,6 +514,7 @@ static void update_lwps_blocked_signals(int wait) {
 			ma_update_lwp_blocked_signals();
 		else {
 			ma_atomic_inc_return(&nr_pending_blocked_signals_updates);
+			ma_smp_wmb();
 			ma_raise_softirq_lwp(lwp, MA_SIGMASK_SOFTIRQ);
 		}
 	}

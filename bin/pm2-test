@@ -172,7 +172,7 @@ do_the_test()
             (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
 	if [ `cat $file_status` -ne 0 ] ; then
-	    failures_per_module="$failures_per_module $prog ($flavor)"
+	    failures_per_module="$failures_per_module $prog (flavor $flavor)"
 	    pm2_test_warning_file "Execution of $prog failed" $file_result
 	    return 1
 	fi

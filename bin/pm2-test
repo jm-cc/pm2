@@ -200,7 +200,7 @@ do_the_test()
         if diff -u $file_expected $file_filtered ; then
 	    echo "Test ok!"
         else
-	    failures_per_module="$failures_per_module $prog ($flavor)"
+	    failures_per_module="$failures_per_module $prog (flavor $flavor)"
 	    pm2_test_warning_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
 	    return 1
         fi

@@ -1,1 +1,1 @@
-Provide: TBX_debug
+Depend: TBX_debug

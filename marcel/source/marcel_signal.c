@@ -513,8 +513,8 @@ static void update_lwps_blocked_signals(int wait) {
 		if (lwp == MA_LWP_SELF)
 			ma_update_lwp_blocked_signals();
 		else {
+			ma_atomic_inc_return(&nr_pending_blocked_signals_updates);
 			ma_raise_softirq_lwp(lwp, MA_SIGMASK_SOFTIRQ);
-			ma_atomic_inc(&nr_pending_blocked_signals_updates);
 		}
 	}
 	if (ma_atomic_dec_return(&nr_pending_blocked_signals_updates))

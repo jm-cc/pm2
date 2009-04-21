@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "marcel.h"
+#include "marcel_memory.h"
 #include <errno.h>
 #include <malloc.h>
 

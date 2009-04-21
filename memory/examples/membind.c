@@ -19,7 +19,7 @@
 #include <errno.h>
 #include <malloc.h>
 #include <time.h>
-#include "../marcel_stream.h"
+#include "../../marcel/examples/marcel_stream.h"
 
 #if defined(MARCEL_MAMI_ENABLED)
 

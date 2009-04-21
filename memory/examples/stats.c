@@ -14,7 +14,7 @@
  */
 
 #define MARCEL_INTERNAL_INCLUDE
-#include "marcel.h"
+#include "marcel_memory.h"
 
 #if defined(MARCEL_MAMI_ENABLED)
 

@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "marcel.h"
+#include "marcel_memory.h"
 
 #if defined(MARCEL_MAMI_ENABLED)
 

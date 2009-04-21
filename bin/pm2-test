@@ -402,6 +402,7 @@ while [ $_l -le $_level ]; do
 	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
 
 	    cd ${PM2_ROOT}/modules/$_m/test
+            shopt -u nullglob
 	    _tests=`ls test_*.level_$_l 2> /dev/null`
 	    if [ -n "$_tests" ]; then
 
@@ -479,6 +480,7 @@ while [ $_l -le $_level ]; do
 	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
 
 	    cd ${PM2_ROOT}/modules/$_m/test
+            shopt -u nullglob
 	    _tests=`ls test_*.level_$_l 2> /dev/null`
 	    if [ -n "$_tests" ]; then
 

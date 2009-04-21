@@ -1,0 +1,1 @@
+flags for auto-profiling all functions of this module (see -finstrument-functions option of gcc)

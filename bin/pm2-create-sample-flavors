@@ -156,6 +156,14 @@ registering_flavors() {
 	--marcel=valgrind --marcel=bug_on \
 	--all=debug --all=gdb --all=noinline --all=build_both
 
+    register_flavor memory-debug \
+	--modules="memory marcel tbx init" \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=valgrind \
+        --memory=enable_mami \
+	--all=debug --all=gdb --all=noinline --all=build_static
+
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" --all=debug --all=gdb $COMMON_OPTIONS
 

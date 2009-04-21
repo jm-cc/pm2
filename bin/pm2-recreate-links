@@ -56,7 +56,7 @@ if [ ! -d ${PM2_ROOT}/modules ] ; then
 fi
 for module in appli common ezflavor generic init leonie leoparse \
 	mad3 nmad marcel pioman ntbx pm2 profile stackalign tbx puk \
-        bubblelib bubbles fut2paje
+        bubblelib bubbles fut2paje memory
 	do
    make_ln ${PM2_ROOT}/modules ../$module `basename $module`
 done

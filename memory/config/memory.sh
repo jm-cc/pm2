@@ -1,0 +1,2 @@
+PM2_MEMORY_LIBNAME=memory
+

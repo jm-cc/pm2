@@ -15,13 +15,22 @@
 
 #ifdef MARCEL_MAMI_ENABLED
 
-#include "marcel.h"
+#define MARCEL_INTERNAL_INCLUDE
+
+#include "marcel_memory.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #ifdef LINUX_SYS
 #  include <malloc.h>
 #endif /* LINUX_SYS */
+
+debug_type_t debug_memory = NEW_DEBUG_TYPE("MAR: ", "mar-mami-debug");
+debug_type_t debug_memory_log = NEW_DEBUG_TYPE("MAR: ", "mar-mami-log");
+debug_type_t debug_memory_ilog = NEW_DEBUG_TYPE("MAR: ", "mar-mami-ilog");
+debug_type_t debug_memory_warn = NEW_DEBUG_TYPE("MAR: ", "mar-mami-warn");
 
 /* The following is normally defined in <linux/mempolicy.h>. But that file is not always available. */
 /* Policies */
@@ -203,7 +212,7 @@ void marcel_memory_init(marcel_memory_manager_t *memory_manager) {
   ma_memory_load_model_for_memory_access(memory_manager);
 
 #ifdef PM2DEBUG
-  if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+  if (debug_memory.show > PM2DEBUG_STDLEVEL) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
       for(dest=0 ; dest<memory_manager->nb_nodes ; dest++) {
         p_tbx_slist_t migration_costs = memory_manager->migration_costs[node][dest];
@@ -307,7 +316,7 @@ void marcel_memory_exit(marcel_memory_manager_t *memory_manager) {
   if (memory_manager->root) {
     marcel_fprintf(stderr, "MaMI Warning: some memory areas have not been free-d\n");
 #ifdef PM2DEBUG
-    if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+    if (debug_memory.show > PM2DEBUG_STDLEVEL) {
       marcel_memory_fprint(memory_manager, stderr);
     }
 #endif /* PM2DEBUG */

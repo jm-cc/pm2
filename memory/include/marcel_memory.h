@@ -24,10 +24,35 @@
  * @{
  */
 
-#section common
 #ifdef MARCEL_MAMI_ENABLED
 
-#section types
+#ifndef MARCEL_MEMORY_H
+#define MARCEL_MEMORY_H
+
+#include "pm2_list.h"
+#include "pm2_common.h"
+#include "tbx_pointers.h"
+
+extern debug_type_t debug_memory;
+extern debug_type_t debug_memory_log;
+extern debug_type_t debug_memory_ilog;
+extern debug_type_t debug_memory_warn;
+
+#define mdebug_mami(fmt, args...) \
+    debug_printf(&debug_memory, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+
+#if defined(PM2DEBUG)
+#  define MAMI_LOG_IN()        debug_printf(&debug_memory_log, "%s: -->\n", __TBX_FUNCTION__)
+#  define MAMI_LOG_OUT()       debug_printf(&debug_memory_log, "%s: <--\n", __TBX_FUNCTION__)
+#  define MAMI_ILOG_IN()       debug_printf(&debug_memory_ilog, "%s: -->\n", __TBX_FUNCTION__)
+#  define MAMI_ILOG_OUT()      debug_printf(&debug_memory_ilog, "%s: <--\n", __TBX_FUNCTION__)
+#else
+#  define MAMI_LOG_IN()
+#  define MAMI_LOG_OUT()
+#  define MAMI_ILOG_IN()
+#  define MAMI_ILOG_OUT()
+#endif
+
 /** \brief Type of a link for a list of tree nodes */
 typedef struct marcel_memory_data_link_s marcel_memory_data_link_t;
 
@@ -87,11 +112,6 @@ typedef int marcel_memory_stats_t;
 #define MARCEL_MEMORY_STAT_MEMORY_TOTAL      ((marcel_memory_stats_t)0)
 /** \brief The free amount of memory */
 #define MARCEL_MEMORY_STAT_MEMORY_FREE       ((marcel_memory_stats_t)1)
-
-#section structures
-
-#depend "marcel_mutex.h[types]"
-#include "tbx_pointers.h"
 
 /** \brief Structure of a link for a list of tree nodes */
 struct marcel_memory_data_link_s {
@@ -229,8 +249,6 @@ struct marcel_memory_manager_s {
   int migration_flag;
 };
 
-#section marcel_functions
-
 extern
 void ma_memory_delete_tree(marcel_memory_manager_t *memory_manager,
 			   marcel_memory_tree_t **memory_tree);
@@ -286,8 +304,6 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
 
 extern
 int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager);
-
-#section functions
 
 /**
  * Initialises the memory manager.
@@ -709,7 +725,7 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
                          void *buffer,
                          int node);
 
-#section common
+#endif /* MARCEL_MEMORY_H */
 #endif /* MARCEL_MAMI_ENABLED */
 
 /* @} */

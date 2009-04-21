@@ -15,7 +15,7 @@
 
 #if defined(MARCEL_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
 
-#include "marcel.h"
+#include "marcel_memory.h"
 
 void marcel_memory_init_(int *memory_manager) {
   marcel_memory_manager_t *manager = TBX_MALLOC(sizeof(marcel_memory_manager_t));

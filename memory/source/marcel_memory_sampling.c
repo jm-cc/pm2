@@ -15,7 +15,7 @@
 
 #ifdef MARCEL_MAMI_ENABLED
 
-#include "marcel.h"
+#include "marcel_memory.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
@@ -160,7 +160,7 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
 
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
-      if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+      if (debug_memory.show > PM2DEBUG_STDLEVEL) {
 	marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
       }
 #endif /* PM2DEBUG */
@@ -340,7 +340,7 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
 
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
-      if (marcel_mami_debug.show > PM2DEBUG_STDLEVEL) {
+      if (debug_memory.show > PM2DEBUG_STDLEVEL) {
 	marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
       }
 #endif /* PM2DEBUG */

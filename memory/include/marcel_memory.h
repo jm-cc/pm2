@@ -13,6 +13,42 @@
  * General Public License for more details.
  */
 
+/*! \mainpage The MaMI API Documentation
+ *
+ * \section intro_sec Introduction
+ * <div class="sec">
+ * <P>
+ * MaMI is a memory interface implemented within our user-level thread
+ * library, Marcel. It allows developers to manage memory with regard
+ * to NUMA nodes thanks to an automatically gathered knowledge of the
+ * underlying architecture. The initialization stage preallocates
+ * memory heaps on all the NUMA nodes of the target machine, and
+ * user-made allocations then pick up memory areas from the
+ * preallocated heaps.
+ * </P>
+ * <P>
+ * MaMI implements two methods to migrate data. The first method is
+ * based on the Next-touch policy, it is implemented as a user-level
+ * pager (mprotect() and signal handler for SIGSEGV). The second
+ * migration method is synchronous and allows to move data on a given
+ * node. Both move pages using the Linux system call move_pages().
+ * </P>
+ * <P>
+ * It is possible to evaluate reading and writing access costs to
+ * remote memory areas. Migration cost is based on a linear function
+ * on the number of pages being migrated.
+ * </P>
+ * <P>
+ * Moreover, MaMI gathers statistics on how much memory is available
+ * and left on the different nodes. This information is potentially
+ * helpful when deciding whether or not to migrate a memory area.
+ * </P>
+ * <P>
+ * More information about MaMI can be found at
+ *  found at http://runtime.bordeaux.inria.fr/MaMI/.</P>
+ * </div>
+ */
+
 /** \file
  * \brief MaMI: Marcel Memory Interface
  */

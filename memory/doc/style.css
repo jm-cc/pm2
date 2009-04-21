@@ -1,0 +1,399 @@
+body {
+        background:	#fff;
+        background-image:	url(./head_gradient.png);
+        background-repeat:	repeat-y;
+        margin:	40px;
+        border:	0px;
+        padding:	0px;      
+        vertical-align:	middle;
+	text-align:	center;
+}
+
+div.body {
+	margin:	auto;
+	text-align:	center;
+}
+
+p {
+	width:	60em;
+}
+
+pre {
+	width:	60em;
+	font:	8pt "Lucida Console", "bitstream vera sans mono", "andale mono", "courier new", "courier", monospace;
+        background:	#F0F2F4;
+        margin:	8px;
+        border:	0px;
+        border-color:	#55F;
+        border-style:	solid;
+        padding:	8px;
+        color:	#118;
+}
+
+a {}
+
+a:link {
+	font-weight:	bold;
+	text-decoration:	none;
+	color:	#20a;
+	}
+a:visited {
+	font-weight:	bold;
+	text-decoration:	none;
+        color:	#24f;
+	}
+a:hover, a:active {
+	text-decoration:	underline;
+        color:	#289;
+	}
+
+/* header */
+div.header {
+        margin:	0px;
+	margin-bottom:	16px;
+        border-color:	#009;
+        border-style:	solid;
+        border-width:	0px;
+        border-bottom-width:	2px;
+        padding:	0px;
+        background:	#fff;
+        background-image:	url(./head_gradient.png);
+        background-repeat:	repeat-y;
+	text-align:	left;
+}
+
+div.header div {
+	/*min-height:	160px;*/
+	text-align:	right;
+        background:	rgba(238, 238, 255, 0.2);
+	background-image:	url(./montre.gif);
+	background-position:	left top;
+        background-repeat:	repeat-y;
+	background-attachment:	fixed;
+}
+
+div.header h1 {
+	font:	bold normal small-caps 20pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif ;
+	letter-spacing:	1px;
+	margin:	0px;
+	color:	#0020a0;
+}
+div.header h2 {
+	font:	normal 14pt "Lucida Grande", "bitstream vera serif", times, serif;
+	letter-spacing:	1px;
+	margin:	0px;
+	color:	#002070;
+}
+
+/* Menu */
+div.menu {
+        background:	rgba(255, 238, 0, 0.5);
+        font:	8pt "bitstream vera sans", arial, helvetica, sans-serif;
+        border-color:	#fd0;
+        border-style:	solid;
+        border-width:	0px;
+        border-top-width:	6px;
+        border-bottom-width:	6px;
+        padding:	2px;
+        text-align:	center;
+}
+
+div.menu a:link {
+	font-weight:	bold;
+	text-decoration:	none;
+	color:	#009;
+	}
+div.menu a:visited {
+	font-weight:	bold;
+	text-decoration:	none;
+        color:	#04a;
+	}
+div.menu a:hover, div.menu a:active {
+	text-decoration:	underline;
+        color:	#08f;
+	}
+
+
+/* main */
+div.main {
+	width:	90%;
+	color:	#000;
+	margin:	auto;
+	padding:	0px;
+        padding-bottom:	4px;
+        padding-top:	4px;
+	text-align:	center;
+}
+
+/* Sections */
+
+div.main div.right {
+	clear:	both;
+	float:	right;
+	width:	auto;
+	font:	8pt "Lucida Grande", arial, helvetica, sans-serif;
+        margin:	0px;
+	margin-top:	16px;
+        margin-left:	8px;
+        margin-bottom:	16px;
+        border-color:	#df0;
+        border-style:	solid;
+        border-width:	0px;
+        border-top-width:	6px;
+        border-bottom-width:	6px;
+        padding:	0px;
+        padding-top:	8px;
+        padding-bottom:	8px;
+	background:	#fff;
+        background-image:	url(./head_gradient.png);
+	background-position:	-190px 0px;
+        background-repeat:	repeat-y;
+        text-align:	left;
+}
+
+div.main div.right div {
+	width:	20em;
+	margin:	0px;
+	border:	0px;
+	padding:	8px;
+        text-align:	left;
+}
+
+div.main div.right p {
+	width:	auto;
+}
+
+div.main div.right h1 {
+	font:	bold normal 10pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif;
+	letter-spacing:	1px;
+        margin:	0px;
+	padding-top:	4px;
+	color:	#0050a0;
+	text-align:	left;
+}
+
+div.main div.right ul {
+}
+
+div.main div.right li {
+}
+
+div.main div.right div h2, div.main div.right div div h1 {
+	font:	normal 9pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif;
+	letter-spacing:	1px;
+        margin-left:	0px;
+	margin-bottom:	0px;
+	color:	#0050a0;
+	text-align:	left;
+	padding-top:	4px;
+}
+
+div.main div.contents {
+	width:	80em;
+	font:	8pt "Lucida Grande", "Lucida Bright", arial, helvetica, sans-serif;
+        margin:	0px;
+        margin-bottom:	4px;
+        padding:	0px;
+        padding-left:	40px;
+        padding-right:	40px;
+        padding-bottom:	8px;
+        background:	rgba(238,255, 255, 0.5);
+        text-align:	left;
+	text-align:	justify;
+}
+
+div.main table {
+	font:	8pt "Lucida Grande", "Lucida Bright", arial, helvetica, sans-serif;
+	background:	#fff;
+        background-image:	url(./head_gradient.png);
+	background-position:	-190px 0px;
+        background-repeat:	repeat-y;
+        padding-top:	8px;
+        padding-bottom:	8px;
+	border: 6px solid;
+        border-color:	#df0;
+	border-left: 0px;
+	border-right: 0px;
+}
+
+div.main th {
+        background:	rgba(238,255, 255, 0.5);
+	padding-left, padding-right: 4px;
+	margin: 0px;
+	font:	bold 8pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif;
+	letter-spacing:	1px;
+	color:	#0050a0;
+	border: 1px none;
+}
+
+div.main td {
+        background:	rgba(238,255, 255, 0.5);
+	padding-left, padding-right: 4px;
+	margin: 0px;
+	border: 0px solid;
+        border-color:	#adf;
+	border-left: 0px;
+	border-right: 0px;
+}
+
+div.main div.contents h1 {
+	font:	bold normal 12pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif;
+	letter-spacing:	1px;
+        margin-left:	-32px;
+	margin-bottom:	0px;
+	padding-top:	4px;
+	color:	#0050a0;
+	text-align:	left;
+}
+
+div.main div.contents dt {
+	font-weight:	bold;
+}
+
+/* sous-sections */
+div.main div.contents div {
+	width:	60em;
+	font:	8pt "Lucida Grande", "Lucida Bright", arial, helvetica, sans-serif;
+        display:	block;
+	margin-top:	8px;
+	padding-top:	4px;
+}
+
+div.main div.contents h2, div.main div.contents div h1 {
+	font:	normal 10pt "Lucida Grande", "bitstream vera sans", arial, helvetica, sans-serif;
+	letter-spacing:	1px;
+        margin-left:	-16px;
+	margin-bottom:	0px;
+	color:	#0050a0;
+	text-align:	left;
+	padding-top:	4px;
+}
+
+div.main img {
+	border-width:	4px;
+	border-style:	 solid;
+        border-color:	#adf;
+	padding:	8px;
+        background:	rgba(255, 255, 255, 0.5);
+}
+
+/* specific elements */
+img#photo {
+	border-style:	solid;
+	border-color:	#000;
+	border-width:	3px;
+	padding:	0px;
+}
+
+/* footer */
+div.footer {
+	clear:	both;
+	margin-top:	8px;
+        border-color:	#009;
+        border-style:	solid;
+        border-width:	0px;
+        border-top-width:	2px;
+        background-image:	url(./head_gradient.png);
+        background-repeat:	repeat-y;
+}
+
+div.footer div {
+        font:	0.5em "bitstream vera sans", arial, helvetica, sans-serif;
+	text-align:	right;
+        background:	rgba(238, 238, 255, 0.2);
+	color:	#0020a0;
+}
+
+/* Navigation */
+div.navigation {
+        font:	8pt "bitstream vera sans", arial, helvetica, sans-serif;
+        margin:	0px;
+        margin-bottom:	4px;
+        border-color:	#fd0;
+        border-style:	solid;
+        border-width:	0px;
+        border-top-width:	4px;
+        border-bottom-width:	4px;
+        padding:	0px;
+        text-align:	center;
+}
+
+div.navigation a:link {
+	font-weight:	bold;
+	text-decoration:	none;
+	color:	#009;
+	}
+div.navigation a:visited {
+	font-weight:	bold;
+	text-decoration:	none;
+        color:	#04a;
+	}
+div.navigation a:hover, div.navigation a:active {
+	text-decoration:	underline;
+        color:	#08f;
+	}
+
+
+/* tabs styles, based on http://www.alistapart.com/articles/slidingdoors */
+
+div.tabs
+{
+        background:	rgba(255, 238, 0, 0.5);
+}
+
+div.tabs + div.tabs
+{
+        border-color:	#fd0;
+        border-style:	solid;
+        border-width:	0px;
+        border-top-width:	2px;
+        background:	rgba(255, 255, 0, 0.5);
+}
+
+div.tabs UL
+{
+	margin           : 0px;
+	padding: 0px;
+	padding-left     : 10px;
+	list-style       : none;
+	text-align: center;
+}
+
+
+div.tabs LI
+{
+   display          : inline;
+}
+
+div.tabs LI + LI
+{
+	padding-left     : 10px;
+}
+
+div.tabs A
+{
+	color: #009;
+}
+div.tabs A:hover
+{
+        text-decoration: none;
+        color: #08f;
+
+}
+
+div.tabs A:link, div.tabs A:visited,
+div.tabs A:active, div.tabs A:hover
+{
+       color: #04a;
+}
+
+div.tabs LI.current A
+{
+   color: #117;
+}
+
+div.nav
+{
+   background       : none;
+   border           : none;
+}

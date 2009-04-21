@@ -114,9 +114,6 @@ extern debug_type_t marcel_mtrace_timer;
 extern debug_type_t marcel_allocator_debug;
 extern debug_type_t marcel_allocator_log;
 extern debug_type_t marcel_heap_debug;
-extern debug_type_t marcel_mami_debug;
-extern debug_type_t marcel_mami_log;
-extern debug_type_t marcel_mami_ilog;
 extern debug_type_t marcel_topology_debug;
 #endif
 
@@ -139,8 +136,6 @@ extern debug_type_t marcel_topology_debug;
     debug_printf(&marcel_allocator_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define mdebug_heap(fmt, ...) \
     debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
-#define mdebug_mami(fmt, args...) \
-    debug_printf(&marcel_mami_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define mdebug_topology(fmt, args...) \
     debug_printf(&marcel_topology_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define bubble_sched_debug(fmt, args...) \
@@ -151,17 +146,9 @@ extern debug_type_t marcel_topology_debug;
     debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 
 #if defined(PM2DEBUG)
-#  define MAMI_LOG_IN()        debug_printf(&marcel_mami_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MAMI_LOG_OUT()       debug_printf(&marcel_mami_log, "%s: <--\n", __TBX_FUNCTION__)
-#  define MAMI_ILOG_IN()       debug_printf(&marcel_mami_ilog, "%s: -->\n", __TBX_FUNCTION__)
-#  define MAMI_ILOG_OUT()      debug_printf(&marcel_mami_ilog, "%s: <--\n", __TBX_FUNCTION__)
 #  define MALLOCATOR_LOG_IN()  debug_printf(&marcel_allocator_log, "%s: -->\n", __TBX_FUNCTION__)
 #  define MALLOCATOR_LOG_OUT() debug_printf(&marcel_allocator_log, "%s: <--\n", __TBX_FUNCTION__)
 #else
-#  define MAMI_LOG_IN()
-#  define MAMI_LOG_OUT()
-#  define MAMI_ILOG_IN()
-#  define MAMI_ILOG_OUT()
 #  define MALLOCATOR_LOG_IN()
 #  define MALLOCATOR_LOG_OUT()
 #endif

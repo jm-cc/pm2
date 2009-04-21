@@ -18,6 +18,8 @@
 #ifdef MA__BUBBLES
 #ifdef MARCEL_MAMI_ENABLED
 
+#include "marcel_memory.h"
+
 /** \brief A cache bubble scheduler (inherits from
  * `marcel_bubble_sched_t').  */
 struct marcel_bubble_memory_sched

@@ -13,11 +13,14 @@
  * General Public License for more details.
  */
 
+#section types
+#ifdef MARCEL_MAMI_ENABLED
+struct marcel_memory_manager_s;
+#endif /* MARCEL_MAMI_ENABLED */
+
 #section functions
 #depend "marcel_bubble_sched_interface.h[types]"
 
-
-#depend "marcel_memory.h[types]"
 
 MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memory);
 
@@ -27,7 +30,7 @@ MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memory);
  * scheduler.  */
 extern void
 marcel_bubble_set_memory_manager (struct marcel_bubble_memory_sched *scheduler,
-																	marcel_memory_manager_t *mm);
+                                  struct marcel_memory_manager_s *mm);
 
 /** \brief Initialize \param scheduler as a `memory' scheduler.  \param *
  * memory_manager is used to determine the amount of memory associated with a
@@ -36,7 +39,7 @@ marcel_bubble_set_memory_manager (struct marcel_bubble_memory_sched *scheduler,
  * enabled.  */
 extern int
 marcel_bubble_memory_sched_init (struct marcel_bubble_memory_sched *scheduler,
-																 marcel_memory_manager_t *memory_manager,
-																 tbx_bool_t work_stealing);
+                                 struct marcel_memory_manager_s *memory_manager,
+                                 tbx_bool_t work_stealing);
 
 #endif

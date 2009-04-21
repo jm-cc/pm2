@@ -43,7 +43,7 @@ finalize_bench()
 }
 
 hosts=${BENCHHOST:-"localhost"}
-flavor="bench_marcel_mami_${hosts}"
+flavor="bench_memory_mami_${hosts}"
 appdir="${PM2_ROOT}/memory/examples"
 loop="memory"
 

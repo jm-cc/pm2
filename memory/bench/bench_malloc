@@ -1,4 +1,3 @@
-
 #-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -17,10 +16,10 @@
 initialize_bench()
 {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--modules=\"marcel tbx init\" \
+	--modules=\"marcel tbx init memory\" \
 	--marcel=numa --marcel=marcel_main --marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
-        --marcel=enable_mami \
+        --memory=enable_mami \
         --all=\"opt build_static static\"
     ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 }
@@ -45,8 +44,8 @@ finalize_bench()
 
 hosts=${BENCHHOST:-"localhost"}
 flavor="bench_marcel_mami_${hosts}"
-appdir="${PM2_ROOT}/marcel/examples/memory"
-loop="marcel"
+appdir="${PM2_ROOT}/memory/examples"
+loop="memory"
 
 prog="mami_bench"
 args="1000000"

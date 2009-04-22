@@ -13,7 +13,7 @@
 
 # LIBNAME -> nom de la librairie
 #---------------------------------------------------------------------
-LIBNAME=memory
+LIBNAME=mami
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------

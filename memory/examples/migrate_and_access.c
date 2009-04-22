@@ -13,10 +13,10 @@
  * General Public License for more details.
  */
 
-#include "marcel_memory.h"
+#include "mami.h"
 #include <sys/mman.h>
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 #define SIZE  100000
 

@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 
-#include "marcel_memory.h"
+#include "mami.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>

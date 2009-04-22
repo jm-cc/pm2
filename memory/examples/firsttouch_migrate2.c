@@ -13,10 +13,10 @@
  * General Public License for more details.
  */
 
-#include "marcel_memory.h"
+#include "mami.h"
 #include <malloc.h>
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 /*
  * Test when giving memory areas to MaMI with the first or the last

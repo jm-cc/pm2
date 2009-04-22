@@ -1,6 +1,6 @@
-#include "marcel_memory.h"
+#include "mami.h"
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 #include <cblas.h>
 #include <stdio.h>

@@ -48,7 +48,7 @@ void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict
 		*dest_data = *src_data;
 }
 
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 void ma_stats_memnode_sum_reset(void *dest) {
   memset (dest, 0, marcel_nbnodes * sizeof (long));
 }
@@ -58,7 +58,7 @@ void ma_stats_memnode_sum_synthesis(void * __restrict dest, const void * __restr
     ((long *)dest)[i] += ((long *)src)[i];
   }
 }
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_ENABLED */
 
 void ma_stats_last_vp_sum_reset (void *dest) {
   long *data = dest;
@@ -67,7 +67,7 @@ void ma_stats_last_vp_sum_reset (void *dest) {
 void ma_stats_last_vp_sum_synthesis (void * __restrict dest, const void * __restrict src) {
   long *dest_data = dest;
   const long *src_data = src;
-    
+
   switch (*dest_data) {
   case MA_VPSTATS_CONFLICT:
     /* if someone already told that this subtree contains different
@@ -78,7 +78,7 @@ void ma_stats_last_vp_sum_synthesis (void * __restrict dest, const void * __rest
     /* dest is not set yet, whatever src contains will be fine. */
     *dest_data = *src_data;
     break;
-    
+
   default:
     /* dest has already been set to something, we have to check if src
        holds something different. */
@@ -86,7 +86,7 @@ void ma_stats_last_vp_sum_synthesis (void * __restrict dest, const void * __rest
     case MA_VPSTATS_CONFLICT:
       *dest_data = MA_VPSTATS_CONFLICT;
       break;
-    
+
     case MA_VPSTATS_NO_LAST_VP:
       break;
 

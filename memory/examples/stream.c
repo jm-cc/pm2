@@ -39,9 +39,9 @@
 
 # include <float.h>
 # include <marcel.h>
-# include <marcel_memory.h>
+# include <mami.h>
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 # define N	3000000
 # define NTIMES	10

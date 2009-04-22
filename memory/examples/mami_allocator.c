@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#include "marcel_memory.h"
+#include "mami.h"
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 #warning a finir ....
 typedef struct mami_record_s mami_record_t;

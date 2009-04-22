@@ -13,11 +13,11 @@
  * General Public License for more details.
  */
 
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 
 #define MARCEL_INTERNAL_INCLUDE
 
-#include "marcel_memory.h"
+#include "mami.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -2037,4 +2037,4 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
   return err;
 }
 
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_ENABLED */

@@ -64,7 +64,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \
 	--marcel=enable_stats
 
-    register_flavor marcel-mami-opt \
+    register_flavor mami-opt \
 	--modules="marcel tbx init memory" $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
@@ -72,7 +72,7 @@ registering_flavors() {
         --marcel=dont_use_pthread \
         --memory=enable_mami 
 
-    register_flavor marcel-mami-debug \
+    register_flavor mami-debug \
 	--modules="marcel tbx init memory" \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle \
@@ -81,7 +81,7 @@ registering_flavors() {
         --marcel=dont_use_pthread \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
-    register_flavor marcel-mami-fortran-debug \
+    register_flavor mami-fortran-debug \
 	--modules="marcel tbx init memory" \
 	--marcel=numa --marcel=standard_main \
 	--marcel=smp_smt_idle \
@@ -147,7 +147,7 @@ registering_flavors() {
 	--profile=autostart \
 	--all=debug --all=gdb --all=noinline --all=build_both
 
-    register_flavor marcel-forestgomp-mami-debug \
+    register_flavor forestgomp-mami-debug \
         --modules="marcel tbx init memory" \
 	--marcel=numa --memory=enable_mami \
 	--marcel=standard_main --marcel=dont_use_pthread \

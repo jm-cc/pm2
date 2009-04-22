@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#include "marcel_memory.h"
+#include "mami.h"
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
   int *ptr, *ptr2;

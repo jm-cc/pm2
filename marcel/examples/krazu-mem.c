@@ -17,9 +17,9 @@
 #include <stdlib.h>
 
 #include <marcel.h>
-#include <marcel_memory.h>
+#include <mami.h>
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 #define NUM_THREADS 16
 #define TAB_SIZE 1024*1024*64

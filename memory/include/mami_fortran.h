@@ -13,10 +13,13 @@
  * General Public License for more details.
  */
 
-#section common
-#if defined(MARCEL_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+/** \addtogroup mami */
+/* @{ */
 
-#section functions
+#if defined(MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+
+#ifndef MAMI_FORTRAN_H
+#define MAMI_FORTRAN_H
 
 extern
 void marcel_memory_init_(int *memory_manager);
@@ -73,7 +76,7 @@ void marcel_memory_task_unattach_(int *memory_manager,
 				  marcel_t *owner,
 				  int *err);
 
-#section common
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_FORTRAN_H */
+#endif /* MAMI_ENABLED */
 
 /* @} */

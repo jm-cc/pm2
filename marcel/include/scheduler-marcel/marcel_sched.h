@@ -392,19 +392,19 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	ma_task_stats_set(long, t, marcel_stats_load_offset, MA_TASK_NOT_COUNTED_IN_RUNNING(t) ? 0L : 1L);
 	ma_task_stats_set(long, t, ma_stats_nbrunning_offset, 0);
 	ma_task_stats_set(long, t, ma_stats_nbready_offset, 0);
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 	{
 	  unsigned node;
 	  for (node = 0; node < marcel_nbnodes; node++) {
 	    ((long *) ma_task_stats_get (t, ma_stats_memnode_offset))[node] = 0;
 	  }
 	}
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_ENABLED */
 #endif /* MARCEL_STATS_ENABLED */
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 	ma_spin_lock_init(&t->as_entity.memory_areas_lock);
 	INIT_LIST_HEAD(&t->as_entity.memory_areas);
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_ENABLED */
 	if (ma_holder_type(t->as_entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->as_entity.name, t->as_entity.sched_holder->name, t->as_entity.prio);
 	else

@@ -27,7 +27,7 @@
 
 #include "bubble-testing.h"
 
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 
 #define NB_BUBBLES 4
 #define THREADS_PER_BUBBLE 4
@@ -179,7 +179,7 @@ main (int argc, char *argv[])
   return ret;
 }
 
-#else /* MARCEL_MAMI_ENABLED */
+#else /* MAMI_ENABLED */
 #  warning MaMI must be enabled for this program
 int main (int argc, char *argv[])
 {
@@ -187,4 +187,4 @@ int main (int argc, char *argv[])
 
   return 0;
 }
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_ENABLED */

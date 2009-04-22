@@ -60,10 +60,10 @@
  * @{
  */
 
-#ifdef MARCEL_MAMI_ENABLED
+#ifdef MAMI_ENABLED
 
-#ifndef MARCEL_MEMORY_H
-#define MARCEL_MEMORY_H
+#ifndef MAMI_H
+#define MAMI_H
 
 #include "pm2_list.h"
 #include "pm2_common.h"
@@ -761,7 +761,7 @@ int marcel_memory_gather(marcel_memory_manager_t *memory_manager,
                          void *buffer,
                          int node);
 
-#endif /* MARCEL_MEMORY_H */
-#endif /* MARCEL_MAMI_ENABLED */
+#endif /* MAMI_H */
+#endif /* MAMI_ENABLED */
 
 /* @} */

@@ -14,9 +14,9 @@
  */
 
 #define MARCEL_INTERNAL_INCLUDE
-#include "marcel_memory.h"
+#include "mami.h"
 
-#if defined(MARCEL_MAMI_ENABLED)
+#if defined(MAMI_ENABLED)
 
 static marcel_memory_manager_t memory_manager;
 void stats(void *ptr);

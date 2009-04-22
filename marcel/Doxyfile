@@ -477,7 +477,6 @@ INPUT                  = \
                          ../marcel/include/marcel_heap_numa.h \
                          ../marcel/include/marcel_heap_alloc.h \
                          ../marcel/include/marcel_heap_numa_alloc.h \
-                         ../marcel/include/marcel_memory.h \
                          ../marcel/include/marcel_attr.h \
                          ../marcel/include/marcel_descr.h
 
@@ -1050,7 +1049,6 @@ PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
 			 MARCEL_STATS_ENABLED \
-			 MARCEL_MAMI_ENABLED \
                          LINUX_SYS \
 			 DOXYGEN
 

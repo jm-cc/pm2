@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=marcel-mami
+export FLAVOR_DEFAULT:=mami
 
 ifndef FLAVOR
   ifdef PM2_FLAVOR

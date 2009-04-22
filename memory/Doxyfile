@@ -463,7 +463,11 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
-                         ../memory/include/marcel_memory.h
+                         ../memory/include/mm_heap_alloc.h \
+                         ../memory/include/mm_heap_numa_alloc.h \
+                         ../memory/include/mm_heap_numa.h \
+                         ../memory/include/mm_mami.h
+
 
 # This tag can be used to specify the character encoding of the source files that
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default
@@ -1034,6 +1038,7 @@ PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
 			 MARCEL_STATS_ENABLED \
+                         MM_HEAP_ENABLED \
 			 MM_MAMI_ENABLED \
                          LINUX_SYS \
 			 DOXYGEN

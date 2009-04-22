@@ -38,36 +38,36 @@ enum {
 #define LOOPS_FOR_MEMORY_ACCESS     100000
 
 static
-void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages, int loops,
-                                            void **pageaddrs, int *sources, int *dests, int *status,
-                                            unsigned long pagesize, FILE *f) {
+void _mami_sampling_of_memory_migration(unsigned long source, unsigned long dest, void *buffer, int pages, int loops,
+                                        void **pageaddrs, int *sources, int *dests, int *status,
+                                        unsigned long pagesize, FILE *f) {
   int i, err;
   struct timeval tv1, tv2;
   unsigned long us, ns, bandwidth;
 
   // Check the location of the pages
-  err = ma_memory_check_pages_location(pageaddrs, pages, source);
-  if (err < 0) perror("ma_memory_check_pages_location");
+  err = _mami_check_pages_location(pageaddrs, pages, source);
+  if (err < 0) perror("_mami_check_pages_location");
 
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<loops ; i++) {
-    err = ma_memory_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
-    if (err < 0) perror("ma_memory_move_pages");
-    err = ma_memory_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
-    if (err < 0) perror("ma_memory_move_pages");
+    err = _mami_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
+    if (err < 0) perror("_mami_move_pages");
+    err = _mami_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
+    if (err < 0) perror("_mami_move_pages");
   }
-  err = ma_memory_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
-  if (err < 0) perror("ma_memory_move_pages");
+  err = _mami_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
+  if (err < 0) perror("_mami_move_pages");
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
-  err = ma_memory_check_pages_location(pageaddrs, pages, dest);
-  if (err < 0) perror("ma_memory_check_pages_location");
+  err = _mami_check_pages_location(pageaddrs, pages, dest);
+  if (err < 0) perror("_mami_check_pages_location");
 
   // Move the pages back to the node source
-  err = ma_memory_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
-  if (err < 0) perror("ma_memory_move_pages");
+  err = _mami_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
+  if (err < 0) perror("_mami_move_pages");
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
@@ -78,7 +78,7 @@ void ma_memory_sampling_of_memory_migration(unsigned long source, unsigned long 
 }
 
 static
-int ma_memory_get_filename(const char *type, char *filename, long source, long dest) {
+int _mami_get_filename(const char *type, char *filename, long source, long dest) {
   char directory[1024];
   char hostname[1024];
   int rc = 0;
@@ -114,7 +114,7 @@ int ma_memory_get_filename(const char *type, char *filename, long source, long d
 }
 
 static
-void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
+void _mami_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   mami_migration_cost_t *migration_cost;
 
   migration_cost = tmalloc(sizeof(mami_migration_cost_t));
@@ -127,7 +127,7 @@ void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_
   tbx_slist_push(migration_costs, migration_cost);
 }
 
-int ma_memory_load_model_for_memory_migration(mami_manager_t *memory_manager) {
+int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -141,9 +141,9 @@ int ma_memory_load_model_for_memory_migration(mami_manager_t *memory_manager) {
   float bandwidth;
   int err;
 
-  err = ma_memory_get_filename("model_for_memory_migration", filename, -1, -1);
+  err = _mami_get_filename("model_for_memory_migration", filename, -1, -1);
   if (err < 0) {
-    perror("ma_memory_get_filename");
+    perror("_mami_get_filename");
     return -1;
   }
   out = marcel_fopen(filename, "r");
@@ -165,8 +165,8 @@ int ma_memory_load_model_for_memory_migration(mami_manager_t *memory_manager) {
 	marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
       }
 #endif /* PM2DEBUG */
-      ma_memory_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
-      ma_memory_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
+      _mami_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
+      _mami_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
     }
   }
   marcel_fclose(out);
@@ -210,7 +210,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
 
     // Set the memory policy on node source
     nodemask = (1<<source);
-    err = ma_memory_set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
+    err = _mami_set_mempolicy(MPOL_BIND, &nodemask, maxnode+2);
     if (err < 0) {
       perror("set_mempolicy");
       return (void *)(intptr_t)err;
@@ -233,32 +233,32 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
 
     if (!extended_mode) {
       for(pages=1; pages<=10000 ; pages*=10) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION/10, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION/10, pageaddrs, sources, dests, status, pagesize, out);
       }
     }
     else {
       for(pages=1; pages<10 ; pages++) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
       }
       fflush(out);
 
       for(pages=10; pages<100 ; pages+=10) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
         fflush(out);
       }
 
       for(pages=100; pages<1000 ; pages+=100) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
         fflush(out);
       }
 
       for(pages=1000; pages<10000 ; pages+=1000) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
         fflush(out);
       }
 
       for(pages=10000; pages<=25000 ; pages+=5000) {
-        ma_memory_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
+        _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
         fflush(out);
       }
     }
@@ -277,9 +277,9 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
     long dest = -1;
     if (minsource == maxsource) source = minsource;
     if (mindest == maxdest) dest = mindest;
-    err = ma_memory_get_filename("sampling_for_memory_migration", filename, source, dest);
+    err = _mami_get_filename("sampling_for_memory_migration", filename, source, dest);
     if (err < 0) {
-      perror("ma_memory_get_filename");
+      perror("_mami_get_filename");
       return -1;
     }
   }
@@ -313,7 +313,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
   return 0;
 }
 
-int ma_memory_load_model_for_memory_access(mami_manager_t *memory_manager) {
+int _mami_load_model_for_memory_access(mami_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -322,9 +322,9 @@ int ma_memory_load_model_for_memory_access(mami_manager_t *memory_manager) {
   float rcacheline, wcacheline;
   int err;
 
-  err = ma_memory_get_filename("sampling_for_memory_access", filename, -1, -1);
+  err = _mami_get_filename("sampling_for_memory_access", filename, -1, -1);
   if (err < 0) {
-    perror("ma_memory_get_filename");
+    perror("_mami_get_filename");
     return -1;
   }
   out = marcel_fopen(filename, "r");
@@ -408,9 +408,9 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     long dest = -1;
     if (minsource == maxsource) source = minsource;
     if (mindest == maxdest) dest = mindest;
-    err = ma_memory_get_filename("sampling_for_memory_access", filename, source, dest);
+    err = _mami_get_filename("sampling_for_memory_access", filename, source, dest);
     if (err < 0) {
-      perror("ma_memory_get_filename");
+      perror("_mami_get_filename");
       return -1;
     }
   }

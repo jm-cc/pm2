@@ -44,8 +44,8 @@ int marcel_main(int argc, char * argv[]) {
 
   ptr = mmap(NULL, 50000, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   for(i=0 ; i<memory_manager.nb_nodes ; i++) nodemask += (1<<i);
-  err = ma_memory_mbind(ptr, 50000, MPOL_INTERLEAVE, &nodemask, memory_manager.nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
-  if (err < 0) perror("ma_memory_mbind unexpectedly failed");
+  err = _mami_mbind(ptr, 50000, MPOL_INTERLEAVE, &nodemask, memory_manager.nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+  if (err < 0) perror("_mami_mbind unexpectedly failed");
   memset(ptr, 0, 50000);
 
   mami_register(&memory_manager, ptr, 50000);

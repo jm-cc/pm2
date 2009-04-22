@@ -63,7 +63,7 @@ int marcel_main(int argc, char **argv) {
   printf("move pages to node %d\n", 1);
   for(i=0; i<nbpages ; i++) nodes[i] = 1;
 
-  err = ma_memory_move_pages(pageaddrs, nbpages, nodes, status, MPOL_MF_MOVE);
+  err = _mami_move_pages(pageaddrs, nbpages, nodes, status, MPOL_MF_MOVE);
   if (err < 0) {
     if (errno == ENOENT) {
       printf("warning. cannot move pages which have not been allocated\n");

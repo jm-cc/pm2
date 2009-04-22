@@ -39,60 +39,60 @@ extern debug_type_t debug_memory_warn;
 #endif
 
 extern
-void ma_memory_delete_tree(mami_manager_t *memory_manager,
-			   mami_tree_t **memory_tree);
+void _mami_delete_tree(mami_manager_t *memory_manager,
+                       mami_tree_t **memory_tree);
 
 extern
-void ma_memory_register(mami_manager_t *memory_manager,
-                        void *buffer,
-                        size_t size,
-                        int mami_allocated,
-                        mami_data_t **data);
+void _mami_register(mami_manager_t *memory_manager,
+                    void *buffer,
+                    size_t size,
+                    int mami_allocated,
+                    mami_data_t **data);
 
 extern
-void ma_memory_unregister(mami_manager_t *memory_manager,
-			  mami_tree_t **memory_tree,
-			  void *buffer);
+void _mami_unregister(mami_manager_t *memory_manager,
+                      mami_tree_t **memory_tree,
+                      void *buffer);
 
 /*
  * Preallocates some memory (in number of pages) on the specified numa node.
  */
 extern
-int ma_memory_preallocate(mami_manager_t *memory_manager,
-                          mami_area_t **space,
-                          int nbpages,
-                          int vnode,
-                          int pnode);
+int _mami_preallocate(mami_manager_t *memory_manager,
+                      mami_area_t **space,
+                      int nbpages,
+                      int vnode,
+                      int pnode);
 
 extern
-int ma_memory_preallocate_huge_pages(mami_manager_t *memory_manager,
-                                     mami_huge_pages_area_t **space,
-                                     int node);
+int _mami_preallocate_huge_pages(mami_manager_t *memory_manager,
+                                 mami_huge_pages_area_t **space,
+                                 int node);
 
 extern
-int ma_memory_check_pages_location(void **pageaddrs,
-                                   int pages,
-                                   int node);
+int _mami_check_pages_location(void **pageaddrs,
+                               int pages,
+                               int node);
 
 extern
-int ma_memory_move_pages(void **pageaddrs,
-                         int pages,
-                         int *nodes,
-                         int *status,
-                         int flag);
+int _mami_move_pages(void **pageaddrs,
+                     int pages,
+                     int *nodes,
+                     int *status,
+                     int flag);
 
 extern
-int ma_memory_mbind(void *start, unsigned long len, int mode,
-                    const unsigned long *nmask, unsigned long maxnode, unsigned flags);
+int _mami_mbind(void *start, unsigned long len, int mode,
+                const unsigned long *nmask, unsigned long maxnode, unsigned flags);
 
 extern
-int ma_memory_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode);
+int _mami_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode);
 
 extern
-int ma_memory_load_model_for_memory_migration(mami_manager_t *memory_manager);
+int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager);
 
 extern
-int ma_memory_load_model_for_memory_access(mami_manager_t *memory_manager);
+int _mami_load_model_for_memory_access(mami_manager_t *memory_manager);
 
 #endif /* MM_MAMI_PRIVATE_H */
 #endif /* MM_MAMI_ENABLED */

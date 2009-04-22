@@ -160,11 +160,11 @@ int marcel_main(int argc, char **argv)
   int			  BytesPerWord;
   int	                  i, j, k;
   double		  t, times[4][NTIMES];
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
   marcel_attr_init(&attr);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   a = malloc (NB_NUMA_NODES * sizeof (double *));
   b = malloc (NB_NUMA_NODES * sizeof (double *));
@@ -178,9 +178,9 @@ int marcel_main(int argc, char **argv)
   }
 #else
   for (i = 0; i < NB_NUMA_NODES; i++) {
-    a[i] = marcel_memory_malloc(&memory_manager, TAB_SIZE, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, i);
-    b[i] = marcel_memory_malloc(&memory_manager, TAB_SIZE, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, i);
-    c[i] = marcel_memory_malloc(&memory_manager, TAB_SIZE, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, i);
+    a[i] = mami_malloc(&memory_manager, TAB_SIZE, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, i);
+    b[i] = mami_malloc(&memory_manager, TAB_SIZE, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, i);
+    c[i] = mami_malloc(&memory_manager, TAB_SIZE, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, i);
   }
 
 #endif
@@ -230,7 +230,7 @@ int marcel_main(int argc, char **argv)
   for (k=0; k<NTIMES; k++) {
     for (i = 0; i < NB_NUMA_NODES; i++) {
       int node;
-      marcel_memory_task_attach(&memory_manager, c[i], TAB_SIZE, marcel_self(), &node);
+      mami_task_attach(&memory_manager, c[i], TAB_SIZE, marcel_self(), &node);
     }
 
     times[0][k] = mysecond();
@@ -249,7 +249,7 @@ int marcel_main(int argc, char **argv)
     tuned_STREAM_Triad(scalar);
     times[3][k] = mysecond() - times[3][k];
 
-    marcel_memory_task_unattach_all(&memory_manager, marcel_self());
+    mami_task_unattach_all(&memory_manager, marcel_self());
   }
 
   /*	--- SUMMARY --- */
@@ -286,9 +286,9 @@ int marcel_main(int argc, char **argv)
   }
 #else
   for (i = 0; i < NB_NUMA_NODES; i++) {
-    marcel_memory_free(&memory_manager, a[i]);
-    marcel_memory_free(&memory_manager, b[i]);
-    marcel_memory_free(&memory_manager, c[i]);
+    mami_free(&memory_manager, a[i]);
+    mami_free(&memory_manager, b[i]);
+    mami_free(&memory_manager, c[i]);
   }
 #endif
   free (a);
@@ -296,7 +296,7 @@ int marcel_main(int argc, char **argv)
   free (c);
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

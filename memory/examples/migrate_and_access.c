@@ -22,7 +22,7 @@
 #define SIZE  100000
 
 int *buffer;
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 
 any_t t_migrate(any_t arg) {
   int i;
@@ -30,10 +30,10 @@ any_t t_migrate(any_t arg) {
 
   for(i=0 ; i<*loops ; i++) {
     if (i%2 == 0) {
-      marcel_memory_migrate_pages(&memory_manager, buffer, 1);
+      mami_migrate_pages(&memory_manager, buffer, 1);
     }
     else {
-      marcel_memory_migrate_pages(&memory_manager, buffer, 0);
+      mami_migrate_pages(&memory_manager, buffer, 0);
     }
     //if (i %1000) marcel_printf("Migrate ...\n");
   }
@@ -62,14 +62,14 @@ int marcel_main(int argc, char * argv[]) {
   int loops=1000;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   if (argc == 2) {
     loops = atoi(argv[1]);
   }
 
   // Allocate the buffer
-  buffer = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  buffer = mami_malloc(&memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   // Start the threads
   marcel_create(&threads[0], NULL, t_migrate, (any_t) &loops);
@@ -80,8 +80,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[1], NULL);
 
   // Finish marcel
-  marcel_memory_free(&memory_manager, buffer);
-  marcel_memory_exit(&memory_manager);
+  mami_free(&memory_manager, buffer);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

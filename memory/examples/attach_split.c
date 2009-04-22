@@ -22,22 +22,22 @@ int marcel_main(int argc, char * argv[]) {
   int err, node;
   void *ptr=NULL;
   marcel_t self;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 10*getpagesize(), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr = mami_malloc(&memory_manager, 10*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
   self = marcel_self();
 
-  err = marcel_memory_task_attach(&memory_manager, ptr, (2*getpagesize())-10, self, &node);
-  if (err < 0) perror("marcel_memory_attach unexpectedly failed");
+  err = mami_task_attach(&memory_manager, ptr, (2*getpagesize())-10, self, &node);
+  if (err < 0) perror("mami_attach unexpectedly failed");
 
-  err = marcel_memory_task_unattach(&memory_manager, ptr, self);
-  if (err < 0) perror("marcel_memory_unattach unexpectedly failed");
+  err = mami_task_unattach(&memory_manager, ptr, self);
+  if (err < 0) perror("mami_unattach unexpectedly failed");
 
-  marcel_memory_free(&memory_manager, ptr);
-  marcel_memory_exit(&memory_manager);
+  mami_free(&memory_manager, ptr);
+  mami_exit(&memory_manager);
   marcel_printf("Success\n");
 
   // Finish marcel

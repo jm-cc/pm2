@@ -22,7 +22,7 @@
 #define LOOPS 100000
 #define CACHE_LINE_SIZE 64
 
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 int **buffers;
 
 any_t writer(any_t arg) {
@@ -68,7 +68,7 @@ int marcel_main(int argc, char * argv[]) {
   unsigned long long **rtimes, **wtimes;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   marcel_attr_init(&attr);
 
   rtimes = (unsigned long long **) malloc(marcel_nbnodes * sizeof(unsigned long long *));
@@ -81,7 +81,7 @@ int marcel_main(int argc, char * argv[]) {
   buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    buffers[node] = marcel_memory_malloc(&memory_manager, SIZE*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers[node] = mami_malloc(&memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
 
   // Create a thread on node t to work on memory allocated on node node
@@ -126,7 +126,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Deallocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    marcel_memory_free(&memory_manager, buffers[node]);
+    mami_free(&memory_manager, buffers[node]);
   }
 
   marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
@@ -142,7 +142,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

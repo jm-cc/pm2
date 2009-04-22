@@ -20,26 +20,26 @@
 
 int marcel_main(int argc, char * argv[]) {
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   int i, node;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 9*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr = mami_malloc(&memory_manager, 9*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   for(i=0 ; i<9 ; i+=3 ) {
-    marcel_memory_task_attach(&memory_manager, ptr+(i*memory_manager.normalpagesize), 3*memory_manager.normalpagesize, marcel_self(), &node);
+    mami_task_attach(&memory_manager, ptr+(i*memory_manager.normalpagesize), 3*memory_manager.normalpagesize, marcel_self(), &node);
   }
   for(i=0 ; i<9 ; i+=3 ) {
-    marcel_memory_task_unattach(&memory_manager, ptr+(i*memory_manager.normalpagesize), marcel_self());
+    mami_task_unattach(&memory_manager, ptr+(i*memory_manager.normalpagesize), marcel_self());
   }
 
-  marcel_memory_free(&memory_manager, ptr);
+  mami_free(&memory_manager, ptr);
 
   // Finish marcel
   marcel_printf("Success\n");
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

@@ -25,7 +25,7 @@ struct mami_record_s {
   float imaginary;
 };
 
-static marcel_memory_manager_t memory_manager;
+static mami_manager_t memory_manager;
 static void *mami_record_malloc(void *arg);
 static void mami_record_free(void *obj, void *foo TBX_UNUSED);
 
@@ -34,7 +34,7 @@ int marcel_main(int argc, char * argv[]) {
   mami_record_t *record;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   mami_records = ma_new_obj_allocator(0,
                                       mami_record_malloc, (void *) sizeof(mami_record_t),
@@ -46,7 +46,7 @@ int marcel_main(int argc, char * argv[]) {
   ma_obj_free(mami_records, record);
 
   ma_obj_allocator_fini(mami_records);
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();
@@ -57,12 +57,12 @@ void *mami_record_malloc(void *arg) {
   size_t size = (size_t) (intptr_t) arg;
 
   marcel_printf("Allocating object\n");
-  return marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  return mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 }
 
 void mami_record_free(void *obj, void *foo TBX_UNUSED) {
   marcel_printf("Freeing object\n");
-  marcel_memory_free(&memory_manager, obj);
+  mami_free(&memory_manager, obj);
 }
 
 #else

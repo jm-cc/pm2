@@ -15,7 +15,7 @@
 . ./mami.sh
 prog="migration_error"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_migrate_pages: Operation already in progress
-marcel_memory_migrate_pages: Invalid argument
+mami_migrate_pages: Operation already in progress
+mami_migrate_pages: Invalid argument
 EOF
 

@@ -22,19 +22,19 @@ int marcel_main(int argc, char * argv[]) {
   int node, *nodes;
   int err, i;
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   ptr = malloc(1000);
-  err = marcel_memory_distribute(&memory_manager, ptr, NULL, 0);
+  err = mami_distribute(&memory_manager, ptr, NULL, 0);
   free(ptr);
-  if (err < 0) perror("marcel_memory_distribute successfully failed");
+  if (err < 0) perror("mami_distribute successfully failed");
 
-  ptr = marcel_memory_malloc(&memory_manager, 50000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 1);
+  ptr = mami_malloc(&memory_manager, 50000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
 
-  marcel_memory_locate(&memory_manager, ptr, 50000, &node);
+  mami_locate(&memory_manager, ptr, 50000, &node);
   if (node == 1)
     marcel_fprintf(stderr, "Node is %d as expected\n", node);
   else
@@ -42,28 +42,28 @@ int marcel_main(int argc, char * argv[]) {
 
   nodes = malloc(sizeof(int) * marcel_nbnodes);
   for(i=0 ; i<marcel_nbnodes ; i++) nodes[i] = i;
-  err = marcel_memory_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
-  if (err < 0) perror("marcel_memory_distribute unexpectedly failed");
+  err = mami_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
+  if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
-    marcel_memory_locate(&memory_manager, ptr, 50000, &node);
+    mami_locate(&memory_manager, ptr, 50000, &node);
     if (node == -2)
       marcel_fprintf(stderr, "Node is %d as expected\n", node);
     else
       marcel_fprintf(stderr, "Node is NOT -2 as expected but %d\n", node);
 
-    marcel_memory_gather(&memory_manager, ptr, 0);
-    marcel_memory_locate(&memory_manager, ptr, 50000, &node);
+    mami_gather(&memory_manager, ptr, 0);
+    mami_locate(&memory_manager, ptr, 50000, &node);
     if (node == 0)
       marcel_fprintf(stderr, "Node is %d as expected\n", node);
     else
       marcel_fprintf(stderr, "Node is NOT 0 as expected but %d\n", node);
 
-    marcel_memory_check_pages_location(&memory_manager, ptr, 50000, 0);
+    mami_check_pages_location(&memory_manager, ptr, 50000, 0);
   }
 
   free(nodes);
-  marcel_memory_free(&memory_manager, ptr);
-  marcel_memory_exit(&memory_manager);
+  mami_free(&memory_manager, ptr);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();

@@ -20,13 +20,13 @@
 
 int marcel_main(int argc, char * argv[]) {
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  marcel_memory_exit(&memory_manager);
+  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();

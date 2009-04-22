@@ -37,10 +37,10 @@ int marcel_main(int argc, char * argv[]) {
   int err, i;
   void *ptr;
   unsigned long nodemask;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   ptr = mmap(NULL, 50000, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   for(i=0 ; i<memory_manager.nb_nodes ; i++) nodemask += (1<<i);
@@ -48,26 +48,26 @@ int marcel_main(int argc, char * argv[]) {
   if (err < 0) perror("ma_memory_mbind unexpectedly failed");
   memset(ptr, 0, 50000);
 
-  marcel_memory_register(&memory_manager, ptr, 50000);
+  mami_register(&memory_manager, ptr, 50000);
 
   nodes = malloc(sizeof(int) * marcel_nbnodes);
   for(i=0 ; i<marcel_nbnodes ; i++) nodes[i] = i;
-  err = marcel_memory_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
-  if (err < 0) perror("marcel_memory_distribute unexpectedly failed");
+  err = mami_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
+  if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
-    marcel_memory_gather(&memory_manager, ptr, 1);
-    marcel_memory_locate(&memory_manager, ptr, 50000, &node);
+    mami_gather(&memory_manager, ptr, 1);
+    mami_locate(&memory_manager, ptr, 50000, &node);
     if (node == 1)
       marcel_fprintf(stderr, "Node is %d as expected\n", node);
     else
       marcel_fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
-    marcel_memory_check_pages_location(&memory_manager, ptr, 50000, 1);
+    mami_check_pages_location(&memory_manager, ptr, 50000, 1);
   }
 
   free(nodes);
-  marcel_memory_unregister(&memory_manager, ptr);
+  mami_unregister(&memory_manager, ptr);
   munmap(ptr, 50000);
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();

@@ -19,27 +19,27 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   int *ptr, *ptr2;
   size_t size;
   int err;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("marcel_memory_membind unexpectedly failed");
+  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("mami_membind unexpectedly failed");
 
   size = memory_manager.initially_preallocated_pages * memory_manager.normalpagesize;
-  ptr = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  ptr2 = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr = mami_malloc(&memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr2 = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
-  marcel_memory_free(&memory_manager, ptr);
-  marcel_memory_free(&memory_manager, ptr2);
+  mami_free(&memory_manager, ptr);
+  mami_free(&memory_manager, ptr2);
   marcel_printf("Success\n");
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

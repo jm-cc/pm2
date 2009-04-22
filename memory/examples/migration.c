@@ -18,7 +18,7 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 
 void allocation_and_migration(int cpu, int mem) {
   void *buffer;
@@ -27,15 +27,15 @@ void allocation_and_migration(int cpu, int mem) {
 
   size = memory_manager.normalpagesize * 2;
 
-  buffer = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, mem);
-  marcel_memory_locate(&memory_manager, buffer, size, &bnode);
+  buffer = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, mem);
+  mami_locate(&memory_manager, buffer, size, &bnode);
   marcel_printf("Node before migration %d\n", bnode);
 
-  marcel_memory_migrate_pages(&memory_manager, buffer, cpu);
+  mami_migrate_pages(&memory_manager, buffer, cpu);
 
-  marcel_memory_locate(&memory_manager, buffer, size, &anode);
+  mami_locate(&memory_manager, buffer, size, &anode);
   marcel_printf("Node after migration %d\n", anode);
-  marcel_memory_free(&memory_manager, buffer);
+  mami_free(&memory_manager, buffer);
 }
 
 any_t migration(any_t arg) {
@@ -49,10 +49,10 @@ any_t migration(any_t arg) {
   for(mem=0 ; mem<marcel_nbnodes ; mem++) {
     if (mem == cpu) continue;
 
-    marcel_memory_cost_for_read_access(&memory_manager,
+    mami_cost_for_read_access(&memory_manager,
 				       cpu, mem,
 				       size, &reading_cost);
-    marcel_memory_migration_cost(&memory_manager,
+    mami_migration_cost(&memory_manager,
                                  cpu, mem,
                                  size, &migration_cost);
     marcel_printf("\n[%d:%d] Migration cost %f - Reading access cost %f\n", cpu, mem, migration_cost, reading_cost);
@@ -72,7 +72,7 @@ int marcel_main(int argc, char * argv[]) {
   // Initialise marcel
   marcel_init(&argc, argv);
   marcel_attr_init(&attr);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   if (argc == 3) {
     allocation_and_migration(atoi(argv[1]), atoi(argv[2]));
@@ -87,7 +87,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

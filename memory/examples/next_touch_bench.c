@@ -18,15 +18,15 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 
 int *b;
 
 any_t writer(any_t arg) {
   int *nbpages = (int *) arg;
-  b = marcel_memory_malloc(&memory_manager, (*nbpages)*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b = mami_malloc(&memory_manager, (*nbpages)*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   memory_manager.kernel_nexttouch_migration = 0;
-  marcel_memory_migrate_on_next_touch(&memory_manager, b);
+  mami_migrate_on_next_touch(&memory_manager, b);
   return 0;
 }
 
@@ -36,18 +36,18 @@ any_t reader(any_t arg) {
   struct timeval tv1, tv2;
   unsigned long us, ns;
 
-  marcel_memory_locate(&memory_manager, b, 0, &snode);
+  mami_locate(&memory_manager, b, 0, &snode);
 
   gettimeofday(&tv1, NULL);
   b[1] = 42;
   gettimeofday(&tv2, NULL);
 
-  marcel_memory_locate(&memory_manager, b, 0, &dnode);
+  mami_locate(&memory_manager, b, 0, &dnode);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
 
-  marcel_memory_free(&memory_manager, b);
+  mami_free(&memory_manager, b);
   marcel_printf("%d\t%d\t%d\t%ld\n", snode, dnode, *nbpages, ns);
   return 0;
 }
@@ -59,7 +59,7 @@ int marcel_main(int argc, char * argv[]) {
   int source=-1, dest=-1, nbpages=-1;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   marcel_attr_init(&attr);
 
   for(i=1 ; i<argc ; i+=2) {
@@ -78,7 +78,7 @@ int marcel_main(int argc, char * argv[]) {
   }
   if (source == -1 || dest == -1 || nbpages == -1) {
     marcel_printf("Error. Argument missing\n");
-    marcel_memory_exit(&memory_manager);
+    mami_exit(&memory_manager);
     marcel_end();
     return  -1;
   }
@@ -94,7 +94,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[1], NULL);
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

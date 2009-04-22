@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-/*! \mainpage The MaMI API Documentation
+/*! \mainpage The Memory API Documentation
  *
  * \section intro_sec Introduction
  * <div class="sec">

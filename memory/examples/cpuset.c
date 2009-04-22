@@ -21,21 +21,21 @@
 int marcel_main(int argc, char * argv[]) {
   int node, cnode;
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
     cnode = -1;
-    marcel_memory_locate(&memory_manager, ptr, 100, &cnode);
+    mami_locate(&memory_manager, ptr, 100, &cnode);
     marcel_fprintf(stderr, "Memory %p allocated on node %d (requested node %d)\n", ptr, cnode, node);
-    marcel_memory_free(&memory_manager, ptr);
+    mami_free(&memory_manager, ptr);
   }
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

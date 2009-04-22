@@ -19,25 +19,25 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   void *b;
   int err;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   b = malloc(100);
   memory_manager.kernel_nexttouch_migration = 0;
-  err = marcel_memory_migrate_on_next_touch(&memory_manager, b);
+  err = mami_migrate_on_next_touch(&memory_manager, b);
   if (err < 0) {
-    perror("marcel_memory_migrate_on_next_touch");
+    perror("mami_migrate_on_next_touch");
   }
   else {
-    marcel_printf("marcel_memory_migrate_on_next_touch should have failed\n");
+    marcel_printf("mami_migrate_on_next_touch should have failed\n");
   }
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

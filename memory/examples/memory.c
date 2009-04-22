@@ -20,7 +20,7 @@
 
 //#define PRINT
 #define PAGES 2
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 
 any_t memory(any_t arg) {
   int *b, *c, *d, *e;
@@ -28,13 +28,13 @@ any_t memory(any_t arg) {
   int node, id;
 
   id = marcel_self()->id;
-  b = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  c = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  d = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  e = marcel_memory_malloc(&memory_manager, 100*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  buffer = marcel_memory_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  b = mami_malloc(&memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  c = mami_malloc(&memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  d = mami_malloc(&memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  e = mami_malloc(&memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  buffer = mami_calloc(&memory_manager, 1, PAGES * memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
 
-  marcel_memory_locate(&memory_manager, &(buffer[0]), 0, &node);
+  mami_locate(&memory_manager, &(buffer[0]), 0, &node);
   if (node == id) {
     marcel_printf("[%d] Address is located on the correct node %d\n", id, node);
   }
@@ -43,14 +43,14 @@ any_t memory(any_t arg) {
   }
 
 #ifdef PRINT
-  marcel_memory_print(&memory_manager);
+  mami_print(&memory_manager);
 #endif /* PRINT */
 
-  marcel_memory_free(&memory_manager, c);
-  marcel_memory_free(&memory_manager, b);
-  marcel_memory_free(&memory_manager, d);
-  marcel_memory_free(&memory_manager, e);
-  marcel_memory_free(&memory_manager, buffer);
+  mami_free(&memory_manager, c);
+  mami_free(&memory_manager, b);
+  mami_free(&memory_manager, d);
+  mami_free(&memory_manager, e);
+  mami_free(&memory_manager, buffer);
   return 0;
 }
 
@@ -64,17 +64,17 @@ any_t memory2(any_t arg) {
   buffers2 = malloc(maxnode * sizeof(void *));
   for(i=1 ; i<=5 ; i++) {
     for(node=0 ; node<maxnode ; node++)
-      buffers[node] = marcel_memory_malloc(&memory_manager, i*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+      buffers[node] = mami_malloc(&memory_manager, i*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
     for(node=0 ; node<maxnode ; node++)
-      marcel_memory_free(&memory_manager, buffers[node]);
+      mami_free(&memory_manager, buffers[node]);
   }
   for(node=0 ; node<maxnode ; node++) {
-    buffers[node] = marcel_memory_malloc(&memory_manager, memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
-    buffers2[node] = marcel_memory_malloc(&memory_manager, memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers[node] = mami_malloc(&memory_manager, memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers2[node] = mami_malloc(&memory_manager, memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
   for(node=0 ; node<maxnode ; node++) {
-    marcel_memory_free(&memory_manager, buffers[node]);
-    marcel_memory_free(&memory_manager, buffers2[node]);
+    mami_free(&memory_manager, buffers[node]);
+    mami_free(&memory_manager, buffers2[node]);
   }
   free(buffers);
   free(buffers2);
@@ -82,22 +82,22 @@ any_t memory2(any_t arg) {
 }
 
 void memory_bis(void) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   void *b[7];
   int i;
 
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   memory_manager.initially_preallocated_pages = 2;
-  b[0] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[1] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[2] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[3] = marcel_memory_malloc(&memory_manager, 2*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[4] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[5] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  b[6] = marcel_memory_malloc(&memory_manager, 1*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b[0] = mami_malloc(&memory_manager, 1*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[1] = mami_malloc(&memory_manager, 1*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[2] = mami_malloc(&memory_manager, 2*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[3] = mami_malloc(&memory_manager, 2*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[4] = mami_malloc(&memory_manager, 1*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[5] = mami_malloc(&memory_manager, 1*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[6] = mami_malloc(&memory_manager, 1*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
-  for(i=0 ; i<7 ; i++) marcel_memory_free(&memory_manager, b[i]);
-  marcel_memory_exit(&memory_manager);
+  for(i=0 ; i<7 ; i++) mami_free(&memory_manager, b[i]);
+  mami_exit(&memory_manager);
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -105,7 +105,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_t attr;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   marcel_attr_init(&attr);
 
   if (marcel_nbnodes < 2) {
@@ -133,7 +133,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_join(threads[1], NULL);
   }
 
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
 
   memory_bis();
 

@@ -15,6 +15,6 @@
 . ./mami.sh
 prog="attach"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_task_attach successfully failed: Invalid argument
+mami_task_attach successfully failed: Invalid argument
 EOF
 

@@ -21,25 +21,25 @@
 int marcel_main(int argc, char * argv[]) {
   void *ptr1, *ptr2, *ptr3, *ptr4, *ptr5;
   size_t size;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   size = memory_manager.initially_preallocated_pages * memory_manager.normalpagesize;
-  ptr1 = marcel_memory_malloc(&memory_manager, size+1, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  ptr2 = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  ptr3 = marcel_memory_malloc(&memory_manager, size/2, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  ptr4 = marcel_memory_malloc(&memory_manager, 4, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-  ptr5 = marcel_memory_malloc(&memory_manager, size, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  ptr1 = mami_malloc(&memory_manager, size+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr2 = mami_malloc(&memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr3 = mami_malloc(&memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr4 = mami_malloc(&memory_manager, 4, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr5 = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
-  marcel_memory_free(&memory_manager, ptr1);
-  marcel_memory_free(&memory_manager, ptr2);
-  marcel_memory_free(&memory_manager, ptr3);
-  marcel_memory_free(&memory_manager, ptr4);
-  marcel_memory_free(&memory_manager, ptr5);
+  mami_free(&memory_manager, ptr1);
+  mami_free(&memory_manager, ptr2);
+  mami_free(&memory_manager, ptr3);
+  mami_free(&memory_manager, ptr4);
+  mami_free(&memory_manager, ptr5);
 
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_printf("Success\n");

@@ -18,26 +18,26 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-marcel_memory_manager_t memory_manager;
+mami_manager_t memory_manager;
 
 int *b;
 
 any_t writer(any_t arg) {
-  b = marcel_memory_malloc(&memory_manager, 3*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+  b = mami_malloc(&memory_manager, 3*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   memory_manager.kernel_nexttouch_migration = 0;
-  marcel_memory_migrate_on_next_touch(&memory_manager, b);
+  mami_migrate_on_next_touch(&memory_manager, b);
   return 0;
 }
 
 any_t reader(any_t arg) {
   int node;
 
-  marcel_memory_locate(&memory_manager, b, 0, &node);
+  mami_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
   b[1] = 42;
 
-  marcel_memory_locate(&memory_manager, b, 0, &node);
+  mami_locate(&memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
   return 0;
 }
@@ -47,7 +47,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_t attr;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   marcel_attr_init(&attr);
 
   if (marcel_nbnodes < 3) {
@@ -71,8 +71,8 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Finish marcel
-  marcel_memory_free(&memory_manager, b);
-  marcel_memory_exit(&memory_manager);
+  mami_free(&memory_manager, b);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

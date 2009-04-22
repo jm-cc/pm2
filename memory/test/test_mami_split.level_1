@@ -20,7 +20,7 @@ Success when splitting memory area
 Success when attaching memory area
 
 Spliting unknown memory area
-marcel_memory_split fails 22 <Invalid argument>
+mami_split fails 22 <Invalid argument>
 
 Spliting memory area (204800) not allocated by MaMI
 Success when splitting memory area

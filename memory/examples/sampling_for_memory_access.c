@@ -19,12 +19,12 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char **argv) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   int i, err;
   int minsource, maxsource, mindest, maxdest;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   minsource = 0;
   maxsource = memory_manager.nb_nodes-1;
@@ -44,11 +44,11 @@ int marcel_main(int argc, char **argv) {
     }
   }
 
-  err = marcel_memory_sampling_of_memory_access(&memory_manager, minsource, maxsource, mindest, maxdest);
-  if (err < 0) perror("marcel_memory_sampling_of_memory_migration");
+  err = mami_sampling_of_memory_access(&memory_manager, minsource, maxsource, mindest, maxdest);
+  if (err < 0) perror("mami_sampling_of_memory_migration");
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return err;
 }

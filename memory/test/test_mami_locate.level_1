@@ -17,8 +17,8 @@ prog="locate"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 The memory is located on node #0
 The memory is located on node #0
-marcel_memory_locate: error -22
+mami_locate: error -22
 The memory is located on node #0
-marcel_memory_locate: error -22
+mami_locate: error -22
 EOF
 

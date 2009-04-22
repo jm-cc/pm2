@@ -22,14 +22,14 @@ int marcel_main(int argc, char * argv[]) {
   int node, *nodes;
   int err, i;
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  ptr = marcel_memory_malloc(&memory_manager, 50000, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 1);
+  ptr = mami_malloc(&memory_manager, 50000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
 
-  marcel_memory_locate(&memory_manager, ptr, 50000, &node);
+  mami_locate(&memory_manager, ptr, 50000, &node);
   if (node == 1)
     marcel_fprintf(stderr, "Node is %d as expected\n", node);
   else
@@ -37,17 +37,17 @@ int marcel_main(int argc, char * argv[]) {
 
   nodes = malloc(sizeof(int) * marcel_nbnodes);
   for(i=0 ; i<marcel_nbnodes ; i++) nodes[i] = i;
-  err = marcel_memory_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
-  if (err < 0) perror("marcel_memory_distribute unexpectedly failed");
+  err = mami_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
+  if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
     for(i=0 ; i<marcel_nbnodes ; i++) nodes[i] = (marcel_nbnodes-i-1);
-    err = marcel_memory_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
-    if (err < 0) perror("marcel_memory_distribute unexpectedly failed");
+    err = mami_distribute(&memory_manager, ptr, nodes, marcel_nbnodes);
+    if (err < 0) perror("mami_distribute unexpectedly failed");
   }
 
   free(nodes);
-  marcel_memory_free(&memory_manager, ptr);
-  marcel_memory_exit(&memory_manager);
+  mami_free(&memory_manager, ptr);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();

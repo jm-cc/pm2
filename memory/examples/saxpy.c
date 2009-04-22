@@ -54,26 +54,26 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   marcel_t *worker_id;
   int nb_workers, nb_cores, err;
   marcel_attr_t attr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   unsigned k;
   saxpy_t *args;
   struct timeval tv1, tv2;
   unsigned long us;
   unsigned i;
 
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
-  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("marcel_memory_membind");
+  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("mami_membind");
 
   gettimeofday(&tv1, NULL);
   /* Create and initialise the vectorrices */
   vectorA = malloc(nb_workers * sizeof(float *));
   vectorB = malloc(nb_workers * sizeof(float *));
   for(k=0 ; k<nb_workers ; k++) {
-    vectorA[k] = marcel_memory_malloc(&memory_manager, vector_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    vectorB[k] = marcel_memory_malloc(&memory_manager, vector_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    vectorA[k] = mami_malloc(&memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    vectorB[k] = mami_malloc(&memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
     if (initialisation_policy == SAXPY_INIT_GLOBALE) {
       for (i = 0; i < vector_size; i++) {
@@ -84,8 +84,8 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
 
     if (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
       memory_manager.kernel_nexttouch_migration = (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL);
-      marcel_memory_migrate_on_next_touch(&memory_manager, vectorA[k]);
-      marcel_memory_migrate_on_next_touch(&memory_manager, vectorB[k]);
+      mami_migrate_on_next_touch(&memory_manager, vectorA[k]);
+      mami_migrate_on_next_touch(&memory_manager, vectorB[k]);
     }
   }
 
@@ -106,10 +106,10 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   }
   gettimeofday(&tv2, NULL);
   for(k=0 ; k<nb_workers ; k++) {
-    marcel_memory_free(&memory_manager, vectorA[k]);
-    marcel_memory_free(&memory_manager, vectorB[k]);
+    mami_free(&memory_manager, vectorA[k]);
+    mami_free(&memory_manager, vectorB[k]);
   }
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   *ns = us * 1000;
 }

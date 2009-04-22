@@ -15,6 +15,6 @@
 . ./mami.sh
 prog="next_touch_error"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-marcel_memory_migrate_on_next_touch: Invalid argument
+mami_migrate_on_next_touch: Invalid argument
 EOF
 

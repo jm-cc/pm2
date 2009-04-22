@@ -82,10 +82,10 @@ main (int argc, char **argv)
   unsigned long tab_len = TAB_SIZE * sizeof (double);
   unsigned int i, team;
   struct timespec t1, t2;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init (&argc, argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   if (argc < 2) {
     usage ();
@@ -137,9 +137,9 @@ main (int argc, char **argv)
 
   /* Bind the accessed data to the nodes. */
   if (mpol == MAMI_NEXT_TOUCH || mpol == MAMI) {
-    a = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    b = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    c = marcel_memory_malloc (&memory_manager, nb_teams * sizeof (double *), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    a = mami_malloc (&memory_manager, nb_teams * sizeof (double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    b = mami_malloc (&memory_manager, nb_teams * sizeof (double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    c = mami_malloc (&memory_manager, nb_teams * sizeof (double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
   }
   else {
     a = marcel_malloc (nb_teams * sizeof (double *), __FILE__, __LINE__);
@@ -149,14 +149,14 @@ main (int argc, char **argv)
 
   for (i = 0; i < nb_teams; i++) {
     if (mpol == MAMI_NEXT_TOUCH) {
-      a[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-      b[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-      c[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+      a[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+      b[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+      c[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_DEFAULT, 0);
     }
     else if (mpol == MAMI) {
-      a[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
-      b[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
-      c[i] = marcel_memory_malloc(&memory_manager, tab_len, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
+      a[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
+      b[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
+      c[i] = mami_malloc(&memory_manager, tab_len, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, memory_nodes[i]);
     }
     else {
       a[i] = memalign (getpagesize(), tab_len);
@@ -193,9 +193,9 @@ main (int argc, char **argv)
     STREAM_init (&stream_struct[team], nb_threads, TAB_SIZE, a[team], b[team], c[team]);
 
     if (mpol == MAMI_NEXT_TOUCH) {
-      marcel_memory_migrate_on_next_touch(&memory_manager, a[team]);
-      marcel_memory_migrate_on_next_touch(&memory_manager, b[team]);
-      marcel_memory_migrate_on_next_touch(&memory_manager, c[team]);
+      mami_migrate_on_next_touch(&memory_manager, a[team]);
+      mami_migrate_on_next_touch(&memory_manager, b[team]);
+      mami_migrate_on_next_touch(&memory_manager, c[team]);
     }
 
     for (i = 0; i < nb_threads; i++) {
@@ -211,10 +211,10 @@ main (int argc, char **argv)
       marcel_create (&working_threads[team][i], &thread_attr[team][i], f, &stream_struct[team]);
     attach_mem:
       if (mpol == MAMI || mpol == MAMI_NEXT_TOUCH) {
-	/* FIXME: marcel_memory_attach () can't be called more than once on the same data. */
-        marcel_memory_task_attach(&memory_manager, a[team], tab_len, working_threads[team][i], &node);
-        marcel_memory_task_attach(&memory_manager, b[team], tab_len, working_threads[team][i], &node);
-        marcel_memory_task_attach(&memory_manager, c[team], tab_len, working_threads[team][i], &node);
+	/* FIXME: mami_attach () can't be called more than once on the same data. */
+        mami_task_attach(&memory_manager, a[team], tab_len, working_threads[team][i], &node);
+        mami_task_attach(&memory_manager, b[team], tab_len, working_threads[team][i], &node);
+        mami_task_attach(&memory_manager, c[team], tab_len, working_threads[team][i], &node);
       }
       else {
         for (node = 0; node < marcel_nbnodes; node++) {
@@ -244,13 +244,13 @@ main (int argc, char **argv)
 
   if (mpol == MAMI_NEXT_TOUCH || mpol == MAMI) {
     for (i = 0; i < nb_teams; i++) {
-      marcel_memory_free(&memory_manager, a[i]);
-      marcel_memory_free(&memory_manager, b[i]);
-      marcel_memory_free(&memory_manager, c[i]);
+      mami_free(&memory_manager, a[i]);
+      mami_free(&memory_manager, b[i]);
+      mami_free(&memory_manager, c[i]);
     }
-    marcel_memory_free(&memory_manager, a);
-    marcel_memory_free(&memory_manager, b);
-    marcel_memory_free(&memory_manager, c);
+    mami_free(&memory_manager, a);
+    mami_free(&memory_manager, b);
+    mami_free(&memory_manager, c);
   }
   else {
     for (i = 0; i < nb_teams; i++) {
@@ -267,7 +267,7 @@ main (int argc, char **argv)
   marcel_printf ("Test computed in %lfs!\n", average_time);
   marcel_printf ("Estimated rate (MB/s): %11.4f!\n", (double)(10 * tab_len * 1E-06)/ average_time);
 
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end ();
   return 0;
 }

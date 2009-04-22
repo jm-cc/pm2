@@ -19,26 +19,26 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   void *buffer, *buffer2;
   int err;
 
   // Initialise marcel
   marcel_init(&argc, argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  buffer = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
-  err = marcel_memory_migrate_pages(&memory_manager, buffer, 0);
-  if (err < 0) perror("marcel_memory_migrate_pages");
+  buffer = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  err = mami_migrate_pages(&memory_manager, buffer, 0);
+  if (err < 0) perror("mami_migrate_pages");
 
   buffer2 = malloc(100);
-  err = marcel_memory_migrate_pages(&memory_manager, buffer2, 0);
-  if (err < 0) perror("marcel_memory_migrate_pages");
+  err = mami_migrate_pages(&memory_manager, buffer2, 0);
+  if (err < 0) perror("mami_migrate_pages");
 
   // Finish marcel
-  marcel_memory_free(&memory_manager, buffer);
+  mami_free(&memory_manager, buffer);
   free(buffer2);
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

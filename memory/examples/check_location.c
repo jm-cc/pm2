@@ -21,21 +21,21 @@
 int marcel_main(int argc, char * argv[]) {
   int n, node;
   void *ptr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
   for(n=0 ; n<memory_manager.nb_nodes ; n++) {
-    ptr = marcel_memory_malloc(&memory_manager, 4*memory_manager.normalpagesize, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, n);
-    marcel_memory_locate(&memory_manager, ptr, 1, &node);
+    ptr = mami_malloc(&memory_manager, 4*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, n);
+    mami_locate(&memory_manager, ptr, 1, &node);
     if (node != n) marcel_printf("Wrong location: %d, asked for %d\n", node, n);
-    marcel_memory_check_pages_location(&memory_manager, ptr, 1, n);
-    marcel_memory_free(&memory_manager, ptr);
+    mami_check_pages_location(&memory_manager, ptr, 1, n);
+    mami_free(&memory_manager, ptr);
   }
 
   // Finish marcel
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

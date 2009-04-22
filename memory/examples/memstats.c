@@ -20,27 +20,27 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   void *ptr;
   unsigned long memtotal1, memfree1;
   unsigned long memtotal2, memfree2;
   unsigned long memtotal3, memfree3;
 
   marcel_init(&argc,argv);
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
 
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_TOTAL, &memtotal1);
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_FREE, &memfree1);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree1);
 
-  ptr = marcel_memory_malloc(&memory_manager, 100, MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_TOTAL, &memtotal2);
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_FREE, &memfree2);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal2);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree2);
 
-  marcel_memory_free(&memory_manager, ptr);
+  mami_free(&memory_manager, ptr);
 
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_TOTAL, &memtotal3);
-  marcel_memory_stats(&memory_manager, 0, MARCEL_MEMORY_STAT_MEMORY_FREE, &memfree3);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
+  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
 
   if (memfree1 == memfree3 && (memfree1-memfree2) == (memory_manager.normalpagesize/1024)) {
     marcel_printf("Success\n");
@@ -52,7 +52,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("Memtotal: %ld -- Memfree: %ld\n", memtotal3, memfree3);
   }
 
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
 
   // Finish marcel
   marcel_end();

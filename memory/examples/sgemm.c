@@ -54,18 +54,18 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   marcel_t *worker_id;
   int nb_workers, nb_cores, err;
   marcel_attr_t attr;
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
   unsigned k;
   sgemm_t *args;
   struct timeval tv1, tv2;
   unsigned long us;
   unsigned i,j;
 
-  marcel_memory_init(&memory_manager);
+  mami_init(&memory_manager);
   nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
-  err = marcel_memory_membind(&memory_manager, MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("marcel_memory_membind");
+  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("mami_membind");
 
   gettimeofday(&tv1, NULL);
   /* Create and initialise the matrices */
@@ -73,9 +73,9 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   matB = malloc(nb_workers * sizeof(float *));
   matC = malloc(nb_workers * sizeof(float *));
   for(k=0 ; k<nb_workers ; k++) {
-    matA[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    matB[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
-    matC[k] = marcel_memory_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MARCEL_MEMORY_MEMBIND_POLICY_DEFAULT, 0);
+    matA[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    matB[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    matC[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
     if (initialisation_policy == SGEMM_INIT_GLOBALE) {
       for (j = 0; j < matrix_size; j++) {
@@ -89,9 +89,9 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
 
     if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
       memory_manager.kernel_nexttouch_migration = (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL);
-      marcel_memory_migrate_on_next_touch(&memory_manager, matA[k]);
-      marcel_memory_migrate_on_next_touch(&memory_manager, matB[k]);
-      marcel_memory_migrate_on_next_touch(&memory_manager, matC[k]);
+      mami_migrate_on_next_touch(&memory_manager, matA[k]);
+      mami_migrate_on_next_touch(&memory_manager, matB[k]);
+      mami_migrate_on_next_touch(&memory_manager, matC[k]);
     }
   }
 
@@ -112,11 +112,11 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   }
   gettimeofday(&tv2, NULL);
   for(k=0 ; k<nb_workers ; k++) {
-    marcel_memory_free(&memory_manager, matA[k]);
-    marcel_memory_free(&memory_manager, matB[k]);
-    marcel_memory_free(&memory_manager, matC[k]);
+    mami_free(&memory_manager, matA[k]);
+    mami_free(&memory_manager, matB[k]);
+    mami_free(&memory_manager, matC[k]);
   }
-  marcel_memory_exit(&memory_manager);
+  mami_exit(&memory_manager);
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   *ns = us * 1000;
 }

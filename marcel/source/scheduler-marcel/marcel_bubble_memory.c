@@ -32,7 +32,7 @@ struct marcel_bubble_memory_sched
   /** \brief The associated memory manager.  It is used to determine the
       amount of memory associated with a thread on a given node, which then
       directs thread/memory migration decisions.  */
-  marcel_memory_manager_t *memory_manager;
+  mami_manager_t *memory_manager;
 
   /** \brief An associated `cache' scheduler that will be invoked to schedule
       entities within each NUMA node.  */
@@ -80,7 +80,7 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
 
 void
 marcel_bubble_set_memory_manager (marcel_bubble_memory_sched_t *scheduler,
-				  marcel_memory_manager_t *memory_manager) {
+				  mami_manager_t *memory_manager) {
   scheduler->memory_manager = memory_manager;
 }
 
@@ -210,7 +210,7 @@ ma_memory_global_balance (ma_distribution_t *distribution, unsigned int arity, u
 }
 
 static int
-ma_memory_apply_memory_distribution (marcel_memory_manager_t *memory_manager,
+ma_memory_apply_memory_distribution (mami_manager_t *memory_manager,
 				     ma_distribution_t *distribution,
 				     unsigned int arity) {
   unsigned int i, j;
@@ -226,11 +226,11 @@ ma_memory_apply_memory_distribution (marcel_memory_manager_t *memory_manager,
       switch (distribution[i].entities[j]->type) {
 
       case MA_BUBBLE_ENTITY:
-	marcel_memory_bubble_migrate_all (memory_manager, ma_bubble_entity (distribution[i].entities[j]), i);
+	mami_bubble_migrate_all (memory_manager, ma_bubble_entity (distribution[i].entities[j]), i);
 	break;
 
       case MA_THREAD_ENTITY:
-	marcel_memory_task_migrate_all (memory_manager, ma_task_entity (distribution[i].entities[j]), i);
+	mami_task_migrate_all (memory_manager, ma_task_entity (distribution[i].entities[j]), i);
 	break;
 
       default:
@@ -574,7 +574,7 @@ memory_sched_exit (marcel_bubble_sched_t *scheduler) {
 
 int
 marcel_bubble_memory_sched_init (marcel_bubble_memory_sched_t *scheduler,
-				 marcel_memory_manager_t *memory_manager,
+				 mami_manager_t *mami_manager,
 				 tbx_bool_t work_stealing) {
   int err;
   marcel_bubble_cache_sched_t *cache_sched;
@@ -595,7 +595,7 @@ marcel_bubble_memory_sched_init (marcel_bubble_memory_sched_t *scheduler,
 	{
 	  scheduler->cache_scheduler = (marcel_bubble_sched_t *) cache_sched;
 	  scheduler->work_stealing = work_stealing;
-	  scheduler->memory_manager = memory_manager;
+	  scheduler->memory_manager = mami_manager;
 
 	  scheduler->scheduler.klass = &marcel_bubble_memory_sched_class;
 

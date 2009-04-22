@@ -15,7 +15,7 @@
 
 #section types
 #ifdef MM_MAMI_ENABLED
-struct marcel_memory_manager_s;
+struct mami_manager_s;
 #endif /* MM_MAMI_ENABLED */
 
 #section functions
@@ -30,7 +30,7 @@ MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memory);
  * scheduler.  */
 extern void
 marcel_bubble_set_memory_manager (struct marcel_bubble_memory_sched *scheduler,
-                                  struct marcel_memory_manager_s *mm);
+                                  struct mami_manager_s *mm);
 
 /** \brief Initialize \param scheduler as a `memory' scheduler.  \param *
  * memory_manager is used to determine the amount of memory associated with a
@@ -39,7 +39,7 @@ marcel_bubble_set_memory_manager (struct marcel_bubble_memory_sched *scheduler,
  * enabled.  */
 extern int
 marcel_bubble_memory_sched_init (struct marcel_bubble_memory_sched *scheduler,
-                                 struct marcel_memory_manager_s *memory_manager,
+                                 struct mami_manager_s *mami_manager,
                                  tbx_bool_t work_stealing);
 
 #endif

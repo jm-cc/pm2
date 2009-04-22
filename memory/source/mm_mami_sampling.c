@@ -115,9 +115,9 @@ int ma_memory_get_filename(const char *type, char *filename, long source, long d
 
 static
 void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
-  marcel_memory_migration_cost_t *migration_cost;
+  mami_migration_cost_t *migration_cost;
 
-  migration_cost = tmalloc(sizeof(marcel_memory_migration_cost_t));
+  migration_cost = tmalloc(sizeof(mami_migration_cost_t));
   migration_cost->size_min = size_min;
   migration_cost->size_max = size_max;
   migration_cost->slope = slope;
@@ -127,7 +127,7 @@ void ma_memory_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_
   tbx_slist_push(migration_costs, migration_cost);
 }
 
-int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_manager) {
+int ma_memory_load_model_for_memory_migration(mami_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -173,12 +173,12 @@ int ma_memory_load_model_for_memory_migration(marcel_memory_manager_t *memory_ma
   return 0;
 }
 
-int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_manager,
-                                               unsigned long minsource,
-                                               unsigned long maxsource,
-                                               unsigned long mindest,
-                                               unsigned long maxdest,
-                                               int extended_mode) {
+int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
+                                      unsigned long minsource,
+                                      unsigned long maxsource,
+                                      unsigned long mindest,
+                                      unsigned long maxdest,
+                                      int extended_mode) {
   char filename[1024];
   FILE *out;
   int i;
@@ -313,7 +313,7 @@ int marcel_memory_sampling_of_memory_migration(marcel_memory_manager_t *memory_m
   return 0;
 }
 
-int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manager) {
+int ma_memory_load_model_for_memory_access(mami_manager_t *memory_manager) {
   char filename[1024];
   FILE *out;
   char line[1024];
@@ -353,11 +353,11 @@ int ma_memory_load_model_for_memory_access(marcel_memory_manager_t *memory_manag
   return 0;
 }
 
-int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_manager,
-                                            unsigned long minsource,
-                                            unsigned long maxsource,
-                                            unsigned long mindest,
-                                            unsigned long maxdest) {
+int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
+                                   unsigned long minsource,
+                                   unsigned long maxsource,
+                                   unsigned long mindest,
+                                   unsigned long maxdest) {
   char filename[1024];
   FILE *out;
   unsigned long t, node;
@@ -430,7 +430,7 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
   buffers = tmalloc(memory_manager->nb_nodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    buffers[node] = marcel_memory_malloc(memory_manager, size*sizeof(int), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers[node] = mami_malloc(memory_manager, size*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
 
   // Create a thread on node t to work on memory allocated on node node
@@ -475,7 +475,7 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
 
   // Deallocate memory on each node
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    marcel_memory_free(memory_manager, buffers[node]);
+    mami_free(memory_manager, buffers[node]);
   }
 
   marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");

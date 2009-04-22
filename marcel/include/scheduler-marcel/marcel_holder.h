@@ -166,7 +166,9 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
+#ifdef MM_HEAP_ENABLED
 #depend "mm_heap_alloc.h"
+#endif /* MM_HEAP_ENABLED */
 
 /** \brief Virtual class of a holder entity. An \e entity is a containee of a \e holder (::ma_holder).
  * Examples of entity subclasses include tasks (::marcel_task) and bubbles (::marcel_bubble).

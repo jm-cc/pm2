@@ -38,10 +38,10 @@ create_test_flavor() {
 	test_marcel_bubble_memory)
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""						\
-		--modules="\"marcel tbx init\"" --marcel="numa"		\
+		--modules="\"marcel tbx init memory\"" --marcel="numa"		\
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
-		--marcel="enable_stats"	--marcel="enable_mami"	        \
+		--marcel="enable_stats"	--memory="enable_mami"	        \
 		--marcel="bubble_sched_memory"			        \
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\

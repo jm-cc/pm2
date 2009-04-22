@@ -65,9 +65,7 @@
 #ifndef MM_MAMI_H
 #define MM_MAMI_H
 
-#include "pm2_list.h"
 #include "pm2_common.h"
-#include "tbx_pointers.h"
 
 /** \brief Type of a link for a list of tree nodes */
 typedef struct marcel_memory_data_link_s marcel_memory_data_link_t;

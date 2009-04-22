@@ -1,1 +1,2 @@
 Provide: marcel_stats
+Depend: marcel_numa

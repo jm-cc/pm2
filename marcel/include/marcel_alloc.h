@@ -28,7 +28,9 @@ extern ma_allocator_t *marcel_thread_seed_allocator;
 
 #section functions
 #depend "tbx_compiler.h"
+#ifdef MM_HEAP_ENABLED
 #depend "mm_heap_numa_alloc.h"
+#endif /* MM_HEAP_ENABLED */
 
 TBX_FMALLOC void *marcel_slot_alloc(void);
 TBX_FMALLOC void *marcel_tls_slot_alloc(void);

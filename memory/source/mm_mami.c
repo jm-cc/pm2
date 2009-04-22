@@ -17,7 +17,6 @@
 
 #define MARCEL_INTERNAL_INCLUDE
 
-#include "mm_mami.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -26,6 +25,8 @@
 #ifdef LINUX_SYS
 #  include <malloc.h>
 #endif /* LINUX_SYS */
+#include "mm_mami.h"
+#include "mm_mami_private.h"
 
 debug_type_t debug_memory = NEW_DEBUG_TYPE("MAR: ", "mar-mami-debug");
 debug_type_t debug_memory_log = NEW_DEBUG_TYPE("MAR: ", "mar-mami-log");

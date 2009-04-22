@@ -28,6 +28,7 @@ extern ma_allocator_t *marcel_thread_seed_allocator;
 
 #section functions
 #depend "tbx_compiler.h"
+#depend "mm_heap_numa_alloc.h"
 
 TBX_FMALLOC void *marcel_slot_alloc(void);
 TBX_FMALLOC void *marcel_tls_slot_alloc(void);
@@ -97,7 +98,7 @@ struct nodtab {
 #define LOCAL_NODE 1
 
 #section functions
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 /* heap allocator */
 TBX_FMALLOC void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
 void marcel_free_customized(void *data);
@@ -115,7 +116,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode);
 void marcel_see_allocated_memory(marcel_entity_t *entity);
 void ma_pinfo_init(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
 int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */
 
 /* malloc */
 TBX_FMALLOC void* marcel_malloc(size_t size, const char *file, unsigned line);

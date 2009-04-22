@@ -12,22 +12,26 @@
  *
  */
 
+#ifdef MM_HEAP_ENABLED
+#ifdef LINUX_SYS
+
+#define _GNU_SOURCE
+#define MARCEL_INTERNAL_INCLUDE
+
 #include <errno.h>
 #include <stdio.h>
-
-#include "marcel.h"
-
-#ifdef MA__NUMA_MEMORY
-
-#if defined LINUX_SYS
 #include <numaif.h>
 #include <numa.h>
 #include <stddef.h>
 #include <sys/mman.h>
-#if 0
-#  include <linux/mempolicy.h>
-#endif
 #include <ctype.h>
+#include "marcel.h"
+#include "mm_heap_numa.h"
+
+debug_type_t debug_memory = NEW_DEBUG_TYPE("MAR: ", "mar-mami-debug");
+debug_type_t debug_memory_log = NEW_DEBUG_TYPE("MAR: ", "mar-mami-log");
+debug_type_t debug_memory_ilog = NEW_DEBUG_TYPE("MAR: ", "mar-mami-ilog");
+debug_type_t debug_memory_warn = NEW_DEBUG_TYPE("MAR: ", "mar-mami-warn");
 
 int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
         int err, i, idx_node = 0;
@@ -139,4 +143,4 @@ long long ma_hits_mem_node(int node) {
 }
 
 #endif /* LINUX_SYS */
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

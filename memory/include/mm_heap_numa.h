@@ -15,10 +15,10 @@
 /** \addtogroup marcel_heap */
 /* @{ */
 
-#section common
-#ifdef MA__NUMA_MEMORY
-//#ifndef __NUMASIS_MEM_H
-//#define __NUMASIS_MEM_H
+#ifdef MM_HEAP_ENABLED
+
+#ifndef MM_HEAP_NUMA_H
+#define MM_HEAP_NUMA_H
 
 #include <numa.h>
 #include <numaif.h>
@@ -26,7 +26,6 @@
 #include <sys/mman.h>
 
 /* --- function prototypes --- */
-#section functions
 #if defined LINUX_SYS
 
 /**
@@ -53,7 +52,7 @@ long long ma_hits_mem_node(int node);
 
 #endif /* LINUX_SYS */
 
-#section common
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_NUMA_H */
+#endif /* MM_HEAP_ENABLED */
 
 /* @} */

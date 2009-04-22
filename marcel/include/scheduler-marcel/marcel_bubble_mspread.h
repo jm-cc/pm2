@@ -26,13 +26,13 @@
  */
 
 #section common
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 
 #section functions
 void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l);
 void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_topo_level **l, int nl);
 
 #section common
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */
 
 /* @} */

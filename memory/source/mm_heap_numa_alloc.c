@@ -12,33 +12,34 @@
  */
 
 
+#ifdef MM_HEAP_ENABLED
+
+#ifdef LINUX_SYS
+
+#define MARCEL_INTERNAL_INCLUDE
+
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/mman.h>
-#ifdef LINUX_SYS
 #include <sys/syscall.h>
-#endif
-
-#include "marcel.h"
-
-#ifdef MA__NUMA_MEMORY
 #include <numaif.h>
+#include "marcel.h"
+#include "mm_heap_alloc.h"
+#include "mm_heap_numa_alloc.h"
+#include "mm_heap_numa.h"
 
-#ifdef LINUX_SYS
 #ifndef __NR_move_pages
-
-#ifdef X86_64_ARCH
-#define __NR_move_pages 279
-#elif IA64_ARCH
-#define __NR_move_pages 1276
-#elif X86_ARCH
-#define __NR_move_pages 317
-#elif PPC_ARCH
-#define __NR_move_pages 301
-#elif PPC64_ARCH
-#define __NR_move_pages 301
-#endif
-
+#  ifdef X86_64_ARCH
+#    define __NR_move_pages 279
+#  elif IA64_ARCH
+#    define __NR_move_pages 1276
+#  elif X86_ARCH
+#    define __NR_move_pages 317
+#  elif PPC_ARCH
+#    define __NR_move_pages 301
+#  elif PPC64_ARCH
+#    define __NR_move_pages 301
+#  endif
 #endif /* __NR_move_pages */
 
 void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
@@ -503,4 +504,4 @@ void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h) {
 
 #endif /* LINUX_SYS */
 
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

@@ -126,14 +126,14 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 #section marcel_functions
 #ifdef MA__BUBBLES
 /** \brief Cast virtual class ::ma_holder \e h into subtype ::marcel_bubble.
- * \attention Semantics assumes that \e h dynamic type is a bubble. 
+ * \attention Semantics assumes that \e h dynamic type is a bubble.
  * Programmer should not assume that returned pointer is equal to \e h. */
 static __tbx_inline__ marcel_bubble_t *ma_bubble_holder(ma_holder_t *h);
 #else
 #define ma_bubble_holder(h) NULL
 #endif
 /** \brief Cast virtual class ::ma_holder \e h into subtype ::ma_runqueue.
- * \attention Semantics assumes that \e h dynamic type is a runqueue. 
+ * \attention Semantics assumes that \e h dynamic type is a runqueue.
  * Programmer should not assume that returned pointer is equal to \e h. */
 static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h);
 /** \brief Cast subtype ::marcel_bubble \e b into virtual class ::ma_holder.
@@ -145,9 +145,9 @@ ma_holder_t *ma_holder_bubble(marcel_bubble_t *b);
 ma_holder_t *ma_holder_rq(ma_runqueue_t *rq);
 #define ma_holder_rq(rq) (&(rq)->as_holder)
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 /* \brief Get the number of the numa node where the entity is.
- * \return a node number */ 
+ * \return a node number */
 int ma_node_entity(marcel_entity_t *entity);
 #endif
 
@@ -166,6 +166,8 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 #depend "pm2_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
+#depend "mm_heap_alloc.h"
+
 /** \brief Virtual class of a holder entity. An \e entity is a containee of a \e holder (::ma_holder).
  * Examples of entity subclasses include tasks (::marcel_task) and bubbles (::marcel_bubble).
  *
@@ -173,7 +175,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * - held in some natural, application-structure-dependent, holder
  *   (#natural_holder)
  * - put on some application-state-dependent scheduling holder (#sched_holder)
- *   by bubble scheduler algorithms, indicating a target onto which the entity 
+ *   by bubble scheduler algorithms, indicating a target onto which the entity
  *   should migrate as soon as
  *   _possible_ (but not necessarily immediately) if it is not already running
  *   there
@@ -185,7 +187,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
  * upcoming scheduling decision that the scheduling algorithm is currently busy
  * figuring out.
  *
- * If #ready_holder_data is \p NULL then the entity is currently running. Otherwise, it is 
+ * If #ready_holder_data is \p NULL then the entity is currently running. Otherwise, it is
  * currently preempted out and can be found in #cached_entities_item.
  */
 struct ma_entity {
@@ -246,10 +248,10 @@ struct ma_entity {
 
 #endif /* MM_MAMI_ENABLED */
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 	/** \brief Back pointer to the NUMA heap allocator used to allocated this object */
 	ma_heap_t *heap;
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */
 
 #ifdef MA__BUBBLES
 	/** \brief General-purpose list item linker for bubble schedulers */
@@ -314,7 +316,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #else
 #define MA_SCHED_MEMORY_AREA_INIT(e)
 #endif
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 #define MA_SCHED_ENTITY_HEAP_INIT(e) \
 	.heap = NULL,
 #else
@@ -729,7 +731,7 @@ static __tbx_inline__ int __tbx_warn_unused_result__ ma_get_entity(marcel_entity
 		ma_set_sched_holder(e, ma_bubble_entity(e), 0);
 	}
 #endif
-	sched_debug("holder %p [%s]: getting entity %p [%s] with state %d [%s]\n", h, h->name, e, e->name, state, 
+	sched_debug("holder %p [%s]: getting entity %p [%s] with state %d [%s]\n", h, h->name, e, e->name, state,
 			ma_entity_state_msg(state));
 	return state;
 }
@@ -764,7 +766,7 @@ static __tbx_inline__ void _ma_put_entity_check(marcel_entity_t *e, ma_holder_t 
 	}
 }
 static __tbx_inline__ void ma_put_entity(marcel_entity_t *e, ma_holder_t *h, int state) {
-	
+
 	sched_debug("holder %p [%s]: putting entity %p [%s] with state %d [%s]\n", h, h->name, e, e->name, state,
 			ma_entity_state_msg(state));
 	_ma_put_entity_check(e, h);

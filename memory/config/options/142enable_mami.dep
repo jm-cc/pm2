@@ -1,4 +1,4 @@
-Provide: marcel_mami
+Provide: memory_mami
 Depend: marcel_numa
-Provide: marcel_memory
-Conflict: marcel_memory
+Provide: memory_interface
+Conflict: memory_interface

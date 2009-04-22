@@ -15,16 +15,14 @@
 /** \addtogroup marcel_heap */
 /* @{ */
 
-//#ifndef __HEAP_ALLOC_H
-//#define __HEAP_ALLOC_H
+#ifdef MM_HEAP_ENABLED
 
-#section common
-#ifdef MA__NUMA_MEMORY
+#ifndef MM_HEAP_ALLOC_H
+#define MM_HEAP_ALLOC_H
 
 #include<stddef.h>
 #include<stdio.h>
 
-#section functions
 #ifdef LINUX_SYS
 /**
  * Align (size_t)mem to a multiple of HMALLOC_ALIGNMENT
@@ -32,7 +30,6 @@
 size_t ma_memalign(size_t mem);
 #endif /* LINUX_SYS */
 
-#section macros
 /* --- memory alignment --- */
 #define SIZE_SIZE_T (sizeof(size_t))
 #define HMALLOC_ALIGNMENT (2 * SIZE_SIZE_T)
@@ -55,7 +52,6 @@ typedef unsigned int binmap_t;
 #define clearbit(M,i)      (M[i / BITS_IN_WORDS] &= ~(1 << (i % BITS_IN_WORDS)))
 #define bit_is_marked(M,i) (M[i / BITS_IN_WORDS] & (1 << (i % BITS_IN_WORDS)))
 
-#section functions
 #include<string.h>
 
 #ifdef LINUX_SYS
@@ -88,7 +84,6 @@ static inline void mask_clr(unsigned long *a, int node) {
 
 #endif /*LINUX_SYS */
 
-#section structures
 /* --- heap and used block structures --- */
 /** used memory bloc definition inside heap*/
 struct ub {
@@ -108,13 +103,11 @@ struct ub {
 	struct ub *next;
 };
 
-#section types
 typedef struct ub ma_ub_t;
 /** heap structure type */
 typedef struct heap ma_heap_t;
 typedef struct malloc_stats ma_amalloc_stat_t;
 
-#section macros
 #define set_bloc(b,s,ps,h,pv,nx) {\
 	b->size = s; \
 	b->prev_free_size = ps; \
@@ -125,8 +118,7 @@ typedef struct malloc_stats ma_amalloc_stat_t;
 	b->stat_size = 0; \
 }
 
-#section structures
-#depend "marcel_mutex.h[structures]"
+#include "marcel_mutex.h"
 /** heap definition */
 struct heap {
         /** */
@@ -180,7 +172,6 @@ struct malloc_stats {
 	int npinfo;
 };
 
-#section macros
 #define HEAP_DYN_ALLOC 	0
 #define HEAP_PAGE_ALLOC 1
 #define HEAP_MINIMUM_PAGES 10
@@ -201,7 +192,6 @@ struct malloc_stats {
 
 #define MA_HEAP_NBPAGES 1048576
 
-#section functions
 #ifdef LINUX_SYS
 /**
  * Return an adress pointing to a heap of size (size_t)size
@@ -370,7 +360,7 @@ void ma_print_heap(struct ub* root);
 
 #endif /* LINUX_SYS */
 
-#section common
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ALLOC_H */
+#endif /* MM_HEAP_ENABLED */
 
 /* @} */

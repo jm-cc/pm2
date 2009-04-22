@@ -11,21 +11,18 @@
  *
  */
 
-#include <errno.h>
-#include <stdarg.h>
-
-/* used for atomic cmp&swap */
-//#include <asm/atomic.h>
-//#include <asm/system.h>
-
-/* used for mmap */
-#include <sys/mman.h>
-
-#include "marcel.h"
-
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 
 #ifdef LINUX_SYS
+
+#define MARCEL_INTERNAL_INCLUDE
+
+#include <errno.h>
+#include <stdarg.h>
+#include <sys/mman.h>
+#include "marcel.h"
+#include "mm_heap_numa.h"
+#include "mm_heap_alloc.h"
 
 size_t ma_memalign(size_t mem) {
 	unsigned long nb;
@@ -680,4 +677,4 @@ void ma_print_heap(struct ub* root) {
 
 #endif /* LINUX_SYS */
 
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

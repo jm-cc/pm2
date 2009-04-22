@@ -15,7 +15,7 @@
  */
 
 #section common
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 /* possible conflit avec broq ? */
 
 /** \file
@@ -33,4 +33,4 @@
 extern int marcel_bubble_msteal_see_up(struct marcel_topo_level *level);
 
 #section common
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

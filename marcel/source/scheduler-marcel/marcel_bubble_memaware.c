@@ -27,7 +27,7 @@ struct marcel_bubble_memaware_sched {
 	marcel_bubble_sched_t scheduler;
 };
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 
 int ma_bubble_memaware_checkload = 1;
 int ma_bubble_memaware_nodelevel = -1;
@@ -413,7 +413,7 @@ make_default_scheduler(marcel_bubble_sched_t *scheduler) {
 
 MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memaware, make_default_scheduler);
 
-#else /* !MA__NUMA_MEMORY */
+#else /* !MM_HEAP_ENABLED */
 
 /* Define an empty scheduler.  */
 static int
@@ -426,5 +426,5 @@ make_default_scheduler(marcel_bubble_sched_t *scheduler) {
 
 MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memaware, make_default_scheduler);
 
-#endif /* !MA__NUMA_MEMORY */
+#endif /* !MM_HEAP_ENABLED */
 #endif /* BUBBLES */

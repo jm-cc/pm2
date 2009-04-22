@@ -55,12 +55,12 @@ extern void ma_free_node(void *ptr, size_t size,
 extern void ma_migrate_mem(void *ptr, size_t size, int node);
 extern int ma_is_numa_available(void);
 
-#ifndef MA__NUMA_MEMORY
+#ifndef MM_HEAP_ENABLED
 //refaire un malloc bas de gamme non numa
 #define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
 #define ma_free_node(ptr, size, file, line) marcel_free(ptr)
 #define ma_migrate_mem(ptr, size, node) (void)0
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */
 
 #section marcel_variables
 #ifdef MA__NUMA

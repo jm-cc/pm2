@@ -19,20 +19,15 @@
  * @{
  */
 
-#section common
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 
-//#ifndef __MAHEAP_NUMA_ALLOC_H
-//#define __MAHEAP_NUMA_ALLOC_H
+#ifndef MM_HEAP_NUMA_ALLOC_H
+#define MM_HEAP_NUMA_ALLOC_H
 
 #include<stddef.h>
 
 //#include "maheap_alloc.h"
 
-//#section macros
-//#define MARCEL_NBMAXNODES 512
-
-#section structures
 /** weights of pages */
 enum pinfo_weight {
         /** */
@@ -71,10 +66,8 @@ struct pageinfo {
 	int nb_touched[MARCEL_NBMAXNODES];
  };
 
-#section types
 typedef struct pageinfo ma_pinfo_t;
 
-#section macros
 //#define SIZE_OF_UL 8
 
 /* Mark/Clear bits with given index */
@@ -82,7 +75,6 @@ typedef struct pageinfo ma_pinfo_t;
 //#define cleartouched(M,i)  (M[i / SIZE_OF_UL] &= ~(1 << (i % SIZE_OF_UL)))
 //#define page_is_touched(M,i) (M[i / SIZE_OF_UL] & (1 << (i % SIZE_OF_UL)))
 
-#section functions
 #ifdef LINUX_SYS
 
 /**
@@ -167,8 +159,7 @@ void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
 
 #endif /* LINUX_SYS */
 
-//#endif
-#section common
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_NUMA_ALLOC_H */
+#endif /* MM_HEAP_ENABLED */
 
 /* @} */

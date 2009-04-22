@@ -15,7 +15,7 @@
 
 #section marcel_functions
 #depend "scheduler/marcel_holder.h[types]"
-/* Recursively computes the considered entity's load. 
+/* Recursively computes the considered entity's load.
    A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
 
@@ -48,7 +48,7 @@ unsigned ma_is_a_seed(marcel_entity_t *);
    running thread.) */
 unsigned ma_entity_is_running (marcel_entity_t *e);
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 /* Compares memory attraction only */
 int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
@@ -56,7 +56,7 @@ int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2);
 /* Compares load attribute and memory attraction */
 int decreasing_order_entity_both_compar(const void *_e1, const void *_e2);
 int increasing_order_entity_both_compar(const void *_e1, const void *_e2);
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */
 
 /* Compares load attribute only */
 int ma_decreasing_order_entity_load_compar(const void *_e1, const void *_e2);
@@ -83,9 +83,9 @@ int ma_count_threads_in_entity(marcel_entity_t *entity);
 int ma_burst_bubble (marcel_bubble_t *bubble);
 
 /* This function steals _entity_to_steal_ and moves it to
-   _starving_level_, while moving up "everything that needs to be" (c), 
+   _starving_level_, while moving up "everything that needs to be" (c),
    thus avoiding hierachical locking issues. */
-int ma_bsched_steal (marcel_entity_t *entity_to_steal,  
+int ma_bsched_steal (marcel_entity_t *entity_to_steal,
 		     struct marcel_topo_level *starving_level);
 
 /* Debug function that prints information about the _ne_ entities

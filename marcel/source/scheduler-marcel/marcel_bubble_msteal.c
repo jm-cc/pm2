@@ -21,7 +21,7 @@
  *
  ******************************************************************/
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 #ifdef MA__BUBBLES
 
 #include <math.h>
@@ -538,4 +538,4 @@ int marcel_bubble_msteal_see_up(struct marcel_topo_level *level)
 }
 
 #endif /* MA__BUBBLES */
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

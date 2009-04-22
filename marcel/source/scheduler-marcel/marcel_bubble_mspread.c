@@ -16,7 +16,7 @@
 
 #include "marcel.h"
 
-#ifdef MA__NUMA_MEMORY
+#ifdef MM_HEAP_ENABLED
 #ifdef MA__BUBBLES
 
 /* Bouger la memoire avec les entites */
@@ -588,4 +588,4 @@ void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_
 }
 
 #endif /* MA__BUBBLES */
-#endif /* MA__NUMA_MEMORY */
+#endif /* MM_HEAP_ENABLED */

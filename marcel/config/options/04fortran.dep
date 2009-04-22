@@ -1,1 +1,2 @@
 Depend: fortran_compiler
+Provide: marcel_fortran

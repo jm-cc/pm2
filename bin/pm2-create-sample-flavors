@@ -85,8 +85,8 @@ registering_flavors() {
 	--modules="marcel tbx init memory" \
 	--marcel=numa --marcel=standard_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats \
-        --memory=enable_mami --marcel=fortran \
+	--marcel=enable_stats --marcel=fortran \
+        --memory=enable_mami --memory=fortran \
         --common=fortran_target_gfortran \
         --marcel=dont_use_pthread \
 	--all=debug --all=gdb --all=noinline --all=build_static

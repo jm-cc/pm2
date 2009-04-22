@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#if defined(MM_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+#if defined(MM_MAMI_ENABLED) && defined(MM_FORTRAN)
 
 #include "mm_mami.h"
 

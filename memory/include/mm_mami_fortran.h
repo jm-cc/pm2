@@ -16,7 +16,7 @@
 /** \addtogroup mami */
 /* @{ */
 
-#if defined(MM_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+#if defined(MM_MAMI_ENABLED) && defined(MM_FORTRAN)
 
 #ifndef MM_MAMI_FORTRAN_H
 #define MM_MAMI_FORTRAN_H

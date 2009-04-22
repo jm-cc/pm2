@@ -14,9 +14,9 @@
  */
 
 #section types
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 struct marcel_memory_manager_s;
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 
 #section functions
 #depend "marcel_bubble_sched_interface.h[types]"
@@ -24,7 +24,7 @@ struct marcel_memory_manager_s;
 
 MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memory);
 
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 
 /** \brief Use \param memory_manager as the memory manager for \param
  * scheduler.  */

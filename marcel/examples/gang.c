@@ -27,7 +27,7 @@
 //#define BARRIER
 
 extern ma_runqueue_t ma_gang_rq;
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 marcel_memory_manager_t memory_manager;
 #endif
 
@@ -37,11 +37,11 @@ marcel_barrier_t barrier[GANGS];
 
 any_t work(any_t arg) {
   int n = (int)(intptr_t) arg;
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
   int node;
 #endif
   *marcel_stats_get(marcel_self(), load) = rand()%10;
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
   marcel_memory_task_attach(&memory_manager,NULL,(rand()%10)<<20,NULL,&node);
 #endif
   while(1);
@@ -66,7 +66,7 @@ int marcel_main(int argc, char **argv)
   //marcel_t gangsched;
 
   marcel_init(&argc, argv);
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
   marcel_memory_init(&memory_manager);
 #endif
 

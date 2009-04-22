@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 //#define PRINT
 #define PAGES 2

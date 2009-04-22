@@ -16,9 +16,9 @@
 #include <marcel.h>
 
 #ifdef MA__BUBBLES
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 
-#include "mami.h"
+#include "mm_mami.h"
 
 /** \brief A cache bubble scheduler (inherits from
  * `marcel_bubble_sched_t').  */
@@ -623,7 +623,7 @@ make_default_scheduler (marcel_bubble_sched_t *scheduler) {
 
 MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memory, make_default_scheduler);
 
-#else /* MAMI_ENABLED */
+#else /* MM_MAMI_ENABLED */
 
 struct marcel_bubble_memory_sched
 {
@@ -647,7 +647,7 @@ make_default_scheduler (marcel_bubble_sched_t *scheduler) {
 
 MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS (memory, make_default_scheduler);
 
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 #endif /* MA__BUBBLES */
 
 /*

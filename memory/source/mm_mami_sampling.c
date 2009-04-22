@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 
-#include "mami.h"
+#include "mm_mami.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
@@ -501,4 +501,4 @@ int marcel_memory_sampling_of_memory_access(marcel_memory_manager_t *memory_mana
   return 0;
 }
 
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */

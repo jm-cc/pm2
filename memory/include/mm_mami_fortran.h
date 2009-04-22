@@ -16,10 +16,10 @@
 /** \addtogroup mami */
 /* @{ */
 
-#if defined(MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+#if defined(MM_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
 
-#ifndef MAMI_FORTRAN_H
-#define MAMI_FORTRAN_H
+#ifndef MM_MAMI_FORTRAN_H
+#define MM_MAMI_FORTRAN_H
 
 extern
 void marcel_memory_init_(int *memory_manager);
@@ -76,7 +76,7 @@ void marcel_memory_task_unattach_(int *memory_manager,
 				  marcel_t *owner,
 				  int *err);
 
-#endif /* MAMI_FORTRAN_H */
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_FORTRAN_H */
+#endif /* MM_MAMI_ENABLED */
 
 /* @} */

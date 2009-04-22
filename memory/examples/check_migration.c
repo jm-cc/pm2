@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 
 #include <sys/mman.h>
 #include <errno.h>
@@ -25,7 +25,7 @@
 #include <numa.h>
 #include <numaif.h>
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char **argv) {
   int nbpages=4;

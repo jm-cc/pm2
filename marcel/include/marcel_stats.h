@@ -27,7 +27,7 @@
  * For a given "statistic" (number of thread, thread load, ...) values are held
  * at some offset (ma_stats_nbthreads_offset for instance) in the ma_stats_t
  * buffers. It's up to the caller to know how to cast the pointer. For instance,
- * 
+ *
  * load = *(long*)ma_stats_get(object, marcel_stats_load_offset);
  *
  * For declaring a statistics, you just need to call ma_stats_alloc to which
@@ -55,12 +55,12 @@ extern unsigned long marcel_stats_load_offset;
 /* TODO: Watch out! We make this available outside of Marcel for now
    to be able to set artificial memory guidelines in example
    programs. This should move to the marcel_variable section soon. */
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 /** \brief Offset of the "per node allocated memory" (i.e. the total
     amount of memory per node allocated by the considered entity)
     statistics*/
 extern unsigned long ma_stats_memnode_offset;
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 
 #section marcel_variables
 /** \brief Offset of the "number of thread" statistics */
@@ -149,15 +149,15 @@ ma_stats_reset_t ma_stats_long_sum_reset;
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
 /** \brief "Max" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_max_reset;
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 /** \brief "Sum" synthesis function for the array of long describing
     the amount of memory allocated on each node. */
 ma_stats_synthesis_t ma_stats_memnode_sum_synthesis;
 /** \brief "Sum" reset function for the array of long describing the
     amount of memory allocated on each node. */
 ma_stats_reset_t ma_stats_memnode_sum_reset;
-#endif /* MAMI_ENABLED */
-/** \brief "Sum" synthesis function for the last_vp statistics. */ 
+#endif /* MM_MAMI_ENABLED */
+/** \brief "Sum" synthesis function for the last_vp statistics. */
 ma_stats_synthesis_t ma_stats_last_vp_sum_synthesis;
 /** \brief "Sum" reset function for the last_vp statistics (set to -1) */
 ma_stats_reset_t ma_stats_last_vp_sum_reset;

@@ -24,7 +24,7 @@
 # include <float.h>
 #include "../../marcel/examples/marcel_stream.h"
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #define TAB_SIZE 1024*1024*4
 #define NB_TIMES 20

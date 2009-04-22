@@ -1438,9 +1438,9 @@ unsigned long ma_stats_nbthreads_offset, ma_stats_nbthreadseeds_offset,
                 ma_stats_last_ran_offset, ma_stats_last_vp_offset, 
                 ma_stats_last_topo_level_offset;
 unsigned long marcel_stats_load_offset;
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 unsigned long ma_stats_memnode_offset;
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 
 static void __marcel_init linux_sched_init(void)
 {
@@ -1453,9 +1453,9 @@ static void __marcel_init linux_sched_init(void)
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbready_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 	ma_stats_memnode_offset = ma_stats_alloc(ma_stats_memnode_sum_reset, ma_stats_memnode_sum_synthesis, marcel_nbnodes * sizeof(long));
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 	ma_stats_last_vp_offset = ma_stats_alloc (ma_stats_last_vp_sum_reset, ma_stats_last_vp_sum_synthesis, sizeof (long));
 	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_topo_level_offset = ma_stats_alloc (ma_stats_last_topo_level_sum_reset, NULL, sizeof (long));

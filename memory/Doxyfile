@@ -1034,7 +1034,7 @@ PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
 			 MARCEL_STATS_ENABLED \
-			 MAMI_ENABLED \
+			 MM_MAMI_ENABLED \
                          LINUX_SYS \
 			 DOXYGEN
 

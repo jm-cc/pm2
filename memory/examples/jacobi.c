@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE  0
 #define JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL     1

@@ -16,7 +16,7 @@
 #define MARCEL_INTERNAL_INCLUDE
 
 #include <marcel.h>
-#include <mami.h>
+#include <mm_mami.h>
 #include <numa.h>
 #include <numaif.h>
 #include <errno.h>
@@ -24,7 +24,7 @@
 #include <time.h>
 #include "../../marcel/examples/marcel_stream.h"
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #define TAB_SIZE 1024*1024*16
 #define NB_TIMES 20

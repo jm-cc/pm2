@@ -13,10 +13,10 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 #include <sys/mman.h>
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #define SIZE  100000
 

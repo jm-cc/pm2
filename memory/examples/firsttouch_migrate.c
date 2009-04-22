@@ -13,10 +13,10 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 #include <malloc.h>
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 static void first_touch(void *buffer, size_t size);
 static marcel_memory_manager_t memory_manager;

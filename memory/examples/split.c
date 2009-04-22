@@ -13,11 +13,11 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 #include <errno.h>
 #include <malloc.h>
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 static marcel_memory_manager_t memory_manager;
 

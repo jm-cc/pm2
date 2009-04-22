@@ -13,9 +13,9 @@
  * General Public License for more details.
  */
 
-#if defined(MAMI_ENABLED) && defined(MARCEL_FORTRAN)
+#if defined(MM_MAMI_ENABLED) && defined(MARCEL_FORTRAN)
 
-#include "mami.h"
+#include "mm_mami.h"
 
 void marcel_memory_init_(int *memory_manager) {
   marcel_memory_manager_t *manager = TBX_MALLOC(sizeof(marcel_memory_manager_t));

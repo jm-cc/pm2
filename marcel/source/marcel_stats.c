@@ -48,7 +48,7 @@ void ma_stats_long_max_synthesis(void * __restrict dest, const void * __restrict
 		*dest_data = *src_data;
 }
 
-#ifdef MAMI_ENABLED
+#ifdef MM_MAMI_ENABLED
 void ma_stats_memnode_sum_reset(void *dest) {
   memset (dest, 0, marcel_nbnodes * sizeof (long));
 }
@@ -58,7 +58,7 @@ void ma_stats_memnode_sum_synthesis(void * __restrict dest, const void * __restr
     ((long *)dest)[i] += ((long *)src)[i];
   }
 }
-#endif /* MAMI_ENABLED */
+#endif /* MM_MAMI_ENABLED */
 
 void ma_stats_last_vp_sum_reset (void *dest) {
   long *data = dest;

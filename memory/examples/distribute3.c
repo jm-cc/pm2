@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#include "mami.h"
+#include "mm_mami.h"
 #include <numa.h>
 #include <sys/mman.h>
 
@@ -29,7 +29,7 @@ enum {
 #  define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
 #  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
 
-#if defined(MAMI_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
   int node, *nodes;

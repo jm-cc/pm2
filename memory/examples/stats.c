@@ -14,6 +14,7 @@
  */
 
 #define MARCEL_INTERNAL_INCLUDE
+#include <stdio.h>
 #include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)

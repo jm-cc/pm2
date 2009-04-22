@@ -1,10 +1,9 @@
-#include "mm_mami.h"
-
-#if defined(MM_MAMI_ENABLED)
-
 #include <cblas.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "mm_mami.h"
+
+#if defined(MM_MAMI_ENABLED)
 
 #define SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE  0
 #define SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL     1

@@ -13,6 +13,7 @@
  * General Public License for more details.
  */
 
+#include <stdio.h>
 #include "mm_mami.h"
 #include <numa.h>
 #include <sys/mman.h>

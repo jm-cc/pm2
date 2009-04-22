@@ -379,7 +379,7 @@ int main(int argc, char *argv[]) {
 
 	/* ordonnancement */
 	marcel_start_playing();
-	marcel_bubble_spread(&b0, marcel_topo_level(0,0), 0);
+	marcel_bubble_spread(&b0, marcel_topo_level(0,0));
 
 	/* threads places */
 	marcel_barrier_wait(&allbarrier);

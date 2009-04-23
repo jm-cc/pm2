@@ -350,14 +350,6 @@ void ma_print_list(const char* str, ma_heap_t* heap);
  */
 void ma_print_heap(struct ub* root);
 
-/* --- debug functions --- */
-
-#ifdef PM2DEBUG
-#define mdebug_heap_list(str,root) ma_print_list(str,root)
-#else
-#define	mdebug_heap_list(...)
-#endif
-
 #endif /* LINUX_SYS */
 
 #endif /* MM_HEAP_ALLOC_H */

@@ -17,6 +17,7 @@
 
 #include "mm_mami.h"
 #include "mm_mami_private.h"
+#include "mm_debug.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
@@ -148,12 +149,12 @@ int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager) {
   }
   out = marcel_fopen(filename, "r");
   if (!out) {
-    mdebug_mami("The model for the cost of the memory migration is not available\n");
+    mdebug_memory("The model for the cost of the memory migration is not available\n");
     return -1;
   }
-  mdebug_mami("Reading file %s\n", filename);
+  mdebug_memory("Reading file %s\n", filename);
   fgets(line, 1024, out);
-  mdebug_mami("Reading line %s\n", line);
+  mdebug_memory("Reading line %s\n", line);
   while (!(feof(out))) {
     if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
@@ -329,10 +330,10 @@ int _mami_load_model_for_memory_access(mami_manager_t *memory_manager) {
   }
   out = marcel_fopen(filename, "r");
   if (!out) {
-    mdebug_mami("The model for the cost of the memory access is not available\n");
+    mdebug_memory("The model for the cost of the memory access is not available\n");
     return -1;
   }
-  mdebug_mami("Reading file %s\n", filename);
+  mdebug_memory("Reading file %s\n", filename);
   fgets(line, 1024, out);
   while (!feof(out)) {
     if (marcel_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {

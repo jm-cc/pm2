@@ -18,26 +18,6 @@
 #ifndef MM_MAMI_PRIVATE_H
 #define MM_MAMI_PRIVATE_H
 
-extern debug_type_t debug_memory;
-extern debug_type_t debug_memory_log;
-extern debug_type_t debug_memory_ilog;
-extern debug_type_t debug_memory_warn;
-
-#define mdebug_mami(fmt, args...) \
-    debug_printf(&debug_memory, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-
-#if defined(PM2DEBUG)
-#  define MAMI_LOG_IN()        debug_printf(&debug_memory_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MAMI_LOG_OUT()       debug_printf(&debug_memory_log, "%s: <--\n", __TBX_FUNCTION__)
-#  define MAMI_ILOG_IN()       debug_printf(&debug_memory_ilog, "%s: -->\n", __TBX_FUNCTION__)
-#  define MAMI_ILOG_OUT()      debug_printf(&debug_memory_ilog, "%s: <--\n", __TBX_FUNCTION__)
-#else
-#  define MAMI_LOG_IN()
-#  define MAMI_LOG_OUT()
-#  define MAMI_ILOG_IN()
-#  define MAMI_ILOG_OUT()
-#endif
-
 extern
 void _mami_delete_tree(mami_manager_t *memory_manager,
                        mami_tree_t **memory_tree);

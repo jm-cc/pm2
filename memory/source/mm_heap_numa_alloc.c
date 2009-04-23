@@ -27,6 +27,7 @@
 #include "mm_heap_alloc.h"
 #include "mm_heap_numa_alloc.h"
 #include "mm_heap_numa.h"
+#include "mm_debug.h"
 
 #ifndef __NR_move_pages
 #  ifdef X86_64_ARCH
@@ -45,7 +46,7 @@
 void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
 	ma_heap_t* current_heap;
 	//marcel_fprintf(stderr,"ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask);
-	mdebug_heap("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
+	mdebug_memory("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
 	/* look for corresponding heap */
 	current_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
 	//marcel_fprintf(stderr,"ma_hmalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", mempolicy, *nodemask, maxnode, MARCEL_SELF);
@@ -161,7 +162,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 
 	/* look for corresponding heap */
 	current_heap = ma_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
-	mdebug_heap("ma_hmove_memory (%d,%d) numa=%ld current_heap %p\n",ppinfo->mempolicy,ppinfo->weight,*ppinfo->nodemask,current_heap);
+	mdebug_memory("ma_hmove_memory (%d,%d) numa=%ld current_heap %p\n",ppinfo->mempolicy,ppinfo->weight,*ppinfo->nodemask,current_heap);
 	if (current_heap == NULL) return 0;
 
 	if (ppinfo->mempolicy == mempolicy && ppinfo->weight == weight && mask_equal(ppinfo->nodemask,ppinfo->maxnode,nodemask,maxnode)) {
@@ -182,7 +183,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 	/* 		current_heap->pages[i]= j; */
 	/* 	} */
 
-	mdebug_heap_list("ma_hmove_memory before\n",current_heap);
+	mdebug_memory_list("ma_hmove_memory before\n",current_heap);
 
 	/* look for a existing matching heap to link */
 	match_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
@@ -192,14 +193,14 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
 	while(IS_HEAP(next_same_heap)) {
 		ma_spin_lock(&next_same_heap->lock_heap);
 		if (ma_amaparea(next_same_heap, mempolicy, weight, nodemask, maxnode) != 0) {
-			mdebug_heap("ma_amaparea failed\n");
+			mdebug_memory("ma_amaparea failed\n");
 		}
 		nb_attach = next_same_heap->nb_attach;
 		current_bloc_used = next_same_heap->used;
 		while(current_bloc_used != NULL && nb_attach > 0) {
 			if (current_bloc_used->data != NULL) {
 				if (ma_maparea(current_bloc_used->data, current_bloc_used->stat_size, mempolicy, nodemask, maxnode) != 0) {
-					mdebug_heap("ma_amaparea failed\n");
+					mdebug_memory("ma_amaparea failed\n");
 				}
 				nb_attach--;
 			}
@@ -229,7 +230,7 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
 		ma_spin_lock(&current_heap->lock_heap);
 		if ((unsigned long) ptr < (unsigned long)current_heap + HEAP_GET_SIZE(current_heap) && (unsigned long)ptr > (unsigned long)current_heap) {
 			/* found: heap < data < heap+size */
-			mdebug_heap("found %p in %p\n",ptr,current_heap);
+			mdebug_memory("found %p in %p\n",ptr,current_heap);
 			ppinfo->size = HEAP_GET_SIZE(current_heap);
 			ppinfo->mempolicy = current_heap->mempolicy;
 			ppinfo->weight = current_heap->weight;
@@ -303,7 +304,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 				ma_spin_unlock(&current_heap->lock_heap);
 				current_heap = current_heap->next_heap;
 			}
-			mdebug_heap("ma_hnext_pinfo: first call, it=%d\n",iterator_num);
+			mdebug_memory("ma_hnext_pinfo: first call, it=%d\n",iterator_num);
 		}
 
 		/* set iterator id list */
@@ -323,7 +324,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 			}
 			current_heap = current_heap->next_heap;
 		}
-		mdebug_heap_list("ma_hnext_pinfo list:\n",heap);
+		mdebug_memory_list("ma_hnext_pinfo list:\n",heap);
 
 		/* goes to next heap higher iterator_num */
 		current_heap = ma_aget_heap_from_list((*ppinfo)->mempolicy,(*ppinfo)->weight,(*ppinfo)->nodemask,(*ppinfo)->maxnode,heap);
@@ -336,7 +337,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
 		current_heap = heap;
 		while (IS_HEAP(current_heap)) {
 			if (current_heap->iterator_num == iterator_num + 1) {
-				mdebug_heap("next heap %p it=%d\n",current_heap,current_heap->iterator_num);
+				mdebug_memory("next heap %p it=%d\n",current_heap,current_heap->iterator_num);
 				break;
 			}
 			current_heap = current_heap->next_heap;
@@ -387,7 +388,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 					//{
 					addr[0] = (char *) current_heap + i*pagesize;
 					//		addr[0] = (void*)current_heap+0;
-					//	mdebug_heap("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
+					//	mdebug_memory("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
 					node = -1;
 #ifndef __NR_move_pages
 #warning __NR_move_pages unknown
@@ -410,7 +411,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 					}
 					if (node >= 0) {
 						ppinfo->nb_touched[node]++;
-						mdebug_heap("page touched %p node=%d\n",addr[0],node);
+						mdebug_memory("page touched %p node=%d\n",addr[0],node);
 					}
 					/* set the page touched */
 					//current_heap->pages[i] = node;
@@ -439,7 +440,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
 #else
 								syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
 								//	syscall(__NR_move_pages, 0, nb_pages, addr, NULL, ppinfo->nb_touched, MPOL_MF_MOVE);
-								//	mdebug_heap("i=%d node=%d\n",i,node);
+								//	mdebug_memory("i=%d node=%d\n",i,node);
 								//move_pages(0,1,addr,NULL,&node,MPOL_MF_MOVE);
 #endif
 								if (node >= 0) {

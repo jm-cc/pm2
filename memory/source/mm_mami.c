@@ -27,11 +27,7 @@
 #endif /* LINUX_SYS */
 #include "mm_mami.h"
 #include "mm_mami_private.h"
-
-debug_type_t debug_memory = NEW_DEBUG_TYPE("MAR: ", "mar-mami-debug");
-debug_type_t debug_memory_log = NEW_DEBUG_TYPE("MAR: ", "mar-mami-log");
-debug_type_t debug_memory_ilog = NEW_DEBUG_TYPE("MAR: ", "mar-mami-ilog");
-debug_type_t debug_memory_warn = NEW_DEBUG_TYPE("MAR: ", "mar-mami-warn");
+#include "mm_debug.h"
 
 /* The following is normally defined in <linux/mempolicy.h>. But that file is not always available. */
 /* Policies */
@@ -117,7 +113,7 @@ void mami_init(mami_manager_t *memory_manager) {
   void *ptr;
   int err;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   memory_manager->root = NULL;
   marcel_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
@@ -137,7 +133,7 @@ void mami_init(mami_manager_t *memory_manager) {
 #else /* !LINUX_SYS */
   memory_manager->kernel_nexttouch_migration = 0;
 #endif /* LINUX_SYS */
-  mdebug_mami("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration);
+  mdebug_memory("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration);
 
   // Is migration available
   {
@@ -147,7 +143,7 @@ void mami_init(mami_manager_t *memory_manager) {
       err = _mami_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_MOVE);
       memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
       free(ptr);
-      mdebug_mami("Migration: %d\n", memory_manager->migration_flag);
+      mdebug_memory("Migration: %d\n", memory_manager->migration_flag);
   }
 
   // How much total and free memory per node
@@ -168,10 +164,10 @@ void mami_init(mami_manager_t *memory_manager) {
   memory_manager->heaps = tmalloc((memory_manager->nb_nodes+1) * sizeof(mami_area_t *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     _mami_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, marcel_topo_node_level[node].os_node);
-    mdebug_mami("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
+    mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
   }
   _mami_preallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, FIRST_TOUCH_NODE, FIRST_TOUCH_NODE);
-  mdebug_mami("Preallocating %p for anonymous heap\n", memory_manager->heaps[FIRST_TOUCH_NODE]->start);
+  mdebug_memory("Preallocating %p for anonymous heap\n", memory_manager->heaps[FIRST_TOUCH_NODE]->start);
 
   // Initialise space with huge pages on each node
   memory_manager->huge_pages_heaps = tmalloc(memory_manager->nb_nodes * sizeof(mami_huge_pages_area_t *));
@@ -233,26 +229,26 @@ void mami_init(mami_manager_t *memory_manager) {
   }
 #endif /* PM2DEBUG */
 
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
 }
 
 static
 void _mami_sampling_free(p_tbx_slist_t migration_costs) {
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   while (!tbx_slist_is_nil(migration_costs)) {
     mami_migration_cost_t *ptr = tbx_slist_extract(migration_costs);
     tfree(ptr);
   }
   tbx_slist_free(migration_costs);
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 static
 int _mami_deallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages_area_t **space, int node) {
   int err;
 
-  MAMI_ILOG_IN();
-  mdebug_mami("Releasing huge pages %s\n", (*space)->filename);
+  MEMORY_ILOG_IN();
+  mdebug_memory("Releasing huge pages %s\n", (*space)->filename);
 
   err = close((*space)->file);
   if (err < 0) {
@@ -268,7 +264,7 @@ int _mami_deallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages_
   }
 
   tfree((*space)->filename);
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -276,17 +272,17 @@ static
 void _mami_deallocate(mami_manager_t *memory_manager, mami_area_t **space, int node) {
   mami_area_t *ptr, *ptr2;
 
-  MAMI_ILOG_IN();
-  mdebug_mami("Deallocating memory for node #%d\n", node);
+  MEMORY_ILOG_IN();
+  mdebug_memory("Deallocating memory for node #%d\n", node);
   ptr = (*space);
   while (ptr != NULL) {
-    mdebug_mami("Unmapping memory area from %p\n", ptr->start);
+    mdebug_memory("Unmapping memory area from %p\n", ptr->start);
     munmap(ptr->start, ptr->nbpages * ptr->pagesize);
     ptr2 = ptr;
     ptr = ptr->next;
     tfree(ptr2);
   }
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 static
@@ -300,7 +296,7 @@ void mami_exit(mami_manager_t *memory_manager) {
   int node, dest;
   struct sigaction act;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   if (memory_manager_sigsegv_handler_set) {
     act.sa_flags = SA_SIGINFO;
@@ -348,7 +344,7 @@ void mami_exit(mami_manager_t *memory_manager) {
   tfree(memory_manager->memtotal);
   tfree(memory_manager->memfree);
 
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
 }
 
 int mami_set_alignment(mami_manager_t *memory_manager) {
@@ -366,7 +362,7 @@ void _mami_init_memory_data(mami_manager_t *memory_manager,
                                 void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
                                 int protection, int with_huge_pages, int mami_allocated,
                                 mami_data_t **memory_data) {
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
 
   *memory_data = tmalloc(sizeof(mami_data_t));
 
@@ -394,12 +390,12 @@ void _mami_init_memory_data(mami_manager_t *memory_manager,
   (*memory_data)->pageaddrs = tmalloc((*memory_data)->nbpages * sizeof(void *));
   memcpy((*memory_data)->pageaddrs, pageaddrs, nbpages*sizeof(void*));
 
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 static
 void _mami_clean_memory_data(mami_data_t **memory_data) {
-  mdebug_mami("Cleaning memory area %p\n", (*memory_data)->startaddress);
+  mdebug_memory("Cleaning memory area %p\n", (*memory_data)->startaddress);
   if (!(tbx_slist_is_nil((*memory_data)->owners))) {
     marcel_fprintf(stderr, "MaMI Warning: some threads are still attached to the memory area [%p:%p]\n",
                    (*memory_data)->startaddress, (*memory_data)->endaddress);
@@ -412,7 +408,7 @@ void _mami_clean_memory_data(mami_data_t **memory_data) {
 }
 
 void _mami_delete_tree(mami_manager_t *memory_manager, mami_tree_t **memory_tree) {
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if ((*memory_tree)->leftchild == NULL) {
     mami_tree_t *temp = (*memory_tree);
     _mami_clean_memory_data(&(temp->data));
@@ -444,7 +440,7 @@ void _mami_delete_tree(mami_manager_t *memory_manager, mami_tree_t **memory_tree
     // then delete the predecessor
     _mami_unregister(memory_manager, &((*memory_tree)->leftchild), temp->data->pageaddrs[0]);
   }
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 static
@@ -454,9 +450,9 @@ void _mami_free_from_node(mami_manager_t *memory_manager, void *buffer, size_t s
   mami_area_t **prev;
   mami_area_t *next;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
 
-  mdebug_mami("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size, nbpages);
+  mdebug_memory("Freeing space [%p:%p] with %d pages\n", buffer, buffer+size, nbpages);
 
   available = tmalloc(sizeof(mami_area_t));
   available->start = buffer;
@@ -508,7 +504,7 @@ void _mami_free_from_node(mami_manager_t *memory_manager, void *buffer, size_t s
   }
   while ((*ptr)->next != NULL) {
     if (((*ptr)->end == (*ptr)->next->start) && ((*ptr)->protection == (*ptr)->next->protection)) {
-      mdebug_mami("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
+      mdebug_memory("[%p:%p:%d] and [%p:%p:%d] can be defragmented\n", (*ptr)->start, (*ptr)->end, (*ptr)->protection,
                   (*ptr)->next->start, (*ptr)->next->end, (*ptr)->next->protection);
       (*ptr)->end = (*ptr)->next->end;
       (*ptr)->nbpages += (*ptr)->next->nbpages;
@@ -520,18 +516,18 @@ void _mami_free_from_node(mami_manager_t *memory_manager, void *buffer, size_t s
       ptr = &((*ptr)->next);
   }
 
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 void _mami_unregister(mami_manager_t *memory_manager, mami_tree_t **memory_tree, void *buffer) {
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (*memory_tree!=NULL) {
     if (buffer == (*memory_tree)->data->pageaddrs[0]) {
       mami_data_t *data = (*memory_tree)->data;
       mami_data_t *next_data = data->next;
 
       if (data->mami_allocated) {
-	mdebug_mami("Removing [%p, %p] from node #%d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
+	mdebug_memory("Removing [%p, %p] from node #%d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
                     data->node);
 	VALGRIND_MAKE_MEM_NOACCESS((*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->size);
 	// Free memory
@@ -539,14 +535,14 @@ void _mami_unregister(mami_manager_t *memory_manager, mami_tree_t **memory_tree,
           _mami_free_from_node(memory_manager, buffer, data->size, data->nbpages, data->node, data->protection, data->with_huge_pages);
       }
       else {
-	mdebug_mami("Address %p is not allocated by MaMI.\n", buffer);
+	mdebug_memory("Address %p is not allocated by MaMI.\n", buffer);
       }
 
       // Delete tree
       _mami_delete_tree(memory_manager, memory_tree);
 
       if (next_data) {
-        mdebug_mami("Need to unregister the next memory area\n");
+        mdebug_memory("Need to unregister the next memory area\n");
         _mami_unregister(memory_manager, &(memory_manager->root), next_data->startaddress);
       }
     }
@@ -555,7 +551,7 @@ void _mami_unregister(mami_manager_t *memory_manager, mami_tree_t **memory_tree,
     else
       _mami_unregister(memory_manager, &((*memory_tree)->rightchild), buffer);
   }
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 static
@@ -563,14 +559,14 @@ void _mami_register_pages(mami_manager_t *memory_manager, mami_tree_t **memory_t
                               void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
                               int protection, int with_huge_pages, int mami_allocated,
                               mami_data_t **data) {
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(mami_tree_t));
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
     _mami_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, nodes,
                                protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
-    mdebug_mami("Adding data %p into tree\n", (*memory_tree)->data);
+    mdebug_memory("Adding data %p into tree\n", (*memory_tree)->data);
     if (data) *data = (*memory_tree)->data;
   }
   else {
@@ -581,17 +577,17 @@ void _mami_register_pages(mami_manager_t *memory_manager, mami_tree_t **memory_t
       _mami_register_pages(memory_manager, &((*memory_tree)->rightchild), pageaddrs, nbpages, size, node, nodes,
                                protection, with_huge_pages, mami_allocated, data);
   }
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
 }
 
 int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages_area_t **space, int node) {
   int nbpages;
   pid_t pid;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   nbpages = marcel_topo_node_level[node].huge_page_free;
   if (!nbpages) {
-    mdebug_mami("No huge pages on node #%d\n", node);
+    mdebug_memory("No huge pages on node #%d\n", node);
     *space = NULL;
     return -1;
   }
@@ -629,7 +625,7 @@ int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages
   (*space)->heap->pagesize = memory_manager->hugepagesize;
   (*space)->heap->next = NULL;
 
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return 0;
 }
 
@@ -639,10 +635,10 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
   void *buffer;
   int i, err=0;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
 
   if (vnode != FIRST_TOUCH_NODE && memory_manager->memtotal[vnode] == 0) {
-    mdebug_mami("No memory available on node #%d, os_node #%d\n", vnode, pnode);
+    mdebug_memory("No memory available on node #%d, os_node #%d\n", vnode, pnode);
     err = -EINVAL;
     buffer = NULL;
     length = 0;
@@ -657,7 +653,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
     else {
       if (vnode != FIRST_TOUCH_NODE) {
         nodemask = (1<<pnode);
-        mdebug_mami("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2);
+        mdebug_memory("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2);
         err = _mami_mbind(buffer, length, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_STRICT|memory_manager->migration_flag);
         if (err < 0) {
           perror("(_mami_preallocate) mbind");
@@ -682,8 +678,8 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
   (*space)->pagesize = memory_manager->normalpagesize;
   (*space)->next = NULL;
 
-  mdebug_mami("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, pnode);
-  MAMI_ILOG_OUT();
+  mdebug_memory("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, pnode);
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -700,29 +696,29 @@ void* _mami_get_buffer_from_huge_pages_heap(mami_manager_t *memory_manager, int 
     if (err < 0) {
       return NULL;
     }
-    mdebug_mami("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
+    mdebug_memory("Preallocating heap %p with huge pages for node #%d\n", memory_manager->huge_pages_heaps[node], node);
     heap = memory_manager->huge_pages_heaps[node];
   }
 
   if (heap == NULL) {
-    mdebug_mami("No huge pages are available on node #%d\n", node);
+    mdebug_memory("No huge pages are available on node #%d\n", node);
     return NULL;
   }
 
-  mdebug_mami("Requiring space from huge pages area of size=%lu on node #%d\n", (long unsigned)heap->size, node);
+  mdebug_memory("Requiring space from huge pages area of size=%lu on node #%d\n", (long unsigned)heap->size, node);
 
   // Look for a space big enough
   hheap = heap->heap;
   prev = hheap;
   while (hheap != NULL) {
-    mdebug_mami("Current space from %p with %d pages\n", hheap->start, hheap->nbpages);
+    mdebug_memory("Current space from %p with %d pages\n", hheap->start, hheap->nbpages);
     if (hheap->nbpages >= nbpages)
       break;
     prev = hheap;
     hheap = hheap->next;
   }
   if (hheap == NULL) {
-    mdebug_mami("Not enough huge pages are available on node #%d\n", node);
+    mdebug_memory("Not enough huge pages are available on node #%d\n", node);
     return NULL;
   }
 
@@ -761,12 +757,12 @@ void* _mami_get_buffer_from_heap(mami_manager_t *memory_manager, int node, int n
   mami_area_t *prev = NULL;
   void *buffer;
 
-  mdebug_mami("Requiring space of %d pages from heap %p on node #%d\n", nbpages, heap, node);
+  mdebug_memory("Requiring space of %d pages from heap %p on node #%d\n", nbpages, heap, node);
 
   // Look for a space big enough
   prev = heap;
   while (heap != NULL && heap->start != NULL) {
-    mdebug_mami("Current space from %p with %d pages\n", heap->start, heap->nbpages);
+    mdebug_memory("Current space from %p with %d pages\n", heap->start, heap->nbpages);
     if (heap->nbpages >= nbpages)
       break;
     prev = heap;
@@ -779,7 +775,7 @@ void* _mami_get_buffer_from_heap(mami_manager_t *memory_manager, int node, int n
     if (preallocatedpages < memory_manager->initially_preallocated_pages) {
       preallocatedpages = memory_manager->initially_preallocated_pages;
     }
-    mdebug_mami("not enough space, let's allocate %d extra pages\n", preallocatedpages);
+    mdebug_memory("not enough space, let's allocate %d extra pages\n", preallocatedpages);
     err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, marcel_topo_node_level[node].os_node);
     if (err < 0) {
       return NULL;
@@ -818,10 +814,10 @@ void* _mami_malloc(mami_manager_t *memory_manager, size_t size, unsigned long pa
   size_t realsize;
   void **pageaddrs;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
 
   if (!size) {
-    MAMI_ILOG_OUT();
+    MEMORY_ILOG_OUT();
     return NULL;
   }
 
@@ -848,7 +844,7 @@ void* _mami_malloc(mami_manager_t *memory_manager, size_t size, unsigned long pa
     for(i=0; i<nbpages ; i++) pageaddrs[i] = buffer + i*pagesize;
 
     // Register memory
-    mdebug_mami("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, (long)size);
+    mdebug_memory("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, (long)size);
     _mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, NULL,
                              protection, with_huge_pages, 1, NULL);
 
@@ -857,8 +853,8 @@ void* _mami_malloc(mami_manager_t *memory_manager, size_t size, unsigned long pa
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  mdebug_mami("Allocating %p on node #%d\n", buffer, node);
-  MAMI_ILOG_OUT();
+  mdebug_memory("Allocating %p on node #%d\n", buffer, node);
+  MEMORY_ILOG_OUT();
   return buffer;
 }
 
@@ -867,7 +863,7 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
   int with_huge_pages;
   unsigned long pagesize;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   pagesize = memory_manager->normalpagesize;
   with_huge_pages = 0;
@@ -892,14 +888,14 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
   }
 
   if (tbx_unlikely(policy != MAMI_MEMBIND_POLICY_FIRST_TOUCH && node >= memory_manager->nb_nodes)) {
-    mdebug_mami("Node %d not managed by MaMI\n", node);
-    MAMI_LOG_OUT();
+    mdebug_memory("Node %d not managed by MaMI\n", node);
+    MEMORY_LOG_OUT();
     return NULL;
   }
 
   ptr = _mami_malloc(memory_manager, size, pagesize, node, with_huge_pages);
 
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return ptr;
 }
 
@@ -907,27 +903,27 @@ void* mami_calloc(mami_manager_t *memory_manager, size_t nmemb, size_t size,
                            mami_membind_policy_t policy, int node) {
   void *ptr;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   ptr = mami_malloc(memory_manager, nmemb*size, policy, node);
   ptr = memset(ptr, 0, nmemb*size);
 
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return ptr;
 }
 
 static
 int _mami_locate(mami_manager_t *memory_manager, mami_tree_t *memory_tree, void *buffer, size_t size, mami_data_t **data) {
   if (memory_tree==NULL) {
-    mdebug_mami("The interval [%p:%p] is not managed by MaMI.\n", buffer, buffer+size);
+    mdebug_memory("The interval [%p:%p] is not managed by MaMI.\n", buffer, buffer+size);
     errno = EINVAL;
     return -errno;
   }
-  //mdebug_mami("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
+  //mdebug_memory("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
   if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
     // the address is stored on the current memory_data
-    mdebug_mami("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
-    mdebug_mami("Interval [%p:%p] is located on node #%d\n", buffer, buffer+size, memory_tree->data->node);
+    mdebug_memory("Found interval [%p:%p] in [%p:%p]\n", buffer, buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
+    mdebug_memory("Interval [%p:%p] is located on node #%d\n", buffer, buffer+size, memory_tree->data->node);
     *data = memory_tree->data;
     return 0;
   }
@@ -951,7 +947,7 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
   statuses = tmalloc(nbpages * sizeof(int));
   err = _mami_move_pages(pageaddrs, nbpages, NULL, statuses, 0);
   if (err < 0 || statuses[0] == -ENOENT) {
-    mdebug_mami("Could not locate pages\n");
+    mdebug_memory("Could not locate pages\n");
     if (*node != FIRST_TOUCH_NODE) {
       *node = UNKNOWN_LOCATION_NODE;
     }
@@ -987,7 +983,7 @@ void _mami_register(mami_manager_t *memory_manager,
   int nbpages, protection, with_huge_pages;
   int i, node, *nodes;
 
-  mdebug_mami("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, (long)size);
+  mdebug_memory("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, (long)size);
 
   with_huge_pages = 0;
   protection = PROT_READ|PROT_WRITE;
@@ -1020,10 +1016,10 @@ int mami_register(mami_manager_t *memory_manager,
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   mami_data_t *data = NULL;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   marcel_mutex_lock(&(memory_manager->lock));
-  mdebug_mami("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
+  mdebug_memory("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   _mami_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
 
   if (aligned_endbuffer > buffer+size) {
@@ -1035,7 +1031,7 @@ int mami_register(mami_manager_t *memory_manager,
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return 0;
 }
 
@@ -1045,17 +1041,17 @@ int mami_unregister(mami_manager_t *memory_manager,
   int err=0;
   void *aligned_buffer;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
-    mdebug_mami("Unregistering [%p:%p]\n", buffer,buffer+data->size);
+    mdebug_memory("Unregistering [%p:%p]\n", buffer,buffer+data->size);
     _mami_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1066,7 +1062,7 @@ int mami_split(mami_manager_t *memory_manager,
   mami_data_t *data = NULL;
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
@@ -1077,13 +1073,13 @@ int mami_split(mami_manager_t *memory_manager,
 
     subpages = data->nbpages / subareas;
     if (!subpages) {
-      mdebug_mami("Memory area from %p with size %ld and %d pages not big enough to be split in %d subareas\n",
+      mdebug_memory("Memory area from %p with size %ld and %d pages not big enough to be split in %d subareas\n",
                   data->startaddress, (long) data->size, data->nbpages, subareas);
       errno = EINVAL;
       err = -errno;
     }
     else {
-      mdebug_mami("Splitting area from %p in %d areas of %d pages\n", data->startaddress, subareas, subpages);
+      mdebug_memory("Splitting area from %p in %d areas of %d pages\n", data->startaddress, subareas, subpages);
 
       // Register new subareas
       pageaddrs = data->pageaddrs+subpages;
@@ -1106,7 +1102,7 @@ int mami_split(mami_manager_t *memory_manager,
     }
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1115,48 +1111,48 @@ int mami_membind(mami_manager_t *memory_manager,
                  int node) {
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
-    mdebug_mami("Node #%d invalid\n", node);
+    mdebug_memory("Node #%d invalid\n", node);
     errno = EINVAL;
     err = -errno;
   }
   else if (policy == MAMI_MEMBIND_POLICY_HUGE_PAGES && memory_manager->hugepagesize == 0) {
-    mdebug_mami("Huge pages are not available. Cannot set memory policy.\n");
+    mdebug_memory("Huge pages are not available. Cannot set memory policy.\n");
     errno = EINVAL;
     err = -errno;
   }
   else {
-    mdebug_mami("Set the current membind policy to %d (node #%d)\n", policy, node);
+    mdebug_memory("Set the current membind policy to %d (node #%d)\n", policy, node);
     memory_manager->membind_policy = policy;
     memory_manager->membind_node = node;
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
 void mami_free(mami_manager_t *memory_manager, void *buffer) {
   void *aligned_buffer;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  mdebug_mami("Freeing [%p]\n", buffer);
+  mdebug_memory("Freeing [%p]\n", buffer);
   marcel_mutex_lock(&(memory_manager->lock));
   _mami_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
 }
 
 int _mami_mbind(void *start, unsigned long len, int mode,
                     const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
   int err = 0;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (ma_use_synthetic_topology) {
-      MAMI_ILOG_OUT();
+      MEMORY_ILOG_OUT();
       return err;
   }
-  mdebug_mami("binding on mask %ld\n", nmask);
+  mdebug_memory("binding on mask %ld\n", nmask);
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
   err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #else
@@ -1169,12 +1165,12 @@ int _mami_mbind(void *start, unsigned long len, int mode,
 int _mami_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag) {
   int err=0;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (ma_use_synthetic_topology) {
-      MAMI_ILOG_OUT();
+      MEMORY_ILOG_OUT();
       return err;
   }
-  if (nodes) mdebug_mami("binding on numa node #%d\n", nodes[0]);
+  if (nodes) mdebug_memory("binding on numa node #%d\n", nodes[0]);
 
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
   err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
@@ -1182,21 +1178,21 @@ int _mami_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int f
   err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #endif
   if (err < 0) perror("(_mami_move_pages) move_pages");
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
 int _mami_set_mempolicy(int mode, const unsigned long *nmask, unsigned long maxnode) {
   int err=0;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (ma_use_synthetic_topology) {
-    MAMI_ILOG_OUT();
+    MEMORY_ILOG_OUT();
     return err;
   }
   err = syscall(__NR_set_mempolicy, mode, nmask, maxnode);
   if (err < 0) perror("(_mami_set_mempolicy) set_mempolicy");
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -1205,11 +1201,11 @@ int _mami_check_pages_location(void **pageaddrs, int pages, int node) {
   int i;
   int err=0;
 
-  MAMI_ILOG_IN();
-  mdebug_mami("check location of the %d pages is #%d\n", pages, node);
+  MEMORY_ILOG_IN();
+  mdebug_memory("check location of the %d pages is #%d\n", pages, node);
 
   if (ma_use_synthetic_topology) {
-    mdebug_mami("Using synthethic topology. No need to check physically\n");
+    mdebug_memory("Using synthethic topology. No need to check physically\n");
     return err;
   }
 
@@ -1225,7 +1221,7 @@ int _mami_check_pages_location(void **pageaddrs, int pages, int node) {
     }
   }
   tfree(pagenodes);
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -1236,23 +1232,23 @@ int mami_locate(mami_manager_t *memory_manager, void *buffer, size_t size, int *
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err, *nodes;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
-  mdebug_mami("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
+  mdebug_memory("Trying to locate [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
     if (data->status == MAMI_KERNEL_MIGRATION_STATUS) {
       int node;
       _mami_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &node, &nodes);
       if (node != data->node) {
-        mdebug_mami("Updating location of the pages after a kernel migration\n");
+        mdebug_memory("Updating location of the pages after a kernel migration\n");
         data->node = node;
         data->status = MAMI_INITIAL_STATUS;
       }
     }
     *node = data->node;
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1263,7 +1259,7 @@ int mami_check_pages_location(mami_manager_t *memory_manager, void *buffer, size
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
@@ -1275,7 +1271,7 @@ int mami_check_pages_location(mami_manager_t *memory_manager, void *buffer, size
       marcel_fprintf(stderr, "MaMI: The %d pages are all on node #%d\n", data->nbpages, node);
     }
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1288,17 +1284,17 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err, node, *nodes;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
     _mami_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &node, &nodes);
     if (node != data->node) {
-      mdebug_mami("Updating pages location from node #%d to node #%d\n", data->node, node);
+      mdebug_memory("Updating pages location from node #%d to node #%d\n", data->node, node);
       data->node = node;
     }
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1314,19 +1310,19 @@ void _mami_print(mami_tree_t *memory_tree, FILE *stream, int indent) {
 }
 
 void mami_print(mami_manager_t *memory_manager) {
-  MAMI_LOG_IN();
-  mdebug_mami("******************** TREE BEGIN *********************************\n");
+  MEMORY_LOG_IN();
+  mdebug_memory("******************** TREE BEGIN *********************************\n");
   _mami_print(memory_manager->root, stdout, 0);
-  mdebug_mami("******************** TREE END *********************************\n");
-  MAMI_LOG_OUT();
+  mdebug_memory("******************** TREE END *********************************\n");
+  MEMORY_LOG_OUT();
 }
 
 void mami_fprint(mami_manager_t *memory_manager, FILE *stream) {
-  MAMI_LOG_IN();
-  mdebug_mami("******************** TREE BEGIN *********************************\n");
+  MEMORY_LOG_IN();
+  mdebug_memory("******************** TREE BEGIN *********************************\n");
   _mami_print(memory_manager->root, stream, 0);
-  mdebug_mami("******************** TREE END *********************************\n");
-  MAMI_LOG_OUT();
+  mdebug_memory("******************** TREE END *********************************\n");
+  MEMORY_LOG_OUT();
 }
 
 int mami_migration_cost(mami_manager_t *memory_manager,
@@ -1337,9 +1333,9 @@ int mami_migration_cost(mami_manager_t *memory_manager,
   p_tbx_slist_t migration_costs;
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
-    mdebug_mami("Invalid node id\n");
+    mdebug_memory("Invalid node id\n");
     errno = EINVAL;
     err = -errno;
   }
@@ -1358,7 +1354,7 @@ int mami_migration_cost(mami_manager_t *memory_manager,
       } while (tbx_slist_ref_forward(migration_costs));
     }
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1370,9 +1366,9 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
   mami_access_cost_t access_cost;
   int err;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
-    mdebug_mami("Invalid node id\n");
+    mdebug_memory("Invalid node id\n");
     errno = EINVAL;
     err = -errno;
   }
@@ -1380,7 +1376,7 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
     access_cost = memory_manager->costs_for_write_access[source][dest];
     *cost = (size/memory_manager->cache_line_size) * access_cost.cost;
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1392,9 +1388,9 @@ int mami_cost_for_read_access(mami_manager_t *memory_manager,
   mami_access_cost_t access_cost;
   int err;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
-    mdebug_mami("Invalid node id\n");
+    mdebug_memory("Invalid node id\n");
     errno = EINVAL;
     err = -errno;
   }
@@ -1402,7 +1398,7 @@ int mami_cost_for_read_access(mami_manager_t *memory_manager,
     access_cost = memory_manager->costs_for_read_access[source][dest];
     *cost = ((float)size/(float)memory_manager->cache_line_size) * access_cost.cost;
   }
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1411,16 +1407,16 @@ int mami_select_node(mami_manager_t *memory_manager,
                      int *node) {
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   if (policy == MAMI_LEAST_LOADED_NODE) {
     int i;
     unsigned long maxspace=memory_manager->memfree[0];
-    mdebug_mami("Space on node %d = %ld\n", 0, maxspace);
+    mdebug_memory("Space on node %d = %ld\n", 0, maxspace);
     *node = 0;
     for(i=1 ; i<memory_manager->nb_nodes ; i++) {
-      mdebug_mami("Space on node %d = %ld\n", i, memory_manager->memfree[i]);
+      mdebug_memory("Space on node %d = %ld\n", i, memory_manager->memfree[i]);
       if (memory_manager->memfree[i] > maxspace) {
         maxspace = memory_manager->memfree[i];
         *node = i;
@@ -1428,13 +1424,13 @@ int mami_select_node(mami_manager_t *memory_manager,
     }
   }
   else {
-    mdebug_mami("Policy #%d unknown\n", policy);
+    mdebug_memory("Policy #%d unknown\n", policy);
     errno = EINVAL;
     err = -errno;
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1443,23 +1439,23 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
                             mami_data_t *data, int dest) {
   int err=0;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   if (data->node == dest) {
-    mdebug_mami("The address %p is already located at the required node.\n", data->startaddress);
+    mdebug_memory("The address %p is already located at the required node.\n", data->startaddress);
     err = EALREADY;
   }
   else {
     if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
       unsigned long nodemask;
 
-      mdebug_mami("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
+      mdebug_memory("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
       nodemask = (1<<dest);
       err = _mami_mbind(data->startaddress, data->size, MPOL_BIND, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
     }
     else {
       int i, dests[data->nbpages], status[data->nbpages];
 
-      mdebug_mami("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
+      mdebug_memory("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
 
       if (data->node != MULTIPLE_LOCATION_NODE) {
@@ -1471,11 +1467,11 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
         unsigned long nodemask;
 
         nodemask = (1<<dest);
-        mdebug_mami("Pages on different locations. Check which ones need to be moved and which ones need to be bound\n");
+        mdebug_memory("Pages on different locations. Check which ones need to be moved and which ones need to be bound\n");
         // Some pages might already be at the right location */
         for(i=0 ; i<data->nbpages ; i++) {
           if (data->nodes[i] == -ENOENT) {
-            mdebug_mami("Mbinding page %d (%p) to node #%d\n", i, data->pageaddrs[i], dest);
+            mdebug_memory("Mbinding page %d (%p) to node #%d\n", i, data->pageaddrs[i], dest);
             err = _mami_mbind(data->pageaddrs[i], memory_manager->normalpagesize, MPOL_BIND, &nodemask,
                                   memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
           }
@@ -1484,7 +1480,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
             nbpages_to_be_moved ++;
           }
         }
-        mdebug_mami("%d page(s) need to be moved\n", nbpages_to_be_moved);
+        mdebug_memory("%d page(s) need to be moved\n", nbpages_to_be_moved);
         if (nbpages_to_be_moved) {
           err = _mami_move_pages(pageaddrs_to_be_moved, nbpages_to_be_moved, dests, status, MPOL_MF_MOVE);
         }
@@ -1492,7 +1488,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
     }
 
     if (err < 0) {
-      mdebug_mami("Error when mbinding or migrating: %d\n", err);
+      mdebug_memory("Error when mbinding or migrating: %d\n", err);
     }
     else {
       if (!tbx_slist_is_nil(data->owners)) {
@@ -1501,7 +1497,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
           marcel_entity_t *object = NULL;
           object = tbx_slist_ref_get(data->owners);
 
-          mdebug_mami("Moving data from node #%d to node #%d\n", data->node, dest);
+          mdebug_memory("Moving data from node #%d to node #%d\n", data->node, dest);
           if (data->node >= 0) ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
           ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
         } while (tbx_slist_ref_forward(data->owners));
@@ -1510,7 +1506,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
     }
   }
 
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   errno = err;
   return -err;
 }
@@ -1520,14 +1516,14 @@ int mami_migrate_pages(mami_manager_t *memory_manager,
   int ret;
   mami_data_t *data = NULL;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
   ret = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
   if (ret >= 0) {
     ret = _mami_migrate_pages(memory_manager, data, dest);
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return ret;
 }
 
@@ -1575,17 +1571,17 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
   mami_data_t *data = NULL;
   void *aligned_buffer;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   g_memory_manager = memory_manager;
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  mdebug_mami("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
+  mdebug_memory("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
-    mdebug_mami("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
+    mdebug_memory("Setting migrate on next touch on address %p (%p)\n", data->startaddress, buffer);
     if (memory_manager->kernel_nexttouch_migration == 1 && data->mami_allocated) {
-      mdebug_mami("... using in-kernel migration\n");
+      mdebug_memory("... using in-kernel migration\n");
       data->status = MAMI_KERNEL_MIGRATION_STATUS;
       err = _mami_mbind(data->startaddress, data->size, MPOL_DEFAULT, NULL, 0, 0);
       if (err < 0) {
@@ -1599,7 +1595,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
       }
     }
     else {
-      mdebug_mami("... using user-space migration\n");
+      mdebug_memory("... using user-space migration\n");
       if (!memory_manager_sigsegv_handler_set) {
         struct sigaction act;
         memory_manager_sigsegv_handler_set = 1;
@@ -1609,11 +1605,11 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
         if (err < 0) {
           perror("(mami_migrate_on_next_touch) sigaction");
           marcel_mutex_unlock(&(memory_manager->lock));
-          MAMI_LOG_OUT();
+          MEMORY_LOG_OUT();
           return -errno;
         }
       }
-      mdebug_mami("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_startaddress, data->startaddress+data->mprotect_size,
+      mdebug_memory("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_startaddress, data->startaddress+data->mprotect_size,
 		  data->mprotect_size, data->startaddress, data->endaddress, data->size);
       data->status = MAMI_INITIAL_STATUS;
       err = mprotect(data->mprotect_startaddress, data->mprotect_size, PROT_NONE);
@@ -1623,7 +1619,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
     }
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1633,7 +1629,7 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
   mami_data_t *data = NULL;
   int err;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
   err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
@@ -1641,7 +1637,7 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
     err = _mami_migrate_pages(memory_manager, data, node);
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1654,13 +1650,13 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
   int err=0;
   mami_data_t *data;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
-  mdebug_mami("Attaching [%p:%p:%ld] to entity %p\n", buffer, buffer+size, (long)size, owner);
+  mdebug_memory("Attaching [%p:%p:%ld] to entity %p\n", buffer, buffer+size, (long)size, owner);
 
   if (!buffer) {
-    mdebug_mami("Cannot attach NULL buffer\n");
+    mdebug_memory("Cannot attach NULL buffer\n");
     errno = EINVAL;
     err = -errno;
   }
@@ -1677,7 +1673,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
 
     err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
     if (err < 0) {
-      mdebug_mami("The address interval [%p:%p] is not managed by MaMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
+      mdebug_memory("The address interval [%p:%p] is not managed by MaMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
       _mami_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
 
       if (aligned_endbuffer > buffer+size) {
@@ -1692,7 +1688,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     }
     else {
       if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
-        mdebug_mami("Need to find out the location of the memory area\n");
+        mdebug_memory("Need to find out the location of the memory area\n");
         _mami_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &(data->node), &(data->nodes));
       }
       if (size < data->size) {
@@ -1701,10 +1697,10 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
 
         newsize = data->size-aligned_size;
         if (!newsize) {
-          mdebug_mami("Cannot split a page\n");
+          mdebug_memory("Cannot split a page\n");
         }
         else {
-          mdebug_mami("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
+          mdebug_memory("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
                       data->startaddress,data->startaddress+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
           data->nbpages = aligned_size/memory_manager->normalpagesize;
           data->endaddress = data->startaddress + aligned_size;
@@ -1715,16 +1711,16 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
       }
     }
 
-    mdebug_mami("Adding entity %p to data %p\n", owner, data);
+    mdebug_memory("Adding entity %p to data %p\n", owner, data);
     tbx_slist_push(data->owners, owner);
 
     *node = data->node;
     if (*node >= 0) {
-      mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
+      mdebug_memory("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
       ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[*node] += data->size;
     }
     else {
-      mdebug_mami("Cannot attach data as location undefined #%d\n", *node);
+      mdebug_memory("Cannot attach data as location undefined #%d\n", *node);
     }
 
     area = tmalloc(sizeof(mami_data_link_t));
@@ -1735,7 +1731,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     ma_spin_unlock(&(owner->memory_areas_lock));
   }
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -1748,7 +1744,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
   void *aligned_buffer;
   mami_data_link_t *area = NULL;
 
-  MAMI_ILOG_IN();
+  MEMORY_ILOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
   aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
@@ -1756,10 +1752,10 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
   if (err >= 0) {
     marcel_entity_t *res;
 
-    mdebug_mami("Removing entity %p from data %p\n", owner, data);
+    mdebug_memory("Removing entity %p from data %p\n", owner, data);
 
     if (tbx_slist_is_nil(data->owners)) {
-      mdebug_mami("The entity %p is not attached to the memory area %p(1).\n", owner, aligned_buffer);
+      mdebug_memory("The entity %p is not attached to the memory area %p(1).\n", owner, aligned_buffer);
       errno = ENOENT;
       err = -errno;
     }
@@ -1767,11 +1763,11 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
       res = tbx_slist_search_and_extract(data->owners, NULL, owner);
       if (res == owner) {
         if (data->node >= 0) {
-          mdebug_mami("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
+          mdebug_memory("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
           ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[data->node] -= data->size;
         }
 
-        mdebug_mami("Removing data %p from entity %p\n", data, owner);
+        mdebug_memory("Removing data %p from entity %p\n", data, owner);
 	ma_spin_lock(&(owner->memory_areas_lock));
 	list_for_each_entry(area, &(owner->memory_areas), list) {
           if (area->data == data) {
@@ -1783,7 +1779,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
         ma_spin_unlock(&(owner->memory_areas_lock));
       }
       else {
-        mdebug_mami("The entity %p is not attached to the memory area %p.\n", owner, aligned_buffer);
+        mdebug_memory("The entity %p is not attached to the memory area %p.\n", owner, aligned_buffer);
         errno = ENOENT;
         err = -errno;
       }
@@ -1793,7 +1789,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
   marcel_mutex_unlock(&(memory_manager->lock));
   if (!area) tfree(area);
 
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return err;
 }
 
@@ -1802,14 +1798,14 @@ int _mami_entity_unattach_all(mami_manager_t *memory_manager,
                                   marcel_entity_t *owner) {
   mami_data_link_t *area, *narea;
 
-  MAMI_ILOG_IN();
-  mdebug_mami("Unattaching all memory areas from entity %p\n", owner);
+  MEMORY_ILOG_IN();
+  mdebug_memory("Unattaching all memory areas from entity %p\n", owner);
   //ma_spin_lock(&(owner->memory_areas_lock));
   list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
     _mami_entity_unattach(memory_manager, area->data->startaddress, owner);
   }
   //ma_spin_unlock(&(owner->memory_areas_lock));
-  MAMI_ILOG_OUT();
+  MEMORY_ILOG_OUT();
   return 0;
 }
 
@@ -1900,10 +1896,10 @@ int mami_stats(mami_manager_t *memory_manager,
                unsigned long *value) {
   int err=0;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
-    mdebug_mami("Node #%d invalid\n", node);
+    mdebug_memory("Node #%d invalid\n", node);
     errno = EINVAL;
     err = -errno;
   }
@@ -1916,14 +1912,14 @@ int mami_stats(mami_manager_t *memory_manager,
       *value = memory_manager->memfree[node];
     }
     else {
-      mdebug_mami("Statistic #%d unknown\n", stat);
+      mdebug_memory("Statistic #%d unknown\n", stat);
       errno = EINVAL;
       err = -errno;
     }
     marcel_mutex_unlock(&(memory_manager->lock));
   }
 
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1934,7 +1930,7 @@ int mami_distribute(mami_manager_t *memory_manager,
   mami_data_t *data;
   int err, i, nbpages;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   marcel_mutex_lock(&(memory_manager->lock));
   err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
@@ -1951,7 +1947,7 @@ int mami_distribute(mami_manager_t *memory_manager,
     for(i=0 ; i<data->nbpages ; i++) {
       if ((data->node == MULTIPLE_LOCATION_NODE && data->nodes[i] != nodes[i%nb_nodes]) ||
           (data->node != MULTIPLE_LOCATION_NODE && data->node != nodes[i%nb_nodes])) {
-        mdebug_mami("Moving page %d from node #%d to node #%d\n", i, data->node != MULTIPLE_LOCATION_NODE ? data->node : data->nodes[i], nodes[i%nb_nodes]);
+        mdebug_memory("Moving page %d from node #%d to node #%d\n", i, data->node != MULTIPLE_LOCATION_NODE ? data->node : data->nodes[i], nodes[i%nb_nodes]);
         pageaddrs[nbpages] = buffer + (i*memory_manager->normalpagesize);
         dests[nbpages] = nodes[i%nb_nodes];
         nbpages ++;
@@ -1981,7 +1977,7 @@ int mami_distribute(mami_manager_t *memory_manager,
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 
@@ -1991,7 +1987,7 @@ int mami_gather(mami_manager_t *memory_manager,
   mami_data_t *data;
   int err;
 
-  MAMI_LOG_IN();
+  MEMORY_LOG_IN();
 
   marcel_mutex_lock(&(memory_manager->lock));
   err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
@@ -2028,7 +2024,7 @@ int mami_gather(mami_manager_t *memory_manager,
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
-  MAMI_LOG_OUT();
+  MEMORY_LOG_OUT();
   return err;
 }
 

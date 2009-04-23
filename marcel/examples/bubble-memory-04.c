@@ -29,6 +29,7 @@
 
 #ifdef MM_MAMI_ENABLED
 
+#include "mm_mami.h"
 #define NB_BUBBLES 4
 #define THREADS_PER_BUBBLE 4
 

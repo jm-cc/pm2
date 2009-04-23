@@ -15,7 +15,8 @@
 
 #if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
 
-#include "pm2_common.h"
+#define MARCEL_INTERNAL_INCLUDE
+
 #include "mm_debug.h"
 
 debug_type_t debug_memory = NEW_DEBUG_TYPE("MEMORY: ", "memory-debug");

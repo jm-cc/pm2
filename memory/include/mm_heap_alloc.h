@@ -57,29 +57,29 @@ typedef unsigned int binmap_t;
 #ifdef LINUX_SYS
 /* Manage node mask */
 static inline int mask_equal(unsigned long *a, unsigned long sa, unsigned long *b, unsigned long sb) {
-        unsigned long i;
-	if (sa != sb) return 0;
-        for (i = 0; i < sa/WORD_SIZE; i++)
-                if (a[i] != b[i])
-                        return 0;
-        return 1;
+  unsigned long i;
+  if (sa != sb) return 0;
+  for (i = 0; i < sa/WORD_SIZE; i++)
+    if (a[i] != b[i])
+      return 0;
+  return 1;
 }
 
 static inline int mask_isset(unsigned long *a, unsigned long sa, int node) {
-	if ((unsigned int)node >= sa*8) return 0;
-	return bit_is_marked(a,node);
+  if ((unsigned int)node >= sa*8) return 0;
+  return bit_is_marked(a,node);
 }
 
 static inline void mask_zero(unsigned long *a, unsigned long sa) {
-        memset(a, 0, sa);
+  memset(a, 0, sa);
 }
 
 static inline void mask_set(unsigned long *a, int node) {
-	markbit(a,node);
+  markbit(a,node);
 }
 
 static inline void mask_clr(unsigned long *a, int node) {
-	clearbit(a,node);
+  clearbit(a,node);
 }
 
 #endif /*LINUX_SYS */
@@ -87,20 +87,20 @@ static inline void mask_clr(unsigned long *a, int node) {
 /* --- heap and used block structures --- */
 /** used memory bloc definition inside heap*/
 struct ub {
-	/** */
-	size_t size;
-	/** */
-	size_t prev_free_size;
-	/** */
-	void *data;
-	/** */
-	size_t stat_size;
-	/** */
-	struct heap *heap;
-	/** */
-	struct ub *prev;
-	/** */
-	struct ub *next;
+  /** */
+  size_t size;
+  /** */
+  size_t prev_free_size;
+  /** */
+  void *data;
+  /** */
+  size_t stat_size;
+  /** */
+  struct heap *heap;
+  /** */
+  struct ub *prev;
+  /** */
+  struct ub *next;
 };
 
 typedef struct ub ma_ub_t;
@@ -109,67 +109,67 @@ typedef struct heap ma_heap_t;
 typedef struct malloc_stats ma_amalloc_stat_t;
 
 #define set_bloc(b,s,ps,h,pv,nx) {\
-	b->size = s; \
-	b->prev_free_size = ps; \
-	b->heap = h; \
-	b->prev = pv; \
-	b->next = nx; \
-	b->data = NULL; \
-	b->stat_size = 0; \
+    b->size = s;                  \
+    b->prev_free_size = ps;       \
+    b->heap = h;                  \
+    b->prev = pv;                 \
+    b->next = nx;                 \
+    b->data = NULL;               \
+    b->stat_size = 0;             \
 }
 
 #include "marcel_mutex.h"
 /** heap definition */
 struct heap {
-        /** */
-	struct ub *used;
-        /** */
-	ma_spinlock_t lock_heap;
-        /** */
-	struct heap *next_heap;
-        /** */
-	struct heap *next_same_heap;
-        /** */
-	size_t free_size;
-        /** */
-	size_t used_size;
-        /** */
-	size_t touch_size;
-        /** */
-	size_t attached_size;
-        /** */
-	int nb_attach;
-        /** */
-	void* iterator;
-        /** */
-	int iterator_num;
-        /** */
-	int alloc_policy;
-        /** */
-	int mempolicy;
-        /** */
-	int weight;
-        /** */
-	unsigned long nodemask[MARCEL_NBMAXNODES];
-        /** */
-	unsigned long maxnode;
-        /** */
-	binmap_t bitmap[1]; /* avoid to be set as NULL, need to be the last field of the struct */
-		//int pages[MA_HEAP_NBPAGES];
+  /** */
+  struct ub *used;
+  /** */
+  ma_spinlock_t lock_heap;
+  /** */
+  struct heap *next_heap;
+  /** */
+  struct heap *next_same_heap;
+  /** */
+  size_t free_size;
+  /** */
+  size_t used_size;
+  /** */
+  size_t touch_size;
+  /** */
+  size_t attached_size;
+  /** */
+  int nb_attach;
+  /** */
+  void* iterator;
+  /** */
+  int iterator_num;
+  /** */
+  int alloc_policy;
+  /** */
+  int mempolicy;
+  /** */
+  int weight;
+  /** */
+  unsigned long nodemask[MARCEL_NBMAXNODES];
+  /** */
+  unsigned long maxnode;
+  /** */
+  binmap_t bitmap[1]; /* avoid to be set as NULL, need to be the last field of the struct */
+  //int pages[MA_HEAP_NBPAGES];
 };
 
 /** malloc statistics */
 struct malloc_stats {
-	/** */
-	size_t free_size;
-	/** */
-	size_t used_size;
-	/** */
-	size_t touch_size;
-	/** */
-	size_t attached_size;
-	/** */
-	int npinfo;
+  /** */
+  size_t free_size;
+  /** */
+  size_t used_size;
+  /** */
+  size_t touch_size;
+  /** */
+  size_t attached_size;
+  /** */
+  int npinfo;
 };
 
 #define HEAP_DYN_ALLOC 	0

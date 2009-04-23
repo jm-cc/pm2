@@ -24,56 +24,47 @@
 #ifndef MM_HEAP_NUMA_ALLOC_H
 #define MM_HEAP_NUMA_ALLOC_H
 
-#include<stddef.h>
-
-//#include "maheap_alloc.h"
+#include <stddef.h>
 
 /** weights of pages */
 enum pinfo_weight {
-        /** */
-	HIGH_WEIGHT,
-        /** */
-	MEDIUM_WEIGHT,
-        /** */
-	LOW_WEIGHT
+  /** */
+  HIGH_WEIGHT,
+  /** */
+  MEDIUM_WEIGHT,
+  /** */
+  LOW_WEIGHT
 };
 
 /** mapping policies over numa nodes */
 enum mem_policy {
-        /** */
-	CYCLIC,
-        /** */
-	LESS_LOADED,
-        /** */
-	SMALL_ACCESSED
+  /** */
+  CYCLIC,
+  /** */
+  LESS_LOADED,
+  /** */
+  SMALL_ACCESSED
 };
 
 /** structure used to describe the mapping of a set of pages over numa bloc */
 struct pageinfo {
-//        /** set to one when the structure is newly created */
-//	int new_pinfo;
-        /** mapping policy */
-	int mempolicy;
-        /** pages weights */
-	int weight;
-        /** numa nodes mask */
-	unsigned long *nodemask;
-        /** number of bits of mask */
-	unsigned long maxnode;
-        /** */
-	size_t size;
-        /** distribution of pages over numa nodes */
-	int nb_touched[MARCEL_NBMAXNODES];
+  //        /** set to one when the structure is newly created */
+  //	int new_pinfo;
+  /** mapping policy */
+  int mempolicy;
+  /** pages weights */
+  int weight;
+  /** numa nodes mask */
+  unsigned long *nodemask;
+  /** number of bits of mask */
+  unsigned long maxnode;
+  /** */
+  size_t size;
+  /** distribution of pages over numa nodes */
+  int nb_touched[MARCEL_NBMAXNODES];
  };
 
 typedef struct pageinfo ma_pinfo_t;
-
-//#define SIZE_OF_UL 8
-
-/* Mark/Clear bits with given index */
-//#define mark_touched(M,i)   (M[i / SIZE_OF_UL] |= 1 << (i % SIZE_OF_UL))
-//#define cleartouched(M,i)  (M[i / SIZE_OF_UL] &= ~(1 << (i % SIZE_OF_UL)))
-//#define page_is_touched(M,i) (M[i / SIZE_OF_UL] & (1 << (i % SIZE_OF_UL)))
 
 #ifdef LINUX_SYS
 

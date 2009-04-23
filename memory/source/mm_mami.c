@@ -47,7 +47,6 @@ enum {
 #  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
 
 #if !defined(__NR_move_pages)
-
 #  ifdef X86_64_ARCH
 #    define __NR_move_pages 279
 #  elif IA64_ARCH
@@ -61,11 +60,9 @@ enum {
 #  else
 #    error Syscall move pages undefined
 #  endif
-
 #endif /* __NR_move_pages */
 
 #if !defined(__NR_mbind)
-
 #  ifdef X86_64_ARCH
 #    define __NR_mbind 237
 #  elif IA64_ARCH
@@ -79,11 +76,9 @@ enum {
 #  else
 #    error Syscall mbind undefined
 #  endif
-
 #endif /* __NR_mbind */
 
 #if !defined(__NR_set_mempolicy)
-
 #  ifdef X86_64_ARCH
 #    define __NR_set_mempolicy 238
 #  elif IA64_ARCH
@@ -97,7 +92,6 @@ enum {
 #  else
 #    error Syscall set_mempolicy undefined
 #  endif
-
 #endif /* __NR_set_mempolicy */
 
 static
@@ -1653,10 +1647,10 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
 
 static
 int _mami_entity_attach(mami_manager_t *memory_manager,
-                            void *buffer,
-                            size_t size,
-                            marcel_entity_t *owner,
-                            int *node) {
+                        void *buffer,
+                        size_t size,
+                        marcel_entity_t *owner,
+                        int *node) {
   int err=0;
   mami_data_t *data;
 
@@ -1727,7 +1721,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     *node = data->node;
     if (*node >= 0) {
       mdebug_mami("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
-      ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[*node] += data->size;
+      ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[*node] += data->size;
     }
     else {
       mdebug_mami("Cannot attach data as location undefined #%d\n", *node);
@@ -1747,8 +1741,8 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
 
 static
 int _mami_entity_unattach(mami_manager_t *memory_manager,
-                              void *buffer,
-                              marcel_entity_t *owner) {
+                          void *buffer,
+                          marcel_entity_t *owner) {
   int err=0;
   mami_data_t *data = NULL;
   void *aligned_buffer;
@@ -1774,7 +1768,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
       if (res == owner) {
         if (data->node >= 0) {
           mdebug_mami("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
-          ((long *) ma_stats_get (owner, ma_stats_memnode_offset))[data->node] -= data->size;
+          ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[data->node] -= data->size;
         }
 
         mdebug_mami("Removing data %p from entity %p\n", data, owner);

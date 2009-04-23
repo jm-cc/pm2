@@ -1110,6 +1110,54 @@ static void __marcel_init look_sysfscpu(marcel_vpset_t *offline_cpus_set) {
 	mdebug_topology("%s: found %u procs\n", __func__, marcel_nbprocessors);
 }
 
+static unsigned long
+ma_procfs_meminfo_to_memsize(const char *path)
+{
+	char string[64];
+	FILE *fd;
+
+	fd = fopen(path, "r");
+	if (!fd)
+		return 0;
+
+	while (fgets(string, sizeof(string), fd) && *string != '\0')
+		{
+			unsigned long size;
+			if (sscanf(string, "MemTotal: %ld kB", &size) == 1)
+				{
+					fclose(fd);
+					return size;
+				}
+		}
+
+	fclose(fd);
+	return 0;
+}
+
+static unsigned long
+ma_procfs_meminfo_to_hugepagefree(const char *path)
+{
+	char string[64];
+	FILE *fd;
+
+	fd = fopen(path, "r");
+	if (!fd)
+		return 0;
+
+	while (fgets(string, sizeof(string), fd) && *string != '\0')
+		{
+			unsigned long number;
+			if (sscanf(string, "HugePages_Free: %ld", &number) == 1)
+				{
+					fclose(fd);
+					return number;
+				}
+		}
+
+	fclose(fd);
+	return 0;
+}
+
 static unsigned long ma_sysfs_node_meminfo_to_hugepagefree(const char * path)
 {
 	char string[64];
@@ -1765,6 +1813,15 @@ static void topo_discover(void) {
 	mdebug_topology("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
 	distribute_vps();
+
+	/* Compute the whole machine memory and huge page */
+	/* FIXME: Only when no numa node available ? */
+	marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE]=
+	  ma_procfs_meminfo_to_memsize("/proc/meminfo");
+	marcel_topo_levels[0][0].huge_page_free =
+	  ma_procfs_meminfo_to_hugepagefree("/proc/meminfo");
+	mdebug_topology("Machine level: %ld memory, %ld huge page(s)\n", marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE],
+			marcel_topo_levels[0][0].huge_page_free);
 
 #  ifdef MA__NUMA
 

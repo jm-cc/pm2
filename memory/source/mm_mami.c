@@ -117,12 +117,13 @@ void mami_init(mami_manager_t *memory_manager) {
   memory_manager->root = NULL;
   marcel_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
-  memory_manager->hugepagesize = marcel_topo_node_level[0].huge_page_size;
+  memory_manager->hugepagesize = marcel_topo_node_level ? marcel_topo_node_level[0].huge_page_size : 0;
   memory_manager->initially_preallocated_pages = 1024;
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MAMI_MEMBIND_POLICY_NONE;
-  memory_manager->nb_nodes = marcel_nbnodes;
   memory_manager->alignment = 1;
+  memory_manager->nb_nodes = marcel_nbnodes;
+  memory_manager->max_node = marcel_topo_node_level ? marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2 : 2;
 
   // Is in-kernel migration available
 #ifdef LINUX_SYS
@@ -137,34 +138,46 @@ void mami_init(mami_manager_t *memory_manager) {
 
   // Is migration available
   {
+    if (marcel_topo_node_level) {
       unsigned long nodemask;
       nodemask = (1<<marcel_topo_node_level[0].os_node);
       ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
-      err = _mami_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_MOVE);
+      err = _mami_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_MOVE);
       memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
       free(ptr);
-      mdebug_memory("Migration: %d\n", memory_manager->migration_flag);
+    }
+    else {
+      memory_manager->migration_flag = 0;
+    }
+    mdebug_memory("Migration: %d\n", memory_manager->migration_flag);
   }
 
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
   memory_manager->memfree = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
-  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    if (marcel_topo_node_level) {
+  if (marcel_topo_node_level) {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
       memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
       memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+      mdebug_memory("Memory on node #%d = %d\n", node, memory_manager->memtotal[node]);
     }
-    else {
-      memory_manager->memtotal[node] = 0;
-      memory_manager->memfree[node] = 0;
-    }
+  }
+  else {
+    memory_manager->memtotal[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
+    memory_manager->memfree[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
   }
 
   // Preallocate memory on each node
   memory_manager->heaps = tmalloc((memory_manager->nb_nodes+1) * sizeof(mami_area_t *));
-  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    _mami_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, marcel_topo_node_level[node].os_node);
-    mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
+  if (marcel_topo_node_level) {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      _mami_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, marcel_topo_node_level[node].os_node);
+      mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
+    }
+  }
+  else {
+    _mami_preallocate(memory_manager, &(memory_manager->heaps[0]), memory_manager->initially_preallocated_pages, 0, 0);
+    mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[0]->start, 0, 0);
   }
   _mami_preallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, FIRST_TOUCH_NODE, FIRST_TOUCH_NODE);
   mdebug_memory("Preallocating %p for anonymous heap\n", memory_manager->heaps[FIRST_TOUCH_NODE]->start);
@@ -585,7 +598,7 @@ int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages
   pid_t pid;
 
   MEMORY_ILOG_IN();
-  nbpages = marcel_topo_node_level[node].huge_page_free;
+  nbpages = marcel_topo_node_level ? marcel_topo_node_level[node].huge_page_free : 0;
   if (!nbpages) {
     mdebug_memory("No huge pages on node #%d\n", node);
     *space = NULL;
@@ -653,8 +666,8 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
     else {
       if (vnode != FIRST_TOUCH_NODE) {
         nodemask = (1<<pnode);
-        mdebug_memory("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2);
-        err = _mami_mbind(buffer, length, MPOL_BIND, &nodemask, marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2, MPOL_MF_STRICT|memory_manager->migration_flag);
+        mdebug_memory("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, memory_manager->max_node);
+        err = _mami_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_STRICT|memory_manager->migration_flag);
         if (err < 0) {
           perror("(_mami_preallocate) mbind");
           err = 0;

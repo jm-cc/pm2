@@ -225,6 +225,8 @@ struct mami_huge_pages_area_s {
 struct mami_manager_s {
   /** \brief Number of nodes */
   unsigned nb_nodes;
+  /** \brief Max node (used for mbind) */
+  unsigned max_node;
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */

@@ -113,7 +113,6 @@ extern debug_type_t marcel_mtrace_timer;
 
 extern debug_type_t marcel_allocator_debug;
 extern debug_type_t marcel_allocator_log;
-extern debug_type_t marcel_heap_debug;
 extern debug_type_t marcel_topology_debug;
 #endif
 
@@ -134,8 +133,6 @@ extern debug_type_t marcel_topology_debug;
     debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
 #define mdebug_allocator(fmt, args...) \
     debug_printf(&marcel_allocator_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define mdebug_heap(fmt, ...) \
-    debug_printf(&marcel_heap_debug, fmt , ##__VA_ARGS__)
 #define mdebug_topology(fmt, args...) \
     debug_printf(&marcel_topology_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define bubble_sched_debug(fmt, args...) \

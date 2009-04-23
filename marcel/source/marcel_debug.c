@@ -53,9 +53,6 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_allocator_debug=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_allocator_log=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-allocator-log", &marcel_debug);
 
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_heap_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-heap-debug", &marcel_debug);
-
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_topology_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-topology-debug", &marcel_debug);
 

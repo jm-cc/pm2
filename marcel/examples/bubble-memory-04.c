@@ -63,7 +63,7 @@ main (int argc, char *argv[])
   char **new_argv;
   marcel_bubble_sched_t *scheduler;
   ma_atomic_t start_signal = MA_ATOMIC_INIT (0);
-  marcel_memory_manager_t memory_manager;
+  mami_manager_t memory_manager;
 
   /* A quad-socket quad-core computer ("aka kwak" (tm)) */
   static const char topology_description[] = "4 4 1 1";
@@ -78,7 +78,7 @@ main (int argc, char *argv[])
   argc += 2;
 
   marcel_init (&argc, new_argv);
-  marcel_memory_init (&memory_manager);
+  mami_init (&memory_manager);
 
   /* Make sure we're currently testing the memory scheduler. */
   scheduler =
@@ -101,7 +101,7 @@ main (int argc, char *argv[])
 
   for (i = 0; i < NB_BUBBLES; i++)
     /* Team t will work on array[t]. */
-    array[i] = marcel_memory_malloc (&memory_manager, TAB_LEN * (1 << i), MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+    array[i] = mami_malloc (&memory_manager, TAB_LEN * (1 << i), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
   /* The main thread is thread 0 of team 0. */
   marcel_self ()->id = 0;
@@ -124,11 +124,11 @@ main (int argc, char *argv[])
     ta[team].signal = &start_signal;
     ta[team].team = team;
 
-    marcel_memory_bubble_attach (&memory_manager,
-				 array[team],
-				 TAB_LEN * (1 << team),
-				 &bubbles[team],
-				 &node);
+    mami_bubble_attach (&memory_manager,
+			array[team],
+			TAB_LEN * (1 << team),
+			&bubbles[team],
+			&node);
     MA_BUG_ON (node != 0);
 
     for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
@@ -152,7 +152,7 @@ main (int argc, char *argv[])
 
   /* Wait for other threads to end. */
   for (team = 0; team < NB_BUBBLES; team++) {
-    marcel_memory_bubble_unattach (&memory_manager, array[team], &bubbles[team]);
+    mami_bubble_unattach (&memory_manager, array[team], &bubbles[team]);
     for (i = team * THREADS_PER_BUBBLE; i < (team + 1) * THREADS_PER_BUBBLE; i++) {
       if ((team == 0) && (i == 0)) {
 	continue; /* Avoid the main thread */
@@ -162,18 +162,18 @@ main (int argc, char *argv[])
   }
 
   /* Now check the memory location. */
-  ret = marcel_memory_check_pages_location (&memory_manager, array[0], TAB_LEN * (1 << 0), 1) < 0 ? 1 : 0;
-  ret |= marcel_memory_check_pages_location (&memory_manager, array[1], TAB_LEN * (1 << 1), 2) < 0 ? 1 : 0;
-  ret |= marcel_memory_check_pages_location (&memory_manager, array[2], TAB_LEN * (1 << 2), 3) < 0 ? 1 : 0;
-  ret |= marcel_memory_check_pages_location (&memory_manager, array[3], TAB_LEN * (1 << 3), 0) < 0 ? 1 : 0;
+  ret = mami_check_pages_location (&memory_manager, array[0], TAB_LEN * (1 << 0), 1) < 0 ? 1 : 0;
+  ret |= mami_check_pages_location (&memory_manager, array[1], TAB_LEN * (1 << 1), 2) < 0 ? 1 : 0;
+  ret |= mami_check_pages_location (&memory_manager, array[2], TAB_LEN * (1 << 2), 3) < 0 ? 1 : 0;
+  ret |= mami_check_pages_location (&memory_manager, array[3], TAB_LEN * (1 << 3), 0) < 0 ? 1 : 0;
 
   marcel_printf ("%s\n", ret == 1 ? "FAILED: Bad distribution" : "PASS: scheduling entities and accessed data were distributed as expected");
 
   for (i = 0; i < NB_BUBBLES; i++)
-    marcel_memory_free (&memory_manager, array[i]);
+    mami_free (&memory_manager, array[i]);
 
   marcel_attr_destroy (&attr);
-  marcel_memory_exit (&memory_manager);
+  mami_exit (&memory_manager);
   marcel_end ();
 
   return ret;

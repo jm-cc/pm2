@@ -91,6 +91,14 @@ registering_flavors() {
         --marcel=dont_use_pthread \
 	--all=debug --all=gdb --all=noinline --all=build_static
 
+    register_flavor heap-debug \
+	--modules="marcel tbx init memory" \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=valgrind \
+        --memory=enable_heap_allocator \
+	--all=debug --all=gdb --all=noinline --all=build_static
+
     register_flavor marcel \
 	--modules="marcel tbx init" $COMMON_OPTIONS \
 	--marcel=mono --marcel=marcel_main

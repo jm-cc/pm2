@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
 #else
 
 #include <marcel.h>
-#include <numaif.h>
+#include <mm_helper.h>
 
 int main(int argc, char * argv[])
 {
@@ -24,17 +24,17 @@ int main(int argc, char * argv[])
   pageaddr = malloc(sizeof(void *));
   pageaddr[0] = addr;
 
-  ret = move_pages(0, 1, pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
-  ret = move_pages(0, 1, pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
-  ret = move_pages(0, 1, pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
-  ret = move_pages(0, 1, pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
-  ret = move_pages(0, 1, pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
-  ret = move_pages(0, 1,pageaddr, NULL, &status, MPOL_MF_MOVE);
+  ret = _mm_move_pages(pageaddr, 1, NULL, &status, MPOL_MF_MOVE);
   fprintf(stderr,"_NR_move_pages : retour %d, status %d\n", ret, status);
 
 #ifdef PROFILE

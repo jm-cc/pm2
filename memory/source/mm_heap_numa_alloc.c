@@ -383,17 +383,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
           //		addr[0] = (void*)current_heap+0;
           //	mdebug_memory("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
           node = -1;
-#ifndef __NR_move_pages
-#warning __NR_move_pages unknown
-          int ret = -ENOSYS;
-#elif defined (X86_64_ARCH) && defined (X86_ARCH)
-          extern int syscall6();
-          int ret = syscall6(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-          //	int ret = syscall6(__NR_move_pages, 0, nb_pages, addr, NULL, ppinfo->nb_touched, MPOL_MF_MOVE);
-#else
-          int ret = syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-#endif
-          //move_pages(0,1,addr,NULL,&node,MPOL_MF_MOVE);
+          int ret = _mm_move_pages((void **)addr, 1, NULL, &node, MPOL_MF_MOVE);
           if (ret != 0)
             {
               perror("syscall6 error:");
@@ -427,15 +417,7 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
                 //if (current_heap->pages[i] == 0)
                 //{
                 addr[0] = (char *) current_bloc_used->data + i*pagesize;
-                //	addr[0] = (void*)current_bloc_used->data;
-#ifndef __NR_move_pages
-#warning __NR_move_pages unknown
-#else
-                syscall(__NR_move_pages, 0, 1, addr, NULL, &node, MPOL_MF_MOVE);
-                //	syscall(__NR_move_pages, 0, nb_pages, addr, NULL, ppinfo->nb_touched, MPOL_MF_MOVE);
-                //	mdebug_memory("i=%d node=%d\n",i,node);
-                //move_pages(0,1,addr,NULL,&node,MPOL_MF_MOVE);
-#endif
+                _mm_move_pages((void **)addr, 1, NULL, &node, MPOL_MF_MOVE);
                 if (node >= 0) {
                   ppinfo->nb_touched[node]++;
                 }

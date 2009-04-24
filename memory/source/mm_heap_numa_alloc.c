@@ -22,26 +22,12 @@
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
-#include <numaif.h>
 #include "marcel.h"
 #include "mm_heap_alloc.h"
 #include "mm_heap_numa_alloc.h"
 #include "mm_heap_numa.h"
 #include "mm_debug.h"
-
-#ifndef __NR_move_pages
-#  ifdef X86_64_ARCH
-#    define __NR_move_pages 279
-#  elif IA64_ARCH
-#    define __NR_move_pages 1276
-#  elif X86_ARCH
-#    define __NR_move_pages 317
-#  elif PPC_ARCH
-#    define __NR_move_pages 301
-#  elif PPC64_ARCH
-#    define __NR_move_pages 301
-#  endif
-#endif /* __NR_move_pages */
+#include "mm_helper.h"
 
 void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
   ma_heap_t* current_heap;

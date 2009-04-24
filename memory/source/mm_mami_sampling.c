@@ -53,13 +53,13 @@ void _mami_sampling_of_memory_migration(unsigned long source, unsigned long dest
   // Migrate the pages back and forth between the nodes dest and source
   gettimeofday(&tv1, NULL);
   for(i=0 ; i<loops ; i++) {
-    err = _mami_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
-    if (err < 0) perror("_mami_move_pages");
-    err = _mami_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
-    if (err < 0) perror("_mami_move_pages");
+    err = _mm_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
+    if (err < 0) perror("_mm_move_pages");
+    err = _mm_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
+    if (err < 0) perror("_mm_move_pages");
   }
-  err = _mami_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
-  if (err < 0) perror("_mami_move_pages");
+  err = _mm_move_pages(pageaddrs, pages, dests, status, MPOL_MF_MOVE);
+  if (err < 0) perror("_mm_move_pages");
   gettimeofday(&tv2, NULL);
 
   // Check the location of the pages
@@ -67,8 +67,8 @@ void _mami_sampling_of_memory_migration(unsigned long source, unsigned long dest
   if (err < 0) perror("_mami_check_pages_location");
 
   // Move the pages back to the node source
-  err = _mami_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
-  if (err < 0) perror("_mami_move_pages");
+  err = _mm_move_pages(pageaddrs, pages, sources, status, MPOL_MF_MOVE);
+  if (err < 0) perror("_mm_move_pages");
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;

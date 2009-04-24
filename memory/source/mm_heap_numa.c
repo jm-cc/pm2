@@ -20,14 +20,13 @@
 
 #include <errno.h>
 #include <stdio.h>
-#include <numaif.h>
-#include <numa.h>
 #include <stddef.h>
 #include <sys/mman.h>
 #include <ctype.h>
 #include "marcel.h"
 #include "mm_heap_numa.h"
 #include "mm_debug.h"
+#include "mm_helper.h"
 
 int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
   int err, i, idx_node = 0;
@@ -53,7 +52,7 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
     newmaxnode = maxnode;
     mask_zero(newnodemask,newmaxnode);
     mask_set(newnodemask,idx_node);
-    err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
+    err = _mm_mbind(ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
     break;
   case LESS_LOADED:
     for(i = 0; i < marcel_nbnodes; ++i) {
@@ -69,11 +68,11 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
     newmaxnode = maxnode;
     mask_zero(newnodemask,newmaxnode);
     mask_set(newnodemask,idx_node);
-    err = mbind (ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
+    err = _mm_mbind(ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
     break;
   case CYCLIC:
   default:
-    err = mbind (ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
+    err = _mm_mbind(ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
     if (err) {
       perror("mbind error:");
       mdebug_memory("mbind args %p %zd %d %ld %ld 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, *nodemask, maxnode);

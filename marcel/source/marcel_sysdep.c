@@ -192,6 +192,7 @@ int ma_numa_not_available = 0;
 #ifdef LINUX_SYS
 #define HAS_NUMA
 #include <numa.h>
+#include <mm_helper.h>
 
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
@@ -227,8 +228,8 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 	size += ((uintptr_t)ptr) - addr;
 	if (node < 0 || ma_numa_not_available)
 		return;
-	if (mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
-		mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
+	if (_mm_mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+                _mm_mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
 #endif
 }
 #elif defined(OSF_SYS)

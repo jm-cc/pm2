@@ -42,7 +42,6 @@ create_test_flavor() {
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
 		--marcel="enable_stats"	--memory="enable_mami"	        \
-		--marcel="bubble_sched_memory"			        \
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		--all="gdb" --all="build_static" $_output_redirect
@@ -110,7 +109,6 @@ create_test_flavor() {
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
 		--marcel="enable_stats"					\
-		--marcel="bubble_sched_cache"			\
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		--all="gdb" --all="build_static" $_output_redirect
@@ -147,7 +145,6 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"smp\" --marcel=\"marcel_main\" \
-		--marcel=\"bubble_sched_null\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -215,7 +212,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"marcel_main\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -225,7 +222,6 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"standard_main\" \
 		--marcel=\"enable_stats\" \
-		--marcel=\"bubble_sched_explode\" \
 		--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
 		--marcel=\"pmarcel\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
@@ -238,7 +234,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"smp\" --marcel=\"marcel_main\" \
-		--marcel=\"bubble_sched_null\" --marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
+		--marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -247,7 +243,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"marcel_main\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -256,7 +252,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -265,7 +261,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -274,7 +270,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"marcel_main\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" \
+		--marcel=\"enable_stats\" \
 		--marcel=\"enable_suspend\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
@@ -284,7 +280,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"numa\" --marcel=\"marcel_main\" \
-		--marcel=\"enable_stats\" --marcel=\"bubble_sched_null\" --marcel=\"enable_userspace\" \
+		--marcel=\"enable_stats\" --marcel=\"enable_userspace\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;

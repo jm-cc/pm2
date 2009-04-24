@@ -38,6 +38,6 @@ create_test_flavor() {
 	--ext=\"\" \
 	--modules=\"marcel tbx init memory\" \
         --memory=\"enable_heap_allocator\" \
-	--marcel=\"numa main bubble_sched_null smp_smt_idle enable_stats\" \
+	--marcel=\"numa main smp_smt_idle enable_stats\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

@@ -18,6 +18,7 @@
 #include "mm_mami.h"
 #include "mm_mami_private.h"
 #include "mm_debug.h"
+#include "mm_helper.h"
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>

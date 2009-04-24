@@ -173,7 +173,7 @@ do_the_test()
         fi
 	if [ `cat $file_status` -ne 0 ] ; then
 	    failures_per_module="$failures_per_module $prog (flavor $flavor)"
-	    pm2_test_warning_file "Execution of $prog failed" $file_result
+	    pm2_test_warning_file "Execution of $prog failed: return value is not 0" $file_result
 	    return 1
 	fi
 

@@ -6,13 +6,19 @@
  *
  *              */
 
-#include <semaphore.h>
 #include <stdio.h>
+
+#if !defined(MM_HEAP_ENABLED)
+int main(int argc, char *argv[]) {
+  fprintf(stderr, "This application needs 'Heap allocator' to be enabled\n");
+}
+#else
+
+#include <marcel.h>
+#include <semaphore.h>
 #include <sys/times.h>
 #include <limits.h>
 #include <unistd.h>
-
-#include "marcel.h"
 
 #define SHARED 1
 #define MAXGRID 8196   /* maximum grid size, including boundaries */
@@ -182,3 +188,5 @@ void Barrier() {
     marcel_cond_wait(&go, &barrier);
   marcel_mutex_unlock(&barrier);
 }
+
+#endif

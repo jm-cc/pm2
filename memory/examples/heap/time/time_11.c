@@ -1,9 +1,15 @@
-#include "marcel.h"
-#include <unistd.h>
 #include <stdio.h>
+
+#if !defined(MM_HEAP_ENABLED)
+int main(int argc, char *argv[]) {
+  fprintf(stderr, "This application needs 'Heap allocator' to be enabled\n");
+}
+#else
+
+#include <marcel.h>
+#include <unistd.h>
 #include <errno.h>
 #include <math.h>
-
 #include <numaif.h>
 
 #define NB_THREADS 64
@@ -121,13 +127,13 @@ char *bulle[64];
 any_t run(any_t foo) {
 
 	volatile char *highown;
-	
+
 	int i, node;
 	int id = (intptr_t)foo;
 
-	/* allocation memoire */	
+	/* allocation memoire */
 	int onnode = ma_node_entity(&MARCEL_SELF->as_entity);
-	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);	
+	marcel_fprintf(stderr,"thread %p %d sur node %d\n", MARCEL_SELF, id, onnode);
 	highown = (volatile char *) marcel_malloc_customized(MEMSIZE, HIGH_WEIGHT, 1, -1, 0);
 
 	switch (id)
@@ -204,13 +210,13 @@ any_t run(any_t foo) {
 
 	gettimeofday(&start, NULL);
 	i = 0;
-	for (mems = STARTMEMSHIFT, mem = 1<<mems ; mems <= MAXMEMSHIFT ; mems += MEMSHIFT, mem<<=MEMSHIFT) 
+	for (mems = STARTMEMSHIFT, mem = 1<<mems ; mems <= MAXMEMSHIFT ; mems += MEMSHIFT, mem<<=MEMSHIFT)
 	{
 		gold = ((float) mem *((sqrt(5)-1.)/2.));
-		for (m = 0 ; m < NLOOPS ; m++) 
+		for (m = 0 ; m < NLOOPS ; m++)
 		{
 			//gettimeofday(&start, NULL);
-			for ( k = 0 ; k < mem ; k++) 
+			for ( k = 0 ; k < mem ; k++)
 			{
 				sum += highown[i];
 
@@ -266,7 +272,7 @@ any_t run(any_t foo) {
 			//time = (TIME_DIFF(start, finish) * 1000UL) >> (mems);
 		}
 		//marcel_fprintf(stderr,"time for id %d : %ld\n", id, time);
-		marcel_fprintf(stderr,"%d ",id);	
+		marcel_fprintf(stderr,"%d ",id);
 		*marcel_stats_get(MARCEL_SELF,load) -= 1000;
 	}
 	gettimeofday(&finish, NULL);
@@ -277,7 +283,7 @@ any_t run(any_t foo) {
 
 	marcel_free_customized((void* ) highown);
 	//marcel_see_allocated_memory(&MARCEL_SELF->as_entity);
-	
+
 	/* fin */
 	marcel_fprintf(stderr,"*\n");
 	finished ++;
@@ -303,14 +309,14 @@ any_t run(any_t foo) {
 		marcel_stop_idle_memaware();
 		marcel_cond_signal(&cond);
 	}
-		
+
 	return NULL;
 }
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
 	int i;
-	
+
    marcel_init(&argc,argv);
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -453,8 +459,8 @@ int main(int argc, char *argv[])
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t8, &attr, run, (any_t)8);
 		*marcel_stats_get(t8, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
       marcel_attr_init(&attr);
@@ -629,8 +635,8 @@ int main(int argc, char *argv[])
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t24, &attr, run, (any_t)24);
 		*marcel_stats_get(t24, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
       marcel_attr_init(&attr);
@@ -805,8 +811,8 @@ int main(int argc, char *argv[])
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t40, &attr, run, (any_t)40);
 		*marcel_stats_get(t40, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
       marcel_attr_init(&attr);
@@ -981,8 +987,8 @@ int main(int argc, char *argv[])
       marcel_attr_setname(&attr,"thread");
       marcel_create(&t56, &attr, run, (any_t)56);
 		*marcel_stats_get(t56, load) = NBSHIFTS*1000;
-	}	 
- 
+	}
+
 	{
 		marcel_attr_t attr;
       marcel_attr_init(&attr);
@@ -1071,7 +1077,7 @@ int main(int argc, char *argv[])
 		*marcel_stats_get(t64, load) = NBSHIFTS*1000;
 	}
 
-	
+
 	/* lancer la bulle */
 	marcel_wake_up_bubble(&b0);
 
@@ -1082,13 +1088,13 @@ int main(int argc, char *argv[])
 	marcel_barrier_wait(&allbarrier);
 	gettimeofday(&mainstart, NULL);
 	marcel_barrier_wait(&allbarrier);
-	
+
 	/* execution des threads */
 
    /* attente de liberation */
 	marcel_cond_wait(&cond, &mutex);
 	gettimeofday(&mainfinish, NULL);
-	
+
 	long time = TIME_DIFF(mainstart, mainfinish);
    marcel_fprintf(stderr,"TOTAL TIME : %ld\n", time);
 
@@ -1103,3 +1109,5 @@ int main(int argc, char *argv[])
 #endif
    return 0;
 }
+
+#endif

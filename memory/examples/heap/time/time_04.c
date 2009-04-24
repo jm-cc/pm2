@@ -1,4 +1,12 @@
-#include "marcel.h"
+#include <stdio.h>
+
+#if !defined(MM_HEAP_ENABLED)
+int main(int argc, char *argv[]) {
+  fprintf(stderr, "This application needs 'Heap allocator' to be enabled\n");
+}
+#else
+
+#include <marcel.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
@@ -215,3 +223,5 @@ int main(int argc, char *argv[]) {
 #endif
 	return 0;
 }
+
+#endif

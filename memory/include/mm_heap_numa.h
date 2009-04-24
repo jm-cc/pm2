@@ -17,16 +17,10 @@
 
 #ifdef MM_HEAP_ENABLED
 
+#if defined LINUX_SYS
+
 #ifndef MM_HEAP_NUMA_H
 #define MM_HEAP_NUMA_H
-
-#include <numa.h>
-#include <numaif.h>
-#include <stddef.h>
-#include <sys/mman.h>
-
-/* --- function prototypes --- */
-#if defined LINUX_SYS
 
 /**
  * This function reserve a memory adresses range and bind the physical pages following the distribution
@@ -50,9 +44,8 @@ long long ma_free_mem_node(int node);
  */
 long long ma_hits_mem_node(int node);
 
-#endif /* LINUX_SYS */
-
 #endif /* MM_HEAP_NUMA_H */
+#endif /* LINUX_SYS */
 #endif /* MM_HEAP_ENABLED */
 
 /* @} */

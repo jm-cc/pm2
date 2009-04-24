@@ -21,6 +21,8 @@
 
 #ifdef MM_HEAP_ENABLED
 
+#ifdef LINUX_SYS
+
 #ifndef MM_HEAP_NUMA_ALLOC_H
 #define MM_HEAP_NUMA_ALLOC_H
 
@@ -48,8 +50,6 @@ enum mem_policy {
 
 /** structure used to describe the mapping of a set of pages over numa bloc */
 struct pageinfo {
-  //        /** set to one when the structure is newly created */
-  //	int new_pinfo;
   /** mapping policy */
   int mempolicy;
   /** pages weights */
@@ -65,8 +65,6 @@ struct pageinfo {
  };
 
 typedef struct pageinfo ma_pinfo_t;
-
-#ifdef LINUX_SYS
 
 /**
  * Call ma_amalloc to allocate memory
@@ -148,9 +146,8 @@ void ma_hdelete_heap(ma_heap_t *heap);
  */
 void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
 
-#endif /* LINUX_SYS */
-
 #endif /* MM_HEAP_NUMA_ALLOC_H */
+#endif /* LINUX_SYS */
 #endif /* MM_HEAP_ENABLED */
 
 /* @} */

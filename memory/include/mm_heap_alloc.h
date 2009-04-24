@@ -17,18 +17,19 @@
 
 #ifdef MM_HEAP_ENABLED
 
+#ifdef LINUX_SYS
+
 #ifndef MM_HEAP_ALLOC_H
 #define MM_HEAP_ALLOC_H
 
-#include<stddef.h>
-#include<stdio.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 
-#ifdef LINUX_SYS
 /**
  * Align (size_t)mem to a multiple of HMALLOC_ALIGNMENT
  */
 size_t ma_memalign(size_t mem);
-#endif /* LINUX_SYS */
 
 /* --- memory alignment --- */
 #define SIZE_SIZE_T (sizeof(size_t))
@@ -52,9 +53,6 @@ typedef unsigned int binmap_t;
 #define clearbit(M,i)      (M[i / BITS_IN_WORDS] &= ~(1 << (i % BITS_IN_WORDS)))
 #define bit_is_marked(M,i) (M[i / BITS_IN_WORDS] & (1 << (i % BITS_IN_WORDS)))
 
-#include<string.h>
-
-#ifdef LINUX_SYS
 /* Manage node mask */
 static inline int mask_equal(unsigned long *a, unsigned long sa, unsigned long *b, unsigned long sb) {
   unsigned long i;
@@ -82,7 +80,6 @@ static inline void mask_clr(unsigned long *a, int node) {
   clearbit(a,node);
 }
 
-#endif /*LINUX_SYS */
 
 /* --- heap and used block structures --- */
 /** used memory bloc definition inside heap*/
@@ -118,7 +115,6 @@ typedef struct malloc_stats ma_amalloc_stat_t;
     b->stat_size = 0;             \
 }
 
-#include "marcel_mutex.h"
 /** heap definition */
 struct heap {
   /** */
@@ -179,10 +175,8 @@ struct malloc_stats {
 #define HEAP_UNSPECIFIED_WEIGHT -1
 #define HEAP_ITERATOR_ID_UNDEFINED -1
 
-#ifdef LINUX_SYS
 #define HEAP_SIZE_T 	(ma_memalign(sizeof(ma_heap_t)))
 #define BLOCK_SIZE_T 	(ma_memalign(sizeof(ma_ub_t)))
-#endif /* LINUX_SYS */
 
 #define IS_HEAP(h)			(h != NULL)
 #define IS_HEAP_POLICY(h,p)		(h != NULL && h->alloc_policy == p)
@@ -192,7 +186,6 @@ struct malloc_stats {
 
 #define MA_HEAP_NBPAGES 1048576
 
-#ifdef LINUX_SYS
 /**
  * Return an adress pointing to a heap of size (size_t)size
  * This method is different to ma_acreate in the way that physical pages
@@ -350,9 +343,8 @@ void ma_print_list(const char* str, ma_heap_t* heap);
  */
 void ma_print_heap(struct ub* root);
 
-#endif /* LINUX_SYS */
-
 #endif /* MM_HEAP_ALLOC_H */
+#endif /* LINUX_SYS */
 #endif /* MM_HEAP_ENABLED */
 
 /* @} */

@@ -1460,7 +1460,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
-  if (data->status != MAMI_NEXT_TOUCHED_STATUS) {
+  if (data && data->status != MAMI_NEXT_TOUCHED_STATUS) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
     _mami_migrate_pages(g_memory_manager, data, dest);

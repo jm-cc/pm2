@@ -2442,11 +2442,17 @@ synth_make_simple_topology(const unsigned *topology_description) {
 	if (ma_topo_type_depth[MARCEL_LEVEL_NODE] != -1) {
 		/* Assume this level is the node level.  */
 		unsigned node_level = ma_topo_type_depth[MARCEL_LEVEL_NODE];
+                int i;
 
-		marcel_nbnodes = marcel_topo_level_nbitems[node_level];
+                marcel_nbnodes = marcel_topo_level_nbitems[node_level];
 		/* Link the marcel_topo_node_level pointer to the `node level' in
 			 the marcel_topo_levels tree. */
 		marcel_topo_node_level = marcel_topo_levels[node_level];
+
+                for(i=0 ; i<marcel_nbnodes ; i++) {
+                  marcel_topo_node_level[i].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = 1024*1024;
+                }
+
 	}	else {
 		marcel_nbnodes = 1;
 	}

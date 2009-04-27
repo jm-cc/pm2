@@ -16,11 +16,10 @@
 #ifndef NM_PUBLIC_H
 #define NM_PUBLIC_H
 
+/* don't include pm2_common.h r tbx.h here. They are not needed and not ISO C compliant */
 #include <stdlib.h>
-#include <pm2_common.h>
 #include <Padico/Puk.h>
 #include <nm_errno.h>
-#include <nm_log.h>
 
 /* ** Core ************************************************* */
 
@@ -211,6 +210,9 @@ nmad_lock(void)
 static inline void 
 nmad_unlock(void)
 { }
+
+
+void nm_so_debug_init(int* argc, char** argv, int debug_flags);
 
 #endif /* PIOMAN */
 

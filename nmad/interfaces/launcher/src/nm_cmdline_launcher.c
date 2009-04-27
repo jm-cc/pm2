@@ -15,6 +15,7 @@
 
 #include <Padico/Puk.h>
 #include <nm_public.h>
+#include <nm_private.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_predictions.h>

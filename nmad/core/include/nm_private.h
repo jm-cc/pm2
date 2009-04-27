@@ -20,7 +20,8 @@
 #include <pm2_common.h>
 #include <pm2_list.h>
 
-#include "nm_public.h"
+#include <nm_public.h>
+#include <nm_log.h>
 
 #include <Padico/Module.h>
 
@@ -38,6 +39,11 @@ typedef int8_t nm_trk_id_t;
 #define NM_TRK_NONE  ((nm_trk_id_t)-1)
 
 #define NM_SO_MAX_TRACKS   2
+
+/* Sequence number
+ */
+
+typedef uint8_t nm_seq_t;
 
 
 #include "nm_so_parameters.h"

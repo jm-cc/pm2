@@ -70,8 +70,6 @@ extern debug_type_t debug_nm_so_trace;
     debug_printfl(&debug_nm_so_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
 
 
-void nm_so_debug_init(int* argc, char** argv, int debug_flags);
-
 
 /* Profiling/post-portem analysis
  */

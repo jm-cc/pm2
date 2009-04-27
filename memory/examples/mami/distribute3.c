@@ -14,21 +14,9 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include <numa.h>
 #include <sys/mman.h>
-
-/* Policies */
-enum {
-	MPOL_DEFAULT,
-	MPOL_PREFERRED,
-	MPOL_BIND,
-	MPOL_INTERLEAVE,
-	MPOL_MAX,	/* always last member of enum */
-};
-/* Flags for mbind */
-#  define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
-#  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
+#include <mm_mami.h>
+#include <mm_helper.h>
 
 #if defined(MM_MAMI_ENABLED)
 

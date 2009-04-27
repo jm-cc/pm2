@@ -63,19 +63,15 @@ saxpy-ldflags := -lblas
 	@rm -f ,,conftest{,.c}
 
 ifeq (no,$(HAVE_NUMA))
-APPS_EXCLUDE += check_migration
 APPS_EXCLUDE += crossing_access
 APPS_EXCLUDE += membind
 APPS_EXCLUDE += memteams
 APPS_EXCLUDE += memteams-bubbles
-APPS_EXCLUDE += distribute3
 endif
 membind-ldflags := -lrt -lnuma
 memteams-ldflags := -lrt -lnuma
 memteams-bubbles-ldflags := -lrt -lnuma
-check_migration-ldflags := -lnuma
 crossing_access-ldflags := -lnuma
-distribute3-ldflags := -lnuma
 
 mamif: CC=gfortran
 

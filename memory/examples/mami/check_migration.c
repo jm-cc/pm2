@@ -22,8 +22,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <numa.h>
-#include <numaif.h>
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -35,12 +33,11 @@ int marcel_main(int argc, char **argv) {
   int status[nbpages];
   int i, err;
   unsigned long pagesize;
-  unsigned long maxnode;
   unsigned long nodemask;
 
-  maxnode = numa_max_node();
-  if (!maxnode) {
-    marcel_printf("Need more than one NUMA node. Abort\n");
+  marcel_init(&argc,argv);
+  if (marcel_nbnodes < 2) {
+    marcel_printf("This application needs at least two NUMA nodes.\n");
     exit(1);
   }
 
@@ -48,7 +45,7 @@ int marcel_main(int argc, char **argv) {
   nodemask = (1<<0);
 
   buffer = mmap(NULL, nbpages*pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-  err = mbind(buffer, nbpages*pagesize, MPOL_BIND, &nodemask, maxnode+2, MPOL_MF_MOVE);
+  err = _mm_mbind(buffer, nbpages*pagesize, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
   if (err < 0) {
     perror("mbind");
     exit(1);

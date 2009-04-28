@@ -358,17 +358,17 @@ void* marcel_malloc_customized(size_t size, enum heap_pinfo_weight access, int l
 
 	/* Which node ? */
 	unsigned long node_mask;
-	mask_zero(&node_mask, sizeof(unsigned long));
+	heap_mask_zero(&node_mask, sizeof(unsigned long));
 
 	int local_node = ma_node_entity(upentity);
 
 	if (local)
 	{
-		mask_set(&node_mask, local_node);
+		heap_mask_set(&node_mask, local_node);
 	}
 	else
 	{
-		mask_set(&node_mask, node);
+		heap_mask_set(&node_mask, node);
 	}
 
 	int policy = CYCLIC;
@@ -378,7 +378,7 @@ void* marcel_malloc_customized(size_t size, enum heap_pinfo_weight access, int l
 	/* Smallest access */
 	//enum pinfo_weight weight = ma_mem_access(access, size);
 	enum heap_pinfo_weight weight = access;
-	void *data = heap_hmalloc(size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
+	void *data = heap_hmalloc(size, policy, weight, &node_mask, HEAP_WORD_SIZE, upentity->heap);
 
 	return data;
 }
@@ -598,7 +598,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 	int load;
 
 	unsigned long newnodemask = 0;//[8] = {};
-	mask_set(&newnodemask, newnode);
+	heap_mask_set(&newnodemask, newnode);
 	if (entity->heap)
 	{
 			pinfo = NULL;
@@ -633,7 +633,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 				newpinfo.mempolicy = pinfo->mempolicy;
 				newpinfo.weight = pinfo->weight;
 				newpinfo.nodemask = &newnodemask;
-				newpinfo.maxnode = WORD_SIZE;
+				newpinfo.maxnode = HEAP_WORD_SIZE;
 				if (heap_hmove_memory(pinfo, newpinfo.mempolicy, newpinfo.weight,newpinfo.nodemask, newpinfo.maxnode, entity->heap))
 				{
 					pinfo = NULL;

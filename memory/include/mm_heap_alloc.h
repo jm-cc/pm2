@@ -32,58 +32,58 @@
 size_t heap_memalign(size_t mem);
 
 /* --- memory alignment --- */
-#define SIZE_SIZE_T (sizeof(size_t))
-#define HMALLOC_ALIGNMENT (2 * SIZE_SIZE_T)
+#define HEAP_SIZE_SIZE_T (sizeof(size_t))
+#define HEAP_HMALLOC_ALIGNMENT (2 * HEAP_SIZE_SIZE_T)
 
 /* --- zeroing memory --- */
-#define MALLOC_ZERO(dest, nbytes)       memset(dest, (unsigned char)0, nbytes)
+#define HEAP_MALLOC_ZERO(dest, nbytes)       memset(dest, (unsigned char)0, nbytes)
 /* --- copying memory --- */
-#define MALLOC_COPY(dest, src, nbytes)       memcpy(dest, src, nbytes)
+#define HEAP_MALLOC_COPY(dest, src, nbytes)       memcpy(dest, src, nbytes)
 
 /* --- manage bitmap --- */
-typedef unsigned int binmap_t;
-#define BITS_IN_BYTES 8
-#define WORD_SIZE	(8*sizeof(unsigned long))
-#define BITS_IN_WORDS (BITS_IN_BYTES*WORD_SIZE)
+typedef unsigned int heap_binmap_t;
+#define HEAP_BITS_IN_BYTES 8
+#define HEAP_WORD_SIZE	(8*sizeof(unsigned long))
+#define HEAP_BITS_IN_WORDS (HEAP_BITS_IN_BYTES*HEAP_WORD_SIZE)
 #define HEAP_BINMAP_SIZE 1048576
-#define HEAP_BINMAP_MAX_PAGES (BITS_IN_WORDS*HEAP_BINMAP_SIZE)
+#define HEAP_BINMAP_MAX_PAGES (HEAP_BITS_IN_WORDS*HEAP_BINMAP_SIZE)
 
 /* Mark/Clear bits with given index */
-#define markbit(M,i)       (M[i / BITS_IN_WORDS] |= 1 << (i % BITS_IN_WORDS))
-#define clearbit(M,i)      (M[i / BITS_IN_WORDS] &= ~(1 << (i % BITS_IN_WORDS)))
-#define bit_is_marked(M,i) (M[i / BITS_IN_WORDS] & (1 << (i % BITS_IN_WORDS)))
+#define heap_markbit(M,i)       (M[i / HEAP_BITS_IN_WORDS] |= 1 << (i % HEAP_BITS_IN_WORDS))
+#define heap_clearbit(M,i)      (M[i / HEAP_BITS_IN_WORDS] &= ~(1 << (i % HEAP_BITS_IN_WORDS)))
+#define heap_bit_is_marked(M,i) (M[i / HEAP_BITS_IN_WORDS] & (1 << (i % HEAP_BITS_IN_WORDS)))
 
 /* Manage node mask */
-static inline int mask_equal(unsigned long *a, unsigned long sa, unsigned long *b, unsigned long sb) {
+static inline int heap_mask_equal(unsigned long *a, unsigned long sa, unsigned long *b, unsigned long sb) {
   unsigned long i;
   if (sa != sb) return 0;
-  for (i = 0; i < sa/WORD_SIZE; i++)
+  for (i = 0; i < sa/HEAP_WORD_SIZE; i++)
     if (a[i] != b[i])
       return 0;
   return 1;
 }
 
-static inline int mask_isset(unsigned long *a, unsigned long sa, int node) {
+static inline int heap_mask_isset(unsigned long *a, unsigned long sa, int node) {
   if ((unsigned int)node >= sa*8) return 0;
-  return bit_is_marked(a,node);
+  return heap_bit_is_marked(a,node);
 }
 
-static inline void mask_zero(unsigned long *a, unsigned long sa) {
+static inline void heap_mask_zero(unsigned long *a, unsigned long sa) {
   memset(a, 0, sa);
 }
 
-static inline void mask_set(unsigned long *a, int node) {
-  markbit(a,node);
+static inline void heap_mask_set(unsigned long *a, int node) {
+  heap_markbit(a,node);
 }
 
-static inline void mask_clr(unsigned long *a, int node) {
-  clearbit(a,node);
+static inline void heap_mask_clr(unsigned long *a, int node) {
+  heap_clearbit(a,node);
 }
 
 
 /* --- heap and used block structures --- */
 /** used memory bloc definition inside heap*/
-struct ub {
+struct heap_ub {
   /** */
   size_t size;
   /** */
@@ -93,19 +93,19 @@ struct ub {
   /** */
   size_t stat_size;
   /** */
-  struct heap *heap;
+  struct heap_heap *heap;
   /** */
-  struct ub *prev;
+  struct heap_ub *prev;
   /** */
-  struct ub *next;
+  struct heap_ub *next;
 };
 
-typedef struct ub heap_ub_t;
+typedef struct heap_ub heap_ub_t;
 /** heap structure type */
-typedef struct heap heap_heap_t;
-typedef struct malloc_stats heap_amalloc_stat_t;
+typedef struct heap_heap heap_heap_t;
+typedef struct heap_malloc_stats heap_amalloc_stat_t;
 
-#define set_bloc(b,s,ps,h,pv,nx) {\
+#define heap_set_bloc(b,s,ps,h,pv,nx) {\
     b->size = s;                  \
     b->prev_free_size = ps;       \
     b->heap = h;                  \
@@ -116,15 +116,15 @@ typedef struct malloc_stats heap_amalloc_stat_t;
 }
 
 /** heap definition */
-struct heap {
+struct heap_heap {
   /** */
-  struct ub *used;
+  struct heap_ub *used;
   /** */
   marcel_spinlock_t lock_heap;
   /** */
-  struct heap *next_heap;
+  struct heap_heap *next_heap;
   /** */
-  struct heap *next_same_heap;
+  struct heap_heap *next_same_heap;
   /** */
   size_t free_size;
   /** */
@@ -150,11 +150,11 @@ struct heap {
   /** */
   unsigned long maxnode;
   /** */
-  binmap_t bitmap[1]; /* avoid to be set as NULL, need to be the last field of the struct */
+  heap_binmap_t bitmap[1]; /* avoid to be set as NULL, need to be the last field of the struct */
 };
 
 /** malloc statistics */
-struct malloc_stats {
+struct heap_malloc_stats {
   /** */
   size_t free_size;
   /** */
@@ -175,15 +175,15 @@ struct malloc_stats {
 #define HEAP_ITERATOR_ID_UNDEFINED -1
 
 #define HEAP_SIZE_T 	(heap_memalign(sizeof(heap_heap_t)))
-#define BLOCK_SIZE_T 	(heap_memalign(sizeof(heap_ub_t)))
+#define HEAP_BLOCK_SIZE_T 	(heap_memalign(sizeof(heap_ub_t)))
 
-#define IS_HEAP(h)			(h != NULL)
-#define IS_HEAP_POLICY(h,p)		(h != NULL && h->alloc_policy == p)
+#define HEAP_IS_HEAP(h)			(h != NULL)
+#define HEAP_IS_HEAP_POLICY(h,p)		(h != NULL && h->alloc_policy == p)
 #define HEAP_ADD_FREE_SIZE(sz,h) 	{ h->free_size += sz; h->used_size -= sz; }
 #define HEAP_ADD_USED_SIZE(sz,h) 	{ h->free_size -= sz; h->used_size += sz; }
 #define HEAP_GET_SIZE(h) 		( h->free_size + h->used_size )
 
-#define HEAP_HEAP_NBPAGES 1048576
+#define HEAP_NBPAGES 1048576
 
 /**
  * Return an adress pointing to a heap of size (size_t)size
@@ -340,7 +340,7 @@ void heap_print_list(const char* str, heap_heap_t* heap);
 /**
  * Display the list of bloc starting from (heap_ub_t*)root
  */
-void heap_print_heap(struct ub* root);
+void heap_print_heap(struct heap_ub* root);
 
 #endif /* MM_HEAP_ALLOC_H */
 #endif /* LINUX_SYS */

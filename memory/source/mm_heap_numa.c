@@ -38,7 +38,7 @@ int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask,
   switch(mempolicy) {
   case SMALL_ACCESSED:
     for(i = 0; i < marcel_nbnodes; ++i) {
-      if (mask_isset(nodemask,maxnode,i)) {
+      if (heap_mask_isset(nodemask,maxnode,i)) {
         node_hits = heap_hits_mem_node(i);
         //mdebug_memory("node=%d hits=%lld\n",i,node_hits);
         if (min_hits > node_hits) {
@@ -48,13 +48,13 @@ int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask,
       }
     }
     newmaxnode = maxnode;
-    mask_zero(newnodemask,newmaxnode);
-    mask_set(newnodemask,idx_node);
+    heap_mask_zero(newnodemask,newmaxnode);
+    heap_mask_set(newnodemask,idx_node);
     err = _mm_mbind(ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
     break;
   case LESS_LOADED:
     for(i = 0; i < marcel_nbnodes; ++i) {
-      if (mask_isset(nodemask,maxnode,i)) {
+      if (heap_mask_isset(nodemask,maxnode,i)) {
         node_free_size = heap_free_mem_node(i);
         //mdebug_memory("node=%d size=%lld\n",i,node_free_size);
         if (node_free_size > max_free_size) {
@@ -64,8 +64,8 @@ int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask,
       }
     }
     newmaxnode = maxnode;
-    mask_zero(newnodemask,newmaxnode);
-    mask_set(newnodemask,idx_node);
+    heap_mask_zero(newnodemask,newmaxnode);
+    heap_mask_set(newnodemask,idx_node);
     err = _mm_mbind(ptr, size, MPOL_BIND , newnodemask, newmaxnode, MPOL_MF_MOVE);
     break;
   case CYCLIC:

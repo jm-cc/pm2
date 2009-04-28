@@ -28,15 +28,15 @@
 size_t heap_memalign(size_t mem) {
   unsigned long nb;
   if (mem == 0) return 0;
-  if (mem < HMALLOC_ALIGNMENT) {
-    return HMALLOC_ALIGNMENT;
+  if (mem < HEAP_HMALLOC_ALIGNMENT) {
+    return HEAP_HMALLOC_ALIGNMENT;
   }
   /* look if is not already a multiple of HMALLOC_ALIGNMENT */
-  if (mem % HMALLOC_ALIGNMENT == 0) {
+  if (mem % HEAP_HMALLOC_ALIGNMENT == 0) {
     return mem;
   }
-  nb = mem/HMALLOC_ALIGNMENT;
-  return (nb+1) * HMALLOC_ALIGNMENT;
+  nb = mem/HEAP_HMALLOC_ALIGNMENT;
+  return (nb+1) * HEAP_HMALLOC_ALIGNMENT;
 }
 
 /**
@@ -103,7 +103,7 @@ heap_heap_t* heap_acreate(size_t size, int alloc_policy) {
       heap->used_size = pagesize;
       heap->touch_size = pagesize;
       for(i = 0; i < HEAP_BINMAP_SIZE; ++i) {
-        clearbit(heap->bitmap,i);
+        heap_clearbit(heap->bitmap,i);
       }
     }
 
@@ -130,7 +130,7 @@ void heap_adelete(heap_heap_t **heap) {
   heap_heap_t* next_heap_tmp;
 
   next_heap = *heap;
-  if (IS_HEAP(next_heap)) {
+  if (HEAP_IS_HEAP(next_heap)) {
     while(next_heap != NULL) {
       marcel_spin_lock(&next_heap->lock_heap);
       size_heap = HEAP_GET_SIZE(next_heap);
@@ -157,7 +157,7 @@ int heap_is_empty_heap(heap_heap_t* heap) {
   heap_heap_t* current_heap;
 
   current_heap = heap;
-  while(IS_HEAP(current_heap)) {
+  while(HEAP_IS_HEAP(current_heap)) {
     if (current_heap->used != NULL) {
       return 0;
     }
@@ -175,7 +175,7 @@ int heap_amaparea(heap_heap_t* heap, int mempolicy, int weight, unsigned long *n
     heap->mempolicy = mempolicy;
     heap->weight = weight;
     heap-> maxnode = maxnode;
-    for (i = 0; i < heap->maxnode/WORD_SIZE; ++i) {
+    for (i = 0; i < heap->maxnode/HEAP_WORD_SIZE; ++i) {
       heap->nodemask[i] = nodemask[i];
     }
   }
@@ -186,10 +186,10 @@ void heap_aconcat_global_list(heap_heap_t *hsrc, heap_heap_t *htgt) {
   heap_heap_t *current_heap;
   int valid = 0;
 
-  if (IS_HEAP(hsrc) && IS_HEAP(htgt) && hsrc != htgt) {
+  if (HEAP_IS_HEAP(hsrc) && HEAP_IS_HEAP(htgt) && hsrc != htgt) {
     current_heap = hsrc;
     while(!valid) {
-      while(IS_HEAP(current_heap->next_heap)) {
+      while(HEAP_IS_HEAP(current_heap->next_heap)) {
         current_heap = current_heap->next_heap;
       }
       if(heap_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)0) {
@@ -205,10 +205,10 @@ void heap_aconcat_local_list(heap_heap_t *hsrc, heap_heap_t *htgt) {
   heap_heap_t *current_heap;
   int valid = 0;
 
-  if (IS_HEAP(hsrc) && IS_HEAP(htgt) && hsrc != htgt) {
+  if (HEAP_IS_HEAP(hsrc) && HEAP_IS_HEAP(htgt) && hsrc != htgt) {
     current_heap = hsrc;
     while(!valid) {
-      while(IS_HEAP(current_heap->next_same_heap)) {
+      while(HEAP_IS_HEAP(current_heap->next_same_heap)) {
         current_heap = current_heap->next_same_heap;
       }
       if(heap_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)0) {
@@ -225,10 +225,10 @@ heap_heap_t* heap_aget_heap_from_list(int mempolicy, int weight, unsigned long *
 
   mdebug_memory("heap_aget_heap_from_list from %p (%d,%d) numa=%ld\n",heap,mempolicy,weight,*nodemask);
   current_heap = heap;
-  while (IS_HEAP(current_heap)) {
+  while (HEAP_IS_HEAP(current_heap)) {
     marcel_spin_lock(&current_heap->lock_heap);
     //	mdebug_memory("[check %d = %d && %d = %d && %d = %d]",*nodemask,*current_heap->nodemask,maxnode, current_heap->maxnode,mempolicy,current_heap->mempolicy,weight,current_heap->weight);
-    if (mask_equal(nodemask,maxnode,current_heap->nodemask,current_heap->maxnode) && mempolicy == current_heap->mempolicy && weight == current_heap->weight) {
+    if (heap_mask_equal(nodemask,maxnode,current_heap->nodemask,current_heap->maxnode) && mempolicy == current_heap->mempolicy && weight == current_heap->weight) {
       marcel_spin_unlock(&current_heap->lock_heap);
       mdebug_memory(" found: %p\n",current_heap);
       return current_heap;
@@ -245,7 +245,7 @@ void *heap_apagealloc(int nb_pages, heap_heap_t *heap) {
   unsigned int pagesize = getpagesize () ;
   void* ptr;
 
-  if (!IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
+  if (!HEAP_IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
     mdebug_memory("heap_apagealloc: bad heap\n");
     return NULL;
   }
@@ -253,7 +253,7 @@ void *heap_apagealloc(int nb_pages, heap_heap_t *heap) {
   c = 0;
   i = 1;
   while(i < HEAP_BINMAP_MAX_PAGES) {
-    if (bit_is_marked(heap->bitmap,i)) {
+    if (heap_bit_is_marked(heap->bitmap,i)) {
       c = 0;
     }
     else {
@@ -278,7 +278,7 @@ void *heap_apagealloc(int nb_pages, heap_heap_t *heap) {
     heap->touch_size =  (char*)ptr+nb_pages*pagesize-(char*)heap;
   }
   for(c = i;c < i + nb_pages; c++) {
-    markbit(heap->bitmap,c);
+    heap_markbit(heap->bitmap,c);
   }
 
   marcel_spin_unlock(&heap->lock_heap);
@@ -293,15 +293,15 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
   size = heap_memalign(size);
 
   mdebug_memory("heap_amalloc size=%d\n",(int)size);
-  if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
+  if (!HEAP_IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
     mdebug_memory("bad heap\n");
     return NULL;
   }
   next_same_heap = prev_next_same_heap = heap;
 	/* check for heap with enough remaining free space */
-  while(IS_HEAP(next_same_heap)) {
+  while(HEAP_IS_HEAP(next_same_heap)) {
     marcel_spin_lock(&next_same_heap->lock_heap);
-    if (next_same_heap->free_size > size + BLOCK_SIZE_T) {
+    if (next_same_heap->free_size > size + HEAP_BLOCK_SIZE_T) {
       marcel_spin_unlock(&next_same_heap->lock_heap);
       break;
     }
@@ -309,7 +309,7 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
     prev_next_same_heap = next_same_heap;
     next_same_heap = next_same_heap->next_same_heap;
   }
-  if (!IS_HEAP(next_same_heap)) {
+  if (!HEAP_IS_HEAP(next_same_heap)) {
     /* not enough space found in heap list */
     /* create a new heap */
     mdebug_memory("create new heap from %p\n",prev_next_same_heap);
@@ -321,25 +321,25 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
     return heap_amalloc(size,temp_heap);
   }
   /* enough space in heap */
-  while(IS_HEAP(next_same_heap)) {
+  while(HEAP_IS_HEAP(next_same_heap)) {
     marcel_spin_lock(&next_same_heap->lock_heap);
     if (next_same_heap->used == NULL) { /* first used bloc in list of current heap */
       mdebug_memory("first bloc of list\n");
       next_same_heap->used = (heap_ub_t*)((char*)next_same_heap + HEAP_SIZE_T);
 
-      set_bloc(next_same_heap->used, size, 0, next_same_heap, NULL, NULL);
+      heap_set_bloc(next_same_heap->used, size, 0, next_same_heap, NULL, NULL);
 
-      HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
-      next_same_heap->touch_size = size + BLOCK_SIZE_T;
+      HEAP_ADD_USED_SIZE(size+HEAP_BLOCK_SIZE_T,next_same_heap);
+      next_same_heap->touch_size = size + HEAP_BLOCK_SIZE_T;
 
       marcel_spin_unlock(&next_same_heap->lock_heap);
       mdebug_memory_list("->",next_same_heap);
-      return (void*)((char*)(next_same_heap->used) + BLOCK_SIZE_T);
+      return (void*)((char*)(next_same_heap->used) + HEAP_BLOCK_SIZE_T);
     }
 
     /* find first free block: first fit */
     current_bloc_used_prev = current_bloc_used = next_same_heap->used;
-    while(current_bloc_used != NULL && current_bloc_used->prev_free_size < size + BLOCK_SIZE_T) {
+    while(current_bloc_used != NULL && current_bloc_used->prev_free_size < size + HEAP_BLOCK_SIZE_T) {
       current_bloc_used_prev = current_bloc_used;
       current_bloc_used = current_bloc_used->next;
     }
@@ -352,10 +352,10 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
       current_bloc_used = current_bloc_used_prev;
 
       /* check for enough remaining contigous free space */
-      if ( (char*)next_same_heap+HEAP_GET_SIZE(next_same_heap) - ((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size) < size + BLOCK_SIZE_T) {
+      if ( (char*)next_same_heap+HEAP_GET_SIZE(next_same_heap) - ((char*)current_bloc_used+HEAP_BLOCK_SIZE_T+current_bloc_used->size) < size + HEAP_BLOCK_SIZE_T) {
         /* goes to next heap */
         marcel_spin_unlock(&next_same_heap->lock_heap);
-        if (IS_HEAP(next_same_heap->next_same_heap)) {
+        if (HEAP_IS_HEAP(next_same_heap->next_same_heap)) {
           next_same_heap = next_same_heap->next_same_heap;
           continue;
         }
@@ -372,12 +372,12 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
 
       /* create new used bloc */
       mdebug_memory("heap found\n");
-      current_bloc_used->next = (heap_ub_t*)((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size);
-      set_bloc(current_bloc_used->next, size, 0, next_same_heap, current_bloc_used, NULL);
-      next_same_heap->touch_size = (unsigned long)current_bloc_used->next + size + BLOCK_SIZE_T - (unsigned long)next_same_heap;
-      HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
+      current_bloc_used->next = (heap_ub_t*)((char*)current_bloc_used+HEAP_BLOCK_SIZE_T+current_bloc_used->size);
+      heap_set_bloc(current_bloc_used->next, size, 0, next_same_heap, current_bloc_used, NULL);
+      next_same_heap->touch_size = (unsigned long)current_bloc_used->next + size + HEAP_BLOCK_SIZE_T - (unsigned long)next_same_heap;
+      HEAP_ADD_USED_SIZE(size+HEAP_BLOCK_SIZE_T,next_same_heap);
 
-      ptr = (char*)(current_bloc_used->next) + BLOCK_SIZE_T;
+      ptr = (char*)(current_bloc_used->next) + HEAP_BLOCK_SIZE_T;
     }
     else { /* free space found between block */
       mdebug_memory("free space between used bloc found\n");
@@ -385,12 +385,12 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
       if(current_bloc_used->prev != NULL) {
         /* goes to offset of the last used bloc */
         temp_bloc_used = current_bloc_used;
-        current_bloc_used = (heap_ub_t*)((char*)current_bloc_used_prev+BLOCK_SIZE_T+current_bloc_used_prev->size);
-        set_bloc(current_bloc_used, size, 0, next_same_heap, current_bloc_used_prev, temp_bloc_used);
-        ptr = (char*)(current_bloc_used) + BLOCK_SIZE_T;
+        current_bloc_used = (heap_ub_t*)((char*)current_bloc_used_prev+HEAP_BLOCK_SIZE_T+current_bloc_used_prev->size);
+        heap_set_bloc(current_bloc_used, size, 0, next_same_heap, current_bloc_used_prev, temp_bloc_used);
+        ptr = (char*)(current_bloc_used) + HEAP_BLOCK_SIZE_T;
         current_bloc_used_prev->next = current_bloc_used;
         if (current_bloc_used->next != NULL) {
-          current_bloc_used->next->prev_free_size -= (size + BLOCK_SIZE_T);
+          current_bloc_used->next->prev_free_size -= (size + HEAP_BLOCK_SIZE_T);
           current_bloc_used->next->prev = current_bloc_used;
         }
       }
@@ -399,14 +399,14 @@ void *heap_amalloc(size_t size, heap_heap_t* heap) {
         temp_bloc_used = current_bloc_used;
         current_bloc_used = (heap_ub_t*)((char *)next_same_heap+HEAP_SIZE_T);
         next_same_heap->used = current_bloc_used;
-        set_bloc(current_bloc_used,size, 0, next_same_heap, NULL, temp_bloc_used);
-        ptr = (char*)(current_bloc_used) + BLOCK_SIZE_T;
+        heap_set_bloc(current_bloc_used,size, 0, next_same_heap, NULL, temp_bloc_used);
+        ptr = (char*)(current_bloc_used) + HEAP_BLOCK_SIZE_T;
         if (current_bloc_used->next != NULL) {
-          current_bloc_used->next->prev_free_size -= (size + BLOCK_SIZE_T);
+          current_bloc_used->next->prev_free_size -= (size + HEAP_BLOCK_SIZE_T);
           current_bloc_used->next->prev = current_bloc_used;
         }
       }
-      HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
+      HEAP_ADD_USED_SIZE(size+HEAP_BLOCK_SIZE_T,next_same_heap);
     }
     marcel_spin_unlock(&next_same_heap->lock_heap);
     return ptr;
@@ -426,7 +426,7 @@ void *heap_acalloc(size_t nmemb, size_t size, heap_heap_t* heap) {
     return NULL;
   }
   /* zeroing memory: only memory area specified */
-  MALLOC_ZERO(ptr,local_size);
+  HEAP_MALLOC_ZERO(ptr,local_size);
 
   return ptr;
 }
@@ -438,7 +438,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
   void* new_ptr;
 
   size = heap_memalign(size);
-  if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
+  if (!HEAP_IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
     mdebug_memory("heap_arealloc: bad heap\n");
     return NULL;
   }
@@ -458,7 +458,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
   }
 
   marcel_spin_lock(&heap->lock_heap);
-  current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+  current_bloc_used = (heap_ub_t *)((char*)ptr-HEAP_BLOCK_SIZE_T);
   if (current_bloc_used->heap == heap) {
     if (current_bloc_used->size == size) { /* do nothing */
       mdebug_memory("heap_arealloc: nothing to do\n");
@@ -489,7 +489,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
       marcel_spin_unlock(&heap->lock_heap);
       return ptr;
     }
-    if (current_bloc_used->next == NULL  && (char*)heap+HEAP_SIZE_T+HEAP_GET_SIZE(heap) > (char*)current_bloc_used+BLOCK_SIZE_T+size) {
+    if (current_bloc_used->next == NULL  && (char*)heap+HEAP_SIZE_T+HEAP_GET_SIZE(heap) > (char*)current_bloc_used+HEAP_BLOCK_SIZE_T+size) {
       /* last block and enough remaining space */
       mdebug_memory("heap_arealloc: enough space after bloc and last bloc\n");
       HEAP_ADD_USED_SIZE(size - current_bloc_used->size,heap);
@@ -504,7 +504,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
   new_ptr = heap_amalloc(size,heap);
   if (new_ptr != NULL) {
     /* move data */
-    MALLOC_COPY(new_ptr,ptr,size);
+    HEAP_MALLOC_COPY(new_ptr,ptr,size);
     /* make a free */
     heap_afree_heap(ptr,heap);
     return new_ptr;
@@ -515,7 +515,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
 void heap_afree(void *ptr) {
   heap_ub_t *current_bloc_used;
   if (ptr != NULL) {
-    current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+    current_bloc_used = (heap_ub_t *)((char*)ptr-HEAP_BLOCK_SIZE_T);
     mdebug_memory("afree: heap=%p\n",current_bloc_used->heap);
     heap_afree_heap(ptr,current_bloc_used->heap);
   }
@@ -525,25 +525,25 @@ void heap_afree_heap(void *ptr, heap_heap_t* heap) {
   heap_ub_t *current_bloc_used;
   size_t size;
 
-  if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
+  if (ptr != NULL && HEAP_IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
     marcel_spin_lock(&heap->lock_heap);
-    current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+    current_bloc_used = (heap_ub_t *)((char*)ptr-HEAP_BLOCK_SIZE_T);
     size = current_bloc_used->size;
     if (current_bloc_used->prev != NULL) {
       current_bloc_used->prev->next = current_bloc_used->next;
       if(current_bloc_used->next != NULL) {
         current_bloc_used->next->prev = current_bloc_used->prev;
-        current_bloc_used->next->prev_free_size += current_bloc_used->size+BLOCK_SIZE_T+current_bloc_used->prev_free_size;
+        current_bloc_used->next->prev_free_size += current_bloc_used->size+HEAP_BLOCK_SIZE_T+current_bloc_used->prev_free_size;
       }
     }
     else {
       heap->used = current_bloc_used->next;
       if (current_bloc_used->next != NULL) {
-        current_bloc_used->next->prev_free_size += current_bloc_used->size+BLOCK_SIZE_T+current_bloc_used->prev_free_size;
+        current_bloc_used->next->prev_free_size += current_bloc_used->size+HEAP_BLOCK_SIZE_T+current_bloc_used->prev_free_size;
         current_bloc_used->next->prev = NULL;
       }
     }
-    HEAP_ADD_FREE_SIZE(size+BLOCK_SIZE_T,heap);
+    HEAP_ADD_FREE_SIZE(size+HEAP_BLOCK_SIZE_T,heap);
     marcel_spin_unlock(&heap->lock_heap);
     mdebug_memory_list("heap_afree_heap\n",heap);
   }
@@ -557,13 +557,13 @@ void heap_apagefree(void* ptr, int nb_pages, heap_heap_t *heap) {
   unsigned int i,c;
   unsigned int pagesize;
 
-  if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
+  if (ptr != NULL && HEAP_IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
     marcel_spin_lock(&heap->lock_heap);
     pagesize = getpagesize () ;
     i = ((unsigned long)ptr-(unsigned long)heap)/pagesize;
     mdebug_memory("i = %d\n",i);
     for(c = i;c < i + nb_pages; c++) {
-      clearbit(heap->bitmap,c);
+      heap_clearbit(heap->bitmap,c);
     }
     HEAP_ADD_FREE_SIZE(nb_pages*pagesize,heap);
     marcel_spin_unlock(&heap->lock_heap);
@@ -581,7 +581,7 @@ heap_amalloc_stat_t heap_amallinfo(heap_heap_t* heap) {
   stats.npinfo = 0;
 
   next_heap = heap;
-  while(IS_HEAP(next_heap)) {
+  while(HEAP_IS_HEAP(next_heap)) {
     marcel_spin_lock(&next_heap->lock_heap);
     stats.free_size += next_heap->free_size;
     stats.used_size += next_heap->used_size;
@@ -604,14 +604,14 @@ void heap_print_list(const char* str, heap_heap_t* heap) {
 
   debug_printf(&debug_memory,"%s",str);
   h = heap;
-  while (IS_HEAP(h)) {
+  while (HEAP_IS_HEAP(h)) {
     marcel_spin_lock(&h->lock_heap);
     printf("heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
-    for(i = 0; i < h->maxnode/WORD_SIZE; i++) {
+    for(i = 0; i < h->maxnode/HEAP_WORD_SIZE; i++) {
       printf("%ld|",h->nodemask[i]);
     }
     for(i = 0; i < max_node+1; ++i) {
-      if(mask_isset(h->nodemask,h->maxnode,i)) {
+      if(heap_mask_isset(h->nodemask,h->maxnode,i)) {
         printf("%d-",i);
       }
     }
@@ -625,7 +625,7 @@ void heap_print_list(const char* str, heap_heap_t* heap) {
   }
 }
 
-void heap_print_heap(struct ub* root) {
+void heap_print_heap(struct heap_ub* root) {
   int count = 0;
   while(root != NULL) {
     printf("[%d| %p (u:%zu,f:%zu,s:%zu) (p:%p,n:%p)",count, root, root->size, root->prev_free_size, root->stat_size, root->prev, root->next);

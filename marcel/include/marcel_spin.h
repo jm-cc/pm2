@@ -19,6 +19,14 @@ typedef struct {
 	ma_spinlock_t lock;
 } marcel_spinlock_t, pmarcel_spinlock_t;
 
+#section macros
+#define MARCEL_SPINLOCK_INITIALIZER \
+	{ .lock = MA_SPIN_LOCK_UNLOCKED }
+
+#ifdef MA__IFACE_PMARCEL
+#  define PMARCEL_SPINLOCK_INITIALIZER MARCEL_SPINLOCK_INITIALIZER
+#endif
+
 #section functions
 DEC_MARCEL_POSIX(int, spin_init, (marcel_spinlock_t *lock, int pshared) __THROW);
 DEC_MARCEL_POSIX(int, spin_destroy, (marcel_spinlock_t *lock) __THROW);

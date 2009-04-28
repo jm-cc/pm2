@@ -79,10 +79,10 @@ int _mami_get_filename(const char *type, char *filename, long source, long dest)
   }
   pathname = getenv("PM2_SAMPLING_DIR");
   if (pathname) {
-    rc = marcel_snprintf(directory, 1024, "%s/marcel", pathname);
+    rc = marcel_snprintf(directory, 1024, "%s/memory", pathname);
   }
   else {
-    rc = marcel_snprintf(directory, 1024, "/var/local/pm2/marcel");
+    rc = marcel_snprintf(directory, 1024, "/var/local/pm2/memory");
   }
   assert(rc < 1024);
 

@@ -6,15 +6,21 @@ if [ -z "$x" ] ; then
     # create the flavor
     eval pm2-flavor set --flavor=\"$flavor\" \
         --ext=\"\" \
-        --modules=\"init marcel tbx\" \
+        --modules=\"init marcel tbx memory\" \
         --common=\"fortran_target_none\" \
-        --marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_mami enable_stats\" \
+        --marcel=\"numa marcel_main bubble_sched_null smp_smt_idle enable_stats\" \
+        --memory=\"enable_mami\" \
         --all=\"build_static opt\"
 fi
 
-make -C $PM2_ROOT/marcel FLAVOR=$flavor -j
-make -C $PM2_ROOT/marcel/examples/memory FLAVOR=$flavor sampling_for_memory_migration
+make -C $PM2_ROOT/memory FLAVOR=$flavor -j
+make -C $PM2_ROOT/memory/examples/mami FLAVOR=$flavor sampling_for_memory_migration
 prog=$(pm2-which -f $flavor sampling_for_memory_migration)
+
+if [  -z "$prog" ] ; then
+    echo "Error. Application <sampling_for_memory_migration> is not available"
+    exit 1
+fi
 
 nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
 
@@ -26,7 +32,7 @@ pathname=$PM2_SAMPLING_DIR
 if [ -z "$pathname" ] ; then
     pathname="/var/local/pm2"
 fi
-pathname=$pathname"/marcel"
+pathname=$pathname"/memory"
 
 hostname=$(uname -n)
 (

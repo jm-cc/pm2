@@ -79,7 +79,7 @@ sub fixFilenameAndHostname {
         if ($pathname eq "") {
             $pathname = "/var/local/pm2";
         }
-        $pathname .= "/marcel";
+        $pathname .= "/memory";
         $filename = "$pathname/sampling_for_memory_migration_$hostname.dat";
     }
     return ($pathname, $filename, $hostname);

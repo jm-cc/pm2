@@ -14,6 +14,7 @@
  */
 
 #include "mm_mami.h"
+#include "mm_helper.h"
 
 #include <sys/mman.h>
 #include <errno.h>

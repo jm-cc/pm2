@@ -15,9 +15,10 @@
 . ./heap.sh
 prog="jacobi"
 args="10 2 5"
+sort_output=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
+number of iterations: 5
 worker 0 has started
 worker 1 has started
-number of iterations: 5
 EOF
 

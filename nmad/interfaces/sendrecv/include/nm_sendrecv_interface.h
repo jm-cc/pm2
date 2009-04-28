@@ -99,7 +99,7 @@ typedef struct
 
 #define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })
 
-PUK_VECT_TYPE(nm_sr_event_monitor, nm_sr_event_monitor_t);
+PUK_VECT_TYPE(nm_sr_event_monitor, nm_sr_event_monitor_t)
 
 /** internal defintion of the sendrecv request */
 struct nm_sr_request_s

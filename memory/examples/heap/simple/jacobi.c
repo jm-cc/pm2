@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
   for (i = 0; i < numWorkers; i++)
     if (maxdiff < maxDiff[i])
       maxdiff = maxDiff[i];
-  printf("number of iterations: %d\n", numIters);
+  marcel_printf("number of iterations: %d\n", numIters);
   //printf("maximum difference: %e\n", maxdiff);
   marcel_end();
   return 0;
@@ -94,7 +94,7 @@ any_t Worker(any_t arg) {
   unsigned long mask = 24+myid;
   unsigned long maxnode = 8*sizeof(unsigned long);
 
-  printf("worker %d has started\n", myid);
+  marcel_printf("worker %d has started\n", myid);
   if (myid%2 == 0) {
     h[myid] = ma_acreatenuma(3*MAXGRID,HEAP_DYN_ALLOC,CYCLIC,LOW_WEIGHT,&mask,maxnode);
   }

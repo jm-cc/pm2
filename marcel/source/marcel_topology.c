@@ -145,7 +145,7 @@ static unsigned ma_fallback_nbprocessors(void) {
 
 #ifdef MA__NUMA
 unsigned   ma_synthetic_topology_description[MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH];
-tbx_bool_t ma_use_synthetic_topology = tbx_false;
+tbx_bool_t marcel_use_synthetic_topology = tbx_false;
 #endif
 
 
@@ -2488,7 +2488,7 @@ synth_install_topology (void) {
 static void
 initialize_topology(void) {
 #ifdef MA__NUMA
-	if (ma_use_synthetic_topology && ma_synthetic_topology_description[0] != 0)
+	if (marcel_use_synthetic_topology && ma_synthetic_topology_description[0] != 0)
 		synth_install_topology();
 	else
 #endif

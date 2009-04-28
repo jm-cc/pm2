@@ -89,7 +89,7 @@ static int parse_synthetic_topology_description(const char *description) {
 
 	if(count > 0) {
 		ma_synthetic_topology_description[count + 1] = 0;
-		ma_use_synthetic_topology = 1;
+		marcel_use_synthetic_topology = 1;
 	}
 
 	return (count > 0) ? 0 : 1;
@@ -271,7 +271,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			}
 
 			/* Notify Marcel that we are using a "virtual" topology.  */
-			ma_use_synthetic_topology = 1;
+			marcel_use_synthetic_topology = 1;
 		} else
 #endif
 		if (!strncmp(argv[i], "--marcel", 8)) {

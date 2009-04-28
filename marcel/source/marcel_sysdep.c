@@ -196,7 +196,7 @@ int ma_numa_not_available = 0;
 
 void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	void *p;
-	if (ma_numa_not_available || node == -1 || ma_use_synthetic_topology)
+	if (ma_numa_not_available || node == -1 || marcel_use_synthetic_topology)
 		return ma_malloc_nonuma(size,file,line);
 
 	marcel_malloc_protect();
@@ -208,7 +208,7 @@ void *ma_malloc_node(size_t size, int node, char *file, unsigned line) {
 	return p;
 }
 void ma_free_node(void *data, size_t size, char * __restrict file, unsigned line) {
-	if (ma_numa_not_available || ma_use_synthetic_topology)
+	if (ma_numa_not_available || marcel_use_synthetic_topology)
 		return ma_free_nonuma(data,file,line);
 
 	marcel_malloc_protect();

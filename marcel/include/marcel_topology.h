@@ -768,15 +768,20 @@ extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LA
 		2-node machine with 4 dual-core CPUs.  */
 extern TBX_EXTERN unsigned ma_synthetic_topology_description[];
 
+#endif /* MA__NUMA */
+
+#section variables
+#ifdef MA__NUMA
+
 /** \brief A boolean indicating whether to use the "synthetic" topology
 		described by `ma_synthetic_topology_description' instead of the actual
 		host topology.  Only has an effect at startup-time.  */
-extern TBX_EXTERN tbx_bool_t ma_use_synthetic_topology;
+extern TBX_EXTERN tbx_bool_t marcel_use_synthetic_topology;
 
 #else /* !MA__NUMA */
 
 /* Support for synthetic topologies requires `MA__NUMA'.  */
-# define ma_use_synthetic_topology  0
+# define marcel_use_synthetic_topology  0
 
 #endif /* MA__NUMA */
 

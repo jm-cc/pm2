@@ -15,8 +15,6 @@
 
 #if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
 
-#define MARCEL_INTERNAL_INCLUDE
-
 #include "mm_helper.h"
 #include "mm_debug.h"
 
@@ -25,7 +23,7 @@ int _mm_mbind(void *start, unsigned long len, int mode,
   int err = 0;
 
   MEMORY_ILOG_IN();
-  if (ma_use_synthetic_topology) {
+  if (marcel_use_synthetic_topology) {
       MEMORY_ILOG_OUT();
       return err;
   }
@@ -43,7 +41,7 @@ int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int fla
   int err=0;
 
   MEMORY_ILOG_IN();
-  if (ma_use_synthetic_topology) {
+  if (marcel_use_synthetic_topology) {
       MEMORY_ILOG_OUT();
       return err;
   }

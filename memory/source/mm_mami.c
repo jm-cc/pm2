@@ -104,8 +104,8 @@ void mami_init(mami_manager_t *memory_manager) {
     _mami_preallocate(memory_manager, &(memory_manager->heaps[0]), memory_manager->initially_preallocated_pages, 0, 0);
     mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[0]->start, 0, 0);
   }
-  _mami_preallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, FIRST_TOUCH_NODE, FIRST_TOUCH_NODE);
-  mdebug_memory("Preallocating %p for anonymous heap\n", memory_manager->heaps[FIRST_TOUCH_NODE]->start);
+  _mami_preallocate(memory_manager, &(memory_manager->heaps[MAMI_FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, MAMI_FIRST_TOUCH_NODE, MAMI_FIRST_TOUCH_NODE);
+  mdebug_memory("Preallocating %p for anonymous heap\n", memory_manager->heaps[MAMI_FIRST_TOUCH_NODE]->start);
 
   // Initialise space with huge pages on each node
   memory_manager->huge_pages_heaps = tmalloc(memory_manager->nb_nodes * sizeof(mami_huge_pages_area_t *));
@@ -255,7 +255,7 @@ void mami_exit(mami_manager_t *memory_manager) {
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     _mami_deallocate(memory_manager, &(memory_manager->heaps[node]), node);
   }
-  _mami_deallocate(memory_manager, &(memory_manager->heaps[FIRST_TOUCH_NODE]), FIRST_TOUCH_NODE);
+  _mami_deallocate(memory_manager, &(memory_manager->heaps[MAMI_FIRST_TOUCH_NODE]), MAMI_FIRST_TOUCH_NODE);
   tfree(memory_manager->heaps);
 
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
@@ -318,7 +318,7 @@ void _mami_init_memory_data(mami_manager_t *memory_manager,
   (*memory_data)->next = NULL;
   (*memory_data)->node = node;
 
-  if (node != MULTIPLE_LOCATION_NODE) (*memory_data)->nodes = NULL;
+  if (node != MAMI_MULTIPLE_LOCATION_NODE) (*memory_data)->nodes = NULL;
   else {
     (*memory_data)->nodes = nodes;
   }
@@ -575,7 +575,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
 
   MEMORY_ILOG_IN();
 
-  if (vnode != FIRST_TOUCH_NODE && memory_manager->memtotal[vnode] == 0) {
+  if (vnode != MAMI_FIRST_TOUCH_NODE && memory_manager->memtotal[vnode] == 0) {
     mdebug_memory("No memory available on node #%d, os_node #%d\n", vnode, pnode);
     err = -EINVAL;
     buffer = NULL;
@@ -589,7 +589,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
       err = -errno;
     }
     else {
-      if (vnode != FIRST_TOUCH_NODE) {
+      if (vnode != MAMI_FIRST_TOUCH_NODE) {
         nodemask = (1<<pnode);
         mdebug_memory("Mbinding on node %d with nodemask %ld and max node %d\n", pnode, nodemask, memory_manager->max_node);
         err = _mm_mbind(buffer, length, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_STRICT|memory_manager->migration_flag);
@@ -822,7 +822,7 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
     with_huge_pages = 1;
   }
   else if (policy == MAMI_MEMBIND_POLICY_FIRST_TOUCH) {
-    node = FIRST_TOUCH_NODE;
+    node = MAMI_FIRST_TOUCH_NODE;
   }
 
   if (tbx_unlikely(policy != MAMI_MEMBIND_POLICY_FIRST_TOUCH && node >= memory_manager->nb_nodes)) {
@@ -884,8 +884,8 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
   err = _mm_move_pages(pageaddrs, nbpages, NULL, statuses, 0);
   if (err < 0 || statuses[0] == -ENOENT) {
     mdebug_memory("Could not locate pages\n");
-    if (*node != FIRST_TOUCH_NODE) {
-      *node = UNKNOWN_LOCATION_NODE;
+    if (*node != MAMI_FIRST_TOUCH_NODE) {
+      *node = MAMI_UNKNOWN_LOCATION_NODE;
     }
     errno = ENOENT;
     err = -errno;
@@ -897,8 +897,8 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
 #ifdef PM2DEBUG
 	marcel_fprintf(stderr, "#MaMI Warning: Memory located on different nodes\n");
 #endif
-        if (*node != FIRST_TOUCH_NODE) {
-          *node = MULTIPLE_LOCATION_NODE;
+        if (*node != MAMI_FIRST_TOUCH_NODE) {
+          *node = MAMI_MULTIPLE_LOCATION_NODE;
           *nodes = tmalloc(nbpages * sizeof(int));
           memcpy(*nodes, statuses, nbpages*sizeof(int));
         }
@@ -947,8 +947,8 @@ void _mami_register(mami_manager_t *memory_manager,
 int mami_register(mami_manager_t *memory_manager,
                   void *buffer,
                   size_t size) {
-  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   mami_data_t *data = NULL;
 
@@ -980,7 +980,7 @@ int mami_unregister(mami_manager_t *memory_manager,
   MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
-  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_memory("Unregistering [%p:%p]\n", buffer,buffer+data->size);
@@ -1071,7 +1071,7 @@ void mami_free(mami_manager_t *memory_manager, void *buffer) {
   void *aligned_buffer;
 
   MEMORY_LOG_IN();
-  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_memory("Freeing [%p]\n", buffer);
   marcel_mutex_lock(&(memory_manager->lock));
   _mami_unregister(memory_manager, &(memory_manager->root), aligned_buffer);
@@ -1124,8 +1124,8 @@ int _mami_check_pages_location(void **pageaddrs, int pages, int node) {
 
 int mami_locate(mami_manager_t *memory_manager, void *buffer, size_t size, int *node) {
   mami_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err, *nodes;
 
@@ -1151,8 +1151,8 @@ int mami_locate(mami_manager_t *memory_manager, void *buffer, size_t size, int *
 
 int mami_check_pages_location(mami_manager_t *memory_manager, void *buffer, size_t size, int node) {
   mami_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err=0;
 
@@ -1176,8 +1176,8 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
                                void *buffer,
                                size_t size) {
   mami_data_t *data = NULL;
-  void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-  void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+  void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   int err, node, *nodes;
 
@@ -1341,7 +1341,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
     err = EALREADY;
   }
   else {
-    if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
+    if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
       unsigned long nodemask;
 
       mdebug_memory("Mbinding %d page(s) to node #%d\n", data->nbpages, dest);
@@ -1354,7 +1354,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
       mdebug_memory("Migrating %d page(s) to node #%d\n", data->nbpages, dest);
       for(i=0 ; i<data->nbpages ; i++) dests[i] = dest;
 
-      if (data->node != MULTIPLE_LOCATION_NODE) {
+      if (data->node != MAMI_MULTIPLE_LOCATION_NODE) {
         err = _mm_move_pages(data->pageaddrs, data->nbpages, dests, status, MPOL_MF_MOVE);
       }
       else {
@@ -1471,7 +1471,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
   marcel_mutex_lock(&(memory_manager->lock));
 
   g_memory_manager = memory_manager;
-  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_memory("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
@@ -1596,9 +1596,9 @@ int mami_distribute(mami_manager_t *memory_manager,
     nbpages=0;
     // Find out which pages have to be moved
     for(i=0 ; i<data->nbpages ; i++) {
-      if ((data->node == MULTIPLE_LOCATION_NODE && data->nodes[i] != nodes[i%nb_nodes]) ||
-          (data->node != MULTIPLE_LOCATION_NODE && data->node != nodes[i%nb_nodes])) {
-        mdebug_memory("Moving page %d from node #%d to node #%d\n", i, data->node != MULTIPLE_LOCATION_NODE ? data->node : data->nodes[i], nodes[i%nb_nodes]);
+      if ((data->node == MAMI_MULTIPLE_LOCATION_NODE && data->nodes[i] != nodes[i%nb_nodes]) ||
+          (data->node != MAMI_MULTIPLE_LOCATION_NODE && data->node != nodes[i%nb_nodes])) {
+        mdebug_memory("Moving page %d from node #%d to node #%d\n", i, data->node != MAMI_MULTIPLE_LOCATION_NODE ? data->node : data->nodes[i], nodes[i%nb_nodes]);
         pageaddrs[nbpages] = buffer + (i*memory_manager->normalpagesize);
         dests[nbpages] = nodes[i%nb_nodes];
         nbpages ++;
@@ -1612,7 +1612,7 @@ int mami_distribute(mami_manager_t *memory_manager,
       if (err >= 0) {
         // Check the pages have been properly moved and update the data->nodes information
         if (data->nodes == NULL) data->nodes = tmalloc(data->nbpages * sizeof(int));
-        data->node = MULTIPLE_LOCATION_NODE;
+        data->node = MAMI_MULTIPLE_LOCATION_NODE;
         err = _mm_move_pages(data->pageaddrs, data->nbpages, NULL, status, 0);
         for(i=0 ; i<data->nbpages ; i++) {
           if (status[i] != nodes[i%nb_nodes]) {

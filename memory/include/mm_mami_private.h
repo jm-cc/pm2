@@ -21,15 +21,15 @@
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */
-#define __ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
-#define ALIGN_ON_PAGE(memory_manager, address, pagesize) (memory_manager->alignment?__ALIGN_ON_PAGE(address, pagesize):address)
+#define _MAMI_ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
+#define MAMI_ALIGN_ON_PAGE(memory_manager, address, pagesize) (memory_manager->alignment?_MAMI_ALIGN_ON_PAGE(address, pagesize):address)
 
 /* Node id used for first touch allocated memory */
-#define FIRST_TOUCH_NODE memory_manager->nb_nodes
+#define MAMI_FIRST_TOUCH_NODE memory_manager->nb_nodes
 /* Node id used when memory area located on several nodes */
-#define MULTIPLE_LOCATION_NODE -2
+#define MAMI_MULTIPLE_LOCATION_NODE -2
 /* Node id used when unknown location */
-#define UNKNOWN_LOCATION_NODE -1
+#define MAMI_UNKNOWN_LOCATION_NODE -1
 
 extern
 void _mami_delete_tree(mami_manager_t *memory_manager,

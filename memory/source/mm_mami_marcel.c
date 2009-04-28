@@ -43,8 +43,8 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     err = -errno;
   }
   else {
-    void *aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-    void *aligned_endbuffer = ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+    void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+    void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
     size_t aligned_size = aligned_endbuffer-aligned_buffer;
     mami_data_link_t *area;
 
@@ -69,7 +69,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
       err = 0;
     }
     else {
-      if (data->node == FIRST_TOUCH_NODE || data->node == UNKNOWN_LOCATION_NODE) {
+      if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
         mdebug_memory("Need to find out the location of the memory area\n");
         _mami_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &(data->node), &(data->nodes));
       }
@@ -128,7 +128,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
 
   MEMORY_ILOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
-  aligned_buffer = ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
 
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {

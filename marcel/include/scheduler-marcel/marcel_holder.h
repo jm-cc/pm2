@@ -246,7 +246,7 @@ struct ma_entity {
 	/** \brief List of memory areas attached to the entity.*/
 	struct list_head memory_areas;
 	/** \brief Lock for serializing access to ma_entity#memory_areas */
-	ma_spinlock_t memory_areas_lock;
+	marcel_spinlock_t memory_areas_lock;
 
 #endif /* MM_MAMI_ENABLED */
 
@@ -313,7 +313,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #endif
 #ifdef MM_MAMI_ENABLED
 #define MA_SCHED_MEMORY_AREA_INIT(e) \
-	.memory_areas_lock = MA_SPIN_LOCK_UNLOCKED, \
+	.memory_areas_lock = MARCEL_SPINLOCK_INITIALIZER, \
 	.memory_areas = LIST_HEAD_INIT((e).memory_areas),
 #else
 #define MA_SCHED_MEMORY_AREA_INIT(e)

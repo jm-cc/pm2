@@ -402,7 +402,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #endif /* MM_MAMI_ENABLED */
 #endif /* MARCEL_STATS_ENABLED */
 #ifdef MM_MAMI_ENABLED
-	ma_spin_lock_init(&t->as_entity.memory_areas_lock);
+	marcel_spin_init(&t->as_entity.memory_areas_lock, MARCEL_PROCESS_SHARED);
 	INIT_LIST_HEAD(&t->as_entity.memory_areas);
 #endif /* MM_MAMI_ENABLED */
 	if (ma_holder_type(t->as_entity.sched_holder) == MA_RUNQUEUE_HOLDER)

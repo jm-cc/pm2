@@ -15,13 +15,13 @@
 
 #ifdef MM_MAMI_ENABLED
 
+#include <assert.h>
+#include <errno.h>
+#include <sys/mman.h>
 #include "mm_mami.h"
 #include "mm_mami_private.h"
 #include "mm_debug.h"
 #include "mm_helper.h"
-#include <assert.h>
-#include <errno.h>
-#include <sys/mman.h>
 
 #define LOOPS_FOR_MEMORY_MIGRATION  1000
 #define LOOPS_FOR_MEMORY_ACCESS     100000

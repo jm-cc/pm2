@@ -15,6 +15,7 @@
 
 #if defined(MM_MAMI_ENABLED) && defined(MM_FORTRAN)
 
+#include "mm_mami_fortran.h"
 #include "mm_mami.h"
 
 void mami_init_(int *memory_manager) {

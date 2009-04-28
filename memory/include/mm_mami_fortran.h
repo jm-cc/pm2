@@ -21,6 +21,8 @@
 #ifndef MM_MAMI_FORTRAN_H
 #define MM_MAMI_FORTRAN_H
 
+#include <marcel.h>
+
 extern
 void mami_init_(int *memory_manager);
 

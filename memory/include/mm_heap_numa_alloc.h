@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 /** weights of pages */
-enum pinfo_weight {
+enum heap_pinfo_weight {
   /** */
   HIGH_WEIGHT,
   /** */
@@ -39,7 +39,7 @@ enum pinfo_weight {
 };
 
 /** mapping policies over numa nodes */
-enum mem_policy {
+enum heap_mem_policy {
   /** */
   CYCLIC,
   /** */
@@ -64,53 +64,53 @@ struct pageinfo {
   int nb_touched[MARCEL_NBMAXNODES];
  };
 
-typedef struct pageinfo ma_pinfo_t;
+typedef struct pageinfo heap_pinfo_t;
 
 /**
- * Call ma_amalloc to allocate memory
+ * Call heap_amalloc to allocate memory
  * bind heap if is not already binded
  */
-void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
+void *heap_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  heap_heap_t *heap);
 
 /**
- * Realloc memory, call to ma_arealloc
+ * Realloc memory, call to heap_arealloc
  */
-void *ma_hrealloc(void *ptr, size_t size);
+void *heap_hrealloc(void *ptr, size_t size);
 
 /**
- * Call ma_acalloc to allocate memory
+ * Call heap_acalloc to allocate memory
  * bind heap if is not already binded
  */
-void *ma_hcalloc(size_t nmemb, size_t size, int policy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
+void *heap_hcalloc(size_t nmemb, size_t size, int policy, int weight, unsigned long *nodemask, unsigned long maxnode,  heap_heap_t *heap);
 
 /**
- * free memory by calling ma_afree
+ * free memory by calling heap_afree
  */
-void ma_hfree(void *ptr);
+void heap_hfree(void *ptr);
 
 /**
  * Attach memory to a heap
- * first a ma_hamalloc is done with a size of 0, then the created bloc is set with the mem_stat pointer and the stat_size of the bloc
+ * first a heap_hamalloc is done with a size of 0, then the created bloc is set with the mem_stat pointer and the stat_size of the bloc
  * Note that for the mbind to sucess it needs a static size aligned to page sizes
  */
-void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap);
+void heap_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, heap_heap_t *heap);
 
 /**
  * Detach a memory attached to a heap
  */
-void ma_hdetach_memory(void *ptr, ma_heap_t *heap);
+void heap_hdetach_memory(void *ptr, heap_heap_t *heap);
 
 /**
  * Move touched  physical pages to numa paramter: mempolicy, weight and nodemask of each heap having the ppinfo numa parameter
  * Static memory attached to heap are also moved, however the mbind will only success if the static memory are aligned to pages
  */
-int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap);
+int heap_hmove_memory(heap_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  heap_heap_t *heap);
 
 /**
  * Get pages information. Retrieve the numa information of (void*)ptr into ppinfo from heap
  * Works also if (void*)ptr is a static memory attached to heap
  */
-void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap);
+void heap_hget_pinfo(void *ptr, heap_pinfo_t* ppinfo, heap_heap_t *heap);
 
 /**
  * Get all pages information from heap
@@ -118,7 +118,7 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap);
  * To initiate the iteration ppinfo has to be null
  * ppinfo is allocated inside this method one time
  */
-int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t *heap);
+int heap_hnext_pinfo(heap_pinfo_t **ppinfo, heap_heap_t *heap);
 
 /**
  * Check pages location
@@ -126,25 +126,25 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t *heap);
  * Data are stored in ppinfo, and concerne each heap and static memory associated to numa information of ppinfo
  * To have this information the method call the syscall __NR_move_pages
  */
-void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap);
+void heap_hupdate_memory_nodes(heap_pinfo_t *ppinfo, heap_heap_t *heap);
 
 /**
  * Heap creation
  * Create a heap with a minimum size
  */
-ma_heap_t* ma_hcreate_heap(void);
+heap_heap_t* heap_hcreate_heap(void);
 
 /**
  * Heap destruction
  * Delete a heap
  */
-void ma_hdelete_heap(ma_heap_t *heap);
+void heap_hdelete_heap(heap_heap_t *heap);
 
 /**
  * merge two heaps
- * note: the iterator of (ma_heap_t*)h is freed
+ * note: the iterator of (heap_heap_t*)h is freed
  */
-void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h);
+void heap_hmerge_heap(heap_heap_t *hacc, heap_heap_t *h);
 
 #endif /* MM_HEAP_NUMA_ALLOC_H */
 #endif /* LINUX_SYS */

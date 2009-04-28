@@ -33,7 +33,7 @@ int numArrived = 0;      /* count of the number who have arrived */
 
 int gridSize, numWorkers, numIters, stripSize;
 double maxDiff[MAXWORKERS];
-ma_heap_t *h[MAXWORKERS];
+heap_heap_t *h[MAXWORKERS];
 
 /* main() -- read command line, initialize grids, and create threads
  *           when the threads are done, print the results */
@@ -96,18 +96,18 @@ any_t Worker(any_t arg) {
 
   marcel_printf("worker %d has started\n", myid);
   if (myid%2 == 0) {
-    h[myid] = ma_acreatenuma(3*MAXGRID,HEAP_DYN_ALLOC,CYCLIC,LOW_WEIGHT,&mask,maxnode);
+    h[myid] = heap_acreatenuma(3*MAXGRID,HEAP_DYN_ALLOC,CYCLIC,LOW_WEIGHT,&mask,maxnode);
   }
   else {
     myid--;
   }
   Barrier();
 
-  grid1 = (double**)ma_amalloc((stripSize+3)*sizeof(double*),h[myid]);
-  grid2 = (double**)ma_amalloc((stripSize+3)*sizeof(double*),h[myid]);
+  grid1 = (double**)heap_amalloc((stripSize+3)*sizeof(double*),h[myid]);
+  grid2 = (double**)heap_amalloc((stripSize+3)*sizeof(double*),h[myid]);
   for(i = 0; i <= stripSize; i++) {
-    grid1[i] = (double*)ma_amalloc((gridSize+3)*sizeof(double),h[myid]);
-    grid2[i] = (double*)ma_amalloc((gridSize+3)*sizeof(double),h[myid]);
+    grid1[i] = (double*)heap_amalloc((gridSize+3)*sizeof(double),h[myid]);
+    grid2[i] = (double*)heap_amalloc((gridSize+3)*sizeof(double),h[myid]);
   }
 
   InitializeGrids(grid1,grid2);

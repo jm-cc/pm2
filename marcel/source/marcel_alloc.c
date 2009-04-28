@@ -338,7 +338,7 @@ void marcel_slot_exit(void)
 #ifdef MM_HEAP_ENABLED
 
 /* Marcel allocator */
-void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local, int node, int level)
+void* marcel_malloc_customized(size_t size, enum heap_pinfo_weight access, int local, int node, int level)
 {
 	/* Which entity ? */
 	marcel_entity_t *entity = &MARCEL_SELF->as_entity;
@@ -354,7 +354,7 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 
 	/* New entity heap */
 	if (!upentity->heap)
-		upentity->heap = ma_hcreate_heap();
+		upentity->heap = heap_hcreate_heap();
 
 	/* Which node ? */
 	unsigned long node_mask;
@@ -377,8 +377,8 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 
 	/* Smallest access */
 	//enum pinfo_weight weight = ma_mem_access(access, size);
-	enum pinfo_weight weight = access;
-	void *data = ma_hmalloc(size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
+	enum heap_pinfo_weight weight = access;
+	void *data = heap_hmalloc(size, policy, weight, &node_mask, WORD_SIZE, upentity->heap);
 
 	return data;
 }
@@ -386,11 +386,11 @@ void* marcel_malloc_customized(size_t size, enum pinfo_weight access, int local,
 /* Free memory */
 void marcel_free_customized(void *data)
 {
-	ma_hfree(data);
+	heap_hfree(data);
 }
 
 /* Minimise access if small data */
-enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size)
+enum heap_pinfo_weight ma_mem_access(enum heap_pinfo_weight access, int size)
 {
 	if (size < MA_CACHE_SIZE)
 	{
@@ -413,13 +413,13 @@ enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size)
 //tableau de noeuds
 int ma_bubble_memory_affinity(marcel_bubble_t *bubble)//, ma_nodtab_t *attraction)
 {
-	ma_pinfo_t *pinfo;
+	heap_pinfo_t *pinfo;
 	int total = 0;
 	marcel_entity_t *entity = &bubble->as_entity;
 	if (entity->heap)
 	{
 		pinfo = NULL;
-		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		while (heap_hnext_pinfo(&pinfo, entity->heap))
 		{
 			switch (pinfo->weight)
 			{
@@ -443,13 +443,13 @@ int ma_bubble_memory_affinity(marcel_bubble_t *bubble)//, ma_nodtab_t *attractio
 /* Entity allocated memory, lock it recursively before */
 int ma_entity_memory_volume(marcel_entity_t *entity, int recurse)
 {
-	ma_pinfo_t *pinfo;
+	heap_pinfo_t *pinfo;
 	int total = 0;
 	int begin = 1;
 	if (entity->heap)
 	{
 		pinfo = NULL;
-		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		while (heap_hnext_pinfo(&pinfo, entity->heap))
 		{
 			if (begin)
 			{
@@ -471,9 +471,9 @@ int ma_entity_memory_volume(marcel_entity_t *entity, int recurse)
 }
 
 /* Memory attraction (weight and touched maps) */
-void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min)
+void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum heap_pinfo_weight access_min)
 {
-	ma_pinfo_t *pinfo;
+	heap_pinfo_t *pinfo;
 	int poids;
 	int i;
 
@@ -484,9 +484,9 @@ void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int
 		pinfo = NULL;
 
 		if (entity->heap)
-			while (ma_hnext_pinfo(&pinfo, entity->heap))
+			while (heap_hnext_pinfo(&pinfo, entity->heap))
 			{
-				ma_hupdate_memory_nodes(pinfo, entity->heap);
+				heap_hupdate_memory_nodes(pinfo, entity->heap);
 
 				switch (pinfo->weight)
 				{
@@ -523,7 +523,7 @@ void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int
 }
 
 /* Recursif memory attraction, lock it recursively before */
-int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min, int recurse)
+int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum heap_pinfo_weight access_min, int recurse)
 {
 	ma_nodtab_t local;
 	marcel_entity_t *downentity;
@@ -592,8 +592,8 @@ int ma_compute_total_attraction(marcel_entity_t *entity, int weight_coef, int ac
 /* Memory migration, lock it recursively before */
 void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 {
-	ma_pinfo_t *pinfo;
-	ma_pinfo_t newpinfo;
+	heap_pinfo_t *pinfo;
+	heap_pinfo_t newpinfo;
 	int migration = 0;
 	int load;
 
@@ -603,7 +603,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 	{
 			pinfo = NULL;
 
-		while (ma_hnext_pinfo(&pinfo, entity->heap))
+		while (heap_hnext_pinfo(&pinfo, entity->heap))
 		{
 			switch (pinfo->weight)
 			{
@@ -634,7 +634,7 @@ void ma_move_entity_alldata(marcel_entity_t *entity, int newnode)
 				newpinfo.weight = pinfo->weight;
 				newpinfo.nodemask = &newnodemask;
 				newpinfo.maxnode = WORD_SIZE;
-				if (ma_hmove_memory(pinfo, newpinfo.mempolicy, newpinfo.weight,newpinfo.nodemask, newpinfo.maxnode, entity->heap))
+				if (heap_hmove_memory(pinfo, newpinfo.mempolicy, newpinfo.weight,newpinfo.nodemask, newpinfo.maxnode, entity->heap))
 				{
 					pinfo = NULL;
 				}

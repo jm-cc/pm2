@@ -252,7 +252,7 @@ struct ma_entity {
 
 #ifdef MM_HEAP_ENABLED
 	/** \brief Back pointer to the NUMA heap allocator used to allocated this object */
-	ma_heap_t *heap;
+	heap_heap_t *heap;
 #endif /* MM_HEAP_ENABLED */
 
 #ifdef MA__BUBBLES

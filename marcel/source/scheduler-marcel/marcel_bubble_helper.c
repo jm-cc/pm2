@@ -220,7 +220,7 @@ int decreasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
-	enum pinfo_weight access_min = MEDIUM_WEIGHT;
+	enum heap_pinfo_weight access_min = MEDIUM_WEIGHT;
 
 	long a1 = ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long a2 = ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
@@ -236,7 +236,7 @@ int increasing_order_entity_attraction_compar(const void *_e1, const void *_e2)
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
-	enum pinfo_weight access_min = MEDIUM_WEIGHT;
+	enum heap_pinfo_weight access_min = MEDIUM_WEIGHT;
 
 	long a1 = ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long a2 = ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
@@ -255,7 +255,7 @@ int decreasing_order_entity_both_compar(const void *_e1, const void *_e2)
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
-	enum pinfo_weight access_min = MEDIUM_WEIGHT;
+	enum heap_pinfo_weight access_min = MEDIUM_WEIGHT;
 
 	long v1 = MA_VOLUME_COEF * ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long v2 = MA_VOLUME_COEF * ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);
@@ -273,7 +273,7 @@ int increasing_order_entity_both_compar(const void *_e1, const void *_e2)
 	/* ne pas considerer les frequences dacces pour le calcul du volume */
 	int weight_coef = 0;
 	/* considerer seulement des zones au moins de frequence medium */
-	enum pinfo_weight access_min = MEDIUM_WEIGHT;
+	enum heap_pinfo_weight access_min = MEDIUM_WEIGHT;
 
 	long v1 = MA_VOLUME_COEF * ma_compute_total_attraction(e1,weight_coef,access_min,1,NULL);
 	long v2 = MA_VOLUME_COEF * ma_compute_total_attraction(e2,weight_coef,access_min,1,NULL);

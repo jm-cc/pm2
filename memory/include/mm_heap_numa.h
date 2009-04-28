@@ -32,17 +32,17 @@
  * Note that for each mapping the size of bloc are aligned to page size.
  * If flags is not correctly set, by default CYCLIC is used.
  */
-int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode);
+int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode);
 
 /**
  *
  */
-long long ma_free_mem_node(int node);
+long long heap_free_mem_node(int node);
 
 /**
  *
  */
-long long ma_hits_mem_node(int node);
+long long heap_hits_mem_node(int node);
 
 #endif /* MM_HEAP_NUMA_H */
 #endif /* LINUX_SYS */

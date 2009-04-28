@@ -15,7 +15,7 @@
 
 #ifdef LINUX_SYS
 
-#define MARCEL_INTERNAL_INCLUDE
+#define MARCEL_INTERNAL_INCLUDE /* Only needed for pm2_compareexchange */
 
 #include <errno.h>
 #include <stdarg.h>
@@ -25,7 +25,7 @@
 #include "mm_heap_alloc.h"
 #include "mm_debug.h"
 
-size_t ma_memalign(size_t mem) {
+size_t heap_memalign(size_t mem) {
   unsigned long nb;
   if (mem == 0) return 0;
   if (mem < HMALLOC_ALIGNMENT) {
@@ -42,29 +42,29 @@ size_t ma_memalign(size_t mem) {
 /**
  * Atomic compare and swap
  */
-#define ma_at_cmpchg(p,o,n,s) pm2_compareexchange(p,o,n,s)
+#define heap_at_cmpchg(p,o,n,s) pm2_compareexchange(p,o,n,s)
 
-ma_heap_t* ma_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
-  ma_heap_t *heap;
+heap_heap_t* heap_acreatenuma(size_t size, int alloc_policy, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
+  heap_heap_t *heap;
 
-  heap = ma_acreate(size,alloc_policy);
+  heap = heap_acreate(size,alloc_policy);
   if (mempolicy != HEAP_UNSPECIFIED_POLICY && weight != HEAP_UNSPECIFIED_WEIGHT && maxnode != 0) {
-    ma_spin_lock(&heap->lock_heap);
-    ma_amaparea(heap, mempolicy, weight, nodemask, maxnode);
-    ma_spin_unlock(&heap->lock_heap);
+    marcel_spin_lock(&heap->lock_heap);
+    heap_amaparea(heap, mempolicy, weight, nodemask, maxnode);
+    marcel_spin_unlock(&heap->lock_heap);
   }
   return heap;
 }
 
-ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
-  ma_heap_t* heap;
+heap_heap_t* heap_acreate(size_t size, int alloc_policy) {
+  heap_heap_t* heap;
   unsigned int pagesize, i; //nb_pages;
 
   pagesize = getpagesize () ;
   if (size < HEAP_MINIMUM_PAGES*pagesize) {
     size = HEAP_MINIMUM_PAGES*pagesize;
   } else {
-    size = ma_memalign(size);
+    size = heap_memalign(size);
   }
 
   /* align to pagesize */
@@ -75,11 +75,11 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
     size += pagesize;
   }
 
-  heap = (ma_heap_t *) mmap(0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  heap = (heap_heap_t *) mmap(0, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
   if (heap == MAP_FAILED) {
     heap = NULL;
     perror("mmap failed in acreate\n");
-    mdebug_memory("ma_acreate: mmap failed\n");
+    mdebug_memory("heap_acreate: mmap failed\n");
   }
   else {
     heap->mempolicy = HEAP_UNSPECIFIED_POLICY;
@@ -107,44 +107,44 @@ ma_heap_t* ma_acreate(size_t size, int alloc_policy) {
       }
     }
 
-    //for(i = 0; i < MA_HEAP_NBPAGES; ++i) {
+    //for(i = 0; i < HEAP_HEAP_NBPAGES; ++i) {
     //	heap->pages[i] = 0;
     //}
 
-    ma_spin_lock_init(&heap->lock_heap);
+    marcel_spin_init(&heap->lock_heap, MARCEL_PROCESS_SHARED);
 
-    /* 	if (ma_spin_lock_init(&heap->lock_heap) != 0) { */
+    /* 	if (marcel_spin_lock_init(&heap->lock_heap) != 0) { */
     /* 			heap = NULL; */
     /* 			perror("Initilization of the mutex failed in acreate\n"); */
-    /* 			mdebug_memory("ma_acreate: mutex_init failed\n"); */
+    /* 			mdebug_memory("heap_acreate: mutex_init failed\n"); */
     /* 		} */
   }
-  mdebug_memory("ma_acreate: heap created at %p size=%zd\n",heap,size);
+  mdebug_memory("heap_acreate: heap created at %p size=%zd\n",heap,size);
   return heap;
 }
 
-void ma_adelete(ma_heap_t **heap) {
+void heap_adelete(heap_heap_t **heap) {
   size_t size_heap;
   int failed = 0;
-  ma_heap_t* next_heap;
-  ma_heap_t* next_heap_tmp;
+  heap_heap_t* next_heap;
+  heap_heap_t* next_heap_tmp;
 
   next_heap = *heap;
   if (IS_HEAP(next_heap)) {
     while(next_heap != NULL) {
-      ma_spin_lock(&next_heap->lock_heap);
+      marcel_spin_lock(&next_heap->lock_heap);
       size_heap = HEAP_GET_SIZE(next_heap);
       next_heap_tmp = next_heap->next_heap;
-      ma_spin_unlock(&next_heap->lock_heap);
+      marcel_spin_unlock(&next_heap->lock_heap);
       //if (marcel_mutex_destroy(&next_heap->lock_heap) == 0) {
       /* if mutex destroy success mainly no other thread has locked the mutex */
       if (munmap(next_heap,size_heap) != 0) {
-        mdebug_memory("ma_adelete: freearea error addr=%p size=%d\n",next_heap, (int)size_heap);
+        mdebug_memory("heap_adelete: freearea error addr=%p size=%d\n",next_heap, (int)size_heap);
       }
-      mdebug_memory("ma_adelete: succeed\n");
+      mdebug_memory("heap_adelete: succeed\n");
       //} else {
       /* may destroy an locked mutex: undefined behavior */
-      //mdebug_memory("ma_adelete: may destroy a locked mutex: undefined behavior\n");
+      //mdebug_memory("heap_adelete: may destroy a locked mutex: undefined behavior\n");
       //failed = 1;
       //}
       next_heap = next_heap_tmp;
@@ -153,8 +153,8 @@ void ma_adelete(ma_heap_t **heap) {
   }
 }
 
-int ma_is_empty_heap(ma_heap_t* heap) {
-  ma_heap_t* current_heap;
+int heap_is_empty_heap(heap_heap_t* heap) {
+  heap_heap_t* current_heap;
 
   current_heap = heap;
   while(IS_HEAP(current_heap)) {
@@ -166,11 +166,11 @@ int ma_is_empty_heap(ma_heap_t* heap) {
   return 1;
 }
 
-int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
+int heap_amaparea(heap_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode) {
   int err;
   int i;
-  //fprintf(stderr,"ma_amaparea nodemask %ld maxnode %ld thread %p\n", *nodemask, maxnode, MARCEL_SELF);
-  err = ma_maparea(heap,HEAP_GET_SIZE(heap),mempolicy, nodemask, maxnode);
+  //fprintf(stderr,"heap_amaparea nodemask %ld maxnode %ld thread %p\n", *nodemask, maxnode, MARCEL_SELF);
+  err = heap_maparea(heap,HEAP_GET_SIZE(heap),mempolicy, nodemask, maxnode);
   if (err == 0) {
     heap->mempolicy = mempolicy;
     heap->weight = weight;
@@ -182,8 +182,8 @@ int ma_amaparea(ma_heap_t* heap, int mempolicy, int weight, unsigned long *nodem
   return err;
 }
 
-void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
-  ma_heap_t *current_heap;
+void heap_aconcat_global_list(heap_heap_t *hsrc, heap_heap_t *htgt) {
+  heap_heap_t *current_heap;
   int valid = 0;
 
   if (IS_HEAP(hsrc) && IS_HEAP(htgt) && hsrc != htgt) {
@@ -192,17 +192,17 @@ void ma_aconcat_global_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
       while(IS_HEAP(current_heap->next_heap)) {
         current_heap = current_heap->next_heap;
       }
-      if(ma_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)0) {
+      if(heap_at_cmpchg((volatile void*)&current_heap->next_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_heap))) == (int)0) {
         valid = 1;
-        mdebug_memory("ma_aconcat_global link %p with %p\n",hsrc,htgt);
-        //mdebug_memory_list("ma_aconcat_global\n",hsrc);
+        mdebug_memory("heap_aconcat_global link %p with %p\n",hsrc,htgt);
+        //mdebug_memory_list("heap_aconcat_global\n",hsrc);
       }
     }
   }
 }
 
-void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
-  ma_heap_t *current_heap;
+void heap_aconcat_local_list(heap_heap_t *hsrc, heap_heap_t *htgt) {
+  heap_heap_t *current_heap;
   int valid = 0;
 
   if (IS_HEAP(hsrc) && IS_HEAP(htgt) && hsrc != htgt) {
@@ -211,45 +211,45 @@ void ma_aconcat_local_list(ma_heap_t *hsrc, ma_heap_t *htgt) {
       while(IS_HEAP(current_heap->next_same_heap)) {
         current_heap = current_heap->next_same_heap;
       }
-      if(ma_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)0) {
+      if(heap_at_cmpchg((volatile void*)&current_heap->next_same_heap, (unsigned long)NULL, (unsigned long)htgt,sizeof(*(&current_heap->next_same_heap))) == (int)0) {
         valid = 1;
-        mdebug_memory("ma_aconcat_local link %p with %p\n",hsrc,htgt);
-        //mdebug_memory_list("ma_aconcat_local\n",hsrc);
+        mdebug_memory("heap_aconcat_local link %p with %p\n",hsrc,htgt);
+        //mdebug_memory_list("heap_aconcat_local\n",hsrc);
       }
     }
   }
 }
 
-ma_heap_t* ma_aget_heap_from_list(int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t* heap) {
-  ma_heap_t *current_heap;
+heap_heap_t* heap_aget_heap_from_list(int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, heap_heap_t* heap) {
+  heap_heap_t *current_heap;
 
-  mdebug_memory("ma_aget_heap_from_list from %p (%d,%d) numa=%ld\n",heap,mempolicy,weight,*nodemask);
+  mdebug_memory("heap_aget_heap_from_list from %p (%d,%d) numa=%ld\n",heap,mempolicy,weight,*nodemask);
   current_heap = heap;
   while (IS_HEAP(current_heap)) {
-    ma_spin_lock(&current_heap->lock_heap);
+    marcel_spin_lock(&current_heap->lock_heap);
     //	mdebug_memory("[check %d = %d && %d = %d && %d = %d]",*nodemask,*current_heap->nodemask,maxnode, current_heap->maxnode,mempolicy,current_heap->mempolicy,weight,current_heap->weight);
     if (mask_equal(nodemask,maxnode,current_heap->nodemask,current_heap->maxnode) && mempolicy == current_heap->mempolicy && weight == current_heap->weight) {
-      ma_spin_unlock(&current_heap->lock_heap);
+      marcel_spin_unlock(&current_heap->lock_heap);
       mdebug_memory(" found: %p\n",current_heap);
       return current_heap;
     }
-    ma_spin_unlock(&current_heap->lock_heap);
+    marcel_spin_unlock(&current_heap->lock_heap);
     current_heap = current_heap->next_heap;
   }
   mdebug_memory(" not found\n");
   return NULL;
 }
 
-void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
+void *heap_apagealloc(int nb_pages, heap_heap_t *heap) {
   unsigned int c, i;
   unsigned int pagesize = getpagesize () ;
   void* ptr;
 
   if (!IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
-    mdebug_memory("ma_apagealloc: bad heap\n");
+    mdebug_memory("heap_apagealloc: bad heap\n");
     return NULL;
   }
-  ma_spin_lock(&heap->lock_heap);
+  marcel_spin_lock(&heap->lock_heap);
   c = 0;
   i = 1;
   while(i < HEAP_BINMAP_MAX_PAGES) {
@@ -265,8 +265,8 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
   mdebug_memory("i = %d c = %d bitmap=%p max=%d\n",i,c,heap->bitmap,(int)HEAP_BINMAP_MAX_PAGES);
   if (c < nb_pages) {
     /* TODO add a new heap */
-    mdebug_memory("ma_apagealloc: not enough pages available\n");
-    ma_spin_unlock(&heap->lock_heap);
+    mdebug_memory("heap_apagealloc: not enough pages available\n");
+    marcel_spin_unlock(&heap->lock_heap);
     return NULL;
   }
 
@@ -281,18 +281,18 @@ void *ma_apagealloc(int nb_pages, ma_heap_t *heap) {
     markbit(heap->bitmap,c);
   }
 
-  ma_spin_unlock(&heap->lock_heap);
+  marcel_spin_unlock(&heap->lock_heap);
   return ptr;
 }
 
-void *ma_amalloc(size_t size, ma_heap_t* heap) {
-  ma_ub_t *current_bloc_used, *current_bloc_used_prev, *temp_bloc_used;
-  ma_heap_t *temp_heap, *next_same_heap, *prev_next_same_heap;
+void *heap_amalloc(size_t size, heap_heap_t* heap) {
+  heap_ub_t *current_bloc_used, *current_bloc_used_prev, *temp_bloc_used;
+  heap_heap_t *temp_heap, *next_same_heap, *prev_next_same_heap;
   void *ptr;
 
-  size = ma_memalign(size);
+  size = heap_memalign(size);
 
-  mdebug_memory("ma_amalloc size=%d\n",(int)size);
+  mdebug_memory("heap_amalloc size=%d\n",(int)size);
   if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
     mdebug_memory("bad heap\n");
     return NULL;
@@ -300,12 +300,12 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
   next_same_heap = prev_next_same_heap = heap;
 	/* check for heap with enough remaining free space */
   while(IS_HEAP(next_same_heap)) {
-    ma_spin_lock(&next_same_heap->lock_heap);
+    marcel_spin_lock(&next_same_heap->lock_heap);
     if (next_same_heap->free_size > size + BLOCK_SIZE_T) {
-      ma_spin_unlock(&next_same_heap->lock_heap);
+      marcel_spin_unlock(&next_same_heap->lock_heap);
       break;
     }
-    ma_spin_unlock(&next_same_heap->lock_heap);
+    marcel_spin_unlock(&next_same_heap->lock_heap);
     prev_next_same_heap = next_same_heap;
     next_same_heap = next_same_heap->next_same_heap;
   }
@@ -313,26 +313,26 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
     /* not enough space found in heap list */
     /* create a new heap */
     mdebug_memory("create new heap from %p\n",prev_next_same_heap);
-    mdebug_memory("ma_amalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", heap->mempolicy, *heap->nodemask, heap->maxnode, MARCEL_SELF);
-    temp_heap = ma_acreatenuma(2*size, HEAP_DYN_ALLOC, heap->mempolicy, heap->weight, heap->nodemask, heap->maxnode);
+    mdebug_memory("heap_amalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", heap->mempolicy, *heap->nodemask, heap->maxnode, MARCEL_SELF);
+    temp_heap = heap_acreatenuma(2*size, HEAP_DYN_ALLOC, heap->mempolicy, heap->weight, heap->nodemask, heap->maxnode);
     /* link heap */
-    ma_aconcat_global_list(heap,temp_heap);
-    ma_aconcat_local_list(prev_next_same_heap,temp_heap);
-    return ma_amalloc(size,temp_heap);
+    heap_aconcat_global_list(heap,temp_heap);
+    heap_aconcat_local_list(prev_next_same_heap,temp_heap);
+    return heap_amalloc(size,temp_heap);
   }
   /* enough space in heap */
   while(IS_HEAP(next_same_heap)) {
-    ma_spin_lock(&next_same_heap->lock_heap);
+    marcel_spin_lock(&next_same_heap->lock_heap);
     if (next_same_heap->used == NULL) { /* first used bloc in list of current heap */
       mdebug_memory("first bloc of list\n");
-      next_same_heap->used = (ma_ub_t*)((char*)next_same_heap + HEAP_SIZE_T);
+      next_same_heap->used = (heap_ub_t*)((char*)next_same_heap + HEAP_SIZE_T);
 
       set_bloc(next_same_heap->used, size, 0, next_same_heap, NULL, NULL);
 
       HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
       next_same_heap->touch_size = size + BLOCK_SIZE_T;
 
-      ma_spin_unlock(&next_same_heap->lock_heap);
+      marcel_spin_unlock(&next_same_heap->lock_heap);
       mdebug_memory_list("->",next_same_heap);
       return (void*)((char*)(next_same_heap->used) + BLOCK_SIZE_T);
     }
@@ -354,7 +354,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
       /* check for enough remaining contigous free space */
       if ( (char*)next_same_heap+HEAP_GET_SIZE(next_same_heap) - ((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size) < size + BLOCK_SIZE_T) {
         /* goes to next heap */
-        ma_spin_unlock(&next_same_heap->lock_heap);
+        marcel_spin_unlock(&next_same_heap->lock_heap);
         if (IS_HEAP(next_same_heap->next_same_heap)) {
           next_same_heap = next_same_heap->next_same_heap;
           continue;
@@ -363,16 +363,16 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
           /* no bloc was found in each heap and no heap has enough contiguous space remaining */
           /* we need to create a new heap */
           mdebug_memory("create new heap from %p\n",next_same_heap);
-          temp_heap = ma_acreatenuma(2*size, HEAP_DYN_ALLOC, heap->mempolicy, heap->weight, heap->nodemask, heap->maxnode);
-          ma_aconcat_global_list(heap,temp_heap);
-          ma_aconcat_local_list(next_same_heap,temp_heap);
-          return ma_amalloc(size,temp_heap);
+          temp_heap = heap_acreatenuma(2*size, HEAP_DYN_ALLOC, heap->mempolicy, heap->weight, heap->nodemask, heap->maxnode);
+          heap_aconcat_global_list(heap,temp_heap);
+          heap_aconcat_local_list(next_same_heap,temp_heap);
+          return heap_amalloc(size,temp_heap);
         }
       }
 
       /* create new used bloc */
       mdebug_memory("heap found\n");
-      current_bloc_used->next = (ma_ub_t*)((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size);
+      current_bloc_used->next = (heap_ub_t*)((char*)current_bloc_used+BLOCK_SIZE_T+current_bloc_used->size);
       set_bloc(current_bloc_used->next, size, 0, next_same_heap, current_bloc_used, NULL);
       next_same_heap->touch_size = (unsigned long)current_bloc_used->next + size + BLOCK_SIZE_T - (unsigned long)next_same_heap;
       HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
@@ -385,7 +385,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
       if(current_bloc_used->prev != NULL) {
         /* goes to offset of the last used bloc */
         temp_bloc_used = current_bloc_used;
-        current_bloc_used = (ma_ub_t*)((char*)current_bloc_used_prev+BLOCK_SIZE_T+current_bloc_used_prev->size);
+        current_bloc_used = (heap_ub_t*)((char*)current_bloc_used_prev+BLOCK_SIZE_T+current_bloc_used_prev->size);
         set_bloc(current_bloc_used, size, 0, next_same_heap, current_bloc_used_prev, temp_bloc_used);
         ptr = (char*)(current_bloc_used) + BLOCK_SIZE_T;
         current_bloc_used_prev->next = current_bloc_used;
@@ -397,7 +397,7 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
       else {
         /* used bloc at begining */
         temp_bloc_used = current_bloc_used;
-        current_bloc_used = (ma_ub_t*)((char *)next_same_heap+HEAP_SIZE_T);
+        current_bloc_used = (heap_ub_t*)((char *)next_same_heap+HEAP_SIZE_T);
         next_same_heap->used = current_bloc_used;
         set_bloc(current_bloc_used,size, 0, next_same_heap, NULL, temp_bloc_used);
         ptr = (char*)(current_bloc_used) + BLOCK_SIZE_T;
@@ -408,21 +408,21 @@ void *ma_amalloc(size_t size, ma_heap_t* heap) {
       }
       HEAP_ADD_USED_SIZE(size+BLOCK_SIZE_T,next_same_heap);
     }
-    ma_spin_unlock(&next_same_heap->lock_heap);
+    marcel_spin_unlock(&next_same_heap->lock_heap);
     return ptr;
   }
   return NULL;
 }
 
-void *ma_acalloc(size_t nmemb, size_t size, ma_heap_t* heap) {
+void *heap_acalloc(size_t nmemb, size_t size, heap_heap_t* heap) {
   void* ptr;
-  size_t local_size = ma_memalign(nmemb*size);
+  size_t local_size = heap_memalign(nmemb*size);
 
   /* amalloc */
-  mdebug_memory("ma_acalloc: call to amalloc\n");
-  ptr = ma_amalloc(local_size,heap);
+  mdebug_memory("heap_acalloc: call to amalloc\n");
+  ptr = heap_amalloc(local_size,heap);
   if (ptr == NULL) {
-    mdebug_memory("ma_acalloc: call to ma_amalloc failed\n");
+    mdebug_memory("heap_acalloc: call to heap_amalloc failed\n");
     return NULL;
   }
   /* zeroing memory: only memory area specified */
@@ -431,49 +431,49 @@ void *ma_acalloc(size_t nmemb, size_t size, ma_heap_t* heap) {
   return ptr;
 }
 
-void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
-  ma_ub_t *current_bloc_used;
-  //ma_ub_t *current_bloc_used_prev;
-  //ma_ub_t *temp_bloc_used;
+void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap) {
+  heap_ub_t *current_bloc_used;
+  //heap_ub_t *current_bloc_used_prev;
+  //heap_ub_t *temp_bloc_used;
   void* new_ptr;
 
-  size = ma_memalign(size);
+  size = heap_memalign(size);
   if (!IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
-    mdebug_memory("ma_arealloc: bad heap\n");
+    mdebug_memory("heap_arealloc: bad heap\n");
     return NULL;
   }
 
   if (ptr == NULL) { /* call amalloc */
-    ptr = ma_amalloc(size,heap);
+    ptr = heap_amalloc(size,heap);
     if (ptr == NULL) {
-      mdebug_memory("ma_arealloc: call to amalloc failed\n");
+      mdebug_memory("heap_arealloc: call to amalloc failed\n");
       return NULL;
     }
     return ptr;
   }
   if (size == 0) { /* afree ptr */
-    mdebug_memory("ma_arealloc: size = 0 free memory\n");
-    ma_afree_heap(ptr,heap);
+    mdebug_memory("heap_arealloc: size = 0 free memory\n");
+    heap_afree_heap(ptr,heap);
     return NULL;
   }
 
-  ma_spin_lock(&heap->lock_heap);
-  current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+  marcel_spin_lock(&heap->lock_heap);
+  current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
   if (current_bloc_used->heap == heap) {
     if (current_bloc_used->size == size) { /* do nothing */
-      mdebug_memory("ma_arealloc: nothing to do\n");
-      ma_spin_unlock(&heap->lock_heap);
+      mdebug_memory("heap_arealloc: nothing to do\n");
+      marcel_spin_unlock(&heap->lock_heap);
       return ptr;
     }
 
     if (current_bloc_used->size > size) { /* reduce bloc size */
-      mdebug_memory("ma_arealloc: reduce bloc\n");
+      mdebug_memory("heap_arealloc: reduce bloc\n");
       if (current_bloc_used->next != NULL) {
         current_bloc_used->next->prev_free_size += current_bloc_used->size - size;
       }
       current_bloc_used->size = size;
       HEAP_ADD_FREE_SIZE(current_bloc_used->size - size,heap);
-      ma_spin_unlock(&heap->lock_heap);
+      marcel_spin_unlock(&heap->lock_heap);
       return ptr;
     }
 
@@ -482,52 +482,52 @@ void *ma_arealloc(void *ptr, size_t size, ma_heap_t* heap) {
 
     if (current_bloc_used->next != NULL && current_bloc_used->next->prev_free_size >= size - current_bloc_used->size) {
       /* enough space after bloc and not last bloc */
-      mdebug_memory("ma_arealloc: enough space after bloc not last bloc\n");
+      mdebug_memory("heap_arealloc: enough space after bloc not last bloc\n");
       current_bloc_used->next->prev_free_size -= (size - current_bloc_used->size);
       HEAP_ADD_USED_SIZE(size - current_bloc_used->size,heap);
       current_bloc_used->size = size;
-      ma_spin_unlock(&heap->lock_heap);
+      marcel_spin_unlock(&heap->lock_heap);
       return ptr;
     }
     if (current_bloc_used->next == NULL  && (char*)heap+HEAP_SIZE_T+HEAP_GET_SIZE(heap) > (char*)current_bloc_used+BLOCK_SIZE_T+size) {
       /* last block and enough remaining space */
-      mdebug_memory("ma_arealloc: enough space after bloc and last bloc\n");
+      mdebug_memory("heap_arealloc: enough space after bloc and last bloc\n");
       HEAP_ADD_USED_SIZE(size - current_bloc_used->size,heap);
       current_bloc_used->size = size;
-      ma_spin_unlock(&heap->lock_heap);
+      marcel_spin_unlock(&heap->lock_heap);
       return ptr;
     }
   }
 
   /* make a malloc */
-  ma_spin_unlock(&heap->lock_heap);
-  new_ptr = ma_amalloc(size,heap);
+  marcel_spin_unlock(&heap->lock_heap);
+  new_ptr = heap_amalloc(size,heap);
   if (new_ptr != NULL) {
     /* move data */
     MALLOC_COPY(new_ptr,ptr,size);
     /* make a free */
-    ma_afree_heap(ptr,heap);
+    heap_afree_heap(ptr,heap);
     return new_ptr;
   }
   return ptr;
 }
 
-void ma_afree(void *ptr) {
-  ma_ub_t *current_bloc_used;
+void heap_afree(void *ptr) {
+  heap_ub_t *current_bloc_used;
   if (ptr != NULL) {
-    current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+    current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
     mdebug_memory("afree: heap=%p\n",current_bloc_used->heap);
-    ma_afree_heap(ptr,current_bloc_used->heap);
+    heap_afree_heap(ptr,current_bloc_used->heap);
   }
 }
 
-void ma_afree_heap(void *ptr, ma_heap_t* heap) {
-  ma_ub_t *current_bloc_used;
+void heap_afree_heap(void *ptr, heap_heap_t* heap) {
+  heap_ub_t *current_bloc_used;
   size_t size;
 
   if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_DYN_ALLOC)) {
-    ma_spin_lock(&heap->lock_heap);
-    current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+    marcel_spin_lock(&heap->lock_heap);
+    current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
     size = current_bloc_used->size;
     if (current_bloc_used->prev != NULL) {
       current_bloc_used->prev->next = current_bloc_used->next;
@@ -544,21 +544,21 @@ void ma_afree_heap(void *ptr, ma_heap_t* heap) {
       }
     }
     HEAP_ADD_FREE_SIZE(size+BLOCK_SIZE_T,heap);
-    ma_spin_unlock(&heap->lock_heap);
-    mdebug_memory_list("ma_afree_heap\n",heap);
+    marcel_spin_unlock(&heap->lock_heap);
+    mdebug_memory_list("heap_afree_heap\n",heap);
   }
   else {
     /* argument = NULL: undefined behavior */
-    mdebug_memory("ma_afree_heap: passing NULL as argument caused undefined behavior\n");
+    mdebug_memory("heap_afree_heap: passing NULL as argument caused undefined behavior\n");
   }
 }
 
-void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
+void heap_apagefree(void* ptr, int nb_pages, heap_heap_t *heap) {
   unsigned int i,c;
   unsigned int pagesize;
 
   if (ptr != NULL && IS_HEAP_POLICY(heap,HEAP_PAGE_ALLOC)) {
-    ma_spin_lock(&heap->lock_heap);
+    marcel_spin_lock(&heap->lock_heap);
     pagesize = getpagesize () ;
     i = ((unsigned long)ptr-(unsigned long)heap)/pagesize;
     mdebug_memory("i = %d\n",i);
@@ -566,13 +566,13 @@ void ma_apagefree(void* ptr, int nb_pages, ma_heap_t *heap) {
       clearbit(heap->bitmap,c);
     }
     HEAP_ADD_FREE_SIZE(nb_pages*pagesize,heap);
-    ma_spin_unlock(&heap->lock_heap);
+    marcel_spin_unlock(&heap->lock_heap);
   }
 }
 
-ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
-  ma_heap_t * next_heap;
-  ma_amalloc_stat_t stats;
+heap_amalloc_stat_t heap_amallinfo(heap_heap_t* heap) {
+  heap_heap_t * next_heap;
+  heap_amalloc_stat_t stats;
 
   stats.free_size = 0;
   stats.used_size = 0;
@@ -582,21 +582,21 @@ ma_amalloc_stat_t ma_amallinfo(ma_heap_t* heap) {
 
   next_heap = heap;
   while(IS_HEAP(next_heap)) {
-    ma_spin_lock(&next_heap->lock_heap);
+    marcel_spin_lock(&next_heap->lock_heap);
     stats.free_size += next_heap->free_size;
     stats.used_size += next_heap->used_size;
     stats.touch_size += next_heap->touch_size;
     stats.attached_size += next_heap->attached_size;
     stats.npinfo++;
-    ma_spin_unlock(&next_heap->lock_heap);
+    marcel_spin_unlock(&next_heap->lock_heap);
     next_heap = next_heap->next_heap;
   }
-  mdebug_memory_list("ma_amallinfo:\n",heap);
+  mdebug_memory_list("heap_amallinfo:\n",heap);
   return stats;
 }
 
-void ma_print_list(const char* str, ma_heap_t* heap) {
-  ma_heap_t* h;
+void heap_print_list(const char* str, heap_heap_t* heap) {
+  heap_heap_t* h;
   int count = 0;
   unsigned int i, max_node = (unsigned int) (marcel_nbnodes - 1) ;
 
@@ -605,7 +605,7 @@ void ma_print_list(const char* str, ma_heap_t* heap) {
   debug_printf(&debug_memory,"%s",str);
   h = heap;
   while (IS_HEAP(h)) {
-    ma_spin_lock(&h->lock_heap);
+    marcel_spin_lock(&h->lock_heap);
     printf("heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
     for(i = 0; i < h->maxnode/WORD_SIZE; i++) {
       printf("%ld|",h->nodemask[i]);
@@ -618,14 +618,14 @@ void ma_print_list(const char* str, ma_heap_t* heap) {
     printf(" : next_same=%p|",h->next_same_heap);
     printf(" : next=%p|",h->next_heap);
     printf(" : %d : ",(int)HEAP_GET_SIZE(h));
-    ma_print_heap(h->used);
+    heap_print_heap(h->used);
     count++;
-    ma_spin_unlock(&h->lock_heap);
+    marcel_spin_unlock(&h->lock_heap);
     h = h->next_heap;
   }
 }
 
-void ma_print_heap(struct ub* root) {
+void heap_print_heap(struct ub* root) {
   int count = 0;
   while(root != NULL) {
     printf("[%d| %p (u:%zu,f:%zu,s:%zu) (p:%p,n:%p)",count, root, root->size, root->prev_free_size, root->stat_size, root->prev, root->next);

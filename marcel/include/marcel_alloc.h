@@ -102,22 +102,22 @@ struct nodtab {
 #section functions
 #ifdef MM_HEAP_ENABLED
 /* heap allocator */
-TBX_FMALLOC void* marcel_malloc_customized(size_t size, enum pinfo_weight weight, int local, int node, int level);
+TBX_FMALLOC void* marcel_malloc_customized(size_t size, enum heap_pinfo_weight weight, int local, int node, int level);
 void marcel_free_customized(void *data);
 
-enum pinfo_weight ma_mem_access(enum pinfo_weight access, int size);
+enum heap_pinfo_weight ma_mem_access(enum heap_pinfo_weight access, int size);
 
 int ma_bubble_memory_affinity(marcel_bubble_t *bubble);
 int ma_entity_memory_volume(marcel_entity_t *entity, int recurse);
 
-void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min);
-int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum pinfo_weight access_min, int recurse);
+void ma_attraction_inentity(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum heap_pinfo_weight access_min);
+int ma_most_attractive_node(marcel_entity_t *entity, ma_nodtab_t *allocated, int weight_coef, enum heap_pinfo_weight access_min, int recurse);
 int ma_compute_total_attraction(marcel_entity_t *entity, int weight_coef, int access_min, int attraction, int *pnode);
 void ma_move_entity_alldata(marcel_entity_t *entity, int newnode);
 
 void marcel_see_allocated_memory(marcel_entity_t *entity);
-void ma_pinfo_init(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
-int ma_pinfo_isok(ma_pinfo_t *pinfo, enum mem_policy policy, int node_mask, enum pinfo_weight type);
+void heap_pinfo_init(heap_pinfo_t *pinfo, enum heap_mem_policy policy, int node_mask, enum heap_pinfo_weight type);
+int heap_pinfo_isok(heap_pinfo_t *pinfo, enum heap_mem_policy policy, int node_mask, enum heap_pinfo_weight type);
 #endif /* MM_HEAP_ENABLED */
 
 /* malloc */

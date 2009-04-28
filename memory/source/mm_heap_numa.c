@@ -16,7 +16,6 @@
 #ifdef LINUX_SYS
 
 #define _GNU_SOURCE
-#define MARCEL_INTERNAL_INCLUDE
 
 #include <errno.h>
 #include <stdio.h>
@@ -28,20 +27,19 @@
 #include "mm_debug.h"
 #include "mm_helper.h"
 
-int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
+int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, unsigned long maxnode) {
   int err, i, idx_node = 0;
   long long node_free_size, max_free_size = 0;
   long long node_hits, min_hits = LONG_MAX;
   unsigned long newnodemask[MARCEL_NBMAXNODES];
   unsigned long newmaxnode;
 
-  mdebug_memory("ma_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
+  mdebug_memory("heap_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
   switch(mempolicy) {
   case SMALL_ACCESSED:
-    /* marcel_nbnodes = numa_max_node() + 1 */
     for(i = 0; i < marcel_nbnodes; ++i) {
       if (mask_isset(nodemask,maxnode,i)) {
-        node_hits = ma_hits_mem_node(i);
+        node_hits = heap_hits_mem_node(i);
         //mdebug_memory("node=%d hits=%lld\n",i,node_hits);
         if (min_hits > node_hits) {
           min_hits = node_hits;
@@ -57,7 +55,7 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
   case LESS_LOADED:
     for(i = 0; i < marcel_nbnodes; ++i) {
       if (mask_isset(nodemask,maxnode,i)) {
-        node_free_size = ma_free_mem_node(i);
+        node_free_size = heap_free_mem_node(i);
         //mdebug_memory("node=%d size=%lld\n",i,node_free_size);
         if (node_free_size > max_free_size) {
           max_free_size = node_free_size;
@@ -85,7 +83,7 @@ int ma_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask, u
   return err;
 }
 
-long long ma_free_mem_node(int node) {
+long long heap_free_mem_node(int node) {
   char fn[64];
   long long size = -1;
   size_t len = 0;
@@ -116,7 +114,7 @@ long long ma_free_mem_node(int node) {
   return size;
 }
 
-long long ma_hits_mem_node(int node) {
+long long heap_hits_mem_node(int node) {
   char fn[64];
   long long hits = -1;
   size_t len = 0;

@@ -1,6 +1,4 @@
 /*
- * src/maheap_numa_alloc.c
- *
  * Definition of memory allocator inside a predefined heap
  * working for  NUMA architecture and multithread environements.
  *
@@ -16,8 +14,6 @@
 
 #ifdef LINUX_SYS
 
-#define MARCEL_INTERNAL_INCLUDE
-
 #include <errno.h>
 #include <stdarg.h>
 #include <sys/mman.h>
@@ -29,93 +25,93 @@
 #include "mm_debug.h"
 #include "mm_helper.h"
 
-void *ma_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
-  ma_heap_t* current_heap;
+void *heap_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, heap_heap_t *heap) {
+  heap_heap_t* current_heap;
 
-  //marcel_fprintf(stderr,"ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask);
-  mdebug_memory("ma_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
+  //marcel_fprintf(stderr,"heap_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask);
+  mdebug_memory("heap_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
   /* look for corresponding heap */
-  current_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
-  //marcel_fprintf(stderr,"ma_hmalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", mempolicy, *nodemask, maxnode, MARCEL_SELF);
+  current_heap = heap_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
+  //marcel_fprintf(stderr,"heap_hmalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", mempolicy, *nodemask, maxnode, MARCEL_SELF);
   if (current_heap == NULL) {
-    ma_spin_lock(&heap->lock_heap);
+    marcel_spin_lock(&heap->lock_heap);
     if (heap->mempolicy == HEAP_UNSPECIFIED_POLICY && heap->weight == HEAP_UNSPECIFIED_WEIGHT && heap->maxnode == 0) {
-      ma_amaparea(heap,mempolicy,weight,nodemask,maxnode);
-      ma_spin_unlock(&heap->lock_heap);
-      return ma_amalloc(size,heap);
+      heap_amaparea(heap,mempolicy,weight,nodemask,maxnode);
+      marcel_spin_unlock(&heap->lock_heap);
+      return heap_amalloc(size,heap);
     }
     else {
       /* new heap to create */
-      ma_spin_unlock(&heap->lock_heap);
-      current_heap = ma_acreatenuma(2*size,HEAP_DYN_ALLOC,mempolicy,weight,nodemask,maxnode);
-      ma_aconcat_global_list(heap,current_heap);
+      marcel_spin_unlock(&heap->lock_heap);
+      current_heap = heap_acreatenuma(2*size,HEAP_DYN_ALLOC,mempolicy,weight,nodemask,maxnode);
+      heap_aconcat_global_list(heap,current_heap);
     }
   }
-  return ma_amalloc(size,current_heap);
+  return heap_amalloc(size,current_heap);
 }
 
-void *ma_hrealloc(void *ptr, size_t size) {
-  ma_ub_t* current_bloc_used;
-  ma_heap_t *current_heap;
+void *heap_hrealloc(void *ptr, size_t size) {
+  heap_ub_t* current_bloc_used;
+  heap_heap_t *current_heap;
 
-  current_bloc_used = (ma_ub_t *)((char*)ptr-BLOCK_SIZE_T);
+  current_bloc_used = (heap_ub_t *)((char*)ptr-BLOCK_SIZE_T);
   current_heap = current_bloc_used->heap;
-  return ma_arealloc(ptr,size,current_heap);
+  return heap_arealloc(ptr,size,current_heap);
 }
 
-void *ma_hcalloc(size_t nmemb, size_t size, int mempolicy, int weight, unsigned long* nodemask, unsigned long maxnode, ma_heap_t *heap) {
-  ma_heap_t* current_heap;
+void *heap_hcalloc(size_t nmemb, size_t size, int mempolicy, int weight, unsigned long* nodemask, unsigned long maxnode, heap_heap_t *heap) {
+  heap_heap_t* current_heap;
 
   /* look for corresponding heap */
-  current_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
+  current_heap = heap_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
 
   if (current_heap == NULL) {
-    ma_spin_lock(&heap->lock_heap);
+    marcel_spin_lock(&heap->lock_heap);
     if (size < HEAP_GET_SIZE(heap)+BLOCK_SIZE_T && heap->mempolicy == HEAP_UNSPECIFIED_POLICY && heap->weight == HEAP_UNSPECIFIED_WEIGHT && heap->maxnode == 0) {
-      ma_amaparea(heap,mempolicy,weight,nodemask,maxnode);
-      ma_spin_unlock(&heap->lock_heap);
-      return ma_acalloc(nmemb,size,heap);
+      heap_amaparea(heap,mempolicy,weight,nodemask,maxnode);
+      marcel_spin_unlock(&heap->lock_heap);
+      return heap_acalloc(nmemb,size,heap);
     }
     else {
       /* new heap to create */
-      ma_spin_unlock(&heap->lock_heap);
-      current_heap = ma_acreatenuma(2*size,HEAP_DYN_ALLOC,mempolicy,weight,nodemask,maxnode);
-      ma_aconcat_global_list(heap,current_heap);
-      ma_aconcat_local_list(heap,current_heap);
+      marcel_spin_unlock(&heap->lock_heap);
+      current_heap = heap_acreatenuma(2*size,HEAP_DYN_ALLOC,mempolicy,weight,nodemask,maxnode);
+      heap_aconcat_global_list(heap,current_heap);
+      heap_aconcat_local_list(heap,current_heap);
     }
   }
-  return ma_acalloc(nmemb,size,current_heap);
+  return heap_acalloc(nmemb,size,current_heap);
 }
 
-void ma_hfree(void *data) {
-  ma_afree(data);
+void heap_hfree(void *data) {
+  heap_afree(data);
 }
 
-void ma_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, ma_heap_t *heap) {
-  ma_ub_t* current_bloc_used;
-  ma_heap_t* current_heap;
+void heap_hattach_memory(void *ptr, size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, heap_heap_t *heap) {
+  heap_ub_t* current_bloc_used;
+  heap_heap_t* current_heap;
   void* local_ptr;
 
-  local_ptr = ma_hmalloc(0, mempolicy, weight, nodemask, maxnode, heap);
-  current_bloc_used = (ma_ub_t *)((char*)local_ptr-BLOCK_SIZE_T);
+  local_ptr = heap_hmalloc(0, mempolicy, weight, nodemask, maxnode, heap);
+  current_bloc_used = (heap_ub_t *)((char*)local_ptr-BLOCK_SIZE_T);
   current_heap = current_bloc_used->heap;;
   current_bloc_used->data = ptr;
   current_bloc_used->stat_size = size;
-  ma_spin_lock(&current_heap->lock_heap);
+  marcel_spin_lock(&current_heap->lock_heap);
   current_heap->attached_size += size;
   current_heap->nb_attach++;
-  ma_maparea(ptr,size,mempolicy,current_heap->nodemask,current_heap->maxnode);
-  ma_spin_unlock(&current_heap->lock_heap);
+  heap_maparea(ptr,size,mempolicy,current_heap->nodemask,current_heap->maxnode);
+  marcel_spin_unlock(&current_heap->lock_heap);
 }
 
-void ma_hdetach_memory(void *ptr, ma_heap_t *heap) {
+void heap_hdetach_memory(void *ptr, heap_heap_t *heap) {
   int found = 0;
-  ma_ub_t* current_bloc_used;
-  ma_heap_t* current_heap;
+  heap_ub_t* current_bloc_used;
+  heap_heap_t* current_heap;
 
   current_heap = heap;
   while(IS_HEAP(current_heap) && !found) {
-    ma_spin_lock(&current_heap->lock_heap);
+    marcel_spin_lock(&current_heap->lock_heap);
     current_bloc_used = current_heap->used;
     while(current_bloc_used != NULL) {
       if (current_bloc_used->data == ptr) {
@@ -140,19 +136,19 @@ void ma_hdetach_memory(void *ptr, ma_heap_t *heap) {
       }
       current_bloc_used = current_bloc_used->next;
     }
-    ma_spin_unlock(&current_heap->lock_heap);
+    marcel_spin_unlock(&current_heap->lock_heap);
     current_heap = current_heap->next_heap;
   }
 }
 
-int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  ma_heap_t *heap)  {
-  ma_heap_t *current_heap, *next_same_heap, *match_heap;
-  ma_ub_t* current_bloc_used;
+int heap_hmove_memory(heap_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode,  heap_heap_t *heap)  {
+  heap_heap_t *current_heap, *next_same_heap, *match_heap;
+  heap_ub_t* current_bloc_used;
   int nb_attach;
 
   /* look for corresponding heap */
-  current_heap = ma_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
-  mdebug_memory("ma_hmove_memory (%d,%d) numa=%ld current_heap %p\n",ppinfo->mempolicy,ppinfo->weight,*ppinfo->nodemask,current_heap);
+  current_heap = heap_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
+  mdebug_memory("heap_hmove_memory (%d,%d) numa=%ld current_heap %p\n",ppinfo->mempolicy,ppinfo->weight,*ppinfo->nodemask,current_heap);
   if (current_heap == NULL) return 0;
 
   if (ppinfo->mempolicy == mempolicy && ppinfo->weight == weight && mask_equal(ppinfo->nodemask,ppinfo->maxnode,nodemask,maxnode)) {
@@ -160,7 +156,7 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
   }
 
   /* 	int i,j; */
-  /* 	for (i=0;i<MA_HEAP_NBPAGES;i++) */
+  /* 	for (i=0;i<HEAP_HEAP_NBPAGES;i++) */
   /* 	{ */
   /* 		/\* ya pas moyen d'arranger ça autrement qu'en tour de boucle *\/  */
   /* 		j = 0; */
@@ -173,53 +169,53 @@ int ma_hmove_memory(ma_pinfo_t *ppinfo, int mempolicy, int weight, unsigned long
   /* 		current_heap->pages[i]= j; */
   /* 	} */
 
-  mdebug_memory_list("ma_hmove_memory before\n",current_heap);
+  mdebug_memory_list("heap_hmove_memory before\n",current_heap);
 
   /* look for a existing matching heap to link */
-  match_heap = ma_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
+  match_heap = heap_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
 
   /* map heap */
   next_same_heap = current_heap;
   while(IS_HEAP(next_same_heap)) {
-    ma_spin_lock(&next_same_heap->lock_heap);
-    if (ma_amaparea(next_same_heap, mempolicy, weight, nodemask, maxnode) != 0) {
-      mdebug_memory("ma_amaparea failed\n");
+    marcel_spin_lock(&next_same_heap->lock_heap);
+    if (heap_amaparea(next_same_heap, mempolicy, weight, nodemask, maxnode) != 0) {
+      mdebug_memory("heap_amaparea failed\n");
     }
     nb_attach = next_same_heap->nb_attach;
     current_bloc_used = next_same_heap->used;
     while(current_bloc_used != NULL && nb_attach > 0) {
       if (current_bloc_used->data != NULL) {
-        if (ma_maparea(current_bloc_used->data, current_bloc_used->stat_size, mempolicy, nodemask, maxnode) != 0) {
-          mdebug_memory("ma_amaparea failed\n");
+        if (heap_maparea(current_bloc_used->data, current_bloc_used->stat_size, mempolicy, nodemask, maxnode) != 0) {
+          mdebug_memory("heap_amaparea failed\n");
         }
         nb_attach--;
       }
       current_bloc_used = current_bloc_used->next;
     }
-    ma_spin_unlock(&next_same_heap->lock_heap);
+    marcel_spin_unlock(&next_same_heap->lock_heap);
     next_same_heap = next_same_heap->next_same_heap;
   }
 
   /* rebuild list */
   if(match_heap != NULL) {
     if (current_heap > match_heap) {
-      ma_aconcat_local_list(match_heap,current_heap);
+      heap_aconcat_local_list(match_heap,current_heap);
     }
     else {
-      ma_aconcat_local_list(current_heap,match_heap);
+      heap_aconcat_local_list(current_heap,match_heap);
     }
   }
   return 1;
 }
 
-void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
-  ma_heap_t* current_heap;
-  ma_ub_t* current_bloc_used;
+void heap_hget_pinfo(void *ptr, heap_pinfo_t* ppinfo, heap_heap_t *heap) {
+  heap_heap_t* current_heap;
+  heap_ub_t* current_bloc_used;
   int i,found = 0;
 
   current_heap = heap;
   while(IS_HEAP(current_heap)) {
-    ma_spin_lock(&current_heap->lock_heap);
+    marcel_spin_lock(&current_heap->lock_heap);
     if ((unsigned long) ptr < (unsigned long)current_heap + HEAP_GET_SIZE(current_heap) && (unsigned long)ptr > (unsigned long)current_heap) {
       /* found: heap < data < heap+size */
       mdebug_memory("found %p in %p\n",ptr,current_heap);
@@ -234,17 +230,17 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
         ppinfo->nb_touched[i] = 0;
       }
       found = 1;
-      ma_spin_unlock(&current_heap->lock_heap);
+      marcel_spin_unlock(&current_heap->lock_heap);
       break;
     }
-    ma_spin_unlock(&current_heap->lock_heap);
+    marcel_spin_unlock(&current_heap->lock_heap);
     current_heap = current_heap->next_heap;
   }
 
   if (!found) { /* not found as regular block check if it's an attached memory */
     current_heap = heap;
     while(current_heap != NULL && !found) {
-      ma_spin_lock(&current_heap->lock_heap);
+      marcel_spin_lock(&current_heap->lock_heap);
       current_bloc_used = current_heap->used;
       while(current_bloc_used != NULL) {
         if (current_bloc_used->data == ptr) {
@@ -262,21 +258,21 @@ void ma_hget_pinfo(void *ptr, ma_pinfo_t* ppinfo, ma_heap_t *heap) {
         }
         current_bloc_used = current_bloc_used->next;
       }
-      ma_spin_unlock(&current_heap->lock_heap);
+      marcel_spin_unlock(&current_heap->lock_heap);
       current_heap = current_heap->next_heap;
     }
   }
 }
 
-int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
-  ma_heap_t *current_heap, *current_same_heap;
+int heap_hnext_pinfo(heap_pinfo_t **ppinfo, heap_heap_t* heap) {
+  heap_heap_t *current_heap, *current_same_heap;
   int i,iterator_num = HEAP_ITERATOR_ID_UNDEFINED;
 
   if (IS_HEAP(heap)) {
     if (*ppinfo == NULL) {
       /* first call, allocate iterator */
       if (heap->iterator == NULL) {
-        heap->iterator = ma_amalloc(sizeof(ma_pinfo_t)+heap->maxnode,heap);
+        heap->iterator = heap_amalloc(sizeof(heap_pinfo_t)+heap->maxnode,heap);
       }
       *ppinfo = heap->iterator;
       (*ppinfo)->size = HEAP_GET_SIZE(heap);
@@ -284,42 +280,42 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
       (*ppinfo)->weight = HEAP_UNSPECIFIED_WEIGHT;
       (*ppinfo)->maxnode = 0;
       (*ppinfo)->nodemask =
-        (unsigned long *) ((char *) heap->iterator + sizeof(ma_pinfo_t));
+        (unsigned long *) ((char *) heap->iterator + sizeof(heap_pinfo_t));
 
       /* reset iterator, some node may have changed */
       current_heap = heap;
       while (IS_HEAP(current_heap)) {
-        ma_spin_lock(&current_heap->lock_heap);
+        marcel_spin_lock(&current_heap->lock_heap);
         if (current_heap->iterator_num != HEAP_ITERATOR_ID_UNDEFINED) {
           current_heap->iterator_num = HEAP_ITERATOR_ID_UNDEFINED;
         }
-        ma_spin_unlock(&current_heap->lock_heap);
+        marcel_spin_unlock(&current_heap->lock_heap);
         current_heap = current_heap->next_heap;
       }
-      mdebug_memory("ma_hnext_pinfo: first call, it=%d\n",iterator_num);
+      mdebug_memory("heap_hnext_pinfo: first call, it=%d\n",iterator_num);
     }
 
     /* set iterator id list */
     current_heap = heap;
     while (IS_HEAP(current_heap)) {
       if (current_heap->iterator_num == HEAP_ITERATOR_ID_UNDEFINED) {
-        ma_spin_lock(&current_heap->lock_heap);
+        marcel_spin_lock(&current_heap->lock_heap);
         current_heap->iterator_num = iterator_num++;
         current_same_heap = current_heap;
-        ma_spin_unlock(&current_heap->lock_heap);
+        marcel_spin_unlock(&current_heap->lock_heap);
         while(IS_HEAP(current_same_heap)) {
-          ma_spin_lock(&current_same_heap->lock_heap);
+          marcel_spin_lock(&current_same_heap->lock_heap);
           current_same_heap->iterator_num = iterator_num;
-          ma_spin_unlock(&current_same_heap->lock_heap);
+          marcel_spin_unlock(&current_same_heap->lock_heap);
           current_same_heap = current_same_heap->next_same_heap;
         }
       }
       current_heap = current_heap->next_heap;
     }
-    mdebug_memory_list("ma_hnext_pinfo list:\n",heap);
+    mdebug_memory_list("heap_hnext_pinfo list:\n",heap);
 
     /* goes to next heap higher iterator_num */
-    current_heap = ma_aget_heap_from_list((*ppinfo)->mempolicy,(*ppinfo)->weight,(*ppinfo)->nodemask,(*ppinfo)->maxnode,heap);
+    current_heap = heap_aget_heap_from_list((*ppinfo)->mempolicy,(*ppinfo)->weight,(*ppinfo)->nodemask,(*ppinfo)->maxnode,heap);
     if (current_heap == NULL) {
       current_heap = heap;
       iterator_num = HEAP_ITERATOR_ID_UNDEFINED;
@@ -339,7 +335,7 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
       return 0;
     }
     // set ppinfo
-    ma_spin_lock(&current_heap->lock_heap);
+    marcel_spin_lock(&current_heap->lock_heap);
     (*ppinfo)->size = HEAP_GET_SIZE(current_heap);
     (*ppinfo)->mempolicy = current_heap->mempolicy;
     (*ppinfo)->weight = current_heap->weight;
@@ -350,15 +346,15 @@ int ma_hnext_pinfo(ma_pinfo_t **ppinfo, ma_heap_t* heap) {
     for(i = 0; i < marcel_nbnodes; ++i) {
       (*ppinfo)->nb_touched[i] = 0;
     }
-    ma_spin_unlock(&current_heap->lock_heap);
+    marcel_spin_unlock(&current_heap->lock_heap);
     return 1;
   }
   return -1;
 }
 
-void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
-  ma_heap_t* current_heap;
-  ma_ub_t* current_bloc_used;
+void heap_hupdate_memory_nodes(heap_pinfo_t *ppinfo, heap_heap_t *heap) {
+  heap_heap_t* current_heap;
+  heap_ub_t* current_bloc_used;
   int i, nb_pages, pagesize, node, nb_attach;
   const void *addr[1];
 
@@ -368,11 +364,11 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
       ppinfo->nb_touched[i] = 0;
     }
     /* look for corresponding heap */
-    current_heap = ma_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
+    current_heap = heap_aget_heap_from_list(ppinfo->mempolicy,ppinfo->weight,ppinfo->nodemask,ppinfo->maxnode,heap);
 
     if (IS_HEAP(current_heap)) {
       while(IS_HEAP(current_heap)) {
-        ma_spin_lock(&current_heap->lock_heap);
+        marcel_spin_lock(&current_heap->lock_heap);
         nb_pages = HEAP_GET_SIZE(current_heap)/pagesize;
 
         for(i = 0; i < nb_pages; ++i) {
@@ -436,44 +432,44 @@ void ma_hupdate_memory_nodes(ma_pinfo_t *ppinfo, ma_heap_t *heap) {
             current_bloc_used = current_bloc_used->next;
           }
         }
-        ma_spin_unlock(&current_heap->lock_heap);
+        marcel_spin_unlock(&current_heap->lock_heap);
         current_heap = current_heap->next_same_heap;
       }
     }
   }
 }
 
-ma_heap_t* ma_hcreate_heap(void) {
+heap_heap_t* heap_hcreate_heap(void) {
   unsigned int pagesize = getpagesize();
-  return ma_acreate(HEAP_MINIMUM_PAGES*pagesize, HEAP_DYN_ALLOC);
+  return heap_acreate(HEAP_MINIMUM_PAGES*pagesize, HEAP_DYN_ALLOC);
 }
 
-void ma_hdelete_heap(ma_heap_t *heap) {
-  ma_adelete(&heap);
+void heap_hdelete_heap(heap_heap_t *heap) {
+  heap_adelete(&heap);
 }
 
-void ma_hmerge_heap(ma_heap_t *hacc, ma_heap_t *h) {
-  ma_heap_t* current_heap;
-  ma_heap_t* merging_heap;
+void heap_hmerge_heap(heap_heap_t *hacc, heap_heap_t *h) {
+  heap_heap_t* current_heap;
+  heap_heap_t* merging_heap;
 
   if (IS_HEAP(hacc) && IS_HEAP(h) && hacc != h) {
     current_heap = hacc;
     while (IS_HEAP(current_heap)) {
-      ma_spin_lock(&current_heap->lock_heap);
+      marcel_spin_lock(&current_heap->lock_heap);
       /* look for last numa heap */
       if (current_heap->next_same_heap == NULL) {
         /* look for matching heap */
-        merging_heap = ma_aget_heap_from_list(current_heap->mempolicy,current_heap->weight,current_heap->nodemask,current_heap->maxnode,h);
+        merging_heap = heap_aget_heap_from_list(current_heap->mempolicy,current_heap->weight,current_heap->nodemask,current_heap->maxnode,h);
         if (merging_heap != NULL) {
-          ma_aconcat_local_list(current_heap,merging_heap);
+          heap_aconcat_local_list(current_heap,merging_heap);
         }
       }
-      ma_spin_unlock(&current_heap->lock_heap);
+      marcel_spin_unlock(&current_heap->lock_heap);
       current_heap = current_heap->next_heap;
     }
-    ma_aconcat_global_list(hacc,h);
+    heap_aconcat_global_list(hacc,h);
     if (h->iterator != NULL) {
-      ma_afree(h->iterator);
+      heap_afree(h->iterator);
     }
   }
 }

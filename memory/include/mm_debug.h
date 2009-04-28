@@ -43,7 +43,7 @@ extern debug_type_t debug_memory_warn;
 /* --- debug functions --- */
 
 #ifdef PM2DEBUG
-#define mdebug_memory_list(str,root) ma_print_list(str,root)
+#define mdebug_memory_list(str,root) heap_print_list(str,root)
 #else
 #define	mdebug_memory_list(...)
 #endif

@@ -99,7 +99,7 @@ void mami_init(mami_manager_t *memory_manager) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
       memory_manager->memtotal[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
       memory_manager->memfree[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
-      mdebug_memory("Memory on node #%d = %d\n", node, memory_manager->memtotal[node]);
+      mdebug_memory("Memory on node #%d = %ld\n", node, memory_manager->memtotal[node]);
     }
   }
   else {

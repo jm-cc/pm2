@@ -28,7 +28,7 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
     pm2_skip_test
 fi
 
-flavor="test_marcel_heap"
+flavor="test_memory_heap"
 appdir="${PM2_ROOT}/memory/examples/heap/simple"
 check_all_lines=1
 

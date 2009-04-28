@@ -29,7 +29,7 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
 fi
 
 NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
-flavor="test_marcel_mami"
+flavor="test_memory_mami"
 appdir="${PM2_ROOT}/memory/examples/mami"
 check_all_lines=1
 

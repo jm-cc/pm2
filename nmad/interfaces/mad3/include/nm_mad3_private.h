@@ -19,6 +19,7 @@
 #include "madeleine.h"
 #include <nm_sendrecv_interface.h>
 #include <nm_public.h>
+#include <nm_private.h>
 
 typedef struct s_mad_nmad_connection_specific {
         struct s_mad_nmad_connection_specific	*master_cnx;

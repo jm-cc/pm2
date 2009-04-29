@@ -1392,10 +1392,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
         do {
           marcel_entity_t *object = NULL;
           object = tbx_slist_ref_get(data->owners);
-
-          mdebug_memory("Moving data from node #%d to node #%d\n", data->node, dest);
-          if (data->node >= 0) ((long *) ma_stats_get (object, ma_stats_memnode_offset))[data->node] -= data->size;
-          ((long *) ma_stats_get (object, ma_stats_memnode_offset))[dest] += data->size;
+          _mm_mami_update_stats(object, data->node, dest, data->size);
         } while (tbx_slist_ref_forward(data->owners));
       }
       data->node = dest;

@@ -268,4 +268,14 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
   return _mami_entity_migrate_all(memory_manager, entity, node);
 }
 
+int _mm_mami_update_stats(marcel_entity_t *entity,
+                          int source,
+                          int dest,
+                          size_t size) {
+  mdebug_memory("Moving data from node #%d to node #%d\n", source, dest);
+  if (source >= 0) ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[source] -= size;
+  ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[dest] += size;
+  return 0;
+}
+
 #endif /* MM_MAMI_ENABLED */

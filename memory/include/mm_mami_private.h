@@ -95,5 +95,11 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
                         mami_data_t *data,
                         int dest);
 
+extern
+int _mm_mami_update_stats(marcel_entity_t *entity,
+                          int source,
+                          int dest,
+                          size_t size);
+
 #endif /* MM_MAMI_PRIVATE_H */
 #endif /* MM_MAMI_ENABLED */

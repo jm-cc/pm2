@@ -12,7 +12,7 @@
  *
  */
 
-/** \addtogroup marcel_heap */
+/** \addtogroup memory_heap */
 /* @{ */
 
 #ifdef MM_HEAP_ENABLED

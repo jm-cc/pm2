@@ -12,7 +12,7 @@
  *
  */
 
-/** \defgroup marcel_heap Heap Allocator Interface
+/** \defgroup memory_heap Heap Allocator Interface
  *
  * This is the interface for memory management
  *
@@ -49,7 +49,7 @@ enum heap_mem_policy {
 };
 
 /** structure used to describe the mapping of a set of pages over numa bloc */
-struct pageinfo {
+struct heap_pageinfo {
   /** mapping policy */
   int mempolicy;
   /** pages weights */
@@ -64,7 +64,7 @@ struct pageinfo {
   int nb_touched[MARCEL_NBMAXNODES];
  };
 
-typedef struct pageinfo heap_pinfo_t;
+typedef struct heap_pageinfo heap_pinfo_t;
 
 /**
  * Call heap_amalloc to allocate memory

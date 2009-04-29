@@ -12,7 +12,7 @@
  *
  */
 
-/** \addtogroup marcel_heap */
+/** \addtogroup memory_heap */
 /* @{ */
 
 #ifdef MM_HEAP_ENABLED
@@ -79,7 +79,6 @@ static inline void heap_mask_set(unsigned long *a, int node) {
 static inline void heap_mask_clr(unsigned long *a, int node) {
   heap_clearbit(a,node);
 }
-
 
 /* --- heap and used block structures --- */
 /** used memory bloc definition inside heap*/
@@ -167,18 +166,18 @@ struct heap_malloc_stats {
   int npinfo;
 };
 
-#define HEAP_DYN_ALLOC 	0
-#define HEAP_PAGE_ALLOC 1
-#define HEAP_MINIMUM_PAGES 10
-#define HEAP_UNSPECIFIED_POLICY -1
-#define HEAP_UNSPECIFIED_WEIGHT -1
-#define HEAP_ITERATOR_ID_UNDEFINED -1
+#define HEAP_DYN_ALLOC 			0
+#define HEAP_PAGE_ALLOC 		1
+#define HEAP_MINIMUM_PAGES 		10
+#define HEAP_UNSPECIFIED_POLICY 	-1
+#define HEAP_UNSPECIFIED_WEIGHT 	-1
+#define HEAP_ITERATOR_ID_UNDEFINED	-1
 
-#define HEAP_SIZE_T 	(heap_memalign(sizeof(heap_heap_t)))
+#define HEAP_SIZE_T 		(heap_memalign(sizeof(heap_heap_t)))
 #define HEAP_BLOCK_SIZE_T 	(heap_memalign(sizeof(heap_ub_t)))
 
 #define HEAP_IS_HEAP(h)			(h != NULL)
-#define HEAP_IS_HEAP_POLICY(h,p)		(h != NULL && h->alloc_policy == p)
+#define HEAP_IS_HEAP_POLICY(h,p)	(h != NULL && h->alloc_policy == p)
 #define HEAP_ADD_FREE_SIZE(sz,h) 	{ h->free_size += sz; h->used_size -= sz; }
 #define HEAP_ADD_USED_SIZE(sz,h) 	{ h->free_size -= sz; h->used_size += sz; }
 #define HEAP_GET_SIZE(h) 		( h->free_size + h->used_size )
@@ -217,8 +216,6 @@ int heap_is_empty_heap(heap_heap_t* heap);
  * Mbind a heap and set its numa data: mempolicy, weight and nodemask
  */
 int heap_amaparea(heap_heap_t* heap, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode);
-
-//static inline unsigned long heap_at_cmpchg(volatile void *ptr, unsigned long old, unsigned long new, int size);
 
 /**
  * Concat htgt at the end of hsrc
@@ -306,7 +303,7 @@ void *heap_arealloc(void *ptr, size_t size, heap_heap_t* heap);
  * Free the memory of (void*)ptr by calling heap_afree_heap.
  * Matching heap was stored in the used bloc referencing by (void*)ptr.
  */
-void  heap_afree(void* ptr);
+void heap_afree(void* ptr);
 
 /**
  * A call to heap_afree_heap consists to remove the used bloc pointed by (void*)ptr
@@ -314,13 +311,13 @@ void  heap_afree(void* ptr);
  * In case of a next bloc follow the removed bloc,
  * previous free size of next bloc is increased by the free space of the removed bloc.
  */
-void  heap_afree_heap(void* ptr, heap_heap_t* heap);
+void heap_afree_heap(void* ptr, heap_heap_t* heap);
 
 /**
  * Free pages in a heap with an allocation per pages
  * Pages are set as free in the bitmap vector.
  */
-void  heap_apagefree(void* ptr, int nb_pages, heap_heap_t *heap);
+void heap_apagefree(void* ptr, int nb_pages, heap_heap_t *heap);
 
 /**
  * Return a structure with information of the usage of the heap:
@@ -330,7 +327,7 @@ void  heap_apagefree(void* ptr, int nb_pages, heap_heap_t *heap);
  * - attached memory size
  * - number of heaps
  */
-heap_amalloc_stat_t  heap_amallinfo(heap_heap_t* heap);
+heap_amalloc_stat_t heap_amallinfo(heap_heap_t* heap);
 
 /**
  * Display the list of heap starting from (heap_heap_t*)heap

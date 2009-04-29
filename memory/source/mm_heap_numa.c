@@ -90,11 +90,11 @@ long long heap_free_mem_node(int node) {
   char *line = NULL;
   FILE *f;
 
-  sprintf(fn,"/sys/devices/system/node/node%d/meminfo", node);
-  f = fopen(fn, "r");
+  marcel_sprintf(fn,"/sys/devices/system/node/node%d/meminfo", node);
+  f = marcel_fopen(fn, "r");
   if (!f)
     return -1;
-  while (getdelim(&line, &len, '\n', f) > 0) {
+  while (marcel_getdelim(&line, &len, '\n', f) > 0) {
     char *end;
     char *s = strcasestr(line, "kB");
     if (!s)
@@ -109,7 +109,7 @@ long long heap_free_mem_node(int node) {
       if (end == s) size= -1;
     }
   }
-  fclose(f);
+  marcel_fclose(f);
   free(line);
   return size;
 }
@@ -121,17 +121,17 @@ long long heap_hits_mem_node(int node) {
   char *line = NULL;
   FILE *f;
 
-  sprintf(fn,"/sys/devices/system/node/node%d/numastat", node);
-  f = fopen(fn, "r");
+  marcel_sprintf(fn,"/sys/devices/system/node/node%d/numastat", node);
+  f = marcel_fopen(fn, "r");
   if (!f)
     return -1;
-  while (getdelim(&line, &len, '\n', f) > 0) {
+  while (marcel_getdelim(&line, &len, '\n', f) > 0) {
     if (strstr(line, "numa_hit")) {
       hits = strtoull(line+8,NULL,0);
       break;
     }
   }
-  fclose(f);
+  marcel_fclose(f);
   free(line);
   return hits;
 }

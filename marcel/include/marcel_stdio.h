@@ -43,4 +43,5 @@ TBX_FORMAT(scanf,2,3)
 int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...);
 char *marcel_fgets(char *s, int size, FILE *stream);
 int marcel_feof(FILE *stream);
+ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream);
 #endif

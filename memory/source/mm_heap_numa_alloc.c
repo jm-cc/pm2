@@ -28,11 +28,9 @@
 void *heap_hmalloc(size_t size, int mempolicy, int weight, unsigned long *nodemask, unsigned long maxnode, heap_heap_t *heap) {
   heap_heap_t* current_heap;
 
-  //marcel_fprintf(stderr,"heap_hmalloc size=%ld at %p (%d,%d) numa=%ld\n", (unsigned long)size,heap,mempolicy,weight,*nodemask);
   mdebug_memory("heap_hmalloc size=%ld at %p (%d,%d) numa=%ld\n",(unsigned long)size,heap,mempolicy,weight,*nodemask);
   /* look for corresponding heap */
   current_heap = heap_aget_heap_from_list(mempolicy,weight,nodemask,maxnode,heap);
-  //marcel_fprintf(stderr,"heap_hmalloc mempolicy %d, nodemask %ld, maxnode %ld, thread %p\n", mempolicy, *nodemask, maxnode, MARCEL_SELF);
   if (current_heap == NULL) {
     marcel_spin_lock(&heap->lock_heap);
     if (heap->mempolicy == HEAP_UNSPECIFIED_POLICY && heap->weight == HEAP_UNSPECIFIED_WEIGHT && heap->maxnode == 0) {
@@ -380,14 +378,7 @@ void heap_hupdate_memory_nodes(heap_pinfo_t *ppinfo, heap_heap_t *heap) {
           //	mdebug_memory("addr=%p size=%d*%d\n",addr[0],nb_pages,pagesize);
           node = -1;
           int ret = _mm_move_pages((void **)addr, 1, NULL, &node, MPOL_MF_MOVE);
-          if (ret != 0)
-            {
-              perror("syscall6 error:");
-              if (errno == ENOSYS)
-                marcel_fprintf(stderr,"upgrade to kernel >= 2.6.18\n");
-              else
-                marcel_fprintf(stderr,"errno syscall6 = %d\n", errno);
-            }
+          if (ret != 0) perror("syscall6 error:");
           if (node >= 0) {
             ppinfo->nb_touched[node]++;
             mdebug_memory("page touched %p node=%d\n",addr[0],node);

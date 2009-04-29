@@ -602,22 +602,22 @@ void heap_print_list(const char* str, heap_heap_t* heap) {
 
   if (debug_memory.show < PM2DEBUG_STDLEVEL) return;
 
-  debug_printf(&debug_memory,"%s",str);
+  debug_printf(&debug_memory, "%s", str);
   h = heap;
   while (HEAP_IS_HEAP(h)) {
     marcel_spin_lock(&h->lock_heap);
-    printf("heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
+    marcel_fprintf(stderr, "heap #%d %p (it=%d) (%d,%d) numa=",count,h,h->iterator_num,h->mempolicy,h->weight);
     for(i = 0; i < h->maxnode/HEAP_WORD_SIZE; i++) {
       printf("%ld|",h->nodemask[i]);
     }
     for(i = 0; i < max_node+1; ++i) {
       if(heap_mask_isset(h->nodemask,h->maxnode,i)) {
-        printf("%d-",i);
+        marcel_fprintf(stderr, "%d-",i);
       }
     }
-    printf(" : next_same=%p|",h->next_same_heap);
-    printf(" : next=%p|",h->next_heap);
-    printf(" : %d : ",(int)HEAP_GET_SIZE(h));
+    marcel_fprintf(stderr, " : next_same=%p|",h->next_same_heap);
+    marcel_fprintf(stderr, " : next=%p|",h->next_heap);
+    marcel_fprintf(stderr, " : %d : ",(int)HEAP_GET_SIZE(h));
     heap_print_heap(h->used);
     count++;
     marcel_spin_unlock(&h->lock_heap);

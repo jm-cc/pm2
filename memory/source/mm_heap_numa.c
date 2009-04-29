@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <sys/mman.h>
 #include <ctype.h>
+#include <limits.h>
 #include "marcel.h"
 #include "mm_heap_numa.h"
 #include "mm_debug.h"
@@ -34,7 +35,7 @@ int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask,
   unsigned long newnodemask[MARCEL_NBMAXNODES];
   unsigned long newmaxnode;
 
-  mdebug_memory("heap_maparea size %d, start address %p mask=%ld ", (int)size, ptr,*nodemask);
+  mdebug_memory("heap_maparea size %d, start address %p mask=%ld\n", (int)size, ptr,*nodemask);
   switch(mempolicy) {
   case SMALL_ACCESSED:
     for(i = 0; i < marcel_nbnodes; ++i) {
@@ -72,7 +73,6 @@ int heap_maparea(void *ptr, size_t size, int mempolicy, unsigned long *nodemask,
   default:
     err = _mm_mbind(ptr, size, MPOL_INTERLEAVE , nodemask, maxnode, MPOL_MF_MOVE);
     if (err) {
-      perror("mbind error:");
       mdebug_memory("mbind args %p %zd %d %ld %ld 0\n",ptr, size, MPOL_INTERLEAVE|MPOL_MF_MOVE, *nodemask, maxnode);
     }
     else {

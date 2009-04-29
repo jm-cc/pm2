@@ -63,7 +63,7 @@ void _mami_sampling_of_memory_migration(unsigned long source, unsigned long dest
   ns /= (loops * 2);
   bandwidth = ns / pages;
   marcel_fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
-  marcel_printf("%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
+  marcel_fprintf(stdout, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
 }
 
 static
@@ -88,15 +88,15 @@ int _mami_get_filename(const char *type, char *filename, long source, long dest)
 
   if (source == -1) {
     if (dest == -1)
-      marcel_snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
+      rc = marcel_snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
     else
-      marcel_snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
+      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
   }
   else {
     if (dest == -1)
-      marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
+      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
     else
-      marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
+      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
   return 0;
@@ -141,9 +141,9 @@ int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager) {
     return -1;
   }
   mdebug_memory("Reading file %s\n", filename);
-  fgets(line, 1024, out);
+  marcel_fgets(line, 1024, out);
   mdebug_memory("Reading line %s\n", line);
-  while (!(feof(out))) {
+  while (!(marcel_feof(out))) {
     if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
     }
@@ -151,7 +151,7 @@ int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager) {
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
       if (debug_memory.show > PM2DEBUG_STDLEVEL) {
-	marcel_printf("%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
+	marcel_fprintf(stderr, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
       }
 #endif /* PM2DEBUG */
       _mami_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
@@ -229,26 +229,26 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
       for(pages=1; pages<10 ; pages++) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
       }
-      fflush(out);
+      marcel_fflush(out);
 
       for(pages=10; pages<100 ; pages+=10) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        fflush(out);
+        marcel_fflush(out);
       }
 
       for(pages=100; pages<1000 ; pages+=100) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        fflush(out);
+        marcel_fflush(out);
       }
 
       for(pages=1000; pages<10000 ; pages+=1000) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        fflush(out);
+        marcel_fflush(out);
       }
 
       for(pages=10000; pages<=25000 ; pages+=5000) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        fflush(out);
+        marcel_fflush(out);
       }
     }
 
@@ -274,11 +274,11 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
   }
   out = marcel_fopen(filename, "w");
   if (!out) {
-    marcel_printf("Error when opening file <%s>\n", filename);
+    marcel_fprintf(stderr, "Error when opening file <%s>\n", filename);
     return -errno;
   }
   marcel_fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
-  marcel_printf("Source\tDest\tPages\tSize\tMigration_Time\n");
+  marcel_fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\n");
 
   marcel_attr_init(&attr);
   for(source=minsource; source<=maxsource ; source++) {
@@ -298,7 +298,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
     }
   }
   marcel_fclose(out);
-  marcel_printf("Sampling saved in <%s>\n", filename);
+  marcel_fprintf(stdout, "Sampling saved in <%s>\n", filename);
   return 0;
 }
 
@@ -322,8 +322,8 @@ int _mami_load_model_for_memory_access(mami_manager_t *memory_manager) {
     return -1;
   }
   mdebug_memory("Reading file %s\n", filename);
-  fgets(line, 1024, out);
-  while (!feof(out)) {
+  marcel_fgets(line, 1024, out);
+  while (!marcel_feof(out)) {
     if (marcel_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
       break;
     }
@@ -331,7 +331,7 @@ int _mami_load_model_for_memory_access(mami_manager_t *memory_manager) {
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
       if (debug_memory.show > PM2DEBUG_STDLEVEL) {
-	marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
+	marcel_fprintf(stderr, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
       }
 #endif /* PM2DEBUG */
       memory_manager->costs_for_write_access[source][dest].cost = wcacheline;
@@ -405,7 +405,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
   }
   out = marcel_fopen(filename, "w");
   if (!out) {
-    marcel_printf("Error when opening file <%s>\n", filename);
+    marcel_fprintf(stderr, "Error when opening file <%s>\n", filename);
     return -1;
   }
 
@@ -467,16 +467,16 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     mami_free(memory_manager, buffers[node]);
   }
 
-  marcel_printf("Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  marcel_fprintf(stdout, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   marcel_fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=minsource ; t<=maxsource ; t++) {
     for(node=mindest ; node<=maxdest ; node++) {
-      marcel_printf("%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-                    t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
-                    rtimes[node][t],
-                    (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
-                    wtimes[node][t],
-                    (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
+      marcel_fprintf(stdout, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+                     t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
+                     rtimes[node][t],
+                     (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
+                     wtimes[node][t],
+                     (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
       marcel_fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
                      t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
                      rtimes[node][t],
@@ -487,7 +487,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
   }
 
   marcel_fclose(out);
-  marcel_printf("Sampling saved in <%s>\n", filename);
+  marcel_fprintf(stdout, "Sampling saved in <%s>\n", filename);
   return 0;
 }
 

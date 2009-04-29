@@ -137,3 +137,30 @@ int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...) 
 	marcel_extlib_unprotect();
 	return retour;
 }
+
+char *marcel_fgets(char *s, int size, FILE *stream) {
+        char *retour;
+
+        marcel_extlib_protect();
+        retour = fgets(s, size, stream);
+        marcel_extlib_unprotect();
+        return retour;
+}
+
+int marcel_feof(FILE *stream) {
+        int retour;
+
+        marcel_extlib_protect();
+        retour = feof(stream);
+        marcel_extlib_unprotect();
+        return retour;
+}
+
+int marcel_fflush(FILE *stream) {
+        int retour;
+
+        marcel_extlib_protect();
+        retour = fflush(stream);
+        marcel_extlib_unprotect();
+        return retour;
+}

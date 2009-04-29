@@ -156,11 +156,3 @@ int marcel_feof(FILE *stream) {
         return retour;
 }
 
-int marcel_fflush(FILE *stream) {
-        int retour;
-
-        marcel_extlib_protect();
-        retour = fflush(stream);
-        marcel_extlib_unprotect();
-        return retour;
-}

@@ -165,6 +165,10 @@ do_the_test()
 	    export PM2_LD_PRELOAD="$_ld_preload_value"
 	fi
 
+	if [ -n "$PM2_LD_PRELOAD" ] ; then
+	    echo "Preloading with PM2_LD_PRELOAD=$PM2_LD_PRELOAD"
+	fi
+
         if [ -z "$net" ] ; then
             (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         else

@@ -938,7 +938,7 @@ void _mami_register(mami_manager_t *memory_manager,
 
   // Register the pages
   _mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, nodes,
-                           protection, with_huge_pages, mami_allocated, data);
+                       protection, with_huge_pages, mami_allocated, data);
 
   // Free temporary array
   tfree(pageaddrs);
@@ -1026,7 +1026,7 @@ int mami_split(mami_manager_t *memory_manager,
       for(i=1 ; i<subareas ; i++) {
 	newbuffers[i] = pageaddrs[0];
 	_mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->nodes,
-                                 data->protection, data->with_huge_pages, data->mami_allocated, NULL);
+                             data->protection, data->with_huge_pages, data->mami_allocated, NULL);
 	pageaddrs += subpages;
       }
 
@@ -1369,7 +1369,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
           if (data->nodes[i] == -ENOENT) {
             mdebug_memory("Mbinding page %d (%p) to node #%d\n", i, data->pageaddrs[i], dest);
             err = _mm_mbind(data->pageaddrs[i], memory_manager->normalpagesize, MPOL_BIND, &nodemask,
-                                  memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+                            memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
           }
           else if (data->nodes[i] != dest) {
             pageaddrs_to_be_moved[nbpages_to_be_moved] = data->pageaddrs[i];

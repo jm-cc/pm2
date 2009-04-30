@@ -25,7 +25,9 @@
 
 #include <pm2_list.h>
 #include <nm_public.h>
-
+#ifdef PIOMAN
+#include "pioman.h"
+#endif
 /*#include <ccs_public.h>*/
 struct CCSI_Segment;
 

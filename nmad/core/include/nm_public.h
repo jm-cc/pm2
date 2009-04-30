@@ -212,9 +212,9 @@ nmad_unlock(void)
 { }
 
 
-void nm_so_debug_init(int* argc, char** argv, int debug_flags);
-
 #endif /* PIOMAN */
+
+void nm_so_debug_init(int* argc, char** argv, int debug_flags);
 
 #endif /* NM_PUBLIC_H */
 

@@ -388,7 +388,7 @@ static int ksoftirqd(void * foo TBX_UNUSED) {
 
 		__ma_set_current_state(MA_TASK_RUNNING);
 
-		while (ma_local_softirq_pending() || (ma_vpnum(MA_LWP_SELF) != -1 && !ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)))) {
+		while (ma_local_softirq_pending() || (ma_vpnum(MA_LWP_SELF) != -1 && ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF)))) {
 			/* Preempt disable stops cpu going offline.
 			   If already offline, we'll be on wrong CPU:
 			   don't process */

@@ -428,7 +428,6 @@ extern int nm_sr_send_success(nm_core_t p_core, nm_sr_request_t **out_req);
  *  request.
  *  @param p_core a pointer to the NM core object
  *  @param request the request to check.
- *  @param tag the tag to check
  *  @param size returns the size of the message
  *  @return The NM status.
  */

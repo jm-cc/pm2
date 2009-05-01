@@ -6,9 +6,6 @@ pmarcel + valgrind a l'air de merder sur la TLS: valgrind met 0x3 pour le gs du 
 Possible que ce soit simplement
 https://bugs.kde.org/show_bug.cgi?id=175984
 
-Ajouter des fonctions printf, malloc etc. dans Marcel qui appelle
-marcel_extlib_protect puis __printf, __malloc, etc. -> pukabi
-
 examples/create: mesurer séparément création sur le même processeur et sur un autre processeur
 
 topologie: pouvoir demander à utiliser seulement un processeur logique par core à l'aide d'une option --marcel-.

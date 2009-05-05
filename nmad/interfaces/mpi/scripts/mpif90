@@ -188,7 +188,7 @@ for arg in "$@" ; do
         *)
             if [ -s "$arg" ] ; then
                 ext=`expr "$arg" : '.*\(\..*\)'`
-                if [ "$ext" = ".f90" -o "$ext" = ".F90" ] ; then
+                if [ "$ext" = ".f90" -o "$ext" = ".F90" -o "$ext" = ".f" -o "$ext" = ".F" ] ; then
                     DoCompile=1
                     compileargs="$compileargs $arg"
                     fname=`basename $arg $ext`

@@ -191,7 +191,7 @@ for arg in "$@" ; do
                 if [ "$ext" = ".f90" -o "$ext" = ".F90" ] ; then
                     DoCompile=1
                     compileargs="$compileargs $arg"
-                    fname=`basename $arg .f90`
+                    fname=`basename $arg $ext`
                     linkobjs="$linkobjs $fname.o"
                 elif [ "$ext" = ".s" ] ; then
 	            # Support .s for those compilers that can

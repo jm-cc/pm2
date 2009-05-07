@@ -27,20 +27,20 @@
 //#define MAX_BUBBLE_LEVEL 0
 
 typedef struct {
-  int inf, sup, res;
+  int inf, sup, res, display_time;
   marcel_sem_t sem;
   int level;
 } job;
 
 static marcel_attr_t attr;
-static int display_time;
 
-static __inline__ void job_init(job *j, int inf, int sup, int level)
+static __inline__ void job_init(job *j, int inf, int sup, int level, int display_time)
 {
   j->inf = inf;
   j->sup = sup;
   marcel_sem_init(&j->sem, 0);
   j->level = level;
+  j->display_time = display_time;
 }
 
 static any_t sum(any_t arg)
@@ -61,8 +61,8 @@ static any_t sum(any_t arg)
     return NULL;
   }
 
-  job_init(&j1, j->inf, (j->inf+j->sup)/2, j->level + 1);
-  job_init(&j2, (j->inf+j->sup)/2+1, j->sup, j->level + 1);
+  job_init(&j1, j->inf, (j->inf+j->sup)/2, j->level + 1, j->display_time);
+  job_init(&j2, (j->inf+j->sup)/2+1, j->sup, j->level + 1, j->display_time);
 
 #ifdef MA__BUBBLES
   if (j->level<MAX_BUBBLE_LEVEL) {
@@ -115,7 +115,7 @@ static void compute(job j) {
   TBX_GET_TICK(t2);
   marcel_printf("Sum from 1 to %d = %d\n", j.sup, j.res);
   temps = TBX_TIMING_DELAY(t1, t2);
-  if (display_time) marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  if (j.display_time) marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 }
 
 int main(int argc, char **argv)
@@ -140,11 +140,11 @@ int main(int argc, char **argv)
   marcel_sem_init(&j.sem, 0);
   j.inf = 1;
   j.level = 0;
-  display_time = 1;
+  j.display_time = 1;
   if ((argc > 1) && (strncmp(argv[1], "-notime", 7) == 0)) {
-      display_time = 0;
-      argc--;
-      argv++;
+    j.display_time = 0;
+    argc--;
+    argv++;
   }
 
   if (argc > 1) {

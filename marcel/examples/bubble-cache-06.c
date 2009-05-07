@@ -20,8 +20,9 @@
 #define NB_THREADS  4
 #define BIG_LOAD    100
 #define LITTLE_LOAD 1
+#define NB_VPS      NB_THREADS
 
-static unsigned int vp_levels[4], expected_result[4];
+static unsigned int vp_levels[NB_VPS], expected_result[NB_VPS];
 
 static void *
 thread_entry_point (void *arg) {
@@ -69,12 +70,10 @@ main (int argc, char *argv[])
 
 	/* Creating threads as leaves of the hierarchy.  */
 	marcel_t threads[NB_THREADS];
-	marcel_attr_t attr;
-
-	marcel_attr_init (&attr);
-	marcel_attr_setnaturalbubble (&attr, &marcel_root_bubble);
+	marcel_attr_t attrs[NB_THREADS];
 
 	/* The main thread is one of the _heavy_ threads. */
+	//	marcel_fprintf(stderr, "Setting VP #%d with %d threads\n", 0, BIG_LOAD);
 	ma_task_stats_set (unsigned long, marcel_self(), marcel_stats_load_offset, BIG_LOAD);
 	/* The main thread is thread 0. */
 	marcel_self ()->id = 0;
@@ -83,8 +82,12 @@ main (int argc, char *argv[])
 	for (i = 1; i < NB_THREADS; i++) {
 		/* Note: We can't use `dontsched' since THREAD would not appear
 			 on the runqueue.  */
-		marcel_attr_setid (&attr, i);
-		marcel_create (threads + i, &attr, thread_entry_point, &start_signal);
+		marcel_attr_init (&attrs[i]);
+		marcel_attr_setnaturalbubble (&attrs[i], &marcel_root_bubble);
+		marcel_attr_setid (&attrs[i], i);
+		marcel_create (threads + i, &attrs[i], thread_entry_point, &start_signal);
+		//		marcel_fprintf(stderr, "Setting VP #%d with %d threads\n",
+		//									 i, (i == NB_THREADS - 1) ? BIG_LOAD : LITTLE_LOAD);
 		ma_task_stats_set (unsigned long,
 											 threads[i],
 											 marcel_stats_load_offset,
@@ -111,18 +114,22 @@ main (int argc, char *argv[])
 	expected_result[0] = expected_result[2] = BIG_LOAD;
 	expected_result[1] = expected_result[3] = LITTLE_LOAD;
 
-	for (i = 0; i < NB_THREADS; i++) {
+	ret = 0;
+	for (i = 0; i < NB_VPS; i++) {
 		if (vp_levels[i] != expected_result[i]) {
-			printf ("FAILED: Bad distribution.\n");
+			printf ("FAILED: Bad distribution [VP #%d has %d threads, but %d were expected].\n",
+							i, vp_levels[i], expected_result[i]);
 			ret = 1;
 			goto end;
 		}
 	}
-	printf ("PASS: scheduling entities were distributed as expected\n");
-	ret = 0;
+	if (!ret)
+		printf ("PASS: scheduling entities were distributed as expected\n");
 
 end:
-	marcel_attr_destroy (&attr);
+	for (i = 1; i < NB_THREADS; i++) {
+		marcel_attr_destroy (&attrs[i]);
+	}
 	marcel_end ();
 
 	return ret;

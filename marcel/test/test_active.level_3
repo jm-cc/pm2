@@ -17,3 +17,10 @@
 flavor="test_marcel"
 prog="active"
 
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+thread creation
+thread will sleep during 2 seconds...
+thread will work a little bit...
+thread termination
+thread termination catched
+EOF

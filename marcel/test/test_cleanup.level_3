@@ -17,3 +17,25 @@
 flavor="test_marcel_cleanup"
 prog="cleanup"
 
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+Hi boys!
+Hi girls!
+Hi girls!
+Hi boys!
+Hi boys!
+Hi girls!
+Hi girls!
+Hi boys!
+Hi boys!
+Hi girls!
+Hi girls!
+Hi boys!
+Hi boys!
+Hi girls!
+Hi girls!
+Hi boys!
+Hi boys!
+Hi girls!
+Hi girls!
+Hi boys!
+EOF

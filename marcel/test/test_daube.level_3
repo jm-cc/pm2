@@ -16,6 +16,7 @@
 . ./common.sh
 flavor="test_marcel"
 prog="daube"
+args="-notime"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 50 = 1275
 EOF

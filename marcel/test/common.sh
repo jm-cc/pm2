@@ -12,7 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-
+check_all_lines=1
 flavor="<undefined>"
 appdir="${PM2_ROOT}/marcel/examples"
 prog="<undefined>"

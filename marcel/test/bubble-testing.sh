@@ -22,6 +22,7 @@ then
 fi
 
 # Configuration
+check_all_lines=1
 flavor="test_marcel_bubble"
 appdir="${PM2_ROOT}/marcel/examples"
 script="<undefined>"

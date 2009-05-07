@@ -33,6 +33,7 @@ typedef struct {
 } job;
 
 static marcel_attr_t attr;
+static int display_time;
 
 static __inline__ void job_init(job *j, int inf, int sup, int level)
 {
@@ -114,7 +115,7 @@ static void compute(job j) {
   TBX_GET_TICK(t2);
   marcel_printf("Sum from 1 to %d = %d\n", j.sup, j.res);
   temps = TBX_TIMING_DELAY(t1, t2);
-  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  if (display_time) marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 }
 
 int main(int argc, char **argv)
@@ -139,7 +140,14 @@ int main(int argc, char **argv)
   marcel_sem_init(&j.sem, 0);
   j.inf = 1;
   j.level = 0;
-  if(argc > 1) {
+  display_time = 1;
+  if ((argc > 1) && (strncmp(argv[1], "-notime", 7) == 0)) {
+      display_time = 0;
+      argc--;
+      argv++;
+  }
+
+  if (argc > 1) {
     // Execution unique en utilisant l'argument en ligne de commande
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
@@ -164,6 +172,3 @@ int main(int argc, char **argv)
   marcel_end();
   return 0;
 }
-
-
-

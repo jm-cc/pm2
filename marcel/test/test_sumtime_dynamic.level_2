@@ -18,7 +18,7 @@
 . ./common.sh
 flavor="test_marcel_dynamic_smp"
 prog="sumtime"
-args="100"
+args="-notime 100"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 100 = 5050
 EOF

@@ -16,10 +16,9 @@
 [ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 
 . ./common.sh
-check_all_lines=0
 flavor="test_marcel_dynamic"
 prog="sumtime"
-args="100"
+args="-notime 100"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Sum from 1 to 100 = 5050
 EOF

@@ -16,4 +16,4 @@
 . ./common.sh
 flavor="test_marcel"
 prog="prio"
-
+check_all_lines=0

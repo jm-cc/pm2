@@ -19,3 +19,8 @@ flavor="test_marcel_pukabi"
 
 prog="fork+exec"
 ld_preload="libPukABI.so"
+
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+PukABI: preinit.
+PukABI: preinit.
+EOF

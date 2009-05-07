@@ -18,3 +18,28 @@
 flavor="test_marcel_pthread_abi"
 prog="pthread-abi-cond2"
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
+
+sort_output=1
+(
+    echo "broadcast"
+    for c in $(seq 0 9) ; do
+	echo "child $c: done"
+	echo "child $c: lock"
+	echo "child $c: sync"
+	echo "child $c: wait"
+	echo "child $c: woken up"
+    done
+    for c in $(seq 0 9) ; do
+	echo "create thread $c"
+    done
+    echo "done"
+    echo "get lock outselves"
+    for c in $(seq 0 9) ; do
+	echo "join thread $c"
+    done
+    echo "PukABI: preinit."
+    for c in $(seq 0 9) ; do
+	echo "wait for child $c"
+    done
+) > /tmp/pm2test_"${USER}"_expected
+

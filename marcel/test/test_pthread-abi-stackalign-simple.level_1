@@ -28,3 +28,6 @@ prog="pthread-abi-simple"
 # could end up loading two different copies of `libPukABI.so'.
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
 
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+PukABI: preinit.
+EOF

@@ -16,3 +16,8 @@
 flavor="test_marcel_tls"
 prog="keys"
 
+(
+    for k in $(seq 1 122) ; do
+	echo "key_destructor $k"
+    done
+) > /tmp/pm2test_"${USER}"_expected

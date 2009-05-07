@@ -18,3 +18,11 @@
 flavor="test_marcel_pthread_abi"
 prog="pthread-abi-rwlock2"
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
+
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+PukABI: preinit.
+rwlock_init succeeded
+1st rwlock_wrlock succeeded
+rwlock_tryrdlock on rwlock with writer succeeded
+rwlock_trywrlock on rwlock with writer succeeded
+EOF

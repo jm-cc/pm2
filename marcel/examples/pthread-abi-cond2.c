@@ -79,7 +79,7 @@ do_test (void)
   int i;
   int err;
 
-  printf ("&cond = %p\n&mut = %p\n", &cond, &mut);
+  //  printf ("&cond = %p\n&mut = %p\n", &cond, &mut);
 
   if (pthread_barrier_init (&bar, NULL, 2) != 0)
     {

@@ -59,7 +59,7 @@ do_test (void)
   pthread_t th;
   int err;
 
-  printf ("&cond = %p\n&mut = %p\n", &cond, &mut);
+  //  printf ("&cond = %p\n&mut = %p\n", &cond, &mut);
 
   puts ("parent: get mutex");
 

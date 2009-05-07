@@ -52,7 +52,7 @@ main (int argc, char *argv[])
 
   marcel_init (&argc, argv);
 
-  printf ("parent = %i\n", getpid());
+  //  printf ("parent = %i\n", getpid());
 
 #if 0 /* debugging */
   /* The main LWP is not necessarily LWP #0 on VP #0.  */

@@ -278,7 +278,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 
   assert((sending_type != nm_sr_iov_transfer) || (len < NM_SO_PREALLOC_IOV_LEN));
 
-  seq = nm_so_tag_get(&p_gate->tags, tag)->send_seq_number++;
+  seq = p_so_tag->send_seq_number++;
 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->seq    = seq;
@@ -866,7 +866,8 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
       nm_sr_irecv_event_info.missed++;
       const nm_sr_event_info_t info = { 
 	.recv_unexpected.p_gate = event->p_gate,
-	.recv_unexpected.tag = event->tag
+	.recv_unexpected.tag = event->tag,
+	.recv_unexpected.len = event->len
       };
       nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
     }

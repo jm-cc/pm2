@@ -16,6 +16,7 @@
 . ./common.sh
 flavor="test_marcel_cleanup"
 prog="cleanup"
+sort_output=1
 
 (
     echo "Bye bye boys!"

@@ -17,25 +17,13 @@
 flavor="test_marcel_cleanup"
 prog="cleanup"
 
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Hi boys!
-Hi girls!
-Hi girls!
-Hi boys!
-Hi boys!
-Hi girls!
-Hi girls!
-Hi boys!
-Hi boys!
-Hi girls!
-Hi girls!
-Hi boys!
-Hi boys!
-Hi girls!
-Hi girls!
-Hi boys!
-Hi boys!
-Hi girls!
-Hi girls!
-Hi boys!
-EOF
+(
+    echo "Bye bye boys!"
+    echo "Bye bye girls!"
+    for i in $(seq 1 10) ; do
+	echo "Hi boys!"
+    done
+    for i in $(seq 1 10) ; do
+	echo "Hi girls!"
+    done
+) > /tmp/pm2test_"${USER}"_expected <<EOF

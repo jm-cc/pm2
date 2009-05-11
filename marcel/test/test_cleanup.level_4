@@ -15,4 +15,15 @@
 . ./common.sh
 flavor="test_marcel_numa_stats_cleanup"
 prog="cleanup"
+sort_output=1
 
+(
+    echo "Bye bye boys!"
+    echo "Bye bye girls!"
+    for i in $(seq 1 10) ; do
+	echo "Hi boys!"
+    done
+    for i in $(seq 1 10) ; do
+	echo "Hi girls!"
+    done
+) > /tmp/pm2test_"${USER}"_expected <<EOF

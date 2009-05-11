@@ -16,6 +16,7 @@
 flavor="test_marcel_numa_stats"
 prog="smpheavy"
 args="32"
+check_all_lines=0
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Using 32 threads
 EOF

@@ -16,8 +16,9 @@
 flavor="marcel-topology"
 prog="read-topology"
 script="$PM2_ROOT/marcel/examples/test-topologies.sh"
-
-: > /tmp/pm2test_"${USER}"_expected
+sort_output=1
+check_all_lines=0
+echo "12/12 tests passed" > /tmp/pm2test_"${USER}"_expected
 
 # Creation de la flavor
 create_test_flavor() {

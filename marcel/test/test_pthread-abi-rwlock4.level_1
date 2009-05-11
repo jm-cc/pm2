@@ -21,4 +21,8 @@ ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpth
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 PukABI: preinit.
+going to fork now
+child done
+going to fork now
+parent done
 EOF

@@ -15,4 +15,5 @@
 . ./common.sh
 flavor="test_marcel_numa_stats"
 prog="tube"
+check_all_lines=0
 

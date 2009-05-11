@@ -21,4 +21,28 @@ ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpth
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 PukABI: preinit.
+1st timedwrlock done
+1st timedrdlock done
+2nd timedwrlock done
+child calling timedrdlock
+started thread
+1st child timedrdlock done
+2nd child timedrdlock done
+joined thread
+1st timedwrlock done
+1st timedrdlock done
+2nd timedwrlock done
+child calling timedrdlock
+started thread
+1st child timedrdlock done
+2nd child timedrdlock done
+joined thread
+1st timedwrlock done
+1st timedrdlock done
+2nd timedwrlock done
+child calling timedrdlock
+started thread
+1st child timedrdlock done
+2nd child timedrdlock done
+joined thread
 EOF

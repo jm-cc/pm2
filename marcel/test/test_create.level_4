@@ -16,4 +16,4 @@
 flavor="test_marcel_numa_stats"
 prog="create"
 args="100000"
-
+check_all_lines=0

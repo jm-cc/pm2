@@ -15,4 +15,13 @@
 . ./common.sh
 flavor="test_marcel_numa_suspend_stats"
 prog="suspend"
+sort_output=1
+
+(
+    for i in $(seq 1 10) ; do
+	echo "Hi boys!"
+    done
+    echo "I think I managed to suspend this crazy thread..."
+    echo "Well, ok. Let's resume it again!"
+) > /tmp/pm2test_"${USER}"_expected <<EOF
 

@@ -15,4 +15,9 @@
 . ./common.sh
 flavor="test_marcel_numa_stats_jump"
 prog="stack_jump"
+check_all_lines=0
+sort_output=1
+cat > /tmp/pm2test_"${USER}"_expected <<EOF
+Here we are!!
+EOF
 

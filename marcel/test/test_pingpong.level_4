@@ -16,6 +16,5 @@
 flavor="test_marcel_numa_stats"
 prog="pingpong"
 args="100000"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-EOF
+check_all_lines=0
 

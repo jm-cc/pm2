@@ -21,12 +21,6 @@ prog="keys-pthread"
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
 args=""
 hosts="localhost"
-
-(
-    echo "PukABI: preinit."
-    for k in $(seq 1 122) ; do
-	echo "key_destructor $k"
-    done
-) > /tmp/pm2test_"${USER}"_expected
+check_all_lines=0
 
 . ./marcel.sh

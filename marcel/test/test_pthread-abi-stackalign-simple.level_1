@@ -18,6 +18,7 @@
 # Configuration
 flavor="test_marcel_pthread_abi_stackalign"
 prog="pthread-abi-simple"
+check_all_lines=0
 
 # Tell `pm2-test' to preload things in the right order.  Supposedly,
 # PukABI's directory is in libpthread's `RPATH' so the loader should
@@ -27,7 +28,3 @@ prog="pthread-abi-simple"
 # preloaded DSO *and* as a dependency of `libpthread.so', otherwise it
 # could end up loading two different copies of `libPukABI.so'.
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
-
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-PukABI: preinit.
-EOF

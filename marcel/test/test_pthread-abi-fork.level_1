@@ -18,7 +18,4 @@
 flavor="test_marcel_pthread_abi"
 prog="pthread-abi-fork"
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
-
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-PukABI: preinit.
-EOF
+check_all_lines=0

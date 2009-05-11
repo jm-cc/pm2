@@ -18,4 +18,5 @@
 # Configuration
 flavor="test_marcel_pthread_cpp"
 prog="pthread-cpp-initializer"
+check_all_lines=0
 

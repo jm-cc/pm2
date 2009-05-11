@@ -415,12 +415,14 @@ while [ $_l -le $_level ]; do
                     # Affichage
                     _tst_name="`pm2_test_name $_f`"
 
-                    is_test_selected=1
+		    is_test_selected=0
                     if [ -n "$PM2_TESTS" ] ; then
-                        if [ "$(echo $PM2_TESTS|tr ' ' '\012' | grep -e '^'$_tst_name'$')" == "" ] ; then
-                            is_test_selected=0
-                        fi
-                    fi
+			for t in $PM2_TESTS ; do
+			if [ "$(echo $_tst_name | grep $t)" != "" ] ; then
+			    is_test_selected=1
+			fi
+			done
+		    fi
 
                     if [ $is_test_selected == 1 ] ; then
                         echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"

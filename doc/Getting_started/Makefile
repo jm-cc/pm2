@@ -24,7 +24,8 @@ XML_HTML_FILES		+=	$(shell seq 1 $(NB_XML_FILES) | sed 's/\(.*\)/Section\1.html/
 
 RSYNC		:= rsync
 RSYNCOPTIONS	:= -avz
-PUBLISHDIR	:= sync:/web/runtime/pm2-doc
+PUBLISHHOST	:= sync
+PUBLISHDIR	:= $(PUBLISHHOST):/web/runtime/pm2-doc
 
 THISDIR			:=	$(CURDIR)
 

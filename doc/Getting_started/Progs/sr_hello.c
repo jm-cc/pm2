@@ -1,47 +1,52 @@
-#include <nm_so_util.h>
-#include <nm_so_sendrecv_interface.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <nm_public.h>
+#include <nm_launcher.h>
+#include <nm_sendrecv_interface.h>
+#include <pm2_common.h>
 
 const char *msg	= "hello, world!";
 
-int main(int argc, char	**argv) {
-  struct nm_so_interface *sr_if = NULL;
-  nm_so_request s_request, r_request;
-  nm_gate_id_t gate_id;
+int
+main(int	  argc,
+     char	**argv) {
+  char		*buf	= NULL;
+  uint64_t	 len;
+  int            rank;
+  int            peer;
+  nm_core_t      p_core    = NULL;
+  nm_gate_t      gate_id   = NULL;
 
-  uint32_t len = 1 + strlen(msg);
-  int rank;
-  char *buf = NULL;
+  nm_launcher_init(&argc, argv); /* Here */
+  nm_launcher_get_core(&p_core);
+  nm_launcher_get_rank(&rank);
+  peer = 1 - rank;
+  nm_launcher_get_gate(peer, &gate_id); /* Here */
 
-  nm_so_init(&argc, argv);
-  nm_so_get_rank(&rank); /* Here */
-  nm_so_get_sr_if(&sr_if); /* Here */
+  len = 1+strlen(msg);
+  buf = malloc((size_t)len);
 
-  buf = malloc(len*sizeof(char));
-  memset(buf, 0, len);
+  if (rank != 0) {
+    nm_sr_request_t request;
+    /* server
+     */
+    memset(buf, 0, len);
 
-  if (rank == 0) {
-    nm_so_sr_irecv(sr_if, NM_SO_ANY_SRC, 0, buf, len, &r_request); /* Here */
-    nm_so_sr_rwait(sr_if, r_request);
-
-    nm_so_get_gate_out_id(1, &gate_id);    /* Here */
-    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &s_request); /* Here */
-    nm_so_sr_swait(sr_if, s_request);
+    nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request); /* Here */
+    nm_sr_rwait(p_core, &request);
+    printf("buffer contents: <%s>\n", buf);
   }
-  else if (rank == 1) {
+  else {
+    nm_sr_request_t request;
+    /* client
+     */
     strcpy(buf, msg);
 
-    nm_so_get_gate_out_id(0, &gate_id); /* Here */
-    nm_so_sr_isend(sr_if, gate_id, 0, buf, len, &s_request);
-    nm_so_sr_swait(sr_if, s_request);
-
-    nm_so_get_gate_in_id(0, &gate_id); /* Here */
-    nm_so_sr_irecv(sr_if, gate_id, 0, buf, len, &r_request);
-    nm_so_sr_rwait(sr_if, r_request);
-
-    printf("buffer contents: <%s>\n", buf);
+    nm_sr_isend(p_core, gate_id, 0, buf, len, &request); /* Here */
+    nm_sr_swait(p_core, &request);
   }
 
   free(buf);
-  nm_so_exit();
+  common_exit(NULL);
   exit(0);
 }

@@ -1,54 +1,52 @@
-#include <nm_so_util.h>
-#include <nm_so_sendrecv_interface.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <nm_public.h>
+#include <nm_launcher.h>
+#include <nm_pack_interface.h>
+#include <pm2_common.h>
 
 const char *msg	= "hello, world!";
 
-int main(int argc, char	**argv) {
-  struct nm_so_interface *sr_if = NULL;
-  nm_so_request s_request, r_request;
-  nm_gate_id_t gate_id;
-  nm_so_pack_interface    pack_if;
-  struct nm_so_cnx      cnx;
-
-  uint32_t len = 1 + strlen(msg);
-  int rank;
+int main(int argc, char **argv)
+{
   char *buf = NULL;
+  uint64_t len;
+  nm_pack_cnx_t cnx;
+  int            rank;
+  int            peer;
+  nm_core_t      p_core    = NULL;
+  nm_gate_t      gate_id   = NULL;
 
-  nm_so_init(&argc, argv);
-  nm_so_get_rank(&rank);
-  nm_so_get_pack_if(&pack_if);
+  nm_launcher_init(&argc, argv); /* Here */
+  nm_launcher_get_core(&p_core);
+  nm_launcher_get_rank(&rank);
+  peer = 1 - rank;
+  nm_launcher_get_gate(peer, &gate_id); /* Here */
 
-  buf = malloc(len*sizeof(char));
-  memset(buf, 0, len);
+  len = 1+strlen(msg);
+  buf = malloc((size_t)len);
 
-  if (rank == 0) {
-    nm_so_begin_unpacking(pack_if, NM_SO_ANY_SRC, 0, &cnx); /* Here */
-    nm_so_unpack(&cnx, buf, len);
-    nm_so_end_unpacking(&cnx);  /* Here */
+  if (rank != 0) {
+    /* server */
+    memset(buf, 0, len);
 
-    nm_so_get_gate_out_id(1, &gate_id);
-
-    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);  /* Here */
-    nm_so_pack(&cnx, buf, len);
-    nm_so_end_packing(&cnx);  /* Here */
-  }
-  else if (rank == 1) {
-    strcpy(buf, msg);
-
-    nm_so_get_gate_out_id(0, &gate_id);
-    nm_so_begin_packing(pack_if, gate_id, 0, &cnx);
-    nm_so_pack(&cnx, buf, len);
-    nm_so_end_packing(&cnx);
-
-    nm_so_get_gate_in_id(0, &gate_id);
-    nm_so_begin_unpacking(pack_if, gate_id, 0, &cnx);
-    nm_so_unpack(&cnx, buf, len);
-    nm_so_end_unpacking(&cnx);
+    nm_begin_unpacking(p_core, NM_ANY_GATE, 0, &cnx); /* Here */
+    nm_unpack(&cnx, buf, len); /* Here */
+    nm_end_unpacking(&cnx); /* Here */
 
     printf("buffer contents: <%s>\n", buf);
   }
+  else {
+    /* client */
+    strcpy(buf, msg);
+
+    nm_begin_packing(p_core, gate_id, 0, &cnx); /* Here */
+    nm_pack(&cnx, buf, len); /* Here */
+    nm_end_packing(&cnx); /* Here */
+  }
 
   free(buf);
-  nm_so_exit();
+  common_exit(NULL);
   exit(0);
 }

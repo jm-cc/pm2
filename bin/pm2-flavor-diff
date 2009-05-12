@@ -43,7 +43,7 @@ flavor2="$2"
 flavor1_output="`mktemp`"
 flavor2_output="`mktemp`"
 
-trap "rm -f $flavor1 $flavor2"  EXIT
+trap "rm -f $flavor1_output $flavor2_output"  EXIT
 
 if pm2-flavor get --flavor="$flavor1" > "$flavor1_output"
 then
@@ -51,7 +51,6 @@ then
     then
 	canonicalize_flavor_options "$flavor1_output"
 	canonicalize_flavor_options "$flavor2_output"
-	rm -f "$flavor1" "$flavor2"
-	exec diff -uBb "$flavor1_output" "$flavor2_output"
+	diff -uBb "$flavor1_output" "$flavor2_output"
     fi
 fi

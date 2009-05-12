@@ -122,7 +122,6 @@ registering_flavors() {
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
-
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
@@ -196,6 +195,13 @@ registering_flavors() {
 
     register_flavor nmad-mpi \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=tcp \
+        --common=fortran_target_none
+
+    register_flavor nmad-mpi-debug \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $DEBUG_OPTIONS \
 	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \

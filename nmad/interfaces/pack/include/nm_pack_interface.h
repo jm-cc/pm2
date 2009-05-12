@@ -24,6 +24,7 @@
  */
 
 #include <nm_public.h>
+#include <nm_sendrecv_interface.h>
 
 /** Connection storage for the pack interface.
  */

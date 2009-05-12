@@ -953,8 +953,8 @@ minimal NewMadeleine programs. You can compile and execute them.
 </P>
 
 <PROGRAM FILE="./Progs/compileNmad.txt" TITLE="Compiling and executing NewMadeleine applications"/>
-<PROGRAM FILE="./Progs/hello.c" TITLE="NewMadeleine application using the pack/unpack interface" LABEL="prog:nmHello"/>
-<PROGRAM FILE="./Progs/sr_hello.c" TITLE="NewMadeleine application using the send/receive interface" LABEL="prog:nmSrhello"/>
+<PROGRAM FILE="./Progs/gs_pack_hello.c" TITLE="NewMadeleine application using the pack/unpack interface" LABEL="prog:nmHello"/>
+<PROGRAM FILE="./Progs/gs_sr_hello.c" TITLE="NewMadeleine application using the send/receive interface" LABEL="prog:nmSrhello"/>
 
 <SUBSUBSECTION TITLE="Initialisation and termination">
 

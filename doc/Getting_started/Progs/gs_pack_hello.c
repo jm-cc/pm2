@@ -1,0 +1,1 @@
+../../../nmad/examples/getting_started/gs_pack_hello.c

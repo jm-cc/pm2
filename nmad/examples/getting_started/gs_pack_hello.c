@@ -34,11 +34,11 @@ int main(int argc, char **argv)
   nm_core_t      p_core    = NULL;
   nm_gate_t      gate_id   = NULL;
 
-  nm_launcher_init(&argc, argv);
+  nm_launcher_init(&argc, argv); /* Here */
   nm_launcher_get_core(&p_core);
   nm_launcher_get_rank(&rank);
   peer = 1 - rank;
-  nm_launcher_get_gate(peer, &gate_id);
+  nm_launcher_get_gate(peer, &gate_id); /* Here */
 
   len = 1+strlen(msg);
   buf = malloc((size_t)len);
@@ -47,9 +47,9 @@ int main(int argc, char **argv)
     /* server */
     memset(buf, 0, len);
 
-    nm_begin_unpacking(p_core, NM_ANY_GATE, 0, &cnx);
-    nm_unpack(&cnx, buf, len);
-    nm_end_unpacking(&cnx);
+    nm_begin_unpacking(p_core, NM_ANY_GATE, 0, &cnx); /* Here */
+    nm_unpack(&cnx, buf, len); /* Here */
+    nm_end_unpacking(&cnx); /* Here */
 
     printf("buffer contents: <%s>\n", buf);
   }
@@ -57,9 +57,9 @@ int main(int argc, char **argv)
     /* client */
     strcpy(buf, msg);
 
-    nm_begin_packing(p_core, gate_id, 0, &cnx);
-    nm_pack(&cnx, buf, len);
-    nm_end_packing(&cnx);
+    nm_begin_packing(p_core, gate_id, 0, &cnx); /* Here */
+    nm_pack(&cnx, buf, len); /* Here */
+    nm_end_packing(&cnx); /* Here */
   }
 
   free(buf);

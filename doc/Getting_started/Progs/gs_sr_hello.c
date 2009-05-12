@@ -1,0 +1,1 @@
+../../../nmad/examples/getting_started/gs_sr_hello.c

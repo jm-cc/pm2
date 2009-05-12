@@ -17,10 +17,10 @@
 #include <stdlib.h>
 
 #include <marcel.h>
-#include <mm_mami.h>
 
 #if defined(MM_MAMI_ENABLED)
 
+#include <mm_mami.h>
 #define NUM_THREADS 16
 #define TAB_SIZE 1024*1024*64
 #define NB_TIMES 1024*1024

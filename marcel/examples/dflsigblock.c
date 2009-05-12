@@ -18,6 +18,8 @@
 
 #include "marcel.h"
 
+#ifdef MARCEL_SIGNALS_ENABLED
+
 static void handler(int sig) {
   marcel_printf("got signal %d\n", sig);
 }
@@ -53,3 +55,13 @@ int marcel_main(int argc, char *argv[])
   marcel_end();
   return 0;
 }
+#else /* MARCEL_SIGNALS_ENABLED */
+#  warning Marcel signals must be enabled for this program
+int marcel_main(int argc, char *argv[])
+{
+  fprintf(stderr,
+	  "'marcel signals' feature disabled in the flavor\n");
+
+  return 0;
+}
+#endif /* MARCEL_SIGNALS_ENABLED */

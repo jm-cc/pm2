@@ -43,6 +43,7 @@ int main (int argc, char *argv[]) {
   marcel_bubble_t *root_bubble;
   marcel_bubble_sched_t *scheduler;
   ma_atomic_t thread_exit_signal;
+  int ret;
 
   /* A simple topology: 2 nodes, each of which has 2 CPUs, each of which has 4 cores.  */
   static const char topology_description[] = "2 2 4";

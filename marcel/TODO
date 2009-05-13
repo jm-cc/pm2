@@ -61,8 +61,6 @@ l'allocateur hiérarchique.
 
 Signaux: SA_RESETHAND
 
-topology: implémenter un tri topologique pour qu'on n'ait pas à donner les niveaux dans l'ordre.
-
 Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujours ce que l'on considère. Les LWP ne sont que les threads noyaux qui permettent de les implémenter, dans le cas de détournement d'un appel bloquant sur un VP par exemple, le LWP courant est remplacé par un autre LWP.
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()

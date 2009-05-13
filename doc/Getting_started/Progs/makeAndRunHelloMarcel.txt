@@ -1,5 +1,6 @@
 ravel% setenv PM2_FLAVOR marcel
-ravel% make sum
+ravel% cd $PM2_ROOT/marcel/examples
+ravel% make gs_sumtime
 [...]   # Normally, no warning whatsoever!
-ravel% pm2-load sum
+ravel% pm2-load gs_sumtime
 Sum from 1 to 1000 = 500500

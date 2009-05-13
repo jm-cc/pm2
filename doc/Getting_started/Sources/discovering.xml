@@ -237,7 +237,7 @@ Available sending flags are defined as follows:
 </P>
 
 <DL>
-    
+
 <DT><TT>mad_send_SAFER</TT></DT>
 <DD> This flag indicates that PM2 should pack the data
   in a way that further modifications to the corresponding memory area
@@ -269,7 +269,7 @@ The following flags control the reception of user data packets:
 </P>
 
 <DL>
-    
+
 <DT><TT>mad_receive_EXPRESS</TT></DT>
 <DD> This flag forces PM2 to guarantee that the
   corresponding data are immediately available after the the
@@ -277,7 +277,7 @@ The following flags control the reception of user data packets:
   the data is needed to determine the next forthcoming <EM>unpacking</EM>
   calls.  On some network protocols, this functionality may be
   available for free. On some others, it could penalize the latency and
-  the bandwidth. Users should therefore extract data using this behaviour 
+  the bandwidth. Users should therefore extract data using this behaviour
   only when necessary.
 </DD>
 
@@ -353,7 +353,7 @@ Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile
 
 <PROGRAM FILE="./Progs/makeAndRunHelloMarcel.txt"/>
 
-<PROGRAM FILE="./Progs/marcel-hello.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
+<PROGRAM FILE="./Progs/gs_sumtime.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
 
 <SUBSUBSECTION TITLE="The marcel_main function">
 
@@ -489,7 +489,7 @@ may in fact be irrelevant.
 From the user point of view, the <MU/>PM2 program terminates as soon as the
 shell prompts for the next command from the terminal. This corresponds
 to the end of the main node. However, note that some nodes may
-actually keep running after the main node has completed.  
+actually keep running after the main node has completed.
 </P>
 
 <IGNORE>
@@ -584,7 +584,7 @@ to the output of the master node using the <TT>pm2_printf</TT> function. As
 <TT>tprintf</TT>, it is protected against multithreading. Moreover, it sends
 its output as a regular message to node<SPACE/>0, where it is printed out.
 However, the user must be aware that this facility should be used with
-caution, as it uses the common communication subsystem. 
+caution, as it uses the common communication subsystem.
 </P>
 
 <PROGRAM FILE="./Progs/hello2.c" TITLE="Output redirection, Example 2" LABEL="prog:hello2"/>
@@ -682,7 +682,7 @@ It is now time to run the program:
 <P>
 Observe that an image of the program has been started <EM>both</EM> on
 hosts <TT>debussy</TT> and <TT>faure</TT>. In fact, the service function has been
-registered on all 3 nodes, including root node<SPACE/>0.  Yet, only 
+registered on all 3 nodes, including root node<SPACE/>0.  Yet, only
 node<SPACE/>1 has been used as a server for the request of node<SPACE/>0.
 </P>
 
@@ -717,7 +717,7 @@ parameters. In Program <REF LABEL="prog:rpc-params"/>, node<SPACE/>0 invokes a s
 on node<SPACE/>1 with a string as a parameter. The service consists namely in
 printing the string on the standard output.
 </P>
-  
+
 <PROGRAM FILE="./Progs/rpc-params.c" TITLE="Service with a string parameter" LABEL="prog:rpc-params"/>
 
 <P>
@@ -729,7 +729,7 @@ sparse matrices, etc. In one word: In Search of Lost Time, <EM>À
 <EM>Madeleine</EM>, a typically French (delicious) cookie, played a
 central role in the life of <EM>Marcel</EM> Proust...
 </P>
-  
+
 <P>
 On the client side, the parameters of the service are <EM>packed</EM>
 together between the <TT>pm2_rawrpc_begin</TT> and the <TT>pm2_rawrpc_end</TT>
@@ -778,7 +778,7 @@ Let us now run the program.
 The packing/unpacking API of <MU/>PM2 is identical to the Madeleine
 API presented in Section <REF LABEL="sec:mad-pack"/>. The sending and
 receiving flags for <MU/>PM2 are as follows:
-<TT>SEND_SAFER</TT>, <TT>SEND_LATER</TT>, <TT>SEND_CHEAPER</TT>, <TT>RECV_EXPRESS</TT>, <TT>RECV_CHEAPER</TT>. 
+<TT>SEND_SAFER</TT>, <TT>SEND_LATER</TT>, <TT>SEND_CHEAPER</TT>, <TT>RECV_EXPRESS</TT>, <TT>RECV_CHEAPER</TT>.
 </P>
 
 <P>
@@ -814,7 +814,7 @@ demonstrated in Program <REF LABEL="prog:rpc-threads"/>. The service function
 <TT>service</TT> spawns a fresh thread each time it is invoked
 through a RPC request. Then, it immediately returns. The child thread
 is in charge of extracting the message from the network through a series
-of <TT>unpack</TT> calls in the usual way. 
+of <TT>unpack</TT> calls in the usual way.
 </P>
 
 <P>
@@ -843,7 +843,7 @@ problem. Actually, the service handler immediately returns after
 spawning the thread, and then looses any control on its
 progression. Thus, the <TT>pm2_rawrpc_end</TT> routine on the client side
 may return <EM>before</EM> the service thread has even started any
-unpacking whatsoever! 
+unpacking whatsoever!
 </P>
 
 <P>
@@ -1136,7 +1136,7 @@ and can be used to create <EM>heterogeneous networks</EM>. </LI>
 With our simple example, we can build three physical channels:
 </P>
 
-<OL> 
+<OL>
 <LI> a channel build above the Myrinet network. This channel
 encompasses the nodes {<TT>foo0</TT>, <TT>foo1</TT>, <TT>foo2</TT>};
 </LI>

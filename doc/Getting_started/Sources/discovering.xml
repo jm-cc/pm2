@@ -163,8 +163,8 @@ Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile
 <PROGRAM FILE="./Progs/gs_mad_hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
 
 <P>
-Compilation using the Makefile given in Program <REF
-LABEL="prog:Makefile1"/> creates the executable file in the
+You can also choose to do the compilation by using the Makefile given
+in Program <REF LABEL="prog:Makefile1"/>. It will create the executable file in the
 appropriate PM2 build directory, e.g
 <TT>${PM2_BUILD_DIR}/${PM2_ASM}/${PM2_FLAVOR}/examples/bin</TT>. When needed, the
 program will be located using the utility <TT>pm2-which</TT>.

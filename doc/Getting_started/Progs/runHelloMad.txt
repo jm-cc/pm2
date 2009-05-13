@@ -3,7 +3,7 @@ The current PM2 configuration contains 2 host(s) :
 0 : ravel
 1 : debussy
 
-ravel% pm2-load hello
+ravel% pm2-load gs_mad_hello
 ##### ravel
 ##### debussy
-Hello World from ravel
+success

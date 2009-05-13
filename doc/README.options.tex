@@ -1,0 +1,72 @@
+\documentclass[11pt, a4paper ,twoside]{article}
+\usepackage{epstopdf}
+\usepackage{natbib}
+\usepackage{epstopdf}
+\usepackage[utf8]{inputenc}
+\usepackage{a4wide}
+\usepackage{rotating}
+\usepackage{multicol}
+\usepackage{afterpage}
+\usepackage{color}
+\usepackage{array}
+\usepackage{floatflt}
+\usepackage[colorlinks=true, linkcolor=blue, bookmarks=true, citecolor=blue, pagebackref]{hyperref}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{1}
+\usepackage[french]{minitoc}
+\setcounter{parttocdepth}{2}
+\usepackage{amsmath}
+
+\usepackage[final]{pdfpages}
+\usepackage{amssymb}
+\usepackage[english, french]{babel}
+\pagestyle{plain}
+
+\begin{document}
+There are two kinds of options for each module:
+\begin{itemize}
+\item inclusive (check boxes),
+\item exclusives (radio boxes), only one choice per section.
+\end{itemize}
+
+For each of these options, there can be a text box that allows to
+specify a value for that option, and even provide a default value.
+The only condition for this is to append ``:'' to the name of that
+option.
+
+There is for instance: \verb|--marcel-stacksize:64| (64 being the
+default value).
+
+The following files are needed in \verb|module-name/config/options| to
+define an option:
+\begin{enumerate}
+\item \verb|nnnoption-name:.sh|
+\item \verb|nnnoption-name:.help| (to provide help on the option)
+\item \verb|nnnoption-name:.dep| (for eventual dependencies)
+\item \verb|nnnoption-name:.dft| (to specify a default value)
+\end{enumerate}
+
+\verb+nnn+ is the number of the option and is used for sorting them. It
+should start with a 0 for inclusive options, and 1 for exclusive
+options.
+
+After adding/supressing/modifying options, \verb+pm2-recreate-links+ has
+to be called to take them into account.
+
+To configure flavors, either use \verb+ezflavor+, \verb+make config+, or
+use the following commands:
+\begin{itemize}
+\item \verb|pm2-flavor get --flavor=flavor-name| : Shows the
+flavor.
+\item \verb|pm2-flavor list| : Give the list of flavors.
+\item \verb|pm2-flavor set --flavor=flavor-name| : Reset the whole
+flavor.
+\item \verb|pm2-flavor set --flavor=flavor-name `cat FILE`| : Set
+flavor options from a file.
+\item \verb|xargs pm2-flavor set --flavor=flavor-name < FILE| : Other
+way to achieve the same.
+\item \verb|pm2-create-sample-flavor flavor-name| : Generate one of the
+sample flavors.
+\end{itemize}
+\end{document}

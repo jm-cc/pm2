@@ -105,6 +105,7 @@ WindowsNT/IA32.
 </P>
 </SUBSUBSECTION>
 
+<IGNORE>
 <SUBSUBSECTION TITLE="MPICH-Madeleine">
 <P>
 MPICH-Madeleine is an implementation of the MPI (Message Passing
@@ -120,6 +121,7 @@ To have more information about MPICH-Madeleine, please consult the
 following URL: <URL>http://runtime.bordeaux.inria.fr/mpi/</URL>.
 </P>
 </SUBSUBSECTION>
+</IGNORE>
 
 <SUBSUBSECTION TITLE="NewMadeleine">
 <P>

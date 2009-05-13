@@ -160,7 +160,7 @@ Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile
 
 <PROGRAM FILE="./Progs/makeHelloMad.txt"/>
 
-<PROGRAM FILE="./Progs/mad-hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
+<PROGRAM FILE="./Progs/gs_mad_hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
 
 <P>
 Compilation using the Makefile given in Program <REF

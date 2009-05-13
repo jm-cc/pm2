@@ -1,0 +1,36 @@
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+script="<undefined>"
+flavor="test_mad3"
+appdir="${PM2_ROOT}/mad3/examples"
+prog="gs_mad_hello"
+args="-w --x --p --l"
+hosts=${TESTCONFIG:-"localhost localhost"}
+net=${TESTNET:-tcp}
+echo "success" > /tmp/pm2test_"${USER}"_expected
+
+# Creation de la flavor
+create_test_flavor() {
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--ext=\"\" \
+	--modules=\"init mad3 ntbx tbx\" \
+	--init=\"debug gdb\" \
+	--mad3=\"debug gdb ${net}\" \
+	--ntbx=\"debug gdb\" \
+	--tbx=\"debug gdb\" \
+	--common=\"debug gdb\" \
+	--all=\"build_static\"
+}

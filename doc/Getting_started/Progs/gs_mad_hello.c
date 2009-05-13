@@ -1,0 +1,1 @@
+../../../mad3/examples/gs_mad_hello.c

@@ -19,10 +19,17 @@ prog="cleanup"
 sort_output=1
 
 (
+    echo "Bye bye all!"
     echo "Bye bye boys!"
-    echo "Bye bye girls!"
+    echo "Bye bye everybody!"
     for i in $(seq 1 10) ; do
+	echo "Hi all!"
+    done
+    for i in $(seq 1 3) ; do
 	echo "Hi boys!"
+    done
+    for i in $(seq 1 5) ; do
+	echo "Hi everybody!"
     done
     for i in $(seq 1 10) ; do
 	echo "Hi girls!"

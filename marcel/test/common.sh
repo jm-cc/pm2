@@ -171,7 +171,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"marcel_main\" \
+		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -253,7 +253,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

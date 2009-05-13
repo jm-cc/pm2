@@ -20,9 +20,10 @@
 
 #ifdef MARCEL_CLEANUP_ENABLED
 #define STACK_SIZE	10000
+#define DELAY 50
 
 static
-char *mess[2] = { "boys", "girls" };
+const char *mess[] = { "boys", "girls", "everybody", "all" };
 
 static
 void bye(any_t arg)
@@ -32,22 +33,29 @@ void bye(any_t arg)
 
 static
 any_t writer(any_t arg)
-{ int i;
+{
+   int n = (intptr_t) arg;
+   const char *message = mess[n];
+   int i;
 
-   marcel_cleanup_push(bye, arg);
+
+   marcel_cleanup_push(bye, (any_t) message);
 
    for(i=0;i<10;i++) {
-      tfprintf(stderr, "Hi %s!\n", (char*) arg);
-      marcel_delay(50);
+      if (n == 2 && i == 5)
+        marcel_exit(NULL);
+      marcel_delay(DELAY);
+      tfprintf(stderr, "Hi %s!\n", message);
    }
-   marcel_cleanup_pop(0);
+   marcel_cleanup_pop(n == 3);
    return (any_t)NULL;
 }
 
 int marcel_main(int argc, char *argv[])
-{ any_t status;
-  marcel_t writer1_pid, writer2_pid;
-  marcel_attr_t writer_attr;
+{
+   any_t status;
+   marcel_t writer1_pid, writer2_pid, writer3_pid, writer4_pid;
+   marcel_attr_t writer_attr;
 
    marcel_init(&argc, argv);
 
@@ -55,11 +63,18 @@ int marcel_main(int argc, char *argv[])
 
    marcel_attr_setstacksize(&writer_attr, STACK_SIZE);
 
-   marcel_create(&writer2_pid, &writer_attr, writer, (any_t)mess[0]);
-   marcel_create(&writer1_pid, &writer_attr, writer,  (any_t)mess[1]);
+   marcel_create(&writer1_pid, &writer_attr, writer, (any_t)(uintptr_t)0);
+   marcel_create(&writer2_pid, &writer_attr, writer, (any_t)(uintptr_t)1);
+   marcel_create(&writer3_pid, &writer_attr, writer, (any_t)(uintptr_t)2);
+   marcel_create(&writer4_pid, &writer_attr, writer, (any_t)(uintptr_t)3);
+
+   marcel_delay(3*DELAY + DELAY/2);
+   marcel_cancel(writer1_pid);
 
    marcel_join(writer1_pid, &status);
    marcel_join(writer2_pid, &status);
+   marcel_join(writer3_pid, &status);
+   marcel_join(writer4_pid, &status);
 
    marcel_end();
    return 0;

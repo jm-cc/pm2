@@ -163,7 +163,7 @@ struct __marcel_attr_s {
 
 #define MARCEL_ATTR_INITIALIZER { \
   .__schedparam= {MA_DEF_PRIO,}, \
-  .__schedpolicy= SCHED_OTHER, \
+  .__schedpolicy= MARCEL_SCHED_OTHER, \
   .__flags = 0, \
   .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr= NULL, \

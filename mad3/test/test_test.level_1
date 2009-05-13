@@ -13,16 +13,8 @@
 # General Public License for more details.
 
 
-compile_leonie()
-{
-	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
-}
-
-# Verification et compilation du lanceur leonie
-#leonie --help > /dev/null 2>&1 || compile_leonie
-compile_leonie
-
 # Configuration
+script="<undefined>"
 flavor="test_mad3"
 appdir="${PM2_ROOT}/mad3/examples"
 prog="mad_test"
@@ -36,13 +28,15 @@ do
 done
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
- --ext=\"\" \
- --modules=\"init mad3 ntbx tbx\" \
- --init=\"debug gdb\" \
- --mad3=\"debug gdb ${net}\" \
- --ntbx=\"debug gdb\" \
- --tbx=\"debug gdb\" \
- --common=\"debug gdb\" \
- --all=\"build_static\"
+create_test_flavor() {
+    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	--ext=\"\" \
+	--modules=\"init mad3 ntbx tbx\" \
+	--init=\"debug gdb\" \
+	--mad3=\"debug gdb ${net}\" \
+	--ntbx=\"debug gdb\" \
+	--tbx=\"debug gdb\" \
+	--common=\"debug gdb\" \
+	--all=\"build_static\"
+}
 

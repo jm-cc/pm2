@@ -20,12 +20,6 @@ components: Marcel and Madeleine. we briefly review the currently
 supported architectures and systems.
 </P>
 
-<NOTE>
-  <EM>
-  Luc: There should be something alike for Madeleine. <TT>${PM2_ROOT}/INTERFACES</TT>?
-  </EM>
-</NOTE>
-
 <SUBSUBSECTION TITLE="Multithreading: Marcel">
 
 <P>
@@ -137,10 +131,9 @@ from <URL>http://subversion.tigris.org/</URL>.
 <LI>
 <P>
 To become a member of the project <TT>pm2</TT>. For this, you first
-need to get an account to the gForge server. You can then become a
-member of the project by contacting one of the project administrators.
-The list of the project administrators is available from the main
-project page.
+need to get an account to the gForge server. You can then send a
+request to join the <TT>pm2</TT> project
+(<URL>https://gforge.inria.fr/project/request.php?group_id=30</URL>).
 </P>
 <P>
 You can also choose to check out the project's SVN repository through
@@ -197,17 +190,18 @@ Once extracted, the PM2 distribution should be available under the
 <DT><TT>doc</TT> </DT>         <DD>Documentation files</DD>
 <DT><TT>ezflavor</TT> </DT>    <DD>Flavor configuration graphic interface</DD>
 <DT><TT>generic</TT> </DT>     <DD>Common configuration options</DD>
+<DT><TT>init</TT> </DT>        <DD></DD>
 <DT><TT>leonie</TT> </DT>      <DD>Bootstrap code for PM2 applications</DD>
 <DT><TT>leoparse</TT> </DT>    <DD>Parser for PM2 configuration files</DD>
-<DT><TT>lib</TT> </DT>         <DD>External libraries used by PM2</DD>
 <DT><TT>mad3</TT> </DT>        <DD>Communication subsystem (obsolete version)</DD>
-<DT><TT>nmad</TT> </DT>        <DD>Communication subsystem (current version)</DD>
 <DT><TT>make</TT> </DT>        <DD>PM2 makefile system</DD>
 <DT><TT>marcel</TT> </DT>      <DD>Multithreading subsystem</DD>
+<DT><TT>memory</TT> </DT>      <DD>Memory management system</DD>
 <DT><TT>modules</TT> </DT>     <DD>Link to all the PM2 modules</DD>
+<DT><TT>nmad</TT> </DT>        <DD>Communication subsystem (current version)</DD>
 <DT><TT>ntbx</TT> </DT>        <DD>Generic network management utility toolbox</DD>
-<DT><TT>pm2</TT> </DT>         <DD>PM2 <EM>en personne</EM>! </DD>
 <DT><TT>pioman</TT> </DT>      <DD>Generic I/O manager</DD>
+<DT><TT>pm2</TT> </DT>         <DD>PM2 <EM>en personne</EM>! </DD>
 <DT><TT>profile</TT> </DT>     <DD>PM2 profiling utilities</DD>
 <DT><TT>puk</TT></DT>          <DD>Padico micro-kernel</DD>
 <DT><TT>stackalign</TT> </DT>  <DD>Stack initialization for Marcel</DD>
@@ -320,9 +314,9 @@ turned off for performance.
 <PROGRAM FILE="./Progs/makeInit.txt"/>
 
 <P>
-This checks the whole source hierarchy for consistency extracting the
+This checks the whole source hierarchy for consistency, and extracts the
 option sets for each PM2 module if necessary. It then creates
-the various flavors. You can list them by
+the various flavors. You can list them by calling
 </P>
 
 <PROGRAM FILE="./Progs/flavorList.txt"/>
@@ -356,18 +350,6 @@ operating system/processor pair.
 Configuring flavors is done through a set of external utilities to be
 introduced later. We strongly discourage you to edit the flavor files
 by hand.
-</P>
-
-<P>
-The only interesting setting at this time is the underlying network
-protocol selection, for which the auto-detection by the
-Madeleine<SPACE/>III communication library is not recommended.  By
-default, the network protocol is set to TCP in the flavors, which
-should fit your needs at least for the first runs.
-
-<IGNORE>
-<PROGRAM FILE="./Progs/setPm2Flavor.txt"/>
-</IGNORE>
 </P>
 
 <P>
@@ -459,8 +441,7 @@ Before executing a PM2 application, it is needed to specify the list
 of host names on which the application is going to run. For this,
 use the <TT>pm2-conf</TT> command. Here I want to use my local machine
 called <TT>ravel</TT>, and two neighboring ones called
-<TT>debussy</TT> and <TT>faure</TT> (well, this should actually read
-<EM>Fauré</EM>!).
+<TT>debussy</TT> and <TT>faure</TT>.
 </P>
 
 <PROGRAM FILE="./Progs/pm2conf.txt"/>

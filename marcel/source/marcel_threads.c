@@ -604,6 +604,9 @@ static void marcel_exit_internal(any_t val)
 		return;
 	}
 
+	/* We may have been canceled during a sleep.  */
+	ma_del_timer_sync(&SELF_GETMEM(schedule_timeout_timer));
+
 	/* atexit and cleanup functions are called on the thread's stack.
 	 * postexit functions are called outside the thread (either postexit or
 	 * joiner), without stack when it is dynamic */

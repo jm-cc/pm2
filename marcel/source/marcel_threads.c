@@ -982,6 +982,12 @@ void marcel_resume(marcel_t pid)
 #define __NO_WEAK_PTHREAD_ALIASES
 #ifdef MA__LIBPTHREAD
 #include <bits/libc-lock.h>
+/* TODO: For the next 2 declarations, using AC_CHECK_DECL is prefered */
+/*       (as soon as we switch to autoconf)                           */
+extern void _pthread_cleanup_pop (struct _pthread_cleanup_buffer *buffer,
+				  int execute);
+extern void _pthread_cleanup_push (struct _pthread_cleanup_buffer *buffer,
+				   void (*routine) (void *), void *arg);
 #endif
 #undef NAME_PREFIX
 #define NAME_PREFIX _

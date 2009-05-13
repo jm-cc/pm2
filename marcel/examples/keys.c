@@ -37,7 +37,8 @@ key_destructor (void *arg)
 
   number = (uintptr_t) arg;
   assert (number < THREADS);
-  printf ("%s %u\n", __func__, number);
+  marcel_fprintf(stderr, "%s %u\n", __func__, number);
+  marcel_fflush(stderr);
   key_destroyed[number] = 1;
 }
 

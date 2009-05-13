@@ -13,21 +13,6 @@
 
 export FLAVOR_DEFAULT:=mad3
 
-PROGS :=			\
-mad_mini			\
-mad_ping			\
-mad_multi_ping			\
-mad_test			\
-mad_sumping			\
-mad_control			\
-mad_random_test			\
-mad_mux_example			\
-mad_micro			\
-mad_unreliable			\
-mad_reliability_test		\
-mad_random 			\
-mad_list_ping			\
-mad_bench_ping			\
-mad_micro_direct
+MOD_SRC += $(PM2_ROOT)/mad3/examples
 
 include $(PM2_ROOT)/make/apps.mak

@@ -501,7 +501,7 @@ while [ $_l -le $_level ]; do
 
 		    is_test_selected=0
                     if [ -z "$PM2_TESTS" ] ; then
-			is_test_selected=0
+			is_test_selected=1
 		    else
 			for t in $PM2_TESTS ; do
 			if [ "$(echo $_tst_name | grep $t)" != "" ] ; then

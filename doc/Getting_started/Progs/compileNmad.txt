@@ -1,25 +1,26 @@
 ravel% setenv PM2_FLAVOR nmad-mpi
-ravel% make hello
+ravel% cd $PM2_ROOT/nmad/examples/getting_started
+ravel% make gs_pack_hello
 ...
 <<< Generating libraries: done
-    building hello.o
-    linking hello
+    building gs_pack_hello.o
+    linking gs_pack_hello
 ravel% pm2-conf ravel debussy
 The current PM2 configuration contains 2 host(s) :
 0 : ravel
 1 : debussy
-ravel% pm2-load hello
+ravel% pm2-load gs_pack_hello
 ##### ravel
 ##### debussy
 buffer contents: <hello, world!>
 ravel%
 ravel%
-ravel% make sr_hello
+ravel% make gs_sr_hello
 ...
 <<< Generating libraries: done
-    building sr_hello.o
-    linking sr_hello
-ravel% pm2-load sr_hello
+    building gs_sr_hello.o
+    linking gs_sr_hello
+ravel% pm2-load gs_sr_hello
 ##### ravel
 ##### debussy
 buffer contents: <hello, world!>

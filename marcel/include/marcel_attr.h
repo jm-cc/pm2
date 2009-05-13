@@ -21,6 +21,7 @@
  */
 #section types
 #include <sys/types.h> /* pour size_t */
+#include <sched.h>     /* define SCHED_OTHER */
 typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
 #section structures
@@ -163,7 +164,7 @@ struct __marcel_attr_s {
 
 #define MARCEL_ATTR_INITIALIZER { \
   .__schedparam= {MA_DEF_PRIO,}, \
-  .__schedpolicy= MARCEL_SCHED_OTHER, \
+  .__schedpolicy= SCHED_OTHER, \
   .__flags = 0, \
   .__guardsize= MARCEL_STACKSGUARD, \
   .__stackaddr= NULL, \

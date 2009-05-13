@@ -49,6 +49,8 @@ int marcel_gettid(void) {
 
 // XXX: for getting rid of u32/__user of debian sarge's futex.h
 #define sys_futex(...) sys_futex()
+#define do_futex(...) do_futex()
+#define handle_futex_death(...) handle_futex_death()
 #include <linux/futex.h>
 #ifndef FUTEX_WAIT_PRIVATE
 #define FUTEX_WAIT_PRIVATE FUTEX_WAIT

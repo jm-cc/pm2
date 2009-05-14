@@ -371,7 +371,7 @@ pm2_config_set_vars()
     _PM2_CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS}"
     for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
-	[ "$_LIB" != APPLI ] && [ "$_LIB" != COMMON ] && [ "$_LIB" != INIT ] && eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
+	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"
 	# répertoire de génération AVANT
 	eval _geninc='$'PM2_${_LIB}_GENERATE_INCLUDE
 	if [ "$_geninc" = true ]; then

@@ -24,6 +24,9 @@
 \pagestyle{plain}
 
 \begin{document}
+
+\section{Introduction}
+
 There are two kinds of options for each module:
 \begin{itemize}
 \item inclusive (check boxes),
@@ -38,21 +41,138 @@ option.
 There is for instance: \verb|--marcel-stacksize:64| (64 being the
 default value).
 
-The following files are needed in \verb|module-name/config/options| to
+The following files should be put in \verb|module-name/config/options| to
 define an option:
 \begin{enumerate}
-\item \verb|nnnoption-name:.sh|
-\item \verb|nnnoption-name:.help| (to provide help on the option)
-\item \verb|nnnoption-name:.dep| (for eventual dependencies)
-\item \verb|nnnoption-name:.dft| (to specify a default value)
+\item \verb|nnnoption-name:.sh| action of the option
+\item \verb|nnnoption-name:.help| provides help on the option
+\item \verb|nnnoption-name:.dep| specifies eventual dependencies
+\item \verb|nnnoption-name:.dft| specifies a default value
 \end{enumerate}
 
 \verb+nnn+ is the number of the option and is used for sorting them. It
 should start with a 0 for inclusive options, and 1 for exclusive
 options.
 
+Help files just contain the text that should be disabled \emph{e.g.} in
+popups in \verb+ezflavor+.
+
 After adding/supressing/modifying options, \verb+pm2-recreate-links+ has
 to be called to take them into account.
+
+\section{Actions}
+
+A flavor is just a concatenation of all the \verb+.sh+ files of all the
+options that have been selected.  These are shell script snippets that
+can do anything they need.  Their eventual effect is to modify some
+environment variables.  In the lists below, \verb+${MOD}+ is the module
+name in capital letters.  The \verb+appli+ module corresponds to 
+the application itself.
+
+Read-only variables
+\begin{itemize}
+\item \verb+PM2_ARCH+ is set to the target architecture. See
+\verb+bin/pm2-arch+ for a list.
+\item \verb+PM2_SYS+ is set to the target architecture. See
+\verb+bin/pm2-sys+ for a list.
+\end{itemize}
+
+\begin{itemize}
+\item \verb+PM2_${MOD}_BUILD_DYNAMIC+ is set to \verb+yes+ by the
+\verb+build_dynamic+ option to request compiling the module as a shared
+library.
+\item \verb+PM2_${MOD}_BUILD_STATIC+ is set to \verb+yes+ by the
+\verb+build_dynamic+ option to request compiling the module as a static
+library.
+\item \verb+PM2_${MOD}_CFLAGS+ contains the C flags that will be used
+while compiling all modules.
+\item \verb+PM2_${MOD}_CFLAGS_KERNEL+ contains the C flags that will be
+used while compiling module \verb+${MOD}+.
+\item \verb+PM2_${MOD}_LD_PATH+ contains \verb+-L+ options that will be
+passed to the linker when linking a shared version of the module, or
+when statically linking the module into an application.
+\item \verb+PM2_${MOD}_LIBS+ contains \verb+-l+ options that will be
+passed to the linker when linking a shared version of the module, or
+when statically linking the module into an application.
+\item \verb+PM2_${MOD}_EARLY_LDFLAGS+ contains linker flags that will be
+passed before objects.
+\item \verb+PM2_${MOD}_EARLY_LDFLAGS_KERNEL+ contains linker flags that
+will be passed before objects, but only when linking the module itself.
+\item \verb+PM2_${MOD}_DYN_LIBS_DIR+ contains a list of directories
+which will be added to \verb+LD_LIBRARY_PATH+ by \verb+pm2-load+.
+\item \verb+PM2_${MOD}_MAKEFILE+ contains text that will be pasted as is
+in the module's \verb+Makefile+.
+\item \verb+PM2_${MOD}_LIBNAME+ overrides the name of the produced
+library (which is the name of the module by default).
+\item \verb+PM2_${MOD}_LINK_OTHERS+ should be set to \verb+yes+ if the
+module needs to be linked against all other modules, so that the
+module's shared library will pull all the others at runtime.  This is
+notably needed when building ABI-compatibility libraries like
+\verb+libpthread.so+.
+\item \verb+PM2_COMMON_PM2_SHLIBS+ contains the list of modules that are
+compiled as shared libraries.
+\item \verb+PM2_COMMON_FORTRAN_TARGET+ specifies which fortran compiler
+should be used, if any.
+\item \verb+PM2_CC+ specifics which C compiler should be used.
+\item \verb+PM2_PROTOCOLS+ contains the list of Madeleine protocols that
+will be available.
+\item \verb+PM2_NMAD_DRIVERS+ contains the list of Madeleine drivers.
+\item \verb+PM2_NMAD_INTERFACES+ contains the list of Madeleine
+interfaces.
+\item \verb+PM2_NMAD_LAUNCHER+ specifies which launder Madeleine should
+use.
+\item \verb+PM2_NMAD_STRATEGIES+ contains the list of Madeleine
+strategies.
+\item \verb+PM2_NMAD_STRAT+ specifies which Madeleine strategy should
+be used.
+\item \verb+PM2_LOADER+ specifies which loader should be run by
+\verb+pm2-load+.
+\end{itemize}
+
+The following variables don't seem to have effect any more.
+\begin{itemize}
+\item \verb+PM2_${MOD}_MODULE_DEPEND_LIB+ was probably used for
+inter-module dependencies.
+\end{itemize}
+
+The following functions are provided (see \verb+bin/pm2-config-tools.sh+).
+\begin{itemize}
+\item \verb+included_in what where+ looks for the word \verb+what+ in
+the string \verb+where+.
+\item \verb+not_included_in+ does the contrary.
+\item \verb+defined_in what where+ looks for the word \verb+-Dwhat+ in
+the string \verb+where+.
+\item \verb+not_defined_in+ does the contrary.
+\end{itemize}
+
+
+\section{Dependencies}
+
+Some options require that others be set.  For instance, module debug
+support depends on the debug part of TBX.  This is expressed in
+the \verb+.dep+ files: \verb+tbx/config/options/00debug.dep+ has a
+\verb+Provide: TBX_debug+ line, and \verb+*/config/options/00debug.dep+
+contain a \verb+Depend: TBX_debug+ line. The name of the dependency,
+\verb+TBX_debug+, but should be prefixed by the name of the module that
+provides it. Conflicts can also be expressed by putting a
+\verb+Conflict:+ line in the \verb+.dep+ file. The special case of
+depending on a module itself is handled by just using
+\verb+Depend: name+.
+
+\section{Generic options}
+
+A few options are common to all modules: debugging flags, linking
+options, etc. \verb+generic/config/options+ contains templates for
+these.  Modifications thus need to be done there, and
+\verb+make duplique_global+ run from there to propagate the modification
+to all modules.
+
+\section{Common options}
+
+A few options are not specific to any modules, they live in
+\verb+common/config/options+.
+
+\section{Handling flavors}
 
 To configure flavors, either use \verb+ezflavor+, \verb+make config+, or
 use the following commands:

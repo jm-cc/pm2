@@ -392,191 +392,140 @@ fi
 
 _to_test="$_prefix $_suffix"
 
-rm -rf /tmp/tests_${USER}_database/
-mkdir /tmp/tests_${USER}_database/
-_l=$_init_level
 failures=""
+_l=$_init_level
 while [ $_l -le $_level ]; do
-
-    echo "*** Initialising level $_l tests ***"
-    rm -f /tmp/tests_${USER}_database/*.dat
-
-    for _m in $_to_test ; do
-
-	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
-
-	    cd ${PM2_ROOT}/modules/$_m/test
-            shopt -u nullglob
-	    _tests=`ls test_*.level_$_l 2> /dev/null`
-	    if [ -n "$_tests" ]; then
-
-		for _f in $_tests ; do
-
-                    # Affichage
-                    _tst_name="`pm2_test_name $_f`"
-
-		    is_test_selected=0
-                    if [ -z "$PM2_TESTS" ] ; then
-			is_test_selected=1
-		    else
-			for t in $PM2_TESTS ; do
-			if [ "$(echo $_tst_name | grep $t)" != "" ] ; then
-			    is_test_selected=1
-			fi
-			done
-		    fi
-
-                    if [ $is_test_selected == 1 ] ; then
-                        echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
-
-			alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
-
-		        # Source
-			unset ld_preload
-                        . ./$_f
-			echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`' = \`$ld_preload'" | pm2_debug
-			eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
-
-			# If the flavor doesn't exist or is older than the test,
-                        # force its regeneration. Ideally we should also depend
-                        # on the options' .sh files.
-			flavor_file=`pm2-flavor-file -f $flavor`
-			if [ ! -r "$flavor_file" ] || [ "$_f" -nt "$flavor_file" ] ; then
-			    rm -f "$flavor_file"
-			    create_test_flavor | sed -e 's/^/..../'
-			fi
-
-			appdir2=$(echo $appdir | tr '/' ':')
-			echo $prog >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
-                    fi
-
-                done
-
-	    fi
-	fi
-    done
-
-    echo "*** Compiling level $_l tests ***"
-
-    shopt -s nullglob
-    for f in /tmp/tests_${USER}_database/*.dat ; do
-	d_filename=$(basename $f .dat)
-	d_flavor=$(echo $d_filename | awk -F'.' '{print $1}')
-	d_appdir=$(echo $d_filename | awk -F'.' '{print $2}' | tr ':' '/')
-
-	CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
-	file_status="/tmp/pm2test_${USER}_status"
-
-	echo "Compiling flavor \"$d_flavor\"..."
-	(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
-
-	d_progs=`cat $f | tr '\012' ' '`
-	if [ `cat $file_status` -eq 0 ] ; then
-	    echo "Compiling applications \"$d_progs\" for flavor \"$d_flavor\"..."
-	    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $d_appdir $d_progs; echo "$?" > $file_status) | sed -e 's/^/..../'
-	    [ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation of the applications failed"
-	else
-	    pm2_test_warning "Compilation of the library failed. Applications \"$d_progs\" cannot be compiled"
-	fi
-    done
-
-    echo "*** Performing level $_l tests ***"
-
     failures_per_level=""
+
     for _m in $_to_test ; do
+	echo "*** Testing module $_m ***"
+	failures_per_module=""
 
-	if [ -d ${PM2_ROOT}/modules/$_m/test ]; then
+        shopt -u nullglob
+	cd ${PM2_ROOT}/modules/$_m/test
+	_tests=`ls test_*.level_$_l 2> /dev/null`
+	if [ -n "$_tests" ]; then
+	    echo "*** Initialising level $_l tests for module $_m ***"
+	    rm -rf /tmp/tests_${USER}_database/
+	    mkdir /tmp/tests_${USER}_database/
 
-	    cd ${PM2_ROOT}/modules/$_m/test
-            shopt -u nullglob
-	    _tests=`ls test_*.level_$_l 2> /dev/null`
-	    if [ -n "$_tests" ]; then
+	    for _f in $_tests ; do
+                # Affichage
+                _tst_name="`pm2_test_name $_f`"
 
-		failures_per_module=""
-
-		for _f in $_tests ; do
-
-                    # Affichage
-                    _tst_name="`pm2_test_name $_f`"
-
-		    is_test_selected=0
-                    if [ -z "$PM2_TESTS" ] ; then
-			is_test_selected=1
-		    else
-			for t in $PM2_TESTS ; do
+		is_test_selected=0
+                if [ -z "$PM2_TESTS" ] ; then
+		    is_test_selected=1
+		else
+		    for t in $PM2_TESTS ; do
 			if [ "$(echo $_tst_name | grep $t)" != "" ] ; then
 			    is_test_selected=1
 			fi
-			done
+		    done
+		fi
+
+                if [ $is_test_selected == 1 ] ; then
+                    echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
+
+		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
+
+		    # Source
+		    unset ld_preload
+                    . ./$_f
+		    echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`' = \`$ld_preload'" | pm2_debug
+		    eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
+
+		    # If the flavor doesn't exist or is older than the test,
+                    # force its regeneration. Ideally we should also depend
+                    # on the options' .sh files.
+		    flavor_file=`pm2-flavor-file -f $flavor`
+		    if [ ! -r "$flavor_file" ] || [ "$_f" -nt "$flavor_file" ] ; then
+			rm -f "$flavor_file"
+			create_test_flavor | sed -e 's/^/..../'
 		    fi
 
-                    if [ $is_test_selected == 1 ] ; then
-                        echo "Level [$_l], module [$_m], Test [$_tst_name]"
+		    appdir2=$(echo $appdir | tr '/' ':')
+		    echo $prog $_f >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
+		    echo $_f >> /tmp/tests_${USER}_database/${flavor}.flavor
+                fi
+            done
 
-                        # by default, do not sort the output
-                        sort_output=0
+	    echo "*** Compiling flavor for level $_l tests ***"
+	    shopt -s nullglob
+	    for f in /tmp/tests_${USER}_database/*.flavor ; do
+		d_flavor=$(basename $f .flavor)
 
-			alias pm2_skip_test='{ echo "Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
+		CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
+		file_status="/tmp/pm2test_${USER}_status"
 
-		        # Source
-                        . ./$_f
+		echo "Compiling flavor <$d_flavor>..."
+		(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
 
-		        # Execution et verification des resultats
-                        if eval do_the_test "$_f" $_output_redirect; then
-				echo "   [$_tst_name] did succeed."
-			else
-				echo "   [$_tst_name] did fail."
-			fi
-
-                    fi
-
-                done
-
-		if [ -z "$failures_per_module" ] ; then
-		    echo ">>> Level [$_l] tests for module [$_m] did succeed!"
-		else
-		    echo ">>> Some of the level [$_l] tests for module [$_m] did fail: $failures_per_module"
-		    failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
+		if [ `cat $file_status` -ne 0 ] ; then
+		    pm2_test_warning "Compilation of the flavor $d_flavor failed."
 		fi
-	    fi
 
+		echo "Compiling and performing tests for flavor <$d_flavor>"
+		for _t in $(cat $f) ; do
+		    _tst_name="`pm2_test_name $_t`"
+		    echo "Level [$_l], module [$_m], Test [$_tst_name]"
 
-	    if [ "$_coverage" = "yes" ]
-	    then
-		# Enumerate all the lcov-generated `.info' files.
-		lcov_options=""
-                gcov_dirs=$(find $(pm2-config --flavor=$flavor --builddir) -name coverage -type d)
-		for gcov_dir in $gcov_dirs/*
-		do
-		    if [ -d "$gcov_dir" ]
-		    then
-			for file in "$gcov_dir"/*.info
-			do
-			    if [ -s "$file" ]
-			    then
-				lcov_options="$lcov_options -a $file"
-			    fi
-			done
+		    # by default, do not sort the output
+		    sort_output=0
+
+		    alias pm2_skip_test='{ echo "Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
+
+	            # Source
+		    . ./$_t
+
+		    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" $jobs -C $appdir $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
+		    [ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation of the application <$prog> failed"
+
+		    # Execution et verification des resultats
+		    if eval do_the_test "$_t" $_output_redirect; then
+			echo "   [$_tst_name] did succeed."
+		    else
+			echo "   [$_tst_name] did fail."
 		    fi
 		done
 
-		lcov_html_report_dir="$(dirname $(pm2-config --flavor=$flavor --builddir))/coverage/$_m"
-		rm -rf "$lcov_html_report_dir"
-		mkdir -p "$lcov_html_report_dir"
+		if [ "$_coverage" = "yes" ] ; then
+		    # Enumerate all the lcov-generated `.info' files.
+		    lcov_options=""
+                    gcov_dirs=$(find $(pm2-config --flavor=$flavor --builddir) -name coverage -type d)
+		    for gcov_dir in $gcov_dirs/* ; do
+			if [ -d "$gcov_dir" ] ; then
+			    for file in "$gcov_dir"/*.info ; do
+				if [ -s "$file" ] ; then
+				    lcov_options="$lcov_options -a $file"
+				fi
+			    done
+			fi
+		    done
 
-		# Aggregate all the lcov-generated `.info' files.
-		lcov_global_info_file="$lcov_html_report_dir/${_m}.info"
-		#echo "lcov_options: $lcov_options"
-		lcov $lcov_options > "$lcov_global_info_file"
+		    lcov_html_report_dir="$(dirname $(pm2-config --flavor=$flavor --builddir))/coverage/$_m"
+		    rm -rf "$lcov_html_report_dir"
+		    mkdir -p "$lcov_html_report_dir"
 
-		# Generate the HTML report.
-		echo "generating HTML coverage report under \`$lcov_html_report_dir'..."
-		genhtml -o "$lcov_html_report_dir" "$lcov_global_info_file" && \
-		echo "HTML coverage report available under \`$lcov_html_report_dir'..."
+		    # Aggregate all the lcov-generated `.info' files.
+		    lcov_global_info_file="$lcov_html_report_dir/${_m}.info"
+		    lcov $lcov_options > "$lcov_global_info_file"
+
+		    # Generate the HTML report.
+		    echo "generating HTML coverage report under \`$lcov_html_report_dir'..."
+		    genhtml -o "$lcov_html_report_dir" "$lcov_global_info_file" && \
+			echo "HTML coverage report available under \`$lcov_html_report_dir'..."
+		fi
+
+	    done
+
+	    if [ -z "$failures_per_module" ] ; then
+		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
+	    else
+		echo ">>> Some of the level [$_l] tests for module [$_m] did fail: $failures_per_module"
+		failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
 	    fi
-
 	fi
-
     done
 
     if [ -z "$failures_per_level" ] ; then

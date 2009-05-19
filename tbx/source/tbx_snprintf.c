@@ -30,11 +30,9 @@
 #include "tbx.h"
 #include <stdarg.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #ifdef MARCEL
-static inline int isdigit(int c) {
-	return (c>='0' && c<='9');
-}
 
 static size_t my_strnlen(const char *s, size_t count) {
 	const char *sc;

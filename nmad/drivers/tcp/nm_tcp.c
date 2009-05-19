@@ -982,7 +982,8 @@ nm_tcp_send 	(void*_status,
                 NM_TRACEF("tcp outgoing: sending header");
                 NM_TRACE_VAL("tcp header outgoing gate id", p_pw->p_gate->id);
         write_again:
-                ret	= write(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+		
+                ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, MSG_MORE);
                 NM_TRACE_VAL("tcp outgoing write status", ret);
 
                 if (ret < 0) {

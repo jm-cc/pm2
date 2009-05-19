@@ -567,7 +567,7 @@ done
 echo
 echo "# of passes		$nb_passes"
 echo "# of failures		$nb_failures"
-echo "# of performed tests	$nb_tests"
+echo "# of performed tests	$nb_tests"
 
 if [ -n "$failures" ] ; then
     echo ""

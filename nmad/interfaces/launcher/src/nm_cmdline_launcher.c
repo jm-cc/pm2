@@ -186,6 +186,9 @@ static int get_default_driver_assemblies(puk_component_t*assemblies)
 #if defined CONFIG_TCP
   assemblies[cur_nr_drivers++] = load_driver("tcp");
 #endif
+#if defined CONFIG_LOCAL
+  assemblies[cur_nr_drivers++] = load_driver("local");
+#endif
 
   return cur_nr_drivers;
 }

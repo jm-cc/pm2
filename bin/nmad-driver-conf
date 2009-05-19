@@ -115,6 +115,7 @@ EOF
 
 nmad_driver_write_default() {
     nmad_driver_write tcp
+    nmad_driver_write local
     nmad_driver_write mx
     nmad_driver_write qsnet
     nmad_driver_write ibverbs

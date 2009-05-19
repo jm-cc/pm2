@@ -150,7 +150,7 @@ mad3()
 
     log "Create driver configuration file"
     if [ $dev != custom ]; then
-	$PM2_ROOT/bin/nmad-driver-conf --$dev
+	$PM2_ROOT/bin/nmad-driver-conf --driver=$dev
     fi
 
     [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
@@ -639,7 +639,7 @@ else
 fi
 for p in $protocols ; do
     if [ $p != custom ]; then
-	$PM2_ROOT/bin/nmad-driver-conf --$p
+	$PM2_ROOT/bin/nmad-driver-conf --driver=$p
     fi
 done
 

@@ -982,8 +982,14 @@ nm_tcp_send 	(void*_status,
                 NM_TRACEF("tcp outgoing: sending header");
                 NM_TRACE_VAL("tcp header outgoing gate id", p_pw->p_gate->id);
         write_again:
-		
-                ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, MSG_MORE);
+#ifdef MSG_MORE
+		/* MSG_MORE is Linux, not POSIX. It cuts the latency in half when available.
+		 * @todo The same feature may be achieved with TCP_CORK (and bloated code).
+		 */
+		ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, MSG_MORE);
+#else /* MSG_MORE */
+		ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, 0);
+#endif /* MSG_MORE */
                 NM_TRACE_VAL("tcp outgoing write status", ret);
 
                 if (ret < 0) {

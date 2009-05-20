@@ -1,3 +1,2 @@
 PM2_MEMORY_LIBNAME=mami
-PM2_MEMORY_LIBS="-lmami"
 

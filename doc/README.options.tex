@@ -65,6 +65,13 @@ popups in \verb+ezflavor+.
 After adding/supressing/modifying options, \verb+pm2-recreate-links+ has
 to be called to take them into account.
 
+In addition to options, \verb+module-name/config/module-name.sh+
+is included before options, and
+\verb+module-name/config/module-name-post.sh+ is included after options,
+\verb+module-name/config/module-name.dep+ specify the dependencies for
+the module itself, and \verb+module-name/config/module-name.sh+ provides
+help on the module itself.
+
 \section{Actions}
 
 A flavor is just a concatenation of all the \verb+.sh+ files of all the

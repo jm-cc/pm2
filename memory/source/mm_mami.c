@@ -707,14 +707,15 @@ void* _mami_get_buffer_from_heap(mami_manager_t *memory_manager, int node, int n
     heap = heap->next;
   }
   if (heap == NULL || heap->start == NULL) {
-    int err, preallocatedpages;
+    int err, preallocatedpages, osnode;
 
     preallocatedpages = nbpages;
     if (preallocatedpages < memory_manager->initially_preallocated_pages) {
       preallocatedpages = memory_manager->initially_preallocated_pages;
     }
-    mdebug_memory("not enough space, let's allocate %d extra pages\n", preallocatedpages);
-    err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, marcel_topo_node_level[node].os_node);
+    osnode = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : 0;
+    mdebug_memory("not enough space, let's allocate %d extra pages on the OS node #%d\n", preallocatedpages, osnode);
+    err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, osnode);
     if (err < 0) {
       return NULL;
     }

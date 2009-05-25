@@ -117,6 +117,7 @@ EOF
 		date
         	${PM2_ROOT}/bin/pm2-load $args --network $networks_file --protocol $net -f $flavor $leo_args $prog $leo_appli_args
 	done
+        finalize_bench
 	date
 }
 

@@ -384,9 +384,9 @@ void mami_free(mami_manager_t *memory_manager,
  */
 extern
 int mami_locate(mami_manager_t *memory_manager,
-                         void *buffer,
-                         size_t size,
-                         int *node);
+		void *buffer,
+		size_t size,
+		int *node);
 
 /**
  * Prints on the standard output the currently managed memory areas.

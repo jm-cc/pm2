@@ -48,7 +48,10 @@ clean:
 	-rm $(GEN_CONFIG_FILES)
 	-rm -r $(PUK_ROOT)/puk
 
-flavormaks: $(GEN_CONFIG_FILES)
+flavormaks:
+
+# Make sure the puk configuration files are a prerequisite for all `.o' files.
+MOD_GEN_C_INC += $(GEN_CONFIG_FILES)
 
 
 # ## init packaging framework and generate base config files

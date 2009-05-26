@@ -15,6 +15,10 @@
 /** \addtogroup memory_heap */
 /* @{ */
 
+/** \file
+ * \brief HEAP Numa interface
+ */
+
 #ifdef MM_HEAP_ENABLED
 
 #if defined LINUX_SYS

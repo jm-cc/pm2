@@ -12,6 +12,10 @@
  *
  */
 
+/** \file
+ * \brief HEAP Numa alloc interface
+ */
+
 /** \defgroup memory_heap Heap Allocator Interface
  *
  * This is the interface for memory management

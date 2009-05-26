@@ -15,6 +15,11 @@
 /** \addtogroup memory_heap */
 /* @{ */
 
+/** \file
+ * \brief HEAP alloc interface
+ */
+
+
 #ifdef MM_HEAP_ENABLED
 
 #ifdef LINUX_SYS

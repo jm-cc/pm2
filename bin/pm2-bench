@@ -36,6 +36,7 @@ Usage: $_PM2_BENCH_PROGNAME { option } { modules }
     -q,--quiet     : do not be verbose
     -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
     --dir XXX      : specify a sub-directory in module/bench to run benchmarks from
+    --benchs XXX   : specify the benchmarks to be run (by default, all the benchmarks of the specified module)
   modules:
     "all" (default) or a subset of "$_ALL_MODULES"
 EOF
@@ -103,6 +104,7 @@ do_the_bench()
 _output_redirect=""
 jobs=""
 PM2_BENCHMARKS_DIR=""
+PM2_BENCHMARKS=""
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -125,6 +127,11 @@ while [ $# -gt 0 ]; do
         --dir)
             shift
             PM2_BENCHMARKS_DIR=$1
+            shift
+            ;;
+        --benchs)
+            shift
+            PM2_BENCHMARKS=$1
             shift
             ;;
 	--)
@@ -194,35 +201,44 @@ for _m in $_to_bench ; do
         if [ -n "$_benchs" ]; then
 
     	    for _f in $_benchs ; do
+    	        _bench_name=`echo $_f | sed -e 's/bench_\(.*\)/\1/g'`
 
-    	    # Affichage
-    	    _bench_name=`echo $_f | sed -e 's/bench_\(.*\)/\1/g'`
-    	    echo "Module [$_m], Bench [$_bench_name]"
+		is_bench_selected=0
+                if [ -z "$PM2_BENCHMARKS" ] ; then
+		    is_bench_selected=1
+		else
+		    for t in $PM2_BENCHMARKS ; do
+			if [ "$(echo $_bench_name | grep $t)" != "" ] ; then
+			    is_bench_selected=1
+			fi
+		    done
+		fi
 
-    	    # Source
-    	    . ./$_f
+                if [  $is_bench_selected == 1 ] ; then
+   	            # Affichage
+    	            echo "Module [$_m], Bench [$_bench_name]"
 
-	    # Fichiers de sortie
-	    file_status="/tmp/pm2_bench_${prog}_${USER}_status"
+    	            # Source
+    	            . ./$_f
 
-	    file_result="/tmp/pm2_bench_${prog}_${USER}_result"
-	    rm -f $file_result
-	    touch $file_result
+                    # Fichiers de sortie
+	            file_status="/tmp/pm2_bench_${prog}_${USER}_status"
 
-	    file_log="/tmp/pm2_bench_${prog}_${USER}_log"
-	    rm -f $file_log
-	    touch $file_log
+	            file_result="/tmp/pm2_bench_${prog}_${USER}_result"
+	            rm -f $file_result
+	            touch $file_result
 
-	    for _l in $loop; do
+	            file_log="/tmp/pm2_bench_${prog}_${USER}_log"
+	            rm -f $file_log
+	            touch $file_log
 
-    	    	# Compilation et execution
-		eval do_the_bench $_l 2>&1 | tee -a $file_log
-
-	    done
-
-    	done
-        echo "%==========" | tee -a $file_result
-
+	            for _l in $loop; do
+    	    	        # Compilation et execution
+		        eval do_the_bench $_l 2>&1 | tee -a $file_log
+	            done
+                fi
+    	    done
+            echo "%==========" | tee -a $file_result
         fi
 
     fi

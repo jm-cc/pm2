@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -27,13 +26,13 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  ptr = mami_malloc(memory_manager, 9*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr = mami_malloc(memory_manager, 9*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   for(i=0 ; i<9 ; i+=3 ) {
-    mami_task_attach(memory_manager, ptr+(i*memory_manager->normalpagesize), 3*memory_manager->normalpagesize, marcel_self(), &node);
+    mami_task_attach(memory_manager, ptr+(i*getpagesize()), 3*getpagesize(), marcel_self(), &node);
   }
   for(i=0 ; i<9 ; i+=3 ) {
-    mami_task_unattach(memory_manager, ptr+(i*memory_manager->normalpagesize), marcel_self());
+    mami_task_unattach(memory_manager, ptr+(i*getpagesize()), marcel_self());
   }
 
   mami_free(memory_manager, ptr);

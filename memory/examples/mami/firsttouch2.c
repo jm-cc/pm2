@@ -31,7 +31,7 @@ int marcel_main(int argc, char * argv[]) {
   err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("mami_membind unexpectedly failed");
 
-  size = memory_manager->initially_preallocated_pages * memory_manager->normalpagesize;
+  size = memory_manager->initially_preallocated_pages * getpagesize();
   ptr = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   ptr2 = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 

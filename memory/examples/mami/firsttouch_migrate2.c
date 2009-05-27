@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -37,12 +36,12 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
   mami_unset_kernel_migration(memory_manager);
-  size = 10*memory_manager->normalpagesize;
+  size = 10*getpagesize();
 
-  buffer1=memalign(memory_manager->normalpagesize, size);
-  buffer2=memalign(memory_manager->normalpagesize, size);
-  buffer3=memalign(memory_manager->normalpagesize, size);
-  buffer4=memalign(memory_manager->normalpagesize, size);
+  buffer1=memalign(getpagesize(), size);
+  buffer2=memalign(getpagesize(), size);
+  buffer3=memalign(getpagesize(), size);
+  buffer4=memalign(getpagesize(), size);
 
   first_touch(memory_manager, buffer1, size-100, 0, buffer1+(size-100));
   first_touch(memory_manager, buffer2, size-100, 1, buffer2+(size-100));

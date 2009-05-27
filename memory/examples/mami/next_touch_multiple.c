@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -29,7 +28,7 @@ any_t reader(any_t arg) {
   mami_locate(memory_manager, b, 0, &node);
   marcel_fprintf(stderr, "Address is located on node %d\n", node);
 
-  for(i=0 ; i<(3*memory_manager->normalpagesize)/sizeof(int) ; i++)
+  for(i=0 ; i<(3*getpagesize())/sizeof(int) ; i++)
     b[i] = 42;
 
   mami_update_pages_location(memory_manager, b, 0);
@@ -54,7 +53,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("This application needs at least two NUMA nodes.\n");
   }
   else {
-    b = mami_malloc(memory_manager, 3*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+    b = mami_malloc(memory_manager, 3*getpagesize(), MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
 
     mami_unset_kernel_migration(memory_manager);
     mami_migrate_on_next_touch(memory_manager, b);

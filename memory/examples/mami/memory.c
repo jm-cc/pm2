@@ -33,7 +33,7 @@ any_t memory(any_t arg) {
   c = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
   d = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
   e = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  buffer = mami_calloc(memory_manager, 1, PAGES * memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  buffer = mami_calloc(memory_manager, 1, PAGES * getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
 
   mami_locate(memory_manager, &(buffer[0]), 0, &node);
   if (node == id) {
@@ -65,13 +65,13 @@ any_t memory2(any_t arg) {
   buffers2 = malloc(maxnode * sizeof(void *));
   for(i=1 ; i<=5 ; i++) {
     for(node=0 ; node<maxnode ; node++)
-      buffers[node] = mami_malloc(memory_manager, i*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+      buffers[node] = mami_malloc(memory_manager, i*getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
     for(node=0 ; node<maxnode ; node++)
       mami_free(memory_manager, buffers[node]);
   }
   for(node=0 ; node<maxnode ; node++) {
-    buffers[node] = mami_malloc(memory_manager, memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
-    buffers2[node] = mami_malloc(memory_manager, memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers[node] = mami_malloc(memory_manager, getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers2[node] = mami_malloc(memory_manager, getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
   for(node=0 ; node<maxnode ; node++) {
     mami_free(memory_manager, buffers[node]);
@@ -89,13 +89,13 @@ void memory_bis(void) {
 
   mami_init(&memory_manager);
   memory_manager->initially_preallocated_pages = 2;
-  b[0] = mami_malloc(memory_manager, 1*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[1] = mami_malloc(memory_manager, 1*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[2] = mami_malloc(memory_manager, 2*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[3] = mami_malloc(memory_manager, 2*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[4] = mami_malloc(memory_manager, 1*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[5] = mami_malloc(memory_manager, 1*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  b[6] = mami_malloc(memory_manager, 1*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[0] = mami_malloc(memory_manager, 1*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[1] = mami_malloc(memory_manager, 1*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[2] = mami_malloc(memory_manager, 2*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[3] = mami_malloc(memory_manager, 2*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[4] = mami_malloc(memory_manager, 1*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[5] = mami_malloc(memory_manager, 1*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b[6] = mami_malloc(memory_manager, 1*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   for(i=0 ; i<7 ; i++) mami_free(memory_manager, b[i]);
   mami_exit(&memory_manager);

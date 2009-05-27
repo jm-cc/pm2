@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -24,7 +23,7 @@ mami_manager_t *memory_manager;
 int *b;
 
 any_t writer(any_t arg) {
-  b = mami_malloc(memory_manager, 3*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  b = mami_malloc(memory_manager, 3*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_unset_kernel_migration(memory_manager);
   mami_migrate_on_next_touch(memory_manager, b);
   return 0;

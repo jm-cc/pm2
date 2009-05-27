@@ -27,7 +27,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  size = memory_manager->initially_preallocated_pages * memory_manager->normalpagesize;
+  size = memory_manager->initially_preallocated_pages * getpagesize();
   ptr1 = mami_malloc(memory_manager, size+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   ptr2 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   ptr3 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);

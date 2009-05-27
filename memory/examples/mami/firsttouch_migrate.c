@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -34,7 +33,7 @@ int marcel_main(int argc, char * argv[]) {
   size = 10000*sizeof(int);
 
   // Case with user-allocated memory
-  buffer=memalign(memory_manager->normalpagesize, size);
+  buffer=memalign(getpagesize(), size);
   first_touch(buffer, size);
   err = mami_unregister(memory_manager, buffer);
   if (err < 0) perror("mami_unregister unexpectedly failed");

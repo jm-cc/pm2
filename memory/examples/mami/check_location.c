@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -27,8 +26,8 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  for(n=0 ; n<memory_manager->nb_nodes ; n++) {
-    ptr = mami_malloc(memory_manager, 4*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, n);
+  for(n=0 ; n<marcel_nbnodes ; n++) {
+    ptr = mami_malloc(memory_manager, 4*getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, n);
     mami_locate(memory_manager, ptr, 1, &node);
     if (node != n) marcel_printf("Wrong location: %d, asked for %d\n", node, n);
     mami_check_pages_location(memory_manager, ptr, 1, n);

@@ -16,7 +16,6 @@
 #define MARCEL_INTERNAL_INCLUDE
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -43,7 +42,7 @@ int marcel_main(int argc, char * argv[]) {
   mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
   mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
 
-  if (memfree1 == memfree3 && (memfree1-memfree2) == (memory_manager->normalpagesize/1024)) {
+  if (memfree1 == memfree3 && (memfree1-memfree2) == (getpagesize()/1024)) {
     marcel_printf("Success\n");
   }
   else {

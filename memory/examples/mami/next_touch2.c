@@ -15,29 +15,30 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 int *b;
 
 any_t writer(any_t arg) {
-  b = mami_malloc(&memory_manager, 3*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  memory_manager.kernel_nexttouch_migration = 0;
-  mami_migrate_on_next_touch(&memory_manager, b);
+  b = mami_malloc(memory_manager, 3*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  memory_manager->kernel_nexttouch_migration = 0;
+  mami_migrate_on_next_touch(memory_manager, b);
   return 0;
 }
 
 any_t reader(any_t arg) {
   int node;
 
-  mami_locate(&memory_manager, b, 0, &node);
+  mami_locate(memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
   b[1] = 42;
 
-  mami_locate(&memory_manager, b, 0, &node);
+  mami_locate(memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
   return 0;
 }
@@ -71,7 +72,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Finish marcel
-  mami_free(&memory_manager, b);
+  mami_free(memory_manager, b);
   mami_exit(&memory_manager);
   marcel_end();
   return 0;

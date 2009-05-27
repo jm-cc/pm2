@@ -55,7 +55,28 @@
 
 /** \defgroup mami MaMI: Marcel Memory Interface
  *
- * This is the interface for memory management.
+ * MaMI is a memory interface implemented within our user-level thread
+ * library, Marcel. It allows developers to manage memory with regard
+ * to NUMA nodes thanks to an automatically gathered knowledge of the
+ * underlying architecture. The initialization stage preallocates
+ * memory heaps on all the NUMA nodes of the target machine, and
+ * user-made allocations then pick up memory areas from the
+ * preallocated heaps.
+ *
+ * MaMI implements two methods to migrate data. The first method is
+ * based on the Next-touch policy, it is implemented as a user-level
+ * pager (mprotect() and signal handler for SIGSEGV). The second
+ * migration method is synchronous and allows to move data on a given
+ * node. Both move pages using the Linux system call move_pages().
+ *
+ * It is possible to evaluate reading and writing access costs to
+ * remote memory areas. Migration cost is based on a linear function
+ * on the number of pages being migrated.
+ *
+ * Moreover, MaMI gathers statistics on how much memory is available
+ * and left on the different nodes. This information is potentially
+ * helpful when deciding whether or not to migrate a memory area. This
+ * is the interface for memory management.
  *
  * @{
  */
@@ -67,45 +88,14 @@
 
 #include "pm2_common.h"
 
-/** \brief Type of a tree node */
-typedef struct mami_data_s mami_data_t;
-
-/** \brief Type of a sorted-binary tree of allocated memory areas */
-typedef struct mami_tree_s mami_tree_t;
-
-/** \brief Type of a pre-allocated space (start address + number of pages) */
-typedef struct mami_area_s mami_area_t;
-
-/** \brief Type of a reading or writing access cost from node to node */
-typedef struct mami_access_cost_s mami_access_cost_t;
-
-/** \brief Type of a preallocated space with huge pages */
-typedef struct mami_huge_pages_area_s mami_huge_pages_area_t;
-
+/** \addtogroup mami_init
+ * @{ */
 /** \brief Type of a memory manager */
 typedef struct mami_manager_s  mami_manager_t;
-
-/** \addtogroup mami_stats
- * @{
- */
-/** \brief Node selection policy */
-typedef int mami_node_selection_policy_t;
-/** \brief Selects the least loaded node */
-#define MAMI_LEAST_LOADED_NODE      ((mami_node_selection_policy_t)0)
 /* @} */
 
-/** \brief Type of a memory status */
-typedef int mami_status_t;
-/** \brief Initial status: the memory has been allocated */
-#define MAMI_INITIAL_STATUS	  ((mami_status_t)0)
-/** \brief The memory has been migrated following a next touch mark */
-#define MAMI_NEXT_TOUCHED_STATUS ((mami_status_t)1)
-/** \brief The memory has been tagged for a kernel migration */
-#define MAMI_KERNEL_MIGRATION_STATUS ((mami_status_t)2)
-
 /** \addtogroup mami_alloc
- * @{
- */
+ * @{ */
 /** \brief Type of a memory location policy */
 typedef int mami_membind_policy_t;
 /** \brief The memory will be allocated with the policy specified by the last call to mami_membind() */
@@ -123,8 +113,12 @@ typedef int mami_membind_policy_t;
 /* @} */
 
 /** \addtogroup mami_stats
- * @{
- */
+ * @{ */
+/** \brief Node selection policy */
+typedef int mami_node_selection_policy_t;
+/** \brief Selects the least loaded node */
+#define MAMI_LEAST_LOADED_NODE      ((mami_node_selection_policy_t)0)
+
 /** \brief Type of a statistic */
 typedef int mami_stats_t;
 /** \brief The total amount of memory */
@@ -133,70 +127,23 @@ typedef int mami_stats_t;
 #define MAMI_STAT_MEMORY_FREE       ((mami_stats_t)1)
 /* @} */
 
-/** \brief Structure of a memory manager */
-struct mami_manager_s {
-  /** \brief Number of nodes */
-  unsigned nb_nodes;
-  /** \brief Max node (used for mbind) */
-  unsigned max_node;
-  /** \brief Memory migration costs from all the nodes to all the nodes */
-  p_tbx_slist_t **migration_costs;
-  /** \brief Reading access costs from all the nodes to all the nodes */
-  mami_access_cost_t **costs_for_read_access;
-  /** \brief Writing access costs from all the nodes to all the nodes */
-  mami_access_cost_t **costs_for_write_access;
-  /** \brief Tree containing all the allocated memory areas */
-  mami_tree_t *root;
-  /** \brief List of pre-allocated memory areas for huge pages */
-  mami_huge_pages_area_t **huge_pages_heaps;
-  /** \brief List of pre-allocated memory areas */
-  mami_area_t **heaps;
-  /** \brief Total memory per node */
-  unsigned long *memtotal;
-  /** \brief Free memory per node */
-  unsigned long *memfree;
-  /** \brief Lock to manipulate the data */
-  marcel_mutex_t lock;
-  /** \brief System page size */
-  unsigned long normalpagesize;
-  /** \brief System huge page size */
-  unsigned long hugepagesize;
-  /** \brief Number of initially pre-allocated pages */
-  int initially_preallocated_pages;
-  /** \brief Cache line size */
-  int cache_line_size;
-  /** \brief Current membind policy */
-  mami_membind_policy_t membind_policy;
-  /** \brief Node for the membind policy */
-  int membind_node;
-  /** \brief Are memory addresses aligned on page boundaries or not? */
-  int alignment;
-  /** \brief Is the kernel next touch migration available */
-  int kernel_nexttouch_migration;
-  /** \brief Is the migration available */
-  int migration_flag;
-};
-
 /** \addtogroup mami_init MaMI Init
- *
  * This is the interface for MaMI Init
- *
- * @{
- */
+ * @{ */
 
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
  */
 extern
-void mami_init(mami_manager_t *memory_manager);
+void mami_init(mami_manager_t **memory_manager);
 
 /**
  * Shutdowns the memory manager.
  * @param memory_manager pointer to the memory manager
  */
 extern
-void mami_exit(mami_manager_t *memory_manager);
+void mami_exit(mami_manager_t **memory_manager);
 
 /**
  * Indicates that memory addresses given to MaMI should be aligned to page boundaries.

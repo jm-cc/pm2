@@ -15,11 +15,12 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   void *b;
   int err;
 
@@ -27,8 +28,8 @@ int marcel_main(int argc, char * argv[]) {
   mami_init(&memory_manager);
 
   b = malloc(100);
-  memory_manager.kernel_nexttouch_migration = 0;
-  err = mami_migrate_on_next_touch(&memory_manager, b);
+  memory_manager->kernel_nexttouch_migration = 0;
+  err = mami_migrate_on_next_touch(memory_manager, b);
   if (err < 0) {
     perror("mami_migrate_on_next_touch");
   }

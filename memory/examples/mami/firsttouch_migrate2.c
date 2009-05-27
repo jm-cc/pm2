@@ -14,8 +14,9 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 #include <malloc.h>
+#include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -28,25 +29,25 @@
 static void first_touch(mami_manager_t *memory_manager, void *buffer, size_t size, int touchme, void *ptr);
 
 int marcel_main(int argc, char * argv[]) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   void *buffer1, *buffer2, *buffer3, *buffer4;
   size_t size;
   int err;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
-  memory_manager.kernel_nexttouch_migration = 0;
-  size = 10*memory_manager.normalpagesize;
+  memory_manager->kernel_nexttouch_migration = 0;
+  size = 10*memory_manager->normalpagesize;
 
-  buffer1=memalign(memory_manager.normalpagesize, size);
-  buffer2=memalign(memory_manager.normalpagesize, size);
-  buffer3=memalign(memory_manager.normalpagesize, size);
-  buffer4=memalign(memory_manager.normalpagesize, size);
+  buffer1=memalign(memory_manager->normalpagesize, size);
+  buffer2=memalign(memory_manager->normalpagesize, size);
+  buffer3=memalign(memory_manager->normalpagesize, size);
+  buffer4=memalign(memory_manager->normalpagesize, size);
 
-  first_touch(&memory_manager, buffer1, size-100, 0, buffer1+(size-100));
-  first_touch(&memory_manager, buffer2, size-100, 1, buffer2+(size-100));
-  first_touch(&memory_manager, buffer3+100, size-100, 0, buffer3);
-  first_touch(&memory_manager, buffer4+100, size-100, 1, buffer4);
+  first_touch(memory_manager, buffer1, size-100, 0, buffer1+(size-100));
+  first_touch(memory_manager, buffer2, size-100, 1, buffer2+(size-100));
+  first_touch(memory_manager, buffer3+100, size-100, 0, buffer3);
+  first_touch(memory_manager, buffer4+100, size-100, 1, buffer4);
 
   free(buffer1);
   free(buffer2);

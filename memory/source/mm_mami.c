@@ -33,12 +33,14 @@ mami_manager_t *g_memory_manager = NULL;
 static
 int memory_manager_sigsegv_handler_set = 0;
 
-void mami_init(mami_manager_t *memory_manager) {
+void mami_init(mami_manager_t **memory_manager_p) {
   int node, dest;
   void *ptr;
   int err;
+  mami_manager_t *memory_manager;
 
   MEMORY_LOG_IN();
+  memory_manager = tmalloc(sizeof(mami_manager_t));
   memory_manager->root = NULL;
   marcel_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
@@ -167,6 +169,7 @@ void mami_init(mami_manager_t *memory_manager) {
   }
 #endif /* PM2DEBUG */
 
+  *memory_manager_p = memory_manager;
   MEMORY_LOG_OUT();
 }
 
@@ -230,12 +233,13 @@ void _mami_clean_memory(mami_manager_t *memory_manager) {
   }
 }
 
-void mami_exit(mami_manager_t *memory_manager) {
+void mami_exit(mami_manager_t **memory_manager_p) {
   int node, dest;
   struct sigaction act;
+  mami_manager_t *memory_manager;
 
   MEMORY_LOG_IN();
-
+  memory_manager = *memory_manager_p;
   if (memory_manager_sigsegv_handler_set) {
     act.sa_flags = SA_SIGINFO;
     act.sa_handler = SIG_DFL;
@@ -281,6 +285,7 @@ void mami_exit(mami_manager_t *memory_manager) {
   tfree(memory_manager->costs_for_write_access);
   tfree(memory_manager->memtotal);
   tfree(memory_manager->memfree);
+  tfree(memory_manager);
 
   MEMORY_LOG_OUT();
 }

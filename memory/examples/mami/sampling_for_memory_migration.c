@@ -15,11 +15,12 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int main(int argc, char **argv) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   int i, err;
   int minsource, maxsource, mindest, maxdest;
   int extended_mode=0;
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  err = mami_sampling_of_memory_migration(&memory_manager, minsource, maxsource, mindest, maxdest, extended_mode);
+  err = mami_sampling_of_memory_migration(memory_manager, minsource, maxsource, mindest, maxdest, extended_mode);
   if (err < 0) perror("mami_sampling_of_memory_migration");
 
   // Finish marcel

@@ -21,25 +21,25 @@
 int marcel_main(int argc, char * argv[]) {
   int node, err;
   void *ptr;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  ptr = mami_malloc(&memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
-  err = mami_locate(&memory_manager, ptr, 1000, &node);
+  err = mami_locate(memory_manager, ptr, 1000, &node);
   marcel_printf("The memory is located on node #%d\n", node);
   if (err < 0) marcel_printf("mami_locate: error %d\n", err);
 
-  err = mami_locate(&memory_manager, NULL, 0, &node);
+  err = mami_locate(memory_manager, NULL, 0, &node);
   marcel_printf("The memory is located on node #%d\n", node);
   if (err < 0) marcel_printf("mami_locate: error %d\n", err);
 
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
 
   ptr = malloc(1000);
-  err = mami_locate(&memory_manager, ptr, 1000, &node);
+  err = mami_locate(memory_manager, ptr, 1000, &node);
   marcel_printf("The memory is located on node #%d\n", node);
   if (err < 0) marcel_printf("mami_locate: error %d\n", err);
 

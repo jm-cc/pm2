@@ -19,7 +19,7 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   int anode, bnode;
   void *ptr;
   size_t size;
@@ -27,11 +27,11 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  mami_select_node(&memory_manager, MAMI_LEAST_LOADED_NODE, &anode);
+  mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &anode);
   size = marcel_topo_node_level[anode].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]*1024/2;
-  ptr = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, anode);
+  ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, anode);
 
-  mami_select_node(&memory_manager, MAMI_LEAST_LOADED_NODE, &bnode);
+  mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &bnode);
   if (anode != bnode) {
     marcel_printf("Success\n");
   }
@@ -41,7 +41,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Finish marcel
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
   mami_exit(&memory_manager);
   marcel_end();
   return 0;

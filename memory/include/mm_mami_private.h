@@ -24,6 +24,30 @@ typedef struct mami_migration_cost_s mami_migration_cost_t;
 /** \brief Type of a link for a list of tree nodes */
 typedef struct mami_data_link_s mami_data_link_t;
 
+/** \brief Type of a tree node */
+typedef struct mami_data_s mami_data_t;
+
+/** \brief Type of a sorted-binary tree of allocated memory areas */
+typedef struct mami_tree_s mami_tree_t;
+
+/** \brief Type of a pre-allocated space (start address + number of pages) */
+typedef struct mami_area_s mami_area_t;
+
+/** \brief Type of a reading or writing access cost from node to node */
+typedef struct mami_access_cost_s mami_access_cost_t;
+
+/** \brief Type of a preallocated space with huge pages */
+typedef struct mami_huge_pages_area_s mami_huge_pages_area_t;
+
+/** \brief Type of a memory status */
+typedef int mami_status_t;
+/** \brief Initial status: the memory has been allocated */
+#define MAMI_INITIAL_STATUS	  ((mami_status_t)0)
+/** \brief The memory has been migrated following a next touch mark */
+#define MAMI_NEXT_TOUCHED_STATUS ((mami_status_t)1)
+/** \brief The memory has been tagged for a kernel migration */
+#define MAMI_KERNEL_MIGRATION_STATUS ((mami_status_t)2)
+
 /** \brief Structure of a memory migration cost from node to node */
 struct mami_migration_cost_s {
   size_t size_min;
@@ -116,6 +140,50 @@ struct mami_area_s {
   int protection;
   /** \brief Next pre-allocated space */
   struct mami_area_s *next;
+};
+
+/** \brief Structure of a memory manager */
+struct mami_manager_s {
+  /** \brief Number of nodes */
+  unsigned nb_nodes;
+  /** \brief Max node (used for mbind) */
+  unsigned max_node;
+  /** \brief Memory migration costs from all the nodes to all the nodes */
+  p_tbx_slist_t **migration_costs;
+  /** \brief Reading access costs from all the nodes to all the nodes */
+  mami_access_cost_t **costs_for_read_access;
+  /** \brief Writing access costs from all the nodes to all the nodes */
+  mami_access_cost_t **costs_for_write_access;
+  /** \brief Tree containing all the allocated memory areas */
+  mami_tree_t *root;
+  /** \brief List of pre-allocated memory areas for huge pages */
+  mami_huge_pages_area_t **huge_pages_heaps;
+  /** \brief List of pre-allocated memory areas */
+  mami_area_t **heaps;
+  /** \brief Total memory per node */
+  unsigned long *memtotal;
+  /** \brief Free memory per node */
+  unsigned long *memfree;
+  /** \brief Lock to manipulate the data */
+  marcel_mutex_t lock;
+  /** \brief System page size */
+  unsigned long normalpagesize;
+  /** \brief System huge page size */
+  unsigned long hugepagesize;
+  /** \brief Number of initially pre-allocated pages */
+  int initially_preallocated_pages;
+  /** \brief Cache line size */
+  int cache_line_size;
+  /** \brief Current membind policy */
+  mami_membind_policy_t membind_policy;
+  /** \brief Node for the membind policy */
+  int membind_node;
+  /** \brief Are memory addresses aligned on page boundaries or not? */
+  int alignment;
+  /** \brief Is the kernel next touch migration available */
+  int kernel_nexttouch_migration;
+  /** \brief Is the migration available */
+  int migration_flag;
 };
 
 /* align a application-given address to the closest page-boundary:

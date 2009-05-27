@@ -22,20 +22,20 @@ int marcel_main(int argc, char * argv[]) {
   int err, node;
   void *ptr;
   marcel_t self;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
   ptr = malloc(1000);
   self = marcel_self();
-  err = mami_task_attach(&memory_manager, ptr, 1000, self, &node);
+  err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
   marcel_printf("mami_task_attach with unregistered memory: %d\n", err);
 
-  err = mami_task_unattach(&memory_manager, ptr, self);
+  err = mami_task_unattach(memory_manager, ptr, self);
   marcel_printf("mami_task_unattach: %d\n", err);
 
-  err = mami_unregister(&memory_manager, ptr);
+  err = mami_unregister(memory_manager, ptr);
   marcel_printf("mami_task_unregister: %d\n", err);
 
   mami_exit(&memory_manager);

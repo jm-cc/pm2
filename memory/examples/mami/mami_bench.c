@@ -19,7 +19,7 @@
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   void *ptr;
   int node;
   tbx_tick_t t1, t2;
@@ -34,12 +34,12 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   TBX_GET_TICK(t1);
-  ptr = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
-  mami_locate(&memory_manager, ptr, size, &node);
+  ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  mami_locate(memory_manager, ptr, size, &node);
   if (node != 0) {
     marcel_printf("Memory allocated on current node\n");
   }
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
   TBX_GET_TICK(t2);
   temps = TBX_TIMING_DELAY(t1, t2);
   marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);

@@ -18,35 +18,35 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 any_t firsttouch(any_t arg) {
   int *ptr;
   int err, node;
 
-  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  mami_free(&memory_manager, ptr);
+  ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  mami_free(memory_manager, ptr);
 
-  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  err = mami_locate(&memory_manager, ptr, 100, &node);
+  ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  err = mami_locate(memory_manager, ptr, 100, &node);
   if (err < 0) perror("mami_membind unexpectedly failed");
   marcel_printf("Before first touch, memory located on node %d\n", node);
 
   ptr[0] = 42;
 
-  err = mami_task_attach(&memory_manager, ptr, 100, marcel_self(), &node);
+  err = mami_task_attach(memory_manager, ptr, 100, marcel_self(), &node);
   if (err < 0) perror("mami_task_attach unexpectedly failed");
 
-  err = mami_locate(&memory_manager, ptr, 100, &node);
+  err = mami_locate(memory_manager, ptr, 100, &node);
   if (err < 0) perror("mami_locate unexpectedly failed");
   if (node == marcel_nbnodes-1)
     marcel_printf("After first touch, memory located on last node\n");
   else
     marcel_printf("After first touch, memory NOT located on last node but on node %d\n", node);
 
-  err = mami_task_unattach(&memory_manager, ptr, marcel_self());
+  err = mami_task_unattach(memory_manager, ptr, marcel_self());
   if (err < 0) perror("mami_task_unattach unexpectedly failed");
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
 }
 
 int marcel_main(int argc, char * argv[]) {
@@ -58,7 +58,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_attr_init(&attr);
   mami_init(&memory_manager);
 
-  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("mami_membind unexpectedly failed");
 
   marcel_attr_settopo_level(&attr, &marcel_topo_node_level[marcel_nbnodes-1]);

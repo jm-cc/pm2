@@ -15,18 +15,19 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 int *b;
 
 any_t writer(any_t arg) {
   int *nbpages = (int *) arg;
-  b = mami_malloc(&memory_manager, (*nbpages)*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  memory_manager.kernel_nexttouch_migration = 0;
-  mami_migrate_on_next_touch(&memory_manager, b);
+  b = mami_malloc(memory_manager, (*nbpages)*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  memory_manager->kernel_nexttouch_migration = 0;
+  mami_migrate_on_next_touch(memory_manager, b);
   return 0;
 }
 
@@ -36,18 +37,18 @@ any_t reader(any_t arg) {
   struct timeval tv1, tv2;
   unsigned long us, ns;
 
-  mami_locate(&memory_manager, b, 0, &snode);
+  mami_locate(memory_manager, b, 0, &snode);
 
   gettimeofday(&tv1, NULL);
   b[1] = 42;
   gettimeofday(&tv2, NULL);
 
-  mami_locate(&memory_manager, b, 0, &dnode);
+  mami_locate(memory_manager, b, 0, &dnode);
 
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
   ns = us * 1000;
 
-  mami_free(&memory_manager, b);
+  mami_free(memory_manager, b);
   marcel_printf("%d\t%d\t%d\t%ld\n", snode, dnode, *nbpages, ns);
   return 0;
 }

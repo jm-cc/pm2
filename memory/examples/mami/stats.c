@@ -19,7 +19,7 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-static mami_manager_t memory_manager;
+static mami_manager_t *memory_manager;
 void stats(void *ptr);
 
 int marcel_main(int argc, char * argv[]) {
@@ -28,13 +28,13 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
   stats(ptr);
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
 
-  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   stats(ptr);
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
 
   mami_exit(&memory_manager);
 
@@ -51,12 +51,12 @@ void stats(void *ptr) {
 
   marcel_printf("[before attach]  stats=%ld\n", ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[0]);
 
-  err = mami_task_attach(&memory_manager, ptr, 100, marcel_self(), &node);
+  err = mami_task_attach(memory_manager, ptr, 100, marcel_self(), &node);
   if (err < 0) perror("mami_task_attach unexpectedly failed");
 
   marcel_printf("[after attach]   stats=%ld\n", ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[0]);
 
-  err = mami_task_unattach(&memory_manager, ptr, marcel_self());
+  err = mami_task_unattach(memory_manager, ptr, marcel_self());
   if (err < 0) perror("mami_task_unattach unexpectedly failed");
 
   marcel_printf("[after unattach] stats=%ld\n", ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[0]);

@@ -1,7 +1,23 @@
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include <cblas.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -54,7 +70,7 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   marcel_t *worker_id;
   int nb_workers, nb_cores, err;
   marcel_attr_t attr;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   unsigned k;
   saxpy_t *args;
   struct timeval tv1, tv2;
@@ -64,7 +80,7 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   mami_init(&memory_manager);
   nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
-  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("mami_membind");
 
   gettimeofday(&tv1, NULL);
@@ -72,8 +88,8 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   vectorA = malloc(nb_workers * sizeof(float *));
   vectorB = malloc(nb_workers * sizeof(float *));
   for(k=0 ; k<nb_workers ; k++) {
-    vectorA[k] = mami_malloc(&memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-    vectorB[k] = mami_malloc(&memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    vectorA[k] = mami_malloc(memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    vectorB[k] = mami_malloc(memory_manager, vector_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
     if (initialisation_policy == SAXPY_INIT_GLOBALE) {
       for (i = 0; i < vector_size; i++) {
@@ -83,9 +99,9 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
     }
 
     if (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      memory_manager.kernel_nexttouch_migration = (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL);
-      mami_migrate_on_next_touch(&memory_manager, vectorA[k]);
-      mami_migrate_on_next_touch(&memory_manager, vectorB[k]);
+      memory_manager->kernel_nexttouch_migration = (migration_policy == SAXPY_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      mami_migrate_on_next_touch(memory_manager, vectorA[k]);
+      mami_migrate_on_next_touch(memory_manager, vectorB[k]);
     }
   }
 
@@ -106,8 +122,8 @@ void test_saxpy(int vector_size, int migration_policy, int initialisation_policy
   }
   gettimeofday(&tv2, NULL);
   for(k=0 ; k<nb_workers ; k++) {
-    mami_free(&memory_manager, vectorA[k]);
-    mami_free(&memory_manager, vectorB[k]);
+    mami_free(memory_manager, vectorA[k]);
+    mami_free(memory_manager, vectorB[k]);
   }
   mami_exit(&memory_manager);
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);

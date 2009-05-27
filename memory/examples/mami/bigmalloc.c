@@ -15,29 +15,30 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
   void *ptr1, *ptr2, *ptr3, *ptr4, *ptr5;
   size_t size;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  size = memory_manager.initially_preallocated_pages * memory_manager.normalpagesize;
-  ptr1 = mami_malloc(&memory_manager, size+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  ptr2 = mami_malloc(&memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  ptr3 = mami_malloc(&memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  ptr4 = mami_malloc(&memory_manager, 4, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  ptr5 = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  size = memory_manager->initially_preallocated_pages * memory_manager->normalpagesize;
+  ptr1 = mami_malloc(memory_manager, size+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr2 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr3 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr4 = mami_malloc(memory_manager, 4, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  ptr5 = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
-  mami_free(&memory_manager, ptr1);
-  mami_free(&memory_manager, ptr2);
-  mami_free(&memory_manager, ptr3);
-  mami_free(&memory_manager, ptr4);
-  mami_free(&memory_manager, ptr5);
+  mami_free(memory_manager, ptr1);
+  mami_free(memory_manager, ptr2);
+  mami_free(memory_manager, ptr3);
+  mami_free(memory_manager, ptr4);
+  mami_free(memory_manager, ptr5);
 
   mami_exit(&memory_manager);
 

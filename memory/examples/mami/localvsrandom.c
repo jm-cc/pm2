@@ -21,7 +21,7 @@
 #define SIZE  100000
 #define LOOPS 100000
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 int **buffers;
 
 any_t compute(any_t arg) {
@@ -33,7 +33,7 @@ any_t compute(any_t arg) {
   marcel_fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", marcel_self()->id, marcel_current_node(), marcel_current_vp());
   buffer = buffers[node];
 
-  mami_locate(&memory_manager, buffer, 0, &where);
+  mami_locate(memory_manager, buffer, 0, &where);
   marcel_fprintf(stderr,"[%d] Memory on node #%d\n", marcel_self()->id, where);
 
   for(j=0 ; j<LOOPS ; j++) {
@@ -66,7 +66,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Allocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    buffers[node] = mami_malloc(&memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    buffers[node] = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
 
   // The thread which will work on the memory allocated on the node N is started on the same node N
@@ -98,7 +98,7 @@ int marcel_main(int argc, char * argv[]) {
 
   // Deallocate memory on each node
   for(node=0 ; node<marcel_nbnodes ; node++) {
-    mami_free(&memory_manager, buffers[node]);
+    mami_free(memory_manager, buffers[node]);
   }
 
   local_us = (local_tv2.tv_sec - local_tv1.tv_sec) * 1000000 + (local_tv2.tv_usec - local_tv1.tv_usec);

@@ -15,27 +15,28 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 void allocation_and_migration(int cpu, int mem) {
   void *buffer;
   size_t size;
   int bnode, anode;
 
-  size = memory_manager.normalpagesize * 2;
+  size = memory_manager->normalpagesize * 2;
 
-  buffer = mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, mem);
-  mami_locate(&memory_manager, buffer, size, &bnode);
+  buffer = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, mem);
+  mami_locate(memory_manager, buffer, size, &bnode);
   marcel_printf("Node before migration %d\n", bnode);
 
-  mami_migrate_pages(&memory_manager, buffer, cpu);
+  mami_migrate_pages(memory_manager, buffer, cpu);
 
-  mami_locate(&memory_manager, buffer, size, &anode);
+  mami_locate(memory_manager, buffer, size, &anode);
   marcel_printf("Node after migration %d\n", anode);
-  mami_free(&memory_manager, buffer);
+  mami_free(memory_manager, buffer);
 }
 
 any_t migration(any_t arg) {
@@ -44,17 +45,17 @@ any_t migration(any_t arg) {
   float migration_cost, reading_cost;
 
   cpu = marcel_self()->id;
-  size = memory_manager.normalpagesize * 10000;
+  size = memory_manager->normalpagesize * 10000;
 
   for(mem=0 ; mem<marcel_nbnodes ; mem++) {
     if (mem == cpu) continue;
 
-    mami_cost_for_read_access(&memory_manager,
-				       cpu, mem,
-				       size, &reading_cost);
-    mami_migration_cost(&memory_manager,
-                                 cpu, mem,
-                                 size, &migration_cost);
+    mami_cost_for_read_access(memory_manager,
+                              cpu, mem,
+                              size, &reading_cost);
+    mami_migration_cost(memory_manager,
+                        cpu, mem,
+                        size, &migration_cost);
     marcel_printf("\n[%d:%d] Migration cost %f - Reading access cost %f\n", cpu, mem, migration_cost, reading_cost);
     if (migration_cost < reading_cost) {
       marcel_printf("Migration is cheaper than remote reading. Let's migrate...\n");

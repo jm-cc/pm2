@@ -15,28 +15,29 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 int *b;
 
 any_t reader(any_t arg) {
   int i, node;
 
-  mami_locate(&memory_manager, b, 0, &node);
+  mami_locate(memory_manager, b, 0, &node);
   marcel_fprintf(stderr, "Address is located on node %d\n", node);
 
-  for(i=0 ; i<(3*memory_manager.normalpagesize)/sizeof(int) ; i++)
+  for(i=0 ; i<(3*memory_manager->normalpagesize)/sizeof(int) ; i++)
     b[i] = 42;
 
-  mami_update_pages_location(&memory_manager, b, 0);
+  mami_update_pages_location(memory_manager, b, 0);
 
-  mami_locate(&memory_manager, b, 0, &node);
+  mami_locate(memory_manager, b, 0, &node);
   marcel_fprintf(stderr, "Address is located on node %d\n", node);
 
-  mami_check_pages_location(&memory_manager, b, 0, marcel_current_node());
+  mami_check_pages_location(memory_manager, b, 0, marcel_current_node());
 
   return 0;
 }
@@ -53,24 +54,24 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("This application needs at least two NUMA nodes.\n");
   }
   else {
-    b = mami_malloc(&memory_manager, 3*memory_manager.normalpagesize, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+    b = mami_malloc(memory_manager, 3*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
 
-    memory_manager.kernel_nexttouch_migration = 0;
-    mami_migrate_on_next_touch(&memory_manager, b);
+    memory_manager->kernel_nexttouch_migration = 0;
+    mami_migrate_on_next_touch(memory_manager, b);
 
     // Start the thread on the numa node #1
     marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
     marcel_create(&thread, &attr, reader, NULL);
     marcel_join(thread, NULL);
 
-    mami_migrate_on_next_touch(&memory_manager, b);
+    mami_migrate_on_next_touch(memory_manager, b);
 
     // Start the thread on the numa node #2
     marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
     marcel_create(&thread, &attr, reader, NULL);
     marcel_join(thread, NULL);
 
-    mami_free(&memory_manager, b);
+    mami_free(memory_manager, b);
   }
 
   // Finish marcel

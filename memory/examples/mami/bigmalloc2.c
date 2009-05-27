@@ -15,19 +15,20 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
   void *ptr;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  ptr = mami_malloc(&memory_manager, memory_manager.initially_preallocated_pages*memory_manager.normalpagesize,
-                             MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  mami_free(&memory_manager, ptr);
+  ptr = mami_malloc(memory_manager, memory_manager->initially_preallocated_pages*memory_manager->normalpagesize,
+                    MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  mami_free(memory_manager, ptr);
 
   // Finish marcel
   marcel_printf("Success\n");

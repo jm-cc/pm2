@@ -15,11 +15,12 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char **argv) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   int i, err;
   int minsource, maxsource, mindest, maxdest;
 
@@ -27,9 +28,9 @@ int marcel_main(int argc, char **argv) {
   mami_init(&memory_manager);
 
   minsource = 0;
-  maxsource = memory_manager.nb_nodes-1;
+  maxsource = memory_manager->nb_nodes-1;
   mindest = 0;
-  maxdest = memory_manager.nb_nodes-1;
+  maxdest = memory_manager->nb_nodes-1;
 
   for(i=1 ; i<argc ; i++) {
     if (!strcmp(argv[i], "-src")) {
@@ -44,7 +45,7 @@ int marcel_main(int argc, char **argv) {
     }
   }
 
-  err = mami_sampling_of_memory_access(&memory_manager, minsource, maxsource, mindest, maxdest);
+  err = mami_sampling_of_memory_access(memory_manager, minsource, maxsource, mindest, maxdest);
   if (err < 0) perror("mami_sampling_of_memory_migration");
 
   // Finish marcel

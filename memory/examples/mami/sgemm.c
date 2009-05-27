@@ -1,7 +1,23 @@
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
 #include <cblas.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -54,7 +70,7 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   marcel_t *worker_id;
   int nb_workers, nb_cores, err;
   marcel_attr_t attr;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   unsigned k;
   sgemm_t *args;
   struct timeval tv1, tv2;
@@ -64,7 +80,7 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   mami_init(&memory_manager);
   nb_workers = marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
-  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("mami_membind");
 
   gettimeofday(&tv1, NULL);
@@ -73,9 +89,9 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   matB = malloc(nb_workers * sizeof(float *));
   matC = malloc(nb_workers * sizeof(float *));
   for(k=0 ; k<nb_workers ; k++) {
-    matA[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-    matB[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-    matC[k] = mami_malloc(&memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    matA[k] = mami_malloc(memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    matB[k] = mami_malloc(memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    matC[k] = mami_malloc(memory_manager, matrix_size*matrix_size*sizeof(float), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
     if (initialisation_policy == SGEMM_INIT_GLOBALE) {
       for (j = 0; j < matrix_size; j++) {
@@ -88,10 +104,10 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
     }
 
     if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      memory_manager.kernel_nexttouch_migration = (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL);
-      mami_migrate_on_next_touch(&memory_manager, matA[k]);
-      mami_migrate_on_next_touch(&memory_manager, matB[k]);
-      mami_migrate_on_next_touch(&memory_manager, matC[k]);
+      memory_manager->kernel_nexttouch_migration = (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      mami_migrate_on_next_touch(memory_manager, matA[k]);
+      mami_migrate_on_next_touch(memory_manager, matB[k]);
+      mami_migrate_on_next_touch(memory_manager, matC[k]);
     }
   }
 
@@ -112,9 +128,9 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
   }
   gettimeofday(&tv2, NULL);
   for(k=0 ; k<nb_workers ; k++) {
-    mami_free(&memory_manager, matA[k]);
-    mami_free(&memory_manager, matB[k]);
-    mami_free(&memory_manager, matC[k]);
+    mami_free(memory_manager, matA[k]);
+    mami_free(memory_manager, matB[k]);
+    mami_free(memory_manager, matC[k]);
   }
   mami_exit(&memory_manager);
   us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);

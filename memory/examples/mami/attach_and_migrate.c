@@ -23,31 +23,31 @@ int marcel_main(int argc, char * argv[]) {
   void *ptr=NULL;
   void *ptr2;
   marcel_t self;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
   self = marcel_self();
 
-  ptr = mami_malloc(&memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
-  ptr2 = mami_malloc(&memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
+  ptr2 = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
-  err = mami_task_attach(&memory_manager, ptr, 1000, self, &node);
+  err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
   if (err < 0) perror("mami_task_attach unexpectedly failed");
-  err = mami_task_attach(&memory_manager, ptr2, 1000, self, &node);
+  err = mami_task_attach(memory_manager, ptr2, 1000, self, &node);
   if (err < 0) perror("mami_task_attach unexpectedly failed");
 
-  mami_task_migrate_all(&memory_manager, self, 1);
+  mami_task_migrate_all(memory_manager, self, 1);
   if (err < 0) perror("mami_migrate_all unexpectedly failed");
 
-  mami_check_pages_location(&memory_manager, ptr, 1000, 1);
-  mami_check_pages_location(&memory_manager, ptr2, 1000, 1);
+  mami_check_pages_location(memory_manager, ptr, 1000, 1);
+  mami_check_pages_location(memory_manager, ptr2, 1000, 1);
 
-  err = mami_task_unattach_all(&memory_manager, self);
+  err = mami_task_unattach_all(memory_manager, self);
   if (err < 0) perror("mami_task_unattach_all unexpectedly failed");
 
-  mami_free(&memory_manager, ptr);
-  mami_free(&memory_manager, ptr2);
+  mami_free(memory_manager, ptr);
+  mami_free(memory_manager, ptr2);
   mami_exit(&memory_manager);
 
   // Finish marcel

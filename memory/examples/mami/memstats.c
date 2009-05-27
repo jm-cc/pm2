@@ -16,11 +16,12 @@
 #define MARCEL_INTERNAL_INCLUDE
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int marcel_main(int argc, char * argv[]) {
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
   void *ptr;
   unsigned long memtotal1, memfree1;
   unsigned long memtotal2, memfree2;
@@ -29,20 +30,20 @@ int marcel_main(int argc, char * argv[]) {
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree1);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree1);
 
-  ptr = mami_malloc(&memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal2);
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree2);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal2);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree2);
 
-  mami_free(&memory_manager, ptr);
+  mami_free(memory_manager, ptr);
 
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
-  mami_stats(&memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
+  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
 
-  if (memfree1 == memfree3 && (memfree1-memfree2) == (memory_manager.normalpagesize/1024)) {
+  if (memfree1 == memfree3 && (memfree1-memfree2) == (memory_manager->normalpagesize/1024)) {
     marcel_printf("Success\n");
   }
   else {

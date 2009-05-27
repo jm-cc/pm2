@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -83,7 +84,7 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, i
   struct timeval tv1, tv2;
   unsigned long us, ns;
   double maxdiff;
-  mami_manager_t memory_manager;
+  mami_manager_t *memory_manager;
 
   mami_init(&memory_manager);
   marcel_attr_init(&attr);
@@ -93,14 +94,14 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, i
   nb_cores=marcel_topo_level_nbitems[MARCEL_LEVEL_CORE];
 
   // Initialise the grids
-  err = mami_membind(&memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
   if (err < 0) perror("mami_membind");
 
-  grid1 = (double **) mami_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  grid2 = (double **) mami_malloc(&memory_manager, (grid_size+2) * sizeof(double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  grid1 = (double **) mami_malloc(memory_manager, (grid_size+2) * sizeof(double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  grid2 = (double **) mami_malloc(memory_manager, (grid_size+2) * sizeof(double *), MAMI_MEMBIND_POLICY_DEFAULT, 0);
   for (i = 0; i <= grid_size+1; i++) {
-    grid1[i] = (double *) mami_malloc(&memory_manager, (grid_size+2) * sizeof(double), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-    grid2[i] = (double *) mami_malloc(&memory_manager, (grid_size+2) * sizeof(double), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    grid1[i] = (double *) mami_malloc(memory_manager, (grid_size+2) * sizeof(double), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    grid2[i] = (double *) mami_malloc(memory_manager, (grid_size+2) * sizeof(double), MAMI_MEMBIND_POLICY_DEFAULT, 0);
   }
   if (initialisation_policy == JACOBI_INIT_GLOBALE) {
     for (i = 0; i <= grid_size+1; i++)
@@ -123,9 +124,9 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, i
   }
   if (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
     for (i = 0; i <= grid_size+1; i++) {
-      memory_manager.kernel_nexttouch_migration = (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL);
-      mami_migrate_on_next_touch(&memory_manager, grid1[i]);
-      mami_migrate_on_next_touch(&memory_manager, grid2[i]);
+      memory_manager->kernel_nexttouch_migration = (migration_policy == JACOBI_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      mami_migrate_on_next_touch(memory_manager, grid1[i]);
+      mami_migrate_on_next_touch(memory_manager, grid2[i]);
     }
   }
 
@@ -157,11 +158,11 @@ void jacobi(int grid_size, int nb_workers, int nb_iters, int migration_policy, i
 
   // Free the memory
   for (i = 0; i <= grid_size+1; i++) {
-    mami_free(&memory_manager, grid1[i]);
-    mami_free(&memory_manager, grid2[i]);
+    mami_free(memory_manager, grid1[i]);
+    mami_free(memory_manager, grid2[i]);
   }
-  mami_free(&memory_manager, grid1);
-  mami_free(&memory_manager, grid2);
+  mami_free(memory_manager, grid1);
+  mami_free(memory_manager, grid2);
   free(workerid);
   free(local_max_diff);
   mami_exit(&memory_manager);

@@ -22,7 +22,7 @@
 #define SIZE  100000
 
 int *buffer;
-mami_manager_t memory_manager;
+mami_manager_t *memory_manager;
 
 any_t t_migrate(any_t arg) {
   int i;
@@ -30,10 +30,10 @@ any_t t_migrate(any_t arg) {
 
   for(i=0 ; i<*loops ; i++) {
     if (i%2 == 0) {
-      mami_migrate_pages(&memory_manager, buffer, 1);
+      mami_migrate_pages(memory_manager, buffer, 1);
     }
     else {
-      mami_migrate_pages(&memory_manager, buffer, 0);
+      mami_migrate_pages(memory_manager, buffer, 0);
     }
     //if (i %1000) marcel_printf("Migrate ...\n");
   }
@@ -69,7 +69,7 @@ int marcel_main(int argc, char * argv[]) {
   }
 
   // Allocate the buffer
-  buffer = mami_malloc(&memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  buffer = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   // Start the threads
   marcel_create(&threads[0], NULL, t_migrate, (any_t) &loops);
@@ -80,7 +80,7 @@ int marcel_main(int argc, char * argv[]) {
   marcel_join(threads[1], NULL);
 
   // Finish marcel
-  mami_free(&memory_manager, buffer);
+  mami_free(memory_manager, buffer);
   mami_exit(&memory_manager);
   marcel_end();
   return 0;

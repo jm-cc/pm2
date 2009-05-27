@@ -25,7 +25,7 @@ struct mami_record_s {
   float imaginary;
 };
 
-static mami_manager_t memory_manager;
+static mami_manager_t *memory_manager;
 static void *mami_record_malloc(void *arg);
 static void mami_record_free(void *obj, void *foo TBX_UNUSED);
 
@@ -57,12 +57,12 @@ void *mami_record_malloc(void *arg) {
   size_t size = (size_t) (intptr_t) arg;
 
   marcel_printf("Allocating object\n");
-  return mami_malloc(&memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  return mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
 }
 
 void mami_record_free(void *obj, void *foo TBX_UNUSED) {
   marcel_printf("Freeing object\n");
-  mami_free(&memory_manager, obj);
+  mami_free(memory_manager, obj);
 }
 
 #else

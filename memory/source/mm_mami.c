@@ -29,9 +29,9 @@
 #include "mm_helper.h"
 
 static
-mami_manager_t *g_memory_manager = NULL;
+mami_manager_t *_mami_memory_manager = NULL;
 static
-int memory_manager_sigsegv_handler_set = 0;
+int _mami_sigsegv_handler_set = 0;
 
 void mami_init(mami_manager_t **memory_manager_p) {
   int node, dest;
@@ -65,20 +65,18 @@ void mami_init(mami_manager_t **memory_manager_p) {
   mdebug_memory("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration_available);
 
   // Is migration available
-  {
-    if (marcel_topo_node_level) {
-      unsigned long nodemask;
-      nodemask = (1<<marcel_topo_node_level[0].os_node);
-      ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
-      err = _mm_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_MOVE);
-      memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
-      free(ptr);
-    }
-    else {
-      memory_manager->migration_flag = 0;
-    }
-    mdebug_memory("Migration: %d\n", memory_manager->migration_flag);
+  if (marcel_topo_node_level) {
+    unsigned long nodemask;
+    nodemask = (1<<marcel_topo_node_level[0].os_node);
+    ptr = memalign(memory_manager->normalpagesize, memory_manager->normalpagesize);
+    err = _mm_mbind(ptr,  memory_manager->normalpagesize, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_MOVE);
+    memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
+    free(ptr);
   }
+  else {
+    memory_manager->migration_flag = 0;
+  }
+  mdebug_memory("Migration: %d\n", memory_manager->migration_flag);
 
   // How much total and free memory per node
   memory_manager->memtotal = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long));
@@ -241,7 +239,7 @@ void mami_exit(mami_manager_t **memory_manager_p) {
 
   MEMORY_LOG_IN();
   memory_manager = *memory_manager_p;
-  if (memory_manager_sigsegv_handler_set) {
+  if (_mami_sigsegv_handler_set) {
     act.sa_flags = SA_SIGINFO;
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
@@ -791,7 +789,7 @@ void* _mami_malloc(mami_manager_t *memory_manager, size_t size, unsigned long pa
     // Register memory
     mdebug_memory("Registering [%p:%p:%ld]\n", pageaddrs[0], pageaddrs[0]+size, (long)size);
     _mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, realsize, node, NULL,
-                             protection, with_huge_pages, 1, NULL);
+                         protection, with_huge_pages, 1, NULL);
 
     tfree(pageaddrs);
     VALGRIND_MAKE_MEM_UNDEFINED(buffer, size);
@@ -845,7 +843,7 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
 }
 
 void* mami_calloc(mami_manager_t *memory_manager, size_t nmemb, size_t size,
-                           mami_membind_policy_t policy, int node) {
+                  mami_membind_policy_t policy, int node) {
   void *ptr;
 
   MEMORY_LOG_IN();
@@ -1433,12 +1431,12 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
   int err, dest;
   mami_data_t *data = NULL;
 
-  marcel_mutex_lock(&(g_memory_manager->lock));
+  marcel_mutex_lock(&(_mami_memory_manager->lock));
 
 #warning look at www.gnu.org/software/libsigsegv/
 
   addr = info->si_addr;
-  err = _mami_locate(g_memory_manager, g_memory_manager->root, addr, 1, &data);
+  err = _mami_locate(_mami_memory_manager, _mami_memory_manager->root, addr, 1, &data);
   if (err < 0) {
     // The address is not managed by MaMI. Reset the segv handler to its default action, to cause a segfault
     struct sigaction act;
@@ -1449,7 +1447,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (data && data->status != MAMI_NEXT_TOUCHED_STATUS) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
     dest = marcel_current_node();
-    _mami_migrate_pages(g_memory_manager, data, dest);
+    _mami_migrate_pages(_mami_memory_manager, data, dest);
     err = mprotect(data->mprotect_startaddress, data->mprotect_size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";
@@ -1463,7 +1461,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
       }
     }
   }
-  marcel_mutex_unlock(&(g_memory_manager->lock));
+  marcel_mutex_unlock(&(_mami_memory_manager->lock));
 }
 
 int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
@@ -1474,7 +1472,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
   MEMORY_LOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
 
-  g_memory_manager = memory_manager;
+  _mami_memory_manager = memory_manager;
   aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
   mdebug_memory("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
@@ -1496,9 +1494,9 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
     }
     else {
       mdebug_memory("... using user-space migration\n");
-      if (!memory_manager_sigsegv_handler_set) {
+      if (!_mami_sigsegv_handler_set) {
         struct sigaction act;
-        memory_manager_sigsegv_handler_set = 1;
+        _mami_sigsegv_handler_set = 1;
         act.sa_flags = SA_SIGINFO;
         act.sa_sigaction = _mami_segv_handler;
         err = sigaction(SIGSEGV, &act, NULL);

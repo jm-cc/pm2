@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -32,7 +31,7 @@ int marcel_main(int argc, char * argv[]) {
     marcel_printf("NUMA node topology not accessible.\n");
   }
   else {
-    bigsize =  marcel_topo_node_level[0].huge_page_free * memory_manager->hugepagesize;
+    bigsize =  marcel_topo_node_level[0].huge_page_free * marcel_topo_node_level[0].huge_page_size;
 
     ptr = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
     ptr2 = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);

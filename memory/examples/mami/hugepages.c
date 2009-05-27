@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -35,7 +34,7 @@ int marcel_main(int argc, char * argv[]) {
   }
   else {
     mami_membind(memory_manager, MAMI_MEMBIND_POLICY_HUGE_PAGES, 0);
-    bigsize =  marcel_topo_node_level[0].huge_page_free * memory_manager->hugepagesize;
+    bigsize =  marcel_topo_node_level[0].huge_page_free * marcel_topo_node_level[0].huge_page_size;
     ptr = mami_malloc(memory_manager, bigsize+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
     perror("mami_malloc succesfully failed");
 

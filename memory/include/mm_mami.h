@@ -67,9 +67,6 @@
 
 #include "pm2_common.h"
 
-/** \brief Type of a link for a list of tree nodes */
-typedef struct mami_data_link_s mami_data_link_t;
-
 /** \brief Type of a tree node */
 typedef struct mami_data_s mami_data_t;
 
@@ -82,19 +79,20 @@ typedef struct mami_area_s mami_area_t;
 /** \brief Type of a reading or writing access cost from node to node */
 typedef struct mami_access_cost_s mami_access_cost_t;
 
-/** \brief Type of a memory migration cost from node to node */
-typedef struct mami_migration_cost_s mami_migration_cost_t;
-
 /** \brief Type of a preallocated space with huge pages */
 typedef struct mami_huge_pages_area_s mami_huge_pages_area_t;
 
 /** \brief Type of a memory manager */
 typedef struct mami_manager_s  mami_manager_t;
 
+/** \addtogroup mami_stats
+ * @{
+ */
 /** \brief Node selection policy */
 typedef int mami_node_selection_policy_t;
 /** \brief Selects the least loaded node */
 #define MAMI_LEAST_LOADED_NODE      ((mami_node_selection_policy_t)0)
+/* @} */
 
 /** \brief Type of a memory status */
 typedef int mami_status_t;
@@ -105,6 +103,9 @@ typedef int mami_status_t;
 /** \brief The memory has been tagged for a kernel migration */
 #define MAMI_KERNEL_MIGRATION_STATUS ((mami_status_t)2)
 
+/** \addtogroup mami_alloc
+ * @{
+ */
 /** \brief Type of a memory location policy */
 typedef int mami_membind_policy_t;
 /** \brief The memory will be allocated with the policy specified by the last call to mami_membind() */
@@ -119,107 +120,18 @@ typedef int mami_membind_policy_t;
 #define MAMI_MEMBIND_POLICY_HUGE_PAGES        ((mami_membind_policy_t)16)
 /** \brief The memory will not be bound to any node */
 #define MAMI_MEMBIND_POLICY_FIRST_TOUCH       ((mami_membind_policy_t)32)
+/* @} */
 
+/** \addtogroup mami_stats
+ * @{
+ */
 /** \brief Type of a statistic */
 typedef int mami_stats_t;
 /** \brief The total amount of memory */
 #define MAMI_STAT_MEMORY_TOTAL      ((mami_stats_t)0)
 /** \brief The free amount of memory */
 #define MAMI_STAT_MEMORY_FREE       ((mami_stats_t)1)
-
-/** \brief Structure of a link for a list of tree nodes */
-struct mami_data_link_s {
-  struct list_head list;
-  mami_data_t *data;
-};
-
-/** \brief Structure of a tree node */
-struct mami_data_s {
-  /** \brief Start address of the memory area */
-  void *startaddress;
-  /** \brief End address of the memory area */
-  void *endaddress;
-  /** \brief Size of the memory area */
-  size_t size;
-  /** \brief Protection of the memory area */
-  int protection;
-  /** \brief Is the memory based on huge pages */
-  int with_huge_pages;
-
-  /** \brief Page addresses of the memory area */
-  void **pageaddrs;
-  /** \brief Number of pages holding the memory area */
-  int nbpages;
-
-  /** \brief Node where the memory area is located. Meaningful when all memory allocated on the same node. Otherwise value is -1 */
-  int node;
-  /** \brief Nodes where the memory area is located. Used when pages allocated on different nodes */
-  int *nodes;
-
-  /** \brief Tag indicating if the memory has been allocated by MaMI */
-  int mami_allocated;
-  /** \brief Tag indicating the memory status */
-  mami_status_t status;
-  /** \brief Entities which are attached to the memory area */
-  p_tbx_slist_t owners;
-
-  /** \brief */
-  mami_data_t *next;
-
-  /** \brief Start address of the area to use when calling mprotect */
-  void *mprotect_startaddress;
-  /** \brief Size of the area to use when calling mprotect */
-  size_t mprotect_size;
-};
-
-/** \brief Structure of a sorted-binary tree of allocated memory areas */
-struct mami_tree_s {
-  /** \brief Left child of the tree */
-  struct mami_tree_s *leftchild;
-  /** \brief Right child of the tree */
-  struct mami_tree_s *rightchild;
-  /** \brief Node of the tree */
-  mami_data_t *data;
-};
-
-/** \brief Structure of a pre-allocated space (start address + number of pages) */
-struct mami_area_s {
-  /** \brief Start address of the memory area */
-  void *start;
-  /** \brief End address of the memory area */
-  void *end;
-  /** \brief Number of pages of the memory area */
-  int nbpages;
-  /** \brief Page size */
-  unsigned long pagesize;
-  /** \brief Protection of the memory area */
-  int protection;
-  /** \brief Next pre-allocated space */
-  struct mami_area_s *next;
-};
-
-/** \brief Structure of a reading or writing access cost from node to node */
-struct mami_access_cost_s {
-  float cost;
-};
-
-/** \brief Structure of a memory migration cost from node to node */
-struct mami_migration_cost_s {
-  size_t size_min;
-  size_t size_max;
-  float slope;
-  float intercept;
-  float correlation;
-};
-
-/** \brief Structure of a preallocated space with huge pages */
-struct mami_huge_pages_area_s {
-  void *buffer;
-  char *filename;
-  int file;
-  size_t size;
-  mami_area_t *heap;
-};
+/* @} */
 
 /** \brief Structure of a memory manager */
 struct mami_manager_s {
@@ -265,6 +177,13 @@ struct mami_manager_s {
   int migration_flag;
 };
 
+/** \addtogroup mami_init MaMI Init
+ *
+ * This is the interface for MaMI Init
+ *
+ * @{
+ */
+
 /**
  * Initialises the memory manager.
  * @param memory_manager pointer to the memory manager
@@ -292,6 +211,49 @@ int mami_set_alignment(mami_manager_t *memory_manager);
  */
 extern
 int mami_unset_alignment(mami_manager_t *memory_manager);
+
+/**
+ * Locates the given memory.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer pointer to the memory to be located
+ * @param size size of the memory area to be located
+ * @param node returns the location of the given memory
+ * @return a negative value and set errno to EINVAL when address not found
+ */
+extern
+int mami_locate(mami_manager_t *memory_manager,
+		void *buffer,
+		size_t size,
+		int *node);
+
+/**
+ * Prints on the standard output the currently managed memory areas.
+ * @param memory_manager pointer to the memory manager
+ */
+extern
+void mami_print(mami_manager_t *memory_manager);
+
+/**
+ * Prints in the given file the currently managed memory areas.
+ * @param memory_manager pointer to the memory manager
+ * @param stream
+ */
+extern
+void mami_fprint(mami_manager_t *memory_manager, FILE *stream);
+
+/**
+ * Indicates if huge pages are available on the system.
+ * @param memory_manager pointer to the memory manager
+ */
+extern
+int mami_huge_pages_available(mami_manager_t *memory_manager);
+
+/* @} */
+
+/** \addtogroup mami_alloc MaMI Allocation
+ * This is the interface for MaMI Allocation
+ * @{
+ */
 
 /**
  * Allocates memory w.r.t the specified allocation policy. Size will be rounded up to the system page size.
@@ -375,33 +337,67 @@ void mami_free(mami_manager_t *memory_manager,
                void *buffer);
 
 /**
- * Locates the given memory.
+ * Checks if the location of the memory area is the given node.
  * @param memory_manager pointer to the memory manager
- * @param buffer pointer to the memory to be located
- * @param size size of the memory area to be located
- * @param node returns the location of the given memory
- * @return a negative value and set errno to EINVAL when address not found
+ * @param buffer address of the memory area
+ * @param size size of the memory area
+ * @param node location to be checked
  */
 extern
-int mami_locate(mami_manager_t *memory_manager,
-		void *buffer,
-		size_t size,
-		int *node);
+int mami_check_pages_location(mami_manager_t *memory_manager,
+                              void *buffer,
+                              size_t size,
+                              int node);
 
 /**
- * Prints on the standard output the currently managed memory areas.
+ * Updates the location of the memory area.
  * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @param size size of the memory area
  */
 extern
-void mami_print(mami_manager_t *memory_manager);
+int mami_update_pages_location(mami_manager_t *memory_manager,
+                               void *buffer,
+                               size_t size);
+
+/* @} */
+
+/** \addtogroup mami_stats MaMI Statistics
+ * This is the interface for MaMI Statistics
+ * @{
+ */
 
 /**
- * Prints in the given file the currently managed memory areas.
+ * Indicates the value of the statistic \e stat for the node \e node
  * @param memory_manager pointer to the memory manager
- * @param stream
+ * @param node node identifier
+ * @param stat statistic
+ * @param value will contain the value of the given statistic for the given node
  */
 extern
-void mami_fprint(mami_manager_t *memory_manager, FILE *stream);
+int mami_stats(mami_manager_t *memory_manager,
+               int node,
+               mami_stats_t stat,
+               unsigned long *value);
+
+/**
+ * Selects the "best" node based on the given policy.
+ * @param memory_manager pointer to the memory manager
+ * @param policy selection policy
+ * @param node returns the id of the node
+ */
+extern
+int mami_select_node(mami_manager_t *memory_manager,
+                     mami_node_selection_policy_t policy,
+                     int *node);
+
+
+/* @} */
+
+/** \addtogroup mami_alloc MaMI Cost
+ * This is the interface for MaMI Cost
+ * @{
+ */
 
 /**
  * Indicates the migration cost for \e size bits from node \e source to node \e dest.
@@ -480,16 +476,12 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
                                    unsigned long mindest,
                                    unsigned long maxdest);
 
-/**
- * Selects the "best" node based on the given policy.
- * @param memory_manager pointer to the memory manager
- * @param policy selection policy
- * @param node returns the id of the node
+/* @} */
+
+/** \addtogroup mami_migration MaMI Migration
+ * This is the interface for MaMI Migration
+ * @{
  */
-extern
-int mami_select_node(mami_manager_t *memory_manager,
-                     mami_node_selection_policy_t policy,
-                     int *node);
 
 /**
  * Migrates the pages to the specified node.
@@ -615,50 +607,6 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
                             int node);
 
 /**
- * Indicates if huge pages are available on the system.
- * @param memory_manager pointer to the memory manager
- */
-extern
-int mami_huge_pages_available(mami_manager_t *memory_manager);
-
-/**
- * Checks if the location of the memory area is the given node.
- * @param memory_manager pointer to the memory manager
- * @param buffer address of the memory area
- * @param size size of the memory area
- * @param node location to be checked
- */
-extern
-int mami_check_pages_location(mami_manager_t *memory_manager,
-                              void *buffer,
-                              size_t size,
-                              int node);
-
-/**
- * Updates the location of the memory area.
- * @param memory_manager pointer to the memory manager
- * @param buffer address of the memory area
- * @param size size of the memory area
- */
-extern
-int mami_update_pages_location(mami_manager_t *memory_manager,
-                               void *buffer,
-                               size_t size);
-
-/**
- * Indicates the value of the statistic \e stat for the node \e node
- * @param memory_manager pointer to the memory manager
- * @param node node identifier
- * @param stat statistic
- * @param value will contain the value of the given statistic for the given node
- */
-extern
-int mami_stats(mami_manager_t *memory_manager,
-               int node,
-               mami_stats_t stat,
-               unsigned long *value);
-
-/**
  * Distributes pages of the given memory on the given set of nodes
  * using a round robin policy. The first page is migrated to the first
  * node, the second page to the second node, ....
@@ -684,6 +632,8 @@ extern
 int mami_gather(mami_manager_t *memory_manager,
                 void *buffer,
                 int node);
+
+/* @} */
 
 #endif /* MM_MAMI_H */
 #endif /* MM_MAMI_ENABLED */

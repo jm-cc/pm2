@@ -56,7 +56,7 @@ int marcel_main(int argc, char * argv[]) {
   else {
     b = mami_malloc(memory_manager, 3*memory_manager->normalpagesize, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
 
-    memory_manager->kernel_nexttouch_migration = 0;
+    mami_unset_kernel_migration(memory_manager);
     mami_migrate_on_next_touch(memory_manager, b);
 
     // Start the thread on the numa node #1

@@ -181,7 +181,9 @@ struct mami_manager_s {
   /** \brief Are memory addresses aligned on page boundaries or not? */
   int alignment;
   /** \brief Is the kernel next touch migration available */
-  int kernel_nexttouch_migration;
+  int kernel_nexttouch_migration_available;
+  /** \brief Is the kernel next touch migration requested by the user */
+  int kernel_nexttouch_migration_requested;
   /** \brief Is the migration available */
   int migration_flag;
 };

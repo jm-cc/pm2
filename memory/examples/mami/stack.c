@@ -15,7 +15,6 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -40,7 +39,7 @@ int marcel_main(int argc, char * argv[]) {
   err = mami_check_pages_location(memory_manager, ptr, size, node);
   if (err < 0) perror("mami_check_pages_location unexpectedly failed");
 
-  memory_manager->kernel_nexttouch_migration = 0;
+  mami_unset_kernel_migration(memory_manager);
   err = mami_migrate_on_next_touch(memory_manager, ptr);
   if (err < 0) perror("mami_migrate_on_next_touch unexpectedly failed");
 

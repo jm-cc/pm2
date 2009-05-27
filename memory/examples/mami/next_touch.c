@@ -34,7 +34,7 @@ any_t reader(any_t arg) {
   mami_locate(memory_manager, b, 0, &node);
   marcel_printf("Address is located on node %d\n", node);
 
-  memory_manager->kernel_nexttouch_migration = 0;
+  mami_unset_kernel_migration(memory_manager);
   mami_migrate_on_next_touch(memory_manager, b);
 
   mami_locate(memory_manager, b, 0, &node);

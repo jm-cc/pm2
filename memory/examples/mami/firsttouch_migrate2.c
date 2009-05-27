@@ -36,7 +36,7 @@ int marcel_main(int argc, char * argv[]) {
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
-  memory_manager->kernel_nexttouch_migration = 0;
+  mami_unset_kernel_migration(memory_manager);
   size = 10*memory_manager->normalpagesize;
 
   buffer1=memalign(memory_manager->normalpagesize, size);

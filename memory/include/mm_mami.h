@@ -170,6 +170,20 @@ void mami_fprint(mami_manager_t *memory_manager, FILE *stream);
 extern
 int mami_huge_pages_available(mami_manager_t *memory_manager);
 
+/**
+ * Tells MaMI to use kernel migration when it is available.
+ * @param memory_manager pointer to the memory manager
+ */
+extern
+int mami_set_kernel_migration(mami_manager_t *memory_manager);
+
+/**
+ * Tells MaMI not to use kernel migration even when it is available.
+ * @param memory_manager pointer to the memory manager
+ */
+extern
+int mami_unset_kernel_migration(mami_manager_t *memory_manager);
+
 /* @} */
 
 /** \addtogroup mami_alloc MaMI Allocation

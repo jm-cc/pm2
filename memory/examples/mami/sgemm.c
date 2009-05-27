@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -104,7 +103,10 @@ void test_sgemm(int matrix_size, int migration_policy, int initialisation_policy
     }
 
     if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_USERSPACE || migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL) {
-      memory_manager->kernel_nexttouch_migration = (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL);
+      if (migration_policy == SGEMM_MIGRATE_ON_NEXT_TOUCH_KERNEL)
+        mami_set_kernel_migration(memory_manager);
+      else
+        mami_unset_kernel_migration(memory_manager);
       mami_migrate_on_next_touch(memory_manager, matA[k]);
       mami_migrate_on_next_touch(memory_manager, matB[k]);
       mami_migrate_on_next_touch(memory_manager, matC[k]);

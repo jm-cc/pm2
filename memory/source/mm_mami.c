@@ -1504,7 +1504,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
         }
       }
       mdebug_memory("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_startaddress, data->startaddress+data->mprotect_size,
-		  data->mprotect_size, data->startaddress, data->endaddress, data->size);
+		    (long) data->mprotect_size, data->startaddress, data->endaddress, (long) data->size);
       data->status = MAMI_INITIAL_STATUS;
       err = mprotect(data->mprotect_startaddress, data->mprotect_size, PROT_NONE);
       if (err < 0) {

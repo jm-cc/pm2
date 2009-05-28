@@ -54,7 +54,7 @@
  * helpful when deciding whether or not to migrate a memory area.
  *
  * More information about MaMI can be found at
- * at http://runtime.bordeaux.inria.fr/MaMI/.
+ * http://runtime.bordeaux.inria.fr/MaMI/.
  *
  * @{
  */

@@ -56,16 +56,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
     if (err < 0) {
       mdebug_memory("The address interval [%p:%p] is not managed by MaMI. Let's register it\n", aligned_buffer, aligned_endbuffer);
-      _mami_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
-
-      if (aligned_endbuffer > buffer+size) {
-	data->mprotect_size = data->size - memory_manager->normalpagesize;
-      }
-      if (aligned_buffer < buffer) {
-	data->mprotect_startaddress += memory_manager->normalpagesize;
-	data->mprotect_size -= memory_manager->normalpagesize;
-      }
-
+      _mami_register(memory_manager, aligned_buffer, aligned_endbuffer, aligned_size, buffer, size, 0, &data);
       err = 0;
     }
     else {
@@ -87,7 +78,8 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
           data->nbpages = aligned_size/memory_manager->normalpagesize;
           data->endaddress = data->startaddress + aligned_size;
           data->size = aligned_size;
-          _mami_register(memory_manager, aligned_endbuffer, newsize, data->mami_allocated, &next_data);
+          _mami_register(memory_manager, aligned_endbuffer, aligned_endbuffer+newsize, newsize, aligned_endbuffer, newsize,
+                         data->mami_allocated, &next_data);
           data->next = next_data;
         }
       }

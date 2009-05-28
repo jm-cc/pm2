@@ -208,7 +208,10 @@ void _mami_delete_tree(mami_manager_t *memory_manager,
 extern
 void _mami_register(mami_manager_t *memory_manager,
                     void *buffer,
+                    void *endbuffer,
                     size_t size,
+                    void *initial_buffer,
+                    size_t initial_size,
                     int mami_allocated,
                     mami_data_t **data);
 

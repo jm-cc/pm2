@@ -507,7 +507,7 @@ void _mami_register_pages(mami_manager_t *memory_manager, mami_tree_t **memory_t
     (*memory_tree)->leftchild = NULL;
     (*memory_tree)->rightchild = NULL;
     _mami_init_memory_data(memory_manager, pageaddrs, nbpages, size, node, nodes,
-                               protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
+                           protection, with_huge_pages, mami_allocated, &((*memory_tree)->data));
     mdebug_memory("Adding data %p into tree\n", (*memory_tree)->data);
     if (data) *data = (*memory_tree)->data;
   }
@@ -916,10 +916,13 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
 }
 
 void _mami_register(mami_manager_t *memory_manager,
-                        void *buffer,
-                        size_t size,
-                        int mami_allocated,
-                        mami_data_t **data) {
+                    void *buffer,
+                    void *endbuffer,
+                    size_t size,
+                    void *initial_buffer,
+                    size_t initial_size,
+                    int mami_allocated,
+                    mami_data_t **data) {
   void **pageaddrs;
   int nbpages, protection, with_huge_pages;
   int i, node, *nodes;
@@ -945,6 +948,14 @@ void _mami_register(mami_manager_t *memory_manager,
   _mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, nbpages, size, node, nodes,
                        protection, with_huge_pages, mami_allocated, data);
 
+  if (endbuffer > initial_buffer+initial_size) {
+    (*data)->mprotect_size = (*data)->size - memory_manager->normalpagesize;
+  }
+  if (buffer < initial_buffer) {
+    (*data)->mprotect_startaddress += memory_manager->normalpagesize;
+    (*data)->mprotect_size -= memory_manager->normalpagesize;
+  }
+
   // Free temporary array
   tfree(pageaddrs);
 }
@@ -961,15 +972,7 @@ int mami_register(mami_manager_t *memory_manager,
   if (aligned_size > size) aligned_size = size;
   marcel_mutex_lock(&(memory_manager->lock));
   mdebug_memory("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
-  _mami_register(memory_manager, aligned_buffer, aligned_size, 0, &data);
-
-  if (aligned_endbuffer > buffer+size) {
-    data->mprotect_size = data->size - memory_manager->normalpagesize;
-  }
-  if (aligned_buffer < buffer) {
-    data->mprotect_startaddress += memory_manager->normalpagesize;
-    data->mprotect_size -= memory_manager->normalpagesize;
-  }
+  _mami_register(memory_manager, aligned_buffer, aligned_endbuffer, aligned_size, buffer, size, 0, &data);
 
   marcel_mutex_unlock(&(memory_manager->lock));
   MEMORY_LOG_OUT();
@@ -1015,7 +1018,7 @@ int mami_split(mami_manager_t *memory_manager,
     subpages = data->nbpages / subareas;
     if (!subpages) {
       mdebug_memory("Memory area from %p with size %ld and %d pages not big enough to be split in %d subareas\n",
-                  data->startaddress, (long) data->size, data->nbpages, subareas);
+                    data->startaddress, (long) data->size, data->nbpages, subareas);
       errno = EINVAL;
       err = -errno;
     }

@@ -18,7 +18,7 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-int main(int argc, char **argv) {
+int marcel_main(int argc, char **argv) {
   mami_manager_t *memory_manager;
   int i, err;
   int minsource, maxsource, mindest, maxdest;

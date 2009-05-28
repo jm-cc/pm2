@@ -39,7 +39,11 @@
  * based on the Next-touch policy, it is implemented as a user-level
  * pager (mprotect() and signal handler for SIGSEGV). The second
  * migration method is synchronous and allows to move data on a given
- * node. Both move pages using the Linux system call move_pages().
+ * node. Both move pages using the Linux system call move_pages(). We
+ * have also developed an implementation of a Next-touch policy in the
+ * kernel (see http://hal.inria.fr/inria-00358172). On systems which
+ * provide it, MaMI will use this method instead of the user-level
+ * one.
  *
  * It is possible to evaluate reading and writing access costs to
  * remote memory areas. Migration cost is based on a linear function
@@ -47,11 +51,10 @@
  *
  * Moreover, MaMI gathers statistics on how much memory is available
  * and left on the different nodes. This information is potentially
- * helpful when deciding whether or not to migrate a memory area. This
- * is the interface for memory management.
+ * helpful when deciding whether or not to migrate a memory area.
  *
  * More information about MaMI can be found at
- * found at http://runtime.bordeaux.inria.fr/MaMI/.
+ * at http://runtime.bordeaux.inria.fr/MaMI/.
  *
  * @{
  */

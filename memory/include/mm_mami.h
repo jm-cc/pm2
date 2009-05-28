@@ -123,6 +123,7 @@ void mami_exit(mami_manager_t **memory_manager);
 /**
  * Indicates that memory addresses given to MaMI should be aligned to page boundaries.
  * @param memory_manager pointer to the memory manager
+ * @return 0
  */
 extern
 int mami_set_alignment(mami_manager_t *memory_manager);
@@ -130,6 +131,7 @@ int mami_set_alignment(mami_manager_t *memory_manager);
 /**
  * Indicates that memory addresses given to MaMI should NOT be aligned to page boundaries.
  * @param memory_manager pointer to the memory manager
+ * @return 0
  */
 extern
 int mami_unset_alignment(mami_manager_t *memory_manager);
@@ -139,8 +141,8 @@ int mami_unset_alignment(mami_manager_t *memory_manager);
  * @param memory_manager pointer to the memory manager
  * @param buffer pointer to the memory to be located
  * @param size size of the memory area to be located
- * @param node returns the location of the given memory
- * @return a negative value and set errno to EINVAL when address not found
+ * @param[out] node returns the location of the given memory
+ * @return -EINVAL and set errno to EINVAL when address not found, 0 otherwise
  */
 extern
 int mami_locate(mami_manager_t *memory_manager,
@@ -166,6 +168,7 @@ void mami_fprint(mami_manager_t *memory_manager, FILE *stream);
 /**
  * Indicates if huge pages are available on the system.
  * @param memory_manager pointer to the memory manager
+ * @return 1 when huges pages are available, 0 otherwise
  */
 extern
 int mami_huge_pages_available(mami_manager_t *memory_manager);
@@ -173,6 +176,8 @@ int mami_huge_pages_available(mami_manager_t *memory_manager);
 /**
  * Tells MaMI to use kernel migration when it is available.
  * @param memory_manager pointer to the memory manager
+ * @return 1 when kernel migration is enabled, 0 otherwise (the system
+ * does not provide it)
  */
 extern
 int mami_set_kernel_migration(mami_manager_t *memory_manager);
@@ -180,6 +185,7 @@ int mami_set_kernel_migration(mami_manager_t *memory_manager);
 /**
  * Tells MaMI not to use kernel migration even when it is available.
  * @param memory_manager pointer to the memory manager
+ * @return 0
  */
 extern
 int mami_unset_kernel_migration(mami_manager_t *memory_manager);
@@ -197,6 +203,8 @@ int mami_unset_kernel_migration(mami_manager_t *memory_manager);
  * @param size size of the required memory
  * @param policy allocation policy
  * @param node allocation node
+ * @return the allocated buffer, or NULL if size or node invalid, or
+ * when there is no space left
  */
 extern
 void* mami_malloc(mami_manager_t *memory_manager,
@@ -211,6 +219,8 @@ void* mami_malloc(mami_manager_t *memory_manager,
  * @param size size of a single element
  * @param policy memory allocation policy
  * @param node allocation node
+ * @return the allocated buffer, or NULL if size or node invalid, or
+ * when there is no space left
  */
 extern
 void* mami_calloc(mami_manager_t *memory_manager,
@@ -224,6 +234,7 @@ void* mami_calloc(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
+ * @return 0
  */
 extern
 int mami_register(mami_manager_t *memory_manager,
@@ -234,6 +245,7 @@ int mami_register(mami_manager_t *memory_manager,
  * Unregisters a memory area which has not been allocated by MaMI.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
+ * @return same code as mami_locate()
  */
 extern
 int mami_unregister(mami_manager_t *memory_manager,
@@ -244,7 +256,9 @@ int mami_unregister(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param subareas number of subareas
- * @param newbuffers addresses of the new memory areas
+ * @param[out] newbuffers addresses of the new memory areas
+ * @return same code as mami_locate() when address not found or when
+ * memory not big enough to be splitted in the given number of subareas
  */
 extern
 int mami_split(mami_manager_t *memory_manager,
@@ -257,6 +271,7 @@ int mami_split(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param policy new default allocation policy
  * @param node new default allocation node
+ * @return -EINVAL and sets errno to EINVAL when the policy is invalid, 0 otherwise
  */
 extern
 int mami_membind(mami_manager_t *memory_manager,
@@ -278,6 +293,7 @@ void mami_free(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param size size of the memory area
  * @param node location to be checked
+ * @return TODO
  */
 extern
 int mami_check_pages_location(mami_manager_t *memory_manager,
@@ -290,6 +306,7 @@ int mami_check_pages_location(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
+ * @return same code as mami_locate()
  */
 extern
 int mami_update_pages_location(mami_manager_t *memory_manager,
@@ -308,7 +325,8 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param node node identifier
  * @param stat statistic
- * @param value will contain the value of the given statistic for the given node
+ * @param[out] value will contain the value of the given statistic for the given node
+ * @return -EINVAL and sets errno to EINVAL when invalid node or statistic, 0 otherwise
  */
 extern
 int mami_stats(mami_manager_t *memory_manager,
@@ -320,7 +338,8 @@ int mami_stats(mami_manager_t *memory_manager,
  * Selects the "best" node based on the given policy.
  * @param memory_manager pointer to the memory manager
  * @param policy selection policy
- * @param node returns the id of the node
+ * @param[out] node returns the id of the node
+ * @return -EINVAL and sets errno to EINVAL when invalid policy, 0 otherwise
  */
 extern
 int mami_select_node(mami_manager_t *memory_manager,
@@ -341,7 +360,8 @@ int mami_select_node(mami_manager_t *memory_manager,
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to migrate
- * @param cost estimated cost of the migration
+ * @param[out] cost estimated cost of the migration
+ * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_migration_cost(mami_manager_t *memory_manager,
@@ -356,7 +376,8 @@ int mami_migration_cost(mami_manager_t *memory_manager,
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
- * @param cost estimated cost of the access
+ * @param[out] cost estimated cost of the access
+ * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_cost_for_write_access(mami_manager_t *memory_manager,
@@ -371,7 +392,8 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
  * @param source source node
  * @param dest destination node
  * @param size how many bits do we want to access
- * @param cost estimated cost of the access
+ * @param[out] cost estimated cost of the access
+ * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_cost_for_read_access(mami_manager_t *memory_manager,
@@ -388,6 +410,7 @@ int mami_cost_for_read_access(mami_manager_t *memory_manager,
  * @param mindest
  * @param maxdest
  * @param extended_mode
+ * @return a negative value if output file cannot be created, 0 otherwise
  */
 extern
 int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
@@ -404,6 +427,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
  * @param maxsource
  * @param mindest
  * @param maxdest
+ * @return a negative value if output file cannot be created, 0 otherwise
  */
 extern
 int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
@@ -424,6 +448,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the buffer to be migrated
  * @param dest identifier of the destination node
+ * @return TODO
  */
 extern
 int mami_migrate_pages(mami_manager_t *memory_manager,
@@ -434,6 +459,7 @@ int mami_migrate_pages(mami_manager_t *memory_manager,
  * Marks the area to be migrated on next touch.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
+ * @return TODO
  */
 extern
 int mami_migrate_on_next_touch(mami_manager_t *memory_manager,
@@ -444,6 +470,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param node destination
+ * @return TODO
  */
 extern
 int mami_migrate_on_node(mami_manager_t *memory_manager,
@@ -451,12 +478,14 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
                          int node);
 
 /**
- * Attaches the memory to the specified thread
+ * Attaches the memory to the specified thread. If the memory is not
+ * known by MaMI, it will be registered.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
  * @param owner thread
- * @param node will contain the node id where the data is located
+ * @param[out] node will contain the node id where the data is located
+ * @return -EINVAL and sets errno to EINVAL when the NULL address is provided, 0 otherwise
  */
 extern
 int mami_task_attach(mami_manager_t *memory_manager,
@@ -470,6 +499,8 @@ int mami_task_attach(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner thread
+ * @return same code as mami_locate() when address not found, -ENOENT
+ * and sets errno to ENOENT when entity not attached to the memory, 0 otherwise
  */
 extern
 int mami_task_unattach(mami_manager_t *memory_manager,
@@ -480,6 +511,7 @@ int mami_task_unattach(mami_manager_t *memory_manager,
  * Unattaches all the memory areas attached to the specified thread.
  * @param memory_manager pointer to the memory manager
  * @param owner thread
+ * @return same code as mami_task_unattach()
  */
 extern
 int mami_task_unattach_all(mami_manager_t *memory_manager,
@@ -490,6 +522,7 @@ int mami_task_unattach_all(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param owner thread
  * @param node destination
+ * @return TODO
  */
 extern
 int mami_task_migrate_all(mami_manager_t *memory_manager,
@@ -497,12 +530,14 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
                           int node);
 
 /**
- * Attaches the memory to the specified bubble
+ * Attaches the memory to the specified bubble. If the memory is not
+ * known by MaMI, it will be registered.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param size size of the memory area
  * @param owner bubble
- * @param node will contain the node id where the data is located
+ * @param[out] node will contain the node id where the data is located
+ * @return -EINVAL and sets errno to EINVAL when the NULL address is provided, 0 otherwise
  */
 extern
 int mami_bubble_attach(mami_manager_t *memory_manager,
@@ -516,6 +551,8 @@ int mami_bubble_attach(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner bubble
+ * @return same code as mami_locate() when address not found, -ENOENT
+ * and sets errno to ENOENT when entity not attached to the memory, 0 otherwise
  */
 extern
 int mami_bubble_unattach(mami_manager_t *memory_manager,
@@ -526,6 +563,7 @@ int mami_bubble_unattach(mami_manager_t *memory_manager,
  * Unattaches all the memory areas attached to the specified bubble.
  * @param memory_manager pointer to the memory manager
  * @param owner bubble
+ * @return same code as mami_bubble_unattach()
  */
 extern
 int mami_bubble_unattach_all(mami_manager_t *memory_manager,
@@ -536,6 +574,7 @@ int mami_bubble_unattach_all(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param owner bubble
  * @param node destination
+ * @return TODO
  */
 extern
 int mami_bubble_migrate_all(mami_manager_t *memory_manager,
@@ -549,7 +588,8 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param nodes destination nodes
- * @param nb_nodes number of nodes in the nodes array
+ * @param nb_nodes number of nodes in the \e nodes array
+ * @return TODO
  */
 extern
 int mami_distribute(mami_manager_t *memory_manager,
@@ -558,11 +598,12 @@ int mami_distribute(mami_manager_t *memory_manager,
                     int nb_nodes);
 
 /**
- * Inverse operation of mami_distribute. All the pages of the
+ * Inverse operation of mami_distribute(). All the pages of the
  * given memory are moved back to the given node.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param node destination node
+ * @return TODO
  */
 extern
 int mami_gather(mami_manager_t *memory_manager,

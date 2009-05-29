@@ -17,16 +17,17 @@
 
 #include "mm_mami_fortran.h"
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 void mami_init_(int *memory_manager) {
-  mami_manager_t *manager = TBX_MALLOC(sizeof(mami_manager_t));
-  mami_init(manager);
+  mami_manager_t *manager;
+  mami_init(&manager);
   *memory_manager = (intptr_t)manager;
 }
 
 void mami_exit_(int *memory_manager) {
   mami_manager_t *manager = (void *)*memory_manager;
-  mami_exit(manager);
+  mami_exit(&manager);
 }
 
 void mami_unset_alignment_(int *memory_manager) {

@@ -145,7 +145,7 @@ int mami_unset_alignment(mami_manager_t *memory_manager);
  * @param buffer pointer to the memory to be located
  * @param size size of the memory area to be located
  * @param[out] node returns the location of the given memory
- * @return -EINVAL and set errno to EINVAL when address not found, 0 otherwise
+ * @return -EINVAL and set errno to EINVAL when address not known by MaMI, 0 otherwise
  */
 extern
 int mami_locate(mami_manager_t *memory_manager,
@@ -260,8 +260,9 @@ int mami_unregister(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param subareas number of subareas
  * @param[out] newbuffers addresses of the new memory areas
- * @return same code as mami_locate() when address not found or when
- * memory not big enough to be splitted in the given number of subareas
+ * @return same code as mami_locate() when address not known by MaMI
+ * or when memory not big enough to be splitted in the given number of
+ * subareas
  */
 extern
 int mami_split(mami_manager_t *memory_manager,
@@ -502,8 +503,9 @@ int mami_task_attach(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner thread
- * @return same code as mami_locate() when address not found, -ENOENT
- * and sets errno to ENOENT when entity not attached to the memory, 0 otherwise
+ * @return same code as mami_locate() when address not known by MaMI,
+ * -ENOENT and sets errno to ENOENT when entity not attached to the
+ * memory, 0 otherwise
  */
 extern
 int mami_task_unattach(mami_manager_t *memory_manager,
@@ -554,8 +556,9 @@ int mami_bubble_attach(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param owner bubble
- * @return same code as mami_locate() when address not found, -ENOENT
- * and sets errno to ENOENT when entity not attached to the memory, 0 otherwise
+ * @return same code as mami_locate() when address not known by MaMI,
+ * -ENOENT and sets errno to ENOENT when entity not attached to the
+ * memory, 0 otherwise
  */
 extern
 int mami_bubble_unattach(mami_manager_t *memory_manager,

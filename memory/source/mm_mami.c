@@ -612,7 +612,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
     }
   }
 
-  if (!buffer) mdebug_memory("No space available on node #%d\n", pnode);
+  if (!buffer) mdebug_memory("No space available on node #%d, os_node #%d\n", vnode, pnode);
   else {
     (*space) = tmalloc(sizeof(mami_area_t));
     (*space)->start = buffer;
@@ -622,7 +622,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
     (*space)->pagesize = memory_manager->normalpagesize;
     (*space)->next = NULL;
 
-    mdebug_memory("Preallocating [%p:%p] on node #%d\n", buffer,buffer+length, pnode);
+    mdebug_memory("Preallocating [%p:%p] on node #%d, os_node #%d\n", buffer,buffer+length, vnode, pnode);
   }
   MEMORY_ILOG_OUT();
   return err;
@@ -720,7 +720,7 @@ void* _mami_get_buffer_from_heap(mami_manager_t *memory_manager, int node, int n
     if (preallocatedpages < memory_manager->initially_preallocated_pages) {
       preallocatedpages = memory_manager->initially_preallocated_pages;
     }
-    osnode = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : 0;
+    osnode = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : node;
     mdebug_memory("not enough space, let's allocate %d extra pages on the OS node #%d\n", preallocatedpages, osnode);
     err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, osnode);
     if (err < 0) {

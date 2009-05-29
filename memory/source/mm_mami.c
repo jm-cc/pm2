@@ -193,13 +193,13 @@ int _mami_deallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages_
   err = close((*space)->file);
   if (err < 0) {
     perror("(_mami_deallocate_huge_pages) close");
-    err = -errno;
+    err = -1;
   }
   else {
     err = unlink((*space)->filename);
     if (err < 0) {
       perror("(_mami_deallocate_huge_pages) unlink");
-      err = -errno;
+      err = -1;
     }
   }
 
@@ -545,7 +545,7 @@ int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages
     tfree(*space);
     *space = NULL;
     perror("(_mami_preallocate_huge_pages) open");
-    return -errno;
+    return -1;
   }
 
   (*space)->buffer = mmap(NULL, (*space)->size, PROT_READ|PROT_WRITE, MAP_PRIVATE, (*space)->file, 0);
@@ -553,7 +553,7 @@ int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages
     perror("(_mami_preallocate_huge_pages) mmap");
     tfree(*space);
     *space = NULL;
-    return -errno;
+    return -1;
   }
 #warning todo: readv pour prefaulter
   /* mark the memory as unaccessible until it gets allocated to the application */
@@ -590,7 +590,7 @@ int _mami_preallocate(mami_manager_t *memory_manager, mami_area_t **space, int n
     buffer = mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
     if (buffer == MAP_FAILED) {
       perror("(_mami_preallocate) mmap");
-      err = -errno;
+      err = -1;
     }
     else {
       if (vnode != MAMI_FIRST_TOUCH_NODE) {
@@ -862,7 +862,7 @@ int _mami_locate(mami_manager_t *memory_manager, mami_tree_t *memory_tree, void 
   if (memory_tree==NULL) {
     mdebug_memory("The interval [%p:%p] is not managed by MaMI.\n", buffer, buffer+size);
     errno = EINVAL;
-    return -errno;
+    return -1;
   }
   //mdebug_memory("Comparing [%p:%p] and [%p:%p]\n", buffer,buffer+size, memory_tree->data->startaddress, memory_tree->data->endaddress);
   if (buffer >= memory_tree->data->startaddress && buffer+size <= memory_tree->data->endaddress) {
@@ -880,7 +880,7 @@ int _mami_locate(mami_manager_t *memory_manager, mami_tree_t *memory_tree, void 
   }
   else {
     errno = EINVAL;
-    return -errno;
+    return -1;
   }
 }
 
@@ -896,7 +896,7 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
       *node = MAMI_UNKNOWN_LOCATION_NODE;
     }
     errno = ENOENT;
-    err = -errno;
+    err = -1;
   }
   else {
     *node = statuses[0];
@@ -1023,7 +1023,7 @@ int mami_split(mami_manager_t *memory_manager,
       mdebug_memory("Memory area from %p with size %ld and %d pages not big enough to be split in %d subareas\n",
                     data->startaddress, (long) data->size, data->nbpages, subareas);
       errno = EINVAL;
-      err = -errno;
+      err = -1;
     }
     else {
       mdebug_memory("Splitting area from %p in %d areas of %d pages\n", data->startaddress, subareas, subpages);
@@ -1062,12 +1062,12 @@ int mami_membind(mami_manager_t *memory_manager,
   if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
     mdebug_memory("Node #%d invalid\n", node);
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else if (policy == MAMI_MEMBIND_POLICY_HUGE_PAGES && memory_manager->hugepagesize == 0) {
     mdebug_memory("Huge pages are not available. Cannot set memory policy.\n");
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     mdebug_memory("Set the current membind policy to %d (node #%d)\n", policy, node);
@@ -1245,7 +1245,7 @@ int mami_migration_cost(mami_manager_t *memory_manager,
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_memory("Invalid node id\n");
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     migration_costs = memory_manager->migration_costs[source][dest];
@@ -1278,7 +1278,7 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_memory("Invalid node id\n");
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     access_cost = memory_manager->costs_for_write_access[source][dest];
@@ -1300,7 +1300,7 @@ int mami_cost_for_read_access(mami_manager_t *memory_manager,
   if (tbx_unlikely(source >= memory_manager->nb_nodes || dest >= memory_manager->nb_nodes)) {
     mdebug_memory("Invalid node id\n");
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     access_cost = memory_manager->costs_for_read_access[source][dest];
@@ -1334,7 +1334,7 @@ int mami_select_node(mami_manager_t *memory_manager,
   else {
     mdebug_memory("Policy #%d unknown\n", policy);
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
 
   marcel_mutex_unlock(&(memory_manager->lock));
@@ -1412,7 +1412,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
 
   MEMORY_ILOG_OUT();
   errno = err;
-  return -err;
+  return -1;
 }
 
 int mami_migrate_pages(mami_manager_t *memory_manager,
@@ -1510,7 +1510,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
           perror("(mami_migrate_on_next_touch) sigaction");
           marcel_mutex_unlock(&(memory_manager->lock));
           MEMORY_LOG_OUT();
-          return -errno;
+          return -1;
         }
       }
       mdebug_memory("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_startaddress, data->startaddress+data->mprotect_size,
@@ -1571,7 +1571,7 @@ int mami_stats(mami_manager_t *memory_manager,
   if (tbx_unlikely(node >= memory_manager->nb_nodes)) {
     mdebug_memory("Node #%d invalid\n", node);
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     marcel_mutex_lock(&(memory_manager->lock));
@@ -1584,7 +1584,7 @@ int mami_stats(mami_manager_t *memory_manager,
     else {
       mdebug_memory("Statistic #%d unknown\n", stat);
       errno = EINVAL;
-      err = -errno;
+      err = -1;
     }
     marcel_mutex_unlock(&(memory_manager->lock));
   }

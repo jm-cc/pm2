@@ -194,7 +194,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
     buffer = mmap(NULL, 25000 * pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
     if (buffer < 0) {
       perror("mmap");
-      return (void *)(intptr_t)-errno;
+      return (void *)(intptr_t)-1;
     }
 
     // Set the memory policy on node source
@@ -275,7 +275,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
   out = marcel_fopen(filename, "w");
   if (!out) {
     marcel_fprintf(stderr, "Error when opening file <%s>\n", filename);
-    return -errno;
+    return -1;
   }
   marcel_fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
   marcel_fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\n");
@@ -293,7 +293,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
       marcel_join(thread, &status);
       if (status) {
         perror("error");
-        return -errno;
+        return -1;
       }
     }
   }

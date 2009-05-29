@@ -145,7 +145,7 @@ int mami_unset_alignment(mami_manager_t *memory_manager);
  * @param buffer pointer to the memory to be located
  * @param size size of the memory area to be located
  * @param[out] node returns the location of the given memory
- * @return -EINVAL and set errno to EINVAL when address not known by MaMI, 0 otherwise
+ * @return -1 and set errno to EINVAL when address not known by MaMI, 0 otherwise
  */
 extern
 int mami_locate(mami_manager_t *memory_manager,
@@ -275,7 +275,7 @@ int mami_split(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param policy new default allocation policy
  * @param node new default allocation node
- * @return -EINVAL and sets errno to EINVAL when the policy is invalid, 0 otherwise
+ * @return -1 and sets errno to EINVAL when the policy is invalid, 0 otherwise
  */
 extern
 int mami_membind(mami_manager_t *memory_manager,
@@ -330,7 +330,7 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
  * @param node node identifier
  * @param stat statistic
  * @param[out] value will contain the value of the given statistic for the given node
- * @return -EINVAL and sets errno to EINVAL when invalid node or statistic, 0 otherwise
+ * @return -1 and sets errno to EINVAL when invalid node or statistic, 0 otherwise
  */
 extern
 int mami_stats(mami_manager_t *memory_manager,
@@ -343,7 +343,7 @@ int mami_stats(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param policy selection policy
  * @param[out] node returns the id of the node
- * @return -EINVAL and sets errno to EINVAL when invalid policy, 0 otherwise
+ * @return -1 and sets errno to EINVAL when invalid policy, 0 otherwise
  */
 extern
 int mami_select_node(mami_manager_t *memory_manager,
@@ -365,7 +365,7 @@ int mami_select_node(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to migrate
  * @param[out] cost estimated cost of the migration
- * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_migration_cost(mami_manager_t *memory_manager,
@@ -381,7 +381,7 @@ int mami_migration_cost(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param[out] cost estimated cost of the access
- * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_cost_for_write_access(mami_manager_t *memory_manager,
@@ -397,7 +397,7 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param[out] cost estimated cost of the access
- * @return -EINVAL and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
  */
 extern
 int mami_cost_for_read_access(mami_manager_t *memory_manager,
@@ -489,7 +489,7 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
  * @param size size of the memory area
  * @param owner thread
  * @param[out] node will contain the node id where the data is located
- * @return -EINVAL and sets errno to EINVAL when the NULL address is provided, 0 otherwise
+ * @return -1 and sets errno to EINVAL when the NULL address is provided, 0 otherwise
  */
 extern
 int mami_task_attach(mami_manager_t *memory_manager,
@@ -504,7 +504,7 @@ int mami_task_attach(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param owner thread
  * @return same code as mami_locate() when address not known by MaMI,
- * -ENOENT and sets errno to ENOENT when entity not attached to the
+ * -1 and sets errno to ENOENT when entity not attached to the
  * memory, 0 otherwise
  */
 extern
@@ -542,7 +542,7 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
  * @param size size of the memory area
  * @param owner bubble
  * @param[out] node will contain the node id where the data is located
- * @return -EINVAL and sets errno to EINVAL when the NULL address is provided, 0 otherwise
+ * @return -1 and sets errno to EINVAL when the NULL address is provided, 0 otherwise
  */
 extern
 int mami_bubble_attach(mami_manager_t *memory_manager,
@@ -557,7 +557,7 @@ int mami_bubble_attach(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param owner bubble
  * @return same code as mami_locate() when address not known by MaMI,
- * -ENOENT and sets errno to ENOENT when entity not attached to the
+ * -1 and sets errno to ENOENT when entity not attached to the
  * memory, 0 otherwise
  */
 extern

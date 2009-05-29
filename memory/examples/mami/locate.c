@@ -29,19 +29,19 @@ int marcel_main(int argc, char * argv[]) {
   ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
 
   err = mami_locate(memory_manager, ptr, 1000, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
-  if (err < 0) marcel_printf("mami_locate: error %d\n", err);
+  if (err < 0) perror("(1) mami_locate unexpectedly failed");
+  else marcel_printf("(1) The memory is located on node #%d\n", node);
 
   err = mami_locate(memory_manager, NULL, 0, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
-  if (err < 0) marcel_printf("mami_locate: error %d\n", err);
+  if (err < 0) perror("(2) mami_locate successfully failed");
+  else marcel_printf("(2) The memory is located on node #%d\n", node);
 
   mami_free(memory_manager, ptr);
 
   ptr = malloc(1000);
   err = mami_locate(memory_manager, ptr, 1000, &node);
-  marcel_printf("The memory is located on node #%d\n", node);
-  if (err < 0) marcel_printf("mami_locate: error %d\n", err);
+  if (err < 0) perror("(3) mami_locate successfully failed");
+  else marcel_printf("(3) The memory is located on node #%d\n", node);
 
   free(ptr);
   mami_exit(&memory_manager);

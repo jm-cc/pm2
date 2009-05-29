@@ -40,7 +40,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
   if (!buffer) {
     mdebug_memory("Cannot attach NULL buffer\n");
     errno = EINVAL;
-    err = -errno;
+    err = -1;
   }
   else {
     void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
@@ -131,7 +131,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
     if (tbx_slist_is_nil(data->owners)) {
       mdebug_memory("The entity %p is not attached to the memory area %p(1).\n", owner, aligned_buffer);
       errno = ENOENT;
-      err = -errno;
+      err = -1;
     }
     else {
       res = tbx_slist_search_and_extract(data->owners, NULL, owner);
@@ -155,7 +155,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
       else {
         mdebug_memory("The entity %p is not attached to the memory area %p.\n", owner, aligned_buffer);
         errno = ENOENT;
-        err = -errno;
+        err = -1;
       }
     }
   }

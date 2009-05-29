@@ -14,11 +14,10 @@
 
 . ./mami.sh
 prog="locate"
+sort_output=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-The memory is located on node #0
-The memory is located on node #0
-mami_locate: error -22
-The memory is located on node #0
-mami_locate: error -22
+(1) The memory is located on node #0
+(2) mami_locate successfully failed: Invalid argument
+(3) mami_locate successfully failed: Invalid argument
 EOF
 

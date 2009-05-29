@@ -295,9 +295,9 @@ int mami_unset_alignment(mami_manager_t *memory_manager) {
 
 static
 void _mami_init_memory_data(mami_manager_t *memory_manager,
-                                void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
-                                int protection, int with_huge_pages, int mami_allocated,
-                                mami_data_t **memory_data) {
+                            void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
+                            int protection, int with_huge_pages, int mami_allocated,
+                            mami_data_t **memory_data) {
   MEMORY_ILOG_IN();
 
   *memory_data = tmalloc(sizeof(mami_data_t));
@@ -482,9 +482,9 @@ void _mami_unregister(mami_manager_t *memory_manager, mami_tree_t **memory_tree,
 
 static
 void _mami_register_pages(mami_manager_t *memory_manager, mami_tree_t **memory_tree,
-                              void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
-                              int protection, int with_huge_pages, int mami_allocated,
-                              mami_data_t **data) {
+                          void **pageaddrs, int nbpages, size_t size, int node, int *nodes,
+                          int protection, int with_huge_pages, int mami_allocated,
+                          mami_data_t **data) {
   MEMORY_ILOG_IN();
   if (*memory_tree==NULL) {
     *memory_tree = tmalloc(sizeof(mami_tree_t));
@@ -1326,7 +1326,8 @@ int mami_select_node(mami_manager_t *memory_manager,
 }
 
 int _mami_migrate_pages(mami_manager_t *memory_manager,
-                        mami_data_t *data, int dest) {
+                        mami_data_t *data,
+                        int dest) {
   int err=0;
 
   MEMORY_ILOG_IN();
@@ -1387,7 +1388,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
         do {
           marcel_entity_t *object = NULL;
           object = tbx_slist_ref_get(data->owners);
-          _mm_mami_update_stats(object, data->node, dest, data->size);
+          _mami_update_stats(object, data->node, dest, data->size);
         } while (tbx_slist_ref_forward(data->owners));
       }
       data->node = dest;

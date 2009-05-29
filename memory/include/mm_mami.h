@@ -145,7 +145,7 @@ int mami_unset_alignment(mami_manager_t *memory_manager);
  * @param buffer pointer to the memory to be located
  * @param size size of the memory area to be located
  * @param[out] node returns the location of the given memory
- * @return -1 and set errno to EINVAL when address not known by MaMI, 0 otherwise
+ * @return 0 on success, -1 and set errno to EINVAL when address not known by MaMI
  */
 extern
 int mami_locate(mami_manager_t *memory_manager,
@@ -275,7 +275,7 @@ int mami_split(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param policy new default allocation policy
  * @param node new default allocation node
- * @return -1 and sets errno to EINVAL when the policy is invalid, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when the policy is invalid
  */
 extern
 int mami_membind(mami_manager_t *memory_manager,
@@ -297,7 +297,8 @@ void mami_free(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param size size of the memory area
  * @param node location to be checked
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or pages located on another node
  */
 extern
 int mami_check_pages_location(mami_manager_t *memory_manager,
@@ -330,7 +331,7 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
  * @param node node identifier
  * @param stat statistic
  * @param[out] value will contain the value of the given statistic for the given node
- * @return -1 and sets errno to EINVAL when invalid node or statistic, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when invalid node or statistic
  */
 extern
 int mami_stats(mami_manager_t *memory_manager,
@@ -343,7 +344,7 @@ int mami_stats(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param policy selection policy
  * @param[out] node returns the id of the node
- * @return -1 and sets errno to EINVAL when invalid policy, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when invalid policy
  */
 extern
 int mami_select_node(mami_manager_t *memory_manager,
@@ -365,7 +366,7 @@ int mami_select_node(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to migrate
  * @param[out] cost estimated cost of the migration
- * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when invalid nodes
  */
 extern
 int mami_migration_cost(mami_manager_t *memory_manager,
@@ -381,7 +382,7 @@ int mami_migration_cost(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param[out] cost estimated cost of the access
- * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when invalid nodes
  */
 extern
 int mami_cost_for_write_access(mami_manager_t *memory_manager,
@@ -397,7 +398,7 @@ int mami_cost_for_write_access(mami_manager_t *memory_manager,
  * @param dest destination node
  * @param size how many bits do we want to access
  * @param[out] cost estimated cost of the access
- * @return -1 and sets errno to EINVAL when invalid nodes, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when invalid nodes
  */
 extern
 int mami_cost_for_read_access(mami_manager_t *memory_manager,
@@ -414,7 +415,7 @@ int mami_cost_for_read_access(mami_manager_t *memory_manager,
  * @param mindest
  * @param maxdest
  * @param extended_mode
- * @return a negative value if output file cannot be created, 0 otherwise
+ * @return 0 on success, a negative value if output file cannot be created
  */
 extern
 int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
@@ -431,7 +432,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
  * @param maxsource
  * @param mindest
  * @param maxdest
- * @return a negative value if output file cannot be created, 0 otherwise
+ * @return 0 on success, a negative value if output file cannot be created
  */
 extern
 int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
@@ -452,7 +453,9 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the buffer to be migrated
  * @param dest identifier of the destination node
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or to EALREADY when pages already located on the
+ * given node
  */
 extern
 int mami_migrate_pages(mami_manager_t *memory_manager,
@@ -463,23 +466,13 @@ int mami_migrate_pages(mami_manager_t *memory_manager,
  * Marks the area to be migrated on next touch.
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or to other specific error values when setting the
+ * next touch policy
  */
 extern
 int mami_migrate_on_next_touch(mami_manager_t *memory_manager,
                                void *buffer);
-
-/**
- * Migrates the area to the specified node.
- * @param memory_manager pointer to the memory manager
- * @param buffer address of the memory area
- * @param node destination
- * @return TODO
- */
-extern
-int mami_migrate_on_node(mami_manager_t *memory_manager,
-                         void *buffer,
-                         int node);
 
 /**
  * Attaches the memory to the specified thread. If the memory is not
@@ -489,7 +482,7 @@ int mami_migrate_on_node(mami_manager_t *memory_manager,
  * @param size size of the memory area
  * @param owner thread
  * @param[out] node will contain the node id where the data is located
- * @return -1 and sets errno to EINVAL when the NULL address is provided, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when the NULL address is provided
  */
 extern
 int mami_task_attach(mami_manager_t *memory_manager,
@@ -527,7 +520,8 @@ int mami_task_unattach_all(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param owner thread
  * @param node destination
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EALREADY when pages
+ * already located on the given node
  */
 extern
 int mami_task_migrate_all(mami_manager_t *memory_manager,
@@ -542,7 +536,7 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
  * @param size size of the memory area
  * @param owner bubble
  * @param[out] node will contain the node id where the data is located
- * @return -1 and sets errno to EINVAL when the NULL address is provided, 0 otherwise
+ * @return 0 on success, -1 and sets errno to EINVAL when the NULL address is provided
  */
 extern
 int mami_bubble_attach(mami_manager_t *memory_manager,
@@ -580,7 +574,8 @@ int mami_bubble_unattach_all(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param owner bubble
  * @param node destination
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EALREADY when pages
+ * already located on the given node
  */
 extern
 int mami_bubble_migrate_all(mami_manager_t *memory_manager,
@@ -595,7 +590,8 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
  * @param buffer address of the memory area
  * @param nodes destination nodes
  * @param nb_nodes number of nodes in the \e nodes array
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or to other specific error values when moving pages
  */
 extern
 int mami_distribute(mami_manager_t *memory_manager,
@@ -609,7 +605,8 @@ int mami_distribute(mami_manager_t *memory_manager,
  * @param memory_manager pointer to the memory manager
  * @param buffer address of the memory area
  * @param node destination node
- * @return TODO
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or to other specific error values when moving pages
  */
 extern
 int mami_gather(mami_manager_t *memory_manager,

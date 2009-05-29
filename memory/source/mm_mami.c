@@ -1124,7 +1124,8 @@ int _mami_check_pages_location(void **pageaddrs, int pages, int node) {
     for(i=0; i<pages; i++) {
       if (pagenodes[i] != node) {
         marcel_fprintf(stderr, "MaMI Warning: page #%d is not located on node #%d but on node #%d\n", i, node, pagenodes[i]);
-        err = -EINVAL;
+        errno = EINVAL;
+        err = -1;
       }
     }
   }
@@ -1349,7 +1350,8 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
   MEMORY_ILOG_IN();
   if (data->node == dest) {
     mdebug_memory("The address %p is already located at the required node.\n", data->startaddress);
-    err = EALREADY;
+    errno = EALREADY;
+    err = -1;
   }
   else {
     if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
@@ -1411,8 +1413,7 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
   }
 
   MEMORY_ILOG_OUT();
-  errno = err;
-  return -1;
+  return err;
 }
 
 int mami_migrate_pages(mami_manager_t *memory_manager,
@@ -1521,24 +1522,6 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
         perror("(mami_migrate_on_next_touch) mprotect");
       }
     }
-  }
-  marcel_mutex_unlock(&(memory_manager->lock));
-  MEMORY_LOG_OUT();
-  return err;
-}
-
-int mami_migrate_on_node(mami_manager_t *memory_manager,
-                         void *buffer,
-                         int node) {
-  mami_data_t *data = NULL;
-  int err;
-
-  MEMORY_LOG_IN();
-  marcel_mutex_lock(&(memory_manager->lock));
-
-  err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
-  if (err >= 0) {
-    err = _mami_migrate_pages(memory_manager, data, node);
   }
   marcel_mutex_unlock(&(memory_manager->lock));
   MEMORY_LOG_OUT();

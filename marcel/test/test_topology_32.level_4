@@ -22,9 +22,7 @@ if [ -d $topology_chroot ] ; then
     cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected
 else
     echo Warning: topology $topology_chroot not available >&2
-    prog="`type -P true`"
-    rm -f /tmp/pm2test_"${USER}"_expected
-    touch /tmp/pm2test_"${USER}"_expected
+    pm2_skip_test
 fi
 
 

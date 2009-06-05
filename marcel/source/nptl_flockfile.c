@@ -211,7 +211,9 @@ void
 __flockfile (stream)
 	_LPT_IO_FILE *stream;
 {
-#warning workaround tant que marcel ne peut pas être initialisé assez tôt...
+#ifdef PM2_DEV
+#  warning workaround tant que marcel ne peut pas être initialisé assez tôt...
+#endif
 	if (marcel_activity)
 		_lpt_IO_lock_lock (&(*stream->_lock));
 }

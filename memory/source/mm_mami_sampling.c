@@ -18,8 +18,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <unistd.h>
+
 #include "mm_mami.h"
 #include "mm_mami_private.h"
+#include "mm_mami_thread.h"
 #include "mm_debug.h"
 #include "mm_helper.h"
 
@@ -62,8 +65,8 @@ void _mami_sampling_of_memory_migration(unsigned long source, unsigned long dest
   ns = us * 1000;
   ns /= (loops * 2);
   bandwidth = ns / pages;
-  marcel_fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
-  marcel_fprintf(stdout, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
+  th_mami_fprintf(f, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
+  th_mami_fprintf(stdout, "%ld\t%ld\t%d\t%ld\t%ld\t%ld\n", source, dest, pages, pagesize*pages, ns, bandwidth);
 }
 
 static
@@ -79,24 +82,24 @@ int _mami_get_filename(const char *type, char *filename, long source, long dest)
   }
   pathname = getenv("PM2_SAMPLING_DIR");
   if (pathname) {
-    rc = marcel_snprintf(directory, 1024, "%s/memory", pathname);
+    rc = th_mami_snprintf(directory, 1024, "%s/memory", pathname);
   }
   else {
-    rc = marcel_snprintf(directory, 1024, "/var/local/pm2/memory");
+    rc = th_mami_snprintf(directory, 1024, "/var/local/pm2/memory");
   }
   assert(rc < 1024);
 
   if (source == -1) {
     if (dest == -1)
-      rc = marcel_snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
+      rc = th_mami_snprintf(filename, 1024, "%s/%s_%s.dat", directory, type, hostname);
     else
-      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
+      rc = th_mami_snprintf(filename, 1024, "%s/%s_%s_dest_%ld.dat", directory, type, hostname, dest);
   }
   else {
     if (dest == -1)
-      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
+      rc = th_mami_snprintf(filename, 1024, "%s/%s_%s_source_%ld.dat", directory, type, hostname, source);
     else
-      rc = marcel_snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
+      rc = th_mami_snprintf(filename, 1024, "%s/%s_%s_source_%ld_dest_%ld.dat", directory, type, hostname, source, dest);
   }
   assert(rc < 1024);
   return 0;
@@ -106,7 +109,7 @@ static
 void _mami_insert_migration_cost(p_tbx_slist_t migration_costs, size_t size_min, size_t size_max, float slope, float intercept, float correlation) {
   mami_migration_cost_t *migration_cost;
 
-  migration_cost = tmalloc(sizeof(mami_migration_cost_t));
+  migration_cost = th_mami_malloc(sizeof(mami_migration_cost_t));
   migration_cost->size_min = size_min;
   migration_cost->size_max = size_max;
   migration_cost->slope = slope;
@@ -135,30 +138,30 @@ int _mami_load_model_for_memory_migration(mami_manager_t *memory_manager) {
     perror("_mami_get_filename");
     return -1;
   }
-  out = marcel_fopen(filename, "r");
+  out = th_mami_fopen(filename, "r");
   if (!out) {
     mdebug_memory("The model for the cost of the memory migration is not available\n");
     return -1;
   }
   mdebug_memory("Reading file %s\n", filename);
-  marcel_fgets(line, 1024, out);
+  th_mami_fgets(line, 1024, out);
   mdebug_memory("Reading line %s\n", line);
-  while (!(marcel_feof(out))) {
-    if (marcel_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
+  while (!(th_mami_feof(out))) {
+    if (th_mami_fscanf(out, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", &source, &dest, &min_size, &max_size, &slope, &intercept, &correlation, &bandwidth) == EOF) {
       break;
     }
 
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
       if (debug_memory.show > PM2DEBUG_STDLEVEL) {
-	marcel_fprintf(stderr, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
+	th_mami_fprintf(stderr, "%ld\t%ld\t%ld\t%ld\t%f\t%f\t%f\t%f\n", source, dest, min_size, max_size, slope, intercept, correlation, bandwidth);
       }
 #endif /* PM2DEBUG */
       _mami_insert_migration_cost(memory_manager->migration_costs[source][dest], min_size, max_size, slope, intercept, correlation);
       _mami_insert_migration_cost(memory_manager->migration_costs[dest][source], min_size, max_size, slope, intercept, correlation);
     }
   }
-  marcel_fclose(out);
+  th_mami_fclose(out);
   return 0;
 }
 
@@ -173,8 +176,8 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
   int i;
   unsigned long source;
   unsigned long dest;
-  marcel_t thread;
-  marcel_attr_t attr;
+  th_mami_t thread;
+  th_mami_attr_t attr;
   auto any_t migration(any_t arg);
 
   auto any_t migration(any_t arg) {
@@ -209,14 +212,14 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
     memset(buffer, 0, 25000*pagesize);
 
     // Set the page addresses
-    pageaddrs = tmalloc(25000 * sizeof(void *));
+    pageaddrs = th_mami_malloc(25000 * sizeof(void *));
     for(i=0; i<25000; i++)
       pageaddrs[i] = buffer + i*pagesize;
 
     // Set the other variables
-    status = tmalloc(25000 * sizeof(int));
-    sources = tmalloc(25000 * sizeof(int));
-    dests = tmalloc(25000 * sizeof(int));
+    status = th_mami_malloc(25000 * sizeof(int));
+    sources = th_mami_malloc(25000 * sizeof(int));
+    dests = th_mami_malloc(25000 * sizeof(int));
     for(i=0; i<25000 ; i++) dests[i] = dest;
     for(i=0; i<25000 ; i++) sources[i] = source;
 
@@ -229,34 +232,34 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
       for(pages=1; pages<10 ; pages++) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
       }
-      marcel_fflush(out);
+      th_mami_fflush(out);
 
       for(pages=10; pages<100 ; pages+=10) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        marcel_fflush(out);
+        th_mami_fflush(out);
       }
 
       for(pages=100; pages<1000 ; pages+=100) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        marcel_fflush(out);
+        th_mami_fflush(out);
       }
 
       for(pages=1000; pages<10000 ; pages+=1000) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        marcel_fflush(out);
+        th_mami_fflush(out);
       }
 
       for(pages=10000; pages<=25000 ; pages+=5000) {
         _mami_sampling_of_memory_migration(source, dest, buffer, pages, LOOPS_FOR_MEMORY_MIGRATION, pageaddrs, sources, dests, status, pagesize, out);
-        marcel_fflush(out);
+        th_mami_fflush(out);
       }
     }
 
     munmap(buffer, 25000 * pagesize);
-    tfree(pageaddrs);
-    tfree(status);
-    tfree(sources);
-    tfree(dests);
+    th_mami_free(pageaddrs);
+    th_mami_free(status);
+    th_mami_free(sources);
+    th_mami_free(dests);
     return NULL;
   }
 
@@ -272,15 +275,15 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
       return -1;
     }
   }
-  out = marcel_fopen(filename, "w");
+  out = th_mami_fopen(filename, "w");
   if (!out) {
-    marcel_fprintf(stderr, "Error when opening file <%s>\n", filename);
+    th_mami_fprintf(stderr, "Error when opening file <%s>\n", filename);
     return -1;
   }
-  marcel_fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
-  marcel_fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\n");
+  th_mami_fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
+  th_mami_fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\n");
 
-  marcel_attr_init(&attr);
+  th_mami_attr_init(&attr);
   for(source=minsource; source<=maxsource ; source++) {
     for(dest=mindest; dest<=maxdest ; dest++) {
       any_t status;
@@ -289,16 +292,16 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
 
       // Create a thread on node source
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
-      marcel_create(&thread, &attr, migration, NULL);
-      marcel_join(thread, &status);
+      th_mami_create(&thread, &attr, migration, NULL);
+      th_mami_join(thread, &status);
       if (status) {
         perror("error");
         return -1;
       }
     }
   }
-  marcel_fclose(out);
-  marcel_fprintf(stdout, "Sampling saved in <%s>\n", filename);
+  th_mami_fclose(out);
+  th_mami_fprintf(stdout, "Sampling saved in <%s>\n", filename);
   return 0;
 }
 
@@ -316,29 +319,29 @@ int _mami_load_model_for_memory_access(mami_manager_t *memory_manager) {
     perror("_mami_get_filename");
     return -1;
   }
-  out = marcel_fopen(filename, "r");
+  out = th_mami_fopen(filename, "r");
   if (!out) {
     mdebug_memory("The model for the cost of the memory access is not available\n");
     return -1;
   }
   mdebug_memory("Reading file %s\n", filename);
-  marcel_fgets(line, 1024, out);
-  while (!marcel_feof(out)) {
-    if (marcel_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
+  th_mami_fgets(line, 1024, out);
+  while (!th_mami_feof(out)) {
+    if (th_mami_fscanf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", &source, &dest, &size, &rtime, &rcacheline, &wtime, &wcacheline) == EOF) {
       break;
     }
 
     if (source < memory_manager->nb_nodes && dest < memory_manager->nb_nodes) {
 #ifdef PM2DEBUG
       if (debug_memory.show > PM2DEBUG_STDLEVEL) {
-	marcel_fprintf(stderr, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
+	th_mami_fprintf(stderr, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n", source, dest, size, rtime, rcacheline, wtime, wcacheline);
       }
 #endif /* PM2DEBUG */
       memory_manager->costs_for_write_access[source][dest].cost = wcacheline;
       memory_manager->costs_for_read_access[source][dest].cost = rcacheline;
     }
   }
-  marcel_fclose(out);
+  th_mami_fclose(out);
   return 0;
 }
 
@@ -351,8 +354,8 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
   FILE *out;
   unsigned long t, node;
   unsigned long long **rtimes, **wtimes;
-  marcel_t thread;
-  marcel_attr_t attr;
+  th_mami_t thread;
+  th_mami_attr_t attr;
   int **buffers;
   long long int size=100;
   auto any_t writer(any_t arg);
@@ -363,7 +366,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     int i, j, node;
     unsigned int gold = 1.457869;
 
-    node = marcel_self()->id;
+    node = th_mami_thread_id(th_mami_self());
     buffer = buffers[node];
 
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
@@ -377,7 +380,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     int *buffer;
     int i, j, node;
 
-    node = marcel_self()->id;
+    node = th_mami_thread_id(th_mami_self());
     buffer = buffers[node];
 
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
@@ -389,7 +392,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     return NULL;
   }
 
-  marcel_attr_init(&attr);
+  th_mami_attr_init(&attr);
 
   {
     int err;
@@ -403,20 +406,20 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       return -1;
     }
   }
-  out = marcel_fopen(filename, "w");
+  out = th_mami_fopen(filename, "w");
   if (!out) {
-    marcel_fprintf(stderr, "Error when opening file <%s>\n", filename);
+    th_mami_fprintf(stderr, "Error when opening file <%s>\n", filename);
     return -1;
   }
 
-  rtimes = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
-  wtimes = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
+  rtimes = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
+  wtimes = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long long *));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    rtimes[node] = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long));
-    wtimes[node] = tmalloc(memory_manager->nb_nodes * sizeof(unsigned long long));
+    rtimes[node] = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long long));
+    wtimes[node] = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long long));
   }
 
-  buffers = tmalloc(memory_manager->nb_nodes * sizeof(int *));
+  buffers = th_mami_malloc(memory_manager->nb_nodes * sizeof(int *));
   // Allocate memory on each node
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     buffers[node] = mami_malloc(memory_manager, size*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
@@ -428,13 +431,13 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_setid(&attr, node);
+      marcel_attr_setid(&attr, node); // todo: not posix
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
 
       gettimeofday(&tv1, NULL);
-      marcel_create(&thread, &attr, writer, NULL);
+      th_mami_create(&thread, &attr, writer, NULL);
       // Wait for the thread to complete
-      marcel_join(thread, NULL);
+      th_mami_join(thread, NULL);
       gettimeofday(&tv2, NULL);
 
       us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
@@ -452,9 +455,9 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
 
       gettimeofday(&tv1, NULL);
-      marcel_create(&thread, &attr, reader, NULL);
+      th_mami_create(&thread, &attr, reader, NULL);
       // Wait for the thread to complete
-      marcel_join(thread, NULL);
+      th_mami_join(thread, NULL);
       gettimeofday(&tv2, NULL);
 
       us = (tv2.tv_sec - tv1.tv_sec) * 1000000 + (tv2.tv_usec - tv1.tv_usec);
@@ -467,27 +470,27 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     mami_free(memory_manager, buffers[node]);
   }
 
-  marcel_fprintf(stdout, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
-  marcel_fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  th_mami_fprintf(stdout, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
+  th_mami_fprintf(out, "Thread\tNode\tBytes\t\tReader (ns)\tCache Line (ns)\tWriter (ns)\tCache Line (ns)\n");
   for(t=minsource ; t<=maxsource ; t++) {
     for(node=mindest ; node<=maxdest ; node++) {
-      marcel_fprintf(stdout, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-                     t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
-                     rtimes[node][t],
-                     (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
-                     wtimes[node][t],
-                     (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
-      marcel_fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
-                     t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
-                     rtimes[node][t],
-                     (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
-                     wtimes[node][t],
-                     (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
+      th_mami_fprintf(stdout, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+                      t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
+                      rtimes[node][t],
+                      (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
+                      wtimes[node][t],
+                      (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
+      th_mami_fprintf(out, "%ld\t%ld\t%lld\t%lld\t%f\t%lld\t%f\n",
+                      t, node, LOOPS_FOR_MEMORY_ACCESS*size*4,
+                      rtimes[node][t],
+                      (float)(rtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size,
+                      wtimes[node][t],
+                      (float)(wtimes[node][t]) / (float)(LOOPS_FOR_MEMORY_ACCESS*size*4) / (float)memory_manager->cache_line_size);
     }
   }
 
-  marcel_fclose(out);
-  marcel_fprintf(stdout, "Sampling saved in <%s>\n", filename);
+  th_mami_fclose(out);
+  th_mami_fprintf(stdout, "Sampling saved in <%s>\n", filename);
   return 0;
 }
 

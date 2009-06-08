@@ -15,6 +15,7 @@
 
 #ifdef MM_MAMI_ENABLED
 
+#ifdef MARCEL
 #define MARCEL_INTERNAL_INCLUDE
 
 #include <errno.h>
@@ -269,4 +270,5 @@ int _mami_update_stats(marcel_entity_t *entity,
   return 0;
 }
 
+#endif /* MARCEL */
 #endif /* MM_MAMI_ENABLED */

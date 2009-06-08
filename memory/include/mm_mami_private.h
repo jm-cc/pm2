@@ -18,6 +18,10 @@
 #ifndef MM_MAMI_PRIVATE_H
 #define MM_MAMI_PRIVATE_H
 
+#include <stdint.h>
+#include "pm2_list.h"
+#include "mm_mami_thread.h"
+
 /** \brief Type of a memory migration cost from node to node */
 typedef struct mami_migration_cost_s mami_migration_cost_t;
 
@@ -165,7 +169,7 @@ struct mami_manager_s {
   /** \brief Free memory per node */
   unsigned long *memfree;
   /** \brief Lock to manipulate the data */
-  marcel_mutex_t lock;
+  th_mami_mutex_t lock;
   /** \brief System page size */
   unsigned long normalpagesize;
   /** \brief System huge page size */
@@ -267,12 +271,6 @@ extern
 int _mami_migrate_pages(mami_manager_t *memory_manager,
                         mami_data_t *data,
                         int dest);
-
-extern
-int _mami_update_stats(marcel_entity_t *entity,
-                       int source,
-                       int dest,
-                       size_t size);
 
 #endif /* MM_MAMI_PRIVATE_H */
 #endif /* MM_MAMI_ENABLED */

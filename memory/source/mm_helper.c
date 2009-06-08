@@ -15,6 +15,9 @@
 
 #if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
 
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "mm_helper.h"
 #include "mm_debug.h"
 
@@ -23,7 +26,7 @@ int _mm_mbind(void *start, unsigned long len, int mode,
   int err = 0;
 
   MEMORY_ILOG_IN();
-  if (marcel_use_synthetic_topology) {
+  if (_mm_use_synthetic_topology()) {
       MEMORY_ILOG_OUT();
       return err;
   }
@@ -41,7 +44,7 @@ int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int fla
   int err=0;
 
   MEMORY_ILOG_IN();
-  if (marcel_use_synthetic_topology) {
+  if (_mm_use_synthetic_topology()) {
       MEMORY_ILOG_OUT();
       return err;
   }
@@ -55,6 +58,14 @@ int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int fla
   if (err < 0) perror("(_mm_move_pages) move_pages");
   MEMORY_ILOG_OUT();
   return err;
+}
+
+int _mm_use_synthetic_topology(void) {
+#ifdef MARCEL
+  return marcel_use_synthetic_topology;
+#else
+  return 0;
+#endif
 }
 
 #endif /* MM_MAMI_ENABLED || MM_HEAP_ENABLED */

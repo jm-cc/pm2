@@ -363,12 +363,11 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
 
   auto any_t writer(any_t arg) {
     int *buffer;
-    int i, j, node;
+    int i, j;
+    int *node = (int *) arg;
     unsigned int gold = 1.457869;
 
-    node = th_mami_thread_id(th_mami_self());
-    buffer = buffers[node];
-
+    buffer = buffers[*node];
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
       for(i=0 ; i<size ; i++) {
         __builtin_ia32_movnti((void*) &buffer[i], gold);
@@ -378,11 +377,10 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
   }
   auto any_t reader(any_t arg) {
     int *buffer;
-    int i, j, node;
+    int i, j;
+    int *node = (int *) arg;
 
-    node = th_mami_thread_id(th_mami_self());
-    buffer = buffers[node];
-
+    buffer = buffers[*node];
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
       for(i=0 ; i<size ; i+=memory_manager->cache_line_size/4) {
         __builtin_prefetch((void*)&buffer[i]);
@@ -431,11 +429,10 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_setid(&attr, node); // todo: not posix
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
 
       gettimeofday(&tv1, NULL);
-      th_mami_create(&thread, &attr, writer, NULL);
+      th_mami_create(&thread, &attr, writer, (any_t) &node);
       // Wait for the thread to complete
       th_mami_join(thread, NULL);
       gettimeofday(&tv2, NULL);
@@ -451,11 +448,10 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_setid(&attr, node);
       marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
 
       gettimeofday(&tv1, NULL);
-      th_mami_create(&thread, &attr, reader, NULL);
+      th_mami_create(&thread, &attr, reader, (any_t) &node);
       // Wait for the thread to complete
       th_mami_join(thread, NULL);
       gettimeofday(&tv2, NULL);

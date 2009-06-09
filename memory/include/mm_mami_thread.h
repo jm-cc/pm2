@@ -46,7 +46,6 @@
 
 //#  define th_mami_main                	main
 #  define th_mami_self              	marcel_self
-#  define th_mami_thread_id(thread)	thread->id
 
 #else
 
@@ -78,7 +77,6 @@
 
 //#  define th_mami_main                main
 #  define th_mami_self                pthread_self
-#  define th_mami_thread_id(thread)   thread
 
 typedef void* any_t;
 

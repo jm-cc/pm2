@@ -429,7 +429,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]); // todo: use sched_setaffinity when using pthread
 
       gettimeofday(&tv1, NULL);
       th_mami_create(&thread, &attr, writer, (any_t) &node);

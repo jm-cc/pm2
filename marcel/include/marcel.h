@@ -32,7 +32,7 @@ extern "C" {
 #include "sys/marcel_flags.h"
 #include "sys/isomalloc_archdep.h"
 #include "marcel_config.h"
-#include "marcel_valgrind.h"
+#include "pm2_valgrind.h"
 
 #include "marcel_abi.h"
 

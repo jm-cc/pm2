@@ -14,8 +14,8 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_VALGRIND_EST_DEF
-#define MARCEL_VALGRIND_EST_DEF
+#ifndef PM2_VALGRIND_EST_DEF
+#define PM2_VALGRIND_EST_DEF
 
 #ifdef PM2VALGRIND
 #include <valgrind/valgrind.h>
@@ -42,4 +42,4 @@
 #define VALGRIND_MAKE_MEM_DEFINED(start, size) ((void)0)
 #endif
 
-#endif /* MARCEL_VALGRIND_EST_DEF */
+#endif /* PM2_VALGRIND_EST_DEF */

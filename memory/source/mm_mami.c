@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "pm2_valgrind.h"
 #include "mm_mami.h"
 #include "mm_mami_private.h"
 #include "mm_debug.h"

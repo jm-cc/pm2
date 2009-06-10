@@ -58,8 +58,6 @@
  * signal mask should be changed and wait for them to actually do it.
  */
 
-/*********************MA__DEBUG******************************/
-#define MA__DEBUG
 /*********************variables globales*********************/
 static struct marcel_sigaction csigaction[MARCEL_NSIG];
 /* Protects csigaction updates.  */
@@ -186,6 +184,7 @@ static void itimer_timeout(unsigned long data)
 	}
 }
 
+#ifdef MA__DEBUG
 /* Common functions to check given values */
 static int check_itimer(int which)
 {
@@ -220,18 +219,21 @@ static int check_setitimer(int which, const struct itimerval *value)
 	}
 	return 0;
 }
+#endif
 /***********************getitimer**********************/
 
 DEF_MARCEL_POSIX(int, getitimer, (int which, struct itimerval *value), (which, value),
 {
 	LOG_IN();
 
+#ifdef MA__DEBUG
 	/* error checking */
 	int ret = check_itimer(which);
 	if (ret) {
 		LOG_RETURN(ret);
 	}
 	/* error checking end */
+#endif
 
 	value->it_interval.tv_sec = interval / 1000000;
 	value->it_interval.tv_usec = interval % 1000000;
@@ -248,13 +250,16 @@ DEF___C(int, getitimer, (int which, struct itimerval *value), (which, value))
 DEF_MARCEL_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue), (which, value, ovalue),
 {
 	LOG_IN();
+	unsigned int ret = 0;
 
+#ifdef MA__DEBUG
 	/* error checking */
-	unsigned int ret = check_setitimer(which, value);
+	ret = check_setitimer(which, value);
 	if (ret) {
 		LOG_RETURN(ret);
 	}
 	/* error checking end */
+#endif
 
 	ma_del_timer_sync(&itimer_timer);
 
@@ -349,6 +354,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 }
 
 /*****************************raise****************************/
+#ifdef MA__DEBUG
 static int check_raise(int sig)
 {
 	if ((sig < 0) || (sig >= MARCEL_NSIG)) {
@@ -358,6 +364,7 @@ static int check_raise(int sig)
 	}
 	return 0;
 }
+#endif
 
 DEF_MARCEL(int, raise, (int sig), (sig),
 {
@@ -379,12 +386,14 @@ DEF_POSIX(int, raise, (int sig), (sig),
 {
 	LOG_IN();
 
+#ifdef MA__DEBUG
 	/* error checking */
 	int ret = check_raise(sig);
 	if (ret) {
 		LOG_RETURN(ret);
 	}
 	/* error checking end */
+#endif
 
 	marcel_kill(marcel_self(), sig);
 
@@ -528,6 +537,7 @@ static void update_lwps_blocked_signals(int wait) {
 }
 
 /*********************pthread_kill***************************/
+#ifdef MA__DEBUG
 static int check_kill(marcel_t thread, int sig)
 {
 	if (!MARCEL_THREAD_ISALIVE(thread)) {
@@ -540,6 +550,7 @@ static int check_kill(marcel_t thread, int sig)
 	}
 	return 0;
 }
+#endif
 
 DEF_MARCEL(int, kill, (marcel_t thread, int sig), (thread,sig),
 {
@@ -580,12 +591,14 @@ DEF_POSIX(int, kill, (pmarcel_t pmthread, int sig), (pmthread,sig),
 
 	marcel_t thread = (marcel_t) pmthread;
 
+#ifdef MA__DEBUG
 	/* codes d'erreur */
 	int err = check_kill(thread, sig);
 	if (err) {
 		LOG_RETURN(err);
 	}
 	/* fin codes d'erreur */
+#endif
 
 	if (!sig) {
 		LOG_RETURN(0);
@@ -613,6 +626,7 @@ DEF_PTHREAD(int, kill, (pthread_t thread, int sig), (thread,sig))
 DEF___PTHREAD(int, kill, (pthread_t thread, int sig), (thread,sig))
 
 /*************************pthread_sigmask***********************/
+#ifdef MA__DEBUG
 static int check_sigmask(int how)
 {
 	if ((how != SIG_BLOCK) && (how != SIG_UNBLOCK)
@@ -622,6 +636,7 @@ static int check_sigmask(int how)
 	}
 	return 0;
 }
+#endif
 
 int marcel_sigmask(int how, __const marcel_sigset_t * set,
     marcel_sigset_t * oset)
@@ -742,11 +757,13 @@ int pmarcel_sigmask(int how, __const marcel_sigset_t * set,
     marcel_sigset_t * oset)
 {
 	LOG_IN();
+#ifdef MA__DEBUG
 	/* error checking */
 	int ret = check_sigmask(how);
 	if (ret)
 		LOG_RETURN(ret);
 	/*error checking end */
+#endif
 
 	LOG_RETURN(marcel_sigmask(how, set, oset));
 }
@@ -791,9 +808,11 @@ int lpt_sigprocmask(int how, __const sigset_t * set, sigset_t * oset)
 {
 	LOG_IN();
 
+#ifdef MA__DEBUG
 	if (marcel_createdthreads() != 0)
 		marcel_fprintf(stderr,
 		    "sigprocmask : multithreading here ! lpt_sigmask used instead\n");
+#endif
 	int ret = lpt_sigmask(how, set, oset);
 	if (ret) {
 		mdebug("lpt_sigprocmask : retour d'erreur de lpt_sigmask\n");
@@ -809,6 +828,7 @@ DEF___LIBC(int, sigprocmask, (int how, __const sigset_t * set, sigset_t * oset),
 #endif				/*  MA__LIBPTHREAD */
 
 /****************************sigpending**************************/
+#ifdef MA__DEBUG
 static int check_sigpending(marcel_sigset_t * set)
 {
 	marcel_t cthread = marcel_self();
@@ -827,6 +847,7 @@ static int check_sigpending(marcel_sigset_t * set)
 	ma_spin_unlock_softirq(&cthread->siglock);
 	return 0;
 }
+#endif
 
 DEF_MARCEL(int, sigpending, (marcel_sigset_t *set), (set),
 {
@@ -864,11 +885,13 @@ DEF_POSIX(int, sigpending, (marcel_sigset_t *set), (set),
 	marcel_t cthread = marcel_self();
 	int sig;
 
+#ifdef MA__DEBUG
 	/* error checking */
 	int ret = check_sigpending(set);
 	if (ret)
 		LOG_RETURN(ret);
 	/* error checking end */
+#endif
 
 	marcel_sigemptyset(set);
 	ma_spin_lock_softirq(&gsiglock);
@@ -1351,8 +1374,10 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 		LOG_RETURN(0);
 	}
 
+#ifdef MA__DEBUG
 	if (sig == MARCEL_RESCHED_SIGNAL)
 		marcel_fprintf(stderr, "!! warning: signal %d not supported\n", sig);
+#endif
 
 	if (!act) {
 		/* Just reading the current sigaction */
@@ -1642,6 +1667,7 @@ __marcel_init void ma_signals_init(void)
 	LOG_OUT();
 }
 
+#ifdef MA__DEBUG
 /***************testset*********/
 void marcel_testset(__const marcel_sigset_t * set, char *what)
 {
@@ -1654,6 +1680,7 @@ void marcel_testset(__const marcel_sigset_t * set, char *what)
 			marcel_fprintf(stderr, "0");
 	marcel_fprintf(stderr, "\n");
 }
+#endif
 
 /****************autres fonctions******************/
 DEF_MARCEL_POSIX(int,sighold,(int sig),(sig),

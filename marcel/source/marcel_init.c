@@ -440,8 +440,10 @@ assert_preloaded (void) {
 				if (pukabi_malloc != global_malloc) {
 					if (real_malloc != NULL && global_malloc != real_malloc) {
 						/* GNU Bash, for instance, provides its own `malloc'.  */
+#ifdef MA__DEBUG
 						fprintf(stderr, "[Marcel] this program appears to provide its own malloc(3)"
 							", which may not be thread-safe\n");
+#endif
 					} else {
 						fprintf(stderr, "[Marcel] it appears that PukABI "
 							"was not preloaded\n");

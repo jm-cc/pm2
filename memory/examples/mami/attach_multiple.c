@@ -30,7 +30,7 @@ any_t attach(any_t arg) {
   if (err < 0) perror("mami_task_attach unexpectedly failed");
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   int err;
   marcel_t threads[2];
 
@@ -60,7 +60,7 @@ int marcel_main(int argc, char * argv[]) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

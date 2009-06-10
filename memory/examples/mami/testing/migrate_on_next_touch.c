@@ -85,7 +85,7 @@ void segv_handler(int sig, siginfo_t *info, void *_context) {
 //  sigaction(SIGSEGV, &act, NULL);
 }
 
-int marcel_main(int argc, char **argv) {
+int main(int argc, char **argv) {
   struct sigaction act;
   int err;
   int pagesize;

@@ -29,7 +29,7 @@ static mami_manager_t *memory_manager;
 static void *mami_record_malloc(void *arg);
 static void mami_record_free(void *obj, void *foo TBX_UNUSED);
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   ma_allocator_t *mami_records;
   mami_record_t *record;
 
@@ -66,7 +66,7 @@ void mami_record_free(void *obj, void *foo TBX_UNUSED) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

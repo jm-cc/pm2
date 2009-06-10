@@ -155,7 +155,7 @@ any_t triadd_matrices(any_t arg) {
   return 0;
 }
 
-int marcel_main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   int			  BytesPerWord;
   int	                  i, j, k;
@@ -451,7 +451,7 @@ void tuned_STREAM_Triad(double scalar) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

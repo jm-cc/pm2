@@ -163,7 +163,7 @@ any_t memory2(any_t arg) {
   thread_memory_move(&thread_memory, 2);
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   marcel_t threads[3];
   marcel_attr_t attr;
 

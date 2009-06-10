@@ -99,7 +99,7 @@ any_t congestion1(any_t arg) {
   marcel_barrier_wait(&endbarrier);
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   marcel_t threads[2];
   marcel_attr_t attr;
   unsigned long pagesize;

@@ -94,7 +94,7 @@ void handle(int foo) { }
 
 int numa;
 
-int marcel_main(void) {
+int main(void) {
 	int node,prevnode,mems,k,m,cpu,prevcpu;
 	long mem, free;
 	volatile char *c;

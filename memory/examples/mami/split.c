@@ -53,7 +53,7 @@ any_t my_thread(any_t arg) {
   free(ptr);
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   marcel_t thread;
   marcel_attr_t attr;
 
@@ -132,7 +132,7 @@ static void attach(void *ptr, size_t size) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

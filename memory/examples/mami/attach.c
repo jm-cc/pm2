@@ -18,7 +18,7 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   int err, node;
   void *ptr=NULL;
   void *ptr2;
@@ -57,7 +57,7 @@ int marcel_main(int argc, char * argv[]) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

@@ -48,7 +48,7 @@ any_t reader(any_t arg) {
   return 0;
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   marcel_t threads[2];
   marcel_attr_t attr;
 
@@ -78,7 +78,7 @@ int marcel_main(int argc, char * argv[]) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

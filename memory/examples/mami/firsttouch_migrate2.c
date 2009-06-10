@@ -27,7 +27,7 @@
 
 static void first_touch(mami_manager_t *memory_manager, void *buffer, size_t size, int touchme, void *ptr);
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
   void *buffer1, *buffer2, *buffer3, *buffer4;
   size_t size;
@@ -82,7 +82,7 @@ static void first_touch(mami_manager_t *memory_manager, void *buffer, size_t siz
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

@@ -20,7 +20,7 @@
 #define LOOPS 10000000
 #define SIZE  1000
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   void *buffer;
   marcel_memory_manager_t memory_manager;
   int i, err, node;

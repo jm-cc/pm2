@@ -49,7 +49,7 @@ any_t firsttouch(any_t arg) {
   mami_free(memory_manager, ptr);
 }
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   int err;
   marcel_t thread;
   marcel_attr_t attr;
@@ -72,7 +72,7 @@ int marcel_main(int argc, char * argv[]) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

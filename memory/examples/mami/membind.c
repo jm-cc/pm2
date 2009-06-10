@@ -1,4 +1,4 @@
-/*
+!!/*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
  *

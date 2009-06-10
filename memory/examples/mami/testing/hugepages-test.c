@@ -194,7 +194,7 @@ huge_memory_t *malloc_with_huge_pages(size_t size, int node) {
   return memory;
 }
 
-int marcel_main(int argc, char **argv) {
+int main(int argc, char **argv) {
   int i, err;
   huge_memory_t *memory;
   int nbpages, dest, node, realnode;

@@ -52,7 +52,7 @@ int nb_arrived = 0;    /* count of the number who have arrived */
 double *local_max_diff;
 double **grid1, **grid2;
 
-int marcel_main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   int grid_size, nb_workers, nb_iters, migration_policy, initialisation_policy;
 
   marcel_init(&argc, argv);
@@ -257,7 +257,7 @@ void barrier(int nb_workers) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

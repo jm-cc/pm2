@@ -22,7 +22,7 @@
 static mami_manager_t *memory_manager;
 void stats(void *ptr);
 
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   int *ptr;
 
   marcel_init(&argc,argv);
@@ -63,7 +63,7 @@ void stats(void *ptr) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
 }
 #endif

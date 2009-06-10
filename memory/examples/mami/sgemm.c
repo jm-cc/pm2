@@ -37,7 +37,7 @@ typedef struct sgemm_s {
   int initialisation_policy;
 } sgemm_t;
 
-int marcel_main(int argc, char **argv) {
+int main(int argc, char **argv) {
   int matrix_size, migration_policy, initialisation_policy;
   unsigned long ns;
   char *migration_policy_texts[3] = {"NEXT_TOUCH_USERSPACE",
@@ -167,7 +167,7 @@ any_t sgemm(any_t arg) {
 }
 
 #else
-int marcel_main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) {
   fprintf(stderr, "This application needs MaMI to be enabled\n");
   return 0;
 }

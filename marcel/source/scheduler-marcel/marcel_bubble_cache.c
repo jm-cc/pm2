@@ -145,6 +145,9 @@ ma_spread_load_balancing_entities (ma_distribution_t *distribution,
 	ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[level]);
       }
     }
+    /* Put the remaining entities consecutively */
+    while (load_balancing_entities->nb_entities)
+      ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[arity - 1]);
   } else {
     /* Sort the entities before distributing them. */
     qsort (load_balancing_entities->entities, 
@@ -235,7 +238,7 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
 				     &load_balancing_entities,
 				     arity,
 				     entities_are_the_same,
-				     entities_per_level);
+				     ne / arity);
 
   /* At this point, we verify if every underlying topo_level will be
      occupied. If not, we even the load by taking entities from the

@@ -128,12 +128,11 @@ static __tbx_inline__ void ma_entering_idle(void) {
 	PROF_EVENT1(sched_idle_start,ma_vpnum(MA_LWP_SELF));
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		//marcel_sig_disable_interrupts();
+		marcel_sig_disable_interrupts();
 		ma_topology_lwp_idle_start(MA_LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(MA_LWP_SELF)))
-			//ma_sched_sig_pause();
-			ma_cpu_relax();
-		//marcel_sig_enable_interrupts();
+			ma_sched_sig_pause();
+		marcel_sig_enable_interrupts();
 	}
 #  endif
 #endif
@@ -146,11 +145,10 @@ static __tbx_inline__ void ma_still_idle(void) {
 #ifdef MA__LWPS
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		//marcel_sig_disable_interrupts();
+		marcel_sig_disable_interrupts();
 		if (!ma_topology_lwp_idle_core(MA_LWP_SELF))
-			//ma_sched_sig_pause();
-			ma_cpu_relax();
-		//marcel_sig_enable_interrupts();
+			ma_sched_sig_pause();
+		marcel_sig_enable_interrupts();
 	}
 #  endif
 #endif

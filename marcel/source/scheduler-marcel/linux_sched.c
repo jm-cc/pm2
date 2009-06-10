@@ -852,6 +852,8 @@ restart:
 			        /* already polled a bit, sleep a bit before
 				 * polling again */
  			        marcel_sig_nanosleep();
+#else
+			//ma_cpu_relax();
 #endif
 #ifdef PIOMAN
 			__piom_check_polling(PIOM_POLL_AT_IDLE);

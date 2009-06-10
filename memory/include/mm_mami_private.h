@@ -152,6 +152,8 @@ struct mami_manager_s {
   unsigned nb_nodes;
   /** \brief Max node (used for mbind) */
   unsigned max_node;
+  /** brief Id of the OS node for each node */
+  int* os_nodes;
   /** \brief Memory migration costs from all the nodes to all the nodes */
   p_tbx_slist_t **migration_costs;
   /** \brief Reading access costs from all the nodes to all the nodes */
@@ -174,6 +176,8 @@ struct mami_manager_s {
   unsigned long normalpagesize;
   /** \brief System huge page size */
   unsigned long hugepagesize;
+  /** \brief number of huge pages per node */
+  int *hugepagefree;
   /** \brief Number of initially pre-allocated pages */
   int initially_preallocated_pages;
   /** \brief Cache line size */

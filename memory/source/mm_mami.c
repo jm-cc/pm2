@@ -53,13 +53,26 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->root = NULL;
   th_mami_mutex_init(&(memory_manager->lock), NULL);
   memory_manager->normalpagesize = getpagesize();
-  memory_manager->hugepagesize = marcel_topo_node_level ? marcel_topo_node_level[0].huge_page_size : 0;
   memory_manager->initially_preallocated_pages = 1024;
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MAMI_MEMBIND_POLICY_NONE;
   memory_manager->alignment = 1;
   memory_manager->nb_nodes = marcel_nbnodes;
   memory_manager->max_node = marcel_topo_node_level ? marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2 : 2;
+
+  memory_manager->os_nodes = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->os_nodes[node] = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : node;
+    mdebug_memory("Node #%d --> OS Node #%d\n", node, memory_manager->os_nodes[node]);
+  }
+
+  memory_manager->hugepagesize = marcel_topo_node_level ? marcel_topo_node_level[0].huge_page_size : 0;
+  mdebug_memory("Huge page size : %ld\n", memory_manager->hugepagesize);
+  memory_manager->hugepagefree = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    memory_manager->hugepagefree[node] = marcel_topo_node_level ? marcel_topo_node_level[node].huge_page_free : 0;
+    mdebug_memory("Number of huge pages on node #%d = %d\n", node, memory_manager->hugepagefree[node]);
+  }
 
   // Is in-kernel migration available
 #ifdef LINUX_SYS
@@ -287,6 +300,8 @@ void mami_exit(mami_manager_t **memory_manager_p) {
   th_mami_free(memory_manager->costs_for_write_access);
   th_mami_free(memory_manager->memtotal);
   th_mami_free(memory_manager->memfree);
+  th_mami_free(memory_manager->os_nodes);
+  th_mami_free(memory_manager->hugepagefree);
   th_mami_free(memory_manager);
 
   MEMORY_LOG_OUT();
@@ -516,19 +531,17 @@ void _mami_register_pages(mami_manager_t *memory_manager, mami_tree_t **memory_t
 }
 
 int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages_area_t **space, int node) {
-  int nbpages;
   pid_t pid;
 
   MEMORY_ILOG_IN();
-  nbpages = marcel_topo_node_level ? marcel_topo_node_level[node].huge_page_free : 0;
-  if (!nbpages) {
+  if (memory_manager->hugepagefree[node] == 0) {
     mdebug_memory("No huge pages on node #%d\n", node);
     *space = NULL;
     return -1;
   }
 
   (*space) = th_mami_malloc(sizeof(mami_huge_pages_area_t));
-  (*space)->size = nbpages * memory_manager->hugepagesize;
+  (*space)->size = memory_manager->hugepagefree[node] * memory_manager->hugepagesize;
   (*space)->filename = th_mami_malloc(1024 * sizeof(char));
   pid = getpid();
   th_mami_sprintf((*space)->filename, "/hugetlbfs/mami_pid_%d_node_%d", pid, node);
@@ -555,7 +568,7 @@ int _mami_preallocate_huge_pages(mami_manager_t *memory_manager, mami_huge_pages
   (*space)->heap = th_mami_malloc(sizeof(mami_area_t));
   (*space)->heap->start = (*space)->buffer;
   (*space)->heap->end = (*space)->buffer + (*space)->size;
-  (*space)->heap->nbpages = nbpages;
+  (*space)->heap->nbpages = memory_manager->hugepagefree[node];
   (*space)->heap->protection = PROT_READ|PROT_WRITE;
   (*space)->heap->pagesize = memory_manager->hugepagesize;
   (*space)->heap->next = NULL;
@@ -708,15 +721,14 @@ void* _mami_get_buffer_from_heap(mami_manager_t *memory_manager, int node, int n
     heap = heap->next;
   }
   if (heap == NULL || heap->start == NULL) {
-    int err=0, preallocatedpages, osnode;
+    int err=0, preallocatedpages;
 
     preallocatedpages = nbpages;
     if (preallocatedpages < memory_manager->initially_preallocated_pages) {
       preallocatedpages = memory_manager->initially_preallocated_pages;
     }
-    osnode = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : node;
-    mdebug_memory("not enough space, let's allocate %d extra pages on the OS node #%d\n", preallocatedpages, osnode);
-    err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, osnode);
+    mdebug_memory("not enough space, let's allocate %d extra pages on the OS node #%d\n", preallocatedpages, memory_manager->os_nodes[node]);
+    err = _mami_preallocate(memory_manager, &heap, preallocatedpages, node, memory_manager->os_nodes[node]);
     if (err < 0) {
       return NULL;
     }

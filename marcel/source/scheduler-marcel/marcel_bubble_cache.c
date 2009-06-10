@@ -106,7 +106,7 @@ ma_strict_cache_distribute (marcel_entity_t *e,
 			 ma_distribution_t *distribution,
 			 ma_distribution_t *load_balancing_entities) {
   if (favorite_vp == MA_VPSTATS_NO_LAST_VP) {
-   ma_distribution_add_tail (e, load_balancing_entities);
+    ma_distribution_add (e, load_balancing_entities, 0);
   } else {
     if (!distribution[favorite_vp].nb_entities) {
      ma_distribution_add_tail (e, &distribution[favorite_vp]);
@@ -132,10 +132,31 @@ ma_strict_cache_distribute (marcel_entity_t *e,
 static void
 ma_spread_load_balancing_entities (ma_distribution_t *distribution,
 				   ma_distribution_t *load_balancing_entities,
-				   unsigned int arity) {
-  while (load_balancing_entities->nb_entities) {
-    unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
-    ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
+				   unsigned int arity,
+				   int entities_are_the_same,
+				   unsigned int entities_per_level) {
+  if (entities_are_the_same) {
+    /* Distribute according to threads indexes */
+    /* This can help with false sharing issues on OpenMP work
+       shares. */
+    int level;
+    for (level = 0; level < arity; level++) {
+      while (distribution[level].total_load < entities_per_level && load_balancing_entities->nb_entities) {
+	ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[level]);
+      }
+    }
+  } else {
+    /* Sort the entities before distributing them. */
+    qsort (load_balancing_entities->entities, 
+	   load_balancing_entities->nb_entities,
+	   sizeof (load_balancing_entities->entities[0]),
+	   &ma_increasing_order_entity_load_compar);
+
+    /* Greedy distribute the entities. */
+    while (load_balancing_entities->nb_entities) {
+      unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
+      ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
+    }
   }
 }
 
@@ -168,6 +189,21 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
   return 0;
 }
 
+static int
+ma_entities_are_the_same (marcel_entity_t *e[], int ne) {
+  int i;
+  int type = e[0]->type;
+  int load = ma_entity_load (e[0]);
+
+  for (i = 0; i < ne; i++) {
+    if (e[i]->type != type || ma_entity_load (e[i]) != load)
+      return 0;
+  }
+
+  return 1;
+}
+
+
 /* Distributes a set of entities regarding cache affinities */
 static int
 ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
@@ -191,11 +227,15 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
 				&load_balancing_entities);
   }
 
+  int entities_are_the_same = ma_entities_are_the_same (e, ne);
+
   /* Then, we greedily distribute the unconstrained entities to balance
      the load. */
   ma_spread_load_balancing_entities (distribution,
 				     &load_balancing_entities,
-				     arity);
+				     arity,
+				     entities_are_the_same,
+				     entities_per_level);
 
   /* At this point, we verify if every underlying topo_level will be
      occupied. If not, we even the load by taking entities from the

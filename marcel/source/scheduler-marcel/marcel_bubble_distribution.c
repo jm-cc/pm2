@@ -23,7 +23,7 @@ void
 ma_distribution_add (marcel_entity_t *e,
 		     ma_distribution_t *distribution,
 		     unsigned int position) {
-  MA_BUG_ON (position >= distribution->nb_entities);
+  MA_BUG_ON (position != 0 && position >= distribution->nb_entities);
   MA_BUG_ON (distribution->nb_entities >= distribution->max_entities);
   if (distribution->entities[position]) {
     unsigned int size = sizeof (distribution->entities[0]);

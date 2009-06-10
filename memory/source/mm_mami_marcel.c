@@ -44,14 +44,14 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     err = -1;
   }
   else {
-    void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
-    void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normalpagesize);
+    void *aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normal_page_size);
+    void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normal_page_size);
     size_t aligned_size = aligned_endbuffer-aligned_buffer;
     mami_data_link_t *area;
 
     if (!aligned_size) {
-      aligned_endbuffer = aligned_buffer + memory_manager->normalpagesize;
-      aligned_size = memory_manager->normalpagesize;
+      aligned_endbuffer = aligned_buffer + memory_manager->normal_page_size;
+      aligned_size = memory_manager->normal_page_size;
     }
 
     err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
@@ -63,7 +63,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     else {
       if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
         mdebug_memory("Need to find out the location of the memory area\n");
-        _mami_get_pages_location(memory_manager, data->pageaddrs, data->nbpages, &(data->node), &(data->nodes));
+        _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &(data->node), &(data->nodes));
       }
       if (size < data->size) {
         size_t newsize;
@@ -74,10 +74,10 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
           mdebug_memory("Cannot split a page\n");
         }
         else {
-          mdebug_memory("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->startaddress,data->endaddress,
-                      data->startaddress,data->startaddress+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
-          data->nbpages = aligned_size/memory_manager->normalpagesize;
-          data->endaddress = data->startaddress + aligned_size;
+          mdebug_memory("Splitting [%p:%p] in [%p:%p] and [%p:%p]\n", data->start_address,data->end_address,
+                        data->start_address,data->start_address+aligned_size, aligned_endbuffer,aligned_endbuffer+newsize);
+          data->nb_pages = aligned_size/memory_manager->normal_page_size;
+          data->end_address = data->start_address + aligned_size;
           data->size = aligned_size;
           _mami_register(memory_manager, aligned_endbuffer, aligned_endbuffer+newsize, newsize, aligned_endbuffer, newsize,
                          data->mami_allocated, &next_data);
@@ -121,7 +121,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
 
   MEMORY_ILOG_IN();
   marcel_mutex_lock(&(memory_manager->lock));
-  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normalpagesize);
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normal_page_size);
 
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
@@ -176,7 +176,7 @@ int _mami_entity_unattach_all(mami_manager_t *memory_manager,
   mdebug_memory("Unattaching all memory areas from entity %p\n", owner);
   //marcel_spin_lock(&(owner->memory_areas_lock));
   list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
-    _mami_entity_unattach(memory_manager, area->data->startaddress, owner);
+    _mami_entity_unattach(memory_manager, area->data->start_address, owner);
   }
   //marcel_spin_unlock(&(owner->memory_areas_lock));
   MEMORY_ILOG_OUT();

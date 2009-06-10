@@ -84,9 +84,9 @@ struct mami_huge_pages_area_s {
 /** \brief Structure of a tree node */
 struct mami_data_s {
   /** \brief Start address of the memory area */
-  void *startaddress;
+  void *start_address;
   /** \brief End address of the memory area */
-  void *endaddress;
+  void *end_address;
   /** \brief Size of the memory area */
   size_t size;
   /** \brief Protection of the memory area */
@@ -97,7 +97,7 @@ struct mami_data_s {
   /** \brief Page addresses of the memory area */
   void **pageaddrs;
   /** \brief Number of pages holding the memory area */
-  int nbpages;
+  int nb_pages;
 
   /** \brief Node where the memory area is located. Meaningful when all memory allocated on the same node. Otherwise value is -1 */
   int node;
@@ -115,7 +115,7 @@ struct mami_data_s {
   mami_data_t *next;
 
   /** \brief Start address of the area to use when calling mprotect */
-  void *mprotect_startaddress;
+  void *mprotect_start_address;
   /** \brief Size of the area to use when calling mprotect */
   size_t mprotect_size;
 };
@@ -123,9 +123,9 @@ struct mami_data_s {
 /** \brief Structure of a sorted-binary tree of allocated memory areas */
 struct mami_tree_s {
   /** \brief Left child of the tree */
-  struct mami_tree_s *leftchild;
+  struct mami_tree_s *left_child;
   /** \brief Right child of the tree */
-  struct mami_tree_s *rightchild;
+  struct mami_tree_s *right_child;
   /** \brief Node of the tree */
   mami_data_t *data;
 };
@@ -137,9 +137,9 @@ struct mami_area_s {
   /** \brief End address of the memory area */
   void *end;
   /** \brief Number of pages of the memory area */
-  int nbpages;
+  int nb_pages;
   /** \brief Page size */
-  unsigned long pagesize;
+  unsigned long page_size;
   /** \brief Protection of the memory area */
   int protection;
   /** \brief Next pre-allocated space */
@@ -167,17 +167,17 @@ struct mami_manager_s {
   /** \brief List of pre-allocated memory areas */
   mami_area_t **heaps;
   /** \brief Total memory per node */
-  unsigned long *memtotal;
+  unsigned long *mem_total;
   /** \brief Free memory per node */
-  unsigned long *memfree;
+  unsigned long *mem_free;
   /** \brief Lock to manipulate the data */
   th_mami_mutex_t lock;
   /** \brief System page size */
-  unsigned long normalpagesize;
+  unsigned long normal_page_size;
   /** \brief System huge page size */
-  unsigned long hugepagesize;
+  unsigned long huge_page_size;
   /** \brief number of huge pages per node */
-  int *hugepagefree;
+  int *huge_page_free;
   /** \brief Number of initially pre-allocated pages */
   int initially_preallocated_pages;
   /** \brief Cache line size */
@@ -199,8 +199,8 @@ struct mami_manager_s {
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */
-#define _MAMI_ALIGN_ON_PAGE(address, pagesize) (void*)((((uintptr_t) address) + (pagesize >> 1)) & (~(pagesize-1)))
-#define MAMI_ALIGN_ON_PAGE(memory_manager, address, pagesize) (memory_manager->alignment?_MAMI_ALIGN_ON_PAGE(address, pagesize):address)
+#define _MAMI_ALIGN_ON_PAGE(address, page_size) (void*)((((uintptr_t) address) + (page_size >> 1)) & (~(page_size-1)))
+#define MAMI_ALIGN_ON_PAGE(memory_manager, address, page_size) (memory_manager->alignment?_MAMI_ALIGN_ON_PAGE(address, page_size):address)
 
 /* Node id used for first touch allocated memory */
 #define MAMI_FIRST_TOUCH_NODE memory_manager->nb_nodes

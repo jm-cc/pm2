@@ -7,4 +7,4 @@ To upload it on the gforge site:
 
 $ rsync -cvrlt --exclude .svn --exclude latex --exclude man --delete doc gforge:/home/groups/pm2/htdocs/memory
 
-The code for the index page is available in the file include/mm_mami.h
+The code for the index page is available in the file doc/memory.doc

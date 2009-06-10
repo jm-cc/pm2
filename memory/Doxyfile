@@ -456,6 +456,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = \
+                         ../memory/doc/memory.doc \
                          ../memory/include/mm_heap_alloc.h \
                          ../memory/include/mm_heap_numa_alloc.h \
                          ../memory/include/mm_heap_numa.h \

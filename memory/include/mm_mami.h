@@ -13,14 +13,6 @@
  * General Public License for more details.
  */
 
-/*! \mainpage The Memory API Documentation
- *
- * \section intro_sec Introduction
- * Two memory management interfaces are provided:
- * - \ref mami
- * - \ref memory_heap
- */
-
 /** \file
  * \brief MaMI: Marcel Memory Interface
  */

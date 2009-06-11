@@ -73,7 +73,11 @@
 /* Room for threads/bubbles statistics */
 /* There are 9 defined marcel statistics for now, one of them points
    to an array of MARCEL_NBMAXNODES items. */
+#ifdef MA__NUMA
 #define MARCEL_STATS_ROOM	((9 + MARCEL_NBMAXNODES) * sizeof (long))
+#else
+#define MARCEL_STATS_ROOM	(9 * sizeof (long))
+#endif
 
 /* Number of distinct real-time priorities */
 #if defined(MA__IFACE_LPT)

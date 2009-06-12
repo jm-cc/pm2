@@ -897,6 +897,7 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
   int *statuses;
   int i, err=0;
 
+  MEMORY_ILOG_IN();
   statuses = th_mami_malloc(nb_pages * sizeof(int));
   err = _mm_move_pages(pageaddrs, nb_pages, NULL, statuses, 0);
   if (err < 0 || statuses[0] == -ENOENT) {
@@ -907,14 +908,21 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
     errno = ENOENT;
     err = -1;
   }
-  else {
+  else if (nb_pages == 1) {
     *node = statuses[0];
-    for(i=1 ; i<nb_pages ; i++) {
-      if (statuses[i] != statuses[0]) {
+    *nodes = NULL;
+  }
+  else {
+    *node = statuses[1];
+    *nodes = NULL;
+    /* Ignore first page as it has very likely been prefaulted somewhere else earlier */
+    for(i=2 ; i<nb_pages ; i++) {
+      if (statuses[i] != statuses[1]) {
 #ifdef PM2DEBUG
 	th_mami_fprintf(stderr, "#MaMI Warning: Memory located on different nodes\n");
 #endif
         if (*node != MAMI_FIRST_TOUCH_NODE) {
+          mdebug_memory("ah ah\n");
           *node = MAMI_MULTIPLE_LOCATION_NODE;
           *nodes = th_mami_malloc(nb_pages * sizeof(int));
           memcpy(*nodes, statuses, nb_pages*sizeof(int));
@@ -924,6 +932,7 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
     }
   }
   th_mami_free(statuses);
+  MEMORY_ILOG_OUT();
   return err;
 }
 

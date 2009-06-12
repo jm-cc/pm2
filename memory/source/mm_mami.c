@@ -92,7 +92,7 @@ void mami_init(mami_manager_t **memory_manager_p) {
   // Is migration available
   if (marcel_topo_node_level) {
     unsigned long nodemask;
-    nodemask = (1<<marcel_topo_node_level[0].os_node);
+    nodemask = (1<<memory_manager->os_nodes[0]);
     ptr = memalign(memory_manager->normal_page_size, memory_manager->normal_page_size);
     err = _mm_mbind(ptr,  memory_manager->normal_page_size, MPOL_BIND, &nodemask, memory_manager->max_node, MPOL_MF_MOVE);
     memory_manager->migration_flag = err>=0 ? MPOL_MF_MOVE : 0;
@@ -110,25 +110,21 @@ void mami_init(mami_manager_t **memory_manager_p) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
       memory_manager->mem_total[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
       memory_manager->mem_free[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
-      mdebug_memory("Memory on node #%d = %ld\n", node, memory_manager->mem_total[node]);
     }
   }
   else {
     memory_manager->mem_total[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
     memory_manager->mem_free[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
   }
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    mdebug_memory("Memory on node #%d = %ld\n", node, memory_manager->mem_total[node]);
+  }
 
   // Preallocate memory on each node
   memory_manager->heaps = th_mami_malloc((memory_manager->nb_nodes+1) * sizeof(mami_area_t *));
-  if (marcel_topo_node_level) {
-    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-      _mami_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, marcel_topo_node_level[node].os_node);
-      mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, marcel_topo_node_level[node].os_node);
-    }
-  }
-  else {
-    _mami_preallocate(memory_manager, &(memory_manager->heaps[0]), memory_manager->initially_preallocated_pages, 0, 0);
-    mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[0]->start, 0, 0);
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    _mami_preallocate(memory_manager, &(memory_manager->heaps[node]), memory_manager->initially_preallocated_pages, node, memory_manager->os_nodes[node]);
+    mdebug_memory("Preallocating %p for node #%d %d\n", memory_manager->heaps[node]->start, node, memory_manager->os_nodes[node]);
   }
   _mami_preallocate(memory_manager, &(memory_manager->heaps[MAMI_FIRST_TOUCH_NODE]), memory_manager->initially_preallocated_pages, MAMI_FIRST_TOUCH_NODE, MAMI_FIRST_TOUCH_NODE);
   mdebug_memory("Preallocating %p for anonymous heap\n", memory_manager->heaps[MAMI_FIRST_TOUCH_NODE]->start);

@@ -922,7 +922,6 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
 	th_mami_fprintf(stderr, "#MaMI Warning: Memory located on different nodes\n");
 #endif
         if (*node != MAMI_FIRST_TOUCH_NODE) {
-          mdebug_memory("ah ah\n");
           *node = MAMI_MULTIPLE_LOCATION_NODE;
           *nodes = th_mami_malloc(nb_pages * sizeof(int));
           memcpy(*nodes, statuses, nb_pages*sizeof(int));

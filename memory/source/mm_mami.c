@@ -58,7 +58,10 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->membind_policy = MAMI_MEMBIND_POLICY_NONE;
   memory_manager->alignment = 1;
   memory_manager->nb_nodes = marcel_nbnodes;
+  mdebug_memory("Number of NUMA nodes = %d\n", memory_manager->nb_nodes);
+
   memory_manager->max_node = marcel_topo_node_level ? marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2 : 2;
+  mdebug_memory("Max node = %d\n", memory_manager->max_node);
 
   memory_manager->os_nodes = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {

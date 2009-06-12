@@ -43,7 +43,9 @@
 #define MA_PER_LEVEL_ROOM	4096
 
 /* Room for Exec TLS (not dynamic) */
+#ifndef MA_TLS_AREA_SIZE
 #define MA_TLS_AREA_SIZE        4096UL
+#endif
 
 /* Max number of architecture elements */
 #ifdef MA__LWPS

@@ -269,19 +269,19 @@ while [ $# -gt 0 ]; do
 	    _output_redirect="> /dev/null 2>&1"
 	    shift
 	    ;;
-	--basic|-l1)
+	--basic)
 	    _level=1
 	    shift
 	    ;;
-	--normal|-l2)
+	--normal)
 	    _level=2
 	    shift
 	    ;;
-	--advanced|-l3)
+	--advanced)
 	    _level=3
 	    shift
 	    ;;
-	--torture|-l4)
+	--torture)
 	    _level=4
 	    shift
 	    ;;
@@ -291,6 +291,10 @@ while [ $# -gt 0 ]; do
 	--abort-on-error)
 	    _abort_on_error=yes
 	    shift;;
+	-l[1-9])
+	    _level=${1#-l}
+	    shift
+	    ;;
 	-L[1-9])
 	    _level=${1#-L}
 	    _init_level=$_level

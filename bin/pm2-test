@@ -176,7 +176,7 @@ do_the_test()
             (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
 	if [ `cat $file_status` -ne 0 ] ; then
-	    failures_per_module="$failures_per_module $prog (flavor $flavor)"
+	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
 	    nb_failures_per_module=`expr $nb_failures_per_module + 1`
 	    pm2_test_warning_file "Execution of $prog failed: return value is not 0" $file_result
 	    return 1
@@ -206,7 +206,7 @@ do_the_test()
 	    echo "Test ok!"
 	    nb_passes_per_module=`expr $nb_passes_per_module + 1`
         else
-	    failures_per_module="$failures_per_module $prog (flavor $flavor)"
+	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
 	    nb_failures_per_module=`expr $nb_failures_per_module + 1`
 	    pm2_test_warning_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
 	    return 1
@@ -291,28 +291,8 @@ while [ $# -gt 0 ]; do
 	--abort-on-error)
 	    _abort_on_error=yes
 	    shift;;
-	-L1)
-	    _level=1
-	    _init_level=$_level
-	    shift
-	    ;;
-	-L2)
-	    _level=2
-	    _init_level=$_level
-	    shift
-	    ;;
-	-L3)
-	    _level=3
-	    _init_level=$_level
-	    shift
-	    ;;
-	-L4)
-	    _level=4
-	    _init_level=$_level
-	    shift
-	    ;;
-	-L5)
-	    _level=5
+	-L[1-9])
+	    _level=${1#-L}
 	    _init_level=$_level
 	    shift
 	    ;;

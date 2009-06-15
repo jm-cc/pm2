@@ -15,7 +15,7 @@
  */
 
 
-#if defined(MARCEL_KEYS_ENABLED)// && defined(MARCEL_ONCE_ENABLED)
+#if defined(MARCEL_KEYS_ENABLED)
 #  include "clone.h"
 
 static clone_t clone_var;

@@ -13,6 +13,6 @@
 # General Public License for more details.
 
 . ./common.sh
-flavor="test_marcel_numa_stats"
+flavor="test_marcel_options_numa_stats"
 prog="eclone"
 

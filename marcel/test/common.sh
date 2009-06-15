@@ -218,6 +218,15 @@ create_test_flavor() {
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
+	test_marcel_keys)
+	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+		--ext=\"\" \
+		--modules=\"marcel tbx init\" \
+		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
+		--marcel=\"enable_keys\" \
+		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
+	    ;;
 	test_marcel_numa_stats)
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
@@ -234,7 +243,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"standard_main\" \
 		--marcel=\"enable_stats\" \
 		--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
-		--marcel=\"pmarcel\" \
+		--marcel=\"enable_keys\" --marcel=\"pmarcel\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"gdb\" --all=\"opt\" \
 		--all=\"build_static\" --marcel=\"build_dynamic\" \

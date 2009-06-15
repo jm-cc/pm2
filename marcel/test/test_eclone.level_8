@@ -15,5 +15,5 @@
 
 # Configuration
 . ./common.sh
-flavor="test_marcel"
+flavor="test_marcel_keys"
 prog="eclone"

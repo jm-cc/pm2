@@ -17,3 +17,4 @@
 . ./common.sh
 flavor="test_marcel_keys"
 prog="eclone"
+check_all_lines=0

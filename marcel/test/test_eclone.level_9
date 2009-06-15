@@ -15,4 +15,4 @@
 . ./common.sh
 flavor="test_marcel_options_numa_stats"
 prog="eclone"
-
+check_all_lines=0

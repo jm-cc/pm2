@@ -106,7 +106,7 @@ static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
 
 
-#define NM_IBVERBS_AUTO_THRESHOLD (2 * 1024 * 1024 - 1)
+#define NM_IBVERBS_AUTO_THRESHOLD (3 * 1024 * 1024 - NM_IBVERBS_ADAPTRDMA_HDRSIZE - 8)
 
 /** list of WRIDs used in the driver. */
 enum {

@@ -13,10 +13,8 @@
 # General Public License for more details.
 
 . ./mami.sh
-
-prog="firsttouch"
+prog="attach_malloc"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Before first touch, memory located on node $NB_NODES
-After first touch, memory located on last node
+Success
 EOF
 

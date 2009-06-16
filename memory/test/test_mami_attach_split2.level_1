@@ -13,14 +13,17 @@
 # General Public License for more details.
 
 . ./mami.sh
-
-prog="firsttouch_migrate"
+prog="attach_split2"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Memory not located on any node
-Memory located on node 0
-MaMI: The 10 pages are all on node #0
-Memory located on node $NB_NODES
-Memory located on node 0
-MaMI: The 10 pages are all on node #0
+Spliting memory area allocated by MaMI
+Success when splitting memory area
+Success when attaching memory area
+
+Spliting unknown memory area
+mami_split fails 22 <Invalid argument>
+
+Spliting memory area (204800) not allocated by MaMI
+Success when splitting memory area
+Success when attaching memory area
 EOF
 

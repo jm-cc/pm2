@@ -13,13 +13,10 @@
 # General Public License for more details.
 
 . ./mami.sh
-prog="stats"
+
+prog="attach_firsttouch"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-[before attach]  stats=0
-[after attach]   stats=4096
-[after unattach] stats=0
-[before attach]  stats=0
-[after attach]   stats=0
-[after unattach] stats=0
+Before first touch, memory located on node $NB_NODES
+After first touch, memory located on last node
 EOF
 

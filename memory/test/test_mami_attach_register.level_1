@@ -13,8 +13,10 @@
 # General Public License for more details.
 
 . ./mami.sh
-prog="malloc_attach"
+prog="attach_register"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Success
+mami_task_attach with unregistered memory: 0
+mami_task_unattach: 0
+mami_task_unregister: 0
 EOF
 

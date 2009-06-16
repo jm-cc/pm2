@@ -13,10 +13,13 @@
 # General Public License for more details.
 
 . ./mami.sh
-prog="register"
+prog="attach_stats"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
-mami_task_attach with unregistered memory: 0
-mami_task_unattach: 0
-mami_task_unregister: 0
+[before attach]  stats=0
+[after attach]   stats=4096
+[after unattach] stats=0
+[before attach]  stats=0
+[after attach]   stats=0
+[after unattach] stats=0
 EOF
 

@@ -33,7 +33,7 @@ int main(int argc, char * argv[]) {
   size_t size;
   int err;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
   mami_unset_kernel_migration(memory_manager);
   size = 10*getpagesize();
@@ -53,9 +53,8 @@ int main(int argc, char * argv[]) {
   free(buffer3);
   free(buffer4);
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 
@@ -74,8 +73,8 @@ static void first_touch(mami_manager_t *memory_manager, void *buffer, size_t siz
 
   err = mami_locate(memory_manager, buffer, size, &node);
   if (err < 0) perror("mami_locate unexpectedly failed");
-  if (node >= 0) marcel_fprintf(stderr, "Memory located on node %d\n", node);
-  else marcel_fprintf(stderr, "Memory not located on a specific node\n");
+  if (node >= 0) fprintf(stderr, "Memory located on node %d\n", node);
+  else fprintf(stderr, "Memory not located on a specific node\n");
 
   err = mami_unregister(memory_manager, buffer);
   if (err < 0) perror("mami_unregister unexpectedly failed");

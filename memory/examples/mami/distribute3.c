@@ -15,8 +15,9 @@
 
 #include <stdio.h>
 #include <sys/mman.h>
-#include <mm_mami.h>
-#include <mm_helper.h>
+#include "mm_mami.h"
+#include "mm_mami_private.h"
+#include "mm_helper.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -27,28 +28,28 @@ int main(int argc, char * argv[]) {
   unsigned long nodemask;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   ptr = mmap(NULL, 50000, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-  for(i=0 ; i<marcel_nbnodes ; i++) nodemask += (1<<i);
-  err = _mm_mbind(ptr, 50000, MPOL_INTERLEAVE, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
+  for(i=0 ; i<memory_manager->nb_nodes ; i++) nodemask += (1<<i);
+  err = _mm_mbind(ptr, 50000, MPOL_INTERLEAVE, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
   if (err < 0) perror("_mm_mbind unexpectedly failed");
   memset(ptr, 0, 50000);
 
   mami_register(memory_manager, ptr, 50000);
 
-  nodes = malloc(sizeof(int) * marcel_nbnodes);
-  for(i=0 ; i<marcel_nbnodes ; i++) nodes[i] = i;
-  err = mami_distribute(memory_manager, ptr, nodes, marcel_nbnodes);
+  nodes = malloc(sizeof(int) * memory_manager->nb_nodes);
+  for(i=0 ; i<memory_manager->nb_nodes ; i++) nodes[i] = i;
+  err = mami_distribute(memory_manager, ptr, nodes, memory_manager->nb_nodes);
   if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
     mami_gather(memory_manager, ptr, 1);
     mami_locate(memory_manager, ptr, 50000, &node);
     if (node == 1)
-      marcel_fprintf(stderr, "Node is %d as expected\n", node);
+      fprintf(stderr, "Node is %d as expected\n", node);
     else
-      marcel_fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
+      fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
     mami_check_pages_location(memory_manager, ptr, 50000, 1);
   }
 
@@ -57,8 +58,7 @@ int main(int argc, char * argv[]) {
   munmap(ptr, 50000);
   mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

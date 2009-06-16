@@ -22,14 +22,13 @@ int main(int argc, char * argv[]) {
   void *ptr;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

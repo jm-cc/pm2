@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
   size_t size;
   int err;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
@@ -37,11 +37,10 @@ int main(int argc, char * argv[]) {
 
   mami_free(memory_manager, ptr);
   mami_free(memory_manager, ptr2);
-  marcel_printf("Success\n");
+  printf("Success\n");
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -23,20 +24,19 @@ int main(int argc, char * argv[]) {
   void *ptr;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
     cnode = -1;
     mami_locate(memory_manager, ptr, 100, &cnode);
-    marcel_fprintf(stderr, "Memory %p allocated on node %d (requested node %d)\n", ptr, cnode, node);
+    fprintf(stderr, "Memory allocated on node %d (requested node %d)\n", cnode, node);
     mami_free(memory_manager, ptr);
   }
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

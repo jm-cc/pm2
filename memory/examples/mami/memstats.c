@@ -13,7 +13,6 @@
  * General Public License for more details.
  */
 
-#define MARCEL_INTERNAL_INCLUDE
 #include <stdio.h>
 #include "mm_mami.h"
 
@@ -26,7 +25,7 @@ int main(int argc, char * argv[]) {
   unsigned long memtotal2, memfree2;
   unsigned long memtotal3, memfree3;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
@@ -43,19 +42,18 @@ int main(int argc, char * argv[]) {
   mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
 
   if (memfree1 == memfree3 && (memfree1-memfree2) == (getpagesize()/1024)) {
-    marcel_printf("Success\n");
+    printf("Success\n");
   }
   else {
-    marcel_printf("Error\n");
-    marcel_printf("Memtotal: %ld -- Memfree: %ld\n", memtotal1, memfree1);
-    marcel_printf("Memtotal: %ld -- Memfree: %ld\n", memtotal2, memfree2);
-    marcel_printf("Memtotal: %ld -- Memfree: %ld\n", memtotal3, memfree3);
+    printf("Error\n");
+    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal1, memfree1);
+    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal2, memfree2);
+    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal3, memfree3);
   }
 
   mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -24,26 +25,25 @@ int main(int argc, char * argv[]) {
   void *ptr;
   size_t size;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &anode);
-  size = marcel_topo_node_level[anode].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE]*1024/2;
+  size = memory_manager->mem_total[anode]*1024/2;
   ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, anode);
 
   mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &bnode);
   if (anode != bnode) {
-    marcel_printf("Success\n");
+    printf("Success\n");
   }
   else {
-    marcel_printf("The least loaded anode is: %d\n", anode);
-    marcel_printf("The least loaded bnode is: %d\n", bnode);
+    printf("The least loaded anode is: %d\n", anode);
+    printf("The least loaded bnode is: %d\n", bnode);
   }
 
-  // Finish marcel
   mami_free(memory_manager, ptr);
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

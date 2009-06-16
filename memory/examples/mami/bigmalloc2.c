@@ -23,17 +23,16 @@ int main(int argc, char * argv[]) {
   void *ptr;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   ptr = mami_malloc(memory_manager, memory_manager->initially_preallocated_pages*getpagesize(),
                     MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_free(memory_manager, ptr);
 
-  // Finish marcel
-  marcel_printf("Success\n");
+  printf("Success\n");
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

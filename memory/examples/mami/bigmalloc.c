@@ -24,7 +24,7 @@ int main(int argc, char * argv[]) {
   size_t size;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   size = memory_manager->initially_preallocated_pages * getpagesize();
@@ -42,9 +42,8 @@ int main(int argc, char * argv[]) {
 
   mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_printf("Success\n");
-  marcel_end();
+  printf("Success\n");
+  common_exit(NULL);
   return 0;
 }
 

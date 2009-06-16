@@ -23,8 +23,7 @@ int main(int argc, char * argv[]) {
   void *buffer, *buffer2;
   int err;
 
-  // Initialise marcel
-  marcel_init(&argc, argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   buffer = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
@@ -35,11 +34,10 @@ int main(int argc, char * argv[]) {
   err = mami_migrate_pages(memory_manager, buffer2, 0);
   if (err < 0) perror("mami_migrate_pages");
 
-  // Finish marcel
   mami_free(memory_manager, buffer);
   free(buffer2);
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

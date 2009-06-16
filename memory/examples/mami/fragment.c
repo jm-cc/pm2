@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -23,20 +24,20 @@ int main(int argc, char * argv[]) {
   int *ptr, *ptr2;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   mami_membind(memory_manager, MAMI_MEMBIND_POLICY_HUGE_PAGES, 0);
-  if (!marcel_topo_node_level || marcel_topo_node_level[0].huge_page_free == 0) {
-    marcel_printf("NUMA node topology not accessible.\n");
+  if (memory_manager->huge_page_free[0] == 0) {
+    printf("No huge page available.\n");
   }
   else {
-    bigsize =  marcel_topo_node_level[0].huge_page_free * marcel_topo_node_level[0].huge_page_size;
+    bigsize = memory_manager->huge_page_free[0] * memory_manager->huge_page_size;
 
     ptr = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
     ptr2 = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
     if (ptr && ptr2) {
-      marcel_printf("Success\n");
+      printf("Success\n");
       mami_free(memory_manager, ptr);
       mami_free(memory_manager, ptr2);
       ptr2 = mami_malloc(memory_manager, bigsize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
@@ -44,14 +45,13 @@ int main(int argc, char * argv[]) {
       mami_free(memory_manager, ptr2);
     }
     else {
-      marcel_printf("Failure. Could not allocated with huge pages.\n");
+      printf("Failure. Could not allocated with huge pages.\n");
     }
   }
 
   mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

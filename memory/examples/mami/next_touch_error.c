@@ -23,7 +23,7 @@ int main(int argc, char * argv[]) {
   void *b;
   int err;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   b = malloc(100);
@@ -33,12 +33,11 @@ int main(int argc, char * argv[]) {
     perror("mami_migrate_on_next_touch");
   }
   else {
-    marcel_printf("mami_migrate_on_next_touch should have failed\n");
+    printf("mami_migrate_on_next_touch should have failed\n");
   }
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

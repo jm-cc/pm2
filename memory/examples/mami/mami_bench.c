@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
   unsigned long temps;
   size_t size=1000;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   if(argc > 1) {
@@ -37,16 +37,15 @@ int main(int argc, char * argv[]) {
   ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
   mami_locate(memory_manager, ptr, size, &node);
   if (node != 0) {
-    marcel_printf("Memory allocated on current node\n");
+    printf("Memory allocated on current node\n");
   }
   mami_free(memory_manager, ptr);
   TBX_GET_TICK(t2);
   temps = TBX_TIMING_DELAY(t1, t2);
-  marcel_printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
+  printf("time = %ld.%03ldms\n", temps/1000, temps%1000);
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

@@ -291,7 +291,7 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
       if (dest == source) continue;
 
       // Create a thread on node source
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
+      th_mami_attr_setnode_level(&attr, source);
       th_mami_create(&thread, &attr, migration, NULL);
       th_mami_join(thread, &status);
       if (status) {
@@ -429,7 +429,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]); // todo: use sched_setaffinity when using pthread
+      th_mami_attr_setnode_level(&attr, t);
 
       gettimeofday(&tv1, NULL);
       th_mami_create(&thread, &attr, writer, (any_t) &node);
@@ -448,7 +448,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+      th_mami_attr_setnode_level(&attr, t);
 
       gettimeofday(&tv1, NULL);
       th_mami_create(&thread, &attr, reader, (any_t) &node);

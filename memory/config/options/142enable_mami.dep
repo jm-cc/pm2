@@ -1,4 +1,3 @@
 Provide: memory_mami
-Depend: marcel_numa
 Provide: memory_interface
 Conflict: memory_interface

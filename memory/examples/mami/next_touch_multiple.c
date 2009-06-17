@@ -37,7 +37,7 @@ any_t reader(any_t arg) {
   mami_locate(memory_manager, b, 0, &node);
   fprintf(stderr, "Address is located on node %d\n", node);
 
-  mami_check_pages_location(memory_manager, b, 0, marcel_current_node());
+  mami_check_pages_location(memory_manager, b, 0, th_mami_current_node());
 
   return 0;
 }
@@ -60,14 +60,14 @@ int main(int argc, char * argv[]) {
     mami_migrate_on_next_touch(memory_manager, b);
 
     // Start the thread on the numa node #1
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
+    th_mami_attr_setnode_level(&attr, 1);
     th_mami_create(&thread, &attr, reader, NULL);
     th_mami_join(thread, NULL);
 
     mami_migrate_on_next_touch(memory_manager, b);
 
     // Start the thread on the numa node #2
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
+    th_mami_attr_setnode_level(&attr, 2);
     th_mami_create(&thread, &attr, reader, NULL);
     th_mami_join(thread, NULL);
 

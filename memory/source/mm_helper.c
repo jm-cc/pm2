@@ -64,6 +64,7 @@ int _mm_use_synthetic_topology(void) {
 #ifdef MARCEL
   return marcel_use_synthetic_topology;
 #else
+#  warning undefined
   return 0;
 #endif
 }

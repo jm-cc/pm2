@@ -824,7 +824,7 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
   }
 
   if (policy == MAMI_MEMBIND_POLICY_NONE) {
-    node = marcel_current_node();
+    node = th_mami_current_node();
     if (tbx_unlikely(node == -1)) node=0;
   }
   else if (policy == MAMI_MEMBIND_POLICY_LEAST_LOADED_NODE) {
@@ -1464,7 +1464,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
   }
   if (data && data->status != MAMI_NEXT_TOUCHED_STATUS) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
-    dest = marcel_current_node();
+    dest = th_mami_current_node();
     _mami_migrate_pages(_mami_memory_manager, data, dest);
     err = mprotect(data->mprotect_start_address, data->mprotect_size, data->protection);
     if (err < 0) {
@@ -1689,5 +1689,17 @@ int mami_gather(mami_manager_t *memory_manager,
   MEMORY_LOG_OUT();
   return err;
 }
+
+#if !defined(MARCEL)
+int _mami_current_node(void) {
+#warning undefined
+  return -1;
+}
+
+int _mami_attr_settopo_level(th_mami_attr_t *attr, int node) {
+#warning undefined
+  return -1;
+}
+#endif /* !MARCEL */
 
 #endif /* MM_MAMI_ENABLED */

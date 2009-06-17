@@ -94,7 +94,7 @@ int main(int argc, char * argv[]) {
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+      th_mami_attr_setnode_level(&attr, t);
 
       gettimeofday(&tv1, NULL);
       th_mami_create(&thread, &attr, writer, (any_t) &args[node]);
@@ -113,7 +113,7 @@ int main(int argc, char * argv[]) {
       struct timeval tv1, tv2;
       unsigned long us;
 
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[t]);
+      th_mami_attr_setnode_level(&attr, t);
 
       gettimeofday(&tv1, NULL);
       th_mami_create(&thread, &attr, reader, (any_t) &args[node]);

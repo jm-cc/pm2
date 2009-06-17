@@ -31,7 +31,7 @@ any_t compute(any_t arg) {
 
   node = (int *) arg;
 
-  fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", *node, marcel_current_node(), marcel_current_vp());
+  fprintf(stderr,"[%d] launched on Node #%d\n", *node, th_mami_current_node());
   buffer = buffers[*node];
 
   mami_locate(memory_manager, buffer, 0, &where);
@@ -77,7 +77,7 @@ int main(int argc, char * argv[]) {
   // The thread which will work on the memory allocated on the node N is started on the same node N
   gettimeofday(&local_tv1, NULL);
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[node]);
+    th_mami_attr_setnode_level(&attr, node);
     th_mami_create(&threads[node], &attr, compute, (any_t) &args[node]);
   }
 

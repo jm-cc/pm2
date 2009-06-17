@@ -39,13 +39,16 @@
 #  define th_mami_mutex_unlock		marcel_mutex_unlock
 
 #  define th_mami_t			marcel_t
-#  define th_mami_attr_t		marcel_attr_t
-#  define th_mami_attr_init		marcel_attr_init
 #  define th_mami_create		marcel_create
 #  define th_mami_join			marcel_join
 
-//#  define th_mami_main                	main
+#  define th_mami_attr_t		marcel_attr_t
+#  define th_mami_attr_init		marcel_attr_init
+#  define th_mami_attr_setnode_level(attr, node)   marcel_attr_settopo_level(attr, &marcel_topo_node_level[node])
+
 #  define th_mami_self              	marcel_self
+#  define th_mami_current_node		marcel_current_node
+
 
 #else
 
@@ -70,13 +73,15 @@
 #  define th_mami_mutex_unlock        pthread_mutex_unlock
 
 #  define th_mami_t                   pthread_t
-#  define th_mami_attr_t              pthread_attr_t
-#  define th_mami_attr_init           pthread_attr_init
 #  define th_mami_create              pthread_create
 #  define th_mami_join                pthread_join
 
-//#  define th_mami_main                main
+#  define th_mami_attr_t              pthread_attr_t
+#  define th_mami_attr_init           pthread_attr_init
+#  define th_mami_attr_setnode_level(attr, node)   _mami_attr_settopo_level(attr, node)
+
 #  define th_mami_self                pthread_self
+#  define th_mami_current_node	      _mami_current_node
 
 typedef void* any_t;
 

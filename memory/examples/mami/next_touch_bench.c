@@ -85,12 +85,12 @@ int main(int argc, char * argv[]) {
   }
 
   // Start the thread on the numa node #source
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
+  th_mami_attr_setnode_level(&attr, source);
   th_mami_create(&threads[0], &attr, writer, (any_t)&nbpages);
   th_mami_join(threads[0], NULL);
 
   // Start the thread on the numa node #1
-  marcel_attr_settopo_level(&attr, &marcel_topo_node_level[dest]);
+  th_mami_attr_setnode_level(&attr, dest);
   th_mami_create(&threads[1], &attr, reader, (any_t)&nbpages);
   th_mami_join(threads[1], NULL);
 

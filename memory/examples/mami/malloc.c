@@ -29,11 +29,11 @@ int main(int argc, char * argv[]) {
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_locate(memory_manager, ptr, 100, &node);
-  if (node == marcel_current_node()) {
+  if (node == th_mami_current_node()) {
     printf("Memory allocated on current node\n");
   }
   else {
-    printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, marcel_current_node());
+    printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, th_mami_current_node());
   }
 
   maxnode = memory_manager->nb_nodes-1;

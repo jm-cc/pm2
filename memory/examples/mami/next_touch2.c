@@ -56,17 +56,17 @@ int main(int argc, char * argv[]) {
   }
   else {
     // Start the thread on the numa node #0
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
+    th_mami_attr_setnode_level(&attr, 0);
     th_mami_create(&threads[0], &attr, writer, NULL);
     th_mami_join(threads[0], NULL);
 
     // Start the thread on the numa node #1
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
+    th_mami_attr_setnode_level(&attr, 1);
     th_mami_create(&threads[1], &attr, reader, NULL);
     th_mami_join(threads[1], NULL);
 
     // Start the thread on the numa node #2
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[2]);
+    th_mami_attr_setnode_level(&attr, 2);
     th_mami_create(&threads[2], &attr, reader, NULL);
     th_mami_join(threads[2], NULL);
   }

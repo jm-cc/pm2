@@ -276,5 +276,11 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
                         mami_data_t *data,
                         int dest);
 
+extern
+int _mami_current_node(void);
+
+extern
+int _mami_attr_settopo_level(th_mami_attr_t *attr, int node);
+
 #endif /* MM_MAMI_PRIVATE_H */
 #endif /* MM_MAMI_ENABLED */

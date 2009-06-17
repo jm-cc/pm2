@@ -35,10 +35,12 @@ int main(int argc, char **argv) {
   int i, err;
   unsigned long pagesize;
   unsigned long nodemask;
+  int nbnodes;
 
-  marcel_init(&argc,argv);
-  if (marcel_nbnodes < 2) {
-    marcel_printf("This application needs at least two NUMA nodes.\n");
+  common_init(&argc, argv, NULL);
+  nbnodes = marcel_nbnodes;
+  if (nbnodes < 2) {
+    printf("This application needs at least two NUMA nodes.\n");
     exit(1);
   }
 
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
   nodemask = (1<<0);
 
   buffer = mmap(NULL, nbpages*pagesize, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-  err = _mm_mbind(buffer, nbpages*pagesize, MPOL_BIND, &nodemask, marcel_nbnodes+2, MPOL_MF_MOVE);
+  err = _mm_mbind(buffer, nbpages*pagesize, MPOL_BIND, &nodemask, nbnodes+2, MPOL_MF_MOVE);
   if (err < 0) {
     perror("mbind");
     exit(1);

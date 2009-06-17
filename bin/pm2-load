@@ -561,6 +561,7 @@ else # USE_LOCAL_FLAVOR
 fi
 
 # Chemin d'accès au chargeur
+[ -n "$_PM2_CONFIG_LOADER" ] || _pm2_load_error "$PROGNAME Fatal Error: no loader defined!"
 [ -x $_PM2_CONFIG_LOADER ] || _pm2_load_error "$PROGNAME Fatal Error: \"$_PM2_CONFIG_LOADER\" exec file not found!"
 
 case $_PM2_CONFIG_LOADER in

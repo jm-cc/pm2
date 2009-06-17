@@ -34,10 +34,15 @@
 
 #include <infiniband/verbs.h>
 
+#ifdef PUK_ABI
+#include <Padico/Puk-ABI.h>
+#endif
+
+
 /* *********************************************************
  * Rationale of the newmad/ibverbs driver
  *
- * This is a multi-method driver. Three methods are available:
+ * This is a multi-method driver. Four methods are available:
  *   -- bycopy: data is copied in a pre-allocated, pre-registered
  *      memory region, then sent through RDMA into a pre-registered
  *      memory region of the peer node.
@@ -50,16 +55,22 @@
  *      a pipeline with variable block size. For each block, the
  *      receiver sends an ACK with RDMA info (raddr, rkey), then 
  *      zero-copy RDMA is performed.
+ *   -- rcache: memory is registered on the fly on both sides, 
+ *      sequencially, using puk_mem_* functions from Puk-ABI that
+ *      manage a cache.
  *
  * Method is chosen as follows:
- *   -- tracks for small messages use always 'bycopy'
+ *   -- tracks for small messages always uses 'bycopy'
  *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages 
  *      and 'regrdma' for larger messages. Usually, the threshold 
  *      is 224kB (from empirical results about registration/send overlap)
+ *      on MT23108, and 2MB on ConnectX.
+ *   -- tracks with rendez-vous use 'rcache' when ib_rcache is activated
+ *      in the flavor.
  */
 
 
-/* *** global IB parameters */
+/* *** global IB parameters ******************************** */
 
 #define NM_IBVERBS_PORT         1
 #define NM_IBVERBS_TX_DEPTH     4
@@ -70,43 +81,6 @@
 #define NM_IBVERBS_MAX_INLINE   128
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
-/* *** method: 'bycopy' */
-
-#define NM_IBVERBS_BYCOPY_BUFSIZE     (4096 - sizeof(struct nm_ibverbs_bycopy_header))
-#define NM_IBVERBS_BYCOPY_RBUF_NUM    32
-#define NM_IBVERBS_BYCOPY_SBUF_NUM    2
-#define NM_IBVERBS_BYCOPY_CREDITS_THR 17
-
-#define NM_IBVERBS_BYCOPY_STATUS_EMPTY   0x00  /**< no message in buffer */
-#define NM_IBVERBS_BYCOPY_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
-#define NM_IBVERBS_BYCOPY_STATUS_LAST    0x02  /**< last data block */
-#define NM_IBVERBS_BYCOPY_STATUS_CREDITS 0x04  /**< message contains credits */
-
-/* *** method: 'regrdma' */
-
-static const int nm_ibverbs_regrdma_frag_base    = 256 * 1024;
-static const int nm_ibverbs_regrdma_frag_inc     = 512 * 1024;
-static const int nm_ibverbs_regrdma_frag_overrun = 64  * 1024;
-static const int nm_ibverbs_regrdma_frag_max     = 4096 * 1024;
-
-/* *** method: 'adaptrdma' */
-
-static const int nm_ibverbs_adaptrdma_block_granularity = 2048;
-static const int nm_ibverbs_adaptrdma_step_base         = 16  * 1024;
-static const int nm_ibverbs_adaptrdma_step_overrun      = 16  * 1024;
-static const int nm_ibverbs_adaptrdma_reg_threshold     = 384 * 1024;
-static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
-
-#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (3 * 1024 * 1024)
-#define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header))
-
-#define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
-#define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
-#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_BEG 0x04
-#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
-
-
-#define NM_IBVERBS_AUTO_THRESHOLD (3 * 1024 * 1024 - NM_IBVERBS_ADAPTRDMA_HDRSIZE - 8)
 
 /** list of WRIDs used in the driver. */
 enum {
@@ -159,7 +133,8 @@ struct nm_ibverbs_drv
   struct ibv_context*context; /**< global IB context */
   struct ibv_pd*pd;           /**< global IB protection domain */
   uint16_t lid;               /**< local IB LID */
-  int server_sock;            /**< socket used for connection */
+  struct nm_ibverbs_trk*trks_array; /**< tracks of the driver*/
+  int nb_trks;                      /**< number of tracks */
   struct
   {
     int max_qp;               /**< maximum number of QP */
@@ -173,17 +148,18 @@ struct nm_ibverbs_drv
   } ib_caps;
   char*url;                   /**< Infiniband url for this node */
   struct nm_drv_cap caps;     /**< capabilities */
-  struct nm_ibverbs_trk*trks_array; /**< tracks of the driver*/
-  int nb_trks;                      /**< number of tracks */
+  int server_sock;            /**< socket used for connection */
 };
 
-enum nm_ibverbs_trk_kind {
-  NM_IBVERBS_TRK_NONE      = 0,
-  NM_IBVERBS_TRK_BYCOPY    = 0x01,
-  NM_IBVERBS_TRK_REGRDMA   = 0x02,
-  NM_IBVERBS_TRK_ADAPTRDMA = 0x04,
-  NM_IBVERBS_TRK_AUTO      = 0x10
-};
+enum nm_ibverbs_trk_kind
+  {
+    NM_IBVERBS_TRK_NONE      = 0,
+    NM_IBVERBS_TRK_BYCOPY    = 0x01,
+    NM_IBVERBS_TRK_REGRDMA   = 0x02,
+    NM_IBVERBS_TRK_ADAPTRDMA = 0x04,
+    NM_IBVERBS_TRK_RCACHE    = 0x08,
+    NM_IBVERBS_TRK_AUTO      = 0x10
+  };
 
 struct nm_ibverbs_trk 
 {
@@ -204,6 +180,19 @@ struct nm_ibverbs_cnx_addr
   uint32_t psn;
   struct nm_ibverbs_segment segments[16];
 };
+
+
+/* *** method: 'bycopy' ************************************ */
+
+#define NM_IBVERBS_BYCOPY_BUFSIZE     (4096 - sizeof(struct nm_ibverbs_bycopy_header))
+#define NM_IBVERBS_BYCOPY_RBUF_NUM    32
+#define NM_IBVERBS_BYCOPY_SBUF_NUM    2
+#define NM_IBVERBS_BYCOPY_CREDITS_THR 17
+
+#define NM_IBVERBS_BYCOPY_STATUS_EMPTY   0x00  /**< no message in buffer */
+#define NM_IBVERBS_BYCOPY_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */
+#define NM_IBVERBS_BYCOPY_STATUS_LAST    0x02  /**< last data block */
+#define NM_IBVERBS_BYCOPY_STATUS_CREDITS 0x04  /**< message contains credits */
 
 struct nm_ibverbs_bycopy_header 
 {
@@ -257,6 +246,14 @@ struct nm_ibverbs_bycopy
   struct ibv_mr*mr;           /**< global MR (used for 'buffer') */
   
 };
+
+
+/* *** method: 'regrdma' *********************************** */
+
+static const int nm_ibverbs_regrdma_frag_base    = 256 * 1024;
+static const int nm_ibverbs_regrdma_frag_inc     = 512 * 1024;
+static const int nm_ibverbs_regrdma_frag_overrun = 64  * 1024;
+static const int nm_ibverbs_regrdma_frag_max     = 4096 * 1024;
 
 struct nm_ibverbs_regrdma_cell
 {
@@ -314,6 +311,26 @@ struct nm_ibverbs_regrdma
   } headers;
 };
 
+
+/* *** method: 'adaptrdma' ********************************* */
+
+static const int nm_ibverbs_adaptrdma_block_granularity = 2048;
+static const int nm_ibverbs_adaptrdma_step_base         = 16  * 1024;
+static const int nm_ibverbs_adaptrdma_step_overrun      = 16  * 1024;
+static const int nm_ibverbs_adaptrdma_reg_threshold     = 384 * 1024;
+static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
+
+#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (3 * 1024 * 1024)
+#define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header))
+
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
+#define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_BEG 0x04
+#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
+
+/** threshold to switch from adaptrdma to regrdma */
+#define NM_IBVERBS_AUTO_THRESHOLD (3 * 1024 * 1024 - NM_IBVERBS_ADAPTRDMA_HDRSIZE - 8)
+
 /** on the wire header of method 'adaptrdma' */
 struct nm_ibverbs_adaptrdma_header
 {
@@ -355,6 +372,49 @@ struct nm_ibverbs_adaptrdma
   } recv;
 };
 
+/* *** method: 'rcache' ********************************* */
+
+
+/** Header sent by the receiver to ask for RDMA data (rcache rdv) */
+struct nm_ibverbs_rcache_rdvhdr 
+{
+  uint64_t raddr;
+  uint32_t rkey;
+  volatile int busy;
+};
+
+/** Header sent to signal presence of rcache data */
+struct nm_ibverbs_rcache_sighdr 
+{
+  volatile int busy;
+};
+
+/** Connection state for 'rcache' tracks */
+struct nm_ibverbs_rcache
+{
+  struct ibv_mr*mr;              /**< global MR (used for headers) */
+  struct nm_ibverbs_segment seg; /**< remote segment */
+  struct
+  {
+    char*message;
+    int size;
+    struct ibv_mr*mr;
+  } recv;
+  struct
+  {
+    const char*message;
+    int size;
+    struct ibv_mr*mr;
+  } send;
+  struct
+  {
+    struct nm_ibverbs_rcache_rdvhdr shdr, rhdr;
+    struct nm_ibverbs_rcache_sighdr ssig, rsig;
+  } headers;
+};
+
+
+
 /** an IB connection for a given trk/gate pair */
 struct nm_ibverbs_cnx
 {
@@ -364,16 +424,17 @@ struct nm_ibverbs_cnx
   struct ibv_cq*of_cq;    /**< CQ for outgoing packets */
   struct ibv_cq*if_cq;    /**< CQ for incoming packets */
   int max_inline;         /**< max size of data for IBV inline RDMA */
-  
-  struct {
+  struct
+  {
     int total;
     int wrids[_NM_IBVERBS_WRID_MAX];
   } pending;              /**< count of pending packets */
-  
-  struct {
+  struct
+  {
     struct nm_ibverbs_bycopy    bycopy;
     struct nm_ibverbs_regrdma   regrdma;
     struct nm_ibverbs_adaptrdma adaptrdma;
+    struct nm_ibverbs_rcache    rcache;
   };
 };
 
@@ -542,6 +603,12 @@ static void nm_ibverbs_addr_pack(struct nm_ibverbs_cnx*p_ibverbs_cnx, int kind)
     p_ibverbs_cnx->local_addr.segments[n].rkey  = p_ibverbs_cnx->adaptrdma.mr->rkey;
     n++;
   }
+  if(kind & NM_IBVERBS_TRK_RCACHE) {
+    p_ibverbs_cnx->local_addr.segments[n].kind  = NM_IBVERBS_TRK_RCACHE;
+    p_ibverbs_cnx->local_addr.segments[n].raddr = (uintptr_t)&p_ibverbs_cnx->rcache.headers;
+    p_ibverbs_cnx->local_addr.segments[n].rkey  = p_ibverbs_cnx->rcache.mr->rkey;
+    n++;
+  }
 }
 
 static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
@@ -560,6 +627,9 @@ static void nm_ibverbs_addr_unpack(const struct nm_ibverbs_cnx_addr*addr,
 	  break;
 	case NM_IBVERBS_TRK_ADAPTRDMA:
 	  p_ibverbs_cnx->adaptrdma.seg = addr->segments[i];
+	  break;
+	case NM_IBVERBS_TRK_RCACHE:
+	  p_ibverbs_cnx->rcache.seg = addr->segments[i];
 	  break;
 	default:
 	  fprintf(stderr, "Infiniband: got unknown address kind.\n");
@@ -639,7 +709,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   int i;
   struct nm_ibverbs_drv*p_ibverbs_drv = NULL;
   
-  /* check parameters consitency */
+  /* check parameters consistency */
   assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
   assert(NM_IBVERBS_BYCOPY_CREDITS_THR > NM_IBVERBS_BYCOPY_RBUF_NUM / 2);
   
@@ -697,7 +767,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   p_ibverbs_drv->caps.rdv_threshold                       = 256 * 1024;
 #ifdef PM2_NUIOA
   p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
-  p_ibverbs_drv->caps.latency = 373; /* from sr_ping */
+  p_ibverbs_drv->caps.latency = 170; /* from sr_ping */
   p_ibverbs_drv->caps.bandwidth = 1400; /* from sr_ping, use 200 * link width instead? */
 #endif
   
@@ -707,6 +777,21 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
  out:
   return err;
 }
+
+#ifdef NM_IBVERBS_RCACHE
+static struct ibv_pd*global_pd; /**< global IB protection domain */
+static void*nm_ibverbs_mem_reg(const void*ptr, size_t len)
+{
+  struct ibv_mr*mr = ibv_reg_mr(global_pd, (void*)ptr, len, 
+				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  return mr;
+}
+static void nm_ibverbs_mem_unreg(const void*ptr, void*key)
+{
+  struct ibv_mr*mr = key;
+  ibv_dereg_mr(mr);
+}
+#endif /* BM_IBVERBS_RCACHE */
 
 static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
@@ -729,6 +814,11 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
     fprintf(stderr, "Infiniband: cannot allocate IB protection domain.\n");
     abort();
   }
+#ifdef NM_IBVERBS_RCACHE
+  global_pd = p_ibverbs_drv->pd;
+  puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
+#endif /* NM_IBVERBS_RCACHE */
+
   /* detect LID */
   struct ibv_port_attr port_attr;
   rc = ibv_query_port(p_ibverbs_drv->context, NM_IBVERBS_PORT, &port_attr);
@@ -825,15 +915,24 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
     {
       /* auto-detect track kind */ 
       if(trk_caps[i].rq_type == nm_trk_rq_rdv)
-	p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO; /* XXX */
+	{
+#ifdef NM_IBVERBS_RCACHE
+	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_RCACHE;
+#else
+	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO; /* XXX */
+#endif
+	}
       else
-	p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_BYCOPY;
+	{
+	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_BYCOPY;
+	}
       /* fill capabilities */
       switch(p_ibverbs_drv->trks_array[i].kind) 
 	{
 	case NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO:
 	case NM_IBVERBS_TRK_REGRDMA:
 	case NM_IBVERBS_TRK_ADAPTRDMA:
+	case NM_IBVERBS_TRK_RCACHE:
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -949,7 +1048,21 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
 	goto out;
       }
     }
-  
+    if(kind & NM_IBVERBS_TRK_RCACHE)
+    {
+      /* init state */
+      memset(&p_ibverbs_cnx->rcache.headers, 0, sizeof(p_ibverbs_cnx->rcache.headers));
+      /* register Memory Region */
+      p_ibverbs_cnx->rcache.mr = ibv_reg_mr(p_ibverbs_drv->pd, &p_ibverbs_cnx->rcache.headers,
+					    sizeof(p_ibverbs_cnx->rcache.headers),
+					    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+      if(p_ibverbs_cnx->rcache.mr == NULL) {
+	fprintf(stderr, "Infiniband: cannot register MR.\n");
+	err = -NM_EUNKNOWN;
+	goto out;
+      }
+    }
+
   /* init incoming CQ */
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_ibverbs_drv->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
   if(p_ibverbs_cnx->if_cq == NULL) {
@@ -1858,6 +1971,111 @@ static inline int nm_ibverbs_adaptrdma_poll_one(struct nm_ibverbs_cnx*__restrict
 
 /* ********************************************************* */
 
+/* ** reg cache I/O **************************************** */
+
+
+static inline void nm_ibverbs_rcache_send_post(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx,
+					       const struct iovec*v, int n)
+{
+#ifdef NM_IBVERBS_RCACHE
+  char*message = v[0].iov_base;
+  const int size = v[0].iov_len;
+  assert(n == 1);
+  p_ibverbs_cnx->rcache.send.message = message;
+  p_ibverbs_cnx->rcache.send.size = size;
+  p_ibverbs_cnx->rcache.send.mr = puk_mem_reg(message, size);
+#endif
+}
+
+static inline int nm_ibverbs_rcache_send_poll(struct nm_ibverbs_cnx*p_ibverbs_cnx)
+{
+#ifdef NM_IBVERBS_RCACHE
+  struct nm_ibverbs_rcache_rdvhdr*const h = &p_ibverbs_cnx->rcache.headers.rhdr;
+  if(h->busy)
+    {
+      const uint64_t raddr = h->raddr;
+      const uint32_t rkey  = h->rkey;
+      h->raddr = 0;
+      h->rkey  = 0;
+      h->busy  = 0;
+      nm_ibverbs_do_rdma(p_ibverbs_cnx, 
+			 p_ibverbs_cnx->rcache.send.message,
+			 p_ibverbs_cnx->rcache.send.size, raddr, IBV_WR_RDMA_WRITE,
+			 (p_ibverbs_cnx->rcache.send.size > p_ibverbs_cnx->max_inline ?
+			  IBV_SEND_SIGNALED : (IBV_SEND_SIGNALED | IBV_SEND_INLINE)),
+			 p_ibverbs_cnx->rcache.send.mr->lkey, rkey, NM_IBVERBS_WRID_DATA);
+      p_ibverbs_cnx->rcache.headers.ssig.busy = 1;
+      nm_ibverbs_rdma_send(p_ibverbs_cnx, sizeof(struct nm_ibverbs_rcache_sighdr),
+			   &p_ibverbs_cnx->rcache.headers.ssig,
+			   &p_ibverbs_cnx->rcache.headers.rsig,
+			   &p_ibverbs_cnx->rcache.headers,
+			   &p_ibverbs_cnx->rcache.seg,
+			   p_ibverbs_cnx->rcache.mr,
+			   NM_IBVERBS_WRID_HEADER);
+      nm_ibverbs_send_flush(p_ibverbs_cnx, NM_IBVERBS_WRID_HEADER);  
+      puk_mem_unreg(p_ibverbs_cnx->rcache.send.message);
+      p_ibverbs_cnx->rcache.send.message = NULL;
+      p_ibverbs_cnx->rcache.send.size    = -1;
+      p_ibverbs_cnx->rcache.send.mr = NULL;
+      nm_ibverbs_send_flush(p_ibverbs_cnx, NM_IBVERBS_WRID_DATA);  
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      return -NM_EAGAIN;
+    }
+#else
+  return -NM_ENOTIMPL;
+#endif
+}
+
+static inline void nm_ibverbs_rcache_recv_init(struct nm_pkt_wrap*p_pw, struct nm_ibverbs_cnx*p_ibverbs_cnx)
+{
+#ifdef NM_IBVERBS_RCACHE
+  p_ibverbs_cnx->rcache.headers.rsig.busy = 0;
+  p_ibverbs_cnx->rcache.recv.message = p_pw->v[p_pw->v_first].iov_base;
+  p_ibverbs_cnx->rcache.recv.size = p_pw->v[p_pw->v_first].iov_len;
+  p_ibverbs_cnx->rcache.recv.mr = puk_mem_reg(p_ibverbs_cnx->rcache.recv.message, 
+					      p_ibverbs_cnx->rcache.recv.size);
+  struct nm_ibverbs_rcache_rdvhdr*const h = &p_ibverbs_cnx->rcache.headers.shdr;
+  h->raddr =  (uintptr_t)p_ibverbs_cnx->rcache.recv.message;
+  h->rkey  = p_ibverbs_cnx->rcache.recv.mr->rkey;
+  h->busy  = 1;
+  nm_ibverbs_rdma_send(p_ibverbs_cnx, sizeof(struct nm_ibverbs_rcache_rdvhdr),
+		       &p_ibverbs_cnx->rcache.headers.shdr, 
+		       &p_ibverbs_cnx->rcache.headers.rhdr,
+		       &p_ibverbs_cnx->rcache.headers,
+		       &p_ibverbs_cnx->rcache.seg,
+		       p_ibverbs_cnx->rcache.mr,
+		       NM_IBVERBS_WRID_RDV);
+  nm_ibverbs_send_flush(p_ibverbs_cnx, NM_IBVERBS_WRID_RDV);
+  p_pw->drv_priv = p_ibverbs_cnx;
+#endif
+}
+
+static inline int nm_ibverbs_rcache_poll_one(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
+{
+#ifdef NM_IBVERBS_RCACHE
+  struct nm_ibverbs_rcache_sighdr*rsig = &p_ibverbs_cnx->rcache.headers.rsig;
+  if(rsig->busy)
+    {
+      puk_mem_unreg(p_ibverbs_cnx->rcache.recv.message);
+      p_ibverbs_cnx->rcache.recv.message = NULL;
+      p_ibverbs_cnx->rcache.recv.size = -1;
+      p_ibverbs_cnx->rcache.recv.mr = NULL;
+      return NM_ESUCCESS;
+    }
+  else
+    {
+      return -NM_EAGAIN;
+    }
+#else
+  return -NM_ENOTIMPL;
+#endif
+}
+
+/* ********************************************************* */
+
 /* ** driver I/O functions ********************************* */
 
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
@@ -1868,6 +2086,9 @@ static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
   p_pw->drv_priv = p_ibverbs_cnx;
   switch(kind)
     {
+    case NM_IBVERBS_TRK_BYCOPY:
+      nm_ibverbs_bycopy_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
+      break;
     case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
     case NM_IBVERBS_TRK_AUTO:
       if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD) 
@@ -1879,14 +2100,14 @@ static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
 	  nm_ibverbs_adaptrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
 	}
       break;
-    case NM_IBVERBS_TRK_BYCOPY:
-      nm_ibverbs_bycopy_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
-      break;
     case NM_IBVERBS_TRK_REGRDMA:
       nm_ibverbs_regrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
       break;
     case NM_IBVERBS_TRK_ADAPTRDMA:
       nm_ibverbs_adaptrdma_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
+      break;
+    case NM_IBVERBS_TRK_RCACHE:
+      nm_ibverbs_rcache_send_post(p_ibverbs_cnx, &p_pw->v[p_pw->v_first], p_pw->v_nb);
       break;
     default:
       fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", kind, __FUNCTION__);
@@ -1904,6 +2125,9 @@ static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
   int err = -NM_EUNKNOWN;
   switch(kind)
     {
+    case NM_IBVERBS_TRK_BYCOPY:
+      err = nm_ibverbs_bycopy_send_poll(p_ibverbs_cnx);
+      break;
     case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
     case NM_IBVERBS_TRK_AUTO:
       if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD)
@@ -1915,14 +2139,14 @@ static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
 	  err = nm_ibverbs_adaptrdma_send_poll(p_ibverbs_cnx);
 	}
       break;
-    case NM_IBVERBS_TRK_BYCOPY:
-      err = nm_ibverbs_bycopy_send_poll(p_ibverbs_cnx);
-      break;
     case NM_IBVERBS_TRK_REGRDMA:
       err = nm_ibverbs_regrdma_send_poll(p_ibverbs_cnx);
       break;
     case NM_IBVERBS_TRK_ADAPTRDMA:
       err = nm_ibverbs_adaptrdma_send_poll(p_ibverbs_cnx);
+      break;
+    case NM_IBVERBS_TRK_RCACHE:
+      err = nm_ibverbs_rcache_send_poll(p_ibverbs_cnx);
       break;
     default:
       fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", kind, __FUNCTION__);
@@ -1938,6 +2162,9 @@ static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,
   const int kind = nm_ibverbs_get_kind(p_pw->p_drv, p_pw->trk_id);
   switch(kind)
     {
+    case NM_IBVERBS_TRK_BYCOPY:
+      nm_ibverbs_bycopy_recv_init(p_pw, p_ibverbs_cnx);
+      break;
     case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
     case NM_IBVERBS_TRK_AUTO:
       if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD)
@@ -1949,14 +2176,14 @@ static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,
 	  nm_ibverbs_adaptrdma_recv_init(p_pw, p_ibverbs_cnx);
 	}
       break;
-    case NM_IBVERBS_TRK_BYCOPY:
-      nm_ibverbs_bycopy_recv_init(p_pw, p_ibverbs_cnx);
-      break;
     case NM_IBVERBS_TRK_REGRDMA:
       nm_ibverbs_regrdma_recv_init(p_pw, p_ibverbs_cnx);
       break;
     case NM_IBVERBS_TRK_ADAPTRDMA:
       nm_ibverbs_adaptrdma_recv_init(p_pw, p_ibverbs_cnx);
+      break;
+    case NM_IBVERBS_TRK_RCACHE:
+      nm_ibverbs_rcache_recv_init(p_pw, p_ibverbs_cnx);
       break;
     default:
       fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", kind, __FUNCTION__);
@@ -1971,6 +2198,9 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
   const int kind = nm_ibverbs_get_kind(p_pw->p_drv, p_pw->trk_id);
   switch(kind) 
     {
+    case NM_IBVERBS_TRK_BYCOPY:
+      return nm_ibverbs_bycopy_poll_one(p_ibverbs_cnx);
+      break;
     case NM_IBVERBS_TRK_AUTO |  NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_REGRDMA:
     case NM_IBVERBS_TRK_AUTO:
       if(p_pw->length > NM_IBVERBS_AUTO_THRESHOLD)
@@ -1984,20 +2214,18 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
 	  return nm_ibverbs_adaptrdma_poll_one(p_ibverbs_cnx);
 	}
       break;
-    case NM_IBVERBS_TRK_BYCOPY:
-      return nm_ibverbs_bycopy_poll_one(p_ibverbs_cnx);
-      break;
-      
     case NM_IBVERBS_TRK_REGRDMA:
       assert(p_pw->p_gate != NULL);
       return nm_ibverbs_regrdma_poll_one(p_ibverbs_cnx);
       break;
-      
     case NM_IBVERBS_TRK_ADAPTRDMA:
       assert(p_pw->p_gate != NULL);
       return nm_ibverbs_adaptrdma_poll_one(p_ibverbs_cnx);
       break;
-      
+    case NM_IBVERBS_TRK_RCACHE:
+      assert(p_pw->p_gate != NULL);
+      return nm_ibverbs_rcache_poll_one(p_ibverbs_cnx);
+      break;
     default:
       fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", kind, __FUNCTION__);
       abort();
@@ -2022,12 +2250,13 @@ static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
 	  const struct nm_gate*__restrict__ p_gate = &p_core->gate_array[i];
 	  if(p_gate) {
 	    struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-	    if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status) {
-	      p_pw->p_gate = (struct nm_gate*)p_gate;
-	      nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
-	      err = nm_ibverbs_poll_one(p_pw, p_ibverbs_cnx);
-	      goto out;
-	    }
+	    if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status)
+	      {
+		p_pw->p_gate = (struct nm_gate*)p_gate;
+		nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
+		err = nm_ibverbs_poll_one(p_pw, p_ibverbs_cnx);
+		goto out;
+	      }
 	  }
 	}
     }

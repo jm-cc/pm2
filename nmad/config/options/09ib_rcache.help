@@ -1,0 +1,1 @@
+Enable registration cache in NewMadeleine Infiniband driver (dynamic pipelined registration is used else).

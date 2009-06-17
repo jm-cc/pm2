@@ -14,8 +14,9 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 #include <sys/mman.h>
+#include "mm_mami.h"
+#include "mm_mami_thread.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -35,7 +36,7 @@ any_t t_migrate(any_t arg) {
     else {
       mami_migrate_pages(memory_manager, buffer, 0);
     }
-    //if (i %1000) marcel_printf("Migrate ...\n");
+    //if (i %1000) printf("Migrate ...\n");
   }
   return 0;
 }
@@ -52,16 +53,16 @@ any_t t_access(any_t arg) {
     else {
       res -= buffer[i];
     }
-    //if (i %1000) marcel_printf("Access ...\n");
+    //if (i %1000) printf("Access ...\n");
   }
   return 0;
 }
 
 int main(int argc, char * argv[]) {
-  marcel_t threads[2];
+  th_mami_t threads[2];
   int loops=1000;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   if (argc == 2) {
@@ -72,17 +73,17 @@ int main(int argc, char * argv[]) {
   buffer = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
 
   // Start the threads
-  marcel_create(&threads[0], NULL, t_migrate, (any_t) &loops);
-  marcel_create(&threads[1], NULL, t_access, (any_t) &loops);
+  th_mami_create(&threads[0], NULL, t_migrate, (any_t) &loops);
+  th_mami_create(&threads[1], NULL, t_access, (any_t) &loops);
 
   // Wait for the threads to complete
-  marcel_join(threads[0], NULL);
-  marcel_join(threads[1], NULL);
+  th_mami_join(threads[0], NULL);
+  th_mami_join(threads[1], NULL);
 
-  // Finish marcel
+  printf("Success\n");
   mami_free(memory_manager, buffer);
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

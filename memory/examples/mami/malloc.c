@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -23,27 +24,27 @@ int main(int argc, char * argv[]) {
   void *ptr, *ptr2, *ptr3, *ptr4;
   mami_manager_t *memory_manager;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_locate(memory_manager, ptr, 100, &node);
   if (node == marcel_current_node()) {
-    marcel_printf("Memory allocated on current node\n");
+    printf("Memory allocated on current node\n");
   }
   else {
-    marcel_printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, marcel_current_node());
+    printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, marcel_current_node());
   }
 
-  maxnode = marcel_nbnodes-1;
+  maxnode = memory_manager->nb_nodes-1;
   mami_membind(memory_manager, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, maxnode);
   ptr2 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_locate(memory_manager, ptr2, 100, &node);
   if (node == maxnode) {
-    marcel_printf("Memory allocated on given node\n");
+    printf("Memory allocated on given node\n");
   }
   else {
-    marcel_printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, maxnode);
+    printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, maxnode);
   }
 
   ptr3 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
@@ -52,20 +53,19 @@ int main(int argc, char * argv[]) {
   ptr4 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
   mami_locate(memory_manager, ptr4, 100, &node);
   if (node == least_loaded_node) {
-    marcel_printf("Memory allocated on least loaded node\n");
+    printf("Memory allocated on least loaded node\n");
   }
   else {
-    marcel_printf("Error. Memory NOT allocated on least loaded node (%d != %d)\n", node, least_loaded_node);
+    printf("Error. Memory NOT allocated on least loaded node (%d != %d)\n", node, least_loaded_node);
   }
 
   mami_free(memory_manager, ptr);
   mami_free(memory_manager, ptr2);
   mami_free(memory_manager, ptr3);
   mami_free(memory_manager, ptr4);
-  mami_exit(&memory_manager);
 
-  // Finish marcel
-  marcel_end();
+  mami_exit(&memory_manager);
+  common_exit(NULL);
   return 0;
 }
 

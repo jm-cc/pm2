@@ -15,26 +15,30 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-#define SIZE  100000
-#define LOOPS 100000
+#define SIZE  10000
+#define LOOPS 10000
 
 mami_manager_t *memory_manager;
 int **buffers;
 
 any_t compute(any_t arg) {
   int *buffer;
-  int i, j, node, where;
+  int i, j, *node, where;
 
-  node = marcel_self()->id;
+  node = (int *) arg;
 
-  marcel_fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", marcel_self()->id, marcel_current_node(), marcel_current_vp());
-  buffer = buffers[node];
+  fprintf(stderr,"[%d] launched on Node #%d - VP #%u\n", *node, marcel_current_node(), marcel_current_vp());
+  buffer = buffers[*node];
 
   mami_locate(memory_manager, buffer, 0, &where);
-  marcel_fprintf(stderr,"[%d] Memory on node #%d\n", marcel_self()->id, where);
+  if (where != *node) {
+    fprintf(stderr,"[%d] Memory not located on node #%d\n", *node, where);
+    exit(1);
+  }
 
   for(j=0 ; j<LOOPS ; j++) {
     for(i=0 ; i<SIZE ; i++) {
@@ -45,10 +49,10 @@ any_t compute(any_t arg) {
 }
 
 int main(int argc, char * argv[]) {
-  marcel_t *threads;
-  marcel_attr_t attr;
-  marcel_attr_t attr2;
+  th_mami_t *threads;
+  th_mami_attr_t attr;
   int node;
+  int *args;
 
   struct timeval random_tv1, random_tv2;
   struct timeval local_tv1, local_tv2;
@@ -56,48 +60,47 @@ int main(int argc, char * argv[]) {
   unsigned long random_us, random_ns;
   unsigned long benefit;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
-  marcel_attr_init(&attr);
-  marcel_attr_init(&attr2);
+  th_mami_attr_init(&attr);
 
-  buffers = (int **) malloc(marcel_nbnodes * sizeof(int *));
-  threads = (marcel_t *) malloc(marcel_nbnodes * sizeof(marcel_t));
+  args = (int *) th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+  buffers = (int **) th_mami_malloc(memory_manager->nb_nodes * sizeof(int *));
+  threads = (th_mami_t *) th_mami_malloc(memory_manager->nb_nodes * sizeof(th_mami_t));
 
   // Allocate memory on each node
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    args[node] = node;
     buffers[node] = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
   }
 
   // The thread which will work on the memory allocated on the node N is started on the same node N
   gettimeofday(&local_tv1, NULL);
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    marcel_attr_setid(&attr, node);
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     marcel_attr_settopo_level(&attr, &marcel_topo_node_level[node]);
-    marcel_create(&threads[node], &attr, compute, NULL);
+    th_mami_create(&threads[node], &attr, compute, (any_t) &args[node]);
   }
 
   // Wait for the threads to complete
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    marcel_join(threads[node], NULL);
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    th_mami_join(threads[node], NULL);
   }
   gettimeofday(&local_tv2, NULL);
 
-  // Let marcel decide where to place the threads
+  // Randomly place the threads
   gettimeofday(&random_tv1, NULL);
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    marcel_attr_setid(&attr2, node);
-    marcel_create(&threads[node], &attr2, compute, NULL);
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    th_mami_create(&threads[node], NULL, compute, (any_t) &args[node]);
   }
 
   // Wait for the threads to complete
-  for(node=0 ; node<marcel_nbnodes ; node++) {
-    marcel_join(threads[node], NULL);
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+    th_mami_join(threads[node], NULL);
   }
   gettimeofday(&random_tv2, NULL);
 
   // Deallocate memory on each node
-  for(node=0 ; node<marcel_nbnodes ; node++) {
+  for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     mami_free(memory_manager, buffers[node]);
   }
 
@@ -108,11 +111,10 @@ int main(int argc, char * argv[]) {
 
   benefit = local_ns / random_ns * 100;
 
-  marcel_printf("%ld\t%ld\t%ld\n", local_ns, random_ns, benefit);
+  printf("%ld\t%ld\t%ld\n", local_ns, random_ns, benefit);
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

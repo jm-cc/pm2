@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_thread.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -48,19 +49,19 @@ any_t reader(any_t arg) {
   ns = us * 1000;
 
   mami_free(memory_manager, b);
-  marcel_printf("%d\t%d\t%d\t%ld\n", snode, dnode, *nbpages, ns);
+  printf("%d\t%d\t%d\t%ld\n", snode, dnode, *nbpages, ns);
   return 0;
 }
 
 int main(int argc, char * argv[]) {
-  marcel_t threads[2];
-  marcel_attr_t attr;
+  th_mami_t threads[2];
+  th_mami_attr_t attr;
   int i;
   int source=-1, dest=-1, nbpages=-1;
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
-  marcel_attr_init(&attr);
+  th_mami_attr_init(&attr);
 
   for(i=1 ; i<argc ; i+=2) {
     if (!strcmp(argv[i], "-src")) {
@@ -77,25 +78,24 @@ int main(int argc, char * argv[]) {
     }
   }
   if (source == -1 || dest == -1 || nbpages == -1) {
-    marcel_printf("Error. Argument missing\n");
+    printf("Error. Argument missing\n");
     mami_exit(&memory_manager);
-    marcel_end();
+    common_exit(NULL);
     return  -1;
   }
 
   // Start the thread on the numa node #source
   marcel_attr_settopo_level(&attr, &marcel_topo_node_level[source]);
-  marcel_create(&threads[0], &attr, writer, (any_t)&nbpages);
-  marcel_join(threads[0], NULL);
+  th_mami_create(&threads[0], &attr, writer, (any_t)&nbpages);
+  th_mami_join(threads[0], NULL);
 
   // Start the thread on the numa node #1
   marcel_attr_settopo_level(&attr, &marcel_topo_node_level[dest]);
-  marcel_create(&threads[1], &attr, reader, (any_t)&nbpages);
-  marcel_join(threads[1], NULL);
+  th_mami_create(&threads[1], &attr, reader, (any_t)&nbpages);
+  th_mami_join(threads[1], NULL);
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

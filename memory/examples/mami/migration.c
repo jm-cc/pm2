@@ -15,6 +15,7 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -29,66 +30,57 @@ void allocation_and_migration(int cpu, int mem) {
 
   buffer = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, mem);
   mami_locate(memory_manager, buffer, size, &bnode);
-  marcel_printf("Node before migration %d\n", bnode);
-
   mami_migrate_pages(memory_manager, buffer, cpu);
-
   mami_locate(memory_manager, buffer, size, &anode);
-  marcel_printf("Node after migration %d\n", anode);
+
+  if (bnode == mem && anode == cpu) {
+    printf("[%d:%d] Data has succesfully been migrated\n", mem, cpu);
+  }
+  else {
+    printf("[%d:%d] Error when migrating data - bnode = %d -- anode = %d\n", mem, cpu, bnode, anode);
+  }
   mami_free(memory_manager, buffer);
 }
 
 any_t migration(any_t arg) {
-  int cpu, mem;
+  int *cpu, mem;
   size_t size;
   float migration_cost, reading_cost;
 
-  cpu = marcel_self()->id;
+  cpu = (int *)arg;
   size = getpagesize() * 10000;
 
-  for(mem=0 ; mem<marcel_nbnodes ; mem++) {
-    if (mem == cpu) continue;
+  for(mem=0 ; mem<memory_manager->nb_nodes ; mem++) {
+    if (mem == *cpu) continue;
 
-    mami_cost_for_read_access(memory_manager,
-                              cpu, mem,
-                              size, &reading_cost);
-    mami_migration_cost(memory_manager,
-                        cpu, mem,
-                        size, &migration_cost);
-    marcel_printf("\n[%d:%d] Migration cost %f - Reading access cost %f\n", cpu, mem, migration_cost, reading_cost);
-    if (migration_cost < reading_cost) {
-      marcel_printf("Migration is cheaper than remote reading. Let's migrate...\n");
-      allocation_and_migration(cpu, mem);
-    }
+    mami_cost_for_read_access(memory_manager, *cpu, mem, size, &reading_cost);
+    mami_migration_cost(memory_manager, *cpu, mem, size, &migration_cost);
+    //if (migration_cost < reading_cost) {
+    allocation_and_migration(*cpu, mem);
+    //}
   }
   return 0;
 }
 
 int main(int argc, char * argv[]) {
   int cpu;
-  marcel_t thread;
-  marcel_attr_t attr;
+  th_mami_t thread;
 
-  // Initialise marcel
-  marcel_init(&argc, argv);
-  marcel_attr_init(&attr);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
   if (argc == 3) {
     allocation_and_migration(atoi(argv[1]), atoi(argv[2]));
   }
   else {
-    for(cpu=0 ; cpu<marcel_nbnodes ; cpu++) {
-      marcel_attr_setid(&attr, cpu);
-      marcel_attr_settopo_level(&attr, &marcel_topo_node_level[cpu]);
-      marcel_create(&thread, &attr, migration, NULL);
-      marcel_join(thread, NULL);
+    for(cpu=0 ; cpu<memory_manager->nb_nodes ; cpu++) {
+      th_mami_create(&thread, NULL, migration, (any_t) &cpu);
+      th_mami_join(thread, NULL);
     }
   }
 
-  // Finish marcel
   mami_exit(&memory_manager);
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

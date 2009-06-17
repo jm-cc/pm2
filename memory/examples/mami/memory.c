@@ -26,21 +26,21 @@ mami_manager_t *memory_manager;
 any_t memory(any_t arg) {
   int *b, *c, *d, *e;
   char *buffer;
-  int node, id;
+  int node, *id;
 
-  id = marcel_self()->id;
-  b = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  c = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  d = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  e = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
-  buffer = mami_calloc(memory_manager, 1, PAGES * getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, id);
+  id = (int *) arg;
+  b = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, *id);
+  c = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, *id);
+  d = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, *id);
+  e = mami_malloc(memory_manager, 100*sizeof(int), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, *id);
+  buffer = mami_calloc(memory_manager, 1, PAGES * getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, *id);
 
   mami_locate(memory_manager, &(buffer[0]), 0, &node);
-  if (node == id) {
-    marcel_printf("[%d] Address is located on the correct node %d\n", id, node);
+  if (node == *id) {
+    printf("[%d] Address is located on the correct node %d\n", *id, node);
   }
   else {
-    marcel_printf("[%d] Address is NOT located on the correct node but on node %d\n", id, node);
+    printf("[%d] Address is NOT located on the correct node but on node %d\n", *id, node);
   }
 
 #ifdef PRINT
@@ -59,7 +59,7 @@ any_t memory2(any_t arg) {
   int i, node;
   void **buffers;
   void **buffers2;
-  int maxnode = marcel_nbnodes;
+  int maxnode = memory_manager->nb_nodes;
 
   buffers = malloc(maxnode * sizeof(void *));
   buffers2 = malloc(maxnode * sizeof(void *));
@@ -102,44 +102,32 @@ void memory_bis(void) {
 }
 
 int main(int argc, char * argv[]) {
-  marcel_t threads[2];
-  marcel_attr_t attr;
+  th_mami_t threads[2];
+  int args[2];
 
-  marcel_init(&argc,argv);
+  common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
-  marcel_attr_init(&attr);
 
-  if (marcel_nbnodes < 2) {
-    marcel_printf("This application needs at least two NUMA nodes.\n");
+  if (memory_manager->nb_nodes < 2) {
+    printf("This application needs at least two NUMA nodes.\n");
   }
   else {
-    // Start the 1st thread on the node #0
-    marcel_attr_setid(&attr, 0);
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[0]);
-    marcel_create(&threads[0], &attr, memory, NULL);
+    args[0] = 0;
+    args[1] = 1;
+    th_mami_create(&threads[0], NULL, memory, (any_t) &args[0]);
+    th_mami_create(&threads[1], NULL, memory, (any_t) &args[1]);
 
-    // Start the 2nd thread on the node #1
-    marcel_attr_setid(&attr, 1);
-    marcel_attr_settopo_level(&attr, &marcel_topo_node_level[1]);
-    marcel_create(&threads[1], &attr, memory, NULL);
+    th_mami_join(threads[0], NULL);
+    th_mami_join(threads[1], NULL);
 
-    // Wait for the threads to complete
-    marcel_join(threads[0], NULL);
-    marcel_join(threads[1], NULL);
-
-    // Start the thread on the last VP
-    marcel_attr_setid(&attr, marcel_nbvps()-1);
-    marcel_attr_settopo_level(&attr, &marcel_topo_vp_level[marcel_nbvps()-1]);
-    marcel_create(&threads[1], &attr, memory2, NULL);
-    marcel_join(threads[1], NULL);
+    th_mami_create(&threads[1], NULL, memory2, NULL);
+    th_mami_join(threads[1], NULL);
   }
 
   mami_exit(&memory_manager);
-
   memory_bis();
 
-  // Finish marcel
-  marcel_end();
+  common_exit(NULL);
   return 0;
 }
 

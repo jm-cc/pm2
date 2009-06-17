@@ -17,5 +17,6 @@ prog="migrate_and_access"
 args="10000"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
+Success
 EOF
 

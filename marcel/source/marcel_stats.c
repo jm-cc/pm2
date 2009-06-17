@@ -124,7 +124,7 @@ void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src) {
 
 long *ma_cumulative_stats_get (marcel_entity_t *e, unsigned long offset) {
   return
-#ifdef MA__BUBBLE
+#ifdef MA__BUBBLES
   (e->type == MA_BUBBLE_ENTITY) ?
     (long *) ma_bubble_hold_stats_get (ma_bubble_entity (e), offset)
     :

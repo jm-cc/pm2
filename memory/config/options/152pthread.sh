@@ -1,0 +1,2 @@
+PM2_MEMORY_LIBS="$PM2_MEMORY_LIBS -lpthread"
+

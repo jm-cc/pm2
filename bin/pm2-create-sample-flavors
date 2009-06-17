@@ -70,6 +70,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats \
         --marcel=dont_use_pthread \
+        --memory=marcel \
         --memory=enable_mami
 
     register_flavor mami-debug \
@@ -77,6 +78,7 @@ registering_flavors() {
 	--marcel=numa --marcel=standard_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=valgrind \
+        --memory=marcel \
         --memory=enable_mami \
         --marcel=dont_use_pthread \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
@@ -86,6 +88,7 @@ registering_flavors() {
 	--marcel=numa --marcel=standard_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=fortran \
+        --memory=marcel \
         --memory=enable_mami --memory=fortran \
         --common=fortran_target_gfortran \
         --marcel=dont_use_pthread \
@@ -157,7 +160,7 @@ registering_flavors() {
 
     register_flavor forestgomp-mami-debug \
         --modules="marcel tbx init memory" \
-	--marcel=numa --memory=enable_mami \
+	--marcel=numa --memory=marcel --memory=enable_mami \
 	--marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \

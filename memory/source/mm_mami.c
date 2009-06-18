@@ -991,11 +991,18 @@ int mami_register(mami_manager_t *memory_manager,
 
   MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
+  if (aligned_buffer == aligned_endbuffer) {
+    mdebug_memory("Cannit register a memory area smaller than a page\n");
+    errno = EINVAL;
+    MEMORY_LOG_OUT();
+    return -1;
+  }
+
   th_mami_mutex_lock(&(memory_manager->lock));
   mdebug_memory("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
   _mami_register(memory_manager, aligned_buffer, aligned_endbuffer, aligned_size, buffer, size, 0, &data);
-
   th_mami_mutex_unlock(&(memory_manager->lock));
+
   MEMORY_LOG_OUT();
   return 0;
 }

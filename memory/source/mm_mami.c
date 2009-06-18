@@ -934,19 +934,28 @@ int _mami_get_pages_location(mami_manager_t *memory_manager, void **pageaddrs, i
   return err;
 }
 
-void _mami_register(mami_manager_t *memory_manager,
-                    void *buffer,
-                    void *endbuffer,
-                    size_t size,
-                    void *initial_buffer,
-                    size_t initial_size,
-                    int mami_allocated,
-                    mami_data_t **data) {
+int _mami_register(mami_manager_t *memory_manager,
+                   void *buffer,
+                   void *endbuffer,
+                   size_t size,
+                   void *initial_buffer,
+                   size_t initial_size,
+                   int mami_allocated,
+                   mami_data_t **data) {
   void **pageaddrs;
   int nb_pages, protection, with_huge_pages;
   int i, node, *nodes;
+  mami_data_t *pdata = NULL;
+  int err=0;
 
   mdebug_memory("Registering address interval [%p:%p:%lu]\n", buffer, buffer+size, (long)size);
+
+  err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &pdata);
+  if (err >= 0) {
+    mdebug_memory("The memory area is already registered.\n");
+    errno = EINVAL;
+    return -1;
+  }
 
   with_huge_pages = 0;
   protection = PROT_READ|PROT_WRITE;
@@ -979,6 +988,7 @@ void _mami_register(mami_manager_t *memory_manager,
   // Free temporary array
   th_mami_free(nodes);
   th_mami_free(pageaddrs);
+  return 0;
 }
 
 int mami_register(mami_manager_t *memory_manager,
@@ -988,23 +998,23 @@ int mami_register(mami_manager_t *memory_manager,
   void *aligned_endbuffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer+size, memory_manager->normal_page_size);
   size_t aligned_size = aligned_endbuffer-aligned_buffer;
   mami_data_t *data = NULL;
+  int err=0;
 
   MEMORY_LOG_IN();
   if (aligned_size > size) aligned_size = size;
   if (aligned_buffer == aligned_endbuffer) {
     mdebug_memory("Cannit register a memory area smaller than a page\n");
     errno = EINVAL;
-    MEMORY_LOG_OUT();
-    return -1;
+    err = -1;
   }
-
-  th_mami_mutex_lock(&(memory_manager->lock));
-  mdebug_memory("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
-  _mami_register(memory_manager, aligned_buffer, aligned_endbuffer, aligned_size, buffer, size, 0, &data);
-  th_mami_mutex_unlock(&(memory_manager->lock));
-
+  else {
+    th_mami_mutex_lock(&(memory_manager->lock));
+    mdebug_memory("Registering [%p:%p:%ld]\n", aligned_buffer, aligned_buffer+aligned_size, (long)aligned_size);
+    err = _mami_register(memory_manager, aligned_buffer, aligned_endbuffer, aligned_size, buffer, size, 0, &data);
+    th_mami_mutex_unlock(&(memory_manager->lock));
+  }
   MEMORY_LOG_OUT();
-  return 0;
+  return err;
 }
 
 int mami_unregister(mami_manager_t *memory_manager,

@@ -205,7 +205,7 @@ struct mami_manager_s {
 /* Node id used for first touch allocated memory */
 #define MAMI_FIRST_TOUCH_NODE memory_manager->nb_nodes
 /* Node id used when memory area located on several nodes */
-#define MAMI_MULTIPLE_LOCATION_NODE -2
+#define MAMI_MULTIPLE_LOCATION_NODE -20
 /* Node id used when unknown location */
 #define MAMI_UNKNOWN_LOCATION_NODE -1
 
@@ -269,7 +269,7 @@ int _mami_get_pages_location(mami_manager_t *memory_manager,
                              void **pageaddrs,
                              int nbpages,
                              int *node,
-                             int **nodes);
+                             int *nodes);
 
 extern
 int _mami_migrate_pages(mami_manager_t *memory_manager,

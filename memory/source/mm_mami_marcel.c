@@ -63,7 +63,8 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     else {
       if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
         mdebug_memory("Need to find out the location of the memory area\n");
-        _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &(data->node), &(data->nodes));
+        if (data->nodes == NULL) data->nodes = th_mami_malloc(data->nb_pages * sizeof(int));
+        _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &(data->node), data->nodes);
       }
       if (size < data->size) {
         size_t newsize;

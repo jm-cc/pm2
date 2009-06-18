@@ -15,29 +15,30 @@
 
 #include <stdio.h>
 #include "mm_mami.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
 int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
-  int ptr[10000];
+  int ptr[getpagesize()*10/sizeof(int)];
   int i, err, node;
   size_t size;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager);
-  mami_unset_alignment(memory_manager);
 
-  size=10000*sizeof(int);
+  size=getpagesize()*10;
   err = mami_task_attach(memory_manager, ptr, size, marcel_self(), &node);
   if (err < 0) perror("mami_task_attach unexpectedly failed");
 
   err = mami_locate(memory_manager, ptr, size, &node);
   if (err < 0) perror("mami_locate unexpectedly failed");
-  marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
-  err = mami_check_pages_location(memory_manager, ptr, size, node);
-  if (err < 0) perror("mami_check_pages_location unexpectedly failed");
+  if (node != MAMI_MULTIPLE_LOCATION_NODE) {
+    err = mami_check_pages_location(memory_manager, ptr, size, node);
+    if (err < 0) perror("mami_check_pages_location unexpectedly failed");
+  }
 
   mami_unset_kernel_migration(memory_manager);
   err = mami_migrate_on_next_touch(memory_manager, ptr);

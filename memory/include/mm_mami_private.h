@@ -214,14 +214,14 @@ void _mami_delete_tree(mami_manager_t *memory_manager,
                        mami_tree_t **memory_tree);
 
 extern
-void _mami_register(mami_manager_t *memory_manager,
-                    void *buffer,
-                    void *endbuffer,
-                    size_t size,
-                    void *initial_buffer,
-                    size_t initial_size,
-                    int mami_allocated,
-                    mami_data_t **data);
+int _mami_register(mami_manager_t *memory_manager,
+                   void *buffer,
+                   void *endbuffer,
+                   size_t size,
+                   void *initial_buffer,
+                   size_t initial_size,
+                   int mami_allocated,
+                   mami_data_t **data);
 
 extern
 void _mami_unregister(mami_manager_t *memory_manager,

@@ -47,10 +47,10 @@ int main(int argc, char * argv[]) {
   if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
     mami_locate(memory_manager, ptr, 50000, &node);
-    if (node == -2)
-      fprintf(stderr, "Node is %d as expected\n", node);
+    if (node == MAMI_MULTIPLE_LOCATION_NODE)
+      fprintf(stderr, "Node is <MAMI_MULTIPLE_LOCATION_NODE> as expected\n");
     else
-      fprintf(stderr, "Node is NOT -2 as expected but %d\n", node);
+      fprintf(stderr, "Node is NOT <MAMI_MULTIPLE_LOCATION_NODE> as expected but %d\n", node);
 
     mami_gather(memory_manager, ptr, 0);
     mami_locate(memory_manager, ptr, 50000, &node);

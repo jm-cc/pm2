@@ -62,6 +62,9 @@ MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_bubble_sched_debug=
   NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-bubble-sched", &marcel_debug);
 
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_lwp_debug=
+  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-lwp-debug", &marcel_debug);
+
 #ifdef MARCEL_TRACE
 MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace=
   NEW_DEBUG_TYPE_DEPEND("MAR_TRACE: ", "mar-trace", &marcel_debug);

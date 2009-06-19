@@ -82,6 +82,8 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
+        mdebug_lwp("lwp on core ...\n");
+
 	ret = ma_call_lwp_notifier(MA_LWP_ONLINE, lwp);
         if (ret == MA_NOTIFY_BAD) {
                 pm2debug("%s: attempt to bring up LWP %p failed\n",

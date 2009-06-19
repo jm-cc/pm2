@@ -114,6 +114,7 @@ extern debug_type_t marcel_mtrace_timer;
 extern debug_type_t marcel_allocator_debug;
 extern debug_type_t marcel_allocator_log;
 extern debug_type_t marcel_topology_debug;
+extern debug_type_t marcel_lwp_debug;
 #endif
 
 #section macros
@@ -138,9 +139,11 @@ extern debug_type_t marcel_topology_debug;
 #define bubble_sched_debug(fmt, args...) \
     debug_printf(&marcel_bubble_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define bubble_sched_debugl(level, fmt, args...) \
-  debug_printfl(&marcel_bubble_sched_debug, (level), "[%s] " fmt , __TBX_FUNCTION__, ##args)
+    debug_printfl(&marcel_bubble_sched_debug, (level), "[%s] " fmt , __TBX_FUNCTION__, ##args)
 #define sched_debug(fmt, args...) \
     debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#define mdebug_lwp(fmt, args...) \
+    debug_printf(&marcel_lwp_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
 
 #if defined(PM2DEBUG)
 #  define MALLOCATOR_LOG_IN()  debug_printf(&marcel_allocator_log, "%s: -->\n", __TBX_FUNCTION__)

@@ -37,10 +37,10 @@ any_t memory(any_t arg) {
 
   mami_locate(memory_manager, &(buffer[0]), 0, &node);
   if (node == *id) {
-    printf("[%d] Address is located on the correct node %d\n", *id, node);
+    fprintf(stdout, "[%d] Address is located on the correct node %d\n", *id, node);
   }
   else {
-    printf("[%d] Address is NOT located on the correct node but on node %d\n", *id, node);
+    fprintf(stdout, "[%d] Address is NOT located on the correct node but on node %d\n", *id, node);
   }
 
 #ifdef PRINT

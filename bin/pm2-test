@@ -405,9 +405,9 @@ while [ $_l -le $_level ]; do
 	    rm -rf /tmp/tests_${USER}_database/
 	    mkdir /tmp/tests_${USER}_database/
 
-	    for _f in $_tests ; do
+	    for _t in $_tests ; do
                 # Affichage
-                _tst_name="`pm2_test_name $_f`"
+                _tst_name="`pm2_test_name $_t`"
 
 		is_test_selected=0
                 if [ -z "$PM2_TESTS" ] ; then
@@ -427,7 +427,7 @@ while [ $_l -le $_level ]; do
 
 		    # Source
 		    unset ld_preload
-                    . ./$_f
+                    . ./$_t
 		    echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`' = \`$ld_preload'" | pm2_debug
 		    eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
 
@@ -435,14 +435,14 @@ while [ $_l -le $_level ]; do
                     # force its regeneration. Ideally we should also depend
                     # on the options' .sh files.
 		    flavor_file=`pm2-flavor-file -f $flavor`
-		    if [ ! -r "$flavor_file" ] || [ "$_f" -nt "$flavor_file" ] ; then
+		    if [ ! -r "$flavor_file" ] || [ "$_t" -nt "$flavor_file" ] ; then
 			rm -f "$flavor_file"
 			create_test_flavor | sed -e 's/^/..../'
 		    fi
 
 		    appdir2=$(echo $appdir | tr '/' ':')
-		    echo $prog $_f >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
-		    echo $_f >> /tmp/tests_${USER}_database/${flavor}.flavor
+		    echo $prog $_t >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
+		    echo $_t >> /tmp/tests_${USER}_database/${flavor}.flavor
 		    nb_tests_per_module=`expr $nb_tests_per_module + 1`
                 fi
             done

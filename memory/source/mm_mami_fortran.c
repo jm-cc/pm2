@@ -111,4 +111,14 @@ void mami_task_unattach_(int *memory_manager,
   *err = _err;
 }
 
+void mami_task_migrate_all_(int *memory_manager,
+                            marcel_t *owner,
+                            int *node,
+                            int *err) {
+  int _err;
+  mami_manager_t *manager = (void *)*memory_manager;
+  _err = mami_task_migrate_all(manager, *owner, *node);
+  *err = _err;
+}
+
 #endif

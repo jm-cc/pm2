@@ -1067,14 +1067,14 @@ int mami_split(mami_manager_t *memory_manager,
       pageaddrs = data->pageaddrs+subpages;
       subsize = (data->with_huge_pages) ? subpages * memory_manager->huge_page_size : subpages * memory_manager->normal_page_size;
       for(i=1 ; i<subareas ; i++) {
-	newbuffers[i] = pageaddrs[0];
+	if (newbuffers) newbuffers[i] = pageaddrs[0];
 	_mami_register_pages(memory_manager, &(memory_manager->root), pageaddrs, subpages, subsize, data->node, data->nodes,
                              data->protection, data->with_huge_pages, data->mami_allocated, NULL);
 	pageaddrs += subpages;
       }
 
       // Modify initial memory area
-      newbuffers[0] = buffer;
+      if (newbuffers) newbuffers[0] = buffer;
       data->nb_pages = subpages;
       data->end_address = data->start_address + subsize;
       data->size = subsize;

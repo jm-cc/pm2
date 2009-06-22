@@ -356,9 +356,9 @@ static int process_small_data(tbx_bool_t is_any_src,
   return NM_SO_HEADER_MARK_READ;
 }
 
-static int store_data_or_rdv(nm_so_status_t status,
-			     void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
-			     struct nm_pkt_wrap *p_pw)
+static inline int store_data_or_rdv(nm_so_status_t status,
+				    void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
+				    struct nm_pkt_wrap *p_pw)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_pw->p_gate->tags, tag);
   struct nm_so_chunk *chunk = &p_so_tag->recv[seq].pkt_here;

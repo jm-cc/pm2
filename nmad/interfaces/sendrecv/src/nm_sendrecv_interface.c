@@ -233,9 +233,9 @@ int nm_sr_init(struct nm_core *p_core)
   if(!nm_sr_data.init_done)
     {
       /* Fill-in scheduler callbacks */
-      nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
-      nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       nm_so_monitor_add(p_core, &nm_sr_monitor_unexpected);
+      nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
+      nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       
       INIT_LIST_HEAD(&nm_sr_data.completed_rreq);
       INIT_LIST_HEAD(&nm_sr_data.completed_sreq);
@@ -477,8 +477,6 @@ extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
   nm_sr_irecv_event_info.len = len;
 
   nmad_unlock();
-
-  nm_schedule(p_core);
 
   return NM_ESUCCESS;
 }

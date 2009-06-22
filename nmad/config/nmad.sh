@@ -17,3 +17,6 @@ PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/ccs"
 PM2_DEFAULT_LOADER=${PM2_ROOT}/nmad/bin/nmadload_conf_not_needed
 
 PM2_NMAD_EARLY_LDFLAGS="$PM2_NMAD_EARLY_LDFLAGS -Wl,--export-dynamic"
+
+# list of component. Most of work is done in nmad-post.sh.
+PM2_NMAD_COMPONENTS=

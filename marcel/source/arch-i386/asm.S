@@ -57,7 +57,7 @@ ma_setjmp:
         .globl setjmp
 setjmp:
         SAVE
-        movl    8(%esp),%eax    // buffer
+        movl    4(%esp),%eax    // buffer
         pushl   $1
         pushl   %eax
         call    ma_savesigs
@@ -68,7 +68,7 @@ setjmp:
         .globl _setjmp
 _setjmp:
         SAVE
-        movl    8(%esp),%eax    // buffer
+        movl    4(%esp),%eax    // buffer
         pushl   $0
         pushl   %eax
         call    ma_savesigs

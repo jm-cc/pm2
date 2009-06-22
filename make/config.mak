@@ -19,16 +19,16 @@ MAKEFILE_FILE := Makefile
 
 # CC, AS, LD -> Commandes de construction
 #---------------------------------------------------------------------
-CC := $(PM2_CC)
-ifeq (,$(CC))
-CC := gcc
+ifeq (,$(PM2_CC))
+PM2_CC := gcc
 endif
+CC := $(PM2_CC)
 AS := $(CC) # needed for some gcc specific flags
 LD := $(CC) # needed for some gcc specific flags
-AR := $(PM2_AR)
-ifeq (,$(AR))
-AR := ar
+ifeq (,$(PM2_AR))
+PM2_AR := ar
 endif
+AR := $(PM2_AR)
 
 
 LEX  :=  flex

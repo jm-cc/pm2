@@ -730,7 +730,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   puk_component_t component = puk_adapter_parse_file(filename);
   if(component == NULL)
     {
-      padico_fatal("Puk: failed to load component '%s' (%s)\n", name, filename);
+      padico_fatal("nmad: failed to load component '%s' (%s)\n", name, filename);
     }
   return component;
 }

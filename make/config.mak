@@ -19,14 +19,10 @@ MAKEFILE_FILE := Makefile
 
 # CC, AS, LD -> Commandes de construction
 #---------------------------------------------------------------------
-# Allow user-specified `CC'.
-ifeq (,$(CC))
 CC := $(PM2_CC)
 ifeq (,$(CC))
 CC := gcc
 endif
-endif
-
 AS := $(CC) # needed for some gcc specific flags
 LD := $(CC) # needed for some gcc specific flags
 AR := $(PM2_AR)

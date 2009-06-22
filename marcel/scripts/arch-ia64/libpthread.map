@@ -99,7 +99,7 @@ MARCEL {
     sigsuspend; signal; __signal; __sysv_signal; sigpending; __sigpending;
     sigpause; __sigpause;
     sigprocmask;  __sigprocmask; 
-    setjmp; sigsetjmp; __sigsetjmp;
+    setjmp; _setjmp; sigsetjmp; __sigsetjmp;
     usleep; sleep; alarm; getitimer; setitimer;
     sched_get_priority_min; sched_get_priority_max;
     __sched_get_priority_min; __sched_get_priority_max;

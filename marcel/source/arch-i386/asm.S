@@ -15,18 +15,18 @@
  */
 
 #include <sys/marcel_flags.h>
-		  
-	.text
-	.align 4
-	
+        	  
+        .text
+        .align 4
+        
 #if defined(FREEBSD_SYS) || defined(WIN_SYS) || defined(DARWIN_SYS)
 #define ma_setjmp _ma_setjmp
 #define __sigsetjmp ___sigsetjmp
 #define ma_savesigs _ma_savesigs
 #endif
-	.globl ma_setjmp
+        .globl ma_setjmp
 ma_setjmp:
-	movl    4(%esp), %ecx
+        movl    4(%esp), %ecx
         movl    %ebx, 0(%ecx)
         movl    %esi, 4(%ecx)
         movl    %edi, 8(%ecx)
@@ -42,31 +42,59 @@ ma_setjmp:
 #endif
 
 #ifdef MA__LIBPTHREAD
-	.globl __sigsetjmp
-__sigsetjmp:
-        movl    4(%esp), %ecx
-        movl    %ebx, 0(%ecx)
-        movl    %esi, 4(%ecx)
-        movl    %edi, 8(%ecx)
-        movl    %ebp, 12(%ecx)
-        popl    %edx        
-		  movl    %edx, 20(%ecx)
-        movl    %esp, 16(%ecx)
+
+#define SAVE \
+        movl    4(%esp), %ecx  ; \
+        movl    %ebx, 0(%ecx)  ; \
+        movl    %esi, 4(%ecx)  ; \
+        movl    %edi, 8(%ecx)  ; \
+        movl    %ebp, 12(%ecx) ; \
+        popl    %edx           ; \
+        movl    %edx, 20(%ecx) ; \
+        movl    %esp, 16(%ecx) ; \
+        pushl   %edx
+
+        .globl setjmp
+setjmp:
+        SAVE
+        movl    8(%esp),%eax    // buffer
+        pushl   $1
+        pushl   %eax
+        call    ma_savesigs
+        addl    $8, %esp
         xorl    %eax, %eax
-		  pushl   %edx
+        ret
+
+        .globl _setjmp
+_setjmp:
+        SAVE
+        movl    8(%esp),%eax    // buffer
+        pushl   $0
+        pushl   %eax
+        call    ma_savesigs
+        addl    $8, %esp
+        xorl    %eax, %eax
+        ret
+
+        .globl __sigsetjmp
+__sigsetjmp:
+        SAVE
+        xorl    %eax, %eax
         jmp     ma_savesigs
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 .size __sigsetjmp,.-__sigsetjmp
+.size _setjmp,.-_setjmp
+.size setjmp,.-setjmp
 #endif
 #endif
-		  
+        	  
 #if !(defined(LINUX_SYS) || defined(GNU_SYS))
-	.globl ma_i386_spinlock_contention
+        .globl ma_i386_spinlock_contention
 ma_i386_spinlock_contention:
 re:
-	rep; nop
-	cmpb $0,(%eax)
-	jle re
-	ret
+        rep; nop
+        cmpb $0,(%eax)
+        jle re
+        ret
 #endif

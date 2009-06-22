@@ -43,7 +43,21 @@ ma_setjmp:
 #endif
 
 #ifdef MA__LIBPTHREAD
-	.globl __sigsetjmp
+        .globl setjmp
+setjmp:
+        movl    $1,%esi
+#ifdef __PIC__
+        jmp     __sigsetjmp@PLT
+#else
+        jmp     __sigsetjmp
+#endif
+
+        .globl _setjmp
+_setjmp:
+        xorl    %esi,%esi
+        // fallthrough to __sigsetjmp
+
+        .globl __sigsetjmp
 __sigsetjmp:
         movq    %rbx, 0(%rdi)
         movq    %rbp, 8(%rdi)
@@ -64,5 +78,7 @@ __sigsetjmp:
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 .size __sigsetjmp,.-__sigsetjmp
+.size _setjmp,.-_setjmp
+.size setjmp,.-setjmp
 #endif
 #endif

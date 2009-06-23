@@ -151,7 +151,7 @@ static void nm_ibverbs_regrdma_addr_pack(void*_status,  struct nm_ibverbs_cnx_ad
 {
   struct nm_ibverbs_regrdma*regrdma = _status;
   struct nm_ibverbs_segment*seg = &addr->segments[addr->n];
-  seg->kind  = NM_IBVERBS_TRK_REGRDMA;
+  seg->kind  = NM_IBVERBS_CNX_REGRDMA;
   seg->raddr = (uintptr_t)&regrdma->headers;
   seg->rkey  = regrdma->mr->rkey;
   addr->n++;
@@ -164,7 +164,7 @@ static void nm_ibverbs_regrdma_addr_unpack(void*_status,  struct nm_ibverbs_cnx_
   for(i = 0; addr->segments[i].raddr; i++)
     {
       struct nm_ibverbs_segment*seg = &addr->segments[i];
-      if(seg->kind == NM_IBVERBS_TRK_REGRDMA)
+      if(seg->kind == NM_IBVERBS_CNX_REGRDMA)
 	{
 	  regrdma->seg = *seg;
 	  break;

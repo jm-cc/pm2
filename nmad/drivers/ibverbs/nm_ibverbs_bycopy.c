@@ -163,7 +163,7 @@ static void nm_ibverbs_bycopy_addr_pack(void*_status, struct nm_ibverbs_cnx_addr
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
   struct nm_ibverbs_segment*seg = &addr->segments[addr->n];
-  seg->kind  = NM_IBVERBS_TRK_BYCOPY;
+  seg->kind  = NM_IBVERBS_CNX_BYCOPY;
   seg->raddr = (uintptr_t)&bycopy->buffer;
   seg->rkey  = bycopy->mr->rkey;
   addr->n++;
@@ -176,7 +176,7 @@ static void nm_ibverbs_bycopy_addr_unpack(void*_status, struct nm_ibverbs_cnx_ad
   for(i = 0; addr->segments[i].raddr; i++)
     {
       struct nm_ibverbs_segment*seg = &addr->segments[i];
-      if(seg->kind == NM_IBVERBS_TRK_BYCOPY)
+      if(seg->kind == NM_IBVERBS_CNX_BYCOPY)
 	{
 	  bycopy->seg = *seg;
 	  break;

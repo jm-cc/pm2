@@ -36,19 +36,19 @@ enum {
   _NM_IBVERBS_WRID_MAX
 };
 
-enum nm_ibverbs_trk_kind
+enum nm_ibverbs_cnx_kind
   {
-    NM_IBVERBS_TRK_NONE      = 0,
-    NM_IBVERBS_TRK_BYCOPY    = 0x01,
-    NM_IBVERBS_TRK_REGRDMA   = 0x02,
-    NM_IBVERBS_TRK_ADAPTRDMA = 0x04,
-    NM_IBVERBS_TRK_RCACHE    = 0x08,
-    NM_IBVERBS_TRK_AUTO      = 0x10
+    NM_IBVERBS_CNX_NONE      = 0,
+    NM_IBVERBS_CNX_BYCOPY    = 0x01,
+    NM_IBVERBS_CNX_REGRDMA   = 0x02,
+    NM_IBVERBS_CNX_ADAPTRDMA = 0x04,
+    NM_IBVERBS_CNX_RCACHE    = 0x08,
+    NM_IBVERBS_CNX_AUTO      = 0x10
   };
 
 struct nm_ibverbs_segment 
 {
-  enum nm_ibverbs_trk_kind kind;
+  enum nm_ibverbs_cnx_kind kind;
   uint64_t raddr;
   uint32_t rkey;
 };

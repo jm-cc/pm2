@@ -78,7 +78,6 @@
 
 struct nm_ibverbs_trk 
 {
-  enum nm_ibverbs_trk_kind kind;
   puk_component_t method;
   const struct nm_ibverbs_method_iface_s*method_iface;
 };
@@ -193,13 +192,6 @@ static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status, nm_trk_id_t
   struct nm_ibverbs*status = _status;
   struct nm_ibverbs_cnx*p_ibverbs_cnx = &status->cnx_array[trk_id];
   return p_ibverbs_cnx;
-}
-
-static inline int nm_ibverbs_get_kind(struct nm_drv*p_drv, int trk_id)
-{
-  struct nm_ibverbs_drv*__restrict__ p_ibverbs_drv = p_drv->priv;
-  int kind = p_ibverbs_drv->trks_array[trk_id].kind;
-  return kind;
 }
 
 static void nm_ibverbs_addr_send(const void*_status,
@@ -471,31 +463,13 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   nm_trk_id_t i;
   for(i = 0; i < nb_trks; i++)
     {
-      /* auto-detect track kind */ 
       if(trk_caps[i].rq_type == nm_trk_rq_rdv)
 	{
 #ifdef NM_IBVERBS_RCACHE
-	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_RCACHE;
 	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_rcache");
 #else
-	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO; /* XXX */
 	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_auto");
 #endif
-	}
-      else
-	{
-	  p_ibverbs_drv->trks_array[i].kind = NM_IBVERBS_TRK_BYCOPY;
-	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_bycopy");
-	}
-      p_ibverbs_drv->trks_array[i].method_iface =
-	puk_adapter_get_driver_NewMad_ibverbs_method(p_ibverbs_drv->trks_array[i].method, NULL);
-      /* fill capabilities */
-      switch(p_ibverbs_drv->trks_array[i].kind) 
-	{
-	case NM_IBVERBS_TRK_REGRDMA | NM_IBVERBS_TRK_ADAPTRDMA | NM_IBVERBS_TRK_AUTO:
-	case NM_IBVERBS_TRK_REGRDMA:
-	case NM_IBVERBS_TRK_ADAPTRDMA:
-	case NM_IBVERBS_TRK_RCACHE:
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -503,8 +477,10 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 1;
-	  break;
-	case NM_IBVERBS_TRK_BYCOPY:
+	}
+      else
+	{
+	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_bycopy");
 	  trk_caps[i].rq_type  = nm_trk_rq_dgram;
 	  trk_caps[i].iov_type = nm_trk_iov_send_only;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -512,12 +488,9 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_single_request_length	= SSIZE_MAX;
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
-	  break;
-	default:
-	  fprintf(stderr, "Infiniband: cannot handle method 0x%x in %s\n", p_ibverbs_drv->trks_array[i].kind, __FUNCTION__);
-	  abort();
-	  break;
 	}
+      p_ibverbs_drv->trks_array[i].method_iface =
+	puk_adapter_get_driver_NewMad_ibverbs_method(p_ibverbs_drv->trks_array[i].method, NULL);
     }
   
   err = NM_ESUCCESS;

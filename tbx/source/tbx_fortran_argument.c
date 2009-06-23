@@ -45,7 +45,7 @@ void tbx_fortran_init(int *argc, char ***argv) {
   int i;
 
   *argc = 1+_gfortran_iargc();
-  fprintf(stderr,"argc = %d\n", *argc);
+  //  fprintf(stderr,"argc = %d\n", *argc);
   *argv = malloc(*argc * sizeof(char *));
 
   for (i = 0; i < *argc; i++) {
@@ -66,9 +66,9 @@ void tbx_fortran_init(int *argc, char ***argv) {
     }
     ((*argv)[i])[j] = '\0';
   }
-  for (i = 0; i < *argc; i++) {
-    fprintf(stderr,"argv[%d] = [%s]\n", i, (*argv)[i]);
-  }
+//  for (i = 0; i < *argc; i++) {
+//    fprintf(stderr,"argv[%d] = [%s]\n", i, (*argv)[i]);
+//  }
 }
 
 #elif defined PM2_FORTRAN_TARGET_IFORT

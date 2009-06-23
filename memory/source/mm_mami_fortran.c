@@ -19,105 +19,98 @@
 #include "mm_mami.h"
 #include "mm_mami_private.h"
 
-void mami_init_(int *memory_manager) {
-  mami_manager_t *manager;
-  mami_init(&manager);
-  *memory_manager = (intptr_t)manager;
+void mami_init_(mami_manager_t **memory_manager) {
+  mami_init(memory_manager);
 }
 
-void mami_exit_(int *memory_manager) {
-  mami_manager_t *manager = (void *)*memory_manager;
-  mami_exit(&manager);
+void mami_exit_(mami_manager_t **memory_manager) {
+  mami_exit(memory_manager);
 }
 
-void mami_unset_alignment_(int *memory_manager) {
-  mami_manager_t *manager = (void *)*memory_manager;
-  mami_unset_alignment(manager);
+void mami_unset_alignment_(mami_manager_t **memory_manager) {
+  mami_unset_alignment(*memory_manager);
 }
 
-void mami_malloc_(int *memory_manager,
-                  int *size,
+void mami_malloc_(mami_manager_t **memory_manager,
+                  size_t *size,
                   int *policy,
                   int *node,
-                  int *buffer) {
-  mami_manager_t *manager = (void *)*memory_manager;
-  int *_buffer = mami_malloc(manager, *size*sizeof(int), *policy, *node);
-  *buffer = (int)_buffer;
+                  void *buffer) {
+  buffer = mami_malloc(*memory_manager, *size, *policy, *node);
 }
 
-void mami_free_(int *memory_manager,
-                int *buffer) {
-  mami_manager_t *manager = (void *)*memory_manager;
-  mami_free(manager, (void *)buffer);
+void mami_free_(mami_manager_t **memory_manager,
+                void *buffer) {
+  mami_free(*memory_manager, buffer);
 }
 
-void mami_register_(int *memory_manager,
-                    int *buffer,
-                    int *size,
+void mami_register_(mami_manager_t **memory_manager,
+                    void *buffer,
+                    size_t *size,
                     int *err) {
   int _err;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_register(manager, (void *)buffer, *size);
+  _err = mami_register(*memory_manager, buffer, *size);
   *err = _err;
 }
 
-void mami_unregister_(int *memory_manager,
-                      int *buffer,
+void mami_unregister_(mami_manager_t **memory_manager,
+                      void *buffer,
                       int *err) {
-
   int _err;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_unregister(manager, (void *)buffer);
+  _err = mami_unregister(*memory_manager, buffer);
   *err = _err;
 }
 
-void mami_locate_(int *memory_manager,
-                  int *address,
-                  int *size,
+void mami_locate_(mami_manager_t **memory_manager,
+                  void *address,
+                  size_t *size,
                   int *node,
                   int *err) {
   int _node, _err;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_locate(manager, (void *)address, *size, &_node);
-  *err = _err;
+  _err = mami_locate(*memory_manager, address, *size, &_node);
   *node = _node;
+  *err = _err;
 }
 
-void mami_print_(int *memory_manager) {
-  mami_manager_t *manager = (void *)*memory_manager;
-  mami_print(manager);
+void mami_print_(mami_manager_t **memory_manager) {
+  mami_print(*memory_manager);
 }
 
-void mami_task_attach_(int *memory_manager,
-                       int *buffer,
-                       int *size,
+void mami_task_attach_(mami_manager_t **memory_manager,
+                       void *buffer,
+                       size_t *size,
                        marcel_t *owner,
                        int *node,
                        int *err) {
-  int _err, _node;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_task_attach(manager, (void *)buffer, *size, *owner, &_node);
+  int _node, _err;
+  _err = mami_task_attach(*memory_manager, buffer, *size, *owner, &_node);
   *node = _node;
   *err = _err;
 }
 
-void mami_task_unattach_(int *memory_manager,
-                         int *buffer,
+void mami_task_unattach_(mami_manager_t **memory_manager,
+                         void *buffer,
                          marcel_t *owner,
                          int *err) {
   int _err;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_task_unattach(manager, (void *)buffer, *owner);
+  _err = mami_task_unattach(*memory_manager, buffer, *owner);
   *err = _err;
 }
 
-void mami_task_migrate_all_(int *memory_manager,
+void mami_task_migrate_all_(mami_manager_t **memory_manager,
                             marcel_t *owner,
                             int *node,
                             int *err) {
   int _err;
-  mami_manager_t *manager = (void *)*memory_manager;
-  _err = mami_task_migrate_all(manager, *owner, *node);
+  _err = mami_task_migrate_all(*memory_manager, *owner, *node);
+  *err = _err;
+}
+
+void mami_migrate_on_next_touch_(mami_manager_t **memory_manager,
+                                 void *buffer,
+                                 int *err) {
+  int _err;
+  _err = mami_migrate_on_next_touch(*memory_manager, buffer);
   *err = _err;
 }
 

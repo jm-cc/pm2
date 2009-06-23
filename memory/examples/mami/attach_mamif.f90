@@ -15,26 +15,30 @@
 
 program launch
 
-  integer node, ierr
-  integer memory_manager
+  integer node
+  integer ierr
+  integer*8 size
+  integer*8 memory_manager
   integer buffer(100)
-  integer (kind=8) :: self
+  integer*8 self
 
   call marcel_init()
   call mami_init(memory_manager)
   call marcel_self(self)
 
+  size=100
   call mami_unset_alignment(memory_manager)
-  call mami_register(memory_manager, buffer, 100, ierr)
-  call mami_locate(memory_manager, buffer, 100, node, ierr)
+  call mami_register(memory_manager, buffer, size, ierr)
+  call mami_locate(memory_manager, buffer, size, node, ierr)
 
-  print *,'node=',node
+  write(*,*) 'node=',node
 
   buffer(10) = 42
 
   print *,'buffer(10)=',buffer(10)
 
-  call mami_task_attach(memory_manager, buffer, 100, self, node, ierr)
+  call mami_task_attach(memory_manager, buffer, size, self, node, ierr)
+  print *,'node=',node
   call mami_print(memory_manager)
 
   call mami_task_unattach(memory_manager, buffer, self, ierr)

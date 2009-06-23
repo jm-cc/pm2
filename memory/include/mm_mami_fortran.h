@@ -21,62 +21,68 @@
 #ifndef MM_MAMI_FORTRAN_H
 #define MM_MAMI_FORTRAN_H
 
-#include <marcel.h>
+#include "marcel.h"
+#include "mm_mami.h"
 
 extern
-void mami_init_(int *memory_manager);
+void mami_init_(mami_manager_t **memory_manager);
 
 extern
-void mami_exit_(int *memory_manager);
+void mami_exit_(mami_manager_t **memory_manager);
 
 extern
-void mami_unset_alignment_(int *memory_manager);
+void mami_unset_alignment_(mami_manager_t **memory_manager);
 
 extern
-void mami_malloc_(int *memory_manager,
-                  int *size,
+void mami_malloc_(mami_manager_t **memory_manager,
+                  size_t *size,
                   int *policy,
                   int *node,
-                  int *buffer);
+                  void *buffer);
 
 extern
-void mami_free_(int *memory_manager,
-                int *buffer);
+void mami_free_(mami_manager_t **memory_manager,
+                void *buffer);
 
 extern
-void mami_register_(int *memory_manager,
-                    int *buffer,
-                    int *size,
+void mami_register_(mami_manager_t **memory_manager,
+                    void *buffer,
+                    size_t *size,
                     int *err);
 
 extern
-void mami_unregister_(int *memory_manager,
-                      int *buffer,
+void mami_unregister_(mami_manager_t **memory_manager,
+                      void *buffer,
                       int *err);
 
 extern
-void mami_locate_(int *memory_manager,
-                  int *address,
-                  int *size,
+void mami_locate_(mami_manager_t **memory_manager,
+                  void *address,
+                  size_t *size,
                   int *node,
                   int *err);
 
 extern
-void mami_print_(int *memory_manager);
+void mami_print_(mami_manager_t **memory_manager);
 
 extern
-void mami_task_attach_(int *memory_manager,
-                       int *buffer,
-                       int *size,
+void mami_task_attach_(mami_manager_t **memory_manager,
+                       void *buffer,
+                       size_t *size,
                        marcel_t *owner,
                        int *node,
                        int *err);
 
 extern
-void mami_task_unattach_(int *memory_manager,
-                         int *buffer,
+void mami_task_unattach_(mami_manager_t **memory_manager,
+                         void *buffer,
                          marcel_t *owner,
                          int *err);
+
+extern
+void mami_migrate_on_next_touch_(mami_manager_t **memory_manager,
+                                 void *buffer,
+                                 int *err);
 
 #endif /* MM_MAMI_FORTRAN_H */
 #endif /* MM_MAMI_ENABLED */

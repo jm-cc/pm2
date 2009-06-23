@@ -17,7 +17,7 @@
       program attach
 
       integer*8 size, numthreads
-      integer memory_manager
+      integer*8 memory_manager
       integer (kind=8) :: self
       integer node
 
@@ -44,7 +44,11 @@
       write (*,*) "Node=", node, ", err=", ierr
 
       node = 0
+!      call mami_migrate_on_next_touch(memory_manager, m3D)
       call mami_task_migrate_all(memory_manager, self, node, ierr)
+
+      call mami_locate(memory_manager, m3D, m3D_chk_s, node, ierr)
+      write (*,*) "Node=", node, ", err=", ierr
 
       do k = 1, size
          do j = 1, size
@@ -54,6 +58,8 @@
          end do
       end do
 
+      call mami_task_unattach(memory_manager, m3D, self, ierr)
+      call mami_unregister(memory_manager, m3D, ierr)
       call mami_exit(memory_manager)
       call marcel_end()
 

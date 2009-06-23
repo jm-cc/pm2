@@ -30,7 +30,7 @@ int _mm_mbind(void *start, unsigned long len, int mode,
       MEMORY_ILOG_OUT();
       return err;
   }
-  mdebug_memory("binding on mask %lud\n", *nmask);
+  mdebug_memory("binding on mask %lu\n", nmask?*nmask:0);
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
   err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #else

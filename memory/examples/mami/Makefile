@@ -73,7 +73,9 @@ memteams-ldflags := -lrt -lnuma
 memteams-bubbles-ldflags := -lrt -lnuma
 crossing_access-ldflags := -lnuma
 
-attach_mamif: CC=gfortran
-attach_migratef: CC=gfortran
+attach_mamif: FC=gfortran
+attach_migratef: FC=gfortran
+attach_mamif-ldflags := -lgfortranbegin -lgfortran
+attach_migratef-ldflags := -lgfortranbegin -lgfortran
 
 include $(PM2_ROOT)/make/apps.mak

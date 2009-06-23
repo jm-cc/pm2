@@ -14,5 +14,5 @@ done
 
 # force inclusion of components in binary (they may seem unused for ld)
 for c in $PM2_NMAD_COMPONENTS; do
-    PM2_NMAD_EARLY_LDFLAGS="$PM2_NMAD_EARLY_LDFLAGS -Wl,-upadico_module_initializer__${c}"
+    PM2_NMAD_EARLY_LDFLAGS_KERNEL="$PM2_NMAD_EARLY_LDFLAGS_KERNEL -Wl,-upadico_module_initializer__${c}"
 done

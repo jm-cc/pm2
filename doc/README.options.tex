@@ -107,8 +107,9 @@ when statically linking the module into an application.
 passed to the linker when linking a shared version of the module, or
 when statically linking the module into an application.
 \item \verb+PM2_${MOD}_EARLY_LDFLAGS+ contains linker flags that will be
+passed before objects.
 \item \verb+PM2_${MOD}_EARLY_OBJECT_FILES+ contains a list of objects
-that well be passed to the linker before the others.
+that will be passed to the linker before the others.
 \item \verb+PM2_${MOD}_EARLY_LDFLAGS_KERNEL+ contains linker flags that
 will be passed before objects, but only when linking the module itself.
 \item \verb+PM2_${MOD}_DYN_LIBS_DIR+ contains a list of directories

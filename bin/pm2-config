@@ -412,7 +412,8 @@ pm2_config_set_vars()
     for _lib in $PM2_LIBS appli common ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _PM2_CONFIG_EARLY_LDFLAGS=\"\$_PM2_CONFIG_EARLY_LDFLAGS '$'PM2_${_LIB}_EARLY_LDFLAGS\"
-	if [ "`eval '$'PM2_${_LIB}_BUILD_DYNAMIC`" != yes ]
+	eval _build_dynamic='$'PM2_${_LIB}_BUILD_DYNAMIC
+	if [ "$_build_dynamic" != yes ]
 	then
             # This module is only available as static object, the kernel ldflags
             # need to be used when linking the application itself.

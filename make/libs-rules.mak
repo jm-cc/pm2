@@ -77,7 +77,7 @@ endif
 
 LINK_CMD:=$(LD) $(SONAMEFLAGS)\
 		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
-		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
+		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBRARY)_link.pic, $(filter %.pic, $(MOD_PICS)))
 
 ifeq ($(LINK_OTHER_LIBS),yes)

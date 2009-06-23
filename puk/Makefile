@@ -25,7 +25,7 @@ PADICO_ROOT    := $(PUK_ROOT)
 SRC_CONFIG_FILES := externals/packaging-tools/padico-setup.sh.in configure.ac # $(wildcard externals/building-tools/*.m4)
 GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
-PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a
+PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a $(PADICO_ROOT)/lib/libPadicoPuk.so
 
 PUK_ENABLE_PUKABI := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
 ifeq ($(PUK_ENABLE_PUKABI),yes)

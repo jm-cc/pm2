@@ -96,7 +96,7 @@ struct nm_ibverbs_method_iface_s
   void (*addr_unpack)(void*_status, struct nm_ibverbs_cnx_addr*addr);
   void (*send_post)(void*_status, const struct iovec*v, int n);
   int  (*send_poll)(void*_status);
-  void (*recv_init)(void*_status, struct nm_pkt_wrap*p_pw);
+  void (*recv_init)(void*_status, struct iovec*v, int n);
   int  (*poll_one)(void*_status);
   int  (*poll_any)(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate);
   int  (*cancel_recv)(void*_status); 

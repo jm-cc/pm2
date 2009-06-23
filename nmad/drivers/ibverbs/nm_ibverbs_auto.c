@@ -40,7 +40,7 @@ static void nm_ibverbs_auto_addr_pack(void*_status, struct nm_ibverbs_cnx_addr*a
 static void nm_ibverbs_auto_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_auto_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_auto_send_poll(void*_status);
-static void nm_ibverbs_auto_recv_init(void*_status, struct nm_pkt_wrap*p_pw);
+static void nm_ibverbs_auto_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_auto_poll_one(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_auto_method =
@@ -126,11 +126,11 @@ static int  nm_ibverbs_auto_send_poll(void*_status)
     status->r_send = NULL;
   return err;
 }
-static void nm_ibverbs_auto_recv_init(void*_status, struct nm_pkt_wrap*p_pw)
+static void nm_ibverbs_auto_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_auto*status = _status;
-  status->r_recv = (p_pw->v[p_pw->v_first].iov_len < NM_IBVERBS_AUTO_THRESHOLD) ? &status->adaptrdma.r : &status->regrdma.r;
-  (*status->r_recv->driver->recv_init)(status->r_recv->_status, p_pw);
+  status->r_recv = (v->iov_len < NM_IBVERBS_AUTO_THRESHOLD) ? &status->adaptrdma.r : &status->regrdma.r;
+  (*status->r_recv->driver->recv_init)(status->r_recv->_status, v, n);
 }
 static int  nm_ibverbs_auto_poll_one(void*_status)
 {

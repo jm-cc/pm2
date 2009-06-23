@@ -86,7 +86,7 @@ static void nm_ibverbs_regrdma_addr_pack(void*_status, struct nm_ibverbs_cnx_add
 static void nm_ibverbs_regrdma_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_regrdma_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_regrdma_send_poll(void*_status);
-static void nm_ibverbs_regrdma_recv_init(void*_status, struct nm_pkt_wrap*p_pw);
+static void nm_ibverbs_regrdma_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_regrdma_poll_one(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_regrdma_method =
@@ -320,11 +320,11 @@ static int nm_ibverbs_regrdma_send_poll(void*_status)
 }
 
 
-static void nm_ibverbs_regrdma_recv_init(void*_status, struct nm_pkt_wrap*p_pw)
+static void nm_ibverbs_regrdma_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_regrdma*regrdma = _status;
-  const int size = p_pw->v[p_pw->v_first].iov_len;
-  regrdma->recv.message     = p_pw->v[p_pw->v_first].iov_base;
+  const int size = v->iov_len;
+  regrdma->recv.message     = v->iov_base;
   regrdma->recv.todo        = size;
   regrdma->recv.max_cell    = nm_ibverbs_regrdma_count(size);
   regrdma->recv.cells       = TBX_MALLOC(sizeof(struct nm_ibverbs_regrdma_cell) * regrdma->recv.max_cell);

@@ -79,7 +79,7 @@ static void nm_ibverbs_adaptrdma_addr_pack(void*_status, struct nm_ibverbs_cnx_a
 static void nm_ibverbs_adaptrdma_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_adaptrdma_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_send_poll(void*_status);
-static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct nm_pkt_wrap*p_pw);
+static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_poll_one(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_adaptrdma_method =
@@ -251,15 +251,14 @@ static int nm_ibverbs_adaptrdma_send_poll(void*_status)
 
 }
 
-static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct nm_pkt_wrap*p_pw)
+static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_adaptrdma*adaptrdma = _status;
   adaptrdma->recv.done       = 0;
   adaptrdma->recv.block_size = nm_ibverbs_adaptrdma_block_size(0);
-  adaptrdma->recv.message    = p_pw->v[p_pw->v_first].iov_base;
-  adaptrdma->recv.size       = p_pw->v[p_pw->v_first].iov_len;
+  adaptrdma->recv.message    = v->iov_base;
+  adaptrdma->recv.size       = v->iov_len;
   adaptrdma->recv.rbuf       = adaptrdma->buffer.rbuf;
-  p_pw->drv_priv = adaptrdma->cnx;
 }
 
 

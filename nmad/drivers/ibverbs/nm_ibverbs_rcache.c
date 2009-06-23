@@ -68,7 +68,7 @@ static void nm_ibverbs_rcache_addr_pack(void*_status, struct nm_ibverbs_cnx_addr
 static void nm_ibverbs_rcache_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_rcache_send_poll(void*_status);
-static void nm_ibverbs_rcache_recv_init(void*_status, struct nm_pkt_wrap*p_pw);
+static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_rcache_poll_one(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_rcache_method =
@@ -240,13 +240,13 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 #endif
 }
 
-static void nm_ibverbs_rcache_recv_init(void*_status, struct nm_pkt_wrap*p_pw)
+static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
 {
 #ifdef NM_IBVERBS_RCACHE
   struct nm_ibverbs_rcache*rcache = _status;
   rcache->headers.rsig.busy = 0;
-  rcache->recv.message = p_pw->v[p_pw->v_first].iov_base;
-  rcache->recv.size = p_pw->v[p_pw->v_first].iov_len;
+  rcache->recv.message = v->iov_base;
+  rcache->recv.size = v->iov_len;
   rcache->recv.mr = puk_mem_reg(rcache->recv.message, 
 					      rcache->recv.size);
   struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;

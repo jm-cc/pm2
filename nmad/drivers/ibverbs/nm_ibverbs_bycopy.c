@@ -87,7 +87,7 @@ static void nm_ibverbs_bycopy_addr_pack(void*_status, struct nm_ibverbs_cnx_addr
 static void nm_ibverbs_bycopy_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_bycopy_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
-static void nm_ibverbs_bycopy_recv_init(void*_status, struct nm_pkt_wrap*p_pw);
+static void nm_ibverbs_bycopy_recv_init(void*_status,  struct iovec*v, int n);
 static int  nm_ibverbs_bycopy_poll_one(void*_status);
 static int  nm_ibverbs_bycopy_poll_any(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate);
 static int  nm_ibverbs_bycopy_cancel_recv(void*_status);
@@ -294,13 +294,13 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
   return -NM_EAGAIN;
 }
 
-static void nm_ibverbs_bycopy_recv_init(void*_status, struct nm_pkt_wrap*p_pw)
+static void nm_ibverbs_bycopy_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
   bycopy->recv.done        = 0;
   bycopy->recv.msg_size    = -1;
-  bycopy->recv.buf_posted  = p_pw->v[p_pw->v_first].iov_base;
-  bycopy->recv.size_posted = p_pw->v[p_pw->v_first].iov_len;
+  bycopy->recv.buf_posted  = v->iov_base;
+  bycopy->recv.size_posted = v->iov_len;
 }
 
 static int nm_ibverbs_bycopy_poll_one(void*_status)

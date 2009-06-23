@@ -30,7 +30,7 @@ void __marcel_init ma_deviate_init(void)
 }
 
 // préemption désactivée et deviate_lock == 1
-static void marcel_deviate_record(marcel_t pid, handler_func_t h, any_t arg)
+static void marcel_deviate_record(marcel_t pid, marcel_handler_func_t h, any_t arg)
 {
 	deviate_record_t *ptr = ma_obj_alloc(deviate_records);
 
@@ -50,7 +50,7 @@ static void do_execute_deviate_work(void)
 	deviate_record_t *ptr;
 
 	while ((ptr = cur->work.deviate_work) != NULL) {
-		handler_func_t h = ptr->func;
+		marcel_handler_func_t h = ptr->func;
 		any_t arg = ptr->arg;
 
 		cur->work.deviate_work = ptr->next;
@@ -82,7 +82,7 @@ void marcel_execute_deviate_work(void)
 	}
 }
 
-static void TBX_NORETURN insertion_relai(handler_func_t f, void *arg)
+static void TBX_NORETURN insertion_relai(marcel_handler_func_t f, void *arg)
 {
 	marcel_ctx_t back;
 	marcel_t cur = marcel_self();
@@ -113,12 +113,12 @@ static void TBX_NORETURN insertion_relai(handler_func_t f, void *arg)
 }
 
 /* VERY INELEGANT: to avoid inlining of insertion_relai function... */
-typedef void (*relai_func_t) (handler_func_t f, void *arg);
+typedef void (*relai_func_t) (marcel_handler_func_t f, void *arg);
 static volatile relai_func_t relai_func = insertion_relai;
 
-void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
+void marcel_do_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 {
-	static volatile handler_func_t f_to_call;
+	static volatile marcel_handler_func_t f_to_call;
 	static void *volatile argument;
 	static volatile long initial_sp;
 
@@ -141,7 +141,7 @@ void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg)
 	marcel_ctx_destroyjmp(SELF_GETMEM(ctx_yield));
 }
 
-void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg)
+void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 {
 	LOG_IN();
 

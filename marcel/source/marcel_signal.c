@@ -336,7 +336,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 			if (deliver)
 				/* Deliver all signals at once */
 				marcel_deviate(t,
-				    (handler_func_t) marcel_deliver_sig, NULL);
+				    (marcel_handler_func_t) marcel_deliver_sig, NULL);
 			_ma_raw_spin_unlock(&t->siglock);
 			if (marcel_sigisemptyset(&gsigpending))
 				break;
@@ -578,7 +578,7 @@ DEF_MARCEL(int, kill, (marcel_t thread, int sig), (thread,sig),
 		thread->siginfo[sig] = info;
 #endif
 		ma_spin_unlock_softirq(&thread->siglock);
-		marcel_deviate(thread, (handler_func_t) marcel_deliver_sig,
+		marcel_deviate(thread, (marcel_handler_func_t) marcel_deliver_sig,
 		    NULL);
 	}
 
@@ -615,7 +615,7 @@ DEF_POSIX(int, kill, (pmarcel_t pmthread, int sig), (pmthread,sig),
 		thread->siginfo[sig] = info;
 #endif
 		ma_spin_unlock_softirq(&thread->siglock);
-		marcel_deviate(thread, (handler_func_t) marcel_deliver_sig,
+		marcel_deviate(thread, (marcel_handler_func_t) marcel_deliver_sig,
 		    NULL);
 	}
 

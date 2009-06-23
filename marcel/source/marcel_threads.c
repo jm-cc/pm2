@@ -874,7 +874,7 @@ DEF_MARCEL(int, cancel, (marcel_t pid), (pid),
 		pid->ret_val = NULL;
 		mdebug("marcel %i kill %i\n", marcel_self()->number,
 		    pid->number);
-		marcel_deviate(pid, (handler_func_t) marcel_exit, NULL);
+		marcel_deviate(pid, (marcel_handler_func_t) marcel_exit, NULL);
 	}
 	LOG_RETURN(0);
 })
@@ -897,7 +897,7 @@ DEF_POSIX(int, cancel, (pmarcel_t ptid), (ptid),
 			tid->ret_val = NULL;
 			mdebug("marcel %i kill %i\n", marcel_self()->number,
 			    tid->number);
-			marcel_deviate(tid, (handler_func_t) marcel_exit, NULL);
+			marcel_deviate(tid, (marcel_handler_func_t) marcel_exit, NULL);
 			ma_spin_unlock(&tid->cancellock);
 		}
 	} else

@@ -25,8 +25,8 @@
 void marcel_enable_deviation(void);
 void marcel_disable_deviation(void);
 
-void marcel_deviate(marcel_t pid, handler_func_t h, any_t arg);
-void marcel_do_deviate(marcel_t pid, handler_func_t h, any_t arg);
+void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg);
+void marcel_do_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg);
 #endif /* MARCEL_DEVIATION_ENABLED */
 
 #section marcel_functions
@@ -43,7 +43,7 @@ typedef struct marcel_work marcel_work_t;
 #section marcel_structures
 #ifdef MARCEL_DEVIATION_ENABLED
 struct deviate_record_struct_t {
-  handler_func_t func;
+  marcel_handler_func_t func;
   any_t arg;
   struct deviate_record_struct_t *next;
 };

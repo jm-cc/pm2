@@ -126,7 +126,7 @@ BEGIN_SERVICE(SEND_MESSAGE)
 
    send_mail(box, req.mess, strlen(req.mess));
 
-   marcel_deviate_np(pid, (handler_func_t)message_handler, box);
+   marcel_deviate_np(pid, (marcel_handler_func_t)message_handler, box);
 
 END_SERVICE(SEND_MESSAGE)
 

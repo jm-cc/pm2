@@ -95,11 +95,11 @@ static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t con
 
   const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
   status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[NM_SO_MAX_SMALL=%i]", status->nm_so_max_small);
+  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
 
   const char*nm_so_copy_on_send_threshold = puk_context_getattr(context, "nm_so_copy_on_send_threshold");
   status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[NM_SO_COPY_ON_SEND_THRESHOLD=%i]", status->nm_so_copy_on_send_threshold);
+  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
 
   return (void*)status;
 }
@@ -330,10 +330,11 @@ strat_split_balance_pack(void *_status,
 			 const void *data, uint32_t len)
 {
   int err;
+  struct nm_so_strat_split_balance*status = _status;
 
   nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
 
-  if(len <= NM_SO_MAX_SMALL) {
+  if(len <= status->nm_so_max_small) {
     NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u\n", tag, seq, len);
 
     /* Small packet */
@@ -355,7 +356,7 @@ strat_split_balance_packv(void *_status,
 			  nm_tag_t tag, uint8_t seq,
 			  const struct iovec *iov, int nb_entries)
 {
-
+  struct nm_so_strat_split_balance*status = _status;
   uint32_t offset = 0;
   uint8_t last_chunk = 0;
   int i;
@@ -368,7 +369,7 @@ strat_split_balance_packv(void *_status,
       last_chunk = 1;
     }
 
-    if(iov[i].iov_len <= NM_SO_MAX_SMALL) {
+    if(iov[i].iov_len <= status->nm_so_max_small) {
       NM_SO_TRACE("PACK of a small iov entry - tag = %u, seq = %u, len = %ld, offset = %u, is_last_chunk = %u\n", tag, seq, (long)iov[i].iov_len, offset, last_chunk);
       /* Small packet */
       strat_split_balance_try_to_agregate_small(_status, p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
@@ -484,6 +485,7 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 				  nm_tag_t tag, uint8_t seq,
 				  const struct DLOOP_Segment *segp)
 {
+  struct nm_so_strat_split_balance*status = _status;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   DLOOP_Handle handle;
@@ -498,7 +500,7 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 
   NM_SO_TRACE("Send a datatype on gate %d and tag %d with length %d\n", p_gate->id, tag, data_sz);
 
-  if(data_sz <= NM_SO_MAX_SMALL) {
+  if(data_sz <= status->nm_so_max_small) {
     NM_SO_TRACE("Short datatype : try to aggregate it\n");
      strat_split_balance_agregate_datatype(_status, p_gate, tag, seq, data_sz, segp);
 

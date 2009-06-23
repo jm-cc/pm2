@@ -332,9 +332,11 @@ int nm_sr_rsend(struct nm_core *p_core,
 
   if (ret != NM_ESUCCESS)
     goto exit;
-
-  if(len > NM_SO_MAX_SMALL) {
-
+  fprintf(stderr, "nmad: rsend not implemented yet.");
+#if 0
+  /* obsolete code that does anything but an rsend. */
+  if(len > NM_SO_MAX_SMALL)
+    {
 #ifdef PIOMAN
     /* TODO : use piom_cond_signal when an ACK arrives in order to have a *real* rsend  */
     nmad_lock();
@@ -353,6 +355,7 @@ int nm_sr_rsend(struct nm_core *p_core,
 
 #endif
   }
+#endif /* if 0 */
 
  exit:
   NM_SO_SR_LOG_OUT();

@@ -109,11 +109,11 @@ static void*strat_aggreg_instanciate(puk_instance_t ai, puk_context_t context)
 
   const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
   status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[NM_SO_MAX_SMALL=%i]", status->nm_so_max_small);
+  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
 
   const char*nm_so_copy_on_send_threshold = puk_context_getattr(context, "nm_so_copy_on_send_threshold");
   status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[NM_SO_COPY_ON_SEND_THRESHOLD=%i]", status->nm_so_copy_on_send_threshold);
+  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
 
   return (void*)status;
 }
@@ -286,7 +286,7 @@ try_to_agregate_small(void *_status,
 	/* There's not enough room to add our data to this paquet */
 	goto next;
 
-      if(len <= NM_SO_COPY_ON_SEND_THRESHOLD && size <= h_rlen)
+      if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 	/* We can copy data into the header zone */
 	flags = NM_SO_DATA_USE_COPY;
       else
@@ -302,7 +302,7 @@ try_to_agregate_small(void *_status,
       ;
   }
 
-  if(len <= NM_SO_COPY_ON_SEND_THRESHOLD)
+  if(len <= status->nm_so_copy_on_send_threshold)
     flags = NM_SO_DATA_USE_COPY;
 
   /* We didn't have a chance to form an aggregate, so simply form a
@@ -406,8 +406,7 @@ static int strat_aggreg_try_and_commit(void *_status,
     &(status)->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
-     NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 

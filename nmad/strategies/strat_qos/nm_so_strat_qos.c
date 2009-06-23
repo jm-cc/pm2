@@ -293,8 +293,7 @@ static int strat_qos_try_and_commit(void*_status,
   int err = NM_ESUCCESS;
   uint8_t policy;
 
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
-     NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 

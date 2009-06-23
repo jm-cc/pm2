@@ -28,10 +28,15 @@
 #include <nm_private.h>
 #include <madeleine.h>
 
-static const int param_min_size = 2;
+/* Maximum size of a small message for a faked strategy */
+#define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED -	  \
+		       NM_SO_GLOBAL_HEADER_SIZE - \
+		       NM_SO_DATA_HEADER_SIZE)
+
+static const int param_min_size = 1;
 static const int param_max_size = (8*1024*1024);
-static const int param_nb_samples = 50;
-static const int param_dryrun_count = 1000;
+static const int param_nb_samples = 200;
+static const int param_dryrun_count = 10;
 
 static int nm_ns_initialize_pw(struct nm_core *p_core,
 			       struct nm_drv  *p_drv,
@@ -123,7 +128,7 @@ static void nm_ns_eager_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   int err;
-  if(len <= NM_SO_MAX_SMALL)
+  if(len <= NM_MAX_SMALL)
     {
       const uint8_t flags = NM_SO_DATA_USE_COPY;
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
@@ -162,7 +167,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   int err;
-  if(len <= NM_SO_MAX_SMALL)
+  if(len <= NM_MAX_SMALL)
     {
       const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER | NM_SO_DATA_PREPARE_RECV;
       err = nm_so_pw_alloc(flags, &p_pw);
@@ -190,7 +195,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
       fprintf(stderr, "sampling: error %d while receiving.\n", err);
       abort();
     }
-  if(len <= NM_SO_MAX_SMALL)
+  if(len <= NM_MAX_SMALL)
     {
       /* very rough header decoder... should be sufficient for our basic use here. */
       struct nm_so_global_header*gh = p_pw->v[0].iov_base;

@@ -15,6 +15,11 @@
 
 #ifdef NMAD_QOS
 
+/* Threshold used on the sending side to decide if data should be
+   copied (when smaller than the threshold) within the packet wrapper
+   header zone */
+#define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
+
 extern int nm_so_strat_qos_init(void);
 
 /* Parameters for the QoS strategy

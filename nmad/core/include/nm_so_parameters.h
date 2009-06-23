@@ -18,7 +18,6 @@
 #define NM_SO_PARAMETERS_H
 
 
-
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion
    of the previous ones.
@@ -33,27 +32,9 @@
 #  define NM_SO_MAX_UNEXPECTED                (32 * 1024)
 #endif
 
-/* Maximum size of a small message */
-#define NM_SO_MAX_SMALL                     (NM_SO_MAX_UNEXPECTED -	\
-					     NM_SO_GLOBAL_HEADER_SIZE - \
-					     NM_SO_DATA_HEADER_SIZE)
-
 /* Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 16
 
-/* Threshold used on the sending side to decide if data should be
-   copied (when smaller than the threshold) within the packet wrapper
-   header zone */
-#if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-#  define NM_SO_COPY_ON_SEND_THRESHOLD        (1024 * 1024)
-#else
-#  define NM_SO_COPY_ON_SEND_THRESHOLD        (32 * 1024)
-#endif
-
-/** Maximum active send request per track.
- * @note This is a legacy parameter. Now always 1.
- */
-#define NM_SO_MAX_ACTIVE_SEND_PER_TRACK 1
 
 /** Threshold (in bytes) between by-copy / zero-copy with multi-ack methods
  * for datatype transfers

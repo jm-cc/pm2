@@ -90,11 +90,11 @@ static void*strat_aggreg_autoextended_instanciate(puk_instance_t ai, puk_context
 
   const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
   status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[NM_SO_MAX_SMALL=%i]", status->nm_so_max_small);
+  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
 
   const char*nm_so_copy_on_send_threshold = puk_context_getattr(context, "nm_so_copy_on_send_threshold");
   status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[NM_SO_COPY_ON_SEND_THRESHOLD=%i]", status->nm_so_copy_on_send_threshold);
+  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
 
   return (void*)status;
 }
@@ -293,8 +293,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
     &(status)->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] ==
-     NM_SO_MAX_ACTIVE_SEND_PER_TRACK)
+  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 

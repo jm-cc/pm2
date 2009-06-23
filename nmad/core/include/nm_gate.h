@@ -61,7 +61,7 @@ struct nm_gate
   struct nm_core *p_core;
   
   /** Gate id. */
-  uint8_t id;
+  int id;
   
   /** table of tag status */
   struct nm_so_tag_table_s tags;

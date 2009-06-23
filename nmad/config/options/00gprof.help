@@ -1,1 +1,1 @@
-flags for profiler (-pg)
+flags for gprof (-pg)

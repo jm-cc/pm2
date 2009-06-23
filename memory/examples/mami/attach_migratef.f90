@@ -38,7 +38,7 @@
       m3D_chk_s = m3D_s / numthreads
       m3D_len = size*size*size
 
-      write (*,*) "Matrix3D: ", m3D_s
+!      write (*,*) "Matrix3D: ", m3D_s
 
       call mami_task_attach(memory_manager, m3D, m3D_chk_s, self, node, ierr)
       write (*,*) "Node=", node, ", err=", ierr

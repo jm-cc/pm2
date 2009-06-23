@@ -38,7 +38,8 @@ create_test_flavor() {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init memory\" \
-        --memory=\"enable_mami\" \
-	--marcel=\"numa standard_main smp_smt_idle enable_stats dont_use_pthread\" \
+        --memory=\"marcel enable_mami fortran\" \
+	--marcel=\"numa standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
+        --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

@@ -1471,6 +1471,7 @@ DEF_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
 	if (ma_kernel_sigaction(sig, &kact, NULL) == -1) {
 		mdebug("!! syscall sigaction rate -> sig : %d\n", sig);
 		mdebug("!! sortie erreur de marcel_sigaction\n");
+		marcel_rwlock_unlock(&rwlock);
 		LOG_RETURN(-1);
 	}
 

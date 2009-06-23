@@ -86,7 +86,8 @@ $(LIB_LIB_SO_MAJ_MIN): $(foreach name,$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)
 # and link against them
 LINK_CMD+= $(shell $(PM2_CONFIG) --libs-only-L) \
 	   $(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
-	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS))))
+	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))) \
+	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_STLIBS))))
 endif
 
 ifeq ($(LINK_OTHER_LIBS),yes)

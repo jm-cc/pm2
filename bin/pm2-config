@@ -287,14 +287,22 @@ pm2_config_set_vars()
 	    for LIB in $PM2_COMMON_PM2_SHLIBS; do
 		eval '_PM2_CONFIG_'${_lib}'_PM2_SHLIBS="$_PM2_CONFIG_'${_lib}'_PM2_SHLIBS "$PM2_'${LIB}'_LIBNAME'
 	    done
+	    for LIB in $PM2_COMMON_PM2_STLIBS; do
+		eval '_PM2_CONFIG_'${_lib}'_PM2_STLIBS="$_PM2_CONFIG_'${_lib}'_PM2_STLIBS "$PM2_'${LIB}'_LIBNAME'
+	    done
 	fi
 	eval export _PM2_CONFIG_${_lib}_PM2_SHLIBS
+	eval export _PM2_CONFIG_${_lib}_PM2_STLIBS
     done
 
     for LIB in $PM2_COMMON_PM2_SHLIBS; do
 	eval '_PM2_CONFIG_PM2_SHLIBS="$_PM2_CONFIG_PM2_SHLIBS "$PM2_'${LIB}'_LIBNAME'
     done
+    for LIB in $PM2_COMMON_PM2_STLIBS; do
+	eval '_PM2_CONFIG_PM2_STLIBS="$_PM2_CONFIG_PM2_STLIBS "$PM2_'${LIB}'_LIBNAME'
+    done
     export _PM2_CONFIG_PM2_SHLIBS
+    export _PM2_CONFIG_PM2_STLIBS
 
     # Make directory
     _PM2_CONFIG_MAK_DIR=$_PM2_CONFIG_BUILD/mak

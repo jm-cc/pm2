@@ -83,6 +83,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
           _mami_register(memory_manager, aligned_endbuffer, aligned_endbuffer+newsize, newsize, aligned_endbuffer, newsize,
                          data->mami_allocated, &next_data);
           data->next = next_data;
+          mami_update_pages_location(memory_manager, data->start_address, data->size);
         }
       }
     }

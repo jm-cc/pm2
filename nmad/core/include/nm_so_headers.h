@@ -30,7 +30,7 @@
 #define NM_SO_PROTO_MULTI_ACK    13
 #define NM_SO_PROTO_ACK_CHUNK    14
 
-#define NM_SO_PROTO_DATA_UNUSED 0
+#define NM_SO_PROTO_DATA_UNUSED 2
 #define NM_SO_PROTO_CTRL_UNUSED 1
 
 /** Global header for every packet sent on the network */

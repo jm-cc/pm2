@@ -24,7 +24,7 @@ mami_manager_t *memory_manager;
 int *b;
 
 any_t writer(any_t arg) {
-  b = mami_malloc(memory_manager, 3*getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  b = mami_malloc(memory_manager, 3*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 1);
   return 0;
 }
 

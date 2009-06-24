@@ -48,10 +48,9 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
     }
   else
     {
-      TBX_FAILUREF("more bytes sent than posted on tag %d! (diff = %d; just sent = %d)\n",
-		   tag, p_so_tag->send[seq], len);
+      TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
+		   tag, p_so_tag->send[seq] + len, len);
     }
- 
 }
 
 static int data_completion_callback(struct nm_pkt_wrap *p_pw,

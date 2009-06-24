@@ -20,7 +20,12 @@
 
 #include "pm2_common.h"
 
-/** \addtogroup mami_migration
+/** \addtogroup mami
+ * @{ */
+
+/** \addtogroup mami_marcel MaMI Marcel Specific Interface
+ * The following functionalities are only available when MaMI is build
+ * on top of Marcel.
  * @{ */
 
 /**
@@ -131,6 +136,7 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
                             marcel_bubble_t *owner,
                             int node);
 
+/* @} */
 /* @} */
 
 #endif /* MM_MAMI_MARCEL_H */

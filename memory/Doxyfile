@@ -460,7 +460,8 @@ INPUT                  = \
                          ../memory/include/mm_heap_alloc.h \
                          ../memory/include/mm_heap_numa_alloc.h \
                          ../memory/include/mm_heap_numa.h \
-                         ../memory/include/mm_mami.h
+                         ../memory/include/mm_mami.h \
+                         ../memory/include/mm_mami_marcel.h
 
 
 # This tag can be used to specify the character encoding of the source files that
@@ -1035,6 +1036,7 @@ PREDEFINED             = MA__LWPS \
                          MM_HEAP_ENABLED \
 			 MM_MAMI_ENABLED \
                          LINUX_SYS \
+                         MARCEL \
 			 DOXYGEN
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then

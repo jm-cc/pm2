@@ -96,26 +96,15 @@ nm_so_pw_alloc_and_fill_with_data(nm_tag_t proto_id, uint8_t seq,
                                   int flags,
 				  struct nm_pkt_wrap **pp_so_pw)
 {
-  int err;
   struct nm_pkt_wrap *p_so_pw;
-
-  err = nm_so_pw_alloc(flags, &p_so_pw);
+  int err = nm_so_pw_alloc(flags, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
-
-  err = nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
-  if(err != NM_ESUCCESS)
-    goto free;
-
+  nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
   p_so_pw->chunk_offset = chunk_offset;
-
   *pp_so_pw = p_so_pw;
-
  out:
     return err;
- free:
-    nm_so_pw_free(p_so_pw);
-    goto out;
 }
 
 static __inline__

@@ -464,116 +464,87 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   int err;
   struct iovec *vec;
 
-  if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) {
-    /* Add data with header */
-
-    /* the headers are always in the first entries of the struct iovec tab */
-    vec = p_pw->prealloc_v;
-
-    if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER))) {
-      /* Small data case */
-      struct nm_so_data_header *h;
-
-      /* Add header */
-      h = vec->iov_base + vec->iov_len;
-
-      h->proto_id = proto_id;
-      h->seq = seq;
-      h->chunk_offset = offset;
-      h->is_last_chunk = is_last_chunk;
-
-      vec->iov_len += NM_SO_DATA_HEADER_SIZE;
-
-      if(tbx_likely(flags & NM_SO_DATA_USE_COPY)) {
-
-        /* Data immediately follows its header */
-	uint32_t size;
-        size = nm_so_aligned(len);
-
-	h->skip = 0;
-        h->len = len;
-
-        if(len) {
+  if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) /* ** Data with header */
+    {
+      /* the headers are always in the first entries of the struct iovec tab */
+      vec = p_pw->prealloc_v;
+      if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
+	{
+	  /* Small data case */
+	  struct nm_so_data_header *h;
+	  /* Add header */
+	  h = vec->iov_base + vec->iov_len;
+	  h->proto_id = proto_id;
+	  h->seq = seq;
+	  h->chunk_offset = offset;
+	  h->is_last_chunk = is_last_chunk;
+	  vec->iov_len += NM_SO_DATA_HEADER_SIZE;
+	  if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
+	    {
+	      /* Data immediately follows its header */
+	      uint32_t size = nm_so_aligned(len);
+	      h->skip = 0;
+	      h->len = len;
+	      if(len)
+		{
 #ifdef PIO_OFFLOAD
-          p_pw->data_to_offload = tbx_true;
-
-          p_pw->v[p_pw->v_nb].iov_base = data;
-          p_pw->v[p_pw->v_nb].iov_len  = len;
-          p_pw->v_nb ++;
-
+		  p_pw->data_to_offload = tbx_true;
+		  p_pw->v[p_pw->v_nb].iov_base = data;
+		  p_pw->v[p_pw->v_nb].iov_len  = len;
+		  p_pw->v_nb ++;
 #else
-	  memcpy(vec->iov_base + vec->iov_len, data, len);
+		  memcpy(vec->iov_base + vec->iov_len, data, len);
 #endif
-          vec->iov_len += size;
+		  vec->iov_len += size;
+		}
+	      p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
+	    }
+	  else 
+	    {
+	      /* Data are handled by a separate iovec entry */
+	      struct iovec *dvec = p_pw->v + p_pw->v_nb;
+#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
+	      nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
+#endif
+	      dvec->iov_base = (void*)data;
+	      dvec->iov_len = len;
+	      /* We don't know yet the gap between header and data, so we
+		 temporary store the iovec index as the 'skip' value */
+	      h->skip = p_pw->v_nb;
+	      p_pw->pending_skips++;
+	      h->len = len;
+	      h->chunk_offset = offset;
+	      h->is_last_chunk = is_last_chunk;
+	      p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
+	      p_pw->v_nb++;
+	    }
 	}
-
-	p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
-
-      } else {
-	/* Data are handled by a separate iovec entry */
-
-	struct iovec *dvec;
-
-	dvec = p_pw->v + p_pw->v_nb;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-	nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
-#endif
-
-	dvec->iov_base = (void*)data;
-	dvec->iov_len = len;
-
-	/* We don't know yet the gap between header and data, so we
-	   temporary store the iovec index as the 'skip' value */
-	h->skip = p_pw->v_nb;
-	p_pw->pending_skips++;
-	h->len = len;
-        h->chunk_offset = offset;
-        h->is_last_chunk = is_last_chunk;
-
-        p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
-
-	p_pw->v_nb++;
-
-      }
-
-    } else {
-
-      /* Data actually references a ctrl header. We simply append it
-	 to the previous other headers. */
-      union nm_so_generic_ctrl_header *src, *dst;
-
-      src = (void*)data;
-      dst = vec->iov_base + vec->iov_len;
-
-      /* Copy ctrl header */
-      *dst = *src;
-
-      vec->iov_len += NM_SO_CTRL_HEADER_SIZE;
-
-      p_pw->length += NM_SO_CTRL_HEADER_SIZE;
-
+      else 
+	{
+	  /* Data actually references a ctrl header. We simply append it
+	     to the previous other headers. */
+	  union nm_so_generic_ctrl_header *src, *dst;
+	  src = (void*)data;
+	  dst = vec->iov_base + vec->iov_len;
+	  /* Copy ctrl header */
+	  *dst = *src;
+	  vec->iov_len += NM_SO_CTRL_HEADER_SIZE;
+	  p_pw->length += NM_SO_CTRL_HEADER_SIZE;
+	}
     }
-
-  } else {
-    /* Data chunk added 'as is': simply use a new iovec entry */
-
+  else /* ** Add raw data to pw, without header */
+    {
 #ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-    nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
+      nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
 #endif
-
-    vec = p_pw->v + p_pw->v_nb++;
-    vec->iov_base = (void*)data;
-    vec->iov_len = len;
-
-    p_pw->proto_id = proto_id;
-    p_pw->seq = seq;
-
-    p_pw->length += len;
-
-  }
-
+      vec = p_pw->v + p_pw->v_nb++;
+      vec->iov_base = (void*)data;
+      vec->iov_len = len;
+      p_pw->proto_id = proto_id;
+      p_pw->seq = seq;
+      p_pw->length += len;
+    }
   err = NM_ESUCCESS;
-
   return err;
 }
 
@@ -851,8 +822,10 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 
   while(remaining_len)
     {
+      assert(remaining_len > 0);
       /* Decode header */
       const nm_tag_t proto_id = *(nm_tag_t *)ptr;
+      assert(proto_id != 0);
       if(proto_id >= NM_SO_PROTO_DATA_FIRST ||
 	 proto_id == NM_SO_PROTO_DATA_UNUSED)
 	{
@@ -870,20 +843,22 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		  const struct iovec *v = vec;
 		  uint32_t rlen = (v->iov_base + v->iov_len) - data;
 		  if (skip < rlen)
-		    data += skip;
-		  else {
-		    do {
-		      skip -= rlen;
-		      v++;
-		      rlen = v->iov_len;
-		    } while (skip >= rlen);
-		    data = v->iov_base + skip;
-		  }
+		    {
+		      data += skip;
+		    }
+		  else
+		    {
+		      do
+			{
+			  skip -= rlen;
+			  v++;
+			  rlen = v->iov_len;
+			} while (skip >= rlen);
+		      data = v->iov_base + skip;
+		    }
 		}
 	    }
-	  
 	  remaining_len -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(dh->len);
-	  
 	  /* We must recall ptr if necessary */
 	  if(dh->skip == 0){ // data are just after the header
 	    ptr += nm_so_aligned(dh->len);

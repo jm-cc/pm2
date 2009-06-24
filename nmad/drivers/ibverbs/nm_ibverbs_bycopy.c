@@ -22,7 +22,7 @@
 #define NM_IBVERBS_BYCOPY_BUFSIZE     (4096 - sizeof(struct nm_ibverbs_bycopy_header))
 #define NM_IBVERBS_BYCOPY_RBUF_NUM    32
 #define NM_IBVERBS_BYCOPY_SBUF_NUM    2
-#define NM_IBVERBS_BYCOPY_CREDITS_THR 17
+#define NM_IBVERBS_BYCOPY_CREDITS_THR ((NM_IBVERBS_BYCOPY_RBUF_NUM / 2) + 1)
 
 #define NM_IBVERBS_BYCOPY_STATUS_EMPTY   0x00  /**< no message in buffer */
 #define NM_IBVERBS_BYCOPY_STATUS_DATA    0x01  /**< data in buffer (sent by copy) */

@@ -340,7 +340,7 @@ MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
 #section marcel_inline
 #ifdef MA__SELF_VAR
 extern TBX_EXTERN
-#ifdef MA__USE_TLS
+#ifdef MA__SELF_VAR_TLS
 	__thread
 #endif
 	marcel_t ma_self;

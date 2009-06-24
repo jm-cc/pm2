@@ -134,7 +134,7 @@ DEF___C(int,sched_get_priority_min,(int policy),(policy));
 
 
 #ifdef MA__SELF_VAR
-#ifdef MA__USE_TLS
+#ifdef MA__SELF_VAR_TLS
 __thread
 #endif
 	marcel_t ma_self

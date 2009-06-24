@@ -153,6 +153,7 @@
 #  define MA__LIBPTHREAD
 #endif
 
+/* If we use the system TLS, we can use it for marcel_self */
 #ifdef MARCEL_USE_TLS
 #  define MA__SELF_VAR
 #  define MA__USE_TLS

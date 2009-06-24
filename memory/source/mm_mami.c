@@ -1538,7 +1538,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_memory("Setting migrate on next touch on address %p (%p)\n", data->start_address, buffer);
-    if (memory_manager->kernel_nexttouch_migration_requested >= 0 && data->mami_allocated) {
+    if (memory_manager->kernel_nexttouch_migration_requested > 0 && data->mami_allocated) {
       data->status = MAMI_KERNEL_MIGRATION_STATUS;
       if (memory_manager->kernel_nexttouch_migration_available == MAMI_KERNEL_NEXT_TOUCH_MOF) {
         mdebug_memory("... using in-kernel migration\n");

@@ -37,6 +37,10 @@
 #  include "mm_mami_marcel_private.h"
 #endif /* MARCEL */
 
+#ifndef MPOL_MF_LAZY
+#  define MPOL_MF_LAZY (1<<3)
+#endif
+
 static
 mami_manager_t *_mami_memory_manager = NULL;
 static
@@ -79,9 +83,20 @@ void mami_init(mami_manager_t **memory_manager_p) {
 
   // Is in-kernel migration available
 #ifdef LINUX_SYS
+  memory_manager->kernel_nexttouch_migration_available = 0;
   ptr = memalign(memory_manager->normal_page_size, memory_manager->normal_page_size);
-  err = madvise(ptr, memory_manager->normal_page_size, 12);
-  memory_manager->kernel_nexttouch_migration_available = (err>=0);
+  err = _mm_mbind(ptr, memory_manager->normal_page_size, MPOL_PREFERRED, NULL, 0, MPOL_MF_MOVE|MPOL_MF_LAZY);
+  if (err >= 0) {
+    // TODO: That test is not enough, we also need to test that the
+    // file /cpusets/migrate_on_fault contains 1, or as it depends on
+    // the current cpuset, it would be better to migrate pages
+    memory_manager->kernel_nexttouch_migration_available = MAMI_KERNEL_NEXT_TOUCH_MOF;
+  }
+  else {
+    err = madvise(ptr, memory_manager->normal_page_size, 12);
+    if (err >= 0)
+      memory_manager->kernel_nexttouch_migration_available = MAMI_KERNEL_NEXT_TOUCH_BRICE;
+  }
   free(ptr);
 #else /* !LINUX_SYS */
   memory_manager->kernel_nexttouch_migration_available = 0;
@@ -1523,17 +1538,26 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
   if (err >= 0) {
     mdebug_memory("Setting migrate on next touch on address %p (%p)\n", data->start_address, buffer);
-    if (memory_manager->kernel_nexttouch_migration_requested == 1 && data->mami_allocated) {
-      mdebug_memory("... using in-kernel migration\n");
+    if (memory_manager->kernel_nexttouch_migration_requested >= 0 && data->mami_allocated) {
       data->status = MAMI_KERNEL_MIGRATION_STATUS;
-      err = _mm_mbind(data->start_address, data->size, MPOL_DEFAULT, NULL, 0, 0);
-      if (err < 0) {
-        perror("(mami_migrate_on_next_touch) mbind");
+      if (memory_manager->kernel_nexttouch_migration_available == MAMI_KERNEL_NEXT_TOUCH_MOF) {
+        mdebug_memory("... using in-kernel migration\n");
+        err = _mm_mbind(data->start_address, data->size, MPOL_PREFERRED, NULL, 0, MPOL_MF_MOVE|MPOL_MF_LAZY);
+        if (err < 0) {
+          perror("(mami_migrate_on_next_touch) mbind");
+        }
       }
       else {
-        err = madvise(data->start_address, data->size, 12);
+        mdebug_memory("... using in-kernel migration (brice's patch)\n");
+        err = _mm_mbind(data->start_address, data->size, MPOL_DEFAULT, NULL, 0, 0);
         if (err < 0) {
-          perror("(mami_migrate_on_next_touch) madvise");
+          perror("(mami_migrate_on_next_touch) mbind");
+        }
+        else {
+          err = madvise(data->start_address, data->size, 12);
+          if (err < 0) {
+            perror("(mami_migrate_on_next_touch) madvise");
+          }
         }
       }
     }

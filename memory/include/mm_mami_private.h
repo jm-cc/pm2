@@ -196,6 +196,9 @@ struct mami_manager_s {
   int migration_flag;
 };
 
+#define MAMI_KERNEL_NEXT_TOUCH_MOF   1
+#define MAMI_KERNEL_NEXT_TOUCH_BRICE 2
+
 /* align a application-given address to the closest page-boundary:
  * re-add the lower bits to increase the bit above pagesize if needed, and truncate
  */

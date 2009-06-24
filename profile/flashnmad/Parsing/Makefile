@@ -1,7 +1,7 @@
 CC=gcc
 
-LDFLAGS+=-L$(FXTDIR)/lib -lfxt -ldl
-CFLAGS+= -static -I../NMadState/ -I../Parsing/ -I../FlashEngine/ -I$(FXTDIR)/include -I$(MINGDIR)/include
+LDFLAGS+=$(shell pkg-config --libs fxt) -ldl
+CFLAGS+= -static -I../NMadState/ -I../Parsing/ -I../FlashEngine/ $(shell pkg-config --cflags fxt) -I$(MINGDIR)/include
 CFLAGS+= -g -O0
 
 all: log_preprocess.o log_process.o

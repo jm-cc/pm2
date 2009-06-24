@@ -1,7 +1,7 @@
-CFLAGS += -g  -I${MINGDIR}/include/ -I${FXTDIR}/include/  -Wall -O0
+CFLAGS += -g  -I${MINGDIR}/include/ $(shell pkg-config --cflags fxt)  -Wall -O0
 CFLAGS += -I./FlashEngine/ -I./Parsing -I./NMadState
 
-LDFLAGS += -lm  -L${MINGDIR}/lib/ -L${FXTDIR}/lib/ -lfxt -lming -ldl
+LDFLAGS += -lm  -L${MINGDIR}/lib/ $(shell pkg-config --libs fxt) -lming -ldl
 
 LDFLAGS += ./Parsing/log_preprocess.o ./Parsing/log_process.o
 LDFLAGS += ./NMadState/NMadStateInit.o ./NMadState/NMadState.o

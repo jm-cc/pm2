@@ -61,12 +61,13 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
       err = 0;
     }
     else {
-      if (data->node == MAMI_FIRST_TOUCH_NODE || data->node == MAMI_UNKNOWN_LOCATION_NODE) {
+      if (data->node == MAMI_FIRST_TOUCH_NODE || data->node < 0) {
         mdebug_memory("Need to find out the location of the memory area\n");
         if (data->nodes == NULL) data->nodes = th_mami_malloc(data->nb_pages * sizeof(int));
         _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &(data->node), data->nodes);
       }
-      if (size < data->size) {
+
+      if (size < data->size && aligned_size != data->size - memory_manager->normal_page_size) {
         size_t newsize;
         mami_data_t *next_data;
 
@@ -92,7 +93,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     tbx_slist_push(data->owners, owner);
 
     *node = data->node;
-    if (*node >= 0) {
+    if (*node >= 0 && *node != MAMI_FIRST_TOUCH_NODE) {
       mdebug_memory("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
       ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[*node] += data->size;
     }

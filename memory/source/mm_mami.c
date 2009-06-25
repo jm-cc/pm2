@@ -1705,12 +1705,18 @@ int mami_gather(mami_manager_t *memory_manager,
       }
     }
 
+    // If some threads are attached to the memory area, the statistics need to be updated
+    _mami_update_stats_for_entities(memory_manager, data, -1);
+
     err = _mm_move_pages(pageaddrs, nb_pages, dests, status, MPOL_MF_MOVE);
     if (err >= 0) {
       data->node = node;
       th_mami_free(data->nodes);
       data->nodes = NULL;
     }
+
+    // If some threads are attached to the memory area, the statistics need to be updated
+    _mami_update_stats_for_entities(memory_manager, data, +1);
 
     th_mami_free(dests);
     th_mami_free(status);

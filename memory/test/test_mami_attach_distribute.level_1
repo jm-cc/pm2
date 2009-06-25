@@ -30,7 +30,7 @@ Stats are correct
 Stats are correct
 ... Re-attaching current thread to memory area
 Stats are correct
-... Moving memory area to node #2
+... Gathering memory area to node #2
 Stats are correct
 ... Unattaching current thread from memory area
 Stats are correct
@@ -48,7 +48,7 @@ Stats are correct
 Stats are correct
 ... Re-attaching current thread to memory area
 Stats are correct
-... Moving memory area to node #2
+... Gathering memory area to node #2
 Stats are correct
 ... Unattaching current thread from memory area
 Stats are correct

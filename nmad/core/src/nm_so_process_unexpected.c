@@ -108,17 +108,8 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   uint32_t expected_len = 0;
   uint32_t cumulated_len = 0;
-  struct nm_so_any_src_s*any_src = NULL;
+  struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag) : NULL;
   struct nm_so_chunk *chunk = &p_so_tag->recv[seq].pkt_here;
-
-  if(is_any_src){
-    any_src = nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag);
-    any_src->expected_len = 0;
-    any_src->cumulated_len = 0;
-  } else {
-    p_so_tag->recv[seq].unpack_here.expected_len = 0;
-    p_so_tag->recv[seq].unpack_here.cumulated_len = 0;
-  }
 
   p_so_tag->recv[seq].unpack_here.data = data;
 
@@ -137,48 +128,53 @@ int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
 	}
     }
 
-  if(is_any_src){
-    expected_len  = any_src->expected_len;
-    cumulated_len = any_src->cumulated_len;
-  } else {
-    expected_len  = p_so_tag->recv[seq].unpack_here.expected_len;
-    cumulated_len = p_so_tag->recv[seq].unpack_here.cumulated_len;
-  }
-
-  if(expected_len == 0){
-    if(is_any_src){
-      any_src->expected_len  = len;
-    } else {
-      p_so_tag->recv[seq].unpack_here.expected_len  = len;
+  if(is_any_src)
+    {
+      expected_len  = any_src->expected_len;
+      cumulated_len = any_src->cumulated_len;
     }
-  }
+  else
+    {
+      expected_len  = p_so_tag->recv[seq].unpack_here.expected_len;
+      cumulated_len = p_so_tag->recv[seq].unpack_here.cumulated_len;
+    }
+  if(expected_len == 0)
+    {
+      if(is_any_src)
+	{
+	  any_src->expected_len  = len;
+	} 
+      else 
+	{
+	  p_so_tag->recv[seq].unpack_here.expected_len  = len;
+	}
+    }
 
   NM_SO_TRACE("After retrieving data - expected_len = %d, cumulated_len = %d\n", expected_len, cumulated_len);
 
   /* Verify if the communication is done */
-  if(cumulated_len >= expected_len){
-    NM_SO_TRACE("Wow! All data chunks were already in!\n");
-
-    if(is_any_src){
-
-      any_src->status = 0;
-      any_src->p_gate = NM_ANY_GATE;
-
-    } else {
-      p_so_tag->status[seq] = 0;
+  if(cumulated_len >= expected_len)
+    {
+      NM_SO_TRACE("Wow! All data chunks were already in!\n");
+      if(is_any_src)
+	{
+	  any_src->status = 0;
+	  any_src->p_gate = NM_ANY_GATE;
+	}
+      else 
+	{
+	  p_so_tag->status[seq] = 0;
+	}
+      const struct nm_so_event_s event =
+	{
+	  .status = NM_SO_STATUS_UNPACK_COMPLETED,
+	  .p_gate = p_gate,
+	  .tag = tag,
+	  .seq = seq,
+	  .any_src = is_any_src
+	};
+      nm_so_status_event(p_gate->p_core, &event);
+      return NM_ESUCCESS;
     }
-
-    const struct nm_so_event_s event =
-      {
-	.status = NM_SO_STATUS_UNPACK_COMPLETED,
-	.p_gate = p_gate,
-	.tag = tag,
-	.seq = seq,
-	.any_src = is_any_src
-      };
-    nm_so_status_event(p_gate->p_core, &event);
-
-    return NM_ESUCCESS;
-  }
-  return NM_EINPROGRESS; // il manque encore des données
+  return NM_EINPROGRESS;
 }

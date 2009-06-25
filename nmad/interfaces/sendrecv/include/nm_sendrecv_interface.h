@@ -199,9 +199,8 @@ static inline int nm_sr_isend_with_ref(nm_core_t p_core,
   return nm_sr_isend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, ref);
 }
 
-/** Post a ready send request. When seading a large packet requiring a
- *  RDV, waits for completion of RDV, i.e returns when the matching
- *  receive has been posted.
+/** Post a ready send request, i.e. assume the receiver is ready
+ *  thus removing the need for a rdv.
  *  @param p_core a pointer to the NM core object
  *  @param p_gate a pointer to the destination gate.
  *  @param tag the message tag.

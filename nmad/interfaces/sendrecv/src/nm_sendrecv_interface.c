@@ -324,40 +324,11 @@ int nm_sr_rsend(struct nm_core *p_core,
 		   nm_sr_request_t *p_request)
 {
   const nm_sr_transfer_type_t tt = nm_sr_contiguous_transfer;
-  int ret = -NM_EAGAIN;
   
   NM_SO_SR_LOG_IN();
   
-  ret = nm_sr_isend_generic(p_core, p_gate, tag, tt, data, len, p_request, NULL);
+  int ret = nm_sr_isend_generic(p_core, p_gate, tag, tt, data, len, p_request, NULL);
 
-  if (ret != NM_ESUCCESS)
-    goto exit;
-  fprintf(stderr, "nmad: rsend not implemented yet.");
-#if 0
-  /* obsolete code that does anything but an rsend. */
-  if(len > NM_SO_MAX_SMALL)
-    {
-#ifdef PIOMAN
-    /* TODO : use piom_cond_signal when an ACK arrives in order to have a *real* rsend  */
-    nmad_lock();
-    if(! nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
-      {
-	nm_so_post_all(p_core);
-      }
-    nmad_unlock();
-    nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
-
-#else
-    volatile nm_so_status_t *status = &(nm_so_tag_get(&p_gate->tags, tag)->status[p_request->seq]);
-
-    NM_SO_SR_TRACE("Waiting for status %p\n", status);
-    nm_sr_status_wait(status, NM_SO_STATUS_ACK_HERE, p_core);
-
-#endif
-  }
-#endif /* if 0 */
-
- exit:
   NM_SO_SR_LOG_OUT();
   return ret;
 }

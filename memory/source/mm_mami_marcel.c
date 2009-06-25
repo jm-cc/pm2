@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "mm_mami.h"
 #include "mm_mami_private.h"
+#include "mm_mami_marcel_private.h"
 #include "mm_debug.h"
 #include "mm_helper.h"
 
@@ -93,13 +94,7 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     tbx_slist_push(data->owners, owner);
 
     *node = data->node;
-    if (*node >= 0 && *node != MAMI_FIRST_TOUCH_NODE) {
-      mdebug_memory("Adding %lu bits to memnode offset for node #%d\n", (long unsigned)data->size, *node);
-      ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[*node] += data->size;
-    }
-    else {
-      mdebug_memory("Cannot attach data as location undefined #%d\n", *node);
-    }
+    _mami_update_stats_for_entity(memory_manager, data, owner, +1);
 
     area = tmalloc(sizeof(mami_data_link_t));
     area->data = data;
@@ -139,11 +134,7 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
       marcel_entity_t *res;
       res = tbx_slist_search_and_extract(data->owners, NULL, owner);
       if (res == owner) {
-        if (data->node >= 0) {
-          mdebug_memory("Removing %lu bits from memnode offset for node #%d\n", (long unsigned)data->size, data->node);
-          ((long *) ma_stats_get(owner, ma_stats_memnode_offset))[data->node] -= data->size;
-        }
-
+        _mami_update_stats_for_entity(memory_manager, data, owner, -1);
         mdebug_memory("Removing data %p from entity %p\n", data, owner);
 	marcel_spin_lock(&(owner->memory_areas_lock));
 	list_for_each_entry(area, &(owner->memory_areas), list) {
@@ -263,13 +254,41 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
   return _mami_entity_migrate_all(memory_manager, entity, node);
 }
 
-int _mami_update_stats(marcel_entity_t *entity,
-                       int source,
-                       int dest,
-                       size_t size) {
-  mdebug_memory("Moving data from node #%d to node #%d\n", source, dest);
-  if (source >= 0) ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[source] -= size;
-  ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[dest] += size;
+int _mami_update_stats_for_entities(mami_manager_t *memory_manager,
+                                    mami_data_t *data,
+                                    int coeff) {
+  if (!tbx_slist_is_nil(data->owners)) {
+    tbx_slist_ref_to_head(data->owners);
+    do {
+      void *object = NULL;
+      object = tbx_slist_ref_get(data->owners);
+      _mami_update_stats_for_entity(memory_manager, data, object, coeff);
+    } while (tbx_slist_ref_forward(data->owners));
+  }
+  return 0;
+}
+
+int _mami_update_stats_for_entity(mami_manager_t *memory_manager,
+                                  mami_data_t *data,
+                                  marcel_entity_t *entity,
+                                  int coeff) {
+  if (data->node >= 0 && data->node != MAMI_FIRST_TOUCH_NODE) {
+    mdebug_memory("%s %lu bits to memnode offset for node #%d\n", coeff>0?"Adding":"Removing", (long unsigned)data->size, data->node);
+    ((long *) ma_stats_get (entity, ma_stats_memnode_offset))[data->node] += (coeff * data->size);
+  }
+  else if (data->node == MAMI_MULTIPLE_LOCATION_NODE) {
+    int i;
+    mdebug_memory("Memory scattered on different nodes. Update statistics accordingly\n");
+    mdebug_memory("nb of pages on undefined node = %d\n", data->pages_on_undefined_node);
+    for(i=0 ; i<memory_manager->nb_nodes ; i++) {
+      if (data->pages_per_node[i]) {
+        size_t nsize = data->pages_per_node[i] * memory_manager->normal_page_size;
+        mdebug_memory("%s %lu bits (%d pages) to memnode offset for node #%d\n", coeff>0?"Adding":"Removing", (long unsigned)nsize,
+                      data->pages_per_node[i], i);
+        ((long *) ma_stats_get(entity, ma_stats_memnode_offset))[i] += (coeff * nsize);
+      }
+    }
+  }
   return 0;
 }
 

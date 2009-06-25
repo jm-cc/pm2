@@ -103,6 +103,10 @@ struct mami_data_s {
   int node;
   /** \brief Nodes where the memory area is located. Used when pages allocated on different nodes */
   int *nodes;
+  /** \brief Number of pages per node. Used when pages allocated on different nodes */
+  int *pages_per_node;
+  /** \brief Number of pages on undefined node. Used when pages allocated on different nodes */
+  int pages_on_undefined_node;
 
   /** \brief Tag indicating if the memory has been allocated by MaMI */
   int mami_allocated;

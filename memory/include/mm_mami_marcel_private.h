@@ -21,10 +21,14 @@
 #include "pm2_common.h"
 
 extern
-int _mami_update_stats(marcel_entity_t *entity,
-                       int source,
-                       int dest,
-                       size_t size);
+int _mami_update_stats_for_entities(mami_manager_t *memory_manager,
+                                    mami_data_t *data,
+                                    int coeff);
+extern
+int _mami_update_stats_for_entity(mami_manager_t *memory_manager,
+                                  mami_data_t *data,
+                                  marcel_entity_t *entity,
+                                  int coeff);
 
 #endif /* MM_MAMI_MARCEL_PRIVATE_H */
 #endif /* MM_MAMI_ENABLED */

@@ -359,6 +359,20 @@ void _mami_init_memory_data(mami_manager_t *memory_manager,
     memcpy((*memory_data)->nodes, nodes, nb_pages*sizeof(int));
   }
 
+  if ((*memory_data)->node != MAMI_MULTIPLE_LOCATION_NODE) {
+    (*memory_data)->pages_per_node = NULL;
+    (*memory_data)->pages_on_undefined_node = -1;
+  }
+  else {
+    int i;
+    (*memory_data)->pages_per_node = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+    memset((*memory_data)->pages_per_node, 0, memory_manager->nb_nodes*sizeof(int));
+    (*memory_data)->pages_on_undefined_node = 0;
+    for(i=0 ; i<nb_pages ; i++) {
+      if (nodes[i] >= 0) (*memory_data)->pages_per_node[nodes[i]] ++; else (*memory_data)->pages_on_undefined_node ++;
+    }
+  }
+
   // Set the page addresses
   (*memory_data)->nb_pages = nb_pages;
   (*memory_data)->pageaddrs = th_mami_malloc((*memory_data)->nb_pages * sizeof(void *));
@@ -1416,15 +1430,9 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
       mdebug_memory("Error when mbinding: %d\n", err);
     }
     else {
-      if (!tbx_slist_is_nil(data->owners)) {
-        tbx_slist_ref_to_head(data->owners);
-        do {
-          void *object = NULL;
-          object = tbx_slist_ref_get(data->owners);
-          _mami_update_stats(object, data->node, dest, data->size);
-        } while (tbx_slist_ref_forward(data->owners));
-      }
+      _mami_update_stats_for_entities(memory_manager, data, -1);
       data->node = dest;
+      _mami_update_stats_for_entities(memory_manager, data, +1);
     }
   }
 
@@ -1637,7 +1645,13 @@ int mami_distribute(mami_manager_t *memory_manager,
       err = _mm_move_pages(pageaddrs, nb_pages, dests, status, MPOL_MF_MOVE);
 
       if (err >= 0) {
+        // If some threads are attached to the memory area, the statistics need to be updated
+        _mami_update_stats_for_entities(memory_manager, data, -1);
+
         // Check the pages have been properly moved and update the data->nodes information
+        if (data->pages_per_node == NULL) data->pages_per_node = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+        memset(data->pages_per_node, 0, memory_manager->nb_nodes*sizeof(int));
+        data->pages_on_undefined_node = 0;
         if (data->nodes == NULL) data->nodes = th_mami_malloc(data->nb_pages * sizeof(int));
         data->node = MAMI_MULTIPLE_LOCATION_NODE;
         err = _mm_move_pages(data->pageaddrs, data->nb_pages, NULL, status, 0);
@@ -1646,7 +1660,11 @@ int mami_distribute(mami_manager_t *memory_manager,
             th_mami_fprintf(stderr, "MaMI Warning: Page %d is on node %d, but it should be on node %d\n", i, status[i], nodes[i%nb_nodes]);
           }
           data->nodes[i] = status[i];
+          if (data->nodes[i] >= 0) data->pages_per_node[data->nodes[i]] ++; else data->pages_on_undefined_node ++;
         }
+
+        // If some threads are attached to the memory area, the statistics need to be updated
+        _mami_update_stats_for_entities(memory_manager, data, +1);
       }
     }
     th_mami_free(dests);

@@ -1815,6 +1815,7 @@ static void topo_discover(void) {
 	distribute_vps();
 
 #  ifdef MA__NUMA
+#    ifdef LINUX_SYS
 	/* Compute the whole machine memory and huge page */
 	/* FIXME: Only when no numa node available ? */
 	marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE]=
@@ -1823,6 +1824,7 @@ static void topo_discover(void) {
 	  ma_procfs_meminfo_to_hugepagefree("/proc/meminfo");
 	mdebug_topology("Machine level: %ld memory, %ld huge page(s)\n", marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE],
 			marcel_topo_levels[0][0].huge_page_free);
+#    endif
 #  endif
 
 #  ifdef MA__NUMA

@@ -297,6 +297,7 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
 static void nm_ibverbs_bycopy_recv_init(void*_status, struct iovec*v, int n)
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
+  assert(bycopy->recv.buf_posted == NULL);
   bycopy->recv.done        = 0;
   bycopy->recv.msg_size    = -1;
   bycopy->recv.buf_posted  = v->iov_base;
@@ -318,7 +319,6 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
 	  bycopy->recv.msg_size = 0;
 	}
       complete = (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_LAST);
-      assert((bycopy->recv.done == 0 && (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_DATA)));
       const int offset = packet->header.offset;
       const int packet_size = NM_IBVERBS_BYCOPY_BUFSIZE - offset;
       memcpy(bycopy->recv.buf_posted + bycopy->recv.done, &packet->data[offset], packet_size);
@@ -348,6 +348,7 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
   nm_ibverbs_rdma_poll(bycopy->cnx);
   if((bycopy->recv.msg_size > 0) && complete)
     {
+      bycopy->recv.buf_posted = NULL;
       nm_ibverbs_send_flush(bycopy->cnx, NM_IBVERBS_WRID_ACK);
       err = NM_ESUCCESS;
     }

@@ -156,6 +156,7 @@ int marcel_feof(FILE *stream) {
         return retour;
 }
 
+#ifdef __GLIBC__
 ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream) {
         ssize_t retour;
 
@@ -164,3 +165,4 @@ ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream) {
         marcel_extlib_unprotect();
         return retour;
 }
+#endif

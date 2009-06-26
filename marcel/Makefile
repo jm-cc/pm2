@@ -109,10 +109,8 @@ $(MOD_GEN_CPP)/marcel_bubble_sched.i: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.
 
 $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/marcel_bubble_*.c)
 	$(COMMON_BUILD)
-	@( schedulers=`								\
-	 grep -o '^ *MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *[A-Za-z0-9_]\+ *,' $^ \
-	 | cut -d '(' -f 2							\
-	 | grep -o '[A-Za-z0-9_]\+'						\
+	@( schedulers=`cat $^							\
+	 | sed -n -e 's/.*MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *\([^,]*\).*/\1/p' \
 	 | sort | uniq` ;							\
 	echo "/* Automatically generated, do not edit.  */" ;			\
 	echo "struct ma_bubble_sched_desc {" ;					\

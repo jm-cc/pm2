@@ -99,7 +99,7 @@ debug_log "CPP:      \`$CPP'"
 
 cat "$header_file" | $CPP $CPPFLAGS -		\
 | filter_out_external_headers "$PM2_ROOT"	\
-| $hash_prog | grep -o '\([[:xdigit:]]\+\)'
+| $hash_prog | tr -c -d '0-9a-fA-F'
 
 
 # Local Variables:

@@ -52,7 +52,7 @@ int main(int argc, char * argv[]) {
     else
       fprintf(stderr, "Node is NOT <MAMI_MULTIPLE_LOCATION_NODE> as expected but %d\n", node);
 
-    mami_gather(memory_manager, ptr, 0);
+    mami_migrate_on_node(memory_manager, ptr, 0);
     mami_locate(memory_manager, ptr, 50000, &node);
     if (node == 0)
       fprintf(stderr, "Node is %d as expected\n", node);

@@ -483,20 +483,6 @@ int mami_distribute(mami_manager_t *memory_manager,
                     int *nodes,
                     int nb_nodes);
 
-/**
- * Inverse operation of mami_distribute(). All the pages of the
- * given memory are moved back to the given node.
- * @param memory_manager pointer to the memory manager
- * @param buffer address of the memory area
- * @param node destination node
- * @return 0 on success, -1 and sets errno to EINVAL when address not
- * known by MaMI or to other specific error values when moving pages
- */
-extern
-int mami_gather(mami_manager_t *memory_manager,
-                void *buffer,
-                int node);
-
 /* @} */
 
 #ifdef MARCEL

@@ -44,7 +44,7 @@ int main(int argc, char * argv[]) {
   err = mami_distribute(memory_manager, ptr, nodes, memory_manager->nb_nodes);
   if (err < 0) perror("mami_distribute unexpectedly failed");
   else {
-    mami_gather(memory_manager, ptr, 1);
+    mami_migrate_on_node(memory_manager, ptr, 1);
     mami_locate(memory_manager, ptr, 50000, &node);
     if (node == 1)
       fprintf(stderr, "Node is %d as expected\n", node);

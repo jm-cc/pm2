@@ -1678,57 +1678,6 @@ int mami_distribute(mami_manager_t *memory_manager,
   return err;
 }
 
-int mami_gather(mami_manager_t *memory_manager,
-                void *buffer,
-                int node) {
-  mami_data_t *data;
-  int err=0;
-
-  MEMORY_LOG_IN();
-
-  th_mami_mutex_lock(&(memory_manager->lock));
-  err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
-
-  if ((err >= 0) && (data->nodes)) {
-    int i, *dests, *status;
-    int nb_pages = 0;
-    void **pageaddrs;
-
-    dests = th_mami_malloc(data->nb_pages * sizeof(int));
-    status = th_mami_malloc(data->nb_pages * sizeof(int));
-    pageaddrs  = th_mami_malloc(data->nb_pages * sizeof(void *));
-
-    for(i=0 ; i<data->nb_pages ; i++) {
-      dests[i] = node;
-      if (data->nodes[i] != node) {
-        pageaddrs[nb_pages] = data->pageaddrs[i];
-        nb_pages ++;
-      }
-    }
-
-    // If some threads are attached to the memory area, the statistics need to be updated
-    _mami_update_stats_for_entities(memory_manager, data, -1);
-
-    err = _mm_move_pages(pageaddrs, nb_pages, dests, status, MPOL_MF_MOVE);
-    if (err >= 0) {
-      data->node = node;
-      th_mami_free(data->nodes);
-      data->nodes = NULL;
-    }
-
-    // If some threads are attached to the memory area, the statistics need to be updated
-    _mami_update_stats_for_entities(memory_manager, data, +1);
-
-    th_mami_free(dests);
-    th_mami_free(status);
-    th_mami_free(pageaddrs);
-  }
-
-  th_mami_mutex_unlock(&(memory_manager->lock));
-  MEMORY_LOG_OUT();
-  return err;
-}
-
 #if !defined(MARCEL)
 int _mami_current_node(void) {
 #warning undefined

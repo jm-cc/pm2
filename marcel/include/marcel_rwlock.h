@@ -36,12 +36,12 @@ enum
   MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
 };
 
-#section structures
-#depend "marcel_threads.h[types]"
-
+#section types
+#depend "asm/nptl_types.h[structures]"
 /* Read-write locks.  */
 typedef lpt_rwlock_t marcel_rwlock_t, pmarcel_rwlock_t;
 
+#section structures
 /* Attribute for read-write locks (from glibc's
  * `sysdeps/unix/sysv/linux/internaltypes.h').  */
 typedef struct marcel_rwlockattr

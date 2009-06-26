@@ -19,6 +19,7 @@
 
 #section structures
 #depend "marcel_fastlock.h[structures]"
+#depend "marcel_rwlock.h[structures]"
 /* Data structure for read-write lock variable handling.  The
    structure of the attribute type is not exposed on purpose.  */
 typedef union
@@ -40,6 +41,7 @@ typedef union
 
 typedef union
 {
+  struct marcel_rwlockattr __attr;
   long int __align;
 } lpt_rwlockattr_t;
 

@@ -370,6 +370,7 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
     buffer = buffers[*node];
     for(j=0 ; j<LOOPS_FOR_MEMORY_ACCESS ; j++) {
       for(i=0 ; i<size ; i+=memory_manager->cache_line_size/4) {
+#warning FIXME: quid non-x86 archs?
         __builtin_ia32_movnti((void*) &buffer[i], gold);
       }
     }

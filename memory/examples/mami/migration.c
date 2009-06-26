@@ -30,7 +30,7 @@ void allocation_and_migration(int cpu, int mem) {
 
   buffer = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, mem);
   mami_locate(memory_manager, buffer, size, &bnode);
-  mami_migrate_pages(memory_manager, buffer, cpu);
+  mami_migrate_on_node(memory_manager, buffer, cpu);
   mami_locate(memory_manager, buffer, size, &anode);
 
   if (bnode == mem && anode == cpu) {

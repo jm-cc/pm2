@@ -1409,9 +1409,9 @@ int mami_select_node(mami_manager_t *memory_manager,
   return err;
 }
 
-int _mami_migrate_pages(mami_manager_t *memory_manager,
-                        mami_data_t *data,
-                        int dest) {
+int _mami_migrate_on_node(mami_manager_t *memory_manager,
+                          mami_data_t *data,
+                          int dest) {
   int err=0;
 
   MEMORY_ILOG_IN();
@@ -1440,8 +1440,9 @@ int _mami_migrate_pages(mami_manager_t *memory_manager,
   return err;
 }
 
-int mami_migrate_pages(mami_manager_t *memory_manager,
-                       void *buffer, int dest) {
+int mami_migrate_on_node(mami_manager_t *memory_manager,
+                         void *buffer,
+                         int dest) {
   int err=0;
   mami_data_t *data = NULL;
 
@@ -1449,7 +1450,7 @@ int mami_migrate_pages(mami_manager_t *memory_manager,
   th_mami_mutex_lock(&(memory_manager->lock));
   err = _mami_locate(memory_manager, memory_manager->root, buffer, 1, &data);
   if (err >= 0) {
-    err = _mami_migrate_pages(memory_manager, data, dest);
+    err = _mami_migrate_on_node(memory_manager, data, dest);
   }
   th_mami_mutex_unlock(&(memory_manager->lock));
   MEMORY_LOG_OUT();
@@ -1478,7 +1479,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
   if (data && data->status != MAMI_NEXT_TOUCHED_STATUS) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
     dest = th_mami_current_node();
-    _mami_migrate_pages(_mami_memory_manager, data, dest);
+    _mami_migrate_on_node(_mami_memory_manager, data, dest);
     err = mprotect(data->mprotect_start_address, data->mprotect_size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";

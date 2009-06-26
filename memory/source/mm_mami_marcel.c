@@ -183,7 +183,7 @@ int _mami_entity_migrate_all(mami_manager_t *memory_manager,
                              int node) {
   mami_data_link_t *area, *narea;
   list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
-    _mami_migrate_pages(memory_manager, area->data, node);
+    _mami_migrate_on_node(memory_manager, area->data, node);
   }
   return 0;
 }

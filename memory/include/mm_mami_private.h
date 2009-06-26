@@ -279,9 +279,9 @@ int _mami_get_pages_location(mami_manager_t *memory_manager,
                              int *nodes);
 
 extern
-int _mami_migrate_pages(mami_manager_t *memory_manager,
-                        mami_data_t *data,
-                        int dest);
+int _mami_migrate_on_node(mami_manager_t *memory_manager,
+                          mami_data_t *data,
+                          int dest);
 
 extern
 int _mami_current_node(void);

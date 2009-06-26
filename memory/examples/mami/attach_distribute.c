@@ -57,8 +57,8 @@ void attach_distribute_stats(mami_manager_t *memory_manager, void *ptr, size_t s
   memset(ptr, 0, size);
 
   fprintf(stderr, "... Moving memory area to node #0\n");
-  err = mami_migrate_pages(memory_manager, ptr, 0);
-  if (err < 0) perror("mami_migrate_pages failed");
+  err = mami_migrate_on_node(memory_manager, ptr, 0);
+  if (err < 0) perror("mami_migrate_on_node failed");
   expected_stats[node] -= size;
   expected_stats[0] += size;
   check_stats(memory_manager, expected_stats, print);
@@ -117,7 +117,7 @@ void attach_distribute_stats(mami_manager_t *memory_manager, void *ptr, size_t s
 
   fprintf(stderr, "... Gathering memory area to node #2\n");
   err = mami_gather(memory_manager, ptr, 2);
-  if (err < 0) perror("mami_migrate_pages failed");
+  if (err < 0) perror("mami_gather failed");
   memset(expected_stats, 0, memory_manager->nb_nodes*sizeof(long));
   expected_stats[2] = size;
   check_stats(memory_manager, expected_stats, print);

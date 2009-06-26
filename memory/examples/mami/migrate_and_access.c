@@ -31,10 +31,10 @@ any_t t_migrate(any_t arg) {
 
   for(i=0 ; i<*loops ; i++) {
     if (i%2 == 0) {
-      mami_migrate_pages(memory_manager, buffer, 1);
+      mami_migrate_on_node(memory_manager, buffer, 1);
     }
     else {
-      mami_migrate_pages(memory_manager, buffer, 0);
+      mami_migrate_on_node(memory_manager, buffer, 0);
     }
     //if (i %1000) printf("Migrate ...\n");
   }

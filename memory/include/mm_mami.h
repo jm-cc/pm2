@@ -450,9 +450,9 @@ int mami_sampling_of_memory_access(mami_manager_t *memory_manager,
  * given node
  */
 extern
-int mami_migrate_pages(mami_manager_t *memory_manager,
-                       void *buffer,
-                       int dest);
+int mami_migrate_on_node(mami_manager_t *memory_manager,
+                         void *buffer,
+                         int dest);
 
 /**
  * Marks the area to be migrated on next touch.

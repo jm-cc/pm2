@@ -517,65 +517,32 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 /* Compute and apply the best possible packet rearrangement, then
    return next packet to send */
 static int
-strat_split_balance_try_and_commit(void *_status,
-				   struct nm_gate *p_gate)
+strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
 {
   struct nm_so_strat_split_balance*status = _status;
   struct list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
-  int nb_drivers = p_gate->p_core->nb_drivers;
-  nm_drv_id_t *drv_ids = NULL;
-  nm_drv_id_t drv_id;
+  const int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
-
- start:
-  if(list_empty(out_list))
-    /* We're done */
-    goto out;
-
-  if(nb_drivers == 1){
-    drv_id = 0;
-    if (p_gate->active_send[drv_id][NM_TRK_SMALL] +
-	p_gate->active_send[drv_id][NM_TRK_LARGE] == 0)
-      /* We found an idle NIC */
-      goto next;
-  }
-
+  nm_drv_id_t*drv_ids = NULL;
   nm_ns_inc_lats(p_gate->p_core, &drv_ids);
-  while(n < nb_drivers){
-    if (p_gate->active_send[drv_ids[n]][NM_TRK_SMALL] +
-        p_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0){
-      /* We found an idle NIC */
-      drv_id = drv_ids[n];
+  while(n < nb_drivers && !list_empty(out_list))
+    {
+      if(p_gate->active_send[drv_ids[n]][NM_TRK_SMALL] == 0 &&
+	 p_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0)
+	{
+	  /* We found an idle NIC */
+	  const nm_drv_id_t drv_id = drv_ids[n];
+	  /* Take the packet at the head of the list and post it on trk #0 */
+	  p_so_pw = nm_l2so(out_list->next);
+	  list_del(out_list->next);
+	  status->nb_packets--;
+	  nm_so_pw_finalize(p_so_pw);
+	  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, drv_id);
+	}
       n++;
-      goto next;
     }
-    n++;
-  }
-
-  /* We didn't found any idle NIC, so we're done*/
-  goto out;
-
- next:
-  /* Simply take the head of the list */
-  p_so_pw = nm_l2so(out_list->next);
-  list_del(out_list->next);
-  status->nb_packets--;
-
-  /* Finalize packet wrapper */
-  nm_so_pw_finalize(p_so_pw);
-
-  /* Post packet on track 0 */
-  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, drv_id);
-
-  if(nb_drivers == 1)
-    goto out;
-
-  /* Loop and see if we can feed another NIC with a ready paquet */
-  goto start;
-
- out:
-    return NM_ESUCCESS;
+  return NM_ESUCCESS;
 }
 
 /* Warning: drv_id and trk_id are IN/OUT parameters. They initially

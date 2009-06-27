@@ -9,6 +9,8 @@ PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/sendrecv/include
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/pack/include"
 # 'launcher' interface
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/launcher/include"
+# 'bmi' interface
+PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/interfaces/bmi/include"
 # sampling is included by default
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_ROOT}/nmad/drivers/sampling/include"
 # need Datatype per default 

@@ -1,7 +1,12 @@
 /*
+ * This file has been imported from PVFS2 implementation of BMI
+ *
  * (C) 2001 Clemson University and The University of Chicago
  *
- * See COPYING in top-level directory.
+ * See COPYING file.
+ *
+ * NewMadeleine
+ * Copyright (C) 2009 (see AUTHORS file)
  */
 
 #include <stdio.h>

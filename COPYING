@@ -3,7 +3,7 @@ The license below applies to all files, except these ones
 * marcel/examples/marcel_stream.h (specific licence)
 * doc/xml2html/data/latex/algorithmic.sty (LGPL)
 * doc/xml2html/data/latex/algorithm.sty (LGPL)
-
+* nmad/interfaces/bmi/ (LGPL Version 2.1, see nmad/interfaces/bmi/COPYING)
 
 
 		    GNU GENERAL PUBLIC LICENSE

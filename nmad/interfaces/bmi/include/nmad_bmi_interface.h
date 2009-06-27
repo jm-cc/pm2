@@ -1,10 +1,15 @@
 /* -*- mode: c; c-basic-offset: 8; indent-tabs-mode: nil; -*-
  *  vim:expandtab:shiftwidth=8:tabstop=8:
  *
+ * This file has been imported from PVFS2 implementation of BMI (MX driver)
+ *
  *   Copyright (C) 2007 Myricom, Inc.
  *   Author: Myricom, Inc. <help at myri.com>
  *
  *   See COPYING in top-level directory.
+ *
+ * NewMadeleine
+ * Copyright (C) 2009 (see AUTHORS file)
  */
 
 #ifndef NMAD_BMI_INTERFACE_H

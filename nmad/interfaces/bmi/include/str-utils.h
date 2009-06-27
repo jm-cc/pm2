@@ -1,3 +1,11 @@
+/*
+ * This file has been imported from PVFS2 implementation of BMI
+ *
+ * NewMadeleine
+ * Copyright (C) 2009 (see AUTHORS file)
+ */
+
+
 #ifndef STR_UTILS_H
 #define STR_UTILS_H
 

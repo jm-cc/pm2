@@ -23,6 +23,11 @@
  * the Parallel Virtual File System version 2.
  */
 
+/* Modified by Francois Trahay (francois.trahay@labri.fr)
+ * Copyright (C) 2009 (see AUTHORS file)
+ * For use with BMI interface of NewMadeleine
+ */
+
 #ifndef __BMI_BYTESWAP_H
 #define __BMI_BYTESWAP_H 
 

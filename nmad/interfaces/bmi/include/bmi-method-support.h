@@ -16,6 +16,7 @@
 #ifndef __BMI_METHOD_SUPPORT_H
 #define __BMI_METHOD_SUPPORT_H
 
+#include "pm2_list.h"
 #include "tbx.h"
 #include "bmi-types.h"
 

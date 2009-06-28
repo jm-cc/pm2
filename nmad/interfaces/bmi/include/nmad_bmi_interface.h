@@ -120,18 +120,19 @@ struct bnm_data
         list_t              bnm_idle_rxs;       /* available for receiving */
 
         list_t              bnm_canceled;       /* canceled reqs waiting for test */
-        marcel_mutex_t      bnm_canceled_lock;  /* canceled list lock */
 
         list_t              bnm_unex_txs;       /* completed unexpected sends */
-        marcel_mutex_t         bnm_unex_txs_lock;  /* completed unexpected sends lock */
         list_t              bnm_unex_rxs;       /* completed unexpected recvs */
-        marcel_mutex_t         bnm_unex_rxs_lock;  /* completed unexpected recvs lock */
 
         uint32_t            bnm_next_id;        /* for the next peer_id */
 #ifdef MARCEL
         marcel_mutex_t      bnm_peers_lock;     /* peers list lock */
         marcel_mutex_t      bnm_idle_txs_lock;  /* idle_txs lock */
         marcel_mutex_t      bnm_idle_rxs_lock;  /* idle_rxs lock */
+        marcel_mutex_t      bnm_canceled_lock;  /* canceled list lock */
+        marcel_mutex_t      bnm_unex_txs_lock;  /* completed unexpected sends lock */
+        marcel_mutex_t      bnm_unex_rxs_lock;  /* completed unexpected recvs lock */
+
         marcel_mutex_t      bnm_lock;           /* global lock - use for global rxs,
                                                    global txs, next_id, etc. */
 #endif

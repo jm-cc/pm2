@@ -358,6 +358,7 @@ BMI_nm_test(bmi_op_id_t id, int *outcount, bmi_error_code_t *err,
         case BNM_CTX_CANCELED:
                 {
                 /* we are racing with testcontext */
+#ifdef MARCEL
                 marcel_mutex_lock(&bmi_nm->bnm_canceled_lock);
                 if (ctx->nmc_state != BNM_CTX_CANCELED) {
                         marcel_mutex_unlock(&bmi_nm->bnm_canceled_lock);
@@ -365,6 +366,11 @@ BMI_nm_test(bmi_op_id_t id, int *outcount, bmi_error_code_t *err,
                 }
                 list_del_init(&ctx->nmc_list);
                 marcel_mutex_unlock(&bmi_nm->bnm_canceled_lock);
+#else
+                if (ctx->nmc_state != BNM_CTX_CANCELED) 
+                        return 0;
+                list_del_init(&ctx->nmc_list);
+#endif
                 *outcount = 1;
                 *err = ctx->nmc_nmstat;
                 if (ctx->nmc_mop) {
@@ -453,12 +459,16 @@ int BMI_nm_testcontext (int incount, bmi_op_id_t *outids, int *outcount,
 
         /* always return canceled messages first */
         while (completed < incount && !list_empty(canceled)) {
+#ifdef MARCEL
                 marcel_mutex_lock(&bmi_nm->bnm_canceled_lock);
+#endif
                 ctx = list_entry(canceled->next, struct bnm_ctx, nmc_list);
                 list_del_init(&ctx->nmc_list);
                 /* change state in case test is trying to reap it as well */
                 ctx->nmc_state = BNM_CTX_COMPLETED;
+#ifdef MARCEL
                 marcel_mutex_unlock(&bmi_nm->bnm_canceled_lock);
+#endif
 
                 peer = ctx->nmc_peer;
                 outids[completed] = ctx->nmc_mop->op_id;
@@ -526,14 +536,18 @@ int BMI_nm_testcontext (int incount, bmi_op_id_t *outids, int *outcount,
 
                 ctx = NULL;
 
+#ifdef MARCEL
                 marcel_mutex_lock(&bmi_nm->bnm_unex_txs_lock);
+#endif
                 if (!list_empty(unex_txs)) {
                         ctx = list_entry(unex_txs->next, struct bnm_ctx, nmc_list);
                         peer = ctx->nmc_peer;
                         list_del_init(&ctx->nmc_list);
                         result = 1;
                 }
+#ifdef MARCEL
                 marcel_mutex_unlock(&bmi_nm->bnm_unex_txs_lock);
+#endif
 
                 while (!ctx && again) {
                         again = 0;

@@ -34,7 +34,6 @@
 #include "pm2_list.h"
 
 static int bmi_initialized_count = 0;
-static marcel_mutex_t bmi_initialize_mutex = MARCEL_MUTEX_INITIALIZER;
 
 /*
  * List of BMI addrs currently managed.
@@ -43,11 +42,16 @@ static ref_list_p cur_ref_list = NULL;
 
 /* array to keep up with active contexts */
 static int context_array[BMI_MAX_CONTEXTS] = { 0 };
-static marcel_mutex_t context_mutex = MARCEL_MUTEX_INITIALIZER;
-static marcel_mutex_t ref_mutex = MARCEL_MUTEX_INITIALIZER;
 
 static LIST_HEAD(forget_list);
+
+#ifdef MARCEL
+static marcel_mutex_t bmi_initialize_mutex = MARCEL_MUTEX_INITIALIZER;
+static marcel_mutex_t context_mutex = MARCEL_MUTEX_INITIALIZER;
+static marcel_mutex_t ref_mutex = MARCEL_MUTEX_INITIALIZER;
 static marcel_mutex_t forget_list_mutex = MARCEL_MUTEX_INITIALIZER;
+#endif
+
 
 struct forget_item
 {
@@ -116,7 +120,9 @@ static struct bmi_method_ops **known_method_table = 0;
  * because we listen on them for the duration.
  */
 static int active_method_count = 0;
+#ifdef MARCEL
 static marcel_mutex_t active_method_count_mutex = MARCEL_MUTEX_INITIALIZER;
+#endif
 
 static struct bmi_method_ops **active_method_table = NULL;
 static struct {
@@ -156,17 +162,22 @@ int BMI_initialize(const char *method_list,
     char *proto = NULL;
     int addr_count = 0;
 
+#ifdef MARCEL
     marcel_mutex_lock(&bmi_initialize_mutex);
+#endif
     if(bmi_initialized_count > 0)
     {
         /* Already initialized! Just increment ref count and return. */
 	++bmi_initialized_count;
+#ifdef MARCEL
 	marcel_mutex_unlock(&bmi_initialize_mutex);
+#endif
         return 0;
     }
     ++bmi_initialized_count;
+#ifdef MARCEL
     marcel_mutex_unlock(&bmi_initialize_mutex);
-
+#endif
     global_flags = flags;
 
     /* server must specify method list at startup, optional for client */
@@ -207,7 +218,9 @@ int BMI_initialize(const char *method_list,
     memcpy(known_method_table, static_methods,
 	known_method_count * sizeof(*known_method_table));
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     if (!method_list) {
 	/* nothing active until lookup */
 	active_method_count = 0;
@@ -218,7 +231,9 @@ int BMI_initialize(const char *method_list,
 	{
 	    //gossip_lerr("Error: bad method list.\n");
 	    ret = bmi_errno_to_pvfs(-EINVAL);
+#ifdef MARCEL
 	    marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 	    goto bmi_initialize_failure;
 	}
 
@@ -234,7 +249,9 @@ int BMI_initialize(const char *method_list,
 	    if(!proto)
 	    {
 		ret = -EINVAL;
+#ifdef MARCEL
 		marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 		goto bmi_initialize_failure;
 	    }
 	    proto += 4;
@@ -260,14 +277,18 @@ int BMI_initialize(const char *method_list,
 			   "address for the bmi method: %s\n",
 			   __func__, requested_methods[i]);
 		ret = -EINVAL;
+#ifdef MARCEL
 		marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 		goto bmi_initialize_failure;
 	    }
 
 	    ret = activate_method(requested_methods[i], this_addr, flags);
 	    if (ret < 0) {
 		ret = bmi_errno_to_pvfs(ret);
+#ifdef MARCEL
 		marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 		goto bmi_initialize_failure;
 	    }
 	    free(requested_methods[i]);
@@ -279,8 +300,9 @@ int BMI_initialize(const char *method_list,
 	    listen_addrs = NULL;
 	}
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&active_method_count_mutex);
-
+#endif
     return (0);
 
   bmi_initialize_failure:
@@ -291,7 +313,9 @@ int BMI_initialize(const char *method_list,
 	ref_list_cleanup(cur_ref_list);
     }
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     /* look for loaded methods and shut down */
     if (active_method_table)
     {
@@ -329,7 +353,9 @@ int BMI_initialize(const char *method_list,
     }
 
     active_method_count = 0;
-    marcel_mutex_unlock(&active_method_count_mutex);
+#ifdef MARCEL
+    marcel_mutex_unlock(&active_method_count_mutex); 
+#endif
 
     /* shut down id generator */
     /* todo: get rid of this */
@@ -346,16 +372,22 @@ int BMI_finalize(void)
 {
     int i = -1;
 
+#ifdef MARCEL
     marcel_mutex_lock(&bmi_initialize_mutex);
+#endif
     --bmi_initialized_count;
     if(bmi_initialized_count > 0)
     {
+#ifdef MARCEL
         marcel_mutex_unlock(&bmi_initialize_mutex);
+#endif
         return 0;
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&bmi_initialize_mutex);
 
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     /* attempt to shut down active methods */
     for (i = 0; i < active_method_count; i++)
     {
@@ -363,8 +395,9 @@ int BMI_finalize(void)
     }
     active_method_count = 0;
     free(active_method_table);
+#ifdef MARCEL
     marcel_mutex_unlock(&active_method_count_mutex);
-
+#endif
     free(known_method_table);
     known_method_count = 0;
 
@@ -394,7 +427,9 @@ int BMI_open_context(bmi_context_id* context_id)
     int i;
     int ret = 0;
 
+#ifdef MARCEL
     marcel_mutex_lock(&context_mutex);
+#endif
 
     /* find an unused context id */
     for(context_index=0; context_index<BMI_MAX_CONTEXTS; context_index++)
@@ -408,11 +443,15 @@ int BMI_open_context(bmi_context_id* context_id)
     if(context_index >= BMI_MAX_CONTEXTS)
     {
 	/* we don't have any more available! */
+#ifdef MARCEL
 	marcel_mutex_unlock(&context_mutex);
+#endif
 	return(bmi_errno_to_pvfs(-EBUSY));
     }
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     /* tell all of the modules about the new context */
     for (i = 0; i < active_method_count; i++)
     {
@@ -434,14 +473,17 @@ int BMI_open_context(bmi_context_id* context_id)
 	    goto out;
 	}
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&active_method_count_mutex);
-
+#endif
     context_array[context_index] = 1;
     *context_id = context_index;
 
 out:
 
+#ifdef MARCEL
     marcel_mutex_unlock(&context_mutex);
+#endif
     return(ret);
 }
 
@@ -452,24 +494,32 @@ void BMI_close_context(bmi_context_id context_id)
 {
     int i;
 
+#ifdef MARCEL
     marcel_mutex_lock(&context_mutex);
+#endif
 
     if(!context_array[context_id])
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&context_mutex);
+#endif
 	return;
     }
 
     /* tell all of the modules to get rid of this context */
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     for (i = 0; i < active_method_count; i++)
     {
 	active_method_table[i]->close_context(context_id);
     }
     context_array[context_id] = 0;
-    marcel_mutex_unlock(&active_method_count_mutex);
 
+#ifdef MARCEL
+    marcel_mutex_unlock(&active_method_count_mutex);
     marcel_mutex_unlock(&context_mutex);
+#endif
     return;
 }
 
@@ -477,14 +527,20 @@ static inline
 ref_st_p __BMI_get_ref(BMI_addr_t peer)
 {
     ref_st_p ret = NULL;
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     ret = ref_list_search_addr(cur_ref_list, peer);
     if (!ret)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return NULL;
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
     return ret;
 }
 
@@ -640,10 +696,13 @@ int BMI_testsome(int incount,
     int tmp_outcount;
     int tmp_active_method_count;
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
     tmp_active_method_count = active_method_count;
     marcel_mutex_unlock(&active_method_count_mutex);
-
+#else
+    tmp_active_method_count = active_method_count;
+#endif
     if (max_idle_time_ms < 0)
 	return (bmi_errno_to_pvfs(-EINVAL));
 
@@ -794,9 +853,13 @@ int BMI_testunexpected(int incount,
     /* figure out if we need to drop any stale addresses */
     bmi_check_forget_list();
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
     tmp_active_method_count = active_method_count;
     marcel_mutex_unlock(&active_method_count_mutex);
+#else
+    tmp_active_method_count = active_method_count;
+#endif
 
     if (max_idle_time_ms < 0)
 	return (bmi_errno_to_pvfs(-EINVAL));
@@ -832,21 +895,27 @@ int BMI_testunexpected(int incount,
 	info_array[i].buffer = sub_info[i].buffer;
 	info_array[i].size = sub_info[i].size;
 	info_array[i].tag = sub_info[i].tag;
+#ifdef MARCEL
 	marcel_mutex_lock(&ref_mutex);
+#endif
 	tmp_ref = ref_list_search_method_addr(
             cur_ref_list, sub_info[i].addr);
 	if (!tmp_ref)
 	{
 	    /* yeah, right */
 	    //gossip_lerr("Error: critical BMI_testunexpected failure.\n");
+#ifdef MARCEL
 	    marcel_mutex_unlock(&ref_mutex);
+#endif
 	    return (bmi_errno_to_pvfs(-EPROTO));
 	}
         if(global_flags & BMI_AUTO_REF_COUNT)
         {
             tmp_ref->ref_count++;
         }
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	info_array[i].addr = tmp_ref->bmi_addr;
     }
     /* return 1 if anything completed */
@@ -879,9 +948,13 @@ int BMI_testcontext(int incount,
     int tmp_active_method_count = 0;
     struct timespec ts;
 
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
     tmp_active_method_count = active_method_count;
     marcel_mutex_unlock(&active_method_count_mutex);
+#else
+    tmp_active_method_count = active_method_count;
+#endif
 
     if (max_idle_time_ms < 0)
 	return (bmi_errno_to_pvfs(-EINVAL));
@@ -952,15 +1025,20 @@ const char* BMI_addr_rev_lookup(BMI_addr_t addr)
     char* tmp_str = NULL;
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (NULL);
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
-    
+#endif    
     tmp_str = tmp_ref->id_string;
 
     return(tmp_str);
@@ -980,14 +1058,20 @@ const char* BMI_addr_rev_lookup_unexpected(BMI_addr_t addr)
     ref_st_p tmp_ref = NULL;
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return ("UNKNOWN");
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
     
     if(!tmp_ref->interface->rev_lookup_unexpected)
     {
@@ -1011,14 +1095,20 @@ void *BMI_memalloc(BMI_addr_t addr,
     ref_st_p tmp_ref = NULL;
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (NULL);
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     /* allocate the buffer using the method's mechanism */
     new_buffer = tmp_ref->interface->memalloc(size, send_recv);
@@ -1039,14 +1129,20 @@ int BMI_memfree(BMI_addr_t addr,
     int ret = -1;
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (bmi_errno_to_pvfs(-EINVAL));
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     /* free the memory */
     ret = tmp_ref->interface->memfree(buffer, size, send_recv);
@@ -1066,14 +1162,20 @@ int BMI_unexpected_free(BMI_addr_t addr,
     int ret = -1;
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (bmi_errno_to_pvfs(-EINVAL));
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     if (!tmp_ref->interface->unexpected_free)
     {
@@ -1107,7 +1209,9 @@ int BMI_set_info(BMI_addr_t addr,
 	{
 	    return (bmi_errno_to_pvfs(-EINVAL));
 	}
+#ifdef MARCEL
 	marcel_mutex_lock(&active_method_count_mutex);
+#endif
 	for (i = 0; i < active_method_count; i++)
 	{
 	    ret = active_method_table[i]->set_info(
@@ -1115,20 +1219,28 @@ int BMI_set_info(BMI_addr_t addr,
 	    /* we bail out if even a single set_info fails */
 	    if (ret < 0)
 	    {
+#ifdef MARCEL
 		marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 		return (ret);
 	    }
 	}
+#ifdef MARCEL
 	marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 	return (0);
     }
 
     /* find a reference that matches this address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (bmi_errno_to_pvfs(-EINVAL));
     }
 
@@ -1136,7 +1248,9 @@ int BMI_set_info(BMI_addr_t addr,
     if(option == BMI_INC_ADDR_REF)
     {
 	tmp_ref->ref_count++;
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return(0);
     }
     if(option == BMI_DEC_ADDR_REF)
@@ -1148,11 +1262,15 @@ int BMI_set_info(BMI_addr_t addr,
 	{
             bmi_addr_drop(tmp_ref);
 	}
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return(0);
     }
 
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     ret = tmp_ref->interface->set_info(option, inout_parameter);
 
@@ -1177,19 +1295,27 @@ int BMI_get_info(BMI_addr_t addr,
     {
 	/* check to see if the interface is initialized */
     case BMI_CHECK_INIT:
+#ifdef MARCEL
 	marcel_mutex_lock(&active_method_count_mutex);
+#endif
 	if (active_method_count > 0)
 	{
+#ifdef MARCEL
 	    marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 	    return (0);
 	}
 	else
 	{
+#ifdef MARCEL
 	    marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 	    return (bmi_errno_to_pvfs(-ENETDOWN));
 	}
     case BMI_CHECK_MAXSIZE:
+#ifdef MARCEL
 	marcel_mutex_lock(&active_method_count_mutex);
+#endif
 	for (i = 0; i < active_method_count; i++)
 	{
 	    ret = active_method_table[i]->get_info(
@@ -1209,28 +1335,42 @@ int BMI_get_info(BMI_addr_t addr,
 	    }
 	    *((int *) inout_parameter) = maxsize;
 	}
+#ifdef MARCEL
 	marcel_mutex_unlock(&active_method_count_mutex);
+#endif
 	break;
     case BMI_GET_METH_ADDR:
+#ifdef MARCEL
 	marcel_mutex_lock(&ref_mutex);
+#endif
 	tmp_ref = ref_list_search_addr(cur_ref_list, addr);
 	if(!tmp_ref)
 	{
+#ifdef MARCEL
 	    marcel_mutex_unlock(&ref_mutex);
+#endif
 	    return (bmi_errno_to_pvfs(-EINVAL));
 	}
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	*((void**) inout_parameter) = tmp_ref->method_addr;
 	break;
     case BMI_GET_UNEXP_SIZE:
+#ifdef MARCEL
         marcel_mutex_lock(&ref_mutex);
+#endif
         tmp_ref = ref_list_search_addr(cur_ref_list, addr);
         if(!tmp_ref)
         {
+#ifdef MARCEL
             marcel_mutex_unlock(&ref_mutex);
+#endif
             return (bmi_errno_to_pvfs(-EINVAL));
         }
+#ifdef MARCEL
         marcel_mutex_unlock(&ref_mutex);
+#endif
         ret = tmp_ref->interface->get_info(
             option, inout_parameter);
         if(ret < 0)
@@ -1264,14 +1404,20 @@ int BMI_query_addr_range (BMI_addr_t addr, const char *id_string, int netmask)
 	return(bmi_errno_to_pvfs(-ENAMETOOLONG));
     }
     /* lookup the provided address */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     tmp_ref = ref_list_search_addr(cur_ref_list, addr);
     if (!tmp_ref)
     {
+#ifdef MARCEL
 	marcel_mutex_unlock(&ref_mutex);
+#endif
 	return (bmi_errno_to_pvfs(-EPROTO));
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     ptr = strchr(id_string, ':');
     if (ptr == NULL)
@@ -1291,7 +1437,9 @@ int BMI_query_addr_range (BMI_addr_t addr, const char *id_string, int netmask)
      * matches the specified wildcard address. 
      */
     i = 0;
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     while (i < active_method_count)
     {
         const char *active_method_name = active_method_table[i]->method_name + 4;
@@ -1314,7 +1462,9 @@ int BMI_query_addr_range (BMI_addr_t addr, const char *id_string, int netmask)
         }
 	i++;
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&active_method_count_mutex);
+#endif
     free(provided_method_name);
     if (failed)
         return bmi_errno_to_pvfs(ret);
@@ -1346,9 +1496,13 @@ int BMI_addr_lookup(BMI_addr_t * new_addr,
 
     /* First we want to check to see if this host has already been
      * discovered! */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     new_ref = ref_list_search_str(cur_ref_list, id_string);
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
+#endif
 
     if (new_ref)
     {
@@ -1362,7 +1516,9 @@ int BMI_addr_lookup(BMI_addr_t * new_addr,
      * listed in order of preference
      */
     i = 0;
+#ifdef MARCEL
     marcel_mutex_lock(&active_method_count_mutex);
+#endif
     while ((i < active_method_count) &&
            !(meth_addr = active_method_table[i]->method_addr_lookup(id_string)))
     {
@@ -1397,7 +1553,9 @@ int BMI_addr_lookup(BMI_addr_t * new_addr,
 	    }
 	}
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&active_method_count_mutex);
+#endif
     if (failed)
         return bmi_errno_to_pvfs(ret);
 
@@ -1428,10 +1586,13 @@ int BMI_addr_lookup(BMI_addr_t * new_addr,
     new_ref->interface = active_method_table[i];
 
     /* keep up with the reference and we are done */
+#ifdef MARCEL
     marcel_mutex_lock(&ref_mutex);
+#endif
     ref_list_add(cur_ref_list, new_ref);
+#ifdef MARCEL
     marcel_mutex_unlock(&ref_mutex);
-
+#endif
     *new_addr = new_ref->bmi_addr;
     return (0);
 
@@ -1680,10 +1841,13 @@ int bmi_method_addr_forget_callback(BMI_addr_t addr)
     /* add to queue of items that we want the BMI control layer to consider
      * deallocating
      */
+#ifdef MARCEL
     marcel_mutex_lock(&forget_list_mutex);
+#endif
     list_add(&tmp_item->link, &forget_list);
+#ifdef MARCEL
     marcel_mutex_unlock(&forget_list_mutex);
-
+#endif
     return (0);
 }
 
@@ -1858,7 +2022,9 @@ static void bmi_check_forget_list(void)
     struct forget_item* tmp_item;
     ref_st_p tmp_ref = NULL;
     
+#ifdef MARCEL
     marcel_mutex_lock(&forget_list_mutex);
+#endif
     while(!list_empty(&forget_list))
     {
         tmp_item = list_entry(forget_list.next, struct forget_item,
@@ -1867,21 +2033,28 @@ static void bmi_check_forget_list(void)
         /* item is off of the list; unlock for a moment while we work on
          * this addr 
          */
+#ifdef MARCEL
         marcel_mutex_unlock(&forget_list_mutex);
+#endif
         tmp_addr = tmp_item->addr;
         free(tmp_item);
 
+#ifdef MARCEL
         marcel_mutex_lock(&ref_mutex);
+#endif
         tmp_ref = ref_list_search_addr(cur_ref_list, tmp_addr);
         if(tmp_ref && tmp_ref->ref_count == 0)
         {
             bmi_addr_drop(tmp_ref);
         }   
+#ifdef MARCEL
         marcel_mutex_unlock(&ref_mutex);
-
         marcel_mutex_lock(&forget_list_mutex);
+#endif
     }
+#ifdef MARCEL
     marcel_mutex_unlock(&forget_list_mutex);
+#endif
 
     return;
 }

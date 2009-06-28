@@ -112,15 +112,12 @@ struct bnm_data
         int                 bnm_is_server;      /* am I a server? */
 
         list_t              bnm_peers;          /* list of all peers */
-        marcel_mutex_t      bnm_peers_lock;     /* peers list lock */
 
         list_t              bnm_txs;            /* list of all txs for cleanup */
         list_t              bnm_idle_txs;       /* available for sending */
-        marcel_mutex_t      bnm_idle_txs_lock;  /* idle_txs lock */
 
         list_t              bnm_rxs;            /* list of all rxs for cleanup */
         list_t              bnm_idle_rxs;       /* available for receiving */
-        marcel_mutex_t      bnm_idle_rxs_lock;  /* idle_rxs lock */
 
         list_t              bnm_canceled;       /* canceled reqs waiting for test */
         marcel_mutex_t      bnm_canceled_lock;  /* canceled list lock */
@@ -131,21 +128,30 @@ struct bnm_data
         marcel_mutex_t         bnm_unex_rxs_lock;  /* completed unexpected recvs lock */
 
         uint32_t            bnm_next_id;        /* for the next peer_id */
-        marcel_mutex_t         bnm_lock;           /* global lock - use for global rxs,
+#ifdef MARCEL
+        marcel_mutex_t      bnm_peers_lock;     /* peers list lock */
+        marcel_mutex_t      bnm_idle_txs_lock;  /* idle_txs lock */
+        marcel_mutex_t      bnm_idle_rxs_lock;  /* idle_rxs lock */
+        marcel_mutex_t      bnm_lock;           /* global lock - use for global rxs,
                                                    global txs, next_id, etc. */
+#endif
 
 #if BNM_MEM_TWEAK
         list_t              bnm_idle_buffers;
-        marcel_mutex_t         bnm_idle_buffers_lock;
         list_t              bnm_used_buffers;
-        marcel_mutex_t         bnm_used_buffers_lock;
         int                 bnm_misses;
 
         list_t              bnm_idle_unex_buffers;
-        marcel_mutex_t         bnm_idle_unex_buffers_lock;
         list_t              bnm_used_unex_buffers;
-        marcel_mutex_t         bnm_used_unex_buffers_lock;
         int                 bnm_unex_misses;
+
+#ifdef MARCEL
+        marcel_mutex_t         bnm_idle_buffers_lock;
+        marcel_mutex_t         bnm_used_buffers_lock;
+        marcel_mutex_t         bnm_idle_unex_buffers_lock;
+        marcel_mutex_t         bnm_used_unex_buffers_lock;
+#endif
+
 #endif
 };
 
@@ -184,7 +190,9 @@ struct bnm_peer
         int                     nmp_refcount;   /* queued and pending txs and pending rxs */
 
         list_t                  nmp_list;       /* hang this on bmx_peers */
+#ifdef MARCEL
         marcel_mutex_t          nmp_lock;       /* peer lock */
+#endif
 };
 
 enum bnm_req_type {

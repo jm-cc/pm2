@@ -85,7 +85,7 @@ void mami_init(mami_manager_t **memory_manager_p) {
 #ifdef LINUX_SYS
   memory_manager->kernel_nexttouch_migration_available = 0;
   ptr = memalign(memory_manager->normal_page_size, memory_manager->normal_page_size);
-  err = _mm_mbind(ptr, memory_manager->normal_page_size, MPOL_PREFERRED, NULL, 0, MPOL_MF_MOVE|MPOL_MF_LAZY);
+  err = _mm_mbind_call(ptr, memory_manager->normal_page_size, MPOL_PREFERRED, NULL, 0, MPOL_MF_MOVE|MPOL_MF_LAZY);
   if (err >= 0) {
     // TODO: That test is not enough, we also need to test that the
     // file /cpusets/migrate_on_fault contains 1, or as it depends on

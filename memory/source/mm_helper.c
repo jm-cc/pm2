@@ -21,22 +21,27 @@
 #include "mm_helper.h"
 #include "mm_debug.h"
 
+int _mm_mbind_call(void *start, unsigned long len, int mode,
+                   const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
+  if (_mm_use_synthetic_topology()) {
+      return 0;
+  }
+#if defined (X86_64_ARCH) && defined (X86_ARCH)
+  return syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+#else
+  return syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+#endif
+}
+
 int _mm_mbind(void *start, unsigned long len, int mode,
               const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
   int err = 0;
 
   MEMORY_ILOG_IN();
-  if (_mm_use_synthetic_topology()) {
-      MEMORY_ILOG_OUT();
-      return err;
-  }
   mdebug_memory("binding on mask %lu\n", nmask?*nmask:0);
-#if defined (X86_64_ARCH) && defined (X86_ARCH)
-  err = syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
-#else
-  err = syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
-#endif
+  err = _mm_mbind_call(start, len, mode, nmask, maxnode, flags);
   if (err < 0) perror("(_mm_mbind) mbind");
+  MEMORY_ILOG_OUT();
   return err;
 }
 

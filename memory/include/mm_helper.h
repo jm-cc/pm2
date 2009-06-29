@@ -80,6 +80,10 @@ enum {
 #endif /* __NR_set_mempolicy */
 
 extern
+int _mm_mbind_call(void *start, unsigned long len, int mode,
+                   const unsigned long *nmask, unsigned long maxnode, unsigned flags);
+
+extern
 int _mm_mbind(void *start, unsigned long len, int mode,
               const unsigned long *nmask, unsigned long maxnode, unsigned flags);
 

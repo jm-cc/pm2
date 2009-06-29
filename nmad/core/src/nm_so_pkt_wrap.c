@@ -811,7 +811,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
-     safey destroyed */
+     safely destroyed */
   p_pw->header_ref_count = 0;
 
   struct iovec *vec = p_pw->v;
@@ -866,15 +866,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	  
 	  if(proto_id != NM_SO_PROTO_DATA_UNUSED && data_handler)
 	    {
-	      int r = data_handler(p_pw,
-				   data,
-				   dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset, dh->is_last_chunk);
-	      if (r == NM_SO_HEADER_MARK_READ)
-		{
-		  dh->proto_id = NM_SO_PROTO_DATA_UNUSED;
-		} else {
-		p_pw->header_ref_count++;
-	      }
+	      data_handler(p_pw, data, dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset, dh->is_last_chunk);
 	    }
 	}
       else
@@ -887,16 +879,9 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 	      if (rdv_handler)
 		{
-		  int r = rdv_handler(p_pw,
-				      ch,
-				      ch->r.tag_id, ch->r.seq,
-				      ch->r.len, ch->r.chunk_offset, ch->r.is_last_chunk);
-		  if (r == NM_SO_HEADER_MARK_READ) {
-		    ch->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-		  } else {
-		    p_pw->header_ref_count++;
-		  }
-		  
+		  rdv_handler(p_pw, ch,
+			      ch->r.tag_id, ch->r.seq,
+			      ch->r.len, ch->r.chunk_offset, ch->r.is_last_chunk);
 		} else {
 		NM_SO_TRACE("Sent completed of a RDV on tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
 	      }
@@ -923,15 +908,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		    }
 		  else
 #endif /* NMAD_QOS */
-		    r = ack_handler(p_pw,
-				    ch->a.tag_id, ch->a.seq, ch->a.track_id,
-				    ch->a.chunk_offset);
-		  
-		  if (r == NM_SO_HEADER_MARK_READ) {
-		    ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-		  } else {
-		    p_pw->header_ref_count++;
-		  }
+		    ack_handler(p_pw, &ch->a);
 		}
 	      else
 		{
@@ -948,7 +925,6 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      nm_tag_t tag_id = ch->ma.tag_id;
 	      uint8_t seq = ch->ma.seq;
 	      uint32_t chunk_offset = ch->ma.chunk_offset;
-	      tbx_bool_t header_ref_count_incremented = tbx_false;
 	      int i;
 	      
 	      ptr += NM_SO_CTRL_HEADER_SIZE;
@@ -972,31 +948,17 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		      if (ch->ac.proto_id != NM_SO_PROTO_ACK_CHUNK) {
 			TBX_FAILURE("Invalid header - ACK_CHUNK expected");
 		      }
-		      NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK received - tag_id = %u, seq = %u - trk_id = %u, chunk_len =%u\n", tag_id, seq, ch->ac.trk_id, ch->ac.chunk_len);
+		      NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK received - tag_id = %u, seq = %u - trk_id = %u, chunk_len =%u\n",
+				  tag_id, seq, ch->ac.trk_id, ch->ac.chunk_len);
 		      
-		      int r = ack_chunk_handler(p_pw, tag_id, seq, chunk_offset,
-						ch->ac.trk_id, ch->ac.chunk_len);
+		      ack_chunk_handler(p_pw, tag_id, seq, chunk_offset, &ch->ac);
 		      chunk_offset += ch->ac.chunk_len;
-		      if (r == NM_SO_HEADER_MARK_READ) 
-			{
-			  ch->a.proto_id = NM_SO_PROTO_CTRL_UNUSED;
-			}
-		      else 
-			{
-			  header_ref_count_incremented = tbx_true;
-			  p_pw->header_ref_count++;
-			}
 		    next:
 		      ptr += NM_SO_CTRL_HEADER_SIZE;
 		      ch = ptr;
 		      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 		    }
-		  if(header_ref_count_incremented == tbx_false)
-		    {
-		      *proto_id = NM_SO_PROTO_CTRL_UNUSED;
-		    } else {
-		    NM_SO_TRACE("Multi-ack not completly treated\n");
-		  }
+		  *proto_id = NM_SO_PROTO_CTRL_UNUSED;
 		}
 	    }
 	    break;

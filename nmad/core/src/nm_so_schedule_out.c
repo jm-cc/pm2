@@ -53,16 +53,15 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
     }
 }
 
-static int data_completion_callback(struct nm_pkt_wrap *p_pw,
-                                    void *ptr TBX_UNUSED,
-                                    void *header, uint32_t len TBX_UNUSED,
-                                    nm_tag_t proto_id, uint8_t seq,
-                                    uint32_t chunk_offset, uint8_t is_last_chunk)
+static void data_completion_callback(struct nm_pkt_wrap *p_pw,
+				     void *ptr TBX_UNUSED,
+				     nm_so_data_header_t*header, uint32_t len TBX_UNUSED,
+				     nm_tag_t proto_id, uint8_t seq,
+				     uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   NM_SO_TRACE("completed chunk ptr=%p len=%u tag=%d seq=%u offset=%u\n", ptr, len, proto_id - 128, seq, chunk_offset);
   nm_so_out_data_complete(p_gate, proto_id, seq, len);
-  return NM_SO_HEADER_MARK_READ;
 }
 
 /** Process a complete successful outgoing request.

@@ -245,11 +245,11 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
   return err;
 }
 
-static int process_small_data(tbx_bool_t is_any_src,
-			      struct nm_pkt_wrap *p_pw,
-			      void *ptr,
-			      uint32_t len, nm_tag_t tag, uint8_t seq,
-			      uint32_t chunk_offset, uint8_t is_last_chunk)
+static void process_small_data(tbx_bool_t is_any_src,
+			       struct nm_pkt_wrap *p_pw,
+			       void *ptr,
+			       uint32_t len, nm_tag_t tag, uint8_t seq,
+			       uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_so_sched *p_so_sched =  &p_gate->p_core->so_sched;
@@ -309,7 +309,7 @@ static int process_small_data(tbx_bool_t is_any_src,
       else
         {
 	  nm_so_pw_free(p_pw);
-	  return NM_SO_HEADER_MARK_UNREAD;
+	  return;
         }
     }
 
@@ -339,12 +339,11 @@ static int process_small_data(tbx_bool_t is_any_src,
       };
     nm_so_status_event(p_gate->p_core, &event);
   }
-  return NM_SO_HEADER_MARK_READ;
 }
 
-static inline int store_data_or_rdv(nm_so_status_t status,
-				    void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
-				    struct nm_pkt_wrap *p_pw)
+static inline void store_data_or_rdv(nm_so_status_t status,
+				     void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
+				     struct nm_pkt_wrap *p_pw)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_pw->p_gate->tags, tag);
   struct nm_so_chunk *chunk = &p_so_tag->recv[seq].pkt_here;
@@ -369,15 +368,14 @@ static inline int store_data_or_rdv(nm_so_status_t status,
       .any_src = tbx_false
     };
   nm_so_status_event(p_pw->p_gate->p_core, &event);
-  return NM_SO_HEADER_MARK_UNREAD;
 }
 
 
 /** Process a complete data request.
  */
-static int data_completion_callback(struct nm_pkt_wrap *p_pw,
+static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 				    void *ptr,
-				    void *header, uint32_t len,
+				    nm_so_data_header_t*header, uint32_t len,
 				    nm_tag_t proto_id, uint8_t seq,
 				    uint32_t chunk_offset,
 				    uint8_t is_last_chunk)
@@ -392,8 +390,8 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
   if(p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_HERE)
     {
       /* Cool! We already have a waiting unpack for this packet */
-      return process_small_data(tbx_false, p_pw, ptr,
-				len, tag, seq, chunk_offset, is_last_chunk);
+      process_small_data(tbx_false, p_pw, ptr, len, tag, seq, chunk_offset, is_last_chunk);
+      header->proto_id = NM_SO_PROTO_DATA_UNUSED; /* mark as read */
     }
   else
     {
@@ -403,31 +401,31 @@ static int data_completion_callback(struct nm_pkt_wrap *p_pw,
 	   || (any_src->p_gate == p_gate && any_src->seq == seq))) 
 	{
 	  NM_SO_TRACE("Pending any_src reception\n");
-	  return process_small_data(tbx_true, p_pw, ptr,
-				    len, tag, seq, chunk_offset, is_last_chunk);
+	  process_small_data(tbx_true, p_pw, ptr, len, tag, seq, chunk_offset, is_last_chunk);
+	  header->proto_id = NM_SO_PROTO_DATA_UNUSED; /* mark as read */
 	}
       else
 	{
 	  /* Receiver process is not ready, so store the information in the
 	     recv array and keep the p_pw packet alive */
 	  NM_SO_TRACE("Store the data chunk with tag = %u, seq = %u\n", tag, seq);
-	  return store_data_or_rdv(NM_SO_STATUS_PACKET_HERE, header, len, tag, seq, p_pw);
+	  store_data_or_rdv(NM_SO_STATUS_PACKET_HERE, header, len, tag, seq, p_pw);
+	  p_pw->header_ref_count++;
 	}
     }
 }
 
 /** Process a complete rendez-vous request.
  */
-static int rdv_callback(struct nm_pkt_wrap *p_pw,
-			void *rdv,
-			nm_tag_t tag_id, uint8_t seq,
-			uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+static void rdv_callback(struct nm_pkt_wrap *p_pw,
+			 nm_so_generic_ctrl_header_t*rdv,
+			 nm_tag_t tag_id, uint8_t seq,
+			 uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   const nm_tag_t tag = tag_id - 128;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   nm_so_status_t *status = &(p_so_tag->status[seq]);
-  int err;
 
   NM_SO_TRACE("RDV completed for tag = %d, seq = %u len = %u, offset = %u\n", tag, seq, len, chunk_offset);
 
@@ -436,8 +434,9 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
       /* Application is already ready! */
       NM_SO_TRACE("RDV for a classic exchange on tag %u, seq = %u, len = %u, chunk_offset = %u, is_last_chunk = %u\n", 
 		  tag, seq, len, chunk_offset, is_last_chunk);
-      err = nm_so_rdv_success(tbx_false, p_gate, tag, seq,
-			      len, chunk_offset, is_last_chunk);
+      nm_so_rdv_success(tbx_false, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
+      rdv->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
+
     }
   else 
     {
@@ -450,32 +449,30 @@ static int rdv_callback(struct nm_pkt_wrap *p_pw,
 	  /* Check if the received rdv matches with an any_src request */
 	  NM_SO_TRACE("RDV for an ANY_SRC exchange for tag = %d, seq = %u len = %u, offset = %u\n",
 		      tag, seq, len, chunk_offset);
-	  err = nm_so_rdv_success(tbx_true, p_gate, tag, seq,
-				  len, chunk_offset, is_last_chunk);
+	  nm_so_rdv_success(tbx_true, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
+	  rdv->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
 	}
       else 
 	{
 	  /* Store rdv request */
 	  NM_SO_TRACE("Store the RDV for tag = %d, seq = %u len = %u, offset = %u\n", tag, seq, len, chunk_offset);
-	  
-	  return store_data_or_rdv(NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE, rdv, len, tag, seq, p_pw);
+	  store_data_or_rdv(NM_SO_STATUS_RDV_HERE | NM_SO_STATUS_PACKET_HERE, rdv, len, tag, seq, p_pw);
+	  p_pw->header_ref_count++;
 	}
     }
-
-  return NM_SO_HEADER_MARK_READ;
 }
 
 /** Process a complete rendez-vous acknowledgement request.
  */
-static int ack_callback(struct nm_pkt_wrap *p_pw,
-			nm_tag_t tag_id, uint8_t seq,
-			nm_trk_id_t track_id, uint32_t chunk_offset)
+static void ack_callback(struct nm_pkt_wrap *p_pw, struct nm_so_ctrl_ack_header*header)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   struct nm_pkt_wrap *p_so_large_pw = NULL;
-  const nm_tag_t tag = tag_id - 128;
+  const nm_tag_t tag = header->tag_id - 128;
+  const uint8_t seq = header->seq;
+  const uint32_t chunk_offset = header->chunk_offset;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-
+  
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   const struct nm_so_event_s event =
@@ -504,11 +501,9 @@ static int ack_callback(struct nm_pkt_wrap *p_pw,
 	      CCSI_Segment_count_contig_blocks(p_so_large_pw->segp, 0, &last, &nb_blocks);
 	      if(nb_blocks < nb_entries)
 		{
-		  NM_SO_TRACE("The data will be sent through an iovec directly from their location\n");
 		  CCSI_Segment_pack_vector(p_so_large_pw->segp,
 					   p_so_large_pw->datatype_offset, (DLOOP_Offset *)&last,
-					   (DLOOP_VECTOR *)p_so_large_pw->v,
-					   &nb_entries);
+					   (DLOOP_VECTOR *)p_so_large_pw->v,  &nb_entries);
 		  NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n",
 			      nb_entries, p_so_large_pw->datatype_offset, last, last-p_so_large_pw->datatype_offset);
 		}
@@ -529,37 +524,36 @@ static int ack_callback(struct nm_pkt_wrap *p_pw,
 	    }
 	  
 	  /* Send the data */
-	  nm_core_post_send(p_gate, p_so_large_pw,
-			    track_id % NM_SO_MAX_TRACKS,
-			    track_id / NM_SO_MAX_TRACKS);
-	  return NM_SO_HEADER_MARK_READ;
+	  nm_core_post_send(p_gate, p_so_large_pw, header->trk_id, header->drv_id);
+	  header->proto_id = NM_SO_PROTO_CTRL_UNUSED; /* mark as read */
+	  return;
 	}
     }
   TBX_FAILURE("PANIC!\n");
 }
 
-static int
-ack_chunk_callback(struct nm_pkt_wrap *p_pw,
-                   nm_tag_t tag_id, uint8_t seq, uint32_t chunk_offset,
-                   nm_trk_id_t track_id, uint32_t chunk_len)
+static void ack_chunk_callback(struct nm_pkt_wrap *p_pw,
+			       nm_tag_t tag_id, uint8_t seq, uint32_t chunk_offset,
+			       struct nm_so_ctrl_ack_chunk_header*header)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_so_sched *p_so_sched = &p_gate->p_core->so_sched;
   struct nm_pkt_wrap *p_so_large_pw, *p_so_large_pw2;
-  nm_tag_t tag = tag_id - 128;
+  const nm_tag_t tag = tag_id - 128;
+  const uint32_t chunk_len = header->chunk_len;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
-  NM_SO_TRACE("ACK_CHUNK completed for tag = %d, track_id = %u, seq = %u, chunk_len = %u, chunk_offset = %u\n", tag, track_id, seq, chunk_len, chunk_offset);
+  NM_SO_TRACE("ACK_CHUNK completed for tag = %d, track_id = %u, seq = %u, chunk_len = %u, chunk_offset = %u\n",
+	      tag, header->trk_id, seq, chunk_len, chunk_offset);
 
   list_for_each_entry(p_so_large_pw, &p_so_tag->pending_large_send, link) {
-    NM_SO_TRACE("Searching the pw corresponding to the ack_chunk - cur_seq = %d - cur_offset = %d\n", p_so_large_pw->seq, p_so_large_pw->chunk_offset);
+    NM_SO_TRACE("Searching the pw corresponding to the ack_chunk - cur_seq = %d - cur_offset = %d\n",
+		p_so_large_pw->seq, p_so_large_pw->chunk_offset);
 
     if(p_so_large_pw->seq == seq && p_so_large_pw->chunk_offset == chunk_offset) {
       list_del(&p_so_large_pw->link);
 
       // Les données à envoyer sont décrites par un datatype
-      if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE
-         || nm_so_any_src_get(&p_so_sched->any_src, tag)->status & NM_SO_STATUS_IS_DATATYPE){
+      if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE) {
 
         int length = p_so_large_pw->length;
         int32_t first = p_so_large_pw->datatype_offset;
@@ -618,11 +612,9 @@ ack_chunk_callback(struct nm_pkt_wrap *p_pw,
       }
 
       /* Send the data */
-      nm_core_post_send(p_gate, p_so_large_pw,
-			track_id % NM_SO_MAX_TRACKS,
-			track_id / NM_SO_MAX_TRACKS);
-
-      return NM_SO_HEADER_MARK_READ;
+      nm_core_post_send(p_gate, p_so_large_pw, header->trk_id, header->drv_id);
+      header->proto_id = NM_SO_PROTO_CTRL_UNUSED;
+      return;
     }
   }
   TBX_FAILURE("PANIC!\n");

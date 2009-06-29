@@ -146,21 +146,20 @@ nm_so_pw_finalize(struct nm_pkt_wrap *p_so_pw);
 #define NM_SO_HEADER_MARK_READ   0
 #define NM_SO_HEADER_MARK_UNREAD 1
 
-typedef int nm_so_pw_data_handler(struct nm_pkt_wrap *p_so_pw,
-				  void *ptr,
-                                  void *header, uint32_t len,
-				  nm_tag_t proto_id, uint8_t seq,
-                                  uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef int nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_so_pw,
-                                 void *rdv,
-				 nm_tag_t tag_id, uint8_t seq,
-                                 uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef int nm_so_pw_ack_handler(struct nm_pkt_wrap *p_so_pw,
-                                 nm_tag_t tag_id, uint8_t seq,
-                                 nm_trk_id_t track_id, uint32_t chunk_offset);
-typedef int nm_so_pw_ack_chunk_handler(struct nm_pkt_wrap *p_so_pw,
-                                       nm_tag_t tag_id, uint8_t seq, uint32_t chunk_offset,
-                                       nm_trk_id_t track_id, uint32_t chunk_len);
+typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_so_pw,
+				   void *ptr,
+				   nm_so_data_header_t*header, uint32_t len,
+				   nm_tag_t proto_id, uint8_t seq,
+				   uint32_t chunk_offset, uint8_t is_last_chunk);
+typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_so_pw,
+				  nm_so_generic_ctrl_header_t*rdv,
+				  nm_tag_t tag, uint8_t seq,
+				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
+typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_so_pw,
+				  struct nm_so_ctrl_ack_header*header);
+typedef void nm_so_pw_ack_chunk_handler(struct nm_pkt_wrap *p_so_pw,
+					nm_tag_t tag, uint8_t seq, uint32_t chunk_offset,
+					struct nm_so_ctrl_ack_chunk_header*header);
 int
 nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_so_pw,
 			      nm_so_pw_data_handler data_handler,

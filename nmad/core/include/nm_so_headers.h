@@ -61,10 +61,11 @@ struct nm_so_ctrl_rdv_header {
 };
 
 struct nm_so_ctrl_ack_header {
-  nm_tag_t proto_id;
-  nm_tag_t tag_id;
+  nm_tag_t proto_id;  /**< proto ID- should be NM_SO_PROTO_ACK */
+  nm_tag_t tag_id;    /**< tag of the acknowledged data */
   uint8_t seq;
-  uint8_t track_id;
+  nm_trk_id_t trk_id;
+  nm_drv_id_t drv_id;
   uint32_t chunk_offset;
 };
 
@@ -79,6 +80,7 @@ struct nm_so_ctrl_multi_ack_header {
 struct nm_so_ctrl_ack_chunk_header {
   nm_tag_t proto_id;
   nm_trk_id_t trk_id;
+  nm_drv_id_t drv_id;
   uint32_t chunk_len;
 };
 
@@ -90,6 +92,9 @@ union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_multi_ack_header ma;
   struct nm_so_ctrl_ack_chunk_header ac;
 };
+
+typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
+typedef struct nm_so_data_header nm_so_data_header_t;
 
 #define NM_SO_GLOBAL_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_global_header))
@@ -113,31 +118,34 @@ union nm_so_generic_ctrl_header {
     (p_ctrl)->r.is_last_chunk = (_is_last_chunk);	\
   } while(0)
 
-static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t _tag, uint8_t _seq,
-				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t _chunk_offset)
+static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, uint8_t seq,
+				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset)
 { 
   p_ctrl->a.proto_id = NM_SO_PROTO_ACK;
-  p_ctrl->a.tag_id   = _tag;
-  p_ctrl->a.seq      = _seq;
-  p_ctrl->a.track_id = drv_id * NM_SO_MAX_TRACKS + trk_id;
-  p_ctrl->a.chunk_offset = _chunk_offset;
+  p_ctrl->a.tag_id   = tag;
+  p_ctrl->a.seq      = seq;
+  p_ctrl->a.trk_id   = trk_id;
+  p_ctrl->a.drv_id   = drv_id;
+  p_ctrl->a.chunk_offset = chunk_offset;
 }
 
-#define nm_so_init_multi_ack(p_ctrl, _nb_chunks, _tag, _seq, _chunk_offset) \
-  do { \
-    (p_ctrl)->ma.proto_id = NM_SO_PROTO_MULTI_ACK;	\
-    (p_ctrl)->ma.nb_chunks = (_nb_chunks);		\
-    (p_ctrl)->ma.tag_id = (_tag);		\
-    (p_ctrl)->ma.seq = (_seq);			\
-    (p_ctrl)->ma.chunk_offset = (_chunk_offset);			\
-  } while(0)
+static inline void nm_so_init_multi_ack(union nm_so_generic_ctrl_header*p_ctrl, int nb_chunks, nm_tag_t tag,
+					uint8_t seq, uint32_t chunk_offset)
+{
+  p_ctrl->ma.proto_id  = NM_SO_PROTO_MULTI_ACK;
+  p_ctrl->ma.nb_chunks = nb_chunks;
+  p_ctrl->ma.tag_id    = tag;
+  p_ctrl->ma.seq       = seq;
+  p_ctrl->ma.chunk_offset = chunk_offset;
+}
 
 static inline void nm_so_add_ack_chunk(union nm_so_generic_ctrl_header*p_ctrl,
 				       const struct nm_rdv_chunk*chunk)
 {
   p_ctrl->ac.proto_id  = NM_SO_PROTO_ACK_CHUNK;
-  p_ctrl->ac.trk_id    = chunk->drv_id * NM_SO_MAX_TRACKS + chunk->trk_id;
+  p_ctrl->ac.trk_id    = chunk->trk_id;
+  p_ctrl->ac.drv_id    = chunk->drv_id;
   p_ctrl->ac.chunk_len = chunk->len;
 }
 
-#endif
+#endif /* NM_SO_§HEADER_H */

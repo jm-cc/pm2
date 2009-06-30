@@ -19,8 +19,10 @@
 
 /* *** method: 'bycopy' ************************************ */
 
-#define NM_IBVERBS_BYCOPY_BUFSIZE     (4096 - sizeof(struct nm_ibverbs_bycopy_header))
-#define NM_IBVERBS_BYCOPY_RBUF_NUM    32
+#define NM_IBVERBS_BYCOPY_BLOCKSIZE 4096
+#define NM_IBVERBS_BYCOPY_RBUF_NUM    16
+
+#define NM_IBVERBS_BYCOPY_BUFSIZE     (NM_IBVERBS_BYCOPY_BLOCKSIZE - sizeof(struct nm_ibverbs_bycopy_header))
 #define NM_IBVERBS_BYCOPY_SBUF_NUM    2
 #define NM_IBVERBS_BYCOPY_CREDITS_THR ((NM_IBVERBS_BYCOPY_RBUF_NUM / 2) + 1)
 

@@ -33,6 +33,9 @@
 #define NM_SO_PROTO_DATA_UNUSED 2
 #define NM_SO_PROTO_CTRL_UNUSED 1
 
+#define NM_SO_DATA_FLAG_LASTCHUNK 0x01
+#define NM_SO_DATA_FLAG_ALIGNED   0x02
+
 /** Global header for every packet sent on the network */
 struct nm_so_global_header
 {
@@ -45,7 +48,7 @@ struct nm_so_global_header
 struct nm_so_data_header {
   nm_tag_t proto_id;
   uint8_t  seq;
-  uint8_t is_last_chunk;
+  uint8_t  flags;
   uint16_t skip;
   uint32_t len;
   uint32_t chunk_offset;
@@ -107,6 +110,17 @@ typedef struct nm_so_data_header nm_so_data_header_t;
 
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
+
+static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_id, uint8_t seq, uint8_t flags,
+				   uint16_t skip, uint32_t len, uint32_t chunk_offset)
+{ 
+  p_header->proto_id = proto_id;
+  p_header->seq      = seq;
+  p_header->flags    = flags;
+  p_header->skip     = skip;
+  p_header->len      = len;
+  p_header->chunk_offset = chunk_offset;
+}
 
 #define nm_so_init_rdv(p_ctrl, _tag, _seq, _len, _chunk_offset, _is_last_chunk)	\
   do { \

@@ -39,7 +39,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
       assert(len <= NM_SO_MAX_UNEXPECTED);
       const void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
       const uint32_t chunk_offset = h->chunk_offset;
-      const uint8_t is_last_chunk = h->is_last_chunk;
+      const uint8_t is_last_chunk = (h->flags & NM_SO_DATA_FLAG_LASTCHUNK);
       nm_so_status_t status = 0;
 
       NM_SO_TRACE("DATA recovered chunk: tag = %u, seq = %u, len = %u, chunk_offset = %u\n",

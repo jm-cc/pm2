@@ -421,20 +421,14 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
 	{
 	  /* Small data case */
-	  struct nm_so_data_header *h;
-	  /* Add header */
-	  h = vec->iov_base + vec->iov_len;
-	  h->proto_id = proto_id;
-	  h->seq = seq;
-	  h->chunk_offset = offset;
-	  h->is_last_chunk = is_last_chunk;
+	  struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
 	  vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	  if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
 	    {
 	      /* Data immediately follows its header */
-	      uint32_t size = nm_so_aligned(len);
-	      h->skip = 0;
-	      h->len = len;
+	      const uint32_t size = nm_so_aligned(len);
+	      const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0) | NM_SO_DATA_FLAG_ALIGNED;
+	      nm_so_init_data(h, proto_id, seq, flags, 0, len, offset);
 	      if(len)
 		{
 #ifdef PIO_OFFLOAD
@@ -457,11 +451,9 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	      dvec->iov_len = len;
 	      /* We don't know yet the gap between header and data, so we
 		 temporary store the iovec index as the 'skip' value */
-	      h->skip = p_pw->v_nb;
+	      const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0);
+	      nm_so_init_data(h, proto_id, seq, flags, p_pw->v_nb, len, offset);
 	      p_pw->pending_skips++;
-	      h->len = len;
-	      h->chunk_offset = offset;
-	      h->is_last_chunk = is_last_chunk;
 	      p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
 	      p_pw->v_nb++;
 	    }
@@ -512,62 +504,46 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 			  nm_tag_t proto_id, uint8_t seq,
 			  uint32_t len, const struct DLOOP_Segment *segp)
 {
-  uint32_t size = 0;
-
-  if(len) {
-    size = nm_so_aligned(len);
-
-    DLOOP_Offset first = 0;
-    DLOOP_Offset last  = len;
-
+  if(len) 
     {
-      struct nm_so_data_header *h;
-      struct iovec *vec =  p_pw->prealloc_v;
-      /* Add header */
-      h = vec->iov_base + vec->iov_len;
-
-      h->proto_id = proto_id;
-      h->seq = seq;
-      h->is_last_chunk = 1;
-      h->len = len;
-      h->skip = 0;
-      h->chunk_offset = 0;
-
-      vec->iov_len += NM_SO_DATA_HEADER_SIZE;
-      p_pw->length += NM_SO_DATA_HEADER_SIZE;
+      const uint32_t size = nm_so_aligned(len);
+      DLOOP_Offset first = 0;
+      DLOOP_Offset last  = len;
+      {
+	struct iovec *vec =  p_pw->prealloc_v;
+	/* Add header */
+	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
+	nm_so_init_data(h, proto_id, seq, NM_SO_DATA_FLAG_LASTCHUNK | NM_SO_DATA_FLAG_ALIGNED, 0, len, 0);
+	vec->iov_len += NM_SO_DATA_HEADER_SIZE;
+	p_pw->length += NM_SO_DATA_HEADER_SIZE;
+      }
+      
+      /* flatten datatype into contiguous memory */
+      CCSI_Segment_pack(segp, first, &last, p_pw->v[0].iov_base + p_pw->v[0].iov_len);
+      
+      p_pw->v[0].iov_len += size;
+      p_pw->length += size;
     }
-
-    /* unfold datatype into contiguous memory */
-    CCSI_Segment_pack(segp, first, &last, p_pw->v[0].iov_base + p_pw->v[0].iov_len);
-
-    p_pw->v[0].iov_len  += size;
-    p_pw->length += size;
-  }
 
   return NM_ESUCCESS;
 }
 
+/* TODO- is this function ever used? (AD) */
 int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
                                     nm_tag_t proto_id, uint8_t seq,
                                     uint32_t len, struct DLOOP_Segment *segp)
 {
-  void *buf = NULL;
   DLOOP_Offset first = 0;
   DLOOP_Offset last  = len;
-  struct iovec *vec = NULL;
-  int err;
+  void *buf = TBX_MALLOC(len); /* TODO: where is it freed? (AD) */
 
-  buf = TBX_MALLOC(len);
+  int err = nm_so_pw_add_data(p_pw, proto_id, seq,
+			      buf, len, 0, 1,
+			      NM_SO_DATA_DONT_USE_HEADER);
 
-  err = nm_so_pw_add_data(p_pw,
-                          proto_id, seq,
-                          buf, len,
-                          0, 1,
-                          NM_SO_DATA_DONT_USE_HEADER);
+  struct iovec *vec = p_pw->v;
 
-  vec = p_pw->v;
-
-  /* unfold datatype into contiguous memory */
+  /* flatten datatype into contiguous memory */
   CCSI_Segment_pack(segp, first, &last, vec->iov_base);
 
   vec->iov_len = len;
@@ -659,11 +635,6 @@ int nm_so_pw_offloaded_finalize(struct nm_pkt_wrap *p_pw)
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 {
   int err = NM_ESUCCESS;
-  unsigned long remaining_bytes;
-  unsigned long to_skip;
-  void *ptr;
-  struct iovec *vec;
-  struct iovec *last_treated_vec = NULL;
 
   /* check if the packet travels headerles
    */
@@ -671,10 +642,9 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
     /* We're done */
     goto out;
 
-  /* update the length field of the global header
-   */
-  ((struct nm_so_global_header *)(p_pw->v->iov_base))->len =
-    p_pw->length;
+  /* update the length field of the global header */
+  struct nm_so_global_header*header = p_pw->v->iov_base;
+  header->len = p_pw->length;
 
 #ifdef PIO_OFFLOAD
   /* the finalize (actually the copy of the data) is deported in a tasklet
@@ -691,44 +661,42 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
     goto out;
   }
 
-  vec = p_pw->v;
-
-  ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
-  remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
-  to_skip = 0;
-  last_treated_vec = vec;
-
-  do {
-
-    if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST) {
-      /* Data header */
-
-      struct nm_so_data_header *h = ptr;
-
-      if(h->skip == 0) {
-	/* Data immediately follows */
-	ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-        remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-
-      } else {
-        /* Data occupy a separate iovec entry */
-	ptr += NM_SO_DATA_HEADER_SIZE;
-	remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
-	h->skip = remaining_bytes + to_skip;
-
-        last_treated_vec++;
-        to_skip += last_treated_vec->iov_len;
-
-        p_pw->pending_skips--;
-      }
-
-    } else {
-      /* Ctrl header */
-      ptr += NM_SO_CTRL_HEADER_SIZE;
-      remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+  struct iovec *vec = p_pw->v;
+  void *ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
+  unsigned long remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
+  unsigned long to_skip = 0;
+  struct iovec *last_treated_vec = vec;
+  do 
+    {
+      if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST)
+	{
+	  /* Data header */
+	  struct nm_so_data_header *h = ptr;
+	  if(h->skip == 0)
+	    {
+	      /* Data immediately follows */
+	      ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+	      remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+	    }
+	  else
+	    {
+	      /* Data occupy a separate iovec entry */
+	      ptr += NM_SO_DATA_HEADER_SIZE;
+	      remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
+	      h->skip = remaining_bytes + to_skip;
+	      last_treated_vec++;
+	      to_skip += last_treated_vec->iov_len;
+	      p_pw->pending_skips--;
+	    }
+	}
+      else
+	{
+	  /* Ctrl header */
+	  ptr += NM_SO_CTRL_HEADER_SIZE;
+	  remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+	}
     }
-
-  } while (p_pw->pending_skips);
+  while (p_pw->pending_skips);
 
  out:
   return err;
@@ -802,15 +770,17 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		    }
 		}
 	    }
-	  remaining_len -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(dh->len);
+	  const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	  remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
 	  /* We must recall ptr if necessary */
 	  if(dh->skip == 0){ // data are just after the header
-	    ptr += nm_so_aligned(dh->len);
+	    ptr += size;
 	  }  // else the next header is just behind
 	  
 	  if(proto_id != NM_SO_PROTO_DATA_UNUSED && data_handler)
 	    {
-	      data_handler(p_pw, data, dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset, dh->is_last_chunk);
+	      const uint8_t is_last_chunk = (dh->flags & NM_SO_DATA_FLAG_LASTCHUNK);
+	      data_handler(p_pw, data, dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset, is_last_chunk);
 	    }
 	}
       else

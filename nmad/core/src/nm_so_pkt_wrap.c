@@ -22,22 +22,6 @@
 
 #include <nm_private.h>
 
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-/* Per-'iovec entry' allocation flags (exclusive) */
-/** @name IOV entry allocation
-
-Flag constants to indicate whether a given iovec entry has been
-dynamically or statically allocated.
-*/
-/*@{*/
-/** Entry is has been allocated statically and should not be freed explicitely.
- */
-#define NM_SO_ALLOC_STATIC       0
-/** Entry is has been allocated dynamically and should be freed after use.
- */
-#define NM_SO_ALLOC_DYNAMIC      1
-/*@}*/
-#endif
 
 /* Global priv_flags */
 /** @name Global private flags
@@ -48,10 +32,6 @@ Flag constants for the flag field of pw.
 /** Headerless pkt, if set.
  */
 #define NM_SO_NO_HEADER          1
-
-/** Pkt with a dynamically allocated IOV, if set.
- */
-#define NM_SO_IOV_ALLOC_DYNAMIC  2
 
 /** Pkt has been allocated for reception, if set.
  */
@@ -65,20 +45,17 @@ Flag constants for the flag field of pw.
 #  define INITIAL_PKT_NUM  16
 #endif
 
-/** Allocator struct for headerless SO pkt wrapper.
+/** Allocator struct for headerless pkt wrapper.
  */
 static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
 
-/** Allocator struct for send SO pkt wrapper.
+/** Allocator struct for send pkt wrapper.
  */
 static p_tbx_memory_t nm_so_pw_send_mem = NULL;
 
-/** Allocator struct for recv SO pkt wrapper.
+/** Allocator struct for recv pkt wrapper.
  */
 static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
-
-/* Some ugly macros (for convenience only) */
-#define nm_so_iov_flags(p_pw, i)  ((p_pw)->nm_v[i].priv_flags)
 
 /** Initialize the fast allocator structs for SO pkt wrapper.
  *
@@ -89,11 +66,11 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
   tbx_malloc_init(&nm_so_pw_nohd_mem,
 		  sizeof(struct nm_pkt_wrap),
-		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_pkt_wrap/nohd");
+		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd");
 
   tbx_malloc_init(&nm_so_pw_send_mem,
 		  sizeof(struct nm_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
-		  INITIAL_PKT_NUM, "nmad/.../sched_opt/nm_pkt_wrap/send");
+		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/send");
 
   /* There's no need to use a separate allocator for send and recv ! */
   nm_so_pw_recv_mem = nm_so_pw_send_mem;
@@ -143,7 +120,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->v_nb            = 0;
 
   p_pw->v = NULL;
-  p_pw->nm_v = NULL;
 
 #ifdef PIO_OFFLOAD
   p_pw->data_to_offload = tbx_false;
@@ -195,9 +171,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	  
 	  /* io vector */
 	  p_pw->v = p_pw->prealloc_v;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-	  p_pw->nm_v = p_pw->prealloc_nm_v;
-#endif
 	  p_pw->v_first = 0;
 	  p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
 	  p_pw->v_nb = 1;
@@ -228,9 +201,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	  
 	  /* io vector */
 	  p_pw->v = p_pw->prealloc_v;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-	  p_pw->nm_v = p_pw->prealloc_nm_v;
-#endif
 	  p_pw->v_first = 0;
 	  p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
 	  p_pw->v_nb = 0;
@@ -259,9 +229,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       
       /* io vector */
       p_pw->v = p_pw->prealloc_v;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-      p_pw->nm_v = p_pw->prealloc_nm_v;
-#endif
       p_pw->v_first = 0;
       p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
       p_pw->v_nb = 1;
@@ -269,10 +236,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       /* first entry: global header */
       p_pw->prealloc_v->iov_base = p_pw->buf;
       p_pw->prealloc_v->iov_len = NM_SO_GLOBAL_HEADER_SIZE;
-      
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-      nm_so_iov_flags(p_pw, 0) = NM_SO_ALLOC_STATIC;
-#endif
       
       p_pw->is_completed = tbx_true;
       
@@ -311,24 +274,11 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   piom_req_free(&p_pw->inst);
 #endif
 
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-  /* Clean iov entries first */
-  {
-    int i;
-
-    for(i = 0; i < p_pw->v_nb; i++)
-      if(nm_so_iov_flags(p_pw, i) == NM_SO_ALLOC_DYNAMIC)
-	TBX_FREE(p_pw->v[i].iov_base);
-  }
-#endif
-
   /* Then clean whole iov */
-  if(flags & NM_SO_IOV_ALLOC_DYNAMIC) {
-    TBX_FREE(p_pw->v);
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-    TBX_FREE(p_pw->nm_v);
-#endif
-  }
+  if(p_pw->v != p_pw->prealloc_v)
+    {
+      TBX_FREE(p_pw->v);
+    }
 
   /* Finally clean packet wrapper itself */
   if(flags & NM_SO_RECV_PW){
@@ -503,9 +453,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	    {
 	      /* Data are handled by a separate iovec entry */
 	      struct iovec *dvec = p_pw->v + p_pw->v_nb;
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-	      nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
-#endif
 	      dvec->iov_base = (void*)data;
 	      dvec->iov_len = len;
 	      /* We don't know yet the gap between header and data, so we
@@ -534,9 +481,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     }
   else /* ** Add raw data to pw, without header */
     {
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-      nm_so_iov_flags(p_pw, p_pw->v_nb) = NM_SO_ALLOC_STATIC;
-#endif
       vec = p_pw->v + p_pw->v_nb++;
       vec->iov_base = (void*)data;
       vec->iov_len = len;

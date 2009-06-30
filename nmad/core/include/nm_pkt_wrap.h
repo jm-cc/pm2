@@ -20,35 +20,6 @@
 
 #include <ccs_public.h>
 
-/** IO vector entry meta-data.
- */
-struct nm_iovec {
-
-    /** Flags. */
-    uint32_t		 priv_flags;
-
-};
-
-/** Io vector iterator.
- */
-struct nm_iovec_iter {
-
-        /** Flags.
-         */
-        uint32_t		 priv_flags;
-
-        /** Current entry num.
-         */
-        uint32_t		 v_cur;
-
-        /** Current ptr and len copy since the io vector must be modified in-place.
-         */
-        struct iovec		 cur_copy;
-
-        /** Current size.
-         */
-        uint32_t		 v_cur_size;
-};
 
 /** Internal packet wrapper.
  */
@@ -157,9 +128,6 @@ struct nm_pkt_wrap
   /** IO vector. */
   struct iovec		*v;
   
-  /** IO vector per-entry meta-data, if needed, or NULL. */
-  struct nm_iovec		*nm_v;
-  
   tbx_tick_t start_transfer_time;
   
   struct DLOOP_Segment *segp;
@@ -176,10 +144,6 @@ struct nm_pkt_wrap
 
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];
-
-#ifdef _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-  struct nm_iovec    prealloc_nm_v[NM_SO_PREALLOC_IOV_LEN];
-#endif
 
   uint32_t chunk_offset;
   tbx_bool_t is_completed;

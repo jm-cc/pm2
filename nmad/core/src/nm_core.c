@@ -122,7 +122,6 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   post_rq->v_nb            = 0;
 
   post_rq->v = NULL;
-  post_rq->nm_v = NULL;
 
   piom_req_init(&post_rq->inst);
   post_rq->inst.server=&p_drv->server;
@@ -741,7 +740,6 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
  */
 int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 {
-  struct nm_core *p_core	= NULL;
   int err = NM_ESUCCESS;
 
   /*
@@ -753,7 +751,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     }
 
   /*
-   * Lazy PM2 initialization (it may already have been initialized in PadicoTM)
+   * Lazy PM2 initialization (it may already have been initialized in PadicoTM or ForestGOMP)
    */
   if(!tbx_initialized())
     {
@@ -763,7 +761,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
   FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 
-  p_core = TBX_MALLOC(sizeof(struct nm_core));
+  struct nm_core *p_core = TBX_MALLOC(sizeof(struct nm_core));
   memset(p_core, 0, sizeof(struct nm_core));
 
   p_core->nb_gates   = 0;

@@ -77,6 +77,23 @@ struct nm_tcp {
   int	fd[255];
 };
 
+/** Io vector iterator.
+ */
+struct nm_iovec_iter {
+
+
+        /** Current entry num.
+         */
+        uint32_t		 v_cur;
+
+        /** Current ptr and len copy since the io vector must be modified in-place.
+         */
+        struct iovec		 cur_copy;
+
+        /** Current size.
+         */
+        uint32_t		 v_cur_size;
+};
 
 /** TCP specific pkt wrapper data.
  */

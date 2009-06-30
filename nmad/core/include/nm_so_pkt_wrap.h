@@ -17,8 +17,6 @@
 #define NM_SO_PKT_WRAP_H
 
 
-//#define _NM_SO_HANDLE_DYNAMIC_IOVEC_ENTRIES
-
 /* Data flags */
 #define NM_SO_DATA_USE_COPY            1
 #define NM_SO_DATA_IS_CTRL_HEADER      2

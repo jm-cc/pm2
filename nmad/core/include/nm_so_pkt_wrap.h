@@ -143,9 +143,6 @@ nm_so_pw_finalize(struct nm_pkt_wrap *p_so_pw);
 
 /* Iterators */
 
-#define NM_SO_HEADER_MARK_READ   0
-#define NM_SO_HEADER_MARK_UNREAD 1
-
 typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_so_pw,
 				   void *ptr,
 				   nm_so_data_header_t*header, uint32_t len,

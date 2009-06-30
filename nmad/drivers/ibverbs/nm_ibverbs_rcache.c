@@ -17,7 +17,7 @@
 
 #include "nm_ibverbs.h"
 
-#ifdef PUK_ABI
+#ifdef PADICO_ENABLE_PUKABI
 #include <Padico/Puk-ABI.h>
 #endif
 

@@ -90,11 +90,6 @@ int nm_so_pw_exit(void)
   return NM_ESUCCESS;
 }
 
-static void nm_so_pw_reset(struct nm_pkt_wrap * __restrict__ p_pw)
-{
-  p_pw->drv_priv	= NULL;
-}
-
 
 static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 {
@@ -110,16 +105,11 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 
   p_pw->pkt_priv_flags = 0;
   p_pw->length = 0;
-  p_pw->iov_flags = 0;
 
-  p_pw->data = NULL;
-  p_pw->len_v = NULL;
-
-  p_pw->v_size          = 0;
-  p_pw->v_first         = 0;
-  p_pw->v_nb            = 0;
-
-  p_pw->v = NULL;
+  p_pw->v       = p_pw->prealloc_v;
+  p_pw->v_first = 0;
+  p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
+  p_pw->v_nb    = 0;
 
 #ifdef PIO_OFFLOAD
   p_pw->data_to_offload = tbx_false;
@@ -134,7 +124,7 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   }
 
   p_pw->chunk_offset = 0;
-  p_pw->is_completed = tbx_false;
+  p_pw->is_completed = tbx_true;
   p_pw->datatype_copied_buf = tbx_false;
 }
 
@@ -166,24 +156,16 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	      goto out;
 	    }
 	  
-	  nm_so_pw_reset(p_pw);
 	  nm_so_pw_raz(p_pw);
-	  
-	  /* io vector */
-	  p_pw->v = p_pw->prealloc_v;
-	  p_pw->v_first = 0;
-	  p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
-	  p_pw->v_nb = 1;
 	  
 	  /* pw flags */
 	  p_pw->pkt_priv_flags = NM_SO_RECV_PW;
 	  
-	  p_pw->is_completed = tbx_true;
-	  
 	  /* first entry: pkt header */
+	  p_pw->v_nb = 1;
 	  p_pw->prealloc_v->iov_base = p_pw->buf;
-	  p_pw->prealloc_v->iov_len = (p_pw->length = NM_SO_MAX_UNEXPECTED);
-	  
+	  p_pw->prealloc_v->iov_len = NM_SO_MAX_UNEXPECTED;
+	  p_pw->length = NM_SO_MAX_UNEXPECTED;
 	} 
       else
 	{
@@ -196,16 +178,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	      goto out;
 	    }
 	  
-	  nm_so_pw_reset(p_pw);
 	  nm_so_pw_raz(p_pw);
-	  
-	  /* io vector */
-	  p_pw->v = p_pw->prealloc_v;
-	  p_pw->v_first = 0;
-	  p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
-	  p_pw->v_nb = 0;
-	  
-	  p_pw->is_completed = tbx_true;
 	  
 	  /* pw flags */
 	  p_pw->pkt_priv_flags = NM_SO_NO_HEADER;
@@ -224,27 +197,16 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	  goto out;
 	}
       
-      nm_so_pw_reset(p_pw);
       nm_so_pw_raz(p_pw);
       
-      /* io vector */
-      p_pw->v = p_pw->prealloc_v;
-      p_pw->v_first = 0;
-      p_pw->v_size = NM_SO_PREALLOC_IOV_LEN;
-      p_pw->v_nb = 1;
-      
       /* first entry: global header */
+      p_pw->v_nb = 1;
       p_pw->prealloc_v->iov_base = p_pw->buf;
       p_pw->prealloc_v->iov_len = NM_SO_GLOBAL_HEADER_SIZE;
-      
-      p_pw->is_completed = tbx_true;
-      
-      /* cumulated length: global header length) */
       p_pw->length = NM_SO_GLOBAL_HEADER_SIZE;
       
       /* pw flags */
       p_pw->pkt_priv_flags = 0;
-      
       p_pw->pending_skips = 0;
     }
   
@@ -304,8 +266,6 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
                    uint32_t offset)
 {
   struct nm_pkt_wrap *p_pw2 = NULL;
-  int idx_pw, len, iov_offset, nb_entries;
-  int idx_pw2 = 0;
   int err;
 
   nm_so_pw_finalize(p_pw);
@@ -325,68 +285,53 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 
   p_pw->length = offset;
 
-  nb_entries = p_pw->v_nb;
+  const int nb_entries = p_pw->v_nb;
+  int idx_pw, len;
+  int idx_pw2 = 0;
 
-  for(idx_pw = 0, len = 0;
-      idx_pw < nb_entries;
-      len += p_pw->v[idx_pw].iov_len, idx_pw++){
-
-    if(len + p_pw->v[idx_pw].iov_len == offset){
-      idx_pw++;
-      goto next;
+  for(idx_pw = 0, len = 0; idx_pw < nb_entries; len += p_pw->v[idx_pw].iov_len, idx_pw++)
+    {
+      if(len + p_pw->v[idx_pw].iov_len == offset)
+	{
+	  /* cut between segments of iovec */
+	  idx_pw++;
+	  p_pw2->v_nb = nb_entries - idx_pw;
+	  p_pw->v_nb = idx_pw;
+	  while(idx_pw < nb_entries)
+	    {
+	      p_pw2->v[idx_pw2].iov_len  = p_pw->v[idx_pw].iov_len;
+	      p_pw2->v[idx_pw2].iov_base = p_pw->v[idx_pw].iov_base;
+	      p_pw->v[idx_pw].iov_len = 0;
+	      p_pw->v[idx_pw].iov_base = NULL;
+	      idx_pw++;
+	      idx_pw2++;
+	    }
+	}
+      else if(len + p_pw->v[idx_pw].iov_len > offset)
+	{
+	  /* cut in the middle of an iovec segment */
+	  const int iov_offset = offset - len;
+	  p_pw2->v[0].iov_len  = p_pw->v[idx_pw].iov_len  - iov_offset;
+	  p_pw2->v[0].iov_base = p_pw->v[idx_pw].iov_base + iov_offset;
+	  p_pw2->v_nb = nb_entries - idx_pw;
+	  p_pw->v[idx_pw].iov_len = iov_offset;
+	  p_pw->v_nb = idx_pw + 1;
+	  idx_pw++;
+	  idx_pw2++;
+	  while(idx_pw < nb_entries)
+	    {
+	      p_pw2->v[idx_pw2].iov_len = p_pw->v[idx_pw].iov_len;
+	      p_pw2->v[idx_pw2].iov_base = p_pw->v[idx_pw].iov_base;
+	      p_pw->v[idx_pw].iov_len = 0;
+	      p_pw->v[idx_pw].iov_base = NULL;
+	      idx_pw++;
+	      idx_pw2++;
+	    }
+	}
     }
-
-
-    if(len + p_pw->v[idx_pw].iov_len > offset){
-      iov_offset = offset - len;
-
-      p_pw2->v_first = idx_pw;
-      p_pw2->v[idx_pw].iov_len  = p_pw->v[idx_pw].iov_len  - iov_offset;
-      p_pw2->v[idx_pw].iov_base = p_pw->v[idx_pw].iov_base + iov_offset;
-      p_pw2->v_nb = nb_entries - idx_pw;
-
-      p_pw->v[idx_pw].iov_len = iov_offset;
-      p_pw->v_nb = idx_pw + 1;
-
-      idx_pw++;
-      goto next2;
-    }
-  }
-
- next:
-  p_pw2->v_nb = nb_entries - idx_pw;
-  p_pw->v_nb = idx_pw;
-
-
-  while(idx_pw < nb_entries){
-    p_pw2->v[idx_pw2].iov_len  = p_pw->v[idx_pw].iov_len;
-    p_pw2->v[idx_pw2].iov_base = p_pw->v[idx_pw].iov_base;
-
-    p_pw->v[idx_pw].iov_len = 0;
-    p_pw->v[idx_pw].iov_base = NULL;
-
-    idx_pw++;
-    idx_pw2++;
-  }
-  goto out;
-
- next2:
-  while(idx_pw < nb_entries){
-    p_pw2->v[idx_pw].iov_len = p_pw->v[idx_pw].iov_len;
-    p_pw2->v[idx_pw].iov_base = p_pw->v[idx_pw].iov_base;
-
-    p_pw->v[idx_pw].iov_len = 0;
-    p_pw->v[idx_pw].iov_base = NULL;
-
-    idx_pw++;
-  }
 
  out:
-  p_pw2->chunk_offset = p_pw->chunk_offset+offset;
-
-  // shortcut on the first iov entry
-  p_pw2->data   = p_pw2->v[p_pw2->v_first].iov_base;
-  p_pw2->v_size = p_pw2->v[p_pw2->v_first].iov_len;
+  p_pw2->chunk_offset = p_pw->chunk_offset + offset;
 
   *pp_pw2 = p_pw2;
 
@@ -412,12 +357,11 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 		      int flags)
 {
   int err;
-  struct iovec *vec;
 
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) /* ** Data with header */
     {
       /* the headers are always in the first entries of the struct iovec tab */
-      vec = p_pw->prealloc_v;
+      struct iovec*vec = p_pw->prealloc_v;
       if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
 	{
 	  /* Small data case */
@@ -473,7 +417,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     }
   else /* ** Add raw data to pw, without header */
     {
-      vec = p_pw->v + p_pw->v_nb++;
+      struct iovec*vec = p_pw->v + p_pw->v_nb++;
       vec->iov_base = (void*)data;
       vec->iov_len = len;
       p_pw->proto_id = proto_id;

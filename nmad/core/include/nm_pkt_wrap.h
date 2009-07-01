@@ -62,9 +62,7 @@ struct nm_pkt_wrap
   /** Sequence number for the given protocol id.
       - rank in the communication flow this packet belongs to
   */
-  uint8_t			 seq;
-  
-  /* Implementation dependent data.				*/
+  uint8_t seq;
   
   /** Driver implementation data.  */
   void			*drv_priv;
@@ -78,41 +76,7 @@ struct nm_pkt_wrap
   /** Cumulated amount of data (everything included) referenced by this wrap. */
   uint32_t		 length;
 
-  /** Io vector setting.
-   * bit 0:
-   * 0 - no main/iovec header
-   * 1 - reference main and iovec header in iovec
-   *
-   * bit 1:
-   * 0 - no length vector header
-   * 1 - reference length vector header in iovec
-   *
-   * bit 2: block type
-   * 0 - headerless data
-   * 1 - packet
-   * - wrapped packet types may only be data, packet data or multipacket
-   *
-   * bit 3-7: reserved, must be 0
-   */
-  uint8_t 		 iov_flags;
-  
-  /** Body.
-      - shortcut to pkt first data block vector entry (if relevant),
-      or NULL
-      - this field is to be used for convenience when needed, it does
-      not imply that every pkt_wrap iov should be organized as a
-      header+body msg
-  */
-  void			*data;
-  
-  /** Length vector for iov headers (if needed).
-      - shortcut and ptr to length vector buffer
-      - each entry must by 8-byte long, low to high weight bytes
-  */
-  uint8_t			*len_v;
-  
-  
-  /** IO vector size. */
+  /** actual number of allocated entries in the iovec. */
   uint32_t		 v_size;
   
   /** First used entry in io vector, not necessarily 0, to allow for prepend.
@@ -120,7 +84,7 @@ struct nm_pkt_wrap
   */
   uint32_t		 v_first;
   
-  /** Number of used entries in io vector.
+  /** Number of *used* entries in io vector.
       - first unused entry after iov  contents is v[v_first + v_nb]
   */
   uint32_t		 v_nb;
@@ -128,16 +92,11 @@ struct nm_pkt_wrap
   /** IO vector. */
   struct iovec		*v;
   
-  tbx_tick_t start_transfer_time;
-  
-  struct DLOOP_Segment *segp;
-  /** Current position in the datatype */
-  DLOOP_Offset datatype_offset;
+  /** number of references pointing to the header (when storing unexpected packets) */
+  int header_ref_count;
 
-  int                header_ref_count;
-
-  /* Used on the sending side */
-  int                pending_skips;
+  /** number of pending 'skip' fields in data header to update before sending */
+  int pending_skips;
 
   /* Used on the receiving side */
   struct list_head   link;
@@ -147,6 +106,12 @@ struct nm_pkt_wrap
 
   uint32_t chunk_offset;
   tbx_bool_t is_completed;
+
+  tbx_tick_t start_transfer_time;
+  
+  struct DLOOP_Segment *segp;
+  /** Current position in the datatype */
+  DLOOP_Offset datatype_offset;
 
   tbx_bool_t datatype_copied_buf;
 

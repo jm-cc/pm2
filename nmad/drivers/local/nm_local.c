@@ -278,7 +278,7 @@ static int nm_local_disconnect(void*_status, struct nm_cnx_rq*p_crq)
 static int nm_local_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_local*status = (struct nm_local*)_status;
-  struct iovec*iov = p_pw->v + p_pw->v_first;
+  struct iovec*iov = &p_pw->v[0];
   const int fd = status->fd[p_pw->trk_id];
   if(p_pw->v_nb != 1)
     {
@@ -321,7 +321,7 @@ static int nm_local_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_local*status = (struct nm_local*)_status;
   const int fd = status->fd[p_pw->trk_id];
-  struct iovec*iov = p_pw->v + p_pw->v_first;
+  struct iovec*iov = &p_pw->v[0];
   int size = 0;
   int rc = recv(fd, &size, sizeof(size), MSG_DONTWAIT);
   int err = errno;

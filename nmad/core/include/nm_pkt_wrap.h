@@ -79,13 +79,8 @@ struct nm_pkt_wrap
   /** actual number of allocated entries in the iovec. */
   uint32_t		 v_size;
   
-  /** First used entry in io vector, not necessarily 0, to allow for prepend.
-      - first unused entry before iov contents is v[v_first - 1]
-  */
-  uint32_t		 v_first;
-  
   /** Number of *used* entries in io vector.
-      - first unused entry after iov  contents is v[v_first + v_nb]
+      - first unused entry after iov  contents is v[v_nb]
   */
   uint32_t		 v_nb;
   

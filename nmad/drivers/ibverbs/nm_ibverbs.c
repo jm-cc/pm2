@@ -760,7 +760,7 @@ static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
 {
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
   p_pw->drv_priv = p_ibverbs_cnx;
-  (*p_ibverbs_cnx->method.driver->send_post)(p_ibverbs_cnx->method._status, &p_pw->v[p_pw->v_first], p_pw->v_nb);
+  (*p_ibverbs_cnx->method.driver->send_post)(p_ibverbs_cnx->method._status, &p_pw->v[0], p_pw->v_nb);
   int err = nm_ibverbs_poll_send_iov(_status, p_pw);
   return err;
 }
@@ -776,7 +776,7 @@ static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,
 					struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
   (*p_ibverbs_cnx->method.driver->recv_init)(p_ibverbs_cnx->method._status, 
-					     &p_pw->v[p_pw->v_first], p_pw->v_nb);
+					     &p_pw->v[0], p_pw->v_nb);
 }
 
 static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,

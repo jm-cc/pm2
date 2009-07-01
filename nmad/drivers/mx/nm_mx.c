@@ -764,7 +764,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   
   {
     mx_segment_t	 seg_list[p_pw->v_nb];
-    struct iovec	*p_src = p_pw->v + p_pw->v_first;
+    struct iovec	*p_src = &p_pw->v[0];
     mx_segment_t	*p_dst = seg_list;
     int i;
     for (i = 0; i < p_pw->v_nb; i++) {
@@ -822,7 +822,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   
   {
     mx_segment_t	 seg_list[p_pw->v_nb];
-    struct iovec	*p_src	= p_pw->v + p_pw->v_first;
+    struct iovec	*p_src	= &p_pw->v[0];
     mx_segment_t	*p_dst	= seg_list;
     int	 i;
     for (i = 0; i < p_pw->v_nb; i++) {

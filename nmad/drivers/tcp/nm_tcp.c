@@ -889,11 +889,11 @@ nm_tcp_send 	(void*_status,
 
                 /* current entry num is first entry num
                  */
-                p_tcp_pw->vi.v_cur	= p_pw->v_first;
+                p_tcp_pw->vi.v_cur	= 0;
 
                 /* save a copy of current entry
                  */
-                p_tcp_pw->vi.cur_copy	= p_pw->v[p_pw->v_first];
+                p_tcp_pw->vi.cur_copy	= p_pw->v[0];
 
                 /* current vector size is full vector size
                  */
@@ -1104,11 +1104,11 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     
     /* current entry num is first entry num
      */
-    p_tcp_pw->vi.v_cur	= p_pw->v_first;
+    p_tcp_pw->vi.v_cur	= 0;
     
     /* save a copy of current entry
      */
-    p_tcp_pw->vi.cur_copy	= p_pw->v[p_pw->v_first];
+    p_tcp_pw->vi.cur_copy	= p_pw->v[0];
     
     /* current vector size is full vector size
      */

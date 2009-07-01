@@ -845,7 +845,7 @@ nm_gm_post_send_iov		(void*_status,
         p_gm_pw->p_gm_port	= p_gm_trk->p_gm_port;
         p_gm_port		= p_gm_pw->p_gm_port;
 
-        p_gm_pw->p_iov	= p_pw->v + p_pw->v_first;
+        p_gm_pw->p_iov	= p_pw->v;
         p_iov		= p_gm_pw->p_iov;
 
         p_gm_pw->rq.lock	= 0;
@@ -904,7 +904,7 @@ nm_gm_post_recv_iov		(void*_status,
         p_gm_pw->p_gm_port	= p_gm_trk->p_gm_port;
         p_gm_port		= p_gm_pw->p_gm_port;
 
-        p_gm_pw->p_iov	= p_pw->v + p_pw->v_first;
+        p_gm_pw->p_iov	= p_pw->v;
         p_iov		= p_gm_pw->p_iov;
 
         /* register memory block

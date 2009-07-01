@@ -534,18 +534,18 @@ static int store_iov_waiting_transfer(struct nm_gate *p_gate,
 
   p_so_pw->chunk_offset = chunk_offset;
 
-  p_so_pw->prealloc_v[0].iov_len  = iov[0].iov_len - first_iov_offset;
-  p_so_pw->prealloc_v[0].iov_base = iov[0].iov_base + first_iov_offset;
-  cur_len -= p_so_pw->prealloc_v[0].iov_len;
+  p_so_pw->v[0].iov_len  = iov[0].iov_len - first_iov_offset;
+  p_so_pw->v[0].iov_base = iov[0].iov_base + first_iov_offset;
+  cur_len -= p_so_pw->v[0].iov_len;
 
   for(i = 1; i < nb_entries-1; i++){
-    p_so_pw->prealloc_v[i].iov_len  = iov[i].iov_len;
-    p_so_pw->prealloc_v[i].iov_base = iov[i].iov_base;
-    cur_len -= p_so_pw->prealloc_v[i].iov_len;
+    p_so_pw->v[i].iov_len  = iov[i].iov_len;
+    p_so_pw->v[i].iov_base = iov[i].iov_base;
+    cur_len -= p_so_pw->v[i].iov_len;
   }
 
-  p_so_pw->prealloc_v[i].iov_len  = cur_len;
-  p_so_pw->prealloc_v[i].iov_base = iov[i].iov_base;
+  p_so_pw->v[i].iov_len  = cur_len;
+  p_so_pw->v[i].iov_base = iov[i].iov_base;
 
   list_add_tail(&p_so_pw->link, &p_gate->pending_large_recv);
 
@@ -592,17 +592,17 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	{
 	  /* ** iov to be completed */
 	  list_del(p_gate->pending_large_recv.next);
-	  if(p_large_pw->prealloc_v[0].iov_len < p_large_pw->length)
+	  if(p_large_pw->v[0].iov_len < p_large_pw->length)
 	    {
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
 	      /* Only post the first entry */
-	      nm_so_pw_split(p_large_pw, &p_large_pw2, p_large_pw->prealloc_v[0].iov_len);
+	      nm_so_pw_split(p_large_pw, &p_large_pw2, p_large_pw->v[0].iov_len);
 	      list_add_tail(&p_large_pw2->link, &p_gate->pending_large_recv);
 	    }
 	  struct nm_rdv_chunk chunk = {
 	    .drv_id = p_large_pw->p_drv->id,
 	    .trk_id = p_large_pw->trk_id,
-	    .len = p_large_pw->prealloc_v[0].iov_len 
+	    .len = p_large_pw->v[0].iov_len 
 	  };
 	  nm_so_direct_post_large_recv(p_gate, chunk.drv_id, p_large_pw);
 	  

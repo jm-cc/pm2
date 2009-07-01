@@ -107,7 +107,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->length = 0;
 
   p_pw->v       = p_pw->prealloc_v;
-  p_pw->v_first = 0;
   p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
   p_pw->v_nb    = 0;
 
@@ -118,10 +117,11 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->header_ref_count = 0;
   p_pw->pending_skips = 0;
 
-  for(i = 0; i < NM_SO_PREALLOC_IOV_LEN; i++){
-    p_pw->prealloc_v[i].iov_len  = 0;
-    p_pw->prealloc_v[i].iov_base = NULL;
-  }
+  for(i = 0; i < NM_SO_PREALLOC_IOV_LEN; i++)
+    {
+      p_pw->prealloc_v[i].iov_len  = 0;
+      p_pw->prealloc_v[i].iov_base = NULL;
+    }
 
   p_pw->chunk_offset = 0;
   p_pw->is_completed = tbx_true;
@@ -163,8 +163,8 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 	  
 	  /* first entry: pkt header */
 	  p_pw->v_nb = 1;
-	  p_pw->prealloc_v->iov_base = p_pw->buf;
-	  p_pw->prealloc_v->iov_len = NM_SO_MAX_UNEXPECTED;
+	  p_pw->v[0].iov_base = p_pw->buf;
+	  p_pw->v[0].iov_len = NM_SO_MAX_UNEXPECTED;
 	  p_pw->length = NM_SO_MAX_UNEXPECTED;
 	} 
       else
@@ -201,8 +201,8 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       
       /* first entry: global header */
       p_pw->v_nb = 1;
-      p_pw->prealloc_v->iov_base = p_pw->buf;
-      p_pw->prealloc_v->iov_len = NM_SO_GLOBAL_HEADER_SIZE;
+      p_pw->v[0].iov_base = p_pw->buf;
+      p_pw->v[0].iov_len = NM_SO_GLOBAL_HEADER_SIZE;
       p_pw->length = NM_SO_GLOBAL_HEADER_SIZE;
       
       /* pw flags */
@@ -330,7 +330,6 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	}
     }
 
- out:
   p_pw2->chunk_offset = p_pw->chunk_offset + offset;
 
   *pp_pw2 = p_pw2;
@@ -361,7 +360,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) /* ** Data with header */
     {
       /* the headers are always in the first entries of the struct iovec tab */
-      struct iovec*vec = p_pw->prealloc_v;
+      struct iovec*vec = &p_pw->v[0];
       if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
 	{
 	  /* Small data case */
@@ -454,7 +453,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
       DLOOP_Offset first = 0;
       DLOOP_Offset last  = len;
       {
-	struct iovec *vec =  p_pw->prealloc_v;
+	struct iovec *vec =  &p_pw->v[0];
 	/* Add header */
 	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
 	nm_so_init_data(h, proto_id, seq, NM_SO_DATA_FLAG_LASTCHUNK | NM_SO_DATA_FLAG_ALIGNED, 0, len, 0);

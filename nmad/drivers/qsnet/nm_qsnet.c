@@ -469,7 +469,7 @@ static int nm_qsnet_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
     goto out;
 
   p_pw->drv_priv = p_qsnet_pw;
-  p_iov		 = p_pw->v + p_pw->v_first;
+  p_iov		 = p_pw->v;
   p_qsnet_pw->ev = elan_tportTxStart(p_qsnet_trk->p, 0, p_qsnet_cnx->remote_proc,
 				     p_qsnet_drv->proc,
 				     2, p_iov->iov_base, p_iov->iov_len);
@@ -508,7 +508,7 @@ static int nm_qsnet_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     }
 
   p_pw->drv_priv = p_qsnet_pw;
-  p_iov	= p_pw->v + p_pw->v_first;
+  p_iov	= p_pw->v;
   p_qsnet_pw->ev = elan_tportRxStart(p_qsnet_trk->p, 0, remote_proc_mask, remote_proc,
 				     -1, 2, p_iov->iov_base, p_iov->iov_len);
   

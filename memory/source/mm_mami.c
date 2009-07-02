@@ -504,6 +504,15 @@ void _mami_unregister(mami_manager_t *memory_manager, mami_tree_t **memory_tree,
       mami_data_t *data = (*memory_tree)->data;
       mami_data_t *next_data = data->next;
 
+      if (data->status == MAMI_USERSPACE_MIGRATION_STATUS) {
+        int err;
+        mdebug_memory("Data has been marked for a next touch migration but has not been touched, the protection has to been reset\n");
+        err = mprotect(data->mprotect_start_address, data->mprotect_size, data->protection);
+        if (err < 0) {
+          perror("(mami_unregister) mprotect");
+        }
+      }
+
       if (data->mami_allocated) {
 	mdebug_memory("Removing [%p, %p] from node #%d\n", (*memory_tree)->data->pageaddrs[0], (*memory_tree)->data->pageaddrs[0]+(*memory_tree)->data->size,
                       data->node);
@@ -1476,7 +1485,7 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
-  if (data && data->status != MAMI_NEXT_TOUCHED_STATUS) {
+  if (data && data->status == MAMI_USERSPACE_MIGRATION_STATUS) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
     dest = th_mami_current_node();
     _mami_migrate_on_node(_mami_memory_manager, data, dest);
@@ -1550,7 +1559,7 @@ int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
       }
       mdebug_memory("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_start_address, data->start_address+data->mprotect_size,
 		    (long) data->mprotect_size, data->start_address, data->end_address, (long) data->size);
-      data->status = MAMI_INITIAL_STATUS;
+      data->status = MAMI_USERSPACE_MIGRATION_STATUS;
       err = mprotect(data->mprotect_start_address, data->mprotect_size, PROT_NONE);
       if (err < 0) {
         perror("(mami_migrate_on_next_touch) mprotect");

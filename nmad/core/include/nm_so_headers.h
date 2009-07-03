@@ -70,6 +70,7 @@ struct nm_so_ctrl_ack_header {
   nm_trk_id_t trk_id;
   nm_drv_id_t drv_id;
   uint32_t chunk_offset;
+  uint32_t chunk_len;
 };
 
 struct nm_so_ctrl_multi_ack_header {
@@ -133,7 +134,7 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_
   } while(0)
 
 static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, uint8_t seq,
-				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset)
+				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 { 
   p_ctrl->a.proto_id = NM_SO_PROTO_ACK;
   p_ctrl->a.tag_id   = tag;
@@ -141,6 +142,7 @@ static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag
   p_ctrl->a.trk_id   = trk_id;
   p_ctrl->a.drv_id   = drv_id;
   p_ctrl->a.chunk_offset = chunk_offset;
+  p_ctrl->a.chunk_len = chunk_len;
 }
 
 static inline void nm_so_init_multi_ack(union nm_so_generic_ctrl_header*p_ctrl, int nb_chunks, nm_tag_t tag,

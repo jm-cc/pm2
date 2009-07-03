@@ -466,11 +466,11 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
  */
 static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
 {
-  struct nm_gate *p_gate = p_ack_pw->p_gate;
-  struct nm_pkt_wrap *p_large_pw = NULL;
-  const nm_tag_t tag = header->tag_id - 128;
-  const uint8_t seq = header->seq;
+  const nm_tag_t tag          = header->tag_id - 128;
+  const uint8_t seq           = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
+  const uint32_t chunk_len    = header->chunk_len;
+  struct nm_gate *p_gate = p_ack_pw->p_gate;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
@@ -484,6 +484,8 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
       .any_src = tbx_false
     };
   nm_so_status_event(p_gate->p_core, &event);
+
+  struct nm_pkt_wrap *p_large_pw = NULL;
   list_for_each_entry(p_large_pw, &p_so_tag->pending_large_send, link)
     {
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
@@ -494,38 +496,65 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 	  list_del(&p_large_pw->link);
 	  if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE)
 	    {
-	      int nb_blocks = 0;
-	      int last = p_large_pw->length;
+	      /* large data is datatype */
+	      int length = p_large_pw->length;
+	      DLOOP_Offset first = p_large_pw->datatype_offset;
+	      DLOOP_Offset last  = first + chunk_len;
 	      int nb_entries = p_large_pw->v_size - p_large_pw->v_nb;
 	      /* AD: TODO with resizable iovecs, packing datatype into vector or contigous
 	       * should depend upon blocks density, not iovec current size.
 	       */
-	      CCSI_Segment_count_contig_blocks(p_large_pw->segp, 0, &last, &nb_blocks);
+	      int nb_blocks = 0;
+	      CCSI_Segment_count_contig_blocks(p_large_pw->segp, first, &last, &nb_blocks);
 	      if(nb_blocks < nb_entries)
 		{
-		  CCSI_Segment_pack_vector(p_large_pw->segp,
-					   p_large_pw->datatype_offset, (DLOOP_Offset *)&last,
-					   (DLOOP_VECTOR *)p_large_pw->v,  &nb_entries);
+		  /* pack datatype into an iovec */
+		  CCSI_Segment_pack_vector(p_large_pw->segp, first, &last, (DLOOP_VECTOR *)p_large_pw->v, &nb_entries);
 		  NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n",
 			      nb_entries, p_large_pw->datatype_offset, last, last-p_large_pw->datatype_offset);
 		}
 	      else 
 		{
+		  /* pack datatype into a contiguous buffer (by copy) */
 		  NM_SO_TRACE("There is no enough space in the iovec - copy in a contiguous buffer and send\n");
 		  p_large_pw->datatype_copied_buf = tbx_true;
-		  p_large_pw->v[0].iov_base = TBX_MALLOC(p_large_pw->length);
-		  CCSI_Segment_pack(p_large_pw->segp,
-				    p_large_pw->datatype_offset, &last,
-				    p_large_pw->v[0].iov_base);
-		  p_large_pw->v[0].iov_len = last-p_large_pw->datatype_offset;
+		  p_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
+		  CCSI_Segment_pack(p_large_pw->segp, first, &last, p_large_pw->v[0].iov_base);
+		  p_large_pw->v[0].iov_len = last - first;
 		  nb_entries = 1;
 		}
-	      p_large_pw->length = last - p_large_pw->datatype_offset;
+	      p_large_pw->length = last - first;
 	      p_large_pw->v_nb += nb_entries;
 	      p_large_pw->datatype_offset = last;
+
+	      if(chunk_offset + chunk_len < length)
+		{
+		  /* store the remaining data */
+		  struct nm_pkt_wrap *p_large_pw2 = NULL;
+		  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_large_pw2);
+		  p_large_pw2->p_gate   = p_large_pw->p_gate;
+		  p_large_pw2->proto_id = p_large_pw->proto_id;
+		  p_large_pw2->seq      = p_large_pw->seq;
+		  p_large_pw2->length   = length;
+		  p_large_pw2->v_nb     = 0;
+		  p_large_pw2->segp     = p_large_pw->segp;
+		  p_large_pw2->datatype_offset = last;
+		  p_large_pw2->chunk_offset = p_large_pw2->datatype_offset;
+		  list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
+		}
 	    }
-	  
-	  /* Send the data */
+	  else
+	    {
+	      /* large data is contiguous or iovec */
+	      if(chunk_len < p_large_pw->length)
+		{
+		  /* partial ACK- split the packet  */
+		  struct nm_pkt_wrap *p_large_pw2 = NULL;
+		  nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
+		  list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
+		}
+	    }
+	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
 	  header->proto_id = NM_SO_PROTO_CTRL_UNUSED; /* mark as read */
 	  return;

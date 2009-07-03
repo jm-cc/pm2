@@ -38,12 +38,8 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
 static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
 						       struct nm_pkt_wrap *p_so_pw)
 {
-  int err;
-
   nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
-
-  err = NM_ESUCCESS;
-  return err;
+  return NM_ESUCCESS;
 }
 
 
@@ -86,6 +82,17 @@ static inline int nm_so_out_schedule_gate(struct nm_gate *p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   return r->driver->try_and_commit(r->_status, p_gate);
+}
+
+/** Post an ACK
+ */
+static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, uint8_t seq,
+				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
+{
+  nm_so_generic_ctrl_header_t h;
+  nm_so_init_ack(&h, tag, seq, drv_id, trk_id, chunk_offset, chunk_len);
+  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
 /* ** Pack/unpack ****************************************** */

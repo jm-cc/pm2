@@ -464,10 +464,10 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
 
 /** Process a complete rendez-vous acknowledgement request.
  */
-static void ack_callback(struct nm_pkt_wrap *p_pw, struct nm_so_ctrl_ack_header*header)
+static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
 {
-  struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_pkt_wrap *p_so_large_pw = NULL;
+  struct nm_gate *p_gate = p_ack_pw->p_gate;
+  struct nm_pkt_wrap *p_large_pw = NULL;
   const nm_tag_t tag = header->tag_id - 128;
   const uint8_t seq = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
@@ -484,47 +484,49 @@ static void ack_callback(struct nm_pkt_wrap *p_pw, struct nm_so_ctrl_ack_header*
       .any_src = tbx_false
     };
   nm_so_status_event(p_gate->p_core, &event);
-  list_for_each_entry(p_so_large_pw, &p_so_tag->pending_large_send, link)
+  list_for_each_entry(p_large_pw, &p_so_tag->pending_large_send, link)
     {
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
-		  p_so_large_pw->seq, p_so_large_pw->chunk_offset);
-      if(p_so_large_pw->seq == seq && p_so_large_pw->chunk_offset == chunk_offset)
+		  p_large_pw->seq, p_large_pw->chunk_offset);
+      if(p_large_pw->seq == seq && p_large_pw->chunk_offset == chunk_offset)
 	{
-	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_so_large_pw, p_gate->id, 1/* large output list*/);
-	  list_del(&p_so_large_pw->link);
+	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
+	  list_del(&p_large_pw->link);
 	  if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE)
 	    {
 	      int nb_blocks = 0;
-	      int last = p_so_large_pw->length;
-	      int nb_entries = NM_SO_PREALLOC_IOV_LEN - p_so_large_pw->v_nb;
-	      
-	      CCSI_Segment_count_contig_blocks(p_so_large_pw->segp, 0, &last, &nb_blocks);
+	      int last = p_large_pw->length;
+	      int nb_entries = p_large_pw->v_size - p_large_pw->v_nb;
+	      /* AD: TODO with resizable iovecs, packing datatype into vector or contigous
+	       * should depend upon blocks density, not iovec current size.
+	       */
+	      CCSI_Segment_count_contig_blocks(p_large_pw->segp, 0, &last, &nb_blocks);
 	      if(nb_blocks < nb_entries)
 		{
-		  CCSI_Segment_pack_vector(p_so_large_pw->segp,
-					   p_so_large_pw->datatype_offset, (DLOOP_Offset *)&last,
-					   (DLOOP_VECTOR *)p_so_large_pw->v,  &nb_entries);
+		  CCSI_Segment_pack_vector(p_large_pw->segp,
+					   p_large_pw->datatype_offset, (DLOOP_Offset *)&last,
+					   (DLOOP_VECTOR *)p_large_pw->v,  &nb_entries);
 		  NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n",
-			      nb_entries, p_so_large_pw->datatype_offset, last, last-p_so_large_pw->datatype_offset);
+			      nb_entries, p_large_pw->datatype_offset, last, last-p_large_pw->datatype_offset);
 		}
 	      else 
 		{
 		  NM_SO_TRACE("There is no enough space in the iovec - copy in a contiguous buffer and send\n");
-		  p_so_large_pw->datatype_copied_buf = tbx_true;
-		  p_so_large_pw->v[0].iov_base = TBX_MALLOC(p_so_large_pw->length);
-		  CCSI_Segment_pack(p_so_large_pw->segp,
-				    p_so_large_pw->datatype_offset, &last,
-				    p_so_large_pw->v[0].iov_base);
-		  p_so_large_pw->v[0].iov_len = last-p_so_large_pw->datatype_offset;
+		  p_large_pw->datatype_copied_buf = tbx_true;
+		  p_large_pw->v[0].iov_base = TBX_MALLOC(p_large_pw->length);
+		  CCSI_Segment_pack(p_large_pw->segp,
+				    p_large_pw->datatype_offset, &last,
+				    p_large_pw->v[0].iov_base);
+		  p_large_pw->v[0].iov_len = last-p_large_pw->datatype_offset;
 		  nb_entries = 1;
 		}
-	      p_so_large_pw->length = last - p_so_large_pw->datatype_offset;
-	      p_so_large_pw->v_nb += nb_entries;
-	      p_so_large_pw->datatype_offset = last;
+	      p_large_pw->length = last - p_large_pw->datatype_offset;
+	      p_large_pw->v_nb += nb_entries;
+	      p_large_pw->datatype_offset = last;
 	    }
 	  
 	  /* Send the data */
-	  nm_core_post_send(p_gate, p_so_large_pw, header->trk_id, header->drv_id);
+	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
 	  header->proto_id = NM_SO_PROTO_CTRL_UNUSED; /* mark as read */
 	  return;
 	}
@@ -532,12 +534,12 @@ static void ack_callback(struct nm_pkt_wrap *p_pw, struct nm_so_ctrl_ack_header*
   TBX_FAILURE("PANIC!\n");
 }
 
-static void ack_chunk_callback(struct nm_pkt_wrap *p_pw,
+static void ack_chunk_callback(struct nm_pkt_wrap *p_ack_pw,
 			       nm_tag_t tag_id, uint8_t seq, uint32_t chunk_offset,
 			       struct nm_so_ctrl_ack_chunk_header*header)
 {
-  struct nm_gate *p_gate = p_pw->p_gate;
-  struct nm_pkt_wrap *p_so_large_pw, *p_so_large_pw2;
+  struct nm_gate *p_gate = p_ack_pw->p_gate;
+  struct nm_pkt_wrap *p_large_pw, *p_large_pw2;
   const nm_tag_t tag = tag_id - 128;
   const uint32_t chunk_len = header->chunk_len;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
@@ -545,74 +547,73 @@ static void ack_chunk_callback(struct nm_pkt_wrap *p_pw,
   NM_SO_TRACE("ACK_CHUNK completed for tag = %d, track_id = %u, seq = %u, chunk_len = %u, chunk_offset = %u\n",
 	      tag, header->trk_id, seq, chunk_len, chunk_offset);
 
-  list_for_each_entry(p_so_large_pw, &p_so_tag->pending_large_send, link) {
+  list_for_each_entry(p_large_pw, &p_so_tag->pending_large_send, link) {
     NM_SO_TRACE("Searching the pw corresponding to the ack_chunk - cur_seq = %d - cur_offset = %d\n",
-		p_so_large_pw->seq, p_so_large_pw->chunk_offset);
+		p_large_pw->seq, p_large_pw->chunk_offset);
 
-    if(p_so_large_pw->seq == seq && p_so_large_pw->chunk_offset == chunk_offset) {
-      list_del(&p_so_large_pw->link);
+    if(p_large_pw->seq == seq && p_large_pw->chunk_offset == chunk_offset) {
+      list_del(&p_large_pw->link);
 
       // Les données à envoyer sont décrites par un datatype
       if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE) {
 
-        int length = p_so_large_pw->length;
-        int32_t first = p_so_large_pw->datatype_offset;
+        int length = p_large_pw->length;
+        int32_t first = p_large_pw->datatype_offset;
         int32_t last  = first + chunk_len;
-        int nb_entries = 1;
         int nb_blocks = 0;
-        CCSI_Segment_count_contig_blocks(p_so_large_pw->segp, first, &last, &nb_blocks);
-        nb_entries = NM_SO_PREALLOC_IOV_LEN - p_so_large_pw->v_nb;
+        CCSI_Segment_count_contig_blocks(p_large_pw->segp, first, &last, &nb_blocks);
+        int nb_entries = p_large_pw->v_size - p_large_pw->v_nb;
 
-        // dans p_so_large_pw, je pack les données à émettre pour qu'il y en est chunk_len o
+        // dans p_large_pw, je pack les données à émettre pour qu'il y en ait chunk_len o
         if(nb_blocks < nb_entries){
-          CCSI_Segment_pack_vector(p_so_large_pw->segp,
+          CCSI_Segment_pack_vector(p_large_pw->segp,
                                    first, (DLOOP_Offset *)&last,
-                                   (DLOOP_VECTOR *)p_so_large_pw->v,
+                                   (DLOOP_VECTOR *)p_large_pw->v,
                                    &nb_entries);
-          NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n", nb_entries, p_so_large_pw->datatype_offset, last, last-p_so_large_pw->datatype_offset);
+          NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n", nb_entries, p_large_pw->datatype_offset, last, last-p_large_pw->datatype_offset);
         } else {
           // on a pas assez d'entrées dans notre pw pour pouvoir envoyer tout en 1 seule fois
           // donc on copie en contigu et on envoie
-          p_so_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
+          p_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
 
-          CCSI_Segment_pack(p_so_large_pw->segp, first, &last, p_so_large_pw->v[0].iov_base);
-          p_so_large_pw->v[0].iov_len = last-first;
+          CCSI_Segment_pack(p_large_pw->segp, first, &last, p_large_pw->v[0].iov_base);
+          p_large_pw->v[0].iov_len = last-first;
           nb_entries = 1;
         }
 
-        p_so_large_pw->length = last - first;
-        p_so_large_pw->v_nb += nb_entries;
-        p_so_large_pw->datatype_offset = last;
+        p_large_pw->length = last - first;
+        p_large_pw->v_nb += nb_entries;
+        p_large_pw->datatype_offset = last;
 
         if(chunk_offset + chunk_len < length){
-          //dans p_so_large_pw2, je laisse la fin du segment
-          nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_large_pw2);
-          p_so_large_pw2->p_gate   = p_so_large_pw->p_gate;
-          p_so_large_pw2->proto_id = p_so_large_pw->proto_id;
-          p_so_large_pw2->seq      = p_so_large_pw->seq;
-          p_so_large_pw2->length   = length;
-          p_so_large_pw2->v_nb     = 0;
-          p_so_large_pw2->segp     = p_so_large_pw->segp;
-          p_so_large_pw2->datatype_offset = last;
-          p_so_large_pw2->chunk_offset = p_so_large_pw2->datatype_offset;
+          //dans p_large_pw2, je laisse la fin du segment
+          nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_large_pw2);
+          p_large_pw2->p_gate   = p_large_pw->p_gate;
+          p_large_pw2->proto_id = p_large_pw->proto_id;
+          p_large_pw2->seq      = p_large_pw->seq;
+          p_large_pw2->length   = length;
+          p_large_pw2->v_nb     = 0;
+          p_large_pw2->segp     = p_large_pw->segp;
+          p_large_pw2->datatype_offset = last;
+          p_large_pw2->chunk_offset = p_large_pw2->datatype_offset;
 
-          list_add(&p_so_large_pw2->link, &p_so_tag->pending_large_send);
+          list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
         }
 
       // Les données sont envoyées depuis un buffer contigu ou un iov
       } else {
-        if(chunk_len < p_so_large_pw->length){
-	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_so_large_pw,
+        if(chunk_len < p_large_pw->length){
+	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw,
 	  		p_gate->id, 1/* large output list*/);
-          nm_so_pw_split(p_so_large_pw, &p_so_large_pw2, chunk_len);
-	  FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT, p_so_large_pw,
-	  		p_so_large_pw2, chunk_len, p_gate->id, 1/* outlist*/);
-          list_add(&p_so_large_pw2->link, &p_so_tag->pending_large_send);
+          nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
+	  FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT, p_large_pw,
+	  		p_large_pw2, chunk_len, p_gate->id, 1/* outlist*/);
+          list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
         }
       }
 
       /* Send the data */
-      nm_core_post_send(p_gate, p_so_large_pw, header->trk_id, header->drv_id);
+      nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
       header->proto_id = NM_SO_PROTO_CTRL_UNUSED;
       return;
     }

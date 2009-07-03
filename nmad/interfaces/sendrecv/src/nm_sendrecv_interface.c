@@ -276,8 +276,6 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data, len, p_request);
 
-  assert((sending_type != nm_sr_iov_transfer) || (len < NM_SO_PREALLOC_IOV_LEN));
-
   seq = p_so_tag->send_seq_number++;
 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);

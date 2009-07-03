@@ -37,16 +37,17 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
                                       void *data, uint32_t len,
                                       uint32_t chunk_offset);
 
-static int store_iov_waiting_transfer(struct nm_gate *p_gate,
-                                      nm_tag_t tag, uint8_t seq, uint32_t chunk_offset,
-                                      struct iovec *iov, int nb_entries, uint32_t pending_len,
-                                      uint32_t first_iov_offset);
-
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
                                                  nm_tag_t tag, uint8_t seq,
                                                  uint32_t len, uint32_t chunk_offset,
                                                  struct DLOOP_Segment *segp);
 
+static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
+{
+  assert(p_pw->trk_id == NM_TRK_LARGE);
+  assert(p_pw->p_drv != NULL);
+  list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
+}
 
 /* ********************************************************* */
 
@@ -132,25 +133,23 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
                       uint32_t chunk_offset,
                       uint8_t is_last_chunk)
 {
-  struct nm_so_sched *p_so_sched = &p_gate->p_core->so_sched;
   int err;
-  struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_so_sched->any_src, tag) : NULL;
+  struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag) : NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  nm_so_status_t *status = NULL;
-  if(is_any_src){
-    status = &(any_src->status);
-  } else {
-    status = &(p_so_tag->status[seq]);
-  }
+  nm_so_status_t *status = is_any_src ? &(any_src->status) : &(p_so_tag->status[seq]);
 
-  // Update the real size to receive
-  if(is_last_chunk){
-    if(is_any_src){
-      any_src->expected_len = chunk_offset + len;
-    } else {
-      p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
+  /* Update the real size to receive */
+  if(is_last_chunk)
+    {
+      if(is_any_src)
+	{
+	  any_src->expected_len = chunk_offset + len;
+	} 
+      else 
+	{
+	  p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
+	}
     }
-  }
 
   if(is_any_src)
     {
@@ -171,38 +170,29 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
       any_src->p_gate = p_gate;
       any_src->seq = seq;
     }
-
-  // 1) The final destination of the data is desribed by an iov
-  if(*status & NM_SO_STATUS_UNPACK_IOV){
-    struct iovec *iov = NULL;
-
-    if(is_any_src){
-      iov = any_src->data;
-    } else {
-      iov = p_so_tag->recv[seq].unpack_here.data;
+  
+  /* 1) The final destination of the data is an iov */
+  if(*status & NM_SO_STATUS_UNPACK_IOV)
+    {
+      struct iovec *iov = is_any_src ?
+	any_src->data : p_so_tag->recv[seq].unpack_here.data;
+      err = init_large_iov_recv(p_gate, tag, seq, iov, len, chunk_offset);
+      
     }
-
-    err = init_large_iov_recv(p_gate, tag, seq, iov, len, chunk_offset);
-
-
-  // 2) The final destination of the data is desribed by a datatype
-  } else if(*status & NM_SO_STATUS_IS_DATATYPE){
-    err = init_large_datatype_recv(is_any_src, p_gate, tag, seq, len, chunk_offset);
-
-  // 3) The final destination of the data is a contiguous buffer
-  } else {
-    void *data = NULL;
-    NM_SO_TRACE("RDV_sucess - contiguous data with tag %d , seq %d, chunk_offset %d, any_src %d\n",
-                tag, seq, chunk_offset, is_any_src);
-
-    if(is_any_src){
-      data = any_src->data + chunk_offset;
-    } else {
-      data = p_so_tag->recv[seq].unpack_here.data + chunk_offset;
+  /* 2) The final destination of the data is a datatype */
+  else if(*status & NM_SO_STATUS_IS_DATATYPE)
+    {
+      err = init_large_datatype_recv(is_any_src, p_gate, tag, seq, len, chunk_offset);
     }
-
-    err = init_large_contiguous_recv(p_gate, tag, seq, data, len, chunk_offset);
-  }
+  /* 3) The final destination of the data is a contiguous buffer */
+  else
+    {
+      void *data = is_any_src ?
+	( any_src->data + chunk_offset) : (p_so_tag->recv[seq].unpack_here.data + chunk_offset);
+      NM_SO_TRACE("RDV_sucess - contiguous data with tag %d , seq %d, chunk_offset %d, any_src %d\n",
+		  tag, seq, chunk_offset, is_any_src);
+      err = init_large_contiguous_recv(p_gate, tag, seq, data, len, chunk_offset);
+    }
 
   return err;
 }
@@ -220,7 +210,9 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
 
 //************ IOV ************/
 
-/* fragment d'un message à envoyer qui s'étend sur plusieurs entrées de l'iov de réception*/
+/** The received rdv describes a fragment 
+ * (that may span across multiple entries of the recv-side iovec)
+ */
 static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset)
 {
@@ -230,93 +222,90 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq
   int nb_chunks = 1;
   uint32_t offset = 0;
   int i = 0;
-
-  /* Go to the right iovec entry */
+ 
+  /* find the iovec entry for the given chunk_offset */
   while(offset + iov[i].iov_len <= chunk_offset)
     {
       offset += iov[i].iov_len;
       i++;
     }
+
   if(offset + iov[i].iov_len >= chunk_offset + len)
     {
-    /* Data are contiguous */
+      /* Single entry- regular ack */
       strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, &chunk);
-      
-      nm_so_post_large_recv(p_gate, &chunk, tag+128, seq,
-			    iov[i].iov_base + (chunk_offset - offset));
-      
+      nm_so_post_large_recv(p_gate, &chunk, tag+128, seq, iov[i].iov_base + (chunk_offset - offset));
       /* Launch the ACK */
       nm_so_build_multi_ack(p_gate, tag+128, seq, chunk_offset, nb_chunks, &chunk);
-
-    goto out;
-  }
-
-  /* Data are on several entries of the iovec */
-  union nm_so_generic_ctrl_header ctrl[NM_SO_PREALLOC_IOV_LEN];
-  uint32_t pending_len = len;
-  int nb_entries = 1;
-  uint32_t cur_len = 0;
-
+    }
+  else
+    {
+      /* Data spans across multiples entries of the iovec */
+      nm_so_generic_ctrl_header_t ctrl[NM_SO_PREALLOC_IOV_LEN];
+      uint32_t pending_len = len;
+      int nb_entries = 1;
+      uint32_t cur_len = 0;
+      
 #warning TODO:multirail
-  uint32_t chunk_len = iov[i].iov_len + (chunk_offset - offset);
 
-  int err = strategy->driver->rdv_accept(strategy->_status, p_gate, chunk_len, &nb_chunks, &chunk);
-  if(err != NM_ESUCCESS)
-    {
-      /* No free track */
-      err = store_iov_waiting_transfer(p_gate,
-				       tag + 128, seq, chunk_offset,
-				       &iov[i], nb_entries, pending_len,
-				       iov[i].iov_len + (chunk_offset - offset));
-      goto out;
-    }
-  nm_so_post_large_recv(p_gate, &chunk,
-                        tag+128, seq,
-                        iov[i].iov_base + (chunk_offset - offset));
-  nm_so_add_ack_chunk(&ctrl[nb_entries], &chunk);
-
-  nb_entries++;
-  pending_len -= chunk_len;
-  offset += iov[i].iov_len;
-  cur_len += chunk_len;
-  i++;
-
-  while(pending_len)
-    {
-      /* We ask the current strategy to find an available track
-	 for transfering this large data chunk.*/
-      chunk_len = iov[i].iov_len;
-      err = strategy->driver->rdv_accept(strategy->_status, p_gate, chunk_len, &nb_chunks, &chunk);
-      if (err != NM_ESUCCESS)
+      int err = NM_ESUCCESS;
+      while(err == NM_ESUCCESS && pending_len > 0)
 	{
-	  /* No free track */
-	  err = store_iov_waiting_transfer(p_gate,
-					   tag + 128, seq, chunk_offset+cur_len,
-					   &iov[i], nb_entries, pending_len, 0);
-	  goto ack_to_send;
+	  const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry, for partial entries */
+	  const uint32_t chunk_len = iov[i].iov_len - iov_offset;
+	  err = strategy->driver->rdv_accept(strategy->_status, p_gate, chunk_len, &nb_chunks, &chunk);
+	  if(err != NM_ESUCCESS)
+	    {
+	      /* no free track- store pending large recv for processing later  */
+	      struct nm_pkt_wrap *p_pw = NULL;
+	      nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+	      p_pw->proto_id = tag + 128;
+	      p_pw->seq      = seq;
+	      p_pw->length   = pending_len;
+	      p_pw->v_nb     = nb_entries;
+	      p_pw->chunk_offset = chunk_offset + cur_len;
+	      /* TODO (AD)- convert this iov filling into nm_so_pw_add_data for resizable iovec */
+	      p_pw->v[0].iov_len  = iov[i].iov_len - iov_offset;
+	      p_pw->v[0].iov_base = iov[i].iov_base + iov_offset;
+	      pending_len -= chunk_len;
+	      int j;
+	      for(j = 1; pending_len > 0; j++)
+		{
+		  p_pw->v[j].iov_len  = iov[j+i].iov_len;
+		  p_pw->v[j].iov_base = iov[j+i].iov_base;
+		  cur_len     -= p_pw->v[j].iov_len;
+		  pending_len -= p_pw->v[j].iov_len;
+		}
+	      nm_so_pw_assign(p_pw, chunk.trk_id, chunk.drv_id, p_gate);
+	      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
+	    }
+	  else
+	    {
+	      /* post a recv and prepare an ack for the given chunk */
+	      nm_so_post_large_recv(p_gate, &chunk, tag + 128, seq, iov[i].iov_base + iov_offset);
+	      nm_so_add_ack_chunk(&ctrl[nb_entries], &chunk);
+	      nb_entries++;
+	      pending_len -= chunk_len;
+	      offset += iov[i].iov_len;
+	      cur_len += chunk_len;
+	      i++;
+	    }
 	}
-      nm_so_post_large_recv(p_gate, &chunk, tag+128, seq, iov[i].iov_base);
-      nm_so_add_ack_chunk(&ctrl[nb_entries], &chunk);
-      nb_entries++;
-      pending_len -= chunk_len;
-      offset += iov[i].iov_len;
-      cur_len += chunk_len;
-      i++;
+      nb_entries--;
+      if(nb_entries > 0)
+	{
+	  /* Launch the acks */
+	  nm_so_init_multi_ack(&ctrl[0], nb_entries, tag+128, seq, chunk_offset);
+	  strategy->driver->pack_extended_ctrl(strategy->_status, p_gate,
+					       NM_SO_CTRL_HEADER_SIZE * nb_entries, &ctrl[0], &p_so_acks_pw);
+	  for(i = 0; i < nb_entries; i++)
+	    {
+	      strategy->driver->pack_ctrl_chunk(strategy->_status, p_so_acks_pw, &ctrl[i+1]);
+	    }
+	  strategy->driver->pack_extended_ctrl_end(strategy->_status, p_gate, p_so_acks_pw);
+	}
     }
-  nb_entries--;
-
- ack_to_send:
-  /* Launch the acks */
-  nm_so_init_multi_ack(&ctrl[0], nb_entries-1, tag+128, seq, chunk_offset);
-  strategy->driver->pack_extended_ctrl(strategy->_status, p_gate,
-				       NM_SO_CTRL_HEADER_SIZE * nb_entries, &ctrl[0], &p_so_acks_pw);
-  for(i = 1; i < nb_entries; i++)
-    {
-      strategy->driver->pack_ctrl_chunk(strategy->_status, p_so_acks_pw, &ctrl[i]);
-    }
-  strategy->driver->pack_extended_ctrl_end(strategy->_status, p_gate, p_so_acks_pw);
-
- out:
+  
   return NM_ESUCCESS;
 }
 
@@ -356,7 +345,7 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 					    0, 0, NM_SO_DATA_DONT_USE_HEADER,
 					    &p_so_pw);
 	  p_so_pw->segp = segp;
-	  nm_core_post_recv(p_so_pw, p_gate, chunk.trk_id, chunk.drv_id);
+	  nm_core_post_recv(p_so_pw, p_gate, chunk. trk_id, chunk.drv_id);
 	  if(is_any_src)
 	    {
 	      nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag-128)->status |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
@@ -454,7 +443,7 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_s
   }
 
   /* No free track: postpone the ack */
-  list_add_tail(&p_so_pw->link, &p_gate->pending_large_recv);
+  nm_so_pw_store_pending_large_recv(p_so_pw, p_gate);
 
  out:
   return err;
@@ -500,10 +489,11 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
   else
     {
       /* No free track: postpone the ack */
-      struct nm_pkt_wrap *p_so_pw = NULL;
+      struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc_and_fill_with_data(tag+128, seq, data, len, chunk_offset, 0,
-					NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
-      list_add_tail(&p_so_pw->link, &p_gate->pending_large_recv);
+					NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+      nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
+      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
   return err;
 }
@@ -514,63 +504,24 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
 /******* Functions which allow to store the data while there is not any available NIC ****/
 /*****************************************************************************************/
 
-static int store_iov_waiting_transfer(struct nm_gate *p_gate,
-                                      nm_tag_t tag, uint8_t seq, uint32_t chunk_offset,
-                                      struct iovec *iov, int nb_entries, uint32_t pending_len,
-                                      uint32_t first_iov_offset){
-  struct nm_pkt_wrap *p_so_pw = NULL;
-  uint32_t cur_len = pending_len;
-  int err, i;
-
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  p_so_pw->p_gate   = p_gate;
-  p_so_pw->proto_id = tag;
-  p_so_pw->seq      = seq;
-  p_so_pw->length   = pending_len;
-  p_so_pw->v_nb     = nb_entries;
-
-  p_so_pw->chunk_offset = chunk_offset;
-
-  p_so_pw->v[0].iov_len  = iov[0].iov_len - first_iov_offset;
-  p_so_pw->v[0].iov_base = iov[0].iov_base + first_iov_offset;
-  cur_len -= p_so_pw->v[0].iov_len;
-
-  for(i = 1; i < nb_entries-1; i++){
-    p_so_pw->v[i].iov_len  = iov[i].iov_len;
-    p_so_pw->v[i].iov_base = iov[i].iov_base;
-    cur_len -= p_so_pw->v[i].iov_len;
-  }
-
-  p_so_pw->v[i].iov_len  = cur_len;
-  p_so_pw->v[i].iov_base = iov[i].iov_base;
-
-  list_add_tail(&p_so_pw->link, &p_gate->pending_large_recv);
-
-  err = NM_ESUCCESS;
- out:
-  return err;
-}
 
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
                                                  nm_tag_t tag, uint8_t seq,
                                                  uint32_t len, uint32_t chunk_offset,
                                                  struct DLOOP_Segment *segp){
-  struct nm_pkt_wrap *p_so_pw = NULL;
+  struct nm_pkt_wrap *p_pw = NULL;
 
-  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
 
-  p_so_pw->p_gate   = p_gate;
-  p_so_pw->proto_id = tag;
-  p_so_pw->seq      = seq;
-  p_so_pw->length   = len;
-  p_so_pw->v_nb     = 0;
-  p_so_pw->segp     = segp;
-  p_so_pw->chunk_offset = chunk_offset;
+  p_pw->p_gate   = p_gate;
+  p_pw->proto_id = tag;
+  p_pw->seq      = seq;
+  p_pw->length   = len;
+  p_pw->v_nb     = 0;
+  p_pw->segp     = segp;
+  p_pw->chunk_offset = chunk_offset;
 
-  list_add_tail(&p_so_pw->link, &p_gate->pending_large_recv);
+  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
 
   return NM_ESUCCESS;
 }
@@ -586,8 +537,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
       union nm_so_generic_ctrl_header ctrl;
       struct nm_pkt_wrap *p_large_pw = nm_l2so(p_gate->pending_large_recv.next);
       NM_SO_TRACE("Retrieve wrapper waiting for a reception\n");
-      if(nm_so_tag_get(&p_gate->tags, p_large_pw->proto_id - 128)->status[p_large_pw->seq]
-	 & NM_SO_STATUS_UNPACK_IOV
+      if(nm_so_tag_get(&p_gate->tags, p_large_pw->proto_id - 128)->status[p_large_pw->seq] & NM_SO_STATUS_UNPACK_IOV
 	 || nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->proto_id-128)->status & NM_SO_STATUS_UNPACK_IOV)
 	{
 	  /* ** iov to be completed */
@@ -597,7 +547,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
 	      /* Only post the first entry */
 	      nm_so_pw_split(p_large_pw, &p_large_pw2, p_large_pw->v[0].iov_len);
-	      list_add_tail(&p_large_pw2->link, &p_gate->pending_large_recv);
+	      nm_so_pw_store_pending_large_recv(p_large_pw2, p_gate);
 	    }
 	  struct nm_rdv_chunk chunk = {
 	    .drv_id = p_large_pw->p_drv->id,
@@ -607,8 +557,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  nm_so_direct_post_large_recv(p_gate, chunk.drv_id, p_large_pw);
 	  
 	  /* Launch the ACK */
-	  nm_so_build_multi_ack(p_gate, p_large_pw->proto_id, p_large_pw->seq, p_large_pw->chunk_offset, 
-				1, &chunk);
+	  nm_so_build_multi_ack(p_gate, p_large_pw->proto_id, p_large_pw->seq, p_large_pw->chunk_offset, 1, &chunk);
 	}
       else if ((nm_so_tag_get(&p_gate->tags, p_large_pw->proto_id - 128)->status[p_large_pw->seq]
 		& NM_SO_STATUS_IS_DATATYPE

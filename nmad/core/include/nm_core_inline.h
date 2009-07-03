@@ -27,18 +27,11 @@
  * without PIOMan).
  */
 static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
-					     nm_trk_id_t trk_id, int drv_id)
+					     nm_trk_id_t trk_id, nm_drv_id_t drv_id)
 {
-  p_pw->p_gate = p_gate;
-
-  /* Packet is assigned to given driver */
-  p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
-  /* Packet is assigned to given track */
-  p_pw->trk_id = trk_id;
-
+  nm_so_pw_assign(p_pw, trk_id, drv_id, p_gate);
   /* append pkt to scheduler post list */
   tbx_slist_append(p_gate->p_core->so_sched.post_recv_req, p_pw);
-
   p_gate->active_recv[drv_id][trk_id] = 1;
 }
 

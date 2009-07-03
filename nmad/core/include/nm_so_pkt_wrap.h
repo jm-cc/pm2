@@ -33,10 +33,18 @@ static __inline__ uint32_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_
   return NM_SO_MAX_UNEXPECTED - ((vec->iov_base + vec->iov_len) - (void *)p_pw->buf);
 }
 
-static __inline__
-uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_so_pw)
+static __inline__ uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_so_pw)
 {
   return NM_SO_MAX_UNEXPECTED - p_so_pw->length;
+}
+
+static __inline__ void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, nm_drv_id_t drv_id, nm_gate_t p_gate)
+{
+  p_pw->p_gate = p_gate;
+   /* Packet is assigned to given driver */
+  p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
+  /* Packet is assigned to given track */
+  p_pw->trk_id = trk_id;
 }
 
 int nm_so_pw_init(struct nm_core *p_core);

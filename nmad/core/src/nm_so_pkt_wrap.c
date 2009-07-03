@@ -360,12 +360,12 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) /* ** Data with header */
     {
       /* the headers are always in the first entries of the struct iovec tab */
-      struct iovec*vec = &p_pw->v[0];
+      struct iovec*hvec = &p_pw->v[0];
       if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
 	{
 	  /* Small data case */
-	  struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
-	  vec->iov_len += NM_SO_DATA_HEADER_SIZE;
+	  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
+	  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	  if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
 	    {
 	      /* Data immediately follows its header */
@@ -378,11 +378,11 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 		  p_pw->data_to_offload = tbx_true;
 		  p_pw->v[p_pw->v_nb].iov_base = data;
 		  p_pw->v[p_pw->v_nb].iov_len  = len;
-		  p_pw->v_nb ++;
+		  p_pw->v_nb++;
 #else
-		  memcpy(vec->iov_base + vec->iov_len, data, len);
+		  memcpy(hvec->iov_base + hvec->iov_len, data, len);
 #endif
-		  vec->iov_len += size;
+		  hvec->iov_len += size;
 		}
 	      p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
 	    }
@@ -407,16 +407,16 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	     to the previous other headers. */
 	  union nm_so_generic_ctrl_header *src, *dst;
 	  src = (void*)data;
-	  dst = vec->iov_base + vec->iov_len;
+	  dst = hvec->iov_base + hvec->iov_len;
 	  /* Copy ctrl header */
 	  *dst = *src;
-	  vec->iov_len += NM_SO_CTRL_HEADER_SIZE;
+	  hvec->iov_len += NM_SO_CTRL_HEADER_SIZE;
 	  p_pw->length += NM_SO_CTRL_HEADER_SIZE;
 	}
     }
   else /* ** Add raw data to pw, without header */
     {
-      struct iovec*vec = p_pw->v + p_pw->v_nb++;
+      struct iovec*vec = &p_pw->v[p_pw->v_nb++];
       vec->iov_base = (void*)data;
       vec->iov_len = len;
       p_pw->proto_id = proto_id;
@@ -671,8 +671,8 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 
   struct iovec *vec = p_pw->v;
   void *ptr = vec->iov_base;
-  unsigned long remaining_len = ((struct nm_so_global_header *)ptr)->len - NM_SO_GLOBAL_HEADER_SIZE;
-
+  const struct nm_so_global_header*gh = ptr;
+  unsigned long remaining_len = gh->len - NM_SO_GLOBAL_HEADER_SIZE;
   ptr += NM_SO_GLOBAL_HEADER_SIZE;
 
   while(remaining_len)
@@ -783,13 +783,13 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      uint8_t seq = ch->ma.seq;
 	      uint32_t chunk_offset = ch->ma.chunk_offset;
 	      int i;
-	      
 	      ptr += NM_SO_CTRL_HEADER_SIZE;
 	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 	      ch = ptr;
 	      if (!ack_chunk_handler)
 		{
 		  NM_SO_TRACE("Sent completed of a multi-ack\n");
+		    *proto_id = NM_SO_PROTO_CTRL_UNUSED;
 		  for(i = 0; i < nb_chunks; i++) {
 		    ptr += NM_SO_CTRL_HEADER_SIZE;
 		    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
@@ -807,7 +807,6 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		      }
 		      NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK received - tag_id = %u, seq = %u - trk_id = %u, chunk_len =%u\n",
 				  tag_id, seq, ch->ac.trk_id, ch->ac.chunk_len);
-		      
 		      ack_chunk_handler(p_pw, tag_id, seq, chunk_offset, &ch->ac);
 		      chunk_offset += ch->ac.chunk_len;
 		    next:

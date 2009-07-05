@@ -472,7 +472,7 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate = p_ack_pw->p_gate;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  
+
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   const struct nm_so_event_s event =
@@ -560,7 +560,8 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 	  return;
 	}
     }
-  TBX_FAILURE("PANIC!\n");
+  TBX_FAILUREF("PANIC- ack_callback cannot find pending packet wrapper for seq = %d; offset = %d!\n",
+	      seq, chunk_offset);
 }
 
 /** Process a complete incoming request.

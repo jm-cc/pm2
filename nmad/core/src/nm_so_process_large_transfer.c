@@ -63,6 +63,7 @@ static void nm_so_build_multi_ack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t 
       NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK - drv_id = %d, trk_id = %d, chunk_len =%u\n",
 		  chunks[i].drv_id, chunks[i].trk_id, chunks[i].len);
       nm_so_post_ack(p_gate, tag, seq, chunks[i].drv_id, chunks[i].trk_id, chunk_offset, chunks[i].len);
+      chunk_offset += chunks[i].len;
     }
 }
 

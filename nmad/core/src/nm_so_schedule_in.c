@@ -563,93 +563,6 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
   TBX_FAILURE("PANIC!\n");
 }
 
-static void ack_chunk_callback(struct nm_pkt_wrap *p_ack_pw,
-			       nm_tag_t tag_id, uint8_t seq, uint32_t chunk_offset,
-			       struct nm_so_ctrl_ack_chunk_header*header)
-{
-  struct nm_gate *p_gate = p_ack_pw->p_gate;
-  struct nm_pkt_wrap *p_large_pw, *p_large_pw2;
-  const nm_tag_t tag = tag_id - 128;
-  const uint32_t chunk_len = header->chunk_len;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-
-  NM_SO_TRACE("ACK_CHUNK completed for tag = %d, track_id = %u, seq = %u, chunk_len = %u, chunk_offset = %u\n",
-	      tag, header->trk_id, seq, chunk_len, chunk_offset);
-
-  list_for_each_entry(p_large_pw, &p_so_tag->pending_large_send, link) {
-    NM_SO_TRACE("Searching the pw corresponding to the ack_chunk - cur_seq = %d - cur_offset = %d\n",
-		p_large_pw->seq, p_large_pw->chunk_offset);
-
-    if(p_large_pw->seq == seq && p_large_pw->chunk_offset == chunk_offset) {
-      list_del(&p_large_pw->link);
-
-      // Les données à envoyer sont décrites par un datatype
-      if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE) {
-
-        int length = p_large_pw->length;
-        int32_t first = p_large_pw->datatype_offset;
-        int32_t last  = first + chunk_len;
-        int nb_blocks = 0;
-        CCSI_Segment_count_contig_blocks(p_large_pw->segp, first, &last, &nb_blocks);
-        int nb_entries = p_large_pw->v_size - p_large_pw->v_nb;
-
-        // dans p_large_pw, je pack les données à émettre pour qu'il y en ait chunk_len o
-        if(nb_blocks < nb_entries){
-          CCSI_Segment_pack_vector(p_large_pw->segp,
-                                   first, (DLOOP_Offset *)&last,
-                                   (DLOOP_VECTOR *)p_large_pw->v,
-                                   &nb_entries);
-          NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n", nb_entries, p_large_pw->datatype_offset, last, last-p_large_pw->datatype_offset);
-        } else {
-          // on a pas assez d'entrées dans notre pw pour pouvoir envoyer tout en 1 seule fois
-          // donc on copie en contigu et on envoie
-          p_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
-
-          CCSI_Segment_pack(p_large_pw->segp, first, &last, p_large_pw->v[0].iov_base);
-          p_large_pw->v[0].iov_len = last-first;
-          nb_entries = 1;
-        }
-
-        p_large_pw->length = last - first;
-        p_large_pw->v_nb += nb_entries;
-        p_large_pw->datatype_offset = last;
-
-        if(chunk_offset + chunk_len < length){
-          //dans p_large_pw2, je laisse la fin du segment
-          nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_large_pw2);
-          p_large_pw2->p_gate   = p_large_pw->p_gate;
-          p_large_pw2->proto_id = p_large_pw->proto_id;
-          p_large_pw2->seq      = p_large_pw->seq;
-          p_large_pw2->length   = length;
-          p_large_pw2->v_nb     = 0;
-          p_large_pw2->segp     = p_large_pw->segp;
-          p_large_pw2->datatype_offset = last;
-          p_large_pw2->chunk_offset = p_large_pw2->datatype_offset;
-
-          list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
-        }
-
-      // Les données sont envoyées depuis un buffer contigu ou un iov
-      } else {
-        if(chunk_len < p_large_pw->length){
-	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw,
-	  		p_gate->id, 1/* large output list*/);
-          nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
-	  FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_SPLIT, p_large_pw,
-	  		p_large_pw2, chunk_len, p_gate->id, 1/* outlist*/);
-          list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
-        }
-      }
-
-      /* Send the data */
-      nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
-      header->proto_id = NM_SO_PROTO_CTRL_UNUSED;
-      return;
-    }
-  }
-  TBX_FAILURE("PANIC!\n");
-}
-
 /** Process a complete incoming request.
  */
 int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw)
@@ -684,8 +597,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       nm_so_pw_iterate_over_headers(p_pw,
 				    data_completion_callback,
 				    rdv_callback,
-				    ack_callback,
-				    ack_chunk_callback);
+				    ack_callback);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

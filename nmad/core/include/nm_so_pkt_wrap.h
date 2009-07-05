@@ -157,23 +157,18 @@ typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_so_pw,
 				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_so_pw,
 				  struct nm_so_ctrl_ack_header*header);
-typedef void nm_so_pw_ack_chunk_handler(struct nm_pkt_wrap *p_so_pw,
-					nm_tag_t tag, uint8_t seq, uint32_t chunk_offset,
-					struct nm_so_ctrl_ack_chunk_header*header);
-int
-nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_so_pw,
-			      nm_so_pw_data_handler data_handler,
-			      nm_so_pw_rdv_handler rdv_handler,
-			      nm_so_pw_ack_handler ack_handler,
-                              nm_so_pw_ack_chunk_handler ack_chunk_handler);
 
-static __inline__
-int
-nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_so_pw)
+int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_so_pw,
+				  nm_so_pw_data_handler data_handler,
+				  nm_so_pw_rdv_handler rdv_handler,
+				  nm_so_pw_ack_handler ack_handler);
+
+static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_so_pw)
 {
-  if(!(--p_so_pw->header_ref_count)){
-    nm_so_pw_free(p_so_pw);
-  }
+  if(!(--p_so_pw->header_ref_count))
+    {
+      nm_so_pw_free(p_so_pw);
+    }
   return NM_ESUCCESS;
 }
 

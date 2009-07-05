@@ -27,8 +27,6 @@
 #define NM_SO_PROTO_DATA_FIRST   128
 #define NM_SO_PROTO_RDV          11
 #define NM_SO_PROTO_ACK          12
-#define NM_SO_PROTO_MULTI_ACK    13
-#define NM_SO_PROTO_ACK_CHUNK    14
 
 #define NM_SO_PROTO_DATA_UNUSED 2
 #define NM_SO_PROTO_CTRL_UNUSED 1
@@ -73,28 +71,11 @@ struct nm_so_ctrl_ack_header {
   uint32_t chunk_len;
 };
 
-struct nm_so_ctrl_multi_ack_header {
-  nm_tag_t proto_id;
-  uint8_t nb_chunks;
-  nm_tag_t tag_id;
-  uint8_t seq;
-  uint32_t chunk_offset;
-};
-
-struct nm_so_ctrl_ack_chunk_header {
-  nm_tag_t proto_id;
-  nm_trk_id_t trk_id;
-  nm_drv_id_t drv_id;
-  uint32_t chunk_len;
-};
-
 /** a unified control header type
  */
 union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header r;
   struct nm_so_ctrl_ack_header a;
-  struct nm_so_ctrl_multi_ack_header ma;
-  struct nm_so_ctrl_ack_chunk_header ac;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
@@ -105,9 +86,6 @@ typedef struct nm_so_data_header nm_so_data_header_t;
 
 #define NM_SO_DATA_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_data_header))
-
-#define NM_SO_DATATYPE_HEADER_SIZE \
-  nm_so_aligned(sizeof(struct nm_so_datatype_header))
 
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
@@ -143,25 +121,6 @@ static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag
   p_ctrl->a.drv_id   = drv_id;
   p_ctrl->a.chunk_offset = chunk_offset;
   p_ctrl->a.chunk_len = chunk_len;
-}
-
-static inline void nm_so_init_multi_ack(union nm_so_generic_ctrl_header*p_ctrl, int nb_chunks, nm_tag_t tag,
-					uint8_t seq, uint32_t chunk_offset)
-{
-  p_ctrl->ma.proto_id  = NM_SO_PROTO_MULTI_ACK;
-  p_ctrl->ma.nb_chunks = nb_chunks;
-  p_ctrl->ma.tag_id    = tag;
-  p_ctrl->ma.seq       = seq;
-  p_ctrl->ma.chunk_offset = chunk_offset;
-}
-
-static inline void nm_so_add_ack_chunk(union nm_so_generic_ctrl_header*p_ctrl,
-				       const struct nm_rdv_chunk*chunk)
-{
-  p_ctrl->ac.proto_id  = NM_SO_PROTO_ACK_CHUNK;
-  p_ctrl->ac.trk_id    = chunk->trk_id;
-  p_ctrl->ac.drv_id    = chunk->drv_id;
-  p_ctrl->ac.chunk_len = chunk->len;
 }
 
 #endif /* NM_SO_§HEADER_H */

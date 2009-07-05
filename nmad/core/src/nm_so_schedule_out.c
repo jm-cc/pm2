@@ -89,7 +89,7 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
     {
       NM_SO_TRACE("completed short msg- drv=%d trk=%d\n", p_pw->p_drv->id, p_pw->trk_id);
       
-      nm_so_pw_iterate_over_headers(p_pw, data_completion_callback, NULL, NULL, NULL);
+      nm_so_pw_iterate_over_headers(p_pw, data_completion_callback, NULL, NULL);
     } 
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

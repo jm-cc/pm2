@@ -170,7 +170,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       else
 	{
 	  /* send, no header -> for the large messages */
-	  
 	  p_pw = tbx_malloc(nm_so_pw_nohd_mem);
 	  if (!p_pw)
 	    {
@@ -656,8 +655,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 				  nm_so_pw_data_handler data_handler,
 				  nm_so_pw_rdv_handler rdv_handler,
-				  nm_so_pw_ack_handler ack_handler,
-				  nm_so_pw_ack_chunk_handler ack_chunk_handler)
+				  nm_so_pw_ack_handler ack_handler)
 {
 #ifdef NMAD_QOS
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pw->p_gate->strategy_receptacle;
@@ -751,8 +749,8 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 	      if(ack_handler)
 		{
-		  int r;
 #ifdef NMAD_QOS
+		  int r;
 		  if(strategy->driver->ack_callback != NULL)
 		    {
 		      ack_received = 1;
@@ -770,51 +768,6 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      else
 		{
 		  NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d, offset = %d\n", ch->a.tag_id, ch->a.seq, ch->a.chunk_offset);
-		}
-	    }
-	    break;
-	    
-	  case NM_SO_PROTO_MULTI_ACK:
-	    {
-	      union nm_so_generic_ctrl_header *ch = ptr;
-	      nm_tag_t *proto_id  = &ch->ma.proto_id;
-	      uint8_t nb_chunks = ch->ma.nb_chunks;
-	      nm_tag_t tag_id = ch->ma.tag_id;
-	      uint8_t seq = ch->ma.seq;
-	      uint32_t chunk_offset = ch->ma.chunk_offset;
-	      int i;
-	      ptr += NM_SO_CTRL_HEADER_SIZE;
-	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-	      ch = ptr;
-	      if (!ack_chunk_handler)
-		{
-		  NM_SO_TRACE("Sent completed of a multi-ack\n");
-		    *proto_id = NM_SO_PROTO_CTRL_UNUSED;
-		  for(i = 0; i < nb_chunks; i++) {
-		    ptr += NM_SO_CTRL_HEADER_SIZE;
-		    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-		  }
-		}
-	      else
-		{
-		  NM_SO_TRACE("NM_SO_PROTO_MULTI_ACK received - nb_acks = %u, tag_id = %u, seq = %u\n", nb_chunks, tag_id, seq);
-		  for(i = 0; i < nb_chunks; i++) 
-		    {
-		      if (ch->ac.proto_id == NM_SO_PROTO_CTRL_UNUSED)
-			goto next;
-		      if (ch->ac.proto_id != NM_SO_PROTO_ACK_CHUNK) {
-			TBX_FAILURE("Invalid header - ACK_CHUNK expected");
-		      }
-		      NM_SO_TRACE("NM_SO_PROTO_ACK_CHUNK received - tag_id = %u, seq = %u - trk_id = %u, chunk_len =%u\n",
-				  tag_id, seq, ch->ac.trk_id, ch->ac.chunk_len);
-		      ack_chunk_handler(p_pw, tag_id, seq, chunk_offset, &ch->ac);
-		      chunk_offset += ch->ac.chunk_len;
-		    next:
-		      ptr += NM_SO_CTRL_HEADER_SIZE;
-		      ch = ptr;
-		      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-		    }
-		  *proto_id = NM_SO_PROTO_CTRL_UNUSED;
 		}
 	    }
 	    break;

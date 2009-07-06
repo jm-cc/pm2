@@ -269,6 +269,8 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 
   nm_so_pw_finalize(p_pw);
 
+  assert(offset > 0 && offset < p_pw->length);
+
   err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw2);
   if(err != NM_ESUCCESS)
     goto err;

@@ -169,8 +169,6 @@ nm_core_driver_load_init(nm_core_t		 p_core,
   return nm_core_driver_load_init_with_params(p_core, driver, NULL, 0, p_id, p_url);
 }
 
-int nm_core_driver_exit	(nm_core_t p_core);
-
 
 int nm_core_gate_init(nm_core_t p_core,
 		      nm_gate_t *pp_gate);

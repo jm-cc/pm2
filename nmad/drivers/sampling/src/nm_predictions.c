@@ -31,79 +31,68 @@
 //#define STRAT_ISO_SPLIT
 //#define STRAT_HCW_SPLIT
 
-static nm_drv_id_t *ordered_drv_id_by_lat;
-static nm_drv_id_t *ordered_drv_id_by_bw;
+static struct
+{
+  nm_drv_id_t*drvs_by_lat;
+  nm_drv_id_t*drvs_by_bw;
+  double *drv_bws;
+  double *drv_lats;
+  int nb_drvs;
+} nm_ns = {
+  .drvs_by_lat = NULL,
+  .drvs_by_bw  = NULL,
+  .drv_bws     = NULL,
+  .drv_lats    = NULL,
+  .nb_drvs = 0
+};
+
 #ifdef SAMPLING
-static double *drv_bws;
-static double *drv_lats;
 #endif
 
 #ifdef SAMPLING
-static int compare_lat(const void *drv1, const void *drv2){
-
-  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] > 0)
+static int compare_lat(const void *drv1, const void *drv2)
+{
+  if(nm_ns.drv_lats[*(nm_drv_id_t *)drv2] - nm_ns.drv_lats[*(nm_drv_id_t *)drv1] > 0)
     return -1;
-  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] < 0)
+  if(nm_ns.drv_lats[*(nm_drv_id_t *)drv2] - nm_ns.drv_lats[*(nm_drv_id_t *)drv1] < 0)
     return 1;
   return 0;
 }
 #endif
 
-static int order_lat(int nb_drivers){
-  int i;
-
-  for(i = 0; i < nb_drivers; i++){
-    ordered_drv_id_by_lat[i] = i;
-  }
 #ifdef SAMPLING
-  qsort(ordered_drv_id_by_lat, nb_drivers, sizeof(*ordered_drv_id_by_lat), compare_lat);
-#endif
-
-#if 0
-  int k;
-  printf("Latence [qsnet en 0]\n");
-  for(k = 0; k < nb_drivers; k++)
-    printf("(%d) driver %d\n", k, ordered_drv_id_by_lat[k]);
-#endif
-
-  return NM_ESUCCESS;
-}
-
-#ifdef SAMPLING
-static int compare_bw(const void *drv1, const void *drv2){
-
-  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] > 0)
+static int compare_bw(const void *drv1, const void *drv2)
+{
+  if(nm_ns.drv_lats[*(nm_drv_id_t *)drv2] - nm_ns.drv_lats[*(nm_drv_id_t *)drv1] > 0)
     return 1;
-  if(drv_lats[*(nm_drv_id_t *)drv2] - drv_lats[*(nm_drv_id_t *)drv1] < 0)
+  if(nm_ns.drv_lats[*(nm_drv_id_t *)drv2] - nm_ns.drv_lats[*(nm_drv_id_t *)drv1] < 0)
     return -1;
   return 0;
 }
 #endif
 
-static int order_bw(int nb_drivers){
-  int i;
-
-  for(i = 0; i < nb_drivers; i++){
-    ordered_drv_id_by_bw[i] = i;
-  }
-
+static void nm_ns_cleanup(void)
+{
+  if(nm_ns.nb_drvs > 0)
+    {
+      TBX_FREE(nm_ns.drvs_by_lat);
+      nm_ns.drvs_by_lat = NULL;
+      TBX_FREE(nm_ns.drvs_by_bw);
+      nm_ns.drvs_by_bw = NULL;
 #ifdef SAMPLING
-  qsort(ordered_drv_id_by_bw, nb_drivers, sizeof(*ordered_drv_id_by_bw), compare_bw);
+      TBX_FREE(nm_ns.drv_lats);
+      nm_ns.drv_lats = NULL;
+      TBX_FREE(nm_ns.drv_bws);
+      nm_ns.drv_bws = NULL;
 #endif
-
-#if 0
-  int k;
-  printf("BW [mx en 0]\n");
-  for(k = 0; k < nb_drivers; k++)
-    printf("(%d) driver %d\n", k, ordered_drv_id_by_bw[k]);
-#endif
-
-  return NM_ESUCCESS;
+      nm_ns.nb_drvs = 0;
+    }
 }
 
-int
-nm_ns_init(struct nm_core *p_core){
-  int nb_drivers = p_core->nb_drivers;
+int nm_ns_update(struct nm_core *p_core)
+{
+  nm_ns_cleanup();
+  nm_ns.nb_drvs = p_core->nb_drivers;
 
 #ifdef SAMPLING
   struct nm_drv *p_drv = NULL;
@@ -111,82 +100,108 @@ nm_ns_init(struct nm_core *p_core){
   int i;
 
   /* 1 - recenser les bw et les latences */
-  for(i = 0; i < nb_drivers; i++){
-    p_drv = &p_core->driver_array[i];
-
-    bw_idx = (bw_idx > p_drv->driver->get_capabilities(p_drv)->nb_samplings ? bw_idx : p_drv->driver->get_capabilities(p_drv)->nb_samplings);
-  }
+  for(i = 0; i < nm_ns.nb_drvs; i++)
+    {
+      p_drv = &p_core->driver_array[i];
+      bw_idx = (bw_idx > p_drv->driver->get_capabilities(p_drv)->nb_samplings ? bw_idx : p_drv->driver->get_capabilities(p_drv)->nb_samplings);
+    }
   bw_idx -= 1;
 
   len = (1 << LAT_IDX);
 
-  drv_bws = TBX_MALLOC(nb_drivers * sizeof(double));
-  drv_lats = TBX_MALLOC(nb_drivers * sizeof(double));
-  for(i = 0; i < nb_drivers; i++){
-    p_drv = &p_core->driver_array[i];
-
-    drv_bws[i] = p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[bw_idx];
-    drv_lats[i] = len / p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX];
-
-    //printf("p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX] = %g\n", p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX]);
-  }
+  nm_ns.drv_bws = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
+  nm_ns.drv_lats = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
+  for(i = 0; i < nb_drivers; i++)
+    {
+      p_drv = &p_core->driver_array[i];
+      nm_ns.drv_bws[i] = p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[bw_idx];
+      nm_ns.drv_lats[i] = len / p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX];
+    }
 
 #if 0
   int k;
-  for(k = 0; k < nb_drivers; k++){
-    printf("drv_lats[%d] = %lf\n", k, drv_lats[k]);
-  }
-  for(k = 0; k < nb_drivers; k++){
-    printf("drv_bws[%d] = %lf\n", k, drv_bws[k]);
-  }
+  for(k = 0; k < nm_ns.nb_drvs; k++)
+    {
+      printf("drv_lats[%d] = %lf\n", k, nm_ns.drv_lats[k]);
+    }
+  for(k = 0; k < nm_ns.nb_drvs; k++)
+    {
+      printf("drv_bws[%d] = %lf\n", k, nm_ns.drv_bws[k]);
+    }
 #endif
 #endif
 
   /* 2 - ordonner les bw et les lats */
-  ordered_drv_id_by_bw  = TBX_MALLOC(nb_drivers * sizeof(nm_drv_id_t));
-  order_bw(nb_drivers);
+  nm_ns.drvs_by_bw  = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_id_t));
+  int i;
+  for(i = 0; i < nm_ns.nb_drvs; i++)
+    {
+      nm_ns.drvs_by_bw[i] = i;
+    }
 
-  ordered_drv_id_by_lat = TBX_MALLOC(nb_drivers * sizeof(nm_drv_id_t));
-  order_lat(nb_drivers);
+#ifdef SAMPLING
+  qsort(nm_ns.drvs_by_bw, nm_ns.nb_drvs, sizeof(nm_drv_id_t), compare_bw);
+#endif
 
+  nm_ns.drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_id_t));
+  for(i = 0; i < nm_ns.nb_drvs; i++)
+    {
+      nm_ns.drvs_by_lat[i] = i;
+    }
+#ifdef SAMPLING
+  qsort(nm_ns.drvs_by_lat, nm_ns.nb_drvs, sizeof(nm_drv_id_t), compare_lat);
+#endif
+
+#if 0
+  {
+    fprintf(stderr, "# sampling: ordered by bw (%d) \n", nm_ns.nb_drvs);
+    int k;
+    for(k = 0; k < nm_ns.nb_drvs; k++)
+      {
+	fprintf(stderr, "#   [%d] -> %d\n", k, nm_ns.drvs_by_bw[k]);
+      }
+    fprintf(stderr, "# sampling: ordered by lat (%d) \n", nm_ns.nb_drvs);
+    for(k = 0; k < nm_ns.nb_drvs; k++)
+      {
+	fprintf(stderr, "#   [%d] -> %d\n", k, nm_ns.drvs_by_lat[k]);
+      }
+  }
+#endif
 
   return NM_ESUCCESS;
 }
 
-int nm_ns_exit(struct nm_core *p_core) {
-  TBX_FREE(ordered_drv_id_by_bw);
-  TBX_FREE(ordered_drv_id_by_lat);
-
+int nm_ns_exit(struct nm_core *p_core)
+{
+  nm_ns_cleanup();
   return NM_ESUCCESS;
 }
 
-double
-nm_ns_evaluate_bw(struct nm_drv *driver, int length){
-
-    struct nm_drv_cap* caps = driver->driver->get_capabilities(driver);
-    double * samplings = caps->network_sampling_bandwidth;
-    int sampling_id = 0;
-    double coef = 0;
-    int sampling_start_id = 0;
-
-    frexp(2, &sampling_start_id);
-    coef = frexp(length, &sampling_id);
-
-    sampling_id -= sampling_start_id;
-
-    return samplings[sampling_id]
-      + coef * (samplings[sampling_id] - samplings[sampling_id - 1]);
+double nm_ns_evaluate_bw(struct nm_drv *driver, int length)
+{
+  struct nm_drv_cap* caps = driver->driver->get_capabilities(driver);
+  double * samplings = caps->network_sampling_bandwidth;
+  int sampling_id = 0;
+  double coef = 0;
+  int sampling_start_id = 0;
+  
+  frexp(2, &sampling_start_id);
+  coef = frexp(length, &sampling_id);
+  
+  sampling_id -= sampling_start_id;
+  
+  return samplings[sampling_id]
+    + coef * (samplings[sampling_id] - samplings[sampling_id - 1]);
 }
 
-double
-nm_ns_evaluate_transfer_time(struct nm_drv *driver, int length){
-  double bw = nm_ns_evaluate_bw(driver, length);
-
+double nm_ns_evaluate_transfer_time(struct nm_drv *driver, int length)
+{
+  const double bw = nm_ns_evaluate_bw(driver, length);
   return bw / length;
 }
 
-double
-nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw){
+double nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw)
+{
   double estimate_transfer_time;
   tbx_tick_t start_transfer_time;
   tbx_tick_t now;
@@ -199,27 +214,24 @@ nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw){
 }
 
 
-int
-nm_ns_dec_bws(struct nm_core *p_core,
-	      nm_drv_id_t **drv_ids){
-  *drv_ids = ordered_drv_id_by_bw;
-
+int nm_ns_dec_bws(struct nm_core *p_core, const nm_drv_id_t **drv_ids, int*nb_drivers)
+{
+  *drv_ids = nm_ns.drvs_by_bw;
+  *nb_drivers = nm_ns.nb_drvs;
   return NM_ESUCCESS;
 }
 
-int
-nm_ns_inc_lats(struct nm_core *p_core,
-               nm_drv_id_t **drv_ids){
-  *drv_ids = ordered_drv_id_by_lat;
-
+int nm_ns_inc_lats(struct nm_core *p_core, const nm_drv_id_t **drv_ids, int*nb_drivers)
+{
+  *drv_ids = nm_ns.drvs_by_lat;
+  *nb_drivers = nm_ns.nb_drvs;
   return NM_ESUCCESS;
 }
 
-int
-nm_ns_split_ratio(uint32_t len_to_send,
-                  struct nm_core *p_core, nm_drv_id_t drv1_id, nm_drv_id_t drv2_id,
-                  uint32_t *offset){
-
+int nm_ns_split_ratio(uint32_t len_to_send,
+		      struct nm_core *p_core, nm_drv_id_t drv1_id, nm_drv_id_t drv2_id,
+		      uint32_t *offset)
+{
 #ifdef STRAT_ISO_SPLIT
   *offset = tbx_aligned(len_to_send / 2, sizeof(uint32_t));
 #elif defined STRAT_HCW_SPLIT
@@ -282,12 +294,12 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
     int i;
     for(i = 0; i < *nb_chunks; i++)
       {
-	sum_bw += drv_bws[chunks[i].drv_id];
+	sum_bw += nm_ns.drv_bws[chunks[i].drv_id];
       }
     int pending_len = len;
     for(i = 0; i < *nb_chunks - 1; i++)
       {
-	const int drv_bw = drv_bws[chunks[i].drv_id];
+	const int drv_bw = nm_ns.drv_bws[chunks[i].drv_id];
 	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
 	pending_len -= chunk_lens[i];
 	sum_bw -= drv_bw;

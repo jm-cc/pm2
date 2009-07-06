@@ -18,7 +18,6 @@
 #include <nm_private.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
-#include <nm_predictions.h>
 
 #include <string.h>
 
@@ -87,16 +86,6 @@ static void nm_cmdline_launcher_destroy(void*_status)
     free(status->l_url[j]);
   }
 
-  err = nm_ns_exit(status->p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_ns_exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
-  err = nm_core_driver_exit(status->p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core_driver_exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
   err = nm_core_exit(status->p_core);
   if(err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core__exit return err = %d\n", err);
@@ -407,8 +396,6 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   for(j = 0; j < status->nr_rails; j++) {
     printf("# launcher: local url[%d]: '%s'\n", j, status->l_url[j]);
   }
-
-  nm_ns_init(status->p_core);
 
   err = nm_core_gate_init(status->p_core, &status->gate);
   if (err != NM_ESUCCESS) {

@@ -266,21 +266,22 @@ strat_aggreg_pack_extended_ctrl_end(void *_status,
   return NM_ESUCCESS;
 }
 
-static int
-try_to_agregate_small(void *_status,
-		      struct nm_gate *p_gate,
-		      nm_tag_t tag, uint8_t seq,
-                      const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
+static int try_to_agregate_small(void *_status,
+				 struct nm_gate *p_gate,
+				 nm_tag_t tag, uint8_t seq,
+				 const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+{
   struct nm_pkt_wrap *p_so_pw;
   struct nm_so_strat_aggreg_gate *status = _status;
   int flags = 0;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &status->out_list, link) {
-    uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-    uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
-    uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+  list_for_each_entry(p_so_pw, &status->out_list, link)
+    {
+      const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+      const uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
+      const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 
       if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
 	/* There's not enough room to add our data to this paquet */

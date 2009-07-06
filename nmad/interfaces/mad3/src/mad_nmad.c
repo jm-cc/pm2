@@ -29,7 +29,6 @@
 #include "madeleine.h"
 
 #include "nm_mad3_private.h"
-#include "nm_predictions.h"
 
 #include <errno.h>
 
@@ -141,11 +140,6 @@ nm_mad3_init_core(int	 *argc,
                 DISP("nm_core_init returned err = %d\n", err);
                 TBX_FAILURE("nmad error");
         }
-        err = nm_ns_init(p_core);
-	if(err != NM_ESUCCESS) {
-                DISP("nm_ns_init return err = %d\n", err);
-                TBX_FAILURE("nmad error");
-	}
 }
 
 /*
@@ -206,19 +200,9 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
 
   if (p_core == NULL) return;
 
-  err = nm_core_driver_exit(p_core);
-  if(err != NM_ESUCCESS) {
-    DISP("nm_core_driver_exit return err = %d\n", err);
-    TBX_FAILURE("nmad error");
-  }
   err = nm_core_exit(p_core);
   if(err != NM_ESUCCESS) {
     DISP("nm_core__exit return err = %d\n", err);
-    TBX_FAILURE("nmad error");
-  }
-  err = nm_ns_exit(p_core);
-  if(err != NM_ESUCCESS) {
-    DISP("nm_ns_exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
   p_core = NULL;

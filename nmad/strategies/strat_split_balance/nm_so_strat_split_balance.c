@@ -516,20 +516,22 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 
 /* Compute and apply the best possible packet rearrangement, then
    return next packet to send */
-static int
-strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
+static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
 {
   struct nm_so_strat_split_balance*status = _status;
   struct list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
-  const int nb_drivers = p_gate->p_core->nb_drivers;
+  int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
-  nm_drv_id_t*drv_ids = NULL;
-  nm_ns_inc_lats(p_gate->p_core, &drv_ids);
+  const nm_drv_id_t*drv_ids = NULL;
+  nm_ns_inc_lats(p_gate->p_core, &drv_ids, &nb_drivers);
+  assert(nb_drivers > 0);
   while(n < nb_drivers && !list_empty(out_list))
     {
-      if(p_gate->active_send[drv_ids[n]][NM_TRK_SMALL] == 0 &&
-	 p_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0)
+      const nm_drv_id_t drv_id = drv_ids[n];
+      assert(drv_id >= 0 && drv_id < nb_drivers);
+      if(p_gate->active_send[drv_id][NM_TRK_SMALL] == 0 &&
+	 p_gate->active_send[drv_id][NM_TRK_LARGE] == 0)
 	{
 	  /* We found an idle NIC */
 	  const nm_drv_id_t drv_id = drv_ids[n];
@@ -572,11 +574,11 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
     }
   else
     {
-      const int nb_drivers = p_gate->p_core->nb_drivers;
+      int nb_drivers = p_gate->p_core->nb_drivers;
       int chunk_index = 0;
       const nm_trk_id_t trk_id = NM_TRK_LARGE;
-      nm_drv_id_t *ordered_drv_id_by_bw = NULL;
-      nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw);
+      const nm_drv_id_t *ordered_drv_id_by_bw = NULL;
+      nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
 
       int i;
       for(i = 0; i < nb_drivers; i++)

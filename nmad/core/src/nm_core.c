@@ -281,6 +281,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
   nm_core_init_piom_drv(p_core, p_drv);
 #endif
 
+  nm_ns_update(p_core);
   err = NM_ESUCCESS;
 
  out:
@@ -407,7 +408,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 /** Shutdown all drivers.
  *
  */
-int nm_core_driver_exit(struct nm_core *p_core)
+static int nm_core_driver_exit(struct nm_core *p_core)
 {
   int i, j, err = NM_ESUCCESS;
 
@@ -784,7 +785,9 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
  */
 int nm_core_exit(nm_core_t p_core)
 {
+  nm_core_driver_exit(p_core);
   nm_so_schedule_exit(p_core);
+  nm_ns_exit(p_core);
   TBX_FREE(p_core);
 
   return NM_ESUCCESS;

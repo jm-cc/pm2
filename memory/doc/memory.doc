@@ -13,11 +13,24 @@
  * General Public License for more details.
  */
 
-/*! \mainpage The Memory API Documentation
- *
- * \section intro_sec Introduction
- * Two memory management interfaces are provided:
- * - \ref mami
- * - \ref memory_heap
- */
+/*! \mainpage Memory
+
+<h1 class="sub">The Memory API Documentation</h1>
+
+<hr>
+
+\htmlonly
+<div class="section" id="introduction">
+\endhtmlonly
+\section Introduction
+
+Two memory management interfaces are provided:
+
+<ul>
+<li> \ref mami
+<li> \ref memory_heap
+</ul>
+
+*/
+
 

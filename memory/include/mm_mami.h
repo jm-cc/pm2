@@ -19,6 +19,9 @@
 
 /** \defgroup mami MaMI: Marcel Memory Interface
  *
+ * \htmlonly
+ * <div class="section" id="mami">
+ * \endhtmlonly
  * MaMI is a memory interface implemented within our user-level thread
  * library, Marcel. It allows developers to manage memory with regard
  * to NUMA nodes thanks to an automatically gathered knowledge of the

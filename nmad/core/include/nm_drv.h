@@ -49,6 +49,8 @@ struct nm_drv
  */
 struct nm_drv_iface_s
 {
+  const char*name;
+
   int (*query)     (struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
   int (*init)      (struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
   int (*close)     (struct nm_drv *p_drv);

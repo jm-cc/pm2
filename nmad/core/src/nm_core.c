@@ -139,7 +139,6 @@ int nm_core_driver_load(nm_core_t p_core,
 			puk_component_t driver,
 			nm_drv_id_t *p_id)
 {
-  struct nm_drv	*p_drv		= NULL;
   int err;
 
   NM_LOG_IN();
@@ -148,7 +147,7 @@ int nm_core_driver_load(nm_core_t p_core,
     goto out;
   }
   assert(driver != NULL);
-  p_drv = p_core->driver_array + p_core->nb_drivers;
+  struct nm_drv	*p_drv = p_core->driver_array + p_core->nb_drivers;
   memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
   p_drv->id       = p_core->nb_drivers;
@@ -177,11 +176,10 @@ int nm_core_driver_query(nm_core_t p_core,
 			 struct nm_driver_query_param *params,
 			 int nparam)
 {
-  struct nm_drv	*p_drv		= NULL;
   int err;
 
   NM_LOG_IN();
-  p_drv	= p_core->driver_array + id;
+  struct nm_drv	*p_drv = &p_core->driver_array[id];
 
   if (!p_drv->driver->query) {
     err = -NM_EINVAL;

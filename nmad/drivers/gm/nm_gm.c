@@ -120,6 +120,8 @@ static const char*nm_gm_get_driver_url(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_gm_driver =
   {
+    .name               = "gm",
+
     .query              = &nm_gm_query,
     .init               = &nm_gm_init,
 

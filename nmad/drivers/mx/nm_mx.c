@@ -163,6 +163,8 @@ static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 
 static const struct nm_drv_iface_s nm_mx_driver =
   {
+    .name               = "mx",
+
     .query              = &nm_mx_query,
     .init               = &nm_mx_init,
     .close              = &nm_mx_close,
@@ -495,10 +497,6 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
   p_tbx_string_t url_string = tbx_string_init_to_int(p_mx_drv->ep_id);
   p_mx_drv->ep_url = tbx_string_to_cstring(url_string);
   tbx_string_free(url_string);
-  
-#ifdef SAMPLING
-  nm_parse_sampling(p_drv, "mx");
-#endif
   
   /* open requested tracks */
   p_mx_drv->nb_trks = nb_trks;

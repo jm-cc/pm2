@@ -120,6 +120,8 @@ static const char*nm_qsnet_get_driver_url(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_qsnet_driver =
   {
+    .name               = "qsnet",
+
     .query              = &nm_qsnet_query,
     .init               = &nm_qsnet_init,
     .close	        = &nm_qsnet_close,
@@ -269,10 +271,6 @@ static int nm_qsnet_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int n
   p_qsnet_drv->url	= tbx_string_to_cstring(url_string);
   NM_TRACE_STR("p_qsnet_drv->url", p_qsnet_drv->url);
   tbx_string_free(url_string);
-  
-#ifdef SAMPLING
-  nm_parse_sampling(p_drv, "qsnet");
-#endif
   
   /* open requested tracks */
   p_qsnet_drv->nb_trks = nb_trks;

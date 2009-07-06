@@ -149,6 +149,8 @@ static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 
 static const struct nm_drv_iface_s nm_tcp_driver =
   {
+    .name               = "tcp",
+
     .query              = &nm_tcp_query,
     .init               = &nm_tcp_init,
     .close              = &nm_tcp_exit,

@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <sys/uio.h>
 #include <math.h>
+#include <sys/utsname.h>
+#include <ctype.h>
 
 #include <nm_private.h>
 #include "nm_predictions.h"
@@ -31,12 +33,19 @@
 //#define STRAT_ISO_SPLIT
 //#define STRAT_HCW_SPLIT
 
+struct nm_sampling_set_s
+{
+  double*bandwidth;
+  int nb_samples;
+};
+
 static struct
 {
   nm_drv_id_t*drvs_by_lat;
   nm_drv_id_t*drvs_by_bw;
   double *drv_bws;
   double *drv_lats;
+  struct nm_sampling_set_s*sampling_sets;
   int nb_drvs;
 } nm_ns = {
   .drvs_by_lat = NULL,
@@ -45,6 +54,72 @@ static struct
   .drv_lats    = NULL,
   .nb_drvs = 0
 };
+
+#define LINE_SIZE     100
+
+#ifndef MAXPATHLEN
+#  define MAXPATHLEN 1024
+#endif
+
+int nm_ns_parse_sampling(struct nm_drv*p_drv)
+{
+  FILE *sampling_file;
+  char sampling_file_path[MAXPATHLEN];
+  struct utsname machine_info;
+  uname(&machine_info);
+  const char *archi = machine_info.machine;
+
+  snprintf(sampling_file_path, sizeof(sampling_file_path),
+	   "%s/nmad/sampling/%s_%s.nm_ns",
+	   getenv("PM2_ROOT"), p_drv->driver->name, archi);
+
+  sampling_file = fopen(sampling_file_path, "r");
+  if(!sampling_file)
+    {
+      TBX_FAILUREF("Sampling file <%s> does not exist. Check if the sampling has been done.", sampling_file_path);
+    }
+
+  fprintf(stderr, "# sampling: reading sampling file %s...\n", sampling_file_path);
+  /* count sampling entries */
+  int nb_entries = 0;
+  char *s = NULL;
+  do
+    {
+      char str[LINE_SIZE];
+      s = fgets(str, LINE_SIZE, sampling_file);
+      if(s && isdigit(str[0]))
+	nb_entries++;
+    }
+  while(s);
+
+  struct nm_sampling_set_s*set = &nm_ns.sampling_sets[p_drv->id];
+
+  set->nb_samples = nb_entries;
+  set->bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
+
+  /* process the sampling file */
+  fseek(sampling_file, 0L, SEEK_SET);
+  int cur_entry = 0;
+  while(1)
+    {
+      char str[LINE_SIZE];
+      s = fgets(str, LINE_SIZE, sampling_file);
+      if(!s)
+	break;
+      
+      if(!isdigit(str[0]))
+	continue;
+      
+      s = strchr(str, '\t') + 1;
+      
+      set->bandwidth[cur_entry++] = atof(s);
+    }
+
+  fclose(sampling_file);
+
+  return NM_ESUCCESS;
+}
+
 
 #ifdef SAMPLING
 #endif
@@ -84,6 +159,8 @@ static void nm_ns_cleanup(void)
       nm_ns.drv_lats = NULL;
       TBX_FREE(nm_ns.drv_bws);
       nm_ns.drv_bws = NULL;
+      TBX_FREE(nm_ns.sampling_sets);
+      nm_ns.sampling_sets = NULL;
 #endif
       nm_ns.nb_drvs = 0;
     }
@@ -91,19 +168,27 @@ static void nm_ns_cleanup(void)
 
 int nm_ns_update(struct nm_core *p_core)
 {
+  int i;
+  if(p_core->nb_drivers == nm_ns.nb_drvs)
+    {
+      return NM_ESUCCESS;
+    }
+
   nm_ns_cleanup();
   nm_ns.nb_drvs = p_core->nb_drivers;
 
 #ifdef SAMPLING
   struct nm_drv *p_drv = NULL;
   int bw_idx = 0, len;
-  int i;
+
+  nm_ns.sampling_sets = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_sampling_set_s));
 
   /* 1 - recenser les bw et les latences */
   for(i = 0; i < nm_ns.nb_drvs; i++)
     {
       p_drv = &p_core->driver_array[i];
-      bw_idx = (bw_idx > p_drv->driver->get_capabilities(p_drv)->nb_samplings ? bw_idx : p_drv->driver->get_capabilities(p_drv)->nb_samplings);
+      nm_ns_parse_sampling(p_drv);
+      bw_idx = (bw_idx > nm_ns.sampling_sets[p_drv->id].nb_samples) ? bw_idx : nm_ns.sampling_sets[p_drv->id].nb_samples;
     }
   bw_idx -= 1;
 
@@ -111,11 +196,11 @@ int nm_ns_update(struct nm_core *p_core)
 
   nm_ns.drv_bws = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
   nm_ns.drv_lats = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
-  for(i = 0; i < nb_drivers; i++)
+  for(i = 0; i < nm_ns.nb_drvs; i++)
     {
       p_drv = &p_core->driver_array[i];
-      nm_ns.drv_bws[i] = p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[bw_idx];
-      nm_ns.drv_lats[i] = len / p_drv->driver->get_capabilities(p_drv)->network_sampling_bandwidth[LAT_IDX];
+      nm_ns.drv_bws[i] = nm_ns.sampling_sets[p_drv->id].bandwidth[bw_idx];
+      nm_ns.drv_lats[i] = len / nm_ns.sampling_sets[p_drv->id].bandwidth[LAT_IDX];
     }
 
 #if 0
@@ -133,7 +218,6 @@ int nm_ns_update(struct nm_core *p_core)
 
   /* 2 - ordonner les bw et les lats */
   nm_ns.drvs_by_bw  = TBX_MALLOC(nm_ns.nb_drvs * sizeof(nm_drv_id_t));
-  int i;
   for(i = 0; i < nm_ns.nb_drvs; i++)
     {
       nm_ns.drvs_by_bw[i] = i;
@@ -177,10 +261,9 @@ int nm_ns_exit(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
-double nm_ns_evaluate_bw(struct nm_drv *driver, int length)
+double nm_ns_evaluate_bw(struct nm_drv *p_drv, int length)
 {
-  struct nm_drv_cap* caps = driver->driver->get_capabilities(driver);
-  double * samplings = caps->network_sampling_bandwidth;
+  const double *samplings = nm_ns.sampling_sets[p_drv->id].bandwidth;
   int sampling_id = 0;
   double coef = 0;
   int sampling_start_id = 0;
@@ -238,23 +321,14 @@ int nm_ns_split_ratio(uint32_t len_to_send,
   *offset = tbx_aligned(len_to_send/2 + len_to_send/8, sizeof(uint32_t));
 #else
  {
-   struct nm_drv *drv1 = NULL;
-   struct nm_drv *drv2 = NULL;
-   double drv1_max_bw, drv2_max_bw;
-   int bw_idx, sum_bw;
-   uint32_t threshold;
-
-   drv1 = &p_core->driver_array[drv1_id];
-   drv2 = &p_core->driver_array[drv2_id];
-
-   bw_idx = (drv1->driver->get_capabilities(drv1)->nb_samplings < drv2->driver->get_capabilities(drv2)->nb_samplings? drv1->driver->get_capabilities(drv1)->nb_samplings:drv2->driver->get_capabilities(drv2)->nb_samplings) - 1;
-
-   drv1_max_bw = drv1->driver->get_capabilities(drv1)->network_sampling_bandwidth[bw_idx];
-   drv2_max_bw = drv2->driver->get_capabilities(drv2)->network_sampling_bandwidth[bw_idx];
-
-   sum_bw = drv1_max_bw + drv2_max_bw;
-
-   threshold  = (len_to_send / sum_bw ) * drv1_max_bw;
+   struct nm_drv *drv1 = &p_core->driver_array[drv1_id];
+   struct nm_drv *drv2 = &p_core->driver_array[drv2_id];
+   const int bw_idx = ( nm_ns.sampling_sets[drv1->id].nb_samples < nm_ns.sampling_sets[drv2->id].nb_samples ?
+			nm_ns.sampling_sets[drv1->id].nb_samples : nm_ns.sampling_sets[drv2->id].nb_samples ) - 1;
+   const double drv1_max_bw = nm_ns.sampling_sets[drv1->id].bandwidth[bw_idx];
+   const double drv2_max_bw = nm_ns.sampling_sets[drv1->id].bandwidth[bw_idx];
+   const double sum_bw      = drv1_max_bw + drv2_max_bw;
+   const uint32_t threshold = (len_to_send / sum_bw ) * drv1_max_bw;
 
    *offset = tbx_aligned(threshold, sizeof(uint32_t));
  }
@@ -301,7 +375,7 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       {
 	const int drv_bw = nm_ns.drv_bws[chunks[i].drv_id];
 	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
-	pending_len -= chunk_lens[i];
+	pending_len -= chunks[i].len;
 	sum_bw -= drv_bw;
       }
     chunks[i].len = tbx_aligned(pending_len, sizeof(uint32_t));

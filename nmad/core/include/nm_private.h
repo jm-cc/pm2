@@ -72,11 +72,6 @@ typedef uint8_t nm_seq_t;
 
 #include <nm_predictions.h>
 
-#ifdef SAMPLING
-#include "nm_parser.h"
-#endif
-
-
 int nm_sched_out(struct nm_core *p_core);
 
 int nm_sched_in(struct nm_core *p_core);

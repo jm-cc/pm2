@@ -109,6 +109,8 @@ static struct nm_drv_cap*nm_ibverbs_get_capabilities(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_ibverbs_driver =
   {
+    .name               = "ibverbs",
+
     .query              = &nm_ibverbs_query,
     .init               = &nm_ibverbs_init,
     .close              = &nm_ibverbs_close,
@@ -334,10 +336,10 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   p_ibverbs_drv->caps.has_trk_rq_rdv		        = 1;
   p_ibverbs_drv->caps.has_selective_receive		= 1;
   p_ibverbs_drv->caps.has_concurrent_selective_receive	= 0;
-  p_ibverbs_drv->caps.rdv_threshold                       = 256 * 1024;
+  p_ibverbs_drv->caps.rdv_threshold                     = 256 * 1024;
 #ifdef PM2_NUIOA
   p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
-  p_ibverbs_drv->caps.latency = 170; /* from sr_ping */
+  p_ibverbs_drv->caps.latency = 135; /* from sampling */
   p_ibverbs_drv->caps.bandwidth = 1400; /* from sr_ping, use 200 * link width instead? */
 #endif
   
@@ -452,10 +454,6 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   
   fprintf(stderr, "# Infiniband:   active_width=%d; active_speed=%d\n",
 	  (int)port_attr.active_width, (int)port_attr.active_speed);
-
-#ifdef SAMPLING
-  nm_parse_sampling(p_drv, "ibverbs");
-#endif
 
   /* open tracks */
   p_ibverbs_drv->nb_trks = nb_trks;

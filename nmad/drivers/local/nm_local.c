@@ -70,6 +70,8 @@ static int nm_local_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 
 static const struct nm_drv_iface_s nm_local_driver =
   {
+    .name               = "local",
+    
     .query              = &nm_local_query,
     .init               = &nm_local_init,
     .close              = &nm_local_exit,

@@ -46,11 +46,6 @@ struct nm_drv_cap {
          */
         uint8_t has_concurrent_selective_receive;
 
-        /** Driver performance sampling
-         */
-        double *network_sampling_bandwidth;
-        int nb_samplings;
-
 #ifdef PIOM_BLOCKING_CALLS
 	uint8_t is_exportable;
 #endif

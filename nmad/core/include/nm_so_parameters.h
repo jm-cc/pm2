@@ -35,7 +35,6 @@
 /* Number of preallocated iovec entries within packet wrappers */
 #define NM_SO_PREALLOC_IOV_LEN 16
 
-
 /** Threshold (in bytes) between by-copy / zero-copy with multi-ack methods
  * for datatype transfers
  */

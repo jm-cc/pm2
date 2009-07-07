@@ -45,7 +45,7 @@ static int nm_ns_initialize_pw(struct nm_core *p_core,
 			       struct nm_pkt_wrap **pp_pw)
 {
   struct nm_pkt_wrap *p_pw = NULL;
-  const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER;
+  const uint8_t flags = NM_PW_NOHEADER;
   const nm_tag_t tag = 0;
   const uint8_t seq = 0;
   int err = nm_so_pw_alloc(flags, &p_pw);
@@ -130,12 +130,12 @@ static void nm_ns_eager_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   int err;
   if(len <= NM_MAX_SMALL)
     {
-      const uint8_t flags = NM_SO_DATA_USE_COPY;
+      const uint8_t flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   else
     {
-      const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER;
+      const uint8_t flags = NM_PW_NOHEADER;
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   if(err != NM_ESUCCESS)
@@ -169,12 +169,12 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   int err;
   if(len <= NM_MAX_SMALL)
     {
-      const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER | NM_SO_DATA_PREPARE_RECV;
+      const uint8_t flags = NM_PW_BUFFER;
       err = nm_so_pw_alloc(flags, &p_pw);
     }
   else
     {
-      const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER;
+      const uint8_t flags = NM_PW_NOHEADER;
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   if(err != NM_ESUCCESS)
@@ -220,7 +220,7 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   nm_ns_eager_recv(p_drv, p_gate, &ok_to_send, sizeof(ok_to_send));
   
   struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[p_drv->id]->receptacle;
-  const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER;
+  const uint8_t flags = NM_PW_NOHEADER;
   const nm_tag_t tag  = 0;
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
@@ -254,7 +254,7 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   int err;
-  const uint8_t flags = NM_SO_DATA_DONT_USE_HEADER;
+  const uint8_t flags = NM_PW_NOHEADER;
   err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
   if(err != NM_ESUCCESS)
     {

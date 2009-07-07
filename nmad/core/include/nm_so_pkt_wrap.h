@@ -17,12 +17,6 @@
 #define NM_SO_PKT_WRAP_H
 
 
-/* Data flags */
-#define NM_SO_DATA_USE_COPY            1
-#define NM_SO_DATA_IS_CTRL_HEADER      2
-#define NM_SO_DATA_DONT_USE_HEADER     4
-#define NM_SO_DATA_PREPARE_RECV        8
-
 #define nm_l2so(l) \
         ((struct nm_pkt_wrap *)((char *)(l) -\
          (unsigned long)(&((struct nm_pkt_wrap *)0)->link)))
@@ -33,9 +27,9 @@ static __inline__ uint32_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_
   return NM_SO_MAX_UNEXPECTED - ((vec->iov_base + vec->iov_len) - (void *)p_pw->buf);
 }
 
-static __inline__ uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_so_pw)
+static __inline__ uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
 {
-  return NM_SO_MAX_UNEXPECTED - p_so_pw->length;
+  return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
 
 static __inline__ void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, nm_drv_id_t drv_id, nm_gate_t p_gate)
@@ -72,102 +66,97 @@ nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 
 
 int
-nm_so_pw_store_datatype(struct nm_pkt_wrap *p_so_pw,
+nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
                         nm_tag_t proto_id, uint8_t seq,
                         uint32_t len, const struct DLOOP_Segment *segp);
 
 int
-nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_so_pw,
+nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
                                     nm_tag_t proto_id, uint8_t seq,
                                     uint32_t len, struct DLOOP_Segment *segp);
 
-#define nm_so_pw_add_control(p_so_pw, p_ctrl) \
-  nm_so_pw_add_data((p_so_pw), \
-		    0, 0, \
-		    (p_ctrl), sizeof(*(p_ctrl)), \
-		    0, \
-                    0, \
-                    NM_SO_DATA_IS_CTRL_HEADER)
+static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_so_generic_ctrl_header*p_ctrl)
+{
+  struct iovec*hvec = &p_pw->v[0];
+  memcpy(hvec->iov_base + hvec->iov_len, p_ctrl, NM_SO_CTRL_HEADER_SIZE);
+  hvec->iov_len += NM_SO_CTRL_HEADER_SIZE;
+  p_pw->length += NM_SO_CTRL_HEADER_SIZE;
+  return NM_ESUCCESS;
+}
 
 
-static __inline__
-int
+static __inline__ int 
 nm_so_pw_alloc_and_fill_with_data(nm_tag_t proto_id, uint8_t seq,
 				  const void *data, uint32_t len,
                                   uint32_t chunk_offset,
                                   uint8_t is_last_chunk,
                                   int flags,
-				  struct nm_pkt_wrap **pp_so_pw)
+				  struct nm_pkt_wrap **pp_pw)
 {
-  struct nm_pkt_wrap *p_so_pw;
-  int err = nm_so_pw_alloc(flags, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-  nm_so_pw_add_data(p_so_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
-  p_so_pw->chunk_offset = chunk_offset;
-  *pp_so_pw = p_so_pw;
- out:
-    return err;
+  struct nm_pkt_wrap *p_pw;
+  int err = nm_so_pw_alloc(flags, &p_pw);
+  if(err == NM_ESUCCESS)
+    {
+      nm_so_pw_add_data(p_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
+      p_pw->chunk_offset = chunk_offset;
+      *pp_pw = p_pw;
+    }
+  return err;
 }
 
 static __inline__
 int
 nm_so_pw_alloc_and_fill_with_control(const union nm_so_generic_ctrl_header *ctrl,
-				     struct nm_pkt_wrap **pp_so_pw)
+				     struct nm_pkt_wrap **pp_pw)
 {
   int err;
-  struct nm_pkt_wrap *p_so_pw;
+  struct nm_pkt_wrap *p_pw;
 
-  err = nm_so_pw_alloc(0, &p_so_pw);
+  err = nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
-  err = nm_so_pw_add_control(p_so_pw, ctrl);
+  err = nm_so_pw_add_control(p_pw, ctrl);
   if(err != NM_ESUCCESS)
     goto free;
 
-  *pp_so_pw = p_so_pw;
+  *pp_pw = p_pw;
 
  out:
     return err;
  free:
-    nm_so_pw_free(p_so_pw);
+    nm_so_pw_free(p_pw);
     goto out;
 }
 
-#ifdef PIO_OFFLOAD
-int
-nm_so_pw_offloaded_finalize(struct nm_pkt_wrap *p_so_pw);
-#endif
 
-int
-nm_so_pw_finalize(struct nm_pkt_wrap *p_so_pw);
+int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
 
 /* Iterators */
 
-typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_so_pw,
+typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_pw,
 				   void *ptr,
 				   nm_so_data_header_t*header, uint32_t len,
 				   nm_tag_t proto_id, uint8_t seq,
 				   uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_so_pw,
+typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_pw,
 				  nm_so_generic_ctrl_header_t*rdv,
 				  nm_tag_t tag, uint8_t seq,
 				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_so_pw,
+typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_pw,
 				  struct nm_so_ctrl_ack_header*header);
 
-int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_so_pw,
+int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 				  nm_so_pw_data_handler data_handler,
 				  nm_so_pw_rdv_handler rdv_handler,
 				  nm_so_pw_ack_handler ack_handler);
 
-static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_so_pw)
+static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
 {
-  if(!(--p_so_pw->header_ref_count))
+  if(!(--p_pw->header_ref_count))
     {
-      nm_so_pw_free(p_so_pw);
+      nm_so_pw_free(p_pw);
     }
   return NM_ESUCCESS;
 }

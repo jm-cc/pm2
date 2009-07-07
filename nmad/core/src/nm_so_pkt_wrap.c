@@ -23,20 +23,6 @@
 #include <nm_private.h>
 
 
-/* Global priv_flags */
-/** @name Global private flags
-
-Flag constants for the flag field of pw.
-*/
-/*@{*/
-/** Headerless pkt, if set.
- */
-#define NM_SO_NO_HEADER          1
-
-/** Pkt has been allocated for reception, if set.
- */
-#define NM_SO_RECV_PW            4
-/*@}*/
 
 /** Fast packet allocator constant for initial number of entries. */
 #if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
@@ -49,13 +35,10 @@ Flag constants for the flag field of pw.
  */
 static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
 
-/** Allocator struct for send pkt wrapper.
+/** Allocator struct for pkt wrapper with contiguous data block.
  */
-static p_tbx_memory_t nm_so_pw_send_mem = NULL;
+static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
 
-/** Allocator struct for recv pkt wrapper.
- */
-static p_tbx_memory_t nm_so_pw_recv_mem = NULL;
 
 /** Initialize the fast allocator structs for SO pkt wrapper.
  *
@@ -68,12 +51,9 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 		  sizeof(struct nm_pkt_wrap),
 		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd");
 
-  tbx_malloc_init(&nm_so_pw_send_mem,
+  tbx_malloc_init(&nm_so_pw_buf_mem,
 		  sizeof(struct nm_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
-		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/send");
-
-  /* There's no need to use a separate allocator for send and recv ! */
-  nm_so_pw_recv_mem = nm_so_pw_send_mem;
+		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/buf");
 
   return NM_ESUCCESS;
 }
@@ -85,7 +65,7 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 int nm_so_pw_exit(void)
 {
   tbx_malloc_clean(nm_so_pw_nohd_mem);
-  tbx_malloc_clean(nm_so_pw_send_mem);
+  tbx_malloc_clean(nm_so_pw_buf_mem);
 
   return NM_ESUCCESS;
 }
@@ -103,7 +83,7 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->seq = 0;
   p_pw->drv_priv   = NULL;
 
-  p_pw->pkt_priv_flags = 0;
+  p_pw->flags = 0;
   p_pw->length = 0;
 
   p_pw->v       = p_pw->prealloc_v;
@@ -125,7 +105,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 
   p_pw->chunk_offset = 0;
   p_pw->is_completed = tbx_true;
-  p_pw->datatype_copied_buf = tbx_false;
 }
 
 
@@ -133,8 +112,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 /** Allocate a suitable pkt wrapper for various SO purposes.
  *
  *  @param flags the flags indicating what pkt wrapper is needed.
- *    - @c NM_SO_DATA_DONT_USE_HEADER:  whether to prepare a global header or not.
- *    - @c NM_SO_DATA_PREPARE_RECV:  whether to prepare a send or receive pkt wrapper.
  *  @param pp_pw a pointer to the pkt wrapper pointer where to store the result.
  *  @return The NM status.
  */
@@ -143,59 +120,52 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   struct nm_pkt_wrap *p_pw;
   int err = NM_ESUCCESS;
 
-  if(flags & NM_SO_DATA_DONT_USE_HEADER)
+  if(flags & NM_PW_BUFFER) 
     {
-      /* dont use header -> no dedicated buffer for the headers */
-      if(flags & NM_SO_DATA_PREPARE_RECV) 
-	{
-	  /* receive, no header */
-	  p_pw = tbx_malloc(nm_so_pw_recv_mem);
-	  if (!p_pw)
-	    {
-	      err = -NM_ENOMEM;
-	      goto out;
-	    }
-	  
-	  nm_so_pw_raz(p_pw);
-	  
-	  /* pw flags */
-	  p_pw->pkt_priv_flags = NM_SO_RECV_PW;
-	  
-	  /* first entry: pkt header */
-	  p_pw->v_nb = 1;
-	  p_pw->v[0].iov_base = p_pw->buf;
-	  p_pw->v[0].iov_len = NM_SO_MAX_UNEXPECTED;
-	  p_pw->length = NM_SO_MAX_UNEXPECTED;
-	} 
-      else
-	{
-	  /* send, no header -> for the large messages */
-	  p_pw = tbx_malloc(nm_so_pw_nohd_mem);
-	  if (!p_pw)
-	    {
-	      err = -NM_ENOMEM;
-	      goto out;
-	    }
-	  
-	  nm_so_pw_raz(p_pw);
-	  
-	  /* pw flags */
-	  p_pw->pkt_priv_flags = NM_SO_NO_HEADER;
-	  
-	  /* pkt is empty for now */
-	  p_pw->length = 0;
-	}
-    }
-  else 
-    {
-      /* send, with header -> one dedicated buffer for the headers */
-      p_pw = tbx_malloc(nm_so_pw_send_mem);
+      /* full buffer as v[0]- used for short receive */
+      p_pw = tbx_malloc(nm_so_pw_buf_mem);
       if (!p_pw)
 	{
 	  err = -NM_ENOMEM;
 	  goto out;
 	}
+      nm_so_pw_raz(p_pw);
       
+      /* pw flags */
+      p_pw->flags = NM_PW_BUFFER;
+      
+      /* first entry: pkt header */
+      p_pw->v_nb = 1;
+      p_pw->v[0].iov_base = p_pw->buf;
+      p_pw->v[0].iov_len = NM_SO_MAX_UNEXPECTED;
+      p_pw->length = NM_SO_MAX_UNEXPECTED;
+    } 
+  else if(flags & NM_PW_NOHEADER)
+    {
+      /* no header preallocated- used for large send/recv */
+      p_pw = tbx_malloc(nm_so_pw_nohd_mem);
+      if (!p_pw)
+	{
+	  err = -NM_ENOMEM;
+	  goto out;
+	}
+      nm_so_pw_raz(p_pw);
+      
+      /* pw flags */
+      p_pw->flags = NM_PW_NOHEADER;
+      
+      /* pkt is empty for now */
+      p_pw->length = 0;
+    }
+  else if(flags & NM_PW_GLOBAL_HEADER)
+    {
+      /* global header preallocated as v[0]- used for short sends */
+      p_pw = tbx_malloc(nm_so_pw_buf_mem);
+      if (!p_pw)
+	{
+	  err = -NM_ENOMEM;
+	  goto out;
+	}
       nm_so_pw_raz(p_pw);
       
       /* first entry: global header */
@@ -205,8 +175,12 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       p_pw->length = NM_SO_GLOBAL_HEADER_SIZE;
       
       /* pw flags */
-      p_pw->pkt_priv_flags = 0;
+      p_pw->flags = NM_PW_GLOBAL_HEADER;
       p_pw->pending_skips = 0;
+    }
+  else
+    {
+      TBX_FAILURE("nmad: no flag given for pw allocations.\n");
     }
   
   INIT_LIST_HEAD(&p_pw->link);
@@ -227,13 +201,18 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 {
   int err;
-  int flags = p_pw->pkt_priv_flags;
+  int flags = p_pw->flags;
 
   NM_SO_TRACE_LEVEL(3,"destructing the pw %p\n", p_pw);
 
 #ifdef PIOMAN
   piom_req_free(&p_pw->inst);
 #endif
+
+  if(p_pw->flags & NM_PW_DYNAMIC_V0)
+    {
+      TBX_FREE(p_pw->v[0].iov_base);
+    }
 
   /* Then clean whole iov */
   if(p_pw->v != p_pw->prealloc_v)
@@ -242,17 +221,14 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
     }
 
   /* Finally clean packet wrapper itself */
-  if(flags & NM_SO_RECV_PW){
-    tbx_free(nm_so_pw_recv_mem, p_pw);
-    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_recv_mem\n", p_pw);
-  }
-  else if(flags & NM_SO_NO_HEADER) {
+  if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
+    {
+      tbx_free(nm_so_pw_buf_mem, p_pw);
+      NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_buf_mem\n", p_pw);
+    }
+  else if(flags & NM_PW_NOHEADER) {
     NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_nohd_mem\n", p_pw);
     tbx_free(nm_so_pw_nohd_mem, p_pw);
-  }
-  else {
-    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_send_mem\n", p_pw);
-    tbx_free(nm_so_pw_send_mem, p_pw);
   }
 
   err = NM_ESUCCESS;
@@ -271,7 +247,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 
   assert(offset > 0 && offset < p_pw->length);
 
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw2);
+  err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
   if(err != NM_ESUCCESS)
     goto err;
 
@@ -358,65 +334,50 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 {
   int err;
 
-  if(!(flags & NM_SO_DATA_DONT_USE_HEADER)) /* ** Data with header */
+  if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
     {
-      /* the headers are always in the first entries of the struct iovec tab */
       struct iovec*hvec = &p_pw->v[0];
-      if(tbx_likely(!(flags & NM_SO_DATA_IS_CTRL_HEADER)))
+      /* Small data case */
+      struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
+      hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+      if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
 	{
-	  /* Small data case */
-	  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-	  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
-	  if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
+	  /* Data immediately follows its header */
+	  const uint32_t size = nm_so_aligned(len);
+	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0) | NM_SO_DATA_FLAG_ALIGNED;
+	  nm_so_init_data(h, proto_id, seq, flags, 0, len, offset);
+	  if(len)
 	    {
-	      /* Data immediately follows its header */
-	      const uint32_t size = nm_so_aligned(len);
-	      const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0) | NM_SO_DATA_FLAG_ALIGNED;
-	      nm_so_init_data(h, proto_id, seq, flags, 0, len, offset);
-	      if(len)
-		{
 #ifdef PIO_OFFLOAD
-		  p_pw->data_to_offload = tbx_true;
-		  p_pw->v[p_pw->v_nb].iov_base = data;
-		  p_pw->v[p_pw->v_nb].iov_len  = len;
-		  p_pw->v_nb++;
-#else
-		  memcpy(hvec->iov_base + hvec->iov_len, data, len);
-#endif
-		  hvec->iov_len += size;
-		}
-	      p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
-	    }
-	  else 
-	    {
-	      /* Data are handled by a separate iovec entry */
-	      struct iovec *dvec = p_pw->v + p_pw->v_nb;
-	      dvec->iov_base = (void*)data;
-	      dvec->iov_len = len;
-	      /* We don't know yet the gap between header and data, so we
-		 temporary store the iovec index as the 'skip' value */
-	      const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0);
-	      nm_so_init_data(h, proto_id, seq, flags, p_pw->v_nb, len, offset);
-	      p_pw->pending_skips++;
-	      p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
+	      p_pw->data_to_offload = tbx_true;
+	      p_pw->v[p_pw->v_nb].iov_base = data;
+	      p_pw->v[p_pw->v_nb].iov_len  = len;
 	      p_pw->v_nb++;
+#else
+	      memcpy(hvec->iov_base + hvec->iov_len, data, len);
+#endif
+	      hvec->iov_len += size;
 	    }
+	  p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
 	}
       else 
 	{
-	  /* Data actually references a ctrl header. We simply append it
-	     to the previous other headers. */
-	  union nm_so_generic_ctrl_header *src, *dst;
-	  src = (void*)data;
-	  dst = hvec->iov_base + hvec->iov_len;
-	  /* Copy ctrl header */
-	  *dst = *src;
-	  hvec->iov_len += NM_SO_CTRL_HEADER_SIZE;
-	  p_pw->length += NM_SO_CTRL_HEADER_SIZE;
+	  /* Data are handled by a separate iovec entry */
+	  struct iovec *dvec = p_pw->v + p_pw->v_nb;
+	  dvec->iov_base = (void*)data;
+	  dvec->iov_len = len;
+	  /* We don't know yet the gap between header and data, so we
+	     temporary store the iovec index as the 'skip' value */
+	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0);
+	  nm_so_init_data(h, proto_id, seq, flags, p_pw->v_nb, len, offset);
+	  p_pw->pending_skips++;
+	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
+	  p_pw->v_nb++;
 	}
     }
-  else /* ** Add raw data to pw, without header */
+  else if(p_pw->flags & NM_PW_NOHEADER)
     {
+      /* ** Add raw data to pw, without header */
       struct iovec*vec = &p_pw->v[p_pw->v_nb++];
       vec->iov_base = (void*)data;
       vec->iov_len = len;
@@ -481,9 +442,7 @@ int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
   DLOOP_Offset last  = len;
   void *buf = TBX_MALLOC(len); /* TODO: where is it freed? (AD) */
 
-  int err = nm_so_pw_add_data(p_pw, proto_id, seq,
-			      buf, len, 0, 1,
-			      NM_SO_DATA_DONT_USE_HEADER);
+  int err = nm_so_pw_add_data(p_pw, proto_id, seq, buf, len, 0, 1, NM_PW_NOHEADER);
 
   struct iovec *vec = p_pw->v;
 
@@ -496,81 +455,6 @@ int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
   return err;
 }
 
-#ifdef PIO_OFFLOAD
-int nm_so_pw_offloaded_finalize(struct nm_pkt_wrap *p_pw)
-{
-  int err = NM_ESUCCESS;
-  unsigned long remaining_bytes;
-  unsigned long to_skip;
-  void *ptr;
-  struct iovec *vec;
-  struct iovec *last_treated_vec = NULL;
-  tbx_bool_t separate_iovec = tbx_false;
-
-  /* update the length field of the global header
-   */
-  ((struct nm_so_global_header *)(p_pw->v->iov_base))->len =
-    p_pw->length;
-
-  /* Fix the 'skip' fields */
-  if(!p_pw->pending_skips && !p_pw->data_to_offload){
-    /* Were're done */
-    goto out;
-  }
-
-  vec = p_pw->v;
-
-  ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
-  remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
-  to_skip = 0;
-  last_treated_vec = vec;
-
-  do {
-    if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST) {
-      /* Data header */
-      struct nm_so_data_header *h = ptr;
-
-      if(h->skip == 0) {
-        ptr += NM_SO_DATA_HEADER_SIZE;
-        last_treated_vec++;
-
-        memcpy(ptr, last_treated_vec->iov_base, h->len);
-        last_treated_vec->iov_len = 0;
-
-        ptr += nm_so_aligned(h->len);
-        remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-
-      } else {
-        /* Data occupy a separate iovec entry */
-	ptr += NM_SO_DATA_HEADER_SIZE;
-	remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
-	h->skip = remaining_bytes + to_skip;
-
-        last_treated_vec++;
-        to_skip += last_treated_vec->iov_len;
-
-        p_pw->pending_skips--;
-        separate_iovec = tbx_true;
-      }
-
-    } else {
-      /* Ctrl header */
-      ptr += NM_SO_CTRL_HEADER_SIZE;
-      remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
-    }
-
-  } while (p_pw->pending_skips);
-
-  /* all the used iov entries have been copied in contiguous */
-  if(!separate_iovec){
-    p_pw->v_nb = 1;
-  }
-
- out:
-  return err;
-}
-#endif
-
 /** Finalize the incremental building of the packet.
  *
  *  @param p_pw the pkt wrapper pointer.
@@ -580,69 +464,53 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 {
   int err = NM_ESUCCESS;
 
-  /* check if the packet travels headerles
-   */
-  if(p_pw->pkt_priv_flags & NM_SO_NO_HEADER)
-    /* We're done */
-    goto out;
-
-  /* update the length field of the global header */
-  struct nm_so_global_header*header = p_pw->v->iov_base;
-  header->len = p_pw->length;
-
-#ifdef PIO_OFFLOAD
-  /* the finalize (actually the copy of the data) is deported in a tasklet
-     it is now done in the nm_so_pw_copy_offloaded_data_and_finalize function
-  */
-  if(p_pw->data_to_offload){
-    goto out;
-  }
-#endif
-
-  /* Fix the 'skip' fields */
-  if(!p_pw->pending_skips){
-    /* Were're done */
-    goto out;
-  }
-
-  struct iovec *vec = p_pw->v;
-  void *ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
-  unsigned long remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
-  unsigned long to_skip = 0;
-  struct iovec *last_treated_vec = vec;
-  do 
+  if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
     {
-      if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST)
+      /* update the length field of the global header */
+      struct nm_so_global_header*header = p_pw->v->iov_base;
+      header->len = p_pw->length;
+      if(p_pw->pending_skips > 0)
 	{
-	  /* Data header */
-	  struct nm_so_data_header *h = ptr;
-	  if(h->skip == 0)
+	  /* Fix the 'skip' fields */
+	  struct iovec *vec = p_pw->v;
+	  void *ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
+	  unsigned long remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
+	  unsigned long to_skip = 0;
+	  struct iovec *last_treated_vec = vec;
+	  do 
 	    {
-	      /* Data immediately follows */
-	      ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-	      remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+	      if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST)
+		{
+		  /* Data header */
+		  struct nm_so_data_header *h = ptr;
+		  if(h->skip == 0)
+		    {
+		      /* Data immediately follows */
+		      ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+		      remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
+		    }
+		  else
+		    {
+		      /* Data occupy a separate iovec entry */
+		      ptr += NM_SO_DATA_HEADER_SIZE;
+		      remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
+		      h->skip = remaining_bytes + to_skip;
+		      last_treated_vec++;
+		      to_skip += last_treated_vec->iov_len;
+		      p_pw->pending_skips--;
+		    }
+		}
+	      else
+		{
+		  /* Ctrl header */
+		  ptr += NM_SO_CTRL_HEADER_SIZE;
+		  remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+		}
 	    }
-	  else
-	    {
-	      /* Data occupy a separate iovec entry */
-	      ptr += NM_SO_DATA_HEADER_SIZE;
-	      remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
-	      h->skip = remaining_bytes + to_skip;
-	      last_treated_vec++;
-	      to_skip += last_treated_vec->iov_len;
-	      p_pw->pending_skips--;
-	    }
+	  while (p_pw->pending_skips);
 	}
-      else
-	{
-	  /* Ctrl header */
-	  ptr += NM_SO_CTRL_HEADER_SIZE;
-	  remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
-	}
+      p_pw->flags |= NM_PW_FINALIZED;
     }
-  while (p_pw->pending_skips);
-
- out:
   return err;
 }
 

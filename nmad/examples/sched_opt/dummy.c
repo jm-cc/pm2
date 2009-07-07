@@ -84,7 +84,7 @@ main(int	  argc,
     err = nm_so_pw_alloc_and_fill_with_data(TAG0, 0,
 					    "abc", 4,
                                             0, 1,
-					    NM_SO_DATA_USE_COPY,
+					    NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY,
 					    &p_so_pw);
 
     if(err != NM_ESUCCESS) {
@@ -138,7 +138,7 @@ main(int	  argc,
                                             buf, NM_SO_MAX_UNEXPECTED,
 			                    0,
                                             1,
-                                            NM_SO_DATA_DONT_USE_HEADER,
+                                            NM_PW_NOHEADER,
                                             &p_so_pw);
     if(err != NM_ESUCCESS) {
       printf("nm_so_pw_alloc failed: err = %d\n", err);

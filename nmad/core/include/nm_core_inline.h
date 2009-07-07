@@ -71,7 +71,7 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 
 /** Schedule and post new outgoing buffers
  */
-static inline int nm_so_out_schedule_gate(struct nm_gate *p_gate)
+static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   return r->driver->try_and_commit(r->_status, p_gate);

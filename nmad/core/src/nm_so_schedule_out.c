@@ -97,16 +97,10 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 		  p_pw->p_drv->id, p_pw->trk_id, (long long unsigned int)p_pw->length);
 
       nm_so_out_data_complete(p_gate, p_pw->proto_id, p_pw->seq, p_pw->length);
-
-      if(p_pw->datatype_copied_buf)
-	{
-	  TBX_FREE(p_pw->v[0].iov_base);
-	}
-
       nm_so_pw_free(p_pw);
     }
   
-  nm_so_out_schedule_gate(p_gate);
+  nm_strat_try_and_commit(p_gate);
   
   return NM_ESUCCESS;
 }

@@ -231,7 +231,7 @@ strat_split_balance_launch_large_chunk(void *_status,
   /* First allocate a packet wrapper */
   err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                           data, len, chunk_offset, is_last_chunk,
-                                          NM_SO_DATA_DONT_USE_HEADER,
+                                          NM_PW_NOHEADER,
                                           &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
@@ -273,34 +273,28 @@ strat_split_balance_try_to_agregate_small(void *_status,
 
   /* We aggregate ONLY if data are very small OR if there are
      already two ready packets */
-  if(len <= 512 || status->nb_packets >= 2) {
-
-    /* We first try to find an existing packet to form an aggregate */
-    list_for_each_entry(p_so_pw, &status->out_list, link) {
-      uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-      uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
-      if(size <= h_rlen)
-        /* We can copy data into the header zone */
-        flags = NM_SO_DATA_USE_COPY;
-      else
-        /* There's not enough room to add our data to this paquet */
-        goto next;
-      
-      struct nm_pkt_wrap TBX_UNUSED dummy_p_so_pw;
-      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_so_pw, tag, seq, len);
-      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
-      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
-
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
-      goto out;
-
-    next:
-      ;
+  if(len <= 512 || status->nb_packets >= 2)
+    {
+      /* We first try to find an existing packet to form an aggregate */
+      list_for_each_entry(p_so_pw, &status->out_list, link)
+	{
+	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
+	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  if(size <= h_rlen)
+	    {
+	      /* We can copy data into the header zone */
+	      flags = NM_SO_DATA_USE_COPY;
+	      struct nm_pkt_wrap TBX_UNUSED dummy_p_so_pw;
+	      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_so_pw, tag, seq, len);
+	      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
+	      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
+	      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
+	      goto out;
+	    }
+	}
     }
-  }
 
-  flags = NM_SO_DATA_USE_COPY;
+  flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
@@ -444,7 +438,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
   int err;
 
   /* First allocate a packet wrapper */
-  err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+  err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -520,7 +514,6 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 {
   struct nm_so_strat_split_balance*status = _status;
   struct list_head *out_list = &status->out_list;
-  struct nm_pkt_wrap *p_so_pw;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
   const nm_drv_id_t*drv_ids = NULL;
@@ -536,10 +529,9 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 	  /* We found an idle NIC */
 	  const nm_drv_id_t drv_id = drv_ids[n];
 	  /* Take the packet at the head of the list and post it on trk #0 */
-	  p_so_pw = nm_l2so(out_list->next);
+	  struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
 	  list_del(out_list->next);
 	  status->nb_packets--;
-	  nm_so_pw_finalize(p_so_pw);
 	  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, drv_id);
 	}
       n++;

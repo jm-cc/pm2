@@ -22,7 +22,7 @@
 #include <ccs_public.h>
 #include <segment.h>
 
-static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_so_pw);
+static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_pw);
 
 static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset);
@@ -74,8 +74,7 @@ static inline int nm_so_post_large_recv(struct nm_gate *p_gate,
 {
   struct nm_pkt_wrap *p_pw = NULL;
   int err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, chunk->len,
-					      0, 0, NM_SO_DATA_DONT_USE_HEADER,
-					      &p_pw);
+					      0, 0, NM_PW_NOHEADER, &p_pw);
   if(err == NM_ESUCCESS)
     {
       nm_core_post_recv(p_pw, p_gate, chunk->trk_id, chunk->drv_id);
@@ -238,7 +237,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq
 	    {
 	      /* no free track- store pending large recv for processing later  */
 	      struct nm_pkt_wrap *p_pw = NULL;
-	      nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	      p_pw->proto_id = tag + 128;
 	      p_pw->seq      = seq;
 	      p_pw->length   = pending_len;
@@ -306,10 +305,8 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 	{
 	  struct nm_pkt_wrap *p_pw = NULL;
 	  void *data = TBX_MALLOC(len);
-	  nm_so_pw_alloc_and_fill_with_data(tag, seq,
-					    data, len,
-					    0, 0, NM_SO_DATA_DONT_USE_HEADER,
-					    &p_pw);
+	  nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
+					    0, 0, NM_PW_NOHEADER, &p_pw);
 	  p_pw->segp = segp;
 	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.drv_id);
 	  if(is_any_src)
@@ -333,8 +330,7 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
       /* ** Large blocks (high density) -> receive datatype directly in place (-> multi-ack)
        */
       struct nm_pkt_wrap *p_pw =  NULL;
-      nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
-      
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_gate   = p_gate;
       p_pw->proto_id = tag + 128;
       p_pw->seq      = seq;
@@ -351,15 +347,15 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 
 
 
-static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_so_pw)
+static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_pw)
 {
-  struct nm_gate *p_gate = p_so_pw->p_gate;
+  struct nm_gate *p_gate = p_pw->p_gate;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
-  nm_tag_t tag = p_so_pw->proto_id;
-  uint8_t seq = p_so_pw->seq;
-  uint32_t len = p_so_pw->length;
+  nm_tag_t tag = p_pw->proto_id;
+  uint8_t seq = p_pw->seq;
+  uint32_t len = p_pw->length;
 
 #warning Multi-rail?
   /* We ask the current strategy to find an available track for
@@ -369,30 +365,30 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_s
     {
       int nb_entries = 1;
       uint32_t last = len;
-      struct DLOOP_Segment *segp = p_so_pw->segp;
-      uint32_t first = p_so_pw->datatype_offset;
+      struct DLOOP_Segment *segp = p_pw->segp;
+      uint32_t first = p_pw->datatype_offset;
       CCSI_Segment_pack_vector(segp,
 			       first, (DLOOP_Offset *)&last,
-			       (DLOOP_VECTOR *)p_so_pw->v,
+			       (DLOOP_VECTOR *)p_pw->v,
 			       &nb_entries);
       assert(nb_entries == 1);
-      p_so_pw->length = last - first;
-      p_so_pw->v_nb = nb_entries;
-      chunk.len = p_so_pw->length; /* TODO- should be given by rdv_accept */
-      nm_so_post_multiple_pw_recv(p_gate, p_so_pw, 1, &chunk);
+      p_pw->length = last - first;
+      p_pw->v_nb = nb_entries;
+      chunk.len = p_pw->length; /* TODO- should be given by rdv_accept */
+      nm_so_post_multiple_pw_recv(p_gate, p_pw, 1, &chunk);
       nm_so_build_multi_ack(p_gate, tag, seq, first, nb_chunks, &chunk);
 
       if(last < len)
 	{
-	  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
-	  p_so_pw->p_gate   = p_gate;
-	  p_so_pw->proto_id = tag;
-	  p_so_pw->seq      = seq;
-	  p_so_pw->length   = len;
-	  p_so_pw->v_nb     = 0;
-	  p_so_pw->segp     = segp;
-	  p_so_pw->datatype_offset += last - first;
-	  p_so_pw->chunk_offset = p_so_pw->datatype_offset;
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+	  p_pw->p_gate   = p_gate;
+	  p_pw->proto_id = tag;
+	  p_pw->seq      = seq;
+	  p_pw->length   = len;
+	  p_pw->v_nb     = 0;
+	  p_pw->segp     = segp;
+	  p_pw->datatype_offset += last - first;
+	  p_pw->chunk_offset = p_pw->datatype_offset;
 	}
       else 
 	{
@@ -401,7 +397,7 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_s
     }
 
   /* No free track: postpone the ack */
-  nm_so_pw_store_pending_large_recv(p_so_pw, p_gate);
+  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
 
  out:
   return err;
@@ -438,7 +434,7 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
       /* No free track: postpone the ack */
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len, chunk_offset, 0,
-					NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+					NM_PW_NOHEADER, &p_pw);
       nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
       nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
@@ -458,7 +454,7 @@ static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
                                                  struct DLOOP_Segment *segp){
   struct nm_pkt_wrap *p_pw = NULL;
 
-  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 
   p_pw->p_gate   = p_gate;
   p_pw->proto_id = tag;

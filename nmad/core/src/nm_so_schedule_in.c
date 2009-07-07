@@ -517,8 +517,8 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 		{
 		  /* pack datatype into a contiguous buffer (by copy) */
 		  NM_SO_TRACE("There is no enough space in the iovec - copy in a contiguous buffer and send\n");
-		  p_large_pw->datatype_copied_buf = tbx_true;
 		  p_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
+		  p_large_pw->flags |= NM_PW_DYNAMIC_V0;
 		  CCSI_Segment_pack(p_large_pw->segp, first, &last, p_large_pw->v[0].iov_base);
 		  p_large_pw->v[0].iov_len = last - first;
 		  nb_entries = 1;
@@ -531,7 +531,7 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 		{
 		  /* store the remaining data */
 		  struct nm_pkt_wrap *p_large_pw2 = NULL;
-		  nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_large_pw2);
+		  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw2);
 		  p_large_pw2->p_gate   = p_large_pw->p_gate;
 		  p_large_pw2->proto_id = p_large_pw->proto_id;
 		  p_large_pw2->seq      = p_large_pw->seq;

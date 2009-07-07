@@ -20,6 +20,37 @@
 
 #include <ccs_public.h>
 
+/** @name Packet wrapper flags.
+ * Flag constants for the flag field of pw.
+ */
+/*@{*/
+
+typedef uint32_t nm_pw_flag_t;
+
+/** Headerless pkt, if set.
+ */
+#define NM_PW_NOHEADER      0x0001
+
+/** Pkt has been allocated with full (NM_SO_MAX_UNEXPECTED) contiguous buffer, if set.
+ */
+#define NM_PW_BUFFER        0x0002
+
+/** Pkt has been allocated with a contiguous buffer and a global header has been prepared.
+ */
+#define NM_PW_GLOBAL_HEADER 0x0004
+
+/** v[0].iov_base has been dyanmically allocated
+ */
+#define NM_PW_DYNAMIC_V0    0x0008
+
+/** Pkt has been finalized- ready to send on the wire.
+ */
+#define NM_PW_FINALIZED     0x0100
+/*@}*/
+
+/* Data flags */
+#define NM_SO_DATA_USE_COPY            0x0100
+
 
 /** Internal packet wrapper.
  */
@@ -70,8 +101,8 @@ struct nm_pkt_wrap
   
   /* Packet related fields.					*/
   
-  /** Packet internal flags. */
-  uint32_t		 pkt_priv_flags;
+  /** Packet flags. */
+  nm_pw_flag_t		 flags;
   
   /** Cumulated amount of data (everything included) referenced by this wrap. */
   uint32_t		 length;
@@ -107,8 +138,6 @@ struct nm_pkt_wrap
   struct DLOOP_Segment *segp;
   /** Current position in the datatype */
   DLOOP_Offset datatype_offset;
-
-  tbx_bool_t datatype_copied_buf;
 
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];

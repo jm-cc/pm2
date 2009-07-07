@@ -197,15 +197,15 @@ static int strat_default_pack(void*_status,
   struct nm_pkt_wrap *p_so_pw;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   struct nm_so_strat_default*status = _status;
-  int flags = 0;
   int err;
 
   p_so_tag->send[seq] = len;
   if(len <= status->nm_so_max_small)
     {
       /* Small packet */
+      int flags = NM_PW_GLOBAL_HEADER;
       if(len <= status->nm_so_copy_on_send_threshold)
-	flags = NM_SO_DATA_USE_COPY;
+	flags |= NM_SO_DATA_USE_COPY;
       /* Simply form a new packet wrapper and add it to the out_list */
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
 					      0, 1, flags, &p_so_pw);
@@ -219,7 +219,7 @@ static int strat_default_pack(void*_status,
 	 RdV request. */
       /* First allocate a packet wrapper */
       err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
-					      0, 0, NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+					      0, 0, NM_PW_NOHEADER, &p_so_pw);
       if(err != NM_ESUCCESS)
 	goto out;
       /* Then place it into the appropriate list of large pending
@@ -271,7 +271,7 @@ strat_default_packv(void*_status,
 	  /* First allocate a packet wrapper */
 	  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, iov[i].iov_base, iov[i].iov_len,
 						  offset, is_last_chunk,
-						  NM_SO_DATA_DONT_USE_HEADER, &p_so_pw);
+						  NM_PW_NOHEADER, &p_so_pw);
 	  if(err != NM_ESUCCESS)
 	    goto out;
 	  /* Then place it into the appropriate list of large pending "sends". */
@@ -303,29 +303,16 @@ static int strat_default_try_and_commit(void*_status,
 					struct nm_gate *p_gate)
 {
   struct nm_so_strat_default*status = _status;
-  struct list_head *out_list = &(status->out_list);
-  struct nm_pkt_wrap *p_so_pw;
-
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
-    /* We're done */
-    goto out;
-
-  if(list_empty(out_list))
-    /* We're done */
-    goto out;
-
-  /* Simply take the head of the list */
-  p_so_pw = nm_l2so(out_list->next);
-  list_del(out_list->next);
-
-  /* Finalize packet wrapper */
-  nm_so_pw_finalize(p_so_pw);
-
-  /* Post packet on track 0 */
-  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
-
- out:
-    return NM_ESUCCESS;
+  struct list_head *out_list = &status->out_list;
+  if((p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 0) &&
+     !(list_empty(out_list)))
+    {
+      struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
+      list_del(out_list->next);
+      /* Post packet on track 0 */
+      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
+    }
+  return NM_ESUCCESS;
 }
 
 /** Accept or refuse a RDV on the suggested (driver/track/gate).

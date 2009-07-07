@@ -57,10 +57,9 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
     piom_req_init(&p_pw->inst);
     p_pw->inst.server = &p_pw->p_drv->server;
     p_pw->which = SEND;
-#ifdef PIO_OFFLOAD
-    nm_so_pw_offloaded_finalize(p_pw);
-#endif
 #endif /* PIOMAN */
+
+  nm_so_pw_finalize(p_pw);
 
   /* post request */
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -123,7 +122,7 @@ int nm_sched_out(struct nm_core *p_core)
       struct nm_gate*p_gate = &p_core->gate_array[g];
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  err = nm_so_out_schedule_gate(p_gate);
+	  err = nm_strat_try_and_commit(p_gate);
 	  if (err < 0)
 	    {
 	      NM_DISPF("sched.schedule_out returned %d", err);

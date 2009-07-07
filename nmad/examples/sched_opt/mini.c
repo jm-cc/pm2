@@ -93,14 +93,14 @@ int main(int	  argc, char**argv)
       
       memset(buf, 0, len);
       
-      err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+      err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       if (err != NM_ESUCCESS) {
 	printf("nm_so_pw_alloc returned err = %d\n", err);
 	goto out;
       }
 
       err = nm_so_pw_add_data(p_pw, tag, seq, buf, len,
-			      0, 1, NM_SO_DATA_DONT_USE_HEADER);
+			      0, 1, NM_PW_NOHEADER);
 
       nm_core_post_recv(p_pw, gate, NM_TRK_SMALL, NM_DRV_DEFAULT);
 
@@ -130,14 +130,14 @@ int main(int	  argc, char**argv)
       
       strcpy(buf, msg);
       
-      err = nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER, &p_pw);
+      err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       if (err != NM_ESUCCESS) {
 	printf("nm_so_pw_alloc returned err = %d\n", err);
 	goto out;
       }
 
       err = nm_so_pw_add_data(p_pw, tag, seq, buf, len,
-			      0, 1, NM_SO_DATA_DONT_USE_HEADER);
+			      0, 1, NM_PW_NOHEADER);
 
       nm_core_post_send(gate, p_pw, NM_TRK_SMALL, NM_DRV_DEFAULT);
       

@@ -53,18 +53,18 @@ struct nm_strategy_iface_s
 		   nm_generic_header_t p_ctrl);
   
   int (*pack_ctrl_chunk)(void*_status,
-			 struct nm_pkt_wrap *p_so_pw,
+			 struct nm_pkt_wrap *p_pw,
 			 nm_generic_header_t p_ctrl);
 
   int (*pack_extended_ctrl)(void*_status,
                             struct nm_gate *p_gate,
                             uint32_t cumulated_header_len,
 			    nm_generic_header_t p_ctrl,
-                            struct nm_pkt_wrap **pp_so_pw);
+                            struct nm_pkt_wrap **pp_pw);
 
   int (*pack_extended_ctrl_end)(void*_status,
                                 struct nm_gate *p_gate,
-                                struct nm_pkt_wrap *p_so_pw);
+                                struct nm_pkt_wrap *p_pw);
 
   /** Compute and apply the best possible packet rearrangement, then
       return next packet to send */
@@ -85,7 +85,7 @@ struct nm_strategy_iface_s
 
 #ifdef NMAD_QOS
   int (*ack_callback)(void *_status,
-                      struct nm_pkt_wrap *p_so_pw,
+                      struct nm_pkt_wrap *p_pw,
                       nm_tag_t tag_id, uint8_t seq,
                       nm_trk_id_t track_id, uint8_t finished);
 #endif /* NMAD_QOS */

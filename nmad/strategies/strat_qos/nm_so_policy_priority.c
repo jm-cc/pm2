@@ -126,7 +126,7 @@ pack(struct nm_gate *p_gate, void *private,
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                             data, len,
 					    0, 1,
-                                            NM_SO_DATA_DONT_USE_HEADER,
+                                            NM_PW_NOHEADER,
                                             &p_so_pw);
     if(err != NM_ESUCCESS)
       goto out;

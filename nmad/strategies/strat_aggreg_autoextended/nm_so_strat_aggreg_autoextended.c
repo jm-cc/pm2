@@ -227,8 +227,9 @@ static int strat_aggreg_autoextended_pack(void*_status,
       ;
     }
 
+    flags = NM_PW_GLOBAL_HEADER;
     if(len <= status->nm_so_copy_on_send_threshold)
-      flags = NM_SO_DATA_USE_COPY;
+      flags |= NM_SO_DATA_USE_COPY;
 
     NM_SO_TRACE("We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
@@ -250,7 +251,7 @@ static int strat_aggreg_autoextended_pack(void*_status,
     err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
                                             data, len,
 					    0, 1,
-                                            NM_SO_DATA_DONT_USE_HEADER,
+                                            NM_PW_NOHEADER,
                                             &p_so_pw);
     p_so_pw->is_completed = tbx_true;
 
@@ -310,9 +311,6 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
     NM_SO_TRACE("pw is not completed\n");
     goto out;
   }
-
-  /* Finalize packet wrapper */
-  nm_so_pw_finalize(p_so_pw);
 
   /* Post packet on track 0 */
   nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);

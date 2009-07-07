@@ -171,9 +171,7 @@ int nm_sched_in(struct nm_core *p_core)
 	  if(p_gate->status == NM_GATE_STATUS_CONNECTED && !p_gate->active_recv[drv][NM_TRK_SMALL])
 	    {
 	      struct nm_pkt_wrap *p_pw;
-	      nm_so_pw_alloc(NM_SO_DATA_DONT_USE_HEADER |
-		       NM_SO_DATA_PREPARE_RECV,
-		       &p_pw);
+	      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
 	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, drv);
 	    }
 	}

@@ -25,11 +25,6 @@
 static int strat_default_pack(void*, struct nm_gate*, nm_tag_t, uint8_t, const void*, uint32_t);
 static int strat_default_packv(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct iovec *, int);
 static int strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_default_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_so_generic_ctrl_header *);
-static int strat_default_pack_extended_ctrl(void*, struct nm_gate *, uint32_t, const union nm_so_generic_ctrl_header *, struct nm_pkt_wrap **);
-static int strat_default_pack_extended_ctrl_end(void*,
-                                                struct nm_gate *p_gate,
-                                                struct nm_pkt_wrap *p_so_pw);
 static int strat_default_try_and_commit(void*, struct nm_gate*);
 static int strat_default_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
 
@@ -38,9 +33,6 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .pack               = &strat_default_pack,
     .packv              = &strat_default_packv,
     .pack_ctrl          = &strat_default_pack_ctrl,
-    .pack_ctrl_chunk    = &strat_default_pack_ctrl_chunk,
-    .pack_extended_ctrl = &strat_default_pack_extended_ctrl,
-    .pack_extended_ctrl_end = &strat_default_pack_extended_ctrl_end,
     .try_and_commit     = &strat_default_try_and_commit,
 #ifdef NMAD_QOS
     .ack_callback    = NULL,
@@ -135,48 +127,6 @@ static int strat_default_pack_ctrl(void*_status,
 
  out:
   return err;
-}
-
-static int
-strat_default_pack_extended_ctrl(void*_status,
-                                 struct nm_gate *p_gate,
-                                 uint32_t cumulated_header_len,
-                                 const union nm_so_generic_ctrl_header *p_ctrl,
-                                 struct nm_pkt_wrap **pp_so_pw){
-  struct nm_pkt_wrap *p_so_pw = NULL;
-  int err;
-
-  /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
-
-  *pp_so_pw = p_so_pw;
-
-  return err;
-}
-
-static int
-strat_default_pack_ctrl_chunk(void*_status,
-                              struct nm_pkt_wrap *p_so_pw,
-                              const union nm_so_generic_ctrl_header *p_ctrl){
-
-  int err;
-
-  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-
-  return err;
-}
-
-static int
-strat_default_pack_extended_ctrl_end(void*_status,
-                                     struct nm_gate *p_gate,
-                                     struct nm_pkt_wrap *p_so_pw){
-
-  struct nm_so_strat_default*status = _status;
-
-  /* Add the control packet to the BEGINING of out_list */
-  list_add(&p_so_pw->link, &status->out_list);
-
-  return NM_ESUCCESS;
 }
 
 /** Handle a new packet submitted by the user code.

@@ -26,11 +26,6 @@ static int strat_split_balance_pack(void*, struct nm_gate*, nm_tag_t, uint8_t, c
 static int strat_split_balance_packv(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct iovec *, int);
 static int strat_split_balance_pack_datatype(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct DLOOP_Segment*);
 static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
-static int strat_split_balance_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_so_generic_ctrl_header *);
-static int strat_split_balance_pack_extended_ctrl(void*, struct nm_gate *, uint32_t, const union nm_so_generic_ctrl_header *, struct nm_pkt_wrap **);
-static int strat_split_balance_pack_extended_ctrl_end(void*,
-                                                struct nm_gate *p_gate,
-                                                struct nm_pkt_wrap *p_so_pw);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
 static int strat_split_balance_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
 
@@ -40,9 +35,6 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
     .packv              = &strat_split_balance_packv,
     .pack_datatype      = &strat_split_balance_pack_datatype,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
-    .pack_ctrl_chunk    = &strat_split_balance_pack_ctrl_chunk,
-    .pack_extended_ctrl = &strat_split_balance_pack_extended_ctrl,
-    .pack_extended_ctrl_end = &strat_split_balance_pack_extended_ctrl_end,
     .try_and_commit     = &strat_split_balance_try_and_commit,
 #ifdef NMAD_QOS
     .ack_callback    = NULL,
@@ -109,68 +101,6 @@ static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t con
 static void strat_split_balance_destroy(void*status)
 {
   TBX_FREE(status);
-}
-
-static int
-strat_split_balance_pack_extended_ctrl(void *_status,
-				       struct nm_gate *p_gate,
-				       uint32_t cumulated_header_len,
-				       const union nm_so_generic_ctrl_header *p_ctrl,
-				       struct nm_pkt_wrap **pp_so_pw)
-{
-  struct nm_pkt_wrap *p_so_pw = NULL;
-  struct nm_so_strat_split_balance*status = _status;
-  uint32_t h_rlen;
-  int err;
-
-  if(!list_empty(&status->out_list)) {
-    /* Inspect only the head of the list */
-    p_so_pw = nm_l2so(status->out_list.next);
-
-    h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-
-    /* If the paquet is reasonably small, we can form an aggregate */
-    if(cumulated_header_len <= h_rlen) {
-      err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-      goto out;
-    }
-  }
-
-  /* Otherwise, simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
- out:
-  *pp_so_pw = p_so_pw;
-
-  return err;
-}
-
-static int
-strat_split_balance_pack_ctrl_chunk(void *_status,
-				    struct nm_pkt_wrap *p_so_pw,
-				    const union nm_so_generic_ctrl_header *p_ctrl)
-{
-  int err;
-
-  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-
-  return err;
-}
-
-static int
-strat_split_balance_pack_extended_ctrl_end(void *_status,
-					   struct nm_gate *p_gate,
-					   struct nm_pkt_wrap *p_so_pw)
-{
-  struct nm_so_strat_split_balance*status = _status;
-
-  /* Add the control packet to the BEGINING of out_list */
-  list_add(&p_so_pw->link, &status->out_list);
-  status->nb_packets++;
-
-  return NM_ESUCCESS;
 }
 
 /* Add a new control "header" to the flow of outgoing packets */

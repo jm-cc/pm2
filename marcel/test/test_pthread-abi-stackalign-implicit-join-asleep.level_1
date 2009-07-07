@@ -17,5 +17,6 @@
 . ./common.sh
 flavor="test_marcel_pthread_abi_stackalign"
 prog="pthread-abi-implicit-join-asleep"
+create_test_flavor
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
 check_all_lines=0

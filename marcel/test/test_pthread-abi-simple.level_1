@@ -26,4 +26,5 @@ check_all_lines=0
 # loader applies the same search rules to find `libPukABI.so' as a
 # preloaded DSO *and* as a dependency of `libpthread.so', otherwise it
 # could end up loading two different copies of `libPukABI.so'.
+create_test_flavor
 ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"

@@ -614,7 +614,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       if(p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE
 	 || any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE)
 	{
-	  /* ** 1.1. Large packet, datatype -> extract data in temp buffer */
+	  /* ** 1.1. Large packet, packed datatype -> finalize */
 	  DLOOP_Offset last = p_pw->length;
 	  /* unpack contigous data into their final destination */
 	  CCSI_Segment_unpack(p_pw->segp, 0, &last, p_pw->v[0].iov_base);
@@ -623,7 +623,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	      /* we are expecting more data */
 	      p_pw->v[0].iov_base += last;
 	      p_pw->v[0].iov_len -= last;
-	      nm_so_direct_post_large_recv(p_gate, p_pw->p_drv->id, p_pw);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_LARGE, p_pw->p_drv->id);
 	      goto out;
 	    }
 	  else

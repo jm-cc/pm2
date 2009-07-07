@@ -35,13 +35,6 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   p_gate->active_recv[drv_id][trk_id] = 1;
 }
 
-static __tbx_inline__ int nm_so_direct_post_large_recv(struct nm_gate *p_gate, int drv_id,
-						       struct nm_pkt_wrap *p_so_pw)
-{
-  nm_core_post_recv(p_so_pw, p_gate, NM_TRK_LARGE, drv_id);
-  return NM_ESUCCESS;
-}
-
 
 /* ** Sending functions ************************************ */
 /* ********************************************************* */

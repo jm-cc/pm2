@@ -108,7 +108,7 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
     {
       if(chunks[i].len < p_pw->length)
 	nm_so_pw_split(p_pw, &p_pw2, chunks[i].len);
-      nm_so_direct_post_large_recv(p_gate, chunks[i].drv_id, p_pw);
+      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].drv_id);
       p_pw = p_pw2;
     }
   return NM_ESUCCESS;
@@ -378,13 +378,8 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_s
       assert(nb_entries == 1);
       p_so_pw->length = last - first;
       p_so_pw->v_nb = nb_entries;
-      // depot de la reception
-      nm_so_direct_post_large_recv(p_gate, chunk.drv_id, p_so_pw);
-      
-      // init le multi_ack
-      NM_SO_TRACE("Multi-ack building for a block with tag %d, length %do, chunk_offset %d\n",
-		  tag, last - first, first);
-      chunk.len = p_so_pw->length;
+      chunk.len = p_so_pw->length; /* TODO- should be given by rdv_accept */
+      nm_so_post_multiple_pw_recv(p_gate, p_so_pw, 1, &chunk);
       nm_so_build_multi_ack(p_gate, tag, seq, first, nb_chunks, &chunk);
 
       if(last < len)
@@ -505,9 +500,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	    .trk_id = p_large_pw->trk_id,
 	    .len = p_large_pw->v[0].iov_len 
 	  };
-	  nm_so_direct_post_large_recv(p_gate, chunk.drv_id, p_large_pw);
-	  
-	  /* Launch the ACK */
+	  nm_so_post_multiple_pw_recv(p_gate, p_large_pw, 1, &chunk);
 	  nm_so_build_multi_ack(p_gate, p_large_pw->proto_id, p_large_pw->seq, p_large_pw->chunk_offset, 1, &chunk);
 	}
       else if ((nm_so_tag_get(&p_gate->tags, p_large_pw->proto_id - 128)->status[p_large_pw->seq]

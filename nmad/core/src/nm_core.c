@@ -110,7 +110,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   post_rq->seq = 0;
   post_rq->drv_priv   = NULL;
 
-  post_rq->pkt_priv_flags = 0;
+  post_rq->flags = 0;
   post_rq->length = 0;
 
   post_rq->v_size          = 0;

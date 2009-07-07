@@ -235,6 +235,21 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   return err;
 }
 
+/** Ensures p_pw->v contains at least n entries and returns v[n]
+ */
+static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
+{
+  if(p_pw->v_nb >= p_pw->v_size)
+    {
+      p_pw->v_size *= 2;
+      if(p_pw->v == p_pw->prealloc_v)
+	p_pw->v = TBX_MALLOC(sizeof(struct iovec) * p_pw->v_size);
+      else
+	p_pw->v = TBX_REALLOC(p_pw->v, sizeof(struct iovec) * p_pw->v_size);
+    }
+  return &p_pw->v[p_pw->v_nb++];
+}
+
 // Attention!! split only enable when the p_pw is finished
 int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
                    struct nm_pkt_wrap **pp_pw2,
@@ -258,54 +273,46 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
   p_pw2->p_gdrv = p_pw->p_gdrv;
   p_pw2->proto_id = p_pw->proto_id;
   p_pw2->seq = p_pw->seq;
-  p_pw2->length = p_pw->length - offset;
 
-  p_pw->length = offset;
-
-  const int nb_entries = p_pw->v_nb;
-  int idx_pw, len;
-  int idx_pw2 = 0;
-
-  for(idx_pw = 0, len = 0; idx_pw < nb_entries; len += p_pw->v[idx_pw].iov_len, idx_pw++)
+  const uint32_t total_length = p_pw->length;
+  int idx_pw = 0;
+  uint32_t len = 0;
+  while(len < total_length)
     {
-      if(len + p_pw->v[idx_pw].iov_len == offset)
+      if(len >= offset)
 	{
-	  /* cut between segments of iovec */
-	  idx_pw++;
-	  p_pw2->v_nb = nb_entries - idx_pw;
-	  p_pw->v_nb = idx_pw;
-	  while(idx_pw < nb_entries)
-	    {
-	      p_pw2->v[idx_pw2].iov_len  = p_pw->v[idx_pw].iov_len;
-	      p_pw2->v[idx_pw2].iov_base = p_pw->v[idx_pw].iov_base;
-	      p_pw->v[idx_pw].iov_len = 0;
-	      p_pw->v[idx_pw].iov_base = NULL;
-	      idx_pw++;
-	      idx_pw2++;
-	    }
+	  /* consume the whole segment */
+	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len;
+	  nm_so_pw_add_data(p_pw2, p_pw->proto_id, p_pw->seq,
+			    p_pw->v[idx_pw].iov_base, chunk_len,
+			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
+	  len += p_pw->v[idx_pw].iov_len;
+	  p_pw->length -= chunk_len;
+	  p_pw->v_nb--;
+	  p_pw->v[idx_pw].iov_len = 0;
+	  p_pw->v[idx_pw].iov_base = NULL;
 	}
       else if(len + p_pw->v[idx_pw].iov_len > offset)
 	{
 	  /* cut in the middle of an iovec segment */
 	  const int iov_offset = offset - len;
-	  p_pw2->v[0].iov_len  = p_pw->v[idx_pw].iov_len  - iov_offset;
-	  p_pw2->v[0].iov_base = p_pw->v[idx_pw].iov_base + iov_offset;
-	  p_pw2->v_nb = nb_entries - idx_pw;
+	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
+	  nm_so_pw_add_data(p_pw2, p_pw->proto_id, p_pw->seq,
+			    p_pw->v[idx_pw].iov_base + iov_offset, chunk_len,
+			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
+	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->v[idx_pw].iov_len = iov_offset;
-	  p_pw->v_nb = idx_pw + 1;
-	  idx_pw++;
-	  idx_pw2++;
-	  while(idx_pw < nb_entries)
-	    {
-	      p_pw2->v[idx_pw2].iov_len = p_pw->v[idx_pw].iov_len;
-	      p_pw2->v[idx_pw2].iov_base = p_pw->v[idx_pw].iov_base;
-	      p_pw->v[idx_pw].iov_len = 0;
-	      p_pw->v[idx_pw].iov_base = NULL;
-	      idx_pw++;
-	      idx_pw2++;
-	    }
+	  p_pw->length -= chunk_len;
 	}
+      else
+	{
+	  len += p_pw->v[idx_pw].iov_len;
+	}
+      idx_pw++;
     }
+
+  assert(p_pw->length + p_pw2->length == total_length);
+  assert(p_pw->length == offset);
 
   p_pw2->chunk_offset = p_pw->chunk_offset + offset;
 
@@ -349,10 +356,10 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  if(len)
 	    {
 #ifdef PIO_OFFLOAD
+	      struct iovec *dvec = nm_pw_grow_iovec(p_pw);
 	      p_pw->data_to_offload = tbx_true;
-	      p_pw->v[p_pw->v_nb].iov_base = data;
-	      p_pw->v[p_pw->v_nb].iov_len  = len;
-	      p_pw->v_nb++;
+	      dvec->iov_base = data;
+	      dvec->iov_len  = len;
 #else
 	      memcpy(hvec->iov_base + hvec->iov_len, data, len);
 #endif
@@ -362,8 +369,8 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	}
       else 
 	{
-	  /* Data are handled by a separate iovec entry */
-	  struct iovec *dvec = p_pw->v + p_pw->v_nb;
+	  /* Data handled by a separate iovec entry */
+	  struct iovec *dvec = nm_pw_grow_iovec(p_pw);
 	  dvec->iov_base = (void*)data;
 	  dvec->iov_len = len;
 	  /* We don't know yet the gap between header and data, so we
@@ -372,13 +379,12 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  nm_so_init_data(h, proto_id, seq, flags, p_pw->v_nb, len, offset);
 	  p_pw->pending_skips++;
 	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
-	  p_pw->v_nb++;
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
       /* ** Add raw data to pw, without header */
-      struct iovec*vec = &p_pw->v[p_pw->v_nb++];
+      struct iovec*vec = nm_pw_grow_iovec(p_pw);
       vec->iov_base = (void*)data;
       vec->iov_len = len;
       p_pw->proto_id = proto_id;

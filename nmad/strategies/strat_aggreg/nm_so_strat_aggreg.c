@@ -282,24 +282,17 @@ static int try_to_agregate_small(void *_status,
       const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
       const uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
       const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
       if(size <= d_rlen && h_rlen >= NM_SO_DATA_HEADER_SIZE)
 	{
 	  if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 	    /* We can copy data into the header zone */
 	    flags = NM_SO_DATA_USE_COPY;
-	  else
-	    if(p_so_pw->v_nb >= p_so_pw->v_size)
-	      goto next;
 	  err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
 	  nb_data_aggregation ++;
-	  
 	  goto out;
 	}
-	next:
-      ;
-  }
-
+    }
+  
   flags = NM_PW_GLOBAL_HEADER;
   if(len <= status->nm_so_copy_on_send_threshold)
     flags |= NM_SO_DATA_USE_COPY;

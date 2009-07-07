@@ -7,4 +7,4 @@ To upload it on the runtime site:
 
 $ rsync -cvrlt doc/html/ sync:/web/runtime/MaMI/doc
 
-The code for the index page is available in the file doc/memory.doc
+The code for the index page is available in the file doc/memory.doxy

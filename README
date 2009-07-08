@@ -8,7 +8,23 @@ To be compiled, pm2 software need:
     instance bash, zsh, ksh, ...
 * autoconf and autoheader (version > 2.50) when using newMadeleine with puk.
 
+* libtopology (when enabling MaMI or Marcel NUMA options)
+
 TO BE COMPLETED
+
+0 . Installing the prerequisites ++++++++++++++++++++++++++++++++++++++
+
+Sources for libtopology can be obtained either as a tarball at the
+following address:
+
+http://gforge.inria.fr/frs/?group_id=1758
+
+or from the Subversion server:
+
+$ svn checkout svn://scm.gforge.inria.fr/svn/libtopology/trunk libtopology
+
+Follow the provided instructions to install the library.
+
 
 I . Configuring PM2 +++++++++++++++++++++++++++++++++++++++++++++++++++
 

@@ -184,7 +184,7 @@ void common_pre_init(int *_argc, char *_argv[],
   */
   {
     char *topology_fsys_root_path = NULL;
-    if (argv[1] && !strcmp(argv[1], "--synthetic-topology")) {
+    if (*argc >= 2 && !strcmp(argv[1], "--synthetic-topology")) {
       if (*argc <= 2) {
 	fprintf(stderr,
 		"Fatal error: --synthetic-topology option must be followed "
@@ -196,7 +196,7 @@ void common_pre_init(int *_argc, char *_argv[],
       *argc -= 2;
       argv += 2;
     }
-    if (argv[1] && !strcmp(argv[1], "--topology-fsys-root")) {
+    if (*argc >= 2 && !strcmp(argv[1], "--topology-fsys-root")) {
       if (*argc <= 2) {
 	fprintf(stderr,
 		"Fatal error: --topology-fsys-root option must be followed "

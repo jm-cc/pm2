@@ -29,9 +29,13 @@
 #include <numa.h>
 #endif
 
-/* Tracks 
- */
+/** Gate */
+typedef int nm_gate_id_t;
 
+#define NUMBER_OF_GATES          255
+
+
+/* Tracks */
 typedef int8_t nm_trk_id_t;
 
 #define NM_TRK_SMALL ((nm_trk_id_t)0)
@@ -40,10 +44,14 @@ typedef int8_t nm_trk_id_t;
 
 #define NM_SO_MAX_TRACKS   2
 
-/* Sequence number
- */
-
+/** Sequence number */
 typedef uint8_t nm_seq_t;
+
+/* The following constant defines the maximum number of consecutive
+   packs/unpacks that can be requested without waiting the completion
+   of the previous ones.
+   WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
+#define NM_SO_PENDING_PACKS_WINDOW          256
 
 
 #include "nm_so_parameters.h"
@@ -83,11 +91,11 @@ int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 /* ** SchedOpt internal functions */
 
 int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
-			     nm_tag_t tag, uint8_t seq, uint32_t len, void *data);
+			     nm_tag_t tag, nm_seq_t seq, uint32_t len, void *data);
 
 int nm_so_rdv_success(tbx_bool_t is_any_src,
                       struct nm_gate *p_gate,
-                      nm_tag_t tag, uint8_t seq,
+                      nm_tag_t tag, nm_seq_t seq,
                       uint32_t len,
                       uint32_t chunk_offset,
                       uint8_t is_last_chunk);

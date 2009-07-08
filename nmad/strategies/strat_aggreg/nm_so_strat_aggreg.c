@@ -23,8 +23,8 @@
 /* Components structures:
  */
 
-static int strat_aggreg_pack(void*, struct nm_gate*, nm_tag_t, uint8_t, const void*, uint32_t);
-static int strat_aggreg_packv(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct iovec *, int);
+static int strat_aggreg_pack(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const void*, uint32_t);
+static int strat_aggreg_packv(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const struct iovec *, int);
 static int strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_try_and_commit(void*, struct nm_gate*);
 static int strat_aggreg_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
@@ -67,12 +67,12 @@ static int nb_ctrl_aggregation;
 static int
 try_to_agregate_small(void *_status,
 		      struct nm_gate *p_gate,
-		      nm_tag_t tag, uint8_t seq,
+		      nm_tag_t tag, nm_seq_t seq,
                       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 static int
 launch_large_chunk(void *_status,
 		   struct nm_gate *p_gate,
-                   nm_tag_t tag, uint8_t seq,
+                   nm_tag_t tag, nm_seq_t seq,
                    const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 
 /** Component declaration */
@@ -178,7 +178,7 @@ static int strat_aggreg_pack_ctrl(void*_status,
  */
 static int strat_aggreg_pack(void*_status,
 			     struct nm_gate *p_gate,
-			     nm_tag_t tag, uint8_t seq,
+			     nm_tag_t tag, nm_seq_t seq,
 			     const void *data, uint32_t len)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
@@ -200,7 +200,7 @@ static int strat_aggreg_pack(void*_status,
 
 static int try_to_agregate_small(void *_status,
 				 struct nm_gate *p_gate,
-				 nm_tag_t tag, uint8_t seq,
+				 nm_tag_t tag, nm_seq_t seq,
 				 const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_pkt_wrap *p_so_pw;
@@ -244,7 +244,7 @@ static int try_to_agregate_small(void *_status,
 static int
 launch_large_chunk(void *_status,
 		   struct nm_gate *p_gate,
-                   nm_tag_t tag, uint8_t seq,
+                   nm_tag_t tag, nm_seq_t seq,
                    const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
   struct nm_pkt_wrap *p_so_pw = NULL;
   int err;
@@ -282,7 +282,7 @@ launch_large_chunk(void *_status,
 static int
 strat_aggreg_packv(void *_status,
 		   struct nm_gate *p_gate,
-		   nm_tag_t tag, uint8_t seq,
+		   nm_tag_t tag, nm_seq_t seq,
 		   const struct iovec *iov, int nb_entries){
   struct nm_so_strat_aggreg_gate *status = _status;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);

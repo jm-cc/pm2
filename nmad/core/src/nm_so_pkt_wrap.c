@@ -333,7 +333,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
  *  @return The NM status.
  */
 int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		      nm_tag_t proto_id, uint8_t seq,
+		      nm_tag_t proto_id, nm_seq_t seq,
 		      const void *data, uint32_t len,
 		      uint32_t offset,
 		      uint8_t is_last_chunk,
@@ -396,7 +396,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 }
 
 int nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
-			    nm_tag_t proto_id, uint8_t seq,
+			    nm_tag_t proto_id, nm_seq_t seq,
 			    uint32_t len, const struct DLOOP_Segment *segp)
 {
   p_pw->proto_id = proto_id;
@@ -412,7 +412,7 @@ int nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
 
 // function dedicated to the datatypes which do not require a rendezvous
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-			  nm_tag_t proto_id, uint8_t seq,
+			  nm_tag_t proto_id, nm_seq_t seq,
 			  uint32_t len, const struct DLOOP_Segment *segp)
 {
   if(len) 
@@ -441,7 +441,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 
 /* TODO- is this function ever used? (AD) */
 int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
-                                    nm_tag_t proto_id, uint8_t seq,
+                                    nm_tag_t proto_id, nm_seq_t seq,
                                     uint32_t len, struct DLOOP_Segment *segp)
 {
   DLOOP_Offset first = 0;

@@ -36,16 +36,16 @@ struct nm_strategy_iface_s
       some optimizations at this point */
   int (*pack)(void*_status,
 	      struct nm_gate *p_gate,
-	      nm_tag_t tag, uint8_t seq,
+	      nm_tag_t tag, nm_seq_t seq,
 	      const void *data, uint32_t len);
 
   int (*packv)(void*_status,
                struct nm_gate *p_gate,
-               nm_tag_t tag, uint8_t seq,
+               nm_tag_t tag, nm_seq_t seq,
                const struct iovec *iov, int nb_entries);
 
   int (*pack_datatype)(void*_status, struct nm_gate *p_gate,
-		       nm_tag_t tag, uint8_t seq,
+		       nm_tag_t tag, nm_seq_t seq,
 		       const struct DLOOP_Segment *segp);
 
   int (*pack_ctrl)(void*_status,
@@ -72,7 +72,7 @@ struct nm_strategy_iface_s
 #ifdef NMAD_QOS
   int (*ack_callback)(void *_status,
                       struct nm_pkt_wrap *p_pw,
-                      nm_tag_t tag_id, uint8_t seq,
+                      nm_tag_t tag_id, nm_seq_t seq,
                       nm_trk_id_t track_id, uint8_t finished);
 #endif /* NMAD_QOS */
 };

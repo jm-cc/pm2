@@ -22,8 +22,8 @@
 /* Components structures:
  */
 
-static int strat_split_balance_pack(void*, struct nm_gate*, nm_tag_t, uint8_t, const void*, uint32_t);
-static int strat_split_balance_packv(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct iovec *, int);
+static int strat_split_balance_pack(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const void*, uint32_t);
+static int strat_split_balance_packv(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const struct iovec *, int);
 static int strat_split_balance_pack_datatype(void*, struct nm_gate*, nm_tag_t, uint8_t, const struct DLOOP_Segment*);
 static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
@@ -152,7 +152,7 @@ strat_split_balance_pack_ctrl(void *_status,
 static int
 strat_split_balance_launch_large_chunk(void *_status,
 				       struct nm_gate *p_gate,
-				       nm_tag_t tag, uint8_t seq,
+				       nm_tag_t tag, nm_seq_t seq,
 				       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
@@ -193,7 +193,7 @@ strat_split_balance_launch_large_chunk(void *_status,
 static int
 strat_split_balance_try_to_agregate_small(void *_status,
 					  struct nm_gate *p_gate,
-					  nm_tag_t tag, uint8_t seq,
+					  nm_tag_t tag, nm_seq_t seq,
 					  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_pkt_wrap *p_so_pw;
@@ -250,7 +250,7 @@ strat_split_balance_try_to_agregate_small(void *_status,
 static int
 strat_split_balance_pack(void *_status,
 			 struct nm_gate *p_gate,
-			 nm_tag_t tag, uint8_t seq,
+			 nm_tag_t tag, nm_seq_t seq,
 			 const void *data, uint32_t len)
 {
   int err;
@@ -277,7 +277,7 @@ strat_split_balance_pack(void *_status,
 static int
 strat_split_balance_packv(void *_status,
 			  struct nm_gate *p_gate,
-			  nm_tag_t tag, uint8_t seq,
+			  nm_tag_t tag, nm_seq_t seq,
 			  const struct iovec *iov, int nb_entries)
 {
   struct nm_so_strat_split_balance*status = _status;
@@ -312,7 +312,7 @@ strat_split_balance_packv(void *_status,
 
 static int
 strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
-				      nm_tag_t tag, uint8_t seq,
+				      nm_tag_t tag, nm_seq_t seq,
 				      uint32_t len, const struct DLOOP_Segment *segp)
 {
 
@@ -360,7 +360,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
 
 static int
 strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
-					  nm_tag_t tag, uint8_t seq,
+					  nm_tag_t tag, nm_seq_t seq,
 					  uint32_t len, const struct DLOOP_Segment *segp)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
@@ -406,7 +406,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
 // s'il n'y a pas assez d'entrées. Les données sont (pour l'instant) systématiquement reçus en contigu
 static int
 strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
-				  nm_tag_t tag, uint8_t seq,
+				  nm_tag_t tag, nm_seq_t seq,
 				  const struct DLOOP_Segment *segp)
 {
   struct nm_so_strat_split_balance*status = _status;

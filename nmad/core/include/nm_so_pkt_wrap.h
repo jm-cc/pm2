@@ -55,24 +55,24 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 
 int
 nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		  nm_tag_t proto_id, uint8_t seq,
+		  nm_tag_t proto_id, nm_seq_t seq,
 		  const void *data, uint32_t len,
                   uint32_t offset, uint8_t is_last_chunk, int flags);
 
 int
 nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-                      nm_tag_t proto_id, uint8_t seq,
+                      nm_tag_t proto_id, nm_seq_t seq,
                       uint32_t len, const struct DLOOP_Segment *segp);
 
 
 int
 nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
-                        nm_tag_t proto_id, uint8_t seq,
+                        nm_tag_t proto_id, nm_seq_t seq,
                         uint32_t len, const struct DLOOP_Segment *segp);
 
 int
 nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
-                                    nm_tag_t proto_id, uint8_t seq,
+                                    nm_tag_t proto_id, nm_seq_t seq,
                                     uint32_t len, struct DLOOP_Segment *segp);
 
 static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_so_generic_ctrl_header*p_ctrl)
@@ -86,7 +86,7 @@ static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_s
 
 
 static __inline__ int 
-nm_so_pw_alloc_and_fill_with_data(nm_tag_t proto_id, uint8_t seq,
+nm_so_pw_alloc_and_fill_with_data(nm_tag_t proto_id, nm_seq_t seq,
 				  const void *data, uint32_t len,
                                   uint32_t chunk_offset,
                                   uint8_t is_last_chunk,
@@ -138,11 +138,11 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_pw,
 				   void *ptr,
 				   nm_so_data_header_t*header, uint32_t len,
-				   nm_tag_t proto_id, uint8_t seq,
+				   nm_tag_t proto_id, nm_seq_t seq,
 				   uint32_t chunk_offset, uint8_t is_last_chunk);
 typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_pw,
 				  nm_so_generic_ctrl_header_t*rdv,
-				  nm_tag_t tag, uint8_t seq,
+				  nm_tag_t tag, nm_seq_t seq,
 				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_pw,
 				  struct nm_so_ctrl_ack_header*header);

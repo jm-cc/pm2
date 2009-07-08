@@ -64,7 +64,7 @@ pack_ctrl(void *private,
 
 static int
 pack(struct nm_gate *p_gate, void *private,
-     uint8_t tag, uint8_t seq,
+     uint8_t tag, nm_seq_t seq,
      void *data, uint32_t len)
 {
   struct list_head *out_list =

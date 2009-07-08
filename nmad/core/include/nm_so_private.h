@@ -75,6 +75,17 @@ extern p_tbx_memory_t nm_so_chunk_mem;
         ((struct nm_so_chunk *)((char *)(l) -\
          (unsigned long)(&((struct nm_so_chunk *)0)->link)))
 
+struct nm_unpack_t
+{
+  nm_so_status_t status;
+  void *data;
+  int32_t cumulated_len;
+  int32_t expected_len;
+  nm_gate_t p_gate;
+  nm_seq_t seq;
+  nm_tag_t tag;
+};
+
 /** tag-indexed type for 'any_src' requests */
 struct nm_so_any_src_s
 {
@@ -83,7 +94,7 @@ struct nm_so_any_src_s
   int32_t cumulated_len;
   int32_t expected_len;
   nm_gate_t p_gate;
-  uint8_t seq;
+  nm_seq_t seq;
 };
 static inline void nm_so_any_src_ctor(struct nm_so_any_src_s*any_src, nm_tag_t tag)
 {
@@ -100,9 +111,7 @@ NM_TAG_TABLE_TYPE(nm_so_any_src, struct nm_so_any_src_s);
 struct nm_so_tag_s
 {
 
-  /* ** common fields 
-   *  WARNING: false sharing between send and recv!
-   */
+  /* ** common fields */
   
   /** send and recv status (filled with NM_SO_STATUS_* bitmasks) */
   nm_so_status_t status[NM_SO_PENDING_PACKS_WINDOW];
@@ -110,26 +119,27 @@ struct nm_so_tag_s
   /** context for the interface */
   struct nm_sr_tag_s*p_sr_tag;
 
+
   /* ** receiving-related fields */
-  uint8_t recv_seq_number;
+
+  nm_seq_t recv_seq_number; /**< next sequence number for recv */
   struct
   {
-    struct nm_so_chunk pkt_here; /**< unexpected packet */
+    struct nm_so_chunk pkt_here; /**< chunks of unexpected data- lookup by [gate,tag,seq] + matching */
     struct
-    { /* expected packet (i.e. recv posted) */
+    {
       void *data;
       int32_t cumulated_len;
       int32_t expected_len;
-    } unpack_here;
+    } unpack_here; /**< unpack request- lookup by [gate,tag,seq] + matching */
   } recv[NM_SO_PENDING_PACKS_WINDOW];
+
 
   /* ** sending-related fields */
 
-  uint8_t send_seq_number;
-  /** pending len to send */
-  int32_t send[NM_SO_PENDING_PACKS_WINDOW];
-  /** large messages waiting for ACKs */
-  struct list_head pending_large_send;
+  nm_seq_t send_seq_number;                  /**< next sequence number for send */
+  int32_t send[NM_SO_PENDING_PACKS_WINDOW];  /**< pending len to send */
+  struct list_head pending_large_send;       /**< large messages waiting for ACKs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
 };
 static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 {
@@ -182,13 +192,13 @@ struct nm_so_sched
 
 int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len);
 
-int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
+int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
 		   nm_so_flag_t flag, void *data_description, uint32_t len);
 
 int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t flag,
 			   void *data_description, uint32_t len);
 
-int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq);
+int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq);
 
 
 static inline int iov_len(const struct iovec *iov, int nb_entries)

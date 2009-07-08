@@ -45,7 +45,7 @@ struct nm_so_global_header
 
 struct nm_so_data_header {
   nm_tag_t proto_id;
-  uint8_t  seq;
+  nm_seq_t  seq;
   uint8_t  flags;
   uint16_t skip;
   uint32_t len;
@@ -55,7 +55,7 @@ struct nm_so_data_header {
 struct nm_so_ctrl_rdv_header {
   nm_tag_t proto_id;
   nm_tag_t tag_id;
-  uint8_t seq;
+  nm_seq_t seq;
   uint8_t is_last_chunk;
   uint32_t len;
   uint32_t chunk_offset;
@@ -64,7 +64,7 @@ struct nm_so_ctrl_rdv_header {
 struct nm_so_ctrl_ack_header {
   nm_tag_t proto_id;  /**< proto ID- should be NM_SO_PROTO_ACK */
   nm_tag_t tag_id;    /**< tag of the acknowledged data */
-  uint8_t seq;
+  nm_seq_t seq;
   nm_trk_id_t trk_id;
   nm_drv_id_t drv_id;
   uint32_t chunk_offset;
@@ -90,7 +90,7 @@ typedef struct nm_so_data_header nm_so_data_header_t;
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
-static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_id, uint8_t seq, uint8_t flags,
+static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_id, nm_seq_t seq, uint8_t flags,
 				   uint16_t skip, uint32_t len, uint32_t chunk_offset)
 { 
   p_header->proto_id = proto_id;
@@ -111,7 +111,7 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_
     (p_ctrl)->r.is_last_chunk = (_is_last_chunk);	\
   } while(0)
 
-static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, uint8_t seq,
+static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 { 
   p_ctrl->a.proto_id = NM_SO_PROTO_ACK;

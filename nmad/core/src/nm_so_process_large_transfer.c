@@ -24,21 +24,21 @@
 
 static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_pw);
 
-static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
+static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset);
 
 static int init_large_datatype_recv(tbx_bool_t is_any_src,
                                     struct nm_gate *p_gate,
-                                    nm_tag_t tag, uint8_t seq,
+                                    nm_tag_t tag, nm_seq_t seq,
                                     uint32_t len, uint32_t chunk_offset);
 
 static int init_large_contiguous_recv(struct nm_gate *p_gate,
-                                      nm_tag_t tag, uint8_t seq,
+                                      nm_tag_t tag, nm_seq_t seq,
                                       void *data, uint32_t len,
                                       uint32_t chunk_offset);
 
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
-                                                 nm_tag_t tag, uint8_t seq,
+                                                 nm_tag_t tag, nm_seq_t seq,
                                                  uint32_t len, uint32_t chunk_offset,
                                                  struct DLOOP_Segment *segp);
 
@@ -51,7 +51,7 @@ static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, st
 
 /* ********************************************************* */
 
-static void nm_so_build_multi_ack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq, uint32_t chunk_offset,
+static void nm_so_build_multi_ack(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq, uint32_t chunk_offset,
 				  int nb_chunks, struct nm_rdv_chunk*chunks)
 {
   int i;
@@ -69,7 +69,7 @@ static void nm_so_build_multi_ack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t 
 
 static inline int nm_so_post_large_recv(struct nm_gate *p_gate,
 					struct nm_rdv_chunk*chunk,
-					nm_tag_t tag, uint8_t seq,
+					nm_tag_t tag, nm_seq_t seq,
 					void *data)
 {
   struct nm_pkt_wrap *p_pw = NULL;
@@ -85,7 +85,7 @@ static inline int nm_so_post_large_recv(struct nm_gate *p_gate,
 
 static inline int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
 						int nb_chunks, struct nm_rdv_chunk*chunks,
-						nm_tag_t tag, uint8_t seq, void *data)
+						nm_tag_t tag, nm_seq_t seq, void *data)
 {
   uint32_t offset = 0;
   int i;
@@ -120,7 +120,7 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
 
 int nm_so_rdv_success(tbx_bool_t is_any_src,
                       struct nm_gate *p_gate,
-                      nm_tag_t tag, uint8_t seq,
+                      nm_tag_t tag, nm_seq_t seq,
                       uint32_t len,
                       uint32_t chunk_offset,
                       uint8_t is_last_chunk)
@@ -194,7 +194,7 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
 /** The received rdv describes a fragment 
  * (that may span across multiple entries of the recv-side iovec)
  */
-static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
+static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
                                struct iovec *iov, uint32_t len, uint32_t chunk_offset)
 {
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
@@ -281,7 +281,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq
 
 static int init_large_datatype_recv(tbx_bool_t is_any_src,
                                     struct nm_gate *p_gate,
-                                    nm_tag_t tag, uint8_t seq,
+                                    nm_tag_t tag, nm_seq_t seq,
                                     uint32_t len, uint32_t chunk_offset){
   int nb_blocks = 0;
   int last = len;
@@ -354,7 +354,7 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_p
   struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
   nm_tag_t tag = p_pw->proto_id;
-  uint8_t seq = p_pw->seq;
+  nm_seq_t seq = p_pw->seq;
   uint32_t len = p_pw->length;
 
 #warning Multi-rail?
@@ -408,7 +408,7 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_p
 
 
 static int init_large_contiguous_recv(struct nm_gate *p_gate,
-                                      nm_tag_t tag, uint8_t seq,
+                                      nm_tag_t tag, nm_seq_t seq,
                                       void *data, uint32_t len,
                                       uint32_t chunk_offset)
 {
@@ -449,7 +449,7 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
 
 
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
-                                                 nm_tag_t tag, uint8_t seq,
+                                                 nm_tag_t tag, nm_seq_t seq,
                                                  uint32_t len, uint32_t chunk_offset,
                                                  struct DLOOP_Segment *segp){
   struct nm_pkt_wrap *p_pw = NULL;

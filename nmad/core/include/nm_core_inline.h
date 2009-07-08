@@ -79,7 +79,7 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 
 /** Post an ACK
  */
-static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, uint8_t seq,
+static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
@@ -91,7 +91,7 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, uint8_t 
 /* ** Pack/unpack ****************************************** */
 
 static inline int nm_so_unpack(struct nm_gate *p_gate,
-			       nm_tag_t tag, uint8_t seq,
+			       nm_tag_t tag, nm_seq_t seq,
 			       void *data, uint32_t len)
 {
   /* Nothing special to flag for the contiguous reception */
@@ -100,7 +100,7 @@ static inline int nm_so_unpack(struct nm_gate *p_gate,
 }
 
 static inline int nm_so_unpackv(struct nm_gate *p_gate,
-				nm_tag_t tag, uint8_t seq,
+				nm_tag_t tag, nm_seq_t seq,
 				struct iovec *iov, int nb_entries)
 {
   /* Data will be receive in an iovec tab */
@@ -109,7 +109,7 @@ static inline int nm_so_unpackv(struct nm_gate *p_gate,
 }
 
 static inline int nm_so_unpack_datatype(struct nm_gate *p_gate,
-					nm_tag_t tag, uint8_t seq,
+					nm_tag_t tag, nm_seq_t seq,
 					struct DLOOP_Segment *segp)
 {
   /* Data will be receive through a datatype */

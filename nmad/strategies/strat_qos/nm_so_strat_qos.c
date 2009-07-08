@@ -70,7 +70,7 @@ static int nm_strat_qos_load(void)
 struct nm_so_strat_qos_ack {
   nm_tag_t tag;
   struct list_head link;
-  uint8_t seq;
+  nm_seq_t seq;
   nm_trk_id_t track_id;
 };
 
@@ -235,7 +235,7 @@ static int strat_qos_pack_ctrl(void*_status,
    some optimizations at this point */
 static int strat_qos_pack(void*_status,
                           struct nm_gate *p_gate,
-                          nm_tag_t tag, uint8_t seq,
+                          nm_tag_t tag, nm_seq_t seq,
                           void *data, uint32_t len)
 {
   struct nm_so_strat_qos *status = _status;
@@ -328,7 +328,7 @@ static int strat_qos_rdv_accept(void *_status, struct nm_gate *p_gate, uint32_t 
 
 static int strat_qos_ack_callback(void *_status,
                                   struct nm_pkt_wrap *p_so_pw,
-                                  nm_tag_t tag_id, uint8_t seq,
+                                  nm_tag_t tag_id, nm_seq_t seq,
                                   nm_trk_id_t track_id, uint8_t finished)
 {
   struct nm_so_strat_qos *status = _status;

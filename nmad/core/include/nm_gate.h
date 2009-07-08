@@ -23,7 +23,6 @@ struct nm_sched;
 struct nm_gate_drv;
 struct nm_pkt_wrap;
 
-
 /** Per driver gate related data. */
 struct nm_gate_drv
 {
@@ -61,15 +60,15 @@ struct nm_gate
   struct nm_core *p_core;
   
   /** Gate id. */
-  int id;
+  nm_gate_id_t id;
   
   /** table of tag status */
   struct nm_so_tag_table_s tags;
 
-  unsigned active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
-  unsigned active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
+  tbx_bool_t active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
+  tbx_bool_t active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
-  /* For large messages waiting for Track 1 (or 2) to be free */
+  /** large messages waiting for Track 1 (or 2) to be free */
   struct list_head pending_large_recv;
 
   /* Strategy components elements */

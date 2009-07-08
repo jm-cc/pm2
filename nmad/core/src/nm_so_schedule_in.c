@@ -150,7 +150,7 @@ int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t fl
 
 /** Handle a sourceful unpack.
  */
-int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
+int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
 		   nm_so_flag_t flag, void *data_description, uint32_t len)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
@@ -192,7 +192,7 @@ int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq,
   return err;
 }
 
-int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, uint8_t seq)
+int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq)
 {
   int err = -NM_ENOTIMPL;
   if(p_gate)
@@ -248,7 +248,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 static void process_small_data(tbx_bool_t is_any_src,
 			       struct nm_pkt_wrap *p_pw,
 			       void *ptr,
-			       uint32_t len, nm_tag_t tag, uint8_t seq,
+			       uint32_t len, nm_tag_t tag, nm_seq_t seq,
 			       uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
@@ -342,7 +342,7 @@ static void process_small_data(tbx_bool_t is_any_src,
 }
 
 static inline void store_data_or_rdv(nm_so_status_t status,
-				     void *header, uint32_t len, nm_tag_t tag, uint8_t seq,
+				     void *header, uint32_t len, nm_tag_t tag, nm_seq_t seq,
 				     struct nm_pkt_wrap *p_pw)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_pw->p_gate->tags, tag);
@@ -376,7 +376,7 @@ static inline void store_data_or_rdv(nm_so_status_t status,
 static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 				    void *ptr,
 				    nm_so_data_header_t*header, uint32_t len,
-				    nm_tag_t proto_id, uint8_t seq,
+				    nm_tag_t proto_id, nm_seq_t seq,
 				    uint32_t chunk_offset,
 				    uint8_t is_last_chunk)
 {
@@ -419,7 +419,7 @@ static void data_completion_callback(struct nm_pkt_wrap *p_pw,
  */
 static void rdv_callback(struct nm_pkt_wrap *p_pw,
 			 nm_so_generic_ctrl_header_t*rdv,
-			 nm_tag_t tag_id, uint8_t seq,
+			 nm_tag_t tag_id, nm_seq_t seq,
 			 uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
@@ -467,7 +467,7 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
 static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
 {
   const nm_tag_t tag          = header->tag_id - 128;
-  const uint8_t seq           = header->seq;
+  const nm_seq_t seq          = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate = p_ack_pw->p_gate;
@@ -604,7 +604,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
     {
       /* ** Large packet - track #1 ************************ */
       const nm_tag_t tag = p_pw->proto_id - 128;
-      const uint8_t seq = p_pw->seq;
+      const nm_seq_t seq = p_pw->seq;
       const uint32_t len = p_pw->length;
       struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);
       struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);

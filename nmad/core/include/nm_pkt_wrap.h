@@ -93,7 +93,7 @@ struct nm_pkt_wrap
   /** Sequence number for the given protocol id.
       - rank in the communication flow this packet belongs to
   */
-  uint8_t seq;
+  nm_seq_t seq;
   
   /** Driver implementation data.  */
   void			*drv_priv;

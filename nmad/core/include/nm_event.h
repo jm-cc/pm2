@@ -21,7 +21,7 @@ struct nm_so_event_s
   nm_so_status_t status;
   nm_gate_t p_gate;
   nm_tag_t tag;
-  uint8_t seq;
+  nm_seq_t seq;
   uint32_t len;
   tbx_bool_t any_src;
 };

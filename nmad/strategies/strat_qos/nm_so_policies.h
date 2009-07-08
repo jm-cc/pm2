@@ -18,8 +18,6 @@
 
 #ifdef NMAD_QOS
 
-#include "nm_so_headers.h"
-
 typedef struct nm_so_policy_struct nm_so_policy;
 
 typedef int (*nm_so_policy_pack_ctrl_func)(void *private,
@@ -27,7 +25,7 @@ typedef int (*nm_so_policy_pack_ctrl_func)(void *private,
 
 typedef int (*nm_so_policy_pack_func)(struct nm_gate *p_gate,
 				      void *private,
-				      uint8_t tag, uint8_t seq,
+				      nm_tag_t tag, nm_seq_t seq,
 				      void *data, uint32_t len);
 
 typedef int (*nm_so_policy_try_and_commit_func)(struct nm_gate *p_gate,

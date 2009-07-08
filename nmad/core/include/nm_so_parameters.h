@@ -18,13 +18,6 @@
 #define NM_SO_PARAMETERS_H
 
 
-/* The following constant defines the maximum number of consecutive
-   packs/unpacks that can be requested without waiting the completion
-   of the previous ones.
-
-   WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
-#define NM_SO_PENDING_PACKS_WINDOW          256
-
 #if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
 #  define NM_SO_MAX_UNEXPECTED                (1024 * 1024)
 #else

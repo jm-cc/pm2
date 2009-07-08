@@ -126,11 +126,6 @@ enum nm_sr_transfer_type
 typedef enum nm_sr_transfer_type nm_sr_transfer_type_t;
 
 
-/* for backward compatibility */
-#define nm_so_request nm_sr_request_t
-#define NM_SO_ANY_SRC  NM_ANY_GATE
-
-
 /** Initialize the send/receive interface.
  *
  *  @param p_core a pointer to the NM core object.

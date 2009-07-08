@@ -268,7 +268,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
-  uint8_t seq;
+  nm_seq_t seq;
   int ret;
 
   NM_SO_SR_LOG_IN();
@@ -515,7 +515,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   else
     {
       nmad_lock();
-      uint8_t seq;
+      nm_seq_t seq;
       struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
       struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
   
@@ -681,7 +681,7 @@ int nm_sr_probe(struct nm_core *p_core,
 	  if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	    {
 	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-	      uint8_t seq = p_so_tag->recv_seq_number;
+	      nm_seq_t seq = p_so_tag->recv_seq_number;
 	      volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
 	      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
 		*pp_out_gate = p_gate;
@@ -696,7 +696,7 @@ int nm_sr_probe(struct nm_core *p_core,
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
 	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-	  uint8_t seq = p_so_tag->recv_seq_number;
+	  nm_seq_t seq = p_so_tag->recv_seq_number;
 	  volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
 	  if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
 	    *pp_out_gate = p_gate;
@@ -825,7 +825,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
   if(nm_sr_irecv_event_info.request)
     {
       struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
-      uint8_t seq = p_so_tag->recv_seq_number++;
+      nm_seq_t seq = p_so_tag->recv_seq_number++;
       struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
       p_sr_tag->rreqs[seq] = nm_sr_irecv_event_info.request;
       nm_sr_irecv_event_info.request = NULL;
@@ -872,7 +872,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
       p_request = *rreq;
       *rreq = NULL;
     }
-  uint8_t sr_event;
+  nm_sr_status_t sr_event;
   if(event->status & NM_SO_STATUS_UNPACK_CANCELLED)
     {
       sr_event = NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED;

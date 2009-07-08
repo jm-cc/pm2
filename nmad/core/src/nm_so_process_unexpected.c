@@ -34,7 +34,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
     {
       const struct nm_so_data_header *h = header;
       const nm_tag_t tag = h->proto_id - 128;
-      const uint8_t seq = h->seq;
+      const nm_seq_t seq = h->seq;
       const uint32_t len = h->len;
       assert(len <= NM_SO_MAX_UNEXPECTED);
       const void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
@@ -85,7 +85,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
     {
       const struct nm_so_ctrl_rdv_header *rdv = header;
       const nm_tag_t tag = rdv->tag_id - 128;
-      const uint8_t seq = rdv->seq;
+      const nm_seq_t seq = rdv->seq;
       const uint32_t len = rdv->len;
       const uint32_t chunk_offset = rdv->chunk_offset;
       const uint8_t is_last_chunk = rdv->is_last_chunk;
@@ -103,7 +103,7 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
 }
 
 int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
-			     nm_tag_t tag, uint8_t seq, uint32_t len, void *data)
+			     nm_tag_t tag, nm_seq_t seq, uint32_t len, void *data)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   uint32_t expected_len = 0;

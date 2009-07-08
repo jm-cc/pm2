@@ -22,7 +22,7 @@
 
 /** Process a data request completion.
  */
-static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto_id, uint8_t seq, uint32_t len)
+static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto_id, nm_seq_t seq, uint32_t len)
 {
   const nm_tag_t tag = proto_id - 128;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
@@ -56,7 +56,7 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
 static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 				     void *ptr TBX_UNUSED,
 				     nm_so_data_header_t*header, uint32_t len TBX_UNUSED,
-				     nm_tag_t proto_id, uint8_t seq,
+				     nm_tag_t proto_id, nm_seq_t seq,
 				     uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;

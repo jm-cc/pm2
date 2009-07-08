@@ -23,7 +23,7 @@
 /* Components structures:
 */
 
-static int strat_aggreg_autoextended_pack(void*, struct nm_gate*, nm_tag_t, uint8_t, const void*, uint32_t);
+static int strat_aggreg_autoextended_pack(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const void*, uint32_t);
 static int strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
 static int strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
@@ -183,7 +183,7 @@ static int strat_aggreg_autoextended_flush(void*_status,
  */
 static int strat_aggreg_autoextended_pack(void*_status,
                                           struct nm_gate *p_gate,
-                                          nm_tag_t tag, uint8_t seq,
+                                          nm_tag_t tag, nm_seq_t seq,
                                           const void *data, uint32_t len)
 {
   struct nm_pkt_wrap *p_so_pw = NULL;

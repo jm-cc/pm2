@@ -31,10 +31,6 @@ typedef struct nm_gate*nm_gate_t;
 
 #define NM_GATE_NONE ((nm_gate_t)NULL)
 
-typedef nm_gate_t nm_gate_id_t;
-
-#define NUMBER_OF_GATES          255
-
 #define NM_ANY_GATE NM_GATE_NONE
 
 

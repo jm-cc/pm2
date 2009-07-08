@@ -410,66 +410,6 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-### Sampling configuration ###
-
-#Check if the network samplings have to be done
-SAMPLING_ENABLED=$(pm2-config --getvar=NMAD_SAMPLING_ENABLED)
-
-if [ "$SAMPLING_ENABLED" == "1" ] ; then
-    log "Sampling enabled"
-
-    pm2-conf > machine_file
-
-    machine1=$(cat machine_file | head -n 2 | sed -e '1d' -e 's/0 : //g')
-    log "machine1=$machine1"
-
-    machine2=$(cat machine_file | head -n 3 | sed -e '1,2d' -e 's/1 : //g')
-    log "machine2=$machine2"
-
-    if [ -z "$machine1" ] ; then
-        _pm2_load_error "$PROGNAME Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
-    fi
-
-    ssh $machine1 arch > architecture
-    if [ ! -s architecture ] ; then
-	ssh $machine1 uname -m > architecture
-    fi
-    arch=`cat architecture`
-    log "Arch = $arch"
-
-    rm -f architecture
-    rm -f machine_file
-
-    sampling_activated=1
-else
-    log "Sampling not enabled"
-    sampling_activated=0
-fi
-
-### --- ###
-
-### Launch the driver sampling if required ###
-if [ $sampling_activated -eq 1 ] ; then
-    if [ -n "$PM2_PROTOCOL" ] ; then
-        protocols="$PM2_PROTOCOL"
-    else
-        protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
-    fi
-
-    for protocol in $protocols
-      do
-
-      sampling_file="${PM2_ROOT}/nmad/sampling/${protocol}_${arch}.nm_ns"
-      if [ ! -f $sampling_file ] ; then
-	  log "Launching of sampling.sh"
-	  (cd ${PM2_ROOT}/nmad/sampling/; ./sampling.sh $machine1 $machine2 ${protocol})
-      else
-	  log "${protocol}_${arch}.nm_ns already exists"
-      fi
-    done
-fi
-### --- ###
-
 [ -n "$*" ] || _pm2_load_usage 1
 
 

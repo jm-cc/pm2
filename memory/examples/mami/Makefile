@@ -33,51 +33,6 @@ APPS_EXCLUDE += $(basename mami_allocator.c)
 endif
 
 all: $(APPS_LIST)
-config: .config/blas_$(FLAVOR) .config/numa_$(FLAVOR)
-
-# Include the file that tells whether BLAS is available.
--include .config/blas_$(FLAVOR)
-
-# Determine whether BLAS is available.
-.config/blas_$(FLAVOR):
-	@mkdir -p "$(dir $@)"
-	@echo "#include <cblas.h>" > ,,conftest.c
-	@echo "int main (int argc, char *argv[]) { int x=CblasRowMajor; return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lblas 2>/dev/null;	\
-	then echo "HAVE_BLAS = yes" > "$@" ;								\
-	else echo "HAVE_BLAS = no" > "$@" ; fi
-	@rm -f ,,conftest{,.c}
-
-ifeq (no,$(HAVE_BLAS))
-APPS_EXCLUDE += sgemm
-APPS_EXCLUDE += saxpy
-endif
-sgemm-ldflags := -lblas
-saxpy-ldflags := -lblas
-
-# Include the file that tells whether NUMA is available.
--include .config/numa_$(FLAVOR)
-
-# Determine whether NUMA is available.
-.config/numa_$(FLAVOR):
-	@mkdir -p "$(dir $@)"
-	@echo "#include <numa.h>" > ,,conftest.c
-	@echo "int main (int argc, char *argv[]) { return 0; }" >> ,,conftest.c
-	@if $(CC) $(CFLAGS) -o ,,conftest ,,conftest.c $(LDFLAGS) -lnuma 2>/dev/null;	\
-	then echo "HAVE_NUMA = yes" > "$@" ;								\
-	else echo "HAVE_NUMA = no" > "$@" ; fi
-	@rm -f ,,conftest{,.c}
-
-ifeq (no,$(HAVE_NUMA))
-APPS_EXCLUDE += crossing_access
-APPS_EXCLUDE += membind
-APPS_EXCLUDE += memteams
-APPS_EXCLUDE += memteams-bubbles
-endif
-membind-ldflags := -lrt -lnuma
-memteams-ldflags := -lrt -lnuma
-memteams-bubbles-ldflags := -lrt -lnuma
-crossing_access-ldflags := -lnuma
 
 attach_mamif: FC=gfortran
 attach_migratef: FC=gfortran

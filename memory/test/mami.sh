@@ -29,16 +29,26 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
 fi
 
 NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
-flavor="test_memory_mami"
 appdir="${PM2_ROOT}/memory/examples/mami"
 check_all_lines=1
+
+level=$(basename $_t .level_3)
+if [ "$level" == "$_t" ] ; then
+    flavor="test_memory_mami_marcel"
+    modules="marcel"
+    options="marcel fortran"
+else
+    flavor="test_memory_mami_pthread"
+    modules=""
+    options="pthread"
+fi
 
 create_test_flavor() {
 # Creation de la flavor
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
-	--modules=\"marcel tbx init memory\" \
-        --memory=\"marcel enable_mami fortran\" \
+	--modules=\"$modules tbx init memory\" \
+        --memory=\"enable_mami $options\" \
 	--marcel=\"numa standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
         --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect

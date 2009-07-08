@@ -27,6 +27,11 @@ static unsigned int pm2self       = 0;
 static unsigned int pm2_conf_size = 0;
 #endif
 
+#if defined(PM2_TOPOLOGY)
+topo_topology_t topology;
+char *synthetic_topology_description = NULL;
+#endif /* PM2_TOPOLOGY */
+
 void common_attr_init(common_attr_t *attr TBX_UNUSED)
 {
 #if defined (MAD3)
@@ -105,6 +110,17 @@ void common_attr_init(common_attr_t *attr TBX_UNUSED)
     *_argc = last; \
   }
 
+#ifdef PM2_TOPOLOGY
+static void show_synthetic_topology_help(void)
+{
+	fprintf(stderr,
+					"<topology-description> is a space-separated list of positive integers,\n"
+					"each of which denotes the number of children attached to a each node of the\n"
+					"corresponding topology level.\n\n"
+					"Example: \"2 4 2\" denotes a 2-node machine with 4 dual-core CPUs.\n");
+}
+#endif /* PM2_TOPOLOGY */
+
 void common_pre_init(int *_argc, char *_argv[],
 		     common_attr_t *attr)
 {
@@ -160,6 +176,44 @@ void common_pre_init(int *_argc, char *_argv[],
    */
   pm2_init_data(argc, argv);
 #endif /* PM2 */
+
+#if defined(PM2_TOPOLOGY)
+  /* TODO: FIXME: The arguments are only taken into account if they
+     are at the beginning of the command line, we should be able to
+     specify them at any location
+  */
+  {
+    char *topology_fsys_root_path = NULL;
+    if (argv[1] && !strcmp(argv[1], "--synthetic-topology")) {
+      if (*argc <= 2) {
+	fprintf(stderr,
+		"Fatal error: --synthetic-topology option must be followed "
+		"by <topology-description>.\n");
+	show_synthetic_topology_help();
+	exit(1);
+      }
+      synthetic_topology_description = argv[2];
+      *argc -= 2;
+      argv += 2;
+    }
+    if (argv[1] && !strcmp(argv[1], "--topology-fsys-root")) {
+      if (*argc <= 2) {
+	fprintf(stderr,
+		"Fatal error: --topology-fsys-root option must be followed "
+		"by the path of a directory.\n");
+	exit(1);
+      }
+      topology_fsys_root_path = argv[2];
+      *argc -= 2;
+      argv += 2;
+    }
+    topo_topology_init(&topology);
+    topo_topology_set_fsys_root(topology, topology_fsys_root_path);
+    if (synthetic_topology_description)
+      topo_topology_set_synthetic(topology, synthetic_topology_description);
+    topo_topology_load(topology);
+  }
+#endif /* PM2_TOPOLOGY */
 
 #ifdef MARCEL
   /*
@@ -409,7 +463,6 @@ void common_post_init(int *_argc, char *_argv[],
   tbx_purge_cmd_line(argc, argv);
 #endif /* TBX */
 
-
 #ifdef PM2DEBUG
 /*
    * Logging services - args clean-up
@@ -432,7 +485,7 @@ common_exit(common_attr_t *attr)
 {
   LOG_IN();
 
-/* If several modules are activated (such as NMad + Marcel), 
+/* If several modules are activated (such as NMad + Marcel),
  * common_exit may be called several times. To avoid double-free problems
  * let's return if common_exit as already been called.
  */
@@ -446,6 +499,10 @@ common_exit(common_attr_t *attr)
     {
       attr = &default_static_attr;
     }
+
+#ifdef PM2_TOPOLOGY
+  topo_topology_destroy(topology);
+#endif /* PM2_TOPOLOGY */
 
 #ifdef PM2
   pm2_net_request_end();

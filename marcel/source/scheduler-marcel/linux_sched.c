@@ -1396,6 +1396,9 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		if (level->children[i]->type == MARCEL_LEVEL_FAKE)
 			snprintf(name, sizeof(name), "Fake%d-%d",
 				levelnum, level->children[i]->number);
+		else if (level->children[i]->type == MARCEL_LEVEL_MISC)
+			snprintf(name, sizeof(name), "Misc%d-%d",
+				levelnum, level->children[i]->number);
 		else
 #endif
 			snprintf(name,sizeof(name), "%s%d",

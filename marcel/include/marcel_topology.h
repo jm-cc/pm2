@@ -84,6 +84,8 @@ extern unsigned marcel_nbnodes;
 #ifdef MA__NUMA
 /** \brief Maximum allowed arity in the level tree */
 extern unsigned marcel_topo_max_arity;
+/** \brief Is merge needed */
+extern unsigned marcel_topo_merge;
 /** \brief Direct access to node levels */
 extern struct marcel_topo_level *marcel_topo_node_level;
 /** \brief Direct access to core levels */
@@ -128,6 +130,7 @@ enum marcel_topo_level_e {
 #else
 #  ifdef MA__NUMA
 	MARCEL_LEVEL_FAKE,	/**< \brief Fake level for meeting the marcel_topo_max_arity constraint */
+	MARCEL_LEVEL_MISC,	/**< \brief Misc kinds of {OS,machine}-dependant levels */
 	MARCEL_LEVEL_NODE,	/**< \brief NUMA node */
 	MARCEL_LEVEL_DIE,	/**< \brief Physical chip */
 	MARCEL_LEVEL_L3,	/**< \brief L3 cache */
@@ -725,15 +728,6 @@ struct marcel_topo_level {
 		__l->father = NULL; \
 	} while (0)
 
-#define ma_topo_level_cpuset_from_array(l, _value, _array, _max) do { \
-		struct marcel_topo_level *__l = (l); \
-		unsigned int *__a = (_array); \
-		int k; \
-		for(k=0; k<_max; k++) \
-			if (__a[k] == _value) \
-				marcel_vpset_set(&__l->cpuset, k); \
-	} while (0)
-
 #section types
 /** \brief Type of a topology level */
 typedef struct marcel_topo_level marcel_topo_level_t;
@@ -745,9 +739,6 @@ typedef struct marcel_topo_level marcel_topo_level_t;
 #define ma_topo_vpdata_self() (ma_topo_vpdata_by_vpnum(ma_vpnum(MA_LWP_SELF)))
 #define ma_topo_nodedata_l(node, field) ((node)->nodedata.field)
 #define ma_topo_nodedata(nodenum, field) ma_topo_nodedata_l(&marcel_topo_node_level[nodenum], field)
-
-/** \brief The maximum depth of a synthetic or "fake" topology tree.  */
-#define MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH   128
 
 #section variables
 /** \brief Number of horizontal levels */
@@ -762,26 +753,25 @@ extern TBX_EXTERN struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LA
 #section marcel_variables
 #ifdef MA__NUMA
 
-/** \brief A zero-terminated array describing a "synthetic" topology.  Each
-		integer denotes the number of children attached to a each node of the
-		corresponding topology level.  For example, { 2, 4, 2, 0 } denotes a
-		2-node machine with 4 dual-core CPUs.  */
-extern TBX_EXTERN unsigned ma_synthetic_topology_description[];
+/** \brief A space-separated string describing a "synthetic" topology.  Each
+	integer denotes the number of children attached to a each node of the
+	corresponding topology level.  For example, "2 4 2" denotes a
+	2-node machine with 4 dual-core CPUs.
+	Only has an effect at startup-time.  */
+extern TBX_EXTERN char * ma_synthetic_topology_description;
 
 #endif /* MA__NUMA */
 
 #section variables
 #ifdef MA__NUMA
 
-/** \brief A boolean indicating whether to use the "synthetic" topology
-		described by `ma_synthetic_topology_description' instead of the actual
-		host topology.  Only has an effect at startup-time.  */
-extern TBX_EXTERN tbx_bool_t marcel_use_synthetic_topology;
+/** \brief A boolean indicating whether a fake topology is used. */
+extern TBX_EXTERN tbx_bool_t marcel_use_fake_topology;
 
 #else /* !MA__NUMA */
 
-/* Support for synthetic topologies requires `MA__NUMA'.  */
-# define marcel_use_synthetic_topology  0
+/* Support for fake topologies requires `MA__NUMA'.  */
+# define marcel_use_fake_topology  0
 
 #endif /* MA__NUMA */
 
@@ -842,10 +832,6 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 #define ma_topology_lwp_idle_core(lwp) 1
 #define ma_topology_lwp_idle_end(lwp) (void)0
 #endif
-
-/** \brief Use \param path as the file system root when browsing, e.g., Linux
- * sysfs and procfs to determine the topology.  */
-extern int ma_topology_set_fsys_root(const char *path);
 
 
 #section marcel_inline

@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   int nbnodes;
 
   common_init(&argc, argv, NULL);
-  nbnodes = marcel_nbnodes;
+  nbnodes = topo_get_type_nbobjs(topology, TOPO_OBJ_NODE);
   if (nbnodes < 2) {
     printf("This application needs at least two NUMA nodes.\n");
     exit(1);

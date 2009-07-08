@@ -67,10 +67,11 @@ int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int fla
 
 int _mm_use_synthetic_topology(void) {
 #ifdef MARCEL
-  return marcel_use_synthetic_topology;
+  return marcel_use_fake_topology;
 #else
-#  warning undefined
-  return 0;
+  struct topo_topology_info topoinfo;
+  topo_topology_get_info(topology, &topoinfo);
+  return topoinfo.is_fake;
 #endif
 }
 

@@ -33,10 +33,15 @@ main (int argc, char *argv[])
 #define BUBBLE MA_BUBBLE_ENTITY
 #define THREAD MA_THREAD_ENTITY
 
-  static const tree_t result_core =
+  static const tree_t result_vp =
     { .children_count = 0,
       .entity_count = 1,
       .entities = { THREAD } };
+
+  static const tree_t result_core =
+    { .children_count = 1,
+      .children = { &result_vp },
+      .entity_count = 0 };
 
   static const tree_t result_cpu =
     { .children_count = 2,

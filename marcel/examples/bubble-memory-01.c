@@ -59,13 +59,13 @@ main (int argc, char *argv[]) {
   marcel_bubble_sched_t *scheduler;
 
   /* A dual-socket dual-core computer */
-  static const char topology_description[] = "2 2 1 1";
+  static const char topology_description[] = "2 2 1 1 1";
 
   /* Pass the topology description to Marcel.  Yes, it looks hackish to
      communicate with the library via command-line arguments.  */
   new_argv = alloca ((argc + 2) * sizeof (*new_argv));
   new_argv[0] = argv[0];
-  new_argv[1] = (char *) "--marcel-synthetic-topology";
+  new_argv[1] = (char *) "--synthetic-topology";
   new_argv[2] = (char *) topology_description;
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
   argc += 2;

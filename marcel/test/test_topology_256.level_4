@@ -16,7 +16,7 @@
 topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
 flavor="marcel-topology-256"
 prog="read-topology"
-args="-v --marcel-topology-fsys-root $topology_chroot"
+args="--topology-fsys-root $topology_chroot -v"
 
 if [ -d $topology_chroot ] ; then
     cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected

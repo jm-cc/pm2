@@ -328,7 +328,7 @@ static int get_sublevels_type(struct marcel_topo_level *level, struct marcel_top
     DO(L1, l1_fig)
     DO(PROC, proc_fig)
     DO(VP, vp_fig)
-    if ((*merged_type) & ~(1 << MARCEL_LEVEL_FAKE))
+    if ((*merged_type) & ~(1 << MARCEL_LEVEL_FAKE | 1 << MARCEL_LEVEL_MISC))
       fprintf(stderr,"urgl, merged type %lx?! Skipping\n", *merged_type);
     if (!l[0]->children)
       return 0;

@@ -14,6 +14,7 @@
 
 . ./mami.sh
 prog="memory"
+sort_output=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [0] Address is located on the correct node 0
 [1] Address is located on the correct node 1

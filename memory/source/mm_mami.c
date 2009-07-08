@@ -15,6 +15,8 @@
 
 #ifdef MM_MAMI_ENABLED
 
+#define _GNU_SOURCE
+#include <sched.h>
 #include <errno.h>
 #include <fcntl.h>
 #ifdef LINUX_SYS
@@ -26,6 +28,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <topology.h>
+#include "pm2_common.h"
 #include "pm2_valgrind.h"
 #include "mm_mami.h"
 #include "mm_mami_private.h"
@@ -47,10 +51,11 @@ static
 int _mami_sigsegv_handler_set = 0;
 
 void mami_init(mami_manager_t **memory_manager_p) {
-  int node, dest;
+  int node, dest, nb_nodes;
   void *ptr;
   int err;
   mami_manager_t *memory_manager;
+  unsigned int depth_node;
 
   MEMORY_LOG_IN();
   memory_manager = th_mami_malloc(sizeof(mami_manager_t));
@@ -61,23 +66,36 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->cache_line_size = 64;
   memory_manager->membind_policy = MAMI_MEMBIND_POLICY_NONE;
   memory_manager->alignment = 1;
-  memory_manager->nb_nodes = marcel_nbnodes;
+
+  nb_nodes = topo_get_type_nbobjs(topology, TOPO_OBJ_NODE);
+  memory_manager->nb_nodes = nb_nodes ? nb_nodes : 1;
   mdebug_memory("Number of NUMA nodes = %d\n", memory_manager->nb_nodes);
 
-  memory_manager->max_node = marcel_topo_node_level ? marcel_topo_node_level[memory_manager->nb_nodes-1].os_node+2 : 2;
+  depth_node = topo_get_type_depth(topology, TOPO_OBJ_NODE);
+  memory_manager->max_node = nb_nodes ? topo_get_obj_by_depth(topology, depth_node, memory_manager->nb_nodes-1)->os_index+2 : 2;
   mdebug_memory("Max node = %d\n", memory_manager->max_node);
 
   memory_manager->os_nodes = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+  if (!nb_nodes) memory_manager->os_nodes[0] = 0;
+  else {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      memory_manager->os_nodes[node] = topo_get_obj_by_depth(topology, depth_node, node)->os_index;
+    }
+  }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    memory_manager->os_nodes[node] = marcel_topo_node_level ? marcel_topo_node_level[node].os_node : node;
     mdebug_memory("Node #%d --> OS Node #%d\n", node, memory_manager->os_nodes[node]);
   }
 
-  memory_manager->huge_page_size = marcel_topo_node_level ? marcel_topo_node_level[0].huge_page_size : 0;
+  memory_manager->huge_page_size = topo_get_system_obj(topology)->attr->system.huge_page_size_kB * 1024;
   mdebug_memory("Huge page size : %ld\n", memory_manager->huge_page_size);
   memory_manager->huge_page_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
+  if (!nb_nodes) memory_manager->huge_page_free[0] = 0;
+  else {
+    for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+      memory_manager->huge_page_free[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.huge_page_free;
+    }
+  }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-    memory_manager->huge_page_free[node] = marcel_topo_node_level ? marcel_topo_node_level[node].huge_page_free : 0;
     mdebug_memory("Number of huge pages on node #%d = %d\n", node, memory_manager->huge_page_free[node]);
   }
 
@@ -105,7 +123,7 @@ void mami_init(mami_manager_t **memory_manager_p) {
   mdebug_memory("Kernel next_touch migration: %d\n", memory_manager->kernel_nexttouch_migration_available);
 
   // Is migration available
-  if (marcel_topo_node_level) {
+  if (nb_nodes) {
     unsigned long nodemask;
     nodemask = (1<<memory_manager->os_nodes[0]);
     ptr = memalign(memory_manager->normal_page_size, memory_manager->normal_page_size);
@@ -121,15 +139,17 @@ void mami_init(mami_manager_t **memory_manager_p) {
   // How much total and free memory per node
   memory_manager->mem_total = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long));
   memory_manager->mem_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long));
-  if (marcel_topo_node_level) {
+  if (nb_nodes) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-      memory_manager->mem_total[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
-      memory_manager->mem_free[node] = marcel_topo_node_level[node].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE];
+      memory_manager->mem_total[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
+      memory_manager->mem_free[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
     }
   }
   else {
-    memory_manager->mem_total[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
-    memory_manager->mem_free[0] = marcel_topo_levels[0][0].memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE];
+    topo_obj_t obj = NULL;
+    obj = topo_get_next_obj(topology, TOPO_OBJ_SYSTEM, obj);
+    memory_manager->mem_total[0] = obj->attr->node.memory_kB;
+    memory_manager->mem_free[0] = obj->attr->node.memory_kB;
   }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     mdebug_memory("Memory on node #%d = %ld\n", node, memory_manager->mem_total[node]);
@@ -1439,9 +1459,13 @@ int _mami_migrate_on_node(mami_manager_t *memory_manager,
       mdebug_memory("Error when mbinding: %d\n", err);
     }
     else {
+#ifdef MARCEL
       _mami_update_stats_for_entities(memory_manager, data, -1);
+#endif
       data->node = dest;
+#ifdef MARCEL
       _mami_update_stats_for_entities(memory_manager, data, +1);
+#endif
     }
   }
 
@@ -1489,6 +1513,8 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
     data->status = MAMI_NEXT_TOUCHED_STATUS;
     dest = th_mami_current_node();
     _mami_migrate_on_node(_mami_memory_manager, data, dest);
+    mdebug_memory("Un-Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_start_address, data->start_address+data->mprotect_size,
+		    (long) data->mprotect_size, data->start_address, data->end_address, (long) data->size);
     err = mprotect(data->mprotect_start_address, data->mprotect_size, data->protection);
     if (err < 0) {
       const char *msg = "mprotect(handler): ";
@@ -1655,8 +1681,10 @@ int mami_distribute(mami_manager_t *memory_manager,
       err = _mm_move_pages(pageaddrs, nb_pages, dests, status, MPOL_MF_MOVE);
 
       if (err >= 0) {
+#ifdef MARCEL
         // If some threads are attached to the memory area, the statistics need to be updated
         _mami_update_stats_for_entities(memory_manager, data, -1);
+#endif
 
         // Check the pages have been properly moved and update the data->nodes information
         if (data->pages_per_node == NULL) data->pages_per_node = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
@@ -1673,8 +1701,10 @@ int mami_distribute(mami_manager_t *memory_manager,
           if (data->nodes[i] >= 0) data->pages_per_node[data->nodes[i]] ++; else data->pages_on_undefined_node ++;
         }
 
+#ifdef MARCEL
         // If some threads are attached to the memory area, the statistics need to be updated
         _mami_update_stats_for_entities(memory_manager, data, +1);
+#endif
       }
     }
     th_mami_free(dests);
@@ -1688,14 +1718,28 @@ int mami_distribute(mami_manager_t *memory_manager,
 }
 
 #if !defined(MARCEL)
+#include <topology/glibc-sched.h>
 int _mami_current_node(void) {
-#warning undefined
-  return -1;
+  cpu_set_t set;
+  topo_cpuset_t topo_set;
+  topo_obj_t obj;
+
+  CPU_ZERO(&set);
+  pthread_getaffinity_np(th_mami_self(), sizeof(set), &set);
+  topo_cpuset_from_glibc_sched_affinity(topology, &topo_set, &set, sizeof(cpu_set_t));
+  obj = topo_get_next_obj_above_cpuset(topology, &topo_set, TOPO_OBJ_NODE, NULL);
+  if (obj) return obj->os_index; else return -1;
 }
 
 int _mami_attr_settopo_level(th_mami_attr_t *attr, int node) {
-#warning undefined
-  return -1;
+  cpu_set_t set;
+  topo_obj_t node_obj;
+
+  CPU_ZERO(&set);
+  node_obj = topo_get_obj_by_depth(topology, topo_get_type_depth(topology, TOPO_OBJ_NODE), node);
+  topo_cpuset_to_glibc_sched_affinity(topology, &(node_obj->cpuset), &set, sizeof(cpu_set_t));
+  pthread_attr_setaffinity_np(attr, sizeof(set), &set);
+  return 0;
 }
 #endif /* !MARCEL */
 

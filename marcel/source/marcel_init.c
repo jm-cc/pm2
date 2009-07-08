@@ -56,47 +56,6 @@ void marcel_initialize(int* argc, char**argv)
 }
 #endif
 
-#ifdef MA__NUMA
-
-static void show_synthetic_topology_help(void)
-{
-	fprintf(stderr,
-					"<topology-description> is a space-separated list of positive integers,\n"
-					"each of which denotes the number of children attached to a each node of the\n"
-					"corresponding topology level.\n\n"
-					"Example: \"2 4 2\" denotes a 2-node machine with 4 dual-core CPUs.\n");
-}
-
-/* Read from DESCRIPTION a series of integers describing a symmetrical
-	 topology and update `ma_synthetic_topology_description' accordingly.  On
-	 success, return zero.  */
-static int parse_synthetic_topology_description(const char *description) {
-	const char *pos, *next_pos;
-	unsigned long item, count;
-
-	for (pos = description, count = 0;
-			 *pos;
-			 pos = next_pos) {
-		item = strtoul(pos, (char **)&next_pos, 10);
-		if(next_pos == pos)
-			return 1;
-
-		MA_BUG_ON(count + 1 >= MA_SYNTHETIC_TOPOLOGY_MAX_DEPTH);
-		MA_BUG_ON(item > UINT_MAX);
-
-		ma_synthetic_topology_description[count++] = (unsigned)item;
-	}
-
-	if(count > 0) {
-		ma_synthetic_topology_description[count + 1] = 0;
-		marcel_use_synthetic_topology = 1;
-	}
-
-	return (count > 0) ? 0 : 1;
-}
-
-#endif /* MA__NUMA */
-
 
 static void marcel_parse_cmdline_early(int *argc, char **argv,
     tbx_bool_t just_strip)
@@ -206,30 +165,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 		} else
 #endif
 #endif
-#ifdef MA__NUMA
-		if (!strcmp(argv[i], "--marcel-synthetic-topology")) {
-			int err;
-
-			i += 2;
-			if (i > *argc) {
-				fprintf(stderr,
-								"Fatal error: --marcel-synthetic-topology option must be followed "
-								"by <topology-description>.\n");
-				show_synthetic_topology_help();
-				exit(1);
-			}
-			if (just_strip)
-				continue;
-
-			err = parse_synthetic_topology_description(argv[i - 1]);
-			if (err) {
-				fprintf (stderr,
-								 "Fatal error: invalid argument for --marcel-synthetic-topology.\n");
-				show_synthetic_topology_help();
-				exit(1);
-			}
-		} else
-#endif
 #ifdef MA__BUBBLES
 		if (!strcmp (argv[i], "--marcel-bubble-scheduler")) {
 			const marcel_bubble_sched_t *scheduler;
@@ -251,27 +186,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				exit(1);
 			}
 			marcel_bubble_set_sched((marcel_bubble_sched_t *)scheduler);
-		} else
-#endif
-#ifdef MA__NUMA
-		if (!strcmp(argv[i], "--marcel-topology-fsys-root")) {
-			i += 2;
-			if (i > *argc) {
-				fprintf(stderr,
-								"Fatal error: --marcel-topology-fsys-root option must be followed "
-								"by the path of a directory.\n");
-				exit(1);
-			}
-			if (just_strip)
-				continue;
-
-			if (ma_topology_set_fsys_root(argv[i - 1])) {
-				fprintf(stderr, "failed to set root directory to `%s': %m\n", argv[i - 1]);
-				exit(1);
-			}
-
-			/* Notify Marcel that we are using a "virtual" topology.  */
-			marcel_use_synthetic_topology = 1;
 		} else
 #endif
 		if (!strncmp(argv[i], "--marcel", 8)) {
@@ -297,12 +211,6 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 #endif
 #ifdef MA__BUBBLES
 					"--marcel-bubble-scheduler sched   Use the given bubble scheduler\n"
-#endif
-#ifdef MA__NUMA
-					"--marcel-synthetic-topology topo  Create a synthetic or \"fake\" topology\n"
-					"                                  according to the given description\n"
-					"--marcel-topology-fsys-root path  Use the given path as the root directory\n"
-					"                                  when accessing, e.g., `/sys' on Linux\n"
 #endif
 			    );
 			exit(1);

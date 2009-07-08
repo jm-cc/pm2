@@ -1,0 +1,40 @@
+Machine:
+  Fake:
+    NUMANode + Die: Node#0(8386704kB) Die#0
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#0 VP #0
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#1 VP #1
+    NUMANode + Die: Node#1(8GB) Die#1
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#2 VP #2
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#3 VP #3
+  Fake:
+    NUMANode + Die: Node#2(8GB) Die#2
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#4 VP #4
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#5 VP #5
+    NUMANode + Die: Node#3(8GB) Die#3
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#6 VP #6
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#7 VP #7
+  Fake:
+    NUMANode + Die: Node#4(8GB) Die#4
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#8 VP #8
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#9 VP #9
+    NUMANode + Die: Node#7(8GB) Die#7
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#14 VP #14
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#15 VP #15
+  Fake:
+    NUMANode + Die: Node#5(8GB) Die#5
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#10 VP #10
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#11 VP #11
+    NUMANode + Die: Node#6(8GB) Die#6
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#0 L1(64kB) CPU#12 VP #12
+      L2Cache + Core + L1Cache + SMTproc + VP: L2(1MB) Core#1 L1(64kB) CPU#13 VP #13
+depth 0:	marcel type #0 (Machine)
+ depth 1:	marcel type #1 (Fake)
+ depth 1:	marcel type #2 (Misc)
+  depth 2:	marcel type #3 (NUMANode)
+  depth 2:	marcel type #4 (Die)
+  depth 2:	marcel type #5 (L3Cache)
+   depth 3:	marcel type #6 (L2Cache)
+   depth 3:	marcel type #7 (Core)
+   depth 3:	marcel type #8 (L1Cache)
+   depth 3:	marcel type #9 (SMTproc)
+   depth 3:	marcel type #10 (VP)

@@ -62,15 +62,15 @@ test_topology ()
     # XXX: `local' may well be a bashism.
     local name="$1"
     local dir="$2"
+    local expected_output="$3"
 
     local output="`mktemp`"
 
-    if ! pm2-load read-topology -v				\
-	--marcel-topology-fsys-root "$dir" > "$output"
+    if ! pm2-load read-topology --topology-fsys-root "$dir" -v > "$output"
     then
 	result=1
     else
-	diff -uBb "$dir/output" "$output"
+	diff -uBb "$expected_output" "$output"
 	result=$?
     fi
 
@@ -86,8 +86,9 @@ test_topology ()
 test_eligible()
 {
     local dir="$1"
+    local output="$2"
 
-    [ -d "$dir" -a -f "$dir/output" ] &&				\
+    [ -d "$dir" -a -f "$output" ] &&				\
 	[ `flavor_max_cpu_count` -ge `topology_cpu_count "$dir"` ]
 }
 
@@ -116,12 +117,13 @@ do
 	error "failed to extract topology \`$topology'"
     else
 	actual_dir="`echo "$dir"/*`"
+	actual_output="$abs_builddir/$topology".output
 
-	if test_eligible "$actual_dir"
+	if test_eligible "$actual_dir" "$actual_output"
 	then
 	    test_count="`expr $test_count + 1`"
 
-	    if test_topology "`basename $topology`" "$actual_dir"
+	    if test_topology "`basename $topology`" "$actual_dir" "$actual_output"
 	    then
 		tests_passed="`expr $tests_passed + 1`"
 		echo "PASS: `basename $topology`"

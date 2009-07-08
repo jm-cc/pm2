@@ -34,36 +34,40 @@ int main(int argc, char * argv[]) {
   if (err < 0) perror("mami_distribute successfully failed");
 
   ptr = mami_malloc(memory_manager, 50000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
-
-  mami_locate(memory_manager, ptr, 50000, &node);
-  if (node == 1)
-    fprintf(stderr, "Node is %d as expected\n", node);
-  else
-    fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
-
-  nodes = malloc(sizeof(int) * memory_manager->nb_nodes);
-  for(i=0 ; i<memory_manager->nb_nodes ; i++) nodes[i] = i;
-  err = mami_distribute(memory_manager, ptr, nodes, memory_manager->nb_nodes);
-  if (err < 0) perror("mami_distribute unexpectedly failed");
+  if (!ptr) {
+    perror("mami_malloc failed");
+  }
   else {
     mami_locate(memory_manager, ptr, 50000, &node);
-    if (node == MAMI_MULTIPLE_LOCATION_NODE)
-      fprintf(stderr, "Node is <MAMI_MULTIPLE_LOCATION_NODE> as expected\n");
-    else
-      fprintf(stderr, "Node is NOT <MAMI_MULTIPLE_LOCATION_NODE> as expected but %d\n", node);
-
-    mami_migrate_on_node(memory_manager, ptr, 0);
-    mami_locate(memory_manager, ptr, 50000, &node);
-    if (node == 0)
+    if (node == 1)
       fprintf(stderr, "Node is %d as expected\n", node);
     else
-      fprintf(stderr, "Node is NOT 0 as expected but %d\n", node);
+      fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
 
-    mami_check_pages_location(memory_manager, ptr, 50000, 0);
+    nodes = malloc(sizeof(int) * memory_manager->nb_nodes);
+    for(i=0 ; i<memory_manager->nb_nodes ; i++) nodes[i] = i;
+    err = mami_distribute(memory_manager, ptr, nodes, memory_manager->nb_nodes);
+    if (err < 0) perror("mami_distribute unexpectedly failed");
+    else {
+      mami_locate(memory_manager, ptr, 50000, &node);
+      if (node == MAMI_MULTIPLE_LOCATION_NODE)
+	fprintf(stderr, "Node is <MAMI_MULTIPLE_LOCATION_NODE> as expected\n");
+      else
+	fprintf(stderr, "Node is NOT <MAMI_MULTIPLE_LOCATION_NODE> as expected but %d\n", node);
+
+      mami_migrate_on_node(memory_manager, ptr, 0);
+      mami_locate(memory_manager, ptr, 50000, &node);
+      if (node == 0)
+	fprintf(stderr, "Node is %d as expected\n", node);
+      else
+	fprintf(stderr, "Node is NOT 0 as expected but %d\n", node);
+
+      mami_check_pages_location(memory_manager, ptr, 50000, 0);
+    }
+
+    free(nodes);
+    mami_free(memory_manager, ptr);
   }
-
-  free(nodes);
-  mami_free(memory_manager, ptr);
   mami_exit(&memory_manager);
 
   common_exit(NULL);

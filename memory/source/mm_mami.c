@@ -898,6 +898,7 @@ void* mami_malloc(mami_manager_t *memory_manager, size_t size, mami_membind_poli
 
   if (tbx_unlikely(policy != MAMI_MEMBIND_POLICY_FIRST_TOUCH && node >= memory_manager->nb_nodes)) {
     mdebug_memory("Node %d not managed by MaMI\n", node);
+    errno = EINVAL;
     MEMORY_LOG_OUT();
     return NULL;
   }

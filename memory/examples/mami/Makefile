@@ -26,6 +26,12 @@ ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
 
+FLAVOR_WITH_MARCEL :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep memory=marcel)
+ifeq (,$(FLAVOR_WITH_MARCEL))
+APPS_EXCLUDE += $(basename $(wildcard attach*.c))
+APPS_EXCLUDE += $(basename mami_allocator.c)
+endif
+
 all: $(APPS_LIST)
 config: .config/blas_$(FLAVOR) .config/numa_$(FLAVOR)
 

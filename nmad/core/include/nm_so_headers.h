@@ -27,8 +27,8 @@ typedef uint8_t nm_proto_t;
 #define NM_PROTO_DATA_UNUSED 0x10
 #define NM_PROTO_CTRL_UNUSED 0x20
 
-#define NM_SO_DATA_FLAG_LASTCHUNK 0x01
-#define NM_SO_DATA_FLAG_ALIGNED   0x02
+#define NM_PROTO_FLAG_LASTCHUNK 0x01
+#define NM_PROTO_FLAG_ALIGNED   0x02
 
 /** Global header for every packet sent on the network */
 struct nm_so_global_header

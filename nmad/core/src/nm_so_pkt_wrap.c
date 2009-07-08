@@ -351,7 +351,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	{
 	  /* Data immediately follows its header */
 	  const uint32_t size = nm_so_aligned(len);
-	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0) | NM_SO_DATA_FLAG_ALIGNED;
+	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0) | NM_PROTO_FLAG_ALIGNED;
 	  nm_so_init_data(h, tag, seq, flags, 0, len, offset);
 	  if(len)
 	    {
@@ -375,7 +375,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  dvec->iov_len = len;
 	  /* We don't know yet the gap between header and data, so we
 	     temporary store the iovec index as the 'skip' value */
-	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0);
+	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
 	  nm_so_init_data(h, tag, seq, flags, p_pw->v_nb, len, offset);
 	  p_pw->pending_skips++;
 	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
@@ -424,7 +424,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 	struct iovec *vec =  &p_pw->v[0];
 	/* Add header */
 	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
-	nm_so_init_data(h, tag, seq, NM_SO_DATA_FLAG_LASTCHUNK | NM_SO_DATA_FLAG_ALIGNED, 0, len, 0);
+	nm_so_init_data(h, tag, seq, NM_PROTO_FLAG_LASTCHUNK | NM_PROTO_FLAG_ALIGNED, 0, len, 0);
 	vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	p_pw->length += NM_SO_DATA_HEADER_SIZE;
       }
@@ -585,7 +585,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 		    data = v->iov_base + skip;
 		  }
 	      }
-	    const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	    const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
 	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
 	    if(dh->skip == 0)
 	      { /* data is just after the header */
@@ -593,7 +593,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	      }  /* else the next header is just behind */
 	    if(data_handler)
 	      {
-		const uint8_t is_last_chunk = (dh->flags & NM_SO_DATA_FLAG_LASTCHUNK);
+		const uint8_t is_last_chunk = (dh->flags & NM_PROTO_FLAG_LASTCHUNK);
 		data_handler(p_pw, data, dh, dh->len, dh->tag_id, dh->seq, dh->chunk_offset, is_last_chunk);
 	      }
 	  }
@@ -604,7 +604,7 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 	    /* Unused data header- skip */
 	    struct nm_so_data_header *dh = ptr;
 	    ptr += NM_SO_DATA_HEADER_SIZE;
-	    const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	    const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
 	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
 	    if(dh->skip == 0)
 	      {

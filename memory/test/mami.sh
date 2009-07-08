@@ -48,6 +48,7 @@ create_test_flavor() {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"$modules tbx init memory\" \
+	--init=\"topology\" \
         --memory=\"enable_mami $options\" \
 	--marcel=\"numa standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
         --common=\"fortran_target_gfortran\" \

@@ -68,6 +68,18 @@ registering_flavors() {
 	--marcel=enable_stats \
         --init=topology
 
+    register_flavor mami-pthread-opt \
+	--modules="tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
+        --memory=pthread \
+        --memory=enable_mami \
+        --init=topology
+
+    register_flavor mami-pthread-debug \
+	--modules="tbx init memory" $COMMON_OPTIONS $DEBUG_OPTIONS \
+        --memory=pthread \
+        --memory=enable_mami \
+        --init=topology
+
     register_flavor mami-opt \
 	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
 	--marcel=numa --marcel=standard_main \

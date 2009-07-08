@@ -157,7 +157,7 @@ static int strat_default_pack(void*_status,
       if(len <= status->nm_so_copy_on_send_threshold)
 	flags |= NM_SO_DATA_USE_COPY;
       /* Simply form a new packet wrapper and add it to the out_list */
-      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
 					      0, 1, flags, &p_so_pw);
       if(err != NM_ESUCCESS)
 	goto out;
@@ -168,7 +168,7 @@ static int strat_default_pack(void*_status,
       /* Large packets can not be sent immediately : we have to issue a
 	 RdV request. */
       /* First allocate a packet wrapper */
-      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
 					      0, 0, NM_PW_NOHEADER, &p_so_pw);
       if(err != NM_ESUCCESS)
 	goto out;
@@ -178,7 +178,7 @@ static int strat_default_pack(void*_status,
       /* Finally, generate a RdV request */
       {
 	union nm_so_generic_ctrl_header ctrl;
-	nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
+	nm_so_init_rdv(&ctrl, tag, seq, len, 0, 1);
 	err = strat_default_pack_ctrl(status, p_gate, &ctrl);
 	if(err != NM_ESUCCESS)
 	  goto out;
@@ -208,7 +208,7 @@ strat_default_packv(void*_status,
 	  if(iov[i].iov_len <= status->nm_so_copy_on_send_threshold)
 	    flags = NM_SO_DATA_USE_COPY;
 	  /* Simply form a new packet wrapper and add it to the out_list */
-	  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, iov[i].iov_base, iov[i].iov_len,
+	  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, iov[i].iov_base, iov[i].iov_len,
 						  offset, is_last_chunk, flags, &p_so_pw);
 	  if(err != NM_ESUCCESS)
 	    goto out;
@@ -219,7 +219,7 @@ strat_default_packv(void*_status,
 	  /* Large packets can not be sent immediately : we have to issue a
 	     RdV request. */
 	  /* First allocate a packet wrapper */
-	  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, iov[i].iov_base, iov[i].iov_len,
+	  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, iov[i].iov_base, iov[i].iov_len,
 						  offset, is_last_chunk,
 						  NM_PW_NOHEADER, &p_so_pw);
 	  if(err != NM_ESUCCESS)
@@ -229,7 +229,7 @@ strat_default_packv(void*_status,
 	  /* Finally, generate a RdV request */
 	  {
 	    union nm_so_generic_ctrl_header ctrl;
-	    nm_so_init_rdv(&ctrl, tag + 128, seq, iov[i].iov_len, offset, is_last_chunk);
+	    nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, is_last_chunk);
 	    err = strat_default_pack_ctrl(_status, p_gate, &ctrl);
 	    if(err != NM_ESUCCESS)
 	      goto out;

@@ -221,7 +221,7 @@ static int strat_qos_pack_ctrl(void*_status,
                                union nm_so_generic_ctrl_header *p_ctrl)
 {
   struct nm_so_strat_qos *status = _status;
-  nm_tag_t tag = p_ctrl->r.tag_id - 128;
+  nm_tag_t tag = p_ctrl->r.tag_id;
   int policy = nm_so_get_policy(tag);
   int err;
 
@@ -334,7 +334,7 @@ static int strat_qos_ack_callback(void *_status,
   struct nm_so_strat_qos *status = _status;
   struct nm_gate *p_gate = p_so_pw->p_gate;
   struct nm_pkt_wrap *p_so_large_pw;
-  nm_tag_t tag = tag_id - 128;
+  nm_tag_t tag = tag_id;
   uint8_t i;
 
   if(!finished)

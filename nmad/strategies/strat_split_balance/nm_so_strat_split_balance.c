@@ -159,7 +159,7 @@ strat_split_balance_launch_large_chunk(void *_status,
   int err;
 
   /* First allocate a packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
                                           data, len, chunk_offset, is_last_chunk,
                                           NM_PW_NOHEADER,
                                           &p_so_pw);
@@ -178,7 +178,7 @@ strat_split_balance_launch_large_chunk(void *_status,
   {
     union nm_so_generic_ctrl_header ctrl;
 
-    nm_so_init_rdv(&ctrl, tag + 128, seq, len, chunk_offset, is_last_chunk);
+    nm_so_init_rdv(&ctrl, tag, seq, len, chunk_offset, is_last_chunk);
 
     NM_SO_TRACE("RDV pack_ctrl\n");
     err = strat_split_balance_pack_ctrl(_status, p_gate, &ctrl);
@@ -218,7 +218,7 @@ strat_split_balance_try_to_agregate_small(void *_status,
 	      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_so_pw, tag, seq, len);
 	      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
 	      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
-	      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
+	      err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, chunk_offset, is_last_chunk, flags);
 	      goto out;
 	    }
 	}
@@ -228,7 +228,7 @@ strat_split_balance_try_to_agregate_small(void *_status,
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
                                           chunk_offset, is_last_chunk, flags, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
@@ -333,7 +333,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
         goto next;
 
       // add the datatype. Actually, we add the header and copy the data just after
-      err = nm_so_pw_add_datatype(p_so_pw, tag + 128, seq, len, segp);
+      err = nm_so_pw_add_datatype(p_so_pw, tag, seq, len, segp);
 
       goto out;
 
@@ -348,7 +348,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_gate *p_gate,
   if(err != NM_ESUCCESS)
     goto out;
 
-  err = nm_so_pw_add_datatype(p_so_pw, tag + 128, seq, len, segp);
+  err = nm_so_pw_add_datatype(p_so_pw, tag, seq, len, segp);
 
   list_add_tail(&p_so_pw->link, &status->out_list);
   status->nb_packets++;
@@ -372,7 +372,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
   if(err != NM_ESUCCESS)
     goto out;
 
-  nm_so_pw_store_datatype(p_so_pw, tag + 128, seq, len, segp);
+  nm_so_pw_store_datatype(p_so_pw, tag, seq, len, segp);
 
   p_so_tag->status[seq] |= NM_SO_STATUS_IS_DATATYPE;
 
@@ -387,7 +387,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
   {
     union nm_so_generic_ctrl_header ctrl;
 
-    nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
+    nm_so_init_rdv(&ctrl, tag, seq, len, 0, 1);
 
     NM_SO_TRACE("RDV pack_ctrl\n");
     err = strat_split_balance_pack_ctrl(_status, p_gate, &ctrl);

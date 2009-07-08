@@ -22,9 +22,8 @@
 
 /** Process a data request completion.
  */
-static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto_id, nm_seq_t seq, uint32_t len)
+static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t tag, nm_seq_t seq, uint32_t len)
 {
-  const nm_tag_t tag = proto_id - 128;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   p_so_tag->send[seq] -= len;
@@ -56,12 +55,12 @@ static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t proto
 static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 				     void *ptr TBX_UNUSED,
 				     nm_so_data_header_t*header, uint32_t len TBX_UNUSED,
-				     nm_tag_t proto_id, nm_seq_t seq,
+				     nm_tag_t tag, nm_seq_t seq,
 				     uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  NM_SO_TRACE("completed chunk ptr=%p len=%u tag=%d seq=%u offset=%u\n", ptr, len, proto_id - 128, seq, chunk_offset);
-  nm_so_out_data_complete(p_gate, proto_id, seq, len);
+  NM_SO_TRACE("completed chunk ptr=%p len=%u tag=%d seq=%u offset=%u\n", ptr, len, tag, seq, chunk_offset);
+  nm_so_out_data_complete(p_gate, tag, seq, len);
 }
 
 /** Process a complete successful outgoing request.
@@ -71,11 +70,11 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
 {
   struct nm_gate *p_gate = p_pw->p_gate;
 
-  NM_TRACEF("send request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
+  NM_TRACEF("send request complete: gate %d, drv %d, trk %d, tag %d, seq %d",
 	    p_pw->p_gate->id,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
-	    p_pw->proto_id,
+	    p_pw->tag,
 	    p_pw->seq);
   
 #ifdef PIOMAN
@@ -96,7 +95,7 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
       NM_SO_TRACE("completed large msg- drv=%d trk=%d size=%llu bytes\n",
 		  p_pw->p_drv->id, p_pw->trk_id, (long long unsigned int)p_pw->length);
 
-      nm_so_out_data_complete(p_gate, p_pw->proto_id, p_pw->seq, p_pw->length);
+      nm_so_out_data_complete(p_gate, p_pw->tag, p_pw->seq, p_pw->length);
       nm_so_pw_free(p_pw);
     }
   

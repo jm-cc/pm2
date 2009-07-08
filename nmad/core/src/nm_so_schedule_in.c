@@ -376,12 +376,11 @@ static inline void store_data_or_rdv(nm_so_status_t status,
 static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 				    void *ptr,
 				    nm_so_data_header_t*header, uint32_t len,
-				    nm_tag_t proto_id, nm_seq_t seq,
+				    nm_tag_t tag, nm_seq_t seq,
 				    uint32_t chunk_offset,
 				    uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  const nm_tag_t tag = proto_id - 128;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   NM_SO_TRACE("Recv completed for chunk : %p, len = %u, tag = %d, seq = %u, offset = %u, is_last_chunk = %u\n",
@@ -391,7 +390,7 @@ static void data_completion_callback(struct nm_pkt_wrap *p_pw,
     {
       /* Cool! We already have a waiting unpack for this packet */
       process_small_data(tbx_false, p_pw, ptr, len, tag, seq, chunk_offset, is_last_chunk);
-      header->proto_id = NM_SO_PROTO_DATA_UNUSED; /* mark as read */
+      header->proto_id = NM_PROTO_DATA_UNUSED; /* mark as read */
     }
   else
     {
@@ -402,7 +401,7 @@ static void data_completion_callback(struct nm_pkt_wrap *p_pw,
 	{
 	  NM_SO_TRACE("Pending any_src reception\n");
 	  process_small_data(tbx_true, p_pw, ptr, len, tag, seq, chunk_offset, is_last_chunk);
-	  header->proto_id = NM_SO_PROTO_DATA_UNUSED; /* mark as read */
+	  header->proto_id = NM_PROTO_DATA_UNUSED; /* mark as read */
 	}
       else
 	{
@@ -419,11 +418,10 @@ static void data_completion_callback(struct nm_pkt_wrap *p_pw,
  */
 static void rdv_callback(struct nm_pkt_wrap *p_pw,
 			 nm_so_generic_ctrl_header_t*rdv,
-			 nm_tag_t tag_id, nm_seq_t seq,
+			 nm_tag_t tag, nm_seq_t seq,
 			 uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
-  const nm_tag_t tag = tag_id - 128;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   nm_so_status_t *status = &(p_so_tag->status[seq]);
 
@@ -435,7 +433,7 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
       NM_SO_TRACE("RDV for a classic exchange on tag %u, seq = %u, len = %u, chunk_offset = %u, is_last_chunk = %u\n", 
 		  tag, seq, len, chunk_offset, is_last_chunk);
       nm_so_rdv_success(tbx_false, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
-      rdv->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
+      rdv->r.proto_id = NM_PROTO_CTRL_UNUSED;
 
     }
   else 
@@ -450,7 +448,7 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
 	  NM_SO_TRACE("RDV for an ANY_SRC exchange for tag = %d, seq = %u len = %u, offset = %u\n",
 		      tag, seq, len, chunk_offset);
 	  nm_so_rdv_success(tbx_true, p_gate, tag, seq, len, chunk_offset, is_last_chunk);
-	  rdv->r.proto_id = NM_SO_PROTO_CTRL_UNUSED;
+	  rdv->r.proto_id = NM_PROTO_CTRL_UNUSED;
 	}
       else 
 	{
@@ -466,7 +464,7 @@ static void rdv_callback(struct nm_pkt_wrap *p_pw,
  */
 static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
 {
-  const nm_tag_t tag          = header->tag_id - 128;
+  const nm_tag_t tag          = header->tag_id;
   const nm_seq_t seq          = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
   const uint32_t chunk_len    = header->chunk_len;
@@ -533,7 +531,7 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 		  struct nm_pkt_wrap *p_large_pw2 = NULL;
 		  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw2);
 		  p_large_pw2->p_gate   = p_large_pw->p_gate;
-		  p_large_pw2->proto_id = p_large_pw->proto_id;
+		  p_large_pw2->tag      = p_large_pw->tag;
 		  p_large_pw2->seq      = p_large_pw->seq;
 		  p_large_pw2->length   = length;
 		  p_large_pw2->v_nb     = 0;
@@ -556,7 +554,7 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 	    }
 	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
-	  header->proto_id = NM_SO_PROTO_CTRL_UNUSED; /* mark as read */
+	  header->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
 	  return;
 	}
     }
@@ -572,11 +570,11 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   struct nm_so_sched *p_so_sched = &p_core->so_sched;
   int err;
 
-  NM_TRACEF("recv request complete: gate %d, drv %d, trk %d, proto %d, seq %d",
+  NM_TRACEF("recv request complete: gate %d, drv %d, trk %d, tag %d, seq %d",
 	    p_pw->p_gate->id,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
-	    p_pw->proto_id,
+	    p_pw->tag,
 	    p_pw->seq);
 
   /* clear the input request field in gate track */
@@ -603,7 +601,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {
       /* ** Large packet - track #1 ************************ */
-      const nm_tag_t tag = p_pw->proto_id - 128;
+      const nm_tag_t tag = p_pw->tag;
       const nm_seq_t seq = p_pw->seq;
       const uint32_t len = p_pw->length;
       struct nm_so_any_src_s*any_src = nm_so_any_src_get(&p_so_sched->any_src, tag);

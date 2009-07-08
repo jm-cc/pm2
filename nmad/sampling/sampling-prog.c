@@ -54,7 +54,7 @@ static int nm_ns_initialize_pw(struct nm_core *p_core,
       fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
       abort();
     }
-  err = nm_so_pw_add_data(p_pw, tag + 128, seq, ptr, param_min_size, 0, 1, flags);
+  err = nm_so_pw_add_data(p_pw, tag, seq, ptr, param_min_size, 0, 1, flags);
   if(err != NM_ESUCCESS)
     {
       fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
@@ -131,12 +131,12 @@ static void nm_ns_eager_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   if(len <= NM_MAX_SMALL)
     {
       const uint8_t flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
-      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
+      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   else
     {
       const uint8_t flags = NM_PW_NOHEADER;
-      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
+      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   if(err != NM_ESUCCESS)
     {
@@ -175,7 +175,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   else
     {
       const uint8_t flags = NM_PW_NOHEADER;
-      err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
+      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
     }
   if(err != NM_ESUCCESS)
     {
@@ -224,7 +224,7 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   const nm_tag_t tag  = 0;
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  int err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
+  int err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
   if(err != NM_ESUCCESS)
     {
       fprintf(stderr, "sampling: error %d while initializing pw [rdv send].\n", err);
@@ -255,7 +255,7 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   struct nm_pkt_wrap*p_pw = NULL;
   int err;
   const uint8_t flags = NM_PW_NOHEADER;
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, ptr, len, 0, 1, flags, &p_pw);
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
   if(err != NM_ESUCCESS)
     {
       fprintf(stderr, "sampling: error %d while initializing pw [rdv recv].\n", err);

@@ -84,11 +84,9 @@ struct nm_pkt_wrap
   /** Assignated gate driver, if relevant. */
   struct nm_gate_drv *p_gdrv;
 
-  /** Protocol id.
-      - communication flow this packet belongs to
-      - 0 means any
+  /** Tag of the message
   */
-  nm_tag_t proto_id;
+  nm_tag_t tag;
   
   /** Sequence number for the given protocol id.
       - rank in the communication flow this packet belongs to

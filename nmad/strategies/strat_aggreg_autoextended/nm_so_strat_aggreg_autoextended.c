@@ -219,7 +219,7 @@ static int strat_aggreg_autoextended_pack(void*_status,
 	  goto next;
         }
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, 1, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, 0, 1, flags);
       nb_data_aggregation ++;
       goto out;
 
@@ -232,7 +232,7 @@ static int strat_aggreg_autoextended_pack(void*_status,
       flags |= NM_SO_DATA_USE_COPY;
 
     NM_SO_TRACE("We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
 					    data, len,
 					    0, 1,
 					    flags,
@@ -248,7 +248,7 @@ static int strat_aggreg_autoextended_pack(void*_status,
     NM_SO_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
 
     NM_SO_TRACE("First allocate a packet wrapper\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
                                             data, len,
 					    0, 1,
                                             NM_PW_NOHEADER,
@@ -266,7 +266,7 @@ static int strat_aggreg_autoextended_pack(void*_status,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
+      nm_so_init_rdv(&ctrl, tag, seq, len, 0, 1);
 
       err = strat_aggreg_autoextended_pack_ctrl(status, p_gate, &ctrl);
       if(err != NM_ESUCCESS)

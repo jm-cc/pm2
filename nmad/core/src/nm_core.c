@@ -106,7 +106,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
   post_rq->trk_id = -1;
   post_rq->p_gate = NULL;
   post_rq->p_gdrv = NULL;
-  post_rq->proto_id = 0;
+  post_rq->tag = 0;
   post_rq->seq = 0;
   post_rq->drv_priv   = NULL;
 

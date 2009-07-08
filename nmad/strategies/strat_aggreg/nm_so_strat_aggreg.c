@@ -219,7 +219,7 @@ static int try_to_agregate_small(void *_status,
 	  if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 	    /* We can copy data into the header zone */
 	    flags = NM_SO_DATA_USE_COPY;
-	  err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, chunk_offset, is_last_chunk, flags);
+	  err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, chunk_offset, is_last_chunk, flags);
 	  nb_data_aggregation ++;
 	  goto out;
 	}
@@ -231,7 +231,7 @@ static int try_to_agregate_small(void *_status,
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
                                           chunk_offset, is_last_chunk, flags, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
@@ -252,7 +252,7 @@ launch_large_chunk(void *_status,
   /* Large packets can not be sent immediately : we have to issue a RdV request. */
 
   /* First allocate a packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq, data, len,
+  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
                                           chunk_offset, is_last_chunk,
                                           NM_PW_NOHEADER, &p_so_pw);
   if(err != NM_ESUCCESS)
@@ -266,7 +266,7 @@ launch_large_chunk(void *_status,
   {
     union nm_so_generic_ctrl_header ctrl;
 
-    nm_so_init_rdv(&ctrl, tag + 128, seq, len, chunk_offset, is_last_chunk);
+    nm_so_init_rdv(&ctrl, tag, seq, len, chunk_offset, is_last_chunk);
 
     err = strat_aggreg_pack_ctrl(_status, p_gate, &ctrl);
     if(err != NM_ESUCCESS)

@@ -93,7 +93,7 @@ pack(struct nm_gate *p_gate, void *private,
 	if(p_so_pw->v_nb == NM_SO_PREALLOC_IOV_LEN)
 	  goto next;
 
-      err = nm_so_pw_add_data(p_so_pw, tag + 128, seq, data, len, 0, 1, flags);
+      err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, 0, 1, flags);
       goto out;
 
     next:
@@ -105,7 +105,7 @@ pack(struct nm_gate *p_gate, void *private,
 
     /* We didn't have a chance to form an aggregate, so simply form a
        new packet wrapper and add it to the out_list */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
 					    data, len,
 					    0, 1,
 					    flags,
@@ -121,7 +121,7 @@ pack(struct nm_gate *p_gate, void *private,
        RdV request. */
 
     /* First allocate a packet wrapper */
-    err = nm_so_pw_alloc_and_fill_with_data(tag + 128, seq,
+    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
                                             data, len,
 					    0, 1,
                                             NM_PW_NOHEADER,
@@ -138,7 +138,7 @@ pack(struct nm_gate *p_gate, void *private,
     {
       union nm_so_generic_ctrl_header ctrl;
 
-      nm_so_init_rdv(&ctrl, tag + 128, seq, len, 0, 1);
+      nm_so_init_rdv(&ctrl, tag, seq, len, 0, 1);
 
       err = pack_ctrl(private, &ctrl);
       if(err != NM_ESUCCESS)

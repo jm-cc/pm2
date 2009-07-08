@@ -18,18 +18,14 @@
 
 #include <tbx_macros.h>
 
-/* from legacy nm_proto_id.h:
- *   - Scheduler protocol flows: 1-16
- *   - General purpose protocol flows: 17-127   (obsolete)
- *   - User channels: 128-255
- */
+typedef uint8_t nm_proto_t;
 
-#define NM_SO_PROTO_DATA_FIRST   128
-#define NM_SO_PROTO_RDV          11
-#define NM_SO_PROTO_ACK          12
+#define NM_PROTO_DATA   0x01
+#define NM_PROTO_RDV    0x02
+#define NM_PROTO_ACK    0x04
 
-#define NM_SO_PROTO_DATA_UNUSED 2
-#define NM_SO_PROTO_CTRL_UNUSED 1
+#define NM_PROTO_DATA_UNUSED 0x10
+#define NM_PROTO_CTRL_UNUSED 0x20
 
 #define NM_SO_DATA_FLAG_LASTCHUNK 0x01
 #define NM_SO_DATA_FLAG_ALIGNED   0x02
@@ -44,8 +40,9 @@ struct nm_so_global_header
 // with the 'proto_id' field
 
 struct nm_so_data_header {
-  nm_tag_t proto_id;
-  nm_seq_t  seq;
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
+  nm_tag_t tag_id;
+  nm_seq_t seq;
   uint8_t  flags;
   uint16_t skip;
   uint32_t len;
@@ -53,7 +50,7 @@ struct nm_so_data_header {
 };
 
 struct nm_so_ctrl_rdv_header {
-  nm_tag_t proto_id;
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RDV */
   nm_tag_t tag_id;
   nm_seq_t seq;
   uint8_t is_last_chunk;
@@ -62,7 +59,7 @@ struct nm_so_ctrl_rdv_header {
 };
 
 struct nm_so_ctrl_ack_header {
-  nm_tag_t proto_id;  /**< proto ID- should be NM_SO_PROTO_ACK */
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_ACK */
   nm_tag_t tag_id;    /**< tag of the acknowledged data */
   nm_seq_t seq;
   nm_trk_id_t trk_id;
@@ -90,10 +87,11 @@ typedef struct nm_so_data_header nm_so_data_header_t;
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
-static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_id, nm_seq_t seq, uint8_t flags,
+static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t tag_id, nm_seq_t seq, uint8_t flags,
 				   uint16_t skip, uint32_t len, uint32_t chunk_offset)
 { 
-  p_header->proto_id = proto_id;
+  p_header->proto_id = NM_PROTO_DATA;
+  p_header->tag_id   = tag_id;
   p_header->seq      = seq;
   p_header->flags    = flags;
   p_header->skip     = skip;
@@ -101,20 +99,21 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t proto_
   p_header->chunk_offset = chunk_offset;
 }
 
-#define nm_so_init_rdv(p_ctrl, _tag, _seq, _len, _chunk_offset, _is_last_chunk)	\
-  do { \
-    (p_ctrl)->r.proto_id = NM_SO_PROTO_RDV;	\
-    (p_ctrl)->r.tag_id = (_tag);		\
-    (p_ctrl)->r.seq = (_seq);			\
-    (p_ctrl)->r.len = (_len);			\
-    (p_ctrl)->r.chunk_offset = (_chunk_offset);	\
-    (p_ctrl)->r.is_last_chunk = (_is_last_chunk);	\
-  } while(0)
-
+static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
+				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+{
+  p_ctrl->r.proto_id      = NM_PROTO_RDV;
+  p_ctrl->r.tag_id        = tag;
+  p_ctrl->r.seq           = seq;
+  p_ctrl->r.len           = len;
+  p_ctrl->r.chunk_offset  = chunk_offset;
+  p_ctrl->r.is_last_chunk = is_last_chunk;
+}
+    
 static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 { 
-  p_ctrl->a.proto_id = NM_SO_PROTO_ACK;
+  p_ctrl->a.proto_id = NM_PROTO_ACK;
   p_ctrl->a.tag_id   = tag;
   p_ctrl->a.seq      = seq;
   p_ctrl->a.trk_id   = trk_id;

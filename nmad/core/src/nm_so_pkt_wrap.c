@@ -79,7 +79,7 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->trk_id = NM_TRK_NONE;
   p_pw->p_gate = NULL;
   p_pw->p_gdrv = NULL;
-  p_pw->proto_id = 0;
+  p_pw->tag = 0;
   p_pw->seq = 0;
   p_pw->drv_priv   = NULL;
 
@@ -271,7 +271,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
   p_pw2->trk_id = p_pw->trk_id;
   p_pw2->p_gate = p_pw->p_gate;
   p_pw2->p_gdrv = p_pw->p_gdrv;
-  p_pw2->proto_id = p_pw->proto_id;
+  p_pw2->tag = p_pw->tag;
   p_pw2->seq = p_pw->seq;
 
   const uint32_t total_length = p_pw->length;
@@ -283,7 +283,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	{
 	  /* consume the whole segment */
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len;
-	  nm_so_pw_add_data(p_pw2, p_pw->proto_id, p_pw->seq,
+	  nm_so_pw_add_data(p_pw2, p_pw->tag, p_pw->seq,
 			    p_pw->v[idx_pw].iov_base, chunk_len,
 			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
 	  len += p_pw->v[idx_pw].iov_len;
@@ -297,7 +297,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	  /* cut in the middle of an iovec segment */
 	  const int iov_offset = offset - len;
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
-	  nm_so_pw_add_data(p_pw2, p_pw->proto_id, p_pw->seq,
+	  nm_so_pw_add_data(p_pw2, p_pw->tag, p_pw->seq,
 			    p_pw->v[idx_pw].iov_base + iov_offset, chunk_len,
 			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
 	  len += p_pw->v[idx_pw].iov_len;
@@ -325,7 +325,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 /** Append a fragment of data to the pkt wrapper being built.
  *
  *  @param p_pw the pkt wrapper pointer.
- *  @param proto_id the protocol id which generated the fragment.
+ *  @param tag the tag id which generated the fragment.
  *  @param seq the sequence number of the fragment.
  *  @param data the data fragment pointer.
  *  @param len the data fragment length.
@@ -333,7 +333,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
  *  @return The NM status.
  */
 int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		      nm_tag_t proto_id, nm_seq_t seq,
+		      nm_tag_t tag, nm_seq_t seq,
 		      const void *data, uint32_t len,
 		      uint32_t offset,
 		      uint8_t is_last_chunk,
@@ -352,7 +352,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  /* Data immediately follows its header */
 	  const uint32_t size = nm_so_aligned(len);
 	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0) | NM_SO_DATA_FLAG_ALIGNED;
-	  nm_so_init_data(h, proto_id, seq, flags, 0, len, offset);
+	  nm_so_init_data(h, tag, seq, flags, 0, len, offset);
 	  if(len)
 	    {
 #ifdef PIO_OFFLOAD
@@ -376,7 +376,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  /* We don't know yet the gap between header and data, so we
 	     temporary store the iovec index as the 'skip' value */
 	  const uint8_t flags = (is_last_chunk ? NM_SO_DATA_FLAG_LASTCHUNK : 0);
-	  nm_so_init_data(h, proto_id, seq, flags, p_pw->v_nb, len, offset);
+	  nm_so_init_data(h, tag, seq, flags, p_pw->v_nb, len, offset);
 	  p_pw->pending_skips++;
 	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
 	}
@@ -387,7 +387,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       struct iovec*vec = nm_pw_grow_iovec(p_pw);
       vec->iov_base = (void*)data;
       vec->iov_len = len;
-      p_pw->proto_id = proto_id;
+      p_pw->tag = tag;
       p_pw->seq = seq;
       p_pw->length += len;
     }
@@ -396,10 +396,10 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 }
 
 int nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
-			    nm_tag_t proto_id, nm_seq_t seq,
+			    nm_tag_t tag, nm_seq_t seq,
 			    uint32_t len, const struct DLOOP_Segment *segp)
 {
-  p_pw->proto_id = proto_id;
+  p_pw->tag = tag;
   p_pw->seq = seq;
 
   p_pw->length += len;
@@ -412,7 +412,7 @@ int nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
 
 // function dedicated to the datatypes which do not require a rendezvous
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-			  nm_tag_t proto_id, nm_seq_t seq,
+			  nm_tag_t tag, nm_seq_t seq,
 			  uint32_t len, const struct DLOOP_Segment *segp)
 {
   if(len) 
@@ -424,7 +424,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 	struct iovec *vec =  &p_pw->v[0];
 	/* Add header */
 	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
-	nm_so_init_data(h, proto_id, seq, NM_SO_DATA_FLAG_LASTCHUNK | NM_SO_DATA_FLAG_ALIGNED, 0, len, 0);
+	nm_so_init_data(h, tag, seq, NM_SO_DATA_FLAG_LASTCHUNK | NM_SO_DATA_FLAG_ALIGNED, 0, len, 0);
 	vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	p_pw->length += NM_SO_DATA_HEADER_SIZE;
       }
@@ -441,14 +441,14 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 
 /* TODO- is this function ever used? (AD) */
 int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
-                                    nm_tag_t proto_id, nm_seq_t seq,
+                                    nm_tag_t tag, nm_seq_t seq,
                                     uint32_t len, struct DLOOP_Segment *segp)
 {
   DLOOP_Offset first = 0;
   DLOOP_Offset last  = len;
   void *buf = TBX_MALLOC(len); /* TODO: where is it freed? (AD) */
 
-  int err = nm_so_pw_add_data(p_pw, proto_id, seq, buf, len, 0, 1, NM_PW_NOHEADER);
+  int err = nm_so_pw_add_data(p_pw, tag, seq, buf, len, 0, 1, NM_PW_NOHEADER);
 
   struct iovec *vec = p_pw->v;
 
@@ -485,7 +485,8 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	  struct iovec *last_treated_vec = vec;
 	  do 
 	    {
-	      if (*(nm_tag_t *)ptr >= NM_SO_PROTO_DATA_FIRST)
+	      const nm_proto_t proto_id = *(nm_proto_t*)ptr;
+	      if(proto_id == NM_PROTO_DATA)
 		{
 		  /* Data header */
 		  struct nm_so_data_header *h = ptr;
@@ -553,112 +554,121 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
     {
       assert(remaining_len > 0);
       /* Decode header */
-      const nm_tag_t proto_id = *(nm_tag_t *)ptr;
+      const nm_proto_t proto_id = *(nm_proto_t *)ptr;
       assert(proto_id != 0);
-      if(proto_id >= NM_SO_PROTO_DATA_FIRST ||
-	 proto_id == NM_SO_PROTO_DATA_UNUSED)
+      switch(proto_id)
 	{
-	  /* Data header */
-	  void *data = NULL;
-	  struct nm_so_data_header *dh = ptr;
-	  ptr += NM_SO_DATA_HEADER_SIZE;
-	  if(proto_id != NM_SO_PROTO_DATA_UNUSED) 
-	    {
-	      /* Retrieve data location */
-	      unsigned long skip = dh->skip;
-	      data = ptr;
-	      if(dh->len) 
-		{
-		  const struct iovec *v = vec;
-		  uint32_t rlen = (v->iov_base + v->iov_len) - data;
-		  if (skip < rlen)
-		    {
-		      data += skip;
-		    }
-		  else
-		    {
-		      do
-			{
-			  skip -= rlen;
-			  v++;
-			  rlen = v->iov_len;
-			} while (skip >= rlen);
-		      data = v->iov_base + skip;
-		    }
-		}
-	    }
-	  const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	  remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
-	  /* We must recall ptr if necessary */
-	  if(dh->skip == 0){ // data are just after the header
-	    ptr += size;
-	  }  // else the next header is just behind
-	  
-	  if(proto_id != NM_SO_PROTO_DATA_UNUSED && data_handler)
-	    {
-	      const uint8_t is_last_chunk = (dh->flags & NM_SO_DATA_FLAG_LASTCHUNK);
-	      data_handler(p_pw, data, dh, dh->len, dh->proto_id, dh->seq, dh->chunk_offset, is_last_chunk);
-	    }
-	}
-      else
-	switch(proto_id)
+	case NM_PROTO_DATA:
 	  {
-	  case NM_SO_PROTO_RDV:
-	    {
-	      union nm_so_generic_ctrl_header *ch = ptr;
-	      ptr += NM_SO_CTRL_HEADER_SIZE;
-	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-	      if (rdv_handler)
-		{
-		  rdv_handler(p_pw, ch,
-			      ch->r.tag_id, ch->r.seq,
-			      ch->r.len, ch->r.chunk_offset, ch->r.is_last_chunk);
+	    /* Data header */
+	    struct nm_so_data_header *dh = ptr;
+	    ptr += NM_SO_DATA_HEADER_SIZE;
+	    /* Retrieve data location */
+	    unsigned long skip = dh->skip;
+	    void*data = ptr;
+	    if(dh->len) 
+	      {
+		const struct iovec *v = vec;
+		uint32_t rlen = (v->iov_base + v->iov_len) - data;
+		if (skip < rlen)
+		  {
+		    data += skip;
+		  }
+		else
+		  {
+		    do
+		      {
+			skip -= rlen;
+			v++;
+			rlen = v->iov_len;
+		      } while (skip >= rlen);
+		    data = v->iov_base + skip;
+		  }
+	      }
+	    const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
+	    if(dh->skip == 0)
+	      { /* data is just after the header */
+		ptr += size;
+	      }  /* else the next header is just behind */
+	    if(data_handler)
+	      {
+		const uint8_t is_last_chunk = (dh->flags & NM_SO_DATA_FLAG_LASTCHUNK);
+		data_handler(p_pw, data, dh, dh->len, dh->tag_id, dh->seq, dh->chunk_offset, is_last_chunk);
+	      }
+	  }
+	  break;
+
+	case NM_PROTO_DATA_UNUSED:
+	  {
+	    /* Unused data header- skip */
+	    struct nm_so_data_header *dh = ptr;
+	    ptr += NM_SO_DATA_HEADER_SIZE;
+	    const unsigned long size = (dh->flags & NM_SO_DATA_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
+	    if(dh->skip == 0)
+	      {
+		ptr += size;
+	      }
+	  }
+	  break;
+	  
+	case NM_PROTO_RDV:
+	  {
+	    union nm_so_generic_ctrl_header *ch = ptr;
+	    ptr += NM_SO_CTRL_HEADER_SIZE;
+	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
+	    if(rdv_handler)
+	      {
+		rdv_handler(p_pw, ch, ch->r.tag_id, ch->r.seq,
+			    ch->r.len, ch->r.chunk_offset, ch->r.is_last_chunk);
 		} else {
 		NM_SO_TRACE("Sent completed of a RDV on tag = %d, seq = %d\n", ch->r.tag_id, ch->r.seq);
 	      }
 	    }
-	    break;
-	  case NM_SO_PROTO_ACK:
-	    {
-	      union nm_so_generic_ctrl_header *ch = ptr;
-	      ptr += NM_SO_CTRL_HEADER_SIZE;
-	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-	      if(ack_handler)
-		{
+	  break;
+
+	case NM_PROTO_ACK:
+	  {
+	    union nm_so_generic_ctrl_header *ch = ptr;
+	    ptr += NM_SO_CTRL_HEADER_SIZE;
+	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
+	    if(ack_handler)
+	      {
 #ifdef NMAD_QOS
-		  int r;
-		  if(strategy->driver->ack_callback != NULL)
-		    {
-		      ack_received = 1;
-		      r = strategy->driver->ack_callback(strategy->_status,
-							 p_pw,
-							 ch->a.tag_id,
-							 ch->a.seq,
-							 ch->a.track_id,
-							 0);
-		    }
-		  else
+		int r;
+		if(strategy->driver->ack_callback != NULL)
+		  {
+		    ack_received = 1;
+		    r = strategy->driver->ack_callback(strategy->_status,
+						       p_pw,
+						       ch->a.tag_id,
+						       ch->a.seq,
+						       ch->a.track_id,
+						       0);
+		  }
+		else
 #endif /* NMAD_QOS */
-		    ack_handler(p_pw, &ch->a);
-		}
-	      else
-		{
-		  NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d, offset = %d\n", ch->a.tag_id, ch->a.seq, ch->a.chunk_offset);
-		}
-	    }
-	    break;
-	    
-	  case NM_SO_PROTO_CTRL_UNUSED:
-	    {
-	      ptr += NM_SO_CTRL_HEADER_SIZE;
-	      remaining_len -= NM_SO_CTRL_HEADER_SIZE;
-	      break;
-	    }
-	    
-	  default:
-	    return -NM_EINVAL;
-	    
-	  } /* switch */
+		  ack_handler(p_pw, &ch->a);
+	      }
+	    else
+	      {
+		NM_SO_TRACE("Sent completed of an ACK on tag = %d, seq = %d, offset = %d\n", ch->a.tag_id, ch->a.seq, ch->a.chunk_offset);
+	      }
+	  }
+	  break;
+	  
+	case NM_PROTO_CTRL_UNUSED:
+	  {
+	    ptr += NM_SO_CTRL_HEADER_SIZE;
+	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
+	  }
+	  break;
+	  
+	default:
+	  return -NM_EINVAL;
+	  
+	} /* switch */
     } /* while */
   
 #ifdef NMAD_QOS

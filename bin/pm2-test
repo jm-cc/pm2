@@ -381,12 +381,14 @@ _to_test="$_prefix $_suffix"
 
 failures=""
 nb_tests=0
+nb_skipped_tests=0
 nb_passes=0
 nb_failures=0
 _l=$_init_level
 while [ $_l -le $_level ]; do
     failures_per_level=""
     nb_tests_per_level=0
+    nb_skipped_tests_per_level=0
     nb_passes_per_level=0
     nb_failures_per_level=0
 
@@ -394,6 +396,7 @@ while [ $_l -le $_level ]; do
 	echo "*** Testing module $_m ***"
 	failures_per_module=""
 	nb_tests_per_module=0
+	nb_skipped_tests_per_module=0
 	nb_failures_per_module=0
 	nb_passes_per_module=0
 
@@ -423,7 +426,7 @@ while [ $_l -le $_level ]; do
                 if [ $is_test_selected == 1 ] ; then
                     echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
 
-		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
+		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; nb_skipped_tests_per_module=`expr $nb_skipped_tests_per_module + 1` ; continue; }'
 
 		    # Source
 		    unset ld_preload
@@ -529,6 +532,7 @@ while [ $_l -le $_level ]; do
 		failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
 	    fi
 	    nb_tests_per_level=`expr $nb_tests_per_level + $nb_tests_per_module`
+	    nb_skipped_tests_per_level=`expr $nb_skipped_tests_per_level + $nb_skipped_tests_per_module`
 	    nb_passes_per_level=`expr $nb_passes_per_level + $nb_passes_per_module`
 	    nb_failures_per_level=`expr $nb_failures_per_level + $nb_failures_per_module`
 	fi
@@ -543,6 +547,7 @@ while [ $_l -le $_level ]; do
 	failures="$failures [Level $_l: $failures_per_level]"
     fi
     nb_tests=`expr $nb_tests + $nb_tests_per_level`
+    nb_skipped_tests=`expr $nb_skipped_tests + $nb_skipped_tests_per_level`
     nb_passes=`expr $nb_passes + $nb_passes_per_level`
     nb_failures=`expr $nb_failures + $nb_failures_per_level`
     _l=`expr $_l + 1`
@@ -552,6 +557,7 @@ echo
 echo "# of passes		$nb_passes"
 echo "# of failures		$nb_failures"
 echo "# of performed tests	$nb_tests"
+echo "# of skipped tests	$nb_skipped_tests"
 
 if [ -n "$failures" ] ; then
     echo ""

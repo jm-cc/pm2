@@ -3,3 +3,4 @@ Provide: marcel_smp
 Provide: marcel_numa
 Conflict: marcel_proctype
 Depend: marcel_stats
+Depend: libtopology

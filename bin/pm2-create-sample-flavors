@@ -43,26 +43,30 @@ registering_flavors() {
 	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
 	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
 	--marcel=smp_smt_idle \
-	--marcel=enable_stats
+	--marcel=enable_stats \
+        --init=topology
 
     register_flavor marcel-topology-32 \
 	--modules="marcel tbx init" $DEBUG_OPTIONS \
 	$COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:32 \
-	--marcel=enable_stats
+	--marcel=enable_stats \
+        --init=topology
 
     register_flavor marcel-topology \
 	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:64 \
-	--marcel=enable_stats
+	--marcel=enable_stats \
+        --init=topology
 
     register_flavor marcel-topology-256 \
 	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \
-	--marcel=enable_stats
+	--marcel=enable_stats \
+        --init=topology
 
     register_flavor mami-opt \
 	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
@@ -71,7 +75,8 @@ registering_flavors() {
 	--marcel=enable_stats \
         --marcel=dont_use_pthread \
         --memory=marcel \
-        --memory=enable_mami
+        --memory=enable_mami \
+        --init=topology
 
     register_flavor mami-debug \
 	--modules="marcel tbx init memory" \
@@ -80,6 +85,7 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=valgrind \
         --memory=marcel \
         --memory=enable_mami \
+        --init=topology \
         --marcel=dont_use_pthread \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
@@ -92,6 +98,7 @@ registering_flavors() {
         --memory=enable_mami --memory=fortran \
         --common=fortran_target_gfortran \
         --marcel=dont_use_pthread \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
     register_flavor heap-debug \
@@ -100,6 +107,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=valgrind \
         --memory=enable_heap_allocator \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
     register_flavor marcel \
@@ -112,6 +120,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats \
+        --init=topology \
 	--bubbles=gdb --bubbles=noinline
 
     register_flavor marcel-distrib \
@@ -121,7 +130,8 @@ registering_flavors() {
 	--marcel=pmarcel --marcel=enable_stats \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_deviation --marcel=enable_signals
+	--marcel=enable_deviation --marcel=enable_signals \
+        --init=topology
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
@@ -129,6 +139,7 @@ registering_flavors() {
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline
 
     register_flavor marcel-forestgomp-opt \
@@ -137,6 +148,7 @@ registering_flavors() {
 	--marcel=standard_main --marcel=dont_use_pthread \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
+        --init=topology \
 	--all=opt --all=build_both
 
     register_flavor marcel-forestgomp-debug \
@@ -146,6 +158,7 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline --all=build_both
 
     register_flavor marcel-forestgomp-fxtdebug \
@@ -156,6 +169,7 @@ registering_flavors() {
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=profile --marcel=bug_on \
 	--profile=autostart \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline --all=build_both
 
     register_flavor forestgomp-mami-debug \
@@ -165,6 +179,7 @@ registering_flavors() {
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
+        --init=topology \
 	$DEBUG_OPTIONS --all=noinline --all=build_both
 
     register_flavor leonie \
@@ -257,6 +272,7 @@ registering_flavors() {
 	--marcel=enable_deviation --marcel=enable_signals \
 	--marcel=enable_stats \
 	--marcel=standard_main \
+        --init=topology \
 	--puk=enable_pukabi --puk=disable_output \
 	--puk=disable_fd_virtualization
 

@@ -68,11 +68,6 @@ struct _struct_common_attr_t {
 
 #endif // *_KERNEL
 
-#if defined(MA__LWPS) || defined(MM_MAMI_ENABLED)
-/* TODO: should rather be a init option which marcel's lwp option depends on */
-#  define PM2_TOPOLOGY
-#endif /* MA__LWPS || MM_MAMI_ENABLED */
-
 #if defined(PM2_TOPOLOGY)
 #  include <topology.h>
 extern topo_topology_t topology;

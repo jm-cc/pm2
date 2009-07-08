@@ -1,3 +1,4 @@
 Provide: memory_mami
 Provide: memory_interface
 Conflict: memory_interface
+Depend: libtopology

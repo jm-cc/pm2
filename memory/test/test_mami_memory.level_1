@@ -14,6 +14,10 @@
 
 . ./mami.sh
 prog="memory"
+if [ ! -d /sys/devices/system/node/node1 ] ; then
+    pm2_skip_test
+fi
+
 sort_output=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 [0] Address is located on the correct node 0

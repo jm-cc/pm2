@@ -14,6 +14,10 @@
 
 . ./mami.sh
 prog="attach_distribute"
+if [ ! -d /sys/devices/system/node/node1 ] ; then
+    pm2_skip_test
+fi
+
 args="--no-print"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 ... Allocating memory on first touch node

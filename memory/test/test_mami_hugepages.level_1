@@ -17,7 +17,7 @@ prog="hugepages"
 hugepages_free=$(grep HugePages_Free: /sys/devices/system/node/node0/meminfo | awk '{print $NF}')
 if [ "$hugepages_free" == "0" ] ; then
     cat > /tmp/pm2test_"${USER}"_expected <<EOF
-NUMA node topology not accessible.
+No huge page available.
 EOF
 else
     cat > /tmp/pm2test_"${USER}"_expected <<EOF

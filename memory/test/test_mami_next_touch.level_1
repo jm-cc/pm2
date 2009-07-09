@@ -14,6 +14,10 @@
 
 . ./mami.sh
 prog="next_touch"
+if [ ! -d /sys/devices/system/node/node1 ] ; then
+    pm2_skip_test
+fi
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 Address is located on node 0
 Address is located on node 0

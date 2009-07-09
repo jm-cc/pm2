@@ -14,6 +14,9 @@
 
 . ./mami.sh
 prog="migrate_and_access"
+if [ ! -d /sys/devices/system/node/node1 ] ; then
+    pm2_skip_test
+fi
 args="10000"
 
 cat > /tmp/pm2test_"${USER}"_expected <<EOF

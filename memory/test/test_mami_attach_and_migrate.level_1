@@ -13,8 +13,11 @@
 # General Public License for more details.
 
 . ./mami.sh
-
 prog="attach_and_migrate"
+if [ ! -d /sys/devices/system/node/node1 ] ; then
+    pm2_skip_test
+fi
+
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 MaMI: The 1 pages are all on node #1
 MaMI: The 1 pages are all on node #1

@@ -13,7 +13,7 @@
 # General Public License for more details.
 
 . ./mami.sh
-prog="locate"
+prog="mlocate"
 sort_output=1
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 (1) The memory is located on node #0

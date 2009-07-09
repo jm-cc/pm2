@@ -41,6 +41,27 @@ static __inline__ void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_
   p_pw->trk_id = trk_id;
 }
 
+/** Ensures p_pw->v contains at least n entries
+ */
+static inline void nm_pw_grow_n(struct nm_pkt_wrap*p_pw, int n)
+{
+  if(n >= p_pw->v_size)
+    {
+      while(n >= p_pw->v_size)
+	p_pw->v_size *= 2;
+      if(p_pw->v == p_pw->prealloc_v)
+	p_pw->v = TBX_MALLOC(sizeof(struct iovec) * p_pw->v_size);
+      else
+	p_pw->v = TBX_REALLOC(p_pw->v, sizeof(struct iovec) * p_pw->v_size);
+    }
+}
+
+static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
+{
+  nm_pw_grow_n(p_pw, p_pw->v_nb + 1);
+  return &p_pw->v[p_pw->v_nb++];
+}
+
 int nm_so_pw_init(struct nm_core *p_core);
 
 int nm_so_pw_exit(void);
@@ -53,27 +74,14 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
                    struct nm_pkt_wrap **pp_pw2,
                    uint32_t offset);
 
-int
-nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		  nm_tag_t proto_id, nm_seq_t seq,
-		  const void *data, uint32_t len,
-                  uint32_t offset, uint8_t is_last_chunk, int flags);
+int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
+		      nm_tag_t proto_id, nm_seq_t seq,
+		      const void *data, uint32_t len,
+		      uint32_t offset, uint8_t is_last_chunk, int flags);
 
-int
-nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-                      nm_tag_t proto_id, nm_seq_t seq,
-                      uint32_t len, const struct DLOOP_Segment *segp);
-
-
-int
-nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
-                        nm_tag_t proto_id, nm_seq_t seq,
-                        uint32_t len, const struct DLOOP_Segment *segp);
-
-int
-nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
-                                    nm_tag_t proto_id, nm_seq_t seq,
-                                    uint32_t len, struct DLOOP_Segment *segp);
+int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
+			  nm_tag_t proto_id, nm_seq_t seq,
+			  uint32_t len, const struct DLOOP_Segment *segp);
 
 static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_so_generic_ctrl_header*p_ctrl)
 {

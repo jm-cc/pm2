@@ -68,11 +68,11 @@ static int _nm_so_treat_chunk(tbx_bool_t is_any_src, void *dest_buffer, struct n
 	    status = p_so_tag->status[seq];
 	  }
 	/* Copy data to its final destination */
-	if(status & NM_SO_STATUS_UNPACK_IOV)
+	if(status & NM_UNPACK_TYPE_IOV)
 	  {
 	    _nm_so_copy_data_in_iov(dest_buffer, chunk_offset, ptr, len);
 	  }
-	else if(status & NM_SO_STATUS_IS_DATATYPE)
+	else if(status & NM_UNPACK_TYPE_DATATYPE)
 	  {
 	    struct DLOOP_Segment *segp = dest_buffer;
 	    DLOOP_Offset last = chunk_offset + len;

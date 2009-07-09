@@ -287,13 +287,13 @@ static void process_small_data(tbx_bool_t is_any_src,
   if(len)
     {
       /* Copy data to its final destination */
-      if(*status & NM_SO_STATUS_UNPACK_IOV)
+      if(*status & NM_UNPACK_TYPE_IOV)
 	{
 	  /* destination is non contiguous */
 	  struct iovec *iov = is_any_src ? any_src->data : p_so_tag->recv[seq].unpack_here.data;
 	  _nm_so_copy_data_in_iov(iov, chunk_offset, ptr, len);
 	}
-      else if(*status & NM_SO_STATUS_IS_DATATYPE)
+      else if(*status & NM_UNPACK_TYPE_DATATYPE)
 	{
 	  /* data is described by a datatype */
 	  DLOOP_Offset last = chunk_offset + len;
@@ -492,65 +492,12 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
 	  list_del(&p_large_pw->link);
-	  if(p_so_tag->status[seq] & NM_SO_STATUS_IS_DATATYPE)
+	  if(chunk_len < p_large_pw->length)
 	    {
-	      /* large data is datatype */
-	      int length = p_large_pw->length;
-	      DLOOP_Offset first = p_large_pw->datatype_offset;
-	      DLOOP_Offset last  = first + chunk_len;
-	      int nb_entries = p_large_pw->v_size - p_large_pw->v_nb;
-	      /* AD: TODO with resizable iovecs, packing datatype into vector or contigous
-	       * should depend upon blocks density, not iovec current size.
-	       */
-	      int nb_blocks = 0;
-	      CCSI_Segment_count_contig_blocks(p_large_pw->segp, first, &last, &nb_blocks);
-	      if(nb_blocks < nb_entries)
-		{
-		  /* pack datatype into an iovec */
-		  CCSI_Segment_pack_vector(p_large_pw->segp, first, &last, (DLOOP_VECTOR *)p_large_pw->v, &nb_entries);
-		  NM_SO_TRACE("Pack with %d entries from byte %d to byte %d (%d bytes)\n",
-			      nb_entries, p_large_pw->datatype_offset, last, last-p_large_pw->datatype_offset);
-		}
-	      else 
-		{
-		  /* pack datatype into a contiguous buffer (by copy) */
-		  NM_SO_TRACE("There is no enough space in the iovec - copy in a contiguous buffer and send\n");
-		  p_large_pw->v[0].iov_base = TBX_MALLOC(chunk_len);
-		  p_large_pw->flags |= NM_PW_DYNAMIC_V0;
-		  CCSI_Segment_pack(p_large_pw->segp, first, &last, p_large_pw->v[0].iov_base);
-		  p_large_pw->v[0].iov_len = last - first;
-		  nb_entries = 1;
-		}
-	      p_large_pw->length = last - first;
-	      p_large_pw->v_nb += nb_entries;
-	      p_large_pw->datatype_offset = last;
-
-	      if(chunk_offset + chunk_len < length)
-		{
-		  /* store the remaining data */
-		  struct nm_pkt_wrap *p_large_pw2 = NULL;
-		  nm_so_pw_alloc(NM_PW_NOHEADER, &p_large_pw2);
-		  p_large_pw2->p_gate   = p_large_pw->p_gate;
-		  p_large_pw2->tag      = p_large_pw->tag;
-		  p_large_pw2->seq      = p_large_pw->seq;
-		  p_large_pw2->length   = length;
-		  p_large_pw2->v_nb     = 0;
-		  p_large_pw2->segp     = p_large_pw->segp;
-		  p_large_pw2->datatype_offset = last;
-		  p_large_pw2->chunk_offset = p_large_pw2->datatype_offset;
-		  list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
-		}
-	    }
-	  else
-	    {
-	      /* large data is contiguous or iovec */
-	      if(chunk_len < p_large_pw->length)
-		{
-		  /* partial ACK- split the packet  */
-		  struct nm_pkt_wrap *p_large_pw2 = NULL;
-		  nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
-		  list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
-		}
+	      /* partial ACK- split the packet  */
+	      struct nm_pkt_wrap *p_large_pw2 = NULL;
+	      nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
+	      list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
 	    }
 	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
@@ -609,8 +556,8 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       
       NM_SO_TRACE("Reception of a large packet\n");
 
-      if(p_so_tag->status[seq] & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE
-	 || any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE)
+      if(p_so_tag->status[seq] & NM_UNPACK_TYPE_COPY_DATATYPE
+	 || any_src->status & NM_UNPACK_TYPE_COPY_DATATYPE)
 	{
 	  /* ** 1.1. Large packet, packed datatype -> finalize */
 	  DLOOP_Offset last = p_pw->length;
@@ -627,7 +574,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  else
 	    {
 	      TBX_FREE(p_pw->v[0].iov_base);
-	      if(any_src->status & NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE)
+	      if(any_src->status & NM_UNPACK_TYPE_COPY_DATATYPE)
 		{
 		  /* large packet, datatype, anysrc */
 		  any_src->status = 0;

@@ -164,7 +164,7 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
     }
   
   /* 1) The final destination of the data is an iov */
-  if(*status & NM_SO_STATUS_UNPACK_IOV)
+  if(*status & NM_UNPACK_TYPE_IOV)
     {
       struct iovec *iov = is_any_src ?
 	any_src->data : p_so_tag->recv[seq].unpack_here.data;
@@ -172,7 +172,7 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
       
     }
   /* 2) The final destination of the data is a datatype */
-  else if(*status & NM_SO_STATUS_IS_DATATYPE)
+  else if(*status & NM_UNPACK_TYPE_DATATYPE)
     {
       err = init_large_datatype_recv(is_any_src, p_gate, tag, seq, len, chunk_offset);
     }
@@ -311,11 +311,11 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.drv_id);
 	  if(is_any_src)
 	    {
-	      nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag)->status |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+	      nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag)->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
 	    }
 	  else
 	    {
-	      nm_so_tag_get(&p_gate->tags, tag)->status[seq] |= NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE;
+	      nm_so_tag_get(&p_gate->tags, tag)->status[seq] |= NM_UNPACK_TYPE_COPY_DATATYPE;
 	    }
 	  nm_so_post_ack(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, 0, len);
 	}
@@ -479,8 +479,8 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
     {
       struct nm_pkt_wrap *p_large_pw = nm_l2so(p_gate->pending_large_recv.next);
       NM_SO_TRACE("Retrieve wrapper waiting for a reception\n");
-      if(nm_so_tag_get(&p_gate->tags, p_large_pw->tag)->status[p_large_pw->seq] & NM_SO_STATUS_UNPACK_IOV
-	 || nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->tag)->status & NM_SO_STATUS_UNPACK_IOV)
+      if(nm_so_tag_get(&p_gate->tags, p_large_pw->tag)->status[p_large_pw->seq] & NM_UNPACK_TYPE_IOV
+	 || nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->tag)->status & NM_UNPACK_TYPE_IOV)
 	{
 	  /* ** iov to be completed */
 	  list_del(p_gate->pending_large_recv.next);
@@ -500,9 +500,9 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  nm_so_build_multi_ack(p_gate, p_large_pw->tag, p_large_pw->seq, p_large_pw->chunk_offset, 1, &chunk);
 	}
       else if ((nm_so_tag_get(&p_gate->tags, p_large_pw->tag)->status[p_large_pw->seq]
-		& NM_SO_STATUS_IS_DATATYPE
+		& NM_UNPACK_TYPE_DATATYPE
 		|| nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->tag)->status
-		& NM_SO_STATUS_IS_DATATYPE)
+		& NM_UNPACK_TYPE_DATATYPE)
 	       && p_large_pw->segp)
 	{
 	  /* ** datatype to be completed */

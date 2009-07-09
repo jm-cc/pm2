@@ -364,24 +364,48 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_gate *p_gate,
 					  uint32_t len, const struct DLOOP_Segment *segp)
 {
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  struct nm_pkt_wrap *p_so_pw = NULL;
+  struct nm_pkt_wrap *p_pw = NULL;
   int err;
 
   /* First allocate a packet wrapper */
-  err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_so_pw);
+  err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
-  nm_so_pw_store_datatype(p_so_pw, tag, seq, len, segp);
+  {
+    /* store datatype into iovec- flatten into contiguous
+     * or convert into iovec depending on density
+     */
+    DLOOP_Offset first = 0;
+    DLOOP_Offset last  = first + len;
+    int nb_blocks = 0;
+    CCSI_Segment_count_contig_blocks(p_pw->segp, first, &last, &nb_blocks);
+    const int density = len / nb_blocks; /* average block size */
+    if(density <= NM_SO_DATATYPE_BLOCKSIZE)
+      {
+	/* low density => flatten into a contiguous buffer (by copy) */
+	p_pw->v[0].iov_base = TBX_MALLOC(len);
+	p_pw->flags |= NM_PW_DYNAMIC_V0;
+	CCSI_Segment_pack((struct DLOOP_Segment*)segp, first, &last, p_pw->v[0].iov_base);
+	p_pw->v[0].iov_len = last - first;
+	p_pw->v_nb = 1;
+      }
+    else
+      {
+	/* high-density => pack into an iovec */
+	nm_pw_grow_n(p_pw, nb_blocks);
+	CCSI_Segment_pack_vector((struct DLOOP_Segment*)segp, first, &last, (DLOOP_VECTOR *)p_pw->v, &nb_blocks);
+	p_pw->v_nb = nb_blocks;
+	p_pw->length = last - first;
+      }
+  }
 
-  p_so_tag->status[seq] |= NM_SO_STATUS_IS_DATATYPE;
-
-  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
-  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 1, p_so_pw);
-  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 1, 1, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_pw, tag, seq, len);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 1, p_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 1, 1, p_pw);
 
   /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_so_pw->link, &(p_so_tag->pending_large_send));
+  list_add_tail(&p_pw->link, &(p_so_tag->pending_large_send));
 
   /* Finally, generate a RdV request */
   {
@@ -424,16 +448,16 @@ strat_split_balance_pack_datatype(void*_status, struct nm_gate *p_gate,
 
   NM_SO_TRACE("Send a datatype on gate %d and tag %d with length %d\n", p_gate->id, tag, data_sz);
 
-  if(data_sz <= status->nm_so_max_small) {
-    NM_SO_TRACE("Short datatype : try to aggregate it\n");
-     strat_split_balance_agregate_datatype(_status, p_gate, tag, seq, data_sz, segp);
-
-  } else {
-    NM_SO_TRACE("Large datatype : send a rdv\n");
-    strat_split_balance_launch_large_datatype(_status, p_gate, tag, seq, data_sz, segp);
-  }
-
-  p_so_tag->status[seq] = NM_SO_STATUS_IS_DATATYPE;
+  if(data_sz <= status->nm_so_max_small)
+    {
+      NM_SO_TRACE("Short datatype : try to aggregate it\n");
+      strat_split_balance_agregate_datatype(_status, p_gate, tag, seq, data_sz, segp);
+    }
+  else 
+    {
+      NM_SO_TRACE("Large datatype : send a rdv\n");
+      strat_split_balance_launch_large_datatype(_status, p_gate, tag, seq, data_sz, segp);
+    }
 
   return NM_ESUCCESS;
 }

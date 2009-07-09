@@ -104,7 +104,7 @@ static inline int nm_so_unpackv(struct nm_gate *p_gate,
 				struct iovec *iov, int nb_entries)
 {
   /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
+  const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
   return __nm_so_unpack(p_gate, tag, seq, flag, iov, iov_len(iov, nb_entries));
 }
 
@@ -113,7 +113,7 @@ static inline int nm_so_unpack_datatype(struct nm_gate *p_gate,
 					struct DLOOP_Segment *segp)
 {
   /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
+  const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
   return __nm_so_unpack(p_gate, tag, seq, flag, segp, datatype_size(segp));
 }
 
@@ -128,14 +128,14 @@ static inline int nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, voi
 static inline int nm_so_unpackv_any_src(struct nm_core *p_core, nm_tag_t tag, struct iovec *iov, int nb_entries)
 {
   /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_SO_STATUS_UNPACK_IOV;
+  const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
   return __nm_so_unpack_any_src(p_core, tag, flag, iov, iov_len(iov, nb_entries));
 }
 
 static inline int nm_so_unpack_datatype_any_src(struct nm_core *p_core, nm_tag_t tag, struct DLOOP_Segment *segp){
 
   /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_SO_STATUS_IS_DATATYPE;
+  const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
   return __nm_so_unpack_any_src(p_core, tag, flag, segp, datatype_size(segp));
 }
 

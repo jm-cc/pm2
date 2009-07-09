@@ -42,11 +42,11 @@ typedef nm_so_status_t nm_so_flag_t;
 /** unpack operation has been cancelled */
 #define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0080)
 /** flag: unpack is an iovec */
-#define NM_SO_STATUS_UNPACK_IOV               ((nm_so_flag_t)0x0100)
+#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0100)
 /** flag: unpack is a datatype */
-#define NM_SO_STATUS_IS_DATATYPE              ((nm_so_flag_t)0x0200)
+#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0200)
 /* flag: unpack datatype through a temporary buffer */
-#define NM_SO_STATUS_UNPACK_RETRIEVE_DATATYPE ((nm_so_flag_t)0x0400)
+#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0400)
 
 /** an event notifier, fired upon status transition */
 typedef struct nm_so_event_s* nm_so_event_t;

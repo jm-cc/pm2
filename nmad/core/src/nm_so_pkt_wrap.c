@@ -235,20 +235,6 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   return err;
 }
 
-/** Ensures p_pw->v contains at least n entries and returns v[n]
- */
-static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
-{
-  if(p_pw->v_nb >= p_pw->v_size)
-    {
-      p_pw->v_size *= 2;
-      if(p_pw->v == p_pw->prealloc_v)
-	p_pw->v = TBX_MALLOC(sizeof(struct iovec) * p_pw->v_size);
-      else
-	p_pw->v = TBX_REALLOC(p_pw->v, sizeof(struct iovec) * p_pw->v_size);
-    }
-  return &p_pw->v[p_pw->v_nb++];
-}
 
 // Attention!! split only enable when the p_pw is finished
 int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
@@ -395,20 +381,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   return err;
 }
 
-int nm_so_pw_store_datatype(struct nm_pkt_wrap *p_pw,
-			    nm_tag_t tag, nm_seq_t seq,
-			    uint32_t len, const struct DLOOP_Segment *segp)
-{
-  p_pw->tag = tag;
-  p_pw->seq = seq;
-
-  p_pw->length += len;
-
-  p_pw->segp = (struct DLOOP_Segment*)segp;
-  p_pw->datatype_offset = 0;
-
-  return NM_ESUCCESS;
-}
 
 // function dedicated to the datatypes which do not require a rendezvous
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
@@ -437,28 +409,6 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
     }
 
   return NM_ESUCCESS;
-}
-
-/* TODO- is this function ever used? (AD) */
-int nm_so_pw_copy_contiguously_datatype(struct nm_pkt_wrap *p_pw,
-                                    nm_tag_t tag, nm_seq_t seq,
-                                    uint32_t len, struct DLOOP_Segment *segp)
-{
-  DLOOP_Offset first = 0;
-  DLOOP_Offset last  = len;
-  void *buf = TBX_MALLOC(len); /* TODO: where is it freed? (AD) */
-
-  int err = nm_so_pw_add_data(p_pw, tag, seq, buf, len, 0, 1, NM_PW_NOHEADER);
-
-  struct iovec *vec = p_pw->v;
-
-  /* flatten datatype into contiguous memory */
-  CCSI_Segment_pack(segp, first, &last, vec->iov_base);
-
-  vec->iov_len = len;
-
-  err = NM_ESUCCESS;
-  return err;
 }
 
 /** Finalize the incremental building of the packet.

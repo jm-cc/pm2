@@ -37,7 +37,8 @@ registering_flavors() {
     register_flavor marcel-smp \
 	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
 	--marcel=smp --marcel=marcel_main \
-	--marcel=smp_smt_idle
+	--marcel=smp_smt_idle \
+        --init=topology
 
     register_flavor marcel-numa \
 	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
@@ -243,7 +244,8 @@ registering_flavors() {
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --marcel=smp --marcel=standard_main \
-        --common=fortran_target_none
+        --common=fortran_target_none \
+        --init=topology
 
     register_flavor nmad-distrib \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
@@ -273,7 +275,8 @@ registering_flavors() {
 	--marcel=marcel_main --marcel=pmarcel \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_deviation --marcel=enable_signals
+	--marcel=enable_deviation --marcel=enable_signals \
+        --init=topology
 
     register_flavor libpthread \
 	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \

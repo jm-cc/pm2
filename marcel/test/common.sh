@@ -62,7 +62,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk\""			\
-		--marcel="smp"						\
+		--init="topology" --marcel="smp"			\
 		--marcel="spinlock" --marcel="standard_main"		\
 		--marcel="pmarcel"					\
 		--marcel="enable_cleanup" --marcel="enable_deviation"	\
@@ -77,7 +77,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk\""			\
-		--marcel="smp"						\
+		--init="topology" --marcel="smp"			\
 		--marcel="spinlock" --marcel="standard_main"		\
 		--marcel="pmarcel" --marcel="pthread"			\
 		--marcel="enable_cleanup" --marcel="enable_deviation"	\
@@ -92,7 +92,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk stackalign\""		\
-		--marcel="smp"						\
+		--init="topology" --marcel="smp"			\
 		--marcel="spinlock" --marcel="main_as_func"		\
 		--marcel="pmarcel" --marcel="pthread"			\
 		--marcel="enable_cleanup" --marcel="enable_deviation"	\
@@ -157,7 +157,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"smp\" --marcel=\"marcel_main\" \
+		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
@@ -165,7 +165,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"smp\" --marcel=\"marcel_main\" \
+		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_dynamic\" $_output_redirect
 	    ;;
@@ -181,7 +181,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"smp\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
+		--init=\"topology\" --marcel=\"smp\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"enable_keys\" \
 		--marcel=\"pmarcel\" --marcel=\"enable_signals\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
@@ -257,7 +257,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
-		--marcel=\"smp\" --marcel=\"marcel_main\" \
+		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

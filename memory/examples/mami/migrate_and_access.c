@@ -17,6 +17,7 @@
 #include <sys/mman.h>
 #include "mm_mami.h"
 #include "mm_mami_thread.h"
+#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -65,23 +66,29 @@ int main(int argc, char * argv[]) {
   common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
-  if (argc == 2) {
-    loops = atoi(argv[1]);
+  if (memory_manager->nb_nodes < 2) {
+    printf("This application needs at least two NUMA nodes.\n");
+  }
+  else {
+    if (argc == 2) {
+      loops = atoi(argv[1]);
+    }
+
+    // Allocate the buffer
+    buffer = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+
+    // Start the threads
+    th_mami_create(&threads[0], NULL, t_migrate, (any_t) &loops);
+    th_mami_create(&threads[1], NULL, t_access, (any_t) &loops);
+
+    // Wait for the threads to complete
+    th_mami_join(threads[0], NULL);
+    th_mami_join(threads[1], NULL);
+
+    printf("Success\n");
+    mami_free(memory_manager, buffer);
   }
 
-  // Allocate the buffer
-  buffer = mami_malloc(memory_manager, SIZE*sizeof(int), MAMI_MEMBIND_POLICY_DEFAULT, 0);
-
-  // Start the threads
-  th_mami_create(&threads[0], NULL, t_migrate, (any_t) &loops);
-  th_mami_create(&threads[1], NULL, t_access, (any_t) &loops);
-
-  // Wait for the threads to complete
-  th_mami_join(threads[0], NULL);
-  th_mami_join(threads[1], NULL);
-
-  printf("Success\n");
-  mami_free(memory_manager, buffer);
   mami_exit(&memory_manager);
   common_exit(NULL);
   return 0;

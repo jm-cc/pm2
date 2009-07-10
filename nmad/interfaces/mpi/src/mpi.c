@@ -1881,6 +1881,42 @@ int MPI_Testany(int count,
   return err;
 }
 
+
+/* TODO : handle the case where statuses == MPI_STATUSES_IGNORE */
+int MPI_Testsome(int count,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *indices,
+		 MPI_Status *statuses) {
+  int i, flag, err = 0;
+  int count_inactive = 0;
+  mpir_request_t *mpir_request;
+
+  MPI_NMAD_LOG_IN();
+
+  *outcount = 0;
+
+  for(i=0 ; i<count ; i++) {
+    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      count_inactive++;
+      continue;
+    }
+
+    err = MPI_Test(&(array_of_requests[i]), &flag, &(statuses[*outcount]));
+    if (flag == 1) {
+      indices[*outcount] = i;
+      (*outcount)++;
+    }
+  }
+
+  if (count_inactive == count)
+    *outcount = MPI_UNDEFINED;
+  
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
+
 int MPI_Iprobe(int source,
                int tag,
                MPI_Comm comm,

@@ -266,7 +266,7 @@ int MPI_Test(MPI_Request *request,
              MPI_Status *status);
 
 /**
- * Tests for completion of the communication operations associated
+ * Tests for completion of one communication operation associated
  * with requests in the array.
  * @param count list length
  * @param array_of_requests array of request handles
@@ -280,6 +280,22 @@ int MPI_Testany(int count,
                 int *index,
                 int *flag,
                 MPI_Status *status);
+
+/**
+ * Tests for completion of several communication operations associated
+ * with requests in the array.
+ * @param count list length
+ * @param array_of_requests array of request handles
+ * @param outcount is the number of request handle completed
+ * @param indices are the indices or request handle completed in array_of_requests
+ * @param statuses array of statuses of the completed operations
+ * @return MPI status
+ */
+int MPI_Testsome(int count,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *indices,
+		 MPI_Status *statuses);
 
 /**
  * Nonblocking operation that returns flag = true if there is a

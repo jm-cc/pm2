@@ -20,6 +20,7 @@ initialize_bench()
 	--marcel=numa --marcel=standard_main --marcel=smp_smt_idle \
 	--marcel=enable_stats --marcel=bubble_sched_null \
         --memory=enable_mami \
+	--init=topology \
         --all=\"opt build_static static\"
     ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
 }

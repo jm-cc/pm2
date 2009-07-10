@@ -16,6 +16,6 @@
 # Configuration
 prog="bubble-sched-lookup"
 
-source "bubble-testing.sh"
+source "./bubble-testing.sh"
 
 : > /tmp/pm2test_"${USER}"_expected

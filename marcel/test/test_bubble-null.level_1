@@ -16,4 +16,4 @@
 # Configuration
 prog="bubble-null"
 
-source "bubble-testing.sh"
+source "./bubble-testing.sh"

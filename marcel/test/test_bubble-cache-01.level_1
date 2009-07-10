@@ -16,4 +16,4 @@
 # Configuration
 prog="bubble-cache-01"
 
-source "bubble-testing.sh"
+source "./bubble-testing.sh"

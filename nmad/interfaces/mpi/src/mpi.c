@@ -1957,7 +1957,7 @@ int MPI_Cancel(MPI_Request *request) {
 
   MPI_NMAD_TRACE("Request is cancelled\n");
 
-  mpir_cancel(&mpir_internal_data, mpir_request);
+  err = mpir_cancel(&mpir_internal_data, mpir_request);
   mpir_request->request_type = MPI_REQUEST_CANCELLED;
   if (mpir_request->contig_buffer != NULL) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);
@@ -2557,7 +2557,8 @@ int MPI_Reduce(void* sendbuf,
     }
 
     // Do the reduction operation
-    memcpy(recvbuf, sendbuf, count*mpir_sizeof_datatype(&mpir_internal_data, datatype));
+    if (recvbuf != sendbuf)
+      memcpy(recvbuf, sendbuf, count*mpir_sizeof_datatype(&mpir_internal_data, datatype));
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       operator->function(remote_sendbufs[i], recvbuf, &count, &datatype);
@@ -2724,6 +2725,9 @@ int MPI_Type_free(MPI_Datatype *datatype) {
   if (err == MPI_SUCCESS) {
     *datatype = MPI_DATATYPE_NULL;
   }
+  else { /* err = MPI_DATATYPE_ACTIVE */
+    err = MPI_SUCCESS;
+  }  
   return err;
 }
 

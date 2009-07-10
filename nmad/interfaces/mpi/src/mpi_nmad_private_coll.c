@@ -137,6 +137,22 @@ void mpir_op_sum(void *invec,
       }
       break;
     }
+    case MPI_INTEGER4 : {
+      int32_t *i_invec = (int32_t *) invec;
+      int32_t *i_inoutvec = (int32_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    }
+    case MPI_INTEGER8 : {
+      int64_t *i_invec = (int64_t *) invec;
+      int64_t *i_inoutvec = (int64_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        i_inoutvec[i] += i_invec[i];
+      }
+      break;
+    }
     default : {
       ERROR("Datatype %d for SUM Reduce operation", *type);
       break;

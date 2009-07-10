@@ -49,6 +49,22 @@ void mpir_op_max(void *invec,
       }
       break;
     } /* END MPI_DOUBLE FOR MPI_MAX */
+    case MPI_INTEGER4 : {
+      int32_t *i_invec = (int32_t *) invec;
+      int32_t *i_inoutvec = (int32_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INTEGER4 FOR MPI_MAX */
+    case MPI_INTEGER8 : {
+      int64_t *i_invec = (int64_t *) invec;
+      int64_t *i_inoutvec = (int64_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] > i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INTEGER8 FOR MPI_MAX */
     default : {
       ERROR("Datatype %d for MAX Reduce operation", *type);
       break;
@@ -80,6 +96,22 @@ void mpir_op_min(void *invec,
       }
       break;
     } /* END MPI_DOUBLE FOR MPI_MAX */
+    case MPI_INTEGER4 : {
+      int32_t *i_invec = (int32_t *) invec;
+      int32_t *i_inoutvec = (int32_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INTEGER4 FOR MPI_MAX */
+    case MPI_INTEGER8 : {
+      int64_t *i_invec = (int64_t *) invec;
+      int64_t *i_inoutvec = (int64_t *) inoutvec;
+      for(i=0 ; i<*len ; i++) {
+        if (i_invec[i] < i_inoutvec[i]) i_inoutvec[i] = i_invec[i];
+      }
+      break;
+    } /* END MPI_INTEGER8 FOR MPI_MAX */
     default : {
       ERROR("Datatype %d for MIN Reduce operation", *type);
       break;

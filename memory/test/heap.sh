@@ -37,6 +37,7 @@ create_test_flavor() {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init memory\" \
+	--init=\"topology\" \
         --memory=\"enable_heap_allocator\" \
 	--marcel=\"numa main smp_smt_idle enable_stats\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect

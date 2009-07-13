@@ -206,7 +206,7 @@ static int pmarcel_mutex_blockcell(pmarcel_mutex_t * mutex,const struct timespec
 	timeout = (((tv.tv_sec*1e6 + tv.tv_usec) -
 				(now.tv_sec*1e6 + now.tv_usec)) + marcel_gettimeslice()-1)/marcel_gettimeslice();
 
-	ma_spin_lock(&mutex->__data.__lock.__spinlock); 
+	ma_fastlock_acquire(&mutex->__data.__lock); 
 
 	__pmarcel_register_spinlocked(&mutex->__data.__lock,
 			marcel_self(), &c);
@@ -214,9 +214,9 @@ static int pmarcel_mutex_blockcell(pmarcel_mutex_t * mutex,const struct timespec
 	//tant que c'est bloqué et qu'il y a du temps...
 	while(c.blocked && timeout) {
 		ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-		ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+		ma_fastlock_release(&mutex->__data.__lock);
 		timeout = ma_schedule_timeout(timeout+1);
-		ma_spin_lock(&mutex->__data.__lock.__spinlock);
+		ma_fastlock_acquire(&mutex->__data.__lock);
 	}
 	// si c'est encore bloqué (cad le temps est écoulé)
 	if (c.blocked) {
@@ -224,10 +224,10 @@ static int pmarcel_mutex_blockcell(pmarcel_mutex_t * mutex,const struct timespec
 			pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
 		}
 		//on sort	
-		ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+		ma_fastlock_release(&mutex->__data.__lock);
 		LOG_RETURN(ETIMEDOUT);
 	}
-	ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+	ma_fastlock_release(&mutex->__data.__lock);
 	LOG_RETURN(0);
 }
 int pmarcel_mutex_timedlock(pmarcel_mutex_t * mutex,const struct timespec *abstime) {

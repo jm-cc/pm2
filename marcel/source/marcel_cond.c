@@ -54,19 +54,19 @@ int marcel_cond_signal (marcel_cond_t *cond) {
 }
 int marcel_cond_broadcast (marcel_cond_t *cond) {
 	LOG_IN();
-	ma_spin_lock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_acquire(&cond->__data.__lock);
 	while (__marcel_unlock_spinlocked(&cond->__data.__lock));
-	ma_spin_unlock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_release(&cond->__data.__lock);
 	LOG_RETURN(0);
 }
 int marcel_cond_wait (marcel_cond_t * __restrict cond,
 		marcel_mutex_t * __restrict mutex)
 {
 	LOG_IN();
-	ma_spin_lock(&mutex->__data.__lock.__spinlock);
-	ma_spin_lock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_acquire(&mutex->__data.__lock);
+	ma_fastlock_acquire(&cond->__data.__lock);
 	__marcel_unlock_spinlocked(&mutex->__data.__lock);
-	ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+	ma_fastlock_release(&mutex->__data.__lock);
 	{
 		blockcell c;
 
@@ -74,9 +74,9 @@ int marcel_cond_wait (marcel_cond_t * __restrict cond,
 				marcel_self(), &c);
 
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-				ma_spin_unlock(&cond->__data.__lock.__spinlock),
-				ma_spin_lock(&cond->__data.__lock.__spinlock));
-		ma_spin_unlock(&cond->__data.__lock.__spinlock);
+				ma_fastlock_release(&cond->__data.__lock),
+				ma_fastlock_acquire(&cond->__data.__lock));
+		ma_fastlock_release(&cond->__data.__lock);
 	}
 	marcel_mutex_lock(mutex);
 	LOG_RETURN(0);
@@ -102,10 +102,10 @@ int marcel_cond_timedwait(marcel_cond_t * __restrict cond,
 	timeout = JIFFIES_FROM_US(((tv.tv_sec * 1e6 + tv.tv_usec) -
 		(now.tv_sec * 1e6 + now.tv_usec)));
 
-	ma_spin_lock(&mutex->__data.__lock.__spinlock);
-	ma_spin_lock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_acquire(&mutex->__data.__lock);
+	ma_fastlock_acquire(&cond->__data.__lock);
 	__marcel_unlock_spinlocked(&mutex->__data.__lock);
-	ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+	ma_fastlock_release(&mutex->__data.__lock);
 	{
 		blockcell c;
 		__marcel_register_spinlocked(&cond->__data.__lock,
@@ -115,9 +115,9 @@ int marcel_cond_timedwait(marcel_cond_t * __restrict cond,
 		    marcel_self(), &c, cond);
 		while (c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock(&cond->__data.__lock.__spinlock);
+			ma_fastlock_release(&cond->__data.__lock);
 			timeout = ma_schedule_timeout(timeout);
-			ma_spin_lock(&cond->__data.__lock.__spinlock);
+			ma_fastlock_acquire(&cond->__data.__lock);
 		}
 		if (c.blocked) {
 			if (__marcel_unregister_spinlocked(&cond->__data.__lock,
@@ -128,7 +128,7 @@ int marcel_cond_timedwait(marcel_cond_t * __restrict cond,
 			}
 			ret = ETIMEDOUT;
 		}
-		ma_spin_unlock(&cond->__data.__lock.__spinlock);
+		ma_fastlock_release(&cond->__data.__lock);
 		mdebug("unblocking %p (cell %p) in marcel_cond_timedwait %p\n",
 		    marcel_self(), &c, cond);
 	}
@@ -184,11 +184,11 @@ int pmarcel_cond_wait (pmarcel_cond_t * __restrict cond,
 		pmarcel_mutex_t * __restrict mutex)
 {
 	LOG_IN();
-	ma_spin_lock(&mutex->__data.__lock.__spinlock);
-	ma_spin_lock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_acquire(&mutex->__data.__lock);
+	ma_fastlock_acquire(&cond->__data.__lock);
 	mutex->__data.__owner = 0;
 	__pmarcel_unlock_spinlocked(&mutex->__data.__lock);
-	ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+	ma_fastlock_release(&mutex->__data.__lock);
 	{
 		blockcell c;
 
@@ -196,9 +196,9 @@ int pmarcel_cond_wait (pmarcel_cond_t * __restrict cond,
 				marcel_self(), &c);
 
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-				ma_spin_unlock(&cond->__data.__lock.__spinlock),
-				ma_spin_lock(&cond->__data.__lock.__spinlock));
-		ma_spin_unlock(&cond->__data.__lock.__spinlock);
+				ma_fastlock_release(&cond->__data.__lock),
+				ma_fastlock_acquire(&cond->__data.__lock));
+		ma_fastlock_release(&cond->__data.__lock);
 	}
 	pmarcel_mutex_lock(mutex);
 	LOG_RETURN(0);
@@ -224,11 +224,11 @@ int pmarcel_cond_timedwait(pmarcel_cond_t * __restrict cond,
 	timeout = JIFFIES_FROM_US(((tv.tv_sec * 1e6 + tv.tv_usec) -
 		(now.tv_sec * 1e6 + now.tv_usec)));
 
-	ma_spin_lock(&mutex->__data.__lock.__spinlock);
-	ma_spin_lock(&cond->__data.__lock.__spinlock);
+	ma_fastlock_acquire(&mutex->__data.__lock);
+	ma_fastlock_acquire(&cond->__data.__lock);
 	mutex->__data.__owner = 0;
 	__pmarcel_unlock_spinlocked(&mutex->__data.__lock);
-	ma_spin_unlock(&mutex->__data.__lock.__spinlock);
+	ma_fastlock_release(&mutex->__data.__lock);
 	{
 		blockcell c;
 		__pmarcel_register_spinlocked(&cond->__data.__lock,
@@ -236,9 +236,9 @@ int pmarcel_cond_timedwait(pmarcel_cond_t * __restrict cond,
 
 		while (c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			ma_spin_unlock(&cond->__data.__lock.__spinlock);
+			ma_fastlock_release(&cond->__data.__lock);
 			timeout = ma_schedule_timeout(timeout);
-			ma_spin_lock(&cond->__data.__lock.__spinlock);
+			ma_fastlock_acquire(&cond->__data.__lock);
 		}
 		if (c.blocked) {
 			if (__pmarcel_unregister_spinlocked(&cond->__data.__lock,
@@ -249,7 +249,7 @@ int pmarcel_cond_timedwait(pmarcel_cond_t * __restrict cond,
 			}
 			ret = ETIMEDOUT;
 		}
-		ma_spin_unlock(&cond->__data.__lock.__spinlock);
+		ma_fastlock_release(&cond->__data.__lock);
 	}
 
 	pmarcel_mutex_lock(mutex);

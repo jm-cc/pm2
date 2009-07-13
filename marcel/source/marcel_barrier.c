@@ -62,7 +62,7 @@ int marcel_barrier_setcount(marcel_barrier_t *b, unsigned int count) {
 #ifdef MA_BARRIER_USE_MUTEX
 	marcel_mutex_lock(&b->m);
 #else
-	ma_spin_lock(&b->lock.__spinlock);
+	ma_fastlock_acquire(&b->lock);
 #endif
 	b->init_count = count;
 	ma_atomic_set(&b->leftB, count);
@@ -71,7 +71,7 @@ int marcel_barrier_setcount(marcel_barrier_t *b, unsigned int count) {
 	marcel_cond_signal(&b->c);
 	marcel_mutex_unlock(&b->m);
 #else
-	ma_spin_unlock(&b->lock.__spinlock);
+	ma_fastlock_release(&b->lock);
 #endif
 	LOG_RETURN(0);
 }
@@ -86,7 +86,7 @@ int marcel_barrier_addcount(marcel_barrier_t *b, int v) {
 #ifdef MA_BARRIER_USE_MUTEX
 	marcel_mutex_lock(&b->m);
 #else
-	ma_spin_lock(&b->lock.__spinlock);
+	ma_fastlock_acquire(&b->lock);
 #endif
 	b->init_count	+= v;
 	ma_atomic_add(v, &b->leftB);
@@ -94,7 +94,7 @@ int marcel_barrier_addcount(marcel_barrier_t *b, int v) {
 	marcel_cond_signal(&b->c);
 	marcel_mutex_unlock(&b->m);
 #else
-	ma_spin_unlock(&b->lock.__spinlock);
+	ma_fastlock_release(&b->lock);
 #endif
 	LOG_RETURN(0);
 }
@@ -142,7 +142,7 @@ int marcel_barrier_destroy (marcel_barrier_t *b) {
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
 #else
-		ma_spin_lock(&b->lock.__spinlock);
+		ma_fastlock_acquire(&b->lock);
 #endif
 
 	if (b->mode == MA_BARRIER_SLEEP_MODE) {
@@ -154,8 +154,8 @@ int marcel_barrier_destroy (marcel_barrier_t *b) {
 			__marcel_register_spinlocked(&b->lock, marcel_self(),
 					&c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_spin_unlock(&b->lock.__spinlock),
-					ma_spin_lock(&b->lock.__spinlock));
+					ma_fastlock_release(&b->lock),
+					ma_fastlock_acquire(&b->lock));
 #endif
 		}
 	} else {
@@ -169,7 +169,7 @@ int marcel_barrier_destroy (marcel_barrier_t *b) {
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_unlock(&b->m);
 #else
-		ma_spin_unlock(&b->lock.__spinlock);
+		ma_fastlock_release(&b->lock);
 #endif
 	LOG_RETURN(ret);
 }
@@ -188,7 +188,7 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
 #else
-		ma_spin_lock(&b->lock.__spinlock);
+		ma_fastlock_acquire(&b->lock);
 #endif
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 		while (ma_atomic_read(&b->leftE)) {
@@ -199,8 +199,8 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 			__marcel_register_spinlocked(&b->lock, marcel_self(),
 					&c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_spin_unlock(&b->lock.__spinlock),
-					ma_spin_lock(&b->lock.__spinlock));
+					ma_fastlock_release(&b->lock),
+					ma_fastlock_acquire(&b->lock));
 #endif
 		}
 	else
@@ -222,7 +222,7 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 		marcel_cond_signal(&b->c);
 		marcel_mutex_unlock(&b->m);
 #else
-		ma_spin_unlock(&b->lock.__spinlock);
+		ma_fastlock_release(&b->lock);
 #endif
 	LOG_RETURN(ret);
 }
@@ -233,7 +233,7 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
 #else
-		ma_spin_lock(&b->lock.__spinlock);
+		ma_fastlock_acquire(&b->lock);
 #endif
 	if (b->mode == MA_BARRIER_SLEEP_MODE) {
 		while (!ma_atomic_read(&b->leftE)) {
@@ -244,8 +244,8 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 			__marcel_register_spinlocked(&b->lock, marcel_self(),
 					&c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_spin_unlock(&b->lock.__spinlock),
-					ma_spin_lock(&b->lock.__spinlock));
+					ma_fastlock_release(&b->lock),
+					ma_fastlock_acquire(&b->lock));
 #endif
 		}
 	} else {
@@ -260,7 +260,7 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 #else
 		if (!ret)
 			while (__marcel_unlock_spinlocked(&b->lock));
-		ma_spin_unlock(&b->lock.__spinlock);
+		ma_fastlock_release(&b->lock);
 #endif
 	}
 	LOG_RETURN(ret);

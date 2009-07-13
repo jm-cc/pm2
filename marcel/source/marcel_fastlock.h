@@ -42,6 +42,16 @@ __tbx_inline__ static void lpt_fastlock_release(struct _lpt_fastlock *fastlock)
 	lpt_lock_release(&fastlock->__status);
 }
 
+__tbx_inline__ static void ma_fastlock_acquire(struct _marcel_fastlock *fastlock)
+{
+	ma_spin_lock(&fastlock->__spinlock);
+}
+
+__tbx_inline__ static void ma_fastlock_release(struct _marcel_fastlock *fastlock)
+{
+	ma_spin_unlock(&fastlock->__spinlock);
+}
+
 struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
@@ -204,14 +214,14 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
-			ma_spin_unlock(&lock->__spinlock),
-			ma_spin_lock(&lock->__spinlock));
-		ma_spin_unlock(&lock->__spinlock);
+			ma_fastlock_release(lock),
+			ma_fastlock_acquire(lock));
+		ma_fastlock_release(lock);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 		
 	} else { /* was free */
 		lock->__status = 1;
-		ma_spin_unlock(&lock->__spinlock);
+		ma_fastlock_release(lock);
 	}
 	mdebug("getting lock %p in task %p\n", lock, self);
 	//LOG_OUT();
@@ -304,7 +314,7 @@ __tbx_inline__ static int __marcel_lock(struct _marcel_fastlock * lock,
   int ret;
 
   //LOG_IN();
-  ma_spin_lock(&lock->__spinlock);
+  ma_fastlock_acquire(lock);
   ret=__marcel_lock_spinlocked(lock, self);
   //LOG_OUT();
   return ret;
@@ -334,15 +344,15 @@ __tbx_inline__ static int __marcel_trylock(struct _marcel_fastlock * lock)
   if(lock->__status)
     return 0;
 
-  ma_spin_lock(&lock->__spinlock);
+  ma_fastlock_acquire(lock);
 
   if(lock->__status == 0) { /* free */
     lock->__status = 1;
-    ma_spin_unlock(&lock->__spinlock);
+    ma_fastlock_release(lock);
     //LOG_OUT();
     return 1;
   } else {
-    ma_spin_unlock(&lock->__spinlock);
+    ma_fastlock_release(lock);
     //LOG_OUT();
     return 0;
   }
@@ -376,9 +386,9 @@ __tbx_inline__ static int __marcel_unlock(struct _marcel_fastlock * lock)
   int ret;
 
   //LOG_IN();
-  ma_spin_lock(&lock->__spinlock);
+  ma_fastlock_acquire(lock);
   ret=__marcel_unlock_spinlocked(lock);
-  ma_spin_unlock(&lock->__spinlock);
+  ma_fastlock_release(lock);
   //LOG_OUT();
   return ret;
 }

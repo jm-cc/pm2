@@ -60,15 +60,23 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
 #define MA_LPT_FASTLOCK_TAKEN(_lock)		\
   ((_lock)->__status & 2L)
 
+/* Return true if LOCK is busy (taken and possibly a wait list) */
+#define MA_MARCEL_FASTLOCK_BUSY(_lock)		\
+  ((_lock)->__status != 0L)
+
 /* If TAKEN is true, mark LOCK as taken, otherwise mark it as free.  */
 #define MA_LPT_FASTLOCK_SET_STATUS(_lock, _taken)			\
   ((_taken)								\
    ? ma_test_and_set_bit (1, (unsigned long *) &(_lock)->__status)	\
    : ma_test_and_clear_bit (1, (unsigned long *) &(_lock)->__status))
+#define MA_MARCEL_FASTLOCK_SET_STATUS(_lock, _taken)			\
+   (_lock)->__status = (_taken)
 
 /* Return the head of LOCK's wait list.  */
 #define MA_LPT_FASTLOCK_WAIT_LIST(_lock)		\
   ((lpt_blockcell_t *) ((_lock)->__status & ~3L))
+#define MA_MARCEL_FASTLOCK_WAIT_LIST(_lock)		\
+  ((blockcell *) ((_lock)->__status & ~1L))
 
 /* Set LOCK's wait list head to CELL, an `lpt_blockcell_t' pointer.  */
 #define MA_LPT_FASTLOCK_SET_WAIT_LIST(_lock, _cell)			\
@@ -77,5 +85,13 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
       /* CELL must be 4-byte aligned.  */				\
       MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
       (_lock)->__status = (((_lock)->__status) & 3L) | ((uintptr_t) (_cell)); \
+    }									\
+  while (0)
+#define MA_MARCEL_FASTLOCK_SET_WAIT_LIST(_lock, _cell)			\
+  do									\
+    {									\
+      /* CELL must be 4-byte aligned.  */				\
+      MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
+	    (_lock)->__status = 1 | ((uintptr_t) (_cell)); \
     }									\
   while (0)

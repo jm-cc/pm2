@@ -93,10 +93,10 @@ __tbx_inline__ static int __marcel_register_spinlocked(struct _marcel_fastlock *
   c->next = NULL;
   c->blocked = tbx_true;
   c->task = (self)?:marcel_self();
-  first=(blockcell*)(lock->__status & ~1);
+  first=MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
   if(first == NULL) {
     /* On est le premier à attendre */
-    lock->__status = 1 | ((unsigned long)c);
+    MA_MARCEL_FASTLOCK_SET_WAIT_LIST(lock, c);
     first=c;
   } else {
     first->last->next=c;
@@ -139,12 +139,12 @@ __tbx_inline__ static int __marcel_unregister_spinlocked(struct _marcel_fastlock
   //LOG_IN();
   mdebug("unregistering %p (cell %p) in lock %p\n", c->task, c, lock);
   first=NULL;
-  first=(blockcell*)(lock->__status & ~1);
+  first=MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
   if (first == NULL) {
     /* Il n'y a rien */
   } else if (first==c) {
     /* On est en premier */
-    lock->__status= (unsigned long)first->next|1;
+    MA_MARCEL_FASTLOCK_SET_WAIT_LIST(lock, first->next);
     if (first->next) {
       first->next->last=first->last;
     }
@@ -206,7 +206,7 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 	int ret=0;
 
 	//LOG_IN();
-	if(lock->__status != 0) { /* busy */
+	if(MA_MARCEL_FASTLOCK_BUSY(lock)) {
 		blockcell c;
 
 		ret=__marcel_register_spinlocked(lock, self, &c);
@@ -220,7 +220,7 @@ __tbx_inline__ static int __marcel_lock_spinlocked(struct _marcel_fastlock * loc
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 		
 	} else { /* was free */
-		lock->__status = 1;
+		MA_MARCEL_FASTLOCK_SET_STATUS(lock, 1);
 		ma_fastlock_release(lock);
 	}
 	mdebug("getting lock %p in task %p\n", lock, self);
@@ -260,9 +260,9 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
   blockcell *first;
 
   //LOG_IN();
-  first=(blockcell*)(lock->__status & ~1);
+  first=MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
   if(first != 0) { /* waiting threads */
-    lock->__status= (unsigned long)first->next|1;
+    MA_MARCEL_FASTLOCK_SET_WAIT_LIST(lock, first->next);
     if (first->next) {
       first->next->last=first->last;
     }
@@ -274,7 +274,7 @@ __tbx_inline__ static int __marcel_unlock_spinlocked(struct _marcel_fastlock * l
     ret=1;
   } else {
     mdebug("releasing lock %p in task %p\n", lock, marcel_self());
-    lock->__status = 0; /* free */
+    MA_MARCEL_FASTLOCK_SET_STATUS(lock, 0); /* free */
     ret=0;
   }
 
@@ -341,13 +341,13 @@ __tbx_inline__ static int __marcel_trylock(struct _marcel_fastlock * lock)
 {
   //LOG_IN();
   ma_smp_mb();
-  if(lock->__status)
+  if(MA_MARCEL_FASTLOCK_BUSY(lock))
     return 0;
 
   ma_fastlock_acquire(lock);
 
-  if(lock->__status == 0) { /* free */
-    lock->__status = 1;
+  if(!MA_MARCEL_FASTLOCK_BUSY(lock)) {
+    MA_MARCEL_FASTLOCK_SET_STATUS(lock, 1);
     ma_fastlock_release(lock);
     //LOG_OUT();
     return 1;

@@ -166,13 +166,14 @@ DEF_MARCEL_POSIX (int, rwlock_init,
 		  (rwlock, attr),
 {
   const struct marcel_rwlockattr *iattr;
+  struct _lpt_fastlock fastlock_unlocked = MA_LPT_FASTLOCK_UNLOCKED;
 
   iattr = attr ?: &default_attr;
 
   rwlock->__data.__lock = 0;
   rwlock->__data.__nr_readers = 0;
-  rwlock->__data.__readers_wakeup.__status = 0;
-  rwlock->__data.__writer_wakeup.__status = 0;
+  rwlock->__data.__readers_wakeup = fastlock_unlocked;
+  rwlock->__data.__writer_wakeup = fastlock_unlocked;
   rwlock->__data.__nr_readers_queued = 0;
   rwlock->__data.__nr_writers_queued = 0;
   rwlock->__data.__writer = 0;

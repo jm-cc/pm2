@@ -59,7 +59,10 @@ struct blockcell_struct {
   volatile tbx_bool_t blocked;
 };
 
-typedef struct blockcell_struct blockcell;
+/* `lpt_blockcell_t' objects must be 2-byte aligned.  See `struct
+   _lpt_fastlock' for details.  */
+typedef struct blockcell_struct blockcell
+  __attribute__ ((__aligned__ ((2))));
 
 /* `lpt_blockcell_t' objects must be 4-byte aligned.  See `struct
    _lpt_fastlock' for details.  */

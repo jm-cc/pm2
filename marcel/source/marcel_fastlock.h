@@ -32,11 +32,6 @@ __tbx_inline__ static int lpt_lock_release(long int *lock)
 	return 0;
 }
 
-#define marcel_lock_acquire(lock)		ma_spin_lock(lock)
-#define marcel_lock_release(lock)		ma_spin_unlock(lock)
-#define pmarcel_lock_acquire(lock)		ma_spin_lock(lock)
-#define pmarcel_lock_release(lock)		ma_spin_unlock(lock)
-
 struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;

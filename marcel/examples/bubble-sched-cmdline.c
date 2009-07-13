@@ -42,7 +42,7 @@ main (int argc, char *argv[])
 	 && marcel_bubble_sched_class (prev_sched) == &marcel_bubble_cache_sched_class)
     ? EXIT_SUCCESS : EXIT_FAILURE;
 
-  marcel_free (prev_sched);
+  //marcel_free (prev_sched);
 
   marcel_end ();
 

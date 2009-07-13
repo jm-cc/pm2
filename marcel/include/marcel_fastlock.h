@@ -64,13 +64,16 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
 #define MA_MARCEL_FASTLOCK_BUSY(_lock)		\
   ((_lock)->__status != 0L)
 
-/* If TAKEN is true, mark LOCK as taken, otherwise mark it as free.  */
+/* If TAKEN is true, mark LOCK as taken, otherwise mark it as free.
+ * Assumes the lock is taken.  */
 #define MA_LPT_FASTLOCK_SET_STATUS(_lock, _taken)			\
-  ((_taken)								\
-   ? ma_test_and_set_bit (1, (unsigned long *) &(_lock)->__status)	\
-   : ma_test_and_clear_bit (1, (unsigned long *) &(_lock)->__status))
+  do { \
+    /* Make sure it's locked */						\
+    MA_BUG_ON (((_lock)->__status & 1) != 1);		\
+    (_lock)->__status = (((_taken) & 1) << 1) | 1;			\
+  } while (0)
 #define MA_MARCEL_FASTLOCK_SET_STATUS(_lock, _taken)			\
-   (_lock)->__status = (_taken)
+    (_lock)->__status = (_taken)
 
 /* Return the head of LOCK's wait list.  */
 #define MA_LPT_FASTLOCK_WAIT_LIST(_lock)		\
@@ -78,20 +81,24 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
 #define MA_MARCEL_FASTLOCK_WAIT_LIST(_lock)		\
   ((blockcell *) ((_lock)->__status & ~1L))
 
-/* Set LOCK's wait list head to CELL, an `lpt_blockcell_t' pointer.  */
+/* Set LOCK's wait list head to CELL, an `lpt_blockcell_t' pointer.
+ * Assumes the lock is taken.
+ * Also sets status to held.  */
 #define MA_LPT_FASTLOCK_SET_WAIT_LIST(_lock, _cell)			\
   do									\
     {									\
       /* CELL must be 4-byte aligned.  */				\
       MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
-      (_lock)->__status = (((_lock)->__status) & 3L) | ((uintptr_t) (_cell)); \
+      /* Make sure it's locked */		\
+      MA_BUG_ON (((_lock)->__status & 1L) != 1);			\
+      (_lock)->__status = 3 | ((uintptr_t) (_cell)); \
     }									\
   while (0)
 #define MA_MARCEL_FASTLOCK_SET_WAIT_LIST(_lock, _cell)			\
   do									\
     {									\
-      /* CELL must be 4-byte aligned.  */				\
-      MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
-	    (_lock)->__status = 1 | ((uintptr_t) (_cell)); \
+      /* CELL must be 2-byte aligned.  */				\
+      MA_BUG_ON ((((uintptr_t) (_cell)) & 1L) != 0);			\
+      (_lock)->__status = 1 | ((uintptr_t) (_cell)); \
     }									\
   while (0)

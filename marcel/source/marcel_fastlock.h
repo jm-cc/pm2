@@ -368,6 +368,9 @@ __tbx_inline__ static int __pmarcel_trylock(struct _marcel_fastlock * lock)
 __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
 {
   int taken;
+  ma_smp_mb();
+  if(MA_LPT_FASTLOCK_TAKEN(lock))
+    return 0;
 
   lpt_fastlock_acquire(lock);
 

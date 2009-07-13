@@ -197,7 +197,7 @@ static int lpt_mutex_blockcell(lpt_mutex_t * mutex,const struct timespec *abstim
         timeout = (((tv.tv_sec*1e6 + tv.tv_usec) -
         		  (now.tv_sec*1e6 + now.tv_usec)) + marcel_gettimeslice()-1)/marcel_gettimeslice();
 
-        lpt_lock_acquire(&mutex->__data.__lock.__status); 
+        lpt_fastlock_acquire(&mutex->__data.__lock); 
 
         {
                 lpt_blockcell_t c;
@@ -208,9 +208,9 @@ static int lpt_mutex_blockcell(lpt_mutex_t * mutex,const struct timespec *abstim
                 //tant que c'est bloqué et qu'il y a du temps...
                 while(c.blocked && timeout) {
                         ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-                        lpt_lock_release(&mutex->__data.__lock.__status);
+                        lpt_fastlock_release(&mutex->__data.__lock);
                         timeout = ma_schedule_timeout(timeout+1);
-                        lpt_lock_acquire(&mutex->__data.__lock.__status);
+                        lpt_fastlock_acquire(&mutex->__data.__lock);
                 }
                 // si c'est encore bloqué (cad le temps est écoulé)
                 if (c.blocked) {
@@ -218,10 +218,10 @@ static int lpt_mutex_blockcell(lpt_mutex_t * mutex,const struct timespec *abstim
                                 pm2debug("Strange, we should be in the queue !!! (%s:%d)\n", __FILE__, __LINE__);
                         }
                         //on sort	
-                        lpt_lock_release(&mutex->__data.__lock.__status);
+                        lpt_fastlock_release(&mutex->__data.__lock);
                         LOG_RETURN(ETIMEDOUT);
                 }
-                lpt_lock_release(&mutex->__data.__lock.__status);
+                lpt_fastlock_release(&mutex->__data.__lock);
         }
         LOG_RETURN(0);
 }

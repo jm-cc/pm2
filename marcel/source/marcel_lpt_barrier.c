@@ -107,19 +107,19 @@ int lpt_barrier_destroy (lpt_barrier_t *_b) {
 	struct lpt_barrier * const b	= (struct lpt_barrier *)_b;
 	int ret = 0;
 	LOG_IN();
-	lpt_lock_acquire(&b->lock.__status);
+	lpt_fastlock_acquire(&b->lock);
 	while (ma_atomic_read(&b->leftE)) {
 		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-				lpt_lock_release(&b->lock.__status),
-				lpt_lock_acquire(&b->lock.__status));
+				lpt_fastlock_release(&b->lock),
+				lpt_fastlock_acquire(&b->lock));
 	}
 	if (__builtin_expect(ma_atomic_read(&b->leftB) != b->init_count, 0)) {
 		ret = EBUSY;
 	}
-	lpt_lock_release(&b->lock.__status);
+	lpt_fastlock_release(&b->lock);
 	LOG_RETURN(ret);
 }
 int lpt_barrier_wait(lpt_barrier_t *b) {
@@ -133,14 +133,14 @@ int lpt_barrier_wait(lpt_barrier_t *b) {
 int lpt_barrier_wait_begin(lpt_barrier_t *_b) {
 	struct lpt_barrier * const b	= (struct lpt_barrier *)_b;
 	LOG_IN();
-	lpt_lock_acquire(&b->lock.__status);
+	lpt_fastlock_acquire(&b->lock);
 	while (ma_atomic_read(&b->leftE)) {
 		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-				lpt_lock_release(&b->lock.__status),
-				lpt_lock_acquire(&b->lock.__status));
+				lpt_fastlock_release(&b->lock),
+				lpt_fastlock_acquire(&b->lock));
 	}
 	int ret = ma_atomic_dec_return(&b->leftB);
 	if (!ret) {
@@ -148,25 +148,25 @@ int lpt_barrier_wait_begin(lpt_barrier_t *_b) {
 		ma_atomic_set(&b->leftB, b->init_count);
 		ma_atomic_set(&b->leftE, b->init_count);	
 	}
-	lpt_lock_release(&b->lock.__status);
+	lpt_fastlock_release(&b->lock);
 	LOG_RETURN(ret);
 }
 int lpt_barrier_wait_end(lpt_barrier_t *_b) {
 	struct lpt_barrier * const b	= (struct lpt_barrier *)_b;
 	LOG_IN();
-	lpt_lock_acquire(&b->lock.__status);
+	lpt_fastlock_acquire(&b->lock);
 	while (!ma_atomic_read(&b->leftE)) {
 		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&b->lock, marcel_self(),
 				&c);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-				lpt_lock_release(&b->lock.__status),
-				lpt_lock_acquire(&b->lock.__status));
+				lpt_fastlock_release(&b->lock),
+				lpt_fastlock_acquire(&b->lock));
 	}
 	int ret = ma_atomic_dec_return(&b->leftE);
 	if (!ret)
 		while (__lpt_unlock_spinlocked(&b->lock));
-	lpt_lock_release(&b->lock.__status);
+	lpt_fastlock_release(&b->lock);
 	LOG_RETURN(ret);
 }
 #endif

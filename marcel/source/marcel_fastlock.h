@@ -32,6 +32,16 @@ __tbx_inline__ static int lpt_lock_release(long int *lock)
 	return 0;
 }
 
+__tbx_inline__ static void lpt_fastlock_acquire(struct _lpt_fastlock *fastlock)
+{
+	lpt_lock_acquire(&fastlock->__status);
+}
+
+__tbx_inline__ static void lpt_fastlock_release(struct _lpt_fastlock *fastlock)
+{
+	lpt_lock_release(&fastlock->__status);
+}
+
 struct blockcell_struct {
   marcel_t task;
   struct blockcell_struct *next;
@@ -221,13 +231,13 @@ __tbx_inline__ static int __lpt_lock_spinlocked(struct _lpt_fastlock * lock,
 		mdebug("blocking %p (cell %p) in lock %p\n", self, &c, lock);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 			c.blocked, 
-			lpt_lock_release(&lock->__status),
-			lpt_lock_acquire(&lock->__status));
-		lpt_lock_release(&lock->__status);
+			lpt_fastlock_release(lock),
+			lpt_fastlock_acquire(lock));
+		lpt_fastlock_release(lock);
 		mdebug("unblocking %p (cell %p) in lock %p\n", self, &c, lock);
 	} else { /* was free */
 		MA_LPT_FASTLOCK_SET_STATUS(lock, 1);
-		lpt_lock_release(&lock->__status);
+		lpt_fastlock_release(lock);
 	}
 	mdebug("getting lock %p in task %p\n", lock, self);
 	//LOG_OUT();
@@ -311,7 +321,7 @@ __tbx_inline__ static int __lpt_lock(struct _lpt_fastlock * lock,
   int ret;
 
   //LOG_IN();
-  lpt_lock_acquire(&lock->__status);
+  lpt_fastlock_acquire(lock);
   ret=__lpt_lock_spinlocked(lock, self);
   //LOG_OUT();
   return ret;
@@ -346,7 +356,7 @@ __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
 {
   int taken;
 
-  lpt_lock_acquire(&lock->__status);
+  lpt_fastlock_acquire(lock);
 
   if(!MA_LPT_FASTLOCK_TAKEN(lock)) {
     /* LOCK was free, take it.  */
@@ -356,7 +366,7 @@ __tbx_inline__ static int __lpt_trylock(struct _lpt_fastlock * lock)
     taken = 0;
   }
 
-  lpt_lock_release(&lock->__status);
+  lpt_fastlock_release(lock);
 
   return taken;
 }
@@ -382,9 +392,9 @@ __tbx_inline__ static int __lpt_unlock(struct _lpt_fastlock * lock)
   int ret;
 
   //LOG_IN();
-  lpt_lock_acquire(&lock->__status);
+  lpt_fastlock_acquire(lock);
   ret=__lpt_unlock_spinlocked(lock);
-  lpt_lock_release(&lock->__status);
+  lpt_fastlock_release(lock);
   //LOG_OUT();
   return ret;
 }

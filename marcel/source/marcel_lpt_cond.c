@@ -140,20 +140,20 @@ int lpt_cond_signal (lpt_cond_t *cond)
 int lpt_cond_broadcast (lpt_cond_t *cond)
 {
 	LOG_IN();
-	lpt_lock_acquire(&cond->__data.__lock.__status);
+	lpt_fastlock_acquire(&cond->__data.__lock);
 	do { } while (__lpt_unlock_spinlocked(&cond->__data.__lock));
-	lpt_lock_release(&cond->__data.__lock.__status);
+	lpt_fastlock_release(&cond->__data.__lock);
 	LOG_RETURN(0);
 }
 int lpt_cond_wait (lpt_cond_t * __restrict cond,
 	lpt_mutex_t * __restrict mutex)
 {
 	LOG_IN();
-	lpt_lock_acquire(&mutex->__data.__lock.__status);
-	lpt_lock_acquire(&cond->__data.__lock.__status);
+	lpt_fastlock_acquire(&mutex->__data.__lock);
+	lpt_fastlock_acquire(&cond->__data.__lock);
 	mutex->__data.__owner = 0;
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
-	lpt_lock_release(&mutex->__data.__lock.__status);
+	lpt_fastlock_release(&mutex->__data.__lock);
 	{
 		lpt_blockcell_t c;
 
@@ -163,9 +163,9 @@ int lpt_cond_wait (lpt_cond_t * __restrict cond,
 		mdebug("blocking %p (cell %p) in lpt_cond_wait %p\n",
 		    marcel_self(), &c, cond);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    lpt_lock_release(&cond->__data.__lock.__status),
-		    lpt_lock_acquire(&cond->__data.__lock.__status));
-		lpt_lock_release(&cond->__data.__lock.__status);
+		    lpt_fastlock_release(&cond->__data.__lock),
+		    lpt_fastlock_acquire(&cond->__data.__lock));
+		lpt_fastlock_release(&cond->__data.__lock);
 		mdebug("unblocking %p (cell %p) in lpt_cond_wait %p\n",
 		    marcel_self(), &c, cond);
 	}
@@ -194,11 +194,11 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 	timeout = JIFFIES_FROM_US(((tv.tv_sec * 1e6 + tv.tv_usec) -
 		(now.tv_sec * 1e6 + now.tv_usec)));
 
-	lpt_lock_acquire(&mutex->__data.__lock.__status);
-	lpt_lock_acquire(&cond->__data.__lock.__status);
+	lpt_fastlock_acquire(&mutex->__data.__lock);
+	lpt_fastlock_acquire(&cond->__data.__lock);
 	mutex->__data.__owner = 0;
 	__lpt_unlock_spinlocked(&mutex->__data.__lock);
-	lpt_lock_release(&mutex->__data.__lock.__status);
+	lpt_fastlock_release(&mutex->__data.__lock);
 	{
 		lpt_blockcell_t c;
 		__lpt_register_spinlocked(&cond->__data.__lock,
@@ -208,9 +208,9 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 		    marcel_self(), &c, cond);
 		while (c.blocked && timeout) {
 			ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-			lpt_lock_release(&cond->__data.__lock.__status);
+			lpt_fastlock_release(&cond->__data.__lock);
 			timeout = ma_schedule_timeout(timeout);
-			lpt_lock_acquire(&cond->__data.__lock.__status);
+			lpt_fastlock_acquire(&cond->__data.__lock);
 		}
 		if (c.blocked) {
 			if (__lpt_unregister_spinlocked(&cond->__data.__lock,
@@ -221,7 +221,7 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond,
 			}
 			ret = ETIMEDOUT;
 		}
-		lpt_lock_release(&cond->__data.__lock.__status);
+		lpt_fastlock_release(&cond->__data.__lock);
 		mdebug("unblocking %p (cell %p) in lpt_cond_timedwait %p\n",
 		    marcel_self(), &c, cond);
 	}
@@ -239,16 +239,16 @@ void __lpt_lock_wait(struct _lpt_fastlock * lock)
 {
 	lpt_blockcell_t c;
 
-	lpt_lock_acquire(&lock->__status);
+	lpt_fastlock_acquire(lock);
 	__lpt_register_spinlocked(lock, marcel_self(), &c);
 
 	INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
 		c.blocked,
-		lpt_lock_release(&lock->__status),
-		lpt_lock_acquire(&lock->__status));
+		lpt_fastlock_release(lock),
+		lpt_fastlock_acquire(lock));
 
 	__lpt_unregister_spinlocked(lock, &c);
-	lpt_lock_release(&lock->__status);
+	lpt_fastlock_release(lock);
 }
 
 int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout, long *value, long expected_value)
@@ -259,12 +259,12 @@ int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout, 
 
 	timeout_us = MA_TIMESPEC_TO_USEC(timeout);
 
-	lpt_lock_acquire(&lock->__status);
+	lpt_fastlock_acquire(lock);
 
 	if (*value != expected_value) {
 		/* Mimic the futex(2) `FUTEX_WAIT' behavior: since VALUE changed in the
 		 * mean time, just return `EWOULDBLOCK'.  */
-		lpt_lock_release(&lock->__status);
+		lpt_fastlock_release(lock);
 		return EWOULDBLOCK;
 	}
 
@@ -274,8 +274,8 @@ int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout, 
 	TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(
 		INTERRUPTIBLE,
 		c.blocked,
-		lpt_lock_release(&lock->__status),
-		lpt_lock_acquire(&lock->__status),
+		lpt_fastlock_release(lock),
+		lpt_fastlock_acquire(lock),
 		timeout_us);
 
 	result = c.blocked ? ETIMEDOUT : 0;
@@ -284,7 +284,7 @@ int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *timeout, 
 		MA_BUG();
 	}
 
-	lpt_lock_release(&lock->__status);
+	lpt_fastlock_release(lock);
 
 	return result;
 }
@@ -293,7 +293,7 @@ void __lpt_lock_signal(struct _lpt_fastlock * lock)
 {
 	lpt_blockcell_t *cell;
 
-	lpt_lock_acquire(&lock->__status);
+	lpt_fastlock_acquire(lock);
 
 	cell = MA_LPT_FASTLOCK_WAIT_LIST(lock);
 	if (cell != NULL) {
@@ -301,19 +301,19 @@ void __lpt_lock_signal(struct _lpt_fastlock * lock)
 		ma_wake_up_thread(cell->task);
 	}
 
-	lpt_lock_release(&lock->__status);
+	lpt_fastlock_release(lock);
 }
 
 void __lpt_lock_broadcast(struct _lpt_fastlock * lock)
 {
 	lpt_blockcell_t *cell;
 
-	lpt_lock_acquire(&lock->__status);
+	lpt_fastlock_acquire(lock);
 
 	for (cell = MA_LPT_FASTLOCK_WAIT_LIST(lock); cell != NULL; cell = cell->next) {
 		cell->blocked = 0;
 		ma_wake_up_thread(cell->task);
 	}
 
-	lpt_lock_release(&lock->__status);
+	lpt_fastlock_release(lock);
 }

@@ -178,15 +178,14 @@ struct marcel_task {
 	enum ma_stack_kind_t stack_kind;
 
 	/** \brief Initial stack pointer.
-	 *
-	 * TODO: give some details about the purpose and use of the field. */
+	 * used only during thread creation in the different cases (main
+	 * thread, normal thread, initial thread of an LWP) */
 	long initial_sp;
 
-	/** \brief ID number of the thread. */
+	/** \brief ID number of the thread, chosen by the user through marcel_attr_setid */
 	int id;
 
-	/** \brief Yet another number of the thread. 
-	 * TODO: document respective pupose and use of \p id field and \p number field */
+	/** \brief ID number of the thread, uniquely computed by marcel */
 	int number;
 
 	/* Used when TIF_BLOCK_HARDIRQ is set (cf softirq.c) */

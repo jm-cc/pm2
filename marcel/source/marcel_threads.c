@@ -472,11 +472,11 @@ static void* postexit_thread_func(any_t arg)
 	abort(); /* For security */
 }
 
-void marcel_threads_postexit_init(marcel_lwp_t *lwp)
+static void marcel_threads_postexit_init(marcel_lwp_t *lwp)
 {
 }
 
-void marcel_threads_postexit_start(marcel_lwp_t *lwp)
+static void marcel_threads_postexit_start(marcel_lwp_t *lwp)
 {
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];

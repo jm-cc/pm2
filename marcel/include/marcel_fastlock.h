@@ -38,6 +38,11 @@ struct _marcel_fastlock
 
 #define _pmarcel_fastlock _marcel_fastlock
 
+/* Same as _marcel_fastlock, but constrainted to a long int so as to fit it
+ * tight in lpt-ABI-compatible structures.
+ * In that case we have to use ma_bit_spin_lock, which is significantly slower
+ * that ma_spin_lock
+ */
 struct _lpt_fastlock
 {
   /* Bit 0: Spinlock, accessed via `lpt_lock_acquire ()' and

@@ -18,29 +18,6 @@ dans marcel.h,
 ...
 ?
 
-Faire une libtopology, du genre pouvoir faire
-const struct topo_info *info;
-int i,j;
-libtopo_init();
-for (i = 0; i < libtopo_nblevels(); i++) {
-	printf("level %d has %d items\n", libtopo_level_nbelems(i));
-	for (j = 0; j < libtopo_level_nbelems(i); j++) {
-		info = libtopo_item(i,j);
-		printf("%*s: \n", 2*i, "", j);
-		switch(info->type) {
-		case LIBTOPO_NODE: printf("node %lu", info->node.num); break;
-		case LIBTOPO_CORE: printf("core %lu", info->core.num); break;
-		...
-		}
-	}
-}
-i = libtopo_node_level();
-for (j = 0; j < libtopo_level_nbelems(i); j++) {
-	info = libtopo_item(i,j);
-	printf("node %lu has %luGB mem\n", info->node.num, info->node.mem>>20);
-}
-libtopo_fini();
-
 Traquer les régressions: cf ~benchmarks/results/marcel/*.png. Parfois c'est des changements de libc/gcc, parfois changement de stratégie d'ordonnancement par défaut.
 
 Mettre en place un cron qui lance posixtestsuite et trace un courbe

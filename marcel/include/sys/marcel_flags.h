@@ -22,26 +22,29 @@
 #endif
 
 #ifdef MARCEL_MONO
-#  undef MARCEL_MONO
-#  define MARCEL_MONO 1
+#  define __MARCEL_MONO 1
+#else
+#  define __MARCEL_MONO 0
 #endif
 
 #ifdef MARCEL_SMP
-#  undef MARCEL_SMP
-#  define MARCEL_SMP 1
+#  define __MARCEL_SMP 1
+#else
+#  define __MARCEL_SMP 0
 #endif
 
 #ifdef MARCEL_NUMA
-#  undef MARCEL_NUMA
-#  define MARCEL_NUMA 1
+#  define __MARCEL_NUMA 1
+#else
+#  define __MARCEL_NUMA 0
 #endif
 
-#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA) == 0)
+#if ((__MARCEL_MONO + __MARCEL_SMP + __MARCEL_NUMA) == 0)
 #  error No MARCEL_... defined. Choose between MONO SMP and NUMA Marcel options in the flavor
 //#define MARCEL_MONO 1
 #endif
 
-#if ((MARCEL_MONO + MARCEL_SMP + MARCEL_NUMA) > 1)
+#if ((__MARCEL_MONO + __MARCEL_SMP + __MARCEL_NUMA) > 1)
 #  error You must define at most one of MARCEL_MONO, MARCEL_SMP or MARCEL_NUMA Marcel options in the flavor
 #endif
 

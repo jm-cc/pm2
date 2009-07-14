@@ -2,7 +2,6 @@ ARCHITECTURES : Supported architectures
 AUTHORS       :
 COPYING       : :-)
 Makefile      : Makefile
-NEWS          : 
 README        : Quick introduction to PM2
 appli         : Application configuration options
 bin           : Scripts used in PM2

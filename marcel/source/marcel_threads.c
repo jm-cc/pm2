@@ -153,12 +153,6 @@ static __inline__ void init_marcel_thread(marcel_t t,
 #ifdef MA__LIBPTHREAD
 	//t->__res_state
 #endif
-	t->p_readlock_list = NULL;
-	t->p_readlock_free = NULL;
-	t->p_untracked_readlock_count = 0;
-	t->p_nextwaiting = NULL;
-	marcel_sem_init(&t->pthread_sync, 0);
-
 	//t->all_threads
 
 #ifdef MARCEL_DEBUG_SPINLOCK

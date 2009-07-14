@@ -259,17 +259,6 @@ struct marcel_task {
 	struct __res_state __res_state;
 #endif
 
-	/* TODO: option rwlock */
-	/*         List of readlock info structs */
-	marcel_readlock_info *p_readlock_list;
-	/*         Free list of structs */
-	marcel_readlock_info *p_readlock_free;
-	/*         Readlocks not tracked by list */
-	int p_untracked_readlock_count;
-	/*         Next element in the queue holding the thr */
-	marcel_t p_nextwaiting;
-	marcel_sem_t pthread_sync;
-
 	/* per-lwp list of all threads */
 	struct list_head all_threads;
 

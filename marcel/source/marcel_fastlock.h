@@ -16,19 +16,13 @@
 
 __tbx_inline__ static int lpt_lock_acquire(long int *lock)
 {
-	ma_preempt_disable();
-#ifdef MA__LWPS
 	ma_bit_spin_lock(0, (unsigned long int*)lock);
-#endif
 	return 0;
 }
 
 __tbx_inline__ static int lpt_lock_release(long int *lock)
 {
-#ifdef MA__LWPS
 	ma_bit_spin_unlock(0, (unsigned long int*)lock);
-#endif
-	ma_preempt_enable();
 	return 0;
 }
 

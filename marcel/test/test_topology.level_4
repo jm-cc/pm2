@@ -14,14 +14,15 @@
 
 . ./common.sh
 topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
-flavor="marcel-topology"
+name=$(basename $_t .level_4 |  sed 's/test_//' | tr '_' '-')
+flavor="marcel-$name"
 prog="read-topology"
 args="--topology-fsys-root $topology_chroot -v"
 
 if [ -d $topology_chroot ] ; then
     cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected
 else
-    echo Warning: topology $topology_chroot not available >&2
+    echo Warning: topology $topology_chroot not available name $name >&2
     pm2_skip_test
 fi
 

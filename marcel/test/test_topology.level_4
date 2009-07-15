@@ -13,19 +13,25 @@
 # General Public License for more details.
 
 . ./common.sh
-topology_chroot="/soft/common/topology-chroot/strange1-subdudley"
+topology_dir="$PM2_ROOT/marcel/examples/topology-sysfs"
 name=$(basename $_t .level_4 |  sed 's/test_//' | tr '_' '-')
 flavor="marcel-$name"
 prog="read-topology"
-args="--topology-fsys-root $topology_chroot -v"
 
-if [ -d $topology_chroot ] ; then
-    cp ${topology_chroot}/output /tmp/pm2test_"${USER}"_expected
+if [ -f ${topology_dir}/strange1-subdudley.tar.gz ] && [ -f ${topology_dir}/strange1-subdudley.tar.gz.output ] ; then
+    dir="`mktemp -d`"
+    if ! ( cd "$dir" && gunzip -c ${topology_dir}/strange1-subdudley.tar.gz | tar xf - )
+    then
+	echo "Error: failed to extract topology '${topology_dir}/strange1-subdudley.tar.gz'"
+        pm2_skip_test
+    else
+        args="--topology-fsys-root $dir/strange1-subdudley -v"
+        cp ${topology_dir}/strange1-subdudley.tar.gz.output /tmp/pm2test_"${USER}"_expected
+    fi
 else
-    echo Warning: topology $topology_chroot not available name $name >&2
+    echo Warning: topology ${topology_dir}/strange1-subdudley.tar.gz not available >&2
     pm2_skip_test
 fi
-
 
 # Creation de la flavor
 create_test_flavor() {

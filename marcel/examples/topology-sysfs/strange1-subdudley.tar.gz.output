@@ -1,0 +1,28 @@
+Machine:
+  Die + L3Cache: Die#0 L3(4MB)
+    L2Cache + Core + L1Cache: L2(1MB) Core#0 L1(16kB)
+      SMTproc + VP: CPU#0 VP #0
+      SMTproc + VP: CPU#8 VP #1
+    L2Cache + Core + L1Cache: L2(1MB) Core#1 L1(16kB)
+      SMTproc + VP: CPU#4 VP #2
+      SMTproc + VP: CPU#12 VP #3
+  Die + L3Cache: Die#2 L3(4MB)
+    L2Cache + Core + L1Cache: L2(1MB) Core#0 L1(16kB)
+      SMTproc + VP: CPU#2 VP #4
+    L2Cache + Core + L1Cache: L2(1MB) Core#1 L1(16kB)
+      SMTproc + VP: CPU#6 VP #5
+  Die + L3Cache: Die#3 L3(4MB)
+    L2Cache + Core + L1Cache: L2(1MB) Core#0 L1(16kB)
+      SMTproc + VP: CPU#3 VP #6
+      SMTproc + VP: CPU#11 VP #7
+depth 0:	marcel type #0 (Machine)
+depth 0:	marcel type #1 (Fake)
+depth 0:	marcel type #2 (Misc)
+depth 0:	marcel type #3 (NUMANode)
+ depth 1:	marcel type #4 (Die)
+ depth 1:	marcel type #5 (L3Cache)
+  depth 2:	marcel type #6 (L2Cache)
+  depth 2:	marcel type #7 (Core)
+  depth 2:	marcel type #8 (L1Cache)
+   depth 3:	marcel type #9 (SMTproc)
+   depth 3:	marcel type #10 (VP)

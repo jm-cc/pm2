@@ -1524,6 +1524,8 @@ int MPI_Rsend(void* buffer,
 
   err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
+  MPI_Wait(&request, MPI_STATUS_IGNORE);
+
   MPI_NMAD_LOG_OUT();
   return err;
 }
@@ -1558,7 +1560,7 @@ int MPI_Ssend(void* buffer,
   mpir_request->buffer = buffer;
   mpir_request->count = count;
   mpir_request->user_tag = tag;
-  mpir_request->communication_mode = MPI_READY_MODE;
+  mpir_request->communication_mode = MPI_SYNCHRONOUS_MODE;
 
   err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 

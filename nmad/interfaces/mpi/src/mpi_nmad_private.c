@@ -559,18 +559,23 @@ static inline int mpir_isend_wrapper(mpir_internal_data_t *mpir_internal_data,
   MPI_NMAD_TRACE("Sending data\n");
   MPI_NMAD_TRANSFER("Sent --> gate %p : %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
 
-  if (mpir_request->communication_mode == MPI_IMMEDIATE_MODE) {
-    err = nm_sr_isend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
-                         mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
-  }
-  else if (mpir_request->communication_mode == MPI_READY_MODE) {
-    err = nm_sr_rsend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
-                         mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
-  }
-  else {
-    TBX_FAILUREF("Unkown mode %d for isend", mpir_request->communication_mode);
-  }
-
+  switch(mpir_request->communication_mode)
+    {
+    case MPI_IMMEDIATE_MODE:
+      err = nm_sr_isend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
+			mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+      break;
+    case MPI_READY_MODE:
+      err = nm_sr_rsend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
+			mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+      break;
+    case MPI_SYNCHRONOUS_MODE:
+      TBX_FAILURE("madmpi: synchronous mode not supported yet.\n");
+      break;
+    default:
+      TBX_FAILUREF("madmpi: unkown mode %d for isend", mpir_request->communication_mode);
+      break;
+    }
   MPI_NMAD_TRANSFER("Sent finished\n");
   return err;
 }

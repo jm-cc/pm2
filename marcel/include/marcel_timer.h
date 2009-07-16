@@ -27,8 +27,11 @@ typedef int marcel_time_t;
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 
 #section functions
+/* Set the preemption timer granularity in microseconds */
 void marcel_settimeslice(unsigned long microsecs);
+/* Get the preemption timer granularity in microseconds */
 unsigned long marcel_gettimeslice(void);
+/* Return the number of milliseconds elapsed since Marcel start */
 unsigned long marcel_clock(void);
 
 #ifndef MA__TIMER

@@ -135,11 +135,13 @@ typedef struct mpir_request_s {
   /** persistent type of the request */
   MPI_Request_type request_persistent_type;
 
-  /** handle to the NM request when data are exchanged with the \ref sr_interface */
-  nm_sr_request_t request_nmad;
-  /** handle to the NM connexion when data are exchanged with the \ref pack_interface */
-  nm_pack_cnx_t request_cnx;
-
+  union
+  {
+    /** handle to the NM request when data are exchanged with the \ref sr_interface */
+    nm_sr_request_t request_nmad;
+    /** handle to the NM connexion when data are exchanged with the \ref pack_interface */
+    nm_pack_cnx_t request_cnx;
+  };
   /** buffer used when non-contiguous data are exchanged with the \ref sr_interface */
   void *contig_buffer;
   /** array of pointers used when non-contiguous data are exchanged with the \ref pack_interface */

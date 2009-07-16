@@ -20,62 +20,17 @@
 
 #include <nm_private.h>
 
-/** Process a data request completion.
- */
-static inline void nm_so_out_data_complete(struct nm_gate*p_gate, nm_tag_t tag, nm_seq_t seq, uint32_t len)
-{
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-
-  p_so_tag->send[seq] -= len;
-
-  if(p_so_tag->send[seq] == 0)
-    {
-      NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", tag, seq, len);
-      const struct nm_so_event_s event =
-	{
-	  .status = NM_SO_STATUS_PACK_COMPLETED,
-	  .p_gate = p_gate,
-	  .tag = tag,
-	  .seq = seq,
-	  .any_src = tbx_false
-	};
-      nm_so_status_event(p_gate->p_core, &event);
-    } 
-  else if(p_so_tag->send[seq] > 0)
-     {
-      NM_SO_TRACE("It is missing %d bytes to complete sending of the msg with tag %u, seq %u\n", p_so_tag->send[seq], tag, seq);
-    }
-  else
-    {
-      TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
-		   tag, p_so_tag->send[seq] + len, len);
-    }
-}
-
-static void data_completion_callback(struct nm_pkt_wrap *p_pw,
-				     void *ptr TBX_UNUSED,
-				     nm_so_data_header_t*header, uint32_t len TBX_UNUSED,
-				     nm_tag_t tag, nm_seq_t seq,
-				     uint32_t chunk_offset, uint8_t is_last_chunk)
-{
-  struct nm_gate *p_gate = p_pw->p_gate;
-  NM_SO_TRACE("completed chunk ptr=%p len=%u tag=%d seq=%u offset=%u\n", ptr, len, tag, seq, chunk_offset);
-  nm_so_out_data_complete(p_gate, tag, seq, len);
-}
 
 /** Process a complete successful outgoing request.
  */
-int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
+int nm_so_process_complete_send(struct nm_core *p_core,
 				struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
 
   NM_TRACEF("send request complete: gate %d, drv %d, trk %d, tag %d, seq %d",
-	    p_pw->p_gate->id,
-	    p_pw->p_drv->id,
-	    p_pw->trk_id,
-	    p_pw->tag,
-	    p_pw->seq);
+	    p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id,
+	    p_pw->tag, p_pw->seq);
   
 #ifdef PIOMAN
   piom_req_success(&p_pw->inst);
@@ -83,22 +38,8 @@ int nm_so_process_complete_send(struct nm_core *p_core TBX_UNUSED,
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   
   p_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
-
-  if(p_pw->trk_id == NM_TRK_SMALL) 
-    {
-      NM_SO_TRACE("completed short msg- drv=%d trk=%d\n", p_pw->p_drv->id, p_pw->trk_id);
-      
-      nm_so_pw_iterate_over_headers(p_pw, data_completion_callback, NULL, NULL);
-    } 
-  else if(p_pw->trk_id == NM_TRK_LARGE)
-    {
-      NM_SO_TRACE("completed large msg- drv=%d trk=%d size=%llu bytes\n",
-		  p_pw->p_drv->id, p_pw->trk_id, (long long unsigned int)p_pw->length);
-
-      nm_so_out_data_complete(p_gate, p_pw->tag, p_pw->seq, p_pw->length);
-      nm_so_pw_free(p_pw);
-    }
-  
+  nm_pw_complete_contribs(p_core, p_pw);
+  nm_so_pw_free(p_pw);
   nm_strat_try_and_commit(p_gate);
   
   return NM_ESUCCESS;

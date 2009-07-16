@@ -16,10 +16,11 @@
 #ifndef NM_PUBLIC_H
 #define NM_PUBLIC_H
 
-/* don't include pm2_common.h r tbx.h here. They are not needed and not ISO C compliant */
+/* don't include pm2_common.h or tbx.h here. They are not needed and not ISO C compliant */
 #include <stdlib.h>
 #include <Padico/Puk.h>
 #include <nm_errno.h>
+#include <pm2_list.h>
 
 /* ** Core ************************************************* */
 
@@ -58,6 +59,8 @@ typedef uint64_t nm_tag_t;
 
 #define NM_TAGS_PREALLOC 255
 
+#define NM_ANY_TAG ((nm_tag_t)-1)
+
 /* ** Drivers ********************************************** */
 
 typedef uint16_t nm_drv_id_t;
@@ -77,6 +80,41 @@ typedef uint16_t nm_drv_id_t;
 
 /* legacy */
 #define NM_SO_DEFAULT_NET NM_DRV_DEFAULT
+
+
+/* ** Packs/unpacks **************************************** */
+
+typedef uint16_t nm_so_status_t;
+/* for now, flags are included in status */
+typedef nm_so_status_t nm_so_flag_t;
+
+/** Sequence number */
+typedef uint8_t nm_seq_t;
+
+/** An unpack request */
+struct nm_unpack_s
+{
+  nm_so_status_t status;
+  void *data;
+  int32_t cumulated_len;
+  int32_t expected_len;
+  nm_gate_t p_gate;
+  nm_seq_t seq;
+  nm_tag_t tag;
+  struct list_head link;
+};
+
+/** A pack request */
+struct nm_pack_s
+{
+  nm_so_status_t status;
+  void*data; /**< actually, char*, struct iovec*, or DLOOP_Segment* depending on pack type (see status) */
+  int len;   /**< cumulated data length */
+  int done;
+  nm_gate_t p_gate;
+  nm_tag_t tag;
+  nm_seq_t seq;
+};
 
 
 /* ** Core functions *************************************** */
@@ -207,8 +245,6 @@ nmad_unlock(void)
 
 
 #endif /* PIOMAN */
-
-void nm_so_debug_init(int* argc, char** argv, int debug_flags);
 
 #endif /* NM_PUBLIC_H */
 

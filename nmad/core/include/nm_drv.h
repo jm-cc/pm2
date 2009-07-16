@@ -42,10 +42,26 @@ struct nm_drv
   
 #ifdef PIOMAN
   struct piom_server server;
+  struct nm_pkt_wrap post_rq;
 #endif
 };
 
-/* Driver for 'NewMad_Driver' component interface.
+/** Request for connecting/disconnecting a gate with a driver. */
+struct nm_cnx_rq
+{
+  
+  struct nm_gate *p_gate;
+  struct nm_drv  *p_drv;
+  nm_trk_id_t trk_id;
+  
+  /** Remote driver url.  */
+  char *remote_drv_url;
+  
+  /** Remote track url. */
+  char *remote_trk_url;
+};
+
+/** Driver for 'NewMad_Driver' component interface.
  */
 struct nm_drv_iface_s
 {

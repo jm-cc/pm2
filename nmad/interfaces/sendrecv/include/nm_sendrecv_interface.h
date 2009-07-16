@@ -106,10 +106,12 @@ PUK_VECT_TYPE(nm_sr_event_monitor, nm_sr_event_monitor_t)
 /** internal defintion of the sendrecv request */
 struct nm_sr_request_s
 {
+  union /* inlined core pack/unpack request to avoid dynamic allocation */
+  {
+    struct nm_unpack_s unpack;
+    struct nm_pack_s pack;
+  };
   nm_sr_cond_t status;
-  uint8_t seq;
-  nm_gate_t p_gate;
-  nm_tag_t tag;
   nm_sr_event_monitor_t monitor;
   void *ref;
   struct list_head _link;
@@ -447,7 +449,7 @@ static inline int nm_sr_get_tag(nm_core_t p_core,
 				nm_sr_request_t *p_request,
 				nm_tag_t*tag)
 {
-  *tag = p_request->tag;
+  *tag = p_request->unpack.tag;
   return NM_ESUCCESS;
 }
 

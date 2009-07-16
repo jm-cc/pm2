@@ -74,14 +74,52 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
                    struct nm_pkt_wrap **pp_pw2,
                    uint32_t offset);
 
-int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		      nm_tag_t proto_id, nm_seq_t seq,
-		      const void *data, uint32_t len,
-		      uint32_t offset, uint8_t is_last_chunk, int flags);
+int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
+		      const void *data, uint32_t len, uint32_t offset, uint8_t is_last_chunk, int flags);
 
-int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-			  nm_tag_t proto_id, nm_seq_t seq,
+int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);
+
+void nm_pw_complete_contribs(struct nm_core*p_core, struct nm_pkt_wrap*p_pw);
+
+/** Add smal data to pw, in header */
+static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)
+{
+  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  struct iovec*hvec = &p_pw->v[0];
+  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
+  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+  const uint32_t size = nm_so_aligned(len);
+  nm_so_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
+  if(len)
+    {
+#ifdef PIO_OFFLOAD
+      struct iovec *dvec = nm_pw_grow_iovec(p_pw);
+      p_pw->data_to_offload = tbx_true;
+      dvec->iov_base = data;
+      dvec->iov_len  = len;
+#else
+      memcpy(hvec->iov_base + hvec->iov_len, data, len);
+#endif
+      hvec->iov_len += size;
+    }
+  p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
+
+}
+
+/** Add raw data to pw, without header */
+static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq, const void*data, uint32_t len, uint32_t chunk_offset)
+{
+  assert(p_pw->flags & NM_PW_NOHEADER);
+  struct iovec*vec = nm_pw_grow_iovec(p_pw);
+  vec->iov_base = (void*)data;
+  vec->iov_len = len;
+  p_pw->tag = tag;
+  p_pw->seq = seq;
+  p_pw->length += len;
+  p_pw->chunk_offset = chunk_offset;
+}
 
 static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_so_generic_ctrl_header*p_ctrl)
 {
@@ -93,23 +131,16 @@ static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_s
 }
 
 
-static __inline__ int 
-nm_so_pw_alloc_and_fill_with_data(nm_tag_t proto_id, nm_seq_t seq,
-				  const void *data, uint32_t len,
-                                  uint32_t chunk_offset,
-                                  uint8_t is_last_chunk,
-                                  int flags,
-				  struct nm_pkt_wrap **pp_pw)
+static __inline__ void 
+nm_so_pw_alloc_and_fill_with_data(struct nm_pack_s*p_pack, const void*ptr, uint32_t chunk_len,
+                                  uint32_t chunk_offset, tbx_bool_t is_last_chunk,
+                                  int flags, struct nm_pkt_wrap **pp_pw)
 {
   struct nm_pkt_wrap *p_pw;
-  int err = nm_so_pw_alloc(flags, &p_pw);
-  if(err == NM_ESUCCESS)
-    {
-      nm_so_pw_add_data(p_pw, proto_id, seq, data, len, chunk_offset, is_last_chunk, flags);
-      p_pw->chunk_offset = chunk_offset;
-      *pp_pw = p_pw;
-    }
-  return err;
+  nm_so_pw_alloc(flags, &p_pw);
+  nm_so_pw_add_data(p_pw, p_pack, ptr, chunk_len, chunk_offset, is_last_chunk, flags);
+  p_pw->chunk_offset = chunk_offset;
+  *pp_pw = p_pw;
 }
 
 static __inline__
@@ -137,6 +168,32 @@ nm_so_pw_alloc_and_fill_with_control(const union nm_so_generic_ctrl_header *ctrl
     goto out;
 }
 
+static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, uint32_t len)
+{
+  if(p_pw->n_contribs > 0 && p_pw->contribs[p_pw->n_contribs - 1].p_pack == p_pack)
+    {
+      p_pw->contribs[p_pw->n_contribs - 1].len += len;
+    }
+  else
+    {
+      if(p_pw->n_contribs >= p_pw->contribs_size)
+	{
+	  p_pw->contribs_size *= 2;
+	  if(p_pw->contribs == p_pw->prealloc_contribs)
+	    {
+	      p_pw->contribs = TBX_MALLOC(sizeof(struct nm_pw_contrib_s) * p_pw->contribs_size);
+	    }
+	  else
+	    {
+	      p_pw->contribs = TBX_REALLOC(p_pw->contribs, sizeof(struct nm_pw_contrib_s) * p_pw->contribs_size);
+	    }
+	}
+      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[p_pw->n_contribs];
+      p_contrib->len = len;
+      p_contrib->p_pack = p_pack;
+      p_pw->n_contribs++;
+    }
+}
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 

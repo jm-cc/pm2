@@ -90,71 +90,47 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t
 
 /* ** Pack/unpack ****************************************** */
 
-static inline int nm_so_unpack(struct nm_gate *p_gate,
-			       nm_tag_t tag, nm_seq_t seq,
+static inline int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
+			       struct nm_gate *p_gate, nm_tag_t tag,
 			       void *data, uint32_t len)
 {
   /* Nothing special to flag for the contiguous reception */
   const nm_so_flag_t flag = 0;
-  return __nm_so_unpack(p_gate, tag, seq, flag, data, len);
+  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, data, len);
 }
 
-static inline int nm_so_unpackv(struct nm_gate *p_gate,
-				nm_tag_t tag, nm_seq_t seq,
+static inline int nm_so_unpackv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
+				struct nm_gate *p_gate, nm_tag_t tag,
 				struct iovec *iov, int nb_entries)
 {
   /* Data will be receive in an iovec tab */
   const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
-  return __nm_so_unpack(p_gate, tag, seq, flag, iov, iov_len(iov, nb_entries));
+  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, iov, iov_len(iov, nb_entries));
 }
 
-static inline int nm_so_unpack_datatype(struct nm_gate *p_gate,
-					nm_tag_t tag, nm_seq_t seq,
+static inline int nm_so_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
+					struct nm_gate *p_gate, nm_tag_t tag,
 					struct DLOOP_Segment *segp)
 {
   /* Data will be receive through a datatype */
   const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
-  return __nm_so_unpack(p_gate, tag, seq, flag, segp, datatype_size(segp));
+  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, segp, datatype_size(segp));
 }
 
-static inline int nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, void *data, uint32_t len)
-{
-    /* Nothing special to flag for the contiguous reception */
-  const nm_so_flag_t flag = 0;
-  return __nm_so_unpack_any_src(p_core, tag, flag, data, len);
-}
-
-
-static inline int nm_so_unpackv_any_src(struct nm_core *p_core, nm_tag_t tag, struct iovec *iov, int nb_entries)
-{
-  /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
-  return __nm_so_unpack_any_src(p_core, tag, flag, iov, iov_len(iov, nb_entries));
-}
-
-static inline int nm_so_unpack_datatype_any_src(struct nm_core *p_core, nm_tag_t tag, struct DLOOP_Segment *segp){
-
-  /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
-  return __nm_so_unpack_any_src(p_core, tag, flag, segp, datatype_size(segp));
-}
-
-static inline int nm_so_pack(nm_gate_t p_gate, nm_tag_t tag, int seq, const void*data, int len)
+static inline int nm_so_pack(struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
+			     const void*data, uint32_t len, nm_so_flag_t pack_type)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  return (*r->driver->pack)(r->_status, p_gate, tag, seq, data, len);
-}
-
-static inline int nm_so_packv(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct iovec*iov, int len)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  return (*r->driver->packv)(r->_status, p_gate, tag, seq, iov, len);
-}
-
-static inline int nm_so_pack_datatype(nm_gate_t p_gate, nm_tag_t tag, int seq, const struct DLOOP_Segment*segp)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  return (*r->driver->pack_datatype)(r->_status, p_gate, tag, seq, segp);
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
+  const nm_seq_t seq = p_so_tag->send_seq_number++;
+  p_pack->status = pack_type;
+  p_pack->data   = (void*)data;
+  p_pack->len    = len;
+  p_pack->done   = 0;
+  p_pack->p_gate = p_gate;
+  p_pack->tag    = tag;
+  p_pack->seq    = seq;
+  return (*r->driver->pack)(r->_status, p_pack);
 }
 
 static inline int nm_so_flush(nm_gate_t p_gate)

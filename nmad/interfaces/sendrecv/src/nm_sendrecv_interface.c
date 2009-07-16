@@ -21,61 +21,10 @@
 #include "nm_sendrecv_interface.h"
 
 
-/* ** Tags ************************************************* */
-
-struct nm_sr_tag_s
-{
-  nm_sr_request_t *rreqs[NM_SO_PENDING_PACKS_WINDOW],
-    *sreqs[NM_SO_PENDING_PACKS_WINDOW];
-};
-/** Create a new sendrecv tag entry, if not already allocated.
- */
-static inline struct nm_sr_tag_s*nm_sr_tag_init(struct nm_so_tag_s*p_so_tag)
-{
-  struct nm_sr_tag_s*p_sr_tag = p_so_tag->p_sr_tag;
-  if(tbx_unlikely(p_sr_tag == NULL))
-    {
-      p_sr_tag = TBX_MALLOC(sizeof(struct nm_sr_tag_s));
-      int j;
-      for(j = 0; j < NM_SO_PENDING_PACKS_WINDOW; j++)
-	{
-	  p_sr_tag->rreqs[j] = NULL;
-	  p_sr_tag->sreqs[j] = NULL;
-	}
-      p_so_tag->p_sr_tag = p_sr_tag;
-    }
-  return p_sr_tag;
-}
-static inline void nm_sr_tag_destroy(struct nm_sr_tag_s*p_sr_tag)
-{
-}
-
-
-/** Status for any source receive requests.
- */
-struct nm_sr_anysrc_s
-{
-  nm_sr_request_t *rreq;
-  nm_gate_t p_gate;
-};
-static inline void nm_sr_anysrc_ctor(struct nm_sr_anysrc_s*p_sr_anysrc, nm_tag_t tag)
-{
-  p_sr_anysrc->rreq = NULL;
-  p_sr_anysrc->p_gate = NM_ANY_GATE;
-}
-static inline void nm_sr_anysrc_dtor(struct nm_sr_anysrc_s*p_sr_anysrc)
-{
-}
-NM_TAG_TABLE_TYPE(nm_sr_anysrc, struct nm_sr_anysrc_s);
-
-
 /** Structure that contains all sendrecv-related static variables.
  */
 static struct
 {
-  /** Tag-indexed table of any_src_status structs. One entry per tag. */
-  struct nm_sr_anysrc_table_s any_src;
-  
   struct list_head completed_rreq;
   struct list_head completed_sreq;
 
@@ -221,7 +170,7 @@ static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed =
 static const struct nm_so_monitor_s nm_sr_monitor_unexpected = 
   {
     .notifier = &nm_sr_event_unexpected,
-    .mask = NM_SO_STATUS_PACKET_HERE 
+    .mask = NM_SO_STATUS_UNEXPECTED
   };
 
 /* User interface */
@@ -240,8 +189,6 @@ int nm_sr_init(struct nm_core *p_core)
       INIT_LIST_HEAD(&nm_sr_data.completed_rreq);
       INIT_LIST_HEAD(&nm_sr_data.completed_sreq);
       
-      nm_sr_anysrc_table_init(&nm_sr_data.any_src);
-
       nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
 
       nm_sr_data.init_done = 1;
@@ -266,49 +213,33 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 			nm_sr_request_t *p_request,
 			void*ref)
 {
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
-  nm_seq_t seq;
-  int ret;
-
   NM_SO_SR_LOG_IN();
   nmad_lock();
-
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data, len, p_request);
-
-  seq = p_so_tag->send_seq_number++;
-
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
-  p_request->seq    = seq;
-  p_request->p_gate = p_gate;
-  p_request->tag    = tag;
-  p_request->ref    = ref;
+  p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  if(p_sr_tag->sreqs[seq])
-    {
-      nm_sr_swait(p_core, p_sr_tag->sreqs[seq]);
-    }
-  p_sr_tag->sreqs[seq] = p_request;
-  
+  nm_so_flag_t pack_type = 0;
+  uint32_t size;
   switch(sending_type)
     {
     case nm_sr_contiguous_transfer:
-      ret = nm_so_pack(p_gate, tag, seq, data, len);
+      pack_type = NM_PACK_TYPE_CONTIGUOUS;
+      size = len;
       break;
-
     case nm_sr_iov_transfer:
-      ret = nm_so_packv(p_gate, tag, seq, data, len);
+      pack_type = NM_PACK_TYPE_IOV;
+      size = iov_len(data, len);
       break;
-      
     case nm_sr_datatype_transfer:
-      ret = nm_so_pack_datatype(p_gate, tag, seq, data);
+      pack_type = NM_PACK_TYPE_DATATYPE;
+      size = datatype_size(data);
       break;
-
     default:
       TBX_FAILURE("Unkown sending type.");
       break;
     }
-  
+  int ret = nm_so_pack(&p_request->pack, tag, p_gate, data, size, pack_type);
   nm_so_post_all(p_core);
   nmad_unlock();
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
@@ -406,53 +337,6 @@ int nm_sr_scancel(struct nm_core *p_core, nm_sr_request_t *p_request)
   return NM_ENOTIMPL;
 }
 
-static struct
-{
-  nm_sr_request_t*request;
-  void*data;
-  uint32_t len;
-  int missed;
-} nm_sr_irecv_event_info =
-  {
-    .request = NULL,
-    .data = NULL,
-    .len = 0,
-    .missed = 0
-  };
-
-extern int nm_sr_irecv_event(nm_core_t p_core, nm_tag_t tag,
-			     void*data, uint32_t len,
-			     nm_sr_request_t *p_request)
-{
-  if(nm_sr_irecv_event_info.missed)
-    {
-      nm_sr_irecv_event_info.missed--;
-      return nm_sr_irecv(p_core, NM_ANY_GATE, tag, data, len, p_request);
-    }
-
-  nmad_lock();
-
-  nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-  p_request->p_gate  = NM_GATE_NONE;
-  p_request->ref     = NULL;
-  p_request->tag     = tag;
-  p_request->seq     = -1;
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-
-  if(nm_sr_irecv_event_info.request != NULL)
-    {
-      TBX_FAILURE("sendrecv: concurrent nm_sr_irecv_event detected\n");
-    }
-
-  nm_sr_irecv_event_info.request = p_request;
-  nm_sr_irecv_event_info.data = data;
-  nm_sr_irecv_event_info.len = len;
-
-  nmad_unlock();
-
-  return NM_ESUCCESS;
-}
-
 /* Receive operations */
 extern int nm_sr_irecv_generic(nm_core_t p_core,
 			       nm_gate_t p_gate, nm_tag_t tag,
@@ -466,98 +350,33 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data_description, len, p_request);
 
-  if(p_gate == NM_ANY_GATE)
-    {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
-      if(p_sr_anysrc->rreq)
-	{
-	  /* ensure that there is no other pending any_src request. */
-	  NM_SO_SR_TRACE("Irecv not completed for ANY_SRC tag=%d\n", tag);
-	  nm_sr_rwait(p_core, p_sr_anysrc->rreq);
-	}
-      nmad_lock();
-      nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-      p_request->p_gate  = NM_GATE_NONE;
-      p_request->ref     = ref;
-      p_request->tag     = tag;
-      p_request->seq     = -1;
-      p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-      p_sr_anysrc->rreq = p_request;
-
-      NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC: tag = %d, request = %p\n", tag, p_sr_anysrc->rreq);
-      
-      switch(reception_type)
-	{
-	case nm_sr_datatype_transfer:
-	  {
-	    struct DLOOP_Segment *segp = data_description;
-	    ret = nm_so_unpack_datatype_any_src(p_core, tag, segp);
-	    break;
-	  }
-	case nm_sr_iov_transfer:
-	  {
-	    struct iovec *iov = data_description;
-	    ret = nm_so_unpackv_any_src(p_core, tag, iov, len);
-	  }
-	  break;
-	case nm_sr_contiguous_transfer:
-	  {
-	    ret = nm_so_unpack_any_src(p_core, tag, data_description, len);
-	  }
-	  break;
-	default:
-	  TBX_FAILURE("Unknown reception type.");
-	}
-      
-      NM_SO_SR_TRACE_LEVEL(3, "IRECV ANY_SRC completed : tag = %d, request = %p\n",
-			   tag, p_sr_anysrc->rreq);
-    }
-  else
-    {
-      nmad_lock();
-      nm_seq_t seq;
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-      struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
+  nmad_lock();
+  nm_sr_flush(p_core);
+  nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
+  p_request->ref     = ref;
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   
-      nm_sr_flush(p_core);
-      
-      seq = p_so_tag->recv_seq_number++;
-      
-      nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-      p_request->seq     = seq;
-      p_request->p_gate  = p_gate;
-      p_request->ref     = ref;
-      p_request->tag     = tag;
-      p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-      if(p_sr_tag->rreqs[seq])
-	{
-	  nm_sr_rwait(p_core, p_sr_tag->rreqs[seq]);
-	}
-      p_sr_tag->rreqs[seq] = p_request;
-
-      NM_SO_SR_TRACE_LEVEL(3, "IRECV: tag = %d, seq = %d, gate = %p request %p\n", tag, seq, p_gate, p_sr_tag->rreqs[seq]);
-      switch(reception_type)
-	{
-	case nm_sr_datatype_transfer:
-	  {
-	    struct DLOOP_Segment *segp = data_description;
-	    ret = nm_so_unpack_datatype(p_gate, tag, seq, segp);
-	  }
-	  break;
-	case nm_sr_iov_transfer:
-	  {
-	    struct iovec *iov = data_description;
-	    ret = nm_so_unpackv(p_gate, tag, seq, iov, len);
-	  }
-	  break;
-	case nm_sr_contiguous_transfer:
-	  {
-	    ret = nm_so_unpack(p_gate, tag, seq, data_description, len);
-	  }
-	  break;
-	default:
-	  TBX_FAILURE("Unknown reception type.");
-	}
+  switch(reception_type)
+    {
+    case nm_sr_contiguous_transfer:
+      {
+	ret = nm_so_unpack(p_core, &p_request->unpack, p_gate, tag, data_description, len);
+      }
+      break;
+    case nm_sr_iov_transfer:
+      {
+	struct iovec *iov = data_description;
+	ret = nm_so_unpackv(p_core, &p_request->unpack, p_gate, tag, iov, len);
+      }
+      break;
+    case nm_sr_datatype_transfer:
+      {
+	struct DLOOP_Segment *segp = data_description;
+	ret = nm_so_unpack_datatype(p_core, &p_request->unpack, p_gate, tag, segp);
+      }
+      break;
+    default:
+      TBX_FAILURE("Unknown reception type.");
     }
   nm_so_post_all(p_core);
   nmad_unlock();
@@ -632,36 +451,17 @@ int nm_sr_rwait(struct nm_core *p_core, nm_sr_request_t *p_request)
   return nm_sr_rtest(p_core, p_request);
 }
 
-int nm_sr_get_size(struct nm_core *p_core,
-		   nm_sr_request_t *p_request,
-		   size_t *size)
+int nm_sr_get_size(struct nm_core *p_core, nm_sr_request_t *p_request, size_t *size)
 {
-  const nm_tag_t tag = p_request->tag;
-
-  if (p_request->p_gate == NM_ANY_GATE)
-    {
-      *size = nm_so_any_src_get(&p_core->so_sched.any_src, tag)->expected_len;
-    }
-  else 
-    {
-      *size = nm_so_tag_get(&p_request->p_gate->tags, tag)->recv[p_request->seq].unpack_here.expected_len;
-    }
-
-  NM_SO_SR_TRACE("SIZE: tag = %d, seq = %d, gate = %p --> %zd\n", tag, p_request->seq, p_request->p_gate, *size);
-
+  *size = p_request->unpack.cumulated_len;
   return NM_ESUCCESS;
 }
 
 int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
-  const nm_tag_t tag = p_request->tag;
-  struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, tag);
-
   NM_SO_SR_LOG_IN();
-
   if(pp_gate)
-    *pp_gate = p_sr_anysrc->p_gate;
-
+    *pp_gate = p_request->unpack.p_gate;
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
@@ -670,47 +470,22 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
 int nm_sr_probe(struct nm_core *p_core,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
 {
-  int i;
-  NM_SO_SR_LOG_IN();
-
-  if (p_gate == NM_ANY_GATE)
+#warning TODO (AD)- move this into a new function nm_so_iprobe() (in nm_so_schedule_in.c)
+  struct nm_unexpected_s*chunk;
+  list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
     {
-      for(i = 0; i < p_core->nb_gates; i++)
+      if( ((chunk->p_gate == p_gate) && (chunk->tag == tag)) ||
+	  ((p_gate == NM_ANY_GATE)   && (chunk->tag == tag)) ||
+	  ((chunk->p_gate == p_gate) && (tag == NM_ANY_TAG)) )
 	{
-	  p_gate = &p_core->gate_array[i];
-	  if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	    {
-	      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-	      nm_seq_t seq = p_so_tag->recv_seq_number;
-	      volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
-	      if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
-		*pp_out_gate = p_gate;
-		NM_SO_SR_LOG_OUT();
-		return NM_ESUCCESS;
-	      }
-	    }
+	  *pp_out_gate = p_gate;
+	  return NM_ESUCCESS;
 	}
     }
-  else
-    {
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-	  nm_seq_t seq = p_so_tag->recv_seq_number;
-	  volatile nm_so_status_t *status = &(p_so_tag->status[seq]);
-	  if ((*status & NM_SO_STATUS_PACKET_HERE) || (*status & NM_SO_STATUS_RDV_HERE)) {
-	    *pp_out_gate = p_gate;
-	    NM_SO_SR_LOG_OUT();
-	    return NM_ESUCCESS;
-	  }
-	}
-    }
-
 #ifndef PIOMAN
   nm_schedule(p_core);
 #endif
   *pp_out_gate = NM_ANY_GATE;
-  NM_SO_SR_LOG_OUT();
   return -NM_EAGAIN;
 }
 
@@ -782,12 +557,7 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
     }
   else
     {
-      err = nm_so_cancel_unpack(p_core, p_request->p_gate, p_request->tag, p_request->seq);
-      if(err == NM_ESUCCESS && p_request->p_gate == NULL)
-	{
-	  struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, p_request->tag);
-	  p_sr_anysrc->rreq = NULL;
-	}
+      err = nm_so_cancel_unpack(p_core, p_request->unpack.p_gate, p_request->unpack.tag, p_request->unpack.seq);
     }
   nmad_unlock();
   return err;
@@ -801,14 +571,11 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
  */
 static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
-  nm_sr_request_t**const sreq = &p_so_tag->p_sr_tag->sreqs[event->seq];
-  nm_sr_request_t *const p_request = *sreq;
-
+  struct nm_pack_s*p_pack = event->p_pack;
+  struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, pack);
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , event->tag, event->seq);
   
-  *sreq = NULL;
   if(p_request && p_request->ref)
     {
       list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
@@ -822,25 +589,12 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 
 static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
 {
-  if(nm_sr_irecv_event_info.request)
-    {
-      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
-      nm_seq_t seq = p_so_tag->recv_seq_number++;
-      struct nm_sr_tag_s*p_sr_tag = nm_sr_tag_init(p_so_tag);
-      p_sr_tag->rreqs[seq] = nm_sr_irecv_event_info.request;
-      nm_sr_irecv_event_info.request = NULL;
-      nm_so_unpack(event->p_gate, event->tag, seq, nm_sr_irecv_event_info.data, nm_sr_irecv_event_info.len);
-    }
-  else
-    {
-      nm_sr_irecv_event_info.missed++;
-      const nm_sr_event_info_t info = { 
-	.recv_unexpected.p_gate = event->p_gate,
-	.recv_unexpected.tag = event->tag,
-	.recv_unexpected.len = event->len
-      };
-      nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
-    }
+  const nm_sr_event_info_t info = { 
+    .recv_unexpected.p_gate = event->p_gate,
+    .recv_unexpected.tag = event->tag,
+    .recv_unexpected.len = event->len
+  };
+  nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
 }
 
 /** Check the status for a receive request (gate/is_any_src,tag,seq).
@@ -852,26 +606,9 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
  */
 static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 {
-  struct nm_so_tag_s*const p_so_tag = nm_so_tag_get(&event->p_gate->tags, event->tag);
-  struct nm_sr_tag_s*const p_sr_tag = nm_sr_tag_init(p_so_tag);
-  nm_sr_request_t**const rreq = &p_sr_tag->rreqs[event->seq];
-  nm_sr_request_t *p_request = NULL;
-
+  struct nm_unpack_s*p_unpack = event->p_unpack;
+  struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, unpack);
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("data received for request = %p - tag %d, seq %d\n", rreq, event->tag, event->seq);
-
-  if(event->any_src) 
-    {
-      struct nm_sr_anysrc_s*p_sr_anysrc = nm_sr_anysrc_get(&nm_sr_data.any_src, event->tag);
-      p_sr_anysrc->p_gate = event->p_gate;
-      p_request = p_sr_anysrc->rreq;
-      p_sr_anysrc->rreq = NULL;
-    } 
-  else 
-    {
-      p_request = *rreq;
-      *rreq = NULL;
-    }
   nm_sr_status_t sr_event;
   if(event->status & NM_SO_STATUS_UNPACK_CANCELLED)
     {

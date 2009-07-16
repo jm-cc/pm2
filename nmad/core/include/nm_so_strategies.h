@@ -34,10 +34,7 @@ struct nm_strategy_iface_s
 {
   /** Handle the arrival of a new packet. The strategy may already apply
       some optimizations at this point */
-  int (*pack)(void*_status,
-	      struct nm_gate *p_gate,
-	      nm_tag_t tag, nm_seq_t seq,
-	      const void *data, uint32_t len);
+  int (*pack)(void*_status, struct nm_pack_s*p_pack);
 
   int (*packv)(void*_status,
                struct nm_gate *p_gate,

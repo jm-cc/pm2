@@ -21,9 +21,7 @@
 #include <nm_private.h>
 
 
-#define INITIAL_CHUNK_NUM (NM_TAGS_PREALLOC * NM_SO_PENDING_PACKS_WINDOW)
-
-p_tbx_memory_t nm_so_chunk_mem = NULL;
+p_tbx_memory_t nm_so_unexpected_mem = NULL;
 
 /** Initialize SchedOpt.
  */
@@ -45,9 +43,12 @@ int nm_so_schedule_init(struct nm_core *p_core)
   p_core->so_sched.post_recv_req       = tbx_slist_nil();
   p_core->so_sched.post_sched_out_list = tbx_slist_nil();
 
-  /* any src */
-  nm_so_any_src_table_init(&p_so_sched->any_src);
-  p_so_sched->next_gate_id = 0;
+  /* unpacks */
+  INIT_LIST_HEAD(&p_core->so_sched.unpacks);
+
+  /* unexpected */
+  tbx_malloc_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s), NM_UNEXPECTED_PREALLOC, "nmad/core/chunks");
+  INIT_LIST_HEAD(&p_core->so_sched.unexpected);
 
   /* which strategy is going to be used */
   const char*strategy_name = NULL;
@@ -71,10 +72,6 @@ int nm_so_schedule_init(struct nm_core *p_core)
 
   p_so_sched->strategy_adapter = nm_core_component_load("strategy", strategy_name);
   printf("# nmad: strategy = %s\n", p_so_sched->strategy_adapter->name);
-
-  tbx_malloc_init(&nm_so_chunk_mem,
-                  sizeof(struct nm_so_chunk),
-                  INITIAL_CHUNK_NUM, "nmad/.../sched_opt/nm_so_chunk");
 
   err = NM_ESUCCESS;
   return err;
@@ -113,7 +110,7 @@ int nm_so_schedule_exit (struct nm_core *p_core)
 
   nm_so_monitor_vect_destroy(&p_core->so_sched.monitors);
 
-  tbx_malloc_clean(nm_so_chunk_mem);
+  tbx_malloc_clean(nm_so_unexpected_mem);
 
   /* free requests lists */
 #ifndef PIOMAN

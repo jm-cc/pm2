@@ -22,6 +22,8 @@
 
 #include <nm_private.h>
 
+debug_type_t debug_nm_so_trace = NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");
+
 #ifdef PIOMAN
 
 static piom_spinlock_t piom_big_lock;
@@ -44,8 +46,8 @@ int nm_core_init_piom(struct nm_core *p_core)
   return 0;
 }
 
-/* Initialisation du serveur utilisé pour les drivers */
-static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
+/** Initialize PIOMan server for the given driver */
+static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 {
   LOG_IN();
   piom_server_init(&p_drv->server, "NMad IO Server");
@@ -100,7 +102,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
 
   /* Very ugly for now */
   /* todo: "unugly" me ! */
-  struct nm_pkt_wrap *post_rq = TBX_MALLOC(sizeof(struct nm_pkt_wrap));
+  struct nm_pkt_wrap *post_rq = &p_drv->post_rq;
 
   post_rq->p_drv  = p_drv;
   post_rq->trk_id = -1;
@@ -115,8 +117,11 @@ static int nm_core_init_piom_drv(struct nm_core*p_core,struct nm_drv *p_drv)
 
   post_rq->v_size          = 0;
   post_rq->v_nb            = 0;
-
   post_rq->v = NULL;
+
+  post_rq->contribs = NULL;
+  post_rq->contribs_size = 0;
+  post_rq->n_contribs = 0;
 
   piom_req_init(&post_rq->inst);
   post_rq->inst.server=&p_drv->server;
@@ -752,6 +757,10 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
       common_pre_init(argc, argv, NULL);
       common_post_init(argc, argv, NULL);
     }
+
+  /* init debug system */
+  pm2debug_register(&debug_nm_so_trace);
+  pm2debug_init_ext(argc, argv, 0 /* debug_flags */);
 
   FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 

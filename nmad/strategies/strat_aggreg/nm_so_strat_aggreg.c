@@ -23,7 +23,7 @@
 /* Components structures:
  */
 
-static int strat_aggreg_pack(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const void*, uint32_t);
+static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_aggreg_packv(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const struct iovec *, int);
 static int strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_try_and_commit(void*, struct nm_gate*);
@@ -64,16 +64,11 @@ static int num_instances = 0;
 static int nb_data_aggregation;
 static int nb_ctrl_aggregation;
 
-static int
-try_to_agregate_small(void *_status,
-		      struct nm_gate *p_gate,
-		      nm_tag_t tag, nm_seq_t seq,
-                      const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
-static int
-launch_large_chunk(void *_status,
-		   struct nm_gate *p_gate,
-                   nm_tag_t tag, nm_seq_t seq,
-                   const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
+static void try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
+				  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
+
+static void launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
+			       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
 
 /** Component declaration */
 static int nm_strat_aggreg_load(void)
@@ -176,52 +171,73 @@ static int strat_aggreg_pack_ctrl(void*_status,
  *  @param len the data fragment length.
  *  @return The NM status.
  */
-static int strat_aggreg_pack(void*_status,
-			     struct nm_gate *p_gate,
-			     nm_tag_t tag, nm_seq_t seq,
-			     const void *data, uint32_t len)
+static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
-  int err;
+  const uint32_t len = p_pack->len;
 
-  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
+  if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
+    {
+      if(len <= status->nm_so_max_small) 
+	{
+	  /* Small packet */
+	  try_to_agregate_small(_status, p_pack, p_pack->data, len, 0, 1);
+	}
+      else 
+	{
+	  /* Large packet */
+	  launch_large_chunk(_status, p_pack, p_pack->data, len, 0, 1);
+	}
+    }
+  else if(p_pack->status & NM_PACK_TYPE_IOV)
+    {
+      struct iovec*iov = p_pack->data;
+      uint32_t offset = 0;
+      int i;
+      for(i = 0; offset < len; i++)
+	{
+	  tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
+	  if(iov[i].iov_len <= status->nm_so_max_small) 
+	    {
+	      /* Small packet */
+	      try_to_agregate_small(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
+	    }
+	  else 
+	    {
+	      /* Large packets are splited in 2 chunks. */
+	      launch_large_chunk(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
+	    }
+	  offset += iov[i].iov_len;
+	}
+    }
+  else
+    TBX_FAILURE("strat_aggreg does not support datatypes.");
 
-  if(len <= status->nm_so_max_small) {
-    /* Small packet */
-    err = try_to_agregate_small(_status, p_gate, tag, seq, data, len, 0, 1);
-
-  } else {
-    /* Large packet */
-    err = launch_large_chunk(_status, p_gate, tag, seq, data, len, 0, 1);
-  }
-
-  return err;
+  return NM_ESUCCESS;
 }
 
-static int try_to_agregate_small(void *_status,
-				 struct nm_gate *p_gate,
-				 nm_tag_t tag, nm_seq_t seq,
-				 const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+static void try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
+				  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
 {
-  struct nm_pkt_wrap *p_so_pw;
   struct nm_so_strat_aggreg_gate *status = _status;
+  struct nm_pkt_wrap*p_pw;
   int flags = 0;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &status->out_list, link)
+  list_for_each_entry(p_pw, &status->out_list, link)
     {
-      const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-      const uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
+      const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+      const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
       const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
       if(size <= d_rlen && h_rlen >= NM_SO_DATA_HEADER_SIZE)
 	{
 	  if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 	    /* We can copy data into the header zone */
 	    flags = NM_SO_DATA_USE_COPY;
-	  err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, chunk_offset, is_last_chunk, flags);
+	  err = nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, is_last_chunk, flags);
 	  nb_data_aggregation ++;
-	  goto out;
+	  return;
 	}
     }
   
@@ -231,88 +247,27 @@ static int try_to_agregate_small(void *_status,
 
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
-  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
-                                          chunk_offset, is_last_chunk, flags, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  list_add_tail(&p_so_pw->link, &status->out_list);
- out:
-  return err;
+  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, flags, &p_pw);
+  list_add_tail(&p_pw->link, &status->out_list);
 }
 
-static int
-launch_large_chunk(void *_status,
-		   struct nm_gate *p_gate,
-                   nm_tag_t tag, nm_seq_t seq,
-                   const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk){
-  struct nm_pkt_wrap *p_so_pw = NULL;
-  int err;
-
-  /* Large packets can not be sent immediately : we have to issue a RdV request. */
-
-  /* First allocate a packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
-                                          chunk_offset, is_last_chunk,
-                                          NM_PW_NOHEADER, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_so_pw->link, &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
-
-
-  /* Finally, generate a RdV request */
-  {
-    union nm_so_generic_ctrl_header ctrl;
-
-    nm_so_init_rdv(&ctrl, tag, seq, len, chunk_offset, is_last_chunk);
-
-    err = strat_aggreg_pack_ctrl(_status, p_gate, &ctrl);
-    if(err != NM_ESUCCESS)
-      goto out;
-  }
-
-  err = NM_ESUCCESS;
-
- out:
-  return err;
+static void launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
+			       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+{
+  struct nm_pkt_wrap *p_pw = NULL;
+  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
+  list_add_tail(&p_pw->link, &(nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag)->pending_large_send));
+  union nm_so_generic_ctrl_header ctrl;
+  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, chunk_offset, is_last_chunk);
+  strat_aggreg_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 }
 
 static int
 strat_aggreg_packv(void *_status,
 		   struct nm_gate *p_gate,
 		   nm_tag_t tag, nm_seq_t seq,
-		   const struct iovec *iov, int nb_entries){
-  struct nm_so_strat_aggreg_gate *status = _status;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  uint32_t offset = 0;
-  uint8_t last_chunk = 0;
-  int i;
-
-  p_so_tag->send[seq] = 0;
-
-  for(i = 0; i < nb_entries; i++){
-    if(i == (nb_entries - 1)){
-      last_chunk = 1;
-    }
-
-    if(iov[i].iov_len <= status->nm_so_max_small) {
-      NM_SO_TRACE("PACK of a small one - tag = %u, seq = %u, len = %u, offset = %u, is_last_chunk = %u\n", tag, seq, (unsigned int)iov[i].iov_len, offset, last_chunk);
-
-      /* Small packet */
-      try_to_agregate_small(_status, p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
-
-    } else {
-      NM_SO_TRACE("PACK of a large one - tag = %u, seq = %u, nb_entries = %u\n", tag, seq, nb_entries);
-
-      /* Large packets are splited in 2 chunks. */
-      launch_large_chunk(_status, p_gate, tag, seq, iov[i].iov_base, iov[i].iov_len, offset, last_chunk);
-    }
-    offset += iov[i].iov_len;
-  }
-  p_so_tag->send[seq] = offset;
-
+		   const struct iovec *iov, int nb_entries)
+{
   return NM_ESUCCESS;
 }
 

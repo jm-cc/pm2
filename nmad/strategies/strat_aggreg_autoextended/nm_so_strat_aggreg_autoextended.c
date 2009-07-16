@@ -23,7 +23,7 @@
 /* Components structures:
 */
 
-static int strat_aggreg_autoextended_pack(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const void*, uint32_t);
+static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
 static int strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
@@ -181,103 +181,59 @@ static int strat_aggreg_autoextended_flush(void*_status,
  *  @param len the data fragment length.
  *  @return The NM status.
  */
-static int strat_aggreg_autoextended_pack(void*_status,
-                                          struct nm_gate *p_gate,
-                                          nm_tag_t tag, nm_seq_t seq,
-                                          const void *data, uint32_t len)
+static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
 {
-  struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
+  struct nm_pkt_wrap *p_pw = NULL;
   int flags = 0;
-  int err;
+  const uint32_t len = p_pack->len;
 
-  nm_so_tag_get(&p_gate->tags, tag)->send[seq] = len;
+  if(!(p_pack->status & NM_PACK_TYPE_CONTIGUOUS))
+    TBX_FAILURE("strat_aggreg_autoextended supports only contiguous packs.");
 
-  if(len <= status->nm_so_max_small) {
-    NM_SO_TRACE("Small packet\n");
-
-    NM_SO_TRACE("We first try to find an existing packet to form an aggregate\n");
-    list_for_each_entry(p_so_pw, &status->out_list, link) {
-      uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
-      uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
-      uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-
-      if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen) {
-        p_so_pw->is_completed = tbx_true;
-	NM_SO_TRACE("There's not enough room to add our data to this paquet\n");
-	goto next;
-      }
-
-      if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen) {
-	NM_SO_TRACE("We can copy data into the header zone\n");
-	flags = NM_SO_DATA_USE_COPY;
-      }
-      else
-	if(p_so_pw->v_nb == NM_SO_PREALLOC_IOV_LEN) {
-          NM_SO_TRACE("Full packet. Checking next ...\n");
-          p_so_pw->is_completed = tbx_true;
-	  goto next;
-        }
-
-      err = nm_so_pw_add_data(p_so_pw, tag, seq, data, len, 0, 1, flags);
-      nb_data_aggregation ++;
-      goto out;
-
-    next:
-      ;
-    }
-
-    flags = NM_PW_GLOBAL_HEADER;
-    if(len <= status->nm_so_copy_on_send_threshold)
-      flags |= NM_SO_DATA_USE_COPY;
-
-    NM_SO_TRACE("We didn't have a chance to form an aggregate, so simply form a new packet wrapper and add it to the out_list\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
-					    data, len,
-					    0, 1,
-					    flags,
-					    &p_so_pw);
-    p_so_pw->is_completed = tbx_false;
-
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    list_add_tail(&p_so_pw->link, &status->out_list);
-
-  } else {
-    NM_SO_TRACE("Large packets can not be sent immediately : we have to issue a RdV request.\n");
-
-    NM_SO_TRACE("First allocate a packet wrapper\n");
-    err = nm_so_pw_alloc_and_fill_with_data(tag, seq,
-                                            data, len,
-					    0, 1,
-                                            NM_PW_NOHEADER,
-                                            &p_so_pw);
-    p_so_pw->is_completed = tbx_true;
-
-    if(err != NM_ESUCCESS)
-      goto out;
-
-    NM_SO_TRACE("Then place it into the appropriate list of large pending sends.\n");
-    list_add_tail(&p_so_pw->link,
-                  &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
-
-    /* Finally, generate a RdV request */
+  if(len <= status->nm_so_max_small)
     {
-      union nm_so_generic_ctrl_header ctrl;
-
-      nm_so_init_rdv(&ctrl, tag, seq, len, 0, 1);
-
-      err = strat_aggreg_autoextended_pack_ctrl(status, p_gate, &ctrl);
-      if(err != NM_ESUCCESS)
-	goto out;
+      /* small packet */
+      list_for_each_entry(p_pw, &status->out_list, link)
+	{
+	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+	  const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
+	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
+	    {
+	      p_pw->is_completed = tbx_true;
+	    }
+	  else
+	    {
+	      if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
+		{
+		  flags = NM_SO_DATA_USE_COPY;
+		}
+	      nm_so_pw_add_data(p_pw, p_pack, p_pack->data, len, 0, 1, flags);
+	      nb_data_aggregation ++;
+	      goto out;
+	    }
+	}
+      /* cannot aggregate- create a new pw */
+      flags = NM_PW_GLOBAL_HEADER;
+      if(len <= status->nm_so_copy_on_send_threshold)
+	flags |= NM_SO_DATA_USE_COPY;
+      nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, flags, &p_pw);
+      p_pw->is_completed = tbx_false;
+      list_add_tail(&p_pw->link, &status->out_list);
     }
-  }
-
-  err = NM_ESUCCESS;
-
+  else
+    {
+      /* large packet */
+      nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, NM_PW_NOHEADER, &p_pw);
+      p_pw->is_completed = tbx_true;
+      list_add_tail(&p_pw->link, &(nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag)->pending_large_send));
+      union nm_so_generic_ctrl_header ctrl;
+      nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, 1);
+      strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);
+    }
  out:
-  return err;
+  return NM_ESUCCESS;
 }
 
 /** Compute and apply the best possible packet rearrangement, then
@@ -290,8 +246,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
                                                     struct nm_gate *p_gate)
 {
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
-  struct list_head *out_list =
-    &(status)->out_list;
+  struct list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
   if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)

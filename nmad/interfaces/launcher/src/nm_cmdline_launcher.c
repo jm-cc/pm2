@@ -309,9 +309,6 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
     nparam_array[i] = 1;
   }
 
-  nm_so_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
-  nm_sr_debug_init(argc, argv, PM2DEBUG_DO_OPT|PM2DEBUG_CLEAROPT);
-
   err = nm_core_init(argc, argv, &status->p_core);
   if (err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core_init returned err = %d\n", err);

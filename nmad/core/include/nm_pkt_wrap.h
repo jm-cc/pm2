@@ -49,8 +49,13 @@ typedef uint32_t nm_pw_flag_t;
 /*@}*/
 
 /* Data flags */
-#define NM_SO_DATA_USE_COPY            0x0100
+#define NM_SO_DATA_USE_COPY            0x0200
 
+struct nm_pw_contrib_s
+{
+  struct nm_pack_s*p_pack;
+  uint32_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
+};
 
 /** Internal packet wrapper.
  */
@@ -122,14 +127,25 @@ struct nm_pkt_wrap
   /** number of pending 'skip' fields in data header to update before sending */
   int pending_skips;
 
-  /* Used on the receiving side */
+  /* used to store the pw in: out_list in strategy, pending_large_send in sender, pending_large_recv in receiver */
   struct list_head   link;
 
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];
 
+  /** offset of this chunk in the message */
   uint32_t chunk_offset;
+
   tbx_bool_t is_completed;
+
+  /** list of contributions in this pw (sending) */
+  struct nm_pw_contrib_s*contribs;
+  /** number of contribs actually stored in this pw */
+  int n_contribs;
+  /** size of the allocated contribs array */
+  int contribs_size;
+  /** pre-allocated contribs */
+  struct nm_pw_contrib_s prealloc_contribs[NM_SO_PREALLOC_IOV_LEN];
 
   tbx_tick_t start_transfer_time;
   

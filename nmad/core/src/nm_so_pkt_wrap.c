@@ -39,6 +39,10 @@ static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
  */
 static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
 
+/** Allocator for packet contributions
+ */
+static p_tbx_memory_t nm_so_pw_contrib_mem = NULL;
+
 
 /** Initialize the fast allocator structs for SO pkt wrapper.
  *
@@ -47,6 +51,10 @@ static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
  */
 int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
+  tbx_malloc_init(&nm_so_pw_contrib_mem,
+		  sizeof(struct nm_pw_contrib_s),
+		  INITIAL_PKT_NUM, "nmad/core/pw_contrib");
+
   tbx_malloc_init(&nm_so_pw_nohd_mem,
 		  sizeof(struct nm_pkt_wrap),
 		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd");
@@ -73,15 +81,13 @@ int nm_so_pw_exit(void)
 
 static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 {
-  int i;
-
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
   p_pw->p_gate = NULL;
   p_pw->p_gdrv = NULL;
   p_pw->tag = 0;
   p_pw->seq = 0;
-  p_pw->drv_priv   = NULL;
+  p_pw->drv_priv = NULL;
 
   p_pw->flags = 0;
   p_pw->length = 0;
@@ -90,18 +96,16 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
   p_pw->v_nb    = 0;
 
+  p_pw->contribs = p_pw->prealloc_contribs;
+  p_pw->contribs_size = NM_SO_PREALLOC_IOV_LEN;
+  p_pw->n_contribs = 0;
+
 #ifdef PIO_OFFLOAD
   p_pw->data_to_offload = tbx_false;
 #endif
 
   p_pw->header_ref_count = 0;
   p_pw->pending_skips = 0;
-
-  for(i = 0; i < NM_SO_PREALLOC_IOV_LEN; i++)
-    {
-      p_pw->prealloc_v[i].iov_len  = 0;
-      p_pw->prealloc_v[i].iov_base = NULL;
-    }
 
   p_pw->chunk_offset = 0;
   p_pw->is_completed = tbx_true;
@@ -214,12 +218,17 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
       TBX_FREE(p_pw->v[0].iov_base);
     }
 
-  /* Then clean whole iov */
+  /* clean whole iov */
   if(p_pw->v != p_pw->prealloc_v)
     {
       TBX_FREE(p_pw->v);
     }
-
+  /* clean the contribs */
+  if(p_pw->contribs != p_pw->prealloc_contribs)
+    {
+      TBX_FREE(p_pw->contribs);
+    }
+  
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
     {
@@ -236,29 +245,29 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 }
 
 
-// Attention!! split only enable when the p_pw is finished
+/* Warning! We may only split finalized single-pack pw */
 int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
                    struct nm_pkt_wrap **pp_pw2,
                    uint32_t offset)
 {
   struct nm_pkt_wrap *p_pw2 = NULL;
-  int err;
 
   nm_so_pw_finalize(p_pw);
 
   assert(offset > 0 && offset < p_pw->length);
+  assert(p_pw->n_contribs == 1);
 
-  err = nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
-  if(err != NM_ESUCCESS)
-    goto err;
+  struct nm_pack_s*p_pack = p_pw->contribs[0].p_pack;
+
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
 
   /* Copy the pw part */
   p_pw2->p_drv = p_pw->p_drv;
   p_pw2->trk_id = p_pw->trk_id;
   p_pw2->p_gate = p_pw->p_gate;
   p_pw2->p_gdrv = p_pw->p_gdrv;
-  p_pw2->tag = p_pw->tag;
-  p_pw2->seq = p_pw->seq;
+  p_pw2->tag = p_pack->tag;
+  p_pw2->seq = p_pack->seq;
 
   const uint32_t total_length = p_pw->length;
   int idx_pw = 0;
@@ -269,7 +278,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	{
 	  /* consume the whole segment */
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len;
-	  nm_so_pw_add_data(p_pw2, p_pw->tag, p_pw->seq,
+	  nm_so_pw_add_data(p_pw2, p_pack,
 			    p_pw->v[idx_pw].iov_base, chunk_len,
 			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
 	  len += p_pw->v[idx_pw].iov_len;
@@ -283,7 +292,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	  /* cut in the middle of an iovec segment */
 	  const int iov_offset = offset - len;
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
-	  nm_so_pw_add_data(p_pw2, p_pw->tag, p_pw->seq,
+	  nm_so_pw_add_data(p_pw2, p_pack,
 			    p_pw->v[idx_pw].iov_base + iov_offset, chunk_len,
 			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
 	  len += p_pw->v[idx_pw].iov_len;
@@ -304,8 +313,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 
   *pp_pw2 = p_pw2;
 
- err:
-  return err;
+  return NM_ESUCCESS;
 }
 
 /** Append a fragment of data to the pkt wrapper being built.
@@ -319,43 +327,31 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
  *  @return The NM status.
  */
 int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		      nm_tag_t tag, nm_seq_t seq,
+		      struct nm_pack_s*p_pack,
 		      const void *data, uint32_t len,
 		      uint32_t offset,
 		      uint8_t is_last_chunk,
 		      int flags)
 {
   int err;
+  const nm_tag_t tag = p_pack->tag;
+  const nm_seq_t seq = p_pack->seq;
 
   if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
     {
-      struct iovec*hvec = &p_pw->v[0];
       /* Small data case */
-      struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-      hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
-      if(tbx_likely(flags & NM_SO_DATA_USE_COPY))
+      if(flags & NM_SO_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  const uint32_t size = nm_so_aligned(len);
-	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0) | NM_PROTO_FLAG_ALIGNED;
-	  nm_so_init_data(h, tag, seq, flags, 0, len, offset);
-	  if(len)
-	    {
-#ifdef PIO_OFFLOAD
-	      struct iovec *dvec = nm_pw_grow_iovec(p_pw);
-	      p_pw->data_to_offload = tbx_true;
-	      dvec->iov_base = data;
-	      dvec->iov_len  = len;
-#else
-	      memcpy(hvec->iov_base + hvec->iov_len, data, len);
-#endif
-	      hvec->iov_len += size;
-	    }
-	  p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
+	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
+	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, flags);
 	}
       else 
 	{
 	  /* Data handled by a separate iovec entry */
+	  struct iovec*hvec = &p_pw->v[0];
+	  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
+	  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	  struct iovec *dvec = nm_pw_grow_iovec(p_pw);
 	  dvec->iov_base = (void*)data;
 	  dvec->iov_len = len;
@@ -370,21 +366,17 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
       /* ** Add raw data to pw, without header */
-      struct iovec*vec = nm_pw_grow_iovec(p_pw);
-      vec->iov_base = (void*)data;
-      vec->iov_len = len;
-      p_pw->tag = tag;
-      p_pw->seq = seq;
-      p_pw->length += len;
+      nm_so_pw_add_raw(p_pw, tag, seq, data, len, 0);
     }
+  /* add the contrib ref to the pw */
+  nm_pw_add_contrib(p_pw, p_pack, len);
   err = NM_ESUCCESS;
   return err;
 }
 
 
 // function dedicated to the datatypes which do not require a rendezvous
-int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
-			  nm_tag_t tag, nm_seq_t seq,
+int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp)
 {
   if(len) 
@@ -396,7 +388,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
 	struct iovec *vec =  &p_pw->v[0];
 	/* Add header */
 	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
-	nm_so_init_data(h, tag, seq, NM_PROTO_FLAG_LASTCHUNK | NM_PROTO_FLAG_ALIGNED, 0, len, 0);
+	nm_so_init_data(h, p_pack->tag, p_pack->seq, NM_PROTO_FLAG_LASTCHUNK | NM_PROTO_FLAG_ALIGNED, 0, len, 0);
 	vec->iov_len += NM_SO_DATA_HEADER_SIZE;
 	p_pw->length += NM_SO_DATA_HEADER_SIZE;
       }
@@ -406,6 +398,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw,
       
       p_pw->v[0].iov_len += size;
       p_pw->length += size;
+      nm_pw_add_contrib(p_pw, p_pack, len);
     }
 
   return NM_ESUCCESS;
@@ -469,6 +462,33 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       p_pw->flags |= NM_PW_FINALIZED;
     }
   return err;
+}
+
+/** signal completion of a sent pw to all contributing packs */
+void nm_pw_complete_contribs(struct nm_core*p_core, struct nm_pkt_wrap*p_pw)
+{
+  int i;
+  for(i = 0; i < p_pw->n_contribs; i++)
+    {
+      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[i];
+      struct nm_pack_s*p_pack = p_contrib->p_pack;
+      p_pack->done += p_contrib->len;
+      if(p_pack->done == p_pack->len)
+	{
+	  NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", p_pack->tag, p_pack->seq, p_pack->len);
+	  const struct nm_so_event_s event =
+	    {
+	      .status = NM_SO_STATUS_PACK_COMPLETED,
+	      .p_pack = p_pack
+	    };
+	  nm_so_status_event(p_core, &event);
+	}
+      else if(p_pack->done > p_pack->len)
+	{ 
+	  TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
+		       p_pack->tag, p_pack->len, p_pack->done);
+	}
+    }
 }
 
 /** Iterate over the fields of a freshly received ctrl pkt.
@@ -627,9 +647,10 @@ int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
 				   p_pw, 0, 0, 128, 1);
 #endif /* NMAD_QOS */
 
-  if (!p_pw->header_ref_count){
-    nm_so_pw_free(p_pw);
-  }
+  if (!p_pw->header_ref_count)
+    {
+      nm_so_pw_free(p_pw);
+    }
 
   return NM_ESUCCESS;
 }

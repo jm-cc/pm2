@@ -38,37 +38,22 @@ static const int param_max_size = (8*1024*1024);
 static const int param_nb_samples = 200;
 static const int param_dryrun_count = 10;
 
-static int nm_ns_initialize_pw(struct nm_core *p_core,
-			       struct nm_drv  *p_drv,
-			       struct nm_gate *p_gate,
-			       unsigned char *ptr,
-			       struct nm_pkt_wrap **pp_pw)
+static unsigned char*data_send = NULL;
+static unsigned char*data_recv = NULL;
+
+static void nm_ns_initialize_pw(struct nm_core *p_core,
+				struct nm_drv  *p_drv,
+				struct nm_gate *p_gate,
+				unsigned char *ptr,
+				struct nm_pkt_wrap **pp_pw)
 {
   struct nm_pkt_wrap *p_pw = NULL;
-  const uint8_t flags = NM_PW_NOHEADER;
   const nm_tag_t tag = 0;
   const uint8_t seq = 0;
-  int err = nm_so_pw_alloc(flags, &p_pw);
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
-      abort();
-    }
-  err = nm_so_pw_add_data(p_pw, tag, seq, ptr, param_min_size, 0, 1, flags);
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw.\n", err);
-      abort();
-    }
-
-  p_pw->p_gate = p_gate;
-  p_pw->p_drv  = p_drv;
-  p_pw->trk_id = NM_TRK_SMALL;
-
-  *pp_pw	= p_pw;
-
- out:
-  return err;
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  nm_so_pw_add_raw(p_pw, tag, seq, ptr, param_min_size, 0);
+  nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
+  *pp_pw = p_pw;
 }
 
 static void nm_ns_fill_data(unsigned char * data)
@@ -90,6 +75,7 @@ static void nm_ns_pw_send(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
   int err;
   p_pw->v[0].iov_base = ptr;
   p_pw->v[0].iov_len  = len;
+  p_pw->length = len;
   err = r->driver->post_send_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
     {
@@ -107,6 +93,7 @@ static void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
   int err;
   p_pw->v[0].iov_base = ptr;
   p_pw->v[0].iov_len  = len;
+  p_pw->length = len;
   err = r->driver->post_recv_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
     {
@@ -124,30 +111,22 @@ static void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
 static void nm_ns_eager_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 { 
   struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[p_drv->id]->receptacle;
-  const nm_tag_t tag  = 0;
-  const uint8_t seq   = 0;
+  const nm_tag_t tag = 0;
+  const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  int err;
   if(len <= NM_MAX_SMALL)
     {
-      const uint8_t flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
-      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
+      nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
+      nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, 0, 0);
     }
   else
     {
-      const uint8_t flags = NM_PW_NOHEADER;
-      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
     }
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw [eager send].\n", err);
-      abort();
-    }
-  p_pw->p_drv  = p_drv;
-  p_pw->p_gate = p_gate;
-  p_pw->trk_id = NM_TRK_SMALL;
+  nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
   nm_so_pw_finalize(p_pw);
-  err = r->driver->post_send_iov(r->_status, p_pw);
+  int err = r->driver->post_send_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
     {
       err = r->driver->poll_send_iov(r->_status, p_pw);
@@ -166,26 +145,17 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   const nm_tag_t tag  = 0;
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  int err;
   if(len <= NM_MAX_SMALL)
     {
-      const uint8_t flags = NM_PW_BUFFER;
-      err = nm_so_pw_alloc(flags, &p_pw);
+      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
     }
   else
     {
-      const uint8_t flags = NM_PW_NOHEADER;
-      err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
     }
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw [eager recv].\n", err);
-      abort();
-    }
-  p_pw->p_drv  = p_drv;
-  p_pw->p_gate = p_gate;
-  p_pw->trk_id = NM_TRK_SMALL;
-  err = r->driver->post_recv_iov(r->_status, p_pw);
+  nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
+  int err = r->driver->post_recv_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
     {
       err = r->driver->poll_recv_iov(r->_status, p_pw);
@@ -198,12 +168,12 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   if(len <= NM_MAX_SMALL)
     {
       /* very rough header decoder... should be sufficient for our basic use here. */
-      struct nm_so_global_header*gh = p_pw->v[0].iov_base;
-      nm_tag_t proto_id = *(nm_tag_t*)(gh + 1);
-      if(proto_id >= NM_SO_PROTO_DATA_FIRST)
+      const struct nm_so_global_header*gh = p_pw->v[0].iov_base;
+      nm_proto_t proto_id = *(nm_proto_t*)(gh + 1);
+      if(proto_id == NM_PROTO_DATA)
 	{
-	  struct nm_so_data_header*dh = (struct nm_so_data_header*)(gh + 1);
-	  size_t data_len = dh->len;
+	  const struct nm_so_data_header*dh = (const struct nm_so_data_header*)(gh + 1);
+	  const size_t data_len = dh->len;
 	  memcpy(ptr, dh + 1, data_len);
 	}
     }
@@ -220,20 +190,13 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   nm_ns_eager_recv(p_drv, p_gate, &ok_to_send, sizeof(ok_to_send));
   
   struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[p_drv->id]->receptacle;
-  const uint8_t flags = NM_PW_NOHEADER;
-  const nm_tag_t tag  = 0;
-  const uint8_t seq   = 0;
+  const nm_tag_t tag = 0;
+  const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  int err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw [rdv send].\n", err);
-      abort();
-    }
-  p_pw->p_drv  = p_drv;
-  p_pw->p_gate = p_gate;
-  p_pw->trk_id = NM_TRK_LARGE;
-  err = r->driver->post_send_iov(r->_status, p_pw);
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+  nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv->id, p_gate);
+  int err = r->driver->post_send_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
     {
       err = r->driver->poll_send_iov(r->_status, p_pw);
@@ -253,18 +216,10 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   const nm_tag_t tag  = 0;
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  int err;
-  const uint8_t flags = NM_PW_NOHEADER;
-  err = nm_so_pw_alloc_and_fill_with_data(tag, seq, ptr, len, 0, 1, flags, &p_pw);
-  if(err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "sampling: error %d while initializing pw [rdv recv].\n", err);
-      abort();
-    }
-  p_pw->p_drv  = p_drv;
-  p_pw->p_gate = p_gate;
-  p_pw->trk_id = NM_TRK_LARGE;
-  err = r->driver->post_recv_iov(r->_status, p_pw);
+  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+  nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv->id, p_gate);
+  int err = r->driver->post_recv_iov(r->_status, p_pw);
 
   int rdv_req = 0, ok_to_send = 1;
   nm_ns_eager_recv(p_drv, p_gate, &rdv_req, sizeof(rdv_req));
@@ -288,11 +243,8 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
   struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[0]->receptacle;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
-  unsigned char *data_send = TBX_MALLOC(param_max_size);
-  unsigned char *data_recv = TBX_MALLOC(param_max_size);
   int size = 0;
 
-  nm_ns_fill_data(data_send);
   nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_send, &sending_pw);
   nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_recv, &receiving_pw);
 
@@ -372,11 +324,8 @@ static int nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
   struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[0]->receptacle;
   struct nm_pkt_wrap * sending_pw = NULL;
   struct nm_pkt_wrap * receiving_pw = NULL;
-  unsigned char *data_send = TBX_MALLOC(param_max_size);
-  unsigned char *data_recv = TBX_MALLOC(param_max_size);
   int size = 0;
 
-  nm_ns_fill_data(data_send);
   nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_send, &sending_pw);
   nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_recv, &receiving_pw);
 
@@ -434,6 +383,10 @@ int main(int argc, char **argv)
   struct nm_core  *p_core = mad_nmad_get_core();
   struct nm_drv   *p_drv  = &p_core->driver_array[0];
   struct nm_gate  *p_gate = &p_core->gate_array[0];
+
+  data_send = TBX_MALLOC(param_max_size);
+  data_recv = TBX_MALLOC(param_max_size);
+  nm_ns_fill_data(data_send);
 
   if(!is_server)
     {

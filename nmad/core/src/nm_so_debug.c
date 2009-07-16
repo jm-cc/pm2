@@ -15,11 +15,3 @@
 
 #include <nm_private.h>
 
-debug_type_t debug_nm_so_trace=NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");
-
-void nm_so_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_flags TBX_UNUSED)
-{
-  pm2debug_register(&debug_nm_so_trace);
-  pm2debug_init_ext(argc, argv, debug_flags);
-}
-

@@ -18,7 +18,6 @@
 #define NM_PRIVATE_H
 
 #include <pm2_common.h>
-#include <pm2_list.h>
 
 #include <nm_public.h>
 #include <nm_log.h>
@@ -44,26 +43,21 @@ typedef int8_t nm_trk_id_t;
 
 #define NM_SO_MAX_TRACKS   2
 
-/** Sequence number */
-typedef uint8_t nm_seq_t;
-
 /* The following constant defines the maximum number of consecutive
    packs/unpacks that can be requested without waiting the completion
    of the previous ones.
    WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
 #define NM_SO_PENDING_PACKS_WINDOW          256
 
-
 #include "nm_so_parameters.h"
 
 #include "nm_drv_cap.h"
 #include "nm_trk_cap.h"
-#include "nm_drv.h"
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"
+#include "nm_drv.h"
 #include "nm_errno.h"
 #include "nm_log.h"
-#include "nm_cnx_rq.h"
 #ifdef PIOMAN
 #include "nm_piom.h"
 #endif
@@ -90,15 +84,8 @@ int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 
 /* ** SchedOpt internal functions */
 
-int nm_so_process_unexpected(tbx_bool_t is_any_src, struct nm_gate *p_gate,
-			     nm_tag_t tag, nm_seq_t seq, uint32_t len, void *data);
-
-int nm_so_rdv_success(tbx_bool_t is_any_src,
-                      struct nm_gate *p_gate,
-                      nm_tag_t tag, nm_seq_t seq,
-                      uint32_t len,
-                      uint32_t chunk_offset,
-                      uint8_t is_last_chunk);
+int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
+                      uint32_t len, uint32_t chunk_offset);
 
 int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
 

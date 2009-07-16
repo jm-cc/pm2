@@ -21,24 +21,12 @@
 
 /* ** SchedOpt status flags */
 
-typedef uint16_t nm_so_status_t;
-/* for now, flags are included in status */
-typedef nm_so_status_t nm_so_flag_t;
-
 /** sending operation has completed */
 #define NM_SO_STATUS_PACK_COMPLETED           ((nm_so_status_t)0x0001)
 /** unpack operation has completed */
 #define NM_SO_STATUS_UNPACK_COMPLETED         ((nm_so_status_t)0x0002)
-/** data has arrived */
-#define NM_SO_STATUS_PACKET_HERE              ((nm_so_status_t)0x0004)
-/** recv is posted */
-#define NM_SO_STATUS_UNPACK_HERE              ((nm_so_status_t)0x0008)
-/** rendez-vous has arrived */
-#define NM_SO_STATUS_RDV_HERE                 ((nm_so_status_t)0x0010)
-/** rendez-vous is in progress */
-#define NM_SO_STATUS_RDV_IN_PROGRESS          ((nm_so_status_t)0x0020)
-/** ACK for rendez-vous has arrived */
-#define NM_SO_STATUS_ACK_HERE                 ((nm_so_status_t)0x0040)
+/** data or rdv has arrived, with no matching unpack */
+#define NM_SO_STATUS_UNEXPECTED               ((nm_so_status_t)0x0004)
 /** unpack operation has been cancelled */
 #define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0080)
 /** flag: unpack is an iovec */
@@ -47,6 +35,10 @@ typedef nm_so_status_t nm_so_flag_t;
 #define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0200)
 /* flag: unpack datatype through a temporary buffer */
 #define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0400)
+
+#define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x01)
+#define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x02)
+#define NM_PACK_TYPE_DATATYPE   ((nm_so_flag_t)0x04)
 
 /** an event notifier, fired upon status transition */
 typedef struct nm_so_event_s* nm_so_event_t;
@@ -60,101 +52,43 @@ struct nm_so_monitor_s
 PUK_VECT_TYPE(nm_so_monitor, const struct nm_so_monitor_s*);
 
 
-/** chunk of unexpected message to be stored */
-struct nm_so_chunk 
+/** a chunk of unexpected message to be stored */
+struct nm_unexpected_s
 {
-  void *header;
-  struct nm_pkt_wrap *p_pw;
-  struct list_head link;
-};
-
-/** fast allocator for struct nm_so_chunk */
-extern p_tbx_memory_t nm_so_chunk_mem;
-
-#define nm_l2chunk(l) \
-        ((struct nm_so_chunk *)((char *)(l) -\
-         (unsigned long)(&((struct nm_so_chunk *)0)->link)))
-
-struct nm_unpack_t
-{
-  nm_so_status_t status;
-  void *data;
-  int32_t cumulated_len;
-  int32_t expected_len;
+  const void*header;
+  struct nm_pkt_wrap*p_pw;
   nm_gate_t p_gate;
   nm_seq_t seq;
   nm_tag_t tag;
+  struct list_head link;
 };
 
-/** tag-indexed type for 'any_src' requests */
-struct nm_so_any_src_s
-{
-  nm_so_status_t status;
-  void *data;
-  int32_t cumulated_len;
-  int32_t expected_len;
-  nm_gate_t p_gate;
-  nm_seq_t seq;
-};
-static inline void nm_so_any_src_ctor(struct nm_so_any_src_s*any_src, nm_tag_t tag)
-{
-  memset(any_src, 0, sizeof(struct nm_so_any_src_s));
-}
-static inline void nm_so_any_src_dtor(struct nm_so_any_src_s*any_src)
-{
-}
-NM_TAG_TABLE_TYPE(nm_so_any_src, struct nm_so_any_src_s);
+/** fast allocator for struct nm_unexpected_s */
+extern p_tbx_memory_t nm_so_unexpected_mem;
+
+#define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * NM_SO_PENDING_PACKS_WINDOW)
+
+#define nm_l2chunk(l)  list_entry(l, struct nm_unexpected_s, link)
 
 /** tag-indexed type for known-src requests 
- * @todo compress arrays of size NM_SO_PENDING_PACKS_WINDOW.
  */
 struct nm_so_tag_s
 {
-
-  /* ** common fields */
-  
-  /** send and recv status (filled with NM_SO_STATUS_* bitmasks) */
-  nm_so_status_t status[NM_SO_PENDING_PACKS_WINDOW];
-
-  /** context for the interface */
-  struct nm_sr_tag_s*p_sr_tag;
-
-
   /* ** receiving-related fields */
-
   nm_seq_t recv_seq_number; /**< next sequence number for recv */
-  struct
-  {
-    struct nm_so_chunk pkt_here; /**< chunks of unexpected data- lookup by [gate,tag,seq] + matching */
-    struct
-    {
-      void *data;
-      int32_t cumulated_len;
-      int32_t expected_len;
-    } unpack_here; /**< unpack request- lookup by [gate,tag,seq] + matching */
-  } recv[NM_SO_PENDING_PACKS_WINDOW];
-
 
   /* ** sending-related fields */
-
   nm_seq_t send_seq_number;                  /**< next sequence number for send */
-  int32_t send[NM_SO_PENDING_PACKS_WINDOW];  /**< pending len to send */
   struct list_head pending_large_send;       /**< large messages waiting for ACKs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
 };
 static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 {
-  memset(&so_tag->status, 0, sizeof(so_tag->status));
   so_tag->recv_seq_number = 0;
-  memset(&so_tag->recv, 0, sizeof(so_tag->recv));
   so_tag->send_seq_number = 0;
-  memset(&so_tag->send , 0, sizeof(so_tag->send));
   INIT_LIST_HEAD(&so_tag->pending_large_send);
-  so_tag->p_sr_tag = NULL;
 }
 static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 {
-  if(so_tag->p_sr_tag)
-    TBX_FREE(so_tag->p_sr_tag);
 }
 NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 
@@ -184,22 +118,23 @@ struct nm_so_sched
   /** monitors for upper layers to track events in nmad scheduler */
   struct nm_so_monitor_vect_s monitors;
 
-  /* "any source" messages management */
-  struct nm_so_any_src_table_s any_src;
-  /** next gate_id to poll for any_src */
-  int next_gate_id;
+  /** list of posted unpacks */
+  struct list_head unpacks;
+
+  /** list of unexpected chunks */
+  struct list_head unexpected;
 };
 
 int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len);
 
-int __nm_so_unpack(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
+int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
 		   nm_so_flag_t flag, void *data_description, uint32_t len);
-
-int __nm_so_unpack_any_src(struct nm_core *p_core, nm_tag_t tag, nm_so_flag_t flag,
-			   void *data_description, uint32_t len);
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq);
 
+struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*unpack);
+
+struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_tag_t tag);
 
 static inline int iov_len(const struct iovec *iov, int nb_entries)
 {

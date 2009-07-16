@@ -24,18 +24,14 @@
 
 static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_pw);
 
-static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
-                               struct iovec *iov, uint32_t len, uint32_t chunk_offset);
+static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+			       uint32_t len, uint32_t chunk_offset);
 
-static int init_large_datatype_recv(tbx_bool_t is_any_src,
-                                    struct nm_gate *p_gate,
-                                    nm_tag_t tag, nm_seq_t seq,
-                                    uint32_t len, uint32_t chunk_offset);
+static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+				    uint32_t len, uint32_t chunk_offset);
 
-static int init_large_contiguous_recv(struct nm_gate *p_gate,
-                                      nm_tag_t tag, nm_seq_t seq,
-                                      void *data, uint32_t len,
-                                      uint32_t chunk_offset);
+static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+				      uint32_t len, uint32_t chunk_offset);
 
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
                                                  nm_tag_t tag, nm_seq_t seq,
@@ -67,22 +63,6 @@ static void nm_so_build_multi_ack(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t
     }
 }
 
-static inline int nm_so_post_large_recv(struct nm_gate *p_gate,
-					struct nm_rdv_chunk*chunk,
-					nm_tag_t tag, nm_seq_t seq,
-					void *data)
-{
-  struct nm_pkt_wrap *p_pw = NULL;
-  int err = nm_so_pw_alloc_and_fill_with_data(tag, seq, data, chunk->len,
-					      0, 0, NM_PW_NOHEADER, &p_pw);
-  if(err == NM_ESUCCESS)
-    {
-      nm_core_post_recv(p_pw, p_gate, chunk->trk_id, chunk->drv_id);
-      err = NM_ESUCCESS;
-    }
-  return err;
-}
-
 static inline int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
 						int nb_chunks, struct nm_rdv_chunk*chunks,
 						nm_tag_t tag, nm_seq_t seq, void *data)
@@ -91,7 +71,10 @@ static inline int nm_so_post_multiple_data_recv(struct nm_gate *p_gate,
   int i;
   for(i = 0; i < nb_chunks; i++)
     {
-      nm_so_post_large_recv(p_gate, &chunks[i], tag, seq, data + offset);
+      struct nm_pkt_wrap *p_pw = NULL;
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, tag, seq, data + offset, chunks[i].len, offset);
+      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].drv_id);
       offset += chunks[i].len;
     }
   return NM_ESUCCESS;
@@ -117,75 +100,27 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
 
 /***************************************/
 
-
-int nm_so_rdv_success(tbx_bool_t is_any_src,
-                      struct nm_gate *p_gate,
-                      nm_tag_t tag, nm_seq_t seq,
-                      uint32_t len,
-                      uint32_t chunk_offset,
-                      uint8_t is_last_chunk)
+/** Process a rdv request with a matching unpack already posted
+ */
+int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
+                      uint32_t len, uint32_t chunk_offset)
 {
   int err;
-  struct nm_so_any_src_s*any_src = is_any_src ? nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag) : NULL;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  nm_so_status_t *status = is_any_src ? &(any_src->status) : &(p_so_tag->status[seq]);
-
-  /* Update the real size to receive */
-  if(is_last_chunk)
-    {
-      if(is_any_src)
-	{
-	  any_src->expected_len = chunk_offset + len;
-	} 
-      else 
-	{
-	  p_so_tag->recv[seq].unpack_here.expected_len = chunk_offset + len;
-	}
-    }
-
-  if(is_any_src)
-    {
-      const struct nm_so_event_s event = 
-	{
-	  .status = NM_SO_STATUS_RDV_IN_PROGRESS,
-	  .p_gate = p_gate,
-	  .tag = tag,
-	  .seq = seq,
-	  .any_src = tbx_true
-	};
-      nm_so_status_event(p_gate->p_core, &event);
-    }
-
-  if(is_any_src && any_src->p_gate == NM_ANY_GATE)
-    {
-      p_so_tag->recv_seq_number++;
-      any_src->p_gate = p_gate;
-      any_src->seq = seq;
-    }
-  
   /* 1) The final destination of the data is an iov */
-  if(*status & NM_UNPACK_TYPE_IOV)
+  if(unpack->status & NM_UNPACK_TYPE_IOV)
     {
-      struct iovec *iov = is_any_src ?
-	any_src->data : p_so_tag->recv[seq].unpack_here.data;
-      err = init_large_iov_recv(p_gate, tag, seq, iov, len, chunk_offset);
-      
+      err = init_large_iov_recv(p_core, unpack, len, chunk_offset);
     }
   /* 2) The final destination of the data is a datatype */
-  else if(*status & NM_UNPACK_TYPE_DATATYPE)
+  else if(unpack->status & NM_UNPACK_TYPE_DATATYPE)
     {
-      err = init_large_datatype_recv(is_any_src, p_gate, tag, seq, len, chunk_offset);
+      err = init_large_datatype_recv(p_core, unpack, len, chunk_offset);
     }
   /* 3) The final destination of the data is a contiguous buffer */
   else
     {
-      void *data = is_any_src ?
-	( any_src->data + chunk_offset) : (p_so_tag->recv[seq].unpack_here.data + chunk_offset);
-      NM_SO_TRACE("RDV_sucess - contiguous data with tag %d , seq %d, chunk_offset %d, any_src %d\n",
-		  tag, seq, chunk_offset, is_any_src);
-      err = init_large_contiguous_recv(p_gate, tag, seq, data, len, chunk_offset);
+      err = init_large_contiguous_recv(p_core, unpack, len, chunk_offset);
     }
-
   return err;
 }
 
@@ -194,9 +129,13 @@ int nm_so_rdv_success(tbx_bool_t is_any_src,
 /** The received rdv describes a fragment 
  * (that may span across multiple entries of the recv-side iovec)
  */
-static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq,
-                               struct iovec *iov, uint32_t len, uint32_t chunk_offset)
+static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+			       uint32_t len, uint32_t chunk_offset)
 {
+  struct iovec*iov = unpack->data;
+  struct nm_gate*p_gate = unpack->p_gate;
+  const nm_tag_t tag = unpack->tag;
+  const nm_seq_t seq = unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .len = len, .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
@@ -214,7 +153,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t se
     {
       /* Single entry- regular ack */
       strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, &chunk);
-      nm_so_post_large_recv(p_gate, &chunk, tag, seq, iov[i].iov_base + (chunk_offset - offset));
+      nm_so_post_multiple_data_recv(p_gate, 1, &chunk, tag, seq, iov[i].iov_base + (chunk_offset - offset));
       /* Launch the ACK */
       nm_so_build_multi_ack(p_gate, tag, seq, chunk_offset, nb_chunks, &chunk);
     }
@@ -243,7 +182,8 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t se
 	      p_pw->length = pending_len;
 	      p_pw->v_nb   = nb_entries;
 	      p_pw->chunk_offset = chunk_offset + cur_len;
-	      /* TODO (AD)- convert this iov filling into nm_so_pw_add_data for resizable iovec */
+#warning TODO (AD) iovec
+	      /* TODO (AD)- convert this iov filling into nm_so_pw_add_raw for resizable iovec */
 	      p_pw->v[0].iov_len  = iov[i].iov_len - iov_offset;
 	      p_pw->v[0].iov_base = iov[i].iov_base + iov_offset;
 	      pending_len -= chunk_len;
@@ -261,7 +201,7 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t se
 	  else
 	    {
 	      /* post a recv and prepare an ack for the given chunk */
-	      nm_so_post_large_recv(p_gate, &chunk, tag, seq, iov[i].iov_base + iov_offset);
+	      nm_so_post_multiple_data_recv(p_gate, 1, &chunk, tag, seq, iov[i].iov_base + iov_offset);
 	      nm_so_post_ack(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, chunk_offset, chunk_len);
 	      nb_entries++;
 	      pending_len -= chunk_len;
@@ -279,16 +219,15 @@ static int init_large_iov_recv(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t se
 
 //************ DATATYPE ************/
 
-static int init_large_datatype_recv(tbx_bool_t is_any_src,
-                                    struct nm_gate *p_gate,
-                                    nm_tag_t tag, nm_seq_t seq,
-                                    uint32_t len, uint32_t chunk_offset){
+static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+				    uint32_t len, uint32_t chunk_offset)
+{
   int nb_blocks = 0;
   int last = len;
-  NM_SO_TRACE("RDV reception for data described by a datatype\n");
-  struct DLOOP_Segment *segp = (is_any_src) ?
-    nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag)->data
-    : nm_so_tag_get(&p_gate->tags, tag)->recv[seq].unpack_here.data;
+  struct nm_gate*p_gate = unpack->p_gate;
+  struct DLOOP_Segment *segp = unpack->data;
+  const nm_tag_t tag = unpack->tag;
+  const nm_seq_t seq = unpack->seq;
 
   CCSI_Segment_count_contig_blocks(segp, 0, &last, &nb_blocks);
   const int density = len / nb_blocks; /* average block size */
@@ -305,18 +244,11 @@ static int init_large_datatype_recv(tbx_bool_t is_any_src,
 	{
 	  struct nm_pkt_wrap *p_pw = NULL;
 	  void *data = TBX_MALLOC(len);
-	  nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len,
-					    0, 0, NM_PW_NOHEADER, &p_pw);
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+	  nm_so_pw_add_raw(p_pw, tag, seq, data, len, 0);
 	  p_pw->segp = segp;
 	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.drv_id);
-	  if(is_any_src)
-	    {
-	      nm_so_any_src_get(&p_gate->p_core->so_sched.any_src, tag)->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
-	    }
-	  else
-	    {
-	      nm_so_tag_get(&p_gate->tags, tag)->status[seq] |= NM_UNPACK_TYPE_COPY_DATATYPE;
-	    }
+	  unpack->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
 	  nm_so_post_ack(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, 0, len);
 	}
       else 
@@ -407,23 +339,17 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_p
 //************ CONTIGUOUS ************/
 
 
-static int init_large_contiguous_recv(struct nm_gate *p_gate,
-                                      nm_tag_t tag, nm_seq_t seq,
-                                      void *data, uint32_t len,
-                                      uint32_t chunk_offset)
+static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
+			       uint32_t len, uint32_t chunk_offset)
 {
-  int err;
+  void*data = unpack->data;
+  struct nm_gate*p_gate = unpack->p_gate;
+  const nm_tag_t tag = unpack->tag;
+  const nm_seq_t seq = unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  /** Handle a matching rendez-vous.
-      rdv_success is called when a RdV request and an UNPACK operation
-      match together. Basically, we just have to check if there is a
-      track available for the large data transfer and to send an ACK if
-      so. Otherwise, we simply postpone the acknowledgement.
-  */
   struct nm_rdv_chunk chunks[NM_DRV_MAX];
   int nb_chunks = NM_DRV_MAX;
-  NM_SO_TRACE("-->single_rdv with tag %d, seq %d, len %d, chunk_offset %d\n", tag, seq, len, chunk_offset);
-  err = strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, chunks);
+  int err = strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, chunks);
   if(err == NM_ESUCCESS)
     {
       nm_so_post_multiple_data_recv(p_gate, nb_chunks, chunks, tag, seq, data);
@@ -433,8 +359,8 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
     {
       /* No free track: postpone the ack */
       struct nm_pkt_wrap *p_pw = NULL;
-      nm_so_pw_alloc_and_fill_with_data(tag, seq, data, len, chunk_offset, 0,
-					NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, tag, seq, data, len, chunk_offset);
       nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
       nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
@@ -451,11 +377,10 @@ static int init_large_contiguous_recv(struct nm_gate *p_gate,
 static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
                                                  nm_tag_t tag, nm_seq_t seq,
                                                  uint32_t len, uint32_t chunk_offset,
-                                                 struct DLOOP_Segment *segp){
+                                                 struct DLOOP_Segment *segp)
+{
   struct nm_pkt_wrap *p_pw = NULL;
-
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-
   p_pw->p_gate   = p_gate;
   p_pw->tag      = tag;
   p_pw->seq      = seq;
@@ -463,24 +388,21 @@ static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
   p_pw->v_nb     = 0;
   p_pw->segp     = segp;
   p_pw->chunk_offset = chunk_offset;
-
   nm_so_pw_store_pending_large_recv(p_pw, p_gate);
-
   return NM_ESUCCESS;
 }
 
 
 int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 {
-  struct nm_so_sched *p_so_sched = &p_gate->p_core->so_sched;
-
   /* ** Process postponed recv requests */
   if(!list_empty(&p_gate->pending_large_recv))
     {
       struct nm_pkt_wrap *p_large_pw = nm_l2so(p_gate->pending_large_recv.next);
-      NM_SO_TRACE("Retrieve wrapper waiting for a reception\n");
-      if(nm_so_tag_get(&p_gate->tags, p_large_pw->tag)->status[p_large_pw->seq] & NM_UNPACK_TYPE_IOV
-	 || nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->tag)->status & NM_UNPACK_TYPE_IOV)
+      struct nm_unpack_s*unpack = nm_unpack_find_matching(p_gate->p_core, p_gate, p_large_pw->seq, p_large_pw->tag);
+      assert(unpack != NULL); /* TODO- we should put matching unpack directly into pw */
+#warning TODO (AD)
+      if(unpack->status & NM_UNPACK_TYPE_IOV)
 	{
 	  /* ** iov to be completed */
 	  list_del(p_gate->pending_large_recv.next);
@@ -499,11 +421,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  nm_so_post_multiple_pw_recv(p_gate, p_large_pw, 1, &chunk);
 	  nm_so_build_multi_ack(p_gate, p_large_pw->tag, p_large_pw->seq, p_large_pw->chunk_offset, 1, &chunk);
 	}
-      else if ((nm_so_tag_get(&p_gate->tags, p_large_pw->tag)->status[p_large_pw->seq]
-		& NM_UNPACK_TYPE_DATATYPE
-		|| nm_so_any_src_get(&p_so_sched->any_src, p_large_pw->tag)->status
-		& NM_UNPACK_TYPE_DATATYPE)
-	       && p_large_pw->segp)
+      else if(unpack->status & NM_UNPACK_TYPE_DATATYPE)
 	{
 	  /* ** datatype to be completed */
 	  /* Post next iov entry on driver drv_id */

@@ -153,7 +153,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
-  list_add_tail(&p_pw->link, &(nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag)->pending_large_send));
+  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_so_generic_ctrl_header ctrl;
   nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, chunk_offset, is_last_chunk);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
@@ -237,7 +237,6 @@ static void
 strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
 					  uint32_t len, const struct DLOOP_Segment *segp)
 {
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag);
   struct nm_pkt_wrap *p_pw = NULL;
   
   /* First allocate a packet wrapper */
@@ -268,7 +267,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
       p_pw->length = last - first;
     }
   /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_pw->link, &(p_so_tag->pending_large_send));
+  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 
   /* Finally, generate a RdV request */
   union nm_so_generic_ctrl_header ctrl;

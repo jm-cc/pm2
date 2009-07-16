@@ -47,7 +47,7 @@ struct nm_so_data_header {
   uint16_t skip;
   uint32_t len;
   uint32_t chunk_offset;
-};
+} __attribute__((packed));
 
 struct nm_so_ctrl_rdv_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RDV */
@@ -56,7 +56,7 @@ struct nm_so_ctrl_rdv_header {
   uint8_t is_last_chunk;
   uint32_t len;
   uint32_t chunk_offset;
-};
+} __attribute__((packed));
 
 struct nm_so_ctrl_ack_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_ACK */
@@ -66,7 +66,7 @@ struct nm_so_ctrl_ack_header {
   nm_drv_id_t drv_id;
   uint32_t chunk_offset;
   uint32_t chunk_len;
-};
+} __attribute__((packed));
 
 /** a unified control header type
  */

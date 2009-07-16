@@ -227,7 +227,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
       /* large packet */
       nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, NM_PW_NOHEADER, &p_pw);
       p_pw->is_completed = tbx_true;
-      list_add_tail(&p_pw->link, &(nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag)->pending_large_send));
+      list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_so_generic_ctrl_header ctrl;
       nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, 1);
       strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);

@@ -425,12 +425,11 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
   const uint32_t chunk_offset = header->chunk_offset;
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate      = p_ack_pw->p_gate;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
 
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   struct nm_pkt_wrap *p_large_pw = NULL;
-  list_for_each_entry(p_large_pw, &p_so_tag->pending_large_send, link)
+  list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		  p_large_pw->seq, p_large_pw->chunk_offset);
@@ -443,7 +442,7 @@ static void ack_callback(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_hea
 	      /* partial ACK- split the packet  */
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
 	      nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
-	      list_add(&p_large_pw2->link, &p_so_tag->pending_large_send);
+	      list_add(&p_large_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);

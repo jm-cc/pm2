@@ -79,13 +79,11 @@ struct nm_so_tag_s
 
   /* ** sending-related fields */
   nm_seq_t send_seq_number;                  /**< next sequence number for send */
-  struct list_head pending_large_send;       /**< large messages waiting for ACKs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
 };
 static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 {
   so_tag->recv_seq_number = 0;
   so_tag->send_seq_number = 0;
-  INIT_LIST_HEAD(&so_tag->pending_large_send);
 }
 static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 {

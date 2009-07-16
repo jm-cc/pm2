@@ -142,7 +142,6 @@ static int strat_default_pack_ctrl(void*_status,
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_pkt_wrap *p_pw;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_pack->p_gate->tags, p_pack->tag);
   struct nm_so_strat_default*status = _status;
   const nm_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
@@ -166,7 +165,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	  /* First allocate a packet wrapper */
 	  nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, tbx_true, NM_PW_NOHEADER, &p_pw);
 	  /* Then place it into the list of large pending sends. */
-	  list_add_tail(&p_pw->link, &p_so_tag->pending_large_send);
+	  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	  /* Finally, generate a RdV request */
 	  union nm_so_generic_ctrl_header ctrl;
 	  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, p_pack->len, 0, 1);
@@ -201,7 +200,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 						offset, is_last_chunk,
 						NM_PW_NOHEADER, &p_pw);
 	      /* Then place it into the appropriate list of large pending "sends". */
-	      list_add_tail(&p_pw->link, &p_so_tag->pending_large_send);
+	      list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	      /* Finally, generate a RdV request */
 	      union nm_so_generic_ctrl_header ctrl;
 	      nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, is_last_chunk);

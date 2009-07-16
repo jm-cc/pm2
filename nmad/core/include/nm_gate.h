@@ -68,8 +68,10 @@ struct nm_gate
   tbx_bool_t active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
   tbx_bool_t active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
-  /** large messages waiting for Track 1 (or 2) to be free */
+  /** large messages waiting for Track 1 (or 2) to be free- list of pw */
   struct list_head pending_large_recv;
+  /** large messages waiting for ACKs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
+  struct list_head pending_large_send;       
 
   /* Strategy components elements */
   struct puk_receptacle_NewMad_Strategy_s strategy_receptacle;

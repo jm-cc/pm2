@@ -41,19 +41,19 @@ struct nm_so_global_header
 
 struct nm_so_data_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
-  nm_tag_t tag_id;
   nm_seq_t seq;
+  nm_tag_t tag_id;
   uint8_t  flags;
-  uint16_t skip;
   uint32_t len;
   uint32_t chunk_offset;
+  uint16_t skip;
 } __attribute__((packed));
 
 struct nm_so_ctrl_rdv_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RDV */
-  nm_tag_t tag_id;
   nm_seq_t seq;
-  uint8_t is_last_chunk;
+  nm_tag_t tag_id;
+  uint8_t  flags;
   uint32_t len;
   uint32_t chunk_offset;
 } __attribute__((packed));
@@ -100,14 +100,14 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t tag_id
 }
 
 static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
-				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+				  uint32_t len, uint32_t chunk_offset, uint8_t flags)
 {
-  p_ctrl->r.proto_id      = NM_PROTO_RDV;
-  p_ctrl->r.tag_id        = tag;
-  p_ctrl->r.seq           = seq;
-  p_ctrl->r.len           = len;
-  p_ctrl->r.chunk_offset  = chunk_offset;
-  p_ctrl->r.is_last_chunk = is_last_chunk;
+  p_ctrl->r.proto_id     = NM_PROTO_RDV;
+  p_ctrl->r.tag_id       = tag;
+  p_ctrl->r.seq          = seq;
+  p_ctrl->r.len          = len;
+  p_ctrl->r.chunk_offset = chunk_offset;
+  p_ctrl->r.flags        = flags;
 }
     
 static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,

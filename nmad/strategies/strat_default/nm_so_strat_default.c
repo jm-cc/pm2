@@ -168,7 +168,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	  /* Finally, generate a RdV request */
 	  union nm_so_generic_ctrl_header ctrl;
-	  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, p_pack->len, 0, 1);
+	  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, p_pack->len, 0, NM_PROTO_FLAG_LASTCHUNK);
 	  strat_default_pack_ctrl(status, p_pack->p_gate, &ctrl);
 	}
     }
@@ -179,7 +179,8 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
       int i;
       for(i = 0; offset < len; i++)
 	{
-	  tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
+	  const tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
+	  const uint8_t flags = is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0;
 	  if(iov[i].iov_len <= status->nm_so_max_small)
 	    {
 	      /* Small packet */
@@ -203,7 +204,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	      list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	      /* Finally, generate a RdV request */
 	      union nm_so_generic_ctrl_header ctrl;
-	      nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, is_last_chunk);
+	      nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, flags);
 	      strat_default_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 	    }
 	  offset += iov[i].iov_len;

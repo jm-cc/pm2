@@ -198,25 +198,6 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 
 
-/* Iterators */
-
-typedef void nm_so_pw_data_handler(struct nm_pkt_wrap *p_pw,
-				   void *ptr,
-				   nm_so_data_header_t*header, uint32_t len,
-				   nm_tag_t proto_id, nm_seq_t seq,
-				   uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef void nm_so_pw_rdv_handler(struct nm_pkt_wrap *p_pw,
-				  nm_so_generic_ctrl_header_t*rdv,
-				  nm_tag_t tag, nm_seq_t seq,
-				  uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
-typedef void nm_so_pw_ack_handler(struct nm_pkt_wrap *p_pw,
-				  struct nm_so_ctrl_ack_header*header);
-
-int nm_so_pw_iterate_over_headers(struct nm_pkt_wrap *p_pw,
-				  nm_so_pw_data_handler data_handler,
-				  nm_so_pw_rdv_handler rdv_handler,
-				  nm_so_pw_ack_handler ack_handler);
-
 static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
 {
   if(!(--p_pw->header_ref_count))

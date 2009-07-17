@@ -28,13 +28,16 @@
 /** data or rdv has arrived, with no matching unpack */
 #define NM_SO_STATUS_UNEXPECTED               ((nm_so_status_t)0x0004)
 /** unpack operation has been cancelled */
-#define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0080)
+#define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0008)
+
+/** flag: unpack is contiguous */
+#define NM_UNPACK_TYPE_CONTIGUOUS    ((nm_so_flag_t)0x0010)
 /** flag: unpack is an iovec */
-#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0100)
+#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0020)
 /** flag: unpack is a datatype */
-#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0200)
+#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0040)
 /* flag: unpack datatype through a temporary buffer */
-#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0400)
+#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0080)
 
 #define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x01)
 #define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x02)
@@ -122,8 +125,6 @@ struct nm_so_sched
   /** list of unexpected chunks */
   struct list_head unexpected;
 };
-
-int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len);
 
 int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
 		   nm_so_flag_t flag, void *data_description, uint32_t len);

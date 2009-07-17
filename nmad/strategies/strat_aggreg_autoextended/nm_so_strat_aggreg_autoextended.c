@@ -229,7 +229,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
       p_pw->is_completed = tbx_true;
       list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_so_generic_ctrl_header ctrl;
-      nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, 1);
+      nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, NM_PROTO_FLAG_LASTCHUNK);
       strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);
     }
  out:

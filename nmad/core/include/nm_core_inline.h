@@ -95,7 +95,7 @@ static inline int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 			       void *data, uint32_t len)
 {
   /* Nothing special to flag for the contiguous reception */
-  const nm_so_flag_t flag = 0;
+  const nm_so_flag_t flag = NM_UNPACK_TYPE_CONTIGUOUS;
   return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, data, len);
 }
 

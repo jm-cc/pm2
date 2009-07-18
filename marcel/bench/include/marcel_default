@@ -18,14 +18,19 @@
 initialize_bench()
 {
     # Creation de la flavor
+    init_options=""
     if [ "$marcel" == "numa" ] ; then
         marcel_options="bubble_sched_null enable_stats"
+	init_options="--init=topology"
     else
+	if [ "$marcel" == "smp" ] ; then
+	    init_options="--init=topology"
+	fi
         marcel_options=""
     fi
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
         --ext=\"\" \
-        --modules=\"init marcel ntbx tbx\"\
+        --modules=\"init marcel ntbx tbx\" $init_options \
         --marcel=\"marcel_main $marcel $marcel_options\" \
         --all=\"opt build_static static\"
 

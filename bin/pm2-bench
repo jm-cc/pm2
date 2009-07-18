@@ -188,9 +188,9 @@ done
 _to_bench="$_prefix $_suffix"
 
 # display the state of the machine
-ps faux
-top -b -n 5
-uptime
+#ps faux
+#top -b -n 5
+#uptime
 
 for _m in $_to_bench ; do
 

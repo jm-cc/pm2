@@ -524,6 +524,7 @@ int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset
 	return 0;
 }
 
+/* TODO: cleaner fix */
 #ifndef CPU_ZERO_S
 #  define CPU_ZERO_S(cpusetsize, cpuset) CPU_ZERO(cpuset)
 #endif

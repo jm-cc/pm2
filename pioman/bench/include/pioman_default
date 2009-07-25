@@ -61,6 +61,7 @@ initialize_bench()
         # Creation de la flavor
         eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
          --ext=\"\" \
+	 --init=\"topology\" \
          --modules=\"puk init nmad ntbx tbx pioman marcel\" \
          --marcel=\"smp marcel_main\" \
          --nmad=\"sched_opt strat_default mad3_emu ${dev} tag_as_flat_array\" \

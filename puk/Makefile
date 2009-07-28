@@ -91,7 +91,7 @@ PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell pm2-config --flavor=$(FLAVOR) --getvar=
 
 $(PUK_BUILDDIR)/config.status: $(GEN_CONFIG_FILES)
 	( cd $(PUK_BUILDDIR) ; \
-           $(PUK_SRCDIR)/externals/configure LDFLAGS= CFLAGS= --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
+           $(PUK_SRCDIR)/externals/configure LIBS= LDFLAGS= CFLAGS= --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
 
 # ## build
 # ##

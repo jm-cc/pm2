@@ -365,7 +365,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 	t->as_entity.natural_holder=NULL;
 	t->as_entity.ready_holder_data=NULL;
 #ifdef MA__BUBBLES
-	INIT_LIST_HEAD(&t->as_entity.natural_entities_item);
+	TBX_INIT_FAST_LIST_HEAD(&t->as_entity.natural_entities_item);
 #endif
 	if (h) {
 		t->as_entity.sched_holder = h;
@@ -379,7 +379,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 			MA_BUG_ON(!rq->as_holder.name[0]);
 		}
 	}
-	INIT_LIST_HEAD(&t->as_entity.cached_entities_item);
+	TBX_INIT_FAST_LIST_HEAD(&t->as_entity.cached_entities_item);
 	t->as_entity.prio=attr->__schedparam.__sched_priority;
 	PROF_EVENT2(sched_setprio,ma_task_entity(&t->as_entity),t->as_entity.prio);
 	/* TODO: only for the spread scheduler */
@@ -403,7 +403,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 #endif /* MARCEL_STATS_ENABLED */
 #ifdef MM_MAMI_ENABLED
 	marcel_spin_init(&t->as_entity.memory_areas_lock, MARCEL_PROCESS_SHARED);
-	INIT_LIST_HEAD(&t->as_entity.memory_areas);
+	TBX_INIT_FAST_LIST_HEAD(&t->as_entity.memory_areas);
 #endif /* MM_MAMI_ENABLED */
 	if (ma_holder_type(t->as_entity.sched_holder) == MA_RUNQUEUE_HOLDER)
 		sched_debug("%p(%s)'s holder is %s (prio %d)\n", t, t->as_entity.name, t->as_entity.sched_holder->name, t->as_entity.prio);

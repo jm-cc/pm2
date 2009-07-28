@@ -88,11 +88,11 @@ piom_check_polling_for(piom_server_t server)
     server->max_priority = PIOM_REQ_PRIORITY_LOWEST;
     server->registered_req_not_yet_polled = 0;
     if (nb == 1 && server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func){
-	req=list_entry(server->list_req_poll_grouped.next,
+	req=tbx_fast_list_entry(server->list_req_poll_grouped.next,
 		       struct piom_req, chain_req_grouped);
 	/* Only one request, use the fast_poll method */
 #ifdef PIOM_BLOCKING_CALLS
-	if(list_entry(server->list_req_poll_grouped.next,
+	if(tbx_fast_list_entry(server->list_req_poll_grouped.next,
 		      struct piom_req, chain_req_grouped)->func_to_use != PIOM_FUNC_SYSCALL ) 
 #endif	/* PIOM_BLOCKING_CALLS */
 	    {			
@@ -189,7 +189,7 @@ void
 __piom_check_polling(unsigned polling_point)
 {
     piom_shs_poll(); 
-    if( list_empty(&piom_list_poll))
+    if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
 
     PROF_IN();
@@ -197,7 +197,7 @@ __piom_check_polling(unsigned polling_point)
 
     /* TODO: if the vpset does not match idle core, remote schedule the tasklet 
        (or schedule the tasklet somewhere else) */
-    list_for_each_entry_safe(server,bak, &piom_list_poll, chain_poll) {		
+    tbx_fast_list_for_each_entry_safe(server,bak, &piom_list_poll, chain_poll) {		
 	if( marcel_vpset_isset(&(server->poll_tasklet.vp_set),
 			       marcel_current_vp())) 
 	    {
@@ -220,7 +220,7 @@ void
 __piom_check_polling(unsigned polling_point)
 {
 #ifdef MARCEL
-    if( job_scheduled || list_empty(&piom_list_poll))
+    if( job_scheduled || tbx_fast_list_empty(&piom_list_poll))
 	return;
     if( ! _piom_spin_trylock_softirq(&piom_poll_lock))
 	return;
@@ -230,7 +230,7 @@ __piom_check_polling(unsigned polling_point)
     PROF_IN();
     piom_server_t server, bak=NULL;
 
-    list_for_each_entry(server, &piom_list_poll, chain_poll) {
+    tbx_fast_list_for_each_entry(server, &piom_list_poll, chain_poll) {
 	if(bak==server){
 	    break;	
 	}
@@ -248,7 +248,7 @@ __piom_check_polling(unsigned polling_point)
 #ifdef MARCEL
     if(!scheduled)
 	{
-	    list_for_each_entry(server, &piom_list_poll, chain_poll) {
+	    tbx_fast_list_for_each_entry(server, &piom_list_poll, chain_poll) {
 		if(bak==server){
 		    break;	
 		}
@@ -284,7 +284,7 @@ piom_poll_req(piom_req_t req, unsigned usec)
 	     req, 1, PIOM_OPT_REQ_ITER);
 	
 	_piom_spin_lock_softirq(&req->server->req_ready_lock); 
-	if(! list_empty(&req->chain_req_ready)) {
+	if(! tbx_fast_list_empty(&req->chain_req_ready)) {
 	    /* Request succeeded */
 	    TBX_GET_TICK(t2);
 	    req->state |= PIOM_STATE_OCCURED;
@@ -292,7 +292,7 @@ piom_poll_req(piom_req_t req, unsigned usec)
 	    if (!(req->state & PIOM_STATE_NO_WAKE_SERVER))
 		__piom_add_success_req(req->server, req);
 			
-	    list_del_init(&req->chain_req_ready);
+	    tbx_fast_list_del_init(&req->chain_req_ready);
 	    if (req->state & PIOM_STATE_ONE_SHOT) {
 		__piom_unregister_poll(req->server, req);
 		__piom_unregister(req->server, req);

@@ -24,7 +24,7 @@ typedef struct marcel_lwp marcel_lwp_t;
 typedef struct marcel_lwp *ma_lwp_t;
 
 #section marcel_structures
-#depend "pm2_list.h"
+#depend "tbx_fast_list.h"
 #depend "marcel_sem.h[structures]"
 #depend "sys/marcel_kthread.h[marcel_types]"
 #depend "linux_timer.h[marcel_types]"
@@ -34,7 +34,7 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "scheduler/marcel_sched.h[marcel_structures]"
 
 struct marcel_lwp {
-	struct list_head lwp_list;
+	struct tbx_fast_list_head lwp_list;
 #ifdef MA__LWPS
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
@@ -133,7 +133,7 @@ extern TBX_EXTERN ma_atomic_t ma__last_vp;
 #depend "asm/linux_rwlock.h[marcel_types]"
 // Verrou protégeant la liste chaînée des LWPs
 extern TBX_EXTERN ma_rwlock_t __ma_lwp_list_lock;
-extern struct list_head ma_list_lwp_head;
+extern struct tbx_fast_list_head ma_list_lwp_head;
 
 #if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
 extern TBX_EXTERN __thread marcel_lwp_t *ma_lwp_self;
@@ -221,7 +221,7 @@ __tbx_inline__ static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp);
 #section marcel_inline
 __tbx_inline__ static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp)
 {
-  return list_entry(lwp->lwp_list.next, marcel_lwp_t, lwp_list);
+  return tbx_fast_list_entry(lwp->lwp_list.next, marcel_lwp_t, lwp_list);
 }
 
 #section marcel_functions
@@ -229,7 +229,7 @@ __tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp);
 #section marcel_inline
 __tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp)
 {
-  return list_entry(lwp->lwp_list.prev, marcel_lwp_t, lwp_list);
+  return tbx_fast_list_entry(lwp->lwp_list.prev, marcel_lwp_t, lwp_list);
 }
 
 #section marcel_functions
@@ -303,11 +303,11 @@ void marcel_leave_blocking_section(void);
 } while(0)
 #  define ma_is_first_lwp(lwp)			(lwp == &__main_lwp)
 
-#  define ma_any_lwp()				(!list_empty(&ma_list_lwp_head))
+#  define ma_any_lwp()				(!tbx_fast_list_empty(&ma_list_lwp_head))
 #  define ma_for_all_lwp(lwp) \
-     list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
+     tbx_fast_list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
 #  define ma_for_all_lwp_from_begin(lwp, lwp_start) \
-     list_for_each_entry_from_begin(lwp, &ma_list_lwp_head, lwp_start, lwp_list)
+     tbx_fast_list_for_each_entry_from_begin(lwp, &ma_list_lwp_head, lwp_start, lwp_list)
 #  define ma_for_all_lwp_from_end() \
      list_for_each_entry_from_end()
 /* Should rather be the node level where this lwp was started */

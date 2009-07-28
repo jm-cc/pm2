@@ -241,7 +241,7 @@ marcel_bubble_sched_class(const marcel_bubble_sched_t *scheduler) {
 
 
 #section structures
-#depend "pm2_list.h"
+#depend "tbx_fast_list.h"
 #depend "scheduler/marcel_holder.h[structures]"
 #depend "marcel_sem.h[types]"
 #depend "marcel_sem.h[structures]"
@@ -256,14 +256,14 @@ struct marcel_bubble {
 	/** \brief Holder information */
 	struct ma_holder as_holder;
 	/** \brief List of entities for which the bubble is a natural holder */
-	struct list_head natural_entities;
+	struct tbx_fast_list_head natural_entities;
 	/** \brief Number of held entities */
 	unsigned nb_natural_entities;
 	/** \brief Semaphore for the join operation */
 	marcel_sem_t join;
 
 	/** \brief List of entities queued in the so-called "thread cache" */
-	struct list_head cached_entities;
+	struct tbx_fast_list_head cached_entities;
 	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nb_ready_entities. */
 	int num_schedules;
 
@@ -286,8 +286,8 @@ struct marcel_bubble {
 };
 
 #section macros
-/*  LIST_HEAD_INIT */
-#depend "pm2_list.h"
+/*  TBX_FAST_LIST_HEAD_INIT */
+#depend "tbx_fast_list.h"
 /*  MA_ATOMIC_INIT */
 #depend "asm/linux_atomic.h"
 #depend "scheduler/marcel_holder.h[macros]"
@@ -299,10 +299,10 @@ struct marcel_bubble {
 #define MARCEL_BUBBLE_INITIALIZER(b) { \
 	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
 	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
-	.natural_entities = LIST_HEAD_INIT((b).natural_entities), \
+	.natural_entities = TBX_FAST_LIST_HEAD_INIT((b).natural_entities), \
 	.nb_natural_entities = 0, \
 	.join = MARCEL_SEM_INITIALIZER(1), \
-	.cached_entities = LIST_HEAD_INIT((b).cached_entities), \
+	.cached_entities = TBX_FAST_LIST_HEAD_INIT((b).cached_entities), \
 	.num_schedules = 0, \
 	.settled = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
@@ -469,7 +469,7 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	MA_BUG_ON(e->ready_holder != &b->as_holder);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	if (list_empty(&b->cached_entities)) {
+	if (tbx_fast_list_empty(&b->cached_entities)) {
 		ma_holder_t *h = b->as_entity.ready_holder;
 		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
 		if (h) {
@@ -480,9 +480,9 @@ static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel
 		}
 	}
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->cached_entities_item, &b->cached_entities);
+		tbx_fast_list_add(&e->cached_entities_item, &b->cached_entities);
 	else
-		list_add_tail(&e->cached_entities_item, &b->cached_entities);
+		tbx_fast_list_add_tail(&e->cached_entities_item, &b->cached_entities);
 	MA_BUG_ON(e->ready_holder_data);
 	e->ready_holder_data = (void *)1;
 #endif
@@ -491,8 +491,8 @@ static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel
 #ifdef MA__BUBBLES
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	list_del(&e->cached_entities_item);
-	if (list_empty(&b->cached_entities)) {
+	tbx_fast_list_del(&e->cached_entities_item);
+	if (tbx_fast_list_empty(&b->cached_entities)) {
 		ma_holder_t *h = b->as_entity.ready_holder;
 		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
 		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
@@ -517,9 +517,9 @@ static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_b
 	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->cached_entities_item, &b->cached_entities);
+		tbx_fast_list_add(&e->cached_entities_item, &b->cached_entities);
 	else
-		list_add_tail(&e->cached_entities_item, &b->cached_entities);
+		tbx_fast_list_add_tail(&e->cached_entities_item, &b->cached_entities);
 	MA_BUG_ON(e->ready_holder_data);
 	e->ready_holder_data = (void *)1;
 #endif
@@ -539,7 +539,7 @@ static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_
 	ma_holder_t *h = b->as_entity.ready_holder;
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 
-	if (list_empty(&b->cached_entities) || b->as_entity.ready_holder_data || !h) {
+	if (tbx_fast_list_empty(&b->cached_entities) || b->as_entity.ready_holder_data || !h) {
 		/* No awake entity or B already awake, just unlock */
 		ma_holder_rawunlock(&b->as_holder);
 		return;
@@ -554,7 +554,7 @@ static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_
 	ma_holder_rawunlock(&b->as_holder);
 	h = ma_bubble_holder_rawlock(b);
 	ma_holder_rawlock(&b->as_holder);
-	if (!list_empty(&b->cached_entities) && h) {
+	if (!tbx_fast_list_empty(&b->cached_entities) && h) {
 		MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
 		if (!b->as_entity.ready_holder_data)
 			ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
@@ -579,7 +579,7 @@ static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_b
 #ifdef MA__BUBBLES
 	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
 	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
-	list_del(&e->cached_entities_item);
+	tbx_fast_list_del(&e->cached_entities_item);
 	MA_BUG_ON(!e->ready_holder_data);
 	e->ready_holder_data = NULL;
 	MA_BUG_ON(e->ready_holder != &b->as_holder);

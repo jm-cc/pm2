@@ -598,7 +598,7 @@ struct marcel_topo_vpdata {
 	/* Number of tasks created by this VP that are still alive */
 	unsigned nb_tasks;
 	/* List of all threads created on this VP that are still alive */
-	struct list_head all_threads;
+	struct tbx_fast_list_head all_threads;
 	/* Sequence number of the last thread created on this VP, which also
 	 * corresponds to the total number of threads that have been created on
 	 * this VP (including dead threads). */
@@ -620,7 +620,7 @@ struct marcel_topo_vpdata {
 struct marcel_topo_nodedata {
 	/* For NUMA levels */
 	size_t allocated;
-	struct list_head memory_areas;
+	struct tbx_fast_list_head memory_areas;
 	ma_spinlock_t memory_areas_lock;
 };
 
@@ -636,13 +636,13 @@ struct marcel_topo_nodedata {
 #define MARCEL_TOPO_VPDATA_INITIALIZER(var) { \
 	.threadlist_lock = MA_SPIN_LOCK_UNLOCKED, \
 	.task_number = 0, \
-	.all_threads = LIST_HEAD_INIT((var)->all_threads), \
+	.all_threads = TBX_FAST_LIST_HEAD_INIT((var)->all_threads), \
 	MARCEL_TOPO_VPDATA_POSTEXIT_INITIALIZER \
 }
 
 #define MARCEL_TOPO_NODEDATA_INITIALIZER(var) { \
    .allocated = 0, \
-   .memory_areas = LIST_HEAD_INIT((var)->memory_areas), \
+   .memory_areas = TBX_FAST_LIST_HEAD_INIT((var)->memory_areas), \
    .memory_areas_lock = MA_SPIN_LOCK_UNLOCKED,\
 }
 

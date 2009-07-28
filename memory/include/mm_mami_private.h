@@ -19,7 +19,7 @@
 #define MM_MAMI_PRIVATE_H
 
 #include <stdint.h>
-#include "pm2_list.h"
+#include "tbx_fast_list.h"
 #include "mm_mami_thread.h"
 
 /** \brief Type of a memory migration cost from node to node */
@@ -65,7 +65,7 @@ struct mami_migration_cost_s {
 
 /** \brief Structure of a link for a list of tree nodes */
 struct mami_data_link_s {
-  struct list_head list;
+  struct tbx_fast_list_head list;
   mami_data_t *data;
 };
 

@@ -378,7 +378,7 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 		if (do_lock)
 			ma_holder_rawlock(&b->as_holder);
 
-		list_for_each_entry(ee, &b->natural_entities, natural_entities_item) {
+		tbx_fast_list_for_each_entry(ee, &b->natural_entities, natural_entities_item) {
 			if (ee->sched_holder && ee->sched_holder->type == MA_BUBBLE_HOLDER)
 				ma_set_sched_holder(ee, bubble, do_lock);
 		if (do_lock)
@@ -403,7 +403,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	MA_BUG_ON(entity->natural_holder != &src_bubble->as_holder);
 	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
-	list_del_init(&entity->natural_entities_item);
+	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&src_bubble->barrier, -1);
 	res = (!--src_bubble->nb_natural_entities);
 	ma_holder_rawunlock(&src_bubble->as_holder);
@@ -412,7 +412,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 
 	/* insert entity in bubble dst */
 	if (!dst_bubble->nb_natural_entities) {
-		MA_BUG_ON(!list_empty(&dst_bubble->natural_entities));
+		MA_BUG_ON(!tbx_fast_list_empty(&dst_bubble->natural_entities));
 		marcel_sem_P(&dst_bubble->join);
 	}
 
@@ -422,7 +422,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),dst_bubble);
 
 	/* change entity natural_holder */
-	list_add_tail(&entity->natural_entities_item, &dst_bubble->natural_entities);
+	tbx_fast_list_add_tail(&entity->natural_entities_item, &dst_bubble->natural_entities);
 	marcel_barrier_addcount(&dst_bubble->barrier, 1);
 	dst_bubble->nb_natural_entities++;
 	entity->natural_holder = &dst_bubble->as_holder;
@@ -506,7 +506,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nb_natural_entities) {
-		MA_BUG_ON(!list_empty(&bubble->natural_entities));
+		MA_BUG_ON(!tbx_fast_list_empty(&bubble->natural_entities));
 		marcel_sem_P(&bubble->join);
 	}
 
@@ -515,7 +515,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 		PROF_EVENT2(bubble_sched_insert_bubble,ma_bubble_entity(entity),bubble);
 	else
 		PROF_EVENT2(bubble_sched_insert_thread,ma_task_entity(entity),bubble);
-	list_add_tail(&entity->natural_entities_item, &bubble->natural_entities);
+	tbx_fast_list_add_tail(&entity->natural_entities_item, &bubble->natural_entities);
 	marcel_barrier_addcount(&bubble->barrier, 1);
 	bubble->nb_natural_entities++;
 	entity->natural_holder = &bubble->as_holder;
@@ -547,7 +547,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	LOG_IN();
 
-	if (!list_empty(&entity->natural_entities_item)) {
+	if (!tbx_fast_list_empty(&entity->natural_entities_item)) {
 		if (ma_bubble_holder(entity->natural_holder) == bubble)
 			LOG_RETURN(0);
 
@@ -598,7 +598,7 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	MA_BUG_ON(entity->natural_holder != &bubble->as_holder);
 	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
-	list_del_init(&entity->natural_entities_item);
+	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&bubble->barrier, -1);
 	bubble_becomes_empty = (!--bubble->nb_natural_entities);
 	if ((entity)->type != MA_BUBBLE_ENTITY)
@@ -691,7 +691,7 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 	marcel_sem_P(&bubble->join);
 	h = ma_bubble_holder_lock_softirq(bubble);
 	MA_BUG_ON(bubble->nb_natural_entities);
-	MA_BUG_ON(!list_empty(&bubble->natural_entities));
+	MA_BUG_ON(!tbx_fast_list_empty(&bubble->natural_entities));
 	if (bubble->as_entity.ready_holder) {
 		if (bubble->as_entity.ready_holder_data)
 			ma_dequeue_entity(&bubble->as_entity, h);
@@ -732,7 +732,7 @@ static void __ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 	marcel_task_t *t;
 	ma_stats_reset(&bubble->as_holder);
 	ma_stats_synthesize(&bubble->as_holder, &bubble->as_entity);
-	list_for_each_entry(e, &bubble->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &bubble->natural_entities, natural_entities_item) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			b = ma_bubble_entity(e);
 			ma_holder_rawlock(&b->as_holder);
@@ -789,7 +789,7 @@ ma_bubble_snapshot (void) {
 void __ma_bubble_gather(marcel_bubble_t *b, marcel_bubble_t *rootbubble) {
 	marcel_entity_t *e;
 	
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		int state;
 
 		if (e->type == MA_BUBBLE_ENTITY)
@@ -832,7 +832,7 @@ static void __ma_bubble_lock_all(marcel_bubble_t *b, marcel_bubble_t *root_bubbl
 	if (b->as_entity.sched_holder == &root_bubble->as_holder) {
 		/* Bubble held in the root bubble of this part of the hierarchy, just need to lock it and its content */
 		ma_holder_rawlock(&b->as_holder);
-		list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+		tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_lock_all(ma_bubble_entity(e), root_bubble);
 		}
@@ -843,7 +843,7 @@ static void __ma_bubble_lock_all(marcel_bubble_t *b, marcel_bubble_t *root_bubbl
 			/* not queued, hence didn't get locked when running ma_topo_lock() */
 			ma_holder_rawlock(&b->as_holder);
 		}
-		list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+		tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_lock_all(ma_bubble_entity(e), b); /* b is the new root bubble */
 		}
@@ -856,13 +856,13 @@ static void __ma_bubble_unlock_all(marcel_bubble_t *b, marcel_bubble_t *root_bub
 		 // TODO: ne devrait pas être nécessaire.
 		// || b->as_entity.sched_holder == &marcel_root_bubble.as_holder){
 		/* Bubble held in root bubble, just need to unlock its content and it */
-		list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+		tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_all(ma_bubble_entity(e), root_bubble);
 		}
 		ma_holder_rawunlock(&b->as_holder);
 	} else {
-		list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+		tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_all(ma_bubble_entity(e), b); /* b is the new root bubble */
 		}
@@ -886,7 +886,7 @@ static void __ma_topo_lock(struct marcel_topo_level *level) {
 
 	/* Lock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
+		tbx_fast_list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -918,7 +918,7 @@ static void __ma_topo_unlock(struct marcel_topo_level *level) {
 
 	/* Unlock all bubbles queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
+		tbx_fast_list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				ma_holder_rawunlock(&ma_bubble_entity(e)->as_holder);
 			}
@@ -981,7 +981,7 @@ void ma_bubble_unlock_all(marcel_bubble_t *b, struct marcel_topo_level *level) {
 
 static void __ma_bubble_lock_subbubbles(marcel_bubble_t *b) {
 	marcel_entity_t *e;
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			marcel_bubble_t *b = ma_bubble_entity(e);
 			if(b->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER)
@@ -997,7 +997,7 @@ void __ma_bubble_lock(marcel_bubble_t *b) {
 
 static void __ma_bubble_unlock_subbubbles(marcel_bubble_t *b) {
 	marcel_entity_t *e;
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			marcel_bubble_t *b = ma_bubble_entity(e);
 			if(b->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER)
@@ -1018,7 +1018,7 @@ static void ma_topo_lock_bubbles(struct marcel_topo_level *level) {
 	int i;
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
+		tbx_fast_list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_lock_subbubbles(ma_bubble_entity(e));
 		}
@@ -1042,7 +1042,7 @@ static void ma_topo_unlock_bubbles(struct marcel_topo_level *level) {
 
 	/* Lock all subbubbles of the bubble queued on that level */
 	for (prio = 0; prio < MA_MAX_PRIO; prio++) {
-		list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
+		tbx_fast_list_for_each_entry(e, ma_array_queue(level->rq.active, prio), cached_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY)
 				__ma_bubble_unlock_subbubbles(ma_bubble_entity(e));
 		}
@@ -1099,7 +1099,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 	ma_holder_rawlock(&bubble->as_holder);
 
 	/* We generally manage to avoid this */
-	if (list_empty(&bubble->cached_entities)) {
+	if (tbx_fast_list_empty(&bubble->cached_entities)) {
 	  bubble_sched_debug("warning: bubble %d (%p) empty\n", bubble->id, bubble);
 		/* We shouldn't ever schedule a NOSCHED bubble */
 		MA_BUG_ON(bubble->as_entity.prio == MA_NOSCHED_PRIO);
@@ -1126,7 +1126,7 @@ marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 
 	bubble->num_schedules++;
 
-	nextent = list_entry(bubble->cached_entities.next, marcel_entity_t, cached_entities_item);
+	nextent = tbx_fast_list_entry(bubble->cached_entities.next, marcel_entity_t, cached_entities_item);
 	bubble_sched_debugl(7,"next entity to run %p\n",nextent);
 	MA_BUG_ON(nextent->type == MA_BUBBLE_ENTITY);
 

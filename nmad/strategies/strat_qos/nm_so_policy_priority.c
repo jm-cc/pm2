@@ -24,7 +24,7 @@
 #include "nm_so_strat_qos.h"
 
 struct nm_so_policy_priority_gate{
-  struct list_head out_list[NM_SO_NB_PRIORITIES];
+  struct tbx_fast_list_head out_list[NM_SO_NB_PRIORITIES];
   unsigned nb_packets[NM_SO_NB_PRIORITIES];
  };
 
@@ -34,13 +34,13 @@ pack_ctrl(void *private,
 {
   nm_tag_t tag = p_ctrl->a.tag_id;
   uint8_t priority = nm_so_get_priority(tag);
-  struct list_head *out_list =
+  struct tbx_fast_list_head *out_list =
     &((struct nm_so_policy_priority_gate *)private)->out_list[priority];
   struct nm_pkt_wrap *p_so_pw = NULL;
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, out_list, link)
+  tbx_fast_list_for_each_entry(p_so_pw, out_list, link)
     {
       if(p_so_pw->length <= 32 - NM_SO_CTRL_HEADER_SIZE)
 	{
@@ -56,7 +56,7 @@ pack_ctrl(void *private,
     goto out;
 
   /* Add the control packet to the out_list */
-  list_add_tail(&p_so_pw->link, out_list);
+  tbx_fast_list_add_tail(&p_so_pw->link, out_list);
   ((struct nm_so_policy_priority_gate *)private)->nb_packets[priority]++;
 
  out:
@@ -69,7 +69,7 @@ pack(struct nm_gate *p_gate, void *private,
      void *data, uint32_t len)
 {
   uint8_t priority = nm_so_get_priority(tag);
-  struct list_head *out_list =
+  struct tbx_fast_list_head *out_list =
     &((struct nm_so_policy_priority_gate *)private)->out_list[priority];
   struct nm_pkt_wrap *p_so_pw;
   int flags = 0;
@@ -79,7 +79,7 @@ pack(struct nm_gate *p_gate, void *private,
     /* Small packet */
 
     /* We first try to find an existing packet to form an aggregate */
-      list_for_each_entry(p_so_pw, out_list, link) {
+      tbx_fast_list_for_each_entry(p_so_pw, out_list, link) {
       uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
       uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
       uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
@@ -116,7 +116,7 @@ pack(struct nm_gate *p_gate, void *private,
     if(err != NM_ESUCCESS)
       goto out;
 
-    list_add_tail(&p_so_pw->link, out_list);
+    tbx_fast_list_add_tail(&p_so_pw->link, out_list);
     ((struct nm_so_policy_priority_gate *)private)->nb_packets[priority]++;
   } else {
     /* Large packets can not be sent immediately : we have to issue a
@@ -133,7 +133,7 @@ pack(struct nm_gate *p_gate, void *private,
 
     /* Then place it into the appropriate list of large pending
        "sends". */
-    list_add_tail(&p_so_pw->link,
+    tbx_fast_list_add_tail(&p_so_pw->link,
                   &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
     /* Finally, generate a RdV request */
@@ -163,16 +163,16 @@ try_and_commit(struct nm_gate *p_gate, void *private)
   for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
     {
       struct nm_so_policy_priority_gate *p_so_pg = ((struct nm_so_policy_priority_gate *)private);
-      struct list_head *out_list = &p_so_pg->out_list[i];
+      struct tbx_fast_list_head *out_list = &p_so_pg->out_list[i];
       struct nm_pkt_wrap *p_so_pw;
 
-      if(list_empty(out_list))
+      if(tbx_fast_list_empty(out_list))
 	/* We're done */
 	goto next;
 
       /* Simply take the head of the list */
       p_so_pw = nm_l2so(out_list->next);
-      list_del(out_list->next);
+      tbx_fast_list_del(out_list->next);
       ((struct nm_so_policy_priority_gate *)private)->nb_packets[i]--;
       /* Finalize packet wrapper */
       nm_so_pw_finalize(p_so_pw);
@@ -200,7 +200,7 @@ init_gate(void **addr_private)
   uint8_t i;
 
   for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
-      INIT_LIST_HEAD(&priv->out_list[i]);
+      TBX_INIT_FAST_LIST_HEAD(&priv->out_list[i]);
 
   for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
     priv->nb_packets[i] = 0;

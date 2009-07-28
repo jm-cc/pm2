@@ -17,13 +17,13 @@
 #ifndef PIOM_H
 #define PIOM_H
 
-#include "pm2_list.h"
+#include "tbx_fast_list.h"
 #include "piom_sh_sem.h"
 
 /* List of servers currently doing some polling
  * (state == 2 and tasks waiting for polling) 
  */
-extern struct list_head piom_list_poll;
+extern struct tbx_fast_list_head piom_list_poll;
 #ifdef MARCEL
 extern ma_spinlock_t piom_poll_lock;
 extern int job_scheduled;
@@ -123,7 +123,7 @@ typedef struct {
 
 struct piom_wait {
 	/* List of groupes events we are waiting for */
-	struct list_head chain_wait;
+	struct tbx_fast_list_head chain_wait;
 
 #ifdef MARCEL
 	/* TODO : Useless without marcel ? */
@@ -152,7 +152,7 @@ struct piom_wait {
  */
 #define PIOM_WAIT_SUCCESS(wait, code) \
   do { \
-        list_del(&(wait)->chain_wait); \
+        tbx_fast_list_del(&(wait)->chain_wait); \
         (wait)->ret_code=(code); \
   } while(0)
 
@@ -173,7 +173,7 @@ void __piom_check_polling(unsigned polling_point);
  */
 static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
 {
-	return (!list_empty(&piom_list_poll)) || piom_shs_polling_is_required();
+	return (!tbx_fast_list_empty(&piom_list_poll)) || piom_shs_polling_is_required();
 }
 
 /* Try to poll

@@ -24,7 +24,7 @@ typedef  piom_sh_sem_t* p_piom_sh_sem_t;
 
 #include "piom_sem.h"
 #include "pioman.h"
-#include "pm2_list.h"
+#include "tbx_fast_list.h"
 
 #ifdef MARCEL
 #include "marcel.h"
@@ -34,7 +34,7 @@ struct piom_sh_sem {
 	piom_atomic_t value;
 	piom_sem_t local_sem;
 	/* list of pending sh_sem */
-	struct list_head pending_shs;
+	struct tbx_fast_list_head pending_shs;
 } ;
 
 
@@ -44,7 +44,7 @@ struct piom_sh_sem {
 	piom_atomic_t value;
 	piom_sem_t local_sem;
 	/* list of pending sh_sem */
-	struct list_head pending_shs;
+	struct tbx_fast_list_head pending_shs;
 } ;
 
 #endif /* MARCEL */

@@ -26,8 +26,8 @@
 #define NM_SO_POLICY_RATE_CTRLS 1
 
 struct nm_so_policy_rate_gate{
-  struct list_head out_list[2];
-  struct list_head pack_ctrl_out_list;  
+  struct tbx_fast_list_head out_list[2];
+  struct tbx_fast_list_head pack_ctrl_out_list;  
   unsigned nb_packets;
   unsigned round;
 };
@@ -36,13 +36,13 @@ static int
 pack_ctrl(void *private, 
 	  union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct list_head *out_list =
+  struct tbx_fast_list_head *out_list =
     &((struct nm_so_policy_rate_gate *)private)->out_list[NM_SO_POLICY_RATE_CTRLS];
   struct nm_pkt_wrap *p_so_pw = NULL;
   int err;
   
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, out_list, link) 
+  tbx_fast_list_for_each_entry(p_so_pw, out_list, link) 
     {
       if(p_so_pw->length <= 32 - NM_SO_CTRL_HEADER_SIZE)
 	{
@@ -58,7 +58,7 @@ pack_ctrl(void *private,
     goto out;
   
   /* Add the control packet to the out_list */
-  list_add_tail(&p_so_pw->link, out_list);
+  tbx_fast_list_add_tail(&p_so_pw->link, out_list);
   ((struct nm_so_policy_rate_gate *)private)->nb_packets++;
       
  out:
@@ -78,11 +78,11 @@ pack(struct nm_gate *p_gate, void *private,
   if(len <= NM_SO_MAX_SMALL) {
     /* Small packet */
     
-    struct list_head *out_list =
+    struct tbx_fast_list_head *out_list =
       &((struct nm_so_policy_rate_gate *)private)->out_list[NM_SO_POLICY_RATE_PACKS];
 
     /* We first try to find an existing packet to form an aggregate */
-    list_for_each_entry(p_so_pw, out_list, link) {
+    tbx_fast_list_for_each_entry(p_so_pw, out_list, link) {
       uint32_t h_rlen = nm_so_pw_remaining_header_area(p_so_pw);
       uint32_t d_rlen = nm_so_pw_remaining_data(p_so_pw);
       uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
@@ -119,7 +119,7 @@ pack(struct nm_gate *p_gate, void *private,
     if(err != NM_ESUCCESS)
       goto out;
 
-    list_add_tail(&p_so_pw->link, out_list);
+    tbx_fast_list_add_tail(&p_so_pw->link, out_list);
     ((struct nm_so_policy_rate_gate *)private)->nb_packets++;
     
   } else {
@@ -137,7 +137,7 @@ pack(struct nm_gate *p_gate, void *private,
 
     /* Then place it into the appropriate list of large pending
        "sends". */
-    list_add_tail(&p_so_pw->link,
+    tbx_fast_list_add_tail(&p_so_pw->link,
                   &(nm_so_tag_get(&p_gate->tags, tag)->pending_large_send));
 
     /* Finally, generate a RdV request */
@@ -158,7 +158,7 @@ pack(struct nm_gate *p_gate, void *private,
   return err;
 }
 
-static int switch_list(struct nm_so_policy_rate_gate *p_so_lg, struct list_head **p_out_list)
+static int switch_list(struct nm_so_policy_rate_gate *p_so_lg, struct tbx_fast_list_head **p_out_list)
 {
   if(*p_out_list == &(p_so_lg->out_list[NM_SO_POLICY_RATE_CTRLS]))
     *p_out_list = &(p_so_lg->out_list[NM_SO_POLICY_RATE_PACKS]);
@@ -172,7 +172,7 @@ static int
 try_and_commit(struct nm_gate *p_gate, void *private)
 {
   struct nm_so_policy_rate_gate *p_so_rg = ((struct nm_so_policy_rate_gate *)private);
-  struct list_head *out_list;
+  struct tbx_fast_list_head *out_list;
   struct nm_pkt_wrap *p_so_pw;
   unsigned *round = &p_so_rg->round;
 
@@ -184,18 +184,18 @@ try_and_commit(struct nm_gate *p_gate, void *private)
   else
     out_list = &p_so_rg->out_list[NM_SO_POLICY_RATE_CTRLS];
   
-  if(list_empty(out_list))
+  if(tbx_fast_list_empty(out_list))
     {
       switch_list(p_so_rg, &out_list);
       
-      if(list_empty(out_list))
+      if(tbx_fast_list_empty(out_list))
 	/* We're done */
 	goto out;
     }
   
   /* Simply take the head of the list */
   p_so_pw = nm_l2so(out_list->next);
-  list_del(out_list->next);
+  tbx_fast_list_del(out_list->next);
   ((struct nm_so_policy_rate_gate *)private)->nb_packets--;
   
   /* Finalize packet wrapper */
@@ -214,8 +214,8 @@ init_gate(void **addr_private)
   struct nm_so_policy_rate_gate *priv = 
     TBX_MALLOC(sizeof(struct nm_so_policy_rate_gate));
 
-  INIT_LIST_HEAD(&priv->out_list[NM_SO_POLICY_RATE_PACKS]); 
-  INIT_LIST_HEAD(&priv->out_list[NM_SO_POLICY_RATE_CTRLS]); 
+  TBX_INIT_FAST_LIST_HEAD(&priv->out_list[NM_SO_POLICY_RATE_PACKS]); 
+  TBX_INIT_FAST_LIST_HEAD(&priv->out_list[NM_SO_POLICY_RATE_CTRLS]); 
   priv->nb_packets = 0;
   priv->round = 0;
    

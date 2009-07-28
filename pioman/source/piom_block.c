@@ -90,8 +90,8 @@ __tbx_inline__
 static void 
 __piom_init_lwp(piom_comm_lwp_t lwp)
 {
-    INIT_LIST_HEAD(&lwp->chain_lwp_ready);
-    INIT_LIST_HEAD(&lwp->chain_lwp_working);
+    TBX_INIT_FAST_LIST_HEAD(&lwp->chain_lwp_ready);
+    TBX_INIT_FAST_LIST_HEAD(&lwp->chain_lwp_working);
     lwp->vp_nb = -1;
     lwp->fds[0] = lwp->fds[1] = -1;
     lwp->server = NULL;
@@ -112,10 +112,10 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
     /* Pick up a LWP from the pool */
     _piom_spin_lock(&server->lwp_lock);
     do {
-	if(!list_empty(server->list_lwp_ready.next))
-	    lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
-	else if( server->stopable && !list_empty(server->list_lwp_working.next))
-	    lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
+	if(!tbx_fast_list_empty(server->list_lwp_ready.next))
+	    lwp = tbx_fast_list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
+	else if( server->stopable && !tbx_fast_list_empty(server->list_lwp_working.next))
+	    lwp = tbx_fast_list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 	else {
 	    /* Create another LWP (warning: this is *very* expensive !) */
 	    _piom_spin_unlock(&server->lwp_lock);	
@@ -155,8 +155,8 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
 			break;
 		    PIOM_WARN_ON(req2->state & PIOM_STATE_OCCURED);
 		    /* Set the request as 'exported' */
-		    list_del_init(&req2->chain_req_to_export);
-		    list_add(&req2->chain_req_exported, &server->list_req_exported);
+		    tbx_fast_list_del_init(&req2->chain_req_to_export);
+		    tbx_fast_list_add(&req2->chain_req_exported, &server->list_req_exported);
 		    req2->state|=PIOM_STATE_EXPORTED;
 				
 		    __piom_tryunlock_server(server);
@@ -166,7 +166,7 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
 		     func) (server, PIOM_FUNCTYPE_BLOCK_WAITONE, req2,
 			    server->req_poll_grouped_nb, lwp->fds[0]);
 				
-		    list_del_init(&req2->chain_req_exported);
+		    tbx_fast_list_del_init(&req2->chain_req_exported);
 				
 		    lock = piom_ensure_trylock_server(server);
 				
@@ -226,8 +226,8 @@ __piom_syscall_loop(void * param)
     /* Main loop: wait for commands until the server is halted */
     do {
 	_piom_spin_lock(&server->lwp_lock);
-	list_del_init(&lwp->chain_lwp_working);
-	list_add_tail(&lwp->chain_lwp_ready, &server->list_lwp_ready);
+	tbx_fast_list_del_init(&lwp->chain_lwp_working);
+	tbx_fast_list_add_tail(&lwp->chain_lwp_ready, &server->list_lwp_ready);
 	lwp->state=PIOM_LWP_STATE_READY;
 	_piom_spin_unlock(&server->lwp_lock);
 
@@ -248,15 +248,15 @@ __piom_syscall_loop(void * param)
 	_piom_spin_lock(&server->lwp_lock);
 	/* Check the server's state */
 	if( lwp->server->state == PIOM_SERVER_STATE_HALTED ){
-	    list_del_init(&lwp->chain_lwp_ready);
+	    tbx_fast_list_del_init(&lwp->chain_lwp_ready);
 	    _piom_spin_unlock(&server->lwp_lock);
 	    return NULL;
 	}
 		
 	/* Remove the LWP from the ready list and add it to the working list */
 	lwp->state=PIOM_LWP_STATE_WORKING;
-	list_del_init(&lwp->chain_lwp_ready);
-	list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+	tbx_fast_list_del_init(&lwp->chain_lwp_ready);
+	tbx_fast_list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 	_piom_spin_unlock(&server->lwp_lock);
 	lock = piom_ensure_trylock_server(server);
@@ -281,8 +281,8 @@ __piom_syscall_loop(void * param)
 			    break;
 			PIOM_WARN_ON(req->state &PIOM_STATE_OCCURED);
 			/* Set the request as exported */
-			list_del_init(&req->chain_req_to_export);
-			list_add(&req->chain_req_exported, &server->list_req_exported);
+			tbx_fast_list_del_init(&req->chain_req_to_export);
+			tbx_fast_list_add(&req->chain_req_exported, &server->list_req_exported);
 			req->state|=PIOM_STATE_EXPORTED;
 					
 			__piom_tryunlock_server(server);
@@ -292,7 +292,7 @@ __piom_syscall_loop(void * param)
 			 func) (server, PIOM_FUNCTYPE_BLOCK_WAITONE, req,
 				server->req_poll_grouped_nb, lwp->fds[0]);
 					
-			list_del_init(&req->chain_req_exported);
+			tbx_fast_list_del_init(&req->chain_req_exported);
 					
 			lock = piom_ensure_trylock_server(server);
 
@@ -325,8 +325,8 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
     marcel_attr_setname(&attr, "piom_receiver");
 
     /* TODO: what happens if this function is called several times ? (are the first LWPs lost ?) */
-    INIT_LIST_HEAD(&server->list_lwp_working);
-    INIT_LIST_HEAD(&server->list_lwp_ready);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_lwp_working);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_lwp_ready);
     for(i=0;i<nb_lwps;i++)
 	{
 	    PIOM_LOGF("Creating a lwp for server %p\n", server);
@@ -337,7 +337,7 @@ piom_server_start_lwp(piom_server_t server, unsigned nb_lwps)
 
 	    /* The LWP is set as Working during initialization */
 	    _piom_spin_lock(&server->lwp_lock);
-	    list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
+	    tbx_fast_list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 	    _piom_spin_unlock(&server->lwp_lock);
 
 	    lwp->vp_nb = marcel_lwp_add_vp();

@@ -76,7 +76,7 @@ struct ma_holder {
 	/** \brief Lock of holder */
 	ma_spinlock_t lock;
 	/** \brief List of entities running or ready to run in this holder */
-	struct list_head ready_entities;
+	struct tbx_fast_list_head ready_entities;
 	/** \brief Number of entities in the ma_holder::ready_entities list above */
 	unsigned long nb_ready_entities;
 
@@ -108,7 +108,7 @@ enum marcel_holder ma_holder_type(ma_holder_t *h);
 #define MA_HOLDER_INITIALIZER(h, t) { \
 	.type = t, \
 	.lock = MA_SPIN_LOCK_UNLOCKED, \
-	.ready_entities = LIST_HEAD_INIT((h).ready_entities), \
+	.ready_entities = TBX_FAST_LIST_HEAD_INIT((h).ready_entities), \
 	.nb_ready_entities = 0, \
 }
 
@@ -119,7 +119,7 @@ static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder typ
 static __tbx_inline__ void ma_holder_init(ma_holder_t *h, enum marcel_holder type) {
 	h->type = type;
 	ma_spin_lock_init(&h->lock);
-	INIT_LIST_HEAD(&h->ready_entities);
+	TBX_INIT_FAST_LIST_HEAD(&h->ready_entities);
 	h->nb_ready_entities = 0;
 }
 
@@ -163,7 +163,7 @@ static __tbx_inline__ ma_runqueue_t *ma_rq_holder(ma_holder_t *h) {
 
 #section structures
 #depend "[types]"
-#depend "pm2_list.h"
+#depend "tbx_fast_list.h"
 #depend "asm/linux_atomic.h[marcel_types]"
 #depend "marcel_stats.h[marcel_types]"
 #ifdef MM_HEAP_ENABLED
@@ -213,7 +213,7 @@ struct ma_entity {
 	 * The list is either marcel_bubble#cached_entities if the
 	 * ma_entity#ready_holder is a bubble or ma_runqueue#active if the holder is
 	 * a runqueue. */
-	struct list_head cached_entities_item;
+	struct tbx_fast_list_head cached_entities_item;
 	/** \brief Scheduling policy code (see #__MARCEL_SCHED_AVAILABLE). */
 	int sched_policy;
 	/** \brief Current priority given to the entity. */
@@ -223,11 +223,11 @@ struct ma_entity {
 #ifdef MA__BUBBLES
 	/** \brief Item linker to the list of natural entities
 	 * (marcel_bubble#natural_entities)  in the entity's natural holding bubble. */
-	struct list_head natural_entities_item;
+	struct tbx_fast_list_head natural_entities_item;
 #endif
 	/** \brief Item linker to the cumulative list of ready and running entities
 	 * (ma_holder#ready_entities) in the entity's ma_entity#ready_holder. */
-	struct list_head ready_entities_item;
+	struct tbx_fast_list_head ready_entities_item;
 
 #ifdef MA__LWPS
 	/** \brief Depth of the (direct or indirect) runqueue onto which the entity is currently scheduled. */
@@ -244,7 +244,7 @@ struct ma_entity {
 
 #ifdef MM_MAMI_ENABLED
 	/** \brief List of memory areas attached to the entity.*/
-	struct list_head memory_areas;
+	struct tbx_fast_list_head memory_areas;
 	/** \brief Lock for serializing access to ma_entity#memory_areas */
 	marcel_spinlock_t memory_areas_lock;
 
@@ -257,7 +257,7 @@ struct ma_entity {
 
 #ifdef MA__BUBBLES
 	/** \brief General-purpose list item linker for bubble schedulers */
-	struct list_head next;
+	struct tbx_fast_list_head next;
 #endif
 };
 
@@ -307,14 +307,14 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 #define MA_SCHED_LEVEL_INIT
 #endif
 #ifdef MA__BUBBLES
-#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) .natural_entities_item = LIST_HEAD_INIT((e).natural_entities_item),
+#define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e) .natural_entities_item = TBX_FAST_LIST_HEAD_INIT((e).natural_entities_item),
 #else
 #define MA_BUBBLE_SCHED_ENTITY_INITIALIZER(e)
 #endif
 #ifdef MM_MAMI_ENABLED
 #define MA_SCHED_MEMORY_AREA_INIT(e) \
 	.memory_areas_lock = MARCEL_SPINLOCK_INITIALIZER, \
-	.memory_areas = LIST_HEAD_INIT((e).memory_areas),
+	.memory_areas = TBX_FAST_LIST_HEAD_INIT((e).memory_areas),
 #else
 #define MA_SCHED_MEMORY_AREA_INIT(e)
 #endif
@@ -329,7 +329,7 @@ static __tbx_inline__ marcel_bubble_t *ma_bubble_entity(marcel_entity_t *e) {
 	.type = t, \
 	.natural_holder = NULL, .sched_holder = NULL, .ready_holder = NULL, \
 	.ready_holder_data = NULL, \
-	.cached_entities_item = LIST_HEAD_INIT((e).cached_entities_item), \
+	.cached_entities_item = TBX_FAST_LIST_HEAD_INIT((e).cached_entities_item), \
 	/*.sched_policy = */ \
 	.prio = p, \
 	.time_slice = MA_ATOMIC_INIT(0), \
@@ -553,9 +553,9 @@ static __tbx_inline__ void ma_set_ready_holder(marcel_entity_t *e, ma_holder_t *
 	MA_BUG_ON(!ma_holder_check_locked(h));
 	e->ready_holder = h;
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->ready_entities_item, &h->ready_entities);
+		tbx_fast_list_add(&e->ready_entities_item, &h->ready_entities);
 	else
-		list_add_tail(&e->ready_entities_item, &h->ready_entities);
+		tbx_fast_list_add_tail(&e->ready_entities_item, &h->ready_entities);
 	h->nb_ready_entities++;
 }
 
@@ -623,7 +623,7 @@ static __tbx_inline__ void ma_clear_ready_holder(marcel_entity_t *e, ma_holder_t
 	MA_BUG_ON(h->nb_ready_entities <= 0);
 	MA_BUG_ON(!ma_holder_check_locked(h));
 	h->nb_ready_entities--;
-	list_del(&e->ready_entities_item);
+	tbx_fast_list_del(&e->ready_entities_item);
 	MA_BUG_ON(e->ready_holder != h);
 	e->ready_holder = NULL;
 }
@@ -662,7 +662,7 @@ static __tbx_inline__ void ma_task_check(marcel_task_t *t TBX_UNUSED) {
 			marcel_bubble_t *b = ma_bubble_holder(h);
 			MA_BUG_ON(!b->as_entity.ready_holder);
 			MA_BUG_ON(!b->as_entity.ready_holder_data);
-			MA_BUG_ON(list_empty(&b->cached_entities));
+			MA_BUG_ON(tbx_fast_list_empty(&b->cached_entities));
 		}
 #endif
 	}

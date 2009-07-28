@@ -54,7 +54,7 @@ static const struct puk_adapter_driver_s nm_so_strat_aggreg_autoextended_adapter
  */
 struct nm_so_strat_aggreg_autoextended_gate {
   /** List of raw outgoing packets. */
-  struct list_head out_list;
+  struct tbx_fast_list_head out_list;
   int nm_so_max_small;
   int nm_so_copy_on_send_threshold;
 };
@@ -84,7 +84,7 @@ static void*strat_aggreg_autoextended_instanciate(puk_instance_t ai, puk_context
   struct nm_so_strat_aggreg_autoextended_gate*status = TBX_MALLOC(sizeof(struct nm_so_strat_aggreg_autoextended_gate));
 
   num_instances++;
-  INIT_LIST_HEAD(&status->out_list);
+  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
   NM_LOGF("[loading strategy: <aggreg_autoextended>]");
 
@@ -128,7 +128,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  list_for_each_entry(p_so_pw, &status->out_list, link) {
+  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
 
     if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE) {
       /* There's not enough room to add our ctrl header to this paquet */
@@ -151,7 +151,7 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
     goto out;
 
   /* Add the control packet to the out_list */
-  list_add_tail(&p_so_pw->link, &status->out_list);
+  tbx_fast_list_add_tail(&p_so_pw->link, &status->out_list);
 
  out:
   return err;
@@ -163,7 +163,7 @@ static int strat_aggreg_autoextended_flush(void*_status,
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
 
-  list_for_each_entry(p_so_pw, &status->out_list, link) {
+  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
     NM_SO_TRACE("Marking pw %p as completed\n", p_so_pw);
     p_so_pw->is_completed = tbx_true;
   }
@@ -194,7 +194,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
   if(len <= status->nm_so_max_small)
     {
       /* small packet */
-      list_for_each_entry(p_pw, &status->out_list, link)
+      tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
 	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
 	  const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
@@ -220,14 +220,14 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
 	flags |= NM_SO_DATA_USE_COPY;
       nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, flags, &p_pw);
       p_pw->is_completed = tbx_false;
-      list_add_tail(&p_pw->link, &status->out_list);
+      tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
       nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, NM_PW_NOHEADER, &p_pw);
       p_pw->is_completed = tbx_true;
-      list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_so_generic_ctrl_header ctrl;
       nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, NM_PROTO_FLAG_LASTCHUNK);
       strat_aggreg_autoextended_pack_ctrl(status, p_pack->p_gate, &ctrl);
@@ -246,14 +246,14 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
                                                     struct nm_gate *p_gate)
 {
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
-  struct list_head *out_list = &status->out_list;
+  struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
   if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 
-  if(list_empty(out_list))
+  if(tbx_fast_list_empty(out_list))
     /* We're done */
     goto out;
 
@@ -261,7 +261,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
   p_so_pw = nm_l2so(out_list->next);
   if(p_so_pw->is_completed == tbx_true) {
     NM_SO_TRACE("pw %p is completed\n", p_so_pw);
-    list_del(out_list->next);
+    tbx_fast_list_del(out_list->next);
   } else {
     NM_SO_TRACE("pw is not completed\n");
     goto out;

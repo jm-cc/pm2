@@ -114,7 +114,7 @@ struct ma_tasklet_struct {
 	unsigned long data;
 #ifdef MARCEL_REMOTE_TASKLETS
 	marcel_vpset_t vp_set;
-	struct list_head associated_bubble;
+	struct tbx_fast_list_head associated_bubble;
 	unsigned priority;
 #endif
 	int preempt;	/* do send a signal to force quick tasklet scheduling */

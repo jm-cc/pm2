@@ -64,26 +64,26 @@ struct piom_req {
     piom_req_priority_t priority;
 
     /* List of submitted queries */
-    struct list_head chain_req_registered;
+    struct tbx_fast_list_head chain_req_registered;
     /* List of grouped queries */
-    struct list_head chain_req_grouped;
+    struct tbx_fast_list_head chain_req_grouped;
     /* List of grouped queries (for a blocking syscall)*/
-    struct list_head chain_req_block_grouped;
+    struct tbx_fast_list_head chain_req_block_grouped;
     /* Chaine des requêtes signalées OK par un call-back */
-    struct list_head chain_req_ready;
+    struct tbx_fast_list_head chain_req_ready;
     /* List of completed queries */
-    struct list_head chain_req_success;
+    struct tbx_fast_list_head chain_req_success;
     /* List of queries to be exported */
-    struct list_head chain_req_to_export;
+    struct tbx_fast_list_head chain_req_to_export;
     /* List of exported queries*/
-    struct list_head chain_req_exported;
+    struct tbx_fast_list_head chain_req_exported;
 
     /* Request state */
     unsigned state;
     /* Request's server */
     piom_server_t server;
     /* List of waiters for this request */
-    struct list_head list_wait;
+    struct tbx_fast_list_head list_wait;
 
     /* Number of polling loops before the request is exported */
     /*  -1 : don't export this request */

@@ -51,7 +51,7 @@ typedef struct per_lwp_polling_s {
 /* piom_list_poll is the list that contains the polling servers that 
  * have something to poll
  */
-LIST_HEAD(piom_list_poll);
+TBX_FAST_LIST_HEAD(piom_list_poll);
 #ifdef MARCEL
 /* lock used to access piom_list_poll */
 ma_spinlock_t piom_poll_lock = MA_SPIN_LOCK_UNLOCKED;
@@ -81,7 +81,7 @@ __piom_wake_req_waiters(piom_server_t server,
 	}
 #endif	/* PIOM__DEBUG */
 	wait->ret = code;
-	list_del_init(&wait->chain_wait);
+	tbx_fast_list_del_init(&wait->chain_wait);
 #ifdef MARCEL
 	marcel_sem_V(&wait->sem);
 #endif	/* MARCEL */
@@ -95,7 +95,7 @@ __piom_wake_id_waiters(piom_server_t server, int code)
 {
     piom_wait_t wait, tmp;
     LOG_IN();
-    list_for_each_entry_safe(wait, tmp, &server->list_id_waiters,
+    tbx_fast_list_for_each_entry_safe(wait, tmp, &server->list_id_waiters,
 			     chain_wait) {
 #ifdef PIOM__DEBUG
 	switch (code) {
@@ -110,7 +110,7 @@ __piom_wake_id_waiters(piom_server_t server, int code)
 	}
 #endif	/* PIOM__DEBUG */
 	wait->ret = code;
-	list_del_init(&wait->chain_wait);
+	tbx_fast_list_del_init(&wait->chain_wait);
 #ifdef MARCEL
 	marcel_sem_V(&wait->sem);
 #endif	/* MARCEL */
@@ -128,9 +128,9 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
     if (timeout) {
 	PIOM_EXCEPTION_RAISE(PIOM_NOT_IMPLEMENTED);
     }
-    INIT_LIST_HEAD(&wait->chain_wait);
-    INIT_LIST_HEAD(&req->list_wait);
-    list_add(&wait->chain_wait, &req->list_wait);
+    TBX_INIT_FAST_LIST_HEAD(&wait->chain_wait);
+    TBX_INIT_FAST_LIST_HEAD(&req->list_wait);
+    tbx_fast_list_add(&wait->chain_wait, &req->list_wait);
 #ifdef MARCEL
     marcel_sem_init(&wait->sem, 0);
     wait->task = MARCEL_SELF;
@@ -242,7 +242,7 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
 	PIOM_EXCEPTION_RAISE(PIOM_NOT_IMPLEMENTED);
     }
 
-    list_add(&wait.chain_wait, &server->list_id_waiters);
+    tbx_fast_list_add(&wait.chain_wait, &server->list_id_waiters);
 #ifdef MARCEL
     marcel_sem_init(&wait.sem, 0);
 #endif	/* MARCEL */

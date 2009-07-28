@@ -60,7 +60,7 @@ build_list(marcel_entity_t *e[], int ne, int nl, float per_item_load, marcel_ent
 				(ma_entity_load(e[i]) > per_item_load || ne < nl)) {
 			marcel_entity_t *ee;
 			marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-			list_for_each_entry(ee, &bb->natural_entities, natural_entities_item)
+			tbx_fast_list_for_each_entry(ee, &bb->natural_entities, natural_entities_item)
 				new_e[j++] = ee;
 		} else
 			new_e[j++] = e[i];
@@ -96,32 +96,32 @@ select_level(unsigned long *l_load, int nl) {
 }
 static inline void
 insert_level(struct marcel_topo_level **l_l,
-		struct list_head *l_dist,
+		struct tbx_fast_list_head *l_dist,
 		unsigned long *l_load,
 		int *l_n,
 		int k) {
 	unsigned long _l_load;
-	struct list_head _l_dist;
+	struct tbx_fast_list_head _l_dist;
 	struct marcel_topo_level *_l;
 	int _l_n;
 	int m;
 
 	/* Save level 0 */
-	INIT_LIST_HEAD(&_l_dist);
+	TBX_INIT_FAST_LIST_HEAD(&_l_dist);
 	_l_load = l_load[0];
-	list_splice_init(&l_dist[0],&_l_dist);
+	tbx_fast_list_splice_init(&l_dist[0],&_l_dist);
 	_l_n = l_n[0];
 	_l = l_l[0];
 	/* Shift levels */
 	for (m=0; m<k; m++) {
 		l_load[m] = l_load[m+1];
-		list_splice_init(&l_dist[m+1],&l_dist[m]);
+		tbx_fast_list_splice_init(&l_dist[m+1],&l_dist[m]);
 		l_n[m] = l_n[m+1];
 		l_l[m] = l_l[m+1];
 	}
 	/* Restore level 0 */
 	l_load[k] = _l_load;
-	list_splice(&_l_dist,&l_dist[k]);
+	tbx_fast_list_splice(&_l_dist,&l_dist[k]);
 	l_n[k] = _l_n;
 	l_l[k] = _l;
 }
@@ -198,7 +198,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 
 	/* More entities than items, greedily distribute */
 	struct marcel_topo_level *l_l[nl];
-	struct list_head l_dist[nl];
+	struct tbx_fast_list_head l_dist[nl];
 	unsigned long l_load[nl];
 	int l_n[nl];
 
@@ -209,7 +209,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	n = 0;
 	for (i=0; i<nl; i++) {
 		l_l[i] = l[i];
-		INIT_LIST_HEAD(&l_dist[i]);
+		TBX_INIT_FAST_LIST_HEAD(&l_dist[i]);
 		l_load[i] = 0;
 		l_n[i] = 0;
 	}
@@ -233,7 +233,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		bubble_sched_debug("add to level %s(%ld)",l_l[0]->rq.as_holder.name,l_load[0]);
 		/* Add this entity (heaviest) to least loaded level item */
 		PROF_EVENTSTR(sched_status, "spread: add to level");
-		list_add_tail(&e[i]->next,&l_dist[0]);
+		tbx_fast_list_add_tail(&e[i]->next,&l_dist[0]);
 		l_load[0] += ma_entity_load(e[i]);
 		l_n[0]++;
 		state = ma_get_entity(e[i]);
@@ -251,7 +251,7 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 		marcel_entity_t *ne[l_n[i]];
 		marcel_entity_t *e;
 		j = 0;
-		list_for_each_entry(e,&l_dist[i],next)
+		tbx_fast_list_for_each_entry(e,&l_dist[i],next)
 			ne[j++] = e;
 		MA_BUG_ON(j != l_n[i]);
 		if (l_l[i]->arity)

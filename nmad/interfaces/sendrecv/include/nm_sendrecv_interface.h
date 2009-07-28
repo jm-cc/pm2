@@ -23,7 +23,7 @@
  * @{
  */
 
-#include <pm2_list.h>
+#include <tbx_fast_list.h>
 #include <nm_public.h>
 #ifdef PIOMAN
 #include "pioman.h"
@@ -114,7 +114,7 @@ struct nm_sr_request_s
   nm_sr_cond_t status;
   nm_sr_event_monitor_t monitor;
   void *ref;
-  struct list_head _link;
+  struct tbx_fast_list_head _link;
 };
 
 

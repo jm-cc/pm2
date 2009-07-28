@@ -479,7 +479,7 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale,
     reset_scaled_position (&state);
 
     /* Draws filled zone. */
-    list_for_each_entry (current_action, &shape->actions, action_list) {
+    tbx_fast_list_for_each_entry (current_action, &shape->actions, action_list) {
         if (current_action->type < BGL_ACTION_COUNT)
             {
                 do_action_fn_t do_action = actions_TABLE[current_action->type];
@@ -497,7 +497,7 @@ bgl_anim_DisplayItem (BubbleDisplayItem display_item, float scale,
     reset_scaled_position (&state);
 
     /* Draws lines. */
-    list_for_each_entry (current_action, &shape->actions, action_list) {
+    tbx_fast_list_for_each_entry (current_action, &shape->actions, action_list) {
         if (current_action->type < BGL_ACTION_COUNT)
             {
                 do_action_fn_t do_action = actions_TABLE[current_action->type];
@@ -542,7 +542,7 @@ bgl_anim_DisplayFrame (BubbleMovie movie, int iframe, float scale,
     glEnable (GL_LINE_SMOOTH);
     glEnable (GL_POLYGON_SMOOTH);
     glLineWidth(4);
-    list_for_each_entry (display_item, &frame->display_items, disp_list) {
+    tbx_fast_list_for_each_entry (display_item, &frame->display_items, disp_list) {
         bgl_anim_DisplayItem (display_item, scale,
                               goff_x, goff_y, rev_x, rev_y);
     }

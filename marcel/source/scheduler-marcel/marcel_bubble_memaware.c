@@ -111,7 +111,7 @@ static void ma_lifton_entities(struct marcel_topo_level *where, struct marcel_to
   marcel_entity_t *entity;
 
   /* on regarde ce qui s'execute sur le niveau */
-  list_for_each_entry(entity, &rqlevel->as_holder.ready_entities, ready_entities_item) {
+  tbx_fast_list_for_each_entry(entity, &rqlevel->as_holder.ready_entities, ready_entities_item) {
     /* on rassemble la bulle */
     if (entity->type == MA_BUBBLE_ENTITY && entity != &marcel_root_bubble.as_entity) {
       ma_bubble_lock_all_but_levels(ma_bubble_entity(entity));
@@ -158,7 +158,7 @@ static void ma_work_is_balanced_down(struct marcel_topo_level *me, int *number, 
 
   bubble_sched_debug("down me %p\n",me);
   ma_holder_rawlock(h);
-  list_for_each_entry(e, &h->ready_entities, ready_entities_item) {
+  tbx_fast_list_for_each_entry(e, &h->ready_entities, ready_entities_item) {
     /* charge totale */
     if (e->type == MA_BUBBLE_ENTITY)
       ma_bubble_synthesize_stats(ma_bubble_entity(e));

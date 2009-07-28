@@ -34,8 +34,8 @@ typedef enum {
 struct piom_comm_lwp {
 	int vp_nb; 		/* LWP number */
 	int fds[2];		/* file descriptor used to unblock the lwp  */
-	struct list_head chain_lwp_ready;
-	struct list_head chain_lwp_working;
+	struct tbx_fast_list_head chain_lwp_ready;
+	struct tbx_fast_list_head chain_lwp_working;
 	piom_server_t server;
 	marcel_t pid;
         volatile piom_lwp_state_t state;    

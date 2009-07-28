@@ -83,12 +83,12 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #define MA_BITMAP_SIZE ((MA_MAX_PRIO+1+MA_BITS_PER_LONG)/MA_BITS_PER_LONG)
 
 #section marcel_structures
-#depend "pm2_list.h"
+#depend "tbx_fast_list.h"
 
 struct prio_array {
 	int nr_active;
 	unsigned long bitmap[MA_BITMAP_SIZE];
-	struct list_head queue[MA_MAX_PRIO];
+	struct tbx_fast_list_head queue[MA_MAX_PRIO];
 };
 
 #section marcel_types
@@ -121,7 +121,7 @@ struct ma_runqueue {
 /* 	int prev_node_load[MAX_NUMNODES]; */
 /* #endif */
 /* 	marcel_task_t *migration_thread; */
-/* 	struct list_head migration_queue; */
+/* 	struct tbx_fast_list_head migration_queue; */
 
 /* 	ma_atomic_t nr_iowait; */
 
@@ -138,7 +138,7 @@ struct ma_runqueue {
 
 #ifdef MA__BUBBLES
         /** \brief General-purpose list link for bubble schedulers */
-	struct list_head next;
+	struct tbx_fast_list_head next;
 #endif
 };
 
@@ -176,23 +176,23 @@ marcel_task_t ma_lwp_curr(ma_lwp_t lwp);
 #define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
 struct prio_array;
 /* \brief Queue of entities with priority \e prio in array \e array */
-struct list_head *ma_array_queue(struct prio_array *array, int prio);
+struct tbx_fast_list_head *ma_array_queue(struct prio_array *array, int prio);
 #define ma_array_queue(array,prio)	((array)->queue + (prio))
 /** \brief Queue of priority \e prio in runqueue \e rq */
-struct list_head *ma_rq_queue(ma_runqueue_t *rq, int prio);
+struct tbx_fast_list_head *ma_rq_queue(ma_runqueue_t *rq, int prio);
 #define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
 /** \brief Whether queue \e queue is empty */
-int ma_queue_empty(struct list_head *queue);
-#define ma_queue_empty(queue)	list_empty(queue)
+int ma_queue_empty(struct tbx_fast_list_head *queue);
+#define ma_queue_empty(queue)	tbx_fast_list_empty(queue)
 /** \brief First entity in queue \e queue */
-marcel_entity_t *ma_queue_entry(struct list_head *queue);
-#define ma_queue_entry(queue)	list_entry((queue)->next, marcel_entity_t, cached_entities_item)
+marcel_entity_t *ma_queue_entry(struct tbx_fast_list_head *queue);
+#define ma_queue_entry(queue)	tbx_fast_list_entry((queue)->next, marcel_entity_t, cached_entities_item)
 
 /** \brief Iterate through the entities held in queue \e queue */
-#define ma_queue_for_each_entry(e, queue) list_for_each_entry(e, queue, cached_entities_item)
+#define ma_queue_for_each_entry(e, queue) tbx_fast_list_for_each_entry(e, queue, cached_entities_item)
 /** \brief Same as ma_queue_for_each_entry(), but safe version against current
  * item removal: prefetches the next entity in \e ee. */
-#define ma_queue_for_each_entry_safe(e, ee, queue) list_for_each_entry_safe(e, ee, queue, cached_entities_item)
+#define ma_queue_for_each_entry_safe(e, ee, queue) tbx_fast_list_for_each_entry_safe(e, ee, queue, cached_entities_item)
 
 /*
  * Adding/removing a task to/from a priority array:
@@ -206,8 +206,8 @@ static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *e, ma_prio_a
 	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
 	if (e->prio != MA_NOSCHED_PRIO)
 		array->nr_active--;
-	list_del(&e->cached_entities_item);
-	if (list_empty(ma_array_queue(array, e->prio))) {
+	tbx_fast_list_del(&e->cached_entities_item);
+	if (tbx_fast_list_empty(ma_array_queue(array, e->prio))) {
 		sched_debug("array %p (prio %d) empty\n",array, e->prio);
 		__ma_clear_bit(e->prio, array->bitmap);
 	}
@@ -228,9 +228,9 @@ static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_a
 {
 	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
 	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		list_add(&e->cached_entities_item, ma_array_queue(array, e->prio));
+		tbx_fast_list_add(&e->cached_entities_item, ma_array_queue(array, e->prio));
 	else
-		list_add_tail(&e->cached_entities_item, ma_array_queue(array, e->prio));
+		tbx_fast_list_add_tail(&e->cached_entities_item, ma_array_queue(array, e->prio));
 	__ma_set_bit(e->prio, array->bitmap);
 	if (e->prio != MA_NOSCHED_PRIO)
 		array->nr_active++;
@@ -244,23 +244,23 @@ static __tbx_inline__ void ma_array_enqueue_task(marcel_task_t *p, ma_prio_array
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq);
+static __tbx_inline__ void ma_array_entity_list_add(struct tbx_fast_list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq);
 #section marcel_inline
-static __tbx_inline__ void ma_array_entity_list_add(struct list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
+static __tbx_inline__ void ma_array_entity_list_add(struct tbx_fast_list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
 	MA_BUG_ON(e->ready_holder_data);
-	list_add_tail(&e->cached_entities_item, head);
+	tbx_fast_list_add_tail(&e->cached_entities_item, head);
 	e->ready_holder_data = array;
 	MA_BUG_ON(e->ready_holder);
 	e->ready_holder = &rq->as_holder;
 }
 
 #section marcel_functions
-static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq);
+static __tbx_inline__ void ma_array_enqueue_entity_list(struct tbx_fast_list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq);
 #define ma_array_enqueue_task_list ma_array_enqueue_entity_list
 #section marcel_inline
-static __tbx_inline__ void ma_array_enqueue_entity_list(struct list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq TBX_UNUSED)
+static __tbx_inline__ void ma_array_enqueue_entity_list(struct tbx_fast_list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq TBX_UNUSED)
 {
-	list_splice(head, ma_array_queue(array, prio));
+	tbx_fast_list_splice(head, ma_array_queue(array, prio));
 	__ma_set_bit(prio, array->bitmap);
 	array->nr_active += num;
 }

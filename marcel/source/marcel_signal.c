@@ -317,7 +317,7 @@ static void marcel_sigtransfer(struct ma_softirq_action *action)
 	/* Iterate over all threads */
 	for_all_vp_from_begin(vp, number) {
 		_ma_raw_spin_lock(&ma_topo_vpdata_l(vp, threadlist_lock));
-		list_for_each_entry(t, &ma_topo_vpdata_l(vp, all_threads),
+		tbx_fast_list_for_each_entry(t, &ma_topo_vpdata_l(vp, all_threads),
 		    all_threads) {
 			_ma_raw_spin_lock(&t->siglock);
 			deliver = 0;

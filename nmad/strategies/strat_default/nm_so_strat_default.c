@@ -55,7 +55,7 @@ static const struct puk_adapter_driver_s nm_strat_default_adapter_driver =
  */
 struct nm_so_strat_default {
   /** List of raw outgoing packets. */
-  struct list_head out_list;
+  struct tbx_fast_list_head out_list;
   int nm_so_max_small;
   int nm_so_copy_on_send_threshold;
 };
@@ -79,7 +79,7 @@ static void*strat_default_instanciate(puk_instance_t ai, puk_context_t context)
 {
   struct nm_so_strat_default *status = TBX_MALLOC(sizeof(struct nm_so_strat_default));
 
-  INIT_LIST_HEAD(&status->out_list);
+  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
   NM_LOGF("[loading strategy: <default>]");
 
@@ -122,7 +122,7 @@ static int strat_default_pack_ctrl(void*_status,
     goto out;
 
   /* Add the control packet to the out_list */
-  list_add_tail(&p_so_pw->link,
+  tbx_fast_list_add_tail(&p_so_pw->link,
                 &status->out_list);
 
  out:
@@ -157,7 +157,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	    flags |= NM_SO_DATA_USE_COPY;
 	  /* Simply form a new packet wrapper and add it to the out_list */
 	  nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, tbx_true, flags, &p_pw);
-	  list_add_tail(&p_pw->link, &status->out_list);
+	  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
 	}
       else
 	{
@@ -165,7 +165,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	  /* First allocate a packet wrapper */
 	  nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, tbx_true, NM_PW_NOHEADER, &p_pw);
 	  /* Then place it into the list of large pending sends. */
-	  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+	  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	  /* Finally, generate a RdV request */
 	  union nm_so_generic_ctrl_header ctrl;
 	  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, p_pack->len, 0, NM_PROTO_FLAG_LASTCHUNK);
@@ -190,7 +190,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	      /* Simply form a new packet wrapper and add it to the out_list */
 	      nm_so_pw_alloc_and_fill_with_data(p_pack, iov[i].iov_base, iov[i].iov_len,
 						offset, is_last_chunk, flags, &p_pw);
-	      list_add_tail(&p_pw->link, &status->out_list);
+	      tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
 	    }
 	  else
 	    {
@@ -201,7 +201,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 						offset, is_last_chunk,
 						NM_PW_NOHEADER, &p_pw);
 	      /* Then place it into the appropriate list of large pending "sends". */
-	      list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+	      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	      /* Finally, generate a RdV request */
 	      union nm_so_generic_ctrl_header ctrl;
 	      nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, flags);
@@ -236,12 +236,12 @@ static int strat_default_try_and_commit(void*_status,
 					struct nm_gate *p_gate)
 {
   struct nm_so_strat_default*status = _status;
-  struct list_head *out_list = &status->out_list;
+  struct tbx_fast_list_head *out_list = &status->out_list;
   if((p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 0) &&
-     !(list_empty(out_list)))
+     !(tbx_fast_list_empty(out_list)))
     {
       struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
-      list_del(out_list->next);
+      tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
     }

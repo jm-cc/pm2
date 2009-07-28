@@ -16,7 +16,7 @@
 #ifndef BUBBLE_GL_ANIM_H
 #define BUBBLE_GL_ANIM_H
 
-#include "pm2_list.h"
+#include "tbx_fast_list.h"
 #include <stdio.h>
 
 #ifdef BUBBLE_GL_DEBUG
@@ -42,7 +42,7 @@ struct BGLColor {
 
 /*! Fill style structure. */
 struct BGLFillStyle {
-    struct list_head style_list; /*! < position in styles list. */
+    struct tbx_fast_list_head style_list; /*! < position in styles list. */
     struct BGLColor color;       /*! < Color of the style. */
 };
 
@@ -73,7 +73,7 @@ typedef enum {
 /*! Base action structure. */
 typedef struct bgl_action_s {
     bgl_action_type_e_t type;     /*! < action type. */
-    struct list_head action_list; /*! < Position in actions list. */
+    struct tbx_fast_list_head action_list; /*! < Position in actions list. */
     size_t size;                  /*! < Size of the action structure. */
 } bgl_action_t;
 
@@ -141,11 +141,11 @@ struct BGLBlock {
 /*! Shape structure. */
 struct BGLShape {
     struct BGLBlock blk;      /*! < Block base structure. */
-    struct list_head actions; /*! < Head of actions list. */
+    struct tbx_fast_list_head actions; /*! < Head of actions list. */
 
     struct bgl_vector_s orig; /*! < Offset of actions coordinates. */
 
-    struct list_head styles;  /*! < Head of created fill styles. */
+    struct tbx_fast_list_head styles;  /*! < Head of created fill styles. */
 
     /* drawing data */
     struct BGLFillStyle *current_style; /*! < Current fill style. */
@@ -165,7 +165,7 @@ struct BGLMorph {
 
 /*! Display Item structure. */
 struct BGLDisplayItem {
-    struct list_head     disp_list;  /*! < Position in display item list. */
+    struct tbx_fast_list_head     disp_list;  /*! < Position in display item list. */
     struct BGLBlock     *block;      /*! < Source block. */
     struct BGLBlock     *disp_block; /*! < Block to display. */
     struct bgl_vector_s  current;    /*! < Position for current frame. */
@@ -176,9 +176,9 @@ struct BGLDisplayItem {
 
 /*! Frame structure. */
 typedef struct bgl_frame_s {
-    struct list_head  frame_list;    /*! < Position of the frame. */
+    struct tbx_fast_list_head  frame_list;    /*! < Position of the frame. */
     float             duration;      /*! < Frame duration, in seconds. */
-    struct list_head  display_items; /*! < Head of display items list. */
+    struct tbx_fast_list_head  display_items; /*! < Head of display items list. */
     const char *      status;        /*! < Status text. */
 } bgl_frame_t;
 
@@ -188,7 +188,7 @@ typedef struct bgl_frame_s {
  *  \todo complete structure.
  */
 struct BGLMovie {
-    struct list_head frames;    /*! < Head of frames list. */
+    struct tbx_fast_list_head frames;    /*! < Head of frames list. */
 
     /* Set in BGLMovie_save. */
     int           frames_count; /*! < Frames count. */

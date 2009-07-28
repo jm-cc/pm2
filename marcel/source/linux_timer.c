@@ -75,7 +75,7 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
 {
 	unsigned long expires = timer->expires;
 	unsigned long idx = expires - base->timer_jiffies;
-	struct list_head *vec;
+	struct tbx_fast_list_head *vec;
 
 	mdebug("adding timer [%p] at %li\n", timer, expires); 
 
@@ -112,7 +112,7 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
 	/*
 	 * Timers are FIFO:
 	 */
-	list_add_tail(&timer->entry, vec);
+	tbx_fast_list_add_tail(&timer->entry, vec);
 }
 
 TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
@@ -165,7 +165,7 @@ repeat:
 	 * the new one:
 	 */
 	if (old_base) {
-		list_del(&timer->entry);
+		tbx_fast_list_del(&timer->entry);
 		ret = 1;
 	}
 	timer->expires = expires;
@@ -245,7 +245,7 @@ repeat:
 		ma_spin_unlock_softirq(&base->lock);
 		goto repeat;
 	}
-	list_del(&timer->entry);
+	tbx_fast_list_del(&timer->entry);
 	timer->base = NULL;
 	ma_spin_unlock_softirq(&base->lock);
 
@@ -301,7 +301,7 @@ del_again:
 static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 {
 	/* cascade all the timers from tv up one level */
-	struct list_head *head, *curr;
+	struct tbx_fast_list_head *head, *curr;
 
 	head = tv->vec + index;
 	curr = head->next;
@@ -312,12 +312,12 @@ static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 	while (curr != head) {
 		struct ma_timer_list *tmp;
 
-		tmp = list_entry(curr, struct ma_timer_list, entry);
+		tmp = tbx_fast_list_entry(curr, struct ma_timer_list, entry);
 		MA_BUG_ON(tmp->base != base);
 		curr = curr->next;
 		internal_add_timer(base, tmp);
 	}
-	INIT_LIST_HEAD(head);
+	TBX_INIT_FAST_LIST_HEAD(head);
 
 	return index;
 }
@@ -340,8 +340,8 @@ static inline void __run_timers(ma_tvec_base_t *base)
 
 	ma_spin_lock_softirq(&base->lock);
 	while (ma_time_after_eq(ma_jiffies, base->timer_jiffies)) {
-		struct list_head work_list = LIST_HEAD_INIT(work_list);
-		struct list_head *head = &work_list;
+		struct tbx_fast_list_head work_list = TBX_FAST_LIST_HEAD_INIT(work_list);
+		struct tbx_fast_list_head *head = &work_list;
  		int index = base->timer_jiffies & TVR_MASK;
  
 		/*
@@ -353,17 +353,17 @@ static inline void __run_timers(ma_tvec_base_t *base)
 					!cascade(base, &base->tv4, INDEX(2)))
 			cascade(base, &base->tv5, INDEX(3));
 		++base->timer_jiffies; 
-		list_splice_init(base->tv1.vec + index, &work_list);
+		tbx_fast_list_splice_init(base->tv1.vec + index, &work_list);
 repeat:
-		if (!list_empty(head)) {
+		if (!tbx_fast_list_empty(head)) {
 			void (*fn)(unsigned long);
 			unsigned long data;
 
-			timer = list_entry(head->next,struct ma_timer_list,entry);
+			timer = tbx_fast_list_entry(head->next,struct ma_timer_list,entry);
  			fn = timer->function;
  			data = timer->data;
 
-			list_del(&timer->entry);
+			tbx_fast_list_del(&timer->entry);
 			set_running_timer(base, timer);
 			ma_smp_wmb();
 			timer->base = NULL;
@@ -511,13 +511,13 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 	base = &ma_per_lwp(tvec_bases, lwp);
 	ma_spin_lock_init(&base->lock);
 	for (j = 0; j < TVN_SIZE; j++) {
-		INIT_LIST_HEAD(base->tv5.vec + j);
-		INIT_LIST_HEAD(base->tv4.vec + j);
-		INIT_LIST_HEAD(base->tv3.vec + j);
-		INIT_LIST_HEAD(base->tv2.vec + j);
+		TBX_INIT_FAST_LIST_HEAD(base->tv5.vec + j);
+		TBX_INIT_FAST_LIST_HEAD(base->tv4.vec + j);
+		TBX_INIT_FAST_LIST_HEAD(base->tv3.vec + j);
+		TBX_INIT_FAST_LIST_HEAD(base->tv2.vec + j);
 	}
 	for (j = 0; j < TVR_SIZE; j++)
-		INIT_LIST_HEAD(base->tv1.vec + j);
+		TBX_INIT_FAST_LIST_HEAD(base->tv1.vec + j);
 
 	base->timer_jiffies = ma_jiffies;
 

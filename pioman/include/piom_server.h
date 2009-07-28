@@ -48,26 +48,26 @@ struct piom_server {
 #endif	/* MARCEL */
 
 	/* List of submitted queries */
-    struct list_head list_req_registered;
+    struct tbx_fast_list_head list_req_registered;
     /* List of ready queries */
-    struct list_head list_req_ready;
+    struct tbx_fast_list_head list_req_ready;
     /* Liste des requêtes pour ceux en attente dans la liste précédente */
-    struct list_head list_req_success;
+    struct tbx_fast_list_head list_req_success;
     /* List of waiters */
-    struct list_head list_id_waiters;
+    struct tbx_fast_list_head list_id_waiters;
 
 #ifdef PIOM_BLOCKING_CALLS
     /* Liste des requêtes à exporter */
-    struct list_head list_req_to_export;
+    struct tbx_fast_list_head list_req_to_export;
     /* Liste des requêtes exportées */
-    struct list_head list_req_exported;
+    struct tbx_fast_list_head list_req_exported;
 
     /* spinlock to modify the lists of lwp */
     ma_spinlock_t lwp_lock;
     /* List of ready LWPs */
-    struct list_head list_lwp_ready;
+    struct tbx_fast_list_head list_lwp_ready;
     /* List of working LWPs */
-    struct list_head list_lwp_working;
+    struct tbx_fast_list_head list_lwp_working;
 #endif /* PIOM_BLOCKING_CALLS */
 
 #ifdef MARCEL
@@ -82,9 +82,9 @@ struct piom_server {
     int registered_req_not_yet_polled;
 
     /* List of grouped queries for polling (or being grouped) */
-    struct list_head list_req_poll_grouped;
+    struct tbx_fast_list_head list_req_poll_grouped;
     /* List of grouped queries for syscall (or being grouped) */
-    struct list_head list_req_block_grouped;
+    struct tbx_fast_list_head list_req_block_grouped;
     /* Amount of queries in list_req_poll_grouped */
     int req_poll_grouped_nb;
     int req_block_grouped_nb;
@@ -103,7 +103,7 @@ struct piom_server {
 
     /* List of servers currently doing some polling
        (state == 2 and tasks waiting for polling */
-    struct list_head chain_poll;
+    struct tbx_fast_list_head chain_poll;
 
 #ifdef MARCEL
     /* Tasklet and timer used for polling */
@@ -139,26 +139,26 @@ struct piom_server {
     {									             \
 	.lock=MA_SPIN_LOCK_UNLOCKED,					             \
 	    .lock_owner=NULL,						             \
-	    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered),          \
-	    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready),	             \
-	    .list_req_success=LIST_HEAD_INIT((var).list_req_success),	             \
-	    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters),	             \
+	    .list_req_registered=TBX_FAST_LIST_HEAD_INIT((var).list_req_registered),          \
+	    .list_req_ready=TBX_FAST_LIST_HEAD_INIT((var).list_req_ready),	             \
+	    .list_req_success=TBX_FAST_LIST_HEAD_INIT((var).list_req_success),	             \
+	    .list_id_waiters=TBX_FAST_LIST_HEAD_INIT((var).list_id_waiters),	             \
 	    .req_success_lock=MA_SPIN_LOCK_UNLOCKED,			             \
 	    .req_ready_lock=MA_SPIN_LOCK_UNLOCKED,			             \
 	    .registered_req_not_yet_polled=0,				             \
-	    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped),      \
-	    .list_req_block_grouped=LIST_HEAD_INIT((var).list_req_block_grouped),    \
-	    .list_req_to_export=LIST_HEAD_INIT((var).list_req_to_export),            \
-	    .list_req_exported=LIST_HEAD_INIT((var).list_req_exported),              \
+	    .list_req_poll_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_poll_grouped),      \
+	    .list_req_block_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_block_grouped),    \
+	    .list_req_to_export=TBX_FAST_LIST_HEAD_INIT((var).list_req_to_export),            \
+	    .list_req_exported=TBX_FAST_LIST_HEAD_INIT((var).list_req_exported),              \
             .lwp_lock=MA_SPIN_LOCK_UNLOCKED,                                         \
-	    .list_lwp_ready=LIST_HEAD_INIT((var).list_lwp_ready),	             \
-	    .list_lwp_working=LIST_HEAD_INIT((var).list_lwp_working),	             \
+	    .list_lwp_ready=TBX_FAST_LIST_HEAD_INIT((var).list_lwp_ready),	             \
+	    .list_lwp_working=TBX_FAST_LIST_HEAD_INIT((var).list_lwp_working),	             \
 	    .req_poll_grouped_nb=0,					             \
 	    .poll_points=0,						             \
 	    .period=0,							             \
 	    .stopable=0,						             \
 	    .max_poll=-1,						             \
-	    .chain_poll=LIST_HEAD_INIT((var).chain_poll),		             \
+	    .chain_poll=TBX_FAST_LIST_HEAD_INIT((var).chain_poll),		             \
 	    .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet,		             \
 					   &piom_poll_from_tasklet,	             \
 					   (unsigned long)(piom_server_t)&(var),1 ), \
@@ -174,20 +174,20 @@ struct piom_server {
     {									             \
 	.lock=MA_SPIN_LOCK_UNLOCKED,					             \
 	    .lock_owner=NULL,						             \
-	    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered),          \
-	    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready),	             \
-	    .list_req_success=LIST_HEAD_INIT((var).list_req_success),	             \
-	    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters),	             \
+	    .list_req_registered=TBX_FAST_LIST_HEAD_INIT((var).list_req_registered),          \
+	    .list_req_ready=TBX_FAST_LIST_HEAD_INIT((var).list_req_ready),	             \
+	    .list_req_success=TBX_FAST_LIST_HEAD_INIT((var).list_req_success),	             \
+	    .list_id_waiters=TBX_FAST_LIST_HEAD_INIT((var).list_id_waiters),	             \
 	    .req_success_lock=MA_SPIN_LOCK_UNLOCKED,			             \
 	    .req_ready_lock=MA_SPIN_LOCK_UNLOCKED,			             \
 	    .registered_req_not_yet_polled=0,				             \
-	    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped),      \
+	    .list_req_poll_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_poll_grouped),      \
 	    .req_poll_grouped_nb=0,					             \
 	    .poll_points=0,						             \
 	    .period=0,							             \
 	    .stopable=0,						             \
 	    .max_poll=-1,						             \
-	    .chain_poll=LIST_HEAD_INIT((var).chain_poll),		             \
+	    .chain_poll=TBX_FAST_LIST_HEAD_INIT((var).chain_poll),		             \
 	    .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet,		             \
 					   &piom_poll_from_tasklet,	             \
 					   (unsigned long)(piom_server_t)&(var),1 ), \
@@ -202,18 +202,18 @@ struct piom_server {
 
 #define PIOM_SERVER_INIT(var, sname)					        \
     {									        \
-	.list_req_registered=LIST_HEAD_INIT((var).list_req_registered),         \
-	    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready),	        \
-	    .list_req_success=LIST_HEAD_INIT((var).list_req_success),	        \
-	    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters),	        \
+	.list_req_registered=TBX_FAST_LIST_HEAD_INIT((var).list_req_registered),         \
+	    .list_req_ready=TBX_FAST_LIST_HEAD_INIT((var).list_req_ready),	        \
+	    .list_req_success=TBX_FAST_LIST_HEAD_INIT((var).list_req_success),	        \
+	    .list_id_waiters=TBX_FAST_LIST_HEAD_INIT((var).list_id_waiters),	        \
 	    .registered_req_not_yet_polled=0,				        \
-	    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+	    .list_req_poll_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_poll_grouped), \
 	    .req_poll_grouped_nb=0,					        \
 	    .poll_points=0,						        \
 	    .period=0,							        \
 	    .stopable=0,						        \
 	    .max_poll=-1,						        \
-	    .chain_poll=LIST_HEAD_INIT((var).chain_poll),		        \
+	    .chain_poll=TBX_FAST_LIST_HEAD_INIT((var).chain_poll),		        \
 	    .state=PIOM_SERVER_STATE_INIT,				        \
 	    .name=sname,						        \
 	    }

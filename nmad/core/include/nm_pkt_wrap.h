@@ -128,7 +128,7 @@ struct nm_pkt_wrap
   int pending_skips;
 
   /* used to store the pw in: out_list in strategy, pending_large_send in sender, pending_large_recv in receiver */
-  struct list_head   link;
+  struct tbx_fast_list_head   link;
 
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];

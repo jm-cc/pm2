@@ -46,7 +46,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		PROF_EVENT1(rq_lock,&ma_gang_rq);
 		ma_holder_rawlock(&ma_gang_rq.as_holder);
 		PROF_EVENTSTR(sched_status,"gang scheduler: cleaning gang runqueue");
-		list_for_each_entry_safe(e, ee, &work_rq->as_holder.ready_entities, ready_entities_item) {
+		tbx_fast_list_for_each_entry_safe(e, ee, &work_rq->as_holder.ready_entities, ready_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
 				ma_put_entity(e, &ma_gang_rq.as_holder, state);
@@ -54,7 +54,7 @@ any_t marcel_gang_scheduler(any_t runqueue) {
 		}
 		/* Then put one job on work_rq */
 		PROF_EVENTSTR(sched_status,"gang scheduler: putting one job");
-		list_for_each_entry(e, &ma_gang_rq.as_holder.ready_entities, ready_entities_item) {
+		tbx_fast_list_for_each_entry(e, &ma_gang_rq.as_holder.ready_entities, ready_entities_item) {
 			MA_BUG_ON(e->type != MA_BUBBLE_ENTITY);
 			b = ma_bubble_entity(e);
 			if (b->as_holder.nb_ready_entities) {
@@ -95,7 +95,7 @@ static any_t TBX_NORETURN marcel_gang_cleaner(any_t foo) {
 		ma_holder_lock_softirq(&work_rq->as_holder);
 		ma_holder_rawlock(&ma_gang_rq.as_holder);
 		PROF_EVENTSTR(sched_status,"gang cleaner: cleaning gang runqueue");
-		list_for_each_entry_safe(e, ee, &work_rq->as_holder.ready_entities, ready_entities_item) {
+		tbx_fast_list_for_each_entry_safe(e, ee, &work_rq->as_holder.ready_entities, ready_entities_item) {
 			if (e->type == MA_BUBBLE_ENTITY) {
 				int state = ma_get_entity(e);
 				ma_put_entity(e, &ma_gang_rq.as_holder, state);
@@ -186,7 +186,7 @@ static int gang_sched_exit(marcel_bubble_sched_t *self) {
 	ma_holder_lock_softirq(&ma_main_runqueue.as_holder);
 	PROF_EVENT1(rq_lock,&ma_gang_rq);
 	ma_holder_rawlock(&ma_gang_rq.as_holder);
-	list_for_each_entry_safe(e, ee, &ma_gang_rq.as_holder.ready_entities, ready_entities_item) {
+	tbx_fast_list_for_each_entry_safe(e, ee, &ma_gang_rq.as_holder.ready_entities, ready_entities_item) {
 		int state = ma_get_entity(e);
 		ma_put_entity(e, &ma_main_runqueue.as_holder, state);
 	}

@@ -52,7 +52,7 @@ static const struct puk_adapter_driver_s nm_so_strat_split_balance_adapter_drive
 
 struct nm_so_strat_split_balance {
   /* list of raw outgoing packets */
-  struct list_head out_list;
+  struct tbx_fast_list_head out_list;
   unsigned nb_packets;
   int nm_so_max_small;
   int nm_so_copy_on_send_threshold;
@@ -77,7 +77,7 @@ static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t con
 {
   struct nm_so_strat_split_balance *status = TBX_MALLOC(sizeof(struct nm_so_strat_split_balance));
 
-  INIT_LIST_HEAD(&status->out_list);
+  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
   status->nb_packets = 0;
 
@@ -111,7 +111,7 @@ strat_split_balance_pack_ctrl(void *_status,
   struct nm_so_strat_split_balance*status = _status;
   int err;
 
-  if(!list_empty(&status->out_list)) {
+  if(!tbx_fast_list_empty(&status->out_list)) {
     /* Inspect only the head of the list */
     p_so_pw = nm_l2so(status->out_list.next);
 
@@ -139,7 +139,7 @@ strat_split_balance_pack_ctrl(void *_status,
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 0, p_so_pw);
 
   /* Add the control packet to the BEGINING of out_list */
-  list_add(&p_so_pw->link, &status->out_list);
+  tbx_fast_list_add(&p_so_pw->link, &status->out_list);
   status->nb_packets++;
 
  out:
@@ -153,7 +153,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
-  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_so_generic_ctrl_header ctrl;
   nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
@@ -172,7 +172,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   if(p_pack->len <= 512 || status->nb_packets >= 2)
     {
       /* We first try to find an existing packet to form an aggregate */
-      list_for_each_entry(p_pw, &status->out_list, link)
+      tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
 	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
 	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
@@ -198,7 +198,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
   FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, p_so_pw);
   FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 0, p_so_pw);
-  list_add_tail(&p_pw->link, &status->out_list);
+  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;
 }
 
@@ -214,7 +214,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
   if(len <= 512 || status->nb_packets >= 2)
     {
       /* We first try to find an existing packet to form an aggregate */
-      list_for_each_entry(p_pw, &status->out_list, link)
+      tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
 	  uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
 	  uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
@@ -229,7 +229,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
   int flags = NM_SO_DATA_USE_COPY;
   nm_so_pw_alloc(flags, &p_pw);
   nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
-  list_add_tail(&p_pw->link, &status->out_list);
+  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;
 }
 
@@ -267,7 +267,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
       p_pw->length = last - first;
     }
   /* Then place it into the appropriate list of large pending "sends". */
-  list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
+  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 
   /* Finally, generate a RdV request */
   union nm_so_generic_ctrl_header ctrl;
@@ -341,13 +341,13 @@ static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
 static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_gate)
 {
   struct nm_so_strat_split_balance*status = _status;
-  struct list_head *out_list = &status->out_list;
+  struct tbx_fast_list_head *out_list = &status->out_list;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
   const nm_drv_id_t*drv_ids = NULL;
   nm_ns_inc_lats(p_gate->p_core, &drv_ids, &nb_drivers);
   assert(nb_drivers > 0);
-  while(n < nb_drivers && !list_empty(out_list))
+  while(n < nb_drivers && !tbx_fast_list_empty(out_list))
     {
       const nm_drv_id_t drv_id = drv_ids[n];
       assert(drv_id >= 0 && drv_id < nb_drivers);
@@ -358,7 +358,7 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 	  const nm_drv_id_t drv_id = drv_ids[n];
 	  /* Take the packet at the head of the list and post it on trk #0 */
 	  struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
-	  list_del(out_list->next);
+	  tbx_fast_list_del(out_list->next);
 	  status->nb_packets--;
 	  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, drv_id);
 	}

@@ -43,9 +43,9 @@ static int ma_call_lwp_notifier(unsigned long val, ma_lwp_t lwp)
 
 marcel_lwp_t __main_lwp = MA_LWP_INITIALIZER(&__main_lwp);
 
-LIST_HEAD(ma_list_lwp_head);
+TBX_FAST_LIST_HEAD(ma_list_lwp_head);
 #ifdef MARCEL_GDB
-LIST_HEAD(ma_list_lwp_head_dead);
+TBX_FAST_LIST_HEAD(ma_list_lwp_head_dead);
 #endif
 
 #ifdef MA__LWPS
@@ -168,9 +168,9 @@ static void *lwp_kthread_start_func(void *arg)
 	}
 
 	ma_lwp_list_lock_write();
-	list_del(&lwp->lwp_list);	
+	tbx_fast_list_del(&lwp->lwp_list);	
 #ifdef MARCEL_GDB
-	list_add_tail(&lwp->lwp_list, &ma_list_lwp_head_dead);
+	tbx_fast_list_add_tail(&lwp->lwp_list, &ma_list_lwp_head_dead);
 #endif
 	ma_lwp_list_unlock_write();
 
@@ -196,7 +196,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	ma_lwp_list_lock_write();
 	{
 		// Ajout dans la liste globale des LWP
-		list_add_tail(&lwp->lwp_list, &ma_list_lwp_head);
+		tbx_fast_list_add_tail(&lwp->lwp_list, &ma_list_lwp_head);
 	}
 	ma_lwp_list_unlock_write();
 
@@ -422,7 +422,7 @@ static void lwp_init(ma_lwp_t lwp)
 		ma_per_lwp(run_task, lwp)=MARCEL_SELF;
 
 		ma_lwp_list_lock_write();
-		list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
+		tbx_fast_list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
 		ma_lwp_list_unlock_write();
 
 		LOG_OUT();

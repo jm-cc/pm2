@@ -27,7 +27,7 @@ __piom_poll_start(piom_server_t server)
 {
     _piom_spin_lock_softirq(&piom_poll_lock);
     PIOM_LOGF("Starting polling for %s (%p)\n", server->name, server);
-    list_add(&server->chain_poll, &piom_list_poll);
+    tbx_fast_list_add(&server->chain_poll, &piom_list_poll);
     if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
 	PIOM_LOGF("Starting timer polling for [%s] at period %i\n",
 		  server->name, server->period);
@@ -49,7 +49,7 @@ piom_server_kill(piom_server_t server)
 {
     _piom_spin_lock_softirq(&piom_poll_lock);
     PIOM_LOGF("Killing polling for %p (%d)\n", server, server->state);
-    list_del_init(&server->chain_poll);
+    tbx_fast_list_del_init(&server->chain_poll);
     _piom_spin_unlock_softirq(&piom_poll_lock);
 }
 
@@ -62,7 +62,7 @@ __piom_poll_stop(piom_server_t server)
 {
     _piom_spin_lock_softirq(&piom_poll_lock);
     PIOM_LOGF("Stopping polling for [%s]\n", server->name);
-    list_del_init(&server->chain_poll);
+    tbx_fast_list_del_init(&server->chain_poll);
     if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
 	PIOM_LOGF("Stopping timer polling for [%s]\n", server->name);
 #ifdef MARCEL
@@ -181,15 +181,15 @@ piom_server_stop(piom_server_t server)
     /* Stop LWPs */
     piom_comm_lwp_t lwp;
 
-    while(!list_empty(server->list_lwp_ready.next)){
+    while(!tbx_fast_list_empty(server->list_lwp_ready.next)){
 	char foo=43;
-	lwp = list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
+	lwp = tbx_fast_list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
 	write(lwp->fds[1], &foo, 1);
 	sched_yield();
     }
-    while(!list_empty(server->list_lwp_working.next)){
+    while(!tbx_fast_list_empty(server->list_lwp_working.next)){
 	char foo=44;
-	lwp = list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
+	lwp = tbx_fast_list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 	write(lwp->fds[1], &foo, 1);
 	sched_yield(); 
     }
@@ -198,7 +198,7 @@ piom_server_stop(piom_server_t server)
 #define ECANCELED EIO
 #endif
     /* Cancel any pending request */
-    list_for_each_entry_safe(req, tmp,
+    tbx_fast_list_for_each_entry_safe(req, tmp,
 			     &server->list_req_registered,
 			     chain_req_registered) {
 	PIOM_LOGF("stopping req %p\n", req);

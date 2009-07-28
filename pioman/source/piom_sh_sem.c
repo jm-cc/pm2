@@ -17,10 +17,10 @@
 #include "pioman.h"
 
 /* list of pending sh_sems that need to be polled */
-static LIST_HEAD(piom_list_shs);
+static TBX_FAST_LIST_HEAD(piom_list_shs);
 
 int piom_shs_polling_is_required() {
-	return !list_empty(&piom_list_shs);
+	return !tbx_fast_list_empty(&piom_list_shs);
 }
 
 #ifdef MARCEL
@@ -33,7 +33,7 @@ int piom_shs_poll(){
  start:
 	ma_read_lock(&piom_shs_lock);
 
-	list_for_each_entry_safe(cur_sem, 
+	tbx_fast_list_for_each_entry_safe(cur_sem, 
 				 prev_sem, 
 				 &piom_list_shs, 
 				 pending_shs) {		
@@ -49,7 +49,7 @@ int piom_shs_poll(){
 
  retry:	
 	ma_write_lock(&piom_shs_lock);
-	list_del_init(&(cur_sem)->pending_shs);
+	tbx_fast_list_del_init(&(cur_sem)->pending_shs);
 	piom_sem_V(&(cur_sem)->local_sem);     			
 	ma_write_unlock(&piom_shs_lock);
 	goto start;
@@ -61,7 +61,7 @@ int piom_shs_init(piom_sh_sem_t *sem){
 	piom_sem_init(&sem->local_sem, 0);
 
 	ma_write_lock(&piom_shs_lock);
-	INIT_LIST_HEAD(&sem->pending_shs);
+	TBX_INIT_FAST_LIST_HEAD(&sem->pending_shs);
 	ma_write_unlock(&piom_shs_lock);
 
 	return 0;
@@ -86,13 +86,13 @@ int piom_shs_P(piom_sh_sem_t *sem){
 
 	while(ma_atomic_read(&sem->value)<=0){
 		ma_write_lock(&piom_shs_lock);
-		list_add_tail(&sem->pending_shs, &piom_list_shs);
+		tbx_fast_list_add_tail(&sem->pending_shs, &piom_list_shs);
 		ma_write_unlock(&piom_shs_lock);
 
 		piom_sem_P(&sem->local_sem);
 		
 		ma_write_lock(&piom_shs_lock);
-		list_del_init(&(sem)->pending_shs);
+		tbx_fast_list_del_init(&(sem)->pending_shs);
 		ma_write_unlock(&piom_shs_lock);
 		
 		/* check wether we didn't wake up for nothing */

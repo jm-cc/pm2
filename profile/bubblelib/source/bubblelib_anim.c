@@ -154,7 +154,7 @@ void setRqs(rq_t **rqs, int nb, float x, float y, float width, float height) {
 		(*rqs)[i].entity.holder = NULL;
 		(*rqs)[i].entity.bubble_holder = NULL;
 		(*rqs)[i].entity.gasp = 0;
-		INIT_LIST_HEAD(&(*rqs)[i].entities);
+		TBX_INIT_FAST_LIST_HEAD(&(*rqs)[i].entities);
 		(*rqs)[i].nextX = (*rqs)[i].entity.x + RQ_XMARGIN;
 	}
 }
@@ -203,7 +203,7 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->entity.nospace = 0;
 	b->entity.id = -1;
 	b->entity.gasp = 0;
-	INIT_LIST_HEAD(&b->heldentities);
+	TBX_INIT_FAST_LIST_HEAD(&b->heldentities);
 	b->exploded = 0;
 	b->morph = NULL;
 	b->morphRecurse = 0;
@@ -344,7 +344,7 @@ static void setThreadRecur(BubbleShape shape, thread_t *t, int hide) {
 static int bubble_measure(bubble_t *b, int *nbthreads) {
 	int maxheight = 0;
 	entity_t *e;
-	list_for_each_entry(e, &b->heldentities, entity_list) {
+	tbx_fast_list_for_each_entry(e, &b->heldentities, entity_list) {
 		if (e->holder != &b->entity)
 			continue;
 		if (e->type == THREAD) {
@@ -364,7 +364,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 	int height, nbthreads = 0;
 
 	entity_t *e;
-	if (!showEmptyBubbles && list_empty(&b->heldentities))
+	if (!showEmptyBubbles && tbx_fast_list_empty(&b->heldentities))
 		return;
 	if (!hide) {
 		BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
@@ -377,7 +377,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 	}
 	height = bubble_measure(b, &nbthreads);
 	if (!hide && height <= BUBBLES_MAXHEIGHT && nbthreads <= BUBBLES_MAXTHREADS) {
-		list_for_each_entry(e,&b->heldentities,entity_list) {
+		tbx_fast_list_for_each_entry(e,&b->heldentities,entity_list) {
 			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
 			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 			BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
@@ -419,7 +419,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 			origy = b->entity.y+(3*CURVE)/2;
 		}
 
-		list_for_each_entry(e,&b->heldentities,entity_list) {
+		tbx_fast_list_for_each_entry(e,&b->heldentities,entity_list) {
 			if (e != b->insertion && e->holder == &b->entity)
 				setEntityRecur(shape,e,1,origx,origy);
 			else {
@@ -465,7 +465,7 @@ static void doEntity(entity_t *e) {
 			e->lastitem = BubbleMovie_add(movie,(BubbleBlock)shape);
 			setBubbleRecur(shape,b,0,0,0);
 #ifndef TREES
-			list_for_each_entry(el,&b->heldentities,entity_list)
+			tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 				showEntity(el);
 #endif
 #ifdef BUBBLES
@@ -527,10 +527,10 @@ void delThread(thread_t *t) {
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &t->entity);
 	BubbleMovie_pause(movie, DELAYTIME);
-	list_del(&t->entity.rq);
+	tbx_fast_list_del(&t->entity.rq);
 	t->entity.holder = NULL;
 	if (t->entity.bubble_holder) {
-		list_del(&t->entity.entity_list);
+		tbx_fast_list_del(&t->entity.entity_list);
 		updateEntity(&t->entity.bubble_holder->entity);
 		t->entity.bubble_holder = NULL;
 	} else {
@@ -548,10 +548,10 @@ void delBubble(bubble_t *b) {
 		switchRunqueuesStep(norq, &b->entity, j);
 	doStepsEnd();
 	switchRunqueuesEnd(norq, &b->entity);
-	list_del(&b->entity.rq);
+	tbx_fast_list_del(&b->entity.rq);
 	b->entity.holder = NULL;
 	if (b->entity.bubble_holder) {
-		list_del(&b->entity.entity_list);
+		tbx_fast_list_del(&b->entity.entity_list);
 		b->entity.bubble_holder = NULL;
 	}
 	if (b->entity.lastitem) {
@@ -646,7 +646,7 @@ static void entityMoveDeltaBegin(entity_t *e, float dx, float dy) {
 	if (e->type == BUBBLE) {
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
-		list_for_each_entry(el,&b->heldentities,entity_list)
+		tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 			if (!el->leaving_holder
 #ifdef TREES
 			&& (el->holder == e)
@@ -672,7 +672,7 @@ static void entityMoveToBegin(entity_t *e, float x, float y) {
 	if (e->type == BUBBLE) {
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
-		list_for_each_entry(el,&b->heldentities,entity_list)
+		tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 			if (!el->leaving_holder
 #ifdef TREES
 			&& (el->holder == e)
@@ -689,7 +689,7 @@ static void entityMoveBegin2(entity_t *e) {
 #endif
 		bubble_t *b = bubble_of_entity(e);
 		entity_t *el;
-		list_for_each_entry(el,&b->heldentities,entity_list)
+		tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 			if (!el->leaving_holder
 #ifdef TREES
 			&& (el->holder == e)
@@ -718,7 +718,7 @@ static void entityMoveStep(entity_t *e, float step) {
 #endif
 #ifdef BUBBLES
 		entity_t *el;
-		list_for_each_entry(el,&b->heldentities,entity_list)
+		tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 			if (!el->leaving_holder)
 				entityMoveStep(el, step);
 #endif
@@ -737,7 +737,7 @@ static void entityMoveEnd(entity_t *e) {
 #ifdef TREES
 		bubbleMorphEnd(bubble_of_entity(e));
 #endif
-		list_for_each_entry(el,&b->heldentities,entity_list)
+		tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 			if (!el->leaving_holder
 #ifdef TREES
 			&& (el->holder == e)
@@ -776,7 +776,7 @@ static void addToRunqueueAtBegin2(rq_t *rq, entity_t *e) {
 static void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 	entityMoveEnd(e);
 	if (e->holder) gasp2(rq, e, "adding non-free entity to runqueue");
-	list_add_tail(&e->rq,&rq->entities);
+	tbx_fast_list_add_tail(&e->rq,&rq->entities);
 	e->holder = &rq->entity;
 }
 
@@ -784,7 +784,7 @@ static void addToRunqueueEnd(rq_t *rq, entity_t *e) {
 static void addToRunqueueAtEnd(rq_t *rq, entity_t *e, entity_t *after) {
 	entityMoveEnd(e);
 	if (e->holder) gasp(rq, e, "adding non-free entity to runqueue");
-	list_add(&e->rq,&after->rq);
+	tbx_fast_list_add(&e->rq,&after->rq);
 	e->holder = &rq->entity;
 }
 #endif
@@ -835,7 +835,7 @@ static void removeFromRunqueueEnd(rq_t *rq, entity_t *e) {
 		list_for_each_entry_after(el,&rq->entities,rq,e)
 			entityMoveEnd(el);
 	}
-	list_del(&e->rq);
+	tbx_fast_list_del(&e->rq);
 	e->holder = NULL;
 	e->leaving_holder = 0;
 }
@@ -1062,7 +1062,7 @@ static void removeFromBubbleEnd(bubble_t *b, entity_t *e) {
 		growInBubbleEnd(b,e);
 	e->leaving_holder = 0;
 #ifdef BUBBLES
-	list_del(&e->entity_list);
+	tbx_fast_list_del(&e->entity_list);
 	e->bubble_holder = NULL;
 #endif
 	e->holder = NULL;
@@ -1130,8 +1130,8 @@ static void addToBubbleEnd(bubble_t *b, entity_t *e) {
 		growInHolderEnd(&b->entity);
 	bubbleMorphEnd(b);
 	/* Put back at end of list */
-	list_del(&e->entity_list);
-	list_add_tail(&e->entity_list,&b->heldentities);
+	tbx_fast_list_del(&e->entity_list);
+	tbx_fast_list_add_tail(&e->entity_list,&b->heldentities);
 	e->holder = &b->entity;
 #ifdef TREES
 	if (e->lastitem) {
@@ -1189,7 +1189,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 
 #ifdef TREES
 		if (e->bubble_holder) gasp3(e, e->bubble_holder, b, "inserting entity that is already inserted in a bubble");
-		list_add_tail(&e->entity_list,&b->heldentities);
+		tbx_fast_list_add_tail(&e->entity_list,&b->heldentities);
 		e->bubble_holder = b;
 #endif
 		bubbleMorphBegin2(b);
@@ -1240,7 +1240,7 @@ void bubbleInsertEntity(bubble_t *b, entity_t *e) {
 		bubbleMorphEnd(b);
 #ifdef BUBBLES
 		if (e->bubble_holder) gasp3(e, e->bubble_holder, b, "inserting entity that is already inserted in a bubble");
-		list_add_tail(&e->entity_list,&b->heldentities);
+		tbx_fast_list_add_tail(&e->entity_list,&b->heldentities);
 		e->bubble_holder = b;
 #endif
 		e->holder = &b->entity;
@@ -1262,7 +1262,7 @@ void bubbleRemoveEntity(bubble_t *b, entity_t *e) {
 	gasp("not useful");
 #endif
 	switchRunqueues(norq,e);
-	list_del(&e->entity_list);
+	tbx_fast_list_del(&e->entity_list);
 	if (e->bubble_holder != b) gasp3(e, e->bubble_holder, b, "removing entity from a bubble that isn't its holder");
 	e->bubble_holder = NULL;
 	updateEntity(&b->entity);
@@ -1289,7 +1289,7 @@ static void bubbleExplodeBegin(bubble_t *b) {
 	b->nextX = CURVE;
 
 	//growInRunqueueBegin(rq,&b->entity,-b->nextX,0);
-	list_for_each_entry(el,&b->heldentities,entity_list) {
+	tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list) {
 		fprintf(stderr,"entity %p to rq %p\n",el,rq);
 		el->nospace = 1;
 		addToRunqueueAtBegin(rq,el,el->x);
@@ -1302,7 +1302,7 @@ static void bubbleExplodeBegin2(bubble_t *b) {
 
 	b->exploded = 1;
 	bubbleMorphBegin2(b);
-	list_for_each_entry(el,&b->heldentities,entity_list)
+	tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 		addToRunqueueAtBegin2(rq,el);
 }
 
@@ -1319,7 +1319,7 @@ static void bubbleExplodeStep(bubble_t *b, float step) {
 			b->entity.lastx+(b->entity.x-b->entity.lastx)*step,
 			b->entity.lasty+(b->entity.y-b->entity.lasty)*step
 			);
-	list_for_each_entry(el,&b->heldentities,entity_list)
+	tbx_fast_list_for_each_entry(el,&b->heldentities,entity_list)
 		entityMoveStep(el,step);
 	//changeInRunqueueStep(rq,&b->entity,step);
 }
@@ -1333,11 +1333,11 @@ static void bubbleExplodeEnd(bubble_t *b) {
 
 	rq = rq_of_entity(b->entity.holder);
 
-	list_for_each_entry_reverse(el,&b->heldentities,entity_list) {
+	tbx_fast_list_for_each_entry_reverse(el,&b->heldentities,entity_list) {
 		//el->nospace = 0;
 		addToRunqueueAtEnd(rq,el,&b->entity);
 	}
-	INIT_LIST_HEAD(&b->heldentities);
+	TBX_INIT_FAST_LIST_HEAD(&b->heldentities);
 	bubbleMorphEnd(b);
 }
 

@@ -576,7 +576,7 @@ browse_and_steal(ma_holder_t *hold, void *args) {
       }
     for_each_entity_scheduled_in_bubble_end ()
   } else {
-    list_for_each_entry (e, &hold->ready_entities, ready_entities_item) {
+    tbx_fast_list_for_each_entry (e, &hold->ready_entities, ready_entities_item) {
       if (is_entity_worth_stealing (&greater, &bestbb, &thread_to_steal, &e)) {
 	available_entities++;
       }

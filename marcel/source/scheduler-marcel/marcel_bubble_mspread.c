@@ -186,7 +186,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
 
         if (broken) {
           marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-          list_for_each_entry(ee, &bb->natural_entities, natural_entities_item) {
+          tbx_fast_list_for_each_entry(ee, &bb->natural_entities, natural_entities_item) {
             new_e[j++] = ee;
             bubble_sched_debug("entity %p load %ld\n",ee,ma_entity_load(ee));
           }
@@ -217,7 +217,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     qsort(e, ne, sizeof(e[0]), &ma_decreasing_order_entity_load_compar);
 
   struct marcel_topo_level *l_l[nl];
-  struct list_head l_dist[nl];
+  struct tbx_fast_list_head l_dist[nl];
   unsigned long l_load[nl];
   int l_n[nl];
   /* For entities which are not put on their wanted level */
@@ -231,7 +231,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
   n = 0;
   for (i=0; i<nl; i++) {
     l_l[i] = l[i];
-    INIT_LIST_HEAD(&l_dist[i]);
+    TBX_INIT_FAST_LIST_HEAD(&l_dist[i]);
     l_load[i] = 0;
     l_n[i] = 0;
   }
@@ -342,7 +342,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     /** Put entity on a level and big sort **/
 
     /* Entity on level */
-    list_add_tail(&e[i]->next,&l_dist[begin]);
+    tbx_fast_list_add_tail(&e[i]->next,&l_dist[begin]);
     /* Load on level */
     l_load[begin] += (ma_bubble_memaware_checkload ? ma_entity_load(e[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(e[i]));
     /* One entity more on level */
@@ -387,28 +387,28 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
       bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[begin]->rq.as_holder.name, l_load[begin], l_l[k]->rq.as_holder.name, l_load[k]);
       {
         unsigned long _l_load;
-        struct list_head _l_dist;
+        struct tbx_fast_list_head _l_dist;
         struct marcel_topo_level *_l;
         int _l_n;
 
         /* Save level begin */
-        INIT_LIST_HEAD(&_l_dist);
+        TBX_INIT_FAST_LIST_HEAD(&_l_dist);
         _l_load = l_load[begin];
-        list_splice_init(&l_dist[begin],&_l_dist);
+        tbx_fast_list_splice_init(&l_dist[begin],&_l_dist);
         _l_n = l_n[begin];
         _l = l_l[begin];
 
         /* Shift levels */
         for (m=begin; m<k; m++) {
           l_load[m] = l_load[m+1];
-          list_splice_init(&l_dist[m+1],&l_dist[m]);
+          tbx_fast_list_splice_init(&l_dist[m+1],&l_dist[m]);
           l_n[m] = l_n[m+1];
           l_l[m] = l_l[m+1];
         }
 
         /* Restore level begin */
         l_load[k] = _l_load;
-        list_splice(&_l_dist,&l_dist[k]);
+        tbx_fast_list_splice(&_l_dist,&l_dist[k]);
         l_n[k] = _l_n;
         l_l[k] = _l;
       }
@@ -430,7 +430,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     bubble_sched_debug("later entity %p\n", later[i]);
 
     /* Entity on level */
-    list_add_tail(&later[i]->next,&l_dist[0]);
+    tbx_fast_list_add_tail(&later[i]->next,&l_dist[0]);
     /* Load on level */
     l_load[0] += (ma_bubble_memaware_checkload ? ma_entity_load(later[i]) : MA_DEFAULT_LOAD * ma_count_threads_in_entity(later[i]));
     /* One entity more on level */
@@ -475,28 +475,28 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
       bubble_sched_debug("inserting level %s(%ld) in place of %s(%ld)\n", l_l[0]->rq.as_holder.name, l_load[0], l_l[k]->rq.as_holder.name, l_load[k]);
       {
         unsigned long _l_load;
-        struct list_head _l_dist;
+        struct tbx_fast_list_head _l_dist;
         struct marcel_topo_level *_l;
         int _l_n;
 
         /* Save level 0 */
-        INIT_LIST_HEAD(&_l_dist);
+        TBX_INIT_FAST_LIST_HEAD(&_l_dist);
         _l_load = l_load[0];
-        list_splice_init(&l_dist[0],&_l_dist);
+        tbx_fast_list_splice_init(&l_dist[0],&_l_dist);
         _l_n = l_n[0];
         _l = l_l[0];
 
         /* Shift levels */
         for (m=0; m<k; m++) {
           l_load[m] = l_load[m+1];
-          list_splice_init(&l_dist[m+1],&l_dist[m]);
+          tbx_fast_list_splice_init(&l_dist[m+1],&l_dist[m]);
           l_n[m] = l_n[m+1];
           l_l[m] = l_l[m+1];
         }
 
         /* Restore level 0 */
         l_load[k] = _l_load;
-        list_splice(&_l_dist,&l_dist[k]);
+        tbx_fast_list_splice(&_l_dist,&l_dist[k]);
         l_n[k] = _l_n;
         l_l[k] = _l;
       }
@@ -513,7 +513,7 @@ static void __marcel_bubble_mspread(marcel_entity_t *e[], int ne, struct marcel_
     marcel_entity_t *ne[l_n[i]];
     marcel_entity_t *e;
     j = 0;
-    list_for_each_entry(e,&l_dist[i],next) {
+    tbx_fast_list_for_each_entry(e,&l_dist[i],next) {
       /* Memory migration */
 
       /* Map number to migrate */

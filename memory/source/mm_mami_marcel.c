@@ -98,9 +98,9 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
 
     area = tmalloc(sizeof(mami_data_link_t));
     area->data = data;
-    INIT_LIST_HEAD(&(area->list));
+    TBX_INIT_FAST_LIST_HEAD(&(area->list));
     marcel_spin_lock(&(owner->memory_areas_lock));
-    list_add(&(area->list), &(owner->memory_areas));
+    tbx_fast_list_add(&(area->list), &(owner->memory_areas));
     marcel_spin_unlock(&(owner->memory_areas_lock));
   }
   marcel_mutex_unlock(&(memory_manager->lock));
@@ -137,9 +137,9 @@ int _mami_entity_unattach(mami_manager_t *memory_manager,
         _mami_update_stats_for_entity(memory_manager, data, owner, -1);
         mdebug_memory("Removing data %p from entity %p\n", data, owner);
 	marcel_spin_lock(&(owner->memory_areas_lock));
-	list_for_each_entry(area, &(owner->memory_areas), list) {
+	tbx_fast_list_for_each_entry(area, &(owner->memory_areas), list) {
           if (area->data == data) {
-            list_del_init(&area->list);
+            tbx_fast_list_del_init(&area->list);
             tfree(area);
             break;
           }
@@ -169,7 +169,7 @@ int _mami_entity_unattach_all(mami_manager_t *memory_manager,
   MEMORY_ILOG_IN();
   mdebug_memory("Unattaching all memory areas from entity %p\n", owner);
   //marcel_spin_lock(&(owner->memory_areas_lock));
-  list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
+  tbx_fast_list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
     _mami_entity_unattach(memory_manager, area->data->start_address, owner);
   }
   //marcel_spin_unlock(&(owner->memory_areas_lock));
@@ -182,7 +182,7 @@ int _mami_entity_migrate_all(mami_manager_t *memory_manager,
                              marcel_entity_t *owner,
                              int node) {
   mami_data_link_t *area, *narea;
-  list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
+  tbx_fast_list_for_each_entry_safe(area, narea, &(owner->memory_areas), list) {
     _mami_migrate_on_node(memory_manager, area->data, node);
   }
   return 0;

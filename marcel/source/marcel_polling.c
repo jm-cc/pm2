@@ -27,7 +27,7 @@
  * quelque chose à scruter.
  * Le lock permet de protéger le parcours/modification de la liste
  */
-LIST_HEAD(ma_ev_list_poll);
+TBX_FAST_LIST_HEAD(ma_ev_list_poll);
 static ma_rwlock_t ev_poll_lock = MA_RW_LOCK_UNLOCKED;
 
 /****************************************************************
@@ -132,12 +132,12 @@ inline static int __del_success_req(marcel_ev_server_t server,
 				    marcel_ev_req_t req)
 {
 	LOG_IN();
-	if (list_empty(&req->chain_req_success)) {
+	if (tbx_fast_list_empty(&req->chain_req_success)) {
 		/* On n'est pas enregistré */
 		LOG_RETURN(0);
 	}
 	ma_spin_lock(&server->req_success_lock);
-	list_del_init(&req->chain_req_success);
+	tbx_fast_list_del_init(&req->chain_req_success);
 	mdebug("Removing success ev %p pour [%s]\n", req, server->name);
 	ma_spin_unlock(&server->req_success_lock);	
 	
@@ -148,13 +148,13 @@ inline static int __add_success_req(marcel_ev_server_t server,
 				     marcel_ev_req_t req)
 {
 	LOG_IN();
-	if (!list_empty(&req->chain_req_success)) {
+	if (!tbx_fast_list_empty(&req->chain_req_success)) {
 		/* On est déjà enregistré */
 		LOG_RETURN(0);
 	}
 	ma_spin_lock(&server->req_success_lock);
 	mdebug("Adding success req %p pour [%s]\n", req, server->name);
-	list_add_tail(&req->chain_req_success, &server->list_req_success);
+	tbx_fast_list_add_tail(&req->chain_req_success, &server->list_req_success);
 	ma_spin_unlock(&server->req_success_lock);
 	LOG_RETURN(0);
 }
@@ -176,7 +176,7 @@ inline static int __wake_req_waiters(marcel_ev_server_t server TBX_UNUSED,
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		tbx_fast_list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
@@ -187,7 +187,7 @@ inline static int __wake_id_waiters(marcel_ev_server_t server, int code)
 {
 	marcel_ev_wait_t wait, tmp;
 	LOG_IN();
-	list_for_each_entry_safe(wait, tmp, &server->list_id_waiters, chain_wait) {
+	tbx_fast_list_for_each_entry_safe(wait, tmp, &server->list_id_waiters, chain_wait) {
 #ifdef MA__DEBUG
 		switch (code) {
 		case 0:
@@ -198,7 +198,7 @@ inline static int __wake_id_waiters(marcel_ev_server_t server, int code)
 		}
 #endif
 		wait->ret=code;
-		list_del_init(&wait->chain_wait);
+		tbx_fast_list_del_init(&wait->chain_wait);
 		marcel_sem_V(&wait->sem);
 	}
 	LOG_RETURN(0);
@@ -219,12 +219,12 @@ inline static int __manage_ready(marcel_ev_server_t server)
 	marcel_ev_req_t req, tmp;
 
 	//LOG_IN();
-	if (list_empty(&server->list_req_ready)) {
+	if (tbx_fast_list_empty(&server->list_req_ready)) {
 		//LOG_RETURN(0);
 		return 0;
 	}
 
-	list_for_each_entry_safe(req, tmp, &server->list_req_ready,
+	tbx_fast_list_for_each_entry_safe(req, tmp, &server->list_req_ready,
 				 chain_req_ready) {
 		mdebug("Poll succeed with req %p\n", req);
 		req->state |= MARCEL_EV_STATE_OCCURED;
@@ -235,7 +235,7 @@ inline static int __manage_ready(marcel_ev_server_t server)
 			nb_req_ask_wake_server++;
 		}
 
-		list_del_init(&req->chain_req_ready);
+		tbx_fast_list_del_init(&req->chain_req_ready);
 		if (req->state & MARCEL_EV_STATE_ONE_SHOT) {
 			nb_grouped_req_removed+=__unregister_poll(server, req);
 			__unregister(server, req);
@@ -251,7 +251,7 @@ inline static int __manage_ready(marcel_ev_server_t server)
 	}
 
 #ifdef MA__DEBUG
-	MA_BUG_ON(!list_empty(&server->list_req_ready));
+	MA_BUG_ON(!tbx_fast_list_empty(&server->list_req_ready));
 #endif
 	//LOG_RETURN(nb_grouped_req_removed);
 	return 0;
@@ -295,8 +295,8 @@ inline static void __poll_start(marcel_ev_server_t server)
 {
 	ma_write_lock_softirq(&ev_poll_lock);
 	mdebug("Starting polling for %s\n", server->name);
-	MA_BUG_ON(!list_empty(&server->chain_poll));
-	list_add(&server->chain_poll, &ma_ev_list_poll);
+	MA_BUG_ON(!tbx_fast_list_empty(&server->chain_poll));
+	tbx_fast_list_add(&server->chain_poll, &ma_ev_list_poll);
 	if (server->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
 		mdebug("Starting timer polling for [%s] at frequency %i\n",
 		       server->name, server->frequency);
@@ -316,7 +316,7 @@ inline static void __poll_stop(marcel_ev_server_t server)
 {
 	ma_write_lock_softirq(&ev_poll_lock);
 	mdebug("Stopping polling for [%s]\n", server->name);
-	list_del_init(&server->chain_poll);
+	tbx_fast_list_del_init(&server->chain_poll);
 	if (server->poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
 		mdebug("Stopping timer polling for [%s]\n", server->name);
 		ma_del_timer(&server->poll_timer);
@@ -347,7 +347,7 @@ static void check_polling_for(marcel_ev_server_t server)
 	if(nb == 1 && server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE]) {
 		(*server->funcs[MARCEL_EV_FUNCTYPE_POLL_POLLONE])
 			(server, MARCEL_EV_FUNCTYPE_POLL_POLLONE, 
-			 list_entry(server->list_req_poll_grouped.next,
+			 tbx_fast_list_entry(server->list_req_poll_grouped.next,
 				    struct marcel_ev_req, chain_req_grouped),
 			 nb, MARCEL_EV_OPT_REQ_IS_GROUPED);
 
@@ -409,7 +409,7 @@ void __marcel_check_polling(unsigned polling_point)
 	marcel_ev_server_t server;
 
 	ma_read_lock_softirq(&ev_poll_lock);
-	list_for_each_entry(server, &ma_ev_list_poll, chain_poll) {
+	tbx_fast_list_for_each_entry(server, &ma_ev_list_poll, chain_poll) {
 		if (server->poll_points & polling_point) {
 			mdebugl(7, "Scheduling polling for [%s] at point %i\n",
 				server->name, polling_point);
@@ -436,13 +436,13 @@ inline static void verify_server_state(marcel_ev_server_t server TBX_UNUSED) {
 inline static void __init_req(marcel_ev_req_t req)
 {
 	mdebug("Clearing Grouping request %p\n", req);
-	INIT_LIST_HEAD(&req->chain_req_registered);
-	INIT_LIST_HEAD(&req->chain_req_grouped);
-	INIT_LIST_HEAD(&req->chain_req_ready);
-	INIT_LIST_HEAD(&req->chain_req_success);
+	TBX_INIT_FAST_LIST_HEAD(&req->chain_req_registered);
+	TBX_INIT_FAST_LIST_HEAD(&req->chain_req_grouped);
+	TBX_INIT_FAST_LIST_HEAD(&req->chain_req_ready);
+	TBX_INIT_FAST_LIST_HEAD(&req->chain_req_success);
 	req->state=0;
 	req->server=NULL;
-	INIT_LIST_HEAD(&req->list_wait);
+	TBX_INIT_FAST_LIST_HEAD(&req->list_wait);
 }
 
 inline static int __register(marcel_ev_server_t server, marcel_ev_req_t req)
@@ -452,7 +452,7 @@ inline static int __register(marcel_ev_server_t server, marcel_ev_req_t req)
 	/* On doit ajouter la requête à celles en attente */
 	mdebug("Register req %p for [%s]\n", req, server->name);
 	MA_BUG_ON(req->server);
-	list_add(&req->chain_req_registered, &server->list_req_registered);
+	tbx_fast_list_add(&req->chain_req_registered, &server->list_req_registered);
 	req->state |= MARCEL_EV_STATE_REGISTERED;
 	req->server=server;
 	LOG_RETURN(0);
@@ -466,7 +466,7 @@ inline static int __unregister(marcel_ev_server_t server, marcel_ev_req_t req)
 	mdebug("Unregister request %p for [%s]\n", req, server->name);
 	__del_success_req(server, req);
 
-	list_del_init(&req->chain_req_registered);
+	tbx_fast_list_del_init(&req->chain_req_registered);
 	req->state &= ~MARCEL_EV_STATE_REGISTERED;
 	LOG_RETURN(0);
 }
@@ -478,7 +478,7 @@ inline static int __register_poll(marcel_ev_server_t server,
 	LOG_IN();
 	/* On doit ajouter la requête à celles en attente */
 	mdebug("Grouping Poll request %p for [%s]\n", req, server->name);
-	list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
+	tbx_fast_list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
 	server->req_poll_grouped_nb++;
 	req->state |= MARCEL_EV_STATE_GROUPED;
 
@@ -496,7 +496,7 @@ inline static int __unregister_poll(marcel_ev_server_t server,
 	LOG_IN();
 	if (req->state & MARCEL_EV_STATE_GROUPED) {
 		mdebug("Ungrouping Poll request %p for [%s]\n", req, server->name);
-		list_del_init(&req->chain_req_grouped);
+		tbx_fast_list_del_init(&req->chain_req_grouped);
 		server->req_poll_grouped_nb--;
 		req->state &= ~MARCEL_EV_STATE_GROUPED;
 		LOG_RETURN(1);
@@ -512,7 +512,7 @@ inline static int __wait_req(marcel_ev_server_t server, marcel_ev_req_t req,
 		MARCEL_EXCEPTION_RAISE(MARCEL_NOT_IMPLEMENTED);
 	}
 
-	list_add(&wait->chain_wait, &req->list_wait);
+	tbx_fast_list_add(&wait->chain_wait, &req->list_wait);
 	marcel_sem_init(&wait->sem, 0);
 	wait->ret=0;
 	wait->task=MARCEL_SELF;
@@ -642,7 +642,7 @@ int marcel_ev_server_stop(marcel_ev_server_t server)
 #ifndef ECANCELED
 #define ECANCELED EIO
 #endif
-	list_for_each_entry_safe(req, tmp, 
+	tbx_fast_list_for_each_entry_safe(req, tmp, 
 				 &server->list_req_registered, 
 				 chain_req_registered) {
 		__wake_req_waiters(server, req, -ECANCELED);

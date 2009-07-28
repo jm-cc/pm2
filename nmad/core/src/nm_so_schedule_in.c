@@ -34,7 +34,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
 struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   struct nm_unexpected_s*chunk;
-  list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
+  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
     {
       if((chunk->p_gate == p_unpack->p_gate) && (chunk->seq == p_unpack->seq) && (chunk->tag == p_unpack->tag))
 	{
@@ -80,7 +80,7 @@ struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_ga
   struct nm_unpack_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t last_seq = p_so_tag->recv_seq_number;
-  list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
+  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
     {
       if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && (p_unpack->tag == tag))
 	{
@@ -184,7 +184,7 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
   p_unpack->seq = seq;
   p_unpack->tag = tag;
   /* store the unpack request */
-  list_add_tail(&p_unpack->link, &p_core->so_sched.unpacks);
+  tbx_fast_list_add_tail(&p_unpack->link, &p_core->so_sched.unpacks);
   struct nm_unexpected_s*chunk = nm_unexpected_find_matching(p_core, p_unpack);
   while(chunk)
     {
@@ -211,7 +211,7 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
       nm_so_pw_dec_header_ref_count(chunk->p_pw);
-      list_del(&chunk->link);
+      tbx_fast_list_del(&chunk->link);
       tbx_free(nm_so_unexpected_mem, chunk);
       if(p_unpack->cumulated_len < p_unpack->expected_len)
 	chunk = nm_unexpected_find_matching(p_core, p_unpack);
@@ -225,7 +225,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 {
   int err = -NM_ENOTIMPL;
   struct nm_unpack_s*p_unpack = NULL;
-  list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
+  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
     {
       if((p_unpack->p_gate == p_gate) && (p_unpack->tag == tag) && (p_unpack->seq == seq))
 	{
@@ -238,7 +238,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t 
 	    }
 	  else if(seq == p_so_tag->recv_seq_number - 1)
 	    {
-	      list_del(&p_unpack->link);
+	      tbx_fast_list_del(&p_unpack->link);
 	      const struct nm_so_event_s event =
 		{
 		  .status =  NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
@@ -259,7 +259,7 @@ static inline void store_data_or_rdv(struct nm_core*p_core, struct nm_gate*p_gat
 				     struct nm_pkt_wrap *p_pw)
 {
   struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
-  list_add_tail(&chunk->link, &p_core->so_sched.unexpected);
+  tbx_fast_list_add_tail(&chunk->link, &p_core->so_sched.unexpected);
   chunk->header = header;
   chunk->p_pw = p_pw;
   chunk->p_gate = p_gate;
@@ -317,7 +317,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
       p_unpack->cumulated_len += len;
       if(p_unpack->cumulated_len >= p_unpack->expected_len)
 	{
-	  list_del(&p_unpack->link);
+	  tbx_fast_list_del(&p_unpack->link);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
@@ -359,20 +359,20 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   struct nm_pkt_wrap *p_large_pw = NULL;
-  list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
+  tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		  p_large_pw->seq, p_large_pw->chunk_offset);
       if(p_large_pw->seq == seq && p_large_pw->chunk_offset == chunk_offset)
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
-	  list_del(&p_large_pw->link);
+	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)
 	    {
 	      /* partial ACK- split the packet  */
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
 	      nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
-	      list_add(&p_large_pw2->link, &p_gate->pending_large_send);
+	      tbx_fast_list_add(&p_large_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
@@ -609,7 +609,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       if(p_unpack->cumulated_len >= p_unpack->expected_len)
 	{
 	  /* notify completion */
-	  list_del(&p_unpack->link);
+	  tbx_fast_list_del(&p_unpack->link);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_SO_STATUS_UNPACK_COMPLETED,

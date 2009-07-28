@@ -63,7 +63,7 @@ struct nm_unexpected_s
   nm_gate_t p_gate;
   nm_seq_t seq;
   nm_tag_t tag;
-  struct list_head link;
+  struct tbx_fast_list_head link;
 };
 
 /** fast allocator for struct nm_unexpected_s */
@@ -71,7 +71,7 @@ extern p_tbx_memory_t nm_so_unexpected_mem;
 
 #define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * NM_SO_PENDING_PACKS_WINDOW)
 
-#define nm_l2chunk(l)  list_entry(l, struct nm_unexpected_s, link)
+#define nm_l2chunk(l)  tbx_fast_list_entry(l, struct nm_unexpected_s, link)
 
 /** tag-indexed type for known-src requests 
  */
@@ -120,10 +120,10 @@ struct nm_so_sched
   struct nm_so_monitor_vect_s monitors;
 
   /** list of posted unpacks */
-  struct list_head unpacks;
+  struct tbx_fast_list_head unpacks;
 
   /** list of unexpected chunks */
-  struct list_head unexpected;
+  struct tbx_fast_list_head unexpected;
 };
 
 int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,

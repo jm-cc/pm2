@@ -375,7 +375,7 @@ newBGLDisplayItem (BubbleBlock block) {
     IN();
     BubbleDisplayItem new_item = malloc (sizeof (*new_item));
 
-    INIT_LIST_HEAD (&new_item->disp_list);
+    TBX_INIT_FAST_LIST_HEAD (&new_item->disp_list);
 
     new_item->block = BGLBlock_ref (block);
 
@@ -423,7 +423,7 @@ BGLDisplayItem_copy (BubbleDisplayItem item) {
 static void
 destroyBGLDisplayItem (BubbleDisplayItem item) {
     IN();
-    list_del (&item->disp_list);
+    tbx_fast_list_del (&item->disp_list);
     BGLBlock_unref (item->disp_block);
     BGLBlock_unref (item->block);
     free (item);
@@ -526,18 +526,18 @@ BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
     /* Morph implementation */
     shp = newBGLShape();
 
-    a1 = list_entry (shape1->actions.next, typeof (*a1), action_list);
-    a2 = list_entry (shape2->actions.next, typeof (*a2), action_list);
+    a1 = tbx_fast_list_entry (shape1->actions.next, typeof (*a1), action_list);
+    a2 = tbx_fast_list_entry (shape2->actions.next, typeof (*a2), action_list);
 
     while(&(a1->action_list) != &(shape1->actions) &&
           &(a2->action_list) != &(shape2->actions)) {
 
         bgl_action_t *nact = bgl_action_setRatio (a1, a2, ratio);
 
-        list_add_tail (&nact->action_list, &shp->actions);
+        tbx_fast_list_add_tail (&nact->action_list, &shp->actions);
 
-        a1 = list_entry (a1->action_list.next, typeof (*a1), action_list);
-        a2 = list_entry (a2->action_list.next, typeof (*a2), action_list);
+        a1 = tbx_fast_list_entry (a1->action_list.next, typeof (*a1), action_list);
+        a2 = tbx_fast_list_entry (a2->action_list.next, typeof (*a2), action_list);
     }
 
     item->disp_block = BGLBlock_ref ((BubbleBlock) shp);
@@ -566,9 +566,9 @@ BGLDisplayItem_setRatio (BubbleDisplayItem item, float ratio) {
 static bgl_frame_t *
 bgl_frame_new () {
     bgl_frame_t *new_frame = malloc (sizeof (*new_frame));
-    INIT_LIST_HEAD (&new_frame->frame_list);
+    TBX_INIT_FAST_LIST_HEAD (&new_frame->frame_list);
     new_frame->duration = 0;
-    INIT_LIST_HEAD (&new_frame->display_items);
+    TBX_INIT_FAST_LIST_HEAD (&new_frame->display_items);
     new_frame->status = "";
 
     return new_frame;
@@ -589,9 +589,9 @@ bgl_frame_copy (bgl_frame_t *frame) {
     bgl_frame_t *new_frame = bgl_frame_new();
     new_frame->duration = frame->duration;
 
-    list_for_each_entry (citem, &frame->display_items, disp_list) {
+    tbx_fast_list_for_each_entry (citem, &frame->display_items, disp_list) {
         cpy = BGLDisplayItem_copy (citem);
-        list_add_tail (&cpy->disp_list, &new_frame->display_items);
+        tbx_fast_list_add_tail (&cpy->disp_list, &new_frame->display_items);
     }
     new_frame->status = frame->status;
 
@@ -609,7 +609,7 @@ static void
 bgl_frame_free (bgl_frame_t *frame) {
     BubbleDisplayItem item, next;
 
-    list_for_each_entry_safe (item, next, &frame->display_items, disp_list)
+    tbx_fast_list_for_each_entry_safe (item, next, &frame->display_items, disp_list)
         destroyBGLDisplayItem (item);
 
     free (frame);
@@ -632,9 +632,9 @@ static void BGLMovie_nextFrame (BubbleMovie movie);
  */
 static bgl_frame_t *
 BGLMovie_get_current_frame (BubbleMovie movie) {
-    if (list_empty (&movie->frames)) /* creates default frame */
+    if (tbx_fast_list_empty (&movie->frames)) /* creates default frame */
         BGLMovie_nextFrame (movie);
-    return list_entry (movie->frames.prev, bgl_frame_t, frame_list);
+    return tbx_fast_list_entry (movie->frames.prev, bgl_frame_t, frame_list);
 }
 
 
@@ -649,7 +649,7 @@ newBGLMovie (void) {
     IN();
     BubbleMovie movie = malloc (sizeof (*movie));
 
-    INIT_LIST_HEAD (&movie->frames);
+    TBX_INIT_FAST_LIST_HEAD (&movie->frames);
 
     movie->frames_count = 0;
     movie->frames_array = NULL;
@@ -700,7 +700,7 @@ BGLMovie_nextFrame (BubbleMovie movie) {
     bgl_frame_t *cframe = NULL;
     bgl_frame_t *nframe = NULL;
 
-    if (list_empty (&movie->frames)) {
+    if (tbx_fast_list_empty (&movie->frames)) {
         nframe = bgl_frame_new ();
     } else {
         if (!movie->playing)
@@ -714,15 +714,15 @@ BGLMovie_nextFrame (BubbleMovie movie) {
      * external BGLDisplayItem pointers valid.
      */
     if (cframe)
-		list_del (&cframe->frame_list);
+		tbx_fast_list_del (&cframe->frame_list);
 
     if (nframe)
-		list_add_tail (&nframe->frame_list, &movie->frames);
+		tbx_fast_list_add_tail (&nframe->frame_list, &movie->frames);
 
     if (cframe)
 		{
             cframe->duration = 0;
-            list_add_tail (&cframe->frame_list, &movie->frames);
+            tbx_fast_list_add_tail (&cframe->frame_list, &movie->frames);
 		}
     OUT();
 }
@@ -743,7 +743,7 @@ BGLMovie_add (BubbleMovie movie, BubbleBlock block) {
 
     cframe = BGLMovie_get_current_frame (movie);
     new_item = newBGLDisplayItem (block);
-    list_add_tail (&new_item->disp_list, &cframe->display_items);
+    tbx_fast_list_add_tail (&new_item->disp_list, &cframe->display_items);
 
     OUT();
     return new_item;
@@ -768,13 +768,13 @@ BGLMovie_pause (BubbleMovie movie, coordinate_t sec) {
 static void
 bgl_print_frame_tree (bgl_frame_t *frame) {
     printf ("    Frame duration = %f\n", frame->duration);
-    if (list_empty (&frame->display_items)) {
+    if (tbx_fast_list_empty (&frame->display_items)) {
         printf ("  ! Frame is Empty!\n");
         return;
     }
     struct BGLDisplayItem *citem;
     bgl_action_t         *caction;
-    list_for_each_entry (citem, &frame->display_items, disp_list) {
+    tbx_fast_list_for_each_entry (citem, &frame->display_items, disp_list) {
         printf ("    === Item :\n");
         if (!citem->block) {
             printf ("     !! Goups !\n");
@@ -784,14 +784,14 @@ bgl_print_frame_tree (bgl_frame_t *frame) {
                  citem->block->type == BGL_BLOCK_TYPE_SHAPE ? "SHAPE" : "MORPH");
         printf ("      - OffSet : x=%f, y=%f\n", citem->current.x, citem->current.y);
         printf ("      - Actions :\n");
-        if (list_empty (&((struct BGLShape *) citem->disp_block)->actions)) {
+        if (tbx_fast_list_empty (&((struct BGLShape *) citem->disp_block)->actions)) {
             printf ("        ! No Actions !\n");
             printf ("      - ----\n");
             fflush (stdout);
             continue;
         }
         fflush (stdout);
-        list_for_each_entry (caction,
+        tbx_fast_list_for_each_entry (caction,
                              &((struct BGLShape *) citem->disp_block)->actions,
                              action_list) {
             bgl_action_with_style_t *style;
@@ -873,17 +873,17 @@ BGLMovie_save (BubbleMovie movie, const char *filename TBX_UNUSED) {
     movie->frames_array = NULL;
     movie->frames_count = 0;
 
-    if (list_empty (&movie->frames)) /* Empty movie. */
+    if (tbx_fast_list_empty (&movie->frames)) /* Empty movie. */
         return 0;
 
     /* get frames count. */
-    list_for_each_entry (cframe, &movie->frames, frame_list)
+    tbx_fast_list_for_each_entry (cframe, &movie->frames, frame_list)
         movie->frames_count++;
 
     movie->frames_array = malloc (movie->frames_count * sizeof (bgl_frame_t *));
 
     i = 0;
-    list_for_each_entry (cframe, &movie->frames, frame_list) {
+    tbx_fast_list_for_each_entry (cframe, &movie->frames, frame_list) {
         movie->frames_array[i] = cframe;
         i++;
 
@@ -925,9 +925,9 @@ destroyBGLMovie (BubbleMovie movie) {
 
     free (movie->frames_array);
 
-    while (!list_empty (&movie->frames)) {
-        frame = list_entry (movie->frames.next, bgl_frame_t, frame_list);
-        list_del (&frame->frame_list);
+    while (!tbx_fast_list_empty (&movie->frames)) {
+        frame = tbx_fast_list_entry (movie->frames.next, bgl_frame_t, frame_list);
+        tbx_fast_list_del (&frame->frame_list);
         bgl_frame_free (frame);
     }
 
@@ -994,7 +994,7 @@ static void
 BGLFillStyle_init (BubbleFillStyle style,
                    unsigned char r, unsigned char g, unsigned char b,
                    unsigned char a) {
-    INIT_LIST_HEAD (&style->style_list);
+    TBX_INIT_FAST_LIST_HEAD (&style->style_list);
     BGLColor_init (&style->color, r, g, b, a);
 }
 
@@ -1036,7 +1036,7 @@ BGLShape_addSolidFillStyle (BubbleShape shape,
     IN();
     BubbleFillStyle new_style = newBGLFillStyle (r, g, b, a);
 
-    list_add (&new_style->style_list, &shape->styles);
+    tbx_fast_list_add (&new_style->style_list, &shape->styles);
 
     OUT();
     return new_style;
@@ -1088,7 +1088,7 @@ destroyBGLShape (BubbleShape shape) {
 static bgl_action_t *
 BGLShape_addAction (BubbleShape shape, bgl_action_type_e_t action_type) {
     bgl_action_t *new_action = bgl_action_new (action_type);
-    list_add_tail (&new_action->action_list, &shape->actions);
+    tbx_fast_list_add_tail (&new_action->action_list, &shape->actions);
 
     return new_action;
 }
@@ -1105,11 +1105,11 @@ newBGLShape () {
     BGLBlock_init ((BubbleBlock) new_shape, BGL_BLOCK_TYPE_SHAPE,
                    (free_block_fn_t) __destroyBGLShape);
 
-    INIT_LIST_HEAD (&new_shape->actions);
+    TBX_INIT_FAST_LIST_HEAD (&new_shape->actions);
 
     new_shape->orig.x = new_shape->orig.y = 0;
 
-    INIT_LIST_HEAD (&new_shape->styles);
+    TBX_INIT_FAST_LIST_HEAD (&new_shape->styles);
     new_shape->current_style = NULL;
 
     BGLLine_init (&new_shape->line, 1, 0, 0, 0, 255);

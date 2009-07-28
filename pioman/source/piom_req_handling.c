@@ -31,7 +31,7 @@ piom_req_success(piom_req_t req)
     PIOM_LOGF("Req %p succeded !\n",req);
     if(req->priority >  req->server->max_priority)
 	req->server->max_priority = req->priority;
-    list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); 
+    tbx_fast_list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); 
 #ifdef MARCEL
     _piom_spin_unlock_softirq(&req->server->req_ready_lock); 
 #endif	/* MARCEL */
@@ -45,10 +45,10 @@ piom_get_success(piom_server_t server)
     piom_req_t req = NULL;
     _piom_spin_lock_softirq(&server->req_success_lock);
 
-    if (!list_empty(&server->list_req_success)) {
-	req = list_entry(server->list_req_success.next,
+    if (!tbx_fast_list_empty(&server->list_req_success)) {
+	req = tbx_fast_list_entry(server->list_req_success.next,
 			 struct piom_req, chain_req_success);
-	list_del_init(&req->chain_req_success);
+	tbx_fast_list_del_init(&req->chain_req_success);
 	PIOM_LOGF("Getting success req %p pour [%s]\n", req, server->name);
     }
 
@@ -64,12 +64,12 @@ __piom_del_success_req(piom_server_t server,
 		       piom_req_t req)
 {
     LOG_IN();
-    if (list_empty(&req->chain_req_success)) {
+    if (tbx_fast_list_empty(&req->chain_req_success)) {
 	/* the request is not yet completed */
 	LOG_RETURN(0);
     }
     _piom_spin_lock(&server->req_success_lock);
-    list_del_init(&req->chain_req_success);
+    tbx_fast_list_del_init(&req->chain_req_success);
     PIOM_LOGF("Removing success ev %p pour [%s]\n", req, server->name);
     _piom_spin_unlock(&server->req_success_lock);
 
@@ -84,14 +84,14 @@ __piom_add_success_req(piom_server_t server,
 		       piom_req_t req)
 {
     LOG_IN();
-    if (!list_empty(&req->chain_req_success)) {
+    if (!tbx_fast_list_empty(&req->chain_req_success)) {
 	/* the request is already completed */
 	LOG_RETURN(0);
     }
     _piom_spin_lock(&server->req_success_lock);
 
     PIOM_LOGF("Adding success req %p pour [%s]\n", req, server->name);
-    list_add_tail(&req->chain_req_success, &server->list_req_success);
+    tbx_fast_list_add_tail(&req->chain_req_success, &server->list_req_success);
     _piom_spin_unlock(&server->req_success_lock);
 
     LOG_RETURN(0);
@@ -141,8 +141,8 @@ __piom_register_block(piom_server_t server, piom_req_t req)
     __piom_unregister_poll(server, req);
 
     /* add it to the list of blocking requests */
-    list_add(&req->chain_req_to_export, &server->list_req_to_export);			
-    list_add(&req->chain_req_block_grouped, &server->list_req_block_grouped);			
+    tbx_fast_list_add(&req->chain_req_to_export, &server->list_req_to_export);			
+    tbx_fast_list_add(&req->chain_req_block_grouped, &server->list_req_block_grouped);			
 
     server->req_block_grouped_nb++;	
     req->state |= PIOM_STATE_GROUPED;// | PIOM_STATE_EXPORTED;
@@ -165,14 +165,14 @@ __piom_manage_ready(piom_server_t server)
     int nb_req_ask_wake_server = 0;
     piom_req_t req, tmp, bak;
 
-    if (list_empty(&server->list_req_ready)) {
+    if (tbx_fast_list_empty(&server->list_req_ready)) {
 	/* No completed request */
 	return 0;
     }
     bak = NULL;
     _piom_spin_lock_softirq(&server->req_ready_lock); 
     /* Iterate over the list of completed requests */
-    list_for_each_entry_safe(req, tmp, &server->list_req_ready,
+    tbx_fast_list_for_each_entry_safe(req, tmp, &server->list_req_ready,
 			     chain_req_ready) {
 	if (req == bak) {
 	    break;
@@ -188,7 +188,7 @@ __piom_manage_ready(piom_server_t server)
 	}
 
 	/* Remove the request from the list of completed requests */
-	list_del_init(&req->chain_req_ready);
+	tbx_fast_list_del_init(&req->chain_req_ready);
 	if (req->state & PIOM_STATE_ONE_SHOT) {
 	    nb_grouped_req_removed +=__piom_unregister_poll(server, req);
 	    __piom_unregister(server, req);
@@ -196,7 +196,7 @@ __piom_manage_ready(piom_server_t server)
 	bak = req;
     }
 
-    PIOM_BUG_ON(!list_empty(&server->list_req_ready));
+    PIOM_BUG_ON(!tbx_fast_list_empty(&server->list_req_ready));
     _piom_spin_unlock_softirq(&server->req_ready_lock); 
     if (nb_grouped_req_removed) {
 	PIOM_LOGF("Nb grouped task set to %i\n",
@@ -332,16 +332,16 @@ piom_req_free(piom_req_t req)
 	int nb_req_ask_wake_server=0;
 	_piom_spin_lock_softirq(&server->req_ready_lock);
 
-	if(! list_empty(&req->chain_req_ready)) {
+	if(! tbx_fast_list_empty(&req->chain_req_ready)) {
 	    /* Successful request. */
 	    __piom_wake_req_waiters(server, req, 0);
 	    if (!(req->state & PIOM_STATE_NO_WAKE_SERVER)) {
 		__piom_add_success_req(server, req);
 		nb_req_ask_wake_server++;
 	    }
-	    list_del_init(&req->chain_req_ready);
+	    tbx_fast_list_del_init(&req->chain_req_ready);
 	}
-	PIOM_BUG_ON(!list_empty(&req->chain_req_ready));
+	PIOM_BUG_ON(!tbx_fast_list_empty(&req->chain_req_ready));
 	__piom_unregister_poll(server, req);
 	__piom_unregister(server, req);
 	_piom_spin_unlock_softirq(&server->req_ready_lock);
@@ -371,7 +371,7 @@ __piom_register(piom_server_t server, piom_req_t req)
     LOG_IN();
     PIOM_LOGF("Register req %p for [%s]\n", req, server->name);
 
-    list_add(&req->chain_req_registered, &server->list_req_registered);
+    tbx_fast_list_add(&req->chain_req_registered, &server->list_req_registered);
     req->state |= PIOM_STATE_REGISTERED;
     req->server = server;
     LOG_RETURN(0);
@@ -383,14 +383,14 @@ void
 __piom_init_req(piom_req_t req)
 {
     PIOM_LOGF("Clearing Grouping request %p\n", req);
-    INIT_LIST_HEAD(&req->chain_req_registered);
-    INIT_LIST_HEAD(&req->chain_req_grouped);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_registered);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_grouped);
 #ifdef PIOM_BLOCKING_CALLS
-    INIT_LIST_HEAD(&req->chain_req_block_grouped);
-    INIT_LIST_HEAD(&req->chain_req_to_export);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_block_grouped);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_to_export);
 #endif /* PIOM_BLOCKING_CALLS */
-    INIT_LIST_HEAD(&req->chain_req_ready);
-    INIT_LIST_HEAD(&req->chain_req_success);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_ready);
+    TBX_INIT_FAST_LIST_HEAD(&req->chain_req_success);
 	
     req->state = 0;
     req->server = NULL;
@@ -400,7 +400,7 @@ __piom_init_req(piom_req_t req)
     req->func_to_use=PIOM_FUNC_AUTO;
     req->priority=PIOM_REQ_PRIORITY_NORMAL;
 
-    INIT_LIST_HEAD(&req->list_wait);
+    TBX_INIT_FAST_LIST_HEAD(&req->list_wait);
 }
 
 /* Unregister a request */
@@ -410,8 +410,8 @@ __piom_unregister(piom_server_t server, piom_req_t req)
     LOG_IN();
     PIOM_LOGF("Unregister request %p for [%s]\n", req, server->name);
     __piom_del_success_req(server, req);
-    list_del_init(&req->chain_req_registered);
-    list_del_init(&req->chain_req_ready);
+    tbx_fast_list_del_init(&req->chain_req_registered);
+    tbx_fast_list_del_init(&req->chain_req_ready);
     req->state &= ~PIOM_STATE_REGISTERED;
     LOG_RETURN(0);
 }
@@ -426,7 +426,7 @@ __piom_register_poll(piom_server_t server, piom_req_t req)
     /* Add the request to the list */
     PIOM_LOGF("Grouping Poll request %p for [%s]\n", req, server->name);
     PIOM_BUG_ON(! (req->state & PIOM_STATE_REGISTERED));
-    list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
+    tbx_fast_list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
 
     server->req_poll_grouped_nb++;
     req->state |= PIOM_STATE_GROUPED;
@@ -453,13 +453,13 @@ __piom_unregister_poll(piom_server_t server, piom_req_t req)
 		  server->name);
 #ifdef PIOM_BLOCKING_CALLS
 	if(req->state & PIOM_STATE_EXPORTED){
-	    list_del_init(&req->chain_req_block_grouped);
-	    list_del_init(&req->chain_req_to_export);
+	    tbx_fast_list_del_init(&req->chain_req_block_grouped);
+	    tbx_fast_list_del_init(&req->chain_req_to_export);
 	    server->req_block_grouped_nb--;
 	} else 
 #endif /* PIOM_BLOCKING_CALLS */
 	    {
-		list_del_init(&req->chain_req_grouped);
+		tbx_fast_list_del_init(&req->chain_req_grouped);
 		server->req_poll_grouped_nb--;
 	    }
 	req->state &= ~PIOM_STATE_GROUPED;
@@ -469,7 +469,7 @@ __piom_unregister_poll(piom_server_t server, piom_req_t req)
     }
 #ifdef PIOM_BLOCKING_CALLS
     else if(req->state & PIOM_STATE_EXPORTED){
-	list_del_init(&req->chain_req_to_export);
+	tbx_fast_list_del_init(&req->chain_req_to_export);
     }
 #endif /* PIOM_BLOCKING_CALLS */
     LOG_RETURN(0);

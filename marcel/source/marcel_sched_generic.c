@@ -220,7 +220,7 @@ void marcel_one_more_task(marcel_t pid)
 	MA_BUG_ON(task_number == MA_MAX_VP_THREADS);
 	pid->number = ma_vpnum(MA_LWP_SELF) * MA_MAX_VP_THREADS + task_number;
 	MA_BUG_ON(ma_topo_vpdata_l(vp,task_number) == MA_MAX_VP_THREADS);
-	list_add(&pid->all_threads,&ma_topo_vpdata_l(vp,all_threads));
+	tbx_fast_list_add(&pid->all_threads,&ma_topo_vpdata_l(vp,all_threads));
 	oldnbtasks = ma_topo_vpdata_l(vp,nb_tasks)++;
 
 	if (!oldnbtasks && ma_topo_vpdata_l(vp,main_is_waiting))
@@ -241,7 +241,7 @@ void marcel_one_task_less(marcel_t pid)
 
 	ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 
-	list_del(&pid->all_threads);
+	tbx_fast_list_del(&pid->all_threads);
 	if(((--(ma_topo_vpdata_l(vp,nb_tasks))) == 0) && (ma_topo_vpdata_l(vp,main_is_waiting)))
 		ma_wake_up_thread(__main_thread);
 
@@ -294,7 +294,7 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 
 	for_all_vp(vp) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
-		list_for_each_entry(t, &ma_topo_vpdata_l(vp,all_threads), all_threads) {
+		tbx_fast_list_for_each_entry(t, &ma_topo_vpdata_l(vp,all_threads), all_threads) {
 			if (want_to_see(t, which)) {
 				if (nb_pids < max)
 					pids[nb_pids++] = t;
@@ -314,7 +314,7 @@ void marcel_snapshot(snapshot_func_t f)
 
 	for_all_vp(vp) {
 		ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
-		list_for_each_entry(t, &ma_topo_vpdata_l(vp,all_threads), all_threads)
+		tbx_fast_list_for_each_entry(t, &ma_topo_vpdata_l(vp,all_threads), all_threads)
 			(*f)(t);
 		ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 	}
@@ -520,7 +520,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 		ma_per_lwp(run_task, lwp)->preempt_count=MA_HARDIRQ_OFFSET+MA_PREEMPT_OFFSET;
 	else
 		/* ajout du thread principal à la liste des threads */
-		list_add(&SELF_GETMEM(all_threads),&ma_topo_vpdata(0,all_threads));
+		tbx_fast_list_add(&SELF_GETMEM(all_threads),&ma_topo_vpdata(0,all_threads));
 
 #ifdef MA__LWPS
 	/*****************************************/

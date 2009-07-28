@@ -554,8 +554,8 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   memset(p_gate->active_recv, 0, sizeof(p_gate->active_recv));
   memset(p_gate->active_send, 0, sizeof(p_gate->active_send));
 
-  INIT_LIST_HEAD(&p_gate->pending_large_recv);
-  INIT_LIST_HEAD(&p_gate->pending_large_send);
+  TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_recv);
+  TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_send);
 
   p_gate->strategy_instance = puk_adapter_instanciate(p_core->so_sched.strategy_adapter);
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,

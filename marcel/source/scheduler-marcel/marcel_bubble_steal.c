@@ -33,7 +33,7 @@ static int total_nb_ready_entities(marcel_bubble_t *b) {
 	marcel_entity_t *e;
 	// XXX: pas fiable du tout ! Il faudrait verrouiller la bulle !
 	ma_holder_rawlock(&b->as_holder);
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item)
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item)
 		if (e->type == MA_BUBBLE_ENTITY)
 			nb_ready_entities += total_nb_ready_entities(ma_bubble_entity(e));
 	ma_holder_rawunlock(&b->as_holder);
@@ -51,7 +51,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 	if (!rq->as_holder.nb_ready_entities)
 		return NULL;
 	for (i = 0; i < MA_MAX_PRIO; i++) {
-		list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), cached_entities_item) {
+		tbx_fast_list_for_each_entry_reverse(e, ma_array_queue(rq->active,i), cached_entities_item) {
 			if (e->type != MA_BUBBLE_ENTITY)
 				continue;
 			b = ma_bubble_entity(e);
@@ -109,7 +109,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	PROF_EVENT2(bubble_sched_switchrq, b, rq2);
 	/* laisser d'abord ce qui est ordonnancé sur place */
 	ma_holder_rawlock(&b->as_holder);
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->type == MA_BUBBLE_ENTITY) {
 			/* laisser la première bulle */
 			if (!first)
@@ -134,7 +134,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 	ma_holder_rawlock(&rq2->as_holder);
 	ma_holder_rawlock(&b->as_holder);
 	/* b contient encore tout ce qui n'est pas ordonnancé, les distribuer */
-	list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
+	tbx_fast_list_for_each_entry(e, &b->natural_entities, natural_entities_item) {
 		if (e->sched_holder == &b->as_holder)
 			continue;
 		/* encore dans la bulle, faire sortir cela */

@@ -260,7 +260,7 @@ struct marcel_task {
 #endif
 
 	/* per-lwp list of all threads */
-	struct list_head all_threads;
+	struct tbx_fast_list_head all_threads;
 
 #ifdef MARCEL_DEBUG_SPINLOCK
 	/* backtrace pour débugguer la préemption */

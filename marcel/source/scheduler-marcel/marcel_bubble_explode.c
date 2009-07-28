@@ -152,7 +152,7 @@ les #ifdef dans les arguments de macro...
 	bubble_sched_debugl(7,"timeslice %u\n",ma_atomic_read(&bubble->as_entity.time_slice));
 	//__do_bubble_explode(bubble,rq);
 	//ma_atomic_set(&bubble->as_entity.time_slice,MARCEL_BUBBLE_TIMESLICE*bubble->nbrunning); /* TODO: plutôt arbitraire */
-	list_for_each_entry(e, &bubble->natural_entities, natural_entities_item)
+	tbx_fast_list_for_each_entry(e, &bubble->natural_entities, natural_entities_item)
 		ma_move_entity(e, &rq->as_holder);
 
 	ma_holder_rawunlock(&bubble->as_holder);

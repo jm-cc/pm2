@@ -26,11 +26,11 @@
  *   piom_server_t server : server
  */
 #define FOREACH_REQ_REGISTERED_BASE(req, server)			\
-    list_for_each_entry((req), &(server)->list_req_registered, chain_req_registered)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_registered, chain_req_registered)
 
 /* Idem but safe (intern use) */
 #define FOREACH_REQ_REGISTERED_BASE_SAFE(req, tmp, server)		\
-    list_for_each_entry_safe((req), (tmp), &(server)->list_req_registered, chain_req_registered)
+    tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_registered, chain_req_registered)
 
 /* Iterates using a custom type 
  *
@@ -40,7 +40,7 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_REQ_REGISTERED(req, server, member)			\
-    list_for_each_entry((req), &(server)->list_req_registered, member.chain_req_registered)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_registered, member.chain_req_registered)
 
 /****************************************************************
  * Iterator over the grouped polling queries
@@ -51,11 +51,11 @@
  *   piom_server_t server : server
  */
 #define FOREACH_REQ_POLL_BASE(req, server)				\
-    list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Idem but safe (intern use) */
 #define FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server)			\
-    list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
+    tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Iterates using a custom type 
  *
@@ -65,7 +65,7 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_REQ_POLL(req, server, member)				\
-    list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
 
 /****************************************************************
  * Iterator over the grouped polling queries
@@ -76,11 +76,11 @@
  *   piom_server_t server : server
  */
 #define FOREACH_REQ_BLOCKING_BASE(req, server)				\
-    list_for_each_entry((req), &(server)->list_req_block_grouped,  chain_req_block_grouped)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_block_grouped,  chain_req_block_grouped)
 
 /* Idem but safe (intern use) */
 #define FOREACH_REQ_BLOCKING_BASE_SAFE(req, tmp, server)		\
-    list_for_each_entry_safe((req), (tmp), &(server)->list_req_block_grouped, chain_req_block_grouped)
+    tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_block_grouped, chain_req_block_grouped)
 
 /* Iterates using a custom type 
  *
@@ -90,10 +90,10 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_REQ_BLOCKING(req, server, member)			\
-    list_for_each_entry((req), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
 
 #define FOREACH_REQ_BLOCKING_SAFE(req, tmp, server, member)		\
-    list_for_each_entry_safe((req),(tmp), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
+    tbx_fast_list_for_each_entry_safe((req),(tmp), &(server)->list_req_block_grouped, member.chain_req_block_grouped)
 
 /****************************************************************
  * Iterator over the queries to be exported
@@ -104,11 +104,11 @@
  *   piom_server_t server : server
  */
 #define FOREACH_REQ_TO_EXPORT_BASE(req, server)				\
-    list_for_each_entry((req), &(server)->list_req_to_export, chain_req_to_export)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_to_export, chain_req_to_export)
 
 /* Idem but safe (intern use) */
 #define FOREACH_REQ_TO_EXPORT_BASE_SAFE(req, tmp, server)		\
-    list_for_each_entry_safe((req), (tmp), &(server)->list_req_to_export, chain_req_to_export)
+    tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_to_export, chain_req_to_export)
 
 /* Iterates using a custom type 
  *
@@ -118,7 +118,7 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_REQ_TO_EXPORT(req, server, member)			\
-    list_for_each_entry((req), &(server)->list_req_to_export, member.chain_req_to_export)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_to_export, member.chain_req_to_export)
 
 /****************************************************************
  * Iterator over the exported queries
@@ -129,11 +129,11 @@
  *   piom_server_t server : server
  */
 #define FOREACH_REQ_EXPORTED_BASE(req, server)				\
-    list_for_each_entry((req), &(server)->list_req_exported, chain_req)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_exported, chain_req)
 
 /* Idem but safe (intern use) */
 #define FOREACH_REQ_EXPORTED_BASE_SAFE(req, tmp, server)		\
-    list_for_each_entry_safe((req), (tmp), &(server)->list_req_exported, chain_req)
+    tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_exported, chain_req)
 
 /* Iterates using a custom type 
  *
@@ -143,7 +143,7 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_REQ_EXPORTED(req, server, member)			\
-    list_for_each_entry((req), &(server)->list_req_exported, member.chain_req)
+    tbx_fast_list_for_each_entry((req), &(server)->list_req_exported, member.chain_req)
 
 
 /****************************************************************
@@ -155,11 +155,11 @@
  *   piom_req_t req : request
  */
 #define FOREACH_WAIT_BASE(wait, req)				\
-    list_for_each_entry((wait), &(req)->list_wait, chain_wait)
+    tbx_fast_list_for_each_entry((wait), &(req)->list_wait, chain_wait)
 
 /* Idem but safe (intern use) */
 #define FOREACH_WAIT_BASE_SAFE(wait, tmp, req)				\
-    list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
+    tbx_fast_list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
 
 /* Iterates using a custom type
  *
@@ -169,6 +169,6 @@
  *   member : name of struct piom in the structure pointed by req
  */
 #define FOREACH_WAIT(wait, req, member)					\
-    list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
+    tbx_fast_list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
 
 #endif	/* PIOM_ITERATOR_H */

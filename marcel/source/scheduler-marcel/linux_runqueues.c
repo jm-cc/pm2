@@ -37,7 +37,7 @@ void ma_init_rq(ma_runqueue_t *rq, const char *name)
 		array->nr_active = 0;
 		memset(&array->bitmap, 0, sizeof(array->bitmap));
 		for (k = 0; k < MA_MAX_PRIO; k++)
-			INIT_LIST_HEAD(ma_array_queue(array, k));
+			TBX_INIT_FAST_LIST_HEAD(ma_array_queue(array, k));
 		// delimiter for bitsearch
 		__ma_set_bit(MA_MAX_PRIO, array->bitmap);
 	}

@@ -69,7 +69,7 @@ static int nm_strat_qos_load(void)
 
 struct nm_so_strat_qos_ack {
   nm_tag_t tag;
-  struct list_head link;
+  struct tbx_fast_list_head link;
   nm_seq_t seq;
   nm_trk_id_t track_id;
 };
@@ -78,14 +78,14 @@ struct nm_so_strat_qos_ack {
  */
 struct nm_so_strat_qos {
   /** List of raw outgoing packets. */
-  struct list_head out_list;
+  struct tbx_fast_list_head out_list;
   nm_so_policy* policies[NM_SO_NB_POLICIES];
   uint8_t policies_weights[NM_SO_NB_POLICIES];
 
   void *policy_priv[NM_SO_NB_POLICIES];
   uint8_t current_policy;
   uint8_t round;
-  struct list_head pending_acks[NM_SO_NB_PRIORITIES];
+  struct tbx_fast_list_head pending_acks[NM_SO_NB_PRIORITIES];
   p_tbx_memory_t nm_so_ack_mem;
 
   struct nm_so_strat_qos_ack *p_ack;
@@ -167,7 +167,7 @@ static void*strat_qos_instanciate(puk_instance_t ai, puk_context_t context)
   struct nm_so_strat_qos*status = TBX_MALLOC(sizeof(struct nm_so_strat_qos));
   int i;
 
-  INIT_LIST_HEAD(&status->out_list);
+  TBX_INIT_FAST_LIST_HEAD(&status->out_list);
 
   NM_LOGF("[loading strategy: <qos>]");
 
@@ -191,7 +191,7 @@ static void*strat_qos_instanciate(puk_instance_t ai, puk_context_t context)
   status->round = status->policies_weights[0];
 
   for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
-    INIT_LIST_HEAD(&status->pending_acks[i]);
+    TBX_INIT_FAST_LIST_HEAD(&status->pending_acks[i]);
 
   tbx_malloc_init(&status->nm_so_ack_mem,
 		  sizeof(struct nm_so_strat_qos_ack),
@@ -347,13 +347,13 @@ static int strat_qos_ack_callback(void *_status,
       status->p_ack->seq = seq;
       status->p_ack->track_id = track_id;
 
-      list_add_tail(&status->p_ack->link, &status->pending_acks[priority]);
+      tbx_fast_list_add_tail(&status->p_ack->link, &status->pending_acks[priority]);
     }
   else
     {
       for(i = 0; i < NM_SO_NB_PRIORITIES; i++)
 	{
-	  list_for_each_entry(status->p_ack, &status->pending_acks[i], link)
+	  tbx_fast_list_for_each_entry(status->p_ack, &status->pending_acks[i], link)
 	    {
 	      tag = status->p_ack->tag;
 	      seq = status->p_ack->seq;
@@ -361,11 +361,11 @@ static int strat_qos_ack_callback(void *_status,
 
 	      NM_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
-	      list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_gate->tags, tag)->pending_large_send, link)
+	      tbx_fast_list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_gate->tags, tag)->pending_large_send, link)
 		{
 		  if(p_so_large_pw->seq == seq)
 		    {
-		      list_del(&p_so_large_pw->link);
+		      tbx_fast_list_del(&p_so_large_pw->link);
 
 		      /* Send the data */
 		      nm_core_post_send(p_gate, p_so_large_pw,
@@ -378,7 +378,7 @@ static int strat_qos_ack_callback(void *_status,
 	      TBX_FAILURE("PANIC!\n");
 
 	    next:
-	      list_del(&status->p_ack->link);
+	      tbx_fast_list_del(&status->p_ack->link);
 	      tbx_free(status->nm_so_ack_mem, status->p_ack);
 	    }
 	}

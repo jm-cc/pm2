@@ -42,7 +42,7 @@ static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, st
 {
   assert(p_pw->trk_id == NM_TRK_LARGE);
   assert(p_pw->p_drv != NULL);
-  list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
+  tbx_fast_list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
 }
 
 /* ********************************************************* */
@@ -396,7 +396,7 @@ static int store_large_datatype_waiting_transfer(struct nm_gate *p_gate,
 int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 {
   /* ** Process postponed recv requests */
-  if(!list_empty(&p_gate->pending_large_recv))
+  if(!tbx_fast_list_empty(&p_gate->pending_large_recv))
     {
       struct nm_pkt_wrap *p_large_pw = nm_l2so(p_gate->pending_large_recv.next);
       struct nm_unpack_s*unpack = nm_unpack_find_matching(p_gate->p_core, p_gate, p_large_pw->seq, p_large_pw->tag);
@@ -405,7 +405,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
       if(unpack->status & NM_UNPACK_TYPE_IOV)
 	{
 	  /* ** iov to be completed */
-	  list_del(p_gate->pending_large_recv.next);
+	  tbx_fast_list_del(p_gate->pending_large_recv.next);
 	  if(p_large_pw->v[0].iov_len < p_large_pw->length)
 	    {
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
@@ -425,7 +425,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	{
 	  /* ** datatype to be completed */
 	  /* Post next iov entry on driver drv_id */
-	  list_del(p_gate->pending_large_recv.next);
+	  tbx_fast_list_del(p_gate->pending_large_recv.next);
 	  nm_so_init_large_datatype_recv_with_multi_ack(p_large_pw);
 	}
       else 
@@ -438,7 +438,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 						 &nb_chunks, chunks);
 	  if(err == NM_ESUCCESS)
 	    {
-	      list_del(p_gate->pending_large_recv.next);
+	      tbx_fast_list_del(p_gate->pending_large_recv.next);
 	      err = nm_so_post_multiple_pw_recv(p_gate, p_large_pw, nb_chunks, chunks);
 	      nm_so_build_multi_ack(p_gate, p_large_pw->tag, p_large_pw->seq,
 				    p_large_pw->chunk_offset, nb_chunks, chunks);

@@ -37,7 +37,7 @@ typedef struct ma_tvec_t_base_s ma_tvec_base_t;
 
 #section structures
 struct ma_timer_list {
-	struct list_head entry;
+	struct tbx_fast_list_head entry;
 	unsigned long expires;
 
 	ma_spinlock_t lock;
@@ -51,11 +51,11 @@ struct ma_timer_list {
 
 #section marcel_structures
 typedef struct ma_tvec_s {
-	struct list_head vec[TVN_SIZE];
+	struct tbx_fast_list_head vec[TVN_SIZE];
 } ma_tvec_t;
 
 typedef struct ma_tvec_root_s {
-	struct list_head vec[TVR_SIZE];
+	struct tbx_fast_list_head vec[TVR_SIZE];
 } ma_tvec_root_t;
 
 struct ma_tvec_t_base_s {

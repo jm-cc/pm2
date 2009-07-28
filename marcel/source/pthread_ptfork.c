@@ -140,7 +140,7 @@ static void remove_lwp(marcel_lwp_t * lwp)
 	remove_thread(lwp->run_task);
 #endif
 
-	list_del(&lwp->lwp_list);
+	tbx_fast_list_del(&lwp->lwp_list);
 
 	/* FIXME: There are live `marcel_t' objects pointing to this LWP so don't
 	 * free it for now.  */
@@ -179,8 +179,8 @@ static void cleanup_child_after_fork(void)
 	for_all_vp(vp) {
 		marcel_t thread, next_thread;
 
-		list_for_each_entry_safe(thread, next_thread, &ma_topo_vpdata_l(vp, all_threads), all_threads) {
-			MA_BUG_ON(list_empty(&thread->all_threads));
+		tbx_fast_list_for_each_entry_safe(thread, next_thread, &ma_topo_vpdata_l(vp, all_threads), all_threads) {
+			MA_BUG_ON(tbx_fast_list_empty(&thread->all_threads));
 			if (thread != marcel_self ()
 #ifdef MA__LWPS
 					&& thread != __ma_get_lwp_var(idle_task)
@@ -194,7 +194,7 @@ static void cleanup_child_after_fork(void)
 	/* From the kernel perspective, the child process has only one LWP (i.e.,
 	 * one "kernel thread").  Remove and free all LWP objects but the current
 	 * one.  */
-	list_for_each_entry_safe(lwp, next_lwp, &ma_list_lwp_head, lwp_list) {
+	tbx_fast_list_for_each_entry_safe(lwp, next_lwp, &ma_list_lwp_head, lwp_list) {
 		if (lwp != MA_LWP_SELF)
 			remove_lwp(lwp);
 	}

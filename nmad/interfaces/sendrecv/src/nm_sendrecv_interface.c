@@ -25,8 +25,8 @@
  */
 static struct
 {
-  struct list_head completed_rreq;
-  struct list_head completed_sreq;
+  struct tbx_fast_list_head completed_rreq;
+  struct tbx_fast_list_head completed_sreq;
 
   /** vector of sendrecv event monitors */
   struct nm_sr_event_monitor_vect_s monitors;
@@ -186,8 +186,8 @@ int nm_sr_init(struct nm_core *p_core)
       nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       
-      INIT_LIST_HEAD(&nm_sr_data.completed_rreq);
-      INIT_LIST_HEAD(&nm_sr_data.completed_sreq);
+      TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_rreq);
+      TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_sreq);
       
       nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
 
@@ -472,7 +472,7 @@ int nm_sr_probe(struct nm_core *p_core,
 {
 #warning TODO (AD)- move this into a new function nm_so_iprobe() (in nm_so_schedule_in.c)
   struct nm_unexpected_s*chunk;
-  list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
+  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
     {
       if( ((chunk->p_gate == p_gate) && (chunk->tag == tag)) ||
 	  ((p_gate == NM_ANY_GATE)   && (chunk->tag == tag)) ||
@@ -509,10 +509,10 @@ int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
   nm_schedule(p_core);
-  if(!list_empty(&nm_sr_data.completed_rreq))
+  if(!tbx_fast_list_empty(&nm_sr_data.completed_rreq))
     {
       nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_rreq.next, struct nm_sr_request_s, _link);
-      list_del(nm_sr_data.completed_rreq.next);
+      tbx_fast_list_del(nm_sr_data.completed_rreq.next);
       *out_req = p_request;
       return NM_ESUCCESS;
     } 
@@ -526,10 +526,10 @@ int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 int nm_sr_send_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
   nm_schedule(p_core);
-  if(!list_empty(&nm_sr_data.completed_sreq))
+  if(!tbx_fast_list_empty(&nm_sr_data.completed_sreq))
     {
       nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_sreq.next, struct nm_sr_request_s, _link);
-      list_del(nm_sr_data.completed_sreq.next);
+      tbx_fast_list_del(nm_sr_data.completed_sreq.next);
       *out_req = p_request;
       return NM_ESUCCESS;
     } 
@@ -578,7 +578,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   
   if(p_request && p_request->ref)
     {
-      list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
+      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
     }
   const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
   nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
@@ -620,7 +620,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     }
   if(p_request && p_request->ref)
     {
-      list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
+      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
   const nm_sr_event_info_t info = { 
     .recv_completed.p_request = p_request,

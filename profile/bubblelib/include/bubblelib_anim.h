@@ -18,7 +18,7 @@
 #define BUBBLELIB_ANIM_H
 
 #include "bubblelib_output.h"
-#include "pm2_list.h"
+#include "tbx_fast_list.h"
 
 /*******************************************************************************
  * Parameters
@@ -73,8 +73,8 @@ typedef struct entity_s {
 	float lastwidth, lastheight;	/* size just before move */
 	unsigned thick;		/* drawing thickness */
 	int prio;		/* scheduling priority */
-	struct list_head rq;	/* position in rq */
-	struct list_head entity_list;	/* position in bubble */
+	struct tbx_fast_list_head rq;	/* position in rq */
+	struct tbx_fast_list_head entity_list;	/* position in bubble */
 	enum entity_type type;		/* type of entity */
 	BubbleDisplayItem lastitem;	/* last item shown in movie */
 	BubbleShape lastshape;		/* last shape used in movie */
@@ -92,7 +92,7 @@ typedef struct entity_s {
 
 typedef struct {
 	entity_t entity;
-	struct list_head entities;	/* held entities */
+	struct tbx_fast_list_head entities;	/* held entities */
 	float nextX;			/* position of next enqueued entity */
 } rq_t;
 
@@ -109,7 +109,7 @@ static inline rq_t * rq_of_entity(entity_t *e) {
 
 typedef struct bubble_s {
 	entity_t entity;
-	struct list_head heldentities;	/* held entities */
+	struct tbx_fast_list_head heldentities;	/* held entities */
 	float nextX;			/* position of next enqueued entity */
 	int exploded;			/* whether it is exploded */
 	BubbleMorph morph;			/* current bubble morph */

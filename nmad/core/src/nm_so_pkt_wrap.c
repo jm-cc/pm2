@@ -187,7 +187,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       TBX_FAILURE("nmad: no flag given for pw allocations.\n");
     }
   
-  INIT_LIST_HEAD(&p_pw->link);
+  TBX_INIT_FAST_LIST_HEAD(&p_pw->link);
 
   NM_SO_TRACE_LEVEL(3,"creating a pw %p (%d bytes)\n", p_pw, p_pw->length);
 

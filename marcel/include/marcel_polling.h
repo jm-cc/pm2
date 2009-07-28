@@ -206,11 +206,11 @@ enum {
    marcel_ev_server_t server : serveur
 */
 #define FOREACH_REQ_POLL_BASE(req, server) \
-  list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
+  tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Idem mais protégé (usage interne) */
 #define FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) \
-  list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
+  tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
 
 /* Itérateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
@@ -219,7 +219,7 @@ enum {
    member : nom de struct marcel_ev dans la structure pointée par req
 */
 #define FOREACH_REQ_POLL(req, server, member) \
-  list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
+  tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
 
 
 /****************************************************************
@@ -231,11 +231,11 @@ enum {
    marcel_ev_req_t req : requête
 */
 #define FOREACH_WAIT_BASE(wait, req) \
-  list_for_each_entry((wait), &(req)->list_wait, chain_wait)
+  tbx_fast_list_for_each_entry((wait), &(req)->list_wait, chain_wait)
 
 /* Idem mais protégé (usage interne) */
 #define FOREACH_WAIT_BASE_SAFE(wait, tmp, req) \
-  list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
+  tbx_fast_list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
 
 /* Itérateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
@@ -244,7 +244,7 @@ enum {
    member : nom de struct marcel_ev dans la structure pointée par req
 */
 #define FOREACH_WAIT(wait, req, member) \
-  list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
+  tbx_fast_list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
 
 
 
@@ -260,7 +260,7 @@ enum {
 */
 #define MARCEL_EV_REQ_SUCCESS(req) \
   do { \
-        list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
+        tbx_fast_list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); \
   } while(0)
 
 
@@ -296,7 +296,7 @@ void marcel_poll_from_tasklet(unsigned long id);
 void marcel_poll_timer(unsigned long id);
 
 #section marcel_structures
-#depend "pm2_list.h"
+#depend "tbx_fast_list.h"
 #depend "marcel_sem.h[]"
 #depend "marcel_descr.h[types]"
 #depend "linux_interrupt.h[]"
@@ -327,20 +327,20 @@ struct marcel_ev_server {
 	/* Thread propriétaire du lock (pour le locking applicatif) */
 	marcel_task_t *lock_owner;
 	/* Liste des requêtes soumises */
-	struct list_head list_req_registered;
+	struct tbx_fast_list_head list_req_registered;
 	/* Liste des requêtes signalées prêtes par les call-backs */
-	struct list_head list_req_ready;
+	struct tbx_fast_list_head list_req_ready;
 	/* Liste des requêtes pour ceux en attente dans la liste précédente */
-	struct list_head list_req_success;
+	struct tbx_fast_list_head list_req_success;
 	/* Liste des attentes en cours sur les événements */
-	struct list_head list_id_waiters;
+	struct tbx_fast_list_head list_id_waiters;
 	/* Spinlock régissant l'accès à la liste précédente */
 	ma_spinlock_t req_success_lock;
 	/* Polling events registered but not yet polled */
 	int registered_req_not_yet_polled;
 
 	/* Liste des requêtes groupées pour le polling (ou en cours de groupage) */
-	struct list_head list_req_poll_grouped;
+	struct tbx_fast_list_head list_req_poll_grouped;
 	/* Nombre de requêtes dans la liste précédente */
 	int req_poll_grouped_nb;
 
@@ -351,7 +351,7 @@ struct marcel_ev_server {
 	unsigned frequency;
 	/* Chaine des serveurs en cours de polling 
 	   (state == 2 et tâches en attente de polling) */
-	struct list_head chain_poll;
+	struct tbx_fast_list_head chain_poll;
 	/* Tasklet et timer utilisée pour la scrutation */
 	struct ma_tasklet_struct poll_tasklet;
 	struct ma_timer_list poll_timer;
@@ -368,18 +368,18 @@ struct marcel_ev_server {
   { \
     .lock=MA_SPIN_LOCK_UNLOCKED, \
     .lock_owner=NULL, \
-    .list_req_registered=LIST_HEAD_INIT((var).list_req_registered), \
-    .list_req_ready=LIST_HEAD_INIT((var).list_req_ready), \
-    .list_req_success=LIST_HEAD_INIT((var).list_req_success), \
-    .list_id_waiters=LIST_HEAD_INIT((var).list_id_waiters), \
+    .list_req_registered=TBX_FAST_LIST_HEAD_INIT((var).list_req_registered), \
+    .list_req_ready=TBX_FAST_LIST_HEAD_INIT((var).list_req_ready), \
+    .list_req_success=TBX_FAST_LIST_HEAD_INIT((var).list_req_success), \
+    .list_id_waiters=TBX_FAST_LIST_HEAD_INIT((var).list_id_waiters), \
     .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
     .registered_req_not_yet_polled=0, \
-    .list_req_poll_grouped=LIST_HEAD_INIT((var).list_req_poll_grouped), \
+    .list_req_poll_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_poll_grouped), \
     .req_poll_grouped_nb=0, \
     .funcs={NULL, }, \
     .poll_points=0, \
     .frequency=0, \
-    .chain_poll=LIST_HEAD_INIT((var).chain_poll), \
+    .chain_poll=TBX_FAST_LIST_HEAD_INIT((var).chain_poll), \
     .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
                      &marcel_poll_from_tasklet, \
                      (unsigned long)(marcel_ev_server_t)&(var), 1 ), \
@@ -402,24 +402,24 @@ enum {
 #section marcel_structures
 struct marcel_ev_req {
 	/* Chaine des requêtes soumises */
-	struct list_head chain_req_registered;
+	struct tbx_fast_list_head chain_req_registered;
 	/* Chaine des requêtes groupées en attente */
-	struct list_head chain_req_grouped;
+	struct tbx_fast_list_head chain_req_grouped;
 	/* Chaine des requêtes signalées OK par un call-back */
-	struct list_head chain_req_ready;
+	struct tbx_fast_list_head chain_req_ready;
 	/* Chaine des requêtes à signaler au serveur */
-	struct list_head chain_req_success;
+	struct tbx_fast_list_head chain_req_success;
 	/* État */
 	int state;
 	/* Serveur attaché */
 	marcel_ev_server_t server;
 	/* Liste des attentes en cours sur cette requête */
-	struct list_head list_wait;
+	struct tbx_fast_list_head list_wait;
 };
 
 struct marcel_ev_wait {
 	/* Chaine des événements groupé en attente */
-	struct list_head chain_wait;
+	struct tbx_fast_list_head chain_wait;
 
 	marcel_sem_t sem;
 	/* 0: event
@@ -435,7 +435,7 @@ struct marcel_ev_wait {
 /* Liste des serveurs en cours de polling 
  * (state == 2 et tâches en attente de polling) 
  */
-extern TBX_EXTERN struct list_head ma_ev_list_poll;
+extern TBX_EXTERN struct tbx_fast_list_head ma_ev_list_poll;
 
 #section marcel_functions
 static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
@@ -447,7 +447,7 @@ void TBX_EXTERN __marcel_check_polling(unsigned polling_point);
 
 static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point TBX_UNUSED)
 {
-	return !list_empty(&ma_ev_list_poll);
+	return !tbx_fast_list_empty(&ma_ev_list_poll);
 }
 
 static __tbx_inline__ void marcel_check_polling(unsigned polling_point)

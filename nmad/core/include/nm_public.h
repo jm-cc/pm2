@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <Padico/Puk.h>
 #include <nm_errno.h>
-#include <pm2_list.h>
+#include <tbx_fast_list.h>
 
 /* ** Core ************************************************* */
 
@@ -101,7 +101,7 @@ struct nm_unpack_s
   nm_gate_t p_gate;
   nm_seq_t seq;
   nm_tag_t tag;
-  struct list_head link;
+  struct tbx_fast_list_head link;
 };
 
 /** A pack request */

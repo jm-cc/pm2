@@ -101,7 +101,7 @@ typedef struct {
 	fd_set *writefds;
 	fd_set *exceptfds;
 	struct timeval *timeout;	/* not used (TODO?) */
-//	struct list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
+//	struct tbx_fast_list_head lwait[MAX_REQS][2];/* TODO: dynamique? */
 } requete;
 
 #endif	/* MA__LWPS */

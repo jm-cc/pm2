@@ -266,8 +266,7 @@ registering_flavors() {
         --nmad=tag_as_flat_array --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
 
     register_flavor ezflavor \
-	--modules="ezflavor" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--ezflavor=gtk2
+	--modules="ezflavor" $COMMON_OPTIONS $OPTIM_OPTIONS
 
     register_flavor pmarcel \
 	--modules="marcel tbx init stackalign" --all=opt $COMMON_OPTIONS \

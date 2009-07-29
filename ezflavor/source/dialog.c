@@ -22,10 +22,10 @@ typedef struct {
   GtkWidget *window;
   GtkWidget *button1, *button2, *button3;
   GtkWidget *label;
-#ifdef GTK2
-  dialog_func_t func1, func2, func3;
-#else
+#ifdef GTK1
   GtkSignalFunc func1, func2, func3;
+#else
+  dialog_func_t func1, func2, func3;
 #endif
   gpointer data1, data2, data3;
 } dialog_param_t;

@@ -113,12 +113,20 @@ EOF
     fi
 }
 
+nmad_driver_set_custom() {
+    ln -sf ${DRIVER_DIR}/driver_${1}.xml ${DRIVER_DIR}/driver_custom.xml
+}
+
 nmad_driver_write_default() {
     nmad_driver_write tcp
     nmad_driver_write local
     nmad_driver_write mx
     nmad_driver_write qsnet
     nmad_driver_write ibverbs
+    driver_file=${DRIVER_DIR}/driver_custom.xml
+    if [ ! -e  ${driver_file} ]; then
+	nmad_driver_set_custom tcp
+    fi
 }
 
 case ${ACTION} in
@@ -147,6 +155,6 @@ case ${ACTION} in
 	    usage
 	    exit 1
 	fi
-	ln -sf ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ${DRIVER_DIR}/driver_custom.xml
+	nmad_driver_set_custom ${CHOSEN_DRIVER}
 	;;
 esac

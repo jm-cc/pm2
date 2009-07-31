@@ -192,8 +192,8 @@ distcleandoc:
 .PHONY: init initnoflavor checkmake bkco optionsinit \
 	linksinit flavorinit componentsinit
 init: checkmake linksinit optionsinit componentsinit flavorinit
-initupdateflavor: checkmake linksinit optionsinit flavorupdate
-initnoflavor: checkmake linksinit optionsinit
+initupdateflavor: checkmake linksinit optionsinit componentsinit flavorupdate
+initnoflavor: checkmake linksinit componentsinit optionsinit
 
 ifneq ($(FORCEOLDMAKE),1)
 checkmake:

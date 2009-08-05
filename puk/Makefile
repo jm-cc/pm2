@@ -14,7 +14,7 @@
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-PM2_BUILD_DIR = $(shell pm2-config --flavor=$(FLAVOR) --builddir )
+PM2_BUILD_DIR  := $(shell pm2-config --flavor=$(FLAVOR) --builddir )
 PUK_ROOT       := $(PM2_BUILD_DIR)/puk
 PUK_SRCDIR     := $(CURDIR)
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
@@ -25,9 +25,17 @@ PADICO_ROOT    := $(PUK_ROOT)
 SRC_CONFIG_FILES := externals/packaging-tools/padico-setup.sh.in configure.ac # $(wildcard externals/building-tools/*.m4)
 GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
-PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.a $(PADICO_ROOT)/lib/libPadicoPuk.so
+PM2_PUK_BUILD_STATIC  := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_STATIC )
+PM2_PUK_BUILD_DYNAMIC := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_DYNAMIC )
+PUK_ENABLE_PUKABI     := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
 
-PUK_ENABLE_PUKABI := $(shell pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
+PUK_LIBS = 
+ifeq ($(PM2_PUK_BUILD_STATIC),yes)
+PUK_LIBS += $(PADICO_ROOT)/lib/libPadicoPuk.a
+endif
+ifeq ($(PM2_PUK_BUILD_DYNAMIC),yes)
+PUK_LIBS += $(PADICO_ROOT)/lib/libPadicoPuk.so
+endif
 ifeq ($(PUK_ENABLE_PUKABI),yes)
   PUK_LIBS += $(PADICO_ROOT)/lib/PukABI/libPukABI.so
 endif

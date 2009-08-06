@@ -28,6 +28,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef MARCEL
+#  define MARCEL_INTERNAL_INCLUDE
+#endif /* MARCEL */
+
 #include <topology.h>
 #include "pm2_common.h"
 #include "pm2_valgrind.h"
@@ -1510,10 +1514,21 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
     act.sa_handler = SIG_DFL;
     sigaction(SIGSEGV, &act, NULL);
   }
-  if (data && data->status == MAMI_USERSPACE_MIGRATION_STATUS) {
-    data->status = MAMI_NEXT_TOUCHED_STATUS;
+  if (data && (data->status == MAMI_ATTACH_ON_NEXT_TOUCH_STATUS || data->status == MAMI_USERSPACE_MIGRATION_STATUS)) {
     dest = th_mami_current_node();
-    _mami_migrate_on_node(_mami_memory_manager, data, dest);
+#ifdef MARCEL
+    if (data->status == MAMI_ATTACH_ON_NEXT_TOUCH_STATUS) {
+      marcel_entity_t *entity;
+      int node;
+
+      entity = ma_entity_task(marcel_self());
+      _mami_entity_attach(_mami_memory_manager, data->start_address, data->size, entity, &node);
+    }
+#endif /* MARCEL */
+    if (data->status == MAMI_USERSPACE_MIGRATION_STATUS) {
+      _mami_migrate_on_node(_mami_memory_manager, data, dest);
+    }
+    data->status = MAMI_NEXT_TOUCHED_STATUS;
     mdebug_memory("Un-Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_start_address, data->start_address+data->mprotect_size,
 		    (long) data->mprotect_size, data->start_address, data->end_address, (long) data->size);
     err = mprotect(data->mprotect_start_address, data->mprotect_size, data->protection);
@@ -1530,6 +1545,49 @@ void _mami_segv_handler(int sig, siginfo_t *info, void *_context) {
     }
   }
   th_mami_mutex_unlock(&(_mami_memory_manager->lock));
+}
+
+int mami_attach_on_next_touch(mami_manager_t *memory_manager, void *buffer) {
+  int err=0;
+  mami_data_t *data = NULL;
+  void *aligned_buffer;
+
+  MEMORY_LOG_IN();
+  th_mami_mutex_lock(&(memory_manager->lock));
+
+  _mami_memory_manager = memory_manager;
+  aligned_buffer = MAMI_ALIGN_ON_PAGE(memory_manager, buffer, memory_manager->normal_page_size);
+  mdebug_memory("Trying to locate [%p:%p:1]\n", aligned_buffer, aligned_buffer+1);
+  err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, 1, &data);
+  if (err >= 0) {
+    mdebug_memory("Setting attach on next touch on address %p (%p)\n", data->start_address, buffer);
+    if (!_mami_sigsegv_handler_set) {
+      struct sigaction act;
+      _mami_sigsegv_handler_set = 1;
+      act.sa_flags = SA_SIGINFO;
+      act.sa_sigaction = _mami_segv_handler;
+      err = sigaction(SIGSEGV, &act, NULL);
+      if (err < 0) {
+	perror("(mami_attach_on_next_touch) sigaction");
+	th_mami_mutex_unlock(&(memory_manager->lock));
+	MEMORY_LOG_OUT();
+	return -1;
+      }
+    }
+    mdebug_memory("Mprotecting [%p:%p:%ld] (initially [%p:%p:%ld]\n", data->mprotect_start_address, data->start_address+data->mprotect_size,
+		  (long) data->mprotect_size, data->start_address, data->end_address, (long) data->size);
+    err = mprotect(data->mprotect_start_address, data->mprotect_size, PROT_NONE);
+    if (err < 0) {
+      perror("(mami_migrate_on_next_touch) mprotect");
+      th_mami_mutex_unlock(&(memory_manager->lock));
+      MEMORY_LOG_OUT();
+      return -1;
+    }
+    data->status = MAMI_ATTACH_ON_NEXT_TOUCH_STATUS;
+  }
+  th_mami_mutex_unlock(&(memory_manager->lock));
+  MEMORY_LOG_OUT();
+  return err;
 }
 
 int mami_migrate_on_next_touch(mami_manager_t *memory_manager, void *buffer) {

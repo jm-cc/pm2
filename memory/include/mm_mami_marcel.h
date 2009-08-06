@@ -136,6 +136,18 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
                             marcel_bubble_t *owner,
                             int node);
 
+/**
+ * Marks the area to be attached on next touch.
+ * @param memory_manager pointer to the memory manager
+ * @param buffer address of the memory area
+ * @return 0 on success, -1 and sets errno to EINVAL when address not
+ * known by MaMI or to other specific error values when setting the
+ * next touch policy
+ */
+extern
+int mami_attach_on_next_touch(mami_manager_t *memory_manager,
+			      void *buffer);
+
 /* @} */
 /* @} */
 

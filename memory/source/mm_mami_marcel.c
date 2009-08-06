@@ -25,7 +25,6 @@
 #include "mm_debug.h"
 #include "mm_helper.h"
 
-static
 int _mami_entity_attach(mami_manager_t *memory_manager,
                         void *buffer,
                         size_t size,
@@ -35,7 +34,6 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
   mami_data_t *data;
 
   MEMORY_ILOG_IN();
-  marcel_mutex_lock(&(memory_manager->lock));
 
   mdebug_memory("Attaching [%p:%p:%ld] to entity %p\n", buffer, buffer+size, (long)size, owner);
 
@@ -103,7 +101,6 @@ int _mami_entity_attach(mami_manager_t *memory_manager,
     tbx_fast_list_add(&(area->list), &(owner->memory_areas));
     marcel_spin_unlock(&(owner->memory_areas_lock));
   }
-  marcel_mutex_unlock(&(memory_manager->lock));
   MEMORY_ILOG_OUT();
   return err;
 }
@@ -194,8 +191,13 @@ int mami_task_attach(mami_manager_t *memory_manager,
                      marcel_t owner,
                      int *node) {
   marcel_entity_t *entity;
+  int ret;
+
   entity = ma_entity_task(owner);
-  return _mami_entity_attach(memory_manager, buffer, size, entity, node);
+  marcel_mutex_lock(&(memory_manager->lock));
+  ret = _mami_entity_attach(memory_manager, buffer, size, entity, node);
+  marcel_mutex_unlock(&(memory_manager->lock));
+  return ret;
 }
 
 int mami_task_unattach(mami_manager_t *memory_manager,
@@ -227,8 +229,13 @@ int mami_bubble_attach(mami_manager_t *memory_manager,
                        marcel_bubble_t *owner,
                        int *node) {
   marcel_entity_t *entity;
+  int ret;
+
   entity = ma_entity_bubble(owner);
-  return _mami_entity_attach(memory_manager, buffer, size, entity, node);
+  marcel_mutex_lock(&(memory_manager->lock));
+  ret = _mami_entity_attach(memory_manager, buffer, size, entity, node);
+  marcel_mutex_unlock(&(memory_manager->lock));
+  return ret;
 }
 
 int mami_bubble_unattach(mami_manager_t *memory_manager,

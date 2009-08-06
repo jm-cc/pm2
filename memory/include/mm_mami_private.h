@@ -53,6 +53,8 @@ typedef int mami_status_t;
 #define MAMI_KERNEL_MIGRATION_STATUS ((mami_status_t)2)
 /** \brief The memory has been tagged for a user-space migration */
 #define MAMI_USERSPACE_MIGRATION_STATUS ((mami_status_t)3)
+/** \brief The memory has been tagged for a attach on next touch */
+#define MAMI_ATTACH_ON_NEXT_TOUCH_STATUS ((mami_status_t)4)
 
 /** \brief Structure of a memory migration cost from node to node */
 struct mami_migration_cost_s {

@@ -21,6 +21,12 @@
 #include "pm2_common.h"
 
 extern
+int _mami_entity_attach(mami_manager_t *memory_manager,
+                        void *buffer,
+                        size_t size,
+                        marcel_entity_t *owner,
+                        int *node);
+extern
 int _mami_update_stats_for_entities(mami_manager_t *memory_manager,
                                     mami_data_t *data,
                                     int coeff);

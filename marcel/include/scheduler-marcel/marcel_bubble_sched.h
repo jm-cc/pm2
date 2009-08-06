@@ -359,7 +359,7 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble);
 /** \brief Remember the current threads and bubble distribution by
     updating the last_topo_level statistics on every entity currently
     scheduled. */
-void ma_bubble_snapshot (void);
+void ma_bubble_snapshot (struct marcel_topo_level *from);
 
 /** \brief
  * Detaches bubbles \e bubble from its holding bubble, i.e. put \e bubble on

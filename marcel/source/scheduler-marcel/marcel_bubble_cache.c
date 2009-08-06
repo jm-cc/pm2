@@ -445,7 +445,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */
-  ma_bubble_snapshot ();
+  ma_bubble_snapshot (l);
   ma_bubble_unlock_all (b, l);
 }
 
@@ -470,8 +470,9 @@ static int
 cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
-  bubble_sched_debug ("Cache: Submitting entity %p from topo_level %s.\n", e, from->rq.as_holder.name);
+  marcel_printf ("Cache: Submitting entity %p from topo_level %s.\n", e, from->rq.as_holder.name);
   marcel_bubble_cache (ma_bubble_entity (e), from);
+  marcel_printf ("Cache: Entity %p submitted from topo_level %s.\n", e, from->rq.as_holder.name);
 
   return 0;
 }

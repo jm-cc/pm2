@@ -751,31 +751,45 @@ void ma_bubble_synthesize_stats(marcel_bubble_t *bubble) {
 	ma_holder_unlock_softirq(&bubble->as_holder);
 }
 
-/* Keep track of the current threads and bubbles distribution, by
-   updating the last_topo_level statistics of every scheduled
-   entity. */
-void
-ma_bubble_snapshot (void) {
-#ifdef MARCEL_STATS_ENABLED
-  unsigned int i, j;
-  for (i = 0; i < marcel_topo_nblevels; i++) {
-    for (j = 0; j < marcel_topo_level_nbitems[i]; j++) {
-      marcel_entity_t *e;
-      for_each_entity_scheduled_on_runqueue (e, &marcel_topo_levels[i][j].rq) {
-	/* We set the last_topo_level statistics to the topo_level the
-	   entity is currently scheduled on. */
-	*(struct marcel_topo_level **) ma_stats_get (e, ma_stats_last_topo_level_offset) = &marcel_topo_levels[i][j];
-	if (e->type == MA_BUBBLE_ENTITY) {
+static void
+__do_snapshot (struct marcel_topo_level *from) 
+{
+  marcel_entity_t *e;
+  for_each_entity_scheduled_on_runqueue (e, &from->rq) 
+    {
+      /* We set the last_topo_level statistics to the topo_level the
+	 entity is currently scheduled on. */
+      *(struct marcel_topo_level **) ma_stats_get (e, ma_stats_last_topo_level_offset) = from;
+      if (e->type == MA_BUBBLE_ENTITY) 
+	{
 	  /* In case of a bubble, we set the last_topo_level
 	     statistics of included entities to the topo_level that
 	     holds the holding bubble. */
 	  marcel_entity_t *e1;
 	  for_each_entity_scheduled_in_bubble_begin (e1, ma_bubble_entity (e))
-	    *(struct marcel_topo_level **) ma_stats_get (e1, ma_stats_last_topo_level_offset) = &marcel_topo_levels[i][j];
+	    *(struct marcel_topo_level **) ma_stats_get (e1, ma_stats_last_topo_level_offset) = from;
 	  for_each_entity_scheduled_in_bubble_end ()
 	}
-      }
     }
+}
+
+/* Keep track of the current threads and bubbles distribution, by
+   updating the last_topo_level statistics of every scheduled
+   entity. */
+void
+ma_bubble_snapshot (struct marcel_topo_level *from) 
+{
+#ifdef MARCEL_STATS_ENABLED
+  __do_snapshot (from);
+
+  if (!from->arity)
+    return;
+
+  {  
+    unsigned int i;
+
+    for (i = 0; i < from->arity; i++)
+      ma_bubble_snapshot (from->children[i]);
   }
 #endif /* MARCEL_STATS_ENABLED */
 }

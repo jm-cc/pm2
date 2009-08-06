@@ -470,9 +470,9 @@ static int
 cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
-  marcel_printf ("Cache: Submitting entity %p from topo_level %s.\n", e, from->rq.as_holder.name);
+  bubble_sched_debug ("Cache: Submitting entity %p from topo_level %s.\n", e, from->rq.as_holder.name);
   marcel_bubble_cache (ma_bubble_entity (e), from);
-  marcel_printf ("Cache: Entity %p submitted from topo_level %s.\n", e, from->rq.as_holder.name);
+  bubble_sched_debug ("Cache: Entity %p submitted from topo_level %s.\n", e, from->rq.as_holder.name);
 
   return 0;
 }

@@ -364,8 +364,8 @@ ma_memory_sched_submit (struct marcel_bubble_memory_sched *self,
 
   ma_bubble_lock_all (bubble, from);
 
-  /* Only call the Memory scheduler on a node-based computer. */
-  if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) >= 0)
+  /* Only call the Memory scheduler on a node-based topology. */
+  if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) > from->level)
     ma_memory_schedule_from (self, from);
 
   ma_bubble_unlock_all (bubble, from);
@@ -382,9 +382,9 @@ ma_memory_sched_submit (struct marcel_bubble_memory_sched *self,
 static int
 memory_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
-  bubble_sched_debug ("Memory: Submitting entities!\n");
-  return ma_memory_sched_submit ((struct marcel_bubble_memory_sched *) self,
-				 ma_bubble_entity (e), marcel_topo_level (0, 0));
+  struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
+  bubble_sched_debug ("Memory: Submitting entity %p from topo_level %s\n", e, from->rq.as_holder.name);
+  return ma_memory_sched_submit ((struct marcel_bubble_memory_sched *) self, ma_bubble_entity (e), from);
 }
 
 static int

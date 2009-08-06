@@ -383,8 +383,6 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 
       if (!bubble_has_exploded) {
 	ma_cache_distribute_entities_cache (l, e, ne, distribution);
-	for (k = 0; k < arity; k++)
-	  ma_cache_distribute_from (l->children[k]);
 	ma_distribution_destroy (distribution, arity);
 	return;
       }

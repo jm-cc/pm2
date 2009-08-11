@@ -147,7 +147,7 @@ EOF
 
 
 nmad_strat_set_custom() {
-    echo -ne "Setting custom strategy to $1...\n" 1>&2	
+    #echo -ne "Setting custom strategy to $1...\n" 1>&2	
     ln -sf ${STRAT_DIR}/strategy_${1}.xml ${STRAT_DIR}/strategy_custom.xml
 }
 

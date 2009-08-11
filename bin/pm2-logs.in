@@ -1,0 +1,100 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+export PM2_FLAVOR
+
+usage()
+{
+    echo "Usage : `basename $0` [-u] [-f|--flavor flavor] [node [node...]]"
+    echo "  -u      : Use local flavor (re-run pm2-config on each node)"
+}
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+# Début du script
+
+PM2_LOGS=""
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f|--flavor)
+	    PM2_FLAVOR="$2"; shift
+	    ;;
+	-u)
+	    PM2_USE_LOCAL_FLAVOR=on
+	    ;;
+	[0-9]*)
+	    PM2_LOGS="$PM2_LOGS $1 "
+	    ;;
+	*)
+	    usage
+	    error "Aborting : unknown option $1"
+	    ;;
+    esac
+    shift
+done
+
+set `${PM2_ROOT}/bin/pm2-config --modules`
+
+mod='pm2'
+
+for i
+do
+    case $i in
+      pm2) mod='pm2'; break;;
+    esac
+done
+
+PM2_CONF_FILE=`${PM2_ROOT}/bin/pm2-conf-file`
+[ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
+export PM2_CONF_FILE
+
+[ -f ${PM2_CONF_FILE} ] || error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\" (please run pm2-conf)."
+
+n=0
+for host in `cat ${PM2_CONF_FILE}`; do
+    case " $PM2_LOGS " in
+	*" $n "*|"  ")
+	    varname=`echo logs_on_host_$host | tr .- __`
+	    eval $varname=\"\$$varname /tmp/${USER}-${mod}log-$n\"
+	    ;;
+	*)
+	    echo Do not display node $n
+	    ;;
+    esac
+    n=`expr $n + 1`
+done
+
+if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
+    PM2_VLOCALLOGS=pm2-vlocallogs
+else
+    PM2_VLOCALLOGS="${PM2_ROOT}/bin/pm2-vlocallogs"
+fi
+
+for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do
+    varname=`echo logs_on_host_$host | tr .- __`
+    eval logs=\"\$$varname\"
+    ${PM2_RSH:-ssh} $host ${PM2_VLOCALLOGS} $host $logs
+done
+

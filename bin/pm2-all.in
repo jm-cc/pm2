@@ -1,0 +1,66 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+error() # msg
+{
+    echo $*
+    exit 1
+}
+
+usage() #exit code
+{ 
+
+cat<<EOF
+    Usage: `basename "$0"` cmd [arg1...]
+    Executes "cmd" on all nodes specified in the pm2 config file.
+    The "cmd" argument is compulsory and may take (optional) arguments.
+EOF
+exit $1
+}
+
+[ $# -ge 1 ] || usage 1
+
+PM2_CONF_FILE=`pm2-conf-file`
+
+[ $? -eq 0 ] || error "Error: \"${PM2_CONF_FILE}\" is not a valid file."
+
+export PM2_CONF_FILE
+
+cmd=${@:+"$@"}
+
+if [ -f ${PM2_CONF_FILE} ] ; then
+    set -- `cat ${PM2_CONF_FILE}`
+    nb=$#
+    echo "The current PM2 configuration contains $nb host(s) :"
+    i=0
+    for node in $*
+    do
+	echo On "$node":
+        ${PM2_RSH:-ssh} $node $cmd 
+    done
+else
+    error "Error: PM2 not yet configured for flavor \"${PM2_FLAVOR}\"."
+fi
+
+
+
+
+
+

@@ -1,0 +1,346 @@
+#!/bin/sh
+# Yes, this is -*- Scheme -*-, the one language that was missing from PM2.
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2009 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+main='(module-ref (resolve-interface '\''(pfmon-analyze)) '\'main')'
+exec ${GUILE-guile} -l $0 -c "(apply $main (cdr (command-line)))" "$@"
+
+!#
+
+;;; This tool extracts hardware counter information gathered by
+;;; pfmon(1), along with debugging information provided by Marcel, and
+;;; summarizes it in a human readable way.  It uses GNU Guile 1.8+.
+;;;
+;;; Usage:
+;;;
+;;;   $ PM2_ARGS=--debug:mar-lwp-debug \
+;;;     pfmon --outfile=pfmon.out \
+;;;           -e CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE:LOCAL_TO_0,CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE:LOCAL_TO_1,CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE:LOCAL_TO_2,CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE:LOCAL_TO_3 \
+;;;           --follow-all -- \
+;;;           PROGRAM  2> marcel.out
+;;;   $ ./pfmon-analyze.scm marcel.out pfmon.out.*
+;;;
+
+(define-module (pfmon-analyze)
+  :use-module (ice-9 regex)
+  :use-module (ice-9 rdelim)
+  :use-module (ice-9 format)
+  :use-module (srfi srfi-1)
+  :use-module (srfi srfi-11)
+  :export (main))
+
+
+(define (alist-merge alist1 alist2 = merge-values)
+  ;; Merge ALIST1 and ALIST2, using = to compare keys and MERGE-VALUES
+  ;; to merge two values associated with the same key.
+  (fold (lambda (key+value result)
+          (let* ((key         (car key+value))
+                 (value       (cdr key+value))
+                 (other-value (assoc key result =)))
+            (if (pair? other-value)
+                (alist-cons key (merge-values value (cdr other-value))
+                            (alist-delete key result))
+                (cons key+value result))))
+        alist2
+        alist1))
+
+
+(define (lwp-core-bindings file)
+  ;; Parse FILE, a Marcel debugging output file containing
+  ;; `--debug:mar-lwp-debug' messages, and return an alist of the form:
+  ;;
+  ;;   (PID
+  ;;     (program-name . "NAME")
+  ;;     (threads .
+  ;;       ((TID1 (node . NODE-OF-T1))
+  ;;        (TID2 (node . NODE-OF-T2))
+  ;;        ...))
+  ;;     ...)
+  ;;
+
+  (define binding-rx
+    ;; This regexp must be kept in sync with the `mdebug_lwp ()'
+    ;; messages produced in `marcel_lwp.c'.
+    (make-regexp "process ([0-9]+) \\(([^)]+)\\): LWP ([0-9]+) on.*node ([0-9]+)"))
+
+  (define (updated-result m result)
+    (let* ((pid     (string->number (match:substring m 1)))
+           (name    (match:substring m 2))
+           (tid     (string->number (match:substring m 3)))
+           (node    (string->number (match:substring m 4)))
+
+           (process (or (assoc-ref result pid) '()))
+           (threads (or (assoc-ref process 'threads) '()))
+           (thread  (or (assoc-ref threads tid) '())))
+      (alist-cons pid
+                  `((program-name . ,name)
+                    (threads
+                     . ,(alist-cons tid
+                                    (alist-cons 'node node thread)
+                                    threads)))
+                  (alist-delete pid result))))
+
+  (with-input-from-file file
+    (lambda ()
+      (let loop ((line   (read-line))
+                 (result '()))
+        (if (eof-object? line)
+            result
+            (let ((m (regexp-exec binding-rx line)))
+              (loop (read-line)
+                    (if (not m)
+                        result
+                        (updated-result m result)))))))))
+
+
+(define (aggregate-file-counters file result)
+  ;; Parse FILE, a pfmon(1) output file, and return RESULT augmented
+  ;; with the process, thread, and hardware counter information
+  ;; gathered from FILE.  The result has the following form:
+  ;;
+  ;;  (PID
+  ;;    (program-name . "NAME")
+  ;;    (threads
+  ;;      (TID1
+  ;;        (node . NODE-NUM1)
+  ;;        (events
+  ;;          (COUNT1 . "EVENT1")
+  ;;          (COUNT2 . "EVENT2")
+  ;;          ...))
+  ;;       ...)))
+  ;;
+
+  (define file-name-rx
+    ;; Regexp matching files produced by "pfmon --outfile=BASENAME".
+    (make-regexp "^.*\\.([0-9]+)\\.([0-9]+)$"))
+
+  (define (counters file)
+    (define line-rx
+      ;; Regexp matching lines in files produced by pfmon(1).
+      (make-regexp "^[[:blank:]]*([0-9]+)[[:blank:]]+([A-Za-z_0-9:-]+)$"))
+
+    (with-input-from-file file
+      (lambda ()
+        (let loop ((line   (read-line))
+                   (result '()))
+          (if (eof-object? line)
+              result
+              (let ((m (regexp-exec line-rx line)))
+                (if (not m)
+                    (error "invalid file contents" line)
+                    (loop (read-line)
+                          (cons (cons (string->number
+                                       (match:substring m 1))
+                                      (match:substring m 2))
+                                result)))))))))
+
+  (let ((match (regexp-exec file-name-rx file)))
+    (if (not match)
+        (error "invalid file name" file)
+        (let* ((pid      (string->number (match:substring match 1)))
+               (tid      (string->number (match:substring match 2)))
+               (process  (or (assoc-ref result pid) '()))
+               (threads  (or (assoc-ref process 'threads) '()))
+               (thread   (or (assoc-ref threads tid) '()))
+               (events   (or (assoc-ref thread 'events) '())))
+          (alist-cons pid
+                      (alist-cons 'threads
+                                  (alist-cons tid
+                                              (alist-cons 'events
+                                                          (append (counters file)
+                                                                  events)
+                                                          (alist-delete 'events
+                                                                        thread))
+                                              (alist-delete tid threads))
+                                  (alist-delete 'threads process))
+                      (alist-delete pid result =))))))
+
+
+(define event-locality-rx
+  ;; The event locality regexp.  It should match event names used by
+  ;; pfmon(1) such as `CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE:LOCAL_TO_0'.
+  (make-regexp "([A-Za-z_0-9]+):LOCAL_TO_([0-9]+)"))
+
+(define (numa-event-type event source-node)
+  ;; Return two values: if EVENT denotes a NUMA event, return its base
+  ;; event name and the symbol `local' or `remote'; otherwise, return
+  ;; `#f' twice.
+  (let ((m (regexp-exec event-locality-rx event)))
+    (values (and m (match:substring m 1))
+            (and m
+                 (if (= source-node (string->number (match:substring m 2)))
+                     'local
+                     'remote)))))
+
+(define (thread-numa-events thread)
+  ;; If THREAD has the `node' property, return an alist of the form:
+  ;;
+  ;;   (("EVENT-BASE" . (LOCAL-COUNT . REMOTE-COUNT))
+  ;;    ...)
+  ;;
+  ;; where EVENT-BASE is a NUMA event such as
+  ;; `CPU_TO_DRAM_REQUESTS_TO_TARGET_NODE'.
+  (let ((node (assoc-ref thread 'node)))
+    (if (number? node)
+        (fold (lambda (count+event events)
+                (define count (car count+event))
+                (define event (cdr count+event))
+
+                (let-values (((event-base type)
+                              (numa-event-type event node)))
+                  (if (string? event-base)
+                      (let* ((stats  (or (assoc-ref events event-base)
+                                         '(0 . 0)))
+                             (local  (car stats))
+                             (remote (cdr stats)))
+                        (case type
+                          ((local)
+                           (alist-cons event-base
+                                       (cons (+ count local) remote)
+                                       (alist-delete event-base
+                                                     events)))
+                          ((remote)
+                           (alist-cons event-base
+                                       (cons local
+                                             (+ count remote))
+                                       (alist-delete event-base
+                                                     events)))
+                          (else events))))))
+              '()
+              (assoc-ref thread 'events))
+        '())))
+
+(define (process-numa-events process)
+  (let ((threads (assoc-ref process 'threads)))
+    (if (not threads)
+        (error "process has no threads" process))
+    (fold (lambda (thread numa-events)
+            (alist-merge numa-events
+                         (thread-numa-events thread)
+                         equal?
+                         (lambda (l+r1 l+r2)
+                           (cons (+ (car l+r1) (car l+r2))
+                                 (+ (cdr l+r1) (cdr l+r2))))))
+          '()
+          threads)))
+
+(define (pretty-print-thread-events thread event<)
+  (define (event-count event-base)
+    (fold (lambda (count+event result)
+            (let ((event (cdr count+event))
+                  (count (car count+event)))
+              (if (string-contains event event-base)
+                  (+ count result)
+                  result)))
+          0
+          (assoc-ref thread 'events)))
+
+  (define (event-locality event count)
+    (let ((node (assoc-ref thread 'node)))
+      (if (number? node)
+          (let-values (((event-base type) (numa-event-type event node)))
+            (case type
+              ((local)
+               (let ((ratio (/ count (event-count event-base))))
+                 (format #f " [local]  ~5,2f%" (* 100.0 ratio))))
+              ((remote)
+               (let ((ratio (/ count (event-count event-base))))
+                 (format #f " [REMOTE] ~5,2f%" (* 100.0 ratio))))
+              (else "")))
+          "")))
+
+  (let ((events (assoc-ref thread 'events)))
+    (for-each (lambda (count+event)
+                (let* ((event     (cdr count+event))
+                       (count     (car count+event))
+                       (locality  (event-locality event count)))
+                  (format #t "    ~A ~12d~a~%"
+                          (cdr count+event)
+                          (car count+event)
+                          locality)))
+              (sort events event<))))
+
+(define (pretty-print-counters result)
+  (define (thread-event-count thread)
+    (let ((events (assoc-ref thread 'events)))
+      (if (not events)
+          (error "no events for thread" thread))
+      (apply + (map car events))))
+
+  (define (event< e1 e2)
+    ;; How to sort a thread's events.
+    (> (car e1) (car e2)))
+
+  (define (thread< t1 t2)
+    ;; How to sort a process' threads.
+    (let ((n1 (assoc-ref t1 'node))
+          (n2 (assoc-ref t2 'node)))
+      (if (and n1 n2)
+          (< n1 n2)
+          (let ((c1 (thread-event-count t1))
+                (c2 (thread-event-count t2)))
+            (> c1 c2)))))
+
+  (define (summarize-process-local/remote process)
+    (let ((numa-events (process-numa-events process)))
+      (or (null? numa-events)
+          (begin
+            (format #t "  NUMA event summary for process ~A:~%"
+                    (car process))
+            (for-each (lambda (event+local+remote)
+                        (let* ((event  (car event+local+remote))
+                               (local  (cadr event+local+remote))
+                               (remote (cddr event+local+remote))
+                               (ratio  (/ remote (+ local remote))))
+                          (format #t "    ~55,,,'.a ~5,2f% ~A~%"
+                                  event (* ratio 100.0)
+                                  (if (< ratio 1/2)
+                                      "remote"
+                                      "REMOTE!"))))
+                      numa-events)))))
+
+  (for-each (lambda (process)
+              (let ((pid     (car process))
+                    (name    (assoc-ref process 'program-name))
+                    (threads (assoc-ref process 'threads)))
+                (format #t "~%process ~A~A~%" pid
+                        (if (string? name)
+                            (string-append " (" name ")")
+                            ""))
+                (for-each (lambda (thread)
+                            (let ((tid  (car thread))
+                                  (node (assoc-ref thread 'node)))
+                              (format #t "  thread ~A~A~%" tid
+                                      (if (number? node)
+                                          (format #f " (node ~2d)" node)
+                                          ""))
+                              (pretty-print-thread-events thread event<)))
+
+                          ;; sort threads in the order of increasing
+                          ;; event counts.
+                          (sort threads thread<))
+                (summarize-process-local/remote process)))
+            result))
+
+
+;;;
+;;; The program's entry point.
+;;;
+
+(define (main . files)
+  (let ((result (fold aggregate-file-counters
+                      (lwp-core-bindings (car files))
+		      (cdr files))))
+    (pretty-print-counters result)))

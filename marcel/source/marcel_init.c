@@ -185,7 +185,7 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			scheduler = marcel_lookup_bubble_scheduler(argv[i - 1]);
 			if (scheduler == NULL) {
 				fprintf (stderr,
-								 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i]);
+								 "Fatal error: unknown bubble scheduler `%s'.\n", argv[i-1]);
 				exit(1);
 			}
 			marcel_bubble_set_sched((marcel_bubble_sched_t *)scheduler);
@@ -301,6 +301,11 @@ static void marcel_strip_cmdline(int *argc, char *argv[])
 
 #ifdef MA__LIBPTHREAD
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
+#include <errno.h>
 #include <dlfcn.h>
 
 /* Issue a warning if Marcel and PukABI symbols don't prevail over
@@ -351,10 +356,9 @@ assert_preloaded (void) {
 				if (pukabi_malloc != global_malloc) {
 					if (real_malloc != NULL && global_malloc != real_malloc) {
 						/* GNU Bash, for instance, provides its own `malloc'.  */
-#ifdef MA__DEBUG
-						fprintf(stderr, "[Marcel] this program appears to provide its own malloc(3)"
-							", which may not be thread-safe\n");
-#endif
+						fprintf(stderr, "[Marcel] this program (%s) appears to provide its own malloc(3)"
+							", which may not be thread-safe\n",
+										program_invocation_name ?: "unknown");
 					} else {
 						fprintf(stderr, "[Marcel] it appears that PukABI "
 							"was not preloaded\n");

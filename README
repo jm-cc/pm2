@@ -1,12 +1,12 @@
-0 . Requirement +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+0 . Requirements ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-To be compiled, pm2 software need:
+To be compiled, PM2 software needs:
 
-* make (GNU version >= 3.81)
-* gcc (version >= 3.3)
-* a shell that understand substitutions like ${var/find/replace}, for
-    instance bash, zsh, ksh, ...
-* autoconf and autoheader (version > 2.50) when using newMadeleine with puk.
+* GNU Make >= 3.81
+* GCC >= 3.3 (older versions may work but are no longer supported)
+* GNU Bash (shells such as zsh or ksh may work but are untested)
+* Perl
+* GNU Autoconf > 2.50 when using NewMadeleine and/or puk.
 
 * libtopology (when enabling MaMI or Marcel NUMA options)
 
@@ -28,29 +28,50 @@ Follow the provided instructions to install the library.
 
 I . Configuring PM2 +++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Before starting to build PM2, you must at least set the PM2_ROOT
-environment variable to reflect the location of your PM2 source tree
-root. It is _strongly_ advised to set this variable within your
-~/.bashrc (or .cshrc) file.
+The simplest way to configure PM2/Marcel is to run:
 
-There are also several other variables that may be set for
-commodity. In particular, a number of files will automatically be
-generated within the ${HOME}/.pm2 directory by default (preferences,
-default compile options, etc.) It is possible to change this default
-setting by using the PM2_HOME variable: this is very useful if you
-wish to access to your preference files via a NFS (or SAMBA) mount
-point. By default, this variable is set to ${HOME}.
+  ./configure
 
-Finally, it is also strongly advised to include the ${PM2_ROOT}/bin
-directory in your default PATH.
+This will automatically choose a default "flavor", i.e., a set of
+compilation options, that is best suited for you platform and for use
+with ForestGOMP.  PM2 is then configured and can be compiled:
 
-To sum up, you may place the following lines in your ~/.bashrc file:
+  make
 
-	export PM2_HOME=${HOME}
-	export PM2_ROOT=${PM2_HOME}/pm2
-	PATH=${PATH}:${PM2_ROOT}/bin 
+The default flavor can be configured by hand, for instance:
 
-II . Compiling a PM2 application +++++++++++++++++++++++++++++++++++++
+  ./configure --enable-marcel --enable-nmad --enable-pioman
+
+Note that PM2 is currently not installable.  Instead, build products are
+stored under `build/ARCH/FLAVOR', where ARCH is the architecture name
+(e.g., `i386') and FLAVOR the flavor name.  To compile applications, use
+the flags provided by
+
+  ./bin/pm2-config --cflags
+
+and
+
+  ./bin/pm2-config --libs
+
+
+A different standard flavor can be specified as follows:
+
+  ./configure --with-default-flavor=FLAVOR
+
+For a list of standard flavors, please run the following command once
+you've run `configure':
+
+  ./bin/pm2-create-sample-flavors --list
+
+The PM2 build system allows several flavors to be compiled in parallel.
+Thus, it is still possible (although will be progressively deprecated)
+to build additional flavors beyond the default flavor determined by
+`configure' or specified with `--with-default-flavor':
+
+  ./bin/pm2-create-sample-flavors some_other_flavor
+  make FLAVOR=some_other_flavor
+
+II . Advanced PM2 configuration  +++++++++++++++++++++++++++++++++++++
 
 Before you can compile a PM2 module (or application), you have to
 define a "compile flavor" that will fix the list of libraries to use
@@ -77,9 +98,12 @@ To compile an application, just go to the right directory and type
 	cd ${PM2_ROOT}/pm2/examples/simple
 	make simple
 
-For configuring flavors, just run
+For configuring flavors, just run:
 
 	ezflavor
+
+This launches a GUI allowing you to browse and select compilation
+options (you need GTK+ for this).
 
 III . Running a PM2 application ++++++++++++++++++++++++++++++++++++++
 
@@ -112,6 +136,6 @@ V . Miscellaneous ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 For any problem, please first run
 
-make sos
+  make sos
 
-To perform a few checks, and then send an email pm2-users@listes.ens-lyon.fr.
+To perform a few checks, and then send an email to pm2-bugs@lists.gforge.inria.fr.

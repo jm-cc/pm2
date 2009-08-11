@@ -1,0 +1,64 @@
+#!@BASH@
+#-*-sh-*-
+###########
+#
+# Xwindow mode loader
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# $1... = command and arguments
+
+echo "##### `hostname`"
+rank=$1
+shift
+prog=$1
+shift
+args=${@:+"$@"}
+
+title="$prog.${HOST:-`hostname`}"
+USER=$(id -nu)
+
+PS="ps -A"
+ARCH=`uname -m`
+if [ "$ARCH" = "Power Macintosh" ]
+then
+  PS="ps -U $USER"
+fi
+
+procs=$($PS | grep pm2-logload | sort | sed 's/^[^0-9]*\([0-9]*\).*$/\1 /')
+if [ "$procs" != "" ] ; then
+    set $procs
+else
+    set ""
+fi
+num='0'
+
+while [ $# -gt 0 ]
+do
+    [ $$ == "$1" ] && break
+    shift
+    num=`expr $num + 1`
+done
+
+logfile="/tmp/pm2log-${USER:-nobody}-${num}-${rank}"
+echo $logfile
+
+[ -f $logfile ] && rm -f $logfile
+
+echo $title > $logfile
+
+pm2-wrapper $prog $args </dev/null >>$logfile 2>&1

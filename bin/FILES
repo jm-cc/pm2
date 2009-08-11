@@ -2,10 +2,8 @@ pm2-config                : script to get info about flavors
 pm2-config-flavor         : script to create flavors easily for user
 pm2-flavor                : script to manage flavors
 pm2-module                : script to manage module
-pm2-arch                  : script to get the arch of the system
 pm2-create-sample-flavors : script to create initial (sample) flavors
 pm2-recreate-links        : generate the symlinks of the CVS tree
-pm2-sys                   : script to get the system where we run
 pm2-vars                  : script to set main environment variables
 pm2-clean                 : script to clean the source tree. Try to
                             use 'make disclean' at the root instead.

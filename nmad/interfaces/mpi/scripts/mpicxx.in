@@ -1,0 +1,238 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Main program
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+export PM2_FLAVOR
+
+DoLink=1
+DoCompile=0
+show_compile=0
+show_link=0
+Show=eval
+compileargs=
+linkargs=
+linkobjs=
+gettinglinkarg=0
+HasDashC=0
+verbose=0
+#
+# Default compiler configuration.  A configuration file may override any
+# of these (including the location of the MPI library), but must do so
+# consistently with the MPICH library chosen.  By including the library
+# and include paths here, we can use the same mpicc for a range of 
+# libraries and compilers, including ones for 32 and 64 bit systems.
+CXX=${PM2_CXX:-g++}
+CXXLINKER=${PM2_CXX:-g++}
+LDFLAGSBASE=""
+USER_CFLAGS=$(pm2-config --flavor=$PM2_FLAVOR --cflags)
+BASE_LIB_LIST=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-l)
+LIB_PATH=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-L)
+MPIVERSION="1.0.0 (release) of : 2006/11/20 17:30:00"
+#
+#
+for arg in "$@" ; do
+    # Special processing for -o name
+    if [ $gettinglinkarg = 1 ] ; then
+	linkargs="$linkargs $arg"
+	outputfilename="$arg"
+	gettinglinkarg=0
+	continue
+    fi
+    case "$arg" in 
+	-c)
+            # If -c is NOT specified, then we need to perform a link step.
+            compileargs="$compileargs $arg"
+            # If -o was set, then we need to move the output file option
+            # to the compile line (note that this is non-standard, and should
+            # not be used in portable codes)
+            if [ $DoLink = 1 -a -n "$outputfilename" ] ; then
+                compileargs="$compileargs -o $outputfilename"
+            fi
+            DoLink=0
+            HasDashC=1
+            ;;
+        -o)
+	    # Need to link
+            if [ $HasDashC = 1 ] ; then
+                # Some BUT NOT ALL compilers support -o with -c.  Allow
+                # the user to make use of the feature, IF IT EXISTS.
+                compileargs="$compileargs $arg"	
+            else
+                linkargs="$linkargs $arg"
+	        # Still need to add the target of the -o
+                gettinglinkarg=1
+                DoLink=1
+            fi
+            ;;
+	-E|-M)
+	    # For compilers that support -E as a way to get at the C preprocessor
+	    # Also, for compilers that support -M for creating dependencies
+            compileargs="$compileargs $arg"
+            HasDashC=1
+            DoLink=0
+            ;;
+	-mpilog)
+            echo "Warning. Option <-mpilog> not implemented"
+            ;;
+	-mpianim)
+            echo "Warning. Option <-mpianim> not implemented"
+            ;;
+	-echo)
+            set -x
+            ;;
+	-show)
+            Show=echo
+            ;;
+	-config=*)
+            echo "Warning. Option <-config> not implemented"
+            ;;
+	-cc=*)
+            echo "Warning. Option <-cc> not supported"
+            ;;
+	-compile_info)
+            show_compile=1
+            DoLink=0
+            Show=echo
+            ;;
+	-link_info)
+            show_link=1
+            Show=echo
+            ;;
+	-shlib)
+            echo "Warning. Option <-shlib> not implemented"
+            ;;
+	-noshlib)
+            echo "Warning. Option <-noshlib> not implemented"
+            ;;
+	-v)
+            verbose=1
+            echo "mpicc for $MPIVERSION"
+            compileargs="$compileargs -v"
+            linkargs="$linkargs -v"
+            ;;
+	-l*)
+	    # This SHOULD be the -l<lib> argument.  Only for the linker
+            linkargs="$linkargs $arg"
+            ;;
+	-help)
+            echo "This is a program to compile or link MPI programs"
+            echo "In addition, the following special options are supported"
+            echo "    -mpilog    - Build version that generate MPE log files"
+            echo "    -mpitrace  - Build version that generates traces"
+            echo "    -mpianim   - Build version that generates real-time"
+            echo "                 animation"
+            echo "    -cc=pgm    - Change the program to use to compile and link"
+            echo "                 MPI programs.  WARNING! The program that you"
+            echo "                 choose MUST be compatible with the MPICH "
+            echo "                 libraries.  If you have trouble, you should"
+            echo "                 reconfigure and rebuild MPICH, selecting"
+            echo "                 this compiler."
+            echo "    -show      - Show the commands that would be used without"
+            echo "                 runnning them"
+            echo "    -compile_info - Show how to compile a program"
+            echo "    -link_info - Show how to link a program"
+            echo "    -help      - Give this help"
+            echo "    -echo      - Show exactly what this program is doing."
+            echo "                 This option should normally not be used."
+            echo "This should be used just like the usual C compiler"
+            echo "For example,"
+            echo "   $0 -c foo.c "
+            echo "and"
+            echo "   $0 -o foo foo.o"
+            echo "Combining compilation and linking in a single command"
+            echo "   $0 -o foo foo.c"
+            echo "may not work on some systems, and is not recommended."
+            exit 1
+            ;;
+	
+	# Unrecognized args.  Because we do an eval, we need to
+	# carefully quote any args that contain quotes.
+        *\"*)
+            qarg="'"$arg"'"
+            compileargs="$compileargs $qarg"
+            linkargs="$linkargs $qarg"
+            ;;
+        *\'*) 
+	    qarg='\"'"$arg"'\"'
+            compileargs="$compileargs $qarg"
+            linkargs="$linkargs $qarg"
+            ;;
+        *)
+            if [ -s "$arg" ] ; then
+                ext=`expr "$arg" : '.*\(\..*\)'`
+                if [ "$ext" = ".c" ] ; then
+                    DoCompile=1
+                    compileargs="$compileargs $arg"
+                    fname=`basename $arg .c`
+                    linkobjs="$linkobjs $fname.o"
+                elif [ "$ext" = ".s" ] ; then
+	            # Support .s for those compilers that can
+                    DoCompile=1
+                    compileargs="$compileargs $arg"
+                    fname=`basename $arg .s`
+                    linkobjs="$linkobjs $fname.o"
+                elif [ "$ext" = ".o" ] ; then
+                    if [ $HasDashC = 1 ] ; then
+                        compileargs="$compileargs $arg"
+                    else
+                        DoLink=1
+                        linkobjs="$linkobjs $arg"
+                    fi
+                else
+                    compileargs="$compileargs $arg"
+                    linkargs="$linkargs $arg"
+                fi
+            else
+                compileargs="$compileargs $arg"
+                linkargs="$linkargs $arg"
+            fi
+            ;;
+    esac
+done
+#
+
+status=0
+if [ $DoCompile = 1 -o $show_compile = 1 ] ; then
+    if [ $HasDashC != 1 ] ; then
+        compileargs="-c $compileargs"
+    fi
+    $Show $CXX -Wall $USER_CFLAGS $compileargs
+    status=$?
+    if [ $status != 0 ] ; then
+	exit $status
+    fi
+fi
+
+if [ $DoLink = 1 -o $show_link = 1 ] ; then
+    # If no LDFLAGS defined, use the ones that MPICH was built with
+    if [ -z "$LDFLAGS" ] ; then
+        LDFLAGS="$LDFLAGSBASE"
+    fi
+    dir=$(dirname $0)
+    link=$(readlink $0)
+    if [ -n "$link" ] ; then
+        dir=$(echo $dir"/"$(dirname $link))
+    fi
+    . $dir/mpicc.ext
+    $Show $CXXLINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/ext/obj/$arch/arg_ifort.o
+    status=$?
+fi
+exit $status

@@ -1,0 +1,48 @@
+
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PM2_ROOT := @abs_top_srcdir@
+LIBRARY=profile
+FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
+
+CFLAGS += @FXT_CFLAGS@
+LDFLAGS += @FXT_LIBS@
+
+ifneq (@HAVE_FXT@,yes)
+$(error FxT is missing.  Get it from http://savannah.nongnu.org/projects/fkt/ .)
+endif
+
+include $(PM2_ROOT)/make/libs-vars.mak
+
+# The profile.c file includes fut_entries.h, but it cannot be actually
+# detected by make depend since there would be a circular dependency
+# problem...
+ifneq ($(MAKECMDGOALS),fut)
+$(MOD_GEN_OBJ)/profile.o: $(MOD_GEN_INC)/fut_entries.h
+endif
+
+.PHONY: default libs
+
+libs: $(MOD_GEN_INC)/fut_entries.h
+
+$(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR)
+
+$(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) touch $@
+
+include $(PM2_ROOT)/make/libs-rules.mak

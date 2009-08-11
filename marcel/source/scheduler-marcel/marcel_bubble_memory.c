@@ -133,15 +133,46 @@ ma_memory_favorite_level (marcel_entity_t *e) {
   return favorite_level;
 }
 
+static int
+ma_entities_are_the_same (marcel_entity_t *e[], int ne) {
+  int i;
+  int type = e[0]->type;
+  int load = ma_entity_load (e[0]);
+
+  for (i = 0; i < ne; i++) {
+    if (e[i]->type != type || ma_entity_load (e[i]) != load)
+      return 0;
+  }
+
+  return 1;
+}
+
 /* Greedily distributes entities stored in _load_balancing_entities_
    over the _arity_ levels described in _distribution_.*/
 static void
 ma_memory_spread_load_balancing_entities (ma_distribution_t *distribution,
 					  ma_distribution_t *load_balancing_entities,
-					  unsigned int arity) {
-  while (load_balancing_entities->nb_entities) {
-    unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
-    ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
+					  unsigned int arity,
+					  int entities_are_the_same,
+					  unsigned int entities_per_level) {
+  if (entities_are_the_same) {
+    /* Distribute according to threads indexes */
+    /* This can help with false sharing issues on OpenMP work
+       shares. */
+    int level;
+    for (level = 0; level < arity; level++) {
+      while (distribution[level].total_load < entities_per_level && load_balancing_entities->nb_entities) {
+	ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[level]);
+      }
+    }
+    /* Put the remaining entities consecutively */
+    while (load_balancing_entities->nb_entities)
+      ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[arity - 1]);
+  } else {  
+    while (load_balancing_entities->nb_entities) {
+      unsigned int target = ma_distribution_least_loaded_index (distribution, arity);
+      ma_distribution_add_tail (ma_distribution_remove_tail (load_balancing_entities), &distribution[target]);
+    }
   }
 }
 
@@ -265,12 +296,18 @@ ma_memory_distribute (marcel_topo_level_t *from,
 	  ma_distribution_add_tail (e[i], &distribution[child]);
       }
     } else {
-      ma_distribution_add_tail (e[i], &load_balancing_entities);
+      ma_distribution_add (e[i], &load_balancing_entities, 0);
     }
   }
 
+  int entities_are_the_same = ma_entities_are_the_same (e, ne);
+
   /* Even the load by distributing the "load_balancing_entities". */
-  ma_memory_spread_load_balancing_entities (distribution, &load_balancing_entities, arity);
+  ma_memory_spread_load_balancing_entities (distribution, 
+					    &load_balancing_entities, 
+					    arity, 
+					    entities_are_the_same, 
+					    ne / arity);
 
   /* Rearrange the distribution until occupying every underlying
      core. */

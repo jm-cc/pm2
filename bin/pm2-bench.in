@@ -1,0 +1,250 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+_PM2_BENCH_PROGNAME=pm2-bench
+
+_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
+
+pm2_bench_error() # msg
+{
+    echo $* >&2
+    exit 1
+}
+
+pm2_bench_usage() # exit_code
+{
+    cat <<EOF
+Usage: $_PM2_BENCH_PROGNAME { option } { modules }
+  option:
+    -h,--help      : show this help
+    -q,--quiet     : do not be verbose
+    -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
+    --dir XXX      : specify a sub-directory in module/bench to run benchmarks from
+    --benchs XXX   : specify the benchmarks to be run (by default, all the benchmarks of the specified module)
+  modules:
+    "all" (default) or a subset of "$_ALL_MODULES"
+EOF
+    exit $1
+}
+
+to_be_benched() # module
+{
+    case " $_to_bench " in
+	*\ $1\ *)
+	    echo "yes"
+	    ;;
+	*)
+	    echo "no"
+	    ;;
+    esac
+}
+
+compile()
+{
+    echo "Compiling program $prog..."
+    #cd $appdir; ${PM2_MAKE:-make} clean FLAVOR=$flavor
+    cd $appdir; ${PM2_MAKE:-make} $jobs $prog FLAVOR=$flavor PM2_FLAVOR=$flavor
+}
+
+clean()
+{
+    #${PM2_ROOT}/bin/pm2-clean $flavor
+    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
+}
+
+do_the_bench()
+{
+    _iter=$1
+    shift
+
+    echo "%----------" | tee -a $file_result
+    echo "$_iter" | tee -a $file_result
+
+    # Initialisation du bench
+    (initialize_bench $_iter; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2_bench_error "Initialization failed"
+
+    # Compilation
+    (compile; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    [ `cat $file_status` -eq 0 ] || pm2_bench_error "Compilation failed"
+
+    # Execution
+    echo "Date: $(date)" | tee -a $file_result
+    (run_bench $_iter; echo "$?" >$file_status) 2>&1|tee -a $file_result
+    exec=`cat $file_status`
+
+    # Nettoyage
+    #(clean; echo "$?" >$file_status) 2>&1 | sed -e 's/^/..../'
+    #[ `cat $file_status` -eq 0 ] || pm2_bench_error "Cleaning failed"
+
+    # Finalisation
+    (finalize_bench $_iter) 2>&1 | sed -e 's/^/..../'
+
+    [ $exec -eq 0 ] || pm2_bench_error "Execution failed"
+}
+
+# Programme principal
+
+_output_redirect=""
+jobs=""
+PM2_BENCHMARKS_DIR=""
+PM2_BENCHMARKS=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-h|--help)
+	    pm2_bench_usage 0
+	    ;;
+	-q|--quiet)
+	    _output_redirect="> /dev/null 2>&1"
+	    shift
+	    ;;
+	--jobs|-j)
+	    jobs="$1 $2"
+	    shift
+	    shift
+	    ;;
+	--jobs=*|-j*)
+	    jobs=$1
+	    shift
+	    ;;
+        --dir)
+            shift
+            PM2_BENCHMARKS_DIR=$1
+            shift
+            ;;
+        --benchs)
+            shift
+            PM2_BENCHMARKS=$1
+            shift
+            ;;
+	--)
+	    shift; break
+	    ;;
+	-*)
+	    pm2_bench_error "Invalid option: $1"
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+if [ $# -eq 0 -o "$1" = all ] ; then
+    _to_bench="$_ALL_MODULES"
+else
+    _to_bench=""
+    for m in ${@:+"$@"}; do
+	case " $_ALL_MODULES " in
+	    *\ $m\ *)
+		_to_bench="${_to_bench:+$_to_bench }$m"
+		;;
+	    *)
+		pm2_bench_error "\"$m\" is not a valid module name"
+		;;
+	esac
+    done
+fi
+
+# Reordering of modules
+_prefix=""
+for _m in $_DIRTY_ORDERED_MODULES ; do
+    case " $_to_bench " in
+	*\ $_m\ *)
+	    _prefix="${_prefix:+${_prefix} }$_m"
+	    ;;
+	*)
+	    ;;
+    esac
+done
+
+_suffix=""
+for _m in $_to_bench ; do
+    case " $_DIRTY_ORDERED_MODULES " in
+	*\ $_m\ *)
+	    ;;
+	*)
+	    _suffix="${_suffix:+${_suffix} }$_m"
+	    ;;
+    esac
+done
+
+_to_bench="$_prefix $_suffix"
+
+# display the state of the machine
+#ps faux
+#top -b -n 5
+#uptime
+
+for _m in $_to_bench ; do
+
+    if [ -d ${PM2_ROOT}/modules/$_m/bench ]; then
+
+        cd ${PM2_ROOT}/modules/$_m/bench/$PM2_BENCHMARKS_DIR
+        _benchs=`ls bench_*|grep -v \~ 2> /dev/null`
+        if [ -n "$_benchs" ]; then
+
+    	    for _f in $_benchs ; do
+    	        _bench_name=`echo $_f | sed -e 's/bench_\(.*\)/\1/g'`
+
+		is_bench_selected=0
+                if [ -z "$PM2_BENCHMARKS" ] ; then
+		    is_bench_selected=1
+		else
+		    for t in $PM2_BENCHMARKS ; do
+			if [ "$(echo $_bench_name | grep $t)" != "" ] ; then
+			    is_bench_selected=1
+			fi
+		    done
+		fi
+
+                if [  $is_bench_selected == 1 ] ; then
+   	            # Affichage
+    	            echo "Module [$_m], Bench [$_bench_name]"
+
+    	            # Source
+    	            . ./$_f
+
+                    # Fichiers de sortie
+	            file_status="/tmp/pm2_bench_${prog}_${USER}_status"
+
+	            file_result="/tmp/pm2_bench_${prog}_${USER}_result"
+	            rm -f $file_result
+	            touch $file_result
+
+	            file_log="/tmp/pm2_bench_${prog}_${USER}_log"
+	            rm -f $file_log
+	            touch $file_log
+
+	            for _l in $loop; do
+    	    	        # Compilation et execution
+		        eval do_the_bench $_l 2>&1 | tee -a $file_log
+	            done
+                fi
+    	    done
+            echo "%==========" | tee -a $file_result
+        fi
+
+    fi
+done
+
+exit 0

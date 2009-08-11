@@ -39,7 +39,7 @@
       #define ASM_THREAD_SLOT_SIZE          (0x400000) /* 4 MB */
     #else
       #ifdef MA__LIBPTHREAD
-        #define ASM_THREAD_SLOT_SIZE          (0x100000) /* 1 MB */
+        #define ASM_THREAD_SLOT_SIZE          (0x200000) /* 2 MB */
       #else
         #define ASM_THREAD_SLOT_SIZE          (0x10000) /* 64 KB */
       #endif

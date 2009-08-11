@@ -1,0 +1,78 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+# Re-ajoute dans le CVS pour compatibilite avec Leonie/MadIII
+
+# $1... = command and arguments
+
+num=0
+while [ -f /tmp/pm2debug.$num ] ; do
+    num=`expr $num + 1`
+done
+file=/tmp/pm2debug.$num
+prog=$1
+shift
+
+core=""
+if [ "$1" == "-core" ] ; then
+    core=$2
+    shift
+    shift
+fi
+
+echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
+args=""
+while [ $# -gt 0 ] ; do
+    args="$args '$1'"
+    shift
+done
+
+DISPLAY=${DISPLAY:-':0'}
+export DISPLAY
+
+LEO_XTERM=${LEO_XTERM:-'xterm'}
+
+echo "set args $args" > $file
+title="$prog.$HOST"
+echo "set environment DISPLAY $DISPLAY" >> $file
+echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $file
+
+
+PM2_SYS="@PM2_SYS@"
+PM2_ARCH="@PM2_ARCH@"
+
+for i in $_PM2_CONFIG_MODULES ; do
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
+    [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
+done
+
+if [ -n "${LEO_LD_PRELOAD}" ]; then
+    echo "set environment LD_PRELOAD ${LEO_LD_PRELOAD}" >> $file
+fi
+
+[ -f ~/.pm2_gdb_init ] && cat ~/.pm2_gdb_init >> $file
+
+${LEO_XTERM} -title $title -e gdb -x $file $prog $core
+
+rm -f $file
+

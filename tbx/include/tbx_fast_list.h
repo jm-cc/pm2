@@ -362,6 +362,14 @@ al of list entry
              &pos->member != (head);                                    \
              pos = n, n = tbx_fast_list_entry(n->member.next, typeof(*n), member))
 
+/* Iterate after the "start" item only */
+#define list_for_each_entry_after(pos,head,member,start)		   \
+	for (pos = tbx_fast_list_entry((start)->member.next, typeof(*pos), member), \
+			tbx_prefetch(pos->member.next);			   \
+		&pos->member != (head);					   \
+		pos = tbx_fast_list_entry(pos->member.next, typeof(*pos), member),  \
+			tbx_prefetch(pos->member.next))
+
 #if 0
 /* Unused for now */
 /* 
@@ -511,14 +519,6 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
                 ({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
              pos = n)
 
-
-/* Iterate after the "start" item only */
-#define list_for_each_entry_after(pos,head,member,start)		   \
-	for (pos = tbx_fast_list_entry((start)->member.next, typeof(*pos), member), \
-			tbx_prefetch(pos->member.next);			   \
-		&pos->member != (head);					   \
-		pos = tbx_fast_list_entry(pos->member.next, typeof(*pos), member),  \
-			tbx_prefetch(pos->member.next))
 #endif
 
 #endif /* TBX_FAST_LIST_H */

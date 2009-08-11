@@ -1,0 +1,260 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+_PM2_WHICH_PROGNAME=pm2-which
+
+PM2_SYS="@PM2_SYS@"
+PM2_ARCH="@PM2_ARCH@"
+
+pm2_which_error() # msg
+{
+    echo $* >&2
+    exit 1
+}
+
+pm2_which_usage() # exit_code
+{
+    cat <<EOF
+Usage: $_PM2_WHICH_PROGNAME [option..] command
+
+  option:
+    -f|--flavor name : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -p               : Print possible prefixed notations (used to remove ambiguity)
+    -h               : Display this help message
+EOF
+    exit $1
+}
+
+pm2_which_prettyprint() # path path...
+{
+    for p
+    do
+	if [ $_PM2_WHICH_SHOW_PREFIX = yes ]; then
+	    case "$PM2_SYS" in
+		CYGWIN*_SYS|MINGWIN*_SYS)
+		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|' -e 's|\.exe$||g'
+		    ;;
+		*)
+		    echo $p | sed -e 's|.*examples/\(.*\)/bin/\(.*\)|\1:\2|'
+		    ;;
+	    esac
+	else
+	    echo $p
+	fi
+    done
+}
+
+pm2_which_handle_colon() # dir:name
+{
+    _old_ifs="$IFS"
+    _ifs_not_set=${IFS-yes}
+    IFS=":"
+    set $*
+    IFS=" "
+    if [ "$_ifs_not_set" = yes ]; then
+        unset IFS
+    else
+        IFS="$_old_ifs"
+    fi
+
+    _dir=$1
+    _name=$2
+    [ -x ${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name} ] || pm2_which_error "Error: \"${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name}\" exec file not found."
+    _PM2_WHICH_RESULT="${_PM2_WHICH_EXDIR}/${_dir}/bin/${_name}"
+    _PM2_WHICH_NB_FOUND=1
+}
+
+pm2_which_do_search() # file
+{
+    _file=$1
+    _fifo=$_PM2_WHICH_EXDIR
+    _PM2_WHICH_RESULT=""
+
+    while [ -n "$_fifo" ] ; do
+	set $_fifo
+	_rep=$1
+	shift
+	_fifo="$*"
+
+	for _f in $_rep/* ; do
+	    if [ -d "$_f" ] ; then
+		_fifo="$_fifo $_f"
+	    elif [ "$_rep/$_file" = "$_f" -a -x "$_f" ] ; then
+		_PM2_WHICH_RESULT="${_PM2_WHICH_RESULT:+$_PM2_WHICH_RESULT }$_f"
+	    #else : ni un sous-répertoire, ni le fichier que l'on cherche
+	    fi
+	done
+    done
+
+    if [ -n "$_PM2_WHICH_RESULT" ] ; then
+	set $_PM2_WHICH_RESULT
+	_PM2_WHICH_NB_FOUND=$#
+    else
+	_PM2_WHICH_NB_FOUND=0
+    fi
+}
+
+pm2_which_calc()
+{
+    _PM2_WHICH_ARGS="$*"
+    # On regarde si le nom de la commande est relatif/absolu
+
+    case "$PM2_SYS" in
+	CYGWIN*_SYS|MINGWIN*_SYS)
+	    _ext=".exe"
+	    ;;
+	*)
+	    _ext=""
+	    ;;
+    esac
+
+    _prog="$1"
+
+
+    DIRS=$_PM2_CONFIG_BUILD
+    if [ -n "$PATH" ]; then
+        DIRS="$DIRS:$PATH"
+    fi
+
+    _old_ifs="$IFS"
+    _ifs_not_set=${IFS-yes}
+    IFS=":"
+    set -- $DIRS
+    IFS=" "
+    if [ "$_ifs_not_set" = yes ]; then
+        unset IFS
+    else
+        IFS="$_old_ifs"
+    fi
+
+    export _PM2_WHICH_RESULT
+    export _PM2_WHICH_NB_FOUND
+    export _PM2_WHICH_EXDIR
+
+    first=1
+
+    while [ $# -gt 0  ]; do
+        _PM2_WHICH_EXDIR=$1
+        shift
+
+        case "$_prog" in
+            /*)
+                if [ -x "$_prog" ]; then
+                    _PM2_WHICH_RESULT="$_prog"
+                    _PM2_WHICH_NB_FOUND=1
+                fi
+                ;;
+            *:*)
+                pm2_which_handle_colon $_prog$_ext
+                ;;
+            *)
+                if [ $first -eq 1 ]; then
+                    if [ -f "$_prog" -a -x "$_prog" ]; then
+                        _PM2_WHICH_RESULT="$PWD/$_prog"
+                        _PM2_WHICH_NB_FOUND=1
+                    else
+                        pm2_which_do_search $_prog$_ext
+                    fi
+                else
+                    __prog="$_PM2_WHICH_EXDIR/$_prog"
+                    if [ -f "$__prog" -a -x "$__prog" ]; then
+                        _PM2_WHICH_RESULT=$__prog
+                        _PM2_WHICH_NB_FOUND=1
+                    fi                    
+                fi
+                ;;
+        esac
+
+        if [ -n "$_PM2_WHICH_NB_FOUND" ] && [ $_PM2_WHICH_NB_FOUND -gt 0 ]; then
+            break
+        fi
+
+        first=0
+    done
+}
+
+# Programme principal
+
+PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+export PM2_FLAVOR
+
+_PM2_WHICH_SHOW_PREFIX=no
+_PM2_WHICH_SOURCE_MODE=no
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f|--flavor)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-p)
+	    shift
+	    _PM2_WHICH_SHOW_PREFIX=yes
+	    ;;
+	-h)
+	    pm2_which_usage 0
+	    ;;
+	--source-mode)
+	    _PM2_WHICH_SOURCE_MODE=yes
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	*)
+	    if [ "$_PM2_WHICH_PROG" ]; then
+		pm2_which_usage 1
+	    fi
+	    _PM2_WHICH_PROG="$1"
+	    shift
+	    ;;
+    esac
+done
+
+_PROG="$_PM2_WHICH_PROG"
+
+#On rajoute puis on vire un --source-mode
+set -- --source-mode "$@"
+. ${PM2_ROOT}/bin/pm2-config
+shift
+
+pm2_which_calc "$_PM2_WHICH_PROG"
+if [ $_PM2_WHICH_SOURCE_MODE = no ]; then
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
+        echo "$_PM2_WHICH_PROGNAME: '${_PROG}' exec file not found" 1>&2
+    else
+        pm2_which_prettyprint $_PM2_WHICH_RESULT
+    fi
+    if [ -n "$_PM2_WHICH_NB_FOUND" ] && [ $_PM2_WHICH_NB_FOUND -eq 1 ] ; then
+	exit 0
+    else
+	exit 1
+    fi
+else
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -eq 0 ] ; then
+        pm2_which_error "$_PM2_WHICH_PROGNAME: '${_PROG}' exec file not found"
+    fi
+    if [ -z "$_PM2_WHICH_NB_FOUND" ] || [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
+        pm2_which_error "$_PM2_WHICH_PROGNAME: multiple ${_PROG} example binaries found"
+    fi
+fi
+

@@ -1,0 +1,573 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+PM2_HOME="@PM2_HOME@"
+export PATH PM2_ROOT PM2_HOME
+
+# To be on the safe side.
+unset PM2_FLAVOR
+
+_PM2_TEST_PROGNAME=pm2-test
+
+_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
+
+shopt -s expand_aliases
+
+export PM2_SYS="@PM2_SYS@"
+export PM2_ARCH="@PM2_ARCH@"
+
+pm2_test_name()
+{
+    echo "$1" | sed -e 's/test_\(.*\).level_.*/\1/g'
+}
+
+pm2_debug()
+{
+    if [ -n "$PM2_SCRIPT_DEBUG" ]; then cat; else cat > /dev/null; fi
+}
+
+pm2_canonicalize_name()
+{
+    echo "$1" | tr -- '-+[:blank:]/' '____'
+}
+
+pm2_ld_preload_var_name()
+{
+    _name="ld_preload_`pm2_test_name $1`"
+    echo "`pm2_canonicalize_name $_name`"
+}
+
+pm2_test_error() # msg
+{
+    echo $* >&2
+    exit 1
+}
+
+pm2_test_warning() # msg
+{
+    echo $* >&2
+    if [ "$_abort_on_error" == "yes" ] ; then
+	exit 1
+    fi
+}
+
+pm2_test_warning_file() # msg file
+{
+    echo "----------------------------------------" >&2
+    cat $2
+    echo "----------------------------------------" >&2
+    echo $1
+    if [ "$_abort_on_error" == "yes" ] ; then
+	exit 1
+    fi
+}
+
+pm2_test_usage() # exit_code
+{
+    cat <<EOF
+Usage: $_PM2_TEST_PROGNAME { option } { modules }
+  option:
+    -h,--help      : show this help
+    -q,--quiet     : do not be verbose
+    -l1,--basic    : run a basic number of tests
+    -l2,--normal   : run a reasonable number of tests for each PM2 module (default)
+    -l3,--advanced : run a lot of tests to check more advanced features
+    -l4,--torture  : check each line of C code to search for hidden bugs ;-)))
+    -j N --jobs=N  : pass -j parameter to make so as to speed up compilation
+    --coverage     : perform coverage testing (requires GCC, GNU gcov, and Lcov)
+    --tests XXX    : specify the tests to be run (by default all the tests of the specified level)
+    --abort-on-error : abort when the compilation or the execution of a test fails
+  modules:
+    "all" (default) or a subset of "$_ALL_MODULES"
+EOF
+    exit $1
+}
+
+to_be_tested() # module
+{
+    case " $_to_test " in
+	*\ $1\ *)
+	    echo "yes"
+	    ;;
+	*)
+	    echo "no"
+	    ;;
+    esac
+}
+
+create_test_hosts()
+{
+    hosts=${TESTCONFIG:-"localhost"}
+    nbhost=`echo $hosts | wc -w`;
+
+    while [ $nbhost -lt $1 ]
+    do
+      hosts="$hosts $hosts";
+      nbhost=`echo $hosts | wc -w`;
+    done
+
+    hosts="`echo $hosts | cut -f 1-$1 -d ' '`";
+}
+
+do_the_test()
+{
+    test_script="$1"
+    base_name="`basename $test_script`"
+    test_name="`pm2_test_name $base_name`"
+    file_prefix="/tmp/pm2test_${USER}"
+    file_expected="${file_prefix}_expected"
+    file_result="${file_prefix}_result"
+    file_status="${file_prefix}_status"
+    file_filtered="${file_prefix}_filtered"
+
+    nbl=`wc -l < ${file_expected}`
+    nbl=`expr $nbl + 0`
+
+    gcov_dir="$(pm2-config --flavor=$flavor --builddir)/coverage/$test_script"
+
+    # Execution
+    is_function_defined=$(declare -f prerun_test)
+    if [ "$is_function_defined" != "" ] ; then
+	prerun_test | sed -e 's/^/..../'
+    fi
+
+    if [  "$_perform_test" == "yes" ] ; then
+        if [ "$_coverage" = "yes" ]
+        then
+	# Remove previous gcov output.
+	    find "$(pm2-config --flavor=$flavor --builddir)"	\
+	        -name \*.gcda -exec rm {} \;
+        fi
+
+        if [ "$script" != "<undefined>" ] ; then
+            prog=$script
+        fi
+        echo "Running program <$prog> with flavor <$flavor>..."
+        ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
+
+	save_PM2_LD_PRELOAD="$PM2_LD_PRELOAD"
+	_ld_preload_name="`pm2_ld_preload_var_name $test_name`"
+	_ld_preload_value="`eval echo \\$$_ld_preload_name`"
+	echo "per-test LD_PRELOAD settings: \$$_ld_preload_name = \`$_ld_preload_value'" | pm2_debug
+
+	if [ ! -z "$_ld_preload_value" ]; then
+	    # Use the test-specific `LD_PRELOAD' settings.
+	    export PM2_LD_PRELOAD="$_ld_preload_value"
+	fi
+
+	if [ -n "$PM2_LD_PRELOAD" ] ; then
+	    echo "Preloading with PM2_LD_PRELOAD=$PM2_LD_PRELOAD"
+	fi
+
+        if [ -z "$net" ] ; then
+            (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
+        else
+            protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
+            (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
+        fi
+	if [ `cat $file_status` -ne 0 ] ; then
+	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
+	    nb_failures_per_module=`expr $nb_failures_per_module + 1`
+	    pm2_test_warning_file "Execution of $prog failed: return value is not 0" $file_result
+	    return 1
+	fi
+
+	PM2_LD_PRELOAD="$save_PM2_LD_PRELOAD"
+
+        # Le moment de verite
+        echo "Checking results..."
+        if [ "$sort_output" == "1" ] ; then
+            echo "Sorting output"
+            sort_command="sort --ignore-case"
+        else
+            sort_command="cat"
+        fi
+        if [ "$check_all_lines" == "1" ] ; then
+            # will compare all the lines of the output and not only the number
+            # of lines present in the expected output file
+            head_command="cat"
+        else
+            # will only compare the number of lines present in the
+            # expected output file
+            head_command="head -$nbl"
+        fi
+        grep -v '^#' $file_result | grep -v Puk: | grep -v PadicoTM | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $sort_command | $head_command > $file_filtered
+        if diff -u $file_expected $file_filtered ; then
+	    echo "Test ok!"
+	    nb_passes_per_module=`expr $nb_passes_per_module + 1`
+        else
+	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
+	    nb_failures_per_module=`expr $nb_failures_per_module + 1`
+	    pm2_test_warning_file "Test $prog failed: unexpected result (see $file_result)" $file_filtered
+	    return 1
+        fi
+
+        # Coverage testing.
+        if [ "$_coverage" = "yes" ]
+        then
+	    # Feed all `.gcda' files through lcov to produce lcov `.info'
+	    # files.
+	    echo "collecting gcov output under \`$gcov_dir'..."
+	    rm -rf "$gcov_dir"
+	    mkdir -p "$gcov_dir"
+
+            build_dir=$(pm2-config --flavor=$flavor --builddir)
+            dirs=$(find $(pm2-config --flavor=$flavor --builddir) -type d)
+	    for dir in $dirs
+	    do
+	        if [ -d "$dir/obj" ]
+	        then
+                    is_examples=$(echo $dir | grep examples)
+                    if [ "$is_examples" != "" ]
+                    then
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT/$_m":'")
+                    else
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT":'")
+                    fi
+                    base_dir=$(eval $command)
+		    module_name="$(basename $dir)"
+
+		    echo "writing lcov file \`$gcov_dir/$module_name.info'..."
+		    lcov -c -d "$dir/obj" -b "$base_dir" \
+		        > "$gcov_dir/$module_name.info"
+	        fi
+	    done
+        fi
+    fi
+
+    # Destruction des fichiers residuels
+    rm -rf ${file_prefix}_*
+    return 0
+}
+
+# Programme principal
+
+_init_level=1 # first level to test
+_level=2 # normal
+_output_redirect=""
+_coverage="no"
+_abort_on_error="no"
+jobs=""
+_perform_test="yes"
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-h|--help)
+	    pm2_test_usage 0
+	    ;;
+	-q|--quiet)
+	    _output_redirect="> /dev/null 2>&1"
+	    shift
+	    ;;
+	--basic)
+	    _level=1
+	    shift
+	    ;;
+	--normal)
+	    _level=2
+	    shift
+	    ;;
+	--advanced)
+	    _level=3
+	    shift
+	    ;;
+	--torture)
+	    _level=4
+	    shift
+	    ;;
+	--coverage)
+	    _coverage=yes
+	    shift;;
+	--abort-on-error)
+	    _abort_on_error=yes
+	    shift;;
+	-l[1-9])
+	    _level=${1#-l}
+	    shift
+	    ;;
+	-L[1-9])
+	    _level=${1#-L}
+	    _init_level=$_level
+	    shift
+	    ;;
+	--jobs|-j)
+	    jobs="$1 $2"
+	    shift
+	    shift
+	    ;;
+	--jobs=*|-j*)
+	    jobs=$1
+	    shift
+	    ;;
+        --tests)
+            shift
+            PM2_TESTS=$1
+            shift
+            ;;
+        --compile)
+            shift
+            _perform_test="no"
+            ;;
+	--)
+	    shift; break
+	    ;;
+	-*)
+	    pm2_test_error "Invalid option: $1"
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+if [ $# -eq 0 -o "$1" = all ] ; then
+    _to_test="$_ALL_MODULES"
+else
+    _to_test=""
+    for m in ${@:+"$@"}; do
+	case " $_ALL_MODULES " in
+	    *\ $m\ *)
+		_to_test="${_to_test:+$_to_test }$m"
+		;;
+	    *)
+		pm2_test_error "\"$m\" is not a valid module name"
+		;;
+	esac
+    done
+fi
+
+# Reordering of modules
+_prefix=""
+for _m in $_DIRTY_ORDERED_MODULES ; do
+    case " $_to_test " in
+	*\ $_m\ *)
+	    _prefix="${_prefix:+${_prefix} }$_m"
+	    ;;
+	*)
+	    ;;
+    esac
+done
+
+_suffix=""
+for _m in $_to_test ; do
+    case " $_DIRTY_ORDERED_MODULES " in
+	*\ $_m\ *)
+	    ;;
+	*)
+	    _suffix="${_suffix:+${_suffix} }$_m"
+	    ;;
+    esac
+done
+
+if [ "$_coverage" = "yes" ]
+then
+    # XXX: We have to use `CPPFLAGS', not `CFLAGS', because defining
+    # `CFLAGS' overrides the makefile-provided `CFLAGS'.
+    CPPFLAGS="--coverage $CPPFLAGS"
+    LDFLAGS="--coverage $LDFLAGS"
+fi
+
+_to_test="$_prefix $_suffix"
+
+failures=""
+nb_tests=0
+nb_skipped_tests=0
+nb_passes=0
+nb_failures=0
+_l=$_init_level
+while [ $_l -le $_level ]; do
+    failures_per_level=""
+    nb_tests_per_level=0
+    nb_skipped_tests_per_level=0
+    nb_passes_per_level=0
+    nb_failures_per_level=0
+
+    for _m in $_to_test ; do
+	echo "*** Testing module $_m ***"
+	failures_per_module=""
+	nb_tests_per_module=0
+	nb_skipped_tests_per_module=0
+	nb_failures_per_module=0
+	nb_passes_per_module=0
+
+        shopt -u nullglob
+	cd ${PM2_ROOT}/modules/$_m/test
+	_tests=`ls test_*.level_$_l 2> /dev/null`
+	if [ -n "$_tests" ]; then
+	    echo "*** Initialising level $_l tests for module $_m ***"
+	    rm -rf /tmp/tests_${USER}_database/
+	    mkdir /tmp/tests_${USER}_database/
+
+	    for _t in $_tests ; do
+                # Affichage
+                _tst_name="`pm2_test_name $_t`"
+
+		is_test_selected=0
+                if [ -z "$PM2_TESTS" ] ; then
+		    is_test_selected=1
+		else
+		    for t in $PM2_TESTS ; do
+			if [ "$(echo $_tst_name | grep $t)" != "" ] ; then
+			    is_test_selected=1
+			fi
+		    done
+		fi
+
+                if [ $is_test_selected == 1 ] ; then
+                    echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
+
+		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; nb_skipped_tests_per_module=`expr $nb_skipped_tests_per_module + 1` ; continue; }'
+
+		    # Source
+		    unset ld_preload
+                    . ./$_t
+		    echo "per-test LD_PRELOAD settings: \`$_tst_name' -> \``pm2_ld_preload_var_name $_tst_name`' = \`$ld_preload'" | pm2_debug
+		    eval "`pm2_ld_preload_var_name ${_tst_name}`=\"$ld_preload\""
+
+		    # If the flavor doesn't exist or is older than the test,
+                    # force its regeneration. Ideally we should also depend
+                    # on the options' .sh files.
+		    flavor_file=`pm2-flavor-file -f $flavor`
+		    if [ ! -r "$flavor_file" ] || [ "$_t" -nt "$flavor_file" ] ; then
+			rm -f "$flavor_file"
+			create_test_flavor | sed -e 's/^/..../'
+		    fi
+
+		    appdir2=$(echo $appdir | tr '/' ':')
+		    echo $prog $_t >> /tmp/tests_${USER}_database/${flavor}.${appdir2}.dat
+		    echo $_t >> /tmp/tests_${USER}_database/${flavor}.flavor
+		    nb_tests_per_module=`expr $nb_tests_per_module + 1`
+                fi
+            done
+
+	    if [ $nb_tests_per_module == 0 ] ; then
+		echo "*** No tests to be performed for module $_m and level $_l ***"
+	    else
+		echo "*** Compiling flavors and performing tests for level $_l ***"
+		shopt -s nullglob
+		for f in /tmp/tests_${USER}_database/*.flavor ; do
+		    d_flavor=$(basename $f .flavor)
+
+		    CC=${CC:-$(pm2-config --flavor=$d_flavor --cc)}
+		    file_status="/tmp/pm2test_${USER}_status"
+
+		    echo "*** Compiling flavor <$d_flavor>..."
+		    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
+
+		    if [ `cat $file_status` -ne 0 ] ; then
+			pm2_test_warning "Compilation of the flavor $d_flavor failed."
+		    fi
+
+		    echo "*** Compiling and performing tests for flavor <$d_flavor>"
+		    for _t in $(cat $f) ; do
+			_tst_name="`pm2_test_name $_t`"
+			echo "*** Level [$_l], module [$_m], Test [$_tst_name]"
+
+			# by default, do not sort the output
+			sort_output=0
+
+			alias pm2_skip_test='{ echo "Skipping level [$_l], module [$_m], Test [$_tst_name]" ; continue; }'
+
+			# Source
+			. ./$_t
+
+			(CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" $jobs -C $appdir $prog FLAVOR=$flavor PM2_FLAVOR=$flavor; echo "$?" > $file_status) | sed -e 's/^/..../'
+			[ `cat $file_status` -eq 0 ] || pm2_test_warning "Compilation of the application <$prog> failed"
+
+			# Execution et verification des resultats
+			if eval do_the_test "$_t" $_output_redirect; then
+			    echo "   [$_tst_name] did succeed."
+			else
+			    echo "   [$_tst_name] did fail."
+			fi
+		    done
+
+		    if [ "$_coverage" = "yes" ] ; then
+			# Enumerate all the lcov-generated `.info' files.
+			lcov_options=""
+			gcov_dirs=$(find $(pm2-config --flavor=$flavor --builddir) -name coverage -type d)
+			for gcov_dir in $gcov_dirs/* ; do
+			    if [ -d "$gcov_dir" ] ; then
+				for file in "$gcov_dir"/*.info ; do
+				    if [ -s "$file" ] ; then
+					lcov_options="$lcov_options -a $file"
+				    fi
+				done
+			    fi
+			done
+
+			lcov_html_report_dir="$(dirname $(pm2-config --flavor=$flavor --builddir))/coverage/$_m"
+			rm -rf "$lcov_html_report_dir"
+			mkdir -p "$lcov_html_report_dir"
+
+			# Aggregate all the lcov-generated `.info' files.
+			lcov_global_info_file="$lcov_html_report_dir/${_m}.info"
+			lcov $lcov_options > "$lcov_global_info_file"
+
+			# Generate the HTML report.
+			echo "generating HTML coverage report under \`$lcov_html_report_dir'..."
+			genhtml -o "$lcov_html_report_dir" "$lcov_global_info_file" && \
+			    echo "HTML coverage report available under \`$lcov_html_report_dir'..."
+		    fi
+
+		done
+	    fi
+
+	    if [ $nb_tests_per_module == 0 ] ; then
+		echo ">>> Level [$_l] tests for module [$_m] : all tests have been skipped"
+	    elif [ -z "$failures_per_module" ] ; then
+		echo ">>> Level [$_l] tests for module [$_m] did succeed!"
+	    else
+		echo ">>> Some of the level [$_l] tests for module [$_m] did fail: $failures_per_module"
+		failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
+	    fi
+	    nb_tests_per_level=`expr $nb_tests_per_level + $nb_tests_per_module`
+	    nb_skipped_tests_per_level=`expr $nb_skipped_tests_per_level + $nb_skipped_tests_per_module`
+	    nb_passes_per_level=`expr $nb_passes_per_level + $nb_passes_per_module`
+	    nb_failures_per_level=`expr $nb_failures_per_level + $nb_failures_per_module`
+	fi
+    done
+
+    if [ $nb_tests_per_level == 0 ] ; then
+	echo ">>>>>> Results for Level [$_l]: all tests have been skipped!"
+    elif [ -z "$failures_per_level" ] ; then
+	echo ">>>>>> Results for Level [$_l]: all tests have succeeded!"
+    else
+	echo ">>>>>> Results for Level [$_l]: some tests have failed: $failures_per_level"
+	failures="$failures [Level $_l: $failures_per_level]"
+    fi
+    nb_tests=`expr $nb_tests + $nb_tests_per_level`
+    nb_skipped_tests=`expr $nb_skipped_tests + $nb_skipped_tests_per_level`
+    nb_passes=`expr $nb_passes + $nb_passes_per_level`
+    nb_failures=`expr $nb_failures + $nb_failures_per_level`
+    _l=`expr $_l + 1`
+done
+
+echo
+echo "# of passes		$nb_passes"
+echo "# of failures		$nb_failures"
+echo "# of performed tests	$nb_tests"
+echo "# of skipped tests	$nb_skipped_tests"
+
+if [ -n "$failures" ] ; then
+    echo ""
+    echo "Failures: $failures"
+fi
+exit 0

@@ -61,7 +61,11 @@ $(LIB_LIB_A): $(MOD_OBJECTS)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(AR) crs $@ $(filter-out %/_$(LIBRARY)_link.o, $(filter %.o, $^))
 
-VERSION_SCRIPT_OPT=-Xlinker --version-script=
+ifeq ($(HAVE_GNU_LD),yes)
+VERSION_SCRIPT_OPT = $(addprefix -Xlinker --version-script=,$(1))
+else
+VERSION_SCRIPT_OPT =
+endif
 
 SONAME=$(notdir $(LIB_LIB_SO_MAJ))
 # AIX doesn't support sonames
@@ -71,12 +75,16 @@ else
   ifeq ($(MOD_SYS),OSF_SYS)
     SONAMEFLAGS=-Xlinker -soname -Xlinker $(SONAME)
   else
-    SONAMEFLAGS=-Xlinker --soname=$(SONAME)
+    ifeq ($(HAVE_GNU_LD),yes)
+      SONAMEFLAGS = -Xlinker --soname=$(SONAME)
+    else
+      SONAMEFLAGS =
+    endif
   endif
 endif
 
 LINK_CMD:=$(LD) $(SONAMEFLAGS)\
-		$(addprefix $(VERSION_SCRIPT_OPT), $(strip $(LIB_SO_MAP))) \
+		$(call VERSION_SCRIPT_OPT,$(strip $(LIB_SO_MAP))) \
 		-shared -o $(LIB_LIB_SO_MAJ_MIN) $(MOD_EARLY_LDFLAGS) $(LINK_EARLY_LDFLAGS) $(LINK_LDFLAGS) \
 		$(filter-out %/_$(LIBRARY)_link.pic, $(filter %.pic, $(MOD_PICS)))
 
@@ -88,7 +96,12 @@ LINK_CMD+= $(shell $(PM2_CONFIG) --libs-only-L) \
 	   $(addprefix -Xlinker -L,$(MOD_GEN_LIB)) \
 	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_SHLIBS)))) \
 	   $(addprefix -Xlinker -l,$(addsuffix $(LIB_EXT),$(filter-out $(LIBNAME), $(MOD_PM2_STLIBS))))
-endif
+
+ifeq ($(HAVE_GNU_LD),yes)
+LINK_CMD += -Wl,--rpath=$(MOD_GEN_LIB)
+endif # HAVE_GNU_LD
+
+endif # LINK_OTHER_LIBS
 
 ifeq ($(LINK_OTHER_LIBS),yes)
 # We link at the link stage, not build stage. But compile pics ASAN.
@@ -119,7 +132,7 @@ endif
 
 # Target provided for convenience, similar to that found in
 # Automake-generated makefiles.
-check:
+check: dot_h
 	module_name="$(shell basename $(realpath .))" ;		\
 	$(PM2_ROOT)/bin/pm2-test --torture $$module_name
 

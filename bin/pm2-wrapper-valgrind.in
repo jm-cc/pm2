@@ -1,0 +1,49 @@
+#!@BASH@
+#-*-sh-*-
+###########
+#
+# Wrapper for pm2-valgrind-load
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+echo "##### `hostname`"
+prog=$1
+shift
+
+if [ -n "${LEO_LD_PRELOAD}" ]; then
+    env "LD_PRELOAD=${LEO_LD_PRELOAD}" $prog ${@:+"$@"}
+else
+    if [ -n "${LEO_ALLOW_CORE}" ] ; then
+	ulimit -c unlimited
+    fi
+    echo $prog ${@:+"$@"}
+#    echo ${@:+"$@"} | tr ' ' '\012' > /tmp/`hostname`_`whoami`
+    $prog ${@:+"$@"}
+fi
+
+code=$?
+
+if [ "${PM2_PMODE}" = on ]
+then
+    echo "process terminated with code ${code}"
+    sleep 2
+    read dummy
+else
+    [ $code -gt 0 ] && echo "process terminated with code ${code}"
+
+fi

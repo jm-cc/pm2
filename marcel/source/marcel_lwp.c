@@ -16,6 +16,13 @@
 
 #include "marcel.h"
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
+#include <errno.h>
+
+
 #ifdef MA__LWPS
 static MA_DEFINE_NOTIFIER_CHAIN(lwp_chain, "LWP");
 
@@ -82,7 +89,14 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 
 	MA_BUG_ON(!ma_in_irq());
 
-        mdebug_lwp("lwp on core ...\n");
+#if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
+	/* On Linux, thread IDs are represented as `pid_t', which are integers.  */
+	mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
+		 getpid(), program_invocation_name,
+		 lwp->pid,
+		 lwp->core_level?lwp->core_level->os_core:-1,
+		 lwp->node_level?lwp->node_level->os_node:-1);
+#endif
 
 	ret = ma_call_lwp_notifier(MA_LWP_ONLINE, lwp);
         if (ret == MA_NOTIFY_BAD) {
@@ -424,6 +438,14 @@ static void lwp_init(ma_lwp_t lwp)
 		ma_lwp_list_lock_write();
 		tbx_fast_list_add_tail(&lwp->lwp_list,&ma_list_lwp_head);
 		ma_lwp_list_unlock_write();
+
+#if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
+		mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
+			getpid(), program_invocation_name,
+			getpid(),
+			lwp->core_level?lwp->core_level->os_core:-1,
+			lwp->node_level?lwp->node_level->os_node:-1);
+#endif
 
 		LOG_OUT();
 		return;

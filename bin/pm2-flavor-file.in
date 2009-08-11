@@ -1,0 +1,81 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+_PM2_FLAVOR_FILE_PROGNAME=pm2-flavor-file
+
+pm2_flavor_file_usage() # exit_code
+{
+    cat <<EOF
+Usage: $_PM2_FLAVOR_FILE_PROGNAME { option }
+  option:
+    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -h        : Display this help message
+EOF
+    exit $1
+}
+
+pm2_flavor_file_parse_cmdline()
+{
+    while [ $# -gt 0 ]; do
+	case $1 in
+	    -f)
+		shift; PM2_FLAVOR="$1"; shift
+		;;
+	    -h)
+		pm2_flavor_file_usage 0
+		;;
+	    --)
+		shift; break
+		;;
+	    *)
+		break
+		;;
+	esac
+    done
+
+    [ $# -eq 0 ] || pm2_flavor_file_usage 1
+
+    PM2_USER_FLAVOR_DIR="@PM2_HOME@/flavors"
+    export PM2_USER_FLAVOR_DIR
+
+    PM2_FLAVOR_FILE=$PM2_USER_FLAVOR_DIR/$PM2_FLAVOR
+    export PM2_FLAVOR_FILE
+
+    if [ "$_PM2_FLAVOR_FILE_SOURCEMODE" != yes ]; then
+	echo $PM2_FLAVOR_FILE
+    fi
+}
+
+# Programme principal
+
+PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+export PM2_FLAVOR
+
+export _PM2_FLAVOR_FILE_SOURCEMODE
+if [ "$1" = --source-mode ]; then
+    _PM2_FLAVOR_FILE_SOURCEMODE=yes
+    shift
+    pm2_flavor_file_parse_cmdline $*
+else
+    _PM2_FLAVOR_FILE_SOURCEMODE=no
+    pm2_flavor_file_parse_cmdline $*
+    exit 0
+fi
+

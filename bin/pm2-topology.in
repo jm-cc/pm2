@@ -1,0 +1,65 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
+    echo "Syntax: $0 [ --latex ] [ <host> ]"
+    exit 1
+fi
+
+# Read the arguments
+args=""
+SSH=""
+while [ "$1" ] ; do
+    if [ "$1" == "--latex" ] ; then
+        args="--latex"
+    else
+	# the application should be launched remotely
+	host=$1
+        SSH="ssh $1"
+    fi
+    shift
+done
+
+# Create the flavor if needed
+flavor=$($SSH pm2-flavor get --flavor=marcel-topology 2>/dev/null)
+if [ -z "$flavor" ] ; then
+    $SSH pm2-create-sample-flavors marcel-topology
+fi
+
+# Compile the application
+$SSH make -j 10 -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read-topology
+$SSH make -j 10 -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read-topology
+echo
+echo
+
+# Execute the application
+$SSH $($SSH pm2-which --flavor marcel-topology read-topology) --verbose $args > /tmp/topology_$$.out
+cat /tmp/topology_$$.out
+
+# If the application has been launched remotely, download the file and run latex on it
+if [ -n "$SSH" ] ; then
+    if [ "$args" == "--latex" ] ; then
+	file=$(grep latex /tmp/topology_$$.out | awk '{print $2}')
+	scp $host:$file.tex .
+	latex $file
+	dvips -Ppdf  -t landscape $file.dvi
+	ps2pdf $file.ps
+    fi
+fi

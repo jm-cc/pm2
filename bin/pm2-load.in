@@ -1,0 +1,609 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+PROGNAME=pm2-load
+
+_pm2_load_error() # msg
+{
+    echo $*
+    exit 1
+}
+
+_pm2_load_warning() # msg
+{
+    echo $*
+}
+
+_pm2_load_usage() # exit_code
+{
+    cat <<EOF
+Usage: $PROGNAME { option } command
+
+  option:
+    -f|--flavor name      : Use flavor named "name" (default=\$PM2_FLAVOR or default)
+    -d|--debug            : Run command through gdb
+    -vg|--valgrind        : Run command through valgrind
+    --numactl [n]         : Run command through numactl [default: n=0]
+    -t|--trace            : Run command through strace
+    --prescript cmd       : Run pre-script command (e.g. numactl)
+    -s                    : Run scripts in debug mode
+    -c|--console name     : Use console named "name"
+    -l|--log              : Also generate a log file on first node
+    -L                    : As '-l' but do not display the log file
+    -u|--use-local-flavor : Use local flavor (re-run pm2-config on each node)
+    --strategy name       : Use strategy named "name"
+    -h|--help             : Display this help message
+
+   Madeleine/Leonie options:
+    -x                    : Run command through xterm
+    -p                    : Pause at the end of the command
+    -cd                   : Change working directory at the beginning of the session
+    --wd directory        : Set working directory to given directory at the beginning of the session
+    --protocol name       : Use protocol named "name"
+    --network file        : Specify the network configuration file
+EOF
+    exit $1
+}
+
+_pm2_load_ambiguity() # prog
+{
+    _prog=$1
+    shift
+
+    echo "Error: multiple exec files found." >&2
+    echo "Please remove ambiguity by using one the following:" >&2
+
+    for _p in `pm2-which -p $_prog` ; do
+	echo "   $PROGNAME $_p ..."
+    done
+
+    exit 1
+}
+
+log()
+{
+    if [ -n "$PM2_SCRIPT_DEBUG" ]; then
+	echo "$*" 1>&2
+    fi
+}
+
+mad3()
+{
+    log "Program: $PM2_CMD_NAME"
+    log "Args: ${prog_args[@]}"
+
+    if [ -n "$PM2_PROTOCOL" ] ; then
+        protocols="$PM2_PROTOCOL"
+    else
+        protocols=$_PM2_CONFIG_PROTOCOLS
+    fi
+    nb_protocols=$(echo $protocols | wc -w | tr -d ' ')
+    log "Protocol: $protocols"
+
+    # Récupération du chemin d'accès au fichier de config des machines
+    set --  --source-mode
+    . ${PM2_ROOT}/bin/pm2-conf-file
+
+    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
+    log "PM2 config file: ${PM2_CONF_FILE}"
+
+    PM2_LEONIE_FILE="${PM2_CONF_FILE}.cfg"
+    log "Leonie config file: ${PM2_LEONIE_FILE}"
+
+    if [ -n "$PM2_NETWORK_FILE" ] ; then
+	PM2_LEONIE_NETWORK_FILE=$PM2_NETWORK_FILE
+    else
+	PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
+    fi
+
+    host_list=`cat ${PM2_CONF_FILE}`
+    for i in $host_list
+    do
+	[ -z "$new_list" ] && new_list="${i}[0]" && continue
+	k='0'
+	for j in $new_list
+	do
+	    [ $j != "${i}[${k}]" ] && continue
+	    k=`expr $k + 1`
+	done
+
+	new_list="$new_list ${i}[${k}]"
+    done
+    tmp_list=`echo $new_list|tr ' ' ','`
+    log "Host list: " $tmp_list
+    new_list=""
+
+    networks_name=""
+    for p in $protocols ; do
+        dev=`echo $p | sed 's/nmad-//'`
+        log "Device: $dev"
+        network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
+        log "Network $network_name"
+
+        if [ "$network_name" == "Network not found" ] ; then
+            dev=`echo $p | sed 's/mad-//'`
+            log "Device: $dev"
+            network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
+            log "Network $network_name"
+
+            if [ "$network_name" == "Network not found" ] ; then
+		_pm2_load_error "$PROGNAME Error: No network found for device $dev and hosts $host_list, please check the names and the network configuration file $PM2_LEONIE_NETWORK_FILE"
+            fi
+	fi
+        networks_name=`echo $networks_name $network_name`
+    done
+    log "Networks: $networks_name"
+
+    log "Create driver configuration file"
+    if [ $dev != custom ]; then
+	$PM2_ROOT/bin/nmad-driver-conf --driver=$dev
+    fi
+
+    [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
+    echo "application: {"                      >  $PM2_LEONIE_FILE
+    echo "    networks: {"                     >> $PM2_LEONIE_FILE
+    echo "        channels: ("                 >> $PM2_LEONIE_FILE
+    if [ "$nb_protocols" == 1 ] ; then
+        echo "                    {"                          >> $PM2_LEONIE_FILE
+        echo "                      name : pm2;"              >> $PM2_LEONIE_FILE
+        echo "                      net  : ${networks_name};" >> $PM2_LEONIE_FILE
+        echo "                      hosts: (${tmp_list});"    >> $PM2_LEONIE_FILE
+        echo "                    }"                          >> $PM2_LEONIE_FILE
+    else
+        PM2_CHANNEL_FILE="${PM2_CONF_FILE}_channel.cfg"
+        [ -f $PM2_CHANNEL_FILE ] && rm -f $PM2_CHANNEL_FILE
+        log "Leonie channel file: ${PM2_CHANNEL_FILE}"
+        for n in $networks_name ; do
+            echo "                    {"                         >> $PM2_CHANNEL_FILE
+            echo "                      name : pm2_${n};"        >> $PM2_CHANNEL_FILE
+            echo "                      net  : ${n};"            >> $PM2_CHANNEL_FILE
+            echo "                      hosts: (${tmp_list});"   >> $PM2_CHANNEL_FILE
+            echo "                    },"                        >> $PM2_CHANNEL_FILE
+        done
+        first_network=$(echo $networks_name | cut -d" " -f1)
+        cat $PM2_CHANNEL_FILE | tr '\012' '&'| sed 's/,&$//' | sed "s/name : pm2_${first_network};/name : pm2;/" | tr '&' '\012' >> $PM2_LEONIE_FILE
+        echo "" >> $PM2_LEONIE_FILE
+    fi
+    echo "                  );"                >> $PM2_LEONIE_FILE
+    echo "    };"                              >> $PM2_LEONIE_FILE
+    echo "};"                                  >> $PM2_LEONIE_FILE
+
+    [ "$PM2_DEBUG" = "on" ] && PM2_XMODE="on"
+
+    pm2_load_args=""
+    [ "$PM2_DEBUG" = "on" ]           && pm2_load_args="${pm2_load_args} -d"
+    [ "$PM2_DEBUG" = "off" ]          && pm2_load_args="${pm2_load_args} --d"
+    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} -vg"
+    [ "$PM2_VALGRIND" = "off" ]       && pm2_load_args="${pm2_load_args} --vg"
+    [ "$PM2_XMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -x"
+    [ "$PM2_XMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --x"
+    [ "$PM2_X11MODE" = "off" ]        && pm2_load_args="${pm2_load_args} --x11"
+    [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -p"
+    [ "$PM2_PMODE" = "off" ]          && pm2_load_args="${pm2_load_args} --p"
+    [ "$PM2_LOGS_ON_NODE_0" = "on" ]  && pm2_load_args="${pm2_load_args} -l"
+    [ "$PM2_LOGS_ON_NODE_0" = "off" ] && pm2_load_args="${pm2_load_args} --l"
+
+    if [ "$PM2_NUMACTL" != "off" ] ; then
+        pm2_load_args="${pm2_load_args} --numactl=$PM2_NUMACTL"
+    fi
+
+    if [ "$PM2_CDMODE" != "off" ] ; then
+        pm2_load_args="${pm2_load_args} -cd"
+    fi
+
+    if [ "$PM2_WDIR" != "" ] ; then
+        pm2_load_args="${pm2_load_args} --wd=$PM2_WDIR"
+    fi
+
+    env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    if [ "$PM2_CONF_DIR" != "" ] ; then
+        env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    fi
+
+    if [ "$OMP_NUM_THREADS" != "" ] ; then
+        env="$env OMP_NUM_THREADS=$OMP_NUM_THREADS"
+    fi
+
+    LEONIE_ENV=""
+    if [ -f "$OAR_NODEFILE" ] ; then
+	oarsh=`which oarsh 2>/dev/null`
+	if [ -n "$oarsh" ] ; then
+	    LEONIE_ENV="export LEO_RSH=oarsh"
+	fi
+    fi
+
+    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
+    if [ "$x" == "" ] ; then
+        pm2-create-sample-flavors leonie > /tmp/leonie_$$ 2>&1
+    fi
+    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie > /tmp/leonie_$$ 2>&1
+        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
+        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
+            echo "Could not compile leonie. Aborting"
+            exit 1
+        fi
+    fi
+
+    $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE $LEONIE_ARGS "${prog_args[@]}"
+
+    exit $?
+}
+
+
+# Programme principal
+log "Running $*"
+
+PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+export PM2_FLAVOR
+
+PM2_CONSOLE=""
+
+PM2_DEBUG=off
+PM2_VALGRIND=off
+PM2_NUMACTL=off
+PM2_LOGS_ON_NODE_0=off
+PM2_USE_LOCAL_FLAVOR=off
+PM2_XMODE=off
+PM2_X11MODE=on
+PM2_PMODE=off
+PM2_CDMODE=off
+PM2_WDIR=""
+PM2_PROTOCOL=""
+PM2_NETWORK_FILE=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-f|--flavor)
+	    shift
+	    PM2_FLAVOR="$1"
+	    shift
+	    ;;
+	-d|--debug)
+	    shift
+	    PM2_DEBUG=on
+	    ;;
+	-cf|--corefile)
+	    shift
+	    PM2_COREFILE="$1"
+	    shift
+	    ;;
+	-vg|--valgrind)
+	    shift
+	    PM2_VALGRIND=on
+	    ;;
+	--numactl)
+	    shift
+            x=$(expr $1 + 0 2>/dev/null)
+            if [ $? -ne 0 ] ; then
+                x=0
+            else
+                shift
+            fi
+	    PM2_NUMACTL=$x
+	    PM2_SCRIPT="numactl --cpubind=$x --membind=$x"
+	    ;;
+	-t|--trace)
+	    shift
+	    PM2_STRACE=on
+	    ;;
+	--prescript)
+	    shift
+	    PM2_SCRIPT="$1"
+	    shift
+	    ;;
+	-s|--debug)
+	    shift
+	    PM2_SCRIPT_DEBUG=on
+	    ;;
+	-c|--console)
+	    shift
+	    PM2_CONSOLE="$1"
+	    shift
+	    ;;
+	-l|--log)
+	    shift
+	    PM2_LOGS_ON_NODE_0=on
+	    ;;
+	-L)
+	    shift
+	    PM2_LOGS_ON_NODE_0=only
+	    ;;
+# begin Madeleine only
+	--l) # Logs off
+	    shift
+	    PM2_LOGS_ON_NODE_0=off
+	    ;;
+	--d) # Debug off
+	    shift
+	    PM2_DEBUG=off
+	    ;;
+	--vg) # Valgrind off
+	    shift
+	    PM2_VALGRIND=off
+	    ;;
+	-cd) # Cd mode on
+	    shift
+	    PM2_CDMODE=on
+	    ;;
+	--cd) # Cdmode off
+	    shift
+	    PM2_CDMODE=off
+	    ;;
+	--t) # Strace off
+	    shift
+	    PM2_STRACE=off
+	    ;;
+	-x) # XTerm mode on
+	    shift
+	    PM2_XMODE=on
+	    ;;
+	--x) # XTerm mode off
+	    shift
+	    PM2_XMODE=off
+	    ;;
+	--x11) # X11 mode off
+	    shift
+	    PM2_X11MODE=off
+	    ;;
+	-p) # Pause mode on
+	    shift
+	    PM2_PMODE=on
+	    ;;
+	--p) # Pause mode off
+	    shift
+	    PM2_PMODE=off
+	    ;;
+	--protocol)
+	    shift
+	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
+	    shift
+	    ;;
+	--strategy)
+	    shift
+	    PM2_STRATEGY="$1"
+	    shift
+	    ;;
+	--network)
+	    shift
+	    PM2_NETWORK_FILE="$1"
+	    shift
+	    ;;
+        --wd)
+            shift
+            PM2_WDIR=$1
+            shift
+            ;;
+# end Madeleine only
+	-u|--use-local-flavor)
+	    shift
+	    PM2_USE_LOCAL_FLAVOR=on
+	    ;;
+	-h|--help)
+	    _pm2_load_usage 0
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	-*)
+	    _pm2_load_usage 1
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+[ -n "$*" ] || _pm2_load_usage 1
+
+
+# Initialisation des arguments passés à pm2-pre-script.sh
+_prescript_args=""
+
+
+# Variables automatiquement exportées
+PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}PM2_LD_LIBRARY_PATH:PM2_FLAVOR
+
+if [ "$PM2_SCRIPT_DEBUG" = on ]; then
+    export PM2_SCRIPT_DEBUG
+    _prescript_args="$_prescript_args --script-debug"
+fi
+
+# Sauvegarde de la commande et des arguments
+PM2_PROG_NAME=$1
+export PM2_PROG_NAME
+shift
+
+prog_args=(${@:+"$@"})
+
+nmad_present=$(pm2-config --modules|grep nmad)
+if [ -n "$nmad_present" ] ; then
+    log "Create strategy configuration file"
+    if [ "$PM2_STRATEGY" == "" ] ; then
+	STRAT_DIR="@PM2_HOME@/strategy"
+	if [ ! -f $STRAT_DIR/strategy_default.xml ] && [ ! -f $STRAT_DIR/strategy_custom.xml ] ; then
+            $PM2_ROOT/bin/nmad-strategy-conf -d -f
+	fi
+    else
+	$PM2_ROOT/bin/nmad-strategy-conf --$PM2_STRATEGY
+    fi
+fi
+
+if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
+
+    PM2_EXPORT=${PM2_EXPORT:+${PM2_EXPORT}:}PM2_CONF_FILE
+
+    # Récupération de (des) chemin(s) d'accès au fichier exécutable
+
+    set --  --source-mode $PM2_PROG_NAME
+    . ${PM2_ROOT}/bin/pm2-which
+
+    if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
+	_pm2_load_ambiguity $PM2_PROG_NAME
+    fi
+
+    PM2_CMD_NAME="$_PM2_WHICH_RESULT"
+    export PM2_CMD_NAME
+
+    # Librairies dynamiques (LD_PRELOAD)
+    if [ -n "$_PM2_CONFIG_PRELOAD" ]; then
+	_prescript_args="$_prescript_args --preload \"$_PM2_CONFIG_PRELOAD\""
+    fi
+
+    # LD library path
+    PM2_LD_LIBRARY_PATH="$_PM2_CONFIG_LD_LIBRARY_PATH"
+
+    # Mad3 special case
+    case " $_PM2_CONFIG_MODULES " in
+    *\ mad3\ *)
+	# Mad III mode
+	log "Mad III selected"
+	mad3 "${prog_args[@]}"
+	exit $?
+	;;
+    *)
+	;;
+    esac
+
+    if [ "$_PM2_CONFIG_LAUNCHER" == "leonie" ] ; then
+        log "Leonie selected"
+	mad3 "${prog_args[@]}"
+	exit $?
+    fi
+
+else # USE_LOCAL_FLAVOR
+
+    PM2_CMD_NAME="$PM2_PROG_NAME"
+    export PM2_CMD_NAME
+
+# Pour obtenir $_PM2_CONFIG_LOADER...
+    set -- --source-mode
+    . ${PM2_ROOT}/bin/pm2-config
+
+    _prescript_args="$_prescript_args --use-local-flavor"
+
+fi
+
+# Chemin d'accès au chargeur
+[ -n "$_PM2_CONFIG_LOADER" ] || _pm2_load_error "$PROGNAME Fatal Error: no loader defined!"
+[ -x $_PM2_CONFIG_LOADER ] || _pm2_load_error "$PROGNAME Fatal Error: \"$_PM2_CONFIG_LOADER\" exec file not found!"
+
+case $_PM2_CONFIG_LOADER in
+    *conf_not_needed)
+	# No need to try to access the pm2 conf file
+	;;
+    *)
+	# Récupération du chemin d'accès au fichier de config des machines
+	set --  --source-mode
+	. ${PM2_ROOT}/bin/pm2-conf-file
+
+	[ -f $PM2_CONF_FILE ] || _pm2_load_error "$PROGNAME Error: PM2 is not yet configured for this flavor (please run pm2-conf)."
+	;;
+esac
+
+# Variable DISPLAY
+#case "_${DISPLAY}" in
+#    _) DISPLAY=`uname -n`:0.0 ;;
+#    _:*) DISPLAY=`uname -n`${DISPLAY} ;;
+#    *) ;;
+#esac
+
+# Arguments à passer à pm2-pre-script.sh
+
+# Debug
+if [ "$PM2_DEBUG" = on ]; then
+    _prescript_args="$_prescript_args --debug"
+    if [ -n "$PM2_COREFILE" ]; then
+        _prescript_args="$_prescript_args --corefile ${PM2_COREFILE}"
+    fi
+fi
+
+if [ "$PM2_VALGRIND" = on ]; then
+    _prescript_args="$_prescript_args --valgrind"
+fi
+
+if [ "$PM2_STRACE" = on ]; then
+    _prescript_args="$_prescript_args --strace"
+fi
+
+if [ -n "$PM2_SCRIPT" ]; then
+    _prescript_args="$_prescript_args --prescript \"$PM2_SCRIPT\""
+fi
+
+_old_ifs="$IFS"
+_ifs_not_set=${IFS-yes}
+IFS=":"
+set $PM2_EXPORT
+IFS=" "
+if [ "$_ifs_not_set" = yes ]; then
+    unset IFS
+else
+    IFS="$_old_ifs"
+fi
+
+# Variables à exporter
+for v in $*; do
+    eval _val=\"\$$v\"
+    log "Exporting $v with value '$_val'"
+    if [ -n "$_val" ]; then
+	_prescript_args="$_prescript_args --export $v \"$_val\""
+    fi
+done
+
+if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
+    PM2_PRE_SCRIPT=pm2-pre-script.sh
+else
+    PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
+fi
+
+# create driver configuration file
+if [ -n "$PM2_PROTOCOL" ] ; then
+    protocols="$PM2_PROTOCOL"
+else
+    protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
+fi
+for p in $protocols ; do
+    if [ $p != custom ]; then
+	$PM2_ROOT/bin/nmad-driver-conf --driver=$p
+    fi
+done
+
+if [ "$PM2_LOGS_ON_NODE_0" = "on" ]; then
+    log "Executing: $_PM2_CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+	$PM2_CMD_NAME ${prog_args[@]}"
+    eval $_PM2_CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+	$PM2_CMD_NAME "${prog_args[@]}" 2>&1 | tee /tmp/${USER}-pm2log-0
+    exit 0
+elif [ "$PM2_LOGS_ON_NODE_0" = "only" ]; then
+    log "Executing: $_PM2_CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+        $PM2_CMD_NAME ${prog_args[@]}"
+    eval $_PM2_CONFIG_LOADER ${PM2_PRE_SCRIPT} $_prescript_args -- \
+        $PM2_CMD_NAME "${prog_args[@]}" > /tmp/${USER}-pm2log-0 2>&1
+    exit 0
+else
+    log "Executing: set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
+        $PM2_CMD_NAME ${prog_args[@]}"
+    log "Executing: . $_PM2_CONFIG_LOADER"
+    eval set -- ${PM2_PRE_SCRIPT} $_prescript_args -- \
+	$PM2_CMD_NAME \"\${prog_args[@]}\"
+    . $_PM2_CONFIG_LOADER
+fi

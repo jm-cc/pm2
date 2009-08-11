@@ -1,0 +1,465 @@
+#!@BASH@
+#-*-sh-*-
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+export PATH PM2_ROOT
+
+_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+
+registering_flavors() {
+#########################################################
+# START OF LIST OF SAMPLE FLAVORS
+#########################################################
+
+    COMMON_OPTIONS="--all=build_static --common=static"
+    OPTIM_OPTIONS="--all=opt"
+    DEBUG_OPTIONS="--all=debug --all=gdb"
+
+    register_flavor default \
+	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=mono --marcel=marcel_main \
+	--marcel=enable_keys --marcel=enable_migration \
+	--marcel=enable_postexit --marcel=enable_userspace --marcel=enable_atexit --marcel=enable_deviation \
+	--mad3=tcp
+
+    register_flavor marcel-mono \
+	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=mono --marcel=marcel_main
+
+    register_flavor marcel-smp \
+	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=smp --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+        --init=topology
+
+    register_flavor marcel-numa \
+	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats \
+        --init=topology
+
+    register_flavor marcel-topology-32 \
+	--modules="marcel tbx init" $DEBUG_OPTIONS \
+	$COMMON_OPTIONS \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle --marcel=nbmaxcpus:32 \
+	--marcel=enable_stats \
+        --init=topology
+
+    register_flavor marcel-topology \
+	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle --marcel=nbmaxcpus:64 \
+	--marcel=enable_stats \
+        --init=topology
+
+    register_flavor marcel-topology-256 \
+	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \
+	--marcel=enable_stats \
+        --init=topology
+
+    register_flavor mami-pthread-opt \
+	--modules="tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
+        --memory=pthread \
+        --memory=enable_mami \
+        --init=topology
+
+    register_flavor mami-pthread-debug \
+	--modules="tbx init memory" $COMMON_OPTIONS $DEBUG_OPTIONS \
+        --memory=pthread \
+        --memory=enable_mami \
+        --init=topology
+
+    register_flavor mami-opt \
+	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=numa --marcel=standard_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats \
+        --marcel=dont_use_pthread \
+        --memory=marcel \
+        --memory=enable_mami \
+        --init=topology
+
+    register_flavor mami-debug \
+	--modules="marcel tbx init memory" \
+	--marcel=numa --marcel=standard_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=valgrind \
+        --memory=marcel \
+        --memory=enable_mami \
+        --init=topology \
+        --marcel=dont_use_pthread \
+	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
+
+    register_flavor mami-fortran-debug \
+	--modules="marcel tbx init memory" \
+	--marcel=numa --marcel=standard_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=fortran \
+        --memory=marcel \
+        --memory=enable_mami --memory=fortran \
+        --common=fortran_target_gfortran \
+        --marcel=dont_use_pthread \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
+
+    register_flavor heap-debug \
+	--modules="marcel tbx init memory" \
+	--marcel=numa --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=enable_stats --marcel=valgrind \
+        --memory=enable_heap_allocator \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
+
+    register_flavor marcel \
+	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=mono --marcel=marcel_main
+
+    register_flavor marcel-bubbles \
+	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=profile \
+	--marcel=enable_stats \
+        --init=topology \
+	--bubbles=gdb --bubbles=noinline
+
+    register_flavor marcel-distrib \
+	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=pmarcel --marcel=enable_stats \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+        --init=topology
+
+    register_flavor marcel-bubblegum \
+	--modules="marcel profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
+	--marcel=numa --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=smp_smt_idle \
+	--marcel=profile \
+	--marcel=enable_stats \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline
+
+    register_flavor marcel-forestgomp-opt \
+        --modules="marcel tbx init" \
+	--marcel=numa --marcel=enable_numa_memory \
+	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=enable_stats --marcel=enable_keys \
+	--marcel=enable_cleanup --marcel=enable_once \
+        --init=topology \
+	--all=opt --all=build_both
+
+    register_flavor marcel-forestgomp-debug \
+        --modules="marcel tbx init" \
+	--marcel=numa --marcel=enable_numa_memory \
+	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=enable_stats --marcel=enable_keys \
+	--marcel=enable_cleanup --marcel=enable_once \
+	--marcel=valgrind --marcel=bug_on \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline --all=build_both
+
+    register_flavor marcel-forestgomp-fxtdebug \
+        --modules="marcel tbx init bubblelib bubbles profile" \
+	--marcel=numa --marcel=enable_numa_memory \
+	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=enable_stats --marcel=enable_keys \
+	--marcel=enable_cleanup --marcel=enable_once \
+	--marcel=profile --marcel=bug_on \
+	--profile=autostart \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline --all=build_both
+
+    register_flavor forestgomp-mami-debug \
+        --modules="marcel tbx init memory" \
+	--marcel=numa --memory=marcel --memory=enable_mami \
+	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=enable_stats --marcel=enable_keys \
+	--marcel=enable_cleanup --marcel=enable_once \
+	--marcel=valgrind --marcel=bug_on \
+        --init=topology \
+	$DEBUG_OPTIONS --all=noinline --all=build_both
+
+    register_flavor leonie \
+	--modules="leonie leoparse tbx ntbx init" $DEBUG_OPTIONS $COMMON_OPTIONS $OPTIM_OPTIONS
+
+    register_flavor leoparse \
+	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS
+
+    register_flavor mad3 \
+	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--mad3=tcp --marcel=mono --marcel=marcel_main
+
+    register_flavor pm2 \
+	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--marcel=mono --marcel=marcel_main \
+	--marcel=enable_keys --marcel=enable_migration \
+	--marcel=enable_atexit --marcel=enable_postexit --marcel=enable_deviation \
+	--marcel=enable_userspace \
+	--mad3=tcp
+
+    register_flavor nmad \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
+
+    register_flavor nmad-pioman \
+	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --marcel=mono --marcel=standard_main \
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
+
+    register_flavor nmad-mpi \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=tcp \
+        --common=fortran_target_none
+
+    register_flavor nmad-mpi-debug \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $DEBUG_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=tcp \
+        --common=fortran_target_none
+
+    register_flavor nmad-mpi-pioman \
+	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
+	--nmad=tcp \
+        --marcel=smp --marcel=standard_main \
+        --common=fortran_target_none \
+        --init=topology
+
+    register_flavor nmad-distrib \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
+        --common=fortran_target_none
+
+    register_flavor nmad-mpi-qos \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_hashtable --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
+        --nmad=quality_of_service \
+        --common=fortran_target_none
+
+    register_flavor nmad-open-mx \
+	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=disable_output \
+        --nmad=tag_as_flat_array --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
+
+    register_flavor ezflavor \
+	--modules="ezflavor" $COMMON_OPTIONS $OPTIM_OPTIONS
+
+    register_flavor pmarcel \
+	--modules="marcel tbx init stackalign" --all=opt $COMMON_OPTIONS \
+	--marcel=smp \
+	--marcel=marcel_main --marcel=pmarcel \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+        --init=topology
+
+    register_flavor libpthread \
+	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
+	--marcel=numa --marcel=enable_numa_memory --marcel=dont_use_pthread \
+	--marcel=pmarcel --marcel=pthread \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_stats \
+	--marcel=standard_main \
+        --init=topology \
+	--puk=enable_pukabi --puk=disable_output \
+	--puk=disable_fd_virtualization
+
+    register_flavor tbx \
+        --modules="init tbx ntbx" $COMMON_OPTIONS $OPTIM_OPTIONS
+
+#########################################################
+# END OF LIST OF SAMPLE FLAVORS
+#########################################################
+}
+
+disp() {
+    $PRINT "$@"
+}
+
+usage() {
+    echo "Usage: `basename $0` [-f|--force] [-h|--help] [-v|--verbose] [-l|--list] [-x|--expansion] [flavors...]"
+}
+
+erreur() {
+    echo "ERROR: ""$@"
+}
+
+FORCE=no
+LIST_FLAVORS=""
+FLAVOR_NAME=""
+PRINT=":"
+SHOW_LIST="no"
+EXPANSION="off"
+
+while [ $# != 0 ]; do
+    case "$1" in
+    -f|--force)
+	FORCE=yes;;
+    -h|--help)
+        usage
+	exit 0;;
+    -v|--verbose)
+        PRINT=echo;;
+    -l|--list)
+	SHOW_LIST="yes";;
+    -x|--expansion)
+	EXPANSION="on";;
+    -o)
+	FLAVOR_NAME=$2
+	shift;;
+    -*)
+    	erreur "Unknown option $1"
+	usage
+	exit 1;;
+    *)
+	if [ -n "$FLAVOR_NAME" -a -n "$LIST_FLAVORS" ]
+	then
+	    erreur "-o can not be used when generating several sample flavors"
+	    usage
+	    exit 1
+	fi
+        LIST_FLAVORS="$LIST_FLAVORS $1";;
+    esac
+    shift
+done
+
+register_flavor() {
+  orig_name="$1"
+  shift
+  name=${orig_name//-/_}
+  FLAVOR=("$@")
+  i=0;
+  while [ $# != 0 ]; do
+      case $1 in 
+         --modules=*)
+	    modules="${1#--modules=}"
+	    for mod in $modules; do
+	        case " $_ALL_MODULES " in
+		   *" $mod "*)
+		       ;;
+		   *)
+		       # required module not available, do not register flavor
+		       return 0;
+		       ;;
+		esac
+	    done
+	    # no need to continue looking at options
+	    break;
+	 ;;
+      esac
+      shift
+  done
+  disp "registering $orig_name"
+  REGISTERED_FLAVORS="$REGISTERED_FLAVORS $orig_name"
+  eval REGISTERED_FLAVOR_${name}='("${FLAVOR[@]}")'
+}
+
+create_flavor() {
+    name="$1"
+    shift
+    flavor=$FLAVOR_NAME
+    [ -n "$flavor" ] || flavor="$name"
+
+    case " $REGISTERED_FLAVORS " in
+        *" $name "*)
+	    SAMPLE_FLAVOR="yes";;
+	*)
+	    SAMPLE_FLAVOR="no";;
+    esac
+    case " $($PM2_CREATE_FLAVOR list) " in
+        *" $flavor "*)
+	    SAMPLE_FLAVOR_EXIST="yes";;
+	*)
+	    SAMPLE_FLAVOR_EXIST="no";;
+    esac
+
+    if [ $SAMPLE_FLAVOR == "yes" \
+         -a \( $FORCE == "yes" \
+	       -o $SAMPLE_FLAVOR_EXIST == "no" \) ]; then
+	# No existing flavor yet
+	echo "Creating initial sample flavor $flavor..."
+
+	regname=${name//-/_}
+	eval set -- \"\$\{REGISTERED_FLAVOR_${regname}\[\@\]\}\"
+
+	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor="$flavor" "$@"
+    else
+        ${PM2_ROOT}/bin/pm2-clean --refresh "$flavor"
+    fi
+    pm2-flavor check --flavor="$flavor"
+    if [ $? != 0 ] ; then
+	echo "Delete flavor $flavor..."
+	pm2-flavor delete --flavor="$flavor"
+	exit 1
+    fi
+}
+
+set -- --source-mode
+. ${PM2_ROOT}/bin/pm2-flavor-file
+
+PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
+
+registering_flavors
+
+if [ $SHOW_LIST == "yes" ]; then
+    echo "$REGISTERED_FLAVORS"
+    exit 0
+fi
+
+if [ $EXPANSION == "on" ] ; then
+    NEW_LIST_FLAVORS=""
+    for flavor in $LIST_FLAVORS ; do
+	TMP_FLAVORS=$(echo $REGISTERED_FLAVORS | tr ' ' '\012' | grep $flavor)
+	NEW_LIST_FLAVORS="$NEW_LIST_FLAVORS $TMP_FLAVORS"
+    done
+    LIST_FLAVORS="$NEW_LIST_FLAVORS"
+fi
+
+if [ -z "$LIST_FLAVORS" ]; then
+    # All flavors (registered + exinsting)
+    LIST_FLAVORS="$REGISTERED_FLAVORS"
+    for flavor in `${PM2_ROOT}/bin/pm2-flavor list` ; do
+	case " $LIST_FLAVORS " in
+	    *" $flavor "*) ;;
+	    *) LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;
+	esac
+    done
+fi
+
+for flavor in $LIST_FLAVORS; do
+    create_flavor $flavor
+done
+
+

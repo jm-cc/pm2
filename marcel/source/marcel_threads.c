@@ -14,6 +14,10 @@
  * General Public License for more details.
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+
 #include "marcel.h"
 #include "marcel_sched_generic___sched_marcel_inline.h"
 #include "tbx_compiler.h"
@@ -977,15 +981,25 @@ void marcel_resume(marcel_t pid)
 
 #ifdef MARCEL_CLEANUP_ENABLED
 #define __NO_WEAK_PTHREAD_ALIASES
+
 #ifdef MA__LIBPTHREAD
-#include <bits/libc-lock.h>
-/* TODO: For the next 2 declarations, using AC_CHECK_DECL is prefered */
-/*       (as soon as we switch to autoconf)                           */
+
+#ifdef HAVE_BITS_LIBC_LOCK_H
+# include <bits/libc-lock.h>
+#endif
+
+#if !HAVE_DECL__PTHREAD_CLEANUP_POP
 extern void _pthread_cleanup_pop (struct _pthread_cleanup_buffer *buffer,
 				  int execute);
+#endif
+
+#if !HAVE_DECL__PTHREAD_CLEANUP_PUSH
 extern void _pthread_cleanup_push (struct _pthread_cleanup_buffer *buffer,
 				   void (*routine) (void *), void *arg);
 #endif
+
+#endif /* MA__LIBPTHREAD */
+
 #undef NAME_PREFIX
 #define NAME_PREFIX _
 DEF_MARCEL_POSIX(void, cleanup_push,(struct _marcel_cleanup_buffer * __restrict __buffer,

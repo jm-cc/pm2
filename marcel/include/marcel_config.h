@@ -44,7 +44,11 @@
 
 /* Room for Exec TLS (not dynamic) */
 #ifndef MA_TLS_AREA_SIZE
-#define MA_TLS_AREA_SIZE        4096UL
+#  ifdef MA__LIBPTHREAD
+#   define MA_TLS_AREA_SIZE       8192UL
+#  else
+#   define MA_TLS_AREA_SIZE       4096UL
+#  endif
 #endif
 
 /* Max number of architecture elements */

@@ -1,0 +1,4 @@
+With a fresh checkout, the configure file needs to be generated. This
+is done by calling the following:
+
+$ ./autogen.sh

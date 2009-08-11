@@ -382,7 +382,9 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
       }
 
       if (!bubble_has_exploded) {
-	ma_cache_distribute_entities_cache (l, e, ne, distribution);
+	if (ne >= arity) {
+	  ma_cache_distribute_entities_cache (l, e, ne, distribution);
+	}
 	ma_distribution_destroy (distribution, arity);
 	return;
       }

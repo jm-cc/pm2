@@ -46,7 +46,7 @@ static ma_atomic_t ma_failed_steals = MA_ATOMIC_INIT(0);
 static void
 ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
   unsigned int i;
-  bubble_sched_debug ("Submitting entities on runqueue %p:\n", &l->rq);
+  bubble_sched_debug ("Submitting entities on runqueue %s (%p):\n", l->rq.as_holder.name, &l->rq);
   ma_debug_show_entities ("ma_cache_sched_submit", e, ne);
   for (i = 0; i < ne; i++) {
     if (e[i]) {
@@ -328,7 +328,7 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 
   bubble_sched_debug ("count in __marcel_bubble__cache\n");
   ne = ma_count_entities_on_rq (&l->rq);
-  bubble_sched_debug ("ne = %d on runqueue %p\n", ne, &l->rq);
+  bubble_sched_debug ("ne = %d on runqueue %s (%p)\n", ne, l->rq.as_holder.name, &l->rq);
 
   if (!ne) {
     for (k = 0; k < arity; k++)
@@ -345,7 +345,7 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
   bubble_sched_debug ("get in ma_cache_distribute_from\n");
   ma_get_entities_from_rq (&l->rq, e, ne);
 
-  bubble_sched_debug ("Entities were taken from runqueue %p:\n", &l->rq);
+  bubble_sched_debug ("Entities were taken from runqueue %s (%p):\n", l->rq.as_holder.name, &l->rq);
   ma_debug_show_entities ("ma_cache_distribute_from", e, ne);
 
   qsort (e, ne, sizeof(e[0]), &ma_increasing_order_entity_load_compar);

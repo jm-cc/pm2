@@ -53,7 +53,7 @@ ma_memory_print_affinities (marcel_bubble_t *bubble) {
 
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
 
-  marcel_fprintf (stderr, "Entity %p (%s): [ ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : ma_task_entity (e)->name);
+  marcel_fprintf (stderr, "Entity %p (%s): [ ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : e->name);
   long *nodes = ma_cumulative_stats_get (e, ma_stats_memnode_offset);
   for (i = 0; i < marcel_nbnodes; i++) {
     marcel_fprintf (stderr, "%8ld%s", nodes[i], (i == (marcel_nbnodes - 1)) ? " ]\n" : ", ");
@@ -70,7 +70,7 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
 
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
 
-  marcel_fprintf (stderr, "Entity %p (%s): ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : ma_task_entity (e)->name);
+  marcel_fprintf (stderr, "Entity %p (%s): ", e, e->type == MA_BUBBLE_ENTITY ? "bubble" : e->name);
   long vp = *(long *) ma_cumulative_stats_get (e, ma_stats_last_vp_offset);
   marcel_fprintf (stderr, "%ld\n", vp);
 

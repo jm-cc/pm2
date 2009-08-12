@@ -382,8 +382,12 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
       }
 
       if (!bubble_has_exploded) {
+	bubble_sched_debug ("Didn't find any bubble to explode...\n");
 	if (ne >= arity) {
+	  bubble_sched_debug ("... at least, distribute over the children of level %s.\n", l->rq.as_holder.name);
 	  ma_cache_distribute_entities_cache (l, e, ne, distribution);
+	} else {
+	  bubble_sched_debug ("... so leave the entities on level %s.\n", l->rq.as_holder.name);
 	}
 	ma_distribution_destroy (distribution, arity);
 	return;

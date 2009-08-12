@@ -44,11 +44,15 @@ struct marcel_bubble_memory_sched
 
 
 #if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
+
+static marcel_mutex_t print_lock;
+
 static void
 ma_memory_print_affinities (marcel_bubble_t *bubble) {
   unsigned int i;
   marcel_entity_t *e;
 
+  marcel_mutex_lock (&print_lock);
   marcel_fprintf (stderr, "Printing memory affinity hints for bubble %p:\n", bubble);
 
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
@@ -60,12 +64,14 @@ ma_memory_print_affinities (marcel_bubble_t *bubble) {
   }
 
   for_each_entity_scheduled_in_bubble_end ();
+  marcel_mutex_unlock (&print_lock);
 }
 
 static void
 ma_memory_print_previous_location (marcel_bubble_t *bubble) {
   marcel_entity_t *e;
 
+  marcel_mutex_lock (&print_lock);
   marcel_fprintf (stderr, "Printing previous location of threads scheduling in bubble %p:\n", bubble);
 
   for_each_entity_scheduled_in_bubble_begin (e, bubble);
@@ -75,6 +81,7 @@ ma_memory_print_previous_location (marcel_bubble_t *bubble) {
   marcel_fprintf (stderr, "%ld\n", vp);
 
   for_each_entity_scheduled_in_bubble_end ();
+  marcel_mutex_unlock (&print_lock);
 }
 #endif /* MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS */
 
@@ -86,6 +93,9 @@ marcel_bubble_set_memory_manager (marcel_bubble_memory_sched_t *scheduler,
 
 static int
 memory_sched_start (marcel_bubble_sched_t *self) {
+#if MA_MEMORY_BSCHED_NEEDS_DEBUGGING_FUNCTIONS
+  marcel_mutex_init (&print_lock, NULL);
+#endif
   return 0;
 }
 

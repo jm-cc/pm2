@@ -406,6 +406,10 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&src_bubble->barrier, -1);
 	res = (!--src_bubble->nb_natural_entities);
+	if (entity->type == MA_BUBBLE_ENTITY)
+		PROF_EVENT2(bubble_sched_remove_bubble,ma_bubble_entity(entity),src_bubble);
+	else
+		PROF_EVENT2(bubble_sched_remove_thread,ma_task_entity(entity),src_bubble);
 	ma_holder_rawunlock(&src_bubble->as_holder);
 
 	ma_holder_rawlock(&dst_bubble->as_holder);

@@ -40,7 +40,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-logload				\
   bin/pm2-logs					\
   bin/pm2-make-option-sets			\
-  bin/pm2-menu-config				\
   bin/pm2-module				\
   bin/pm2-pre-script.sh				\
   bin/pm2-prof					\

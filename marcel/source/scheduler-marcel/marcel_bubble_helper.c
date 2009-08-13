@@ -424,4 +424,11 @@ ma_debug_show_entities(const char *func_name TBX_UNUSED, marcel_entity_t *e[], i
   bubble_sched_debug("end)\n");
 }
 
+#ifdef PROFILE
+void 
+ma_bubble_set_color (marcel_bubble_t *bubble, unsigned int color_index) {
+  PROF_EVENT2(bubble_sched_set_color, bubble, color_index);
+}
+#endif
+
 #endif /* MA__BUBBLES */

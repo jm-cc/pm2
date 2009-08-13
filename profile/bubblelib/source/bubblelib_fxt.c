@@ -286,6 +286,20 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 				delBubble(b);
 				break;
 			}
+			  
+		case BUBBLE_SCHED_SET_COLOR: {
+		  bubble_t *b = getBubble (ev.ev64.param[0]);
+		  unsigned char color_index = (unsigned int)ev.ev64.param[1] % BL_NB_COLORS;
+		  verbprintf("bubble %p(%p) colored to %c-%c-%c\n", 
+			     (void *)(intptr_t)ev.ev64.param[0], b, 
+			     bl_colors[color_index].r, 
+			     bl_colors[color_index].g, 
+			     bl_colors[color_index].b);
+		  b->color.r = bl_colors[color_index].r;
+		  b->color.g = bl_colors[color_index].g;
+		  b->color.b = bl_colors[color_index].b;
+		  break;
+		}
 #endif
 			case FUT_RQS_NEWLEVEL: {
 				unsigned num = ev.ev64.param[0];

@@ -49,6 +49,25 @@ BubbleOps *curBubbleOps;
  * End of configuration
  */
 
+bl_color_t bl_colors[BL_NB_COLORS] = {
+  /* Rouge */
+  {.r = 255, .g = 0, .b = 0},
+  /* Bleu */
+  {.r = 0, .g = 0, .b = 255},
+  /* Jaune */
+  {.r = 255, .g = 255, .b = 0},
+  /* Vert sombre */
+  {.r = 0, .g = 128, .b = 0},
+  /* Orange */
+  {.r = 255, .g = 128, .b = 0},
+  /* Cyan */
+  {.r = 0, .g = 255, .b = 255},
+  /* Magenta */
+  {.r = 255, .g = 0, .b = 255},
+  /* Rouge sombre */
+  {.r = 128, .g = 0, .b = 0}
+};
+
 extern void bad_type_in_gasp(void);
 #define highlight(x) { \
 	entity_t *_x = (entity_t*) (x); \
@@ -208,6 +227,7 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->morph = NULL;
 	b->morphRecurse = 0;
 	b->insertion = NULL;
+	b->color.r = b->color.g = b->color.b = 0;
 	if (initrq)
 		addToRunqueue(initrq, &b->entity);
 	return b;
@@ -294,6 +314,7 @@ static void setBubble(BubbleShape shape, bubble_t *b) {
 	float width = b->width;
 	float height = b->height;
 	int prio = b->prio;
+
 	if (b->gasp)
 		BubbleShape_setLine(shape,b->thick,255,0,255,255);
 	BubbleShape_movePen(shape,CURVE,0);
@@ -312,12 +333,12 @@ static void setBubble(BubbleShape shape, bubble_t *b) {
 }
 
 static void setPlainBubble(BubbleShape shape, bubble_t *b) {
-	BubbleShape_setLine(shape,b->thick,0,0,0,255);
+	BubbleShape_setLine (shape, b->thick, b->color.r, b->color.g, b->color.b, 255);
 	setBubble(shape,b);
 }
 
 static void setExplodedBubble(BubbleShape shape, bubble_t *b) {
-	BubbleShape_setLine(shape,b->thick,0,0,0,128);
+	BubbleShape_setLine (shape, b->thick, b->color.r, b->color.g, b->color.b, 128);
 	setBubble(shape,b);
 }
 
@@ -367,7 +388,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 	if (!showEmptyBubbles && tbx_fast_list_empty(&b->heldentities))
 		return;
 	if (!hide) {
-		BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+		BubbleShape_setLine (shape, b->entity.thick, b->color.r, b->color.g, b->color.b, 255);
 		BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 		BubbleShape_drawCircle(shape,CURVE/2);
 		if (DISPPRIO && b->entity.prio) {
@@ -378,7 +399,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 	height = bubble_measure(b, &nbthreads);
 	if (!hide && height <= BUBBLES_MAXHEIGHT && nbthreads <= BUBBLES_MAXTHREADS) {
 		tbx_fast_list_for_each_entry(e,&b->heldentities,entity_list) {
-			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_setLine (shape, b->entity.thick, b->color.r, b->color.g, b->color.b, 255);
 			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 			BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
 			BubbleShape_movePen(shape,-CURVE/2,0);
@@ -386,7 +407,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 		}
 		if (b->insertion) {
 			/* fake entity */
-			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_setLine (shape, b->entity.thick, b->color.r, b->color.g, b->color.b, 255);
 			BubbleShape_movePenTo(shape,b->entity.x+CURVE/2,b->entity.y);
 			BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
 			BubbleShape_movePen(shape,-CURVE/2,0);
@@ -423,7 +444,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 			if (e != b->insertion && e->holder == &b->entity)
 				setEntityRecur(shape,e,1,origx,origy);
 			else {
-				BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+				BubbleShape_setLine (shape, b->entity.thick, b->color.r, b->color.g, b->color.b, 255);
 				BubbleShape_movePenTo(shape,origx,origy);
 				BubbleShape_drawLineTo(shape,e->x+CURVE/2,e->y);
 				BubbleShape_movePen(shape,-CURVE/2,0);
@@ -432,7 +453,7 @@ static void setBubbleRecur(BubbleShape shape, bubble_t *b, int hide, int origx, 
 		}
 		if (b->insertion) {
 			/* fake entity */
-			BubbleShape_setLine(shape,b->entity.thick,0,0,0,255);
+			BubbleShape_setLine (shape, b->entity.thick, b->color.r, b->color.g, b->color.b, 255);
 			BubbleShape_movePenTo(shape,origx,origy);
 			BubbleShape_drawLineTo(shape,b->insertion->x+CURVE/2,b->insertion->y);
 			BubbleShape_movePen(shape,-CURVE/2,0);

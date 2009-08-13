@@ -46,8 +46,18 @@ extern float OPTIME; /* Operation time */
 #define BUBBLES
 #endif
 
+/*******************************************************************************
+ * Color
+ */
+typedef struct bl_color {
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+} bl_color_t;
 
+#define BL_NB_COLORS 8
 
+extern bl_color_t bl_colors[BL_NB_COLORS];
 
 /*******************************************************************************
  * Entity
@@ -115,6 +125,7 @@ typedef struct bubble_s {
 	BubbleMorph morph;			/* current bubble morph */
 	int morphRecurse;		/* an animation can involve a bubble several times, count that */
 	entity_t *insertion;		/* entity being inserted */
+        bl_color_t color;               /* current bubble color */
 } bubble_t;
 bubble_t *newBubble (int prio, rq_t *initrq);
 void delBubble(bubble_t *b);

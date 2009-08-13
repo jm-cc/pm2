@@ -92,6 +92,11 @@ int ma_bsched_steal (marcel_entity_t *entity_to_steal,
    stored in _e_ */
 void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne);
 
+#ifdef PROFILE
+/* Set the color of the bubble passed in argument for FxT animation tracing. */
+void ma_bubble_set_color (marcel_bubble_t *bubble, unsigned int color_index);
+#endif
+
 #section marcel_macros
 
 /* Iterates over every entity directly scheduled in bubble b */

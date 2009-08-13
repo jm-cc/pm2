@@ -211,7 +211,7 @@ ma_memory_burst_light_bubbles (marcel_entity_t **e, int ne, int arity) {
   int i, new_ne = ne;
   qsort (e, ne, sizeof (e[0]), ma_memory_mem_load_compar);
 
-  for (i = 0; i < new_ne && new_ne < arity; i++) {
+  for (i = 0; i < ne && new_ne < arity; i++) {
     if (e[i]->type == MA_BUBBLE_ENTITY)
       new_ne += ma_burst_bubble (ma_bubble_entity (e[i])) - 1;
   }

@@ -415,13 +415,12 @@ ma_memory_sched_submit (struct marcel_bubble_memory_sched *self,
   if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) > from->level)
     ma_memory_schedule_from (self, from);
 
-  ma_bubble_unlock_all (bubble, from);
-
   /* Let the cache scheduler handle the rest of the topology (starting at
-     FROM).  XXX: There's a small window during which the bubble hierarchy
-     in unlocked.  */
-  self->cache_scheduler->submit (self->cache_scheduler,
-				 ma_entity_bubble (bubble));
+     FROM). */
+  self->cache_scheduler->rawsubmit (self->cache_scheduler,
+				    ma_entity_bubble (bubble));
+
+  ma_bubble_unlock_all (bubble, from);
 
   return 0;
 }

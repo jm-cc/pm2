@@ -37,6 +37,7 @@ typedef int (*ma_bubble_sched_init)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_start)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_exit)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_submit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
+typedef int (*ma_bubble_sched_rawsubmit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
 typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
 typedef int (*ma_bubble_sched_tick)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
@@ -60,6 +61,9 @@ struct ma_bubble_sched_struct {
 
 	/** \brief Submission of a set of entities to be scheduled */
 	ma_bubble_sched_submit submit;
+
+	/** \brief Submission of a set of entities to be scheduled, without locking any holder */
+	ma_bubble_sched_submit rawsubmit;
 
 	/** \brief Called to force a new distribution from a specific bubble. */
 	ma_bubble_sched_shake shake;

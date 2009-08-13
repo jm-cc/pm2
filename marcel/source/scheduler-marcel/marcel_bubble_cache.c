@@ -440,19 +440,14 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 
 static void
 marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
-  bubble_sched_debug ("marcel_root_bubble: %p \n", &marcel_root_bubble);
+  bubble_sched_debug ("Cache: Submitting bubble %p from topo_level %s.\n", b, l->rq.as_holder.name);
 
-  /* Update the marcel statistics on any entity contained in b. */
-  ma_bubble_synthesize_stats (b);
-
-  /* Make sure bubbles and runqueues can't be modified behind our
-     back.  */
-  ma_bubble_lock_all (b, l);
   ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);
   /* Remember the distribution we've just applied. */
   ma_bubble_snapshot (l);
-  ma_bubble_unlock_all (b, l);
+
+  bubble_sched_debug ("Cache: Bubble %p submitted from topo_level %s.\n", b, l->rq.as_holder.name);
 }
 
 static int
@@ -473,15 +468,33 @@ cache_sched_exit (marcel_bubble_sched_t *self) {
 }
 
 static int
-cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
+cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
-  bubble_sched_debug ("Cache: Submitting entity %p from topo_level %s.\n", e, from->rq.as_holder.name);
-  marcel_bubble_cache (ma_bubble_entity (e), from);
-  bubble_sched_debug ("Cache: Entity %p submitted from topo_level %s.\n", e, from->rq.as_holder.name);
+  marcel_bubble_t *b = ma_bubble_entity (e);
+
+  /* Update the marcel statistics on any entity contained in b. */
+  ma_bubble_synthesize_stats (b);
+  marcel_bubble_cache (b, from);
 
   return 0;
 }
+
+static int
+cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
+  MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+  struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
+  marcel_bubble_t *b = ma_bubble_entity (e);
+
+  /* Update the marcel statistics on any entity contained in b. */
+  ma_bubble_synthesize_stats (b);
+  ma_bubble_lock_all (b, from);
+  marcel_bubble_cache (b, from);
+  ma_bubble_unlock_all (b, from);
+
+  return 0;
+}
+
 
 
 /* Work stealing.  */
@@ -690,6 +703,7 @@ marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
   scheduler->scheduler.init = cache_sched_init;
   scheduler->scheduler.exit = cache_sched_exit;
   scheduler->scheduler.submit = cache_sched_submit;
+  scheduler->scheduler.rawsubmit = cache_sched_rawsubmit;
   scheduler->scheduler.vp_is_idle = cache_steal;
 
   scheduler->work_stealing = work_stealing;

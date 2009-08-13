@@ -473,8 +473,6 @@ cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
   marcel_bubble_t *b = ma_bubble_entity (e);
 
-  /* Update the marcel statistics on any entity contained in b. */
-  ma_bubble_synthesize_stats (b);
   marcel_bubble_cache (b, from);
 
   return 0;

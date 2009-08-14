@@ -414,11 +414,11 @@ ma_memory_sched_submit (struct marcel_bubble_memory_sched *self,
   /* Only call the Memory scheduler on a node-based topology. */
   if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) > from->level)
     ma_memory_schedule_from (self, from);
-
-  /* Let the cache scheduler handle the rest of the topology (starting at
-     FROM). */
-  self->cache_scheduler->rawsubmit (self->cache_scheduler,
-				    ma_entity_bubble (bubble));
+  else
+    /* Let the cache scheduler handle the rest of the topology (starting at
+       FROM). */
+    self->cache_scheduler->rawsubmit (self->cache_scheduler,
+				      ma_entity_bubble (bubble));
 
   ma_bubble_unlock_all (bubble, from);
 

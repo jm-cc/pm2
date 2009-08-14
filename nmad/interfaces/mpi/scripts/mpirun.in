@@ -130,7 +130,14 @@ PATH="@abs_top_builddir@/bin:$PATH"
 PM2_ROOT="@abs_top_srcdir@"
 export PATH PM2_ROOT
 
-PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
+if [ "$1" = "-flavor" ]
+then
+    shift
+    PM2_FLAVOR=$1
+    shift
+else
+    PM2_FLAVOR="${PM2_FLAVOR:-libpthread}"
+fi
 export PM2_FLAVOR
 
 dir=$(dirname $0)

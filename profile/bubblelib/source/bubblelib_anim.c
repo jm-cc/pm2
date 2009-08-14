@@ -49,25 +49,6 @@ BubbleOps *curBubbleOps;
  * End of configuration
  */
 
-bl_color_t bl_colors[BL_NB_COLORS] = {
-  /* Rouge */
-  {.r = 255, .g = 0, .b = 0},
-  /* Bleu */
-  {.r = 0, .g = 0, .b = 255},
-  /* Jaune */
-  {.r = 255, .g = 255, .b = 0},
-  /* Vert sombre */
-  {.r = 0, .g = 128, .b = 0},
-  /* Orange */
-  {.r = 255, .g = 128, .b = 0},
-  /* Cyan */
-  {.r = 0, .g = 255, .b = 255},
-  /* Magenta */
-  {.r = 255, .g = 0, .b = 255},
-  /* Rouge sombre */
-  {.r = 128, .g = 0, .b = 0}
-};
-
 extern void bad_type_in_gasp(void);
 #define highlight(x) { \
 	entity_t *_x = (entity_t*) (x); \

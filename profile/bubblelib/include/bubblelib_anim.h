@@ -55,10 +55,6 @@ typedef struct bl_color {
   unsigned char b;
 } bl_color_t;
 
-#define BL_NB_COLORS 8
-
-extern bl_color_t bl_colors[BL_NB_COLORS];
-
 /*******************************************************************************
  * Entity
  */

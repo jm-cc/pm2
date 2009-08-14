@@ -94,7 +94,7 @@ void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne)
 
 #ifdef PROFILE
 /* Set the color of the bubble passed in argument for FxT animation tracing. */
-void ma_bubble_set_color (marcel_bubble_t *bubble, unsigned int color_index);
+void ma_bubble_set_color (marcel_bubble_t *bubble, unsigned char r, unsigned char g, unsigned char b);
 #endif
 
 #section marcel_macros

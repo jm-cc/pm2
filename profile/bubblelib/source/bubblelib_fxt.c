@@ -289,15 +289,14 @@ int BubbleFromFxT(BubbleMovie movie, const char *traceFile) {
 			  
 		case BUBBLE_SCHED_SET_COLOR: {
 		  bubble_t *b = getBubble (ev.ev64.param[0]);
-		  unsigned char color_index = (unsigned int)ev.ev64.param[1] % BL_NB_COLORS;
+		  unsigned char red = (unsigned char)ev.ev64.param[1];
+		  unsigned char green = (unsigned char)ev.ev64.param[2];
+		  unsigned char blue = (unsigned char)ev.ev64.param[3];
 		  verbprintf("bubble %p(%p) colored to %c-%c-%c\n", 
-			     (void *)(intptr_t)ev.ev64.param[0], b, 
-			     bl_colors[color_index].r, 
-			     bl_colors[color_index].g, 
-			     bl_colors[color_index].b);
-		  b->color.r = bl_colors[color_index].r;
-		  b->color.g = bl_colors[color_index].g;
-		  b->color.b = bl_colors[color_index].b;
+			     (void *)(intptr_t)ev.ev64.param[0], b, red, green, blue); 
+		  b->color.r = red;
+		  b->color.g = green;
+		  b->color.b = blue;
 		  break;
 		}
 #endif

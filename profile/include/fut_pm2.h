@@ -76,6 +76,12 @@
 #define _GEN_PREPROC1(name,str,line,arg1) __GEN_PREPROC1(name,str,line,arg1)
 #define GEN_PREPROC2(name,str,arg1,arg2) _GEN_PREPROC2(name,str,__LINE__,arg1,arg2)
 #define _GEN_PREPROC2(name,str,line,arg1,arg2) __GEN_PREPROC2(name,str,line,arg1,arg2)
+#define GEN_PREPROC3(name,str,arg1,arg2,arg3) _GEN_PREPROC3(name,str,__LINE__,arg1,arg2,arg3)
+#define _GEN_PREPROC3(name,str,line,arg1,arg2,arg3) __GEN_PREPROC3(name,str,line,arg1,arg2,arg3)
+#define GEN_PREPROC4(name,str,arg1,arg2,arg3,arg4) _GEN_PREPROC4(name,str,__LINE__,arg1,arg2,arg3,arg4)
+#define _GEN_PREPROC4(name,str,line,arg1,arg2,arg3,arg4) __GEN_PREPROC4(name,str,line,arg1,arg2,arg3,arg4)
+#define GEN_PREPROC5(name,str,arg1,arg2,arg3,arg4,arg5) _GEN_PREPROC5(name,str,__LINE__,arg1,arg2,arg3,arg4,arg5)
+#define _GEN_PREPROC5(name,str,line,arg1,arg2,arg3,arg4,arg5) __GEN_PREPROC5(name,str,line,arg1,arg2,arg3,arg4,arg5)
 #define GEN_PREPROCSTR(name,str,s,...) _GEN_PREPROCSTR(name,str,__LINE__,s,##__VA_ARGS__)
 #define _GEN_PREPROCSTR(name,str,line,s,...) __GEN_PREPROCSTR(name,str,line,s,##__VA_ARGS__)
 #define GEN_PREPROC_ALWAYS(name,str) _GEN_PREPROC_ALWAYS(name,str,__LINE__)
@@ -84,6 +90,12 @@
 #define _GEN_PREPROC1_ALWAYS(name,str,line,arg1) __GEN_PREPROC1_ALWAYS(name,str,line,arg1)
 #define GEN_PREPROC2_ALWAYS(name,str,arg1,arg2) _GEN_PREPROC2_ALWAYS(name,str,__LINE__,arg1,arg2)
 #define _GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2) __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2)
+#define GEN_PREPROC3_ALWAYS(name,str,arg1,arg2,arg3) _GEN_PREPROC3_ALWAYS(name,str,__LINE__,arg1,arg2,arg3)
+#define _GEN_PREPROC3_ALWAYS(name,str,line,arg1,arg2,arg3) __GEN_PREPROC3_ALWAYS(name,str,line,arg1,arg2,arg3)
+#define GEN_PREPROC4_ALWAYS(name,str,arg1,arg2,arg3,arg4) _GEN_PREPROC4_ALWAYS(name,str,__LINE__,arg1,arg2,arg3,arg4)
+#define _GEN_PREPROC4_ALWAYS(name,str,line,arg1,arg2,arg3,arg4) __GEN_PREPROC4_ALWAYS(name,str,line,arg1,arg2,arg3,arg4)
+#define GEN_PREPROC5_ALWAYS(name,str,arg1,arg2,arg3,arg4,arg5) _GEN_PREPROC5_ALWAYS(name,str,__LINE__,arg1,arg2,arg3,arg4,arg5)
+#define _GEN_PREPROC5_ALWAYS(name,str,line,arg1,arg2,arg3,arg4,arg5) __GEN_PREPROC5_ALWAYS(name,str,line,arg1,arg2,arg3,arg4,arg5)
 #define GEN_PREPROCSTR_ALWAYS(name,str,s,...) _GEN_PREPROCSTR_ALWAYS(name,str,__LINE__,s,##__VA_ARGS__)
 #define _GEN_PREPROCSTR_ALWAYS(name,str,line,s,...) __GEN_PREPROCSTR_ALWAYS(name,str,line,s,##__VA_ARGS__)
 
@@ -98,10 +110,16 @@
   } while(0)
 #define __GEN_PREPROC1(name,str,line,arg1) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC2(name,str,line,arg1,arg2) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC3(name,str,line,arg1,arg2,arg3) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC4(name,str,line,arg1,arg2,arg3,arg4) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC5(name,str,line,arg1,arg2,arg3,arg4,arg5) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROCSTR(name,str,line,s,...) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC_ALWAYS(name,str,line) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC1_ALWAYS(name,str,line,arg1) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROC2_ALWAYS(name,str,line,arg1,arg2) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC3_ALWAYS(name,str,line,arg1,arg2,arg3) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC4_ALWAYS(name,str,line,arg1,arg2,arg3,arg4) __GEN_PREPROC(name,str,line)
+#define __GEN_PREPROC5_ALWAYS(name,str,line,arg1,arg2,arg3,arg4,arg5) __GEN_PREPROC(name,str,line)
 #define __GEN_PREPROCSTR_ALWAYS(name,str,line,s,...) __GEN_PREPROC(name,str,line)
 
 #else // ifndef PREPROC
@@ -134,6 +152,30 @@
     extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
   TBX_VISIBILITY_POP					\
     FUT_PROBE2(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2); \
+  } while(0)
+
+#define __GEN_PREPROC3(name,str,line,arg1,arg2,arg3)	  \
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_PROBE3(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2,arg3);	\
+  } while(0)
+
+#define __GEN_PREPROC4(name,str,line,arg1,arg2,arg3,arg4)	  \
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_PROBE4(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2,arg3,arg4); \
+  } while(0)
+
+#define __GEN_PREPROC5(name,str,line,arg1,arg2,arg3,arg4,arg5)	\
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_PROBE5(PROFILE_KEYMASK, __code_##name##_##line, arg1,arg2,arg3,arg4,arg5); \
   } while(0)
 
 #define __GEN_PREPROCSTR(name,str,line,s,...)                     \
@@ -171,6 +213,30 @@
     FUT_DO_PROBE2(__code_##name##_##line, arg1,arg2);               \
   } while(0)
 
+#define __GEN_PREPROC3_ALWAYS(name,str,line,arg1,arg2,arg3)	  \
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_DO_PROBE3(__code_##name##_##line, arg1,arg2,arg3);	\
+  } while(0)
+
+#define __GEN_PREPROC4_ALWAYS(name,str,line,arg1,arg2,arg3,arg4)	\
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_DO_PROBE4(__code_##name##_##line, arg1,arg2,arg3,arg4);	\
+  } while(0)
+
+#define __GEN_PREPROC5_ALWAYS(name,str,line,arg1,arg2,arg3,arg4,arg5)	\
+  do {                                                    \
+  TBX_VISIBILITY_PUSH_DEFAULT				\
+    extern unsigned __code_##name##_##line asm(FUT_SYM_PREFIX "fut_" str "_code");\
+  TBX_VISIBILITY_POP					\
+    FUT_DO_PROBE5(__code_##name##_##line, arg1,arg2,arg3,arg4,arg5);	\
+  } while(0)
+
 #define __GEN_PREPROCSTR_ALWAYS(name,str,line,s,...)      \
   do {                                                    \
   TBX_VISIBILITY_PUSH_DEFAULT				\
@@ -206,10 +272,16 @@
 #define PROF_EVENT(name)              GEN_PREPROC(name, #name "_single")
 #define PROF_EVENT1(name, arg1)       GEN_PREPROC1(name, #name "_single", arg1)
 #define PROF_EVENT2(name, arg1, arg2) GEN_PREPROC2(name, #name "_single", arg1, arg2)
+#define PROF_EVENT3(name, arg1, arg2, arg3) GEN_PREPROC3(name, #name "_single", arg1, arg2, arg3)
+#define PROF_EVENT4(name, arg1, arg2, arg3, arg4) GEN_PREPROC4(name, #name "_single", arg1, arg2, arg3, arg4)
+#define PROF_EVENT5(name, arg1, arg2, arg3, arg4, arg5) GEN_PREPROC5(name, #name "_single", arg1, arg2, arg3, arg4, arg5)
 #define PROF_EVENTSTR(name, s, ...)   GEN_PREPROCSTR(name, #name "_single", s, ##__VA_ARGS__)
 #define PROF_EVENT_ALWAYS(name)              GEN_PREPROC_ALWAYS(name, #name "_single")
 #define PROF_EVENT1_ALWAYS(name, arg1)       GEN_PREPROC1_ALWAYS(name, #name "_single", arg1)
 #define PROF_EVENT2_ALWAYS(name, arg1, arg2) GEN_PREPROC2_ALWAYS(name, #name "_single", arg1, arg2)
+#define PROF_EVENT3_ALWAYS(name, arg1, arg2, arg3) GEN_PREPROC3_ALWAYS(name, #name "_single", arg1, arg2, arg3)
+#define PROF_EVENT4_ALWAYS(name, arg1, arg2, arg3, arg4) GEN_PREPROC4_ALWAYS(name, #name "_single", arg1, arg2, arg3, arg4)
+#define PROF_EVENT5_ALWAYS(name, arg1, arg2, arg3, arg4, arg5) GEN_PREPROC5_ALWAYS(name, #name "_single", arg1, arg2, arg3, arg4, arg5)
 #define PROF_EVENTSTR_ALWAYS(name, s, ...)   GEN_PREPROCSTR_ALWAYS(name, #name "_single", s, ##__VA_ARGS__)
 
 #else // ifndef DO_PROFILE
@@ -225,10 +297,16 @@
 #define PROF_EVENT(name)                      (void)0
 #define PROF_EVENT1(name, arg1)               (void)0
 #define PROF_EVENT2(name, arg1, arg2)         (void)0
+#define PROF_EVENT3(name, arg1, arg2, arg3)                     (void)0
+#define PROF_EVENT4(name, arg1, arg2, arg3, arg4)               (void)0
+#define PROF_EVENT5(name, arg1, arg2, arg3, arg4, arg5)         (void)0
 #define PROF_EVENTSTR(name, s, ...)           (void)0
 #define PROF_EVENT_ALWAYS(name)               (void)0
 #define PROF_EVENT1_ALWAYS(name, arg1)        (void)0
 #define PROF_EVENT2_ALWAYS(name, arg1, arg2)  (void)0
+#define PROF_EVENT3_ALWAYS(name, arg1, arg2, arg3)              (void)0
+#define PROF_EVENT4_ALWAYS(name, arg1, arg2, arg3, arg4)        (void)0
+#define PROF_EVENT5_ALWAYS(name, arg1, arg2, arg3, arg4, arg5)  (void)0
 #define PROF_EVENTSTR_ALWAYS(name, s, ...)    (void)0
 
 #endif // DO_PROFILE

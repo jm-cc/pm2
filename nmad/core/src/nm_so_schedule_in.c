@@ -221,37 +221,30 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
   return NM_ESUCCESS;
 }
 
-int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq)
+int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
-  int err = -NM_ENOTIMPL;
-  struct nm_unpack_s*p_unpack = NULL;
-  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
+  struct nm_so_tag_s*p_so_tag = (p_unpack->p_gate == NM_ANY_GATE) ? 
+    NULL : nm_so_tag_get(&p_unpack->p_gate->tags, p_unpack->tag);
+  if(p_unpack->status & (NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNEXPECTED))
     {
-      if((p_unpack->p_gate == p_gate) && (p_unpack->tag == tag) && (p_unpack->seq == seq))
-	{
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-	  if(p_unpack->status & (NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNEXPECTED))
-	    {
-	      /* receive is already in progress- too late to cancel */
-	      err = -NM_EINPROGRESS;
-	      return err;
-	    }
-	  else if(seq == p_so_tag->recv_seq_number - 1)
-	    {
-	      tbx_fast_list_del(&p_unpack->link);
-	      const struct nm_so_event_s event =
-		{
-		  .status =  NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
-		  .p_unpack = p_unpack
-		};
-	      nm_so_status_event(p_core, &event);
-	      p_so_tag->recv_seq_number--;
-	      err = NM_ESUCCESS;
-	      return err;
-	    }
-	}
+      /* receive is already in progress- too late to cancel */
+      return -NM_EINPROGRESS;
     }
-  return err;
+  else if((p_so_tag == NULL) || (p_unpack->seq == p_so_tag->recv_seq_number - 1))
+    {
+      tbx_fast_list_del(&p_unpack->link);
+      const struct nm_so_event_s event =
+	{
+	  .status =  NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
+	  .p_unpack = p_unpack
+	};
+      nm_so_status_event(p_core, &event);
+      if(p_so_tag)
+	p_so_tag->recv_seq_number--;
+      return NM_ESUCCESS;
+    }
+  else
+    return -NM_ENOTIMPL;
 }
 
 static inline void store_data_or_rdv(struct nm_core*p_core, struct nm_gate*p_gate,

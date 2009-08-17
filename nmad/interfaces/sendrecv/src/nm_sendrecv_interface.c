@@ -334,7 +334,7 @@ int nm_sr_swait(struct nm_core *p_core, nm_sr_request_t *p_request)
 int nm_sr_scancel(struct nm_core *p_core, nm_sr_request_t *p_request) 
 {
 
-  return NM_ENOTIMPL;
+  return -NM_ENOTIMPL;
 }
 
 /* Receive operations */
@@ -557,7 +557,7 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
     }
   else
     {
-      err = nm_so_cancel_unpack(p_core, p_request->unpack.p_gate, p_request->unpack.tag, p_request->unpack.seq);
+      err = nm_so_cancel_unpack(p_core, &p_request->unpack);
     }
   nmad_unlock();
   return err;

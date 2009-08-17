@@ -129,7 +129,7 @@ struct nm_so_sched
 int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
 		   nm_so_flag_t flag, void *data_description, uint32_t len);
 
-int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq);
+int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
 struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*unpack);
 

@@ -13,6 +13,6 @@
 
 export FLAVOR_DEFAULT:=nmad
 
-MOD_SRC += $(PM2_ROOT)/nmad/examples/getting_started
+MOD_SRC += ../../../nmad/examples/getting_started
 
-include $(PM2_ROOT)/make/apps.mak
+include ../../../make/apps.mak

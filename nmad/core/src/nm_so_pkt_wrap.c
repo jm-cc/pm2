@@ -175,8 +175,8 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       /* first entry: global header */
       p_pw->v_nb = 1;
       p_pw->v[0].iov_base = p_pw->buf;
-      p_pw->v[0].iov_len = NM_SO_GLOBAL_HEADER_SIZE;
-      p_pw->length = NM_SO_GLOBAL_HEADER_SIZE;
+      p_pw->v[0].iov_len = 0;
+      p_pw->length = 0;
       
       /* pw flags */
       p_pw->flags = NM_PW_GLOBAL_HEADER;
@@ -415,50 +415,49 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 
   if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
     {
-      /* update the length field of the global header */
-      struct nm_so_global_header*header = p_pw->v->iov_base;
-      header->len = p_pw->length;
-      if(p_pw->pending_skips > 0)
+      /* Fix the 'skip' fields */
+      struct iovec *vec = p_pw->v;
+      void *ptr = vec->iov_base;
+      unsigned long remaining_bytes = vec->iov_len;
+      unsigned long to_skip = 0;
+      struct iovec *last_treated_vec = vec;
+      do 
 	{
-	  /* Fix the 'skip' fields */
-	  struct iovec *vec = p_pw->v;
-	  void *ptr = vec->iov_base + NM_SO_GLOBAL_HEADER_SIZE;
-	  unsigned long remaining_bytes = vec->iov_len - NM_SO_GLOBAL_HEADER_SIZE;
-	  unsigned long to_skip = 0;
-	  struct iovec *last_treated_vec = vec;
-	  do 
+	  const nm_proto_t proto_id = *(nm_proto_t*)ptr;
+	  uint32_t proto_hsize = 0;
+	  if(proto_id == NM_PROTO_DATA)
 	    {
-	      const nm_proto_t proto_id = *(nm_proto_t*)ptr;
-	      if(proto_id == NM_PROTO_DATA)
+	      /* Data header */
+	      struct nm_so_data_header *h = ptr;
+	      if(h->skip == 0)
 		{
-		  /* Data header */
-		  struct nm_so_data_header *h = ptr;
-		  if(h->skip == 0)
-		    {
-		      /* Data immediately follows */
-		      ptr += NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-		      remaining_bytes -= NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
-		    }
-		  else
-		    {
-		      /* Data occupy a separate iovec entry */
-		      ptr += NM_SO_DATA_HEADER_SIZE;
-		      remaining_bytes -= NM_SO_DATA_HEADER_SIZE;
-		      h->skip = remaining_bytes + to_skip;
-		      last_treated_vec++;
-		      to_skip += last_treated_vec->iov_len;
-		      p_pw->pending_skips--;
-		    }
+		  /* Data immediately follows */
+		  proto_hsize = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(h->len);
 		}
 	      else
 		{
-		  /* Ctrl header */
-		  ptr += NM_SO_CTRL_HEADER_SIZE;
-		  remaining_bytes -= NM_SO_CTRL_HEADER_SIZE;
+		  /* Data occupy a separate iovec entry */
+		  proto_hsize = NM_SO_DATA_HEADER_SIZE;
+		  h->skip = remaining_bytes - NM_SO_DATA_HEADER_SIZE + to_skip;
+		  last_treated_vec++;
+		  to_skip += last_treated_vec->iov_len;
+		  p_pw->pending_skips--;
 		}
 	    }
-	  while (p_pw->pending_skips);
+	  else
+	    {
+	      /* Ctrl header */
+	      proto_hsize = NM_SO_CTRL_HEADER_SIZE;
+	    }
+	  remaining_bytes -= proto_hsize;
+	  if(remaining_bytes == 0)
+	    {
+	      nm_proto_t*p_proto = ptr;
+	      *p_proto |= NM_PROTO_LAST;
+	    }
+	  ptr += proto_hsize;
 	}
+      while(remaining_bytes > 0);
       p_pw->flags |= NM_PW_FINALIZED;
     }
   return err;

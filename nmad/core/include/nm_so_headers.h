@@ -20,24 +20,28 @@
 
 typedef uint8_t nm_proto_t;
 
-#define NM_PROTO_DATA   0x01
-#define NM_PROTO_RDV    0x02
-#define NM_PROTO_ACK    0x04
+#define NM_PROTO_DATA        0x01
+#define NM_PROTO_RDV         0x02
+#define NM_PROTO_ACK         0x03
+#define NM_PROTO_SHORT_DATA  0x04
+#define NM_PROTO_UNUSED      0x08
+#define NM_PROTO_CTRL_UNUSED 0x09
 
-#define NM_PROTO_DATA_UNUSED 0x10
-#define NM_PROTO_CTRL_UNUSED 0x20
+#define NM_PROTO_ID_MASK     0x0F
+#define NM_PROTO_FLAG_MASK   0xF0
+
+#define NM_PROTO_LAST        0x80
 
 #define NM_PROTO_FLAG_LASTCHUNK 0x01
 #define NM_PROTO_FLAG_ALIGNED   0x02
 
-/** Global header for every packet sent on the network */
-struct nm_so_global_header
-{
-  uint32_t len;
-};
-
 // Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
+
+struct nm_so_unused_header {
+  nm_proto_t proto_id; /**< proto ID- should be NM_PROTO_UNUSED */
+  uint32_t len;        /**< length to skip, including this header */
+};
 
 struct nm_so_data_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
@@ -47,6 +51,14 @@ struct nm_so_data_header {
   uint32_t len;
   uint32_t chunk_offset;
   uint16_t skip;
+} __attribute__((packed));
+
+struct nm_so_short_data_header {
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_SHORT_DATA */
+  nm_seq_t seq;
+  nm_tag_t tag_id;
+  uint8_t  flags;
+  uint16_t len;
 } __attribute__((packed));
 
 struct nm_so_ctrl_rdv_header {
@@ -77,9 +89,6 @@ union nm_so_generic_ctrl_header {
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
 typedef struct nm_so_data_header nm_so_data_header_t;
-
-#define NM_SO_GLOBAL_HEADER_SIZE \
-  nm_so_aligned(sizeof(struct nm_so_global_header))
 
 #define NM_SO_DATA_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_data_header))

@@ -190,7 +190,7 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
     {
       /* data is already here (at least one chunk)- process all matching chunks */
       void*header = chunk->header;
-      const nm_proto_t proto_id = *(nm_proto_t *)header;
+      const nm_proto_t proto_id = (*(nm_proto_t *)header) & NM_PROTO_ID_MASK;
       switch(proto_id)
 	{
 	case NM_PROTO_DATA:
@@ -325,7 +325,11 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
 	    };
 	  nm_so_status_event(p_core, &event);
 	}
-      h->proto_id = NM_PROTO_DATA_UNUSED; /* mark as read */
+      const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(h->len) : h->len;
+      const uint32_t len = (h->skip == 0) ? size : 0;
+      struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
+      uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
+      uh->len = NM_SO_DATA_HEADER_SIZE + len;
     }
 }
 
@@ -402,15 +406,15 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 
   struct iovec *vec = p_pw->v;
   void *ptr = vec->iov_base;
-  const struct nm_so_global_header*gh = ptr;
-  unsigned long remaining_len = gh->len - NM_SO_GLOBAL_HEADER_SIZE;
-  ptr += NM_SO_GLOBAL_HEADER_SIZE;
+  int done = 0;
 
-  while(remaining_len)
+  while(!done)
     {
-      assert(remaining_len > 0);
       /* Decode header */
-      const nm_proto_t proto_id = *(nm_proto_t *)ptr;
+      const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;
+      const nm_proto_t proto_flag = (*(nm_proto_t *)ptr) & NM_PROTO_FLAG_MASK;
+      if(proto_flag & NM_PROTO_LAST)
+	done = 1;
       assert(proto_id != 0);
       switch(proto_id)
 	{
@@ -442,7 +446,6 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 		  }
 	      }
 	    const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
 	    if(dh->skip == 0)
 	      { /* data is just after the header */
 		ptr += size;
@@ -464,17 +467,11 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  }
 	  break;
 
-	case NM_PROTO_DATA_UNUSED:
+	case NM_PROTO_UNUSED:
 	  {
 	    /* Unused data header- skip */
-	    struct nm_so_data_header *dh = ptr;
-	    ptr += NM_SO_DATA_HEADER_SIZE;
-	    const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	    remaining_len -= NM_SO_DATA_HEADER_SIZE + size;
-	    if(dh->skip == 0)
-	      {
-		ptr += size;
-	      }
+	    struct nm_so_unused_header*uh = ptr;
+	    ptr += uh->len;
 	  }
 	  break;
 	  
@@ -482,7 +479,6 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 	    const nm_tag_t tag = ch->r.tag_id;
 	    const nm_seq_t seq = ch->r.seq;
 	    const uint32_t len = ch->r.len;
@@ -505,7 +501,6 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 #ifdef NMAD_QOS
 	    int r;
 	    if(strategy->driver->ack_callback != NULL)
@@ -528,7 +523,6 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	case NM_PROTO_CTRL_UNUSED:
 	  {
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    remaining_len -= NM_SO_CTRL_HEADER_SIZE;
 	  }
 	  break;
 	  

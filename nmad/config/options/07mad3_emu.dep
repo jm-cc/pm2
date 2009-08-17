@@ -1,1 +1,2 @@
 Provide: mad3_emu
+Depend: ntbx

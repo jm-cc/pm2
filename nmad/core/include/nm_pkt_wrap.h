@@ -124,9 +124,6 @@ struct nm_pkt_wrap
   /** number of references pointing to the header (when storing unexpected packets) */
   int header_ref_count;
 
-  /** number of pending 'skip' fields in data header to update before sending */
-  int pending_skips;
-
   /* used to store the pw in: out_list in strategy, pending_large_send in sender, pending_large_recv in receiver */
   struct tbx_fast_list_head   link;
 

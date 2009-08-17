@@ -105,7 +105,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 #endif
 
   p_pw->header_ref_count = 0;
-  p_pw->pending_skips = 0;
 
   p_pw->chunk_offset = 0;
   p_pw->is_completed = tbx_true;
@@ -180,7 +179,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
       
       /* pw flags */
       p_pw->flags = NM_PW_GLOBAL_HEADER;
-      p_pw->pending_skips = 0;
     }
   else
     {
@@ -359,7 +357,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	     temporary store the iovec index as the 'skip' value */
 	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
 	  nm_so_init_data(h, tag, seq, flags, p_pw->v_nb, len, offset);
-	  p_pw->pending_skips++;
 	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
 	}
     }
@@ -441,7 +438,6 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 		  h->skip = remaining_bytes - NM_SO_DATA_HEADER_SIZE + to_skip;
 		  last_treated_vec++;
 		  to_skip += last_treated_vec->iov_len;
-		  p_pw->pending_skips--;
 		}
 	    }
 	  else

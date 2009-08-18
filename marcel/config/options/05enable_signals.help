@@ -1,1 +1,1 @@
-Enable the signal functions.
+Enable the POSIX-compatible signal functions (marcel_sigaction, marcel_sigmask, marcel_kill, etc.)

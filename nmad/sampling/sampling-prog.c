@@ -29,9 +29,7 @@
 #include <madeleine.h>
 
 /* Maximum size of a small message for a faked strategy */
-#define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED -	  \
-		       NM_SO_GLOBAL_HEADER_SIZE - \
-		       NM_SO_DATA_HEADER_SIZE)
+#define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
 
 static const int param_min_size = 1;
 static const int param_max_size = (8*1024*1024);
@@ -168,11 +166,11 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   if(len <= NM_MAX_SMALL)
     {
       /* very rough header decoder... should be sufficient for our basic use here. */
-      const struct nm_so_global_header*gh = p_pw->v[0].iov_base;
-      nm_proto_t proto_id = *(nm_proto_t*)(gh + 1);
+      const nm_proto_t*p_proto = p_pw->v[0].iov_base;
+      const nm_proto_t proto_id = (*p_proto) & NM_PROTO_ID_MASK;
       if(proto_id == NM_PROTO_DATA)
 	{
-	  const struct nm_so_data_header*dh = (const struct nm_so_data_header*)(gh + 1);
+	  const struct nm_so_data_header*dh = (const struct nm_so_data_header*)p_proto;
 	  const size_t data_len = dh->len;
 	  memcpy(ptr, dh + 1, data_len);
 	}

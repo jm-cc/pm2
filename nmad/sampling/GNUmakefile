@@ -11,8 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=nmad
+export FLAVOR_DEFAULT := nmad-sampling-tcp
 
-MOD_SRC += ../../../nmad/sampling
+MOD_SRC += ../../nmad/sampling
 
-include ../../../make/apps.mak
+include ../../make/apps.mak

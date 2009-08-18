@@ -37,7 +37,7 @@ create_test_flavor() {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 	--ext=""						\
 	--modules="\"marcel tbx init\""                         \
-        --init="topology" --marcel="numa"		        \
+        --init="topology" --marcel="numa" --marcel="bubbles"    \
 	--marcel="spinlock" --marcel="marcel_main"		\
 	--marcel="standard_main" --marcel="pmarcel"		\
 	--marcel="enable_stats"					\

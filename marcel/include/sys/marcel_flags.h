@@ -121,6 +121,9 @@
 #  undef MA__SELF_VAR_TLS
 #endif
 
+#ifdef MA__BUBBLES
+#  undef MA__BUBBLES
+#endif
 
 
 /*
@@ -141,6 +144,9 @@
 #if defined(MARCEL_NUMA)
 #  define MA__NUMA
    /* Always enable bubbles in NUMA */
+#endif
+
+#ifdef MARCEL_BUBBLES
 #  define MA__BUBBLES
 #endif
 

@@ -50,7 +50,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext=""						\
 		--modules="\"marcel tbx init memory\""                  \
-                --init="topology" --marcel="numa"		        \
+                --init="topology" --marcel="numa" --marcel="bubbles"    \
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
 		--marcel="enable_stats"	--memory="enable_mami"	        \
@@ -118,7 +118,7 @@ create_test_flavor() {
 	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""						\
 		--modules="\"marcel tbx init\""                         \
-                --init="topology" --marcel="numa"		        \
+                --init="topology" --marcel="numa" --marcel="bubbles"    \
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
 		--marcel="enable_stats"					\
@@ -234,7 +234,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
@@ -244,7 +244,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"standard_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"standard_main\" \
 		--marcel=\"enable_stats\" \
 		--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
 		--marcel=\"enable_keys\" --marcel=\"pmarcel\" \
@@ -267,7 +267,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
@@ -277,7 +277,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
@@ -287,7 +287,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
@@ -297,7 +297,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--marcel=\"enable_suspend\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
@@ -308,7 +308,7 @@ create_test_flavor() {
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
-		--marcel=\"numa\" --marcel=\"marcel_main\" \
+		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" --marcel=\"enable_userspace\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect

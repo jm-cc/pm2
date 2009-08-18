@@ -256,6 +256,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
   assert(p_pw->n_contribs == 1);
 
   struct nm_pack_s*p_pack = p_pw->contribs[0].p_pack;
+  p_pw->contribs[0].len = offset;
 
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
 
@@ -305,6 +306,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
     }
 
   assert(p_pw->length + p_pw2->length == total_length);
+  assert(p_pw->contribs[0].len + p_pw2->contribs[0].len == total_length);
   assert(p_pw->length == offset);
 
   p_pw2->chunk_offset = p_pw->chunk_offset + offset;

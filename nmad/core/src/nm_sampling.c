@@ -22,7 +22,6 @@
 #include <ctype.h>
 
 #include <nm_private.h>
-#include "nm_predictions.h"
 
 #define LAT_IDX 2
 

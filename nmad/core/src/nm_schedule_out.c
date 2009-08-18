@@ -21,6 +21,30 @@
 #include <nm_private.h>
 
 
+/** Process a complete successful outgoing request.
+ */
+static int nm_so_process_complete_send(struct nm_core *p_core,
+				       struct nm_pkt_wrap *p_pw)
+{
+  struct nm_gate *p_gate = p_pw->p_gate;
+
+  NM_TRACEF("send request complete: gate %d, drv %d, trk %d, tag %d, seq %d",
+	    p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id,
+	    p_pw->tag, p_pw->seq);
+  
+#ifdef PIOMAN
+  piom_req_success(&p_pw->inst);
+#endif
+  FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
+  
+  p_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
+  nm_pw_complete_contribs(p_core, p_pw);
+  nm_so_pw_free(p_pw);
+  nm_strat_try_and_commit(p_gate);
+  
+  return NM_ESUCCESS;
+}
+
 /** Poll an active outgoing request.
  */
 __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)

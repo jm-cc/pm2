@@ -72,7 +72,7 @@ typedef int8_t nm_trk_id_t;
 #include "nm_so_pkt_wrap.h"
 #include "nm_core_inline.h"
 
-#include <nm_predictions.h>
+#include "nm_sampling.h"
 
 int nm_sched_out(struct nm_core *p_core);
 
@@ -99,12 +99,6 @@ int nm_so_schedule_init			(struct nm_core *p_core);
 /** Shutdown the scheduler module.
  */
 int nm_so_schedule_exit			(struct nm_core *p_core);
-
-
-/** Process complete outgoing request */
-int nm_so_process_complete_send(struct nm_core	*p_core,
-				struct nm_pkt_wrap *p_pw);
-
 
 /** Process complete incoming request.
  */

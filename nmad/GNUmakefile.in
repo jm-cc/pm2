@@ -44,10 +44,6 @@ MOD_SRC += $(foreach INTERFACE, $(NMAD_INTERFACES), $(PM2_ROOT)/nmad/interfaces/
 #---------------------------------------------------------------------
 MOD_SRC += $(PM2_ROOT)/nmad/ccs
 
-# Sampling
-#---------------------------------------------------------------------
-MOD_SRC += $(PM2_ROOT)/nmad/drivers/sampling/src
-
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_ROOT)/make/libs-rules.mak

@@ -569,8 +569,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       const nm_tag_t tag = p_pw->tag;
       const nm_seq_t seq = p_pw->seq;
       const uint32_t len = p_pw->length;
-      struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-#warning TDOO (AD)- the matching unpack should be stored into the pw
+      struct nm_unpack_s*p_unpack = p_pw->p_unpack;
       if(p_unpack->status & NM_UNPACK_TYPE_COPY_DATATYPE)
 	{
 	  /* ** Large packet, packed datatype -> finalize */

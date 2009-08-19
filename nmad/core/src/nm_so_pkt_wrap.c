@@ -100,6 +100,8 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->contribs_size = NM_SO_PREALLOC_IOV_LEN;
   p_pw->n_contribs = 0;
 
+  p_pw->p_unpack = NULL;
+
 #ifdef PIO_OFFLOAD
   p_pw->data_to_offload = tbx_false;
 #endif
@@ -265,6 +267,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
   p_pw2->trk_id = p_pw->trk_id;
   p_pw2->p_gate = p_pw->p_gate;
   p_pw2->p_gdrv = p_pw->p_gdrv;
+  p_pw2->p_unpack = p_pw->p_unpack;
   p_pw2->tag = p_pack->tag;
   p_pw2->seq = p_pack->seq;
 

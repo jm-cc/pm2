@@ -135,6 +135,8 @@ struct nm_pkt_wrap
 
   tbx_bool_t is_completed;
 
+  /* ** fields used when sending */
+
   /** list of contributions in this pw (sending) */
   struct nm_pw_contrib_s*contribs;
   /** number of contribs actually stored in this pw */
@@ -143,6 +145,10 @@ struct nm_pkt_wrap
   int contribs_size;
   /** pre-allocated contribs */
   struct nm_pw_contrib_s prealloc_contribs[NM_SO_PREALLOC_IOV_LEN];
+
+  /* ** fields used when receiving */
+
+  struct nm_unpack_s*p_unpack;
 
   tbx_tick_t start_transfer_time;
   

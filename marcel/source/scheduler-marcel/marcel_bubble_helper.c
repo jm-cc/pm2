@@ -405,23 +405,19 @@ ma_bsched_steal (marcel_entity_t *entity_to_steal, struct marcel_topo_level *sta
 void
 ma_debug_show_entities(const char *func_name TBX_UNUSED, marcel_entity_t *e[], int ne) {
   int k;
-  bubble_sched_debug("in %s: There are %d entities: adresses :\n(", func_name, ne);
-  for (k = 0; k < ne; k++)
-    bubble_sched_debug("[%p, %d]", e[k], e[k]->type);
-  bubble_sched_debug("end)\n");
-  bubble_sched_debug("names :\n(");
+  bubble_sched_debug("[%s] %d %s:\n", func_name, ne, ne>1?"entities":"entity");
   for (k = 0; k < ne; k++) {
     if (e[k]->type == MA_BUBBLE_ENTITY) {
-      bubble_sched_debug("bubble, ");
+      bubble_sched_debug(".. [%p, %d] bubble [%s]\n", e[k], e[k]->type, ma_holder_check_locked(&(ma_bubble_entity(e[k]))->as_holder)?"locked":"unlocked");
     } else if (e[k]->type == MA_THREAD_ENTITY) {
-      bubble_sched_debug("%s, ", e[k]->name);
+      bubble_sched_debug(".. [%p, %d] thread %s\n", e[k], e[k]->type, e[k]->name);
     } else if (e[k]->type == MA_THREAD_SEED_ENTITY) {
-      bubble_sched_debug("thread_seed, ");
+      bubble_sched_debug(".. [%p, %d] thread_seed\n", e[k], e[k]->type);
     } else {
-      bubble_sched_debug("unknown!, ");
+      bubble_sched_debug(".. [%p, %d] unknown!\n", e[k], e[k]->type);
     }
   }
-  bubble_sched_debug("end)\n");
+  bubble_sched_debug("end\n");
 }
 
 #ifdef PROFILE

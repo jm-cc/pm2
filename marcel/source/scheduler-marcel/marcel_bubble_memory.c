@@ -336,6 +336,9 @@ ma_memory_schedule_from (marcel_bubble_memory_sched_t *scheduler,
 			 struct marcel_topo_level *from) {
   unsigned int i, ne, arity = from->arity;
 
+  if (!arity)
+    return 0;
+
   ne = ma_count_entities_on_rq (&from->rq);
 
   /* If nothing was found on the current runqueue, let's browse its
@@ -350,8 +353,12 @@ ma_memory_schedule_from (marcel_bubble_memory_sched_t *scheduler,
   ma_get_entities_from_rq (&from->rq, e, ne);
 
   if (ne < arity) {
+    int new_ne;
     /* We need at least one entity per children level. */
-    ma_memory_burst_light_bubbles (e, ne, arity);
+    new_ne = ma_memory_burst_light_bubbles (e, ne, arity);
+    if (new_ne == ne)
+      return 0;
+
     return ma_memory_schedule_from (scheduler, from);
   }
 

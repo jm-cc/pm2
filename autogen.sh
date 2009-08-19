@@ -110,7 +110,7 @@ EOF
 
 		# drop duplicate enable_ part which don't look pretty
 		ac_opt="${ac_opt#enable-}"
-		ac_opt_="`echo "$pm2_opt" | tr - _`"
+		ac_opt_="`echo "$ac_opt" | tr - _`"
 
 		# a priori, put the pm2 option in PM2_FLAVOR_CONTENT
 		VAR=PM2_FLAVOR_CONTENT

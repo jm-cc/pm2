@@ -74,7 +74,7 @@ EOF
 		pm2_opt="${pm2_opt%.sh}"
 
 		# replace _ by - to get the autoconf option
-		ac_opt="${pm2_opt//_/-}"
+		ac_opt="`echo "$pm2_opt" | tr _ -`"
 
 		# dependency hacks
 
@@ -110,19 +110,20 @@ EOF
 
 		# drop duplicate enable_ part which don't look pretty
 		ac_opt="${ac_opt#enable-}"
+		ac_opt_="`echo "$pm2_opt" | tr - _`"
 
 		# a priori, put the pm2 option in PM2_FLAVOR_CONTENT
 		VAR=PM2_FLAVOR_CONTENT
 		# but for options which do not default to no, put them appart to
 		# avoid believing the user gave them
-		[ "$default" == no -a "$pm2_opt" != build_static ] || VAR=PM2_FLAVOR_CONTENT_DEFAULT
+		[ "$default" = no -a "$pm2_opt" != build_static ] || VAR=PM2_FLAVOR_CONTENT_DEFAULT
 
 		cat << EOF
 AC_ARG_ENABLE([$output_module-$ac_opt],
 	,
 	[PM2_CONFIG_OPTIONS="\$PM2_CONFIG_OPTIONS --enable-$output_module-$ac_opt=\$enableval"],
-	[enable_${output_module}_${ac_opt//-/_}=$default])
-if test "\$enable_${output_module}_${ac_opt//-/_}" != no
+	[enable_${output_module}_${ac_opt_}=$default])
+if test "\$enable_${output_module}_${ac_opt_}" != no
 then
 	$VAR="\$$VAR --$output_module=$pm2_opt$val $extra"
 fi

@@ -186,7 +186,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	      /* Small packet */
 	      int flags = NM_PW_GLOBAL_HEADER;
 	      if(iov[i].iov_len <= status->nm_so_copy_on_send_threshold)
-		flags = NM_SO_DATA_USE_COPY;
+		flags |= NM_SO_DATA_USE_COPY;
 	      /* Simply form a new packet wrapper and add it to the out_list */
 	      nm_so_pw_alloc_and_fill_with_data(p_pack, iov[i].iov_base, iov[i].iov_len,
 						offset, is_last_chunk, flags, &p_pw);

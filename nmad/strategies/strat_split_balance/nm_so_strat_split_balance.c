@@ -226,7 +226,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
 	}
     }
   // We don't find any free wrapper so we build a new one
-  int flags = NM_SO_DATA_USE_COPY;
+  int flags = NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY;
   nm_so_pw_alloc(flags, &p_pw);
   nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
   tbx_fast_list_add_tail(&p_pw->link, &status->out_list);

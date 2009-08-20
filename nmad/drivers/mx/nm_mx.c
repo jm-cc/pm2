@@ -369,6 +369,11 @@ nm_mx_query		(struct nm_drv *p_drv,
   if (mx_ret != MX_ALREADY_INITIALIZED)
     /* special return code only used by mx_init() */
     nm_mx_check_return("mx_init", mx_ret);
+  if(mx_ret != MX_SUCCESS)
+    {
+      fprintf(stderr, "MX: no device found.\n");
+      return -NM_ENOTFOUND;
+    }
 
   if (!board_use_count) {
     err = nm_mx_init_boards();

@@ -369,7 +369,7 @@ nm_mx_query		(struct nm_drv *p_drv,
   if (mx_ret != MX_ALREADY_INITIALIZED)
     /* special return code only used by mx_init() */
     nm_mx_check_return("mx_init", mx_ret);
-  if(mx_ret != MX_SUCCESS)
+  if(mx_ret != MX_SUCCESS && mx_ret != MX_ALREADY_INITIALIZED)
     {
       fprintf(stderr, "MX: no device found.\n");
       return -NM_ENOTFOUND;

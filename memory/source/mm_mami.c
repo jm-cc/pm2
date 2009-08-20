@@ -1242,7 +1242,7 @@ int mami_locate(mami_manager_t *memory_manager, void *buffer, size_t size, int *
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
     if (data->status == MAMI_KERNEL_MIGRATION_STATUS) {
-      int node = 0;
+      int node = MAMI_UNKNOWN_LOCATION_NODE;
       int *nodes = th_mami_malloc(data->nb_pages * sizeof(int));
       _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &node, nodes);
       if (node != data->node) {
@@ -1294,7 +1294,7 @@ int mami_update_pages_location(mami_manager_t *memory_manager,
   if (aligned_size > size) aligned_size = size;
   err = _mami_locate(memory_manager, memory_manager->root, aligned_buffer, aligned_size, &data);
   if (err >= 0) {
-    int node = 0;
+    int node = MAMI_UNKNOWN_LOCATION_NODE;
     int *nodes = th_mami_malloc(data->nb_pages * sizeof(int));
     _mami_get_pages_location(memory_manager, data->pageaddrs, data->nb_pages, &node, nodes);
     if (node != data->node) {

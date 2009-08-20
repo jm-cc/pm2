@@ -1,0 +1,41 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+create_test_hosts 2;
+net=${TESTNET:-tcp}
+mpi=""
+strat="strat_default"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}"
+
+appdir="${PM2_ROOT}/nmad/examples/sendrecv"
+prog="sr_cancel"
+args="--x --p --l"
+
+rm -f /tmp/pm2test_"${USER}"_expected
+(cat <<EOF
+buffer contents: hello, world
+nm_sr_cancel rc = -10 (expected: -NM_EALREADY = -10)
+nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
+nm_sr_test   rc = -14 (expected: -NM_ECANCELED = -14)
+nm_sr_cancel rc =  -2 (expected: -NM_ENOTIMPL = -2)
+nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
+nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
+EOF
+) > /tmp/pm2test_"${USER}"_expected
+
+. ./include/nmad_default
+

@@ -1,2 +1,3 @@
 Depend: marcel_numa
 Depend: marcel_stats
+Provide: marcel_bubbles

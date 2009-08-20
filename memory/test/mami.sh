@@ -50,7 +50,7 @@ create_test_flavor() {
 	--modules=\"$modules tbx init memory\" \
 	--init=\"topology\" \
         --memory=\"enable_mami $options\" \
-	--marcel=\"numa standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
+	--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
         --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

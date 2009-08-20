@@ -87,7 +87,7 @@ registering_flavors() {
 
     register_flavor mami-opt \
 	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--marcel=numa --marcel=standard_main \
+	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
 	--marcel=smp_smt_idle \
         --marcel=dont_use_pthread \
         --memory=marcel \
@@ -96,7 +96,7 @@ registering_flavors() {
 
     register_flavor mami-debug \
 	--modules="marcel tbx init memory" \
-	--marcel=numa --marcel=standard_main \
+	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
 	--marcel=smp_smt_idle \
 	--marcel=valgrind \
         --memory=marcel \
@@ -107,7 +107,7 @@ registering_flavors() {
 
     register_flavor mami-fortran-debug \
 	--modules="marcel tbx init memory" \
-	--marcel=numa --marcel=standard_main \
+	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
 	--marcel=smp_smt_idle \
 	--marcel=fortran \
         --memory=marcel \

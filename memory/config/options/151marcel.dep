@@ -1,4 +1,5 @@
 Provide: memory_thread
 Conflict: memory_thread
-Depend: marcel_numa
+Depend: marcel_numa marcel_bubbles
+
 

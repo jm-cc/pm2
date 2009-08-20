@@ -82,6 +82,7 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
                           marcel_t owner,
                           int node);
 
+#ifdef MA__BUBBLES
 /**
  * Attaches the memory to the specified bubble. If the memory is not
  * known by MaMI, it will be registered.
@@ -135,6 +136,7 @@ extern
 int mami_bubble_migrate_all(mami_manager_t *memory_manager,
                             marcel_bubble_t *owner,
                             int node);
+#endif /* MA__BUBBLES */
 
 /**
  * Marks the area to be attached on next touch.

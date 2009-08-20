@@ -223,6 +223,7 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
   return _mami_entity_migrate_all(memory_manager, entity, node);
 }
 
+#ifdef MA__BUBBLES
 int mami_bubble_attach(mami_manager_t *memory_manager,
                        void *buffer,
                        size_t size,
@@ -260,6 +261,7 @@ int mami_bubble_migrate_all(mami_manager_t *memory_manager,
   entity = ma_entity_bubble(owner);
   return _mami_entity_migrate_all(memory_manager, entity, node);
 }
+#endif /* MA__BUBBLES */
 
 int _mami_update_stats_for_entities(mami_manager_t *memory_manager,
                                     mami_data_t *data,

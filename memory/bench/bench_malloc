@@ -17,8 +17,7 @@ initialize_bench()
 {
     eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init memory\" \
-	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle \
-	--marcel=bubble_sched_null \
+	--marcel=numa --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle \
         --memory=enable_mami \
 	--init=topology \
         --all=\"opt build_static static\"

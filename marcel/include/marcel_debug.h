@@ -231,14 +231,14 @@ template <int w>
     (msg[0] ? debug_printf(&marcel_mtrace, \
             "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
             " [%06x], %3d T]\n", \
-            msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
+            msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
             pid->preempt_count, \
             marcel_nbthreads() + 1) : 0)
 #  define MTRACE_TIMER(msg, pid) \
     debug_printf(&marcel_mtrace_timer, \
             "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
             " %3d T]\n", \
-            msg, (pid)->number, (pid), (pid)->name, (pid)->flags, \
+            msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
             marcel_nbthreads() + 1)
 #  define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
 #  define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)

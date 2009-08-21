@@ -84,12 +84,21 @@ typedef uint16_t nm_drv_id_t;
 
 /* ** Packs/unpacks **************************************** */
 
+/* @note pack/unpack related types are supposedly private.
+ * However, they are allocated by the sendrecv interface in
+ * its sr_request_t type, thus the types must be visible by
+ * the application.
+ */
+
+/** status of a pack/unpack request */
 typedef uint16_t nm_so_status_t;
-/* for now, flags are included in status */
+
+/** pack/unpack flags
+ * @note for now, flags are included in status */
 typedef nm_so_status_t nm_so_flag_t;
 
 /** Sequence number */
-typedef uint8_t nm_seq_t;
+typedef uint16_t nm_seq_t;
 
 /** An unpack request */
 struct nm_unpack_s

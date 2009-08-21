@@ -1,0 +1,58 @@
+
+#-*-sh-*-
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# Configuration
+create_test_hosts 2;
+net=${TESTNET:-tcp}
+mpi=""
+strat="strat_default"
+net2=$(echo $net | tr ' ' '_')
+flavor="test_nmad_${mpi}_${net2}"
+
+appdir="${PM2_ROOT}/nmad/examples/sendrecv"
+prog="sr_flush"
+args="--x --p --l"
+
+rm -f /tmp/pm2test_"${USER}"_expected
+(cat <<EOF
+starting- max_pending = 4
+  ok.
+starting- max_pending = 8
+  ok.
+starting- max_pending = 16
+  ok.
+starting- max_pending = 32
+  ok.
+starting- max_pending = 64
+  ok.
+starting- max_pending = 128
+  ok.
+starting- max_pending = 256
+  ok.
+starting- max_pending = 512
+  ok.
+starting- max_pending = 1024
+  ok.
+starting- max_pending = 2048
+  ok.
+starting- max_pending = 4096
+  ok.
+starting- max_pending = 8192
+  ok.
+EOF
+) > /tmp/pm2test_"${USER}"_expected
+
+. ./include/nmad_default
+

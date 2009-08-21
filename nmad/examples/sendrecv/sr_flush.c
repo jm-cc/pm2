@@ -22,7 +22,9 @@
 
 #include "helper.h"
 
-#define MAX_PENDING 2048
+/* test up to 8192 pending isend/irecv at the same time */
+
+#define MAX_PENDING (1024*8)
 
 int main(int argc, char	**argv)
 {
@@ -30,38 +32,51 @@ int main(int argc, char	**argv)
   char buf[MAX_PENDING + 1];
   nm_sr_request_t requests[MAX_PENDING];
   int i;
+  int max_pending;
 
   init(&argc, argv);
   
-  if (is_server) 
+  for(max_pending = 4; max_pending <= MAX_PENDING; max_pending *= 2)
     {
-      /* server */
-      memset(buf, 0, len);
-      for(i = 0; i < MAX_PENDING; i++)
+      if (is_server) 
 	{
-	  nm_sr_irecv(p_core, NM_ANY_GATE, 0, &buf[i], 1, &requests[i]);
+	  /* server */
+	  printf("starting- max_pending = %d\n", max_pending);
+	  memset(buf, 0, len);
+	  for(i = 0; i < max_pending; i++)
+	    {
+	      nm_sr_irecv(p_core, NM_ANY_GATE, 0, &buf[i], 1, &requests[i]);
+	    }
+	  for(i = 0; i < max_pending; i++)
+	    {
+	      nm_sr_rwait(p_core, &requests[i]);
+	    }
+	  for(i = 0; i < max_pending - 1; i++)
+	    {
+	      if(buf[i] != (char)('A' + i % ('Z' - 'A')))
+		{
+		  printf("data corruption detected i = %d.\n", i);
+		  abort();
+		}
+	    }
+	  printf("  ok.\n");
 	}
-      for(i = 0; i < MAX_PENDING; i++)
+      else
 	{
-	  nm_sr_rwait(p_core, &requests[i]);
-	}
-      printf("buffer contents: %s\n", buf);
-    }
-  else
-    {
-      /* client */
-      for(i = 0; i < MAX_PENDING; i++)
-	{
-	  buf[i] = 'A' + i % ('Z' - 'A');
-	}
-      buf[MAX_PENDING - 1] = 0;
-      for(i = 0; i < MAX_PENDING; i++)
-	{
-	  nm_sr_isend(p_core, gate_id, 0, &buf[i], 1, &requests[i]);
-	}
-      for(i = 0; i < MAX_PENDING; i++)
-	{
-	  nm_sr_swait(p_core, &requests[i]);
+	  /* client */
+	  for(i = 0; i < max_pending; i++)
+	    {
+	      buf[i] = 'A' + i % ('Z' - 'A');
+	    }
+	  buf[max_pending - 1] = 0;
+	  for(i = 0; i < max_pending; i++)
+	    {
+	      nm_sr_isend(p_core, gate_id, 0, &buf[i], 1, &requests[i]);
+	    }
+	  for(i = 0; i < max_pending; i++)
+	    {
+	      nm_sr_swait(p_core, &requests[i]);
+	    }
 	}
     }
   

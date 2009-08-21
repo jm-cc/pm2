@@ -394,8 +394,9 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
-     safely destroyed */
-  p_pw->header_ref_count = 0;
+     safely destroyed.
+     Increment it here for our own use in the header decoder uses the header. */
+  p_pw->header_ref_count++;
 
   struct iovec *vec = p_pw->v;
   void *ptr = vec->iov_base;
@@ -532,10 +533,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 				   p_pw, 0, 0, 128, 1);
 #endif /* NMAD_QOS */
 
-  if (!p_pw->header_ref_count)
-    {
-      nm_so_pw_free(p_pw);
-    }
+  nm_so_pw_dec_header_ref_count(p_pw);
 }
 
 

@@ -182,6 +182,7 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 	  if(p_pw->contribs == p_pw->prealloc_contribs)
 	    {
 	      p_pw->contribs = TBX_MALLOC(sizeof(struct nm_pw_contrib_s) * p_pw->contribs_size);
+	      memcpy(p_pw->contribs, p_pw->prealloc_contribs, sizeof(struct nm_pw_contrib_s) * NM_SO_PREALLOC_IOV_LEN);
 	    }
 	  else
 	    {

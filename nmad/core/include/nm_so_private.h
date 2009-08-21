@@ -131,10 +131,6 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
-struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*unpack);
-
-struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_tag_t tag);
-
 static inline int iov_len(const struct iovec *iov, int nb_entries)
 {
   uint32_t len = 0;

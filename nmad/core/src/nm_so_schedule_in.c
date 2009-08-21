@@ -31,7 +31,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
 /** Find an unexpected chunk that matches an unpack request [p_gate, seq, tag]
  *  including matching with any_gate / any_tag in the unpack
  */
-struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
+static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
@@ -75,7 +75,7 @@ struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct
 /** Find an unpack that matches a given packet that arrived from [p_gate, seq, tag]
  *  including matching with any_gate / any_tag in the unpack
  */
-struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_tag_t tag)
+static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_tag_t tag)
 {
   struct nm_unpack_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);

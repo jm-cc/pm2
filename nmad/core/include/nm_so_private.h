@@ -131,6 +131,8 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
+int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**pp_out_gate, nm_tag_t tag);
+
 static inline int iov_len(const struct iovec *iov, int nb_entries)
 {
   uint32_t len = 0;

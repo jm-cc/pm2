@@ -221,6 +221,23 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
   return NM_ESUCCESS;
 }
 
+int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**pp_out_gate, nm_tag_t tag)
+{
+  struct nm_unexpected_s*chunk;
+  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
+    {
+      if( ((chunk->p_gate == p_gate) && (chunk->tag == tag)) ||
+	  ((p_gate == NM_ANY_GATE)   && (chunk->tag == tag)) ||
+	  ((chunk->p_gate == p_gate) && (tag == NM_ANY_TAG)) )
+	{
+	  *pp_out_gate = p_gate;
+	  return NM_ESUCCESS;
+	}
+    }
+  *pp_out_gate = NM_ANY_GATE;
+  return -NM_EAGAIN;
+}
+
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   struct nm_so_tag_s*p_so_tag = (p_unpack->p_gate == NM_ANY_GATE) ? 

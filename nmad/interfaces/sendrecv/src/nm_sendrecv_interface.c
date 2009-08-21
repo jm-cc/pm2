@@ -470,23 +470,11 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
 int nm_sr_probe(struct nm_core *p_core,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
 {
-#warning TODO (AD)- move this into a new function nm_so_iprobe() (in nm_so_schedule_in.c)
-  struct nm_unexpected_s*chunk;
-  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
-    {
-      if( ((chunk->p_gate == p_gate) && (chunk->tag == tag)) ||
-	  ((p_gate == NM_ANY_GATE)   && (chunk->tag == tag)) ||
-	  ((chunk->p_gate == p_gate) && (tag == NM_ANY_TAG)) )
-	{
-	  *pp_out_gate = p_gate;
-	  return NM_ESUCCESS;
-	}
-    }
+  int err = nm_so_iprobe(p_core, p_gate, pp_out_gate, tag);
 #ifndef PIOMAN
   nm_schedule(p_core);
 #endif
-  *pp_out_gate = NM_ANY_GATE;
-  return -NM_EAGAIN;
+  return err;
 }
 
 int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)

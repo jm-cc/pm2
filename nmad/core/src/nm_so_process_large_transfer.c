@@ -69,7 +69,7 @@ static inline int nm_so_post_multiple_data_recv(struct nm_unpack_s*p_unpack,
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
-      nm_so_pw_add_raw(p_pw, p_unpack->tag, p_unpack->seq, data + offset, chunks[i].len, offset);
+      nm_so_pw_add_raw(p_pw, data + offset, chunks[i].len, offset);
       nm_core_post_recv(p_pw, p_unpack->p_gate, chunks[i].trk_id, chunks[i].drv_id);
       offset += chunks[i].len;
     }
@@ -174,8 +174,6 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 	      struct nm_pkt_wrap *p_pw = NULL;
 	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	      p_pw->p_unpack = p_unpack;
-	      p_pw->tag    = tag;
-	      p_pw->seq    = seq;
 	      p_pw->length = pending_len;
 	      p_pw->v_nb   = nb_entries;
 	      p_pw->chunk_offset = chunk_offset + cur_len;
@@ -243,7 +241,7 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
 	  void *data = TBX_MALLOC(len);
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	  p_pw->p_unpack = p_unpack;
-	  nm_so_pw_add_raw(p_pw, tag, seq, data, len, 0);
+	  nm_so_pw_add_raw(p_pw, data, len, 0);
 	  p_pw->segp = segp;
 	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.drv_id);
 	  p_unpack->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
@@ -256,8 +254,6 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	  p_pw->p_unpack = p_unpack;
 	  p_pw->p_gate   = p_gate;
-	  p_pw->tag      = tag;
-	  p_pw->seq      = seq;
 	  p_pw->length   = len;
 	  p_pw->v_nb     = 0;
 	  p_pw->segp     = segp;
@@ -273,8 +269,6 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
       p_pw->p_gate   = p_gate;
-      p_pw->tag      = tag;
-      p_pw->seq      = seq;
       p_pw->length   = len;
       p_pw->v_nb     = 0;
       p_pw->segp     = segp;
@@ -294,8 +288,9 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_p
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
-  const nm_tag_t tag = p_pw->tag;
-  const nm_seq_t seq = p_pw->seq;
+  struct nm_unpack_s*p_unpack = p_pw->p_unpack;
+  const nm_tag_t tag = p_unpack->tag;
+  const nm_seq_t seq = p_unpack->seq;
   const uint32_t len = p_pw->length;
 
 #warning Multi-rail?
@@ -325,8 +320,6 @@ static int nm_so_init_large_datatype_recv_with_multi_ack(struct nm_pkt_wrap *p_p
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
 	  p_pw2->p_unpack = p_pw->p_unpack;
 	  p_pw2->p_gate   = p_gate;
-	  p_pw2->tag      = tag;
-	  p_pw2->seq      = seq;
 	  p_pw2->length   = len;
 	  p_pw2->v_nb     = 0;
 	  p_pw2->segp     = segp;
@@ -373,7 +366,7 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
-      nm_so_pw_add_raw(p_pw, tag, seq, data, len, chunk_offset);
+      nm_so_pw_add_raw(p_pw, data, len, chunk_offset);
       nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
       nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
@@ -406,7 +399,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	    .len = p_large_pw->v[0].iov_len 
 	  };
 	  nm_so_post_multiple_pw_recv(p_gate, p_large_pw, 1, &chunk);
-	  nm_so_build_multi_ack(p_gate, p_large_pw->tag, p_large_pw->seq, p_large_pw->chunk_offset, 1, &chunk);
+	  nm_so_build_multi_ack(p_gate, p_unpack->tag, p_unpack->seq, p_large_pw->chunk_offset, 1, &chunk);
 	}
       else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
 	{
@@ -427,7 +420,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	    {
 	      tbx_fast_list_del(p_gate->pending_large_recv.next);
 	      err = nm_so_post_multiple_pw_recv(p_gate, p_large_pw, nb_chunks, chunks);
-	      nm_so_build_multi_ack(p_gate, p_large_pw->tag, p_large_pw->seq,
+	      nm_so_build_multi_ack(p_gate, p_unpack->tag, p_unpack->seq,
 				    p_large_pw->chunk_offset, nb_chunks, chunks);
 	    }
 	}

@@ -68,9 +68,6 @@ struct nm_pkt_wrap
     SEND,
     NONE,
   } which;
-#ifdef PIO_OFFLOAD
-  tbx_bool_t data_to_offload;
-#endif /* PIO_OFFLOAD */
 #endif /* PIOMAN */
   
   
@@ -89,17 +86,8 @@ struct nm_pkt_wrap
   /** Assignated gate driver, if relevant. */
   struct nm_gate_drv *p_gdrv;
 
-  /** Tag of the message
-  */
-  nm_tag_t tag;
-  
-  /** Sequence number for the given protocol id.
-      - rank in the communication flow this packet belongs to
-  */
-  nm_seq_t seq;
-  
   /** Driver implementation data.  */
-  void			*drv_priv;
+  void*drv_priv;
   
   
   /* Packet related fields.					*/

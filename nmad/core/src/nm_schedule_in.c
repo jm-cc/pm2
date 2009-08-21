@@ -27,12 +27,11 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 {
   int err;
 
-  NM_TRACEF("polling inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
+  NM_TRACEF("polling inbound request: gate %d, drv %d, trk %d, proto %d",
 	    p_pw->p_gate?p_pw->p_gate->id:-1,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
-	    p_pw->proto_id,
-	    p_pw->seq);
+	    p_pw->proto_id);
   /* poll request 					*/
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(p_pw->p_gate)
@@ -92,12 +91,11 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	  p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
 	}
       
-      NM_TRACEF("posting new recv request: gate %d, drv %d, trk %d, proto %d, seq %d",
+      NM_TRACEF("posting new recv request: gate %d, drv %d, trk %d, proto %d",
 		p_pw->p_gate?p_pw->p_gate->id:-1,
 		p_pw->p_drv->id,
 		p_pw->trk_id,
-		p_pw->proto_id,
-		p_pw->seq);
+		p_pw->proto_id);
 #ifdef PIOMAN
       piom_req_init(&p_pw->inst);
       p_pw->inst.server = &p_pw->p_drv->server;
@@ -118,12 +116,11 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
       
       if (err == -NM_EAGAIN)
 	{
-	  NM_TRACEF("new recv request pending: gate %d, drv %d, trk %d, proto %d, seq %d",
+	  NM_TRACEF("new recv request pending: gate %d, drv %d, trk %d, proto %d",
 		    p_pw->p_gate?p_pw->p_gate->id:-1,
 		    p_pw->p_drv->id,
 		    p_pw->trk_id,
-		    p_pw->proto_id,
-		    p_pw->seq);
+		    p_pw->proto_id);
 #ifdef PIOMAN
 	  p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST | PIOM_STATE_ONE_SHOT;
       /* TODO : implementer les syscall */
@@ -230,12 +227,11 @@ int nm_sched_in(struct nm_core *p_core)
 
 int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
 {
-  NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d, seq %d",
+  NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d",
 	    p_pw->p_gate?p_pw->p_gate->id:-1,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
-	    p_pw->proto_id,
-	    p_pw->seq);
+	    p_pw->proto_id);
   
   nmad_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;

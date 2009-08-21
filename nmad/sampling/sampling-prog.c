@@ -49,7 +49,7 @@ static void nm_ns_initialize_pw(struct nm_core *p_core,
   const nm_tag_t tag = 0;
   const uint8_t seq = 0;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_raw(p_pw, tag, seq, ptr, param_min_size, 0);
+  nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
   *pp_pw = p_pw;
 }
@@ -120,7 +120,7 @@ static void nm_ns_eager_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   else
     {
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-      nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+      nm_so_pw_add_raw(p_pw, ptr, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
   nm_so_pw_finalize(p_pw);
@@ -150,7 +150,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
   else
     {
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-      nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+      nm_so_pw_add_raw(p_pw, ptr, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv->id, p_gate);
   int err = r->driver->post_recv_iov(r->_status, p_pw);
@@ -192,7 +192,7 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+  nm_so_pw_add_raw(p_pw, ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv->id, p_gate);
   int err = r->driver->post_send_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
@@ -215,7 +215,7 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_raw(p_pw, tag, seq, ptr, len, 0);
+  nm_so_pw_add_raw(p_pw, ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv->id, p_gate);
   int err = r->driver->post_recv_iov(r->_status, p_pw);
 

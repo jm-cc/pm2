@@ -85,8 +85,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->trk_id = NM_TRK_NONE;
   p_pw->p_gate = NULL;
   p_pw->p_gdrv = NULL;
-  p_pw->tag = 0;
-  p_pw->seq = 0;
   p_pw->drv_priv = NULL;
 
   p_pw->flags = 0;
@@ -101,10 +99,6 @@ static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->n_contribs = 0;
 
   p_pw->p_unpack = NULL;
-
-#ifdef PIO_OFFLOAD
-  p_pw->data_to_offload = tbx_false;
-#endif
 
   p_pw->header_ref_count = 0;
 
@@ -268,8 +262,6 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
   p_pw2->p_gate = p_pw->p_gate;
   p_pw2->p_gdrv = p_pw->p_gdrv;
   p_pw2->p_unpack = p_pw->p_unpack;
-  p_pw2->tag = p_pack->tag;
-  p_pw2->seq = p_pack->seq;
 
   const uint32_t total_length = p_pw->length;
   int idx_pw = 0;
@@ -368,7 +360,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
       /* ** Add raw data to pw, without header */
-      nm_so_pw_add_raw(p_pw, tag, seq, data, len, 0);
+      nm_so_pw_add_raw(p_pw, data, len, 0);
     }
   /* add the contrib ref to the pw */
   nm_pw_add_contrib(p_pw, p_pack, len);

@@ -61,8 +61,6 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
   p_pw->p_gate = p_gate;
 
   /* append pkt to scheduler post list */
-  //#warning vérifier le nb max de requetes concurrentes autorisées!!!!(dans nm_trk_cap.h -> max_pending_send_request)
-
   tbx_slist_append(p_core->so_sched.post_sched_out_list, p_pw);
 
   p_gate->active_send[drv_id][trk_id]++;

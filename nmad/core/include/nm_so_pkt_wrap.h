@@ -94,14 +94,7 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t
   nm_so_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
   if(len)
     {
-#ifdef PIO_OFFLOAD
-      struct iovec *dvec = nm_pw_grow_iovec(p_pw);
-      p_pw->data_to_offload = tbx_true;
-      dvec->iov_base = data;
-      dvec->iov_len  = len;
-#else
       memcpy(hvec->iov_base + hvec->iov_len, data, len);
-#endif
       hvec->iov_len += size;
     }
   p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
@@ -109,14 +102,12 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t
 }
 
 /** Add raw data to pw, without header */
-static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq, const void*data, uint32_t len, uint32_t chunk_offset)
+static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, uint32_t len, uint32_t chunk_offset)
 {
   assert(p_pw->flags & NM_PW_NOHEADER);
   struct iovec*vec = nm_pw_grow_iovec(p_pw);
   vec->iov_base = (void*)data;
   vec->iov_len = len;
-  p_pw->tag = tag;
-  p_pw->seq = seq;
   p_pw->length += len;
   p_pw->chunk_offset = chunk_offset;
 }

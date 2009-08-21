@@ -375,9 +375,11 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
   struct nm_pkt_wrap *p_large_pw = NULL;
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
+      assert(p_large_pw->n_contribs == 1);
+      const struct nm_pw_contrib_s*p_contrib = &p_large_pw->contribs[0];
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
-		  p_large_pw->seq, p_large_pw->chunk_offset);
-      if(p_large_pw->seq == seq && p_large_pw->chunk_offset == chunk_offset)
+		  p_contrib->p_pack->seq, p_large_pw->chunk_offset);
+      if(p_contrib->p_pack->seq == seq && p_large_pw->chunk_offset == chunk_offset)
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
 	  tbx_fast_list_del(&p_large_pw->link);
@@ -581,10 +583,10 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {
       /* ** Large packet - track #1 ************************ */
-      const nm_tag_t tag = p_pw->tag;
-      const nm_seq_t seq = p_pw->seq;
-      const uint32_t len = p_pw->length;
       struct nm_unpack_s*p_unpack = p_pw->p_unpack;
+      const nm_tag_t tag = p_unpack->tag;
+      const nm_seq_t seq = p_unpack->seq;
+      const uint32_t len = p_pw->length;
       if(p_unpack->status & NM_UNPACK_TYPE_COPY_DATATYPE)
 	{
 	  /* ** Large packet, packed datatype -> finalize */

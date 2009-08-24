@@ -421,6 +421,9 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
  		 poll.  */
  	ma_atomic_init (&thread_exit_signal, 0);
 
+#ifdef PROFILE
+   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
 	/* Create a bubble hierarchy.  */
   root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
 																							&thread_exit_signal);
@@ -436,6 +439,9 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 	marcel_thread_preemption_disable ();
 	ma_bubble_lock_all (&marcel_root_bubble, marcel_machine_level);
 
+#ifdef PROFILE
+   profile_stop();
+#endif
 	matches_p = topology_matches_tree_p (marcel_machine_level, expected_result);
 
 	ma_bubble_unlock_all (&marcel_root_bubble, marcel_machine_level);

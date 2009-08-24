@@ -362,13 +362,13 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, s
 
 /** Process a complete rendez-vous acknowledgement request.
  */
-static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
+static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_header*header)
 {
   const nm_tag_t tag          = header->tag_id;
   const nm_seq_t seq          = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
   const uint32_t chunk_len    = header->chunk_len;
-  struct nm_gate *p_gate      = p_ack_pw->p_gate;
+  struct nm_gate *p_gate      = p_rtr_pw->p_gate;
 
   NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
@@ -492,15 +492,15 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    const nm_tag_t tag = ch->r.tag_id;
-	    const nm_seq_t seq = ch->r.seq;
-	    const uint32_t len = ch->r.len;
+	    const nm_tag_t tag = ch->rdv.tag_id;
+	    const nm_seq_t seq = ch->rdv.seq;
+	    const uint32_t len = ch->rdv.len;
 	    struct nm_gate *p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
 	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
 	    if(p_unpack)
 	      {
-		nm_rdv_handler(p_core, p_unpack, &ch->r);
+		nm_rdv_handler(p_core, p_unpack, &ch->rdv);
 	      }
 	    else 
 	      {
@@ -510,7 +510,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  }
 	  break;
 
-	case NM_PROTO_ACK:
+	case NM_PROTO_RTR:
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
@@ -521,14 +521,14 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 		ack_received = 1;
 		r = strategy->driver->ack_callback(strategy->_status,
 						   p_pw,
-						   ch->a.tag_id,
-						   ch->a.seq,
-						   ch->a.track_id,
+						   ch->rtr.tag_id,
+						   ch->rtr.seq,
+						   ch->rtr.track_id,
 						   0);
 	      }
 	    else
 #endif /* NMAD_QOS */
-	      nm_ack_handler(p_pw, &ch->a);
+	      nm_rtr_handler(p_pw, &ch->rtr);
 	    
 	  }
 	  break;

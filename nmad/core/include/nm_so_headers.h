@@ -20,20 +20,36 @@
 
 typedef uint8_t nm_proto_t;
 
-#define NM_PROTO_DATA        0x01
-#define NM_PROTO_RDV         0x02
-#define NM_PROTO_ACK         0x03
-#define NM_PROTO_SHORT_DATA  0x04
-#define NM_PROTO_UNUSED      0x08
-#define NM_PROTO_CTRL_UNUSED 0x09
-
 #define NM_PROTO_ID_MASK     0x0F
 #define NM_PROTO_FLAG_MASK   0xF0
 
+/** a chunk of data */
+#define NM_PROTO_DATA        0x01
+/** rendez-vous request */
+#define NM_PROTO_RDV         0x02
+/** ready-to-receive, replay to rdv */
+#define NM_PROTO_RTR         0x03
+/** a simplified (short header) chunk of data- not implemented yet */
+#define NM_PROTO_SHORT_DATA  0x04
+/** an ack for a ssend (sent when receiving first chunk) */
+#define NM_PROTO_ACK         0x05
+/** unused data chunk (already read) */
+#define NM_PROTO_UNUSED      0x08
+/** unused control chunk (already read) */
+#define NM_PROTO_CTRL_UNUSED 0x09
+
+/* flag for last proto in packet */
 #define NM_PROTO_LAST        0x80
 
+
+/* ** flags for data chunks */
+
+/** last chunk of data for the given pack */
 #define NM_PROTO_FLAG_LASTCHUNK 0x01
+/** data is 32 bit-aligned in packet */
 #define NM_PROTO_FLAG_ALIGNED   0x02
+/** data sent as synchronous send- please send an ack on first chunk */
+#define NM_PROTO_FLAG_ACKREQ    0x04
 
 // Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
@@ -70,8 +86,8 @@ struct nm_so_ctrl_rdv_header {
   uint32_t chunk_offset;
 } __attribute__((packed));
 
-struct nm_so_ctrl_ack_header {
-  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_ACK */
+struct nm_so_ctrl_rtr_header {
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RTR */
   nm_tag_t tag_id;    /**< tag of the acknowledged data */
   nm_seq_t seq;
   nm_trk_id_t trk_id;
@@ -83,8 +99,8 @@ struct nm_so_ctrl_ack_header {
 /** a unified control header type
  */
 union nm_so_generic_ctrl_header {
-  struct nm_so_ctrl_rdv_header r;
-  struct nm_so_ctrl_ack_header a;
+  struct nm_so_ctrl_rdv_header rdv;
+  struct nm_so_ctrl_rtr_header rtr;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
@@ -111,24 +127,24 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t tag_id
 static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
 				  uint32_t len, uint32_t chunk_offset, uint8_t flags)
 {
-  p_ctrl->r.proto_id     = NM_PROTO_RDV;
-  p_ctrl->r.tag_id       = tag;
-  p_ctrl->r.seq          = seq;
-  p_ctrl->r.len          = len;
-  p_ctrl->r.chunk_offset = chunk_offset;
-  p_ctrl->r.flags        = flags;
+  p_ctrl->rdv.proto_id     = NM_PROTO_RDV;
+  p_ctrl->rdv.tag_id       = tag;
+  p_ctrl->rdv.seq          = seq;
+  p_ctrl->rdv.len          = len;
+  p_ctrl->rdv.chunk_offset = chunk_offset;
+  p_ctrl->rdv.flags        = flags;
 }
     
-static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_init_rtr(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 { 
-  p_ctrl->a.proto_id = NM_PROTO_ACK;
-  p_ctrl->a.tag_id   = tag;
-  p_ctrl->a.seq      = seq;
-  p_ctrl->a.trk_id   = trk_id;
-  p_ctrl->a.drv_id   = drv_id;
-  p_ctrl->a.chunk_offset = chunk_offset;
-  p_ctrl->a.chunk_len = chunk_len;
+  p_ctrl->rtr.proto_id = NM_PROTO_RTR;
+  p_ctrl->rtr.tag_id   = tag;
+  p_ctrl->rtr.seq      = seq;
+  p_ctrl->rtr.trk_id   = trk_id;
+  p_ctrl->rtr.drv_id   = drv_id;
+  p_ctrl->rtr.chunk_offset = chunk_offset;
+  p_ctrl->rtr.chunk_len = chunk_len;
 }
 
 #endif /* NM_SO_§HEADER_H */

@@ -77,11 +77,11 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 
 /** Post an ACK
  */
-static inline void nm_so_post_ack(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
-  nm_so_init_ack(&h, tag, seq, drv_id, trk_id, chunk_offset, chunk_len);
+  nm_so_init_rtr(&h, tag, seq, drv_id, trk_id, chunk_offset, chunk_len);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }

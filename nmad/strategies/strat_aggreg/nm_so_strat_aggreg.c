@@ -24,7 +24,6 @@
  */
 
 static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_aggreg_packv(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const struct iovec *, int);
 static int strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_try_and_commit(void*, struct nm_gate*);
 static int strat_aggreg_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
@@ -32,7 +31,6 @@ static int strat_aggreg_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struc
 static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
   {
     .pack               = &strat_aggreg_pack,
-    .packv              = &strat_aggreg_packv,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
 #ifdef NMAD_QOS
@@ -260,15 +258,6 @@ static void launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
   union nm_so_generic_ctrl_header ctrl;
   nm_so_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
   strat_aggreg_pack_ctrl(_status, p_pack->p_gate, &ctrl);
-}
-
-static int
-strat_aggreg_packv(void *_status,
-		   struct nm_gate *p_gate,
-		   nm_tag_t tag, nm_seq_t seq,
-		   const struct iovec *iov, int nb_entries)
-{
-  return NM_ESUCCESS;
 }
 
 /** Compute and apply the best possible packet rearrangement, then

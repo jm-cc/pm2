@@ -30,8 +30,6 @@ static int strat_split_balance_rdv_accept(void*, struct nm_gate*, uint32_t, int*
 static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
   {
     .pack               = &strat_split_balance_pack,
-    .packv              = NULL,
-    .pack_datatype      = NULL,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .try_and_commit     = &strat_split_balance_try_and_commit,
 #ifdef NMAD_QOS

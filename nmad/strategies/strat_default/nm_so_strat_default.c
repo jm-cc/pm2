@@ -23,7 +23,6 @@
  */
 
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack);
-static int strat_default_packv(void*, struct nm_gate*, nm_tag_t, nm_seq_t, const struct iovec *, int);
 static int strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_default_try_and_commit(void*, struct nm_gate*);
 static int strat_default_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
@@ -31,7 +30,6 @@ static int strat_default_rdv_accept(void*, struct nm_gate*, uint32_t, int*, stru
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
     .pack               = &strat_default_pack,
-    .packv              = &strat_default_packv,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
 #ifdef NMAD_QOS
@@ -214,15 +212,6 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
     {
       return -NM_ENOTIMPL;
     }
-  return NM_ESUCCESS;
-}
-
-static int
-strat_default_packv(void*_status,
-                    struct nm_gate *p_gate,
-                    nm_tag_t tag, nm_seq_t seq,
-                    const struct iovec *iov, int nb_entries)
-{
   return NM_ESUCCESS;
 }
 

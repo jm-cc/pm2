@@ -36,15 +36,6 @@ struct nm_strategy_iface_s
       some optimizations at this point */
   int (*pack)(void*_status, struct nm_pack_s*p_pack);
 
-  int (*packv)(void*_status,
-               struct nm_gate *p_gate,
-               nm_tag_t tag, nm_seq_t seq,
-               const struct iovec *iov, int nb_entries);
-
-  int (*pack_datatype)(void*_status, struct nm_gate *p_gate,
-		       nm_tag_t tag, nm_seq_t seq,
-		       const struct DLOOP_Segment *segp);
-
   int (*pack_ctrl)(void*_status,
                    struct nm_gate *p_gate,
 		   nm_generic_header_t p_ctrl);

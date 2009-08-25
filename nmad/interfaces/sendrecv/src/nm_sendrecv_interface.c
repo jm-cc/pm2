@@ -158,7 +158,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event);
 static const struct nm_so_monitor_s nm_sr_monitor_pack_completed = 
   {
     .notifier = &nm_sr_event_pack_completed,
-    .mask = NM_SO_STATUS_PACK_COMPLETED
+    .mask = NM_SO_STATUS_PACK_COMPLETED | NM_SO_STATUS_ACK_RECEIVED
   };
 
 static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed = 
@@ -205,7 +205,7 @@ int nm_sr_exit(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
-/* Send operations */
+/** generic send operation */
 int nm_sr_isend_generic(struct nm_core *p_core,
 			nm_gate_t p_gate, nm_tag_t tag,
 			nm_sr_transfer_type_t sending_type,
@@ -239,7 +239,49 @@ int nm_sr_isend_generic(struct nm_core *p_core,
       TBX_FAILURE("Unkown sending type.");
       break;
     }
-  int ret = nm_so_pack(&p_request->pack, tag, p_gate, data, size, pack_type);
+  int ret = nm_so_pack(p_core, &p_request->pack, tag, p_gate, data, size, pack_type);
+  nm_so_post_all(p_core);
+  nmad_unlock();
+  NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
+  NM_SO_SR_LOG_OUT();
+  return ret;
+}
+
+/** synchronous send operation */
+int nm_sr_issend_generic(struct nm_core *p_core,
+			 nm_gate_t p_gate, nm_tag_t tag,
+			 nm_sr_transfer_type_t sending_type,
+			 const void *data, uint32_t len,
+			 nm_sr_request_t *p_request,
+			 void*ref)
+{
+  NM_SO_SR_LOG_IN();
+  nmad_lock();
+  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data, len, p_request);
+  nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
+  p_request->ref = ref;
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  nm_so_flag_t pack_flag = NM_PACK_SYNCHRONOUS;
+  uint32_t size;
+  switch(sending_type)
+    {
+    case nm_sr_contiguous_transfer:
+      pack_flag |= NM_PACK_TYPE_CONTIGUOUS;
+      size = len;
+      break;
+    case nm_sr_iov_transfer:
+      pack_flag |= NM_PACK_TYPE_IOV;
+      size = iov_len(data, len);
+      break;
+    case nm_sr_datatype_transfer:
+      pack_flag |= NM_PACK_TYPE_DATATYPE;
+      size = datatype_size(data);
+      break;
+    default:
+      TBX_FAILURE("Unkown sending type.");
+      break;
+    }
+  int ret = nm_so_pack(p_core, &p_request->pack, tag, p_gate, data, size, pack_flag);
   nm_so_post_all(p_core);
   nmad_unlock();
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
@@ -563,15 +605,19 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, pack);
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , event->tag, event->seq);
-  
-  if(p_request && p_request->ref)
+  const nm_so_status_t status = p_pack->status;
+  if( (status & NM_SO_STATUS_PACK_COMPLETED) &&
+      ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_SO_STATUS_ACK_RECEIVED)) )
     {
-      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
+      if(p_request && p_request->ref)
+	{
+#warning Paulette: lock
+	  tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
+	}
+      const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
+      nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
+      nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
     }
-  const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
-  nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
-  nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
-
   NM_SO_SR_LOG_OUT();
 }
 

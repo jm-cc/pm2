@@ -155,7 +155,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
   tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
   union nm_so_generic_ctrl_header ctrl;
-  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
+  nm_so_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 }
 
@@ -271,7 +271,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
 
   /* Finally, generate a RdV request */
   union nm_so_generic_ctrl_header ctrl;
-  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, len, 0, NM_PROTO_FLAG_LASTCHUNK);
+  nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 }
 

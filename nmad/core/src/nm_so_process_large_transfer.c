@@ -96,24 +96,24 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
 
 /** Process a rdv request with a matching unpack already posted
  */
-int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
+int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
                       uint32_t len, uint32_t chunk_offset)
 {
   int err;
   /* 1) The final destination of the data is an iov */
-  if(unpack->status & NM_UNPACK_TYPE_IOV)
+  if(p_unpack->status & NM_UNPACK_TYPE_IOV)
     {
-      err = init_large_iov_recv(p_core, unpack, len, chunk_offset);
+      err = init_large_iov_recv(p_core, p_unpack, len, chunk_offset);
     }
   /* 2) The final destination of the data is a datatype */
-  else if(unpack->status & NM_UNPACK_TYPE_DATATYPE)
+  else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
     {
-      err = init_large_datatype_recv(p_core, unpack, len, chunk_offset);
+      err = init_large_datatype_recv(p_core, p_unpack, len, chunk_offset);
     }
   /* 3) The final destination of the data is a contiguous buffer */
   else
     {
-      err = init_large_contiguous_recv(p_core, unpack, len, chunk_offset);
+      err = init_large_contiguous_recv(p_core, p_unpack, len, chunk_offset);
     }
   return err;
 }

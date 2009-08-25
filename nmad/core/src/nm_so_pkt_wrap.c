@@ -331,6 +331,11 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   int err;
   const nm_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
+  nm_proto_t proto_flags = 0;
+  if(is_last_chunk)
+    proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
+  if(p_pack->status & NM_PACK_SYNCHRONOUS)
+    proto_flags |= NM_PROTO_FLAG_ACKREQ;
 
   if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
     {
@@ -338,8 +343,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       if(flags & NM_SO_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
-	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
-	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, flags);
+	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, proto_flags);
 	}
       else 
 	{
@@ -352,8 +356,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 	  dvec->iov_len = len;
 	  /* We don't know yet the gap between header and data, so we
 	     temporary store the iovec index as the 'skip' value */
-	  const uint8_t flags = (is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
-	  nm_so_init_data(h, tag, seq, flags, p_pw->v_nb, len, offset);
+	  nm_so_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, offset);
 	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
 	}
     }
@@ -456,30 +459,4 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
   return err;
 }
 
-/** signal completion of a sent pw to all contributing packs */
-void nm_pw_complete_contribs(struct nm_core*p_core, struct nm_pkt_wrap*p_pw)
-{
-  int i;
-  for(i = 0; i < p_pw->n_contribs; i++)
-    {
-      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[i];
-      struct nm_pack_s*p_pack = p_contrib->p_pack;
-      p_pack->done += p_contrib->len;
-      if(p_pack->done == p_pack->len)
-	{
-	  NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", p_pack->tag, p_pack->seq, p_pack->len);
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_PACK_COMPLETED,
-	      .p_pack = p_pack
-	    };
-	  nm_so_status_event(p_core, &event);
-	}
-      else if(p_pack->done > p_pack->len)
-	{ 
-	  TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
-		       p_pack->tag, p_pack->len, p_pack->done);
-	}
-    }
-}
 

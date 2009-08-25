@@ -21,6 +21,28 @@
 #include <nm_private.h>
 
 
+int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
+	       const void*data, uint32_t len, nm_so_flag_t pack_type)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
+  const nm_seq_t seq = p_so_tag->send_seq_number++;
+  p_pack->status = pack_type;
+  p_pack->data   = (void*)data;
+  p_pack->len    = len;
+  p_pack->done   = 0;
+  p_pack->p_gate = p_gate;
+  p_pack->tag    = tag;
+  p_pack->seq    = seq;
+  if(p_pack->status & NM_PACK_SYNCHRONOUS)
+    {
+#warning Paulette: lock
+      tbx_fast_list_add_tail(&p_pack->_link, &p_core->so_sched.pending_packs);
+    }
+  return (*r->driver->pack)(r->_status, p_pack);
+}
+
+
 /** Process a complete successful outgoing request.
  */
 static int nm_so_process_complete_send(struct nm_core *p_core,
@@ -37,7 +59,30 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   
   p_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
-  nm_pw_complete_contribs(p_core, p_pw);
+
+  int i;
+  for(i = 0; i < p_pw->n_contribs; i++)
+    {
+      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[i];
+      struct nm_pack_s*p_pack = p_contrib->p_pack;
+      p_pack->done += p_contrib->len;
+      if(p_pack->done == p_pack->len)
+	{
+	  NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", p_pack->tag, p_pack->seq, p_pack->len);
+	  const struct nm_so_event_s event =
+	    {
+	      .status = NM_SO_STATUS_PACK_COMPLETED,
+	      .p_pack = p_pack
+	    };
+	  nm_so_status_event(p_core, &event, &p_pack->status);
+	}
+      else if(p_pack->done > p_pack->len)
+	{ 
+	  TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
+		       p_pack->tag, p_pack->len, p_pack->done);
+	}
+    }
+
   nm_so_pw_free(p_pw);
   nm_strat_try_and_commit(p_gate);
   

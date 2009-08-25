@@ -70,7 +70,7 @@ struct nm_gate
 
   /** large messages waiting for Track 1 (or 2) to be free- list of pw */
   struct tbx_fast_list_head pending_large_recv;
-  /** large messages waiting for ACKs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
+  /** large messages waiting for RTRs- list of pw, lookup by [gate,tag,seq,chunk_offset] */
   struct tbx_fast_list_head pending_large_send;       
 
   /* Strategy components elements */

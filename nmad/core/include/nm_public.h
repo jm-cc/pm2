@@ -108,9 +108,9 @@ struct nm_unpack_s
   int32_t cumulated_len;
   int32_t expected_len;
   nm_gate_t p_gate;
-  nm_seq_t seq;
   nm_tag_t tag;
-  struct tbx_fast_list_head link;
+  nm_seq_t seq;
+  struct tbx_fast_list_head _link;
 };
 
 /** A pack request */
@@ -123,6 +123,7 @@ struct nm_pack_s
   nm_gate_t p_gate;
   nm_tag_t tag;
   nm_seq_t seq;
+  struct tbx_fast_list_head _link;
 };
 
 

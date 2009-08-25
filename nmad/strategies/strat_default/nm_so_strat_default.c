@@ -168,7 +168,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	  /* Finally, generate a RdV request */
 	  union nm_so_generic_ctrl_header ctrl;
-	  nm_so_init_rdv(&ctrl, p_pack->tag, p_pack->seq, p_pack->len, 0, NM_PROTO_FLAG_LASTCHUNK);
+	  nm_so_init_rdv(&ctrl, p_pack, p_pack->len, 0, NM_PROTO_FLAG_LASTCHUNK);
 	  strat_default_pack_ctrl(status, p_pack->p_gate, &ctrl);
 	}
     }
@@ -204,7 +204,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
 	      /* Finally, generate a RdV request */
 	      union nm_so_generic_ctrl_header ctrl;
-	      nm_so_init_rdv(&ctrl, tag, seq, iov[i].iov_len, offset, flags);
+	      nm_so_init_rdv(&ctrl, p_pack, iov[i].iov_len, offset, flags);
 	      strat_default_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 	    }
 	  offset += iov[i].iov_len;

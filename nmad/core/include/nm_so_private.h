@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-/* ** SchedOpt status flags */
+/* ** SchedOpt status and flags, used in pack/unpack requests and events */
 
 /** sending operation has completed */
 #define NM_SO_STATUS_PACK_COMPLETED           ((nm_so_status_t)0x0001)
@@ -29,19 +29,24 @@
 #define NM_SO_STATUS_UNEXPECTED               ((nm_so_status_t)0x0004)
 /** unpack operation has been cancelled */
 #define NM_SO_STATUS_UNPACK_CANCELLED         ((nm_so_status_t)0x0008)
+/** ack received for the given pack */
+#define NM_SO_STATUS_ACK_RECEIVED             ((nm_so_status_t)0x0010)
 
 /** flag: unpack is contiguous */
-#define NM_UNPACK_TYPE_CONTIGUOUS    ((nm_so_flag_t)0x0010)
+#define NM_UNPACK_TYPE_CONTIGUOUS    ((nm_so_flag_t)0x0100)
 /** flag: unpack is an iovec */
-#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0020)
+#define NM_UNPACK_TYPE_IOV           ((nm_so_flag_t)0x0200)
 /** flag: unpack is a datatype */
-#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0040)
+#define NM_UNPACK_TYPE_DATATYPE      ((nm_so_flag_t)0x0400)
 /* flag: unpack datatype through a temporary buffer */
-#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0080)
+#define NM_UNPACK_TYPE_COPY_DATATYPE ((nm_so_flag_t)0x0800)
 
-#define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x01)
-#define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x02)
-#define NM_PACK_TYPE_DATATYPE   ((nm_so_flag_t)0x04)
+#define NM_PACK_TYPE_CONTIGUOUS ((nm_so_flag_t)0x0100)
+#define NM_PACK_TYPE_IOV        ((nm_so_flag_t)0x0200)
+#define NM_PACK_TYPE_DATATYPE   ((nm_so_flag_t)0x0400)
+/** flag pack as synchronous (i.e. request the receiver to send an ack) */
+#define NM_PACK_SYNCHRONOUS     ((nm_so_flag_t)0x1000)
+
 
 /** an event notifier, fired upon status transition */
 typedef struct nm_so_event_s* nm_so_event_t;
@@ -69,7 +74,7 @@ struct nm_unexpected_s
 /** fast allocator for struct nm_unexpected_s */
 extern p_tbx_memory_t nm_so_unexpected_mem;
 
-#define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * NM_SO_PENDING_PACKS_WINDOW)
+#define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * 256)
 
 #define nm_l2chunk(l)  tbx_fast_list_entry(l, struct nm_unexpected_s, link)
 
@@ -124,7 +129,13 @@ struct nm_so_sched
 
   /** list of unexpected chunks */
   struct tbx_fast_list_head unexpected;
+
+  /** list of pending packs waiting for an ack */
+  struct tbx_fast_list_head pending_packs;
 };
+
+int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
+	       const void*data, uint32_t len, nm_so_flag_t pack_type);
 
 int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
 		   nm_so_flag_t flag, void *data_description, uint32_t len);

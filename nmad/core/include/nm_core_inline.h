@@ -75,13 +75,23 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
   return r->driver->try_and_commit(r->_status, p_gate);
 }
 
-/** Post an ACK
+/** Post a ready-to-receive
  */
 static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
   nm_so_init_rtr(&h, tag, seq, drv_id, trk_id, chunk_offset, chunk_len);
+  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+  (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
+}
+
+/** Post an ACK
+ */
+static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_tag_t tag, nm_seq_t seq)
+{
+  nm_so_generic_ctrl_header_t h;
+  nm_so_init_ack(&h, tag, seq);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
@@ -115,21 +125,6 @@ static inline int nm_so_unpack_datatype(struct nm_core*p_core, struct nm_unpack_
   return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, segp, datatype_size(segp));
 }
 
-static inline int nm_so_pack(struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
-			     const void*data, uint32_t len, nm_so_flag_t pack_type)
-{
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  const nm_seq_t seq = p_so_tag->send_seq_number++;
-  p_pack->status = pack_type;
-  p_pack->data   = (void*)data;
-  p_pack->len    = len;
-  p_pack->done   = 0;
-  p_pack->p_gate = p_gate;
-  p_pack->tag    = tag;
-  p_pack->seq    = seq;
-  return (*r->driver->pack)(r->_status, p_pack);
-}
 
 static inline int nm_so_flush(nm_gate_t p_gate)
 {

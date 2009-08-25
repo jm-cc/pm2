@@ -80,7 +80,7 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   struct nm_unpack_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t last_seq = p_so_tag->recv_seq_number;
-  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, link)
+  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, _link)
     {
       if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && (p_unpack->tag == tag))
 	{
@@ -184,7 +184,8 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
   p_unpack->seq = seq;
   p_unpack->tag = tag;
   /* store the unpack request */
-  tbx_fast_list_add_tail(&p_unpack->link, &p_core->so_sched.unpacks);
+#warning Paulette: lock
+  tbx_fast_list_add_tail(&p_unpack->_link, &p_core->so_sched.unpacks);
   struct nm_unexpected_s*chunk = nm_unexpected_find_matching(p_core, p_unpack);
   while(chunk)
     {
@@ -211,6 +212,7 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
       /* Decrement the packet wrapper reference counter. If no other
 	 chunks are still in use, the pw will be destroyed. */
       nm_so_pw_dec_header_ref_count(chunk->p_pw);
+#warning Paulette: lock
       tbx_fast_list_del(&chunk->link);
       tbx_free(nm_so_unexpected_mem, chunk);
       if(p_unpack->cumulated_len < p_unpack->expected_len)
@@ -249,13 +251,14 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     }
   else if((p_so_tag == NULL) || (p_unpack->seq == p_so_tag->recv_seq_number - 1))
     {
-      tbx_fast_list_del(&p_unpack->link);
+#warning Paulette: lock
+      tbx_fast_list_del(&p_unpack->_link);
       const struct nm_so_event_s event =
 	{
 	  .status =  NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
 	  .p_unpack = p_unpack
 	};
-      nm_so_status_event(p_core, &event);
+      nm_so_status_event(p_core, &event, &p_unpack->status);
       if(p_so_tag)
 	p_so_tag->recv_seq_number--;
       return NM_ESUCCESS;
@@ -284,7 +287,7 @@ static inline void store_data_or_rdv(struct nm_core*p_core, struct nm_gate*p_gat
       .seq = seq,
       .len = len
     };
-  nm_so_status_event(p_pw->p_gate->p_core, &event);
+  nm_so_status_event(p_pw->p_gate->p_core, &event, NULL);
 }
 
 
@@ -299,8 +302,13 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
       assert(len <= p_unpack->expected_len);
       if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
 	{
-	  p_unpack->expected_len = chunk_offset + len;
+	  /* Update the real size to receive */
+	  const uint32_t size = chunk_offset + len;
+	  assert(size <= p_unpack->expected_len);
+	  p_unpack->expected_len = size;
 	}
+      if((p_unpack->cumulated_len == 0) && (h->flags & NM_PROTO_FLAG_ACKREQ))
+	nm_so_post_ack(p_unpack->p_gate, h->tag_id, h->seq);
       if(len > 0)
 	{
 	  /* Copy data to its final destination */
@@ -327,13 +335,14 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
       p_unpack->cumulated_len += len;
       if(p_unpack->cumulated_len >= p_unpack->expected_len)
 	{
-	  tbx_fast_list_del(&p_unpack->link);
+#warning Paulette: lock
+	  tbx_fast_list_del(&p_unpack->_link);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
 	      .p_unpack = p_unpack
 	    };
-	  nm_so_status_event(p_core, &event);
+	  nm_so_status_event(p_core, &event, &p_unpack->status);
 	}
       const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(h->len) : h->len;
       const uint32_t len = (h->skip == 0) ? size : 0;
@@ -356,11 +365,13 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, s
       assert(size <= p_unpack->expected_len);
       p_unpack->expected_len = size;
     }
+  if((p_unpack->cumulated_len == 0) && (h->flags & NM_PROTO_FLAG_ACKREQ))
+    nm_so_post_ack(p_unpack->p_gate, h->tag_id, h->seq);
   nm_so_rdv_success(p_core, p_unpack, len, chunk_offset);
   h->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
 }
 
-/** Process a complete rendez-vous acknowledgement request.
+/** Process a complete rendez-vous ready-to-receive request.
  */
 static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_header*header)
 {
@@ -382,12 +393,14 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
       if(p_contrib->p_pack->seq == seq && p_large_pw->chunk_offset == chunk_offset)
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
+#warning Paulette: lock
 	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)
 	    {
 	      /* partial ACK- split the packet  */
 	      struct nm_pkt_wrap *p_large_pw2 = NULL;
 	      nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
+#warning Paulette: lock
 	      tbx_fast_list_add(&p_large_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
@@ -398,6 +411,30 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
     }
   TBX_FAILUREF("PANIC- ack_callback cannot find pending packet wrapper for seq = %d; offset = %d!\n",
 	      seq, chunk_offset);
+}
+/** Process an acknowledgement.
+ */
+static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
+{
+  struct nm_core*p_core = p_ack_pw->p_gate->p_core;
+  const nm_tag_t tag = header->tag_id;
+  const nm_seq_t seq = header->seq;
+  struct nm_pack_s*p_pack = NULL;
+  tbx_fast_list_for_each_entry(p_pack, &p_core->so_sched.pending_packs, _link)
+    {
+      if(p_pack->tag == tag && p_pack->seq == seq)
+	{
+#warning Paulette: lock
+	  tbx_fast_list_del(&p_pack->_link);
+	  const struct nm_so_event_s event =
+	    {
+	      .status = NM_SO_STATUS_ACK_RECEIVED,
+	      .p_pack = p_pack
+	    };
+	  nm_so_status_event(p_core, &event, &p_pack->status);
+	  return;
+	}
+    }
 }
 
 /** Iterate over the headers of a freshly received ctrl pkt.
@@ -529,7 +566,14 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	    else
 #endif /* NMAD_QOS */
 	      nm_rtr_handler(p_pw, &ch->rtr);
-	    
+	  }
+	  break;
+
+	case NM_PROTO_ACK:
+	  {
+	    union nm_so_generic_ctrl_header *ch = ptr;
+	    ptr += NM_SO_CTRL_HEADER_SIZE;
+	    nm_ack_handler(p_pw, &ch->ack);
 	  }
 	  break;
 	  
@@ -612,13 +656,14 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       if(p_unpack->cumulated_len >= p_unpack->expected_len)
 	{
 	  /* notify completion */
-	  tbx_fast_list_del(&p_unpack->link);
+#warning Paulette: lock
+	  tbx_fast_list_del(&p_unpack->_link);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
 	      .p_unpack = p_unpack
 	    };
-	  nm_so_status_event(p_core, &event);
+	  nm_so_status_event(p_core, &event, &p_unpack->status);
 	}
       p_gate->active_recv[p_pw->p_drv->id][NM_TRK_LARGE] = 0;
       nm_so_pw_free(p_pw);

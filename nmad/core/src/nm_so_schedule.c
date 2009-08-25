@@ -47,8 +47,11 @@ int nm_so_schedule_init(struct nm_core *p_core)
   TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.unpacks);
 
   /* unexpected */
-  tbx_malloc_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s), NM_UNEXPECTED_PREALLOC, "nmad/core/chunks");
+  tbx_malloc_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s), NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected");
   TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.unexpected);
+  
+  /* pending packs */
+  TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.pending_packs);
 
   /* which strategy is going to be used */
   const char*strategy_name = NULL;

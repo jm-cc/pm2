@@ -43,12 +43,6 @@ typedef int8_t nm_trk_id_t;
 
 #define NM_SO_MAX_TRACKS   2
 
-/* The following constant defines the maximum number of consecutive
-   packs/unpacks that can be requested without waiting the completion
-   of the previous ones.
-   WARNING: THE ONLY VALUE CURRENTLY SUPPORTED IS 256 */
-#define NM_SO_PENDING_PACKS_WINDOW          256
-
 #include "nm_so_parameters.h"
 
 #include "nm_drv_cap.h"
@@ -63,8 +57,8 @@ typedef int8_t nm_trk_id_t;
 #endif
 
 #include "nm_so_strategies.h"
-#include "nm_so_headers.h"
 #include "nm_so_private.h"
+#include "nm_so_headers.h"
 #include "nm_gate.h"
 #include "nm_core.h"
 #include "nm_event.h"

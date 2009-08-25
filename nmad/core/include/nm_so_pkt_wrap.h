@@ -80,8 +80,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);
 
-void nm_pw_complete_contribs(struct nm_core*p_core, struct nm_pkt_wrap*p_pw);
-
 /** Add smal data to pw, in header */
 static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
 					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)

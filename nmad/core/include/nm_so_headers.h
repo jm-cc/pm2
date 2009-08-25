@@ -96,11 +96,18 @@ struct nm_so_ctrl_rtr_header {
   uint32_t chunk_len;
 } __attribute__((packed));
 
+struct nm_so_ctrl_ack_header {
+  nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_ACK */
+  nm_seq_t seq;
+  nm_tag_t tag_id;
+} __attribute__((packed));
+
 /** a unified control header type
  */
 union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header rdv;
   struct nm_so_ctrl_rtr_header rtr;
+  struct nm_so_ctrl_ack_header ack;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
@@ -124,17 +131,19 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t tag_id
   p_header->chunk_offset = chunk_offset;
 }
 
-static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
-				  uint32_t len, uint32_t chunk_offset, uint8_t flags)
+static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, struct nm_pack_s*p_pack,
+				  uint32_t len, uint32_t chunk_offset, uint8_t rdv_flags)
 {
+  if(p_pack->status & NM_PACK_SYNCHRONOUS)
+    rdv_flags |= NM_PROTO_FLAG_ACKREQ;
   p_ctrl->rdv.proto_id     = NM_PROTO_RDV;
-  p_ctrl->rdv.tag_id       = tag;
-  p_ctrl->rdv.seq          = seq;
+  p_ctrl->rdv.tag_id       = p_pack->tag;
+  p_ctrl->rdv.seq          = p_pack->seq;
   p_ctrl->rdv.len          = len;
   p_ctrl->rdv.chunk_offset = chunk_offset;
-  p_ctrl->rdv.flags        = flags;
+  p_ctrl->rdv.flags        = rdv_flags;
 }
-    
+
 static inline void nm_so_init_rtr(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 { 
@@ -147,4 +156,11 @@ static inline void nm_so_init_rtr(union nm_so_generic_ctrl_header*p_ctrl, nm_tag
   p_ctrl->rtr.chunk_len = chunk_len;
 }
 
-#endif /* NM_SO_§HEADER_H */
+static inline void nm_so_init_ack(union nm_so_generic_ctrl_header*p_ctrl, nm_tag_t tag, nm_seq_t seq)
+{ 
+  p_ctrl->ack.proto_id = NM_PROTO_ACK;
+  p_ctrl->ack.tag_id   = tag;
+  p_ctrl->ack.seq      = seq;
+}
+
+#endif /* NM_SO_HEADER_H */

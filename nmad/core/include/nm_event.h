@@ -27,9 +27,11 @@ struct nm_so_event_s
   struct nm_pack_s*p_pack;
 };
 
-static inline void nm_so_status_event(nm_core_t p_core, const struct nm_so_event_s*const event)
+static inline void nm_so_status_event(nm_core_t p_core, const struct nm_so_event_s*const event, nm_so_status_t*p_status)
 {
   nm_so_monitor_itor_t i;
+  if(p_status)
+    *p_status |= event->status;
   puk_vect_foreach(i, nm_so_monitor, &p_core->so_sched.monitors)
     {
       if((*i)->mask & event->status)

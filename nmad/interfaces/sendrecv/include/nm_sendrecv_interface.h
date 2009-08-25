@@ -170,6 +170,21 @@ extern int nm_sr_isend_generic(struct nm_core *p_core,
 			       nm_sr_request_t *p_request,
 			       void*ref);
 
+extern int nm_sr_issend_generic(struct nm_core *p_core,
+			       nm_gate_t p_gate, nm_tag_t tag,
+			       nm_sr_transfer_type_t sending_type,
+			       const void *data, uint32_t len,
+			       nm_sr_request_t *p_request,
+			       void*ref);
+
+static inline int nm_sr_issend(nm_core_t p_core,
+			       nm_gate_t p_gate, nm_tag_t tag,
+			       const void *data, uint32_t len,
+			       nm_sr_request_t *p_request)
+{
+  return nm_sr_issend_generic(p_core, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, NULL);
+}
+
 /** Post a non blocking send request.
  *  @param p_core a pointer to the NM core object.
  *  @param p_gate a pointer to the destination gate.

@@ -381,16 +381,17 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate      = p_rtr_pw->p_gate;
 
-  NM_SO_TRACE("ACK completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
+  NM_SO_TRACE("rtr completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
 
   struct nm_pkt_wrap *p_large_pw = NULL;
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       assert(p_large_pw->n_contribs == 1);
       const struct nm_pw_contrib_s*p_contrib = &p_large_pw->contribs[0];
+      const struct nm_pack_s*p_pack = p_contrib->p_pack;
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
-		  p_contrib->p_pack->seq, p_large_pw->chunk_offset);
-      if(p_contrib->p_pack->seq == seq && p_large_pw->chunk_offset == chunk_offset)
+		  p_pack->seq, p_large_pw->chunk_offset);
+      if((p_pack->seq == seq) && (p_pack->tag == tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
 #warning Paulette: lock

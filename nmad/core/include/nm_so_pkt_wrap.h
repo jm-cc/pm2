@@ -80,7 +80,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);
 
-/** Add smal data to pw, in header */
+/** Add small data to pw, in header */
 static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
 					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)
 {
@@ -97,6 +97,22 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t
     }
   p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
 
+}
+
+/** Add small data to pw, in iovec */
+static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+					      const void*data, uint32_t len, uint32_t chunk_offset, uint8_t proto_flags)
+{
+  struct iovec*hvec = &p_pw->v[0];
+  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
+  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+  struct iovec *dvec = nm_pw_grow_iovec(p_pw);
+  dvec->iov_base = (void*)data;
+  dvec->iov_len = len;
+  /* We don't know yet the gap between header and data, so we
+     temporary store the iovec index as the 'skip' value */
+  nm_so_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, chunk_offset);
+  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
 }
 
 /** Add raw data to pw, without header */

@@ -22,7 +22,7 @@
 #  define NM_SO_MAX_UNEXPECTED                (1024 * 1024)
 #else
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
-#  define NM_SO_MAX_UNEXPECTED                (32 * 1024)
+#  define NM_SO_MAX_UNEXPECTED                (64 * 1024)
 #endif
 
 /* Number of preallocated iovec entries within packet wrappers */

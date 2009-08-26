@@ -348,16 +348,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       else 
 	{
 	  /* Data handled by a separate iovec entry */
-	  struct iovec*hvec = &p_pw->v[0];
-	  struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-	  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
-	  struct iovec *dvec = nm_pw_grow_iovec(p_pw);
-	  dvec->iov_base = (void*)data;
-	  dvec->iov_len = len;
-	  /* We don't know yet the gap between header and data, so we
-	     temporary store the iovec index as the 'skip' value */
-	  nm_so_init_data(h, tag, seq, proto_flags, p_pw->v_nb, len, offset);
-	  p_pw->length += NM_SO_DATA_HEADER_SIZE + len;
+	  nm_so_pw_add_data_in_iovec(p_pw, tag, seq, data, len, offset, proto_flags);
 	}
     }
   else if(p_pw->flags & NM_PW_NOHEADER)

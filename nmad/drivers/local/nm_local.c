@@ -181,7 +181,7 @@ static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int n
   const pid_t pid = getpid();
   struct sockaddr_un addr;
   addr.sun_family = AF_UNIX;
-  sprintf(addr.sun_path, "/tmp/nmad_local.%d", pid);
+  snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/nmad_local.%d", pid);
   p_local_drv->url = strdup(addr.sun_path);
   p_local_drv->server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
   unlink(addr.sun_path);
@@ -288,16 +288,15 @@ static int nm_local_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
       abort();
     }
   int size = iov->iov_len;
-  int rc = send(fd, &size, sizeof(size), MSG_MORE);
-  if(rc != sizeof(size))
+  struct iovec send_iov[2] = 
     {
-      fprintf(stderr, "nmad: local- error %d while sending header.\n", errno);
-      abort();
-    }
-  rc = write(fd, iov->iov_base, iov->iov_len);
-  if(rc != iov->iov_len)
+      [0] = { .iov_base = &size, .iov_len = sizeof(size) },
+      [1] = { .iov_base = iov->iov_base, .iov_len = iov->iov_len }
+    };
+  int rc = writev(fd, &send_iov, 2);
+  if(rc < 0)
     {
-      fprintf(stderr, "nmad: local- error %d while sending data.\n", errno);
+      fprintf(stderr, "nmad: local- error %d while sending message.\n", errno);
       abort();
     }
   return NM_ESUCCESS;

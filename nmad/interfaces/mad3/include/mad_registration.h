@@ -55,6 +55,10 @@ typedef enum
   mad_NMAD_IBVERBS,
 #endif
 
+#ifdef CONFIG_LOCAL
+  mad_NMAD_LOCAL,
+#endif
+
   mad_driver_number // Must be the last element of the enum declaration
 } mad_driver_id_t, *p_mad_driver_id_t;
 

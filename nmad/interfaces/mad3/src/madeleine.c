@@ -70,6 +70,9 @@ static char * (*mad_driver_registration[])(p_mad_driver_interface_t interface) =
 #ifdef CONFIG_IBVERBS
   mad_nmad_register,
 #endif
+#ifdef CONFIG_LOCAL
+  mad_nmad_register,
+#endif
 
   NULL
 };
@@ -96,6 +99,9 @@ static char *mad_driver_name[] =
 #endif
 #ifdef CONFIG_IBVERBS
   "ibverbs",
+#endif
+#ifdef CONFIG_LOCAL
+  "local",
 #endif
 
   NULL

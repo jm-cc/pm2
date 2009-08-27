@@ -33,7 +33,6 @@
 
 static const int param_min_size = 1;
 static const int param_max_size = (8*1024*1024);
-static const int param_nb_samples = 200;
 static const int param_dryrun_count = 10;
 
 static unsigned char*data_send = NULL;
@@ -50,6 +49,16 @@ struct nm_sample_s
 };
 PUK_VECT_TYPE(nm_sample, struct nm_sample_s);
 static nm_sample_vect_t samples = NULL;
+
+static inline int nm_ns_nb_samples(int size)
+{
+  if(size < 32768)
+    return 1000;
+  else if(size < 1024 * 1024)
+    return 100;
+  else
+    return 20;
+}
 
 static void nm_ns_initialize_pw(struct nm_core *p_core,
 				struct nm_drv  *p_drv,
@@ -299,6 +308,7 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
 
   for (size = param_min_size; size <= param_max_size; size*= 2)
     {
+      const int param_nb_samples = nm_ns_nb_samples(size);
       int nb_samples;
       tbx_tick_t t1, t2;
       TBX_GET_TICK(t1);
@@ -388,7 +398,8 @@ static int nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
 
   for (size = param_min_size; size <= param_max_size; size*= 2)
     {
-     int nb_samples;
+      const int param_nb_samples = nm_ns_nb_samples(size);
+      int nb_samples;
       for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
 	{
 	  nm_ns_pw_recv(receiving_pw, r, data_recv, size);
@@ -426,13 +437,13 @@ static void nm_ns_compute_thresholds(void)
 {
   /* copy/iov threshold */
   int size = 0;
-  int i = 0;
+  int i = 1; /* init to 1 to leave room for interpolation (i-1 must exist) */
   struct nm_sample_s s;
   while(size < NM_MAX_SMALL)
     {
       s = nm_sample_vect_at(samples, i);
       size = s.size;
-      if(s.trk0_copy_lat - s.trk0_iov_lat > 0.05)
+      if(s.trk0_copy_lat > s.trk0_iov_lat)
 	{
 	  break;
 	}
@@ -440,11 +451,18 @@ static void nm_ns_compute_thresholds(void)
     }
   fprintf(stderr, "# copy_on_send_threshold = %d\n", size);
   fprintf(stderr, "#   copy = %f; iov = %f\n", s.trk0_copy_lat, s.trk0_iov_lat);
+  struct nm_sample_s s0 = nm_sample_vect_at(samples, i - 1);
+  struct nm_sample_s s1 = nm_sample_vect_at(samples, i);
+  const int copy_on_send = s0.size +
+    ( ( (s1.size - s0.size)*(s0.trk0_copy_lat - s0.trk0_iov_lat) ) / 
+      ( s1.trk0_iov_lat - s0.trk0_iov_lat + s0.trk0_copy_lat - s1.trk0_copy_lat ) );
+  fprintf(stderr, "#  interpolated = %d\n", copy_on_send);
+  /* don't re-initialize i; rdv threshold must be higher than copy_on_send */
   while(size < NM_MAX_SMALL)
     {
       s = nm_sample_vect_at(samples, i);
       size = s.size;
-      if(s.trk0_iov_lat - s.trk1_rdv_lat > 0.05)
+      if(s.trk0_iov_lat > s.trk1_rdv_lat)
 	{
 	  break;
 	}
@@ -452,6 +470,12 @@ static void nm_ns_compute_thresholds(void)
     }
   fprintf(stderr, "# rdv_threshold = %d\n", size);
   fprintf(stderr, "#   eager = %f; rdv = %f\n", s.trk0_iov_lat, s.trk1_rdv_lat);
+  s0 = nm_sample_vect_at(samples, i - 1);
+  s1 = nm_sample_vect_at(samples, i);
+  const int rdv_threshold = s0.size +
+    ( ( (s1.size - s0.size)*(s0.trk1_rdv_lat - s0.trk0_iov_lat) ) / 
+      ( s1.trk0_iov_lat - s0.trk0_iov_lat + s0.trk1_rdv_lat - s1.trk1_rdv_lat ) );
+  fprintf(stderr, "#  interpolated = %d\n", rdv_threshold);
 }
 
 int main(int argc, char **argv)

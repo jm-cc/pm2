@@ -80,6 +80,23 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);
 
+/** Add short data to pw, with compact header */
+static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+					   const void*data, uint32_t len)
+{
+  assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
+  struct iovec*hvec = &p_pw->v[0];
+  struct nm_so_short_data_header *h = hvec->iov_base + hvec->iov_len;
+  hvec->iov_len += NM_SO_SHORT_DATA_HEADER_SIZE;
+  nm_so_init_short_data(h, tag, seq, len);
+  if(len)
+    {
+      memcpy(hvec->iov_base + hvec->iov_len, data, len);
+      hvec->iov_len += len;
+    }
+  p_pw->length += NM_SO_SHORT_DATA_HEADER_SIZE + len;
+}
+
 /** Add small data to pw, in header */
 static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
 					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)
@@ -96,7 +113,6 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t
       hvec->iov_len += size;
     }
   p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
-
 }
 
 /** Add small data to pw, in iovec */

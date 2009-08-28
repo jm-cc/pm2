@@ -220,7 +220,13 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
       /* very rough header decoder... should be sufficient for our basic use here. */
       const nm_proto_t*p_proto = p_pw->v[0].iov_base;
       const nm_proto_t proto_id = (*p_proto) & NM_PROTO_ID_MASK;
-      if(proto_id == NM_PROTO_DATA)
+      if(proto_id == NM_PROTO_SHORT_DATA)
+	{
+	  const struct nm_so_short_data_header*dh = (const struct nm_so_short_data_header*)p_proto;
+	  const size_t data_len = dh->len;
+	  memcpy(ptr, dh + 1, data_len);
+	}
+      else if(proto_id == NM_PROTO_DATA)
 	{
 	  const struct nm_so_data_header*dh = (const struct nm_so_data_header*)p_proto;
 	  const size_t data_len = dh->len;

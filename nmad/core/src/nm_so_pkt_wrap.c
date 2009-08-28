@@ -340,7 +340,11 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
     {
       /* Small data case */
-      if(flags & NM_SO_DATA_USE_COPY)
+      if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
+	{
+	  nm_so_pw_add_short_data(p_pw, tag, seq, data, len);
+	}
+      else if(flags & NM_SO_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
 	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, proto_flags);
@@ -430,6 +434,11 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 		  last_treated_vec++;
 		  to_skip += last_treated_vec->iov_len;
 		}
+	    }
+	  else if(proto_id == NM_PROTO_SHORT_DATA)
+	    {
+	      struct nm_so_short_data_header*h = ptr;
+	      proto_hsize = NM_SO_SHORT_DATA_HEADER_SIZE + h->len;
 	    }
 	  else
 	    {

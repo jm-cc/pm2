@@ -19,8 +19,8 @@
 
 /* *** method: 'bycopy' ************************************ */
 
-#define NM_IBVERBS_BYCOPY_BLOCKSIZE 4096
-#define NM_IBVERBS_BYCOPY_RBUF_NUM    16
+#define NM_IBVERBS_BYCOPY_BLOCKSIZE 8192
+#define NM_IBVERBS_BYCOPY_RBUF_NUM  8
 
 #define NM_IBVERBS_BYCOPY_BUFSIZE     (NM_IBVERBS_BYCOPY_BLOCKSIZE - sizeof(struct nm_ibverbs_bycopy_header))
 #define NM_IBVERBS_BYCOPY_SBUF_NUM    2

@@ -61,8 +61,8 @@ struct nm_so_unused_header {
 
 struct nm_so_data_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */
-  nm_seq_t seq;
   nm_tag_t tag_id;
+  nm_seq_t seq;
   uint8_t  flags;
   uint32_t len;
   uint32_t chunk_offset;
@@ -71,10 +71,9 @@ struct nm_so_data_header {
 
 struct nm_so_short_data_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_SHORT_DATA */
-  nm_seq_t seq;
   nm_tag_t tag_id;
-  uint8_t  flags;
-  uint16_t len;
+  nm_seq_t seq;
+  uint8_t len;
 } __attribute__((packed));
 
 struct nm_so_ctrl_rdv_header {
@@ -112,9 +111,13 @@ union nm_so_generic_ctrl_header {
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
 typedef struct nm_so_data_header nm_so_data_header_t;
+typedef struct nm_so_short_data_header nm_so_short_data_header_t;
 
 #define NM_SO_DATA_HEADER_SIZE \
   nm_so_aligned(sizeof(struct nm_so_data_header))
+
+#define NM_SO_SHORT_DATA_HEADER_SIZE \
+  nm_so_aligned(sizeof(struct nm_so_short_data_header))
 
 #define NM_SO_CTRL_HEADER_SIZE \
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
@@ -129,6 +132,15 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_tag_t tag_id
   p_header->skip     = skip;
   p_header->len      = len;
   p_header->chunk_offset = chunk_offset;
+}
+
+static inline void nm_so_init_short_data(nm_so_short_data_header_t*p_header, nm_tag_t tag_id, 
+					 nm_seq_t seq, uint32_t len)
+{
+  p_header->proto_id = NM_PROTO_SHORT_DATA;
+  p_header->tag_id   = tag_id;
+  p_header->seq      = seq;
+  p_header->len      = len;
 }
 
 static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, struct nm_pack_s*p_pack,

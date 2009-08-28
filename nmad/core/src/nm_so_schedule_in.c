@@ -23,9 +23,10 @@
 #include <ccs_public.h>
 #include <segment.h>
 
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_so_ctrl_rdv_header*h);
 
+static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_short_data_header_t*h);
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_data_header_t*h);
+static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_so_ctrl_rdv_header*h);
 
 
 /** Find an unexpected chunk that matches an unpack request [p_gate, seq, tag]
@@ -115,57 +116,120 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   return NULL;
 }
 
-static int _nm_so_copy_data_in_iov(struct iovec *iov, uint32_t chunk_offset, const void *data, uint32_t len)
+/** copy received data to its final destination */
+static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, const void *ptr, uint32_t len)
 {
-  uint32_t chunk_len, pending_len = len;
-  int offset = 0;
-  int i = 0;
-
-  while(offset + iov[i].iov_len <= chunk_offset)
+  if(len > 0)
     {
-      offset += iov[i].iov_len;
-      i++;
-    }
-
-  if(offset + iov[i].iov_len >= chunk_offset + len)
-    {
-      /* Data is contiguous */
-      memcpy(iov[i].iov_base + (chunk_offset - offset), data, len);
-      goto out;
-    }
-
-  /* Data are on several iovec entries */
-  
-  /* first entry: it can be a fragment of entry */
-  chunk_len = iov[i].iov_len - (chunk_offset - offset);
-
-  memcpy(iov[i].iov_base + (chunk_offset - offset), data, chunk_len);
-
-  pending_len -= chunk_len;
-  offset += iov[i].iov_len;
-  i++;
-
-  /* following entries: only full part */
-  while(pending_len)
-    {
-      if(offset + iov[i].iov_len >= chunk_offset + pending_len)
+      /* Copy data to its final destination */
+      if(p_unpack->status & NM_UNPACK_TYPE_CONTIGUOUS)
 	{
-	  /* it is the last line */
-	  memcpy(iov[i].iov_base, data+(len-pending_len), pending_len);
-	  goto out;
+	  /* contiguous data */
+	  void*const data = p_unpack->data;
+	  memcpy(data + chunk_offset, ptr, len);
 	}
-      
-      chunk_len = iov[i].iov_len;
-      
-      memcpy(iov[i].iov_base, data+(len-pending_len), chunk_len);
-      
-      pending_len -= chunk_len;
-      offset += iov[i].iov_len;
-      i++;
+      else if(p_unpack->status & NM_UNPACK_TYPE_IOV)
+	{
+	  /* destination is non contiguous */
+	  struct iovec*const iov = p_unpack->data;
+	  uint32_t pending_len = len;
+	  int offset = 0;
+	  int i = 0;
+	  while(offset + iov[i].iov_len <= chunk_offset)
+	    {
+	      offset += iov[i].iov_len;
+	      i++;
+	    }
+	  uint32_t chunk_len = iov[i].iov_len - (chunk_offset - offset);
+	  if(chunk_len > len)
+	    chunk_len = len;
+	  memcpy(iov[i].iov_base + (chunk_offset - offset), ptr, chunk_len);
+	  pending_len -= chunk_len;
+	  offset += iov[i].iov_len;
+	  i++;
+	  while(pending_len)
+	    {
+	      if(offset + iov[i].iov_len >= chunk_offset + pending_len)
+		{
+		  memcpy(iov[i].iov_base, ptr + (len-pending_len), pending_len);
+		  pending_len = 0;
+		}
+	      else
+		{
+		  chunk_len = iov[i].iov_len;
+		  memcpy(iov[i].iov_base, ptr + (len-pending_len), chunk_len);
+		  pending_len -= chunk_len;
+		  offset += iov[i].iov_len;
+		  i++;
+		}
+	    }
+	}
+      else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
+	{
+	  /* data is described by a datatype */
+	  DLOOP_Offset last = chunk_offset + len;
+	  struct DLOOP_Segment*const segp = p_unpack->data;
+	  CCSI_Segment_unpack(segp, chunk_offset, &last, ptr);
+	}	    
     }
-  
- out:
-  return NM_ESUCCESS;
+}
+
+/** mark 'chunk_len' data as received in the given unpack, and check for unpack completion */
+static inline nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_unpack_s*p_unpack, int chunk_len)
+{
+  p_unpack->cumulated_len += chunk_len;
+  if(p_unpack->cumulated_len >= p_unpack->expected_len)
+    {
+#warning Paulette: lock
+      tbx_fast_list_del(&p_unpack->_link);
+      const struct nm_so_event_s event =
+	{
+	  .status = NM_SO_STATUS_UNPACK_COMPLETED,
+	  .p_unpack = p_unpack
+	};
+      nm_so_status_event(p_core, &event, &p_unpack->status);
+    }
+}
+
+/** decode and manage data flags found in data/short_data/rdv packets */
+static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t flags,
+					   uint32_t chunk_offset, uint32_t chunk_len)
+{
+  assert(chunk_len <= p_unpack->expected_len);
+  if(flags & NM_PROTO_FLAG_LASTCHUNK)
+    {
+      /* Update the real size to receive */
+      const uint32_t size = chunk_offset + chunk_len;
+      assert(size <= p_unpack->expected_len);
+      p_unpack->expected_len = size;
+    }
+  if((p_unpack->cumulated_len == 0) && (flags & NM_PROTO_FLAG_ACKREQ))
+    nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);
+}
+
+/** store an unexpected chunk of data (data/short_data/rdv) */
+static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate,
+					  void *header, uint32_t len, nm_tag_t tag, nm_seq_t seq,
+					  struct nm_pkt_wrap *p_pw)
+{
+  struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
+  chunk->header = header;
+  chunk->p_pw = p_pw;
+  chunk->p_gate = p_gate;
+  chunk->seq = seq;
+  chunk->tag = tag;
+  p_pw->header_ref_count++;
+#warning Paulette: lock
+  tbx_fast_list_add_tail(&chunk->link, &p_core->so_sched.unexpected);
+  const struct nm_so_event_s event =
+    {
+      .status = NM_SO_STATUS_UNEXPECTED,
+      .p_gate = p_pw->p_gate,
+      .tag = tag,
+      .seq = seq,
+      .len = len
+    };
+  nm_so_status_event(p_pw->p_gate->p_core, &event, NULL);
 }
 
 
@@ -194,6 +258,13 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
       const nm_proto_t proto_id = (*(nm_proto_t *)header) & NM_PROTO_ID_MASK;
       switch(proto_id)
 	{
+	case NM_PROTO_SHORT_DATA:
+	  {
+	    struct nm_so_short_data_header *h = header;
+	    const void *ptr = header + NM_SO_SHORT_DATA_HEADER_SIZE;
+	    nm_short_data_handler(p_core, p_unpack, ptr, h);
+	  }
+	  break;
 	case NM_PROTO_DATA:
 	  {
 	    struct nm_so_data_header *h = header;
@@ -201,7 +272,6 @@ int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm
 	    nm_small_data_handler(p_core, p_unpack, ptr, h);
 	  }
 	  break;
-	  
 	case NM_PROTO_RDV:
 	  {
 	    struct nm_so_ctrl_rdv_header *rdv = header;
@@ -267,88 +337,40 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     return -NM_ENOTIMPL;
 }
 
-static inline void store_data_or_rdv(struct nm_core*p_core, struct nm_gate*p_gate,
-				     void *header, uint32_t len, nm_tag_t tag, nm_seq_t seq,
-				     struct nm_pkt_wrap *p_pw)
+/** Process a short data request with a matching unpack (NM_PROTO_SHORT_DATA).
+ */
+static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_short_data_header_t*h)
 {
-  struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
-  tbx_fast_list_add_tail(&chunk->link, &p_core->so_sched.unexpected);
-  chunk->header = header;
-  chunk->p_pw = p_pw;
-  chunk->p_gate = p_gate;
-  chunk->seq = seq;
-  chunk->tag = tag;
-  p_pw->header_ref_count++;
-  const struct nm_so_event_s event =
+  if(!(p_unpack->status & NM_SO_STATUS_UNPACK_CANCELLED))
     {
-      .status = NM_SO_STATUS_UNEXPECTED,
-      .p_gate = p_pw->p_gate,
-      .tag = tag,
-      .seq = seq,
-      .len = len
-    };
-  nm_so_status_event(p_pw->p_gate->p_core, &event, NULL);
+      const uint32_t len = h->len;
+      const uint32_t chunk_offset = 0;
+      const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
+      nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
+      nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
+      nm_so_unpack_check_completion(p_core, p_unpack, len);
+      struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
+      uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
+      uh->len = NM_SO_SHORT_DATA_HEADER_SIZE + len;
+    }
 }
 
-
-/** Process a small data request with a matching unpack.
+/** Process a small data request with a matching unpack (NM_PROTO_DATA).
  */
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_data_header_t*h)
 {
-  const uint32_t len = h->len;
-  const uint32_t chunk_offset = h->chunk_offset;
   if(!(p_unpack->status & NM_SO_STATUS_UNPACK_CANCELLED))
     {
-      assert(len <= p_unpack->expected_len);
-      if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
-	{
-	  /* Update the real size to receive */
-	  const uint32_t size = chunk_offset + len;
-	  assert(size <= p_unpack->expected_len);
-	  p_unpack->expected_len = size;
-	}
-      if((p_unpack->cumulated_len == 0) && (h->flags & NM_PROTO_FLAG_ACKREQ))
-	nm_so_post_ack(p_unpack->p_gate, h->tag_id, h->seq);
-      if(len > 0)
-	{
-	  /* Copy data to its final destination */
-	  if(p_unpack->status & NM_UNPACK_TYPE_CONTIGUOUS)
-	    {
-	      /* contiguous data */
-	      void*const data = p_unpack->data;
-	      memcpy(data + chunk_offset, ptr, len);
-	    }
-	  else if(p_unpack->status & NM_UNPACK_TYPE_IOV)
-	    {
-	      /* destination is non contiguous */
-	      struct iovec*const iov = p_unpack->data;
-	      _nm_so_copy_data_in_iov(iov, chunk_offset, ptr, len);
-	    }
-	  else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
-	    {
-	      /* data is described by a datatype */
-	      DLOOP_Offset last = chunk_offset + len;
-	      struct DLOOP_Segment*const segp = p_unpack->data;
-	      CCSI_Segment_unpack(segp, chunk_offset, &last, ptr);
-	    }	    
-	}
-      p_unpack->cumulated_len += len;
-      if(p_unpack->cumulated_len >= p_unpack->expected_len)
-	{
-#warning Paulette: lock
-	  tbx_fast_list_del(&p_unpack->_link);
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_unpack = p_unpack
-	    };
-	  nm_so_status_event(p_core, &event, &p_unpack->status);
-	}
-      const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(h->len) : h->len;
-      const uint32_t len = (h->skip == 0) ? size : 0;
+      const uint32_t len = h->len;
+      const uint32_t chunk_offset = h->chunk_offset;
+      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
+      nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
+      nm_so_unpack_check_completion(p_core, p_unpack, len);
+      const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(len) : len;
+      const uint32_t unused_len = (h->skip == 0) ? size : 0;
       struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
       uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
-      uh->len = NM_SO_DATA_HEADER_SIZE + len;
+      uh->len = NM_SO_DATA_HEADER_SIZE + unused_len;
     }
 }
 
@@ -358,15 +380,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, s
 {
   const uint32_t len = h->len;
   const uint32_t chunk_offset = h->chunk_offset;
-  if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
-    {
-      /* Update the real size to receive */
-      const uint32_t size = chunk_offset + len;
-      assert(size <= p_unpack->expected_len);
-      p_unpack->expected_len = size;
-    }
-  if((p_unpack->cumulated_len == 0) && (h->flags & NM_PROTO_FLAG_ACKREQ))
-    nm_so_post_ack(p_unpack->p_gate, h->tag_id, h->seq);
+  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
   nm_so_rdv_success(p_core, p_unpack, len, chunk_offset);
   h->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
 }
@@ -469,6 +483,28 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
       assert(proto_id != 0);
       switch(proto_id)
 	{
+	case NM_PROTO_SHORT_DATA:
+	  {
+	    struct nm_so_short_data_header*sh = ptr;
+	    ptr += NM_SO_SHORT_DATA_HEADER_SIZE;
+	    const uint32_t len = sh->len;
+	    const nm_tag_t tag = sh->tag_id;
+	    const nm_seq_t seq = sh->seq;
+	    struct nm_gate*p_gate = p_pw->p_gate;
+	    struct nm_core*p_core = p_gate->p_core;
+	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
+	    if(p_unpack)
+	      {
+		nm_short_data_handler(p_core, p_unpack, ptr, sh);
+	      }
+	    else
+	      { 
+		nm_so_unexpected_store(p_core, p_gate, sh, len, tag, seq, p_pw);
+	      }
+	    ptr += len;
+	  }
+	  break;
+
 	case NM_PROTO_DATA:
 	  {
 	    /* Data header */
@@ -513,7 +549,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      }
 	    else
 	      { 
-		store_data_or_rdv(p_core, p_gate, dh, dh->len, tag, seq, p_pw);
+		nm_so_unexpected_store(p_core, p_gate, dh, dh->len, tag, seq, p_pw);
 	      }
 	  }
 	  break;
@@ -542,8 +578,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      }
 	    else 
 	      {
-		/* Store rdv request */
-		store_data_or_rdv(p_core, p_gate, ch, len, tag, seq, p_pw);
+		nm_so_unexpected_store(p_core, p_gate, ch, len, tag, seq, p_pw);
 	      }
 	  }
 	  break;
@@ -621,7 +656,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
-      NM_SO_TRACE("Reception of a small packet\n");
       p_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
       nm_decode_headers(p_pw);
     }
@@ -629,8 +663,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
     {
       /* ** Large packet - track #1 ************************ */
       struct nm_unpack_s*p_unpack = p_pw->p_unpack;
-      const nm_tag_t tag = p_unpack->tag;
-      const nm_seq_t seq = p_unpack->seq;
       const uint32_t len = p_pw->length;
       if(p_unpack->status & NM_UNPACK_TYPE_COPY_DATATYPE)
 	{
@@ -638,7 +670,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  DLOOP_Offset last = p_pw->length;
 	  /* unpack contigous data into their final destination */
 	  CCSI_Segment_unpack(p_pw->segp, 0, &last, p_pw->v[0].iov_base);
-	  p_unpack->cumulated_len += len;
+	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	  if(last < p_pw->length)
 	    {
 	      /* we are expecting more data */
@@ -651,20 +683,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       else
 	{
 	  /* ** Large packet, data received directly in its final destination */
-	  NM_SO_TRACE("Completion of a large message on tag %d, seq %d and len = %d\n", tag, seq, len);
-	  p_unpack->cumulated_len += len;
-	}
-      if(p_unpack->cumulated_len >= p_unpack->expected_len)
-	{
-	  /* notify completion */
-#warning Paulette: lock
-	  tbx_fast_list_del(&p_unpack->_link);
-	  const struct nm_so_event_s event =
-	    {
-	      .status = NM_SO_STATUS_UNPACK_COMPLETED,
-	      .p_unpack = p_unpack
-	    };
-	  nm_so_status_event(p_core, &event, &p_unpack->status);
+	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
       p_gate->active_recv[p_pw->p_drv->id][NM_TRK_LARGE] = 0;
       nm_so_pw_free(p_pw);

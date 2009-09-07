@@ -110,7 +110,7 @@ struct nm_sr_request_s
   {
     struct nm_unpack_s unpack;
     struct nm_pack_s pack;
-  };
+  } req;
   nm_sr_cond_t status;
   nm_sr_event_monitor_t monitor;
   void *ref;
@@ -464,7 +464,7 @@ static inline int nm_sr_get_tag(nm_core_t p_core,
 				nm_sr_request_t *p_request,
 				nm_tag_t*tag)
 {
-  *tag = p_request->unpack.tag;
+  *tag = p_request->req.unpack.tag;
   return NM_ESUCCESS;
 }
 

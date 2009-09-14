@@ -276,4 +276,4 @@ EOF
 	echo '])'
 ) > m4/pm2-flavor-options.m4
 
-ACLOCAL="aclocal -I m4" exec autoreconf -vfi
+ACLOCAL="aclocal -I m4 -I /usr/share/aclocal" exec autoreconf -vfi

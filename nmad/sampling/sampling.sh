@@ -11,6 +11,12 @@ machine2=$2 #echo "machine2 = $machine2"
 shift
 shift
 
+if [ x${LEO_RSH} = x ]; then
+  SSH=ssh
+else
+  SSH="${LEO_RSH}"
+fi
+
 for network in $*; do
     #echo "network = $network"
 
@@ -27,16 +33,16 @@ for network in $*; do
         --nmad="$network sched_opt strat_default mad3_emu tag_as_flat_array" --puk=disable_output
 
     #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
-    ssh $machine1 arch > architecture
+    $SSH $machine1 arch > architecture
     if [ ! -s architecture ] ; then
-	ssh $machine1 uname -m > architecture
+	$SSH $machine1 uname -m > architecture
     fi
     arch=`cat architecture` #echo "Arch = $arch"
     rm -f architecture
 
     #compilation du test d'échantillonage avec une flavor prédéfinie
     prog=$(pm2-which -f $flavor sampling-prog 2>/dev/null)
-    ssh $machine1 make FLAVOR=$flavor -C $PM2_ROOT/nmad/sampling sampling-prog
+    $SSH $machine1 make FLAVOR=$flavor -C $PM2_ROOT/nmad/sampling sampling-prog
  
     LEONIE_FLAVOR=$(pm2-flavor get --flavor=leonie 2>/dev/null)
     if [ -z "$LEONIE_FLAVOR" ] ; then

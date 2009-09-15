@@ -613,7 +613,7 @@ static void nm_ns_compute_thresholds(void)
   fprintf(stderr, "#  interpolated = %d\n", rdv_threshold);
 
   i = 1;
-  while(size < NM_MAX_SMALL)
+  do
     {
       s = nm_sample_vect_at(samples, i);
       size = s.size;
@@ -623,6 +623,7 @@ static void nm_ns_compute_thresholds(void)
 	}
       i++;
     }
+  while(size < NM_MAX_SMALL);
   fprintf(stderr, "# aggreg_threshold = %d\n", size);
   fprintf(stderr, "#   2 packs = %f; aggreg = %f\n", s.trk0_x2_lat, s.aggreg_lat);
   s0 = nm_sample_vect_at(samples, i - 1);

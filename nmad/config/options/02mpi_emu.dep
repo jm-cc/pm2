@@ -1,1 +1,1 @@
-Depend: mad3_emu nmad_tag_as_hashtable
+Depend: nmad_launcher nmad_tag_as_hashtable

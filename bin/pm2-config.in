@@ -57,6 +57,9 @@ Other options
   --loader      : loader used
   --preload     : dynamic libraries to be pre-loaded
   --ld-library-path : dynamic library path to be added
+  --arch        : target architecture
+  --asm         : target assembly
+  --sys         : target system
   --getvar=name : print content of specified variable
 
 Known values for MODULE are:
@@ -555,7 +558,7 @@ pm2_config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path)
+    --ext|--protocols|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path|--arch|--asm|--sys)
 	_other=$1
 	;;
      --getvar=*)
@@ -671,6 +674,18 @@ pm2_config_parse_cmdline() # args
 		;;
 	    --ld-library-path)
 		echo $_PM2_CONFIG_LD_LIBRARY_PATH
+		exit 0
+		;;
+	    --arch)
+		echo $PM2_ARCH
+		exit 0
+		;;
+	    --asm)
+		echo $PM2_ASM
+		exit 0
+		;;
+	    --sys)
+		echo $PM2_SYS
 		exit 0
 		;;
 	    --stampfile)

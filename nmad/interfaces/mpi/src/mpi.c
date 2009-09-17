@@ -1151,7 +1151,8 @@ int MPI_Init(int *argc,
   launcher_instance = puk_adapter_instanciate(launcher);
   struct puk_receptacle_NewMad_Launcher_s r;
   puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
-  (*r.driver->init)(r._status, argc, *argv, "Mad-MPI");
+  const char*session = puk_mod_getattr(NULL, "PADICO_BOOT_ID");
+  (*r.driver->init)(r._status, argc, *argv, session);
 
   /*
    * Internal initialisation

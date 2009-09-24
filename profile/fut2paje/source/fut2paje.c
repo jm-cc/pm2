@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <fxt/fxt.h>
 #include <fxt/fut.h>
@@ -46,7 +47,7 @@ static uint64_t start_time = 0;
 
 static char *out_paje_path = "paje.trace";
 static char *events_file_path = "events.tmp";
-static FILE *out_paje_file, *events_file;
+static FILE *out_paje_file = NULL, *events_file;
 
 static void write_paje_header (FILE *);
 
@@ -60,8 +61,14 @@ perror_and_exit (const char *message, int exit_code)
 static void
 paje_output_file_init (void)
 {
-  out_paje_file = fopen (out_paje_path, "w+");
-  events_file = fopen (events_file_path, "w+");
+  if((out_paje_file = fopen (out_paje_path, "w+")) == NULL)
+    perror_and_exit("fopen on out_paje_file failed", -1);
+
+  if((events_file = fopen (events_file_path, "w+")) == NULL)
+    {
+      fclose(out_paje_file);
+      perror_and_exit("fopen on events_file failed", -1);
+    }
 
   write_paje_header (out_paje_file);
 
@@ -170,10 +177,11 @@ handle_switch_to (void)
 {
   int thread_id = find_thread_id (ev.param[0]);
 
-  fprintf (events_file, "10       %f	ST_VPState     VP%lu      %c\n",
+  fprintf (events_file, "10       %f	ST_VPState     VP%lu      %c      \"%s\"\n",
 	   (float)((ev.time-start_time)/1000000.0),
 	   ev.param[2],
-	   thread_name[thread_id][0] != 'm' ? thread_name[thread_id][0] : 'u');
+	   thread_name[thread_id][0] != 'm' ? thread_name[thread_id][0] : 'u',
+	   thread_name[thread_id]);
 
   return 0;
 }
@@ -204,14 +212,14 @@ handle_set_thread_name (void)
 int
 main (int argc, char **argv)
 {
-  char *filename, *filenameout = NULL;
+  char *filename;
   int ret;
-  int fd_in, fd_out;
-  int use_stdout = 1;
+  int fd_in;
+  fxt_blockev_t block;
 
   if (argc < 2)
     {
-      fprintf (stderr, "Usage : %s input_filename [-o output_filename]\n", argv[0]);
+      fprintf (stderr, "Usage : %s input_filename [output_filename]\n", argv[0]);
       exit (-1);
     }
 
@@ -222,19 +230,12 @@ main (int argc, char **argv)
     perror_and_exit ("open failed :", -1);
 
   if (argc > 2)
-    {
-      filenameout = argv[2];
-      use_stdout = 0;
-      fd_out = open (filenameout, O_RDWR);
-      if (fd_out < 0)
-	perror_and_exit ("open (out) failed :", -1);
-    }
-
+    out_paje_path = argv[2];
+ 
   fut = fxt_fdopen (fd_in);
   if (!fut)
     perror_and_exit ("fxt_fdopen :", -1);
 
-  fxt_blockev_t block;
   block = fxt_blockev_enter (fut);
 
   /* create a htable to identify each worker(tid) */
@@ -243,7 +244,7 @@ main (int argc, char **argv)
   thread_name = malloc (MAX_THREADS * sizeof(char *));
 
   paje_output_file_init ();
-
+  
   while (true)
     {
       ret = fxt_next_ev (block, FXT_EV_TYPE_64, (struct fxt_ev *)&ev);
@@ -289,7 +290,7 @@ main (int argc, char **argv)
 	  break;
 
 	default:
-	  fprintf (stderr, "unknown event.. %x at time %llx\n", (unsigned)ev.code, (long long unsigned)ev.time);
+	  //fprintf (stderr, "unknown event.. %x at time %llx\n", (unsigned)ev.code, (long long unsigned)ev.time);
 	  break;
 	}
     }
@@ -297,6 +298,7 @@ main (int argc, char **argv)
   free (thread_name);
 
   paje_output_file_terminate ();
+  close(fd_in);
 
   return 0;
 }
@@ -360,6 +362,7 @@ write_paje_header (FILE *file)
   fprintf (file, "\%%	Type	string\n");
   fprintf (file, "\%%	Container	string\n");
   fprintf (file, "\%%	Value	string\n");
+  fprintf (file, "\%%       ThreadName      string\n");
   fprintf (file, "\%%EndEventDef\n");
   fprintf (file, "\%%EventDef	PajePushState	11\n");
   fprintf (file, "\%%	Time	date\n");

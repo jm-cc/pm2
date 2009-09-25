@@ -721,8 +721,10 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
       home = getenv("HOME");
     }
     assert(home != NULL);
-    rc = snprintf(filename, 1024, "%s/.pm2/%s/%s_%s.xml", home, entity, entity, name);
+
+    rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", home, entity, entity, name);
   }
+
   assert(rc < 1024);
   puk_component_t component = puk_adapter_parse_file(filename);
   if(component == NULL)

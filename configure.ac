@@ -55,6 +55,8 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-wrapper				\
   bin/pm2-wrapper-valgrind			\
   bin/pm2-xload					\
+  bin/nmad-strategy-conf                        \
+  bin/nmad-driver-conf                          \
   nmad/interfaces/mpi/scripts/mpicc		\
   nmad/interfaces/mpi/scripts/mpicc.ext		\
   nmad/interfaces/mpi/scripts/mpicxx		\

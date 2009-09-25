@@ -1,4 +1,4 @@
-#! /bin/bash
+#!@BASH@
 ###########
 
 # PM2: Parallel Multithreaded Machine
@@ -16,7 +16,11 @@
 #
 
 # Get some variables
-DRIVER_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/driver
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+
+DRIVER_DIR="@PM2_HOME@/driver"
+
 ACTION="write"
 CHOSEN_DRIVER=""
 

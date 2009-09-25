@@ -1,4 +1,4 @@
-#! /bin/bash
+#!@BASH@
 ###########
 
 # PM2: Parallel Multithreaded Machine
@@ -16,7 +16,10 @@
 #
 
 # Get some variables
-STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+
+STRAT_DIR="@PM2_HOME@/strategy"
 NM_SO_MAX_SMALL="32726"
 NM_SO_COPY_ON_SEND_THRESHOLD="4096"
 ACTION="write"
@@ -181,7 +184,6 @@ case ${ACTION} in
 	    usage
 	    exit 1
 	fi
-
 
 	nmad_strat_write $CHOSEN_STRATEGY
 

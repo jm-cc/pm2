@@ -16,6 +16,7 @@
 #include <nm_public.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
+#include <nm_private.h>
 
 #ifdef CONFIG_PROTO_MAD3
 #include <nm_mad3_public.h>

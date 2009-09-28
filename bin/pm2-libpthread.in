@@ -21,7 +21,11 @@ export PATH PM2_ROOT
 PM2_FLAVOR="${PM2_FLAVOR:-libpthread}"
 export PM2_FLAVOR
 
-BUILDDIR="@abs_top_srcdir@/build/@PM2_ASM@/$PM2_FLAVOR"
+if [ -z "$PM2_BUILD" ] ; then
+    BUILDDIR="${PM2_BUILD_DIR:-${PM2_ROOT}/build}/@PM2_ASM@/$PM2_FLAVOR"
+else
+    eval BUILDDIR="$PM2_BUILD"
+fi
 marcel_libpthread="$BUILDDIR/lib/libpthread.so"
 
 if [ ! -f "$marcel_libpthread" ]

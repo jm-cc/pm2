@@ -154,6 +154,7 @@ pm2_config_init()
     if [ ! -f "$_PM2_CONFIG_FLAVOR_FILE" ]; then
 	echo "Flavor '$_PM2_CONFIG_FLAVOR' does not exist yet. Create it before." 1>&2
 	echo "You can use 'make init' to create the basic flavors of pm2" 1>&2
+	echo "or ./bin/pm2-create-sample-flavors to $_PM2_CONFIG_FLAVOR to generate just this one" 1>&2
 	echo "or 'make config|menuconfig|xdialogconfig|xconfig' to create your own flavor." 1>&2
 	exit 1
     fi

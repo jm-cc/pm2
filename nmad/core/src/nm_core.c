@@ -716,13 +716,11 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   const char*pm2_root = getenv("PM2_ROOT");
   if(pm2_home)
     {
-      fprintf(stderr, "PM2_HOME = %s\n", pm2_home);
       /* $PM2_HOME/<entity>/<entity>_<name>.xml */
       rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_home, entity, entity, name);
     }
   else if(pm2_root)
     {
-      fprintf(stderr, "PM2_ROOT = %s\n", pm2_root);
       /* $PM2_ROOT/build/home/<entity>/<entity>_<name>.xml */
       rc = snprintf(filename, 1024, "%s/build/home/%s/%s_%s.xml", pm2_root, entity, entity, name);
     }

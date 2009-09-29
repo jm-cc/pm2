@@ -713,19 +713,28 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
   char filename[1024];
   int rc = 0;
   const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
-  if(pm2_conf_dir) {
+  const char*pm2_home = getenv("PM2_HOME");
+  const char*pm2_root = getenv("PM2_ROOT");
+  if(pm2_conf_dir)
+    {
+      /* $PM2_CONF_DIR/<entity>/<entity>_<name>.xml */
       rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_conf_dir, entity, entity, name);
-  } else {
-    const char*home = getenv("PM2_HOME");
-    if (!home) {
-      home = getenv("HOME");
     }
-    assert(home != NULL);
-
-    rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", home, entity, entity, name);
-  }
-
-  assert(rc < 1024);
+  else if(pm2_home)
+    {
+      /* $PM2_HOME/<entity>/<entity>_<name>.xml */
+      rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_home, entity, entity, name);
+    }
+  else if(pm2_root)
+    {
+      /* $PM2_ROOT/build/home/<entity>/<entity>_<name>.xml */
+      rc = snprintf(filename, 1024, "%s/build/home/%s/%s_%s.xml", pm2_root, entity, entity, name);
+    }
+  else
+    {
+      TBX_FAILURE("nmad: cannot compute PM2_CONF_DIR. Please set $PM2_CONF_DIR, $PM2_HOME, or $PM2_ROOT.\n");
+    }
+  assert(rc < 1024 && rc > 0);
   puk_component_t component = puk_adapter_parse_file(filename);
   if(component == NULL)
     {

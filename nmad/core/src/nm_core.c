@@ -706,33 +706,29 @@ void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
 
 
 /** Load a newmad component from disk. The actual path loaded is
- * ${PM2_CONF_DIR}/'entity'/'entity'_'driver'.xml
+ * ${PM2_HOME}/'entity'/'entity'_'driver'.xml
  */
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
   char filename[1024];
   int rc = 0;
-  const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
   const char*pm2_home = getenv("PM2_HOME");
   const char*pm2_root = getenv("PM2_ROOT");
-  if(pm2_conf_dir)
+  if(pm2_home)
     {
-      /* $PM2_CONF_DIR/<entity>/<entity>_<name>.xml */
-      rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_conf_dir, entity, entity, name);
-    }
-  else if(pm2_home)
-    {
+      fprintf(stderr, "PM2_HOME = %s\n", pm2_home);
       /* $PM2_HOME/<entity>/<entity>_<name>.xml */
       rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_home, entity, entity, name);
     }
   else if(pm2_root)
     {
+      fprintf(stderr, "PM2_ROOT = %s\n", pm2_root);
       /* $PM2_ROOT/build/home/<entity>/<entity>_<name>.xml */
       rc = snprintf(filename, 1024, "%s/build/home/%s/%s_%s.xml", pm2_root, entity, entity, name);
     }
   else
     {
-      TBX_FAILURE("nmad: cannot compute PM2_CONF_DIR. Please set $PM2_CONF_DIR, $PM2_HOME, or $PM2_ROOT.\n");
+      TBX_FAILURE("nmad: cannot compute PM2_HOME. Please set $PM2_HOME, or $PM2_ROOT.\n");
     }
   assert(rc < 1024 && rc > 0);
   puk_component_t component = puk_adapter_parse_file(filename);

@@ -14,13 +14,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-PM2_HOME="@PM2_HOME@"
-export PATH PM2_ROOT PM2_HOME
+
+export PATH="@abs_top_builddir@/bin:$PATH"
+export PM2_ROOT="@abs_top_srcdir@"
+export PM2_HOME="@PM2_HOME@"
+export PM2_SYS="@PM2_SYS@"
+export PM2_ARCH="@PM2_ARCH@"
 
 # To be on the safe side.
 unset PM2_FLAVOR
+unset PM2_CONF_DIR
+unset PM2_BUILD_DIR
 
 _PM2_TEST_PROGNAME=pm2-test
 
@@ -30,8 +34,6 @@ _DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
 
 shopt -s expand_aliases
 
-export PM2_SYS="@PM2_SYS@"
-export PM2_ARCH="@PM2_ARCH@"
 
 pm2_test_name()
 {

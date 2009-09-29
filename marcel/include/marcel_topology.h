@@ -549,8 +549,10 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
                 }
 
 #section functions
-/** \brief Get the current VP number. Note that if preemption is enabled,
- *  this may change just after the function call. */
+/** \brief Get the current VP number. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be -1 when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
 unsigned marcel_current_vp(void);
 unsigned marcel_current_node(void);
 

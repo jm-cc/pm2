@@ -36,6 +36,8 @@ struct marcel_bubble_cache_sched
 #define MA_FAILED_STEAL_COOLDOWN 1000
 #define MA_SUCCEEDED_STEAL_COOLDOWN 100
 
+#define MA_CACHE_FAVORS_LOAD_BALANCING 0
+
 /* FIXME: Move these variables as fields of `marcel_bubble_cache_sched_t'.  */
 static unsigned long ma_last_failed_steal = 0;
 static unsigned long ma_last_succeeded_steal = 0;
@@ -105,7 +107,7 @@ ma_strict_cache_distribute (marcel_entity_t *e,
 			 int favorite_vp,
 			 ma_distribution_t *distribution,
 			 ma_distribution_t *load_balancing_entities) {
-  if (favorite_vp == MA_VPSTATS_NO_LAST_VP) {
+  if (MA_CACHE_FAVORS_LOAD_BALANCING || favorite_vp == MA_VPSTATS_NO_LAST_VP) {
     ma_distribution_add (e, load_balancing_entities, 0);
   } else {
     if (!distribution[favorite_vp].nb_entities) {
@@ -245,6 +247,19 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
      most loaded levels to the least loaded ones. */
   ma_global_load_balance (distribution, arity, entities_per_level);
 
+  /* Leave the work dedicated to the most loaded runqueue on the root
+     of the considered subtree to favor load balancing. */
+  if (MA_CACHE_FAVORS_LOAD_BALANCING) {
+    if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) == l->level) {
+      int most_loaded = ma_distribution_most_loaded_index (distribution, arity);
+      for (i = 0; i < distribution[most_loaded].nb_entities; i++) {
+	marcel_entity_t *removed_e = ma_distribution_remove_tail (&distribution[most_loaded]);
+	if (removed_e->type == MA_BUBBLE_ENTITY)
+	  ma_bubble_entity (removed_e)->settled = 1;
+      }
+    }
+  }
+
   /* We now have a satisfying logical distribution, let's physically
      move entities according it. */
   ma_apply_distribution (distribution, arity);
@@ -365,18 +380,20 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 
 	/* TODO: We could choose the next bubble to explode here,
 	   considering bubble thickness and other parameters. */
-	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
-	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-	  marcel_entity_t *ee;
-	  if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
-	    /* If the bubble is not empty, and contains more than one thread */
-	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
-	      new_ne++;
-	    for_each_entity_scheduled_in_bubble_end ()
-	    bubble_has_exploded = 1; /* We exploded one bubble,
-					it may be enough ! */
-	    bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
-	    break;
+	if (e[i]->type == MA_BUBBLE_ENTITY && !ma_bubble_entity (e[i])->settled) {
+	  if (!bubble_has_exploded) {
+	    marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+	    marcel_entity_t *ee;
+	    if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
+	      /* If the bubble is not empty, and contains more than one thread */
+	      for_each_entity_scheduled_in_bubble_begin (ee, bb)
+		new_ne++;
+	      for_each_entity_scheduled_in_bubble_end ()
+		bubble_has_exploded = 1; /* We exploded one bubble,
+					    it may be enough ! */
+	      bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
+	      break;
+	    }
 	  }
 	}
       }

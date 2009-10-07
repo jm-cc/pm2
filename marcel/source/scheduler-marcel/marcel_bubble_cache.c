@@ -107,7 +107,7 @@ ma_strict_cache_distribute (marcel_entity_t *e,
 			 int favorite_vp,
 			 ma_distribution_t *distribution,
 			 ma_distribution_t *load_balancing_entities) {
-  if (MA_CACHE_FAVORS_LOAD_BALANCING || favorite_vp == MA_VPSTATS_NO_LAST_VP) {
+  if (favorite_vp == MA_VPSTATS_NO_LAST_VP) {
     ma_distribution_add (e, load_balancing_entities, 0);
   } else {
     if (!distribution[favorite_vp].nb_entities) {
@@ -247,19 +247,6 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
      most loaded levels to the least loaded ones. */
   ma_global_load_balance (distribution, arity, entities_per_level);
 
-  /* Leave the work dedicated to the most loaded runqueue on the root
-     of the considered subtree to favor load balancing. */
-  if (MA_CACHE_FAVORS_LOAD_BALANCING) {
-    if (ma_get_topo_type_depth (MARCEL_LEVEL_NODE) == l->level) {
-      int most_loaded = ma_distribution_most_loaded_index (distribution, arity);
-      for (i = 0; i < distribution[most_loaded].nb_entities; i++) {
-	marcel_entity_t *removed_e = ma_distribution_remove_tail (&distribution[most_loaded]);
-	if (removed_e->type == MA_BUBBLE_ENTITY)
-	  ma_bubble_entity (removed_e)->settled = 1;
-      }
-    }
-  }
-
   /* We now have a satisfying logical distribution, let's physically
      move entities according it. */
   ma_apply_distribution (distribution, arity);
@@ -380,20 +367,18 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 
 	/* TODO: We could choose the next bubble to explode here,
 	   considering bubble thickness and other parameters. */
-	if (e[i]->type == MA_BUBBLE_ENTITY && !ma_bubble_entity (e[i])->settled) {
-	  if (!bubble_has_exploded) {
-	    marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-	    marcel_entity_t *ee;
-	    if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
-	      /* If the bubble is not empty, and contains more than one thread */
-	      for_each_entity_scheduled_in_bubble_begin (ee, bb)
-		new_ne++;
-	      for_each_entity_scheduled_in_bubble_end ()
-		bubble_has_exploded = 1; /* We exploded one bubble,
-					    it may be enough ! */
-	      bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
-	      break;
-	    }
+	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
+	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+	  marcel_entity_t *ee;
+	  if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
+	    /* If the bubble is not empty, and contains more than one thread */
+	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
+	      new_ne++;
+	    for_each_entity_scheduled_in_bubble_end ()
+	    bubble_has_exploded = 1; /* We exploded one bubble,
+					it may be enough ! */
+	    bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
+	    break;
 	  }
 	}
       }
@@ -467,6 +452,46 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("Cache: Bubble %p submitted from topo_level %s.\n", b, l->rq.as_holder.name);
 }
 
+static void
+ma_bubble_load_balance (unsigned int level) {
+  unsigned int x_index;
+  struct marcel_topo_level *topo_lvl;
+
+  for (x_index = 0; x_index < marcel_topo_level_nbitems[level]; x_index++) {
+    unsigned int child_id, best_load = 0, most_loaded_child_id = 0;
+    topo_lvl = marcel_topo_level (level, x_index);
+
+    for (child_id = 0; child_id < topo_lvl->arity; child_id++) {
+      unsigned int i, my_load = 0, ne = ma_count_entities_on_rq (&topo_lvl->children[child_id]->rq);
+      marcel_entity_t *e[ne]; 
+      ma_get_entities_from_rq (&topo_lvl->children[child_id]->rq, e, ne);
+
+      for (i = 0; i < ne; i++)
+	my_load += ma_entity_load (e[i]);
+
+      if (my_load > best_load) {
+	best_load = my_load;
+	most_loaded_child_id = child_id;
+      }
+    }
+
+    unsigned int i, ne = ma_count_entities_on_rq (&topo_lvl->children[most_loaded_child_id]->rq);
+    marcel_entity_t *e[ne];
+    ma_get_entities_from_rq (&topo_lvl->children[most_loaded_child_id]->rq, e, ne);
+
+    for (i = 0; i < ne; i++)
+      ma_move_entity (e[i], &topo_lvl->rq.as_holder);
+  }
+}
+
+static void
+marcel_bubble_load_balance (struct marcel_topo_level *from) {
+  struct marcel_topo_level *topo_lvl;
+
+  for (topo_lvl = marcel_topo_level (marcel_topo_nblevels - 2, 0); topo_lvl->level > from->level; topo_lvl = topo_lvl->father)
+    ma_bubble_load_balance (topo_lvl->level);
+}
+
 static int
 cache_sched_init (marcel_bubble_sched_t *self) {
   ma_last_succeeded_steal = 0;
@@ -492,6 +517,9 @@ cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
 
   marcel_bubble_cache (b, from);
 
+  if (MA_CACHE_FAVORS_LOAD_BALANCING)
+    marcel_bubble_load_balance (from);
+
   return 0;
 }
 
@@ -505,6 +533,10 @@ cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   ma_bubble_synthesize_stats (b);
   ma_bubble_lock_all (b, from);
   marcel_bubble_cache (b, from);
+  
+  if (MA_CACHE_FAVORS_LOAD_BALANCING)
+    marcel_bubble_load_balance (from);
+  
   ma_bubble_unlock_all (b, from);
 
   return 0;

@@ -221,6 +221,9 @@ struct ma_entity {
 	/** \brief Remaining time slice until the entity gets preempted out. */
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
+        /* Marks the entity as settled on the current runqueue. Used by some
+        bubble schedulers. (can be 0 or 1) */
+        unsigned int settled;
 	/** \brief Item linker to the list of natural entities
 	 * (marcel_bubble#natural_entities)  in the entity's natural holding bubble. */
 	struct tbx_fast_list_head natural_entities_item;

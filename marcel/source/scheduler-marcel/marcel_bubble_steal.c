@@ -116,7 +116,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 				continue;
 			first = 0;
 			b2 = ma_bubble_entity(e);
-			b2->settled = 1;
+			e->settled = 1;
 			bubble_sched_debug("detaching running bubble %p from %p\n", b2, b);
 		} else {
 			t = ma_task_entity(e);
@@ -141,7 +141,7 @@ static int see(struct marcel_topo_level *level, int up_power) {
 		/* TODO: prendre tout de suite du boulot pour soi ? */
 		if (e->type == MA_BUBBLE_ENTITY) {
 			b2 = ma_bubble_entity(e);
-			b2->settled = 1;
+			e->settled = 1;
 			bubble_sched_debug("detaching bubble %p from %p\n", b2, b);
 		} else {
 			t = ma_task_entity(e);
@@ -234,9 +234,9 @@ steal_sched_sched(marcel_bubble_sched_t *self, marcel_entity_t *nextent, ma_runq
 	marcel_bubble_t *bubble = ma_bubble_entity(nextent);
 
 	/* Fresh bubble, put it near us. */
-	if (ma_idle_scheduler_is_running () && !bubble->settled) {
+	if (ma_idle_scheduler_is_running () && !nextent->settled) {
 		ma_runqueue_t *rq2 = ma_lwp_vprq(MA_LWP_SELF);
-		bubble->settled = 1;
+		nextent->settled = 1;
 		if (rq != rq2) {
 			bubble_sched_debug("settling bubble %p on rq %s\n", bubble, rq2->as_holder.name);
 			ma_dequeue_entity(&bubble->as_entity, &rq->as_holder);

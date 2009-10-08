@@ -267,8 +267,6 @@ struct marcel_bubble {
 	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nb_ready_entities. */
 	int num_schedules;
 
-	/** \brief Whether the bubble settled somewhere */
-	int settled;
         /** \brief Barrier for the barrier operation */
 	marcel_barrier_t barrier;
 
@@ -304,7 +302,6 @@ struct marcel_bubble {
 	.join = MARCEL_SEM_INITIALIZER(1), \
 	.cached_entities = TBX_FAST_LIST_HEAD_INIT((b).cached_entities), \
 	.num_schedules = 0, \
-	.settled = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
 	.not_preemptible = tbx_false, \
         .old = 0,			      \

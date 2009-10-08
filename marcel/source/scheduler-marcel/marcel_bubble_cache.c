@@ -486,10 +486,15 @@ ma_bubble_load_balance (unsigned int level) {
 
 static void
 marcel_bubble_load_balance (struct marcel_topo_level *from) {
-  struct marcel_topo_level *topo_lvl;
+  struct marcel_topo_level *topo_lvl = marcel_topo_level (marcel_topo_nblevels - 2, 0);
 
-  for (topo_lvl = marcel_topo_level (marcel_topo_nblevels - 2, 0); topo_lvl->level > from->level; topo_lvl = topo_lvl->father)
+  while (topo_lvl) {
+    if (topo_lvl->level < from->level)
+      break;
+
     ma_bubble_load_balance (topo_lvl->level);
+    topo_lvl = topo_lvl->father;
+  }
 }
 
 static int

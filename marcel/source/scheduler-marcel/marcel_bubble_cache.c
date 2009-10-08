@@ -446,8 +446,6 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
 
   ma_cache_distribute_from (l);
   ma_resched_existing_threads (l);
-  /* Remember the distribution we've just applied. */
-  ma_bubble_snapshot (l);
 
   bubble_sched_debug ("Cache: Bubble %p submitted from topo_level %s.\n", b, l->rq.as_holder.name);
 }
@@ -479,8 +477,10 @@ ma_bubble_load_balance (unsigned int level) {
     marcel_entity_t *e[ne];
     ma_get_entities_from_rq (&topo_lvl->children[most_loaded_child_id]->rq, e, ne);
 
-    for (i = 0; i < ne; i++)
+    for (i = 0; i < ne; i++) {
+      e[i]->settled = 1;
       ma_move_entity (e[i], &topo_lvl->rq.as_holder);
+    }
   }
 }
 
@@ -512,6 +512,10 @@ cache_sched_exit (marcel_bubble_sched_t *self) {
 static int
 cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+
+  if (e->settled)
+    return 0;
+
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
   marcel_bubble_t *b = ma_bubble_entity (e);
 
@@ -519,6 +523,9 @@ cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
 
   if (MA_CACHE_FAVORS_LOAD_BALANCING)
     marcel_bubble_load_balance (from);
+
+  /* Remember the distribution we've just applied. */
+  ma_bubble_snapshot (from);
 
   return 0;
 }
@@ -526,16 +533,25 @@ cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
 static int
 cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   MA_BUG_ON (e->type != MA_BUBBLE_ENTITY);
+
+  if (e->settled)
+    return 0;
+
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
   marcel_bubble_t *b = ma_bubble_entity (e);
 
   /* Update the marcel statistics on any entity contained in b. */
   ma_bubble_synthesize_stats (b);
+
   ma_bubble_lock_all (b, from);
+
   marcel_bubble_cache (b, from);
   
   if (MA_CACHE_FAVORS_LOAD_BALANCING)
     marcel_bubble_load_balance (from);
+
+  /* Remember the distribution we've just applied. */
+  ma_bubble_snapshot (from);
   
   ma_bubble_unlock_all (b, from);
 

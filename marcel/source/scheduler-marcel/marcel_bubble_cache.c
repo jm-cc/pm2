@@ -256,15 +256,20 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
   return 0;
 }
 
+#define MA_CACHE_DISTRIBUTES_WITHOUT_BURSTING 0UL
+#define MA_CACHE_NEEDS_TO_BURST 1UL
+#define MA_CACHE_CANNOT_BURST 2UL
+
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
-static int
+static unsigned int
 ma_cache_has_enough_entities (struct marcel_topo_level *l,
 			    marcel_entity_t *e[],
 			    unsigned int ne,
 			    const ma_distribution_t *distribution) {
-  unsigned int i, ret = 1, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
+  unsigned int i, prev_state = 1, nvp = marcel_vpset_weight (&l->vpset);
   unsigned int arity = l->arity, per_item_entities = nvp / arity, entities_per_level[arity];
+  unsigned int total_load = 0, ret = MA_CACHE_DISTRIBUTES_WITHOUT_BURSTING;
 
   /* First, check if enough entities are already scheduled over the
      underlying levels. */
@@ -275,7 +280,7 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
   }
 
   if (prev_state) {
-    return prev_state;
+    return ret;
   }
 
   /* If not, initialize the entities_per_level array with the load of
@@ -293,6 +298,7 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
     /* Put the bigger entity on the least-loaded level.
      * We assume the _e_ array is sorted. */
     entities_per_level[0] += ma_entity_load (e[i]);
+    total_load += ma_entity_load (e[i]);
 
     /* Rearrange the entities_per_level array. */
     for (k = 0; k < arity - 1; k++) {
@@ -306,15 +312,75 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
     }
   }
 
-  /* Eventually checks if every underlying core will be occupied this
-     way. */
-  for (i = 0; i < arity; i++) {
-    if (entities_per_level[i] < per_item_entities) {
-      ret = 0;
+  if (total_load < arity)
+    /* There is no need to explode anything, as the considered
+       entities do not hold enough work to occupy every underlying
+       level. */
+    ret = MA_CACHE_CANNOT_BURST;
+  else {
+    /* Eventually checks if every underlying core will be occupied this
+       way. */
+    for (i = 0; i < arity; i++) {
+      if (entities_per_level[i] < per_item_entities) {
+	/* If not, tell the scheduler to explode a bubble. */
+	ret = MA_CACHE_NEEDS_TO_BURST;
+      }
     }
   }
 
   return ret;
+}
+
+/* Explode one bubble from the _e_ set of entities. */
+static
+unsigned int ma_cache_burst_one_bubble_from (struct marcel_topo_level *from, marcel_entity_t **e, unsigned int ne) {
+  /* Let's start by counting the sub-entities. */
+  unsigned int i, j, new_ne = 0, bubble_has_exploded = 0;
+  marcel_entity_t *ee;
+  
+  for (i = 0; i < ne; i++) {
+    if (!e[i])
+      continue;
+    
+    if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
+      marcel_bubble_t *bb = ma_bubble_entity(e[i]);
+      if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
+	/* If the bubble is not empty, and contains more than one thread. */
+	for_each_entity_scheduled_in_bubble_begin (ee, bb)
+	new_ne++;
+	for_each_entity_scheduled_in_bubble_end ()
+	bubble_has_exploded = 1; 
+	break;
+      }
+    }
+  }
+
+  if (!new_ne || !bubble_has_exploded)
+    return 0;
+  
+  /* Now we can create the auxiliary list that will contain
+     the new entities */
+  marcel_entity_t *new_e[new_ne];
+  j = 0;
+  bubble_has_exploded = 0;
+  for (i = 0; i < ne; i++) {
+    if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
+      marcel_bubble_t *bb = ma_bubble_entity (e[i]);
+      if (bb->as_holder.nb_ready_entities) {
+	bubble_sched_debug ("exploding bubble %p\n", bb);
+	for_each_entity_scheduled_in_bubble_begin (ee, bb)
+	new_e[j++] = ee;
+	for_each_entity_scheduled_in_bubble_end ()
+	bubble_has_exploded = 1;
+	break;
+      }
+    }
+  }
+  MA_BUG_ON (new_ne != j);
+  
+  ma_cache_sched_submit (new_e, new_ne, from);
+
+  return bubble_has_exploded;
 }
 
 static
@@ -328,7 +394,6 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
     return;
   }
 
-  bubble_sched_debug ("count in __marcel_bubble__cache\n");
   ne = ma_count_entities_on_rq (&l->rq);
   bubble_sched_debug ("ne = %d on runqueue %s (%p)\n", ne, l->rq.as_holder.name, &l->rq);
 
@@ -344,99 +409,56 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
   ma_distribution_init (distribution, l, arity, ne);
 
   marcel_entity_t *e[ne];
-  bubble_sched_debug ("get in ma_cache_distribute_from\n");
   ma_get_entities_from_rq (&l->rq, e, ne);
 
   bubble_sched_debug ("Entities were taken from runqueue %s (%p):\n", l->rq.as_holder.name, &l->rq);
   ma_debug_show_entities ("ma_cache_distribute_from", e, ne);
 
   qsort (e, ne, sizeof(e[0]), &ma_increasing_order_entity_load_compar);
-
+  
   if (ne < nvp) {
-    if (ma_cache_has_enough_entities (l, e, ne, distribution))
+    unsigned int state = ma_cache_has_enough_entities (l, e, ne, distribution);
+    
+    switch (state) {
+      
+    case MA_CACHE_DISTRIBUTES_WITHOUT_BURSTING:
       ma_cache_distribute_entities_cache (l, e, ne, distribution);
-    else {
-      /* We really have to explode at least one bubble */
-      bubble_sched_debug ("We have to explode bubbles...\n");
-
-      /* Let's start by counting sub-entities */
-      unsigned int j, new_ne = 0, bubble_has_exploded = 0;
-      for (i = 0; i < ne; i++) {
-	if (!e[i])
-	  continue;
-
-	/* TODO: We could choose the next bubble to explode here,
-	   considering bubble thickness and other parameters. */
-	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
-	  marcel_bubble_t *bb = ma_bubble_entity(e[i]);
-	  marcel_entity_t *ee;
-	  if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
-	    /* If the bubble is not empty, and contains more than one thread */
-	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
-	      new_ne++;
-	    for_each_entity_scheduled_in_bubble_end ()
-	    bubble_has_exploded = 1; /* We exploded one bubble,
-					it may be enough ! */
-	    bubble_sched_debug ("counting: nb_ready_entities: %ld, new_ne: %d\n", bb->as_holder.nb_ready_entities, new_ne);
-	    break;
-	  }
-	}
-      }
-
-      if (!bubble_has_exploded) {
-	bubble_sched_debug ("Didn't find any bubble to explode...\n");
-	if (ne >= arity) {
-	  bubble_sched_debug ("... at least, distribute over the children of level %s.\n", l->rq.as_holder.name);
-	  ma_cache_distribute_entities_cache (l, e, ne, distribution);
+      break;
+      
+    case MA_CACHE_NEEDS_TO_BURST:
+      {
+	unsigned int bubble_has_exploded = ma_cache_burst_one_bubble_from (l, e, ne);
+	if (bubble_has_exploded) {
+	  ma_distribution_destroy (distribution, arity);
+	  return ma_cache_distribute_from (l);  
 	} else {
-	  bubble_sched_debug ("... so leave the entities on level %s.\n", l->rq.as_holder.name);
-	}
-	ma_distribution_destroy (distribution, arity);
-	return;
-      }
-
-      if (!new_ne) {
-	bubble_sched_debug ("done: !new_ne\n");
-	ma_distribution_destroy (distribution, arity);
-	return;
-      }
-
-      /* Now we can create the auxiliary list that will contain
-	 the new entities */
-      marcel_entity_t *ee, *new_e[new_ne];
-      j = 0;
-      bubble_has_exploded = 0;
-      for (i = 0; i < ne; i++) {
-	/* TODO: Once again could be a good moment to choose which
-	   bubble to explode.*/
-	if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
-	  marcel_bubble_t *bb = ma_bubble_entity (e[i]);
-	  if (bb->as_holder.nb_ready_entities) {
-	    bubble_sched_debug ("exploding bubble %p\n", bb);
-	    for_each_entity_scheduled_in_bubble_begin (ee, bb)
-	      new_e[j++] = ee;
-	    for_each_entity_scheduled_in_bubble_end ()
-	    bubble_has_exploded = 1;
-	    break;
+	  bubble_sched_debug ("Didn't find any bubble to explode...\n");
+	  if (ne >= arity) {
+	    bubble_sched_debug ("... at least, distribute over the children of level %s.\n", l->rq.as_holder.name);
+	    ma_cache_distribute_entities_cache (l, e, ne, distribution);
+	  } else {
+	    bubble_sched_debug ("... so leave the entities on level %s.\n", l->rq.as_holder.name);
 	  }
 	}
+	break;
       }
-      MA_BUG_ON (new_ne != j);
-
-      ma_cache_sched_submit (new_e, new_ne, l);
-      ma_distribution_destroy (distribution, arity);
-      return ma_cache_distribute_from (l);
+      
+    case MA_CACHE_CANNOT_BURST:
+      break;
+      
+    default:
+      MA_BUG ();
     }
   } else { /* ne >= nvp */
     /* We can delay bubble explosion ! */
     bubble_sched_debug ("more entities (%d) than vps (%d), delaying bubble explosion...\n", ne, nvp);
     ma_cache_distribute_entities_cache (l, e, ne, distribution);
   }
-
+  
   /* Keep distributing on the underlying levels */
   for (i = 0; i < arity; i++)
     ma_cache_distribute_from (l->children[i]);
-
+  
   ma_distribution_destroy (distribution, arity);
 }
 

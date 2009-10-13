@@ -15,6 +15,19 @@
 
 PM2_ROOT := @abs_top_srcdir@
 FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
+INCLUDE_DIR := $(shell pm2-config --includedir profile)
+BIN_DIR	:= $(shell pm2-config --bindir profile)
 
 .PHONY: default
-include $(PM2_ROOT)/make/progs.mak
+
+fut2paje: ./source/fut2paje.c $(INCLUDE_DIR)/fut_entries.h $(FXT_PREFIX)/include/fxt/fut.h
+	$(CC) ./source/fut2paje.c -I$(INCLUDE_DIR)/ -I$(FXT_PREFIX)/include/ -o $(BIN_DIR)/fut2paje $(CFLAGS) -lfxt -L$(FXT_PREFIX)/lib
+
+flavormaks:
+	
+
+libs:	fut2paje
+	
+
+link:
+	

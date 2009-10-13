@@ -320,7 +320,7 @@
 // fields of the task_desc structure.
 #define PROF_SWITCH_TO(thr1, thr2)                                  \
  PROF_START                                                         \
-      FUT_DO_PROBE2(FUT_SWITCH_TO_CODE, MA_PROFILE_TID(thr2), thr2->number); \
+ FUT_DO_PROBE3(FUT_SWITCH_TO_CODE, MA_PROFILE_TID(thr2), thr2->number, marcel_current_vp() == -1 ? -1 : marcel_topo_vp_level[marcel_current_vp()].os_cpu); \
  PROF_END
 
 // Must be called when a new kernel threads (SMP or activation flavors
@@ -342,12 +342,12 @@ extern int fkt_new_lwp(unsigned int thread_num, unsigned int lwp_logical_num);
 
 #define PROF_THREAD_BIRTH(thr)                                      \
  PROF_START                                                         \
-  FUT_DO_PROBE1(FUT_THREAD_BIRTH_CODE, MA_PROFILE_TID(thr));        \
+ FUT_DO_PROBE2(FUT_THREAD_BIRTH_CODE, MA_PROFILE_TID(thr), marcel_current_vp() == -1 ? -1 : marcel_topo_vp_level[marcel_current_vp()].os_cpu);        \
  PROF_END
 
 #define PROF_THREAD_DEATH(thr)                                      \
  PROF_START                                                         \
-  FUT_DO_PROBE1(FUT_THREAD_DEATH_CODE, MA_PROFILE_TID(thr));        \
+ FUT_DO_PROBE2(FUT_THREAD_DEATH_CODE, MA_PROFILE_TID(thr), marcel_current_vp() == -1 ? -1 : marcel_topo_vp_level[marcel_current_vp()].os_cpu);        \
  PROF_END
 
 #define PROF_SET_THREAD_NAME(thr)                                   \

@@ -38,12 +38,6 @@ struct marcel_bubble_cache_sched
 
 #define MA_CACHE_FAVORS_LOAD_BALANCING 0
 
-/* FIXME: Move these variables as fields of `marcel_bubble_cache_sched_t'.  */
-static unsigned long ma_last_failed_steal = 0;
-static unsigned long ma_last_succeeded_steal = 0;
-static ma_atomic_t ma_succeeded_steals = MA_ATOMIC_INIT(0);
-static ma_atomic_t ma_failed_steals = MA_ATOMIC_INIT(0);
-
 /* Submits a set of entities on a marcel_topo_level */
 static void
 ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
@@ -521,18 +515,11 @@ marcel_bubble_load_balance (struct marcel_topo_level *from) {
 
 static int
 cache_sched_init (marcel_bubble_sched_t *self) {
-  ma_last_succeeded_steal = 0;
-  ma_last_failed_steal = 0;
-  ma_atomic_init (&ma_succeeded_steals, 0);
-  ma_atomic_init (&ma_failed_steals, 0);
   return 0;
 }
 
 static int
 cache_sched_exit (marcel_bubble_sched_t *self) {
-  bubble_sched_debug ("Succeeded steals : %d, failed steals : %d\n",
-		     ma_atomic_read (&ma_succeeded_steals),
-		     ma_atomic_read (&ma_failed_steals));
   return 0;
 }
 
@@ -725,12 +712,6 @@ cache_steal (marcel_bubble_sched_t *sched, unsigned int from_vp) {
     /* Work stealing is disabled.  */
     return 0;
 
-#if 0
-  if ((ma_last_failed_steal && ((marcel_clock() - ma_last_failed_steal) < MA_FAILED_STEAL_COOLDOWN))
-      || (ma_last_succeeded_steal && ((marcel_clock() - ma_last_failed_steal) < MA_SUCCEEDED_STEAL_COOLDOWN)))
-    return 0;
-#endif
-
   if (!ma_idle_scheduler_is_running ()) {
     bubble_sched_debug ("===[Processor %u is idle but ma_idle_scheduler is off! (%d)]===\n", from_vp, ma_idle_scheduler_is_running ());
     return 0;
@@ -769,14 +750,10 @@ cache_steal (marcel_bubble_sched_t *sched, unsigned int from_vp) {
 
   if (smthg_to_steal > 0) {
     bubble_sched_debug ("We successfuly stole one or several entities !\n");
-    ma_last_succeeded_steal = marcel_clock ();
-    ma_atomic_inc (&ma_succeeded_steals);
     return 1;
   }
 
-  ma_last_failed_steal = marcel_clock ();
   bubble_sched_debug ("We didn't manage to steal anything !\n");
-  ma_atomic_inc (&ma_failed_steals);
   return 0;
 }
 

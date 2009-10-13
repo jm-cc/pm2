@@ -146,15 +146,14 @@ int ma_increasing_order_entity_load_compar(const void *_e1, const void *_e2)
 unsigned int
 ma_count_entities_on_rq (ma_runqueue_t *rq) {
   marcel_entity_t *ee;
-  unsigned int ne = 0;
+  unsigned int ne = rq->as_holder.nb_ready_entities;
 
   for_each_entity_scheduled_on_runqueue (ee, rq) {
     if (ee->type == MA_BUBBLE_ENTITY) {
       if (!(ma_bubble_entity (ee))->as_holder.nb_ready_entities) {
-	continue;
+	ne--;
       }
     }
-    ne++;
   }
 
   return ne;

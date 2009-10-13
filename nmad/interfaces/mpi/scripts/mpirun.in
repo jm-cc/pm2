@@ -180,7 +180,7 @@ if [ ! -r "$NET_FILE" ] ; then
 fi
 
 if [ "$MPI_NMAD_STRATEGY" = "" ] ; then
-    STRAT_DIR=${PM2_CONF_DIR:-${PM2_HOME:-${HOME}}/.pm2}/strategy
+    STRAT_DIR="@PM2_HOME@/strategy"
     if [ ! -f $STRAT_DIR/default_strategy.xml ] && [ ! -f $STRAT_DIR/custom_strategy.xml ] ; then
         $PM2_ROOT/bin/nmad-strategy-conf --default
     fi

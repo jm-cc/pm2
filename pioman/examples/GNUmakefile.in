@@ -31,7 +31,7 @@ foo.o : fut
 .PHONY: fut
 fut: $(FUT) 
 	pm2-build-fut-table -f ${PM2_FLAVOR} -t app
-	cp $(PM2_HOME)/build/$(PM2_FLAVOR)/profile/include/app_fut_entries.h foo.c
+	cp $(shell pm2-config --flavor=${PM2_FLAVOR} --builddir)/profile/include/app_fut_entries.h foo.c
 
 
 %.fut: %.i

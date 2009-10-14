@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
@@ -25,7 +25,7 @@ then
     PM2_FLAVOR=$1
     shift
 else
-    PM2_FLAVOR="${PM2_FLAVOR:-libpthread}"
+    PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
 fi
 export PM2_FLAVOR
 

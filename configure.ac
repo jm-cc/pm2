@@ -46,7 +46,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-text-config				\
   bin/pm2-topology				\
   bin/pm2-valgrind-load				\
-  bin/pm2-vars					\
   bin/pm2-vlocallogs				\
   bin/pm2-which					\
   bin/pm2-wrapper				\

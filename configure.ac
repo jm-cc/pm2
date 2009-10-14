@@ -1,6 +1,6 @@
 dnl  Process this file with autoconf to produce configure.
 
-AC_INIT([pm2-marcel], [0.1-forestgomp], [pm2-marcel@lists.gforge.inria.fr])
+AC_INIT([pm2-marcel], [0.1-forestgomp], [pm2-users@lists.gforge.inria.fr])
 AC_PREREQ([2.61])
 
 AC_CONFIG_SRCDIR([marcel/source/marcel.c])

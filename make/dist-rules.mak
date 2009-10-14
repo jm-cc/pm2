@@ -23,7 +23,7 @@ PM2_COMPULSORY_DEPENDENCIES :=				\
   bin make modules common appli doc ezflavor		\
   configure configure.ac build-aux			\
   GNUmakefile.in aclocal.m4				\
-  ARCHITECTURES AUTHORS COPYING FILES NEWS README
+  ARCHITECTURES AUTHORS COPYING FILES README
 
 # The repository URL.  In the git-svn case, we can't simply use `git
 # clone $(PM2_ROOT) foo' to "export" the source tree since we want SVN
@@ -56,7 +56,7 @@ dist-$(1):
 	        echo "keeping makefile \`$$$$mf'" ;			\
 	    fi ;							\
 	  done )
-	( cd "$(2)" ; aclocal -I m4 && autoheader && autoconf )
+	( cd "$(2)" ; ./autogen.sh )
 	GZIP=--best tar czf "$(2).tar.gz"			\
 	  $(foreach subdir,$(PM2_COMPULSORY_DEPENDENCIES) $(1) $(3),"$(2)/$(subdir)")
 	rm -rf "$(2)"

@@ -36,6 +36,7 @@ $0 [<opt>] <action>
 where mandatory <action> is among:
   --help, -h            display this help message
   --get, -g             display the current strategy
+  --check               check strategy configuration; use 'default' if anything is wrong
   --gen-default         generate default strategy files
   --strat=strat_<strat> choose strategy <strat>, e.g. --strat=strat_default
     possible <strat> values are: default, aggreg, split_balance, qos
@@ -76,6 +77,9 @@ while test $# -gt 0; do
     case "$CMD" in
 	--get|-g)
 	    ACTION="get"
+	    ;;
+	--check)
+	    ACTION="check"
 	    ;;
 	--gen-default)
 	    ACTION="gen_default"
@@ -176,6 +180,15 @@ case ${ACTION} in
 
     get)
 	readlink ${STRAT_DIR}/strategy_custom.xml | sed -e "s,${STRAT_DIR}/strategy_\(.*\).xml,\1,g"
+	;;
+
+    check)
+	if [ ! -r ${STRAT_DIR}/strategy_custom.xml ]; then
+	    echo "# Generating default nmad strategy file." 1>&2
+	    nmad_strat_write default
+	    echo "# Selecting 'default' as custom." 1>&2
+	    nmad_strat_set_custom default
+	fi
 	;;
 
     write)

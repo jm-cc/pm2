@@ -1,4 +1,4 @@
-#!/bin/sh
+#! /bin/bash
 
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
@@ -180,12 +180,9 @@ if [ ! -r "$NET_FILE" ] ; then
 fi
 
 if [ "$MPI_NMAD_STRATEGY" = "" ] ; then
-    STRAT_DIR="@PM2_HOME@/strategy"
-    if [ ! -f $STRAT_DIR/default_strategy.xml ] && [ ! -f $STRAT_DIR/custom_strategy.xml ] ; then
-        $PM2_ROOT/bin/nmad-strategy-conf --default
-    fi
+    $PM2_ROOT/bin/nmad-strategy-conf --check
 else
-    $PM2_ROOT/bin/nmad-strategy-conf --$MPI_NMAD_STRATEGY
+    $PM2_ROOT/bin/nmad-strategy-conf --${MPI_NMAD_STRATEGY}
 fi
 
 # Detect which version of OAR is used

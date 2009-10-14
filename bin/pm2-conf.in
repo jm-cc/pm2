@@ -14,9 +14,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-export PATH PM2_ROOT
+export PATH="@abs_top_builddir@/bin:$PATH"
+export PM2_ROOT="@abs_top_srcdir@"
+export PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+export PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
 
 usage() # exit_code
 {
@@ -127,10 +128,7 @@ evaluate()
 
 # Début du script 
 
-PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
-export PM2_FLAVOR
-
-PREF_DIR="@PM2_HOME@/preferences/conf"
+PREF_DIR="${PM2_CONF_DIR}/preferences/conf"
 
 pref_file=""
 

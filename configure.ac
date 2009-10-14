@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR([marcel/source/marcel.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CONFIG_HEADER([marcel/include/config.h])
+AC_CONFIG_HEADER([pm2_config.h])
 
 AC_CANONICAL_HOST
 

@@ -14,9 +14,7 @@
  * General Public License for more details.
  */
 
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <pm2_config.h>
 
 #include "marcel.h"
 #include "marcel_sched_generic___sched_marcel_inline.h"

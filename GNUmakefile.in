@@ -51,7 +51,7 @@ endif
 # Regle par defaut : construction des librairies
 # ATTENTION: l'ordre des dépendances est TRES IMPORTANT !
 #---------------------------------------------------------------------
-link: ARCHITECTURES dot_h fut libs
+link: dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------
@@ -210,10 +210,10 @@ else
 checkmake:
 endif
 
-flavorinit: ARCHITECTURES # remove _flavors_ before :
+flavorinit: # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors
 
-flavorupdate: ARCHITECTURES # remove _flavors_ before :
+flavorupdate: # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors -f -v
 
 flavors:

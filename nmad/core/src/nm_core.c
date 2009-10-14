@@ -706,7 +706,7 @@ void nm_gate_ref_set(struct nm_gate*p_gate, void*ref)
 
 
 /** Load a newmad component from disk. The actual path loaded is
- * ${PM2_HOME}/'entity'/'entity'_'driver'.xml
+ * ${PM2_CONF_DIR}/nmad/'entity'/'entity'_'driver'.xml
  */
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {

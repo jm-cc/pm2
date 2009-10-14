@@ -178,10 +178,10 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 	    {
 	      /* We can copy data into the header zone */
 	      flags = NM_SO_DATA_USE_COPY;
-	      struct nm_pkt_wrap TBX_UNUSED dummy_p_so_pw;
-	      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_so_pw, tag, seq, len);
-	      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, &dummy_p_so_pw);
-	      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_gate->id, 0, 0, &dummy_p_so_pw, p_so_pw);
+	      struct nm_pkt_wrap TBX_UNUSED dummy_p_pw;
+	      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_pw, p_pack->tag, p_pack->seq, len);
+	      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_pack->p_gate->id, 0, &dummy_p_pw);
+	      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_pack->p_gate->id, 0, 0, &dummy_p_pw, p_pw);
 	      nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, is_last_chunk, flags);
 	      return;
 	    }
@@ -193,9 +193,9 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
   /* We didn't have a chance to form an aggregate, so simply form a
      new packet wrapper and add it to the out_list */
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, flags, &p_pw);
-  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_so_pw, tag, seq, len);
-  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_gate->id, 0, p_so_pw);
-  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_gate->id, 0, 0, p_so_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, p_pw, p_pack->tag, p_pack->seq, len);
+  FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_pack->p_gate->id, 0, p_pw);
+  FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_IN_TO_OUT, p_pack->p_gate->id, 0, 0, p_pw);
   tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;
 }

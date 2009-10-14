@@ -24,7 +24,7 @@ usage() # exit_code
     cat <<EOF
 Usage: `basename $0` { option } { item }
   option:
-    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -f <name> : Use flavor "name" (default=\$PM2_FLAVOR or @PM2_DEFAULT_FLAVOR@)
     -p <name> : Store parameters in file "name" under the preference directory
     -h        : Display this help message
   item:
@@ -128,7 +128,7 @@ evaluate()
 
 # Début du script 
 
-PREF_DIR="${PM2_CONF_DIR}/preferences/conf"
+PREF_DIR="${PM2_CONF_DIR}/preferences"
 
 pref_file=""
 
@@ -171,8 +171,8 @@ export PM2_CONF_FILE
 
 # Modification éventuelle de la configuration courante
 if [ $# -gt 0 ] ; then
-    PM2_CONF_DIR=`dirname ${PM2_CONF_FILE}`
-    [ -d ${PM2_CONF_DIR} ] || mkdir -p ${PM2_CONF_DIR}
+    conf_dir=`dirname ${PM2_CONF_FILE}`
+    [ -d ${conf_dir} ] || mkdir -p ${conf_dir}
     LINE=''
     while [ $# -ge 1 ]; do
 	case "$1" in

@@ -14,9 +14,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-export PATH PM2_ROOT
+export PATH="@abs_top_builddir@/bin:$PATH"
+export PM2_ROOT="@abs_top_srcdir@"
+export PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+export PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
 
 _PM2_CONF_FILE_PROGNAME=pm2-conf-file
 
@@ -25,7 +26,7 @@ pm2_conf_file_usage() # exit_code
     cat <<EOF
 Usage: $_PM2_CONF_FILE_PROGNAME { option }
   option:
-    -f|--flavor <name> : Use flavor "name" (default=\$PM2_FLAVOR or default)
+    -f|--flavor <name> : Use flavor "name" (default=\$PM2_FLAVOR or @PM2_DEFAULT_FLAVOR@)
     -h                 : Display this help message
 EOF
     exit $1
@@ -36,7 +37,7 @@ pm2_conf_file_parse_cmdline()
     while [ $# -gt 0 ]; do
 	case $1 in
 	    -f|--flavor)
-		shift; PM2_FLAVOR="$1"; shift
+		shift; export PM2_FLAVOR="$1"; shift
 		;;
 	    -h)
 		pm2_conf_file_usage 0
@@ -52,14 +53,11 @@ pm2_conf_file_parse_cmdline()
 
     [ $# -eq 0 ] || pm2_conf_file_usage 1
 
-    PM2_CONF_FILE="@PM2_HOME@/conf/${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}/.pm2_conf"
+    PM2_CONF_FILE="$PM2_CONF_DIR/conf/${PM2_FLAVOR}/.pm2_conf"
     export PM2_CONF_FILE
 }
 
 # Programme principal
-
-PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
-export PM2_FLAVOR
 
 if [ "$1" = --source-mode ]; then
     shift

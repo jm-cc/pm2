@@ -712,21 +712,21 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
   char filename[1024];
   int rc = 0;
-  const char*pm2_home = getenv("PM2_HOME");
-  const char*pm2_root = getenv("PM2_ROOT");
-  if(pm2_home)
+  const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
+  const char*home = getenv("HOME");
+  if(pm2_conf_dir)
     {
-      /* $PM2_HOME/<entity>/<entity>_<name>.xml */
-      rc = snprintf(filename, 1024, "%s/%s/%s_%s.xml", pm2_home, entity, entity, name);
+      /* $PM2_CONF_DIR/nmad/<entity>/<entity>_<name>.xml */
+      rc = snprintf(filename, 1024, "%s/nmad/%s/%s_%s.xml", pm2_conf_dir, entity, entity, name);
     }
-  else if(pm2_root)
+  else if(home)
     {
-      /* $PM2_ROOT/build/home/<entity>/<entity>_<name>.xml */
-      rc = snprintf(filename, 1024, "%s/build/home/%s/%s_%s.xml", pm2_root, entity, entity, name);
+      /* $HOME/.pm2/nmad/<entity>/<entity>_<name>.xml */
+      rc = snprintf(filename, 1024, "%s/.pm2/nmad/%s/%s_%s.xml", home, entity, entity, name);
     }
   else
     {
-      TBX_FAILURE("nmad: cannot compute PM2_HOME. Please set $PM2_HOME, or $PM2_ROOT.\n");
+      TBX_FAILURE("nmad: cannot compute PM2_CONF_DIR. Environment variable $HOME is not set.\n");
     }
   assert(rc < 1024 && rc > 0);
   puk_component_t component = puk_adapter_parse_file(filename);

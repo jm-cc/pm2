@@ -19,7 +19,9 @@
 PATH="@abs_top_builddir@/bin:$PATH"
 PM2_ROOT="@abs_top_srcdir@"
 
-STRAT_DIR="@PM2_HOME@/strategy"
+PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+STRAT_DIR="$PM2_CONF_DIR/nmad/strategy"
+
 NM_SO_MAX_SMALL="32726"
 NM_SO_COPY_ON_SEND_THRESHOLD="4096"
 ACTION="write"

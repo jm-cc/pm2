@@ -34,7 +34,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-gdb-load				\
   bin/pm2-gen-make.sh				\
   bin/pm2-install.pl				\
-  bin/pm2-libpthread				\
   bin/pm2-load					\
   bin/pm2-log2paje				\
   bin/pm2-logload				\
@@ -55,15 +54,7 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-wrapper				\
   bin/pm2-wrapper-valgrind			\
   bin/pm2-xload					\
-  bin/nmad-strategy-conf                        \
-  bin/nmad-driver-conf                          \
-  nmad/interfaces/mpi/scripts/mpicc		\
-  nmad/interfaces/mpi/scripts/mpicc.ext		\
-  nmad/interfaces/mpi/scripts/mpicxx		\
-  nmad/interfaces/mpi/scripts/mpif77		\
-  nmad/interfaces/mpi/scripts/mpif90		\
-  nmad/interfaces/mpi/scripts/mpirun		\
-  marcel/examples/test-topologies.sh])
+])
 
 dnl This must be the first command run.
 AC_CONFIG_COMMANDS([pm2-executable-scripts], [chmod +x ]pm2_bin_scripts)
@@ -106,42 +97,7 @@ AC_CONFIG_FILES([GNUmakefile
 		 make/apps-vars.mak
 		 make/common-vars.mak
 	         make/config.mak
-                 marcel/scripts/cpp-hash.sh
-
-		 ezflavor/GNUmakefile
-		 init/GNUmakefile
-		 leonie/GNUmakefile
-		 leoparse/GNUmakefile
-		 mad3/GNUmakefile
-		 marcel/GNUmakefile
-		 nmad/GNUmakefile
-		 ntbx/GNUmakefile
-		 pioman/GNUmakefile
-		 pm2/GNUmakefile
-		 profile/GNUmakefile
-		 puk/GNUmakefile
-		 stackalign/GNUmakefile
-		 tbx/GNUmakefile
-		 mad3/examples/GNUmakefile
-		 marcel/examples/GNUmakefile
-		 pioman/examples/GNUmakefile
-		 puk/examples/GNUmakefile
-		 tbx/examples/GNUmakefile
-
-		 memory/GNUmakefile
-		 memory/examples/mami/testing/GNUmakefile
-		 memory/examples/mami/GNUmakefile
-		 memory/examples/heap/time/GNUmakefile
-		 memory/examples/heap/simple/GNUmakefile
-
-		 profile/bubblegum/GNUmakefile
-		 profile/bubblelib/GNUmakefile
-		 profile/bubbles/GNUmakefile
-		 profile/flashnmad/GNUmakefile
-		 profile/fut2paje/GNUmakefile
 		 ]
-                 pm2_bin_scripts)
-
-AC_CONFIG_COMMANDS([cpp-hash-executable], [chmod +x marcel/scripts/cpp-hash.sh])
+		 pm2_bin_scripts)
 
 AC_OUTPUT

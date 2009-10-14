@@ -13,17 +13,7 @@ dnl WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl General Public License for more details.
 
-ACX_GNU_NPTL
-
-m4_define([marcel_bin_scripts], [		\
-	bin/pm2-libpthread			\
-	marcel/examples/test-topologies.sh	\
+AC_CONFIG_FILES([				\
+	puk/GNUmakefile				\
+	puk/examples/GNUmakefile		\
 ])
-
-AC_CONFIG_FILES([
-	marcel/scripts/cpp-hash.sh
-	marcel/GNUmakefile
-	marcel/examples/GNUmakefile
-] marcel_bin_scripts)
-
-AC_CONFIG_COMMANDS([marcel-executable], [chmod +x marcel/scripts/cpp-hash.sh ] marcel_bin_scripts)

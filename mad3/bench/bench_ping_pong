@@ -1,4 +1,4 @@
-
+#-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -21,7 +21,7 @@ prog="mad_bench_ping"
 loop="tcp gm mx quadrics"
 
 # bench settings used by 'mad3_default' include
-bench_setting_file="${PM2_HOME:-${HOME}}/.pm2/bench/mad3"
+bench_setting_file="${PM2_CONF_DIR:-${HOME}/.pm2}/bench/mad3"
 leo_cfg_file="/tmp/bench_mad3_${prog}_${USER}.cfg"
 leo_args="-w --x --p --l"
 leo_appli_args=""

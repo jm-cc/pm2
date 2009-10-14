@@ -24,7 +24,7 @@ result_file="pm2_bench_${prog}_marcel_${USER}_result"
 loop=${BENCHNET:-tcp}
 
 # bench settings used by 'nmad_default' include
-bench_setting_file="${PM2_HOME:-${HOME}}/.pm2/bench/nmad"
+bench_setting_file="${PM2_CONF_DIR:-${HOME}/.pm2}/bench/nmad"
 leo_cfg_file="/tmp/bench_nmad_${prog}_${USER}.cfg"
 leo_args="--x --p --l"
 leo_appli_args=""

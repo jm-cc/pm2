@@ -25,8 +25,8 @@ Benchmarks configuration
   These modules benchmarks require some information about mapping
   devices onto actual networks and computers. This information should
   be written in the
-  ${HOME}|${PM2_HOME}/.pm2/bench/mad3
-  ${HOME}|${PM2_HOME}/.pm2/bench/nmad
+  ${PM2_CONF_DIR:-${HOME}/.pm2}/bench/mad3
+  ${PM2_CONF_DIR:-${HOME}/.pm2}/bench/nmad
   files according to the following format:
   <dev>:<net>:<comma separated host list>
 

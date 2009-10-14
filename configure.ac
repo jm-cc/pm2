@@ -3,7 +3,7 @@ dnl  Process this file with autoconf to produce configure.
 AC_INIT([pm2-marcel], [0.1-forestgomp], [pm2-users@lists.gforge.inria.fr])
 AC_PREREQ([2.61])
 
-AC_CONFIG_SRCDIR([marcel/source/marcel.c])
+AC_CONFIG_SRCDIR([init/source/init.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -38,11 +38,9 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-log2paje				\
   bin/pm2-logload				\
   bin/pm2-logs					\
-  bin/pm2-make-option-sets			\
   bin/pm2-module				\
   bin/pm2-pre-script.sh				\
   bin/pm2-prof					\
-  bin/pm2-recreate-links			\
   bin/pm2-split-h-file				\
   bin/pm2-test					\
   bin/pm2-text-config				\

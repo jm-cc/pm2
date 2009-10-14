@@ -1,4 +1,4 @@
-#!@BASH@
+#!/bin/bash
 #-*-sh-*-
 
 # PM2: Parallel Multithreaded Machine
@@ -14,15 +14,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-export PATH PM2_ROOT
 CLEAN=
 
 echo
 echo
 
-modules=`cd $PM2_ROOT/modules; ls`
+modules=`cd modules; ls`
 
 if [ "$1" = --clean ]; then
 	CLEAN=true
@@ -34,9 +31,10 @@ else
 fi
 
 for m in ${modules} ; do
-	if [ -d ${PM2_ROOT}/modules/${m}/config/options ]; then
+	if [ -d modules/${m}/config/options ]; then
 		echo "$ACTION option sets for module $m..."
-		cd ${PM2_ROOT}/modules/${m}/config/options
+		(
+		cd modules/${m}/config/options
 		categories=`ls [0-9]* 2>/dev/null | cut -b -2 | uniq`
 		cd ..
 		rm -rf *.incl *.excl
@@ -57,5 +55,6 @@ for m in ${modules} ; do
 				echo "${categ}.${suffix} done."
 			done
 		fi
+		)
 	fi
 done

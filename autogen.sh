@@ -16,6 +16,8 @@
 
 set -e
 
+./bin/pm2-make-option-sets
+
 # TODO: automatically enable dependencies :)
 # Notes: the dependency hacks are just temporary hacks for the conveniency of
 # the user for now. Proper automatic generation would be necessary

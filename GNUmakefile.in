@@ -60,15 +60,10 @@ include $(PM2_ROOT)/make/common-rules.mak
 # all : construction de la distribution PM2 et des exemples
 #---------------------------------------------------------------------
 #       Note: s'agit-il de tous les exemples ou de ceux de PM2 ?
-all: configure pm2 examples
+all: pm2 examples
 .PHONY: pm2 all
 
-configure: configure.ac
-	autoheader
-	aclocal -I $(PM2_ROOT)/m4
-	autoconf
-
-GNUmakefile: GNUmakefile.in
+GNUmakefile: $(PM2_ROOT)/GNUmakefile.in
 	$(PM2_ROOT)/config.status $@
 
 # pm2: construction des librairies
@@ -200,11 +195,11 @@ distcleandoc:
 
 # Initialisation de la distribution PM2
 #---------------------------------------------------------------------
-.PHONY: init initnoflavor checkmake bkco optionsinit \
-	linksinit flavorinit componentsinit
-init: checkmake linksinit optionsinit componentsinit flavorinit 
-initupdateflavor: checkmake linksinit optionsinit componentsinit flavorupdate
-initnoflavor: checkmake linksinit componentsinit optionsinit
+.PHONY: init initnoflavor checkmake \
+	flavorinit componentsinit
+init: checkmake componentsinit flavorinit 
+initupdateflavor: checkmake componentsinit flavorupdate
+initnoflavor: checkmake componentsinit
 
 ifneq ($(FORCEOLDMAKE),1)
 checkmake:
@@ -214,17 +209,6 @@ checkmake:
 else
 checkmake:
 endif
-
-README:
-	$(MAKE) bkco
-
-optionsinit: README modules
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-make-option-sets
-
-linksinit modules ARCHITECTURES: $(if $(wildcard README),,README)
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-recreate-links --nooptionsets
-
-svninit: optionsinit
 
 flavorinit: ARCHITECTURES # remove _flavors_ before :
 	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors

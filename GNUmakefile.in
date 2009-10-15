@@ -277,7 +277,7 @@ xdialogconfig: flavors
 
 xconfig: flavors
 	$(COMMON_HIDE) $(MAKE) -C ezflavor FLAVOR=ezflavor
-	$(PM2_SRCROOT)/bin/ezflavor
+	$(PM2_OBJROOT)/bin/ezflavor
 
 
 # sos: verification des variables d'environnement PM2_*

@@ -57,6 +57,7 @@ m4_define([pm2_bin_scripts], [			\
 dnl This must be the first command run.
 AC_CONFIG_COMMANDS([pm2-executable-scripts], [chmod +x ]pm2_bin_scripts)
 dnl Symlink magic launchers
+mkdir -p bin
 for i in bubblegum bubbles leonie
 do
 	ln -sf ezflavor bin/$i

@@ -17,6 +17,7 @@ PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 LIBRARY=pm2
+PM2_SRCDIR := @abs_srcdir@
 
 include $(PM2_SRCROOT)/make/libs-vars.mak
 
@@ -28,7 +29,7 @@ include $(PM2_SRCROOT)/make/libs-rules.mak
 
 $(MOD_GEN_INC)/dsm_page_size.h:
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) $(CC) $(CURDIR)/bin/src/dsm_page_size.c -o $(MOD_GEN_OBJ)/dsm_page_size${LIB_EXT}
+	$(COMMON_MAIN) $(CC) $(PM2_SRCDIR)/bin/src/dsm_page_size.c -o $(MOD_GEN_OBJ)/dsm_page_size${LIB_EXT}
 	$(COMMON_HIDE) echo "#define DSM_PAGE_SIZE `$(MOD_GEN_OBJ)/dsm_page_size$(LIB_EXT)`" > $@
 	$(COMMON_HIDE) echo "#ifndef IRIX_SYS" >> $@
 	$(COMMON_HIDE) echo "#define DSM_ASM_PAGEALIGN \".align `$(MOD_GEN_OBJ)/dsm_page_size$(LIB_EXT)`\"" >> $@

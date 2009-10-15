@@ -118,10 +118,10 @@ AC_DEFUN([PM2_OPTIONS], [
       else
 	AC_MSG_RESULT([no])
 	AC_MSG_NOTICE([creating default flavor `$PM2_DEFAULT_FLAVOR'...])
-	if "$ac_top_srcdir/bin/pm2-create-sample-flavors" -f "$PM2_DEFAULT_FLAVOR"; then
+	if "$ac_abs_top_builddir/bin/pm2-create-sample-flavors" -f "$PM2_DEFAULT_FLAVOR"; then
 	  AC_MSG_NOTICE([flavor `$PM2_DEFAULT_FLAVOR' created])
 	else
-	  sample_flavors="`"$ac_top_builddir/bin/pm2-create-sample-flavors" -l`"
+	  sample_flavors="`"$ac_abs_top_builddir/bin/pm2-create-sample-flavors" -l`"
 	  AC_MSG_WARN([Flavor `$PM2_DEFAULT_FLAVOR' could not be created.])
 	  AC_MSG_WARN([Please choose a flavor among the following: $sample_flavors.])
 	fi

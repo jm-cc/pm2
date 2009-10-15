@@ -16,12 +16,22 @@ dnl General Public License for more details.
 m4_define([nmad_bin_scripts], [			\
 	bin/nmad-strategy-conf			\
 	bin/nmad-driver-conf			\
+	nmad/examples/piom/GNUmakefile		\
+	nmad/examples/getting_started/GNUmakefile \
+	nmad/examples/mpi/optimized/GNUmakefile	\
+	nmad/examples/mpi/basics/GNUmakefile	\
+	nmad/examples/pack/GNUmakefile		\
+	nmad/examples/mad3/GNUmakefile		\
+	nmad/examples/sched_opt/GNUmakefile	\
+	nmad/examples/sendrecv/GNUmakefile	\
+	nmad/sampling/GNUmakefile		\
 	nmad/interfaces/mpi/scripts/mpicc	\
 	nmad/interfaces/mpi/scripts/mpicc.ext	\
 	nmad/interfaces/mpi/scripts/mpicxx	\
 	nmad/interfaces/mpi/scripts/mpif77	\
 	nmad/interfaces/mpi/scripts/mpif90	\
 	nmad/interfaces/mpi/scripts/mpirun	\
+	nmad/interfaces/mpi/src/f90modules/GNUmakefile	\
 ])
 
 AC_CONFIG_FILES([

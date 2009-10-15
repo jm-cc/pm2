@@ -13,8 +13,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
 export FLAVOR_DEFAULT:=pm2
 
-PROGS := ping reactivity thr_create
+PM2_SRCDIR  := @abs_srcdir@
+
+
+PROGS := attach slots
+
+attach-objs := attach.o rpc_defs.o
+slots-objs := slots.o rpc_defs.o
 
 include $(PM2_SRCROOT)/make/apps.mak
+
+

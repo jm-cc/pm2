@@ -14,7 +14,7 @@
 PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
-FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
+FLAVOR_DEFAULT := mami-opt
 PM2_SRCDIR  := @abs_srcdir@
 
 ifndef FLAVOR

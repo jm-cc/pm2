@@ -45,6 +45,7 @@ AC_DEFUN([PM2_DETERMINE_DEFAULT_FLAVOR], [
       fi
       AC_CHECK_HEADERS([expat.h], [have_expat="yes"], [have_expat="no"])
 
+# FIXME: choose according to available modules
       AC_MSG_CHECKING([for the best default flavor])
       case "$host--$have_gdb-$have_expat" in
 	*-linux-gnu--yes-yes)

@@ -13,8 +13,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=pm2
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
+export FLAVOR_DEFAULT:=marcel-bubblegum
 
-PROGS := hello simple synchronous threads argv remote_hello channel
+PM2_SRCDIR  := @abs_srcdir@
+
+CFLAGS += -I${MOD_GEN_INC}
 
 include $(PM2_SRCROOT)/make/apps.mak
+

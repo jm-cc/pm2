@@ -17,7 +17,7 @@ PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 LIBNAME=bubblelib
-FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
+FLAVOR_DEFAULT := marcel-bubbles
 
 CFLAGS += @FXT_CFLAGS@ @MING_CPPFLAGS@
 LDFLAGS += @FXT_LIBS@ @MING_LDFLAGS@

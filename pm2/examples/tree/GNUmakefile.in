@@ -13,15 +13,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
 export FLAVOR_DEFAULT:=pm2
 
-PROGS := polygon
-polygon-objs := polygon.o regul.o custom.o
-polygon-ldflags := -L/usr/X11R6/lib -L$$OPENWINHOME/lib -lxview -lolgx -lX11
-polygon-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
-regul-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
-custom-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
+PM2_SRCDIR  := @abs_srcdir@
+
+
+PROGS := tree
 
 include $(PM2_SRCROOT)/make/apps.mak
-
-

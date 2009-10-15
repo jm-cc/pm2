@@ -2,7 +2,10 @@
 #
 # 
 SHELL = /bin/sh
-PM2_ROOT = ../../../../..
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
+export FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 #
 ifeq ($(PM2_F90),)
 F90	:=	gfortran
@@ -19,12 +22,12 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .o .$(MOD) .$(F90SUFFIX) .f
 #
-includedir = $(PM2_ROOT)/nmad/interface/mpi/include
+includedir = $(PM2_SRCROOT)/nmad/interface/mpi/include
 includenochoice_dir = ${includedir}/f90base
-mpiincdir  = $(PM2_ROOT)/nmad/interface/mpi/include
-includebuild_dir = $(PM2_ROOT)/nmad/interface/mpi/include
-top_srcdir = $(PM2_ROOT)/nmad/interface/mpi/src/f90modules
-srcdir     = $(PM2_ROOT)/nmad/interface/mpi/src/f90modules
+mpiincdir  = $(PM2_SRCROOT)/nmad/interface/mpi/include
+includebuild_dir = $(PM2_SRCROOT)/nmad/interface/mpi/include
+top_srcdir = $(PM2_SRCROOT)/nmad/interface/mpi/src/f90modules
+srcdir     = $(PM2_SRCROOT)/nmad/interface/mpi/src/f90modules
 
 VPATH=.:${srcdir}
 #

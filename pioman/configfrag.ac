@@ -16,4 +16,5 @@ dnl General Public License for more details.
 AC_CONFIG_FILES([				\
 	pioman/GNUmakefile			\
 	pioman/examples/GNUmakefile		\
+	pioman/examples/benchs/GNUmakefile	\
 ])

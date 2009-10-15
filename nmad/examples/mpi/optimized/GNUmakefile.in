@@ -11,12 +11,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
 export FLAVOR_DEFAULT:=nmad
 
-MOD_SRC	:= ../../../../nmad/examples/mpi/optimized
+PM2_SRCDIR := @abs_srcdir@
+
 PROGS 	:= ping_optimized
 
-include ../../../../make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 
 $(MOD_GEN_BIN)/ping_optimized: $(patsubst %.o, %.o, \
 			$(if $(ping-optimized-objs), $(ping-optimized-objs), ping_optimized.o)) indexed_optimized.o vector_optimized.o struct_optimized.o

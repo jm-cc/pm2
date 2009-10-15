@@ -13,10 +13,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-FLAVOR_DEFAULT:=pm2
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
+export FLAVOR_DEFAULT:=pm2
 
-PROGS := hello
+PM2_SRCDIR  := @abs_srcdir@
 
-include ../../../make/apps.mak
 
-CC=g++
+PROGS := ping simple
+
+ping-objs := ping.o rpc_defs.o
+simple-objs := simple.o rpc_defs.o
+
+include $(PM2_SRCROOT)/make/apps.mak
+
+

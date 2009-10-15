@@ -1,5 +1,6 @@
-# PM2: Parallel Multithreaded Machine
-# Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+
+# NewMadeleine
+# Copyright (C) 2006 (see AUTHORS file)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -11,8 +12,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export FLAVOR_DEFAULT:=nmad
+export PM2_ROOT := @abs_top_srcdir@
+export PM2_SRCROOT := @abs_top_srcdir@
+export PM2_OBJROOT := @abs_top_builddir@
 
-MOD_SRC += ../../../nmad/examples/getting_started
+PM2_SRCDIR := @abs_srcdir@
 
-include ../../../make/apps.mak
+#APP		:= piom_ping piom_multi_ping piom_pingpong
+export FLAVOR_DEFAULT:=nmad-pioman
+
+include $(PM2_SRCROOT)/make/apps.mak
+

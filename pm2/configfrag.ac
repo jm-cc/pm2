@@ -13,4 +13,19 @@ dnl WITHOUT ANY WARRANTY; without even the implied warranty of
 dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 dnl General Public License for more details.
 
-AC_CONFIG_FILES([pm2/GNUmakefile])
+AC_CONFIG_FILES([				\
+	pm2/GNUmakefile				\
+	pm2/examples/X/GNUmakefile		\
+	pm2/examples/acteurs/GNUmakefile	\
+	pm2/examples/c++/GNUmakefile		\
+	pm2/examples/demo-vthd/GNUmakefile	\
+	pm2/examples/gimp-plugin/GNUmakefile	\
+	pm2/examples/isomalloc/GNUmakefile	\
+	pm2/examples/migration/GNUmakefile	\
+	pm2/examples/rpc/GNUmakefile		\
+	pm2/examples/simple/GNUmakefile		\
+	pm2/examples/test/GNUmakefile		\
+	pm2/examples/tree/GNUmakefile		\
+	pm2/examples/tree-rpc/GNUmakefile	\
+	pm2/examples/tsp/GNUmakefile		\
+])

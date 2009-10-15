@@ -16,7 +16,7 @@
 export PM2_ROOT := @abs_top_srcdir@
 export PM2_SRCROOT := @abs_top_srcdir@
 export PM2_OBJROOT := @abs_top_builddir@
-export FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
+export FLAVOR_DEFAULT := marcel
 
 PM2_SRCDIR  := @abs_srcdir@
 

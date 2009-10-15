@@ -18,8 +18,8 @@ export PM2_ROOT
 
 include $(PM2_ROOT)/make/common-vars.mak
 
-PM2_BUILD_DIR  := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
-PUK_ROOT       := $(PM2_BUILD_DIR)/puk
+pm2_build_dir  := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
+PUK_ROOT       := $(pm2_build_dir)/puk
 PUK_SRCDIR     := $(CURDIR)
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
 PUK_INSTALLDIR := $(PUK_ROOT)
@@ -50,7 +50,7 @@ endif
 
 
 libs: $(PADICO_ROOT)/lib/libPadicoPuk.a
-	@cp $(PUK_LIBS) $(PM2_BUILD_DIR)/lib/
+	@cp $(PUK_LIBS) $(pm2_build_dir)/lib/
 
 link:
 
@@ -93,7 +93,7 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
 	@( cd externals ; $${AUTOHEADER:-autoheader} -f )
 	-@mkdir $(PUK_BUILDDIR)
-	-@mkdir $(PM2_BUILD_DIR)/lib/
+	-@mkdir $(pm2_build_dir)/lib/
 
 # ## configure
 # ##

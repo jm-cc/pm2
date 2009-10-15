@@ -25,7 +25,6 @@ export PM2_ARCH="@PM2_ARCH@"
 
 # To be on the safe side.
 unset PM2_FLAVOR
-unset PM2_BUILD_DIR
 
 _PM2_TEST_PROGNAME=pm2-test
 

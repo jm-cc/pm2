@@ -310,7 +310,6 @@ sos:
 		echo "ERROR: PM2_ROOT does not have a proper value (should be: $(CURDIR))." ; \
 		exit 1 ; \
 	fi ; \
-	echo "PM2_BUILD_DIR = $(PM2_BUILD_DIR)" ; \
 	echo "********* Checking source *********" ; \
 	for i in modules/* ; do \
 		echo $$i ; \

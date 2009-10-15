@@ -14,20 +14,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-PM2_SRCROOT="@abs_top_srcdir@"
-PM2_OBJROOT="@abs_top_builddir@"
-export PATH PM2_ROOT
-# Default to the `libpthread' flavor.
-PM2_FLAVOR="${PM2_FLAVOR:-libpthread}"
-export PM2_FLAVOR
+export PATH="@abs_top_builddir@/bin:$PATH"
+export PM2_ROOT="@abs_top_srcdir@"
+export PM2_SRCROOT="@abs_top_srcdir@"
+export PM2_OBJROOT="@abs_top_builddir@"
+export PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
 
-if [ -z "$PM2_BUILD" ] ; then
-    BUILDDIR="${PM2_BUILD_DIR:-${PM2_ROOT}/build}/@PM2_ASM@/$PM2_FLAVOR"
-else
-    eval BUILDDIR="$PM2_BUILD"
-fi
+
+BUILDDIR="${PM2_ROOT}/build/@PM2_ASM@/${PM2_FLAVOR}"
 marcel_libpthread="$BUILDDIR/lib/libpthread.so"
 
 if [ ! -f "$marcel_libpthread" ]

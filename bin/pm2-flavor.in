@@ -280,7 +280,6 @@ create_flavor() {
     echo "# Inclusion of commodity function" >> ${OUT}
     echo '. $PM2_ROOT/bin/pm2-config-tools.sh' >> ${OUT}
     echo "#" >> ${OUT}
-    echo "PM2_BUILD='$builddir'" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}
     echo "PM2_EXT=$ext" >> ${OUT}
 

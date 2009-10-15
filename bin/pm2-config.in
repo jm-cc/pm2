@@ -183,17 +183,7 @@ pm2_config_set_vars()
     pm2_config_build_uppercase appli common init $_PM2_CONFIG_DIRTY_ORDERED_MODULES
 
     # Build directory
-    if [ -z "$PM2_BUILD" ] ; then
-	_PM2_CONFIG_BUILD="${PM2_BUILD_DIR:-${PM2_ROOT}/build}/${PM2_ASM}/$flavor"
-    else
-	eval _PM2_CONFIG_BUILD="$PM2_BUILD"
-    fi
-    case "$_PM2_CONFIG_BUILD" in
-	/*)
-	    ;;
-	*)
-	    eval _PM2_CONFIG_BUILD="${PM2_BUILD_DIR:-${PM2_ROOT}/build}/${PM2_ASM}"'/$_PM2_CONFIG_BUILD'
-    esac
+    _PM2_CONFIG_BUILD="${PM2_ROOT}/build/${PM2_ASM}/$flavor"
     export _PM2_CONFIG_BUILD
 
     # Extension

@@ -43,7 +43,7 @@ LIB_LIB += buildstatic
 endif
 ifeq ($(BUILD_DYNAMIC_LIBS),yes)
 LIB_LIB += builddynamic
-LIB_SO_MAP = $(wildcard scripts/arch-$(MOD_ARCH)/lib$(LIBNAME).map)
+LIB_SO_MAP = $(wildcard $(PM2_SRCROOT)/modules/$(MODULE)/scripts/arch-$(MOD_ARCH)/lib$(LIBNAME).map)
 ifeq ($(LINK_OTHER_LIBS),yes)
 LINK_LIB += linkdynamic
 endif

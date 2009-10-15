@@ -47,7 +47,6 @@ Directories pm2-libs was configured to
   --stampdir --builddir --includedir --scriptdir --cppdir --tmpdir
 
 Other options
-  --ext         : extension used
   --protocols   : communication libraries used
   --launcher    : launcher used
   --modules     : modules included in the flavor

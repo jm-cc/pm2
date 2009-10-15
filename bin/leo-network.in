@@ -1,4 +1,4 @@
-#!/usr/bin/env pm2-sh
+#!@BASH@
 #-*-sh-*-
 ###########
 

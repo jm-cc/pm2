@@ -16,6 +16,7 @@ m4_define([pm2_bin_scripts], [			\
   bin/ezflavor					\
   bin/fut-print.pl				\
   bin/leoar					\
+  bin/leo-network				\
   bin/leo-network.pl				\
   bin/leo-load					\
   bin/pm2-all					\

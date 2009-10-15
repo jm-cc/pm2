@@ -25,7 +25,7 @@ profile       : Profiling management routines
 puk           : 
 stackalign    : 
 tbx           : Toolbox module
-xpaulette     : Paulette module
+pioman        : The PM2 I/O Manager
 
 Most of the module directories contains:
 

@@ -22,7 +22,7 @@ include $(PM2_OBJROOT)/make/common-vars.mak
 
 # Repertoire source
 #---------------------------------------------------------------------
-MOD_SRC ?= $(PM2_SRCROOT)/$(MODULE)/source
+MOD_SRC ?= $(PM2_SRCROOT)/modules/$(MODULE)/source
 
 MOD_AFLAGS += -D__ASSEMBLY__
 
@@ -30,7 +30,7 @@ MOD_AFLAGS += -D__ASSEMBLY__
 #---------------------------------------------------------------------
 DO_NOT_GENERATE_MAK_FILES+=_default_ _no_goal_
 ifeq (,$(findstring _$(MAKECMDGOALS)_,$(DO_NOT_GENERATE_MAK_FILES)))
--include $(PM2_MAK_DIR)/$(MODULE)-config.mak
+-include $(PM2_MAK_DIR)/modules/$(MODULE)-config.mak
 endif
 
 # Commandes de compilation et d'assemblage

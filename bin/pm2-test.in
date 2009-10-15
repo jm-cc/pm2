@@ -17,6 +17,8 @@
 
 export PATH="@abs_top_builddir@/bin:$PATH"
 export PM2_ROOT="@abs_top_srcdir@"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
 export PM2_HOME="@PM2_HOME@"
 export PM2_SYS="@PM2_SYS@"
 export PM2_ARCH="@PM2_ARCH@"

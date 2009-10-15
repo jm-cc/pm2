@@ -13,6 +13,8 @@
 
 export FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 PM2_ROOT := @abs_top_srcdir@
+PM2_SRCROOT := @abs_top_srcdir@
+PM2_OBJROOT := @abs_top_builddir@
 
 PROGS :=			\
 mad_mini			\

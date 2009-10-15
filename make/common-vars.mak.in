@@ -14,6 +14,8 @@
 # General Public License for more details.
 
 PM2_ROOT := @abs_top_srcdir@
+PM2_SRCROOT := @abs_top_srcdir@
+PM2_OBJROOT := @abs_top_builddir@
 
 ifneq (@abs_top_srcdir@,@abs_top_builddir@)
 $(error The PM2 build system requires srcdir equal to builddir.)

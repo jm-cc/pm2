@@ -18,6 +18,8 @@
 # Get some variables
 PATH="@abs_top_builddir@/bin:$PATH"
 PM2_ROOT="@abs_top_srcdir@"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
 
 PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
 STRAT_DIR="$PM2_CONF_DIR/nmad/strategy"

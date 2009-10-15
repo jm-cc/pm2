@@ -29,6 +29,8 @@ endif # FLAVOR
 # PM2_ROOT -> root directory of PM2's source tree.
 #---------------------------------------------------------------------
 export PM2_ROOT := @abs_top_srcdir@
+PM2_SRCROOT := @abs_top_srcdir@
+PM2_OBJROOT := @abs_top_builddir@
 
 # Par securite, il vaut mieux considerer ROOT que PM2_ROOT, pour ne
 # pas inclure de Makefiles provenant d'une distribution obsolete par

@@ -94,6 +94,8 @@ hash_prog="`find_hash_program`"
 debug_log "using PM2 flavor \`$flavor' and header file \`$header_file'"
 debug_log "using hash program \`$hash_prog'"
 debug_log "PM2_ROOT: \`@abs_top_srcdir@"
+debug_log "PM2_SRCROOT: \`@abs_top_srcdir@"
+debug_log "PM2_OBJROOT: \`@abs_top_builddir@"
 debug_log "CPPFLAGS: \`$CPPFLAGS'"
 debug_log "CPP:      \`$CPP'"
 

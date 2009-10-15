@@ -16,6 +16,8 @@
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 PATH="@abs_top_builddir@/bin:$PATH"
 PM2_ROOT="@abs_top_srcdir@"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
 export PATH PM2_ROOT
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.

@@ -128,6 +128,8 @@ get_machines() {
 
 PATH="@abs_top_builddir@/bin:$PATH"
 PM2_ROOT="@abs_top_srcdir@"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
 export PATH PM2_ROOT
 
 if [ "$1" = "-flavor" ]

@@ -15,19 +15,20 @@ PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export PM2_ROOT PM2_SRCROOT PM2_OBJROOT
+PM2_SRCDIR := @abs_srcdir@
 
 include $(PM2_OBJROOT)/make/common-vars.mak
 
 pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 PUK_ROOT       := $(pm2_build_dir)/puk
-PUK_SRCDIR     := $(CURDIR)
+PUK_SRCDIR     := $(PM2_SRCDIR)
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
 PUK_INSTALLDIR := $(PUK_ROOT)
 
 PADICO_ROOT    := $(PUK_ROOT)
 
-SRC_CONFIG_FILES := externals/packaging-tools/padico-setup.sh.in configure.ac # $(wildcard externals/building-tools/*.m4)
-GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
+SRC_CONFIG_FILES := $(PM2_SRCDIR)/externals/packaging-tools/padico-setup.sh.in $(PM2_SRCDIR)/configure.ac # $(PM2_SRCDIR)/$(wildcard externals/building-tools/*.m4)
+GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh $(PM2_OBJROOT)/puk/externals/configure $(PM2_OBJROOT)/puk/externals/Puk/padico_config.h.in $(PM2_OBJROOT)/VERSION
 
 PM2_PUK_BUILD_STATIC  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_STATIC)
 PM2_PUK_BUILD_DYNAMIC := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_DYNAMIC)
@@ -68,12 +69,13 @@ MOD_GEN_C_INC += $(GEN_CONFIG_FILES)
 # ## init packaging framework and generate base config files
 # ##
 
+# TODO: move this to ./autogen.sh
 $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 	@echo "    generating Puk version file..."
 	@echo "0.4.0" > VERSION
 	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
 	@echo
-	@./externals/packaging-tools/padico-init \
+	@$(PM2_SRCDIR)/externals/packaging-tools/padico-init \
           admindir=$(PUK_SRCDIR)/externals/packaging-tools \
           installdir=$(PADICO_ROOT) \
           srcdir=$(PUK_SRCDIR) \
@@ -88,10 +90,10 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
            if [ "x$$autoheader_ver" = "x" ]; then echo "Bad autoheader version (should be GNU)"; exit 1; \
            else echo "      - $$autoheader_ver"; fi )
 	@echo "    generating externals/configure [autoconf] ..."
-	@cp configure.ac externals/
-	@( cd externals ; $${AUTOCONF:-autoconf} )
+	@cp $(PM2_SRCDIR)/configure.ac $(PUK_SRCDIR)/externals/
+	@( cd $(PUK_SRCDIR)/externals ; $${AUTOCONF:-autoconf} )
 	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
-	@( cd externals ; $${AUTOHEADER:-autoheader} -f )
+	@( cd $(PUK_SRCDIR)/externals ; $${AUTOHEADER:-autoheader} -f )
 	-@mkdir $(PUK_BUILDDIR)
 	-@mkdir $(pm2_build_dir)/lib/
 

@@ -14,7 +14,7 @@
 PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
-export PM2_ROOT
+export PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
 include $(PM2_ROOT)/make/common-vars.mak
 

@@ -18,7 +18,7 @@ PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 PM2_HOME := @PM2_HOME@
 
-export PM2_ROOT PM2_HOME
+export PM2_ROOT PM2_HOME PM2_SRCROOT PM2_OBJROOT
 
 # GNU Make.
 MAKE ?= @MAKE@

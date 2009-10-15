@@ -1,4 +1,4 @@
-% cd ${PM2_ROOT}/mad3/examples/
+% cd ${PM2_OBJROOT}/mad3/examples/
 % make clean
 % make mad_ping
 ...

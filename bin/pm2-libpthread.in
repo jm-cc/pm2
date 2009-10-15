@@ -21,7 +21,7 @@ export PM2_OBJROOT="@abs_top_builddir@"
 export PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
 
 
-BUILDDIR="${PM2_ROOT}/build/@PM2_ASM@/${PM2_FLAVOR}"
+BUILDDIR="${PM2_OBJROOT}/build/@PM2_ASM@/${PM2_FLAVOR}"
 marcel_libpthread="$BUILDDIR/lib/libpthread.so"
 
 if [ ! -f "$marcel_libpthread" ]
@@ -42,11 +42,11 @@ then
 	PM2_ARCH="@PM2_ARCH@"
 	for mod in $(pm2-config --modules)
 	do
-		gdbinit_arch_sys=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH-$PM2_SYS
+		gdbinit_arch_sys=$PM2_SRCROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH-$PM2_SYS
 		[ -r $gdbinit_arch_sys ] && GDB="$GDB -x $gdbinit_arch_sys"
-		gdbinit_arch=$PM2_ROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH
+		gdbinit_arch=$PM2_SRCROOT/modules/$mod/scripts/gdbinit-$PM2_ARCH
 		[ -r $gdbinit_arch ] && GDB="$GDB -x $gdbinit_arch"
-		gdbinit=$PM2_ROOT/modules/$mod/scripts/gdbinit
+		gdbinit=$PM2_SRCROOT/modules/$mod/scripts/gdbinit
 		[ -r $gdbinit ] && GDB="$GDB -x $gdbinit"
 	done
 	exec $GDB									\

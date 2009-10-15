@@ -22,6 +22,6 @@ polygon-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
 regul-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
 custom-cflags := -I/usr/X11R6/include -I$$OPENWINHOME/include
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 
 

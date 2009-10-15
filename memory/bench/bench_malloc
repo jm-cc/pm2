@@ -15,13 +15,13 @@
 # args: loop variable
 initialize_bench()
 {
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init memory\" \
 	--marcel=numa --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle \
         --memory=enable_mami \
 	--init=topology \
         --all=\"opt build_static static\"
-    ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
+    ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts
 }
 
 # args: -
@@ -30,7 +30,7 @@ run_bench()
     # wait for NFS to propagate the new compiled program
     sleep 10
 
-    ${PM2_ROOT}/bin/pm2-load -f $flavor $prog $args
+    ${PM2_OBJROOT}/bin/pm2-load -f $flavor $prog $args
 }
 
 # args: loop variable
@@ -44,7 +44,7 @@ finalize_bench()
 
 hosts=${BENCHHOST:-"localhost"}
 flavor="bench_memory_mami_${hosts}"
-appdir="${PM2_ROOT}/memory/examples/mami"
+appdir="${PM2_OBJROOT}/memory/examples/mami"
 loop="memory"
 
 prog="mami_bench"

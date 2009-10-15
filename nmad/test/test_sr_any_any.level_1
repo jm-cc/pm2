@@ -21,7 +21,7 @@ strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}"
 
-appdir="${PM2_ROOT}/nmad/examples/sendrecv"
+appdir="${PM2_SRCROOT}/nmad/examples/sendrecv"
 prog="sr_any_any"
 args="--x --p --l"
 

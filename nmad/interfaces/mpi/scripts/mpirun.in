@@ -21,7 +21,7 @@ compile_leonie() {
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         echo "Bootstrap layer not available. Compiling ..."
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie 1>/tmp/leonie_${USER}_$$ 2>&1
+        make FLAVOR=leonie -C $PM2_OBJROOT/modules/leonie 1>/tmp/leonie_${USER}_$$ 2>&1
         LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
         if [ ! -x "$LEONIE_DIR"/leonie ] ; then
             echo "Could not compile leonie. Aborting. See file /tmp/leonie_${USER}_$$ for details."
@@ -84,11 +84,11 @@ get_machines() {
     if [ -n "$MPI_NMAD_PROTOCOL" ] ; then
         protocols="$MPI_NMAD_PROTOCOL"
     else
-        protocols=`${PM2_ROOT}/bin/pm2-config --flavor=$PM2_FLAVOR --protocols`
+        protocols=`${PM2_OBJROOT}/bin/pm2-config --flavor=$PM2_FLAVOR --protocols`
     fi
 
     for net in `echo $protocols` ; do
-	network_name=`${PM2_ROOT}/bin/leo-network.pl $NET_FILE $net $host_list2`
+	network_name=`${PM2_OBJROOT}/bin/leo-network.pl $NET_FILE $net $host_list2`
 	if [ "$network_name" != "Network not found" ] ; then
 	    break
 	fi
@@ -107,7 +107,7 @@ get_machines() {
     fi
 
     # Create driver configuration file
-    $PM2_ROOT/bin/nmad-driver-conf -f --$net
+    $PM2_OBJROOT/bin/nmad-driver-conf -f --$net
 
     # construct the machine list
     new_list=""
@@ -172,7 +172,7 @@ fi
 if [ -n "$MPI_NET_FILE" ] ; then
     NET_FILE="$MPI_NET_FILE"
 else
-    NET_FILE="${PM2_ROOT}/nmad/examples/mpi/networks.cfg"
+    NET_FILE="${PM2_SRCROOT}/nmad/examples/mpi/networks.cfg"
 fi
 
 if [ ! -r "$NET_FILE" ] ; then
@@ -182,9 +182,9 @@ if [ ! -r "$NET_FILE" ] ; then
 fi
 
 if [ "$MPI_NMAD_STRATEGY" = "" ] ; then
-    $PM2_ROOT/bin/nmad-strategy-conf --check
+    $PM2_OBJROOT/bin/nmad-strategy-conf --check
 else
-    $PM2_ROOT/bin/nmad-strategy-conf --${MPI_NMAD_STRATEGY}
+    $PM2_OBJROOT/bin/nmad-strategy-conf --${MPI_NMAD_STRATEGY}
 fi
 
 # Detect which version of OAR is used
@@ -223,9 +223,9 @@ EOF
 ) > $appli_file
 
 PM2_LD_LIBRARY_PATH=$(pm2-config --flavor=$PM2_FLAVOR --ld-library-path)
-env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} PM2_VALGRIND_OPTIONS='${PM2_VALGRIND_OPTIONS}'"
+env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} PM2_SRCROOT=${PM2_SRCROOT} PM2_OBJROOT=${PM2_OBJROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} PM2_VALGRIND_OPTIONS='${PM2_VALGRIND_OPTIONS}'"
 if [ "$PM2_CONF_DIR" != "" ] ; then
-    env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} PM2_VALGRIND_OPTIONS='${PM2_VALGRIND_OPTIONS}'"
+    env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_SRCROOT=${PM2_SRCROOT} PM2_OBJROOT=${PM2_OBJROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} PM2_VALGRIND_OPTIONS='${PM2_VALGRIND_OPTIONS}'"
 fi
 if [ "$OMP_NUM_THREADS" != "" ] ; then
     env="$env OMP_NUM_THREADS=$OMP_NUM_THREADS"

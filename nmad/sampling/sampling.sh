@@ -20,7 +20,7 @@ fi
 for network in $*; do
     #echo "network = $network"
 
-    if [ ! -d ${PM2_ROOT}/nmad/drivers/${network} ]; then
+    if [ ! -d ${PM2_SRCROOT}/nmad/drivers/${network} ]; then
 	echo "Network '${network}' not supported."
 	exit -1
     fi
@@ -42,7 +42,7 @@ for network in $*; do
 
     #compilation du test d'échantillonage avec une flavor prédéfinie
     prog=$(pm2-which -f $flavor sampling-prog 2>/dev/null)
-    $SSH $machine1 make FLAVOR=$flavor -C $PM2_ROOT/nmad/sampling sampling-prog
+    $SSH $machine1 make FLAVOR=$flavor -C $PM2_OBJROOT/nmad/sampling sampling-prog
  
     LEONIE_FLAVOR=$(pm2-flavor get --flavor=leonie 2>/dev/null)
     if [ -z "$LEONIE_FLAVOR" ] ; then
@@ -51,12 +51,12 @@ for network in $*; do
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
         echo "# Building leonie"
-        make FLAVOR=leonie -C $PM2_ROOT/leonie
+        make FLAVOR=leonie -C $PM2_OBJROOT/leonie
     fi
 
     #construction des fichiers de config
     #*** network.cfg
-    network_file="${PM2_ROOT}/nmad/sampling/networks.cfg"
+    network_file="${PM2_OBJROOT}/nmad/sampling/networks.cfg"
 
     cat > $network_file <<EOF
 networks : ({
@@ -67,7 +67,7 @@ networks : ({
 EOF
 
     # lancement de l'échantillonnage
-    sampling_file="${PM2_ROOT}/nmad/sampling/${network}_${arch}.nm_ns"
+    sampling_file="${PM2_OBJROOT}/nmad/sampling/${network}_${arch}.nm_ns"
     echo "# starting sampling for network ${network}"
     pm2-conf --flavor $flavor $machine1 $machine2
     pm2-load --network $network_file --flavor $flavor sampling-prog ${sampling_file}

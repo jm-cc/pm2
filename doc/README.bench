@@ -77,7 +77,8 @@ Here is an example crontab for pm2-bench:
 %----------
 SHELL=/bin/sh
 MAILTO=<email.address>
-PM2_ROOT=<path_to_pm2>
+PM2_SRCROOT=<path_to_pm2>
+PM2_OBJROOT=<path_to_pm2>
 PATH=<path_to_pm2/bin>
 USER=<user_name>
 LEO_RSH="ssh -f -i <ssh_key_file>"

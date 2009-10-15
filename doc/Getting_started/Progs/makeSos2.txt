@@ -2,7 +2,8 @@
 PM2_HOME = 
 FLAVOR = pm2
 CURDIR = .../pm2
-PM2_ROOT = .../pm2
+PM2_SRCROOT = .../pm2
+PM2_OBJROOT = .../pm2
 PM2_BUILD_DIR = .../pm2/build
 ********* Refreshing files for current flavor *********
 make[1]: Entering directory `.../pm2'

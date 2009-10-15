@@ -56,6 +56,7 @@ m4_define([pm2_bin_scripts], [			\
 
 dnl This must be the first command run.
 AC_CONFIG_COMMANDS([pm2-executable-scripts], [chmod +x ]pm2_bin_scripts)
+
 dnl Symlink magic launchers
 mkdir -p bin
 for i in bubblegum bubbles leonie
@@ -67,6 +68,9 @@ for i in pm2-menu-config pm2-xconfig
 do
 	ln -sf pm2-text-config bin/$i
 done
+
+dnl Copy modules links
+[ -d modules ] || cp -a $srcdir/modules .
 
 if test "x$ac_abs_top_srcdir" != "x$ac_abs_top_builddir"; then
    AC_MSG_ERROR([Build directory ($ac_abs_top_builddir) differs from source directory ($ac_abs_top_srcdir), which is not supported.])

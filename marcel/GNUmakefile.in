@@ -24,28 +24,28 @@ LIB_SO_MAJ=0
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 DO_NOT_GENERATE_MAK_FILES += _clean_autogen_
 
 # TODO LIBNAME devrait provenir des fichiers de la flavor
 #---------------------------------------------------------------------
 ifeq ($(LIBPTHREAD),true)
 LIBNAME := pthread
-LINK_LDFLAGS += -Wl,--rpath="$(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --libdir puk)"
+LINK_LDFLAGS += -Wl,--rpath="$(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --libdir puk)"
 endif
 
 SCHED_NAME=marcel
 
-MOD_HSPLITS_COMMON:=scripts/splitall_section_def.h
-MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd include ; \
+MOD_HSPLITS_COMMON:=$(PM2_SRCROOT)/marcel/scripts/splitall_section_def.h
+MOD_HSPLITS_SOURCES:=$(shell echo `pwd` 1>&2 ; cd $(PM2_SRCROOT)/marcel/include ; \
 	grep -l '^\#section' *.h sys/*.h)
 
 #MOD_HSPLITS_GENDIR ?= $(MOD_GEN_INC)
-MOD_HSPLITS_GENDIR = $(PM2_ROOT)/marcel/autogen-include
+MOD_HSPLITS_GENDIR = $(PM2_SRCROOT)/marcel/autogen-include
 
-MOD_SRC += source/scheduler-$(SCHED_NAME)
-MOD_SRC += source/arch-$(MOD_ARCH)
-MOD_SRC += source/arch-generic
+MOD_SRC += $(PM2_SRCROOT)/marcel/source/scheduler-$(SCHED_NAME)
+MOD_SRC += $(PM2_SRCROOT)/marcel/source/arch-$(MOD_ARCH)
+MOD_SRC += $(PM2_SRCROOT)/marcel/source/arch-generic
 
 $(eval $(call MOD_HSPLITS_ADD_MASTER,,,))
 #$(warning $(call MOD_HSPLITS_ADD_MASTER,,,))
@@ -53,14 +53,14 @@ $(eval $(call MOD_HSPLITS_ADD_MASTER,,,))
 define ADD_SUBDIR # subdir SUBNAME base
  $$(eval $$(call MOD_HSPLITS_ADD_MASTER,-$(1),_$(2),$(1)))
  MOD_HSPLITS_PARTS_$(2) += MOD_HSPLITS_$(2)_section MOD_HSPLITS_$(2)_nosection
- MOD_HSPLITS_$(2)_section_COMMON:=scripts/splitall_section_def.h
- MOD_HSPLITS_$(2)_section_SRCDIR:=include/$(1)
+ MOD_HSPLITS_$(2)_section_COMMON:=$(PM2_SRCROOT)/marcel/scripts/splitall_section_def.h
+ MOD_HSPLITS_$(2)_section_SRCDIR:=$(PM2_SRCROOT)/marcel/include/$(1)
  MOD_HSPLITS_$(2)_section_GENSUBDIR:=$(1)
  MOD_HSPLITS_$(2)_section_DEFAULT_SECTION:=null
- MOD_HSPLITS_$(2)_SOURCES:=$$(patsubst include/$(1)/%,%,$$(wildcard include/$(1)/*.h))
- MOD_HSPLITS_$(2)_section_SOURCES=$$(shell cd include/$(1); grep </dev/null -l '^\#section' $$(MOD_HSPLITS_$(2)_SOURCES))
- MOD_HSPLITS_$(2)_nosection_COMMON:=scripts/splitall_nosection_def.h
- MOD_HSPLITS_$(2)_nosection_SRCDIR:=include/$(1)
+ MOD_HSPLITS_$(2)_SOURCES:=$$(patsubst $(PM2_SRCROOT)/marcel/include/$(1)/%,%,$$(wildcard $(PM2_SRCROOT)/marcel/include/$(1)/*.h))
+ MOD_HSPLITS_$(2)_section_SOURCES=$$(shell cd $(PM2_SRCROOT)/marcel/include/$(1); grep </dev/null -l '^\#section' $$(MOD_HSPLITS_$(2)_SOURCES))
+ MOD_HSPLITS_$(2)_nosection_COMMON:=$(PM2_SRCROOT)/marcel/scripts/splitall_nosection_def.h
+ MOD_HSPLITS_$(2)_nosection_SRCDIR:=$(PM2_SRCROOT)/marcel/include/$(1)
  MOD_HSPLITS_$(2)_nosection_GENSUBDIR:=$(1)
  MOD_HSPLITS_$(2)_nosection_DEFAULT_SECTION:=all
  MOD_HSPLITS_$(2)_nosection_SOURCES=$$(filter-out $$(MOD_HSPLITS_$(2)_section_SOURCES),$$(MOD_HSPLITS_$(2)_SOURCES))
@@ -75,7 +75,7 @@ endef
 
 # Décommenter lorsque make 3.81 sortira
 #ifeq ($(findstring dot_h_all, $(MAKECMDGOALS)),dot_h_all)
-#$(foreach ASM,$(subst include/,,$(wildcard include/asm-*)),\
+#$(foreach ASM,$(subst $(PM2_SRCROOT)/marcel/include/,,$(wildcard $(PM2_SRCROOT)/marcel/include/asm-*)),\
 #	$(eval $(call ADD_SUBDIR,$(ASM),ARCH-$(ASM))))
 #else
 $(eval $(call ADD_SUBDIR,asm-generic,ARCH_GENERIC))
@@ -96,8 +96,8 @@ $(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 	$(COMMON_BUILD)
 	@: > "$@"
 	$(info computing header hash for flavor `$(FLAVOR)')
-	@( hash=`$(PM2_ROOT)/marcel/scripts/cpp-hash.sh "$(FLAVOR)"	\
-	             $(PM2_ROOT)/marcel/include/marcel.h` ;		\
+	@( hash=`$(PM2_OBJROOT)/marcel/scripts/cpp-hash.sh "$(FLAVOR)"	\
+	             $(PM2_SRCROOT)/marcel/include/marcel.h` ;		\
 	echo "/* Automatically generated, do not edit.  */" ;		\
 	echo "#ifndef MARCEL_HEADER_HASH" ;				\
 	echo "/** \\brief A hash of Marcel's headers for flavor" ;	\
@@ -111,7 +111,7 @@ $(MOD_GEN_INC)/marcel_abi.h: $(MOD_HSPLITS_MAKEFILES)
 $(MOD_GEN_OBJ)/marcel_bubble_sched.o $(MOD_GEN_OBJ)/marcel_bubble_sched.pic: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 $(MOD_GEN_CPP)/marcel_bubble_sched.i: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 
-$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard source/scheduler-marcel/marcel_bubble_*.c)
+$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard $(PM2_SRCROOT)/marcel/source/scheduler-marcel/marcel_bubble_*.c)
 	$(COMMON_BUILD)
 	@( schedulers=`cat $^							\
 	 | sed -n -e 's/.*MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *\([^,]*\).*/\1/p' \
@@ -144,10 +144,10 @@ $(MOD_GEN_INC)/scheduler:
 clean: clean_autogen
 
 clean_autogen:
-	$(COMMON_CLEAN) $(RM) -r autogen-include
+	$(COMMON_CLEAN) $(RM) -r $(PM2_SRCROOT)/marcel/autogen-include
 
-#$(foreach rep,$(patsubst include/%,%, \
-#		$(wildcard include/asm-* include/scheduler-*)), \
+#$(foreach rep,$(patsubst $(PM2_SRCROOT)/marcel/include/%,%, \
+#		$(wildcard $(PM2_SRCROOT)/marcel/include/asm-* $(PM2_SRCROOT)/marcel/include/scheduler-*)), \
 #	$(eval $(call ADD_SUBDIR,$(rep),$(rep))))
 
 #sys/marcel_sched.h scheduler/sched_marcel.h marcel_alias.h \
@@ -155,7 +155,7 @@ clean_autogen:
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
@@ -163,7 +163,7 @@ include $(PM2_ROOT)/make/libs-rules.mak
 # des sources du noyaux linux
 
 # Récupération du nom des fichiers originaux
-KFILES=$(shell find include source -iname "linux_*.[ch]" | \
+KFILES=$(shell find $(PM2_SRCROOT)/marcel/include $(PM2_SRCROOT)/marcel/source -iname "linux_*.[ch]" | \
 	sed	-e 's,^.*/old/.*$$,,' \
 		-e 's,\(asm[^/]*/\)linux_,\1,' \
 		-e 's,include/\(asm-.*\)/linux_,include/\1/,' \

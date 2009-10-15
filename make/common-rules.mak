@@ -51,7 +51,7 @@ commonoptionshelp:
 	@echo "  VERB=verbose|normal|quiet|silent: vebosity of building process"
 	@echo
 	@echo "Most of these options can be given with command line or"
-	@echo "configurated in $(PM2_ROOT)/make/config.mak"
+	@echo "configurated in $(PM2_OBJROOT)/make/config.mak"
 
 # Note: interet ?
 suboptionshelp:

@@ -338,7 +338,7 @@ if [ -z "$modules_set" ]; then
 fi
 
 set -- --source-mode
-. ${PM2_ROOT}/bin/pm2-config
+. ${PM2_OBJROOT}/bin/pm2-config
 
 # Generating directories
 

@@ -29,5 +29,5 @@ endif # FLAVOR
 CFLAGS ?= -Wall -Wmissing-prototypes
 
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 

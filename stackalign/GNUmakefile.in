@@ -18,6 +18,6 @@ PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 LDFLAGS+= -ldl
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak

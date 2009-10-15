@@ -17,7 +17,7 @@ EXEFILES	:= $(CFILES:%.c=%)
 ifdef PM2_BUILD_DIR
 TARGET	:=	${PM2_BUILD_DIR}/${PM2_ASM}/${PM2_FLAVOR}/examples/bin
 else
-TARGET	:=	${PM2_ROOT}/build/${PM2_ASM}/${PM2_FLAVOR}/examples/bin
+TARGET	:=	${PM2_OBJROOT}/build/${PM2_ASM}/${PM2_FLAVOR}/examples/bin
 endif
 
 all: ${EXEFILES}
@@ -27,7 +27,7 @@ ${TARGET}:
 
 ${EXEFILES}: %: %.c ${TARGET}
 	@echo "Compiling $< for flavor '${PM2_FLAVOR}'..."
-	make -C ${PM2_ROOT}
+	make -C ${PM2_OBJROOT}
 	@${CC} ${CFLAGS} $< ${LDFLAGS} -o ${TARGET}/$@
 
 clean:

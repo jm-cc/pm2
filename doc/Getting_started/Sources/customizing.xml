@@ -171,7 +171,7 @@ The binary will be created in the directory
 <LATEX>\end{quote}</LATEX>
 The root script to
 invoke <TT>ezflavor</TT> is available from your <TT>PATH</TT> in
-<TT>${PM2_ROOT}/bin/ezflavor</TT>, using your PM2 configuration, it
+<TT>${PM2_OBJROOT}/bin/ezflavor</TT>, using your PM2 configuration, it
 will automatically redirect your call to the binary file.
 </P>
 

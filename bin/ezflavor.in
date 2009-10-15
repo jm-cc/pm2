@@ -91,10 +91,7 @@ error_compile()
   exit 1
 }
 
-# Main part
-[ -n "${PM2_ROOT}"    ] || error 'PM2_ROOT variable is not set'
-
-PM2_CONFIG="${PM2_ROOT}/bin/pm2-config"
+PM2_CONFIG="${PM2_OBJROOT}/bin/pm2-config"
 [ -x "${PM2_CONFIG}" ] || error "cannot execute ${PM2_CONFIG}"
 
 FLAVOR_DIR=`${PM2_CONFIG} --flavor=$flavor --bindir $module 2>/dev/null`
@@ -111,7 +108,7 @@ if [ ! -d "${FLAVOR_DIR}"  ] ; then
   error_compile "Directory ${FLAVOR_DIR} not found" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module}" \
+	--cmd "cd $PM2_OBJROOT ; make FLAVOR=$flavor -C modules/${module}" \
 	-- ${@:+"$@"}
 fi
 
@@ -119,7 +116,7 @@ if [ ! -x "${PROG}" ]; then
   error_compile "cannot execute ${PROG}" \
 	"" \
         "Do you want to try to compile it by executing :" \
-	--cmd "cd $PM2_ROOT ; make FLAVOR=$flavor -C modules/${module}" \
+	--cmd "cd $PM2_OBJROOT ; make FLAVOR=$flavor -C modules/${module}" \
 	-- ${@:+"$@"}
 fi
 

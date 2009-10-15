@@ -22,11 +22,6 @@ export PATH PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
 PROGNAME="pm2-module"
 
-if [ -z "${PM2_ROOT}" ]; then
-    echo "Check PM2_ROOT environment variable, please" 1>&2
-    exit 1
-fi
-
 ##########################################################################
 
 HIDDEN_MODULES="generic|appli"
@@ -142,7 +137,7 @@ module_valid() { # module noabort generic
     $HIDDEN_MODULES)
 	;;
     *)
-	if [ -d "${PM2_ROOT}/modules/$1/config" ]; then
+	if [ -d "${PM2_SRCROOT}/modules/$1/config" ]; then
 	    return 0
 	fi
 	;;
@@ -266,15 +261,15 @@ do_modules() {
     done
     case $action in
     list)
-	if [ -d "${PM2_ROOT}/modules" ]; then
+	if [ -d "${PM2_SRCROOT}/modules" ]; then
 	    if [ "$with_common" = true ]; then
-		list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | grep -v generic`
+		list=`( cd "${PM2_SRCROOT}/modules"; ls -d * ) | grep -v generic`
 	    else
                 if [ "$user_only" = true ]; then
-		    list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
+		    list=`( cd "${PM2_SRCROOT}/modules"; ls -d * ) | \
 			grep -v -E $EXPERT_MODULES | grep -v common`
 		else
-		    list=`( cd "${PM2_ROOT}/modules"; ls -d * ) | \
+		    list=`( cd "${PM2_SRCROOT}/modules"; ls -d * ) | \
 			grep -v -E $HIDDEN_MODULES | grep -v common`
 		fi
 	    fi
@@ -307,7 +302,7 @@ do_module() { # module ...
 	esac
 	shift
     done
-    directory="${PM2_ROOT}/modules/$module/config"
+    directory="${PM2_SRCROOT}/modules/$module/config"
     filename="$module"
     do_action $module ""
 }
@@ -340,13 +335,13 @@ get_options_in_dir() {
 
 # Donne la liste exhaustive des options
 do_options_list() {
-    get_options_in_dir ${PM2_ROOT}/modules/$module/config/options
+    get_options_in_dir ${PM2_SRCROOT}/modules/$module/config/options
 }
 
 # Donne la liste des ensembles d'options exclusives
 do_options_get_excl_sets() {
-	if [ -d "${PM2_ROOT}/modules/$module/config" ]; then
-	    for eset in `(cd "${PM2_ROOT}/modules/$module/config"; \
+	if [ -d "${PM2_SRCROOT}/modules/$module/config" ]; then
+	    for eset in `(cd "${PM2_SRCROOT}/modules/$module/config"; \
 			ls -d *.excl) 2>/dev/null`; do
 	       e_set=${eset%%.*}
 	       echo $e_set
@@ -356,7 +351,7 @@ do_options_get_excl_sets() {
 
 # Donne les options faisant partie de l'ensemble "$1"
 do_options_get_excl() { # set
-    get_options_in_dir ${PM2_ROOT}/modules/$module/config/$1.excl
+    get_options_in_dir ${PM2_SRCROOT}/modules/$module/config/$1.excl
 }
 
 # Donne la liste exhaustive de toutes les options dans tous les
@@ -372,8 +367,8 @@ get_all_excl_options() {
 ########################
 # Donne la liste des ensembles d'options inclusives
 do_options_get_incl_sets() {
-	if [ -d "${PM2_ROOT}/modules/$module/config" ]; then
-	    for iset in `(cd "${PM2_ROOT}/modules/$module/config"; \
+	if [ -d "${PM2_SRCROOT}/modules/$module/config" ]; then
+	    for iset in `(cd "${PM2_SRCROOT}/modules/$module/config"; \
 			ls -d *.incl) 2>/dev/null`; do
 	       echo $iset | cut -d. -f1
 	    done
@@ -382,7 +377,7 @@ do_options_get_incl_sets() {
 
 # Donne les options faisant partie de l'ensemble "$1"
 do_options_get_incl() { # set
-    get_options_in_dir ${PM2_ROOT}/modules/$module/config/$1.incl
+    get_options_in_dir ${PM2_SRCROOT}/modules/$module/config/$1.incl
 }
 
 # Donne la liste exhaustive de toutes les options dans tous les
@@ -468,9 +463,9 @@ do_option() { # option ...
 	esac
 	shift
     done
-    directory="${PM2_ROOT}/modules/$module/config/options"
-    if [ -d "${PM2_ROOT}/modules/$module/config/options" ]; then
-	filename=`( cd "${PM2_ROOT}/modules/$module/config/options" ; ls -1 ) \
+    directory="${PM2_SRCROOT}/modules/$module/config/options"
+    if [ -d "${PM2_SRCROOT}/modules/$module/config/options" ]; then
+	filename=`( cd "${PM2_SRCROOT}/modules/$module/config/options" ; ls -1 ) \
 	    | grep '^[0-9]*'"$option\\." | head -n 1 | cut -d. -f1`
     else
 	filename="$option"

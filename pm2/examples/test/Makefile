@@ -17,4 +17,4 @@ export FLAVOR_DEFAULT:=pm2
 
 PROGS := ping reactivity thr_create
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak

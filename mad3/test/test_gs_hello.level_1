@@ -15,7 +15,7 @@
 # Configuration
 script="<undefined>"
 flavor="test_mad3"
-appdir="${PM2_ROOT}/mad3/examples"
+appdir="${PM2_OBJROOT}/mad3/examples"
 prog="gs_mad_hello"
 args="-w --x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
@@ -24,7 +24,7 @@ echo "success" > /tmp/pm2test_"${USER}"_expected
 
 # Creation de la flavor
 create_test_flavor() {
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"init mad3 ntbx tbx\" \
 	--init=\"debug gdb\" \

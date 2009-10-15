@@ -14,7 +14,7 @@
 
 # Configuration
 flavor="test_mad3_marcel"
-appdir="${PM2_ROOT}/mad3/examples"
+appdir="${PM2_OBJROOT}/mad3/examples"
 prog="mad_control"
 args="-w --x --p --l"
 hosts=${TESTCONFIG:-"localhost localhost"}
@@ -27,7 +27,7 @@ do
 done
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
  --ext=\"\" \
  --modules=\"init mad3 ntbx tbx marcel\" \
  --init=\"opt\" \

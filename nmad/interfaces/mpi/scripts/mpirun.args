@@ -63,7 +63,7 @@ Environment variables:
    - MPI_HOST_FILE specifies a file containing a list of possible
      machines to run on.
    - MPI_NET_FILE specifies a configuration network file. By default,
-     the file \${PM2_ROOT}/nmad/examples/mpi/networks.cfg is used.
+     the file \${PM2_SRCROOT}/nmad/examples/mpi/networks.cfg is used.
    - LEONIE_ARGS specify arguments for leonie, the bootstrap code used
      by Mad-MPI.
    - MPI_NMAD_X allows to start each processus in a graphical console.

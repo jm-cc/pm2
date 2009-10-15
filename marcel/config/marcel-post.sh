@@ -48,14 +48,14 @@ esac
 if [ "$PM2_SYS" != OSF_SYS ]; then
     if [ "$PM2_MARCEL_BUILD_DYNAMIC" = yes ]; then
 	if [ "$GNU_LINKER" = yes ]; then
-	    PM2_MARCEL_EARLY_LDFLAGS_KERNEL="${PM2_ROOT}/marcel/scripts/marcel$PREFIX.lds"
+	    PM2_MARCEL_EARLY_LDFLAGS_KERNEL="${PM2_SRCROOT}/marcel/scripts/marcel$PREFIX.lds"
 	else
 	    PM2_MARCEL_EARLY_OBJECT_FILES_KERNEL="_marcel_link.pic"
 	fi
     else
 	if [ "$PM2_MARCEL_BUILD_STATIC" = yes ]; then
 	    if [ "$GNU_LINKER" = yes ]; then
-		PM2_MARCEL_EARLY_LDFLAGS="${PM2_ROOT}/marcel/scripts/marcel$PREFIX.lds"
+		PM2_MARCEL_EARLY_LDFLAGS="${PM2_SRCROOT}/marcel/scripts/marcel$PREFIX.lds"
 	    else
 		PM2_MARCEL_EARLY_OBJECT_FILES="_marcel_link.o"
 	    fi

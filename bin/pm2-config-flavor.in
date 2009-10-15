@@ -20,8 +20,8 @@ PM2_SRCROOT="@abs_top_srcdir@"
 PM2_OBJROOT="@abs_top_builddir@"
 export PATH PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
-PM2_FLAVOR="${PM2_ROOT}/bin/pm2-flavor"
-PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
+PM2_FLAVOR="${PM2_OBJROOT}/bin/pm2-flavor"
+PM2_MODULE="${PM2_OBJROOT}/bin/pm2-module"
 
 ARGV=${@:+"$@"}
 

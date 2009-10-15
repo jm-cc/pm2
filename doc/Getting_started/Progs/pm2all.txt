@@ -1,1 +1,1 @@
-ravel% pm2-all 'ls ${PM2_ROOT}'
+ravel% pm2-all 'ls ${PM2_OBJROOT}'

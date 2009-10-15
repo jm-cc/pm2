@@ -28,7 +28,7 @@ unset PM2_FLAVOR
 
 _PM2_TEST_PROGNAME=pm2-test
 
-_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+_ALL_MODULES="`${PM2_OBJROOT}/bin/pm2-module modules`"
 
 _DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
 
@@ -162,7 +162,7 @@ do_the_test()
             prog=$script
         fi
         echo "Running program <$prog> with flavor <$flavor>..."
-        ${PM2_ROOT}/bin/pm2-conf -f $flavor $hosts
+        ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts
 
 	save_PM2_LD_PRELOAD="$PM2_LD_PRELOAD"
 	_ld_preload_name="`pm2_ld_preload_var_name $test_name`"
@@ -179,10 +179,10 @@ do_the_test()
 	fi
 
         if [ -z "$net" ] ; then
-            (${PM2_ROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
+            (${PM2_OBJROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         else
             protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-            (${PM2_ROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
+            (${PM2_OBJROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
 	if [ `cat $file_status` -ne 0 ] ; then
 	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
@@ -239,9 +239,9 @@ do_the_test()
                     is_examples=$(echo $dir | grep examples)
                     if [ "$is_examples" != "" ]
                     then
-                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT/$_m":'")
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_SRCROOT/$_m":'")
                     else
-                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_ROOT":'")
+                        command=$(echo "echo $dir | sed 's:"$build_dir':'$PM2_SRCROOT":'")
                     fi
                     base_dir=$(eval $command)
 		    module_name="$(basename $dir)"
@@ -410,7 +410,7 @@ while [ $_l -le $_level ]; do
 	nb_passes_per_module=0
 
         shopt -u nullglob
-	cd ${PM2_ROOT}/modules/$_m/test
+	cd ${PM2_SRCROOT}/modules/$_m/test
 	_tests=`ls test_*.level_$_l 2> /dev/null`
 	if [ -n "$_tests" ]; then
 	    echo "*** Initialising level $_l tests for module $_m ***"
@@ -471,7 +471,7 @@ while [ $_l -le $_level ]; do
 		    file_status="/tmp/pm2test_${USER}_status"
 
 		    echo "*** Compiling flavor <$d_flavor>..."
-		    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_ROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
+		    (CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" ${PM2_MAKE:-make} CC="$CC" FLAVOR=$d_flavor PM2_FLAVOR=$d_flavor $jobs -C $PM2_OBJROOT $jobs; echo "$?" > $file_status ) | sed -e 's/^/..../'
 
 		    if [ `cat $file_status` -ne 0 ] ; then
 			pm2_test_warning "Compilation of the flavor $d_flavor failed."

@@ -236,7 +236,7 @@ _PROG="$_PM2_WHICH_PROG"
 
 #On rajoute puis on vire un --source-mode
 set -- --source-mode "$@"
-. ${PM2_ROOT}/bin/pm2-config
+. ${PM2_OBJROOT}/bin/pm2-config
 shift
 
 pm2_which_calc "$_PM2_WHICH_PROG"

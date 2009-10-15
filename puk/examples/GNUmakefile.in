@@ -9,7 +9,7 @@ all: $(PROGS)
 
 pukabi-mini.o: pukabi-mini.c
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 
 
 LIBDIR   := $(shell pm2-config --libdir puk)

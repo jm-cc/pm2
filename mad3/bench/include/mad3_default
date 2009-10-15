@@ -16,7 +16,7 @@
 compile_leonie()
 {
 	echo "Compiling Leonie"
-	(cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
+	(cd ${PM2_OBJROOT}/leonie ; make FLAVOR=leonie)
 }
 
 # args: loop variable
@@ -46,7 +46,7 @@ initialize_bench()
 	IFS=$OLD_IFS
 
         # Creation de la flavor
-        eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+        eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
          --ext=\"\" \
          --modules=\"init mad3 ntbx tbx\" \
          --init=\"opt\" \
@@ -85,7 +85,7 @@ run_bench()
 	# wait for NFS to propagate the new compiled program
 	sleep 10
 
-	${PM2_ROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
+	${PM2_SRCROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
 }
 
 # args: loop variable

@@ -39,7 +39,7 @@ duplique_global:
 		name=`ls *$$file.sh` ; name=`basename $$name .sh` ; \
 		echo "duplicating '$$name' for $$2" ; \
 		for lib in $$2; do \
-		    DEST=$$PM2_ROOT/modules/$$lib/config/options ;\
+		    DEST=$$PM2_SRCROOT/modules/$$lib/config/options ;\
 	    	    mkdir -p $$DEST; \
 		    copie $$name.sh $$lib $$DEST/$$name.sh ;\
 		    copie $$name.help $$lib $$DEST/$$name.help ;\
@@ -52,7 +52,7 @@ duplique_global:
 	    for lib in $$2; do \
 	    	LIB=`echo $$lib | tr [a-z] [A-Z]`; \
 		ligne=`echo "$$1"|sed -e "s,@LIB@,$${LIB},g;s,@lib@,$${lib},g"`;\
-		DESTFILE=$$PM2_ROOT/modules/$$lib/config/$$lib.dep ;\
+		DESTFILE=$$PM2_SRCROOT/modules/$$lib/config/$$lib.dep ;\
 		if ! grep -sq "$$ligne" "$$DESTFILE" ; then \
 		    echo "updating $$lib with $$ligne" ;\
 		    echo $$ligne >> $$DESTFILE ; \

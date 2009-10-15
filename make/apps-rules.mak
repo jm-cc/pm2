@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-include $(PM2_ROOT)/make/objs-rules.mak
+include $(PM2_SRCROOT)/make/objs-rules.mak
 
 .PHONY: all examples
 all: $(APPS_LIST)
@@ -25,7 +25,7 @@ examples: all
 $(MOD_STAMP_FILES): flavor
 flavor:
 	$(COMMON_HIDE) echo ">>> Generating libraries..."
-	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
+	$(COMMON_MAIN) $(MAKE) -C $(PM2_OBJROOT)
 	$(COMMON_HIDE) echo "<<< Generating libraries: done"
 
 $(MOD_GEN_BIN)/%: $(MOD_STAMP_FILES)

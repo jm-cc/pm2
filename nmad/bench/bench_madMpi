@@ -18,7 +18,7 @@
 # pm2-bench settings
 flavor="bench_nmad_mpi"
 flavor_options="--nmad=mpi_emu --nmad=tag_as_hashtable"
-appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+appdir="${PM2_SRCROOT}/nmad/examples/mpi/basics"
 prog="mpi_bench"
 loop=${BENCHNET:-tcp}
 

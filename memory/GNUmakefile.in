@@ -21,9 +21,9 @@ LIBNAME=mami
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 

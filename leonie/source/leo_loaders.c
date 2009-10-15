@@ -136,6 +136,12 @@ leo_default_loader(p_leo_settings_t settings,
 	    var = tbx_environment_variable_to_variable("PM2_ROOT");
 	    tbx_environment_append_variable(env, var);
 
+	    var = tbx_environment_variable_to_variable("PM2_SRCROOT");
+	    tbx_environment_append_variable(env, var);
+
+	    var = tbx_environment_variable_to_variable("PM2_OBJROOT");
+	    tbx_environment_append_variable(env, var);
+
 	    var = tbx_environment_variable_to_variable("LEO_XTERM");
 	    tbx_environment_append_variable(env, var);
 
@@ -406,6 +412,12 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	    tbx_environment_append_variable(env, var);
 
 	    var = tbx_environment_variable_to_variable("PM2_ROOT");
+	    tbx_environment_append_variable(env, var);
+
+	    var = tbx_environment_variable_to_variable("PM2_SRCROOT");
+	    tbx_environment_append_variable(env, var);
+
+	    var = tbx_environment_variable_to_variable("PM2_OBJROOT");
 	    tbx_environment_append_variable(env, var);
 
 	    var = tbx_environment_variable_to_variable("LEO_XTERM");
@@ -810,6 +822,12 @@ leo_bipload_loader(p_leo_settings_t settings,
 	  tbx_environment_append_variable(env, var);
 
 	  var = tbx_environment_variable_to_variable("PM2_ROOT");
+	  tbx_environment_append_variable(env, var);
+
+	  var = tbx_environment_variable_to_variable("PM2_SRCROOT");
+	  tbx_environment_append_variable(env, var);
+
+	  var = tbx_environment_variable_to_variable("PM2_OBJROOT");
 	  tbx_environment_append_variable(env, var);
 
 	  var = tbx_environment_variable_to_variable("LEO_XTERM");

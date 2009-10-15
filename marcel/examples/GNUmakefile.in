@@ -32,24 +32,24 @@ CFLAGS ?= -Wall -Wmissing-prototypes
 #----------------------------------------------------------------------
 APPS_EXCLUDE = $(basename $(wildcard *-posix.c))
 
-FLAVOR_WITH_PMARCEL :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep pmarcel)
+FLAVOR_WITH_PMARCEL :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep pmarcel)
 ifeq (,$(FLAVOR_WITH_PMARCEL))
 APPS_EXCLUDE += $(basename $(wildcard barrier*.c))
 endif
 
-FLAVOR_WITH_NUMA :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep numa)
+FLAVOR_WITH_NUMA :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep numa)
 ifeq (,$(FLAVOR_WITH_NUMA))
 APPS_EXCLUDE += $(basename $(wildcard bubble-*.c))
 APPS_EXCLUDE += $(basename $(wildcard memomp-*.c))
 APPS_EXCLUDE += $(basename $(wildcard krazu-bubbles.c))
 endif
 
-FLAVOR_WITH_TLS :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep dont_use_pthread)
+FLAVOR_WITH_TLS :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep dont_use_pthread)
 ifeq (,$(FLAVOR_WITH_TLS))
 APPS_EXCLUDE += $(basename $(wildcard tls*.c))
 endif
 
-FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep fortran)
+FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep fortran)
 ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
@@ -70,17 +70,17 @@ balance-ldflags := -lm
 
 # The `barrier' tests use `pmarcel', so they need to see Marcel's
 # <pthread.h>, not the system's <pthread.h>
-barrier-1-cflags := -I$(PM2_ROOT)/marcel/include/pthread
-barrier-2-cflags := -I$(PM2_ROOT)/marcel/include/pthread
-barrier-3-cflags := -I$(PM2_ROOT)/marcel/include/pthread
-barrier-4-cflags := -I$(PM2_ROOT)/marcel/include/pthread
+barrier-1-cflags := -I$(PM2_SRCROOT)/marcel/include/pthread
+barrier-2-cflags := -I$(PM2_SRCROOT)/marcel/include/pthread
+barrier-3-cflags := -I$(PM2_SRCROOT)/marcel/include/pthread
+barrier-4-cflags := -I$(PM2_SRCROOT)/marcel/include/pthread
 
 simple-cpp-ldflags := -lstdc++
 
 pthread-cpp-ldflags := -lstdc++
-pthread-cpp-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
+pthread-cpp-cppflags := -I$(PM2_SRCROOT)/marcel/include/pthread
 pthread-cpp-initializer-ldflags := -lstdc++
-pthread-cpp-initializer-cppflags := -I$(PM2_ROOT)/marcel/include/pthread
+pthread-cpp-initializer-cppflags := -I$(PM2_SRCROOT)/marcel/include/pthread
 
 # Programs that test Marcel's ABI-compatible libpthread and must be
 # linked against the system libpthread.
@@ -123,5 +123,5 @@ APPS :=
 
 simple: CC=gfortran
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 

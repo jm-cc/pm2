@@ -21,7 +21,7 @@ strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}"
 
-appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+appdir="${PM2_SRCROOT}/nmad/examples/mpi/basics"
 prog="async"
 args="--x --p --l"
 sort_output=1

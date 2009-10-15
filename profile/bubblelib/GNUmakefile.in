@@ -26,7 +26,7 @@ ifneq (@HAVE_MING@,yes)
 $(error Ming is missing.  Get it from http://www.libming.org/ .)
 endif
 
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # The profile.c file includes fut_entries.h, but it cannot be actually
 # detected by make depend since there would be a circular dependency
@@ -40,9 +40,9 @@ endif
 libs: $(MOD_GEN_INC)/fut_entries.h $(MOD_GEN_INC)/ming-version.h
 
 
-$(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_ROOT}/bin/pm2-build-fut-table
+$(MOD_GEN_INC)/fut_entries.h: $(MOD_GEN_STAMP)/fut_stamp ${PM2_OBJROOT}/bin/pm2-build-fut-table
 	$(COMMON_BUILD)
-	$(COMMON_MAIN) ${PM2_ROOT}/bin/pm2-build-fut-table -f $(FLAVOR) -m bubblelib
+	$(COMMON_MAIN) ${PM2_OBJROOT}/bin/pm2-build-fut-table -f $(FLAVOR) -m bubblelib
 
 $(MOD_GEN_STAMP)/fut_stamp: $(MOD_STAMP_FLAVOR)
 	$(COMMON_BUILD)
@@ -70,4 +70,4 @@ $(MOD_GEN_INC)/ming-version.h:
 	  echo "# define BUBBLES_MING_VERSION_MICRO $$micro";			\
 	  echo "#endif" ) > "$@"
 
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak

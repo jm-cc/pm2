@@ -154,9 +154,9 @@ leo_help(void)
 		    "Do not open session processes in valgrind");
   DISP("");
   __leo_option_help("-e", "",
-		    "Export PATH, PM2_ROOT and LEO_XTERM     to client nodes");
+		    "Export PATH, PM2_ROOT, PM2_SRCROOT, PM2_OBJROOT and LEO_XTERM     to client nodes");
   __leo_option_help("[--e]", "",
-		    "Do not export local PATH, PM2_ROOT and  LEO_XTERM to client nodes");
+		    "Do not export local PATH, PM2_ROOT, PM2_SRCROOT, PM2_OBJROOT and  LEO_XTERM to client nodes");
 
   __leo_option_help("", "--flavor=FLAVOR",
 		    "Select FLAVOR as the application flavor");

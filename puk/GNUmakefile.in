@@ -16,9 +16,9 @@ PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
-include $(PM2_ROOT)/make/common-vars.mak
+include $(PM2_OBJROOT)/make/common-vars.mak
 
-pm2_build_dir  := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
+pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 PUK_ROOT       := $(pm2_build_dir)/puk
 PUK_SRCDIR     := $(CURDIR)
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
@@ -29,9 +29,9 @@ PADICO_ROOT    := $(PUK_ROOT)
 SRC_CONFIG_FILES := externals/packaging-tools/padico-setup.sh.in configure.ac # $(wildcard externals/building-tools/*.m4)
 GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh externals/configure externals/Puk/padico_config.h.in VERSION
 
-PM2_PUK_BUILD_STATIC  := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_STATIC)
-PM2_PUK_BUILD_DYNAMIC := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_DYNAMIC)
-PUK_ENABLE_PUKABI     := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
+PM2_PUK_BUILD_STATIC  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_STATIC)
+PM2_PUK_BUILD_DYNAMIC := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_DYNAMIC)
+PUK_ENABLE_PUKABI     := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
 
 PUK_LIBS = 
 ifeq ($(PM2_PUK_BUILD_STATIC),yes)
@@ -98,7 +98,7 @@ $(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
 # ## configure
 # ##
 
-PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_ROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
+PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
 
 $(PUK_BUILDDIR)/config.status: $(GEN_CONFIG_FILES)
 	( cd $(PUK_BUILDDIR) ; \

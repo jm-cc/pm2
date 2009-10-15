@@ -24,12 +24,12 @@ ifndef FLAVOR
   endif # PM2_FLAVOR
 endif # FLAVOR
 
-FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep memory=fortran)
+FLAVOR_WITH_FORTRAN :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep memory=fortran)
 ifeq (,$(FLAVOR_WITH_FORTRAN))
 APPS_EXCLUDE += $(basename $(wildcard *.f90))
 endif
 
-FLAVOR_WITH_MARCEL :=	$(shell $(PM2_ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep memory=marcel)
+FLAVOR_WITH_MARCEL :=	$(shell $(PM2_OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep memory=marcel)
 ifeq (,$(FLAVOR_WITH_MARCEL))
 APPS_EXCLUDE += $(basename $(wildcard attach*.c))
 APPS_EXCLUDE += $(basename mami_allocator.c)
@@ -42,4 +42,4 @@ attach_migratef: FC=gfortran
 attach_mamif-ldflags := -lgfortranbegin -lgfortran
 attach_migratef-ldflags := -lgfortranbegin -lgfortran
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak

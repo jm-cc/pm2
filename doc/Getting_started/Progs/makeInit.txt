@@ -1,3 +1,3 @@
 ravel% source ${HOME}/.cshrc           # If you are running csh
-ravel% cd ${PM2_ROOT}
+ravel% cd ${PM2_OBJROOT}
 ravel% make init

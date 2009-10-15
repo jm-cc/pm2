@@ -1,5 +1,5 @@
 [ "$PM2_SYS" = IRIX_SYS ] && PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -fno-omit-frame-pointer"
-PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -I${PM2_ROOT}/marcel/autogen-include -D__STDC_LIMIT_MACROS"
+PM2_MARCEL_CFLAGS="$PM2_MARCEL_CFLAGS -I${PM2_SRCROOT}/marcel/autogen-include -D__STDC_LIMIT_MACROS"
 [ "$PM2_SYS" != DARWIN_SYS ] && PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -D_POSIX_C_SOURCE=200112"
 PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -D_GNU_SOURCE"
 PM2_MARCEL_CFLAGS_KERNEL="$PM2_MARCEL_CFLAGS_KERNEL -Wmissing-prototypes"
@@ -20,7 +20,7 @@ esac
 
 case " $PM2_LIBS " in
     *\ mad?\ *) ;;
-    *) PM2_DEFAULT_LOADER=${PM2_ROOT}/marcel/bin/marcelload_conf_not_needed ;;
+    *) PM2_DEFAULT_LOADER=${PM2_SRCROOT}/marcel/bin/marcelload_conf_not_needed ;;
 esac
 
 if [ "$PM2_SYS" = SOLARIS_SYS ]; then

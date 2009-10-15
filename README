@@ -95,7 +95,7 @@ setting the PM2_FLAVOR variable. For instance:
 To compile an application, just go to the right directory and type
 'make':
 
-	cd ${PM2_ROOT}/pm2/examples/simple
+	cd ${PM2_SRCROOT}/pm2/examples/simple
 	make simple
 
 For configuring flavors, just run:

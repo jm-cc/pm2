@@ -31,7 +31,7 @@ export PM2_FLAVOR
 builddir="`pm2-config --builddir marcel`"
 read_topology="$builddir/examples/bin/read-topology"
 
-example_dir="$PM2_ROOT/marcel/examples"
+example_dir="$PM2_SRCROOT/marcel/examples"
 topology_dir="$example_dir/topology-sysfs"
 
 error()

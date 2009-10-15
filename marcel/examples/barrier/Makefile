@@ -32,7 +32,7 @@ CFLAGS_$(1) = $(shell pm2-config --flavor=$(1) --cflags)
 LDLIBS_$(1) = $(shell pm2-config --flavor=$(1) --libs)
 flavors: flavor-$(1)
 flavor-$(1):
-	$$(MAKE) -C $$(PM2_ROOT) FLAVOR=$(1)
+	$$(MAKE) -C $$(PM2_OBJROOT) FLAVOR=$(1)
 endef
 
 $(foreach flav, $(FLAVORS), \

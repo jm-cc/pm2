@@ -1,3 +1,3 @@
 Enable POSIX API compatibility mode.
 This enables pmarcel_* functions that are semantically equivalent to pthread_* functions from the POSIX norm.
-For pthread_* -> pmarcel_* renaming, add -I$PM2_ROOT/marcel/include/pthread/, where a pthread.h file is provided.
+For pthread_* -> pmarcel_* renaming, add -I$PM2_SRCROOT/marcel/include/pthread/, where a pthread.h file is provided.

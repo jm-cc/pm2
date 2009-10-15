@@ -278,7 +278,7 @@ static void init(void) {
 
 	fontpath = SWF_fontfile;
 	if (!SWF_fontfile) {
-		char *root = getenv("PM2_ROOT");
+		char *root = getenv("PM2_SRCROOT");
 		static const char path[] = "/profile/bubblelib/font/Sans.fdb";
 		int len = strlen(root) + strlen(path);
 		fontpath = malloc(len+1);

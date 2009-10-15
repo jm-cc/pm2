@@ -1,3 +1,4 @@
-ravel% cd ${PM2_ROOT}
+PM2_SRCROOT = .../pm2
+ravel% cd ${PM2_OBJROOT}
 ravel% make PM2_FLAVOR=pm2debug
 [...]           # Well, a bunch of lines here...

@@ -13,8 +13,8 @@ if [ -z "$x" ] ; then
         --all=\"build_static opt\"
 fi
 
-make -C $PM2_ROOT/memory FLAVOR=$flavor -j
-make -C $PM2_ROOT/memory/examples/mami FLAVOR=$flavor sampling_for_memory_access
+make -C $PM2_OBJROOT/memory FLAVOR=$flavor -j
+make -C $PM2_OBJROOT/memory/examples/mami FLAVOR=$flavor sampling_for_memory_access
 prog=$(pm2-which -f $flavor sampling_for_memory_access)
 
 $prog

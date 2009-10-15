@@ -149,7 +149,7 @@ pm2_config_init()
 
     # Get the flavor script file path
     set --  --source-mode -f $_PM2_CONFIG_FLAVOR
-    . ${PM2_ROOT}/bin/pm2-flavor-file
+    . ${PM2_OBJROOT}/bin/pm2-flavor-file
     _PM2_CONFIG_FLAVOR_FILE=$PM2_FLAVOR_FILE
     export _PM2_CONFIG_FLAVOR_FILE
 
@@ -183,7 +183,7 @@ pm2_config_set_vars()
     pm2_config_build_uppercase appli common init $_PM2_CONFIG_DIRTY_ORDERED_MODULES
 
     # Build directory
-    _PM2_CONFIG_BUILD="${PM2_ROOT}/build/${PM2_ASM}/$flavor"
+    _PM2_CONFIG_BUILD="${PM2_OBJROOT}/build/${PM2_ASM}/$flavor"
     export _PM2_CONFIG_BUILD
 
     # Loader
@@ -382,8 +382,8 @@ pm2_config_set_vars()
 	    eval _flags=\"$_flags -I\$_PM2_CONFIG_${_lib}_INCLUDE_DIR\"
 	fi
 	# répertoire standard APRES (permet de générer des fichiers existants)
-	if [ -d "${PM2_ROOT}/modules/$_lib/include" ]; then
-	    _flags="$_flags -I${PM2_ROOT}/modules/$_lib/include"
+	if [ -d "${PM2_SRCROOT}/modules/$_lib/include" ]; then
+	    _flags="$_flags -I${PM2_SRCROOT}/modules/$_lib/include"
 	fi
 	_PM2_CONFIG_CFLAGS="$_PM2_CONFIG_CFLAGS $_flags"
     done
@@ -578,11 +578,11 @@ pm2_config_parse_cmdline() # args
 	_libs_add_all=true
 	;;
     *)
-	_PM2_CONFIG_ALL_MODULES=`${PM2_ROOT}/bin/pm2-module modules --with-common`
+	_PM2_CONFIG_ALL_MODULES=`${PM2_OBJROOT}/bin/pm2-module modules --with-common`
 
 	if [ -z "$_PM2_CONFIG_ALL_MODULES" ]; then
 	    echo "No PM2 module detected." 1>&2
-	    echo "Please check your PM2_ROOT environment variable and/or do 'make init'" 1>&2
+	    echo "Please check the output of ./autogen.sh" 1>&2
 	    exit 1
 	fi
 

@@ -1692,7 +1692,7 @@ diff -uprN -x '*~' -x configure -x autom4te.cache -x '*.in' gcc-4.2.2.orig/libgo
 +  fi
 +  AC_MSG_RESULT(yes)
 +
-+  MARCEL_CPPFLAGS="$(pm2-config --cflags) -I$PM2_ROOT/marcel/include/pthread/"
++  MARCEL_CPPFLAGS="$(pm2-config --cflags) -I$PM2_SRCROOT/marcel/include/pthread/"
 +
 +  save_CPPFLAGS="$CPPFLAGS"
 +  CPPFLAGS="$MARCEL_CPPFLAGS"

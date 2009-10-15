@@ -13,6 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-include ${PM2_ROOT}/make/apps-vars.mak
-include ${PM2_ROOT}/make/apps-rules.mak
+include ${PM2_OBJROOT}/make/apps-vars.mak
+include ${PM2_SRCROOT}/make/apps-rules.mak
 

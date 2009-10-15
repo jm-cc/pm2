@@ -1,4 +1,4 @@
 ravel% setenv PM2_FLAVOR mad3
-ravel% cd $PM2_ROOT/mad3/examples
+ravel% cd $PM2_OBJROOT/mad3/examples
 ravel% make gs_mad_hello
 [...]   # Normally, no warning whatsoever!

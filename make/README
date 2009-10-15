@@ -63,7 +63,7 @@ library generated (mad for mad3)
 You can define $(LIBRARY)_CC and/or $(LIBRARY)_AS (default CC and AS defined
 in config.mak)
 
-You include $(PM2_ROOT)/make/libs.mak
+You include $(PM2_SRCROOT)/make/libs.mak
 
 If you have more complexe things to do, you can refere to the Makefile of pm2
 and mad3.
@@ -72,7 +72,7 @@ How to write a examples Makefile ?
 ==================================
 You can define a FLAVOR_DEFAULT
 You have to define PROGS (the list of progs to build)
-You include $(PM2_ROOT)/make/apps.mak
+You include $(PM2_SRCROOT)/make/apps.mak
 
 You can define special rules for the building when APP_RECURSIF is defined.
 Do not forget the extention in files' name.

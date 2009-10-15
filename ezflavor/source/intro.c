@@ -40,12 +40,24 @@ static gint logo_area_height  = 0;
 static gint max_steps;
 static gint step = 0;
 
-gchar *pm2_root(void)
+gchar *pm2_srcroot(void)
 {
-  gchar *ptr= getenv("PM2_ROOT");
+  gchar *ptr= getenv("PM2_SRCROOT");
 
   if(!ptr) {
-    fprintf(stderr, "Error: undefined PM2_ROOT variable\n");
+    fprintf(stderr, "Error: undefined PM2_SRCROOT variable\n");
+    exit(1);
+  }
+
+  return ptr;
+}
+
+gchar *pm2_objroot(void)
+{
+  gchar *ptr= getenv("PM2_OBJROOT");
+
+  if(!ptr) {
+    fprintf(stderr, "Error: undefined PM2_OBJROOT variable\n");
     exit(1);
   }
 
@@ -60,7 +72,7 @@ static void logo_load_size(void)
   if (logo_pixmap)
     return;
 
-  g_snprintf(buf, sizeof(buf), "%s/ezflavor/ezflavor.ppm", pm2_root());
+  g_snprintf(buf, sizeof(buf), "%s/ezflavor/ezflavor.ppm", pm2_srcroot());
 
   fp = fopen(buf, "rb");
   if(!fp) {
@@ -97,7 +109,7 @@ static void logo_load(GtkWidget *window)
     return;
   }
 
-  g_snprintf(buf, sizeof(buf), "%s/ezflavor/ezflavor.ppm", pm2_root());
+  g_snprintf(buf, sizeof(buf), "%s/ezflavor/ezflavor.ppm", pm2_srcroot());
 
   fp = fopen(buf, "rb");
   if(!fp) {
@@ -262,7 +274,7 @@ static void compute_nb_steps(void)
     i++;
   }
 
-  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_objroot());
 
   while((tok = parser_next_token()) != END_OF_INPUT)
     max_steps++;
@@ -282,7 +294,7 @@ void intro_init(void)
     compute_nb_steps();
 
     if(with_sound) {
-      sprintf(cmd, "wavp %s/ezflavor/ezflavor.wav", pm2_root());
+      sprintf(cmd, "wavp %s/ezflavor/ezflavor.wav", pm2_srcroot());
       sound_pid = exec_single_cmd_fmt(NULL, cmd);
     }
   }

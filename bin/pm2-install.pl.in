@@ -24,13 +24,13 @@ my $pm2_root;
 my $install_dir;
 
 # working directory
-if (exists $ENV{'PM2_ROOT'}) {
-	$pm2_root	= $ENV{'PM2_ROOT'};
+if (exists $ENV{'PM2_OBJROOT'}) {
+	$pm2_root	= $ENV{'PM2_OBJROOT'};
 	chdir $pm2_root	or die "chdir ${pm2_root}: $!\n";
 } elsif ( -x 'bin/pm2-install.pl' ) {
 	$pm2_root	= `pwd`;
 	chomp $pm2_root;
-	$ENV{'PM2_ROOT'}	= $pm2_root;
+	$ENV{'PM2_OBJROOT'}	= $pm2_root;
 } else {
 	die "pm2-install.pl must be run from PM2 extraction directory\n";
 }

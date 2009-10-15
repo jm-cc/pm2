@@ -20,5 +20,5 @@ FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 
 hugepages-test-ldflags := -lnuma
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 

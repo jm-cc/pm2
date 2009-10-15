@@ -26,12 +26,12 @@ PM2_COMPULSORY_DEPENDENCIES :=				\
   ARCHITECTURES AUTHORS COPYING FILES README
 
 # The repository URL.  In the git-svn case, we can't simply use `git
-# clone $(PM2_ROOT) foo' to "export" the source tree since we want SVN
+# clone $(PM2_SRCROOT) foo' to "export" the source tree since we want SVN
 # externals to be handled as well.
 vcs-url    :=							\
-  $(shell if test -d "$(PM2_ROOT)/.git";			\
+  $(shell if test -d "$(PM2_SRCROOT)/.git";			\
           then git svn info | grep '^URL' | cut -f 2- -d ' ';	\
-	  else echo "$(PM2_ROOT)"; fi)
+	  else echo "$(PM2_SRCROOT)"; fi)
 
 vcs-export := svn export
 

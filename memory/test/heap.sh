@@ -29,12 +29,12 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
 fi
 
 flavor="test_memory_heap"
-appdir="${PM2_ROOT}/memory/examples/heap/simple"
+appdir="${PM2_OBJROOT}/memory/examples/heap/simple"
 check_all_lines=1
 
 create_test_flavor() {
 # Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel tbx init memory\" \
 	--init=\"topology\" \

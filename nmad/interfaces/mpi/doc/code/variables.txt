@@ -2,7 +2,7 @@
 export PM2_ROOT=$HOME/soft/pm2
 
 ## Access to the PM2 commands
-export PATH=${PM2_ROOT}/bin:${PATH}
+export PATH=${PM2_OBJROOT}/bin:${PATH}
 
 ## Access to the Mad-MPI commands
 export PATH=${PM2_ROOT}/nmad/interface/mpi/scripts:${PATH}

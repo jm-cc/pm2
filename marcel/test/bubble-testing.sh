@@ -24,7 +24,7 @@ fi
 # Configuration
 check_all_lines=1
 flavor="test_marcel_bubble"
-appdir="${PM2_ROOT}/marcel/examples"
+appdir="${PM2_SRCROOT}/marcel/examples"
 script="<undefined>"
 args=""
 hosts="localhost"
@@ -34,7 +34,7 @@ EOF
 
 # Creation de la flavor
 create_test_flavor() {
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 	--ext=""						\
 	--modules="\"marcel tbx init\""                         \
         --init="topology" --marcel="numa" --marcel="bubbles"    \

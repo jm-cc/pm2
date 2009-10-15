@@ -25,7 +25,7 @@ $(LIBRARY):
 
 # Regles communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/objs-rules.mak
+include $(PM2_SRCROOT)/make/objs-rules.mak
 
 # Regle par defaut: construction de la librairie
 # (après objs-rules.mak pour que la flavor s'affiche avant la compilation)
@@ -134,7 +134,7 @@ endif
 # Automake-generated makefiles.
 check: dot_h
 	module_name="$(shell basename $(realpath .))" ;		\
-	$(PM2_ROOT)/bin/pm2-test --torture $$module_name
+	$(PM2_OBJROOT)/bin/pm2-test --torture $$module_name
 
 .PHONY: check
 

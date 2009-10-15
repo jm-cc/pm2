@@ -1,4 +1,4 @@
-ravel% cd $PM2_ROOT/pm2/examples/simple
+ravel% cd $PM2_OBJROOT/pm2/examples/simple
 ravel% setenv PM2_FLAVOR pm2debug
 ravel% make hello
 [...]

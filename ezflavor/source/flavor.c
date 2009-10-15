@@ -865,7 +865,7 @@ void flavor_init(GtkWidget *vbox)
 
   if(!fla_names) {
     fprintf(stderr, "Error: no flavor found!\n");
-    fprintf(stderr, "Try 'make init' in $PM2_ROOT to create basic initial flavors\n");
+    fprintf(stderr, "Try 'make init' in $PM2_OBJROOT to create basic initial flavors\n");
     exit(1);
   }
 

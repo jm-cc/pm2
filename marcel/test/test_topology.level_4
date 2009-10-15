@@ -13,7 +13,7 @@
 # General Public License for more details.
 
 . ./common.sh
-topology_dir="$PM2_ROOT/marcel/examples/topology-sysfs"
+topology_dir="$PM2_SRCROOT/marcel/examples/topology-sysfs"
 name=$(basename $_t .level_4 |  sed 's/test_//' | tr '_' '-')
 flavor="marcel-$name"
 prog="read-topology"

@@ -13,5 +13,5 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-include $(PM2_ROOT)/make/libs-vars.mak
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak

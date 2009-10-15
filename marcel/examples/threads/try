@@ -39,7 +39,6 @@ echo "************** NGPT"
 echo "************** Marcel-mono"
 ./$prog-marcel-mono "$@"
 echo "************** Marcel-smp"
-#LD_PRELOAD=$PM2_ROOT/lib/LINUX_SYS/X86_ARCH/libpthread.so ./$prog-marcel-smp "$@"
 ./$prog-marcel-smp "$@"
 
 echo "************** Marcel-numa"

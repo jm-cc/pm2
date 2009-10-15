@@ -16,7 +16,7 @@
 # if someone does 'make' in an module directory, ...
 #---------------------------------------------------------------------
 no_goal:
-	$(MAKE) -C $(PM2_ROOT)
+	$(MAKE) -C $(PM2_OBJROOT)
 
 .DELETE_ON_ERROR:
 
@@ -46,7 +46,7 @@ fut: $(MOD_FUT)
 
 # Regles communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-rules.mak
+include $(PM2_SRCROOT)/make/common-rules.mak
 
 # Dépendances du fichier de cache sur la flavor
 #---------------------------------------------------------------------
@@ -237,7 +237,7 @@ endif # $(MAKECMDGOALS)
 #		$(foreach PART, $(MOD_HSPLITS_PARTS), \
 #			$(addprefix $($(PART)_SRCDIR)/,$($(PART)_SOURCES)))
 #	$(COMMON_BUILD)
-#	$(COMMON_MAIN) $(PM2_ROOT)/bin/pm2-split-h-file \
+#	$(COMMON_MAIN) $(PM2_OBJROOT)/bin/pm2-split-h-file \
 #		--makefile $@ \
 #		--gendir $(MOD_GEN_INC) \
 #		--masterfile $(MODULE)-master.h \
@@ -273,7 +273,7 @@ $(MOD_GEN_C_Y_INC): $(MOD_GEN_INC)/%.h: %.y
 #---------------------------------------------------------------------
 .PHONY: clean cleanall refresh refreshall sos
 clean cleanall refresh refreshall sos:
-	$(COMMON_HIDE) $(MAKE) -C $(PM2_ROOT) $@
+	$(COMMON_HIDE) $(MAKE) -C $(PM2_OBJROOT) $@
 
 # Exemples
 #---------------------------------------------------------------------

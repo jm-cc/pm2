@@ -101,7 +101,7 @@ mad3()
 
     # Récupération du chemin d'accès au fichier de config des machines
     set --  --source-mode
-    . ${PM2_ROOT}/bin/pm2-conf-file
+    . ${PM2_OBJROOT}/bin/pm2-conf-file
 
     [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
     log "PM2 config file: ${PM2_CONF_FILE}"
@@ -112,7 +112,7 @@ mad3()
     if [ -n "$PM2_NETWORK_FILE" ] ; then
 	PM2_LEONIE_NETWORK_FILE=$PM2_NETWORK_FILE
     else
-	PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"}}
+	PM2_LEONIE_NETWORK_FILE=${PM2_LEONIE_NETWORK_FILE:-${LEONIE_NETWORK_FILE:-"${PM2_SRCROOT}/leonie/examples/networks.cfg"}}
     fi
 
     host_list=`cat ${PM2_CONF_FILE}`
@@ -136,13 +136,13 @@ mad3()
     for p in $protocols ; do
         dev=`echo $p | sed 's/nmad-//'`
         log "Device: $dev"
-        network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
+        network_name=`${PM2_OBJROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
         log "Network $network_name"
 
         if [ "$network_name" == "Network not found" ] ; then
             dev=`echo $p | sed 's/mad-//'`
             log "Device: $dev"
-            network_name=`${PM2_ROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
+            network_name=`${PM2_OBJROOT}/bin/leo-network.pl ${PM2_LEONIE_NETWORK_FILE} $dev $host_list`
             log "Network $network_name"
 
             if [ "$network_name" == "Network not found" ] ; then
@@ -155,7 +155,7 @@ mad3()
 
     log "Create driver configuration file"
     if [ $dev != custom ]; then
-	$PM2_ROOT/bin/nmad-driver-conf --driver=$dev
+	$PM2_OBJROOT/bin/nmad-driver-conf --driver=$dev
     fi
 
     [ -f $PM2_LEONIE_FILE ] && rm -f $PM2_LEONIE_FILE
@@ -214,9 +214,9 @@ mad3()
         pm2_load_args="${pm2_load_args} --wd=$PM2_WDIR"
     fi
 
-    env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+    env="PM2_EXPORT=${PM2_EXPORT} PM2_ROOT=${PM2_ROOT} PM2_SRCROOT=${PM2_SRCROOT} PM2_OBJROOT=${PM2_OBJROOT} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     if [ "$PM2_CONF_DIR" != "" ] ; then
-        env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+        env="PM2_EXPORT=${PM2_EXPORT}:PM2_CONF_DIR PM2_ROOT=${PM2_ROOT} PM2_SRCROOT=${PM2_SRCROOT} PM2_OBJROOT=${PM2_OBJROOT} PM2_CONF_DIR=${PM2_CONF_DIR} LD_LIBRARY_PATH=${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     fi
 
     if [ "$OMP_NUM_THREADS" != "" ] ; then
@@ -237,7 +237,7 @@ mad3()
     fi
     LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
     if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_ROOT/modules/leonie > /tmp/leonie_$$ 2>&1
+        make FLAVOR=leonie -C $PM2_OBJROOT/modules/leonie > /tmp/leonie_$$ 2>&1
         LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
         if [ ! -x "$LEONIE_DIR"/leonie ] ; then
             echo "Could not compile leonie. Aborting"
@@ -245,7 +245,7 @@ mad3()
         fi
     fi
 
-    $LEONIE_ENV ; ${PM2_ROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE $LEONIE_ARGS "${prog_args[@]}"
+    $LEONIE_ENV ; ${PM2_SRCROOT}/bin/leonie --env="$env" "--appli=${PM2_CMD_NAME}" "--flavor=${PM2_FLAVOR}" "--net=${PM2_LEONIE_NETWORK_FILE}" ${pm2_load_args} $PM2_LEONIE_FILE $LEONIE_ARGS "${prog_args[@]}"
 
     exit $?
 }
@@ -441,9 +441,9 @@ nmad_present=$(pm2-config --modules|grep nmad)
 if [ -n "$nmad_present" ] ; then
     log "Create strategy configuration file"
     if [ "$PM2_STRATEGY" == "" ] ; then
-	$PM2_ROOT/bin/nmad-strategy-conf --check
+	$PM2_OBJROOT/bin/nmad-strategy-conf --check
     else
-	$PM2_ROOT/bin/nmad-strategy-conf --$PM2_STRATEGY
+	$PM2_OBJROOT/bin/nmad-strategy-conf --$PM2_STRATEGY
     fi
 fi
 
@@ -454,7 +454,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
     # Récupération de (des) chemin(s) d'accès au fichier exécutable
 
     set --  --source-mode $PM2_PROG_NAME
-    . ${PM2_ROOT}/bin/pm2-which
+    . ${PM2_OBJROOT}/bin/pm2-which
 
     if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
 	_pm2_load_ambiguity $PM2_PROG_NAME
@@ -496,7 +496,7 @@ else # USE_LOCAL_FLAVOR
 
 # Pour obtenir $_PM2_CONFIG_LOADER...
     set -- --source-mode
-    . ${PM2_ROOT}/bin/pm2-config
+    . ${PM2_OBJROOT}/bin/pm2-config
 
     _prescript_args="$_prescript_args --use-local-flavor"
 
@@ -513,7 +513,7 @@ case $_PM2_CONFIG_LOADER in
     *)
 	# Récupération du chemin d'accès au fichier de config des machines
 	set --  --source-mode
-	. ${PM2_ROOT}/bin/pm2-conf-file
+	. ${PM2_OBJROOT}/bin/pm2-conf-file
 
 	[ -f $PM2_CONF_FILE ] || _pm2_load_error "$PROGNAME Error: PM2 is not yet configured for this flavor (please run pm2-conf)."
 	;;
@@ -571,18 +571,18 @@ done
 if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     PM2_PRE_SCRIPT=pm2-pre-script.sh
 else
-    PM2_PRE_SCRIPT=${PM2_ROOT}/bin/pm2-pre-script.sh
+    PM2_PRE_SCRIPT=${PM2_OBJROOT}/bin/pm2-pre-script.sh
 fi
 
 # create driver configuration file
 if [ -n "$PM2_PROTOCOL" ] ; then
     protocols="$PM2_PROTOCOL"
 else
-    protocols=$(${PM2_ROOT}/bin/pm2-config --protocols)
+    protocols=$(${PM2_OBJROOT}/bin/pm2-config --protocols)
 fi
 for p in $protocols ; do
     if [ $p != custom ]; then
-	$PM2_ROOT/bin/nmad-driver-conf --driver=$p
+	$PM2_OBJROOT/bin/nmad-driver-conf --driver=$p
     fi
 done
 

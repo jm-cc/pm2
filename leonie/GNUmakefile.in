@@ -18,4 +18,4 @@ PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 
-include $(PM2_ROOT)/make/progs.mak
+include $(PM2_SRCROOT)/make/progs.mak

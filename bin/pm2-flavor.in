@@ -28,16 +28,16 @@ ARGV=${@:+"$@"}
 PROGNAME=pm2-flavor
 SETTINGS='### SETTINGS:'
 
-PM2_MODULE="${PM2_ROOT}/bin/pm2-module"
-PM2_CONFIGPROG="${PM2_ROOT}/bin/pm2-config"
-PM2_FLAVOR_PROG="${PM2_ROOT}/bin/${PROGNAME}"
+PM2_MODULE="${PM2_OBJROOT}/bin/pm2-module"
+PM2_CONFIGPROG="${PM2_OBJROOT}/bin/pm2-config"
+PM2_FLAVOR_PROG="${PM2_OBJROOT}/bin/${PROGNAME}"
 
-MODULES=`"${PM2_ROOT}/bin/pm2-module" modules --with-common`
+MODULES=`"${PM2_OBJROOT}/bin/pm2-module" modules --with-common`
 
 
 if [ -z "$MODULES" ]; then
     echo "No PM2 module detected." 1>&2
-    echo "Check PM2_ROOT environment variable and/or do 'make init'" 1>&2
+    echo "Check the output of ./autogen.sh" 1>&2
     exit 1
 fi
 
@@ -194,7 +194,7 @@ EOF
 ##########################################################################
 # usefull function
 
-_dummy_fla=`${PM2_ROOT}/bin/pm2-flavor-file -f dummy`
+_dummy_fla=`${PM2_OBJROOT}/bin/pm2-flavor-file -f dummy`
 USER_FLAVOR_DIR=`dirname $_dummy_fla`
 
 find_flavor() {
@@ -278,7 +278,7 @@ create_flavor() {
 	    	sed -e 's, \([^ ]*\), --'$mod'=\1,g'`" >> ${OUT}
     done
     echo "# Inclusion of commodity function" >> ${OUT}
-    echo '. $PM2_ROOT/bin/pm2-config-tools.sh' >> ${OUT}
+    echo '. $PM2_OBJROOT/bin/pm2-config-tools.sh' >> ${OUT}
     echo "#" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}
 
@@ -286,14 +286,14 @@ create_flavor() {
 	options="`eval echo \\$lst_opt_$mod`"
 
 	echo "# Pre-configuring $mod" >> ${OUT}
-	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" ]; then
-	    cat "${PM2_ROOT}/modules/$mod/config/$mod-pre.sh" >> ${OUT}
+	if [ -f "${PM2_SRCROOT}/modules/$mod/config/$mod-pre.sh" ]; then
+	    cat "${PM2_SRCROOT}/modules/$mod/config/$mod-pre.sh" >> ${OUT}
 	    echo "" >> ${OUT}
 	fi
 
 	echo "# Configuring $mod" >> ${OUT}
-	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod.sh" ]; then
-	    cat "${PM2_ROOT}/modules/$mod/config/$mod.sh" >> ${OUT}
+	if [ -f "${PM2_SRCROOT}/modules/$mod/config/$mod.sh" ]; then
+	    cat "${PM2_SRCROOT}/modules/$mod/config/$mod.sh" >> ${OUT}
 	    echo "" >> ${OUT}
 	fi
 
@@ -307,8 +307,8 @@ create_flavor() {
 	fi
 
 	echo "# Post-configuring $mod" >> ${OUT}
-	if [ -f "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" ]; then
-	    cat "${PM2_ROOT}/modules/$mod/config/$mod-post.sh" >> ${OUT}
+	if [ -f "${PM2_SRCROOT}/modules/$mod/config/$mod-post.sh" ]; then
+	    cat "${PM2_SRCROOT}/modules/$mod/config/$mod-post.sh" >> ${OUT}
 	    echo "" >> ${OUT}
 	fi
 
@@ -327,7 +327,7 @@ create_flavor() {
 # Deletion
 delete_flavor() {
     $ECHO "Deleting flavor '$flavor'"
-    #make -C ${PM2_ROOT} FLAVOR=$flavor clean
+    #make -C ${PM2_OBJROOT} FLAVOR=$flavor clean
     local fl="`find_flavor`"
     if [ -f "$fl" ]; then
 	rm -f "$fl"

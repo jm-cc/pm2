@@ -19,6 +19,6 @@ PROGS := tree
 
 tree-objs := tree.o rpc_defs.o
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 
 

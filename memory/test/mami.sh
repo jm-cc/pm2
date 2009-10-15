@@ -29,7 +29,7 @@ if [ ! -d /sys/devices/system/node/node0 ] ; then
 fi
 
 NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
-appdir="${PM2_ROOT}/memory/examples/mami"
+appdir="${PM2_OBJROOT}/memory/examples/mami"
 check_all_lines=1
 
 level=$(basename $_t .level_3)
@@ -45,7 +45,7 @@ fi
 
 create_test_flavor() {
 # Creation de la flavor
-    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"$modules tbx init memory\" \
 	--init=\"topology\" \

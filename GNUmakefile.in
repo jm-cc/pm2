@@ -40,10 +40,12 @@ export PM2_OBJROOT := @abs_top_builddir@
 # pas inclure de Makefiles provenant d'une distribution obsolete par
 # exemple...
 ROOT	:=	$(PM2_ROOT)
+SRCROOT	:=	$(PM2_SRCROOT)
+OBJROOT	:=	$(PM2_OBJROOT)
 
 # Variables communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-vars.mak
+include $(PM2_OBJROOT)/make/common-vars.mak
 
 # Cache - partie principale des librairies
 #---------------------------------------------------------------------
@@ -61,7 +63,7 @@ link: dot_h fut libs
 
 # Regles communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-rules.mak
+include $(PM2_SRCROOT)/make/common-rules.mak
 
 # all : construction de la distribution PM2 et des exemples
 #---------------------------------------------------------------------
@@ -69,8 +71,8 @@ include $(PM2_ROOT)/make/common-rules.mak
 all: pm2 examples
 .PHONY: pm2 all
 
-GNUmakefile: $(PM2_ROOT)/GNUmakefile.in
-	$(PM2_ROOT)/config.status $@
+GNUmakefile: $(PM2_SRCROOT)/GNUmakefile.in
+	$(PM2_OBJROOT)/config.status $@
 
 # pm2: construction des librairies
 #---------------------------------------------------------------------
@@ -163,26 +165,26 @@ $(eval $(call RECURSIVE_LIBS_template, check,, \
 
 refresh:
 	$(COMMON_HIDE) set -e; \
-	$(ROOT)/bin/pm2-clean --refresh $(FLAVOR)
+	$(OBJROOT)/bin/pm2-clean --refresh $(FLAVOR)
 
 refreshall:
 	$(COMMON_HIDE) set -e; \
-	$(ROOT)/bin/pm2-clean --all --refresh
+	$(OBJROOT)/bin/pm2-clean --all --refresh
 
 .PHONY: clean cleanall clean-header-autogen
 
-FLAVOR_WITH_MARCEL :=	$(shell $(ROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep marcel)
+FLAVOR_WITH_MARCEL :=	$(shell $(OBJROOT)/bin/pm2-flavor get --flavor=$(FLAVOR) | grep marcel)
 
 clean-header-autogen:
 	@if [ "$(FLAVOR_WITH_MARCEL)" != "" ] ; then $(MAKE) -C marcel clean_autogen ; fi
 
 clean: clean-header-autogen
 	$(COMMON_HIDE) set -e; \
-	$(ROOT)/bin/pm2-clean $(FLAVOR)
+	$(OBJROOT)/bin/pm2-clean $(FLAVOR)
 
 cleanall: clean-header-autogen
 	$(COMMON_HIDE) set -e; \
-	$(ROOT)/bin/pm2-clean --all
+	$(OBJROOT)/bin/pm2-clean --all
 
 .PHONY: distclean distcleandoc
 
@@ -217,16 +219,16 @@ checkmake:
 endif
 
 flavorinit: # remove _flavors_ before :
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors
+	$(COMMON_HIDE) $(OBJROOT)/bin/pm2-create-sample-flavors
 
 flavorupdate: # remove _flavors_ before :
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-create-sample-flavors -f -v
+	$(COMMON_HIDE) $(OBJROOT)/bin/pm2-create-sample-flavors -f -v
 
 flavors:
 
 componentsinit:
-	$(COMMON_HIDE) $(ROOT)/bin/nmad-driver-conf --gen-default
-	$(COMMON_HIDE) $(ROOT)/bin/nmad-strategy-conf --gen-default
+	$(COMMON_HIDE) $(OBJROOT)/bin/nmad-driver-conf --gen-default
+	$(COMMON_HIDE) $(OBJROOT)/bin/nmad-strategy-conf --gen-default
 
 # Documentation
 #---------------------------------------------------------------------
@@ -267,13 +269,13 @@ targethelp:
 config: textconfig
 
 textconfig: flavors
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --text || :
+	$(COMMON_HIDE) $(OBJROOT)/bin/pm2-config-flavor --text || :
 
 menuconfig: flavors
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --dialog || :
+	$(COMMON_HIDE) $(OBJROOT)/bin/pm2-config-flavor --dialog || :
 
 xdialogconfig: flavors
-	$(COMMON_HIDE) $(ROOT)/bin/pm2-config-flavor --xdialog || :
+	$(COMMON_HIDE) $(OBJROOT)/bin/pm2-config-flavor --xdialog || :
 
 xconfig: flavors
 	$(COMMON_HIDE) $(MAKE) -C ezflavor FLAVOR=ezflavor
@@ -285,9 +287,9 @@ xconfig: flavors
 
 checkflavor: flavors
 	$(COMMON_HIDE) \
-	for f in `$(ROOT)/bin/pm2-flavor list` ; do \
+	for f in `$(OBJROOT)/bin/pm2-flavor list` ; do \
 		echo "Checking flavor $$f" ; \
-		$(ROOT)/bin/pm2-flavor check --flavor=$$f ; \
+		$(OBJROOT)/bin/pm2-flavor check --flavor=$$f ; \
 	done
 
 .PHONY: sos
@@ -302,12 +304,18 @@ sos:
 	fi ; \
 	echo "CURDIR = $(CURDIR)" ; \
 	echo "PM2_ROOT = $(PM2_ROOT)" ; \
-	if [ ! -d "$(PM2_ROOT)" ] ; then \
-		echo "ERROR: \"$(PM2_ROOT)\" is not a valid directory." ; \
+	echo "PM2_SRCROOT = $(PM2_SRCROOT)" ; \
+	echo "PM2_OBJROOT = $(PM2_OBJROOT)" ; \
+	if [ ! -d "$(PM2_SRCROOT)" ] ; then \
+		echo "ERROR: \"$(PM2_SRCROOT)\" is not a valid directory." ; \
 		exit 1 ; \
 	fi ; \
-	if [ `ls -id $(CURDIR) | awk '{print $$1;}'` -ne `ls -id $(PM2_ROOT) | awk '{print $$1;}'` ]; then \
-		echo "ERROR: PM2_ROOT does not have a proper value (should be: $(CURDIR))." ; \
+	if [ ! -d "$(PM2_OBJROOT)" ] ; then \
+		echo "ERROR: \"$(PM2_OBJROOT)\" is not a valid directory." ; \
+		exit 1 ; \
+	fi ; \
+	if [ `ls -id $(CURDIR) | awk '{print $$1;}'` -ne `ls -id $(PM2_OBJROOT) | awk '{print $$1;}'` ]; then \
+		echo "ERROR: PM2_OBJROOT does not have a proper value (should be: $(CURDIR))." ; \
 		exit 1 ; \
 	fi ; \
 	echo "********* Checking source *********" ; \
@@ -348,7 +356,7 @@ DIST_MODULES        := marcel
 marcel_VERSION      := 2.90
 marcel_DEPENDENCIES := init tbx stackalign memory profile puk
 
-include $(PM2_ROOT)/make/dist-rules.mak
+include $(PM2_SRCROOT)/make/dist-rules.mak
 
 # Fin du Makefile
 ######################################################################

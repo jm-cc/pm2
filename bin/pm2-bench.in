@@ -22,7 +22,7 @@ export PATH PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
 _PM2_BENCH_PROGNAME=pm2-bench
 
-_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+_ALL_MODULES="`${PM2_OBJROOT}/bin/pm2-module modules`"
 
 _DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
 
@@ -69,8 +69,8 @@ compile()
 
 clean()
 {
-    #${PM2_ROOT}/bin/pm2-clean $flavor
-    ${PM2_ROOT}/bin/pm2-flavor delete --flavor=$flavor
+    #${PM2_OBJROOT}/bin/pm2-clean $flavor
+    ${PM2_OBJROOT}/bin/pm2-flavor delete --flavor=$flavor
 }
 
 do_the_bench()
@@ -199,9 +199,9 @@ _to_bench="$_prefix $_suffix"
 
 for _m in $_to_bench ; do
 
-    if [ -d ${PM2_ROOT}/modules/$_m/bench ]; then
+    if [ -d ${PM2_SRCROOT}/modules/$_m/bench ]; then
 
-        cd ${PM2_ROOT}/modules/$_m/bench/$PM2_BENCHMARKS_DIR
+        cd ${PM2_SRCROOT}/modules/$_m/bench/$PM2_BENCHMARKS_DIR
         _benchs=`ls bench_*|grep -v \~ 2> /dev/null`
         if [ -n "$_benchs" ]; then
 

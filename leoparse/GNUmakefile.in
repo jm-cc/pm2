@@ -19,7 +19,7 @@ PM2_OBJROOT := @abs_top_builddir@
 
 # Variables communes aux libraries
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # Rajout d'un répertoire de sources (fichiers yacc et lex)
 #---------------------------------------------------------------------
@@ -31,6 +31,6 @@ dot_h: $(MOD_GEN_C_INC)
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 
 ######################################################################

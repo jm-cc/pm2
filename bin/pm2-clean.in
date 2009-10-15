@@ -83,7 +83,7 @@ else
 fi
 
 set -- --source-mode
-. ${PM2_ROOT}/bin/pm2-flavor-file
+. ${PM2_OBJROOT}/bin/pm2-flavor-file
 
 if [ ! -d $PM2_USER_FLAVOR_DIR ]; then
     pm2_clean_error "No existing flavors yet."
@@ -118,10 +118,10 @@ fi
 for f in $flavors; do
     if [ $_refresh = yes ]; then
 	echo "Re-generating flavor $f..."
-	$_prefix ${PM2_ROOT}/bin/pm2-flavor regenerate --flavor=$f
+	$_prefix ${PM2_OBJROOT}/bin/pm2-flavor regenerate --flavor=$f
     fi
     echo "Cleaning for flavor $f..."
-    $_prefix rm -rf `${PM2_ROOT}/bin/pm2-config --builddir --flavor=$f`
+    $_prefix rm -rf `${PM2_OBJROOT}/bin/pm2-config --builddir --flavor=$f`
 done
 
 exit 0

@@ -14,7 +14,7 @@
 
 compile_leonie()
 {
-        (cd ${PM2_ROOT}/leonie ; make FLAVOR=leonie)
+        (cd ${PM2_OBJROOT}/leonie ; make FLAVOR=leonie)
 }
 
 # Verification et compilation du lanceur leonie
@@ -23,13 +23,13 @@ compile_leonie
 
 # Configuration
 flavor="test_pm2"
-appdir="${PM2_ROOT}/pm2/examples/simple"
+appdir="${PM2_OBJROOT}/pm2/examples/simple"
 prog="remote_hello"
 args="a b c"
 hosts=${TESTCONFIG:-"localhost localhost"}
 
 # Creation de la flavor
-eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--ext=\"\" \
 	--modules=\"marcel mad3 ntbx tbx pm2 init\" \
 	--marcel=\"mono poll\" --marcel=\"marcel_main enable_keys enable_migration enable_postexit enable_userspace enable_deviation enable_atexit\" \

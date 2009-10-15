@@ -57,7 +57,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-set `${PM2_ROOT}/bin/pm2-config --modules`
+set `${PM2_OBJROOT}/bin/pm2-config --modules`
 
 mod='pm2'
 
@@ -68,7 +68,7 @@ do
     esac
 done
 
-PM2_CONF_FILE=`${PM2_ROOT}/bin/pm2-conf-file`
+PM2_CONF_FILE=`${PM2_OBJROOT}/bin/pm2-conf-file`
 [ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
 
@@ -91,7 +91,7 @@ done
 if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     PM2_VLOCALLOGS=pm2-vlocallogs
 else
-    PM2_VLOCALLOGS="${PM2_ROOT}/bin/pm2-vlocallogs"
+    PM2_VLOCALLOGS="${PM2_OBJROOT}/bin/pm2-vlocallogs"
 fi
 
 for host in `cat ${PM2_CONF_FILE} | sort | uniq` ; do

@@ -1,4 +1,4 @@
-% cd ${PM2_ROOT}/nmad/examples/sched_opt
+% cd ${PM2_SRCROOT}/nmad/examples/sched_opt
 % make clean
 % make sr_ping
 ...

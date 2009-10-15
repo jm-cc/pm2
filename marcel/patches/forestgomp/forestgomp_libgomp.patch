@@ -596,7 +596,7 @@ diff -uprN -X diff_exclude gcc-4.2.2.orig/libgomp/configure.ac gcc-4.2.2/libgomp
 +  fi
 +  AC_MSG_RESULT(yes)
 +
-+  MARCEL_CPPFLAGS="$(pm2-config --cflags) -I$PM2_ROOT/marcel/include/pthread/"
++  MARCEL_CPPFLAGS="$(pm2-config --cflags) -I$PM2_SRCROOT/marcel/include/pthread/"
 +
 +  save_CPPFLAGS="$CPPFLAGS"
 +  CPPFLAGS="$MARCEL_CPPFLAGS"

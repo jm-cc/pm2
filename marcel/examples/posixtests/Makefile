@@ -29,7 +29,7 @@ top_builddir = .
 
 LOGFILE = $(top_builddir)/logfile
 
-#CFLAGS = -g -O2 -Wall -Werror $(shell pm2-config --cflags) -I$$PM2_ROOT/marcel/include/pthread
+#CFLAGS = -g -O2 -Wall -Werror $(shell pm2-config --cflags) -I$$PM2_SRCROOT/marcel/include/pthread
 #LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#) $(shell pm2-config --libs)
 
 EXEC_PREFIX := pm2-libpthread

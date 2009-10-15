@@ -17,20 +17,16 @@ PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 
-ifneq (@abs_top_srcdir@,@abs_top_builddir@)
-$(error The PM2 build system requires srcdir equal to builddir.)
-endif
-
 # The default flavor.
 FLAVOR_DEFAULT := @PM2_DEFAULT_FLAVOR@
 
 # Préférences globales
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/config.mak
+include $(PM2_OBJROOT)/make/config.mak
 
 # MODULE -> module en cours de compilation
 #---------------------------------------------------------------------
-MODULE ?= $(notdir $(CURDIR))
+MODULE = $(notdir $(CURDIR))
 #$(if $(filter-out examples, $(notdir $(CURDIR))), \
 #		$(notdir $(CURDIR)), \
 #		$(notdir $(shell dirname $(CURDIR))))
@@ -133,18 +129,18 @@ endif
 # COMMON_DEPS -> dependances racines
 # - config.mak contient les reglages du processus de contruction
 #---------------------------------------------------------------------
-COMMON_DEPS += $(PM2_ROOT)/make/config.mak
+COMMON_DEPS += $(PM2_OBJROOT)/make/config.mak
 
 # PM2_CONFIG -> script d'information de configuration de PM2
 #---------------------------------------------------------------------
 ifndef PM2_CONFIG
-PM2_CONFIG := $(PM2_ROOT)/bin/pm2-config
+PM2_CONFIG := $(PM2_OBJROOT)/bin/pm2-config
 endif
 override PM2_CONFIG := $(PM2_CONFIG) --flavor=$(FLAVOR)
 
 # PM2_GEN_MAK -> script de génération des makefiles "accélérateurs"
 #---------------------------------------------------------------------
-PM2_GEN_MAK := $(PM2_ROOT)/bin/pm2-gen-make.sh --silent
+PM2_GEN_MAK := $(PM2_OBJROOT)/bin/pm2-gen-make.sh --silent
 
 # GOALS pour lesquels on ne générera ni n'incluera les .mak
 #---------------------------------------------------------------------

@@ -15,7 +15,7 @@
 . ./common.sh
 flavor="marcel-topology"
 prog="read-topology"
-script="$PM2_ROOT/marcel/examples/test-topologies.sh"
+script="$PM2_OBJROOT/marcel/examples/test-topologies.sh"
 sort_output=1
 check_all_lines=0
 echo "13/13 tests passed" > /tmp/pm2test_"${USER}"_expected

@@ -1,3 +1,3 @@
 ravel% setenv PM2_FLAVOR pm2debug
-ravel% cd ${PM2_ROOT}
+ravel% cd ${PM2_OBJROOT}
 ravel% make

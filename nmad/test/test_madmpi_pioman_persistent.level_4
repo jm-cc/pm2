@@ -23,7 +23,7 @@ ext="pioman"
 flavor="test_nmad_${mpi}_${net2}_${ext}"
 sort_output=1
 
-appdir="${PM2_ROOT}/nmad/examples/mpi/basics"
+appdir="${PM2_SRCROOT}/nmad/examples/mpi/basics"
 prog="persistent"
 args="--x --p --l"
 sort_output=1

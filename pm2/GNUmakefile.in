@@ -18,13 +18,13 @@ PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 LIBRARY=pm2
 
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 MOD_GEN_C_INC += $(MOD_GEN_INC)/dsm_page_size.h
 
 dot_h: $(MOD_GEN_INC)/dsm_page_size.h
 
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 
 $(MOD_GEN_INC)/dsm_page_size.h:
 	$(COMMON_BUILD)

@@ -22,4 +22,4 @@ PM2_OBJROOT := @abs_top_builddir@
 LIBNAME = pioman
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs.mak
+include $(PM2_SRCROOT)/make/libs.mak

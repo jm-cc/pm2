@@ -167,7 +167,7 @@ if [ -n "$pref_file" -a -n "$*" ] ; then
     echo "Parameters stored in file \"${PREF_DIR}/$pref_file\""
 fi
 
-PM2_CONF_FILE=`${PM2_ROOT}/bin/pm2-conf-file`
+PM2_CONF_FILE=`${PM2_OBJROOT}/bin/pm2-conf-file`
 [ $? -eq 0 ] || error "Error: unable to get the .pm2conf file path."
 export PM2_CONF_FILE
 

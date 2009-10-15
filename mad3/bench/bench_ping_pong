@@ -16,7 +16,7 @@
 
 # pm2-bench settings
 flavor="bench_mad3"
-appdir="${PM2_ROOT}/mad3/examples"
+appdir="${PM2_OBJROOT}/mad3/examples"
 prog="mad_bench_ping"
 loop="tcp gm mx quadrics"
 

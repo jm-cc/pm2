@@ -20,7 +20,7 @@ PM2_SRCROOT="@abs_top_srcdir@"
 PM2_OBJROOT="@abs_top_builddir@"
 export PATH PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
-_ALL_MODULES="`${PM2_ROOT}/bin/pm2-module modules`"
+_ALL_MODULES="`${PM2_OBJROOT}/bin/pm2-module modules`"
 
 registering_flavors() {
 #########################################################
@@ -415,7 +415,7 @@ create_flavor() {
 
 	$PM2_CREATE_FLAVOR ${CREATE_FLAGS} set --flavor="$flavor" "$@"
     else
-        ${PM2_ROOT}/bin/pm2-clean --refresh "$flavor"
+        ${PM2_OBJROOT}/bin/pm2-clean --refresh "$flavor"
     fi
     pm2-flavor check --flavor="$flavor"
     if [ $? != 0 ] ; then
@@ -426,9 +426,9 @@ create_flavor() {
 }
 
 set -- --source-mode
-. ${PM2_ROOT}/bin/pm2-flavor-file
+. ${PM2_OBJROOT}/bin/pm2-flavor-file
 
-PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_ROOT}/bin/pm2-flavor}
+PM2_CREATE_FLAVOR=${PM2_CREATE_FLAVOR:-${PM2_OBJROOT}/bin/pm2-flavor}
 
 registering_flavors
 
@@ -449,7 +449,7 @@ fi
 if [ -z "$LIST_FLAVORS" ]; then
     # All flavors (registered + exinsting)
     LIST_FLAVORS="$REGISTERED_FLAVORS"
-    for flavor in `${PM2_ROOT}/bin/pm2-flavor list` ; do
+    for flavor in `${PM2_OBJROOT}/bin/pm2-flavor list` ; do
 	case " $LIST_FLAVORS " in
 	    *" $flavor "*) ;;
 	    *) LIST_FLAVORS="$LIST_FLAVORS $flavor" ;;

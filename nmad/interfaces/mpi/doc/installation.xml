@@ -194,7 +194,7 @@ Compile <MACRO NAME="madmpi"/>.
 <P>
 You need to provide a network configuration file, located in
 <LATEX>\begin{quote}</LATEX>
-<TT>${PM2_ROOT}/nmad/examples/mpi/networks.cfg</TT>
+<TT>${PM2_SRCROOT}/nmad/examples/mpi/networks.cfg</TT>
 <LATEX>\end{quote}</LATEX>
 This file is
 mandatory but users can select another location by defining the

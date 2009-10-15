@@ -13,7 +13,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-include $(PM2_ROOT)/make/objs-rules.mak
+include $(PM2_SRCROOT)/make/objs-rules.mak
 
 ifneq ($(PROGRAM),$(PROGNAME))
 $(PROGNAME): $(PROGRAM)

@@ -1,2 +1,2 @@
-ravel% cd ${PM2_ROOT}
+ravel% cd ${PM2_OBJROOT}
 ravel% make sos

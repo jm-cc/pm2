@@ -221,21 +221,7 @@ works.
 
 <LI>
 <P>
-The <TT>PM2_ROOT</TT> variable contains the path to the PM2
-distribution root directory. Setting that variable is
-<B>mandatory</B>. It is the only one needed, all other variables have
-default values.
-
-<IGNORE>
-Observe that PM2 does not write
-anything into this directory: a write-protected directory is OK.
-</IGNORE>
-</P>
-</LI>
-
-<LI>
-<P>
-It is highly recommended to add the directory <TT>${PM2_ROOT}/bin</TT>
+It is highly recommended to add the directories <TT>${PM2_SRCROOT}/bin</TT> and <TT>${PM2_OBJROOT}/bin</TT>
 in the active search path.
 </P>
 </LI>
@@ -256,8 +242,8 @@ the <TT>PM2_CONF_DIR</TT> variable to another directory.
 </P>
 <P>
 All the files generated within the compilation process will be placed
-by default in the <TT>${PM2_ROOT}/build</TT> directory, more precisely
-in the <TT>${PM2_ROOT}/build/${PM2_ASM}</TT>. The environment variable
+by default in the <TT>${PM2_OBJROOT}/build</TT> directory, more precisely
+in the <TT>${PM2_OBJROOT}/build/${PM2_ASM}</TT>. The environment variable
 <TT>PM2_ASM</TT> describes the architecture of the machine and is set
 to the result of the call <TT>pm2-arch --pm2-asm</TT>. If you wish to
 keep the compiled files into another directory, you can set the
@@ -370,7 +356,7 @@ the flavor one wishes to use.
 You are now ready for the big step: compiling the whole library.
 
 <IGNORE>
-No files are created in the <TT>${PM2_ROOT}</TT> directory, so that
+No files are created in the <TT>${PM2_SRCROOT}</TT> directory, so that
 you can compile and install PM2 from a CDROM.
 </IGNORE>
 
@@ -388,7 +374,7 @@ configuration. A local <TT>/tmp</TT> directory will not work!
 
 <P>
 To launch the whole compilation, just invoke <TT>make</TT> from the
-<TT>$PM2_ROOT</TT> directory.
+<TT>$PM2_OBJROOT</TT> directory.
 </P>
 
 <WARNING>
@@ -468,7 +454,7 @@ preferably outside the configuration.
   <EM>
   Just to avoid disturbing problems in the following, please make sure
   that you local machine is allowed to issue <TT>ssh</TT> commands to each
-  machine in the configuration, and that the directory <TT>${PM2_ROOT}</TT>
+  machine in the configuration, and that the directories <TT>${PM2_SRCROOT}</TT> and <TT>${PM2_OBJROOT}</TT>
   is actually shared by all of them. You can for example try the following command:
   </EM>
   </P>
@@ -485,7 +471,7 @@ preferably outside the configuration.
   <EM>
   This script issues a <TT>ssh</TT> command to each node in the current
   configuration. In case you do not get the list of the files in your
-  current <TT>${PM2_ROOT}</TT> directory, but get instead nothing or a
+  current <TT>${PM2_OBJROOT}</TT> directory, but get instead nothing or a
   message similar to <TT>permission denied</TT>, you should then check
   you can connect to the machines which are in your current
   configuration.
@@ -566,7 +552,7 @@ This is done by setting the <TT>PM2_LEONIE_NETWORK_FILE</TT> variable.
 The PM2 library should now be fully configured.  You are ready to
 compile and execute the example programs of the distribution.  Let's
 start with the simplest one: <EM>Hello world!</EM>, located in the file
-<TT>${PM2_ROOT}/pm2/examples/simple/hello.c</TT>.
+<TT>${PM2_SRCROOT}/pm2/examples/simple/hello.c</TT>.
 </P>
 
 <PROGRAM FILE="./Progs/makeHello.txt"/>

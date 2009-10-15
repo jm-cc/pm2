@@ -46,8 +46,8 @@ if [ -z "$flavor" ] ; then
 fi
 
 # Compile the application
-$SSH make -j 10 -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read-topology
-$SSH make -j 10 -C $PM2_ROOT/marcel/examples FLAVOR=marcel-topology read-topology
+$SSH make -j 10 -C $PM2_OBJROOT/marcel/examples FLAVOR=marcel-topology read-topology
+$SSH make -j 10 -C $PM2_OBJROOT/marcel/examples FLAVOR=marcel-topology read-topology
 echo
 echo
 

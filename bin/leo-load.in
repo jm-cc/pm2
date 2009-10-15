@@ -175,13 +175,13 @@ fi
 
 # Récupération de (des) chemin(s) d'accès au fichier exécutable
 set --  --source-mode "$prog" -- "$@"
-. ${PM2_ROOT}/bin/pm2-which
+. ${PM2_OBJROOT}/bin/pm2-which
 
 if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
     ambiguity "$prog"
 fi
 
-[ "${PM2_SMPMODE}" = on ] && export LEO_LD_PRELOAD=`${PM2_ROOT}/bin/pm2-config --flavor=${PM2_FLAVOR} --preload`
+[ "${PM2_SMPMODE}" = on ] && export LEO_LD_PRELOAD=`${PM2_OBJROOT}/bin/pm2-config --flavor=${PM2_FLAVOR} --preload`
 
 # Execution
 if [ "${PM2_DEBUG}" = on ]; then

@@ -70,7 +70,7 @@ int nm_ns_parse_sampling(struct nm_drv*p_drv)
 
   snprintf(sampling_file_path, sizeof(sampling_file_path),
 	   "%s/nmad/sampling/%s_%s.nm_ns",
-	   getenv("PM2_ROOT"), p_drv->driver->name, archi);
+	   getenv("PM2_OBJROOT"), p_drv->driver->name, archi);
 
   sampling_file = fopen(sampling_file_path, "r");
   if(!sampling_file)

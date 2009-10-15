@@ -96,11 +96,11 @@ while [ $# -gt 0 ]; do
 	    PM2_ARCH="@PM2_ARCH@"
 
 	    for i in $_PM2_CONFIG_MODULES ; do
-	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
+	        gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
-	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
+	        gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
-	        gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
+	        gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit"
 		[ -r "$gdbinit" ] && cat "$gdbinit" >> $debug_file
 	    done
 	    log "Using debug mode"
@@ -142,7 +142,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
     # Récupération de (des) chemin(s) d'accès au fichier exécutable
     set --  --source-mode $PM2_CMD_NAME
-    . ${PM2_ROOT}/bin/pm2-which
+    . ${PM2_OBJROOT}/bin/pm2-which
 
     if [ $_PM2_WHICH_NB_FOUND -gt 1 ] ; then
 	exit 1
@@ -182,7 +182,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 	*)
 	    # Récupération du chemin d'accès au fichier de config des machines
 	    set --  --source-mode
-	    . ${PM2_ROOT}/bin/pm2-conf-file
+	    . ${PM2_OBJROOT}/bin/pm2-conf-file
 
 	    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured this flavor (please run pm2-conf)."
 	    ;;

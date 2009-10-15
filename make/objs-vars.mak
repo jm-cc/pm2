@@ -18,11 +18,11 @@ default: no_goal
 
 # Variables communes
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/common-vars.mak
+include $(PM2_OBJROOT)/make/common-vars.mak
 
 # Repertoire source
 #---------------------------------------------------------------------
-MOD_SRC ?= source
+MOD_SRC ?= $(PM2_SRCROOT)/$(MODULE)/source
 
 MOD_AFLAGS += -D__ASSEMBLY__
 
@@ -75,7 +75,7 @@ MOD_F_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.f90))
 MOD_S_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.S))
 MOD_L_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.l))
 MOD_Y_SOURCES ?= $(foreach rep, $(MOD_SRC), $(wildcard $(rep)/*.y))
-MOD_HSPLITS_SRCDIR ?= include
+MOD_HSPLITS_SRCDIR ?= $(PM2_SRCROOT)/$(MODULE)/include
 #MOD_HSPLITS_SOURCES ?= 
 MOD_HSPLITS_PARTS=$(if $(MOD_HSPLITS_SOURCES),MOD_HSPLITS)
 MOD_HSPLITS_MAKEFILES = 
@@ -87,7 +87,7 @@ define MOD_HSPLITS_ADD_MASTER # master-suffix VAR_SUFFIX subgendir
 		$$(foreach PART, $$(MOD_HSPLITS_PARTS$(2)), \
 			$$(addprefix $$($$(PART)_SRCDIR)/,$$($$(PART)_SOURCES)))
 	$$(COMMON_BUILD)
-	$$(COMMON_MAIN) $$(PM2_ROOT)/bin/pm2-split-h-file \
+	$$(COMMON_MAIN) $$(PM2_OBJROOT)/bin/pm2-split-h-file \
 		--makefile $$@ \
 		--gendir $$(MOD_HSPLITS_GENDIR) \
 		$(addprefix --gensubdir ,$(3)) \

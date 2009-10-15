@@ -22,7 +22,7 @@ LIBNAME=mad3
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # Inclusion du cache specifique a madeleine
 #---------------------------------------------------------------------
@@ -41,7 +41,7 @@ vpath %.c $(MOD_SRC2)
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 
 # Construction du cache specifique a Madeleine III
 #---------------------------------------------------------------------

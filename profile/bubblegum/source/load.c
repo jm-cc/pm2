@@ -20,9 +20,9 @@
 
 gchar *pm2_root(void)
 {
-  gchar *ptr = getenv("PM2_ROOT");
+  gchar *ptr = getenv("PM2_SRCROOT");
   if (!ptr) {
-    fprintf(stderr, "Error: undefined PM2_ROOT variable\n");
+    fprintf(stderr, "Error: undefined PM2_SRCROOT variable\n");
     exit(1);
   }
   return ptr;

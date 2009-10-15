@@ -99,7 +99,7 @@ echo "Building fut_entries.h & fut_print.h for flavor $PM2_FLAVOR (type is $TYPE
 echo "SearchPath : $SEARCHDIR"
 
 set -- --source-mode
-. ${PM2_ROOT}/bin/pm2-config
+. ${PM2_OBJROOT}/bin/pm2-config
 
 BUILDDIR=`echo $_PM2_CONFIG_BUILD | sed -e 's/\/\//\//'` # pour eviter les // dans le #include
 

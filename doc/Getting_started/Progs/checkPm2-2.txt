@@ -1,4 +1,4 @@
-% cd ${PM2_ROOT}/marcel/examples
+% cd ${PM2_SRCROOT}/marcel/examples
 % make clean
 ...
 % make sumtime

@@ -18,7 +18,7 @@ default: no_goal
 
 # Variables communes pour produire du code
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/objs-vars.mak
+include $(PM2_SRCROOT)/make/objs-vars.mak
 
 # Type de cache à générer
 #---------------------------------------------------------------------

@@ -14,7 +14,7 @@
 
 check_all_lines=1
 flavor="<undefined>"
-appdir="${PM2_ROOT}/marcel/examples"
+appdir="${PM2_SRCROOT}/marcel/examples"
 prog="<undefined>"
 script="<undefined>"
 args=""
@@ -27,7 +27,7 @@ create_test_flavor() {
     # Creation de la flavor
     case "$flavor" in
 	test_marcel_barrier)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"			\
 		--ext=""							\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
@@ -37,7 +37,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_barrier_1MiB_stack)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"			\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"			\
 		--ext=""							\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
@@ -47,7 +47,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_bubble_memory)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext=""						\
 		--modules="\"marcel tbx init memory\""                  \
                 --init="topology" --marcel="numa" --marcel="bubbles"    \
@@ -59,7 +59,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_pukabi)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk\""			\
 		--init="topology" --marcel="smp"			\
@@ -74,7 +74,7 @@ create_test_flavor() {
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk\""			\
 		--init="topology" --marcel="smp"			\
@@ -89,7 +89,7 @@ create_test_flavor() {
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi_stackalign)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"	\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 		--ext="" --all="build_dynamic" --marcel="build_dynamic"	\
 		--modules="\"marcel tbx init puk stackalign\""		\
 		--init="topology" --marcel="smp"			\
@@ -104,7 +104,7 @@ create_test_flavor() {
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_cpp)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""							\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="spinlock" --marcel="marcel_main" --marcel="pmarcel"	\
@@ -115,7 +115,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_bubble)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""						\
 		--modules="\"marcel tbx init\""                         \
                 --init="topology" --marcel="numa" --marcel="bubbles"    \
@@ -127,7 +127,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_dynamic)
-	        eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	        eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		    --ext=\"\" \
 		    --modules=\"marcel tbx init\" \
 		    --marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -135,7 +135,7 @@ create_test_flavor() {
 		    --all=\"opt\" --all=\"gdb\" --all=\"build_dynamic\" $_output_redirect
 		;;
 	test_marcel)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -143,7 +143,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_tls)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--ext=""							\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="bug_on" --marcel="spinlock" --marcel="marcel_main"	\
@@ -154,7 +154,7 @@ create_test_flavor() {
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_smp)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
@@ -162,7 +162,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_dynamic_smp)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
@@ -170,7 +170,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_dynamic\" $_output_redirect
 	    ;;
 	test_marcel_cleanup)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
@@ -178,7 +178,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_pmarcel)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -188,7 +188,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_cleanup_once)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
@@ -196,7 +196,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_jump)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
@@ -204,7 +204,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_virtual_timer)
-	        eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	        eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		    --ext=\"\" \
 		    --modules=\"marcel tbx init\" \
 		    --marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -213,7 +213,7 @@ create_test_flavor() {
 		    --all=\"gdb\" --all=\"build_static\" $_output_redirect
 		;;
 	test_marcel_userspace)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"enable_userspace\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -221,7 +221,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_keys)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
@@ -230,7 +230,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -240,7 +240,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_options_numa_stats)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -254,7 +254,7 @@ create_test_flavor() {
 		--sub --marcel=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_smp_blocking)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
@@ -263,7 +263,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats_cleanup)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -273,7 +273,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_cleanup_once_stats)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -283,7 +283,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats_jump)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -293,7 +293,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_suspend_stats)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \
@@ -304,7 +304,7 @@ create_test_flavor() {
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_userspace_stats)
-	    eval ${PM2_ROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
+	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 		--ext=\"\" \
 		--modules=\"marcel tbx init\" \
                 --init="topology" \

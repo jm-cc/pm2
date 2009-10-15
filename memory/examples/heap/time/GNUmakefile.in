@@ -53,5 +53,5 @@ APPS :=
 # + (%.c -> % qui ont un %-objs)
 #----------------------------------------------------------------------
 
-include $(PM2_ROOT)/make/apps.mak
+include $(PM2_SRCROOT)/make/apps.mak
 

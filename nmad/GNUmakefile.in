@@ -22,31 +22,31 @@ LIBDOC=newmadeleine
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 
 # NewMad core
 # ----------------------------------------------------------
-MOD_SRC += $(PM2_ROOT)/nmad/core/src
+MOD_SRC += $(PM2_SRCROOT)/nmad/core/src
 
 # Drivers
 #-----------------------------------------------------------
-MOD_SRC += $(foreach DRV, $(NMAD_DRIVERS), $(PM2_ROOT)/nmad/drivers/$(DRV) )
+MOD_SRC += $(foreach DRV, $(NMAD_DRIVERS), $(PM2_SRCROOT)/nmad/drivers/$(DRV) )
 
 # Strategies
 #-----------------------------------------------------------
-MOD_SRC += $(foreach STRAT, $(NMAD_STRATEGIES), $(PM2_ROOT)/nmad/strategies/strat_$(STRAT))
+MOD_SRC += $(foreach STRAT, $(NMAD_STRATEGIES), $(PM2_SRCROOT)/nmad/strategies/strat_$(STRAT))
 
 # Interfaces
 #---------------------------------------------------------------------
-MOD_SRC += $(foreach INTERFACE, $(NMAD_INTERFACES), $(PM2_ROOT)/nmad/interfaces/$(INTERFACE)/src)
+MOD_SRC += $(foreach INTERFACE, $(NMAD_INTERFACES), $(PM2_SRCROOT)/nmad/interfaces/$(INTERFACE)/src)
 
 
 # Datatype de MPICH
 #---------------------------------------------------------------------
-MOD_SRC += $(PM2_ROOT)/nmad/ccs
+MOD_SRC += $(PM2_SRCROOT)/nmad/ccs
 
 # Regles communes aux librairies
 #---------------------------------------------------------------------
-include $(PM2_ROOT)/make/libs-rules.mak
+include $(PM2_SRCROOT)/make/libs-rules.mak
 

@@ -19,7 +19,7 @@ marcel=${BENCHMARCEL:-"mono"}
 hosts=${BENCHHOST:-"localhost"}
 
 flavor="bench_marcel_${marcel}_${hosts}"
-appdir="${PM2_ROOT}/marcel/examples/fft"
+appdir="${PM2_SRCROOT}/marcel/examples/fft"
 loop="marcel"
 
 prog="fft"

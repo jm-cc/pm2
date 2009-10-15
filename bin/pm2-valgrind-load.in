@@ -53,11 +53,11 @@ PM2_SYS="@PM2_SYS@"
 PM2_ARCH="@PM2_ARCH@"
 
 for i in $_PM2_CONFIG_MODULES ; do
-    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
+    gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit-$PM2_ARCH-$PM2_SYS"
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
-    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
+    gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit-$PM2_ARCH"
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
-    gdbinit="$PM2_ROOT/modules/$i/scripts/gdbinit"
+    gdbinit="$PM2_SRCROOT/modules/$i/scripts/gdbinit"
     [ -r "$gdbinit" ] && cat "$gdbinit" >> $file
 done
 

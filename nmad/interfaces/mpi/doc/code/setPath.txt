@@ -1,1 +1,1 @@
-% export PATH=${PM2_ROOT}/bin:${PATH}
+% export PATH=${PM2_OBJROOT}/bin:${PATH}

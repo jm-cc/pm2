@@ -186,10 +186,6 @@ pm2_config_set_vars()
     _PM2_CONFIG_BUILD="${PM2_ROOT}/build/${PM2_ASM}/$flavor"
     export _PM2_CONFIG_BUILD
 
-    # Extension
-    _PM2_CONFIG_EXT="$PM2_EXT"
-    export _PM2_CONFIG_EXT
-
     # Loader
     if [ -n "${PM2_LOADER}" ]; then
 	_PM2_CONFIG_LOADER="$PM2_LOADER"
@@ -242,7 +238,7 @@ pm2_config_set_vars()
 	eval _PM2_CONFIG_${_lib}_ASM_DIR=$_PM2_CONFIG_BUILD/${_lib}/asm
 	eval export _PM2_CONFIG_${_lib}_ASM_DIR
 
-	eval _PM2_CONFIG_${_lib}_INCLUDE_DIR=$_PM2_CONFIG_BUILD/${_lib}/include${_PM2_CONFIG_EXT}
+	eval _PM2_CONFIG_${_lib}_INCLUDE_DIR=$_PM2_CONFIG_BUILD/${_lib}/include
 	eval export _PM2_CONFIG_${_lib}_INCLUDE_DIR
 
 	eval _PM2_CONFIG_${_lib}_LINK_OTHERS='$'PM2_${_LIB}_LINK_OTHERS
@@ -258,7 +254,7 @@ pm2_config_set_vars()
 	eval LINK_MODE_DYNAMIC='$'PM2_${_LIB}_BUILD_DYNAMIC
 	if [ "$LINK_MODE_DYNAMIC" = yes ]; then
 	    eval _PM2_CONFIG_${_lib}_BUILD_DYNAMIC=yes
-	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}${PM2_EXT}.so"
+	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}.so"
 	    case ":${_PM2_CONFIG_LD_LIBRARY_PATH}:" in
 		*:${_dir}:*)
 		    ;;
@@ -271,7 +267,7 @@ pm2_config_set_vars()
 	eval LINK_MODE_STATIC='$'PM2_${_LIB}_BUILD_STATIC
 	if [ "$LINK_MODE_STATIC" = yes ]; then
 	    eval _PM2_CONFIG_${_lib}_BUILD_STATIC=yes
-	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}${PM2_EXT}.a"
+	    STAMP_FILES="${STAMP_FILES:+$STAMP_FILES }${_dir}/lib${_libname}.a"
 	fi
 	eval export _PM2_CONFIG_${_lib}_BUILD_STATIC
 
@@ -474,7 +470,7 @@ pm2_config_set_vars()
     for _lib in $_PM2_CONFIG_DIRTY_ORDERED_LIBS ; do
 	case " $_requested " in
 	    *\ $_lib\ *)
-		_PM2_CONFIG_LD_LIBS="$_PM2_CONFIG_LD_LIBS -l${_lib}${_PM2_CONFIG_EXT}"
+		_PM2_CONFIG_LD_LIBS="$_PM2_CONFIG_LD_LIBS -l${_lib}"
 		;;
 	    *) ;;
 	esac
@@ -551,7 +547,7 @@ pm2_config_parse_cmdline() # args
 	eval ${_dirname1}dir=true
 	_dirtoshow="$_dirname1"
 	;;
-    --ext|--protocols|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path|--arch|--asm|--sys)
+    --protocols|--launcher|--modules|--profmods|--headgenmods|--cc|--fc|--stampfile|--loader|--preload|--ld-library-path|--arch|--asm|--sys)
 	_other=$1
 	;;
      --getvar=*)
@@ -620,10 +616,6 @@ pm2_config_parse_cmdline() # args
     # on a demandé des repertoires/réglages...
     if [ -n "${_dirtoshow}" ]; then
 	case $_dirtoshow in
-	    --ext)
-		echo $_PM2_CONFIG_EXT
-		exit 0
-		;;
 	    --protocols)
                 # TODO : trouver une façon plus joli de faire la meme chose...
 		echo $_PM2_CONFIG_PROTOCOLS |sed 's/ /\n/g' |gawk -F mad- '{print $2}' |tr '\012' ' '; echo

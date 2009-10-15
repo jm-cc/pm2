@@ -37,7 +37,6 @@ static GtkWidget *notebook;
 static GtkWidget *module_frame, *general_frame;
 static GtkWidget *select_button;
 static GtkWidget *deselect_button;
-static GtkWidget *builddir_entry, *extension_entry;
 static GtkWidget *pEntry;
 
 static GList *mod_names = NULL;
@@ -697,30 +696,10 @@ static void module_build_general_options(GtkWidget *box)
   gtk_container_add(GTK_CONTAINER(vbox), subvbox);
   gtk_widget_show(subvbox);
 
-  label = gtk_label_new("Build directory");
-  gtk_box_pack_start(GTK_BOX(subvbox), label, FALSE, TRUE, 0);
-  gtk_widget_show(label);
-
-  builddir_entry = gtk_entry_new();
-  gtk_signal_connect(GTK_OBJECT(builddir_entry), "changed",
-		     GTK_SIGNAL_FUNC(settings_changed), NULL);
-  gtk_box_pack_start(GTK_BOX(subvbox), builddir_entry, FALSE, TRUE, 0);
-  gtk_widget_show(builddir_entry);
-
   //subvbox = gtk_vbox_new(FALSE, 10);
   //gtk_container_set_border_width (GTK_CONTAINER(subvbox), 10);
   //gtk_container_add(GTK_CONTAINER(vbox), subvbox);
   //gtk_widget_show(subvbox);
-
-  label = gtk_label_new("File extension");
-  gtk_box_pack_start(GTK_BOX(subvbox), label, FALSE, TRUE, 0);
-  gtk_widget_show(label);
-
-  extension_entry = gtk_entry_new();
-  gtk_signal_connect(GTK_OBJECT(extension_entry), "changed",
-		     GTK_SIGNAL_FUNC(settings_changed), NULL);
-  gtk_box_pack_start(GTK_BOX(subvbox), extension_entry, FALSE, TRUE, 0);
-  gtk_widget_show(extension_entry);
 
   subvbox = gtk_vbox_new(FALSE, 10);
   gtk_container_set_border_width (GTK_CONTAINER(subvbox), 10);
@@ -754,13 +733,6 @@ static void module_update_module_options(module_t *m)
   }
 }
 
-static void module_update_general_settings(void)
-{
-  gtk_entry_set_text(GTK_ENTRY(builddir_entry), flavor_builddir());
-
-  gtk_entry_set_text(GTK_ENTRY(extension_entry), flavor_extension());
-}
-
 void module_update_with_current_flavor(void)
 {
   GList *mod;
@@ -770,8 +742,6 @@ void module_update_with_current_flavor(void)
   //    gtk_widget_set_sensitive(general_frame, FALSE);
   //    return;
   //  }
-
-  module_update_general_settings();
 
   // Modules implicites
   for(mod = g_list_first(the_static_modules);
@@ -839,19 +809,11 @@ static void module_save_module_options(module_t *m)
   }
 }
 
-static void module_save_general_settings(void)
-{
-  flavor_set_builddir(gtk_entry_get_text(GTK_ENTRY(builddir_entry)));
-  flavor_set_extension(gtk_entry_get_text(GTK_ENTRY(extension_entry)));
-}
-
 void module_save_to_flavor(void)
 {
   GList *mod;
 
   flavor_reset_contents();
-
-  module_save_general_settings();
 
   // Modules implicites
   for(mod = g_list_first(the_static_modules);

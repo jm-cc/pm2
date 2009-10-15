@@ -42,10 +42,6 @@ void flavor_check_quit(void);
 
 char *flavor_name(void);
 
-char *flavor_builddir(void);
-
-char *flavor_extension(void);
-
 // Format for module is "--modules=name"
 gint flavor_uses_module(const char *module);
 
@@ -53,10 +49,6 @@ gint flavor_uses_module(const char *module);
 char *flavor_uses_option(const char *option);
 
 void flavor_reset_contents(void);
-
-void flavor_set_builddir(const char *name);
-
-void flavor_set_extension(const char *name);
 
 void flavor_add_module(const char *name);
 

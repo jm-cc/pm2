@@ -39,8 +39,6 @@ static GtkWidget *combo;
 
 typedef struct flavor_struct_t {
   char *name;
-  char *builddir;
-  char *extension;
   GList *modules;
   GList *options;
 } flavor_t;
@@ -60,8 +58,6 @@ static void flavor_print(void)
 
   if(cur_flavor != NULL) {
     g_print("name      : [%s]\n", (cur_flavor->name ? : ""));
-    g_print("builddir  : [%s]\n", (cur_flavor->builddir ? : ""));
-    g_print("extension : [%s]\n", (cur_flavor->extension ? : ""));
     g_print("modules   : ");
     for(ptr = g_list_first(cur_flavor->modules);
 	ptr != NULL;
@@ -196,7 +192,7 @@ static flavor_t *load_flavor(char *name)
 {
   token_t tok;
   char buf[1024];
-  enum { FLAVOR_TAG, BUILDDIR_TAG, EXT_TAG, MODULE_TAG, OPTION_TAG } tag;
+  enum { FLAVOR_TAG, MODULE_TAG, OPTION_TAG } tag;
   flavor_t * ptr;
 
   if(!flavor_exists(name))
@@ -217,10 +213,6 @@ static flavor_t *load_flavor(char *name)
 
     if(!strcmp(parser_token_image(), "--flavor"))
       tag = FLAVOR_TAG;
-    else if (!strcmp(parser_token_image(), "--builddir"))
-      tag = BUILDDIR_TAG;
-    else if (!strcmp(parser_token_image(), "--ext"))
-      tag = EXT_TAG;
     else if (!strcmp(parser_token_image(), "--modules"))
       tag = MODULE_TAG;
     else
@@ -235,14 +227,6 @@ static flavor_t *load_flavor(char *name)
     switch(tag) {
     case FLAVOR_TAG : {
       ptr->name = string_new(parser_token_image()+1);
-      break;
-    }
-    case BUILDDIR_TAG : {
-      ptr->builddir = string_new(parser_token_image()+1);
-      break;
-    }
-    case EXT_TAG : {
-      ptr->extension = string_new(parser_token_image()+1);
       break;
     }
     case MODULE_TAG : {
@@ -274,16 +258,12 @@ static flavor_t *load_flavor(char *name)
 static void alloc_flavor_fields(flavor_t *ptr, char *name)
 {
   ptr->name = string_new(name);
-  ptr->builddir = string_new("");
-  ptr->extension = string_new("");
   ptr->modules = ptr->options = NULL;
 }
 
 static void free_flavor_fields(flavor_t *ptr)
 {
   g_free(ptr->name);
-  g_free(ptr->builddir);
-  g_free(ptr->extension);
   string_list_destroy(&ptr->modules);
   string_list_destroy(&ptr->options);
 }
@@ -465,11 +445,9 @@ static int flavor_save_on_disk(void)
   GList *ptr;
   static char cmd[4096];
 
-  sprintf(cmd, "%s/bin/pm2-flavor set --flavor=%s --builddir=%s --ext=%s",
+  sprintf(cmd, "%s/bin/pm2-flavor set --flavor=%s",
           pm2_root(),
-	  cur_flavor->name,
-	  cur_flavor->builddir,
-	  cur_flavor->extension);
+	  cur_flavor->name);
 
   for(ptr = g_list_first(cur_flavor->modules);
       ptr != NULL;
@@ -504,10 +482,8 @@ static int flavor_do_check(void)
 
   module_save_to_flavor();
 
-  sprintf(cmd, "%s/bin/pm2-flavor check --builddir=%s --ext=%s",
-          pm2_root(),
-	  cur_flavor->builddir,
-	  cur_flavor->extension);
+  sprintf(cmd, "%s/bin/pm2-flavor check",
+          pm2_root());
 
   for(ptr = g_list_first(cur_flavor->modules);
       ptr != NULL;
@@ -811,16 +787,6 @@ char *flavor_name(void)
   return (cur_flavor == NULL) ? "" : cur_flavor->name;
 }
 
-char *flavor_builddir(void)
-{
-  return (cur_flavor == NULL) ? "" : cur_flavor->builddir;
-}
-
-char *flavor_extension(void)
-{
-  return (cur_flavor == NULL) ? "" : cur_flavor->extension;
-}
-
 gint flavor_uses_module(const char *module)
 {
   if(cur_flavor == NULL)
@@ -908,22 +874,8 @@ void flavor_init(GtkWidget *vbox)
 
 void flavor_reset_contents(void)
 {
-  if(cur_flavor->builddir)
-    g_free(cur_flavor->builddir);
-  if(cur_flavor->extension)
-    g_free(cur_flavor->extension);
   string_list_destroy(&cur_flavor->modules);
   string_list_destroy(&cur_flavor->options);
-}
-
-void flavor_set_builddir(const char *name)
-{
-  cur_flavor->builddir = string_new(name);
-}
-
-void flavor_set_extension(const char *name)
-{
-  cur_flavor->extension = string_new(name);
 }
 
 void flavor_add_module(const char *name)

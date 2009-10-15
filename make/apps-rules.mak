@@ -28,12 +28,12 @@ flavor:
 	$(COMMON_MAIN) $(MAKE) -C $(PM2_ROOT)
 	$(COMMON_HIDE) echo "<<< Generating libraries: done"
 
-$(MOD_GEN_BIN)/%$(MOD_EXT): $(MOD_STAMP_FILES)
+$(MOD_GEN_BIN)/%: $(MOD_STAMP_FILES)
 	$(COMMON_LINK)
 	$(COMMON_MAIN) $(CC) $(EARLY_LDFLAGS) $(filter %.o, $^) $(LDFLAGS) -o $@
 
 .PHONY: $(APPS_LIST)
-$(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%$(MOD_EXT)
+$(APPS_LIST): %: flavor $(MOD_GEN_BIN)/%
 
 # Generation des fichiers 'fut'
 #.PHONY: fut
@@ -73,16 +73,16 @@ MOD_LINKED_OBJECTS=$(APPS_LIST)
 # - double run pour que make regarde à nouveau les dépendances
 # - dépendances complètes pour la flavor (trop complexe a priori)
 define PROGRAM_template
- $(MOD_GEN_BIN)/$(1)$(MOD_EXT): $$(patsubst %.o, %$(MOD_EXT).o, \
+ $(MOD_GEN_BIN)/$(1): $$(patsubst %.o, %.o, \
 			$$(if $$($(1)-objs), $$($(1)-objs), $(1).o))
- $(MOD_GEN_BIN)/$(1)$(MOD_EXT): LDFLAGS += $$($(1)-ldflags)
- $(MOD_GEN_BIN)/$(1)$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
+ $(MOD_GEN_BIN)/$(1): LDFLAGS += $$($(1)-ldflags)
+ $(MOD_GEN_BIN)/$(1): $(MOD_STAMP_FILES) | flavor
 endef
 define OBJECT_template
- $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CFLAGS += $$($(1)-cflags)
- $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CPPFLAGS += $$($(1)-cppflags)
- $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: CXXFLAGS += $$($(1)-cxxflags)
- $(MOD_GEN_OBJ)/$(1)$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
+ $(MOD_GEN_OBJ)/$(1).o: CFLAGS += $$($(1)-cflags)
+ $(MOD_GEN_OBJ)/$(1).o: CPPFLAGS += $$($(1)-cppflags)
+ $(MOD_GEN_OBJ)/$(1).o: CXXFLAGS += $$($(1)-cxxflags)
+ $(MOD_GEN_OBJ)/$(1).o: $(MOD_STAMP_FILES) | flavor
 endef
 
 GF	:= $(shell $(PM2_CONFIG) --fc)

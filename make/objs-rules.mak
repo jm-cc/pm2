@@ -149,26 +149,26 @@ endif
 $(MOD_C_OBJECTS): CFLAGS+=$(MOD_CFLAGS) -DSTATIC_BUILD
 $(MOD_C_OBJECTS): CFLAGS+=$($<-cflags)
 $(MOD_C_OBJECTS): CPPFLAGS+=$($<-cppflags)
-$(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: $(MOD_GEN_C_INC)
-$(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.c
+$(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%.o: $(MOD_GEN_C_INC)
+$(MOD_C_OBJECTS): $(MOD_GEN_OBJ)/%.o: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(MOD_C_PREPROCESSED): CFLAGS+=$(MOD_CFLAGS)
-$(MOD_C_PREPROCESSED): $(MOD_GEN_OBJ)/%$(MOD_EXT).cpp: $(MOD_GEN_C_INC)
-$(MOD_C_PREPROCESSED): $(MOD_GEN_OBJ)/%$(MOD_EXT).cpp: %.c
+$(MOD_C_PREPROCESSED): $(MOD_GEN_OBJ)/%.cpp: $(MOD_GEN_C_INC)
+$(MOD_C_PREPROCESSED): $(MOD_GEN_OBJ)/%.cpp: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CXXFLAGS) -E $< -o $@
 
 $(MOD_C_PICS): CFLAGS+=$(MOD_CFLAGS) -DDYNAMIC_BUILD
-$(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: $(MOD_GEN_C_INC)
-$(MOD_C_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.c
+$(MOD_C_PICS): $(MOD_GEN_OBJ)/%.pic: $(MOD_GEN_C_INC)
+$(MOD_C_PICS): $(MOD_GEN_OBJ)/%.pic: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ -fPIC
 
 $(MOD_C_PREPROC): CFLAGS+=$(MOD_CFLAGS)
-$(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: $(MOD_GEN_C_INC)
-$(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
+$(MOD_C_PREPROC): $(MOD_GEN_CPP)/%.i: $(MOD_GEN_C_INC)
+$(MOD_C_PREPROC): $(MOD_GEN_CPP)/%.i: %.c
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC -DPM2_NOINLINE $(CFLAGS) $< > $@
 
@@ -177,34 +177,34 @@ $(MOD_C_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).i: %.c
 $(MOD_CXX_OBJECTS): CXXFLAGS+=$(MOD_CFLAGS) $(MOD_CXXFLAGS)
 $(MOD_CXX_OBJECTS): CXXFLAGS+=$($<-cflags)
 $(MOD_CXX_OBJECTS): CXXFLAGS+=$($<-cxxflags)
-$(MOD_CXX_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.cpp
+$(MOD_CXX_OBJECTS): $(MOD_GEN_OBJ)/%.o: %.cpp
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 $(MOD_CXX_PICS): CXXFLAGS+=$(MOD_CFLAGS) $(MOD_CXXFLAGS)
-$(MOD_CXX_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.cpp
+$(MOD_CXX_PICS): $(MOD_GEN_OBJ)/%.pic: %.cpp
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ -fPIC
 
 $(MOD_CXX_PREPROC): CXXFLAGS+=$(MOD_CFLAGS) $(MOD_CXXFLAGS)
-$(MOD_CXX_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).cppi: %.cpp
+$(MOD_CXX_PREPROC): $(MOD_GEN_CPP)/%.cppi: %.cpp
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CXX) $(CPPFLAGS) -E -DPREPROC $(CXXFLAGS) $< > $@
 
 # Dependances vers *.S
 #---------------------------------------------------------------------
 $(MOD_S_OBJECTS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
-$(MOD_S_OBJECTS): $(MOD_GEN_OBJ)/%$(MOD_EXT).o: %.S
+$(MOD_S_OBJECTS): $(MOD_GEN_OBJ)/%.o: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -x assembler-with-cpp -c $< -o $@
 
 $(MOD_S_PICS): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
-$(MOD_S_PICS): $(MOD_GEN_OBJ)/%$(MOD_EXT).pic: %.S
+$(MOD_S_PICS): $(MOD_GEN_OBJ)/%.pic: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(CFLAGS) -x assembler-with-cpp -c $< -o $@ -fPIC
 
 $(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
-$(MOD_S_PREPROC): $(MOD_GEN_CPP)/%$(MOD_EXT).si: %.S
+$(MOD_S_PREPROC): $(MOD_GEN_CPP)/%.si: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
 
@@ -250,20 +250,20 @@ endif # $(MAKECMDGOALS)
 
 # Lex
 #---------------------------------------------------------------------
-$(MOD_GEN_C_L_SOURCES): $(MOD_GEN_SRC)/%$(MOD_EXT).c: %.l
+$(MOD_GEN_C_L_SOURCES): $(MOD_GEN_SRC)/%.c: %.l
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(LEX) $<
 	$(COMMON_HIDE) mv lex.yy.c $@
 
 # Yacc
 #---------------------------------------------------------------------
-$(MOD_GEN_C_Y_SOURCES): $(MOD_GEN_SRC)/%$(MOD_EXT).c: %.y
+$(MOD_GEN_C_Y_SOURCES): $(MOD_GEN_SRC)/%.c: %.y
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(YACC) $<
 	$(COMMON_HIDE) mv y.tab.c $@
 	$(COMMON_HIDE) mv y.tab.h $(MOD_GEN_C_TO_H)
 
-$(MOD_GEN_C_Y_INC): $(MOD_GEN_INC)/%$(MOD_EXT).h: %.y
+$(MOD_GEN_C_Y_INC): $(MOD_GEN_INC)/%.h: %.y
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(YACC) $<
 	$(COMMON_HIDE) mv y.tab.h $@

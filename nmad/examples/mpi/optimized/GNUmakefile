@@ -18,11 +18,11 @@ PROGS 	:= ping_optimized
 
 include ../../../../make/apps.mak
 
-$(MOD_GEN_BIN)/ping_optimized$(MOD_EXT): $(patsubst %.o, %$(MOD_EXT).o, \
+$(MOD_GEN_BIN)/ping_optimized: $(patsubst %.o, %.o, \
 			$(if $(ping-optimized-objs), $(ping-optimized-objs), ping_optimized.o)) indexed_optimized.o vector_optimized.o struct_optimized.o
-$(MOD_GEN_BIN)/ping_optimized$(MOD_EXT): LDFLAGS += $(ping-optimized-ldflags) -lm
-$(MOD_GEN_BIN)/ping_optimized$(MOD_EXT): $(MOD_STAMP_FILES) | flavor
+$(MOD_GEN_BIN)/ping_optimized: LDFLAGS += $(ping-optimized-ldflags) -lm
+$(MOD_GEN_BIN)/ping_optimized: $(MOD_STAMP_FILES) | flavor
 
-$(MOD_GEN_OBJ)/ping_optimized$(MOD_EXT).o: CFLAGS += $(ping-optimized-cflags)
-$(MOD_GEN_OBJ)/ping_optimized$(MOD_EXT).o: $(MOD_STAMP_FILES) | flavor
+$(MOD_GEN_OBJ)/ping_optimized.o: CFLAGS += $(ping-optimized-cflags)
+$(MOD_GEN_OBJ)/ping_optimized.o: $(MOD_STAMP_FILES) | flavor
 

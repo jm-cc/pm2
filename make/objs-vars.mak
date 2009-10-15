@@ -107,13 +107,13 @@ MOD_Y_BASE = $(foreach I, $(MOD_Y_SOURCES), $(notdir $(basename $I)))
 
 # Generated sources
 #---------------------------------------------------------------------
-MOD_GEN_C_L_SOURCES = $(foreach I, $(MOD_L_BASE), $(MOD_GEN_SRC)/$I$(MOD_EXT).c)
-MOD_GEN_C_Y_SOURCES = $(foreach I, $(MOD_Y_BASE), $(MOD_GEN_SRC)/$I$(MOD_EXT).c)
+MOD_GEN_C_L_SOURCES = $(foreach I, $(MOD_L_BASE), $(MOD_GEN_SRC)/$I.c)
+MOD_GEN_C_Y_SOURCES = $(foreach I, $(MOD_Y_BASE), $(MOD_GEN_SRC)/$I.c)
 MOD_GEN_C_SOURCES   = $(MOD_GEN_C_L_SOURCES) $(MOD_GEN_C_Y_SOURCES)
 
 # Generated includes
 #---------------------------------------------------------------------
-MOD_GEN_C_Y_INC = $(foreach I, $(MOD_Y_BASE), $(MOD_GEN_INC)/$I$(MOD_EXT).h)
+MOD_GEN_C_Y_INC = $(foreach I, $(MOD_Y_BASE), $(MOD_GEN_INC)/$I.h)
 MOD_GEN_C_INC   = $(MOD_GEN_C_Y_INC)
 
 # Bases : fichiers sans extension ni repertoire (suite)
@@ -127,31 +127,31 @@ MOD_BASE   = $(MOD_C_BASE) $(MOD_CXX_BASE) $(MOD_S_BASE) $(MOD_F_BASE)
 
 # Objets
 #---------------------------------------------------------------------
-MOD_C_OBJECTS = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
-MOD_CXX_OBJECTS = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
-MOD_S_OBJECTS = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
-MOD_F_OBJECTS = $(foreach I, $(MOD_F_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).o)
+MOD_C_OBJECTS = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I.o)
+MOD_CXX_OBJECTS = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I.o)
+MOD_S_OBJECTS = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I.o)
+MOD_F_OBJECTS = $(foreach I, $(MOD_F_BASE), $(MOD_GEN_OBJ)/$I.o)
 MOD_OBJECTS   = $(MOD_C_OBJECTS) $(MOD_CXX_OBJECTS) $(MOD_S_OBJECTS) $(MOD_F_OBJECTS)
 
 # PICS - librairies dynamiques
 #---------------------------------------------------------------------
-MOD_C_PICS =  $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
-MOD_CXX_PICS =  $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
-MOD_S_PICS =  $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).pic)
+MOD_C_PICS =  $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I.pic)
+MOD_CXX_PICS =  $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_OBJ)/$I.pic)
+MOD_S_PICS =  $(foreach I, $(MOD_S_BASE), $(MOD_GEN_OBJ)/$I.pic)
 MOD_PICS   =  $(MOD_C_PICS) $(MOD_CXX_PICS) $(MOD_S_PICS)
 
 # Preprocs
 #---------------------------------------------------------------------
-MOD_C_PREPROCESSED = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I$(MOD_EXT).cpp)
-MOD_C_PREPROC = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).i)
-MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).cppi)
-MOD_S_PREPROC = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).si)
+MOD_C_PREPROCESSED = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_OBJ)/$I.cpp)
+MOD_C_PREPROC = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I.i)
+MOD_CXX_PREPROC = $(foreach I, $(MOD_CXX_BASE), $(MOD_GEN_CPP)/$I.cppi)
+MOD_S_PREPROC = $(foreach I, $(MOD_S_BASE), $(MOD_GEN_CPP)/$I.si)
 MOD_PREPROC   = $(MOD_C_PREPROC) $(MOD_CXX_PREPROC) $(MOD_S_PREPROC)
 
 # FUT entries
 #---------------------------------------------------------------------
 # MOD_S_FUT : pas de sens
-MOD_C_FUT = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I$(MOD_EXT).fut)
+MOD_C_FUT = $(foreach I, $(MOD_C_BASE), $(MOD_GEN_CPP)/$I.fut)
 MOD_FUT   = $(MOD_C_FUT)
 
 # Dependances

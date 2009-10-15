@@ -281,7 +281,6 @@ create_flavor() {
     echo '. $PM2_ROOT/bin/pm2-config-tools.sh' >> ${OUT}
     echo "#" >> ${OUT}
     echo "PM2_LIBS=\"$modules\"" >> ${OUT}
-    echo "PM2_EXT=$ext" >> ${OUT}
 
     for mod in $modules $HIDDEN_MODULES; do
 	options="`eval echo \\$lst_opt_$mod`"

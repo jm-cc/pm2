@@ -34,7 +34,7 @@ GEN_SUBDIR ?= $(strip $(if $(filter-out examples, $(notdir $(CURDIR))), \
 
 # Répertoire(s) contenant les sources
 #---------------------------------------------------------------------
-MOD_SRC ?= .
+MOD_SRC ?= $(PM2_SRCDIR)
 
 # Variables communes pour produire du code
 #---------------------------------------------------------------------

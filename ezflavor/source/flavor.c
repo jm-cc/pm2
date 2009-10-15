@@ -204,7 +204,7 @@ static flavor_t *load_flavor(char *name)
   ptr->modules = ptr->options = NULL;
 
   parser_start_cmd("%s/bin/pm2-flavor get --flavor=%s",
-    pm2_root(), name);
+    pm2_objroot(), name);
 
   while(tok = parser_next_token(), tok != END_OF_INPUT) {
 
@@ -368,7 +368,7 @@ void flavor_delete(void)
 
     ret = exec_wait(exec_single_cmd_fmt(NULL,
 					"%s/bin/pm2-flavor delete --flavor=%s",
-					pm2_root(), selected));
+					pm2_objroot(), selected));
 
     if(ret != 0) {
       fprintf(stderr, "Error: Delete operation failed\n");
@@ -446,7 +446,7 @@ static int flavor_save_on_disk(void)
   static char cmd[4096];
 
   sprintf(cmd, "%s/bin/pm2-flavor set --flavor=%s",
-          pm2_root(),
+          pm2_objroot(),
 	  cur_flavor->name);
 
   for(ptr = g_list_first(cur_flavor->modules);
@@ -483,7 +483,7 @@ static int flavor_do_check(void)
   module_save_to_flavor();
 
   sprintf(cmd, "%s/bin/pm2-flavor check",
-          pm2_root());
+          pm2_objroot());
 
   for(ptr = g_list_first(cur_flavor->modules);
       ptr != NULL;
@@ -677,7 +677,7 @@ void flavor_rescan(void)
 
   string_list_destroy(&fla_names);
 
-  parser_start_cmd("%s/bin/pm2-flavor list", pm2_root());
+  parser_start_cmd("%s/bin/pm2-flavor list", pm2_objroot());
 
   fla_names = string_list_from_parser();
 

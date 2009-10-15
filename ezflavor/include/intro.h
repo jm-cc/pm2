@@ -19,7 +19,8 @@
 
 #include <stdarg.h>
 
-gchar *pm2_root(void);
+gchar *pm2_srcroot(void);
+gchar *pm2_objroot(void);
 
 void intro_init(void);
 

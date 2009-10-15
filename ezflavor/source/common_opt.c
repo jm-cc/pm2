@@ -84,7 +84,7 @@ static GList *create_option_list(void)
   GList *wko = NULL;
   GList *ptr;
 
-  parser_start_cmd("%s/bin/pm2-module options --module=generic", pm2_root());
+  parser_start_cmd("%s/bin/pm2-module options --module=generic", pm2_objroot());
 
   wko = string_list_from_parser();
 

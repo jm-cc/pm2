@@ -96,7 +96,7 @@ static void module_rescan(void)
   string_list_destroy(&mod_names);
 
   /* First build the complete list of modules */
-  parser_start_cmd("%s/bin/pm2-module modules", pm2_root());
+  parser_start_cmd("%s/bin/pm2-module modules", pm2_objroot());
 
   mod_names = string_list_from_parser();
 
@@ -109,7 +109,7 @@ static void module_rescan(void)
 
   else {
 
-    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_root());
+    parser_start_cmd("%s/bin/pm2-module modules --user-only", pm2_objroot());
 
     visible_names = string_list_from_parser();
 
@@ -135,7 +135,7 @@ static void option_set_tooltip_msg(GtkWidget *widget, char *module, char *option
   int pid, fd;
 
   sprintf(arg, "echo \\\"`%s/bin/pm2-module option=%s --module=%s --help`\\\"",
-	  pm2_root(), option, module);
+	  pm2_objroot(), option, module);
 
   pid = exec_single_cmd_args(&fd, "sh", "-c", arg, NULL);
 
@@ -160,7 +160,7 @@ static void module_set_tooltip_msg(GtkWidget *widget, char *module)
   int pid, fd;
 
   sprintf(arg, "echo \\\"`%s/bin/pm2-module module=%s --help`\\\"",
-	  pm2_root(), module);
+	  pm2_objroot(), module);
 
   pid = exec_single_cmd_args(&fd, "sh", "-c", arg, NULL);
 
@@ -242,7 +242,7 @@ static void add_exclusive_option_set(char *module,
   GtkWidget *button = NULL;
 
   parser_start_cmd("%s/bin/pm2-module options --module=%s --get-excl=%s",
-                   pm2_root(), module, set);
+                   pm2_objroot(), module, set);
 
   options = string_list_from_parser();
 
@@ -268,7 +268,7 @@ static void add_exclusive_option_set(char *module,
           gtk_widget_show(hbox);
                     
           parser_start_cmd("%s/bin/pm2-module option=%s --module=%s --defaultvalue",                        
-               pm2_root(), ptr->data, module);
+               pm2_objroot(), ptr->data, module);
           tok = parser_next_token();
           
           if(tok == IDENT_TOKEN) {
@@ -323,7 +323,7 @@ static void add_inclusive_option_set(char *module,
   GtkWidget *button = NULL;
         
   parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl=%s",
-		   pm2_root(), module, set);
+		   pm2_objroot(), module, set);
         
   options = string_list_from_parser();
         
@@ -342,7 +342,7 @@ static void add_inclusive_option_set(char *module,
       gtk_widget_show(hbox);          
                         
       parser_start_cmd("%s/bin/pm2-module option=%s --module=%s --defaultvalue",                        
-		       pm2_root(), ptr->data, module);
+		       pm2_objroot(), ptr->data, module);
 
       tok = parser_next_token();
       
@@ -399,7 +399,7 @@ static void add_exclusive_options(char *module,
   GList *sets, *ptr;
 
   parser_start_cmd("%s/bin/pm2-module options --module=%s --get-excl-sets",
-                   pm2_root(), module);
+                   pm2_objroot(), module);
 
   sets = string_list_from_parser();
 
@@ -427,7 +427,7 @@ static void add_inclusive_options(char *module,
   GList *sets, *ptr;
 
   parser_start_cmd("%s/bin/pm2-module options --module=%s --get-incl-sets",
-                   pm2_root(), module);
+                   pm2_objroot(), module);
 
   sets = string_list_from_parser();
 

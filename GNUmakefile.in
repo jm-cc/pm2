@@ -29,8 +29,12 @@ endif # FLAVOR
 # PM2_ROOT -> root directory of PM2's source tree.
 #---------------------------------------------------------------------
 export PM2_ROOT := @abs_top_srcdir@
-PM2_SRCROOT := @abs_top_srcdir@
-PM2_OBJROOT := @abs_top_builddir@
+# PM2_SRCROOT -> root directory of PM2's source tree.
+#---------------------------------------------------------------------
+export PM2_SRCROOT := @abs_top_srcdir@
+# PM2_SRCROOT -> root directory of PM2's object tree.
+#---------------------------------------------------------------------
+export PM2_OBJROOT := @abs_top_builddir@
 
 # Par securite, il vaut mieux considerer ROOT que PM2_ROOT, pour ne
 # pas inclure de Makefiles provenant d'une distribution obsolete par
@@ -273,7 +277,7 @@ xdialogconfig: flavors
 
 xconfig: flavors
 	$(COMMON_HIDE) $(MAKE) -C ezflavor FLAVOR=ezflavor
-	$(ROOT)/bin/ezflavor
+	$(PM2_SRCROOT)/bin/ezflavor
 
 
 # sos: verification des variables d'environnement PM2_*

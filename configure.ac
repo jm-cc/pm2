@@ -70,7 +70,7 @@ do
 done
 
 dnl Copy modules links
-[ -d modules ] || cp -a $srcdir/modules .
+test -d modules || cp -a $srcdir/modules .
 
 if test "x$ac_abs_top_srcdir" != "x$ac_abs_top_builddir"; then
    AC_MSG_ERROR([Build directory ($ac_abs_top_builddir) differs from source directory ($ac_abs_top_srcdir), which is not supported.])

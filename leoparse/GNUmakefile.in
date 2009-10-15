@@ -16,6 +16,7 @@
 PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
+PM2_SRCDIR := @abs_srcdir@
 
 # Variables communes aux libraries
 #---------------------------------------------------------------------
@@ -23,7 +24,7 @@ include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # Rajout d'un répertoire de sources (fichiers yacc et lex)
 #---------------------------------------------------------------------
-MOD_SRC += source/tools
+MOD_SRC += $(PM2_SRCDIR)/source/tools
 
 # Création des fichiers d'include à la première passe
 #---------------------------------------------------------------------

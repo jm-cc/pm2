@@ -65,7 +65,7 @@ AC_PADICO_OPTIMIZE
 AC_PADICO_DEBUG
 AC_PADICO_TRACE
 AC_PADICO_DISABLE_OUTPUT
-AC_PADICO_PM2
+AC_PADICO_PM2_EXTERNAL
 
 dnl --- output
 dnl --------------------------------------------------------

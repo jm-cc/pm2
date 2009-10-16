@@ -42,9 +42,9 @@ initialize_bench()
 
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-         --ext=\"\" \
-         --modules=\"puk init nmad ntbx tbx pioman\" \
-         --nmad=\"sched_opt strat_default mad3_emu ${dev} nuioa\" \
+         --modules=\"puk init nmad ntbx tbx\" \
+         --nmad=\"sched_opt strat_aggreg mad3_emu ${dev} nuioa ib_rcache\" \
+	 --puk=\"disable_output enable_pukabi disable_fd_virtualization\" \
          --common=\"fortran_target_none\" \
          --all=\"build_static opt\" $flavor_options
 

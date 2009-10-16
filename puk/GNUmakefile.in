@@ -15,20 +15,23 @@ PM2_ROOT := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export PM2_ROOT PM2_SRCROOT PM2_OBJROOT
-PM2_SRCDIR := @abs_srcdir@
 
 include $(PM2_OBJROOT)/make/common-vars.mak
 
 pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 PUK_ROOT       := $(pm2_build_dir)/puk
-PUK_SRCDIR     := $(PM2_SRCDIR)
+PUK_SRCDIR     := @abs_srcdir@
 PUK_BUILDDIR   := $(PUK_ROOT)/puk
 PUK_INSTALLDIR := $(PUK_ROOT)
 
 PADICO_ROOT    := $(PUK_ROOT)
 
-SRC_CONFIG_FILES := $(PM2_SRCDIR)/externals/packaging-tools/padico-setup.sh.in $(PM2_SRCDIR)/configure.ac # $(PM2_SRCDIR)/$(wildcard externals/building-tools/*.m4)
-GEN_CONFIG_FILES := $(PADICO_ROOT)/etc/padico-setup.sh $(PM2_OBJROOT)/puk/externals/configure $(PM2_OBJROOT)/puk/externals/Puk/padico_config.h.in $(PM2_OBJROOT)/VERSION
+PUK_CONFIG_FILES := \
+  $(PUK_SRCDIR)/externals/packaging-tools/padico-init \
+  $(PUK_SRCDIR)/externals/packaging-tools/padico-setup.sh.in \
+  $(PUK_SRCDIR)/externals/configure \
+  $(PUK_SRCDIR)/externals/Puk/padico_config.h.in \
+  $(PUK_SRCDIR)/VERSION
 
 PM2_PUK_BUILD_STATIC  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_STATIC)
 PM2_PUK_BUILD_DYNAMIC := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_BUILD_DYNAMIC)
@@ -58,51 +61,28 @@ link:
 dot_h: $(PADICO_ROOT)/lib/libPadicoPuk.a
 
 clean:
-	-rm $(GEN_CONFIG_FILES)
 	-rm -r $(PUK_ROOT)/puk
 
 flavormaks:
-
-# Make sure the puk configuration files are a prerequisite for all `.o' files.
-MOD_GEN_C_INC += $(GEN_CONFIG_FILES)
-
-# ## init packaging framework and generate base config files
-# ##
-
-# TODO: move this to ./autogen.sh
-$(GEN_CONFIG_FILES): $(SRC_CONFIG_FILES)
-	@echo "    generating Puk version file..."
-	@echo "0.4.0" > VERSION
-	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
-	@echo
-	@$(PM2_SRCDIR)/externals/packaging-tools/padico-init \
-          admindir=$(PUK_SRCDIR)/externals/packaging-tools \
-          installdir=$(PADICO_ROOT) \
-          srcdir=$(PUK_SRCDIR) \
-          builddir=$(PUK_BUILDDIR) \
-          logdir=$(PUK_BUILDDIR)/log \
-          padico_dialog=whiptail
-	@echo "    checking config tools versions..."
-	@( autoconf_ver="`$${AUTOCONF:-autoconf} --version | grep 'GNU Autoconf'`"; \
-           if [ "x$$autoconf_ver" = "x" ]; then echo "Bad autoconf version (should be at least GNU 2.50)"; exit 1; \
-           else echo "      - $$autoconf_ver"; fi )
-	@( autoheader_ver="`$${AUTOHEADER:-autoheader} --version | grep 'GNU Autoconf'`"; \
-           if [ "x$$autoheader_ver" = "x" ]; then echo "Bad autoheader version (should be GNU)"; exit 1; \
-           else echo "      - $$autoheader_ver"; fi )
-	@echo "    generating externals/configure [autoconf] ..."
-	@cp $(PM2_SRCDIR)/configure.ac $(PUK_SRCDIR)/externals/
-	@( cd $(PUK_SRCDIR)/externals ; $${AUTOCONF:-autoconf} )
-	@echo "    generating externals/Puk/padico_config.h.in [autoheader] ..."
-	@( cd $(PUK_SRCDIR)/externals ; $${AUTOHEADER:-autoheader} -f )
-	-@mkdir $(PUK_BUILDDIR)
-	-@mkdir $(pm2_build_dir)/lib/
 
 # ## configure
 # ##
 
 PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
 
-$(PUK_BUILDDIR)/config.status: $(GEN_CONFIG_FILES)
+$(PUK_BUILDDIR)/config.status: $(PUK_CONFIG_FILES)
+	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
+	@echo
+	@$(PUK_SRCDIR)/externals/packaging-tools/padico-init \
+          admindir=$(PUK_SRCDIR)/externals/packaging-tools \
+          installdir=$(PADICO_ROOT) \
+          srcdir=$(PUK_SRCDIR) \
+          builddir=$(PUK_BUILDDIR) \
+          logdir=$(PUK_BUILDDIR)/log \
+          padico_dialog=whiptail
+	-@mkdir $(PUK_BUILDDIR)
+	-@mkdir $(pm2_build_dir)/lib/
+	-@echo "   configuring Puk"
 	( cd $(PUK_BUILDDIR) ; \
            $(PUK_SRCDIR)/externals/configure LIBS= LDFLAGS= CFLAGS= --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )
 

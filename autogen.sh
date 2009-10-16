@@ -291,4 +291,15 @@ do
 	echo "m4_include([$module_ac])" >> include.ac
 done
 
-ACLOCAL="aclocal $LOCAL" exec autoreconf -vfi
+echo "Invoking PM2 autoreconf..."
+ACLOCAL="aclocal $LOCAL" autoreconf -vfi
+
+echo "Initializing Puk..."
+echo "0.4.0" > ./puk/VERSION
+echo "    generating puk/externals/configure [autoconf] ..."
+cp ./puk/configure.ac ./puk/externals/
+( cd ./puk/externals ; ${AUTOCONF:-autoconf} )
+echo "    generating puk/externals/Puk/padico_config.h.in [autoheader] ..."
+( cd ./puk/externals ; ${AUTOHEADER:-autoheader} -f )
+
+echo "Done."

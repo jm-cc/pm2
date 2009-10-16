@@ -6,7 +6,7 @@ Pour ajouter un nouveau module, il faut :
 - ajouter un répertoire ${PM2_SRCROOT}/plop/config
 - Ajouter le nom du module dans les fichiers suivants : 
 	${PM2_SRCROOT}/generic/config/options/Makefile
-	${PM2_SRCROOT}/bin/pm2-config 
+	${PM2_SRCROOT}/bin/pm2-config.in
 - Créer un lien depuis le répertoire ${PM2_SRCROOT}/modules
         cd ${PM2_SRCROOT}/modules ; ln -s ../plop
 - puis, on génère les fichiers d'options du module :

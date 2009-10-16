@@ -85,7 +85,7 @@ run_bench()
 	# wait for NFS to propagate the new compiled program
 	sleep 10
 
-	${PM2_SRCROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
+	${PM2_OBJROOT}/bin/leonie --flavor=$flavor --appli=$prog --net=${LEONIE_NETWORK_FILE:-"${PM2_ROOT}/leonie/examples/networks.cfg"} $leo_args $leo_cfg_file $leo_appli_args
 }
 
 # args: loop variable

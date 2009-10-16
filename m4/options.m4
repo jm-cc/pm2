@@ -102,7 +102,7 @@ AC_DEFUN([PM2_OPTIONS], [
       AC_MSG_NOTICE([configuration options `$PM2_CONFIG_OPTIONS'])
       # Create a new flavor based on the user's `--enable-' options.
       AC_MSG_NOTICE([creating flavor `$PM2_DEFAULT_FLAVOR' with `$PM2_FLAVOR_CONTENT'])
-      if "$ac_top_srcdir/bin/pm2-flavor" set --flavor="$PM2_DEFAULT_FLAVOR" \
+      if "$ac_top_builddir/bin/pm2-flavor" set --flavor="$PM2_DEFAULT_FLAVOR" \
           $PM2_FLAVOR_CONTENT
       then
 	AC_MSG_NOTICE([flavor `$PM2_DEFAULT_FLAVOR' created])
@@ -114,7 +114,7 @@ AC_DEFUN([PM2_OPTIONS], [
 
       # Use a pre-existing flavor.
       AC_MSG_CHECKING([whether flavor `$PM2_DEFAULT_FLAVOR' already exists'])
-      if "$ac_top_srcdir/bin/pm2-flavor" check --flavor="$PM2_DEFAULT_FLAVOR" >/dev/null 2>&1; then
+      if "$ac_top_builddir/bin/pm2-flavor" check --flavor="$PM2_DEFAULT_FLAVOR" >/dev/null 2>&1; then
 	AC_MSG_RESULT([yes])
       else
 	AC_MSG_RESULT([no])

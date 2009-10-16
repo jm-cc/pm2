@@ -24,7 +24,7 @@ fi
 # Configuration
 check_all_lines=1
 flavor="test_marcel_bubble"
-appdir="${PM2_SRCROOT}/marcel/examples"
+appdir="${PM2_OBJROOT}/marcel/examples"
 script="<undefined>"
 args=""
 hosts="localhost"

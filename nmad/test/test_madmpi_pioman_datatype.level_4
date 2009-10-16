@@ -22,7 +22,7 @@ net2=$(echo $net | tr ' ' '_')
 ext="pioman"
 flavor="test_nmad_${mpi}_${net2}_${ext}"
 
-appdir="${PM2_SRCROOT}/nmad/examples/mpi/basics"
+appdir="${PM2_OBJROOT}/nmad/examples/mpi/basics"
 prog="datatype"
 args="--x --p --l"
 sort_output=1

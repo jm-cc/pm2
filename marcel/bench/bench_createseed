@@ -19,7 +19,7 @@ hosts=${BENCHHOST:-"localhost"}
 
 flavor="bench_marcel_${marcel}_${hosts}"
 
-appdir="${PM2_SRCROOT}/marcel/examples"
+appdir="${PM2_OBJROOT}/marcel/examples"
 
 loop="marcel"
 

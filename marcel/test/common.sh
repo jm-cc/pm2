@@ -14,7 +14,7 @@
 
 check_all_lines=1
 flavor="<undefined>"
-appdir="${PM2_SRCROOT}/marcel/examples"
+appdir="${PM2_OBJROOT}/marcel/examples"
 prog="<undefined>"
 script="<undefined>"
 args=""

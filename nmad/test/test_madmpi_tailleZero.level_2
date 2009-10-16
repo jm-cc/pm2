@@ -21,7 +21,7 @@ strat="strat_default"
 net2=$(echo $net | tr ' ' '_')
 flavor="test_nmad_${mpi}_${net2}"
 
-appdir="${PM2_SRCROOT}/nmad/examples/mpi/basics"
+appdir="${PM2_OBJROOT}/nmad/examples/mpi/basics"
 prog="tailleZero"
 args="--x --p --l"
 

@@ -17,7 +17,7 @@
 # pm2-bench settings
 flavor="bench_pioman"
 flavor_options=""
-appdir="${PM2_SRCROOT}/nmad/examples/piom"
+appdir="${PM2_OBJROOT}/nmad/examples/piom"
 prog="piom_ping_bench"
 loop=${BENCHNET:-tcp}
 

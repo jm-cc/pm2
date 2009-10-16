@@ -18,7 +18,7 @@
 # pm2-bench settings
 flavor="bench_nmad"
 flavor_options="--nmad=tag_as_flat_array"
-appdir="${PM2_SRCROOT}/nmad/examples/sendrecv"
+appdir="${PM2_OBJROOT}/nmad/examples/sendrecv"
 prog="sr_bench"
 loop=${BENCHNET:-tcp}
 

@@ -30,7 +30,6 @@ hosts=${TESTCONFIG:-"localhost localhost"}
 
 # Creation de la flavor
 eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
 	--modules=\"marcel mad3 ntbx tbx pm2 init\" \
 	--marcel=\"mono poll\" --marcel=\"marcel_main enable_keys enable_migration enable_postexit enable_userspace enable_deviation enable_atexit\" \
 	--mad3=\"tcp\" \

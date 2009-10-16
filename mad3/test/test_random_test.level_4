@@ -28,7 +28,6 @@ done
 
 # Creation de la flavor
 eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
- --ext=\"\" \
  --modules=\"init mad3 ntbx tbx marcel\" \
  --init=\"opt\" \
  --mad3=\"opt ${net} marcel_poll\" \

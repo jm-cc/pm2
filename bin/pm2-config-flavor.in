@@ -505,7 +505,6 @@ do_cmdline() { # no_flavor
 	cmdline="--flavor=$fl_flavor"
     fi
     cmdline="$cmdline --builddir=\"\$fl_builddir\""
-    cmdline="$cmdline --ext=$fl_ext"
     cmdline="$cmdline --modules=\"\$fl_modules\""
     cmdline="$cmdline --common=\"\$fl_common\""
     for mod in $fl_modules appli; do
@@ -518,7 +517,6 @@ show_flavor_text() { # check
     echo "Current settings:"
     echo "flavor name: $fl_flavor"
     echo "builddir   : $fl_builddir"
-    echo "extension  : $fl_ext"
     echo "modules    : $fl_modules appli"
     [ ! -z "$fl_common" ] &&
 	echo "  Common options             : $fl_common"
@@ -575,7 +573,6 @@ show_flavor_dialog() { # check init_text last_text yesno
     text="${2}Current settings for flavor '$fl_flavor'\n"
     text="${text}\n"\
     text="${text}builddir   : $fl_builddir\n"\
-    text="${text}extension  : $fl_ext\n"\
     text="${text}modules    : $fl_modules appli\n"
     [ ! -z "$fl_common" ] &&
 	text="$text  Common options             : $fl_common\n"
@@ -612,7 +609,6 @@ do_edite_text() {
 	echo "  Use _ to select an empty value"
 	echo
 	get_value 0 fl_builddir "Directory for compiling"
-	get_value 0 fl_ext "Extension added to libraries and binaries"
 	get_modules
 	get_options all "Options for all modules and applications" "" "" option
 	get_options remove_all "Options to remove from all modules and applications" "" "" option
@@ -635,7 +631,6 @@ do_edite_dialog() {
     while [ "$fin" != true ]; do
 	show_flavor "" "Editing flavor...\n\n"
 	get_value 0 fl_builddir "Directory for compiling"
-	get_value 0 fl_ext "Extension added to libraries and binaries"
 	get_modules
 	get_options all "Options for all modules and applications" "" "" option
 	get_options remove_all "Options to remove from all modules and applications" "" "" option

@@ -30,7 +30,6 @@ done
 # Creation de la flavor
 create_test_flavor() {
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
 	--modules=\"init mad3 ntbx tbx\" \
 	--init=\"debug gdb\" \
 	--mad3=\"debug gdb ${net}\" \

@@ -1,7 +1,6 @@
 ravel% pm2-flavor get --flavor=pm2
  --flavor=pm2
  --builddir=$flavor
- --ext=
  --modules=pm2 --modules=marcel --modules=mad3 --modules=tbx
        --modules=ntbx --modules=init
  --pm2=opt --pm2=build_static

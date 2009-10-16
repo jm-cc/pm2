@@ -46,7 +46,6 @@ fi
 create_test_flavor() {
 # Creation de la flavor
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--ext=\"\" \
 	--modules=\"$modules tbx init memory\" \
 	--init=\"topology\" \
         --memory=\"enable_mami $options\" \

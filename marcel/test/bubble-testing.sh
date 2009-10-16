@@ -35,7 +35,6 @@ EOF
 # Creation de la flavor
 create_test_flavor() {
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
-	--ext=""						\
 	--modules="\"marcel tbx init\""                         \
         --init="topology" --marcel="numa" --marcel="bubbles"    \
 	--marcel="spinlock" --marcel="marcel_main"		\

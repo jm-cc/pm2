@@ -60,7 +60,6 @@ initialize_bench()
 
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-         --ext=\"\" \
 	 --init=\"topology\" \
          --modules=\"puk init nmad ntbx tbx pioman marcel\" \
          --marcel=\"smp marcel_main\" \

@@ -29,7 +29,6 @@ initialize_bench()
         marcel_options=""
     fi
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-        --ext=\"\" \
         --modules=\"init marcel ntbx tbx\" $init_options \
         --marcel=\"marcel_main $marcel $marcel_options\" \
         --all=\"opt build_static static\"

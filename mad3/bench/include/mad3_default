@@ -1,4 +1,4 @@
-
+#-*-sh-*-
 # PM2: Parallel Multithreaded Machine
 # Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
 #
@@ -47,7 +47,6 @@ initialize_bench()
 
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-         --ext=\"\" \
          --modules=\"init mad3 ntbx tbx\" \
          --init=\"opt\" \
          --mad3=\"opt ${dev}\" \

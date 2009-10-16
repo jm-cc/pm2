@@ -1,8 +1,31 @@
-#! /bin/bash
+#! @BASH@
+###########
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+
+# Get some variables
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
+
+PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+
 
 if [ -z "$3" ] ; then
     echo "Error. Syntax: $0 <machine1> <machine2> <network1> ... <networkn>"
-    exit
+    exit 1
 fi
 
 machine1=$1 #echo "machine1 = $machine1"
@@ -11,7 +34,7 @@ machine2=$2 #echo "machine2 = $machine2"
 shift
 shift
 
-if [ x${LEO_RSH} = x ]; then
+if [ "x${LEO_RSH}" = "x" ]; then
   SSH=ssh
 else
   SSH="${LEO_RSH}"
@@ -33,12 +56,12 @@ for network in $*; do
         --nmad="$network sched_opt strat_default mad3_emu tag_as_flat_array" --puk=disable_output
 
     #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
-    $SSH $machine1 arch > architecture
-    if [ ! -s architecture ] ; then
-	$SSH $machine1 uname -m > architecture
+    $SSH $machine1 arch > /tmp/architecture.$$
+    if [ ! -s /tmp/architecture.$$ ] ; then
+	$SSH $machine1 uname -m > /tmp/architecture.$$
     fi
-    arch=`cat architecture` #echo "Arch = $arch"
-    rm -f architecture
+    arch=`cat /tmp/architecture.$$` #echo "Arch = $arch"
+    rm -f /tmp/architecture.$$
 
     #compilation du test d'échantillonage avec une flavor prédéfinie
     prog=$(pm2-which -f $flavor sampling-prog 2>/dev/null)
@@ -67,7 +90,7 @@ networks : ({
 EOF
 
     # lancement de l'échantillonnage
-    sampling_file="${PM2_OBJROOT}/nmad/sampling/${network}_${arch}.nm_ns"
+    sampling_file="${PM2_CONF_DIR}/nmad/sampling/${network}_${arch}.nm_ns"
     echo "# starting sampling for network ${network}"
     pm2-conf --flavor $flavor $machine1 $machine2
     pm2-load --network $network_file --flavor $flavor sampling-prog ${sampling_file}

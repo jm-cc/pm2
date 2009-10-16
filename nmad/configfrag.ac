@@ -16,6 +16,7 @@ dnl General Public License for more details.
 m4_define([nmad_bin_scripts], [			\
 	bin/nmad-strategy-conf			\
 	bin/nmad-driver-conf			\
+	bin/nmad-sample				\
 	nmad/examples/piom/GNUmakefile		\
 	nmad/examples/getting_started/GNUmakefile \
 	nmad/examples/mpi/optimized/GNUmakefile	\

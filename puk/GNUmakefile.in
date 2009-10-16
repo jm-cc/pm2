@@ -21,7 +21,7 @@ include $(PM2_OBJROOT)/make/common-vars.mak
 pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 PUK_ROOT       := $(pm2_build_dir)/puk
 PUK_SRCDIR     := @abs_srcdir@
-PUK_BUILDDIR   := $(PUK_ROOT)/puk
+PUK_BUILDDIR   := $(PUK_ROOT)/build
 PUK_INSTALLDIR := $(PUK_ROOT)
 
 PADICO_ROOT    := $(PUK_ROOT)

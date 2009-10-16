@@ -16,30 +16,37 @@ m4_define([pm2_bin_scripts], [			\
   bin/ezflavor					\
   bin/fut-print.pl				\
   bin/leoar					\
+  bin/leo-load					\
   bin/leo-network				\
   bin/leo-network.pl				\
-  bin/leo-load					\
+  bin/marcel-install				\
+  bin/nmad-fut2nam.pl				\
+  bin/nmad-fut2txt.pl				\
+  bin/nmad-install				\
+  bin/nmad-trace.py				\
   bin/pm2-all					\
   bin/pm2-bench					\
   bin/pm2-build-fut-table			\
   bin/pm2-clean					\
-  bin/pm2-conf-file				\
-  bin/pm2-config-flavor				\
-  bin/pm2-config				\
-  bin/pm2-config-tools.sh			\
   bin/pm2-conf					\
+  bin/pm2-conf-file				\
+  bin/pm2-config				\
+  bin/pm2-config-flavor				\
+  bin/pm2-config-tools.sh			\
   bin/pm2-create-sample-flavors			\
-  bin/pm2-flavor-file				\
   bin/pm2-flavor				\
   bin/pm2-flavor-diff				\
+  bin/pm2-flavor-file				\
   bin/pm2-gdb-load				\
   bin/pm2-gen-make.sh				\
+  bin/pm2-indent-log.pl				\
   bin/pm2-install.pl				\
   bin/pm2-load					\
   bin/pm2-log2paje				\
   bin/pm2-logload				\
   bin/pm2-logs					\
   bin/pm2-module				\
+  bin/pm2-pfmon-analyze				\
   bin/pm2-pre-script.sh				\
   bin/pm2-prof					\
   bin/pm2-split-h-file				\
@@ -71,10 +78,6 @@ done
 
 dnl Copy modules links
 test -d modules || cp -a $srcdir/modules .
-
-if test "x$ac_abs_top_srcdir" != "x$ac_abs_top_builddir"; then
-   AC_MSG_ERROR([Build directory ($ac_abs_top_builddir) differs from source directory ($ac_abs_top_srcdir), which is not supported.])
-fi
 
 AC_PATH_PROG([BASH], [bash], [not-found])
 

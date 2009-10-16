@@ -63,14 +63,13 @@ dot_h: $(PADICO_ROOT)/lib/libPadicoPuk.a
 clean:
 	-rm -r $(PUK_ROOT)/puk
 
-flavormaks:
+flavormaks: $(PADICO_ROOT)/etc/padico-setup.sh
 
-# ## configure
+
+# ## packaging and directories
 # ##
 
-PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
-
-$(PUK_BUILDDIR)/config.status: $(PUK_CONFIG_FILES)
+$(PADICO_ROOT)/etc/padico-setup.sh: $(PUK_CONFIG_FILES)
 	@echo "    installing Padico packaging tools in PADICO_ROOT=$(PADICO_ROOT)"
 	@echo
 	@$(PUK_SRCDIR)/externals/packaging-tools/padico-init \
@@ -82,6 +81,13 @@ $(PUK_BUILDDIR)/config.status: $(PUK_CONFIG_FILES)
           padico_dialog=whiptail
 	-@mkdir $(PUK_BUILDDIR)
 	-@mkdir $(pm2_build_dir)/lib/
+
+# ## configure
+# ##
+
+PM2_PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
+
+$(PUK_BUILDDIR)/config.status: $(PADICO_ROOT)/etc/padico-setup.sh
 	-@echo "   configuring Puk"
 	( cd $(PUK_BUILDDIR) ; \
            $(PUK_SRCDIR)/externals/configure LIBS= LDFLAGS= CFLAGS= --prefix=$(PUK_INSTALLDIR) $(PM2_PUK_CONFIGURE_EXTRA_FLAGS) )

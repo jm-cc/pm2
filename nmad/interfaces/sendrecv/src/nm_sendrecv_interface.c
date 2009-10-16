@@ -215,7 +215,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 {
   NM_SO_SR_LOG_IN();
   nmad_lock();
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data, len, p_request);
+  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
@@ -257,7 +257,7 @@ int nm_sr_issend_generic(struct nm_core *p_core,
 {
   NM_SO_SR_LOG_IN();
   nmad_lock();
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data, len, p_request);
+  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
@@ -390,7 +390,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   int ret;
 
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", tag, data_description, len, p_request);
+  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data_description, len, p_request);
 
   nmad_lock();
   nm_sr_flush(p_core);
@@ -604,7 +604,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , event->tag, event->seq);
+  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , (int)event->tag, event->seq);
   const nm_so_status_t status = p_pack->status;
   if( (status & NM_SO_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_SO_STATUS_ACK_RECEIVED)) )

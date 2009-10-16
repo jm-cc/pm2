@@ -47,7 +47,7 @@ static void nm_so_build_multi_rtr(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t
 {
   int i;
 
-  NM_SO_TRACE("Building of a multi-ack with %d chunks on tag %d and seq %d\n", nb_chunks, tag, seq);
+  NM_SO_TRACE("Building of a multi-ack with %d chunks on tag %d and seq %d\n", nb_chunks, (int)tag, seq);
 
   for(i = 0; i < nb_chunks; i++)
     {

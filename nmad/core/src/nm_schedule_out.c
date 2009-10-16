@@ -68,7 +68,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
       p_pack->done += p_contrib->len;
       if(p_pack->done == p_pack->len)
 	{
-	  NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", p_pack->tag, p_pack->seq, p_pack->len);
+	  NM_SO_TRACE("all chunks sent for msg tag=%u seq=%u len=%u!\n", (int)p_pack->tag, p_pack->seq, p_pack->len);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_SO_STATUS_PACK_COMPLETED,
@@ -79,7 +79,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
       else if(p_pack->done > p_pack->len)
 	{ 
 	  TBX_FAILUREF("more bytes sent than posted on tag %d (should have been = %d; actually sent = %d)\n",
-		       p_pack->tag, p_pack->len, p_pack->done);
+		       (int)p_pack->tag, p_pack->len, p_pack->done);
 	}
     }
 

@@ -63,7 +63,7 @@ PUK_VECT_TYPE(nm_so_monitor, const struct nm_so_monitor_s*);
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
 {
-  const void*header;
+  void*header;
   struct nm_pkt_wrap*p_pw;
   nm_gate_t p_gate;
   nm_seq_t seq;

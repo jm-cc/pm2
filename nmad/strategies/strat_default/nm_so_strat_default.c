@@ -141,8 +141,6 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_pkt_wrap *p_pw;
   struct nm_so_strat_default*status = _status;
-  const nm_tag_t tag = p_pack->tag;
-  const nm_seq_t seq = p_pack->seq;
   const int len = p_pack->len;
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)

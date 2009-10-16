@@ -175,7 +175,7 @@ static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, 
 }
 
 /** mark 'chunk_len' data as received in the given unpack, and check for unpack completion */
-static inline nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_unpack_s*p_unpack, int chunk_len)
+static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_unpack_s*p_unpack, int chunk_len)
 {
   p_unpack->cumulated_len += chunk_len;
   if(p_unpack->cumulated_len >= p_unpack->expected_len)
@@ -395,7 +395,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate      = p_rtr_pw->p_gate;
 
-  NM_SO_TRACE("rtr completed for tag = %d, seq = %u, offset = %u\n", tag, seq, chunk_offset);
+  NM_SO_TRACE("rtr completed for tag = %d, seq = %u, offset = %u\n", (int)tag, seq, chunk_offset);
 
   struct nm_pkt_wrap *p_large_pw = NULL;
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)

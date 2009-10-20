@@ -30,7 +30,6 @@ create_test_flavor() {
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"puk nmad tbx ntbx init $modules\" \
 	--nmad=\"${net} sched_opt strat_custom ${mpi} mad3_emu $tag\" \
-	--puk=\"disable_output\" \
 	$options \
 	--common=\"fortran_target_none\" \
 	--all=\"debug gdb build_static\"

@@ -220,32 +220,27 @@ registering_flavors() {
 
     register_flavor nmad \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
 	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --marcel=mono --marcel=standard_main \
 	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-mpi \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-debug \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $DEBUG_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --marcel=smp --marcel=standard_main \
@@ -254,20 +249,17 @@ registering_flavors() {
 
     register_flavor nmad-distrib \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_default --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --common=fortran_target_none
 
     register_flavor nmad-mpi-qos \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_hashtable --nmad=strat_qos --nmad=mpi_emu --nmad=mad3_emu --nmad=tcp \
         --nmad=quality_of_service \
         --common=fortran_target_none
 
     register_flavor nmad-open-mx \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--puk=disable_output \
         --nmad=tag_as_flat_array --nmad=strat_custom --nmad=mx --nmad=mx_dir:/opt/open-mx
 
     register_flavor ezflavor \
@@ -292,7 +284,7 @@ registering_flavors() {
 	--marcel=enable_stats \
 	--marcel=standard_main \
         --init=topology \
-	--puk=enable_pukabi --puk=disable_output \
+	--puk=enable_pukabi \
 	--puk=disable_fd_virtualization
 
     register_flavor tbx \

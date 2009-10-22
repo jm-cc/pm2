@@ -22,5 +22,4 @@ for cnode in $(echo $nodes) ; do
             echo "[$cnode:$mnode] Data has succesfully been migrated"
         fi
     done
-done > /tmp/pm2test_"${USER}"_expected <<EOF
-
+done > /tmp/pm2test_"${USER}"_expected

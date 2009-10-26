@@ -500,10 +500,6 @@ common_exit(common_attr_t *attr)
       attr = &default_static_attr;
     }
 
-#ifdef PM2_TOPOLOGY
-  topo_topology_destroy(topology);
-#endif /* PM2_TOPOLOGY */
-
 #ifdef PM2
   pm2_net_request_end();
   pm2_net_wait_end();
@@ -609,6 +605,10 @@ common_exit(common_attr_t *attr)
    */
   profile_exit();
 #endif /* PROFILE */
+
+#ifdef PM2_TOPOLOGY
+  topo_topology_destroy(topology);
+#endif /* PM2_TOPOLOGY */
 
   LOG_OUT();
 }

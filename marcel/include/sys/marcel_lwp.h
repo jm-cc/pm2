@@ -329,13 +329,8 @@ void marcel_leave_blocking_section(void);
 #  define ma_for_all_lwp_from_end() \
 	}
 #endif
-#ifdef MARCEL_BLOCKING_ENABLED
-#  define ma_spare_lwp_ext(lwp)			(ma_vpnum(lwp)==-1)
-#  define ma_spare_lwp()			(ma_spare_lwp_ext(MA_LWP_SELF))
-#else
-#  define ma_spare_lwp_ext(lwp)			(0)
-#  define ma_spare_lwp()			(0)
-#endif
+#define ma_spare_lwp_ext(lwp)			(ma_vpnum(lwp)==-1)
+#define ma_spare_lwp()				(ma_spare_lwp_ext(MA_LWP_SELF))
 #define ma_for_each_lwp_begin(lwp) \
 	ma_for_all_lwp(lwp) {\
 		if (ma_lwp_online(lwp)) {

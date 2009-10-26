@@ -147,11 +147,17 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
 	MA_BUG_ON(!ma_in_atomic());
 	if (cur != next) {
+		if (cur->f_pre_switch) {
+			cur->f_pre_switch(cur->arg);
+		}
 		if(MA_THR_SETJMP(cur) == NORMAL_RETURN) {
 			MA_THR_DESTROYJMP(cur);
 			MA_THR_RESTARTED(cur, "Switch_to");
 			MA_BUG_ON(!ma_in_atomic());
 			ma_update_lwp_blocked_signals();
+			if (cur->f_post_switch) {
+				cur->f_post_switch(cur->arg);
+			}
 			return __ma_get_lwp_var(previous_thread);
 		}
 		debug_printf(&MA_DEBUG_VAR_NAME(default),

@@ -121,6 +121,12 @@ struct __marcel_attr_s {
 	/** \brief Flag indicating whether the thread to create should actually be a seed (set) or a plain thread (unset).
 	 * TODO: merge with other set of flags? */
 	int seed;
+
+	/** \brief Hook for a callback function called before the running thread is scheduled out, arg is the thread arg. */
+	void (*f_pre_switch)(void *arg);
+
+	/** \brief Hook for a callback function called before the sleeping thread is scheduled again or when a newly created thread is about to start, arg is the thread arg. */
+	void (*f_post_switch)(void *arg);
 };
 
 #section macros
@@ -181,6 +187,8 @@ struct __marcel_attr_s {
   .id = -1, \
   .sched= MARCEL_SCHED_ATTR_INITIALIZER, \
   .seed = 0, \
+  .f_pre_switch = NULL, \
+  .f_post_switch = NULL, \
 }
 
 /* #define MARCEL_SCHED_ATTR_DESTROYER { \ */
@@ -229,6 +237,8 @@ struct __marcel_attr_s {
   .name= "invalid", \
   .id = -2, \
   .seed = -1, \
+  .f_pre_switch = NULL, \
+  .f_post_switch = NULL, \
 }
 
 /* realtime */
@@ -311,6 +321,9 @@ int marcel_attr_getflags(__const marcel_attr_t * __restrict attr,
 int marcel_attr_setseed(marcel_attr_t *attr, int seed);
 int marcel_attr_getseed(__const marcel_attr_t * __restrict attr,
 			 int * __restrict seed);
+
+int marcel_attr_setfpreswitch(marcel_attr_t *attr, void (f_pre_switch)(void *arg));
+int marcel_attr_setfpostswitch(marcel_attr_t *attr, void (f_post_switch)(void *arg));
 
 DEC_POSIX(int, attr_setguardsize, (marcel_attr_t *attr, size_t guardsize) __THROW);
 DEC_POSIX(int, attr_getguardsize, (__const marcel_attr_t *attr, size_t *guardsize) __THROW);

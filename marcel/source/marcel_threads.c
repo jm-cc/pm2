@@ -83,6 +83,17 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	//t->f_to_call
 	//t->arg
 
+	if (attr->f_pre_switch) {
+		t->f_pre_switch = attr->f_pre_switch;
+	} else {
+		t->f_pre_switch = NULL;
+	}
+	if (attr->f_post_switch) {
+		t->f_post_switch = attr->f_post_switch;
+	} else {
+		t->f_post_switch = NULL;
+	}
+
 	t->cur_thread_seed = NULL;
 
 	t->detached = !!(attr->__flags & MA_ATTR_FLAG_DETACHSTATE);
@@ -1567,6 +1578,15 @@ DEF_POSIX(int,getcpuclockid,(pmarcel_t thread_id TBX_UNUSED, clockid_t *clock_id
 
 DEF_PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));
 DEF___PTHREAD(int,getcpuclockid,(pthread_t thread_id, clockid_t *clock_id),(thread_id,clock_id));
+#endif
+
+#ifdef PROFILE
+/** Write a HW counter sampling value associated to a given thread. */
+void ma_thread_record_hw_sample(marcel_t t, unsigned long hw_id, unsigned long long hw_val) {
+  PROF_EVENT4(fut_thread_hw_sample, MA_PROFILE_TID(t), hw_id,
+		  (unsigned long)(((unsigned long long)hw_val) & 0xffffffff),
+		  (unsigned long)((((unsigned long long)hw_val) >> 32) & 0xffffffff));
+}
 #endif
 
 /* TODO : several functions may fail if: [ESRCH]

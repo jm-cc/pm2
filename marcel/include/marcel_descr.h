@@ -150,6 +150,9 @@ struct marcel_task {
 	/** \brief User arg to pass the the user function marcel_task::f_to_call. */
 	any_t arg;
 
+	void (*f_pre_switch)(void *arg);
+	void (*f_post_switch)(void *arg);
+
 	//marcel_attr_t *shared_attr;
 	
 	/** \brief Pointer to the seed that a seed runner thread is currently running. */

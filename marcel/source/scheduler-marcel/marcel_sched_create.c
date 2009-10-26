@@ -99,6 +99,9 @@ void marcel_sched_internal_create_dontstart_son (void) {
 	}
 	MA_THR_DESTROYJMP(marcel_self());
 	MA_THR_RESTARTED(MARCEL_SELF, "Start");
+	if (SELF_GETMEM(f_post_switch)) {
+		(*SELF_GETMEM(f_post_switch))(SELF_GETMEM(arg));
+	}
 	/* Drop preempt_count with ma_spin_unlock_softirq */
 	ma_schedule_tail(__ma_get_lwp_var(previous_thread));
 
@@ -190,6 +193,10 @@ void marcel_sched_internal_create_start_son(void) {
 	/* pas de ma_preempt_enable ici : le preempt a déjà été mangé dans ma_schedule_tail */
 	//ma_preempt_enable();
 	LOG_OUT();
+
+	if (SELF_GETMEM(f_post_switch)) {
+		(*SELF_GETMEM(f_post_switch))(SELF_GETMEM(arg));
+	}
 	marcel_exit((*SELF_GETMEM(f_to_call))(SELF_GETMEM(arg)));
 }
 

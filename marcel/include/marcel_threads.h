@@ -575,6 +575,10 @@ extern void _marcel_cleanup_pop_restore (struct _marcel_cleanup_buffer *__buffer
 /* 			 void (*__init_routine) (void)) __THROW; */
 #endif /* MARCEL_ONCE_ENABLED */
 
+#ifdef PROFILE
+extern void ma_thread_record_hw_sample(marcel_t t, unsigned long hw_id, unsigned long long hw_val);
+#endif
+
 #section macros
 #depend "marcel_descr.h[types]"
 #ifdef STANDARD_MAIN

@@ -492,6 +492,18 @@ int marcel_attr_getseed(__const marcel_attr_t * __restrict attr,
 	*seed = attr->seed;
 	return 0;
 }
+
+int marcel_attr_setfpreswitch(marcel_attr_t *attr, void (*f_pre_switch)(void *arg))
+{
+	attr->f_pre_switch = f_pre_switch;
+	return 0;
+}
+
+int marcel_attr_setfpostswitch(marcel_attr_t *attr, void (*f_post_switch)(void *arg))
+{
+	attr->f_post_switch = f_post_switch;
+	return 0;
+}
 /****************************destroy******************************/
 #undef marcel_attr_destroy
 DEF_MARCEL_POSIX(int,attr_destroy,(marcel_attr_t * attr),(attr),

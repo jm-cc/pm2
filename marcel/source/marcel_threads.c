@@ -83,16 +83,8 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	//t->f_to_call
 	//t->arg
 
-	if (attr->f_pre_switch) {
-		t->f_pre_switch = attr->f_pre_switch;
-	} else {
-		t->f_pre_switch = NULL;
-	}
-	if (attr->f_post_switch) {
-		t->f_post_switch = attr->f_post_switch;
-	} else {
-		t->f_post_switch = NULL;
-	}
+	t->f_pre_switch = attr->f_pre_switch;
+	t->f_post_switch = attr->f_post_switch;
 
 	t->cur_thread_seed = NULL;
 

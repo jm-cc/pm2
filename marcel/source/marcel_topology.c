@@ -668,6 +668,11 @@ static void topo_discover(void) {
 
 	mdebug_topology("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
+	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_VPS) {
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_VPS);
+		exit(1);
+	}
+
 	distribute_vps();
 
 	/* TODO: Brice will probably want the OS->VP function */

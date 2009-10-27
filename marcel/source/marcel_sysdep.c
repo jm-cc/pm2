@@ -102,7 +102,8 @@ void ma_migrate_mem(void *ptr, size_t size, int node) {
 	size += ((uintptr_t)ptr) - addr;
 	if (node < 0 || ma_numa_not_available)
 		return;
-	if (_mm_mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
+	// Don't even try MF_MOVE_ALL, that's root-only and probably won't change.
+	//if (_mm_mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE_ALL) == -1 && errno == EPERM)
                 _mm_mbind((void*)addr, size, MPOL_BIND, &mask, sizeof(mask)*CHAR_BIT, MPOL_MF_MOVE);
 #endif
 }

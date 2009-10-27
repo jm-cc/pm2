@@ -59,6 +59,7 @@
 #  define marcel_apply_vpset(set) (void)0
 #endif
 #  define marcel_vpset_t            unsigned long
+#  define MARCEL_VPSET_VP(num)      (1<<(num))
 
 #  define TRUE 1
 #  define FALSE 0
@@ -229,6 +230,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_apply_vpset(set) (void)0
 #endif
 #  define marcel_vpset_t            unsigned long
+#  define MARCEL_VPSET_VP(num)      (1<<(num))
 
 #elif defined(REGULAR_UNIX)
 
@@ -289,6 +291,7 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_apply_vpset(set) (void)0
 #endif
 #  define marcel_vpset_t            unsigned long
+#  define MARCEL_VPSET_VP(num)      (1<<(num))
 
 #elif defined(MARCEL)
 

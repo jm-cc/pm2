@@ -19,7 +19,7 @@ void * run(void * arg) {
 	int essais = 3;
 	tick_t t1, t2, t3, t4, t5;
 	int num = (int) arg;
-	marcel_vpset_t set = 1<<num;
+	marcel_vpset_t set = MARCEL_VPSET_VP(num);
 
 	if(nb == 0)
 		return NULL;

@@ -51,7 +51,7 @@ void bench_apply_vpset(unsigned nb)
 
   GET_TICK(t1);
   while(--i) {
-    marcel_vpset_t vpset = 1<<vp;
+    marcel_vpset_t vpset = MARCEL_VPSET_VP(vp);
     marcel_apply_vpset(&vpset);
     vp = 1-vp;
   }

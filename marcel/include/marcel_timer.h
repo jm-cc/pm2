@@ -35,7 +35,7 @@ unsigned long marcel_gettimeslice(void);
 unsigned long marcel_clock(void);
 
 #ifndef MA__TIMER
-#define marcel_gettimeslice() 10000L
+#define marcel_gettimeslice() MARCEL_MIN_TIMESLICE
 #endif
 
 #section functions

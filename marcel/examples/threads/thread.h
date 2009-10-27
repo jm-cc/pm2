@@ -54,9 +54,11 @@
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), set); } while(0)
+#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), (void*) set); } while(0)
+#  define marcel_attr_setvpset(attr,set) do { pthread_attr_setaffinity_np(attr, sizeof(set), &set); } while(0)
 #else
 #  define marcel_apply_vpset(set) (void)0
+#  define marcel_attr_setvpset(attr,set) 0
 #endif
 #  define marcel_vpset_t            unsigned long
 #  define MARCEL_VPSET_VP(num)      (1<<(num))
@@ -225,9 +227,11 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), set); } while(0)
+#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), (void*) set); } while(0)
+#  define marcel_attr_setvpset(attr,set) 0
 #else
 #  define marcel_apply_vpset(set) (void)0
+#  define marcel_attr_setvpset(attr,set) 0
 #endif
 #  define marcel_vpset_t            unsigned long
 #  define MARCEL_VPSET_VP(num)      (1<<(num))
@@ -286,9 +290,11 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), set); } while(0)
+#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), (void*) set); } while(0)
+#  define marcel_attr_setvpset(attr,set) 0
 #else
 #  define marcel_apply_vpset(set) (void)0
+#  define marcel_attr_setvpset(attr,set) 0
 #endif
 #  define marcel_vpset_t            unsigned long
 #  define MARCEL_VPSET_VP(num)      (1<<(num))

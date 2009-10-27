@@ -20,11 +20,14 @@ void * run(void * arg) {
 	tick_t t1, t2, t3, t4, t5;
 	int num = (int) arg;
 	marcel_vpset_t set = MARCEL_VPSET_VP(num);
+	marcel_attr_t attr;
 
 	if(nb == 0)
 		return NULL;
 
 	marcel_apply_vpset(&set);
+	marcel_attr_init(&attr);
+	marcel_attr_setvpset(&attr, set);
 
 	while(essais--) {
 		

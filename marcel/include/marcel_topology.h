@@ -700,6 +700,9 @@ struct marcel_topo_level {
 
 	/* allocated by ma_per_level_alloc() */
 	char data[MA_PER_LEVEL_ROOM];
+
+	/* Padding to make sure to skip to next page */
+	char pad[4096];
 };
 
 #define ma_topo_set_empty_os_numbers(l) do { \

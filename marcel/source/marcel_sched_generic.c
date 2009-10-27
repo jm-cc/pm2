@@ -462,7 +462,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 
 		/* schedule threads */
 		//PROF_EVENT(idle_tests_need_resched);
-		if (ma_get_need_resched()) {
+		while (ma_get_need_resched()) {
 			PROF_EVENT(idle_does_schedule);
 			if (ma_schedule())
 				continue;

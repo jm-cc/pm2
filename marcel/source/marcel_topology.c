@@ -565,7 +565,6 @@ static void topo_discover(void) {
 	  topo_obj_type_t ltype = topo_get_depth_type(topology, l);
 
 	  mdebug_topology("converting %d items from libtopology level depth %d (type %d)\n", nbitems, l, ltype);
-	  MA_ALWAYS_BUG_ON(MARCEL_NBMAXCPUS < nbitems); /* FIXME? */
 
 	  if (ltype == TOPO_OBJ_SYSTEM) {
 	    mlevels = marcel_machine_level;

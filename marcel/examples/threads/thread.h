@@ -284,9 +284,9 @@ int clone(int (*fn)(void *), void *child_stack, int flags, void *arg);
 #  define marcel_fflush              fflush
 
 #ifdef __linux__
-#  define marcel_change_vpset(set) do { sched_setaffinity(0, sizeof(*set), set); } while(0)
+#  define marcel_apply_vpset(set) do { sched_setaffinity(0, sizeof(*set), set); } while(0)
 #else
-#  define marcel_change_vpset(set) (void)0
+#  define marcel_apply_vpset(set) (void)0
 #endif
 #  define marcel_vpset_t            unsigned long
 

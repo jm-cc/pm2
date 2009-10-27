@@ -37,7 +37,7 @@ void * run(void * arg) {
 		while(my_nb--) {
 			
 			GET_TICK(t1);
-			marcel_create(&pid, NULL, f, &t3);
+			marcel_create(&pid, &attr, f, &t3);
 			marcel_join(pid, NULL);
 			GET_TICK(t2);
 				

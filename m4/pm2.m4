@@ -56,3 +56,7 @@ AC_DEFUN([PM2_SYS_ARCH], [dnl
   AC_DEFINE_UNQUOTED([$PM2_SYS],  1, [PM2 operating system type])
   AC_DEFINE_UNQUOTED([$PM2_ARCH], 1, [PM2 hardware architecture type])
 ])
+
+m4_ifdef([AC_COMPUTE_INT], [], [
+AC_DEFUN([AC_COMPUTE_INT], [_AC_COMPUTE_INT([$2],[$1],[$3],[$4])])
+])

@@ -22,8 +22,8 @@ typedef union u_tick
 
 	struct
 	{
-		unsigned long low;
-		unsigned long high;
+		unsigned low;
+		unsigned high;
 	} sub;
 	
 	struct timeval timev;
@@ -100,7 +100,7 @@ void timing_init(void)
 	GET_TICK(last_event);
 }
 
-double tick2usec(long long t)
+double tick2usec(unsigned long long t)
 {
 	return (double)(t)*scale;
 }

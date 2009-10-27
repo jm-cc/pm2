@@ -999,17 +999,33 @@ static void topo_discover(void) {
 	marcel_vpset_zero(&marcel_topo_vp_level[i].cpuset);
 	marcel_vpset_zero(&marcel_topo_vp_level[i].vpset);
 
+	/* Initialize per-VP data */
 	for (level = &marcel_topo_vp_level[0]; level < &marcel_topo_vp_level[marcel_nbvps() + MARCEL_NBMAXVPSUP]; level++)
 		level->vpdata = (struct marcel_topo_vpdata) MARCEL_TOPO_VPDATA_INITIALIZER(&level->vpdata);
 #  ifdef MA__NUMA
+	/* Initialize per-node data */
 	if (marcel_topo_node_level)
 		for (level = &marcel_topo_node_level[0]; !marcel_vpset_iszero(&level->vpset); level++)
 			level->nodedata = (struct marcel_topo_nodedata) MARCEL_TOPO_NODEDATA_INITIALIZER(&level->nodedata);
 #  endif
 
+	/* Initialize level value */
 	for (l=0; l<marcel_topo_nblevels; l++)
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++)
 			marcel_topo_levels[l][i].level = l;
+
+#  ifdef MA__NUMA
+	if (marcel_topo_node_level)
+		/* Migrate data to respective memory nodes */
+		for (l=0; l<marcel_topo_nblevels; l++)
+			for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].vpset); i++) {
+				for (level = &marcel_topo_levels[l][i]; level && level->type != MARCEL_LEVEL_NODE; level = level->father)
+					;
+				if (level)
+					/* That's not a level above NUMA nodes */
+					ma_migrate_mem(&marcel_topo_levels[l][i], sizeof(marcel_topo_levels[l][i]) - sizeof(marcel_topo_levels[l][i].pad), level->os_node);
+			}
+#  endif
 
 #  ifdef MA__NUMA
         if (marcel_topo_node_level) {

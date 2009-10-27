@@ -345,6 +345,10 @@ static void marcel_top_tick(unsigned long foo TBX_UNUSED) {
 int marcel_init_top(const char *outfile) {
 	int fl;
 
+	ma_init_timer(&timer);
+	timer.expires = ma_jiffies + JIFFIES_FROM_US(1000000);
+	timer.function = marcel_top_tick;
+
 #ifndef MA__TIMER
 	fprintf(stderr,"Timer is disabled in the flavor, hence marcel_top can't work\n");
 	return 0;
@@ -371,6 +375,10 @@ int marcel_init_top(const char *outfile) {
 			}
 			exit(0);
 		}
+		if (top_pid == -1) {
+			perror("fork");
+			return -1;
+		}
 		close(fds[1]);
 		// TODO récupérer le pid et le tuer proprement (il se termine dès qu'on tape dedans...)
 	} else 
@@ -383,9 +391,6 @@ int marcel_init_top(const char *outfile) {
 	fl = fcntl(top_file, F_GETFL);
 	fcntl(top_file, F_SETFL, fl | O_NONBLOCK);
 
-	ma_init_timer(&timer);
-	timer.expires = ma_jiffies + JIFFIES_FROM_US(1000000);
-	timer.function = marcel_top_tick;
 	ma_add_timer(&timer);
 	return 0;
 }

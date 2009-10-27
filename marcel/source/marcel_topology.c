@@ -981,7 +981,7 @@ static void topo_discover(void) {
 		for (level = marcel_topo_node_level; !marcel_vpset_iszero(&level->cpuset); level++)
 			for(j=0; j<marcel_nbvps(); j++)
 				if (marcel_vpset_isset(&level->vpset, j))
-					ma_vp_node[j] = level->number;
+					ma_vp_node[j] = level->os_node;
 #endif /* MA__NUMA */
 
 	/* Now add supplementary VPs on the last level. */

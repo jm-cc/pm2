@@ -54,7 +54,7 @@ static ma_sighandler_t TBX_UNUSED signal(int sig, ma_sighandler_t handler)
 
 ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
 
-/* Unité : microsecondes */
+/* Unit : microseconds */
 static volatile unsigned long time_slice = MARCEL_DEFAULT_TIME_SLICE;
 
 #ifdef MARCEL_SIGNALS_ENABLED
@@ -62,7 +62,7 @@ sigset_t ma_timer_sigmask;
 ma_spinlock_t ma_timer_sigmask_lock = MA_SPIN_LOCK_UNLOCKED;
 #endif
 
-// Fréquence des messages de debug dans timer_interrupt
+// Frequency of debug messages in timer_interrupt
 #ifndef TICK_RATE
 #define TICK_RATE 1
 #endif
@@ -77,7 +77,7 @@ unsigned long marcel_clock(void)
 	return __milliseconds;
 }
 
-// Softirq appellée par le timer
+// Softirq called by the timer
 static void timer_action(struct ma_softirq_action *a TBX_UNUSED)
 {
 #ifdef MA__DEBUG
@@ -155,20 +155,20 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
 #endif /* __MINGW32__ */
 
 /****************************************************************
- * Le signal TIMER
+ * The TIMER signal
  *
- * dans la norme posix, setitimer(ITIMER_REAL) envoie régulièrement un SIGALRM
- * au _processus_ (donc à un seul des threads), ce thread renvoie donc SIGALRM
- * aux autres threads.
+ * In the POSIX norm, setitimer(ITIMER_REAL) sends regularly SIGALRM to the
+ * _processus_, thus to only one of its threads, that thread thus has to
+ * forward SIGALRM to the other threads.
  *
- * par contre setitimer(ITIMER_VIRTUAL) est "par thread".
+ * setitimer(ITIMER_VIRTUAL) is however "per-thread".
  *
- * Il se trouve que linux <= 2.4 voire un peu plus, solaris <= je ne sais
- * pas,... ont un ITIMER_REAL "par thread" !
+ * It happens that linux <= 2.4 or maybe a bit more, solaris <= I don't know,
+ * ... have a "per-thread" ITIMER_REAL !!
  *
- * On préfèrerait donc ITIMER_VIRTUAL, où c'est le noyau qui s'occupe de
- * distribuer (bien, a priori). Seul problème, c'est qu'il n'expire que si on
- * consomme du cpu...
+ * We'd thus prefer ITIMER_VIRTUAL since in that case the kernel handles
+ * distributing signals, but one problem is that it expires only when we
+ * consume cpu...
  */
 #ifndef __MINGW32__
 
@@ -178,8 +178,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
 
 static sigset_t sigalrmset, sigeptset;
 
-// Fonction appelée à chaque fois que SIGALRM est délivré au LWP
-// courant
+// Function called each time SIGALRM is delivered to the current LWP.
 #ifdef SA_SIGINFO
 static void timer_interrupt(int sig, siginfo_t *info, void *uc TBX_UNUSED)
 #else
@@ -293,7 +292,7 @@ void marcel_sig_pause(void)
 
 void marcel_sig_nanosleep(void)
 {
-	/* TODO: si possible, utiliser plutôt un marcel_kthread_machin temporisé, pour éviter la mécanique de signal pour se faire interrompre */
+	/* TODO: if possible, rather use a temporised marcel_kthread_something, to avoid the signal machinery to get interrupted. */
 #if !defined(USE_VIRTUAL_TIMER)
 	struct timespec time = { .tv_sec = 0, .tv_nsec = 1 };
 #ifdef OSF_SYS
@@ -314,6 +313,9 @@ void marcel_sig_reset_timer(void)
 
 	LOG_IN();
 
+	/* TODO: for scalability, use timer_create(CLOCK_MONOTONIC,
+	 * SIGEV_THREAD_ID) and link -lrt on linux. Those are _not_ inherited
+	 * via fork() _and_ destroyed on exec() :D */
 #ifdef MA__TIMER
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
@@ -345,7 +347,7 @@ void marcel_settimeslice(unsigned long microsecs)
 }
 
 #ifdef MA__TIMER
-/* Retour en microsecondes */
+/* returns microseconds */
 unsigned long marcel_gettimeslice(void)
 {
 	LOG_IN();
@@ -412,7 +414,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 #endif
 	
 #ifdef MA__TIMER
-	/* obligé de le faire sur chaque lwp pour les noyaux linux <= 2.4 */
+	/* We have to do it for each LWP for <= 2.4 linux kernels */
 	sigaction(MARCEL_TIMER_SIGNAL, &sa, (struct sigaction *)NULL);
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
 	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
@@ -449,11 +451,11 @@ static void sig_stop_timer(ma_lwp_t lwp TBX_UNUSED)
 	marcel_sig_stop_itimer();
 #endif
 
-	/* à part avec linux <= 2.4, les traitants de signaux ne sont _pas_
-	 * par thread, il faut donc garder le traitant commun jusqu'au bout, en
-	 * désactivant simplement l'interruption.
+	/* Execpt with linux <= 2.4, signal handlers are _not_ per thread, we
+	 * thus have to keep the common handler up to the termination, and just
+	 * mask the signal.
 	 *
-	 * Et puis on en a besoin dans le cas DISTRIBUTE_SIGALRM. */
+	 * We need it in the DISTRIBUTE_SIGALRM case anyway. */
 	sigemptyset(&sa.sa_mask);
 	sa.sa_handler = SIG_IGN;
 	sa.sa_flags = 0;
@@ -475,9 +477,12 @@ void marcel_sig_exit(void)
 	return;
 }
 
-// TODO: sur un vrai système POSIX, les traitants de signaux sont par processus.
-// Il n'est donc pas utile de les redéfinir pour chaque LWP... Sauf pour linux
-// 2.4 (hem...)
+/* TODO:
+ * On a real POSIX system, signal handlers are per-processus, it is thus not
+ * useful to redefine them for each LWP.  Except on Linux 2.4 (herm...) */
+
+/* TODO:
+ * Detect old linux case dynamically instead */
 MA_DEFINE_LWP_NOTIFIER_ONOFF(sig_timer, "Signal timer",
 			     sig_start_timer, "Start signal timer",
 			     sig_stop_timer, "Stop signal timer");

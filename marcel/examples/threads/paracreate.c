@@ -40,9 +40,9 @@ void * run(void * arg) {
 				
 		}
 		GET_TICK(t5);
-		marcel_printf("last creation  time =  %fus\n", TIMING_DELAY(t1, t3));
-		marcel_printf("last execution time =  %fus\n", TIMING_DELAY(t1, t2));
-		marcel_printf("mean execution time =  %fus\n", TIMING_DELAY(t4, t5)/(float)nb);
+		marcel_printf("last %2d creation  time =  %fus\n", num, TIMING_DELAY(t1, t3));
+		marcel_printf("last %2d execution time =  %fus\n", num, TIMING_DELAY(t1, t2));
+		marcel_printf("mean %2d execution time =  %fus\n", num, TIMING_DELAY(t4, t5)/(float)nb);
 		marcel_fflush(stdout);
 	}
 	return NULL;

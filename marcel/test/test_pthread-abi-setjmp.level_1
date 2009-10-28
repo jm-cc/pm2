@@ -15,6 +15,9 @@
 [ "$PM2_SYS" != LINUX_SYS ] && pm2_skip_test
 
 . ./common.sh
+
+export PADICO_VERBOSE=yes
+
 flavor="test_marcel_pthread_abi"
 prog="setjmp"
 create_test_flavor

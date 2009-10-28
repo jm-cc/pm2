@@ -94,6 +94,8 @@ if test "x$PERL" = "xnot-found"; then
   AC_MSG_ERROR([Perl was not found.  Please install it first.])
 fi
 
+AC_USE_SYSTEM_EXTENSIONS
+
 ACX_GNU_MAKE
 ACX_GNU_C
 ACX_GNU_C_MAJOR_VERSION

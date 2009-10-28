@@ -17,6 +17,8 @@
 #ifndef MARCEL_FLAGS_EST_DEF
 #define MARCEL_FLAGS_EST_DEF
 
+#include <pm2_config.h>
+
 #ifdef PM2DEBUG
 #  define MA__DEBUG
 #endif
@@ -189,6 +191,10 @@
 #warning I hope you are debugging
 #endif
 #  undef MA__TIMER
+#endif
+
+#if defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && HAVE_DECL_SIGEV_THREAD_ID
+#define MA__USE_TIMER_CREATE
 #endif
 
 /* Actually we need to always record tids, as we need them to detect

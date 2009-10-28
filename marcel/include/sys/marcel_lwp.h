@@ -98,6 +98,10 @@ struct marcel_lwp {
 	/* Signal mask currently applied to the LWP.  */
 	marcel_sigset_t curmask;
 #endif
+
+#ifdef MA__USE_TIMER_CREATE
+	timer_t timer;
+#endif
 };
 
 #ifdef MA__LWPS

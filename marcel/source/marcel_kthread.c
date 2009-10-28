@@ -21,6 +21,7 @@
 #ifdef MA__LWPS
 #ifdef LINUX_SYS
 #include <linux/unistd.h>
+#include <sys/syscall.h>
 int marcel_gettid(void) {
 #ifdef SYS_gettid
 	/* 2.6 linux kernels and above have tids */

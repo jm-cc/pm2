@@ -172,7 +172,7 @@ MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(int_catcher, MA_INIT_INT_CATCHER, MA_INIT_INT_C
  */
 #ifndef __MINGW32__
 
-#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(OLD_ITIMER_REAL) && !defined(DARWIN_SYS)
+#if defined(MA__LWPS) && defined(MA__TIMER) && !defined(USE_VIRTUAL_TIMER) && !defined(DARWIN_SYS) && !defined(OLD_TIMER_REAL) && !defined(MA__USE_TIMER_CREATE)
 #define DISTRIBUTE_SIGALRM
 #endif
 
@@ -238,30 +238,32 @@ static void timer_interrupt(int sig)
 		}
 #endif
 #endif
+
 #ifdef MA__TIMER
 	if (
-#ifdef MA__LWPS
+#  ifdef MA__LWPS
 	    MA_LWP_SELF->vpnum !=-1 && MA_LWP_SELF->vpnum < marcel_nbvps() &&
-#endif
+#  endif
 	    (sig == MARCEL_TIMER_SIGNAL || sig == MARCEL_TIMER_USERSIGNAL)) {
-#ifndef MA_HAVE_COMPAREEXCHANGE
+#  ifndef MA_HAVE_COMPAREEXCHANGE
 	// Avoid raising softirq if compareexchange is not implemented and
 	// a compare & exchange is currently running...
-		if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock)) {
-#endif
-			ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ);
-#ifndef MA_HAVE_COMPAREEXCHANGE
-		}
-#endif
-#if defined(MA__LWPS)
-#if !defined(MA_BOGUS_SIGINFO_CODE)
-		if (!info || info->si_code > 0)
-#elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
+		if (!ma_spin_is_locked_nofail(&ma_compareexchange_spinlock))
+#  endif
+			{ ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ); }
+#  if defined(MA__LWPS)
+#    if !defined(MA_BOGUS_SIGINFO_CODE)
+		if (!info || info->si_code > 0
+#      ifdef SI_TIMER
+				|| info->si_code == SI_TIMER
+#      endif
+				)
+#    elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
 		if (ma_is_first_lwp(MA_LWP_SELF))
-#else
+#    else
 		if (sig == MARCEL_TIMER_SIGNAL)
-#endif
-#endif
+#    endif
+#  endif
 		/* kernel timer signal */
 		{
 			ma_jiffies+=MA_JIFFIES_PER_TIMER_TICK;
@@ -269,6 +271,7 @@ static void timer_interrupt(int sig)
 		}
 	}
 #endif
+
 #ifdef MA_SIGNAL_NOMASK
 	ma_irq_exit();
 	ma_preempt_check_resched(0);
@@ -307,16 +310,21 @@ void marcel_sig_nanosleep(void)
 
 void marcel_sig_reset_timer(void)
 {
-#ifdef MA__TIMER
-	struct itimerval value;
-#endif
-
 	LOG_IN();
 
-	/* TODO: for scalability, use timer_create(CLOCK_MONOTONIC,
-	 * SIGEV_THREAD_ID) and link -lrt on linux. Those are _not_ inherited
-	 * via fork() _and_ destroyed on exec() :D */
 #ifdef MA__TIMER
+#ifdef MA__USE_TIMER_CREATE
+    {
+	struct itimerspec value = {};
+
+	value.it_interval.tv_sec = 0;
+	value.it_interval.tv_nsec = time_slice * 1000;
+	value.it_value = value.it_interval;
+	timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
+    }
+#else
+    {
+	struct itimerval value = {};
 	value.it_interval.tv_sec = 0;
 	value.it_interval.tv_usec = time_slice;
 	value.it_value = value.it_interval;
@@ -325,6 +333,8 @@ void marcel_sig_reset_timer(void)
 		perror("can't start itimer");
 		exit(1);
 	}
+    }
+#endif
 #endif
 	
 	LOG_OUT();
@@ -419,6 +429,22 @@ static void sig_start_timer(ma_lwp_t lwp)
 #if MARCEL_TIMER_USERSIGNAL != MARCEL_TIMER_SIGNAL
 	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
 #endif
+
+#ifdef MA__USE_TIMER_CREATE
+	/* Create per-thread timer */
+	{
+		struct sigevent ev = {};
+		int ret;
+		ev.sigev_notify = SIGEV_THREAD_ID;
+		ev.sigev_signo = MARCEL_TIMER_SIGNAL;
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+		ev.sigev_notify_thread_id = marcel_gettid();
+		ret = timer_create(CLOCK_MONOTONIC, &ev, &lwp->timer);
+		MA_BUG_ON(ret);
+	}
+#endif
 #endif
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
@@ -436,9 +462,19 @@ static void sig_start_timer(ma_lwp_t lwp)
 void marcel_sig_stop_itimer(void)
 {
 #ifdef MA__TIMER
+#ifdef MA__USE_TIMER_CREATE
+    {
+	struct itimerspec value = {};
+	memset(&value,0,sizeof(value));
+	timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
+    }
+#else
+    {
 	struct itimerval value;
 	memset(&value,0,sizeof(value));
 	setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *)NULL);
+    }
+#endif
 #endif
 }
 
@@ -449,6 +485,11 @@ static void sig_stop_timer(ma_lwp_t lwp TBX_UNUSED)
 
 #ifndef DISTRIBUTE_SIGALRM
 	marcel_sig_stop_itimer();
+#endif
+
+#ifdef MA__USE_TIMER_CREATE
+	/* Delete per-thread timer */
+	timer_delete(lwp->timer);
 #endif
 
 	/* Execpt with linux <= 2.4, signal handlers are _not_ per thread, we

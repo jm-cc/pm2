@@ -27,3 +27,7 @@ AC_CONFIG_FILES([
 ] marcel_bin_scripts)
 
 AC_CONFIG_COMMANDS([marcel-executable], [chmod +x marcel/scripts/cpp-hash.sh ] marcel_bin_scripts)
+
+AC_CHECK_DECLS([SIGEV_THREAD_ID], [
+  AC_CHECK_LIB([rt], [timer_create])
+], [:], [[#include <signal.h>]])

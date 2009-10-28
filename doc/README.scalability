@@ -1,0 +1,11 @@
+A couple of things needs care for proper scalability:
+
+- looking at the whole list of VPs can be a very expensive operation. With 100s
+of cores, that's already several thousands of ns just to browse the list.
+  That includes
+  - ma_for_all_lwp
+  - ma_for_each_lwp (adds yet one more read).
+  - the (default!) MARCEL_SCHED_SHARED policy
+  - ...
+
+TODO: try_to_resched is still using ma_for_all_lwp...

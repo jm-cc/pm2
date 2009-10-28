@@ -131,6 +131,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 	if (!ma_any_lwp())
 		return;
 
+	/* TODO: scalability concern */
 	ma_for_all_lwp_from_begin(lwp, MA_LWP_SELF) {
 		i = ma_vpnum(lwp);
 		if (rq == ma_lwp_rq(lwp)) {

@@ -442,6 +442,17 @@ $block_code{0x201}	= 'user raw 64';
 package main;
 use Getopt::Std;
 
+sub usage {
+	print "fut-print [options] <prof_file>\n";
+	print "\t-h \t\tdisplay usage info\n";
+	print "\t-b <BASE_EVENT> \tselect the event used as the timestamp offset reference\n";
+	print "\t-s \t\tuse the short display format\n";
+	print "\t-l \t\tprefix records with length information for rewind\n";
+	print "\t-f <FILTER> \tset the event selector filter\n";
+	print "\t-m <MASK> \tset the event selector mask\n";
+	exit 0;
+}
+
 my $filter	= 0x0;	# event selector filter
 my $mask	= 0x0;	# event selector mask
 my $short_fmt	= 0;	# bool, short display format
@@ -451,7 +462,11 @@ my $old_length	= 0;	# length of the previous event in the merged trace
 
 # read command line args
 my %opts;
-my $ret	= getopts('b:slf:m:', \%opts);	# -b <BASE_EVENT> -s -l -f <FILTER> -m <MASK>
+my $ret	= getopts('hb:slf:m:', \%opts);	# -b <BASE_EVENT> -s -l -f <FILTER> -m <MASK>
+
+if (exists $opts{'h'}) {
+    usage();
+}
 
 if (exists $opts{'s'}) {
     $short_fmt	= 1;

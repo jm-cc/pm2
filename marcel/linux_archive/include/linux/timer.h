@@ -12,7 +12,9 @@ struct timer_list {
 	unsigned long expires;
 
 	spinlock_t lock;
+#ifdef PM2_DEBUG
 	unsigned long magic;
+#endif
 
 	void (*function)(unsigned long);
 	unsigned long data;
@@ -20,14 +22,19 @@ struct timer_list {
 	struct tvec_t_base_s *base;
 };
 
+#ifdef PM2_DEBUG
 #define TIMER_MAGIC	0x4b87ad6e
+#define TIMER_INITIALIZER_MAGIC .magic = TIMER_MAGIC,
+#else
+#define TIMER_INITIALIZER_MAGIC
+#endif
 
 #define TIMER_INITIALIZER(_function, _expires, _data) {		\
 		.function = (_function),			\
 		.expires = (_expires),				\
 		.data = (_data),				\
 		.base = NULL,					\
-		.magic = TIMER_MAGIC,				\
+		TIMER_INITIALIZER_MAGIC			\
 		.lock = SPIN_LOCK_UNLOCKED,			\
 	}
 
@@ -40,8 +47,11 @@ struct timer_list {
  */
 static inline void init_timer(struct timer_list * timer)
 {
+	timer->entry.next = NULL;
 	timer->base = NULL;
+#ifdef PM2_DEBUG
 	timer->magic = TIMER_MAGIC;
+#endif
 	spin_lock_init(&timer->lock);
 }
 
@@ -57,7 +67,7 @@ static inline void init_timer(struct timer_list * timer)
  */
 static inline int timer_pending(const struct timer_list * timer)
 {
-	return timer->base != NULL;
+	return timer->entry.pending != NULL;
 }
 
 extern void add_timer_on(struct timer_list *timer, int cpu);

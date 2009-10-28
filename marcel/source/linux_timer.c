@@ -43,7 +43,7 @@ static inline void set_running_timer(ma_tvec_base_t *base,
 				     struct ma_timer_list *timer)
 {
 #ifdef MA__LWPS
-	base->running_timer = timer;
+	base->t_base.running_timer = timer;
 #endif
 }
 
@@ -61,8 +61,7 @@ static void check_timer_failed(struct ma_timer_list *timer)
 	/*
 	 * Now fix it up
 	 */
-	ma_spin_lock_init(&timer->lock);
-	timer->magic = MA_TIMER_MAGIC;
+	ma_init_timer(timer);
 }
 #endif
 
@@ -119,9 +118,63 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
 	tbx_fast_list_add_tail(&timer->entry, vec);
 }
 
+/*
+ * Used by MA_TIMER_INITIALIZER, we can't use per_lwp(tvec_bases)
+ * at compile time, and we need timer->base to lock the timer.
+ *
+ * Yes, this seems like a contention point, but that's only for timers using
+ * MA_TIMER_INITIALIZER, and even for them it will be used only once, after
+ * * * * that a per-LWP base will be used
+ */
+typedef struct ma_timer_base_s ma_timer_base_t;
+ma_timer_base_t __ma_init_timer_base;
+
+static inline void detach_timer(struct ma_timer_list *timer,
+				int clear_pending)
+{
+	struct tbx_fast_list_head *entry = &timer->entry;
+
+	__tbx_fast_list_del(entry->prev, entry->next);
+	if (clear_pending)
+		entry->next = NULL;
+#ifdef PM2_DEBUG
+	entry->prev = (void*) 0x123;
+#endif
+}
+
+/*
+ * We are using hashed locking: holding per_lwp(tvec_bases).t_base.lock
+ * means that all timers which are tied to this base via timer->base are
+ * locked, and the base itself is locked too.
+ *
+ * So __run_timers can safely modify all timers which could
+ * be found on ->tvX lists.
+ *
+ * When the timer's base is locked, and the timer removed from list, it is
+ * possible to set timer->base = NULL and drop the lock: the timer remains
+ * locked.
+ */
+static ma_timer_base_t *lock_timer_base(struct ma_timer_list *timer)
+{
+       ma_timer_base_t *base;
+
+       for (;;) {
+               base = timer->base;
+               if (tbx_likely(base != NULL)) {
+                       ma_spin_lock_softirq(&base->lock);
+                       if (tbx_likely(base == timer->base))
+                               return base;
+                       /* The timer has migrated to another LWP */
+                       ma_spin_unlock_softirq(&base->lock);
+               }
+               ma_cpu_relax();
+       }
+}
+
 TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 {
-	ma_tvec_base_t *old_base, *new_base;
+	ma_timer_base_t *base;
+	ma_tvec_base_t *new_base;
 	int ret = 0;
 
 	MA_BUG_ON(!timer->function);
@@ -131,55 +184,40 @@ TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires
 
 	check_timer(timer);
 
-	ma_spin_lock_softirq(&timer->lock);
-	new_base = &__ma_get_lwp_var(tvec_bases);
-repeat:
-	old_base = timer->base;
+	base = lock_timer_base(timer);
 
-	/*
-	 * Prevent deadlocks via ordering by old_base < new_base.
-	 */
-	if (old_base && (new_base != old_base)) {
-		if (old_base < new_base) {
-			ma_spin_lock(&new_base->lock);
-			ma_spin_lock(&old_base->lock);
-		} else {
-			ma_spin_lock(&old_base->lock);
-			ma_spin_lock(&new_base->lock);
-		}
-		/*
-		 * The timer base might have been cancelled while we were
-		 * trying to take the lock(s):
-		 */
-		if (timer->base != old_base) {
-			ma_spin_unlock(&new_base->lock);
-			ma_spin_unlock(&old_base->lock);
-			goto repeat;
-		}
-	} else {
-		ma_spin_lock(&new_base->lock);
-		if (timer->base != old_base) {
-			ma_spin_unlock(&new_base->lock);
-			goto repeat;
-		}
-	}
-
-	/*
-	 * Delete the previous timeout (if there was any), and install
-	 * the new one:
-	 */
-	if (old_base) {
-		tbx_fast_list_del(&timer->entry);
+	if (ma_timer_pending(timer)) {
+		detach_timer(timer, 0);
 		ret = 1;
 	}
+
+	new_base = &__ma_get_lwp_var(tvec_bases);
+
+	if (base != &new_base->t_base) {
+		/*
+		 * We are trying to schedule the timer on the local CPU.
+		 * However we can't change timer's base while it is running,
+		 * otherwise del_timer_sync() can't detect that the timer's
+		 * handler yet has not finished. This also guarantees that
+		 * the timer is serialized wrt itself.
+		 */
+		if (tbx_unlikely(base->running_timer == timer)) {
+		        /* The timer remains on a former base */
+		        new_base = tbx_container_of(base, ma_tvec_base_t, t_base);
+		} else {
+		        /* See the comment in lock_timer_base() */
+		        timer->base = NULL;
+		        ma_spin_unlock(&base->lock);
+			base = &new_base->t_base;
+		        ma_spin_lock(&base->lock);
+		        timer->base = base;
+		}
+	}
+
 	timer->expires = expires;
 	internal_add_timer(new_base, timer);
-	timer->base = new_base;
 
-	if (old_base && (new_base != old_base))
-		ma_spin_unlock(&old_base->lock);
-	ma_spin_unlock(&new_base->lock);
-	ma_spin_unlock_softirq(&timer->lock);
+	ma_spin_unlock_softirq(&base->lock);
 
 	return ret;
 }
@@ -234,26 +272,23 @@ TBX_EXTERN int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
  */
 TBX_EXTERN int ma_del_timer(struct ma_timer_list *timer)
 {
-	ma_tvec_base_t *base;
+	ma_timer_base_t *base;
+	int ret = 0;
 
 	check_timer(timer);
 
 	mdebug("Deleting timer [%p]\n", timer);
 
-repeat:
- 	base = timer->base;
-	if (!base)
-		return 0;
-	ma_spin_lock_softirq(&base->lock);
-	if (base != timer->base) {
+	if (ma_timer_pending(timer)) {
+		base = lock_timer_base(timer);
+		if (ma_timer_pending(timer)) {
+			detach_timer(timer, 1);
+			ret = 1;
+		}
 		ma_spin_unlock_softirq(&base->lock);
-		goto repeat;
 	}
-	tbx_fast_list_del(&timer->entry);
-	timer->base = NULL;
-	ma_spin_unlock_softirq(&base->lock);
 
-	return 1;
+	return ret;
 }
 
 #ifdef MA__LWPS
@@ -263,40 +298,38 @@ repeat:
  *
  * This function only differs from del_timer() on SMP: besides deactivating
  * the timer it also makes sure the handler has finished executing on other
- * CPUs.
+ * LWPs.
  *
  * Synchronization rules: callers must prevent restarting of the timer,
  * otherwise this function is meaningless. It must not be called from
- * interrupt contexts. Upon exit the timer is not queued and the handler
- * is not running on any CPU.
+ * interrupt contexts. The caller must not hold locks which would prevent
+ * completion of the timer's handler. Upon exit the timer is not queued and
+ * the handler is not running on any CPU.
  *
  * The function returns whether it has deactivated a pending timer or not.
  */
 TBX_EXTERN int ma_del_timer_sync(struct ma_timer_list *timer)
 {
-	ma_tvec_base_t *base;
-	int ret = 0;
-	ma_lwp_t lwp;
+	ma_timer_base_t *base;
+	int ret = -1;
 
 	check_timer(timer);
 	mdebug("Deleting timer sync [%p]\n", timer);
 
-del_again:
-	ret += ma_del_timer(timer);
+	do {
+		base = lock_timer_base(timer);
 
-	ma_for_each_lwp_begin(lwp)
-		base = &ma_per_lwp(tvec_bases, lwp);
-		if (base->running_timer == timer) {
-			while (base->running_timer == timer) {
-				ma_cpu_relax();
-				ma_preempt_check_resched(0);
-			}
-			break;
+		if (base->running_timer == timer)
+			goto unlock;
+
+		ret = 0;
+		if (ma_timer_pending(timer)) {
+			detach_timer(timer, 1);
+			ret = 1;
 		}
-	ma_for_each_lwp_end()
-	ma_smp_rmb();
-	if (ma_timer_pending(timer))
-		goto del_again;
+unlock:
+		ma_spin_unlock_softirq(&base->lock);
+	} while (ret < 0);
 
 	return ret;
 }
@@ -317,7 +350,7 @@ static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 		struct ma_timer_list *tmp;
 
 		tmp = tbx_fast_list_entry(curr, struct ma_timer_list, entry);
-		MA_BUG_ON(tmp->base != base);
+		MA_BUG_ON(tmp->base != &base->t_base);
 		curr = curr->next;
 		internal_add_timer(base, tmp);
 	}
@@ -327,7 +360,7 @@ static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 }
 
 /***
- * __run_timers - run all expired timers (if any) on this CPU.
+ * __run_timers - run all expired timers (if any) on this LWP.
  * @base: the timer vector to be processed.
  *
  * This function cascades all vectors and executes all expired timer
@@ -342,7 +375,7 @@ static inline void __run_timers(ma_tvec_base_t *base)
 	mdebugl(7, "Running Timers (next at %li, current : %li)\n",
 		base->timer_jiffies, ma_jiffies);
 
-	ma_spin_lock_softirq(&base->lock);
+	ma_spin_lock_softirq(&base->t_base.lock);
 	while (ma_time_after_eq(ma_jiffies, base->timer_jiffies)) {
 		struct tbx_fast_list_head work_list = TBX_FAST_LIST_HEAD_INIT(work_list);
 		struct tbx_fast_list_head *head = &work_list;
@@ -358,8 +391,7 @@ static inline void __run_timers(ma_tvec_base_t *base)
 			cascade(base, &base->tv5, INDEX(3));
 		++base->timer_jiffies; 
 		tbx_fast_list_splice_init(base->tv1.vec + index, &work_list);
-repeat:
-		if (!tbx_fast_list_empty(head)) {
+		while (!tbx_fast_list_empty(head)) {
 			void (*fn)(unsigned long);
 			unsigned long data;
 
@@ -367,18 +399,15 @@ repeat:
  			fn = timer->function;
  			data = timer->data;
 
-			tbx_fast_list_del(&timer->entry);
 			set_running_timer(base, timer);
-			ma_smp_wmb();
-			timer->base = NULL;
-			ma_spin_unlock_softirq(&base->lock);
+			detach_timer(timer, 1);
+			ma_spin_unlock_softirq(&base->t_base.lock);
 			fn(data);
-			ma_spin_lock_softirq(&base->lock);
-			goto repeat;
+			ma_spin_lock_softirq(&base->t_base.lock);
 		}
 	}
 	set_running_timer(base, NULL);
-	ma_spin_unlock_softirq(&base->lock);
+	ma_spin_unlock_softirq(&base->t_base.lock);
 }
 
 static inline void do_process_times(struct marcel_task *p,
@@ -394,7 +423,7 @@ static void update_one_process(struct marcel_task *p, unsigned long user,
 }	
 
 /*
- * Called by the local, per-CPU timer interrupt on SMP.
+ * Called by the local, per-LWP timer interrupt on SMP.
  */
 static void ma_run_local_timers(void)
 {
@@ -456,7 +485,7 @@ void ma_process_timeout(unsigned long __data)
  * routine returns.
  *
  * Specifying a @timeout value of %MAX_SCHEDULE_TIMEOUT will schedule
- * the CPU away without a bound on the timeout. In this case the return
+ * the LWP away without a bound on the timeout. In this case the return
  * value will be %MAX_SCHEDULE_TIMEOUT.
  *
  * In all cases the return value is guaranteed to be non-negative.
@@ -513,7 +542,7 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 	ma_tvec_base_t *base;
        
 	base = &ma_per_lwp(tvec_bases, lwp);
-	ma_spin_lock_init(&base->lock);
+	ma_spin_lock_init(&base->t_base.lock);
 	for (j = 0; j < TVN_SIZE; j++) {
 		TBX_INIT_FAST_LIST_HEAD(base->tv5.vec + j);
 		TBX_INIT_FAST_LIST_HEAD(base->tv4.vec + j);

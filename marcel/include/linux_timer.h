@@ -40,7 +40,6 @@ struct ma_timer_list {
 	struct tbx_fast_list_head entry;
 	unsigned long expires;
 
-	ma_spinlock_t lock;
 #ifdef PM2_DEBUG
 	unsigned long magic;
 #endif
@@ -48,8 +47,11 @@ struct ma_timer_list {
 	void (*function)(unsigned long);
 	unsigned long data;
 
-	struct ma_tvec_t_base_s *base;
+	struct ma_timer_base_s *base;
 };
+
+#section marcel_variables
+extern struct ma_timer_base_s __ma_init_timer_base;
 
 #section marcel_structures
 typedef struct ma_tvec_s {
@@ -60,10 +62,14 @@ typedef struct ma_tvec_root_s {
 	struct tbx_fast_list_head vec[TVR_SIZE];
 } ma_tvec_root_t;
 
-struct ma_tvec_t_base_s {
+struct ma_timer_base_s {
 	ma_spinlock_t lock;
-	unsigned long timer_jiffies;
 	struct ma_timer_list *running_timer;
+};
+
+struct ma_tvec_t_base_s {
+	struct ma_timer_base_s t_base;
+	unsigned long timer_jiffies;
 	ma_tvec_root_t tv1;
 	ma_tvec_t tv2;
 	ma_tvec_t tv3;
@@ -84,9 +90,8 @@ struct ma_tvec_t_base_s {
 		.function = (_function),			\
 		.expires = (_expires),				\
 		.data = (_data),				\
-		.base = NULL,					\
+		.base = &__ma_init_timer_base,			\
 		MA_TIMER_INITIALIZER_MAGIC			\
-		.lock = MA_SPIN_LOCK_UNLOCKED,			\
 	}
 
 #section marcel_inline
@@ -99,11 +104,11 @@ struct ma_tvec_t_base_s {
  */
 static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
 {
-	timer->base = NULL;
+	timer->entry.next = NULL;
+	timer->base = &__ma_get_lwp_var(tvec_bases).t_base;
 #ifdef PM2_DEBUG
 	timer->magic = MA_TIMER_MAGIC;
 #endif
-	ma_spin_lock_init(&timer->lock);
 }
 
 /***
@@ -118,7 +123,7 @@ static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
  */
 static __tbx_inline__ int ma_timer_pending(const struct ma_timer_list * timer)
 {
-	return timer->base != NULL;
+	return timer->entry.next != NULL;
 }
 
 #section marcel_functions

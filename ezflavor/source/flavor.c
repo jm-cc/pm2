@@ -734,6 +734,7 @@ static void flavor_build_selector(GtkWidget *vbox)
 {
   GtkWidget *frame;
   GtkWidget *int_vbox;
+  GtkWidget *int_hbox;
 
   frame = gtk_frame_new(" Flavors ");
   gtk_container_set_border_width (GTK_CONTAINER(frame), 10);
@@ -755,25 +756,29 @@ static void flavor_build_selector(GtkWidget *vbox)
   gtk_box_pack_start(GTK_BOX(int_vbox), combo, FALSE, TRUE, 0);
   gtk_widget_show(combo);
 
+  int_hbox = gtk_hbox_new(TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(int_vbox), int_hbox, FALSE, TRUE, 0);
+  gtk_widget_show(int_hbox);
+
   the_load_button = gtk_button_new_with_label("Load");
-  gtk_box_pack_start(GTK_BOX(int_vbox), the_load_button, FALSE, FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER(the_load_button), 10);
+  gtk_box_pack_start(GTK_BOX(int_hbox), the_load_button, TRUE, TRUE, 0);
+  gtk_container_set_border_width (GTK_CONTAINER(the_load_button), 1);
   gtk_signal_connect(GTK_OBJECT(the_load_button), "clicked",
 		     GTK_SIGNAL_FUNC(flavor_load_pressed),
 		     (gpointer)(GTK_COMBO(combo)->entry));
   gtk_widget_show(the_load_button);
 
   the_create_button = gtk_button_new_with_label("New");
-  gtk_box_pack_start(GTK_BOX(int_vbox), the_create_button, FALSE, FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER(the_create_button), 10);
+  gtk_box_pack_start(GTK_BOX(int_hbox), the_create_button, TRUE, TRUE, 0);
+  gtk_container_set_border_width (GTK_CONTAINER(the_create_button), 1);
   gtk_signal_connect(GTK_OBJECT(the_create_button), "clicked",
 		     GTK_SIGNAL_FUNC(flavor_create_pressed),
 		     (gpointer)(GTK_COMBO(combo)->entry));
   gtk_widget_show(the_create_button);
 
   the_save_button = gtk_button_new_with_label("Save");
-  gtk_box_pack_start(GTK_BOX(int_vbox), the_save_button, FALSE, FALSE, 0);
-  gtk_container_set_border_width (GTK_CONTAINER(the_save_button), 10);
+  gtk_box_pack_start(GTK_BOX(int_hbox), the_save_button, TRUE, TRUE, 0);
+  gtk_container_set_border_width (GTK_CONTAINER(the_save_button), 1);
   gtk_signal_connect(GTK_OBJECT(the_save_button), "clicked",
 		     GTK_SIGNAL_FUNC(flavor_save_pressed),
 		     (gpointer)(GTK_COMBO(combo)->entry));

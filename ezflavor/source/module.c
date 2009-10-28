@@ -452,23 +452,14 @@ static void add_inclusive_options(char *module,
 /* Should be customized to use either a "notebook" style or a column style... */
 static GtkWidget *add_options(char *module, GList **list)
 {
-  GtkWidget *frame;
   GtkWidget *vbox;
   GtkWidget *scrolled_window;
-  char title[1024];
-
-  sprintf(title, " %s options ", module);
-  frame = gtk_frame_new(title);
-  gtk_container_set_border_width (GTK_CONTAINER(frame), 10);
-  //gtk_widget_set_usize(frame, 300, 300);
-  gtk_widget_show(frame);
 
   scrolled_window = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_set_border_width(GTK_CONTAINER(scrolled_window), 10);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),
 				  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
   gtk_widget_show(scrolled_window);
-  gtk_container_add(GTK_CONTAINER(frame), scrolled_window);
 
   vbox = gtk_vbox_new(FALSE, 10);
   gtk_container_set_border_width (GTK_CONTAINER(vbox), 5);
@@ -483,7 +474,7 @@ static GtkWidget *add_options(char *module, GList **list)
 
   intro_end_step();
 
-  return frame;
+  return scrolled_window;
 }
 
 static void set_module_info(GtkWidget *widget, char *module)
@@ -678,11 +669,9 @@ static void module_build_notebook(GtkWidget *box)
 
 static void module_build_general_options(GtkWidget *box)
 {
-  GtkWidget *vbox, *subvbox;
-  GtkWidget *label;
+  GtkWidget *vbox;
 
   general_frame = gtk_frame_new(" General settings ");
-  //gtk_widget_set_sensitive(general_frame, FALSE);
   gtk_container_set_border_width (GTK_CONTAINER(general_frame), 10);
   gtk_box_pack_start(GTK_BOX(box), general_frame, TRUE, TRUE, 0);
   gtk_widget_show(general_frame);
@@ -691,22 +680,7 @@ static void module_build_general_options(GtkWidget *box)
   gtk_container_add(GTK_CONTAINER(general_frame), vbox);
   gtk_widget_show(vbox);
 
-  subvbox = gtk_vbox_new(FALSE, 10);
-  gtk_container_set_border_width (GTK_CONTAINER(subvbox), 10);
-  gtk_container_add(GTK_CONTAINER(vbox), subvbox);
-  gtk_widget_show(subvbox);
-
-  //subvbox = gtk_vbox_new(FALSE, 10);
-  //gtk_container_set_border_width (GTK_CONTAINER(subvbox), 10);
-  //gtk_container_add(GTK_CONTAINER(vbox), subvbox);
-  //gtk_widget_show(subvbox);
-
-  subvbox = gtk_vbox_new(FALSE, 10);
-  gtk_container_set_border_width (GTK_CONTAINER(subvbox), 10);
-  gtk_container_add(GTK_CONTAINER(vbox), subvbox);
-  gtk_widget_show(subvbox);
-
-  add_misc_options(subvbox);
+  add_misc_options(vbox);
 }
 
 static void module_update_module_options(module_t *m)

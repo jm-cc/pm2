@@ -535,7 +535,6 @@ int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_
 	CPU_ZERO_S(cpusetsize, cpuset);
 	for (i = 0; i < MARCEL_NBMAXCPUS; i++) {
 		if (marcel_vpset_isset(vpset, i)) {
-			fprintf(stderr,"%d is set\n", i);
 			if (i >= cpusetsize * CHAR_BIT) {
 #ifdef MA__DEBUG
 				mdebug("cpuset2vpset: VP %d beyond user-provided buffer\n", i);

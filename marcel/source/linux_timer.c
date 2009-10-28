@@ -47,6 +47,7 @@ static inline void set_running_timer(ma_tvec_base_t *base,
 #endif
 }
 
+#ifdef PM2_DEBUG
 static void check_timer_failed(struct ma_timer_list *timer)
 {
 	static int whine_count;
@@ -63,11 +64,14 @@ static void check_timer_failed(struct ma_timer_list *timer)
 	ma_spin_lock_init(&timer->lock);
 	timer->magic = MA_TIMER_MAGIC;
 }
+#endif
 
 static inline void check_timer(struct ma_timer_list *timer)
 {
+#ifdef PM2_DEBUG
 	if (timer->magic != MA_TIMER_MAGIC)
 		check_timer_failed(timer);
+#endif
 }
 
 

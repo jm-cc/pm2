@@ -41,7 +41,9 @@ struct ma_timer_list {
 	unsigned long expires;
 
 	ma_spinlock_t lock;
+#ifdef PM2_DEBUG
 	unsigned long magic;
+#endif
 
 	void (*function)(unsigned long);
 	unsigned long data;
@@ -72,12 +74,18 @@ struct ma_tvec_t_base_s {
 #section marcel_macros
 #define MA_TIMER_MAGIC	0x4b87ad6e
 
+#ifdef PM2_DEBUG
+
+#define MA_TIMER_INITIALIZER_MAGIC .magic = MA_TIMER_MAGIC,
+#else
+#define MA_TIMER_INITIALIZER_MAGIC
+#endif
 #define MA_TIMER_INITIALIZER(_function, _expires, _data) {	\
 		.function = (_function),			\
 		.expires = (_expires),				\
 		.data = (_data),				\
 		.base = NULL,					\
-		.magic = MA_TIMER_MAGIC,			\
+		MA_TIMER_INITIALIZER_MAGIC			\
 		.lock = MA_SPIN_LOCK_UNLOCKED,			\
 	}
 
@@ -92,7 +100,9 @@ struct ma_tvec_t_base_s {
 static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
 {
 	timer->base = NULL;
+#ifdef PM2_DEBUG
 	timer->magic = MA_TIMER_MAGIC;
+#endif
 	ma_spin_lock_init(&timer->lock);
 }
 

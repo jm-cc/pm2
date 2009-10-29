@@ -36,8 +36,8 @@ void ma_bind_on_processor(unsigned target) {
 	topo_cpuset_zero(&set);
 	topo_cpuset_set(&set, target);
 	if (topo_set_cpubind(topology, &set, TOPO_CPUBIND_THREAD)) {
-		fprintf(stderr,"while binding on CPU%d\n", target);
 		perror("topo_set_cpubind");
+		fprintf(stderr,"while binding on CPU%d\n", target);
 		exit(1);
 	}
 }
@@ -46,8 +46,8 @@ void ma_unbind_from_processor(void) {
 
 	topo_cpuset_fill(&set);
 	if (topo_set_cpubind(topology, &set, TOPO_CPUBIND_THREAD)) {
-		fprintf(stderr,"while unbinding\n");
 		perror("topo_set_cpubind");
+		fprintf(stderr,"while unbinding\n");
 		exit(1);
 	}
 }

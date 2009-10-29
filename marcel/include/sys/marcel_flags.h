@@ -193,7 +193,7 @@
 #  undef MA__TIMER
 #endif
 
-#if defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && HAVE_DECL_SIGEV_THREAD_ID
+#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && HAVE_DECL_SIGEV_THREAD_ID
 #define MA__USE_TIMER_CREATE
 #endif
 

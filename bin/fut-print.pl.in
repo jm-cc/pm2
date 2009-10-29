@@ -288,7 +288,7 @@ sub read_user64_event($$) {
         sysread $fh, $buf, 8
             or die "read param: $!";
         ${$self}{'pos'}	+= 8;
-        my ($param_0, $param_1)	= unpack "${$self}{swapl}", $buf;
+        my ($param_0, $param_1)	= unpack "${$self}{swapl}2", $buf;
 	my $param;
 	if (${$self}{'is_little_endian'}) {
 		$param = Math::BigInt->new($param_1)->blsft(32)->badd($param_0);

@@ -29,6 +29,7 @@ AC_CONFIG_FILES([
 AC_CONFIG_COMMANDS([marcel-executable], [chmod +x marcel/scripts/cpp-hash.sh ] marcel_bin_scripts)
 
 AC_CHECK_DECLS([SIGEV_THREAD_ID], [
-  AC_CHECK_LIB([rt], [timer_create])
-  AC_DEFINE([PM2_HAVE_DECL_SIGEV_THREAD_ID], [1], [Define to 1 if you have the declaration of `SIGEV_THREAD_ID', and to 0 if you don't.])
+  AC_CHECK_LIB([rt], [timer_create],
+    AC_DEFINE([PM2_HAVE_DECL_SIGEV_THREAD_ID], [1], [Define to 1 if you have the declaration of `SIGEV_THREAD_ID'.])
+  )
 ], [:], [[#include <signal.h>]])

@@ -17,8 +17,7 @@
 #ifndef _PM2_CONFIG_PUBLIC_H
 #define _PM2_CONFIG_PUBLIC_H
 
-/* Define to 1 if you have the declaration of `SIGEV_THREAD_ID', and to 0 if
-   you don't. */
+/* Define to 1 if you have the declaration of `SIGEV_THREAD_ID'. */
 #undef PM2_HAVE_DECL_SIGEV_THREAD_ID
 
 #endif /* _PM2_CONFIG_PUBLIC_H */

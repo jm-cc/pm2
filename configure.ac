@@ -115,6 +115,7 @@ AC_CONFIG_FILES([GNUmakefile
 		 make/apps-vars.mak
 		 make/common-vars.mak
 	         make/config.mak
+                 init/include/pm2_config_public.h
 		 ]
 		 pm2_bin_scripts)
 

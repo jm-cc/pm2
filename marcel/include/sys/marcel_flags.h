@@ -17,7 +17,7 @@
 #ifndef MARCEL_FLAGS_EST_DEF
 #define MARCEL_FLAGS_EST_DEF
 
-#include <pm2_config.h>
+#include <pm2_config_public.h>
 
 #ifdef PM2DEBUG
 #  define MA__DEBUG
@@ -193,7 +193,7 @@
 #  undef MA__TIMER
 #endif
 
-#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && HAVE_DECL_SIGEV_THREAD_ID
+#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && defined(PM2_HAVE_DECL_SIGEV_THREAD_ID)
 #define MA__USE_TIMER_CREATE
 #endif
 

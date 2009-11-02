@@ -1,0 +1,58 @@
+#!@PERL@
+
+my %code_hash;
+
+my $fut_cflags = `pkg-config --cflags fxt`;
+chomp $fut_cflags;
+my ($fut_include_dir) = ($fut_cflags =~ /-I(\S+)/);
+
+my $fut_h = "${fut_include_dir}/fxt/fut.h";
+#print "${fut_h}\n";
+
+open my $fut_h_desc, $fut_h or die "open [$fut_h] failed: $!\n";
+
+while (<$fut_h_desc>) {
+	next unless /define/;
+	next unless /0x/;
+	s,\/\*.*?\*\/,,g;
+	s/^#define\s+//;
+	chomp;
+	my ($code_name, $code_hval) = split;
+	my $code_val = hex $code_hval;
+	#print "$code_name: $code_val\n";
+	${code_hash}{$code_name} = $code_val;
+}
+
+my $profile_include_dir = `pm2-config --includedir profile`;
+chomp $profile_include_dir;
+my $fut_print_h = "${profile_include_dir}/fut_print.h";
+#print "${fut_print_h}\n";
+
+open my $fut_print_h_desc, $fut_print_h or die "open [$fut_print_h] failed: $!\n";
+while (<$fut_print_h_desc>) {
+	next unless /define/;
+	next unless /0x/;
+	s,\/\*.*?\*\/,,g;
+	s/^#define\s+//;
+	chomp;
+	my ($code_name, $code_hval) = split;
+	my $code_val = hex $code_hval;
+	#print "$code_name: $code_val\n";
+	${code_hash}{$code_name} = $code_val;
+}
+
+foreach my $k (sort keys %code_hash) {
+	my $v = ${code_hash}{$k};
+	print "$k,$v\n";
+	#printf "%s,0x%x\n", $k, $v;
+}
+
+# ForestGOMP ev codes
+my $fut_fgomp_code = 0xfd00;
+print 'FUT_FGOMP_PAPIMAR_EV0,', $fut_fgomp_code+0x10, "\n";
+print 'FUT_FGOMP_PAPIMAR_EV1,', $fut_fgomp_code+0x11, "\n";
+print 'FUT_FGOMP_PAPIMAR_EV2,', $fut_fgomp_code+0x12, "\n";
+print 'FUT_FGOMP_PAPIMAR_EV3,', $fut_fgomp_code+0x13, "\n";
+print 'FUT_FGOMP_GOMP_BAR_ENTER,', $fut_fgomp_code+0x20, "\n";
+print 'FUT_FGOMP_GOMP_BAR_LEAVE,', $fut_fgomp_code+0x21, "\n";
+

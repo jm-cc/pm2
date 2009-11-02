@@ -1,0 +1,816 @@
+#!@PERL@
+
+use warnings;
+use strict;
+use Math::BigInt;	# 64bit time stamp processing on 32bit archs
+use Getopt::Std;
+
+sub usage {
+	print "marcel-fut.pl [options] <prof_file>\n";
+	print "\t-h \t\tdisplay usage info\n";
+	print "\t-q \t\tquiet mode\n";
+	print "\t-o [text|paje] \toutput mode\n";
+	print "\f-f [papi,special,...] \tfilter out some event subsets (comma separated list)\n";
+	print "\t-t \t\ttime warp mode\n";
+	exit 0;
+}
+
+my %code_hash;
+my %handler_hash;
+
+my %th_name_hash;
+my %th_state_hash;
+my %th_suffix_hash;
+my %th_created_hash;
+my %th_gomp_ev_created_hash;
+
+my %vp_th_hash;
+my %th_vp_hash;
+my %code_name_hash;
+my $nb_levels = 0;
+my $ev_ref_tstamp = undef;
+
+
+# Settings
+my $filter_out_special_threads = 0;
+my $filter_out_papi_events = 0;
+
+my $output_mode = 'text';
+my $quiet_mode = 0;
+my $time_warp_mode = 0;
+my %filter_out;
+
+my %opts;
+my $ret	= getopts('hqo:f:t', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t
+
+if (exists $opts{'h'}) {
+	usage();
+}
+
+if (exists $opts{'q'}) {
+	$quiet_mode	= 1;
+}
+
+if (exists $opts{'o'}) {
+	$output_mode	= $opts{'o'};
+	if ($output_mode ne 'paje' and $output_mode ne 'text') {
+		usage();
+	}
+}
+
+if (exists $opts{'f'}) {
+	my $filter_events	= $opts{'f'};
+	my @filter_event_list = split /,/, $filter_events;
+	foreach (@filter_event_list) {
+		$filter_out{$_} = 1;
+	}
+}
+
+if (exists $opts{'t'}) {
+	$time_warp_mode	= 1;
+}
+
+if (exists $filter_out{'special'}) {
+	$filter_out_special_threads = 1;
+}
+
+if (exists $filter_out{'papi'}) {
+	$filter_out_papi_events = 1;
+}
+
+# Read FUT codes
+open my $code_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";
+
+while (<$code_desc>) {
+	chomp;
+	my ($code_name, $code_val) = split /,/;
+	#print "$code_name: $code_val\n";
+	${code_hash}{$code_name} = $code_val;
+	if (! exists ${code_name_hash}{$code_val}) {
+		${code_name_hash}{$code_val} = $code_name;
+	}
+}
+
+# Helpers
+sub tstamp($$) {
+	my $ev_num = shift;
+	my $ev_time = shift;
+	my $result;
+
+	if ($time_warp_mode) {
+		unless (defined $ev_ref_tstamp) {
+			$ev_ref_tstamp = $ev_num;
+		}
+		$result = $ev_num - $ev_ref_tstamp;
+	} else {
+		unless (defined $ev_ref_tstamp) {
+			$ev_ref_tstamp = $ev_time;
+		}
+		$result = $ev_time - $ev_ref_tstamp;
+	}
+
+	return $result;
+}
+
+
+# - Paje output mode -
+sub handle_paje_FUT_SETUP_CODE		($) {
+	print <<END_PAJE_HEADER
+%EventDef	PajeDefineContainerType	1
+%	Alias	string
+%	ContainerType	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDefineEventType	2
+%	Alias	string
+%	ContainerType	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDefineStateType	3
+%	Alias	string
+%	ContainerType	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDefineVariableType	4
+%	Alias	string
+%	ContainerType	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDefineLinkType	5
+%	Alias	string
+%	ContainerType	string
+%	SourceContainerType	string
+%	DestContainerType	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDefineEntityValue	6
+%	Alias	string
+%	EntityType	string
+%	Name	string
+%	Color	color
+%EndEventDef
+%EventDef	PajeCreateContainer	7
+%	Time	date
+%	Alias	string
+%	Type	string
+%	Container	string
+%	Name	string
+%EndEventDef
+%EventDef	PajeDestroyContainer	8
+%	Time	date
+%	Name	string
+%	Type	string
+%EndEventDef
+%EventDef	PajeNewEvent	9
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%EndEventDef
+%EventDef	PajeSetState	10
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%       ThreadName      string
+%EndEventDef
+%EventDef	PajePushState	11
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%EndEventDef
+%EventDef	PajePushState	111
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%	Object	string
+%EndEventDef
+%EventDef	PajePopState	12
+%	Time	date
+%	Type	string
+%	Container	string
+%EndEventDef
+%EventDef	PajeSetVariable	13
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	double
+%EndEventDef
+%EventDef	PajeAddVariable	14
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	double
+%EndEventDef
+%EventDef	PajeSubVariable	15
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	double
+%EndEventDef
+%EventDef	PajeStartLink	16
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%	SourceContainer	string
+%	Key	string
+%	Size	int
+%EndEventDef
+%EventDef	PajeEndLink	17
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%	DestContainer	string
+%	Key	string
+%	Size	int
+%EndEventDef
+%EventDef	PajeStartLink	18
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%	SourceContainer	string
+%	Key	string
+%EndEventDef
+%EventDef	PajeEndLink	19
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%	DestContainer	string
+%	Key	string
+%EndEventDef
+%EventDef	PajeNewEvent   20
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%       EventName      string
+%EndEventDef
+%EventDef	PajeNewEvent   21
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%       EventName      string
+%       ThreadName      string
+%EndEventDef
+%EventDef	PajeNewEvent   112
+%	Time	date
+%	Type	string
+%	Container	string
+%	Value	string
+%       ThreadName      string
+%       ThreadGroup     string
+%       ThreadParent    string
+%EndEventDef
+1	CT_D	0	Display_type
+1	CT_M	CT_D	Machine_container_type
+1	CT_Mvp	CT_D	Machine_container_type_vp
+1	CT_VPvp	CT_Mvp	VP_container_type_vp
+1	CT_T	CT_M	Thread_container_type
+1	CT_TE	CT_T	Thread_event_container_type
+3	ST_BT	CT_TE	Barrier_thread_state_type
+3	ST_T	CT_T	Thread_state_type
+3	ST_VPvp	CT_VPvp	VP_state_type_vp
+6	bw	ST_BT	waiting	\"0.0 0.0 0.9\"
+6	br	ST_BT	running	\"0.5 0.5 0.5\"
+6	s	ST_T	sleep	\"0.5 0.2 0.2\"
+6	s_u	ST_T	sleep	\"0.5 0.5 0.5\"
+6	s_i	ST_T	sleep	\"0.4 0.4 0.0\"
+6	s_k	ST_T	sleep	\"0.5 0.2 0.0\"
+6	s_r	ST_T	sleep	\"0.0 0.3 0.5\"
+6	r	ST_T	running	\"0.0 1.0 0.0\"
+6	r_u	ST_T	running	\"0.8 0.8 0.8\"
+6	r_i	ST_T	running	\"0.9 0.9 0.0\"
+6	r_k	ST_T	running	\"0.9 0.6 0.0\"
+6	r_r	ST_T	running	\"0.0 0.6 0.9\"
+6	d	ST_T	dead	\"0.1 0.1 0.1\"
+6	vp	ST_VPvp	user	\"0.0 1.0 0.5\"
+6	vp_u	ST_VPvp	undef	\"0.8 0.8 0.8\"
+6	vp_i	ST_VPvp	idle	\"0.9 0.9 0.5\"
+6	vp_k	ST_VPvp	ksoftirqd	\"0.9 0.6 0.5\"
+6	vp_r	ST_VPvp	run_task	\"0.0 0.5 0.9\"
+7	0	D	CT_D	0	Display
+7	0	M	CT_M	D	Machine
+7	0	Mvp	CT_Mvp	D	VPs
+5	LT_SW	CT_M	CT_T	CT_T	Link_type_switch
+7	0	VPvp0	CT_VPvp	Mvp	VP_0
+4       VAR_PAPI_0      CT_T    "Papi event 0"
+4       VAR_PAPI_1      CT_T    "Papi event 1"
+4       VAR_PAPI_2      CT_T    "Papi event 2"
+4       VAR_PAPI_3      CT_T    "Papi event 3"
+4       VAR_PAPI_0vp    CT_VPvp    "Papi event 0"
+4       VAR_PAPI_1vp    CT_VPvp    "Papi event 1"
+4       VAR_PAPI_2vp    CT_VPvp    "Papi event 2"
+4       VAR_PAPI_3vp    CT_VPvp    "Papi event 3"
+END_PAJE_HEADER
+}
+
+sub handle_paje_FUT_THREAD_BIRTH_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	shift @$param_array;
+	my ($s_temp) = pack 'q', (@$param_array);
+	my ($param_1) = unpack 'l', ($s_temp);
+	my $th = $param_0;
+	my $th_already_exists = 0;
+	if (exists ${th_created_hash}{$th}) {
+		$th_already_exists = 1;
+	}
+	my $th_name = 'undef';
+	my $th_state = 's';
+	my $th_suffix = '_u';
+	${th_name_hash}{$th} = $th_name;
+	${th_state_hash}{$th} = $th_state;
+	${th_suffix_hash}{$th} = $th_suffix;
+
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	unless ($filter_out_special_threads == 1) {
+		if ($th_already_exists == 0) {
+			print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
+			${th_created_hash}{$th}	= 1;
+		}
+		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
+	}
+}
+
+sub handle_paje_FUT_SET_THREAD_NAME_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $line = ${$event}{'line'};
+	my $param_array = ${$event}{'params'};
+	my $th = shift @$param_array;
+	my ($name_s_temp) = pack 'q*', (@$param_array);
+	my ($th_name) = unpack 'Z*', ($name_s_temp);
+	my $th_suffix = '';
+	if ($th_name =~ /^idle/) {
+		$th_suffix = "_i";
+	} elsif ($th_name =~ /^ksoftirqd/) {
+		$th_suffix = "_k";
+	} elsif ($th_name =~ /^run_task/) {
+		$th_suffix = "_r";
+	}
+	${th_name_hash}{$th} = $th_name;
+	${th_suffix_hash}{$th} = $th_suffix;
+	my $th_state = ${th_state_hash}{$th};
+	my $vp_num = 0;
+	if (exists ${th_vp_hash}{$th}) {
+		$vp_num = ${th_vp_hash}{$th};
+	}
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	if ($filter_out_special_threads == 1) {
+		if ($th_suffix eq '') {
+			unless (exists ${th_created_hash}{$th}) {
+				print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
+				${th_created_hash}{$th}	= 1;
+			}
+			print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
+			print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
+		}
+	} else {
+		unless (exists ${th_created_hash}{$th}) {
+			print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
+			${th_created_hash}{$th}	= 1;
+		}
+		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
+		print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
+	}
+}
+
+sub handle_paje_FUT_SWITCH_TO_CODE		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $th_from = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $th_to = ${$param_array}[0];
+	
+	my $th_from_name = ${th_name_hash}{$th_from};
+	my $th_from_suffix = ${th_suffix_hash}{$th_from};
+	my $th_from_state = 's';
+	if (${th_state_hash}{$th_from} ne 'd') {
+		${th_state_hash}{$th_from} = $th_from_state;
+	}
+
+	my $th_to_name = ${th_name_hash}{$th_to};
+	my $th_to_suffix = ${th_suffix_hash}{$th_to};
+	my $th_to_state = 'r';
+	${th_state_hash}{$th_to} = $th_to_state;
+
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	my $b_ev_tstamp;
+	my $e_ev_tstamp;
+	if ($time_warp_mode) {
+		$b_ev_tstamp = $ev_tstamp - 0.1;
+		$e_ev_tstamp = $ev_tstamp + 0.1;
+	} else {
+		$b_ev_tstamp = $ev_tstamp - 100000;
+		$e_ev_tstamp = $ev_tstamp + 100000;
+	}
+	my $no_arrow = 0;
+
+	unless (exists ${th_created_hash}{$th_from}) {
+		$no_arrow = 1;
+	}
+
+	unless (exists ${th_created_hash}{$th_to}) {
+		$no_arrow = 1;
+	}
+
+	if ($filter_out_special_threads == 1 and ($th_from_suffix ne '' or $th_to_suffix ne '')) {
+		$no_arrow = 1;
+	}
+
+	unless ($no_arrow == 1) {
+		print "18 $b_ev_tstamp LT_SW M 0 T$th_from $ev_num\n";
+	}
+	unless ($filter_out_special_threads == 1 and $th_from_suffix ne '') {
+		print "10 $ev_tstamp ST_T T$th_from $th_from_state$th_from_suffix \"$th_from_name\"\n";
+	}
+	unless ($filter_out_special_threads == 1 and $th_to_suffix ne '') {
+		print "10 $ev_tstamp ST_T T$th_to $th_to_state$th_to_suffix \"$th_to_name\"\n";
+	}
+
+	my $vp_num = 0;
+	if (exists ${th_vp_hash}{$th_from}) {
+		$vp_num = ${th_vp_hash}{$th_from};
+		delete ${th_vp_hash}{$th_from};
+	}
+	${vp_th_hash}{$vp_num} = $th_to;
+	${th_vp_hash}{$th_to} = $vp_num;
+	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_to_suffix \"VP_$vp_num\"\n";
+	unless ($no_arrow == 1) {
+		print "19 $e_ev_tstamp LT_SW M 0 T$th_to $ev_num\n";
+	}
+}
+
+sub handle_paje_FUT_THREAD_DEATH_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $th = ${$param_array}[0];
+	my $th_name = ${th_name_hash}{$th};
+	${th_suffix_hash}{$th} = '';
+	my $th_state = 'd';
+	${th_state_hash}{$th} = $th_state;
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	if (exists ${th_created_hash}{$th}) {
+		print "10 $ev_tstamp ST_T T$th $th_state \"$th_name\"\n";
+		#print "8 $ev_tstamp T$th CT_T\n";
+	}
+}
+
+sub handle_paje_FUT_NEW_LWP_CODE		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $vp_num = ${$param_array}[0];
+	my $th = ${$param_array}[1];
+
+	my $th_name = ${th_name_hash}{$th};
+	my $th_suffix = ${th_suffix_hash}{$th};
+	my $th_state = 'r';
+	${th_state_hash}{$th} = $th_state;
+	${vp_th_hash}{$vp_num} = $th;
+	${th_vp_hash}{$th} = $vp_num;
+
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	if (exists ${th_created_hash}{$th}) {
+		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
+	}
+	print "7 $ev_tstamp VPvp$vp_num CT_VPvp Mvp VP_$vp_num\n";
+	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
+}
+
+sub handle_paje_FUT_FGOMP_PAPIMAR_EV		($$) {
+	my $papi_ev = shift;
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $ev_val = ${$param_array}[0];
+
+	my $vp_num = 0;
+	if (exists ${th_vp_hash}{$ev_tid}) {
+		$vp_num = ${th_vp_hash}{$ev_tid};
+	}
+
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	print "13 $ev_tstamp VAR_PAPI_$papi_ev T$ev_tid $ev_val\n";
+	print "13 $ev_tstamp VAR_PAPI_${papi_ev}vp VPvp$vp_num $ev_val\n";
+}
+
+sub handle_paje_FUT_FGOMP_PAPIMAR_EV0		($) {
+	my $event = shift;
+	handle_paje_FUT_FGOMP_PAPIMAR_EV (0, $event);
+}
+
+sub handle_paje_FUT_FGOMP_PAPIMAR_EV1		($) {
+	my $event = shift;
+	handle_paje_FUT_FGOMP_PAPIMAR_EV (1, $event);
+}
+
+sub handle_paje_FUT_FGOMP_PAPIMAR_EV2		($) {
+	my $event = shift;
+	handle_paje_FUT_FGOMP_PAPIMAR_EV (2, $event);
+}
+
+sub handle_paje_FUT_FGOMP_PAPIMAR_EV3		($) {
+	my $event = shift;
+	handle_paje_FUT_FGOMP_PAPIMAR_EV (3, $event);
+}
+
+sub handle_paje_FUT_FGOMP_GOMP_BAR_ENTER	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $th_name = ${th_name_hash}{$ev_tid};
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	unless (exists $th_gomp_ev_created_hash{$ev_tid}) {
+		$th_gomp_ev_created_hash{$ev_tid} = 1;
+		print "7 $ev_tstamp TE$ev_tid CT_TE T$ev_tid GOMP events\n";
+	}
+	print "10 $ev_tstamp ST_BT TE$ev_tid bw \"$th_name\"\n";
+}
+
+sub handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
+	my $ev_tid = ${$event}{'tid'};
+	my $th_name = ${th_name_hash}{$ev_tid};
+	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	unless (exists $th_gomp_ev_created_hash{$ev_tid}) {
+		$th_gomp_ev_created_hash{$ev_tid} = 1;
+		print "7 $ev_tstamp TE$ev_tid CT_TE T$ev_tid GOMP events\n";
+	}
+	print "10 $ev_tstamp ST_BT TE$ev_tid br \"$th_name\"\n";
+}
+
+# - Text output mode -
+sub handle_FUT_GCC_INSTRUMENT_ENTRY_CODE($) {
+	print "<FUT_GCC_INSTRUMENT_ENTRY_CODE>\n";
+}
+
+sub handle_FUT_GCC_INSTRUMENT_EXIT_CODE($) {
+	print "<FUT_GCC_INSTRUMENT_EXIT_CODE>\n";
+}
+
+sub handle_FUT_SETUP_CODE		($) {
+	print "<FUT_SETUP_CODE>\n";
+}
+
+sub handle_FUT_CALIBRATE0_CODE		($) {
+	print "<FUT_CALIBRATE0_CODE>\n";
+}
+
+sub handle_FUT_CALIBRATE1_CODE		($) {
+	print "<FUT_CALIBRATE1_CODE>\n";
+}
+
+sub handle_FUT_CALIBRATE2_CODE		($) {
+	print "<FUT_CALIBRATE2_CODE>\n";
+}
+
+sub handle_FUT_RQS_NEWLEVEL		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	print "$ev_num [$ev_tid]: New level $nb_levels created with [$param_0] runqueues\n";
+	$nb_levels++;
+}
+
+sub handle_FUT_RQS_NEWRQ		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my ($s_temp) = pack 'q', (@$param_array);
+	my ($param_0) = unpack 'l', ($s_temp);
+	my $param_1 = @$param_array[1];
+	print "$ev_num [$ev_tid]: New rq [$param_1] at level [$param_0] created\n";
+}
+
+sub handle_BUBBLE_SCHED_NEW		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	print "$ev_num [$ev_tid]: New bubble [$param_0] created\n";
+}
+
+sub handle_FUT_THREAD_BIRTH_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	shift @$param_array;
+	my ($s_temp) = pack 'q', (@$param_array);
+	my ($param_1) = unpack 'l', ($s_temp);
+	print "$ev_num [$ev_tid]: Thread [$param_0] created on VP [$param_1]\n";
+}
+
+sub handle_SET_THREAD_NUMBER		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	my $param_1 = ${$param_array}[1];
+	print "$ev_num [$ev_tid]: Thread [$param_0] numbered [$param_1]\n";
+}
+
+sub handle_FUT_SET_THREAD_NAME_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $line = ${$event}{'line'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = shift @$param_array;
+	my ($name_s_temp) = pack 'q*', (@$param_array);
+	my ($name_s) = unpack 'Z*', ($name_s_temp);
+	my $name = join ' - ',(@$param_array);
+
+	print "$ev_num [$ev_tid]: Thread [$param_0] named [$name_s]\n";
+}
+
+sub handle_FUT_SWITCH_TO_CODE		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	print "$ev_num [$ev_tid]: Switch to thread $param_0\n";
+}
+
+sub handle_FUT_THREAD_DEATH_CODE	($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	print "$ev_num [$ev_tid]: Thread [$param_0] dead\n";
+}
+
+sub handle_FUT_RQS_NEWLWPRQ		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my ($s_temp) = pack 'q', (@$param_array);
+	my ($param_0) = unpack 'l', ($s_temp);
+	my $param_1 = @$param_array[1];
+	print "$ev_num [$ev_tid]: New VP rq [$param_1] at VP [$param_0] created\n";
+}
+
+sub handle_FUT_NEW_LWP_CODE		($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $param_0 = ${$param_array}[0];
+	my $param_1 = ${$param_array}[1];
+	print "$ev_num [$ev_tid]: New VP [$param_0] running thread [$param_1]\n";
+}
+
+sub handle_FUT_FGOMP_PAPIMAR_EV		($$) {
+	my $papi_ev = shift;
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'params'};
+	my $ev_val = ${$param_array}[0];
+
+	print "$ev_num [$ev_tid]: PAPI event$papi_ev sample: $ev_val\n";
+}
+
+sub handle_FUT_FGOMP_PAPIMAR_EV0		($) {
+	my $event = shift;
+	handle_FUT_FGOMP_PAPIMAR_EV (0, $event);
+}
+
+sub handle_FUT_FGOMP_PAPIMAR_EV1		($) {
+	my $event = shift;
+	handle_FUT_FGOMP_PAPIMAR_EV (1, $event);
+}
+
+sub handle_FUT_FGOMP_PAPIMAR_EV2		($) {
+	my $event = shift;
+	handle_FUT_FGOMP_PAPIMAR_EV (2, $event);
+}
+
+sub handle_FUT_FGOMP_PAPIMAR_EV3		($) {
+	my $event = shift;
+	handle_FUT_FGOMP_PAPIMAR_EV (3, $event);
+}
+
+# - Output mode dispatch -
+if ($output_mode eq 'paje') {
+	${handler_hash}{ ${code_hash}{'FUT_SETUP_CODE'} } = \&handle_paje_FUT_SETUP_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_paje_FUT_THREAD_BIRTH_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_paje_FUT_SET_THREAD_NAME_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_paje_FUT_SWITCH_TO_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_paje_FUT_THREAD_DEATH_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_paje_FUT_NEW_LWP_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_FGOMP_GOMP_BAR_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_ENTER;
+	${handler_hash}{ ${code_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
+
+	unless ($filter_out_papi_events) {
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV0;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV1;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV2;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV3;
+	}
+} else {
+	${handler_hash}{ ${code_hash}{'FUT_GCC_INSTRUMENT_ENTRY_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_ENTRY_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_GCC_INSTRUMENT_EXIT_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_EXIT_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_SETUP_CODE'} } = \&handle_FUT_SETUP_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE0_CODE'} } = \&handle_FUT_CALIBRATE0_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE1_CODE'} } = \&handle_FUT_CALIBRATE1_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE2_CODE'} } = \&handle_FUT_CALIBRATE2_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWLEVEL'} } = \&handle_FUT_RQS_NEWLEVEL;
+	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWRQ'} } = \&handle_FUT_RQS_NEWRQ;
+	${handler_hash}{ ${code_hash}{'BUBBLE_SCHED_NEW'} } = \&handle_BUBBLE_SCHED_NEW;
+	${handler_hash}{ ${code_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_FUT_THREAD_BIRTH_CODE;
+	${handler_hash}{ ${code_hash}{'SET_THREAD_NUMBER'} } = \&handle_SET_THREAD_NUMBER;
+	${handler_hash}{ ${code_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_FUT_SET_THREAD_NAME_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_FUT_SWITCH_TO_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_FUT_THREAD_DEATH_CODE;
+	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWLWPRQ'} } = \&handle_FUT_RQS_NEWLWPRQ;
+	${handler_hash}{ ${code_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_FUT_NEW_LWP_CODE;
+
+	unless ($filter_out_papi_events) {
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_FUT_FGOMP_PAPIMAR_EV0;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_FUT_FGOMP_PAPIMAR_EV1;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_FUT_FGOMP_PAPIMAR_EV2;
+		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_FUT_FGOMP_PAPIMAR_EV3;
+	}
+}
+
+# Read Tracefile
+my $trace_filename = shift @ARGV;
+
+open my $trace_desc, "fut-print.pl -s ${trace_filename}|" or die "open [fut-print.pl -s ${trace_filename}|] failed: $!\n";
+
+while (<$trace_desc>) {
+	#print;
+	chomp;
+
+	#
+	my $line = $_;
+	my @params	= split ',';	# split the line into fields
+	
+	# read the fields
+	my $ev_num		= shift @params;
+	my $ev_host_num	= shift @params;
+	my $ev_time	= Math::BigInt->new(shift @params);
+	my $ev_tid	= shift @params;
+	my $ev_code	= shift @params;
+	my $ev_nb_params	= shift @params;
+	#
+
+	if (exists ${handler_hash}{$ev_code}) {
+		my $event = {};
+		${$event}{'line'}	= $line;
+		${$event}{'num'}	= $ev_num;
+		${$event}{'time'}	= $ev_time;
+		${$event}{'host_num'}	= $ev_host_num;
+		${$event}{'tid'}	= $ev_tid;
+		${$event}{'code'}	= $ev_code;
+		${$event}{'nb_params'}	= $ev_nb_params;
+		${$event}{'params'}	= \@params;
+		my $handler_sub = ${handler_hash}{$ev_code};
+		&{$handler_sub}($event);
+	} else {
+		if ($quiet_mode == 0) {
+			if (exists ${code_name_hash}{$ev_code}) {
+				print "unhandled event $ev_num: $ev_code - ".(${code_name_hash}{$ev_code})."\n";
+			} else {
+				print "unhandled event $ev_num: $ev_code - <UNKNOWN CODE>\n";
+			}
+		}
+	}
+
+}
+

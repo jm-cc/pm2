@@ -43,7 +43,7 @@ any_t f_idle(any_t arg)
   return NULL;
 }
 
-void bench_apply_vpset(unsigned nb)
+void bench_apply_vpset(unsigned nb, int target_vp)
 {
   tbx_tick_t t1, t2;
   int i = nb;
@@ -53,7 +53,7 @@ void bench_apply_vpset(unsigned nb)
   while(--i) {
     marcel_vpset_t vpset = MARCEL_VPSET_VP(vp);
     marcel_apply_vpset(&vpset);
-    vp = 1-vp;
+    vp = target_vp-vp;
   }
   TBX_GET_TICK(t2);
 
@@ -62,7 +62,7 @@ void bench_apply_vpset(unsigned nb)
 
 }
 
-void bench_migrate(unsigned long nb, int active)
+void bench_migrate(unsigned long nb, int active, int target_vp)
 {
   tbx_tick_t t1, t2;
   marcel_t pid;
@@ -74,9 +74,17 @@ void bench_migrate(unsigned long nb, int active)
   marcel_bubble_t b;
   marcel_bubble_init(&b);
   marcel_attr_setnaturalbubble(&attr, &b);
-  marcel_bubble_scheduleonlevel(&b, &marcel_topo_vp_level[2]);
+  marcel_bubble_scheduleonlevel(&b, &marcel_topo_vp_level[target_vp]);
   marcel_wake_up_bubble(&b);
 #endif
+
+  int vp = target_vp - 1;
+
+  if (target_vp == 1)
+    vp = 2;
+
+  marcel_vpset_t vpset = MARCEL_VPSET_VP(vp);
+  marcel_apply_vpset(&vpset);
 
   ma_holder_t *h[2];
   int i = 0;
@@ -94,9 +102,9 @@ void bench_migrate(unsigned long nb, int active)
 #ifdef MA__BUBBLES
   h[0] = &b.as_holder;
 #else
-  h[0] = &marcel_topo_vp_level[2].rq.as_holder;
+  h[0] = &marcel_topo_vp_level[target_vp].rq.as_holder;
 #endif
-  h[1] = &marcel_topo_vp_level[3].rq.as_holder;
+  h[1] = &marcel_topo_vp_level[0].rq.as_holder;
 
   TBX_GET_TICK(t1);
   while(--n) {
@@ -118,7 +126,7 @@ void bench_migrate(unsigned long nb, int active)
 #endif
 }
 
-void bench_resched(unsigned long nb)
+void bench_resched(unsigned long nb, int target_vp)
 {
   tbx_tick_t t1, t2;
   marcel_t pid;
@@ -126,8 +134,13 @@ void bench_resched(unsigned long nb)
   register long n = nb;
   marcel_attr_t attr;
 
+  int vp = target_vp - 1;
+
+  if (target_vp == 1)
+    vp = 2;
+
   marcel_attr_init(&attr);
-  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(2));
+  marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(vp));
 
   finished = 0;
   started = 0;
@@ -139,8 +152,8 @@ void bench_resched(unsigned long nb)
   TBX_GET_TICK(t1);
   while(--n) {
 	  ma_set_tsk_need_togo(pid);
-	  ma_resched_task(pid, 2, ma_get_lwp_by_vpnum(2));
-	  ma_topo_vpdata_l(&marcel_topo_vp_level[2], need_resched) = 0;
+	  ma_resched_task(pid, target_vp, ma_get_lwp_by_vpnum(target_vp));
+	  ma_topo_vpdata_l(&marcel_topo_vp_level[target_vp], need_resched) = 0;
   }
   TBX_GET_TICK(t2);
   marcel_printf("resched time =  %fus\n", TBX_TIMING_DELAY(t1, t2) / (double)nb);
@@ -151,24 +164,33 @@ void bench_resched(unsigned long nb)
 int marcel_main(int argc, char *argv[])
 {
   int essais = 3;
+  int vp = 1;
 
   marcel_init(&argc, argv);
 
-  if(argc != 2) {
-    marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);
+  if(argc < 2 || argc > 3) {
+    marcel_fprintf(stderr, "Usage: %s <nb> <vp>\n", argv[0]);
     exit(1);
   }
 
-  if (marcel_nbvps() < 4) {
-    marcel_fprintf(stderr, "I need at least 4 processors to run\n");
+  if (argc == 3)
+    vp = atoi(argv[2]);
+
+  if (!vp) {
+    marcel_fprintf(stderr, "VP can't be 0\n");
+    exit(1);
+  }
+
+  if (marcel_nbvps() < 3) {
+    marcel_fprintf(stderr, "I need at least 3 processors to run\n");
     exit(1);
   }
 
   while(essais--) {
-    bench_apply_vpset(atol(argv[1]));
-    bench_migrate(atol(argv[1])*100, 1);
-    bench_migrate(atol(argv[1])*100, 0);
-    bench_resched(atol(argv[1])*10);
+    bench_apply_vpset(atol(argv[1]), vp);
+    //bench_migrate(atol(argv[1])*100, 1, vp);
+    //bench_migrate(atol(argv[1])*100, 0, vp);
+    bench_resched(atol(argv[1])*10, vp);
   }
 
   marcel_end();

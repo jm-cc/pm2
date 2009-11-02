@@ -42,6 +42,7 @@ create_test_flavor() {
 	--marcel="enable_stats"					\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
+	$TESTOPTIONS						\
 	--all="gdb" --all="build_static" $_output_redirect
 }
 

@@ -33,6 +33,7 @@ create_test_flavor() {
 		--marcel="standard_main"					\
 		--marcel="bug_on" --marcel="malloc_preempt_debug"		\
 		--tbx="safe_malloc" --tbx="parano_malloc"			\
+		$TESTOPTIONS							\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_barrier_1MiB_stack)
@@ -42,6 +43,7 @@ create_test_flavor() {
 		--marcel="standard_main" --marcel="stacksize:1024"		\
 		--marcel="bug_on" 			                        \
 		--tbx="safe_malloc" --tbx="parano_malloc"			\
+		$TESTOPTIONS							\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_bubble_memory)
@@ -53,6 +55,7 @@ create_test_flavor() {
 		--marcel="enable_stats"	--memory="enable_mami"	        \
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		$TESTOPTIONS						\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_pukabi)
@@ -68,6 +71,7 @@ create_test_flavor() {
 		--marcel="bug_on" --puk="enable_pukabi"			\
 		--puk="disable_fd_virtualization"			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi)
@@ -83,6 +87,7 @@ create_test_flavor() {
 		--marcel="bug_on" --puk="enable_pukabi"			\
 		--puk="disable_fd_virtualization"			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi_stackalign)
@@ -98,6 +103,7 @@ create_test_flavor() {
 		--marcel="bug_on" --puk="enable_pukabi"			\
 		--puk="disable_fd_virtualization"			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_cpp)
@@ -108,6 +114,7 @@ create_test_flavor() {
 		--marcel="enable_keys" --marcel="enable_deviation"		\
 		--marcel="enable_cleanup" --marcel="enable_once"		\
 		--marcel="bug_on"						\
+		$TESTOPTIONS						\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_bubble)
@@ -119,6 +126,7 @@ create_test_flavor() {
 		--marcel="enable_stats"					\
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
+		$TESTOPTIONS						\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_dynamic)
@@ -126,6 +134,7 @@ create_test_flavor() {
 		    --modules=\"marcel tbx init\" \
 		    --marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		    --tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		    --all=\"opt\" --all=\"gdb\" --all=\"build_dynamic\" $_output_redirect
 		;;
 	test_marcel)
@@ -133,6 +142,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_tls)
@@ -143,6 +153,7 @@ create_test_flavor() {
 		--marcel="malloc_preempt_debug"					\
 		--marcel="enable_keys"						\
 		--tbx="safe_malloc" --tbx="parano_malloc"			\
+		$TESTOPTIONS						\
 		--all="gdb" --all="build_static" $_output_redirect
 	    ;;
 	test_marcel_smp)
@@ -150,6 +161,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_dynamic_smp)
@@ -157,6 +169,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_dynamic\" $_output_redirect
 	    ;;
 	test_marcel_cleanup)
@@ -164,6 +177,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_pmarcel)
@@ -173,6 +187,7 @@ create_test_flavor() {
 		--marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"enable_keys\" \
 		--marcel=\"pmarcel\" --marcel=\"enable_signals\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_cleanup_once)
@@ -180,6 +195,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_jump)
@@ -187,6 +203,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_virtual_timer)
@@ -195,6 +212,7 @@ create_test_flavor() {
 		    --marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		    --marcel=\"use_virtual_timer\" \
 		    --tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		    --all=\"gdb\" --all=\"build_static\" $_output_redirect
 		;;
 	test_marcel_userspace)
@@ -202,6 +220,7 @@ create_test_flavor() {
 		--modules=\"marcel tbx init\" \
 		--marcel=\"mono\" --marcel=\"enable_userspace\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_keys)
@@ -210,6 +229,7 @@ create_test_flavor() {
 		--marcel=\"mono\" --marcel=\"spinlock\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_keys\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats)
@@ -219,6 +239,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_options_numa_stats)
@@ -230,6 +251,7 @@ create_test_flavor() {
 		--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
 		--marcel=\"enable_keys\" --marcel=\"pmarcel\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"gdb\" --all=\"opt\" \
 		--all=\"build_static\" --marcel=\"build_dynamic\" \
 		--sub --marcel=\"build_static\" $_output_redirect
@@ -240,6 +262,7 @@ create_test_flavor() {
 		--init=\"topology\" --marcel=\"smp\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_blocking\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats_cleanup)
@@ -249,6 +272,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"enable_cleanup\" --marcel=\"enable_deviation\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_cleanup_once_stats)
@@ -258,6 +282,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"enable_cleanup\" --marcel=\"enable_once\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_stats_jump)
@@ -267,6 +292,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" --marcel=\"stack_jump\" \
 		--marcel=\"enable_stats\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_suspend_stats)
@@ -277,6 +303,7 @@ create_test_flavor() {
 		--marcel=\"enable_stats\" \
 		--marcel=\"enable_suspend\" --marcel=\"enable_deviation\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
 	test_marcel_numa_userspace_stats)
@@ -286,6 +313,7 @@ create_test_flavor() {
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"marcel_main\" \
 		--marcel=\"enable_stats\" --marcel=\"enable_userspace\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
+		$TESTOPTIONS						\
 		--all=\"opt\" --all=\"gdb\" --all=\"build_static\" $_output_redirect
 	    ;;
     esac

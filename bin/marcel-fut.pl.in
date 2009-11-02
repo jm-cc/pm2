@@ -15,31 +15,52 @@ sub usage {
 	exit 0;
 }
 
+# Dispatch hash tables
 my %code_hash;
+my %code_name_hash;
 my %handler_hash;
 
+# State hash tables
 my %th_name_hash;
 my %th_state_hash;
 my %th_suffix_hash;
 my %th_created_hash;
 my %th_gomp_ev_created_hash;
 
+# Thread <-> VP relationship tables
 my %vp_th_hash;
 my %th_vp_hash;
-my %code_name_hash;
+
+# Runqueue levels counter
 my $nb_levels = 0;
+
+# Reference timestamp
 my $ev_ref_tstamp = undef;
 
 
 # Settings
+
+## 0 - display Marcel's special threads (idle, run-task, ksoftirqd)
+## 1 - do not display Marcel's special threads
 my $filter_out_special_threads = 0;
+
+## 0 - display PAPI samples values
+## 1 - do not display PAPI samples values
 my $filter_out_papi_events = 0;
 
+## 'text' - selects text-mode trace output
+## 'paje' - selects paje-mode trace output
 my $output_mode = 'text';
-my $quiet_mode = 0;
-my $time_warp_mode = 0;
-my %filter_out;
 
+## 0 - display unknown/unhandled events
+## 1 - do not display unknown/unhandled events
+my $quiet_mode = 0;
+
+## 0 - use effective event times as timestamps
+## 1 - use a virtual timer as timestamps
+my $time_warp_mode = 0;
+
+# Command line processing
 my %opts;
 my $ret	= getopts('hqo:f:t', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t
 
@@ -58,16 +79,13 @@ if (exists $opts{'o'}) {
 	}
 }
 
+my %filter_out;
 if (exists $opts{'f'}) {
 	my $filter_events	= $opts{'f'};
 	my @filter_event_list = split /,/, $filter_events;
 	foreach (@filter_event_list) {
 		$filter_out{$_} = 1;
 	}
-}
-
-if (exists $opts{'t'}) {
-	$time_warp_mode	= 1;
 }
 
 if (exists $filter_out{'special'}) {
@@ -78,7 +96,11 @@ if (exists $filter_out{'papi'}) {
 	$filter_out_papi_events = 1;
 }
 
-# Read FUT codes
+if (exists $opts{'t'}) {
+	$time_warp_mode	= 1;
+}
+
+# Read FUT codes / code_names mapping
 open my $code_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";
 
 while (<$code_desc>) {
@@ -92,6 +114,8 @@ while (<$code_desc>) {
 }
 
 # Helpers
+
+# Generate time stamps out of event numbers or event times
 sub tstamp($$) {
 	my $ev_num = shift;
 	my $ev_time = shift;
@@ -771,25 +795,25 @@ if ($output_mode eq 'paje') {
 # Read Tracefile
 my $trace_filename = shift @ARGV;
 
+## Extract trace using fut-print.pl
 open my $trace_desc, "fut-print.pl -s ${trace_filename}|" or die "open [fut-print.pl -s ${trace_filename}|] failed: $!\n";
 
 while (<$trace_desc>) {
-	#print;
 	chomp;
 
-	#
+	# read a line
 	my $line = $_;
 	my @params	= split ',';	# split the line into fields
 	
-	# read the fields
+	# read the event fields
 	my $ev_num		= shift @params;
 	my $ev_host_num	= shift @params;
 	my $ev_time	= Math::BigInt->new(shift @params);
 	my $ev_tid	= shift @params;
 	my $ev_code	= shift @params;
 	my $ev_nb_params	= shift @params;
-	#
 
+	# dispatch the event to the suitable event handler
 	if (exists ${handler_hash}{$ev_code}) {
 		my $event = {};
 		${$event}{'line'}	= $line;
@@ -811,6 +835,5 @@ while (<$trace_desc>) {
 			}
 		}
 	}
-
 }
 

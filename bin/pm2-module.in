@@ -267,10 +267,10 @@ do_modules() {
 	    else
                 if [ "$user_only" = true ]; then
 		    list=`( cd "${PM2_SRCROOT}/modules"; ls -d * ) | \
-			grep -v -E $EXPERT_MODULES | grep -v common`
+			@EGREP@ -v $EXPERT_MODULES | grep -v common`
 		else
 		    list=`( cd "${PM2_SRCROOT}/modules"; ls -d * ) | \
-			grep -v -E $HIDDEN_MODULES | grep -v common`
+			@EGREP@ -v $HIDDEN_MODULES | grep -v common`
 		fi
 	    fi
 	    new_list=

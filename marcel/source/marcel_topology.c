@@ -543,7 +543,7 @@ static void topo_discover(void) {
 	marcel_nbprocessors = ma_fallback_nbprocessors ();
 
 	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_VPS) {
-		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_VPS);
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_VPS);
 		exit(1);
 	}
 

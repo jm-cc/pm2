@@ -139,7 +139,7 @@ void __memory_barrier(void);
 #  if __GNUC_MINOR__ >= 1
 #    define __tbx_inline__	__inline__ __TBX_ALWAYS_INLINE
 #    define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
-#    if __GNUC_MINOR < 4
+#    if __GNUC_MINOR__ < 4
 #      define __tbx_setjmp_inline__	__inline__ __TBX_ALWAYS_INLINE
 #    else
 #      define __tbx_setjmp_inline__	__inline__
@@ -245,8 +245,8 @@ void __memory_barrier(void);
 #if (__GNUC__ > 4)
 #define tbx_mb __sync_synchronize()
 #endif
-#if defined(__GNUC_MINOR)
-#  if (__GNUC__ == 4 && __GNUC_MINOR >=1)
+#if defined(__GNUC_MINOR__)
+#  if (__GNUC__ == 4 && __GNUC_MINOR__ >=1)
 #    define tbx_mb __sync_synchronize()
 #  endif
 #endif

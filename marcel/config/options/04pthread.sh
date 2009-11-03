@@ -7,3 +7,5 @@ PM2_MARCEL_LIBS="$PM2_MARCEL_LIBS -lPukABI -lrt"
 # make libpthread be linked against all other libs, so as to pull them
 # automatically at runtime.
 PM2_MARCEL_LINK_OTHERS=yes
+
+PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}libpthread.so"

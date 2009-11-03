@@ -64,7 +64,7 @@ AC_PADICO_INFINIBAND
 AC_PADICO_OPTIMIZE
 AC_PADICO_DEBUG
 AC_PADICO_TRACE
-AC_PADICO_PM2_EXTERNAL
+#AC_PADICO_PM2
 
 dnl --- output
 dnl --------------------------------------------------------

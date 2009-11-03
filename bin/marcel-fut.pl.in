@@ -21,15 +21,10 @@ my %code_name_hash;
 my %handler_hash;
 
 # State hash tables
-my %th_name_hash;
-my %th_state_hash;
-my %th_suffix_hash;
-my %th_created_hash;
-my %th_gomp_ev_created_hash;
+my %thread_hash;
 
 # Thread <-> VP relationship tables
 my %vp_th_hash;
-my %th_vp_hash;
 
 # Runqueue levels counter
 my $nb_levels = 0;
@@ -114,11 +109,43 @@ while (<$code_desc>) {
 }
 
 # Helpers
+sub suffix_from_name($) {
+	my $name = shift;
+	my $suffix = '';
+	if ($name =~ /^idle/) {
+		$suffix = "_i";
+	} elsif ($name =~ /^ksoftirqd/) {
+		$suffix = "_k";
+	} elsif ($name =~ /^run_task/) {
+		$suffix = "_r";
+	}
+	return $suffix;
+}
+
+sub display_arrow($$) {
+	my $thread_from = shift;
+	my $thread_to = shift;
+
+	unless (exists ${$thread_from}{'created'}) {
+		return 0;
+	}
+
+	unless (exists ${$thread_to}{'created'}) {
+		return 0;
+	}
+
+	if ($filter_out_special_threads == 1 and (${$thread_from}{'suffix'} ne '' or ${$thread_to}{'suffix'} ne '')) {
+		return 0;
+	}
+
+	return 1;
+}
 
 # Generate time stamps out of event numbers or event times
-sub tstamp($$) {
-	my $ev_num = shift;
-	my $ev_time = shift;
+sub tstamp($) {
+	my $event = shift;
+	my $ev_num = ${$event}{'num'};
+	my $ev_time = ${$event}{'time'};
 	my $result;
 
 	if ($time_warp_mode) {
@@ -136,6 +163,27 @@ sub tstamp($$) {
 	return $result;
 }
 
+sub tstamp_minus_e($) {
+	my $event = shift;
+	my $result = tstamp($event);
+	if ($time_warp_mode) {
+		$result = $result - 0.1;
+	} else {
+		$result = $result - 100000;
+	}
+	return $result;
+}
+
+sub tstamp_plus_e($) {
+	my $event = shift;
+	my $result = tstamp($event);
+	if ($time_warp_mode) {
+		$result = $result + 0.1;
+	} else {
+		$result = $result + 100000;
+	}
+	return $result;
+}
 
 # - Paje output mode -
 sub handle_paje_FUT_SETUP_CODE		($) {
@@ -299,6 +347,7 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 1	CT_T	CT_M	Thread_container_type
 1	CT_TE	CT_T	Thread_event_container_type
 3	ST_BT	CT_TE	Barrier_thread_state_type
+2	ET_BT	CT_TE	Barrier_thread_event_type
 3	ST_T	CT_T	Thread_state_type
 3	ST_VPvp	CT_VPvp	VP_state_type_vp
 6	bw	ST_BT	waiting	\"0.0 0.0 0.9\"
@@ -324,16 +373,83 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 7	0	Mvp	CT_Mvp	D	VPs
 5	LT_SW	CT_M	CT_T	CT_T	Link_type_switch
 7	0	VPvp0	CT_VPvp	Mvp	VP_0
-4       VAR_PAPI_0      CT_T    "Papi event 0"
-4       VAR_PAPI_1      CT_T    "Papi event 1"
-4       VAR_PAPI_2      CT_T    "Papi event 2"
-4       VAR_PAPI_3      CT_T    "Papi event 3"
-4       VAR_PAPI_0vp    CT_VPvp    "Papi event 0"
-4       VAR_PAPI_1vp    CT_VPvp    "Papi event 1"
-4       VAR_PAPI_2vp    CT_VPvp    "Papi event 2"
-4       VAR_PAPI_3vp    CT_VPvp    "Papi event 3"
+4       VAR_PAPI_0      CT_T    \"Papi event 0\"
+4       VAR_PAPI_1      CT_T    \"Papi event 1\"
+4       VAR_PAPI_2      CT_T    \"Papi event 2\"
+4       VAR_PAPI_3      CT_T    \"Papi event 3\"
+4       VAR_PAPI_0vp    CT_VPvp    \"Papi event 0\"
+4       VAR_PAPI_1vp    CT_VPvp    \"Papi event 1\"
+4       VAR_PAPI_2vp    CT_VPvp    \"Papi event 2\"
+4       VAR_PAPI_3vp    CT_VPvp    \"Papi event 3\"
 END_PAJE_HEADER
 }
+
+sub paje_display_create_thread($$) {
+	my $event = shift;
+	my $thread = shift;
+	my $ev_tstamp = tstamp($event);
+	my $th_tid = ${$thread}{'tid'};
+	unless (exists ${$thread}{'created'}) {
+		print "7 $ev_tstamp T$th_tid CT_T M Thread_$th_tid\n";
+		${$thread}{'created'} = 1;
+	}
+}
+
+sub paje_display_create_vp($$) {
+	my $event = shift;
+	my $vp_num = shift;
+	my $ev_tstamp = tstamp($event);
+	print "7 $ev_tstamp VPvp$vp_num CT_VPvp Mvp VP_$vp_num\n";
+}
+
+sub paje_display_thread_state($$) {
+	my $event = shift;
+	my $thread = shift;
+	my $ev_tstamp = tstamp($event);
+	if (exists ${$thread}{'created'}) {
+		unless ($filter_out_special_threads and ${$thread}{'suffix'} ne '') {
+			print "10 $ev_tstamp ST_T T${$thread}{'tid'} ${$thread}{'state'}${$thread}{'suffix'} \"${$thread}{'name'}\"\n";
+		}
+	}
+}
+
+sub paje_display_vp_thread_state($$) {
+	my $event = shift;
+	my $thread = shift;
+	my $ev_tstamp = tstamp($event);
+	my $vp_num = 0;
+	if (exists ${$thread}{'vp'}) {
+		$vp_num = ${$thread}{'vp'};
+	}
+	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp${$thread}{'suffix'} \"VP_$vp_num\"\n";
+}
+
+sub paje_display_switch_arrow_begin($$) {
+	my $event = shift;
+	my $thread_from = shift;
+	my $b_ev_tstamp = tstamp_minus_e($event);
+	print "18 $b_ev_tstamp LT_SW M 0 T${$thread_from}{'tid'} ${$event}{'num'}\n";
+}
+
+sub paje_display_switch_arrow_end($$) {
+	my $event = shift;
+	my $thread_to = shift;
+	my $e_ev_tstamp = tstamp_plus_e($event);
+	print "19 $e_ev_tstamp LT_SW M 0 T${$thread_to}{'tid'} ${$event}{'num'}\n";
+}
+
+sub paje_check_gomp_event_container($$) {
+	my $event = shift;
+	my $thread = shift;
+
+	unless (exists ${$thread}{'gomp_ev'}) {
+		${$thread}{'gomp_ev'}= 1;
+		my $ev_tstamp = tstamp($event);
+		print "7 $ev_tstamp TE${$thread}{'tid'} CT_TE T${$thread}{'tid'} \"GOMP events\"\n";
+	}
+}
+
+# -
 
 sub handle_paje_FUT_THREAD_BIRTH_CODE	($) {
 	my $event = shift;
@@ -341,201 +457,118 @@ sub handle_paje_FUT_THREAD_BIRTH_CODE	($) {
 	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'params'};
-	my $param_0 = ${$param_array}[0];
-	shift @$param_array;
-	my ($s_temp) = pack 'q', (@$param_array);
-	my ($param_1) = unpack 'l', ($s_temp);
-	my $th = $param_0;
-	my $th_already_exists = 0;
-	if (exists ${th_created_hash}{$th}) {
-		$th_already_exists = 1;
-	}
-	my $th_name = 'undef';
-	my $th_state = 's';
-	my $th_suffix = '_u';
-	${th_name_hash}{$th} = $th_name;
-	${th_state_hash}{$th} = $th_state;
-	${th_suffix_hash}{$th} = $th_suffix;
+	my $th_tid = shift @$param_array;
+	my ($param_1) = unpack 'l', (pack 'q', (@$param_array));
 
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	unless ($filter_out_special_threads == 1) {
-		if ($th_already_exists == 0) {
-			print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
-			${th_created_hash}{$th}	= 1;
-		}
-		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
+	my $thread;
+	if (exists ${thread_hash}{$th_tid}) {
+		$thread = ${thread_hash}{$th_tid};
+	} else {
+		$thread = {};
+		${$thread}{'tid'} = $th_tid;
+		${thread_hash}{$th_tid} = $thread;
+	}
+	${$thread}{'name'} = 'undefined';
+	${$thread}{'state'} = 's';
+	${$thread}{'suffix'} = '_u';
+
+	unless ($filter_out_special_threads) {
+		paje_display_create_thread($event, $thread);
+		paje_display_thread_state($event, $thread);
 	}
 }
 
 sub handle_paje_FUT_SET_THREAD_NAME_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
-	my $line = ${$event}{'line'};
 	my $param_array = ${$event}{'params'};
-	my $th = shift @$param_array;
-	my ($name_s_temp) = pack 'q*', (@$param_array);
-	my ($th_name) = unpack 'Z*', ($name_s_temp);
-	my $th_suffix = '';
-	if ($th_name =~ /^idle/) {
-		$th_suffix = "_i";
-	} elsif ($th_name =~ /^ksoftirqd/) {
-		$th_suffix = "_k";
-	} elsif ($th_name =~ /^run_task/) {
-		$th_suffix = "_r";
-	}
-	${th_name_hash}{$th} = $th_name;
-	${th_suffix_hash}{$th} = $th_suffix;
-	my $th_state = ${th_state_hash}{$th};
-	my $vp_num = 0;
-	if (exists ${th_vp_hash}{$th}) {
-		$vp_num = ${th_vp_hash}{$th};
-	}
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	if ($filter_out_special_threads == 1) {
-		if ($th_suffix eq '') {
-			unless (exists ${th_created_hash}{$th}) {
-				print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
-				${th_created_hash}{$th}	= 1;
-			}
-			print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
-			print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
-		}
-	} else {
-		unless (exists ${th_created_hash}{$th}) {
-			print "7 $ev_tstamp T$th CT_T M Thread_$th\n";
-			${th_created_hash}{$th}	= 1;
-		}
-		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
-		print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
+	my $th_tid = shift @$param_array;
+	my ($th_name) = unpack 'Z*', (pack 'q*', (@$param_array));
+	my $thread = ${thread_hash}{$th_tid};
+	${$thread}{'name'} = $th_name;
+	${$thread}{'suffix'} = suffix_from_name($th_name);
+	if (!$filter_out_special_threads or ${$thread}{'suffix'} eq '') {
+		paje_display_create_thread($event, $thread);
+		paje_display_thread_state($event, $thread);
+		paje_display_vp_thread_state($event, $thread);
 	}
 }
 
 sub handle_paje_FUT_SWITCH_TO_CODE		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
-	my $th_from = ${$event}{'tid'};
+	my $th_from_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'params'};
-	my $th_to = ${$param_array}[0];
+	my $th_to_tid = ${$param_array}[0];
 	
-	my $th_from_name = ${th_name_hash}{$th_from};
-	my $th_from_suffix = ${th_suffix_hash}{$th_from};
-	my $th_from_state = 's';
-	if (${th_state_hash}{$th_from} ne 'd') {
-		${th_state_hash}{$th_from} = $th_from_state;
+	my $thread_from = ${thread_hash}{$th_from_tid};
+	if (${$thread_from}{'state'} ne 'd') {
+		${$thread_from}{'state'} = 's';
 	}
 
-	my $th_to_name = ${th_name_hash}{$th_to};
-	my $th_to_suffix = ${th_suffix_hash}{$th_to};
-	my $th_to_state = 'r';
-	${th_state_hash}{$th_to} = $th_to_state;
+	my $thread_to = ${thread_hash}{$th_to_tid};
+	${$thread_to}{'state'} = 'r';
 
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	my $b_ev_tstamp;
-	my $e_ev_tstamp;
-	if ($time_warp_mode) {
-		$b_ev_tstamp = $ev_tstamp - 0.1;
-		$e_ev_tstamp = $ev_tstamp + 0.1;
-	} else {
-		$b_ev_tstamp = $ev_tstamp - 100000;
-		$e_ev_tstamp = $ev_tstamp + 100000;
+	my $display_arrow = display_arrow($thread_from, $thread_to);
+	if ($display_arrow) {
+		paje_display_switch_arrow_begin($event, $thread_from);
 	}
-	my $no_arrow = 0;
-
-	unless (exists ${th_created_hash}{$th_from}) {
-		$no_arrow = 1;
-	}
-
-	unless (exists ${th_created_hash}{$th_to}) {
-		$no_arrow = 1;
-	}
-
-	if ($filter_out_special_threads == 1 and ($th_from_suffix ne '' or $th_to_suffix ne '')) {
-		$no_arrow = 1;
-	}
-
-	unless ($no_arrow == 1) {
-		print "18 $b_ev_tstamp LT_SW M 0 T$th_from $ev_num\n";
-	}
-	unless ($filter_out_special_threads == 1 and $th_from_suffix ne '') {
-		print "10 $ev_tstamp ST_T T$th_from $th_from_state$th_from_suffix \"$th_from_name\"\n";
-	}
-	unless ($filter_out_special_threads == 1 and $th_to_suffix ne '') {
-		print "10 $ev_tstamp ST_T T$th_to $th_to_state$th_to_suffix \"$th_to_name\"\n";
-	}
+	paje_display_thread_state($event, $thread_from);
+	paje_display_thread_state($event, $thread_to);
 
 	my $vp_num = 0;
-	if (exists ${th_vp_hash}{$th_from}) {
-		$vp_num = ${th_vp_hash}{$th_from};
-		delete ${th_vp_hash}{$th_from};
+	if (exists ${$thread_from}{'vp'}) {
+		$vp_num = ${$thread_from}{'vp'};
+		delete ${$thread_from}{'vp'};
 	}
-	${vp_th_hash}{$vp_num} = $th_to;
-	${th_vp_hash}{$th_to} = $vp_num;
-	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_to_suffix \"VP_$vp_num\"\n";
-	unless ($no_arrow == 1) {
-		print "19 $e_ev_tstamp LT_SW M 0 T$th_to $ev_num\n";
+	${vp_th_hash}{$vp_num} = $thread_to;
+	${$thread_to}{'vp'} = $vp_num;
+
+	paje_display_vp_thread_state($event, $thread_to);
+	if ($display_arrow) {
+		paje_display_switch_arrow_end($event, $thread_to);
 	}
 }
 
 sub handle_paje_FUT_THREAD_DEATH_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
-	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'params'};
-	my $th = ${$param_array}[0];
-	my $th_name = ${th_name_hash}{$th};
-	${th_suffix_hash}{$th} = '';
-	my $th_state = 'd';
-	${th_state_hash}{$th} = $th_state;
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	if (exists ${th_created_hash}{$th}) {
-		print "10 $ev_tstamp ST_T T$th $th_state \"$th_name\"\n";
-		#print "8 $ev_tstamp T$th CT_T\n";
-	}
+	my $th_tid = ${$param_array}[0];
+	my $thread = ${thread_hash}{$th_tid};
+	${$thread}{'suffix'} = '';
+	${$thread}{'state'} = 'd';
+	paje_display_thread_state($event, $thread);
 }
 
 sub handle_paje_FUT_NEW_LWP_CODE		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
-	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'params'};
 	my $vp_num = ${$param_array}[0];
-	my $th = ${$param_array}[1];
+	my $th_tid = ${$param_array}[1];
 
-	my $th_name = ${th_name_hash}{$th};
-	my $th_suffix = ${th_suffix_hash}{$th};
-	my $th_state = 'r';
-	${th_state_hash}{$th} = $th_state;
-	${vp_th_hash}{$vp_num} = $th;
-	${th_vp_hash}{$th} = $vp_num;
+	my $thread = ${thread_hash}{$th_tid};
+	${$thread}{'state'} = 'r';
+	${$thread}{'vp'} = $vp_num;
+	${vp_th_hash}{$vp_num} = $thread;
 
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	if (exists ${th_created_hash}{$th}) {
-		print "10 $ev_tstamp ST_T T$th $th_state$th_suffix \"$th_name\"\n";
-	}
-	print "7 $ev_tstamp VPvp$vp_num CT_VPvp Mvp VP_$vp_num\n";
-	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp$th_suffix \"VP_$vp_num\"\n";
+	paje_display_thread_state($event, $thread);
+	paje_display_create_vp($event, $vp_num);
+	paje_display_vp_thread_state($event, $thread);
 }
 
 sub handle_paje_FUT_FGOMP_PAPIMAR_EV		($$) {
 	my $papi_ev = shift;
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'params'};
 	my $ev_val = ${$param_array}[0];
+	my $thread = ${thread_hash}{$ev_tid};
 
 	my $vp_num = 0;
-	if (exists ${th_vp_hash}{$ev_tid}) {
-		$vp_num = ${th_vp_hash}{$ev_tid};
+	if (exists ${$thread}{'vp'}) {
+		$vp_num = ${$thread}{'vp'};
 	}
 
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
+	my $ev_tstamp = tstamp($event);
 	print "13 $ev_tstamp VAR_PAPI_$papi_ev T$ev_tid $ev_val\n";
 	print "13 $ev_tstamp VAR_PAPI_${papi_ev}vp VPvp$vp_num $ev_val\n";
 }
@@ -562,30 +595,22 @@ sub handle_paje_FUT_FGOMP_PAPIMAR_EV3		($) {
 
 sub handle_paje_FUT_FGOMP_GOMP_BAR_ENTER	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
-	my $th_name = ${th_name_hash}{$ev_tid};
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	unless (exists $th_gomp_ev_created_hash{$ev_tid}) {
-		$th_gomp_ev_created_hash{$ev_tid} = 1;
-		print "7 $ev_tstamp TE$ev_tid CT_TE T$ev_tid GOMP events\n";
-	}
-	print "10 $ev_tstamp ST_BT TE$ev_tid bw \"$th_name\"\n";
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_gomp_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "10 $ev_tstamp ST_BT TE$ev_tid bw \"barrier wait\"\n";
+	print "20 $ev_tstamp ET_BT TE$ev_tid \"entering barrier\" \"barrier enter\"\n";
 }
 
 sub handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
-	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
-	my $th_name = ${th_name_hash}{$ev_tid};
-	my $ev_tstamp = tstamp($ev_num, $ev_time);
-	unless (exists $th_gomp_ev_created_hash{$ev_tid}) {
-		$th_gomp_ev_created_hash{$ev_tid} = 1;
-		print "7 $ev_tstamp TE$ev_tid CT_TE T$ev_tid GOMP events\n";
-	}
-	print "10 $ev_tstamp ST_BT TE$ev_tid br \"$th_name\"\n";
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_gomp_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "10 $ev_tstamp ST_BT TE$ev_tid br \"running\"\n";
+	print "20 $ev_tstamp ET_BT TE$ev_tid \"leaving barrier\" \"barrier leave\"\n";
 }
 
 # - Text output mode -

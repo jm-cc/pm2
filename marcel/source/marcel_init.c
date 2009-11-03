@@ -301,10 +301,6 @@ static void marcel_strip_cmdline(int *argc, char *argv[])
 
 #ifdef MA__LIBPTHREAD
 
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE
-#endif
-
 #include <errno.h>
 #include <dlfcn.h>
 

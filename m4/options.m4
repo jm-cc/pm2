@@ -52,7 +52,7 @@ AC_DEFUN([PM2_DETERMINE_DEFAULT_FLAVOR], [
 	  $1="libpthread"
 	  ;;
 	*)
-	  $1="marcel-forestgomp-opt"
+	  $1="pm2"
 	  ;;
       esac
    fi

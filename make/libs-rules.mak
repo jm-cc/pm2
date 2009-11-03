@@ -106,10 +106,11 @@ endif # LINK_OTHER_LIBS
 ifeq ($(LINK_OTHER_LIBS),yes)
 # We link at the link stage, not build stage. But compile pics ASAN.
 builddynamic: $(MOD_PICS)
-link: $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
+linkdynamic: $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 else
 builddynamic: $(LIB_LIB_SO) $(LIB_LIB_SO_MAJ) $(LIB_LIB_SO_MAJ_MIN)
 endif
+link: $(LINK_LIB)
 
 $(LIB_LIB_SO_MAJ_MIN): $(MOD_PICS) $(LIB_SO_MAP)
 	$(COMMON_LINK)

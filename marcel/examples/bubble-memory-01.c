@@ -143,6 +143,8 @@ main (int argc, char *argv[]) {
   for (i = 0; i < 2; i++) {
     if (node_levels[i] != expected_result[i]) {
       printf ("FAILED: Bad distribution.\n");
+      printf ("        node %i: expected: %i threads\n", i, expected_result[i]); 
+      printf ("                observed: %i threads\n", node_levels[i]);
       ret = 1;
       goto end;
     }

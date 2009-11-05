@@ -69,8 +69,8 @@ struct _struct_common_attr_t {
 #endif // *_KERNEL
 
 #if defined(PM2_TOPOLOGY)
-#  include <topology.h>
-extern topo_topology_t topology;
+#  include <hwloc.h>
+extern hwloc_topology_t topology;
 extern char *synthetic_topology_description; /* This is exported as it is needed by marcel */
 #endif /* PM2_TOPOLOGY */
 

@@ -28,7 +28,7 @@ static unsigned int pm2_conf_size = 0;
 #endif
 
 #if defined(PM2_TOPOLOGY)
-topo_topology_t topology;
+hwloc_topology_t topology;
 char *synthetic_topology_description = NULL;
 #endif /* PM2_TOPOLOGY */
 
@@ -207,11 +207,11 @@ void common_pre_init(int *_argc, char *_argv[],
       *argc -= 2;
       argv += 2;
     }
-    topo_topology_init(&topology);
-    topo_topology_set_fsys_root(topology, topology_fsys_root_path);
+    hwloc_topology_init(&topology);
+    hwloc_topology_set_fsroot(topology, topology_fsys_root_path);
     if (synthetic_topology_description)
-      topo_topology_set_synthetic(topology, synthetic_topology_description);
-    topo_topology_load(topology);
+      hwloc_topology_set_synthetic(topology, synthetic_topology_description);
+    hwloc_topology_load(topology);
   }
 #endif /* PM2_TOPOLOGY */
 
@@ -607,7 +607,7 @@ common_exit(common_attr_t *attr)
 #endif /* PROFILE */
 
 #ifdef PM2_TOPOLOGY
-  topo_topology_destroy(topology);
+  hwloc_topology_destroy(topology);
 #endif /* PM2_TOPOLOGY */
 
   LOG_OUT();

@@ -32,7 +32,7 @@
 #  define MARCEL_INTERNAL_INCLUDE
 #endif /* MARCEL */
 
-#include <topology.h>
+#include <hwloc.h>
 #include "pm2_common.h"
 #include "pm2_valgrind.h"
 #include "mm_mami.h"
@@ -71,32 +71,32 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->membind_policy = MAMI_MEMBIND_POLICY_NONE;
   memory_manager->alignment = 1;
 
-  nb_nodes = topo_get_type_nbobjs(topology, TOPO_OBJ_NODE);
+  nb_nodes = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_NODE);
   memory_manager->nb_nodes = nb_nodes ? nb_nodes : 1;
   mdebug_memory("Number of NUMA nodes = %d\n", memory_manager->nb_nodes);
 
-  depth_node = topo_get_type_depth(topology, TOPO_OBJ_NODE);
-  memory_manager->max_node = nb_nodes ? topo_get_obj_by_depth(topology, depth_node, memory_manager->nb_nodes-1)->os_index+2 : 2;
+  depth_node = hwloc_get_type_depth(topology, HWLOC_OBJ_NODE);
+  memory_manager->max_node = nb_nodes ? hwloc_get_obj_by_depth(topology, depth_node, memory_manager->nb_nodes-1)->os_index+2 : 2;
   mdebug_memory("Max node = %d\n", memory_manager->max_node);
 
   memory_manager->os_nodes = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
   if (!nb_nodes) memory_manager->os_nodes[0] = 0;
   else {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-      memory_manager->os_nodes[node] = topo_get_obj_by_depth(topology, depth_node, node)->os_index;
+      memory_manager->os_nodes[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->os_index;
     }
   }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     mdebug_memory("Node #%d --> OS Node #%d\n", node, memory_manager->os_nodes[node]);
   }
 
-  memory_manager->huge_page_size = topo_get_system_obj(topology)->attr->system.huge_page_size_kB * 1024;
+  memory_manager->huge_page_size = hwloc_get_system_obj(topology)->attr->system.huge_page_size_kB * 1024;
   mdebug_memory("Huge page size : %ld\n", memory_manager->huge_page_size);
   memory_manager->huge_page_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
   if (!nb_nodes) memory_manager->huge_page_free[0] = 0;
   else {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-      memory_manager->huge_page_free[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.huge_page_free;
+      memory_manager->huge_page_free[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.huge_page_free;
     }
   }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
@@ -145,13 +145,13 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->mem_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long));
   if (nb_nodes) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
-      memory_manager->mem_total[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
-      memory_manager->mem_free[node] = topo_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
+      memory_manager->mem_total[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
+      memory_manager->mem_free[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
     }
   }
   else {
-    topo_obj_t obj = NULL;
-    obj = topo_get_next_obj(topology, TOPO_OBJ_SYSTEM, obj);
+    hwloc_obj_t obj = NULL;
+    obj = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_SYSTEM, obj);
     memory_manager->mem_total[0] = obj->attr->node.memory_kB;
     memory_manager->mem_free[0] = obj->attr->node.memory_kB;
   }
@@ -1777,26 +1777,27 @@ int mami_distribute(mami_manager_t *memory_manager,
 }
 
 #if !defined(MARCEL)
-#include <topology/glibc-sched.h>
+#include <hwloc/glibc-sched.h>
 int _mami_current_node(void) {
   cpu_set_t set;
-  topo_cpuset_t topo_set;
+  hwloc_cpuset_t topo_set;
   topo_obj_t obj;
 
   CPU_ZERO(&set);
   pthread_getaffinity_np(th_mami_self(), sizeof(set), &set);
-  topo_cpuset_from_glibc_sched_affinity(topology, &topo_set, &set, sizeof(cpu_set_t));
-  obj = topo_get_next_obj_above_cpuset(topology, &topo_set, TOPO_OBJ_NODE, NULL);
+  topo_set = topo_cpuset_from_glibc_sched_affinity(topology, &set, sizeof(cpu_set_t));
+  obj = topo_get_next_obj_above_cpuset(topology, topo_set, TOPO_OBJ_NODE, NULL);
+  hwloc_cpuset_free(topo_set);
   if (obj) return obj->os_index; else return -1;
 }
 
 int _mami_attr_settopo_level(th_mami_attr_t *attr, int node) {
   cpu_set_t set;
-  topo_obj_t node_obj;
+  hwloc_obj_t node_obj;
 
   CPU_ZERO(&set);
-  node_obj = topo_get_obj_by_depth(topology, topo_get_type_depth(topology, TOPO_OBJ_NODE), node);
-  topo_cpuset_to_glibc_sched_affinity(topology, &(node_obj->cpuset), &set, sizeof(cpu_set_t));
+  node_obj = hwloc_get_obj_by_depth(topology, hwloc_get_type_depth(topology, HWLOC_OBJ_NODE), node);
+  topo_cpuset_to_glibc_sched_affinity(topology, node_obj->cpuset, &set, sizeof(cpu_set_t));
   pthread_attr_setaffinity_np(attr, sizeof(set), &set);
   return 0;
 }

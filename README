@@ -8,20 +8,20 @@ To be compiled, PM2 software needs:
 * Perl
 * GNU Autoconf > 2.50 when using NewMadeleine and/or puk.
 
-* libtopology (when enabling MaMI or Marcel NUMA options)
+* hwloc (when enabling MaMI or Marcel NUMA options)
 
 TO BE COMPLETED
 
 0 . Installing the prerequisites ++++++++++++++++++++++++++++++++++++++
 
-Sources for libtopology can be obtained either as a tarball at the
+Sources for hwloc can be obtained either as a tarball at the
 following address:
 
-http://gforge.inria.fr/frs/?group_id=1758
+http://www.open-mpi.org/projects/hwloc/
 
 or from the Subversion server:
 
-$ svn checkout svn://scm.gforge.inria.fr/svn/libtopology/trunk libtopology
+$ svn checkout http://svn.open-mpi.org/svn/hwloc/trunk hwloc
 
 Follow the provided instructions to install the library.
 

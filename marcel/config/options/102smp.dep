@@ -1,4 +1,4 @@
 Provide: marcel_smp
 Provide: marcel_proctype
 Conflict: marcel_proctype
-Depend: libtopology
+Depend: hwloc

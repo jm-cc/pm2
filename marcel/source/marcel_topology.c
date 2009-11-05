@@ -28,7 +28,7 @@
 
 #ifdef MA__NUMA
 #  include <math.h>
-#  include <topology.h>
+#  include <hwloc.h>
 #endif
 
 /* cpus */
@@ -118,7 +118,7 @@ struct marcel_topo_level *marcel_topo_levels[2*MARCEL_LEVEL_LAST+1] = {
 /* Return the OS-provided number of processors.  Unlike other methods such as
    reading sysfs on Linux, this method is not virtualizable; thus it's only
    used as a fall-back method, allowing `ma_topology_set_fsys_root ()' to
-   have the desired effect. FIXME for libtopology? */
+   have the desired effect. FIXME for hwloc? */
 static unsigned ma_fallback_nbprocessors(void) {
 #if defined(_SC_NPROCESSORS_ONLN)
 	return sysconf(_SC_NPROCESSORS_ONLN);
@@ -466,29 +466,29 @@ static void topo_connect(void) {
 
 #ifdef MA__NUMA
 static enum marcel_topo_level_e
-ma_topo_level_type_from_libtopology(topo_obj_t t)
+ma_topo_level_type_from_hwloc(hwloc_obj_t t)
 {
   enum marcel_topo_level_e mtype = MARCEL_LEVEL_MACHINE; /* default value which always exists */
 
   switch (t->type) {
-  case TOPO_OBJ_SYSTEM: mtype = MARCEL_LEVEL_MACHINE; break;
-  case TOPO_OBJ_MACHINE:
+  case HWLOC_OBJ_SYSTEM: mtype = MARCEL_LEVEL_MACHINE; break;
+  case HWLOC_OBJ_MACHINE:
     marcel_fprintf(stderr, "SSI OSes like Kerrighed not supported yet\n");
     MA_ALWAYS_BUG_ON(1);
-  case TOPO_OBJ_NODE: mtype = MARCEL_LEVEL_NODE; break;
-  case TOPO_OBJ_SOCKET: mtype = MARCEL_LEVEL_DIE; break;
-  case TOPO_OBJ_CORE: mtype = MARCEL_LEVEL_CORE; break;
-  case TOPO_OBJ_PROC: mtype = MARCEL_LEVEL_PROC; break;
-  case TOPO_OBJ_MISC: mtype = MARCEL_LEVEL_MISC; break;
+  case HWLOC_OBJ_NODE: mtype = MARCEL_LEVEL_NODE; break;
+  case HWLOC_OBJ_SOCKET: mtype = MARCEL_LEVEL_DIE; break;
+  case HWLOC_OBJ_CORE: mtype = MARCEL_LEVEL_CORE; break;
+  case HWLOC_OBJ_PROC: mtype = MARCEL_LEVEL_PROC; break;
+  case HWLOC_OBJ_MISC: mtype = MARCEL_LEVEL_MISC; break;
 
-  case TOPO_OBJ_CACHE: {
+  case HWLOC_OBJ_CACHE: {
     switch (t->attr->cache.depth) {
     case 1: mtype = MARCEL_LEVEL_L1; break;
     case 2: mtype = MARCEL_LEVEL_L2; break;
     case 3: mtype = MARCEL_LEVEL_L3; break;
     default:
       /* FIXME ignore other cache depth */
-      marcel_fprintf(stderr, "Cannot convert libtopology cache depth %d\n", t->attr->cache.depth);
+      marcel_fprintf(stderr, "Cannot convert hwloc cache depth %d\n", t->attr->cache.depth);
       MA_ALWAYS_BUG_ON(1);
     }
     break;      
@@ -496,7 +496,7 @@ ma_topo_level_type_from_libtopology(topo_obj_t t)
 
   default:
     /* MAX and other should not occur */
-    marcel_fprintf(stderr, "Cannot convert libtopology type %d\n", t->type);
+    marcel_fprintf(stderr, "Cannot convert hwloc type %d\n", t->type);
     MA_ALWAYS_BUG_ON(1);
   }
 
@@ -504,25 +504,25 @@ ma_topo_level_type_from_libtopology(topo_obj_t t)
 }
 
 static inline void
-ma_cpuset_from_libtopology(marcel_vpset_t *mset, topo_cpuset_t *lset)
+ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_cpuset_t lset)
 {
 #ifdef MA_HAVE_VPSUBSET
-  /* large vpset using an array of unsigned long subsets in both marcel and libtopology */
+  /* large vpset using an array of unsigned long subsets in both marcel and hwloc */
   int i;
   for(i=0; i<MA_VPSUBSET_COUNT && i<MA_VPSUBSET_COUNT; i++)
-    MA_VPSUBSET_SUBSET(*mset, i) = MA_VPSUBSET_SUBSET(*lset, i);
+    MA_VPSUBSET_SUBSET(*mset, i) = hwloc_cpuset_to_ith_ulong(lset, i);
 #elif MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32
   /* marcel uses unsigned long long mask,
-   * and it's longer than libtopology's unsigned long mask,
+   * and it's longer than hwloc's unsigned long mask,
    * use 2 of the latter
    */
-  *mset = (marcel_vpset_t) lset->s[0] | ((marcel_vpset_t) lset->s[1] << 32);
+  *mset = (marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 0) | ((marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 1) << 32);
 #else
   /* marcel uses int or unsigned long long mask,
-   * and it's smaller or equal-size than libtopology's unsigned long mask,
+   * and it's smaller or equal-size than hwloc's unsigned long mask,
    * use 1 of the latter
    */
-  *mset = lset->s[0];
+  *mset = hwloc_cpuset_to_ith_ulong(lset, 0);
 #endif
 }
 #endif /* MA__NUMA */
@@ -549,24 +549,22 @@ static void topo_discover(void) {
 
 	/* Raw detection, from coarser levels to finer levels */
 #  ifdef MA__NUMA
-	struct topo_topology_info topoinfo;
+	unsigned topodepth = hwloc_topology_get_depth(topology);
 
-	topo_topology_get_info(topology, &topoinfo);
-
-	marcel_use_fake_topology = topoinfo.is_fake ? tbx_true : tbx_false;
+	marcel_use_fake_topology = hwloc_topology_is_thissystem(topology) ? tbx_false : tbx_true;
 	if (synthetic_topology_description) {
 	  marcel_topo_max_arity = -1; /* Synthetic topologies do not need splitting */
 	  marcel_topo_merge = 0; /* Synthetic topologies do not need merging */
 	}
 
-	for(l=topoinfo.depth-1; l>=0 && l<topoinfo.depth; l--) {
+	for(l=topodepth-1; l>=0 && l<topodepth; l--) {
 	  struct marcel_topo_level *mlevels;
-	  int nbitems = topo_get_depth_nbobjs(topology, l);
-	  topo_obj_type_t ltype = topo_get_depth_type(topology, l);
+	  int nbitems = hwloc_get_nbobjs_by_depth(topology, l);
+	  hwloc_obj_type_t ltype = hwloc_get_depth_type(topology, l);
 
-	  mdebug_topology("converting %d items from libtopology level depth %d (type %d)\n", nbitems, l, ltype);
+	  mdebug_topology("converting %d items from hwloc level depth %d (type %d)\n", nbitems, l, ltype);
 
-	  if (ltype == TOPO_OBJ_SYSTEM) {
+	  if (ltype == HWLOC_OBJ_SYSTEM) {
 	    mlevels = marcel_machine_level;
 	  } else {
 	    mlevels = __marcel_malloc((nbitems+MARCEL_NBMAXVPSUP+1)*sizeof(*mlevels));
@@ -574,14 +572,14 @@ static void topo_discover(void) {
 	    marcel_topo_level_nbitems[l] = nbitems;
 	    marcel_topo_levels[l] = mlevels;
 	    switch (ltype) {
-	    case TOPO_OBJ_NODE:
+	    case HWLOC_OBJ_NODE:
 	      marcel_topo_node_level = mlevels;
 	      marcel_nbnodes = nbitems;
 	      break;
-	    case TOPO_OBJ_CORE:
+	    case HWLOC_OBJ_CORE:
 	      marcel_topo_core_level = mlevels;
 	      break;
-	    case TOPO_OBJ_PROC:
+	    case HWLOC_OBJ_PROC:
 	      marcel_topo_cpu_level = mlevels;
 	      break;
 	    default:
@@ -592,14 +590,14 @@ static void topo_discover(void) {
 	  /* FIXME: drop level if no numa? */
 
 	  for(i=0; i<nbitems; i++) {
-	    struct topo_obj *tlevel = topo_get_obj_by_depth(topology, l, i);
+	    hwloc_obj_t tlevel = hwloc_get_obj_by_depth(topology, l, i);
 	    struct marcel_topo_level *mlevel = &mlevels[i];
-	    enum marcel_topo_level_e mtype = ma_topo_level_type_from_libtopology(tlevel);
+	    enum marcel_topo_level_e mtype = ma_topo_level_type_from_hwloc(tlevel);
 
 	    ma_topo_setup_level(mlevel, mtype);
 	    MA_ALWAYS_BUG_ON(tlevel->depth != l);
 	    MA_ALWAYS_BUG_ON(tlevel->logical_index != i);
-	    mlevel->index = topo_get_obj_by_depth(topology, l, i)->sibling_rank;
+	    mlevel->index = hwloc_get_obj_by_depth(topology, l, i)->sibling_rank;
 
 	    ma_topo_set_empty_os_numbers(mlevel);
 	    switch (mtype) {
@@ -640,19 +638,19 @@ static void topo_discover(void) {
 	      break;
 	    }
 
-	    ma_cpuset_from_libtopology(&mlevel->cpuset, &tlevel->cpuset);
+	    ma_cpuset_from_hwloc(&mlevel->cpuset, tlevel->cpuset);
 
 	    marcel_vpset_zero(&mlevel->vpset);
 
-	    mdebug_topology("assembled libtopology level at depth %d cpuset %" MARCEL_PRIxVPSET "\n",
+	    mdebug_topology("assembled hwloc level at depth %d cpuset %" MARCEL_PRIxVPSET "\n",
 			    l,
 			    MARCEL_VPSET_PRINTF_VALUE(mlevel->cpuset));
 	  }
 	  marcel_vpset_zero(&mlevels[i].vpset);
 	  marcel_vpset_zero(&mlevels[i].cpuset);
 	}
-	marcel_nbprocessors = topo_get_depth_nbobjs(topology, topoinfo.depth-1);
-	marcel_topo_nblevels = topoinfo.depth;
+	marcel_nbprocessors = hwloc_get_nbobjs_by_depth(topology, topodepth-1);
+	marcel_topo_nblevels = topodepth;
 
 	/* FIXME: drop level if not ordered as expected */
 

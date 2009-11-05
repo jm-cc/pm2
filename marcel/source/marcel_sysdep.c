@@ -22,7 +22,7 @@
 #  include <sys/mman.h>
 #endif
 #if defined(MA__LWPS)
-#  include <topology.h>
+#  include <hwloc.h>
 #endif
 
 /*
@@ -31,25 +31,24 @@
 
 #if defined(MA__LWPS)
 void ma_bind_on_processor(unsigned target) {
-	topo_cpuset_t set;
-
-	topo_cpuset_zero(&set);
-	topo_cpuset_set(&set, target);
-	if (topo_set_cpubind(topology, &set, TOPO_CPUBIND_THREAD)) {
-		perror("topo_set_cpubind");
+	hwloc_cpuset_t set = hwloc_cpuset_alloc();
+	hwloc_cpuset_set(set, target);
+	if (hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD)) {
+		perror("hwloc_set_cpubind");
 		fprintf(stderr,"while binding on CPU%d\n", target);
 		exit(1);
 	}
+	hwloc_cpuset_free(set);
 }
 void ma_unbind_from_processor(void) {
-	topo_cpuset_t set;
-
-	topo_cpuset_fill(&set);
-	if (topo_set_cpubind(topology, &set, TOPO_CPUBIND_THREAD)) {
-		perror("topo_set_cpubind");
+	hwloc_cpuset_t set = hwloc_cpuset_alloc();
+	hwloc_cpuset_fill(set);
+	if (hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD)) {
+		perror("hwloc_set_cpubind");
 		fprintf(stderr,"while unbinding\n");
 		exit(1);
 	}
+	hwloc_cpuset_free(set);
 }
 #endif
 

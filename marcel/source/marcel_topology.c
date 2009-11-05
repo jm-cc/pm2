@@ -542,8 +542,8 @@ static void topo_discover(void) {
 		 obtained using sysconf(3).  */
 	marcel_nbprocessors = ma_fallback_nbprocessors ();
 
-	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_VPS) {
-		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_VPS);
+	if (marcel_nbvps() > MARCEL_NBMAXCPUS) {
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n", marcel_nbvps(), MARCEL_NBMAXCPUS);
 		exit(1);
 	}
 
@@ -665,8 +665,8 @@ static void topo_discover(void) {
 
 	mdebug_topology("%s: chose %u VPs\n", __func__, ma__nb_vp);
 
-	if (marcel_nbvps() + MARCEL_NBMAXVPSUP > MA_NR_VPS) {
-		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h\n", marcel_nbvps() + MARCEL_NBMAXVPSUP, MA_NR_VPS);
+	if (marcel_nbvps() > MARCEL_NBMAXCPUS) {
+		fprintf(stderr,"%d > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n", marcel_nbvps(), MARCEL_NBMAXCPUS);
 		exit(1);
 	}
 

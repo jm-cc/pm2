@@ -1780,14 +1780,14 @@ int mami_distribute(mami_manager_t *memory_manager,
 #include <hwloc/glibc-sched.h>
 int _mami_current_node(void) {
   cpu_set_t set;
-  hwloc_cpuset_t topo_set;
-  topo_obj_t obj;
+  hwloc_cpuset_t hwloc_set;
+  hwloc_obj_t obj;
 
   CPU_ZERO(&set);
   pthread_getaffinity_np(th_mami_self(), sizeof(set), &set);
-  topo_set = topo_cpuset_from_glibc_sched_affinity(topology, &set, sizeof(cpu_set_t));
-  obj = topo_get_next_obj_above_cpuset(topology, topo_set, TOPO_OBJ_NODE, NULL);
-  hwloc_cpuset_free(topo_set);
+  hwloc_set = hwloc_cpuset_from_glibc_sched_affinity(topology, &set, sizeof(cpu_set_t));
+  obj = hwloc_get_next_obj_covering_cpuset_by_type(topology, hwloc_set, HWLOC_OBJ_NODE, NULL);
+  hwloc_cpuset_free(hwloc_set);
   if (obj) return obj->os_index; else return -1;
 }
 
@@ -1797,7 +1797,7 @@ int _mami_attr_settopo_level(th_mami_attr_t *attr, int node) {
 
   CPU_ZERO(&set);
   node_obj = hwloc_get_obj_by_depth(topology, hwloc_get_type_depth(topology, HWLOC_OBJ_NODE), node);
-  topo_cpuset_to_glibc_sched_affinity(topology, node_obj->cpuset, &set, sizeof(cpu_set_t));
+  hwloc_cpuset_to_glibc_sched_affinity(topology, node_obj->cpuset, &set, sizeof(cpu_set_t));
   pthread_attr_setaffinity_np(attr, sizeof(set), &set);
   return 0;
 }

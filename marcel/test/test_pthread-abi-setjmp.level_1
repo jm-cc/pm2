@@ -21,10 +21,8 @@ export PADICO_VERBOSE=yes
 flavor="test_marcel_pthread_abi"
 prog="setjmp"
 create_test_flavor
-ld_preload="libPukABI.so $(pm2-config --flavor=$flavor --ld-library-path)/libpthread.so"
 
 cat > /tmp/pm2test_"${USER}"_expected << EOF
-PukABI: preinit.
 set jump 1
 long jump 1
 jumped 1

@@ -47,6 +47,7 @@ void marcel_sig_disable_interrupts(void);
 void marcel_sig_exit(void);
 void marcel_sig_pause(void);
 void marcel_sig_nanosleep(void);
+void marcel_sig_create_timer(ma_lwp_t lwp);
 void marcel_sig_reset_timer(void);
 void marcel_sig_stop_itimer(void);
 #ifndef MA__TIMER

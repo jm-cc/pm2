@@ -213,6 +213,7 @@ static void cleanup_child_after_fork(void)
 
 	/* Restart the timer and preemption.  This allows applications using
 	 * Marcel's libpthread to work correctly.  */
+	marcel_sig_create_timer(MA_LWP_SELF);
 	marcel_sig_reset_timer();
 	ma_local_bh_enable_no_resched();
 	ma_preempt_enable();

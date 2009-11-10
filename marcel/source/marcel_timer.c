@@ -308,6 +308,31 @@ void marcel_sig_nanosleep(void)
 #endif
 }
 
+/* Interval timers don't need to be explicitely created, they always exist in
+ * processes.
+ *
+ * Timers created through timer_create are however destroyed during fork, so
+ * they need to be recreated from the cleanup_child_after_fork handler.
+ */
+void marcel_sig_create_timer(ma_lwp_t lwp)
+{
+#ifdef MA__USE_TIMER_CREATE
+	/* Create per-thread timer */
+	{
+		struct sigevent ev = {};
+		int ret;
+		ev.sigev_notify = SIGEV_THREAD_ID;
+		ev.sigev_signo = MARCEL_TIMER_SIGNAL;
+#ifndef sigev_notify_thread_id
+#define sigev_notify_thread_id _sigev_un._tid
+#endif
+		ev.sigev_notify_thread_id = marcel_gettid();
+		ret = timer_create(CLOCK_MONOTONIC, &ev, &lwp->timer);
+		MA_BUG_ON(ret);
+	}
+#endif
+}
+
 void marcel_sig_reset_timer(void)
 {
 	LOG_IN();
@@ -430,22 +455,9 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sigaction(MARCEL_TIMER_USERSIGNAL, &sa, (struct sigaction *)NULL);
 #endif
 
-#ifdef MA__USE_TIMER_CREATE
-	/* Create per-thread timer */
-	{
-		struct sigevent ev = {};
-		int ret;
-		ev.sigev_notify = SIGEV_THREAD_ID;
-		ev.sigev_signo = MARCEL_TIMER_SIGNAL;
-#ifndef sigev_notify_thread_id
-#define sigev_notify_thread_id _sigev_un._tid
+	marcel_sig_create_timer(lwp);
 #endif
-		ev.sigev_notify_thread_id = marcel_gettid();
-		ret = timer_create(CLOCK_MONOTONIC, &ev, &lwp->timer);
-		MA_BUG_ON(ret);
-	}
-#endif
-#endif
+
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
 	marcel_sig_enable_interrupts();

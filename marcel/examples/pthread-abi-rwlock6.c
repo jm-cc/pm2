@@ -79,7 +79,9 @@ tf (void *arg)
 
   if (tv.tv_usec < 200000)
     {
-      puts ("timeout too short");
+      printf ("timeout %lu.%06lu too short (expected %lu.%06lu)",
+	  (unsigned long) tv.tv_sec, (unsigned long) tv.tv_usec,
+	  0UL, 200000UL);
       pthread_exit ((void *) 1l);
     }
 

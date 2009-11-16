@@ -28,11 +28,12 @@
 #ifdef PIOMAN
 #include "pioman.h"
 #endif
+#include <nm_public.h>
+#include <nm_private.h>
 /*#include <ccs_public.h>*/
 struct CCSI_Segment;
 
 #include <sys/uio.h>
-
 
 typedef uint8_t nm_sr_status_t;
 
@@ -59,13 +60,13 @@ typedef enum
   } nm_sr_event_t;
 
 
-#ifdef PIOMAN
-/** a status with synchronization- PIOMan version */
-typedef piom_cond_t nm_sr_cond_t;
-#else /* PIOMAN */
+#ifdef NMAD_POLL
 /** a status with synchronization- PIOMan-less version */
 typedef volatile nm_sr_status_t nm_sr_cond_t;
-#endif /* PIOMAN */
+#else
+/** a status with synchronization- PIOMan version */
+typedef piom_cond_t nm_sr_cond_t;
+#endif
 
 /** a sendrecv request object. Supposedly opaque for applications.*/
 typedef struct nm_sr_request_s nm_sr_request_t;
@@ -141,7 +142,7 @@ extern int nm_sr_init(nm_core_t p_core);
  */
 extern int nm_sr_exit(nm_core_t p_core);
 
-#ifdef PIOMAN
+#ifdef PIOM_ENABLE_SHM
 /** Attach a piom_sem_t to a request. This piom_sem_t is woken 
  *  up when the request is completed.
  *  @param p_request a pointer to a NM/SO request to be filled.
@@ -149,7 +150,7 @@ extern int nm_sr_exit(nm_core_t p_core);
  *  @return The NM status.
  */
 extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
-#endif
+#endif	/* PIOM_ENABLE_SHM */
 
 extern void nm_sr_debug_init(int* argc, char** argv, int debug_flags);
 
@@ -448,15 +449,9 @@ extern int nm_sr_get_size(nm_core_t p_core,
 			  nm_sr_request_t *request,
 			  size_t *size);
 
-/** Retrieve the 'ref' from a completed receive request.
- */
-static inline int nm_sr_get_ref(nm_core_t p_core,
-				nm_sr_request_t *p_request,
-				void**ref)
-{
-  *ref = p_request->ref;
-  return NM_ESUCCESS;
-}
+int nm_sr_get_ref(nm_core_t p_core,
+		  nm_sr_request_t *p_request,
+		  void**ref);
 
 /** Retrieve the tag from a sendreceive request.
  */
@@ -464,10 +459,48 @@ static inline int nm_sr_get_tag(nm_core_t p_core,
 				nm_sr_request_t *p_request,
 				nm_tag_t*tag)
 {
+/* FIXME: if this is a send request, the tag we return is actually the seq number
+ * so use nm_sr_get_[r|s]tag instead
+ */
   *tag = p_request->req.unpack.tag;
   return NM_ESUCCESS;
 }
 
+/** Retrieve the tag from a receive request.
+ */
+static inline int nm_sr_get_rtag(nm_core_t p_core,
+				nm_sr_request_t *p_request,
+				nm_tag_t*tag)
+{
+  *tag = p_request->req.unpack.tag;
+  return NM_ESUCCESS;
+}
+
+/** Retrieve the tag from a send request.
+ */
+static inline int nm_sr_get_stag(nm_core_t p_core,
+				nm_sr_request_t *p_request,
+				nm_tag_t*tag)
+{
+  *tag = p_request->req.pack.tag;
+  return NM_ESUCCESS;
+}
+
+
+static inline 
+int nm_sr_disable_progression(nm_core_t p_core)
+{
+  return nm_core_disable_progression(p_core);
+}
+
+static inline 
+int nm_sr_enable_progression(nm_core_t p_core)
+{
+  return nm_core_enable_progression(p_core);
+}
+
+void nm_sr_send_remove(struct nm_core *p_core, nm_sr_request_t *req);
+void nm_sr_recv_remove(struct nm_core *p_core, nm_sr_request_t *req);
 
 /* @} */
 

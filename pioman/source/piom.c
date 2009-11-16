@@ -52,14 +52,8 @@ typedef struct per_lwp_polling_s {
  * have something to poll
  */
 TBX_FAST_LIST_HEAD(piom_list_poll);
-#ifdef MARCEL
 /* lock used to access piom_list_poll */
-ma_spinlock_t piom_poll_lock = MA_SPIN_LOCK_UNLOCKED;
-
-int job_scheduled = 0;
-#else
-void* piom_poll_lock;
-#endif	/* MARCEL */
+piom_spinlock_t piom_poll_lock = PIOM_SPIN_LOCK_INITIALIZER;
 
 
 /* Wake up threads that are waiting for a request */
@@ -82,9 +76,9 @@ __piom_wake_req_waiters(piom_server_t server,
 #endif	/* PIOM__DEBUG */
 	wait->ret = code;
 	tbx_fast_list_del_init(&wait->chain_wait);
-#ifdef MARCEL
-	marcel_sem_V(&wait->sem);
-#endif	/* MARCEL */
+#ifdef PIOM_THREAD_ENABLED
+	piom_sem_V(&wait->sem);
+#endif	/* PIOM_THREAD_ENABLED */
     }
     LOG_RETURN(0);
 }
@@ -111,9 +105,9 @@ __piom_wake_id_waiters(piom_server_t server, int code)
 #endif	/* PIOM__DEBUG */
 	wait->ret = code;
 	tbx_fast_list_del_init(&wait->chain_wait);
-#ifdef MARCEL
-	marcel_sem_V(&wait->sem);
-#endif	/* MARCEL */
+#ifdef PIOM_THREAD_ENABLED
+	piom_sem_V(&wait->sem);
+#endif	/* PIOM_THREAD_ENABLED */
     }
     LOG_RETURN(0);
 }
@@ -131,10 +125,10 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
     TBX_INIT_FAST_LIST_HEAD(&wait->chain_wait);
     TBX_INIT_FAST_LIST_HEAD(&req->list_wait);
     tbx_fast_list_add(&wait->chain_wait, &req->list_wait);
-#ifdef MARCEL
-    marcel_sem_init(&wait->sem, 0);
-    wait->task = MARCEL_SELF;
-#endif /* MARCEL */
+#ifdef PIOM_THREAD_ENABLED
+    piom_sem_init(&wait->sem, 0);
+    wait->task = PIOM_SELF;
+#endif /* PIOM_THREAD_ENABLED */
     wait->ret = 0;
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -146,9 +140,9 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
 
     __piom_unlock_server(server);
 
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P that can return -1 and set errno to EINT (posix compliant) */
-    marcel_sem_P(&wait->sem);	
+    piom_sem_P(&wait->sem);	
 #else
     int waken_up = 0;
 
@@ -174,7 +168,7 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
 	}
     } while (!(req->state & PIOM_STATE_OCCURED));
 
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
     LOG_RETURN(wait->ret);
 }
 
@@ -188,18 +182,14 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
 {
     if(req->state&PIOM_STATE_OCCURED)
 	return 0;
-#ifdef MARCEL
-    marcel_task_t *lock;
-#endif	/* MARCEL */
+    piom_thread_t lock;
     int ret = 0;
     piom_server_t server;
     LOG_IN();
 
     PIOM_BUG_ON(!(req->state & PIOM_STATE_REGISTERED));
     server = req->server;
-#ifdef MARCEL
     lock = piom_ensure_lock_server(server);
-#endif	/* MARCEL */
     piom_verify_server_state(server);
 
     req->state &= ~PIOM_STATE_OCCURED;
@@ -214,11 +204,9 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
     if (!(req->state & PIOM_STATE_OCCURED)) {
 	/* Wait for the request */
 	ret = __piom_wait_req(server, req, wait, timeout);
-#ifdef MARCEL
 	piom_restore_lock_server_unlocked(server, lock);
     } else {
 	piom_restore_lock_server_locked(server, lock);
-#endif	/* MARCEL */
     }
 
     LOG_RETURN(ret);
@@ -231,10 +219,8 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
 {
     LOG_IN();
     struct piom_wait wait;
-#ifdef MARCEL
-    marcel_task_t *lock;
+    piom_thread_t lock;
     lock = piom_ensure_lock_server(server);
-#endif	/* MARCEL */
 
     piom_verify_server_state(server);
 
@@ -243,21 +229,21 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
     }
 
     tbx_fast_list_add(&wait.chain_wait, &server->list_id_waiters);
-#ifdef MARCEL
-    marcel_sem_init(&wait.sem, 0);
-#endif	/* MARCEL */
+#ifdef PIOM_THREAD_ENABLED
+    piom_sem_init(&wait.sem, 0);
+#endif	/* PIOM_THREAD_ENABLED */
     wait.ret = 0;
 #ifdef PIOM__DEBUG
-    wait.task = MARCEL_SELF;
+    wait.task = PIOM_SELF;
 #endif	/* PIOM__DEBUG */
 	/* TODO: only register if the polling fails */
     piom_check_polling_for(server);
-#ifdef MARCEL
     __piom_unlock_server(server);
+#ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P (posix compliant) */
-    marcel_sem_P(&wait.sem);
+    piom_sem_P(&wait.sem);
+#endif	/* PIOM_THREAD_ENABLED */
     piom_restore_lock_server_unlocked(server, lock);
-#endif	/* MARCEL */
 
     LOG_RETURN(wait.ret);
 }
@@ -271,10 +257,8 @@ piom_wait(piom_server_t server, piom_req_t req,
     int checked = 0;
     int waken_up = 0;
 
-#ifdef MARCEL
-    marcel_task_t *lock;
-    lock = piom_ensure_lock_server(server);
-#endif	/* MARCEL */
+    piom_thread_t lock_owner;
+    lock_owner = piom_ensure_lock_server(server);
 
     piom_verify_server_state(server);
 
@@ -310,9 +294,7 @@ piom_wait(piom_server_t server, piom_req_t req,
 	    }
 	}
 
-#ifdef MARCEL
-	piom_restore_lock_server_locked(server, lock);
-#endif	/* MARCEL */
+	piom_restore_lock_server_locked(server, lock_owner);
 	LOG_RETURN(0);
     }
 
@@ -325,15 +307,11 @@ piom_wait(piom_server_t server, piom_req_t req,
     /* Wait for the request's completion */
     if (!(req->state & PIOM_STATE_OCCURED)) {
 	__piom_wait_req(server, req, wait, timeout);
-#ifdef MARCEL
-	piom_lock_server_owner(server, lock);
-#endif /* MARCEL */
+    lock_owner = piom_ensure_lock_server(server);
     }
     /* Unregister the request */
     __piom_unregister(server, req);
-#ifdef MARCEL
-    piom_restore_lock_server_locked(server, lock);
-#endif	/* MARCEL */
+    piom_restore_lock_server_locked(server, lock_owner);
     LOG_RETURN(wait->ret);
 }
 

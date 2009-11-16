@@ -76,6 +76,7 @@ static int nm_tag_eq(const void*_tag1, const void*_tag2)
   const nm_tag_t tag2 = (intptr_t)_tag2;
   return (tag1 == tag2);
 }
+
 #define NM_TAG_TABLE_HASHTABLE(NAME, ENTRY_TYPE) \
   struct NAME##_table_s \
   { \
@@ -85,7 +86,7 @@ static int nm_tag_eq(const void*_tag1, const void*_tag2)
   static inline void NAME##_table_init(struct NAME##_table_s*t) \
   { \
     t->_h = puk_hashtable_new(&nm_tag_hash, &nm_tag_eq); \
-    tbx_malloc_init(&t->_mem, sizeof(ENTRY_TYPE), NM_TAGS_PREALLOC, "nmad/taghash/" #NAME); \
+    tbx_malloc_extended_init(&t->_mem, sizeof(ENTRY_TYPE), NM_TAGS_PREALLOC, "nmad/taghash/" #NAME, 1); \
   } \
   static inline void NAME##_table_destroy(struct NAME##_table_s*t) \
   { \
@@ -112,6 +113,7 @@ static int nm_tag_eq(const void*_tag1, const void*_tag2)
     } \
     return e; \
   }
+
 #endif /* NM_TAGS_AS_HASHTABLE */
 
 

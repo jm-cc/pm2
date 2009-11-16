@@ -57,6 +57,10 @@ struct nm_strategy_iface_s
   int (*flush)(void*_status,
                struct nm_gate *p_gate);
 
+  /** Returns NULL if there is no packet to send */
+  int (*todo)(void* _status, 
+	      struct nm_gate*p_gate);
+
 #ifdef NMAD_QOS
   int (*ack_callback)(void *_status,
                       struct nm_pkt_wrap *p_pw,

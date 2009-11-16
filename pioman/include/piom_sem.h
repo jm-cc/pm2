@@ -22,20 +22,29 @@
 #include "pioman.h"
 #include "tbx_fast_list.h"
 
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
 //#include "marcel.h"
 //#include "marcel_sem.h"
 
+#ifdef MARCEL
 typedef marcel_sem_t piom_sem_t;
+#else
+#include <semaphore.h>
+typedef sem_t piom_sem_t;
+#endif
 
 typedef struct {
+#ifdef MARCEL
     marcel_cond_t cond;
-    ma_spinlock_t lock;
-    marcel_sem_t sem;
+#endif
+    piom_spinlock_t lock;
+    piom_sem_t sem;
     /* additional semaphore used to signal this condition
        and others */
     /* todo: is there a need for 2 semaphores ? */    
+#ifdef PIOM_ENABLE_SHM
     p_piom_sh_sem_t alt_sem;
+#endif
     uint8_t value;
     int cpt;
 } piom_cond_t;
@@ -45,7 +54,7 @@ typedef struct {
 typedef int piom_sem_t;
 typedef uint8_t piom_cond_t;
 
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
 
 void piom_sem_P(piom_sem_t *sem);
 void piom_sem_V(piom_sem_t *sem);
@@ -59,6 +68,8 @@ void piom_cond_mask(piom_cond_t *cond, uint8_t mask);
 
 /* Attach an additional semaphore to an already initialized condition
    Returns 1 if a semaphore is already attached, 0 otherwise */
+#ifdef PIOM_ENABLE_SHM
 int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sem);
+#endif
 
 #endif	/* PIOM_SEM_H */

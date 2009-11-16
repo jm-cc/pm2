@@ -61,15 +61,31 @@ struct nm_pw_contrib_s
  */
 struct nm_pkt_wrap
 {
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
+#ifdef PIOM_ENABLE_LTASKS
+
+  struct piom_ltask ltask;
+
+#else  /* PIOM_ENABLE_LTASKS */
+
   struct piom_req inst;
   enum {
-    RECV,
-    SEND,
-    NONE,
+    RECV=1,
+    SEND=2,
+    NONE=3,
+    ERROR=4,
   } which;
-#endif /* PIOMAN */
-  
+#endif	/* PIOM_ENABLE_LTASKS */
+#endif /* PIOMAN_POLL */
+
+#ifdef PIO_OFFLOAD
+  tbx_bool_t data_to_offload;
+
+#ifdef PIOM_ENABLE_LTASKS
+  struct piom_ltask offload_ltask;
+#endif	/* PIOM_ENABLE_LTASKS */
+
+#endif /* PIO_OFFLOAD */
   
   /* Scheduler fields.
    */

@@ -236,22 +236,10 @@ void nm_gate_ref_set(struct nm_gate*p_gate, void*ref);
 
 int nm_schedule(nm_core_t p_core);
 
-#ifdef PIOMAN
-void nmad_lock(void);
-
-void nmad_unlock(void);
+#ifndef PIOM_POLLING_DISABLED
 
 int nm_piom_post_all(nm_core_t p_core);
 
-#else /* PIOMAN */
-
-static inline void 
-nmad_lock(void)
-{ }
-
-static inline void 
-nmad_unlock(void)
-{ }
 
 
 #endif /* PIOMAN */

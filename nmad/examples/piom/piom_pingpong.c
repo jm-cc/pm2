@@ -22,7 +22,8 @@
 
 #ifdef PIOMAN
 
-#define LEN_DEFAULT      16*1024*1024
+//#define LEN_DEFAULT      16*1024*1024
+#define LEN_DEFAULT      (128*1024)
 #define WARMUPS_DEFAULT	10
 #define LOOPS_DEFAULT	100
 #define THREADS_DEFAULT 4

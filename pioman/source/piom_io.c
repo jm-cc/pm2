@@ -577,6 +577,8 @@ piom_io_fast_poll(piom_server_t server,
 	return 0;
 }
 
+#ifndef PIOM_ENABLE_LTASKS
+
 /* Function that reads a fd and uses PIOMan */
 int 
 piom_read(int fildes, void *buf, size_t nbytes)
@@ -651,7 +653,6 @@ piom_write(int fildes, const void *buf, size_t nbytes)
 		LOG_RETURN(n);
 	} else
 		LOG_RETURN(write(fildes, buf, nbytes));
-
 }
 
 #ifndef __MINGW32__
@@ -743,7 +744,7 @@ piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 	return piom_writev(fildes, iov, iovcnt);
 }
 #endif
-
+#endif /* PIOM_ENABLE_LTASKS */
 /* =============== Asynchronous I/O management =============== */
 
 int piom_tselect(int width, fd_set * __restrict readfds,

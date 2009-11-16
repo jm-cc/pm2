@@ -51,17 +51,20 @@ static p_tbx_memory_t nm_so_pw_contrib_mem = NULL;
  */
 int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
-  tbx_malloc_init(&nm_so_pw_contrib_mem,
+  tbx_malloc_extended_init(&nm_so_pw_contrib_mem,
 		  sizeof(struct nm_pw_contrib_s),
-		  INITIAL_PKT_NUM, "nmad/core/pw_contrib");
+		  INITIAL_PKT_NUM, "nmad/core/pw_contrib",
+		  1);
 
-  tbx_malloc_init(&nm_so_pw_nohd_mem,
-		  sizeof(struct nm_pkt_wrap),
-		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd");
+  tbx_malloc_extended_init(&nm_so_pw_nohd_mem,
+			   sizeof(struct nm_pkt_wrap),
+			   INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd", 
+			   1);
 
-  tbx_malloc_init(&nm_so_pw_buf_mem,
-		  sizeof(struct nm_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
-		  INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/buf");
+  tbx_malloc_extended_init(&nm_so_pw_buf_mem,
+			   sizeof(struct nm_pkt_wrap) + NM_SO_MAX_UNEXPECTED,
+			   INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/buf", 
+			   1);
 
   return NM_ESUCCESS;
 }
@@ -70,7 +73,7 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
  *
  *  @return The NM status.
  */
-int nm_so_pw_exit(void)
+int nm_so_pw_exit()
 {
   tbx_malloc_clean(nm_so_pw_nohd_mem);
   tbx_malloc_clean(nm_so_pw_buf_mem);
@@ -79,7 +82,7 @@ int nm_so_pw_exit(void)
 }
 
 
-static void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
+void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 {
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
@@ -188,6 +191,9 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   *pp_pw = p_pw;
 
  out:
+#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
+  p_pw->which = ERROR;
+#endif
   return err;
 }
 
@@ -203,9 +209,16 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 
   NM_SO_TRACE_LEVEL(3,"destructing the pw %p\n", p_pw);
 
-#ifdef PIOMAN
-  piom_req_free(&p_pw->inst);
-#endif
+#ifdef PIOM_ENABLE_LTASKS
+  piom_ltask_completed(&p_pw->ltask);
+#else
+#ifdef PIOMAN_POLL
+  if((p_pw->which == RECV) || (p_pw->which == SEND))
+    {
+      piom_req_free(&p_pw->inst);
+    }
+#endif /* PIOMAN_POLL */
+#endif /* PIOM_ENABLE_LTASKS */
 
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {
@@ -223,6 +236,10 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
       TBX_FREE(p_pw->contribs);
     }
   
+#if DEBUG
+  /* make sure no one can use this pw anymore ! */
+  memset(p_pw, 7, sizeof(struct nm_pkt_wrap));
+#endif
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
     {
@@ -365,7 +382,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   err = NM_ESUCCESS;
   return err;
 }
-
 
 // function dedicated to the datatypes which do not require a rendezvous
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,

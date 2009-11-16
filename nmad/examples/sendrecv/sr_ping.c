@@ -24,11 +24,13 @@
 #define MAX_DEFAULT	(8 * 1024 * 1024)
 #define MULT_DEFAULT	2
 #define INCR_DEFAULT	0
-#define WARMUPS_DEFAULT	20
+#define WARMUPS_DEFAULT	100
 #define LOOPS_DEFAULT	2000
 #define MAX_DATA        (100ULL * 1024ULL * 1024ULL) /* 100 MB */
 
 #define DATA_CONTROL_ACTIVATED 0
+
+//#define DEBUG 1
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -161,12 +163,18 @@ main(int	  argc,
       for(k = 0; k < iterations + warmups; k++) {
         nm_sr_request_t request;
 
+#if DEBUG
+	fprintf(stderr, "%d -- Irecv %d bytes\n", k, len);
+#endif /* DEBUG */
         nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
         nm_sr_rwait(p_core, &request);
 
 #if DATA_CONTROL_ACTIVATED
         control_buffer("réception", buf, len);
 #endif
+#if DEBUG
+	fprintf(stderr, "%d -- Isend %d bytes\n", k, len);
+#endif /* DEBUG */
         nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
         nm_sr_swait(p_core, &request);
       }
@@ -189,9 +197,15 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("envoi", buf, len);
 #endif
+#if DEBUG
+	fprintf(stderr, "%d -- Isend %d bytes\n", k, len);
+#endif /* DEBUG */
         nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
         nm_sr_swait(p_core, &request);
 
+#if DEBUG
+	fprintf(stderr, "%d -- Irecv %d bytes\n", k, len);
+#endif /* DEBUG */
         nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
         nm_sr_rwait(p_core, &request);
 #if DATA_CONTROL_ACTIVATED
@@ -207,9 +221,15 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("envoi", buf, len);
 #endif
+#if DEBUG
+	fprintf(stderr, "%d -- Isend %d bytes\n", k+warmups, len);
+#endif /* DEBUG */
         nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
         nm_sr_swait(p_core, &request);
 
+#if DEBUG
+	fprintf(stderr, "%d -- Irecv %d bytes\n", k+warmups, len);
+#endif /* DEBUG */
         nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
         nm_sr_rwait(p_core, &request);
 #if DATA_CONTROL_ACTIVATED

@@ -17,6 +17,9 @@
 #ifndef NM_PRIVATE_H
 #define NM_PRIVATE_H
 
+#ifdef PIOMAN
+#include "pioman.h"
+#endif
 #include <pm2_common.h>
 
 #include <nm_public.h>
@@ -28,6 +31,13 @@
 #include <numa.h>
 #endif
 
+#if(!defined(PIOMAN) || defined(PIOM_POLLING_DISABLED))
+/* use nmad progression */
+#define NMAD_POLL 1
+#else
+/* use pioman as a progression engine */
+#define PIOMAN_POLL 1
+#endif
 /** Gate */
 typedef int nm_gate_id_t;
 
@@ -54,6 +64,7 @@ typedef int8_t nm_trk_id_t;
 #include "nm_log.h"
 #ifdef PIOMAN
 #include "nm_piom.h"
+#include "nm_piom_ltasks.h"
 #endif
 
 #include "nm_so_strategies.h"
@@ -64,7 +75,9 @@ typedef int8_t nm_trk_id_t;
 #include "nm_event.h"
 
 #include "nm_so_pkt_wrap.h"
+#include "nm_lock.h"
 #include "nm_core_inline.h"
+#include "nm_lock_inline.h"
 
 #include "nm_sampling.h"
 
@@ -99,5 +112,11 @@ int nm_so_schedule_exit			(struct nm_core *p_core);
 int nm_so_process_complete_recv(struct nm_core	*p_core,
 				struct nm_pkt_wrap *p_pw);
 
+
+int nm_post_send(struct nm_pkt_wrap*p_pw);
+
+int nm_core_disable_progression(struct nm_core*p_core);
+
+int nm_core_enable_progression(struct nm_core*p_core);
 
 #endif /* NM_PRIVATE_H */

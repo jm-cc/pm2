@@ -649,14 +649,20 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
     }
 
-#ifdef PIOMAN
+#ifdef PIOM_ENABLE_LTASKS
+  piom_ltask_completed(&p_pw->ltask);
+#else
+#ifdef PIOMAN_POLL
   piom_req_success(&p_pw->inst);
 #endif
-
+#endif	/* PIOM_ENABLE_LTASKS */
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
+      nm_lock_interface(p_core);
       p_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
+      nm_unlock_interface(p_core);
+      
       nm_decode_headers(p_pw);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
@@ -685,7 +691,12 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  /* ** Large packet, data received directly in its final destination */
 	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
+      nm_lock_interface(p_core);
       p_gate->active_recv[p_pw->p_drv->id][NM_TRK_LARGE] = 0;
+      nm_unlock_interface(p_core);
+    
+
+      /* Free the wrapper */
       nm_so_pw_free(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }

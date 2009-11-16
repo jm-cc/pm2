@@ -13,21 +13,12 @@
  * General Public License for more details.
  */
 
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
 
 #ifndef NM_PIOM_H
 #define NM_PIOM_H
 
 #include "pioman.h"
-
-int nm_process_complete_send_rq(struct nm_gate	*p_gate,
-				struct nm_pkt_wrap	*p_pw,
-				int		 	_err);
-
-int nm_process_complete_recv_rq(struct nm_core      *p_core,
-				struct nm_pkt_wrap	*p_pw,
-				int		 	_err);
-
 
 int nm_piom_init(struct nm_core * p_core);
 
@@ -65,4 +56,4 @@ nm_piom_block_recv(struct nm_pkt_wrap  *p_pw);
 
 #endif /* NM_PIOM_H */
 
-#endif /* PIOM */
+#endif /* PIOMAN_POLL*/

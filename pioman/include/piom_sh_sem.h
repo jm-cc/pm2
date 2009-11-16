@@ -18,6 +18,8 @@
 #define PIOM_SH_SEM_H
 #include "pioman.h"
 
+#ifdef PIOM_ENABLE_SHM
+
 struct piom_sh_sem;
 typedef  struct piom_sh_sem piom_sh_sem_t;
 typedef  piom_sh_sem_t* p_piom_sh_sem_t;
@@ -29,17 +31,10 @@ typedef  piom_sh_sem_t* p_piom_sh_sem_t;
 #ifdef MARCEL
 #include "marcel.h"
 typedef ma_atomic_t piom_atomic_t;
-
-struct piom_sh_sem {
-	piom_atomic_t value;
-	piom_sem_t local_sem;
-	/* list of pending sh_sem */
-	struct tbx_fast_list_head pending_shs;
-} ;
-
-
 #else
 typedef int piom_atomic_t;
+#endif /* MARCEL */
+
 struct piom_sh_sem {
 	piom_atomic_t value;
 	piom_sem_t local_sem;
@@ -47,7 +42,6 @@ struct piom_sh_sem {
 	struct tbx_fast_list_head pending_shs;
 } ;
 
-#endif /* MARCEL */
 
 int piom_shs_init(piom_sh_sem_t *sem);
 
@@ -72,5 +66,6 @@ int piom_shs_polling_is_required();
 		piom_sem_V(&(sem)->local_sem);	\
 	} while(0)
 
+#endif	/* PIOM_ENABLE_SHM */
 #endif /* PIOM_SH_SEM_H */
 

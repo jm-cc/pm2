@@ -55,7 +55,11 @@ typedef enum
  */
 typedef struct s_tbx_memory
 {
-  TBX_SHARED;
+  union {
+    TBX_SHARED;
+    TBX_CRITICAL_SHARED;
+  };
+  int     is_critical;
   void    *first_mem;
   void    *current_mem;
   size_t   block_len;

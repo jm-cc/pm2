@@ -303,6 +303,16 @@ do { \
 #  define TBX_LOCK()             lock_task()
 #  define TBX_UNLOCK()           unlock_task()
 #  define TBX_YIELD()            marcel_yield()
+
+#  define TBX_CRITICAL_SHARED             marcel_spinlock_t __tbx_spinlock
+#  define TBX_INIT_CRITICAL_SHARED(st)    marcel_spin_init((&((st)->__tbx_spinlock)), 0)
+#  define TBX_LOCK_CRITICAL_SHARED(st)    marcel_spin_lock((&((st)->__tbx_spinlock)))
+#  define TBX_TRYLOCK_CRITICAL_SHARED(st) marcel_spin_trylock((&((st)->__tbx_spinlock)))
+#  define TBX_UNLOCK_CRITICAL_SHARED(st)  marcel_spin_unlock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_LOCK()             marcel_spin_lock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_UNLOCK()           marcel_spin_unlock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_YIELD()            (void) 0
+
 #elif defined (_REENTRANT) /*# Thread sync : Pthread mode */
 #  define TBX_CRITICAL_SECTION(name)              pthread_mutex_t __tbx_section_ ## name = PTHREAD_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        pthread_mutex_lock(&(__tbx_section_ ## name))
@@ -322,6 +332,18 @@ do { \
 #    define TBX_YIELD()           pthread_yield()
 #  endif                        /*# pthread yield : end */
 #else                         /*# Threads sync : no thread mode */
+
+#  define TBX_CRITICAL_SHARED             TBX_SHARED
+#  define TBX_INIT_CRITICAL_SHARED(st)    TBX_INIT_SHARED(st)
+#  define TBX_LOCK_CRITICAL_SHARED(st)    TBX_LOCK_SHARED(st)
+#  define TBX_TRYLOCK_CRITICAL_SHARED(st) TBX_TRYLOCK_SHARED(st)
+#  define TBX_UNLOCK_CRITICAL_SHARED(st)  TBX_UNLOCK_SHARED(st)
+#  define TBX_CRITICAL_LOCK()             TBX_LOCK()
+#  define TBX_CRITICAL_UNLOCK()           TBX_UNLOCK()
+#  define TBX_CRITICAL_YIELD()            TBX_YIELD()
+
+#  define tbx_main DEFINE_TBX_MAIN(main)
+
 #  define TBX_CRITICAL_SECTION(name) const int __tbx_section_ ## name = 0
 #  define TBX_CRITICAL_SECTION_ENTER(name)
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name)
@@ -335,6 +357,15 @@ do { \
 #  define TBX_LOCK()             (void)(0)
 #  define TBX_UNLOCK()           (void)(0)
 #  define TBX_YIELD()            (void)(0)
+
+#  define TBX_CRITICAL_SHARED             TBX_SHARED
+#  define TBX_INIT_CRITICAL_SHARED(st)    TBX_INIT_SHARED(st)
+#  define TBX_LOCK_CRITICAL_SHARED(st)    TBX_LOCK_SHARED(st)
+#  define TBX_TRYLOCK_CRITICAL_SHARED(st) TBX_TRYLOCK_SHARED(st)
+#  define TBX_UNLOCK_CRITICAL_SHARED(st)  TBX_UNLOCK_SHARED(st)
+#  define TBX_CRITICAL_LOCK()             TBX_LOCK()
+#  define TBX_CRITICAL_UNLOCK()           TBX_UNLOCK()
+#  define TBX_CRITICAL_YIELD()            TBX_YIELD()
 #endif                      /*# Threads sync : end */
 
 

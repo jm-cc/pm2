@@ -66,6 +66,8 @@ int nm_so_pw_init(struct nm_core *p_core);
 
 int nm_so_pw_exit(void);
 
+void nm_so_pw_raz(struct nm_pkt_wrap *p_pw);
+
 int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw);
 
 int nm_so_pw_free(struct nm_pkt_wrap *p_pw);

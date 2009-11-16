@@ -32,7 +32,7 @@ create_test_flavor() {
 	--nmad=\"${net} sched_opt strat_custom ${mpi} mad3_emu $tag\" \
 	$options \
 	--common=\"fortran_target_none\" \
-	--all=\"debug gdb build_static\"
+	--all=\"build_static\"
 }
 
 prerun_test() {

@@ -31,10 +31,11 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
 {
   nm_so_pw_assign(p_pw, trk_id, drv_id, p_gate);
   /* append pkt to scheduler post list */
-  tbx_slist_append(p_gate->p_core->so_sched.post_recv_req, p_pw);
+  nm_so_lock_in(&p_gate->p_core->so_sched, drv_id);
+  tbx_slist_append(p_gate->p_core->so_sched.post_sched_in_list[drv_id][trk_id], p_pw);
   p_gate->active_recv[drv_id][trk_id] = 1;
+  nm_so_unlock_in(&p_gate->p_core->so_sched, drv_id);
 }
-
 
 /* ** Sending functions ************************************ */
 /* ********************************************************* */
@@ -50,20 +51,29 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 					     nm_trk_id_t trk_id, nm_drv_id_t drv_id)
 {
   struct nm_core*p_core = p_gate->p_core;
-
   NM_SO_TRACE_LEVEL(3, "Packet posted on track %d\n", trk_id);
-
   FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate->id, p_pw, drv_id, trk_id );
-
   /* Packet is assigned to given track, driver, and gate */
   p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
   p_pw->trk_id = trk_id;
   p_pw->p_gate = p_gate;
 
-  /* append pkt to scheduler post list */
-  tbx_slist_append(p_core->so_sched.post_sched_out_list, p_pw);
-
-  p_gate->active_send[drv_id][trk_id]++;
+#if 0
+/* todo: is this still used ? */
+#if(defined(PIOM_ENABLE_LTASKS) && defined(PIO_OFFLOAD))
+  if(trk_id == NM_TRK_SMALL)
+	  /* todo: we should also modify this function */
+	  nm_submit_offload_ltask(&p_pw->offload_ltask, p_pw);
+  else
+#endif
+#endif
+  {
+    /* append pkt to scheduler post list */
+    nm_so_lock_out(&p_core->so_sched, p_pw->p_drv->id);
+    tbx_slist_append(p_core->so_sched.post_sched_out_list[drv_id][trk_id], p_pw);
+    p_gate->active_send[drv_id][trk_id]++;
+    nm_so_unlock_out(&p_core->so_sched, p_pw->p_drv->id);
+  }
 }
 
 
@@ -71,8 +81,26 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
  */
 static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 {
+  int err;
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
-  return r->driver->try_and_commit(r->_status, p_gate);
+#ifdef FINE_GRAIN_LOCKING
+  if(r->driver->todo && 
+     r->driver->todo(r->_status, p_gate)) 
+  {
+    if(nm_trylock_interface(p_gate->p_core)) {
+      nm_lock_status(p_gate->p_core);
+      err = r->driver->try_and_commit(r->_status, p_gate);
+      nm_unlock_status(p_gate->p_core);
+      nm_unlock_interface(p_gate->p_core);
+      goto out;
+    }
+  }
+  err = NM_EINPROGRESS;
+out:
+#else
+  err = r->driver->try_and_commit(r->_status, p_gate);
+#endif
+  return err;
 }
 
 /** Post a ready-to-receive

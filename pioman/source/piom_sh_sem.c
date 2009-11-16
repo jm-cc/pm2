@@ -17,6 +17,8 @@
 #include "pioman.h"
 
 /* list of pending sh_sems that need to be polled */
+#ifdef PIOM_ENABLE_SHM
+
 static TBX_FAST_LIST_HEAD(piom_list_shs);
 
 int piom_shs_polling_is_required() {
@@ -152,3 +154,4 @@ int piom_shs_test(piom_sh_sem_t *sem){
 
 
 
+#endif /* PIOM_ENABLE_SHM */

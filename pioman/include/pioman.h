@@ -22,6 +22,11 @@
 #include "marcel.h"
 #endif
 
+#if(defined(MARCEL) || defined(PIOM_PTHREAD_LOCK))
+#define PIOM_THREAD_ENABLED
+#endif
+
+#include "piom_lock_types.h"
 #include "piom.h"
 #include "piom_log.h"
 #include "piom_debug.h"
@@ -33,7 +38,9 @@
 #include "piom_sem.h"
 #include "piom_block.h"
 #include "piom_poll.h"
+#include "piom_ltask.h"
 #include "piom_io.h"
+#include "piom_io_task.h"
 #include "tbx.h"
 
 #endif /* PIOMAN_H */

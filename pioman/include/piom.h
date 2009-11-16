@@ -19,20 +19,21 @@
 
 #include "tbx_fast_list.h"
 #include "piom_sh_sem.h"
+#include "tbx_fast_list.h"
+#include "piom_sh_sem.h"
+#include "piom_ltask.h"
+
+/* The server defines callbacks and polling parameters. It may group requests */
+typedef struct piom_server *piom_server_t;
+
+#include "piom_lock.h"
+#include "piom_sem.h"
 
 /* List of servers currently doing some polling
  * (state == 2 and tasks waiting for polling) 
  */
 extern struct tbx_fast_list_head piom_list_poll;
-#ifdef MARCEL
-extern ma_spinlock_t piom_poll_lock;
-extern int job_scheduled;
-#else
-extern void* piom_poll_lock;
-#endif
-
-/* The server defines callbacks and polling parameters. It may group requests */
-typedef struct piom_server *piom_server_t;
+extern piom_spinlock_t piom_poll_lock;
 
 /* A request defines an event that can be detected. Several requests may
  * be grouped (to permit to poll only once for a group of requests)
@@ -125,11 +126,9 @@ struct piom_wait {
 	/* List of groupes events we are waiting for */
 	struct tbx_fast_list_head chain_wait;
 
-#ifdef MARCEL
-	/* TODO : Useless without marcel ? */
-	marcel_sem_t sem;
-	marcel_task_t *task;
-#endif
+	piom_sem_t sem;
+	piom_thread_t task;
+
 	/* Ret value
 	   0: event
 	   -ECANCELED: piom_req_cancel called
@@ -173,7 +172,17 @@ void __piom_check_polling(unsigned polling_point);
  */
 static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
 {
-	return (!tbx_fast_list_empty(&piom_list_poll)) || piom_shs_polling_is_required();
+#ifdef PIOM_ENABLE_SHM
+    if(piom_shs_polling_is_required())
+	return 1;
+#endif	/* PIOM_ENABLE_SHM */
+
+#ifdef PIOM_ENABLE_LTASKS
+    if(piom_ltask_polling_is_required())
+	return 1;
+#endif	/* PIOM_ENABLE_LTASKS */
+
+    return (!tbx_fast_list_empty(&piom_list_poll));
 }
 
 /* Try to poll

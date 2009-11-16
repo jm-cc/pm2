@@ -1,21 +1,7 @@
 /* basic_ping.c */
 
 #define __PROF_APP__
-#include <errno.h>
-#include <sys/time.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <arpa/inet.h>
-
+#include <sys/utsname.h>
 #include <semaphore.h>
 #include "pm2_common.h"
 
@@ -37,45 +23,59 @@ static int file_des;
 #else
 #define NB_BOURRIN 1
 #endif
-#define PRINT_STATS 1
+//#define PRINT_STATS 1
 
+#if 1
+#define WRITE  piom_write
+#define READ   piom_read
+#define SELECT piom_select
 
+#else
+#define WRITE  write
+#define READ   read
+#define SELECT select
+
+#endif
 void envoi(void* b, unsigned int size, int id)
 {
 #if DEBUG
-	fprintf(stderr, "Thread %d\n",id);
-	fprintf(stderr, "\tEnvoyer %d to fd %d\n", buffer[id], file_des);
+	fprintf(stderr, "[%d]\tSending %d to fd %d\n", id, buffer[id], file_des);
 #endif
 	int done=0;
+	int ret=0;
 	do{    	
 		PROF_EVENT(rec_write);
-		done+=piom_write(file_des, (void*)b, size);
+		do{
+			ret = WRITE(file_des, (void*)b, size);
+		}while(ret < 0);
+		done += ret;
 		PROF_EVENT(rec_write_done);
 	}while(done<SIZE);
 #if DEBUG
-	fprintf(stderr, "Thread %d\n",id);
-	fprintf(stderr, "\tEnvoyer done (fd %d)\n", file_des);
+	fprintf(stderr, "[%d]\tData sent (fd %d)\n", id, file_des);
 #endif
 }
 
 void rec(void * b, unsigned int size, int id)
 {
 	int done=0;
+	int ret=0;
 	fd_set fd;
 	FD_ZERO(&fd);
 	FD_SET(file_des, &fd);
 #if DEBUG
-	fprintf(stderr, "Thread %d\n",id);
-	fprintf(stderr, "\trecevoir (fd=%d)\n", file_des);
+	fprintf(stderr, "[%d]\tReceiving on fd %d\n", id, file_des);
 #endif
 	do{
 		PROF_EVENT(rec_read);
-		done+=piom_read(file_des, (void*)b,size);    
+		do {
+			ret = READ(file_des, (void*)b,size);    
+		}while(ret < 0);
+		done+=ret;
 		PROF_EVENT(rec_read_done);
 	}while(done<size);
 #if DEBUG
-	fprintf(stderr, "Thread %d\n",id);
-	fprintf(stderr, "\tRecu : %d from fd %d\n", buffer[id], file_des);
+	fprintf(stderr, "[%d]\tReceived : %d from fd %d\n", id, buffer[id], file_des);
 #endif
 }
 
@@ -107,14 +107,14 @@ void bourrin()
 	int my_pos=pos++;
 	ok++;
 #ifndef PRINT_STATS
-	fprintf(stderr, "##Demarrage du bourrin\n");
+	fprintf(stderr, "##Starting greedy thread\n");
 #endif
 #ifdef MARCEL
 	marcel_sem_V(&ready_sem);
 #endif
 	while(!fin[my_pos]);
 #if DEBUG
-	fprintf(stderr, "Fin du bourrin\n");
+	fprintf(stderr, "End of greedy thread\n");
 #endif
 }
 
@@ -138,9 +138,6 @@ void burn()
 	}
 }
 
-#define IP_JOE "10.0.0.3"
-#define IP_JACK "10.0.0.4"
-
 static int max_serv, max_client;
 void serveur(){
 	int id_server=max_serv++;
@@ -148,7 +145,7 @@ void serveur(){
 	int iter=0;
 	marcel_attr_t attr_main;
 	marcel_attr_init(&attr_main);
-	marcel_attr_setname(&attr_main, "bourrin");
+	marcel_attr_setname(&attr_main, "greedy");
 
 	marcel_sem_init(&ready_sem,0);
  
@@ -163,7 +160,7 @@ void serveur(){
 
 	/* Debut du test */
 #if DEBUG
-	fprintf(stderr, "Debut du test (server %d)\n",id_server);
+	fprintf(stderr, "Starting benchmark (server %d)\n", id_server);
 #endif /* DEBUG */
 	pos=0;
 
@@ -173,7 +170,7 @@ void serveur(){
 		/* Tours de chauffe non mesurés */
 		for(j=0;j<WARMUP;j++) {
 #if DEBUG
-			fprintf(stderr, "Boucle (%d) : iter= %d\n",id_server,iter);
+			fprintf(stderr, "Loop (%d) : iter= %d\n",id_server,iter);
 #endif /* DEBUG */
 
 			PROF_EVENT1(ENVOYER,j);
@@ -190,7 +187,7 @@ void serveur(){
 		/* Tours chronometrés */
 		for(j=0;j<NB_LOOP;j++) {
 #if DEBUG
-			fprintf(stderr, "Boucle (%d) : iter= %d\n",id_server, iter);
+			fprintf(stderr, "Loop (%d) : iter= %d\n",id_server, iter);
 #endif /* DEBUG */
 
 			PROF_EVENT1(ENVOYER,j);
@@ -204,7 +201,7 @@ void serveur(){
 			iter++;
 		}
 		ok=0;
-		fprintf(stderr, "#%d Bourrins done\n",i);
+		fprintf(stderr, "#%d Greedy threads done\n",i);
 		fin[i]=0;
 #ifdef MARCEL
 		marcel_sem_V(&bourrin_ready);
@@ -219,7 +216,7 @@ void serveur(){
 
 		for(j=0;j<WARMUP;j++) {
 #if DEBUG
-			fprintf(stderr, "Boucle (%d) : iter= %d\n",id_server, iter);
+			fprintf(stderr, "Loop (%d) : iter= %d\n",id_server, iter);
 #endif
 
 			PROF_EVENT1(ENVOYER,j);
@@ -233,7 +230,7 @@ void serveur(){
 
 		for(j=0;j<NB_LOOP;j++) {
 #if DEBUG
-			fprintf(stderr, "Boucle (%d) : iter= %d\n",id_server, iter);
+			fprintf(stderr, "Loop (%d) : iter= %d\n",id_server, iter);
 #endif /* DEBUG */
 			PROF_EVENT1(ENVOYER,j);
 			envoi(&iter,sizeof(int), id_server);
@@ -244,18 +241,15 @@ void serveur(){
 			iter++;
 		}
 		marcel_sem_V(&bourrin_ready);
-		fprintf(stderr, "#%d Bourrins done\n",i);
+		fprintf(stderr, "#%d Greedy threads done\n",i);
 		ok=0;
 	}
 #ifndef PRINT_STATS
-	fprintf(stderr, "FIN DU TEST (server %d)\n", id_server);
+	fprintf(stderr, "Benchmark done (server %d)\n", id_server);
 #endif
 	PROF_EVENT(FIN_PING_PONG);
 	sleep(1);
           
-#if DEBUG
-	fprintf(stderr, "Fin du ping pong\n");
-#endif
 	shutdown(sock,2);
 }
 
@@ -265,7 +259,7 @@ void client() {
 	int iter;
 	tbx_tick_t wake1,wake2;
 	long long int duree;
-	fprintf(stderr, "Lancement du client %d\n",id_client);
+	fprintf(stderr, "Launching client %d\n",id_client);
 		
 	for(i=0; i < NB_BOURRIN; i++)
 	{
@@ -308,7 +302,7 @@ void client() {
 			burn();
 		}
 #ifndef PRINT_STATS
-		fprintf(stderr, "###%d Bourrins : latence = %lf µs\n",i, tbx_tick2usec(duree)/(2*NB_LOOP));
+		fprintf(stderr, "###%d greedy threads : latency = %lf µs\n",i, tbx_tick2usec(duree)/(2*NB_LOOP));
 #endif
 		ok=0;
 	}
@@ -353,15 +347,19 @@ void client() {
 #endif
 		}
 #ifndef PRINT_STATS
-		fprintf(stderr, "###%d Bourrins : latence = %lf µs\n",i, tbx_tick2usec(duree)/(2*NB_LOOP));
+		fprintf(stderr, "###%d greedy : latency = %lf µs\n",i, tbx_tick2usec(duree)/(2*NB_LOOP));
 #endif
 		ok=0;
 	}
 	envoyer(id_client);
 
-	fprintf(stderr, "## Fin du ping pong\n");	
 }
 
+void usage(char** argv)
+{
+	fprintf(stderr, "Usage: %s -s|-c\n", argv[0]);
+	exit(1);
+}
 int main(int argc, char ** argv)
 {
 	common_init(&argc, argv, NULL);
@@ -370,9 +368,23 @@ int main(int argc, char ** argv)
 	int i,j;
 	int yes = 1;
 	fini=0;
+	int is_server=0;
+	char *remote_drv_url=NULL;
 
-	fprintf(stderr, "## basic_ping\n");
+	if(argc < 2 )
+		usage(argv);
+	if(!strcmp(argv[1],"-s")){
+		is_server=1;
+		printf("Running as server\n");
+	} else if (!strcmp(argv[1],"-c")){
+		is_server=0;
+		printf("Running as client\n");
+	} else {
+		usage(argv);
+	}
+
 #ifdef MARCEL
+	/* Initialize thread-related structures */
 	marcel_attr_t attr_main;
 	marcel_attr_init(&attr_main);
 	marcel_attr_setname(&attr_main, "client-server");
@@ -393,93 +405,85 @@ int main(int argc, char ** argv)
 	for(i=0;i<SIZE;i++)
 		buffer[i]=0;
 
-/*  Initialisation */
-	addr.sin_addr.s_addr=inet_addr(IP_JOE);   
+	/* crappy connecting management */
+	struct sockaddr_in address;
+        socklen_t          len  = sizeof(struct sockaddr_in);
+        struct sockaddr_in temp;
+        int                server_fd;
+	uint16_t	   port;
+	struct utsname     utsname;
+        SYSCALL(server_fd = socket(AF_INET, SOCK_STREAM, 0));
+	
+        temp.sin_family      = AF_INET;
+        temp.sin_addr.s_addr = htonl(INADDR_ANY);
+        temp.sin_port        = htons(0);
 
-	sock = socket (AF_INET, SOCK_STREAM, 0);
-	if (sock < 0)
-	{
-		perror ("socket");
-		return 1;
-	}
-	int port=8000;
-	addr.sin_family=AF_INET;
-	addr.sin_port=htons(port++); // Port écouté du serveur
-	length=sizeof(addr);
-	setsockopt(sock, SOL_IP, TCP_NODELAY, &yes, sizeof(yes));
+        SYSCALL(bind(server_fd, (struct sockaddr *)&temp, len));
+
+	SYSCALL(getsockname(server_fd, (struct sockaddr *)&address, &len));
+	SYSCALL(listen(server_fd, 5));
+	uname(&utsname);
+	port		= ntohs(address.sin_port);
+	
+	if(is_server) {
+		int fd;
+		printf("%s -- %d\n", utsname.nodename, port);
+		SYSCALL(fd = accept(server_fd, NULL, NULL));
+
+		file_des=fd;
+		int	    val = 1;
+		socklen_t sock_len = sizeof(int);
+		SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, sock_len));
+		SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
+	} else {
+		char *remote_hostname, *remote_port;
+		remote_hostname=argv[2];
+		remote_port=argv[3];
+
+		int fd;
+		printf("%s:%d\n", utsname.nodename, port);
+		char 			*saveptr = NULL;
+		port	= strtol(remote_port, (char **)NULL, 10);
+		
+		printf("connecting to server %s on port %d\n", remote_hostname, port);
+		SYSCALL(fd = socket(AF_INET, SOCK_STREAM, 0));
+		struct sockaddr_in temp;
+
+		temp.sin_family      = AF_INET;
+		temp.sin_addr.s_addr = htonl(INADDR_ANY);
+		temp.sin_port        = htons(0);
+		
+		SYSCALL(bind(fd, (struct sockaddr *)&temp, len));
+
+		struct hostent *host_entry;
+		host_entry = gethostbyname(remote_hostname);
+		address.sin_family	= AF_INET;
+		address.sin_port	= htons(port);
+		memcpy(&address.sin_addr.s_addr,
+		       host_entry->h_addr,
+		       (size_t)host_entry->h_length);		
+		memset(address.sin_zero, 0, 8);
+
+		SYSCALL(connect(fd, (struct sockaddr *)&address,
+				sizeof(struct sockaddr_in)));
+		file_des=fd;
+		int val;
+		socklen_t len = sizeof(int);
+		SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
+		SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
+ 	}
 
 #ifdef DO_PROFILE
 	profile_activate(FUT_ENABLE,USER_APP_MASK|MARCEL_PROF_MASK|MAD_PROF_MASK|PIOM_PROF_MASK, 0);	  
 #endif
 
-	if(argc>1)
+	if(is_server)
 	{
-		/*  CLIENT  */
-		fprintf(stderr, "## Connexion %d\n",j);
-		i=0;
-		while(connect(sock,(struct sockaddr*)&addr,sizeof(addr)) ==-1)
-		{
-			fprintf(stderr, "Erreur de connection\n");
-			perror("connect");
-			if(i++ > 5)
-				exit(1);
-		}
-		file_des=sock;
-		fprintf(stderr, "## Connexion %d OK\n",j);
-		/* Reinit socket */
-		sock = socket (AF_INET, SOCK_STREAM, 0);
-		if (sock < 0)
-		{
-			perror ("socket");
-			return 1;
-		}
-
-		addr.sin_family=AF_INET;
-		addr.sin_port=htons(port++); // Port écouté du serveur
-		length=sizeof(addr);
-		setsockopt(sock, SOL_IP, TCP_NODELAY, &yes, sizeof(yes));
-
-		client();
+		serveur();
 	}  
 	else
 	{
-		/* SERVEUR */
-		/* Connection */
-		fprintf(stderr, "Creation du server %d (port %d)\n",j,port);
-		if(bind(sock,(struct sockaddr*)&addr,length) == -1)
-		{
-			perror("bind");
-			exit(1);
-		}      
-		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-		addr.sin_addr.s_addr=INADDR_ANY;
-		listen(sock, 1);
-		i=0;
-		fprintf(stderr, "Bind %d OK\n",j);
-		while((file_des=accept(sock,(struct sockaddr*)&addr,&length)) == -1)
-		{
-			perror("accept");
-			if(i++>5)
-				exit(0);
-		}
-		fprintf(stderr, "Accept %d done\n",j);
-		/*  Reinit */
-		addr.sin_addr.s_addr=inet_addr(IP_JOE);   
-	
-		sock = socket (AF_INET, SOCK_STREAM, 0);
-		if (sock < 0)
-		{
-			perror ("socket");
-			return 1;
-		}
-
-		addr.sin_family=AF_INET;
-		addr.sin_port=htons(port++); // Port écouté du serveur
-		length=sizeof(addr);
-		setsockopt(sock, SOL_IP, TCP_NODELAY, &yes, sizeof(yes));
-
-		serveur();
-
+		client();
 	}
 #ifdef DO_PROFILE
 	profile_stop();

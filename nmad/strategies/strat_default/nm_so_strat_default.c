@@ -22,6 +22,7 @@
 /* Components structures:
  */
 
+static int strat_default_todo(void*, struct nm_gate*);/* todo: s/nm_gate/nm_pack/ ? */
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_default_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_default_try_and_commit(void*, struct nm_gate*);
@@ -29,6 +30,7 @@ static int strat_default_rdv_accept(void*, struct nm_gate*, uint32_t, int*, stru
 
 static const struct nm_strategy_iface_s nm_strat_default_driver =
   {
+    .todo               = &strat_default_todo,
     .pack               = &strat_default_pack,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
@@ -125,6 +127,13 @@ static int strat_default_pack_ctrl(void*_status,
 
  out:
   return err;
+}
+
+static int strat_default_todo(void* _status, struct nm_gate*p_gate)
+{
+  struct nm_so_strat_default*status = _status;
+  struct tbx_fast_list_head *out_list = &(status->out_list);
+  return !(tbx_fast_list_empty(out_list));
 }
 
 /** Handle a new packet submitted by the user code.

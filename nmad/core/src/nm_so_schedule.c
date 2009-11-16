@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include <nm_private.h>
+#include <nm_so_private.h>
 
 
 p_tbx_memory_t nm_so_unexpected_mem = NULL;
@@ -36,18 +37,28 @@ int nm_so_schedule_init(struct nm_core *p_core)
   nm_so_monitor_vect_init(&p_core->so_sched.monitors);
  
   /* requests lists */
-#ifndef PIOMAN
-  p_core->so_sched.pending_recv_req    = tbx_slist_nil();
-  p_core->so_sched.out_req_list        = tbx_slist_nil();
-#endif
-  p_core->so_sched.post_recv_req       = tbx_slist_nil();
-  p_core->so_sched.post_sched_out_list = tbx_slist_nil();
+  int i, j;
+  for(i=0;i<NM_DRV_MAX;i++){
+    for(j=0; j<NM_SO_MAX_TRACKS; j++){
+      p_core->so_sched.post_sched_in_list[i][j] = tbx_slist_nil();
+      p_core->so_sched.post_sched_out_list[i][j] = tbx_slist_nil();
+    }
+#ifdef NMAD_POLL
+    p_core->so_sched.pending_recv_list[i]   = tbx_slist_nil();
+    p_core->so_sched.pending_send_list[i]   = tbx_slist_nil();
+#endif /* NMAD_POLL */
+    nm_poll_lock_in_init(&p_core->so_sched, i);
+    nm_poll_lock_out_init(&p_core->so_sched, i);
+    nm_so_lock_out_init(&p_core->so_sched, i);
+    nm_so_lock_in_init(&p_core->so_sched, i);
+  }
 
   /* unpacks */
   TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.unpacks);
 
   /* unexpected */
-  tbx_malloc_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s), NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected");
+  tbx_malloc_extended_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s), NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected", 1);
+
   TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.unexpected);
   
   /* pending packs */
@@ -57,6 +68,8 @@ int nm_so_schedule_init(struct nm_core *p_core)
   const char*strategy_name = NULL;
 #if defined(CONFIG_STRAT_SPLIT_BALANCE)
   strategy_name = "split_balance";
+#elif defined(CONFIG_STRAT_SPLIT_ALL)
+  strategy_name = "split_all";
 #elif defined(CONFIG_STRAT_DEFAULT)
   strategy_name = "default";
 #elif defined(CONFIG_STRAT_AGGREG)
@@ -80,33 +93,61 @@ int nm_so_schedule_init(struct nm_core *p_core)
   return err;
 }
 
+/** Remove any remaining unexpected chunk */
+int nm_so_clean_unexpected(struct nm_core *p_core)
+{  
+  struct nm_unexpected_s*chunk, *tmp;
+  int ret = 0;
+  tbx_fast_list_for_each_entry_safe(chunk, tmp, &p_core->so_sched.unexpected, link)
+  {
+    if(chunk){
+#ifdef NMAD_DEBUG
+      fprintf(stderr, "nm_so_clean_unexpected: Chunk %p is still in use\n", chunk);
+#endif
+      ret++;
+      if(chunk->p_pw)
+        nm_so_pw_free(chunk->p_pw);
+      tbx_fast_list_del(&chunk->link);
+      tbx_free(nm_so_unexpected_mem, chunk);
+    }
+  }
+  return ret;
+}
+
 /** Shutdown the scheduler.
  */
 int nm_so_schedule_exit (struct nm_core *p_core)
 {
-
   nmad_lock();
 
   /* purge requests not posted yet to the driver */
-  while (!tbx_slist_is_nil(p_core->so_sched.post_recv_req))
-    {
-      NM_SO_TRACE("extracting pw from post_recv_req\n");
-      void *pw = tbx_slist_extract(p_core->so_sched.post_recv_req);
-      nm_so_pw_free(pw);
-    }
-
-#ifndef PIOMAN
-  /* Sanity check- everything is supposed to be empty here */
-  {
-    p_tbx_slist_t pending_slist = p_core->so_sched.pending_recv_req;
-    while (!tbx_slist_is_nil(pending_slist))
+  int i, j;
+  for(i=0;i<NM_DRV_MAX;i++){
+	  for(j=0;j<NM_SO_MAX_TRACKS;j++)
+    while (!tbx_slist_is_nil(p_core->so_sched.post_sched_in_list[i][j]))
       {
-	struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_slist);
-	NM_DISPF("extracting pw from pending_recv_req\n");
-	nm_so_pw_free(p_pw);
+        NM_SO_TRACE("extracting pw from post_sched_in_list\n");
+	void *pw = tbx_slist_extract(p_core->so_sched.post_sched_in_list[i][j]);
+	nm_so_pw_free(pw);
       }
   }
-#endif
+
+#ifdef NMAD_POLL
+  /* Sanity check- everything is supposed to be empty here */
+  {
+    for(i=0;i<NM_DRV_MAX;i++){
+      p_tbx_slist_t pending_slist = p_core->so_sched.pending_recv_list[i];
+      while (!tbx_slist_is_nil(pending_slist))
+        {
+	  struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_slist);
+	  NM_DISPF("extracting pw from pending_recv_req\n");
+	  nm_so_pw_free(p_pw);
+	}
+    }
+  }
+#endif /* NMAD_POLL */
+
+  nm_so_clean_unexpected(p_core);
 
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
@@ -116,19 +157,22 @@ int nm_so_schedule_exit (struct nm_core *p_core)
   tbx_malloc_clean(nm_so_unexpected_mem);
 
   /* free requests lists */
-#ifndef PIOMAN
-  tbx_slist_clear(p_core->so_sched.pending_recv_req);
-  tbx_slist_clear(p_core->so_sched.out_req_list);
-  tbx_slist_free(p_core->so_sched.pending_recv_req);
-  tbx_slist_free(p_core->so_sched.out_req_list);
-#endif
-
-  tbx_slist_clear(p_core->so_sched.post_recv_req);
-  tbx_slist_clear(p_core->so_sched.post_sched_out_list);
-  tbx_slist_free(p_core->so_sched.post_recv_req);
-  tbx_slist_free(p_core->so_sched.post_sched_out_list);
+  for(i=0;i<NM_DRV_MAX;i++){
+#ifdef NMAD_POLL
+    tbx_slist_clear(p_core->so_sched.pending_recv_list[i]);
+    tbx_slist_clear(p_core->so_sched.pending_send_list[i]);
+    tbx_slist_free(p_core->so_sched.pending_recv_list[i]);
+    tbx_slist_free(p_core->so_sched.pending_send_list[i]);
+#endif /* PIOMAN_POLL */
+    for(j=0;j<NM_SO_MAX_TRACKS;j++){
+      tbx_slist_clear(p_core->so_sched.post_sched_in_list[i][j]);
+      tbx_slist_free(p_core->so_sched.post_sched_in_list[i][j]);
+      tbx_slist_clear(p_core->so_sched.post_sched_out_list[i][j]);
+      tbx_slist_free(p_core->so_sched.post_sched_out_list[i][j]);
+    }
+  }
 
   nmad_unlock();
+
   return NM_ESUCCESS;
 }
-

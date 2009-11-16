@@ -352,7 +352,9 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunks[NM_DRV_MAX];
   int nb_chunks = NM_DRV_MAX;
+
   int err = strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, chunks);
+
   if(err == NM_ESUCCESS)
     {
       nm_so_post_multiple_data_recv(p_unpack, nb_chunks, chunks, data);

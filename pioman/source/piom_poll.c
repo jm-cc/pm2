@@ -16,6 +16,8 @@
 
 #include "pioman.h"
 
+static int job_scheduled = 0;
+
 /* Try to group requests (polling version) */
 int 
 __piom_poll_group(piom_server_t server,
@@ -67,9 +69,14 @@ __piom_update_timer(piom_server_t server)
  */
 /* TODO: check if we should use a blocking syscall
  */
- void 
+void 
 piom_check_polling_for(piom_server_t server)
 {
+    
+    if(server->state != PIOM_SERVER_STATE_LAUNCHED){
+	return;
+    }
+    
     int nb = __piom_need_poll(server);
     piom_req_t req  ;	
 #ifdef PIOM__DEBUG
@@ -87,6 +94,15 @@ piom_check_polling_for(piom_server_t server)
 
     server->max_priority = PIOM_REQ_PRIORITY_LOWEST;
     server->registered_req_not_yet_polled = 0;
+#ifdef PIOM_THREAD_ENABLED
+    piom_thread_t owner = piom_ensure_lock_server(server);
+#endif
+    nb = __piom_need_poll(server);
+    if (!nb){
+	piom_restore_lock_server_locked(server, owner);	
+	return;
+    }
+
     if (nb == 1 && server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func){
 	req=tbx_fast_list_entry(server->list_req_poll_grouped.next,
 		       struct piom_req, chain_req_grouped);
@@ -95,48 +111,70 @@ piom_check_polling_for(piom_server_t server)
 	if(tbx_fast_list_entry(server->list_req_poll_grouped.next,
 		      struct piom_req, chain_req_grouped)->func_to_use != PIOM_FUNC_SYSCALL ) 
 #endif	/* PIOM_BLOCKING_CALLS */
-	    {			
+	    {
 		(*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
 		    (server, PIOM_FUNCTYPE_POLL_POLLONE,
 		     req, nb, PIOM_OPT_REQ_IS_GROUPED);
 	    }
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func) {
 	/* poll all the requests with the pollanny callback */
+#ifdef PIOM_THREAD_ENABLED
+	__piom_unlock_server(server);	
+#endif		
 	(*server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func)
 	    (server, PIOM_FUNCTYPE_POLL_POLLANY, NULL, nb, 0);
+#ifdef PIOM_THREAD_ENABLED
+	__piom_lock_server(server, PIOM_SELF);
+#endif
 
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func) {
 	piom_req_t req, tmp;
 	/* for each requests, call the fast_poll callback */
-	FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) {
-	    if(! (req->state & PIOM_STATE_OCCURED))
-		/* If a high priority request is completed, do not poll low priority 
-		   requests for now */
-		if(req->priority >= server->max_priority) {
-		    if(req->func_to_use != PIOM_FUNC_SYSCALL){
-			(*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
-			    (server, PIOM_FUNCTYPE_POLL_POLLONE,
-			     req, nb,
-			     PIOM_OPT_REQ_IS_GROUPED
-			     | PIOM_OPT_REQ_ITER);
-		    }
-		}
-	}
+
+       FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) {
+            if(! (req->state & PIOM_STATE_OCCURED))
+                /* If a high priority request is completed, do not poll low priority
+                   requests for now */
+                if(req->priority >= server->max_priority) {
+                    if(req->func_to_use != PIOM_FUNC_SYSCALL){
+#ifdef PIOM_THREAD_ENABLED
+			__piom_unlock_server(server);	
+#endif
+                        (*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
+                            (server, PIOM_FUNCTYPE_POLL_POLLONE,
+                             req, nb,
+                             PIOM_OPT_REQ_IS_GROUPED
+                             | PIOM_OPT_REQ_ITER);
+#ifdef PIOM_THREAD_ENABLED
+			__piom_lock_server(server, PIOM_SELF);
+#endif
+
+                    }
+                }
+       }
+
     } else {
 	/* no polling method available ! */
 	PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
     }
+ out:
     /* Handle completed requests */
     __piom_manage_ready(server);
     if (nb != __piom_need_poll(server)) {
 	/* The number of polling requests have change, do we need to poll again ? */
 	if (!__piom_need_poll(server)) {
 	    __piom_poll_stop(server);
+#ifdef PIOM_THREAD_ENABLED
+	    piom_restore_lock_server_locked(server, owner);
+#endif
 	    return;
 	} else {
 	    __piom_poll_group(server, NULL);
 	}
     }
+#ifdef PIOM_THREAD_ENABLED
+    piom_restore_lock_server_locked(server, owner);
+#endif
     __piom_update_timer(server);
     return;
 }
@@ -156,9 +194,7 @@ piom_poll_from_tasklet(unsigned long hid)
 
     piom_check_polling_for(server);
 #ifdef MARCEL
-    _piom_spin_lock(&piom_poll_lock);
     job_scheduled=0;
-    _piom_spin_unlock(&piom_poll_lock);
 #endif	/* MARCEL */
     return;
 }
@@ -171,16 +207,17 @@ piom_poll_timer(unsigned long hid)
 
     if(server->state == PIOM_SERVER_STATE_HALTED)
 	return;
-#ifdef MARCEL
     PIOM_LOGF("Timer function for [%s]\n", server->name);
+#ifdef PIOM_USE_TASKLETS
     ma_tasklet_schedule(&server->poll_tasklet);
 #else
     piom_check_polling_for(server);
-#endif	/* MARCEL */
+#endif	/* PIOM_USE_TASKLETS */
     return;
 }
 
-#ifdef MARCEL_REMOTE_TASKLETS
+//#ifdef MARCEL_REMOTE_TASKLETS
+#if 1
 
 /* Schedules tasklets for each server
  * this function is called on some triggers (mainly cpu idleness and timer interrupt) by Marcel
@@ -188,7 +225,14 @@ piom_poll_timer(unsigned long hid)
 void 
 __piom_check_polling(unsigned polling_point)
 {
-    piom_shs_poll(); 
+#ifdef PIOM_ENABLE_SHM
+    if(piom_shs_polling_is_required())
+	piom_shs_poll(); 
+#endif
+
+#ifdef PIOM_ENABLE_LTASKS
+	piom_ltask_schedule();
+#endif
     if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
 
@@ -197,14 +241,22 @@ __piom_check_polling(unsigned polling_point)
 
     /* TODO: if the vpset does not match idle core, remote schedule the tasklet 
        (or schedule the tasklet somewhere else) */
-    tbx_fast_list_for_each_entry_safe(server,bak, &piom_list_poll, chain_poll) {		
+    tbx_fast_list_for_each_entry_safe(server, bak, &piom_list_poll, chain_poll) {		
+#ifdef MARCEL_REMOTE_TASKLETS
 	if( marcel_vpset_isset(&(server->poll_tasklet.vp_set),
 			       marcel_current_vp())) 
+#endif
 	    {
 		if (server->poll_points & polling_point) {
-		    _piom_spin_lock_softirq(&piom_poll_lock);
+		    /* disable bh to avoid piom_poll_timer to be invoked 
+		       while scheduling the tasklet */
+		    ma_local_bh_disable();
+#ifdef PIOM_USE_TASKLETS
 		    ma_tasklet_schedule(&server->poll_tasklet);
-		    _piom_spin_unlock_softirq(&piom_poll_lock);
+#else
+		    piom_check_polling_for(server);
+#endif /* PIOM_USE_TASKLETS */
+		    ma_local_bh_enable();
 		}
 	    }
     }
@@ -222,8 +274,6 @@ __piom_check_polling(unsigned polling_point)
 #ifdef MARCEL
     if( job_scheduled || tbx_fast_list_empty(&piom_list_poll))
 	return;
-    if( ! _piom_spin_trylock_softirq(&piom_poll_lock))
-	return;
     int scheduled=0;
 #endif	/* MARCEL */
 
@@ -236,28 +286,27 @@ __piom_check_polling(unsigned polling_point)
 	}
 	if (server->poll_points & polling_point) {		
 #ifdef MARCEL		
+	    ma_local_bh_disable();
 	    job_scheduled=1;
 	    scheduled++;
 	    ma_tasklet_schedule(&server->poll_tasklet);
+	    ma_local_bh_enable();
 #else
 	    piom_check_polling_for(server);
 #endif /* MARCEL */
-	    bak=server;			
 	}
     }
+
 #ifdef MARCEL
     if(!scheduled)
 	{
 	    tbx_fast_list_for_each_entry(server, &piom_list_poll, chain_poll) {
-		if(bak==server){
-		    break;	
-		}
+		ma_local_bh_disable();
 		job_scheduled=1;
 		ma_tasklet_schedule(&server->poll_tasklet);
-		bak=server;			
+		ma_local_bh_enable();
 	    }
 	}
-    _piom_spin_unlock_softirq(&piom_poll_lock);
 #endif /* MARCEL */
     PROF_OUT();
 }
@@ -316,11 +365,11 @@ piom_poll_force(piom_server_t server)
     LOG_IN();
     PIOM_LOGF("Poll forced for [%s]\n", server->name);
     if (__piom_need_poll(server)) {
-#ifdef MARCEL
+#ifdef PIOM_USE_TASKLETS
 	ma_tasklet_schedule(&server->poll_tasklet);
 #else
 	piom_check_polling_for(server);
-#endif	/* MARCEL */
+#endif	/* PIOM_USE_TASKLETS */
     }
     LOG_OUT();
 }

@@ -25,6 +25,7 @@
 #define PIOM_POLL_AT_LIB_ENTRY  4
 #define PIOM_POLL_AT_IDLE       8
 #define PIOM_POLL_WHEN_FORCED   16
+#define PIOM_POLL_AT_CTX_SWITCH 32
 
 /* Used by initializers */
 void piom_poll_from_tasklet(unsigned long id);
@@ -46,5 +47,16 @@ int __piom_need_poll(piom_server_t server);
 /* Try to group requests (polling version) */
 int __piom_poll_group(piom_server_t server,
 		      piom_req_t req);
+
+static inline 
+void piom_pause_server(piom_server_t server)
+{
+    __piom_poll_stop(server);
+}
+static inline
+void piom_resume_server(piom_server_t server)
+{
+    __piom_poll_start(server);
+}
 
 #endif	/* PIOM_POLL_H */

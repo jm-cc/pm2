@@ -1,0 +1,18 @@
+PIOMan:
+ * in piom_cond_wait: do not block on the semaphore if the current thread is the only one that can be scheduled on the local VP. This may saves a couple of ctx switches
+ * in piom_cond_wait: use an adaptive polling duration: depending on previous cond_wait, we should be able to choose a polling duration more precisely
+
+LTASKS: 
+ * migrate automatically tasks: a task is first submitted to a local (core-level) list and a timestamp is added. If the task is not runnable quickly (ie. the core isn't idle/no ctx switch, etc.), move the task to an higher level list and change the timestamp
+   -> this way, the tasks are run locally but are still executed, even if local cores are busy
+ * Use libtopology for creating task queues
+ * Fix piom_io
+ * Find out why submitting a task is that expensive
+
+NMAD:
+ * add blocking calls into IB driver
+ * fix the poll_any/wait_any problems in nmad
+ * use list_head instead of tbx_slist
+ * add a mechanism for choosing dynamically the locking system (use Puk component ?)
+ * IB driver : use ltasks for pinning memory pages
+ * use ltasks for pre-computing optimization strategies

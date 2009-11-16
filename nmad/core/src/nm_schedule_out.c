@@ -53,7 +53,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
   NM_TRACEF("send request complete: gate %d, drv %d, trk %d",
 	    p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id);
   
-#ifdef PIOMAN
+#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
   piom_req_success(&p_pw->inst);
 #endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
@@ -109,7 +109,7 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 /** Post a new outgoing request.
     - this function must handle immediately completed requests properly
 */
-static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
+int nm_post_send(struct nm_pkt_wrap*p_pw)
 {
   int err;
   
@@ -120,11 +120,14 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-#ifdef PIOMAN
+#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
     piom_req_init(&p_pw->inst);
     p_pw->inst.server = &p_pw->p_drv->server;
     p_pw->which = SEND;
-#endif /* PIOMAN */
+#endif /* PIOMAN_POLL */
+#ifdef PIO_OFFLOAD
+    nm_so_pw_offloaded_finalize(p_pw);
+#endif
 
   nm_so_pw_finalize(p_pw);
 
@@ -141,7 +144,17 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
 		p_pw->p_drv->id,
 		p_pw->trk_id,
 		p_pw->proto_id);
-#ifdef PIOMAN
+
+#ifdef PIOM_ENABLE_LTASKS
+      nm_submit_poll_send_ltask(p_pw);
+#else
+      /* todo: clean that mess ! */
+#ifdef NMAD_POLL
+      /* put the request in the list of pending requests */
+      nm_poll_lock_out(&p_pw->p_gate->p_core->so_sched, p_pw->p_drv->id);
+      tbx_slist_add_at_tail(p_pw->p_gate->p_core->so_sched.pending_send_list[p_pw->p_drv->id], p_pw);
+      nm_poll_unlock_out(&p_pw->p_gate->p_core->so_sched, p_pw->p_drv->id);
+#else /* NMAD_POLL */
       /* Submit  the pkt_wrapper to Pioman */
       piom_req_init(&p_pw->inst);
 #ifdef PIOM_BLOCKING_CALLS
@@ -152,11 +165,9 @@ static __inline__ int nm_post_send(struct nm_pkt_wrap*p_pw)
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
       p_pw->which = SEND;
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-#else /* PIOMAN */
-      /* put the request in the list of pending requests */
-      tbx_slist_add_at_tail(p_pw->p_gate->p_core->so_sched.out_req_list, p_pw);
-#endif /* PIOMAN */
+#endif /* NMAD_POLL */
 
+#endif
     } 
   else if(err == NM_ESUCCESS)
     {
@@ -197,45 +208,81 @@ int nm_sched_out(struct nm_core *p_core)
     }
   
   /* post new requests	*/
-  while (!tbx_slist_is_nil(p_core->so_sched.post_sched_out_list))
+  /* todo: remove this crappy MA__LWPS */
+  int i;
+  FOR_EACH_DRIVER(i, p_core)
+  {
+    int trk;
+    for(trk=0;trk<NM_SO_MAX_TRACKS;trk++)
     {
-      NM_TRACEF("posting outbound requests");
-      struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.post_sched_out_list);
-      err = nm_post_send(p_pw);
-      if (err < 0 && err != -NM_EAGAIN)
+	    
+      if(tbx_slist_is_nil(p_core->so_sched.post_sched_out_list[i][trk]))
+        goto next;
+      nm_so_lock_out(&p_core->so_sched, i);
+      while (!tbx_slist_is_nil(p_core->so_sched.post_sched_out_list[i][trk]))
+      {
+        NM_TRACEF("posting outbound requests");
+	struct nm_pkt_wrap*p_pw = tbx_slist_peek_from_head(p_core->so_sched.post_sched_out_list[i][trk]);
+#if 0
+	/* todo: really useless ? */
+	if(p_pw->p_gdrv->out_req_nb)
+        /* the driver is busy */
+	  goto out;
+#endif
+	p_pw = tbx_slist_remove_from_head(p_core->so_sched.post_sched_out_list[i][trk]);
+	
+	nm_so_unlock_out(&p_core->so_sched, i);
+	
+	err = nm_post_send(p_pw);
+	if (err < 0 && err != -NM_EAGAIN)
 	{
 	  NM_DISPF("post_send returned %d", err);
 	}
+	nm_so_lock_out(&p_core->so_sched, i);
+      }
+    out:
+      nm_so_unlock_out(&p_core->so_sched, i);
+    next:
+      err = NM_ESUCCESS;
     }
-#ifndef PIOMAN
+  }
+
+#ifdef NMAD_POLL
   /* poll pending out requests	*/
-  if (!tbx_slist_is_nil(p_core->so_sched.out_req_list))
+  for(i = 0; i < NM_DRV_MAX; i++ ) {
+    if (tbx_slist_is_nil(p_core->so_sched.pending_send_list[i]))
+      continue;
+    nm_poll_lock_out(&p_core->so_sched, i);
+    if (!tbx_slist_is_nil(p_core->so_sched.pending_send_list[i]))
     {
       NM_TRACEF("polling outbound requests");
-      tbx_slist_ref_to_head(p_core->so_sched.out_req_list);
-      tbx_bool_t todo = tbx_true;
+      struct nm_pkt_wrap* first_pw = NULL;
+
       do
 	{
-	  struct nm_pkt_wrap*p_pw = tbx_slist_ref_get(p_core->so_sched.out_req_list);
+  	  struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.pending_send_list[i]);
+
+	  nm_poll_unlock_out(&p_core->so_sched, i);
 	  err = nm_poll_send(p_pw);
-	  if(err == NM_ESUCCESS)
+	  nm_poll_lock_out(&p_core->so_sched, i);
+	  if(err != NM_ESUCCESS)
 	    {
-	      todo = tbx_slist_ref_extract_and_forward(p_core->so_sched.out_req_list, NULL);
-	    }
-	  else
-	    {
-	      todo = tbx_slist_ref_forward(p_core->so_sched.out_req_list);
+	      if(!first_pw)
+	        first_pw=p_pw;
+	      tbx_slist_add_at_tail(p_core->so_sched.pending_send_list[i], p_pw);
 	    }
 	}
-      while(todo);
+      while(!tbx_slist_is_nil(p_core->so_sched.pending_send_list[i])
+	      &&tbx_slist_peek_from_head(p_core->so_sched.pending_send_list[i])!= first_pw);
+    }
+    nm_poll_unlock_out(&p_core->so_sched, i);
   }
-#endif /* PIOMAN */
+#endif /* NMAD_POLL */
   
   err = NM_ESUCCESS;
   
   return err;
 }
-
 
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -244,7 +291,11 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
 {
   nmad_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err = r->driver->wait_send_iov(r->_status, p_pw);
+  int err;
+  do {
+    err = r->driver->wait_send_iov(r->_status, p_pw);
+  }while(err == -NM_EAGAIN);
+
   nmad_lock();
   if (err != -NM_EAGAIN)
     {

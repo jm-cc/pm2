@@ -30,6 +30,63 @@
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
 
+#  define TBX_INIT_MSHARED(st)                  \
+  do {                                          \
+    if((st)->is_critical)			\
+      { TBX_INIT_CRITICAL_SHARED((st)); }	\
+    else                                        \
+      { TBX_INIT_SHARED((st)); }		\
+  }while(0)
+				      
+#  define TBX_LOCK_MSHARED(st)                  \
+  do {                                          \
+    if((st)->is_critical)			\
+      { TBX_LOCK_CRITICAL_SHARED((st)); }	\
+    else					\
+      { TBX_LOCK_SHARED((st)); }		\
+  } while (0)
+
+#  define TBX_TRYLOCK_MSHARED(st)            \
+  do {                                       \
+    if((st)->is_critical)		     \
+      { TBX_TRYLOCK_CRITICAL_SHARED((st)); } \
+    else				     \
+      { TBX_TRYLOCK_SHARED((st)); }	     \
+  } while (0)
+
+#  define TBX_UNLOCK_MSHARED(st)            \
+  do {                                      \
+    if((st)->is_critical)		    \
+      { TBX_UNLOCK_CRITICAL_SHARED((st)); } \
+    else				    \
+      { TBX_UNLOCK_SHARED((st)); }	    \
+  } while (0)
+
+#  define TBX_MLOCK()             \
+  do {                            \
+    if((st)->is_critical)	  \
+      { TBX_CRITICAL_LOCK((st)); }\
+    else			  \
+      { TBX_LOCK((st)); }	  \
+  } while (0)
+
+#  define TBX_MUNLOCK()              \
+  do {                               \
+    if((st)->is_critical)	     \
+      { TBX_CRITICAL_UNLOCK((st)); } \
+    else			     \
+      { TBX_UNLOCK((st)); }	     \
+  } while (0)
+
+#  define TBX_MYIELD()              \
+  do {                              \
+    if((st)->is_critical)	    \
+      { TBX_CRITICAL_YIELD((st)); } \
+    else			    \
+      { TBX_YIELD((st)); }	    \
+  } while (0)
+
+
 /*
  * Aligned block allocation
  * ------------------------
@@ -99,17 +156,20 @@ tbx_aligned_free (void *ptr,
 static
 __inline__
 void
-tbx_malloc_init(p_tbx_memory_t *mem,
-		size_t          block_len,
-		long            initial_block_number,
-                const char     *name)
+tbx_malloc_extended_init(p_tbx_memory_t *mem,
+			 size_t          block_len,
+			 long            initial_block_number,
+			 const char     *name,
+			 int             is_critical)
 {
+
   p_tbx_memory_t temp_mem  = NULL;
 
   temp_mem = (p_tbx_memory_t)TBX_MALLOC(sizeof(tbx_memory_t));
   CTRL_ALLOC(temp_mem);
-
-  TBX_INIT_SHARED(temp_mem);
+  
+  temp_mem->is_critical = is_critical;
+  TBX_INIT_MSHARED(temp_mem);
 #ifdef TBX_MALLOC_DEBUG_NAME
   if (tbx_streq(TBX_MALLOC_DEBUG_NAME, name)) {
     pm2debug("tbx_malloc_init: %s\n", name);
@@ -148,6 +208,21 @@ tbx_malloc_init(p_tbx_memory_t *mem,
   *mem = temp_mem;
 }
 
+static
+__inline__
+void
+tbx_malloc_init(p_tbx_memory_t *mem,
+		size_t          block_len,
+		long            initial_block_number,
+                const char     *name)
+{
+  tbx_malloc_extended_init(mem, 
+			   block_len, 
+			   initial_block_number, 
+			   name, 
+			   0);
+}
+
 TBX_FMALLOC
 static
 __inline__
@@ -156,7 +231,7 @@ tbx_malloc(p_tbx_memory_t mem)
 {
   void *ptr = NULL;
 
-  TBX_LOCK_SHARED(mem);
+  TBX_LOCK_MSHARED(mem);
   if (mem->first_free != NULL)
     {
       LOG_PTR("tbx_malloc: first free", mem->first_free);
@@ -192,7 +267,7 @@ tbx_malloc(p_tbx_memory_t mem)
 #endif /* TBX_MALLOC_BTRACE_DEPTH */
 
   mem->nb_allocated++;
-  TBX_UNLOCK_SHARED(mem);
+  TBX_UNLOCK_MSHARED(mem);
 
   return ptr ;
 }
@@ -203,7 +278,7 @@ void
 tbx_free(p_tbx_memory_t  mem,
 	 void           *ptr)
 {
-  TBX_LOCK_SHARED(mem);
+  TBX_LOCK_MSHARED(mem);
 #if TBX_MALLOC_BTRACE_DEPTH
   ptr -= TBX_MALLOC_DEBUG_LEN;
   memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
@@ -217,7 +292,7 @@ tbx_free(p_tbx_memory_t  mem,
   *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) = mem->first_free ;
   mem->first_free = ptr;
   mem->nb_allocated--;
-  TBX_UNLOCK_SHARED(mem);
+  TBX_UNLOCK_MSHARED(mem);
 }
 
 static
@@ -226,8 +301,8 @@ void
 tbx_malloc_clean(p_tbx_memory_t mem)
 {
   void *block_mem = NULL;
-
-  TBX_LOCK_SHARED(mem);
+  /* todo: why mem is locked but not unlocked ? */
+  TBX_LOCK_MSHARED(mem);
 #ifdef TBX_MALLOC_DEBUG_NAME
   if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
     pm2debug("tbx_malloc_clean: %s\n", mem->name);

@@ -23,9 +23,14 @@
 
 #include <nm_private.h>
 
+//#define DEBUG 1
 
 /** Initial number of packet wrappers */
 #define INITIAL_PW_NUM		16
+
+#ifdef PIOMAN
+piom_spinlock_t  nm_mx_lock;
+#endif /* PIOMAN */
 
 /** MX packet wrapper allocator */
 static p_tbx_memory_t mx_pw_mem;
@@ -151,6 +156,7 @@ static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv);
@@ -459,7 +465,9 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
   
   mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
   mx_nic_id_to_hostname(nic_id, hostname);
-  
+#ifdef PIOMAN
+  piom_spin_lock_init(&nm_mx_lock);
+#endif /* PIOMAN */
 #if 0 && MX_API >= 0x301
   /* disabled for now since it conflicts with test_any/wait_any, to be reworked */
   {
@@ -752,6 +760,9 @@ nm_mx_disconnect	(void*_status,
 /** Post a iov send request to MX */
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mx_lock);
+#endif /* PIOMAN */
   struct nm_mx *status = _status;
   struct nm_drv *p_drv = p_pw->p_drv;
   struct nm_mx_drv *p_mx_drv = p_drv->priv;
@@ -770,12 +781,18 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
     struct iovec	*p_src = &p_pw->v[0];
     mx_segment_t	*p_dst = seg_list;
     int i;
+    int len = 0;
     for (i = 0; i < p_pw->v_nb; i++) {
       p_dst->segment_ptr	= p_src->iov_base;
       p_dst->segment_length	= p_src->iov_len;
+      len += p_dst->segment_length;
       p_src++;
       p_dst++;
     }
+
+#if DEBUG
+    fprintf(stderr, "[MX] post send %d (pw=%p)\n", len, p_pw);
+#endif
     
     NMAD_EVENT_SND_START(p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
     
@@ -788,14 +805,19 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 			   &p_mx_pw->rq);
     nm_mx_check_return("mx_isend", mx_ret);
   }
-  err = nm_mx_poll_iov(_status, p_pw);
-  
+  err = nm_mx_poll_iov_locked(_status, p_pw);
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mx_lock);
+#endif /* PIOMAN */
   return err;
 }
 
 /** Post a iov receive request to MX */
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mx_lock);
+#endif /* PIOMAN */
   struct nm_mx	*status	= _status;
   struct nm_drv *p_drv = p_pw->p_drv;
   struct nm_mx_drv *p_mx_drv = p_drv->priv;
@@ -828,19 +850,26 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     struct iovec	*p_src	= &p_pw->v[0];
     mx_segment_t	*p_dst	= seg_list;
     int	 i;
+    int len = 0;
     for (i = 0; i < p_pw->v_nb; i++) {
       p_dst->segment_ptr	= p_src->iov_base;
       p_dst->segment_length	= p_src->iov_len;
+      len += p_dst->segment_length;
       p_src++;
       p_dst++;
     }
     
+#if DEBUG
+    fprintf(stderr, "[MX] post recv %d (pw=%p)\n", len, p_pw);
+#endif
     mx_ret	= mx_irecv(p_mx_drv->ep, seg_list, p_pw->v_nb, match_info,
 			   match_mask, p_pw,&p_mx_pw->rq);
     nm_mx_check_return("mx_irecv", mx_ret);
   }
-  err = nm_mx_poll_iov(_status, p_pw);
-  
+  err = nm_mx_poll_iov_locked(_status, p_pw);
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mx_lock);  
+#endif /* PIOMAN */
   return err;
 }
 
@@ -859,6 +888,11 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
       p_pw->p_gate = p_pw->p_drv->p_core->gate_array
 	+ p_mx_trk->gate_map[status.match_info];
     }
+#if DEBUG
+  if (status.code == MX_SUCCESS) {
+	  fprintf(stderr, "\t[MX] Success (pw=%p)\n", p_pw);
+  }
+#endif
   
   if (tbx_unlikely(status.code != MX_SUCCESS)) {
     WARN("MX driver: request completed with non-successful status: %s",
@@ -942,7 +976,7 @@ static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw)
 #endif
 
 /** Load MX operations */
-static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
+static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_mx_pkt_wrap	*p_mx_pw = p_pw->drv_priv;;
   mx_status_t	status;
@@ -954,6 +988,18 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
     return -NM_EAGAIN;
   
   return nm_mx_get_err(p_pw, status, mx_ret);
+}
+
+static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw)
+{
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mx_lock);
+  int err = nm_mx_poll_iov_locked(_status, p_pw);
+  piom_spin_unlock(&nm_mx_lock);
+  return err;
+#else
+  return nm_mx_poll_iov_locked(_status, p_pw);
+#endif /* PIOMAN */
 }
 
 /** cancel a recv operation */

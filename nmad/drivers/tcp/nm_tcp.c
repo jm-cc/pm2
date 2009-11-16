@@ -661,7 +661,7 @@ nm_tcp_outgoing_poll	(void*_status,
  */
 static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 {
-  struct nm_tcp	*status	= _status;
+  struct nm_tcp	        *status	        = _status;
   struct nm_drv		*p_drv		= p_pw->p_drv;
   struct nm_tcp_drv     *p_tcp_drv      = p_drv->priv;
   struct nm_tcp_trk	*p_tcp_trk	= &p_tcp_drv->trks_array[p_pw->trk_id];

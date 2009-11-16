@@ -26,41 +26,39 @@ debug_type_t debug_nm_so_trace = NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");
 
 #ifdef PIOMAN
 
-static piom_spinlock_t piom_big_lock;
+#ifdef FINE_GRAIN_LOCKING
+piom_spinlock_t nm_tac_lock;
+piom_spinlock_t nm_status_lock;
+#else
+piom_spinlock_t piom_big_lock = PIOM_SPIN_LOCK_INITIALIZER;
+#endif	/* FINE_GRAIN_LOCKING */
 
-void  nmad_lock(void)
-{
-  piom_spin_lock(&piom_big_lock);
-}
-
-void nmad_unlock(void)
-{
-  piom_spin_unlock(&piom_big_lock);
-}
-/* Initialisation de PIOMan  */
-int nm_core_init_piom(struct nm_core *p_core)
-{
-  LOG_IN();
-
-  piom_spin_lock_init(&piom_big_lock);
-  return 0;
-}
-
+#ifdef PIOMAN_POLL
 /** Initialize PIOMan server for the given driver */
 static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 {
   LOG_IN();
+
+#ifndef PIOM_ENABLE_LTASKS
+
   piom_server_init(&p_drv->server, "NMad IO Server");
 
 #ifdef  MARCEL_REMOTE_TASKLETS
-  marcel_vpset_t vpset;
-  marcel_vpset_vp(&vpset, 0);
-  ma_remote_tasklet_set_vpset(&p_drv->server.poll_tasklet, &vpset);
-#endif
+  int vp=(p_drv->id);
+  char* ENV_PIOM_POLL_VP=getenv("PIOM_POLL_VP");
+  if(ENV_PIOM_POLL_VP)
+    vp=atoi(ENV_PIOM_POLL_VP);
+  
+  /* distribute CPUs so as to allow concurrent polling, etc. */
+  marcel_vpset_vp(&p_drv->vpset, vp%marcel_nbvps());
+  ma_remote_tasklet_set_vpset(&p_drv->server.poll_tasklet, &p_drv->vpset);
+#endif /* MARCEL_REMOTE_TASKLET */
 
   piom_server_set_poll_settings(&p_drv->server,
-				PIOM_POLL_AT_TIMER_SIG
-				| PIOM_POLL_AT_IDLE
+				//PIOM_POLL_AT_TIMER_SIG
+				 PIOM_POLL_AT_IDLE
+				| PIOM_POLL_AT_YIELD
+				| PIOM_POLL_AT_CTX_SWITCH
 				| PIOM_POLL_WHEN_FORCED, 1, -1);
 
   /* Définition des callbacks */
@@ -71,13 +69,6 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 			     }
 			   );
 
-#warning "TODO: Fix the poll_any issues."
-  //	piom_server_add_callback(&p_drv->server,
-  //				  PIOM_FUNCTYPE_POLL_POLLANY,
-  //				  (piom_pcallback_t) {
-  //		.func = &nm_piom_poll_any,
-  //			 .speed = PIOM_CALLBACK_NORMAL_SPEED});
-
 #ifdef PIOM_BLOCKING_CALLS
   if((p_drv->driver->get_capabilities(p_drv))->is_exportable)
     {
@@ -87,24 +78,15 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 				 .func = &nm_piom_block,
 				 .speed = PIOM_CALLBACK_NORMAL_SPEED
 			       });
-#if 0
-      piom_server_add_callback(&p_drv->server, PIOM_FUNCTYPE_BLOCK_WAITANY,
-			       (piom_pcallback_t) {
-				 .func = &nm_piom_block_any,
-				 .speed = PIOM_CALLBACK_NORMAL_SPEED
-			       });
-#endif
-
     }
 #endif /* PIOM_BLOCKING_CALLS */
 
   piom_server_start(&p_drv->server);
 
-  /* Very ugly for now */
-  /* todo: "unugly" me ! */
   struct nm_pkt_wrap *post_rq = &p_drv->post_rq;
-
+  nm_so_pw_raz(post_rq);
   post_rq->p_drv  = p_drv;
+
   post_rq->trk_id = -1;
   post_rq->p_gate = NULL;
   post_rq->p_gdrv = NULL;
@@ -128,10 +110,58 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
   piom_req_submit(&p_drv->server, &post_rq->inst);
 
+#endif /* PIOM_ENABLE_LTASKS */
   return 0;
 }
-#endif /* PIOMAN */
 
+#endif /* PIOMAN_POLL */
+
+
+/* Initialisation of PIOMan  */
+int nm_core_init_piom(struct nm_core *p_core)
+{
+  nmad_lock_init(p_core);
+  nm_lock_interface_init(p_core);
+  nm_lock_status_init(p_core);
+
+#ifdef PIOM_ENABLE_LTASKS
+  piom_init_ltasks();
+  nm_submit_post_ltask(&p_core->task, p_core);
+#endif	/* PIOM_ENABLE_LTASKS */
+
+  return 0;
+}
+
+#endif  /* PIOMAN */
+
+
+#ifdef PIOMAN_POLL
+int nm_core_disable_progression(struct nm_core*p_core)
+{
+  nm_drv_id_t drv_id;
+  for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
+    {
+      piom_pause_server(&p_core->driver_array[drv_id].server);
+    }
+  return 0;
+}
+
+int nm_core_enable_progression(struct nm_core *p_core)
+{
+  nm_drv_id_t drv_id;
+  for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
+    {
+      piom_resume_server(&p_core->driver_array[drv_id].server);
+    }
+  return 0;
+}
+#else
+int nm_core_disable_progression(struct nm_core*p_core)
+{return 0;}
+
+int nm_core_enable_progression(struct nm_core*p_core)
+{return 0;}
+#endif	/* PIOMAN_POLL */
 
 /** Load a driver.
  *
@@ -278,7 +308,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
   FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
   nm_core_init_piom_drv(p_core, p_drv);
 #endif
 
@@ -413,20 +443,26 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 {
   int i, j, err = NM_ESUCCESS;
 
-  nmad_lock();
+#ifdef PIOM_ENABLE_LTASKS
+  piom_ltask_completed (&p_core->task);
+#endif	/* PIOM_ENABLE_LTASKS */
 
+  nmad_lock();
+  nm_lock_interface(p_core);
   nm_drv_id_t drv_id;
   for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
     {
       int i;
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
       /* stop polling
        */
       struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       nmad_unlock();
+      nm_unlock_interface(p_core);
       piom_server_stop(&p_drv->server);
+      nm_lock_interface(p_core);
       nmad_lock();
-#endif /* PIOMAN */
+#endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
        */
       for(i = 0; i < p_core->nb_gates; i++)
@@ -440,17 +476,24 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	      if(r->driver->cancel_recv_iov)
 		r->driver->cancel_recv_iov(r->_status, p_pw);
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-#ifdef PIOMAN
+#ifdef PIOM_ENABLE_LTASKS
+	        piom_ltask_completed(&p_pw->ltask);
+#else
+#ifdef NMAD_POLL
+	      tbx_slist_search_and_extract(p_core->so_sched.pending_recv_list[p_pw->p_drv->id], NULL, p_pw);
+#else /* NMAD_POLL */
 	      piom_req_success(&p_pw->inst);
-#else /* PIOMAN */
-	      tbx_slist_search_and_extract(p_core->so_sched.pending_recv_req, NULL, p_pw);
-#endif /* PIOMAN */
+#endif /* NMAD_POLL */
+#endif /* PIOM_ENABLE_LTASKS */
 	      nm_so_pw_free(p_pw);
 	    }
 	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	  p_gate->active_recv[drv_id][NM_TRK_SMALL] = 0;
 	}
     }
+#ifdef PIOM_ENABLE_LTASKS
+  piom_exit_ltasks();
+#endif
 
   /* disconnect all gates */
   for(i = 0 ; i < p_core->nb_gates ; i++)
@@ -516,7 +559,10 @@ static int nm_core_driver_exit(struct nm_core *p_core)
       nm_so_tag_table_destroy(&p_gate->tags);
       puk_instance_destroy(p_gate->strategy_instance);
     }
+
   nmad_unlock();
+  nm_unlock_interface(p_core);
+
   return err;
 }
 
@@ -774,13 +820,13 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   p_core->nb_gates   = 0;
   p_core->nb_drivers = 0;
 
-#ifdef PIOMAN
-  nm_core_init_piom(p_core);
-#endif
-
   err = nm_so_schedule_init(p_core);
   if (err != NM_ESUCCESS)
     goto out_free;
+
+#ifdef PIOMAN
+  nm_core_init_piom(p_core);
+#endif /* PIOMAN */
 
   *pp_core	= p_core;
 

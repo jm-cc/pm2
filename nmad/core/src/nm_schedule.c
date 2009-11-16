@@ -26,9 +26,9 @@
  */
 int nm_schedule(struct nm_core *p_core)
 {
-#ifdef PIOMAN
-  return 0;
-#else /* PIOMAN */
+#ifdef NMAD_POLL
+  int err;
+  nmad_lock();  
 
 #ifdef NMAD_DEBUG
   static int scheduling_in_progress = 0;
@@ -36,14 +36,30 @@ int nm_schedule(struct nm_core *p_core)
   scheduling_in_progress = 1;  
 #endif /* NMAD_DEBUG */
 
-  nm_sched_out(p_core);
-    
-  nm_sched_in(p_core);
+  /* send
+   */
+  err = nm_sched_out(p_core);
+
+  /* receive
+   */
+  err = nm_sched_in(p_core);
+  
+  nmad_unlock();
+
+  if (err < 0) {
+    NM_DISPF("nm_sched_in returned %d", err);
+  }
+  
+  NM_TRACEF("\n");
+  err = NM_ESUCCESS;
   
 #ifdef NMAD_DEBUG
   scheduling_in_progress = 0;
 #endif /* NMAD_DEBUG */
 
   return NM_ESUCCESS;
-#endif /* PIOMAN */
+#else  /* NMAD_POLL */
+  __piom_check_polling(PIOM_POLL_WHEN_FORCED);
+  return 0;
+#endif /* NMAD_POLL */
 }

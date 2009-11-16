@@ -34,18 +34,10 @@ enum {
 
 /* Events server structure */
 struct piom_server {
-#ifdef MARCEL
     /* Spinlock used to access this structure */
-    /* TODO : useless without marcel ? */
-    ma_spinlock_t lock;
+    piom_spinlock_t lock;
     /* Thread that owns the lock */
-    /* TODO useless without marcel ? */
-    marcel_task_t *lock_owner;
-#else
-    /* foo */
-    void *lock;
-    void *lock_owner;
-#endif	/* MARCEL */
+    piom_thread_t lock_owner;
 
 	/* List of submitted queries */
     struct tbx_fast_list_head list_req_registered;
@@ -70,14 +62,10 @@ struct piom_server {
     struct tbx_fast_list_head list_lwp_working;
 #endif /* PIOM_BLOCKING_CALLS */
 
-#ifdef MARCEL
     /* Spinlock used to access list_req_success */
-    ma_spinlock_t req_success_lock;
-    ma_spinlock_t req_ready_lock;
-#else
-    /* foo */
-    void *req_success_lock;
-#endif	/* MARCEL */
+    piom_spinlock_t req_success_lock;
+    piom_spinlock_t req_ready_lock;
+
 	/* Polling events registered but not yet polled */
     int registered_req_not_yet_polled;
 

@@ -87,7 +87,7 @@ struct nm_gate
 /** Get the driver-specific per-gate data */
 static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_id_t drv_id)
 {
-  assert(drv_id >= 0 && drv_id < NM_DRV_MAX);
+  assert(drv_id < NM_DRV_MAX);
   return p_gate->p_gate_drv_array[drv_id];
 }
 

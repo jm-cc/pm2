@@ -23,6 +23,7 @@
 /* Components structures:
 */
 
+static int strat_aggreg_autoextended_todo(void*, struct nm_gate*);
 static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
@@ -39,6 +40,7 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
 #endif /* NMAD_QOS */
     .rdv_accept     = &strat_aggreg_autoextended_rdv_accept,
     .flush          = &strat_aggreg_autoextended_flush,
+    .todo           = &strat_aggreg_autoextended_todo
   };
 
 static void*strat_aggreg_autoextended_instanciate(puk_instance_t, puk_context_t);
@@ -169,6 +171,14 @@ static int strat_aggreg_autoextended_flush(void*_status,
   }
 
   return NM_ESUCCESS;
+}
+
+static int strat_aggreg_autoextended_todo(void*_status,
+					  struct nm_gate *p_gate)
+{
+  struct nm_so_strat_aggreg_autoextended_gate *status = _status;
+  struct tbx_fast_list_head *out_list = &(status)->out_list;
+  return !(tbx_fast_list_empty(out_list));
 }
 
 /** Handle a new packet submitted by the user code.

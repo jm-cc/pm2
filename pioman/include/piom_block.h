@@ -41,6 +41,9 @@ struct piom_comm_lwp {
         volatile piom_lwp_state_t state;    
 };
 
+int __piom_lower_my_priority();
+void __piom_higher_my_priority(int prio);
+
 /* Wake up a LWP to export a request and perform a blocking call */
 int piom_wakeup_lwp(piom_server_t server, piom_req_t req);
 #endif

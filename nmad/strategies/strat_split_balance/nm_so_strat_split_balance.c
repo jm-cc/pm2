@@ -22,6 +22,7 @@
 /* Components structures:
  */
 
+static int strat_split_balance_todo(void*, struct nm_gate*);
 static int strat_split_balance_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
@@ -36,7 +37,8 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
     .ack_callback    = NULL,
 #endif /* NMAD_QOS */
     .rdv_accept          = &strat_split_balance_rdv_accept,
-    .flush               = NULL
+    .flush               = NULL,
+    .todo                = &strat_split_balance_todo
 };
 
 static void*strat_split_balance_instanciate(puk_instance_t, puk_context_t);
@@ -167,6 +169,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 
   /* We aggregate ONLY if data are very small OR if there are
      already two ready packets */
+
   if(p_pack->len <= 512 || status->nb_packets >= 2)
     {
       /* We first try to find an existing packet to form an aggregate */
@@ -271,6 +274,14 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
   union nm_so_generic_ctrl_header ctrl;
   nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
+}
+
+static int strat_split_balance_todo(void*_status,
+				    struct nm_gate *p_gate)
+{
+	struct nm_so_strat_split_balance *status = _status;
+	struct tbx_fast_list_head *out_list = &(status)->out_list;
+	return !(tbx_fast_list_empty(out_list));
 }
 
 /* Handle the arrival of a new packet. The strategy may already apply

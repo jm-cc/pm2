@@ -19,6 +19,7 @@
  */
 
 
+#include "pm2_common.h"
 #include <nm_public.h>
 #include <nm_launcher.h>
 #include <nm_mad3_public.h>

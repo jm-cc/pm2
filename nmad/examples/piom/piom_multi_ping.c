@@ -22,12 +22,15 @@
 
 #include "../sendrecv/helper.h"
 
+//#define DEBUG 1
+
 /* This program performs several ping pong in parallel.
  * This evaluates the efficienty to access nmad from 1, 2, 3, ...n threads simultanously
 */
 #ifdef PIOMAN
 
-#define LEN_DEFAULT      4
+#define LEN_DEFAULT      (128*1024)
+//#define LEN_DEFAULT      4
 #define WARMUPS_DEFAULT	100
 #define LOOPS_DEFAULT	2000
 #define THREADS_DEFAULT 4
@@ -37,6 +40,7 @@ static uint32_t	 len;
 static int	 loops;
 static int       threads;
 static int       warmups;
+static int       status[16];
 
 #ifdef MARCEL
 static pmarcel_sem_t ready_sem;
@@ -100,6 +104,15 @@ static void control_buffer(char *msg, char *buffer, int len) {
 #endif
 
 
+void affiche_status() {
+  int i;
+  for(i=0;i<16;i++){
+	  fprintf(stderr, "[%d]  ", status[i]);
+  }
+  fprintf(stderr, "\n");
+
+}
+
 void 
 server(void* arg) {
   int    my_pos = *(int*)arg;
@@ -115,16 +128,22 @@ server(void* arg) {
       marcel_yield();
     for(k = 0; k < loops + warmups; k++) {
       nm_sr_request_t request;
-
+#if DEBUG
+      fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
+#endif
       nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
       nm_sr_rwait(p_core, &request);
-
+#if DEBUG
+      fprintf(stderr, "[%d] Send %d\n", my_pos, k);
+#endif
 #if DATA_CONTROL_ACTIVATED
       control_buffer("réception", buf, len);
 #endif
       nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
       nm_sr_swait(p_core, &request);
     }
+    status[my_pos]++;
+    affiche_status();
     marcel_sem_V(&ready_sem); 	
   } 
 }
@@ -151,9 +170,14 @@ client(void* arg) {
 #if DATA_CONTROL_ACTIVATED
 	    control_buffer("envoi", buf, len);
 #endif
+#if DEBUG
+	    fprintf(stderr, "[%d] Send %d\n", my_pos, k);
+#endif
 	    nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
 	    nm_sr_swait(p_core, &request);
-
+#if DEBUG
+	    fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
+#endif
 	    nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
 	    nm_sr_rwait(p_core, &request);
 #if DATA_CONTROL_ACTIVATED
@@ -167,10 +191,16 @@ client(void* arg) {
       nm_sr_request_t request;
 #if DATA_CONTROL_ACTIVATED
       control_buffer("envoi", buf, len);
+#endif 
+#if DEBUG
+      fprintf(stderr, "[%d] Send %d\n", my_pos, k+warmups);
 #endif
       nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
       nm_sr_swait(p_core, &request);
 
+#if DEBUG
+      fprintf(stderr, "[%d] Recv %d\n", my_pos, k+warmups);
+#endif
       nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
       nm_sr_rwait(p_core, &request);
 #if DATA_CONTROL_ACTIVATED
@@ -185,8 +215,9 @@ client(void* arg) {
     lat	      = sum / (2 * loops);
     bw_million_byte = len * (loops / (sum / 2));
     bw_mbyte        = bw_million_byte / 1.048576;
-  
+    status[my_pos]++;
     printf("[%d]\t%d\t%lf\t%8.3f\t%8.3f\n", my_pos, len, lat, bw_million_byte, bw_mbyte);
+    affiche_status();
     marcel_sem_V(&ready_sem); 	
   }
 }
@@ -234,6 +265,9 @@ main(int	  argc,
     }
   }
 
+  for(i=0;i<16;i++){
+	  status[i]=0;
+  }
 #ifdef MARCEL
   marcel_attr_init(&attr);
  

@@ -435,9 +435,9 @@ mad_init(int   *argc,
 
   LOG_IN();
   common_pre_init(argc, argv, NULL);
-  common_post_init(argc, argv, NULL);
   mad_memory_manager_init(*argc, argv);
   madeleine = mad_object_init(*argc, argv);
+  common_post_init(argc, argv, NULL);
   mad_cmd_line_init(madeleine, *argc, argv);
   mad_leonie_link_init(madeleine, *argc, argv);
   mad_leonie_command_init(madeleine, *argc, argv);

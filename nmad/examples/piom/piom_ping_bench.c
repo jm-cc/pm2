@@ -31,8 +31,8 @@ int main(){ return -1; }
 #define MAX_DEFAULT	(8)
 #define MULT_DEFAULT	2
 #define INCR_DEFAULT	0
-#define WARMUPS_DEFAULT	100
-#define LOOPS_DEFAULT	1000
+#define WARMUPS_DEFAULT	10
+#define LOOPS_DEFAULT	100
 #define THREADS_DEFAULT 8
 #define DATA_CONTROL_ACTIVATED 0
 
@@ -165,18 +165,20 @@ main(int	  argc,
 #ifdef MARCEL
   marcel_attr_init(&attr);
   fini = 0;
-  pid = malloc(sizeof(marcel_t) * marcel_nbvps());
-  threads = marcel_nbvps() -  2;
+  //pid = malloc(sizeof(marcel_t) * marcel_nbvps());
+  //threads = marcel_nbvps() -  2;
+  threads = THREADS_DEFAULT;
+  pid = malloc(sizeof(marcel_t) * threads);
   fprintf(stderr, "[%d Computing threads]\n", threads);
 
   marcel_sem_init(&ready_sem,0);
   for(i=0;i<threads;i++) {
-    marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps() - 1 - (i % marcel_nbvps())));
-    //fprintf(stderr,"creating thread with vpset %d\n", attr.vpset);
+	  //marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps() - 1 - (i % marcel_nbvps())));
+    fprintf(stderr,"creating thread %d\n",i);
     marcel_create(&pid[i], &attr, (void*)greedy_func, NULL);
     /* wait for the thread to be actually launched before we continue */
     marcel_sem_P(&ready_sem);
-    //fprintf(stderr,"Thread %d created\n", i);
+    fprintf(stderr,"Thread %d created\n", i);
   }
 
 #endif

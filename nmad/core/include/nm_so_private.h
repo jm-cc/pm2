@@ -102,22 +102,37 @@ NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 struct nm_so_sched
 {
   /** Post-scheduler outgoing lists, to be posted to thre driver. */
-  p_tbx_slist_t post_sched_out_list;
+  p_tbx_slist_t post_sched_out_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
-#ifndef PIOMAN
+  /** recv requests submited to nmad, to be posted to the driver. */
+  p_tbx_slist_t	post_sched_in_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
+  
+#ifdef PIOMAN
+  /** Lock used to access post_sched_out_list */
+  piom_spinlock_t post_sched_out_lock[NM_DRV_MAX];
+
+  /** Lock used to access post_recv_list */
+  piom_spinlock_t post_sched_in_lock[NM_DRV_MAX];
+#endif
+#ifdef NMAD_POLL
   /* We don't use these lists since PIOMan already manage a 
      list of requests to poll */
 
   /** Outgoing active requests. */
-  p_tbx_slist_t out_req_list;
+  p_tbx_slist_t pending_send_list[NM_DRV_MAX];
 
   /** recv requests posted to the driver. */
-  p_tbx_slist_t	 pending_recv_req;
-#endif
+  p_tbx_slist_t pending_recv_list[NM_DRV_MAX];
 
-  /** recv requests submited to nmad, to be posted to the driver. */
-  p_tbx_slist_t	post_recv_req;
-  
+#ifdef PIOMAN
+  /** Lock used to access pending_send_list */
+  piom_spinlock_t pending_send_lock[NM_DRV_MAX];
+
+  /** Lock used to access pending_recv_list */
+  piom_spinlock_t pending_recv_lock[NM_DRV_MAX];
+#endif /* PIOMAN */
+#endif /* NMAD_POLL */
+
   /** selected strategy */
   puk_component_t strategy_adapter;
 

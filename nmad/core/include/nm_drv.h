@@ -40,11 +40,24 @@ struct nm_drv
   /** Private structure of the driver. */
   void *priv;
   
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
   struct piom_server server;
   struct nm_pkt_wrap post_rq;
 #endif
+#if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
+  marcel_vpset_t vpset;
+#endif
 };
+
+#if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
+#define FOR_EACH_DRIVER(i, p_core)		                       \
+	for(i = 0; i< NM_DRV_MAX; i++ )                                \
+		if(marcel_vpset_isset(&p_core->driver_array[i].vpset, \
+				      marcel_current_vp()))
+#else
+#define FOR_EACH_DRIVER(i, p_core)			\
+	for(i = 0; i< NM_DRV_MAX; i++ )
+#endif
 
 /** Request for connecting/disconnecting a gate with a driver. */
 struct nm_cnx_rq

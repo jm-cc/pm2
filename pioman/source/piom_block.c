@@ -14,8 +14,50 @@
  * General Public License for more details.
  */
 
-//#define EXPORT_THREADS 1
 #include "pioman.h"
+#include <sched.h>
+#include <pthread.h>
+
+static int rr_min_priority ;
+static int rr_max_priority ;
+
+static  int PIOM_TH_SYS_RT_PRIO   ;
+static  int PIOM_TH_MAX_RT_PRIO   ;
+static  int PIOM_TH_DEF_PRIO      ;
+static  int PIOM_TH_BATCH_PRIO    ;
+static  int PIOM_TH_LOWBATCH_PRIO ;
+static  int PIOM_TH_IDLE_PRIO     ;
+static  int PIOM_OTHER_DEF_PRIO   ;
+
+int __piom_lower_my_priority()
+{
+    struct sched_param thread_param;
+    int policy;
+    /* backup the current priority */
+    pthread_getschedparam (pthread_self(), &policy, &thread_param);
+    int prio = thread_param.sched_priority ;
+
+    /* lower the priority */
+    thread_param.sched_priority = PIOM_OTHER_DEF_PRIO;
+    int err;
+    if((err = pthread_setschedparam (pthread_self(), SCHED_OTHER, &thread_param))) {
+	fprintf(stderr, "cannot lower my priority (err %d)\n", err);
+	fprintf(stderr, "please check that you are allowed to change the Linux scheduler policy\n");
+    }
+    return prio;
+}
+
+
+void __piom_higher_my_priority(int prio)
+{
+    struct sched_param thread_param;
+    thread_param.sched_priority = prio;
+    int err;
+    if((err = pthread_setschedparam (pthread_self(), SCHED_FIFO, &thread_param))) {
+	fprintf(stderr, "cannot higher my priority (err %d)\n", err);
+	fprintf(stderr, "please check that you are allowed to change the Linux scheduler policy\n");
+    }
+}
 
 /* Check if it is interesting to use a blocking syscall 
  * return 0 if we should use polling
@@ -112,77 +154,28 @@ piom_wakeup_lwp(piom_server_t server, piom_req_t req)
     /* Pick up a LWP from the pool */
     _piom_spin_lock(&server->lwp_lock);
     do {
-	if(!tbx_fast_list_empty(server->list_lwp_ready.next))
+	if(!tbx_fast_list_empty(server->list_lwp_ready.next)) {
 	    lwp = tbx_fast_list_entry(server->list_lwp_ready.next, struct piom_comm_lwp, chain_lwp_ready);
+	    tbx_fast_list_del_init(&lwp->chain_lwp_ready);
+ 	}
 	else if( server->stopable && !tbx_fast_list_empty(server->list_lwp_working.next))
 	    lwp = tbx_fast_list_entry(server->list_lwp_working.next, struct piom_comm_lwp, chain_lwp_working);
 	else {
 	    /* Create another LWP (warning: this is *very* expensive !) */
 	    _piom_spin_unlock(&server->lwp_lock);	
 	    piom_server_start_lwp(server, 1);
+	    lwp=NULL;
 	    _piom_spin_lock(&server->lwp_lock);
 	}
     }while(! lwp);
     _piom_spin_unlock(&server->lwp_lock);
 
     /* wake up the LWP */
-    PIOM_LOGF("Waiking up comm LWP #%d\n",lwp->vp_nb);
+    PIOM_LOGF("Waking up comm LWP #%d\n",lwp->vp_nb);
     PROF_EVENT(writing_tube);
     write(lwp->fds[1], &foo, 1);
     PROF_EVENT(writing_tube_done);
 
-#ifdef EXPORT_THREADS
-    /* In that case, the LWP we just woke up is in charge of rescuing the 
-       threads so that we can perform the blocking call here  */
-    marcel_task_t *lock;	
-    piom_req_t prev, tmp, req2=NULL;
-    if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
-	{
-	    __piom_tryunlock_server(server);
-	    /* Perform one blocking call for all the requests */
-	    (*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].
-	     func) (server, PIOM_FUNCTYPE_BLOCK_WAITANY, req2,
-		    server->req_block_grouped_nb, lwp->fds[0]);
-		
-	    lock = piom_ensure_trylock_server(server);
-	}
-    else{
-	if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].func)
-	    {
-		prev=NULL;
-		FOREACH_REQ_TO_EXPORT_BASE_SAFE(req2, tmp, server) {
-		    if(req2==prev)
-			break;
-		    PIOM_WARN_ON(req2->state & PIOM_STATE_OCCURED);
-		    /* Set the request as 'exported' */
-		    tbx_fast_list_del_init(&req2->chain_req_to_export);
-		    tbx_fast_list_add(&req2->chain_req_exported, &server->list_req_exported);
-		    req2->state|=PIOM_STATE_EXPORTED;
-				
-		    __piom_tryunlock_server(server);
-					
-		    /* call the blocking callback */		
-		    (*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].
-		     func) (server, PIOM_FUNCTYPE_BLOCK_WAITONE, req2,
-			    server->req_poll_grouped_nb, lwp->fds[0]);
-				
-		    tbx_fast_list_del_init(&req2->chain_req_exported);
-				
-		    lock = piom_ensure_trylock_server(server);
-				
-		    prev=req;
-		    break;
-		}
-	    }
-	else 
-	    PIOM_EXCEPTION_RAISE(PIOM_CALLBACK_ERROR);
-		
-    }
-    /* handle completed requests */
-    __piom_manage_ready(server);
-    lock = piom_ensure_trylock_server(server);
-	
-#endif	/* EXPORT_THREADS */
     return 0;
 }
 
@@ -196,33 +189,32 @@ __piom_syscall_loop(void * param)
     piom_req_t prev, tmp, req=NULL;
     int foo=0;
     marcel_task_t *lock;
+    int err;
+    struct sched_param thread_param;
 
     lwp->state=PIOM_LWP_STATE_LAUNCHED;
-#ifdef EXPORT_THREADS
 
-    /* On met la priorite au minimum */
-    /* Set priority to minimum to avoid the LWP to be woken up as soon
-       as it is unblocked */
-    struct sched_param pthread_param;
-    if(sched_getparam(0, &pthread_param)) {
-	fprintf(stderr, "couldn't get my priority !\n");
-	switch(errno){
-	case EINVAL: 
-	    fprintf(stderr, "invalid param\n"); 
-	    break;
-	case EPERM:
-	    fprintf(stderr, " The calling process does not have appropriate privileges \n");
-	    break;
-	case ESRCH:
-	    fprintf(stderr, "The process whose ID is 0 is unknown\n");
-	    break;
-	}
-    }
-    if(nice(10) == -1){
-	fprintf(stderr, "couldn't lower my priority\n");
-    }
-#endif	/* EXPORT_THREADS */
-    
+    rr_min_priority = sched_get_priority_min (SCHED_FIFO);
+    rr_max_priority = sched_get_priority_max (SCHED_FIFO);
+    PIOM_OTHER_DEF_PRIO = sched_get_priority_min (SCHED_OTHER);
+    PIOM_TH_SYS_RT_PRIO   = rr_max_priority;
+    PIOM_TH_MAX_RT_PRIO   = rr_max_priority-1;
+    PIOM_TH_DEF_PRIO      = (rr_min_priority + rr_max_priority)/2;
+    PIOM_TH_BATCH_PRIO    = (PIOM_TH_DEF_PRIO + rr_min_priority)/2;
+    PIOM_TH_LOWBATCH_PRIO = (PIOM_TH_BATCH_PRIO + rr_min_priority)/2;
+    PIOM_TH_IDLE_PRIO     = rr_min_priority;
+
+    thread_param.sched_priority = PIOM_TH_MAX_RT_PRIO;
+
+    /* The progression thread is a real-time thread with the highest priority.
+     */
+    if(err = pthread_setschedparam (pthread_self(), SCHED_FIFO, &thread_param))
+        {
+            fprintf(stderr, "cannot higher my priority (err %d)\n", err);
+            fprintf(stderr, "please check that you are allowed to change the Linux scheduler policy\n");
+            exit(1);        
+        }
+
     /* Main loop: wait for commands until the server is halted */
     do {
 	_piom_spin_lock(&server->lwp_lock);
@@ -233,13 +225,8 @@ __piom_syscall_loop(void * param)
 
 	/* Wait for a command */		
 	PROF_EVENT2(syscall_waiting, lwp->vp_nb, lwp->fds[0]);
-#ifdef EXPORT_THREADS
-	do {
-	    read(lwp->fds[0], &foo, 1); 
-	} while(1); 
-#else
+
 	read(lwp->fds[0], &foo, 1); 
-#endif	/* EXPORT_THREADS */
 
     process_blocking_call:
 	PROF_EVENT2(syscall_read_done, lwp->vp_nb, lwp->fds[0]);
@@ -255,7 +242,6 @@ __piom_syscall_loop(void * param)
 		
 	/* Remove the LWP from the ready list and add it to the working list */
 	lwp->state=PIOM_LWP_STATE_WORKING;
-	tbx_fast_list_del_init(&lwp->chain_lwp_ready);
 	tbx_fast_list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 	_piom_spin_unlock(&server->lwp_lock);

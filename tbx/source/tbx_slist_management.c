@@ -58,10 +58,12 @@ void
 tbx_slist_manager_init(void)
 {
   LOG_IN();
-  tbx_malloc_init(&tbx_slist_element_manager_memory,
-		  sizeof(tbx_slist_element_t),
-		  INITIAL_SLIST_ELEMENT,
-                  "tbx/slist elements");
+  tbx_malloc_extended_init(&tbx_slist_element_manager_memory,
+			   sizeof(tbx_slist_element_t),
+			   INITIAL_SLIST_ELEMENT,
+			   "tbx/slist elements", 
+			   1);
+
   tbx_malloc_init(&tbx_slist_nref_manager_memory,
 		  sizeof(tbx_slist_nref_t),
 		  INITIAL_SLIST_NREF,

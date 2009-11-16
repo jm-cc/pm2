@@ -20,61 +20,6 @@
 
 #include "pioman.h"
 
-#ifdef MARCEL
-
-#define piom_spinlock_t ma_spinlock_t
-#define piom_spin_lock_init(lock)      ma_spin_lock_init(lock)
-#define piom_spin_lock(lock) 	       ma_spin_lock_softirq(lock)
-#define piom_spin_unlock(lock) 	       ma_spin_unlock_softirq(lock)
-#define piom_spin_trylock(lock)	       ma_spin_trylock_softirq(lock)
-
-
-#define piom_rwlock_t               ma_rwlock_t
-#define PIOM_RW_LOCK_UNLOCKED       MA_RW_LOCK_UNLOCKED
-#define piom_rwlock_init(lock)      ma_rwlock_init(lock)
-#define piom_rwlock_is_locked(lock) ma_rwlock_is_locked(lock)
-
-
-#define piom_read_lock(lock)    ma_read_lock(lock)
-#define piom_read_unlock(lock)  ma_read_unlock(lock)
-#define piom_write_lock(lock)   ma_write_lock(lock)
-#define piom_write_unlock(lock) ma_write_unlock(lock)
-
-#define piom_read_lock_softirq(lock)    ma_read_lock_softirq(lock)
-#define piom_read_unlock_softirq(lock)  ma_read_unlock_softirq(lock)
-#define piom_write_lock_softirq(lock)   ma_write_lock_softirq(lock)
-#define piom_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
-
-#define piom_task_t     marcel_task_t
-#define PIOM_SELF       MARCEL_SELF
-#define PIOM_CURRENT_VP marcel_current_vp()
-
-#else /* MARCEL */
-
-#define piom_spinlock_t
-#define piom_spin_lock_init(lock)      (void) 0
-#define piom_spin_lock(lock) 	       (void) 0
-#define piom_spin_unlock(lock) 	       (void) 0
-
-#define piom_rwlock_t   int
-#define PIOM_RW_LOCK_UNLOCKED 0
-
-#define piom_read_lock(lock)    (void) 0
-#define piom_read_unlock(lock)  (void) 0
-#define piom_write_lock(lock)   (void) 0
-#define piom_write_unlock(lock) (void) 0
-
-#define piom_read_lock_softirq(lock)    (void) 0
-#define piom_read_unlock_softirq(lock)  (void) 0
-#define piom_write_lock_softirq(lock)   (void) 0
-#define piom_write_unlock_softirq(lock) (void) 0
-
-#define piom_task_t     int
-#define PIOM_SELF       1
-#define PIOM_CURRENT_VP 1
-
-#endif /* MARCEL */
-
 /* Mutual exclusion handling
  * 
  * Remarks about locking:
@@ -87,16 +32,16 @@
  *     . softirqs have to be disabled
  *     . the server's tasklet has to be disabled
  */
-#ifdef MARCEL
+#if defined(PIOM_THREAD_ENABLED)
 /* locks a server
  * this function can't be called from the server's tasklet
  */
 void __piom_lock_server(piom_server_t server,
-			marcel_task_t *owner);
+			piom_thread_t owner);
 
 /* locks a server from the server's tasklet*/
 void __piom_trylock_server(piom_server_t server,
-			   marcel_task_t *owner);
+			   piom_thread_t owner);
 
 /* unlocks a server */
 void __piom_unlock_server(piom_server_t server);
@@ -105,40 +50,41 @@ void __piom_unlock_server(piom_server_t server);
 void __piom_tryunlock_server(piom_server_t server);
 
 /* Locks a server and disable the tasklet
- * return  MARCEL_SELF if we already have the lock
+ * return  PIOM_SELF if we already have the lock
  *  NULL overwise
  */
-marcel_task_t *piom_ensure_lock_server(piom_server_t server);
+piom_thread_t piom_ensure_lock_server(piom_server_t server);
 
 /* Locks a server
- * return  MARCEL_SELF if we already have the lock
+ * return  PIOM_SELF if we already have the lock
  *  NULL overwise
  */
-marcel_task_t *piom_ensure_trylock_from_tasklet(piom_server_t server);
+piom_thread_t piom_ensure_trylock_from_tasklet(piom_server_t server);
 
 /* Locks a server
- * return  MARCEL_SELF if we already have the lock
+ * return  PIOM_SELF if we already have the lock
  *  NULL overwise
  */
-marcel_task_t *piom_ensure_trylock_server(piom_server_t server);
+piom_thread_t piom_ensure_trylock_server(piom_server_t server);
 
 void piom_lock_server_owner(piom_server_t server,
-			    marcel_task_t *owner);
+			    piom_thread_t owner);
 
 void piom_restore_lock_server_locked(piom_server_t server,
-				     marcel_task_t *old_owner);
+				     piom_thread_t old_owner);
 
 void piom_restore_trylocked_from_tasklet(piom_server_t server, 
-					 marcel_task_t *old_owner);
+					 piom_thread_t old_owner);
 
 void piom_restore_lock_server_trylocked(piom_server_t server,
-					marcel_task_t *old_owner);
+					piom_thread_t old_owner);
 
 void piom_restore_lock_server_unlocked(piom_server_t server,
-				       marcel_task_t *old_owner);
+				       piom_thread_t old_owner);
 
 
 
+#ifdef MARCEL
 #define _piom_spin_lock_softirq(lock)    ma_spin_lock_softirq(lock)
 #define _piom_spin_unlock_softirq(lock)  ma_spin_unlock_softirq(lock)
 #define _piom_spin_trylock_softirq(lock) ma_spin_trylock_softirq(lock)
@@ -149,13 +95,25 @@ void piom_restore_lock_server_unlocked(piom_server_t server,
 
 #define _piom_spin_lock(lock)   ma_spin_lock(lock)
 #define _piom_spin_unlock(lock) ma_spin_unlock(lock)
+#else
+#define _piom_spin_lock_softirq(lock)    piom_spin_lock(lock)
+#define _piom_spin_unlock_softirq(lock)  piom_spin_unlock(lock)
+#define _piom_spin_trylock_softirq(lock) piom_spin_trylock(lock)
+#define _piom_write_lock_softirq(lock)   piom_write_lock(lock)
+#define _piom_write_unlock_softirq(lock) piom_write_unlock(lock)
+#define _piom_read_lock_softirq(lock)    piom_read_lock(lock)
+#define _piom_read_unlock_softirq(lock)  piom_read_unlock(lock)
+
+#define _piom_spin_lock(lock)   piom_spin_lock(lock)
+#define _piom_spin_unlock(lock) piom_spin_unlock(lock)
+#endif
 
 #else
 
 #define __piom_lock_server(server, owner)                    (void) 0
 #define __piom_unlock_server(server)                         (void) 0
 #define _piom_spin_trylock_softirq(lock)                     (void) 0
-#define piom_ensure_lock_server(server)                      (void) 0
+#define piom_ensure_lock_server(server)                      0
 #define piom_lock_server_owner(server, owner)                (void) 0
 #define piom_restore_lock_server_locked(server, old_owner)   (void) 0
 #define piom_restore_lock_server_unlocked(server, old_owner) (void) 0
@@ -187,12 +145,12 @@ void piom_restore_lock_server_unlocked(piom_server_t server,
  * - If a request has the ONE_SHOT attribute, the disactivation is atomic
  */
 
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
 int piom_lock(piom_server_t server);
 int piom_unlock(piom_server_t server);
 #else
-#define piom_lock(lock)   (void) 0
-#define piom_unlock(lock) (void) 0
-#endif	/* MARCEL */
+#define piom_lock(server)    (void) 0
+#define piom_unlock(server)  (void) 0
+#endif	/* PIOM_THREAD_ENABLED */
 
 #endif	/* PIOM_LOCK_H */

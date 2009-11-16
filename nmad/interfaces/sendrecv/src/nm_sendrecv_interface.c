@@ -20,7 +20,7 @@
 #include <nm_private.h>
 #include "nm_sendrecv_interface.h"
 
-
+//#define DEBUG 1
 /** Structure that contains all sendrecv-related static variables.
  */
 static struct
@@ -34,12 +34,23 @@ static struct
   int init_done;
 } nm_sr_data = { .init_done = 0 };
 
-
+/** Retrieve the 'ref' from a completed receive request.
+ */
+/* todo: move this in the header file and inline the function */
+int nm_sr_get_ref(nm_core_t p_core,
+		  nm_sr_request_t *p_request,
+		  void**ref)
+{
+	
+  *ref = p_request->ref;
+  return NM_ESUCCESS;
+}
 
 /* ** Status *********************************************** */
 
 static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_t event, const nm_sr_event_info_t*info)
 {
+
   nm_sr_event_monitor_vect_itor_t i;
   for(i  = nm_sr_event_monitor_vect_begin(&nm_sr_data.monitors);
       i != nm_sr_event_monitor_vect_end(&nm_sr_data.monitors);
@@ -55,8 +66,7 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
       (*p_request->monitor.notifier)(event, info);
     }
 }
-
-#ifdef PIOMAN
+#ifdef PIOMAN_POLL
 #define nm_sr_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
 #define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
 #define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
@@ -78,7 +88,7 @@ static inline void nm_so_post_all_force(nm_core_t p_core)
 	/* todo: add a kind of ma_tasklet_schedule here */
 //  nm_piom_post_all(p_core);
 }
-#else /* PIOMAN */
+#else /* PIOMAN_POLL */
 static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
 {
   *status = bitmask;
@@ -101,6 +111,11 @@ static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask
     {
       while(!((*status) & bitmask)) {
 	nm_schedule(p_core);
+#if(!defined(FINE_GRAIN_LOCKING) && defined(MARCEL))
+	if(!((*status) & bitmask)) {
+	      marcel_yield();
+      }
+#endif 
       }
     }
 }
@@ -108,9 +123,9 @@ static inline void nm_so_post_all(nm_core_t p_core)
 { /* do nothing */ }
 static inline void nm_so_post_all_force(nm_core_t p_core)
 { /* do nothing */ }
-#endif /* PIOMAN */
+#endif /* PIOMAN_POLL */
 
-#ifdef PIOMAN
+#ifdef PIOM_ENABLE_SHM
 /** Attach a piom_sem_t to a request. This piom_sem_t is woken 
  *  up when the request is completed.
  *  @param p_request a pointer to a NM/SO request to be filled.
@@ -213,9 +228,14 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 			nm_sr_request_t *p_request,
 			void*ref)
 {
-  NM_SO_SR_LOG_IN();
   nmad_lock();
+  nm_lock_interface(p_core);
+
+  NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
+#ifdef DEBUG
+  fprintf(stderr, "[ISend] tag=%lx; data=%p; len=%d; req=%p, ref %p\n", tag, data, len, p_request, ref);
+#endif
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
@@ -239,9 +259,12 @@ int nm_sr_isend_generic(struct nm_core *p_core,
       TBX_FAILURE("Unkown sending type.");
       break;
     }
+
   int ret = nm_so_pack(p_core, &p_request->req.pack, tag, p_gate, data, size, pack_type);
   nm_so_post_all(p_core);
   nmad_unlock();
+  nm_unlock_interface(p_core);
+
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
   NM_SO_SR_LOG_OUT();
   return ret;
@@ -315,6 +338,9 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
+  nm_lock_interface(p_core);
+  nm_lock_status(p_core);
+
 #ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
     TBX_FAILUREF("nm_sr_stest- req=%p no send posted!\n", p_request);
@@ -323,10 +349,7 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     goto exit;
 
-#ifdef PIOMAN
-  /* Useless ? */
-  __piom_check_polling(PIOM_POLL_AT_IDLE);
-#else
+#ifdef NMAD_POLL
   nm_schedule(p_core);
 #endif
 
@@ -334,6 +357,9 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
     NM_ESUCCESS : -NM_EAGAIN;
 
  exit:
+
+  nm_unlock_status(p_core);
+  nm_unlock_interface(p_core);
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, rc);
   NM_SO_SR_LOG_OUT();
   return rc;
@@ -363,9 +389,7 @@ int nm_sr_swait(struct nm_core *p_core, nm_sr_request_t *p_request)
 
   if(! nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     {
-      nmad_lock();
       nm_so_post_all_force(p_core);
-      nmad_unlock();
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
     }
 
@@ -388,11 +412,15 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 			       void *ref)
 {
   int ret;
-
   NM_SO_SR_LOG_IN();
+
+#ifdef DEBUG
+  fprintf(stderr, "[Irecv] tag=%lx; data=%p; len=%d; req=%p, ref %p\n", tag, data_description, len, p_request, ref);
+#endif
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data_description, len, p_request);
 
   nmad_lock();
+  nm_lock_interface(p_core);
   nm_sr_flush(p_core);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
   p_request->ref     = ref;
@@ -400,6 +428,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   
   switch(reception_type)
     {
+
     case nm_sr_contiguous_transfer:
       {
 	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, data_description, len);
@@ -420,8 +449,10 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
     default:
       TBX_FAILURE("Unknown reception type.");
     }
-  nm_so_post_all(p_core);
+
   nmad_unlock();
+  nm_unlock_interface(p_core);
+
   NM_SO_SR_LOG_OUT();
   return ret;
 }
@@ -436,6 +467,8 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
 
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
+  /* todo: no need to lock this ? */
+  //nm_lock_interface(p_core);
 
 #ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
@@ -444,10 +477,7 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
 
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
-#ifdef PIOMAN
-      /* Useless ? */
-      __piom_check_polling(PIOM_POLL_AT_IDLE);
-#else
+#ifdef NMAD_POLL
       nm_schedule(p_core);
 #endif
     }
@@ -467,6 +497,7 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
     {
       rc = -NM_EAGAIN;
     }
+  //nm_unlock_interface(p_core);
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, rc);
   NM_SO_SR_LOG_OUT();
   return rc;
@@ -482,12 +513,9 @@ int nm_sr_rwait(struct nm_core *p_core, nm_sr_request_t *p_request)
 		 nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED)) 
     {
-      nmad_lock();
       nm_so_post_all_force(p_core);
-      nmad_unlock();
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED, p_core);
     }
-
   NM_SO_SR_TRACE("request %p completed\n", p_request);
   NM_SO_SR_LOG_OUT();
   return nm_sr_rtest(p_core, p_request);
@@ -512,10 +540,17 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
 int nm_sr_probe(struct nm_core *p_core,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
 {
+  nm_lock_interface(p_core);
+  nm_lock_status(p_core);
+
   int err = nm_so_iprobe(p_core, p_gate, pp_out_gate, tag);
-#ifndef PIOMAN
+  nm_unlock_status(p_core);
+  nm_unlock_interface(p_core);
+
+#ifdef NMAD_POLL
   nm_schedule(p_core);
 #endif
+
   return err;
 }
 
@@ -525,7 +560,6 @@ int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t mask, nm_sr_event_notifier_t n
   nm_sr_event_monitor_vect_push_back(&nm_sr_data.monitors, m);
   return NM_ESUCCESS;
 }
-
 
 int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
@@ -538,19 +572,41 @@ int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
 
 int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
+#ifdef NMAD_POLL
   nm_schedule(p_core);
+#endif
+
+  nm_lock_interface(p_core);
+  nm_lock_status(p_core);
+
   if(!tbx_fast_list_empty(&nm_sr_data.completed_rreq))
     {
       nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_rreq.next, struct nm_sr_request_s, _link);
       tbx_fast_list_del(nm_sr_data.completed_rreq.next);
       *out_req = p_request;
+
+      nm_unlock_status(p_core);
+      nm_unlock_interface(p_core);
       return NM_ESUCCESS;
     } 
   else 
     {
       *out_req = NULL;
+
+      nm_unlock_status(p_core);
+      nm_unlock_interface(p_core);
       return -NM_EAGAIN;
     }
+}
+
+void nm_sr_send_remove(struct nm_core *p_core, nm_sr_request_t *req)
+{
+       tbx_fast_list_del_init(&req->_link);
+}
+
+void nm_sr_recv_remove(struct nm_core *p_core, nm_sr_request_t *req)
+{
+       tbx_fast_list_del_init(&req->_link);
 }
 
 int nm_sr_send_success(struct nm_core *p_core, nm_sr_request_t **out_req)
@@ -580,7 +636,11 @@ int nm_sr_send_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
 {
   int err = -NM_ENOTIMPL;
+
   nmad_lock();
+  nm_lock_interface(p_core);
+  nm_lock_status(p_core);
+
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
       err = -NM_EALREADY;
@@ -589,7 +649,10 @@ int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
     {
       err = nm_so_cancel_unpack(p_core, &p_request->req.unpack);
     }
+  nm_unlock_status(p_core);
+  nm_unlock_interface(p_core);
   nmad_unlock();
+
   return err;
 }
 
@@ -605,6 +668,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , (int)event->tag, event->seq);
+
   const nm_so_status_t status = p_pack->status;
   if( (status & NM_SO_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_SO_STATUS_ACK_RECEIVED)) )
@@ -628,6 +692,9 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
     .recv_unexpected.tag = event->tag,
     .recv_unexpected.len = event->len
   };
+#ifdef DEBUG
+  fprintf(stderr, "[Unexpected] gate %p, tag %lx, len %d\n", event->p_gate, event->tag, event->len);
+#endif
   nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
 }
 
@@ -644,6 +711,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
   struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req.unpack);
   NM_SO_SR_LOG_IN();
   nm_sr_status_t sr_event;
+
   if(event->status & NM_SO_STATUS_UNPACK_CANCELLED)
     {
       sr_event = NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED;
@@ -660,6 +728,9 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     .recv_completed.p_request = p_request,
     .recv_completed.p_gate = event->p_gate
   };
+#ifdef DEBUG
+  fprintf(stderr, "[UNPACK completed] tag %lx, len %d, gate %p\n", p_unpack->tag, p_unpack->cumulated_len, p_unpack->p_gate);
+#endif
   nm_sr_request_signal(p_request, sr_event);
   nm_sr_monitor_notify(p_request, sr_event, &info);
 
@@ -669,7 +740,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 int nm_sr_progress(struct nm_core *p_core)
 {
   /* We assume that PIOMan makes the communications progress */
-#ifndef PIOMAN
+#ifdef NMAD_POLL
   NM_SO_SR_LOG_IN();
   nm_schedule(p_core);
   NM_SO_SR_LOG_OUT();

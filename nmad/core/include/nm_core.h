@@ -70,6 +70,9 @@ struct nm_core
   /** SchedOpt scheduler */
   struct nm_so_sched so_sched;
 
+#ifdef PIOM_ENABLE_LTASKS
+  struct piom_ltask task;
+#endif
 };
 
 #endif /* NM_CORE_H */

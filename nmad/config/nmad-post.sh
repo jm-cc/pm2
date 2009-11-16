@@ -2,7 +2,7 @@
 PM2_NMAD_INTERFACES="sendrecv launcher pack bmi $PM2_NMAD_INTERFACES"
 
 # add default strategies
-PM2_NMAD_STRATEGIES="default aggreg aggreg_extended aggreg_autoextended split_balance $PM2_NMAD_STRATEGIES"
+PM2_NMAD_STRATEGIES="default aggreg aggreg_extended aggreg_autoextended split_balance split_all $PM2_NMAD_STRATEGIES"
 
 # compute list of components
 for d in $PM2_NMAD_DRIVERS; do

@@ -25,16 +25,15 @@
 void 
 piom_req_success(piom_req_t req)
 {
-#ifdef MARCEL
     _piom_spin_lock_softirq(&req->server->req_ready_lock); 
-#endif	/* MARCEL */
     PIOM_LOGF("Req %p succeded !\n",req);
-    if(req->priority >  req->server->max_priority)
-	req->server->max_priority = req->priority;
-    tbx_fast_list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready); 
-#ifdef MARCEL
+    if(req->state & PIOM_STATE_REGISTERED) {
+       if(req->priority >  req->server->max_priority)
+           req->server->max_priority = req->priority;
+       req->state |= PIOM_STATE_OCCURED;
+       tbx_fast_list_move(&(req)->chain_req_ready, &(req)->server->list_req_ready);
+    }
     _piom_spin_unlock_softirq(&req->server->req_ready_lock); 
-#endif	/* MARCEL */
 }
 
 /* Get a completed request (or NULL) */
@@ -189,7 +188,9 @@ __piom_manage_ready(piom_server_t server)
 
 	/* Remove the request from the list of completed requests */
 	tbx_fast_list_del_init(&req->chain_req_ready);
-	if (req->state & PIOM_STATE_ONE_SHOT) {
+
+	if((req->state & PIOM_STATE_REGISTERED) &&
+	   (req->state & PIOM_STATE_ONE_SHOT)) {
 	    nb_grouped_req_removed +=__piom_unregister_poll(server, req);
 	    __piom_unregister(server, req);
 	}
@@ -243,10 +244,10 @@ int
 piom_req_submit(piom_server_t server, piom_req_t req)
 {
     LOG_IN();
-#ifdef MARCEL
-    marcel_task_t *lock;
+#ifdef PIOM_THREAD_ENABLED
+    piom_thread_t lock;
     lock=piom_ensure_trylock_from_tasklet(server);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
 
     piom_verify_server_state(server);
     PIOM_BUG_ON(req->state & PIOM_STATE_REGISTERED);
@@ -276,9 +277,9 @@ piom_req_submit(piom_server_t server, piom_req_t req)
 	    server->registered_req_not_yet_polled++;
 	    __piom_register_poll(server, req);
 	}
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
     piom_restore_trylocked_from_tasklet(server, lock);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
     LOG_RETURN(0);
 }
 
@@ -286,17 +287,17 @@ piom_req_submit(piom_server_t server, piom_req_t req)
 int 
 piom_req_cancel(piom_req_t req, int ret_code)
 {
-#ifdef MARCEL
-    marcel_task_t *lock;
-#endif	/* MARCEL */
+#ifdef PIOM_THREAD_ENABLED
+    piom_thread_t lock;
+#endif	/* PIOM_THREAD_ENABLED */
     piom_server_t server;
     LOG_IN();
 
     PIOM_BUG_ON(!(req->state & PIOM_STATE_REGISTERED));
     server = req->server;
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
     lock = piom_ensure_lock_server(server);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
     piom_verify_server_state(server);
 
     /* Wake up the threads with the return code */
@@ -312,9 +313,9 @@ piom_req_cancel(piom_req_t req, int ret_code)
     }
     __piom_unregister(server, req);
 
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
     piom_restore_lock_server_locked(server, lock);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
 
     LOG_RETURN(0);
 }
@@ -325,10 +326,10 @@ piom_req_free(piom_req_t req)
 {
     piom_server_t server=req->server;
     if(server) {
-#ifdef MARCEL
-	marcel_task_t *lock;
+#ifdef PIOM_THREAD_ENABLED
+	piom_thread_t lock;
 	lock=piom_ensure_trylock_from_tasklet(server);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
 	int nb_req_ask_wake_server=0;
 	_piom_spin_lock_softirq(&server->req_ready_lock);
 
@@ -348,9 +349,9 @@ piom_req_free(piom_req_t req)
 	if (nb_req_ask_wake_server) {
 	    __piom_wake_id_waiters(server, nb_req_ask_wake_server);
 	}
-#ifdef MARCEL
+#ifdef PIOM_THREAD_ENABLED
 	piom_restore_trylocked_from_tasklet(server, lock);
-#endif	/* MARCEL */
+#endif	/* PIOM_THREAD_ENABLED */
 
 	if (!__piom_need_poll(server)) {
 	    __piom_poll_stop(server);
@@ -370,13 +371,14 @@ __piom_register(piom_server_t server, piom_req_t req)
 
     LOG_IN();
     PIOM_LOGF("Register req %p for [%s]\n", req, server->name);
-
+#ifdef PIOM_THREAD_ENABLED
+    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
+#endif
     tbx_fast_list_add(&req->chain_req_registered, &server->list_req_registered);
     req->state |= PIOM_STATE_REGISTERED;
     req->server = server;
     LOG_RETURN(0);
 }
-
 
 /* Initialize a request */
 void 
@@ -408,6 +410,9 @@ int
 __piom_unregister(piom_server_t server, piom_req_t req)
 {
     LOG_IN();
+#ifdef PIOM_THREAD_ENABLED
+    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
+#endif
     PIOM_LOGF("Unregister request %p for [%s]\n", req, server->name);
     __piom_del_success_req(server, req);
     tbx_fast_list_del_init(&req->chain_req_registered);
@@ -426,6 +431,12 @@ __piom_register_poll(piom_server_t server, piom_req_t req)
     /* Add the request to the list */
     PIOM_LOGF("Grouping Poll request %p for [%s]\n", req, server->name);
     PIOM_BUG_ON(! (req->state & PIOM_STATE_REGISTERED));
+#ifdef PIOM_THREAD_ENABLED
+    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
+#endif
+    PIOM_BUG_ON(&req->chain_req_grouped != req->chain_req_grouped.next);
+    PIOM_BUG_ON(&req->chain_req_grouped != req->chain_req_grouped.prev);
+
     tbx_fast_list_add(&req->chain_req_grouped, &server->list_req_poll_grouped);
 
     server->req_poll_grouped_nb++;
@@ -448,6 +459,9 @@ int
 __piom_unregister_poll(piom_server_t server, piom_req_t req)
 {
     LOG_IN();
+#ifdef PIOM_THREAD_ENABLED
+    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
+#endif
     if (req->state & PIOM_STATE_GROUPED) {
 	PIOM_LOGF("Ungrouping Poll request %p for [%s]\n", req,
 		  server->name);

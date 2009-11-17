@@ -514,6 +514,36 @@ static __tbx_inline__ int marcel_vpset_first(const marcel_vpset_t * vpset)
 }
 
 #section marcel_functions
+/** \brief Compute the first VP in VP mask */
+static __tbx_inline__ int marcel_vpset_last(const marcel_vpset_t * vpset);
+#section marcel_inline
+#depend "asm/linux_bitops.h[marcel_inline]"
+static __tbx_inline__ int marcel_vpset_last(const marcel_vpset_t * vpset)
+{
+#if (!defined MA_HAVE_VPSUBSET) && MA_BITS_PER_LONG < MARCEL_NBMAXCPUS
+	/* FIXME: return ma_ffs64(*vpset)-1 */
+	int i;
+	i = ma_fls(((unsigned*)vpset)[0]);
+	if (i>0)
+		return i-1;
+	i = ma_fls(((unsigned*)vpset)[1]);
+	if (i>0)
+		return i+32-1;
+	return -1;
+#else
+	int i;
+	for(i=MA_VPSUBSET_COUNT-1; i>=0; i--) {
+		int fls = ma_fls(MA_VPSUBSET_SUBSET(*vpset,i));
+		if (fls>0)
+			return fls - 1 + MA_VPSUBSET_SIZE*i;
+	}
+
+	return -1;
+#endif
+}
+
+
+#section marcel_functions
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 #section marcel_inline
@@ -677,6 +707,9 @@ struct marcel_topo_level {
 #endif
 
 	ma_runqueue_t rq;		/**< \brief data for the scheduler (runqueue for Marcel) */
+#ifdef PIOM_ENABLE_LTASKS
+	void *piom_ltask_data;
+#endif
 
 #ifdef MA__LWPS
 	/* for LWPs/VPs management */

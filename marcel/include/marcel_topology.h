@@ -120,7 +120,11 @@ extern void ma_topo_exit(void);
 #endif
 
 #section types
-/** \brief Type of topology level */
+/** \brief Type of topology level
+ *
+ * To be stored in the type field of marcel_topo_level structures, this is
+ * _not_ an index in marcel_topo_levels[].
+ */
 enum marcel_topo_level_e {
 	MARCEL_LEVEL_MACHINE,	/**< \brief Whole machine */
 #ifndef MA__LWPS
@@ -684,7 +688,7 @@ struct marcel_topo_nodedata {
 struct marcel_topo_level {
 	enum marcel_topo_level_e type;	/**< \brief Type of level */
 	unsigned long merged_type;	/**< \brief Pretty-printing type generated from merged levels, bitmask */
-	unsigned level;			/**< \brief Vertical index in marcel_topo_levels */
+	unsigned level;			/**< \brief Vertical index in marcel_topo_levels[] */
 	unsigned number;		/**< \brief Horizontal index in marcel_topo_levels[l.level] */
 	unsigned index;			/**< \brief Index in fathers' children[] array */
 	signed os_node;			/**< \brief OS-provided node number */

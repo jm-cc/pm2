@@ -583,11 +583,41 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
                 }
 
 #section functions
+
+/** \brief Get the current VP level. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be NULL when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
+struct marcel_topo_level * marcel_current_vp_level(void);
+
+/** \brief Get the current die level. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be NULL when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
+struct marcel_topo_level * marcel_current_die_level(void);
+
+/** \brief Get the current NUMA node level. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be NULL when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
+struct marcel_topo_level * marcel_current_node_level(void);
+
 /** \brief Get the current VP number. Note that if preemption is enabled, this
  * may change just after the function call. Also note that this may be -1 when
  * the current LWP is not currently bound to a VP (Marcel termination or
  * blocking system calls) */
 unsigned marcel_current_vp(void);
+
+/** \brief Get the current die number. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be -1 when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
+unsigned marcel_current_die(void);
+
+/** \brief Get the current NUMA node number. Note that if preemption is enabled, this
+ * may change just after the function call. Also note that this may be -1 when
+ * the current LWP is not currently bound to a VP (Marcel termination or
+ * blocking system calls) */
 unsigned marcel_current_node(void);
 
 #section marcel_functions

@@ -366,7 +366,21 @@ void marcel_leave_blocking_section(void);
 #define ma_local_softirq_pending() \
 	__ma_get_lwp_var(softirq_pending)
 
-#define ma_lwp_os_node(lwp)			ma_vp_node_level[ma_vpnum(lwp) ==-1 ? 0 : ma_vpnum(lwp)]->os_node
+#section marcel_functions
+static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp);
+#section marcel_inline
+#depend "marcel_topology.h[]"
+static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp)
+{
+	unsigned vp = ma_vpnum(lwp);
+	struct marcel_topo_level *l;
+	if (vp == -1)
+		vp = 0;
+	l = ma_vp_node_level[vp];
+	if (!l)
+		return 0;
+	return l->os_node;
+}
 
 #section marcel_macros
 

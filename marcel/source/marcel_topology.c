@@ -101,7 +101,6 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #ifdef MA__NUMA
 struct marcel_topo_level * ma_vp_die_level[MA_NR_VPS];
 struct marcel_topo_level * ma_vp_node_level[MA_NR_VPS];
-int ma_vp_node[MA_NR_VPS];
 #endif
 
 #undef marcel_topo_vp_level
@@ -152,53 +151,6 @@ tbx_bool_t marcel_use_fake_topology = tbx_false;
 
 
 
-
-struct marcel_topo_level * marcel_current_vp_level(void)
-{
-#ifdef MA__NUMA
-	unsigned vp = marcel_current_vp();
-	return &marcel_topo_vp_level[vp];
-#else
-	return marcel_machine_level;
-#endif
-}
-
-struct marcel_topo_level *  marcel_current_die_level(void)
-{
-#ifdef MA__NUMA
-        unsigned vp = marcel_current_vp();
-	return ma_vp_die_level[vp];
-#else
-	return marcel_machine_level;
-#endif
-}
-
-struct marcel_topo_level *  marcel_current_node_level(void)
-{
-#ifdef MA__NUMA
-        unsigned vp = marcel_current_vp();
-	return ma_vp_node_level[vp];
-#else
-	return marcel_machine_level;
-#endif
-}
-
-#undef marcel_current_vp
-unsigned marcel_current_vp(void)
-{
-	return __marcel_current_vp();
-}
-
-unsigned marcel_current_die(void)
-{
-	return marcel_current_die_level()->number;
-}
-
-unsigned marcel_current_node(void)
-{
-	return marcel_current_node_level()->number;
-}
-
 
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 	if (index > marcel_topo_level_nbitems[level])
@@ -1008,16 +960,14 @@ static void topo_discover(void) {
 	}
 
 #ifdef MA__NUMA
-	/* We can fill ma_vp_node */
+	/* Fill node access cache */
 	if (marcel_topo_node_level)
 		for (level = marcel_topo_node_level; !marcel_vpset_iszero(&level->cpuset); level++)
 			for(j=0; j<marcel_nbvps(); j++)
-				if (marcel_vpset_isset(&level->vpset, j)) {
+				if (marcel_vpset_isset(&level->vpset, j))
 					ma_vp_node_level[j] = level;
-					ma_vp_node[j] = level->number;
-				}
 
-        /* We can fill ma_vp_die */
+	/* Fill die access cache */
 	for(level = marcel_topo_cpu_level; level->type > MARCEL_LEVEL_DIE; )
 		level = level->father;
 	while(!marcel_vpset_iszero(&level->cpuset))

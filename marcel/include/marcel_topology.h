@@ -37,7 +37,7 @@
  * 	...
  * }
  *
- * f(&marcel_topo_vp_level[marcel_current_vp()], NULL);
+ * f(marcel_current_vp_level(), NULL);
  * \endcode
  *
  * or as an array of arrays, for instance:
@@ -109,7 +109,11 @@ extern struct marcel_topo_level *marcel_topo_vp_level;
 
 #ifdef MA__NUMA
 /** \brief VP number to node number conversion array */
-extern int ma_vp_node[MA_NR_VPS];
+extern struct marcel_topo_level *ma_vp_die_level[MA_NR_VPS];
+extern struct marcel_topo_level *ma_vp_node_level[MA_NR_VPS];
+#else
+#define ma_vp_die_level marcel_machine_level
+#define ma_vp_node_level marcel_machine_level
 #endif
 
 #section functions
@@ -582,45 +586,14 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 #define marcel_vpset_foreach_end() \
                 }
 
-#section functions
-
-/** \brief Get the current VP level. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be NULL when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
-struct marcel_topo_level * marcel_current_vp_level(void);
-
-/** \brief Get the current die level. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be NULL when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
-struct marcel_topo_level * marcel_current_die_level(void);
-
-/** \brief Get the current NUMA node level. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be NULL when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
-struct marcel_topo_level * marcel_current_node_level(void);
-
-/** \brief Get the current VP number. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be -1 when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
+#section marcel_functions
+/** \brief Get the current VP number.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be -1 when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
 unsigned marcel_current_vp(void);
 
-/** \brief Get the current die number. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be -1 when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
-unsigned marcel_current_die(void);
-
-/** \brief Get the current NUMA node number. Note that if preemption is enabled, this
- * may change just after the function call. Also note that this may be -1 when
- * the current LWP is not currently bound to a VP (Marcel termination or
- * blocking system calls) */
-unsigned marcel_current_node(void);
-
-#section marcel_functions
 /* Internal version, for inlining */
 static __tbx_inline__ unsigned __marcel_current_vp(void);
 #section marcel_inline
@@ -630,6 +603,64 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 	return ma_vpnum(MA_LWP_SELF);
 }
 #define marcel_current_vp __marcel_current_vp
+
+#section marcel_functions
+/** \brief Get the current VP level.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be NULL when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void);
+
+#section marcel_inline
+static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void)
+{
+	unsigned vp = marcel_current_vp();
+	if (vp == -1)
+		return NULL;
+	return &marcel_topo_vp_level[vp];
+}
+
+#section marcel_functions
+/** \brief Get the die level of a given VP. */
+struct marcel_topo_level * marcel_vp_die_level(unsigned vp);
+#define marcel_vp_die_level(vp) ma_vp_die_level[vp]
+
+/** \brief Get the current die level.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be NULL when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+struct marcel_topo_level * marcel_current_die_level(void);
+#define marcel_current_die_level() marcel_vp_die_level(marcel_current_vp())
+
+/** \brief Get the NUMA node level of a given VP. */
+struct marcel_topo_level * marcel_vp_node_level(unsigned vp);
+#define marcel_vp_node_level(vp) ma_vp_node_level[vp]
+
+/** \brief Get the current NUMA node level.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be NULL when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+struct marcel_topo_level * marcel_current_node_level(void);
+#define marcel_current_node_level() marcel_vp_node_level(marcel_current_vp())
+
+/** \brief Get the current die number.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be -1 when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+unsigned marcel_current_die(void);
+#define marcel_current_die() marcel_current_die_level()->number
+
+/** \brief Get the current NUMA node number.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be -1 when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+unsigned marcel_current_node(void);
+#define marcel_current_node() marcel_current_node_level()->number
 
 #section marcel_structures
 

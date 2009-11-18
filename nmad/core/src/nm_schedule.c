@@ -27,7 +27,6 @@
 int nm_schedule(struct nm_core *p_core)
 {
 #ifdef NMAD_POLL
-  int err;
   nmad_lock();  
 
 #ifdef NMAD_DEBUG
@@ -36,22 +35,11 @@ int nm_schedule(struct nm_core *p_core)
   scheduling_in_progress = 1;  
 #endif /* NMAD_DEBUG */
 
-  /* send
-   */
-  err = nm_sched_out(p_core);
+  nm_sched_out(p_core);
 
-  /* receive
-   */
-  err = nm_sched_in(p_core);
+  nm_sched_in(p_core);
   
   nmad_unlock();
-
-  if (err < 0) {
-    NM_DISPF("nm_sched_in returned %d", err);
-  }
-  
-  NM_TRACEF("\n");
-  err = NM_ESUCCESS;
   
 #ifdef NMAD_DEBUG
   scheduling_in_progress = 0;

@@ -17,9 +17,6 @@
 #ifndef NM_PRIVATE_H
 #define NM_PRIVATE_H
 
-#ifdef PIOMAN
-#include "pioman.h"
-#endif
 #include <pm2_common.h>
 
 #include <nm_public.h>

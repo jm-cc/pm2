@@ -16,9 +16,8 @@
 #ifndef NM_LOCK_INLINE
 #define NM_LOCK_INLINE
 
-#include <nm_private.h>
-
 #ifndef FINE_GRAIN_LOCKING
+
 #ifdef PIOMAN
 extern piom_spinlock_t piom_big_lock;
 #endif

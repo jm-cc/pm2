@@ -236,9 +236,9 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
       TBX_FREE(p_pw->contribs);
     }
   
-#if DEBUG
+#ifdef DEBUG
   /* make sure no one can use this pw anymore ! */
-  memset(p_pw, 7, sizeof(struct nm_pkt_wrap));
+  memset(p_pw, 0, sizeof(struct nm_pkt_wrap));
 #endif
   /* Finally clean packet wrapper itself */
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))

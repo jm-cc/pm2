@@ -105,6 +105,7 @@ struct nm_so_sched
   p_tbx_slist_t post_sched_out_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
   /** recv requests submited to nmad, to be posted to the driver. */
+  /* AD: post_recv_req */
   p_tbx_slist_t	post_sched_in_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
   
 #ifdef PIOMAN

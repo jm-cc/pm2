@@ -152,6 +152,12 @@ tbx_bool_t marcel_use_fake_topology = tbx_false;
 
 
 
+#undef marcel_current_vp
+unsigned marcel_current_vp(void)
+{
+	return __marcel_current_vp();
+}
+
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 	if (index > marcel_topo_level_nbitems[level])
 		return NULL;

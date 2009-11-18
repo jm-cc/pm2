@@ -1159,8 +1159,11 @@ need_resched:
 DEF_MARCEL_POSIX(int, yield, (void), (),
 {
   LOG_IN();
-
+#ifdef PIOMAN
+  piom_check_polling(PIOM_POLL_AT_YIELD);
+#else
   marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
+#endif
   ma_set_need_resched(1);
   ma_schedule();
 

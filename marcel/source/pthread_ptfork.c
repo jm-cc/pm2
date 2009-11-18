@@ -144,7 +144,7 @@ static void remove_lwp(marcel_lwp_t * lwp)
 
 	/* FIXME: There are live `marcel_t' objects pointing to this LWP so don't
 	 * free it for now.  */
-	/* marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_vp_node[ma_vpnum(lwp)]); */
+	/* marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_lwp_os_node(lwp)); */
 
 	LOG_OUT();
 }

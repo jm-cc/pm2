@@ -194,7 +194,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 
 	LOG_IN();
 
-	lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node[vpnum == -1 ? 0 : vpnum]);
+	lwp = marcel_malloc_node(sizeof(*lwp), ma_vp_node_level[vpnum == -1 ? 0 : vpnum]->os_node);
 	/* initialiser le lwp *avant* de l'enregistrer */
 	*lwp = (marcel_lwp_t) MA_LWP_INITIALIZER(lwp);
 
@@ -282,8 +282,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 		 * les piles des threads résidents... 
 		 */
 #ifndef MARCEL_GDB
-		marcel_free_node(lwp, sizeof(marcel_lwp_t),
-		    ma_vp_node[ma_vpnum(lwp)]);
+		marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_vp_os_node(lwp));
 #endif
 	}
 

@@ -366,7 +366,7 @@ void marcel_leave_blocking_section(void);
 #define ma_local_softirq_pending() \
 	__ma_get_lwp_var(softirq_pending)
 
-#define ma_lwp_node(lwp)			ma_vp_node[ma_vpnum(lwp)]
+#define ma_lwp_os_node(lwp)			ma_vp_node_level[ma_vpnum(lwp) ==-1 ? 0 : ma_vpnum(lwp)]->os_node
 
 #section marcel_macros
 

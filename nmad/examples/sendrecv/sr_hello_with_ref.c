@@ -58,7 +58,7 @@ int main(int argc, char**argv)
       printf("size = %zu\n", size);
       
       nm_tag_t tag = 0;
-      nm_sr_get_tag(p_core, req2, &tag);
+      nm_sr_get_rtag(p_core, req2, &tag);
       printf("tag = %lu", (unsigned long)tag);
     }
   else

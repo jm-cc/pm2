@@ -35,7 +35,7 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       size_t size;
       nm_tag_t tag;
       void*ref;
-      nm_sr_get_tag(p_core, p_request, &tag);
+      nm_sr_get_rtag(p_core, p_request, &tag);
       nm_sr_get_size(p_core, p_request, &size);
       nm_sr_get_ref(p_core, p_request, &ref);
       printf("got event NM_SR_EVENT_RECV_COMPLETED- tag = %d; size = %d; ref = %p; from gate = %p\n", tag, size, ref, from);

@@ -34,17 +34,6 @@ static struct
   int init_done;
 } nm_sr_data = { .init_done = 0 };
 
-/** Retrieve the 'ref' from a completed receive request.
- */
-/* todo: move this in the header file and inline the function */
-int nm_sr_get_ref(nm_core_t p_core,
-		  nm_sr_request_t *p_request,
-		  void**ref)
-{
-	
-  *ref = p_request->ref;
-  return NM_ESUCCESS;
-}
 
 /* ** Status *********************************************** */
 

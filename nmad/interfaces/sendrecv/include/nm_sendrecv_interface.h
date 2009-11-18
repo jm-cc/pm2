@@ -26,10 +26,8 @@
 #include <tbx_fast_list.h>
 #include <nm_public.h>
 #ifdef PIOMAN
-#include "pioman.h"
+#include <pioman.h>
 #endif
-#include <nm_public.h>
-#include <nm_private.h>
 /*#include <ccs_public.h>*/
 struct CCSI_Segment;
 
@@ -449,20 +447,13 @@ extern int nm_sr_get_size(nm_core_t p_core,
 			  nm_sr_request_t *request,
 			  size_t *size);
 
-int nm_sr_get_ref(nm_core_t p_core,
-		  nm_sr_request_t *p_request,
-		  void**ref);
-
-/** Retrieve the tag from a sendreceive request.
+/** Retrieve the 'ref' from a completed receive request.
  */
-static inline int nm_sr_get_tag(nm_core_t p_core,
+static inline int nm_sr_get_ref(nm_core_t p_core,
 				nm_sr_request_t *p_request,
-				nm_tag_t*tag)
+				void**ref)
 {
-/* FIXME: if this is a send request, the tag we return is actually the seq number
- * so use nm_sr_get_[r|s]tag instead
- */
-  *tag = p_request->req.unpack.tag;
+  *ref = p_request->ref;
   return NM_ESUCCESS;
 }
 
@@ -487,14 +478,12 @@ static inline int nm_sr_get_stag(nm_core_t p_core,
 }
 
 
-static inline 
-int nm_sr_disable_progression(nm_core_t p_core)
+static inline int nm_sr_disable_progression(nm_core_t p_core)
 {
   return nm_core_disable_progression(p_core);
 }
 
-static inline 
-int nm_sr_enable_progression(nm_core_t p_core)
+static inline int nm_sr_enable_progression(nm_core_t p_core)
 {
   return nm_core_enable_progression(p_core);
 }

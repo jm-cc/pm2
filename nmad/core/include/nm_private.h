@@ -31,13 +31,6 @@
 #include <numa.h>
 #endif
 
-#if(!defined(PIOMAN) || defined(PIOM_POLLING_DISABLED))
-/* use nmad progression */
-#define NMAD_POLL 1
-#else
-/* use pioman as a progression engine */
-#define PIOMAN_POLL 1
-#endif
 /** Gate */
 typedef int nm_gate_id_t;
 
@@ -115,8 +108,5 @@ int nm_so_process_complete_recv(struct nm_core	*p_core,
 
 int nm_post_send(struct nm_pkt_wrap*p_pw);
 
-int nm_core_disable_progression(struct nm_core*p_core);
-
-int nm_core_enable_progression(struct nm_core*p_core);
 
 #endif /* NM_PRIVATE_H */

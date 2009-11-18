@@ -155,12 +155,6 @@ int nm_core_enable_progression(struct nm_core *p_core)
     }
   return 0;
 }
-#else
-int nm_core_disable_progression(struct nm_core*p_core)
-{return 0;}
-
-int nm_core_enable_progression(struct nm_core*p_core)
-{return 0;}
 #endif	/* PIOMAN_POLL */
 
 /** Load a driver.

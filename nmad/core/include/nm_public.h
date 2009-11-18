@@ -81,6 +81,15 @@ typedef uint16_t nm_drv_id_t;
 /* legacy */
 #define NM_SO_DEFAULT_NET NM_DRV_DEFAULT
 
+/* ** Polling ********************************************** */
+
+#if(!defined(PIOMAN) || defined(PIOM_POLLING_DISABLED))
+/* use nmad progression */
+#define NMAD_POLL 1
+#else
+/* use pioman as a progression engine */
+#define PIOMAN_POLL 1
+#endif
 
 /* ** Packs/unpacks **************************************** */
 
@@ -240,9 +249,25 @@ int nm_schedule(nm_core_t p_core);
 
 int nm_piom_post_all(nm_core_t p_core);
 
+#endif /* PIOM_POLLING_DISABLED */
 
+#ifdef PIOMAN_POLL
 
-#endif /* PIOMAN */
+int nm_core_disable_progression(struct nm_core*p_core);
+
+int nm_core_enable_progression(struct nm_core*p_core);
+
+#else /* PIOMAN_POLL */
+static inline int nm_core_disable_progression(struct nm_core*p_core)
+{
+  return 0;
+}
+static inline int nm_core_enable_progression(struct nm_core*p_core)
+{
+  return 0;
+}
+#endif /* PIOMAN_POLL */
+
 
 #endif /* NM_PUBLIC_H */
 

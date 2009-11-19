@@ -96,9 +96,10 @@ static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 {
 }
-NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 
 #define NM_TAGS_PREALLOC 255
+
+NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 
 /** SchedOpt internal status */
 struct nm_so_sched

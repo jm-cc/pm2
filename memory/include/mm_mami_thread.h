@@ -47,7 +47,7 @@
 #  define th_mami_attr_setnode_level(attr, node)   marcel_attr_settopo_level(attr, &marcel_topo_node_level[node])
 
 #  define th_mami_self              	marcel_self
-#  define th_mami_current_node		marcel_current_node
+#  define th_mami_current_node()	marcel_current_node_level()->os_node
 
 
 #else

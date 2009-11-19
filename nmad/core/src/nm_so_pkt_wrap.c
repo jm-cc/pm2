@@ -192,7 +192,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
 
  out:
 #if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
-  p_pw->which = ERROR;
+  p_pw->which = NM_PW_ERROR;
 #endif
   return err;
 }
@@ -213,7 +213,7 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   piom_ltask_completed(&p_pw->ltask);
 #else
 #ifdef PIOMAN_POLL
-  if((p_pw->which == RECV) || (p_pw->which == SEND))
+  if((p_pw->which == NM_PW_RECV) || (p_pw->which == NM_PW_SEND))
     {
       piom_req_free(&p_pw->inst);
     }

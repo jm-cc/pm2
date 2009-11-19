@@ -32,9 +32,9 @@ int nm_piom_poll(piom_server_t            server,
   struct nm_pkt_wrap * pkt= struct_up(req, struct nm_pkt_wrap, inst);
   int err;
   
-  if (pkt->which == SEND)
+  if (pkt->which == NM_PW_SEND)
     err = nm_poll_send(pkt);
-  else if(pkt->which == RECV)
+  else if(pkt->which == NM_PW_RECV)
     err = nm_poll_recv(pkt);
   else
     err = nm_piom_post_all(pkt->p_drv->p_core);
@@ -72,7 +72,7 @@ int nm_piom_block(piom_server_t server,
   nmad_lock();
   struct nm_pkt_wrap * pkt = struct_up(req, struct nm_pkt_wrap, inst);
   int err;
-  if (pkt->which == SEND)
+  if (pkt->which == NM_PW_SEND)
     err = nm_piom_block_send(pkt);
   else
     err = nm_piom_block_recv(pkt);
@@ -104,7 +104,7 @@ int nm_piom_block_any(piom_server_t            server,
     }
   }
   
-  if (p_pw->which == SEND)
+  if (p_pw->which == NM_PW_SEND)
     {
       if (err != -NM_EAGAIN)
 	{

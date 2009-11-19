@@ -69,12 +69,13 @@ struct nm_pkt_wrap
 #else  /* PIOM_ENABLE_LTASKS */
 
   struct piom_req inst;
-  enum {
-    RECV=1,
-    SEND=2,
-    NONE=3,
-    ERROR=4,
-  } which;
+  enum 
+    {
+      NM_PW_RECV = 1,
+      NM_PW_SEND = 2,
+      NM_PW_NONE = 3,
+      NM_PW_ERROR = 4,
+    } which;
 #endif	/* PIOM_ENABLE_LTASKS */
 #endif /* PIOMAN_POLL */
 

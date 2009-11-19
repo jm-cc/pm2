@@ -98,7 +98,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 #if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
       piom_req_init(&p_pw->inst);
       p_pw->inst.server = &p_pw->p_drv->server;
-      p_pw->which = RECV;
+      p_pw->which = NM_PW_RECV;
 #endif /* PIOMAN_POLL */
       struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
       /* post request */

@@ -123,7 +123,7 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
 #if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
     piom_req_init(&p_pw->inst);
     p_pw->inst.server = &p_pw->p_drv->server;
-    p_pw->which = SEND;
+    p_pw->which = NM_PW_SEND;
 #endif /* PIOMAN_POLL */
 #ifdef PIO_OFFLOAD
     nm_so_pw_offloaded_finalize(p_pw);
@@ -163,7 +163,7 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
 	p_pw->inst.func_to_use = PIOM_FUNC_POLLING;
 #endif /* PIOM_BLOCKING_CALLS */
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
-      p_pw->which = SEND;
+      p_pw->which = NM_PW_SEND;
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
 #endif /* NMAD_POLL */
 

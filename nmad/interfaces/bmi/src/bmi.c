@@ -31,12 +31,10 @@
 #include "op-list.h"
 #include "str-utils.h"
 
- #include "nmad_bmi_interface.h"
+#include "nmad_bmi_interface.h"
 
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
-#include "tbx_fast_list.h"
-//#include "nm_predictions.h"
 
 //#define DEBUG 1
 

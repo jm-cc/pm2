@@ -23,9 +23,7 @@
 
 #include "nmad_bmi_interface.h"
 #include "reference-list.h"
-#include "tbx.h"
-#include "Padico/Puk.h"
-#include "Padico/Puk-hashtable.h"
+#include <nm_public.h>
 //#include "id-generator.h"
 //#include "quickhash.h"
 

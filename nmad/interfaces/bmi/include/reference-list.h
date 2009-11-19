@@ -21,8 +21,7 @@
 
 #include "bmi-types.h"
 #include "bmi-method-support.h"
-#include "tbx.h"
-#include "Padico/Puk.h"
+#include <nm_public.h>
 //typedef struct list_head *ref_list_p;
 typedef tbx_list_t* ref_list_p;
 

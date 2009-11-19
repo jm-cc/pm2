@@ -16,8 +16,7 @@
 #ifndef __BMI_METHOD_SUPPORT_H
 #define __BMI_METHOD_SUPPORT_H
 
-#include "tbx_fast_list.h"
-#include "tbx.h"
+#include <nm_public.h>
 #include "bmi-types.h"
 
 #define BMI_MAX_CONTEXTS 16

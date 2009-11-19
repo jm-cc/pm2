@@ -21,10 +21,9 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "tbx.h"
-#include "nm_public.h"
-#include "nm_private.h"
-#include "nm_sendrecv_interface.h"
+#include <nm_public.h>
+#include <nm_private.h>
+#include <nm_sendrecv_interface.h>
 #include "bmi-types.h"
 #include "bmi-method-support.h"
 

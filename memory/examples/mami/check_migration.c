@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
   int nbnodes;
 
   common_init(&argc, argv, NULL);
-  nbnodes = topo_get_type_nbobjs(topology, TOPO_OBJ_NODE);
+  nbnodes = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_NODE);
   if (nbnodes < 2) {
     printf("This application needs at least two NUMA nodes.\n");
     exit(1);

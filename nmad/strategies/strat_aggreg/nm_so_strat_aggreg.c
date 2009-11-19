@@ -282,13 +282,13 @@ static int strat_aggreg_try_and_commit(void *_status,
 {
   struct nm_so_strat_aggreg_gate *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
-  if( (p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 0) &&
+  if( (p_gate->active_send[NM_DRV_DEFAULT][NM_TRK_SMALL] == 0) &&
       (!tbx_fast_list_empty(out_list)))
     {
       struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
+      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_DRV_DEFAULT);
     }
   return NM_ESUCCESS;
 }

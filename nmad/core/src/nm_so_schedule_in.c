@@ -235,8 +235,8 @@ static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*
 
 /** Handle an unpack request.
  */
-int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
-		   nm_so_flag_t flag, void *data_description, uint32_t len)
+int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
+		 nm_so_flag_t flag, void *data_description, uint32_t len)
 {
   const nm_seq_t seq = (p_gate == NM_ANY_GATE) ? 0 : nm_so_tag_get(&p_gate->tags, tag)->recv_seq_number++;
   /* fill-in the unpack request */

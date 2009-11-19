@@ -178,7 +178,7 @@ try_and_commit(struct nm_gate *p_gate, void *private)
       nm_so_pw_finalize(p_so_pw);
 
       /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
+      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_DRV_DEFAULT);
 
       goto out;
 

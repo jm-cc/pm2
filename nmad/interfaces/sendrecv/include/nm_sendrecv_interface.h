@@ -23,7 +23,7 @@
  * @{
  */
 
-#include <tbx_fast_list.h>
+/* don't include pm2_common.h or tbx.h here. They are not needed and not ISO C compliant */
 #include <nm_public.h>
 #ifdef PIOMAN
 #include <pioman.h>

@@ -259,7 +259,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
   struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
 
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
+  if(p_gate->active_send[NM_DRV_DEFAULT][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 
@@ -278,7 +278,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
   }
 
   /* Post packet on track 0 */
-  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_SO_DEFAULT_NET);
+  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_DRV_DEFAULT);
 
  out:
     return NM_ESUCCESS;

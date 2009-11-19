@@ -293,7 +293,7 @@ static int strat_qos_try_and_commit(void*_status,
   int err = NM_ESUCCESS;
   uint8_t policy;
 
-  if(p_gate->active_send[NM_SO_DEFAULT_NET][NM_TRK_SMALL] == 1)
+  if(p_gate->active_send[NM_DRV_DEFAULT][NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 

@@ -417,7 +417,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
       {
 	const nm_so_flag_t flag = NM_UNPACK_TYPE_CONTIGUOUS;
 	void*data = data_description;
-	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, data, len);
+	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, data, len);
       }
       break;
     case nm_sr_iov_transfer:
@@ -425,7 +425,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 	const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
 	struct iovec *iov = data_description;
 	const uint32_t iov_data_len = iov_len(iov, len);
-	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, iov, iov_data_len);
+	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, iov, iov_data_len);
       }
       break;
     case nm_sr_datatype_transfer:
@@ -433,7 +433,7 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 	const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
 	struct DLOOP_Segment *segp = data_description;
 	const uint32_t datatype_len = datatype_size(segp);
-	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, segp, datatype_len);
+	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, segp, datatype_len);
       }
       break;
     default:

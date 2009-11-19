@@ -57,8 +57,6 @@ typedef uint64_t nm_tag_t;
 #  error NewMad: no container type defined for tag-indexed tables
 #endif
 
-#define NM_TAGS_PREALLOC 255
-
 #define NM_ANY_TAG ((nm_tag_t)-1)
 
 /* ** Drivers ********************************************** */
@@ -77,9 +75,6 @@ typedef uint16_t nm_drv_id_t;
  *   available, but the strategy does not support multi-rail
  */
 #define NM_DRV_DEFAULT NM_DRV(0)
-
-/* legacy */
-#define NM_SO_DEFAULT_NET NM_DRV_DEFAULT
 
 /* ** Polling ********************************************** */
 
@@ -114,8 +109,8 @@ struct nm_unpack_s
 {
   nm_so_status_t status;
   void *data;
-  int32_t cumulated_len;
-  int32_t expected_len;
+  int expected_len;
+  int cumulated_len;
   nm_gate_t p_gate;
   nm_tag_t tag;
   nm_seq_t seq;

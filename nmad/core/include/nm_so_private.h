@@ -98,6 +98,8 @@ static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 }
 NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 
+#define NM_TAGS_PREALLOC 255
+
 /** SchedOpt internal status */
 struct nm_so_sched
 {
@@ -154,8 +156,8 @@ struct nm_so_sched
 int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
 	       const void*data, uint32_t len, nm_so_flag_t pack_type);
 
-int __nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
-		   nm_so_flag_t flag, void *data_description, uint32_t len);
+int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
+		 nm_so_flag_t flag, void *data_description, uint32_t len);
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 

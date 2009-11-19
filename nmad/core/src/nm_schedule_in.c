@@ -219,18 +219,18 @@ int nm_sched_in(struct nm_core *p_core)
   {
     int trk;
     for(trk=0;trk<NM_SO_MAX_TRACKS;trk++){
-      if(tbx_slist_is_nil(p_core->so_sched.post_sched_in_list[i][trk]))
+      if(tbx_slist_is_nil(p_core->so_sched.post_recv_list[i][trk]))
         goto next;
 
       nm_so_lock_in(&p_core->so_sched, i);  
       
-      if (!tbx_slist_is_nil(p_core->so_sched.post_sched_in_list[i][trk]))
+      if (!tbx_slist_is_nil(p_core->so_sched.post_recv_list[i][trk]))
       {
         NM_TRACEF("posting inbound requests");
 	struct nm_pkt_wrap* first_pw = NULL;
 	do
 	{
-	  struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.post_sched_in_list[i][trk]);
+	  struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.post_recv_list[i][trk]);
 
 	  nm_so_unlock_in(&p_core->so_sched, i);
 	  const int err = nm_post_recv(p_pw);
@@ -238,13 +238,13 @@ int nm_sched_in(struct nm_core *p_core)
 
 	  if(err == -NM_EBUSY)
 	  {
-	    tbx_slist_add_at_tail(p_core->so_sched.post_sched_in_list[i][trk], p_pw);
+	    tbx_slist_add_at_tail(p_core->so_sched.post_recv_list[i][trk], p_pw);
 	    /* the driver is busy, so don't insist */
 	    goto out;
 	  }
 	}
-	while(!tbx_slist_is_nil(p_core->so_sched.post_sched_in_list[i][trk])
-	      && tbx_slist_peek_from_head(p_core->so_sched.post_sched_in_list[i][trk])!= first_pw);
+	while(!tbx_slist_is_nil(p_core->so_sched.post_recv_list[i][trk])
+	      && tbx_slist_peek_from_head(p_core->so_sched.post_recv_list[i][trk])!= first_pw);
       }
     out:
       nm_so_unlock_in(&p_core->so_sched, i);

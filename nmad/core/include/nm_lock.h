@@ -50,7 +50,7 @@ static inline void nm_so_unlock_out(struct nm_so_sched* p_sched, unsigned drv_id
 static inline void nm_so_lock_out_init(struct nm_so_sched* p_sched, unsigned drv_id);
 
 
-/* Lock used to access post_sched_in_list */
+/* Lock used to access post_recv_list */
 static inline void nm_so_lock_in(struct nm_so_sched* p_sched, unsigned drv_id);
 static inline int  nm_so_trylock_in(struct nm_so_sched* p_sched, unsigned drv_id);
 static inline void nm_so_unlock_in(struct nm_so_sched* p_sched, unsigned drv_id);

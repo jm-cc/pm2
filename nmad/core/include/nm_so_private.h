@@ -105,16 +105,8 @@ struct nm_so_sched
   p_tbx_slist_t post_sched_out_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
   /** recv requests submited to nmad, to be posted to the driver. */
-  /* AD: post_recv_req */
-  p_tbx_slist_t	post_sched_in_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
-  
-#ifdef PIOMAN
-  /** Lock used to access post_sched_out_list */
-  piom_spinlock_t post_sched_out_lock[NM_DRV_MAX];
+  p_tbx_slist_t	post_recv_list[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
-  /** Lock used to access post_recv_list */
-  piom_spinlock_t post_sched_in_lock[NM_DRV_MAX];
-#endif
 #ifdef NMAD_POLL
   /* We don't use these lists since PIOMan already manage a 
      list of requests to poll */
@@ -124,22 +116,8 @@ struct nm_so_sched
 
   /** recv requests posted to the driver. */
   p_tbx_slist_t pending_recv_list[NM_DRV_MAX];
-
-#ifdef PIOMAN
-  /** Lock used to access pending_send_list */
-  piom_spinlock_t pending_send_lock[NM_DRV_MAX];
-
-  /** Lock used to access pending_recv_list */
-  piom_spinlock_t pending_recv_lock[NM_DRV_MAX];
-#endif /* PIOMAN */
 #endif /* NMAD_POLL */
-
-  /** selected strategy */
-  puk_component_t strategy_adapter;
-
-  /** monitors for upper layers to track events in nmad scheduler */
-  struct nm_so_monitor_vect_s monitors;
-
+  
   /** list of posted unpacks */
   struct tbx_fast_list_head unpacks;
 
@@ -148,6 +126,29 @@ struct nm_so_sched
 
   /** list of pending packs waiting for an ack */
   struct tbx_fast_list_head pending_packs;
+
+  /** monitors for upper layers to track events in nmad scheduler */
+  struct nm_so_monitor_vect_s monitors;
+
+  /** selected strategy */
+  puk_component_t strategy_adapter;
+
+#ifdef PIOMAN
+  /** Lock used to access post_sched_out_list */
+  piom_spinlock_t post_sched_out_lock[NM_DRV_MAX];
+
+  /** Lock used to access post_recv_list */
+  piom_spinlock_t post_sched_in_lock[NM_DRV_MAX];
+
+#ifdef NMAD_POLL
+  /** Lock used to access pending_send_list */
+  piom_spinlock_t pending_send_lock[NM_DRV_MAX];
+
+  /** Lock used to access pending_recv_list */
+  piom_spinlock_t pending_recv_lock[NM_DRV_MAX];
+#endif /* NMAD_POLL */
+#endif /* PIOMAN */
+
 };
 
 int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,

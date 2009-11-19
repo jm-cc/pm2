@@ -40,7 +40,7 @@ int nm_so_schedule_init(struct nm_core *p_core)
   int i, j;
   for(i=0;i<NM_DRV_MAX;i++){
     for(j=0; j<NM_SO_MAX_TRACKS; j++){
-      p_core->so_sched.post_sched_in_list[i][j] = tbx_slist_nil();
+      p_core->so_sched.post_recv_list[i][j] = tbx_slist_nil();
       p_core->so_sched.post_sched_out_list[i][j] = tbx_slist_nil();
     }
 #ifdef NMAD_POLL
@@ -124,10 +124,10 @@ int nm_so_schedule_exit (struct nm_core *p_core)
   int i, j;
   for(i=0;i<NM_DRV_MAX;i++){
 	  for(j=0;j<NM_SO_MAX_TRACKS;j++)
-    while (!tbx_slist_is_nil(p_core->so_sched.post_sched_in_list[i][j]))
+    while (!tbx_slist_is_nil(p_core->so_sched.post_recv_list[i][j]))
       {
-        NM_SO_TRACE("extracting pw from post_sched_in_list\n");
-	void *pw = tbx_slist_extract(p_core->so_sched.post_sched_in_list[i][j]);
+        NM_SO_TRACE("extracting pw from post_recv_list\n");
+	void *pw = tbx_slist_extract(p_core->so_sched.post_recv_list[i][j]);
 	nm_so_pw_free(pw);
       }
   }
@@ -165,8 +165,8 @@ int nm_so_schedule_exit (struct nm_core *p_core)
     tbx_slist_free(p_core->so_sched.pending_send_list[i]);
 #endif /* PIOMAN_POLL */
     for(j=0;j<NM_SO_MAX_TRACKS;j++){
-      tbx_slist_clear(p_core->so_sched.post_sched_in_list[i][j]);
-      tbx_slist_free(p_core->so_sched.post_sched_in_list[i][j]);
+      tbx_slist_clear(p_core->so_sched.post_recv_list[i][j]);
+      tbx_slist_free(p_core->so_sched.post_recv_list[i][j]);
       tbx_slist_clear(p_core->so_sched.post_sched_out_list[i][j]);
       tbx_slist_free(p_core->so_sched.post_sched_out_list[i][j]);
     }

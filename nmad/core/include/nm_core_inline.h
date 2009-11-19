@@ -32,7 +32,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   nm_so_pw_assign(p_pw, trk_id, drv_id, p_gate);
   /* append pkt to scheduler post list */
   nm_so_lock_in(&p_gate->p_core->so_sched, drv_id);
-  tbx_slist_append(p_gate->p_core->so_sched.post_sched_in_list[drv_id][trk_id], p_pw);
+  tbx_slist_append(p_gate->p_core->so_sched.post_recv_list[drv_id][trk_id], p_pw);
   p_gate->active_recv[drv_id][trk_id] = 1;
   nm_so_unlock_in(&p_gate->p_core->so_sched, drv_id);
 }

@@ -207,7 +207,7 @@ static inline void nm_so_lock_out_init(struct nm_so_sched* p_sched, unsigned drv
 
 
 /**
- * Lock used to access post_sched_in_list 
+ * Lock used to access post_recv_list
  */
 
 static inline void nm_so_lock_in(struct nm_so_sched* p_sched, unsigned drv_id)

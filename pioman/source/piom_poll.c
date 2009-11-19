@@ -231,7 +231,7 @@ __piom_check_polling(unsigned polling_point)
 #endif
 
 #ifdef PIOM_ENABLE_LTASKS
-	piom_ltask_schedule();
+    piom_ltask_schedule();
 #endif
     if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
@@ -248,15 +248,19 @@ __piom_check_polling(unsigned polling_point)
 #endif
 	    {
 		if (server->poll_points & polling_point) {
+#ifdef MARCEL
 		    /* disable bh to avoid piom_poll_timer to be invoked 
 		       while scheduling the tasklet */
 		    ma_local_bh_disable();
+#endif
 #ifdef PIOM_USE_TASKLETS
 		    ma_tasklet_schedule(&server->poll_tasklet);
 #else
 		    piom_check_polling_for(server);
 #endif /* PIOM_USE_TASKLETS */
+#ifdef MARCEL
 		    ma_local_bh_enable();
+#endif
 		}
 	    }
     }

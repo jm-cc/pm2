@@ -124,36 +124,8 @@ static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_tag_t tag, nm_seq_t 
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }
 
-/* ** Pack/unpack ****************************************** */
-
-static inline int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
-			       struct nm_gate *p_gate, nm_tag_t tag,
-			       void *data, uint32_t len)
-{
-  /* Nothing special to flag for the contiguous reception */
-  const nm_so_flag_t flag = NM_UNPACK_TYPE_CONTIGUOUS;
-  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, data, len);
-}
-
-static inline int nm_so_unpackv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
-				struct nm_gate *p_gate, nm_tag_t tag,
-				struct iovec *iov, int nb_entries)
-{
-  /* Data will be receive in an iovec tab */
-  const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
-  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, iov, iov_len(iov, nb_entries));
-}
-
-static inline int nm_so_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-					struct nm_gate *p_gate, nm_tag_t tag,
-					struct DLOOP_Segment *segp)
-{
-  /* Data will be receive through a datatype */
-  const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
-  return __nm_so_unpack(p_core, p_unpack, p_gate, tag, flag, segp, datatype_size(segp));
-}
-
-
+/** Flush the given gate.
+ */
 static inline int nm_so_flush(nm_gate_t p_gate)
 {
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;

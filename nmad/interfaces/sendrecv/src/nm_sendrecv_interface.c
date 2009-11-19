@@ -222,9 +222,7 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
-#ifdef DEBUG
-  fprintf(stderr, "[ISend] tag=%lx; data=%p; len=%d; req=%p, ref %p\n", tag, data, len, p_request, ref);
-#endif
+
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
@@ -403,9 +401,6 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
   int ret;
   NM_SO_SR_LOG_IN();
 
-#ifdef DEBUG
-  fprintf(stderr, "[Irecv] tag=%lx; data=%p; len=%d; req=%p, ref %p\n", tag, data_description, len, p_request, ref);
-#endif
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data_description, len, p_request);
 
   nmad_lock();
@@ -420,19 +415,25 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
 
     case nm_sr_contiguous_transfer:
       {
-	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, data_description, len);
+	const nm_so_flag_t flag = NM_UNPACK_TYPE_CONTIGUOUS;
+	void*data = data_description;
+	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, data, len);
       }
       break;
     case nm_sr_iov_transfer:
       {
+	const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
 	struct iovec *iov = data_description;
-	ret = nm_so_unpackv(p_core, &p_request->req.unpack, p_gate, tag, iov, len);
+	const uint32_t iov_data_len = iov_len(iov, len);
+	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, iov, iov_data_len);
       }
       break;
     case nm_sr_datatype_transfer:
       {
+	const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
 	struct DLOOP_Segment *segp = data_description;
-	ret = nm_so_unpack_datatype(p_core, &p_request->req.unpack, p_gate, tag, segp);
+	const uint32_t datatype_len = datatype_size(segp);
+	ret = __nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, segp, datatype_len);
       }
       break;
     default:
@@ -681,9 +682,6 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
     .recv_unexpected.tag = event->tag,
     .recv_unexpected.len = event->len
   };
-#ifdef DEBUG
-  fprintf(stderr, "[Unexpected] gate %p, tag %lx, len %d\n", event->p_gate, event->tag, event->len);
-#endif
   nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);
 }
 
@@ -717,9 +715,6 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     .recv_completed.p_request = p_request,
     .recv_completed.p_gate = event->p_gate
   };
-#ifdef DEBUG
-  fprintf(stderr, "[UNPACK completed] tag %lx, len %d, gate %p\n", p_unpack->tag, p_unpack->cumulated_len, p_unpack->p_gate);
-#endif
   nm_sr_request_signal(p_request, sr_event);
   nm_sr_monitor_notify(p_request, sr_event, &info);
 

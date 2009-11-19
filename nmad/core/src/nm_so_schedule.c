@@ -19,7 +19,6 @@
 #include <assert.h>
 
 #include <nm_private.h>
-#include <nm_so_private.h>
 
 
 p_tbx_memory_t nm_so_unexpected_mem = NULL;

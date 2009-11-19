@@ -616,7 +616,7 @@ pm2_config_parse_cmdline() # args
     if [ -n "${_dirtoshow}" ]; then
 	case $_dirtoshow in
 	    --protocols)
-		echo $_PM2_CONFIG_PROTOCOLS | sed 's/ /\n/g' | sed 's/^mad-//' |tr '\012' ' '; echo
+		echo $_PM2_CONFIG_PROTOCOLS | sed 's/ /\n/g' | sed 's/^mad-//' | sed 's/nmad-//' |tr '\012' ' '; echo
 		exit 0
 		;;
             --launcher)

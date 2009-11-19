@@ -191,12 +191,11 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
  */
 int nm_sched_out(struct nm_core *p_core)
 {
-  int g;
   int err = NM_ESUCCESS;
   /* schedule new requests on all gates */
-  for(g = 0; g < p_core->nb_gates; g++)
+  struct nm_gate*p_gate = NULL;
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      struct nm_gate*p_gate = &p_core->gate_array[g];
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
 	  err = nm_strat_try_and_commit(p_gate);

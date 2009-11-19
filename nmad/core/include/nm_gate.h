@@ -53,15 +53,12 @@ typedef enum nm_gate_status_e nm_gate_status_t;
  */
 struct nm_gate
 {
+  /** link to store gates in the core gate_list */
+  struct tbx_fast_list_head _link;
+
   /** current status of the gate (connected / not connected) */
   nm_gate_status_t status;
 
-  /** NM core object. */
-  struct nm_core *p_core;
-  
-  /** Gate id. */
-  nm_gate_id_t id;
-  
   /** table of tag status */
   struct nm_so_tag_table_s tags;
 
@@ -82,6 +79,12 @@ struct nm_gate
 
   /* user reference */
   void*ref;
+
+  /** NM core object. */
+  struct nm_core *p_core;
+  
+  /** Gate id. */
+  int id;
 };
 
 /** Get the driver-specific per-gate data */
@@ -90,5 +93,8 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_i
   assert(drv_id < NM_DRV_MAX);
   return p_gate->p_gate_drv_array[drv_id];
 }
+
+#define NM_FOR_EACH_GATE(P_GATE, P_CORE) \
+  tbx_fast_list_for_each_entry(P_GATE, &(P_CORE)->gate_list, _link)
 
 #endif /* NM_GATE_H */

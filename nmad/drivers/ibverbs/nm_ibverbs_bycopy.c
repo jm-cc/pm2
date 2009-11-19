@@ -366,11 +366,10 @@ static int nm_ibverbs_bycopy_poll_any(struct nm_pkt_wrap*p_pw, struct nm_gate**p
 #warning TODO- poll_any
 #if 0
   const struct nm_core*p_core = p_pw->p_drv->p_core;
-  int i;
-  for(i = 0; i < p_core->nb_gates; i++)
+  struct nm_gate*p_gate = NULL;
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      const struct nm_gate*__restrict__ p_gate = &p_core->gate_array[i];
-      if(p_gate)
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
 	  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
 	  if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status)

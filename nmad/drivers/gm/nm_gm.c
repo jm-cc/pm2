@@ -71,7 +71,7 @@ struct nm_gm_trk {
 	unsigned int		 node_id;
         unsigned char		 unique_node_id[6];
         unsigned int		 max_node_id;
-        uint8_t			*gate_map;
+        nm_gate_t		*gate_map;
 };
 
 struct nm_gm_cnx {
@@ -660,14 +660,14 @@ nm_gm_connect		(void*_status,
                         p_gm_trk->max_node_id	= p_gm_cnx->node_id;
                         p_gm_trk->gate_map	=
                                 TBX_REALLOC(p_gm_trk->gate_map,
-                                            p_gm_trk->max_node_id+1);
+                                            sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
                 }
         } else {
                 p_gm_trk->max_node_id	= p_gm_cnx->node_id;
-                p_gm_trk->gate_map	= TBX_MALLOC(p_gm_trk->max_node_id+1);
+                p_gm_trk->gate_map	= TBX_MALLOC(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
         }
 
-        p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate->id;
+        p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
         NM_TRACEF("new gate map entry: %lu --> %lu",
              (unsigned long)p_gm_cnx->node_id,
              (unsigned long)p_gate->id);
@@ -786,14 +786,14 @@ nm_gm_accept			(void*_status,
                         p_gm_trk->max_node_id	= p_gm_cnx->node_id;
                         p_gm_trk->gate_map	=
                                 TBX_REALLOC(p_gm_trk->gate_map,
-                                            p_gm_trk->max_node_id+1);
+                                            sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
                 }
         } else {
                 p_gm_trk->max_node_id	= p_gm_cnx->node_id;
-                p_gm_trk->gate_map	= TBX_MALLOC(p_gm_trk->max_node_id+1);
+                p_gm_trk->gate_map	= TBX_MALLOC(sizeof(nm_gate_t)*(p_gm_trk->max_node_id+1));
         }
 
-        p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate->id;
+        p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
         NM_TRACEF("new gate map entry: %lu --> %lu",
              (unsigned long)p_gm_cnx->node_id,
              (unsigned long)p_gate->id);
@@ -1039,8 +1039,7 @@ nm_gm_poll_recv_iov    	(void*_status,
 
                 /* gate-less request */
                 p_gm_trk	= p_pw->p_trk->priv;
-                p_pw->p_gate	= p_pw->p_drv->p_core->gate_array
-                        + p_gm_trk->gate_map[remote_node_id];
+                p_pw->p_gate	= p_gm_trk->gate_map[remote_node_id];
         }
 
         TBX_FREE(p_gm_pw);

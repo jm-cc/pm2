@@ -164,54 +164,54 @@ int nm_sched_in(struct nm_core *p_core)
 {
   /* refill input requests */
   const int nb_drivers = p_core->nb_drivers;
-  const int nb_gates = p_core->nb_gates;
-  nm_drv_id_t drv;
-  int i;
+  nm_drv_id_t drv_id;
   int err;
+  int i;
 
-  for(drv = 0; drv < nb_drivers; drv++)
+  for(drv_id = 0; drv_id < nb_drivers; drv_id++)
     {
-      for(i = 0; i < nb_gates; i++)
+      struct nm_gate*p_gate = NULL;
+      NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct nm_gate*p_gate = &p_core->gate_array[i];
-	  if(p_gate->status == NM_GATE_STATUS_CONNECTED && !p_gate->active_recv[drv][NM_TRK_SMALL])
+	  if(p_gate->status == NM_GATE_STATUS_CONNECTED && !p_gate->active_recv[drv_id][NM_TRK_SMALL])
 	    {
 	      struct nm_pkt_wrap *p_pw;
 	      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
-	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, drv);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, drv_id);
 	    }
 	}
     }
 
 #ifdef NMAD_POLL
   /* poll pending requests */
-  for(i=0; i<NM_DRV_MAX; i++) {
-    if (tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i]))
-      continue;
-    nm_poll_lock_in(&p_core->so_sched, i);
-    if (!tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i]))
+  for(i = 0; i < NM_DRV_MAX; i++)
     {
-      NM_TRACEF("polling inbound requests");
-      struct nm_pkt_wrap* first_pw = NULL;
-      do {
-  	  struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.pending_recv_list[i]);
-
-	  nm_poll_unlock_in(&p_core->so_sched, i);
-	  err = nm_poll_recv(p_pw);
-	  nm_poll_lock_in(&p_core->so_sched, i);
-
-	  if(err != NM_ESUCCESS && err != -NM_ECLOSED)
-	    {
-	      if(!first_pw)
-	        first_pw=p_pw;
-	      tbx_slist_add_at_tail(p_core->so_sched.pending_recv_list[i], p_pw);
-	    }
+      if (tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i]))
+	continue;
+      nm_poll_lock_in(&p_core->so_sched, i);
+      if (!tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i]))
+	{
+	  NM_TRACEF("polling inbound requests");
+	  struct nm_pkt_wrap* first_pw = NULL;
+	  do {
+	    struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.pending_recv_list[i]);
+	    
+	    nm_poll_unlock_in(&p_core->so_sched, i);
+	    err = nm_poll_recv(p_pw);
+	    nm_poll_lock_in(&p_core->so_sched, i);
+	    
+	    if(err != NM_ESUCCESS && err != -NM_ECLOSED)
+	      {
+		if(!first_pw)
+		  first_pw=p_pw;
+		tbx_slist_add_at_tail(p_core->so_sched.pending_recv_list[i], p_pw);
+	      }
+	  }
+	  while(!tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i])
+		&&tbx_slist_peek_from_head(p_core->so_sched.pending_recv_list[i])!= first_pw);
 	}
-      while(!tbx_slist_is_nil(p_core->so_sched.pending_recv_list[i])
-	      &&tbx_slist_peek_from_head(p_core->so_sched.pending_recv_list[i])!= first_pw);
+      nm_poll_unlock_in(&p_core->so_sched, i);
     }
-    nm_poll_unlock_in(&p_core->so_sched, i);
-  }
 #endif /* NMAD_POLL */
 
   /* post new requests */

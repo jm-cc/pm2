@@ -55,11 +55,8 @@
  */
 struct nm_core
 {
-  /** Number of gates. */
-  int nb_gates;
-
-  /** Array of gates. */
-  struct nm_gate gate_array[NUMBER_OF_GATES];
+  /** List of gates. */
+  struct tbx_fast_list_head gate_list;
 
   /** Number of drivers. */
   uint8_t nb_drivers;

@@ -76,11 +76,11 @@ struct nm_qsnet_trk
   /** number of processes in the session */
   u_int		 	 nproc;
   
-  /** match info to gate id reverse mapping */
-  uint8_t	       	*gate_map;
+  /** match info to gate reverse mapping */
+  nm_gate_t	       	*gate_map;
   
   /** gate_map size */
-  uint8_t	       	 gate_map_size;
+  int    	       	 gate_map_size;
 };
 
 struct nm_qsnet_cnx
@@ -365,10 +365,10 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
    */
   if (remote_proc >= p_qsnet_trk->gate_map_size)
     {
-      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, remote_proc+1);
+      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, sizeof(nm_gate_t)*(remote_proc+1));
     }
   
-  p_qsnet_trk->gate_map[remote_proc]	= p_gate->id;
+  p_qsnet_trk->gate_map[remote_proc]	= p_gate;
   NM_TRACEF("new gate mapping: gate %d = remote_proc %d", p_gate->id, remote_proc);
   
   
@@ -432,10 +432,10 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
    */
   if (remote_proc >= p_qsnet_trk->gate_map_size)
     {
-      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, remote_proc+1);
+      p_qsnet_trk->gate_map = TBX_REALLOC(p_qsnet_trk->gate_map, sizeof(nm_gate_t) * (remote_proc+1));
     }
   
-  p_qsnet_trk->gate_map[remote_proc]	= p_gate->id;
+  p_qsnet_trk->gate_map[remote_proc]	= p_gate;
   NM_TRACEF("new gate mapping: gate %d = remote_proc %d",
 	    p_gate->id, remote_proc);
   
@@ -571,8 +571,7 @@ static int nm_qsnet_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     {
       /* gate-less request */
       struct nm_qsnet_trk *p_qsnet_trk = &p_qsnet_drv->trks_array[p_pw->trk_id];
-      p_pw->p_gate	= p_pw->p_drv->p_core->gate_array
-	+ p_qsnet_trk->gate_map[remote_proc];
+      p_pw->p_gate	= p_qsnet_trk->gate_map[remote_proc];
       
       NM_TRACE_VAL("new pkt from qsnet proc", remote_proc);
       NM_TRACE_PTR("gate ptr", p_pw->p_gate);

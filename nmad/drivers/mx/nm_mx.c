@@ -52,8 +52,8 @@ struct nm_mx_trk
 {
   /** Next value to use for match info */
   uint16_t next_peer_id;
-  /** Match info to gate id reverse mapping */
-  uint8_t *gate_map;
+  /** Match info to gate reverse mapping */
+  nm_gate_t *gate_map;
 };
 
 /** MX specific connection data */
@@ -590,8 +590,8 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   uint64_t		 r_nic_id	= 0;
   mx_return_t	mx_ret	= MX_SUCCESS;
   
-  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, p_mx_trk->next_peer_id + 1);
-  p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate->id;
+  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
+  p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
   
   NM_TRACEF("connect - drv_url: %s", host_url);
   NM_TRACEF("connect - trk_url: %s", ep_url);
@@ -676,8 +676,8 @@ static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
   uint64_t		 r_nic_id	= 0;
   mx_return_t	mx_ret	= MX_SUCCESS;
 
-  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, p_mx_trk->next_peer_id + 1);
-  p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate->id;
+  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
+  p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
   
   NM_TRACEF("recv pkt1 -->");
   {
@@ -885,8 +885,7 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
       /* gate-less request */
       struct nm_mx_drv*p_mx_drv = p_pw->p_drv->priv;
       struct nm_mx_trk*p_mx_trk	= &p_mx_drv->trks_array[p_pw->trk_id];
-      p_pw->p_gate = p_pw->p_drv->p_core->gate_array
-	+ p_mx_trk->gate_map[status.match_info];
+      p_pw->p_gate = p_mx_trk->gate_map[status.match_info];
     }
 #if DEBUG
   if (status.code == MX_SUCCESS) {

@@ -644,8 +644,10 @@ int main(int argc, char **argv)
   /* Initialisation de Nmad */
   struct nm_core  *p_core = mad_nmad_get_core();
   struct nm_drv   *p_drv  = &p_core->driver_array[0];
-  struct nm_gate  *p_gate = &p_core->gate_array[0];
+  struct nm_gate  *p_gate = tbx_fast_list_entry(p_core->gate_list.next, struct nm_gate, _link);
 
+  assert(p_gate != NULL);
+  assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
   samples = nm_sample_vect_new();
 

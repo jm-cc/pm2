@@ -355,11 +355,10 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
 static inline int nm_sr_flush(struct nm_core *p_core)
 {
   int ret = NM_EAGAIN;
-  int i;
 
-  for(i = 0 ; i < p_core->nb_gates ; i++)
+  struct nm_gate*p_gate = NULL;
+  tbx_fast_list_for_each_entry(p_gate, &p_core->gate_list, _link)
     {
-      struct nm_gate *p_gate = &p_core->gate_array[i];
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
 	  ret = nm_so_flush(p_gate);

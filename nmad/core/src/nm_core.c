@@ -435,7 +435,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
  */
 static int nm_core_driver_exit(struct nm_core *p_core)
 {
-  int i, j, err = NM_ESUCCESS;
+  int j, err = NM_ESUCCESS;
 
 #ifdef PIOM_ENABLE_LTASKS
   piom_ltask_completed (&p_core->task);
@@ -446,7 +446,6 @@ static int nm_core_driver_exit(struct nm_core *p_core)
   nm_drv_id_t drv_id;
   for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
     {
-      int i;
 #ifdef PIOMAN_POLL
       /* stop polling
        */
@@ -459,9 +458,10 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 #endif /* PIOMAN_POLL */
       /* cancel any pending active recv request 
        */
-      for(i = 0; i < p_core->nb_gates; i++)
+
+      struct nm_gate*p_gate = NULL;
+      NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct nm_gate*p_gate = &p_core->gate_array[i];
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_id);
 	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw)
@@ -490,9 +490,9 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 #endif
 
   /* disconnect all gates */
-  for(i = 0 ; i < p_core->nb_gates ; i++)
+  struct nm_gate*p_gate = NULL;
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      struct nm_gate *p_gate = &p_core->gate_array[i];
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
       for(j = 0 ; j < NM_DRV_MAX ; j++)
 	{
@@ -519,9 +519,8 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	}
     }
   /* deinstantiate all drivers */
-  for(i = 0 ; i < p_core->nb_gates ; i++)
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      struct nm_gate *p_gate = &p_core->gate_array[i];
       for(j = 0 ; j < NM_DRV_MAX ; j++)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, j);
@@ -538,6 +537,7 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
+  int i;
   for(i = 0; i < p_core->nb_drivers; i++)
     {
       struct nm_drv*p_drv = &p_core->driver_array[i];
@@ -547,9 +547,8 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	}
     }
   /* close all gates */
-  for(i = 0 ; i < p_core->nb_gates ; i++)
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      struct nm_gate *p_gate = &p_core->gate_array[i];
       nm_so_tag_table_destroy(&p_gate->tags);
       puk_instance_destroy(p_gate->strategy_instance);
     }
@@ -569,19 +568,14 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 {
   int err = NM_ESUCCESS;
 
-  if (p_core->nb_gates == NUMBER_OF_GATES) {
-    err	= -NM_ENOMEM;
-    goto out;
-  }
+  static int next_gate_id = 0;
 
-  struct nm_gate *p_gate = &p_core->gate_array[p_core->nb_gates];
-
-  p_core->nb_gates++;
+  struct nm_gate *p_gate = TBX_MALLOC(sizeof(struct nm_gate));
 
   memset(p_gate, 0, sizeof(struct nm_gate));
 
   p_gate->status = NM_GATE_STATUS_INIT;
-  p_gate->id	 = p_core->nb_gates;
+  p_gate->id	 = next_gate_id++;
   p_gate->p_core = p_core;
   p_gate->ref    = NULL;
 
@@ -599,9 +593,10 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   puk_instance_indirect_NewMad_Strategy(p_gate->strategy_instance, NULL,
 					&p_gate->strategy_receptacle);
 
-  *pp_gate = p_gate;
+  tbx_fast_list_add_tail(&p_gate->_link, &p_core->gate_list);
 
- out:
+  *pp_gate = p_gate;
+  
   return err;
 }
 
@@ -811,7 +806,8 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   struct nm_core *p_core = TBX_MALLOC(sizeof(struct nm_core));
   memset(p_core, 0, sizeof(struct nm_core));
 
-  p_core->nb_gates   = 0;
+  TBX_INIT_FAST_LIST_HEAD(&p_core->gate_list);
+
   p_core->nb_drivers = 0;
 
   err = nm_so_schedule_init(p_core);

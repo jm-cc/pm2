@@ -28,12 +28,6 @@
 #include <numa.h>
 #endif
 
-/** Gate */
-typedef int nm_gate_id_t;
-
-#define NUMBER_OF_GATES          255
-
-
 /* Tracks */
 typedef int8_t nm_trk_id_t;
 

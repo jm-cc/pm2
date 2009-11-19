@@ -186,7 +186,7 @@ any_t worker(any_t arg) {
   int i, j, iters;
   int first, last;
 
-  //  marcel_printf("Thread #%d located on node #%d\n", mydata->thread_id, marcel_current_node_level()->os_node);
+  //  marcel_printf("Thread #%d located on node #%d\n", mydata->thread_id, marcel_current_os_node());
 
   /* determine first and last rows of my strip of the grids */
   first = mydata->thread_id*mydata->strip_size + 1;

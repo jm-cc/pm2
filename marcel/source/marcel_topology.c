@@ -158,6 +158,12 @@ unsigned marcel_current_vp(void)
 	return __marcel_current_vp();
 }
 
+#undef marcel_current_os_node
+unsigned marcel_current_os_node(void)
+{
+	return __marcel_current_os_node();
+}
+
 marcel_topo_level_t *marcel_topo_level(unsigned level, unsigned index) {
 	if (index > marcel_topo_level_nbitems[level])
 		return NULL;

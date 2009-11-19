@@ -625,7 +625,7 @@ static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void)
 #section marcel_functions
 /** \brief Get the die level of a given VP. */
 struct marcel_topo_level * marcel_vp_die_level(unsigned vp);
-#define marcel_vp_die_level(vp) ma_vp_die_level[vp]
+#define marcel_vp_die_level(vp) (ma_vp_die_level[vp])
 
 /** \brief Get the current die level.
  *
@@ -637,7 +637,7 @@ struct marcel_topo_level * marcel_current_die_level(void);
 
 /** \brief Get the NUMA node level of a given VP. */
 struct marcel_topo_level * marcel_vp_node_level(unsigned vp);
-#define marcel_vp_node_level(vp) ma_vp_node_level[vp]
+#define marcel_vp_node_level(vp) (ma_vp_node_level[vp])
 
 /** \brief Get the current NUMA node level.
  *
@@ -653,7 +653,7 @@ struct marcel_topo_level * marcel_current_node_level(void);
  * call. Also note that this may be -1 when the current LWP is not currently
  * bound to a VP (Marcel termination or blocking system calls) */
 unsigned marcel_current_die(void);
-#define marcel_current_die() marcel_current_die_level()->number
+#define marcel_current_die() (marcel_current_die_level()->number)
 
 /** \brief Get the current NUMA node number.
  *
@@ -661,7 +661,19 @@ unsigned marcel_current_die(void);
  * call. Also note that this may be -1 when the current LWP is not currently
  * bound to a VP (Marcel termination or blocking system calls) */
 unsigned marcel_current_node(void);
-#define marcel_current_node() marcel_current_node_level()->number
+#define marcel_current_node() (marcel_current_node_level()->number)
+
+#section functions
+/** \brief Get the current NUMA node number as given by the OS.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be -1 when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+unsigned marcel_current_os_node(void);
+
+#section marcel_macros
+#define __marcel_current_os_node() (marcel_current_node_level()->os_node)
+#define marcel_current_os_node() __marcel_current_os_node()
 
 #section marcel_structures
 

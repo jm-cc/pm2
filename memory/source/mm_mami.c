@@ -1784,6 +1784,7 @@ int _mami_current_node(void) {
   hwloc_obj_t obj;
 
   CPU_ZERO(&set);
+  /* TODO: use hwloc's getcpubind */
   pthread_getaffinity_np(th_mami_self(), sizeof(set), &set);
   hwloc_set = hwloc_cpuset_from_glibc_sched_affinity(topology, &set, sizeof(cpu_set_t));
   obj = hwloc_get_next_obj_covering_cpuset_by_type(topology, hwloc_set, HWLOC_OBJ_NODE, NULL);
@@ -1794,6 +1795,8 @@ int _mami_current_node(void) {
 int _mami_attr_settopo_level(th_mami_attr_t *attr, int node) {
   cpu_set_t set;
   hwloc_obj_t node_obj;
+
+  /* TODO: add to hwloc */
 
   CPU_ZERO(&set);
   node_obj = hwloc_get_obj_by_depth(topology, hwloc_get_type_depth(topology, HWLOC_OBJ_NODE), node);

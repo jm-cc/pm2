@@ -384,6 +384,9 @@ pm2_config_set_vars()
 	if [ -d "${PM2_SRCROOT}/modules/$_lib/include" ]; then
 	    _flags="$_flags -I${PM2_SRCROOT}/modules/$_lib/include"
 	fi
+	if [ -d "${PM2_OBJROOT}/modules/$_lib/include" ]; then
+	    _flags="$_flags -I${PM2_OBJROOT}/modules/$_lib/include"
+	fi
 	_PM2_CONFIG_CFLAGS="$_PM2_CONFIG_CFLAGS $_flags"
     done
     export _PM2_CONFIG_CFLAGS

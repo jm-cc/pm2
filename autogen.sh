@@ -292,7 +292,7 @@ do
 done
 
 echo "Invoking PM2 autoreconf..."
-ACLOCAL="aclocal $LOCAL" autoreconf -vfi
+ACLOCAL="aclocal $LOCAL" ${AUTORECONF:-autoreconf} --verbose -f -i
 
 echo "Initializing Puk..."
 echo "0.4.0" > ./puk/VERSION

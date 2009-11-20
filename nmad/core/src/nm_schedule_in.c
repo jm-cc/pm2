@@ -148,45 +148,43 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
  */
 void nm_sched_in(struct nm_core *p_core)
 {
-  const int nb_drivers = p_core->nb_drivers;
-  nm_drv_id_t drv_id;
-
   /* refill input requests */
-  for(drv_id = 0; drv_id < nb_drivers; drv_id++)
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       struct nm_gate*p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, drv_id);
+	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
 	  if(p_gate->status == NM_GATE_STATUS_CONNECTED && !p_gdrv->active_recv[NM_TRK_SMALL])
 	    {
 	      struct nm_pkt_wrap *p_pw;
 	      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
-	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, drv_id);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv->id);
 	    }
 	}
     }
 
 #ifdef NMAD_POLL
   /* poll pending requests */
-  for(drv_id = 0; drv_id < nb_drivers; drv_id++)
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
-      if (tbx_fast_list_empty(&p_drv->pending_recv_list))
-	continue;
-      nm_poll_lock_in(p_core, p_drv);
-      if (!tbx_fast_list_empty(&p_drv->pending_recv_list))
+      if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
 	{
-	  NM_TRACEF("polling inbound requests");
-	  struct nm_pkt_wrap*p_pw, *p_pw2;
-	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
+	  nm_poll_lock_in(p_core, p_drv);
+	  if (!tbx_fast_list_empty(&p_drv->pending_recv_list))
 	    {
-	      nm_poll_unlock_in(p_core, p_drv);
-	      const int err = nm_poll_recv(p_pw);
-	      nm_poll_lock_in(p_core, p_drv);
-	      if(err == NM_ESUCCESS || err == -NM_ECLOSED)
+	      NM_TRACEF("polling inbound requests");
+	      struct nm_pkt_wrap*p_pw, *p_pw2;
+	      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
 		{
-		  tbx_fast_list_del(&p_pw->link);
+		  nm_poll_unlock_in(p_core, p_drv);
+		  const int err = nm_poll_recv(p_pw);
+		  nm_poll_lock_in(p_core, p_drv);
+		  if(err == NM_ESUCCESS || err == -NM_ECLOSED)
+		    {
+		      tbx_fast_list_del(&p_pw->link);
+		    }
 		}
 	    }
 	}
@@ -195,9 +193,8 @@ void nm_sched_in(struct nm_core *p_core)
 #endif /* NMAD_POLL */
 
   /* post new requests */
-  FOR_EACH_DRIVER(drv_id, p_core)
+  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
   {
-    struct nm_drv*p_drv = &p_core->driver_array[drv_id];
     nm_trk_id_t trk;
     for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
       {

@@ -138,20 +138,20 @@ int nm_core_init_piom(struct nm_core *p_core)
 #ifdef PIOMAN_POLL
 int nm_core_disable_progression(struct nm_core*p_core)
 {
-  nm_drv_id_t drv_id;
-  for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
+  struct nm_drv*p_drv;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      piom_pause_server(&p_core->driver_array[drv_id].server);
+      piom_pause_server(&p_drv->server);
     }
   return 0;
 }
 
 int nm_core_enable_progression(struct nm_core *p_core)
 {
-  nm_drv_id_t drv_id;
-  for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
+  struct nm_drv*p_drv;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      piom_resume_server(&p_core->driver_array[drv_id].server);
+      piom_resume_server(&p_drv->server);
     }
   return 0;
 }
@@ -452,7 +452,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
  */
 static int nm_core_driver_exit(struct nm_core *p_core)
 {
-  int j, err = NM_ESUCCESS;
+  int err = NM_ESUCCESS;
 
 #ifdef PIOM_ENABLE_LTASKS
   piom_ltask_completed (&p_core->task);
@@ -460,13 +460,12 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 
   nmad_lock();
   nm_lock_interface(p_core);
-  nm_drv_id_t drv_id;
-  for(drv_id = 0; drv_id < p_core->nb_drivers; drv_id++)
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
 #ifdef PIOMAN_POLL
       /* stop polling
        */
-      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       nmad_unlock();
       nm_unlock_interface(p_core);
       piom_server_stop(&p_drv->server);
@@ -479,7 +478,7 @@ static int nm_core_driver_exit(struct nm_core *p_core)
       struct nm_gate*p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_id);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
 	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw)
 	    {
@@ -511,9 +510,9 @@ static int nm_core_driver_exit(struct nm_core *p_core)
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
-      for(j = 0 ; j < p_core->nb_drivers ; j++)
+      NM_FOR_EACH_DRIVER(p_drv, p_core)
 	{
-	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, j);
+	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
 	  if (p_gdrv != NULL)
 	    {
 	      struct nm_drv *p_drv = p_drv = p_gdrv->p_drv;
@@ -536,9 +535,9 @@ static int nm_core_driver_exit(struct nm_core *p_core)
   /* deinstantiate all drivers */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      for(j = 0 ; j < p_core->nb_drivers ; j++)
+      NM_FOR_EACH_DRIVER(p_drv, p_core)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, j);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
 	  if (p_gdrv != NULL)
 	    {
 	      struct nm_drv *p_drv = p_gdrv->p_drv;
@@ -552,10 +551,8 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
-  int i;
-  for(i = 0; i < p_core->nb_drivers; i++)
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_drv*p_drv = &p_core->driver_array[i];
       if(p_drv->driver->close)
 	{
 	  (*p_drv->driver->close)(p_drv);

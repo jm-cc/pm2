@@ -103,14 +103,14 @@ int nm_so_schedule_exit (struct nm_core *p_core)
   nmad_lock();
 
   /* purge receive requests not posted yet to the driver */
-  int i, j;
-  for(i = 0; i < p_core->nb_drivers; i++)
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_drv*p_drv = &p_core->driver_array[i];
-      for(j = 0; j < NM_SO_MAX_TRACKS; j++)
+      nm_trk_id_t trk;
+      for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
 	{
 	  struct nm_pkt_wrap*p_pw, *p_pw2;
-	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[j], link)
+	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
 	    {
 	      NM_SO_TRACE("extracting pw from post_recv_list\n");
 	      nm_so_pw_free(p_pw);
@@ -120,18 +120,15 @@ int nm_so_schedule_exit (struct nm_core *p_core)
 
 #ifdef NMAD_POLL
   /* Sanity check- everything is supposed to be empty here */
-  {
-    for(i = 0; i < p_core->nb_drivers; i++)
-      {
-	struct nm_drv*p_drv = &p_core->driver_array[i];
-	struct nm_pkt_wrap*p_pw, *p_pw2;
-	tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
-	  {
-	    NM_DISPF("extracting pw from pending_recv_list\n");
-	    nm_so_pw_free(p_pw);
-	  }
-      }
-  }
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
+    {
+      struct nm_pkt_wrap*p_pw, *p_pw2;
+      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
+	{
+	  NM_DISPF("extracting pw from pending_recv_list\n");
+	  nm_so_pw_free(p_pw);
+	}
+    }
 #endif /* NMAD_POLL */
 
   nm_so_clean_unexpected(p_core);

@@ -86,14 +86,15 @@ struct nm_drv
 };
 
 #if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
-#define FOR_EACH_DRIVER(i, p_core)		                       \
-	for(i = 0; i< p_core->nb_drivers; i++ )                         \
-		if(marcel_vpset_isset(&p_core->driver_array[i].vpset, \
-				      marcel_current_vp()))
+#define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \
+  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ ) \
+    if(marcel_vpset_isset(&p_drv->vpset, marcel_current_vp()))
 #else
-#define FOR_EACH_DRIVER(i, p_core)		\
-	for(i = 0; i< p_core->nb_drivers; i++ )
+#define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \
+  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ )
 #endif
+#define NM_FOR_EACH_DRIVER(p_drv, p_core) \
+  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ )
 
 /** Request for connecting/disconnecting a gate with a driver. */
 struct nm_cnx_rq

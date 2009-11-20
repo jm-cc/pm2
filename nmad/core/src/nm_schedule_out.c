@@ -185,15 +185,13 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
  */
 void nm_sched_out(struct nm_core *p_core)
 {
-  int err = NM_ESUCCESS;
-  const int nb_drivers = p_core->nb_drivers;
   /* schedule new requests on all gates */
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  err = nm_strat_try_and_commit(p_gate);
+	  int err = nm_strat_try_and_commit(p_gate);
 	  if (err < 0)
 	    {
 	      NM_DISPF("sched.schedule_out returned %d", err);
@@ -202,10 +200,9 @@ void nm_sched_out(struct nm_core *p_core)
     }
   
   /* post new requests	*/
-  nm_drv_id_t drv_id;
-  FOR_EACH_DRIVER(drv_id, p_core)
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
   {
-    struct nm_drv*p_drv = &p_core->driver_array[drv_id];
     nm_trk_id_t trk;
     for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
     {
@@ -223,15 +220,13 @@ void nm_sched_out(struct nm_core *p_core)
 	    }
 	  nm_so_unlock_out(p_core, p_drv);
 	}
-      err = NM_ESUCCESS;
     }
   }
 
 #ifdef NMAD_POLL
   /* poll pending out requests	*/
-  for(drv_id = 0; drv_id < nb_drivers; drv_id++ )
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
       if(!tbx_fast_list_empty(&p_drv->pending_send_list))
 	{
 	  nm_poll_lock_out(p_core, p_drv);
@@ -255,9 +250,6 @@ void nm_sched_out(struct nm_core *p_core)
     }
 #endif /* NMAD_POLL */
   
-  err = NM_ESUCCESS;
-  
-  return err;
 }
 
 

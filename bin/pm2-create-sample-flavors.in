@@ -91,8 +91,6 @@ registering_flavors() {
 	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
 	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
 	--marcel=smp_smt_idle \
-        --marcel=dont_use_pthread \
-        --memory=marcel \
         --memory=enable_mami \
         --init=topology
 
@@ -101,10 +99,8 @@ registering_flavors() {
 	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
 	--marcel=smp_smt_idle \
 	--marcel=valgrind \
-        --memory=marcel \
         --memory=enable_mami \
         --init=topology \
-        --marcel=dont_use_pthread \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
     register_flavor mami-fortran-debug \
@@ -115,7 +111,6 @@ registering_flavors() {
         --memory=marcel \
         --memory=enable_mami --memory=fortran \
         --common=fortran_target_gfortran \
-        --marcel=dont_use_pthread \
         --init=topology \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 

@@ -36,11 +36,11 @@ level=$(basename $_t .level_3)
 if [ "$level" == "$_t" ] ; then
     flavor="test_memory_mami_marcel"
     modules="marcel"
-    options="marcel fortran"
+    options="fortran"
 else
     flavor="test_memory_mami_pthread"
     modules=""
-    options="pthread"
+    options=""
 fi
 
 create_test_flavor() {
@@ -49,7 +49,7 @@ create_test_flavor() {
 	--modules=\"$modules tbx init memory\" \
 	--init=\"topology\" \
         --memory=\"enable_mami $options\" \
-	--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats dont_use_pthread fortran\" \
+	--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats fortran\" \
         --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

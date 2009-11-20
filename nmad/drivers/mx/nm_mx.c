@@ -790,7 +790,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
       p_dst++;
     }
 
-#if DEBUG
+#ifdef DEBUG
     fprintf(stderr, "[MX] post send %d (pw=%p)\n", len, p_pw);
 #endif
     
@@ -859,7 +859,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
       p_dst++;
     }
     
-#if DEBUG
+#ifdef DEBUG
     fprintf(stderr, "[MX] post recv %d (pw=%p)\n", len, p_pw);
 #endif
     mx_ret	= mx_irecv(p_mx_drv->ep, seg_list, p_pw->v_nb, match_info,
@@ -887,7 +887,7 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
       struct nm_mx_trk*p_mx_trk	= &p_mx_drv->trks_array[p_pw->trk_id];
       p_pw->p_gate = p_mx_trk->gate_map[status.match_info];
     }
-#if DEBUG
+#ifdef DEBUG
   if (status.code == MX_SUCCESS) {
 	  fprintf(stderr, "\t[MX] Success (pw=%p)\n", p_pw);
   }

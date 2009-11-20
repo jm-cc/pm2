@@ -33,8 +33,6 @@
 #include "nm_ibverbs.h"
 
 
-//#define DEBUG 1
-
 /* *********************************************************
  * Rationale of the newmad/ibverbs driver
  *
@@ -820,9 +818,6 @@ static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
 static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   int err = NM_ESUCCESS;
-#if DEBUG
-  fprintf(stderr, "[IB] Post recv %d bytes (%p)\n", p_pw->length, p_pw);
-#endif /* DEBUG */
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
   p_pw->drv_priv  = p_ibverbs_cnx;
   if(p_pw->p_gate)

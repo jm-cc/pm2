@@ -660,7 +660,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
     {
       /* ** Small packets - track #0 *********************** */
       nm_lock_interface(p_core);
-      p_gate->active_recv[p_pw->p_drv->id][NM_TRK_SMALL] = 0;
+      p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
       nm_unlock_interface(p_core);
       
       nm_decode_headers(p_pw);
@@ -692,7 +692,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
       nm_lock_interface(p_core);
-      p_gate->active_recv[p_pw->p_drv->id][NM_TRK_LARGE] = 0;
+      p_pw->p_gdrv->active_recv[NM_TRK_LARGE] = 0;
       nm_unlock_interface(p_core);
     
 

@@ -360,8 +360,9 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
     {
       const nm_drv_id_t drv_id = drv_ids[n];
       assert(drv_id >= 0 && drv_id < nb_drivers);
-      if(p_gate->active_send[drv_id][NM_TRK_SMALL] == 0 &&
-	 p_gate->active_send[drv_id][NM_TRK_LARGE] == 0)
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_id);
+      if(p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
+	 p_gdrv->active_send[NM_TRK_LARGE] == 0)
 	{
 	  /* We found an idle NIC */
 	  const nm_drv_id_t drv_id = drv_ids[n];
@@ -392,7 +393,8 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
 	   * We assume they are registered in order from the fastest to the slowest. 
 	   * TODO: we should use latency/bandwdith information from drivers capabilities
 	   */
-	  if(p_gate->active_recv[n][NM_TRK_LARGE] == 0)
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, n);
+	  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
 	    {
 	      chunks[0].len    = len;
 	      chunks[0].drv_id = n;
@@ -412,7 +414,8 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
       int i;
       for(i = 0; i < nb_drivers; i++)
 	{
-	  if(p_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0)
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, ordered_drv_id_by_bw[i]);
+	  if(p_gdrv->active_recv[trk_id] == 0)
 	    {
 	      chunks[chunk_index].drv_id = i;
 	      chunks[chunk_index].trk_id = NM_TRK_LARGE;

@@ -29,12 +29,14 @@
 static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
 					     nm_trk_id_t trk_id, nm_drv_id_t drv_id)
 {
+  struct nm_core*p_core = p_gate->p_core;
   nm_so_pw_assign(p_pw, trk_id, drv_id, p_gate);
-  /* append pkt to scheduler post list */
-  nm_so_lock_in(&p_gate->p_core->so_sched, drv_id);
-  tbx_slist_append(p_gate->p_core->so_sched.post_recv_list[drv_id][trk_id], p_pw);
-  p_gate->active_recv[drv_id][trk_id] = 1;
-  nm_so_unlock_in(&p_gate->p_core->so_sched, drv_id);
+  struct nm_drv*p_drv = p_pw->p_drv;
+  nm_so_lock_in(p_core, p_drv);
+  tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_recv_list[trk_id]);
+  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;;
+  p_gdrv->active_recv[trk_id] = 1;
+  nm_so_unlock_in(p_core, p_drv);
 }
 
 /* ** Sending functions ************************************ */
@@ -54,26 +56,14 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
   NM_SO_TRACE_LEVEL(3, "Packet posted on track %d\n", trk_id);
   FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate->id, p_pw, drv_id, trk_id );
   /* Packet is assigned to given track, driver, and gate */
-  p_pw->p_drv = (p_pw->p_gdrv = nm_gate_drv_get(p_gate, drv_id))->p_drv;
-  p_pw->trk_id = trk_id;
-  p_pw->p_gate = p_gate;
-
-#if 0
-/* todo: is this still used ? */
-#if(defined(PIOM_ENABLE_LTASKS) && defined(PIO_OFFLOAD))
-  if(trk_id == NM_TRK_SMALL)
-	  /* todo: we should also modify this function */
-	  nm_submit_offload_ltask(&p_pw->offload_ltask, p_pw);
-  else
-#endif
-#endif
-  {
-    /* append pkt to scheduler post list */
-    nm_so_lock_out(&p_core->so_sched, p_pw->p_drv->id);
-    tbx_slist_append(p_core->so_sched.post_sched_out_list[drv_id][trk_id], p_pw);
-    p_gate->active_send[drv_id][trk_id]++;
-    nm_so_unlock_out(&p_core->so_sched, p_pw->p_drv->id);
-  }
+  nm_so_pw_assign(p_pw, trk_id, drv_id, p_gate);
+  /* append pkt to scheduler post list */
+  struct nm_drv*p_drv = p_pw->p_drv;
+  nm_so_lock_out(p_core, p_drv);
+  tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_sched_out_list[trk_id]);
+  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
+  p_gdrv->active_send[trk_id]++;
+  nm_so_unlock_out(p_core, p_drv);
 }
 
 

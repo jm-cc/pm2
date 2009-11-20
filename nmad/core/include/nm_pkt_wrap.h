@@ -129,8 +129,12 @@ struct nm_pkt_wrap
   /** number of references pointing to the header (when storing unexpected packets) */
   int header_ref_count;
 
-  /* used to store the pw in: out_list in strategy, pending_large_send in sender, pending_large_recv in receiver */
-  struct tbx_fast_list_head   link;
+  /** link to insert the pw into a tbx_fast_list. A pw may be store either in:
+   * out_list in strategy, pending_large_send in sender, pending_large_recv in receiver,
+   * pending_send_list, pending_recv_list in driver,
+   * post_sched_out_list, post_recv_list in driver
+   */
+  struct tbx_fast_list_head link;
 
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];

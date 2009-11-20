@@ -65,9 +65,9 @@ typedef int8_t nm_trk_id_t;
 
 #include "nm_sampling.h"
 
-int nm_sched_out(struct nm_core *p_core);
+void nm_sched_out(struct nm_core *p_core);
 
-int nm_sched_in(struct nm_core *p_core);
+void nm_sched_in(struct nm_core *p_core);
 
 int nm_poll_send(struct nm_pkt_wrap *p_pw);
 
@@ -97,7 +97,7 @@ int nm_so_process_complete_recv(struct nm_core	*p_core,
 				struct nm_pkt_wrap *p_pw);
 
 
-int nm_post_send(struct nm_pkt_wrap*p_pw);
+void nm_post_send(struct nm_pkt_wrap*p_pw);
 
 
 #endif /* NM_PRIVATE_H */

@@ -181,6 +181,23 @@ int nm_core_driver_load(nm_core_t p_core,
   p_drv->assembly = driver;
   p_drv->driver   = puk_adapter_get_driver_NewMad_Driver(p_drv->assembly, NULL);
 
+  nm_trk_id_t trk_id;;
+  for(trk_id = 0; trk_id < NM_SO_MAX_TRACKS; trk_id++)
+    {
+      TBX_INIT_FAST_LIST_HEAD(&p_drv->post_recv_list[trk_id]);
+      TBX_INIT_FAST_LIST_HEAD(&p_drv->post_sched_out_list[trk_id]);
+    }
+  nm_so_lock_out_init(p_core, p_drv);
+  nm_so_lock_in_init(p_core, p_drv);
+
+#ifdef NMAD_POLL
+  TBX_INIT_FAST_LIST_HEAD(&p_drv->pending_recv_list);
+  TBX_INIT_FAST_LIST_HEAD(&p_drv->pending_send_list);
+  nm_poll_lock_in_init(p_core, p_drv);
+  nm_poll_lock_out_init(p_core, p_drv);
+#endif /* NMAD_POLL*/
+
+
   if (p_id) {
     *p_id	= p_drv->id;
   }
@@ -471,10 +488,10 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 		r->driver->cancel_recv_iov(r->_status, p_pw);
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 #ifdef PIOM_ENABLE_LTASKS
-	        piom_ltask_completed(&p_pw->ltask);
+	      piom_ltask_completed(&p_pw->ltask);
 #else
 #ifdef NMAD_POLL
-	      tbx_slist_search_and_extract(p_core->so_sched.pending_recv_list[p_pw->p_drv->id], NULL, p_pw);
+	      tbx_fast_list_del(&p_pw->link);
 #else /* NMAD_POLL */
 	      piom_req_success(&p_pw->inst);
 #endif /* NMAD_POLL */
@@ -482,7 +499,7 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 	      nm_so_pw_free(p_pw);
 	    }
 	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-	  p_gate->active_recv[drv_id][NM_TRK_SMALL] = 0;
+	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	}
     }
 #ifdef PIOM_ENABLE_LTASKS
@@ -494,7 +511,7 @@ static int nm_core_driver_exit(struct nm_core *p_core)
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
-      for(j = 0 ; j < NM_DRV_MAX ; j++)
+      for(j = 0 ; j < p_core->nb_drivers ; j++)
 	{
 	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, j);
 	  if (p_gdrv != NULL)
@@ -513,15 +530,13 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
 		  p_gdrv->p_in_rq_array[trk_id] = NULL;
 		}
-	      TBX_FREE(p_gdrv->p_in_rq_array);
-	      p_gdrv->p_in_rq_array = NULL;
 	    }
 	}
     }
   /* deinstantiate all drivers */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      for(j = 0 ; j < NM_DRV_MAX ; j++)
+      for(j = 0 ; j < p_core->nb_drivers ; j++)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, j);
 	  if (p_gdrv != NULL)
@@ -583,9 +598,6 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 
   nm_so_tag_table_init(&p_gate->tags);
 
-  memset(p_gate->active_recv, 0, sizeof(p_gate->active_recv));
-  memset(p_gate->active_send, 0, sizeof(p_gate->active_send));
-
   TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_recv);
   TBX_INIT_FAST_LIST_HEAD(&p_gate->pending_large_send);
 
@@ -616,7 +628,10 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
     .remote_trk_url		= NULL
   };
 
-  struct nm_gate_drv	*p_gdrv	= TBX_MALLOC(sizeof(struct nm_gate_drv));
+  struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
+
+  memset(p_gdrv->active_recv, 0, sizeof(p_gdrv->active_recv));
+  memset(p_gdrv->active_send, 0, sizeof(p_gdrv->active_send));
 
   char	*urls[255];
   nm_trk_id_t trk_id;
@@ -645,11 +660,6 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 
   /* init gate/driver fields */
   p_gdrv->p_drv	= rq.p_drv;
-  p_gdrv->p_in_rq_array = TBX_MALLOC(rq.p_drv->nb_tracks * sizeof(struct nm_pkt_wrap*));
-  if (!p_gdrv->p_in_rq_array) {
-    err	= -NM_ENOMEM;
-    goto out;
-  }
   p_gate->p_gate_drv_array[drv_id] = p_gdrv;
 
   /* split drv/trk url */

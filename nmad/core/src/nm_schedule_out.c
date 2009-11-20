@@ -58,7 +58,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 #endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   
-  p_gate->active_send[p_pw->p_drv->id][p_pw->trk_id]--;
+  p_pw->p_gdrv->active_send[p_pw->trk_id]--;
 
   int i;
   for(i = 0; i < p_pw->n_contribs; i++)
@@ -109,10 +109,8 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 /** Post a new outgoing request.
     - this function must handle immediately completed requests properly
 */
-int nm_post_send(struct nm_pkt_wrap*p_pw)
+void nm_post_send(struct nm_pkt_wrap*p_pw)
 {
-  int err;
-  
   /* ready to send					*/
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->trk_id);
   NM_TRACEF("posting new send request: gate %d, drv %d, trk %d, proto %d",
@@ -133,7 +131,7 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
 
   /* post request */
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  err = r->driver->post_send_iov(r->_status, p_pw);
+  int err = r->driver->post_send_iov(r->_status, p_pw);
   
   /* process post command status				*/
   
@@ -151,9 +149,9 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
       /* todo: clean that mess ! */
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
-      nm_poll_lock_out(&p_pw->p_gate->p_core->so_sched, p_pw->p_drv->id);
-      tbx_slist_add_at_tail(p_pw->p_gate->p_core->so_sched.pending_send_list[p_pw->p_drv->id], p_pw);
-      nm_poll_unlock_out(&p_pw->p_gate->p_core->so_sched, p_pw->p_drv->id);
+      nm_poll_lock_out(p_pw->p_gate->p_core, p_pw->p_drv);
+      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_send_list);
+      nm_poll_unlock_out(p_pw->p_gate->p_core, p_pw->p_drv);
 #else /* NMAD_POLL */
       /* Submit  the pkt_wrapper to Pioman */
       piom_req_init(&p_pw->inst);
@@ -180,18 +178,15 @@ int nm_post_send(struct nm_pkt_wrap*p_pw)
     {
       TBX_FAILUREF("post_send failed- err = %d", err);
     }
-  
-    err = NM_ESUCCESS;
-    
-    return err;
 }
 
 /** Main scheduler func for outgoing requests.
    - this function must be called once for each gate on a regular basis
  */
-int nm_sched_out(struct nm_core *p_core)
+void nm_sched_out(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
+  const int nb_drivers = p_core->nb_drivers;
   /* schedule new requests on all gates */
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
@@ -207,75 +202,57 @@ int nm_sched_out(struct nm_core *p_core)
     }
   
   /* post new requests	*/
-  /* todo: remove this crappy MA__LWPS */
-  int i;
-  FOR_EACH_DRIVER(i, p_core)
+  nm_drv_id_t drv_id;
+  FOR_EACH_DRIVER(drv_id, p_core)
   {
-    int trk;
-    for(trk=0;trk<NM_SO_MAX_TRACKS;trk++)
+    struct nm_drv*p_drv = &p_core->driver_array[drv_id];
+    nm_trk_id_t trk;
+    for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
     {
-	    
-      if(tbx_slist_is_nil(p_core->so_sched.post_sched_out_list[i][trk]))
-        goto next;
-      nm_so_lock_out(&p_core->so_sched, i);
-      while (!tbx_slist_is_nil(p_core->so_sched.post_sched_out_list[i][trk]))
-      {
-        NM_TRACEF("posting outbound requests");
-	struct nm_pkt_wrap*p_pw = tbx_slist_peek_from_head(p_core->so_sched.post_sched_out_list[i][trk]);
-#if 0
-	/* todo: really useless ? */
-	if(p_pw->p_gdrv->out_req_nb)
-        /* the driver is busy */
-	  goto out;
-#endif
-	p_pw = tbx_slist_remove_from_head(p_core->so_sched.post_sched_out_list[i][trk]);
-	
-	nm_so_unlock_out(&p_core->so_sched, i);
-	
-	err = nm_post_send(p_pw);
-	if (err < 0 && err != -NM_EAGAIN)
+      if(!tbx_fast_list_empty(&p_drv->post_sched_out_list[trk]))
 	{
-	  NM_DISPF("post_send returned %d", err);
+	  nm_so_lock_out(p_core, p_drv);
+	  NM_TRACEF("posting outbound requests");
+	  struct nm_pkt_wrap*p_pw, *p_pw2;
+	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_sched_out_list[trk], link)
+	    {
+	      tbx_fast_list_del(&p_pw->link);
+	      nm_so_unlock_out(p_core, p_drv);
+	      nm_post_send(p_pw);
+	      nm_so_lock_out(p_core, p_drv);
+	    }
+	  nm_so_unlock_out(p_core, p_drv);
 	}
-	nm_so_lock_out(&p_core->so_sched, i);
-      }
-    out:
-      nm_so_unlock_out(&p_core->so_sched, i);
-    next:
       err = NM_ESUCCESS;
     }
   }
 
 #ifdef NMAD_POLL
   /* poll pending out requests	*/
-  for(i = 0; i < NM_DRV_MAX; i++ ) {
-    if (tbx_slist_is_nil(p_core->so_sched.pending_send_list[i]))
-      continue;
-    nm_poll_lock_out(&p_core->so_sched, i);
-    if (!tbx_slist_is_nil(p_core->so_sched.pending_send_list[i]))
+  for(drv_id = 0; drv_id < nb_drivers; drv_id++ )
     {
-      NM_TRACEF("polling outbound requests");
-      struct nm_pkt_wrap* first_pw = NULL;
-
-      do
+      struct nm_drv*p_drv = &p_core->driver_array[drv_id];
+      if(!tbx_fast_list_empty(&p_drv->pending_send_list))
 	{
-  	  struct nm_pkt_wrap*p_pw = tbx_slist_remove_from_head(p_core->so_sched.pending_send_list[i]);
-
-	  nm_poll_unlock_out(&p_core->so_sched, i);
-	  err = nm_poll_send(p_pw);
-	  nm_poll_lock_out(&p_core->so_sched, i);
-	  if(err != NM_ESUCCESS)
+	  nm_poll_lock_out(p_core, p_drv);
+	  if (!tbx_fast_list_empty(&p_drv->pending_send_list))
 	    {
-	      if(!first_pw)
-	        first_pw=p_pw;
-	      tbx_slist_add_at_tail(p_core->so_sched.pending_send_list[i], p_pw);
+	      NM_TRACEF("polling outbound requests");
+	      struct nm_pkt_wrap*p_pw, *p_pw2;
+	      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_send_list, link)
+		{
+		  nm_poll_unlock_out(p_core, p_drv);
+		  const int err = nm_poll_send(p_pw);
+		  nm_poll_lock_out(p_core, p_drv);
+		  if(err == NM_ESUCCESS)
+		    {
+		      tbx_fast_list_del(&p_pw->link);
+		    }
+		}
 	    }
+	  nm_poll_unlock_out(p_core, p_drv);
 	}
-      while(!tbx_slist_is_nil(p_core->so_sched.pending_send_list[i])
-	      &&tbx_slist_peek_from_head(p_core->so_sched.pending_send_list[i])!= first_pw);
     }
-    nm_poll_unlock_out(&p_core->so_sched, i);
-  }
 #endif /* NMAD_POLL */
   
   err = NM_ESUCCESS;

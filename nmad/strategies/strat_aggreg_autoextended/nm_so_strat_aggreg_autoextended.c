@@ -258,8 +258,8 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   struct nm_pkt_wrap *p_so_pw;
-
-  if(p_gate->active_send[NM_DRV_DEFAULT][NM_TRK_SMALL] == 1)
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, NM_DRV_DEFAULT);
+  if(p_gdrv->active_send[NM_TRK_SMALL] == 1)
     /* We're done */
     goto out;
 
@@ -297,7 +297,8 @@ static int strat_aggreg_autoextended_rdv_accept(void*_status, struct nm_gate *p_
 						int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
   *nb_chunks = 1;
-  if(p_gate->active_recv[NM_DRV_DEFAULT][NM_TRK_LARGE] == 0)
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, NM_DRV_DEFAULT);
+  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
     {
       /* The large-packet track is available! */
       chunks[0].len = len;

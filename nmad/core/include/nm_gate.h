@@ -33,8 +33,10 @@ struct nm_gate_drv
   
   /** Array of reference to current incoming requests, (indexed by trk_id).
    */
-  struct nm_pkt_wrap	**p_in_rq_array;
+  struct nm_pkt_wrap *p_in_rq_array[NM_SO_MAX_TRACKS];
   
+  tbx_bool_t active_recv[NM_SO_MAX_TRACKS];
+  tbx_bool_t active_send[NM_SO_MAX_TRACKS];
 };
 
 /** status of a gate, used for dynamic connections */
@@ -61,9 +63,6 @@ struct nm_gate
 
   /** table of tag status */
   struct nm_so_tag_table_s tags;
-
-  tbx_bool_t active_recv[NM_DRV_MAX][NM_SO_MAX_TRACKS];
-  tbx_bool_t active_send[NM_DRV_MAX][NM_SO_MAX_TRACKS];
 
   /** large messages waiting for Track 1 (or 2) to be free- list of pw */
   struct tbx_fast_list_head pending_large_recv;

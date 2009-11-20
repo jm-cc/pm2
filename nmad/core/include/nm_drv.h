@@ -23,22 +23,54 @@ struct nm_pkt_wrap;
  */
 struct nm_drv
 {
-  /* Assembly associated to the driver */
+  /** Assembly associated to the driver */
   puk_adapter_t assembly;
-  
+
+  /** Driver interface, for use when no instance is needed */
   const struct nm_drv_iface_s*driver;
   
-  /* NM core object. */
-  struct nm_core *p_core;
-  
+#ifdef NMAD_POLL
+  /* We don't use these lists since PIOMan already manage a 
+     list of requests to poll */
+
+  /** Outgoing active pw. */
+  struct tbx_fast_list_head pending_send_list;
+#ifdef PIOMAN
+  /** Lock used to access pending_send_list */
+  piom_spinlock_t pending_send_lock;
+#endif
+
+  /** recv pw posted to the driver. */
+  struct tbx_fast_list_head pending_recv_list;
+#ifdef PIOMAN
+  /** Lock used to access pending_recv_list */
+  piom_spinlock_t pending_recv_lock;
+#endif /* PIOMAN */
+#endif /* NMAD_POLL */
+
+  /** Post-scheduler outgoing lists, to be posted to thre driver. */
+  struct tbx_fast_list_head post_sched_out_list[NM_SO_MAX_TRACKS];
+
+  /** recv requests submited to nmad, to be posted to the driver. */
+  struct tbx_fast_list_head post_recv_list[NM_SO_MAX_TRACKS];
+
+#ifdef PIOMAN
+  /** Lock used to access post_sched_out_list */
+  piom_spinlock_t post_sched_out_lock;
+
+  /** Lock used to access post_recv_list */
+  piom_spinlock_t post_recv_lock;
+
+#endif /* PIOMAN */
+
+  /** Private structure of the driver. */
+  void *priv;
+
   /* Driver id. */
   nm_drv_id_t id;
 
   /** Number of tracks opened on this driver. */
   uint8_t nb_tracks;
- 
-  /** Private structure of the driver. */
-  void *priv;
   
 #ifdef PIOMAN_POLL
   struct piom_server server;
@@ -47,16 +79,20 @@ struct nm_drv
 #if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
   marcel_vpset_t vpset;
 #endif
+
+  /* NM core object. */
+  struct nm_core *p_core;
+  
 };
 
 #if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
 #define FOR_EACH_DRIVER(i, p_core)		                       \
-	for(i = 0; i< NM_DRV_MAX; i++ )                                \
+	for(i = 0; i< p_core->nb_drivers; i++ )                         \
 		if(marcel_vpset_isset(&p_core->driver_array[i].vpset, \
 				      marcel_current_vp()))
 #else
-#define FOR_EACH_DRIVER(i, p_core)			\
-	for(i = 0; i< NM_DRV_MAX; i++ )
+#define FOR_EACH_DRIVER(i, p_core)		\
+	for(i = 0; i< p_core->nb_drivers; i++ )
 #endif
 
 /** Request for connecting/disconnecting a gate with a driver. */

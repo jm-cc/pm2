@@ -34,23 +34,6 @@ int nm_so_schedule_init(struct nm_core *p_core)
   nm_so_pw_init(p_core);
 
   nm_so_monitor_vect_init(&p_core->so_sched.monitors);
- 
-  /* requests lists */
-  int i, j;
-  for(i=0;i<NM_DRV_MAX;i++){
-    for(j=0; j<NM_SO_MAX_TRACKS; j++){
-      p_core->so_sched.post_recv_list[i][j] = tbx_slist_nil();
-      p_core->so_sched.post_sched_out_list[i][j] = tbx_slist_nil();
-    }
-#ifdef NMAD_POLL
-    p_core->so_sched.pending_recv_list[i]   = tbx_slist_nil();
-    p_core->so_sched.pending_send_list[i]   = tbx_slist_nil();
-#endif /* NMAD_POLL */
-    nm_poll_lock_in_init(&p_core->so_sched, i);
-    nm_poll_lock_out_init(&p_core->so_sched, i);
-    nm_so_lock_out_init(&p_core->so_sched, i);
-    nm_so_lock_in_init(&p_core->so_sched, i);
-  }
 
   /* unpacks */
   TBX_INIT_FAST_LIST_HEAD(&p_core->so_sched.unpacks);
@@ -119,30 +102,35 @@ int nm_so_schedule_exit (struct nm_core *p_core)
 {
   nmad_lock();
 
-  /* purge requests not posted yet to the driver */
+  /* purge receive requests not posted yet to the driver */
   int i, j;
-  for(i=0;i<NM_DRV_MAX;i++){
-	  for(j=0;j<NM_SO_MAX_TRACKS;j++)
-    while (!tbx_slist_is_nil(p_core->so_sched.post_recv_list[i][j]))
-      {
-        NM_SO_TRACE("extracting pw from post_recv_list\n");
-	void *pw = tbx_slist_extract(p_core->so_sched.post_recv_list[i][j]);
-	nm_so_pw_free(pw);
-      }
-  }
+  for(i = 0; i < p_core->nb_drivers; i++)
+    {
+      struct nm_drv*p_drv = &p_core->driver_array[i];
+      for(j = 0; j < NM_SO_MAX_TRACKS; j++)
+	{
+	  struct nm_pkt_wrap*p_pw, *p_pw2;
+	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[j], link)
+	    {
+	      NM_SO_TRACE("extracting pw from post_recv_list\n");
+	      nm_so_pw_free(p_pw);
+	    }
+	}
+    }
 
 #ifdef NMAD_POLL
   /* Sanity check- everything is supposed to be empty here */
   {
-    for(i=0;i<NM_DRV_MAX;i++){
-      p_tbx_slist_t pending_slist = p_core->so_sched.pending_recv_list[i];
-      while (!tbx_slist_is_nil(pending_slist))
-        {
-	  struct nm_pkt_wrap *p_pw = tbx_slist_extract(pending_slist);
-	  NM_DISPF("extracting pw from pending_recv_req\n");
-	  nm_so_pw_free(p_pw);
-	}
-    }
+    for(i = 0; i < p_core->nb_drivers; i++)
+      {
+	struct nm_drv*p_drv = &p_core->driver_array[i];
+	struct nm_pkt_wrap*p_pw, *p_pw2;
+	tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
+	  {
+	    NM_DISPF("extracting pw from pending_recv_list\n");
+	    nm_so_pw_free(p_pw);
+	  }
+      }
   }
 #endif /* NMAD_POLL */
 
@@ -154,22 +142,6 @@ int nm_so_schedule_exit (struct nm_core *p_core)
   nm_so_monitor_vect_destroy(&p_core->so_sched.monitors);
 
   tbx_malloc_clean(nm_so_unexpected_mem);
-
-  /* free requests lists */
-  for(i=0;i<NM_DRV_MAX;i++){
-#ifdef NMAD_POLL
-    tbx_slist_clear(p_core->so_sched.pending_recv_list[i]);
-    tbx_slist_clear(p_core->so_sched.pending_send_list[i]);
-    tbx_slist_free(p_core->so_sched.pending_recv_list[i]);
-    tbx_slist_free(p_core->so_sched.pending_send_list[i]);
-#endif /* PIOMAN_POLL */
-    for(j=0;j<NM_SO_MAX_TRACKS;j++){
-      tbx_slist_clear(p_core->so_sched.post_recv_list[i][j]);
-      tbx_slist_free(p_core->so_sched.post_recv_list[i][j]);
-      tbx_slist_clear(p_core->so_sched.post_sched_out_list[i][j]);
-      tbx_slist_free(p_core->so_sched.post_sched_out_list[i][j]);
-    }
-  }
 
   nmad_unlock();
 

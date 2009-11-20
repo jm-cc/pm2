@@ -69,7 +69,7 @@ typedef uint16_t nm_drv_id_t;
 /** Maximum number of drivers.
  * @note There should *not* be a hard-coded value.
  */
-#define NM_DRV_MAX 8
+#define NM_DRV_MAX 4
 
 /** The default network to use when several networks are
  *   available, but the strategy does not support multi-rail

@@ -514,8 +514,9 @@ strat_split_all_try_and_commit(void *_status,
   /* todo: fixme */
 //  nm_ns_inc_lats(p_gate->p_core, &drv_ids);
   while(n < nb_drivers){
-    if (p_gate->active_send[drv_ids[n]][NM_TRK_SMALL] +
-        p_gate->active_send[drv_ids[n]][NM_TRK_LARGE] == 0){
+    struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_ids[n]);
+    if (p_gdrv->active_send[NM_TRK_SMALL] +
+        p_gdrv->active_send[NM_TRK_LARGE] == 0){
       /* We found an idle NIC */
       drv_id = drv_ids[n];
       n++;
@@ -614,7 +615,8 @@ strat_split_all_rdv_accept(void *_status,
 /* todo: fixme */
 	  //*drv_id = nm_ns_get_bws(p_gate->p_core, n);
 
-    if(p_gate->active_recv[*drv_id][*trk_id] == 0) {
+    struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, *drv_id);
+    if(p_gdrv->active_recv[*trk_id] == 0) {
       /* Cool! The suggested track is available! */
       return NM_ESUCCESS;
     }
@@ -643,7 +645,8 @@ strat_split_all_extended_rdv_accept(void *_status,
 //  nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw);
 
   for(i = 0; i < nb_drivers; i++){
-    if(p_gate->active_recv[ordered_drv_id_by_bw[i]][trk_id] == 0) {
+    struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, ordered_drv_id_by_bw[i]);
+    if(p_gdrv->active_recv[trk_id] == 0) {
       drv_ids[cur_drv_idx] = i;
       cur_drv_idx++;
     }

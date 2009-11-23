@@ -587,7 +587,7 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 #define marcel_vpset_foreach_end() \
                 }
 
-#section marcel_functions
+#section functions
 /** \brief Get the current VP number.
  *
  * Note that if preemption is enabled, this may change just after the function
@@ -595,6 +595,7 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
  * bound to a VP (Marcel termination or blocking system calls) */
 unsigned marcel_current_vp(void);
 
+#section marcel_functions
 /* Internal version, for inlining */
 static __tbx_inline__ unsigned __marcel_current_vp(void);
 #section marcel_inline

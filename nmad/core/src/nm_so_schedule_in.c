@@ -37,12 +37,12 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
     {
-      if((chunk->p_gate == p_unpack->p_gate) && (chunk->seq == p_unpack->seq) && (chunk->tag == p_unpack->tag))
+      if((chunk->p_gate == p_unpack->p_gate) && (chunk->seq == p_unpack->seq) && nm_tag_eq(chunk->tag, p_unpack->tag))
 	{
 	  /* regular matching */
 	  return chunk;
 	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (chunk->tag == p_unpack->tag))
+      else if((p_unpack->p_gate == NM_ANY_GATE) && nm_tag_eq(chunk->tag, p_unpack->tag))
 	{
 	  /* any gate */
 	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
@@ -51,7 +51,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
 	  p_unpack->p_gate = chunk->p_gate;
 	  return chunk;
 	}
-      else if((p_unpack->p_gate == chunk->p_gate) && (p_unpack->tag == NM_ANY_TAG))
+      else if((p_unpack->p_gate == chunk->p_gate) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
 	{
 	  /* any tag */
 	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
@@ -60,7 +60,7 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
 	  p_unpack->tag = chunk->tag;
 	  return chunk;
 	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (p_unpack->tag == NM_ANY_TAG))
+      else if((p_unpack->p_gate == NM_ANY_GATE) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
 	{
 	  /* any gate, any tag */
 	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
@@ -83,12 +83,12 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   const nm_seq_t last_seq = p_so_tag->recv_seq_number;
   tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, _link)
     {
-      if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && (p_unpack->tag == tag))
+      if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && nm_tag_eq(p_unpack->tag, tag))
 	{
 	  /* regular matching */
 	  return p_unpack;
 	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && (p_unpack->tag == tag))
+      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && nm_tag_eq(p_unpack->tag, tag))
 	{
 	  /* any gate matching */
 	  p_so_tag->recv_seq_number++;
@@ -96,14 +96,14 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
 	  p_unpack->seq = seq;
 	  return p_unpack;
 	}
-      else if((p_unpack->p_gate == p_gate) && (p_unpack->tag == NM_ANY_TAG))
+      else if((p_unpack->p_gate == p_gate) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
 	{
 	  /* any tag matching */
 	  p_unpack->tag = tag;
 	  p_unpack->seq = seq;
 	  return p_unpack;
 	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && (p_unpack->tag == NM_ANY_TAG))
+      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
 	{
 	  /* any gate, any tag */
 	  p_so_tag->recv_seq_number++;
@@ -298,9 +298,9 @@ int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**p
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
     {
-      if( ((chunk->p_gate == p_gate) && (chunk->tag == tag)) ||
-	  ((p_gate == NM_ANY_GATE)   && (chunk->tag == tag)) ||
-	  ((chunk->p_gate == p_gate) && (tag == NM_ANY_TAG)) )
+      if( ((chunk->p_gate == p_gate) && nm_tag_eq(chunk->tag, tag)) ||
+	  ((p_gate == NM_ANY_GATE)   && nm_tag_eq(chunk->tag, tag)) ||
+	  ((chunk->p_gate == p_gate) && nm_tag_eq(tag, NM_ANY_TAG)) )
 	{
 	  *pp_out_gate = p_gate;
 	  return NM_ESUCCESS;
@@ -405,7 +405,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
       const struct nm_pack_s*p_pack = p_contrib->p_pack;
       NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
 		  p_pack->seq, p_large_pw->chunk_offset);
-      if((p_pack->seq == seq) && (p_pack->tag == tag) && (p_large_pw->chunk_offset == chunk_offset))
+      if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
 #warning Paulette: lock
@@ -437,7 +437,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
   struct nm_pack_s*p_pack = NULL;
   tbx_fast_list_for_each_entry(p_pack, &p_core->so_sched.pending_packs, _link)
     {
-      if(p_pack->tag == tag && p_pack->seq == seq)
+      if(nm_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{
 #warning Paulette: lock
 	  tbx_fast_list_del(&p_pack->_link);

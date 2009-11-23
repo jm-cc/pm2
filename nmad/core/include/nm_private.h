@@ -28,7 +28,7 @@
 #include <numa.h>
 #endif
 
-/* Tracks */
+/* ** Tracks */
 typedef int8_t nm_trk_id_t;
 
 #define NM_TRK_SMALL ((nm_trk_id_t)0)
@@ -36,6 +36,24 @@ typedef int8_t nm_trk_id_t;
 #define NM_TRK_NONE  ((nm_trk_id_t)-1)
 
 #define NM_SO_MAX_TRACKS   2
+
+/* ** Drivers */
+
+typedef uint16_t nm_drv_id_t;
+
+/* Just for clarity of code (when using constant parameters) */
+#define NM_DRV(n)  ((nm_drv_id_t)(n))
+
+/** Maximum number of drivers.
+ * @note There should *not* be a hard-coded value.
+ */
+#define NM_DRV_MAX 4
+
+/** The default network to use when several networks are
+ *   available, but the strategy does not support multi-rail
+ */
+#define NM_DRV_DEFAULT NM_DRV(0)
+
 
 #include "nm_so_parameters.h"
 

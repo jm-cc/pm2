@@ -82,11 +82,8 @@ extern p_tbx_memory_t nm_so_unexpected_mem;
  */
 struct nm_so_tag_s
 {
-  /* ** receiving-related fields */
   nm_seq_t recv_seq_number; /**< next sequence number for recv */
-
-  /* ** sending-related fields */
-  nm_seq_t send_seq_number;                  /**< next sequence number for send */
+  nm_seq_t send_seq_number; /**< next sequence number for send */
 };
 static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
 {

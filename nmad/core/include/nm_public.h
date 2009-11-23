@@ -41,42 +41,28 @@ typedef struct nm_gate*nm_gate_t;
 /* 8 bits, contained in flat array  */
 #  define NM_TAGS_AS_FLAT_ARRAY
 typedef uint8_t nm_tag_t;
-#  define NM_SO_MAX_TAGS 255 /**< Maximum number of tags */
+#  define NM_ANY_TAG ((nm_tag_t)-1)
+#  define NM_SO_MAX_TAGS (nm_tag_t)(255)
 #elif defined(CONFIG_TAG_AS_HASHTABLE)
 /* 32 bits, contained in hashtable */
 #  define NM_TAGS_AS_HASHTABLE
 typedef uint32_t nm_tag_t;
-#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT32_MAX - 1ULL) /**< Maximum number of tags  */
+#  define NM_ANY_TAG ((nm_tag_t)-1)
+#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT32_MAX - 1ULL)
 #elif defined(CONFIG_TAG_HUGE)
 /* 64 bits, contained in hashtable */
-#  define NM_TAGS_AS_HASHTABLE
-#  define NM_TAGS_HUGE
-typedef uint64_t nm_tag_t;
+#  define NM_TAGS_AS_INDIRECT_HASH
+typedef uint64_t nm_tag_t; 
+#  define NM_ANY_TAG ((nm_tag_t)-1)
 #  define NM_SO_MAX_TAGS (nm_tag_t)(UINT64_MAX - 1ULL);
 #else
 #  error NewMad: no container type defined for tag-indexed tables
 #endif
 
-#define NM_ANY_TAG ((nm_tag_t)-1)
-
 /* ** Drivers ********************************************** */
 
 typedef struct nm_drv*nm_drv_t;
 
-typedef uint16_t nm_drv_id_t;
-
-/* Just for clarity of code (when using constant parameters) */
-#define NM_DRV(n)  ((nm_drv_id_t)(n))
-
-/** Maximum number of drivers.
- * @note There should *not* be a hard-coded value.
- */
-#define NM_DRV_MAX 4
-
-/** The default network to use when several networks are
- *   available, but the strategy does not support multi-rail
- */
-#define NM_DRV_DEFAULT NM_DRV(0)
 
 /* ** Polling ********************************************** */
 

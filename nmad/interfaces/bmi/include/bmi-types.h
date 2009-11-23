@@ -56,7 +56,7 @@ struct bmi_context{
 
 struct BMI_addr{
     nm_gate_t p_gate;
-    nm_drv_id_t drv_id;
+    nm_drv_t p_drv;
     char* peername;
 };
 

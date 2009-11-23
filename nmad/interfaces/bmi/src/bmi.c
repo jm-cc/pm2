@@ -78,7 +78,7 @@ static BMI_addr_t tmp_peer;
 static struct bnm_peer* tmp_peer = NULL;
 #endif/*TAG_MATCH*/
 
-static nm_drv_id_t drv_id;
+static nm_drv_t p_drv;
 
 static puk_component_t  p_driver_load;
 
@@ -189,7 +189,7 @@ BMI_initialize(const char *method_list,
 #endif
     /* lance le driver selectionne*/
     ret = nm_core_driver_load_init(p_core, p_driver_load, 
-				   &tmp_peer->drv_id, &url);
+				   &tmp_peer->p_drv, &url);
     
     if (ret != NM_ESUCCESS) {
 	fprintf(stderr,"nm_core_driver_init(some) returned ret = %d\n",ret);
@@ -227,7 +227,7 @@ BMI_initialize(const char *method_list,
 
 	/* wait for client */
 	ret = nm_core_gate_accept(p_core, tmp_peer->p_gate, 
-				  tmp_peer->drv_id, NULL);	    
+				  tmp_peer->p_drv, NULL);	    
 
 	if (ret != NM_ESUCCESS) {
 	    fprintf(stderr,"nm_core_gate_accept returned ret = %d\n",ret); 
@@ -396,7 +396,7 @@ BMI_addr_lookup(BMI_addr_t *peer,
 	/*SALE*/
 	//new_peer->drv_id = tmp_peer->drv_id;
 	/*moins SALE*/
-	new_peer->drv_id = drv_id;
+	new_peer->p_drv = p_drv;
 	new_peer->peername = (char *)TBX_MALLOC(strlen(id_string) + 1);
 
 	if (!new_peer->peername)
@@ -413,12 +413,11 @@ BMI_addr_lookup(BMI_addr_t *peer,
 
 	assert(p_core);
 	assert(new_peer->p_gate);
-	assert(new_peer->drv_id < 9);
 	assert(new_peer->peername);
 
 	/* on se connecte a un serveur */
 	ret = nm_core_gate_connect(p_core, new_peer->p_gate, 
-				   new_peer->drv_id,  new_peer->peername);
+				   new_peer->p_drv,  new_peer->peername);
 
 #ifdef DEBUG	
 	fprintf(stderr, "gate %p\n", new_peer->p_gate);
@@ -441,7 +440,7 @@ BMI_addr_lookup(BMI_addr_t *peer,
 #endif
 	
 	peer[0]           = TBX_MALLOC(sizeof(struct BMI_addr));
-	peer[0]->drv_id   = drv_id;
+	peer[0]->p_drv    = p_drv;
 
 	peer[0]->p_gate = new_peer->p_gate;
 

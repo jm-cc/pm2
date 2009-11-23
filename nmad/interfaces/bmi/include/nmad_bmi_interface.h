@@ -180,7 +180,7 @@ struct bnm_peer
         //        const char              *nmm_peername;   /* mx://hostname/board/ep_id  */
         const char              *peername;  
         nm_gate_t               p_gate;
-        nm_drv_id_t             drv_id;
+        nm_drv_t                p_drv;
 
         int                     nmp_exist;      /* have we connected before? */
 

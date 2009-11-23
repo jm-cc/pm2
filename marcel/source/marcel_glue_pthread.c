@@ -93,11 +93,13 @@ int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 		if (policy == SCHED_FIFO)
 			marcel_attr_setpreemptible(&new_attr, 0);
 
+#ifdef MA__LWPS
 		if (new_attr.__flags & MA_ATTR_FLAG_SCOPESYSTEM) {
 			unsigned lwp = marcel_lwp_add_vp();
 			marcel_attr_setvpset(&new_attr,
 			    MARCEL_VPSET_VP(lwp));
 		}
+#endif
 		attr = (pthread_attr_t *) (void *) &new_attr;
 	}
 	LOG_OUT();

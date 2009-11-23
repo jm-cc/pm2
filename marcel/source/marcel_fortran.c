@@ -60,9 +60,11 @@ void marcel_yield_(void) {
 }
 
 
+#ifdef MARCEL_STATS_ENABLED
 void marcel_set_load_(int *load) {
   *marcel_stats_get(marcel_self(), load) = *load;
 }
+#endif
 
 /* Utile pour debug */
 void marcel_rien_(void) {

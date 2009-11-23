@@ -38,7 +38,7 @@ int main(int argc, char	**argv)
   char			*r_url1		= NULL;
   char			*r_url2		= NULL;
   char			*l_url		= NULL;
-  nm_drv_id_t		 drv_id		=    0;
+  nm_drv_t		 p_drv		= NULL;
   nm_gate_t		 gate1   	=    0;
   nm_gate_t		 gate2   	=    0;
   int err;
@@ -75,17 +75,17 @@ int main(int argc, char	**argv)
   }
   
 #if defined CONFIG_IBVERBS
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "ibverbs"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "ibverbs"), &p_drv, &l_url);
 #elif defined CONFIG_MX
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "mx"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "mx"), &p_drv, &l_url);
 #elif defined CONFIG_GM
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "gm"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "gm"), &p_drv, &l_url);
 #elif defined CONFIG_QSNET
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "qsnet"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "qsnet"), &p_drv, &l_url);
 #elif defined CONFIG_SISCI
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "sisci"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "sisci"), &p_drv, &l_url);
 #elif defined CONFIG_TCP
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "tcp"), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "tcp"), &p_drv, &l_url);
 #endif
   if (err != NM_ESUCCESS) {
     printf("nm_core_driver_load_init returned err = %d\n", err);
@@ -115,7 +115,7 @@ int main(int argc, char	**argv)
   if(r_url1)
     {
       fprintf(stderr, "connecting gate1 to url: %s\n", r_url1);
-      err = nm_core_gate_connect(p_core, gate1, drv_id, r_url1);
+      err = nm_core_gate_connect(p_core, gate1, p_drv, r_url1);
       if (err != NM_ESUCCESS) 
 	{
 	  printf("nm_core_gate_connect returned err = %d\n", err);
@@ -125,7 +125,7 @@ int main(int argc, char	**argv)
   else
     {
       fprintf(stderr, "accepting connections on gate1\n");
-      err = nm_core_gate_accept(p_core, gate1, drv_id, NULL);
+      err = nm_core_gate_accept(p_core, gate1, p_drv, NULL);
       if (err != NM_ESUCCESS) 
 	{
 	  printf("nm_core_gate_accept returned err = %d\n", err);
@@ -136,7 +136,7 @@ int main(int argc, char	**argv)
   if(r_url2)
     {
       fprintf(stderr, "connecting gate2 to url: %s\n", r_url2);
-      err = nm_core_gate_connect(p_core, gate2, drv_id, r_url2);
+      err = nm_core_gate_connect(p_core, gate2, p_drv, r_url2);
       if (err != NM_ESUCCESS) 
 	{
 	  printf("nm_core_gate_connect returned err = %d\n", err);
@@ -146,7 +146,7 @@ int main(int argc, char	**argv)
   else
     {
       fprintf(stderr, "accepting connections on gate2\n");
-      err = nm_core_gate_accept(p_core, gate2, drv_id, NULL);
+      err = nm_core_gate_accept(p_core, gate2, p_drv, NULL);
       if (err != NM_ESUCCESS) 
 	{
 	  printf("nm_core_gate_accept returned err = %d\n", err);

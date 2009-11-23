@@ -31,7 +31,7 @@ int main(int	  argc, char**argv)
   struct nm_pkt_wrap*p_pw = NULL;
   char			*r_url		= NULL;
   char			*l_url		= NULL;
-  nm_drv_id_t		 drv_id		=    0;
+  nm_drv_t		 p_drv		= NULL;
   nm_gate_t                gate   	= NULL;
   int err;
   nm_tag_t tag = 128;
@@ -65,7 +65,7 @@ int main(int	  argc, char**argv)
 #elif defined CONFIG_TCP
   default_driver = "tcp";
 #endif
-  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", default_driver), &drv_id, &l_url);
+  err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", default_driver), &p_drv, &l_url);
   if (err != NM_ESUCCESS) {
     printf("nm_core_driver_load_init returned err = %d\n", err);
     goto out;
@@ -85,7 +85,7 @@ int main(int	  argc, char**argv)
       /* server */
       printf("local url: [%s]\n", l_url);
       
-      err = nm_core_gate_accept(p_core, gate, drv_id, NULL);
+      err = nm_core_gate_accept(p_core, gate, p_drv, NULL);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_accept returned err = %d\n", err);
 	goto out;
@@ -122,7 +122,7 @@ int main(int	  argc, char**argv)
   else
     {
       /* client */
-      err = nm_core_gate_connect(p_core, gate, drv_id, r_url);
+      err = nm_core_gate_connect(p_core, gate, p_drv, r_url);
       if (err != NM_ESUCCESS) {
 	printf("nm_core_gate_connect returned err = %d\n", err);
 	goto out;

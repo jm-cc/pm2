@@ -58,11 +58,11 @@ struct nm_core
   /** List of gates. */
   struct tbx_fast_list_head gate_list;
 
-  /** Number of drivers. */
-  uint8_t nb_drivers;
+  /** List of drivers. */
+  struct tbx_fast_list_head driver_list;
 
-  /** Array of drivers. */
-  struct nm_drv driver_array[NM_DRV_MAX];
+  /** Number of drivers currently loaded. */
+  int nb_drivers;
 
   /** SchedOpt scheduler */
   struct nm_so_sched so_sched;

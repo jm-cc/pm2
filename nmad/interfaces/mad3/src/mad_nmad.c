@@ -49,7 +49,7 @@ typedef struct s_mad_nmad_deferred {
 #  endif /* MAD_NMAD_SO_DEBUG */
 
 typedef struct s_mad_nmad_driver_specific {
-        uint8_t			 drv_id;
+        nm_drv_t		 p_drv;
         char			*l_url;
 } mad_nmad_driver_specific_t, *p_mad_nmad_driver_specific_t;
 
@@ -215,7 +215,7 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
                      int		  *argc,
                      char		***argv) {
         p_mad_nmad_driver_specific_t	 ds		= NULL;
-        nm_drv_id_t		 	 drv_id;
+        nm_drv_t		 	 p_drv;
         char				 *l_url;
         int                              err;
 	puk_component_t                  driver_config = NULL;
@@ -245,14 +245,14 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
         }
 
 	driver_config = nm_core_component_load("driver", "custom");
-	err = nm_core_driver_load_init(p_core, driver_config, &drv_id, &l_url);
+	err = nm_core_driver_load_init(p_core, driver_config, &p_drv, &l_url);
 
-        NMAD_EVENT_DRV_ID(drv_id);
+        NMAD_EVENT_DRV_ID(p_drv->id);
         NMAD_EVENT_DRV_NAME(d->device_name);
         d->connection_type	= mad_bidirectional_connection;
         d->buffer_alignment	= 32;
         ds			= TBX_MALLOC(sizeof(mad_nmad_driver_specific_t));
-        ds->drv_id	= drv_id;
+        ds->p_drv	= p_drv;
         ds->l_url	= l_url;
         d->specific	= ds;
         NM_LOG_OUT();
@@ -399,12 +399,12 @@ mad_nmad_accept(p_mad_connection_t   in,
                   in->remote_rank,
                   ai->dir_node->name,
                   cs->gate);
-        err = nm_core_gate_accept(p_core, cs->gate, ds->drv_id, NULL);
+        err = nm_core_gate_accept(p_core, cs->gate, ds->p_drv, NULL);
         if (err != NM_ESUCCESS) {
           printf("nm_core_gate_accept returned err = %d\n", err);
           TBX_FAILURE("nmad error");
         }
-        NMAD_EVENT_CNX_ACCEPT(in->remote_rank, cs->gate, ds->drv_id);
+        NMAD_EVENT_CNX_ACCEPT(in->remote_rank, cs->gate, ds->p_drv);
         TRACE("gate_accept: connection established");
         NM_LOG_OUT();
 
@@ -455,14 +455,14 @@ mad_nmad_connect(p_mad_connection_t   out,
                   ai->dir_node->name,
                   cs->gate);
 
-        err = nm_core_gate_connect(p_core, cs->gate, ds->drv_id, url);
+        err = nm_core_gate_connect(p_core, cs->gate, ds->p_drv, url);
         if (err != NM_ESUCCESS) {
           printf("nm_core_gate_connect returned err = %d\n", err);
           TBX_FAILURE("nmad error");
         }
         TBX_FREE(url);
 
-        NMAD_EVENT_CNX_CONNECT(out->remote_rank, cs->gate, ds->drv_id);
+        NMAD_EVENT_CNX_CONNECT(out->remote_rank, cs->gate, ds->p_drv);
         TRACE("gate_connect: connection established");
         NM_LOG_OUT();
 }

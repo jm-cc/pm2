@@ -643,7 +643,7 @@ int main(int argc, char **argv)
 
   /* Initialisation de Nmad */
   struct nm_core  *p_core = mad_nmad_get_core();
-  struct nm_drv   *p_drv  = &p_core->driver_array[0];
+  struct nm_drv   *p_drv  = tbx_fast_list_entry(p_core->driver_list.next, struct nm_drv, _link);
   struct nm_gate  *p_gate = tbx_fast_list_entry(p_core->gate_list.next, struct nm_gate, _link);
 
   assert(p_gate != NULL);

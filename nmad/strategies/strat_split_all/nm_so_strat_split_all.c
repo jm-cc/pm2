@@ -567,7 +567,9 @@ strat_split_all_split_small(void *_status,
   tbx_tick_t t1,t2;
 
   TBX_GET_TICK(t1);
-  int err = nm_ns_split_ratio(cumulated_len, p_gate->p_core, 0, 1, &split_ratio);
+  /* TODO: fixme */
+  /* int err = nm_ns_split_ratio(cumulated_len, p_gate->p_core, 0, 1, &split_ratio); */
+  int err = 0;
   if(err == NM_EAGAIN)
     return err;
   TBX_GET_TICK(t2);

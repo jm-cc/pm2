@@ -353,24 +353,22 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
   struct tbx_fast_list_head *out_list = &status->out_list;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
-  const nm_drv_id_t*drv_ids = NULL;
-  nm_ns_inc_lats(p_gate->p_core, &drv_ids, &nb_drivers);
+  const struct nm_drv**p_drvs = NULL;
+  nm_ns_inc_lats(p_gate->p_core, &p_drvs, &nb_drivers);
   assert(nb_drivers > 0);
   while(n < nb_drivers && !tbx_fast_list_empty(out_list))
     {
-      const nm_drv_id_t drv_id = drv_ids[n];
-      assert(drv_id >= 0 && drv_id < nb_drivers);
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, drv_id);
+      const struct nm_drv*p_drv = p_drvs[n];
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
       if(p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
 	 p_gdrv->active_send[NM_TRK_LARGE] == 0)
 	{
-	  /* We found an idle NIC */
-	  const nm_drv_id_t drv_id = drv_ids[n];
-	  /* Take the packet at the head of the list and post it on trk #0 */
-	  struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
+	  /* We found an idle NIC
+	   * Take the packet at the head of the list and post it on trk #0 */
+	  struct nm_pkt_wrap *p_pw = nm_l2so(out_list->next);
 	  tbx_fast_list_del(out_list->next);
 	  status->nb_packets--;
-	  nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, drv_id);
+	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv->id);
 	}
       n++;
     }
@@ -386,7 +384,7 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
   if(*nb_chunks == 1)
     {
       /* Is there any large data track available? */
-      nm_drv_id_t n;
+      int n;
       for(n = 0; n < *nb_chunks; n++)
 	{
 	  /* We explore the drivers in sequence. 
@@ -408,13 +406,13 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
       int nb_drivers = p_gate->p_core->nb_drivers;
       int chunk_index = 0;
       const nm_trk_id_t trk_id = NM_TRK_LARGE;
-      const nm_drv_id_t *ordered_drv_id_by_bw = NULL;
+      const struct nm_drv**ordered_drv_id_by_bw = NULL;
       nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
 
       int i;
       for(i = 0; i < nb_drivers; i++)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, ordered_drv_id_by_bw[i]);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, ordered_drv_id_by_bw[i]->id);
 	  if(p_gdrv->active_recv[trk_id] == 0)
 	    {
 	      chunks[chunk_index].drv_id = i;

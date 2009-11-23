@@ -350,8 +350,8 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
   const nm_tag_t tag = p_unpack->tag;
   const nm_seq_t seq = p_unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  struct nm_rdv_chunk chunks[NM_DRV_MAX];
-  int nb_chunks = NM_DRV_MAX;
+  int nb_chunks = p_core->nb_drivers;
+  struct nm_rdv_chunk chunks[nb_chunks];
 
   int err = strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, chunks);
 
@@ -411,8 +411,8 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
       else 
 	{
 	  /* ** contiguous pw with rdv */
-	  struct nm_rdv_chunk chunks[NM_DRV_MAX];
-	  int nb_chunks = NM_DRV_MAX;
+	  int nb_chunks = p_gate->p_core->nb_drivers;
+	  struct nm_rdv_chunk chunks[nb_chunks];
 	  const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
 	  int err = strategy->driver->rdv_accept(strategy->_status, p_gate, p_large_pw->length,
 						 &nb_chunks, chunks);

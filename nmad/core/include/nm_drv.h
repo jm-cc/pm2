@@ -23,6 +23,9 @@ struct nm_pkt_wrap;
  */
 struct nm_drv
 {
+  /** link to insert this driver into the driver_list in core */
+  struct tbx_fast_list_head _link;
+
   /** Assembly associated to the driver */
   puk_adapter_t assembly;
 
@@ -87,14 +90,14 @@ struct nm_drv
 
 #if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
 #define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \
-  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ ) \
+  tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link) \
     if(marcel_vpset_isset(&p_drv->vpset, marcel_current_vp()))
 #else
 #define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \
-  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ )
+  tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
 #endif
 #define NM_FOR_EACH_DRIVER(p_drv, p_core) \
-  for(p_drv = &(p_core)->driver_array[0]; p_drv < &p_core->driver_array[p_core->nb_drivers]; p_drv++ )
+  tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
 
 /** Request for connecting/disconnecting a gate with a driver. */
 struct nm_cnx_rq

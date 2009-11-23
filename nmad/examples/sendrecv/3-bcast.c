@@ -34,7 +34,7 @@ main(int	  argc,
         char			*r_url1		= NULL;
         char			*r_url2		= NULL;
         char			*l_url		= NULL;
-        nm_drv_id_t		 drv_id		=    0;
+        nm_drv_t		 p_drv		= NULL;
         nm_gate_t                gate1   	=    0;
         nm_gate_t   		 gate2   	=    0;
         char			*s_buf		= NULL;
@@ -73,7 +73,7 @@ main(int	  argc,
           printf("running as server\n");
         }
 
-        err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "tcp"), &drv_id, &l_url);
+        err = nm_core_driver_load_init(p_core, nm_core_component_load("driver", "tcp"), &p_drv, &l_url);
 
         if (err != NM_ESUCCESS) {
                 printf("nm_core_driver_load_init returned err = %d\n", err);
@@ -98,13 +98,13 @@ main(int	  argc,
 
         if(!r_url1 && !r_url2){
           // accept sur les 2 gates
-          err = nm_core_gate_accept(p_core, gate1, drv_id, NULL);
+          err = nm_core_gate_accept(p_core, gate1, p_drv, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
           }
 
-          err = nm_core_gate_accept(p_core, gate2, drv_id, NULL);
+          err = nm_core_gate_accept(p_core, gate2, p_drv, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
@@ -112,27 +112,27 @@ main(int	  argc,
 
         } else if(!r_url2){
           // je fais un connect sur r_url1 dans la gate n°1
-          err = nm_core_gate_connect(p_core, gate1, drv_id, r_url1);
+          err = nm_core_gate_connect(p_core, gate1, p_drv, r_url1);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;
           }
 
           // je fais un accept pour r_url2 dans la gate n°2
-          err = nm_core_gate_accept(p_core, gate2, drv_id, NULL);
+          err = nm_core_gate_accept(p_core, gate2, p_drv, NULL);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_accept returned err = %d\n", err);
             goto out;
           }
         } else {
           // connect sur les 2 gates
-          err = nm_core_gate_connect(p_core, gate1, drv_id, r_url1);
+          err = nm_core_gate_connect(p_core, gate1, p_drv, r_url1);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;
           }
 
-          err = nm_core_gate_connect(p_core, gate2, drv_id, r_url2);
+          err = nm_core_gate_connect(p_core, gate2, p_drv, r_url2);
           if (err != NM_ESUCCESS) {
             printf("nm_core_gate_connect returned err = %d\n", err);
             goto out;

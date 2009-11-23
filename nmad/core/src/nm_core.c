@@ -163,22 +163,19 @@ int nm_core_enable_progression(struct nm_core *p_core)
  * p_id  - contains the id of the new driver
  */
 int nm_core_driver_load(nm_core_t p_core,
-			puk_component_t driver,
-			nm_drv_id_t *p_id)
+			puk_component_t driver_assembly,
+			nm_drv_t*pp_drv)
 {
   int err;
 
   NM_LOG_IN();
-  if (p_core->nb_drivers == NM_DRV_MAX) {
-    err	= -NM_ENOMEM;
-    goto out;
-  }
-  assert(driver != NULL);
-  struct nm_drv	*p_drv = p_core->driver_array + p_core->nb_drivers;
+
+  assert(driver_assembly != NULL);
+  struct nm_drv*p_drv = TBX_MALLOC(sizeof(struct nm_drv));
   memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
   p_drv->id       = p_core->nb_drivers;
-  p_drv->assembly = driver;
+  p_drv->assembly = driver_assembly;
   p_drv->driver   = puk_adapter_get_driver_NewMad_Driver(p_drv->assembly, NULL);
 
   nm_trk_id_t trk_id;;
@@ -197,15 +194,13 @@ int nm_core_driver_load(nm_core_t p_core,
   nm_poll_lock_out_init(p_core, p_drv);
 #endif /* NMAD_POLL*/
 
-
-  if (p_id) {
-    *p_id	= p_drv->id;
-  }
+  tbx_fast_list_add_tail(&p_drv->_link, &p_core->driver_list);
   p_core->nb_drivers++;
+
+  *pp_drv = p_drv;
 
   err = NM_ESUCCESS;
 
- out:
   NM_LOG_OUT();
 
   return err;
@@ -216,25 +211,26 @@ int nm_core_driver_load(nm_core_t p_core,
  *
  */
 int nm_core_driver_query(nm_core_t p_core,
-			 nm_drv_id_t id,
+			 nm_drv_t p_drv,
 			 struct nm_driver_query_param *params,
 			 int nparam)
 {
   int err;
 
   NM_LOG_IN();
-  struct nm_drv	*p_drv = &p_core->driver_array[id];
 
-  if (!p_drv->driver->query) {
-    err = -NM_EINVAL;
-    goto out;
-  }
+  if (!p_drv->driver->query)
+    {
+      err = -NM_EINVAL;
+      goto out;
+    }
 
   err = p_drv->driver->query(p_drv, params, nparam);
-  if (err != NM_ESUCCESS) {
-    NM_DISPF("drv.query returned %d", err);
-    goto out;
-  }
+  if (err != NM_ESUCCESS)
+    {
+      NM_DISPF("drv.query returned %d", err);
+      goto out;
+    }
 
   err = NM_ESUCCESS;
 
@@ -250,19 +246,18 @@ int nm_core_driver_query(nm_core_t p_core,
  * p_url - contains the URL of the driver (memory for the URL is allocated by
  * nm_core)
  */
-int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
+int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, char **p_url)
 {
-  struct nm_drv	*p_drv = NULL;
   int err;
 
   NM_LOG_IN();
-  p_drv	= &p_core->driver_array[drv_id];
   p_drv->p_core = p_core;
 
-  if (!p_drv->driver->init) {
-    err = -NM_EINVAL;
-    goto out;
-  }
+  if (!p_drv->driver->init)
+    {
+      err = -NM_EINVAL;
+      goto out;
+    }
   /* open tracks */
   const int nb_trks = NM_SO_MAX_TRACKS;
   struct nm_trk_cap trk_caps[NM_SO_MAX_TRACKS] =
@@ -292,10 +287,11 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_id_t drv_id, char **p_url)
     };
 
   err = p_drv->driver->init(p_drv, trk_caps, nb_trks);
-  if (err != NM_ESUCCESS) {
-    NM_DISPF("drv.init returned %d", err);
-    goto out;
-  }
+  if (err != NM_ESUCCESS)
+    {
+      NM_DISPF("drv.init returned %d", err);
+      goto out;
+    }
   p_drv->nb_tracks = nb_trks;
 
   nm_trk_id_t trk_id;
@@ -341,11 +337,9 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 					      puk_component_t*driver_array,
 					      struct nm_driver_query_param **params_array,
 					      int *nparam_array,
-					      nm_drv_id_t *p_id_array,
+					      nm_drv_t *p_drv_array,
 					      char **p_url_array)
 {
-  nm_drv_id_t id;
-  int i;
 #ifdef PM2_NUIOA
   int preferred_node = PM2_NUIOA_ANY_NODE;
   int nuioa = (numa_available() >= 0);
@@ -355,65 +349,66 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
   int nuioa_current_best = 0;
 #endif /* PM2_NUIOA */
 
-  for(i=0; i<count; i++) {
-    int err;
-
-    err = nm_core_driver_load(p_core, driver_array[i], &id);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("nm_core_driver_load returned %d", err);
-      return err;
-    }
-
-    p_id_array[i] = id;
-
-    err = nm_core_driver_query(p_core, id, params_array[i], nparam_array[i]);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("nm_core_driver_query returned %d", err);
-      return err;
-    }
-
-#ifdef PM2_NUIOA
-    if (nuioa) {
-      struct nm_drv *p_drv = p_core->driver_array + id;
-      int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
-      if (node != PM2_NUIOA_ANY_NODE) {
-	/* if this driver wants something */
-	DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, id);
-
-	if (nuioa_with_latency) {
-	  /* choosing by latency: take this network if it's the first one
-	   * or if its latency is lower than the previous one */
-	  if (preferred_node == PM2_NUIOA_ANY_NODE
-	      || p_drv->driver->get_capabilities(p_drv)->latency < nuioa_current_best) {
-	    preferred_node = node;
-	    nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->latency;
-	  }
-
-	} else if (nuioa_with_bandwidth) {
-	  /* choosing by bandwidth: take this network if it's the first one
-	   * or if its bandwidth is higher than the previous one */
-	  if (preferred_node == PM2_NUIOA_ANY_NODE
-	      || p_drv->driver->get_capabilities(p_drv)->bandwidth > nuioa_current_best) {
-	    preferred_node = node;
-	    nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->bandwidth;
-	  }
-
-	} else if (preferred_node == PM2_NUIOA_ANY_NODE) {
-	  /* if it's the first driver, take its preference for now */
-	  preferred_node = node;
-
-	} else if (preferred_node != node) {
-	  /* if the first driver wants something else, it's a conflict,
-	   * display a message once */
-	  if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
-	    DISP("found conflicts between preferred nuioa nodes of drivers");
-	  preferred_node = PM2_NUIOA_CONFLICTING_NODES;
+  int i;
+  for(i = 0; i < count; i++)
+    {
+      nm_drv_t p_drv = NULL;
+      int err = nm_core_driver_load(p_core, driver_array[i], &p_drv);
+      if (err != NM_ESUCCESS) 
+	{
+	  NM_DISPF("nm_core_driver_load returned %d", err);
+	  return err;
 	}
-      }
-    }
+      p_drv_array[i] = p_drv;
+      
+      err = nm_core_driver_query(p_core, p_drv, params_array[i], nparam_array[i]);
+      if (err != NM_ESUCCESS) 
+	{
+	  NM_DISPF("nm_core_driver_query returned %d", err);
+	  return err;
+	}
+#ifdef PM2_NUIOA
+      if (nuioa) 
+	{
+	  const int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
+	  if (node != PM2_NUIOA_ANY_NODE) {
+	    /* if this driver wants something */
+	    DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, p_drv->id);
+	    
+	    if (nuioa_with_latency) {
+	      /* choosing by latency: take this network if it's the first one
+	       * or if its latency is lower than the previous one */
+	      if (preferred_node == PM2_NUIOA_ANY_NODE
+		  || p_drv->driver->get_capabilities(p_drv)->latency < nuioa_current_best) {
+		preferred_node = node;
+		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->latency;
+	      }
+	      
+	    } else if (nuioa_with_bandwidth) {
+	      /* choosing by bandwidth: take this network if it's the first one
+	       * or if its bandwidth is higher than the previous one */
+	      if (preferred_node == PM2_NUIOA_ANY_NODE
+		  || p_drv->driver->get_capabilities(p_drv)->bandwidth > nuioa_current_best) {
+		preferred_node = node;
+		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->bandwidth;
+	      }
+	      
+	    } else if (preferred_node == PM2_NUIOA_ANY_NODE) {
+	      /* if it's the first driver, take its preference for now */
+	      preferred_node = node;
+	      
+	    } else if (preferred_node != node) {
+	      /* if the first driver wants something else, it's a conflict,
+	       * display a message once */
+	      if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
+		DISP("found conflicts between preferred nuioa nodes of drivers");
+	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
+	    }
+	  }
+	}
 #endif /* PM2_NUIOA */
-  }
-
+    }
+  
 #ifdef PM2_NUIOA
   if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
 #if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
@@ -431,19 +426,18 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
   }
 #endif /* PM2_NUIOA */
 
-  for(i=0; i<count; i++) {
-    int err;
-
-    err = nm_core_driver_init(p_core, p_id_array[i], &p_url_array[i]);
-    if (err != NM_ESUCCESS) {
-      NM_DISPF("nm_core_driver_init returned %d", err);
-      return err;
-    }
-
+  for(i = 0; i < count; i++)
+    {
+      int err = nm_core_driver_init(p_core, p_drv_array[i], &p_url_array[i]);
+      if (err != NM_ESUCCESS) 
+	{
+	  NM_DISPF("nm_core_driver_init returned %d", err);
+	  return err;
+	}
 #ifndef CONFIG_PROTO_MAD3
-    printf("# nmad: driver #%d- name = %s; url = %s\n", i, driver_array[i]->name, p_url_array[i]);
+      printf("# nmad: driver #%d- name = %s; url = %s\n", i, driver_array[i]->name, p_url_array[i]);
 #endif
-  }
+    }
   return NM_ESUCCESS;
 }
 
@@ -613,17 +607,18 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
  */
 static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 				       nm_gate_t	 p_gate,
-				       nm_drv_id_t	 drv_id,
+				       nm_drv_t	         p_drv,
 				       const char	*drv_trk_url,
 				       int		 connect_flag)
 {
-  struct nm_cnx_rq	 rq	= {
-    .p_gate			= NULL,
-    .p_drv			= NULL,
-    .trk_id			= 0,
-    .remote_drv_url		= NULL,
-    .remote_trk_url		= NULL
-  };
+  struct nm_cnx_rq rq =
+    {
+      .p_gate			= p_gate,
+      .p_drv			= p_drv,
+      .trk_id			= 0,
+      .remote_drv_url		= NULL,
+      .remote_trk_url		= NULL
+    };
 
   struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
 
@@ -636,28 +631,24 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 
   p_gate->status = NM_GATE_STATUS_CONNECTING;
 
-  /* set gate */
-  rq.p_gate = p_gate;
-
-  if (!rq.p_gate) {
-    err = -NM_EINVAL;
-    goto out;
-  }
-
-  /* set drv */
-  if (drv_id >= p_core->nb_drivers) {
-    err = -NM_EINVAL;
-    goto out;
-  }
-  rq.p_drv = &p_core->driver_array[drv_id];
+  if(!p_gate)
+    {
+      err = -NM_EINVAL;
+      goto out;
+    }
+  if(!p_drv)
+    {
+      err = -NM_EINVAL;
+      goto out;
+    }
 
   /* instanciate driver */
-  p_gdrv->instance = puk_adapter_instanciate(rq.p_drv->assembly);
+  p_gdrv->instance = puk_adapter_instanciate(p_drv->assembly);
   puk_instance_indirect_NewMad_Driver(p_gdrv->instance, NULL, &p_gdrv->receptacle);
 
   /* init gate/driver fields */
   p_gdrv->p_drv	= rq.p_drv;
-  p_gate->p_gate_drv_array[drv_id] = p_gdrv;
+  p_gate->p_gate_drv_array[p_drv->id] = p_gdrv;
 
   /* split drv/trk url */
   if (drv_trk_url)
@@ -707,9 +698,10 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
   p_gate->status = NM_GATE_STATUS_CONNECTED;
 
  out:
-  if (rq.remote_drv_url) {
-    TBX_FREE(rq.remote_drv_url);
-  }
+  if (rq.remote_drv_url)
+    {
+      TBX_FREE(rq.remote_drv_url);
+    }
   return err;
 
 }
@@ -718,20 +710,20 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
  */
 int nm_core_gate_accept(nm_core_t	 p_core,
 			nm_gate_t	 p_gate,
-			nm_drv_id_t	 drv_id,
+			nm_drv_t	 p_drv,
 			const char	*drv_trk_url)
 {
-  return nm_core_gate_connect_accept(p_core, p_gate, drv_id, drv_trk_url, 0);
+  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, drv_trk_url, 0);
 }
 
 /** Client side of connection establishment.
  */
 int nm_core_gate_connect(nm_core_t p_core,
                          nm_gate_t p_gate,
-                         nm_drv_id_t drv_id,
+                         nm_drv_t  p_drv,
                          const char*drv_trk_url)
 {
-  return nm_core_gate_connect_accept(p_core, p_gate, drv_id, drv_trk_url, !0);
+  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, drv_trk_url, !0);
 }
 
 /** Get the user-registered per-gate data */
@@ -814,7 +806,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   memset(p_core, 0, sizeof(struct nm_core));
 
   TBX_INIT_FAST_LIST_HEAD(&p_core->gate_list);
-
+  TBX_INIT_FAST_LIST_HEAD(&p_core->driver_list);
   p_core->nb_drivers = 0;
 
   err = nm_so_schedule_init(p_core);

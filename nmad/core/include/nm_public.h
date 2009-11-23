@@ -61,6 +61,8 @@ typedef uint64_t nm_tag_t;
 
 /* ** Drivers ********************************************** */
 
+typedef struct nm_drv*nm_drv_t;
+
 typedef uint16_t nm_drv_id_t;
 
 /* Just for clarity of code (when using constant parameters) */
@@ -144,10 +146,10 @@ int nm_core_exit(nm_core_t p_core);
 
 int nm_core_driver_load(nm_core_t         p_core,
 			puk_component_t driver,
-			nm_drv_id_t *p_id);
+			nm_drv_t*pp_drv);
 
 int nm_core_driver_init(nm_core_t p_core,
-			nm_drv_id_t id,
+			nm_drv_t p_drv,
 			char	**p_url);
 
 struct nm_driver_query_param
@@ -164,7 +166,7 @@ struct nm_driver_query_param
 };
 
 int nm_core_driver_query(nm_core_t p_core,
-			 nm_drv_id_t id,
+			 nm_drv_t p_drv,
 			 struct nm_driver_query_param *params,
 			 int nparam);
 
@@ -173,7 +175,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 					      puk_component_t*driver_array,
 					      struct nm_driver_query_param **params_array,
 					      int *nparam_array,
-					      nm_drv_id_t *p_id_array,
+					      nm_drv_t *p_array,
 					      char **p_url_array);
 
 /** Simple helpers to prevent basic applications from having to
@@ -183,14 +185,23 @@ static inline int
 nm_core_driver_load_init_some(nm_core_t p_core,
 			      int count,
 			      puk_component_t*driver_array,
-			      nm_drv_id_t *p_id_array,
+			      nm_drv_t *p_drv_array,
 			      char **p_url_array)
 {
-  struct nm_driver_query_param * params_array[NM_DRV_MAX] = { NULL };
-  int nparam_array[NM_DRV_MAX] = { 0 };
-  return nm_core_driver_load_init_some_with_params(p_core, count, driver_array,
-						   params_array, nparam_array,
-						   p_id_array, p_url_array);
+  struct nm_driver_query_param**params_array = malloc(count * sizeof(struct nm_driver_query_param*));
+  int*nparam_array = malloc(count * sizeof(int));
+  int i;
+  for(i = 0; i < count; i++)
+    {
+      params_array[i] = NULL;
+      nparam_array[i] = 0;
+    }
+  int err = nm_core_driver_load_init_some_with_params(p_core, count, driver_array,
+						      params_array, nparam_array,
+						      p_drv_array, p_url_array);
+  free(params_array);
+  free(nparam_array);
+  return err;
 }
 
 static inline int
@@ -198,23 +209,23 @@ nm_core_driver_load_init_with_params(nm_core_t p_core,
 				     puk_component_t driver,
 				     struct nm_driver_query_param *params,
 				     int nparam,
-				     nm_drv_id_t *p_id,
+				     nm_drv_t *pp_drv,
 				     char **p_url)
 {
   struct nm_driver_query_param * params_array[1] = { params };
   int nparam_array[1] = { nparam };
   return nm_core_driver_load_init_some_with_params(p_core, 1, &driver,
 						   params_array, nparam_array,
-						   p_id, p_url);
+						   pp_drv, p_url);
 }
 
 static inline int
 nm_core_driver_load_init(nm_core_t		 p_core,
 			 puk_component_t          driver,
-			 nm_drv_id_t		 *p_id,
+			 nm_drv_t		 *pp_drv,
 			 char			**p_url)
 {
-  return nm_core_driver_load_init_with_params(p_core, driver, NULL, 0, p_id, p_url);
+  return nm_core_driver_load_init_with_params(p_core, driver, NULL, 0, pp_drv, p_url);
 }
 
 
@@ -223,12 +234,12 @@ int nm_core_gate_init(nm_core_t p_core,
 
 int nm_core_gate_accept(nm_core_t  p_core,
 			nm_gate_t  p_gate,
-			nm_drv_id_t  drv_id,
+			nm_drv_t   p_drv,
 			const char *drv_trk_url);
 
 int nm_core_gate_connect(nm_core_t p_core,
 			 nm_gate_t gate,
-			 nm_drv_id_t drv_id,
+			 nm_drv_t  p_drv,
 			 const char *drv_trk_url);
 
 /** Get the user-registered per-gate data */

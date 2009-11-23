@@ -301,7 +301,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   struct nm_driver_query_param *params_array[RAIL_MAX];
   int nparam_array[RAIL_MAX];
   char *r_url[RAIL_MAX];
-  nm_drv_id_t drv_id[RAIL_MAX];
+  nm_drv_t drvs[RAIL_MAX];
 
   for(i=0; i<RAIL_MAX; i++) {
     params[i].key = NM_DRIVER_QUERY_BY_NOTHING;
@@ -385,7 +385,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
     printf("\n");
   }
 
-  err = nm_core_driver_load_init_some_with_params(status->p_core, status->nr_rails, driver_assemblies, params_array, nparam_array, drv_id, status->l_url);
+  err = nm_core_driver_load_init_some_with_params(status->p_core, status->nr_rails, driver_assemblies, params_array, nparam_array, drvs, status->l_url);
   if (err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core_driver_load_init_some returned err = %d\n", err);
     goto out_err;
@@ -403,7 +403,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   if (status->is_server) {
     /* server  */
     for(j = 0; j < status->nr_rails; j++) {
-      err = nm_core_gate_accept(status->p_core, status->gate, drv_id[j], NULL);
+      err = nm_core_gate_accept(status->p_core, status->gate, drvs[j], NULL);
       if (err != NM_ESUCCESS) {
 	fprintf(stderr, "launcher: nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
 	goto out_err;
@@ -412,7 +412,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   } else {
     /* client */
     for(j = 0; j < status->nr_rails; j++) {
-      err = nm_core_gate_connect(status->p_core, status->gate, drv_id[j], r_url[j]);
+      err = nm_core_gate_connect(status->p_core, status->gate, drvs[j], r_url[j]);
       if (err != NM_ESUCCESS) {
 	fprintf(stderr, "launcher: nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
 	goto out_err;

@@ -127,6 +127,16 @@ $(filter %.pic.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(CFLAGS) $< | \
 		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.o.d, $(MOD_S_DEPENDS)): FFLAGS+=$(MOD_FFLAGS)
+$(filter %.o.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).o.d: %.f90
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(FFLAGS) $< | \
+		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
+$(filter %.pic.d, $(MOD_S_DEPENDS)): FFLAGS+=$(MOD_FFLAGS)
+$(filter %.pic.d, $(MOD_S_DEPENDS)): $(MOD_GEN_DEP)/%$(LIB_EXT).pic.d: %.f90
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CC_DEPFLAGS) $(FFLAGS) $< | \
+		sed -e 's|\(.*\):|$$(MOD_GEN_DEP)/\1.d \1:|' > $@
 $(MOD_I_DEPENDS): CFLAGS+=$(MOD_CFLAGS)
 $(MOD_I_DEPENDS): $(MOD_GEN_DEP)/%$(LIB_EXT).d: %.i
 	$(COMMON_BUILD)
@@ -207,6 +217,23 @@ $(MOD_S_PREPROC): CFLAGS+=$(MOD_CFLAGS) $(MOD_AFLAGS)
 $(MOD_S_PREPROC): $(MOD_GEN_CPP)/%.si: %.S
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(CFLAGS) $< > $@
+
+# Dependances vers *.f90
+#---------------------------------------------------------------------
+$(MOD_F_OBJECTS): FFLAGS+=$(MOD_FFLAGS)
+$(MOD_F_OBJECTS): $(MOD_GEN_OBJ)/%.o: %.f90
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(FFLAGS) -c $< -o $@
+
+$(MOD_F_PICS): FFLAGS+=$(MOD_FFLAGS)
+$(MOD_F_PICS): $(MOD_GEN_OBJ)/%.pic: %.f90
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) $(FFLAGS) -c $< -o $@ -fPIC
+
+$(MOD_F_PREPROC): FFLAGS+=$(MOD_FFLAGS)
+$(MOD_F_PREPROC): $(MOD_GEN_CPP)/%.si: %.f90
+	$(COMMON_BUILD)
+	$(COMMON_MAIN) $(CC) $(CPPFLAGS) -E -DPREPROC $(FFLAGS) $< > $@
 
 
 # Dependances vers *.i
@@ -319,6 +346,7 @@ vpath %.c $(MOD_SRC)
 vpath %.cpp $(MOD_SRC)
 vpath %.c $(MOD_GEN_SRC)
 vpath %.S $(MOD_SRC)
+vpath %.f90 $(MOD_SRC)
 vpath %.o $(MOD_GEN_OBJ)
 vpath %.pic $(MOD_GEN_OBJ)
 vpath %.d $(MOD_GEN_DEP)

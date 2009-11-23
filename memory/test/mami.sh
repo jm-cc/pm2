@@ -37,19 +37,20 @@ if [ "$level" == "$_t" ] ; then
     flavor="test_memory_mami_marcel"
     modules="marcel"
     options="fortran"
+    marcel="--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats fortran\""
 else
     flavor="test_memory_mami_pthread"
     modules=""
     options=""
+    marcel=""
 fi
 
 create_test_flavor() {
 # Creation de la flavor
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"$modules tbx init memory\" \
-	--init=\"topology\" \
+	--init=\"topology\" $marcel \
         --memory=\"enable_mami $options\" \
-	--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats fortran\" \
         --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

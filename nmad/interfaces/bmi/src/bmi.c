@@ -245,11 +245,11 @@ BMI_initialize(const char *method_list,
 	goto failed;
     }
 
-    char url[256];
+    const char*url;
 
     /* lance le driver selectionne*/
     ret = nm_core_driver_load_init(p_core, p_driver_load, 
-				   &p_drv, (char**)&url);
+				   &p_drv, &url);
     
     if (ret != NM_ESUCCESS) {
 	fprintf(stderr,"nm_core_driver_init(some) returned ret = %d\n",ret);

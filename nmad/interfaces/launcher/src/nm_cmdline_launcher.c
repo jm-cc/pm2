@@ -63,7 +63,7 @@ struct nm_cmdline_launcher_status_s
   nm_core_t p_core;
   nm_gate_t gate;
   int is_server;
-  char *l_url[RAIL_MAX];
+  const char *l_url[RAIL_MAX];
   int nr_rails;
 };
 
@@ -80,13 +80,8 @@ static void*nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c)
 static void nm_cmdline_launcher_destroy(void*_status)
 {
   struct nm_cmdline_launcher_status_s*status = _status;
-  int j, err, ret = NM_ESUCCESS;
-
-  for(j = 0; j < status->nr_rails; j++) {
-    free(status->l_url[j]);
-  }
-
-  err = nm_core_exit(status->p_core);
+  int ret = NM_ESUCCESS;
+  int err = nm_core_exit(status->p_core);
   if(err != NM_ESUCCESS) {
     fprintf(stderr, "launcher: nm_core__exit return err = %d\n", err);
     ret = EXIT_FAILURE;
@@ -300,7 +295,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   struct nm_driver_query_param params[RAIL_MAX];
   struct nm_driver_query_param *params_array[RAIL_MAX];
   int nparam_array[RAIL_MAX];
-  char *r_url[RAIL_MAX];
+  const char *r_url[RAIL_MAX];
   nm_drv_t drvs[RAIL_MAX];
 
   for(i=0; i<RAIL_MAX; i++) {

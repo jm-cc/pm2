@@ -174,10 +174,12 @@ struct bnm_method_addr
 
 struct bnm_peer
 {
+        /* todo: useless ? */
         struct bmi_method_addr *nmp_map;        /* his bmi_method_addr * */
         struct bmx_method_addr *nmp_mxmap;      /* his bmx_method_addr */
         //ajout
         //        const char              *nmm_peername;   /* mx://hostname/board/ep_id  */
+        struct BMI_addr        *p_addr;
         const char              *peername;  
         nm_gate_t               p_gate;
         nm_drv_t                p_drv;
@@ -188,6 +190,7 @@ struct bnm_peer
         uint32_t                nmp_tx_id;      /* id assigned to me by peer */
         uint32_t                nmp_rx_id;      /* id I assigned to peer */
 
+        /* todo: useless ? */
         list_t                  nmp_queued_txs; /* waiting on READY */
         list_t                  nmp_queued_rxs; /* waiting on INIT (if in DISCONNECT) */
         list_t                  nmp_pending_rxs; /* in-flight rxs (in case of cancel) */

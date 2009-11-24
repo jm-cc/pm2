@@ -32,10 +32,6 @@
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 
-
-#define TAG_MATCH       1
-
-
 typedef int64_t  bmi_size_t;         /**< Data region size */
 typedef nm_tag_t bmi_msg_tag_t;      /**< User-specified message tag */
 typedef struct bmi_context*  bmi_context_id;     /**< Context identifier */
@@ -58,6 +54,7 @@ struct BMI_addr{
     nm_gate_t p_gate;
     nm_drv_t p_drv;
     char* peername;
+    struct bnm_peer *p_peer;
 };
 
 /* TODO: not using a real type for this yet; need to specify what

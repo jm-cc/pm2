@@ -36,8 +36,6 @@ static puk_hashtable_t str_table = NULL;
  * Visible functions
  */
 
-static int ref_list_compare_key_entry(void* key, struct puk_hash_entry_s* link);
-
 /*
  * ref_list_new()
  *
@@ -81,11 +79,7 @@ ref_list_p ref_list_new(void){
 void 
 ref_list_add(ref_list_p rlp,//TBX list
 	     void* addr){
-#ifdef TAG_MATCH
     struct bnm_peer* peer = (struct bnm_peer*)addr;
-#else
-    BMI_addr_t peer = (struct bmi_addr*)addr;
-#endif
 
     assert (peer->peername);    
     assert (peer->p_gate);
@@ -101,30 +95,14 @@ ref_list_add(ref_list_p rlp,//TBX list
  *
  * returns a pointer to the structure on success, a NULL on failure.
  */
-void*//nm_gate_t  //BMI_addr_t 
+void*
 ref_list_search_addr(ref_list_p rlp,
 		     void* addr){
 
     nm_gate_t p_gate;
-#ifdef TAG_MATCH
     struct bnm_peer* peer = addr;
     p_gate = puk_hashtable_lookup(str_table, peer->peername);
-#else
-    BMI_addr_t peer = (struct BMI_addr*)addr;
-    p_gate = puk_hashtable_lookup(str_table,  peer->peername);    
-#endif
-   /* if (rlp->length){
-	p_tbx_list_element_t list_element ;
-	BMI_addr_t tmp;
-	list_element = rlp->first ;
 
-	while (list_element != NULL){
-	    tmp = list_element->object;
-	    if(!strcmp(tmp->addr, addr->addr))
-		return list_element->object;
-	    list_element = list_element->next;
-	}
-	}*/
     if(!p_gate)return NULL;
     return p_gate;
 }

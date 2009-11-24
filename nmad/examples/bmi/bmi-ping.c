@@ -90,7 +90,8 @@ clear_buffer(char *buffer, int len) {
 int
 main(int  argc,
      char **argv) {
-  char	          *buf        = NULL;
+  char	          *send_buf   = NULL;
+  char	          *recv_buf   = NULL;
   uint64_t         len        = 0;
   struct hosts    *hosts      = NULL;
   int              ret        = -1;
@@ -147,7 +148,6 @@ main(int  argc,
       (hosts->host+i)->hostid = (char *) strdup(tmp+1);
     }
     
-    /*TODO: transferer la gate connect dans addr_lookup*/
     ret = BMI_initialize(NULL, NULL, 0);
 
   }
@@ -157,16 +157,6 @@ main(int  argc,
     exit(1);
   }
   
-
-  buf = TBX_MALLOC(end_len);
-
-  if (buf == NULL) {
-    fprintf(stderr, "TBX_MALLOC error\n");
-    exit(1);
-  }
-
-  fill_buffer(buf, end_len);
-
   if(hosts->host->which == SERVER){
     /*
      *  SERVEUR  just one connexion at time
@@ -183,9 +173,34 @@ main(int  argc,
       fprintf(stderr,"BMI_open_context() ret = %d\n", ret);
       exit(1);
     }
+    struct BMI_unexpected_info request_info;
+    /* wait for a client to connect */
+    do {
+      ret = BMI_testunexpected(1, &outcount, &request_info, 10);
+    } while (ret == 0 && outcount == 0);
+    
+    {
+      if (ret < 0) {
+	fprintf(stderr, "Request recv failure (bad state).\n");
+	perror("BMI_testunexpected");
+	return ret;
+      }
+      if (request_info.error_code != 0) {
+	fprintf(stderr, "Request recv failure (bad state).\n");
+                return ret;
+      }
+    }
+
+    /* retrieve the client address */
+    peer = request_info.addr;
+    BMI_unexpected_free(peer, request_info.buffer);
+
+    send_buf = BMI_memalloc(peer, end_len, BMI_SEND);
+    recv_buf = BMI_memalloc(peer, end_len, BMI_RECV);
 
     /* create a buffer to recv into */
-    clear_buffer(buf, end_len);
+    fill_buffer(send_buf, end_len);
+    clear_buffer(recv_buf, end_len);
     
     printf(" size\t\t|  latency\t|   10^6 B/s\t|   MB/s\t|\n");	    
 
@@ -195,10 +210,8 @@ main(int  argc,
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
-	clear_buffer(buf, len);
-
-	ret = BMI_post_recv(NULL,peer,buf,len,NULL,BMI_PRE_ALLOC,
-			    tag,NULL,context, NULL);
+	ret = BMI_post_recv(NULL, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
+			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 	}
@@ -207,13 +220,11 @@ main(int  argc,
 	} while (ret !=  0);
 	
 #ifdef DEBUG
-	print_buffer(buf, len);
-	sleep(1);
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
 
-	ret = BMI_post_send(NULL,peer,buf,len,BMI_PRE_ALLOC,tag, 
-			    NULL,context,NULL);
+	ret = BMI_post_send(NULL, peer, send_buf, len, BMI_PRE_ALLOC, tag, 
+			    NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
 	}	  
@@ -230,8 +241,8 @@ main(int  argc,
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
 
-	ret = BMI_post_recv(NULL,peer,buf,len,NULL,BMI_PRE_ALLOC,
-			    tag,NULL,context,NULL);
+	ret = BMI_post_recv(NULL, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
+			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 	}
@@ -241,11 +252,10 @@ main(int  argc,
 
 
 #ifdef DEBUG
-	sleep(1);
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
 
-	ret = BMI_post_send(NULL, peer, buf, len,BMI_PRE_ALLOC, 
+	ret = BMI_post_send(NULL, peer, send_buf, len, BMI_PRE_ALLOC, 
 			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
@@ -268,6 +278,9 @@ main(int  argc,
 	     len, lat, bw_million_byte, bw_mbyte);
       fflush(stdout);
     }
+
+    BMI_memfree(peer, send_buf, end_len, BMI_SEND);
+    BMI_memfree(peer, recv_buf, end_len, BMI_RECV);
 
     BMI_close_context(context);
 
@@ -306,21 +319,52 @@ main(int  argc,
     assert(peer);
     assert(peer_addr);
 
-    fill_buffer(buf, end_len);
-     
+    send_buf = BMI_memalloc(peer_addr[0], end_len, BMI_SEND);
+    recv_buf = BMI_memalloc(peer_addr[0], end_len, BMI_RECV);
+
+    /* create a buffer to recv into */
+    fill_buffer(send_buf, end_len);
+    clear_buffer(recv_buf, end_len);
+
+    /* connecting to the server */
+    ret = BMI_post_sendunexpected(NULL, peer_addr[0], send_buf,
+				  8, BMI_PRE_ALLOC, 0, NULL, context[0], NULL);
+    {
+      if (ret < 0) {
+	fprintf(stderr, "BMI_post_sendunexpected failure.\n");
+	return (-1);
+      } else if (ret == 0) {
+	bmi_size_t actual_size=0;
+	bmi_size_t msg_len=8;
+
+	do {
+	  ret = BMI_test(NULL, &outcount, &error_code,
+			 &actual_size, NULL, 10, *context);
+	} while (ret == 0 && outcount == 0);
+	
+	if (ret < 0 || error_code != 0) {
+	  fprintf(stderr, "data send failed.\n");
+	  return (-1);
+	}
+	if (actual_size != msg_len) {
+	  fprintf(stderr, "Expected %d but received %d\n",
+		  msg_len, actual_size);
+	  return (-1);
+	}      
+      }
+    }
+    
     for(len=1; len<end_len; len*=2) {
       int i; 
-
       
       for(loop=0; loop<warmup; loop++) {
 	
 	for(i = 0; i < nb_h; i++){
 
 #ifdef DEBUG
-	sleep(1);
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
-	  ret = BMI_post_send(NULL, peer_addr[i], buf, len, 
+	  ret = BMI_post_send(NULL, peer_addr[i], send_buf, len, 
 			      BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -340,8 +384,7 @@ main(int  argc,
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
-	clear_buffer(buf, len);
-	  ret = BMI_post_recv(NULL, peer_addr[i], buf, len, 
+	  ret = BMI_post_recv(NULL, peer_addr[i], recv_buf, len, 
 			      &len, BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -356,7 +399,7 @@ main(int  argc,
 	  } while (ret !=  0);
 	}
 #ifdef DEBUG
-	print_buffer(buf, len);
+	print_buffer(recv_buf, len);
 #endif
       }
      
@@ -368,7 +411,7 @@ main(int  argc,
 	fprintf(stderr, "[%d]\tSend %d\n", len, loop);
 #endif
 
-	  ret = BMI_post_send(NULL, peer_addr[i], buf, len, 
+	  ret = BMI_post_send(NULL, peer_addr[i], send_buf, len, 
 			      BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -390,7 +433,7 @@ main(int  argc,
 	fprintf(stderr, "[%d]\tRecv %d\n", len, loop);
 #endif
 
-	  ret = BMI_post_recv(NULL, peer_addr[i], buf, len, 
+	  ret = BMI_post_recv(NULL, peer_addr[i], recv_buf, len, 
 			      &len, BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -406,10 +449,15 @@ main(int  argc,
 	}
       }
     }
+
+    BMI_memfree(peer_addr[0], send_buf, end_len, BMI_SEND);
+    BMI_memfree(peer_addr[0], recv_buf, end_len, BMI_RECV);
+
+    for(i = 0; i < nb_h; i++)
+      BMI_close_context(context[i]);
   }
 
 
-  TBX_FREE(buf);
   BMI_finalize();
   exit(0);
 }

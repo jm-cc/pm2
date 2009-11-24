@@ -71,13 +71,6 @@ static const int usage_iters_active = 10000;
 static int server = 0;
 static nm_core_t p_core;
 
-#ifndef TAG_MATCH
-static BMI_addr_t tmp_peer;
-#else
-//static struct bnm_ctx*  ctx  = NULL;
-static struct bnm_peer* tmp_peer = NULL;
-#endif/*TAG_MATCH*/
-
 static nm_drv_t p_drv;
 
 static puk_component_t  p_driver_load;
@@ -97,7 +90,6 @@ BMI_addr_t __BMI_get_ref(BMI_addr_t peer){
 }
 
 
-#ifdef TAG_MATCH
 static void
 bnm_create_match( struct bnm_ctx* ctx){
     int      connect = 0;
@@ -114,7 +106,6 @@ bnm_create_match( struct bnm_ctx* ctx){
 	(ctx->nmc_type == BNM_REQ_RX && connect == 1)) {
 	
 	id = (uint64_t) ctx->nmc_peer->nmp_tx_id;
-	
     } else if ((ctx->nmc_type == BNM_REQ_TX && connect == 1) ||
 	       (ctx->nmc_type == BNM_REQ_RX && connect == 0)) {
 	id = (uint64_t) ctx->nmc_peer->nmp_rx_id;
@@ -123,12 +114,83 @@ bnm_create_match( struct bnm_ctx* ctx){
 #ifdef DEBUG
     fprintf(stderr, " (%"PRIx64" << %d) | (%"PRIx64" << %d) | %"PRIx64"\n",type, BNM_MSG_SHIFT,id, BNM_ID_SHIFT, tag);
     fprintf(stderr,"Tag match: %"PRIx64"\n",  (type << BNM_MSG_SHIFT) | (id << BNM_ID_SHIFT) | tag);
-#endif
+#endif	/* DEBUG */
     ctx->nmc_match = (type << BNM_MSG_SHIFT) | (id << BNM_ID_SHIFT) | tag;
     
     return;
 }
-#endif
+
+static inline void 
+__bmi_peer_init(struct bnm_peer *p_peer)
+{
+    memset(p_peer, 0, sizeof(struct bnm_peer));
+}
+
+static int max_tx_id = 1;
+
+static int __bmi_connect_accept(struct BMI_addr* addr)
+{
+    
+    addr->p_peer=malloc(sizeof(struct bnm_peer));
+
+    __bmi_peer_init(addr->p_peer);
+    addr->p_peer->p_gate = addr->p_gate;
+    addr->p_peer->p_drv = p_drv;
+    addr->p_peer->nmp_state = BNM_PEER_READY;
+    addr->p_peer->nmp_rx_id = max_tx_id++;
+    addr->p_peer->peername = addr->peername;
+#ifdef MARCEL
+    marcel_mutex_init (addr->p_peer->mutex, NULL);
+#endif	/* MARCEL */
+    
+    /* now that the peers are connected, we have to exchange :
+     * - the local hostname
+     * - the tx_id 
+     */
+    nm_sr_request_t rrequest1, rrequest2, srequest1, srequest2;
+    struct bnm_ctx rx;
+    rx.nmc_state    = BNM_CTX_PREP;
+    rx.nmc_tag      = 42;
+    rx.nmc_msg_type = BNM_MSG_ICON_ACK;
+    rx.nmc_peer     = addr->p_peer;
+
+    bnm_create_match(&rx);
+
+    char* local_hostname=malloc(sizeof(char)*256);
+    gethostname(local_hostname, 256);
+
+  
+    nm_sr_isend(p_core, addr->p_gate, rx.nmc_match, 
+		&addr->p_peer->nmp_rx_id, sizeof(addr->p_peer->nmp_rx_id), &srequest1);
+
+
+    /* retrieve remote tx_id */
+    nm_sr_irecv(p_core, addr->p_gate, rx.nmc_match, 
+		&addr->p_peer->nmp_tx_id, sizeof(addr->p_peer->nmp_tx_id), &rrequest1);
+
+    addr->peername=malloc(sizeof(char)*256);
+
+    nm_sr_swait(p_core, &srequest1);
+    nm_sr_rwait(p_core, &rrequest1);
+
+    nm_sr_isend(p_core, addr->p_gate, rx.nmc_match, 
+		local_hostname, strlen(local_hostname), &srequest2);
+
+    /* retrieve remote hostname */
+    nm_sr_irecv(p_core, addr->p_gate, rx.nmc_match, 
+		addr->peername, sizeof(char)*256, &rrequest2);
+    
+    nm_sr_swait(p_core, &srequest2);
+    nm_sr_rwait(p_core, &rrequest2);
+
+    addr->p_peer->peername=malloc(sizeof(char)*256);
+
+    strcpy((char*)addr->p_peer->peername, addr->peername);
+
+    ref_list_add(cur_ref_list, addr->p_peer);    
+
+    return 0;
+}
 
 /** Initializes the BMI layer.  Must be called before any other BMI
  *  functions.
@@ -182,14 +244,9 @@ BMI_initialize(const char *method_list,
 
     char url[256];
 
-#ifndef TAG_MATCH
-    tmp_peer = TBX_MALLOC(sizeof (struct BMI_addr));
-#else
-    tmp_peer = TBX_MALLOC(sizeof(struct bnm_peer));
-#endif
     /* lance le driver selectionne*/
     ret = nm_core_driver_load_init(p_core, p_driver_load, 
-				   &tmp_peer->p_drv, &url);
+				   &p_drv, (char**)&url);
     
     if (ret != NM_ESUCCESS) {
 	fprintf(stderr,"nm_core_driver_init(some) returned ret = %d\n",ret);
@@ -209,36 +266,6 @@ BMI_initialize(const char *method_list,
     /* If we are a server, open an endpoint now.*/    
     if (flags & BMI_INIT_SERVER) {/*SERVER*/
 	server = 1;
-	/* initialise la gate */
-
-	ret = nm_core_gate_init(p_core, &tmp_peer->p_gate);
-
-	if (ret != NM_ESUCCESS) {
-	    fprintf(stderr,"nm_core_gate_init returned ret = %d\n",ret);
-	    goto failed;
-	}
-
-#ifdef MULTICLIENT
-
-	ref_list_add(cur_ref_list, tmp_peer);
-
-#endif /*MULTICLIENT*/
-	fprintf(stdout, "je suis serveur\n");
-
-	/* wait for client */
-	ret = nm_core_gate_accept(p_core, tmp_peer->p_gate, 
-				  tmp_peer->p_drv, NULL);	    
-
-	if (ret != NM_ESUCCESS) {
-	    fprintf(stderr,"nm_core_gate_accept returned ret = %d\n",ret); 
-	    goto failed;
-	}
-
-#ifdef DEBUG
-	fprintf(stderr , "\t\t (gate %p)(server)\n", tmp_peer->p_gate);
-#endif
-
-
     } 
     return 0;
 
@@ -273,12 +300,8 @@ BMI_finalize(void){
 #endif
 
     /* destroy list */
-
     ref_list_cleanup(cur_ref_list);
  
-    TBX_FREE(tmp_peer);
-
-    //why have we problems when that line is removed
     nm_core_exit(p_core);
 
     common_exit(NULL);
@@ -320,14 +343,47 @@ BMI_open_context(bmi_context_id* context_id){
 
     *context_id = TBX_MALLOC(sizeof(struct bmi_context));
     
-    //TODO fix that
-    //context_id->context_id = context_index;
-
 #ifdef MARCEL
     marcel_mutex_unlock(&context_mutex);
 #endif
 
     return ret;
+}
+
+/** Allocates memory that can be used in native mode by the BMI layer.
+ *
+ *  \return Pointer to buffer on success, NULL on failure.
+ */
+void*
+BMI_memalloc(BMI_addr_t addr,
+	     bmi_size_t size,
+	     enum bmi_op_type send_recv){
+
+    return malloc(size);
+}
+
+/** Frees memory that was allocated with BMI_memalloc().
+ *
+ *  \return 0 on success, -errno on failure.
+ */
+int 
+BMI_memfree(BMI_addr_t addr,
+	    void *buffer,
+	    bmi_size_t size,
+	    enum bmi_op_type send_recv){
+    free(buffer);
+    return 0;
+}
+
+/** Acknowledge that an unexpected message has been
+ * serviced that was returned from BMI_test_unexpected().
+ *
+ *  \return 0 on success, -errno on failure.
+ */
+int 
+BMI_unexpected_free(BMI_addr_t addr,
+		    void *buffer){
+    return 0;
 }
 
 
@@ -352,7 +408,7 @@ BMI_close_context(bmi_context_id context_id){
 #ifdef MARCEL
     marcel_mutex_unlock(&context_mutex);
 #endif
-#endif
+#endif	/* 0 */
     TBX_FREE(context_id);
     return;
 }
@@ -367,11 +423,7 @@ BMI_addr_lookup(BMI_addr_t *peer,
 		const char *id_string){
     int ret = 0;
 
-#ifndef TAG_MATCH
-    BMI_addr_t       new_peer= NULL;
-#else
     struct bnm_peer* new_peer= NULL;
-#endif
 
     fprintf(stdout, "je suis client\n");
 
@@ -383,26 +435,19 @@ BMI_addr_lookup(BMI_addr_t *peer,
     if (!new_peer){
 
 	/* create a new reference for the addr */
-#ifndef TAG_MATCH
-	new_peer= TBX_MALLOC(sizeof( struct BMI_addr));
-#else
 	new_peer= TBX_MALLOC(sizeof( struct bnm_peer));
-#endif/*TAG_MATCH*/
 
 	if (!new_peer)  {
 	    goto bmi_addr_lookup_failure;
 	}
 	
-	/*SALE*/
-	//new_peer->drv_id = tmp_peer->drv_id;
-	/*moins SALE*/
 	new_peer->p_drv = p_drv;
 	new_peer->peername = (char *)TBX_MALLOC(strlen(id_string) + 1);
 
 	if (!new_peer->peername)
 	    goto bmi_addr_lookup_failure;
 
-	strcpy(new_peer->peername, id_string);
+	strcpy((char*)new_peer->peername, id_string);
 
 	ret = nm_core_gate_init(p_core, &new_peer->p_gate);
 
@@ -414,10 +459,6 @@ BMI_addr_lookup(BMI_addr_t *peer,
 	assert(p_core);
 	assert(new_peer->p_gate);
 	assert(new_peer->peername);
-
-	/* on se connecte a un serveur */
-	ret = nm_core_gate_connect(p_core, new_peer->p_gate, 
-				   new_peer->p_drv,  new_peer->peername);
 
 #ifdef DEBUG	
 	fprintf(stderr, "gate %p\n", new_peer->p_gate);
@@ -454,7 +495,7 @@ BMI_addr_lookup(BMI_addr_t *peer,
 #endif
     assert(*peer);
     
-    TBX_FREE(new_peer->peername);
+    TBX_FREE((char*)new_peer->peername);
     TBX_FREE(new_peer);
 
     return ret;
@@ -462,7 +503,7 @@ BMI_addr_lookup(BMI_addr_t *peer,
   bmi_addr_lookup_failure:
 
     if (new_peer){
-	TBX_FREE(new_peer->peername);
+	TBX_FREE((char*)new_peer->peername);
 	TBX_FREE(new_peer);
     }
     return (ret);
@@ -488,61 +529,98 @@ BMI_post_recv(bmi_op_id_t         *id,         //not used
     
     int ret = -1;
 
-#ifdef TAG_MATCH
     struct bnm_ctx          rx;
-    struct bnm_peer         peer;
-#endif
     
     context_id->status = RECV;
 
-#ifdef TAG_MATCH
-    //peer = TBX_MALLOC(sizeof(struct bnm_peer));
-    
-    if(server)
-	peer.p_gate = tmp_peer->p_gate;
-    else
-	peer.p_gate = src->p_gate;
+    if(src->p_gate->status == NM_GATE_STATUS_INIT) {
+	fprintf(stderr, "gate %p not connected\n", src->p_gate);
+	ret = nm_core_gate_accept(p_core, src->p_gate, src->p_drv, NULL);
+	fprintf(stderr, "woot ! connexion succeeds !\n");
+    }
 
-    //rx = TBX_MALLOC(sizeof(struct bnm_ctx));
     rx.nmc_state    = BNM_CTX_PREP;
     rx.nmc_tag      = tag;
     rx.nmc_msg_type = BNM_MSG_EXPECTED;
-    rx.nmc_peer     = &peer;
+    rx.nmc_type     = BNM_REQ_RX;
+    rx.nmc_peer     = src->p_peer;
 
     bnm_create_match(&rx);
 
+    /* todo : merge these two irecv */
     if ( server ){
-	ret = nm_sr_irecv(p_core, tmp_peer->p_gate, rx.nmc_match, 
+	ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
 			  buffer, expected_size, 
 			  &context_id->request);
     }else{
 	ret = nm_sr_irecv(p_core, rx.nmc_peer->p_gate, 
 			  rx.nmc_match, buffer, 
 			  expected_size, &context_id->request);
-
-#else/*TAG_MATCH*/
-
-    if ( server ){
-	ret = nm_sr_irecv(p_core, tmp_peer->p_gate, tag, 
-			  buffer, expected_size, 
-			  &context_id->request);
-    }else{
-	ret = nm_sr_irecv(p_core, src->p_gate, tag, 
-			  buffer, expected_size, 
-			  &context_id->request);
-#endif
     }
        
 #ifdef DEBUG
     fprintf(stderr , "\t\tRECV request  %p\n",&context_id->request );
 #endif
-#ifdef TAG_MATCH
-    //TBX_FREE(peer);
-    //TBX_FREE(rx); 
-#endif
+
     return ret;
 }
 
+
+static int 
+BMI_post_send_generic(bmi_op_id_t * id,                //not used
+		      BMI_addr_t dest,                 //must be used
+		      const void *buffer,
+		      bmi_size_t size,
+		      enum bmi_buffer_type buffer_type,//not used
+		      bmi_msg_tag_t tag,
+		      void *user_ptr,                  //not used
+		      bmi_context_id context_id,
+		      bmi_hint hints, 
+		      enum bnm_msg_type msg_type){                 //not used
+    
+    int                      ret    = -1;   
+    struct bnm_ctx          tx;
+    context_id->status = SEND;
+
+    if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
+    
+	fprintf(stderr, "gate %p not connected\n", dest->p_gate);
+	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, dest->peername);
+	fprintf(stderr, "woot ! connexion succeeds !\n");
+
+	__bmi_connect_accept(dest);
+    }
+
+    /* get idle tx, if available, otherwise alloc one */
+    tx.nmc_state    = BNM_CTX_PREP;
+    tx.nmc_type     = BNM_REQ_TX;
+    tx.nmc_msg_type = msg_type;
+    tx.nmc_peer     = dest->p_peer;
+
+
+    if(msg_type == BNM_MSG_UNEXPECTED) {
+	nm_sr_request_t size_req;
+	tx.nmc_tag      = 0;
+	bnm_create_match(&tx);
+
+	nm_sr_isend(p_core, dest->p_gate, 
+		    tx.nmc_match, &size, sizeof(size), 
+		    &size_req);
+	nm_sr_swait(p_core, &size_req);
+
+    }
+
+    tx.nmc_tag      = tag;
+    bnm_create_match(&tx);
+
+    ret = nm_sr_isend(p_core, dest->p_gate, 
+		      tx.nmc_match, buffer, size, 
+		      &context_id->request);
+#ifdef DEBUG
+    fprintf(stderr , "\t\tSEND request  %p\n",&context_id->request );
+#endif
+    return ret;
+}
 
 /** Submits send operations for subsequent service.
  *
@@ -558,69 +636,9 @@ BMI_post_send(bmi_op_id_t * id,                //not used
 	      void *user_ptr,                  //not used
 	      bmi_context_id context_id,
 	      bmi_hint hints){                 //not used
-    int                      ret    = -1;
-   
-#ifdef TAG_MATCH
-    struct bnm_ctx          *tx     = NULL;
-    struct bnm_peer         *peer   = NULL;
-#endif
-    context_id->status = SEND;
 
-#ifdef TAG_MATCH
-    peer = TBX_MALLOC(sizeof(struct bnm_peer));
-    
-    if(server)
-	peer->p_gate = tmp_peer->p_gate;
-    else
-	peer->p_gate = dest->p_gate;
-
-    /* get idle tx, if available, otherwise alloc one */
-    tx               = TBX_MALLOC(sizeof(struct bnm_ctx));
-    tx->nmc_state    = BNM_CTX_PREP;
-    tx->nmc_type     = BNM_REQ_TX;
-    tx->nmc_msg_type = BNM_MSG_EXPECTED;
-    tx->nmc_tag      = tag;
-    tx->nmc_peer     = peer;
-
-    bnm_create_match(tx);
-
-#ifdef DEBUG
-    //fprintf(stderr,"Tag match: %"PRIx64"\n", tx->nmc_match);
-#endif
-    if ( server ){
-	ret = nm_sr_isend(p_core, tmp_peer->p_gate, 
-			  tx->nmc_match, buffer, size, 
-			  &context_id->request);
-    }else{
-	assert(dest);
-	ret = nm_sr_isend(p_core, tx->nmc_peer->p_gate, 
-			  tx->nmc_match, buffer, size, 
-			  &context_id->request);
-#else
-    if ( server ){
-	ret = nm_sr_isend(p_core, tmp_peer->p_gate, 
-			  tag, buffer, size, 
-			  &context_id->request);
-    }else{
-	assert(dest);
-	ret = nm_sr_isend(p_core, dest->p_gate, 
-			  tag, buffer, size, 
-			  &context_id->request);
-#endif
-    }
-
-
-
-#ifdef DEBUG
-    fprintf(stderr , "\t\tSEND request  %p\n",&context_id->request );
-#endif
-#ifdef TAG_MATCH
-    TBX_FREE(peer);
-    TBX_FREE(tx);
-#endif
-    return ret;
+    return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
-#if 0
 /** Submits unexpected send operations for subsequent service.
  *
  *  \return 0 on success, -errno on failure.
@@ -635,19 +653,58 @@ BMI_post_sendunexpected(bmi_op_id_t * id,
 			void *user_ptr,
 			bmi_context_id context_id,
 			bmi_hint hints){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
-
-    *id = 0;
-
-    tmp_ref=__BMI_get_ref(dest);
-
-    ret = tmp_ref->interface->post_sendunexpected(
-        id, tmp_ref->method_addr, buffer, size, buffer_type, tag,
-        user_ptr, context_id, (bmi_hint)hints);
-    return (ret);
+    return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_UNEXPECTED);
 }
-#endif
+
+/** Checks to see if any unexpected messages have completed.
+ *
+ *  \return 0 on success, -errno on failure.
+ */
+/* todo: for now, this function is blocking since it waits for an incoming connecting */
+int BMI_testunexpected(int incount,
+		       int *outcount,
+		       struct BMI_unexpected_info *info_array,
+		       int max_idle_time_ms)
+{
+    
+    /* todo: run this asynchronously ! (progression thread ?) */
+    info_array->addr = malloc(sizeof(struct BMI_addr));
+    nm_core_gate_init(p_core, &info_array->addr->p_gate);    
+
+    int err = nm_core_gate_accept(p_core, info_array->addr->p_gate, p_drv, NULL);
+    if(err != NM_ESUCCESS)
+	*(int*)0=0;
+    fprintf(stderr, "test unexp : connexion succeeds\n");
+    __bmi_connect_accept(info_array->addr);
+
+    nm_sr_request_t request;
+    
+    struct bnm_ctx rx;
+    rx.nmc_state    = BNM_CTX_PREP;
+    rx.nmc_tag      = 0;
+    rx.nmc_type     = BNM_REQ_RX;
+    rx.nmc_msg_type = BNM_MSG_UNEXPECTED;
+    rx.nmc_peer     = info_array->addr->p_peer;
+
+    bnm_create_match(&rx);
+
+    /* retrieve remote tx_id */
+    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+		&info_array->size, sizeof(info_array->size), &request);
+    nm_sr_rwait(p_core, &request);
+
+    /* todo: solve the tag problem here : for now, the tag must be 0 */
+
+
+    info_array->buffer = malloc(info_array->size);
+    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+		info_array->buffer, info_array->size, &request);
+    nm_sr_rwait(p_core, &request);
+ 
+    info_array->error_code=0;
+    return 1;
+}
+
 
 /** Checks to see if a particular message has completed.
  *
@@ -663,14 +720,16 @@ BMI_test(bmi_op_id_t id,                //unused
 	 bmi_context_id context_id){
     int ret = -1;
 
-#ifdef DEBUG
-    //fprintf(stderr,"BMI_test &context_id->request: %p\n",&context_id->request);
-#endif
-
     if(context_id->status == SEND )
 	ret = nm_sr_stest(p_core, &context_id->request);
     else //RECV
 	ret = nm_sr_rtest(p_core, &context_id->request);
+
+    if(ret == NM_ESUCCESS && outcount)
+	*outcount = context_id->request.req.pack.len;
+    if(ret == NM_ESUCCESS && actual_size)
+	*actual_size = context_id->request.req.pack.len;
+	
     return (ret);
 }
 
@@ -1076,124 +1135,7 @@ BMI_addr_rev_lookup_unexpected(BMI_addr_t addr){
 }
 #endif
 
-/** Allocates memory that can be used in native mode by the BMI layer.
- *
- *  \return Pointer to buffer on success, NULL on failure.
- */
-void*
-BMI_memalloc(BMI_addr_t addr,
-	     bmi_size_t size,
-	     enum bmi_op_type send_recv){
-
-    void *new_buffer = NULL;
-#if 0 
-//plusieurs connections
-    ref_st_p tmp_ref = NULL;
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-
-
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-
-    if (!tmp_ref)
-    {
-
-
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-
-
-	return (NULL);
-    }
-
-
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-#endif
-    /* allocate the buffer using the method's mechanism */
-    //new_buffer = tmp_ref->interface->memalloc(size, send_recv);
-
-    new_buffer = TBX_MALLOC(size);
-
-    return (new_buffer);
-}
-
-/** Frees memory that was allocated with BMI_memalloc().
- *
- *  \return 0 on success, -errno on failure.
- */
 #if 0
-int 
-BMI_memfree(BMI_addr_t addr,
-	    void *buffer,
-	    bmi_size_t size,
-	    enum bmi_op_type send_recv){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return 1;
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-
-    /* free the memory */
-    ret = tmp_ref->interface->memfree(buffer, size, send_recv);
-
-    return (ret);
-}
-#endif
-#if 0
-/** Acknowledge that an unexpected message has been
- * serviced that was returned from BMI_test_unexpected().
- *
- *  \return 0 on success, -errno on failure.
- */
-int 
-BMI_unexpected_free(BMI_addr_t addr,
-		    void *buffer){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return 1;
-
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-
-    if (!tmp_ref->interface->unexpected_free){
-        //gossip_err("unimplemented unexpected_free callback\n");
-    }
-    /* free the memory */
-    ret = tmp_ref->interface->unexpected_free(buffer);
-    return (ret);
-}
 #endif
 /** Pass in optional parameters.
  *

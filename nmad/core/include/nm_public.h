@@ -136,7 +136,7 @@ int nm_core_driver_load(nm_core_t         p_core,
 
 int nm_core_driver_init(nm_core_t p_core,
 			nm_drv_t p_drv,
-			char	**p_url);
+			const char**p_url);
 
 struct nm_driver_query_param
 {
@@ -162,7 +162,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 					      struct nm_driver_query_param **params_array,
 					      int *nparam_array,
 					      nm_drv_t *p_array,
-					      char **p_url_array);
+					      const char **p_url_array);
 
 /** Simple helpers to prevent basic applications from having to
  * do load and init when they don't tweak anything in between.
@@ -172,7 +172,7 @@ nm_core_driver_load_init_some(nm_core_t p_core,
 			      int count,
 			      puk_component_t*driver_array,
 			      nm_drv_t *p_drv_array,
-			      char **p_url_array)
+			      const char **p_url_array)
 {
   struct nm_driver_query_param**params_array = malloc(count * sizeof(struct nm_driver_query_param*));
   int*nparam_array = malloc(count * sizeof(int));
@@ -196,7 +196,7 @@ nm_core_driver_load_init_with_params(nm_core_t p_core,
 				     struct nm_driver_query_param *params,
 				     int nparam,
 				     nm_drv_t *pp_drv,
-				     char **p_url)
+				     const char **p_url)
 {
   struct nm_driver_query_param * params_array[1] = { params };
   int nparam_array[1] = { nparam };
@@ -209,7 +209,7 @@ static inline int
 nm_core_driver_load_init(nm_core_t		 p_core,
 			 puk_component_t          driver,
 			 nm_drv_t		 *pp_drv,
-			 char			**p_url)
+			 const char		**p_url)
 {
   return nm_core_driver_load_init_with_params(p_core, driver, NULL, 0, pp_drv, p_url);
 }
@@ -221,12 +221,12 @@ int nm_core_gate_init(nm_core_t p_core,
 int nm_core_gate_accept(nm_core_t  p_core,
 			nm_gate_t  p_gate,
 			nm_drv_t   p_drv,
-			const char *drv_trk_url);
+			const char *url);
 
 int nm_core_gate_connect(nm_core_t p_core,
 			 nm_gate_t gate,
 			 nm_drv_t  p_drv,
-			 const char *drv_trk_url);
+			 const char *url);
 
 /** Get the user-registered per-gate data */
 void*nm_gate_ref_get(struct nm_gate*p_gate);

@@ -31,9 +31,9 @@ int
 main(int	  argc,
      char	**argv) {
         struct nm_core		*p_core		= NULL;
-        char			*r_url1		= NULL;
-        char			*r_url2		= NULL;
-        char			*l_url		= NULL;
+        const char			*r_url1		= NULL;
+        const char			*r_url2		= NULL;
+        const char			*l_url		= NULL;
         nm_drv_t		 p_drv		= NULL;
         nm_gate_t                gate1   	=    0;
         nm_gate_t   		 gate2   	=    0;

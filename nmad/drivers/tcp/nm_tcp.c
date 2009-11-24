@@ -169,7 +169,6 @@ static const struct nm_drv_iface_s nm_tcp_driver =
     .poll_recv_any_iov  = NULL,
 
     .get_driver_url     = &nm_tcp_get_driver_url,
-    .get_track_url      = NULL,
     .get_capabilities   = &nm_tcp_get_capabilities,
 
 #ifdef PIOM_BLOCKING_CALLS

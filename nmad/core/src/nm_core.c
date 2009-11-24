@@ -246,7 +246,7 @@ int nm_core_driver_query(nm_core_t p_core,
  * p_url - contains the URL of the driver (memory for the URL is allocated by
  * nm_core)
  */
-int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, char **p_url)
+int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
 {
   int err;
 
@@ -301,17 +301,8 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, char **p_url)
       FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv->id, trk_id, p_drv->nb_tracks);
     }
 
-  /* encode URL */
-  const char*drv_url = p_drv->driver->get_driver_url ? p_drv->driver->get_driver_url(p_drv) : NULL;
-  p_tbx_string_t url = tbx_string_init_to_cstring(drv_url?:"-");
-  for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
-    {
-      const char*trk_url = p_drv->driver->get_track_url ? p_drv->driver->get_track_url(p_drv, trk_id) : NULL;
-      tbx_string_append_char(url, '#');
-      tbx_string_append_cstring(url, trk_url?:"-");
-    }
-  *p_url = tbx_string_to_cstring(url);
-  tbx_string_free(url);
+  const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
+  *p_url = drv_url;
   FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
@@ -338,7 +329,7 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 					      struct nm_driver_query_param **params_array,
 					      int *nparam_array,
 					      nm_drv_t *p_drv_array,
-					      char **p_url_array)
+					      const char **p_url_array)
 {
 #ifdef PM2_NUIOA
   int preferred_node = PM2_NUIOA_ANY_NODE;
@@ -518,7 +509,6 @@ static int nm_core_driver_exit(struct nm_core *p_core)
 		    .p_drv			= p_drv,
 		    .trk_id			= trk_id,
 		    .remote_drv_url		= NULL,
-		    .remote_trk_url		= NULL
 		  };
 		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
 		  p_gdrv->p_in_rq_array[trk_id] = NULL;
@@ -608,7 +598,7 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
 static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 				       nm_gate_t	 p_gate,
 				       nm_drv_t	         p_drv,
-				       const char	*drv_trk_url,
+				       const char	*url,
 				       int		 connect_flag)
 {
   struct nm_cnx_rq rq =
@@ -616,8 +606,7 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
       .p_gate			= p_gate,
       .p_drv			= p_drv,
       .trk_id			= 0,
-      .remote_drv_url		= NULL,
-      .remote_trk_url		= NULL
+      .remote_drv_url		= url
     };
 
   struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
@@ -625,7 +614,6 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
   memset(p_gdrv->active_recv, 0, sizeof(p_gdrv->active_recv));
   memset(p_gdrv->active_send, 0, sizeof(p_gdrv->active_send));
 
-  char	*urls[255];
   nm_trk_id_t trk_id;
   int err;
 
@@ -650,33 +638,11 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
   p_gdrv->p_drv	= rq.p_drv;
   p_gate->p_gate_drv_array[p_drv->id] = p_gdrv;
 
-  /* split drv/trk url */
-  if (drv_trk_url)
-    {
-      rq.remote_drv_url	= tbx_strdup(drv_trk_url);
-      {
-	char *ptr = rq.remote_drv_url;
-	int i;
-	for (i = 0 ; ptr && i < 255; i++) {
-	  ptr = strchr(ptr, '#');
-
-	  if (ptr) {
-	    *ptr	= '\0';
-	    urls[i]	= ++ptr;
-	  }
-	}
-      }
-    } else {
-      rq.remote_drv_url	= NULL;
-      memset(urls, 0, 255*sizeof(NULL));
-    }
-
   /* connect/accept connections */
   for (trk_id = 0; trk_id < rq.p_drv->nb_tracks; trk_id++)
     {
       p_gdrv->p_in_rq_array[trk_id] = NULL;
       rq.trk_id = trk_id;
-      rq.remote_trk_url	= urls[trk_id];
 
       if (connect_flag) {
 	err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, &rq);
@@ -698,10 +664,6 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
   p_gate->status = NM_GATE_STATUS_CONNECTED;
 
  out:
-  if (rq.remote_drv_url)
-    {
-      TBX_FREE(rq.remote_drv_url);
-    }
   return err;
 
 }
@@ -711,9 +673,9 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 int nm_core_gate_accept(nm_core_t	 p_core,
 			nm_gate_t	 p_gate,
 			nm_drv_t	 p_drv,
-			const char	*drv_trk_url)
+			const char	*url)
 {
-  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, drv_trk_url, 0);
+  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, url, 0);
 }
 
 /** Client side of connection establishment.
@@ -721,9 +683,9 @@ int nm_core_gate_accept(nm_core_t	 p_core,
 int nm_core_gate_connect(nm_core_t p_core,
                          nm_gate_t p_gate,
                          nm_drv_t  p_drv,
-                         const char*drv_trk_url)
+                         const char*url)
 {
-  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, drv_trk_url, !0);
+  return nm_core_gate_connect_accept(p_core, p_gate, p_drv, url, !0);
 }
 
 /** Get the user-registered per-gate data */

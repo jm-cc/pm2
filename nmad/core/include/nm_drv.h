@@ -108,10 +108,7 @@ struct nm_cnx_rq
   nm_trk_id_t trk_id;
   
   /** Remote driver url.  */
-  char *remote_drv_url;
-  
-  /** Remote track url. */
-  char *remote_trk_url;
+  const char *remote_drv_url;
 };
 
 /** Driver for 'NewMad_Driver' component interface.
@@ -140,7 +137,6 @@ struct nm_drv_iface_s
   int (*poll_recv_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);
 
   const char* (*get_driver_url)(struct nm_drv *p_drv);
-  const char* (*get_track_url)(struct nm_drv *p_drv, nm_trk_id_t trk_id);
 
   struct nm_drv_cap*(*get_capabilities)(struct nm_drv *p_drv);
 

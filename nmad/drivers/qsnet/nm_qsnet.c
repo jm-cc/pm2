@@ -140,7 +140,6 @@ static const struct nm_drv_iface_s nm_qsnet_driver =
     .poll_recv_any_iov  = NULL,
 
     .get_driver_url     = &nm_qsnet_get_driver_url,
-    .get_track_url      = NULL,
     .get_capabilities   = &nm_qsnet_get_capabilities
 
   };

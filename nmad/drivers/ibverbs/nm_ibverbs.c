@@ -131,7 +131,6 @@ static const struct nm_drv_iface_s nm_ibverbs_driver =
     .cancel_recv_iov    = &nm_ibverbs_cancel_recv_iov,
 
     .get_driver_url     = &nm_ibverbs_get_driver_url,
-    .get_track_url      = NULL,
     .get_capabilities   = &nm_ibverbs_get_capabilities
   };
 

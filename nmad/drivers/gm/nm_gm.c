@@ -139,7 +139,6 @@ static const struct nm_drv_iface_s nm_gm_driver =
     .poll_recv_iov      = &nm_gm_poll_recv_iov,
 
     .get_driver_url     = &nm_gm_get_driver_url,
-    .get_track_url      = NULL,
     .get_capabilities   = &nm_gm_get_capabilities
 
   };

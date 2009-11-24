@@ -709,17 +709,34 @@ BMI_test(bmi_op_id_t id,                //unused
 	 int max_idle_time_ms,          //unused with the present implementation
 	 bmi_context_id context_id){
     int ret = -1;
+    if(outcount)
+	*outcount=0;
 
-    if(context_id->status == SEND )
+    if(actual_size)
+	*actual_size=0;
+
+    if(context_id->status == SEND ) {
 	ret = nm_sr_stest(p_core, &context_id->request);
-    else //RECV
+	if(ret == -NM_ESUCCESS && outcount)
+	    *outcount = context_id->request.req.pack.len;
+	if(ret == -NM_ESUCCESS && actual_size)
+	    *actual_size = context_id->request.req.pack.len;
+    } else { //RECV
 	ret = nm_sr_rtest(p_core, &context_id->request);
+	if(ret == -NM_ESUCCESS && outcount) {
+	    *outcount = context_id->request.req.unpack.cumulated_len;
+	    fprintf(stderr, "success !\n");
+	}
+	if(ret == -NM_ESUCCESS && actual_size) {
+	    *actual_size = context_id->request.req.unpack.cumulated_len;
+	    fprintf(stderr, "recved %d bytes (expected : %d)\n", 
+		    context_id->request.req.unpack.cumulated_len, 
+		    context_id->request.req.unpack.expected_len);
+	}
+    }
 
-    if(ret == NM_ESUCCESS && outcount)
-	*outcount = context_id->request.req.pack.len;
-    if(ret == NM_ESUCCESS && actual_size)
-	*actual_size = context_id->request.req.pack.len;
-	
+    if(ret == -NM_EAGAIN)
+	ret = 0;
     return (ret);
 }
 
@@ -743,14 +760,14 @@ BMI_get_info(BMI_addr_t addr,
     case BMI_CHECK_INIT:
 	return bmi_initialized_count;
     case BMI_CHECK_MAXSIZE:
-	return (1U << 31) - 1;
+	*((int *) inout_parameter) = (1U << 31) - 1;
 	break;
     case BMI_GET_METH_ADDR:
 	/* todo: return p_core ? */
-	return NULL;
+	*((void **) inout_parameter) = NULL;
 	break;
     case BMI_GET_UNEXP_SIZE:
-	return NM_SO_MAX_UNEXPECTED;
+	*((int *) inout_parameter) = NM_SO_MAX_UNEXPECTED;
         break;
     default:
 	return 1;

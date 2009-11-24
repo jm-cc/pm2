@@ -107,7 +107,6 @@ bnm_create_match( struct bnm_ctx* ctx){
     
     if ((ctx->nmc_type == BNM_REQ_TX && connect == 0) ||
 	(ctx->nmc_type == BNM_REQ_RX && connect == 1)) {
-	
 	id = (uint64_t) ctx->nmc_peer->nmp_tx_id;
     } else if ((ctx->nmc_type == BNM_REQ_TX && connect == 1) ||
 	       (ctx->nmc_type == BNM_REQ_RX && connect == 0)) {
@@ -154,6 +153,7 @@ static int __bmi_connect_accept(struct BMI_addr* addr)
     struct bnm_ctx rx;
     rx.nmc_state    = BNM_CTX_PREP;
     rx.nmc_tag      = 42;
+    rx.nmc_type     = BNM_REQ_TX;
     rx.nmc_msg_type = BNM_MSG_ICON_ACK;
     rx.nmc_peer     = addr->p_peer;
 
@@ -757,11 +757,6 @@ int
 BMI_get_info(BMI_addr_t addr,
 	     int option,
 	     void *inout_parameter){
-    int i = 0;
-    int maxsize = 0;
-    int tmp_maxsize;
-    int ret = 0;
-    ref_st_p tmp_ref = NULL;
 
     switch (option)
     {

@@ -211,7 +211,7 @@ void nm_sched_in(struct nm_core *p_core)
 		      {		    
 			tbx_fast_list_del(&p_pw->link);
 			nm_so_unlock_in(p_core, p_drv);
-			const int err = nm_post_recv(p_pw);
+			nm_post_recv(p_pw);
 			nm_so_lock_in(p_core, p_drv);
 		      }
 		    else

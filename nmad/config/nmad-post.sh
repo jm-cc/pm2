@@ -1,5 +1,5 @@
 # add default interfaces
-PM2_NMAD_INTERFACES="sendrecv launcher pack bmi $PM2_NMAD_INTERFACES"
+PM2_NMAD_INTERFACES="session sendrecv launcher pack bmi $PM2_NMAD_INTERFACES"
 
 # add default strategies
 PM2_NMAD_STRATEGIES="default aggreg aggreg_extended aggreg_autoextended split_balance split_all $PM2_NMAD_STRATEGIES"

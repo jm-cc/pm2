@@ -48,6 +48,12 @@ extern
 void marcel_bubble_submit_(void);
 
 extern
+void marcel_bubble_sched_begin_(void);
+
+extern
+void marcel_bubble_shake_(void);
+
+extern
 void marcel_spread_(void);
 
 #endif /* MA__BUBBLES */

@@ -77,6 +77,14 @@ void marcel_bubble_submit_(void) {
   marcel_bubble_submit(&marcel_root_bubble);
 }
 
+void marcel_bubble_sched_begin_ () {
+  marcel_bubble_sched_begin ();
+}
+
+void marcel_bubble_shake_ () {
+  marcel_bubble_shake ();
+}
+
 #endif /* MA__BUBBLES */
 
 #endif

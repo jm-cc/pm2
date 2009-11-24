@@ -40,6 +40,9 @@
 
 #define SERVER 0
 
+#define NM_BMI_REQUEST_PREALLOC 128
+
+static p_tbx_memory_t nm_bmi_mem;
 static int bmi_initialized_count = 0;
 
 /*
@@ -263,6 +266,8 @@ BMI_initialize(const char *method_list,
     	return -1;
     }
 
+    /* initialize the request allocator */
+    tbx_malloc_extended_init(&nm_bmi_mem, sizeof(struct bmi_op_id), NM_BMI_REQUEST_PREALLOC, "nmad/bmi/request", 1);
     /* If we are a server, open an endpoint now.*/    
     if (flags & BMI_INIT_SERVER) {/*SERVER*/
 	server = 1;
@@ -528,8 +533,7 @@ BMI_post_recv(bmi_op_id_t         *id,
     struct bnm_ctx rx;
 
     /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
-    /* todo: use a tbx_malloc(mem) instead */
-    *id = TBX_MALLOC(sizeof(struct bmi_op_id));
+    *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
     (*id)->status = RECV;
     
@@ -575,8 +579,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     struct bnm_ctx          tx;
 
     /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
-    /* todo: use a TBX_MALLOC instead */
-    *id = TBX_MALLOC(sizeof(struct bmi_op_id));
+    *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
     (*id)->status = SEND;
 

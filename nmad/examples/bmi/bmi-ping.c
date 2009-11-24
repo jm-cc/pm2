@@ -193,27 +193,27 @@ main(int  argc,
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
-	ret = BMI_post_recv(NULL, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
+	ret = BMI_post_recv(&op_id, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
 			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 	}
 	do {
-	  ret = BMI_test(NULL,NULL,NULL,NULL,NULL,0, context);
-	} while (ret !=  0);
+	  ret = BMI_test(op_id,&outcount,NULL,NULL,NULL,0, context);
+	} while (ret ==  0 && outcount == 0);
 	
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
 
-	ret = BMI_post_send(NULL, peer, send_buf, len, BMI_PRE_ALLOC, tag, 
+	ret = BMI_post_send(&op_id, peer, send_buf, len, BMI_PRE_ALLOC, tag, 
 			    NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
 	}	  
 	do {                  
-	  ret = BMI_test(NULL,NULL,NULL,NULL,NULL,0,context);
-	} while (ret != 0);    	
+	  ret = BMI_test(op_id, &outcount, NULL, NULL, NULL, 0, context);
+	} while (ret == 0 && outcount == 0);    	
       }
 
       TBX_GET_TICK(t1);
@@ -224,28 +224,28 @@ main(int  argc,
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
 
-	ret = BMI_post_recv(NULL, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
+	ret = BMI_post_recv(&op_id, peer, recv_buf, len, NULL, BMI_PRE_ALLOC,
 			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 	}
 	do {
-	  ret = BMI_test(NULL,NULL,NULL,NULL,NULL,0,context);
-	} while (ret !=  0);
+	  ret = BMI_test(op_id, &outcount, NULL, NULL, NULL, 0, context);
+	} while (ret ==  0 && outcount == 0);
 
 
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
 
-	ret = BMI_post_send(NULL, peer, send_buf, len, BMI_PRE_ALLOC, 
+	ret = BMI_post_send(&op_id, peer, send_buf, len, BMI_PRE_ALLOC, 
 			    tag, NULL, context, NULL);
 	if (ret !=  0) {
 	  fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
 	}	  
 	do {                  
-	  ret = BMI_test(NULL, NULL, NULL,NULL, NULL, 0, context);
-	} while (ret != 0);    	
+	  ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 0, context);
+	} while (ret == 0 && outcount == 0);    	
       }
 
       TBX_GET_TICK(t2);
@@ -308,7 +308,7 @@ main(int  argc,
     clear_buffer(recv_buf, end_len);
 
     /* connecting to the server */
-    ret = BMI_post_sendunexpected(NULL, peer_addr[0], send_buf,
+    ret = BMI_post_sendunexpected(&op_id, peer_addr[0], send_buf,
 				  8, BMI_PRE_ALLOC, 0, NULL, context[0], NULL);
     {
       if (ret < 0) {
@@ -319,7 +319,7 @@ main(int  argc,
 	bmi_size_t msg_len=8;
 
 	do {
-	  ret = BMI_test(NULL, &outcount, &error_code,
+	  ret = BMI_test(op_id, &outcount, &error_code,
 			 &actual_size, NULL, 10, *context);
 	} while (ret == 0 && outcount == 0);
 	
@@ -345,7 +345,7 @@ main(int  argc,
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
 #endif
-	  ret = BMI_post_send(NULL, peer_addr[i], send_buf, len, 
+	  ret = BMI_post_send(&op_id, peer_addr[i], send_buf, len, 
 			      BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -356,8 +356,8 @@ main(int  argc,
 
 	for(i = 0; i < nb_h; i++){
 	  do {                  
-	    ret = BMI_test(NULL, NULL,NULL,NULL,NULL,0,context[i]);
-	  } while (ret != 0); 
+	    ret = BMI_test(op_id, &outcount,NULL,NULL,NULL,0,context[i]);
+	  } while (ret == 0 && outcount == 0); 
 	}
 
       	for(i = 0; i < nb_h; i++){
@@ -365,7 +365,7 @@ main(int  argc,
 #ifdef DEBUG
 	fprintf(stderr, "\n[%d]\tRecv %d\n", len, loop);
 #endif
-	  ret = BMI_post_recv(NULL, peer_addr[i], recv_buf, len, 
+	  ret = BMI_post_recv(&op_id, peer_addr[i], recv_buf, len, 
 			      &len, BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -376,8 +376,8 @@ main(int  argc,
 
 	for(i = 0; i < nb_h; i++){
 	  do {
-	    ret = BMI_test(NULL, NULL, NULL,NULL,NULL,0,context[i]);
-	  } while (ret !=  0);
+	    ret = BMI_test(op_id, &outcount, NULL,NULL,NULL,0,context[i]);
+	  } while (ret ==  0 && outcount == 0);
 	}
 #ifdef DEBUG
 	print_buffer(recv_buf, len);
@@ -392,7 +392,7 @@ main(int  argc,
 	fprintf(stderr, "[%d]\tSend %d\n", len, loop);
 #endif
 
-	  ret = BMI_post_send(NULL, peer_addr[i], send_buf, len, 
+	  ret = BMI_post_send(&op_id, peer_addr[i], send_buf, len, 
 			      BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -404,8 +404,8 @@ main(int  argc,
 	for(i = 0; i < nb_h; i++){
 
 	  do {                  
-	    ret = BMI_test(NULL, NULL, NULL,NULL, NULL, 10, context[i]);
-	  } while (ret != 0);
+	    ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 10, context[i]);
+	  } while (ret == 0 && outcount == 0);
 	}
 
       	for(i = 0; i < nb_h; i++){
@@ -414,7 +414,7 @@ main(int  argc,
 	fprintf(stderr, "[%d]\tRecv %d\n", len, loop);
 #endif
 
-	  ret = BMI_post_recv(NULL, peer_addr[i], recv_buf, len, 
+	  ret = BMI_post_recv(&op_id, peer_addr[i], recv_buf, len, 
 			      &len, BMI_PRE_ALLOC, tag, 
 			      NULL, context[i], NULL);
 	  if (ret !=  0) {
@@ -425,8 +425,8 @@ main(int  argc,
 
 	for(i = 0; i < nb_h; i++){
 	  do {
-	    ret = BMI_test(NULL, NULL, NULL,NULL, NULL, 0, context[i]);
-	  } while (ret !=  0);
+	    ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 0, context[i]);
+	  } while (ret ==  0 && outcount == 0);
 	}
       }
     }

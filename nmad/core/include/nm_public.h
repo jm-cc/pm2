@@ -237,12 +237,6 @@ void nm_gate_ref_set(struct nm_gate*p_gate, void*ref);
 
 int nm_schedule(nm_core_t p_core);
 
-#ifndef PIOM_POLLING_DISABLED
-
-int nm_piom_post_all(nm_core_t p_core);
-
-#endif /* PIOM_POLLING_DISABLED */
-
 #ifdef PIOMAN_POLL
 
 int nm_core_disable_progression(struct nm_core*p_core);

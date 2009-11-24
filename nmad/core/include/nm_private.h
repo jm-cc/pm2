@@ -91,6 +91,12 @@ int nm_poll_send(struct nm_pkt_wrap *p_pw);
 
 int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 
+#ifndef PIOM_POLLING_DISABLED
+
+int nm_piom_post_all(nm_core_t p_core);
+
+#endif /* PIOM_POLLING_DISABLED */
+
 /* ** SchedOpt internal functions */
 
 int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,

@@ -425,8 +425,6 @@ BMI_addr_lookup(BMI_addr_t *peer,
 
     struct bnm_peer* new_peer= NULL;
 
-    fprintf(stdout, "je suis client\n");
-
     /* First we want to check to see if this host has already been
      * discovered! */
   
@@ -534,9 +532,7 @@ BMI_post_recv(bmi_op_id_t         *id,         //not used
     context_id->status = RECV;
 
     if(src->p_gate->status == NM_GATE_STATUS_INIT) {
-	fprintf(stderr, "gate %p not connected\n", src->p_gate);
 	ret = nm_core_gate_accept(p_core, src->p_gate, src->p_drv, NULL);
-	fprintf(stderr, "woot ! connexion succeeds !\n");
     }
 
     rx.nmc_state    = BNM_CTX_PREP;
@@ -547,17 +543,10 @@ BMI_post_recv(bmi_op_id_t         *id,         //not used
 
     bnm_create_match(&rx);
 
-    /* todo : merge these two irecv */
-    if ( server ){
-	ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
-			  buffer, expected_size, 
-			  &context_id->request);
-    }else{
-	ret = nm_sr_irecv(p_core, rx.nmc_peer->p_gate, 
-			  rx.nmc_match, buffer, 
-			  expected_size, &context_id->request);
-    }
-       
+    ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
+		      buffer, expected_size, 
+		      &context_id->request);
+    
 #ifdef DEBUG
     fprintf(stderr , "\t\tRECV request  %p\n",&context_id->request );
 #endif
@@ -584,10 +573,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 
     if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
     
-	fprintf(stderr, "gate %p not connected\n", dest->p_gate);
 	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, dest->peername);
-	fprintf(stderr, "woot ! connexion succeeds !\n");
-
 	__bmi_connect_accept(dest);
     }
 
@@ -673,8 +659,7 @@ int BMI_testunexpected(int incount,
 
     int err = nm_core_gate_accept(p_core, info_array->addr->p_gate, p_drv, NULL);
     if(err != NM_ESUCCESS)
-	*(int*)0=0;
-    fprintf(stderr, "test unexp : connexion succeeds\n");
+	return 0;
     __bmi_connect_accept(info_array->addr);
 
     nm_sr_request_t request;

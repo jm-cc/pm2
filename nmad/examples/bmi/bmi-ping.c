@@ -151,7 +151,6 @@ main(int  argc,
     ret = BMI_initialize(NULL, NULL, 0);
 
   }
-  fprintf(stderr,"BMI_initialize() ret = %d\n",ret);
   if (ret < 0) {
     fprintf(stderr,"BMI_initialize() ret = %d\n",ret);
     exit(1);
@@ -313,8 +312,6 @@ main(int  argc,
       /* get a bmi_addr for the server */
       BMI_addr_lookup(&peer, host->hostid);
       peer_addr[i] = peer;
-      fprintf(stderr,"peer %d:  gate %p, host %s\n", 
-	      i, peer_addr[i]->p_gate, peer_addr[i]->peername);
     }
     assert(peer);
     assert(peer_addr);

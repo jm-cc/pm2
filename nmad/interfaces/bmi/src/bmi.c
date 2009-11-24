@@ -140,7 +140,7 @@ static int __bmi_connect_accept(struct BMI_addr* addr)
     addr->p_peer->nmp_rx_id = max_tx_id++;
     addr->p_peer->peername = addr->peername;
 #ifdef MARCEL
-    marcel_mutex_init (addr->p_peer->mutex, NULL);
+    marcel_mutex_init (&addr->p_peer->nmp_lock, NULL);
 #endif	/* MARCEL */
     
     /* now that the peers are connected, we have to exchange :

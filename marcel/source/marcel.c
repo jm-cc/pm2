@@ -126,37 +126,15 @@ int _marcel_raise_exception(marcel_exception_t ex)
 /* When calling external libraries, we have to disable preemption, to make sure
  * that they will not see a kernel thread change, in case they take a kernel
  * thread mutex for instance.
- *
- * When we do not use posix threads to create our kernel threads (i.e. we
- * directly use clone) and do not provide the libpthread interface, external
- * libraries aren't even aware that there is concurrency, so we have to protect
- * them ourselves.
  */
-#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-static marcel_recursivemutex_t ma_extlib_lock = MARCEL_RECURSIVEMUTEX_INITIALIZER;
-#endif
 int marcel_extlib_protect(void)
 {
-#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-	if (ma_in_atomic())
-		while (!marcel_recursivemutex_trylock(&ma_extlib_lock))
-			/* Another LWP is already doing an external call, so we
-			 * have to wait for its completion, but we are in an
-			 * atomic section so can not sleep! Make the LWP sleep
-			 * instead */
-			ma_lwp_relax();
-	else
-		marcel_recursivemutex_lock(&ma_extlib_lock);
-#endif
 	marcel_thread_preemption_disable();
 	return 0;
 }
 
 int marcel_extlib_unprotect(void)
 {
-#if defined(MARCEL_DONT_USE_POSIX_THREADS) && !defined(MA__LIBPTHREAD)
-	marcel_recursivemutex_unlock(&ma_extlib_lock);
-#endif
 	/* Release preemption after releasing the mutex, in case we'd try to
 	 * immediately schedule a thread that calls marcel_extlib_protect(),
 	 * thus requiring two useless context switches. */

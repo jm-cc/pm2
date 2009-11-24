@@ -23,6 +23,17 @@ hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 EOF
 
+PTHREAD_OPTIONS='
+  --modules=marcel --modules=puk
+  --marcel=standard_main
+  --marcel=pmarcel --marcel=pthread
+  --marcel=enable_cleanup --marcel=enable_deviation
+  --marcel=enable_signals --marcel=enable_once
+  --marcel=enable_keys 
+  --puk=enable_pukabi
+  --puk=disable_fd_virtualization
+'
+
 create_test_flavor() {
     # Creation de la flavor
     case "$flavor" in
@@ -60,48 +71,33 @@ create_test_flavor() {
 	    ;;
 	test_marcel_pukabi)
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
-		--all="build_dynamic" --marcel="build_dynamic"	\
-		--modules="\"marcel tbx init puk\""			\
+		--all="build_dynamic" --marcel="build_dynamic"		\
+		--modules="\"marcel tbx init\""				\
 		--init="topology" --marcel="smp"			\
-		--marcel="spinlock" --marcel="standard_main"		\
-		--marcel="pmarcel"					\
-		--marcel="enable_cleanup" --marcel="enable_deviation"	\
-		--marcel="enable_signals"				\
-		--marcel="dont_use_pthread"				\
-		--marcel="bug_on" --puk="enable_pukabi"			\
-		--puk="disable_fd_virtualization"			\
+		--marcel="spinlock" 					\
+		--marcel="bug_on" $PTHREAD_OPTIONS			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi)
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
-		--all="build_dynamic" --marcel="build_dynamic"	\
-		--modules="\"marcel tbx init puk\""			\
+		--all="build_dynamic" --marcel="build_dynamic"		\
+		--modules="\"marcel tbx init\""				\
 		--init="topology" --marcel="smp"			\
-		--marcel="spinlock" --marcel="standard_main"		\
-		--marcel="pmarcel" --marcel="pthread"			\
-		--marcel="enable_cleanup" --marcel="enable_deviation"	\
-		--marcel="enable_keys" --marcel="enable_signals"	\
-		--marcel="enable_once" --marcel="dont_use_pthread"	\
-		--marcel="bug_on" --puk="enable_pukabi"			\
-		--puk="disable_fd_virtualization"			\
+		--marcel="spinlock" 					\
+		--marcel="bug_on" $PTHREAD_OPTIONS			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
 	    ;;
 	test_marcel_pthread_abi_stackalign)
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
-		--all="build_dynamic" --marcel="build_dynamic"	\
-		--modules="\"marcel tbx init puk stackalign\""		\
+		--all="build_dynamic" --marcel="build_dynamic"		\
+		--modules="\"marcel tbx init stackalign\""		\
 		--init="topology" --marcel="smp"			\
 		--marcel="spinlock" --marcel="main_as_func"		\
-		--marcel="pmarcel" --marcel="pthread"			\
-		--marcel="enable_cleanup" --marcel="enable_deviation"	\
-		--marcel="enable_keys" --marcel="enable_signals"	\
-		--marcel="enable_once" --marcel="dont_use_pthread"	\
-		--marcel="bug_on" --puk="enable_pukabi"			\
-		--puk="disable_fd_virtualization"			\
+		--marcel="bug_on" $PTHREAD_OPTIONS			\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		$TESTOPTIONS						\
 		--all="gdb" $_output_redirect
@@ -149,12 +145,11 @@ create_test_flavor() {
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
 		--modules="\"marcel tbx init\"" --marcel="mono"			\
 		--marcel="bug_on" --marcel="spinlock" --marcel="marcel_main"	\
-		--marcel="standard_main" --marcel="dont_use_pthread"		\
+		$PTHREAD_OPTIONS \
 		--marcel="malloc_preempt_debug"					\
-		--marcel="enable_keys"						\
 		--tbx="safe_malloc" --tbx="parano_malloc"			\
 		$TESTOPTIONS						\
-		--all="gdb" --all="build_static" $_output_redirect
+		--all="gdb" --all="build_dynamic" $_output_redirect
 	    ;;
 	test_marcel_smp)
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
@@ -248,8 +243,14 @@ create_test_flavor() {
                 --init="topology" \
 		--marcel=\"numa\" --marcel=\"bubbles\" --marcel=\"standard_main\" \
 		--marcel=\"enable_stats\" \
-		--marcel=\"use_virtual_timer\" --marcel=\"dont_use_pthread\" \
-		--marcel=\"enable_keys\" --marcel=\"pmarcel\" \
+		--marcel=\"use_virtual_timer\" \
+		$PTHREAD_OPTIONS \
+		--marcel=\"enable_keys\" --marcel=\"enable_once\" \
+		--marcel=\"enable_signals\" --marcel=\"enable_deviation\" \
+		--marcel=\"enable_atexit\" --marcel=\"enable_blocking\" \
+		--marcel=\"enable_cleanup\" --marcel=\"enable_exceptions\" \
+		--marcel=\"enable_migration\" --marcel=\"enable_postexit\" \
+		--marcel=\"enable_suspend\" --marcel=\"enable_userspace\" \
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		$TESTOPTIONS						\
 		--all=\"gdb\" --all=\"opt\" \

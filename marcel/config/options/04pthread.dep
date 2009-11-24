@@ -1,6 +1,7 @@
 Depend: marcel_pmarcel
-Depend: marcel_dont_use_pthread
 Depend: marcel_signals
 Depend: marcel_deviation
+Depend: marcel_once
+Depend: marcel_keys
 Depend: pukabi
 Provide: marcel_pthread

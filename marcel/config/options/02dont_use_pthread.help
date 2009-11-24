@@ -1,1 +1,0 @@
-Use the system's low-level functions for creating kernel threads instead of system's libpthread (SMP mode and Linux only).  As a side-effect, this option enables thread-local storage (TLS) support for Marcel threads.

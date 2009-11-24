@@ -422,7 +422,6 @@ int
 BMI_addr_lookup(BMI_addr_t *peer,
 		const char *id_string){
     int ret = 0;
-
     struct bnm_peer* new_peer= NULL;
 
     /* First we want to check to see if this host has already been
@@ -572,12 +571,18 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     context_id->status = SEND;
 
     if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
-    
-	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, dest->peername);
+
+	/* remove nm:// from the peername so that NMad establish the connection */
+	char* tmp = strdup(dest->peername);  
+	if (!tmp) exit(1);
+	tmp = strrchr(tmp, '/');
+	if(!tmp) exit(1);
+	tmp++;
+
+	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, tmp);
 	__bmi_connect_accept(dest);
     }
 
-    /* get idle tx, if available, otherwise alloc one */
     tx.nmc_state    = BNM_CTX_PREP;
     tx.nmc_type     = BNM_REQ_TX;
     tx.nmc_msg_type = msg_type;
@@ -659,7 +664,7 @@ int BMI_testunexpected(int incount,
 
     int err = nm_core_gate_accept(p_core, info_array->addr->p_gate, p_drv, NULL);
     if(err != NM_ESUCCESS)
-	return 0;
+	*(int*)0=0;
     __bmi_connect_accept(info_array->addr);
 
     nm_sr_request_t request;
@@ -716,6 +721,41 @@ BMI_test(bmi_op_id_t id,                //unused
 	*actual_size = context_id->request.req.pack.len;
 	
     return (ret);
+}
+
+/** Query for optional parameters.
+ *
+ *  \return 0 on success, -errno on failure.
+ */
+int 
+BMI_get_info(BMI_addr_t addr,
+	     int option,
+	     void *inout_parameter){
+    int i = 0;
+    int maxsize = 0;
+    int tmp_maxsize;
+    int ret = 0;
+    ref_st_p tmp_ref = NULL;
+
+    switch (option)
+    {
+	/* check to see if the interface is initialized */
+    case BMI_CHECK_INIT:
+	return bmi_initialized_count;
+    case BMI_CHECK_MAXSIZE:
+	return (1U << 31) - 1;
+	break;
+    case BMI_GET_METH_ADDR:
+	/* todo: return p_core ? */
+	return NULL;
+	break;
+    case BMI_GET_UNEXP_SIZE:
+	return NM_SO_MAX_UNEXPECTED;
+        break;
+    default:
+	return 1;
+    }
+    return (0);
 }
 
 
@@ -1204,112 +1244,8 @@ BMI_set_info(BMI_addr_t addr,
     return (ret);
 }
 #endif
-/** Query for optional parameters.
- *
- *  \return 0 on success, -errno on failure.
- */
-#if 0
-int 
-BMI_get_info(BMI_addr_t addr,
-	     int option,
-	     void *inout_parameter){
-    int i = 0;
-    int maxsize = 0;
-    int tmp_maxsize;
-    int ret = 0;
-    ref_st_p tmp_ref = NULL;
 
-    switch (option)
-    {
-	/* check to see if the interface is initialized */
-    case BMI_CHECK_INIT:
-#ifdef MARCEL
-	marcel_mutex_lock(&active_method_count_mutex);
-#endif
-	if (active_method_count > 0)
-	{
-#ifdef MARCEL
-	    marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-	    return (0);
-	}
-	else
-	{
-#ifdef MARCEL
-	    marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-	}
-    case BMI_CHECK_MAXSIZE:
-#ifdef MARCEL
-	marcel_mutex_lock(&active_method_count_mutex);
-#endif
-	for (i = 0; i < active_method_count; i++)
-	{
-	    ret = active_method_table[i]->get_info(
-                option, &tmp_maxsize);
-	    if (ret < 0)
-	    {
-		return (ret);
-	    }
-	    if (i == 0)
-	    {
-		maxsize = tmp_maxsize;
-	    }
-	    else
-	    {
-		if (tmp_maxsize < maxsize)
-		    maxsize = tmp_maxsize;
-	    }
-	    *((int *) inout_parameter) = maxsize;
-	}
-#ifdef MARCEL
-	marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-	break;
-    case BMI_GET_METH_ADDR:
-#ifdef MARCEL
-	marcel_mutex_lock(&ref_mutex);
-#endif
-	tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-	if(!tmp_ref)
-	{
-#ifdef MARCEL
-	    marcel_mutex_unlock(&ref_mutex);
-#endif
-	}
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	*((void**) inout_parameter) = tmp_ref->method_addr;
-	break;
-    case BMI_GET_UNEXP_SIZE:
-#ifdef MARCEL
-        marcel_mutex_lock(&ref_mutex);
-#endif
-        tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-        if(!tmp_ref)
-        {
-#ifdef MARCEL
-            marcel_mutex_unlock(&ref_mutex);
-#endif
-	}
-#ifdef MARCEL
-        marcel_mutex_unlock(&ref_mutex);
-#endif
-        ret = tmp_ref->interface->get_info(
-            option, inout_parameter);
-        if(ret < 0)
-        {
-            return ret;
-        }
-        break;
 
-    default:
-	return 1;
-    }
-    return (0);
-}
-#endif
 #if 0
 /** Given a string representation of a host/network address and a BMI
  * address handle, return whether the BMI address handle is part of the wildcard

@@ -124,32 +124,16 @@ main(int  argc,
     print_usage();
     exit(1);
   } 
+
   /*
    * initialize local interface (default options)  
-   */
- 
+   */ 
   if(hosts->host->which == SERVER) {
-    /* method: le driver a utiliser */
     ret = BMI_initialize(NULL,
 			 NULL,
 			 BMI_INIT_SERVER);
   } else {  
-    /* cut address protocol://host -> host*/
-    int     i = 0;
-    char* tmp = NULL;
-    
-    for(i = 0; i < hosts->nb_hosts ;i++){
-
-      fprintf(stdout,"host: %s\n", (hosts->host+i)->hostid);
-      tmp = strdup((hosts->host+i)->hostid);  
-      if (!tmp) exit(1);
-      tmp = strrchr(tmp, '/');
-      if(!tmp) exit(1);
-      (hosts->host+i)->hostid = (char *) strdup(tmp+1);
-    }
-    
     ret = BMI_initialize(NULL, NULL, 0);
-
   }
   if (ret < 0) {
     fprintf(stderr,"BMI_initialize() ret = %d\n",ret);

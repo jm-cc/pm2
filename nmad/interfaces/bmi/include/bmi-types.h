@@ -36,7 +36,6 @@ typedef int64_t  bmi_size_t;         /**< Data region size */
 typedef nm_tag_t bmi_msg_tag_t;      /**< User-specified message tag */
 typedef struct bmi_context*  bmi_context_id;     /**< Context identifier */
 typedef struct BMI_addr* BMI_addr_t;
-typedef void*    bmi_op_id_t;        /**< Reference to ongoing network op */
 typedef void*   *bmi_hint;
 
 enum send_recv{ 
@@ -46,9 +45,17 @@ enum send_recv{
 
 struct bmi_context{
     int64_t context_id;
+    enum send_recv status;
+};
+
+struct bmi_op_id{
+    bmi_context_id context_id;
     nm_sr_request_t request;
     enum send_recv status;
 };
+
+typedef struct bmi_op_id*    bmi_op_id_t;        /**< Reference to ongoing network op */
+
 
 struct BMI_addr{
     nm_gate_t p_gate;

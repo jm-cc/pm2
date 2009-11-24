@@ -33,6 +33,8 @@
 #include "test-bmi.h"
 //#include <src/common/misc/pvfs2-internal.h>  /* lld(), llu() */
 
+//#define DEBUG 1
+
 /**************************************************************
  * Data structures 
  */
@@ -155,8 +157,8 @@ static int do_server(struct options *opts, bmi_context_id *context)
 {
         int                             ret = 0;
         int                             i = 0;
-        BMI_addr_t                 peer_addr;
-        BMI_addr_t                 server_addr;
+        BMI_addr_t                      peer_addr;
+        BMI_addr_t                      server_addr;
         void                            *recv_buffer = NULL;
         void                            *send_buffer = NULL;
         bmi_op_id_t                     op_id[2];
@@ -172,6 +174,7 @@ static int do_server(struct options *opts, bmi_context_id *context)
         int                             iterations      = 0;
         int                             msg_len         = 0;
         int                             run     = 0;
+
 
         /* wait for an initial request to get size */
 
@@ -279,6 +282,7 @@ static int do_server(struct options *opts, bmi_context_id *context)
                 if (actual_size != (bmi_size_t) msg_len) {
                         fprintf(stderr, "Expected %d but received %llu\n",
                                         msg_len, llu(actual_size));
+			*(int*)0=0;
                 }
         }
 
@@ -309,6 +313,7 @@ static int do_server(struct options *opts, bmi_context_id *context)
                                         if (actual_size != bytes) {
                                                 fprintf(stderr, "Expected %d but received %llu\n",
                                                                 bytes, llu(actual_size));
+						*(int*)0=0;
                                                 return (-1);
                                         }
                                 }
@@ -352,7 +357,8 @@ static int do_server(struct options *opts, bmi_context_id *context)
                                 }
                                 if (actual_size != bytes) {
                                         fprintf(stderr, "Expected %d but received %llu\n",
-                                                        bytes, llu(actual_size));
+						bytes, llu(actual_size));
+					*(int*)0=0;
                                         return (-1);
                                 }
                         }
@@ -375,7 +381,7 @@ static int do_client(struct options *opts, bmi_context_id *context)
 {
         int                     ret             = 0;
         int                     i               = 0;
-        BMI_addr_t         peer_addr;
+        BMI_addr_t              peer_addr;
         void                    *recv_buffer    = NULL;
         void                    *send_buffer    = NULL;
         bmi_op_id_t             op_id[2];
@@ -446,9 +452,9 @@ static int do_client(struct options *opts, bmi_context_id *context)
         }
 	
         /* post the test parameters */
-        /*
-	   ret = BMI_post_sendunexpected(&(op_id[SEND]), peer_addr, tx_msg,
-                        msg_len, BMI_PRE_ALLOC, 0, NULL, *context, NULL);
+        
+	ret = BMI_post_sendunexpected(&(op_id[SEND]), peer_addr, tx_msg,
+				      msg_len, BMI_PRE_ALLOC, 0, NULL, *context, NULL);
         if (ret < 0) {
                 fprintf(stderr, "BMI_post_sendunexpected failure.\n");
                 return (-1);
@@ -467,7 +473,6 @@ static int do_client(struct options *opts, bmi_context_id *context)
                         return (-1);
                 }
         }
-	*/
         
 	/* post a recv for the ack */
         ret = BMI_post_recv(&(op_id[RECV]), peer_addr, recv_buffer,
@@ -483,6 +488,7 @@ static int do_client(struct options *opts, bmi_context_id *context)
 
                 if (ret < 0 || error_code != 0) {
                         fprintf(stderr, "data recv failed.\n");
+			*(int*)0=0;
                         return (-1);
                 }
                 if (actual_size != msg_len) {
@@ -558,6 +564,7 @@ static int do_client(struct options *opts, bmi_context_id *context)
         
                         if (ret < 0 || error_code != 0) {
                                 fprintf(stderr, "data recv failed.\n");
+				*(int*)0=0;
                                 return (-1);
                         }
                         if (actual_size != bytes) {
@@ -636,7 +643,10 @@ static void get_method(struct options *opts)
                 opts->method = strdup("bmi_mx");
         } else if (id[0] == 'i' && id[1] == 'b' && check_uri(&id[2])) {
                 opts->method = strdup("bmi_ib");
+        } else if (id[0] == 'n' && id[1] == 'm' && check_uri(&id[2])) {
+                opts->method = strdup("bmi_nm");
         }
+	
         return;
 }
 

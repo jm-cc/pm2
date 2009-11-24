@@ -513,8 +513,8 @@ BMI_addr_lookup(BMI_addr_t *peer,
  */
 
 int 
-BMI_post_recv(bmi_op_id_t         *id,         //not used
-	      BMI_addr_t           src,        
+BMI_post_recv(bmi_op_id_t         *id,
+	      BMI_addr_t           src,
 	      void                *buffer,
 	      bmi_size_t           expected_size,
 	      bmi_size_t          *actual_size,//not used
@@ -524,9 +524,14 @@ BMI_post_recv(bmi_op_id_t         *id,         //not used
 	      bmi_context_id       context_id,
 	      bmi_hint             hints){     //not used
     
-    int ret = -1;
+    int            ret = -1;
+    struct bnm_ctx rx;
 
-    struct bnm_ctx          rx;
+    /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
+    /* todo: use a tbx_malloc(mem) instead */
+    *id = TBX_MALLOC(sizeof(struct bmi_op_id));
+    (*id)->context_id = context_id;
+    (*id)->status = RECV;
     
     context_id->status = RECV;
 
@@ -544,10 +549,10 @@ BMI_post_recv(bmi_op_id_t         *id,         //not used
 
     ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
 		      buffer, expected_size, 
-		      &context_id->request);
+		      &(*id)->request);
     
 #ifdef DEBUG
-    fprintf(stderr , "\t\tRECV request  %p\n",&context_id->request );
+    fprintf(stderr , "\t\tRECV request  %p\n",&(*id)->request );
 #endif
 
     return ret;
@@ -566,8 +571,15 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      bmi_hint hints, 
 		      enum bnm_msg_type msg_type){                 //not used
     
-    int                      ret    = -1;   
+    int                     ret    = -1;   
     struct bnm_ctx          tx;
+
+    /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
+    /* todo: use a TBX_MALLOC instead */
+    *id = TBX_MALLOC(sizeof(struct bmi_op_id));
+    (*id)->context_id = context_id;
+    (*id)->status = SEND;
+
     context_id->status = SEND;
 
     if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
@@ -606,9 +618,9 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 
     ret = nm_sr_isend(p_core, dest->p_gate, 
 		      tx.nmc_match, buffer, size, 
-		      &context_id->request);
+		      &(*id)->request);
 #ifdef DEBUG
-    fprintf(stderr , "\t\tSEND request  %p\n",&context_id->request );
+    fprintf(stderr , "\t\tSEND request  %p\n",&(*id)->request );
 #endif
     return ret;
 }
@@ -685,7 +697,6 @@ int BMI_testunexpected(int incount,
 
     /* todo: solve the tag problem here : for now, the tag must be 0 */
 
-
     info_array->buffer = malloc(info_array->size);
     nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 		info_array->buffer, info_array->size, &request);
@@ -701,10 +712,10 @@ int BMI_testunexpected(int incount,
  *  \return 0 on success, -errno on failure.
  */
 int 
-BMI_test(bmi_op_id_t id,                //unused
-	 int *outcount,                 //unused
+BMI_test(bmi_op_id_t id,                
+	 int *outcount,                 
 	 bmi_error_code_t * error_code, //unused
-	 bmi_size_t * actual_size,      //unused
+	 bmi_size_t * actual_size,      
 	 void **user_ptr,               //unused
 	 int max_idle_time_ms,          //unused with the present implementation
 	 bmi_context_id context_id){
@@ -714,24 +725,19 @@ BMI_test(bmi_op_id_t id,                //unused
 
     if(actual_size)
 	*actual_size=0;
-
-    if(context_id->status == SEND ) {
-	ret = nm_sr_stest(p_core, &context_id->request);
+    if(id->status == SEND ) {
+	ret = nm_sr_stest(p_core, &id->request);
 	if(ret == -NM_ESUCCESS && outcount)
-	    *outcount = context_id->request.req.pack.len;
+	    *outcount = id->request.req.pack.len;
 	if(ret == -NM_ESUCCESS && actual_size)
-	    *actual_size = context_id->request.req.pack.len;
+	    *actual_size = id->request.req.pack.len;
     } else { //RECV
-	ret = nm_sr_rtest(p_core, &context_id->request);
+	ret = nm_sr_rtest(p_core, &id->request);
 	if(ret == -NM_ESUCCESS && outcount) {
-	    *outcount = context_id->request.req.unpack.cumulated_len;
-	    fprintf(stderr, "success !\n");
+	    *outcount = id->request.req.unpack.cumulated_len;
 	}
 	if(ret == -NM_ESUCCESS && actual_size) {
-	    *actual_size = context_id->request.req.unpack.cumulated_len;
-	    fprintf(stderr, "recved %d bytes (expected : %d)\n", 
-		    context_id->request.req.unpack.cumulated_len, 
-		    context_id->request.req.unpack.expected_len);
+	    *actual_size = id->request.req.unpack.cumulated_len;
 	}
     }
 

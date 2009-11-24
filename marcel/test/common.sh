@@ -254,8 +254,8 @@ create_test_flavor() {
 		--tbx=\"safe_malloc\" --tbx=\"parano_malloc\" \
 		$TESTOPTIONS						\
 		--all=\"gdb\" --all=\"opt\" \
-		--all=\"build_static\" --marcel=\"build_dynamic\" \
-		--sub --marcel=\"build_static\" $_output_redirect
+		--all=\"build_dynamic\" \
+		$_output_redirect
 	    ;;
 	test_marcel_smp_blocking)
 	    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \

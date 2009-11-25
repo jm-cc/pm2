@@ -338,6 +338,8 @@ int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
 
 #ifdef NMAD_POLL
   nm_schedule(p_core);
+#else
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
 
   rc = (nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED)) ?
@@ -468,6 +470,8 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
     {
 #ifdef NMAD_POLL
       nm_schedule(p_core);
+#else
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
     }
 
@@ -538,6 +542,8 @@ int nm_sr_probe(struct nm_core *p_core,
 
 #ifdef NMAD_POLL
   nm_schedule(p_core);
+#else
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
 
   return err;
@@ -563,6 +569,8 @@ int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
 {
 #ifdef NMAD_POLL
   nm_schedule(p_core);
+#else
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
 
   nm_lock_interface(p_core);
@@ -727,6 +735,8 @@ int nm_sr_progress(struct nm_core *p_core)
   NM_SO_SR_LOG_IN();
   nm_schedule(p_core);
   NM_SO_SR_LOG_OUT();
+#else
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
 
   return NM_ESUCCESS;

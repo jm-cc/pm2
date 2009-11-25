@@ -42,7 +42,7 @@
 
 #define NM_BMI_REQUEST_PREALLOC 128
 
-static p_tbx_memory_t nm_bmi_mem;
+ p_tbx_memory_t nm_bmi_mem;
 static int bmi_initialized_count = 0;
 
 /*

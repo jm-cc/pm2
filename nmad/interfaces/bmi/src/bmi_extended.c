@@ -19,6 +19,7 @@
 #include "nmad_bmi_interface.h"
 
 extern nm_core_t p_core;
+extern p_tbx_memory_t nm_bmi_mem;
 
 /** Checks to see if a particular message has completed.
  *
@@ -54,8 +55,10 @@ int BMI_wait(bmi_op_id_t id,
 	    *actual_size = id->request.req.unpack.cumulated_len;
 	}
     }
-    if(ret == NM_ESUCCESS)
+    if(ret == NM_ESUCCESS) {
        ret = 0;
+       tbx_free(nm_bmi_mem, id);
+    }
     return (ret);
 
 }

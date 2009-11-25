@@ -17,7 +17,7 @@
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <Padico/Puk.h>
-
+#include "tbx.h"
 #include <string.h>
 #include <assert.h>
 
@@ -53,7 +53,7 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
       int err = nm_core_init(argc, argv, &nm_session.p_core);
       assert(err == NM_ESUCCESS);
       puk_component_t driver_assembly = nm_core_component_load("driver", "custom");
-      char*driver_url = NULL;
+      const char*driver_url = NULL;
       err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &nm_session.p_drv, &driver_url);
       assert(err == NM_ESUCCESS);
 

@@ -741,6 +741,10 @@ BMI_test(bmi_op_id_t id,
 
     if(ret == -NM_EAGAIN)
 	ret = 0;
+    if(ret == -NM_ESUCCESS) {
+	ret = 0;
+	tbx_free(nm_bmi_mem, id);
+    }
     return (ret);
 }
 

@@ -157,7 +157,7 @@ piom_check_polling_for(piom_server_t server)
 	/* no polling method available ! */
 	PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
     }
- out:
+
     /* Handle completed requests */
     __piom_manage_ready(server);
     if (nb != __piom_need_poll(server)) {

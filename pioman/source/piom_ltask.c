@@ -43,7 +43,7 @@ typedef struct piom_ltask_queue
     volatile uint8_t                  ltask_array_nb_items;
     volatile piom_ltask_queue_state_t state;
     piom_spinlock_t                   ltask_lock;
-#if DEBUG
+#ifdef DEBUG
     int                               id;
 #endif
 } piom_ltask_queue_t;
@@ -66,7 +66,7 @@ static tbx_bool_t *being_processed;
 static inline piom_ltask_queue_t *
 __piom_get_queue (piom_vpset_t vpset)
 {
-#if USE_GLOBAL_QUEUE
+#ifdef USE_GLOBAL_QUEUE
     return &global_queue;
 #endif
     int vp1, vp2;
@@ -134,7 +134,7 @@ __piom_ltask_get (piom_ltask_queue_t ** queue)
 {
     /* Try to get a local job */
     struct piom_ltask *result=NULL;
-#if (!USE_GLOBAL_QUEUE)
+#ifndef USE_GLOBAL_QUEUE
     struct marcel_topo_level *l;
     piom_ltask_queue_t *cur_queue;
     for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
@@ -181,7 +181,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     struct piom_ltask *task = NULL;
     if(! (queue->state & PIOM_LTASK_QUEUE_STATE_RUNNING)
        && ! (queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING))
-	return ;
+	return NULL;
     being_processed[marcel_current_vp ()] = tbx_true;
     task = __piom_ltask_get_from_queue (queue);
     /* Make sure the task is runnable */
@@ -229,7 +229,7 @@ piom_init_ltasks ()
 {
     if (!piom_ltask_initialized)
 	{
-#if DEBUG
+#ifdef DEBUG
 	    fprintf(stderr, "Using LTasks\n");
 #endif
 	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * marcel_nbvps ());
@@ -291,7 +291,7 @@ void
 piom_ltask_submit (struct piom_ltask *task)
 {
     piom_ltask_queue_t *queue;
-#if USE_GLOBAL_QUEUE
+#ifdef USE_GLOBAL_QUEUE
     queue=&global_queue;
 #else
     queue = __piom_get_queue (task->vp_mask);
@@ -303,7 +303,7 @@ void *
 piom_ltask_schedule ()
 {
     struct piom_ltask *task;
-#if (!USE_GLOBAL_QUEUE)
+#ifndef USE_GLOBAL_QUEUE
     struct marcel_topo_level *l;
     piom_ltask_queue_t *cur_queue;
     for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
@@ -343,7 +343,6 @@ piom_ltask_polling_is_required ()
 	{
 	    struct marcel_topo_level *l;
 	    piom_ltask_queue_t *cur_queue;
-	    int local_vp=plop;
 	    for(l=&marcel_topo_levels[marcel_topo_nblevels-1][plop];
 		l;			/* do this as long as there's a topo level */
 		l=l->father)

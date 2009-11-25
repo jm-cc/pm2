@@ -18,6 +18,7 @@
 #include <sched.h>
 #include <pthread.h>
 
+#ifdef PIOM_BLOCKING_CALLS
 static int rr_min_priority ;
 static int rr_max_priority ;
 
@@ -27,7 +28,10 @@ static  int PIOM_TH_DEF_PRIO      ;
 static  int PIOM_TH_BATCH_PRIO    ;
 static  int PIOM_TH_LOWBATCH_PRIO ;
 static  int PIOM_TH_IDLE_PRIO     ;
+#endif
+
 static  int PIOM_OTHER_DEF_PRIO   ;
+
 
 int __piom_lower_my_priority()
 {
@@ -139,9 +143,7 @@ __piom_init_lwp(piom_comm_lwp_t lwp)
     lwp->server = NULL;
     lwp->pid = NULL;
 }
-#endif /* PIOM_BLOCKING_CALLS */
 
-#ifdef PIOM_BLOCKING_CALLS
 /* Wake up a LWP to export a request and perform a blocking call */
 int 
 piom_wakeup_lwp(piom_server_t server, piom_req_t req) 

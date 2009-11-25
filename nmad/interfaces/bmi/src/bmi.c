@@ -42,7 +42,7 @@
 
 #define NM_BMI_REQUEST_PREALLOC 128
 
- p_tbx_memory_t nm_bmi_mem;
+p_tbx_memory_t nm_bmi_mem;
 static int bmi_initialized_count = 0;
 
 /*
@@ -57,7 +57,6 @@ static int context_array[BMI_MAX_CONTEXTS] = { 0 };
 static marcel_mutex_t bmi_initialize_mutex = MARCEL_MUTEX_INITIALIZER;
 static marcel_mutex_t context_mutex = MARCEL_MUTEX_INITIALIZER;
 static marcel_mutex_t ref_mutex = MARCEL_MUTEX_INITIALIZER;
-static marcel_mutex_t forget_list_mutex = MARCEL_MUTEX_INITIALIZER;
 #endif
 
 struct forget_item{
@@ -133,14 +132,14 @@ static int max_tx_id = 1;
 static int __bmi_connect_accept(struct BMI_addr* addr)
 {
     
-    addr->p_peer=malloc(sizeof(struct bnm_peer));
+    addr->p_peer = malloc(sizeof(struct bnm_peer));
 
     __bmi_peer_init(addr->p_peer);
-    addr->p_peer->p_gate = addr->p_gate;
-    addr->p_peer->p_drv = p_drv;
+    addr->p_peer->p_gate    = addr->p_gate;
+    addr->p_peer->p_drv     = p_drv;
     addr->p_peer->nmp_state = BNM_PEER_READY;
     addr->p_peer->nmp_rx_id = max_tx_id++;
-    addr->p_peer->peername = addr->peername;
+    addr->p_peer->peername  = addr->peername;
 #ifdef MARCEL
     marcel_mutex_init (&addr->p_peer->nmp_lock, NULL);
 #endif	/* MARCEL */

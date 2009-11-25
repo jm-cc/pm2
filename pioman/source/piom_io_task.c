@@ -241,7 +241,8 @@ piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 		return readv(fildes, iov, iovcnt);
 		
 	} else
-		readv(fildes, iov, iovcnt);
+		return readv(fildes, iov, iovcnt);
+	
 }
 #endif	/* __MINGW32__ */
 

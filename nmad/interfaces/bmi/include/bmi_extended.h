@@ -29,6 +29,8 @@
 #include "nm_public.h"
 #include "bmi-types.h"
 
+typedef void (*bmi_unexpected_callback_t)(struct BMI_unexpected_info*);
+
 /** Checks to see if a particular message has completed.
  *
  *  \return 0 on success, -errno on failure.
@@ -40,6 +42,18 @@ int BMI_wait(bmi_op_id_t id,
 	     void **user_ptr,
 	     int max_idle_time_ms,
 	     bmi_context_id context_id);
+
+/** Register a callback that is invoked each time an unexpected message arrives.
+ * 
+ * \return 0 on success, -1 on failure.
+ */
+int BMI_register_unexpected_callback(bmi_unexpected_callback_t callback);
+
+/** Unregister the unexpected callback.
+ * 
+ * \return 0 on success, -1 on failure.
+ */
+int BMI_unregister_unexpected_callback(bmi_unexpected_callback_t callback);
 
 #endif /* __BMI_EXTENDED_H */
 

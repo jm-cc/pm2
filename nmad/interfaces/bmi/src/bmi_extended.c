@@ -13,8 +13,10 @@
  * General Public License for more details.
  */
 
-#include "bmi.h"
 #include <nm_public.h>
+#include "bmi.h"
+#include "bmi_extended.h"
+#include "nmad_bmi_interface.h"
 
 extern nm_core_t p_core;
 
@@ -57,7 +59,62 @@ int BMI_wait(bmi_op_id_t id,
     return (ret);
 
 }
-	
+
+
+static bmi_unexpected_callback_t unexpected_callback = NULL;
+
+/** Function called by NewMadeleine when an unexpected message arrives
+ */
+void __bmi_event_notifier(nm_sr_event_t event, const nm_sr_event_info_t*event_info)
+{
+
+    /* First, check whether the message is unexpected in the BMI meaning (ie. no 
+     * BMI_post_recv will ever be called for this message) or if the application 
+     * is only late
+     */
+    enum bnm_msg_type type = BNM_MATCH_GET_MSG_TYPE(event_info->recv_unexpected.tag);
+
+    if(type == BNM_MSG_UNEXPECTED) {
+	struct BMI_unexpected_info info = {
+	    .error_code=0,
+	    .addr=NULL, 	/* todo: add a magic bmi_gate_to_addr() function */
+	    .buffer=NULL,	/* ie. the application have to call post_recv */
+	    .size=event_info->recv_unexpected.len,
+	    .tag=event_info->recv_unexpected.tag};
+
+	(*unexpected_callback)(&info);	
+    }
+}
+
+/** Register a callback that is invoked each time an unexpected message arrives.
+ * 
+ * \return 0 on success, -1 on failure.
+ */
+int BMI_register_unexpected_callback(bmi_unexpected_callback_t callback)
+{
+    if(unexpected_callback)
+	/* another callback is already registered ! */
+	return -1;
+    unexpected_callback = callback;
+    nm_sr_monitor(p_core, 
+		  NM_SR_EVENT_RECV_UNEXPECTED, 
+		  __bmi_event_notifier);
+    return 0;
+}
+
+/** Unregister the unexpected callback.
+ * 
+ * \return 0 on success, -1 on failure.
+ */
+int BMI_unregister_unexpected_callback(bmi_unexpected_callback_t callback)
+{
+    if(unexpected_callback == callback) {
+	unexpected_callback = NULL;
+	return 0;
+    }
+    return -1;
+}
+
 /*
  * Local variables:
  *  c-indent-level: 4

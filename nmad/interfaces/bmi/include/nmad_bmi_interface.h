@@ -74,16 +74,32 @@ typedef struct tbx_fast_list_head list_t;       /* easier to type */
  *    32-51     Peer id (to use when contacting the sender)
  *     0-31     Version
  */
+#define BNM_NBITS_ID    28
+#define BNM_NBITS_TAG   32
+#define BNM_NBITS_MSG   4
 
-#define BNM_MSG_SHIFT   60
-#define BNM_ID_SHIFT    32
-#define BNM_MASK_ALL    (~0ULL)
-#define BNM_MASK_MSG    (0xFULL << BNM_MSG_SHIFT)
 
-#define BNM_MAX_PEER_ID ((1<<20) - 1)   /* 20 bits - actually 1,048,574 peers
-                                           1 to 1,048,575 */
-#define BNM_MAX_TAG     (~0U)            /* 32 bits */
+//#define BNM_MSG_SHIFT   60
+//#define BNM_ID_SHIFT    32
 
+#define BNM_ID_SHIFT    (BNM_NBITS_TAG)
+#define BNM_TAG_SHIFT   (0)
+#define BNM_MSG_SHIFT   (BNM_NBITS_TAG+BNM_NBITS_ID)
+
+#define BNM_MAX_ID      ((UINT64_C(1)<<BNM_NBITS_ID)   -1)
+#define BNM_MAX_TAG     ((UINT64_C(1)<<BNM_NBITS_TAG)  -1)
+#define BNM_MAX_MSG     ((UINT64_C(1)<<BNM_NBITS_MSG)  -1)
+
+#define BNM_ID_MASK     (BNM_MAX_ID <<BNM_ID_SHIFT)
+#define BNM_TAG_MASK    (BNM_MAX_TAG<<BNM_TAG_SHIFT)
+#define BNM_MSG_MASK    (BNM_MAX_MSG<<BNM_MSG_SHIFT)
+
+#define BNM_MATCH_GET_MSG_TYPE(_match)                                  \
+        ((enum bnm_msg_type) (((_match) & BNM_MSG_MASK) >> BNM_MSG_SHIFT))
+#define BNM_MATCH_GET_ID(_match)                                \
+        ((uint32_t) (((_match) & BNM_ID_MASK) >> BNM_ID_SHIFT))
+#define BNM_MATCH_GET_TAG(_match)                                  \
+        ((uint32_t) (((_match) & BNM_TAG_MASK) >> BNM_TAG_SHIFT))
 
 #define BNM_TIMEOUT     (20 * 1000)       /* msg timeout in milliseconds */
 

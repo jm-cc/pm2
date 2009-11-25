@@ -72,7 +72,7 @@ static marcel_mutex_t active_method_count_mutex = MARCEL_MUTEX_INITIALIZER;
 static const int usage_iters_starvation = 100000;
 static const int usage_iters_active = 10000;
 static int server = 0;
-static nm_core_t p_core;
+nm_core_t p_core;
 
 static nm_drv_t p_drv;
 
@@ -588,12 +588,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
 
 	/* remove nm:// from the peername so that NMad establish the connection */
-	char* tmp = strdup(dest->peername);  
-	if (!tmp) exit(1);
-	tmp = strrchr(tmp, '/');
-	if(!tmp) exit(1);
-	tmp++;
-
+	char* tmp = dest->peername + 5*sizeof(char);  
 	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, tmp);
 	__bmi_connect_accept(dest);
     }

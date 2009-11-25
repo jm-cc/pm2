@@ -42,6 +42,11 @@ int FxT_verbose = 0;
 int FxT_showPauses = 0;
 #define verbprintf(fmt,...) do { if (FxT_verbose) printf(fmt, ## __VA_ARGS__); } while(0);
 
+#define abort() do {                                                                     \
+                     fprintf (stderr, "abort from %s (line %i)\n", __FILE__, __LINE__);  \
+                     abort ();                                                           \
+                   } while(0);
+
 /*******************************************************************************
  * Pointers Stuff
  *

@@ -608,6 +608,7 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
       .trk_id			= 0,
       .remote_drv_url		= url
     };
+  assert(url != NULL);
 
   struct nm_gate_drv *p_gdrv = TBX_MALLOC(sizeof(struct nm_gate_drv));
 

@@ -18,8 +18,21 @@
 #include <nm_private.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
+#include <nm_session_interface.h>
 
 #include <string.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <sys/uio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
 
 
 /* ** Cmd line launcher ************************************ */
@@ -56,24 +69,20 @@ extern void nm_cmdline_launcher_declare(void)
 
 }
 
-#define RAIL_MAX NM_DRV_MAX
 
 struct nm_cmdline_launcher_status_s
 {
-  nm_core_t p_core;
+  nm_session_t p_session;
   nm_gate_t gate;
   int is_server;
-  const char *l_url[RAIL_MAX];
-  int nr_rails;
 };
 
 static void*nm_cmdline_launcher_instanciate(puk_instance_t i, puk_context_t c)
 {
   struct nm_cmdline_launcher_status_s*status = TBX_MALLOC(sizeof(struct nm_cmdline_launcher_status_s));
-  status->p_core = NULL;
+  status->p_session = NULL;
   status->gate = NM_GATE_NONE;
   status->is_server = 0;
-  status->nr_rails = 0;
   return status;
 }
 
@@ -81,41 +90,13 @@ static void nm_cmdline_launcher_destroy(void*_status)
 {
   struct nm_cmdline_launcher_status_s*status = _status;
   int ret = NM_ESUCCESS;
-  int err = nm_core_exit(status->p_core);
-  if(err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core__exit return err = %d\n", err);
-    ret = EXIT_FAILURE;
-  }
-
+  int err = nm_session_destroy(status->p_session);
+  if(err != NM_ESUCCESS) 
+    {
+      fprintf(stderr, "# launcher: nm_session_destroy return err = %d\n", err);
+      ret = EXIT_FAILURE;
+    }
   TBX_FREE(status);
-
-  common_exit(NULL);
-
-}
-
-static void usage(void)
-{
-  fprintf(stderr, "usage: <prog> [-R <rail1+rail2...>] [<remote url> ...]\n");
-  fprintf(stderr, "  The number of rails must be less than or equal to %d, and there must be as many rails followed by the server's URLs on the sender's side\n", RAIL_MAX);
-  fprintf(stderr, "  Available rails are:\n");
-#if defined CONFIG_MX
-  fprintf(stderr, "    mx    to use      any MX board\n");
-  fprintf(stderr, "    mx:N  to use      the Nth MX board\n");
-#endif
-#if defined CONFIG_QSNET
-  fprintf(stderr, "    qsnet to use      the QsNet board\n");
-#endif
-#if defined CONFIG_IBVERBS
-  fprintf(stderr, "    ib    to use      any InfiniBand device\n");
-  fprintf(stderr, "    ib:N  to use      the Nth InfiniBand device\n");
-#endif
-#if defined CONFIG_GM
-  fprintf(stderr, "    gm    to use      any GM board\n");
-#endif
-#if defined CONFIG_TCP
-  fprintf(stderr, "    tcp   to use      any TCP connection\n");
-#endif
-  exit(EXIT_FAILURE);
 }
 
 static int nm_cmdline_launcher_get_rank(void*_status)
@@ -132,7 +113,7 @@ static int nm_cmdline_launcher_get_size(void*_status)
 static nm_core_t nm_cmdline_launcher_get_core(void*_status)
 {
   struct nm_cmdline_launcher_status_s*status = _status;
-  return status->p_core;
+  return nm_session_get_core(status->p_session);
 }
 
 static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)
@@ -144,282 +125,165 @@ static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)
   _gates[peer] = status->gate;
 }
 
-static inline puk_component_t load_driver(const char *driver_name)
+static void nm_launcher_addr_send(int sock, const char*url)
 {
-  return nm_core_component_load("driver", driver_name);
-}
-
-/** get default drivers if no rails were given on the command line */
-static int get_default_driver_assemblies(puk_component_t*assemblies)
-{
-  int cur_nr_drivers = 0;
-
-  /* load all built-in drivers  */
-#if defined CONFIG_MX
-  assemblies[cur_nr_drivers++] = load_driver("mx");
-#endif
-#ifdef CONFIG_QSNET
-  assemblies[cur_nr_drivers++] = load_driver("qsnet");
-#endif
-#if defined CONFIG_IBVERBS
-  assemblies[cur_nr_drivers++] = load_driver("ibverbs");
-#endif
-#if defined CONFIG_GM
-  assemblies[cur_nr_drivers++] = load_driver("gm");
-#endif
-#if defined CONFIG_TCP
-  assemblies[cur_nr_drivers++] = load_driver("tcp");
-#endif
-#if defined CONFIG_LOCAL
-  assemblies[cur_nr_drivers++] = load_driver("local");
-#endif
-
-  return cur_nr_drivers;
-}
-
-#if defined(CONFIG_MX) || defined(CONFIG_IBVERBS)
-/** look for a driver string in a rail and check whether the board id is forced  */
-static int lookup_rail_driver_and_board_id(const char *rail, const char *driver,
-					   struct nm_driver_query_param *param)
-{
-  int len = strlen(driver);
-
-  if (!strcmp(rail, driver))
-    return 1;
-
-  /* look for driver:N */
-  if (strncmp(rail, driver, len))
-    return 0;
-  if (rail[len] != ':')
-    return 0;
-
-  param->key = NM_DRIVER_QUERY_BY_INDEX;
-  param->value.index = atoi(rail+len+1);
-  return 1;
-}
-#endif
-
-/** handle one rail from the railstring */
-static int handle_one_rail(char *token, int index,
-			   puk_component_t*assembly,
-			   struct nm_driver_query_param *param)
-{
-#if defined CONFIG_MX
-  if (lookup_rail_driver_and_board_id(token, "mx", param)) {
-    if (param->key == NM_DRIVER_QUERY_BY_INDEX)
-      printf("# launcher: using MX board #%d for rail #%d\n",
-	     param->value.index, index);
-    else
-      printf("# launcher: using any MX board for rail #%d\n",
-	     index);
-    *assembly = load_driver("mx");
-  } else
-#endif
-#ifdef CONFIG_QSNET
-  if (!strcmp("qsnet", token)) {
-    printf("# launcher: using QsNet for rail #%d\n", index);
-    *assembly = load_driver("qsnet");
-  } else
-#endif
-#if defined CONFIG_IBVERBS
-  if (lookup_rail_driver_and_board_id(token, "ib", param)
-      || lookup_rail_driver_and_board_id(token, "ibv", param)
-      || lookup_rail_driver_and_board_id(token, "ibverbs", param)) {
-    if (param->key == NM_DRIVER_QUERY_BY_INDEX)
-      printf("# launcher: using IB device #%d for rail #%d\n",
-	     param->value.index, index);
-    else
-      printf("# launcher: using any IB device for rail #%d\n",
-	     index);
-    *assembly = load_driver("ibverbs");
-  } else
-#endif
-#if defined CONFIG_GM
-  if (!strcmp("gm", token)) {
-    printf("# launcher: using GM for rail #%d\n", index);
-    *assembly = load_driver("gm");
-  } else
-#endif
-#if defined CONFIG_TCP
-  if (!strcmp("tcp", token)) {
-    printf("# launcher: using TCP for rail #%d\n", index);
-    *assembly = load_driver("tcp");
-  } else 
-#endif
+  int len = strlen(url);
+  int rc = send(sock, &len, sizeof(len), 0);
+  if(rc != sizeof(len))
     {
-      fprintf(stderr, "launcher: unrecognized rail \"%s\"\n", token);
-      return -1;
+      fprintf(stderr, "# launcher: cannot send address to peer.\n");
+      abort();
     }
-
-  return 0;
+  rc = send(sock, url, len, 0);
+  if(rc != len)
+    {
+      fprintf(stderr, "# launcher: cannot send address to peer.\n");
+      abort();
+    }
 }
 
-/** get drivers from the railstring from the command line */
-static int get_railstring_driver_assemblies(puk_component_t*assemblies,
-					    struct nm_driver_query_param *params,
-					    char * railstring)
+static void nm_launcher_addr_recv(int sock, char**p_url)
 {
-  int cur_nr_drivers = 0;
-  char * token;
-  int err;
-
-  token = strtok(railstring, "+");
-  while (token) {
-    err = handle_one_rail(token, cur_nr_drivers,
-			  &assemblies[cur_nr_drivers],
-			  &params[cur_nr_drivers]);
-    if (err < 0)
-      usage();
-    cur_nr_drivers++;
-
-    if (cur_nr_drivers > RAIL_MAX) {
-      fprintf(stderr, "launcher: found too many drivers, only %d are supported\n", RAIL_MAX);
-      usage();
+  int len = -1;
+  int rc = recv(sock, &len, sizeof(len), MSG_WAITALL);
+  if(rc != sizeof(len))
+    {
+      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      abort();
     }
-
-    token = strtok(NULL, "+");
-  }
-
-  return cur_nr_drivers;
+  char*url = TBX_MALLOC(len);
+  rc = recv(sock, url, len, MSG_WAITALL);
+  if(rc != len)
+    {
+      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      abort();
+    }
+  *p_url = url;
 }
 
 void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_label)
 {
   struct nm_cmdline_launcher_status_s*status = _status;
-  int i,j, err;
-  /* rails */
-  char *railstring = NULL;
-  int nr_r_urls = 0;
-  /* per rail arrays */
-  puk_component_t driver_assemblies[RAIL_MAX];
-  struct nm_driver_query_param params[RAIL_MAX];
-  struct nm_driver_query_param *params_array[RAIL_MAX];
-  int nparam_array[RAIL_MAX];
-  const char *r_url[RAIL_MAX];
-  nm_drv_t drvs[RAIL_MAX];
+  const char*local_session_url = NULL;
+  char*remote_session_url = NULL;
+  const char*remote_launcher_url = NULL;
 
-  for(i=0; i<RAIL_MAX; i++) {
-    params[i].key = NM_DRIVER_QUERY_BY_NOTHING;
-    params_array[i] = &params[i];
-    nparam_array[i] = 1;
-  }
-
-  err = nm_core_init(argc, argv, &status->p_core);
-  if (err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core_init returned err = %d\n", err);
-    goto out_err;
-  }
-
-  i=1;
-  while (i<*argc) {
-    /* handle -R for rails */
-    if (!strcmp(argv[i], "-R")) {
-      if (*argc <= i+1)
-	usage();
-      railstring = argv[i+1];
-      i += 2;
-      continue;
-    }
-    /* other options have to be passed after rails and url */
-    else if (!strncmp(argv[i], "-", 1)) {
-      break;
-    }
-    /* handle urls */
-    else {
-      if (nr_r_urls == RAIL_MAX) {
-	fprintf(stderr, "launcher: found too many url, only %d are supported\n", RAIL_MAX);
-	usage();
-      }
-      r_url[nr_r_urls++] = argv[i];
-      i++;
-    }
-  }
-
-  /* update command line before returning to the program */
-  i--;
-  *argc -= i;
-  for(j=1; j<*argc; j++) {
-    argv[j] = argv[j+i];
-  }
-
-  if (railstring) 
+  int err = nm_session_create(&status->p_session, _label);
+  if (err != NM_ESUCCESS)
     {
-      /* parse railstring to get drivers */
-      status->nr_rails = get_railstring_driver_assemblies(driver_assemblies, params, railstring);
+      fprintf(stderr, "# launcher: nm_session_create returned err = %d\n", err);
+      abort();
+    }
+  err = nm_session_init(status->p_session, argc, argv, &local_session_url);
+  if (err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "# launcher: nm_session_init returned err = %d\n", err);
+      abort();
+    }
+
+  int i;
+  for(i = 1; i < *argc; i++)
+    {
+      if(argv[i][0] != '-')
+	{
+	  remote_launcher_url = argv[i];
+	  fprintf(stderr, "# laucher: remote url = %s\n", remote_launcher_url);
+	  /* update command line  */
+	  *argc = *argc - 1;
+	  int j;
+	  for(j = i; j < *argc; j++)
+	    {
+	      argv[j] = argv[j+1];
+	    }
+	  break;
+	}
+    }
+  status->is_server = (!remote_launcher_url);
+
+  /* address exchange */
+	
+  if(!remote_launcher_url)
+    {
+      /* server */
+      char local_launcher_url[16] = { 0 };
+      int server_sock = socket(AF_INET, SOCK_STREAM, 0);
+      assert(server_sock > -1);
+      struct sockaddr_in addr;
+      unsigned addr_len = sizeof addr;
+      addr.sin_family = AF_INET;
+      addr.sin_port = htons(0);
+      addr.sin_addr.s_addr = INADDR_ANY;
+      int rc = bind(server_sock, (struct sockaddr*)&addr, addr_len);
+      if(rc) 
+	{
+	  fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
+	  abort();
+	}
+      rc = getsockname(server_sock, (struct sockaddr*)&addr, &addr_len);
+      listen(server_sock, 255);
+      
+      struct ifaddrs*ifa_list = NULL;
+      rc = getifaddrs(&ifa_list);
+      if(rc == 0)
+	{
+	  struct ifaddrs*i;
+	  for(i = ifa_list; i != NULL; i = i->ifa_next)
+	    {
+	      if (i->ifa_addr && i->ifa_addr->sa_family == AF_INET)
+		{
+		  struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
+		  if(!(i->ifa_flags & IFF_LOOPBACK))
+		    {
+		      snprintf(local_launcher_url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr.sin_port);
+		      break;
+		    }
+		}
+	    }
+	}
+      if(local_launcher_url[0] == '\0')
+	{
+	  fprintf(stderr, "# launcher: cannot get local address\n");
+	  abort();
+	} 
+      fprintf(stderr, "# laucher: local url = '%s'\n", local_launcher_url);
+      int sock = accept(server_sock, (struct sockaddr*)&addr, &addr_len);
+      assert(sock > -1);
+      close(server_sock);
+      nm_launcher_addr_send(sock, local_session_url);
+      nm_launcher_addr_recv(sock, &remote_session_url);
+      close(sock);
     }
   else
+    { 
+      /* client */
+      int sock = socket(AF_INET, SOCK_STREAM, 0);
+      assert(sock > -1);
+      assert(strlen(remote_launcher_url) == 12);
+      in_addr_t peer_addr;
+      int peer_port;
+      sscanf(remote_launcher_url, "%08x%04x", &peer_addr, &peer_port);
+      struct sockaddr_in inaddr = {
+	.sin_family = AF_INET,
+	.sin_port   = peer_port,
+	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
+      };
+      int rc = connect(sock, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      if(rc)
+	{
+	  fprintf(stderr, "# launcher: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
+	  abort();
+	}
+      nm_launcher_addr_recv(sock, &remote_session_url);
+      nm_launcher_addr_send(sock, local_session_url);
+      close(sock);
+    }
+
+  err = nm_session_connect(status->p_session, &status->gate, remote_session_url);
+  if (err != NM_ESUCCESS)
     {
-      /* use default drivers */
-      status->nr_rails = get_default_driver_assemblies(driver_assemblies);
-      if (status->nr_rails < 0)
-	{
-	  fprintf(stderr, "launcher: failed to select default drivers automatically.\n");
-	  usage();
-	}
-      if(status->nr_rails == 0)
-	{
-	  fprintf(stderr, "launcher: no driver enabled.\n");
-	  usage();
-	}
+      fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
+      abort();
     }
-
-  status->is_server = (!nr_r_urls);
-
-  /* if client, we need as many url as drivers */
-  if (!status->is_server && nr_r_urls < status->nr_rails) {
-    fprintf(stderr, "launcher: need %d url for these %d rails\n", nr_r_urls, status->nr_rails);
-    usage();
-  }
-
-  if (status->is_server) {
-    printf("# launcher: running as server\n");
-  } else {
-    printf("# launcher: running as client using remote url:");
-    for(j = 0; j < status->nr_rails; j++)
-      printf(" %s", r_url[j]);
-    printf("\n");
-  }
-
-  err = nm_core_driver_load_init_some_with_params(status->p_core, status->nr_rails, driver_assemblies, params_array, nparam_array, drvs, status->l_url);
-  if (err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core_driver_load_init_some returned err = %d\n", err);
-    goto out_err;
-  }
-  for(j = 0; j < status->nr_rails; j++) {
-    printf("# launcher: local url[%d]: '%s'\n", j, status->l_url[j]);
-  }
-
-  err = nm_core_gate_init(status->p_core, &status->gate);
-  if (err != NM_ESUCCESS) {
-    fprintf(stderr, "launcher: nm_core_gate_init returned err = %d\n", err);
-    goto out_err;
-  }
-
-  if (status->is_server) {
-    /* server  */
-    for(j = 0; j < status->nr_rails; j++) {
-      err = nm_core_gate_accept(status->p_core, status->gate, drvs[j], NULL);
-      if (err != NM_ESUCCESS) {
-	fprintf(stderr, "launcher: nm_core_gate_accept(drv#%d) returned err = %d\n", j, err);
-	goto out_err;
-      }
-    }
-  } else {
-    /* client */
-    for(j = 0; j < status->nr_rails; j++) {
-      err = nm_core_gate_connect(status->p_core, status->gate, drvs[j], r_url[j]);
-      if (err != NM_ESUCCESS) {
-	fprintf(stderr, "launcher: nm_core_gate_connect(drv#%d) returned err = %d\n", j, err);
-	goto out_err;
-      }
-    }
-
-  }
-
-  return;
-
- out_err:
-  exit(EXIT_FAILURE);
 }
 
 

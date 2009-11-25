@@ -386,6 +386,8 @@ mad_nmad_accept(p_mad_connection_t   in,
         p_mad_nmad_driver_specific_t		ds	= NULL;
         p_mad_nmad_adapter_specific_t		as	= NULL;
         p_mad_nmad_connection_specific_t	cs	= NULL;
+        p_mad_dir_node_t			r_n	= NULL;
+        p_mad_dir_adapter_t			r_a	= NULL;
         int err;
 
         NM_LOG_IN();
@@ -393,13 +395,18 @@ mad_nmad_accept(p_mad_connection_t   in,
         as	= in->channel->adapter->specific;
         ds	= in->channel->adapter->driver->specific;
 
+        r_a	= ai->dir_adapter;
+        r_n	= ai->dir_node;
+
         p_mad_madeleine_t madeleine = in->channel->adapter->driver->madeleine;
+	char*url;
         cs->master_cnx = tbx_darray_get(madeleine->cnx_darray, in->remote_rank);
+	url = tbx_strdup(r_a->parameter);
         NM_TRACEF("accept: cnx_id = %d, remote node = %s, gate = %p",
                   in->remote_rank,
                   ai->dir_node->name,
                   cs->gate);
-        err = nm_core_gate_accept(p_core, cs->gate, ds->p_drv, NULL);
+        err = nm_core_gate_accept(p_core, cs->gate, ds->p_drv, url);
         if (err != NM_ESUCCESS) {
           printf("nm_core_gate_accept returned err = %d\n", err);
           TBX_FAILURE("nmad error");
@@ -432,23 +439,8 @@ mad_nmad_connect(p_mad_connection_t   out,
         p_mad_madeleine_t madeleine = out->channel->adapter->driver->madeleine;
 
         char * url;
-        size_t url_len;
-
         cs->master_cnx = tbx_darray_get(madeleine->cnx_darray, out->remote_rank);
-        if (!strcmp(out->channel->adapter->driver->device_name, "tcp")) {
-          /* remove the default hostname possibly provided by the tcp driver and add the correct one */
-          char *port_str = strchr(r_a->parameter, ':');
-          if (port_str) {
-            port_str++;
-          } else {
-            port_str = r_a->parameter;
-          }
-          url_len = strlen(r_n->name) + 1 + strlen(port_str) + 1;
-          url = TBX_MALLOC(url_len);
-          sprintf(url, "%s:%s", r_n->name, port_str);
-        } else {
-          url = tbx_strdup(r_a->parameter);
-        }
+	url = tbx_strdup(r_a->parameter);
 
         NM_TRACEF("connect: cnx_id = %d, remote node = %s, gate = %p",
                   out->remote_rank,

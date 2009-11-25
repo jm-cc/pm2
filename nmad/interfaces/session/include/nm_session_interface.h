@@ -22,7 +22,7 @@ typedef struct nm_session_s*nm_session_t;
 
 /** Create an empty session object.
  */
-int nm_session_create(nm_session_t*p_session, const char*label);
+int nm_session_create(nm_session_t*pp_session, const char*label);
 
 /** Initializes a session object.
  * 'p_local_url' is a return parameter to an object allocated in the session.
@@ -32,11 +32,7 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
 /** Connect the given gate.
  * 'remote_url' is the url returned by the nm_session_init on the given peer.
  */
-int nm_session_connect(nm_session_t p_session, nm_gate_t*p_gate, const char*remote_url);
-
-/** Accept a connection from a remote peer.
- */
-int nm_session_accept(nm_session_t p_session, nm_gate_t*p_gate);
+int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*remote_url);
 
 /** Disconnect and destroy a session.
  */

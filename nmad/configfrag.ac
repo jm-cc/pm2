@@ -26,6 +26,7 @@ m4_define([nmad_bin_scripts], [			\
 	nmad/examples/mad3/GNUmakefile		\
 	nmad/examples/sched_opt/GNUmakefile	\
 	nmad/examples/sendrecv/GNUmakefile	\
+	nmad/examples/session/GNUmakefile	\
 	nmad/sampling/GNUmakefile		\
 	nmad/interfaces/mpi/scripts/mpicc	\
 	nmad/interfaces/mpi/scripts/mpicc.ext	\

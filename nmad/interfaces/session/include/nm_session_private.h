@@ -19,10 +19,12 @@
 #include <stdint.h>
 #include <nm_session_interface.h>
 
+/** Private state of a session object.
+ */
 struct nm_session_s
 {
   struct nm_core*p_core;
-  uint32_t session_hash;
+  uint32_t hash_code;
   const char*label;
 };
 

@@ -29,6 +29,7 @@
 #include "madeleine.h"
 
 #include "nm_mad3_private.h"
+#include <nm_session_interface.h>
 
 #include <errno.h>
 
@@ -49,8 +50,7 @@ typedef struct s_mad_nmad_deferred {
 #  endif /* MAD_NMAD_SO_DEBUG */
 
 typedef struct s_mad_nmad_driver_specific {
-        nm_drv_t		 p_drv;
-        char			*l_url;
+  const char			*l_url;
 } mad_nmad_driver_specific_t, *p_mad_nmad_driver_specific_t;
 
 typedef struct s_mad_nmad_adapter_specific {
@@ -115,7 +115,8 @@ mad_nmad_disconnect(p_mad_connection_t);
  */
 
 /* core and proto objects */
-static struct nm_core	*p_core		= NULL;
+static nm_core_t p_core	= NULL;
+static nm_session_t p_session = NULL;
 
 /*
  * Driver private functions
@@ -128,19 +129,6 @@ mad_nmad_get_core(void) {
   return p_core;
 }
 
-static
-void
-nm_mad3_init_core(int	 *argc,
-                  char	**argv) {
-        int err;
-
-        TRACE("Initializing NMAD driver");
-        err = nm_core_init(argc, argv, &p_core);
-        if (err != NM_ESUCCESS) {
-                DISP("nm_core_init returned err = %d\n", err);
-                TBX_FAILURE("nmad error");
-        }
-}
 
 /*
  * Registration function
@@ -195,17 +183,17 @@ mad_nmad_driver_exit(p_mad_driver_t	   d) {
   p_mad_nmad_driver_specific_t	 ds		= d->specific;
   int err;
 
-  TBX_FREE(ds->l_url);
   ds->l_url = NULL;
 
-  if (p_core == NULL) return;
+  if (p_session == NULL) return;
 
-  err = nm_core_exit(p_core);
+  err = nm_session_destroy(p_session);
   if(err != NM_ESUCCESS) {
     DISP("nm_core__exit return err = %d\n", err);
     TBX_FAILURE("nmad error");
   }
   p_core = NULL;
+  p_session = NULL;
   NM_LOG_OUT();
 }
 
@@ -215,14 +203,22 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
                      int		  *argc,
                      char		***argv) {
         p_mad_nmad_driver_specific_t	 ds		= NULL;
-        nm_drv_t		 	 p_drv;
-        char				 *l_url;
+        const char			 *l_url;
         int                              err;
-	puk_component_t                  driver_config = NULL;
 
         NM_LOG_IN();
-        if (!p_core) {
-                nm_mad3_init_core(argc, *argv);
+        if (!p_session) {
+	        int err;
+
+		TRACE("Initializing NMAD driver");
+		err = nm_session_create(&p_session, "mad3_emu");
+		err = nm_session_init(p_session, argc, *argv, &l_url);
+		if (err != NM_ESUCCESS) {
+		  DISP("nm_session_init returned err = %d\n", err);
+		  TBX_FAILURE("nmad error");
+		}
+		p_core = nm_session_get_core(p_session);
+
 #ifdef PROFILE
                 DISP("mad3 emulation: profile on");
 
@@ -244,15 +240,9 @@ mad_nmad_driver_init(p_mad_driver_t	   d,
 #endif
         }
 
-	driver_config = nm_core_component_load("driver", "custom");
-	err = nm_core_driver_load_init(p_core, driver_config, &p_drv, &l_url);
-
-        NMAD_EVENT_DRV_ID(p_drv->id);
-        NMAD_EVENT_DRV_NAME(d->device_name);
         d->connection_type	= mad_bidirectional_connection;
         d->buffer_alignment	= 32;
         ds			= TBX_MALLOC(sizeof(mad_nmad_driver_specific_t));
-        ds->p_drv	= p_drv;
         ds->l_url	= l_url;
         d->specific	= ds;
         NM_LOG_OUT();
@@ -334,14 +324,8 @@ mad_nmad_connection_init(p_mad_connection_t in,
         cnx_darray = madeleine->cnx_darray;
 
         if (master_channel_id == ch->dir_channel->id) {
-                err = nm_core_gate_init(p_core, &cs->gate);
-                if (err != NM_ESUCCESS) {
-                        printf("nm_core_gate_init returned err = %d\n", err);
-                        TBX_FAILURE("nmad error");
-                }
-
-                tbx_darray_expand_and_set(cnx_darray, in->remote_rank,
-                                          cs);
+        	cs->gate = NULL;
+                tbx_darray_expand_and_set(cnx_darray, in->remote_rank, cs);
                 cs->master_cnx	= cs;
         } else {
                 cs->master_cnx	= NULL;
@@ -406,9 +390,9 @@ mad_nmad_accept(p_mad_connection_t   in,
                   in->remote_rank,
                   ai->dir_node->name,
                   cs->gate);
-        err = nm_core_gate_accept(p_core, cs->gate, ds->p_drv, url);
+        err = nm_session_connect(p_session, &cs->gate, url);
         if (err != NM_ESUCCESS) {
-          printf("nm_core_gate_accept returned err = %d\n", err);
+          printf("nm_session_connect returned err = %d\n", err);
           TBX_FAILURE("nmad error");
         }
         NMAD_EVENT_CNX_ACCEPT(in->remote_rank, cs->gate, ds->p_drv);
@@ -447,9 +431,9 @@ mad_nmad_connect(p_mad_connection_t   out,
                   ai->dir_node->name,
                   cs->gate);
 
-        err = nm_core_gate_connect(p_core, cs->gate, ds->p_drv, url);
+        err = nm_session_connect(p_session, &cs->gate, url);
         if (err != NM_ESUCCESS) {
-          printf("nm_core_gate_connect returned err = %d\n", err);
+          printf("nm_session_connect returned err = %d\n", err);
           TBX_FAILURE("nmad error");
         }
         TBX_FREE(url);

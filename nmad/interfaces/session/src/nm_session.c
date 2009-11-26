@@ -355,10 +355,12 @@ static void nm_session_do_init(int*argc, char**argv)
 int nm_session_create(nm_session_t*pp_session, const char*label)
 {
   struct nm_session_s*p_session = TBX_MALLOC(sizeof(struct nm_session_s));
+  assert(label != NULL);
+  assert(pp_session != NULL);
   p_session->p_core = NULL;
   p_session->label = strdup(label);
   const int len = strlen(label);
-  p_session->session_hash = puk_hash_oneatatime((void*)label, len);
+  p_session->hash_code = puk_hash_oneatatime((void*)label, len);
   nm_session.ref_count++;
   *pp_session = p_session;
   return NM_ESUCCESS;
@@ -416,7 +418,6 @@ int nm_session_destroy(nm_session_t p_session)
       nm_session.p_drv = NULL;
       free((void*)nm_session.local_url);
       nm_session.local_url = NULL;
-      common_exit(NULL);
     }
   return NM_ESUCCESS;
 }

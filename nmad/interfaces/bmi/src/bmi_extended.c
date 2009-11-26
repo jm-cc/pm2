@@ -18,7 +18,7 @@
 #include "bmi_extended.h"
 #include "nmad_bmi_interface.h"
 
-extern nm_core_t p_core;
+extern nm_session_t p_core;
 extern p_tbx_memory_t nm_bmi_mem;
 
 /** Checks to see if a particular message has completed.

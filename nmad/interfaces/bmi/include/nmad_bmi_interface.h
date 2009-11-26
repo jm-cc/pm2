@@ -103,7 +103,7 @@ typedef struct tbx_fast_list_head list_t;       /* easier to type */
 
 #define BNM_TIMEOUT     (20 * 1000)       /* msg timeout in milliseconds */
 
-#if BNM_MEM_TWEAK
+#ifdef BNM_MEM_TWEAK
 struct bnm_buffer
 {
         list_t              nmb_list;     /* hang on used/idle lists */
@@ -152,7 +152,7 @@ struct bnm_data
                                                    global txs, next_id, etc. */
 #endif
 
-#if BNM_MEM_TWEAK
+#ifdef BNM_MEM_TWEAK
         list_t              bnm_idle_buffers;
         list_t              bnm_used_buffers;
         int                 bnm_misses;
@@ -198,7 +198,6 @@ struct bnm_peer
         struct BMI_addr        *p_addr;
         const char              *peername;  
         nm_gate_t               p_gate;
-        nm_drv_t                p_drv;
 
         int                     nmp_exist;      /* have we connected before? */
 

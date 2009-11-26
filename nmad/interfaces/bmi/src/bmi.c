@@ -86,9 +86,6 @@ static int server = 0;
 
 nm_session_t p_core;
 const char*local_session_url = NULL;
-static nm_drv_t p_drv;
-
-static puk_component_t  p_driver_load;
 
 
 static inline
@@ -192,7 +189,6 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 
     __bmi_peer_init(addr->p_peer);
     addr->p_peer->p_gate    = addr->p_gate;
-    addr->p_peer->p_drv     = p_drv;
     addr->p_peer->nmp_state = BNM_PEER_READY;
     addr->p_peer->nmp_rx_id = max_tx_id++;
     addr->p_peer->peername  = addr->peername;
@@ -561,7 +557,6 @@ BMI_addr_lookup(BMI_addr_t *peer,
 	    goto bmi_addr_lookup_failure;
 	}
 	
-	new_peer->p_drv = p_drv;
 	new_peer->peername = (char *)TBX_MALLOC(strlen(id_string) + 1);
 
 	if (!new_peer->peername)
@@ -594,7 +589,6 @@ BMI_addr_lookup(BMI_addr_t *peer,
 #endif
 	
 	peer[0]           = TBX_MALLOC(sizeof(struct BMI_addr));
-	peer[0]->p_drv    = p_drv;
 
 	peer[0]->p_gate = new_peer->p_gate;
 

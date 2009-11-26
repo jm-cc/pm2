@@ -18,7 +18,8 @@
 #include <assert.h>
 
 #include <nm_private.h>
-#include "nm_sendrecv_interface.h"
+#include <nm_sendrecv_interface.h>
+#include <nm_session_private.h>
 
 //#define DEBUG 1
 /** Structure that contains all sendrecv-related static variables.
@@ -179,8 +180,9 @@ static const struct nm_so_monitor_s nm_sr_monitor_unexpected =
 
 /* User interface */
 
-int nm_sr_init(struct nm_core *p_core)
+int nm_sr_init(nm_session_t p_session)
 {
+  nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
 
   if(!nm_sr_data.init_done)
@@ -201,7 +203,7 @@ int nm_sr_init(struct nm_core *p_core)
   return NM_ESUCCESS;
 }
 
-int nm_sr_exit(struct nm_core *p_core)
+int nm_sr_exit(nm_session_t p_session)
 {
   NM_SO_SR_LOG_IN();
 
@@ -210,13 +212,15 @@ int nm_sr_exit(struct nm_core *p_core)
 }
 
 /** generic send operation */
-int nm_sr_isend_generic(struct nm_core *p_core,
+int nm_sr_isend_generic(nm_session_t p_session,
 			nm_gate_t p_gate, nm_tag_t tag,
 			nm_sr_transfer_type_t sending_type,
 			const void *data, uint32_t len,
 			nm_sr_request_t *p_request,
 			void*ref)
 {
+  nm_core_t p_core = p_session->p_core;
+  assert(nm_sr_data.init_done);
   nmad_lock();
   nm_lock_interface(p_core);
 
@@ -258,14 +262,16 @@ int nm_sr_isend_generic(struct nm_core *p_core,
 }
 
 /** synchronous send operation */
-int nm_sr_issend_generic(struct nm_core *p_core,
+int nm_sr_issend_generic(nm_session_t p_session,
 			 nm_gate_t p_gate, nm_tag_t tag,
 			 nm_sr_transfer_type_t sending_type,
 			 const void *data, uint32_t len,
 			 nm_sr_request_t *p_request,
 			 void*ref)
 {
+  nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
+  assert(nm_sr_data.init_done);
   nmad_lock();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
@@ -299,16 +305,16 @@ int nm_sr_issend_generic(struct nm_core *p_core,
   return ret;
 }
 
-int nm_sr_rsend(struct nm_core *p_core,
-		   nm_gate_t p_gate, nm_tag_t tag,
-		   const void *data, uint32_t len,
-		   nm_sr_request_t *p_request)
+int nm_sr_rsend(nm_session_t p_session,
+		nm_gate_t p_gate, nm_tag_t tag,
+		const void *data, uint32_t len,
+		nm_sr_request_t *p_request)
 {
   const nm_sr_transfer_type_t tt = nm_sr_contiguous_transfer;
   
   NM_SO_SR_LOG_IN();
   
-  int ret = nm_sr_isend_generic(p_core, p_gate, tag, tt, data, len, p_request, NULL);
+  int ret = nm_sr_isend_generic(p_session, p_gate, tag, tt, data, len, p_request, NULL);
 
   NM_SO_SR_LOG_OUT();
   return ret;
@@ -320,8 +326,9 @@ int nm_sr_rsend(struct nm_core *p_core,
  *  @param request the request to check.
  *  @return The NM status.
  */
-int nm_sr_stest(struct nm_core *p_core, nm_sr_request_t *p_request)
+int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
+  nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
 
@@ -369,8 +376,9 @@ static inline int nm_sr_flush(struct nm_core *p_core)
   return ret;
 }
 
-int nm_sr_swait(struct nm_core *p_core, nm_sr_request_t *p_request)
+int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
+  nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
 
   nm_sr_flush(p_core);
@@ -385,22 +393,23 @@ int nm_sr_swait(struct nm_core *p_core, nm_sr_request_t *p_request)
   return NM_ESUCCESS;
 }
 
-int nm_sr_scancel(struct nm_core *p_core, nm_sr_request_t *p_request) 
+int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
-
   return -NM_ENOTIMPL;
 }
 
 /* Receive operations */
-extern int nm_sr_irecv_generic(nm_core_t p_core,
+extern int nm_sr_irecv_generic(nm_session_t p_session,
 			       nm_gate_t p_gate, nm_tag_t tag,
 			       nm_sr_transfer_type_t reception_type,
 			       void *data_description, uint32_t len,
 			       nm_sr_request_t *p_request,
 			       void *ref)
 {
+  nm_core_t p_core = p_session->p_core;
   int ret;
   NM_SO_SR_LOG_IN();
+  assert(nm_sr_data.init_done);
 
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data_description, len, p_request);
 
@@ -453,9 +462,9 @@ extern int nm_sr_irecv_generic(nm_core_t p_core,
  *  @param request the request to check.
  *  @return The NM status.
  */
-int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request) 
+int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
-
+  nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
   /* todo: no need to lock this ? */
@@ -496,8 +505,9 @@ int nm_sr_rtest(struct nm_core *p_core, nm_sr_request_t *p_request)
   return rc;
 }
 
-int nm_sr_rwait(struct nm_core *p_core, nm_sr_request_t *p_request)
+int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
+  nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
 
   nm_sr_flush(p_core);
@@ -511,16 +521,16 @@ int nm_sr_rwait(struct nm_core *p_core, nm_sr_request_t *p_request)
     }
   NM_SO_SR_TRACE("request %p completed\n", p_request);
   NM_SO_SR_LOG_OUT();
-  return nm_sr_rtest(p_core, p_request);
+  return nm_sr_rtest(p_session, p_request);
 }
 
-int nm_sr_get_size(struct nm_core *p_core, nm_sr_request_t *p_request, size_t *size)
+int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_request, size_t *size)
 {
   *size = p_request->req.unpack.cumulated_len;
   return NM_ESUCCESS;
 }
 
-int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
+int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
   NM_SO_SR_LOG_IN();
   if(pp_gate)
@@ -530,9 +540,10 @@ int nm_sr_recv_source(struct nm_core *p_core, nm_sr_request_t *p_request, nm_gat
 }
 
 
-int nm_sr_probe(struct nm_core *p_core,
+int nm_sr_probe(nm_session_t p_session,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
 {
+  nm_core_t p_core = p_session->p_core;
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
@@ -549,14 +560,14 @@ int nm_sr_probe(struct nm_core *p_core,
   return err;
 }
 
-int nm_sr_monitor(nm_core_t p_core, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
+int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
   nm_sr_event_monitor_t m = { .mask = mask, .notifier = notifier };
   nm_sr_event_monitor_vect_push_back(&nm_sr_data.monitors, m);
   return NM_ESUCCESS;
 }
 
-int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
+int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
   assert(p_request->monitor.notifier == NULL);
@@ -565,8 +576,9 @@ int nm_sr_request_monitor(nm_core_t p_core, nm_sr_request_t *p_request,
   return NM_ESUCCESS;
 }
 
-int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
+int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
+  nm_core_t p_core = p_session->p_core;
 #ifdef NMAD_POLL
   nm_schedule(p_core);
 #else
@@ -596,18 +608,9 @@ int nm_sr_recv_success(struct nm_core *p_core, nm_sr_request_t **out_req)
     }
 }
 
-void nm_sr_send_remove(struct nm_core *p_core, nm_sr_request_t *req)
+int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
-       tbx_fast_list_del_init(&req->_link);
-}
-
-void nm_sr_recv_remove(struct nm_core *p_core, nm_sr_request_t *req)
-{
-       tbx_fast_list_del_init(&req->_link);
-}
-
-int nm_sr_send_success(struct nm_core *p_core, nm_sr_request_t **out_req)
-{
+  nm_core_t p_core = p_session->p_core;
   nm_schedule(p_core);
   if(!tbx_fast_list_empty(&nm_sr_data.completed_sreq))
     {
@@ -630,8 +633,9 @@ int nm_sr_send_success(struct nm_core *p_core, nm_sr_request_t **out_req)
  *  -NM_EINPROGRESS receipt is in progress, it is too late to cancel
  *  -NM_EALREADY    receipt is already completed
  */
-int nm_sr_rcancel(struct nm_core *p_core, nm_sr_request_t *p_request)
+int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
 {
+  nm_core_t p_core = p_session->p_core;
   int err = -NM_ENOTIMPL;
 
   nmad_lock();
@@ -728,10 +732,11 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
   NM_SO_SR_LOG_OUT();
 }
 
-int nm_sr_progress(struct nm_core *p_core)
+int nm_sr_progress(nm_session_t p_session)
 {
   /* We assume that PIOMan makes the communications progress */
 #ifdef NMAD_POLL
+  nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
   nm_schedule(p_core);
   NM_SO_SR_LOG_OUT();

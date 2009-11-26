@@ -15,14 +15,15 @@
 
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
-
-#include "helper.h"
+#include <nm_session_interface.h>
 
 const char *msg	= "hello, world!";
 
-int main(int argc, char	**argv) {
+int main(int argc, char	**argv)
+{
+  nm_session_t p_session;
   nm_gate_t gate;
-  nm_pack_cnx_t      cnx;
+  nm_pack_cnx_t cnx;
 
   uint32_t len = 1 + strlen(msg);
   int rank;
@@ -30,19 +31,19 @@ int main(int argc, char	**argv) {
 
   nm_launcher_init(&argc, argv);
   nm_launcher_get_rank(&rank);
-  nm_launcher_get_core(&p_core);
+  nm_launcher_get_session(&p_session);
 
   buf = malloc(len*sizeof(char));
   memset(buf, 0, len);
 
   if (rank == 0) {
-    nm_begin_unpacking(p_core, NM_ANY_GATE, 0, &cnx);
+    nm_begin_unpacking(p_session, NM_ANY_GATE, 0, &cnx);
     nm_unpack(&cnx, buf, len);
     nm_end_unpacking(&cnx);
 
     nm_launcher_get_gate(1, &gate);
 
-    nm_begin_packing(p_core, gate, 0, &cnx);
+    nm_begin_packing(p_session, gate, 0, &cnx);
     nm_pack(&cnx, buf, len);
     nm_end_packing(&cnx);
   }
@@ -50,11 +51,11 @@ int main(int argc, char	**argv) {
     strcpy(buf, msg);
 
     nm_launcher_get_gate(0, &gate);
-    nm_begin_packing(p_core, gate, 0, &cnx);
+    nm_begin_packing(p_session, gate, 0, &cnx);
     nm_pack(&cnx, buf, len);
     nm_end_packing(&cnx);
 
-    nm_begin_unpacking(p_core, gate, 0, &cnx);
+    nm_begin_unpacking(p_session, gate, 0, &cnx);
     nm_unpack(&cnx, buf, len);
     nm_end_unpacking(&cnx);
 

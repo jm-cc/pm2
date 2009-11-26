@@ -20,6 +20,8 @@
 #ifndef MAD_NMAD_H
 #define MAD_NMAD_H
 
+#include <nm_session_interface.h>
+
 /*
  * Structures
  * ----------
@@ -32,6 +34,6 @@
 
 char * mad_nmad_register(p_mad_driver_interface_t);
 
-struct nm_core * mad_nmad_get_core(void);
+nm_session_t mad_nmad_get_session(void);
 
 #endif /* MAD_NMAD_H */

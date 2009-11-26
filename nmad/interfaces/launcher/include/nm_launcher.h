@@ -17,22 +17,22 @@
 #define NM_LAUNCHER_H
 
 #include <nm_public.h>
-
+#include <nm_session_interface.h>
 
 /* ** Component interface definition: 'NewMad_Launcher' */
 
 struct newmad_launcher_driver_s
 {
 
-  void      (*init)(void*_status, int*argc, char**argv, const char*label);
+  void         (*init)(void*_status, int*argc, char**argv, const char*label);
 
-  int       (*get_size)(void*_status);
+  int          (*get_size)(void*_status);
 
-  int       (*get_rank)(void*_status);
+  int          (*get_rank)(void*_status);
 
-  nm_core_t (*get_core)(void*_status);
+  nm_session_t (*get_session)(void*_status);
 
-  void      (*get_gates)(void*_status, nm_gate_t*gates);
+  void         (*get_gates)(void*_status, nm_gate_t*gates);
 };
 
 PUK_IFACE_TYPE(NewMad_Launcher, struct newmad_launcher_driver_s);
@@ -53,7 +53,7 @@ int nm_launcher_get_rank(int *);
 int nm_launcher_get_size(int *);
 
 /** Returns the send/receive interface */
-int nm_launcher_get_core(nm_core_t *p_core);
+int nm_launcher_get_session(nm_session_t *p_session);
 
 /** Returns the gate for the process dest */
 int nm_launcher_get_gate(int dest, nm_gate_t *gate);

@@ -29,7 +29,7 @@ struct mad_launcher_status_s
 {
   p_mad_madeleine_t madeleine;
   p_mad_session_t session;
-  nm_core_t p_core;
+  nm_session_t p_session;
   int rank;
   int size;
 };
@@ -47,19 +47,19 @@ const static struct puk_adapter_driver_s mad_launcher_adapter =
 
 /* ********************************************************* */
 
-static void      mad_launcher_init(void*_status, int*argc, char**argv, const char*group_name);
-static int       mad_launcher_get_size(void*_status);
-static int       mad_launcher_get_rank(void*_status);
-static nm_core_t mad_launcher_get_core(void*_status);
-static void      mad_launcher_get_gates(void*_status, nm_gate_t*gates);
+static void         mad_launcher_init(void*_status, int*argc, char**argv, const char*group_name);
+static int          mad_launcher_get_size(void*_status);
+static int          mad_launcher_get_rank(void*_status);
+static nm_session_t mad_launcher_get_session(void*_status);
+static void         mad_launcher_get_gates(void*_status, nm_gate_t*gates);
 
 const static struct newmad_launcher_driver_s mad_launcher_driver =
   {
-    .init      = &mad_launcher_init,
-    .get_size  = &mad_launcher_get_size,
-    .get_rank  = &mad_launcher_get_rank,
-    .get_core  = &mad_launcher_get_core,
-    .get_gates = &mad_launcher_get_gates
+    .init         = &mad_launcher_init,
+    .get_size     = &mad_launcher_get_size,
+    .get_rank     = &mad_launcher_get_rank,
+    .get_session  = &mad_launcher_get_session,
+    .get_gates    = &mad_launcher_get_gates
   };
 
 
@@ -111,9 +111,9 @@ static void mad_launcher_init(void*_status, int*argc, char**argv, const char*gro
   status->size = tbx_slist_get_length(status->madeleine->dir->process_slist);
 
   /*
-   * Reference to the NewMadeleine core object
+   * Reference to the NewMadeleine session object
    */
-  status->p_core = mad_nmad_get_core();
+  status->p_session = mad_nmad_get_session();
   
 }
 
@@ -129,10 +129,10 @@ static int mad_launcher_get_rank(void*_status)
   return status->rank;
 }
 
-static nm_core_t mad_launcher_get_core(void*_status)
+static nm_session_t mad_launcher_get_session(void*_status)
 {
   struct mad_launcher_status_s*status = _status;
-  return status->p_core;
+  return status->p_session;
 }
 
 static void mad_launcher_get_gates(void*_status, nm_gate_t*gates)

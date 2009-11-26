@@ -25,13 +25,14 @@
 
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
+#include <nm_session_interface.h>
 
 /** Connection storage for the pack interface.
  */
 struct nm_pack_cnx
 {
   /** Interface used on the connexion. */
-  nm_core_t p_core;
+  nm_session_t p_session;
 
   /** Source or destination gate id. */
   nm_gate_t gate;
@@ -49,13 +50,13 @@ typedef struct nm_pack_cnx nm_pack_cnx_t;
 
 
 /** Start building and sending a new message.
- *  @param p_core a pointer to the NM core object.
+ *  @param p_session a pointer to a nmad session object.
  *  @param gate the gate to the destination.
  *  @param tag the message tag.
  *  @param cnx a NM/SO connection pointer.
  *  @return The NM status.
  */
-extern int nm_begin_packing(nm_core_t p_core,
+extern int nm_begin_packing(nm_session_t p_session,
 			    nm_gate_t gate, nm_tag_t tag,
 			    nm_pack_cnx_t *cnx);
 
@@ -81,13 +82,13 @@ extern int nm_end_packing(nm_pack_cnx_t *cnx);
 extern int nm_cancel_packing(nm_pack_cnx_t *cnx);
 
 /** Start receiving and extracting a new message.
- *  @param p_core a pointer to the NM core object.
+ *  @param p_session a pointer to a nmad session object.
  *  @param gate the gate of the source or -1 for receiving from any source.
  *  @param tag the message tag.
  *  @param cnx a NM/SO connection pointer.
  *  @return The NM status.
  */
-extern int nm_begin_unpacking(nm_core_t p_core,
+extern int nm_begin_unpacking(nm_session_t p_session,
 			      nm_gate_t gate, nm_tag_t tag,
 			      nm_pack_cnx_t *cnx);
 

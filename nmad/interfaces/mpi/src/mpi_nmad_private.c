@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include "mpi.h"
 #include "mpi_nmad_private.h"
-#include "nm_so_parameters.h"
 #include "nm_log.h"
 
 #if defined(NMAD_DEBUG)
@@ -74,9 +73,9 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->nb_incoming_msg = 0;
 
   /** Set the NewMadeleine interfaces */
-  mpir_internal_data->p_core = (*r->driver->get_core)(r->_status);
+  mpir_internal_data->p_session = (*r->driver->get_session)(r->_status);
 
-  nm_sr_init(mpir_internal_data->p_core);
+  nm_sr_init(mpir_internal_data->p_session);
 
   /** Initialise the basic datatypes */
   mpir_internal_data->datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
@@ -562,11 +561,11 @@ static inline int mpir_isend_wrapper(mpir_internal_data_t *mpir_internal_data,
   switch(mpir_request->communication_mode)
     {
     case MPI_IMMEDIATE_MODE:
-      err = nm_sr_isend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
+      err = nm_sr_isend(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, buffer,
 			mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
       break;
     case MPI_READY_MODE:
-      err = nm_sr_rsend(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer,
+      err = nm_sr_rsend(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, buffer,
 			mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
       break;
     case MPI_SYNCHRONOUS_MODE:
@@ -590,7 +589,7 @@ static inline int mpir_pack_wrapper(mpir_internal_data_t *mpir_internal_data,
   int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Packing data\n");
-  nm_begin_packing(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, connection);
+  nm_begin_packing(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, connection);
 
   if (mpir_datatype->dte_type == MPIR_VECTOR) {
     err = mpir_datatype_vector_pack(connection, mpir_request->buffer, mpir_datatype, mpir_request->count);
@@ -705,7 +704,7 @@ int mpir_isend_start(mpir_internal_data_t *mpir_internal_data,
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_SEND;
   }
 
-  err = nm_sr_progress(mpir_internal_data->p_core);
+  err = nm_sr_progress(mpir_internal_data->p_session);
   mpir_inc_nb_outgoing_msg(mpir_internal_data);
 
   return err;
@@ -737,7 +736,7 @@ int mpir_set_status(mpir_internal_data_t *mpir_internal_data,
       mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     if (mpir_request->request_source == MPI_ANY_SOURCE) {
       nm_gate_t gate;
-      err = nm_sr_recv_source(mpir_internal_data->p_core, &mpir_request->request_nmad, &gate);
+      err = nm_sr_recv_source(mpir_internal_data->p_session, &mpir_request->request_nmad, &gate);
       status->MPI_SOURCE = mpir_get_dest(mpir_internal_data, gate);
     }
     else {
@@ -745,7 +744,7 @@ int mpir_set_status(mpir_internal_data_t *mpir_internal_data,
     }
   }
   size_t _size = 0;
-  nm_sr_get_size(mpir_internal_data->p_core, &(mpir_request->request_nmad), &_size);
+  nm_sr_get_size(mpir_internal_data->p_session, &(mpir_request->request_nmad), &_size);
   status->size = _size;
   MPI_NMAD_TRACE("Size %d Size datatype %lu\n", status->size, (unsigned long)mpir_sizeof_datatype(mpir_internal_data, mpir_request->request_datatype));
   if (mpir_sizeof_datatype(mpir_internal_data, mpir_request->request_datatype) != 0) {
@@ -863,7 +862,7 @@ static inline int mpir_irecv_wrapper(mpir_internal_data_t *mpir_internal_data,
 
   MPI_NMAD_TRACE("Posting recv request\n");
   MPI_NMAD_TRANSFER("Recv --< gate %p: %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
-  err = nm_sr_irecv(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
+  err = nm_sr_irecv(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
   MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
 
   return err;
@@ -879,7 +878,7 @@ static inline int mpir_unpack_wrapper(mpir_internal_data_t *mpir_internal_data,
   int err = MPI_SUCCESS;
 
   MPI_NMAD_TRACE("Unpacking data\n");
-  nm_begin_unpacking(mpir_internal_data->p_core, mpir_request->gate, mpir_request->request_tag, connection);
+  nm_begin_unpacking(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, connection);
 
   if (mpir_datatype->dte_type == MPIR_VECTOR) {
     MPI_NMAD_TRACE("Receiving vector type: stride %d - blocklen %d - count %d - size %ld\n", mpir_datatype->stride, mpir_datatype->blocklens[0], mpir_datatype->elements, (long)mpir_datatype->size);
@@ -915,7 +914,7 @@ int mpir_irecv_start(mpir_internal_data_t *mpir_internal_data,
     if (mpir_request->request_type != MPI_REQUEST_ZERO) mpir_request->request_type = MPI_REQUEST_PACK_RECV;
   }
 
-  nm_sr_progress(mpir_internal_data->p_core);
+  nm_sr_progress(mpir_internal_data->p_session);
 
   mpir_inc_nb_incoming_msg(mpir_internal_data);
   MPI_NMAD_TRACE("Irecv_start completed\n");
@@ -984,7 +983,7 @@ int mpir_wait(mpir_internal_data_t *mpir_internal_data,
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_sr_rwait\n");
     MPI_NMAD_TRANSFER("Calling nm_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
-    err = nm_sr_rwait(mpir_internal_data->p_core, &mpir_request->request_nmad);
+    err = nm_sr_rwait(mpir_internal_data->p_session, &mpir_request->request_nmad);
     mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
     if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
       mpir_datatype_split(mpir_internal_data, mpir_request);
@@ -994,7 +993,7 @@ int mpir_wait(mpir_internal_data_t *mpir_internal_data,
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_sr_swait\n");
     MPI_NMAD_TRANSFER("Calling nm_sr_swait\n");
-    err = nm_sr_swait(mpir_internal_data->p_core, &mpir_request->request_nmad);
+    err = nm_sr_swait(mpir_internal_data->p_session, &mpir_request->request_nmad);
     MPI_NMAD_TRANSFER("Returning from nm_sr_swait\n");
     if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
       if (mpir_request->contig_buffer != NULL) {
@@ -1025,10 +1024,10 @@ int mpir_test(mpir_internal_data_t *mpir_internal_data,
 	      mpir_request_t *mpir_request) {
   int err = MPI_SUCCESS;
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
-    err = nm_sr_rtest(mpir_internal_data->p_core, &mpir_request->request_nmad);
+    err = nm_sr_rtest(mpir_internal_data->p_session, &mpir_request->request_nmad);
   }
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
-    err = nm_sr_stest(mpir_internal_data->p_core, &mpir_request->request_nmad);
+    err = nm_sr_stest(mpir_internal_data->p_session, &mpir_request->request_nmad);
   }
   else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     nm_pack_cnx_t *connection = &(mpir_request->request_cnx);
@@ -1048,7 +1047,7 @@ int mpir_probe(mpir_internal_data_t *mpir_internal_data,
 	       nm_gate_t gate,
 	       nm_gate_t *out_gate,
 	       nm_tag_t tag) {
-  return nm_sr_probe(mpir_internal_data->p_core, gate, out_gate, tag);
+  return nm_sr_probe(mpir_internal_data->p_session, gate, out_gate, tag);
 }
 
 int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
@@ -1056,7 +1055,7 @@ int mpir_cancel(mpir_internal_data_t *mpir_internal_data,
   int err = MPI_SUCCESS;
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
     mpir_dec_nb_incoming_msg(mpir_internal_data);
-    err = nm_sr_rcancel(mpir_internal_data->p_core, &mpir_request->request_nmad);
+    err = nm_sr_rcancel(mpir_internal_data->p_session, &mpir_request->request_nmad);
   }
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
     mpir_dec_nb_outgoing_msg(mpir_internal_data);

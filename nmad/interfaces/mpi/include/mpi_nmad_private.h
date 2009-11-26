@@ -260,8 +260,8 @@ typedef struct mpir_internal_data_s {
   /** gives the node attached to a gate (hash: nm_gate_t:gate -> intptr_t:(rank+1))*/
   puk_hashtable_t dests;
 
-  /** NewMad core */
-  struct nm_core *p_core;
+  /** NewMad session */
+  nm_session_t p_session;
 
 } mpir_internal_data_t;
 /* @} */

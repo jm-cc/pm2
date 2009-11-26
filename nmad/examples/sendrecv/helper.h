@@ -20,18 +20,20 @@
 #include <ccs_public.h>
 #include <pm2_common.h>
 
-static int       is_server = -1;
-static nm_core_t p_core    = NULL;
-static nm_gate_t gate_id   = NULL;
+static int is_server = -1;
+static nm_session_t p_core = NULL;
+static nm_gate_t gate_id = NULL;
 
-void nmad_exit() {
+void nmad_exit()
+{
   common_exit(NULL);
 }
 
-void init(int *argc, char **argv) {
+void init(int *argc, char **argv)
+{
   int rank, peer;
   nm_launcher_init(argc, argv);
-  nm_launcher_get_core(&p_core);
+  nm_launcher_get_session(&p_core);
   nm_launcher_get_rank(&rank);
   is_server = !rank;
   peer = 1 - rank;

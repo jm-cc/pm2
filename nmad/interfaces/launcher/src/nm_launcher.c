@@ -43,9 +43,9 @@ int nm_launcher_get_size(int *size)
   return NM_ESUCCESS;
 }
 
-int nm_launcher_get_core(struct nm_core **p_core)
+int nm_launcher_get_session(nm_session_t *p_session)
 {
-  *p_core  = (*r.driver->get_core)(r._status);
+  *p_session  = (*r.driver->get_session)(r._status);
   return NM_ESUCCESS;
 }
 
@@ -79,7 +79,7 @@ int nm_launcher_init(int *argc, char**argv)
   puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
   (*r.driver->init)(r._status, argc, &*argv, "NewMadeleine");
 
-  nm_sr_init((*r.driver->get_core)(r._status));
+  nm_sr_init((*r.driver->get_session)(r._status));
 
   {
     int size = (*r.driver->get_size)(r._status);

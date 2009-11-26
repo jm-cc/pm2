@@ -24,17 +24,19 @@
 
 static struct
 {
-  struct nm_core*p_core;
-  struct nm_drv*p_drv;
-  const char*local_url;
-  puk_hashtable_t gates;
-  int ref_count;
+  struct nm_core*p_core;    /**< the current nmad object. */
+  struct nm_drv*p_drv;      /**< the driver used for all connections */
+  const char*local_url;     /**< the local nmad url */
+  puk_hashtable_t gates;    /**< list of connected gates */
+  puk_hashtable_t sessions; /**< table of active sessions, hashed by session hashcode */
+  int ref_count;            /**< ref. counter for core = number of active sessions */
 } nm_session =
   {
     .p_core    = NULL,
     .p_drv     = NULL,
     .local_url = NULL,
     .gates     = NULL,
+    .sessions  = NULL,
     .ref_count = 0
   };
 
@@ -323,6 +325,18 @@ static void nm_session_legacy_init(int*argc, char**argv)
 }
 #endif /* 0 - legacy code */
 
+int nm_session_code_eq(const void*key1, const void*key2)
+{
+  const uint32_t*p_code1 = key1;
+  const uint32_t*p_code2 = key2;
+  return (*p_code1 == *p_code2);
+}
+
+uint32_t nm_session_code_hash(const void*key)
+{
+  const uint32_t*p_hash_code = key;
+  return *p_hash_code;
+}
 
 /** Initializes the global nmad core */
 static void nm_session_do_init(int*argc, char**argv)
@@ -345,7 +359,6 @@ static void nm_session_do_init(int*argc, char**argv)
        *   . multi-rail
        *   . configuration through argv / environment variable
        */
-  nm_session.gates = puk_hashtable_new_string();
 }
 
 
@@ -354,13 +367,26 @@ static void nm_session_do_init(int*argc, char**argv)
 
 int nm_session_create(nm_session_t*pp_session, const char*label)
 {
-  struct nm_session_s*p_session = TBX_MALLOC(sizeof(struct nm_session_s));
+  if(!nm_session.sessions)
+    {
+      nm_session.gates = puk_hashtable_new_string();
+      nm_session.sessions = puk_hashtable_new(&nm_session_code_hash, &nm_session_code_eq);
+    }
   assert(label != NULL);
   assert(pp_session != NULL);
+  const int len = strlen(label);
+  const uint32_t hash_code = puk_hash_oneatatime((void*)label, len);
+  struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
+  if(p_session != NULL)
+    {
+      fprintf(stderr, "# session: collision detected while creating session %s- a session with hashcode %d already exist (%s)\n", label, hash_code, p_session->label);
+      abort();
+    }
+  p_session = TBX_MALLOC(sizeof(struct nm_session_s));
   p_session->p_core = NULL;
   p_session->label = strdup(label);
-  const int len = strlen(label);
-  p_session->hash_code = puk_hash_oneatatime((void*)label, len);
+  p_session->hash_code = hash_code;
+  puk_hashtable_insert(nm_session.sessions, &p_session->hash_code, p_session);
   nm_session.ref_count++;
   *pp_session = p_session;
   return NM_ESUCCESS;
@@ -409,6 +435,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 
 int nm_session_destroy(nm_session_t p_session)
 {
+  puk_hashtable_remove(nm_session.sessions, p_session);
   TBX_FREE(p_session);
   nm_session.ref_count--;
   if(nm_session.ref_count == 0)
@@ -422,7 +449,4 @@ int nm_session_destroy(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
-struct nm_core*nm_session_get_core(nm_session_t p_session)
-{
-  return p_session->p_core;
-}
+

@@ -25,7 +25,7 @@ typedef struct nm_session_s*nm_session_t;
 int nm_session_create(nm_session_t*pp_session, const char*label);
 
 /** Initializes a session object.
- * 'p_local_url' is a return parameter to an object allocated in the session.
+ * 'p_local_url' is a return parameter, pointing to an object allocated in the session- do not free nor modify!
  */
 int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_local_url);
 
@@ -38,9 +38,5 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*rem
  */
 int nm_session_destroy(nm_session_t p_session);
 
-
-/** Temporary hack- don't use!
- */
-struct nm_core*nm_session_get_core(nm_session_t p_session);
 
 #endif /* NM_SESSION_INTERFACE_H */

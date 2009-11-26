@@ -576,6 +576,13 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
   return NM_ESUCCESS;
 }
 
+int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref)
+{
+  assert(p_request->ref == NULL);
+  p_request->ref = ref;
+  return NM_ESUCCESS;
+}
+
 int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   nm_core_t p_core = p_session->p_core;

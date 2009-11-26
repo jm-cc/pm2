@@ -31,6 +31,8 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
 
 /** Connect the given gate.
  * 'remote_url' is the url returned by the nm_session_init on the given peer.
+ * @note this function is synchronous; the remote node must call this function
+ * at the same time with our url
  */
 int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*remote_url);
 

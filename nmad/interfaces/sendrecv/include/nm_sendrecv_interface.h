@@ -151,6 +151,51 @@ extern int nm_sr_exit(nm_session_t p_session);
 extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
 #endif	/* PIOM_ENABLE_SHM */
 
+
+/* ** Operations on requests (send or recv) **************** */
+
+/** Set a notification function called upon request completion */
+extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
+				 nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
+
+/** Enqueue the request in the completion queue upon completion */
+extern int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request);
+
+/** Add a user reference to a request */
+extern int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref);
+
+
+/* ** Building blocks for send ***************************** */
+
+extern int nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request);
+extern int nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+				const void*, uint32_t len);
+extern int nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
+			       const struct iovec*iov, int num_entry);
+extern int nm_sr_send_pack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
+				    struct CCSI_Segment*segp);
+extern int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
+			    nm_gate_t p_gate, nm_tag_t tag);
+extern int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
+			     nm_gate_t p_gate, nm_tag_t tag);
+extern int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
+			    nm_gate_t p_gate, nm_tag_t tag);
+			    
+
+/* ** Building blocks for recv ***************************** */
+
+extern int nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request);
+extern int nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+				  const void*, uint32_t len);
+extern int nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
+				 const struct iovec*iov, int num_entry);
+extern int nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
+				      struct CCSI_Segment*segp);
+extern int nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+			    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
+
+
+
 /** Post a non blocking send request- most generic version.
  *  @param p_session a pointer to a nmad session object.
  *  @param p_gate a pointer to the destination gate.
@@ -419,11 +464,6 @@ extern int nm_sr_probe(nm_session_t p_session,
 
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
-
-/** monitors sendrecv events for a given request */
-extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
-				 nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
-
 
 /** Poll for any completed recv request (any source, any tag).
  * @note Only nm_sr_recv*_with_ref functions (with ref != NULL) generate such an event.

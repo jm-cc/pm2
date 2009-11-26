@@ -75,14 +75,15 @@ ref_list_p ref_list_new(void){
  * adds a reference to the list.  
  *
  * no return value
+ *
  */
+/* todo: we should use rlp as a list, not str_table !!! */
 void 
 ref_list_add(ref_list_p rlp,//TBX list
 	     void* addr){
     struct bnm_peer* peer = (struct bnm_peer*)addr;
 
     assert (peer->peername);    
-    assert (peer->p_gate);
     puk_hashtable_insert(str_table, (char*)peer->peername, peer->p_gate);
     tbx_append_list(rlp,peer);
 }

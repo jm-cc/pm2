@@ -23,10 +23,17 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netpacket/packet.h>
+
+
 #include "bmi.h"
 #include "bmi-types.h"
-//#include "bmi-method-support.h"
-//#include "bmi-method-callback.h"
 #include "reference-list.h"
 #include "op-list.h"
 #include "str-utils.h"
@@ -49,6 +56,10 @@ static int bmi_initialized_count = 0;
  * List of BMI addrs currently managed.
  */
 static ref_list_p cur_ref_list = NULL;
+/* 
+ * List of BMI addr, indexed by p_gates 
+ */
+static ref_list_p gate_ref_list = NULL;
 
 /* array to keep up with active contexts */
 static int context_array[BMI_MAX_CONTEXTS] = { 0 };
@@ -71,8 +82,10 @@ static marcel_mutex_t active_method_count_mutex = MARCEL_MUTEX_INITIALIZER;
 static const int usage_iters_starvation = 100000;
 static const int usage_iters_active = 10000;
 static int server = 0;
-nm_core_t p_core;
 
+
+nm_session_t p_core;
+const char*local_session_url = NULL;
 static nm_drv_t p_drv;
 
 static puk_component_t  p_driver_load;
@@ -128,10 +141,53 @@ __bmi_peer_init(struct bnm_peer *p_peer)
 }
 
 static int max_tx_id = 1;
+static int local_tx_id = -1;
 
-static int __bmi_connect_accept(struct BMI_addr* addr)
+static void __bmi_launcher_addr_send(int sock, const char*url)
 {
-    
+  int len = strlen(url) + 1 ;
+  int rc = send(sock, &len, sizeof(len), 0);
+  if(rc != sizeof(len))
+    {
+      fprintf(stderr, "# launcher: cannot send address to peer.\n");
+      abort();
+    }
+  rc = send(sock, url, len, 0);
+  if(rc != len)
+    {
+      fprintf(stderr, "# launcher: cannot send address to peer.\n");
+      abort();
+    }
+}
+
+static void __bmi_launcher_addr_recv(int sock, char**p_url)
+{
+  int len = -1;
+  int rc = recv(sock, &len, sizeof(len), MSG_WAITALL);
+  if(rc != sizeof(len))
+    {
+      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      abort();
+    }
+  fprintf(stderr, "%d bytes\n", len);
+  char*url = TBX_MALLOC(len);
+  rc = recv(sock, url, len, MSG_WAITALL);
+  if(rc != len)
+    {
+      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      abort();
+    }
+  *p_url = url;
+}
+
+void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
+{
+    int err = nm_session_connect(p_core, &addr->p_gate, remote_session_url);
+  if (err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
+      abort();
+    }
     addr->p_peer = malloc(sizeof(struct bnm_peer));
 
     __bmi_peer_init(addr->p_peer);
@@ -189,9 +245,95 @@ static int __bmi_connect_accept(struct BMI_addr* addr)
 
     strcpy((char*)addr->p_peer->peername, addr->peername);
 
+    /* todo: fix this ! */
     ref_list_add(cur_ref_list, addr->p_peer);    
+    //gate_list_add(cur_ref_list, addr->p_peer);    
+    fprintf(stderr, "connect_accept ok\n");
+    return;
 
-    return 0;
+}
+
+void __bmi_accept(BMI_addr_t addr)
+{
+    /* server */
+    char*remote_session_url = NULL;
+    char local_launcher_url[16] = { 0 };
+    int server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    assert(server_sock > -1);
+    struct sockaddr_in addr_in;
+    unsigned addr_len = sizeof addr_in;
+    addr_in.sin_family = AF_INET;
+    addr_in.sin_port = htons(0);
+    addr_in.sin_addr.s_addr = INADDR_ANY;
+    int rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    if(rc) 
+    {
+	fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
+	abort();
+    }
+    rc = getsockname(server_sock, (struct sockaddr*)&addr_in, &addr_len);
+    listen(server_sock, 255);
+      
+    struct ifaddrs*ifa_list = NULL;
+    rc = getifaddrs(&ifa_list);
+    if(rc == 0)
+    {
+	struct ifaddrs*i;
+	for(i = ifa_list; i != NULL; i = i->ifa_next)
+	{
+	    if (i->ifa_addr && i->ifa_addr->sa_family == AF_INET)
+	    {
+		struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
+		if(!(i->ifa_flags & IFF_LOOPBACK))
+		{
+		    snprintf(local_launcher_url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr_in.sin_port);
+		    break;
+		}
+	    }
+	}
+    }
+    if(local_launcher_url[0] == '\0')
+    {
+	fprintf(stderr, "# launcher: cannot get local address\n");
+	abort();
+    } 
+    fprintf(stderr, "# laucher: local url = '%s'\n", local_launcher_url);
+    /* todo: use accept4 ? (nonblocking accept) */
+    int sock = accept(server_sock, (struct sockaddr*)&addr_in, &addr_len);
+    assert(sock > -1);
+    close(server_sock);
+    __bmi_launcher_addr_send(sock, local_session_url);
+    __bmi_launcher_addr_recv(sock, &remote_session_url);
+    close(sock);
+    __bmi_connect_accept(addr , remote_session_url);
+}
+
+
+void __bmi_connect(BMI_addr_t dest, char* url)
+{
+      /* client */
+      int sock = socket(AF_INET, SOCK_STREAM, 0);
+      assert(sock > -1);
+      assert(strlen(url) == 12);
+      in_addr_t peer_addr;
+      int peer_port;
+      sscanf(url, "%08x%04x", &peer_addr, &peer_port);
+      struct sockaddr_in inaddr = {
+	.sin_family = AF_INET,
+	.sin_port   = peer_port,
+	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
+      };
+      int rc = connect(sock, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      if(rc)
+	{
+	  fprintf(stderr, "# launcher: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
+	  abort();
+	}
+      char * remote_session_url;
+      __bmi_launcher_addr_recv(sock, &remote_session_url);
+      __bmi_launcher_addr_send(sock, local_session_url);
+      close(sock);
+      __bmi_connect_accept(dest, remote_session_url);
 }
 
 /** Initializes the BMI layer.  Must be called before any other BMI
@@ -221,41 +363,25 @@ BMI_initialize(const char *method_list,
 
     if(bmi_initialized_count > 1)return 0;
 
-    int   ret           = -1;
     char *dummy_argv[1] = {NULL};
     int   dummy_argc    = 1;
 
     /* initialise le core de nmad */
-    ret = nm_core_init(&dummy_argc,dummy_argv, &p_core);
-    if (ret != NM_ESUCCESS){
-        fprintf(stderr,"nm_core_init returned err = %d\n", ret);
-	goto failed;
+    const char *label="bmi";
+    int err = nm_session_create(&p_core, label);
+    if (err != NM_ESUCCESS)
+    {
+	fprintf(stderr, "# launcher: nm_session_create returned err = %d\n", err);
+	abort();
+    }
+    err = nm_session_init(p_core, &dummy_argc,dummy_argv, &local_session_url);
+    if (err != NM_ESUCCESS)
+    {
+	fprintf(stderr, "# launcher: nm_session_init returned err = %d\n", err);
+	abort();
     }
 
-    /* charge le driver reseau selectionne par nmad-driver-conf 
-     * attention, le driver n'est pas encore pret a etre utilise !
-     */
-    p_driver_load = nm_core_component_load("driver", "custom");
-
-    /* initialise l'interface sendrecv */
-    ret = nm_sr_init(p_core);
-    if(ret != NM_ESUCCESS) {
-	fprintf(stderr,"nm_so_pack_interface_init return err = %d\n",ret);
-	goto failed;
-    }
-
-    const char*url;
-
-    /* lance le driver selectionne*/
-    ret = nm_core_driver_load_init(p_core, p_driver_load, 
-				   &p_drv, &url);
-    
-    if (ret != NM_ESUCCESS) {
-	fprintf(stderr,"nm_core_driver_init(some) returned ret = %d\n",ret);
-	goto failed;
-    }
-    
-    nm_ns_update(p_core);
+    nm_sr_init(p_core);
 
     /* make a new reference list */
     cur_ref_list = ref_list_new();
@@ -272,13 +398,6 @@ BMI_initialize(const char *method_list,
 	server = 1;
     } 
     return 0;
-
- failed:
-
-    if (cur_ref_list)
-	ref_list_cleanup(cur_ref_list);
-
-    return -1;
 }
 
 
@@ -306,7 +425,7 @@ BMI_finalize(void){
     /* destroy list */
     ref_list_cleanup(cur_ref_list);
  
-    nm_core_exit(p_core);
+    nm_session_destroy(p_core);
 
     common_exit(NULL);
     return 0;
@@ -450,15 +569,8 @@ BMI_addr_lookup(BMI_addr_t *peer,
 
 	strcpy((char*)new_peer->peername, id_string);
 
-	ret = nm_core_gate_init(p_core, &new_peer->p_gate);
-
-	if (ret != NM_ESUCCESS) {
-	    fprintf(stderr,"nm_core_gate_init returned ret = %d\n",ret);
-	    goto bmi_addr_lookup_failure;
-	}
-
+	new_peer->p_gate = NULL;
 	assert(p_core);
-	assert(new_peer->p_gate);
 	assert(new_peer->peername);
 
 #ifdef DEBUG	
@@ -538,9 +650,12 @@ BMI_post_recv(bmi_op_id_t         *id,
     
     context_id->status = RECV;
 
+#if 0
+    /* todo: fix this stuff */
     if(src->p_gate->status == NM_GATE_STATUS_INIT) {
 	ret = nm_core_gate_accept(p_core, src->p_gate, src->p_drv, NULL);
     }
+#endif
 
     rx.nmc_state    = BNM_CTX_PREP;
     rx.nmc_tag      = tag;
@@ -562,7 +677,7 @@ BMI_post_recv(bmi_op_id_t         *id,
 }
 
 
-static int 
+int 
 BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      BMI_addr_t dest,                 //must be used
 		      const void *buffer,
@@ -571,8 +686,8 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      bmi_msg_tag_t tag,
 		      void *user_ptr,                  //not used
 		      bmi_context_id context_id,
-		      bmi_hint hints, 
-		      enum bnm_msg_type msg_type){                 //not used
+		      bmi_hint hints,
+		      enum bnm_msg_type msg_type) {                 //not used
     
     int                     ret    = -1;   
     struct bnm_ctx          tx;
@@ -584,12 +699,10 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 
     context_id->status = SEND;
 
-    if(dest->p_gate->status == NM_GATE_STATUS_INIT) {
-
+    if((!dest->p_gate ) || (dest->p_gate->status == NM_GATE_STATUS_INIT)) {
 	/* remove nm:// from the peername so that NMad establish the connection */
 	char* tmp = dest->peername + 5*sizeof(char);  
-	ret = nm_core_gate_connect(p_core, dest->p_gate, dest->p_drv, tmp);
-	__bmi_connect_accept(dest);
+	__bmi_connect(dest, tmp);
     }
 
     tx.nmc_state    = BNM_CTX_PREP;
@@ -669,12 +782,9 @@ int BMI_testunexpected(int incount,
     
     /* todo: run this asynchronously ! (progression thread ?) */
     info_array->addr = malloc(sizeof(struct BMI_addr));
-    nm_core_gate_init(p_core, &info_array->addr->p_gate);    
+    //nm_core_gate_init(p_core, &info_array->addr->p_gate);    
 
-    int err = nm_core_gate_accept(p_core, info_array->addr->p_gate, p_drv, NULL);
-    if(err != NM_ESUCCESS)
-	*(int*)0=0;
-    __bmi_connect_accept(info_array->addr);
+    __bmi_accept(info_array->addr);
 
     nm_sr_request_t request;
     

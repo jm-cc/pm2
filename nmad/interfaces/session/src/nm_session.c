@@ -436,6 +436,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 int nm_session_destroy(nm_session_t p_session)
 {
   puk_hashtable_remove(nm_session.sessions, p_session);
+  TBX_FREE((void*)p_session->label);
   TBX_FREE(p_session);
   nm_session.ref_count--;
   if(nm_session.ref_count == 0)

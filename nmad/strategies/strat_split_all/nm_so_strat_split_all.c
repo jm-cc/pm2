@@ -19,13 +19,6 @@
 #include <assert.h>
 
 #include <nm_private.h>
-#include <nm_sampling.h>
-#include <nm_so_private.h>
-#include "nm_so_pkt_wrap.h"
-#include "nm_so_parameters.h"
-#include "nm_log.h"
-
-#include "nm_so_headers.h"
 
 #define DATATYPE_DENSITY 2*1024
 

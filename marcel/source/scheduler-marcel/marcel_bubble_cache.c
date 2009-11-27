@@ -170,13 +170,13 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
   int most_loaded = ma_distribution_most_loaded_index (distribution, arity);
 
   /* If the most loaded level is also the least one, it means that
-     every underlying level already has the same amount of work, and we
-     can't do anything else.  Furthermore, we want to avoid entering
-     an endless balancing oscillation, so load balancing terminates
-     when the most loaded level's load is that of the least loaded
-     plus 1.  */
+     every underlying level already has the same amount of work, and
+     we can't do anything else.  Furthermore, we want to avoid
+     entering an endless balancing oscillation, so load balancing
+     terminates when the most loaded level's number of entities is
+     that of the least loaded plus 1.  */
 
-  while ((distribution[least_loaded].total_load + 1 < distribution[most_loaded].total_load)
+  while ((distribution[least_loaded].nb_entities + 1 < distribution[most_loaded].nb_entities)
 	 && (distribution[least_loaded].total_load < load_per_level)) {
     if (distribution[most_loaded].nb_entities > 1) {
       ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]),

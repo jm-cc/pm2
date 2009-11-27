@@ -178,14 +178,10 @@ ma_global_load_balance (ma_distribution_t *distribution, unsigned int arity, uns
 
   while ((distribution[least_loaded].nb_entities + 1 < distribution[most_loaded].nb_entities)
 	 && (distribution[least_loaded].total_load < load_per_level)) {
-    if (distribution[most_loaded].nb_entities > 1) {
-      ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]),
+    ma_distribution_add_tail (ma_distribution_remove_tail (&distribution[most_loaded]),
 				  &distribution[least_loaded]);
-      least_loaded = ma_distribution_least_loaded_index (distribution, arity);
-      most_loaded = ma_distribution_most_loaded_index (distribution, arity);
-    } else {
-      return 1;
-    }
+    least_loaded = ma_distribution_least_loaded_index (distribution, arity);
+    most_loaded = ma_distribution_most_loaded_index (distribution, arity);
   }
   return 0;
 }

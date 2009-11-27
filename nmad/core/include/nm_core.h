@@ -51,6 +51,8 @@
 #ifndef NM_CORE_H
 #define NM_CORE_H
 
+PUK_VECT_TYPE(nm_so_monitor, const struct nm_so_monitor_s*);
+
 /** Core NewMadeleine structure.
  */
 struct nm_core
@@ -64,9 +66,21 @@ struct nm_core
   /** Number of drivers currently loaded. */
   int nb_drivers;
 
-  /** SchedOpt scheduler */
-  struct nm_so_sched so_sched;
-
+  /** List of posted unpacks */
+  struct tbx_fast_list_head unpacks;
+  
+  /** List of unexpected chunks */
+  struct tbx_fast_list_head unexpected;
+  
+  /** List of pending packs waiting for an ack */
+  struct tbx_fast_list_head pending_packs;
+  
+  /** Monitors for upper layers to track events in nmad scheduler */
+  struct nm_so_monitor_vect_s monitors;
+  
+  /** Selected strategy */
+  puk_component_t strategy_adapter;
+  
 #ifdef PIOM_ENABLE_LTASKS
   struct piom_ltask task;
 #endif

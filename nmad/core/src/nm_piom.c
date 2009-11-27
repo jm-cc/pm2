@@ -110,7 +110,7 @@ int nm_piom_block_any(piom_server_t            server,
 	{
 	  piom_req_success(&p_pw->inst);
 	  nm_process_complete_send_rq(p_pw->p_gate, p_pw, err);
-//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.out_req_list, NULL, p_pw);
+//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->out_req_list, NULL, p_pw);
       
 	}
     }
@@ -120,7 +120,7 @@ int nm_piom_block_any(piom_server_t            server,
 	{
 	  piom_req_success(&p_pw->inst);
 	  /* supprimer la req de la liste des requetes pending */
-//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->so_sched.pending_recv_req, NULL, p_pw);
+//	  tbx_slist_search_and_extract(p_pw->p_gate->p_core->pending_recv_req, NULL, p_pw);
 	  /* process complete request */
 	  err = nm_process_complete_recv_rq(p_pw->p_gate->p_core, p_pw, err);
 	  

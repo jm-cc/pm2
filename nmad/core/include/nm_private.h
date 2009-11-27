@@ -20,6 +20,7 @@
 #include <pm2_common.h>
 
 #include <nm_public.h>
+#include <nm_core_interface.h>
 #include <nm_log.h>
 
 #include <Padico/Module.h>
@@ -70,11 +71,9 @@ typedef uint16_t nm_drv_id_t;
 #endif
 
 #include "nm_so_strategies.h"
-#include "nm_so_private.h"
 #include "nm_so_headers.h"
 #include "nm_gate.h"
 #include "nm_core.h"
-#include "nm_event.h"
 
 #include "nm_so_pkt_wrap.h"
 #include "nm_lock.h"
@@ -83,45 +82,39 @@ typedef uint16_t nm_drv_id_t;
 
 #include "nm_sampling.h"
 
-void nm_sched_out(struct nm_core *p_core);
+TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 
-void nm_sched_in(struct nm_core *p_core);
+TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
 
-int nm_poll_send(struct nm_pkt_wrap *p_pw);
+TBX_INTERNAL void nm_sched_out(struct nm_core *p_core);
 
-int nm_poll_recv(struct nm_pkt_wrap*p_pw);
+TBX_INTERNAL void nm_sched_in(struct nm_core *p_core);
+
+TBX_INTERNAL int nm_poll_send(struct nm_pkt_wrap *p_pw);
+
+TBX_INTERNAL int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 
 #ifndef PIOM_POLLING_DISABLED
 
-int nm_piom_post_all(nm_core_t p_core);
+TBX_INTERNAL int nm_piom_post_all(nm_core_t p_core);
 
 #endif /* PIOM_POLLING_DISABLED */
 
 /* ** SchedOpt internal functions */
 
-int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
-                      uint32_t len, uint32_t chunk_offset);
+TBX_INTERNAL int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
+				   uint32_t len, uint32_t chunk_offset);
 
-int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
+TBX_INTERNAL int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
 
-
-/* ** TEMPORARY: former Sched ops */
-
-/** Initialize the scheduler module.
- */
-int nm_so_schedule_init			(struct nm_core *p_core);
-
-/** Shutdown the scheduler module.
- */
-int nm_so_schedule_exit			(struct nm_core *p_core);
 
 /** Process complete incoming request.
  */
-int nm_so_process_complete_recv(struct nm_core	*p_core,
-				struct nm_pkt_wrap *p_pw);
+TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core	*p_core,
+					     struct nm_pkt_wrap *p_pw);
 
 
-void nm_post_send(struct nm_pkt_wrap*p_pw);
+TBX_INTERNAL void nm_post_send(struct nm_pkt_wrap*p_pw);
 
 
 #endif /* NM_PRIVATE_H */

@@ -17,11 +17,24 @@
 #define NM_GATE_H
 
 
-struct nm_drv;
-struct nm_core;
-struct nm_sched;
-struct nm_gate_drv;
-struct nm_pkt_wrap;
+/** tag-indexed type for known-src requests 
+ */
+struct nm_so_tag_s
+{
+  nm_seq_t recv_seq_number; /**< next sequence number for recv */
+  nm_seq_t send_seq_number; /**< next sequence number for send */
+};
+static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
+{
+  so_tag->recv_seq_number = 0;
+  so_tag->send_seq_number = 0;
+}
+static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
+{
+}
+
+NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
+
 
 /** Per driver gate related data. */
 struct nm_gate_drv

@@ -34,7 +34,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   struct nm_drv*p_drv = p_pw->p_drv;
   nm_so_lock_in(p_core, p_drv);
   tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_recv_list[trk_id]);
-  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;;
+  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   p_gdrv->active_recv[trk_id] = 1;
   nm_so_unlock_in(p_core, p_drv);
 }
@@ -125,6 +125,22 @@ static inline int nm_so_flush(nm_gate_t p_gate)
     }
   else
     return -NM_ENOTIMPL;
+}
+
+/** Fires an event
+ */
+static inline void nm_so_status_event(nm_core_t p_core, const struct nm_so_event_s*const event, nm_so_status_t*p_status)
+{
+  nm_so_monitor_itor_t i;
+  if(p_status)
+    *p_status |= event->status;
+  puk_vect_foreach(i, nm_so_monitor, &p_core->monitors)
+    {
+      if((*i)->mask & event->status)
+	{
+	  ((*i)->notifier)(event);
+	}
+    }
 }
 
 

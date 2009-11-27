@@ -37,7 +37,7 @@ int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
     {
 #warning Paulette: lock
-      tbx_fast_list_add_tail(&p_pack->_link, &p_core->so_sched.pending_packs);
+      tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
   return (*r->driver->pack)(r->_status, p_pack);
 }

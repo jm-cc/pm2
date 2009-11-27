@@ -16,7 +16,7 @@
 #include <nm_public.h>
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
-#include <nm_private.h>
+#include <nm_core_interface.h>
 
 #ifdef CONFIG_PROTO_MAD3
 #include <nm_mad3_public.h>
@@ -81,12 +81,10 @@ int nm_launcher_init(int *argc, char**argv)
 
   nm_sr_init((*r.driver->get_session)(r._status));
 
-  {
-    int size = (*r.driver->get_size)(r._status);
-    gates = TBX_MALLOC(size * sizeof(nm_gate_t));
-    (*r.driver->get_gates)(r._status, gates);
-  }
-
+  int size = (*r.driver->get_size)(r._status);
+  gates = TBX_MALLOC(size * sizeof(nm_gate_t));
+  (*r.driver->get_gates)(r._status, gates);
+  
   return NM_ESUCCESS;
 }
 

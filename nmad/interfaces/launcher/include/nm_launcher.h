@@ -18,6 +18,7 @@
 
 #include <nm_public.h>
 #include <nm_session_interface.h>
+#include <Padico/Puk.h>
 
 /* ** Component interface definition: 'NewMad_Launcher' */
 

@@ -14,6 +14,7 @@
  */
 
 #include <nm_public.h>
+#include <nm_core_interface.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <Padico/Puk.h>

@@ -23,11 +23,59 @@
 #include <ccs_public.h>
 #include <segment.h>
 
+static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_short_data_header_t*h);
+static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_data_header_t*h);
+static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
+			   struct nm_so_ctrl_rdv_header*h);
 
-static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_short_data_header_t*h);
-static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_data_header_t*h);
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_so_ctrl_rdv_header*h);
+/** a chunk of unexpected message to be stored */
+struct nm_unexpected_s
+{
+  void*header;
+  struct nm_pkt_wrap*p_pw;
+  nm_gate_t p_gate;
+  nm_seq_t seq;
+  nm_tag_t tag;
+  struct tbx_fast_list_head link;
+};
 
+/** fast allocator for struct nm_unexpected_s */
+static p_tbx_memory_t nm_so_unexpected_mem = NULL;
+
+#define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * 256)
+
+static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
+{
+  if(tbx_unlikely(nm_so_unexpected_mem == NULL))
+    {
+      tbx_malloc_extended_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s),
+			       NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected", 1);
+    }
+  struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
+  return chunk;
+}
+
+void nm_unexpected_clean(struct nm_core*p_core)
+{
+  struct nm_unexpected_s*chunk, *tmp;
+  tbx_fast_list_for_each_entry_safe(chunk, tmp, &p_core->unexpected, link)
+    {
+      if(chunk)
+	{
+#ifdef NMAD_DEBUG
+	  fprintf(stderr, "nm_unexpected_clean: chunk %p is still in use\n", chunk);
+#endif
+	  if(chunk->p_pw)
+	    nm_so_pw_free(chunk->p_pw);
+	  tbx_fast_list_del(&chunk->link);
+	  tbx_free(nm_so_unexpected_mem, chunk);
+	}
+    }
+  if(nm_so_unexpected_mem != NULL)
+    tbx_malloc_clean(nm_so_unexpected_mem);
+}
 
 /** Find an unexpected chunk that matches an unpack request [p_gate, seq, tag]
  *  including matching with any_gate / any_tag in the unpack
@@ -35,7 +83,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, s
 static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   struct nm_unexpected_s*chunk;
-  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
+  tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
     {
       if((chunk->p_gate == p_unpack->p_gate) && (chunk->seq == p_unpack->seq) && nm_tag_eq(chunk->tag, p_unpack->tag))
 	{
@@ -81,7 +129,7 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
   struct nm_unpack_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t last_seq = p_so_tag->recv_seq_number;
-  tbx_fast_list_for_each_entry(p_unpack, &p_core->so_sched.unpacks, _link)
+  tbx_fast_list_for_each_entry(p_unpack, &p_core->unpacks, _link)
     {
       if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && nm_tag_eq(p_unpack->tag, tag))
 	{
@@ -212,7 +260,7 @@ static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*
 					  void *header, uint32_t len, nm_tag_t tag, nm_seq_t seq,
 					  struct nm_pkt_wrap *p_pw)
 {
-  struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
+  struct nm_unexpected_s*chunk = nm_unexpected_alloc();
   chunk->header = header;
   chunk->p_pw = p_pw;
   chunk->p_gate = p_gate;
@@ -220,7 +268,7 @@ static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*
   chunk->tag = tag;
   p_pw->header_ref_count++;
 #warning Paulette: lock
-  tbx_fast_list_add_tail(&chunk->link, &p_core->so_sched.unexpected);
+  tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
   const struct nm_so_event_s event =
     {
       .status = NM_SO_STATUS_UNEXPECTED,
@@ -249,7 +297,7 @@ int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_g
   p_unpack->tag = tag;
   /* store the unpack request */
 #warning Paulette: lock
-  tbx_fast_list_add_tail(&p_unpack->_link, &p_core->so_sched.unpacks);
+  tbx_fast_list_add_tail(&p_unpack->_link, &p_core->unpacks);
   struct nm_unexpected_s*chunk = nm_unexpected_find_matching(p_core, p_unpack);
   while(chunk)
     {
@@ -296,7 +344,7 @@ int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_g
 int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**pp_out_gate, nm_tag_t tag)
 {
   struct nm_unexpected_s*chunk;
-  tbx_fast_list_for_each_entry(chunk, &p_core->so_sched.unexpected, link)
+  tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
     {
       if( ((chunk->p_gate == p_gate) && nm_tag_eq(chunk->tag, tag)) ||
 	  ((p_gate == NM_ANY_GATE)   && nm_tag_eq(chunk->tag, tag)) ||
@@ -435,7 +483,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
   const nm_tag_t tag = header->tag_id;
   const nm_seq_t seq = header->seq;
   struct nm_pack_s*p_pack = NULL;
-  tbx_fast_list_for_each_entry(p_pack, &p_core->so_sched.pending_packs, _link)
+  tbx_fast_list_for_each_entry(p_pack, &p_core->pending_packs, _link)
     {
       if(nm_tag_eq(p_pack->tag, tag) && p_pack->seq == seq)
 	{

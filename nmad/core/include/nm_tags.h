@@ -16,6 +16,9 @@
 #ifndef NM_TAGS_H
 #define NM_TAGS_H
 
+
+#define NM_TAGS_PREALLOC 255
+
 /* ** Tag-indexed containers- Warning: black-magic here! */
 
 #if defined(NM_TAGS_AS_FLAT_ARRAY)

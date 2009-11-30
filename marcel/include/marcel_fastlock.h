@@ -96,7 +96,7 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
       MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
       /* Make sure it's locked */		\
       MA_BUG_ON (((_lock)->__status & 1L) != 1);			\
-      (_lock)->__status = 3 | ((uintptr_t) (_cell)); \
+      (_lock)->__status = ((_lock)->__status & 3L) | ((uintptr_t) (_cell)); \
     }									\
   while (0)
 #define MA_MARCEL_FASTLOCK_SET_WAIT_LIST(_lock, _cell)			\

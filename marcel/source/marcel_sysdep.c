@@ -25,33 +25,6 @@
 #  include <hwloc.h>
 #endif
 
-/*
- * How to bind a thread on a given processor
- */
-
-#if defined(MA__LWPS)
-void ma_bind_on_processor(unsigned target) {
-	hwloc_cpuset_t set = hwloc_cpuset_alloc();
-	hwloc_cpuset_set(set, target);
-	if (hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD)) {
-		perror("hwloc_set_cpubind");
-		fprintf(stderr,"while binding on CPU%d\n", target);
-		exit(1);
-	}
-	hwloc_cpuset_free(set);
-}
-void ma_unbind_from_processor(void) {
-	hwloc_cpuset_t set = hwloc_cpuset_alloc();
-	hwloc_cpuset_fill(set);
-	if (hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD)) {
-		perror("hwloc_set_cpubind");
-		fprintf(stderr,"while unbinding\n");
-		exit(1);
-	}
-	hwloc_cpuset_free(set);
-}
-#endif
-
 
 /*
  * How to allocate memory on specific nodes

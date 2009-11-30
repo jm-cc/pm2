@@ -32,6 +32,9 @@ typedef struct marcel_lwp *ma_lwp_t;
 #depend "scheduler/linux_runqueues.h[marcel_structures]"
 #depend "marcel_topology.h[marcel_structures]"
 #depend "scheduler/marcel_sched.h[marcel_structures]"
+#ifdef MA__LWPS
+#include <hwloc.h>
+#endif
 
 struct marcel_lwp {
 	struct tbx_fast_list_head lwp_list;
@@ -101,6 +104,9 @@ struct marcel_lwp {
 
 #ifdef MA__USE_TIMER_CREATE
 	timer_t timer;
+#endif
+#ifdef MA__LWPS
+	hwloc_cpuset_t cpuset;
 #endif
 };
 

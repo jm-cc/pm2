@@ -18,6 +18,9 @@
 
 #include <errno.h>
 
+#ifdef MA__LWPS
+#include <hwloc.h>
+#endif
 
 #ifdef MA__LWPS
 static MA_DEFINE_NOTIFIER_CHAIN(lwp_chain, "LWP");
@@ -282,6 +285,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 		 * les piles des threads résidents... 
 		 */
 #ifndef MARCEL_GDB
+		hwloc_cpuset_free(lwp->cpuset);
 		marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_vp_os_node(lwp));
 #endif
 	}
@@ -397,7 +401,7 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 }
 #endif // MA__LWPS
 
-/* Initialisation d'une structure LWP */
+/* Initialisation d'une structure LWP, y compris la principale */
 /* On crée deux threads : run_task et idle_task
   
    - run_task sera la tâche ordonnancée en premier sur ce LWP. Il
@@ -418,8 +422,14 @@ static void lwp_init(ma_lwp_t lwp)
 {
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
+	long vpnum;
 
 	LOG_IN();
+
+	lwp->cpuset = hwloc_cpuset_alloc();
+	vpnum = ma_vpnum(lwp);
+	if (vpnum >= 0 && vpnum < marcel_nbvps())
+		hwloc_cpuset_set(lwp->cpuset, marcel_topo_vp_level[vpnum].os_cpu);
 
 #ifdef MA__LWPS
 	marcel_sem_init(&lwp->kthread_stop, 0);
@@ -491,14 +501,13 @@ static int lwp_start(ma_lwp_t lwp)
 
 #if defined(MA__LWPS)
 	if(!marcel_use_fake_topology) {
-		if (ma_vpnum(lwp)<marcel_nbvps()) {
-			unsigned long target = marcel_topo_vp_level[ma_vpnum(lwp)].os_cpu;
-			ma_bind_on_processor(target);
-			mdebug("LWP %u bound to processor %lu\n",
-						 ma_vpnum(lwp), target);
-		} else {
-			ma_unbind_from_processor();
+		long target = hwloc_cpuset_first(lwp->cpuset);
+		if (hwloc_set_cpubind(topology, lwp->cpuset, HWLOC_CPUBIND_THREAD)) {
+			perror("hwloc_set_cpubind");
+			fprintf(stderr,"while binding LWP %u on CPU%ld\n", ma_vpnum(lwp), target);
+			exit(1);
 		}
+		mdebug("LWP %u bound to processor %ld\n", ma_vpnum(lwp), target);
 	}
 #endif
 	LOG_RETURN(0);

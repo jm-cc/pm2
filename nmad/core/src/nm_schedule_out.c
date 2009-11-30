@@ -20,25 +20,37 @@
 
 #include <nm_private.h>
 
-
-int nm_so_pack(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
-	       const void*data, uint32_t len, nm_so_flag_t pack_type)
+void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries)
 {
-  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  p_pack->status = NM_PACK_TYPE_IOV;
+  p_pack->data   = (void*)iov;
+  p_pack->len    = nm_so_iov_len(iov, num_entries);
+  p_pack->done   = 0;
+}
+
+void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const struct DLOOP_Segment *segp)
+{
+  p_pack->status = NM_PACK_TYPE_DATATYPE;
+  p_pack->data   = (void*)segp;
+  p_pack->len    = nm_so_datatype_size(segp);
+  p_pack->done   = 0;
+}
+
+int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate,
+		      nm_so_flag_t flags)
+{
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = p_so_tag->send_seq_number++;
-  p_pack->status = pack_type;
-  p_pack->data   = (void*)data;
-  p_pack->len    = len;
-  p_pack->done   = 0;
-  p_pack->p_gate = p_gate;
-  p_pack->tag    = tag;
+  p_pack->status |= flags | NM_STATUS_PACK_POSTED;
   p_pack->seq    = seq;
+  p_pack->tag    = tag;
+  p_pack->p_gate = p_gate;
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
     {
 #warning Paulette: lock
       tbx_fast_list_add_tail(&p_pack->_link, &p_core->pending_packs);
     }
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   return (*r->driver->pack)(r->_status, p_pack);
 }
 
@@ -71,10 +83,10 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 	  NM_SO_TRACE("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
 	  const struct nm_so_event_s event =
 	    {
-	      .status = NM_SO_STATUS_PACK_COMPLETED,
+	      .status = NM_STATUS_PACK_COMPLETED,
 	      .p_pack = p_pack
 	    };
-	  nm_so_status_event(p_core, &event, &p_pack->status);
+	  nm_core_status_event(p_core, &event, &p_pack->status);
 	}
       else if(p_pack->done > p_pack->len)
 	{ 

@@ -232,10 +232,10 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
       tbx_fast_list_del(&p_unpack->_link);
       const struct nm_so_event_s event =
 	{
-	  .status = NM_SO_STATUS_UNPACK_COMPLETED,
+	  .status = NM_STATUS_UNPACK_COMPLETED,
 	  .p_unpack = p_unpack
 	};
-      nm_so_status_event(p_core, &event, &p_unpack->status);
+      nm_core_status_event(p_core, &event, &p_unpack->status);
     }
 }
 
@@ -271,27 +271,39 @@ static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
   const struct nm_so_event_s event =
     {
-      .status = NM_SO_STATUS_UNEXPECTED,
+      .status = NM_STATUS_UNEXPECTED,
       .p_gate = p_pw->p_gate,
       .tag = tag,
       .seq = seq,
       .len = len
     };
-  nm_so_status_event(p_pw->p_gate->p_core, &event, NULL);
+  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
 }
 
+void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct iovec*iov, int num_entries)
+{ 
+  p_unpack->status = NM_UNPACK_TYPE_IOV;
+  p_unpack->data = iov;
+  p_unpack->cumulated_len = 0;
+  p_unpack->expected_len = nm_so_iov_len(iov, num_entries);
+
+}
+
+void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct CCSI_Segment*segp)
+{ 
+  p_unpack->status = NM_UNPACK_TYPE_DATATYPE;
+  p_unpack->data = segp;
+  p_unpack->cumulated_len = 0;
+  p_unpack->expected_len = nm_so_datatype_size(segp);
+}
 
 /** Handle an unpack request.
  */
-int nm_so_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag,
-		 nm_so_flag_t flag, void *data_description, uint32_t len)
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag)
 {
-  const nm_seq_t seq = (p_gate == NM_ANY_GATE) ? 0 : nm_so_tag_get(&p_gate->tags, tag)->recv_seq_number++;
   /* fill-in the unpack request */
-  p_unpack->status = flag;
-  p_unpack->data = data_description;
-  p_unpack->cumulated_len = 0;
-  p_unpack->expected_len = len;
+  const nm_seq_t seq = (p_gate == NM_ANY_GATE) ? 0 : nm_so_tag_get(&p_gate->tags, tag)->recv_seq_number++;
+  p_unpack->status |= NM_STATUS_UNPACK_POSTED;
   p_unpack->p_gate = p_gate;
   p_unpack->seq = seq;
   p_unpack->tag = tag;
@@ -362,7 +374,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   struct nm_so_tag_s*p_so_tag = (p_unpack->p_gate == NM_ANY_GATE) ? 
     NULL : nm_so_tag_get(&p_unpack->p_gate->tags, p_unpack->tag);
-  if(p_unpack->status & (NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNEXPECTED))
+  if(p_unpack->status & (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED))
     {
       /* receive is already in progress- too late to cancel */
       return -NM_EINPROGRESS;
@@ -373,10 +385,10 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
       tbx_fast_list_del(&p_unpack->_link);
       const struct nm_so_event_s event =
 	{
-	  .status =  NM_SO_STATUS_UNPACK_COMPLETED | NM_SO_STATUS_UNPACK_CANCELLED,
+	  .status =  NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED,
 	  .p_unpack = p_unpack
 	};
-      nm_so_status_event(p_core, &event, &p_unpack->status);
+      nm_core_status_event(p_core, &event, &p_unpack->status);
       if(p_so_tag)
 	p_so_tag->recv_seq_number--;
       return NM_ESUCCESS;
@@ -389,7 +401,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
  */
 static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_short_data_header_t*h)
 {
-  if(!(p_unpack->status & NM_SO_STATUS_UNPACK_CANCELLED))
+  if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
     {
       const uint32_t len = h->len;
       const uint32_t chunk_offset = 0;
@@ -407,7 +419,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_un
  */
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_data_header_t*h)
 {
-  if(!(p_unpack->status & NM_SO_STATUS_UNPACK_CANCELLED))
+  if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
     {
       const uint32_t len = h->len;
       const uint32_t chunk_offset = h->chunk_offset;
@@ -491,10 +503,10 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
 	  tbx_fast_list_del(&p_pack->_link);
 	  const struct nm_so_event_s event =
 	    {
-	      .status = NM_SO_STATUS_ACK_RECEIVED,
+	      .status = NM_STATUS_ACK_RECEIVED,
 	      .p_pack = p_pack
 	    };
-	  nm_so_status_event(p_core, &event, &p_pack->status);
+	  nm_core_status_event(p_core, &event, &p_pack->status);
 	  return;
 	}
     }

@@ -30,30 +30,27 @@
 #ifdef PIOMAN
 #include <pioman.h>
 #endif
-/*#include <ccs_public.h>*/
-struct CCSI_Segment;
-
 #include <sys/uio.h>
 
 typedef uint8_t nm_sr_status_t;
 
 /** a posted send has completed */
-#define NM_SR_STATUS_SEND_COMPLETED  ((nm_sr_status_t)0x01)
+#define NM_SR_STATUS_SEND_COMPLETED  ((nm_sr_status_t)NM_STATUS_PACK_COMPLETED)
 /** a posted recv has completed */
-#define NM_SR_STATUS_RECV_COMPLETED  ((nm_sr_status_t)0x02)
+#define NM_SR_STATUS_RECV_COMPLETED  ((nm_sr_status_t)NM_STATUS_UNPACK_COMPLETED)
 /** recv operation was canceled */
-#define NM_SR_STATUS_RECV_CANCELLED  ((nm_sr_status_t)0x04)
+#define NM_SR_STATUS_RECV_CANCELLED  ((nm_sr_status_t)NM_STATUS_UNPACK_CANCELLED)
 /** a send is posted */
-#define NM_SR_STATUS_SEND_POSTED     ((nm_sr_status_t)0x08)
+#define NM_SR_STATUS_SEND_POSTED     ((nm_sr_status_t)NM_STATUS_PACK_POSTED)
 /** a recv is posted */
-#define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)0x10)
+#define NM_SR_STATUS_RECV_POSTED     ((nm_sr_status_t)NM_STATUS_UNPACK_POSTED)
 
 /** events for nm_sr_monitor() */
 typedef enum
   {
     /** an unexpected packet has arrived. Post a recv to get data
      */
-    NM_SR_EVENT_RECV_UNEXPECTED = ((nm_sr_status_t)0x80),
+    NM_SR_EVENT_RECV_UNEXPECTED = ((nm_sr_status_t)NM_STATUS_UNEXPECTED),
     NM_SR_EVENT_RECV_COMPLETED  = NM_SR_STATUS_RECV_COMPLETED,
     NM_SR_EVENT_SEND_COMPLETED  = NM_SR_STATUS_SEND_COMPLETED,
     NM_SR_EVENT_RECV_CANCELLED  = NM_SR_STATUS_RECV_CANCELLED

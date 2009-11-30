@@ -69,6 +69,10 @@ typedef uint64_t nm_tag_t;
 #endif
 
 
+/* ** datatypes ******************************************** */
+
+struct CCSI_Segment;
+
 
 #endif /* NM_PUBLIC_H */
 

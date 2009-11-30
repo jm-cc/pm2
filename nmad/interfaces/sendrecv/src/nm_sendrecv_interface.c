@@ -163,19 +163,19 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event);
 static const struct nm_so_monitor_s nm_sr_monitor_pack_completed = 
   {
     .notifier = &nm_sr_event_pack_completed,
-    .mask = NM_SO_STATUS_PACK_COMPLETED | NM_SO_STATUS_ACK_RECEIVED
+    .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED
   };
 
 static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed = 
   {
     .notifier = &nm_sr_event_unpack_completed,
-    .mask = NM_SO_STATUS_UNPACK_COMPLETED
+    .mask = NM_STATUS_UNPACK_COMPLETED
   };
 
 static const struct nm_so_monitor_s nm_sr_monitor_unexpected = 
   {
     .notifier = &nm_sr_event_unexpected,
-    .mask = NM_SO_STATUS_UNEXPECTED
+    .mask = NM_STATUS_UNEXPECTED
   };
 
 /* User interface */
@@ -221,8 +221,6 @@ int nm_sr_isend_generic(nm_session_t p_session,
 {
   nm_core_t p_core = p_session->p_core;
   assert(nm_sr_data.init_done);
-  nmad_lock();
-  nm_lock_interface(p_core);
 
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
@@ -230,31 +228,28 @@ int nm_sr_isend_generic(nm_session_t p_session,
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  nm_so_flag_t pack_type = 0;
-  uint32_t size;
   switch(sending_type)
     {
     case nm_sr_contiguous_transfer:
-      pack_type = NM_PACK_TYPE_CONTIGUOUS;
-      size = len;
+      nm_core_pack_data(p_core, &p_request->req.pack, data, len);
       break;
     case nm_sr_iov_transfer:
-      pack_type = NM_PACK_TYPE_IOV;
-      size = iov_len(data, len);
+      nm_core_pack_iov(p_core, &p_request->req.pack, data, len);
       break;
     case nm_sr_datatype_transfer:
-      pack_type = NM_PACK_TYPE_DATATYPE;
-      size = datatype_size(data);
+      nm_core_pack_datatype(p_core, &p_request->req.pack, data);
       break;
     default:
       TBX_FAILURE("Unkown sending type.");
       break;
     }
 
-  int ret = nm_so_pack(p_core, &p_request->req.pack, tag, p_gate, data, size, pack_type);
+  nmad_lock();
+  nm_lock_interface(p_core);
+  int ret = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, 0);
   nm_so_post_all(p_core);
-  nmad_unlock();
   nm_unlock_interface(p_core);
+  nmad_unlock();
 
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
   NM_SO_SR_LOG_OUT();
@@ -272,33 +267,30 @@ int nm_sr_issend_generic(nm_session_t p_session,
   nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
   assert(nm_sr_data.init_done);
-  nmad_lock();
   NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   p_request->ref = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  nm_so_flag_t pack_flag = NM_PACK_SYNCHRONOUS;
-  uint32_t size;
   switch(sending_type)
     {
     case nm_sr_contiguous_transfer:
-      pack_flag |= NM_PACK_TYPE_CONTIGUOUS;
-      size = len;
+      nm_core_pack_data(p_core, &p_request->req.pack, data, len);
       break;
     case nm_sr_iov_transfer:
-      pack_flag |= NM_PACK_TYPE_IOV;
-      size = iov_len(data, len);
+      nm_core_pack_iov(p_core, &p_request->req.pack, data, len);
       break;
     case nm_sr_datatype_transfer:
-      pack_flag |= NM_PACK_TYPE_DATATYPE;
-      size = datatype_size(data);
+      nm_core_pack_datatype(p_core, &p_request->req.pack, data);
       break;
     default:
       TBX_FAILURE("Unkown sending type.");
       break;
     }
-  int ret = nm_so_pack(p_core, &p_request->req.pack, tag, p_gate, data, size, pack_flag);
+  nmad_lock();
+  nm_lock_interface(p_core);
+  int ret = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, NM_PACK_SYNCHRONOUS);
   nm_so_post_all(p_core);
+  nm_unlock_interface(p_core);
   nmad_unlock();
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
   NM_SO_SR_LOG_OUT();
@@ -402,7 +394,7 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 extern int nm_sr_irecv_generic(nm_session_t p_session,
 			       nm_gate_t p_gate, nm_tag_t tag,
 			       nm_sr_transfer_type_t reception_type,
-			       void *data_description, uint32_t len,
+			       void *data, uint32_t len,
 			       nm_sr_request_t *p_request,
 			       void *ref)
 {
@@ -411,11 +403,8 @@ extern int nm_sr_irecv_generic(nm_session_t p_session,
   NM_SO_SR_LOG_IN();
   assert(nm_sr_data.init_done);
 
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data_description, len, p_request);
+  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
 
-  nmad_lock();
-  nm_lock_interface(p_core);
-  nm_sr_flush(p_core);
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
   p_request->ref     = ref;
   p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
@@ -425,31 +414,27 @@ extern int nm_sr_irecv_generic(nm_session_t p_session,
 
     case nm_sr_contiguous_transfer:
       {
-	const nm_so_flag_t flag = NM_UNPACK_TYPE_CONTIGUOUS;
-	void*data = data_description;
-	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, data, len);
+	nm_core_unpack_data(p_core, &p_request->req.unpack, data, len);
       }
       break;
     case nm_sr_iov_transfer:
       {
-	const nm_so_flag_t flag = NM_UNPACK_TYPE_IOV;
-	struct iovec *iov = data_description;
-	const uint32_t iov_data_len = iov_len(iov, len);
-	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, iov, iov_data_len);
+	nm_core_unpack_iov(p_core, &p_request->req.unpack, data, len);
       }
       break;
     case nm_sr_datatype_transfer:
       {
-	const nm_so_flag_t flag = NM_UNPACK_TYPE_DATATYPE;
-	struct DLOOP_Segment *segp = data_description;
-	const uint32_t datatype_len = datatype_size(segp);
-	ret = nm_so_unpack(p_core, &p_request->req.unpack, p_gate, tag, flag, segp, datatype_len);
+	nm_core_unpack_datatype(p_core, &p_request->req.unpack, data);
       }
       break;
     default:
       TBX_FAILURE("Unknown reception type.");
     }
 
+  nmad_lock();
+  nm_lock_interface(p_core);
+  nm_sr_flush(p_core);
+  ret = nm_core_unpack_recv(p_core, &p_request->req.unpack, p_gate, tag);
   nmad_unlock();
   nm_unlock_interface(p_core);
 
@@ -677,9 +662,9 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   NM_SO_SR_LOG_IN();
   NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , (int)event->tag, event->seq);
 
-  const nm_so_status_t status = p_pack->status;
-  if( (status & NM_SO_STATUS_PACK_COMPLETED) &&
-      ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_SO_STATUS_ACK_RECEIVED)) )
+  const nm_status_t status = p_pack->status;
+  if( (status & NM_STATUS_PACK_COMPLETED) &&
+      ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
     {
       if(p_request && p_request->ref)
 	{
@@ -717,7 +702,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
   NM_SO_SR_LOG_IN();
   nm_sr_status_t sr_event;
 
-  if(event->status & NM_SO_STATUS_UNPACK_CANCELLED)
+  if(event->status & NM_STATUS_UNPACK_CANCELLED)
     {
       sr_event = NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED;
     }

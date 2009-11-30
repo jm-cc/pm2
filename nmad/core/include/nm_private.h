@@ -82,6 +82,8 @@ typedef uint16_t nm_drv_id_t;
 
 #include "nm_sampling.h"
 
+#include <ccs_public.h>
+
 TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 
 TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
@@ -115,6 +117,28 @@ TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core	*p_core,
 
 
 TBX_INTERNAL void nm_post_send(struct nm_pkt_wrap*p_pw);
+
+/** Compute the cumulated size of an iovec.
+ */
+static inline int nm_so_iov_len(const struct iovec *iov, int nb_entries)
+{
+  uint32_t len = 0;
+  int i;
+  for(i = 0; i < nb_entries; i++)
+    {
+      len += iov[i].iov_len;
+    }
+  return len;
+}
+/** Compute the cumulated size of a datatype segment.
+ */
+static inline int nm_so_datatype_size(const struct DLOOP_Segment *segp)
+{
+  DLOOP_Handle handle = segp->handle;
+  int data_sz;
+  CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
+  return data_sz;
+}
 
 
 #endif /* NM_PRIVATE_H */

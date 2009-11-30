@@ -129,7 +129,7 @@ static inline int nm_so_flush(nm_gate_t p_gate)
 
 /** Fires an event
  */
-static inline void nm_so_status_event(nm_core_t p_core, const struct nm_so_event_s*const event, nm_so_status_t*p_status)
+static inline void nm_core_status_event(nm_core_t p_core, const struct nm_so_event_s*const event, nm_status_t*p_status)
 {
   nm_so_monitor_itor_t i;
   if(p_status)

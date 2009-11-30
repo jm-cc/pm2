@@ -153,7 +153,7 @@ int lpt_mutex_trylock(lpt_mutex_t * mutex) {
                                 LOG_RETURN(0);
 		}
 		
-                        if (__lpt_trylock(&mutex->__data.__lock) != 0) {
+		if (__lpt_trylock(&mutex->__data.__lock) != 0) {
 			/* Record the ownership.  */
 			mutex->__data.__owner = id;
 			mutex->__data.__count = 1;
@@ -169,7 +169,7 @@ int lpt_mutex_trylock(lpt_mutex_t * mutex) {
 	case LPT_MUTEX_TIMED_NP:
 	case LPT_MUTEX_ADAPTIVE_NP:
 		/* Normal mutex.  */
-                        if (__lpt_trylock(&mutex->__data.__lock) != 0) {
+		if (__lpt_trylock(&mutex->__data.__lock) != 0) {
 			/* Record the ownership.  */
 			mutex->__data.__owner = MARCEL_SELF;
                                 ++mutex->__data.__nusers;	

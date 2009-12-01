@@ -56,64 +56,6 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
       (*p_request->monitor.notifier)(event, info);
     }
 }
-#ifdef PIOMAN_POLL
-#define nm_sr_status_init(STATUS, BITMASK)       piom_cond_init((STATUS),   (BITMASK))
-#define nm_sr_status_test(STATUS, BITMASK)       piom_cond_test((STATUS),   (BITMASK))
-#define nm_sr_status_mask(STATUS, BITMASK)       piom_cond_mask((STATUS),   (BITMASK))
-#define nm_sr_status_wait(STATUS, BITMASK, CORE) piom_cond_wait((STATUS),   (BITMASK))
-static inline void nm_sr_request_signal(nm_sr_request_t*p_request, nm_sr_status_t mask)
-{
-  piom_cond_signal(&p_request->status, mask);
-}
-/** Post PIOMan poll requests (except when offloading PIO)
- */
-static inline void nm_so_post_all(nm_core_t p_core)
-{
-}
-/** Post PIOMan poll requests even when offloading PIO.
- * This avoids scheduling a tasklet on another lwp
- */
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{
-	/* todo: add a kind of ma_tasklet_schedule here */
-//  nm_piom_post_all(p_core);
-}
-#else /* PIOMAN_POLL */
-static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  *status = bitmask;
-}
-static inline int  nm_sr_status_test(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  return ((*status) & bitmask);
-}
-static inline void nm_sr_status_mask(nm_sr_cond_t*status, nm_sr_status_t bitmask)
-{
-  *status &= bitmask;
-}
-static inline void nm_sr_request_signal(nm_sr_request_t*p_request, nm_sr_status_t mask)
-{
-  p_request->status |= mask;
-}
-static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask, nm_core_t p_core)
-{
-  if(status != NULL)
-    {
-      while(!((*status) & bitmask)) {
-	nm_schedule(p_core);
-#if(!defined(FINE_GRAIN_LOCKING) && defined(MARCEL))
-	if(!((*status) & bitmask)) {
-	      marcel_yield();
-      }
-#endif 
-      }
-    }
-}
-static inline void nm_so_post_all(nm_core_t p_core)
-{ /* do nothing */ }
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{ /* do nothing */ }
-#endif /* PIOMAN_POLL */
 
 #ifdef PIOM_ENABLE_SHM
 /** Attach a piom_sem_t to a request. This piom_sem_t is woken 
@@ -128,7 +70,7 @@ extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem)
 	  NM_ESUCCESS: 
 	  NM_EAGAIN);
 }
-#endif /* PIOMAN */
+#endif /* PIOM_ENABLE_SHM */
 
 /* ** Debug ************************************************ */
 
@@ -211,50 +153,6 @@ int nm_sr_exit(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
-/** generic send operation */
-int nm_sr_isend_generic(nm_session_t p_session,
-			nm_gate_t p_gate, nm_tag_t tag,
-			nm_sr_transfer_type_t sending_type,
-			const void *data, uint32_t len,
-			nm_sr_request_t *p_request,
-			void*ref)
-{
-  nm_core_t p_core = p_session->p_core;
-  assert(nm_sr_data.init_done);
-
-  NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
-
-  nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
-  p_request->ref = ref;
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  switch(sending_type)
-    {
-    case nm_sr_contiguous_transfer:
-      nm_core_pack_data(p_core, &p_request->req.pack, data, len);
-      break;
-    case nm_sr_iov_transfer:
-      nm_core_pack_iov(p_core, &p_request->req.pack, data, len);
-      break;
-    case nm_sr_datatype_transfer:
-      nm_core_pack_datatype(p_core, &p_request->req.pack, data);
-      break;
-    default:
-      TBX_FAILURE("Unkown sending type.");
-      break;
-    }
-
-  nmad_lock();
-  nm_lock_interface(p_core);
-  int ret = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, 0);
-  nm_so_post_all(p_core);
-  nm_unlock_interface(p_core);
-  nmad_unlock();
-
-  NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
-  NM_SO_SR_LOG_OUT();
-  return ret;
-}
 
 /** synchronous send operation */
 int nm_sr_issend_generic(nm_session_t p_session,
@@ -302,11 +200,10 @@ int nm_sr_rsend(nm_session_t p_session,
 		const void *data, uint32_t len,
 		nm_sr_request_t *p_request)
 {
-  const nm_sr_transfer_type_t tt = nm_sr_contiguous_transfer;
   
   NM_SO_SR_LOG_IN();
   
-  int ret = nm_sr_isend_generic(p_session, p_gate, tag, tt, data, len, p_request, NULL);
+  int ret = nm_sr_isend(p_session, p_gate, tag, data, len, p_request);
 
   NM_SO_SR_LOG_OUT();
   return ret;
@@ -558,13 +455,6 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
   assert(p_request->monitor.notifier == NULL);
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
-  return NM_ESUCCESS;
-}
-
-int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref)
-{
-  assert(p_request->ref == NULL);
-  p_request->ref = ref;
   return NM_ESUCCESS;
 }
 

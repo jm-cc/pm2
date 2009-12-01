@@ -428,12 +428,10 @@ static void lwp_init(ma_lwp_t lwp)
 
 #ifdef MA__LWPS
 	lwp->cpuset = hwloc_cpuset_alloc();
-#endif
 	vpnum = ma_vpnum(lwp);
 	if (vpnum >= 0 && vpnum < marcel_nbvps())
 		hwloc_cpuset_set(lwp->cpuset, marcel_topo_vp_level[vpnum].os_cpu);
 
-#ifdef MA__LWPS
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
  

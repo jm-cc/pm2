@@ -165,6 +165,12 @@ static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*
     return -NM_EALREADY;
 }
 
+static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_request, size_t *size)
+{
+  *size = p_request->req.unpack.cumulated_len;
+  return NM_ESUCCESS;
+}
+
 /* ** Send inline ****************************************** */
 
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request)
@@ -200,6 +206,61 @@ static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_req
   nm_so_post_all(p_core);
   return err;
 }
+static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag)
+{
+  nm_core_t p_core = p_session->p_core;
+  const int err = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, NM_PACK_SYNCHRONOUS);
+  nm_so_post_all(p_core);
+  return err;
+}
+static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
+				   nm_gate_t p_gate, nm_tag_t tag)
+{
+  nm_core_t p_core = p_session->p_core;
+  const int err = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, 0);
+  nm_so_post_all(p_core);
+  return err;
+}
+
+/* ** Recv inline ****************************************** */
+
+static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request)
+{ 
+  nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
+  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  p_request->ref = NULL;
+}
+
+static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+					  void*data, uint32_t len)
+{
+  nm_core_t p_core = p_session->p_core;
+  nm_core_unpack_data(p_core, &p_request->req.unpack, data, len);
+}
+
+static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
+					 struct iovec*iov, int num_entries)
+{
+  nm_core_t p_core = p_session->p_core;
+  nm_core_unpack_iov(p_core, &p_request->req.unpack, iov, num_entries);
+}
+
+static inline void nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
+					      struct CCSI_Segment*segp)
+{
+  nm_core_t p_core = p_session->p_core;
+  nm_core_unpack_datatype(p_core, &p_request->req.unpack, segp);
+}
+
+static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask)
+{
+  nm_core_t p_core = p_session->p_core;
+  const int err = nm_core_unpack_recv(p_core, &p_request->req.unpack, p_gate, tag);
+  return err;
+}
+
 
 #endif /* NM_SENDRECV_PRIVATE_H*/
 

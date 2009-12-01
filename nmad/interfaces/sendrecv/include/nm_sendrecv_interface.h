@@ -82,18 +82,6 @@ typedef union
 typedef void (*nm_sr_event_notifier_t)(nm_sr_event_t event, const nm_sr_event_info_t*event_info);
 
 
-
-
-/** Transfer types for isend/irecv */
-enum nm_sr_transfer_type
-  {
-    nm_sr_datatype_transfer,
-    nm_sr_iov_transfer,
-    nm_sr_contiguous_transfer
-  };
-typedef enum nm_sr_transfer_type nm_sr_transfer_type_t;
-
-
 /** Initialize the send/receive interface.
  *
  *  @param p_session a nmad session object.
@@ -124,11 +112,23 @@ extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
 extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 				 nm_sr_event_t mask, nm_sr_event_notifier_t notifier);
 
-/** Enqueue the request in the completion queue upon completion */
+/** Ask to enqueue the request in the completion queue upon completion */
 extern int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request);
 
 /** Add a user reference to a request */
 static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref);
+
+/** Returns the received size of the message with the specified request. */
+static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *request, size_t *size);
+
+/** Retrieve the 'ref' from a sendrecv request. */
+static inline int nm_sr_get_ref(nm_session_t p_session,	nm_sr_request_t *p_request, void**ref);
+
+/** Retrieve the tag from a receive request. */
+static inline int nm_sr_get_rtag(nm_session_t p_session, nm_sr_request_t *p_request, nm_tag_t*tag);
+
+/** Retrieve the tag from a send request. */
+static inline int nm_sr_get_stag(nm_session_t p_session, nm_sr_request_t *p_request, nm_tag_t*tag);
 
 
 /* ** Building blocks for send ***************************** */
@@ -140,41 +140,39 @@ static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p
 				       const struct iovec*iov, int num_entries);
 static inline void nm_sr_send_pack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
 					    const struct CCSI_Segment*segp);
-static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
-				   nm_gate_t p_gate, nm_tag_t tag);
-extern int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
-			     nm_gate_t p_gate, nm_tag_t tag);
-extern int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
-			    nm_gate_t p_gate, nm_tag_t tag);
+static inline int  nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag);
+static inline int  nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
+				     nm_gate_t p_gate, nm_tag_t tag);
+static inline int  nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag);
 			    
 
 /* ** Building blocks for recv ***************************** */
 
-extern int nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request);
-extern int nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-				  const void*, uint32_t len);
-extern int nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
-				 const struct iovec*iov, int num_entry);
-extern int nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
-				      struct CCSI_Segment*segp);
-extern int nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
-			    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
+static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request);
+static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
+					  void*, uint32_t len);
+static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
+					 struct iovec*iov, int num_entry);
+static inline void nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
+					      struct CCSI_Segment*segp);
+static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_request,
+				    nm_gate_t p_gate, nm_tag_t tag, nm_tag_t mask);
 
 
+/* ** High level / legacy send ***************************** */
 
-extern int nm_sr_issend_generic(nm_session_t p_session,
-			       nm_gate_t p_gate, nm_tag_t tag,
-			       nm_sr_transfer_type_t sending_type,
-			       const void *data, uint32_t len,
-			       nm_sr_request_t *p_request,
-			       void*ref);
-
+/** Synchronous send. */
 static inline int nm_sr_issend(nm_session_t p_session,
 			       nm_gate_t p_gate, nm_tag_t tag,
 			       const void *data, uint32_t len,
 			       nm_sr_request_t *p_request)
 {
-  return nm_sr_issend_generic(p_session, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, NULL);
+  nm_sr_send_init(p_session, p_request);
+  nm_sr_send_pack_data(p_session, p_request, data, len);
+  const int err = nm_sr_send_issend(p_session, p_request, p_gate, tag);
+  return err;
 }
 
 /** Post a non blocking send request.
@@ -220,10 +218,16 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
  *  @param p_request a pointer to a sendrecv request to be filled.
  *  @return The NM status.
  */
-extern int nm_sr_rsend(nm_session_t p_session,
-		       nm_gate_t p_gate, nm_tag_t tag,
-		       const void *data, uint32_t len,
-		       nm_sr_request_t *p_request);
+static inline int nm_sr_rsend(nm_session_t p_session,
+			      nm_gate_t p_gate, nm_tag_t tag,
+			      const void *data, uint32_t len,
+			      nm_sr_request_t *p_request)
+{
+  nm_sr_send_init(p_session, p_request);
+  nm_sr_send_pack_data(p_session, p_request, data, len);
+  const int err = nm_sr_send_rsend(p_session, p_request, p_gate, tag);
+  return err;
+}
 
 /** Test for the completion of a non blocking send request.
  *  @param p_session a pointer to a nmad session object.
@@ -240,7 +244,7 @@ static inline int nm_sr_isend_iov(nm_session_t p_session,
 				  nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
-  nm_sr_send_pack_data(p_session, p_request, iov, num_entries);
+  nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -253,7 +257,7 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
 {
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
-  nm_sr_send_pack_data(p_session, p_request, iov, num_entries);
+  nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
@@ -276,6 +280,7 @@ static inline int nm_sr_isend_datatype(nm_session_t p_session,
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
   return err;
 }
+
 
 extern int nm_sr_stest(nm_session_t p_session,
 		       nm_sr_request_t *p_request);
@@ -303,13 +308,6 @@ extern int nm_sr_scancel(nm_session_t p_session,
 			 nm_sr_request_t *p_request);
 
 
-extern int nm_sr_irecv_generic(nm_session_t p_session,
-			       nm_gate_t p_gate, nm_tag_t tag,
-			       nm_sr_transfer_type_t reception_type,
-			       void *data_description, uint32_t len,
-			       nm_sr_request_t *p_request,
-			       void *ref);
-
 /** Post a non blocking receive request.
  *  @param p_session a pointer to a nmad session object.
  *  @param p_gate a pointer to the destination gate.
@@ -324,7 +322,10 @@ static inline int nm_sr_irecv(nm_session_t p_session,
 			      void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, NULL);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_recv_unpack_data(p_session, p_request, data, len);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 /** Test for the completion of a non blocking receive request.
@@ -343,23 +344,34 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
 				       nm_sr_request_t *p_request,
 				       void *ref)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_contiguous_transfer, data, len, p_request, ref);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_recv_unpack_data(p_session, p_request, data, len);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 static inline int nm_sr_irecv_iov(nm_session_t p_session,
 				  nm_gate_t p_gate, nm_tag_t tag,
-				  struct iovec *iov, int nb_entries,
+				  struct iovec *iov, int num_entries,
 				  nm_sr_request_t *p_request)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, p_request, NULL);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
 					   nm_gate_t p_gate, nm_tag_t tag,
-					   struct iovec *iov, int nb_entries,
+					   struct iovec *iov, int num_entries,
 					   nm_sr_request_t *p_request, void *ref)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_iov_transfer, iov, nb_entries, p_request, ref);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 static inline int nm_sr_irecv_datatype(nm_session_t p_session,
@@ -367,7 +379,10 @@ static inline int nm_sr_irecv_datatype(nm_session_t p_session,
 				struct CCSI_Segment *segp,
 				nm_sr_request_t *p_request)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_datatype_transfer, segp, 0, p_request, NULL);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_recv_unpack_datatype(p_session, p_request, segp);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 
@@ -377,7 +392,11 @@ static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
 						nm_sr_request_t *p_request,
 						void *ref)
 {
-  return nm_sr_irecv_generic(p_session, p_gate, tag, nm_sr_datatype_transfer, segp, 0, p_request, ref);
+  nm_sr_recv_init(p_session, p_request);
+  nm_sr_request_set_ref(p_session, p_request, ref);
+  nm_sr_recv_unpack_datatype(p_session, p_request, segp);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  return err;
 }
 
 
@@ -386,8 +405,7 @@ static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
  *  @param request the request to check.
  *  @return The NM status.
  */
-extern int nm_sr_rtest(nm_session_t p_session,
-		       nm_sr_request_t *p_request);
+extern int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request);
 
 
 /** Wait for the completion of a non blocking receive request.
@@ -395,16 +413,14 @@ extern int nm_sr_rtest(nm_session_t p_session,
  *  @param request the request to check.
  *  @return The NM status.
  */
-extern int nm_sr_rwait(nm_session_t p_session,
-		       nm_sr_request_t *p_request);
+extern int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request);
 
 /** Cancel a reception request.
  *  @param p_session a pointer to a nmad session object.
  *  @param request the request to cancel.
  *  @return The NM status.
  */
-extern int nm_sr_rcancel(nm_session_t p_session,
-			 nm_sr_request_t *p_request);
+extern int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request);
 
 /** Retrieve the pkt source of a complete any source receive request.
  *  @param p_session a pointer to a nmad session object.
@@ -438,34 +454,6 @@ extern int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
  */
 extern int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req);
 
-/** Returns the received size of the message with the specified
- *  request.
- *  @param p_session a pointer to a nmad session object.
- *  @param request the request to check.
- *  @param size returns the size of the message
- *  @return The NM status.
- */
-extern int nm_sr_get_size(nm_session_t p_session,
-			  nm_sr_request_t *request,
-			  size_t *size);
-
-/** Retrieve the 'ref' from a completed receive request.
- */
-static inline int nm_sr_get_ref(nm_session_t p_session,
-				nm_sr_request_t *p_request,
-				void**ref);
-
-/** Retrieve the tag from a receive request.
- */
-static inline int nm_sr_get_rtag(nm_session_t p_session,
-				 nm_sr_request_t *p_request,
-				 nm_tag_t*tag);
-
-/** Retrieve the tag from a send request.
- */
-static inline int nm_sr_get_stag(nm_session_t p_session,
-				 nm_sr_request_t *p_request,
-				 nm_tag_t*tag);
 
 #if 0
 static inline int nm_sr_disable_progression(nm_session_t p_session)

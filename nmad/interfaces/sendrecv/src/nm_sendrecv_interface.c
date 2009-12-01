@@ -153,63 +153,6 @@ int nm_sr_exit(nm_session_t p_session)
   return NM_ESUCCESS;
 }
 
-
-/** synchronous send operation */
-int nm_sr_issend_generic(nm_session_t p_session,
-			 nm_gate_t p_gate, nm_tag_t tag,
-			 nm_sr_transfer_type_t sending_type,
-			 const void *data, uint32_t len,
-			 nm_sr_request_t *p_request,
-			 void*ref)
-{
-  nm_core_t p_core = p_session->p_core;
-  NM_SO_SR_LOG_IN();
-  assert(nm_sr_data.init_done);
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
-  nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
-  p_request->ref = ref;
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  switch(sending_type)
-    {
-    case nm_sr_contiguous_transfer:
-      nm_core_pack_data(p_core, &p_request->req.pack, data, len);
-      break;
-    case nm_sr_iov_transfer:
-      nm_core_pack_iov(p_core, &p_request->req.pack, data, len);
-      break;
-    case nm_sr_datatype_transfer:
-      nm_core_pack_datatype(p_core, &p_request->req.pack, data);
-      break;
-    default:
-      TBX_FAILURE("Unkown sending type.");
-      break;
-    }
-  nmad_lock();
-  nm_lock_interface(p_core);
-  int ret = nm_core_pack_send(p_core, &p_request->req.pack, tag, p_gate, NM_PACK_SYNCHRONOUS);
-  nm_so_post_all(p_core);
-  nm_unlock_interface(p_core);
-  nmad_unlock();
-  NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, ret);
-  NM_SO_SR_LOG_OUT();
-  return ret;
-}
-
-int nm_sr_rsend(nm_session_t p_session,
-		nm_gate_t p_gate, nm_tag_t tag,
-		const void *data, uint32_t len,
-		nm_sr_request_t *p_request)
-{
-  
-  NM_SO_SR_LOG_IN();
-  
-  int ret = nm_sr_isend(p_session, p_gate, tag, data, len, p_request);
-
-  NM_SO_SR_LOG_OUT();
-  return ret;
-}
-
-
 /** Test for the completion of a non blocking send request.
  *  @param p_so_interface a pointer to the NM/SchedOpt interface.
  *  @param request the request to check.
@@ -250,7 +193,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   return rc;
 }
 
-static inline int nm_sr_flush(struct nm_core *p_core)
+extern int nm_sr_flush(struct nm_core *p_core)
 {
   int ret = NM_EAGAIN;
 
@@ -288,56 +231,6 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 }
 
 /* Receive operations */
-extern int nm_sr_irecv_generic(nm_session_t p_session,
-			       nm_gate_t p_gate, nm_tag_t tag,
-			       nm_sr_transfer_type_t reception_type,
-			       void *data, uint32_t len,
-			       nm_sr_request_t *p_request,
-			       void *ref)
-{
-  nm_core_t p_core = p_session->p_core;
-  int ret;
-  NM_SO_SR_LOG_IN();
-  assert(nm_sr_data.init_done);
-
-  NM_SO_SR_TRACE("tag=%d; data=%p; len=%d; req=%p\n", (int)tag, data, len, p_request);
-
-  nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-  p_request->ref     = ref;
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
-  
-  switch(reception_type)
-    {
-
-    case nm_sr_contiguous_transfer:
-      {
-	nm_core_unpack_data(p_core, &p_request->req.unpack, data, len);
-      }
-      break;
-    case nm_sr_iov_transfer:
-      {
-	nm_core_unpack_iov(p_core, &p_request->req.unpack, data, len);
-      }
-      break;
-    case nm_sr_datatype_transfer:
-      {
-	nm_core_unpack_datatype(p_core, &p_request->req.unpack, data);
-      }
-      break;
-    default:
-      TBX_FAILURE("Unknown reception type.");
-    }
-
-  nmad_lock();
-  nm_lock_interface(p_core);
-  nm_sr_flush(p_core);
-  ret = nm_core_unpack_recv(p_core, &p_request->req.unpack, p_gate, tag);
-  nmad_unlock();
-  nm_unlock_interface(p_core);
-
-  NM_SO_SR_LOG_OUT();
-  return ret;
-}
 
 /** Test for the completion of a non blocking receive request.
  *  @param p_core a pointer to the NewMad core object.
@@ -349,8 +242,6 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
-  /* todo: no need to lock this ? */
-  //nm_lock_interface(p_core);
 
 #ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
@@ -381,7 +272,6 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       rc = -NM_EAGAIN;
     }
-  //nm_unlock_interface(p_core);
   NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, rc);
   NM_SO_SR_LOG_OUT();
   return rc;
@@ -406,12 +296,6 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   return nm_sr_rtest(p_session, p_request);
 }
 
-int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_request, size_t *size)
-{
-  *size = p_request->req.unpack.cumulated_len;
-  return NM_ESUCCESS;
-}
-
 int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
   NM_SO_SR_LOG_IN();
@@ -420,7 +304,6 @@ int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gat
   NM_SO_SR_LOG_OUT();
   return NM_ESUCCESS;
 }
-
 
 int nm_sr_probe(nm_session_t p_session,
 		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
@@ -455,6 +338,30 @@ int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
   assert(p_request->monitor.notifier == NULL);
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
+  return NM_ESUCCESS;
+}
+
+static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info_t*event_info)
+{
+  if(event & NM_SR_STATUS_RECV_COMPLETED)
+    {
+      nm_sr_request_t*p_request = event_info->recv_completed.p_request;
+#warning Paulette: lock
+      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
+    }
+  else if(event & NM_SR_STATUS_SEND_COMPLETED)
+    {
+      nm_sr_request_t*p_request = event_info->send_completed.p_request;
+#warning Paulette: lock
+      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
+    }
+}
+
+int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request)
+{
+  assert(p_request->monitor.notifier == NULL);
+  nm_sr_request_monitor(p_session, p_request, NM_SR_EVENT_SEND_COMPLETED | NM_SR_EVENT_RECV_COMPLETED,
+			&nm_sr_completion_enqueue);
   return NM_ESUCCESS;
 }
 
@@ -556,11 +463,6 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   if( (status & NM_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
     {
-      if(p_request && p_request->ref)
-	{
-#warning Paulette: lock
-	  tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
-	}
       const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
       nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
       nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
@@ -599,10 +501,6 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
   else
     {
       sr_event = NM_SR_STATUS_RECV_COMPLETED;
-    }
-  if(p_request && p_request->ref)
-    {
-      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
     }
   const nm_sr_event_info_t info = { 
     .recv_completed.p_request = p_request,

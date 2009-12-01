@@ -301,6 +301,8 @@ void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
  */
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag)
 {
+  nmad_lock();
+  nm_lock_interface(p_core);
   /* fill-in the unpack request */
   const nm_seq_t seq = (p_gate == NM_ANY_GATE) ? 0 : nm_so_tag_get(&p_gate->tags, tag)->recv_seq_number++;
   p_unpack->status |= NM_STATUS_UNPACK_POSTED;
@@ -350,6 +352,8 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
       else
 	chunk= NULL;
     }
+  nmad_unlock();
+  nm_unlock_interface(p_core);
   return NM_ESUCCESS;
 }
 

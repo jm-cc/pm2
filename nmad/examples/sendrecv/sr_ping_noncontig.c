@@ -30,23 +30,23 @@ void pingpong(int iter)
       if(nm_sr_irecv_iov(p_session, gate_id, 42, 
 			 riov, count, 
 			 &rreq) != NM_ESUCCESS)
-	errx(1, "NM Isend failed \n");
+	errx(1, "NM Irecv failed \n");
       nm_sr_rwait(p_session, &rreq);
       if(nm_sr_isend_iov(p_session, gate_id, 42, 
 			 siov, count, 
 			 &sreq) != NM_ESUCCESS)
-	errx(1, "NM Irecv failed \n");
+	errx(1, "NM Isend failed \n");
       nm_sr_swait(p_session, &sreq);
     }else{
       if(nm_sr_isend_iov(p_session, gate_id, 42, 
 			 siov, count, 
 			 &sreq) != NM_ESUCCESS)
-	errx(1, "NM Irecv failed \n");
+	errx(1, "NM Isend failed \n");
       nm_sr_swait(p_session, &sreq);
       if(nm_sr_irecv_iov(p_session, gate_id, 42, 
 			 riov, count, 
 			 &rreq) != NM_ESUCCESS)
-	errx(1, "NM Isend failed \n");
+	errx(1, "NM Irecv failed \n");
       nm_sr_rwait(p_session, &rreq);
     }
   }

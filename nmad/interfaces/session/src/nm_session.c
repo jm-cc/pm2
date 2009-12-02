@@ -17,6 +17,7 @@
 #include <nm_core_interface.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
+#include <nm_sendrecv_interface.h>
 #include <Padico/Puk.h>
 #include <pm2_common.h>
 
@@ -27,7 +28,7 @@ static struct
 {
   struct nm_core*p_core;    /**< the current nmad object. */
   struct nm_drv*p_drv;      /**< the driver used for all connections */
-  const char*local_url;     /**< the local nmad url */
+  const char*local_url;     /**< the local nmad driver url */
   puk_hashtable_t gates;    /**< list of connected gates */
   puk_hashtable_t sessions; /**< table of active sessions, hashed by session hashcode */
   int ref_count;            /**< ref. counter for core = number of active sessions */
@@ -380,7 +381,8 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
   struct nm_session_s*p_session = puk_hashtable_lookup(nm_session.sessions, &hash_code);
   if(p_session != NULL)
     {
-      fprintf(stderr, "# session: collision detected while creating session %s- a session with hashcode %d already exist (%s)\n", label, hash_code, p_session->label);
+      fprintf(stderr, "# session: collision detected while creating session %s- a session with hashcode %d already exist (%s)\n",
+	      label, hash_code, p_session->label);
       abort();
     }
   p_session = TBX_MALLOC(sizeof(struct nm_session_s));
@@ -401,6 +403,7 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
       nm_session_do_init(argc, argv);
     }
   p_session->p_core = nm_session.p_core;
+  nm_sr_init(p_session);
   *p_local_url = nm_session.local_url;
 
   return NM_ESUCCESS;
@@ -411,11 +414,13 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
   assert(p_session != NULL);
   assert(nm_session.gates != NULL);
   nm_gate_t p_gate = puk_hashtable_lookup(nm_session.gates, url);
-  if(!p_gate)
+  while(p_gate == NULL)
     {
       assert(nm_session.p_core != NULL);
+      /* create gate */
       int err = nm_core_gate_init(nm_session.p_core, &p_gate);
       assert(err == NM_ESUCCESS);
+      /* connect gate */
       const int is_server = (strcmp(url, nm_session.local_url) > 0);
       if(is_server)
 	{
@@ -427,8 +432,27 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  err = nm_core_gate_connect(nm_session.p_core, p_gate, nm_session.p_drv, url);
 	  assert(err == NM_ESUCCESS);
 	}
-      char*key_url = strdup(url);
-      puk_hashtable_insert(nm_session.gates, key_url, p_gate);
+      /* get peer identity */
+      nm_sr_request_t sreq1, sreq2, rreq1, rreq2;
+      nm_tag_t tag = 42;
+      int local_url_size = strlen(nm_session.local_url);
+      err = nm_sr_isend(p_session, p_gate, tag, &local_url_size, sizeof(local_url_size), &sreq1);
+      if(err != NM_ESUCCESS)
+	abort();
+      nm_sr_isend(p_session, p_gate, tag, nm_session.local_url, local_url_size, &sreq2);
+      nm_sr_swait(p_session, &sreq1);
+      nm_sr_swait(p_session, &sreq2);
+      int remote_url_size = -1;
+      nm_sr_irecv(p_session, p_gate, tag, &remote_url_size, sizeof(remote_url_size), &rreq1);
+      nm_sr_rwait(p_session, &rreq1);
+      char*remote_url = malloc(remote_url_size + 1);
+      nm_sr_irecv(p_session, p_gate, tag, remote_url, remote_url_size, &rreq2);
+      nm_sr_rwait(p_session, &rreq2);
+      remote_url[remote_url_size] = '\0';
+      /* insert new gate into hashtable */
+      puk_hashtable_insert(nm_session.gates, remote_url, p_gate);
+      /* lookup again, in case the new gate is not the expected one */
+      p_gate = puk_hashtable_lookup(nm_session.gates, url);
     }
   *pp_gate = p_gate;
   return NM_ESUCCESS;

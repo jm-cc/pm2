@@ -186,7 +186,6 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
       fprintf(stderr, "# launcher: cannot get address from peer.\n");
       abort();
     }
-  fprintf(stderr, "%d bytes\n", len);
   char*url = TBX_MALLOC(len);
   rc = recv(sock, url, len, MSG_WAITALL);
   if(rc < 0)
@@ -202,6 +201,7 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
   *p_url = url;
 }
 
+/* connect to a peer and fill all the necessary structures */
 void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 {
     int err = nm_session_connect(p_core, &addr->p_gate, remote_session_url);
@@ -269,11 +269,10 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
     /* todo: fix this ! */
     ref_list_add(cur_ref_list, addr->p_peer);    
     //gate_list_add(cur_ref_list, addr->p_peer);    
-    fprintf(stderr, "connect_accept ok\n");
     return;
-
 }
 
+/* Wait for an incoming connection */
 void __bmi_accept(BMI_addr_t addr)
 {
     /* server */
@@ -319,7 +318,6 @@ void __bmi_accept(BMI_addr_t addr)
 	abort();
     } 
     fprintf(stderr, "# laucher: local url = '%s'\n", local_launcher_url);
-    /* todo: use accept4 ? (nonblocking accept) */
     int sock = accept(server_sock, (struct sockaddr*)&addr_in, &addr_len);
     assert(sock > -1);
     close(server_sock);
@@ -329,6 +327,116 @@ void __bmi_accept(BMI_addr_t addr)
     __bmi_connect_accept(addr , remote_session_url);
 }
 
+static struct pollfd server_pollfd[10];
+static int server_sock;
+static struct sockaddr_in addr_in;
+static unsigned addr_len;
+
+/* Test for an incoming connection 
+ * Return 1 if connection succeeds, 0 otherwise
+ */
+int __bmi_test_accept(BMI_addr_t addr)
+{
+    short returned_events;
+    char*remote_session_url = NULL;
+
+    server_pollfd[0].fd=server_sock;
+    server_pollfd[0].events=POLLIN|POLLPRI;
+    server_pollfd[0].revents=returned_events;
+
+    int sock = poll(server_pollfd, 1, 0);
+    if(sock < 0) {
+	fprintf(stderr, "# launcher: poll error (%s)\n", strerror(errno));
+	abort();	    
+    }
+
+    if( sock ) {
+	/* someone is trying to connect, accept the connection */
+	sock = accept(server_sock,  (struct sockaddr*)&addr_in, &addr_len);
+	assert(sock > -1);
+	/* todo: do not close this socket ? */
+	close(server_sock);
+	__bmi_launcher_addr_send(sock, local_session_url);
+	__bmi_launcher_addr_recv(sock, &remote_session_url);
+	close(sock);
+	__bmi_connect_accept(addr , remote_session_url);
+	return 1;
+    }
+    return 0;
+}
+
+/* Wait for an incoming connection */
+void __bmi_wait_accept(BMI_addr_t addr)
+{
+    /* todo: use a blocking call here */
+    while(! __bmi_test_accept(addr)) { }
+}
+
+/* non-blocking accept */
+void __bmi_iaccept(BMI_addr_t addr)
+{
+    /* server */
+    char local_launcher_url[16] = { 0 };
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    assert(server_sock > -1);
+    addr_len = sizeof addr_in;
+    addr_in.sin_family = AF_INET;
+    addr_in.sin_port = htons(0);
+    addr_in.sin_addr.s_addr = INADDR_ANY;
+    
+    int on = 1;
+    int rc = setsockopt(server_sock, SOL_SOCKET,  SO_REUSEADDR,
+			(char *)&on, sizeof(on));
+    if (rc < 0)
+    {
+	fprintf(stderr, "#launcher setsockopt error (%s)", strerror(errno));
+	abort();
+    }
+
+    /* set the socket non blocking */
+    rc = ioctl(server_sock, FIONBIO, (char*)&on);
+    if(rc)
+    {
+	fprintf(stderr, "# launcher ioctl error (%s)\n", strerror(errno));
+	abort();
+    }
+    
+    rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    if(rc) 
+    {
+	fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
+	abort();
+    }
+    rc = getsockname(server_sock, (struct sockaddr*)&addr_in, &addr_len);
+    listen(server_sock, 255);
+      
+    /* get the local url */
+    struct ifaddrs*ifa_list = NULL;
+    rc = getifaddrs(&ifa_list);
+    if(rc == 0)
+    {
+	struct ifaddrs*i;
+	for(i = ifa_list; i != NULL; i = i->ifa_next)
+	{
+	    if (i->ifa_addr && i->ifa_addr->sa_family == AF_INET)
+	    {
+		struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
+		if(!(i->ifa_flags & IFF_LOOPBACK))
+		{
+		    snprintf(local_launcher_url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr_in.sin_port);
+		    break;
+		}
+	    }
+	}
+    }
+    if(local_launcher_url[0] == '\0')
+    {
+	fprintf(stderr, "# launcher: cannot get local address\n");
+	abort();
+    } 
+    fprintf(stderr, "# laucher: local url = '%s'\n", local_launcher_url);
+  
+}
 
 void __bmi_connect(BMI_addr_t dest, char* url)
 {
@@ -799,11 +907,11 @@ int BMI_testunexpected(int incount,
 		       int max_idle_time_ms)
 {
     
-    /* todo: run this asynchronously ! (progression thread ?) */
+    /* todo: run this asynchronously ! */
     info_array->addr = malloc(sizeof(struct BMI_addr));
-    //nm_core_gate_init(p_core, &info_array->addr->p_gate);    
 
-    __bmi_accept(info_array->addr);
+    __bmi_iaccept(info_array->addr);
+    __bmi_wait_accept(info_array->addr);
 
     nm_sr_request_t request;
     

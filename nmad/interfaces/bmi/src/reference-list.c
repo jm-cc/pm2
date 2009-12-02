@@ -16,6 +16,8 @@
  *
  */
 
+#include <nm_public.h>
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
@@ -26,7 +28,6 @@
 
 #include "nmad_bmi_interface.h"
 #include "reference-list.h"
-#include <nm_public.h>
 //#include "id-generator.h"
 //#include "quickhash.h"
 

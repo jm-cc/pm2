@@ -26,7 +26,11 @@
 #ifndef __BMI_EXTENDED_H
 #define __BMI_EXTENDED_H
 
-#include "nm_public.h"
+#include <nm_public.h>
+
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include "bmi-types.h"
 
 typedef void (*bmi_unexpected_callback_t)(struct BMI_unexpected_info*);
@@ -54,6 +58,8 @@ int BMI_register_unexpected_callback(bmi_unexpected_callback_t callback);
  * \return 0 on success, -1 on failure.
  */
 int BMI_unregister_unexpected_callback(bmi_unexpected_callback_t callback);
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __BMI_EXTENDED_H */
 

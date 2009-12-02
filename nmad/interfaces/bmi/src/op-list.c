@@ -21,6 +21,8 @@
  * structures before calling any of the functions provided here.
  */
 
+#include <nm_public.h>
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 

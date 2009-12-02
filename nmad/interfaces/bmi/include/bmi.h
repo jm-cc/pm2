@@ -25,10 +25,11 @@
 #ifndef __BMI_H
 #define __BMI_H
 
+#include <nm_public.h>
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
-#include "nm_public.h"
 #include "bmi-types.h"
 
 /** used to describe unexpected message arrivals. */

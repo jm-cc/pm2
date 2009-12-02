@@ -26,12 +26,11 @@
 #ifndef __BMI_TYPES_H
 #define __BMI_TYPES_H
 
+#include <nm_public.h>
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
 #include <stdlib.h>
-
-#include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 
 

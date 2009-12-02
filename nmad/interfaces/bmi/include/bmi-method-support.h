@@ -16,10 +16,11 @@
 #ifndef __BMI_METHOD_SUPPORT_H
 #define __BMI_METHOD_SUPPORT_H
 
+#include "nm_public.h"
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
-#include <nm_public.h>
 #include "bmi-types.h"
 
 #define BMI_MAX_CONTEXTS 16

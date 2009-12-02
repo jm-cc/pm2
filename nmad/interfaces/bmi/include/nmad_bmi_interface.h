@@ -15,6 +15,7 @@
 #ifndef NMAD_BMI_INTERFACE_H
 #define NMAD_BMI_INTERFACE_H
 
+#include <nm_public.h>
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
@@ -24,7 +25,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <nm_public.h>
 #include <nm_private.h>
 #include <nm_sendrecv_interface.h>
 #include "bmi-types.h"

@@ -15,6 +15,8 @@
  * General Public License for more details.
  */
 
+#include <nm_public.h>
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
@@ -202,6 +204,7 @@ main(int  argc,
 		if (ret !=  0) {
 		    fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 		}
+#ifdef USE_WAIT
 		do {
 		    ret = BMI_test(op_id,&outcount,NULL,NULL,NULL,0, context);
 		} while (ret ==  0 && outcount == 0);
@@ -218,9 +221,13 @@ main(int  argc,
 		if (ret !=  0) {
 		    fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
 		}	  
+#ifdef USE_WAIT
 		do {                  
 		    ret = BMI_test(op_id, &outcount, NULL, NULL, NULL, 0, context);
 		} while (ret == 0 && outcount == 0);    	
+#else
+		ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context);
+#endif
 	    }
 
 	    TBX_GET_TICK(t1);
@@ -236,6 +243,7 @@ main(int  argc,
 		if (ret !=  0) {
 		    fprintf(stderr," BMI_post_recv() ret = %d\n",ret); exit(1);
 		}
+#ifdef USE_WAIT
 		do {
 		    ret = BMI_test(op_id, &outcount, NULL, NULL, NULL, 0, context);
 		} while (ret ==  0 && outcount == 0);
@@ -253,9 +261,14 @@ main(int  argc,
 		if (ret !=  0) {
 		    fprintf(stderr," BMI_post_send() ret = %d\n",ret); exit(1);
 		}	  
+
+#ifdef USE_WAIT
 		do {                  
 		    ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 0, context);
 		} while (ret == 0 && outcount == 0);    	
+#else
+		ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context);
+#endif
 	    }
 
 	    TBX_GET_TICK(t2);
@@ -327,7 +340,7 @@ main(int  argc,
 	    } else if (ret == 0) {
 		bmi_size_t actual_size=0;
 		bmi_size_t msg_len=8;
-
+#ifdef USE_WAIT
 		do {
 		    ret = BMI_test(op_id, &outcount, &error_code,
 				   &actual_size, NULL, 10, *context);
@@ -369,9 +382,13 @@ main(int  argc,
 		}
 
 		for(i = 0; i < nb_h; i++){
+#ifdef USE_WAIT
 		    do {                  
 			ret = BMI_test(op_id, &outcount,NULL,NULL,NULL,0,context[i]);
 		    } while (ret == 0 && outcount == 0); 
+#else
+		    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
+#endif
 		}
 
 		for(i = 0; i < nb_h; i++){
@@ -389,9 +406,13 @@ main(int  argc,
 		}
 
 		for(i = 0; i < nb_h; i++){
+#ifdef USE_WAIT
 		    do {
 			ret = BMI_test(op_id, &outcount, NULL,NULL,NULL,0,context[i]);
 		    } while (ret ==  0 && outcount == 0);
+#else
+		    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
+#endif
 		}
 #ifdef DEBUG
 		print_buffer(recv_buf, len);
@@ -416,10 +437,13 @@ main(int  argc,
 		}
 
 		for(i = 0; i < nb_h; i++){
-
+#ifdef USE_WAIT
 		    do {                  
 			ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 10, context[i]);
 		    } while (ret == 0 && outcount == 0);
+#else
+		    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
+#endif
 		}
 
 		for(i = 0; i < nb_h; i++){
@@ -438,16 +462,16 @@ main(int  argc,
 		}	
 
 		for(i = 0; i < nb_h; i++){
+#ifdef USE_WAIT
 		    do {
 			ret = BMI_test(op_id, &outcount, NULL,NULL, NULL, 0, context[i]);
 		    } while (ret ==  0 && outcount == 0);
+#else
+		    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
+#endif
 		}
 	    }
-#else
-	    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
-#endif
 	}
-
 	BMI_memfree(peer_addr[0], send_buf, end_len, BMI_SEND);
 	BMI_memfree(peer_addr[0], recv_buf, end_len, BMI_RECV);
 

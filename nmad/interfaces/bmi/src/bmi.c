@@ -15,6 +15,8 @@
  *  Top-level BMI network interface routines.
  */
 
+#include <nm_public.h>
+
 /* BMI is only available for 'huge tags' (ie. at least 64 bits) */
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
@@ -33,7 +35,8 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <netpacket/packet.h>
-
+#include <poll.h>
+#include <sys/ioctl.h>
 
 #include "bmi.h"
 #include "bmi-types.h"
@@ -43,7 +46,6 @@
 
 #include "nmad_bmi_interface.h"
 
-#include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 
 //#define DEBUG 1
@@ -147,12 +149,22 @@ static void __bmi_launcher_addr_send(int sock, const char*url)
 {
   int len = strlen(url) + 1 ;
   int rc = send(sock, &len, sizeof(len), 0);
+  if(rc < 0)
+  {
+      fprintf(stderr, "#launcher: send erro (%s)\n", strerror(errno));
+      abort();
+  }
   if(rc != sizeof(len))
     {
       fprintf(stderr, "# launcher: cannot send address to peer.\n");
       abort();
     }
   rc = send(sock, url, len, 0);
+  if(rc < 0)
+  {
+      fprintf(stderr, "#launcher: send erro (%s)\n", strerror(errno));
+      abort();
+  }
   if(rc != len)
     {
       fprintf(stderr, "# launcher: cannot send address to peer.\n");
@@ -164,6 +176,11 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
 {
   int len = -1;
   int rc = recv(sock, &len, sizeof(len), MSG_WAITALL);
+  if(rc < 0)
+  {
+      fprintf(stderr, "#launcher: send erro (%s)\n", strerror(errno));
+      abort();
+  }
   if(rc != sizeof(len))
     {
       fprintf(stderr, "# launcher: cannot get address from peer.\n");
@@ -172,6 +189,11 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
   fprintf(stderr, "%d bytes\n", len);
   char*url = TBX_MALLOC(len);
   rc = recv(sock, url, len, MSG_WAITALL);
+  if(rc < 0)
+  {
+      fprintf(stderr, "#launcher: send erro (%s)\n", strerror(errno));
+      abort();
+  }
   if(rc != len)
     {
       fprintf(stderr, "# launcher: cannot get address from peer.\n");

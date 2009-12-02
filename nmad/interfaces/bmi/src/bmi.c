@@ -205,11 +205,13 @@ static void __bmi_launcher_addr_recv(int sock, char**p_url)
 void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 {
     int err = nm_session_connect(p_core, &addr->p_gate, remote_session_url);
-  if (err != NM_ESUCCESS)
+    if (err != NM_ESUCCESS)
     {
-      fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
-      abort();
+	fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
+	abort();
     }
+    if(addr->p_gate == NULL)
+	*(int*)0=0;
     addr->p_peer = malloc(sizeof(struct bnm_peer));
 
     __bmi_peer_init(addr->p_peer);
@@ -354,8 +356,7 @@ int __bmi_test_accept(BMI_addr_t addr)
 	/* someone is trying to connect, accept the connection */
 	sock = accept(server_sock,  (struct sockaddr*)&addr_in, &addr_len);
 	assert(sock > -1);
-	/* todo: do not close this socket ? */
-	close(server_sock);
+	/* exchange session url */
 	__bmi_launcher_addr_send(sock, local_session_url);
 	__bmi_launcher_addr_recv(sock, &remote_session_url);
 	close(sock);
@@ -703,15 +704,6 @@ BMI_addr_lookup(BMI_addr_t *peer,
 	new_peer->p_gate = NULL;
 	assert(p_core);
 	assert(new_peer->peername);
-
-#ifdef DEBUG	
-	fprintf(stderr, "gate %p\n", new_peer->p_gate);
-#endif
-
-	if (ret != NM_ESUCCESS) {
-	    fprintf(stderr,"nm_core_gate_connect returned ret = %d\n",ret);	    
-	    exit(1);
-	}
 	
 	/* keep up with the reference and we are done */
 #ifdef MARCEL
@@ -910,9 +902,9 @@ int BMI_testunexpected(int incount,
 		       int max_idle_time_ms)
 {
     info_array->addr = malloc(sizeof(struct BMI_addr));
-    if(__bmi_test_accept(info_array->addr) )
+    int ret =__bmi_test_accept(info_array->addr);
+    if(ret == 1) 
 	{
-
 	    nm_sr_request_t request;
 	    
 	    struct bnm_ctx rx;

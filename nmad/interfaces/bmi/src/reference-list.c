@@ -34,8 +34,6 @@
 static puk_hashtable_t str_table = NULL;
 #define STR_TABLE_SIZE 137
 
-//#define TAG_MATCH 1
-
 /***************************************************************
  * Visible functions
  */

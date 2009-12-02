@@ -111,17 +111,7 @@ main(int  argc,
     int              warmup     = 200;
     int              loop       = 0;
 
-#ifndef TAG_MATCH
-    bmi_msg_tag_t    tag        = 12;
-#else
     bmi_msg_tag_t    tag        = 5624;
-#endif
-
-
-#ifdef TAG_MATCH
-    printf("TAG_MATCHing enabled\n");
-#endif
-
 
     assert(NB_SERV <= MAX_CONNEXION);
 

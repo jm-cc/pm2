@@ -15,6 +15,9 @@
 #ifndef NMAD_BMI_INTERFACE_H
 #define NMAD_BMI_INTERFACE_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -274,5 +277,8 @@ struct bnm_connreq
 {
         char                nmm_peername[256]; /* my peername nm://hostname/... */
 } __attribute__ ((__packed__)) ;
+
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif  /* NMAD_BMI_INTERFACE_H */

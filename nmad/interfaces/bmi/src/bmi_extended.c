@@ -13,6 +13,9 @@
  * General Public License for more details.
  */
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <nm_public.h>
 #include "bmi.h"
 #include "bmi_extended.h"
@@ -117,6 +120,8 @@ int BMI_unregister_unexpected_callback(bmi_unexpected_callback_t callback)
     }
     return -1;
 }
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 /*
  * Local variables:

@@ -9,6 +9,9 @@
 #ifndef STR_UTILS_H
 #define STR_UTILS_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 /*
  * BMI_split_string_list()
  *
@@ -130,5 +133,7 @@ void BMI_free_string_list(char ** list, int len)
         free(list);
     }
 }
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif	/* STR_UTILS_H */

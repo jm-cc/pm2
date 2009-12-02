@@ -26,11 +26,14 @@
 #ifndef __BMI_TYPES_H
 #define __BMI_TYPES_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <stdlib.h>
 
-//#include "nm_public.h"
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
+
 
 typedef int64_t  bmi_size_t;         /**< Data region size */
 typedef nm_tag_t bmi_msg_tag_t;      /**< User-specified message tag */
@@ -209,6 +212,8 @@ struct bmi_optimistic_buffer_info {
 
 /** default bmi error translation function */
 int bmi_errno_to_pvfs(int error);
+
+#endif	/* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __BMI_TYPES_H */
 

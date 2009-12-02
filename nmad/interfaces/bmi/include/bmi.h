@@ -25,8 +25,10 @@
 #ifndef __BMI_H
 #define __BMI_H
 
-#include "nm_public.h"
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
 
+#include "nm_public.h"
 #include "bmi-types.h"
 
 /** used to describe unexpected message arrivals. */
@@ -186,6 +188,8 @@ int BMI_post_sendunexpected_list(bmi_op_id_t * id,
 
 int BMI_cancel(bmi_op_id_t id, 
 	       bmi_context_id context_id);
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __BMI_H */
 

@@ -16,6 +16,9 @@
  *
  */
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -282,6 +285,9 @@ void dealloc_ref_st(ref_st_p deadref){
     TBX_FREE(deadref);
 }
 #endif
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
+
 /*
  * Local variables:
  *  c-indent-level: 4

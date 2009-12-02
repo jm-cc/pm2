@@ -21,6 +21,9 @@
  * structures before calling any of the functions provided here.
  */
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <stdlib.h>
 #include <errno.h>
 
@@ -254,6 +257,8 @@ static void gossip_print_op(method_op_p print_op)
 
     return;
 }
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 /*
  * Local variables:

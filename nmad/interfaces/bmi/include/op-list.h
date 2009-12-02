@@ -17,6 +17,9 @@
 #ifndef __OP_LIST_H
 #define __OP_LIST_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include "bmi-types.h"
 #include "bmi-method-support.h"
 
@@ -48,6 +51,8 @@ int op_list_empty(op_list_p olp);
 method_op_p op_list_shownext(op_list_p olp);
 method_op_p op_list_search(op_list_p olp,
 			   struct op_list_search_key *key);
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __OP_LIST_H */
 

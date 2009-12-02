@@ -15,6 +15,9 @@
  *  Top-level BMI network interface routines.
  */
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
@@ -1829,6 +1832,9 @@ bmi_addr_drop(ref_st_p tmp_ref){
     return;
 }
 #endif
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
+
 /*
  * Local variables:
  *  c-indent-level: 4

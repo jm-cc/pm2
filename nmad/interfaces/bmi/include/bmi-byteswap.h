@@ -31,6 +31,9 @@
 #ifndef __BMI_BYTESWAP_H
 #define __BMI_BYTESWAP_H 
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #ifndef __bswap_16
 /* Swap bytes in 16 bit value.  */
 #ifdef __GNUC__
@@ -111,6 +114,8 @@ __bswap_32 (unsigned int __bsx)
 #define bmitoh16(x) htobmi16(x) 
 #define bmitoh32(x) htobmi32(x)
 #define bmitoh64(x) htobmi64(x)
+
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __BMI_BYTESWAP_H */
 

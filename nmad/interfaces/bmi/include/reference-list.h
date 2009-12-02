@@ -19,10 +19,14 @@
 #ifndef __REFERENCE_LIST_H
 #define __REFERENCE_LIST_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include "bmi-types.h"
 #include "bmi-method-support.h"
 #include <nm_public.h>
 #include <nm_private.h>
+
 //typedef struct list_head *ref_list_p;
 typedef tbx_list_t* ref_list_p;
 
@@ -60,6 +64,7 @@ void ref_list_cleanup(ref_list_p rlp);
 ref_st_p alloc_ref_st(void);
 void dealloc_ref_st(ref_st_p deadref);
 
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 #endif /* __REFERENCE_LIST_H */
 

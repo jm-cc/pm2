@@ -13,6 +13,9 @@
  * various BMI methods.
  */
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <string.h>
 
 #include "bmi-types.h"
@@ -212,6 +215,7 @@ char *string_key(const char *key,
     return (retstring);
 }
 
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
 /*
  * Local variables:
  *  c-indent-level: 4

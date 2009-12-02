@@ -16,6 +16,9 @@
 #ifndef __BMI_METHOD_SUPPORT_H
 #define __BMI_METHOD_SUPPORT_H
 
+/* BMI is only available for 'huge tags' (ie. at least 64 bits) */
+#ifdef NM_TAGS_AS_INDIRECT_HASH
+
 #include <nm_public.h>
 #include "bmi-types.h"
 
@@ -241,6 +244,7 @@ void bmi_dealloc_method_addr(bmi_method_addr_p old_method_addr);
 char *string_key(const char *key,
 		 const char *id_string);
 
+#endif	/* NM_TAGS_AS_INDIRECT_HASH */
 #endif /* __BMI_METHOD_SUPPORT_H */
 
 /*

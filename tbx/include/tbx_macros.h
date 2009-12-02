@@ -331,6 +331,14 @@ do { \
 #  else                         /*# pthread yield : 'available' case */
 #    define TBX_YIELD()           pthread_yield()
 #  endif                        /*# pthread yield : end */
+#  define TBX_CRITICAL_SHARED             pthread_spinlock_t __tbx_spinlock
+#  define TBX_INIT_CRITICAL_SHARED(st)    pthread_spin_init((&((st)->__tbx_spinlock)), 0)
+#  define TBX_LOCK_CRITICAL_SHARED(st)    pthread_spin_lock((&((st)->__tbx_spinlock)))
+#  define TBX_TRYLOCK_CRITICAL_SHARED(st) pthread_spin_trylock((&((st)->__tbx_spinlock)))
+#  define TBX_UNLOCK_CRITICAL_SHARED(st)  pthread_spin_unlock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_LOCK()             pthread_spin_lock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_UNLOCK()           pthread_spin_unlock((&((st)->__tbx_spinlock)))
+#  define TBX_CRITICAL_YIELD()            (void) 0
 #else                         /*# Threads sync : no thread mode */
 
 #  define TBX_CRITICAL_SHARED             TBX_SHARED

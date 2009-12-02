@@ -373,7 +373,7 @@ void __bmi_wait_accept(BMI_addr_t addr)
 }
 
 /* non-blocking accept */
-void __bmi_iaccept(BMI_addr_t addr)
+void __bmi_iaccept()
 {
     /* server */
     char local_launcher_url[16] = { 0 };
@@ -526,6 +526,9 @@ BMI_initialize(const char *method_list,
     if (flags & BMI_INIT_SERVER) {/*SERVER*/
 	server = 1;
     } 
+    
+    __bmi_iaccept();
+
     return 0;
 }
 
@@ -906,38 +909,39 @@ int BMI_testunexpected(int incount,
 		       struct BMI_unexpected_info *info_array,
 		       int max_idle_time_ms)
 {
-    
-    /* todo: run this asynchronously ! */
     info_array->addr = malloc(sizeof(struct BMI_addr));
+    if(__bmi_test_accept(info_array->addr) )
+	{
 
-    __bmi_iaccept(info_array->addr);
-    __bmi_wait_accept(info_array->addr);
-
-    nm_sr_request_t request;
-    
-    struct bnm_ctx rx;
-    rx.nmc_state    = BNM_CTX_PREP;
-    rx.nmc_tag      = 0;
-    rx.nmc_type     = BNM_REQ_RX;
-    rx.nmc_msg_type = BNM_MSG_UNEXPECTED;
-    rx.nmc_peer     = info_array->addr->p_peer;
-
-    bnm_create_match(&rx);
-
-    /* retrieve remote tx_id */
-    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
-		&info_array->size, sizeof(info_array->size), &request);
-    nm_sr_rwait(p_core, &request);
-
-    /* todo: solve the tag problem here : for now, the tag must be 0 */
-
-    info_array->buffer = malloc(info_array->size);
-    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
-		info_array->buffer, info_array->size, &request);
-    nm_sr_rwait(p_core, &request);
- 
-    info_array->error_code=0;
-    return 1;
+	    nm_sr_request_t request;
+	    
+	    struct bnm_ctx rx;
+	    rx.nmc_state    = BNM_CTX_PREP;
+	    rx.nmc_tag      = 0;
+	    rx.nmc_type     = BNM_REQ_RX;
+	    rx.nmc_msg_type = BNM_MSG_UNEXPECTED;
+	    rx.nmc_peer     = info_array->addr->p_peer;
+	    
+	    bnm_create_match(&rx);
+	    
+	    /* retrieve remote tx_id */
+	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+			&info_array->size, sizeof(info_array->size), &request);
+	    nm_sr_rwait(p_core, &request);
+	    
+	    /* todo: solve the tag problem here : for now, the tag must be 0 */	    
+	    info_array->buffer = malloc(info_array->size);
+	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+			info_array->buffer, info_array->size, &request);
+	    nm_sr_rwait(p_core, &request);
+	    
+	    info_array->error_code=0;
+	    nm_sr_get_size(p_core, &request, (size_t*)outcount);
+	} else {
+	free(info_array->addr);
+    }
+	return 0;
+	
 }
 
 
@@ -968,10 +972,10 @@ BMI_test(bmi_op_id_t id,
     } else { //RECV
 	ret = nm_sr_rtest(p_core, &id->request);
 	if(ret == -NM_ESUCCESS && outcount) {
-	    *outcount = id->request.req.unpack.cumulated_len;
+	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
 	}
 	if(ret == -NM_ESUCCESS && actual_size) {
-	    *actual_size = id->request.req.unpack.cumulated_len;
+	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
 	}
     }
 

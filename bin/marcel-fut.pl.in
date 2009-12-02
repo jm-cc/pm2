@@ -1,8 +1,441 @@
 #!@PERL@
 
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+
+
 use warnings;
 use strict;
-use Math::BigInt;	# 64bit time stamp processing on 32bit archs
+
+package TraceFile;
+
+## a class representing a trace file being parsed
+
+use Fcntl 'SEEK_CUR','SEEK_SET','SEEK_END';	# seek constants
+
+my %arch_code;	# architecture code to string mapping
+my %arch_word;	# architecture code to word size mapping
+my %block_code; # block code to string mapping
+
+# parse a block header
+sub read_block_header($) {
+    my $self	= shift;
+    my $bh	= {};
+    my $buf;
+
+    my $fh	= ${$self}{'file_handle'};
+
+    # save current pos in the file
+    ${$bh}{'start'}	= sysseek($fh, 0, SEEK_CUR)
+        or die "sysseek: $!";
+
+    # raw read the header
+    sysread $fh, $buf, 16
+        or die "sysread block header: $!";
+
+    # perform byte swapping if needed
+    my @unpack_h = unpack "${$self}{'swapl'}4", $buf;
+
+    # parse header fields
+    if (${$self}{'is_little_endian'}) {
+        ${$bh}{'size'} = ($unpack_h[1] << 32) + $unpack_h[0];
+    } else {
+        ${$bh}{'size'} = ($unpack_h[0] << 32) + $unpack_h[1];
+    }
+
+    ${$bh}{'type'}	= $unpack_h[2];
+    ${$bh}{'type_name'}	= $block_code{$unpack_h[2]};
+    ${$bh}{'subtype'}	= $unpack_h[3];
+
+    return $bh;
+}
+
+# pretty pring header fields
+sub disp_block_header($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    print "\n[", ${$bh}{'type_name'},"]\n";
+    print "start:\t ", ${$bh}{'start'}, "\n";
+    print "size:\t ", ${$bh}{'size'}, "\n";
+    print "subtype: ", ${$bh}{'subtype'}, "\n";
+}
+
+# skip to the beginning of next block
+sub seek_next_block($$) {
+    my $self	= shift;
+    my $bh	= shift;
+
+    my $pos;
+    my $fh	= ${$self}{'file_handle'};
+
+    if (${$bh}{'size'}) {
+        # print "seeking to ", ${$bh}{'start'}+${$bh}{'size'}, "\n";
+
+        $pos	= sysseek($fh, ${$bh}{'start'}+${$bh}{'size'}, SEEK_SET)
+            or die "sysseek: $!";
+    } else {
+        $pos	= sysseek($fh, 0, SEEK_END)
+            or die "sysseek: $!";
+    }
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+# set file pos to the beginning of the current block header
+sub seek_block_header($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    my $fh	= ${$self}{'file_handle'};
+
+    # print "seeking to ${$bh}{'type_name'} header at", ${$bh}{'start'}, "\n";
+    my $pos	= sysseek($fh, ${$bh}{'start'}, SEEK_SET)
+        or die "sysseek: $!";
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+# set file pos to the beginning of the current block body
+sub seek_block_data($$) {
+    my $self	= shift;
+    my $bh	= shift;
+    my $fh	= ${$self}{'file_handle'};
+
+    # print "seeking to block ${$bh}{'type_name'} data at ", ${$bh}{'start'}+16, "\n";
+    my $pos	= sysseek($fh, ${$bh}{'start'}+16, SEEK_SET)
+        or die "sysseek: $!";
+
+    ${$self}{'pos'}	= $pos;
+
+    return $pos;
+}
+
+# prepare to read a 'user raw' block
+sub init_read_event($$$) {
+    my $self		= shift;
+    my $bh_hash		= ${$self}{'block_header_hash'};
+    my $bh;
+
+    if (${$self}{'arch_word'} == 64) {
+        $bh	= ${$bh_hash}{'user raw 64'};
+        ${$self}{'read_user_event'}	= \&read_user64_event;
+    } else {
+        $bh	= ${$bh_hash}{'user raw 32'};
+        ${$self}{'read_user_event'}	= \&read_user32_event;
+    }
+
+    ${$self}{'ev_bh'}		= $bh;
+    ${$self}{'ev_start'}	= seek_block_data($self, $bh);
+    ${$self}{'pos'}		= ${$self}{'ev_start'};
+    ${$self}{'ev_end'}		= ${$self}{'pos'} + ${$bh}{'size'} - 16;
+}
+
+# returns a bool indicating whether more events remain to be read or not
+sub more_events($$) {
+    my $self		= shift;
+
+    # print "${$self}{'pos'} / ${$self}{'ev_end'}\n";
+    return ${$self}{'pos'} < ${$self}{'ev_end'};
+}
+
+# pretty print an event
+sub disp_event($$;$) {
+    my $self		= shift;
+    my $short_fmt	= shift;
+    my $event;
+
+    if (@_) {
+        $event	= shift;
+    } else {
+        $event	= ${$self}{'ev_event'};
+    }
+
+    my $nb_params	= ${$event}{'nb_params'};
+    my $a	= ${$event}{'param_array'};
+
+    my $s	= '';
+
+    if ($short_fmt) {
+        $s	.= "${$event}{'time'},${$event}{'tid'},${$event}{'num'},$nb_params";
+        for my $i (0..$nb_params-1) {
+            $s	.= ",${$a}[$i]";
+        }
+    } else {
+        $s	.= "time:\t\t ${$event}{'time'}\n";
+        $s	.= "thread id:\t ${$event}{'tid'}\n";
+#    $s .= "event code:\t %x\n", ${$event}{'code'};
+        $s 	.= sprintf "event num:\t %x\n", ${$event}{'num'};
+
+#    $s .= "nb params:\t ${nb_params}\n";
+
+        for my $i (0..$nb_params-1) {
+            $s	.= sprintf "param ${i}:\t %x\n", ${$a}[$i];
+        }
+    }
+
+    return $s;
+}
+
+# 32bit version of the event block parsing routine
+sub read_user32_event($$) {
+    my $self	= shift;
+    my $fh	= ${$self}{'file_handle'};
+    my $buf;
+
+    sysread $fh, $buf, 16
+        or die "sysread event: $!";
+    ${$self}{'pos'}	+= 16;
+    my @unpack_buf = unpack "${$self}{'swapl'}4", $buf;
+
+    my $time;
+    if (${$self}{'is_little_endian'}) {
+        $time = ($unpack_buf[1] << 32) + $unpack_buf[0];
+    } else {
+        $time = ($unpack_buf[0] << 32) + $unpack_buf[1];
+    }
+
+    my $tid	= $unpack_buf[2];
+    my $code	= $unpack_buf[3];
+    my $nb_params	= ($code & 0xff) - 1;
+    my $num	= $code >> 8;
+
+    my $a	= [];
+    my $i;
+    for $i (0..$nb_params-1) {
+        my $param;
+
+        sysread $fh, $buf, 4
+            or die "read param: $!";
+        ${$self}{'pos'}	+= 4;
+        ($param)	= unpack "${$self}{swapl}", $buf;
+        ${$a}[$i]	= $param;
+    }
+
+    my $event	= {};
+    if (exists (${$self}{'time_offset'})) {
+    } else {
+        ${$self}{'time_offset'}	= $time;
+    }
+
+    ${$event}{'time_stamp'}	= $time;
+    ${$event}{'time'}		= $time - ${$self}{'time_offset'};
+    ${$event}{'tid'}		= $tid;
+    ${$event}{'code'}		= $code;
+    ${$event}{'num'}		= $num;
+    ${$event}{'nb_params'}	= $nb_params;
+    ${$event}{'param_array'}	= $a;
+
+    ${$self}{'ev_event'}	= $event;
+    return $event;
+}
+
+# 64bit version of the event block parsing routine
+sub read_user64_event($$) {
+    my $self	= shift;
+    my $fh	= ${$self}{'file_handle'};
+    my $buf;
+
+    sysread $fh, $buf, 24
+        or die "sysread event: $!";
+    ${$self}{'pos'}	+= 24;
+    my @unpack_buf = unpack "${$self}{'swapl'}6", $buf;
+
+    my $time;
+    if (${$self}{'is_little_endian'}) {
+        $time = ($unpack_buf[1] << 32) + $unpack_buf[0];
+    } else {
+        $time = ($unpack_buf[0] << 32) + $unpack_buf[1];
+    }
+
+    my $tid;
+    if (${$self}{'is_little_endian'}) {
+        $tid = ($unpack_buf[3] << 32) + $unpack_buf[2];
+    } else {
+        $tid = ($unpack_buf[2] << 32) + $unpack_buf[3];
+    }
+    
+    my $code;
+    if (${$self}{'is_little_endian'}) {
+        $code = ($unpack_buf[5] << 32) + $unpack_buf[4];
+    } else {
+        $code = ($unpack_buf[4] << 32) + $unpack_buf[5];
+    }
+
+    my $nb_params	= ($code & 0xff) - 1;
+    my $num	= $code >> 8;
+
+    my $a	= [];
+    my $i;
+    for $i (0..$nb_params-1) {
+        sysread $fh, $buf, 8
+            or die "read param: $!";
+        ${$self}{'pos'}	+= 8;
+        my ($param_0, $param_1)	= unpack "${$self}{swapl}2", $buf;
+	my $param;
+	if (${$self}{'is_little_endian'}) {
+		$param = ($param_1 << 32) + $param_0;
+	} else {
+		$param = ($param_0 << 32) + $param_1;
+	}
+
+        ${$a}[$i]	= $param;
+    }
+
+    my $event	= {};
+    if (exists (${$self}{'time_offset'})) {
+    } else {
+        ${$self}{'time_offset'}	= $time;
+    }
+
+    ${$event}{'time_stamp'}	= $time;
+    ${$event}{'time'}		= $time - ${$self}{'time_offset'};
+    ${$event}{'tid'}		= $tid;
+    ${$event}{'code'}		= $code;
+    ${$event}{'num'}		= $num;
+    ${$event}{'nb_params'}	= $nb_params;
+    ${$event}{'param_array'}	= $a;
+
+    ${$self}{'ev_event'}	= $event;
+    return $event;
+}
+
+# wrap calls to 32bit or 64bit event parsing routine
+sub read_user_event($) {
+    my $self	= shift;
+    return &{${$self}{'read_user_event'}}($self);
+}
+
+# set the time stamp offset to that of the current event (or the passed as arg)
+sub reset_time_offset($;$) {
+    my $self		= shift;
+    my $event;
+
+    if (@_) {
+        $event	= shift;
+    } else {
+        $event	= ${$self}{'ev_event'};
+    }
+
+    ${$self}{'time_offset'}	= ${$event}{'time_stamp'};
+    ${$event}{'time'}		= ${$event}{'time_stamp'} - ${$self}{'time_offset'};
+}
+
+# constructor of the trace file class
+sub init($$) {
+    my $self	= {};
+    bless $self;
+
+    my $name	= shift;
+    open my $fh, "<$name"
+        or die "open <$name: $!";
+
+    my $short_fmt	= shift;
+    my $h	= {};
+    my $bh;
+
+    ${$self}{'file_handle'}		= $fh;		# File handle
+    ${$self}{'file_name'}		= $name;    	# File name
+
+    # Compute file size
+    my $file_size	= sysseek $fh, 0, SEEK_END
+        or die "sysseek: $!";
+    sysseek $fh, 0, SEEK_SET;
+    ${$self}{'file_size'}		= $file_size;	# File size
+
+    # Read architecture code
+    my $buf;
+    sysread $fh, $buf, 4
+        or die "read arch code: $!";
+    my ($arch) = unpack "N1", $buf;
+    ${$self}{'arch_code'}	= $arch_code{${arch}};
+    ${$self}{'arch_word'}	= $arch_word{${arch}};
+
+    print "arch ${arch}: ${$self}{'arch_code'}, ${$self}{'arch_word'} bits\n"
+        unless $short_fmt;
+
+    # Endianness
+    my $is_le	= ($arch < 0x10000);
+    if ($is_le) {
+        print "little endian\n"
+            unless $short_fmt;
+        ${$self}{'swaps'}	= 'v';
+        ${$self}{'swapl'}	= 'V';
+    } else {
+        print "big endian\n"
+            unless $short_fmt;
+        ${$self}{'swaps'}	= 'n';
+        ${$self}{'swapl'}	= 'N';
+    }
+    ${$self}{'is_little_endian'}	= $is_le;	# Endianness
+
+    # Read block headers
+    my $pos	= sysseek($fh, 0, SEEK_CUR)
+        or die "sysseek: $!";
+
+    while ($pos < $file_size){
+        $bh	= $self->read_block_header();
+        $self->disp_block_header($bh)
+            unless $short_fmt;
+        ${$h}{${$bh}{'type_name'}}	= $bh;
+
+        redo
+            if ${$bh}{'type_name'} eq 'infos' ;
+
+        $pos	= $self->seek_next_block($bh);
+    }
+
+    ${$self}{'file_pos'}		= $pos;		# File position
+    ${$self}{'block_header_hash'}	= $h;		# Hash of blocks
+
+    return $self;
+}
+
+# initialization of string hashes
+
+$arch_code{0}		= 'i386';
+$arch_code{1}		= 'ia64';
+$arch_code{2}		= 'x86_64';
+
+$arch_code{0x10000}	= 'PPC';
+$arch_code{0x20000}	= 'PPC64';
+
+$arch_word{0}		= 32;
+$arch_word{1}		= 64;
+$arch_word{2}		= 64;
+
+$arch_word{0x10000}	= 32;
+$arch_word{0x20000}	= 64;
+
+$block_code{0x1}	= 'infos';
+
+$block_code{0x10}	= 'time';
+$block_code{0x11}	= 'uname';
+$block_code{0x12}	= 'irqs';
+$block_code{0x13}	= 'addrs';
+$block_code{0x14}	= 'pids';
+
+$block_code{0x100}	= 'kernel raw 32';
+$block_code{0x101}	= 'kernel raw 64';
+
+$block_code{0x200}	= 'user raw 32';
+$block_code{0x201}	= 'user raw 64';
+
+# -- ---------- -- #
+package main;
 use Getopt::Std;
 
 sub usage {
@@ -16,8 +449,8 @@ sub usage {
 }
 
 # Dispatch hash tables
-my %code_hash;
-my %code_name_hash;
+my %num_hash;
+my %num_name_hash;
 my %handler_hash;
 
 # State hash tables
@@ -95,16 +528,16 @@ if (exists $opts{'t'}) {
 	$time_warp_mode	= 1;
 }
 
-# Read FUT codes / code_names mapping
-open my $code_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";
+# Read FUT nums / num_names mapping
+open my $num_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";
 
-while (<$code_desc>) {
+while (<$num_desc>) {
 	chomp;
-	my ($code_name, $code_val) = split /,/;
-	#print "$code_name: $code_val\n";
-	${code_hash}{$code_name} = $code_val;
-	if (! exists ${code_name_hash}{$code_val}) {
-		${code_name_hash}{$code_val} = $code_name;
+	my ($num_name, $num_val) = split /,/;
+	#print "$num_name: $num_val\n";
+	${num_hash}{$num_name} = $num_val;
+	if (! exists ${num_name_hash}{$num_val}) {
+		${num_name_hash}{$num_val} = $num_name;
 	}
 }
 
@@ -118,6 +551,8 @@ sub suffix_from_name($) {
 		$suffix = "_k";
 	} elsif ($name =~ /^run_task/) {
 		$suffix = "_r";
+	} elsif ($name =~ /^seed runner/) {
+		$suffix = "_s";
 	}
 	return $suffix;
 }
@@ -144,15 +579,15 @@ sub display_arrow($$) {
 # Generate time stamps out of event numbers or event times
 sub tstamp($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_time = ${$event}{'time'};
 	my $result;
 
 	if ($time_warp_mode) {
 		unless (defined $ev_ref_tstamp) {
-			$ev_ref_tstamp = $ev_num;
+			$ev_ref_tstamp = $ev_count;
 		}
-		$result = $ev_num - $ev_ref_tstamp;
+		$result = $ev_count - $ev_ref_tstamp;
 	} else {
 		unless (defined $ev_ref_tstamp) {
 			$ev_ref_tstamp = $ev_time;
@@ -348,22 +783,30 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 1	CT_TE	CT_T	Thread_event_container_type
 3	ST_BT	CT_TE	Barrier_thread_state_type
 2	ET_BT	CT_TE	Barrier_thread_event_type
+3	ST_TWT	CT_TE	Task_wait_thread_state_type
+2	ET_TWT	CT_TE	Task_wait_thread_event_type
 3	ST_T	CT_T	Thread_state_type
+2	ET_SR	CT_T	Seed_run_event_type
 3	ST_VPvp	CT_VPvp	VP_state_type_vp
+6	tww	ST_TWT	waiting	\"0.5 0.0 0.9\"
+6	twr	ST_TWT	running	\"0.5 0.5 0.5\"
 6	bw	ST_BT	waiting	\"0.0 0.0 0.9\"
 6	br	ST_BT	running	\"0.5 0.5 0.5\"
 6	s	ST_T	sleep	\"0.5 0.2 0.2\"
+6	s_s	ST_T	sleep	\"0.5 0.2 0.2\"
 6	s_u	ST_T	sleep	\"0.5 0.5 0.5\"
 6	s_i	ST_T	sleep	\"0.4 0.4 0.0\"
 6	s_k	ST_T	sleep	\"0.5 0.2 0.0\"
 6	s_r	ST_T	sleep	\"0.0 0.3 0.5\"
 6	r	ST_T	running	\"0.0 1.0 0.0\"
+6	r_s	ST_T	running	\"0.5 1.0 0.0\"
 6	r_u	ST_T	running	\"0.8 0.8 0.8\"
 6	r_i	ST_T	running	\"0.9 0.9 0.0\"
 6	r_k	ST_T	running	\"0.9 0.6 0.0\"
 6	r_r	ST_T	running	\"0.0 0.6 0.9\"
 6	d	ST_T	dead	\"0.1 0.1 0.1\"
 6	vp	ST_VPvp	user	\"0.0 1.0 0.5\"
+6	vp_s	ST_VPvp	\"seed runner\"	\"0.5 1.0 0.5\"
 6	vp_u	ST_VPvp	undef	\"0.8 0.8 0.8\"
 6	vp_i	ST_VPvp	idle	\"0.9 0.9 0.5\"
 6	vp_k	ST_VPvp	ksoftirqd	\"0.9 0.6 0.5\"
@@ -397,9 +840,9 @@ sub paje_display_create_thread($$) {
 
 sub paje_display_create_vp($$) {
 	my $event = shift;
-	my $vp_num = shift;
+	my $vp_count = shift;
 	my $ev_tstamp = tstamp($event);
-	print "7 $ev_tstamp VPvp$vp_num CT_VPvp Mvp VP_$vp_num\n";
+	print "7 $ev_tstamp VPvp$vp_count CT_VPvp Mvp VP_$vp_count\n";
 }
 
 sub paje_display_thread_state($$) {
@@ -417,25 +860,25 @@ sub paje_display_vp_thread_state($$) {
 	my $event = shift;
 	my $thread = shift;
 	my $ev_tstamp = tstamp($event);
-	my $vp_num = 0;
+	my $vp_count = 0;
 	if (exists ${$thread}{'vp'}) {
-		$vp_num = ${$thread}{'vp'};
+		$vp_count = ${$thread}{'vp'};
 	}
-	print "10 $ev_tstamp ST_VPvp VPvp$vp_num vp${$thread}{'suffix'} \"VP_$vp_num\"\n";
+	print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'suffix'} \"VP_$vp_count\"\n";
 }
 
 sub paje_display_switch_arrow_begin($$) {
 	my $event = shift;
 	my $thread_from = shift;
 	my $b_ev_tstamp = tstamp_minus_e($event);
-	print "18 $b_ev_tstamp LT_SW M 0 T${$thread_from}{'tid'} ${$event}{'num'}\n";
+	print "18 $b_ev_tstamp LT_SW M 0 T${$thread_from}{'tid'} ${$event}{'count'}\n";
 }
 
 sub paje_display_switch_arrow_end($$) {
 	my $event = shift;
 	my $thread_to = shift;
 	my $e_ev_tstamp = tstamp_plus_e($event);
-	print "19 $e_ev_tstamp LT_SW M 0 T${$thread_to}{'tid'} ${$event}{'num'}\n";
+	print "19 $e_ev_tstamp LT_SW M 0 T${$thread_to}{'tid'} ${$event}{'count'}\n";
 }
 
 sub paje_check_gomp_event_container($$) {
@@ -453,10 +896,10 @@ sub paje_check_gomp_event_container($$) {
 
 sub handle_paje_FUT_THREAD_BIRTH_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_time = ${$event}{'time'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $th_tid = shift @$param_array;
 	my ($param_1) = unpack 'l', (pack 'q', (@$param_array));
 
@@ -481,7 +924,7 @@ sub handle_paje_FUT_THREAD_BIRTH_CODE	($) {
 sub handle_paje_FUT_SET_THREAD_NAME_CODE	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $th_tid = shift @$param_array;
 	my ($th_name) = unpack 'Z*', (pack 'q*', (@$param_array));
 	my $thread = ${thread_hash}{$th_tid};
@@ -497,7 +940,7 @@ sub handle_paje_FUT_SET_THREAD_NAME_CODE	($) {
 sub handle_paje_FUT_SWITCH_TO_CODE		($) {
 	my $event = shift;
 	my $th_from_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $th_to_tid = ${$param_array}[0];
 	
 	my $thread_from = ${thread_hash}{$th_from_tid};
@@ -515,13 +958,13 @@ sub handle_paje_FUT_SWITCH_TO_CODE		($) {
 	paje_display_thread_state($event, $thread_from);
 	paje_display_thread_state($event, $thread_to);
 
-	my $vp_num = 0;
+	my $vp_count = 0;
 	if (exists ${$thread_from}{'vp'}) {
-		$vp_num = ${$thread_from}{'vp'};
+		$vp_count = ${$thread_from}{'vp'};
 		delete ${$thread_from}{'vp'};
 	}
-	${vp_th_hash}{$vp_num} = $thread_to;
-	${$thread_to}{'vp'} = $vp_num;
+	${vp_th_hash}{$vp_count} = $thread_to;
+	${$thread_to}{'vp'} = $vp_count;
 
 	paje_display_vp_thread_state($event, $thread_to);
 	if ($display_arrow) {
@@ -531,7 +974,7 @@ sub handle_paje_FUT_SWITCH_TO_CODE		($) {
 
 sub handle_paje_FUT_THREAD_DEATH_CODE	($) {
 	my $event = shift;
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $th_tid = ${$param_array}[0];
 	my $thread = ${thread_hash}{$th_tid};
 	${$thread}{'suffix'} = '';
@@ -541,17 +984,17 @@ sub handle_paje_FUT_THREAD_DEATH_CODE	($) {
 
 sub handle_paje_FUT_NEW_LWP_CODE		($) {
 	my $event = shift;
-	my $param_array = ${$event}{'params'};
-	my $vp_num = ${$param_array}[0];
+	my $param_array = ${$event}{'param_array'};
+	my $vp_count = ${$param_array}[0];
 	my $th_tid = ${$param_array}[1];
 
 	my $thread = ${thread_hash}{$th_tid};
 	${$thread}{'state'} = 'r';
-	${$thread}{'vp'} = $vp_num;
-	${vp_th_hash}{$vp_num} = $thread;
+	${$thread}{'vp'} = $vp_count;
+	${vp_th_hash}{$vp_count} = $thread;
 
 	paje_display_thread_state($event, $thread);
-	paje_display_create_vp($event, $vp_num);
+	paje_display_create_vp($event, $vp_count);
 	paje_display_vp_thread_state($event, $thread);
 }
 
@@ -559,18 +1002,18 @@ sub handle_paje_FUT_FGOMP_PAPIMAR_EV		($$) {
 	my $papi_ev = shift;
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $ev_val = ${$param_array}[0];
 	my $thread = ${thread_hash}{$ev_tid};
 
-	my $vp_num = 0;
+	my $vp_count = 0;
 	if (exists ${$thread}{'vp'}) {
-		$vp_num = ${$thread}{'vp'};
+		$vp_count = ${$thread}{'vp'};
 	}
 
 	my $ev_tstamp = tstamp($event);
 	print "13 $ev_tstamp VAR_PAPI_$papi_ev T$ev_tid $ev_val\n";
-	print "13 $ev_tstamp VAR_PAPI_${papi_ev}vp VPvp$vp_num $ev_val\n";
+	print "13 $ev_tstamp VAR_PAPI_${papi_ev}vp VPvp$vp_count $ev_val\n";
 }
 
 sub handle_paje_FUT_FGOMP_PAPIMAR_EV0		($) {
@@ -613,6 +1056,35 @@ sub handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE	($) {
 	print "20 $ev_tstamp ET_BT TE$ev_tid \"leaving barrier\" \"barrier leave\"\n";
 }
 
+sub handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_gomp_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "10 $ev_tstamp ST_TWT TE$ev_tid tww \"task wait\"\n";
+	print "20 $ev_tstamp ET_TWT TE$ev_tid \"entering taskwait\" \"task wait enter\"\n";
+}
+
+sub handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_gomp_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "10 $ev_tstamp ST_TWT TE$ev_tid twr \"running\"\n";
+	print "20 $ev_tstamp ET_TWT TE$ev_tid \"leaving task wait\" \"task wait leave\"\n";
+}
+
+sub handle_paje_THREAD_SEED_RUN	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_gomp_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "20 $ev_tstamp ET_SR T$ev_tid \"seed run\" \"seed run\"\n";
+}
+
 # - Text output mode -
 sub handle_FUT_GCC_INSTRUMENT_ENTRY_CODE($) {
 	print "<FUT_GCC_INSTRUMENT_ENTRY_CODE>\n";
@@ -640,118 +1112,118 @@ sub handle_FUT_CALIBRATE2_CODE		($) {
 
 sub handle_FUT_RQS_NEWLEVEL		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
-	print "$ev_num [$ev_tid]: New level $nb_levels created with [$param_0] runqueues\n";
+	print "$ev_count [$ev_tid]: New level $nb_levels created with [$param_0] runqueues\n";
 	$nb_levels++;
 }
 
 sub handle_FUT_RQS_NEWRQ		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my ($s_temp) = pack 'q', (@$param_array);
 	my ($param_0) = unpack 'l', ($s_temp);
 	my $param_1 = @$param_array[1];
-	print "$ev_num [$ev_tid]: New rq [$param_1] at level [$param_0] created\n";
+	print "$ev_count [$ev_tid]: New rq [$param_1] at level [$param_0] created\n";
 }
 
 sub handle_BUBBLE_SCHED_NEW		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
-	print "$ev_num [$ev_tid]: New bubble [$param_0] created\n";
+	print "$ev_count [$ev_tid]: New bubble [$param_0] created\n";
 }
 
 sub handle_FUT_THREAD_BIRTH_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
 	shift @$param_array;
 	my ($s_temp) = pack 'q', (@$param_array);
 	my ($param_1) = unpack 'l', ($s_temp);
-	print "$ev_num [$ev_tid]: Thread [$param_0] created on VP [$param_1]\n";
+	print "$ev_count [$ev_tid]: Thread [$param_0] created on VP [$param_1]\n";
 }
 
 sub handle_SET_THREAD_NUMBER		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
 	my $param_1 = ${$param_array}[1];
-	print "$ev_num [$ev_tid]: Thread [$param_0] numbered [$param_1]\n";
+	print "$ev_count [$ev_tid]: Thread [$param_0] numbered [$param_1]\n";
 }
 
 sub handle_FUT_SET_THREAD_NAME_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
 	my $line = ${$event}{'line'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = shift @$param_array;
 	my ($name_s_temp) = pack 'q*', (@$param_array);
 	my ($name_s) = unpack 'Z*', ($name_s_temp);
 	my $name = join ' - ',(@$param_array);
 
-	print "$ev_num [$ev_tid]: Thread [$param_0] named [$name_s]\n";
+	print "$ev_count [$ev_tid]: Thread [$param_0] named [$name_s]\n";
 }
 
 sub handle_FUT_SWITCH_TO_CODE		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
-	print "$ev_num [$ev_tid]: Switch to thread $param_0\n";
+	print "$ev_count [$ev_tid]: Switch to thread $param_0\n";
 }
 
 sub handle_FUT_THREAD_DEATH_CODE	($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
-	print "$ev_num [$ev_tid]: Thread [$param_0] dead\n";
+	print "$ev_count [$ev_tid]: Thread [$param_0] dead\n";
 }
 
 sub handle_FUT_RQS_NEWLWPRQ		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my ($s_temp) = pack 'q', (@$param_array);
 	my ($param_0) = unpack 'l', ($s_temp);
 	my $param_1 = @$param_array[1];
-	print "$ev_num [$ev_tid]: New VP rq [$param_1] at VP [$param_0] created\n";
+	print "$ev_count [$ev_tid]: New VP rq [$param_1] at VP [$param_0] created\n";
 }
 
 sub handle_FUT_NEW_LWP_CODE		($) {
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $param_0 = ${$param_array}[0];
 	my $param_1 = ${$param_array}[1];
-	print "$ev_num [$ev_tid]: New VP [$param_0] running thread [$param_1]\n";
+	print "$ev_count [$ev_tid]: New VP [$param_0] running thread [$param_1]\n";
 }
 
 sub handle_FUT_FGOMP_PAPIMAR_EV		($$) {
 	my $papi_ev = shift;
 	my $event = shift;
-	my $ev_num = ${$event}{'num'};
+	my $ev_count = ${$event}{'count'};
 	my $ev_tid = ${$event}{'tid'};
-	my $param_array = ${$event}{'params'};
+	my $param_array = ${$event}{'param_array'};
 	my $ev_val = ${$param_array}[0];
 
-	print "$ev_num [$ev_tid]: PAPI event$papi_ev sample: $ev_val\n";
+	print "$ev_count [$ev_tid]: PAPI event$papi_ev sample: $ev_val\n";
 }
 
 sub handle_FUT_FGOMP_PAPIMAR_EV0		($) {
@@ -776,89 +1248,114 @@ sub handle_FUT_FGOMP_PAPIMAR_EV3		($) {
 
 # - Output mode dispatch -
 if ($output_mode eq 'paje') {
-	${handler_hash}{ ${code_hash}{'FUT_SETUP_CODE'} } = \&handle_paje_FUT_SETUP_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_paje_FUT_THREAD_BIRTH_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_paje_FUT_SET_THREAD_NAME_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_paje_FUT_SWITCH_TO_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_paje_FUT_THREAD_DEATH_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_paje_FUT_NEW_LWP_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_FGOMP_GOMP_BAR_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_ENTER;
-	${handler_hash}{ ${code_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
+	${handler_hash}{ ${num_hash}{'FUT_SETUP_CODE'} } = \&handle_paje_FUT_SETUP_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_paje_FUT_THREAD_BIRTH_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_paje_FUT_SET_THREAD_NAME_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_paje_FUT_SWITCH_TO_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_paje_FUT_THREAD_DEATH_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_paje_FUT_NEW_LWP_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_ENTER;
+	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
+	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER;
+	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE;
+	${handler_hash}{ ${num_hash}{'THREAD_SEED_RUN'} } = \&handle_paje_THREAD_SEED_RUN;
+
 
 	unless ($filter_out_papi_events) {
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV0;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV1;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV2;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV3;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV0;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV1;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV2;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV3;
 	}
 } else {
-	${handler_hash}{ ${code_hash}{'FUT_GCC_INSTRUMENT_ENTRY_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_ENTRY_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_GCC_INSTRUMENT_EXIT_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_EXIT_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_SETUP_CODE'} } = \&handle_FUT_SETUP_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE0_CODE'} } = \&handle_FUT_CALIBRATE0_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE1_CODE'} } = \&handle_FUT_CALIBRATE1_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_CALIBRATE2_CODE'} } = \&handle_FUT_CALIBRATE2_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWLEVEL'} } = \&handle_FUT_RQS_NEWLEVEL;
-	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWRQ'} } = \&handle_FUT_RQS_NEWRQ;
-	${handler_hash}{ ${code_hash}{'BUBBLE_SCHED_NEW'} } = \&handle_BUBBLE_SCHED_NEW;
-	${handler_hash}{ ${code_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_FUT_THREAD_BIRTH_CODE;
-	${handler_hash}{ ${code_hash}{'SET_THREAD_NUMBER'} } = \&handle_SET_THREAD_NUMBER;
-	${handler_hash}{ ${code_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_FUT_SET_THREAD_NAME_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_FUT_SWITCH_TO_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_FUT_THREAD_DEATH_CODE;
-	${handler_hash}{ ${code_hash}{'FUT_RQS_NEWLWPRQ'} } = \&handle_FUT_RQS_NEWLWPRQ;
-	${handler_hash}{ ${code_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_FUT_NEW_LWP_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_GCC_INSTRUMENT_ENTRY_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_ENTRY_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_GCC_INSTRUMENT_EXIT_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_EXIT_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_SETUP_CODE'} } = \&handle_FUT_SETUP_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_CALIBRATE0_CODE'} } = \&handle_FUT_CALIBRATE0_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_CALIBRATE1_CODE'} } = \&handle_FUT_CALIBRATE1_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_CALIBRATE2_CODE'} } = \&handle_FUT_CALIBRATE2_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_RQS_NEWLEVEL'} } = \&handle_FUT_RQS_NEWLEVEL;
+	${handler_hash}{ ${num_hash}{'FUT_RQS_NEWRQ'} } = \&handle_FUT_RQS_NEWRQ;
+	${handler_hash}{ ${num_hash}{'BUBBLE_SCHED_NEW'} } = \&handle_BUBBLE_SCHED_NEW;
+	${handler_hash}{ ${num_hash}{'FUT_THREAD_BIRTH_CODE'} } = \&handle_FUT_THREAD_BIRTH_CODE;
+	${handler_hash}{ ${num_hash}{'SET_THREAD_NUMBER'} } = \&handle_SET_THREAD_NUMBER;
+	${handler_hash}{ ${num_hash}{'FUT_SET_THREAD_NAME_CODE'} } = \&handle_FUT_SET_THREAD_NAME_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_FUT_SWITCH_TO_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_FUT_THREAD_DEATH_CODE;
+	${handler_hash}{ ${num_hash}{'FUT_RQS_NEWLWPRQ'} } = \&handle_FUT_RQS_NEWLWPRQ;
+	${handler_hash}{ ${num_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_FUT_NEW_LWP_CODE;
 
 	unless ($filter_out_papi_events) {
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_FUT_FGOMP_PAPIMAR_EV0;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_FUT_FGOMP_PAPIMAR_EV1;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_FUT_FGOMP_PAPIMAR_EV2;
-		${handler_hash}{ ${code_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_FUT_FGOMP_PAPIMAR_EV3;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_FUT_FGOMP_PAPIMAR_EV0;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_FUT_FGOMP_PAPIMAR_EV1;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_FUT_FGOMP_PAPIMAR_EV2;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_FUT_FGOMP_PAPIMAR_EV3;
 	}
 }
 
 # Read Tracefile
+my $ev_count	 = 0;
 my $trace_filename = shift @ARGV;
-
-## Extract trace using fut-print.pl
-open my $trace_desc, "fut-print.pl -s ${trace_filename}|" or die "open [fut-print.pl -s ${trace_filename}|] failed: $!\n";
-
-while (<$trace_desc>) {
-	chomp;
-
-	# read a line
-	my $line = $_;
-	my @params	= split ',';	# split the line into fields
-	
-	# read the event fields
-	my $ev_num		= shift @params;
-	my $ev_host_num	= shift @params;
-	my $ev_time	= Math::BigInt->new(shift @params);
-	my $ev_tid	= shift @params;
-	my $ev_code	= shift @params;
-	my $ev_nb_params	= shift @params;
-
-	# dispatch the event to the suitable event handler
-	if (exists ${handler_hash}{$ev_code}) {
-		my $event = {};
-		${$event}{'line'}	= $line;
-		${$event}{'num'}	= $ev_num;
-		${$event}{'time'}	= $ev_time;
-		${$event}{'host_num'}	= $ev_host_num;
-		${$event}{'tid'}	= $ev_tid;
-		${$event}{'code'}	= $ev_code;
-		${$event}{'nb_params'}	= $ev_nb_params;
-		${$event}{'params'}	= \@params;
-		my $handler_sub = ${handler_hash}{$ev_code};
+my $file_object	= TraceFile::init($trace_filename, 1);
+$file_object->init_read_event();
+while ($file_object->more_events()) {
+	my $event	= $file_object->read_user_event();
+	${$event}{'count'}	= $ev_count;
+	my $ev_num	= ${$event}{'num'};
+	if (exists ${handler_hash}{$ev_num}) {
+		my $handler_sub = ${handler_hash}{$ev_num};
 		&{$handler_sub}($event);
 	} else {
 		if ($quiet_mode == 0) {
-			if (exists ${code_name_hash}{$ev_code}) {
-				print "unhandled event $ev_num: $ev_code - ".(${code_name_hash}{$ev_code})."\n";
+			if (exists ${num_name_hash}{$ev_num}) {
+				print "unhandled event $ev_num - ".(${num_name_hash}{$ev_num})."\n";
 			} else {
-				print "unhandled event $ev_num: $ev_code - <UNKNOWN CODE>\n";
+				print "unhandled event $ev_num - <UNKNOWN CODE>\n";
 			}
 		}
 	}
+    $ev_count++;
 }
+
+## Extract trace using fut-print.pl
+#open my $trace_desc, "fut-print.pl -s ${trace_filename}|" or die "open [fut-print.pl -s ${trace_filename}|] failed: $!\n";
+#
+#while (<$trace_desc>) {
+#	chomp;
+#
+#	# read a line
+#	my $line = $_;
+#	my @params	= split ',';	# split the line into fields
+#	
+#	# read the event fields
+#	my $ev_num		= shift @params;
+#	my $ev_host_num	= shift @params;
+#	my $ev_time	= Math::BigInt->new(shift @params);
+#	my $ev_tid	= shift @params;
+#	my $ev_code	= shift @params;
+#	my $ev_nb_params	= shift @params;
+#
+#	# dispatch the event to the suitable event handler
+#	if (exists ${handler_hash}{$ev_code}) {
+#		my $event = {};
+#		${$event}{'line'}	= $line;
+#		${$event}{'num'}	= $ev_num;
+#		${$event}{'time'}	= $ev_time;
+#		${$event}{'host_num'}	= $ev_host_num;
+#		${$event}{'tid'}	= $ev_tid;
+#		${$event}{'code'}	= $ev_code;
+#		${$event}{'nb_params'}	= $ev_nb_params;
+#		${$event}{'param_array'}	= \@params;
+#		my $handler_sub = ${handler_hash}{$ev_code};
+#		&{$handler_sub}($event);
+#	} else {
+#		if ($quiet_mode == 0) {
+#			if (exists ${code_name_hash}{$ev_code}) {
+#				print "unhandled event $ev_num: $ev_code - ".(${code_name_hash}{$ev_code})."\n";
+#			} else {
+#				print "unhandled event $ev_num: $ev_code - <UNKNOWN CODE>\n";
+#			}
+#		}
+#	}
+#}
 

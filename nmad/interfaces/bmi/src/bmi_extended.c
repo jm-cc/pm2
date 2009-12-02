@@ -53,10 +53,10 @@ int BMI_wait(bmi_op_id_t id,
     } else { //RECV
 	ret = nm_sr_rwait(p_core, &id->request);
 	if(outcount) {
-	    *outcount = id->request.req.unpack.cumulated_len;
+	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
 	}
 	if(actual_size) {
-	    *actual_size = id->request.req.unpack.cumulated_len;
+	    nm_sr_get_size(p_core, &id->request, (size_t*)actual_size);
 	}
     }
     if(ret == NM_ESUCCESS) {

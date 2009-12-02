@@ -936,7 +936,8 @@ int BMI_testunexpected(int incount,
 	    nm_sr_rwait(p_core, &request);
 	    
 	    info_array->error_code=0;
-	    nm_sr_get_size(p_core, &request, (size_t*)outcount);
+	    if(outcount)
+		nm_sr_get_size(p_core, &request, (size_t*)outcount);
 	} else {
 	free(info_array->addr);
     }
@@ -975,7 +976,7 @@ BMI_test(bmi_op_id_t id,
 	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
 	}
 	if(ret == -NM_ESUCCESS && actual_size) {
-	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
+	    nm_sr_get_size(p_core, &id->request, (size_t*)actual_size);
 	}
     }
 

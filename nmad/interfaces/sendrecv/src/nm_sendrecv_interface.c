@@ -163,7 +163,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
-
+  assert(nm_sr_data.init_done);
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
 
@@ -212,10 +212,9 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
-
+  assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
-
-  if(! nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
+  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     {
       nm_so_post_all_force(p_core);
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
@@ -242,7 +241,7 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
-
+  assert(nm_sr_data.init_done);
 #ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
     TBX_FAILUREF("nm_sr_rtest- req=%p no recv posted!\n", p_request);
@@ -281,9 +280,8 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   NM_SO_SR_LOG_IN();
-
+  assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
-
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request,
 		 nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED)) 

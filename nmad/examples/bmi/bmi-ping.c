@@ -30,6 +30,7 @@
 #include "tbx.h"
 
 //#define DEBUG 1
+//#define USE_WAIT 1
 
 #define SERVER          1
 #define CLIENT          2
@@ -89,7 +90,6 @@ static void
 clear_buffer(char *buffer, int len) {
     memset(buffer, 0, len);
 }
-
 
 int
 main(int  argc,
@@ -205,6 +205,9 @@ main(int  argc,
 		do {
 		    ret = BMI_test(op_id,&outcount,NULL,NULL,NULL,0, context);
 		} while (ret ==  0 && outcount == 0);
+#else
+		ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context);
+#endif
 	
 #ifdef DEBUG
 		fprintf(stderr, "\n[%d]\tSend %d\n", len, loop);
@@ -236,6 +239,9 @@ main(int  argc,
 		do {
 		    ret = BMI_test(op_id, &outcount, NULL, NULL, NULL, 0, context);
 		} while (ret ==  0 && outcount == 0);
+#else
+		ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context);
+#endif
 
 
 #ifdef DEBUG
@@ -326,6 +332,10 @@ main(int  argc,
 		    ret = BMI_test(op_id, &outcount, &error_code,
 				   &actual_size, NULL, 10, *context);
 		} while (ret == 0 && outcount == 0);
+#else
+		ret = BMI_wait(op_id, &outcount, &error_code, &actual_size, NULL, 10, context);
+#endif
+
 	
 		if (ret < 0 || error_code != 0) {
 		    fprintf(stderr, "data send failed.\n");
@@ -433,6 +443,9 @@ main(int  argc,
 		    } while (ret ==  0 && outcount == 0);
 		}
 	    }
+#else
+	    ret = BMI_wait(op_id, &outcount, NULL, NULL, NULL, 0, context[i]);
+#endif
 	}
 
 	BMI_memfree(peer_addr[0], send_buf, end_len, BMI_SEND);

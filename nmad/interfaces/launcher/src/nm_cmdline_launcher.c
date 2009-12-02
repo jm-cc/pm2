@@ -127,7 +127,7 @@ static void nm_cmdline_launcher_get_gates(void*_status, nm_gate_t *_gates)
 
 static void nm_launcher_addr_send(int sock, const char*url)
 {
-  int len = strlen(url);
+  int len = strlen(url) + 1;
   int rc = send(sock, &len, sizeof(len), 0);
   if(rc != sizeof(len))
     {

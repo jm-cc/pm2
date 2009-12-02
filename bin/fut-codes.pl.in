@@ -55,4 +55,6 @@ print 'FUT_FGOMP_PAPIMAR_EV2,', $fut_fgomp_code+0x12, "\n";
 print 'FUT_FGOMP_PAPIMAR_EV3,', $fut_fgomp_code+0x13, "\n";
 print 'FUT_FGOMP_GOMP_BAR_ENTER,', $fut_fgomp_code+0x20, "\n";
 print 'FUT_FGOMP_GOMP_BAR_LEAVE,', $fut_fgomp_code+0x21, "\n";
+print 'FUT_FGOMP_GOMP_TASK_WAIT_ENTER,', $fut_fgomp_code+0x22, "\n";
+print 'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE,', $fut_fgomp_code+0x23, "\n";
 

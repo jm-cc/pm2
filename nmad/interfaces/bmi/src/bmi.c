@@ -1039,97 +1039,7 @@ construct_poll_plan(int nmeth, int *idle_time_ms){
     }
 }
 #endif
-#if 0
-/** Checks to see if any unexpected messages have completed.
- *
- *  \return 0 on success, -errno on failure.
- */
-int 
-BMI_testunexpected(int incount,
-		   int *outcount,
-		   struct BMI_unexpected_info *info_array,
-		   int max_idle_time_ms){
-    int i = 0;
-    int ret = -1;
-    int position = 0;
-    int tmp_outcount = 0;
-    struct bmi_method_unexpected_info sub_info[incount];
-    ref_st_p tmp_ref = NULL;
-    int tmp_active_method_count = 0;
 
-    /* figure out if we need to drop any stale addresses */
-    bmi_check_forget_list();
-
-#ifdef MARCEL
-    marcel_mutex_lock(&active_method_count_mutex);
-    tmp_active_method_count = active_method_count;
-    marcel_mutex_unlock(&active_method_count_mutex);
-#else
-    tmp_active_method_count = active_method_count;
-#endif
-    *outcount = 0;
-
-    construct_poll_plan(tmp_active_method_count, &max_idle_time_ms);
-
-    while (position < incount && i < tmp_active_method_count)
-    {
-        if (method_usage[i].plan) {
-            ret = active_method_table[i]->testunexpected(
-                (incount - position), &tmp_outcount,
-                (&(sub_info[position])), max_idle_time_ms);
-            if (ret < 0)
-            {
-                /* can't recover from this */
-                //gossip_lerr("Error: critical BMI_testunexpected failure.\n");
-                return (ret);
-            }
-            position += tmp_outcount;
-            (*outcount) += tmp_outcount;
-            method_usage[i].iters_polled = 0;
-            if (ret)
-                method_usage[i].iters_active = 0;
-        }
-	i++;
-    }
-
-    for (i = 0; i < (*outcount); i++)
-    {
-	info_array[i].error_code = sub_info[i].error_code;
-	info_array[i].buffer = sub_info[i].buffer;
-	info_array[i].size = sub_info[i].size;
-	info_array[i].tag = sub_info[i].tag;
-#ifdef MARCEL
-	marcel_mutex_lock(&ref_mutex);
-#endif
-	tmp_ref = ref_list_search_method_addr(
-            cur_ref_list, sub_info[i].addr);
-	if (!tmp_ref)
-	{
-	    /* yeah, right */
-	    //gossip_lerr("Error: critical BMI_testunexpected failure.\n");
-#ifdef MARCEL
-	    marcel_mutex_unlock(&ref_mutex);
-#endif
-	    return 1;
-
-	}
-        if(global_flags & BMI_AUTO_REF_COUNT)
-        {
-            tmp_ref->ref_count++;
-        }
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	info_array[i].addr = tmp_ref->bmi_addr;
-    }
-    /* return 1 if anything completed */
-    if (ret == 0 && *outcount > 0)
-    {
-	return (1);
-    }
-    return (0);
-}
-#endif
 #if 0
 /** Checks to see if any messages from the specified context have
  *  completed.
@@ -1210,6 +1120,7 @@ BMI_testcontext(int incount,
     return (0);
 }
 #endif 
+
 #if 0
 /** Performs a reverse lookup, returning the string (URL style)
  *  address for a given opaque address.
@@ -1243,6 +1154,7 @@ BMI_addr_rev_lookup(BMI_addr_t addr){
     return(tmp_str);
 }
 #endif
+
 #if 0
 /** Performs a reverse lookup, returning a string
  *  address for a given opaque address.  Works on any address, even those
@@ -1283,8 +1195,6 @@ BMI_addr_rev_lookup_unexpected(BMI_addr_t addr){
 }
 #endif
 
-#if 0
-#endif
 /** Pass in optional parameters.
  *
  *  \return 0 on success, -errno on failure.
@@ -1559,6 +1469,7 @@ BMI_post_sendunexpected_list(bmi_op_id_t * id,
     }
 }
 #endif
+
 #if 0
 /** Attempts to cancel a pending operation that has not yet completed.
  *  Caller must still test to gather error code after calling this
@@ -1643,6 +1554,7 @@ bmi_method_addr_reg_callback(bmi_method_addr_p map){
     return new_ref->bmi_addr;
 }
 #endif
+
 #if 0
 int 
 bmi_method_addr_forget_callback(BMI_addr_t addr){
@@ -1878,6 +1790,7 @@ bmi_check_forget_list(void){
     return;
 }
 #endif
+
 #if 0
 /* bmi_addr_drop
  *

@@ -40,16 +40,17 @@ typedef piom_cond_t nm_sr_cond_t;
 
 /* ** Events *********************************************** */
 
-typedef struct{
+typedef struct
+{
   nm_sr_event_t mask;
   nm_sr_event_notifier_t notifier;
 } nm_sr_event_monitor_t;
 
-#define NM_SR_EVENT_INIT_MONITOR_NULL(monitor) \
-	do {								\
-		monitor.mask = (nm_sr_event_t) 0;			\
-		monitor.notifier= NULL;					\
-	}while(0);							\
+#define NM_SR_EVENT_INIT_MONITOR_NULL(monitor)				\
+  do {									\
+    monitor.mask = (nm_sr_event_t) 0;					\
+    monitor.notifier= NULL;						\
+  } while(0);								\
 
 #define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })
 

@@ -40,11 +40,16 @@ typedef piom_cond_t nm_sr_cond_t;
 
 /* ** Events *********************************************** */
 
-typedef struct
-{
+typedef struct{
   nm_sr_event_t mask;
   nm_sr_event_notifier_t notifier;
 } nm_sr_event_monitor_t;
+
+#define NM_SR_EVENT_INIT_MONITOR_NULL(monitor) \
+	do {								\
+		monitor.mask = (nm_sr_event_t) 0;			\
+		monitor.notifier= NULL;					\
+	}while(0);							\
 
 #define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })
 
@@ -176,7 +181,7 @@ static inline int nm_sr_get_size(nm_session_t p_session, nm_sr_request_t *p_requ
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request)
 {
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
   p_request->ref = NULL;
 }
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
@@ -228,7 +233,7 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request)
 { 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);//  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
   p_request->ref = NULL;
 }
 

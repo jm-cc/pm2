@@ -647,25 +647,7 @@ BMI_unexpected_free(BMI_addr_t addr,
  */
 void 
 BMI_close_context(bmi_context_id context_id){
-#if 0
-#ifdef MARCEL
-    marcel_mutex_lock(&context_mutex);
-#endif
-
-    if(!context_array[context_id->context_id]){
-#ifdef MARCEL
-	marcel_mutex_unlock(&context_mutex);
-#endif
-	return;
-    }
-    /* tell all of the modules to get rid of this context */
-    context_array[context_id->context_id] = 0;
-
-#ifdef MARCEL
-    marcel_mutex_unlock(&context_mutex);
-#endif
-#endif	/* 0 */
-    TBX_FREE(context_id);
+    /* todo: do something here :) */
     return;
 }
 
@@ -1019,7 +1001,6 @@ BMI_get_info(BMI_addr_t addr,
  * XXX: never used.  May want to add adaptive polling strategy of testcontext
  * if it becomes used again.
  */
-#if 0
 int 
 BMI_testsome(int incount,
 	     bmi_op_id_t * id_array,
@@ -1030,147 +1011,13 @@ BMI_testsome(int incount,
 	     void **user_ptr_array,
 	     int max_idle_time_ms,
 	     bmi_context_id context_id){
-    int ret = 0;
-    int idle_per_method = 0;
-    bmi_op_id_t* tmp_id_array;
-    int i,j;
-    struct method_op *query_op;
-    int need_to_test;
-    int tmp_outcount;
-    int tmp_active_method_count;
 
-#ifdef MARCEL
-    marcel_mutex_lock(&active_method_count_mutex);
-    tmp_active_method_count = active_method_count;
-    marcel_mutex_unlock(&active_method_count_mutex);
-#else
-    tmp_active_method_count = active_method_count;
-#endif
-    *outcount = 0;
-
-    if (tmp_active_method_count == 1) {
-	/* shortcircuit for perhaps common case of only one method */
-	ret = active_method_table[0]->testsome(
-	    incount, id_array, outcount, index_array,
-	    error_code_array, actual_size_array, user_ptr_array,
-	    max_idle_time_ms, context_id->context_id);
-
-	/* return 1 if anything completed */
-	if (ret == 0 && *outcount > 0)
-	    return (1);
-	else
-	    return ret;
-    }
-
-    /* TODO: do something more clever here */
-    if (max_idle_time_ms)
-    {
-	idle_per_method = max_idle_time_ms / tmp_active_method_count;
-	if (!idle_per_method)
-	    idle_per_method = 1;
-    }
-
-    tmp_id_array = (bmi_op_id_t*)TBX_MALLOC(incount*sizeof(bmi_op_id_t));
-    /* iterate over each active method */
-    for(i=0; i<tmp_active_method_count; i++)
-    {
-	/* setup the tmp id array with only operations that match
-	 * that method
-	 */
-	need_to_test = 0;
-	for(j=0; j<incount; j++)
-	{
-	    if(id_array[j])
-	    {
-		/* todo: get rid of this */
-		//query_op = (struct method_op*)
-                //    id_gen_fast_lookup(id_array[j]);
-		assert(query_op->op_id == id_array[j]);
-		if(query_op->addr->method_type == i)
-		{
-		    tmp_id_array[j] = id_array[j];
-		    need_to_test++;
-		}
-	    }
-	}
-
-	/* call testsome if we found any ops for this method */
-	if(need_to_test)
-	{
-	    tmp_outcount = 0;
-	    ret = active_method_table[i]->testsome(
-		need_to_test, tmp_id_array, &tmp_outcount, 
-		&(index_array[*outcount]),
-		&(error_code_array[*outcount]),
-		&(actual_size_array[*outcount]),
-		user_ptr_array ? &(user_ptr_array[*outcount]) : 0,
-		idle_per_method,
-		context_id);
-	    if(ret < 0)
-	    {
-		/* can't recover from this... */
-		//gossip_lerr("Error: critical BMI_testsome failure.\n");
-		goto out;
-	    }
-	    *outcount += tmp_outcount;
-	}
-    }
-
-  out:
-    TBX_FREE(tmp_id_array);
-
-    if(ret == 0 && *outcount > 0)
-	return(1);
-    else
+        fprintf(stderr, "BMI_testsome: not yet implemented!\n");
+	abort();
 	return(0);
 }
-#endif
 
-/*
- * If some method was recently active, poll it again for speed,
- * but be sure not to starve any method.  If multiple active,
- * poll them all.  Return idle_time per method too.
- */
-#if 0
-static void
-construct_poll_plan(int nmeth, int *idle_time_ms){
-    int i, numplan;
 
-    numplan = 0;
-    for (i=0; i<nmeth; i++) {
-        ++method_usage[i].iters_polled;
-        ++method_usage[i].iters_active;
-        method_usage[i].plan = 0;
-        if (method_usage[i].iters_active <= usage_iters_active) {
-            /* recently busy, poll */
-            method_usage[i].plan = 1;
-            ++numplan;
-            *idle_time_ms = 0;  /* busy polling */
-        } else if (method_usage[i].iters_polled >= usage_iters_starvation) {
-            /* starving, time to poke this one */
-            method_usage[i].plan = 1;
-            ++numplan;
-        } 
-    }
-
-    /* if nothing is starving or busy, poll everybody */
-    if (numplan == 0) {
-        for (i=0; i<nmeth; i++)
-            method_usage[i].plan = 1;
-        numplan = nmeth;
-
-        /* spread idle time evenly */
-        if (*idle_time_ms) {
-            *idle_time_ms /= numplan;
-            if (*idle_time_ms == 0)
-                *idle_time_ms = 1;
-        }
-        /* note that BMI_testunexpected is always called with idle_time 0 */
-    }
-}
-#endif
-
-#if 0
 /** Checks to see if any messages from the specified context have
  *  completed.
  *
@@ -1185,73 +1032,12 @@ BMI_testcontext(int incount,
 		void **user_ptr_array,
 		int max_idle_time_ms,
 		bmi_context_id context_id){
-    int i = 0;
-    int ret = -1;
-    int position = 0;
-    int tmp_outcount = 0;
-    int tmp_active_method_count = 0;
-    struct timespec ts;
 
-#ifdef MARCEL
-    marcel_mutex_lock(&active_method_count_mutex);
-    tmp_active_method_count = active_method_count;
-    marcel_mutex_unlock(&active_method_count_mutex);
-#else
-    tmp_active_method_count = active_method_count;
-#endif
-    *outcount = 0;
-
-    if(tmp_active_method_count < 1)
-    {
-	/* nothing active yet, just snooze and return */
-	if(max_idle_time_ms > 0)
-	{
-	    ts.tv_sec = 0;
-	    ts.tv_nsec = 2000;
-	    nanosleep(&ts, NULL);
-	}
-	return(0);
-    }
-
-    construct_poll_plan(tmp_active_method_count, &max_idle_time_ms);
-
-    while (position < incount && i < tmp_active_method_count)
-    {
-        if (method_usage[i].plan) {
-            ret = active_method_table[i]->testcontext(
-                incount - position, 
-                &out_id_array[position],
-                &tmp_outcount,
-                &error_code_array[position], 
-                &actual_size_array[position],
-                user_ptr_array ?  &user_ptr_array[position] : NULL,
-                max_idle_time_ms,
-                context_id);
-            if (ret < 0)
-            {
-                /* can't recover from this */
-                //gossip_lerr("Error: critical BMI_testcontext failure.\n");
-                return (ret);
-            }
-            position += tmp_outcount;
-            (*outcount) += tmp_outcount;
-            method_usage[i].iters_polled = 0;
-            if (ret)
-                method_usage[i].iters_active = 0;
-        }
-	i++;
-    }
-
-    /* return 1 if anything completed */
-    if (ret == 0 && *outcount > 0)
-    {
-	return (1);
-    }
-    return (0);
+        fprintf(stderr, "BMI_testcontext: not yet implemented!\n");
+	abort();
+	return 0;
 }
-#endif 
 
-#if 0
 /** Performs a reverse lookup, returning the string (URL style)
  *  address for a given opaque address.
  *
@@ -1261,31 +1047,11 @@ BMI_testcontext(int incount,
  */
 const char* 
 BMI_addr_rev_lookup(BMI_addr_t addr){
-    ref_st_p tmp_ref = NULL;
-    char* tmp_str = NULL;
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return (NULL);
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif    
-    tmp_str = tmp_ref->listen_addr;
-
-    return(tmp_str);
+        fprintf(stderr, "BMI_addr_rev_lookup: not yet implemented!\n");
+	abort();
+	return NULL;
 }
-#endif
 
-#if 0
 /** Performs a reverse lookup, returning a string
  *  address for a given opaque address.  Works on any address, even those
  *  generated unexpectedly, but only gives hostname instead of full
@@ -1297,119 +1063,24 @@ BMI_addr_rev_lookup(BMI_addr_t addr){
  */
 const char* 
 BMI_addr_rev_lookup_unexpected(BMI_addr_t addr){
-    ref_st_p tmp_ref = NULL;
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return ("UNKNOWN");
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-    
-    if(!tmp_ref->interface->rev_lookup_unexpected)
-    {
-        return("UNKNOWN");
-    }
-
-    return(tmp_ref->interface->rev_lookup_unexpected(
-        tmp_ref->method_addr));
+        fprintf(stderr, "BMI_addr_rev_lookup_unexpected: not yet implemented!\n");
+	abort();
+	return NULL;
 }
-#endif
 
 /** Pass in optional parameters.
  *
  *  \return 0 on success, -errno on failure.
  */
-#if 0
 int 
 BMI_set_info(BMI_addr_t addr,
 	     int option,
 	     void *inout_parameter){
-    int ret = -1;
-    int i = 0;
-    ref_st_p tmp_ref = NULL;
-
-    /* if the addr is NULL, then the set_info should apply to all
-     * available methods.
-     */
-    if (!addr)
-    {
-#ifdef MARCEL
-	marcel_mutex_lock(&active_method_count_mutex);
-#endif
-	for (i = 0; i < active_method_count; i++)
-	{
-	    ret = active_method_table[i]->set_info(
-                option, inout_parameter);
-	    /* we bail out if even a single set_info fails */
-	    if (ret < 0)
-	    {
-#ifdef MARCEL
-		marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-		return (ret);
-	    }
-	}
-#ifdef MARCEL
-	marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-	return (0);
-    }
-
-    /* find a reference that matches this address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-    /* shortcut address reference counting */
-    if(option == BMI_INC_ADDR_REF)
-    {
-	tmp_ref->ref_count++;
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return(0);
-    }
-    if(option == BMI_DEC_ADDR_REF)
-    {
-	tmp_ref->ref_count--;
-	assert(tmp_ref->ref_count >= 0);
-
-	if(tmp_ref->ref_count == 0)
-	{
-            bmi_addr_drop(tmp_ref);
-	}
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-	return(0);
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-
-    ret = tmp_ref->interface->set_info(option, inout_parameter);
-
-    return (ret);
+    fprintf(stderr, "Warning : trying to set option %d ! Setting options is not yet implemented !\n", option);
+    return 0;
 }
-#endif
 
 
-#if 0
 /** Given a string representation of a host/network address and a BMI
  * address handle, return whether the BMI address handle is part of the wildcard
  * address range specified by the string.
@@ -1420,68 +1091,10 @@ int
 BMI_query_addr_range (BMI_addr_t addr, 
 		      const char *id_string, 
 		      int netmask){
-    int ret = -1;
-    int i = 0, failed = 1;
-    int provided_method_length = 0;
-    char *ptr, *provided_method_name = NULL;
-    ref_st_p tmp_ref = NULL;
-    /* lookup the provided address */
-#ifdef MARCEL
-    marcel_mutex_lock(&ref_mutex);
-#endif
-    tmp_ref = ref_list_search_addr(cur_ref_list, addr);
-    if (!tmp_ref)
-    {
-#ifdef MARCEL
-	marcel_mutex_unlock(&ref_mutex);
-#endif
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&ref_mutex);
-#endif
-
-    ptr = strchr(id_string, ':');
-    ret = -EPROTO;
-    provided_method_length = (unsigned long) ptr - (unsigned long) id_string;
-    provided_method_name = (char *) calloc(provided_method_length + 1, sizeof(char));
-    strncpy(provided_method_name, id_string, provided_method_length);
-
-    /* Now we will run through each method looking for one that
-     * matches the specified wildcard address. 
-     */
-    i = 0;
-#ifdef MARCEL
-    marcel_mutex_lock(&active_method_count_mutex);
-#endif
-    while (i < active_method_count)
-    {
-        const char *active_method_name = active_method_table[i]->method_name + 4;
-        /* provided name matches this interface */
-        if (!strncmp(active_method_name, provided_method_name, provided_method_length))
-        {
-            int (*meth_fnptr)(bmi_method_addr_p, const char *, int);
-            failed = 0;
-            if ((meth_fnptr = active_method_table[i]->query_addr_range) == NULL)
-            {
-                ret = -ENOSYS;
-                failed = 1;
-                break;
-            }
-            /* pass it into the specific bmi layer */
-            ret = meth_fnptr(tmp_ref->method_addr, id_string, netmask);
-            if (ret < 0)
-                failed = 1;
-            break;
-        }
-	i++;
-    }
-#ifdef MARCEL
-    marcel_mutex_unlock(&active_method_count_mutex);
-#endif
-    TBX_FREE(provided_method_name);
-    return ret;
+        fprintf(stderr, "BMI_query_addr_range: not yet implemented!\n");
+	abort();
+	return 0;
 }
-#endif
 
 
 
@@ -1491,7 +1104,6 @@ BMI_query_addr_range (BMI_addr_t addr,
  *  \return 0 on success, 1 on immediate successful completion,
  *  -errno on failure.
  */
-#if 0
 int 
 BMI_post_send_list(bmi_op_id_t * id,
 		   BMI_addr_t dest,
@@ -1505,20 +1117,10 @@ BMI_post_send_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
-
-    *id = 0;
-    tmp_ref=__BMI_get_ref(dest);
-    if (tmp_ref->interface->post_send_list) {
-	ret = tmp_ref->interface->post_send_list(
-            id, tmp_ref->method_addr, buffer_list, size_list,
-            list_count, total_size, buffer_type, tag, user_ptr,
-            context_id, (bmi_hint)hints);
-	return (ret);
-    }
+    fprintf(stderr, "BMI_post_send_list: not yet implemented!\n");
+    abort();
+    return 0;
 }
-#endif
 
 /** Similar to BMI_post_recv(), except that the dest buffer is 
  *  replaced by a list of (possibly non contiguous) buffers
@@ -1529,7 +1131,6 @@ BMI_post_send_list(bmi_op_id_t * id,
  *  \return 0 on success, 1 on immediate successful completion,
  *  -errno on failure.
  */
-#if 0
 int 
 BMI_post_recv_list(bmi_op_id_t * id,
 		   BMI_addr_t src,
@@ -1543,22 +1144,12 @@ BMI_post_recv_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
 
-    *id = 0;
-    tmp_ref=__BMI_get_ref(src);
-    if (tmp_ref->interface->post_recv_list)
-    {
-	ret = tmp_ref->interface->post_recv_list(
-            id, tmp_ref->method_addr, buffer_list, size_list,
-            list_count, total_expected_size, total_actual_size,
-            buffer_type, tag, user_ptr, context_id, (bmi_hint)hints);
-
-	return (ret);
-    }
+    fprintf(stderr, "BMI_post_recv_list: not yet implemented!\n");
+    abort();
+    return 0;
 }
-#endif
+
 
 /** Similar to BMI_post_sendunexpected(), except that the source buffer is 
  *  replaced by a list of (possibly non contiguous) buffers.
@@ -1568,7 +1159,6 @@ BMI_post_recv_list(bmi_op_id_t * id,
  *  \return 0 on success, 1 on immediate successful completion,
  *  -errno on failure.
  */
-#if 0
 int 
 BMI_post_sendunexpected_list(bmi_op_id_t * id,
 			     BMI_addr_t dest,
@@ -1581,26 +1171,12 @@ BMI_post_sendunexpected_list(bmi_op_id_t * id,
 			     void *user_ptr,
 			     bmi_context_id context_id,
 			     bmi_hint hints){
-    ref_st_p tmp_ref = NULL;
-    int ret = -1;
 
-    *id = 0;
-
-    tmp_ref=__BMI_get_ref(dest);
-
-    if (tmp_ref->interface->post_send_list)
-    {
-	ret = tmp_ref->interface->post_sendunexpected_list(
-            id, tmp_ref->method_addr, buffer_list, size_list,
-            list_count, total_size, buffer_type, tag, user_ptr,
-            context_id, (bmi_hint)hints);
-
-	return (ret);
-    }
+    fprintf(stderr, "BMI_post_sendunexpected_list: not yet implemented!\n");
+    abort();
+    return 0;
 }
-#endif
 
-#if 0
 /** Attempts to cancel a pending operation that has not yet completed.
  *  Caller must still test to gather error code after calling this
  *  function even if it returns 0.
@@ -1610,30 +1186,13 @@ BMI_post_sendunexpected_list(bmi_op_id_t * id,
 int 
 BMI_cancel(bmi_op_id_t id, 
 	   bmi_context_id context_id){
-    struct method_op *target_op = NULL;
-    int ret = -1;
 
-    /* todo: get rid of this */
-    //target_op = id_gen_fast_lookup(id);
-    if(target_op == NULL)
-    {
-        /* if we can't find the operation, then assume it has already
-         * completed naturally.
-         */
-        return(0);
-    }
-
-    assert(target_op->op_id == id);
-
-    if(active_method_table[target_op->addr->method_type]->cancel)
-    {
-	ret = active_method_table[
-            target_op->addr->method_type]->cancel(
-                id, context_id);
-    }
-    return (ret);
+    fprintf(stderr, "BMI_cancel: not yet implemented!\n");
+    abort();
+    return 0;
 }
-#endif
+
+
 /**************************************************************
  * method callback functions
  */
@@ -1651,155 +1210,22 @@ BMI_cancel(bmi_op_id_t id,
  *
  * returns 0 on success, -errno on failure
  */
-#if 0
 BMI_addr_t 
 bmi_method_addr_reg_callback(bmi_method_addr_p map){
-    ref_st_p new_ref = NULL;
 
-    /* NOTE: we are trusting the method to make sure that we really
-     * don't know about the address yet.  No verification done here.
-     */
-
-    /* create a new reference structure */
-    new_ref = alloc_ref_st();
-    if (!new_ref)
-    {
-	return 0;
-    }
-
-    /*
-      fill in the details; we don't have an id string for this one.
-    */
-    new_ref->method_addr = map;
-    new_ref->id_string = NULL;
-    map->parent = new_ref;
-
-    /* check the method_type from the method_addr pointer to know
-     * which interface to use */
-    new_ref->interface = active_method_table[map->method_type];
-
-    /* add the reference structure to the list */
-    ref_list_add(cur_ref_list, new_ref);
-
-    return new_ref->bmi_addr;
+    fprintf(stderr, "bmi_method_addr_reg_callback: not yet implemented!\n");
+    abort();
+    return NULL;
 }
-#endif
 
-#if 0
 int 
 bmi_method_addr_forget_callback(BMI_addr_t addr){
-    struct forget_item* tmp_item = NULL;
 
-    tmp_item = (struct forget_item*)TBX_MALLOC(sizeof(struct forget_item));
-    tmp_item->addr = addr;
-
-    /* add to queue of items that we want the BMI control layer to consider
-     * deallocating
-     */
-#ifdef MARCEL
-    marcel_mutex_lock(&forget_list_mutex);
-#endif
-    list_add(&tmp_item->link, &forget_list);
-#ifdef MARCEL
-    marcel_mutex_unlock(&forget_list_mutex);
-#endif
-    return (0);
+    fprintf(stderr, "bmi_method_addr_forget_callback: not yet implemented!\n");
+    abort();
+    return 0;
 }
-#endif
 
-#if 0
-/*
- * Attempt to insert this name into the list of active methods,
- * and bring it up.
- * NOTE: assumes caller has protected active_method_count with a mutex lock
- */
-static int
-activate_method(const char *name, 
-		const char *listen_addr, 
-		int flags){
-    int i, ret;
-    void *x;
-    struct bmi_method_ops *meth;
-    bmi_method_addr_p new_addr;
-
-    /* already active? */
-    for (i=0; i<active_method_count; i++)
-	if (!strcmp(active_method_table[i]->method_name, name)) break;
-    if (i < active_method_count)
-    {
-	return 0;
-    }
-
-    /* is the method known? */
-    for (i=0; i<known_method_count; i++)
-	if (!strcmp(known_method_table[i]->method_name, name)) break;
-    if (i == known_method_count) {
-	return -ENOPROTOOPT;
-    }
-    meth = known_method_table[i];
-
-    /*
-     * Later: try to load a dynamic module, growing the known method
-     * table and search it again.
-     */
-
-    /* toss it into the active table */
-    x = active_method_table;
-    active_method_table = TBX_MALLOC((active_method_count + 1) 
-				     * sizeof(*active_method_table));
-    if (!active_method_table) {
-	active_method_table = x;
-	return -ENOMEM;
-    }
-    if (active_method_count) {
-	memcpy(active_method_table, x,
-	    active_method_count * sizeof(*active_method_table));
-	TBX_FREE(x);
-    }
-    active_method_table[active_method_count] = meth;
-
-    x = method_usage;
-    method_usage = TBX_MALLOC((active_method_count + 1) * sizeof(*method_usage));
-    if (!method_usage) {
-        method_usage = x;
-        return -ENOMEM;
-    }
-    if (active_method_count) {
-        memcpy(method_usage, x, active_method_count * sizeof(*method_usage));
-        TBX_FREE(x);
-    }
-    memset(&method_usage[active_method_count], 0, sizeof(*method_usage));
-
-    ++active_method_count;
-
-    /* initialize it */
-    new_addr = 0;
-    if (listen_addr) {
-	new_addr = meth->method_addr_lookup(listen_addr);
-	if (!new_addr) {
-	    --active_method_count;
-	    return -EINVAL;
-	}
-	/* this is a bit of a hack */
-	new_addr->method_type = active_method_count - 1;
-    }
-    ret = meth->initialize(new_addr, active_method_count - 1, flags);
-    if (ret < 0) {
-	--active_method_count;
-	return ret;
-    }
-
-    /* tell it about any open contexts */
-    for (i=0; i<BMI_MAX_CONTEXTS; i++)
-	if (context_array[i]) {
-	    ret = meth->open_context(i);
-	    if (ret < 0)
-		break;
-	}
-
-    return ret;
-}
-#endif
 
 #ifdef PVFS
  
@@ -1868,95 +1294,6 @@ case err: bmi_errno = BMI_##err; break
 #undef __CASE
     }
     return bmi_errno;
-}
-#endif
-/* bmi_check_forget_list()
- * 
- * Scans queue of items that methods have suggested that we forget about 
- *
- * no return value
- */
-#if 0
-static void 
-bmi_check_forget_list(void){
-    BMI_addr_t tmp_addr;
-    struct forget_item* tmp_item;
-    ref_st_p tmp_ref = NULL;
-    
-#ifdef MARCEL
-    marcel_mutex_lock(&forget_list_mutex);
-#endif
-    while(!list_empty(&forget_list))
-    {
-        tmp_item = list_entry(forget_list.next, struct forget_item,
-            link);     
-        list_del(&tmp_item->link);
-        /* item is off of the list; unlock for a moment while we work on
-         * this addr 
-         */
-#ifdef MARCEL
-        marcel_mutex_unlock(&forget_list_mutex);
-#endif
-        tmp_addr = tmp_item->addr;
-        TBX_FREE(tmp_item);
-
-#ifdef MARCEL
-        marcel_mutex_lock(&ref_mutex);
-#endif
-        tmp_ref = ref_list_search_addr(cur_ref_list, tmp_addr);
-        if(tmp_ref && tmp_ref->ref_count == 0)
-        {
-            bmi_addr_drop(tmp_ref);
-        }   
-#ifdef MARCEL
-        marcel_mutex_unlock(&ref_mutex);
-        marcel_mutex_lock(&forget_list_mutex);
-#endif
-     }
-#ifdef MARCEL
-    marcel_mutex_unlock(&forget_list_mutex);
-#endif
-
-    return;
-}
-#endif
-
-#if 0
-/* bmi_addr_drop
- *
- * Destroys a complete BMI address, including asking the method to clean up 
- * its portion.  Will query the method for permission before proceeding
- *
- * NOTE: must be called with ref list mutex held 
- */
-static void 
-bmi_addr_drop(ref_st_p tmp_ref){
-    struct method_drop_addr_query query;
-    query.response = 0;
-    query.addr = tmp_ref->method_addr;
-    int ret = 0;
-
-    /* reference count is zero; ask module if it wants us to discard
-     * the address; TCP will tell us to drop addresses for which the
-     * socket has died with no possibility of reconnect 
-     */
-    ret = tmp_ref->interface->get_info(BMI_DROP_ADDR_QUERY,
-        &query);
-    if(ret == 0 && query.response == 1)
-    {
-        /* kill the address */
-#if 0
-        gossip_debug(GOSSIP_BMI_DEBUG_CONTROL,
-            "[BMI CONTROL]: %s: bmi discarding address: %llu\n",
-            __func__, llu(tmp_ref->bmi_addr));
-#endif
-        ref_list_rem(cur_ref_list, tmp_ref->bmi_addr);
-        /* NOTE: this triggers request to module to free underlying
-         * resources if it wants to
-         */
-        dealloc_ref_st(tmp_ref);
-    }
-    return;
 }
 #endif
 

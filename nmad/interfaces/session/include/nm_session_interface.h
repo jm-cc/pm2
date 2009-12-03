@@ -41,4 +41,14 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*rem
 int nm_session_destroy(nm_session_t p_session);
 
 
+/* ** Notes on driver selection.
+ *
+ * The 'session' interface choses drivers automatically. To force 
+ * a given driver, use the NMAD_DRIVER environment variable with 
+ * a driver string description, or the NMAD_ASSEMBLY variable with
+ * a component name.
+ *
+ * TODO- the 'session' interface should use Padico NetSelector instead.
+ */
+
 #endif /* NM_SESSION_INTERFACE_H */

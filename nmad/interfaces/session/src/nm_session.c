@@ -348,10 +348,24 @@ static void nm_session_do_init(int*argc, char**argv)
   assert(err == NM_ESUCCESS);
   
   /* load driver */
-  const char*driver_name = getenv("NMAD_DRIVER");
-  if(!driver_name)
-    driver_name = "custom";
-  puk_component_t driver_assembly = nm_core_component_load("driver", driver_name);
+  puk_component_t driver_assembly = NULL;
+  const char*assembly_name = getenv("NMAD_ASSEMBLY");
+  if(assembly_name)
+    {
+      /* assembly name given (e.g. NewMadico) */
+      fprintf(stderr, "# session: loading assembly %s\n", assembly_name);
+      driver_assembly = puk_adapter_resolve(assembly_name);
+    }
+  else
+    {
+      const char*driver_name = getenv("NMAD_DRIVER");
+      if(!driver_name)
+	{
+	  driver_name = "custom";
+	}
+      driver_assembly = nm_core_component_load("driver", driver_name);
+    }
+  assert(driver_assembly != NULL);
   const char*driver_url = NULL;
   err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &nm_session.p_drv, &driver_url);
   assert(err == NM_ESUCCESS);
@@ -440,14 +454,14 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       if(err != NM_ESUCCESS)
 	abort();
       nm_sr_isend(p_session, p_gate, tag, nm_session.local_url, local_url_size, &sreq2);
-      nm_sr_swait(p_session, &sreq1);
-      nm_sr_swait(p_session, &sreq2);
       int remote_url_size = -1;
       nm_sr_irecv(p_session, p_gate, tag, &remote_url_size, sizeof(remote_url_size), &rreq1);
       nm_sr_rwait(p_session, &rreq1);
-      char*remote_url = malloc(remote_url_size + 1);
+      char*remote_url = TBX_MALLOC(remote_url_size + 1);
       nm_sr_irecv(p_session, p_gate, tag, remote_url, remote_url_size, &rreq2);
       nm_sr_rwait(p_session, &rreq2);
+      nm_sr_swait(p_session, &sreq1);
+      nm_sr_swait(p_session, &sreq2);
       remote_url[remote_url_size] = '\0';
       /* insert new gate into hashtable */
       puk_hashtable_insert(nm_session.gates, remote_url, p_gate);

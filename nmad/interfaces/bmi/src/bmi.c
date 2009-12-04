@@ -814,7 +814,6 @@ BMI_post_recv(bmi_op_id_t         *id,
     return ret;
 }
 
-
 int 
 BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      BMI_addr_t dest,                 //must be used
@@ -955,19 +954,12 @@ int BMI_testunexpected(int incount,
 	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 			info_array->buffer, info_array->size, &request);
 	    nm_sr_rwait(p_core, &request);
-	    
+
+	    info_array->size = nm_sr_get_size(p_core, &request, (size_t*)outcount);
+	    info_array->tag = rx.nmc_tag;
 	    info_array->error_code=0;
 	    if(outcount){
-#ifdef DEBUG
-		fprintf(stderr, "testunexp: outcount !\n");
-#endif
-		nm_sr_get_size(p_core, &request, (size_t*)outcount);
-		
-#ifdef DEBUG
-		if(*outcount)
-		    fprintf(stderr, "testUnexp: %d bytes received\n");
-
-#endif
+		(*outcount)++;
 	    }
 	} else {
 	free(info_array->addr);

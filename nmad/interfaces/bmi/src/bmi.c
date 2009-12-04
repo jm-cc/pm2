@@ -1000,7 +1000,7 @@ BMI_test(bmi_op_id_t id,
 
     if(ret == -NM_EAGAIN)
 	ret = 0;
-    if(ret == -NM_ESUCCESS) {
+    else if(ret == -NM_ESUCCESS) {
 	if(outcount)
 	    *outcount = 1;
 #ifdef DEBUG

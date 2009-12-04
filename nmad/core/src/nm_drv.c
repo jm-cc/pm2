@@ -389,7 +389,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
   piom_ltask_completed (&p_core->task);
 #endif	/* PIOM_ENABLE_LTASKS */
 
-  nmad_lock();
   nm_lock_interface(p_core);
   struct nm_drv*p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
@@ -495,7 +494,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
       puk_instance_destroy(p_gate->strategy_instance);
     }
 
-  nmad_unlock();
   nm_unlock_interface(p_core);
 
   return err;

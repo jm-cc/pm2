@@ -48,7 +48,7 @@
 
 #include <nm_sendrecv_interface.h>
 
-//#define DEBUG 1
+#define DEBUG 1
 
 #define SERVER 0
 
@@ -989,15 +989,10 @@ BMI_test(bmi_op_id_t id,
 	*actual_size=0;
     if(id->status == SEND ) {
 	ret = nm_sr_stest(p_core, &id->request);
-	if(ret == -NM_ESUCCESS && outcount)
-	    *outcount = id->request.req.pack.len;
 	if(ret == -NM_ESUCCESS && actual_size)
 	    *actual_size = id->request.req.pack.len;
     } else { //RECV
 	ret = nm_sr_rtest(p_core, &id->request);
-	if(ret == -NM_ESUCCESS && outcount) {
-	    nm_sr_get_size(p_core, &id->request, (size_t*)outcount);
-	}
 	if(ret == -NM_ESUCCESS && actual_size) {
 	    nm_sr_get_size(p_core, &id->request, (size_t*)actual_size);
 	}
@@ -1006,6 +1001,8 @@ BMI_test(bmi_op_id_t id,
     if(ret == -NM_EAGAIN)
 	ret = 0;
     if(ret == -NM_ESUCCESS) {
+	if(outcount)
+	    *outcount = 1;
 #ifdef DEBUG
 	if(outcount && (*outcount)){
 	    fprintf(stderr, "BMI_test succeeds\n");

@@ -54,6 +54,7 @@ struct bmi_op_id{
     bmi_context_id context_id;
     nm_sr_request_t request;
     enum send_recv status;
+    void* user_ptr;
 };
 
 typedef struct bmi_op_id*    bmi_op_id_t;        /**< Reference to ongoing network op */

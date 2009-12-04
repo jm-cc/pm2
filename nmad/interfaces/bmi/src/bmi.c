@@ -948,18 +948,17 @@ int BMI_testunexpected(int incount,
 			&rx.nmc_tag, sizeof(rx.nmc_tag), &request);
 	    nm_sr_rwait(p_core, &request);
 	    
-	    /* todo: solve the tag problem here : for now, the tag must be 0 */	    
 	    info_array->buffer = malloc(info_array->size);
 	    bnm_create_match(&rx);
 	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 			info_array->buffer, info_array->size, &request);
 	    nm_sr_rwait(p_core, &request);
-
-	    info_array->size = nm_sr_get_size(p_core, &request, (size_t*)outcount);
+	    
+	    nm_sr_get_size(p_core, &request, &info_array->size);
 	    info_array->tag = rx.nmc_tag;
 	    info_array->error_code=0;
 	    if(outcount){
-		(*outcount)++;
+		(*outcount)=1;
 	    }
 	} else {
 	free(info_array->addr);

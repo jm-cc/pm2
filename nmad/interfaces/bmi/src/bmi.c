@@ -772,7 +772,7 @@ BMI_post_recv(bmi_op_id_t         *id,
 	      bmi_size_t          *actual_size,//not used
 	      enum bmi_buffer_type buffer_type,//not used
 	      bmi_msg_tag_t        tag,
-	      void                *user_ptr,   //not used
+	      void                *user_ptr,
 	      bmi_context_id       context_id,
 	      bmi_hint             hints){     //not used
     
@@ -785,7 +785,7 @@ BMI_post_recv(bmi_op_id_t         *id,
     *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
     (*id)->status = RECV;
-    
+    (*id)->user_ptr = user_ptr;
     context_id->status = RECV;
 
 #if 0
@@ -821,7 +821,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      bmi_size_t size,
 		      enum bmi_buffer_type buffer_type,//not used
 		      bmi_msg_tag_t tag,
-		      void *user_ptr,                  //not used
+		      void *user_ptr,
 		      bmi_context_id context_id,
 		      bmi_hint hints,
 		      enum bnm_msg_type msg_type) {                 //not used
@@ -832,6 +832,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
     (*id)->status = SEND;
+    (*id)->user_ptr = user_ptr;
 
     context_id->status = SEND;
 
@@ -886,7 +887,7 @@ BMI_post_send(bmi_op_id_t * id,                //not used
 	      bmi_size_t size,
 	      enum bmi_buffer_type buffer_type,//not used
 	      bmi_msg_tag_t tag,
-	      void *user_ptr,                  //not used
+	      void *user_ptr,
 	      bmi_context_id context_id,
 	      bmi_hint hints){                 //not used
 #ifdef DEBUG
@@ -978,9 +979,9 @@ int BMI_testunexpected(int incount,
 int 
 BMI_test(bmi_op_id_t id,                
 	 int *outcount,                 
-	 bmi_error_code_t * error_code, //unused
+	 bmi_error_code_t * error_code, 
 	 bmi_size_t * actual_size,      
-	 void **user_ptr,               //unused
+	 void **user_ptr,
 	 int max_idle_time_ms,          //unused with the present implementation
 	 bmi_context_id context_id){
     int ret = -1;
@@ -990,7 +991,6 @@ BMI_test(bmi_op_id_t id,
 	*error_code = 0;
     if(actual_size)
 	*actual_size = 0;
-
     if(id->status == SEND ) {
 	ret = nm_sr_stest(p_core, &id->request);
 	if(ret == -NM_ESUCCESS && actual_size)
@@ -1005,6 +1005,8 @@ BMI_test(bmi_op_id_t id,
     if(ret == -NM_EAGAIN)
 	ret = 0;
     else if(ret == -NM_ESUCCESS) {
+	if(user_ptr)
+	    *user_ptr = id->user_ptr;
 	if(outcount)
 	    *outcount = 1;
 #ifdef DEBUG

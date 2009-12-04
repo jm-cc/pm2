@@ -925,6 +925,9 @@ int BMI_testunexpected(int incount,
 		       struct BMI_unexpected_info *info_array,
 		       int max_idle_time_ms)
 {
+
+    if(outcount)
+	*outcount = 0;
     info_array->addr = malloc(sizeof(struct BMI_addr));
     int ret =__bmi_test_accept(info_array->addr);
     if(ret == 1) 
@@ -982,10 +985,12 @@ BMI_test(bmi_op_id_t id,
 	 bmi_context_id context_id){
     int ret = -1;
     if(outcount)
-	*outcount=0;
-
+	*outcount = 0;
+    if(error_code)
+	*error_code = 0;
     if(actual_size)
-	*actual_size=0;
+	*actual_size = 0;
+
     if(id->status == SEND ) {
 	ret = nm_sr_stest(p_core, &id->request);
 	if(ret == -NM_ESUCCESS && actual_size)

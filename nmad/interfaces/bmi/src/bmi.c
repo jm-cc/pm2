@@ -277,6 +277,9 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 /* Wait for an incoming connection */
 void __bmi_accept(BMI_addr_t addr)
 {
+#ifdef DEBUG
+    fprintf(stderr, "bmi_accept\n");
+#endif
     /* server */
     char*remote_session_url = NULL;
     char local_launcher_url[16] = { 0 };
@@ -351,16 +354,30 @@ int __bmi_test_accept(BMI_addr_t addr)
 	fprintf(stderr, "# launcher: poll error (%s)\n", strerror(errno));
 	abort();	    
     }
-
     if( sock ) {
+#ifdef DEBUG
+	fprintf(stderr, "bmi_test_accept succeeds: someone is connecting\n");
+#endif
 	/* someone is trying to connect, accept the connection */
 	sock = accept(server_sock,  (struct sockaddr*)&addr_in, &addr_len);
 	assert(sock > -1);
+#ifdef DEBUG
+	fprintf(stderr, "\t exchanging session_ruls\n");
+#endif
 	/* exchange session url */
 	__bmi_launcher_addr_send(sock, local_session_url);
+#ifdef DEBUG
+	fprintf(stderr, "\t\tI have just sent %s\n", local_session_url);
+#endif
 	__bmi_launcher_addr_recv(sock, &remote_session_url);
+#ifdef DEBUG
+	fprintf(stderr, "\t\tI have just received %s\n", remote_session_url);
+#endif
 	close(sock);
 	__bmi_connect_accept(addr , remote_session_url);
+#ifdef DEBUG
+	fprintf(stderr, "Connection OK ! Ready to send/recv messages\n");
+#endif
 	return 1;
     }
     return 0;
@@ -453,17 +470,32 @@ void __bmi_connect(BMI_addr_t dest, char* url)
 	.sin_port   = peer_port,
 	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
       };
+#ifdef DEBUG
+      fprintf(stderr, "connecting to %s\n", url);
+#endif
       int rc = connect(sock, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
       if(rc)
 	{
 	  fprintf(stderr, "# launcher: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
 	  abort();
 	}
+#ifdef DEBUG
+      fprintf(stderr, "\tExchanging session url\n");
+#endif
       char * remote_session_url;
       __bmi_launcher_addr_recv(sock, &remote_session_url);
+#ifdef DEBUG
+      fprintf(stderr, "\t\tI have just received %s\n",remote_session_url);
+#endif
       __bmi_launcher_addr_send(sock, local_session_url);
+#ifdef DEBUG
+      fprintf(stderr, "\t\tI have just sent %s\n",local_session_url);
+#endif
       close(sock);
       __bmi_connect_accept(dest, remote_session_url);
+#ifdef DEBUG
+      fprintf(stderr, "Connection OK ! Ready to send/recv messages!\n");
+#endif
 }
 
 /** Initializes the BMI layer.  Must be called before any other BMI
@@ -746,7 +778,9 @@ BMI_post_recv(bmi_op_id_t         *id,
     
     int            ret = -1;
     struct bnm_ctx rx;
-
+#ifdef DEBUG
+    fprintf(stderr, "BMI_post_recv(src %p, size %d, tag %lx)\n", src, expected_size, tag);
+#endif
     /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
     *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
@@ -795,7 +829,6 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     
     int                     ret    = -1;   
     struct bnm_ctx          tx;
-
     /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
     *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;
@@ -822,6 +855,10 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 
 	nm_sr_isend(p_core, dest->p_gate, 
 		    tx.nmc_match, &size, sizeof(size), 
+		    &size_req);
+	nm_sr_swait(p_core, &size_req);
+	nm_sr_isend(p_core, dest->p_gate, 
+		    tx.nmc_match, &tag, sizeof(tag), 
 		    &size_req);
 	nm_sr_swait(p_core, &size_req);
 
@@ -853,6 +890,9 @@ BMI_post_send(bmi_op_id_t * id,                //not used
 	      void *user_ptr,                  //not used
 	      bmi_context_id context_id,
 	      bmi_hint hints){                 //not used
+#ifdef DEBUG
+    fprintf(stderr, "BMI_post_send(dest %p, size %d, tag %lx)\n", dest, size, tag);
+#endif
 
     return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
@@ -870,6 +910,9 @@ BMI_post_sendunexpected(bmi_op_id_t * id,
 			void *user_ptr,
 			bmi_context_id context_id,
 			bmi_hint hints){
+#ifdef DEBUG
+    fprintf(stderr, "BMI_post_send_unexpected(dest %p, size %d, tag %lx)\n", dest, size, tag);
+#endif
     return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_UNEXPECTED);
 }
 
@@ -902,16 +945,30 @@ int BMI_testunexpected(int incount,
 	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 			&info_array->size, sizeof(info_array->size), &request);
 	    nm_sr_rwait(p_core, &request);
+	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+			&rx.nmc_tag, sizeof(rx.nmc_tag), &request);
+	    nm_sr_rwait(p_core, &request);
 	    
 	    /* todo: solve the tag problem here : for now, the tag must be 0 */	    
 	    info_array->buffer = malloc(info_array->size);
+	    bnm_create_match(&rx);
 	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 			info_array->buffer, info_array->size, &request);
 	    nm_sr_rwait(p_core, &request);
 	    
 	    info_array->error_code=0;
-	    if(outcount)
+	    if(outcount){
+#ifdef DEBUG
+		fprintf(stderr, "testunexp: outcount !\n");
+#endif
 		nm_sr_get_size(p_core, &request, (size_t*)outcount);
+		
+#ifdef DEBUG
+		if(*outcount)
+		    fprintf(stderr, "testUnexp: %d bytes received\n");
+
+#endif
+	    }
 	} else {
 	free(info_array->addr);
     }
@@ -957,6 +1014,12 @@ BMI_test(bmi_op_id_t id,
     if(ret == -NM_EAGAIN)
 	ret = 0;
     if(ret == -NM_ESUCCESS) {
+#ifdef DEBUG
+	if(outcount && (*outcount)){
+	    fprintf(stderr, "BMI_test succeeds\n");
+	    fprintf(stderr, "\t outcount = %d\n", *outcount);
+	}
+#endif
 	ret = 0;
 	tbx_free(nm_bmi_mem, id);
     }

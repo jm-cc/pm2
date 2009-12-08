@@ -1098,9 +1098,9 @@ BMI_testsome(int incount,
 	     int max_idle_time_ms,
 	     bmi_context_id context_id){
 
-        fprintf(stderr, "BMI_testsome: not yet implemented!\n");
-	abort();
-	return(0);
+    fprintf(stderr, "BMI_testsome: not yet implemented!\n");
+    abort();
+    return 0;
 }
 
 
@@ -1203,9 +1203,40 @@ BMI_post_send_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
-    fprintf(stderr, "BMI_post_send_list: not yet implemented!\n");
-    abort();
-    return 0;
+
+    /* todo: don't duplicate the code ! */
+    *id = tbx_malloc(nm_bmi_mem);
+    (*id)->context_id = context_id;
+    (*id)->status = SEND;
+    (*id)->user_ptr = user_ptr;
+
+    context_id->status = SEND;
+
+    if((!dest->p_gate ) || (dest->p_gate->status == NM_GATE_STATUS_INIT)) {
+	/* remove nm:// from the peername so that NMad establish the connection */
+	char* tmp = dest->peername + 5*sizeof(char);  
+	__bmi_connect(dest, tmp);
+    }
+
+    struct bnm_ctx          tx;
+
+    tx.nmc_state    = BNM_CTX_PREP;
+    tx.nmc_type     = BNM_REQ_TX;
+    tx.nmc_msg_type = BNM_MSG_EXPECTED;
+    tx.nmc_peer     = dest->p_peer;
+    tx.nmc_tag      = tag;
+    bnm_create_match(&tx);
+
+    struct iovec *siov = malloc(sizeof(struct iovec)* list_count);
+    int i;
+    for(i=0; i<list_count; i++) {
+	siov[i].iov_base = buffer_list[i];
+	siov[i].iov_len = size_list[i];
+    }
+
+    return nm_sr_isend_iov(p_core, dest->p_gate, 
+			   tx.nmc_match, siov, list_count, 
+			   &(*id)->request);
 }
 
 /** Similar to BMI_post_recv(), except that the dest buffer is 
@@ -1230,10 +1261,32 @@ BMI_post_recv_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
+    /* todo: don't duplicate the code ! */
+    *id = tbx_malloc(nm_bmi_mem);
+    (*id)->context_id = context_id;
+    (*id)->status = RECV;
+    (*id)->user_ptr = user_ptr;
+    context_id->status = RECV;
 
-    fprintf(stderr, "BMI_post_recv_list: not yet implemented!\n");
-    abort();
-    return 0;
+    struct bnm_ctx rx;
+    rx.nmc_state    = BNM_CTX_PREP;
+    rx.nmc_tag      = tag;
+    rx.nmc_msg_type = BNM_MSG_EXPECTED;
+    rx.nmc_type     = BNM_REQ_RX;
+    rx.nmc_peer     = src->p_peer;
+
+    bnm_create_match(&rx);
+
+    struct iovec *riov = malloc(sizeof(struct iovec)* list_count);
+    int i;
+    for(i=0; i<list_count; i++) {
+	riov[i].iov_base = buffer_list[i];
+	riov[i].iov_len = size_list[i];
+    }
+
+    return nm_sr_irecv_iov(p_core, src->p_peer->p_gate, rx.nmc_match, 
+			  riov, list_count, &(*id)->request);
+
 }
 
 
@@ -1257,9 +1310,9 @@ BMI_post_sendunexpected_list(bmi_op_id_t * id,
 			     void *user_ptr,
 			     bmi_context_id context_id,
 			     bmi_hint hints){
-
-    fprintf(stderr, "BMI_post_sendunexpected_list: not yet implemented!\n");
-    abort();
+    /* todo: implement this! */
+    fprintf(stderr, "Warning ! BMI_post_sendunexpected_list not yet implemented !\n");
+    *(int*)0=0;
     return 0;
 }
 

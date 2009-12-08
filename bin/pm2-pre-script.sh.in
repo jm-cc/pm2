@@ -54,13 +54,12 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--preload)
 	    shift
-	    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$1"
-	    export LD_PRELOAD
+	    PM2_LD_PRELOAD="$1"
 	    shift
 	    if [ -n "$debug_file" ]; then
-		echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
+		echo "set environment LD_PRELOAD $PM2_LD_PRELOAD" >> $debug_file
 	    fi
-	    log "Using ld preload [${LD_PRELOAD}]"
+	    log "Using ld preload [${PM2_LD_PRELOAD}]"
 	    ;;
 	--export)
 	    shift
@@ -152,24 +151,21 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
     # Librairies dynamiques (LD_PRELOAD)
     if [ -n "$_PM2_CONFIG_PRELOAD" ]; then
-	LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$_PM2_CONFIG_PRELOAD"
-	export LD_PRELOAD
+	PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$_PM2_CONFIG_PRELOAD"
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_PRELOAD $LD_PRELOAD" >> $debug_file
+	    echo "set environment LD_PRELOAD $PM2_LD_PRELOAD" >> $debug_file
 	fi
-	log "set environment LD_PRELOAD $LD_PRELOAD"
+	log "set environment LD_PRELOAD $PM2_LD_PRELOAD"
     fi
 
     # LD library path
     PM2_LD_LIBRARY_PATH="$_PM2_CONFIG_LD_LIBRARY_PATH"
 
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
-	LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-	export LD_LIBRARY_PATH
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $debug_file
+	    echo "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH" >> $debug_file
 	fi
-	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
+	log "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH"
     fi
 
     # Chemin d'accès au chargeur
@@ -193,12 +189,10 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 else
 
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
-        LD_LIBRARY_PATH="${PM2_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-        export LD_LIBRARY_PATH
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH" >> $debug_file
+	    echo "set environment PM2_LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH" >> $debug_file
 	fi
-	log "set environment LD_LIBRARY_PATH $LD_LIBRARY_PATH"
+	log "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH"
     fi
 
 
@@ -218,6 +212,8 @@ if [ -n "$valgrind" ]; then
 
     VALGRIND_OPTIONS=${PM2_VALGRIND_OPTIONS:--v -q --show-reachable=yes --leak-check=yes --db-attach=no}
     log "Executing: valgrind $VALGRIND_OPTIONS $prog ${@:+"$@"}"
+    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
     valgrind $VALGRIND_OPTIONS $prog ${@:+"$@"}
 
     rm -f $debug_file
@@ -232,16 +228,22 @@ elif [ -n "$debug_file" ]; then
 elif [ -n "$strace_file" ]; then
 
     log "Executing: exec strace -o $strace_file $prog $*"
+    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
     exec strace -f -o $strace_file $prog ${@:+"$@"}
 
 elif [ -n "$prescript" ]; then
 
     log "Executing: exec $prescript $prog $*"
+    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
     exec $prescript $prog ${@:+"$@"}
 
 else
 
     log "Executing: exec $prog $*"
+    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
     exec $prog ${@:+"$@"}
 
 fi

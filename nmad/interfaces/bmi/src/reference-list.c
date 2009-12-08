@@ -132,7 +132,7 @@ ref_list_search_gate(ref_list_p rlp,
 	}
     }
 
-    return ;
+    return NULL;
 }
 
 

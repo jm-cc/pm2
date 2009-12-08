@@ -29,7 +29,7 @@
 #include <nm_private.h>
 
 //typedef struct list_head *ref_list_p;
-typedef tbx_list_t* ref_list_p;
+typedef tbx_slist_t* ref_list_p;
 
 /**********************************************************************/
 /* this is the basic reference structure for the glue layer above the
@@ -55,6 +55,10 @@ void ref_list_add(ref_list_p rlp,
 		  void* addr);
 void* ref_list_search_addr(ref_list_p rlp,
 				void* addr);
+
+void* ref_list_search_gate(ref_list_p rlp,
+			   void* p_gate);
+
 ref_st_p ref_list_rem(ref_list_p rlp,
 		      BMI_addr_t addr);
 ref_st_p ref_list_search_method_addr(ref_list_p rlp,

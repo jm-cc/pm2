@@ -93,6 +93,11 @@ nm_session_t p_core;
 const char*local_session_url = NULL;
 
 
+/* Unexpected message stuff */
+nm_tag_t unexp_tag;
+bmi_size_t unexp_size;
+nm_sr_request_t unexp_request;
+
 static inline
 BMI_addr_t __BMI_get_ref(BMI_addr_t peer){
     BMI_addr_t ret = NULL;
@@ -127,12 +132,7 @@ bnm_create_match( struct bnm_ctx* ctx){
 	id = (uint64_t) ctx->nmc_peer->nmp_rx_id;
     } 
     
-#ifdef DEBUG
-    fprintf(stderr, " (%"PRIx64" << %d) | (%"PRIx64" << %d) | %"PRIx64"\n",type, BNM_MSG_SHIFT,id, BNM_ID_SHIFT, tag);
-    fprintf(stderr,"Tag match: %"PRIx64"\n",  (type << BNM_MSG_SHIFT) | (id << BNM_ID_SHIFT) | tag);
-#endif	/* DEBUG */
-    ctx->nmc_match = (type << BNM_MSG_SHIFT) | (id << BNM_ID_SHIFT) | tag;
-    
+    ctx->nmc_match = (type << BNM_MSG_SHIFT) | (id << BNM_ID_SHIFT) | tag;    
     return;
 }
 
@@ -215,6 +215,7 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
     addr->p_peer = malloc(sizeof(struct bnm_peer));
 
     __bmi_peer_init(addr->p_peer);
+    addr->p_peer->p_addr    = addr;
     addr->p_peer->p_gate    = addr->p_gate;
     addr->p_peer->nmp_state = BNM_PEER_READY;
     addr->p_peer->nmp_rx_id = max_tx_id++;
@@ -270,7 +271,6 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 
     /* todo: fix this ! */
     ref_list_add(cur_ref_list, addr->p_peer);    
-    //gate_list_add(cur_ref_list, addr->p_peer);    
     return;
 }
 
@@ -561,6 +561,9 @@ BMI_initialize(const char *method_list,
     } 
     
     __bmi_iaccept();
+    
+    unexp_tag = 0;
+    nm_sr_irecv(p_core, NM_ANY_GATE, unexp_tag, &unexp_size, sizeof(unexp_size), &unexp_request);
 
     return 0;
 }
@@ -854,7 +857,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 	bnm_create_match(&tx);
 
 	nm_sr_isend(p_core, dest->p_gate, 
-		    tx.nmc_match, &size, sizeof(size), 
+		    unexp_tag, &size, sizeof(size), 
 		    &size_req);
 	nm_sr_swait(p_core, &size_req);
 	nm_sr_isend(p_core, dest->p_gate, 
@@ -926,49 +929,74 @@ int BMI_testunexpected(int incount,
 		       struct BMI_unexpected_info *info_array,
 		       int max_idle_time_ms)
 {
+    int ret;
 
     if(outcount)
 	*outcount = 0;
+    memset(info_array, 7, sizeof(struct BMI_unexpected_info));
     info_array->addr = malloc(sizeof(struct BMI_addr));
-    int ret =__bmi_test_accept(info_array->addr);
-    if(ret == 1) 
-	{
-	    nm_sr_request_t request;
+    ret = nm_sr_rtest(p_core, &unexp_request);
+    if(ret != -NM_ESUCCESS) {
+	 ret =__bmi_test_accept(info_array->addr);
+	 if(ret != 1)
+	     goto failed;
+
+	 ret = nm_sr_rwait(p_core, &unexp_request);
+	 if(ret != -NM_ESUCCESS)
+	     goto failed;
+    } else {
+	/* retrieve information! */
+	nm_gate_t p_gate = unexp_request.req.unpack.p_gate;
+	struct bnm_peer* p_peer = ref_list_search_gate(cur_ref_list, p_gate);
+	info_array->addr = p_peer->p_addr;
+	if(!info_array->addr){
+	    fprintf(stderr, "cannot find p_gate %p !!!\n", p_gate);
+	    abort();
+	}
 	    
-	    struct bnm_ctx rx;
-	    rx.nmc_state    = BNM_CTX_PREP;
-	    rx.nmc_tag      = 0;
-	    rx.nmc_type     = BNM_REQ_RX;
-	    rx.nmc_msg_type = BNM_MSG_UNEXPECTED;
-	    rx.nmc_peer     = info_array->addr->p_peer;
-	    
-	    bnm_create_match(&rx);
-	    
-	    /* retrieve remote tx_id */
-	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
-			&info_array->size, sizeof(info_array->size), &request);
-	    nm_sr_rwait(p_core, &request);
-	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
-			&rx.nmc_tag, sizeof(rx.nmc_tag), &request);
-	    nm_sr_rwait(p_core, &request);
-	    
-	    info_array->buffer = malloc(info_array->size);
-	    bnm_create_match(&rx);
-	    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
-			info_array->buffer, info_array->size, &request);
-	    nm_sr_rwait(p_core, &request);
-	    
-	    nm_sr_get_size(p_core, &request, &info_array->size);
-	    info_array->tag = rx.nmc_tag;
-	    info_array->error_code=0;
-	    if(outcount){
-		(*outcount)=1;
-	    }
-	} else {
-	free(info_array->addr);
     }
-	return 0;
-	
+
+    nm_sr_request_t request;
+	    
+    struct bnm_ctx rx;
+    rx.nmc_state    = BNM_CTX_PREP;
+    rx.nmc_tag      = 0;
+    rx.nmc_type     = BNM_REQ_RX;
+    rx.nmc_msg_type = BNM_MSG_UNEXPECTED;
+    rx.nmc_peer     = info_array->addr->p_peer;
+	    
+    bnm_create_match(&rx);
+	    
+    /* retrieve remote tx_id */
+    info_array->size = unexp_size;
+
+    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+		&rx.nmc_tag, sizeof(rx.nmc_tag), &request);
+    nm_sr_rwait(p_core, &request);
+	    
+    info_array->buffer = malloc(info_array->size);
+    bnm_create_match(&rx);
+    nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
+		info_array->buffer, info_array->size, &request);
+    nm_sr_rwait(p_core, &request);
+
+    size_t data_size;
+    nm_sr_get_size(p_core, &request, &data_size);
+    info_array->size=data_size;
+    info_array->tag = rx.nmc_tag;
+    info_array->error_code=0;
+
+    nm_sr_irecv(p_core, NM_ANY_GATE, unexp_tag, &unexp_size, sizeof(unexp_size), &unexp_request);    
+
+    if(outcount){
+	(*outcount)=1;
+    }
+
+out:
+	return 0;	
+failed:
+	free(info_array->addr);
+	goto out;
 }
 
 

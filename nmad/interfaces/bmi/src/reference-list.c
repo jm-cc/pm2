@@ -52,22 +52,8 @@ ref_list_p ref_list_new(void){
      * ever have a need for more, then this hash table should be moved from
      * a static global to actually be part of the ref_list_p.
      */
-    //assert(str_table == NULL);
 
-    str_table = puk_hashtable_new_ptr();
-	//puk_hashtable_new_string();
-
-    if(!str_table){
-        return(NULL);
-    }
-
-    tmp_list =  TBX_MALLOC(sizeof( tbx_list_t ));
-    if(!tmp_list){
-	puk_hashtable_delete(str_table);
-        str_table = NULL;
-        return(NULL);
-    }
-    tbx_list_init(tmp_list);
+    tmp_list = tbx_slist_nil();
     return (tmp_list);
 }
 
@@ -86,9 +72,10 @@ ref_list_add(ref_list_p rlp,//TBX list
     struct bnm_peer* peer = (struct bnm_peer*)addr;
 
     assert (peer->peername);    
-    puk_hashtable_insert(str_table, (char*)peer->peername, peer->p_gate);
-    tbx_append_list(rlp,peer);
+    tbx_slist_add_at_head(rlp, peer);
 }
+
+
 
 /*
  * ref_list_search_addr()
@@ -102,13 +89,52 @@ void*
 ref_list_search_addr(ref_list_p rlp,
 		     void* addr){
 
-    nm_gate_t p_gate;
-    struct bnm_peer* peer = addr;
-    p_gate = puk_hashtable_lookup(str_table, peer->peername);
+    if (rlp->length){
+	p_tbx_slist_element_t list_element ;
+	struct bnm_peer *tmp;
+	list_element = rlp->head ;
+	
+	while (list_element != NULL){
 
-    if(!p_gate)return NULL;
-    return p_gate;
+	    tmp = list_element->object;
+	    if(tmp->p_addr == addr)
+		return list_element->object;
+	    list_element = list_element->next;
+	}
+    }
+
+    return NULL;
 }
+
+/*
+ * ref_list_search_addr()
+ *
+ * looks for a reference structure in the list that matches the given
+ * p_gate.
+ *
+ * returns a pointer to the structure on success, a NULL on failure.
+ */
+void*
+ref_list_search_gate(ref_list_p rlp,
+		     void* p_gate){
+
+    if (rlp->length){
+	p_tbx_slist_element_t list_element ;
+	struct bnm_peer *tmp;
+	list_element = rlp->head;
+	
+	while (list_element != NULL){
+
+	    tmp = list_element->object;
+	    if(tmp->p_gate == p_gate)
+		return list_element->object;
+	    list_element = list_element->next;
+	}
+    }
+
+    return ;
+}
+
 
 #if 0
 /*
@@ -129,7 +155,7 @@ ref_list_search_method_addr(ref_list_p rlp,
  * ref_list_search_str()
  *
  * looks for a reference structure in the list that matches the given
- * id string.
+ * peername.
  *
  * returns a pointer to the structure on success, a NULL on failure.
  */
@@ -137,9 +163,9 @@ void* //BMI_addr_t
 ref_list_search_str(ref_list_p rlp,
 		    const char *idstring){
     if (rlp->length){
-	p_tbx_list_element_t list_element ;
-	BMI_addr_t tmp;
-	list_element = rlp->first ;
+	p_tbx_slist_element_t list_element ;
+	struct bnm_peer *tmp;
+	list_element = rlp->head ;
 	
 	while (list_element != NULL){
 
@@ -150,15 +176,6 @@ ref_list_search_str(ref_list_p rlp,
 	}
     }
     return NULL;
-    /*
-      struct puk_hash_entry_s* tmp_link;
-      
-      tmp_link = puk_hashtable_lookup(str_table, (char*)idstring);
-      if(!tmp_link){
-      return(NULL);
-      }
-      return(tmp_link);
-    */
 }
 
 #if 0
@@ -196,33 +213,14 @@ ref_st_p ref_list_rem(ref_list_p rlp,
  * no return values
  */
 void ref_list_cleanup(ref_list_p rlp){
-    /*
-      ref_list_p tmp_link = NULL;
-      ref_list_p scratch = NULL;
-      ref_st_p tmp_entry = NULL;
-    */
-    /*
-    list_for_each_safe(tmp_link, scratch, rlp){
-	tmp_entry = list_entry(tmp_link, struct ref_st,
-			       list_link);
-        dealloc_ref_st(tmp_entry);
+    
+    while(! tbx_slist_is_nil(rlp)){
+	void *obj = tbx_slist_remove_from_head(rlp);
+	
     }
-    */
-    tbx_destroy_list(rlp);
-    /*
-    assert(rlp != NULL);
-    do{
-	tmp_entry = list_entry(tmp_link, 
-			       struct ref_st,
-			       list_link);
-	dealloc_ref_st(tmp_entry); 
-    } while ( rlp != NULL);
-    */
 
-    puk_hashtable_delete(str_table);
-    str_table = NULL;
+    tbx_slist_free(rlp);
 
-    TBX_FREE(rlp);
     return;
 }
 

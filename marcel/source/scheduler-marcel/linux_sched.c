@@ -944,6 +944,8 @@ restart:
 	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
 		/* A thread seed, take it */
 		ma_dequeue_entity(&next->as_entity, nexth);
+		/* Immediately mark that the seed is about to germinate before unlocking the holder. */
+		next->cur_thread_seed_runner = (void *)(intptr_t)1;
 		ma_holder_unlock(nexth);
 
 		if (prev->state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {

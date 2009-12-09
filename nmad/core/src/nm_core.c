@@ -182,30 +182,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   /* pending packs */
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_packs);
 
-  /* which strategy is going to be used */
-  const char*strategy_name = NULL;
-#if defined(CONFIG_STRAT_SPLIT_BALANCE)
-  strategy_name = "split_balance";
-#elif defined(CONFIG_STRAT_SPLIT_ALL)
-  strategy_name = "split_all";
-#elif defined(CONFIG_STRAT_DEFAULT)
-  strategy_name = "default";
-#elif defined(CONFIG_STRAT_AGGREG)
-  strategy_name = "aggreg";
-#elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-  strategy_name = "aggreg_autoextended";
-#elif defined(CONFIG_STRAT_QOS)
-#  if defined(NMAD_QOS)
-  strategy_name = "qos";
-#  else
-#    error Strategy Quality of service cannot be selected without enabling the quality of service
-#  endif /* NMAD_QOS */
-#else /*  defined(CONFIG_STRAT_CUSTOM) */
-  strategy_name = "custom";
-#endif
-
-  p_core->strategy_adapter = nm_core_component_load("strategy", strategy_name);
-  printf("# nmad: strategy = %s\n", p_core->strategy_adapter->name);
+  p_core->strategy_adapter = NULL;
 
 #ifdef PIOMAN
   nmad_lock_init(p_core);
@@ -220,7 +197,20 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   *pp_core = p_core;
 
   return err;
+}
 
+int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
+{
+  puk_iface_t strat_iface = puk_iface_NewMad_Strategy();
+  puk_facet_t strat_facet = puk_adapter_get_facet(strategy, strat_iface, NULL);
+  if(strat_facet == NULL)
+    {
+      fprintf(stderr, "# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);
+      abort();
+    }
+  p_core->strategy_adapter = strategy;
+  printf("# nmad: strategy = %s\n", strategy->name);
+ return NM_ESUCCESS;
 }
 
 /** Shutdown the core struct and the main scheduler.

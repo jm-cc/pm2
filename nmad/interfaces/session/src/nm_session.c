@@ -347,6 +347,25 @@ static void nm_session_do_init(int*argc, char**argv)
   int err = nm_core_init(argc, argv, &nm_session.p_core);
   assert(err == NM_ESUCCESS);
   
+  /* load strategy */
+  const char*strategy_name = NULL;
+#if defined(CONFIG_STRAT_SPLIT_BALANCE)
+  strategy_name = "split_balance";
+#elif defined(CONFIG_STRAT_SPLIT_ALL)
+  strategy_name = "split_all";
+#elif defined(CONFIG_STRAT_DEFAULT)
+  strategy_name = "default";
+#elif defined(CONFIG_STRAT_AGGREG)
+  strategy_name = "aggreg";
+#elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
+  strategy_name = "aggreg_autoextended";
+#else /*  defined(CONFIG_STRAT_CUSTOM) */
+  strategy_name = "custom";
+#endif
+  puk_component_t strategy = nm_core_component_load("strategy", strategy_name);
+  err = nm_core_set_strategy(nm_session.p_core, strategy);
+  assert(err == NM_ESUCCESS);
+
   /* load driver */
   puk_component_t driver_assembly = NULL;
   const char*assembly_name = getenv("NMAD_ASSEMBLY");

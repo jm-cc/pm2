@@ -47,6 +47,8 @@ puk_component_t nm_core_component_load(const char*entity, const char*name);
 
 int nm_core_init(int*argc, char*argv[], nm_core_t *pp_core);
 
+int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy);
+
 int nm_core_exit(nm_core_t p_core);
 
 

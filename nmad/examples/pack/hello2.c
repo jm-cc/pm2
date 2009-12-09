@@ -16,6 +16,7 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_session_interface.h>
+#include <nm_pack_interface.h>
 
 const char *msg	= "hello, world!";
 

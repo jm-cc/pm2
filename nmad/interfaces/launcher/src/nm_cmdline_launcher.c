@@ -208,12 +208,23 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
       char local_launcher_url[16] = { 0 };
       int server_sock = socket(AF_INET, SOCK_STREAM, 0);
       assert(server_sock > -1);
+      int val = 1;
+      int rc = setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
       struct sockaddr_in addr;
       unsigned addr_len = sizeof addr;
       addr.sin_family = AF_INET;
-      addr.sin_port = htons(0);
+      addr.sin_port = htons(8657 + getuid());
       addr.sin_addr.s_addr = INADDR_ANY;
-      int rc = bind(server_sock, (struct sockaddr*)&addr, addr_len);
+      rc = bind(server_sock, (struct sockaddr*)&addr, addr_len);
+      int err = errno;
+      if(rc == -1 && err == EADDRINUSE)
+	{
+	  /* try again without default port */
+	  addr.sin_family = AF_INET;
+	  addr.sin_port = htons(0);
+	  addr.sin_addr.s_addr = INADDR_ANY;
+	  rc = bind(server_sock, (struct sockaddr*)&addr, addr_len);
+	}
       if(rc) 
 	{
 	  fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));

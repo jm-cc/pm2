@@ -42,13 +42,10 @@ static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, st
 
 /* ********************************************************* */
 
-static void nm_so_build_multi_rtr(struct nm_gate *p_gate, nm_tag_t tag, nm_seq_t seq, uint32_t chunk_offset,
+static void nm_so_build_multi_rtr(struct nm_gate *p_gate, nm_core_tag_t tag, nm_seq_t seq, uint32_t chunk_offset,
 				  int nb_chunks, struct nm_rdv_chunk*chunks)
 {
   int i;
-
-  NM_SO_TRACE("Building of a multi-ack with %d chunks on tag %d and seq %d\n", nb_chunks, (int)tag, seq);
-
   for(i = 0; i < nb_chunks; i++)
     {
       nm_so_post_rtr(p_gate, tag, seq, chunks[i].drv_id, chunks[i].trk_id, chunk_offset, chunks[i].len);
@@ -128,7 +125,7 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 {
   struct iovec*iov = p_unpack->data;
   struct nm_gate*p_gate = p_unpack->p_gate;
-  const nm_tag_t tag = p_unpack->tag;
+  const nm_core_tag_t tag = p_unpack->tag;
   const nm_seq_t seq = p_unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .len = len, .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
@@ -219,7 +216,7 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
   int last = len;
   struct nm_gate*p_gate = p_unpack->p_gate;
   struct DLOOP_Segment *segp = p_unpack->data;
-  const nm_tag_t tag = p_unpack->tag;
+  const nm_core_tag_t tag = p_unpack->tag;
   const nm_seq_t seq = p_unpack->seq;
 
   CCSI_Segment_count_contig_blocks(segp, 0, &last, &nb_blocks);
@@ -287,7 +284,7 @@ static int nm_so_init_large_datatype_recv_with_multi_rtr(struct nm_pkt_wrap *p_p
   struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
   struct nm_unpack_s*p_unpack = p_pw->p_unpack;
-  const nm_tag_t tag = p_unpack->tag;
+  const nm_core_tag_t tag = p_unpack->tag;
   const nm_seq_t seq = p_unpack->seq;
   const uint32_t len = p_pw->length;
 
@@ -347,7 +344,7 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
 {
   void*data = p_unpack->data;
   struct nm_gate*p_gate = p_unpack->p_gate;
-  const nm_tag_t tag = p_unpack->tag;
+  const nm_core_tag_t tag = p_unpack->tag;
   const nm_seq_t seq = p_unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   int nb_chunks = p_core->nb_drivers;

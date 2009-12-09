@@ -304,13 +304,17 @@ int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gat
 }
 
 int nm_sr_probe(nm_session_t p_session,
-		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag)
+		nm_gate_t p_gate, nm_gate_t *pp_out_gate, nm_tag_t tag, nm_tag_t mask)
 {
   nm_core_t p_core = p_session->p_core;
+  nm_core_tag_t core_tag = NM_CORE_TAG_NONE;
+  nm_sr_tag_build(p_session, tag, &core_tag);
+  nm_core_tag_t core_mask = NM_CORE_TAG_NONE;
+  nm_sr_tag_build(p_session, mask, &core_mask);
+
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
-
-  int err = nm_so_iprobe(p_core, p_gate, pp_out_gate, tag);
+  int err = nm_so_iprobe(p_core, p_gate, core_tag, core_mask, pp_out_gate);
   nm_unlock_status(p_core);
   nm_unlock_interface(p_core);
 
@@ -455,8 +459,6 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
   NM_SO_SR_LOG_IN();
-  NM_SO_SR_TRACE("data sent for request = %p - tag %d , seq %d\n", p_request , (int)event->tag, event->seq);
-
   const nm_status_t status = p_pack->status;
   if( (status & NM_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
@@ -470,9 +472,11 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 
 static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
 {
+  nm_tag_t sr_tag = nm_sr_tag_get(event->tag);
+
   const nm_sr_event_info_t info = { 
     .recv_unexpected.p_gate = event->p_gate,
-    .recv_unexpected.tag = event->tag,
+    .recv_unexpected.tag = sr_tag,
     .recv_unexpected.len = event->len
   };
   nm_sr_monitor_notify(NULL, NM_SR_EVENT_RECV_UNEXPECTED, &info);

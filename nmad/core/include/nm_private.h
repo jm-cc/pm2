@@ -38,6 +38,33 @@ typedef int8_t nm_trk_id_t;
 
 #define NM_SO_MAX_TRACKS   2
 
+/* ** Sequence numbers */
+
+/** Reserved sequence number used before an unpack has been matched. */
+#define NM_SEQ_NONE ((nm_seq_t)0)
+
+/** First sequence number */
+#define NM_SEQ_FIRST ((nm_seq_t)1)
+
+/** Compute next sequence number */
+static inline nm_seq_t nm_seq_next(nm_seq_t seq)
+{
+  if((seq + 1) == NM_SEQ_NONE)
+    return NM_SEQ_FIRST;
+  else
+    return seq + 1;
+}
+
+/** Compute previous sequence number */
+static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
+{
+  if((seq - 1) == NM_SEQ_NONE)
+    return seq - 2;
+  else
+    return seq - 1;
+}
+
+
 /* ** Drivers */
 
 typedef uint16_t nm_drv_id_t;

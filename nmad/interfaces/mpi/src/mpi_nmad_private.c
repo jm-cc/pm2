@@ -629,11 +629,6 @@ int mpir_isend_init(mpir_internal_data_t *mpir_internal_data,
   mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
   mpir_request->request_tag = mpir_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
 
-  if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid sending tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, NM_SO_MAX_TAGS);
-    return MPI_ERR_INTERN;
-  }
-
   if (mpir_datatype->is_contig == 1) {
     MPI_NMAD_TRACE("Sending data of type %d at address %p with len %ld (%d*%ld)\n", mpir_request->request_datatype, mpir_request->buffer, (long)mpir_request->count*mpir_datatype->size, mpir_request->count, (long)mpir_datatype->size);
   }
@@ -785,12 +780,6 @@ int mpir_irecv_init(mpir_internal_data_t *mpir_internal_data,
   mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
   mpir_request->request_tag = mpir_comm_and_tag(mpir_internal_data, mpir_communicator, mpir_request->user_tag);
   mpir_request->request_source = source;
-
-  if (tbx_unlikely(mpir_request->request_tag > NM_SO_MAX_TAGS)) {
-    fprintf(stderr, "Invalid receiving tag %d (%d, %d). Maximum allowed tag: %d\n", mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag, NM_SO_MAX_TAGS);
-    MPI_NMAD_LOG_OUT();
-    return MPI_ERR_INTERN;
-  }
 
   MPI_NMAD_TRACE("Receiving from %d at address %p with tag %d (%d, %d)\n", source, mpir_request->buffer, mpir_request->request_tag, mpir_communicator->communicator_id, mpir_request->user_tag);
   if (mpir_datatype->is_contig == 1) {
@@ -1047,7 +1036,7 @@ int mpir_probe(mpir_internal_data_t *mpir_internal_data,
 	       nm_gate_t gate,
 	       nm_gate_t *out_gate,
 	       nm_tag_t tag) {
-  return nm_sr_probe(mpir_internal_data->p_session, gate, out_gate, tag);
+  return nm_sr_probe(mpir_internal_data->p_session, gate, out_gate, tag, NM_TAG_MASK_FULL);
 }
 
 int mpir_cancel(mpir_internal_data_t *mpir_internal_data,

@@ -95,7 +95,7 @@ out:
 
 /** Post a ready-to-receive
  */
-static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_seq_t seq,
 				  nm_drv_id_t drv_id, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
@@ -106,7 +106,7 @@ static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_tag_t tag, nm_seq_t
 
 /** Post an ACK
  */
-static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_tag_t tag, nm_seq_t seq)
+static inline void nm_so_post_ack(struct nm_gate*p_gate, nm_core_tag_t tag, nm_seq_t seq)
 {
   nm_so_generic_ctrl_header_t h;
   nm_so_init_ack(&h, tag, seq);

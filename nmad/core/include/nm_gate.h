@@ -24,10 +24,10 @@ struct nm_so_tag_s
   nm_seq_t recv_seq_number; /**< next sequence number for recv */
   nm_seq_t send_seq_number; /**< next sequence number for send */
 };
-static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_tag_t tag)
+static inline void nm_so_tag_ctor(struct nm_so_tag_s*so_tag, nm_core_tag_t tag)
 {
-  so_tag->recv_seq_number = 0;
-  so_tag->send_seq_number = 0;
+  so_tag->recv_seq_number = NM_SEQ_FIRST;
+  so_tag->send_seq_number = NM_SEQ_FIRST;
 }
 static inline void nm_so_tag_dtor(struct nm_so_tag_s*so_tag)
 {

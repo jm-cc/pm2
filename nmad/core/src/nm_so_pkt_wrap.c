@@ -346,7 +346,7 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 		      int flags)
 {
   int err;
-  const nm_tag_t tag = p_pack->tag;
+  const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
   if(is_last_chunk)

@@ -50,23 +50,20 @@ void nm_gate_ref_set(struct nm_gate*p_gate, void*ref);
 /* 8 bits, contained in flat array  */
 #  define NM_TAGS_AS_FLAT_ARRAY
 typedef uint8_t nm_tag_t;
-#  define NM_ANY_TAG ((nm_tag_t)-1)
-#  define NM_SO_MAX_TAGS (nm_tag_t)(255)
 #elif defined(CONFIG_TAG_AS_HASHTABLE)
 /* 32 bits, contained in hashtable */
 #  define NM_TAGS_AS_HASHTABLE
 typedef uint32_t nm_tag_t;
-#  define NM_ANY_TAG ((nm_tag_t)-1)
-#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT32_MAX - 1ULL)
 #elif defined(CONFIG_TAG_HUGE)
-/* 64 bits, contained in hashtable */
+/* 64 bits, contained in indirect hashtable */
 #  define NM_TAGS_AS_INDIRECT_HASH
 typedef uint64_t nm_tag_t; 
-#  define NM_ANY_TAG ((nm_tag_t)-1)
-#  define NM_SO_MAX_TAGS (nm_tag_t)(UINT64_MAX - 1ULL);
 #else
 #  error NewMad: no container type defined for tag-indexed tables
 #endif
+
+#define NM_TAG_MASK_FULL ((nm_tag_t)-1)
+#define NM_TAG_MASK_NONE ((nm_tag_t)0)
 
 
 /* ** datatypes ******************************************** */

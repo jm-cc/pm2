@@ -37,7 +37,7 @@ struct nm_unexpected_s
   struct nm_pkt_wrap*p_pw;
   nm_gate_t p_gate;
   nm_seq_t seq;
-  nm_tag_t tag;
+  nm_core_tag_t tag;
   struct tbx_fast_list_head link;
 };
 
@@ -85,36 +85,20 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
     {
-      if((chunk->p_gate == p_unpack->p_gate) && (chunk->seq == p_unpack->seq) && nm_tag_eq(chunk->tag, p_unpack->tag))
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
+      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
+      if(((p_unpack->p_gate == chunk->p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
+	 nm_tag_match(chunk->tag, p_unpack->tag, p_unpack->tag_mask) && /* tag matches */
+	 ((p_unpack->seq == chunk->seq) || ((p_unpack->seq == NM_SEQ_NONE) && (chunk->seq == next_seq))) /* seq number matches */ ) 
 	{
-	  /* regular matching */
-	  return chunk;
-	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && nm_tag_eq(chunk->tag, p_unpack->tag))
-	{
-	  /* any gate */
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
-	  p_so_tag->recv_seq_number++;
-	  p_unpack->seq = chunk->seq;
-	  p_unpack->p_gate = chunk->p_gate;
-	  return chunk;
-	}
-      else if((p_unpack->p_gate == chunk->p_gate) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
-	{
-	  /* any tag */
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
-	  p_so_tag->recv_seq_number++;
-	  p_unpack->seq = chunk->seq;
-	  p_unpack->tag = chunk->tag;
-	  return chunk;
-	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
-	{
-	  /* any gate, any tag */
-	  struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
-	  p_so_tag->recv_seq_number++;
-	  p_unpack->seq = chunk->seq;
-	  p_unpack->tag = chunk->tag;
+	  if(p_unpack->seq == NM_SEQ_NONE)
+	    {
+	      p_so_tag->recv_seq_number = next_seq;
+	    }
+	  p_unpack->tag      = chunk->tag;
+	  p_unpack->tag_mask = NM_CORE_TAG_MASK_FULL;
+	  p_unpack->p_gate   = chunk->p_gate;
+	  p_unpack->seq      = chunk->seq;
 	  return chunk;
 	}
     }
@@ -124,40 +108,25 @@ static struct nm_unexpected_s*nm_unexpected_find_matching(struct nm_core*p_core,
 /** Find an unpack that matches a given packet that arrived from [p_gate, seq, tag]
  *  including matching with any_gate / any_tag in the unpack
  */
-static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_tag_t tag)
+static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate_t p_gate, nm_seq_t seq, nm_core_tag_t tag)
 {
   struct nm_unpack_s*p_unpack = NULL;
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
-  const nm_seq_t last_seq = p_so_tag->recv_seq_number;
+  const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
   tbx_fast_list_for_each_entry(p_unpack, &p_core->unpacks, _link)
     {
-      if((p_unpack->p_gate == p_gate) && (p_unpack->seq == seq) && nm_tag_eq(p_unpack->tag, tag))
+      if(((p_unpack->p_gate == p_gate) || (p_unpack->p_gate == NM_ANY_GATE)) && /* gate matches */
+	 nm_tag_match(tag, p_unpack->tag, p_unpack->tag_mask) && /* tag matches */
+	 ((p_unpack->seq == seq) || ((p_unpack->seq == NM_SEQ_NONE) && (seq == next_seq))) /* seq number matches */ ) 
 	{
-	  /* regular matching */
-	  return p_unpack;
-	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && nm_tag_eq(p_unpack->tag, tag))
-	{
-	  /* any gate matching */
-	  p_so_tag->recv_seq_number++;
-	  p_unpack->p_gate = p_gate;
-	  p_unpack->seq = seq;
-	  return p_unpack;
-	}
-      else if((p_unpack->p_gate == p_gate) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
-	{
-	  /* any tag matching */
-	  p_unpack->tag = tag;
-	  p_unpack->seq = seq;
-	  return p_unpack;
-	}
-      else if((p_unpack->p_gate == NM_ANY_GATE) && (last_seq == seq) && nm_tag_eq(p_unpack->tag, NM_ANY_TAG))
-	{
-	  /* any gate, any tag */
-	  p_so_tag->recv_seq_number++;
-	  p_unpack->p_gate = p_gate;
-	  p_unpack->tag = tag;
-	  p_unpack->seq = seq;
+	  if(p_unpack->seq == NM_SEQ_NONE)
+	    {
+	      p_so_tag->recv_seq_number = next_seq;
+	    }
+	  p_unpack->tag      = tag;
+	  p_unpack->tag_mask = NM_CORE_TAG_MASK_FULL;
+	  p_unpack->p_gate   = p_gate;
+	  p_unpack->seq      = seq;
 	  return p_unpack;
 	}
     }
@@ -257,7 +226,7 @@ static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t 
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
 static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate,
-					  void *header, uint32_t len, nm_tag_t tag, nm_seq_t seq,
+					  void *header, uint32_t len, nm_core_tag_t tag, nm_seq_t seq,
 					  struct nm_pkt_wrap *p_pw)
 {
   struct nm_unexpected_s*chunk = nm_unexpected_alloc();
@@ -299,16 +268,17 @@ void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
 
 /** Handle an unpack request.
  */
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag)
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate,
+			nm_core_tag_t tag, nm_core_tag_t tag_mask)
 {
   nmad_lock();
   nm_lock_interface(p_core);
   /* fill-in the unpack request */
-  const nm_seq_t seq = (p_gate == NM_ANY_GATE) ? 0 : nm_so_tag_get(&p_gate->tags, tag)->recv_seq_number++;
   p_unpack->status |= NM_STATUS_UNPACK_POSTED;
   p_unpack->p_gate = p_gate;
-  p_unpack->seq = seq;
   p_unpack->tag = tag;
+  p_unpack->tag_mask = tag_mask;
+  p_unpack->seq = NM_SEQ_NONE;
   /* store the unpack request */
 #warning Paulette: lock
   tbx_fast_list_add_tail(&p_unpack->_link, &p_core->unpacks);
@@ -357,14 +327,17 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
   return NM_ESUCCESS;
 }
 
-int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**pp_out_gate, nm_tag_t tag)
+int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, 
+		 nm_core_tag_t tag, nm_core_tag_t tag_mask, struct nm_gate**pp_out_gate)
 {
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
     {
-      if( ((chunk->p_gate == p_gate) && nm_tag_eq(chunk->tag, tag)) ||
-	  ((p_gate == NM_ANY_GATE)   && nm_tag_eq(chunk->tag, tag)) ||
-	  ((chunk->p_gate == p_gate) && nm_tag_eq(tag, NM_ANY_TAG)) )
+      struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
+      const nm_seq_t next_seq = p_so_tag->recv_seq_number;
+      if(((p_gate == chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
+	 nm_tag_match(chunk->tag, tag, tag_mask) && /* tag matches */
+	 (chunk->seq == next_seq) /* seq number matches */ )
 	{
 	  *pp_out_gate = p_gate;
 	  return NM_ESUCCESS;
@@ -376,14 +349,12 @@ int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**p
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
-  struct nm_so_tag_s*p_so_tag = (p_unpack->p_gate == NM_ANY_GATE) ? 
-    NULL : nm_so_tag_get(&p_unpack->p_gate->tags, p_unpack->tag);
   if(p_unpack->status & (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED))
     {
       /* receive is already in progress- too late to cancel */
       return -NM_EINPROGRESS;
     }
-  else if((p_so_tag == NULL) || (p_unpack->seq == p_so_tag->recv_seq_number - 1))
+  else if(p_unpack->seq == NM_SEQ_NONE)
     {
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
@@ -393,8 +364,6 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 	  .p_unpack = p_unpack
 	};
       nm_core_status_event(p_core, &event, &p_unpack->status);
-      if(p_so_tag)
-	p_so_tag->recv_seq_number--;
       return NM_ESUCCESS;
     }
   else
@@ -453,14 +422,11 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, s
  */
 static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_header*header)
 {
-  const nm_tag_t tag          = header->tag_id;
+  const nm_core_tag_t tag     = header->tag_id;
   const nm_seq_t seq          = header->seq;
   const uint32_t chunk_offset = header->chunk_offset;
   const uint32_t chunk_len    = header->chunk_len;
   struct nm_gate *p_gate      = p_rtr_pw->p_gate;
-
-  NM_SO_TRACE("rtr completed for tag = %d, seq = %u, offset = %u\n", (int)tag, seq, chunk_offset);
-
   struct nm_pkt_wrap *p_large_pw = NULL;
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
@@ -496,7 +462,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_header*header)
 {
   struct nm_core*p_core = p_ack_pw->p_gate->p_core;
-  const nm_tag_t tag = header->tag_id;
+  const nm_core_tag_t tag = header->tag_id;
   const nm_seq_t seq = header->seq;
   struct nm_pack_s*p_pack = NULL;
   tbx_fast_list_for_each_entry(p_pack, &p_core->pending_packs, _link)
@@ -552,7 +518,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	    struct nm_so_short_data_header*sh = ptr;
 	    ptr += NM_SO_SHORT_DATA_HEADER_SIZE;
 	    const uint32_t len = sh->len;
-	    const nm_tag_t tag = sh->tag_id;
+	    const nm_core_tag_t tag = sh->tag_id;
 	    const nm_seq_t seq = sh->seq;
 	    struct nm_gate*p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
@@ -601,7 +567,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      { /* data is just after the header */
 		ptr += size;
 	      }  /* else the next header is just behind */
-	    const nm_tag_t tag = dh->tag_id;
+	    const nm_core_tag_t tag = dh->tag_id;
 	    const nm_seq_t seq = dh->seq;
 	    struct nm_gate*p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
@@ -630,7 +596,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    const nm_tag_t tag = ch->rdv.tag_id;
+	    const nm_core_tag_t tag = ch->rdv.tag_id;
 	    const nm_seq_t seq = ch->rdv.seq;
 	    const uint32_t len = ch->rdv.len;
 	    struct nm_gate *p_gate = p_pw->p_gate;
@@ -726,7 +692,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       nm_lock_interface(p_core);
       p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
       nm_unlock_interface(p_core);
-      
       nm_decode_headers(p_pw);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)

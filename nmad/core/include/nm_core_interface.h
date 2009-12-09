@@ -143,6 +143,25 @@ typedef nm_status_t nm_so_flag_t;
 /** Sequence number */
 typedef uint16_t nm_seq_t;
 
+#if defined(NM_TAGS_AS_INDIRECT_HASH)
+/* ** Note: only indirect hashing allows long/structured tags.
+ */
+#define NM_TAGS_STRUCT
+/** An internal tag */
+typedef struct
+{
+  nm_tag_t tag;       /**< the interface level tag */
+  uint32_t hashcode;  /**< the session hashcode */
+} nm_core_tag_t;
+#define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = 0xFFFFFFFF })
+#define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
+#else
+/** An internal tag */
+typedef nm_tag_t nm_core_tag_t;
+#define NM_CORE_TAG_MASK_FULL NM_TAG_MASK_FULL
+#define NM_CORE_TAG_NONE ((nm_tag_t)0)
+#endif /* NM_TAGS_AS_INDIRECT_HASH */
+
 /** An unpack request */
 struct nm_unpack_s
 {
@@ -151,9 +170,10 @@ struct nm_unpack_s
   int expected_len;
   int cumulated_len;
   nm_gate_t p_gate;
-  nm_tag_t tag;
+  nm_core_tag_t tag;
   nm_seq_t seq;
   struct tbx_fast_list_head _link;
+  nm_core_tag_t tag_mask;
 };
 
 /** A pack request */
@@ -164,7 +184,7 @@ struct nm_pack_s
   int len;   /**< cumulated data length */
   int done;
   nm_gate_t p_gate;
-  nm_tag_t tag;
+  nm_core_tag_t tag;
   nm_seq_t seq;
   struct tbx_fast_list_head _link;
 };
@@ -182,7 +202,7 @@ void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct io
 
 void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const struct CCSI_Segment *segp);
 
-int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
+int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
 
 static inline void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
 				       void *data, uint32_t len)
@@ -197,11 +217,11 @@ void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 
 void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct CCSI_Segment*segp);
 
-int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_tag_t tag);
+int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
-int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_gate**pp_out_gate, nm_tag_t tag);
+int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask, struct nm_gate**pp_out_gate);
 
 
 
@@ -212,7 +232,7 @@ struct nm_so_event_s
 {
   nm_status_t status;
   nm_gate_t p_gate;
-  nm_tag_t tag;
+  nm_core_tag_t tag;
   nm_seq_t seq;
   uint32_t len;
   struct nm_unpack_s*p_unpack;

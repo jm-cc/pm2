@@ -55,13 +55,13 @@ int main(int argc, char	**argv)
       nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
       nm_sr_irecv(p_core, gate_id, 0, buf, len, &request2);
       err = nm_sr_rcancel(p_core, &request);
-      printf("nm_sr_cancel rc = %3d (expected: -NM_ENOTIMPL = %d)\n", err, -NM_ENOTIMPL);
+      printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
       err = nm_sr_rcancel(p_core, &request2);
       printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
       err = nm_sr_rcancel(p_core, &request);
-      printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
+      printf("nm_sr_cancel rc = %3d (expected: -NM_EALREADY = %d)\n", err, -NM_EALREADY);
 
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
       nm_sr_swait(p_core, &request);

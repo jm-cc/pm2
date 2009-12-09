@@ -156,7 +156,7 @@ main(int	  argc,
 #endif
         nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
         nm_sr_swait(p_core, &request);
-	tag = (tag + 1) % NM_SO_MAX_TAGS;
+	tag++;
       }
     }
   } else {
@@ -185,7 +185,7 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);
 #endif
-	tag = (tag + 1) % NM_SO_MAX_TAGS;
+	tag++;
       }
 
       TBX_GET_TICK(t1);

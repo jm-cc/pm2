@@ -399,6 +399,13 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 	      label, hash_code, p_session->label);
       abort();
     }
+#ifndef NM_TAG_STRUCT
+  if(puk_hashtable_size(nm_session.sessions) > 0)
+    {
+      fprintf(stderr, "# session: current flavor does not support multiple sessions. Please activate option 'tag_huge'.\n");
+      abort();
+    }
+#endif /* NM_TAG_STRUCT */
   p_session = TBX_MALLOC(sizeof(struct nm_session_s));
   p_session->p_core = NULL;
   p_session->label = strdup(label);

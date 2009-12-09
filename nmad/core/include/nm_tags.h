@@ -29,13 +29,23 @@
 #  define NM_TAG_TABLE_TYPE(NAME, ENTRY_TYPE) NM_TAG_TABLE_INDIRECT_HASH(NAME, ENTRY_TYPE) 
 #endif
 
+/** checks whether tags are equal. */
+static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2);
+/** checks whether matching applies on tags- (recv_tag & mask) == lookup_tag
+ */
+static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask);
+
 /* Implementation of tag-indexed container: as flat array */
 
 #ifdef NM_TAGS_AS_FLAT_ARRAY
 
-static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
+static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
   return tag1 == tag2;
+}
+static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+{
+  return ((recv_tag & mask) == lookup_tag);
 }
 
 #define NM_TAG_TABLE_FLAT_ARRAY(NAME, ENTRY_TYPE) \
@@ -45,7 +55,7 @@ static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
   }; \
   static inline void NAME##_table_init(struct NAME##_table_s*t) \
   { \
-    nm_tag_t i; \
+    nm_core_tag_t i; \
     for(i = 0; i < 255; i++) \
     { \
       NAME##_ctor(&t->_array[i], i); \
@@ -53,13 +63,13 @@ static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
    } \
   static inline void NAME##_table_destroy(struct NAME##_table_s*t) \
   { \
-    nm_tag_t i; \
+    nm_core_tag_t i; \
     for(i = 0; i < 255; i++) \
     { \
       NAME##_dtor(&t->_array[i]); \
     } \
    } \
-  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_tag_t tag) \
+  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_core_tag_t tag) \
   { \
     return &table->_array[tag]; \
   }
@@ -71,9 +81,13 @@ static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
 
 #if defined(NM_TAGS_AS_HASHTABLE)
 
-static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
+static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
   return tag1 == tag2;
+}
+static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+{
+  return ((recv_tag & mask) == lookup_tag);
 }
 
 static uint32_t nm_tag_hash(const void*_tag)
@@ -82,13 +96,13 @@ static uint32_t nm_tag_hash(const void*_tag)
    * periods are likely to be powers of 2, and hashtable size
    * is always a prime number.
    */
-  const nm_tag_t tag = (unsigned long)_tag;
+  const nm_core_tag_t tag = (unsigned long)_tag;
   return (uint32_t)tag;
 }
 static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
 {
-  const nm_tag_t tag1 = (intptr_t)_tag1;
-  const nm_tag_t tag2 = (intptr_t)_tag2;
+  const nm_core_tag_t tag1 = (intptr_t)_tag1;
+  const nm_core_tag_t tag2 = (intptr_t)_tag2;
   return (tag1 == tag2);
 }
 
@@ -116,9 +130,9 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
     puk_hashtable_delete(t->_h); \
     tbx_malloc_clean(t->_mem); \
   } \
-  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_tag_t tag) \
+  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_core_tag_t tag) \
   { \
-    const nm_tag_t shift_tag = tag + 1; /* 0 is forbidden as a hashing key- shift tags */ \
+    const nm_core_tag_t shift_tag = tag + 1; /* 0 is forbidden as a hashing key- shift tags */ \
     void*key = (void*)((intptr_t)shift_tag); \
     ENTRY_TYPE*e = puk_hashtable_lookup(table->_h, key); \
     if(tbx_unlikely(e == NULL)) { \
@@ -134,22 +148,27 @@ static int nm_tag_hasheq(const void*_tag1, const void*_tag2)
 
 #if defined(NM_TAGS_AS_INDIRECT_HASH)
 
-static inline int nm_tag_eq(nm_tag_t tag1, nm_tag_t tag2)
+static inline int nm_tag_eq(nm_core_tag_t tag1, nm_core_tag_t tag2)
 {
-  return (memcmp(&tag1, &tag2, sizeof(nm_tag_t)) == 0);
+  return ((tag1.hashcode == tag2.hashcode) && (tag1.tag == tag2.tag));
+}
+static inline int nm_tag_match(nm_core_tag_t recv_tag, nm_core_tag_t lookup_tag, nm_core_tag_t mask)
+{
+  return ((recv_tag.tag & mask.tag) == lookup_tag.tag) &&
+    ((recv_tag.hashcode & mask.hashcode) == lookup_tag.hashcode);
 }
 
 static uint32_t nm_tag_indirect_hash(const void*_tag)
 {
-  /* const nm_tag_t*p_tag = (const nm_tag_t*)_tag; */
+  /* const nm_core_tag_t*p_tag = (const nm_core_tag_t*)_tag; */
   const uint32_t*p_hash = (const uint32_t*)_tag;
   return *p_hash;
 }
 static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
 {
-  const nm_tag_t*p_tag1 = (const nm_tag_t*)_tag1;
-  const nm_tag_t*p_tag2 = (const nm_tag_t*)_tag2;
-  return (memcmp(p_tag1, p_tag2, sizeof(nm_tag_t)) == 0);
+  const nm_core_tag_t*p_tag1 = (const nm_core_tag_t*)_tag1;
+  const nm_core_tag_t*p_tag2 = (const nm_core_tag_t*)_tag2;
+  return (memcmp(p_tag1, p_tag2, sizeof(nm_core_tag_t)) == 0);
 }
 
 #define NM_TAG_TABLE_INDIRECT_HASH(NAME, ENTRY_TYPE)			\
@@ -161,7 +180,7 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
   struct NAME##_entry_s							\
   {									\
     ENTRY_TYPE _data;							\
-    nm_tag_t _tag;							\
+    nm_core_tag_t _tag;							\
   };									\
   static inline void NAME##_table_init(struct NAME##_table_s*t)		\
   {									\
@@ -181,7 +200,7 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
     puk_hashtable_delete(t->_h);					\
     tbx_malloc_clean(t->_mem);						\
   }									\
-  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_tag_t tag) \
+  static inline ENTRY_TYPE* NAME##_get(struct NAME##_table_s*table, nm_core_tag_t tag) \
   {									\
     const void*key = (const void*)&tag;					\
     ENTRY_TYPE*e = puk_hashtable_lookup(table->_h, key);		\

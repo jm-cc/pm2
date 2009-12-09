@@ -324,7 +324,7 @@ static inline int nm_sr_irecv(nm_session_t p_session,
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_data(p_session, p_request, data, len);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -347,7 +347,7 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_data(p_session, p_request, data, len);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -358,7 +358,7 @@ static inline int nm_sr_irecv_iov(nm_session_t p_session,
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -370,7 +370,7 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -381,7 +381,7 @@ static inline int nm_sr_irecv_datatype(nm_session_t p_session,
 {
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_datatype(p_session, p_request, segp);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -395,7 +395,7 @@ static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_datatype(p_session, p_request, segp);
-  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_ANY_TAG);
+  const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
   return err;
 }
 
@@ -439,7 +439,7 @@ extern int nm_sr_recv_source(nm_session_t p_session,
  *  @return The NM status.
  */
 extern int nm_sr_probe(nm_session_t p_session,
-		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag);
+		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag, nm_tag_t tag_mask);
 
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);

@@ -83,7 +83,7 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);
 
 /** Add short data to pw, with compact header */
-static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 					   const void*data, uint32_t len)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
@@ -100,7 +100,7 @@ static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_tag_t tag
 }
 
 /** Add small data to pw, in header */
-static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
@@ -118,7 +118,7 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_tag_t
 }
 
 /** Add small data to pw, in iovec */
-static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_tag_t tag, nm_seq_t seq,
+static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
 					      const void*data, uint32_t len, uint32_t chunk_offset, uint8_t proto_flags)
 {
   struct iovec*hvec = &p_pw->v[0];

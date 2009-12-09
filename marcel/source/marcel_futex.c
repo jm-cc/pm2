@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include "marcel_fastlock.h"
+#include <errno.h>
 
 struct blockcell {
 	marcel_t task;

@@ -561,6 +561,46 @@ while (<$num_desc>) {
 }
 
 # Helpers
+sub hsl_to_rgb($$$) {
+	my $h = shift;
+	my $s = shift;
+	my $l = shift;
+	my @rgb;
+	my $q;
+	my $p;
+
+	if ($l < 1/2) {
+		$q = $l * (1+$s);
+	} else {
+		$q = $l+$s - $l*$s;
+	}
+
+	$p = 2*$l - $q;
+	$h %= 360;
+	$h /= 360; 
+
+	my $i;
+	for $i (0..2) {
+		my $t = $h + (1-$i)/3;
+		if ($t < 0) {
+			$t += 1;
+		} elsif ($t > 1) {
+			$t -= 1;
+		}
+		if ($t < 1/6) {
+			$rgb[$i] = $p + (($q-$p)*6*$t);
+		} elsif ($t < 1/2) {
+			$rgb[$i] = $q;
+		} elsif ($t < 2/3) {
+			$rgb[$i] = $p + (($q-$p)*6*(2/3-$t));
+		} else {
+			$rgb[$i] = $p;
+		}
+	}
+
+	return @rgb;
+}
+
 sub suffix_from_name($) {
 	my $name = shift;
 	my $suffix = '';
@@ -903,6 +943,7 @@ sub paje_rand_color_entity($$$$) {
 	print "6\t$alias$value\t$entity_type\t$name\t\"$r $v $b\"\n";
 }
 
+# Logarithmic RGB ramp
 # args:
 # . value
 # . alias
@@ -921,7 +962,7 @@ sub paje_log2_ramp_entity($$$$$$$$) {
 	my $entity_type = shift;
 	my $name = shift;
 	my $r = shift;
-	my $v = shift;
+	my $g = shift;
 	my $b = shift;
 	my $range = shift;
 
@@ -932,9 +973,39 @@ sub paje_log2_ramp_entity($$$$$$$$) {
 	$factor = 1 - $factor;
 	$paje_dyn_entity{$alias.$value} = 1;
 	$r *= $factor;
-	$v *= $factor;
+	$g *= $factor;
 	$b *= $factor;
-	print "6\t$alias$value\t$entity_type\t$name\t\"$r $v $b\"\n";
+	print "6\t$alias$value\t$entity_type\t$name\t\"$r $g $b\"\n";
+}
+
+# Logarithmic HSL ramp on Hue parameter 
+# args:
+# . value
+# . alias
+# . entity type
+# . name
+# . s (saturation)
+# . l (luminosity)
+# . range
+sub paje_log2_hsl_ramp_entity($$$$$$$) {
+	my $value = shift;
+	my $alias = shift;
+	if (exists $paje_dyn_entity{$alias.$value}) {
+		return;
+	}
+	my $entity_type = shift;
+	my $name = shift;
+	my $s = shift;
+	my $l = shift;
+	my $range = shift;
+
+	my $factor = (log($value) / log(2) / $range);
+	my @rgb = hsl_to_rgb(360*$factor, $s, $l);
+	$paje_dyn_entity{$alias.$value} = 1;
+	my $r = shift @rgb;
+	my $g = shift @rgb;
+	my $b = shift @rgb;
+	print "6\t$alias$value\t$entity_type\t$name\t\"$r $g $b\"\n";
 }
 
 sub paje_display_vp_thread_state($$) {
@@ -1196,7 +1267,8 @@ sub handle_paje_FUT_FGOMP_GOMP_TASK_ENTER	($) {
 	paje_check_task_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
 	print "20 $ev_tstamp ET_TR TT$ev_tid \"new task\" \"task enter\"\n";
-	paje_log2_ramp_entity($depth,'tr','ST_TR',"task($depth)", 0.0, 0.5, 0.9, 8);
+	paje_log2_hsl_ramp_entity($depth,'tr','ST_TR',"task($depth)", 1.0, 0.5, 6);
+	#paje_log2_ramp_entity($depth,'tr','ST_TR',"task($depth)", 0.0, 0.5, 0.9, 8);
 	#paje_rand_color_entity($depth,'tr','ST_TR',"task($depth)");
 	print "11 $ev_tstamp ST_TR TT$ev_tid tr$depth\n";
 }

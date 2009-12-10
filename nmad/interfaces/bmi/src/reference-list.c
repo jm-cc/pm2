@@ -28,11 +28,6 @@
 
 #include "nmad_bmi_interface.h"
 #include "reference-list.h"
-//#include "id-generator.h"
-//#include "quickhash.h"
-
-static puk_hashtable_t str_table = NULL;
-#define STR_TABLE_SIZE 137
 
 /***************************************************************
  * Visible functions
@@ -65,9 +60,8 @@ ref_list_p ref_list_new(void){
  * no return value
  *
  */
-/* todo: we should use rlp as a list, not str_table !!! */
 void 
-ref_list_add(ref_list_p rlp,//TBX list
+ref_list_add(ref_list_p rlp,
 	     void* addr){
     struct bnm_peer* peer = (struct bnm_peer*)addr;
 
@@ -135,22 +129,6 @@ ref_list_search_gate(ref_list_p rlp,
     return NULL;
 }
 
-
-#if 0
-/*
- * ref_list_search_method_addr()
- *
- * looks for a reference structure in the list that matches the given
- * method_addr_p.
- *
- * returns a pointer to the structure on success, NULL on failure.
- */
-ref_st_p 
-ref_list_search_method_addr(ref_list_p rlp,
-			    bmi_method_addr_p map){
-    return(map->parent);
-}
-#endif
 /*
  * ref_list_search_str()
  *
@@ -159,7 +137,7 @@ ref_list_search_method_addr(ref_list_p rlp,
  *
  * returns a pointer to the structure on success, a NULL on failure.
  */
-void* //BMI_addr_t 
+void*
 ref_list_search_str(ref_list_p rlp,
 		    const char *idstring){
     if (rlp->length){
@@ -177,33 +155,6 @@ ref_list_search_str(ref_list_p rlp,
     }
     return NULL;
 }
-
-#if 0
-/*
- * ref_list_rem()
- *
- * removes the first match from the list - does not destroy it 
- *
- * returns a pointer to the structure on success, a NULL on failure.
- */
-ref_st_p ref_list_rem(ref_list_p rlp,
-		      BMI_addr_t my_addr){
-    ref_st_p tmp_entry;
-    
-    /* TODO: get rid of this */
-    tmp_entry = NULL;//id_gen_safe_lookup(my_addr);
-
-    if(tmp_entry){
-        list_del(&tmp_entry->list_link);
-
-        if(tmp_entry->bmi_addr->listen_addr){
-            puk_hashtable_remove(str_table, tmp_entry->bmi_addr->listen_addr);
-        }
-    }
-    return (tmp_entry);
-}
-#endif
-
 
 /*
  * ref_list_cleanup()
@@ -223,65 +174,6 @@ void ref_list_cleanup(ref_list_p rlp){
 
     return;
 }
-
-/*
- * alloc_ref_st()
- *
- * allocates storage for a reference struct.
- *
- * returns a pointer to the new structure on success, NULL on failure.
- */
-ref_st_p alloc_ref_st(void){
-
-    int ssize = sizeof(struct ref_st);
-    ref_st_p new_ref = NULL;
-
-    new_ref = (ref_st_p) TBX_MALLOC(ssize);
-    if (!new_ref)
-    {
-	return (NULL);
-    }
-
-    memset(new_ref, 0, ssize);
-
-    /* we can go ahead and set the bmi_addr here */
-    /* TODO: get rid of this! */
-    //id_gen_safe_register(&(new_ref->bmi_addr), new_ref);
-
-    return (new_ref);
-}
-#if 0
-/*
- * dealloc_ref_st()
- *
- * frees all memory associated with a reference structure
- * NOTE: it *does not*, however, destroy the associated method address.
- *
- * returns 0 on success, -1 on failure
- */
-void dealloc_ref_st(ref_st_p deadref){
-
-    if (!deadref)
-    {
-	return;
-    }
-
-    if (deadref->bmi_addr->listen_addr)
-    {
-	TBX_FREE(deadref->bmi_addr->listen_addr);
-    }
-    /*
-    if (deadref->method_addr)
-    {
-	deadref->interface->set_info(BMI_DROP_ADDR, deadref->method_addr);
-    }
-    */
-    /* TODO: get rid of this */
-    //id_gen_safe_unregister(deadref->bmi_addr);
-
-    TBX_FREE(deadref);
-}
-#endif
 
 #endif /* NM_TAGS_AS_INDIRECT_HASH */
 

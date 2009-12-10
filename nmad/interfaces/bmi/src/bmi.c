@@ -263,7 +263,6 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
 
     strcpy((char*)addr->p_peer->peername, addr->peername);
 
-    /* todo: fix this ! */
     ref_list_add(cur_ref_list, addr->p_peer);    
     return;
 }
@@ -989,7 +988,6 @@ BMI_post_sendunexpected(bmi_op_id_t * id,
  *
  *  \return 0 on success, -errno on failure.
  */
-/* todo: for now, this function is blocking since it waits for an incoming connecting */
 int BMI_testunexpected(int incount,
 		       int *outcount,
 		       struct BMI_unexpected_info *info_array,

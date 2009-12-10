@@ -19,6 +19,7 @@ PM2_OBJROOT := @abs_top_builddir@
 #---------------------------------------------------------------------
 LIBNAME=nmad
 LIBDOC=newmadeleine
+ADDITIONAL_LIBNAME=bmi
 
 # Inclusion des makefiles generiques
 #---------------------------------------------------------------------

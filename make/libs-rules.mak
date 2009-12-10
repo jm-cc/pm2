@@ -60,6 +60,7 @@ buildstatic: $(LIB_LIB_A)
 $(LIB_LIB_A): $(MOD_OBJECTS)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) $(AR) crs $@ $(filter-out %/_$(LIBRARY)_link.o, $(filter %.o, $^))
+	$(COMMON_MAIN) $(foreach ADD_LIBNAME, $(ADDITIONAL_LIBNAME),  ln -sf $(notdir $@) $(dir $@)/lib$(ADD_LIBNAME).a ;)
 
 ifeq ($(HAVE_GNU_LD),yes)
 VERSION_SCRIPT_OPT = $(addprefix -Xlinker --version-script=,$(1))
@@ -121,11 +122,13 @@ $(LIB_LIB_SO_MAJ):
 #$(LIB_LIB_SO_MAJ_MIN)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ln -sf $(notdir $(LIB_LIB_SO_MAJ_MIN)) $@
+	$(COMMON_MAIN) $(foreach ADD_LIBNAME, $(ADDITIONAL_LIBNAME),  ln -sf $(notdir $@) $(dir $@)/lib$(ADD_LIBNAME).so ;)
 endif
 ifneq ($(LIB_LIB_SO_MAJ),$(LIB_LIB_SO))
 $(LIB_LIB_SO): $(LIB_LIB_SO_MAJ)
 	$(COMMON_BUILD)
 	$(COMMON_MAIN) ln -sf $(notdir $(LIB_LIB_SO_MAJ)) $@
+	$(COMMON_MAIN) $(foreach ADD_LIBNAME, $(ADDITIONAL_LIBNAME), ln -sf $(notdir $@) $(dir $@)/lib$(ADD_LIBNAME).so ;)
 endif
 
 # Test suite

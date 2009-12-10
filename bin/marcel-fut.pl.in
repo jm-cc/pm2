@@ -475,9 +475,17 @@ my %paje_dyn_entity;
 ## 1 - do not display Marcel's special threads
 my $filter_out_special_threads = 0;
 
-## 0 - display ForestGOMP samples values
-## 1 - do not display ForestGOMP samples values
+## 0 - display ForestGOMP events (barrier, task wait)
+## 1 - do not display ForestGOMP events
 my $filter_out_fgomp_events = 0;
+
+## 0 - display Task events
+## 1 - do not display Task events
+my $filter_out_task_events = 0;
+
+## 0 - display events of the Bubble Cache scheduler
+## 1 - do not display Bubble Cache events
+my $filter_out_bcache_events = 0;
 
 ## 0 - display PAPI samples values
 ## 1 - do not display PAPI samples values
@@ -533,6 +541,14 @@ if (exists $filter_out{'special'}) {
 
 if (exists $filter_out{'fgomp'}) {
 	$filter_out_fgomp_events = 1;
+}
+
+if (exists $filter_out{'task'}) {
+	$filter_out_task_events = 1;
+}
+
+if (exists $filter_out{'bcache'}) {
+	$filter_out_bcache_events = 1;
 }
 
 if (exists $filter_out{'papi'}) {
@@ -923,12 +939,15 @@ sub paje_display_thread_state($$) {
 	}
 }
 
+# Random colorization
 # args:
 # . value
 # . alias
 # . entity type
 # . name
-sub paje_rand_color_entity($$$$) {
+# . s (saturation)
+# . l (luminosity)
+sub paje_rand_color_entity($$$$$$) {
 	my $value = shift;
 	my $alias = shift;
 	if (exists $paje_dyn_entity{$alias.$value}) {
@@ -936,11 +955,11 @@ sub paje_rand_color_entity($$$$) {
 	}
 	my $entity_type = shift;
 	my $name = shift;
+	my $s = shift;
+	my $l = shift;
 	$paje_dyn_entity{$alias.$value} = 1;
-	my $r = rand;
-	my $v = rand;
-	my $b = rand;
-	print "6\t$alias$value\t$entity_type\t$name\t\"$r $v $b\"\n";
+	my @rgb = hsl_to_rgb(rand(360), $s, $l);
+	print "6\t$alias$value\t$entity_type\t$name\t\"$rgb[0] $rgb[1] $rgb[2]\"\n";
 }
 
 # Logarithmic RGB ramp
@@ -1019,7 +1038,7 @@ sub paje_display_vp_thread_state($$) {
 	if ($use_vp_thread_marker == 0 or ${$thread}{'suffix'} ne '' and ${$thread}{'suffix'} ne '_s') {
 		print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'suffix'} \"VP_$vp_count\"\n";
 	} else {
-		paje_rand_color_entity(${$thread}{'tid'},'vp','ST_VPvp',"running");
+		paje_rand_color_entity(${$thread}{'tid'},'vp','ST_VPvp',"running", 1, 0.8);
 		print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'tid'} \"VP_$vp_count\"\n";
 	}
 }
@@ -1263,7 +1282,6 @@ sub handle_paje_FUT_FGOMP_GOMP_TASK_ENTER	($) {
 	my $param_array = ${$event}{'param_array'};
 	my $depth = 1+${$param_array}[0];
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_thread_event_container($event, $thread);
 	paje_check_task_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
 	print "20 $ev_tstamp ET_TR TT$ev_tid \"new task\" \"task enter\"\n";
@@ -1277,7 +1295,6 @@ sub handle_paje_FUT_FGOMP_GOMP_TASK_LEAVE	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_thread_event_container($event, $thread);
 	paje_check_task_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
 	print "12 $ev_tstamp ST_TR TT$ev_tid\n";
@@ -1527,15 +1544,19 @@ if ($output_mode eq 'paje') {
 		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
 		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER;
 		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE;
+	}
+	unless ($filter_out_task_events) {
 		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_ENTER;
 		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_LEAVE;
 	}
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_ENTER;
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_LEAVE;
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_ENTER;
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE;
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_ENTER'} } = \&handle_paje_FUT_BCACHE_STEAL_ENTER;
-	${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_LEAVE'} } = \&handle_paje_FUT_BCACHE_STEAL_LEAVE;
+	unless ($filter_out_bcache_events) {
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_LEAVE;
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE;
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_ENTER'} } = \&handle_paje_FUT_BCACHE_STEAL_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_LEAVE'} } = \&handle_paje_FUT_BCACHE_STEAL_LEAVE;
+	}
 
 	${handler_hash}{ ${num_hash}{'THREAD_SEED_RUN'} } = \&handle_paje_THREAD_SEED_RUN;
 

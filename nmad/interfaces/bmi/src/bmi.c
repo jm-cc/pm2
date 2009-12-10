@@ -285,12 +285,25 @@ void __bmi_accept(BMI_addr_t addr)
     char local_launcher_url[16] = { 0 };
     int server_sock = socket(AF_INET, SOCK_STREAM, 0);
     assert(server_sock > -1);
+    int val = 1;
+    int rc = setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
     struct sockaddr_in addr_in;
     unsigned addr_len = sizeof addr_in;
     addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(0);
+    fprintf(stderr, "using port %d\n", 8658 + getuid());
+    addr_in.sin_port = htons(8658 + getuid());
     addr_in.sin_addr.s_addr = INADDR_ANY;
-    int rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    int err = errno;
+    if(rc == -1 && err == EADDRINUSE) 
+    { 
+        /* try again without default port */
+	fprintf(stderr, "arf... already in use\n");
+	addr_in.sin_family = AF_INET;
+	addr_in.sin_port = htons(0);
+	addr_in.sin_addr.s_addr = INADDR_ANY;
+	rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    }
     if(rc) 
     {
 	fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
@@ -352,7 +365,7 @@ int __bmi_test_accept(BMI_addr_t addr)
     int sock = poll(server_pollfd, 1, 0);
     if(sock < 0) {
 	fprintf(stderr, "# launcher: poll error (%s)\n", strerror(errno));
-	abort();	    
+	abort();
     }
     if( sock ) {
 #ifdef DEBUG
@@ -399,7 +412,7 @@ void __bmi_iaccept()
     assert(server_sock > -1);
     addr_len = sizeof addr_in;
     addr_in.sin_family = AF_INET;
-    addr_in.sin_port = htons(0);
+    addr_in.sin_port = htons(8657 + getuid());
     addr_in.sin_addr.s_addr = INADDR_ANY;
     
     int on = 1;
@@ -420,6 +433,18 @@ void __bmi_iaccept()
     }
     
     rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    int err = errno;
+    if(rc == -1 && err == EADDRINUSE)
+    {
+	/* try again without default port */
+#ifdef DEBUG
+	fprintf(stderr, "port %d already in use, choosing random port\n", 8657 + getuid());
+#endif
+	addr_in.sin_family = AF_INET;
+	addr_in.sin_port = htons(0);
+	addr_in.sin_addr.s_addr = INADDR_ANY;
+	rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
+    }
     if(rc) 
     {
 	fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
@@ -937,6 +962,7 @@ int BMI_testunexpected(int incount,
     info_array->addr = malloc(sizeof(struct BMI_addr));
     ret = nm_sr_rtest(p_core, &unexp_request);
     if(ret != -NM_ESUCCESS) {
+	/* no unexpected message, let's see if someone is trying to connect */
 	 ret =__bmi_test_accept(info_array->addr);
 	 if(ret != 1)
 	     goto failed;
@@ -953,7 +979,6 @@ int BMI_testunexpected(int incount,
 	    fprintf(stderr, "cannot find p_gate %p !!!\n", p_gate);
 	    abort();
 	}
-	    
     }
 
     nm_sr_request_t request;
@@ -969,6 +994,7 @@ int BMI_testunexpected(int incount,
 	    
     /* retrieve remote tx_id */
     info_array->size = unexp_size;
+    unexp_size = -1;
 
     nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 		&rx.nmc_tag, sizeof(rx.nmc_tag), &request);
@@ -979,10 +1005,13 @@ int BMI_testunexpected(int incount,
     nm_sr_irecv(p_core, info_array->addr->p_gate, rx.nmc_match, 
 		info_array->buffer, info_array->size, &request);
     nm_sr_rwait(p_core, &request);
-
     size_t data_size;
     nm_sr_get_size(p_core, &request, &data_size);
-    info_array->size=data_size;
+#ifdef DEBUG
+    if(info_array->size != data_size)
+	fprintf(stderr, "Warning ! recved %d bytes instead of %d !\n", info_array->size, data_size);
+#endif
+    info_array->size = data_size;
     info_array->tag = rx.nmc_tag;
     info_array->error_code=0;
 
@@ -1261,6 +1290,7 @@ BMI_post_recv_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
+
     /* todo: don't duplicate the code ! */
     *id = tbx_malloc(nm_bmi_mem);
     (*id)->context_id = context_id;

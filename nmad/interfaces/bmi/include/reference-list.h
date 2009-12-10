@@ -23,7 +23,6 @@
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
 #include "bmi-types.h"
-#include "bmi-method-support.h"
 #include <nm_private.h>
 
 typedef tbx_slist_t* ref_list_p;

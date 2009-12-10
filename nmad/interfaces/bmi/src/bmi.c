@@ -41,8 +41,6 @@
 #include "bmi.h"
 #include "bmi-types.h"
 #include "reference-list.h"
-#include "op-list.h"
-#include "str-utils.h"
 
 #include "nmad_bmi_interface.h"
 

@@ -34,11 +34,12 @@
 #include <nm_sendrecv_interface.h>
 
 
-typedef int64_t  bmi_size_t;         /**< Data region size */
-typedef nm_tag_t bmi_msg_tag_t;      /**< User-specified message tag */
-typedef struct bmi_context*  bmi_context_id;     /**< Context identifier */
-typedef struct BMI_addr* BMI_addr_t;
-typedef void*   *bmi_hint;
+typedef int64_t             bmi_size_t;         /**< Data region size */
+typedef nm_tag_t            bmi_msg_tag_t;      /**< User-specified message tag */
+typedef struct bmi_context *bmi_context_id;     /**< Context identifier */
+typedef struct BMI_addr    *BMI_addr_t;
+typedef void*              *bmi_hint;
+typedef void               *bmi_method_addr_p; /* unused. Just here for compatibility */
 
 enum send_recv{ 
     SEND=0, 

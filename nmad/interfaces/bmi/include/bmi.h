@@ -31,6 +31,7 @@
 #ifdef NM_TAGS_AS_INDIRECT_HASH
 
 #include "bmi-types.h"
+#define BMI_MAX_CONTEXTS 16
 
 /** used to describe unexpected message arrivals. */
 struct BMI_unexpected_info

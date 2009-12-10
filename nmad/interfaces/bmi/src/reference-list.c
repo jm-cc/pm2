@@ -166,12 +166,10 @@ ref_list_search_str(ref_list_p rlp,
 void ref_list_cleanup(ref_list_p rlp){
     
     while(! tbx_slist_is_nil(rlp)){
-	void *obj = tbx_slist_remove_from_head(rlp);
-	
+	tbx_slist_remove_from_head(rlp);
     }
 
     tbx_slist_free(rlp);
-
     return;
 }
 

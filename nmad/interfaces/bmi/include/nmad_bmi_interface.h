@@ -28,7 +28,6 @@
 #include <nm_private.h>
 #include <nm_sendrecv_interface.h>
 #include "bmi-types.h"
-#include "bmi-method-support.h"
 
 #ifdef __GNUC__
 /* confuses debugger */

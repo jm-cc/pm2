@@ -443,8 +443,9 @@ sub usage {
 	print "\t-h \t\tdisplay usage info\n";
 	print "\t-q \t\tquiet mode\n";
 	print "\t-o [text|paje] \toutput mode\n";
-	print "\f-f [papi,special,...] \tfilter out some event subsets (comma separated list)\n";
+	print "\f-f [papi,special,gomp,...] \tfilter out some event subsets (comma separated list)\n";
 	print "\t-t \t\ttime warp mode\n";
+	print "\t-m \t\tthread color marker in the vp section\n";
 	exit 0;
 }
 
@@ -465,12 +466,18 @@ my $nb_levels = 0;
 # Reference timestamp
 my $ev_ref_tstamp = undef;
 
+# Paje dynamic color entity dashboard
+my %paje_dyn_entity;
 
 # Settings
 
 ## 0 - display Marcel's special threads (idle, run-task, ksoftirqd)
 ## 1 - do not display Marcel's special threads
 my $filter_out_special_threads = 0;
+
+## 0 - display ForestGOMP samples values
+## 1 - do not display ForestGOMP samples values
+my $filter_out_fgomp_events = 0;
 
 ## 0 - display PAPI samples values
 ## 1 - do not display PAPI samples values
@@ -488,9 +495,13 @@ my $quiet_mode = 0;
 ## 1 - use a virtual timer as timestamps
 my $time_warp_mode = 0;
 
+## 0 - do not use thread color markers in the vp region
+## 1 - do use thread color markers in the vp region
+my $use_vp_thread_marker = 0;
+
 # Command line processing
 my %opts;
-my $ret	= getopts('hqo:f:t', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t
+my $ret	= getopts('hqo:f:tm', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t -m
 
 if (exists $opts{'h'}) {
 	usage();
@@ -520,12 +531,20 @@ if (exists $filter_out{'special'}) {
 	$filter_out_special_threads = 1;
 }
 
+if (exists $filter_out{'fgomp'}) {
+	$filter_out_fgomp_events = 1;
+}
+
 if (exists $filter_out{'papi'}) {
 	$filter_out_papi_events = 1;
 }
 
 if (exists $opts{'t'}) {
 	$time_warp_mode	= 1;
+}
+
+if (exists $opts{'m'}) {
+	$use_vp_thread_marker	= 1;
 }
 
 # Read FUT nums / num_names mapping
@@ -604,7 +623,7 @@ sub tstamp_minus_e($) {
 	if ($time_warp_mode) {
 		$result = $result - 0.1;
 	} else {
-		$result = $result - 100000;
+		$result = $result - 1;
 	}
 	return $result;
 }
@@ -615,7 +634,7 @@ sub tstamp_plus_e($) {
 	if ($time_warp_mode) {
 		$result = $result + 0.1;
 	} else {
-		$result = $result + 100000;
+		$result = $result + 1;
 	}
 	return $result;
 }
@@ -781,17 +800,25 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 1	CT_VPvp	CT_Mvp	VP_container_type_vp
 1	CT_T	CT_M	Thread_container_type
 1	CT_TE	CT_T	Thread_event_container_type
+1	CT_TT	CT_T	Task_container_type
 3	ST_BT	CT_TE	Barrier_thread_state_type
 2	ET_BT	CT_TE	Barrier_thread_event_type
 3	ST_TWT	CT_TE	Task_wait_thread_state_type
 2	ET_TWT	CT_TE	Task_wait_thread_event_type
+3	ST_TR	CT_TT	Task_run_thread_state_type
+2	ET_TR	CT_TT	Task_run_thread_event_type
+1	CT_BCE	CT_T	Bubble_cache_event_container_type
+3	ST_BC	CT_BCE	Bubble_cache_state_type
+2	ET_BC	CT_BCE	Bubble_cache_event_type
 3	ST_T	CT_T	Thread_state_type
 2	ET_SR	CT_T	Seed_run_event_type
 3	ST_VPvp	CT_VPvp	VP_state_type_vp
-6	tww	ST_TWT	waiting	\"0.5 0.0 0.9\"
-6	twr	ST_TWT	running	\"0.5 0.5 0.5\"
+6	tw	ST_TWT	waiting	\"0.5 0.0 0.9\"
+6	tr	ST_TR	task	\"0.0 0.5 0.9\"
 6	bw	ST_BT	waiting	\"0.0 0.0 0.9\"
-6	br	ST_BT	running	\"0.5 0.5 0.5\"
+6	sub	ST_BC	submit	\"0.9 0.0 0.5\"
+6	rsub	ST_BC	rawsubmit	\"0.7 0.0 0.3\"
+6	steal	ST_BC	steal	\"0.9 0.5 0.5\"
 6	s	ST_T	sleep	\"0.5 0.2 0.2\"
 6	s_s	ST_T	sleep	\"0.5 0.2 0.2\"
 6	s_u	ST_T	sleep	\"0.5 0.5 0.5\"
@@ -806,7 +833,7 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 6	r_r	ST_T	running	\"0.0 0.6 0.9\"
 6	d	ST_T	dead	\"0.1 0.1 0.1\"
 6	vp	ST_VPvp	user	\"0.0 1.0 0.5\"
-6	vp_s	ST_VPvp	\"seed runner\"	\"0.5 1.0 0.5\"
+6	vp_s	ST_VPvp	\"seed runner\"	\"0.0 1.0 0.5\"
 6	vp_u	ST_VPvp	undef	\"0.8 0.8 0.8\"
 6	vp_i	ST_VPvp	idle	\"0.9 0.9 0.5\"
 6	vp_k	ST_VPvp	ksoftirqd	\"0.9 0.6 0.5\"
@@ -856,6 +883,60 @@ sub paje_display_thread_state($$) {
 	}
 }
 
+# args:
+# . value
+# . alias
+# . entity type
+# . name
+sub paje_rand_color_entity($$$$) {
+	my $value = shift;
+	my $alias = shift;
+	if (exists $paje_dyn_entity{$alias.$value}) {
+		return;
+	}
+	my $entity_type = shift;
+	my $name = shift;
+	$paje_dyn_entity{$alias.$value} = 1;
+	my $r = rand;
+	my $v = rand;
+	my $b = rand;
+	print "6\t$alias$value\t$entity_type\t$name\t\"$r $v $b\"\n";
+}
+
+# args:
+# . value
+# . alias
+# . entity type
+# . name
+# . red
+# . green
+# . blue
+# . range
+sub paje_log2_ramp_entity($$$$$$$$) {
+	my $value = shift;
+	my $alias = shift;
+	if (exists $paje_dyn_entity{$alias.$value}) {
+		return;
+	}
+	my $entity_type = shift;
+	my $name = shift;
+	my $r = shift;
+	my $v = shift;
+	my $b = shift;
+	my $range = shift;
+
+	my $factor = (log($value) / log(2) / $range);
+	if ($factor > 1) {
+		$factor = 1;
+	}
+	$factor = 1 - $factor;
+	$paje_dyn_entity{$alias.$value} = 1;
+	$r *= $factor;
+	$v *= $factor;
+	$b *= $factor;
+	print "6\t$alias$value\t$entity_type\t$name\t\"$r $v $b\"\n";
+}
+
 sub paje_display_vp_thread_state($$) {
 	my $event = shift;
 	my $thread = shift;
@@ -864,7 +945,12 @@ sub paje_display_vp_thread_state($$) {
 	if (exists ${$thread}{'vp'}) {
 		$vp_count = ${$thread}{'vp'};
 	}
-	print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'suffix'} \"VP_$vp_count\"\n";
+	if ($use_vp_thread_marker == 0 or ${$thread}{'suffix'} ne '' and ${$thread}{'suffix'} ne '_s') {
+		print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'suffix'} \"VP_$vp_count\"\n";
+	} else {
+		paje_rand_color_entity(${$thread}{'tid'},'vp','ST_VPvp',"running");
+		print "10 $ev_tstamp ST_VPvp VPvp$vp_count vp${$thread}{'tid'} \"VP_$vp_count\"\n";
+	}
 }
 
 sub paje_display_switch_arrow_begin($$) {
@@ -881,14 +967,35 @@ sub paje_display_switch_arrow_end($$) {
 	print "19 $e_ev_tstamp LT_SW M 0 T${$thread_to}{'tid'} ${$event}{'count'}\n";
 }
 
-sub paje_check_gomp_event_container($$) {
+sub paje_check_task_container($$) {
 	my $event = shift;
 	my $thread = shift;
 
-	unless (exists ${$thread}{'gomp_ev'}) {
-		${$thread}{'gomp_ev'}= 1;
+	unless (exists ${$thread}{'task'}) {
+		${$thread}{'task'}= 1;
 		my $ev_tstamp = tstamp($event);
-		print "7 $ev_tstamp TE${$thread}{'tid'} CT_TE T${$thread}{'tid'} \"GOMP events\"\n";
+		print "7 $ev_tstamp TT${$thread}{'tid'} CT_TT T${$thread}{'tid'} \"tasks\"\n";
+	}
+}
+sub paje_check_thread_event_container($$) {
+	my $event = shift;
+	my $thread = shift;
+
+	unless (exists ${$thread}{'thread_ev'}) {
+		${$thread}{'thread_ev'}= 1;
+		my $ev_tstamp = tstamp($event);
+		print "7 $ev_tstamp TE${$thread}{'tid'} CT_TE T${$thread}{'tid'} \"events\"\n";
+	}
+}
+
+sub paje_check_bcache_event_container($$) {
+	my $event = shift;
+	my $thread = shift;
+
+	unless (exists ${$thread}{'bcache_ev'}) {
+		${$thread}{'bcache_ev'}= 1;
+		my $ev_tstamp = tstamp($event);
+		print "7 $ev_tstamp BCE${$thread}{'tid'} CT_BCE T${$thread}{'tid'} \"bubble cache events\"\n";
 	}
 }
 
@@ -1040,47 +1147,136 @@ sub handle_paje_FUT_FGOMP_GOMP_BAR_ENTER	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_gomp_event_container($event, $thread);
+	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
-	print "10 $ev_tstamp ST_BT TE$ev_tid bw \"barrier wait\"\n";
 	print "20 $ev_tstamp ET_BT TE$ev_tid \"entering barrier\" \"barrier enter\"\n";
+	print "11 $ev_tstamp ST_BT TE$ev_tid bw\n";
 }
 
 sub handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_gomp_event_container($event, $thread);
+	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
-	print "10 $ev_tstamp ST_BT TE$ev_tid br \"running\"\n";
+	print "12 $ev_tstamp ST_BT TE$ev_tid\n";
 	print "20 $ev_tstamp ET_BT TE$ev_tid \"leaving barrier\" \"barrier leave\"\n";
 }
 
 sub handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'param_array'};
+	my $depth = 1+${$param_array}[0];
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_gomp_event_container($event, $thread);
+	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
-	print "10 $ev_tstamp ST_TWT TE$ev_tid tww \"task wait\"\n";
 	print "20 $ev_tstamp ET_TWT TE$ev_tid \"entering taskwait\" \"task wait enter\"\n";
+	paje_log2_ramp_entity($depth,'tw','ST_TWT',"task_wait($depth)", 0.5, 0.0, 0.9, 5);
+	print "11 $ev_tstamp ST_TWT TE$ev_tid tw$depth\n";
 }
 
 sub handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_gomp_event_container($event, $thread);
+	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
-	print "10 $ev_tstamp ST_TWT TE$ev_tid twr \"running\"\n";
+	print "12 $ev_tstamp ST_TWT TE$ev_tid\n";
 	print "20 $ev_tstamp ET_TWT TE$ev_tid \"leaving task wait\" \"task wait leave\"\n";
+}
+
+sub handle_paje_FUT_FGOMP_GOMP_TASK_ENTER	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $param_array = ${$event}{'param_array'};
+	my $depth = 1+${$param_array}[0];
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_thread_event_container($event, $thread);
+	paje_check_task_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "20 $ev_tstamp ET_TR TT$ev_tid \"new task\" \"task enter\"\n";
+	paje_log2_ramp_entity($depth,'tr','ST_TR',"task($depth)", 0.0, 0.5, 0.9, 8);
+	#paje_rand_color_entity($depth,'tr','ST_TR',"task($depth)");
+	print "11 $ev_tstamp ST_TR TT$ev_tid tr$depth\n";
+}
+
+sub handle_paje_FUT_FGOMP_GOMP_TASK_LEAVE	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_thread_event_container($event, $thread);
+	paje_check_task_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "12 $ev_tstamp ST_TR TT$ev_tid\n";
+	print "20 $ev_tstamp ET_TR TT$ev_tid \"task complete\" \"task leave\"\n";
+}
+
+sub handle_paje_FUT_BCACHE_SCHED_SUBMIT_ENTER	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"entering sched submit\" \"sched submit enter\"\n";
+	print "11 $ev_tstamp ST_BC BCE$ev_tid sub\n";
+}
+
+sub handle_paje_FUT_BCACHE_SCHED_SUBMIT_LEAVE	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "12 $ev_tstamp ST_BC BCE$ev_tid\n";
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"leaving sched submit\" \"sched submit leave\"\n";
+}
+
+sub handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_ENTER	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"entering sched rawsubmit\" \"sched rawsubmit enter\"\n";
+	print "11 $ev_tstamp ST_BC BCE$ev_tid rsub\n";
+}
+
+sub handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "12 $ev_tstamp ST_BC BCE$ev_tid\n";
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"leaving sched rawsubmit\" \"sched rawsubmit leave\"\n";
+}
+
+sub handle_paje_FUT_BCACHE_STEAL_ENTER	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"entering steal\" \"steal enter\"\n";
+	print "11 $ev_tstamp ST_BC BCE$ev_tid steal\n";
+}
+
+sub handle_paje_FUT_BCACHE_STEAL_LEAVE	($) {
+	my $event = shift;
+	my $ev_tid = ${$event}{'tid'};
+	my $thread = ${thread_hash}{$ev_tid};
+	paje_check_bcache_event_container($event, $thread);
+	my $ev_tstamp = tstamp($event);
+	print "12 $ev_tstamp ST_BC BCE$ev_tid\n";
+	print "20 $ev_tstamp ET_BC BCE$ev_tid \"leaving steal\" \"steal leave\"\n";
 }
 
 sub handle_paje_THREAD_SEED_RUN	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $thread = ${thread_hash}{$ev_tid};
-	paje_check_gomp_event_container($event, $thread);
+	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
 	print "20 $ev_tstamp ET_SR T$ev_tid \"seed run\" \"seed run\"\n";
 }
@@ -1254,18 +1450,31 @@ if ($output_mode eq 'paje') {
 	${handler_hash}{ ${num_hash}{'FUT_SWITCH_TO_CODE'} } = \&handle_paje_FUT_SWITCH_TO_CODE;
 	${handler_hash}{ ${num_hash}{'FUT_THREAD_DEATH_CODE'} } = \&handle_paje_FUT_THREAD_DEATH_CODE;
 	${handler_hash}{ ${num_hash}{'FUT_NEW_LWP_CODE'} } = \&handle_paje_FUT_NEW_LWP_CODE;
-	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_ENTER;
-	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
-	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER;
-	${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE;
+	unless ($filter_out_fgomp_events) {
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_BAR_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_BAR_LEAVE;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_LEAVE;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_ENTER'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_ENTER;
+		${handler_hash}{ ${num_hash}{'FUT_FGOMP_GOMP_TASK_LEAVE'} } = \&handle_paje_FUT_FGOMP_GOMP_TASK_LEAVE;
+	}
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_ENTER;
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_SUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_SUBMIT_LEAVE;
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_ENTER'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_ENTER;
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE'} } = \&handle_paje_FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE;
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_ENTER'} } = \&handle_paje_FUT_BCACHE_STEAL_ENTER;
+	${handler_hash}{ ${num_hash}{'FUT_BCACHE_STEAL_LEAVE'} } = \&handle_paje_FUT_BCACHE_STEAL_LEAVE;
+
 	${handler_hash}{ ${num_hash}{'THREAD_SEED_RUN'} } = \&handle_paje_THREAD_SEED_RUN;
 
 
 	unless ($filter_out_papi_events) {
-		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV0;
-		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV1;
-		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV2;
-		${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV3;
+		unless ($filter_out_fgomp_events) {
+			${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV0'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV0;
+			${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV1'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV1;
+			${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV2'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV2;
+			${handler_hash}{ ${num_hash}{'FUT_FGOMP_PAPIMAR_EV3'} } = \&handle_paje_FUT_FGOMP_PAPIMAR_EV3;
+		}
 	}
 } else {
 	${handler_hash}{ ${num_hash}{'FUT_GCC_INSTRUMENT_ENTRY_CODE'} } = \&handle_FUT_GCC_INSTRUMENT_ENTRY_CODE;
@@ -1316,46 +1525,4 @@ while ($file_object->more_events()) {
 	}
     $ev_count++;
 }
-
-## Extract trace using fut-print.pl
-#open my $trace_desc, "fut-print.pl -s ${trace_filename}|" or die "open [fut-print.pl -s ${trace_filename}|] failed: $!\n";
-#
-#while (<$trace_desc>) {
-#	chomp;
-#
-#	# read a line
-#	my $line = $_;
-#	my @params	= split ',';	# split the line into fields
-#	
-#	# read the event fields
-#	my $ev_num		= shift @params;
-#	my $ev_host_num	= shift @params;
-#	my $ev_time	= Math::BigInt->new(shift @params);
-#	my $ev_tid	= shift @params;
-#	my $ev_code	= shift @params;
-#	my $ev_nb_params	= shift @params;
-#
-#	# dispatch the event to the suitable event handler
-#	if (exists ${handler_hash}{$ev_code}) {
-#		my $event = {};
-#		${$event}{'line'}	= $line;
-#		${$event}{'num'}	= $ev_num;
-#		${$event}{'time'}	= $ev_time;
-#		${$event}{'host_num'}	= $ev_host_num;
-#		${$event}{'tid'}	= $ev_tid;
-#		${$event}{'code'}	= $ev_code;
-#		${$event}{'nb_params'}	= $ev_nb_params;
-#		${$event}{'param_array'}	= \@params;
-#		my $handler_sub = ${handler_hash}{$ev_code};
-#		&{$handler_sub}($event);
-#	} else {
-#		if ($quiet_mode == 0) {
-#			if (exists ${code_name_hash}{$ev_code}) {
-#				print "unhandled event $ev_num: $ev_code - ".(${code_name_hash}{$ev_code})."\n";
-#			} else {
-#				print "unhandled event $ev_num: $ev_code - <UNKNOWN CODE>\n";
-#			}
-#		}
-#	}
-#}
 

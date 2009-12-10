@@ -926,7 +926,7 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 	struct iovec *siov = malloc(sizeof(struct iovec)* list_count);
 	int i;
 	for(i=0; i<list_count; i++) {
-	    siov[i].iov_base = buffer_list[i];
+	    siov[i].iov_base = (void*) buffer_list[i];
 	    siov[i].iov_len = size_list[i];
 	}
 	

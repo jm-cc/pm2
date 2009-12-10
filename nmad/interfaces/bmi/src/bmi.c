@@ -61,10 +61,6 @@ static int bmi_initialized_count = 0;
  * List of BMI addrs currently managed.
  */
 static ref_list_p cur_ref_list = NULL;
-/* 
- * List of BMI addr, indexed by p_gates 
- */
-static ref_list_p gate_ref_list = NULL;
 
 /* array to keep up with active contexts */
 static int context_array[BMI_MAX_CONTEXTS] = { 0 };
@@ -143,7 +139,6 @@ __bmi_peer_init(struct bnm_peer *p_peer)
 }
 
 static int max_tx_id = 1;
-static int local_tx_id = -1;
 
 static void __bmi_launcher_addr_send(int sock, const char*url)
 {
@@ -241,12 +236,11 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
     char* local_hostname=malloc(sizeof(char)*256);
     gethostname(local_hostname, 256);
 
-  
+    /* exchange {rx|tx}_id */
     nm_sr_isend(p_core, addr->p_gate, rx.nmc_match, 
 		&addr->p_peer->nmp_rx_id, sizeof(addr->p_peer->nmp_rx_id), &srequest1);
 
 
-    /* retrieve remote tx_id */
     nm_sr_irecv(p_core, addr->p_gate, rx.nmc_match, 
 		&addr->p_peer->nmp_tx_id, sizeof(addr->p_peer->nmp_tx_id), &rrequest1);
 
@@ -255,10 +249,10 @@ void __bmi_connect_accept(BMI_addr_t addr, char* remote_session_url)
     nm_sr_swait(p_core, &srequest1);
     nm_sr_rwait(p_core, &rrequest1);
 
+    /* exchange hostname */
     nm_sr_isend(p_core, addr->p_gate, rx.nmc_match, 
 		local_hostname, strlen(local_hostname), &srequest2);
 
-    /* retrieve remote hostname */
     nm_sr_irecv(p_core, addr->p_gate, rx.nmc_match, 
 		addr->peername, sizeof(char)*256, &rrequest2);
     
@@ -857,7 +851,7 @@ BMI_post_recv(bmi_op_id_t         *id,
 	      bmi_hint             hints){     //not used
     
 #ifdef DEBUG
-    fprintf(stderr, "BMI_post_recv(src %p, size %d, tag %lx)\n", src, expected_size, tag);
+    fprintf(stderr, "BMI_post_recv(src %p, size %ld, tag %lx)\n", src, expected_size, tag);
 #endif
     return BMI_post_recv_generic(id, 
 				 src, 
@@ -966,7 +960,7 @@ BMI_post_send(bmi_op_id_t * id,                //not used
 	      bmi_context_id context_id,
 	      bmi_hint hints){                 //not used
 #ifdef DEBUG
-    fprintf(stderr, "BMI_post_send(dest %p, size %d, tag %lx)\n", dest, size, tag);
+    fprintf(stderr, "BMI_post_send(dest %p, size %ld, tag %lx)\n", dest, size, tag);
 #endif
 
     return BMI_post_send_generic(id, dest, &buffer, &size, 1, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
@@ -986,7 +980,7 @@ BMI_post_sendunexpected(bmi_op_id_t * id,
 			bmi_context_id context_id,
 			bmi_hint hints){
 #ifdef DEBUG
-    fprintf(stderr, "BMI_post_send_unexpected(dest %p, size %d, tag %lx)\n", dest, size, tag);
+    fprintf(stderr, "BMI_post_send_unexpected(dest %p, size %ld, tag %lx)\n", dest, size, tag);
 #endif
     return BMI_post_send_generic(id, dest, &buffer, &size, 1, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_UNEXPECTED);
 }
@@ -1056,7 +1050,7 @@ int BMI_testunexpected(int incount,
     nm_sr_get_size(p_core, &request, &data_size);
 #ifdef DEBUG
     if(info_array->size != data_size)
-	fprintf(stderr, "Warning ! recved %d bytes instead of %d !\n", info_array->size, data_size);
+	fprintf(stderr, "Warning ! recved %ld bytes instead of %ld !\n", info_array->size, data_size);
 #endif
     info_array->size = data_size;
     info_array->tag = rx.nmc_tag;
@@ -1280,8 +1274,8 @@ BMI_post_send_list(bmi_op_id_t * id,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
 
-    fprintf(stderr, "######################## BMI_post_send_list %d chunks. Total size: %d bytes\n", list_count, total_size);
-    BMI_post_send_generic(id, dest, buffer_list, size_list, list_count, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
+    fprintf(stderr, "######################## BMI_post_send_list %d chunks. Total size: %ld bytes\n", list_count, total_size);
+    return BMI_post_send_generic(id, dest, buffer_list, size_list, list_count, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
 
 /** Similar to BMI_post_recv(), except that the dest buffer is 
@@ -1307,7 +1301,7 @@ BMI_post_recv_list(bmi_op_id_t * id,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
 #ifdef DEBUG
-    fprintf(stderr, "######################## BMI_post_recv_list %d chunks. Total size: %d bytes\n", list_count, total_expected_size);
+    fprintf(stderr, "######################## BMI_post_recv_list %d chunks. Total size: %ld bytes\n", list_count, total_expected_size);
 #endif
     return BMI_post_recv_generic(id, 
 				 src, 

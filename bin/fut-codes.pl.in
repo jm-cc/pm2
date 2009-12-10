@@ -57,4 +57,15 @@ print 'FUT_FGOMP_GOMP_BAR_ENTER,', $fut_fgomp_code+0x20, "\n";
 print 'FUT_FGOMP_GOMP_BAR_LEAVE,', $fut_fgomp_code+0x21, "\n";
 print 'FUT_FGOMP_GOMP_TASK_WAIT_ENTER,', $fut_fgomp_code+0x22, "\n";
 print 'FUT_FGOMP_GOMP_TASK_WAIT_LEAVE,', $fut_fgomp_code+0x23, "\n";
+print 'FUT_FGOMP_GOMP_TASK_ENTER,', $fut_fgomp_code+0x24, "\n";
+print 'FUT_FGOMP_GOMP_TASK_LEAVE,', $fut_fgomp_code+0x25, "\n";
+
+# Bubble cache ev codes
+my $fut_bcache_code = 0xfc00;
+print 'FUT_BCACHE_SCHED_SUBMIT_ENTER,', $fut_bcache_code+0x20, "\n";
+print 'FUT_BCACHE_SCHED_SUBMIT_LEAVE,', $fut_bcache_code+0x21, "\n";
+print 'FUT_BCACHE_SCHED_RAWSUBMIT_ENTER,', $fut_bcache_code+0x22, "\n";
+print 'FUT_BCACHE_SCHED_RAWSUBMIT_LEAVE,', $fut_bcache_code+0x23, "\n";
+print 'FUT_BCACHE_STEAL_ENTER,', $fut_bcache_code+0x24, "\n";
+print 'FUT_BCACHE_STEAL_LEAVE,', $fut_bcache_code+0x25, "\n";
 

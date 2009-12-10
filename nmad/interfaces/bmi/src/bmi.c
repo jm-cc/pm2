@@ -290,7 +290,6 @@ void __bmi_accept(BMI_addr_t addr)
     struct sockaddr_in addr_in;
     unsigned addr_len = sizeof addr_in;
     addr_in.sin_family = AF_INET;
-    fprintf(stderr, "using port %d\n", 8658 + getuid());
     addr_in.sin_port = htons(8658 + getuid());
     addr_in.sin_addr.s_addr = INADDR_ANY;
     rc = bind(server_sock, (struct sockaddr*)&addr_in, addr_len);
@@ -298,7 +297,6 @@ void __bmi_accept(BMI_addr_t addr)
     if(rc == -1 && err == EADDRINUSE) 
     { 
         /* try again without default port */
-	fprintf(stderr, "arf... already in use\n");
 	addr_in.sin_family = AF_INET;
 	addr_in.sin_port = htons(0);
 	addr_in.sin_addr.s_addr = INADDR_ANY;
@@ -786,12 +784,66 @@ BMI_addr_lookup(BMI_addr_t *peer,
     return (ret);
 }
 
+int 
+BMI_post_recv_generic(bmi_op_id_t         *id,
+		      BMI_addr_t           src,
+		      void *const         *buffer_list,
+		      const bmi_size_t    *size_list,
+		      int                  list_count,
+		      bmi_size_t           total_expected_size,
+		      bmi_size_t          *total_actual_size,//not used
+		      enum bmi_buffer_type buffer_type,//not used
+		      bmi_msg_tag_t        tag,
+		      void                *user_ptr,
+		      bmi_context_id       context_id,
+		      bmi_hint             hints){     //not used
+    
+    int            ret = -1;
+    struct bnm_ctx rx;
+
+    /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
+    *id = tbx_malloc(nm_bmi_mem);
+    (*id)->context_id = context_id;
+    (*id)->status = RECV;
+    (*id)->user_ptr = user_ptr;
+    context_id->status = RECV;
+
+    rx.nmc_state    = BNM_CTX_PREP;
+    rx.nmc_tag      = tag;
+    rx.nmc_msg_type = BNM_MSG_EXPECTED;
+    rx.nmc_type     = BNM_REQ_RX;
+    rx.nmc_peer     = src->p_peer;
+
+    bnm_create_match(&rx);
+
+    if(list_count > 1) {
+	struct iovec *riov = malloc(sizeof(struct iovec)* list_count);
+	int i;
+	for(i=0; i<list_count; i++) {
+	    riov[i].iov_base = buffer_list[i];
+	    riov[i].iov_len = size_list[i];
+	}
+	
+	ret = nm_sr_irecv_iov(p_core, src->p_peer->p_gate, rx.nmc_match, 
+			      riov, list_count, &(*id)->request);
+	
+    } else {
+	ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
+			  buffer_list[0], size_list[0], 
+			  &(*id)->request);
+    }
+    
+#ifdef DEBUG
+    fprintf(stderr , "\t\tRECV request  %p\n",&(*id)->request );
+#endif
+
+    return ret;
+}
 
 /** Submits receive operations for subsequent service.
  *
  *  \return 0 on success, -errno on failure.
  */
-
 int 
 BMI_post_recv(bmi_op_id_t         *id,
 	      BMI_addr_t           src,
@@ -804,49 +856,29 @@ BMI_post_recv(bmi_op_id_t         *id,
 	      bmi_context_id       context_id,
 	      bmi_hint             hints){     //not used
     
-    int            ret = -1;
-    struct bnm_ctx rx;
 #ifdef DEBUG
     fprintf(stderr, "BMI_post_recv(src %p, size %d, tag %lx)\n", src, expected_size, tag);
 #endif
-    /* yes i know, a malloc on the critical path is quite dangerous, but we can't avoid this */
-    *id = tbx_malloc(nm_bmi_mem);
-    (*id)->context_id = context_id;
-    (*id)->status = RECV;
-    (*id)->user_ptr = user_ptr;
-    context_id->status = RECV;
-
-#if 0
-    /* todo: fix this stuff */
-    if(src->p_gate->status == NM_GATE_STATUS_INIT) {
-	ret = nm_core_gate_accept(p_core, src->p_gate, src->p_drv, NULL);
-    }
-#endif
-
-    rx.nmc_state    = BNM_CTX_PREP;
-    rx.nmc_tag      = tag;
-    rx.nmc_msg_type = BNM_MSG_EXPECTED;
-    rx.nmc_type     = BNM_REQ_RX;
-    rx.nmc_peer     = src->p_peer;
-
-    bnm_create_match(&rx);
-
-    ret = nm_sr_irecv(p_core, src->p_peer->p_gate, rx.nmc_match, 
-		      buffer, expected_size, 
-		      &(*id)->request);
-    
-#ifdef DEBUG
-    fprintf(stderr , "\t\tRECV request  %p\n",&(*id)->request );
-#endif
-
-    return ret;
+    return BMI_post_recv_generic(id, 
+				 src, 
+				 &buffer, 
+				 &expected_size, 
+				 1, 
+				 expected_size, 
+				 actual_size, 
+				 buffer_type, 
+				 tag, 
+				 user_ptr, 
+				 context_id, 
+				 hints);
 }
 
 int 
 BMI_post_send_generic(bmi_op_id_t * id,                //not used
 		      BMI_addr_t dest,                 //must be used
-		      const void *buffer,
-		      bmi_size_t size,
+		      const void *const *buffer_list,
+		      const bmi_size_t *size_list,
+		      int list_count,
 		      enum bmi_buffer_type buffer_type,//not used
 		      bmi_msg_tag_t tag,
 		      void *user_ptr,
@@ -877,12 +909,13 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
 
 
     if(msg_type == BNM_MSG_UNEXPECTED) {
+	/* unexpected message: do not work with iovec for now */
 	nm_sr_request_t size_req;
 	tx.nmc_tag      = 0;
 	bnm_create_match(&tx);
 
 	nm_sr_isend(p_core, dest->p_gate, 
-		    unexp_tag, &size, sizeof(size), 
+		    unexp_tag, &size_list[0], sizeof(size_list[0]), 
 		    &size_req);
 	nm_sr_swait(p_core, &size_req);
 	nm_sr_isend(p_core, dest->p_gate, 
@@ -895,9 +928,23 @@ BMI_post_send_generic(bmi_op_id_t * id,                //not used
     tx.nmc_tag      = tag;
     bnm_create_match(&tx);
 
-    ret = nm_sr_isend(p_core, dest->p_gate, 
-		      tx.nmc_match, buffer, size, 
-		      &(*id)->request);
+    if(list_count>1) {	
+	struct iovec *siov = malloc(sizeof(struct iovec)* list_count);
+	int i;
+	for(i=0; i<list_count; i++) {
+	    siov[i].iov_base = buffer_list[i];
+	    siov[i].iov_len = size_list[i];
+	}
+	
+	ret = nm_sr_isend_iov(p_core, dest->p_gate, 
+			      tx.nmc_match, siov, list_count, 
+			      &(*id)->request);
+	
+    } else {
+	ret = nm_sr_isend(p_core, dest->p_gate, 
+			  tx.nmc_match, buffer_list[0], size_list[0], 
+			  &(*id)->request);
+    }
 #ifdef DEBUG
     fprintf(stderr , "\t\tSEND request  %p\n",&(*id)->request );
 #endif
@@ -922,7 +969,7 @@ BMI_post_send(bmi_op_id_t * id,                //not used
     fprintf(stderr, "BMI_post_send(dest %p, size %d, tag %lx)\n", dest, size, tag);
 #endif
 
-    return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
+    return BMI_post_send_generic(id, dest, &buffer, &size, 1, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
 /** Submits unexpected send operations for subsequent service.
  *
@@ -941,7 +988,7 @@ BMI_post_sendunexpected(bmi_op_id_t * id,
 #ifdef DEBUG
     fprintf(stderr, "BMI_post_send_unexpected(dest %p, size %d, tag %lx)\n", dest, size, tag);
 #endif
-    return BMI_post_send_generic(id, dest, buffer, size, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_UNEXPECTED);
+    return BMI_post_send_generic(id, dest, &buffer, &size, 1, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_UNEXPECTED);
 }
 
 /** Checks to see if any unexpected messages have completed.
@@ -1148,9 +1195,9 @@ BMI_testcontext(int incount,
 		int max_idle_time_ms,
 		bmi_context_id context_id){
 
-        fprintf(stderr, "BMI_testcontext: not yet implemented!\n");
-	abort();
-	return 0;
+    fprintf(stderr, "BMI_testcontext: not yet implemented!\n");
+    abort();
+    return 0;
 }
 
 /** Performs a reverse lookup, returning the string (URL style)
@@ -1162,9 +1209,9 @@ BMI_testcontext(int incount,
  */
 const char* 
 BMI_addr_rev_lookup(BMI_addr_t addr){
-        fprintf(stderr, "BMI_addr_rev_lookup: not yet implemented!\n");
-	abort();
-	return NULL;
+    fprintf(stderr, "BMI_addr_rev_lookup: not yet implemented!\n");
+    abort();
+    return NULL;
 }
 
 /** Performs a reverse lookup, returning a string
@@ -1178,9 +1225,9 @@ BMI_addr_rev_lookup(BMI_addr_t addr){
  */
 const char* 
 BMI_addr_rev_lookup_unexpected(BMI_addr_t addr){
-        fprintf(stderr, "BMI_addr_rev_lookup_unexpected: not yet implemented!\n");
-	abort();
-	return NULL;
+    fprintf(stderr, "BMI_addr_rev_lookup_unexpected: not yet implemented!\n");
+    abort();
+    return NULL;
 }
 
 /** Pass in optional parameters.
@@ -1206,9 +1253,9 @@ int
 BMI_query_addr_range (BMI_addr_t addr, 
 		      const char *id_string, 
 		      int netmask){
-        fprintf(stderr, "BMI_query_addr_range: not yet implemented!\n");
-	abort();
-	return 0;
+    fprintf(stderr, "BMI_query_addr_range: not yet implemented!\n");
+    abort();
+    return 0;
 }
 
 
@@ -1233,39 +1280,8 @@ BMI_post_send_list(bmi_op_id_t * id,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
 
-    /* todo: don't duplicate the code ! */
-    *id = tbx_malloc(nm_bmi_mem);
-    (*id)->context_id = context_id;
-    (*id)->status = SEND;
-    (*id)->user_ptr = user_ptr;
-
-    context_id->status = SEND;
-
-    if((!dest->p_gate ) || (dest->p_gate->status == NM_GATE_STATUS_INIT)) {
-	/* remove nm:// from the peername so that NMad establish the connection */
-	char* tmp = dest->peername + 5*sizeof(char);  
-	__bmi_connect(dest, tmp);
-    }
-
-    struct bnm_ctx          tx;
-
-    tx.nmc_state    = BNM_CTX_PREP;
-    tx.nmc_type     = BNM_REQ_TX;
-    tx.nmc_msg_type = BNM_MSG_EXPECTED;
-    tx.nmc_peer     = dest->p_peer;
-    tx.nmc_tag      = tag;
-    bnm_create_match(&tx);
-
-    struct iovec *siov = malloc(sizeof(struct iovec)* list_count);
-    int i;
-    for(i=0; i<list_count; i++) {
-	siov[i].iov_base = buffer_list[i];
-	siov[i].iov_len = size_list[i];
-    }
-
-    return nm_sr_isend_iov(p_core, dest->p_gate, 
-			   tx.nmc_match, siov, list_count, 
-			   &(*id)->request);
+    fprintf(stderr, "######################## BMI_post_send_list %d chunks. Total size: %d bytes\n", list_count, total_size);
+    BMI_post_send_generic(id, dest, buffer_list, size_list, list_count, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
 
 /** Similar to BMI_post_recv(), except that the dest buffer is 
@@ -1290,33 +1306,21 @@ BMI_post_recv_list(bmi_op_id_t * id,
 		   void *user_ptr,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
-
-    /* todo: don't duplicate the code ! */
-    *id = tbx_malloc(nm_bmi_mem);
-    (*id)->context_id = context_id;
-    (*id)->status = RECV;
-    (*id)->user_ptr = user_ptr;
-    context_id->status = RECV;
-
-    struct bnm_ctx rx;
-    rx.nmc_state    = BNM_CTX_PREP;
-    rx.nmc_tag      = tag;
-    rx.nmc_msg_type = BNM_MSG_EXPECTED;
-    rx.nmc_type     = BNM_REQ_RX;
-    rx.nmc_peer     = src->p_peer;
-
-    bnm_create_match(&rx);
-
-    struct iovec *riov = malloc(sizeof(struct iovec)* list_count);
-    int i;
-    for(i=0; i<list_count; i++) {
-	riov[i].iov_base = buffer_list[i];
-	riov[i].iov_len = size_list[i];
-    }
-
-    return nm_sr_irecv_iov(p_core, src->p_peer->p_gate, rx.nmc_match, 
-			  riov, list_count, &(*id)->request);
-
+#ifdef DEBUG
+    fprintf(stderr, "######################## BMI_post_recv_list %d chunks. Total size: %d bytes\n", list_count, total_expected_size);
+#endif
+    return BMI_post_recv_generic(id, 
+				 src, 
+				 buffer_list, 
+				 size_list, 
+				 list_count, 
+				 total_expected_size, 
+				 total_actual_size, 
+				 buffer_type, 
+				 tag, 
+				 user_ptr, 
+				 context_id, 
+				 hints);
 }
 
 

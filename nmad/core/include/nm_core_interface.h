@@ -157,11 +157,16 @@ typedef struct
 } nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = 0xFFFFFFFF })
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
+#define NM_CORE_TAG_INIT_NONE(t) { t.tag = 0 ; t.hashcode = 0x0; }
+#define NM_CORE_TAG_INIT_MASK_FULL(t) { t.tag = NM_TAG_MASK_FULL; t.hashcode = 0xFFFFFFFF; }
 #else
 /** An internal tag */
 typedef nm_tag_t nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL NM_TAG_MASK_FULL
 #define NM_CORE_TAG_NONE ((nm_tag_t)0)
+#define NM_CORE_TAG_INIT_NONE(tag) { tag = 0; }
+#define NM_CORE_TAG_INIT_MASK_FULL(tag) { tag = NM_TAG_MASK_FULL; }
+
 #endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 /** An unpack request */

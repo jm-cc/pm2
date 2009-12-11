@@ -442,11 +442,26 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)
 	    {
-	      /* partial ACK- split the packet  */
-	      struct nm_pkt_wrap *p_large_pw2 = NULL;
-	      nm_so_pw_split(p_large_pw, &p_large_pw2, chunk_len);
+	      /* ** partial ACK- split the packet  */
+	      nm_so_pw_finalize(p_large_pw);
+	      /* assert ack is partial */
+	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
+	      /* create a new pw with the remaining data */
+	      struct nm_pkt_wrap *p_pw2 = NULL;
+	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	      p_pw2->p_drv    = p_large_pw->p_drv;
+	      p_pw2->trk_id   = p_large_pw->trk_id;
+	      p_pw2->p_gate   = p_gate;
+	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
+	      p_pw2->p_unpack = NULL;
+	      /* this is a large pw with rdv- it must contain a single contrib */
+	      assert(p_large_pw->n_contribs == 1);
+	      nm_pw_add_contrib(p_pw2, p_large_pw->contribs[0].p_pack, p_large_pw->contribs[0].len - chunk_len);
+	      p_large_pw->contribs[0].len = chunk_len; /* truncate the contrib */
+	      /* populate p_pw2 iovec */
+	      nm_so_pw_split_data(p_large_pw, p_pw2, chunk_len);
 #warning Paulette: lock
-	      tbx_fast_list_add(&p_large_pw2->link, &p_gate->pending_large_send);
+	      tbx_fast_list_add(&p_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
@@ -496,7 +511,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
      safely destroyed.
-     Increment it here for our own use in the header decoder uses the header. */
+     Increment it here for our own use while processing the packet. */
   p_pw->header_ref_count++;
 
   struct iovec *vec = p_pw->v;
@@ -661,7 +676,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
     strategy->driver->ack_callback(strategy->_status,
 				   p_pw, 0, 0, 128, 1);
 #endif /* NMAD_QOS */
-
+  
   nm_so_pw_dec_header_ref_count(p_pw);
 }
 
@@ -678,20 +693,26 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
     {
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
     }
-
+  /* stop polling for this pw */
 #ifdef PIOM_ENABLE_LTASKS
   piom_ltask_completed(&p_pw->ltask);
 #else
 #ifdef PIOMAN_POLL
   piom_req_success(&p_pw->inst);
-#endif
+#endif /* PIOMAN_POLL */
 #endif	/* PIOM_ENABLE_LTASKS */
+#ifdef NMAD_POLL
+  tbx_fast_list_del(&p_pw->link);
+#endif /* NMAD_POLL */
+
+  nm_lock_interface(p_core);
+  assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 1);
+  p_pw->p_gdrv->active_recv[p_pw->trk_id] = 0;
+  nm_unlock_interface(p_core);
+
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
-      nm_lock_interface(p_core);
-      p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-      nm_unlock_interface(p_core);
       nm_decode_headers(p_pw);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
@@ -720,12 +741,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  /* ** Large packet, data received directly in its final destination */
 	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
-      nm_lock_interface(p_core);
-      p_pw->p_gdrv->active_recv[NM_TRK_LARGE] = 0;
-      nm_unlock_interface(p_core);
     
-
-      /* Free the wrapper */
       nm_so_pw_free(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }

@@ -31,7 +31,6 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-  /* poll request 					*/
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(p_pw->p_gate)
     {
@@ -55,13 +54,15 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 	{
 	  p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
 	}
+#ifdef NMAD_POLL
+      tbx_fast_list_del(&p_pw->link);
+#endif /* NMAD_POLL */
       nm_so_pw_free(p_pw);
     }
   else if (err != -NM_EAGAIN)
     {
       NM_DISPF("drv->poll_recv returned %d", err);
     }
-  
   return err;
 }
 
@@ -88,6 +89,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
   p_pw->inst.server = &p_pw->p_drv->server;
   p_pw->which = NM_PW_RECV;
 #endif /* PIOMAN_POLL */
+
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   /* post request */
   if(p_pw->p_gate)
@@ -99,6 +101,16 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
       err = r->driver->post_recv_iov_all(p_pw);
     }
   
+#ifdef NMAD_POLL
+      /* always put the request in the list of pending requests,
+       * even if it completes immediately. It will be removed from
+       * the list by nm_so_process_complete_recv().
+       */
+      nm_poll_lock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
+      nm_poll_unlock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+#endif /* NMAD_POLL */
+
   /* process post command status				*/
   
   if (err == -NM_EAGAIN)
@@ -112,12 +124,8 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
       nm_submit_poll_recv_ltask(p_pw);
 #else
       
-#ifdef NMAD_POLL
-      /* put the request in the list of pending requests */
-      nm_poll_lock_in(p_pw->p_gate->p_core, p_pw->p_drv);
-      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
-      nm_poll_unlock_in(p_pw->p_gate->p_core, p_pw->p_drv);
-#else /* NMAD_POLL */
+
+#ifndef NMAD_POLL
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST | PIOM_STATE_ONE_SHOT;
       /* TODO : implementer les syscall */
 #ifdef PIOM_BLOCKING_CALLS
@@ -179,12 +187,8 @@ void nm_sched_in(struct nm_core *p_core)
 	      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
 		{
 		  nm_poll_unlock_in(p_core, p_drv);
-		  const int err = nm_poll_recv(p_pw);
+		  nm_poll_recv(p_pw);
 		  nm_poll_lock_in(p_core, p_drv);
-		  if(err == NM_ESUCCESS || err == -NM_ECLOSED)
-		    {
-		      tbx_fast_list_del(&p_pw->link);
-		    }
 		}
 	    }
 	}

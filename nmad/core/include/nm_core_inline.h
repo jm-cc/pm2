@@ -35,6 +35,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   nm_so_lock_in(p_core, p_drv);
   tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_recv_list[trk_id]);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
+  assert(p_gdrv->active_recv[trk_id] == 0);
   p_gdrv->active_recv[trk_id] = 1;
   nm_so_unlock_in(p_core, p_drv);
 }

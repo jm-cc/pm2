@@ -207,8 +207,6 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   int err;
   int flags = p_pw->flags;
 
-  NM_SO_TRACE_LEVEL(3,"destructing the pw %p\n", p_pw);
-
 #ifdef PIOM_ENABLE_LTASKS
   piom_ltask_completed(&p_pw->ltask);
 #else
@@ -256,30 +254,16 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 }
 
 
-/* Warning! We may only split finalized single-pack pw */
-int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
-                   struct nm_pkt_wrap **pp_pw2,
-                   uint32_t offset)
+/** Split the data from p_pw into two parts between p_pw and p_pw2
+ */
+int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
+			struct nm_pkt_wrap *p_pw2,
+			uint32_t offset)
 {
-  struct nm_pkt_wrap *p_pw2 = NULL;
-
-  nm_so_pw_finalize(p_pw);
-
-  assert(offset > 0 && offset < p_pw->length);
-  assert(p_pw->n_contribs == 1);
-
-  struct nm_pack_s*p_pack = p_pw->contribs[0].p_pack;
-  p_pw->contribs[0].len = offset;
-
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
-
-  /* Copy the pw part */
-  p_pw2->p_drv = p_pw->p_drv;
-  p_pw2->trk_id = p_pw->trk_id;
-  p_pw2->p_gate = p_pw->p_gate;
-  p_pw2->p_gdrv = p_pw->p_gdrv;
-  p_pw2->p_unpack = p_pw->p_unpack;
-
+  assert(p_pw->flags & NM_PW_NOHEADER);
+  assert(p_pw2->flags & NM_PW_NOHEADER);
+  assert(p_pw2->length == 0);
+  assert(p_pw2->p_gate != NULL);
   const uint32_t total_length = p_pw->length;
   int idx_pw = 0;
   uint32_t len = 0;
@@ -289,9 +273,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	{
 	  /* consume the whole segment */
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len;
-	  nm_so_pw_add_data(p_pw2, p_pack,
-			    p_pw->v[idx_pw].iov_base, chunk_len,
-			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
+	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
 	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->length -= chunk_len;
 	  p_pw->v_nb--;
@@ -303,9 +285,7 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	  /* cut in the middle of an iovec segment */
 	  const int iov_offset = offset - len;
 	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
-	  nm_so_pw_add_data(p_pw2, p_pack,
-			    p_pw->v[idx_pw].iov_base + iov_offset, chunk_len,
-			    p_pw->chunk_offset, (len + chunk_len == total_length), 0);
+	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
 	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->v[idx_pw].iov_len = iov_offset;
 	  p_pw->length -= chunk_len;
@@ -316,19 +296,16 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
 	}
       idx_pw++;
     }
-
-  assert(p_pw->length + p_pw2->length == total_length);
-  assert(p_pw->contribs[0].len + p_pw2->contribs[0].len == total_length);
-  assert(p_pw->length == offset);
-
   p_pw2->chunk_offset = p_pw->chunk_offset + offset;
 
-  *pp_pw2 = p_pw2;
+  /* check that no data was lost :-) */
+  assert(p_pw->length + p_pw2->length == total_length);
+  assert(p_pw->length == offset);
 
   return NM_ESUCCESS;
 }
 
-/** Append a fragment of data to the pkt wrapper being built.
+/** Append a fragment of data to the pkt wrapper being built for sending.
  *
  *  @param p_pw the pkt wrapper pointer.
  *  @param tag the tag id which generated the fragment.
@@ -338,17 +315,17 @@ int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
  *  @param flags the flags controlling the way the fragment is appended.
  *  @return The NM status.
  */
-int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
-		      struct nm_pack_s*p_pack,
-		      const void *data, uint32_t len,
-		      uint32_t offset,
-		      uint8_t is_last_chunk,
-		      int flags)
+void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
+		       struct nm_pack_s*p_pack,
+		       const void *data, uint32_t len,
+		       uint32_t offset,
+		       uint8_t is_last_chunk,
+		       int flags)
 {
-  int err;
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
+  assert(!p_pw->p_unpack);
   if(is_last_chunk)
     proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
@@ -379,8 +356,6 @@ int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     }
   /* add the contrib ref to the pw */
   nm_pw_add_contrib(p_pw, p_pack, len);
-  err = NM_ESUCCESS;
-  return err;
 }
 
 // function dedicated to the datatypes which do not require a rendezvous
@@ -420,6 +395,9 @@ int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 {
   int err = NM_ESUCCESS;
+
+  /* finalize only on *sender* side */
+  assert(p_pw->p_unpack == NULL);
 
   if(!(p_pw->flags & NM_PW_FINALIZED) && (p_pw->flags & NM_PW_GLOBAL_HEADER))
     {

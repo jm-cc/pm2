@@ -139,9 +139,6 @@ struct nm_pkt_wrap
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];
 
-  /** offset of this chunk in the message */
-  uint32_t chunk_offset;
-
   tbx_bool_t is_completed;
 
   /* ** fields used when sending */
@@ -156,6 +153,9 @@ struct nm_pkt_wrap
   struct nm_pw_contrib_s prealloc_contribs[NM_SO_PREALLOC_IOV_LEN];
 
   /* ** fields used when receiving */
+
+  /** offset of this chunk in the message */
+  uint32_t chunk_offset;
 
   struct nm_unpack_s*p_unpack;
 

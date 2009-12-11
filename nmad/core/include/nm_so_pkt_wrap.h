@@ -72,12 +72,12 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw);
 
 int nm_so_pw_free(struct nm_pkt_wrap *p_pw);
 
-int nm_so_pw_split(struct nm_pkt_wrap *p_pw,
-                   struct nm_pkt_wrap **pp_pw2,
-                   uint32_t offset);
+int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
+			struct nm_pkt_wrap *pp_pw2,
+			uint32_t offset);
 
-int nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-		      const void *data, uint32_t len, uint32_t offset, uint8_t is_last_chunk, int flags);
+void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
+		       const void *data, uint32_t len, uint32_t offset, uint8_t is_last_chunk, int flags);
 
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);

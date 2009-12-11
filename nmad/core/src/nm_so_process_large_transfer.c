@@ -80,9 +80,21 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
   for(i = 0; i < nb_chunks; i++)
     {
       if(chunks[i].len < p_pw->length)
-	nm_so_pw_split(p_pw, &p_pw2, chunks[i].len);
+	{
+	  /* create a new pw with the remaining data */
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	  p_pw2->p_drv    = p_pw->p_drv;
+	  p_pw2->trk_id   = p_pw->trk_id;
+	  p_pw2->p_gate   = p_pw->p_gate;
+	  p_pw2->p_gdrv   = p_pw->p_gdrv;
+	  p_pw2->p_unpack = p_pw->p_unpack;
+	  /* populate p_pw2 iovec */
+	  nm_so_pw_split_data(p_pw, p_pw2, chunks[i].len);
+	  assert(p_pw->length == chunks[i].len);
+	}
       nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].drv_id);
       p_pw = p_pw2;
+      p_pw2 = NULL;
     }
   return NM_ESUCCESS;
 
@@ -115,7 +127,7 @@ int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
   return err;
 }
 
-//************ IOV ************/
+/* ** IOV ************************************************** */
 
 /** The received rdv describes a fragment 
  * (that may span across multiple entries of the recv-side iovec)
@@ -207,7 +219,7 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 
 
 
-//************ DATATYPE ************/
+/* ** Datatype ********************************************* */
 
 static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
 				    uint32_t len, uint32_t chunk_offset)
@@ -336,7 +348,7 @@ static int nm_so_init_large_datatype_recv_with_multi_rtr(struct nm_pkt_wrap *p_p
 }
 
 
-//************ CONTIGUOUS ************/
+/* ** Contiguous ******************************************* */
 
 
 static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
@@ -354,7 +366,7 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
 
   if(err == NM_ESUCCESS)
     {
-      nm_so_post_multiple_data_recv(p_unpack, nb_chunks, chunks, data);
+      nm_so_post_multiple_data_recv(p_unpack, nb_chunks, chunks, data + chunk_offset);
       nm_so_build_multi_rtr(p_gate, tag, seq, chunk_offset, nb_chunks, chunks);
     }
   else
@@ -363,7 +375,7 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
       struct nm_pkt_wrap *p_pw = NULL;
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
-      nm_so_pw_add_raw(p_pw, data, len, chunk_offset);
+      nm_so_pw_add_raw(p_pw, data + chunk_offset, len, chunk_offset);
       nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
       nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
@@ -385,10 +397,19 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  tbx_fast_list_del(p_gate->pending_large_recv.next);
 	  if(p_large_pw->v[0].iov_len < p_large_pw->length)
 	    {
-	      struct nm_pkt_wrap *p_large_pw2 = NULL;
-	      /* Only post the first entry */
-	      nm_so_pw_split(p_large_pw, &p_large_pw2, p_large_pw->v[0].iov_len);
-	      nm_so_pw_store_pending_large_recv(p_large_pw2, p_gate);
+	      /* iovec with multiple entries- post an rtr only for the first entry. */
+	      struct nm_pkt_wrap *p_pw2 = NULL;
+	      /* create a new pw with the remaining data */
+	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
+	      p_pw2->p_drv    = p_large_pw->p_drv;
+	      p_pw2->trk_id   = p_large_pw->trk_id;
+	      p_pw2->p_gate   = p_large_pw->p_gate;
+	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
+	      p_pw2->p_unpack = p_large_pw->p_unpack;
+	      /* populate p_pw2 iovec */
+	      nm_so_pw_split_data(p_large_pw, p_pw2, p_large_pw->v[0].iov_len);
+	      /* store the remaining pw to receive later */
+	      nm_so_pw_store_pending_large_recv(p_pw2, p_gate);
 	    }
 	  struct nm_rdv_chunk chunk = {
 	    .drv_id = p_large_pw->p_drv->id,

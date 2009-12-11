@@ -46,7 +46,7 @@ typedef enum {
 	PIOM_POLL_SELECT
 } piom_poll_op_t;
 
-#if __GNU__ < 3
+#if __GNUC__ < 3
 #  define MA_GCC_NAME __ma_gcc
 #  define FD MA_GCC_NAME.fd
 #  define RFDS MA_GCC_NAME.MA_GCC_NAME.rfds

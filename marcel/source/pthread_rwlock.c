@@ -119,6 +119,8 @@ DEF_MARCEL_POSIX (int, rwlockattr_setpshared,
       && __builtin_expect (pshared != MARCEL_PROCESS_PRIVATE, 0))
     return EINVAL;
 
+  if (pshared == MARCEL_PROCESS_SHARED)
+    return ENOTSUP;
   attr = (struct marcel_rwlockattr *) attr;
 
   attr->__pshared = pshared;

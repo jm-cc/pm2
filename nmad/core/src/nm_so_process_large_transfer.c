@@ -135,10 +135,10 @@ int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
 static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
 			       uint32_t len, uint32_t chunk_offset)
 {
-  struct iovec*iov = p_unpack->data;
-  struct nm_gate*p_gate = p_unpack->p_gate;
+  struct iovec*iov        = p_unpack->data;
+  struct nm_gate*p_gate   = p_unpack->p_gate;
   const nm_core_tag_t tag = p_unpack->tag;
-  const nm_seq_t seq = p_unpack->seq;
+  const nm_seq_t seq      = p_unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .len = len, .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
@@ -152,60 +152,43 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
       i++;
     }
 
-  if(offset + iov[i].iov_len >= chunk_offset + len)
+  uint32_t pending_len = len;
+  uint32_t cur_len = 0;
+  int err = NM_ESUCCESS;
+  while(err == NM_ESUCCESS && pending_len > 0)
     {
-      /* Single entry- regular ack */
-      strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, &chunk);
-      nm_so_post_multiple_data_recv(p_unpack, 1, &chunk, iov[i].iov_base + (chunk_offset - offset));
-      /* Launch the ACK */
-      nm_so_build_multi_rtr(p_gate, tag, seq, chunk_offset, nb_chunks, &chunk);
-    }
-  else
-    {
-      /* Data spans across multiples entries of the iovec */
-      uint32_t pending_len = len;
-      int nb_entries = 1;
-      uint32_t cur_len = 0;
-      
-#warning TODO:multirail
-
-      int err = NM_ESUCCESS;
-      while(err == NM_ESUCCESS && pending_len > 0)
+      const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry, for partial entries */
+      const uint32_t chunk_len = iov[i].iov_len - iov_offset;
+      err = strategy->driver->rdv_accept(strategy->_status, p_gate, chunk_len, &nb_chunks, &chunk);
+      if(err != NM_ESUCCESS)
 	{
-	  const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry, for partial entries */
-	  const uint32_t chunk_len = iov[i].iov_len - iov_offset;
-	  err = strategy->driver->rdv_accept(strategy->_status, p_gate, chunk_len, &nb_chunks, &chunk);
-	  if(err != NM_ESUCCESS)
+	  /* no free track- store pending large recv for processing later  */
+	  struct nm_pkt_wrap *p_pw = NULL;
+	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+	  p_pw->p_unpack = p_unpack;
+	  const int pw_chunk_offset = chunk_offset + cur_len;
+	  nm_so_pw_add_raw(p_pw, iov[i].iov_base + iov_offset, iov[i].iov_len - iov_offset, 0);
+	  pending_len -= chunk_len;
+	  int j;
+	  for(j = 1; pending_len > 0; j++)
 	    {
-	      /* no free track- store pending large recv for processing later  */
-	      struct nm_pkt_wrap *p_pw = NULL;
-	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-	      p_pw->p_unpack = p_unpack;
-	      const int pw_chunk_offset = chunk_offset + cur_len;
-	      nm_so_pw_add_raw(p_pw, iov[i].iov_base + iov_offset, iov[i].iov_len - iov_offset, 0);
-	      pending_len -= chunk_len;
-	      int j;
-	      for(j = 1; pending_len > 0; j++)
-		{
-		  nm_so_pw_add_raw(p_pw, iov[j+i].iov_base, iov[j+i].iov_len, 0);
-		  cur_len     -= p_pw->v[j].iov_len;
-		  pending_len -= p_pw->v[j].iov_len;
-		}
-	      p_pw->chunk_offset = pw_chunk_offset;
-	      nm_so_pw_assign(p_pw, chunk.trk_id, chunk.drv_id, p_gate);
-	      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
+	      nm_so_pw_add_raw(p_pw, iov[j+i].iov_base, iov[j+i].iov_len, 0);
+	      cur_len     -= p_pw->v[j].iov_len;
+	      pending_len -= p_pw->v[j].iov_len;
 	    }
-	  else
-	    {
-	      /* post a recv and prepare an ack for the given chunk */
-	      nm_so_post_multiple_data_recv(p_unpack, 1, &chunk, iov[i].iov_base + iov_offset);
-	      nm_so_post_rtr(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, chunk_offset, chunk_len);
-	      nb_entries++;
-	      pending_len -= chunk_len;
-	      offset += iov[i].iov_len;
-	      cur_len += chunk_len;
-	      i++;
-	    }
+	  p_pw->chunk_offset = pw_chunk_offset;
+	  nm_so_pw_assign(p_pw, chunk.trk_id, chunk.drv_id, p_gate);
+	  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
+	}
+      else
+	{
+	  /* post a recv and prepare an ack for the given chunk */
+	  nm_so_post_multiple_data_recv(p_unpack, 1, &chunk, iov[i].iov_base + iov_offset);
+	  nm_so_post_rtr(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, chunk_offset, chunk_len);
+	  pending_len -= chunk_len;
+	  offset += iov[i].iov_len;
+	  cur_len += chunk_len;
+	  i++;
 	}
     }
   

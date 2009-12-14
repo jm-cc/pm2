@@ -285,7 +285,8 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 		 * les piles des threads résidents... 
 		 */
 #ifndef MARCEL_GDB
-		hwloc_cpuset_free(lwp->cpuset);
+		if (lwp->cpuset)
+			hwloc_cpuset_free(lwp->cpuset);
 		marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_vp_os_node(lwp));
 #endif
 	}
@@ -429,10 +430,12 @@ static void lwp_init(ma_lwp_t lwp)
 	LOG_IN();
 
 #ifdef MA__LWPS
-	lwp->cpuset = hwloc_cpuset_alloc();
 	vpnum = ma_vpnum(lwp);
-	if (vpnum >= 0 && vpnum < marcel_nbvps())
+	if (vpnum >= 0 && vpnum < marcel_nbvps()) {
+		lwp->cpuset = hwloc_cpuset_alloc();
 		hwloc_cpuset_set(lwp->cpuset, marcel_topo_vp_level[vpnum].os_cpu);
+	} else
+		lwp->cpuset = NULL;
 
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
@@ -502,7 +505,7 @@ static int lwp_start(ma_lwp_t lwp)
 	LOG_IN();
 
 #if defined(MA__LWPS)
-	if(!marcel_use_fake_topology) {
+	if(!marcel_use_fake_topology && lwp->cpuset) {
 		long target = hwloc_cpuset_first(lwp->cpuset);
 		if (hwloc_set_cpubind(topology, lwp->cpuset, HWLOC_CPUBIND_THREAD)) {
 			perror("hwloc_set_cpubind");

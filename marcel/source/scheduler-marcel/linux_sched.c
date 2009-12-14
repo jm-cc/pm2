@@ -625,7 +625,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 	marcel_t runner = NULL;
 
 	MA_BUG_ON(ma_entity_task(seed)->type != MA_THREAD_SEED_ENTITY);
-	MA_BUG_ON(seed->cur_thread_seed_runner != NULL);
+	MA_BUG_ON(seed->cur_thread_seed_runner != NULL && seed->cur_thread_seed_runner != (void*) 1);
 
 	marcel_attr_init(&attr);
 	marcel_attr_setdetachstate(&attr, tbx_true);

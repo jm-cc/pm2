@@ -422,7 +422,9 @@ static void lwp_init(ma_lwp_t lwp)
 {
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
+#ifdef MA__LWPS
 	long vpnum;
+#endif
 
 	LOG_IN();
 

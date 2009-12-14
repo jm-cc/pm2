@@ -181,22 +181,17 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 	      struct nm_pkt_wrap *p_pw = NULL;
 	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	      p_pw->p_unpack = p_unpack;
-	      p_pw->length = pending_len;
-	      p_pw->v_nb   = nb_entries;
-	      p_pw->chunk_offset = chunk_offset + cur_len;
-#warning TODO (AD) iovec
-	      /* TODO (AD)- convert this iov filling into nm_so_pw_add_raw for resizable iovec */
-	      p_pw->v[0].iov_len  = iov[i].iov_len - iov_offset;
-	      p_pw->v[0].iov_base = iov[i].iov_base + iov_offset;
+	      const int pw_chunk_offset = chunk_offset + cur_len;
+	      nm_so_pw_add_raw(p_pw, iov[i].iov_base + iov_offset, iov[i].iov_len - iov_offset, 0);
 	      pending_len -= chunk_len;
 	      int j;
 	      for(j = 1; pending_len > 0; j++)
 		{
-		  p_pw->v[j].iov_len  = iov[j+i].iov_len;
-		  p_pw->v[j].iov_base = iov[j+i].iov_base;
+		  nm_so_pw_add_raw(p_pw, iov[j+i].iov_base, iov[j+i].iov_len, 0);
 		  cur_len     -= p_pw->v[j].iov_len;
 		  pending_len -= p_pw->v[j].iov_len;
 		}
+	      p_pw->chunk_offset = pw_chunk_offset;
 	      nm_so_pw_assign(p_pw, chunk.trk_id, chunk.drv_id, p_gate);
 	      nm_so_pw_store_pending_large_recv(p_pw, p_gate);
 	    }

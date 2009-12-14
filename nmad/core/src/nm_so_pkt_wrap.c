@@ -277,6 +277,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->length -= chunk_len;
 	  p_pw->v_nb--;
+	  assert(p_pw->v_nb <= p_pw->v_size);
 	  p_pw->v[idx_pw].iov_len = 0;
 	  p_pw->v[idx_pw].iov_base = NULL;
 	}

@@ -59,6 +59,7 @@ static inline void nm_pw_grow_n(struct nm_pkt_wrap*p_pw, int n)
 static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
 {
   nm_pw_grow_n(p_pw, p_pw->v_nb + 1);
+  assert(p_pw->v_nb <= p_pw->v_size);
   return &p_pw->v[p_pw->v_nb++];
 }
 

@@ -69,19 +69,13 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 
 typedef uint16_t nm_drv_id_t;
 
-/* Just for clarity of code (when using constant parameters) */
-#define NM_DRV(n)  ((nm_drv_id_t)(n))
 
 /** Maximum number of drivers.
  * @note There should *not* be a hard-coded value.
  */
 #define NM_DRV_MAX 4
 
-/** The default network to use when several networks are
- *   available, but the strategy does not support multi-rail
- */
-#define NM_DRV_DEFAULT NM_DRV(0)
-
+#define NM_DRV_NONE ((struct nm_drv*)NULL)
 
 #include "nm_so_parameters.h"
 

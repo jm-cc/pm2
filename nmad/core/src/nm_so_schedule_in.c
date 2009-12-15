@@ -464,7 +464,8 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	      tbx_fast_list_add(&p_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
-	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, header->drv_id);
+	  nm_drv_t p_drv = nm_drv_get_by_id(p_gate->p_core, header->drv_id);
+	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, p_drv);
 	  header->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
 	  return;
 	}
@@ -732,7 +733,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	      /* we are expecting more data */
 	      p_pw->v[0].iov_base += last;
 	      p_pw->v[0].iov_len -= last;
-	      nm_core_post_recv(p_pw, p_gate, NM_TRK_LARGE, p_pw->p_drv->id);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_LARGE, p_pw->p_drv);
 	      goto out;
 	    }
 	}

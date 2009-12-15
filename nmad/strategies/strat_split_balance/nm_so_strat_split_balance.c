@@ -353,13 +353,13 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
   struct tbx_fast_list_head *out_list = &status->out_list;
   int nb_drivers = p_gate->p_core->nb_drivers;
   int n = 0;
-  const struct nm_drv**p_drvs = NULL;
+  struct nm_drv*const*p_drvs = NULL;
   nm_ns_inc_lats(p_gate->p_core, &p_drvs, &nb_drivers);
   assert(nb_drivers > 0);
   while(n < nb_drivers && !tbx_fast_list_empty(out_list))
     {
-      const struct nm_drv*p_drv = p_drvs[n];
-      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
+      struct nm_drv*p_drv = p_drvs[n];
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
       if(p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
 	 p_gdrv->active_send[NM_TRK_LARGE] == 0)
 	{
@@ -368,7 +368,7 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 	  struct nm_pkt_wrap *p_pw = nm_l2so(out_list->next);
 	  tbx_fast_list_del(out_list->next);
 	  status->nb_packets--;
-	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv->id);
+	  nm_core_post_send(p_gate, p_pw, NM_TRK_SMALL, p_drv);
 	}
       n++;
     }
@@ -381,60 +381,40 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
 					  int*nb_chunks, struct nm_rdv_chunk*chunks)
 
 {
-  if(*nb_chunks == 1)
+  int nb_drivers = p_gate->p_core->nb_drivers;
+  int chunk_index = 0;
+  const nm_trk_id_t trk_id = NM_TRK_LARGE;
+  struct nm_drv*const*ordered_drv_id_by_bw = NULL;
+  nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
+  
+  int i;
+  for(i = 0; i < nb_drivers && chunk_index < *nb_chunks; i++)
     {
-      /* Is there any large data track available? */
-      int n;
-      for(n = 0; n < *nb_chunks; n++)
+      nm_drv_t p_drv = ordered_drv_id_by_bw[i];
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+      if(p_gdrv->active_recv[trk_id] == 0)
 	{
-	  /* We explore the drivers in sequence. 
-	   * We assume they are registered in order from the fastest to the slowest. 
-	   * TODO: we should use latency/bandwdith information from drivers capabilities
-	   */
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, n);
-	  if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
-	    {
-	      chunks[0].len    = len;
-	      chunks[0].drv_id = n;
-	      chunks[0].trk_id = NM_TRK_LARGE;
-	      return NM_ESUCCESS;
-	    }
+	  chunks[chunk_index].p_drv = p_drv;
+	  chunks[chunk_index].trk_id = NM_TRK_LARGE;
+	  chunk_index++;
 	}
     }
+  *nb_chunks = chunk_index;
+  if(chunk_index == 1)
+    {
+      chunks[0].len = len;
+      return NM_ESUCCESS;
+    }
+  else if(chunk_index > 1)
+    {
+      nm_ns_multiple_split_ratio(len, p_gate->p_core, nb_chunks, chunks);
+      return NM_ESUCCESS;
+    }      
   else
     {
-      int nb_drivers = p_gate->p_core->nb_drivers;
-      int chunk_index = 0;
-      const nm_trk_id_t trk_id = NM_TRK_LARGE;
-      const struct nm_drv**ordered_drv_id_by_bw = NULL;
-      nm_ns_dec_bws(p_gate->p_core, &ordered_drv_id_by_bw, &nb_drivers);
-
-      int i;
-      for(i = 0; i < nb_drivers; i++)
-	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, ordered_drv_id_by_bw[i]->id);
-	  if(p_gdrv->active_recv[trk_id] == 0)
-	    {
-	      chunks[chunk_index].drv_id = i;
-	      chunks[chunk_index].trk_id = NM_TRK_LARGE;
-	      chunk_index++;
-	    }
-	}
-      *nb_chunks = chunk_index;
-      if(chunk_index == 1)
-	{
-	  chunks[0].len = len;
-	  return NM_ESUCCESS;
-	}
-      else if(chunk_index > 1)
-	{
-	  nm_ns_multiple_split_ratio(len, p_gate->p_core, nb_chunks, chunks);
-	  return NM_ESUCCESS;
-	}      
+      /* postpone the acknowledgement. */
+      return -NM_EAGAIN;
     }
-
-  /* postpone the acknowledgement. */
-  return -NM_EAGAIN;
 }
 
 

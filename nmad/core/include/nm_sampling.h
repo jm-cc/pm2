@@ -20,8 +20,8 @@
 extern int nm_ns_update(struct nm_core *p_core);
 extern int nm_ns_exit(struct nm_core *p_core);
 
-extern int nm_ns_dec_bws(struct nm_core *p_core, const struct nm_drv***p_drvs, int*nb_drvs);
-extern int nm_ns_inc_lats(struct nm_core *p_core, const struct nm_drv***p_drvs, int*nb_drvs);
+extern int nm_ns_dec_bws(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drvs);
+extern int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drvs);
 
 extern int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
 				      int*nb_chunks, struct nm_rdv_chunk*chunks);

@@ -40,7 +40,7 @@ NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 struct nm_gate_drv
 {
   /** Driver.  */
-  struct nm_drv           *p_drv;
+  struct nm_drv *p_drv;
   struct puk_receptacle_NewMad_Driver_s receptacle;
   puk_instance_t instance;
   
@@ -99,12 +99,6 @@ struct nm_gate
   int id;
 };
 
-/** Get the driver-specific per-gate data */
-static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_id_t drv_id)
-{
-  assert(drv_id < NM_DRV_MAX);
-  return p_gate->p_gate_drv_array[drv_id];
-}
 
 #define NM_FOR_EACH_GATE(P_GATE, P_CORE) \
   tbx_fast_list_for_each_entry(P_GATE, &(P_CORE)->gate_list, _link)

@@ -21,7 +21,7 @@
  */
 struct nm_rdv_chunk
 {
-  nm_drv_id_t drv_id;
+  nm_drv_t p_drv;
   nm_trk_id_t trk_id;
   uint32_t len;
 };

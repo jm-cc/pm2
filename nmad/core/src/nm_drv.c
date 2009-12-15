@@ -408,7 +408,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
       struct nm_gate*p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
 	  if(p_pw)
 	    {
@@ -442,10 +442,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
       p_gate->status = NM_GATE_STATUS_DISCONNECTED;
       NM_FOR_EACH_DRIVER(p_drv, p_core)
 	{
-	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
-	  if (p_gdrv != NULL)
+	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	  if(p_gdrv != NULL)
 	    {
-	      struct nm_drv *p_drv = p_drv = p_gdrv->p_drv;
 	      nm_trk_id_t trk_id;
 	      for(trk_id = 0 ; trk_id < p_drv->nb_tracks; trk_id++)
 		{
@@ -466,10 +465,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
     {
       NM_FOR_EACH_DRIVER(p_drv, p_core)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv->id);
+	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
 	  if (p_gdrv != NULL)
 	    {
-	      struct nm_drv *p_drv = p_gdrv->p_drv;
 	      p_drv->nb_tracks = 0;
 	      if(p_gdrv->instance != NULL)
 		{

@@ -35,8 +35,8 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
 
 static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
-  assert(p_pw->trk_id == NM_TRK_LARGE);
-  assert(p_pw->p_drv != NULL);
+  assert(p_pw->p_drv == NULL);
+  p_pw->p_gate = p_gate;
   tbx_fast_list_add_tail(&p_pw->link, &p_gate->pending_large_recv);
 }
 
@@ -48,7 +48,7 @@ static void nm_so_build_multi_rtr(struct nm_gate *p_gate, nm_core_tag_t tag, nm_
   int i;
   for(i = 0; i < nb_chunks; i++)
     {
-      nm_so_post_rtr(p_gate, tag, seq, chunks[i].drv_id, chunks[i].trk_id, chunk_offset, chunks[i].len);
+      nm_so_post_rtr(p_gate, tag, seq, chunks[i].p_drv, chunks[i].trk_id, chunk_offset, chunks[i].len);
       chunk_offset += chunks[i].len;
     }
 }
@@ -65,7 +65,7 @@ static inline int nm_so_post_multiple_data_recv(struct nm_unpack_s*p_unpack,
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
       nm_so_pw_add_raw(p_pw, data + offset, chunks[i].len, offset);
-      nm_core_post_recv(p_pw, p_unpack->p_gate, chunks[i].trk_id, chunks[i].drv_id);
+      nm_core_post_recv(p_pw, p_unpack->p_gate, chunks[i].trk_id, chunks[i].p_drv);
       offset += chunks[i].len;
     }
   return NM_ESUCCESS;
@@ -92,7 +92,7 @@ static inline int nm_so_post_multiple_pw_recv(struct nm_gate *p_gate,
 	  nm_so_pw_split_data(p_pw, p_pw2, chunks[i].len);
 	  assert(p_pw->length == chunks[i].len);
 	}
-      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].drv_id);
+      nm_core_post_recv(p_pw, p_gate, chunks[i].trk_id, chunks[i].p_drv);
       p_pw = p_pw2;
       p_pw2 = NULL;
     }
@@ -140,7 +140,7 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
   const nm_core_tag_t tag = p_unpack->tag;
   const nm_seq_t seq      = p_unpack->seq;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  struct nm_rdv_chunk chunk = { .len = len, .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
+  struct nm_rdv_chunk chunk = { .len = len, .p_drv = NM_DRV_NONE, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
   uint32_t offset = 0;
   int i = 0;
@@ -177,14 +177,13 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 	      pending_len -= p_pw->v[j].iov_len;
 	    }
 	  p_pw->chunk_offset = pw_chunk_offset;
-	  nm_so_pw_assign(p_pw, chunk.trk_id, chunk.drv_id, p_gate);
 	  nm_so_pw_store_pending_large_recv(p_pw, p_gate);
 	}
       else
 	{
 	  /* post a recv and prepare an ack for the given chunk */
 	  nm_so_post_multiple_data_recv(p_unpack, 1, &chunk, iov[i].iov_base + iov_offset);
-	  nm_so_post_rtr(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, chunk_offset, chunk_len);
+	  nm_so_post_rtr(p_gate, tag, seq, chunk.p_drv, chunk.trk_id, chunk_offset, chunk_len);
 	  pending_len -= chunk_len;
 	  offset += iov[i].iov_len;
 	  cur_len += chunk_len;
@@ -216,7 +215,7 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
       /* ** Small blocks (low density) -> receive datatype in temporary buffer
        */
       struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-      struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
+      struct nm_rdv_chunk chunk = { .p_drv = NM_DRV_NONE, .trk_id = NM_TRK_LARGE };
       int nb_chunks = 1;
 #warning Multirail
       int err = strategy->driver->rdv_accept(strategy->_status, p_gate, len, &nb_chunks, &chunk);
@@ -226,11 +225,11 @@ static int init_large_datatype_recv(struct nm_core*p_core, struct nm_unpack_s*p_
 	  void *data = TBX_MALLOC(len);
 	  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
 	  p_pw->p_unpack = p_unpack;
+	  p_unpack->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
 	  nm_so_pw_add_raw(p_pw, data, len, 0);
 	  p_pw->segp = segp;
-	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.drv_id);
-	  p_unpack->status |= NM_UNPACK_TYPE_COPY_DATATYPE;
-	  nm_so_post_rtr(p_gate, tag, seq, chunk.drv_id, chunk.trk_id, 0, len);
+	  nm_core_post_recv(p_pw, p_gate, chunk. trk_id, chunk.p_drv);
+	  nm_so_post_rtr(p_gate, tag, seq, chunk.p_drv, chunk.trk_id, 0, len);
 	}
       else 
 	{
@@ -271,7 +270,7 @@ static int nm_so_init_large_datatype_recv_with_multi_rtr(struct nm_pkt_wrap *p_p
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
-  struct nm_rdv_chunk chunk = { .drv_id = NM_DRV_DEFAULT, .trk_id = NM_TRK_LARGE };
+  struct nm_rdv_chunk chunk = { .p_drv = NM_DRV_NONE, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
   struct nm_unpack_s*p_unpack = p_pw->p_unpack;
   const nm_core_tag_t tag = p_unpack->tag;
@@ -354,7 +353,6 @@ static int init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
       p_pw->p_unpack = p_unpack;
       nm_so_pw_add_raw(p_pw, data + chunk_offset, len, chunk_offset);
-      nm_so_pw_assign(p_pw, NM_TRK_LARGE, NM_DRV_DEFAULT, p_gate); /* TODO */
       nm_so_pw_store_pending_large_recv(p_pw, p_gate);
     }
   return err;
@@ -379,10 +377,6 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	      struct nm_pkt_wrap *p_pw2 = NULL;
 	      /* create a new pw with the remaining data */
 	      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw2);
-	      p_pw2->p_drv    = p_large_pw->p_drv;
-	      p_pw2->trk_id   = p_large_pw->trk_id;
-	      p_pw2->p_gate   = p_large_pw->p_gate;
-	      p_pw2->p_gdrv   = p_large_pw->p_gdrv;
 	      p_pw2->p_unpack = p_large_pw->p_unpack;
 	      /* populate p_pw2 iovec */
 	      nm_so_pw_split_data(p_large_pw, p_pw2, p_large_pw->v[0].iov_len);
@@ -390,7 +384,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	      nm_so_pw_store_pending_large_recv(p_pw2, p_gate);
 	    }
 	  struct nm_rdv_chunk chunk = {
-	    .drv_id = p_large_pw->p_drv->id,
+	    .p_drv = p_large_pw->p_drv,
 	    .trk_id = p_large_pw->trk_id,
 	    .len = p_large_pw->v[0].iov_len 
 	  };

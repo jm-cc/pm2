@@ -233,14 +233,15 @@ static int strat_default_try_and_commit(void*_status,
 {
   struct nm_so_strat_default*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, NM_DRV_DEFAULT);
+  nm_drv_t p_drv = nm_drv_default(p_gate);
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
      !(tbx_fast_list_empty(out_list)))
     {
       struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
-      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, NM_DRV_DEFAULT);
+      nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
     }
   return NM_ESUCCESS;
 }
@@ -258,12 +259,13 @@ static int strat_default_rdv_accept(void*_status, struct nm_gate *p_gate, uint32
 				    int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
   *nb_chunks = 1;
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, NM_DRV_DEFAULT);
+  nm_drv_t p_drv = nm_drv_default(p_gate);
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   if(p_gdrv->active_recv[NM_TRK_LARGE] == 0)
     {
       /* The large-packet track is available! */
       chunks[0].len = len;
-      chunks[0].drv_id = NM_DRV_DEFAULT;
+      chunks[0].p_drv = p_drv;
       chunks[0].trk_id = NM_TRK_LARGE;
       return NM_ESUCCESS;
     }

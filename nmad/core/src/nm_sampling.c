@@ -39,8 +39,8 @@ struct nm_sampling_set_s
 
 static struct
 {
-  const struct nm_drv**p_drvs_by_lat;
-  const struct nm_drv**p_drvs_by_bw;
+  struct nm_drv**p_drvs_by_lat;
+  struct nm_drv**p_drvs_by_bw;
   double *drv_bws;
   double *drv_lats;
   struct nm_sampling_set_s*sampling_sets;
@@ -316,14 +316,14 @@ double nm_ns_remaining_transfer_time(struct nm_pkt_wrap *p_pw)
 }
 
 
-int nm_ns_dec_bws(struct nm_core *p_core, const struct nm_drv***p_drvs, int*nb_drivers)
+int nm_ns_dec_bws(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drivers)
 {
   *p_drvs = nm_ns.p_drvs_by_bw;
   *nb_drivers = nm_ns.nb_drvs;
   return NM_ESUCCESS;
 }
 
-int nm_ns_inc_lats(struct nm_core *p_core, const struct nm_drv***p_drvs, int*nb_drivers)
+int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drivers)
 {
   *p_drvs = nm_ns.p_drvs_by_lat;
   *nb_drivers = nm_ns.nb_drvs;

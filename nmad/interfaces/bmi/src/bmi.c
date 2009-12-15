@@ -46,9 +46,7 @@
 
 #include <nm_sendrecv_interface.h>
 
-#define DEBUG 1
-
-#define SERVER 0
+//#define DEBUG 1
 
 #define NM_BMI_REQUEST_PREALLOC 128
 
@@ -1228,7 +1226,9 @@ int
 BMI_set_info(BMI_addr_t addr,
 	     int option,
 	     void *inout_parameter){
+#ifdef DEBUG
     fprintf(stderr, "Warning : trying to set option %d ! Setting options is not yet implemented !\n", option);
+#endif
     return 0;
 }
 
@@ -1270,7 +1270,9 @@ BMI_post_send_list(bmi_op_id_t * id,
 		   bmi_context_id context_id,
 		   bmi_hint hints){
 
+#ifdef DEBUG
     fprintf(stderr, "######################## BMI_post_send_list %d chunks. Total size: %ld bytes\n", list_count, total_size);
+#endif
     return BMI_post_send_generic(id, dest, buffer_list, size_list, list_count, buffer_type, tag, user_ptr, context_id, hints, BNM_MSG_EXPECTED);
 }
 

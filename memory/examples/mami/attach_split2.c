@@ -13,10 +13,12 @@
  * General Public License for more details.
  */
 
-#include <stdio.h>
 #include "mm_mami.h"
+#include "mm_helper.h"
+#include <stdio.h>
 #include <errno.h>
 #include <malloc.h>
+#include <sys/mman.h>
 
 #if defined(MM_MAMI_ENABLED)
 
@@ -28,29 +30,35 @@ static void attach(void *ptr, size_t size);
 any_t my_thread(any_t arg) {
   int err;
   void *ptr;
+  size_t size;
+  unsigned long nodemask;
 
   marcel_fprintf(stderr, "Spliting memory area allocated by MaMI\n");
   ptr = mami_malloc(memory_manager, 10*getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, marcel_nbnodes-1);
   split(ptr, 10*getpagesize());
   mami_free(memory_manager, ptr);
 
-  marcel_fprintf(stderr, "\nSpliting unknown memory area\n");
-  ptr = memalign(getpagesize(), 50*getpagesize());
-  memset(ptr, 0, 50*getpagesize());
-  split(ptr, 50*getpagesize());
+  size = 50*getpagesize();
+  nodemask = (1<<(marcel_nbnodes-1));
 
-  err = mami_register(memory_manager, ptr, 50*getpagesize());
+  marcel_fprintf(stderr, "\nSpliting unknown memory area\n");
+  ptr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  err = _mm_mbind(ptr, size, MPOL_BIND, &nodemask, marcel_nbnodes+1, MPOL_MF_MOVE);
+  memset(ptr, 0, size);
+  split(ptr, size);
+
+  err = mami_register(memory_manager, ptr, size);
   if (err < 0) {
     perror("mami_register unexpectedly failed");
   }
 
-  marcel_fprintf(stderr, "\nSpliting memory area (%ld) not allocated by MaMI\n", 50*getpagesize());
-  split(ptr, 50*getpagesize());
+  marcel_fprintf(stderr, "\nSpliting memory area not allocated by MaMI\n");
+  split(ptr, size);
   err = mami_unregister(memory_manager, ptr);
   if (err < 0) {
     perror("mami_unregister unexpectedly failed");
   }
-  free(ptr);
+  munmap(ptr, size);
 }
 
 int main(int argc, char * argv[]) {

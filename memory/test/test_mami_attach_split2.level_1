@@ -22,7 +22,7 @@ Success when attaching memory area
 Spliting unknown memory area
 mami_split fails 22 <Invalid argument>
 
-Spliting memory area (204800) not allocated by MaMI
+Spliting memory area not allocated by MaMI
 Success when splitting memory area
 Success when attaching memory area
 EOF

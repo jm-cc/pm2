@@ -96,7 +96,6 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_gate.h"
 #include "nm_core.h"
 
-#include "nm_so_pkt_wrap.h"
 #include "nm_lock.h"
 #include "nm_core_inline.h"
 #include "nm_lock_inline.h"

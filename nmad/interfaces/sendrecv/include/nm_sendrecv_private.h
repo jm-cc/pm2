@@ -94,7 +94,7 @@ static inline void nm_so_post_all(nm_core_t p_core)
 static inline void nm_so_post_all_force(nm_core_t p_core)
 {
 	/* todo: add a kind of ma_tasklet_schedule here */
-//  nm_piom_post_all(p_core);
+  /*  nm_piom_post_all(p_core); */
 }
 #else /* PIOMAN_POLL */
 static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
@@ -262,7 +262,7 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request)
 { 
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
-  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);//  p_request->monitor = NM_SR_EVENT_MONITOR_NULL;
+  NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
   p_request->ref = NULL;
 }
 

@@ -233,7 +233,7 @@ extern const marcel_bubble_sched_t *
 marcel_lookup_bubble_scheduler(const char *name);
 
 /**
- * \brief Return the class of \param scheduler.  */
+ * \brief Return the \param scheduler class. */
 static __tbx_inline__ const marcel_bubble_sched_class_t *
 marcel_bubble_sched_class(const marcel_bubble_sched_t *scheduler) {
 	return scheduler->klass;

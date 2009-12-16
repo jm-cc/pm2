@@ -268,13 +268,13 @@ void marcel_print_level(struct marcel_topo_level *l, FILE *output, int txt_mode,
 		   marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2]),
 		   marcel_memory_size_printf_unit(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2]));
   if (l->merged_type & (1<<MARCEL_LEVEL_CORE))
-    marcel_fprintf(output, "%sCore%s%u", separator, indexprefix, l->os_core);
+    marcel_fprintf(output, "%sCore%s", separator, marcel_physindex_printf(indexprefix, l->os_core));
   if (l->merged_type & (1<<MARCEL_LEVEL_L1))
     marcel_fprintf(output, "%sL1%s(%ld%s)", separator, marcel_physindex_printf(indexprefix, l->os_l1),
 		   marcel_memory_size_printf_value(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]),
 		   marcel_memory_size_printf_unit(l->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1]));
   if (l->merged_type & (1<<MARCEL_LEVEL_PROC))
-    marcel_fprintf(output, "%sCPU%s%u", separator, indexprefix, l->os_cpu);
+    marcel_fprintf(output, "%sCPU%s", separator, marcel_physindex_printf(indexprefix, l->os_cpu));
 #endif
   if (l->level == marcel_topo_nblevels-1) {
     marcel_fprintf(output, "%sVP %s%u", separator, indexprefix, l->number);

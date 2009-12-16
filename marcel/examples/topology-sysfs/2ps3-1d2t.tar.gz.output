@@ -1,4 +1,4 @@
-Machine + Core: Core#4294967295
+Machine + Core: Core
   SMTproc + VP: CPU#0 VP #0
   SMTproc + VP: CPU#1 VP #1
 depth 0:	marcel type #0 (Machine)

@@ -154,7 +154,7 @@ typedef struct
 {
   nm_tag_t tag;       /**< the interface level tag */
   uint32_t hashcode;  /**< the session hashcode */
-} nm_core_tag_t;
+} __attribute__((packed)) nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL ((nm_core_tag_t){ .tag = NM_TAG_MASK_FULL, .hashcode = 0xFFFFFFFF })
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
 #define NM_CORE_TAG_INIT_NONE(t) { t.tag = 0 ; t.hashcode = 0x0; }

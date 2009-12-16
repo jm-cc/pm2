@@ -168,7 +168,7 @@ static int nm_tag_indirect_eq(const void*_tag1, const void*_tag2)
 {
   const nm_core_tag_t*p_tag1 = (const nm_core_tag_t*)_tag1;
   const nm_core_tag_t*p_tag2 = (const nm_core_tag_t*)_tag2;
-  return (memcmp(p_tag1, p_tag2, sizeof(nm_core_tag_t)) == 0);
+  return ((p_tag1->hashcode == p_tag2->hashcode) && (p_tag1->tag == p_tag2->tag));
 }
 
 #define NM_TAG_TABLE_INDIRECT_HASH(NAME, ENTRY_TYPE)			\

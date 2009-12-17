@@ -1,0 +1,52 @@
+This document describes nmad configuration.
+
+
+Strategy
+========
+
+The strategy used by nmad is selected using the following rules:
+
+1. if the environment variable NMAD_STRATEGY is set, it is used
+whatever the other configuration parameters are.
+
+2. if a strategy is selected in the flavor, it will be used by
+default.
+
+3. if the strategy selected in the flavor is 'strat_custom', then the
+strategy may be selected using command 'nmad-strategy-conf'.
+
+Valid strategies are: 
+  default, aggreg, aggreg_autoextended, split_balance.
+
+The following are deprecated/unmatained:
+  split_all, qos
+
+
+Drivers
+=======
+
+The drivers used by nmad are selected using the following rules:
+
+1. if the environment variable NMAD_DRIVER is set, it is used by
+default. It may contain the name of a single driver for single rail,
+or a list of multiple drivers separated by '+' for multirail,
+e.g. NMAD_DRIVER=mx+ibverbs
+
+2. if NMAD_DRIVER is not set, the default driver may be set using the
+command nmad-driver-conf. If a single driver is enabled in the flavor,
+then it will be used by default.
+
+
+Tags
+====
+
+-- tag_as_flat_array: tags are 8 bits, stored in flat arrays.
+-- tag_as_hashtable: tags are 32 bits, stored in hashtables. It is
+   expected that the tags actually used will be sparse.
+-- tag_huge: users tags are 64 bits + 32 bits session tag added by
+   nmad core, stored in hashtables with indirect hashing. Performance
+   penalty is ~250ns compared to flat_array.
+
+Note: only 'tag_huge' supports multiple sessions at the same time.
+
+

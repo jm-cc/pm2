@@ -81,34 +81,6 @@ static inline puk_component_t load_driver(const char *driver_name)
   return nm_core_component_load("driver", driver_name);
 }
 
-/** get default drivers if no rails were given on the command line */
-static int get_default_driver_assemblies(puk_component_t*assemblies)
-{
-  int cur_nr_drivers = 0;
-
-  /* load all built-in drivers  */
-#if defined CONFIG_MX
-  assemblies[cur_nr_drivers++] = load_driver("mx");
-#endif
-#ifdef CONFIG_QSNET
-  assemblies[cur_nr_drivers++] = load_driver("qsnet");
-#endif
-#if defined CONFIG_IBVERBS
-  assemblies[cur_nr_drivers++] = load_driver("ibverbs");
-#endif
-#if defined CONFIG_GM
-  assemblies[cur_nr_drivers++] = load_driver("gm");
-#endif
-#if defined CONFIG_TCP
-  assemblies[cur_nr_drivers++] = load_driver("tcp");
-#endif
-#if defined CONFIG_LOCAL
-  assemblies[cur_nr_drivers++] = load_driver("local");
-#endif
-
-  return cur_nr_drivers;
-}
-
 #if defined(CONFIG_MX) || defined(CONFIG_IBVERBS)
 /** look for a driver string in a rail and check whether the board id is forced  */
 static int lookup_rail_driver_and_board_id(const char *rail, const char *driver,
@@ -399,6 +371,10 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	{
 	  driver_name = "custom";
 	}
+      if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
+	driver_name = "ibverbs";
+      else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
+	driver_name = "mx";
       /* parse driver_string */
       nm_session.n_drivers = 0;
       char*driver_string = strdup(driver_name); /* strtok writes into the string */

@@ -347,23 +347,30 @@ uint32_t nm_session_code_hash(const void*key)
 /** Initialize the strategy */
 static void nm_session_init_strategy(int*argc, char**argv)
 {
-  const char*strategy_name = NULL;
+  const char*strategy_name = getenv("NMAD_STRATEGY");
+  if(!strategy_name)
+    {
 #if defined(CONFIG_STRAT_SPLIT_BALANCE)
-  strategy_name = "split_balance";
+      strategy_name = "split_balance";
 #elif defined(CONFIG_STRAT_SPLIT_ALL)
-  strategy_name = "split_all";
+      strategy_name = "split_all";
 #elif defined(CONFIG_STRAT_DEFAULT)
-  strategy_name = "default";
+      strategy_name = "default";
 #elif defined(CONFIG_STRAT_AGGREG)
-  strategy_name = "aggreg";
+      strategy_name = "aggreg";
 #elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-  strategy_name = "aggreg_autoextended";
+      strategy_name = "aggreg_autoextended";
 #else /*  defined(CONFIG_STRAT_CUSTOM) */
-  strategy_name = "custom";
+      strategy_name = "custom";
 #endif
+    }
   puk_component_t strategy = nm_core_component_load("strategy", strategy_name);
   int err = nm_core_set_strategy(nm_session.p_core, strategy);
-  assert(err == NM_ESUCCESS);
+  if(err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "# session: error %d while loading strategy %s.\n", err, strategy_name);
+      abort();
+    }
 }
 
 /** Initialize the drivers */
@@ -517,12 +524,16 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  struct nm_drv*p_drv = nm_session.drivers[i];
 	  char*driver_string = strdup(token);
 	  char*driver_name = strdup(driver_string);
-	  char*driver_url = strchr(driver_string, '/');
+	  char*driver_url = strchr(driver_name, '/');
 	  *driver_url = '\0';
 	  driver_url++;
-	  /* TODO- check that driver_name matches the name of p_drv
-	   * (i.e. that both hosts have the same drivers in the same order)
-	   */
+	  const struct nm_drv_iface_s*drv_iface = p_drv->driver;
+	  if(strcmp(drv_iface->name, driver_name) != 0)
+	    {
+	      fprintf(stderr, "# session: local and peer driver do not match; remote = %s; local = %s\n", 
+		      driver_name, drv_iface->name);
+	      abort();
+	    }
 	  if(is_server)
 	    {
 	      err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);

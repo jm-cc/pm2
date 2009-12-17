@@ -361,12 +361,12 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
     int i;
     for(i = 0; i < *nb_chunks; i++)
       {
-	sum_bw += nm_ns.drv_bws[chunks[i].drv_id];
+	sum_bw += nm_ns.drv_bws[chunks[i].p_drv->id];
       }
     int pending_len = len;
     for(i = 0; i < *nb_chunks - 1; i++)
       {
-	const int drv_bw = nm_ns.drv_bws[chunks[i].drv_id];
+	const int drv_bw = nm_ns.drv_bws[chunks[i].p_drv->id];
 	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
 	pending_len -= chunks[i].len;
 	sum_bw -= drv_bw;

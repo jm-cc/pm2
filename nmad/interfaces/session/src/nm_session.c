@@ -14,6 +14,7 @@
  */
 
 #include <nm_public.h>
+#include <nm_private.h>
 #include <nm_core_interface.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
@@ -27,6 +28,8 @@
 static struct
 {
   struct nm_core*p_core;    /**< the current nmad object. */
+  int n_drivers;            /**< number of drivers */
+  struct nm_drv**drivers;   /**< array of drivers */
   struct nm_drv*p_drv;      /**< the driver used for all connections */
   const char*local_url;     /**< the local nmad driver url */
   puk_hashtable_t gates;    /**< list of connected gates */
@@ -35,7 +38,8 @@ static struct
 } nm_session =
   {
     .p_core    = NULL,
-    .p_drv     = NULL,
+    .n_drivers = 0,
+    .drivers   = NULL,
     .local_url = NULL,
     .gates     = NULL,
     .sessions  = NULL,
@@ -340,14 +344,9 @@ uint32_t nm_session_code_hash(const void*key)
   return *p_hash_code;
 }
 
-/** Initializes the global nmad core */
-static void nm_session_do_init(int*argc, char**argv)
+/** Initialize the strategy */
+static void nm_session_init_strategy(int*argc, char**argv)
 {
-  /* init core */
-  int err = nm_core_init(argc, argv, &nm_session.p_core);
-  assert(err == NM_ESUCCESS);
-  
-  /* load strategy */
   const char*strategy_name = NULL;
 #if defined(CONFIG_STRAT_SPLIT_BALANCE)
   strategy_name = "split_balance";
@@ -363,17 +362,28 @@ static void nm_session_do_init(int*argc, char**argv)
   strategy_name = "custom";
 #endif
   puk_component_t strategy = nm_core_component_load("strategy", strategy_name);
-  err = nm_core_set_strategy(nm_session.p_core, strategy);
+  int err = nm_core_set_strategy(nm_session.p_core, strategy);
   assert(err == NM_ESUCCESS);
+}
 
-  /* load driver */
-  puk_component_t driver_assembly = NULL;
+/** Initialize the drivers */
+static void nm_session_init_drivers(int*argc, char**argv)
+{
   const char*assembly_name = getenv("NMAD_ASSEMBLY");
   if(assembly_name)
     {
       /* assembly name given (e.g. NewMadico) */
       fprintf(stderr, "# session: loading assembly %s\n", assembly_name);
-      driver_assembly = puk_adapter_resolve(assembly_name);
+      puk_component_t driver_assembly = puk_adapter_resolve(assembly_name);
+      assert(driver_assembly != NULL);
+      const char*driver_url = NULL;
+      struct nm_drv*p_drv = NULL;
+      int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &p_drv, &driver_url);
+      assert(err == NM_ESUCCESS);
+      nm_session.n_drivers = 1;
+      nm_session.drivers = malloc(sizeof(struct nm_drv*));
+      nm_session.drivers[0] = p_drv;
+      nm_session.local_url = strdup(driver_url);
     }
   else
     {
@@ -382,18 +392,54 @@ static void nm_session_do_init(int*argc, char**argv)
 	{
 	  driver_name = "custom";
 	}
-      driver_assembly = nm_core_component_load("driver", driver_name);
+      /* parse driver_string */
+      nm_session.n_drivers = 0;
+      char*driver_string = strdup(driver_name); /* strtok writes into the string */
+      padico_string_t url_string = NULL;
+      char*token = strtok(driver_string, "+");
+      while(token)
+	{
+	  puk_component_t driver_assembly = nm_core_component_load("driver", token);
+	  assert(driver_assembly != NULL);
+	  const char*driver_url = NULL;
+	  struct nm_drv*p_drv = NULL;
+	  int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &p_drv, &driver_url);
+	  assert(err == NM_ESUCCESS);
+	  const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
+	  assert(drv_iface != NULL);
+	  const char*driver_name = drv_iface->name;
+	  nm_session.n_drivers++;
+	  nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_drv*));
+	  nm_session.drivers[nm_session.n_drivers - 1] = p_drv;
+	  if(url_string == NULL)
+	    {
+	      url_string = padico_string_new();
+	      padico_string_catf(url_string, "%s/%s", driver_name, driver_url);
+	    }
+	  else
+	    {
+	      padico_string_catf(url_string, "+%s/%s", driver_name, driver_url);
+	    }
+	  token = strtok(NULL, "+");
+	}
+      nm_session.local_url = strdup(padico_string_get(url_string));
+      padico_string_delete(url_string);
+      free(driver_string);
     }
-  assert(driver_assembly != NULL);
-  const char*driver_url = NULL;
-  err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &nm_session.p_drv, &driver_url);
+}
+
+/** Initializes the global nmad core */
+static void nm_session_do_init(int*argc, char**argv)
+{
+  /* init core */
+  int err = nm_core_init(argc, argv, &nm_session.p_core);
   assert(err == NM_ESUCCESS);
-  nm_session.local_url = strdup(driver_url);
-  /* TODO: add custom railstring support with:
-   *   . default driver
-       *   . multi-rail
-       *   . configuration through argv / environment variable
-       */
+  
+  /* load strategy */
+  nm_session_init_strategy(argc, argv);
+
+  /* load driver */
+  nm_session_init_drivers(argc, argv);
 }
 
 
@@ -462,16 +508,35 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       assert(err == NM_ESUCCESS);
       /* connect gate */
       const int is_server = (strcmp(url, nm_session.local_url) > 0);
-      if(is_server)
+      /* connect all drivers */
+      char*parse_string = strdup(url);
+      char*token = strtok(parse_string, "+");
+      int i;
+      for(i = 0; i < nm_session.n_drivers; i++)
 	{
-	  err = nm_core_gate_accept(nm_session.p_core, p_gate, nm_session.p_drv, url);
-	  assert(err == NM_ESUCCESS);
+	  struct nm_drv*p_drv = nm_session.drivers[i];
+	  char*driver_string = strdup(token);
+	  char*driver_name = strdup(driver_string);
+	  char*driver_url = strchr(driver_string, '/');
+	  *driver_url = '\0';
+	  driver_url++;
+	  /* TODO- check that driver_name matches the name of p_drv
+	   * (i.e. that both hosts have the same drivers in the same order)
+	   */
+	  if(is_server)
+	    {
+	      err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
+	      assert(err == NM_ESUCCESS);
+	    }
+	  else
+	    {
+	      err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
+	      assert(err == NM_ESUCCESS);
+	    }
+	  free(driver_string);
+	  token = strtok(NULL, "+");
 	}
-      else
-	{
-	  err = nm_core_gate_connect(nm_session.p_core, p_gate, nm_session.p_drv, url);
-	  assert(err == NM_ESUCCESS);
-	}
+      free(parse_string);
       /* get peer identity */
       nm_sr_request_t sreq1, sreq2, rreq1, rreq2;
       nm_tag_t tag = 42;
@@ -508,7 +573,12 @@ int nm_session_destroy(nm_session_t p_session)
     {
       nm_core_exit(nm_session.p_core);
       nm_session.p_core = NULL;
-      nm_session.p_drv = NULL;
+      if(nm_session.drivers)
+	{
+	  free(nm_session.drivers);
+	  nm_session.drivers = NULL;
+	}
+      nm_session.n_drivers = 0;
       free((void*)nm_session.local_url);
       nm_session.local_url = NULL;
     }

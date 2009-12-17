@@ -168,23 +168,30 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
   char*remote_session_url = NULL;
   const char*remote_launcher_url = NULL;
 
-  int err = nm_session_create(&status->p_session, _label);
-  if (err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "# launcher: nm_session_create returned err = %d\n", err);
-      abort();
-    }
-  err = nm_session_init(status->p_session, argc, argv, &local_session_url);
-  if (err != NM_ESUCCESS)
-    {
-      fprintf(stderr, "# launcher: nm_session_init returned err = %d\n", err);
-      abort();
-    }
-
   int i;
   for(i = 1; i < *argc; i++)
     {
-      if(argv[i][0] != '-')
+      if(strcmp(argv[i], "-R") == 0)
+	{
+	  /* parse -R for rails */
+	  if(*argc <= i+1)
+	    {
+	      fprintf(stderr, "# launcher: missing railstring.\n");
+	      abort();
+	    }
+	  const char*railstring = argv[i+1];
+	  padico_setenv("NMAD_DRIVER", railstring); /* TODO- convert this into an nm_session_set_param() */
+	  fprintf(stderr, "# launcher: railstring = %s\n", railstring);
+	  *argc = *argc - 2;
+	  int j;
+	  for(j = i; j < *argc; j++)
+	    {
+	      argv[j] = argv[j + 2];
+	    }
+	  i--;
+	  continue;
+	}
+      else if(argv[i][0] != '-')
 	{
 	  remote_launcher_url = argv[i];
 	  fprintf(stderr, "# laucher: remote url = %s\n", remote_launcher_url);
@@ -199,6 +206,19 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	}
     }
   status->is_server = (!remote_launcher_url);
+
+  int err = nm_session_create(&status->p_session, _label);
+  if (err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "# launcher: nm_session_create returned err = %d\n", err);
+      abort();
+    }
+  err = nm_session_init(status->p_session, argc, argv, &local_session_url);
+  if (err != NM_ESUCCESS)
+    {
+      fprintf(stderr, "# launcher: nm_session_init returned err = %d\n", err);
+      abort();
+    }
 
   /* address exchange */
 	

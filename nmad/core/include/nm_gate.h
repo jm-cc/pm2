@@ -95,8 +95,6 @@ struct nm_gate
   /** NM core object. */
   struct nm_core *p_core;
   
-  /** Gate id. */
-  int id;
 };
 
 

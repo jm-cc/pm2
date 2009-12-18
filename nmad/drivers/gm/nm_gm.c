@@ -667,9 +667,9 @@ nm_gm_connect		(void*_status,
         }
 
         p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
-        NM_TRACEF("new gate map entry: %lu --> %lu",
-             (unsigned long)p_gm_cnx->node_id,
-             (unsigned long)p_gate->id);
+        NM_TRACEF("new gate map entry: %lu --> %p",
+		  (unsigned long)p_gm_cnx->node_id,
+		  p_gate);
 
         p_gm_port	= p_gm_trk->p_gm_port;
 
@@ -793,9 +793,9 @@ nm_gm_accept			(void*_status,
         }
 
         p_gm_trk->gate_map[p_gm_cnx->node_id]	= p_gate;
-        NM_TRACEF("new gate map entry: %lu --> %lu",
-             (unsigned long)p_gm_cnx->node_id,
-             (unsigned long)p_gate->id);
+        NM_TRACEF("new gate map entry: %lu --> %p",
+		  (unsigned long)p_gm_cnx->node_id,
+		  p_gate);
 
 	err = NM_ESUCCESS;
 

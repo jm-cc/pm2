@@ -437,7 +437,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 		  p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
-	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate->id, 1/* large output list*/);
+	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate, 1/* large output list*/);
 #warning Paulette: lock
 	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)

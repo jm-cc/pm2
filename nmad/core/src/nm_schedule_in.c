@@ -26,8 +26,8 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 {
   int err;
 
-  NM_TRACEF("polling inbound request: gate %d, drv %d, trk %d, proto %d",
-	    p_pw->p_gate?p_pw->p_gate->id:-1,
+  NM_TRACEF("polling inbound request: gate %p, drv %d, trk %d, proto %d",
+	    p_pw->p_gate,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
@@ -79,8 +79,8 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
     }
   
-  NM_TRACEF("posting new recv request: gate %d, drv %d, trk %d, proto %d",
-	    p_pw->p_gate?p_pw->p_gate->id:-1,
+  NM_TRACEF("posting new recv request: gate %p, drv %d, trk %d, proto %d",
+	    p_pw->p_gate,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
@@ -115,8 +115,8 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
   
   if (err == -NM_EAGAIN)
     {
-      NM_TRACEF("new recv request pending: gate %d, drv %d, trk %d, proto %d",
-		p_pw->p_gate?p_pw->p_gate->id:-1,
+      NM_TRACEF("new recv request pending: gate %p, drv %d, trk %d, proto %d",
+		p_pw->p_gate,
 		p_pw->p_drv->id,
 		p_pw->trk_id,
 		p_pw->proto_id);
@@ -235,8 +235,8 @@ void nm_sched_in(struct nm_core *p_core)
 
 int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
 {
-  NM_TRACEF("waiting inbound request: gate %d, drv %d, trk %d, proto %d",
-	    p_pw->p_gate?p_pw->p_gate->id:-1,
+  NM_TRACEF("waiting inbound request: gate %p, drv %d, trk %d, proto %d",
+	    p_pw->p_gate,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);

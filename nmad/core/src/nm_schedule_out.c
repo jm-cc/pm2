@@ -68,8 +68,8 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 {
   struct nm_gate *p_gate = p_pw->p_gate;
 
-  NM_TRACEF("send request complete: gate %d, drv %d, trk %d",
-	    p_pw->p_gate->id, p_pw->p_drv->id, p_pw->trk_id);
+  NM_TRACEF("send request complete: gate %p, drv %d, trk %d",
+	    p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id);
   
 #if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
   piom_req_success(&p_pw->inst);
@@ -131,8 +131,8 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 {
   /* ready to send					*/
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv->id, p_pw->trk_id);
-  NM_TRACEF("posting new send request: gate %d, drv %d, trk %d, proto %d",
-	    p_pw->p_gate->id,
+  NM_TRACEF("posting new send request: gate %p, drv %d, trk %d, proto %d",
+	    p_pw->p_gate,
 	    p_pw->p_drv->id,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
@@ -155,8 +155,8 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
   
   if (err == -NM_EAGAIN)
     {
-      NM_TRACEF("new request pending: gate %d, drv %d, trk %d, proto %d",
-		p_pw->p_gate->id,
+      NM_TRACEF("new request pending: gate %p, drv %d, trk %d, proto %d",
+		p_pw->p_gate,
 		p_pw->p_drv->id,
 		p_pw->trk_id,
 		p_pw->proto_id);

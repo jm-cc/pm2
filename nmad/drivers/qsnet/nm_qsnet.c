@@ -368,7 +368,7 @@ static int nm_qsnet_connect(void*_status, struct nm_cnx_rq *p_crq)
     }
   
   p_qsnet_trk->gate_map[remote_proc]	= p_gate;
-  NM_TRACEF("new gate mapping: gate %d = remote_proc %d", p_gate->id, remote_proc);
+  NM_TRACEF("new gate mapping: gate %p = remote_proc %d", p_gate, remote_proc);
   
   
   /* send our own URL to remote process
@@ -435,8 +435,8 @@ static int nm_qsnet_accept(void*_status, struct nm_cnx_rq *p_crq)
     }
   
   p_qsnet_trk->gate_map[remote_proc]	= p_gate;
-  NM_TRACEF("new gate mapping: gate %d = remote_proc %d",
-	    p_gate->id, remote_proc);
+  NM_TRACEF("new gate mapping: gate %p = remote_proc %d",
+	    p_gate, remote_proc);
   
   err = NM_ESUCCESS;
   NM_LOG_OUT();

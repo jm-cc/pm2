@@ -434,21 +434,12 @@ $block_code{0x101}	= 'kernel raw 64';
 $block_code{0x200}	= 'user raw 32';
 $block_code{0x201}	= 'user raw 64';
 
-# -- ---------- -- #
+# -- MAIN package -- #
 package main;
 use Getopt::Std;
 
-sub usage {
-	print "marcel-fut.pl [options] <prof_file>\n";
-	print "\t-h \t\tdisplay usage info\n";
-	print "\t-q \t\tquiet mode\n";
-	print "\t-o [text|paje] \toutput mode\n";
-	print "\f-f [papi,special,gomp,...] \tfilter out some event subsets (comma separated list)\n";
-	print "\t-t \t\ttime warp mode\n";
-	print "\t-m \t\tthread color marker in the vp section\n";
-	exit 0;
-}
 
+# .... Globals .... #
 # Dispatch hash tables
 my %num_hash;
 my %num_name_hash;
@@ -507,73 +498,18 @@ my $time_warp_mode = 0;
 ## 1 - do use thread color markers in the vp region
 my $use_vp_thread_marker = 0;
 
-# Command line processing
-my %opts;
-my $ret	= getopts('hqo:f:tm', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t -m
+# .... End of globals .... #
 
-if (exists $opts{'h'}) {
-	usage();
-}
-
-if (exists $opts{'q'}) {
-	$quiet_mode	= 1;
-}
-
-if (exists $opts{'o'}) {
-	$output_mode	= $opts{'o'};
-	if ($output_mode ne 'paje' and $output_mode ne 'text') {
-		usage();
-	}
-}
-
-my %filter_out;
-if (exists $opts{'f'}) {
-	my $filter_events	= $opts{'f'};
-	my @filter_event_list = split /,/, $filter_events;
-	foreach (@filter_event_list) {
-		$filter_out{$_} = 1;
-	}
-}
-
-if (exists $filter_out{'special'}) {
-	$filter_out_special_threads = 1;
-}
-
-if (exists $filter_out{'fgomp'}) {
-	$filter_out_fgomp_events = 1;
-}
-
-if (exists $filter_out{'task'}) {
-	$filter_out_task_events = 1;
-}
-
-if (exists $filter_out{'bcache'}) {
-	$filter_out_bcache_events = 1;
-}
-
-if (exists $filter_out{'papi'}) {
-	$filter_out_papi_events = 1;
-}
-
-if (exists $opts{'t'}) {
-	$time_warp_mode	= 1;
-}
-
-if (exists $opts{'m'}) {
-	$use_vp_thread_marker	= 1;
-}
-
-# Read FUT nums / num_names mapping
-open my $num_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";
-
-while (<$num_desc>) {
-	chomp;
-	my ($num_name, $num_val) = split /,/;
-	#print "$num_name: $num_val\n";
-	${num_hash}{$num_name} = $num_val;
-	if (! exists ${num_name_hash}{$num_val}) {
-		${num_name_hash}{$num_val} = $num_name;
-	}
+# .... Sub functions .... #
+sub usage {
+	print "marcel-fut.pl [options] <prof_file>\n";
+	print "\t-h \t\tdisplay usage info\n";
+	print "\t-q \t\tquiet mode\n";
+	print "\t-o [text|paje] \toutput mode\n";
+	print "\f-f [papi,special,gomp,...] \tfilter out some event subsets (comma separated list)\n";
+	print "\t-t \t\ttime warp mode\n";
+	print "\t-m \t\tthread color marker in the vp section\n";
+	exit 0;
 }
 
 # Helpers
@@ -881,8 +817,8 @@ sub handle_paje_FUT_SETUP_CODE		($) {
 6	s_i	ST_T	sleep	\"0.4 0.4 0.0\"
 6	s_k	ST_T	sleep	\"0.5 0.2 0.0\"
 6	s_r	ST_T	sleep	\"0.0 0.3 0.5\"
-6	r	ST_T	running	\"0.0 1.0 0.0\"
-6	r_s	ST_T	running	\"0.5 1.0 0.0\"
+6	r	ST_T	running	\"0.0 0.7 0.0\"
+6	r_s	ST_T	running	\"0.4 0.7 0.0\"
 6	r_u	ST_T	running	\"0.8 0.8 0.8\"
 6	r_i	ST_T	running	\"0.9 0.9 0.0\"
 6	r_k	ST_T	running	\"0.9 0.6 0.0\"
@@ -1257,7 +1193,7 @@ sub handle_paje_FUT_FGOMP_GOMP_TASK_WAIT_ENTER	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'param_array'};
-	my $depth = 1+${$param_array}[0];
+	my $depth = ${$param_array}[0];
 	my $thread = ${thread_hash}{$ev_tid};
 	paje_check_thread_event_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
@@ -1280,12 +1216,12 @@ sub handle_paje_FUT_FGOMP_GOMP_TASK_ENTER	($) {
 	my $event = shift;
 	my $ev_tid = ${$event}{'tid'};
 	my $param_array = ${$event}{'param_array'};
-	my $depth = 1+${$param_array}[0];
+	my $depth = ${$param_array}[0]-1;
 	my $thread = ${thread_hash}{$ev_tid};
 	paje_check_task_container($event, $thread);
 	my $ev_tstamp = tstamp($event);
 	print "20 $ev_tstamp ET_TR TT$ev_tid \"new task\" \"task enter\"\n";
-	paje_log2_hsl_ramp_entity($depth,'tr','ST_TR',"task($depth)", 1.0, 0.5, 6);
+	paje_log2_hsl_ramp_entity($depth,'tr','ST_TR',"task($depth)", 1.0, 0.5, 8);
 	#paje_log2_ramp_entity($depth,'tr','ST_TR',"task($depth)", 0.0, 0.5, 0.9, 8);
 	#paje_rand_color_entity($depth,'tr','ST_TR',"task($depth)");
 	print "11 $ev_tstamp ST_TR TT$ev_tid tr$depth\n";
@@ -1530,6 +1466,79 @@ sub handle_FUT_FGOMP_PAPIMAR_EV3		($) {
 	my $event = shift;
 	handle_FUT_FGOMP_PAPIMAR_EV (3, $event);
 }
+# .... End of sub functions .... #
+
+# .... Main entry point of the program .... #
+# Command line processing
+my %opts;
+my $ret	= getopts('hqo:f:tm', \%opts);	# -h -q -o <output_mode> -f <filtered_out_event_subsets -t -m
+
+if (exists $opts{'h'}) {
+	usage();
+}
+
+if (exists $opts{'q'}) {
+	$quiet_mode	= 1;
+}
+
+if (exists $opts{'o'}) {
+	$output_mode	= $opts{'o'};
+	if ($output_mode ne 'paje' and $output_mode ne 'text') {
+		usage();
+	}
+}
+
+my %filter_out;
+if (exists $opts{'f'}) {
+	my $filter_events	= $opts{'f'};
+	my @filter_event_list = split /,/, $filter_events;
+	foreach (@filter_event_list) {
+		$filter_out{$_} = 1;
+	}
+}
+
+if (exists $filter_out{'special'}) {
+	$filter_out_special_threads = 1;
+}
+
+if (exists $filter_out{'fgomp'}) {
+	$filter_out_fgomp_events = 1;
+}
+
+if (exists $filter_out{'task'}) {
+	$filter_out_task_events = 1;
+}
+
+if (exists $filter_out{'bcache'}) {
+	$filter_out_bcache_events = 1;
+}
+
+if (exists $filter_out{'papi'}) {
+	$filter_out_papi_events = 1;
+}
+
+if (exists $opts{'t'}) {
+	$time_warp_mode	= 1;
+}
+
+if (exists $opts{'m'}) {
+	$use_vp_thread_marker	= 1;
+}
+
+# Read FUT nums / num_names mapping using the output of the fut-codes.pl script
+open my $num_desc, "fut-codes.pl|" or die "open [fut-codes.pl|] failed: $!\n";	# Open a pipe descriptor
+
+while (<$num_desc>) {						# Loop over each line
+	chomp;							# Remove trailing \n
+	my ($num_name, $num_val) = split /,/;			# Split line into fields
+	#print "$num_name: $num_val\n";
+	${num_hash}{$num_name} = $num_val;			# Map code name onto code value
+	if (! exists ${num_name_hash}{$num_val}) {
+		${num_name_hash}{$num_val} = $num_name;		# Map code value onto code name
+								# Note: If multiple code names share the same code value
+								# only the first one is taken into account
+	}
+}
 
 # - Output mode dispatch -
 if ($output_mode eq 'paje') {
@@ -1596,18 +1605,19 @@ if ($output_mode eq 'paje') {
 }
 
 # Read Tracefile
-my $ev_count	 = 0;
-my $trace_filename = shift @ARGV;
-my $file_object	= TraceFile::init($trace_filename, 1);
-$file_object->init_read_event();
-while ($file_object->more_events()) {
-	my $event	= $file_object->read_user_event();
-	${$event}{'count'}	= $ev_count;
-	my $ev_num	= ${$event}{'num'};
-	if (exists ${handler_hash}{$ev_num}) {
-		my $handler_sub = ${handler_hash}{$ev_num};
-		&{$handler_sub}($event);
+my $ev_count	 = 0;						# Store the number of events processed so far
+my $trace_filename = shift @ARGV;				# Get the trace filename from command line
+my $file_object	= TraceFile::init($trace_filename, 1);		# Build a tracefile reader object
+$file_object->init_read_event();				# Bootstrap the event pump
+while ($file_object->more_events()) {				# Loop over the events
+	my $event	= $file_object->read_user_event();	# Fetch an event
+	${$event}{'count'}	= $ev_count;			# Add a count field to the event
+	my $ev_num	= ${$event}{'num'};			# Get the event code
+	if (exists ${handler_hash}{$ev_num}) {			# See if we have an handler for this code
+		my $handler_sub = ${handler_hash}{$ev_num};		# YES: retrieve that handler...
+		&{$handler_sub}($event);				# ... and call it on the event
 	} else {
+		# NO: we don't have any handler for this event. If requested, we display the information we know about that event
 		if ($quiet_mode == 0) {
 			if (exists ${num_name_hash}{$ev_num}) {
 				print "unhandled event $ev_num - ".(${num_name_hash}{$ev_num})."\n";

@@ -359,10 +359,16 @@ static void nm_session_init_drivers(int*argc, char**argv)
       struct nm_drv*p_drv = NULL;
       int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &p_drv, &driver_url);
       assert(err == NM_ESUCCESS);
+      const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
+      assert(drv_iface != NULL);
+      const char*driver_name = drv_iface->name;
+      padico_string_t url_string = padico_string_new();
+      padico_string_catf(url_string, "%s/%s", driver_name, driver_url);
       nm_session.n_drivers = 1;
       nm_session.drivers = malloc(sizeof(struct nm_drv*));
       nm_session.drivers[0] = p_drv;
-      nm_session.local_url = strdup(driver_url);
+      nm_session.local_url = strdup(padico_string_get(url_string));
+      padico_string_delete(url_string);
     }
   else
     {

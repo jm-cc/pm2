@@ -530,14 +530,14 @@ esac
 
 # Debug
 if [ "$PM2_DEBUG" = on ]; then
-    _prescript_args="$_prescript_args --debug"
+    _prescript_args="--debug $_prescript_args"
     if [ -n "$PM2_COREFILE" ]; then
         _prescript_args="$_prescript_args --corefile ${PM2_COREFILE}"
     fi
 fi
 
 if [ "$PM2_VALGRIND" = on ]; then
-    _prescript_args="$_prescript_args --valgrind"
+    _prescript_args="--valgrind $_prescript_args"
 fi
 
 if [ "$PM2_STRACE" = on ]; then

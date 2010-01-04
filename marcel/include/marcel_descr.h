@@ -163,7 +163,7 @@ struct marcel_task {
 
 	/* Gestion de la terminaison */
 	/** \brief Flag indicating whether the thread is currently detached (set) or joignable (unset). */
-	tbx_bool_t detached;
+	int detached;
 	
 	/** \brief Semaphore for synchronizing a thread currently attempting to join this thread. */
 	marcel_sem_t client;

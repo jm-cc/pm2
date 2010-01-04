@@ -372,23 +372,24 @@ static void nm_session_init_drivers(int*argc, char**argv)
     }
   else
     {
-      const char*driver_name = getenv("NMAD_DRIVER");
-      if(!driver_name)
+      const char*driver_env = getenv("NMAD_DRIVER");
+      if(!driver_env)
 	{
-	  driver_name = "custom";
+	  driver_env = "custom";
 	}
-      if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
-	driver_name = "ibverbs";
-      else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
-	driver_name = "mx";
       /* parse driver_string */
       nm_session.n_drivers = 0;
-      char*driver_string = strdup(driver_name); /* strtok writes into the string */
+      char*driver_string = strdup(driver_env); /* strtok writes into the string */
       padico_string_t url_string = NULL;
       char*token = strtok(driver_string, "+");
       while(token)
 	{
-	  puk_component_t driver_assembly = nm_core_component_load("driver", token);
+	  const char*driver_name = token;
+	  if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
+	    driver_name = "ibverbs";
+	  else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
+	    driver_name = "mx";
+	  puk_component_t driver_assembly = nm_core_component_load("driver", driver_name);
 	  assert(driver_assembly != NULL);
 	  const char*driver_url = NULL;
 	  struct nm_drv*p_drv = NULL;
@@ -396,18 +397,18 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	  assert(err == NM_ESUCCESS);
 	  const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
 	  assert(drv_iface != NULL);
-	  const char*driver_name = drv_iface->name;
+	  const char*driver_realname = drv_iface->name;
 	  nm_session.n_drivers++;
 	  nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_drv*));
 	  nm_session.drivers[nm_session.n_drivers - 1] = p_drv;
 	  if(url_string == NULL)
 	    {
 	      url_string = padico_string_new();
-	      padico_string_catf(url_string, "%s/%s", driver_name, driver_url);
+	      padico_string_catf(url_string, "%s/%s", driver_realname, driver_url);
 	    }
 	  else
 	    {
-	      padico_string_catf(url_string, "+%s/%s", driver_name, driver_url);
+	      padico_string_catf(url_string, "+%s/%s", driver_realname, driver_url);
 	    }
 	  token = strtok(NULL, "+");
 	}

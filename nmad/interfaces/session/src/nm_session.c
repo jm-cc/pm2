@@ -357,7 +357,8 @@ static void nm_session_init_drivers(int*argc, char**argv)
       assert(driver_assembly != NULL);
       const char*driver_url = NULL;
       struct nm_drv*p_drv = NULL;
-      int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &p_drv, &driver_url);
+      struct nm_driver_query_param param = { .key = NM_DRIVER_QUERY_BY_NOTHING };
+      int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &param, &p_drv, &driver_url);
       assert(err == NM_ESUCCESS);
       const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
       assert(drv_iface != NULL);
@@ -384,16 +385,36 @@ static void nm_session_init_drivers(int*argc, char**argv)
       char*token = strtok(driver_string, "+");
       while(token)
 	{
-	  const char*driver_name = token;
+	  char*driver_name = strdup(token); /* take a copy so as our writes don't confuse strtok */
+	  char*index_string = strchr(driver_name, ':');
+	  int index = -1;
+	  if(index_string)
+	    {
+	      *index_string = '\0';
+	      index_string++;
+	      index = atoi(index_string);
+	    }
 	  if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
-	    driver_name = "ibverbs";
+	    {
+	      free(driver_name);
+	      driver_name = strdup("ibverbs");
+	    }
 	  else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
-	    driver_name = "mx";
+	    {
+	      free(driver_name);
+	      driver_name = strdup("mx");
+	    }
 	  puk_component_t driver_assembly = nm_core_component_load("driver", driver_name);
 	  assert(driver_assembly != NULL);
 	  const char*driver_url = NULL;
 	  struct nm_drv*p_drv = NULL;
-	  int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &p_drv, &driver_url);
+	  struct nm_driver_query_param param = { .key = NM_DRIVER_QUERY_BY_NOTHING };
+	  if(index >= 0)
+	    {
+	      param.key = NM_DRIVER_QUERY_BY_INDEX;
+	      param.value.index = index;
+	    }
+	  int err = nm_core_driver_load_init(nm_session.p_core, driver_assembly, &param, &p_drv, &driver_url);
 	  assert(err == NM_ESUCCESS);
 	  const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
 	  assert(drv_iface != NULL);
@@ -410,6 +431,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	    {
 	      padico_string_catf(url_string, "+%s/%s", driver_realname, driver_url);
 	    }
+	  free(driver_name);
 	  token = strtok(NULL, "+");
 	}
       nm_session.local_url = strdup(padico_string_get(url_string));

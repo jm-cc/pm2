@@ -158,8 +158,7 @@ int nm_core_driver_load(nm_core_t p_core,
  */
 int nm_core_driver_query(nm_core_t p_core,
 			 nm_drv_t p_drv,
-			 struct nm_driver_query_param *params,
-			 int nparam)
+			 struct nm_driver_query_param *param)
 {
   int err;
 
@@ -171,7 +170,7 @@ int nm_core_driver_query(nm_core_t p_core,
       goto out;
     }
 
-  err = p_drv->driver->query(p_drv, params, nparam);
+  err = p_drv->driver->query(p_drv, param, 1);
   if (err != NM_ESUCCESS)
     {
       NM_DISPF("drv.query returned %d", err);
@@ -265,17 +264,12 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   return err;
 }
 
-/** Helper to load and init several drivers at once,
- * with an array of parameters for each driver,
+/** Helper to load and init a driver with a parameter,
  * and applying numa binding in-between.
  */
-int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
-					      int count,
-					      puk_component_t*driver_array,
-					      struct nm_driver_query_param **params_array,
-					      int *nparam_array,
-					      nm_drv_t *p_drv_array,
-					      const char **p_url_array)
+int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
+			     struct nm_driver_query_param*param,
+			     nm_drv_t *pp_drv, const char**p_url)
 {
 #ifdef PM2_NUIOA
   int preferred_node = PM2_NUIOA_ANY_NODE;
@@ -286,33 +280,30 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
   int nuioa_current_best = 0;
 #endif /* PM2_NUIOA */
 
-  int i;
-  for(i = 0; i < count; i++)
+  nm_drv_t p_drv = NULL;
+  int err = nm_core_driver_load(p_core, driver, &p_drv);
+  if (err != NM_ESUCCESS) 
     {
-      nm_drv_t p_drv = NULL;
-      int err = nm_core_driver_load(p_core, driver_array[i], &p_drv);
-      if (err != NM_ESUCCESS) 
-	{
-	  NM_DISPF("nm_core_driver_load returned %d", err);
-	  return err;
-	}
-      p_drv_array[i] = p_drv;
-      
-      err = nm_core_driver_query(p_core, p_drv, params_array[i], nparam_array[i]);
-      if (err != NM_ESUCCESS) 
-	{
-	  NM_DISPF("nm_core_driver_query returned %d", err);
-	  return err;
-	}
+      NM_DISPF("nm_core_driver_load returned %d", err);
+      return err;
+    }
+  
+  err = nm_core_driver_query(p_core, p_drv, param);
+  if (err != NM_ESUCCESS) 
+    {
+      NM_DISPF("nm_core_driver_query returned %d", err);
+      return err;
+    }
 #ifdef PM2_NUIOA
-      if (nuioa) 
+  if (nuioa) 
+    {
+      const int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
+      if (node != PM2_NUIOA_ANY_NODE) 
 	{
-	  const int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
-	  if (node != PM2_NUIOA_ANY_NODE) {
-	    /* if this driver wants something */
-	    DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, p_drv->id);
-	    
-	    if (nuioa_with_latency) {
+	  /* if this driver wants something */
+	  DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, p_drv->id);
+	  if (nuioa_with_latency) 
+	    {
 	      /* choosing by latency: take this network if it's the first one
 	       * or if its latency is lower than the previous one */
 	      if (preferred_node == PM2_NUIOA_ANY_NODE
@@ -320,8 +311,9 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 		preferred_node = node;
 		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->latency;
 	      }
-	      
-	    } else if (nuioa_with_bandwidth) {
+	    }
+	  else if (nuioa_with_bandwidth) 
+	    {
 	      /* choosing by bandwidth: take this network if it's the first one
 	       * or if its bandwidth is higher than the previous one */
 	      if (preferred_node == PM2_NUIOA_ANY_NODE
@@ -329,12 +321,14 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 		preferred_node = node;
 		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->bandwidth;
 	      }
-	      
-	    } else if (preferred_node == PM2_NUIOA_ANY_NODE) {
+	    }
+	  else if (preferred_node == PM2_NUIOA_ANY_NODE)
+	    {
 	      /* if it's the first driver, take its preference for now */
 	      preferred_node = node;
-	      
-	    } else if (preferred_node != node) {
+	    }
+	  else if (preferred_node != node) 
+	    {
 	      /* if the first driver wants something else, it's a conflict,
 	       * display a message once */
 	      if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
@@ -342,39 +336,39 @@ int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
 	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
 	    }
 	  }
-	}
-#endif /* PM2_NUIOA */
     }
-  
-#ifdef PM2_NUIOA
-  if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES) {
-#if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
-    struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
-    numa_bitmask_setbit(mask, preferred_node);
-    numa_bind(mask);
-    numa_bitmask_free(mask);
-#else
-    nodemask_t mask;
-    nodemask_zero(&mask);
-    nodemask_set(&mask, preferred_node);
-    numa_bind(&mask);
-#endif
-    DISP("# nmad: binding to nuioa node %d", preferred_node);
-  }
 #endif /* PM2_NUIOA */
 
-  for(i = 0; i < count; i++)
+  
+#ifdef PM2_NUIOA
+  if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES)
     {
-      int err = nm_core_driver_init(p_core, p_drv_array[i], &p_url_array[i]);
-      if (err != NM_ESUCCESS) 
-	{
-	  NM_DISPF("nm_core_driver_init returned %d", err);
-	  return err;
-	}
-#ifndef CONFIG_PROTO_MAD3
-      printf("# nmad: driver #%d- name = %s; url = %s\n", i, driver_array[i]->name, p_url_array[i]);
+#if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
+      struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
+      numa_bitmask_setbit(mask, preferred_node);
+      numa_bind(mask);
+      numa_bitmask_free(mask);
+#else
+      nodemask_t mask;
+      nodemask_zero(&mask);
+      nodemask_set(&mask, preferred_node);
+      numa_bind(&mask);
 #endif
+      DISP("# nmad: binding to nuioa node %d", preferred_node);
     }
+#endif /* PM2_NUIOA */
+
+  err = nm_core_driver_init(p_core, p_drv, p_url);
+  if (err != NM_ESUCCESS) 
+    {
+      NM_DISPF("nm_core_driver_init returned %d", err);
+      return err;
+    }
+#ifndef CONFIG_PROTO_MAD3
+  printf("# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
+#endif
+
+  *pp_drv = p_drv;
   return NM_ESUCCESS;
 }
 

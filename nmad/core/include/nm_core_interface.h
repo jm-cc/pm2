@@ -73,24 +73,13 @@ int nm_core_driver_load(nm_core_t p_core, puk_component_t driver, nm_drv_t*pp_dr
 
 int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char**p_url);
 
-int nm_core_driver_query(nm_core_t p_core, nm_drv_t p_drv, struct nm_driver_query_param *params, int nparam);
+int nm_core_driver_query(nm_core_t p_core, nm_drv_t p_drv, struct nm_driver_query_param *param);
 
-int nm_core_driver_load_init_some_with_params(nm_core_t p_core,
-					      int count,
-					      puk_component_t*driver_array,
-					      struct nm_driver_query_param **params_array,
-					      int *nparam_array,
-					      nm_drv_t *p_array,
-					      const char **p_url_array);
 
-static inline int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
-					   nm_drv_t *pp_drv, const char**p_url)
-{
-  struct nm_driver_query_param * params_array[1] = { NULL };
-  int nparam_array[1] = { 0 };
-  return nm_core_driver_load_init_some_with_params(p_core, 1, &driver,
-						   params_array, nparam_array, pp_drv, p_url);
-}
+int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
+			     struct nm_driver_query_param*param,
+			     nm_drv_t *pp_drv, const char**p_url);
+
 
 /* ** Gates ************************************************ */
 

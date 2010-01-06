@@ -186,20 +186,6 @@ static void nm_session_init_drivers(int*argc, char**argv)
     }
 }
 
-/** Initializes the global nmad core */
-static void nm_session_do_init(int*argc, char**argv)
-{
-  /* init core */
-  int err = nm_core_init(argc, argv, &nm_session.p_core);
-  assert(err == NM_ESUCCESS);
-  
-  /* load strategy */
-  nm_session_init_strategy(argc, argv);
-
-  /* load driver */
-  nm_session_init_drivers(argc, argv);
-}
-
 
 /* ********************************************************* */
 /* ** Session interface implementation */
@@ -244,7 +230,19 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
   assert(p_session != NULL);
   if(nm_session.p_core == NULL)
     {
-      nm_session_do_init(argc, argv);
+      /* Initializes the global nmad core */
+      int err = nm_core_init(argc, argv, &nm_session.p_core);
+      if(err != NM_ESUCCESS)
+	{
+	  fprintf(stderr, "# session: error %d while initializing nmad core.\n", err);
+	  abort();
+	}
+      
+      /* load strategy */
+      nm_session_init_strategy(argc, argv);
+      
+      /* load driver */
+      nm_session_init_drivers(argc, argv);
     }
   p_session->p_core = nm_session.p_core;
   nm_sr_init(p_session);

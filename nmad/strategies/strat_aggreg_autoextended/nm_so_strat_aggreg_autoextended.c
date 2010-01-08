@@ -219,7 +219,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
 		{
 		  flags = NM_SO_DATA_USE_COPY;
 		}
-	      nm_so_pw_add_data(p_pw, p_pack, p_pack->data, len, 0, 1, flags);
+	      nm_so_pw_add_data(p_pw, p_pack, p_pack->data, len, 0, flags);
 	      nb_data_aggregation ++;
 	      goto out;
 	    }

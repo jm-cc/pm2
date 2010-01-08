@@ -191,7 +191,7 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			uint32_t offset);
 
 void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-		       const void *data, uint32_t len, uint32_t offset, uint8_t is_last_chunk, int flags);
+		       const void *data, uint32_t len, uint32_t offset, int flags);
 
 int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 			  uint32_t len, const struct DLOOP_Segment *segp);

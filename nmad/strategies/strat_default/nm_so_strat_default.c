@@ -109,31 +109,18 @@ static void strat_default_destroy(void*status)
  *  @return The NM status.
  */
 static int strat_default_pack_ctrl(void*_status,
-                                   struct nm_gate *p_gate,
+                                   struct nm_gate*p_gate,
 				   const union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_default*status = _status;
-  int err;
-
-  /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  /* Add the control packet to the out_list */
-  tbx_fast_list_add_tail(&p_so_pw->link,
-                &status->out_list);
-
- out:
-  return err;
+  nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
+  return NM_ESUCCESS;
 }
 
 static int strat_default_todo(void* _status, struct nm_gate*p_gate)
 {
   struct nm_so_strat_default*status = _status;
-  struct tbx_fast_list_head *out_list = &(status->out_list);
-  return !(tbx_fast_list_empty(out_list));
+  return !(tbx_fast_list_empty(&status->out_list));
 }
 
 /** Handle a new packet submitted by the user code.
@@ -148,33 +135,22 @@ static int strat_default_todo(void* _status, struct nm_gate*p_gate)
  */
 static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 {
-  struct nm_pkt_wrap *p_pw;
   struct nm_so_strat_default*status = _status;
-  const int len = p_pack->len;
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
     {
+      const void*data = p_pack->data;
+      const int len = p_pack->len;
       if(len <= status->nm_so_max_small)
 	{
-	  /* Small packet */
-	  int flags = NM_PW_GLOBAL_HEADER;
 	  if(len <= status->nm_so_copy_on_send_threshold)
-	    flags |= NM_SO_DATA_USE_COPY;
-	  /* Simply form a new packet wrapper and add it to the out_list */
-	  nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, tbx_true, flags, &p_pw);
-	  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
+	    nm_tactic_pack_small_copy(p_pack, data, len, 0, &status->out_list);
+	  else
+	    nm_tactic_pack_small_ref(p_pack, data, len, 0, &status->out_list);
 	}
       else
 	{
-	  /* ** Send large packets through rdv */
-	  /* First allocate a packet wrapper */
-	  nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, tbx_true, NM_PW_NOHEADER, &p_pw);
-	  /* Then place it into the list of large pending sends. */
-	  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-	  /* Finally, generate a RdV request */
-	  union nm_so_generic_ctrl_header ctrl;
-	  nm_so_init_rdv(&ctrl, p_pack, p_pack->len, 0, NM_PROTO_FLAG_LASTCHUNK);
-	  strat_default_pack_ctrl(status, p_pack->p_gate, &ctrl);
+	  nm_tactic_pack_rdv(p_pack, data, len, 0);
 	}
     }
   else if(p_pack->status & NM_PACK_TYPE_IOV)
@@ -182,37 +158,22 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
       struct iovec*iov = p_pack->data;
       uint32_t offset = 0;
       int i;
-      for(i = 0; offset < len; i++)
+      for(i = 0; offset < p_pack->len; i++)
 	{
-	  const tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
-	  const uint8_t flags = is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0;
-	  if(iov[i].iov_len <= status->nm_so_max_small)
+	  const char*data = iov[i].iov_base;
+	  const int len = iov[i].iov_len;
+	  if(len <= status->nm_so_max_small)
 	    {
-	      /* Small packet */
-	      int flags = NM_PW_GLOBAL_HEADER;
-	      if(iov[i].iov_len <= status->nm_so_copy_on_send_threshold)
-		flags |= NM_SO_DATA_USE_COPY;
-	      /* Simply form a new packet wrapper and add it to the out_list */
-	      nm_so_pw_alloc_and_fill_with_data(p_pack, iov[i].iov_base, iov[i].iov_len,
-						offset, is_last_chunk, flags, &p_pw);
-	      tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
+	      if(len <= status->nm_so_copy_on_send_threshold)
+		nm_tactic_pack_small_copy(p_pack, data, len, 0, &status->out_list);
+	      else
+		nm_tactic_pack_small_ref(p_pack, data, len, 0, &status->out_list);
 	    }
 	  else
 	    {
-	      /* Large packets can not be sent immediately : we have to issue a
-		 RdV request. */
-	      /* First allocate a packet wrapper */
-	      nm_so_pw_alloc_and_fill_with_data(p_pack, iov[i].iov_base, iov[i].iov_len,
-						offset, is_last_chunk,
-						NM_PW_NOHEADER, &p_pw);
-	      /* Then place it into the appropriate list of large pending "sends". */
-	      tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-	      /* Finally, generate a RdV request */
-	      union nm_so_generic_ctrl_header ctrl;
-	      nm_so_init_rdv(&ctrl, p_pack, iov[i].iov_len, offset, flags);
-	      strat_default_pack_ctrl(_status, p_pack->p_gate, &ctrl);
+	      nm_tactic_pack_rdv(p_pack, data, len, 0);
 	    }
-	  offset += iov[i].iov_len;
+	  offset += len;
 	}
     }
   else

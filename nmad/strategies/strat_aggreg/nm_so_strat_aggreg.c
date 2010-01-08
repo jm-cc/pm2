@@ -243,7 +243,7 @@ static void try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
 	  if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
 	    /* We can copy data into the header zone */
 	    flags = NM_SO_DATA_USE_COPY;
-	  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, is_last_chunk, flags);
+	  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
 	  nb_data_aggregation ++;
 	  return;
 	}

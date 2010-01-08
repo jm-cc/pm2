@@ -26,6 +26,7 @@ void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct io
   p_pack->data   = (void*)iov;
   p_pack->len    = nm_so_iov_len(iov, num_entries);
   p_pack->done   = 0;
+  p_pack->scheduled = 0;
 }
 
 void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const struct DLOOP_Segment *segp)
@@ -34,6 +35,7 @@ void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const stru
   p_pack->data   = (void*)segp;
   p_pack->len    = nm_so_datatype_size(segp);
   p_pack->done   = 0;
+  p_pack->scheduled = 0;
 }
 
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,

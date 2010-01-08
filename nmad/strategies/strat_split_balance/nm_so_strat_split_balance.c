@@ -185,7 +185,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 	      FUT_DO_PROBE4(FUT_NMAD_GATE_OPS_CREATE_PACKET, &dummy_p_pw, p_pack->tag, p_pack->seq, len);
 	      FUT_DO_PROBE3(FUT_NMAD_GATE_OPS_INSERT_PACKET, p_pack->p_gate, 0, &dummy_p_pw);
 	      FUT_DO_PROBE5(FUT_NMAD_GATE_OPS_IN_TO_OUT_AGREG, p_pack->p_gate, 0, 0, &dummy_p_pw, p_pw);
-	      nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, is_last_chunk, flags);
+	      nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
 	      return;
 	    }
 	}
@@ -279,9 +279,9 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
 static int strat_split_balance_todo(void*_status,
 				    struct nm_gate *p_gate)
 {
-	struct nm_so_strat_split_balance *status = _status;
-	struct tbx_fast_list_head *out_list = &(status)->out_list;
-	return !(tbx_fast_list_empty(out_list));
+  struct nm_so_strat_split_balance *status = _status;
+  struct tbx_fast_list_head *out_list = &(status)->out_list;
+  return !(tbx_fast_list_empty(out_list));
 }
 
 /* Handle the arrival of a new packet. The strategy may already apply

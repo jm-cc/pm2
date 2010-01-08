@@ -177,8 +177,9 @@ struct nm_pack_s
 {
   nm_status_t status;
   void*data; /**< actually, char*, struct iovec*, or DLOOP_Segment* depending on pack type (see status) */
-  int len;   /**< cumulated data length */
-  int done;
+  int len;       /**< cumulated data length */
+  int scheduled; /**< cumulated length of data scheduled for sending */
+  int done;      /**< cumulated length of data sent so far */
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
@@ -192,6 +193,7 @@ static inline void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack,
   p_pack->data   = (void*)data;
   p_pack->len    = len;
   p_pack->done   = 0;
+  p_pack->scheduled = 0;
 }
 
 void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries);

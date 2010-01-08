@@ -179,7 +179,7 @@ static inline void nm_so_pw_alloc_and_fill_with_data(struct nm_pack_s*p_pack, co
 {
   struct nm_pkt_wrap *p_pw;
   nm_so_pw_alloc(flags, &p_pw);
-  nm_so_pw_add_data(p_pw, p_pack, ptr, chunk_len, chunk_offset, is_last_chunk, flags);
+  nm_so_pw_add_data(p_pw, p_pack, ptr, chunk_len, chunk_offset, flags);
   p_pw->chunk_offset = chunk_offset;
   *pp_pw = p_pw;
 }
@@ -233,6 +233,7 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
       p_contrib->p_pack = p_pack;
       p_pw->n_contribs++;
     }
+  p_pack->scheduled += len;
 }
 
 

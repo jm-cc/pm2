@@ -409,7 +409,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
 			      h->proto_id, h->seq,
 			      p_req->data+h->chunk_offset,
 			      padding, // remaining space
-			      h->chunk_offset, tbx_false,
+			      h->chunk_offset,
 			      flags);
 
 	    h->chunk_offset += padding;
@@ -435,7 +435,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
         flags = NM_SO_DATA_USE_COPY;
 
       h->is_last_chunk = tbx_true;
-      nm_so_pw_add_data(p_so_pw, proto_id, h->seq, p_req->data+h->chunk_offset, h->len, h->chunk_offset, h->is_last_chunk, flags);
+      nm_so_pw_add_data(p_so_pw, proto_id, h->seq, p_req->data+h->chunk_offset, h->len, h->chunk_offset, flags);
 
       struct iovec *vec;
       void *ptr;

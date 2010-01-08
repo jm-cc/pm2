@@ -320,17 +320,23 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 		       struct nm_pack_s*p_pack,
 		       const void *data, uint32_t len,
 		       uint32_t offset,
-		       uint8_t is_last_chunk,
 		       int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
   assert(!p_pw->p_unpack);
-  if(is_last_chunk)
-    proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
+
+  /* add the contrib ref to the pw */
+  nm_pw_add_contrib(p_pw, p_pack, len);
+  if(p_pack->scheduled == p_pack->len)
+    {
+      proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
+    }
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
-    proto_flags |= NM_PROTO_FLAG_ACKREQ;
+    {
+      proto_flags |= NM_PROTO_FLAG_ACKREQ;
+    }
 
   if(p_pw->flags & NM_PW_GLOBAL_HEADER) /* ** Data with a global header in v[0] */
     {
@@ -355,8 +361,6 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       /* ** Add raw data to pw, without header */
       nm_so_pw_add_raw(p_pw, data, len, 0);
     }
-  /* add the contrib ref to the pw */
-  nm_pw_add_contrib(p_pw, p_pack, len);
 }
 
 // function dedicated to the datatypes which do not require a rendezvous

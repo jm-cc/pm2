@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <inttypes.h>
 #include "bubblelib_anim.h"
 #include "bubblelib_output.h"
 
@@ -174,7 +175,7 @@ static void setRunqueue(BubbleShape shape, rq_t *rq) {
 
 static void bubbleMorphStep(bubble_t *b, float ratio);
 
-bubble_t *newBubble (int prio, rq_t *initrq) {
+bubble_t *newBubble (uint64_t ptr, int prio, rq_t *initrq) {
 	bubble_t *b = malloc(sizeof(*b));
 	b->entity.x = b->entity.y = -1;
 	b->entity.lastx = b->entity.lasty = -1;
@@ -203,6 +204,7 @@ bubble_t *newBubble (int prio, rq_t *initrq) {
 	b->entity.nospace = 0;
 	b->entity.id = -1;
 	b->entity.gasp = 0;
+	b->entity.ptr = ptr;
 	TBX_INIT_FAST_LIST_HEAD(&b->heldentities);
 	b->exploded = 0;
 	b->morph = NULL;
@@ -262,7 +264,7 @@ static void setThread(BubbleShape shape, thread_t *t) {
 	}
 }
 
-thread_t *newThread (int prio, rq_t *initrq) {
+thread_t *newThread (uint64_t ptr, int prio, rq_t *initrq) {
 	thread_t *t = malloc(sizeof(*t));
 	t->entity.x = t->entity.y = -1;
 	t->entity.lastx = t->entity.lasty = -1;
@@ -283,6 +285,7 @@ thread_t *newThread (int prio, rq_t *initrq) {
 	t->entity.nospace = 0;
 	t->entity.id = -1;
 	t->entity.gasp = 0;
+	t->entity.ptr = ptr;
 	t->state = THREAD_BLOCKED;
 	t->name = NULL;
 	t->number = -1;
@@ -1100,7 +1103,7 @@ static void addToBubbleBegin(bubble_t *b, entity_t *e) {
 	}
 
 #ifdef TREES
-	if (e->bubble_holder != b) gasp2(b,e,"adding entity to bubble that doesn't hold it");
+	if (e->bubble_holder != b) gasp2(b,e,"adding entity %"PRIx64" to bubble %"PRIx64" that doesn't hold it", e->ptr, b->entity.ptr);
 #endif
 }
 

@@ -95,7 +95,7 @@ static rq_t *getRunqueue (uint64_t ptr) {
 }
 
 static bubble_t *newBubblePtr (uint64_t ptr, rq_t *initrq) {
-	bubble_t *b = newBubble(0, initrq);
+	bubble_t *b = newBubble(ptr, 0, initrq);
 	newPtr(ptr,b);
 	return b;
 }
@@ -109,7 +109,7 @@ static bubble_t *getBubble (uint64_t ptr) {
 }
 
 static thread_t *newThreadPtr (uint64_t ptr, rq_t *initrq) {
-	thread_t *t = newThread(0, initrq);
+	thread_t *t = newThread(ptr, 0, initrq);
 	newPtr(ptr,t);
 	return t;
 }

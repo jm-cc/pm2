@@ -90,6 +90,7 @@ typedef struct entity_s {
 	int nospace;		/* in the case of explosion, space used by an entity might actually be already reserved by the holding bubble */
 	int id;			/* ID of the entity */
 	int gasp;		/* there's a problem with this entity */
+	uint64_t ptr;		/* Marcel ptr */
 } entity_t;
 
 /*******************************************************************************
@@ -123,7 +124,7 @@ typedef struct bubble_s {
 	entity_t *insertion;		/* entity being inserted */
         bl_color_t color;               /* current bubble color */
 } bubble_t;
-bubble_t *newBubble (int prio, rq_t *initrq);
+bubble_t *newBubble (uint64_t ptr, int prio, rq_t *initrq);
 void delBubble(bubble_t *b);
 static inline bubble_t * bubble_of_entity(entity_t *e) {
 	return tbx_container_of(e,bubble_t,entity);
@@ -146,7 +147,7 @@ typedef struct {
 	int number;
 	rq_t *initrq;
 } thread_t;
-thread_t *newThread (int prio, rq_t *initrq);
+thread_t *newThread (uint64_t ptr, int prio, rq_t *initrq);
 void delThread(thread_t *t);
 static inline thread_t * thread_of_entity(entity_t *e) {
 	return tbx_container_of(e,thread_t,entity);

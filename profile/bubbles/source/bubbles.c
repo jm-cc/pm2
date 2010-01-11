@@ -197,11 +197,11 @@ if (optind != argc) {
 		/* démonstration bulles simples */
 		bubble_t *b1, *b2, *b;
 		thread_t *t1, *t2, *t3, *t4, *t5;
-		t1 = newThread(0, norq);
-		t2 = newThread(0, norq);
-		t3 = newThread(0, norq);
-		t4 = newThread(0, norq);
-		t5 = newThread(0, norq);
+		t1 = newThread(0, 0, norq);
+		t2 = newThread(0, 0, norq);
+		t3 = newThread(0, 0, norq);
+		t4 = newThread(0, 0, norq);
+		t5 = newThread(0, 0, norq);
 		fprintf(stderr,"t1=%p, t2=%p, t3=%p, t4=%p, t5=%p\n",t1,t2,t3,t4,t5);
 
 #ifdef SHOWBUILD
@@ -214,13 +214,13 @@ if (optind != argc) {
 #endif /* SHOWBUILD */
 
 
-		b1 = newBubble(0, norq);
+		b1 = newBubble(0, 0, norq);
 
 #ifdef SHOWBUILD
 		showEntity(&b1->entity);
 		bubble_pause(1);
 #endif /* SHOWBUILD */
-		b2 = newBubble(0, norq);
+		b2 = newBubble(0, 0, norq);
 #ifdef SHOWBUILD
 		showEntity(&b2->entity);
 		bubble_pause(1);
@@ -237,7 +237,7 @@ if (optind != argc) {
 #ifdef SHOWBUILD
 		bubble_pause(1);
 #endif
-		b = newBubble(0, norq);
+		b = newBubble(0, 0, norq);
 #ifdef SHOWBUILD
 		showEntity(&b->entity);
 		bubble_pause(1);
@@ -376,20 +376,20 @@ if (optind != argc) {
 #define N 5
 		bubble_t *b[N];
 		thread_t *t[2*N], *comm;
-		//bigb = newBubble(5, norq);
+		//bigb = newBubble(0, 5, norq);
 #ifdef SHOWBUILD
 		//showEntity(&bigb->entity);
 #endif
-		comm = newThread(3, norq);
+		comm = newThread(0, 3, norq);
 		//bubbleInsertThread(bigb,comm);
 		
 		switchRunqueues(&rqs[0][0],&comm->entity);
 		showEntity(&comm->entity);
 
 		for (i=0;i<sizeof(b)/sizeof(*b);i++) {
-			b[i] = newBubble(1, norq);
-			t[2*i] = newThread(2, norq);
-			t[2*i+1] = newThread(2, norq);
+			b[i] = newBubble(0, 1, norq);
+			t[2*i] = newThread(0, 2, norq);
+			t[2*i+1] = newThread(0, 2, norq);
 #ifdef SHOWBUILD
 			showEntity(&t[2*i]->entity);
 			showEntity(&t[2*i+1]->entity);

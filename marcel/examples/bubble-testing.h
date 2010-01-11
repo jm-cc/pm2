@@ -198,6 +198,8 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 								{
 									marcel_bubble_init (child);
 									marcel_bubble_insertbubble (bubble, child);
+									if (verbose_output)
+										marcel_printf("inserting bubble %p into %p\n", child, bubble);
 
 									/* Recurse into CHILD.  */
 									populate_bubble_hierarchy (child, level_breadth + 1,
@@ -221,6 +223,8 @@ static marcel_bubble_t *
 make_simple_bubble_hierarchy (const unsigned *level_breadth,
 															ma_atomic_t *thread_exit_signal)
 {
+	if (verbose_output)
+		marcel_printf("root is %p\n", &marcel_root_bubble);
   populate_bubble_hierarchy (&marcel_root_bubble, level_breadth, 1,
 														 thread_exit_signal);
 
@@ -474,5 +478,5 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 	 tab-width: 2
 	 End:
 
-	 vim:ts=2
+	 vim:ts=2 sw=2
  */

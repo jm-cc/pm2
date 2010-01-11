@@ -262,7 +262,6 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 }
 
 void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
-	unsigned vp;
 	marcel_entity_t *e = &b->as_entity;
 	ma_bubble_synthesize_stats(b);
 	/* XXX: suppose that the bubble is not held out of topo hierarchy under
@@ -273,10 +272,7 @@ void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l) {
 	PROF_EVENTSTR(sched_status, "spread: done");
 
 	/* resched existing threads */
-	marcel_vpset_foreach_begin(vp,&l->vpset)
-		ma_lwp_t lwp = ma_vp_lwp[vp];
-		ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-	marcel_vpset_foreach_end()
+	__ma_resched_vpset(&l->vpset);
 
 	ma_bubble_unlock_all(b, l);
 }

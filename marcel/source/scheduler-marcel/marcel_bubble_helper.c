@@ -284,12 +284,7 @@ int increasing_order_entity_both_compar(const void *_e1, const void *_e2)
 void
 ma_resched_existing_threads(struct marcel_topo_level *l)
 {
-	unsigned vp;
-
-	marcel_vpset_foreach_begin(vp,&l->vpset)
-		ma_lwp_t lwp = ma_vp_lwp[vp];
-	ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-	marcel_vpset_foreach_end()
+	__ma_resched_vpset(&l->vpset);
 }
 
 /* Lock the entity ! */

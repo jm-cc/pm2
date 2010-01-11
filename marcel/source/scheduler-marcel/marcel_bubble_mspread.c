@@ -549,7 +549,6 @@ static ma_spinlock_t ma_bubble_mspread_lock = MA_SPIN_LOCK_UNLOCKED;
 /* Spread a bubble on a level with memory information */
 void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
   ma_spin_lock_softirq(&ma_bubble_mspread_lock);
-  unsigned vp;
   marcel_entity_t *e = &b->as_entity;
   ma_bubble_synthesize_stats(b);
   /* XXX: suppose that the bubble is not held out of topo hierarchy under
@@ -560,11 +559,7 @@ void marcel_bubble_mspread(marcel_bubble_t *b, struct marcel_topo_level *l) {
   PROF_EVENTSTR(sched_status, "spread: done");
 
   /* resched existing threads */
-  marcel_vpset_foreach_begin(vp,&l->vpset) {
-    ma_lwp_t lwp = ma_vp_lwp[vp];
-    ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-  }
-  marcel_vpset_foreach_end();
+  __ma_resched_vpset(&l->vpset);
   ma_bubble_unlock_all(b, l);
 
   ma_spin_unlock_softirq(&ma_bubble_mspread_lock);
@@ -577,13 +572,8 @@ void marcel_bubble_mspread_entities(marcel_entity_t *e[], int ne, struct marcel_
   __marcel_bubble_mspread(e, ne, l, nl, 0);
 
   int i,vp;
-  for (i=0;i<nl;i++) {
-    marcel_vpset_foreach_begin(vp,&l[i]->vpset) {
-      ma_lwp_t lwp = ma_vp_lwp[vp];
-      ma_resched_task(ma_per_lwp(current_thread,lwp),vp,lwp);
-    }
-    marcel_vpset_foreach_end();
-  }
+  for (i=0;i<nl;i++)
+    ma_resched_vpset(&l[i]->vpset);
   ma_spin_unlock_softirq(&ma_bubble_mspread_lock);
 }
 

@@ -16,15 +16,22 @@
 
 /* disable.c */
 
-#include "marcel.h"
+#include "bubble-testing.h"
 
-#define N 5
+#define N 4
 #define DELAY 5
 
 int marcel_main(int argc, char *argv[])
 {
 	int i;
+	ma_atomic_t thread_exit_signal;
 	marcel_vpset_t vpset = MARCEL_VPSET_ZERO;
+	marcel_bubble_sched_t *scheduler;
+	int ret;
+
+#ifdef PROFILE
+	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
+#endif
 
 	marcel_init(&argc, argv);
 
@@ -33,14 +40,33 @@ int marcel_main(int argc, char *argv[])
 			marcel_vpset_set(&vpset, i);
 
 	/* Force at least some enabled and disabled */
-#ifdef FIXME
-	/* For now VP0 needs to be kept enabled since it's that one that
-	 * increases Marcel's notion of time */
 	marcel_vpset_set(&vpset, 0);
 	marcel_vpset_clr(&vpset, 1);
-#else
-	marcel_vpset_set(&vpset, 1);
-	marcel_vpset_clr(&vpset, 0);
+
+	ma_atomic_init (&thread_exit_signal, 0);
+
+	static const unsigned bubble_hierarchy_description1[] = { 2, 3, 2, 0 };
+	static const unsigned bubble_hierarchy_description2[] = { 2, 2, 0 };
+	static const unsigned bubble_hierarchy_description3[] = { 2, 0 };
+
+	struct marcel_sched_param p = {.sched_priority = MA_DEF_PRIO - 1};
+	marcel_sched_setparam(MARCEL_SELF, &p);
+
+	marcel_start_playing();
+
+	make_simple_bubble_hierarchy (bubble_hierarchy_description1, &thread_exit_signal);
+	make_simple_bubble_hierarchy (bubble_hierarchy_description2, &thread_exit_signal);
+	make_simple_bubble_hierarchy (bubble_hierarchy_description3, &thread_exit_signal);
+
+#if 1
+	scheduler = alloca(marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
+	ret = marcel_bubble_cache_sched_init((marcel_bubble_cache_sched_t *) scheduler, tbx_false);
+	MA_BUG_ON(ret);
+
+	marcel_bubble_change_sched((void*)scheduler);
+
+	/* Submit bubbles */
+	marcel_bubble_sched_begin();
 #endif
 
 	for (i = 0; i < N; i++) {
@@ -52,7 +78,15 @@ int marcel_main(int argc, char *argv[])
 		marcel_sleep(DELAY);
 	}
 
+	ma_atomic_inc (&thread_exit_signal);
+
+	free_bubble_hierarchy();
+
 	marcel_end();
+
+#ifdef PROFILE
+	profile_stop();
+#endif
 
 	return 0;
 }

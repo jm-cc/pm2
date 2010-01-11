@@ -455,6 +455,21 @@ static __tbx_inline__ int marcel_vpset_isincluded (const marcel_vpset_t *super_s
 }
 
 #section functions
+/** \brief Test whether sets \e set1 and \e set2 intersect */
+static __tbx_inline__ int marcel_vpset_intersect (const marcel_vpset_t *set1,
+						  const marcel_vpset_t *set2);
+#section inline
+static __tbx_inline__ int marcel_vpset_intersect (const marcel_vpset_t *set1,
+						  const marcel_vpset_t *set2)
+{
+	int i;
+	for(i=0; i<MA_VPSUBSET_COUNT; i++)
+		if (MA_VPSUBSET_SUBSET(*set1,i) & MA_VPSUBSET_SUBSET(*set2,i))
+			return 1;
+	return 0;
+}
+
+#section functions
 /** \brief Or set \e modifier_set into set \e set */
 static __tbx_inline__ void marcel_vpset_orset (marcel_vpset_t *set,
 					       const marcel_vpset_t *modifier_set);

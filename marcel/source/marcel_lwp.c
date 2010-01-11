@@ -404,29 +404,182 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
 static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
 
+/* Where should I push up starting from h? */
+static ma_runqueue_t *push_up_to(ma_holder_t *h) {
+	ma_runqueue_t *target = NULL;
+	if (h->type == MA_RUNQUEUE_HOLDER) {
+		ma_runqueue_t *rq = ma_rq_holder(h);
+		if (marcel_vpset_isincluded(&marcel_disabled_vpset, &rq->vpset)) {
+			/* No VP to run, have to go up */
+			for (target = rq;
+				marcel_vpset_isincluded(&marcel_disabled_vpset, &target->vpset);
+				target = target->father)
+				;
+		}
+	}
+	return target;
+}
+
+/* Where should I push up entity e? (if it has to at all) */
+static ma_runqueue_t *where_to_push(marcel_entity_t *e) {
+	ma_runqueue_t *target = NULL;
+
+	target = push_up_to(e->sched_holder);
+	if (!target)
+		target = push_up_to(e->ready_holder);
+
+	return target;
+}
+
+/* Push thread up */
+static void ma_push_thread_up(marcel_t t) {
+	marcel_entity_t *e = ma_entity_task(t);
+	ma_runqueue_t *target;
+	marcel_bubble_t *gatherb = NULL;
+	ma_holder_t *h;
+
+#ifdef MA__BUBBLES
+	marcel_entity_t *e2 = e;
+	/* While there are bubbles containing us */
+	while ((h = e2->natural_holder) && h->type == MA_BUBBLE_HOLDER) {
+		marcel_bubble_t *b = ma_bubble_holder(h);
+		e2 = ma_entity_bubble(b);
+		h = e2->sched_holder;
+
+		/* Check whether it has to be moved itself */
+		if (h && h->type == MA_RUNQUEUE_HOLDER) {
+			ma_runqueue_t *rq = ma_rq_holder(h);
+			if (marcel_vpset_isincluded(&marcel_disabled_vpset, &rq->vpset))
+				/* bubble scheduled on disabled runqueue, we'll have to move it  */
+				gatherb = b;
+		}
+
+		if (gatherb != b) {
+			h = e2->ready_holder;
+			if (h && h->type == MA_RUNQUEUE_HOLDER) {
+				ma_runqueue_t *rq = ma_rq_holder(h);
+				if (marcel_vpset_isincluded(&marcel_disabled_vpset, &rq->vpset))
+					/* bubble running on disabled runqueue, we'll have to move it  */
+					gatherb = b;
+			}
+		}
+	}
+
+	/* Found a whole bubble that needs to be moved, gather all its content, and move */
+	if (gatherb) {
+		target = where_to_push(ma_entity_bubble(gatherb));
+		MA_BUG_ON(!target);
+		__ma_bubble_gather(gatherb, gatherb);
+		PROF_EVENTSTR(sched_status,"gather: done");
+		marcel_printf("moving bubble %p to %s\n", gatherb, ma_holder_rq(target)->name);
+		ma_move_entity(ma_entity_bubble(gatherb), ma_holder_rq(target));
+		return;
+	}
+	/* Thread is not in a bubble that needs to be pushed up, push it alone if needed */
+#endif
+	target = where_to_push(e);
+	if (target) {
+		marcel_printf("moving thread %p to %s\n", t, ma_holder_rq(target)->name);
+		ma_move_entity(e, ma_holder_rq(target));
+	}
+}
+
 /* User/supervisor/whatever requested stopping using a given set of VPs.
  * No need to take much care, it dosen't happen so often.  */
 void marcel_disable_vps(const marcel_vpset_t *vpset)
 {
-	marcel_fprintf(stderr, "disabling %d VPs\n", marcel_vpset_weight(vpset));
+	/*struct marcel_topo_level *level, *found;*/
+	struct marcel_topo_level *l;
+	marcel_vpset_t old_vpset;
+	marcel_t t;
+
+	PROF_EVENTSTR(sched_status,"disabling %d VPs", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
+
+	/* First make sure nobody puts things on it first */
+	/* FIXME: someone may have already started putting something on it.
+	 * For now, let's assume (and check) it doesn't happen. */
+	old_vpset = marcel_disabled_vpset;
 	marcel_vpset_orset(&marcel_disabled_vpset, vpset);
+	if (old_vpset == marcel_disabled_vpset)
+		goto out;
+	MA_BUG_ON(marcel_vpset_isincluded(&marcel_disabled_vpset, &marcel_machine_level->vpset));
+
+#ifdef IDEALLY
+	/* Find the lowest level that contains all newly disabled VPs but still
+	 * has a few other VPs to schedule the poor orphaned threads */
+	level = marcel_machine_level;
+	while(1) {
+		found = NULL;
+		for (i = 0; i < level->arity; i++) {
+			if (marcel_vpset_intersect(&level->children[i]->vpset, vpset)
+					&& !marcel_vpset_isequal(&level->children[i]->vpset, vpset)
+					) {
+				if (found) {
+					found = (void*) -1;
+					break;
+				} else
+					found = level->children[i];
+			}
+		}
+		/* Only matters in some subpart of the machine, see there */
+		if (found && found != (void*) -1)
+			level = found;
+		else
+			break;
+	};
+	marcel_printf("gathering back to %s\n", level->rq.as_holder.name);
+#endif /* And only lock that part of the machine */
+
+	/* FIXME: but too bad, we can't easily know which threads & bubbles are
+	 * scheduled on these runqueues but sleeping, we have to look for the
+	 * whole list of threads */
+
+	/* FIXME: we don't have the list of bubbles, we hope that all bubbles
+	 * have at least on thread in it :/ */
+
+	/* Push all threads up */
+	ma_topo_lock_all(marcel_machine_level);
+	ma_local_bh_disable();
+	ma_preempt_disable();
+	for_all_vp(l) {
+		_ma_raw_spin_lock(&ma_topo_vpdata_l(l,threadlist_lock));
+		tbx_fast_list_for_each_entry(t, &ma_topo_vpdata_l(l, all_threads), all_threads)
+			ma_push_thread_up(t);
+		_ma_raw_spin_unlock(&ma_topo_vpdata_l(l,threadlist_lock));
+	}
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+	ma_topo_unlock_all(marcel_machine_level);
+
+	/* And reschedule VPs so they really become idle. */
+	ma_resched_vpset(vpset);
+
+	/* Tell the bubble scheduler to redistribute threads on the remaining VPs */
+	marcel_bubble_shake();
+
+out:
 	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 
 void marcel_enable_vps(const marcel_vpset_t *vpset)
 {
-	marcel_lwp_t *lwp;
-	unsigned vp;
+	marcel_vpset_t old_vpset;
 
-	marcel_fprintf(stderr, "enabling %d VPs\n", marcel_vpset_weight(vpset));
+	PROF_EVENTSTR(sched_status,"enabling %d VPs", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
+
+	old_vpset = marcel_disabled_vpset;
 	marcel_vpset_clearset(&marcel_disabled_vpset, vpset);
-	marcel_vpset_foreach_begin(vp, vpset)
-		lwp = ma_vp_lwp[vp];
-		if (lwp)
-			MA_LWP_RESCHED(lwp);
-	marcel_vpset_foreach_end()
+	if (old_vpset == marcel_disabled_vpset)
+		goto out;
+
+	/* Tell the bubble scheduler to take profit of the extra VPs */
+	marcel_bubble_shake();
+
+	/* And reschedule VPs so they start picking up threads again. */
+	ma_resched_vpset(vpset);
+out:
 	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 #endif // MA__LWPS

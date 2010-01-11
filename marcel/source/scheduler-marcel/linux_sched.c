@@ -107,6 +107,38 @@ out:
 #endif
 }
 
+void __ma_resched_vpset(const marcel_vpset_t *vpset)
+{
+	unsigned vp;
+	marcel_vpset_foreach_begin(vp, vpset)
+		ma_lwp_t lwp = ma_vp_lwp[vp];
+		if (lwp) {
+			marcel_t current = ma_per_lwp(current_thread, lwp);
+			ma_set_tsk_need_togo(current);
+			ma_resched_task(current,vp,lwp);
+		}
+	marcel_vpset_foreach_end()
+}
+
+void ma_resched_vpset(const marcel_vpset_t *vpset)
+{
+	unsigned vp;
+	ma_preempt_disable();
+	ma_local_bh_disable();
+	marcel_vpset_foreach_begin(vp, vpset)
+		ma_lwp_t lwp = ma_vp_lwp[vp];
+		if (lwp) {
+			marcel_t current = ma_per_lwp(current_thread, lwp);
+			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
+			ma_set_tsk_need_togo(current);
+			ma_resched_task(current,vp,lwp);
+			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
+		}
+	marcel_vpset_foreach_end()
+	ma_preempt_enable_no_resched();
+	ma_local_bh_enable();
+}
+
 /**
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.
@@ -678,6 +710,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 #endif
 	int hard_preempt;
 	int need_resched;
+	int vpnum;
 	LOG_IN();
 	need_resched = ma_get_need_resched();
 	/*
@@ -738,7 +771,8 @@ need_resched_atomic:
 			go_to_sleep = 1;
 	}
 
-	if (ma_need_togo() || go_to_sleep) {
+	vpnum = ma_vpnum(MA_LWP_SELF);
+	if (ma_need_togo() || go_to_sleep || (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))) {
 		if (go_to_sleep && !go_to_sleep_traced) {
 			sched_debug("schedule: go to sleep\n");
 			PROF_EVENT(sched_thread_blocked);
@@ -760,7 +794,10 @@ need_resched_atomic:
 			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->as_holder;
-		prev_as_prio = MA_IDLE_PRIO;
+		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
+			prev_as_prio = MA_SYS_RT_PRIO;
+		else
+			prev_as_prio = MA_IDLE_PRIO;
 	}
 
 #ifdef MA__LWPS

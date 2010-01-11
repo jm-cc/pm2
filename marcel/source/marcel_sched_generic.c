@@ -484,14 +484,16 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 
 #endif
 		vpnum = ma_vpnum(lwp);
-		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
-		{
-			marcel_sig_stop_itimer();
+		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum)) {
+			/* FIXME: we still need a VP to account time */
+			if (vpnum != 0)
+				marcel_sig_stop_itimer();
 			marcel_sig_disable_interrupts();
-			if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
+			while (marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
 				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
-			marcel_sig_reset_timer();
+			if (vpnum != 0)
+				marcel_sig_reset_timer();
 		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)

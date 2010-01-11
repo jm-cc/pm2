@@ -101,5 +101,10 @@ static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 
 #section functions
 extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
+/** Force a LWP to be rescheduled */
 extern void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
+/** Force a whole VPset to be rescheduled */
+extern void ma_resched_vpset(const marcel_vpset_t *vpset);
+/** Same, but lwp rqs of the VPset are already locked */
+extern void __ma_resched_vpset(const marcel_vpset_t *vpset);
 

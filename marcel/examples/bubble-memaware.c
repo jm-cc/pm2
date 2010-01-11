@@ -77,7 +77,7 @@ int main (int argc, char *argv[]) {
 
   scheduler =
     alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memaware_sched_class));
-  ret = marcel_bubble_cache_sched_init (scheduler, tbx_true);
+  ret = marcel_bubble_memaware_sched_init ((marcel_bubble_memaware_sched_t * )scheduler, tbx_true);
   MA_BUG_ON (ret != 0);
 
   marcel_bubble_change_sched (scheduler);

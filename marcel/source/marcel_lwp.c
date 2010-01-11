@@ -400,6 +400,16 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	ma_preempt_enable();
 	return lwp;
 }
+
+void marcel_disable_vps(const marcel_vpset_t *vpset)
+{
+	marcel_fprintf(stderr, "disabling %d VPs\n", marcel_vpset_weight(vpset));
+}
+
+void marcel_enable_vps(const marcel_vpset_t *vpset)
+{
+	marcel_fprintf(stderr, "enabling %d VPs\n", marcel_vpset_weight(vpset));
+}
 #endif // MA__LWPS
 
 /* Initialisation d'une structure LWP, y compris la principale */

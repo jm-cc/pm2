@@ -270,6 +270,19 @@ void marcel_leave_blocking_section(void);
 #  endif
 #endif
 
+#section functions
+#ifdef MA__LWPS
+/** Tell Marcel to stop using the given vpset, i.e.
+ * migrate threads up and stop burning cpu time in idle. */
+void marcel_disable_vps(const marcel_vpset_t *vpset);
+/** Tell Marcel to use again the given vpset, i.e.
+ * let idle restart burning cpu time. */
+void marcel_enable_vps(const marcel_vpset_t *vpset);
+#else /* MA__LWPS */
+#  define marcel_disable_vps(vpset) (void)0
+#  define marcel_enable_vps(vpset) (void)0
+#endif /* MA__LWPS */
+
 #section marcel_macros
 #include "tbx_compiler.h"
 #depend "asm/linux_perlwp.h[marcel_macros]"

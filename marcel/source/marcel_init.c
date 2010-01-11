@@ -272,7 +272,7 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv,
 				continue;
 
 			if (marcel_init_top
-			    ("|xterm -S//0 -geometry 120x26")) {
+			    ("|xterm -S//0 -geometry 130x26")) {
 				fprintf(stderr,
 				    "Error: can't launch xterm\n");
 				exit(1);

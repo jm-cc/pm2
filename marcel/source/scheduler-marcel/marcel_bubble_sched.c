@@ -674,7 +674,6 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 	ma_holder_lock_softirq(h);
 	bubble_sched_debug("waking up bubble %p in holder %p\n",bubble,h);
 	if (h->type == MA_BUBBLE_HOLDER) {
-		marcel_printf("waking bubble %p back to %p\n", bubble, ma_bubble_holder(h));
 		PROF_EVENT2(bubble_sched_bubble_goingback,bubble,ma_bubble_holder(h));
 		/* XXX: the runqueue must be locked. */
 		ma_set_sched_holder(&bubble->as_entity,ma_bubble_holder(h),1);

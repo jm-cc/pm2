@@ -484,19 +484,27 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 
 #endif
 		vpnum = ma_vpnum(lwp);
-		if ((vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
-#ifdef MARCEL_IDLE_PAUSE
-			|| !dopoll
-#endif
-				)
+		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
 		{
+			marcel_sig_stop_itimer();
 			marcel_sig_disable_interrupts();
-			ma_sched_sig_pause();
+			if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
+				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
+			marcel_sig_reset_timer();
 		}
 #ifdef MARCEL_IDLE_PAUSE
-		else
+		if (dopoll)
 			marcel_sig_nanosleep();
+		else
+		{
+			marcel_sig_disable_interrupts();
+			ma_clear_thread_flag(TIF_POLLING_NRFLAG);
+			if (!ma_get_need_resched())
+				ma_sched_sig_pause();
+			ma_set_thread_flag(TIF_POLLING_NRFLAG);
+			marcel_sig_enable_interrupts();
+		}
 #endif
 	}
 }

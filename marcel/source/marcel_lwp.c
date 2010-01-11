@@ -416,9 +416,17 @@ void marcel_disable_vps(const marcel_vpset_t *vpset)
 
 void marcel_enable_vps(const marcel_vpset_t *vpset)
 {
+	marcel_lwp_t *lwp;
+	unsigned vp;
+
 	marcel_fprintf(stderr, "enabling %d VPs\n", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
 	marcel_vpset_clearset(&marcel_disabled_vpset, vpset);
+	marcel_vpset_foreach_begin(vp, vpset)
+		lwp = ma_vp_lwp[vp];
+		if (lwp)
+			MA_LWP_RESCHED(lwp);
+	marcel_vpset_foreach_end()
 	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 #endif // MA__LWPS

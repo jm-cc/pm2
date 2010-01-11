@@ -292,27 +292,31 @@ void marcel_show_top(void) {
 		totlst.softirq += lst.softirq;
 		totlst.irq += lst.irq;
 		totlst.idle += lst.idle;
+		totlst.disabled += lst.disabled;
 		total_usage.user += lst.user;
 		total_usage.nice += lst.nice;
 		total_usage.softirq += lst.softirq;
 		total_usage.irq += lst.irq;
 		total_usage.idle += lst.idle;
-		tot = lst.user + lst.nice + lst.softirq + lst.irq + lst.idle;
+		total_usage.disabled += lst.disabled;
+		tot = lst.user + lst.nice + lst.softirq + lst.irq + lst.idle + lst.disabled;
 		if (tot)
 			top_printf("\
-lwp %2u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+lwp %2u, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle %3llu%% disabled\r\n",
 			ma_vpnum(lwp), lst.user*100/tot, lst.nice*100/tot,
-			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot);
+			lst.softirq*100/tot, lst.irq*100/tot, lst.idle*100/tot,
+			lst.disabled*100/tot);
 	}
-	total_total = total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq + total_usage.idle;
+	total_total = total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq + total_usage.idle + total_usage.disabled;
 	if (total_total)
 	top_printf("\
-Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle\r\n",
+Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle %3llu%% disabled\r\n",
 		total_usage.user*100/total_total,
 		total_usage.nice*100/total_total,
 		total_usage.softirq*100/total_total,
 		total_usage.irq*100/total_total,
-		total_usage.idle*100/total_total);
+		total_usage.idle*100/total_total,
+		total_usage.disabled*100/total_total);
 	top_printf("  %*s %*s %2s %4s%% %2s %2s %10s %10s %10s\r\n",
 		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
 		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");

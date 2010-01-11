@@ -283,6 +283,9 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #  define marcel_enable_vps(vpset) (void)0
 #endif /* MA__LWPS */
 
+#section variables
+extern marcel_vpset_t marcel_disabled_vpset;
+
 #section marcel_macros
 #include "tbx_compiler.h"
 #depend "asm/linux_perlwp.h[marcel_macros]"

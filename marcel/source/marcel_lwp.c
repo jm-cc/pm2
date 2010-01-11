@@ -401,14 +401,25 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	return lwp;
 }
 
+marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
+static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
+
+/* User/supervisor/whatever requested stopping using a given set of VPs.
+ * No need to take much care, it dosen't happen so often.  */
 void marcel_disable_vps(const marcel_vpset_t *vpset)
 {
 	marcel_fprintf(stderr, "disabling %d VPs\n", marcel_vpset_weight(vpset));
+	marcel_mutex_lock(&disabled_vpset_mutex);
+	marcel_vpset_orset(&marcel_disabled_vpset, vpset);
+	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 
 void marcel_enable_vps(const marcel_vpset_t *vpset)
 {
 	marcel_fprintf(stderr, "enabling %d VPs\n", marcel_vpset_weight(vpset));
+	marcel_mutex_lock(&disabled_vpset_mutex);
+	marcel_vpset_clearset(&marcel_disabled_vpset, vpset);
+	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 #endif // MA__LWPS
 

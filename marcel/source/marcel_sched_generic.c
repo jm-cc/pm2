@@ -443,6 +443,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 {
 	int dopoll;
 	struct marcel_lwp *lwp = hlwp;
+	int vpnum;
 	if (lwp == NULL) {
 		/* upcall_new_task est venue ici ? */
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
@@ -482,14 +483,20 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		}
 
 #endif
+		vpnum = ma_vpnum(lwp);
+		if ((vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
 #ifdef MARCEL_IDLE_PAUSE
-		if (dopoll)
-			marcel_sig_nanosleep();
-		else {
+			|| !dopoll
+#endif
+				)
+		{
 			marcel_sig_disable_interrupts();
 			ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
 		}
+#ifdef MARCEL_IDLE_PAUSE
+		else
+			marcel_sig_nanosleep();
 #endif
 	}
 }

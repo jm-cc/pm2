@@ -614,4 +614,5 @@ struct ma_lwp_usage_stat {
 	unsigned long long irq;
 	unsigned long long idle;
 	//unsigned long long iowait;
+	unsigned long long disabled;
 };

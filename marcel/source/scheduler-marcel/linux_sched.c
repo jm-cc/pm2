@@ -500,6 +500,7 @@ unsigned long ma_nb_ready_entities(void)
 void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
+	int vpnum = ma_vpnum(MA_LWP_SELF);
 	marcel_task_t *p = MARCEL_SELF;
 
 	PROF_EVENT(sched_tick);
@@ -527,6 +528,9 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	if (currently_idle)
 #endif
 	{
+		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
+			lwpstat->disabled += sys_ticks;
+		else
 		// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
 		/*if (atomic_read(&rq->nr_iowait) > 0)
 			lwpstat->iowait += sys_ticks;

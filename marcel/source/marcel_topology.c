@@ -1161,6 +1161,10 @@ void ma_enable_topology_vps(const marcel_vpset_t *vpset)
 						break;
 					}
 				}
+				if (i == father->arity) {
+					father->arity++;
+					father->children[i] = l;
+				}
 			}
 		}
 	marcel_vpset_foreach_end()

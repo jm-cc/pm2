@@ -1,4 +1,7 @@
 #include <marcel.h>
+#ifdef PIOMAN
+#  include <pioman.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 
@@ -26,10 +29,15 @@ ma_supervisor_read_command (struct ma_supervisor_msg *p_msg) {
 	int r;
 	int _errno;
 again:
+#ifdef PIOMAN
+	r	= piom_read (ma_supervisor_fd, p_msg, sizeof (*p_msg));
+	_errno	= errno;
+#else
 	marcel_extlib_protect ();
 	r	= read (ma_supervisor_fd, p_msg, sizeof (*p_msg));
 	_errno	= errno;
 	marcel_extlib_unprotect ();
+#endif
 	if (r < 0) {
 		if (_errno == EINTR)
 			goto again;
@@ -53,12 +61,28 @@ static
 void
 ma_supervisor_write_command (struct ma_supervisor_msg *p_msg) {
 	int r;
+	int _errno;
 again:
-	r	= marcel_write (ma_supervisor_neighbour_fd, p_msg, sizeof (*p_msg));
-	if (r <= 0) {
+#ifdef PIOMAN
+	r	= piom_write (ma_supervisor_neighbour_fd, p_msg, sizeof (*p_msg));
+	_errno	= errno;
+#else
+	marcel_extlib_protect ();
+	r	= write (ma_supervisor_neighbour_fd, p_msg, sizeof (*p_msg));
+	_errno	= errno;
+	marcel_extlib_unprotect ();
+#endif
+	if (r < 0) {
 		if (errno == EINTR)
 			goto again;
-		perror ("marcel_write");
+		if (_errno == EWOULDBLOCK || _errno == EAGAIN || _errno == 0) {
+			marcel_yield();
+			goto again;
+		}
+		marcel_fprintf (stderr, "write: r = %d, _errno = %d, %s\n", r, _errno, strerror(_errno));
+		exit (1);
+	} else if (r == 0) {
+		marcel_fprintf (stderr, "write: connection closed\n");
 		exit (1);
 	} else if (r < sizeof (*p_msg)) {
 		marcel_fprintf (stderr, "ma_supervisor_write_command: command message truncated\n");
@@ -84,6 +108,7 @@ ma_supervisor (void *_args TBX_UNUSED) {
 				}
 				marcel_vpset_zero (&vpset);
 				marcel_vpset_set (&vpset, msg.arg);
+				marcel_fprintf (stderr, "ma_supervisor: enablig vp %u\n", (unsigned) msg.arg);
 				marcel_enable_vps (&vpset);
 			} break;
 
@@ -95,6 +120,7 @@ ma_supervisor (void *_args TBX_UNUSED) {
 				}
 				marcel_vpset_zero (&vpset);
 				marcel_vpset_set (&vpset, msg.arg);
+				marcel_fprintf (stderr, "ma_supervisor: disabling vp %u\n", (unsigned) msg.arg);
 				marcel_disable_vps (&vpset);
 			} break;
 
@@ -212,6 +238,10 @@ marcel_supervisor_init (void) {
 	char *filename;
 	char *neighbour_filename;
 	marcel_attr_t attr;
+
+#ifdef PIOMAN
+	piom_io_init ();
+#endif
 
 	marcel_fprintf (stderr, "marcel_supervisor_init: -->\n");
 	filename = getenv ("MARCEL_SUPERVISOR_FIFO");

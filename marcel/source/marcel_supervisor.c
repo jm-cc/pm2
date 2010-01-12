@@ -108,7 +108,7 @@ ma_supervisor (void *_args TBX_UNUSED) {
 				}
 				marcel_vpset_zero (&vpset);
 				marcel_vpset_set (&vpset, msg.arg);
-				marcel_fprintf (stderr, "ma_supervisor: enablig vp %u\n", (unsigned) msg.arg);
+				marcel_fprintf (stderr, "ma_supervisor: enabling vp %u\n", (unsigned) msg.arg);
 				marcel_enable_vps (&vpset);
 			} break;
 

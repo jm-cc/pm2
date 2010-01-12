@@ -56,7 +56,7 @@ int marcel_main(int argc, char *argv[])
 
 	make_simple_bubble_hierarchy (bubble_hierarchy_description1, &thread_exit_signal);
 	make_simple_bubble_hierarchy (bubble_hierarchy_description2, &thread_exit_signal);
-	make_simple_bubble_hierarchy (bubble_hierarchy_description3, &thread_exit_signal);
+	//make_simple_bubble_hierarchy (bubble_hierarchy_description3, &thread_exit_signal);
 
 #if 1
 	scheduler = alloca(marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));

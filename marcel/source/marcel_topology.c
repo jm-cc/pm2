@@ -1111,6 +1111,58 @@ static void topology_lwp_init(ma_lwp_t lwp) {
 #  endif /* MA__NUMA */
 }
 
+void ma_disable_topology_vps(const marcel_vpset_t *vpset)
+{
+	unsigned vp;
+	struct marcel_topo_level *l, *father;
+	unsigned i;
+	marcel_vpset_foreach_begin(vp, vpset)
+		/* Browse up to disable the VP in vpsets, and unlink levels
+		 * with empty vpsets */
+		for (l = &marcel_topo_vp_level[vp]; l; l = l->father) {
+			marcel_vpset_clr(&l->vpset, vp);
+			father = l->father;
+			if (father && marcel_vpset_iszero(&l->vpset)) {
+				for (i = 0; i < father->arity; i++) {
+					if (father->children[i] == l) {
+						father->arity--;
+						memcpy(&father->children[i],
+							&father->children[i+1],
+							(father->arity-i)*sizeof(father->children[0]));
+					}
+				}
+			}
+		}
+	marcel_vpset_foreach_end()
+}
+
+void ma_enable_topology_vps(const marcel_vpset_t *vpset)
+{
+	unsigned vp;
+	struct marcel_topo_level *l, *father;
+	unsigned i;
+	marcel_vpset_foreach_begin(vp, vpset)
+		/* Browse up to enable the VP in vpsets, and relink levels */
+		for (l = &marcel_topo_vp_level[vp]; l; l = l->father) {
+			marcel_vpset_set(&l->vpset, vp);
+			father = l->father;
+			if (father) {
+				for (i = 0; i < father->arity; i++) {
+					/* Put it at the right place */
+					if (father->children[i] != l && marcel_vpset_first(&l->vpset) < marcel_vpset_first(&father->children[i]->vpset)) {
+						memcpy(&father->children[i+1],
+							&father->children[i],
+							(father->arity-i)*sizeof(father->children[0]));
+						father->arity++;
+						father->children[i] = l;
+						break;
+					}
+				}
+			}
+		}
+	marcel_vpset_foreach_end()
+}
+
 static void topology_lwp_start(ma_lwp_t lwp TBX_UNUSED) {
 }
 

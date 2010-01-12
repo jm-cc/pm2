@@ -378,6 +378,9 @@ void ma_bubble_gather_here(marcel_bubble_t *b, struct marcel_topo_level *level);
     call the bubble scheduler distribution algorithm from there. */
 void ma_bubble_move_top_and_submit (marcel_bubble_t *b);
 
+/** \brief Push entities out from a given vpset that becomes disabled. */
+void ma_push_entities(const marcel_vpset_t *vpset);
+
 /** \brief Locks a whole bubble hierarchy.  Also locks the whole level hierarchy.  */
 void ma_bubble_lock_all(marcel_bubble_t *b, struct marcel_topo_level *level);
 /** \brief Unlocks a whole bubble hierarchy.  Also unlocks the whole level hierarchy. */

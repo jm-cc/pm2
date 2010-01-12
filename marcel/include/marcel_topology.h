@@ -965,6 +965,11 @@ static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp);
 #define ma_topology_lwp_idle_end(lwp) (void)0
 #endif
 
+/** Disable the topology levels of a given set of VPs */
+void ma_disable_topology_vps(const marcel_vpset_t *vpset);
+/** Reenable the topology levels of a given set of VPs */
+void ma_enable_topology_vps(const marcel_vpset_t *vpset);
+
 
 #section marcel_inline
 #ifdef MARCEL_SMT_IDLE

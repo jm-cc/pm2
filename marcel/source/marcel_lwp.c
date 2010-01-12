@@ -418,7 +418,7 @@ void marcel_disable_vps(const marcel_vpset_t *vpset)
 	 * For now, let's assume (and check) it doesn't happen. */
 	old_vpset = marcel_disabled_vpset;
 	marcel_vpset_orset(&marcel_disabled_vpset, vpset);
-	if (old_vpset == marcel_disabled_vpset)
+	if (marcel_vpset_isequal(&old_vpset, &marcel_disabled_vpset))
 		goto out;
 	MA_BUG_ON(marcel_vpset_isincluded(&marcel_disabled_vpset, &marcel_machine_level->vpset));
 
@@ -444,7 +444,7 @@ void marcel_enable_vps(const marcel_vpset_t *vpset)
 
 	old_vpset = marcel_disabled_vpset;
 	marcel_vpset_clearset(&marcel_disabled_vpset, vpset);
-	if (old_vpset == marcel_disabled_vpset)
+	if (marcel_vpset_isequal(&old_vpset, &marcel_disabled_vpset))
 		goto out;
 
 	ma_enable_topology_vps(vpset);

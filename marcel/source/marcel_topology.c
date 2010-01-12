@@ -1148,6 +1148,9 @@ void ma_enable_topology_vps(const marcel_vpset_t *vpset)
 			father = l->father;
 			if (father) {
 				for (i = 0; i < father->arity; i++) {
+					if (father->children[i] == l)
+						/* Already there. */
+						break;
 					/* Put it at the right place */
 					if (father->children[i] != l && marcel_vpset_first(&l->vpset) < marcel_vpset_first(&father->children[i]->vpset)) {
 						memcpy(&father->children[i+1],

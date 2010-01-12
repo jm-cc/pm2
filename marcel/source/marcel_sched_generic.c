@@ -485,6 +485,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 #endif
 		vpnum = ma_vpnum(lwp);
 		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum)) {
+			ma_preempt_disable();
 			/* FIXME: we still need a VP to account time */
 			if (vpnum != 0)
 				marcel_sig_stop_itimer();
@@ -494,6 +495,9 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 			marcel_sig_enable_interrupts();
 			if (vpnum != 0)
 				marcel_sig_reset_timer();
+			/* Only let other threads preempt us after we have
+			 * reenabled the timer */
+			ma_preempt_enable();
 		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)

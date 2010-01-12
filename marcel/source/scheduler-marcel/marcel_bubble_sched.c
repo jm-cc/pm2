@@ -848,7 +848,7 @@ void ma_bubble_gather_here(marcel_bubble_t *b, struct marcel_topo_level *level) 
 /* Where should I push up starting from h? */
 static ma_runqueue_t *push_up_to(ma_holder_t *h) {
 	ma_runqueue_t *target = NULL;
-	if (h->type == MA_RUNQUEUE_HOLDER) {
+	if (h != NULL  &&  h->type == MA_RUNQUEUE_HOLDER) {
 		ma_runqueue_t *rq = ma_rq_holder(h);
 		if (marcel_vpset_isincluded(&marcel_disabled_vpset, &rq->vpset)) {
 			/* No VP to run, have to go up */

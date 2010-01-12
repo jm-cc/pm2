@@ -24,12 +24,20 @@ static
 int
 ma_supervisor_read_command (struct ma_supervisor_msg *p_msg) {
 	int r;
+	int _errno;
 again:
-	r	= marcel_read (ma_supervisor_fd, p_msg, sizeof (*p_msg));
+	marcel_extlib_protect ();
+	r	= read (ma_supervisor_fd, p_msg, sizeof (*p_msg));
+	_errno	= errno;
+	marcel_extlib_unprotect ();
 	if (r < 0) {
-		if (errno == EINTR)
+		if (_errno == EINTR)
 			goto again;
-		perror ("marcel_read");
+		if (_errno == EWOULDBLOCK || _errno == EAGAIN || _errno == 0) {
+			marcel_yield();
+			goto again;
+		}
+		marcel_fprintf (stderr, "read: r = %d, _errno = %d, %s\n", r, _errno, strerror(_errno));
 		exit (1);
 	} else if (r == 0) {
 		return 0;
@@ -62,9 +70,11 @@ static void *
 ma_supervisor (void *_args TBX_UNUSED) {
 	struct ma_supervisor_msg msg;
 
+	marcel_fprintf (stderr, "ma_supervisor: -->\n");
 	for (;;) {
 		if (!ma_supervisor_read_command (&msg))
 			break;
+		marcel_fprintf (stderr, "ma_supervisor: - new command %u, arg %u\n", msg.cmd, msg.arg);
 		switch ((enum ma_supervisor_cmd) msg.cmd) {
 			case ma_sc_enable_vp: {
 				marcel_vpset_t vpset;
@@ -141,6 +151,7 @@ ma_supervisor (void *_args TBX_UNUSED) {
 		}
 	}
 
+	marcel_fprintf (stderr, "ma_supervisor: <--\n");
 	return NULL;
 }
 
@@ -202,6 +213,7 @@ marcel_supervisor_init (void) {
 	char *neighbour_filename;
 	marcel_attr_t attr;
 
+	marcel_fprintf (stderr, "marcel_supervisor_init: -->\n");
 	filename = getenv ("MARCEL_SUPERVISOR_FIFO");
 	if (!filename) {
 		marcel_fprintf (stderr, "MARCEL_SUPERVISOR_FIFO var not set\n");
@@ -211,22 +223,28 @@ marcel_supervisor_init (void) {
 	neighbour_filename = getenv ("MARCEL_SUPERVISOR_NBOUR_FIFO");
 
 	marcel_extlib_protect ();
-	ma_supervisor_fd = open (filename, O_RDONLY);
+	marcel_fprintf (stderr, "marcel_supervisor_init: - input fifo filename = %s\n", filename);
+	ma_supervisor_fd = open (filename, O_RDONLY|O_NONBLOCK);
 	if (ma_supervisor_fd < 0) {
 		perror ("open");
 		exit (1);
 	}
+	marcel_fprintf (stderr, "marcel_supervisor_init: - input fifo opened\n");
 	if (neighbour_filename) {
-		ma_supervisor_neighbour_fd = open (neighbour_filename, O_WRONLY);
+		marcel_fprintf (stderr, "marcel_supervisor_init: - output fifo filename = %s\n", filename);
+		ma_supervisor_neighbour_fd = open (neighbour_filename, O_WRONLY|O_NONBLOCK);
 		if (ma_supervisor_neighbour_fd < 0) {
 			perror ("open");
 			exit (1);
 		}
+		marcel_fprintf (stderr, "marcel_supervisor_init: - output fifo opened\n");
 	}
 	marcel_extlib_unprotect ();
 
 	marcel_attr_init (&attr);
 	marcel_attr_setdetachstate (&attr, tbx_true);
+	marcel_fprintf (stderr, "marcel_supervisor_init: - launching supervisor thread\n");
 	marcel_create (&ma_supervisor_thread, &attr, ma_supervisor, NULL);
+	marcel_fprintf (stderr, "marcel_supervisor_init: <--\n");
 }
 

@@ -1,5 +1,6 @@
 #include <marcel.h>
 #include <fcntl.h>
+#include <errno.h>
 
 struct ma_supervisor_msg {
 	uint32_t cmd;

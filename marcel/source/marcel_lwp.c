@@ -471,7 +471,7 @@ static void ma_push_thread_up(marcel_t t) {
 		MA_BUG_ON(!target);
 		__ma_bubble_gather(gatherb, gatherb);
 		PROF_EVENTSTR(sched_status,"gather: done");
-		marcel_printf("moving bubble %p to %s\n", gatherb, ma_holder_rq(target)->name);
+		mdebug("moving bubble %p to %s\n", gatherb, ma_holder_rq(target)->name);
 		ma_move_entity(ma_entity_bubble(gatherb), ma_holder_rq(target));
 		return;
 	}
@@ -479,7 +479,7 @@ static void ma_push_thread_up(marcel_t t) {
 #endif
 	target = where_to_push(e);
 	if (target) {
-		marcel_printf("moving thread %p to %s\n", t, ma_holder_rq(target)->name);
+		mdebug("moving thread %p to %s\n", t, ma_holder_rq(target)->name);
 		ma_move_entity(e, ma_holder_rq(target));
 	}
 }

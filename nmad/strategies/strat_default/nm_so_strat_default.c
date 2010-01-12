@@ -165,9 +165,9 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	  if(len <= status->nm_so_max_small)
 	    {
 	      if(len <= status->nm_so_copy_on_send_threshold)
-		nm_tactic_pack_small_copy(p_pack, data, len, 0, &status->out_list);
+		nm_tactic_pack_small_copy(p_pack, data, len, offset, &status->out_list);
 	      else
-		nm_tactic_pack_small_ref(p_pack, data, len, 0, &status->out_list);
+		nm_tactic_pack_small_ref(p_pack, data, len, offset, &status->out_list);
 	    }
 	  else
 	    {

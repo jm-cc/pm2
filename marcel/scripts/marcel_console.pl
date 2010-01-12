@@ -61,6 +61,12 @@ print "Ready...\n";
 while (<>) {
 	chomp;
 
+	s/\#.*$//;
+	s/^\s+//;
+	s/\s+$//;
+	s/\s+/ /;
+	next
+		if (/^$/);
 	my @args	= split / /;
 	my $cmd	= shift @args;
 	if ($cmd eq 'q') {

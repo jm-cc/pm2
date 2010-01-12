@@ -2,9 +2,10 @@
 ##################
 
 use strict;
+use IO::Handle;
 
 sub usage() {
-	print "marcel_console.pl <prog1> [<prog2>] < <command_file>";
+	print "marcel_console.pl [<prog1> [<prog2>]] < <command_file>";
 	exit;
 }
 
@@ -21,9 +22,6 @@ my $output_path	= '/tmp';
 my $fifo_path	= '/tmp';
 
 my $prog1	= shift;
-unless (defined $prog1) {
-	usage();
-}
 my $prog2	= shift;
 
 my $fifo1_fh;
@@ -31,15 +29,19 @@ my $fifo2_fh;
 
 my $user	= $ENV{'USER'};
 
-my $output1	= "${output_path}/${user}_marcel_console_1.log";
 my $fifo1	= "${fifo_path}/${user}_marcel_console_1.fifo";
 unless (-p $fifo1) {
 	system "mkfifo ${fifo1}"
 		and die "mkfifo ${fifo1}: $!\n";
 }
+if (defined $prog1) {
+	my $output1	= "${output_path}/${user}_marcel_console_1.log";
+	system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog1 > $output1 &";
+}
+print "Opening fifo 1...\n";
 open ($fifo1_fh, "> $fifo1")
 	 or die "open ${fifo1}: $!\n";
-system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog1 > $output1 2>&1 &";
+autoflush $fifo1_fh 1;
 
 if (defined $prog2) {
 	my $output2	= "${output_path}/${user}_marcel_console_2.log";
@@ -48,11 +50,14 @@ if (defined $prog2) {
 		system "mkfifo ${fifo2}"
 			and die "mkfifo ${fifo2}: $!\n";
 	}
+	system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog2 > $output2 &";
+	print "Opening fifo 2...\n";
 	open ($fifo2_fh, "> $fifo2")
 		or die "open ${fifo2}: $!\n";
-	system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog2 > $output2 2>&1 &";
+	autoflush $fifo2_fh 1;
 }
 
+print "Ready...\n";
 while (<>) {
 	chomp;
 

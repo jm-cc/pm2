@@ -26,6 +26,9 @@ my $prog2	= shift;
 
 my $fifo1_fh;
 my $fifo2_fh;
+my $rfifo1_fh;	# Reverse fifo to prog 1
+my $rfifo2_fh;	# Reverse fifo to prog 2
+
 
 my $user	= $ENV{'USER'};
 
@@ -34,14 +37,23 @@ unless (-p $fifo1) {
 	system "mkfifo ${fifo1}"
 		and die "mkfifo ${fifo1}: $!\n";
 }
+my $rfifo1	= "${fifo_path}/${user}_marcel_console_1.rfifo";
+unless (-p $rfifo1) {
+	system "mkfifo ${rfifo1}"
+		and die "mkfifo ${rfifo1}: $!\n";
+}
 if (defined $prog1) {
 	my $output1	= "${output_path}/${user}_marcel_console_1.log";
-	system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog1 > $output1 &";
+	system "MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_RFIFO=${rfifo1} $prog1 > $output1 2>&1 &";
 }
 print "Opening fifo 1...\n";
 open ($fifo1_fh, "> $fifo1")
 	 or die "open ${fifo1}: $!\n";
 autoflush $fifo1_fh 1;
+print "Opening reverse fifo 1...\n";
+open ($rfifo1_fh, "< $rfifo1")
+	 or die "open ${rfifo1}: $!\n";
+autoflush $rfifo1_fh 1;
 
 if (defined $prog2) {
 	my $output2	= "${output_path}/${user}_marcel_console_2.log";
@@ -50,11 +62,19 @@ if (defined $prog2) {
 		system "mkfifo ${fifo2}"
 			and die "mkfifo ${fifo2}: $!\n";
 	}
-	system "MARCEL_SUPERVISOR_FIFO=${fifo1} $prog2 > $output2 &";
+	my $rfifo2	= "${fifo_path}/${user}_marcel_console_2.rfifo";
+	unless (-p $rfifo2) {
+		system "mkfifo ${rfifo2}"
+			and die "mkfifo ${rfifo2}: $!\n";
+	}
+	system "MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_FIFO=${rfifo2} $prog2 > $output2 2>&1 &";
 	print "Opening fifo 2...\n";
 	open ($fifo2_fh, "> $fifo2")
 		or die "open ${fifo2}: $!\n";
 	autoflush $fifo2_fh 1;
+	open ($rfifo2_fh, "< $rfifo2")
+		or die "open ${rfifo2}: $!\n";
+	autoflush $rfifo2_fh 2;
 }
 
 print "Ready...\n";
@@ -120,6 +140,20 @@ while (<>) {
 			print ". ${cmd_name} vp ${vp}\n";
 			syswrite $fh, $data or die "write to fifo: $!\n";
 		}
+	} elsif ($cmd eq 's') {
+		# s: Sync with prog 'arg'
+		my $prog_num	= shift @args;
+		my $fh;
+		if ($prog_num == 1) {
+			$fh	= $rfifo1_fh;
+		} elsif ($prog_num == 2) {
+			$fh	= $rfifo2_fh;
+		} else {
+			die "invalid prog_num ${prog_num}\n";
+		}
+		print "Sync with prog ${prog_num}...\n";
+		sysread $fh, my $data, 8 or die "read from fifo: $!\n";
+		print "Sync with prog ${prog_num} complete\n\n";
 	} else {
 		die "unknown command: $cmd\n";
 	}

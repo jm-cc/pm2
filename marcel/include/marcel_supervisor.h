@@ -4,6 +4,9 @@ void
 marcel_supervisor_init (void);
 
 void
+marcel_supervisor_sync (void);
+
+void
 marcel_supervisor_enable_nbour_vp (int vpnum);
 
 void

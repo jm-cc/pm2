@@ -1,0 +1,49 @@
+# Example script for Marcel console
+###################################
+
+# Comment
+
+# Temporisation 2 secs
+t 2
+
+# Sync with 1
+s 1
+
+# Disable VPs 1&2 of program 1
+D 1 1 2
+t 2
+
+# Re-enable VPs 1&2 of prog 1
+E 1 1 2
+t 2
+
+# Disable VPs 3&4 of prog 1
+D 1 3 4
+t 2
+
+# Re-enable VPs 3&4 of prog 1
+E 1 3 4
+t 2
+
+# Sync with 1
+s 1
+
+# Disable VPs 1&2 of program 1
+D 1 1 3
+t 2
+
+# Re-enable VPs 1&2 of prog 1
+E 1 1 3
+t 2
+
+# Disable VPs 3&4 of prog 1
+D 1 2 4
+t 2
+
+# Re-enable VPs 3&4 of prog 1
+E 1 2 4
+t 2
+
+# Quit console
+q
+

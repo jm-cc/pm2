@@ -284,7 +284,15 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #endif /* MA__LWPS */
 
 #section variables
+#ifdef MA__LWPS
 extern marcel_vpset_t marcel_disabled_vpset;
+#endif
+#section macros
+#ifdef MA__LWPS
+#define marcel_vp_is_disabled(vp) ((vp) >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, (vp)))
+#else
+#define marcel_vp_is_disabled(vp) 0
+#endif
 
 #section marcel_macros
 #include "tbx_compiler.h"

@@ -109,24 +109,15 @@ out:
 
 void __ma_resched_vpset(const marcel_vpset_t *vpset)
 {
-#ifdef MA__LWPS
 	unsigned vp;
 	marcel_vpset_foreach_begin(vp, vpset)
-		ma_lwp_t lwp = ma_vp_lwp[vp];
+		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
 		if (lwp) {
 			marcel_t current = ma_per_lwp(current_thread, lwp);
 			ma_set_tsk_need_togo(current);
 			ma_resched_task(current,vp,lwp);
 		}
 	marcel_vpset_foreach_end()
-#else
-	marcel_t current = marcel_self();
-	ma_set_tsk_need_togo(current);
-	ma_lwp_t lwp;
-	ma_for_all_lwp(lwp) {
-		ma_resched_task(current, marcel_current_vp(), lwp);
-	}
-#endif
 }
 
 void ma_resched_vpset(const marcel_vpset_t *vpset)
@@ -134,9 +125,8 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 	unsigned vp;
 	ma_preempt_disable();
 	ma_local_bh_disable();
-#ifdef MA__LWPS
 	marcel_vpset_foreach_begin(vp, vpset)
-		ma_lwp_t lwp = ma_vp_lwp[vp];
+		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
 		if (lwp) {
 			marcel_t current = ma_per_lwp(current_thread, lwp);
 			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
@@ -145,17 +135,6 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
 		}
 	marcel_vpset_foreach_end()
-#else
-	marcel_t current = marcel_self();
-	ma_set_tsk_need_togo(current);
-	ma_lwp_t lwp;
-	ma_for_all_lwp(lwp) {
-		ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
-		ma_set_tsk_need_togo(current);
-		ma_resched_task(current,vp,lwp);
-		ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
-	}
-#endif
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
@@ -581,7 +560,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	if (currently_idle)
 #endif
 	{
-		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
+		if (marcel_vp_is_disabled(vpnum))
 			lwpstat->disabled += sys_ticks;
 		else
 		// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
@@ -793,7 +772,7 @@ need_resched_atomic:
 	}
 
 	vpnum = ma_vpnum(MA_LWP_SELF);
-	if (ma_need_togo() || go_to_sleep || (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))) {
+	if (ma_need_togo() || go_to_sleep || marcel_vp_is_disabled(vpnum)) {
 		if (go_to_sleep && !go_to_sleep_traced) {
 			sched_debug("schedule: go to sleep\n");
 			PROF_EVENT(sched_thread_blocked);
@@ -815,8 +794,8 @@ need_resched_atomic:
 			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->as_holder;
-		if (vpnum >= 0 && marcel_vpset_isset(&marcel_disabled_vpset, vpnum))
-			prev_as_prio = MA_SYS_RT_PRIO;
+		if (marcel_vp_is_disabled(vpnum))
+			prev_as_prio = MA_SYS_RT_PRIO+1;
 		else
 			prev_as_prio = MA_IDLE_PRIO;
 	}

@@ -259,9 +259,6 @@ unsigned marcel_lwp_add_vp(void)
 
 #endif // MA__LWPS
 
-marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
-static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
-
 #ifdef MA__LWPS
 /* TODO: the stack of the lwp->sched_task is currently *NOT FREED* as
    run_task, and other system threads.
@@ -404,6 +401,9 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	return lwp;
 }
 
+marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
+static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
+
 /* User/supervisor/whatever requested stopping using a given set of VPs.
  * No need to take much care, it dosen't happen so often.  */
 void marcel_disable_vps(const marcel_vpset_t *vpset)
@@ -412,6 +412,10 @@ void marcel_disable_vps(const marcel_vpset_t *vpset)
 
 	PROF_EVENTSTR(sched_status,"disabling %d VPs", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
+
+	/* If we are on a disabled VP, do not let us get preempted by idle, or
+	 * else we won't have the time to push entities */
+	ma_preempt_disable();
 
 	/* First make sure nobody puts things on it first */
 	/* FIXME: someone may have already started putting something on it.
@@ -432,6 +436,7 @@ void marcel_disable_vps(const marcel_vpset_t *vpset)
 	marcel_bubble_shake();
 
 out:
+	ma_preempt_enable();
 	marcel_mutex_unlock(&disabled_vpset_mutex);
 }
 

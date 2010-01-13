@@ -259,6 +259,9 @@ unsigned marcel_lwp_add_vp(void)
 
 #endif // MA__LWPS
 
+marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
+static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
+
 #ifdef MA__LWPS
 /* TODO: the stack of the lwp->sched_task is currently *NOT FREED* as
    run_task, and other system threads.
@@ -400,9 +403,6 @@ marcel_lwp_t *ma_lwp_wait_vp_active(void) {
 	ma_preempt_enable();
 	return lwp;
 }
-
-marcel_vpset_t marcel_disabled_vpset = MARCEL_VPSET_ZERO;
-static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
 
 /* User/supervisor/whatever requested stopping using a given set of VPs.
  * No need to take much care, it dosen't happen so often.  */

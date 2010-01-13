@@ -109,6 +109,7 @@ out:
 
 void __ma_resched_vpset(const marcel_vpset_t *vpset)
 {
+#ifdef MA__LWPS
 	unsigned vp;
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_vp_lwp[vp];
@@ -118,6 +119,14 @@ void __ma_resched_vpset(const marcel_vpset_t *vpset)
 			ma_resched_task(current,vp,lwp);
 		}
 	marcel_vpset_foreach_end()
+#else
+	marcel_t current = marcel_self();
+	ma_set_tsk_need_togo(current);
+	ma_lwp_t lwp;
+	ma_for_all_lwp(lwp) {
+		ma_resched_task(current, marcel_current_vp(), lwp);
+	}
+#endif
 }
 
 void ma_resched_vpset(const marcel_vpset_t *vpset)
@@ -125,6 +134,7 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 	unsigned vp;
 	ma_preempt_disable();
 	ma_local_bh_disable();
+#ifdef MA__LWPS
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_vp_lwp[vp];
 		if (lwp) {
@@ -135,6 +145,17 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
 		}
 	marcel_vpset_foreach_end()
+#else
+	marcel_t current = marcel_self();
+	ma_set_tsk_need_togo(current);
+	ma_lwp_t lwp;
+	ma_for_all_lwp(lwp) {
+		ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
+		ma_set_tsk_need_togo(current);
+		ma_resched_task(current,vp,lwp);
+		ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
+	}
+#endif
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }

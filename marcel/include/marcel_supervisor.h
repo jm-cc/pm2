@@ -1,3 +1,5 @@
+#section functions
+
 void
 marcel_supervisor_init (void);
 

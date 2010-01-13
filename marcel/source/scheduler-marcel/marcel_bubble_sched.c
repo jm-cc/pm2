@@ -879,7 +879,6 @@ static void ma_push_thread_up(marcel_t t) {
 	marcel_bubble_t *gatherb = NULL;
 	ma_holder_t *h;
 
-#ifdef MA__BUBBLES
 	marcel_entity_t *e2 = e;
 	/* While there are bubbles containing us */
 	while ((h = e2->natural_holder) && h->type == MA_BUBBLE_HOLDER) {
@@ -917,7 +916,7 @@ static void ma_push_thread_up(marcel_t t) {
 		return;
 	}
 	/* Thread is not in a bubble that needs to be pushed up, push it alone if needed */
-#endif
+
 	target = where_to_push(e);
 	if (target) {
 		mdebug("moving thread %p to %s\n", t, ma_holder_rq(target)->name);

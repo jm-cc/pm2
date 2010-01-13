@@ -176,6 +176,9 @@ void marcel_bubble_sched_end (void);
  * the top of the topology and then to call the \p submit method on that root
  * bubble. */
 void marcel_bubble_shake (void);
+#ifndef MA__BUBBLES
+#define marcel_bubble_shake() ((void)0)
+#endif
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
 
@@ -380,6 +383,9 @@ void ma_bubble_move_top_and_submit (marcel_bubble_t *b);
 
 /** \brief Push entities out from a given vpset that becomes disabled. */
 void ma_push_entities(const marcel_vpset_t *vpset);
+#ifndef MA__BUBBLES
+#define ma_push_entities(vpset) ((void)0)
+#endif
 
 /** \brief Locks a whole bubble hierarchy.  Also locks the whole level hierarchy.  */
 void ma_bubble_lock_all(marcel_bubble_t *b, struct marcel_topo_level *level);

@@ -44,6 +44,7 @@ unless (-p $rfifo1) {
 }
 if (defined $prog1) {
 	my $output1	= "${output_path}/${user}_marcel_console_1.log";
+	print "system: MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_RFIFO=${rfifo1} $prog1 > $output1 2>&1 &\n";
 	system "MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_RFIFO=${rfifo1} $prog1 > $output1 2>&1 &";
 }
 print "Opening fifo 1...\n";
@@ -67,14 +68,15 @@ if (defined $prog2) {
 		system "mkfifo ${rfifo2}"
 			and die "mkfifo ${rfifo2}: $!\n";
 	}
-	system "MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_FIFO=${rfifo2} $prog2 > $output2 2>&1 &";
+	print "system: MARCEL_SUPERVISOR_FIFO=${fifo2} MARCEL_SUPERVISOR_RFIFO=${rfifo2} $prog2 > $output2 2>&1 &\n";
+	system "MARCEL_SUPERVISOR_FIFO=${fifo2} MARCEL_SUPERVISOR_RFIFO=${rfifo2} $prog2 > $output2 2>&1 &";
 	print "Opening fifo 2...\n";
 	open ($fifo2_fh, "> $fifo2")
 		or die "open ${fifo2}: $!\n";
 	autoflush $fifo2_fh 1;
 	open ($rfifo2_fh, "< $rfifo2")
 		or die "open ${rfifo2}: $!\n";
-	autoflush $rfifo2_fh 2;
+	autoflush $rfifo2_fh 1;
 }
 
 print "Ready...\n";
@@ -154,6 +156,24 @@ while (<>) {
 		print "Sync with prog ${prog_num}...\n";
 		sysread $fh, my $data, 8 or die "read from fifo: $!\n";
 		print "Sync with prog ${prog_num} complete\n\n";
+	} elsif ($cmd eq 'S') {
+		print "Sync with any prog...\n";
+		my $rin = '';
+		if (defined $rfifo1_fh) {
+			vec($rin, fileno($rfifo1_fh), 1) = 1;
+		}
+		if (defined $rfifo2_fh) {
+			vec($rin, fileno($rfifo2_fh), 1) = 1;
+		}
+		my $nfound	= select($rin, undef, undef, undef);
+		if (defined $rfifo1_fh  and  vec($rin, fileno($rfifo1_fh), 1) == 1) {
+			sysread $rfifo1_fh, my $data, 8 or die "read from fifo: $!\n";
+			print "Sync-any with prog 1 complete\n";
+		}
+		if (defined $rfifo2_fh  and  vec($rin, fileno($rfifo2_fh), 1) == 1) {
+			sysread $rfifo2_fh, my $data, 8 or die "read from fifo: $!\n";
+			print "Sync-any with prog 2 complete\n";
+		}
 	} else {
 		die "unknown command: $cmd\n";
 	}

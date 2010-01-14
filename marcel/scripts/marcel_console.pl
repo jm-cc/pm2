@@ -9,11 +9,25 @@ use Getopt::Std;
 my $output_path	= '/tmp';
 my $fifo_path	= '/tmp';
 my $user	= $ENV{'USER'};
+my %vars;
 
 
 sub usage() {
 	print "marcel_console.pl [<prog1> [<prog2>]] < <command_file>";
 	exit;
+}
+
+sub expand($) {
+	my $arg	= shift;
+	unless ($arg =~ /^\$/) {
+		return $arg;
+	}
+	$arg	=~ s/^\$//;
+	unless (exists $vars{$arg}) {
+		die "undefined variable ${arg}\n";
+	}
+
+	return $vars{$arg};
 }
 
 sub mkfifo($) {
@@ -114,6 +128,8 @@ if ($async_nb == 2  or  $prog2 ne '') {
 	$prog_hash{'2'}	= mkprog(2, $prog2);
 }
 
+my @sync_queue;
+
 print "Ready...\n";
 while (<>) {
 	chomp;
@@ -132,14 +148,17 @@ while (<>) {
 		last;
 	} elsif ($cmd eq 't') {
 		# t: Temporisation (arg = duration in seconds)
-		print "Temporisation: $args[0] seconds\n";
-		sleep $args[0];
+		my $arg	= shift @args;
+		$arg	= expand($arg);
+		print "Temporisation: $arg seconds\n";
+		sleep $arg;
 	} elsif ($cmd eq 'e' or $cmd eq 'd') {
 		# e: Enable (args = <1|2> <vpnum>)
 		# d: Disable (args = <1|2> <vpnum>)
 		my $cmd_name	= ($cmd eq 'e')?'enable':'disable';
 		my $cmd_code	= $cmd_set{$cmd_name};
 		my $prog_num	= shift @args;
+		$prog_num	= expand($prog_num);
 		my $vpnum	= shift @args;
 		my $data	= pack 'LL', ($cmd_code, $vpnum);
 		my $prog;
@@ -157,6 +176,7 @@ while (<>) {
 		my $cmd_code	= $cmd_set{"${cmd_name}_list"};
 		my $sub_cmd_code	= $cmd_set{"${cmd_name}_list_item"};
 		my $prog_num	= shift @args;
+		$prog_num	= expand($prog_num);
 		my $nb_vps	= scalar (@args);
 		my $prog;
 		unless (exists $prog_hash{$prog_num}) {
@@ -175,6 +195,7 @@ while (<>) {
 	} elsif ($cmd eq 's') {
 		# s: Sync with prog 'arg'
 		my $prog_num	= shift @args;
+		$prog_num	= expand($prog_num);
 		my $prog;
 		unless (exists $prog_hash{$prog_num}) {
 			die "invalid prog_num ${prog_num}\n";
@@ -187,18 +208,35 @@ while (<>) {
 	} elsif ($cmd eq 'S') {
 		print "Sync with any prog...\n";
 		my $prog_num;
-		my $rin = '';
-		foreach $prog_num (keys %prog_hash) {
-			my $prog	= $prog_hash{$prog_num};
-			vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) = 1;
-		}
-		my $nfound	= select($rin, undef, undef, undef);
-		foreach $prog_num (keys %prog_hash) {
-			my $prog	= $prog_hash{$prog_num};
-			if (vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) == 1) {
-				sysread ${$prog}{'rfifo_fh'}, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
-				print "Sync-any with prog ${prog_num} complete\n";
+		unless (scalar @sync_queue) {
+			my $rin = '';
+			foreach $prog_num (keys %prog_hash) {
+				my $prog	= $prog_hash{$prog_num};
+				vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) = 1;
 			}
+			my $nfound	= select($rin, undef, undef, undef);
+			foreach $prog_num (keys %prog_hash) {
+				my $prog	= $prog_hash{$prog_num};
+				if (vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) == 1) {
+					sysread ${$prog}{'rfifo_fh'}, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
+					print "Sync-any . got message form prog ${prog_num}\n";
+					push @sync_queue, $prog_num;
+				}
+			}
+		}
+		$prog_num	= shift @sync_queue;
+		$vars{'s'}	= $prog_num;
+		print "Sync-any with prog ${prog_num} complete\n";
+	} elsif ($cmd eq 'v') {
+		my $varname	= shift @args;
+		if (scalar @args) {
+			my $value	= shift @args;
+			$value	= expand($value);
+			$vars{$varname}	= $value;
+			print "${varname} := ${value}\n";
+		} else {
+			my $value	= expand("\$${varname}");
+			print "${varname}: ${value}\n";
 		}
 	} else {
 		die "unknown command: $cmd\n";

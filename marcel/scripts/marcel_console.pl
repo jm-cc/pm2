@@ -3,10 +3,64 @@
 
 use strict;
 use IO::Handle;
+use Getopt::Std;
+
+# Globals
+my $output_path	= '/tmp';
+my $fifo_path	= '/tmp';
+my $user	= $ENV{'USER'};
+
 
 sub usage() {
 	print "marcel_console.pl [<prog1> [<prog2>]] < <command_file>";
 	exit;
+}
+
+sub mkfifo($) {
+	my $f = shift;
+	unless (-p $f) {
+		system "mkfifo ${f}"
+			and die "mkfifo ${f}: $!\n";
+	}
+}
+
+sub mkprog($$) {
+	my $num	= shift;
+	my $prog	= shift;
+	my $fifo	= "${fifo_path}/${user}_marcel_console_${num}.fifo";
+	my $rfifo	= "${fifo_path}/${user}_marcel_console_${num}.rfifo";
+	my $output	= "${output_path}/${user}_marcel_console_${num}.log";
+
+	mkfifo($fifo);
+	mkfifo($rfifo);
+
+	if ($prog ne '') {
+		print "system: MARCEL_SUPERVISOR_FIFO=${fifo} MARCEL_SUPERVISOR_RFIFO=${rfifo} $prog > $output 2>&1 &\n";
+		system "MARCEL_SUPERVISOR_FIFO=${fifo} MARCEL_SUPERVISOR_RFIFO=${rfifo} $prog > $output 2>&1 &";
+	}
+
+	my $fifo_fh;
+	print "Opening fifo ${num}...\n";
+	open ($fifo_fh, "> $fifo")
+		or die "open ${fifo}: $!\n";
+	autoflush $fifo_fh 1;
+
+	my $rfifo_fh;
+	print "Opening reverse fifo ${num}...\n";
+	open ($rfifo_fh, "< $rfifo")
+		or die "open ${rfifo}: $!\n";
+	autoflush $rfifo_fh 1;
+
+	my $ref = {};
+	${$ref}{'num'}	= $num;
+	${$ref}{'prog'}	= $prog;
+	${$ref}{'fifo'}	= $fifo;
+	${$ref}{'fifo_fh'}	= $fifo_fh;
+	${$ref}{'rfifo'}	= $rfifo;
+	${$ref}{'rfifo_fh'}	= $rfifo_fh;
+	${$ref}{'output'}	= $output;
+	
+	return $ref;
 }
 
 my %cmd_set	= (
@@ -18,65 +72,46 @@ my %cmd_set	= (
 	disable_list_item	=> 6,
 );
 
-my $output_path	= '/tmp';
-my $fifo_path	= '/tmp';
+my $async_mode	= 0;
+my $async_nb	= 0;
 
-my $prog1	= shift;
-my $prog2	= shift;
+my %opts;
+my $ret	= getopts('ha:', \%opts);
 
-my $fifo1_fh;
-my $fifo2_fh;
-my $rfifo1_fh;	# Reverse fifo to prog 1
-my $rfifo2_fh;	# Reverse fifo to prog 2
-
-
-my $user	= $ENV{'USER'};
-
-my $fifo1	= "${fifo_path}/${user}_marcel_console_1.fifo";
-unless (-p $fifo1) {
-	system "mkfifo ${fifo1}"
-		and die "mkfifo ${fifo1}: $!\n";
+if (exists $opts{'h'}) {
+	usage();
 }
-my $rfifo1	= "${fifo_path}/${user}_marcel_console_1.rfifo";
-unless (-p $rfifo1) {
-	system "mkfifo ${rfifo1}"
-		and die "mkfifo ${rfifo1}: $!\n";
-}
-if (defined $prog1) {
-	my $output1	= "${output_path}/${user}_marcel_console_1.log";
-	print "system: MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_RFIFO=${rfifo1} $prog1 > $output1 2>&1 &\n";
-	system "MARCEL_SUPERVISOR_FIFO=${fifo1} MARCEL_SUPERVISOR_RFIFO=${rfifo1} $prog1 > $output1 2>&1 &";
-}
-print "Opening fifo 1...\n";
-open ($fifo1_fh, "> $fifo1")
-	 or die "open ${fifo1}: $!\n";
-autoflush $fifo1_fh 1;
-print "Opening reverse fifo 1...\n";
-open ($rfifo1_fh, "< $rfifo1")
-	 or die "open ${rfifo1}: $!\n";
-autoflush $rfifo1_fh 1;
 
-if (defined $prog2) {
-	my $output2	= "${output_path}/${user}_marcel_console_2.log";
-	my $fifo2	= "${fifo_path}/${user}_marcel_console_2.fifo";
-	unless (-p $fifo2) {
-		system "mkfifo ${fifo2}"
-			and die "mkfifo ${fifo2}: $!\n";
+if (exists $opts{'a'}) {
+	$async_mode	= 1;
+	$async_nb	= $opts{'a'};
+	die "invalid number of programs for asynchronous mode\n"
+		if ($async_nb < 1  or  $async_nb > 2);
+	print "Running in asynchronous mode, monitoring $async_nb program(s)\n";
+}
+
+my $prog1;
+my $prog2;
+
+if ($async_mode) {
+	$prog1	= '';
+	$prog2	= '';
+} else {
+	$prog1	= shift;
+	if (defined $prog1) {
+		$prog2	= shift;
+	} else {
+		$async_mode	= 1;
+		$async_nb	= 1;
+		$prog1	= '';
+		$prog2	= '';
 	}
-	my $rfifo2	= "${fifo_path}/${user}_marcel_console_2.rfifo";
-	unless (-p $rfifo2) {
-		system "mkfifo ${rfifo2}"
-			and die "mkfifo ${rfifo2}: $!\n";
-	}
-	print "system: MARCEL_SUPERVISOR_FIFO=${fifo2} MARCEL_SUPERVISOR_RFIFO=${rfifo2} $prog2 > $output2 2>&1 &\n";
-	system "MARCEL_SUPERVISOR_FIFO=${fifo2} MARCEL_SUPERVISOR_RFIFO=${rfifo2} $prog2 > $output2 2>&1 &";
-	print "Opening fifo 2...\n";
-	open ($fifo2_fh, "> $fifo2")
-		or die "open ${fifo2}: $!\n";
-	autoflush $fifo2_fh 1;
-	open ($rfifo2_fh, "< $rfifo2")
-		or die "open ${rfifo2}: $!\n";
-	autoflush $rfifo2_fh 1;
+}
+
+my %prog_hash;
+$prog_hash{'1'}	= mkprog(1, $prog1);
+if ($async_nb == 2  or  $prog2 ne '') {
+	$prog_hash{'2'}	= mkprog(2, $prog2);
 }
 
 print "Ready...\n";
@@ -107,14 +142,12 @@ while (<>) {
 		my $prog_num	= shift @args;
 		my $vpnum	= shift @args;
 		my $data	= pack 'LL', ($cmd_code, $vpnum);
-		my $fh;
-		if ($prog_num == 1) {
-			$fh	= $fifo1_fh;
-		} elsif ($prog_num == 2) {
-			$fh	= $fifo2_fh;
-		} else {
+		my $prog;
+		unless (exists $prog_hash{$prog_num}) {
 			die "invalid prog_num ${prog_num}\n";
 		}
+		$prog	= $prog_hash{$prog_num};
+		my $fh	= ${$prog}{'fifo_fh'};
 		print "${cmd_name} VP ${vpnum} on prog ${prog_num}\n";
 		syswrite $fh, $data or die "write to fifo: $!\n";
 	} elsif ($cmd eq 'E' or $cmd eq 'D') {
@@ -125,15 +158,12 @@ while (<>) {
 		my $sub_cmd_code	= $cmd_set{"${cmd_name}_list_item"};
 		my $prog_num	= shift @args;
 		my $nb_vps	= scalar (@args);
-		my $fh;
-		if ($prog_num == 1) {
-			$fh	= $fifo1_fh;
-		} elsif ($prog_num == 2) {
-			$fh	= $fifo2_fh;
-		} else {
+		my $prog;
+		unless (exists $prog_hash{$prog_num}) {
 			die "invalid prog_num ${prog_num}\n";
 		}
-
+		$prog	= $prog_hash{$prog_num};
+		my $fh	= ${$prog}{'fifo_fh'};
 		my $data	= pack 'LL', ($cmd_code, $nb_vps);
 		print "${cmd_name} ${nb_vps} vp(s) on prog ${prog_num}\n";
 		syswrite $fh, $data or die "write to fifo: $!\n";
@@ -145,34 +175,30 @@ while (<>) {
 	} elsif ($cmd eq 's') {
 		# s: Sync with prog 'arg'
 		my $prog_num	= shift @args;
-		my $fh;
-		if ($prog_num == 1) {
-			$fh	= $rfifo1_fh;
-		} elsif ($prog_num == 2) {
-			$fh	= $rfifo2_fh;
-		} else {
+		my $prog;
+		unless (exists $prog_hash{$prog_num}) {
 			die "invalid prog_num ${prog_num}\n";
 		}
+		$prog	= $prog_hash{$prog_num};
+		my $fh	= ${$prog}{'fifo_fh'};
 		print "Sync with prog ${prog_num}...\n";
 		sysread $fh, my $data, 8 or die "read from fifo: $!\n";
 		print "Sync with prog ${prog_num} complete\n\n";
 	} elsif ($cmd eq 'S') {
 		print "Sync with any prog...\n";
+		my $prog_num;
 		my $rin = '';
-		if (defined $rfifo1_fh) {
-			vec($rin, fileno($rfifo1_fh), 1) = 1;
-		}
-		if (defined $rfifo2_fh) {
-			vec($rin, fileno($rfifo2_fh), 1) = 1;
+		foreach $prog_num (keys %prog_hash) {
+			my $prog	= $prog_hash{$prog_num};
+			vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) = 1;
 		}
 		my $nfound	= select($rin, undef, undef, undef);
-		if (defined $rfifo1_fh  and  vec($rin, fileno($rfifo1_fh), 1) == 1) {
-			sysread $rfifo1_fh, my $data, 8 or die "read from fifo: $!\n";
-			print "Sync-any with prog 1 complete\n";
-		}
-		if (defined $rfifo2_fh  and  vec($rin, fileno($rfifo2_fh), 1) == 1) {
-			sysread $rfifo2_fh, my $data, 8 or die "read from fifo: $!\n";
-			print "Sync-any with prog 2 complete\n";
+		foreach $prog_num (keys %prog_hash) {
+			my $prog	= $prog_hash{$prog_num};
+			if (vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) == 1) {
+				sysread ${$prog}{'rfifo_fh'}, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
+				print "Sync-any with prog ${prog_num} complete\n";
+			}
 		}
 	} else {
 		die "unknown command: $cmd\n";

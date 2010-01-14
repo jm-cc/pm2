@@ -17,17 +17,36 @@ sub usage() {
 	exit;
 }
 
-sub expand($) {
+sub expand_var($) {
 	my $arg	= shift;
-	unless ($arg =~ /^\$/) {
+	my $var;
+	while (($var) = ($arg =~ /(\$[[:alpha:]]+)/)) {
+		$var	=~ s/^\$//;
+		unless (exists $vars{$var}) {
+			die "undefined variable ${var}\n";
+		}
+		my $val	= $vars{$var};
+		$arg	=~ s/\$[[:alpha:]]+/$val/e
+	}
+	return $arg;
+}
+
+sub expand_expr($) {
+	my $arg	= shift;
+	if ($arg =~ /[[:alpha:]]/) {
 		return $arg;
 	}
-	$arg	=~ s/^\$//;
-	unless (exists $vars{$arg}) {
-		die "undefined variable ${arg}\n";
+	unless ($arg =~ /[[:digit:]]/) {
+		return $arg;
 	}
-
-	return $vars{$arg};
+	unless ($arg =~ m,[+-/~|&^*],) {
+		return $arg;
+	}
+	my $result	= eval $arg;
+	if ($@ ne '') {
+		die "evaluation error $@: ${arg}\n";
+	}
+	return $result;
 }
 
 sub mkfifo($) {
@@ -100,7 +119,7 @@ if (exists $opts{'a'}) {
 	$async_mode	= 1;
 	$async_nb	= $opts{'a'};
 	die "invalid number of programs for asynchronous mode\n"
-		if ($async_nb < 1  or  $async_nb > 2);
+		if ($async_nb < 0  or  $async_nb > 2);
 	print "Running in asynchronous mode, monitoring $async_nb program(s)\n";
 }
 
@@ -123,9 +142,11 @@ if ($async_mode) {
 }
 
 my %prog_hash;
-$prog_hash{'1'}	= mkprog(1, $prog1);
-if ($async_nb == 2  or  $prog2 ne '') {
-	$prog_hash{'2'}	= mkprog(2, $prog2);
+if ($async_nb == 1  or  $prog1 ne '') {
+	$prog_hash{'1'}	= mkprog(1, $prog1);
+	if ($async_nb == 2  or  $prog2 ne '') {
+		$prog_hash{'2'}	= mkprog(2, $prog2);
+	}
 }
 
 my @sync_queue;
@@ -142,6 +163,8 @@ while (<>) {
 		if (/^$/);
 	my @args	= split / /;
 	my $cmd	= shift @args;
+	@args = map {expand_var($_)}  @args;
+	@args = map {expand_expr($_)}  @args;
 	if ($cmd eq 'q') {
 		# q: Quit
 		print "Quit\n";
@@ -149,7 +172,6 @@ while (<>) {
 	} elsif ($cmd eq 't') {
 		# t: Temporisation (arg = duration in seconds)
 		my $arg	= shift @args;
-		$arg	= expand($arg);
 		print "Temporisation: $arg seconds\n";
 		sleep $arg;
 	} elsif ($cmd eq 'e' or $cmd eq 'd') {
@@ -158,7 +180,6 @@ while (<>) {
 		my $cmd_name	= ($cmd eq 'e')?'enable':'disable';
 		my $cmd_code	= $cmd_set{$cmd_name};
 		my $prog_num	= shift @args;
-		$prog_num	= expand($prog_num);
 		my $vpnum	= shift @args;
 		my $data	= pack 'LL', ($cmd_code, $vpnum);
 		my $prog;
@@ -176,7 +197,6 @@ while (<>) {
 		my $cmd_code	= $cmd_set{"${cmd_name}_list"};
 		my $sub_cmd_code	= $cmd_set{"${cmd_name}_list_item"};
 		my $prog_num	= shift @args;
-		$prog_num	= expand($prog_num);
 		my $nb_vps	= scalar (@args);
 		my $prog;
 		unless (exists $prog_hash{$prog_num}) {
@@ -195,7 +215,6 @@ while (<>) {
 	} elsif ($cmd eq 's') {
 		# s: Sync with prog 'arg'
 		my $prog_num	= shift @args;
-		$prog_num	= expand($prog_num);
 		my $prog;
 		unless (exists $prog_hash{$prog_num}) {
 			die "invalid prog_num ${prog_num}\n";
@@ -231,13 +250,14 @@ while (<>) {
 		my $varname	= shift @args;
 		if (scalar @args) {
 			my $value	= shift @args;
-			$value	= expand($value);
 			$vars{$varname}	= $value;
 			print "${varname} := ${value}\n";
 		} else {
-			my $value	= expand("\$${varname}");
+			my $value	= expand_var("\$${varname}");
 			print "${varname}: ${value}\n";
 		}
+	} elsif ($cmd eq 'p') {
+		print join (' ', @args), "\n";
 	} else {
 		die "unknown command: $cmd\n";
 	}

@@ -54,19 +54,22 @@ int nm_offload_task(void* args)
   return 0;
 }
 
-//#define FULL_VP 1
+#ifndef MARCEL
+#define FULL_VP 1
+#else
 #define VP1 1
 #define VP2 1
 #define VP3 1
 #define VP4 1
+#endif
 
 void nm_submit_poll_recv_ltask(struct nm_pkt_wrap *p_pw)
 {
   /* For now only poll on vp 0*/
 #ifdef FULL_VP
-  marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+  piom_vpset_t task_vpset = piom_vpset_full;
 #else
-  marcel_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
+  piom_vpset_t task_vpset = PIOM_VPSET_VP(VP1);
   marcel_vpset_set(&task_vpset, VP2);
   marcel_vpset_set(&task_vpset, VP3);
   marcel_vpset_set(&task_vpset, VP4);
@@ -82,9 +85,9 @@ void nm_submit_poll_recv_ltask(struct nm_pkt_wrap *p_pw)
 void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw)
 {
 #ifdef FULL_VP
-  marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+  piom_vpset_t task_vpset = piom_vpset_full;
 #else
-  marcel_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
+  piom_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
   marcel_vpset_set(&task_vpset, VP2);
   marcel_vpset_set(&task_vpset, VP3);
   marcel_vpset_set(&task_vpset, VP4);
@@ -100,9 +103,9 @@ void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw)
 void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core)
 {
 #ifdef FULL_VP
-  marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+  piom_vpset_t task_vpset = piom_vpset_full;
 #else
-  marcel_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
+  piom_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
   marcel_vpset_set(&task_vpset, VP2);
   marcel_vpset_set(&task_vpset, VP3);
   marcel_vpset_set(&task_vpset, VP4);
@@ -118,9 +121,9 @@ void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core)
 void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 {
 #ifdef FULL_VP
-  marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+  piom_vpset_t task_vpset = piom_vpset_full;
 #else
-  marcel_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
+  piom_vpset_t task_vpset = MARCEL_VPSET_VP(VP1);
   marcel_vpset_set(&task_vpset, VP2);
   marcel_vpset_set(&task_vpset, VP3);
   marcel_vpset_set(&task_vpset, VP4);

@@ -186,7 +186,7 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_task_ev ev;
-	marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+	piom_vpset_t task_vpset = piom_vpset_full;
 
 	/* If the server is not running, just perform a classical read */
 	if(piom_test_activity())
@@ -219,7 +219,7 @@ int
 piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_task_ev ev;
-	marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+	piom_vpset_t task_vpset = piom_vpset_full;
 	
         /* If the server is not running, just perform a classical read */
 	if(piom_test_activity())
@@ -251,7 +251,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_task_ev ev;
-	marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+	piom_vpset_t task_vpset = piom_vpset_full;
 	LOG_IN();
 
 	PROF_EVENT(piom_write_entry);
@@ -286,7 +286,7 @@ int
 piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_task_ev ev;
-	marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+	piom_vpset_t task_vpset = piom_vpset_full;
 
 	if(piom_test_activity())
 	{
@@ -315,7 +315,7 @@ piom_task_select(int nfds, fd_set * __restrict rfds,
 		 fd_set * __restrict wfds)
 {
 	struct piom_tcp_task_ev ev;
-	marcel_vpset_t task_vpset = MARCEL_VPSET_FULL;
+	piom_vpset_t task_vpset = piom_vpset_full;
 
 	if(piom_test_activity())
 	{	

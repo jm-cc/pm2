@@ -20,7 +20,9 @@
 
 #define PIOM_MAX_LTASK 256
 
-//#define USE_GLOBAL_QUEUE 1
+#ifndef MARCEL
+#define USE_GLOBAL_QUEUE 1
+#endif
 
 typedef enum
     {
@@ -52,7 +54,7 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 
 static tbx_bool_t piom_ltask_initialized = tbx_false;
 #ifdef USE_GLOBAL_QUEUE
-static struct piom_ltask_queue* global_queue;
+static struct piom_ltask_queue global_queue;
 #endif
 static tbx_bool_t *being_processed;
 
@@ -68,7 +70,7 @@ __piom_get_queue (piom_vpset_t vpset)
 {
 #ifdef USE_GLOBAL_QUEUE
     return &global_queue;
-#endif
+#else
     int vp1, vp2;
     vp1 = marcel_vpset_first(&vpset);
     vp2 = marcel_vpset_last(&vpset);
@@ -82,6 +84,7 @@ __piom_get_queue (piom_vpset_t vpset)
     marcel_topo_level_t *common_ancestor=ma_topo_common_ancestor (l1, l2);
 
     return (piom_ltask_queue_t *)common_ancestor->piom_ltask_data;
+#endif	/* USE_GLOBAL_QUEUE */
 }
 
 /* Initialize a queue */
@@ -95,8 +98,12 @@ __piom_init_queue (piom_ltask_queue_t * queue)
     queue->ltask_array_tail = 0;
     queue->ltask_array_head = 0;
     queue->ltask_array_nb_items = 0;
+#ifdef MARCEL
     for (i = 0; i < marcel_nbvps (); i++)
 	being_processed[i] = tbx_false;
+#else
+	being_processed[0] = tbx_false;
+#endif
     piom_spin_lock_init (&queue->ltask_lock);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
@@ -134,7 +141,11 @@ __piom_ltask_get (piom_ltask_queue_t ** queue)
 {
     /* Try to get a local job */
     struct piom_ltask *result=NULL;
-#ifndef USE_GLOBAL_QUEUE
+
+#ifdef USE_GLOBAL_QUEUE
+    result = __piom_ltask_get_from_queue (&global_queue);
+    *queue = &global_queue;    
+#else
     struct marcel_topo_level *l;
     piom_ltask_queue_t *cur_queue;
     for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
@@ -149,9 +160,6 @@ __piom_ltask_get (piom_ltask_queue_t ** queue)
 		    return result;
 		}
 	}
-#else
-    result = __piom_ltask_get_from_queue (&global_queue);
-    *queue = &global_queue;    
 #endif	/* USE_GLOBAL_QUEUE */
     return result;
 }
@@ -182,27 +190,37 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     if(! (queue->state & PIOM_LTASK_QUEUE_STATE_RUNNING)
        && ! (queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING))
 	return NULL;
+#ifdef MARCEL
     being_processed[marcel_current_vp ()] = tbx_true;
+#else
+    being_processed[0] = tbx_true;
+#endif
     task = __piom_ltask_get_from_queue (queue);
     /* Make sure the task is runnable */
     if (__piom_ltask_is_runnable (task))
 	{
 	    task->state = PIOM_LTASK_STATE_SCHEDULED;
 
+#ifdef MARCEL
 	    ma_local_bh_disable();
+#endif
 	    (*task->func_ptr) (task->data_ptr);
 	    
 	    if ((task->options & PIOM_LTASK_OPTION_REPEAT)
 		&& !(task->state & PIOM_LTASK_STATE_DONE))
 		{
+#ifdef MARCEL
 		    ma_local_bh_enable();
+#endif
 		    __piom_ltask_submit_in_queue (task, queue);
 		}
 	    else
 		{
 		    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE;
 		    task->state |= PIOM_LTASK_STATE_DONE;
+#ifdef MARCEL
 		    ma_local_bh_enable();
+#endif
 		}
 	}
 
@@ -210,7 +228,11 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     if(__piom_ltask_queue_is_done(queue))
 	queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
     else
+#ifdef MARCEL
 	being_processed[marcel_current_vp ()] = tbx_false;
+#else
+	being_processed[0] = tbx_false;
+#endif
     return task;
 }
 
@@ -232,8 +254,12 @@ piom_init_ltasks ()
 #ifdef DEBUG
 	    fprintf(stderr, "Using LTasks\n");
 #endif
+#ifdef USE_GLOBAL_QUEUE
+	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * 1);
+	    __piom_init_queue (&global_queue);
+#else
 	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * marcel_nbvps ());
-	    int i, j;
+ 	    int i, j;
 	    for (i=0; i<marcel_topo_nblevels; i++) {
 		for (j=0; j<marcel_topo_level_nbitems[i]; j++) {
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
@@ -241,7 +267,8 @@ piom_init_ltasks ()
 		    __piom_init_queue ((piom_ltask_queue_t*)l->piom_ltask_data);
 		}
 	    }
-	    piom_ltask_initialized = tbx_true;
+#endif	/* USE_GLOBAL_QUEUE */
+ 	    piom_ltask_initialized = tbx_true;
 	}
 }
 
@@ -250,6 +277,10 @@ piom_exit_ltasks()
 {
     if (piom_ltask_initialized)
 	{
+
+#ifdef USE_GLOBAL_QUEUE
+	    __piom_exit_queue((piom_ltask_queue_t*)&global_queue);
+#else
 	    int i, j;
 	    for (i=0; i<marcel_topo_nblevels; i++) {
 		for (j=0; j<marcel_topo_level_nbitems[i]; j++) {
@@ -258,7 +289,7 @@ piom_exit_ltasks()
 		    TBX_FREE(l->piom_ltask_data);
 		}
 	    }
-
+#endif
 	    TBX_FREE(being_processed);
 	    piom_ltask_initialized = tbx_false;
 	}
@@ -303,7 +334,9 @@ void *
 piom_ltask_schedule ()
 {
     struct piom_ltask *task;
-#ifndef USE_GLOBAL_QUEUE
+#ifdef USE_GLOBAL_QUEUE
+    task = __piom_ltask_schedule(&global_queue);
+#else
     struct marcel_topo_level *l;
     piom_ltask_queue_t *cur_queue;
     for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
@@ -315,8 +348,6 @@ piom_ltask_schedule ()
 	    if(task)
 		break;
 	}
-#else
-    task = __piom_ltask_schedule(&global_queue);
 #endif
     return task;
 }
@@ -338,20 +369,30 @@ piom_ltask_wait (struct piom_ltask *task)
 int
 piom_ltask_polling_is_required ()
 {
-    int plop=marcel_current_vp();
-    if (piom_ltask_initialized && !being_processed[plop])
+#ifdef MARCEL
+    int vp = marcel_current_vp();
+#else
+    int vp = 0;
+#endif
+    if (piom_ltask_initialized && !being_processed[vp])
 	{
+#ifdef USE_GLOBAL_QUEUE
+	    if(global_queue.ltask_array_nb_items && 
+	       (global_queue.state == PIOM_LTASK_QUEUE_STATE_RUNNING))
+		return 1;
+#else
 	    struct marcel_topo_level *l;
 	    piom_ltask_queue_t *cur_queue;
-	    for(l=&marcel_topo_levels[marcel_topo_nblevels-1][plop];
+	    for(l=&marcel_topo_levels[marcel_topo_nblevels-1][vp];
 		l;			/* do this as long as there's a topo level */
 		l=l->father)
 		{
 		    cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
-		    if(cur_queue->ltask_array_nb_items && 
+		     if(cur_queue->ltask_array_nb_items && 
 		       (cur_queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING))
 			return 1;
 		}
+#endif	/* USE_GLOBAL_QUEUE */
 	}
 
     return 0;

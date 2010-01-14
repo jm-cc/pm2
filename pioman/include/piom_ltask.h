@@ -27,15 +27,15 @@
 #define piom_vpset_t marcel_vpset_t
 #define piom_vpset_full MARCEL_VPSET_FULL
 #else
-#define piom_vp_set_t void
-#define piom_vpset_full (void) 0
+#define piom_vpset_t unsigned 
+#define piom_vpset_full (unsigned) 1
 #endif /* MARCEL */
 
-typedef enum
-    {
-	PIOM_LTASK_OPTION_NULL = 0,
-	PIOM_LTASK_OPTION_REPEAT = 1
-    } piom_ltask_option_t;
+typedef unsigned piom_ltask_option_t;
+#define PIOM_LTASK_OPTION_NULL 0
+#define PIOM_LTASK_OPTION_REPEAT 1
+
+
 
 typedef enum
     {

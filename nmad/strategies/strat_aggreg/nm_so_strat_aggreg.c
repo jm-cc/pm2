@@ -61,14 +61,8 @@ struct nm_so_strat_aggreg_gate {
 };
 
 static int num_instances = 0;
-static int nb_data_aggregation;
-static int nb_ctrl_aggregation;
-
-static void try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
-				  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
-
-static void launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
-			       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk);
+static int nb_data_aggregation = 0;
+static int nb_ctrl_aggregation = 0;
 
 /** Component declaration */
 static int nm_strat_aggreg_load(void)
@@ -125,49 +119,28 @@ static void strat_aggreg_destroy(void*status)
  *  @param p_ctrl a pointer to the ctrl header.
  *  @return The NM status.
  */
-static int strat_aggreg_pack_ctrl(void*_status,
-				  struct nm_gate *p_gate,
+static int strat_aggreg_pack_ctrl(void*_status, struct nm_gate *p_gate,
 				  const union nm_so_generic_ctrl_header *p_ctrl)
 {
-  struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_gate *status = _status;
-  int err;
-
-  /* We first try to find an existing packet to form an aggregate */
-  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
-
-    if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE)
-      /* There's not enough room to add our ctrl header to this paquet */
-      goto next;
-
-    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    nb_ctrl_aggregation ++;
-    goto out;
-
-  next:
-    ;
-  }
-
-  /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
-					     &p_so_pw);
-  if(err != NM_ESUCCESS)
-    goto out;
-
-  /* Add the control packet to the out_list */
-  tbx_fast_list_add_tail(&p_so_pw->link, &status->out_list);
-
- out:
-  return err;
+  struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_CTRL_HEADER_SIZE, 0);
+  if(p_pw)
+    {
+      nm_so_pw_add_control(p_pw, p_ctrl);
+      nb_ctrl_aggregation++;
+    }
+  else
+    {
+      nm_tactic_pack_ctrl(p_ctrl, &status->out_list);
+    }
+  return NM_ESUCCESS;
 }
 
 
-static int strat_aggreg_todo(void*_status,
-			     struct nm_gate *p_gate)
+static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
-  struct tbx_fast_list_head *out_list = &(status)->out_list;
-  return !(tbx_fast_list_empty(out_list));
+  return !(tbx_fast_list_empty(&status->out_list));
 }
 
 /** Handle a new packet submitted by the user code.
@@ -183,19 +156,28 @@ static int strat_aggreg_todo(void*_status,
 static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
-  const uint32_t len = p_pack->len;
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
     {
+      const uint32_t len = p_pack->len;
       if(len <= status->nm_so_max_small) 
 	{
 	  /* Small packet */
-	  try_to_agregate_small(_status, p_pack, p_pack->data, len, 0, 1);
+	  struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
+	  if(p_pw)
+	    {
+	      nb_data_aggregation++;
+	      nm_tactic_pack_small_into_pw(p_pack, p_pack->data, len, 0, status->nm_so_copy_on_send_threshold, p_pw);
+	    }
+	  else
+	    {
+	      nm_tactic_pack_small_new_pw(p_pack, p_pack->data, len, 0, status->nm_so_copy_on_send_threshold, &status->out_list);
+	    }
 	}
       else 
 	{
 	  /* Large packet */
-	  launch_large_chunk(_status, p_pack, p_pack->data, len, 0, 1);
+	  nm_tactic_pack_rdv(p_pack, p_pack->data, len, 0);
 	}
     }
   else if(p_pack->status & NM_PACK_TYPE_IOV)
@@ -203,18 +185,28 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
       struct iovec*iov = p_pack->data;
       uint32_t offset = 0;
       int i;
-      for(i = 0; offset < len; i++)
+      for(i = 0; offset < p_pack->len; i++)
 	{
-	  tbx_bool_t is_last_chunk = (offset + iov[i].iov_len >= len);
-	  if(iov[i].iov_len <= status->nm_so_max_small) 
+	  const void*data = iov[i].iov_base;
+	  const int len = iov[i].iov_len;
+	  if(len <= status->nm_so_max_small) 
 	    {
 	      /* Small packet */
-	      try_to_agregate_small(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
+	      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
+	      if(p_pw)
+		{
+		  nb_data_aggregation++;
+		  nm_tactic_pack_small_into_pw(p_pack, data, len, offset, status->nm_so_copy_on_send_threshold, p_pw);
+		}
+	      else
+		{
+		  nm_tactic_pack_small_new_pw(p_pack, data, len, offset, status->nm_so_copy_on_send_threshold, &status->out_list);
+		}
 	    }
 	  else 
 	    {
-	      /* Large packets are splited in 2 chunks. */
-	      launch_large_chunk(_status, p_pack, iov[i].iov_base, iov[i].iov_len, offset, is_last_chunk);
+	      /* Large packets */
+	      nm_tactic_pack_rdv(p_pack, data, len, offset);
 	    }
 	  offset += iov[i].iov_len;
 	}
@@ -223,51 +215,6 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
     TBX_FAILURE("strat_aggreg does not support datatypes.");
 
   return NM_ESUCCESS;
-}
-
-static void try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
-				  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
-{
-  struct nm_so_strat_aggreg_gate *status = _status;
-  struct nm_pkt_wrap*p_pw;
-  int flags = 0;
-
-  /* We first try to find an existing packet to form an aggregate */
-  tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
-    {
-      const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-      const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
-      const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
-      if(size <= d_rlen && h_rlen >= NM_SO_DATA_HEADER_SIZE)
-	{
-	  if(len <= status->nm_so_copy_on_send_threshold && size <= h_rlen)
-	    /* We can copy data into the header zone */
-	    flags = NM_SO_DATA_USE_COPY;
-	  nm_so_pw_add_data(p_pw, p_pack, data, len, chunk_offset, flags);
-	  nb_data_aggregation ++;
-	  return;
-	}
-    }
-  
-  flags = NM_PW_GLOBAL_HEADER;
-  if(len <= status->nm_so_copy_on_send_threshold)
-    flags |= NM_SO_DATA_USE_COPY;
-
-  /* We didn't have a chance to form an aggregate, so simply form a
-     new packet wrapper and add it to the out_list */
-  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, flags, &p_pw);
-  tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
-}
-
-static void launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
-			       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
-{
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
-  tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
-  union nm_so_generic_ctrl_header ctrl;
-  nm_so_init_rdv(&ctrl, p_pack, len, chunk_offset, is_last_chunk ? NM_PROTO_FLAG_LASTCHUNK : 0);
-  strat_aggreg_pack_ctrl(_status, p_pack->p_gate, &ctrl);
 }
 
 /** Compute and apply the best possible packet rearrangement, then

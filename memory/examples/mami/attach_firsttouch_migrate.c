@@ -23,7 +23,7 @@ static void first_touch(void *buffer, size_t size);
 static mami_manager_t *memory_manager;
 
 int main(int argc, char * argv[]) {
-  int *buffer;
+  void *buffer;
   size_t size;
   int err;
 
@@ -33,7 +33,7 @@ int main(int argc, char * argv[]) {
   size = 10000*sizeof(int);
 
   // Case with user-allocated memory
-  buffer=memalign(getpagesize(), size);
+  posix_memalign(&buffer, getpagesize(), size);
   first_touch(buffer, size);
   err = mami_unregister(memory_manager, buffer);
   if (err < 0) perror("mami_unregister unexpectedly failed");

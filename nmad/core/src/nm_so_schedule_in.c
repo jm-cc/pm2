@@ -442,7 +442,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	  tbx_fast_list_del(&p_large_pw->link);
 	  if(chunk_len < p_large_pw->length)
 	    {
-	      /* ** partial ACK- split the packet  */
+	      /* ** partial RTR- split the packet  */
 	      nm_so_pw_finalize(p_large_pw);
 	      /* assert ack is partial */
 	      assert(chunk_len > 0 && chunk_len < p_large_pw->length);
@@ -470,7 +470,13 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	  return;
 	}
     }
-  TBX_FAILUREF("PANIC- ack_callback cannot find pending packet wrapper for seq = %d; offset = %d!\n",
+  fprintf(stderr, "cannot find matching packet for seq = %d; offset = %d- dumping pending large packets\n", seq, chunk_offset);
+  tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
+    {
+      const struct nm_pack_s*p_pack = p_large_pw->contribs[0].p_pack;
+      fprintf(stderr, "  packet- seq = %d; chunk_offset = %d\n", p_pack->seq, p_large_pw->chunk_offset);
+    }
+  TBX_FAILUREF("PANIC- nm_rtr_callback cannot find pending packet wrapper for seq = %d; offset = %d!\n",
 	      seq, chunk_offset);
 }
 /** Process an acknowledgement.

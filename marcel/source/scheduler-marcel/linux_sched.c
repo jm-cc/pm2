@@ -555,7 +555,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	}
 
 #ifdef MA__LWPS
-	if (p->as_entity.prio == MA_IDLE_PRIO)
+	if (p == __ma_get_lwp_var(idle_task))
 #else
 	if (currently_idle)
 #endif

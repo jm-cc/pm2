@@ -80,7 +80,7 @@ void large_contigu_vers_large_contigu(void){
     nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(2);
+    usleep(50*1000);
   }
 
   if (is_server) {
@@ -143,7 +143,7 @@ void large_contigu_vers_large_contigu_plus_long(void){
     nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(2);
+    usleep(50*1000);
   }
 
   if (is_server) {
@@ -209,7 +209,7 @@ void large_contigu_vers_large_disperse(void){
     nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(2);
+    usleep(50*1000);
   }
 
   if (is_server) {
@@ -304,7 +304,7 @@ void large_disperse_vers_large_disperse_identique(void){
     nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(2);
+    usleep(50*1000);
   }
 
   if (is_server) {
@@ -400,7 +400,7 @@ void large_disperse_vers_large_disperse_disymetrique(void){
     nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(2);
+    usleep(50*1000);
   }
 
   if (is_server) {
@@ -488,7 +488,7 @@ void large_disperse_vers_large_contigu(void){
     nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
     nm_sr_swait(p_core, &request);
 
-    sleep(5);
+    usleep(50*1000);
   }
 
   if (is_server) {

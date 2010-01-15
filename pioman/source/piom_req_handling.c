@@ -246,7 +246,7 @@ piom_req_submit(piom_server_t server, piom_req_t req)
     LOG_IN();
 #ifdef PIOM_THREAD_ENABLED
     piom_thread_t lock;
-    lock=piom_ensure_trylock_from_tasklet(server);
+    lock = piom_server_lock_reentrant_from_callback(server);
 #endif	/* PIOM_THREAD_ENABLED */
 
     piom_verify_server_state(server);
@@ -278,7 +278,7 @@ piom_req_submit(piom_server_t server, piom_req_t req)
 	    __piom_register_poll(server, req);
 	}
 #ifdef PIOM_THREAD_ENABLED
-    piom_restore_trylocked_from_tasklet(server, lock);
+    piom_server_unlock_reentrant_from_callback(server, lock);
 #endif	/* PIOM_THREAD_ENABLED */
     LOG_RETURN(0);
 }
@@ -296,7 +296,7 @@ piom_req_cancel(piom_req_t req, int ret_code)
     PIOM_BUG_ON(!(req->state & PIOM_STATE_REGISTERED));
     server = req->server;
 #ifdef PIOM_THREAD_ENABLED
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
 #endif	/* PIOM_THREAD_ENABLED */
     piom_verify_server_state(server);
 
@@ -314,7 +314,7 @@ piom_req_cancel(piom_req_t req, int ret_code)
     __piom_unregister(server, req);
 
 #ifdef PIOM_THREAD_ENABLED
-    piom_restore_lock_server_locked(server, lock);
+    piom_server_unlock_reentrant(server, lock);
 #endif	/* PIOM_THREAD_ENABLED */
 
     LOG_RETURN(0);
@@ -328,7 +328,7 @@ piom_req_free(piom_req_t req)
     if(server) {
 #ifdef PIOM_THREAD_ENABLED
 	piom_thread_t lock;
-	lock=piom_ensure_trylock_from_tasklet(server);
+	lock = piom_server_lock_reentrant_from_callback(server);
 #endif	/* PIOM_THREAD_ENABLED */
 	int nb_req_ask_wake_server=0;
 	_piom_spin_lock_softirq(&server->req_ready_lock);
@@ -350,7 +350,7 @@ piom_req_free(piom_req_t req)
 	    __piom_wake_id_waiters(server, nb_req_ask_wake_server);
 	}
 #ifdef PIOM_THREAD_ENABLED
-	piom_restore_trylocked_from_tasklet(server, lock);
+	piom_server_unlock_reentrant_from_callback(server, lock);
 #endif	/* PIOM_THREAD_ENABLED */
 
 	if (!__piom_need_poll(server)) {

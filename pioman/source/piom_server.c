@@ -164,22 +164,22 @@ piom_server_stop(piom_server_t server)
 #ifdef PIOM_THREAD_ENABLED
     piom_thread_t lock;
 
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
     __piom_poll_stop(server);
     server->state = PIOM_SERVER_STATE_HALTED;
-    piom_restore_lock_server_locked(server, lock);
+    piom_server_unlock_reentrant(server, lock);
     
 #ifdef MARCEL
     ma_tasklet_kill(&server->poll_tasklet);
 #endif
     
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
 #ifdef MARCEL
     ma_tasklet_disable(&server->poll_tasklet);
 #endif
     
     /* peut être la solution d'un bug... */
-    //lock = piom_ensure_trylock_from_tasklet(server);
+    //lock = piom_server_lock_reentrant_from_callback(server);
 #endif	/* PIOM_THREAD_ENABLED */
 
     //piom_verify_server_state(server);
@@ -221,7 +221,7 @@ piom_server_stop(piom_server_t server)
     //_piom_spin_unlock_softirq(&piom_poll_lock);
     ma_tasklet_enable(&server->poll_tasklet);
 #endif	/* MARCEL */
-      piom_restore_lock_server_locked(server, lock);
+      piom_server_unlock_reentrant(server, lock);
 #endif /* PIOM_THREAD_ENABLED MARCEL */
 
     LOG_RETURN(0);

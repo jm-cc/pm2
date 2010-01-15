@@ -138,7 +138,7 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
 	}
 #endif /* PIOM_BLOCKING_CALLS */
 
-    __piom_unlock_server(server);
+    piom_unlock(server);
 
 #ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P that can return -1 and set errno to EINT (posix compliant) */
@@ -189,7 +189,7 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
 
     PIOM_BUG_ON(!(req->state & PIOM_STATE_REGISTERED));
     server = req->server;
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
     piom_verify_server_state(server);
 
     req->state &= ~PIOM_STATE_OCCURED;
@@ -204,9 +204,9 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
     if (!(req->state & PIOM_STATE_OCCURED)) {
 	/* Wait for the request */
 	ret = __piom_wait_req(server, req, wait, timeout);
-	piom_restore_lock_server_unlocked(server, lock);
+	piom_server_relock_reentrant(server, lock);
     } else {
-	piom_restore_lock_server_locked(server, lock);
+	piom_server_unlock_reentrant(server, lock);
     }
 
     LOG_RETURN(ret);
@@ -220,7 +220,7 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
     LOG_IN();
     struct piom_wait wait;
     piom_thread_t lock;
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
 
     piom_verify_server_state(server);
 
@@ -238,12 +238,12 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
 #endif	/* PIOM__DEBUG */
 	/* TODO: only register if the polling fails */
     piom_check_polling_for(server);
-    __piom_unlock_server(server);
+    piom_unlock(server);
 #ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P (posix compliant) */
     piom_sem_P(&wait.sem);
 #endif	/* PIOM_THREAD_ENABLED */
-    piom_restore_lock_server_unlocked(server, lock);
+    piom_server_relock_reentrant(server, lock);
 
     LOG_RETURN(wait.ret);
 }
@@ -258,7 +258,7 @@ piom_wait(piom_server_t server, piom_req_t req,
     int waken_up = 0;
 
     piom_thread_t lock_owner;
-    lock_owner = piom_ensure_lock_server(server);
+    lock_owner = piom_server_lock_reentrant(server);
 
     piom_verify_server_state(server);
 
@@ -294,7 +294,7 @@ piom_wait(piom_server_t server, piom_req_t req,
 	    }
 	}
 
-	piom_restore_lock_server_locked(server, lock_owner);
+	piom_server_unlock_reentrant(server, lock_owner);
 	LOG_RETURN(0);
     }
 
@@ -307,11 +307,11 @@ piom_wait(piom_server_t server, piom_req_t req,
     /* Wait for the request's completion */
     if (!(req->state & PIOM_STATE_OCCURED)) {
 	__piom_wait_req(server, req, wait, timeout);
-    lock_owner = piom_ensure_lock_server(server);
+    lock_owner = piom_server_lock_reentrant(server);
     }
     /* Unregister the request */
     __piom_unregister(server, req);
-    piom_restore_lock_server_locked(server, lock_owner);
+    piom_server_unlock_reentrant(server, lock_owner);
     LOG_RETURN(wait->ret);
 }
 

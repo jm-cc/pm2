@@ -95,11 +95,11 @@ piom_check_polling_for(piom_server_t server)
     server->max_priority = PIOM_REQ_PRIORITY_LOWEST;
     server->registered_req_not_yet_polled = 0;
 #ifdef PIOM_THREAD_ENABLED
-    piom_thread_t owner = piom_ensure_lock_server(server);
+    piom_thread_t owner = piom_server_lock_reentrant(server);
 #endif
     nb = __piom_need_poll(server);
     if (!nb){
-	piom_restore_lock_server_locked(server, owner);	
+	piom_server_unlock_reentrant(server, owner);	
 	return;
     }
 
@@ -119,12 +119,12 @@ piom_check_polling_for(piom_server_t server)
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func) {
 	/* poll all the requests with the pollanny callback */
 #ifdef PIOM_THREAD_ENABLED
-	__piom_unlock_server(server);	
+	piom_unlock(server);	
 #endif		
 	(*server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func)
 	    (server, PIOM_FUNCTYPE_POLL_POLLANY, NULL, nb, 0);
 #ifdef PIOM_THREAD_ENABLED
-	__piom_lock_server(server, PIOM_SELF);
+	piom_server_lock(server);
 #endif
 
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func) {
@@ -138,7 +138,7 @@ piom_check_polling_for(piom_server_t server)
                 if(req->priority >= server->max_priority) {
                     if(req->func_to_use != PIOM_FUNC_SYSCALL){
 #ifdef PIOM_THREAD_ENABLED
-			__piom_unlock_server(server);	
+			piom_unlock(server);	
 #endif
                         (*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
                             (server, PIOM_FUNCTYPE_POLL_POLLONE,
@@ -146,7 +146,7 @@ piom_check_polling_for(piom_server_t server)
                              PIOM_OPT_REQ_IS_GROUPED
                              | PIOM_OPT_REQ_ITER);
 #ifdef PIOM_THREAD_ENABLED
-			__piom_lock_server(server, PIOM_SELF);
+			piom_server_lock(server);
 #endif
 
                     }
@@ -165,7 +165,7 @@ piom_check_polling_for(piom_server_t server)
 	if (!__piom_need_poll(server)) {
 	    __piom_poll_stop(server);
 #ifdef PIOM_THREAD_ENABLED
-	    piom_restore_lock_server_locked(server, owner);
+	    piom_server_unlock_reentrant(server, owner);
 #endif
 	    return;
 	} else {
@@ -173,7 +173,7 @@ piom_check_polling_for(piom_server_t server)
 	}
     }
 #ifdef PIOM_THREAD_ENABLED
-    piom_restore_lock_server_locked(server, owner);
+    piom_server_unlock_reentrant(server, owner);
 #endif
     __piom_update_timer(server);
     return;
@@ -325,7 +325,7 @@ piom_poll_req(piom_req_t req, unsigned usec)
 	return; 
 #ifdef MARCEL
     marcel_task_t *lock;
-    lock=piom_ensure_trylock_from_tasklet(req->server);
+    lock = piom_server_lock_reentrant_from_callback(req->server);
 #endif	/* MARCEL */
 
     tbx_tick_t t1, t2;
@@ -358,7 +358,7 @@ piom_poll_req(piom_req_t req, unsigned usec)
 	i++;
     } while(TBX_TIMING_DELAY(t1, t2) < usec);
 #ifdef MARCEL
-    piom_restore_trylocked_from_tasklet(req->server, lock);
+    piom_server_unlock_reentrant_from_callback(req->server, lock);
 #endif	/* MARCEL */
 }
 
@@ -388,12 +388,12 @@ piom_poll_force_sync(piom_server_t server)
     PIOM_LOGF("Sync poll forced for [%s]\n", server->name);
 #ifdef MARCEL
     marcel_task_t *lock;
-    lock = piom_ensure_lock_server(server);
+    lock = piom_server_lock_reentrant(server);
 #endif	/* MARCEL */
     piom_check_polling_for(server);
 
 #ifdef MARCEL
-    piom_restore_lock_server_locked(server, lock);
+    piom_server_unlock_reentrant(server, lock);
 #endif	/* MARCEL */
     LOG_OUT();
 }

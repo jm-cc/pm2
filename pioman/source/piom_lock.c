@@ -15,28 +15,12 @@
  */
 
 #include "pioman.h"
-
 #include <sched.h>
-
-/* Events server's Mutex
- *
- * - Callbacks are ALWAYS called inside this mutex
- * - BLOCK_ONE|ALL callbacks have to unlock it before the syscall 
- *     and lock it after using piom_callback_[un]lock().
- * - Previous functions can be called with or without this lock
- * - The mutex is unlocked in the waiting functions (piom_*wait*())
- * - The callbacks and the wake up of the threads waiting for the
- *    events signaled by the callback are atomic.
- * - If the mutex is held before the waiting function ((piom_wait_*),
- *    the wake up will be atomic (ie: a callback signaling the waited 
- *    event will wake up the thread).
- * - If a request has the ONE_SHOT attribute, the disactivation is atomic
- */
 
 #if defined(PIOM_THREAD_ENABLED)
 
 static __tbx_inline__
-void __piom_lock_from_spare_vp(piom_spinlock_t* lock)
+void __piom_server_lock_from_spare_vp(piom_spinlock_t* lock)
 {
 #ifdef PIOM_BLOCKING_CALLS
     int local_vp=marcel_current_vp();
@@ -61,7 +45,7 @@ void __piom_lock_from_spare_vp(piom_spinlock_t* lock)
 }
 
 static __tbx_inline__
-void __piom_unlock_from_spare_vp(piom_spinlock_t* lock)
+void __piom_server_unlock_from_spare_vp(piom_spinlock_t* lock)
 {
 #ifdef PIOM_BLOCKING_CALLS
     ma_spin_unlock(lock);
@@ -70,156 +54,176 @@ void __piom_unlock_from_spare_vp(piom_spinlock_t* lock)
 #endif
 }
 
-/* Used by the application to lock a server */
-int piom_lock(piom_server_t server)
-{
-    /* this lock is not reentrant ! */
-    PIOM_BUG_ON(server->lock_owner == PIOM_SELF);
-
-    __piom_lock_server(server, PIOM_SELF);
-    return 0;
-}
-
-/* Used by the application to unlock a server */
-int piom_unlock(piom_server_t server)
-{
-    /* check wether *we* have lock before unlocking */
-    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
-
-    __piom_unlock_server(server);
-    return 0;
-}
-
-
 /* locks a server
  * this function can't be called from the server's tasklet
  */
+static __tbx_inline__
 void 
-__piom_lock_server(piom_server_t server,
+__piom_server_lock(piom_server_t server,
 		   piom_thread_t owner)
 {
-    __piom_lock_from_spare_vp(&server->lock);
+    __piom_server_lock_from_spare_vp(&server->lock);
 #ifdef PIOM_USE_TASKLETS
     ma_tasklet_disable(&server->poll_tasklet);
 #endif
     server->lock_owner = owner;
 }
 
-/* locks a server from the server's tasklet*/
-void 
-__piom_trylock_server(piom_server_t server,
-		      piom_thread_t owner)
-{
-    __piom_lock_from_spare_vp(&server->lock);
-    server->lock_owner = owner;
-}
-
 /* unlocks a server */
+static __tbx_inline__
 void 
-__piom_unlock_server(piom_server_t server)
+__piom_server_unlock(piom_server_t server)
 {
     PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
     server->lock_owner = PIOM_THREAD_NULL;
 #ifdef PIOM_USE_TASKLETS
     ma_tasklet_enable(&server->poll_tasklet);
 #endif
-    __piom_unlock_from_spare_vp(&server->lock);
+    __piom_server_unlock_from_spare_vp(&server->lock);
 }
 
-/* unlocks a server */
+/* locks a server from the server callback */
+static __tbx_inline__ 
 void 
-__piom_tryunlock_server(piom_server_t server)
+__piom_server_lock_from_callback(piom_server_t server,
+				 piom_thread_t owner)
+{
+    __piom_server_lock_from_spare_vp(&server->lock);
+    server->lock_owner = owner;
+}
+
+/* unlocks a server from a callback */
+static __tbx_inline__ 
+void 
+__piom_server_unlock_from_callback(piom_server_t server)
 {
     PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
     server->lock_owner = PIOM_THREAD_NULL;
-    __piom_unlock_from_spare_vp(&server->lock);
+    __piom_server_unlock_from_spare_vp(&server->lock);
 }
 
-/* Locks a server and disable the tasklet
+
+/* usual locking primitives:
+ * when using tasklets, these locks disable softirq, so that
+ * while the lock is hold, the thread cannot be preempted.
+ * DO NOT call these function from a callback if you don't want 
+ * the thread to hang forever !
+ */
+
+/* Lock a server 
+ */
+int piom_server_lock(piom_server_t server)
+{
+    /* this lock is not reentrant ! */
+    PIOM_BUG_ON(server->lock_owner == PIOM_SELF);
+
+    __piom_server_lock(server, PIOM_SELF);
+    return 0;
+}
+
+/* Used by the application to unlock a server */
+int piom_server_unlock(piom_server_t server)
+{
+    /* check wether *we* have locked before unlocking */
+    PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
+
+    __piom_server_unlock(server);
+    return 0;
+}
+
+/* Lock a server
+ * This function if reentrant: if the calling thread already has 
+    the lock, the function won't hang
  * return  PIOM_SELF if we already have the lock
- *  NULL overwise
+ * NULL overwise
  */
 piom_thread_t
-piom_ensure_lock_server(piom_server_t server)
+piom_server_lock_reentrant(piom_server_t server)
 {
     if (server->lock_owner == PIOM_SELF) {
+	/* the calling thread already has the lock */
 	LOG_RETURN(PIOM_SELF);
     }
-    __piom_lock_server(server, PIOM_SELF);
+    /* the calling thread doesn't hold the lock */
+    __piom_server_lock(server, PIOM_SELF);
     return PIOM_THREAD_NULL;
 }
 
-/* Locks a server
- * return  PIOM_SELF if we already have the lock
- *  NULL overwise
+/* Unlock a server
+ * @param old_owner: the thread_id that was returned by piom_server_lock_reentrant
+ */
+void 
+piom_server_unlock_reentrant(piom_server_t server,
+			     piom_thread_t old_owner)
+{
+    if (old_owner == PIOM_THREAD_NULL) {
+	__piom_server_unlock(server);
+    }
+}
+
+/* Lock a server that may have been unlocked.
+ * This can be used when the current thread calls piom_server_lock_reentrant, 
+ * then calls a function that unlocks the server. 
+ * @param old_owner: the thread_id that was returned by piom_server_lock_reentrant
+ */
+void 
+piom_server_relock_reentrant(piom_server_t server,
+			     piom_thread_t old_owner)
+{
+    if (old_owner != PIOM_THREAD_NULL) {
+	__piom_server_lock(server, old_owner);
+    }
+}
+
+/*
+ * 'safe' locking primitives:
+ * these function can be called safely from a callback
+ */
+
+/* Locks a server from a callback
+ */
+void
+piom_server_lock_from_callback(piom_server_t server)
+{
+    __piom_server_lock_from_spare_vp(&server->lock);
+}
+
+void 
+piom_server_unlock_from_callback(piom_server_t server)
+{
+    __piom_server_unlock_from_callback(server);	
+}
+
+
+/* Locks a server from a callback.
+ * This function is reentrant: if the calling thread already has the lock,
+ * this function won't hang
+ * return  PIOM_SELF if the calling thread already has the lock
+ * NULL overwise
  */
 piom_thread_t
-piom_ensure_trylock_from_tasklet(piom_server_t server)
+piom_server_lock_reentrant_from_callback(piom_server_t server)
 {
     if (server->lock_owner == PIOM_SELF)
 	/* we already have the lock */
 	return PIOM_SELF;
 
-    __piom_lock_from_spare_vp(&server->lock);
+    __piom_server_lock_from_spare_vp(&server->lock);
     server->lock_owner = PIOM_SELF;
     return PIOM_THREAD_NULL;
 }
 
-/* Locks a server
- * return  PIOM_SELF if we already have the lock
- *  NULL overwise
+
+/* Unlocks a server from a callback.
  */
-piom_thread_t
-piom_ensure_trylock_server(piom_server_t server)
-{
-    if (server->lock_owner == PIOM_SELF) {
-	LOG_RETURN(PIOM_SELF);
-    }
-    __piom_trylock_server(server, PIOM_SELF);
-    return PIOM_THREAD_NULL;
-}
-
 void 
-piom_lock_server_owner(piom_server_t server,
-		       piom_thread_t owner)
-{
-    __piom_lock_server(server, owner);
-}
-
-void 
-piom_restore_lock_server_locked(piom_server_t server,
-				piom_thread_t old_owner)
-{
-    if (old_owner == PIOM_THREAD_NULL) {
-	__piom_unlock_server(server);
-    }
-}
-
-void 
-piom_restore_trylocked_from_tasklet(piom_server_t server, 
-				    piom_thread_t old_owner)
+piom_server_unlock_reentrant_from_callback(piom_server_t server, 
+					   piom_thread_t old_owner)
 {
     if(old_owner == PIOM_THREAD_NULL){
-	__piom_tryunlock_server(server);	
+	__piom_server_unlock_from_callback(server);	
     } 
 }
 
-void 
-piom_restore_lock_server_trylocked(piom_server_t server,
-				   piom_thread_t old_owner)
-{
-    if (old_owner == PIOM_THREAD_NULL) {
-	__piom_tryunlock_server(server);
-    }
-}
-
-void 
-piom_restore_lock_server_unlocked(piom_server_t server,
-				  piom_thread_t old_owner)
-{
-    if (old_owner != PIOM_THREAD_NULL) {
-	__piom_lock_server(server, old_owner);
-    }
-}
-
 #endif	/* PIOM_THREAD_ENABLED */
+

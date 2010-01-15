@@ -247,18 +247,18 @@ __piom_syscall_loop(void * param)
 	tbx_fast_list_add(&lwp->chain_lwp_working, &server->list_lwp_working);
 
 	_piom_spin_unlock(&server->lwp_lock);
-	lock = piom_ensure_trylock_server(server);
+	lock = piom_server_lock_reentrant_from_callback(server);
 
 	/* Get the requests to be posted */
 	if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].func && server->req_block_grouped_nb>1)
 	    {
-		__piom_tryunlock_server(server);
+		piom_server_unlock_from_callback(server);
 		/* Wait for a group of requests */
 		(*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITANY].
 		 func) (server, PIOM_FUNCTYPE_BLOCK_WAITANY, req,
 			server->req_block_grouped_nb, lwp->fds[0]);
 
-		lock = piom_ensure_trylock_server(server);
+		lock = piom_server_lock_reentrant_from_callback(server);
 	    }
 	else{
 	    if(server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].func)
@@ -273,7 +273,7 @@ __piom_syscall_loop(void * param)
 			tbx_fast_list_add(&req->chain_req_exported, &server->list_req_exported);
 			req->state|=PIOM_STATE_EXPORTED;
 					
-			__piom_tryunlock_server(server);
+			piom_server_unlock_from_callback(server);
 					
 			/* call the blocking callback function */		
 			(*server->funcs[PIOM_FUNCTYPE_BLOCK_WAITONE].
@@ -282,7 +282,7 @@ __piom_syscall_loop(void * param)
 					
 			tbx_fast_list_del_init(&req->chain_req_exported);
 					
-			lock = piom_ensure_trylock_server(server);
+			lock = piom_server_lock_reentrant_from_callback(server);
 
 			prev=req;
 			break;
@@ -294,7 +294,7 @@ __piom_syscall_loop(void * param)
 	}
 	/* handle completed requests */
 	__piom_manage_ready(server);
-	__piom_tryunlock_server(server);
+	piom_server_unlock_from_callback(server);
 
     } while(lwp->server->state!=PIOM_SERVER_STATE_HALTED);
     return NULL;

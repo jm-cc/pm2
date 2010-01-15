@@ -9,6 +9,9 @@ use Getopt::Std;
 my $output_path	= '/tmp';
 my $fifo_path	= '/tmp';
 my $user	= $ENV{'USER'};
+my $async_mode	= 0;
+my $async_nb	= 0;
+my $quiet_mode	= 0;
 my %vars;
 
 
@@ -68,18 +71,18 @@ sub mkprog($$) {
 	mkfifo($rfifo);
 
 	if ($prog ne '') {
-		print "system: MARCEL_SUPERVISOR_FIFO=${fifo} MARCEL_SUPERVISOR_RFIFO=${rfifo} $prog > $output 2>&1 &\n";
+		print "system: MARCEL_SUPERVISOR_FIFO=${fifo} MARCEL_SUPERVISOR_RFIFO=${rfifo} $prog > $output 2>&1 &\n" unless $quiet_mode;
 		system "MARCEL_SUPERVISOR_FIFO=${fifo} MARCEL_SUPERVISOR_RFIFO=${rfifo} $prog > $output 2>&1 &";
 	}
 
 	my $fifo_fh;
-	print "Opening fifo ${num}...\n";
+	print "Opening fifo ${num}...\n" unless $quiet_mode;
 	open ($fifo_fh, "> $fifo")
 		or die "open ${fifo}: $!\n";
 	autoflush $fifo_fh 1;
 
 	my $rfifo_fh;
-	print "Opening reverse fifo ${num}...\n";
+	print "Opening reverse fifo ${num}...\n" unless $quiet_mode;
 	open ($rfifo_fh, "< $rfifo")
 		or die "open ${rfifo}: $!\n";
 	autoflush $rfifo_fh 1;
@@ -105,14 +108,15 @@ my %cmd_set	= (
 	disable_list_item	=> 6,
 );
 
-my $async_mode	= 0;
-my $async_nb	= 0;
-
 my %opts;
-my $ret	= getopts('ha:', \%opts);
+my $ret	= getopts('hqa:', \%opts);
 
 if (exists $opts{'h'}) {
 	usage();
+}
+
+if (exists $opts{'q'}) {
+	$quiet_mode	= 1;
 }
 
 if (exists $opts{'a'}) {
@@ -120,7 +124,7 @@ if (exists $opts{'a'}) {
 	$async_nb	= $opts{'a'};
 	die "invalid number of programs for asynchronous mode\n"
 		if ($async_nb < 0  or  $async_nb > 2);
-	print "Running in asynchronous mode, monitoring $async_nb program(s)\n";
+	print "Running in asynchronous mode, monitoring $async_nb program(s)\n" unless $quiet_mode;
 }
 
 my $prog1;
@@ -151,7 +155,7 @@ if ($async_nb == 1  or  $prog1 ne '') {
 
 my @sync_queue;
 
-print "Ready...\n";
+print "Ready...\n" unless $quiet_mode;
 while (<>) {
 	chomp;
 
@@ -167,12 +171,12 @@ while (<>) {
 	@args = map {expand_expr($_)}  @args;
 	if ($cmd eq 'q') {
 		# q: Quit
-		print "Quit\n";
+		print "Quit\n" unless $quiet_mode;
 		last;
 	} elsif ($cmd eq 't') {
 		# t: Temporisation (arg = duration in seconds)
 		my $arg	= shift @args;
-		print "Temporisation: $arg seconds\n";
+		print "Temporisation: $arg seconds\n" unless $quiet_mode;
 		sleep $arg;
 	} elsif ($cmd eq 'e' or $cmd eq 'd') {
 		# e: Enable (args = <1|2> <vpnum>)
@@ -188,7 +192,7 @@ while (<>) {
 		}
 		$prog	= $prog_hash{$prog_num};
 		my $fh	= ${$prog}{'fifo_fh'};
-		print "${cmd_name} VP ${vpnum} on prog ${prog_num}\n";
+		print "${cmd_name} VP ${vpnum} on prog ${prog_num}\n" unless $quiet_mode;
 		syswrite $fh, $data or die "write to fifo: $!\n";
 	} elsif ($cmd eq 'E' or $cmd eq 'D') {
 		# E: Enable list (args = <1|2> <vpnum> [<vpnum>]*)
@@ -205,11 +209,11 @@ while (<>) {
 		$prog	= $prog_hash{$prog_num};
 		my $fh	= ${$prog}{'fifo_fh'};
 		my $data	= pack 'LL', ($cmd_code, $nb_vps);
-		print "${cmd_name} ${nb_vps} vp(s) on prog ${prog_num}\n";
+		print "${cmd_name} ${nb_vps} vp(s) on prog ${prog_num}\n" unless $quiet_mode;
 		syswrite $fh, $data or die "write to fifo: $!\n";
 		foreach my $vp (@args) {
 			$data	= pack 'LL', ($sub_cmd_code, $vp);
-			print ". ${cmd_name} vp ${vp}\n";
+			print ". ${cmd_name} vp ${vp}\n" unless $quiet_mode;
 			syswrite $fh, $data or die "write to fifo: $!\n";
 		}
 	} elsif ($cmd eq 's') {
@@ -221,11 +225,11 @@ while (<>) {
 		}
 		$prog	= $prog_hash{$prog_num};
 		my $fh	= ${$prog}{'rfifo_fh'};
-		print "Sync with prog ${prog_num}...\n";
+		print "Sync with prog ${prog_num}...\n" unless $quiet_mode;
 		sysread $fh, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
-		print "Sync with prog ${prog_num} complete\n\n";
+		print "Sync with prog ${prog_num} complete\n\n" unless $quiet_mode;
 	} elsif ($cmd eq 'S') {
-		print "Sync with any prog...\n";
+		print "Sync with any prog...\n" unless $quiet_mode;
 		my $prog_num;
 		unless (scalar @sync_queue) {
 			my $rin = '';
@@ -238,23 +242,23 @@ while (<>) {
 				my $prog	= $prog_hash{$prog_num};
 				if (vec($rin, fileno(${$prog}{'rfifo_fh'}), 1) == 1) {
 					sysread ${$prog}{'rfifo_fh'}, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
-					print "Sync-any . got message form prog ${prog_num}\n";
+					print "Sync-any . got message form prog ${prog_num}\n" unless $quiet_mode;
 					push @sync_queue, $prog_num;
 				}
 			}
 		}
 		$prog_num	= shift @sync_queue;
 		$vars{'s'}	= $prog_num;
-		print "Sync-any with prog ${prog_num} complete\n";
+		print "Sync-any with prog ${prog_num} complete\n" unless $quiet_mode;
 	} elsif ($cmd eq 'v') {
 		my $varname	= shift @args;
 		if (scalar @args) {
 			my $value	= shift @args;
 			$vars{$varname}	= $value;
-			print "${varname} := ${value}\n";
+			print "${varname} := ${value}\n" unless $quiet_mode;
 		} else {
 			my $value	= expand_var("\$${varname}");
-			print "${varname}: ${value}\n";
+			print "${varname}: ${value}\n" unless $quiet_mode;
 		}
 	} elsif ($cmd eq 'p') {
 		print join (' ', @args), "\n";

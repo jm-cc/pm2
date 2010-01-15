@@ -178,6 +178,18 @@ while (<>) {
 		my $arg	= shift @args;
 		print "Temporisation: $arg seconds\n" unless $quiet_mode;
 		sleep $arg;
+	} elsif ($cmd eq 'c') {
+		# c: Close fifos with prog <arg>
+		my $prog_num	= shift @args;
+		my $prog;
+		unless (exists $prog_hash{$prog_num}) {
+			die "invalid prog_num ${prog_num}\n";
+		}
+		$prog	= $prog_hash{$prog_num};
+		print "Closing fifo with  prog ${prog_num}\n" unless $quiet_mode;
+		close ${$prog}{'rfifo_fh'} or die "close rfifo:$!\n";
+		close ${$prog}{'fifo_fh'} or die "close fifo:$!\n";
+		delete $prog_hash{$prog_num};
 	} elsif ($cmd eq 'e' or $cmd eq 'd') {
 		# e: Enable (args = <1|2> <vpnum>)
 		# d: Disable (args = <1|2> <vpnum>)

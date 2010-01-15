@@ -221,12 +221,13 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
    poll *THREAD_EXIT_SIGNAL and exit when it's non-zero.  */
 static marcel_bubble_t *
 make_simple_bubble_hierarchy (const unsigned *level_breadth,
+															int use_main_thread,
 															ma_atomic_t *thread_exit_signal)
 {
 	if (verbose_output)
 		marcel_printf("root is %p\n", &marcel_root_bubble);
-  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth, 1,
-														 thread_exit_signal);
+  populate_bubble_hierarchy (&marcel_root_bubble, level_breadth,
+														 use_main_thread, thread_exit_signal);
 
   return &marcel_root_bubble;
 }
@@ -429,7 +430,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 	/* Create a bubble hierarchy.  */
-  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
+  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description, 1,
 																							&thread_exit_signal);
 
   marcel_bubble_change_sched (scheduler);

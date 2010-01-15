@@ -52,9 +52,9 @@ int marcel_main(int argc, char *argv[])
 	struct marcel_sched_param p = {.sched_priority = MA_DEF_PRIO - 1};
 	marcel_sched_setparam(MARCEL_SELF, &p);
 
-	make_simple_bubble_hierarchy (bubble_hierarchy_description1, &thread_exit_signal);
-	make_simple_bubble_hierarchy (bubble_hierarchy_description2, &thread_exit_signal);
-	//make_simple_bubble_hierarchy (bubble_hierarchy_description3, &thread_exit_signal);
+	make_simple_bubble_hierarchy (bubble_hierarchy_description1, 0, &thread_exit_signal);
+	make_simple_bubble_hierarchy (bubble_hierarchy_description2, 0, &thread_exit_signal);
+	//make_simple_bubble_hierarchy (bubble_hierarchy_description3, 0, &thread_exit_signal);
 
 #if 1
 	scheduler = alloca(marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));

@@ -72,7 +72,7 @@ int main (int argc, char *argv[]) {
   ma_atomic_init (&thread_exit_signal, 0);
 
   /* Create a bubble hierarchy.  */
-  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description,
+  root_bubble = make_simple_bubble_hierarchy (bubble_hierarchy_description, 1,
                                               &thread_exit_signal);
 
   scheduler =

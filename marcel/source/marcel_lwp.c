@@ -409,6 +409,7 @@ static marcel_mutex_t disabled_vpset_mutex = MARCEL_MUTEX_INITIALIZER;
 void marcel_disable_vps(const marcel_vpset_t *vpset)
 {
 	marcel_vpset_t old_vpset;
+	unsigned vp;
 
 	PROF_EVENTSTR(sched_status,"disabling %d VPs", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
@@ -429,6 +430,12 @@ void marcel_disable_vps(const marcel_vpset_t *vpset)
 	ma_push_entities(vpset);
 	ma_disable_topology_vps(vpset);
 
+	/* Give idle a high priority so it doesn't get overriden by application threads */
+	struct marcel_sched_param param = { .sched_priority = MA_SYS_RT_PRIO+1 };
+	marcel_vpset_foreach_begin(vp, vpset)
+		marcel_sched_setparam(ma_per_lwp(idle_task, ma_get_lwp_by_vpnum(vp)), &param);
+	marcel_vpset_foreach_end();
+
 	/* And reschedule VPs so they really become idle. */
 	ma_resched_vpset(vpset);
 
@@ -443,6 +450,7 @@ out:
 void marcel_enable_vps(const marcel_vpset_t *vpset)
 {
 	marcel_vpset_t old_vpset;
+	unsigned vp;
 
 	PROF_EVENTSTR(sched_status,"enabling %d VPs", marcel_vpset_weight(vpset));
 	marcel_mutex_lock(&disabled_vpset_mutex);
@@ -453,6 +461,12 @@ void marcel_enable_vps(const marcel_vpset_t *vpset)
 		goto out;
 
 	ma_enable_topology_vps(vpset);
+
+	/* Give idle back a low priority so gets overriden by application threads again */
+	struct marcel_sched_param param = { .sched_priority = MA_IDLE_PRIO };
+	marcel_vpset_foreach_begin(vp, vpset)
+		marcel_sched_setparam(ma_per_lwp(idle_task, ma_get_lwp_by_vpnum(vp)), &param);
+	marcel_vpset_foreach_end();
 
 	/* Tell the bubble scheduler to take profit of the extra VPs */
 	marcel_bubble_shake();

@@ -794,10 +794,11 @@ need_resched_atomic:
 			goto need_resched_atomic;
 		prev_as_next = NULL;
 		prev_as_h = &ma_dontsched_rq(MA_LWP_SELF)->as_holder;
-		if (marcel_vp_is_disabled(vpnum))
-			prev_as_prio = MA_SYS_RT_PRIO+1;
-		else
-			prev_as_prio = MA_IDLE_PRIO;
+#ifdef MA__LWPS
+		prev_as_prio = ma_entity_task(__ma_get_lwp_var(current_thread))->prio;
+#else
+		prev_as_prio = MA_IDLE_PRIO;
+#endif
 	}
 
 #ifdef MA__LWPS

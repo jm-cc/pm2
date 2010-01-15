@@ -319,7 +319,7 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle %3llu%% 
 		total_usage.disabled*100/total_total);
 	top_printf("  %*s %*s %2s %4s%% %2s %2s %10s %10s %10s\r\n",
 		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
-		"name", "pr", "cpu", "s", "lc", "init", "sched", "run");
+		"name", "pr", "cpu", "s", "lc", "natural", "sched", "ready");
 #ifdef MA__BUBBLES
 	if (bubbles) {
 		int i;

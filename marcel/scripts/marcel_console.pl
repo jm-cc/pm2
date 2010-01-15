@@ -220,9 +220,9 @@ while (<>) {
 			die "invalid prog_num ${prog_num}\n";
 		}
 		$prog	= $prog_hash{$prog_num};
-		my $fh	= ${$prog}{'fifo_fh'};
+		my $fh	= ${$prog}{'rfifo_fh'};
 		print "Sync with prog ${prog_num}...\n";
-		sysread $fh, my $data, 8 or die "read from fifo: $!\n";
+		sysread $fh, my $data, 8 or die "read from rfifo ${prog_num}: $!\n";
 		print "Sync with prog ${prog_num} complete\n\n";
 	} elsif ($cmd eq 'S') {
 		print "Sync with any prog...\n";

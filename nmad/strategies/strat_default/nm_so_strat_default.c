@@ -165,7 +165,7 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
 	    }
 	  else
 	    {
-	      nm_tactic_pack_rdv(p_pack, data, len, 0);
+	      nm_tactic_pack_rdv(p_pack, data, len, offset);
 	    }
 	  offset += len;
 	}

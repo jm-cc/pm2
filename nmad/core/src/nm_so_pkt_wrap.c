@@ -263,7 +263,6 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
   assert(p_pw->flags & NM_PW_NOHEADER);
   assert(p_pw2->flags & NM_PW_NOHEADER);
   assert(p_pw2->length == 0);
-  assert(p_pw2->p_gate != NULL);
   const uint32_t total_length = p_pw->length;
   int idx_pw = 0;
   uint32_t len = 0;
@@ -359,7 +358,7 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   else if(p_pw->flags & NM_PW_NOHEADER)
     {
       /* ** Add raw data to pw, without header */
-      nm_so_pw_add_raw(p_pw, data, len, 0);
+      nm_so_pw_add_raw(p_pw, data, len, offset);
     }
 }
 

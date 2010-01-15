@@ -100,7 +100,7 @@ typedef struct {
   uintptr_t pointer_guard;
   unsigned long int vgetcpu_cache[2];
   int private_futex;
-  char padding[128]; //for the NPTL thread structure
+  char padding[1024]; //for the NPTL thread structure
   /* LPT binary compatibility end */
 } lpt_tcb_t;
 

@@ -73,6 +73,7 @@ typedef struct {
   /* Needs to be the same as glibc's tcbhead_t structure, see glibc/nptl/sysdeps/<yourarch>/tls.h */
   /* Fill the various fields from marcel/source/marcel_alloc.c */
 
+  char padding[1024]; //for the NPTL thread structure
   /* LPT binary compatibility end */
 } lpt_tcb_t;
 

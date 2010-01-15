@@ -104,7 +104,7 @@ typedef struct {
   /* LPT binary compatibility */
   void *dtv;
   void *__private;
-  char padding[128]; //for the NPTL thread structure
+  char padding[1024]; //for the NPTL thread structure
   /* LPT binary compatibility end */
 } lpt_tcb_t;
 

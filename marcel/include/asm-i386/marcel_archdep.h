@@ -92,7 +92,7 @@ typedef struct {
   uintptr_t pointer_guard;
   int gscope_flag;
   int private_futex;
-  char padding[128]; //for the NPTL thread structure
+  char padding[1024]; //for the NPTL thread structure
   /* LPT binary compatibility end */
 } lpt_tcb_t;
 

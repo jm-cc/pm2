@@ -396,6 +396,7 @@ void ma_gensched_shutdown(void)
 			vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
 			/* To match ma_lwp_block() above */
 			ma_preempt_enable();
+			marcel_enable_vps(&vpset);
 			marcel_apply_vpset(&vpset);
 			MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 			/* Ok, we're in the main kernel thread now */

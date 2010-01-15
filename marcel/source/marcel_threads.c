@@ -1372,6 +1372,7 @@ DEF___PTHREAD(void, testcancel,(void),())
 
 
 #ifdef MA__IFACE_PMARCEL
+/* XXX: NPTL now gets it directly compiled into GLIBC :/ */
 int fastcall __pmarcel_enable_asynccancel (void) {
 	int old;
 	pmarcel_setcanceltype(PMARCEL_CANCEL_ASYNCHRONOUS, &old);

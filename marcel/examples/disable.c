@@ -18,8 +18,8 @@
 
 #include "bubble-testing.h"
 
-#define N 4
-#define DELAY 5
+#define N 2
+#define DELAY 2
 
 int marcel_main(int argc, char *argv[])
 {
@@ -52,8 +52,6 @@ int marcel_main(int argc, char *argv[])
 	struct marcel_sched_param p = {.sched_priority = MA_DEF_PRIO - 1};
 	marcel_sched_setparam(MARCEL_SELF, &p);
 
-	marcel_start_playing();
-
 	make_simple_bubble_hierarchy (bubble_hierarchy_description1, &thread_exit_signal);
 	make_simple_bubble_hierarchy (bubble_hierarchy_description2, &thread_exit_signal);
 	//make_simple_bubble_hierarchy (bubble_hierarchy_description3, &thread_exit_signal);
@@ -69,6 +67,8 @@ int marcel_main(int argc, char *argv[])
 	marcel_bubble_sched_begin();
 #endif
 
+	marcel_start_playing();
+
 	for (i = 0; i < N; i++) {
 		marcel_disable_vps(&vpset);
 		marcel_printf("nuit\n");
@@ -77,6 +77,7 @@ int marcel_main(int argc, char *argv[])
 		marcel_printf("jour\n");
 		marcel_sleep(DELAY);
 	}
+	marcel_disable_vps(&vpset);
 
 	ma_atomic_inc (&thread_exit_signal);
 

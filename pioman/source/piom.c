@@ -138,7 +138,7 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
 	}
 #endif /* PIOM_BLOCKING_CALLS */
 
-    piom_unlock(server);
+    piom_server_unlock(server);
 
 #ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P that can return -1 and set errno to EINT (posix compliant) */
@@ -238,7 +238,7 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
 #endif	/* PIOM__DEBUG */
 	/* TODO: only register if the polling fails */
     piom_check_polling_for(server);
-    piom_unlock(server);
+    piom_server_unlock(server);
 #ifdef PIOM_THREAD_ENABLED
     /* TODO: use pmarcel_sem_P (posix compliant) */
     piom_sem_P(&wait.sem);

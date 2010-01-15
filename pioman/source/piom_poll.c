@@ -119,7 +119,7 @@ piom_check_polling_for(piom_server_t server)
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func) {
 	/* poll all the requests with the pollanny callback */
 #ifdef PIOM_THREAD_ENABLED
-	piom_unlock(server);	
+	piom_server_unlock(server);	
 #endif		
 	(*server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func)
 	    (server, PIOM_FUNCTYPE_POLL_POLLANY, NULL, nb, 0);
@@ -138,7 +138,7 @@ piom_check_polling_for(piom_server_t server)
                 if(req->priority >= server->max_priority) {
                     if(req->func_to_use != PIOM_FUNC_SYSCALL){
 #ifdef PIOM_THREAD_ENABLED
-			piom_unlock(server);	
+			piom_server_unlock(server);	
 #endif
                         (*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
                             (server, PIOM_FUNCTYPE_POLL_POLLONE,

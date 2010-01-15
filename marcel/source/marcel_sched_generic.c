@@ -487,14 +487,18 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		vpnum = ma_vpnum(lwp);
 		if (marcel_vp_is_disabled(vpnum)) {
 			/* FIXME: we still need a VP to account time */
-			if (vpnum != 0)
+			if (vpnum != 0) {
+				ma_preempt_disable();
 				marcel_sig_stop_itimer();
+			}
 			marcel_sig_disable_interrupts();
 			while (marcel_vpset_isset(&marcel_disabled_vpset, vpnum) && !ma_get_need_resched())
 				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
-			if (vpnum != 0)
+			if (vpnum != 0) {
 				marcel_sig_reset_timer();
+				ma_preempt_enable();
+			}
 		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)

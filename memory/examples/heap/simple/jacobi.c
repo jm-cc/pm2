@@ -91,7 +91,7 @@ any_t Worker(any_t arg) {
   int first, last;
   double **grid1;
   double **grid2;
-  unsigned long mask = 24+myid;
+  unsigned long mask = 1<<myid;
   unsigned long maxnode = 8*sizeof(unsigned long);
 
   marcel_printf("worker %d has started\n", myid);

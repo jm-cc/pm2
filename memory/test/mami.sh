@@ -23,7 +23,7 @@ hosts="localhost"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
 EOF
 
-result=$(grep -lE '[,-]' /sys/devices/system/node/online)
+result=$(grep -lE '[,-]' /sys/devices/system/node/online 2>/dev/null)
 if [ -z "$result" ] ; then
     echo "The machine does not seem to be NUMA-aware"
     pm2_skip_test

@@ -299,6 +299,7 @@ marcel_supervisor_init (void) {
 
 	marcel_attr_init (&attr);
 	marcel_attr_setdetachstate (&attr, tbx_true);
+	marcel_attr_setflags(&attr, MA_SF_NORUN);
 	marcel_fprintf (stderr, "marcel_supervisor_init: - launching supervisor thread\n");
 	marcel_create (&ma_supervisor_thread, &attr, ma_supervisor, NULL);
 	marcel_fprintf (stderr, "marcel_supervisor_init: <--\n");

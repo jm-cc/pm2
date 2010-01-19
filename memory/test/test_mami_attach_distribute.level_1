@@ -14,7 +14,7 @@
 
 . ./mami.sh
 prog="attach_distribute"
-if [ ! -d /sys/devices/system/node/node1 ] ; then
+if [ ! -d /sys/devices/system/node/node2 ] ; then
     pm2_skip_test
 fi
 

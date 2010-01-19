@@ -140,33 +140,38 @@ int main(int argc, char *argv[]) {
   common_init(&argc, argv, NULL);
   mami_init(&memory_manager);
 
-  print=1;
-  if (argc > 1 && !strcmp(argv[1], "--no-print")) print=0;
-
-  size = ((memory_manager->nb_nodes * 4) + 1) * memory_manager->normal_page_size;
-
-  ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 1);
-  if (!ptr) {
-    perror("mami_malloc unexpectedly failed");
+  if (memory_manager->nb_nodes < 3) {
+    printf("This application needs at least three NUMA nodes.\n");
   }
   else {
-    fprintf(stderr, "... Allocating memory on first touch node\n");
-    mami_locate(memory_manager, ptr, size, &node);
-    if (node != MAMI_FIRST_TOUCH_NODE) fprintf(stderr, "Node is NOT <MAMI_FIRST_TOUCH_NODE> as expected but %d\n", node);
-    attach_distribute_stats(memory_manager, ptr, size, print);
-    mami_free(memory_manager, ptr);
-  }
+    print=1;
+    if (argc > 1 && !strcmp(argv[1], "--no-print")) print=0;
 
-  ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
-  if (!ptr) {
-    perror("mami_malloc unexpectedly failed");
-  }
-  else {
-    fprintf(stderr, "... Allocating memory on node #1\n");
-    mami_locate(memory_manager, ptr, size, &node);
-    if (node != 1) fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
-    attach_distribute_stats(memory_manager, ptr, size, print);
-    mami_free(memory_manager, ptr);
+    size = ((memory_manager->nb_nodes * 4) + 1) * memory_manager->normal_page_size;
+
+    ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 1);
+    if (!ptr) {
+      perror("mami_malloc unexpectedly failed");
+    }
+    else {
+      fprintf(stderr, "... Allocating memory on first touch node\n");
+      mami_locate(memory_manager, ptr, size, &node);
+      if (node != MAMI_FIRST_TOUCH_NODE) fprintf(stderr, "Node is NOT <MAMI_FIRST_TOUCH_NODE> as expected but %d\n", node);
+      attach_distribute_stats(memory_manager, ptr, size, print);
+      mami_free(memory_manager, ptr);
+    }
+
+    ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
+    if (!ptr) {
+      perror("mami_malloc unexpectedly failed");
+    }
+    else {
+      fprintf(stderr, "... Allocating memory on node #1\n");
+      mami_locate(memory_manager, ptr, size, &node);
+      if (node != 1) fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
+      attach_distribute_stats(memory_manager, ptr, size, print);
+      mami_free(memory_manager, ptr);
+    }
   }
 
   mami_exit(&memory_manager);

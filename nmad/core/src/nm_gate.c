@@ -94,7 +94,7 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
 
   /* init gate/driver fields */
   p_gdrv->p_drv	= rq.p_drv;
-  p_gate->p_gate_drv_array[p_drv->id] = p_gdrv;
+  nm_gdrv_vect_push_back(&p_gate->gdrv_array, p_gdrv);
 
   /* connect/accept connections */
   for (trk_id = 0; trk_id < rq.p_drv->nb_tracks; trk_id++)

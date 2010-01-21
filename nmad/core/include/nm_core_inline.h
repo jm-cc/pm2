@@ -23,12 +23,12 @@
 /** Get the driver-specific per-gate data */
 static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t p_drv)
 {
-  int i;
+  nm_gdrv_vect_itor_t i;
   assert(p_drv != NULL);
-  for(i = 0; i < NM_DRV_MAX; i++)
+  puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
     {
-      if((p_gate->p_gate_drv_array[i] != NULL) && (p_gate->p_gate_drv_array[i]->p_drv == p_drv))
-	return p_gate->p_gate_drv_array[i];
+      if((*i)->p_drv == p_drv)
+	return *i;
     }
   return NULL;
 }
@@ -39,20 +39,16 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t
  */
 static inline struct nm_drv*nm_drv_default(struct nm_gate*p_gate)
 {
-  return p_gate->p_gate_drv_array[0]->p_drv;
+  nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
+  return (*i)->p_drv;
 }
 
 /** Get a driver given its id.
  */
-static inline struct nm_drv*nm_drv_get_by_id(struct nm_core*p_core, nm_drv_id_t id)
+static inline struct nm_drv*nm_drv_get_by_index(struct nm_gate*p_gate, int index)
 {
-  struct nm_drv*p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      if(p_drv->id == id)
-	return p_drv;
-    }
-  return NULL;
+  struct nm_gate_drv*p_gdrv = nm_gdrv_vect_at(&p_gate->gdrv_array, index);
+  return p_gdrv->p_drv;
 }
 
 
@@ -306,16 +302,17 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
   if(r->driver->todo && 
      r->driver->todo(r->_status, p_gate)) 
   {
-    if(nm_trylock_interface(p_gate->p_core)) {
-      nm_lock_status(p_gate->p_core);
-      err = r->driver->try_and_commit(r->_status, p_gate);
-      nm_unlock_status(p_gate->p_core);
-      nm_unlock_interface(p_gate->p_core);
-      goto out;
-    }
+    if(nm_trylock_interface(p_gate->p_core))
+      {
+	nm_lock_status(p_gate->p_core);
+	err = r->driver->try_and_commit(r->_status, p_gate);
+	nm_unlock_status(p_gate->p_core);
+	nm_unlock_interface(p_gate->p_core);
+	goto out;
+      }
   }
   err = NM_EINPROGRESS;
-out:
+ out:
 #else
   err = r->driver->try_and_commit(r->_status, p_gate);
 #endif
@@ -328,7 +325,19 @@ static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_
 				  nm_drv_t p_drv, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
-  nm_so_init_rtr(&h, tag, seq, p_drv->id, trk_id, chunk_offset, chunk_len);
+  int gdrv_index = -1, k = 0;
+  nm_gdrv_vect_itor_t i;
+  puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
+    {
+      if((*i)->p_drv == p_drv)
+	{
+	  gdrv_index = k;
+	  break;
+	}
+      k++;
+    }
+  assert(gdrv_index >= 0);
+  nm_so_init_rtr(&h, tag, seq, gdrv_index, trk_id, chunk_offset, chunk_len);
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   (*strategy->driver->pack_ctrl)(strategy->_status, p_gate, &h);
 }

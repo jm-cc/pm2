@@ -29,27 +29,25 @@
 #define STRAT_ISO_SPLIT
 #endif
 
-//#define STRAT_ISO_SPLIT
 
 struct nm_sampling_set_s
 {
   double*bandwidth;
   int nb_samples;
+  double bw;
+  double lat;
 };
 
 static struct
 {
   struct nm_drv**p_drvs_by_lat;
   struct nm_drv**p_drvs_by_bw;
-  double *drv_bws;
-  double *drv_lats;
-  struct nm_sampling_set_s*sampling_sets;
+  puk_hashtable_t sampling_sets;
   int nb_drvs;
 } nm_ns = {
   .p_drvs_by_lat = NULL,
   .p_drvs_by_bw  = NULL,
-  .drv_bws     = NULL,
-  .drv_lats    = NULL,
+  .sampling_sets = NULL,
   .nb_drvs = 0
 };
 
@@ -59,7 +57,7 @@ static struct
 #  define MAXPATHLEN 1024
 #endif
 
-int nm_ns_parse_sampling(struct nm_drv*p_drv)
+int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
 {
   FILE *sampling_file;
   char sampling_file_path[MAXPATHLEN];
@@ -101,12 +99,10 @@ int nm_ns_parse_sampling(struct nm_drv*p_drv)
     }
   while(s);
 
-  struct nm_sampling_set_s*set = &nm_ns.sampling_sets[p_drv->id];
+  p_set->nb_samples = nb_entries;
+  p_set->bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
 
-  set->nb_samples = nb_entries;
-  set->bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
-
-  /* process the sampling file */
+  /* load the sampling file */
   fseek(sampling_file, 0L, SEEK_SET);
   int cur_entry = 0;
   while(1)
@@ -121,10 +117,14 @@ int nm_ns_parse_sampling(struct nm_drv*p_drv)
       
       s = strchr(str, '\t') + 1;
       
-      set->bandwidth[cur_entry++] = atof(s);
+      p_set->bandwidth[cur_entry++] = atof(s);
     }
 
   fclose(sampling_file);
+
+  /* compute latency and bandwidth */
+  p_set->bw = p_set->bandwidth[nb_entries - 1];
+  p_set->lat = (1 << LAT_IDX) / p_set->bandwidth[LAT_IDX];
 
   return NM_ESUCCESS;
 }
@@ -137,9 +137,11 @@ static int compare_lat(const void*_drv1, const void*_drv2)
   const struct nm_drv**pp_drv2 = (const struct nm_drv**)_drv2;
   const struct nm_drv*p_drv1 = *pp_drv1;
   const struct nm_drv*p_drv2 = *pp_drv2;
-  if(nm_ns.drv_lats[p_drv2->id] - nm_ns.drv_lats[p_drv1->id] > 0)
+  const struct nm_sampling_set_s*p_set1  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv1);
+  const struct nm_sampling_set_s*p_set2  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv2);
+  if(p_set1->lat < p_set2->lat)
     return -1;
-  if(nm_ns.drv_lats[p_drv2->id] - nm_ns.drv_lats[p_drv1->id] < 0)
+  if(p_set1->lat > p_set2->lat)
     return 1;
   return 0;
 }
@@ -152,9 +154,11 @@ static int compare_bw(const void*_drv1, const void*_drv2)
   const struct nm_drv**pp_drv2 = (const struct nm_drv**)_drv2;
   const struct nm_drv*p_drv1 = *pp_drv1;
   const struct nm_drv*p_drv2 = *pp_drv2;
-  if(nm_ns.drv_lats[p_drv2->id] - nm_ns.drv_lats[p_drv1->id] > 0)
+  const struct nm_sampling_set_s*p_set1  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv1);
+  const struct nm_sampling_set_s*p_set2  = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv2);
+  if(p_set2->bw - p_set1->bw > 0)
     return 1;
-  if(nm_ns.drv_lats[p_drv2->id] - nm_ns.drv_lats[p_drv1->id] < 0)
+  if(p_set2->bw - p_set1->bw < 0)
     return -1;
   return 0;
 }
@@ -168,105 +172,49 @@ static void nm_ns_cleanup(void)
       nm_ns.p_drvs_by_lat = NULL;
       TBX_FREE(nm_ns.p_drvs_by_bw);
       nm_ns.p_drvs_by_bw = NULL;
-#ifdef SAMPLING
-      TBX_FREE(nm_ns.drv_lats);
-      nm_ns.drv_lats = NULL;
-      TBX_FREE(nm_ns.drv_bws);
-      nm_ns.drv_bws = NULL;
-      TBX_FREE(nm_ns.sampling_sets);
-      nm_ns.sampling_sets = NULL;
-#endif
-      nm_ns.nb_drvs = 0;
     }
 }
 
-int nm_ns_update(struct nm_core *p_core)
+int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
 {
-  struct nm_drv *p_drv = NULL;
-  int i;
-
-  if(p_core->nb_drivers == nm_ns.nb_drvs)
-    {
-      return NM_ESUCCESS;
-    }
-
   nm_ns_cleanup();
   nm_ns.nb_drvs = p_core->nb_drivers;
 
 #ifdef SAMPLING
-  int bw_idx = 0, len;
-
-  nm_ns.sampling_sets = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_sampling_set_s));
-
-  /* 1 - recenser les bw et les latences */
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      nm_ns_parse_sampling(p_drv);
-      bw_idx = (bw_idx > nm_ns.sampling_sets[p_drv->id].nb_samples) ? bw_idx : nm_ns.sampling_sets[p_drv->id].nb_samples;
-    }
-  bw_idx -= 1;
-
-  len = (1 << LAT_IDX);
-
-  nm_ns.drv_bws = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
-  nm_ns.drv_lats = TBX_MALLOC(nm_ns.nb_drvs * sizeof(double));
-  i = 0;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      nm_ns.drv_bws[i] = nm_ns.sampling_sets[p_drv->id].bandwidth[bw_idx];
-      nm_ns.drv_lats[i] = len / nm_ns.sampling_sets[p_drv->id].bandwidth[LAT_IDX];
-      i++;
-    }
-
-#if 0
-  int k;
-  for(k = 0; k < nm_ns.nb_drvs; k++)
-    {
-      printf("drv_lats[%d] = %lf\n", k, nm_ns.drv_lats[k]);
-    }
-  for(k = 0; k < nm_ns.nb_drvs; k++)
-    {
-      printf("drv_bws[%d] = %lf\n", k, nm_ns.drv_bws[k]);
-    }
-#endif
+  struct nm_sampling_set_s*p_set = TBX_MALLOC(sizeof(struct nm_sampling_set_s));
+  nm_ns_parse_sampling(p_set, p_drv);
+  if(nm_ns.sampling_sets == NULL)
+    nm_ns.sampling_sets = puk_hashtable_new_ptr();
+  puk_hashtable_insert(nm_ns.sampling_sets, p_drv, p_set);
 #endif
 
   /* 2 - ordonner les bw et les lats */
   nm_ns.p_drvs_by_bw = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
-  i = 0;
+  nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
+  int i = 0;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       nm_ns.p_drvs_by_bw[i] = p_drv;
-      i++;
-    }
-
-#ifdef SAMPLING
-  qsort(nm_ns.p_drvs_by_bw, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_bw);
-#endif
-
-  nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
-  i = 0;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
       nm_ns.p_drvs_by_lat[i] = p_drv;
       i++;
     }
 #ifdef SAMPLING
+  qsort(nm_ns.p_drvs_by_bw, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_bw);
   qsort(nm_ns.p_drvs_by_lat, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_lat);
 #endif
 
 #if 0
   {
-    fprintf(stderr, "# sampling: ordered by bw (%d) \n", nm_ns.nb_drvs);
+    fprintf(stderr, "# sampling: ordered by dec bw (%d) \n", nm_ns.nb_drvs);
     int k;
     for(k = 0; k < nm_ns.nb_drvs; k++)
       {
-	fprintf(stderr, "#   [%d] -> %p\n", k, nm_ns.drvs_by_bw[k]);
+	fprintf(stderr, "#   [%d] -> %p (%s)\n", k, nm_ns.p_drvs_by_bw[k], nm_ns.p_drvs_by_bw[k]->driver->name);
       }
-    fprintf(stderr, "# sampling: ordered by lat (%d) \n", nm_ns.nb_drvs);
+    fprintf(stderr, "# sampling: ordered by inc lat (%d) \n", nm_ns.nb_drvs);
     for(k = 0; k < nm_ns.nb_drvs; k++)
       {
-	fprintf(stderr, "#   [%d] -> %p\n", k, nm_ns.drvs_by_lat[k]);
+	fprintf(stderr, "#   [%d] -> %p (%s)\n", k, nm_ns.p_drvs_by_lat[k], nm_ns.p_drvs_by_lat[k]->driver->name);
       }
   }
 #endif
@@ -277,23 +225,24 @@ int nm_ns_update(struct nm_core *p_core)
 int nm_ns_exit(struct nm_core *p_core)
 {
   nm_ns_cleanup();
+  /* TODO- free the sampling_sets hashtable */
   return NM_ESUCCESS;
 }
 
 double nm_ns_evaluate_bw(struct nm_drv *p_drv, int length)
 {
-  const double *samplings = nm_ns.sampling_sets[p_drv->id].bandwidth;
-  int sampling_id = 0;
+  const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv);
+  const double *samples = p_set->bandwidth;
+  int sample_id = 0;
   double coef = 0;
   int sampling_start_id = 0;
   
   frexp(2, &sampling_start_id);
-  coef = frexp(length, &sampling_id);
+  coef = frexp(length, &sample_id);
   
-  sampling_id -= sampling_start_id;
+  sample_id -= sampling_start_id;
   
-  return samplings[sampling_id]
-    + coef * (samplings[sampling_id] - samplings[sampling_id - 1]);
+  return samples[sample_id] + coef * (samples[sample_id] - samples[sample_id - 1]);
 }
 
 double nm_ns_evaluate_transfer_time(struct nm_drv *driver, int length)
@@ -361,12 +310,14 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
     int i;
     for(i = 0; i < *nb_chunks; i++)
       {
-	sum_bw += nm_ns.drv_bws[chunks[i].p_drv->id];
+	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, chunks[i].p_drv);
+	sum_bw += p_set->bw;
       }
     int pending_len = len;
     for(i = 0; i < *nb_chunks - 1; i++)
       {
-	const int drv_bw = nm_ns.drv_bws[chunks[i].p_drv->id];
+	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, chunks[i].p_drv);
+	const int drv_bw = p_set->bw;
 	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
 	pending_len -= chunks[i].len;
 	sum_bw -= drv_bw;

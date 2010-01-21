@@ -641,7 +641,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   p_mx_cnx->send_match_info	= pkt2.match_info;
   NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %llu",	pkt2.match_info);
   
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv->id, p_crq->trk_id);
+  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
   
   free(url);
 
@@ -724,7 +724,7 @@ static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
   nm_mx_check_return("mx_wait", mx_ret);
   NM_TRACEF("send pkt2 <--");
 
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv->id, p_crq->trk_id);
+  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
     
   return NM_ESUCCESS;
 }
@@ -777,7 +777,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
     fprintf(stderr, "[MX] post send %d (pw=%p)\n", len, p_pw);
 #endif
     
-    NMAD_EVENT_SND_START(p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
+    NMAD_EVENT_SND_START(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
     
     mx_ret	= mx_isend(p_mx_drv->ep,
 			   seg_list,
@@ -931,7 +931,7 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
  out:
 #ifdef PROFILE
   if (err == NM_ESUCCESS && !p_mx_pw->send_bool) {
-    NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
+    NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
   }
 #endif
   

@@ -28,6 +28,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   piom_server_init(&p_drv->server, "NMad IO Server");
 
 #ifdef  MARCEL_REMOTE_TASKLETS
+#warning TODO
   int vp=(p_drv->id);
   char* ENV_PIOM_POLL_VP=getenv("PIOM_POLL_VP");
   if(ENV_PIOM_POLL_VP)
@@ -120,7 +121,6 @@ int nm_core_driver_load(nm_core_t p_core,
   struct nm_drv*p_drv = TBX_MALLOC(sizeof(struct nm_drv));
   memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
-  p_drv->id       = p_core->nb_drivers;
   p_drv->assembly = driver_assembly;
   p_drv->driver   = puk_adapter_get_driver_NewMad_Driver(p_drv->assembly, NULL);
 
@@ -242,20 +242,20 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   nm_trk_id_t trk_id;
   for(trk_id = 0; trk_id < p_drv->nb_tracks; trk_id++)
     {
-      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_INPUT_LIST, p_drv->id, trk_id, p_drv->nb_tracks);
-      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv->id, trk_id, p_drv->nb_tracks);
+      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_INPUT_LIST, p_drv, trk_id, p_drv->nb_tracks);
+      FUT_DO_PROBE3(FUT_NMAD_NIC_NEW_OUTPUT_LIST, p_drv, trk_id, p_drv->nb_tracks);
     }
 
   const char*drv_url = (*p_drv->driver->get_driver_url)(p_drv);
   *p_url = drv_url;
-  FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv->id);
+  FUT_DO_PROBE1(FUT_NMAD_INIT_NIC, p_drv);
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
 #ifdef PIOMAN_POLL
   nm_core_init_piom_drv(p_core, p_drv);
 #endif
 
-  nm_ns_update(p_core);
+  nm_ns_update(p_core, p_drv);
   err = NM_ESUCCESS;
 
  out:
@@ -301,7 +301,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       if (node != PM2_NUIOA_ANY_NODE) 
 	{
 	  /* if this driver wants something */
-	  DISP("# nmad: marking nuioa node %d as preferred for driver %d", node, p_drv->id);
+	  DISP("# nmad: marking nuioa node %d as preferred for driver %s", node, p_drv->driver->name);
 	  if (nuioa_with_latency) 
 	    {
 	      /* choosing by latency: take this network if it's the first one

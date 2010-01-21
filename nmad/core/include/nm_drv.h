@@ -69,9 +69,6 @@ struct nm_drv
   /** Private structure of the driver. */
   void *priv;
 
-  /* Driver id. */
-  nm_drv_id_t id;
-
   /** Number of tracks opened on this driver. */
   uint8_t nb_tracks;
   

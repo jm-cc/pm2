@@ -17,7 +17,7 @@
 #define NM_PREDICTIONS_H
 
 /** @internal used by nm core to update performance profiles when a new driver is loaded */
-extern int nm_ns_update(struct nm_core *p_core);
+extern int nm_ns_update(struct nm_core *p_core, struct nm_drv*p_drv);
 extern int nm_ns_exit(struct nm_core *p_core);
 
 extern int nm_ns_dec_bws(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_drvs);

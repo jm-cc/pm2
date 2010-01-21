@@ -468,7 +468,7 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   
   NM_TRACE_VAL("tcp connect/accept trk id", p_crq->trk_id);
   NM_TRACE_VAL("tcp connect/accept gate id", p_gate);
-  NM_TRACE_VAL("tcp connect/accept drv id", p_drv->id);
+  NM_TRACE_VAL("tcp connect/accept drv id", p_drv);
   NM_TRACE_VAL("tcp connect/accept new socket on fd", fd);
   
   status->fd[p_crq->trk_id] = fd;
@@ -482,7 +482,7 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].revents = 0;
   p_tcp_trk->gate_map[p_tcp_drv->nb_gates - 1] = p_gate;
   
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv->id, p_crq->trk_id);
+  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
   
   return NM_ESUCCESS;
 }
@@ -928,7 +928,7 @@ nm_tcp_send 	(void*_status,
                  */
                 p_tcp_pw->rem_length	= sizeof(p_tcp_pw->h);
 
-                NMAD_EVENT_SND_START(p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
+                NMAD_EVENT_SND_START(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
         }
 
         fd	= status->fd[p_pw->trk_id];
@@ -1108,7 +1108,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   }
   NM_TRACE_PTR("status", status);
   NM_TRACE_PTR("p_gate", p_pw->p_gate);
-  NM_TRACEF("drv_id %d status(2) %p", p_pw->p_drv->id, _status);
+  NM_TRACEF("drv %p status(2) %p", p_pw->p_drv, _status);
   
   if (!p_tcp_pw) {
     NM_TRACEF("setup vector iterator");
@@ -1211,7 +1211,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     NM_TRACE_VAL("tcp incoming rem length", p_tcp_pw->rem_length);
     
     if (!p_tcp_pw->rem_length) {
-      NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id, p_tcp_pw->pkt_length);
+      NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_tcp_pw->pkt_length);
       err	= NM_ESUCCESS;
       
       *p_cur = p_vi->cur_copy;
@@ -1252,7 +1252,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 	WARN("-NM_EINVAL");
 	err	= -NM_EINVAL;
       } else {
-	NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv->id, p_pw->trk_id, p_pw->length);
+	NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
 	fprintf(stderr, "tcp incoming iov: receive complete\n");
 	NM_TRACEF("tcp incoming iov: receive complete");
 	err	= NM_ESUCCESS;

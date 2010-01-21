@@ -39,18 +39,21 @@ NM_TAG_TABLE_TYPE(nm_so_tag, struct nm_so_tag_s);
 /** Per driver gate related data. */
 struct nm_gate_drv
 {
-  /** Driver.  */
+  /** NewMad driver reference . */
   struct nm_drv *p_drv;
+  /** Receptacle for the current driver interface. */
   struct puk_receptacle_NewMad_Driver_s receptacle;
+  /** Driver instance. */
   puk_instance_t instance;
   
-  /** Array of reference to current incoming requests, (indexed by trk_id).
-   */
+  /** Array of reference to current incoming requests, (indexed by trk_id). */
   struct nm_pkt_wrap *p_in_rq_array[NM_SO_MAX_TRACKS];
   
   tbx_bool_t active_recv[NM_SO_MAX_TRACKS];
   tbx_bool_t active_send[NM_SO_MAX_TRACKS];
 };
+
+PUK_VECT_TYPE(nm_gdrv, struct nm_gate_drv*);
 
 /** status of a gate, used for dynamic connections */
 enum nm_gate_status_e
@@ -87,7 +90,7 @@ struct nm_gate
   puk_instance_t strategy_instance;
 
   /** Gate data for each driver. */
-  struct nm_gate_drv*p_gate_drv_array[NM_DRV_MAX];
+  struct nm_gdrv_vect_s gdrv_array;
 
   /* user reference */
   void*ref;

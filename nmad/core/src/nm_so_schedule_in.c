@@ -464,7 +464,7 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	      tbx_fast_list_add(&p_pw2->link, &p_gate->pending_large_send);
 	    }
 	  /* send the data */
-	  nm_drv_t p_drv = nm_drv_get_by_id(p_gate->p_core, header->drv_id);
+	  nm_drv_t p_drv = nm_drv_get_by_index(p_gate, header->drv_index);
 	  nm_core_post_send(p_gate, p_large_pw, header->trk_id, p_drv);
 	  header->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
 	  return;

@@ -43,10 +43,11 @@ static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, st
 /* ********************************************************* */
 
 static void nm_so_post_multi_rtr(struct nm_gate*p_gate, struct nm_pkt_wrap *p_pw,
-				 nm_core_tag_t tag, nm_seq_t seq, uint32_t chunk_offset,
-				 int nb_chunks, struct nm_rdv_chunk*chunks)
+				 uint32_t chunk_offset, int nb_chunks, struct nm_rdv_chunk*chunks)
 {
   int i;
+  const nm_seq_t seq = p_pw->p_unpack->seq;
+  const nm_core_tag_t tag = p_pw->p_unpack->tag;
   struct nm_pkt_wrap *p_pw2 = NULL;
   for(i = 0; i < nb_chunks; i++)
     {
@@ -110,37 +111,30 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 {
   struct iovec*iov      = p_unpack->data;
   struct nm_gate*p_gate = p_unpack->p_gate;
+  int pending_len = len;
   uint32_t offset = 0;
   int i = 0;
- 
   /* find the iovec entry for the given chunk_offset */
   while(offset + iov[i].iov_len <= chunk_offset)
     {
       offset += iov[i].iov_len;
       i++;
     }
-
-  int pending_len = len;
-
-  const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
-  const int chunk_len = iov[i].iov_len - iov_offset;
-
   /* store pending large recv for processing later  */
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   p_pw->p_unpack = p_unpack;
-  const int pw_chunk_offset = chunk_offset;
+  const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
   nm_so_pw_add_raw(p_pw, iov[i].iov_base + iov_offset, iov[i].iov_len - iov_offset, 0);
-  pending_len -= chunk_len;
-  offset      += chunk_len;
-  int j;
-  for(j = 1; pending_len > 0; j++)
+  pending_len -= iov[i].iov_len - iov_offset;
+  i++;
+  while(pending_len > 0)
     {
-      nm_so_pw_add_raw(p_pw, iov[j+i].iov_base, iov[j+i].iov_len, 0);
-      pending_len -= iov[i+j].iov_len;
-      offset      += iov[i+j].iov_len;
+      nm_so_pw_add_raw(p_pw, iov[i].iov_base, iov[i].iov_len, 0);
+      pending_len -= iov[i].iov_len;
+      i++;
     }
-  p_pw->chunk_offset = pw_chunk_offset;
+  p_pw->chunk_offset = chunk_offset;
   nm_so_pw_store_pending_large_recv(p_pw, p_gate);
   
   /* enqueue in the list, and immediately process one item 
@@ -251,7 +245,7 @@ static int nm_so_init_large_datatype_recv_with_multi_rtr(struct nm_pkt_wrap *p_p
       p_pw->length = last - first;
       p_pw->v_nb = nb_entries;
       chunk.len = p_pw->length; /* TODO- should be given by rdv_accept */
-      nm_so_post_multi_rtr(p_gate, p_pw, tag, seq,first, nb_chunks, &chunk);
+      nm_so_post_multi_rtr(p_gate, p_pw, first, nb_chunks, &chunk);
 
       if(last < len)
 	{
@@ -334,7 +328,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 		  /* store the remaining pw to receive later */
 		  nm_so_pw_store_pending_large_recv(p_pw2, p_gate);
 		}
-	      nm_so_post_multi_rtr(p_gate, p_large_pw, p_unpack->tag, p_unpack->seq, p_large_pw->chunk_offset, nb_chunks, &chunk);
+	      nm_so_post_multi_rtr(p_gate, p_large_pw, p_large_pw->chunk_offset, nb_chunks, &chunk);
 	    }
 	}
       else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
@@ -354,7 +348,7 @@ int nm_so_process_large_pending_recv(struct nm_gate*p_gate)
 	  if(err == NM_ESUCCESS)
 	    {
 	      tbx_fast_list_del(p_gate->pending_large_recv.next);
-	      nm_so_post_multi_rtr(p_gate, p_large_pw, p_unpack->tag, p_unpack->seq,
+	      nm_so_post_multi_rtr(p_gate, p_large_pw,
 				   p_large_pw->chunk_offset, nb_chunks, chunks);
 	    }
 	}

@@ -57,6 +57,10 @@ int nm_launcher_get_gate(int dest, nm_gate_t *gate)
 
 int nm_launcher_init(int *argc, char**argv)
 {
+  static int init_done = 0;
+  if(init_done)
+    return NM_ESUCCESS;
+  init_done = 1;
   /*
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)
    */
@@ -90,6 +94,10 @@ int nm_launcher_init(int *argc, char**argv)
 
 int nm_launcher_exit(void)
 {
+  static int exit_done = 0;
+  if(exit_done)
+    return NM_ESUCCESS;
+  exit_done = 1;
   free(gates);
   puk_instance_destroy(launcher_instance);
   padico_puk_shutdown();

@@ -13,10 +13,6 @@
  * General Public License for more details.
  */
 
-#ifndef CONFIG_PROTO_MAD3
-#  error "sampling-prog requires option 'mad3_emu'"
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -28,7 +24,6 @@
 #include <nm_private.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
-#include <madeleine.h>
 
 /* Maximum size of a small message for a faked strategy */
 #define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
@@ -133,7 +128,8 @@ static void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
 
 static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 { 
-  struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[p_drv->id]->receptacle;
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   const nm_tag_t tag = 0;
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
@@ -346,7 +342,8 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   nm_ns_eager_send_copy(p_drv, p_gate, &rdv_req, sizeof(rdv_req));
   nm_ns_eager_recv(p_drv, p_gate, &ok_to_send, sizeof(ok_to_send));
   
-  struct puk_receptacle_NewMad_Driver_s*r = &p_gate->p_gate_drv_array[p_drv->id]->receptacle;
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   const nm_tag_t tag = 0;
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
@@ -644,16 +641,16 @@ static void nm_ns_compute_thresholds(void)
 
 int main(int argc, char **argv)
 {
-  /* Initialisation de l'émulation */
-  p_mad_madeleine_t madeleine = mad_init(&argc, argv);
-  p_mad_session_t   session   = madeleine->session;
-  int               is_server = session->process_rank;
-
-  /* Initialisation de Nmad */
-  nm_session_t p_session = mad_nmad_get_session();
-  struct nm_core  *p_core = p_session->p_core;
-  struct nm_drv   *p_drv  = tbx_fast_list_entry(p_core->driver_list.next, struct nm_drv, _link);
-  struct nm_gate  *p_gate = tbx_fast_list_entry(p_core->gate_list.next, struct nm_gate, _link);
+  int is_server = -1, rank, peer;
+  nm_session_t p_session = NULL;
+  nm_gate_t p_gate = NULL;
+  nm_launcher_init(&argc, argv);
+  nm_launcher_get_session(&p_session);
+  nm_launcher_get_rank(&rank);
+  is_server = !rank;
+  peer = 1 - rank;
+  nm_launcher_get_gate(peer, &p_gate);
+  struct nm_drv*p_drv = nm_drv_default(p_gate);
 
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
@@ -684,7 +681,8 @@ int main(int argc, char **argv)
       nm_ns_pong(p_drv, p_gate);
     }
 
-  mad_exit(madeleine);
+  nm_launcher_exit();
+
   return 0;
 }
 

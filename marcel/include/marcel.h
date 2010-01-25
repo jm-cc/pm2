@@ -23,9 +23,6 @@ extern "C" {
 #endif
 
 
-#ifdef PUK
-#include <Padico/padico_config.h>
-#endif
 #include "marcel_abi.h"
 #include "sys/marcel_flags.h"
 #include "marcel_config.h"

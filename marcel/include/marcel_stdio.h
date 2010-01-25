@@ -22,12 +22,18 @@
 #include <unistd.h>
 #include "sys/marcel_flags.h"
 #include "tbx_compiler.h"
-#ifdef PADICO_ENABLE_PUKABI
+#ifdef PUK
+#include <Padico/Puk.h>
 #include <Padico/Puk-ABI.h>
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+#undef HAVE_ATTRIBUTE_VISIBILITY
 #else
 #include <stdio.h>
-#endif
-
+#endif /* PUK */
 
 
 /*  For compatibility purposes : */
@@ -35,7 +41,7 @@
 #define tfprintf marcel_fprintf
 
 
-#ifdef PADICO_ENABLE_PUKABI
+#ifdef PUK_ABI
 
 
 #define marcel_printf printf
@@ -53,6 +59,7 @@
 
 
 #else
+#warning "deprecated: please use Puk-ABI instead !"
 
 
 TBX_FORMAT(printf,1,2)
@@ -75,7 +82,7 @@ int marcel_feof(FILE *stream);
 ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream);
 
 
-#endif /** PADICO_ENABLE_PUKABI **/
+#endif /** PUK_ABI **/
 
 
 #endif /** __MARCEL_STDIO_H__ **/

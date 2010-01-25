@@ -26,12 +26,8 @@
 #include <sys/resource.h>
 #include <stdlib.h>
 #include <string.h>
-
 #ifdef PUK
-#include <Padico/Puk.h>
-#ifdef PADICO_ENABLE_PUKABI
 #include <Padico/Puk-ABI.h>
-#endif
 #endif
 
 

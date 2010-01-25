@@ -28,13 +28,13 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   piom_server_init(&p_drv->server, "NMad IO Server");
 
 #ifdef  MARCEL_REMOTE_TASKLETS
-#warning TODO
-  int vp=(p_drv->id);
-  char* ENV_PIOM_POLL_VP=getenv("PIOM_POLL_VP");
+  /* drivers are bound to core #0 unless PIOM_POLL_VP is set */
+  /* todo: try to distribute this in order to allow concurrent polling */
+  int vp = 0;
+  char* ENV_PIOM_POLL_VP = getenv("PIOM_POLL_VP");
   if(ENV_PIOM_POLL_VP)
-    vp=atoi(ENV_PIOM_POLL_VP);
+    vp = atoi(ENV_PIOM_POLL_VP);
   
-  /* distribute CPUs so as to allow concurrent polling, etc. */
   marcel_vpset_vp(&p_drv->vpset, vp%marcel_nbvps());
   ma_remote_tasklet_set_vpset(&p_drv->server.poll_tasklet, &p_drv->vpset);
 #endif /* MARCEL_REMOTE_TASKLET */

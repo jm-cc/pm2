@@ -236,12 +236,30 @@ __piom_check_polling(unsigned polling_point)
     if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
 
+#ifdef PIOM_THREAD_ENABLED
+    int cur_vp = marcel_current_vp();
+#else
+    int cur_vp = 0;
+
+#endif
+    
+    _piom_spin_lock_softirq(&piom_poll_lock);
+    if(__piom_core_status[cur_vp]  & PIOM_CORE_STATUS_BUSY) {
+	/* someone needs to modify the list */
+	    _piom_spin_unlock_softirq(&piom_poll_lock);
+	    return ;
+    }
+    /* no one needs to modify the list for now */
+    __piom_core_status[cur_vp] |= PIOM_CORE_STATUS_POLLING;
+    _piom_spin_unlock_softirq(&piom_poll_lock);  
+
     PROF_IN();
     piom_server_t server, bak=NULL;
 
     /* TODO: if the vpset does not match idle core, remote schedule the tasklet 
        (or schedule the tasklet somewhere else) */
     tbx_fast_list_for_each_entry_safe(server, bak, &piom_list_poll, chain_poll) {		
+	//tbx_fast_list_for_each_entry(server, &piom_list_poll, chain_poll) {		
 #ifdef MARCEL_REMOTE_TASKLETS
 	if( marcel_vpset_isset(&(server->poll_tasklet.vp_set),
 			       marcel_current_vp())) 
@@ -264,6 +282,11 @@ __piom_check_polling(unsigned polling_point)
 		}
 	    }
     }
+
+    _piom_spin_lock_softirq(&piom_poll_lock);
+    __piom_core_status[cur_vp] &= ~PIOM_CORE_STATUS_POLLING;
+    _piom_spin_unlock_softirq(&piom_poll_lock);
+
     PROF_OUT();
 }
 

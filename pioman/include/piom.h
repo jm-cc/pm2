@@ -35,6 +35,16 @@ typedef struct piom_server *piom_server_t;
 extern struct tbx_fast_list_head piom_list_poll;
 extern piom_spinlock_t piom_poll_lock;
 
+/* array of int that store the status of each core */
+extern volatile int *__piom_core_status;
+#define PIOM_CORE_STATUS_IDLE    0x00 /* the core is not polling */
+#define PIOM_CORE_STATUS_POLLING 0x01  /* the core is polling */
+#define PIOM_CORE_STATUS_BUSY    0x10 /* someone needs to modify the polling list, stop polling */
+
+/* number of cores handled by PIOMan */
+extern int __piom_nb_core;
+
+
 /* A request defines an event that can be detected. Several requests may
  * be grouped (to permit to poll only once for a group of requests)
  */

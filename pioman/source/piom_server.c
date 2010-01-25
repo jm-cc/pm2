@@ -19,6 +19,8 @@
 
 /* TODO: support without Marcel */
 extern unsigned long volatile ma_jiffies;
+volatile int *__piom_core_status = NULL;
+int __piom_nb_core = 0;
 
 /* Start the polling (including the timer) by adding the server to the list
  */
@@ -64,7 +66,29 @@ __piom_poll_stop(piom_server_t server)
 	return;
     }
     _piom_spin_lock_softirq(&piom_poll_lock);
-    
+
+#ifdef MARCEL
+    int cur_vp = marcel_current_vp();
+#else
+    int cur_vp = 0;
+#endif
+    int i;
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* Notify all the core that we need to modify the list */
+	    __piom_core_status[i] |= PIOM_CORE_STATUS_BUSY;
+	}
+    _piom_spin_unlock_softirq(&piom_poll_lock);
+
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* we have to add an exception here since the current core may be 'polling' */
+	    if(i!=cur_vp)
+	    /* wait until all the core have finished  */
+		while (__piom_core_status[i] & PIOM_CORE_STATUS_POLLING);
+	}
+
+    _piom_spin_lock_softirq(&piom_poll_lock);    
     PIOM_LOGF("Stopping polling for [%s]\n", server->name);
     tbx_fast_list_del_init(&server->chain_poll);
     if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
@@ -75,6 +99,13 @@ __piom_poll_stop(piom_server_t server)
 	/* TODO: timer without Marcel */
 #endif		/* MARCEL */
     }
+
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* Notify all the core that we need to modify the list */
+	    __piom_core_status[i] &= ~PIOM_CORE_STATUS_BUSY;
+	}
+
     _piom_spin_unlock_softirq(&piom_poll_lock);
 }
 
@@ -138,6 +169,18 @@ int
 piom_server_start(piom_server_t server)
 {
     PIOM_BUG_ON(server->state != PIOM_SERVER_STATE_INIT);
+    
+    if(! piom_test_activity()) {
+#ifdef PIOM_THREAD_ENABLED
+	__piom_nb_core = marcel_nbvps();
+#else
+	__piom_nb_core = 1;
+#endif
+	__piom_core_status = malloc(sizeof(int)*__piom_nb_core);
+	int i;
+	for(i=0;i<__piom_nb_core; i++)
+	    __piom_core_status[i] = PIOM_CORE_STATUS_IDLE;
+    }	
 
     if (!server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func
 	&& !server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func) {
@@ -178,12 +221,29 @@ piom_server_stop(piom_server_t server)
     ma_tasklet_disable(&server->poll_tasklet);
 #endif
     
-    /* peut être la solution d'un bug... */
-    //lock = piom_server_lock_reentrant_from_callback(server);
 #endif	/* PIOM_THREAD_ENABLED */
 
-    //piom_verify_server_state(server);
-    //server->state = PIOM_SERVER_STATE_HALTED;
+    int i;
+    _piom_spin_lock_softirq(&piom_poll_lock);
+#ifdef MARCEL
+    int cur_vp = marcel_current_vp();
+#else
+    int cur_vp = 0;
+#endif
+    __piom_core_status[cur_vp] = 0;
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* Notify all the core that we need to modify the list */
+	    __piom_core_status[i] |= PIOM_CORE_STATUS_BUSY;
+	}
+    _piom_spin_unlock_softirq(&piom_poll_lock);
+
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* wait until all the core have finished  */
+	    while (__piom_core_status[i] & PIOM_CORE_STATUS_POLLING);
+	}
+
     PIOM_LOGF("server %p is stopped\n", server);
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -216,9 +276,15 @@ piom_server_stop(piom_server_t server)
 	__piom_unregister(server, req);
     }
     __piom_wake_id_waiters(server, -ECANCELED);
+
+    for(i=0; i<__piom_nb_core; i++)
+	{
+	    /* Notify all the core that we need to modify the list */
+	    __piom_core_status[i] &= ~PIOM_CORE_STATUS_BUSY;
+	}
+
 #ifdef PIOM_THREAD_ENABLED
 #ifdef MARCEL
-    //_piom_spin_unlock_softirq(&piom_poll_lock);
     ma_tasklet_enable(&server->poll_tasklet);
 #endif	/* MARCEL */
       piom_server_unlock_reentrant(server, lock);

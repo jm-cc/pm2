@@ -1,5 +1,4 @@
 /build
-autogen-include
 *.o
 *.a
 *.so

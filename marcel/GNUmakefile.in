@@ -107,7 +107,6 @@ clean: clean_autogen
 
 clean_autogen:
 	@echo -n
-#	$(COMMON_CLEAN) $(RM) -r $(PM2_SRCROOT)/marcel/autogen-include
 
 #$(foreach rep,$(patsubst $(PM2_SRCROOT)/marcel/include/%,%, \
 #		$(wildcard $(PM2_SRCROOT)/marcel/include/asm-* $(PM2_SRCROOT)/marcel/include/scheduler-*)), \

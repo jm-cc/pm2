@@ -139,7 +139,7 @@ foreach my $m ( @modules ) {
 # install headers
 print "installing headers\n";
 foreach my $m ( @modules ) {
-	foreach my $d ( 'include', 'autogen-include' ) {
+	foreach my $d ( 'include' ) {
 		my $p	= "${m}/${d}";
 
 		if ( -d "$p" ) {
@@ -179,7 +179,6 @@ foreach my $m ( @modules ) {
 				$nf	=~ s,.*/,${install_dir}/include/,;
 
 				my $nl	= $l;
-				$nl	=~ s,.*autogen-include/,${install_dir}/include/,;
 
 				print "  ** $nf ==> $nl\n";
 				symlink $nl, $nf or die "symlink $nl, $nf: $!\n";

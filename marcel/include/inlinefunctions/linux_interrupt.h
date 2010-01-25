@@ -92,6 +92,7 @@ static __tbx_inline__ void ma_tasklet_unlock_wait(struct ma_tasklet_struct *t) {
 #  define ma_tasklet_unlock(t)			((void)0)
 #endif
 
+static __tbx_inline__ void __ma_raise_softirq_vp(unsigned int nr, unsigned vp) ;
 
 #ifdef MARCEL_REMOTE_TASKLETS
 static __tbx_inline__ void __ma_tasklet_remote_schedule(struct ma_tasklet_struct *t, unsigned vpnum) {

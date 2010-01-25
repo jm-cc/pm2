@@ -39,6 +39,7 @@
  */
 
 
+#include "tbx_fast_list.h"
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "marcel_types.h"

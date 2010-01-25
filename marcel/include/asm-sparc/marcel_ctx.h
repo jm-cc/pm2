@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +13,12 @@
  * General Public License for more details.
  */
 
-#section common
 
-#depend "asm-generic/marcel_ctx.h[]"
-#section structures
-#section macros
-#section marcel_macros
+#ifndef __ASM_SPARC_MARCEL_CTX_H__
+#define __ASM_SPARC_MARCEL_CTX_H__
+
+
+#include "asm-generic/marcel_ctx.h"
+
+
+#endif /** __ASM_SPARC_MARCEL_CTX_H__ **/

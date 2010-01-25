@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,21 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_ALPHA_LINUX_SYSTEM_H__
+#define __ASM_ALPHA_LINUX_SYSTEM_H__
+
+
+#include "tbx_compiler.h"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#ifndef LINUX_SYSTEM___MARCEL_MACROS_H
+#define LINUX_SYSTEM___MARCEL_MACROS_H
+
 /*
  * Similar to:
  * include/asm-ia64/system.h
@@ -29,7 +43,6 @@
  * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
  */
 
-#section marcel_macros
 
 /*
  * Macros to force memory ordering.  In these descriptions, "previous"
@@ -345,3 +358,12 @@ __ma_cmpxchg(volatile void *ptr, unsigned long old, unsigned long repl, int size
 #endif
 
 #define ma_cpu_relax() ma_barrier()
+
+#endif /* LINUX_SYSTEM___MARCEL_MACROS_H */
+
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_ALPHA_LINUX_SYSTEM_H__ **/

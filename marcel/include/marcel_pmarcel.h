@@ -1,25 +1,22 @@
-/* Copyright (C) 2002 Free Software Foundation, Inc.
-   This file is part of the GNU C Library.
+/*
+ * PM2: Parallel Multithreaded Machine
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
 
-   The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
 
-   The GNU C Library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+#ifndef __MARCEL_PMARCEL_H__
+#define __MARCEL_PMARCEL_H__
 
-   You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, write to the Free
-   Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-   02111-1307 USA.  */
-
-#ifndef _PMARCEL_H
-#define _PMARCEL_H	1
-
-#ifdef MA__IFACE_PMARCEL
 
 /* 
  * WARNING: don't edit this file. It is a mere usual pthread.h + semaphore.h, with pthread_
@@ -35,6 +32,7 @@
 #undef __need_sigset_t
 
 #include "tbx_compiler.h"
+#include "marcel_types.h"
 
 #ifndef __attribute_deprecated__
 #define __attribute_deprecated__ __tbx_deprecated__
@@ -775,6 +773,7 @@ extern int pmarcel_sem_getvalue (pmarcel_sem_t *__restrict __sem, int *__restric
      __THROW;
 
 
-#endif
+//#endif
 
-#endif	/* pmarcel.h */
+
+#endif /** __MARCEL_PMARCEL_H__ **/

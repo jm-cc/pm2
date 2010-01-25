@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,28 +13,62 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
 
-/****************************************************************/
-/* List of sections
- */
-#section sched_marcel_functions [no-include-in-main,no-include-in-master-section]
+#ifndef __MARCEL_SCHED_GENERIC_H__
+#define __MARCEL_SCHED_GENERIC_H__
 
-#section sched_marcel_inline [no-include-in-main,no-include-in-master-section]
-#depend "[sched_marcel_functions]"
 
-/****************************************************************/
-/* Include
- */
-#section common
-/* include the specific scheduler file */
-#define MARCEL_SCHED_INTERNAL_INCLUDE
-#depend "scheduler/marcel_sched.h[]"
-#undef MARCEL_SCHED_INTERNAL_INCLUDE
+#include <sys/time.h>
+#include "sys/marcel_flags.h"
+#include "marcel_alias.h"
+#include "marcel_types.h"
+#include "linux_linkage.h"
+#include "marcel_types.h"
+#ifdef MA__IFACE_PMARCEL
+#include "marcel_pmarcel.h"
+#endif
 
-/****************************************************************/
-#section functions
+
+/** Public macros **/
+#define ALL_THREADS		 0
+#define MIGRATABLE_ONLY		 1
+#define NOT_MIGRATABLE_ONLY	 2
+#define DETACHED_ONLY		 4
+#define NOT_DETACHED_ONLY	 8
+#define BLOCKED_ONLY		16
+#define NOT_BLOCKED_ONLY	32
+#define READY_ONLY           64
+#define NOT_READY_ONLY      128
+
+#define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
+	while((cond) && ((timeout) > 0)) {	\
+		ma_set_current_state(MA_TASK_##STATE); \
+		release; \
+		(timeout) = ma_schedule_timeout(JIFFIES_FROM_US(timeout)); \
+		get; \
+	}
+
+#define SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get) \
+	while((cond)) { \
+		ma_set_current_state(MA_TASK_##STATE); \
+		release; \
+		ma_schedule(); \
+		get; \
+	}
+
+#define INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(cond, release, get) \
+        SLEEP_ON_STATE_CONDITION_RELEASING( \
+                INTERRUPTIBLE, \
+                cond, \
+                release, \
+                get)
+
+
+/** Public data structures **/
+typedef void (*snapshot_func_t)(marcel_t pid);
+
+
+/** Public functions **/
 /* ==== `sleep' functions ==== */
 int pmarcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp);
 /** \fn int marcel_nanosleep(const struct timespec *rqtp,struct timespec *rmtp)
@@ -68,134 +101,8 @@ unsigned marcel_nbthreads(void);
  */
 unsigned long marcel_createdthreads(void);
 
-#section marcel_functions
-/** \brief Wait for all application threads to terminate.  */
-void ma_wait_all_tasks_end(void);
-/** \brief Handler for graceful termination of a marcel session */
-void ma_gensched_shutdown(void);
-
-#ifdef MA__LWPS
-/** \brief Called by schedule before switching to idle thread. Last chance for
- * PIOMan to avoid switching to the idle Thread. Preemption and bottom halves
- * are disabled. Useless in mono since there's no actual switch to mono.
- */
-static __tbx_inline__ void ma_about_to_idle(void);
-#endif
-
-/** \brief Called by scheduler when having switched to idle thread.  Preemption is
- * disabled
- */
-static __tbx_inline__ void ma_entering_idle(void);
-
-/** \brief Called by scheduler when idle calls schedule().  Preemption is disabled.
- */
-static __tbx_inline__ void ma_still_idle(void);
-
-/** \brief Called by scheduler just before switching from idle thread.  Preemption is
- * disabled
- */
-static __tbx_inline__ void ma_leaving_idle(void);
-
-#section marcel_inline
-#ifdef MA__LWPS
-static __tbx_inline__ void ma_about_to_idle(void) {
-#  ifdef PIOMAN
-	/* TODO: appeler PIOMan */
-#  endif
-}
-#endif
-
-#ifdef MA__LWPS
-/* To be called from idle only, call marcel_sig_pause after making sure that
- * we have announced other LWPs that we stopped polling */
-static __tbx_inline__ void ma_sched_sig_pause(void) {
-	MA_BUG_ON(MARCEL_SELF != __ma_get_lwp_var(idle_task));
-	/* Tell other LWPs that we will stop polling need_resched */
-	ma_clear_thread_flag(TIF_POLLING_NRFLAG);
-	/* Make sure people see that we won't poll any more after that */
-	ma_smp_mb__after_clear_bit();
-	/* Make a last check once we've announced that */
-	if (!ma_get_need_resched())
-		marcel_sig_pause();
-	/* Either we have need_resched or got a signal, re-announce that we
-	 * will be polling */
-	ma_set_thread_flag(TIF_POLLING_NRFLAG);
-}
-#endif
-
-static __tbx_inline__ void ma_entering_idle(void) {
-#ifdef MA__LWPS
-	PROF_EVENT1(sched_idle_start,ma_vpnum(MA_LWP_SELF));
-#  ifdef MARCEL_SMT_IDLE
-	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		marcel_sig_disable_interrupts();
-		ma_topology_lwp_idle_start(MA_LWP_SELF);
-		if (!(ma_topology_lwp_idle_core(MA_LWP_SELF)))
-			ma_sched_sig_pause();
-		marcel_sig_enable_interrupts();
-	}
-#  endif
-#endif
-#ifdef PIOMAN
-	/* TODO: appeler PIOMan */
-#endif
-}
-
-static __tbx_inline__ void ma_still_idle(void) {
-#ifdef MA__LWPS
-#  ifdef MARCEL_SMT_IDLE
-	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		marcel_sig_disable_interrupts();
-		if (!ma_topology_lwp_idle_core(MA_LWP_SELF))
-			ma_sched_sig_pause();
-		marcel_sig_enable_interrupts();
-	}
-#  endif
-#endif
-}
-
-static __tbx_inline__ void ma_leaving_idle(void) {
-#ifdef MA__LWPS
-	PROF_EVENT1(sched_idle_stop, ma_vpnum(MA_LWP_SELF));
-#  ifdef MARCEL_SMT_IDLE
-	ma_topology_lwp_idle_end(MA_LWP_SELF);
-#  endif
-#endif
-#ifdef PIOMAN
-	/* TODO: appeler PIOMan */
-#endif
-}
-
-#section marcel_functions
-
-/** \brief Update the vp struct each time a task is created
- * (also called for tasks created through end_hibernation
- */
-void marcel_one_more_task(marcel_t pid);
-
-/** \brief Update the vp struct each time a task is destructed */
-void marcel_one_task_less(marcel_t pid);
-
-#section structures
-/* ==== snapshot ==== */
-
-typedef void (*snapshot_func_t)(marcel_t pid);
-
-#section functions
 void marcel_snapshot(snapshot_func_t f);
 
-#section macros
-#define ALL_THREADS		 0
-#define MIGRATABLE_ONLY		 1
-#define NOT_MIGRATABLE_ONLY	 2
-#define DETACHED_ONLY		 4
-#define NOT_DETACHED_ONLY	 8
-#define BLOCKED_ONLY		16
-#define NOT_BLOCKED_ONLY	32
-#define READY_ONLY           64
-#define NOT_READY_ONLY      128
-
-#section functions
 void marcel_threadslist(int max, marcel_t *pids, int *nb, int which);
 void marcel_per_lwp_threadslist(int max, marcel_t *pids, int *nb, int which);
 unsigned marcel_per_lwp_nbthreads(void);
@@ -204,47 +111,17 @@ DEC_MARCEL_POSIX(int,sched_get_priority_max,(int policy) __THROW);
 int pmarcel_sched_get_priority_min(int policy);
 DEC_MARCEL_POSIX(int,sched_get_priority_min,(int policy) __THROW);
 
-#section marcel_functions
-extern TBX_EXTERN signed long FASTCALL(ma_schedule_timeout(signed long timeout));
-extern void ma_process_timeout(unsigned long __data);
-
-#section macros
-#define TIMED_SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get, timeout) \
-	while((cond) && ((timeout) > 0)) {	\
-		ma_set_current_state(MA_TASK_##STATE); \
-		release; \
-		(timeout) = ma_schedule_timeout(JIFFIES_FROM_US(timeout)); \
-		get; \
-	}
-
-#define SLEEP_ON_STATE_CONDITION_RELEASING(STATE, cond, release, get) \
-	while((cond)) { \
-		ma_set_current_state(MA_TASK_##STATE); \
-		release; \
-		ma_schedule(); \
-		get; \
-	}
-
-#define INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(cond, release, get) \
-        SLEEP_ON_STATE_CONDITION_RELEASING( \
-                INTERRUPTIBLE, \
-                cond, \
-                release, \
-                get)
-
-#section functions
 /* ==== explicit preemption ==== */
 int marcel_yield_to(marcel_t next);
 DEC_MARCEL_POSIX(int, yield, (void) __THROW);
 int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned nb_teammates);
 
-/****************************************************************/
-/*               Scheduler et threads                           */
-/****************************************************************/
 
-#section marcel_macros
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* Ces valeurs représentent ce que l'utilisateur voudrait comme état */
-
 #define MA_TASK_RUNNING		0 /* _doit_ rester 0 */
 #define MA_TASK_INTERRUPTIBLE	1
 #define MA_TASK_UNINTERRUPTIBLE	2
@@ -265,61 +142,6 @@ int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned 
 
 #define MA_TASK_IS_FROZEN(tsk) (!(tsk)->state == MA_TASK_FROZEN)
 
-#section sched_marcel_functions
-__tbx_inline__ static void 
-marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
-				const marcel_attr_t* __restrict attr);
-#section sched_marcel_inline
-__tbx_inline__ static void 
-marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
-				const marcel_attr_t* __restrict attr)
-{
-	/* t->lwp */
-	if (attr->topo_level)
-		t->vpset = attr->topo_level->vpset;
-	else if (attr->__cpuset)
-		t->vpset = *attr->__cpuset; 
-	else
-		t->vpset = attr->vpset; 
-	ma_set_task_state(t, MA_TASK_BORNING);
-	marcel_sched_internal_init_marcel_thread(t, attr);
-}
-
-#section marcel_functions
-__tbx_inline__ static void 
-marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset);
-#section marcel_inline
-__tbx_inline__ static void 
-marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset)
-{
-	     *vpset = t->vpset;
-}
-
-#section sched_marcel_functions
-/* Démarrage d'un thread par le scheduler */
-__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
-				      marcel_task_t* __restrict new_task,
-				      __const marcel_attr_t * __restrict attr,
-				      __const int dont_schedule,
-				      __const unsigned long base_stack);
-#section sched_marcel_inline
-__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
-				      marcel_task_t* __restrict new_task,
-				      __const marcel_attr_t * __restrict attr,
-				      __const int dont_schedule,
-				      __const unsigned long base_stack)
-{
-	LOG_IN();
-	LOG_RETURN(marcel_sched_internal_create(cur, new_task, attr, 
-						dont_schedule, base_stack));
-}
-
-/****************************************************************/
-/*               Scheduler et TIF                               */
-/****************************************************************/
-
-
-#section marcel_macros
 /* Manipulation des champs de task->flags */
 
 #define TIF_UPCALL_NEW          8       /* no comment */
@@ -392,6 +214,64 @@ __tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
 #define MA_VP_IS_POLLING(vp) \
    ma_test_tsk_thread_flag(ma_per_lwp(current_thread, GET_LWP_BY_NUM(vp)), TIF_POLLING_NRFLAG)
 
-#section types
-#section marcel_inline
-#section variables
+
+/** Internal functions **/
+/** \brief Wait for all application threads to terminate.  */
+void ma_wait_all_tasks_end(void);
+/** \brief Handler for graceful termination of a marcel session */
+void ma_gensched_shutdown(void);
+
+#ifdef MA__LWPS
+/** \brief Called by schedule before switching to idle thread. Last chance for
+ * PIOMan to avoid switching to the idle Thread. Preemption and bottom halves
+ * are disabled. Useless in mono since there's no actual switch to mono.
+ */
+static __tbx_inline__ void ma_about_to_idle(void);
+#endif
+
+/** \brief Called by scheduler when having switched to idle thread.  Preemption is
+ * disabled
+ */
+static __tbx_inline__ void ma_entering_idle(void);
+
+/** \brief Called by scheduler when idle calls schedule().  Preemption is disabled.
+ */
+static __tbx_inline__ void ma_still_idle(void);
+
+/** \brief Called by scheduler just before switching from idle thread.  Preemption is
+ * disabled
+ */
+static __tbx_inline__ void ma_leaving_idle(void);
+
+
+/** \brief Update the vp struct each time a task is created
+ * (also called for tasks created through end_hibernation
+ */
+void marcel_one_more_task(marcel_t pid);
+
+/** \brief Update the vp struct each time a task is destructed */
+void marcel_one_task_less(marcel_t pid);
+
+extern TBX_EXTERN signed long FASTCALL(ma_schedule_timeout(signed long timeout));
+extern void ma_process_timeout(unsigned long __data);
+
+__tbx_inline__ static void 
+marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset);
+
+
+__tbx_inline__ static void 
+marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
+				const marcel_attr_t* __restrict attr);
+/* Démarrage d'un thread par le scheduler */
+__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
+				      marcel_task_t* __restrict new_task,
+				      __const marcel_attr_t * __restrict attr,
+				      __const int dont_schedule,
+				      __const unsigned long base_stack);
+
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_SCHED_GENERIC_H__ **/

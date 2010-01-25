@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,15 @@
  * General Public License for more details.
  */
 
-#section functions
+
+#ifndef __MARCEL_LOCKING_H__
+#define __MARCEL_LOCKING_H__
+
+
+#include "sys/marcel_flags.h"
+
+
+/** Public functions **/
 /****************************************************************
  * À appeler autour de _tout_ appel à fonctions de librairies externes
  *
@@ -30,3 +37,6 @@ extern int marcel_extlib_unprotect(void);
 
 #define marcel_malloc_protect()    marcel_extlib_protect()
 #define marcel_malloc_unprotect()  marcel_extlib_unprotect()
+
+
+#endif /** __MARCEL_LOCKING_H__ **/

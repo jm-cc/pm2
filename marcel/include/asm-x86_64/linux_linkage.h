@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,6 +13,12 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "asm-generic/linux_linkage.h[]"
-#section marcel_macros
+
+#ifndef __ASM_X86_64_LINUX_LINKAGE_H__
+#define __ASM_X86_64_LINUX_LINKAGE_H__
+
+
+#include "asm-generic/linux_linkage.h"
+
+
+#endif /** __ASM_X86_64_LINUX_LINKAGE_H__ **/

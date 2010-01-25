@@ -14,9 +14,13 @@
  * General Public License for more details.
  */
 
-#include "marcel.h"
 
 #include <stdarg.h>
+#include "marcel.h"
+
+
+#ifndef PADICO_ENABLE_PUKABI
+
 
 int marcel_printf(const char *__restrict format, ...)
 {
@@ -166,3 +170,6 @@ ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream) {
         return retour;
 }
 #endif
+
+
+#endif /** Padico PukABI **/

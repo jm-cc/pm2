@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,21 +13,27 @@
  * General Public License for more details.
  */
 
-#section default[no-depend-previous,no-include-in-main]
 
-#section stringification
+#ifndef __MARCEL_UTILS_H__
+#define __MARCEL_UTILS_H__
 
+
+#include "sys/marcel_flags.h"
+
+
+/** Public macros **/
 #define marcel_xstr(s) marcel_str(s)
 #define marcel_str(s) #s
 #define marcel_id(s) s
 #define __ma_stringify(x)          marcel_str(x)
+#define MA_PROFILE_TID(tid) ((long)(tid))
 
-#section types
+
+/** Public data types **/
 #ifndef __ASSEMBLY__
 typedef void* any_t;
 typedef void (*marcel_handler_func_t)(any_t);
 #endif
 
-#define MA_PROFILE_TID(tid) \
-	((long)(tid))
 
+#endif /** __MARCEL_UTILS_H__ **/

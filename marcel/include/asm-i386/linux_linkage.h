@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +13,15 @@
  * General Public License for more details.
  */
 
-#section common
-/*
- * Similar to:
- * include/asm-i386/linkage.h
- */
-#section marcel_macros
 
+#ifndef __ASM_I386_LINUX_LINKAGE_H__
+#define __ASM_I386_LINUX_LINKAGE_H__
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #ifdef WIN_SYS
 #define asmlinkage CPP_ASMLINKAGE __attribute__((__stdcall__))
 #define FASTCALL(x)	x __attribute__((__fastcall__))
@@ -36,3 +37,8 @@
 //#define __ALIGN_STR ".align 16,0x90"
 //#endif
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_I386_LINUX_LINKAGE_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,23 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
+
+#ifndef __ASM_ALPHA_MARCEL_ARCHDEP_H__
+#define __ASM_ALPHA_MARCEL_ARCHDEP_H__
+
 
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
+#if !defined(__GNUC__) || defined(__INTEL_COMPILER)
+#include "asm-generic/marcel_archdep.h"
+#endif
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* Alpha Tru64 */
 #if defined(OSF_SYS)
 #  define TOP_STACK_FREE_AREA     128
@@ -57,9 +67,7 @@
  register unsigned long fp asm("$15"); \
   fp; \
 })
-#endif
-#else
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#endif /* OSF_SYS */
 #endif
 
 #  define set_sp(val) \
@@ -76,3 +84,9 @@
 		       "addq %1, $31, $15\n" \
 		  : : "r" (sp), "r" (fp) : "memory", "$30")
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_ALPHA_MARCEL_ARCHDEP_H__ **/

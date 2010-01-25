@@ -17,7 +17,6 @@ ACX_GNU_NPTL
 
 m4_define([marcel_bin_scripts], [		\
 	bin/pm2-libpthread			\
-	marcel/examples/test-topologies.sh	\
 ])
 
 AC_CONFIG_FILES([

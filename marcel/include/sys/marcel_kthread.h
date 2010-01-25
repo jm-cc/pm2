@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,13 @@
  * General Public License for more details.
  */
 
-#section types
+
+#ifndef __SYS_MARCEL_KTHREAD_H__
+#define __SYS_MARCEL_KTHREAD_H__
+
+
+#include "marcel_utils.h"
+#include "sys/marcel_kthread.h"
 #ifdef MA__LWPS
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <semaphore.h>
@@ -26,12 +31,22 @@
 #     include <unistd.h>
 #   endif
 # endif
+#endif /* MA__LWPS */
+#ifdef __MARCEL_KERNEL__
+#include <signal.h>
+#ifdef LINUX_SYS
+#include "asm/linux_atomic.h"
 #endif
+#endif /* __MARCEL_KERNEL__ */
 
-#section marcel_types
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal marcel_types **/
 #ifdef MA__LWPS
 typedef void * (*marcel_kthread_func_t)(void *arg);
-
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;
@@ -44,7 +59,6 @@ typedef pthread_cond_t marcel_kthread_cond_t;
 typedef thread_t marcel_kthread_t;
 #   elif LINUX_SYS
 typedef pid_t marcel_kthread_t;
-#depend "asm/linux_atomic.h[marcel_types]"
 typedef ma_atomic_t marcel_kthread_sem_t;
 typedef marcel_kthread_sem_t marcel_kthread_mutex_t;
 #define MARCEL_KTHREAD_MUTEX_INITIALIZER MA_ATOMIC_INIT(1)
@@ -56,7 +70,8 @@ typedef int marcel_kthread_cond_t;
 # endif
 #endif // MA__LWPS
 
-#section marcel_functions
+
+/** Internal marcel_functions **/
 #ifdef MA__LWPS
 int marcel_gettid(void);
 
@@ -91,3 +106,7 @@ void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*c
 void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask);
 
 
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __SYS_MARCEL_KTHREAD_H__ **/

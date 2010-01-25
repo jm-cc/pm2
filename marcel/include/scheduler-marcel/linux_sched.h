@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,21 +13,38 @@
  * General Public License for more details.
  */
 
-/** \file
- * \brief Linux scheduler
- */
-#section common
-#include "tbx_compiler.h"
-/*
- * Similar to:
- * include/linux/interrupt.h
- */
 
-#section marcel_variables
-#depend "sys/marcel_lwp.h[marcel_macros]"
-#depend "asm-generic/linux_perlwp.h[marcel_macros]"
-#depend "marcel_descr.h[types]"
-#depend "asm/linux_rwlock.h[marcel_types]"
+#ifndef __LINUX_SCHED_H__
+#define __LINUX_SCHED_H__
+
+
+#include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "marcel_types.h"
+#ifdef __MARCEL_KERNEL__
+#include "linux_linkage.h"
+#include "marcel_rwlock.h"
+#endif
+
+
+/** Public functions **/
+extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
+/** Force a LWP to be rescheduled */
+extern void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
+/** Force a whole VPset to be rescheduled */
+extern void ma_resched_vpset(const marcel_vpset_t *vpset);
+/** Same, but lwp rqs of the VPset are already locked */
+extern void __ma_resched_vpset(const marcel_vpset_t *vpset);
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
+
+
+/** Internal global variables **/
 extern int nr_threads;
 
 /*
@@ -40,11 +56,10 @@ extern int nr_threads;
 extern ma_rwlock_t tasklist_lock;
 extern TBX_EXTERN void ma_scheduler_tick(int user_tick, int system);
 
-#section marcel_macros
-#include <limits.h>
-#define	MA_MAX_SCHEDULE_TIMEOUT	LONG_MAX
 
-#section marcel_functions
+/** Internal functions **/
+extern TBX_EXTERN void __ma_cond_resched(void);
+
 extern void ma_linux_sched_init0(void);
 
 extern unsigned long ma_nb_ready_entities(void);
@@ -72,39 +87,8 @@ int marcel_idle_lwp(ma_lwp_t lwp);
 int marcel_task_prio(marcel_task_t *p);
 int marcel_task_curr(marcel_task_t *p);
 
-#section marcel_inline
-#depend "linux_thread_info.h[marcel_inline]"
-extern TBX_EXTERN void __ma_cond_resched(void);
-static __tbx_inline__ void ma_cond_resched(void)
-{
-	if (ma_get_need_resched())
-		__ma_cond_resched();
-}
 
-/*
- * cond_resched_lock() - if a reschedule is pending, drop the given lock,
- * call schedule, and on return reacquire the lock.
- *
- * This works OK both with and without CONFIG_PREEMPT.  We do strange low-level
- * operations here to prevent schedule() from being called twice (once via
- * spin_unlock(), once by hand).
- */
-static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
-{
-	if (ma_get_need_resched()) {
-		_ma_raw_spin_unlock(lock);
-		ma_preempt_enable_no_resched();
-		__ma_cond_resched();
-		ma_spin_lock(lock);
-	}
-}
+#endif /** __MARCEL_KERNEL__ **/
 
-#section functions
-extern void marcel_wake_up_created_thread(marcel_task_t * tsk);
-/** Force a LWP to be rescheduled */
-extern void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
-/** Force a whole VPset to be rescheduled */
-extern void ma_resched_vpset(const marcel_vpset_t *vpset);
-/** Same, but lwp rqs of the VPset are already locked */
-extern void __ma_resched_vpset(const marcel_vpset_t *vpset);
 
+#endif /** __LINUX_SCHED_H__ **/

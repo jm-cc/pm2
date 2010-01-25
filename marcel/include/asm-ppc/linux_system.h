@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,11 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_PPC_LINUX_SYSTEM_H__
+#define __ASM_PPC_LINUX_SYSTEM_H__
+
+
 /*
  * Similar to:
  * include/asm-ia64/system.h
@@ -29,71 +33,14 @@
  * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
  */
 
-#section marcel_macros
 
-/*
- * taken from Linux (include/asm-powerpc/system.h)
- * Copyright (C) 1999 Cort Dougan <cort@cs.nmt.edu>
- */
+#include "tbx_compiler.h"
 
-static __tbx_inline__ unsigned long
-__xchg_u32(volatile void *p, unsigned long val)
-{
-        unsigned long prev;
 
-        __asm__ __volatile__(
-        "lwsync \n"
-"1:     lwarx   %0,0,%2 \n"
-"       stwcx.  %3,0,%2 \n\
-        bne-    1b"
-        "\n\tisync\n"
-        : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
-        : "r" (p), "r" (val)
-        : "cc", "memory");
+#ifdef __MARCEL_KERNEL__
 
-        return prev;
-}
 
-static __tbx_inline__ unsigned long
-__xchg_u32_local(volatile void *p, unsigned long val)
-{
-        unsigned long prev;
-
-        __asm__ __volatile__(
-"1:     lwarx   %0,0,%2 \n"
-"       stwcx.  %3,0,%2 \n\
-        bne-    1b"
-        : "=&r" (prev), "+m" (*(volatile unsigned int *)p)
-        : "r" (p), "r" (val)
-        : "cc", "memory");
-
-        return prev;
-}
-
-static __tbx_inline__ unsigned long
-__xchg(volatile void *ptr, unsigned long x, unsigned int size)
-{
-        switch (size) {
-                case 4:
-                        return __xchg_u32(ptr, x);
-                default:
-                        abort();
-        }
-        return x;
-}
-
-static __tbx_inline__ unsigned long
-__xchg_local(volatile void *ptr, unsigned long x, unsigned int size)
-{
-        switch (size) {
-                case 4:
-                        return __xchg_u32_local(ptr, x);
-                default:
-                        abort();
-        }
-        return x;
-}
-
+/** Internal macros **/
 #define ma_xchg(ptr,x)                                                          \
   ({                                                                         \
      __typeof__(*(ptr)) _x_ = (x);                                           \
@@ -158,3 +105,24 @@ __xchg_local(volatile void *ptr, unsigned long x, unsigned int size)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
 
 #define ma_cpu_relax() ma_barrier()
+
+
+/** Internal inline functions **/
+/*
+ * taken from Linux (include/asm-powerpc/system.h)
+ * Copyright (C) 1999 Cort Dougan <cort@cs.nmt.edu>
+ */
+static __tbx_inline__ unsigned long
+__xchg_u32(volatile void *p, unsigned long val) ;
+static __tbx_inline__ unsigned long
+__xchg_u32_local(volatile void *p, unsigned long val) ;
+static __tbx_inline__ unsigned long
+__xchg(volatile void *ptr, unsigned long x, unsigned int size) ;
+static __tbx_inline__ unsigned long
+__xchg_local(volatile void *ptr, unsigned long x, unsigned int size) ;
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_PPC_LINUX_SYSTEM_H__ **/

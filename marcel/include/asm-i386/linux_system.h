@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,23 +13,26 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_I386_LINUX_SYSTEM_H__
+#define __ASM_I386_LINUX_SYSTEM_H__
+
+
+#ifdef __MARCEL_KERNEL__
+#include <stdlib.h>
 #include "tbx_compiler.h"
-/*
- * Similar to:
- * include/asm-i386/atomic.h
- */
+#endif
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define ma_nop() __asm__ __volatile__ ("nop")
-
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
-
 #define ma_tas(ptr) (xchg((ptr),1))
-
 struct __ma_xchg_dummy { unsigned long a[100]; };
 #define __ma_xg(x) ((struct __ma_xchg_dummy *)(x))
-
 
 /*
  * The semantics of XCHGCMP8B are a bit strange, this is why
@@ -46,81 +48,53 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
  * of the instruction set reference 24319102.pdf. We need
  * the reader side to see the coherent 64bit value.
  */
-#if 0
-static __tbx_inline__ void __ma_set_64bit (unsigned long long * ptr,
-		unsigned int low, unsigned int high)
-{
-	__asm__ __volatile__ (
-		"\n1:\t"
-		"movl (%0), %%eax\n\t"
-		"movl 4(%0), %%edx\n\t"
-		"lock cmpxchg8b (%0)\n\t"
-		"jnz 1b"
-		: /* no outputs */
-		:	"D"(ptr),
-			"b"(low),
-			"c"(high)
-		:	"ax","dx","memory");
-}
+/* #if 0 */
+/* static __tbx_inline__ void __ma_set_64bit (unsigned long long * ptr, */
+/* 		unsigned int low, unsigned int high) */
+/* { */
+/* 	__asm__ __volatile__ ( */
+/* 		"\n1:\t" */
+/* 		"movl (%0), %%eax\n\t" */
+/* 		"movl 4(%0), %%edx\n\t" */
+/* 		"lock cmpxchg8b (%0)\n\t" */
+/* 		"jnz 1b" */
+/* 		: /\* no outputs *\/ */
+/* 		:	"D"(ptr), */
+/* 			"b"(low), */
+/* 			"c"(high) */
+/* 		:	"ax","dx","memory"); */
+/* } */
 
-static __tbx_inline__ void __ma_set_64bit_constant (unsigned long long *ptr,
-						 unsigned long long value)
-{
-	__ma_set_64bit(ptr,(unsigned int)(value), (unsigned int)((value)>>32ULL));
-}
-#define ma_ll_low(x)	*(((unsigned int*)(void*)&(x))+0)
-#define ma_ll_high(x)	*(((unsigned int*)(void*)&(x))+1)
+/* static __tbx_inline__ void __ma_set_64bit_constant (unsigned long long *ptr, */
+/* 						 unsigned long long value) */
+/* { */
+/* 	__ma_set_64bit(ptr,(unsigned int)(value), (unsigned int)((value)>>32ULL)); */
+/* } */
+/* #define ma_ll_low(x)	*(((unsigned int*)(void*)&(x))+0) */
+/* #define ma_ll_high(x)	*(((unsigned int*)(void*)&(x))+1) */
 
-static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr,
-			 unsigned long long value)
-{
-	__ma_set_64bit(ptr,ma_ll_low(value), ma_ll_high(value));
-}
+/* static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr, */
+/* 			 unsigned long long value) */
+/* { */
+/* 	__ma_set_64bit(ptr,ma_ll_low(value), ma_ll_high(value)); */
+/* } */
 
-#define ma_set_64bit(ptr,value) \
-(__builtin_constant_p(value) ? \
- __ma_set_64bit_constant(ptr, value) : \
- __ma_set_64bit_var(ptr, value) )
+/* #define ma_set_64bit(ptr,value) \ */
+/* (__builtin_constant_p(value) ? \ */
+/*  __ma_set_64bit_constant(ptr, value) : \ */
+/*  __ma_set_64bit_var(ptr, value) ) */
 
-#define _ma_set_64bit(ptr,value) \
-(__builtin_constant_p(value) ? \
- __ma_set_64bit(ptr, (unsigned int)(value), (unsigned int)((value)>>32ULL) ) : \
- __ma_set_64bit(ptr, ma_ll_low(value), ma_ll_high(value)) )
-#endif
+/* #define _ma_set_64bit(ptr,value) \ */
+/* (__builtin_constant_p(value) ? \ */
+/*  __ma_set_64bit(ptr, (unsigned int)(value), (unsigned int)((value)>>32ULL) ) : \ */
+/*  __ma_set_64bit(ptr, ma_ll_low(value), ma_ll_high(value)) ) */
+/* #endif */
 
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
  * Note 2: xchg has side effect, so that attribute volatile is necessary,
  *	  but generally the primitive is invalid, *ptr is output argument. --ANK
  */
-#include <stdlib.h>
-static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
-{
-	switch (size) {
-		case 1:
-			__asm__ __volatile__("xchgb %b0,%1"
-				:"=q" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		case 2:
-			__asm__ __volatile__("xchgw %w0,%1"
-				:"=r" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		case 4:
-			__asm__ __volatile__("xchgl %0,%1"
-				:"=r" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		default:
-			abort();
-	}
-	return x;
-}
-
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
 
 /*
@@ -128,50 +102,20 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
-
-static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
-				      unsigned long repl, int size)
-{
-	unsigned long prev;
-	switch (size) {
-	case 1:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgb %b1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
-		return prev;
-	case 2:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgw %w1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
-		return prev;
-	case 4:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgl %1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
-		return prev;
-	default:
-		abort();
-	}
-	return old;
-}
-
 #define ma_cmpxchg(ptr,o,n)\
 	((__typeof__(*(ptr)))__ma_cmpxchg((ptr),(unsigned long)(o),\
 					(unsigned long)(n),sizeof(*(ptr))))
     
-#if 0
-struct ma_alt_instr { 
-	__u8 *instr; 		/* original instruction */
-	__u8 *replacement;
-	__u8  cpuid;		/* cpuid bit set for replacement */
-	__u8  instrlen;		/* length of original instruction */
-	__u8  replacementlen; 	/* length of new instruction, <= instrlen */ 
-	__u8  pad;
-}; 
-#endif
+/* #if 0 */
+/* struct ma_alt_instr {  */
+/* 	__u8 *instr; 		/\* original instruction *\/ */
+/* 	__u8 *replacement; */
+/* 	__u8  cpuid;		/\* cpuid bit set for replacement *\/ */
+/* 	__u8  instrlen;		/\* length of original instruction *\/ */
+/* 	__u8  replacementlen; 	/\* length of new instruction, <= instrlen *\/  */
+/* 	__u8  pad; */
+/* };  */
+/* #endif */
 
 /* 
  * Alternative instructions for different CPU types or capabilities.
@@ -185,21 +129,21 @@ struct ma_alt_instr {
  * For non barrier like inlines please define new variants
  * without volatile and memory clobber.
  */
-#if 0
-#define ma_alternative(oldinstr, newinstr, feature) 	\
-	asm volatile ("661:\n\t" oldinstr "\n662:\n" 		     \
-		      ".section .altinstructions,\"a\"\n"     	     \
-		      "  .align 4\n"				       \
-		      "  .long 661b\n"            /* label */          \
-		      "  .long 663f\n"		  /* new instruction */ 	\
-		      "  .byte %c0\n"             /* feature bit */    \
-		      "  .byte 662b-661b\n"       /* sourcelen */      \
-		      "  .byte 664f-663f\n"       /* replacementlen */ \
-		      ".previous\n"						\
-		      ".section .altinstr_replacement,\"ax\"\n"			\
-		      "663:\n\t" newinstr "\n664:\n"   /* replacement */    \
-		      ".previous" :: "i" (feature) : "memory")  
-#endif
+/* #if 0 */
+/* #define ma_alternative(oldinstr, newinstr, feature) 	\ */
+/* 	asm volatile ("661:\n\t" oldinstr "\n662:\n" 		     \ */
+/* 		      ".section .altinstructions,\"a\"\n"     	     \ */
+/* 		      "  .align 4\n"				       \ */
+/* 		      "  .long 661b\n"            /\* label *\/          \ */
+/* 		      "  .long 663f\n"		  /\* new instruction *\/ 	\ */
+/* 		      "  .byte %c0\n"             /\* feature bit *\/    \ */
+/* 		      "  .byte 662b-661b\n"       /\* sourcelen *\/      \ */
+/* 		      "  .byte 664f-663f\n"       /\* replacementlen *\/ \ */
+/* 		      ".previous\n"						\ */
+/* 		      ".section .altinstr_replacement,\"ax\"\n"			\ */
+/* 		      "663:\n\t" newinstr "\n664:\n"   /\* replacement *\/    \ */
+/* 		      ".previous" :: "i" (feature) : "memory")   */
+/* #endif */
 #define ma_alternative(oldinstr, newinstr, feature) 	\
 	asm volatile (oldinstr ::: "memory")  
 
@@ -245,8 +189,6 @@ struct ma_alt_instr {
  * Some non intel clones support out of order store. wmb() ceases to be a
  * nop for these.
  */
- 
-
 #define ma_read_barrier_depends()	do { } while(0)
 
 #define ma_mb() ma_alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
@@ -296,3 +238,9 @@ struct ma_alt_instr {
 
 
 #define ma_cpu_relax() asm volatile("rep; nop" ::: "memory")
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_I386_LINUX_SYSTEM_H__ **/

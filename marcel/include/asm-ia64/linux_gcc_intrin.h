@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,22 +13,24 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_IA64_LINUX_GCC_INTRIN_H__
+#define __ASM_IA64_LINUX_GCC_INTRIN_H__
+
+
 /*
- * Similar to:
- * include/asm-ia64/gcc_intrin.h
- *
  * Copyright (C) 2002,2003 Jun Nakajima <jun.nakajima@intel.com>
  * Copyright (C) 2002,2003 Suresh Siddha <suresh.b.siddha@intel.com>
  */
 
-//#include <linux/compiler.h>
 
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* define this macro to get some asm stmts included in 'c' files */
-//#define ASM_SUPPORTED
 #ifndef __INTEL_COMPILER
 
-#section marcel_macros
 /* Optimization barrier */
 /* The "volatile" is due to gcc bugs */
 #define ma_ia64_barrier()	asm volatile ("":::"memory")
@@ -39,14 +41,6 @@
 
 #define ma_ia64_invala_fr(regnum)	asm volatile ("invala.e f%0" :: "i"(regnum))
 
-#section marcel_functions
-extern void ia64_bad_param_for_setreg (void);
-extern void ia64_bad_param_for_getreg (void);
-
-#section marcel_variables
-//register unsigned long ma_ia64_r13 asm ("r13") __attribute_used__;
-
-#section marcel_macros
 #define ma_ia64_setreg(regnum, val)						\
 ({										\
 	switch (regnum) {							\
@@ -609,5 +603,28 @@ do {								\
 		      :: "r"((x)) : "p6", "p7", "memory");	\
 } while (0)
 
-#section common
 #endif /* __INTEL_COMPILER */
+
+
+/** Internal global variables **/
+/* define this macro to get some asm stmts included in 'c' files */
+#ifndef __INTEL_COMPILER
+
+//register unsigned long ma_ia64_r13 asm ("r13") __attribute_used__;
+
+#endif /* __INTEL_COMPILER */
+
+
+/** Internal functions **/
+#ifndef __INTEL_COMPILER
+
+extern void ia64_bad_param_for_setreg (void);
+extern void ia64_bad_param_for_getreg (void);
+
+#endif /* __INTEL_COMPILER */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_GCC_INTRIN_H__ **/

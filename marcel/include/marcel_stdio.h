@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +13,47 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_STDIO_EST_DEF
-#define MARCEL_STDIO_EST_DEF
 
-#include <stdio.h>
+#ifndef __MARCEL_STDIO_H__
+#define __MARCEL_STDIO_H__
+
+
 #include <sys/time.h>
-
+#include <unistd.h>
+#include "sys/marcel_flags.h"
 #include "tbx_compiler.h"
+#ifdef PADICO_ENABLE_PUKABI
+#include <Padico/Puk-ABI.h>
+#else
+#include <stdio.h>
+#endif
+
+
 
 /*  For compatibility purposes : */
 #define tprintf  marcel_printf
 #define tfprintf marcel_fprintf
+
+
+#ifdef PADICO_ENABLE_PUKABI
+
+
+#define marcel_printf printf
+#define marcel_fprintf fprintf
+#define marcel_sprintf sprintf
+#define marcel_snprintf snprintf
+#define marcel_fopen open
+#define marcel_fclose close
+#define marcel_fflush fflush
+#define marcel_scanf scanf
+#define marcel_fscanf fscanf
+#define marcel_fgets fgets
+#define marcel_feof feof
+#define marcel_getdelim getdelim
+
+
+#else
+
 
 TBX_FORMAT(printf,1,2)
 int marcel_printf(const char * __restrict format, ...);
@@ -44,4 +73,9 @@ int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...);
 char *marcel_fgets(char *s, int size, FILE *stream);
 int marcel_feof(FILE *stream);
 ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream);
-#endif
+
+
+#endif /** PADICO_ENABLE_PUKABI **/
+
+
+#endif /** __MARCEL_STDIO_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +13,12 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-#include "tbx_macros.h"
-#depend "asm/marcel_compareexchange.h[macros]"
-/*
- * similar to:
- * include/linux/spinlock.h - generic locking declarations
- */
 
-/*
- * Taking a spin lock usually also disable preemption (since else other
+#ifndef __LINUX_SPINLOCK_H__
+#define __LINUX_SPINLOCK_H__
+
+
+/* Taking a spin lock usually also disable preemption (since else other
  * spinners would wait for our being rescheduled): ma_*_lock/unlock
  *
  * If a spin lock is to be taken from a bottom half or softirq as well, these
@@ -37,38 +31,27 @@
  * *_no_resched version to avoid calling ma_schedule() twice.
  */
 
-#section marcel_macros
-/*
- * Must define these before including other files, inline functions need them
- */
-#define MA_LOCK_SECTION_NAME			\
-	".text.lock." __ma_stringify(MODULE)
 
-#define MA_LOCK_SECTION_START(extra)		\
-	".subsection 1\n\t"			\
-	extra					\
-	".ifndef " MA_LOCK_SECTION_NAME "\n\t"	\
-	MA_LOCK_SECTION_NAME ":\n\t"		\
-	".endif\n\t"
-
-#define MA_LOCK_SECTION_END			\
-	".previous\n\t"
-
-#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
-#depend "asm/linux_spinlock.h[marcel_macros]"
-#define ma_spin_is_locked_nofail(x) ma_spin_is_locked(x)
-
-/* XXX: we do not check the owner */
-#define ma_spin_check_locked(x) ma_spin_is_locked(x)
+#include "tbx_compiler.h"
+#include "tbx_macros.h"
+#include "sys/marcel_flags.h"
+#include "asm/linux_atomic.h"
+#include "asm/linux_spinlock.h"
+#include "asm/marcel_compareexchange.h"
+#ifdef __MARCEL_KERNEL__
+#include "marcel_utils.h"
+#include "linux_preempt.h"
+#ifdef MA__LWPS
+#include "asm/linux_rwlock.h"
 #endif
+#endif /**__MARCEL_KERNEL__ **/
 
-#section types
+
+/** Public data types **/
 /*
  * If MA__LWPS is set, pull in the _raw_* definitions
  */
-#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
-#depend "asm/linux_spinlock.h[types]"
-#else
+#if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
 typedef struct {
         unsigned long magic;
@@ -96,7 +79,41 @@ typedef struct {
 #endif
 #endif /* MARCEL_DEBUG_SPINLOCK */
 #endif /* MA__LWPS */
-#section marcel_macros
+
+
+/** Public functions **/
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
+TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
+#endif
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+/*
+ * Must define these before including other files, inline functions need them
+ */
+#define MA_LOCK_SECTION_NAME			\
+	".text.lock." __ma_stringify(MODULE)
+
+#define MA_LOCK_SECTION_START(extra)		\
+	".subsection 1\n\t"			\
+	extra					\
+	".ifndef " MA_LOCK_SECTION_NAME "\n\t"	\
+	MA_LOCK_SECTION_NAME ":\n\t"		\
+	".endif\n\t"
+
+#define MA_LOCK_SECTION_END			\
+	".previous\n\t"
+
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
+#define ma_spin_is_locked_nofail(x) ma_spin_is_locked(x)
+
+/* XXX: we do not check the owner */
+#define ma_spin_check_locked(x) ma_spin_is_locked(x)
+#endif
+
 #if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
 
@@ -264,8 +281,6 @@ typedef struct {
 #define _ma_raw_write_trylock(lock) ({ (void)(lock); (1); })
 #endif /* !MA__LWPS */
 
-#section marcel_macros
-#depend "linux_preempt.h[marcel_macros]"
 /*
  * Define the various spin_lock and rw_lock methods.  Note we define these
  * regardless of whether MA__LWPS is set. The various
@@ -278,20 +293,6 @@ typedef struct {
 				1 : ({ma_preempt_enable(); 0;});})
 
 /* Where's read_trylock? */
-#section functions
-#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
-#depend "asm/linux_spinlock.h[types]"
-TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
-#endif
-
-#section marcel_functions
-#if defined(MA__LWPS)
-#depend "asm/linux_rwlock.h[marcel_types]"
-TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock);
-#endif
-
-#section marcel_macros
-#depend "linux_interrupt.h[marcel_macros]"
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #define ma_spin_lock(lock) \
 do { \
@@ -510,82 +511,17 @@ do { \
 	_ma_raw_spin_trylock(lock) ? 1 : \
 	({ma_preempt_enable_no_resched(); ma_local_bh_enable(); 0;});})
 
-#section marcel_functions
+
+/** Internal functions **/
+#if defined(MA__LWPS)
+TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock);
+#endif
+
 /* "lock on reference count zero" */
-#include <asm/linux_atomic.h>
 extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
 
-#section marcel_inline
-#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
-#depend "asm/linux_spinlock.h[marcel_inline]"
-#endif
-#depend "marcel_topology.h[marcel_inline]"
-/*
- *  bit-based spin_lock()
- *
- * Don't use this unless you really need to: spin_lock() and spin_unlock()
- * are significantly faster.
- */
-static __tbx_inline__ void ma_bit_spin_lock(int bitnum, unsigned long *addr)
-{
-	/*
-	 * Assuming the lock is uncontended, this never enters
-	 * the body of the outer loop. If it is contended, then
-	 * within the inner loop a non-atomic test is used to
-	 * busywait with less bus contention for a good time to
-	 * attempt to acquire the lock bit.
-	 */
-	ma_preempt_disable();
-#if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
-	while (ma_test_and_set_bit(bitnum, addr)) {
-		while (ma_test_bit(bitnum, addr))
-			ma_cpu_relax();
-	}
-#endif
-}
 
-/*
- * Return true if it was acquired
- */
-static __tbx_inline__ int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
-{
-#if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
-	int ret;
+#endif /** __MARCEL_KERNEL__ **/
 
-	ma_preempt_disable();
-	ret = !ma_test_and_set_bit(bitnum, addr);
-	if (!ret)
-		ma_preempt_enable();
-	return ret;
-#else
-	ma_preempt_disable();
-	return 1;
-#endif
-}
 
-/*
- *  bit-based spin_unlock()
- */
-static __tbx_inline__ void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
-{
-#if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
-	MA_BUG_ON(!ma_test_bit(bitnum, addr));
-	ma_smp_mb__before_clear_bit();
-	ma_clear_bit(bitnum, addr);
-#endif
-	ma_preempt_enable();
-}
-
-/*
- * Return true if the lock is held.
- */
-static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
-{
-#if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
-	return ma_test_bit(bitnum, addr);
-#else
-	return ma_preempt_count();
-#endif
-}
-#section types
-#section marcel_structures
+#endif /** __LINUX_SPINLOCK_H__ **/

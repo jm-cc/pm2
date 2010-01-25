@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,11 +13,18 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "marcel_container.h[marcel_types]"
-#depend "linux_spinlock.h[types]"
 
-#section types
+#ifndef __MARCEL_ALLOCATOR_H__
+#define __MARCEL_ALLOCATOR_H__
+
+
+#include "sys/marcel_flags.h"
+#include "marcel_utils.h"
+#include "marcel_container.h"
+#include "linux_spinlock.h"
+
+
+/** Public data types **/
 typedef struct _ma_allocator_t ma_allocator_t;
 #ifdef MA__LWPS
 #define POLICY_EQUIV
@@ -33,8 +39,42 @@ enum ma_policy_t {
 	POLICY_BALANCE POLICY_EQUIV
 };
 
-#section marcel_structures
 
+/** Public functions **/
+/* crée un allocateur distribué d'objets, créés au besoin à */
+/* l'aide de create(create_arg). */
+/* si conservative == 1, préserver le contenu des objets */
+/* avec un choix de politiques d'allocation */
+TBX_FMALLOC
+ma_allocator_t *ma_new_obj_allocator(int conservative,
+				      void *(*create)(void *), 
+				      void *create_arg,
+				      void (*destroy)(void *, void *), 
+				      void *destroy_arg,
+				      enum ma_policy_t policy,
+				      int max_size
+				      );
+void ma_obj_allocator_init(ma_allocator_t * allocator);
+TBX_FMALLOC void *ma_obj_alloc(ma_allocator_t *allocator);
+void ma_obj_free(ma_allocator_t *allocator, void *obj);
+void ma_obj_allocator_print(ma_allocator_t * allocator);
+void ma_obj_allocator_fini(ma_allocator_t *allocator);
+
+/* helpful */
+TBX_FMALLOC void * ma_obj_allocator_malloc(void * arg);
+void ma_obj_allocator_free(void * obj, void * foo);
+TBX_FMALLOC void * __ma_obj_allocator_malloc(void * arg);
+void __ma_obj_allocator_free(void * obj, void * foo);
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#define MA_PER_STH_CUR_INITIALIZER(_max) { .cur = 0, .lock = MA_SPIN_LOCK_UNLOCKED, .max = (_max) }
+
+
+/** Internal data structures **/
 struct _ma_allocator_t {
 	enum ma_policy_t policy;
 	union {
@@ -58,37 +98,13 @@ typedef struct {
 	unsigned long max;
 } ma_per_sth_cur_t;
 
-#section marcel_macros
-#define MA_PER_STH_CUR_INITIALIZER(_max) { .cur = 0, .lock = MA_SPIN_LOCK_UNLOCKED, .max = (_max) }
 
-#section functions
-/* crée un allocateur distribué d'objets, créés au besoin à */
-/* l'aide de create(create_arg). */
-/* si conservative == 1, préserver le contenu des objets */
-/* avec un choix de politiques d'allocation */
+/** Internal global variables **/
+extern ma_allocator_t * ma_node_allocator;
+extern ma_per_sth_cur_t ma_per_lwp_cur, ma_per_level_cur;
 
-TBX_FMALLOC
-ma_allocator_t *ma_new_obj_allocator(int conservative,
-				      void *(*create)(void *), 
-				      void *create_arg,
-				      void (*destroy)(void *, void *), 
-				      void *destroy_arg,
-				      enum ma_policy_t policy,
-				      int max_size
-				      );
-void ma_obj_allocator_init(ma_allocator_t * allocator);
-TBX_FMALLOC void *ma_obj_alloc(ma_allocator_t *allocator);
-void ma_obj_free(ma_allocator_t *allocator, void *obj);
-void ma_obj_allocator_print(ma_allocator_t * allocator);
-void ma_obj_allocator_fini(ma_allocator_t *allocator);
 
-/* helpful */
-TBX_FMALLOC void * ma_obj_allocator_malloc(void * arg);
-void ma_obj_allocator_free(void * obj, void * foo);
-TBX_FMALLOC void * __ma_obj_allocator_malloc(void * arg);
-void __ma_obj_allocator_free(void * obj, void * foo);
-
-#section marcel_functions
+/** Internal functions **/
 void ma_allocator_init(void);
 void ma_allocator_exit(void);
 
@@ -102,6 +118,8 @@ unsigned long ma_per_level_alloc(size_t size);
 #define ma_per_lwp_self_data(off) ma_per_lwp_data(MA_LWP_SELF, off)
 #define ma_per_level_data(level, off) ma_per_sth_data(level, off)
 
-#section marcel_variables
-extern ma_allocator_t * ma_node_allocator;
-extern ma_per_sth_cur_t ma_per_lwp_cur, ma_per_level_cur;
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_ALLOCATOR_H__ **/

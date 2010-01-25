@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,23 +13,10 @@
  * General Public License for more details.
  */
 
-#section common
 
-#ifdef OSF_SYS
-#depend "asm-generic/linux_atomic.h[]"
-#section marcel_macros
-#section marcel_types
-#section marcel_inline
+#ifndef __ASM_ALPHA_LINUX_ATOMIC_H__
+#define __ASM_ALPHA_LINUX_ATOMIC_H__
 
-#section common
-#else
-
-#depend "asm-alpha/linux_compiler.h[marcel_macros]"
-#include "tbx_compiler.h"
-/*
- * Similar to:
- * include/asm-alpha/atomic.h
- */
 
 /*
  * Atomic operations that C can't guarantee us.  Useful for
@@ -39,16 +26,39 @@
  * than regular operations.
  */
 
+
+#ifdef OSF_SYS
+#include "asm-generic/linux_atomic.h"
+#else
+#include "tbx_compiler.h"
+#include "asm-alpha/linux_compiler.h"
+#endif
+
+
+/** Public data types **/
 /*
  * Counter is volatile to make sure gcc doesn't try to be clever
  * and move things around on us. We need to use _exactly_ the address
  * the user gave us, not some alias that contains the same information.
  */
-#section marcel_types
+#ifndef OSF_SYS
 typedef struct { volatile int counter; } ma_atomic_t;
 typedef struct { volatile long counter; } ma_atomic64_t;
+#endif
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+#ifndef OSF_SYS
+
+
+/** Internal macros **/
+/*
+ * Counter is volatile to make sure gcc doesn't try to be clever
+ * and move things around on us. We need to use _exactly_ the address
+ * the user gave us, not some alias that contains the same information.
+ */
 #define MA_ATOMIC_INIT(i)	( (ma_atomic_t) { (i) } )
 #define MA_ATOMIC64_INIT(i)	( (ma_atomic64_t) { (i) } )
 
@@ -66,171 +76,8 @@ typedef struct { volatile long counter; } ma_atomic64_t;
  * forward to code at the end of this object's .text section, then
  * branch back to restart the operation.
  */
-
-#section marcel_functions
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v);
-#section marcel_inline
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v)
-{
-	unsigned long temp;
-	__asm__ __volatile__(
-	"1:	ldl_l %0,%1\n"
-	"	addl %0,%2,%0\n"
-	"	stl_c %0,%1\n"
-	"	beq %0,2f\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter)
-	:"Ir" (i), "m" (v->counter));
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_atomic64_add(long i, ma_atomic64_t * v);
-#section marcel_inline
-static __tbx_inline__ void ma_atomic64_add(long i, ma_atomic64_t * v)
-{
-	unsigned long temp;
-	__asm__ __volatile__(
-	"1:	ldq_l %0,%1\n"
-	"	addq %0,%2,%0\n"
-	"	stq_c %0,%1\n"
-	"	beq %0,2f\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter)
-	:"Ir" (i), "m" (v->counter));
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v);
-#section marcel_inline
-static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v)
-{
-	unsigned long temp;
-	__asm__ __volatile__(
-	"1:	ldl_l %0,%1\n"
-	"	subl %0,%2,%0\n"
-	"	stl_c %0,%1\n"
-	"	beq %0,2f\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter)
-	:"Ir" (i), "m" (v->counter));
-}
-
-#section marcel_functions
-static __tbx_inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v);
-#section marcel_inline
-static __tbx_inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v)
-{
-	unsigned long temp;
-	__asm__ __volatile__(
-	"1:	ldq_l %0,%1\n"
-	"	subq %0,%2,%0\n"
-	"	stq_c %0,%1\n"
-	"	beq %0,2f\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter)
-	:"Ir" (i), "m" (v->counter));
-}
-
-
-/*
- * Same as above, but return the result value
- */
-#section marcel_functions
-static __tbx_inline__ long ma_atomic_add_return(int i, ma_atomic_t * v);
-#section marcel_inline
-static __tbx_inline__ long ma_atomic_add_return(int i, ma_atomic_t * v)
-{
-	long temp, result;
-	__asm__ __volatile__(
-	"1:	ldl_l %0,%1\n"
-	"	addl %0,%3,%2\n"
-	"	addl %0,%3,%0\n"
-	"	stl_c %0,%1\n"
-	"	beq %0,2f\n"
-	"	mb\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
-	:"Ir" (i), "m" (v->counter) : "memory");
-	return result;
-}
-
-#section marcel_macros
 #define ma_atomic_add_negative(a, v)	(ma_atomic_add_return((a), (v)) < 0)
 
-#section marcel_functions
-static __tbx_inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v);
-#section marcel_inline
-static __tbx_inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v)
-{
-	long temp, result;
-	__asm__ __volatile__(
-	"1:	ldq_l %0,%1\n"
-	"	addq %0,%3,%2\n"
-	"	addq %0,%3,%0\n"
-	"	stq_c %0,%1\n"
-	"	beq %0,2f\n"
-	"	mb\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
-	:"Ir" (i), "m" (v->counter) : "memory");
-	return result;
-}
-
-#section marcel_functions
-static __tbx_inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v);
-#section marcel_inline
-static __tbx_inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v)
-{
-	long temp, result;
-	__asm__ __volatile__(
-	"1:	ldl_l %0,%1\n"
-	"	subl %0,%3,%2\n"
-	"	subl %0,%3,%0\n"
-	"	stl_c %0,%1\n"
-	"	beq %0,2f\n"
-	"	mb\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
-	:"Ir" (i), "m" (v->counter) : "memory");
-	return result;
-}
-
-#section marcel_functions
-static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v);
-#section marcel_inline
-static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
-{
-	long temp, result;
-	__asm__ __volatile__(
-	"1:	ldq_l %0,%1\n"
-	"	subq %0,%3,%2\n"
-	"	subq %0,%3,%0\n"
-	"	stq_c %0,%1\n"
-	"	beq %0,2f\n"
-	"	mb\n"
-	".subsection 2\n"
-	"2:	br 1b\n"
-	".previous"
-	:"=&r" (temp), "=m" (v->counter), "=&r" (result)
-	:"Ir" (i), "m" (v->counter) : "memory");
-	return result;
-}
-
-#section marcel_macros
 #define ma_atomic_dec_return(v) ma_atomic_sub_return(1,(v))
 #define ma_atomic64_dec_return(v) ma_atomic64_sub_return(1,(v))
 
@@ -257,5 +104,27 @@ static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v)
 #define ma_smp_mb__before_atomic_inc()	ma_smp_mb()
 #define ma_smp_mb__after_atomic_inc()	ma_smp_mb()
 
-#section common
-#endif
+
+/** Internal functions **/
+/*
+ * Counter is volatile to make sure gcc doesn't try to be clever
+ * and move things around on us. We need to use _exactly_ the address
+ * the user gave us, not some alias that contains the same information.
+ */
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v);
+static __tbx_inline__ void ma_atomic64_add(long i, ma_atomic64_t * v);
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v);
+static __tbx_inline__ void ma_atomic64_sub(long i, ma_atomic64_t * v);
+static __tbx_inline__ long ma_atomic_add_return(int i, ma_atomic_t * v);
+static __tbx_inline__ long ma_atomic64_add_return(long i, ma_atomic64_t * v);
+static __tbx_inline__ long ma_atomic_sub_return(int i, ma_atomic_t * v);
+static __tbx_inline__ long ma_atomic64_sub_return(long i, ma_atomic64_t * v);
+
+
+#endif /** ! OSF_SYS **/
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_ALPHA_LINUX_ATOMIC_H__ **/

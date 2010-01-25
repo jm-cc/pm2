@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,39 +13,45 @@
  * General Public License for more details.
  */
 
-#include <stdlib.h>
 
-/** \file
- * \brief Bubble interface
- */
+#ifndef __MARCEL_BUBBLE_SCHED_H__
+#define __MARCEL_BUBBLE_SCHED_H__
 
-/******************************************************************************
- * user view
- */
 
-/** \defgroup marcel_bubble_user Bubbles - application programming interface
+#include "tbx_compiler.h"
+#include "scheduler-marcel/marcel_sched_types.h"
+#include "scheduler-marcel/linux_runqueues.h"
+#include "marcel_types.h"
+
+
+/** Public macros **/
+/* Attention: ne doit être utilisé que par marcel_bubble_init
  *
- * This is the user interface for manipulating bubbles.
- *
- */
-/*@{*/
+ * Note: - only the root_bubble is statically initialized, thus we assume the root bubble for initializing the name fields,
+ * for other bubbles, these fields will be overwritten by marcel_bubble_init. */
+#define MARCEL_BUBBLE_INITIALIZER(b) { \
+	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
+	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
+	.natural_entities = TBX_FAST_LIST_HEAD_INIT((b).natural_entities), \
+	.nb_natural_entities = 0, \
+	.join = MARCEL_SEM_INITIALIZER(1), \
+	.cached_entities = TBX_FAST_LIST_HEAD_INIT((b).cached_entities), \
+	.num_schedules = 0, \
+	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
+	.not_preemptible = tbx_false, \
+        .old = 0,			      \
+        .id = 0,			      \
+	.as_holder.name = "root_bubble_h", \
+	.as_entity.name = "root_bubble_e" \
+}
 
-#section types
-/** \brief Type of a bubble */
-typedef struct marcel_bubble marcel_bubble_t;
 
-#section marcel_variables
-#depend "scheduler/marcel_bubble_sched_interface.h[types]"
-
-#section variables
+/** Public global variables **/
 /** \brief The root bubble (default holding bubble) */
 extern marcel_bubble_t marcel_root_bubble;
 
-#section functions
-#depend "marcel_topology.h[types]"
-#depend "scheduler/marcel_bubble_sched.h[types]"
-#depend "scheduler/marcel_holder.h[types]"
-#depend "marcel_descr.h[types]"
+
+/** Public functions **/
 /**
  * \brief Initializes bubble \e bubble.
  */
@@ -182,24 +187,11 @@ void marcel_bubble_shake (void);
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
 
-/*@}*/
-
 /**
  ******************************************************************************
  * scheduler view
  * \addtogroup marcel_bubble_sched
  */
-/*@{*/
-
-#section marcel_variables
-/* \brief Whether an idle scheduler is running */
-extern ma_atomic_t ma_idle_scheduler;
-/* \brief Central lock for the idle scheduler */
-extern ma_spinlock_t ma_idle_scheduler_lock;
-
-#section functions
-#depend "marcel_bubble_sched_interface.h[types]"
-
 /**
  * \brief Return the bubble scheduler class named \param name or \p NULL
  * if not found.  */
@@ -208,18 +200,13 @@ marcel_lookup_bubble_scheduler_class(const char *name);
 
 /**
  * \brief Return the size of an instance of \param klass .  */
-static __tbx_inline__ size_t
-marcel_bubble_sched_instance_size(const marcel_bubble_sched_class_t *klass) {
-	return klass->instance_size;
-}
+static __tbx_inline__ size_t 
+marcel_bubble_sched_instance_size(const marcel_bubble_sched_class_t *klass) ;
 
 /**
  * \brief Return the name of \param klass .  */
 static __tbx_inline__ const char *
-marcel_bubble_sched_class_name(const marcel_bubble_sched_class_t *klass) {
-	return klass->name;
-}
-
+marcel_bubble_sched_class_name(const marcel_bubble_sched_class_t *klass) ;
 
 /**
  * \brief Initialize \param scheduler as an instance of \param klass .  This
@@ -238,91 +225,46 @@ marcel_lookup_bubble_scheduler(const char *name);
 /**
  * \brief Return the \param scheduler class. */
 static __tbx_inline__ const marcel_bubble_sched_class_t *
-marcel_bubble_sched_class(const marcel_bubble_sched_t *scheduler) {
-	return scheduler->klass;
-}
+marcel_bubble_sched_class(const marcel_bubble_sched_t *scheduler) ;
 
+/* Endort la bulle (qui est verrouillée) */
+int marcel_bubble_sleep_locked(marcel_bubble_t *bubble);
+/* Endort la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */
+int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble);
+/* Réveille la bulle (qui est verrouillée) */
+int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
+/* Réveille la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */
+int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 
-#section structures
-#depend "tbx_fast_list.h"
-#depend "scheduler/marcel_holder.h[structures]"
-#depend "marcel_sem.h[types]"
-#depend "marcel_sem.h[structures]"
+extern void __ma_bubble_sched_start(void);
+extern void ma_bubble_sched_init2(void);
 
-/** \brief Structure of a bubble. */
-struct marcel_bubble {
-#ifdef MA__BUBBLES
-	/* garder en premier, pour que les conversions bubble / entity soient
-	 * triviales */
-	/** \brief Entity information */
-	struct ma_entity as_entity;
-	/** \brief Holder information */
-	struct ma_holder as_holder;
-	/** \brief List of entities for which the bubble is a natural holder */
-	struct tbx_fast_list_head natural_entities;
-	/** \brief Number of held entities */
-	unsigned nb_natural_entities;
-	/** \brief Semaphore for the join operation */
-	marcel_sem_t join;
-
-	/** \brief List of entities queued in the so-called "thread cache" */
-	struct tbx_fast_list_head cached_entities;
-	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nb_ready_entities. */
-	int num_schedules;
-
-        /** \brief Barrier for the barrier operation */
-	marcel_barrier_t barrier;
-
-	/** \brief Whether the bubble is preemptible, i.e., whether one of its
-			threads can be preempted by a thread from another bubble.  */
-	tbx_bool_t not_preemptible;
-
-        /** \brief Dead bubbles (temporary field)*/
-	int old;
-
-        /** bubble identifier */
-        int id;
+/* Called on marcel shutdown */
+void marcel_sched_exit(marcel_t t);
+#ifndef MA__BUBBLES
+#define marcel_sched_exit(t)
 #endif
 
-};
 
-#section macros
-/*  TBX_FAST_LIST_HEAD_INIT */
-#depend "tbx_fast_list.h"
-/*  MA_ATOMIC_INIT */
-#depend "asm/linux_atomic.h"
-#depend "scheduler/marcel_holder.h[macros]"
-
-/* Attention: ne doit être utilisé que par marcel_bubble_init
- *
- * Note: - only the root_bubble is statically initialized, thus we assume the root bubble for initializing the name fields,
- * for other bubbles, these fields will be overwritten by marcel_bubble_init. */
-#define MARCEL_BUBBLE_INITIALIZER(b) { \
-	.as_entity = MA_SCHED_ENTITY_INITIALIZER((b).as_entity, MA_BUBBLE_ENTITY, MA_DEF_PRIO), \
-	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
-	.natural_entities = TBX_FAST_LIST_HEAD_INIT((b).natural_entities), \
-	.nb_natural_entities = 0, \
-	.join = MARCEL_SEM_INITIALIZER(1), \
-	.cached_entities = TBX_FAST_LIST_HEAD_INIT((b).cached_entities), \
-	.num_schedules = 0, \
-	.barrier = MARCEL_BARRIER_INITIALIZER(0), \
-	.not_preemptible = tbx_false, \
-        .old = 0,			      \
-        .id = 0,			      \
-	.as_holder.name = "root_bubble_h", \
-	.as_entity.name = "root_bubble_e" \
-}
+#ifdef __MARCEL_KERNEL__
 
 
-
-#section marcel_macros
+/** Internal macros **/
 /** \brief Gets a statistic value of a bubble */
 #define ma_bubble_stats_get(b,offset) ma_stats_get(&(b)->as_entity, (offset))
 /** \brief Gets a synthesis of a statistic value of the content of a bubble, as
  * collected during the last call to ma_bubble_synthesize_stats() */
 #define ma_bubble_hold_stats_get(b,offset) ma_stats_get(&(b)->as_holder, (offset))
 
-#section marcel_functions
+
+/** Internal global variables **/
+/* \brief Whether an idle scheduler is running */
+extern ma_atomic_t ma_idle_scheduler;
+/* \brief Central lock for the idle scheduler */
+extern ma_spinlock_t ma_idle_scheduler_lock;
+
+
+/** Internal functions **/
 /**
  * called from the Marcel Self Scheduler to achieve bubble scheduling. \e
  * prevrq and \e rq are already be locked.
@@ -424,8 +366,6 @@ int ma_deactivate_idle_scheduler (void);
 /* \brief Checks whether an idle scheduler is running. */
 int ma_idle_scheduler_is_running (void);
 
-
-
 /******************************************************************************
  * internal view
  */
@@ -449,166 +389,8 @@ static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_
 static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock(marcel_bubble_t *b);
 static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock_softirq(marcel_bubble_t *b);
 
-#section functions
-/* Endort la bulle (qui est verrouillée) */
-int marcel_bubble_sleep_locked(marcel_bubble_t *bubble);
-/* Endort la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */
-int marcel_bubble_sleep_rq_locked(marcel_bubble_t *bubble);
-/* Réveille la bulle (qui est verrouillée) */
-int marcel_bubble_wake_locked(marcel_bubble_t *bubble);
-/* Réveille la bulle (qui est verrouillée, ainsi que la runqueue la contenant) */
-int marcel_bubble_wake_rq_locked(marcel_bubble_t *bubble);
 
-extern void __ma_bubble_sched_start(void);
-extern void ma_bubble_sched_init2(void);
+#endif /** __MARCEL_KERNEL__ **/
 
-/* Called on marcel shutdown */
-void marcel_sched_exit(marcel_t t);
-#ifndef MA__BUBBLES
-#define marcel_sched_exit(t)
-#endif
 
-#section marcel_inline
-/* This version (with __) assumes that the runqueue holding b is already locked  */
-static __tbx_inline__ void __ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
-#ifdef MA__BUBBLES
-	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	MA_BUG_ON(e->ready_holder != &b->as_holder);
-	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	if (tbx_fast_list_empty(&b->cached_entities)) {
-		ma_holder_t *h = b->as_entity.ready_holder;
-		bubble_sched_debugl(7,"first running entity in bubble %p\n",b);
-		if (h) {
-			MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-			MA_BUG_ON(!ma_holder_check_locked(h));
-			if (!b->as_entity.ready_holder_data)
-				ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
-		}
-	}
-	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		tbx_fast_list_add(&e->cached_entities_item, &b->cached_entities);
-	else
-		tbx_fast_list_add_tail(&e->cached_entities_item, &b->cached_entities);
-	MA_BUG_ON(e->ready_holder_data);
-	e->ready_holder_data = (void *)1;
-#endif
-}
-static __tbx_inline__ void __ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
-#ifdef MA__BUBBLES
-	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
-	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	tbx_fast_list_del(&e->cached_entities_item);
-	if (tbx_fast_list_empty(&b->cached_entities)) {
-		ma_holder_t *h = b->as_entity.ready_holder;
-		bubble_sched_debugl(7,"last running entity in bubble %p\n",b);
-		if (h && ma_holder_type(h) == MA_RUNQUEUE_HOLDER) {
-			MA_BUG_ON(!ma_holder_check_locked(h));
-			if (b->as_entity.ready_holder_data)
-				ma_rq_dequeue_entity(&b->as_entity, ma_rq_holder(h));
-		}
-	}
-	MA_BUG_ON(!e->ready_holder_data);
-	e->ready_holder_data = NULL;
-	MA_BUG_ON(e->ready_holder != &b->as_holder);
-#endif
-}
-
-/* This version doesn't assume that the runqueue holding b is already locked.
- * It thus can not wake the bubble when needed, so the caller has to call
- * ma_bubble_try_to_wake_and_rawunlock() instead of unlocking it when it is done
- * with it.
- */
-static __tbx_inline__ void ma_bubble_enqueue_entity(marcel_entity_t *e, marcel_bubble_t *b) {
-#ifdef MA__BUBBLES
-	bubble_sched_debugl(7,"enqueuing %p in bubble %p\n",e,b);
-	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		tbx_fast_list_add(&e->cached_entities_item, &b->cached_entities);
-	else
-		tbx_fast_list_add_tail(&e->cached_entities_item, &b->cached_entities);
-	MA_BUG_ON(e->ready_holder_data);
-	e->ready_holder_data = (void *)1;
-#endif
-}
-
-/*
- * B, still locked, has seen entities being enqueued on it by the
- * ma_bubble_enqueue_entity() function above. We may have to wake b if it
- * wasn't awake and these entities are awake. In that case we have to unlock
- * the holding runqueue.
- *
- * Note: this function raw-unlocks b.
- */
-static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_t *b)
-{
-#ifdef MA__BUBBLES
-	ma_holder_t *h = b->as_entity.ready_holder;
-	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-
-	if (tbx_fast_list_empty(&b->cached_entities) || b->as_entity.ready_holder_data || !h) {
-		/* No awake entity or B already awake, just unlock */
-		ma_holder_rawunlock(&b->as_holder);
-		return;
-	}
-
-	/* B holds awake entities but is not awake, we have to unlock it so as
-	 * to be able to lock the runqueue because of the locking conventions.
-	 */
-	bubble_sched_debugl(7,"waking up bubble %p because of its containing awake entities\n",b);
-
-	MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-	ma_holder_rawunlock(&b->as_holder);
-	h = ma_bubble_holder_rawlock(b);
-	ma_holder_rawlock(&b->as_holder);
-	if (!tbx_fast_list_empty(&b->cached_entities) && h) {
-		MA_BUG_ON(ma_holder_type(h) != MA_RUNQUEUE_HOLDER);
-		if (!b->as_entity.ready_holder_data)
-			ma_rq_enqueue_entity(&b->as_entity, ma_rq_holder(h));
-	}
-	ma_bubble_holder_rawunlock(h);
-	ma_holder_rawunlock(&b->as_holder);
-#endif
-}
-
-static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock(marcel_bubble_t *b) {
-	ma_bubble_try_to_wake_up_and_rawunlock(b);
-	ma_preempt_enable();
-}
-
-static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock_softirq(marcel_bubble_t *b) {
-	ma_bubble_try_to_wake_up_and_rawunlock(b);
-	ma_preempt_enable_no_resched();
-	ma_local_bh_enable();
-}
-
-static __tbx_inline__ void ma_bubble_dequeue_entity(marcel_entity_t *e, marcel_bubble_t *b TBX_UNUSED) {
-#ifdef MA__BUBBLES
-	MA_BUG_ON(!ma_holder_check_locked(&b->as_holder));
-	bubble_sched_debugl(7,"dequeuing %p from bubble %p\n",e,b);
-	tbx_fast_list_del(&e->cached_entities_item);
-	MA_BUG_ON(!e->ready_holder_data);
-	e->ready_holder_data = NULL;
-	MA_BUG_ON(e->ready_holder != &b->as_holder);
-#endif
-}
-
-/** \brief Tell whether bubble \e b is preemptible, i.e., whether one of its
- * threads can be preempted by a thread from another bubble.  */
-static __tbx_inline__ void marcel_bubble_set_preemptible(marcel_bubble_t *b, tbx_bool_t preemptible) {
-#ifdef MA__BUBBLES
-	b->not_preemptible = !preemptible;
-#endif
-}
-
-/** \brief Return true if bubble \e b is preemptible, i.e., if one of its
- * threads can be preempted by a thread from another bubble.  */
-static __tbx_inline__ tbx_bool_t marcel_bubble_is_preemptible(const marcel_bubble_t *b) {
-#ifdef MA__BUBBLES
-	return !b->not_preemptible;
-#else
-	return tbx_true;
-#endif
-}
-
-/*@}*/
-
+#endif /** __MARCEL_BUBBLE_SCHED_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +13,29 @@
  * General Public License for more details.
  */
 
-#section common
-/*
- * Similar to:
- * include/linux/preempt.h - macros for accessing and manipulating
- * preempt_count (used for kernel preemption, interrupt count, etc.)
- */
 
-#section marcel_macros
+#ifndef __LINUX_PREEMPT_H__
+#define __LINUX_PREEMPT_H__
 
+
+#include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#ifdef __MARCEL_KERNEL__
+#include "asm/linux_hardirq.h"
+#include "sys/marcel_work.h"
+#include "linux_thread_info.h"
+#include "marcel_compiler.h"
+#endif
+
+
+/** Public functions **/
+TBX_EXTERN void ma_preempt_schedule(int irq);
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #ifdef MARCEL_DEBUG_SPINLOCK
 #define ma_record_preempt_backtrace() do { \
 	if (ma_init_done[MA_INIT_SCHEDULER]) \
@@ -53,13 +66,6 @@ do { \
 	} \
 } while (0)
 
-#section functions
-#depend "tbx_compiler.h"
-TBX_EXTERN void ma_preempt_schedule(int irq);
-
-#section marcel_macros
-#depend "linux_thread_info.h[]"
-#depend "marcel_compiler.h[marcel_compiler]"
 #define ma_preempt_disable() \
 do { \
         ma_preempt_count_inc(); \
@@ -93,6 +99,11 @@ do { \
         ma_preempt_check_resched(0); \
 } while (0)
 
-#section marcel_macros
 
 #define MA_PREEMPT_ACTIVE  (1UL << 25)
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __LINUX_PREEMPT_H__ **/

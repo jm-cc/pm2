@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,37 +13,33 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_ALPHA_MARCEL_TESTANDSET_H__
+#define __ASM_ALPHA_MARCEL_TESTANDSET_H__
+
+
 #include "tbx_compiler.h"
-#section macros
+
+
+/** Public macros **/
 #define MA_HAVE_TESTANDSET 1
 
-#section marcel_functions
-static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
-#section marcel_inline
-static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
-{
-  long unsigned ret, temp;
 
-  __asm__ __volatile__(
-	"\n1:\t"
-	"ldl_l %0,%3\n\t"
-	"bne %0,2f\n\t"
-	"or $31,1,%1\n\t"
-	"stl_c %1,%2\n\t"
-	"beq %1,1b\n"
-	"2:\tmb\n"
-	: "=&r"(ret), "=&r"(temp), "=m"(*spinlock)
-	: "m"(*spinlock)
-        : "memory");
+#ifdef __MARCEL_KERNEL__
 
-  return ret;
-}
 
-#section marcel_macros
+/** Internal macros **/
 #define pm2_spinlock_release(spinlock) do {\
   ma_mb(); \
   *(spinlock) = 0; \
 } while (0)
 
 
+/** Internal functions **/
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_ALPHA_MARCEL_TESTANDSET_H__ **/

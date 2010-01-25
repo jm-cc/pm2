@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +13,24 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_IA64_MARCEL_ARCH_SWITCHTO_H__
+#define __ASM_IA64_MARCEL_ARCH_SWITCHTO_H__
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #ifndef MA__PROVIDE_TLS
 #define MA__INTERRUPT_FIX_LWP
 #endif
 
 #ifndef MA__INTERRUPT_FIX_LWP
-#depend "asm-generic/marcel_arch_switchto.h[]"
+#include "asm-generic/marcel_arch_switchto.h"
 #endif
 
-#section marcel_macros
 #ifdef MA__INTERRUPT_FIX_LWP
-
 /* When delivering a signal, the kernel will have saved r13 (the TLS pointer)
  * on the current thread's stack.
  * When we do not provide TLS ourselves and switch thread in the signal
@@ -55,3 +60,8 @@
 
 #endif
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_MARCEL_ARCH_SWITCHTO_H__ **/

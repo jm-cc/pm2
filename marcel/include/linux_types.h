@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +13,19 @@
  * General Public License for more details.
  */
 
-/*
- * similar to:
- * include/linux/types.h
- */
 
-#section marcel_macros
-#depend "asm/linux_types.h[macros]"
+#ifndef __LINUX_TYPES_H__
+#define __LINUX_TYPES_H__
+
+
+#include "sys/marcel_flags.h"
+#include "asm/linux_types.h"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define MA_BITS_TO_LONGS(bits) \
 	(((bits)+MA_BITS_PER_LONG-1)/MA_BITS_PER_LONG)
 #define MA_DECLARE_BITMAP(name,bits) \
@@ -28,9 +33,8 @@
 #define MA_CLEAR_BITMAP(name,bits) \
 	memset(name, 0, MA_BITS_TO_LONGS(bits)*sizeof(unsigned long))
 
-#section marcel_types
-#depend "asm/linux_types.h[marcel_types]"
 
+/** Internal data types **/
 #ifndef __MA_BIT_TYPES_DEFINED__
 #define __MA_BIT_TYPES_DEFINED__
 
@@ -44,3 +48,7 @@ typedef		__ma_s32	ma_int32_t;
 #endif /* !(__MA_BIT_TYPES_DEFINED__) */
 
 
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __LINUX_TYPES_H__ **/

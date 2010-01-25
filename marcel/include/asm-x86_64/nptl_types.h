@@ -1,7 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
- * Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,18 @@
  * General Public License for more details.
  */
 
-/* This file comes from the Glibc's NPTL, specifically
-   `sysdeps/unix/sysv/linux/ARCH/bits/pthreadtypes.h'.  */
+
+#ifndef __ASM_X86_64_NPTL_TYPES_H__
+#define __ASM_X86_64_NPTL_TYPES_H__
 
 
-#section macros
+#include <stddef.h>
+#include "marcel_debug.h"
+#include "marcel_fastlock.h"
+#include "marcel_types.h"
 
+
+/** Public macros **/
 #define __SIZEOF_LPT_ATTR_T 56
 #define __SIZEOF_LPT_MUTEX_T 40
 #define __OFFSETOF_LPT_MUTEX_KIND 16
@@ -32,16 +37,15 @@
 #define __SIZEOF_LPT_BARRIER_T 32
 #define __SIZEOF_LPT_BARRIERATTR_T 4
 
-#section types
+
+/** Public data types **/
 /* Thread identifiers.  The structure of the attribute type is not
    exposed on purpose.  */
 // On n'exporte pas cela: on utilise des pointeurs, qui sont abi-compatibles avec cela.
 //typedef unsigned long int lpt_t;
 
-#section structures
-#depend "marcel_fastlock.h[structures]"
-#include <stddef.h>
 
+/** Public data structures **/
 typedef union
 {
   char __size[__SIZEOF_LPT_ATTR_T];
@@ -185,5 +189,15 @@ MA_VERIFY (sizeof (lpt_rwlockattr_t) <= __SIZEOF_LPT_RWLOCKATTR_T);
 MA_VERIFY (sizeof (lpt_barrier_t) <= __SIZEOF_LPT_BARRIER_T);
 MA_VERIFY (sizeof (lpt_barrierattr_t) <= __SIZEOF_LPT_BARRIERATTR_T);
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define __ma_cleanup_fct_attribute
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_X86_64_NPTL_TYPES_H__ **/

@@ -1,7 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
- * Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,11 +13,18 @@
  * General Public License for more details.
  */
 
-/* This file comes from the Glibc's NPTL, specifically
-   `sysdeps/unix/sysv/linux/ARCH/bits/pthreadtypes.h'.  */
 
-#section macros
+#ifndef __ASM_I386_NPTL_TYPES_H__
+#define __ASM_I386_NPTL_TYPES_H__
 
+
+#include <stddef.h>
+#include "marcel_debug.h"
+#include "marcel_fastlock.h"
+#include "marcel_types.h"
+
+
+/** Public macros **/
 #define __SIZEOF_LPT_ATTR_T 36
 #define __SIZEOF_LPT_MUTEX_T 24
 #define __OFFSETOF_LPT_MUTEX_KIND 12
@@ -32,16 +38,15 @@
 #define __SIZEOF_LPT_BARRIER_T 20
 #define __SIZEOF_LPT_BARRIERATTR_T 4
 
-#section types
+
+/** Public data types **/
 /* Thread identifiers.  The structure of the attribute type is not
    exposed on purpose.  */
 // On n'exporte pas cela: on utilise des pointeurs, qui sont abi-compatibles avec cela.
 //typedef unsigned long int lpt_t;
 
-#section structures
-#depend "marcel_fastlock.h[structures]"
-#include <stddef.h>
 
+/** Public data structures **/
 typedef union
 {
   char __size[__SIZEOF_LPT_ATTR_T];
@@ -166,7 +171,6 @@ typedef union {
 
 /* Check that the size of our data structures is compatible with those of
    NPTL.  */
-
 MA_VERIFY (sizeof (lpt_attr_t) <= __SIZEOF_LPT_ATTR_T);
 MA_VERIFY (sizeof (lpt_mutex_t) <= __SIZEOF_LPT_MUTEX_T);
 MA_VERIFY (offsetof (lpt_mutex_t,__data.__kind) == __OFFSETOF_LPT_MUTEX_KIND);
@@ -180,5 +184,14 @@ MA_VERIFY (sizeof (lpt_barrier_t) <= __SIZEOF_LPT_BARRIER_T);
 MA_VERIFY (sizeof (lpt_barrierattr_t) <= __SIZEOF_LPT_BARRIERATTR_T);
 
 
-#section marcel_macros
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define __ma_cleanup_fct_attribute __attribute ((regparm (1)))
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_I386_NPTL_TYPES_H__ **/

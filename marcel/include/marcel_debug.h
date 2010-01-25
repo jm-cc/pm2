@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,110 +13,17 @@
  * General Public License for more details.
  */
 
-#section functions
-#include <signal.h>
 
-#section marcel_macros
-#include "tbx_compiler.h"
-
-#define MA_DEBUG_VAR_ATTRIBUTE \
-    TBX_SECTION(".ma.debug.var") TBX_ALIGNED
-
-#ifdef PM2DEBUG
-#define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)
-#define MA_DEBUG_VAR_NAME_S(name) ma_debug_##name
-
-#define MA_DECLARE_DEBUG_NAME(name) MA_DECLARE_DEBUG_NAME_S(name)
-#define MA_DECLARE_DEBUG_NAME_S(name) \
-  extern debug_type_t MA_DEBUG_VAR_NAME(name)
-
-#define MA_DEBUG_DEFINE_NAME_DEPEND(name, dep) \
-  MA_DEBUG_DEFINE_NAME_S(name, dep)
-#define MA_DEBUG_DEFINE_NAME(name) \
-  MA_DEBUG_DEFINE_NAME_S(name, &marcel_debug)
-#define MA_DEBUG_DEFINE_NAME_S(name, dep) \
-  MA_DEBUG_VAR_ATTRIBUTE debug_type_t MA_DEBUG_VAR_NAME(name) \
-  = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
-
-#define ma_debug(name, fmt, ...) \
-  ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
-#define ma_debugl(name, level, fmt, ...) \
-  debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##__VA_ARGS__)
-
-#if defined (MARCEL_KERNEL) && !defined(MA_FILE_DEBUG)
-#  define MA_DEBUG_NO_DEFINE
-#  define MA_FILE_DEBUG default
-#endif
-
-MA_DECLARE_DEBUG_NAME(default);
-
-#ifdef MA_FILE_DEBUG
-#  depend "tbx_debug.h"
-
-#  undef DEBUG_NAME
-#  define DEBUG_NAME CONCAT3(MODULE,_,MA_FILE_DEBUG)
-#  define DEBUG_STR_NAME marcel_xstr(MODULE) "-" marcel_xstr(MA_FILE_DEBUG)
-extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_WARN(DEBUG_NAME);
-
-#  define DEBUG_NAME_DISP_MODULE  DEBUG_NAME_DISP(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_LOG_MODULE   DEBUG_NAME_LOG(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_TRACE_MODULE DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_WARN_MODULE  DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
-#  define MA_DEBUG_DEFINE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-disp: ", \
-		          DEBUG_STR_NAME "-disp", &DEBUG_NAME_DISP_MODULE); \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-log: ", \
-		          DEBUG_STR_NAME "-log", &DEBUG_NAME_LOG_MODULE); \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
-		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE) ; \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_WARN(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-warn: ", \
-		          DEBUG_STR_NAME "-warn", &DEBUG_NAME_WARN_MODULE)
-
-/* Une variable de debug à définir pour ce fichier C */
-#  ifndef MA_DEBUG_NO_DEFINE
-/* On peut avoir envie de le définir nous même (à 1 par exemple) */
-MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
-MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
-#  endif
-#  undef mdebugl
-#  define mdebugl(level, fmt, ...) \
-  ma_debugl(MA_FILE_DEBUG, level, fmt , ##__VA_ARGS__)
-#endif
-#endif /* PM2DEBUG */
+#ifndef __MARCEL_DEBUG_H__
+#define __MARCEL_DEBUG_H__
 
 
-#section types
-#depend "tbx_debug.h"
+#include "sys/marcel_flags.h"
+#include "marcel_utils.h"
+#include "tbx_debug.h"
 
-#section variables
-#ifdef PM2DEBUG
-extern debug_type_t marcel_debug;
-extern debug_type_t marcel_mdebug;
-extern debug_type_t marcel_debug_state;
-extern debug_type_t marcel_debug_work;
-extern debug_type_t marcel_debug_deviate;
-extern debug_type_t marcel_mdebug_sched_q;
 
-extern debug_type_t marcel_sched_debug;
-extern debug_type_t marcel_bubble_sched_debug;
-
-extern debug_type_t marcel_mtrace;
-extern debug_type_t marcel_mtrace_timer;
-
-extern debug_type_t marcel_allocator_debug;
-extern debug_type_t marcel_allocator_log;
-extern debug_type_t marcel_topology_debug;
-extern debug_type_t marcel_lwp_debug;
-#endif
-
-#section macros
+/** Public macros **/
 #ifndef mdebugl
 #  define mdebugl(level, fmt, ...) \
       debug_printfl(&marcel_mdebug, level, fmt , ##__VA_ARGS__)
@@ -153,7 +59,7 @@ extern debug_type_t marcel_lwp_debug;
 #  define MALLOCATOR_LOG_OUT()
 #endif
 
-
+
 /* Compile-time assertions.  Taken from Gnulib's LGPLv2+ `verify' module.  */
 
 /* Verify requirement R at compile-time, as an integer constant expression.
@@ -181,9 +87,7 @@ template <int w>
 # define MA_VERIFY(R) extern int (* verify_function__ (void)) [MA_VERIFY_TRUE (R)]
 
 
-
 #ifdef PM2_BUG_ON
-#depend "marcel_signal.h[marcel_macros]"
 #define MA_BUG_ON(cond) \
   do { \
 	if (cond) { \
@@ -244,6 +148,112 @@ template <int w>
 #  define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)
 #endif
 
-#section marcel_functions
+
+/** Public data types **/
+
+
+/** Public global variables **/
+#ifdef PM2DEBUG
+extern debug_type_t marcel_debug;
+extern debug_type_t marcel_mdebug;
+extern debug_type_t marcel_debug_state;
+extern debug_type_t marcel_debug_work;
+extern debug_type_t marcel_debug_deviate;
+extern debug_type_t marcel_mdebug_sched_q;
+
+extern debug_type_t marcel_sched_debug;
+extern debug_type_t marcel_bubble_sched_debug;
+
+extern debug_type_t marcel_mtrace;
+extern debug_type_t marcel_mtrace_timer;
+
+extern debug_type_t marcel_allocator_debug;
+extern debug_type_t marcel_allocator_log;
+extern debug_type_t marcel_topology_debug;
+extern debug_type_t marcel_lwp_debug;
+#endif
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#define MA_DEBUG_VAR_ATTRIBUTE \
+    TBX_SECTION(".ma.debug.var") TBX_ALIGNED
+
+#ifdef PM2DEBUG
+#define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)
+#define MA_DEBUG_VAR_NAME_S(name) ma_debug_##name
+
+#define MA_DECLARE_DEBUG_NAME(name) MA_DECLARE_DEBUG_NAME_S(name)
+#define MA_DECLARE_DEBUG_NAME_S(name) \
+  extern debug_type_t MA_DEBUG_VAR_NAME(name)
+
+#define MA_DEBUG_DEFINE_NAME_DEPEND(name, dep) \
+  MA_DEBUG_DEFINE_NAME_S(name, dep)
+#define MA_DEBUG_DEFINE_NAME(name) \
+  MA_DEBUG_DEFINE_NAME_S(name, &marcel_debug)
+#define MA_DEBUG_DEFINE_NAME_S(name, dep) \
+  MA_DEBUG_VAR_ATTRIBUTE debug_type_t MA_DEBUG_VAR_NAME(name) \
+  = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
+
+#define ma_debug(name, fmt, ...) \
+  ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
+#define ma_debugl(name, level, fmt, ...) \
+  debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##__VA_ARGS__)
+
+#if defined (MARCEL_KERNEL) && !defined(MA_FILE_DEBUG)
+#  define MA_DEBUG_NO_DEFINE
+#  define MA_FILE_DEBUG default
+#endif
+
+MA_DECLARE_DEBUG_NAME(default);
+
+#ifdef MA_FILE_DEBUG
+#  undef DEBUG_NAME
+#  define DEBUG_NAME CONCAT3(MODULE,_,MA_FILE_DEBUG)
+#  define DEBUG_STR_NAME marcel_xstr(MODULE) "-" marcel_xstr(MA_FILE_DEBUG)
+extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
+extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
+extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
+extern debug_type_t DEBUG_NAME_WARN(DEBUG_NAME);
+
+#  define DEBUG_NAME_DISP_MODULE  DEBUG_NAME_DISP(DEBUG_NAME_MODULE)
+#  define DEBUG_NAME_LOG_MODULE   DEBUG_NAME_LOG(DEBUG_NAME_MODULE)
+#  define DEBUG_NAME_TRACE_MODULE DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
+#  define DEBUG_NAME_WARN_MODULE  DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
+#  define MA_DEBUG_DEFINE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
+  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-disp: ", \
+		          DEBUG_STR_NAME "-disp", &DEBUG_NAME_DISP_MODULE); \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
+  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-log: ", \
+		          DEBUG_STR_NAME "-log", &DEBUG_NAME_LOG_MODULE); \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
+  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
+		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE) ; \
+MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_WARN(DEBUG_VAR_NAME) \
+  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-warn: ", \
+		          DEBUG_STR_NAME "-warn", &DEBUG_NAME_WARN_MODULE)
+
+/* Une variable de debug à définir pour ce fichier C */
+#  ifndef MA_DEBUG_NO_DEFINE
+/* On peut avoir envie de le définir nous même (à 1 par exemple) */
+MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
+MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
+#  endif
+#  undef mdebugl
+#  define mdebugl(level, fmt, ...) \
+  ma_debugl(MA_FILE_DEBUG, level, fmt , ##__VA_ARGS__)
+#endif
+#endif /* PM2DEBUG */
+
+
+/** Internal functions **/
 void marcel_debug_init(int* argc, char** argv, int debug_flags);
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_DEBUG_H__ **/

@@ -434,19 +434,18 @@ void marcel_init_data(int *argc, char *argv[])
 #ifdef PADICO_ENABLE_PUKABI
 	/* Tell PukABI how to protect libc calls.  */
 	puk_abi_set_spinlock_handlers((void (*) (void)) marcel_extlib_protect,
-																(void (*) (void)) marcel_extlib_unprotect,
-																NULL);
+				      (void (*) (void)) marcel_extlib_unprotect,
+				      NULL);
 
 	puk_abi_set_errno_handler(&marcel___errno_location);
 	puk_abi_seterrno(0);
 
-	puk_abi_set_virtual(execve, ma_execve);
-	puk_abi_set_virtual(execv, ma_execv);
-	puk_abi_set_virtual(execvp, ma_execvp);
-
 	/* Note: We don't need to explicitly handle the vararg functions of the
 	 * `execv*' family because PukABI implements them in terms of the
 	 * non-vararg functions above.  */
+	puk_abi_set_virtual(execve, ma_execve);
+	puk_abi_set_virtual(execv, ma_execv);
+	puk_abi_set_virtual(execvp, ma_execvp);
 
 #ifdef MA__LIBPTHREAD
 	assert_preloaded ();

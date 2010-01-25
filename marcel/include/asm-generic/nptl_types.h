@@ -1,7 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
- * Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,16 @@
  * General Public License for more details.
  */
 
-/* This file comes from the Glibc's NPTL, specifically
-   `sysdeps/unix/sysv/linux/ARCH/bits/pthreadtypes.h'.  */
 
-#section structures
-#depend "marcel_fastlock.h[structures]"
-#depend "marcel_rwlock.h[structures]"
+#ifndef __ASM_GENERIC_NPTL_TYPES_H__
+#define __ASM_GENERIC_NPTL_TYPES_H__
+
+
+#include "marcel_fastlock.h"
+#include "marcel_types.h"
+
+
+/** Public data structures **/
 /* Data structure for read-write lock variable handling.  The
    structure of the attribute type is not exposed on purpose.  */
 typedef union
@@ -39,6 +42,7 @@ typedef union
   long int __align;
 } lpt_rwlock_t;
 
+
 typedef union
 {
   struct marcel_rwlockattr __attr;
@@ -46,3 +50,4 @@ typedef union
 } lpt_rwlockattr_t;
 
 
+#endif /** __ASM_GENERIC_NPTL_TYPES_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +13,16 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_GENERIC_MARCEL_CTX_JMP_H__
+#define __ASM_GENERIC_MARCEL_CTX_JMP_H__
+
+
 #include "asm/marcel_archdep.h"
-
-#section structures
 #include "sys/marcel_archsetjmp.h"
-typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
-	jmp_buf jbuf;
-} marcel_ctx_t[1];
 
-#section macros
-#depend "asm/marcel_archdep.h[marcel_macros]"
+
+/** Public macros **/
 #define marcel_ctx_getcontext(ctx) \
   setjmp(ctx[0].jbuf)
 #define marcel_ctx_setjmp(ctx) marcel_ctx_getcontext(ctx)
@@ -54,8 +52,17 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
   (BSP_FIELD(ctx[0].jbuf))
 #endif
 
-#section marcel_macros
-#depend "asm/marcel_archdep.h[marcel_macros]"
+
+/** Public data structures **/
+typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
+	jmp_buf jbuf;
+} marcel_ctx_t[1];
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #ifndef marcel_ctx_set_tls_reg
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
@@ -94,3 +101,9 @@ typedef struct marcel_ctx { /* C++ doesn't like tagless structs.  */
 #define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
 	marcel_generic_ctx_set_new_stack(to_task, top, cur_top)
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_GENERIC_MARCEL_CTX_JMP_H__ **/

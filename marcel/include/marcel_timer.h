@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,19 +13,31 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-#section types
-typedef int marcel_time_t;
 
-#section macros
+#ifndef __MARCEL_TIMER_H__
+#define __MARCEL_TIMER_H__
+
+
+#ifdef __MARCEL_KERNEL__
+#include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "asm/linux_atomic.h"
+#include "sys/marcel_lwp.h"
+#endif
+
+
+/** Public macros **/
 #define MA_JIFFIES_PER_TIMER_TICK 1
 
-#section macros
 #define JIFFIES_FROM_US(microsecs) \
   ((microsecs)*MA_JIFFIES_PER_TIMER_TICK/marcel_gettimeslice())
 
-#section functions
+
+/** Public data types **/
+typedef int marcel_time_t;
+
+
+/** Public functions **/
 /* Set the preemption timer granularity in microseconds */
 void marcel_settimeslice(unsigned long microsecs);
 /* Get the preemption timer granularity in microseconds */
@@ -38,52 +49,15 @@ unsigned long marcel_clock(void);
 #define marcel_gettimeslice() MARCEL_MIN_TIMESLICE
 #endif
 
-#section functions
 /* always call disable_interrupts before calling exec*() */
 void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);
 
-#section marcel_functions
-void marcel_sig_exit(void);
-void marcel_sig_pause(void);
-void marcel_sig_nanosleep(void);
-void marcel_sig_create_timer(ma_lwp_t lwp);
-void marcel_sig_reset_timer(void);
-void marcel_sig_stop_itimer(void);
-#ifndef MA__TIMER
-#define marcel_sig_stop_itimer() (void)0
-#endif
 
-#section marcel_functions
-static __tbx_inline__ void disable_preemption(void);
-static __tbx_inline__ void enable_preemption(void);
-static __tbx_inline__ unsigned int preemption_enabled(void);
-#section marcel_variables
-extern TBX_EXTERN ma_atomic_t __ma_preemption_disabled;
-#ifdef MARCEL_SIGNALS_ENABLED
-/* Mask currently used for the timer and preemption signals, for
- * marcel_signal.c to apply them as well. Protected by ma_timer_sigmask_lock
- * below.  */
-extern sigset_t ma_timer_sigmask;
-extern ma_spinlock_t ma_timer_sigmask_lock;
-#endif
-#section marcel_inline
-static __tbx_inline__ void disable_preemption(void)
-{
-	ma_atomic_inc(&__ma_preemption_disabled);
-}
+#ifdef __MARCEL_KERNEL__
 
-static __tbx_inline__ void enable_preemption(void)
-{
-	ma_atomic_dec(&__ma_preemption_disabled);
-}
 
-static __tbx_inline__ unsigned int preemption_enabled(void)
-{
-	return ma_atomic_read(&__ma_preemption_disabled) == 0;
-}
-
-#section marcel_macros
+/** Internal macros **/
 #define MA_LWP_RESCHED(lwp) marcel_kthread_kill((lwp)->pid, MARCEL_RESCHED_SIGNAL)
 
 /** \brief Return the number of microseconds corresponding to \param ts, a
@@ -95,3 +69,36 @@ static __tbx_inline__ unsigned int preemption_enabled(void)
  * to a `struct timespec' denoting a time interval.  */
 #define MA_TIMESPEC_TO_JIFFIES(_ts)							\
   (JIFFIES_FROM_US (MA_TIMESPEC_TO_USEC (_ts)))
+
+
+/** Internal global variables **/
+extern TBX_EXTERN ma_atomic_t __ma_preemption_disabled;
+#ifdef MARCEL_SIGNALS_ENABLED
+/* Mask currently used for the timer and preemption signals, for
+ * marcel_signal.c to apply them as well. Protected by ma_timer_sigmask_lock
+ * below.  */
+extern sigset_t ma_timer_sigmask;
+extern ma_spinlock_t ma_timer_sigmask_lock;
+#endif
+
+
+/** Internal functions **/
+void marcel_sig_exit(void);
+void marcel_sig_pause(void);
+void marcel_sig_nanosleep(void);
+void marcel_sig_create_timer(ma_lwp_t lwp);
+void marcel_sig_reset_timer(void);
+void marcel_sig_stop_itimer(void);
+#ifndef MA__TIMER
+#define marcel_sig_stop_itimer() (void)0
+#endif
+
+static __tbx_inline__ void disable_preemption(void);
+static __tbx_inline__ void enable_preemption(void);
+static __tbx_inline__ unsigned int preemption_enabled(void);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_TIMER_H__ **/

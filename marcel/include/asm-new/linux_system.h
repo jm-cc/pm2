@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,11 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_NEW_LINUX_SYSTEM_H__
+#define __ASM_NEW_LINUX_SYSTEM_H__
+
+
 /*
  * Similar to:
  * include/asm-ia64/system.h
@@ -29,8 +33,14 @@
  * Copyright (C) 1999 Don Dugger <don.dugger@intel.com>
  */
 
-#section marcel_macros
 
+#include "tbx_compiler.h"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /*
  * Macros to force memory ordering.  In these descriptions, "previous"
  * and "subsequent" refer to program order; "visible" means that all
@@ -53,8 +63,6 @@
  * it's (presumably) much slower than mf and (b) mf.a is supported for
  * sequential memory pages only.
  */
-
-#include "tbx_compiler.h"
 #error "to check !"
 #define ma_mb()		tbx_mb()
 #define ma_rmb()	ma_mb()
@@ -141,3 +149,9 @@
  * loops. Can also be a temporary low priority hint for an SMT processor.
  */
 #define ma_cpu_relax() ma_barrier()
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_NEW_LINUX_SYSTEM_H__ **/

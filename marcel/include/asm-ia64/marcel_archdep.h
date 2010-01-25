@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,20 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
- 
+
+#ifndef __ASM_IA64_MARCEL_ARCHDEP_H__
+#define __ASM_IA64_MARCEL_ARCHDEP_H__
+
+
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define TOP_STACK_FREE_AREA     64
 #define JB_SP                   12
 #define SP_FIELD(buf)           ((buf).uc_mcontext.sc_gr[JB_SP])
@@ -42,19 +49,8 @@
   sp; \
 })
 
-static __tbx_inline__ unsigned long get_bsp(void)
-{
-  register unsigned long bsp;
+static __tbx_inline__ unsigned long get_bsp(void) ;
 
-  __asm__(
-		  ";; \n\t" \
-		  "flushrs ;; \n\t" \
-		  "mov %0 = ar.bsp ;; \n\t"
-		  ";; \n\t" \
-		  : "=r" (bsp));
-
-  return bsp;
-}
 #define set_sp(val) \
   do { \
     __asm__ __volatile__( \
@@ -96,7 +92,7 @@ __ma_u64 __getReg(const int whichReg);
 #define get_sp_fresh() get_sp()
 #endif /* __INTEL_COMPILER */
 #else /* neither gcc nor icc */
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#include "asm-generic/marcel_archdep.h"
 #endif
 
 #ifdef MA__PROVIDE_TLS
@@ -132,3 +128,9 @@ extern unsigned long __main_thread_tls_base;
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_MARCEL_ARCHDEP_H__ **/

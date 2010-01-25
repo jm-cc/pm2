@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,11 +13,15 @@
  * General Public License for more details.
  */
 
-#ifndef ARCHSETJMP_EST_DEF
-#define ARCHSETJMP_EST_DEF
+
+#ifndef __SYS_MARCEL_ARCHSETJMP_H__
+#define __SYS_MARCEL_ARCHSETJMP_H__
+
 
 #include <setjmp.h>
 #include <tbx_compiler.h>
+#include <stdint.h>
+
 
 #if defined(ALPHA_ARCH) && defined(LINUX_SYS)
 
@@ -47,8 +50,7 @@ _PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
 
 #endif
 
-#if defined(X86_ARCH) && 1
-#include <stdint.h>
+#if defined(X86_ARCH)
 #define MA_JMPBUF
 
 #define MARCEL_JB_BX   0
@@ -64,41 +66,7 @@ extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
 
 static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
 
-static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
-{
-  __asm__ __volatile__ (
-#ifdef MA__DEBUG
-		       /* Before blindly jumping, */
-#if 0
-		       /* check validity of EBP, not by default as it may crash
-			* with code compiled with -fno-frame-pointer */
-		       "movl 12(%0), %%ebx\n\t"
-		       "movl 0(%%ebx), %%ebx\n\t"
-#endif
-		       /* check validity of RSP */
-		       "movl 16(%0), %%ebx\n\t"
-		       "movl 0(%%ebx), %%ebx\n\t"
-		       /* check validity of PC */
-		       "movl 20(%0), %%ebx\n\t"
-		       "movl 0(%%ebx), %%ebx\n\t"
-#endif
-		       "movl 0(%0), %%ebx\n\t"
-		       "movl 4(%0), %%esi\n\t"
-		       "movl 8(%0), %%edi\n\t"
-		       "movl 12(%0), %%ebp\n\t"
-		       "movl 16(%0), %%esp\n\t"
-		       "movl 20(%0), %0\n\t"
-		       "jmp *%0"
-#ifdef __INTEL_COMPILER
-		       : : "c,d" (buf), "a" (val));
-#else
-		       : : "c,d" (buf), "a,a" (val));
-#endif
-  // to make gcc believe us that the above statement doesn't return
-  for(;;);
-}
-#elif defined(X86_64_ARCH) && 1
-#include <stdint.h>
+#elif defined(X86_64_ARCH)
 #define MA_JMPBUF
 
 #define MARCEL_JB_RBX   0
@@ -115,42 +83,6 @@ typedef intptr_t ma_jmp_buf[8];
 extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
 
 static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
-
-static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
-{
-  __asm__ __volatile__ (
-#ifdef MA__DEBUG
-		       /* Before blindly jumping, */
-#if 0
-		       /* check validity of RBP, not by default as it may crash
-			* with code compiled with -fno-frame-pointer */
-		       "movq 8(%0), %%rbx\n\t"
-		       "movq 0(%%rbx), %%rbx\n\t"
-#endif
-		       /* check validity of RSP */
-		       "movq 48(%0), %%rbx\n\t"
-		       "movq 0(%%rbx), %%rbx\n\t"
-		       /* check validity of PC */
-		       "movq 56(%0), %%rbx\n\t"
-		       "movq 0(%%rbx), %%rbx\n\t"
-#endif
-		       "movq 0(%0), %%rbx\n\t"
-		       "movq 8(%0), %%rbp\n\t"
-		       "movq 16(%0), %%r12\n\t"
-		       "movq 24(%0), %%r13\n\t"
-		       "movq 32(%0), %%r14\n\t"
-		       "movq 40(%0), %%r15\n\t"
-		       "movq 48(%0), %%rsp\n\t"
-		       "movq 56(%0), %0\n\t"
-		       "jmp *%0"
-#ifdef __INTEL_COMPILER
-		       : : "D" (buf), "a" (val));
-#else
-		       : : "D" (buf), "a,a" (val));
-#endif
-  // to make gcc believe us that the above statement doesn't return
-  for(;;);
-}
 #endif
 
 #ifdef MA_JMPBUF
@@ -161,4 +93,5 @@ static __tbx_inline__ void ma_longjmp(ma_jmp_buf buf, int val)
 #define longjmp ma_longjmp
 #endif
 
-#endif
+
+#endif /* __SYS_MARCEL_ARCHSETJMP_H__ */

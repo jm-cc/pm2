@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +13,20 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-/*
- * Similar to:
- * include/asm-generic/percpu.h
- */
 
-#section marcel_macros
+#ifndef __ASM_GENERIC_LINUX_PERLWP_H__
+#define __ASM_GENERIC_LINUX_PERLWP_H__
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define ma_per_lwp(var,lwp) ((lwp)->var)
 #define __ma_get_lwp_var(var) (MA_LWP_SELF->var)
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_GENERIC_LINUX_PERLWP_H__ **/

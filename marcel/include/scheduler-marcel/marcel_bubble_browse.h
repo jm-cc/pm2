@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,21 +13,19 @@
  * General Public License for more details.
  */
 
-/* This file contains functions to browse the topology on a
-   hierarchical way, and do whatever you want from the browsed
-   runqueues. You can specify what to do by implementing a
-   ma_see_func_t function.
 
-   For example, the Affinity scheduler uses a ma_see_func_t function
-   called browse_bubble_and_steal, that selects a bubble to steal from
-   the considered holder, and then move it to the source runqueue.
+#ifndef __MARCEL_BUBBLE_BROWSE_H__
+#define __MARCEL_BUBBLE_BROWSE_H__
 
-   More generally, a call to ma_topo_level_browse() hierarchically
-   browses the entire topology until the criterias exposed in the
-   corresponding ma_see_func_t function are met.
- */
-#section marcel_types
-#depend "scheduler/marcel_holder.h[types]"
+
+#include "sys/marcel_flags.h"
+#include "marcel_types.h"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal data types **/
 /* The "seeing" function type. We browse the content of the first
    argument (ma_holder_t *), and we remember that we've originally
    been called from the second one (struct marcel_topo_level *). Note
@@ -36,9 +34,8 @@
    browsing the content of a bubble too. */
 typedef int (ma_see_func_t)(ma_holder_t*, void *);
 
-#section marcel_functions
-#depend "marcel_topology.h[types]"
-#depend "scheduler/marcel_holder.h[types]"
+
+/** Internal functions **/
 /* Main browsing function, applies the _my_see_ to each browsed
    runqueue, and stops if nothing has been found before reaching the
    _scope_ level. */
@@ -63,3 +60,9 @@ int ma_topo_level_see_up (struct marcel_topo_level *from,
 /* Determines whether the _l_ level is inside the scope (i.e., if _l_
    is localized under the "height" limit represented by _scope_.) */
 int ma_topo_level_is_in_scope (struct marcel_topo_level *l, int scope);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_BUBBLE_BROWSE_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +13,25 @@
  * General Public License for more details.
  */
 
-/* en interne, une implémentation de conteneur */
-/* si conservatif, n'a pas besoin de déréférencer obj */
-/* si non conservatif, peut se permettre de stocker des choses */
-/* dans *obj, on assure donc que les objets seront d'au moins une */
-/* certaine taille, fixe ou donnée en paramètre (à voir) */
 
-#section marcel_macros
+#ifndef __MARCEL_CONTAINER_H__
+#define __MARCEL_CONTAINER_H__
+
+
+#include "sys/marcel_flags.h"
+#ifdef __MARCEL_KERNEL__
+#include "linux_spinlock.h"
+#endif
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define OBJ_MINSIZE (sizeof(ma_node_t))
 
-#section marcel_types
+
+/** Internal data types **/
 typedef struct ma_node_t {
 	struct ma_node_t *next_node;
 	void *obj;
@@ -37,7 +45,8 @@ typedef struct ma_container_t {
 	ma_spinlock_t lock;
 } ma_container_t;
 
-#section marcel_functions
+
+/** Internal functions **/
 void ma_container_add(ma_container_t * container, void * obj);
 
 void * ma_container_get(ma_container_t * container);
@@ -53,3 +62,9 @@ void ma_unlock_container(ma_container_t * container);
 void ma_container_init(ma_container_t * container, int conservative, int max_size);
 
 void ma_container_clear(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg );
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_CONTAINER_H__ **/

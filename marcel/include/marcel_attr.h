@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,132 +13,25 @@
  * General Public License for more details.
  */
 
-/** \file
- * \brief Thread attributes
- * \defgroup marcel_thread_attributes Thread attributes
- * @{
- */
-#section types
-#include <sys/types.h> /* pour size_t */
-#include <sched.h>     /* define SCHED_OTHER */
-typedef struct __marcel_attr_s marcel_attr_t, pmarcel_attr_t;
 
-#section structures
+#ifndef __MARCEL_ATTR_H__
+#define __MARCEL_ATTR_H__
 
-#depend "marcel_sched_generic.h[types]"
-#depend "marcel_topology.h[marcel_structures]"
-#depend "marcel_topology.h[types]"
-#depend "scheduler/marcel_sched.h[types]"
 
-/** \brief Thread attributes. */
-struct __marcel_attr_s {
-	/* begin of pthread, don't modify */
+#include <sys/types.h>
+#include <sched.h>
+#include "tbx_types.h"
+#include "sys/marcel_flags.h"
+#include "marcel_config.h"
+#include "scheduler/marcel_sched_types.h"
+#include "marcel_alias.h"
+#include "marcel_types.h"
+#ifdef MA__IFACE_PMARCEL
+#include "marcel_pmarcel.h"
+#endif
 
-	/** \brief Runtime-modifiable thread parameter set. 
-	 * \attention POSIX compatibility requires this to be a dedicated sub-struct */
-	struct marcel_sched_param __schedparam;
 
-	/** \brief SMP scheduling policy code */
-	int __schedpolicy;
-
-	/** \brief State flags.
-	 *
-	 * Valid flags are 
-	 * - #MA_ATTR_FLAG_DETACHSTATE 
-	 * - #MA_ATTR_FLAG_INHERITSCHED 
-	 * - #MA_ATTR_FLAG_SCOPESYSTEM
-	 *
-	 */
-	int __flags;
-
-	/** \brief State flag code indicating whether the thread is detached (bit set) or joignable (bit unset). */
-#define MA_ATTR_FLAG_DETACHSTATE	0x0001
-
-	/** \brief State flag code indicating whether the thread inherit its father priority, scope and policy (bit set) or not (bit unset). */
-#define MA_ATTR_FLAG_INHERITSCHED	0x0002
-
-	/** \brief State flag code indicating whether the thread scheduling scope is system-wide (bit set) or process-wide (bit unset). */
-#define MA_ATTR_FLAG_SCOPESYSTEM	0x0004
-
-	/** \brief User-set size of stack memory block guard area.  */
-	size_t __guardsize;
-
-	/** \brief User-set base address of the thread stack memory block.  */
-	void *__stackaddr;
-
-	/** \brief User-set length of the thread stack memory block.  */
-	size_t __stacksize;
-
-	/** \brief Affinity map.  */
-	marcel_vpset_t *__cpuset;
-	size_t __cpusetsize; /* Unused */
-
-	/* marcel attributes */
-
-	/* unsigned stack_size; */
-	/* char *stack_base; */
-	/*int tbx_bool_t detached; */
-
-#ifdef MARCEL_USERSPACE_ENABLED
-	unsigned user_space;
-	/*tbx_bool_t */ int immediate_activation;
-#endif /* MARCEL_USERSPACE_ENABLED */
-#ifdef MARCEL_MIGRATION_ENABLED
-	unsigned not_migratable;
-#endif /* MARCEL_MIGRATION_ENABLED */
-#ifdef MARCEL_DEVIATION_ENABLED
-	unsigned not_deviatable;
-#endif /* MARCEL_DEVIATION_ENABLED */
-
-	/** \brief Flag indicating whether the thread is not preemptible (set) or preemptible (unset). */
-	int not_preemptible;
-
-	/* int sched_policy; */
-	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
-
-	/** \brief Set of VP bits indicating on which VP(s) the thread is allowed to be scheduled.
-	 * TODO: option de flavor */
-	marcel_vpset_t vpset;
-
-	/** \brief Machine topology level on which the thread should be scheduled. */
-	marcel_topo_level_t *topo_level;
-
-	/** \brief Flags. 
-	 * TODO: document allowed flags, merge with other thread flag set */
-	int flags;
-
-	/** \brief Name of the thread, for debugging purpose. */
-	char name[MARCEL_MAXNAMESIZE];
-
-	/** \brief ID number of the thread. */
-	int id;
-
-	/** \brief Scheduler-specific attributes of the thread.
-	 * TODO: merge the structure */
-	marcel_sched_attr_t sched;
-
-	/** \brief Flag indicating whether the thread to create should actually be a seed (set) or a plain thread (unset).
-	 * TODO: merge with other set of flags? */
-	int seed;
-
-	/** \brief Hook for a callback function called before the running thread is scheduled out, arg is the thread arg. */
-	void (*f_pre_switch)(void *arg);
-
-	/** \brief Hook for a callback function called before the sleeping thread is scheduled again or when a newly created thread is about to start, arg is the thread arg. */
-	void (*f_post_switch)(void *arg);
-};
-
-#section macros
-
-/*  MARCEL_CREATE_JOINABLE */
-#depend "marcel_threads.h[types]"
-/*  MARCEL_SCHED_OTHER */
-/*  MARCEL_SCHED_ATTR_INITIALIZER */
-#define MARCEL_SCHED_INTERNAL_INCLUDE
-#depend "scheduler/marcel_sched.h[macros]"
-/*  MARCEL_VPMASK_EMPTY */
-#depend "marcel_sched_generic.h[macros]"
-
+/** Public macros **/
 #ifdef PM2STACKSGUARD
 #define MARCEL_STACKSGUARD THREAD_SLOT_SIZE
 #else
@@ -247,9 +139,108 @@ struct __marcel_attr_s {
 
 #define PMARCEL_STACK_MIN sizeof(marcel_task_t)
 
-#section functions
-#depend "marcel_utils.h[types]"
 
+/** Public data structures **/
+/** \brief Thread attributes. */
+struct __marcel_attr_s {
+	/* begin of pthread, don't modify */
+
+	/** \brief Runtime-modifiable thread parameter set. 
+	 * \attention POSIX compatibility requires this to be a dedicated sub-struct */
+	struct marcel_sched_param __schedparam;
+
+	/** \brief SMP scheduling policy code */
+	int __schedpolicy;
+
+	/** \brief State flags.
+	 *
+	 * Valid flags are 
+	 * - #MA_ATTR_FLAG_DETACHSTATE 
+	 * - #MA_ATTR_FLAG_INHERITSCHED 
+	 * - #MA_ATTR_FLAG_SCOPESYSTEM
+	 *
+	 */
+	int __flags;
+
+	/** \brief State flag code indicating whether the thread is detached (bit set) or joignable (bit unset). */
+#define MA_ATTR_FLAG_DETACHSTATE	0x0001
+
+	/** \brief State flag code indicating whether the thread inherit its father priority, scope and policy (bit set) or not (bit unset). */
+#define MA_ATTR_FLAG_INHERITSCHED	0x0002
+
+	/** \brief State flag code indicating whether the thread scheduling scope is system-wide (bit set) or process-wide (bit unset). */
+#define MA_ATTR_FLAG_SCOPESYSTEM	0x0004
+
+	/** \brief User-set size of stack memory block guard area.  */
+	size_t __guardsize;
+
+	/** \brief User-set base address of the thread stack memory block.  */
+	void *__stackaddr;
+
+	/** \brief User-set length of the thread stack memory block.  */
+	size_t __stacksize;
+
+	/** \brief Affinity map.  */
+	marcel_vpset_t *__cpuset;
+	size_t __cpusetsize; /* Unused */
+
+	/* marcel attributes */
+
+	/* unsigned stack_size; */
+	/* char *stack_base; */
+	/*int tbx_bool_t detached; */
+
+#ifdef MARCEL_USERSPACE_ENABLED
+	unsigned user_space;
+	/*tbx_bool_t */ int immediate_activation;
+#endif /* MARCEL_USERSPACE_ENABLED */
+#ifdef MARCEL_MIGRATION_ENABLED
+	unsigned not_migratable;
+#endif /* MARCEL_MIGRATION_ENABLED */
+#ifdef MARCEL_DEVIATION_ENABLED
+	unsigned not_deviatable;
+#endif /* MARCEL_DEVIATION_ENABLED */
+
+	/** \brief Flag indicating whether the thread is not preemptible (set) or preemptible (unset). */
+	int not_preemptible;
+
+	/* int sched_policy; */
+	/*tbx_bool_t int rt_thread; On utilise la priorité maintenant */
+
+	/** \brief Set of VP bits indicating on which VP(s) the thread is allowed to be scheduled.
+	 * TODO: option de flavor */
+	marcel_vpset_t vpset;
+
+	/** \brief Machine topology level on which the thread should be scheduled. */
+	marcel_topo_level_t *topo_level;
+
+	/** \brief Flags. 
+	 * TODO: document allowed flags, merge with other thread flag set */
+	int flags;
+
+	/** \brief Name of the thread, for debugging purpose. */
+	char name[MARCEL_MAXNAMESIZE];
+
+	/** \brief ID number of the thread. */
+	int id;
+
+	/** \brief Scheduler-specific attributes of the thread.
+	 * TODO: merge the structure */
+	marcel_sched_attr_t sched;
+
+	/** \brief Flag indicating whether the thread to create should actually be a seed (set) or a plain thread (unset).
+	 * TODO: merge with other set of flags? */
+	int seed;
+
+	/** \brief Hook for a callback function called before the running thread is scheduled out, arg is the thread arg. */
+	void (*f_pre_switch)(void *arg);
+
+	/** \brief Hook for a callback function called before the sleeping thread is scheduled again or when a newly created thread is about to start, arg is the thread arg. */
+	void (*f_post_switch)(void *arg);
+};
+
+
+/** Public functions **/
 DEC_MARCEL_POSIX(int, attr_init, (marcel_attr_t *attr) __THROW);
 DEC_MARCEL_POSIX(int, attr_destroy, (marcel_attr_t *attr) __THROW);
 #define marcel_attr_destroy(attr_ptr)	0
@@ -353,9 +344,16 @@ DEC_MARCEL_POSIX(int,getattr_np,(marcel_t thread,marcel_attr_t *attr) __THROW);
 int marcel_attr_settopo_level(marcel_attr_t * attr, marcel_topo_level_t *topo_level);
 int marcel_attr_gettopo_level(__const marcel_attr_t * __restrict attr, marcel_topo_level_t ** __restrict topo_level);
 
-#section marcel_variables
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal global variables **/
 extern marcel_attr_t marcel_attr_default;
 extern marcel_attr_t marcel_attr_destroyer;
 
-/* @} */
 
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_ATTR_H__ **/

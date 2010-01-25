@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +13,15 @@
  * General Public License for more details.
  */
 
-#section functions
-#section marcel_macros [no-depend-previous]
-#section marcel_types
-#section marcel_structures
-#section marcel_functions
 
-#section functions
+#ifndef __SYS_MARCEL_WORK_H__
+#define __SYS_MARCEL_WORK_H__
+
+
+#include "marcel_types.h"
+
+
+/** Public functions **/
 #ifdef MARCEL_DEVIATION_ENABLED
 void marcel_enable_deviation(void);
 void marcel_disable_deviation(void);
@@ -29,25 +30,16 @@ void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg);
 void marcel_do_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg);
 #endif /* MARCEL_DEVIATION_ENABLED */
 
-#section marcel_functions
 
+/** Public data types **/
+typedef struct marcel_work marcel_work_t;
 #ifdef MARCEL_DEVIATION_ENABLED
-void ma_deviate_init(void);
-void marcel_execute_deviate_work(void);
+typedef struct deviate_record_struct_t deviate_record_t;
 #endif /* MARCEL_DEVIATION_ENABLED */
 
-#section marcel_types
-typedef struct deviate_record_struct_t deviate_record_t;
-typedef struct marcel_work marcel_work_t;
 
-#section marcel_structures
+/** Public data structures **/
 #ifdef MARCEL_DEVIATION_ENABLED
-struct deviate_record_struct_t {
-  marcel_handler_func_t func;
-  any_t arg;
-  struct deviate_record_struct_t *next;
-};
-
 struct marcel_work {
   volatile unsigned has_work;
   deviate_record_t *deviate_work;  
@@ -57,12 +49,16 @@ struct marcel_work {
 };
 #endif /* MARCEL_DEVIATION_ENABLED */
 
-#section marcel_macros
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #ifdef MARCEL_DEVIATION_ENABLED
 #define MARCEL_WORK_INIT ((marcel_work_t) { \
         .deviate_work=NULL \
 })
-
 
 /* flags indiquant le type de travail à faire */
 enum {
@@ -88,3 +84,25 @@ void ma_do_work(marcel_t self);
 #define ma_do_work(pid) ((void)0)
 #endif /* MARCEL_DEVIATION_ENABLED */
 
+
+/** Internal data structures **/
+#ifdef MARCEL_DEVIATION_ENABLED
+struct deviate_record_struct_t {
+  marcel_handler_func_t func;
+  any_t arg;
+  struct deviate_record_struct_t *next;
+};
+#endif /* MARCEL_DEVIATION_ENABLED */
+
+
+/** Internal functions **/
+#ifdef MARCEL_DEVIATION_ENABLED
+void ma_deviate_init(void);
+void marcel_execute_deviate_work(void);
+#endif /* MARCEL_DEVIATION_ENABLED */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __SYS_MARCEL_WORK_H__ **/

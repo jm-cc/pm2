@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,9 @@
  */
 
 
-#section common
-#ifdef MA__LWPS
-#include "tbx_compiler.h"
-/*
- * Similar to:
- * include/asm-ia64/spinlock.h
- */
+#ifndef __ASM_IA64_LINUX_SPINLOCK_H__
+#define __ASM_IA64_LINUX_SPINLOCK_H__
+
 
 /*
  * Copyright (C) 1998-2003 Hewlett-Packard Co
@@ -31,108 +26,34 @@
  * This file is used for SMP configurations only.
  */
 
-#section macros
+
+/** Public macros **/
+#ifdef MA__LWPS
 #define MA_HAVE_RWLOCK 1
 #define MA_SPIN_LOCK_UNLOCKED			{ 0 }
+#endif /* MA__LWPS */
 
 
-#section types
-
+/** Public data types **/
+#ifdef MA__LWPS
 typedef struct {
 	volatile unsigned int lock;
 } ma_spinlock_t;
+#endif /* MA__LWPS */
 
 
-#section marcel_macros
+#ifdef __MARCEL_KERNEL__
 
+
+/** Internal macros **/
+#ifdef MA__LWPS
 #define ma_spin_lock_init(x)			((x)->lock = 0)
-
-
-#section marcel_inline
-
-/*
- * Try to get the lock.  If we fail to get the lock, make a non-standard call to
- * ia64_spinlock_contention().  We do not use a normal call because that would force all
- * callers of spin_lock() to be non-leaf routines.  Instead, ia64_spinlock_contention() is
- * carefully coded to touch only those registers that spin_lock() marks "clobbered".
- */
-
-#define MA_IA64_SPINLOCK_CLOBBERS "ar.ccv", "ar.pfs", "p14", /*"p15", "r27", */ "r28", "r29", "r30", "b6", "memory"
-
-static __tbx_inline__ void
-_ma_raw_spin_lock (ma_spinlock_t *lock)
-{
-	register volatile unsigned int *ptr asm ("r31") = &lock->lock;
-
-#if __GNUC__ < 3 || (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
-#   ifdef CONFIG_ITANIUM
-	/* don't use brl on Itanium... */
-	asm volatile ("{\n\t"
-		      "  mov ar.ccv = r0\n\t"
-		      "  mov r28 = ip\n\t"
-		      "  mov r30 = 1;;\n\t"
-		      "}\n\t"
-		      "cmpxchg4.acq r30 = [%1], r30, ar.ccv\n\t"
-		      "movl r29 = ma_ia64_spinlock_contention_pre3_4;;\n\t"
-		      "cmp4.ne p14, p0 = r30, r0\n\t"
-		      "mov b6 = r29;;\n"
-		      //"mov r27=%2\n\t"
-		      "(p14) br.cond.spnt.many b6"
-		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
-#   else
-	asm volatile ("{\n\t"
-		      "  mov ar.ccv = r0\n\t"
-		      "  mov r28 = ip\n\t"
-		      "  mov r30 = 1;;\n\t"
-		      "}\n\t"
-		      "cmpxchg4.acq r30 = [%1], r30, ar.ccv;;\n\t"
-		      "cmp4.ne p14, p0 = r30, r0\n"
-		      //"mov r27=%2\n\t"
-		      "(p14) brl.cond.spnt.many ma_ia64_spinlock_contention_pre3_4;;"
-		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
-#   endif /* CONFIG_MCKINLEY */
-#else
-#   ifdef CONFIG_ITANIUM
-	/* don't use brl on Itanium... */
-	/* mis-declare, so we get the entry-point, not it's function descriptor: */
-	asm volatile ("mov r30 = 1\n\t"
-		      //"mov r27=%2\n\t"
-		      "mov ar.ccv = r0;;\n\t"
-		      "cmpxchg4.acq r30 = [%0], r30, ar.ccv\n\t"
-		      "movl r29 = ma_ia64_spinlock_contention;;\n\t"
-		      "cmp4.ne p14, p0 = r30, r0\n\t"
-		      "mov b6 = r29;;\n"
-		      "(p14) br.call.spnt.many b6 = b6"
-		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
-#   else
-	asm volatile ("mov r30 = 1\n\t"
-		      //"mov r27=%2\n\t"
-		      "mov ar.ccv = r0;;\n\t"
-		      "cmpxchg4.acq r30 = [%0], r30, ar.ccv;;\n\t"
-		      "cmp4.ne p14, p0 = r30, r0\n\t"
-		      "(p14) brl.call.spnt.many b6=ma_ia64_spinlock_contention;;"
-		      : "=r"(ptr) : "r"(ptr) /*, "r" (flags) */ : MA_IA64_SPINLOCK_CLOBBERS);
-#   endif /* CONFIG_MCKINLEY */
-#endif
-}
-
-#section marcel_macros
 
 #define ma_spin_is_locked(x)	((x)->lock != 0)
 #define _ma_raw_spin_unlock(x)	do { ma_barrier(); ((ma_spinlock_t *) x)->lock = 0; } while (0)
 #define _ma_raw_spin_trylock(x)	(ma_cmpxchg_acq(&(x)->lock, 0, 1) == 0)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while ((x)->lock)
 
-
-#section marcel_types
-
-typedef struct {
-	volatile unsigned int read_counter	: 31;
-	volatile unsigned int write_lock	:  1;
-	volatile unsigned int need_write;
-} ma_rwlock_t;
-
-#section marcel_macros
 
 #define MA_RW_LOCK_UNLOCKED { 0, 0, 0 }
 
@@ -215,7 +136,20 @@ do {										\
 	ma_smp_mb__before_clear_bit();	/* need barrier before releasing lock... */	\
 	ma_clear_bit(31, (x));								\
 })
-
-
-#section common
 #endif /* MA__LWPS */
+
+
+/** Internal data types **/
+#ifdef MA__LWPS
+typedef struct {
+	volatile unsigned int read_counter	: 31;
+	volatile unsigned int write_lock	:  1;
+	volatile unsigned int need_write;
+} ma_rwlock_t;
+#endif /* MA__LWPS */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_SPINLOCK_H__ **/

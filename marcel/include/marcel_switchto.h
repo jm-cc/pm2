@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +13,20 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
 
-#section marcel_types
-enum {
-	FIRST_RETURN,
-	NORMAL_RETURN
-};
+#ifndef __MARCEL_SWITCHTO_H__
+#define __MARCEL_SWITCHTO_H__
 
-#section marcel_macros
-#depend "asm/marcel_arch_switchto.h[]"
+
+#include "sys/marcel_flags.h"
+#include "asm/marcel_arch_switchto.h"
+#ifdef __MARCEL_KERNEL__
+#include "marcel_types.h"
+#endif
+
+
+#ifdef __MARCEL_KERNEL__
+/** Internal macros **/
 
 /* effectue un setjmp. On doit être RUNNING avant et après
  * */
@@ -70,5 +72,19 @@ enum {
 #define MA_THR_DESTROYJMP(current) \
   marcel_ctx_destroyjmp(current->ctx_yield);
 
-#section marcel_functions
+
+/** Internal data types **/
+enum {
+	FIRST_RETURN,
+	NORMAL_RETURN
+};
+
+
+/** Internal functions **/
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_SWITCHTO_H__ **/

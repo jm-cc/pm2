@@ -1,9 +1,0 @@
--*- text -*-
-
-This directory contains tarballs of Linux sysfs hierarchies collected on
-various machines.  Each tarball also contain a file named `output',
-which gives the expected output of "read-topology -v" for that machine.
-
-Together with the `--topology-fsys-root' command-line option,
-these are used by `test-topologies.sh' to check for any regression
-introduced in Marcel's topology detection logic.

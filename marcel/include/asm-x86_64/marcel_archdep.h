@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,18 +13,26 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
+
+#ifndef __ASM_X86_64_MARCEL_ARCHDEP_H__
+#define __ASM_X86_64_MARCEL_ARCHDEP_H__
+
 
 #ifdef MA__PROVIDE_TLS
-#include <sys/syscall.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 #include <asm/prctl.h>
 #endif
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
-#depend "sys/marcel_archsetjmp.h"
+#include "sys/marcel_archsetjmp.h"
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* x86_64 has a 128 byte red zone */
 #define TOP_STACK_FREE_AREA     128
 #ifdef MA_JMPBUF
@@ -60,7 +67,7 @@
   __sp; \
 })
 #else
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
+#include "asm-generic/marcel_archdep.h"
 #endif
 
 #define get_bp() \
@@ -120,3 +127,9 @@ extern unsigned long __main_thread_tls_base;
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_X86_64_MARCEL_ARCHDEP_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,42 +13,20 @@
  * General Public License for more details.
  */
 
-/** \file
- * \brief Linux runqueues
- *
- * \defgroup marcel_runqueues Runqueues
- *
- * Runqueues hold entities. Each topology level has its own runqueue, where
- * processors covered by this level can take work.
- *
- * Entities in the runqueues are indexed by priority, whose values can be in:
- *
- * - MA_NOSCHED_PRIO (never scheduled)
- * - MA_IDLE_PRIO (idle thread)
- * - MA_LOWBATCH_PRIO (usually used for blocked batch thread)
- * - MA_BATCH_PRIO (batch thread)
- * - MA_DEF_PRIO .. MA_DEF_PRIO + MAX_MAX_NICE (default priority)
- * - MA_RT_PRIO .. MA_MAX_RT_PRIO == MA_RT_PRIO + MA_MAX_USER_RT_PRIO (application real-time priority)
- * - MA_SYS_RT_PRIO (Marcel-internal Real-Time priority)
- *
- * ::ma_rq_queue provides access to the queue of entities of a given priority.
- *
- * @{
- */
-#section common
-#depend "scheduler-marcel/marcel_bubble_sched.h[types]"
+
+#ifndef __LINUX_RUNQUEUES_H__
+#define __LINUX_RUNQUEUES_H__
+
+
 #include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "linux_types.h"
+#include "marcel_config.h"
+#include "scheduler-marcel/marcel_sched_types.h"
+#include "marcel_types.h"
 
-/*
- * These are the runqueue data structures:
- */
 
-#section types
-/** \brief Type of runqueues */
-typedef struct ma_runqueue ma_runqueue_t;
-typedef ma_runqueue_t ma_topo_level_schedinfo;
-
-#section macros
+/** Public macros **/
 /*
  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL tasks are
@@ -77,27 +54,77 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 #define ma_rt_task(p)		\
 	((p)->as_entity.prio < MA_RT_PRIO)
 
-#section marcel_macros
-#depend "[macros]"
-#depend "asm/linux_types.h[macros]"
+
+/** Public data types **/
+/** \brief Type of runqueues */
+typedef struct ma_runqueue ma_runqueue_t;
+typedef ma_runqueue_t ma_topo_level_schedinfo;
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define MA_BITMAP_SIZE ((MA_MAX_PRIO+1+MA_BITS_PER_LONG)/MA_BITS_PER_LONG)
 
-#section marcel_structures
-#depend "tbx_fast_list.h"
+#ifdef MA__LWPS
+/* \brief Runqueue of LWP \e lwp */
+ma_runqueue_t *ma_lwp_rq(ma_lwp_t lwp);
+#define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
+/** \brief Runqueue of VP run by LWP \e lwp */
+ma_runqueue_t *ma_lwp_vprq(ma_lwp_t lwp);
+#define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->rq)
+/* \brief "Don't sched" runqueue of LWP \e lwp (for idle & such) */
+ma_runqueue_t *ma_dontsched_rq(ma_lwp_t lwp);
+#define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
+/** \brief Whether runqueue covers VP \e vpnum */
+int ma_rq_covers(ma_runqueue_t *rq, int vpnum);
+#define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpset_isset(&rq->vpset, vpnum))
+#else
+#define ma_lwp_rq(lwp)		(&ma_main_runqueue)
+#define ma_lwp_vprq(lwp)		(&ma_main_runqueue)
+#define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
+#define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
+#endif /* MA__LWPS */
+/** \brief Current thread */
+marcel_task_t ma_lwp_curr(ma_lwp_t lwp);
+#define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
+struct prio_array;
+/* \brief Queue of entities with priority \e prio in array \e array */
+struct tbx_fast_list_head *ma_array_queue(struct prio_array *array, int prio);
+#define ma_array_queue(array,prio)	((array)->queue + (prio))
+/** \brief Queue of priority \e prio in runqueue \e rq */
+struct tbx_fast_list_head *ma_rq_queue(ma_runqueue_t *rq, int prio);
+#define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
+/** \brief Whether queue \e queue is empty */
+int ma_queue_empty(struct tbx_fast_list_head *queue);
+#define ma_queue_empty(queue)	tbx_fast_list_empty(queue)
+/** \brief First entity in queue \e queue */
+marcel_entity_t *ma_queue_entry(struct tbx_fast_list_head *queue);
+#define ma_queue_entry(queue)	tbx_fast_list_entry((queue)->next, marcel_entity_t, cached_entities_item)
 
+/** \brief Iterate through the entities held in queue \e queue */
+#define ma_queue_for_each_entry(e, queue) tbx_fast_list_for_each_entry(e, queue, cached_entities_item)
+/** \brief Same as ma_queue_for_each_entry(), but safe version against current
+ * item removal: prefetches the next entity in \e ee. */
+#define ma_queue_for_each_entry_safe(e, ee, queue) tbx_fast_list_for_each_entry_safe(e, ee, queue, cached_entities_item)
+
+/*
+ * Adding/removing a task to/from a priority array:
+ */
+
+
+/** Internal data types **/
+typedef struct prio_array ma_prio_array_t;
+
+
+/** Internal data structures **/
 struct prio_array {
 	int nr_active;
 	unsigned long bitmap[MA_BITMAP_SIZE];
 	struct tbx_fast_list_head queue[MA_MAX_PRIO];
 };
 
-#section marcel_types
-typedef struct prio_array ma_prio_array_t;
-
-#section marcel_structures
-#depend "[types]"
-#depend "marcel_topology.h[types]"
-#depend "scheduler/marcel_holder.h[marcel_structures]"
 /**
  * Locking rule: those places that want to lock multiple runqueues (such as the
  * load balancing or the thread migration code), lock acquire operations must
@@ -142,147 +169,28 @@ struct ma_runqueue {
 #endif
 };
 
-#section marcel_variables
-#depend "linux_perlwp.h[marcel_macros]"
-#depend "[marcel_macros]"
 
+/** Internal global variables **/
 /** \brief The main runqueue (for the whole machine) */
 extern ma_runqueue_t ma_main_runqueue;
 #define ma_main_runqueue (marcel_machine_level[0].rq)
 extern TBX_EXTERN ma_runqueue_t ma_dontsched_runqueue;
 
-#section marcel_macros
-#ifdef MA__LWPS
-/* \brief Runqueue of LWP \e lwp */
-ma_runqueue_t *ma_lwp_rq(ma_lwp_t lwp);
-#define ma_lwp_rq(lwp)		(&ma_per_lwp(runqueue, (lwp)))
-/** \brief Runqueue of VP run by LWP \e lwp */
-ma_runqueue_t *ma_lwp_vprq(ma_lwp_t lwp);
-#define ma_lwp_vprq(lwp)	(&(lwp)->vp_level->rq)
-/* \brief "Don't sched" runqueue of LWP \e lwp (for idle & such) */
-ma_runqueue_t *ma_dontsched_rq(ma_lwp_t lwp);
-#define ma_dontsched_rq(lwp)	(&ma_per_lwp(dontsched_runqueue, (lwp)))
-/** \brief Whether runqueue covers VP \e vpnum */
-int ma_rq_covers(ma_runqueue_t *rq, int vpnum);
-#define ma_rq_covers(rq,vpnum)	(vpnum != -1 && marcel_vpset_isset(&rq->vpset, vpnum))
-#else
-#define ma_lwp_rq(lwp)		(&ma_main_runqueue)
-#define ma_lwp_vprq(lwp)		(&ma_main_runqueue)
-#define ma_dontsched_rq(lwp)	(&ma_dontsched_runqueue)
-#define ma_rq_covers(rq,vpnum)	((void)(rq),(void)(vpnum),1)
-#endif
-/** \brief Current thread */
-marcel_task_t ma_lwp_curr(ma_lwp_t lwp);
-#define ma_lwp_curr(lwp)	ma_per_lwp(current_thread, lwp)
-struct prio_array;
-/* \brief Queue of entities with priority \e prio in array \e array */
-struct tbx_fast_list_head *ma_array_queue(struct prio_array *array, int prio);
-#define ma_array_queue(array,prio)	((array)->queue + (prio))
-/** \brief Queue of priority \e prio in runqueue \e rq */
-struct tbx_fast_list_head *ma_rq_queue(ma_runqueue_t *rq, int prio);
-#define ma_rq_queue(rq,prio)	ma_array_queue((rq)->active, (prio))
-/** \brief Whether queue \e queue is empty */
-int ma_queue_empty(struct tbx_fast_list_head *queue);
-#define ma_queue_empty(queue)	tbx_fast_list_empty(queue)
-/** \brief First entity in queue \e queue */
-marcel_entity_t *ma_queue_entry(struct tbx_fast_list_head *queue);
-#define ma_queue_entry(queue)	tbx_fast_list_entry((queue)->next, marcel_entity_t, cached_entities_item)
 
-/** \brief Iterate through the entities held in queue \e queue */
-#define ma_queue_for_each_entry(e, queue) tbx_fast_list_for_each_entry(e, queue, cached_entities_item)
-/** \brief Same as ma_queue_for_each_entry(), but safe version against current
- * item removal: prefetches the next entity in \e ee. */
-#define ma_queue_for_each_entry_safe(e, ee, queue) tbx_fast_list_for_each_entry_safe(e, ee, queue, cached_entities_item)
-
-/*
- * Adding/removing a task to/from a priority array:
- */
-#section marcel_functions
+/** Public inline functions functions **/
 static __tbx_inline__ void ma_array_dequeue_task(marcel_task_t *p, ma_prio_array_t *array);
 static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *p, ma_prio_array_t *array);
-#section marcel_inline
-static __tbx_inline__ void ma_array_dequeue_entity(marcel_entity_t *e, ma_prio_array_t *array)
-{
-	sched_debug("dequeueing %p (prio %d) from %p\n",e,e->prio,array);
-	if (e->prio != MA_NOSCHED_PRIO)
-		array->nr_active--;
-	tbx_fast_list_del(&e->cached_entities_item);
-	if (tbx_fast_list_empty(ma_array_queue(array, e->prio))) {
-		sched_debug("array %p (prio %d) empty\n",array, e->prio);
-		__ma_clear_bit(e->prio, array->bitmap);
-	}
-	MA_BUG_ON(!e->ready_holder_data);
-	e->ready_holder_data = NULL;
-}
-static __tbx_inline__ void ma_array_dequeue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	sched_debug("dequeueing %d:%s (prio %d) from %p\n",p->number,p->as_entity.name,p->as_entity.prio,array);
-	ma_array_dequeue_entity(&p->as_entity, array);
-}
-
-#section marcel_functions
 static __tbx_inline__ void ma_array_enqueue_task(marcel_task_t *p, ma_prio_array_t *array);
 static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *p, ma_prio_array_t *array);
-#section marcel_inline
-static __tbx_inline__ void ma_array_enqueue_entity(marcel_entity_t *e, ma_prio_array_t *array)
-{
-	sched_debug("enqueueing %p (prio %d) in %p\n",e,e->prio,array);
-	if ((e->prio >= MA_BATCH_PRIO) && (e->prio != MA_LOWBATCH_PRIO))
-		tbx_fast_list_add(&e->cached_entities_item, ma_array_queue(array, e->prio));
-	else
-		tbx_fast_list_add_tail(&e->cached_entities_item, ma_array_queue(array, e->prio));
-	__ma_set_bit(e->prio, array->bitmap);
-	if (e->prio != MA_NOSCHED_PRIO)
-		array->nr_active++;
-	MA_BUG_ON(e->ready_holder_data);
-	e->ready_holder_data = array;
-}
-static __tbx_inline__ void ma_array_enqueue_task(marcel_task_t *p, ma_prio_array_t *array)
-{
-	sched_debug("enqueueing %d:%s (prio %d) in %p\n",p->number,p->as_entity.name,p->as_entity.prio,array);
-	ma_array_enqueue_entity(&p->as_entity,array);
-}
-
-#section marcel_functions
 static __tbx_inline__ void ma_array_entity_list_add(struct tbx_fast_list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq);
-#section marcel_inline
-static __tbx_inline__ void ma_array_entity_list_add(struct tbx_fast_list_head *head, marcel_entity_t *e, ma_prio_array_t *array, ma_runqueue_t *rq) {
-	MA_BUG_ON(e->ready_holder_data);
-	tbx_fast_list_add_tail(&e->cached_entities_item, head);
-	e->ready_holder_data = array;
-	MA_BUG_ON(e->ready_holder);
-	e->ready_holder = &rq->as_holder;
-}
-
-#section marcel_functions
 static __tbx_inline__ void ma_array_enqueue_entity_list(struct tbx_fast_list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq);
 #define ma_array_enqueue_task_list ma_array_enqueue_entity_list
-#section marcel_inline
-static __tbx_inline__ void ma_array_enqueue_entity_list(struct tbx_fast_list_head *head, int num, int prio, ma_prio_array_t *array, ma_runqueue_t *rq TBX_UNUSED)
-{
-	tbx_fast_list_splice(head, ma_array_queue(array, prio));
-	__ma_set_bit(prio, array->bitmap);
-	array->nr_active += num;
-}
-
-#section marcel_functions
 /* \brief Switch the active and expired arrays of runqueue \e rq. */
 //static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq);
-#section marcel_inline
-#if 0
-static __tbx_inline__ void rq_arrays_switch(ma_runqueue_t *rq)
-{
-	ma_prio_array_t *array = rq->active;
-
-	rq->active = rq->expired;
-	rq->expired = array;
-	array = rq->active;
-	//rq->expired_timestamp = 0;
-/* 	rq->best_expired_prio = MA_MAX_PRIO; */
-}
-#endif
-
-#section marcel_functions
 extern void ma_init_rq(ma_runqueue_t *rq, const char *name);
 
-/* @} */
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __LINUX_RUNQUEUES_H__ **/

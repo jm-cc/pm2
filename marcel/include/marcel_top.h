@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,33 @@
  * General Public License for more details.
  */
 
-#section functions
+
+#ifndef __MARCEL_TOP_H__
+#define __MARCEL_TOP_H__
+
+
+#include <stdarg.h>
+#include "tbx_snprintf.h"
+#include "sys/marcel_flags.h"
+
+
+/** Public functions **/
 int marcel_init_top(const char *);
 void marcel_exit_top(void);
 void marcel_show_top(void);
-#section marcel_functions
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal functions **/
 #ifdef MA__BUBBLES
 void ma_top_add_bubble(marcel_bubble_t *b);
 void ma_top_del_bubble(marcel_bubble_t *b);
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_TOP_H__ **/

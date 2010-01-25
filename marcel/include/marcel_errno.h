@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,21 +13,27 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-#section macros
-#section functions
-#depend "[marcel_variables]"
-#section marcel_variables [no-depend-previous]
 
-#section functions
+#ifndef __MARCEL_ERRNO_H__
+#define __MARCEL_ERRNO_H__
+
+
+#include "sys/marcel_flags.h"
+#include "marcel_alias.h"
+
+
+/** Public macros **/
+#define marcel_errno (*marcel___errno_location())
+#define pmarcel_errno (*pmarcel___errno_location())
+#define marcel_h_errno (*marcel___h_errno_location())
+#define pmarcel_h_errno (*pmarcel___h_errno_location())
+
+
+/** Public functions **/
 int *pmarcel___errno_location(void);
 int *pmarcel___h_errno_location(void);
 DEC_MARCEL_POSIX(int *, __errno_location, (void));
 DEC_MARCEL_POSIX(int *, __h_errno_location, (void));
 
-#section macros
-#define marcel_errno (*marcel___errno_location())
-#define pmarcel_errno (*pmarcel___errno_location())
-#define marcel_h_errno (*marcel___h_errno_location())
-#define pmarcel_h_errno (*pmarcel___h_errno_location())
+
+#endif /** __MARCEL_ERRNO_H__ **/

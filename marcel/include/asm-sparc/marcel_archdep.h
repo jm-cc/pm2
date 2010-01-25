@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,23 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
+
+#ifndef __ASM_SPARC_MARCEL_ARCHDEP_H__
+#define __ASM_SPARC_MARCEL_ARCHDEP_H__
+
 
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
+#if !defined(__GNUC__) || defined(__INTEL_COMPILER)
+#include "asm-generic/marcel_archdep.h"
+#endif
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* Solaris sparc */
 #if defined(SOLARIS_SYS)
 #  define STACK_INFO
@@ -54,8 +64,6 @@ extern void call_ST_FLUSH_WINDOWS(void);
   register unsigned long fp asm("%fp"); \
   fp; \
 })
-#else
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
 
 #  define set_sp(val) \
@@ -70,3 +78,9 @@ extern void call_ST_FLUSH_WINDOWS(void);
     __asm__ __volatile__("mov %0, %%sp\n\t" \
 		    	 "mov %1, %%fp\n\t" \
                          : : "r" (sp), "r" (fp) : "memory", "sp")
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_SPARC_MARCEL_ARCHDEP_H__ **/

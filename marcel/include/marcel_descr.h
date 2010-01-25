@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,28 +13,35 @@
  * General Public License for more details.
  */
 
-/** \file
- * \brief Descriptors
- *
- * \defgroup marcel_descriptors Thread descriptors
- *
- * @{
- */
 
-/****************************************************************/
+#ifndef __MARCEL_DESCR_H__
+#define __MARCEL_DESCR_H__
 
-#section common
-#include "tbx_compiler.h"
-#include "tbx_macros.h"
-#section types
-typedef struct marcel_task marcel_task_t;
-typedef marcel_task_t *p_marcel_task_t;
-typedef p_marcel_task_t marcel_t, lpt_t;
-typedef unsigned long int pmarcel_t;
-typedef struct marcel_sched_param marcel_sched_param_t;
 
-#section macros
+#include "sys/marcel_flags.h"
+#include "asm/marcel_ctx.h"
+#include "tbx_fast_list.h"
+#include "marcel_config.h"
+#include "marcel_topology.h"
+#include "marcel_compiler.h"
+#include "marcel_types.h"
+#include "marcel_signal.h"
+#include "marcel_threads.h"
+#include "marcel_sem.h"
+#include "linux_timer.h"
+#ifdef MARCEL_MIGRATION_ENABLED
+#include "marcel_exception.h"
+#endif
+#ifdef MA__LIBPTHREAD
+#define __need_res_state
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+#undef __need_res_state
+#endif
 
+
+/** Public macros **/
 /* To be preferred when accessing a field of a marcel_t (inherited from glibc) */
 #define THREAD_GETMEM(thread_desc, field)   ((thread_desc)->field)
 #define THREAD_SETMEM(thread_desc, field, value)   ((thread_desc)->field)=(value)
@@ -48,28 +54,7 @@ typedef struct marcel_sched_param marcel_sched_param_t;
 #define MARCEL_SELF (marcel_self())
 
 
-#section structures
-#depend "asm/linux_atomic.h[marcel_types]"
-#depend "asm/marcel_ctx.h[structures]"
-#depend "sys/marcel_work.h[marcel_structures]"
-#depend "marcel_attr.h[macros]"
-#depend "marcel_sem.h[structures]"
-#depend "marcel_exception.h[structures]"
-#depend "marcel_signal.h[marcel_types]"
-#depend "linux_timer.h[structures]"
-#depend "scheduler/marcel_sched.h[marcel_types]"
-#depend "scheduler/marcel_holder.h[marcel_structures]"
-#depend "scheduler/marcel_bubble_sched.h[types]"
-#depend "scheduler/marcel_bubble_sched.h[structures]"
- /* Pour struct __res_state */
-#ifdef MA__LIBPTHREAD
-#define __need_res_state
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-#undef __need_res_state
-#endif
-
+/** Public data structures **/
 /** \brief Context info for read write locks.
 
    The marcel_rwlock_info structure
@@ -319,69 +304,21 @@ struct marcel_task {
 #endif
 };
 
-#section functions
+
+/** Public functions **/
 /* ==== get current thread or LWP id ==== */
 /* To be preferred for accessing the current thread's identifier */
 MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void);
+static __tbx_inline__ char *marcel_stackbase(marcel_t pid);
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define MAL(X)          (((X)+(MARCEL_ALIGN-1)) & ~(MARCEL_ALIGN-1))
 #define MAL_BOT(X)      ((X) & ~(MARCEL_ALIGN-1))
 
-#section marcel_inline
-#ifdef MA__SELF_VAR
-extern TBX_EXTERN
-#ifdef MA__SELF_VAR_TLS
-	__thread
-#endif
-	marcel_t ma_self;
-MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
-{
-	return ma_self;
-}
-#else
-#depend "[marcel_macros]"
-#depend "asm/marcel_archdep.h[marcel_macros]"
-#depend "marcel_threads.h[marcel_macros]"
-/* TBX_NOINST car utilisé dans profile/source/fut_record.c */
-MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
-{
-	marcel_t self;
-	register unsigned long sp = get_sp();
-
-#ifdef STANDARD_MAIN
-	if (IS_ON_MAIN_STACK(sp))
-		self = &__main_thread_struct;
-	else
-#endif
-	{
-#ifdef ENABLE_STACK_JUMPING
-		self = *((marcel_t *) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
-			    THREAD_SLOT_SIZE - sizeof(void *))));
-#else
-		self = ma_slot_sp_task(sp);
-#endif
-		/* Detect stack overflow. If you encounter
-		 * this, increase THREAD_SLOT_SIZE */
-		MA_BUG_ON(sp >= (unsigned long) self
-		    && sp < (unsigned long) (self + 1));
-	}
-	return self;
-}
-#endif
-DEC_POSIX(pmarcel_t, self, (void));
-
-
-#section functions
-static __tbx_inline__ char *marcel_stackbase(marcel_t pid);
-#section inline
-static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
-{
-	return (char *) pid->stack_base;
-}
-
-
-#section marcel_macros
 
 /* 0x000000FF : marcel_descr
  * 0x0000FF00 : marcel_sched
@@ -398,5 +335,8 @@ static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
 #define _TIF_DEBUG_IN_PROGRESS  (1<<TIF_DEBUG_IN_PROGRESS)
 #define _TIF_BLOCK_HARDIRQ      (1<<TIF_BLOCK_HARDIRQ)
 
-/* @} */
 
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_DESCR_H__ **/

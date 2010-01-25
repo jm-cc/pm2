@@ -20,9 +20,7 @@
 #error "When this file is in the include path, marcel.h mustn't be #included directly. Always just #include <pthread.h>."
 #endif
 #include <marcel.h>
-
 #include <stdlib.h>
-#include <stdio.h>
 
 
 #ifdef __cplusplus

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +13,19 @@
  * General Public License for more details.
  */
 
-#section macros
+
+#ifndef __MARCEL_EXCEPTION_H__
+#define __MARCEL_EXCEPTION_H__
+
+
+#include "sys/marcel_flags.h"
+#include "marcel_utils.h"
+#ifdef MARCEL_EXCEPTIONS_ENABLED
+#include "asm/marcel_ctx.h"
+#endif
+
+
+/** Public macros **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 #  define MARCEL_EXCEPTION_BEGIN { \
                          marcel_exception_block_t _excep_blk;				\
@@ -55,25 +66,24 @@
 #  define MARCEL_EXCEPTION_RRAISE    MARCEL_EXCEPTION_RAISE(NULL)
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#section common
-#ifdef MARCEL_EXCEPTIONS_ENABLED
 
-#section types
+/** Public data types **/
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 typedef char *marcel_exception_t;
 typedef struct marcel_exception_block marcel_exception_block_t;
+#endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#section structures
-#depend "asm/marcel_ctx.h[structures]"
 
+/** Public data structures **/
+#ifdef MARCEL_EXCEPTIONS_ENABLED
 struct marcel_exception_block {
 	marcel_ctx_t ctx;
 	struct marcel_exception_block *old_blk;
 };
-
-#section common
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#section variables
+
+/** Public global variables **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 extern marcel_exception_t
   MARCEL_TASKING_ERROR,
@@ -97,10 +107,11 @@ extern marcel_exception_t
 #  define MARCEL_USE_ERROR		NULL
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
-#section functions
-#include "tbx_compiler.h"
+
+/** Public functions **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 int TBX_NORETURN _marcel_raise_exception(marcel_exception_t ex);
 #endif /* MARCEL_EXCEPTIONS_ENABLED */
 
 
+#endif /** __MARCEL_EXCEPTION_H__ **/

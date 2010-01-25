@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,27 @@
  * General Public License for more details.
  */
 
-#section macros
+
+#ifndef __ASM_IA64_MARCEL_COMPAREEXCHANGE_H__
+#define __ASM_IA64_MARCEL_COMPAREEXCHANGE_H__
+
+
+#include "asm/linux_intrinsics.h"
+
+
+/** Public macros **/
 #define MA_HAVE_COMPAREEXCHANGE 1
 #define MA_HAVE_FULLCOMPAREEXCHANGE 1
-#section marcel_variables
-#section marcel_macros
-#depend "asm/linux_intrinsics.h[marcel_functions]"
-#depend "asm/linux_intrinsics.h[marcel_macros]"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define pm2_compareexchange(p,o,n,s) ma_ia64_cmpxchg(acq,(p),(o),(n),(s))
-#section marcel_inline
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_MARCEL_COMPAREEXCHANGE_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +13,16 @@
  * General Public License for more details.
  */
 
-#section common
 
+#ifndef __ASM_I386_LINUX_SPINLOCK_H__
+#define __ASM_I386_LINUX_SPINLOCK_H__
+
+
+#include "tbx_compiler.h"
+#include "marcel_utils.h"
+
+
+/** Public macros **/
 #ifdef X86_64_ARCH
 #define MA_SPINB "l"
 #define MA_SPINb ""
@@ -25,36 +32,35 @@
 #define MA_SPINb "b"
 #define MA_SPINT char
 #endif
-/*
- * Similar to:
- * include/asm-i386/spinlock.h
- */
-#include "tbx_compiler.h"
 
 #ifdef MA__LWPS
+#define MA_SPIN_LOCK_UNLOCKED { 1 }
+#define ma_spin_lock_init(x)	do { *(x) = (ma_spinlock_t) MA_SPIN_LOCK_UNLOCKED; } while(0)
+#endif /* MA__LWPS */
 
-#section types
+
+/** Public data types **/
+#ifdef MA__LWPS
 /*
  * Your basic SMP spinlocks, allowing only a single CPU anywhere
  */
-
 typedef struct {
 	volatile unsigned int lock;
 } ma_spinlock_t;
+#endif /* MA__LWPS */
 
-#section macros
-#define MA_SPIN_LOCK_UNLOCKED { 1 }
 
-#define ma_spin_lock_init(x)	do { *(x) = (ma_spinlock_t) MA_SPIN_LOCK_UNLOCKED; } while(0)
+#ifdef __MARCEL_KERNEL__
 
-#section marcel_macros
+
+/** Internal macros **/
+#ifdef MA__LWPS
 /*
  * Simple spin lock operations.  There are two variants, one clears IRQ's
  * on the local processor, one does not.
  *
  * We make no fairness assumptions. They have a cost.
  */
-
 #define ma_spin_is_locked(x)	(*(volatile signed MA_SPINT *)(&(x)->lock) <= 0)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
 
@@ -77,61 +83,10 @@ typedef struct {
 	"call ma_i386_spinlock_contention\n\t" \
 	"1:\n"
 #endif
-
-#section marcel_inline
-/*
- * This works. Despite all the confusion.
- * (except on PPro SMP or if we are using OOSTORE)
- * (PPro errata 66, 92)
- */
- 
-#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
-
-#define ma_spin_unlock_string \
-	"mov"MA_SPINB" $1,%0" \
-		:"=m" (lock->lock) : : "memory"
-
-
-static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
-{
-	__asm__ __volatile__(
-		ma_spin_unlock_string
-	);
-}
-
-#else
-
-#define ma_spin_unlock_string \
-	"xchg"MA_SPINB" %"MA_SPINb"0, %1" \
-		:"=q" (oldval), "=m" (lock->lock) \
-		:"0" (oldval) : "memory"
-
-static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
-{
-	MA_SPINT oldval = 1;
-	__asm__ __volatile__(
-		ma_spin_unlock_string
-	);
-}
-
-#endif
-
-static __tbx_inline__ int _ma_raw_spin_trylock(ma_spinlock_t *lock)
-{
-	MA_SPINT oldval;
-	__asm__ __volatile__(
-		"xchg"MA_SPINB" %"MA_SPINb"0,%1"
-		:"=q" (oldval), "=m" (lock->lock)
-		:"0" (0) : "memory");
-	return oldval > 0;
-}
-
-static __tbx_inline__ void _ma_raw_spin_lock(ma_spinlock_t *lock)
-{
-	__asm__ __volatile__(
-		ma_spin_lock_string
-		:"=m" (lock->lock) : : "memory");
-}
-
-#section common
 #endif /* MA__LWPS */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_I386_LINUX_SPINLOCK_H__ **/

@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,17 +13,22 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_IA64_LINUX_IA64REGS_H__
+#define __ASM_IA64_LINUX_IA64REGS_H__
+
+
 /*
- * Similar to:
- * include/asm-ia64/intrinsics.h
- *
  * Copyright (C) 2002,2003 Intel Corp.
  *      Jun Nakajima <jun.nakajima@intel.com>
  *      Suresh Siddha <suresh.b.siddha@intel.com>
  */
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /*
  * Register Names for getreg() and setreg().
  *
@@ -114,3 +119,8 @@
 #define _MA_IA64_REG_INDR_PMD	9005
 #define _MA_IA64_REG_INDR_RR	9006
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_IA64REGS_H__ **/

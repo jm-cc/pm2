@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +13,17 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-/*
- * similar to:
- * include/linux/jiffies.h
- */
 
-#section variables
+#ifndef __LINUX_JIFFIES_H__
+#define __LINUX_JIFFIES_H__
+
+
+#include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "linux_types.h"
+
+
+/** Public global variables **/
 /*
  * The 64-bit value is not volatile - you MUST NOT read it
  * without sampling the sequence number in xtime_lock.
@@ -32,14 +34,13 @@ extern unsigned long volatile ma_jiffies;
 
 #if (MA_BITS_PER_LONG < 64)
 ma_u64 ma_get_jiffies_64(void);
-#else
-static __tbx_inline__ ma_u64 ma_get_jiffies_64(void)
-{
-	return (ma_u64)ma_jiffies;
-}
 #endif
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /*
  *	These inlines deal with timer wrapping correctly. You are 
  *	strongly encouraged to use them
@@ -65,3 +66,8 @@ static __tbx_inline__ ma_u64 ma_get_jiffies_64(void)
 	 ((long)(a) - (long)(b) >= 0))
 #define ma_time_before_eq(a,b)	ma_time_after_eq(b,a)
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __LINUX_JIFFIES_H__ **/

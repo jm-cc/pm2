@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +13,18 @@
  * General Public License for more details.
  */
 
-#section common
-#depend "asm-ia64/linux_spinlock.h[]"
-#section marcel_types
-#section marcel_macros
-#section marcel_inline
+
+#ifndef __ASM_IA64_LINUX_RWLOCK_H__
+#define __ASM_IA64_LINUX_RWLOCK_H__
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+#include "asm-ia64/linux_spinlock.h"
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_RWLOCK_H__ **/

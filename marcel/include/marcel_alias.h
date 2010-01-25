@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,17 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __MARCEL_ALIAS_H__
+#define __MARCEL_ALIAS_H__
+
+
 #include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "marcel_utils.h"
 
-#section macros
-#depend "marcel_utils.h[stringification]"
 
+/** Public macros **/
 #define NAME_PREFIX
 #define LPT_PREFIX lpt_
 #define PTHREAD_PREFIX pthread_
@@ -187,7 +191,11 @@
 #  define DEF_WEAK_T(rtype, name, aliasname, proto, args)
 #endif
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /*
  * To be used when the pmarcel ABI is the same as the system's libpthread ABI
  */
@@ -389,3 +397,8 @@
 
 #endif /* MA__LIBPTHREAD */
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_ALIAS_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,80 +13,27 @@
  * General Public License for more details.
  */
 
-#section marcel_variables
-extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
-#ifdef MA__PROVIDE_TLS
-extern ma_allocator_t *marcel_tls_slot_allocator;
-void marcel_tls_attach(marcel_t t);
-void marcel_tls_detach(marcel_t t);
-#else
-#define marcel_tls_attach(t) ((void) 0)
-#define marcel_tls_detach(t) ((void) 0)
-#endif
-extern ma_allocator_t *marcel_thread_seed_allocator;
 
-#section functions
-#depend "tbx_compiler.h"
+#ifndef __MARCEL_ALLOC_H__
+#define __MARCEL_ALLOC_H__
+
+
+#include <string.h>
+#include <unistd.h>
+#include "tbx_compiler.h"
+#include "sys/marcel_flags.h"
+#include "marcel_config.h"
+#include "marcel_types.h"
+#include "marcel_allocator.h"
 #ifdef MM_HEAP_ENABLED
-#depend "mm_heap_numa_alloc.h"
-#endif /* MM_HEAP_ENABLED */
-
-TBX_FMALLOC void *marcel_slot_alloc(void);
-TBX_FMALLOC void *marcel_tls_slot_alloc(void);
-void marcel_slot_free(void *addr);
-void marcel_tls_slot_free(void *addr);
-void marcel_slot_exit(void);
-
-#section marcel_macros
-#ifdef MA__PROVIDE_TLS
-#  define marcel_tls_slot_alloc() ma_obj_alloc(marcel_tls_slot_allocator)
-#  define marcel_tls_slot_free(addr) ma_obj_free(marcel_tls_slot_allocator, addr)
-#else
-#  define marcel_tls_slot_alloc marcel_slot_alloc
-#  define marcel_tls_slot_free marcel_slot_free
-#endif
-#define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
-#define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)
-
-#define ma_slot_task(slot) ((marcel_task_t *)((unsigned long) (slot) + THREAD_SLOT_SIZE - MAL(sizeof(marcel_task_t))))
-#define ma_slot_top_task(top) ((marcel_task_t *)((unsigned long) (top) - MAL(sizeof(marcel_task_t))))
-#define ma_slot_sp_task(sp) ma_slot_task((sp) & ~(THREAD_SLOT_SIZE-1))
-#define ma_task_slot_top(t) ((unsigned long) (t) + MAL(sizeof(marcel_task_t)))
-
-#section marcel_functions
-static __tbx_inline__ void ma_free_task_stack(marcel_t task);
-#section marcel_inline
-static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
-	switch (task->stack_kind) {
-	case MA_DYNAMIC_STACK:
-		marcel_tls_slot_free(marcel_stackbase(task));
-		break;
-	case MA_STATIC_STACK:
-		marcel_tls_detach(task);
-		break;
-	case MA_NO_STACK:
-		ma_obj_free(marcel_thread_seed_allocator, task);
-		break;
-	default:
-		MA_BUG();
-	}
-}
-
-/* ======= MT-Safe functions from standard library ======= */
-
-#section types
-#ifdef MA__NUMA
-typedef struct nodtab ma_nodtab_t;
-//typedef struct pageinfo ma_pinfo_t;
-#endif
-#section structures
-#ifdef MA__NUMA
-struct nodtab {
-		size_t array[MARCEL_NBMAXNODES];
-};
+#include "scheduler/marcel_sched_types.h"
+#include "marcel_spin.h"
+#include "mm_heap_alloc.h"
+#include "mm_heap_numa_alloc.h"
 #endif
 
-#section macros
+
+/** Public macros **/
 #define tmalloc(size)          ma_malloc_nonuma(size, __FILE__, __LINE__)
 #define trealloc(ptr, size)    marcel_realloc(ptr, size, __FILE__, __LINE__)
 #define tcalloc(nelem, elsize) marcel_calloc(nelem, elsize, __FILE__, __LINE__)
@@ -99,7 +45,29 @@ struct nodtab {
 #define MA_CACHE_SIZE 16384
 #define LOCAL_NODE 1
 
-#section functions
+
+/** Public data types **/
+#ifdef MA__NUMA
+typedef struct nodtab ma_nodtab_t;
+//typedef struct pageinfo ma_pinfo_t;
+#endif
+
+
+/** Public data structures **/
+#ifdef MA__NUMA
+struct nodtab {
+		size_t array[MARCEL_NBMAXNODES];
+};
+#endif
+
+
+/** Public functions **/
+TBX_FMALLOC void *marcel_slot_alloc(void);
+TBX_FMALLOC void *marcel_tls_slot_alloc(void);
+void marcel_slot_free(void *addr);
+void marcel_tls_slot_free(void *addr);
+void marcel_slot_exit(void);
+
 #ifdef MM_HEAP_ENABLED
 /* heap allocator */
 TBX_FMALLOC void* marcel_malloc_customized(size_t size, enum heap_pinfo_weight weight, int local, int node, int level);
@@ -138,3 +106,46 @@ void ma_free(void *data, const char * file, unsigned line);
 /* ancien malloc pour archi nonnuma */
 TBX_FMALLOC void* ma_malloc_nonuma(size_t size, const char *file, unsigned line);
 void ma_free_nonuma(void *data, const char * __restrict file, unsigned line);
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#ifdef MA__PROVIDE_TLS
+#  define marcel_tls_slot_alloc() ma_obj_alloc(marcel_tls_slot_allocator)
+#  define marcel_tls_slot_free(addr) ma_obj_free(marcel_tls_slot_allocator, addr)
+#else
+#  define marcel_tls_slot_alloc marcel_slot_alloc
+#  define marcel_tls_slot_free marcel_slot_free
+#endif
+#define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
+#define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)
+
+#define ma_slot_task(slot) ((marcel_task_t *)((unsigned long) (slot) + THREAD_SLOT_SIZE - MAL(sizeof(marcel_task_t))))
+#define ma_slot_top_task(top) ((marcel_task_t *)((unsigned long) (top) - MAL(sizeof(marcel_task_t))))
+#define ma_slot_sp_task(sp) ma_slot_task((sp) & ~(THREAD_SLOT_SIZE-1))
+#define ma_task_slot_top(t) ((unsigned long) (t) + MAL(sizeof(marcel_task_t)))
+
+
+/** Internal global variables **/
+extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
+#ifdef MA__PROVIDE_TLS
+extern ma_allocator_t *marcel_tls_slot_allocator;
+void marcel_tls_attach(marcel_t t);
+void marcel_tls_detach(marcel_t t);
+#else
+#define marcel_tls_attach(t) ((void) 0)
+#define marcel_tls_detach(t) ((void) 0)
+#endif
+extern ma_allocator_t *marcel_thread_seed_allocator;
+
+
+/** Internal functions **/
+static __tbx_inline__ void ma_free_task_stack(marcel_t task);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_ALLOC_H__ **/

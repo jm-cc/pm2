@@ -1,6 +1,0 @@
-configure
-autom4te.cache
-makefile.in
-*~
-*.in
-*.orig

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,20 +13,29 @@
  * General Public License for more details.
  */
 
-#section macros
+
+#ifndef __MARCEL_FASTLOCK_H__
+#define __MARCEL_FASTLOCK_H__
+
+
+#include <stdint.h>
+#include "sys/marcel_flags.h"
+#include "linux_spinlock.h"
+#include "marcel_debug.h"
+
+
+/** Public macros **/
 #define MA_MARCEL_FASTLOCK_UNLOCKED {.__status=0, .__spinlock=MA_SPIN_LOCK_UNLOCKED}
 #define MA_PMARCEL_FASTLOCK_UNLOCKED MA_MARCEL_FASTLOCK_UNLOCKED
 /* This must remain 0 to keep ABI compatibility with static initializers.  */
 #define MA_LPT_FASTLOCK_UNLOCKED { .__status = 0 }
 
-#section types
+
+/** Public data types **/
 typedef int __marcel_atomic_lock_t;
 
-#section structures
-#depend "linux_spinlock.h[types]"
 
-#include <stdint.h>
-
+/** Public data structures **/
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _marcel_fastlock
 {
@@ -107,3 +115,6 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
       (_lock)->__status = 1 | ((uintptr_t) (_cell)); \
     }									\
   while (0)
+
+
+#endif /** __MARCEL_FASTLOCK_H__ **/

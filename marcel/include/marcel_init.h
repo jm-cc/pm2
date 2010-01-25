@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,105 +13,18 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
 
-#section functions
-
-/* = initialization & termination == */
-#define marcel_init(argc, argv) common_init(argc, argv, NULL)
-#define marcel_end() common_exit(NULL)
-
-/**
- * Return #tbx_true if @param header_hash matches the library's header hash.
- * @param header_hash The user-visible Marcel header hash, i.e.,
- * #MARCEL_HEADER_HASH.
- */
-extern tbx_bool_t marcel_header_hash_matches_binary(const char *header_hash);
+#ifndef __MARCEL_INIT_H__
+#define __MARCEL_INIT_H__
 
 
-/**
- * Do nothing if @param header_hash matches the library's header hash,
- * otherwise exit with a non-zero exit code.
- * @param header_hash The user-visible Marcel header hash, i.e., #MARCEL_HEADER_HASH.
- */
-extern void marcel_ensure_abi_compatibility(const char *header_hash);
+#include "sys/marcel_flags.h"
+#include "asm/marcel_ctx.h"
+#include "tbx_macros.h"
+#include "tbx_types.h"
 
-int  marcel_test_activity(void);
-extern tbx_flag_t marcel_activity;
 
-void marcel_initialize(int* argc, char**argv);
-
-/*  When completed, calls to marcel_self() are ok, etc. */
-/*  So do calls to the Unix Fork primitive. */
-void marcel_init_data(int *argc, char *argv[]);
-
-/*  May start some internal threads. */
-/*  When completed, fork calls are prohibited. */
-void marcel_start_sched(void);
-
-void marcel_init_section(int section);
-
-void marcel_purge_cmdline(int *argc, char *argv[]);
-
-void marcel_finish_prepare(void);
-
-void marcel_finish(void);
-
-#section functions
-#ifdef STANDARD_MAIN
-#define marcel_main main
-#else  /* STANDARD_MAIN */
-#ifdef MARCEL_MAIN_AS_FUNC
-int go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
-#else  /* MARCEL_MAIN_AS_FUNC */
-#ifdef MARCEL_KERNEL
-extern int marcel_main(int argc, char *argv[]);
-#else
-#ifdef __GNUC__
-/*
- * If compiler is GNU C, we can rename the application's 'main' into
- * marcel_main automatically, saving the user a conditional rename.
- */
-int main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(TBX_REAL_SYMBOL_NAME(marcel_main)));
-#endif /* __GNUC__ */
-#endif /* MARCEL_KERNEL */
-#endif /* MARCEL_MAIN_AS_FUNC */
-#endif /* STANDARD_MAIN */
-
-#section marcel_macros
-#ifdef OSF_SYS
-#define __marcel_init
-#else
-#define __marcel_init TBX_TEXTSECTION(".ma.initfunc")
-#endif
-
-#section marcel_types
-typedef void (*__ma_initfunc_t)(void);
-typedef struct __ma_init_info {
-	__ma_initfunc_t func;
-        int section;
-	char prio;
-	const char **debug;
-	const char *file;
-} TBX_ALIGNED __ma_init_info_t;
-
-#section marcel_macros
-#define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
-  TBX_INTERNAL const __ma_init_info_t ma_init_info_##_func \
-    TBX_ALIGNED = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};
-#define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
-  static const char *ma_init_info_##_func##_help=_debug; \
-  __ma_initfunc_prio_internal(_func, _section, _prio, \
-                              &ma_init_info_##_func##_help)
-#define __ma_initfunc_prio(_func, _section, _prio, _debug) \
-  __ma_initfunc_prio__(_func, _section, _prio, _debug)
-#define __ma_initfunc(_func, _section, _debug) \
-  __ma_initfunc_prio(_func, _section, MA_INIT_PRIO_BASE, _debug)
-
-/* Procédure de lancement de marcel */
-
-#section macros
+/** Public macros **/
 /****************************************************************
  * MARCEL_SELF et MA_LWP_SELF deviennent utilisable
  * - Si on utilise la pile, celle-ci doit être correctement positionnée
@@ -158,7 +70,97 @@ typedef struct __ma_init_info {
 
 #define MA_INIT_MAX_PARTS  MA_INIT_START_LWPS
 
-#section marcel_macros
+
+/** Public global variables **/
+extern int ma_init_done[MA_INIT_MAX_PARTS+1];
+
+
+/** Public functions **/
+/* = initialization & termination == */
+#define marcel_init(argc, argv) common_init(argc, argv, NULL)
+#define marcel_end() common_exit(NULL)
+
+/**
+ * Return #tbx_true if @param header_hash matches the library's header hash.
+ * @param header_hash The user-visible Marcel header hash, i.e.,
+ * #MARCEL_HEADER_HASH.
+ */
+extern tbx_bool_t marcel_header_hash_matches_binary(const char *header_hash);
+
+
+/**
+ * Do nothing if @param header_hash matches the library's header hash,
+ * otherwise exit with a non-zero exit code.
+ * @param header_hash The user-visible Marcel header hash, i.e., #MARCEL_HEADER_HASH.
+ */
+extern void marcel_ensure_abi_compatibility(const char *header_hash);
+
+int  marcel_test_activity(void);
+extern tbx_flag_t marcel_activity;
+
+void marcel_initialize(int* argc, char**argv);
+
+/*  When completed, calls to marcel_self() are ok, etc. */
+/*  So do calls to the Unix Fork primitive. */
+void marcel_init_data(int *argc, char *argv[]);
+
+/*  May start some internal threads. */
+/*  When completed, fork calls are prohibited. */
+void marcel_start_sched(void);
+
+void marcel_init_section(int section);
+
+void marcel_purge_cmdline(int *argc, char *argv[]);
+
+void marcel_finish_prepare(void);
+
+void marcel_finish(void);
+
+#ifdef STANDARD_MAIN
+#define marcel_main main
+#else  /* STANDARD_MAIN */
+#ifdef MARCEL_MAIN_AS_FUNC
+int go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
+#else  /* MARCEL_MAIN_AS_FUNC */
+#ifdef __MARCEL_KERNEL__
+extern int marcel_main(int argc, char *argv[]);
+#else
+#ifdef __GNUC__
+/*
+ * If compiler is GNU C, we can rename the application's 'main' into
+ * marcel_main automatically, saving the user a conditional rename.
+ */
+int main(int argc, char *argv[]) __asm__ ( TBX_MACRO_TO_STR(TBX_REAL_SYMBOL_NAME(marcel_main)));
+#endif /* __GNUC__ */
+#endif /* __MARCEL_KERNEL__ */
+#endif /* MARCEL_MAIN_AS_FUNC */
+#endif /* STANDARD_MAIN */
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+#ifdef OSF_SYS
+#define __marcel_init
+#else
+#define __marcel_init TBX_TEXTSECTION(".ma.initfunc")
+#endif
+
+#define __ma_initfunc_prio_internal(_func, _section, _prio, _pdebug) \
+  TBX_INTERNAL const __ma_init_info_t ma_init_info_##_func \
+    TBX_ALIGNED = {.func=&_func, .section=_section, .prio=_prio, .debug=_pdebug, .file=__FILE__};
+#define __ma_initfunc_prio__(_func, _section, _prio, _debug) \
+  static const char *ma_init_info_##_func##_help=_debug; \
+  __ma_initfunc_prio_internal(_func, _section, _prio, \
+                              &ma_init_info_##_func##_help)
+#define __ma_initfunc_prio(_func, _section, _prio, _debug) \
+  __ma_initfunc_prio__(_func, _section, _prio, _debug)
+#define __ma_initfunc(_func, _section, _debug) \
+  __ma_initfunc_prio(_func, _section, MA_INIT_PRIO_BASE, _debug)
+
+/* Procédure de lancement de marcel */
+
 /* A besoin de MARCEL_SELF et MA_LWP_SELF */
 #define MA_INIT_PRIO_BASE                          5
 
@@ -201,9 +203,24 @@ typedef struct __ma_init_info {
 #define MA_INIT_UPCALL_START	      MA_INIT_START_LWPS
 #define MA_INIT_UPCALL_START_PRIO		    6
 
-#section variables
-extern int ma_init_done[MA_INIT_MAX_PARTS+1];
 
-#section marcel_variables
+/** Internal data types **/
+typedef void (*__ma_initfunc_t)(void);
+typedef struct __ma_init_info {
+	__ma_initfunc_t func;
+        int section;
+	char prio;
+	const char **debug;
+	const char *file;
+} TBX_ALIGNED __ma_init_info_t;
+
+
+/** Internal global variables **/
 extern marcel_ctx_t __ma_initial_main_ctx;
 extern volatile int __marcel_main_ret;
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_INIT_H__ **/

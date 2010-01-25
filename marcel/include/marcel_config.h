@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,7 +13,33 @@
  * General Public License for more details.
  */
 
-/* ========== customization =========== */
+
+#ifndef __MARCEL_CONFIG_H__
+#define __MARCEL_CONFIG_H__
+
+
+#include "sys/marcel_flags.h"
+
+
+/* Version 2.90 */
+#define MARCEL_VERSION 0x029001 
+
+/* MAMI => struct marcel_topo_level */
+#ifdef MM_MAMI_ENABLED
+#define __MARCEL_KERNEL__
+#endif
+
+/* symbol visibility */
+#if defined(MARCEL_KERNEL) || defined(PM2_KERNEL) || defined (MARCEL_INTERNAL_INCLUDE)
+#define __MARCEL_KERNEL__
+#endif
+
+
+/* ============ constants ============= */
+#define NO_TIME_OUT		-1
+#define NO_TIME_SLICE		0
+#define DEFAULT_STACK		0
+
 
 /* Max number of marcel_key_create() calls */
 #ifdef MA__IFACE_PMARCEL
@@ -157,3 +183,6 @@
 #undef MARCEL_NBMAXVPSUP
 #define MARCEL_NBMAXVPSUP	0
 #endif
+
+
+#endif /** __MARCEL_CONFIG_H__ **/

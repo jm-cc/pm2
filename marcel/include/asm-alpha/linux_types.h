@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +13,16 @@
  * General Public License for more details.
  */
 
-#section common
-/*
- * similar to:
- * include/asm-alpha/types.h
- */
 
-#section marcel_types
+#ifndef __ASM_ALPHA_LINUX_TYPES_H__
+#define __ASM_ALPHA_LINUX_TYPES_H__
+
+
+/** Public macros **/
+#define MA_BITS_PER_LONG 64
+
+
+/** Public data types **/
 typedef __signed__ char __ma_s8;
 typedef unsigned char __ma_u8;
 
@@ -45,6 +47,5 @@ typedef unsigned int ma_u32;
 typedef signed long ma_s64;
 typedef unsigned long ma_u64;
 
-#section macros
-#define MA_BITS_PER_LONG 64
 
+#endif /** __ASM_ALPHA_LINUX_TYPES_H__ **/

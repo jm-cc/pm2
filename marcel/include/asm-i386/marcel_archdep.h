@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,20 +13,36 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
 
+#ifndef __ASM_I386_MARCEL_ARCHDEP_H__
+#define __ASM_I386_MARCEL_ARCHDEP_H__
+
+
+#ifdef __MARCEL_KERNEL__
+#include <stdint.h>
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
-#depend "sys/marcel_archsetjmp.h"
+#include "sys/marcel_archsetjmp.h"
+#ifndef MA_JMPBUF
+#include <setjmp.h>
+#endif
+#if !defined(__GNUC__) || defined(__INTEL_COMPILER)
+#include "asm-generic/marcel_archdep.h"
+#endif
+#endif /** __MARCEL_KERNEL__ **/
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define TOP_STACK_FREE_AREA     64
 #ifdef MA_JMPBUF
 #define SP_FIELD(buf)           ((buf)[MARCEL_JB_SP])
 #define FP_FIELD(buf)           ((buf)[MARCEL_JB_BP])
 #define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])
 #else
-#include <setjmp.h>
 #define SP_FIELD(buf)         ((buf)->__jmpbuf[JB_SP])
 #define FP_FIELD(buf)         ((buf)->__jmpbuf[JB_BP])
 #define PC_FIELD(buf)         ((buf)->__jmpbuf[JB_PC])
@@ -35,14 +50,6 @@
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
-#include "tbx_compiler.h"
-static __tbx_inline__ long get_gs(void)
-{
-  register long gs;
-
-    __asm__("movl %%gs, %0" : "=r" (gs));
-    return gs;
-}
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp() \
@@ -50,8 +57,6 @@ static __tbx_inline__ long get_gs(void)
   register unsigned long sp asm("esp"); \
   sp; \
 })
-#else
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
 
 
@@ -80,7 +85,6 @@ static __tbx_inline__ long get_gs(void)
 extern unsigned short __main_thread_desc;
 
 #ifdef MA__PROVIDE_TLS
-#include <stdint.h>
 typedef struct {
   /* LPT binary compatibility */
   void *tcb;
@@ -106,3 +110,13 @@ typedef struct {
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
+
+
+/** Internal inline functions **/
+static __tbx_inline__ long get_gs(void) ;
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_I386_MARCEL_ARCHDEP_H__ **/

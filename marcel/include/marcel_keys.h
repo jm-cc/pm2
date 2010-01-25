@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,59 +13,59 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-/*********************************************************************
- * thread_key 
- * */
-/* ====== specific data ====== */
-#section macros
-#section types
-#section functions
-#section inline
-#depend "[marcel_variables]"
-#section marcel_variables [no-depend-previous]
 
-#section common
+#ifndef __MARCEL_KEYS_H__
+#define __MARCEL_KEYS_H__
+
+
+#include "sys/marcel_flags.h"
+#include "marcel_types.h"
+
+
+/** Public data types **/
+#ifdef MARCEL_KEYS_ENABLED
+typedef void (*marcel_key_destructor_t)(any_t);
+#endif /* MARCEL_KEYS_ENABLED */
+
+
+/** Public functions **/
 #ifdef MARCEL_KEYS_ENABLED
 
-#section types
-/* Keys for thread-specific data */
-typedef unsigned int marcel_key_t,  pmarcel_key_t;
-typedef void (*marcel_key_destructor_t)(any_t);
-
-#section marcel_variables
-extern unsigned marcel_nb_keys;
-extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
-extern int marcel_key_present[MAX_KEY_SPECIFIC];
-
-#section functions
 DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
 				   marcel_key_destructor_t any_t) __THROW);
 DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key) __THROW);
 
-#section marcel_variables
-extern volatile unsigned _nb_keys;
-
-#section functions
 DEC_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
 				    __const void* value));
 DEC_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key));
 
-#section marcel_functions
+#endif /* MARCEL_KEYS_ENABLED */
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal global variables **/
+#ifdef MARCEL_KEYS_ENABLED
+
+extern unsigned marcel_nb_keys;
+extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
+extern int marcel_key_present[MAX_KEY_SPECIFIC];
+
+extern volatile unsigned _nb_keys;
+
+#endif /* MARCEL_KEYS_ENABLED */
+
+
+/** Internal functions **/
+#ifdef MARCEL_KEYS_ENABLED
+
 static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
 
-#section marcel_inline
-#depend "marcel_descr.h[types]"
-#depend "marcel_descr.h[structures]"
-#depend "marcel_descr.h[marcel_inline]"
-static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
-{
-	if (key >= MAX_KEY_SPECIFIC
-	    || (!marcel_key_present[key]))
-		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
-	return &pid->key[key];
-}
-
-#section common
 #endif /* MARCEL_KEYS_ENABLED */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_KEYS_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,19 +13,17 @@
  * General Public License for more details.
  */
 
-#section structures
+
+#ifndef __ASM_IA64_MARCEL_CTX_H__
+#define __ASM_IA64_MARCEL_CTX_H__
+
+
 #include <ucontext.h>
-typedef struct __marcel_ctx_tag { /* C++ doesn't like tagless structs.  */
+#include "tbx_compiler.h"
+#include "asm/linux_types.h"
 
 
-
-
-ucontext_t jbuf;
-
-} marcel_ctx_t[1];
-
-#section macros
-#include <ucontext.h>
+/** Public macros **/
 int TBX_RETURNS_TWICE ma_ia64_setjmp(ucontext_t *ucp);
 int TBX_NORETURN ma_ia64_longjmp(const ucontext_t *ucp, int ret);
 
@@ -53,7 +50,16 @@ int TBX_NORETURN ma_ia64_longjmp(const ucontext_t *ucp, int ret);
   (SP_FIELD(ctx[0].jbuf))
 
 
-#section marcel_macros
+/** Public data structures **/
+typedef struct __marcel_ctx_tag { /* C++ doesn't like tagless structs.  */
+  ucontext_t jbuf;
+} marcel_ctx_t[1];
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* marcel_create : passage père->fils */
 /* marcel_exit : déplacement de pile */
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \
@@ -76,3 +82,9 @@ int TBX_NORETURN ma_ia64_longjmp(const ucontext_t *ucp, int ret);
     call_ST_FLUSH_WINDOWS(); \
     set_sp_bsp(_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
   } while (0)
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_MARCEL_CTX_H__ **/

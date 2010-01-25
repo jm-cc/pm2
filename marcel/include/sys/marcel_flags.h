@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +13,10 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_FLAGS_EST_DEF
-#define MARCEL_FLAGS_EST_DEF
 
-#include <pm2_config_public.h>
+#ifndef __SYS_MARCEL_FLAGS_H__
+#define __SYS_MARCEL_FLAGS_H__
+
 
 #ifdef PM2DEBUG
 #  define MA__DEBUG
@@ -211,5 +210,5 @@
 #  define MA__HAS_SUBSECTION
 #endif
 
-#endif /* MARCEL_FLAGS_EST_DEF */
+#endif /** __SYS_MARCEL_FLAGS_H__ **/
 

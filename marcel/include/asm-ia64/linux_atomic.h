@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,12 +13,10 @@
  * General Public License for more details.
  */
 
-#section common
-#include "tbx_compiler.h"
-/*
- * Similar to:
- * include/asm-ia64/atomic.h
- */
+
+#ifndef __ASM_IA64_LINUX_ATOMIC_H__
+#define __ASM_IA64_LINUX_ATOMIC_H__
+
 
 /*
  * Atomic operations that C can't guarantee us.  Useful for
@@ -32,28 +30,25 @@
  *	David Mosberger-Tang <davidm@hpl.hp.com>
  */
 
-//#include <linux/types.h>
-
-
-//#include <asm/intrinsics.h>
-
-
-#section common
-
 /*
  * On IA-64, counter must always be volatile to ensure that that the
  * memory accesses are ordered.
  */
 
 
+#include "tbx_compiler.h"
+#include "asm/linux_types.h"
 
-#section marcel_types
-#depend "linux_types.h[]"
 
+/** Public data types **/
 typedef struct { volatile __ma_s32 counter; } ma_atomic_t;
 typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #define MA_ATOMIC_INIT(i)	((ma_atomic_t) { (i) })
 #define MA_ATOMIC64_INIT(i)	((ma_atomic64_t) { (i) })
 
@@ -66,80 +61,6 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 #define ma_atomic_init(v,i)	ma_atomic_set((v),(i))
 #define ma_atomic64_init(v,i)	ma_atomic64_set((v),(i))
 
-#section marcel_functions
-static __tbx_inline__ int
-ma_ia64_atomic_add (int i, ma_atomic_t *v);
-
-#section marcel_inline
-static __tbx_inline__ int
-ma_ia64_atomic_add (int i, ma_atomic_t *v)
-{
-	__ma_s32 old, repl;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	do {
-		MA_CMPXCHG_BUGCHECK(v);
-		old = ma_atomic_read(v);
-		repl = old + i;
-	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
-	return repl;
-}
-
-#section marcel_functions
-static __tbx_inline__ int
-ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
-#section marcel_inline
-static __tbx_inline__ int
-ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
-{
-	__ma_s64 old, repl;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	do {
-		MA_CMPXCHG_BUGCHECK(v);
-		old = ma_atomic_read(v);
-		repl = old + i;
-	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
-	return repl;
-}
-
-#section marcel_functions
-static __tbx_inline__ int
-ma_ia64_atomic_sub (int i, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ int
-ma_ia64_atomic_sub (int i, ma_atomic_t *v)
-{
-	__ma_s32 old, repl;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	do {
-		MA_CMPXCHG_BUGCHECK(v);
-		old = ma_atomic_read(v);
-		repl = old - i;
-	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
-	return repl;
-}
-
-#section marcel_functions
-static __tbx_inline__ int
-ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
-#section marcel_inline
-static __tbx_inline__ int
-ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
-{
-	__ma_s64 old, repl;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	do {
-		MA_CMPXCHG_BUGCHECK(v);
-		old = ma_atomic_read(v);
-		repl = old - i;
-	} while (ma_ia64_cmpxchg(acq, v, old, repl, sizeof(ma_atomic_t)) != old);
-	return repl;
-}
-
-#section marcel_macros
 #define ma_atomic_add_return(i,v)						\
 ({									\
 	int __ia64_aar_i = (i);						\
@@ -164,31 +85,6 @@ ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
 		: ma_ia64_atomic64_add(__ia64_aar_i, v);			\
 })
 
-#section marcel_functions
-static __tbx_inline__ int
-ma_atomic_add_negative (int i, ma_atomic_t *v);
-#section marcel_inline
-/*
- * Atomically add I to V and return TRUE if the resulting value is
- * negative.
- */
-static __tbx_inline__ int
-ma_atomic_add_negative (int i, ma_atomic_t *v)
-{
-	return ma_atomic_add_return(i, v) < 0;
-}
-
-#section marcel_functions
-static __tbx_inline__ int
-ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v);
-#section marcel_inline
-static __tbx_inline__ int
-ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
-{
-	return ma_atomic64_add_return(i, v) < 0;
-}
-
-#section marcel_macros
 #define ma_atomic_sub_return(i,v)						\
 ({									\
 	int __ia64_asr_i = (i);						\
@@ -244,3 +140,24 @@ ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
 #define ma_smp_mb__before_atomic_inc()	ma_barrier()
 #define ma_smp_mb__after_atomic_inc()	ma_barrier()
 
+
+/** Internal functions **/
+static __tbx_inline__ int
+ma_ia64_atomic_add (int i, ma_atomic_t *v);
+
+static __tbx_inline__ int
+ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
+static __tbx_inline__ int
+ma_ia64_atomic_sub (int i, ma_atomic_t *v);
+static __tbx_inline__ int
+ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
+static __tbx_inline__ int
+ma_atomic_add_negative (int i, ma_atomic_t *v);
+static __tbx_inline__ int
+ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_ATOMIC_H__ **/

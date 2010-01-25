@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,8 +13,39 @@
  * General Public License for more details.
  */
 
-#section marcel_functions
-#depend "scheduler/marcel_holder.h[types]"
+
+#ifndef __MARCEL_BUBBLE_HELPER_H__
+#define __MARCEL_BUBBLE_HELPER_H__
+
+
+#include "sys/marcel_flags.h"
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
+/* Iterates over every entity directly scheduled in bubble b */
+#define for_each_entity_scheduled_in_bubble_begin(e,b) \
+	tbx_fast_list_for_each_entry(e, &(b)->natural_entities, natural_entities_item) {	\
+      if(e->sched_holder)\
+        if (e->sched_holder->type == MA_BUBBLE_HOLDER) { \
+           /* scheduling holder of e is a bubble, that must be a ancestry of b */
+
+#define for_each_entity_scheduled_in_bubble_end() \
+      } \
+   }
+
+/* Iterates over all the entities contained in bubble b */
+#define for_each_entity_held_in_bubble(e,b) \
+  tbx_fast_list_for_each_entry(e, &(b)->natural_entities, natural_entities_item)
+
+/* Iterates over every entity scheduled on the runqueue r */
+#define for_each_entity_scheduled_on_runqueue(e,r) \
+  tbx_fast_list_for_each_entry(e, &(r)->as_holder.ready_entities, ready_entities_item)
+
+
+/** Internal functions **/
 /* Recursively computes the considered entity's load.
    A previous call to ma_bubble_synthesize_stats() is needed. */
 long ma_entity_load(marcel_entity_t *);
@@ -97,23 +128,8 @@ void ma_debug_show_entities(const char *func_name, marcel_entity_t *e[], int ne)
 void ma_bubble_set_color (marcel_bubble_t *bubble, unsigned char r, unsigned char g, unsigned char b);
 #endif
 
-#section marcel_macros
 
-/* Iterates over every entity directly scheduled in bubble b */
-#define for_each_entity_scheduled_in_bubble_begin(e,b) \
-	tbx_fast_list_for_each_entry(e, &(b)->natural_entities, natural_entities_item) {	\
-      if(e->sched_holder)\
-        if (e->sched_holder->type == MA_BUBBLE_HOLDER) { \
-           /* scheduling holder of e is a bubble, that must be a ancestry of b */
+#endif /** __MARCEL_KERNEL__ **/
 
-#define for_each_entity_scheduled_in_bubble_end() \
-      } \
-   }
 
-/* Iterates over all the entities contained in bubble b */
-#define for_each_entity_held_in_bubble(e,b) \
-  tbx_fast_list_for_each_entry(e, &(b)->natural_entities, natural_entities_item)
-
-/* Iterates over every entity scheduled on the runqueue r */
-#define for_each_entity_scheduled_on_runqueue(e,r) \
-  tbx_fast_list_for_each_entry(e, &(r)->as_holder.ready_entities, ready_entities_item)
+#endif /** __MARCEL_BUBBLE_HELPER_H__ **/

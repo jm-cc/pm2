@@ -14,10 +14,9 @@
  * General Public License for more details.
  */
 
-#include <pm2_config.h>
 
 #include "marcel.h"
-#include "marcel_sched_generic___sched_marcel_inline.h"
+#include "marcel_sched_generic.h"
 #include "tbx_compiler.h"
 
 #ifdef __MINGW32__

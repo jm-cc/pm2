@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +13,21 @@
  * General Public License for more details.
  */
 
-#section macros
 
+#ifndef __MARCEL_RWLOCK_H__
+#define __MARCEL_RWLOCK_H__
+
+
+#include <sys/time.h>
+#include "sys/marcel_flags.h"
+#include "marcel_types.h"
+#include "marcel_alias.h"
+#ifdef MA__IFACE_PMARCEL
+#include "marcel_pmarcel.h"
+#endif
+
+
+/** Public macros **/
 /** \brief Static initializer for `marcel_rwlock_t' objects.  */
 #define MARCEL_RWLOCK_INITIALIZER				\
   {.__data = { \
@@ -27,7 +39,6 @@
  * yet.  Being architecture-dependent, it's not a good fit for this header
  * (see Glibc's `nptl/sysdep/pthread/pthread.h').  */
 /* #undef MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP */
-
 enum
 {
   MARCEL_RWLOCK_PREFER_READER_NP,
@@ -36,23 +47,8 @@ enum
   MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
 };
 
-#section types
-#depend "asm/nptl_types.h[structures]"
-/* Read-write locks.  */
-typedef lpt_rwlock_t marcel_rwlock_t, pmarcel_rwlock_t;
 
-#section structures
-/* Attribute for read-write locks (from glibc's
- * `sysdeps/unix/sysv/linux/internaltypes.h').  */
-typedef struct marcel_rwlockattr
-{
-  int __lockkind;
-  int __pshared;
-} marcel_rwlockattr_t, pmarcel_rwlockattr_t;
-
-#section functions
-#depend "marcel_alias.h[macros]"
-
+/** Public functions **/
 DEC_MARCEL_POSIX(int, rwlock_init, (marcel_rwlock_t * __restrict rwlock,
 			       const marcel_rwlockattr_t * __restrict attr)
 		 __THROW);
@@ -94,3 +90,5 @@ DEC_MARCEL_POSIX(int, rwlockattr_getkind_np,
 
 DEC_MARCEL_POSIX(int, rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref) __THROW);
 
+
+#endif /** __MARCEL_RWLOCK_H__ **/

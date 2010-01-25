@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,9 +13,25 @@
  * General Public License for more details.
  */
 
-#section marcel_functions
-#include <sched.h>
 
+#ifndef __MARCEL_GLUE_PTHREAD_H__
+#define __MARCEL_GLUE_PTHREAD_H__
+
+
+#include "sys/marcel_flags.h"
+#ifdef __MARCEL_KERNEL__
+#include <sched.h>
+#endif
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal global variables **/
+extern unsigned long int ma_fork_generation;
+
+
+/** Internal functions **/
 #ifdef MA__LIBPTHREAD
 
 /** Convert an OS cpuset into a Marcel vpset */
@@ -36,5 +51,8 @@ void _pthread_cleanup_pop_restore(struct _pthread_cleanup_buffer *buffer, int ex
 void __pthread_initialize_minimal(void);
 #endif
 
-#section marcel_variables
-extern unsigned long int ma_fork_generation;
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __MARCEL_GLUE_PTHREAD_H__ **/

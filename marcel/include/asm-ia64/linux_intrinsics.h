@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,36 +13,31 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_IA64_LINUX_INTRINSICS_H__
+#define __ASM_IA64_LINUX_INTRINSICS_H__
+
+
 /*
- * Similar to:
- * include/asm-ia64/intrinsics.h
- *
  * Compiler-dependent intrinsics.
  *
  * Copyright (C) 2002-2003 Hewlett-Packard Co
  *	David Mosberger-Tang <davidm@hpl.hp.com>
  */
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* include compiler specific intrinsics */
-#depend "asm/linux_ia64regs.h[marcel_macros]"
+#include "asm/linux_ia64regs.h"
 #ifdef __INTEL_COMPILER
-# depend "asm/linux_intel_intrin.h[marcel_functions]"
+#include "asm/linux_intel_intrin.h"
 #else
-# depend "asm/linux_gcc_intrin.h[marcel_macros]"
-# depend "asm/linux_gcc_intrin.h[marcel_functions]"
-# depend "asm/linux_gcc_intrin.h[marcel_variables]"
+#include "asm/linux_gcc_intrin.h"
 #endif
 
-#section marcel_functions
-/*
- * Force an unresolved reference if someone tries to use
- * ia64_fetch_and_add() with a bad value.
- */
-extern unsigned long __ma_bad_size_for_ia64_fetch_and_add (void);
-extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add (void);
-
-#section marcel_macros
 #define MA_IA64_FETCHADD(tmp,v,n,sz,sem)						\
 ({										\
 	switch (sz) {								\
@@ -87,14 +82,6 @@ extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add (void);
 
 #define ma_ia64_fetch_and_add(i,v)	(ma_ia64_fetchadd(i, v, rel) + (i)) /* return new value */
 
-#section marcel_functions
-/*
- * This function doesn't exist, so you'll get a linker error if
- * something tries to do an invalid xchg().
- */
-extern void ma_ia64_xchg_called_with_bad_pointer (void);
-
-#section marcel_macros
 #define __ma_xchg(x,ptr,size)						\
 ({									\
 	unsigned long __xchg_result;					\
@@ -132,14 +119,6 @@ extern void ma_ia64_xchg_called_with_bad_pointer (void);
 
 #define __MA_HAVE_ARCH_CMPXCHG 1
 
-#section marcel_functions
-/*
- * This function doesn't exist, so you'll get a linker error
- * if something tries to do an invalid cmpxchg().
- */
-extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
-
-#section marcel_macros
 #define ma_ia64_cmpxchg(sem,ptr,old,repl,size)						\
 ({											\
 	__ma_u64 _o_, _r_;									\
@@ -198,3 +177,29 @@ extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
 # define MA_CMPXCHG_BUGCHECK(v)
 #endif /* !CONFIG_IA64_DEBUG_CMPXCHG */
 
+
+/** Internal functions **/
+/*
+ * Force an unresolved reference if someone tries to use
+ * ia64_fetch_and_add() with a bad value.
+ */
+extern unsigned long __ma_bad_size_for_ia64_fetch_and_add (void);
+extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add (void);
+
+/*
+ * This function doesn't exist, so you'll get a linker error if
+ * something tries to do an invalid xchg().
+ */
+extern void ma_ia64_xchg_called_with_bad_pointer (void);
+
+/*
+ * This function doesn't exist, so you'll get a linker error
+ * if something tries to do an invalid cmpxchg().
+ */
+extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_INTRINSICS_H__ **/

@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +13,15 @@
  * General Public License for more details.
  */
 
-#section common
-/*
- * Similar to:
- * include/asm-i386/hardirq.h
- * Rq: hardirq cannot be disabled in marcel (only softirq)
- */
 
-#section marcel_macros
+#ifndef __ASM_GENERIC_LINUX_HARDIRQ_H__
+#define __ASM_GENERIC_LINUX_HARDIRQ_H__
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /*
  * We put the hardirq and softirq counter into the preemption
  * counter. The bitmask has the following meaning:
@@ -37,7 +36,6 @@
  * MA_SOFTIRQ_MASK: 0x0000ff00
  * MA_HARDIRQ_MASK: 0x00ff0000
  */
-
 #define MA_PREEMPT_BITS	8
 #define MA_SOFTIRQ_BITS	8
 #define MA_HARDIRQ_BITS	8
@@ -106,3 +104,9 @@ do {									\
 #else
 # define ma_synchronize_irq(irq)	ma_barrier()
 #endif /* MA__LWPS */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_GENERIC_LINUX_HARDIRQ_H__ **/

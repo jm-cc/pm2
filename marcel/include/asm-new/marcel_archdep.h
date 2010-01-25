@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +13,23 @@
  * General Public License for more details.
  */
 
-#section marcel_macros
-#include "tbx_compiler.h"
 
+#ifndef __ASM_NEW_MARCEL_ARCHDEP_H__
+#define __ASM_NEW_MARCEL_ARCHDEP_H__
+
+
+#include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "sys/marcel_win_sys.h"
+#if !defined(__GNUC__) || defined(__INTEL_COMPILER)
+#include "asm-generic/marcel_archdep.h"
+#endif
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 #error "to write !"
 
 /*
@@ -54,11 +64,6 @@
   register unsigned long sp asm(""); \
   sp; \
 })
-#else
-/*
- * Else we have a generic ugly way to do it.
- */
-#depend "asm-generic/marcel_archdep.h[marcel_macros]"
 #endif
 
 /*
@@ -100,3 +105,9 @@ typedef struct {
 #else
 #define marcel_ctx_set_tls_reg(new_task) (void)0
 #endif
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_NEW_MARCEL_ARCHDEP_H__ **/

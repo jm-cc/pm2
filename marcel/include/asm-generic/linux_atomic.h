@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,22 +13,20 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_GENERIC_LINUX_ATOMIC_H__
+#define __ASM_GENERIC_LINUX_ATOMIC_H__
+
+
+#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
-#depend "asm/marcel_compareexchange.h[macros]"
-#section marcel_variables
-#depend "asm/marcel_compareexchange.h[marcel_variables]"
-#section marcel_macros
-#depend "asm/marcel_compareexchange.h[marcel_macros]"
-#section marcel_inline
-#depend "asm/marcel_compareexchange.h[marcel_inline]"
+#include "asm/marcel_compareexchange.h"
+#include "tbx_compiler.h"
+#include "linux_spinlock.h"
+#endif /** __MARCEL_KERNEL__ **/
 
-/*
- * Similar to:
- * include/asm-i386/atomic.h
- */
 
-#section marcel_types
+/** Public data types **/
 /*
  * Make sure gcc doesn't try to be clever and move things around
  * on us. We need to use _exactly_ the address the user gave us,
@@ -38,16 +35,16 @@
 #ifdef MA_HAVE_COMPAREEXCHANGE
 typedef struct { volatile int counter; } ma_atomic_t;
 #else
-#depend "linux_spinlock.h[types]"
 typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 #endif
 
-#section marcel_macros
+
+#ifdef __MARCEL_KERNEL__
+/** Internal macros **/
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define MA_ATOMIC_INIT(i)	{ (i) }
 #define ma_atomic_init(v,i)	ma_atomic_set((v), (i))
 #else
-#depend "linux_spinlock.h[marcel_macros]"
 #define MA_ATOMIC_INIT(i)	{ (i), MA_SPIN_LOCK_UNLOCKED }
 #define ma_atomic_init(v,i)	do { \
 					ma_atomic_t *__v = (v); \
@@ -87,7 +84,6 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 		old = ret; \
 	}
 #else
-#depend "linux_spinlock.h[marcel_macros]"
 #define MA_ATOMIC_ADD_RETURN(test) \
 	int old, repl; \
 	ma_spin_lock_softirq(&v->lock); \
@@ -98,25 +94,6 @@ typedef struct { volatile int counter; ma_spinlock_t lock; } ma_atomic_t;
 	return test;
 #endif
 
-#section marcel_functions
-/**
- * ma_atomic_add - add integer to atomic variable
- * @i: integer value to add
- * @v: pointer of type ma_atomic_t
- * 
- * Atomically adds @i to @v.  Note that the guaranteed useful range
- * of an ma_atomic_t is only 24 bits.
- */
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
-{
-#define __rien
-	MA_ATOMIC_ADD_RETURN(__rien);
-#undef __rien
-}
-
-#section marcel_macros
 /**
  * ma_atomic_sub - subtract the atomic variable
  * @i: integer value to subtract
@@ -127,25 +104,6 @@ static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
  */
 #define ma_atomic_sub(i,v) ma_atomic_add(-(i),(v))
 
-#section marcel_functions
-/**
- * ma_atomic_add_and_test - add value to variable and test result
- * @i: integer value to add
- * @v: pointer of type ma_atomic_t
- * 
- * Atomically adds @i to @v and returns
- * true if the result is zero, or false for all
- * other cases.  Note that the guaranteed
- * useful range of an ma_atomic_t is only 24 bits.
- */
-static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
-{
-	MA_ATOMIC_ADD_RETURN(repl == 0);
-}
-
-#section marcel_macros
 /**
  * ma_atomic_sub_and_test - subtract value from variable and test result
  * @i: integer value to subtract
@@ -199,7 +157,38 @@ static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
  */ 
 #define ma_atomic_inc_and_test(v) ma_atomic_sub_and_test(-1,(v))
 
-#section marcel_functions
+#define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))
+
+#define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))
+#define ma_atomic_dec_return(v)  (ma_atomic_sub_return(1,v))
+
+#define ma_smp_mb__before_atomic_dec()  ma_barrier()
+#define ma_smp_mb__after_atomic_dec()   ma_barrier()
+#define ma_smp_mb__before_atomic_inc()  ma_barrier()
+#define ma_smp_mb__after_atomic_inc()   ma_barrier()
+
+
+/** Internal functions **/
+/**
+ * ma_atomic_add - add integer to atomic variable
+ * @i: integer value to add
+ * @v: pointer of type ma_atomic_t
+ * 
+ * Atomically adds @i to @v.  Note that the guaranteed useful range
+ * of an ma_atomic_t is only 24 bits.
+ */
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v);
+/**
+ * ma_atomic_add_and_test - add value to variable and test result
+ * @i: integer value to add
+ * @v: pointer of type ma_atomic_t
+ * 
+ * Atomically adds @i to @v and returns
+ * true if the result is zero, or false for all
+ * other cases.  Note that the guaranteed
+ * useful range of an ma_atomic_t is only 24 bits.
+ */
+static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v);
 /**
  * ma_atomic_add_negative - add and test if negative
  * @v: pointer of type ma_atomic_t
@@ -211,43 +200,9 @@ static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
  * useful range of an ma_atomic_t is only 24 bits.
  */ 
 static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
-{
-	MA_ATOMIC_ADD_RETURN(repl < 0);
-}
 
-static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
-{
-	MA_ATOMIC_ADD_RETURN(repl);
-}
 
-static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v);
-#section marcel_inline
-static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v)
-{
-#ifdef MA_HAVE_COMPAREEXCHANGE
-	return pm2_compareexchange(&v->counter,old,repl,sizeof(v->counter));
-#else
-	int cur;
-	ma_spin_lock_softirq(&v->lock);
-	cur = ma_atomic_read(v);
-	if (cur == old)
-		ma_atomic_set(v, repl);
-	ma_spin_unlock_softirq(&v->lock);
-	return cur;
-#endif
-}
+#endif /** __MARCEL_KERNEL__ **/
 
-#section marcel_macros
-#define ma_atomic_sub_return(i,v) ma_atomic_add_return(-(i),(v))
 
-#define ma_atomic_inc_return(v)  (ma_atomic_add_return(1,v))
-#define ma_atomic_dec_return(v)  (ma_atomic_sub_return(1,v))
-
-#define ma_smp_mb__before_atomic_dec()  ma_barrier()
-#define ma_smp_mb__after_atomic_dec()   ma_barrier()
-#define ma_smp_mb__before_atomic_inc()  ma_barrier()
-#define ma_smp_mb__after_atomic_inc()   ma_barrier()
+#endif /** __ASM_GENERIC_LINUX_ATOMIC_H__ **/

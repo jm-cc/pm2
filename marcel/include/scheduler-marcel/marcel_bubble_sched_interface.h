@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2006 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,26 +13,55 @@
  * General Public License for more details.
  */
 
-/** \file
- * \brief Bubble scheduler interface
- */
+
+#ifndef __MARCEL_BUBBLE_SCHED_INTERFACE_H__
+#define __MARCEL_BUBBLE_SCHED_INTERFACE_H__
+
+
+#include <unistd.h>
+#include "sys/marcel_flags.h"
+#include "scheduler-marcel/marcel_sched_types.h"
+
+
+/** Public macros **/
+/**
+ * \brief Declare a bubble scheduler class named \a _name.  */
+#define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)										\
+  struct marcel_bubble_ ## _name ## _sched;															\
+  typedef struct marcel_bubble_ ## _name ## _sched											\
+          marcel_bubble_ ## _name ## _sched_t;													\
+  extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
 
 /**
- ******************************************************************************
- * scheduler view
- * \defgroup marcel_bubble_sched Bubbles - scheduler programming interface
- *
- * This is the scheduler interface for manipulating bubbles.
- *
- */
-/*@{*/
+ * \brief Define a bubble scheduler class named \a _name, with \a _default_ctor 
+ * the default initializer for instances of this class.  */
+#define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)			\
+  marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class =	\
+	  {																																		\
+			.name = TBX_STRING(_name),																				\
+			.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
+			.instantiate = _default_ctor																			\
+		};
+/** Public data types **/
+/** \brief A bubble scheduler class.  */
+struct ma_bubble_sched_class {
+	/** \brief The class name.  */
+	const char *name;
 
-#section marcel_structures
-#depend "scheduler/marcel_holder.h[types]"
+	/** \brief The size (in bytes) of an instance of this class.  */
+	size_t instance_size;
 
+	/** \brief A method to initialize an instance of this class with default
+			parameter values.  */
+	int (*instantiate)(marcel_bubble_sched_t *);
+};
+
+
+//#ifdef __MARCEL_KERNEL__
+
+
+/** Internal data structures **/
 /** \brief Forward declaration.  */
-struct ma_bubble_sched_struct;
-
 typedef int (*ma_bubble_sched_init)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_start)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_exit)(struct ma_bubble_sched_struct *);
@@ -41,14 +70,13 @@ typedef int (*ma_bubble_sched_rawsubmit)(struct ma_bubble_sched_struct *, marcel
 typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *);
 typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
 typedef int (*ma_bubble_sched_tick)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
-typedef marcel_entity_t *
-(*ma_bubble_sched_sched)(struct ma_bubble_sched_struct *,
-		marcel_entity_t *nextent, ma_runqueue_t *rq,
-		ma_holder_t **nexth, int idx);
+typedef marcel_entity_t * (*ma_bubble_sched_sched)(struct ma_bubble_sched_struct *,
+						   marcel_entity_t *nextent, ma_runqueue_t *rq,
+						   ma_holder_t **nexth, int idx);
 
 /** \brief Bubble scheduler instances.  */
 struct ma_bubble_sched_struct {
-	const struct ma_bubble_sched_class *klass;
+        const struct ma_bubble_sched_class *klass;
 
 	/** \brief Initialization */
 	ma_bubble_sched_init init;
@@ -83,47 +111,8 @@ struct ma_bubble_sched_struct {
 	ma_bubble_sched_sched sched;
 };
 
-
-#section types
-#depend "marcel_bubble_sched_interface.h[marcel_structures]"
 
-/** \brief A bubble scheduler class.  */
-struct ma_bubble_sched_class {
-	/** \brief The class name.  */
-	const char *name;
+//#endif /** __MARCEL_KERNEL__ **/
 
-	/** \brief The size (in bytes) of an instance of this class.  */
-	size_t instance_size;
 
-	/** \brief A method to initialize an instance of this class with default
-			parameter values.  */
-	int (*instantiate)(struct ma_bubble_sched_struct *);
-};
-
-typedef struct ma_bubble_sched_class  marcel_bubble_sched_class_t;
-typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
-
-
-#section macros
-
-/**
- * \brief Declare a bubble scheduler class named \a _name.  */
-#define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)										\
-  struct marcel_bubble_ ## _name ## _sched;															\
-  typedef struct marcel_bubble_ ## _name ## _sched											\
-          marcel_bubble_ ## _name ## _sched_t;													\
-  extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
-
-/**
- * \brief Define a bubble scheduler class named \a _name, with \a _default_ctor 
- * the default initializer for instances of this class.  */
-#define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)			\
-  marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class =	\
-	  {																																		\
-			.name = TBX_STRING(_name),																				\
-			.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
-			.instantiate = _default_ctor																			\
-		};
-
-/*@}*/
-
+#endif /** __MARCEL_BUBBLE_SCHED_INTERFACE_H__ **/

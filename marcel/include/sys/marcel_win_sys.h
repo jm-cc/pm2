@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +13,10 @@
  * General Public License for more details.
  */
 
-#ifndef MARCEL_WIN_SYS_IS_DEF
-#define MARCEL_WIN_SYS_IS_DEF
+
+#ifndef __SYS_MARCEL_WIN_SYS_H__
+#define __SYS_MARCEL_WIN_SYS_H__
+
 
 #ifdef __MINGW32__
 #define ENOTSUP ENOSYS
@@ -46,4 +47,6 @@ extern int win_munmap(void * __addr, size_t __len);
 
 #endif
 
-#endif
+
+#endif /** __SYS_MARCEL_WIN_SYS_H__ **/
+

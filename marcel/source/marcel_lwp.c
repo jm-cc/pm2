@@ -194,11 +194,11 @@ static void *lwp_kthread_start_func(void *arg)
 unsigned marcel_lwp_add_lwp(int vpnum)
 {
 	marcel_lwp_t *lwp;
-        struct marcel_topo_level *level;
+	struct marcel_topo_level *level;
 
 	LOG_IN();
 
-        level = ma_vp_node_level[vpnum == -1 ? 0 : vpnum];
+	level = ma_vp_node_level[vpnum == -1 ? 0 : vpnum];
 	lwp = marcel_malloc_node(sizeof(*lwp), level?level->os_node:0);
 	/* initialiser le lwp *avant* de l'enregistrer */
 	*lwp = (marcel_lwp_t) MA_LWP_INITIALIZER(lwp);

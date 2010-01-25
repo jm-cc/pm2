@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,23 +13,29 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __ASM_IA64_LINUX_INTEL_INTRIN_H__
+#define __ASM_IA64_LINUX_INTEL_INTRIN_H__
+
+
 /*
- * Similar to:
- * include/asm-ia64/gcc_intrin.h
- *
  * Intel Compiler Intrinsics
  *
  * Copyright (C) 2002,2003 Jun Nakajima <jun.nakajima@intel.com>
  * Copyright (C) 2002,2003 Suresh Siddha <suresh.b.siddha@intel.com>
  *
  */
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal functions **/
 #ifdef __INTEL_COMPILER
 #  ifdef MARCEL_KERNEL
 #    error File not yet adapted
 #  endif
 
-#section marcel_functions
 
 void  __lfetch(int lfhint, void *y);
 void  __lfetch_excl(int lfhint, void *y);
@@ -135,7 +141,6 @@ __s64 _m64_dep_mi(const int v, __s64 s, const int p, const int len);
 __s64 _m64_shrp(__s64 a, __s64 b, const int count);
 __s64 _m64_popcnt(__s64 a);
 
-#section marcel_functions
 #define ia64_barrier()		__memory_barrier()
 
 #define ia64_stop()	/* Nothing: As of now stop bit is generated for each
@@ -277,5 +282,10 @@ do {							\
 	}						\
 } while (0)
 
-#section common
 #endif /* __INTEL_COMPILER */
+
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_IA64_LINUX_INTEL_INTRIN_H__ **/

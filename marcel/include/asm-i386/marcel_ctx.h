@@ -1,7 +1,6 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +13,15 @@
  * General Public License for more details.
  */
 
-/* Note: ce fichier est aussi utilisé pour x86_64 */
 
-#section marcel_macros
+#ifndef __ASM_I386_MARCEL_CTX_H__
+#define __ASM_I386_MARCEL_CTX_H__
 
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* marcel_create : passage père->fils */
 #define marcel_ctx_set_new_stack(new_task, top, cur_top) \
   do { \
@@ -36,8 +40,11 @@
 #define marcel_ctx_switch_stack(from_task, to_task, top, cur_top) \
 	marcel_ctx_set_new_stack(to_task, top, cur_top)
 
-#section common
-#depend "asm-generic/marcel_ctx.h[]"
-#section structures
-#section macros
-#section marcel_macros
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#include "asm-generic/marcel_ctx.h"
+
+
+#endif /** __ASM_I386_MARCEL_CTX_H__ **/

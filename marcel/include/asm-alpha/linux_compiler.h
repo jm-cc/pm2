@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,13 +13,15 @@
  * General Public License for more details.
  */
 
-#section common
-/*
- * Similar to:
- * include/asm-alpha/compilper.h
- */
 
-#section marcel_macros
+#ifndef __ASM_ALPHA_LINUX_COMPILER_H__
+#define __ASM_ALPHA_LINUX_COMPILER_H__
+
+
+#ifdef __MARCEL_KERNEL__
+
+
+/** Internal macros **/
 /* 
  * Herein are macros we use when describing various patterns we want to GCC.
  * In all cases we can get better schedules out of the compiler if we hide
@@ -109,3 +111,8 @@
   __asm__("stw %1,%0" : "=m"(mem) : "r"(val))
 #endif
 
+
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif /** __ASM_ALPHA_LINUX_COMPILER_H__ **/

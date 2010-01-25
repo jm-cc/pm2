@@ -1,6 +1,6 @@
 /*
  * PM2: Parallel Multithreaded Machine
- * Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+ * Copyright (C) 2001 the PM2 team (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,10 +13,17 @@
  * General Public License for more details.
  */
 
-#section common
+
+#ifndef __MARCEL_FORTRAN_H__
+#define __MARCEL_FORTRAN_H__
+
+
+#include "sys/marcel_flags.h"
+
+
+/** Public functions **/
 #ifdef MARCEL_FORTRAN
 
-#section functions
 
 extern
 void marcel_init_(void);
@@ -58,5 +65,7 @@ void marcel_spread_(void);
 
 #endif /* MA__BUBBLES */
 
-#section common
 #endif /* MARCEL_FORTRAN */
+
+
+#endif /** __MARCEL_FORTRAN_H__ **/

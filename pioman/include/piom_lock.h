@@ -39,7 +39,6 @@ void piom_server_relock_reentrant(piom_server_t server, piom_thread_t old_owner)
 
 #ifdef MARCEL
 
-#define _piom_spin_lock_softirq(lock)    while(!ma_spin_trylock_softirq(lock))
 #define _piom_spin_lock_softirq(lock)    ma_spin_lock_softirq(lock)
 #define _piom_spin_unlock_softirq(lock)  ma_spin_unlock_softirq(lock)
 #define _piom_spin_trylock_softirq(lock) ma_spin_trylock_softirq(lock)

@@ -236,7 +236,7 @@ __piom_check_polling(unsigned polling_point)
     if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
 
-#ifdef PIOM_THREAD_ENABLED
+#ifdef MA__LWPS
     int cur_vp = marcel_current_vp();
 #else
     int cur_vp = 0;

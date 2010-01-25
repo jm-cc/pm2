@@ -171,7 +171,7 @@ piom_server_start(piom_server_t server)
     PIOM_BUG_ON(server->state != PIOM_SERVER_STATE_INIT);
     
     if(! piom_test_activity()) {
-#ifdef PIOM_THREAD_ENABLED
+#ifdef MA__LWPS
 	__piom_nb_core = marcel_nbvps();
 #else
 	__piom_nb_core = 1;

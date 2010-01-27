@@ -360,7 +360,8 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
     {
       struct nm_drv*p_drv = p_drvs[n];
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
+      if(p_gdrv != NULL &&
+	 p_gdrv->active_send[NM_TRK_SMALL] == 0 &&
 	 p_gdrv->active_send[NM_TRK_LARGE] == 0)
 	{
 	  /* We found an idle NIC
@@ -392,7 +393,7 @@ static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate,
     {
       nm_drv_t p_drv = ordered_drv_id_by_bw[i];
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-      if(p_gdrv->active_recv[trk_id] == 0)
+      if(p_gdrv != NULL && p_gdrv->active_recv[trk_id] == 0)
 	{
 	  chunks[chunk_index].p_drv = p_drv;
 	  chunks[chunk_index].trk_id = NM_TRK_LARGE;

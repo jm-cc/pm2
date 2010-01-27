@@ -403,26 +403,29 @@ int nm_core_driver_exit(struct nm_core *p_core)
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{
 	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
-	  if(p_pw)
+	  if(p_gdrv != NULL)
 	    {
-	      struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-	      if(r->driver->cancel_recv_iov)
-		r->driver->cancel_recv_iov(r->_status, p_pw);
-	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+	      struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+	      if(p_pw)
+		{
+		  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+		  if(r->driver->cancel_recv_iov)
+		    r->driver->cancel_recv_iov(r->_status, p_pw);
+		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 #ifdef PIOM_ENABLE_LTASKS
-	      piom_ltask_completed(&p_pw->ltask);
+		  piom_ltask_completed(&p_pw->ltask);
 #else
 #ifdef NMAD_POLL
-	      tbx_fast_list_del(&p_pw->link);
+		  tbx_fast_list_del(&p_pw->link);
 #else /* NMAD_POLL */
-	      piom_req_success(&p_pw->inst);
+		  piom_req_success(&p_pw->inst);
 #endif /* NMAD_POLL */
 #endif /* PIOM_ENABLE_LTASKS */
-	      nm_so_pw_free(p_pw);
+		  nm_so_pw_free(p_pw);
+		}
+	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	    }
-	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
 	}
     }
 #ifdef PIOM_ENABLE_LTASKS

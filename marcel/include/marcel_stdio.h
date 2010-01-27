@@ -59,7 +59,6 @@
 
 
 #else
-#warning "deprecated: please use Puk-ABI instead !"
 
 
 TBX_FORMAT(printf,1,2)

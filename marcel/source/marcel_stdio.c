@@ -20,6 +20,7 @@
 
 
 #ifndef PADICO_ENABLE_PUKABI
+#warning "deprecated: please use Puk-ABI instead !"
 
 
 int marcel_printf(const char *__restrict format, ...)

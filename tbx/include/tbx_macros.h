@@ -290,6 +290,8 @@ do { \
  * ________________________//////////////////////////////////////////
  */
 #if defined (MARCEL)       /*# Thread sync : Marcel mode */
+#warning Those macros (tbx lock) are deprecated and will be deleted soon
+
 #  define TBX_CRITICAL_SECTION(name)              marcel_mutex_t __tbx_section_ ## name = MARCEL_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        marcel_mutex_lock(&(__tbx_section_ ## name))
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name) marcel_mutex_trylock(&(__tbx_section_ ## name))
@@ -314,6 +316,7 @@ do { \
 #  define TBX_CRITICAL_YIELD()            (void) 0
 
 #elif defined (_REENTRANT) /*# Thread sync : Pthread mode */
+#warning Those macros (tbx lock) are deprecated and will be deleted soon
 #  define TBX_CRITICAL_SECTION(name)              pthread_mutex_t __tbx_section_ ## name = PTHREAD_MUTEX_INITIALIZER
 #  define TBX_CRITICAL_SECTION_ENTER(name)        pthread_mutex_lock(&(__tbx_section_ ## name))
 #  define TBX_CRITICAL_SECTION_TRY_ENTERING(name) pthread_mutex_trylock(&(__tbx_section_ ## name))
@@ -340,6 +343,7 @@ do { \
 #  define TBX_CRITICAL_UNLOCK()           pthread_spin_unlock((&((st)->__tbx_spinlock)))
 #  define TBX_CRITICAL_YIELD()            (void) 0
 #else                         /*# Threads sync : no thread mode */
+#warning Those macros (tbx lock) are deprecated and will be deleted soon
 
 #  define TBX_CRITICAL_SHARED             TBX_SHARED
 #  define TBX_INIT_CRITICAL_SHARED(st)    TBX_INIT_SHARED(st)

@@ -137,12 +137,14 @@ typedef int MPI_Group;
 /** @name Communicators */
 /** Communicator handle */
 typedef int MPI_Comm;
-/** Default communicator that includes all processes. */
-#define MPI_COMM_WORLD ((MPI_Comm)91)
-/** Communicator that includes only the process itself. */
-#define MPI_COMM_SELF  ((MPI_Comm)92)
 /** Invalide request handle */
 #define MPI_COMM_NULL  ((MPI_Comm)0)
+/** Default communicator that includes all processes. */
+#define MPI_COMM_WORLD ((MPI_Comm)1)
+/** Communicator that includes only the process itself. */
+#define MPI_COMM_SELF  ((MPI_Comm)2)
+/** Offset of the first user MPI communicator */
+#define _MPI_COMM_OFFSET ((MPI_Comm)3)
 /* @} */
 
 /** @name Basic datatypes */
@@ -177,6 +179,8 @@ typedef int MPI_Datatype;
 #define MPI_INTEGER8	     ((MPI_Datatype)32)
 
 #define MPI_PACKED           ((MPI_Datatype)33)
+
+#define _MPI_DATATYPE_MAX    ((MPI_Datatype)33)
 /* @} */
 
 /** @name Collective operations */
@@ -196,6 +200,8 @@ typedef int MPI_Op;
 #define MPI_BXOR    (MPI_Op)(109)
 #define MPI_MINLOC  (MPI_Op)(110)
 #define MPI_MAXLOC  (MPI_Op)(111)
+#define _MPI_OP_FIRST ((MPI_Op)100)
+#define _MPI_OP_LAST  ((MPI_Op)111)
 /* @} */
 
 #define MPI_MAX_PROCESSOR_NAME 256

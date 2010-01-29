@@ -70,7 +70,8 @@
 ! Communicators
       INTEGER MPI_COMM_WORLD
 
-      PARAMETER (MPI_COMM_WORLD=91)
+      PARAMETER (MPI_COMM_WORLD=1)
+      PARAMETER (MPI_COMM_SELF=2)
 
 !
 ! Communications

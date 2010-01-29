@@ -78,18 +78,17 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   nm_sr_init(mpir_internal_data->p_session);
 
   /** Initialise the basic datatypes */
-  mpir_internal_data->datatypes = malloc((NUMBER_OF_DATATYPES+1) * sizeof(mpir_datatype_t *));
-
-  for(i=MPI_DATATYPE_NULL ; i<=MPI_PACKED ; i++) {
-    mpir_internal_data->datatypes[i] = malloc(sizeof(mpir_datatype_t));
-    mpir_internal_data->datatypes[i]->basic = 1;
-    mpir_internal_data->datatypes[i]->committed = 1;
-    mpir_internal_data->datatypes[i]->is_contig = 1;
-    mpir_internal_data->datatypes[i]->dte_type = MPIR_BASIC;
-    mpir_internal_data->datatypes[i]->active_communications = 100;
-    mpir_internal_data->datatypes[i]->free_requested = 0;
-    mpir_internal_data->datatypes[i]->lb = 0;
-  }
+  for(i = MPI_DATATYPE_NULL ; i <= _MPI_DATATYPE_MAX; i++)
+    {
+      mpir_internal_data->datatypes[i] = malloc(sizeof(mpir_datatype_t));
+      mpir_internal_data->datatypes[i]->basic = 1;
+      mpir_internal_data->datatypes[i]->committed = 1;
+      mpir_internal_data->datatypes[i]->is_contig = 1;
+      mpir_internal_data->datatypes[i]->dte_type = MPIR_BASIC;
+      mpir_internal_data->datatypes[i]->active_communications = 100;
+      mpir_internal_data->datatypes[i]->free_requested = 0;
+      mpir_internal_data->datatypes[i]->lb = 0;
+    }
 
   mpir_internal_data->datatypes[MPI_DATATYPE_NULL]->size = 0;
   mpir_internal_data->datatypes[MPI_CHAR]->size = sizeof(signed char);
@@ -118,44 +117,45 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
   mpir_internal_data->datatypes[MPI_PACKED]->size = sizeof(char);
 
-  for(i = MPI_DATATYPE_NULL; i <= MPI_PACKED; i++)
+  for(i = MPI_DATATYPE_NULL; i <= _MPI_DATATYPE_MAX; i++)
     {
       mpir_internal_data->datatypes[i]->extent = mpir_internal_data->datatypes[i]->size;
     }
 
   mpir_internal_data->datatypes_pool = puk_int_vect_new();
-  for(i = MPI_PACKED+1 ; i <= NUMBER_OF_DATATYPES; i++)
+  for(i = _MPI_DATATYPE_MAX+1 ; i < NUMBER_OF_DATATYPES; i++)
     {
       puk_int_vect_push_back(mpir_internal_data->datatypes_pool, i);
     }
 
   /** Initialise data for communicators */
-  mpir_internal_data->communicators = malloc((NUMBER_OF_COMMUNICATORS+2) * sizeof(mpir_communicator_t));
-  mpir_internal_data->communicators[0] = malloc(sizeof(mpir_communicator_t));
-  mpir_internal_data->communicators[0]->communicator_id = MPI_COMM_WORLD;
-  mpir_internal_data->communicators[0]->size = global_size;
-  mpir_internal_data->communicators[0]->rank = process_rank;
-  mpir_internal_data->communicators[0]->global_ranks = malloc(global_size * sizeof(int));
-  for(i=0 ; i<global_size ; i++) {
-    mpir_internal_data->communicators[0]->global_ranks[i] = i;
-  }
+  mpir_internal_data->communicators[MPI_COMM_NULL] = NULL;
 
-  mpir_internal_data->communicators[1] = malloc(sizeof(mpir_communicator_t));
-  mpir_internal_data->communicators[1]->communicator_id = MPI_COMM_SELF;
-  mpir_internal_data->communicators[1]->size = 1;
-  mpir_internal_data->communicators[1]->rank = process_rank;
-  mpir_internal_data->communicators[1]->global_ranks = malloc(1 * sizeof(int));
-  mpir_internal_data->communicators[1]->global_ranks[0] = process_rank;
+  mpir_internal_data->communicators[MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
+  mpir_internal_data->communicators[MPI_COMM_WORLD]->communicator_id = MPI_COMM_WORLD;
+  mpir_internal_data->communicators[MPI_COMM_WORLD]->size = global_size;
+  mpir_internal_data->communicators[MPI_COMM_WORLD]->rank = process_rank;
+  mpir_internal_data->communicators[MPI_COMM_WORLD]->global_ranks = malloc(global_size * sizeof(int));
+  for(i=0 ; i<global_size ; i++)
+    {
+      mpir_internal_data->communicators[MPI_COMM_WORLD]->global_ranks[i] = i;
+    }
+
+  mpir_internal_data->communicators[MPI_COMM_SELF] = malloc(sizeof(mpir_communicator_t));
+  mpir_internal_data->communicators[MPI_COMM_SELF]->communicator_id = MPI_COMM_SELF;
+  mpir_internal_data->communicators[MPI_COMM_SELF]->size = 1;
+  mpir_internal_data->communicators[MPI_COMM_SELF]->rank = process_rank;
+  mpir_internal_data->communicators[MPI_COMM_SELF]->global_ranks = malloc(1 * sizeof(int));
+  mpir_internal_data->communicators[MPI_COMM_SELF]->global_ranks[0] = process_rank;
 
   mpir_internal_data->communicators_pool = puk_int_vect_new();
-  for(i = 1; i <= NUMBER_OF_COMMUNICATORS ; i++)
+  for(i = _MPI_COMM_OFFSET; i < NUMBER_OF_COMMUNICATORS; i++)
     {
-      puk_int_vect_push_back(mpir_internal_data->communicators_pool, i + MPI_COMM_SELF);
+      puk_int_vect_push_back(mpir_internal_data->communicators_pool, i);
     }
 
   /** Initialise the collective operators */
-  mpir_internal_data->operators = malloc((NUMBER_OF_OPERATORS+1) * sizeof(mpir_operator_t));
-  for(i = MPI_MAX; i <= MPI_MAXLOC; i++)
+  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
     {
       mpir_internal_data->operators[i] = malloc(sizeof(mpir_operator_t));
       mpir_internal_data->operators[i]->commute = 1;
@@ -200,27 +200,27 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
 int mpir_internal_exit(mpir_internal_data_t *mpir_internal_data)
 {
   int i;
-  for(i = 0; i <= MPI_PACKED; i++)
+  for(i = 0; i <= _MPI_DATATYPE_MAX; i++)
     {
       FREE_AND_SET_NULL(mpir_internal_data->datatypes[i]);
     }
-  FREE_AND_SET_NULL(mpir_internal_data->datatypes);
+
   puk_int_vect_delete(mpir_internal_data->datatypes_pool);
   mpir_internal_data->datatypes_pool = NULL;
 
-  FREE_AND_SET_NULL(mpir_internal_data->communicators[0]->global_ranks);
-  FREE_AND_SET_NULL(mpir_internal_data->communicators[0]);
-  FREE_AND_SET_NULL(mpir_internal_data->communicators[1]->global_ranks);
-  FREE_AND_SET_NULL(mpir_internal_data->communicators[1]);
-  FREE_AND_SET_NULL(mpir_internal_data->communicators);
+  FREE_AND_SET_NULL(mpir_internal_data->communicators[MPI_COMM_WORLD]->global_ranks);
+  FREE_AND_SET_NULL(mpir_internal_data->communicators[MPI_COMM_WORLD]);
+  FREE_AND_SET_NULL(mpir_internal_data->communicators[MPI_COMM_SELF]->global_ranks);
+  FREE_AND_SET_NULL(mpir_internal_data->communicators[MPI_COMM_SELF]);
 
   puk_int_vect_delete(mpir_internal_data->communicators_pool);
   mpir_internal_data->communicators_pool = NULL;
 
-  for(i=MPI_MAX ; i<=MPI_MAXLOC ; i++) {
-    FREE_AND_SET_NULL(mpir_internal_data->operators[i]);
-  }
-  FREE_AND_SET_NULL(mpir_internal_data->operators);
+  for(i = _MPI_OP_FIRST; i <= _MPI_OP_LAST; i++)
+    {
+      FREE_AND_SET_NULL(mpir_internal_data->operators[i]);
+    }
+
   puk_int_vect_delete(mpir_internal_data->operators_pool);
   mpir_internal_data->operators_pool = NULL;
 
@@ -1071,7 +1071,7 @@ size_t mpir_sizeof_datatype(mpir_internal_data_t *mpir_internal_data,
 
 mpir_datatype_t* mpir_get_datatype(mpir_internal_data_t *mpir_internal_data,
 				   MPI_Datatype datatype) {
-  if (tbx_unlikely(datatype <= NUMBER_OF_DATATYPES)) {
+  if (tbx_unlikely(datatype < NUMBER_OF_DATATYPES)) {
     if (tbx_unlikely(mpir_internal_data->datatypes[datatype] == NULL)) {
       ERROR("Datatype %d invalid", datatype);
       return NULL;
@@ -1440,21 +1440,25 @@ mpir_operator_t *mpir_get_operator(mpir_internal_data_t *mpir_internal_data,
   }
 }
 
-mpir_communicator_t *mpir_get_communicator(mpir_internal_data_t *mpir_internal_data,
-					   MPI_Comm comm) {
-  if (tbx_unlikely(comm <= MAX_COMMUNICATOR_ID)) {
-    if (mpir_internal_data->communicators[comm-MPI_COMM_WORLD] == NULL) {
-      ERROR("Communicator %d invalid", comm);
+mpir_communicator_t *mpir_get_communicator(mpir_internal_data_t *mpir_internal_data, MPI_Comm comm)
+{
+  if(comm > 0 && comm < NUMBER_OF_COMMUNICATORS)
+    {
+      if (mpir_internal_data->communicators[comm] == NULL) 
+	{
+	  ERROR("Communicator %d invalid", comm);
+	  return NULL;
+	}
+      else 
+	{
+	  return mpir_internal_data->communicators[comm];
+	}
+    }
+  else
+    {
+      ERROR("Communicator %d unknown", comm);
       return NULL;
     }
-    else {
-      return mpir_internal_data->communicators[comm-MPI_COMM_WORLD];
-    }
-  }
-  else {
-    ERROR("Communicator %d unknown", comm);
-    return NULL;
-  }
 }
 
 int mpir_comm_dup(mpir_internal_data_t *mpir_internal_data,
@@ -1466,7 +1470,7 @@ int mpir_comm_dup(mpir_internal_data_t *mpir_internal_data,
       ERROR("Maximum number of communicators created");
       return MPI_ERR_INTERN;
     }
-  else if (mpir_internal_data->communicators[comm-MPI_COMM_WORLD] == NULL)
+  else if (mpir_internal_data->communicators[comm] == NULL)
     {
       ERROR("Communicator %d is not valid", comm);
       return MPI_ERR_OTHER;
@@ -1476,21 +1480,20 @@ int mpir_comm_dup(mpir_internal_data_t *mpir_internal_data,
     int i;
     *newcomm = puk_int_vect_pop_back(mpir_internal_data->communicators_pool);
 
-    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD] = malloc(sizeof(mpir_communicator_t));
-    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->communicator_id = *newcomm;
-    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->size;
-    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->rank = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->rank;
-    mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->global_ranks = malloc(mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size * sizeof(int));
-    for(i=0 ; i<mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->size ; i++) {
-      mpir_internal_data->communicators[*newcomm - MPI_COMM_WORLD]->global_ranks[i] = mpir_internal_data->communicators[comm - MPI_COMM_WORLD]->global_ranks[i];
+    mpir_internal_data->communicators[*newcomm] = malloc(sizeof(mpir_communicator_t));
+    mpir_internal_data->communicators[*newcomm]->communicator_id = *newcomm;
+    mpir_internal_data->communicators[*newcomm]->size = mpir_internal_data->communicators[comm]->size;
+    mpir_internal_data->communicators[*newcomm]->rank = mpir_internal_data->communicators[comm]->rank;
+    mpir_internal_data->communicators[*newcomm]->global_ranks = malloc(mpir_internal_data->communicators[*newcomm]->size * sizeof(int));
+    for(i=0 ; i<mpir_internal_data->communicators[*newcomm]->size ; i++) {
+      mpir_internal_data->communicators[*newcomm]->global_ranks[i] = mpir_internal_data->communicators[comm]->global_ranks[i];
     }
 
     return MPI_SUCCESS;
   }
 }
 
-int mpir_comm_free(mpir_internal_data_t *mpir_internal_data,
-		   MPI_Comm *comm)
+int mpir_comm_free(mpir_internal_data_t *mpir_internal_data, MPI_Comm *comm)
 {
   if (*comm == MPI_COMM_WORLD)
     {
@@ -1502,16 +1505,16 @@ int mpir_comm_free(mpir_internal_data_t *mpir_internal_data,
       ERROR("Cannot free communicator MPI_COMM_SELF");
       return MPI_ERR_OTHER;
     }
-  else if (*comm > MAX_COMMUNICATOR_ID || mpir_internal_data->communicators[*comm-MPI_COMM_WORLD] == NULL)
+  else if (*comm <= 0 || *comm >= NUMBER_OF_COMMUNICATORS || mpir_internal_data->communicators[*comm] == NULL)
     {
       ERROR("Communicator %d unknown\n", *comm);
       return MPI_ERR_OTHER;
     }
   else 
     {
-      free(mpir_internal_data->communicators[*comm-MPI_COMM_WORLD]->global_ranks);
-      free(mpir_internal_data->communicators[*comm-MPI_COMM_WORLD]);
-      mpir_internal_data->communicators[*comm-MPI_COMM_WORLD] = NULL;
+      free(mpir_internal_data->communicators[*comm]->global_ranks);
+      free(mpir_internal_data->communicators[*comm]);
+      mpir_internal_data->communicators[*comm] = NULL;
       puk_int_vect_push_back(mpir_internal_data->communicators_pool, *comm);
       *comm = MPI_COMM_NULL;
       return MPI_SUCCESS;
@@ -1528,7 +1531,7 @@ nm_tag_t mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
    * value.
    */
   nm_tag_t newtag = tag << 5;
-  newtag += (mpir_communicator->communicator_id-MPI_COMM_WORLD);
+  newtag += (mpir_communicator->communicator_id);
   return newtag;
 }
 

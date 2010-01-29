@@ -102,8 +102,7 @@ extern debug_type_t debug_mpi_nmad_log;
 /* @{ */
 
 /** Maximum number of communicators */
-#define NUMBER_OF_COMMUNICATORS 30
-#define MAX_COMMUNICATOR_ID     (MPI_COMM_SELF+NUMBER_OF_COMMUNICATORS)
+#define NUMBER_OF_COMMUNICATORS 32
 
 /** Internal communicator */
 typedef struct mpir_communicator_s {
@@ -172,7 +171,7 @@ typedef struct mpir_request_s {
 /** @name Reduce operators */
 /* @{ */
 /** Maximum number of reduce operators */
-#define NUMBER_OF_OPERATORS MPI_MAXLOC
+#define NUMBER_OF_OPERATORS (_MPI_OP_LAST+1)
 
 /** Internal reduce operators */
 typedef struct mpir_operator_s {
@@ -238,17 +237,17 @@ typedef struct mpir_datatype_s {
 typedef struct mpir_internal_data_s
 {
   /** all the defined datatypes */
-  mpir_datatype_t **datatypes;
+  mpir_datatype_t *datatypes[NUMBER_OF_DATATYPES];
   /** pool of ids of datatypes that can be created by end-users */
   puk_int_vect_t datatypes_pool;
 
   /** all the defined reduce operations */
-  mpir_operator_t **operators;
+  mpir_operator_t *operators[NUMBER_OF_OPERATORS];
   /** pool of ids of reduce operations that can be created by end-users */
   puk_int_vect_t operators_pool;
 
   /** all the defined communicators */
-  mpir_communicator_t **communicators;
+  mpir_communicator_t *communicators[NUMBER_OF_COMMUNICATORS];
   /** pool of ids of communicators that can be created by end-users */
   puk_int_vect_t communicators_pool;
 

@@ -22,18 +22,12 @@
 #include <unistd.h>
 #include "sys/marcel_flags.h"
 #include "tbx_compiler.h"
-#ifdef PUK
+#if defined(PUK) && defined(PUK_ENABLE_PUKABI)
 #include <Padico/Puk.h>
 #include <Padico/Puk-ABI.h>
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef HAVE_ATTRIBUTE_VISIBILITY
 #else
 #include <stdio.h>
-#endif /* PUK */
+#endif /* PUKABI */
 
 
 /*  For compatibility purposes : */
@@ -41,7 +35,7 @@
 #define tfprintf marcel_fprintf
 
 
-#ifdef PUK_ABI
+#ifdef PUK_ENABLE_PUKABI
 
 
 #define marcel_printf printf

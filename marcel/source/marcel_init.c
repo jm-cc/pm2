@@ -26,9 +26,6 @@
 #include <sys/resource.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef PUK
-#include <Padico/Puk-ABI.h>
-#endif
 
 
 tbx_flag_t marcel_activity = tbx_flag_clear;

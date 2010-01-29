@@ -92,10 +92,11 @@
 #endif
 
 /* Max number of marcel_add_lwp() calls */
-#ifdef MARCEL_NBMAXVPSUP
-#  undef MARCEL_NBMAXVPSUP
-#endif
+#ifndef MA__LWPS
+#define MARCEL_NBMAXVPSUP	0
+#else
 #define MARCEL_NBMAXVPSUP	10
+#endif
 
 /* Default scheduling level */
 #define MARCEL_LEVEL_DEFAULT	0
@@ -178,15 +179,13 @@
 #endif /* MA__TIMER */
 #define MARCEL_RESCHED_SIGNAL     SIGXFSZ
 
-/* don't change this */
-#ifndef MA__LWPS
-#undef MARCEL_NBMAXVPSUP
-#define MARCEL_NBMAXVPSUP	0
-#endif
-
 
 /* Define to 1 if you have the <bits/libc-lock.h> header file. */
 #undef HAVE_BITS_LIBC_LOCK_H
+
+/* Define to 1 if you have the declaration of `SIGEV_THREAD_ID', and to 0 if
+   you don't. */
+#undef HAVE_DECL_SIGEV_THREAD_ID
 
 /* Define to 1 if you have the declaration of `_pthread_cleanup_pop', and to 0
    if you don't. */

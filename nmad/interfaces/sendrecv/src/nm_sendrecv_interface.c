@@ -238,7 +238,6 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
  */
 int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
-  nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
   NM_SO_SR_LOG_IN();
   assert(nm_sr_data.init_done);
@@ -250,9 +249,10 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
 #ifdef NMAD_POLL
+      nm_core_t p_core = p_session->p_core;
       nm_schedule(p_core);
 #else
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
+      piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
     }
 

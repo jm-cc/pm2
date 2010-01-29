@@ -222,9 +222,6 @@ static int nm_so_init_large_datatype_recv_with_multi_rtr(struct nm_pkt_wrap *p_p
   struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
   struct nm_rdv_chunk chunk = { .p_drv = NM_DRV_NONE, .trk_id = NM_TRK_LARGE };
   int nb_chunks = 1;
-  struct nm_unpack_s*p_unpack = p_pw->p_unpack;
-  const nm_core_tag_t tag = p_unpack->tag;
-  const nm_seq_t seq = p_unpack->seq;
   const uint32_t len = p_pw->length;
 
 #warning Multi-rail?

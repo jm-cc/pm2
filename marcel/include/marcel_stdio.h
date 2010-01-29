@@ -22,12 +22,9 @@
 #include <unistd.h>
 #include "sys/marcel_flags.h"
 #include "tbx_compiler.h"
-#if defined(PUK) && defined(PUK_ENABLE_PUKABI)
+#ifdef PUK
 #include <Padico/Puk.h>
-#include <Padico/Puk-ABI.h>
-#else
-#include <stdio.h>
-#endif /* PUKABI */
+#endif /* PUK */
 
 
 /*  For compatibility purposes : */
@@ -35,7 +32,8 @@
 #define tfprintf marcel_fprintf
 
 
-#ifdef PUK_ENABLE_PUKABI
+#ifdef PADICO_ENABLE_PUKABI
+#include <Padico/Puk-ABI.h>
 
 
 #define marcel_printf printf
@@ -53,6 +51,7 @@
 
 
 #else
+#include <stdio.h>
 
 
 TBX_FORMAT(printf,1,2)

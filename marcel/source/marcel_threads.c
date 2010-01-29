@@ -985,7 +985,10 @@ void marcel_resume(marcel_t pid)
 #ifdef MA__LIBPTHREAD
 
 #ifdef HAVE_BITS_LIBC_LOCK_H
-# include <bits/libc-lock.h>
+#include <bits/libc-lock.h>
+#else
+# define HAVE_DECL__PTHREAD_CLEANUP_POP  0
+# define HAVE_DECL__PTHREAD_CLEANUP_PUSH 0
 #endif
 
 #if !HAVE_DECL__PTHREAD_CLEANUP_POP

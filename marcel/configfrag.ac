@@ -25,6 +25,8 @@ AC_CONFIG_FILES([
 	marcel/examples/GNUmakefile
 ] marcel_bin_scripts)
 
+AC_CONFIG_HEADERS([marcel/include/marcel_config.h])
+
 AC_CONFIG_COMMANDS([marcel-executable], [chmod +x marcel/scripts/cpp-hash.sh ] marcel_bin_scripts)
 
 AC_CHECK_DECLS([SIGEV_THREAD_ID], [

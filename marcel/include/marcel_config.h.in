@@ -185,4 +185,16 @@
 #endif
 
 
+/* Define to 1 if you have the <bits/libc-lock.h> header file. */
+#undef HAVE_BITS_LIBC_LOCK_H
+
+/* Define to 1 if you have the declaration of `_pthread_cleanup_pop', and to 0
+   if you don't. */
+#undef HAVE_DECL__PTHREAD_CLEANUP_POP
+
+/* Define to 1 if you have the declaration of `_pthread_cleanup_push', and to
+   0 if you don't. */
+#undef HAVE_DECL__PTHREAD_CLEANUP_PUSH
+
+
 #endif /** __MARCEL_CONFIG_H__ **/

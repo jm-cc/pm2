@@ -27,7 +27,6 @@ extern "C" {
 #include "sys/marcel_flags.h"
 #include "marcel_config.h"
 #include "marcel_compiler.h"
-#include "pm2_config.h"
 #include <pthread.h>
 #if defined(MA__LIBPTHREAD) || defined(MA__PROVIDE_TLS)
 #include "pthread_libc-symbols.h"

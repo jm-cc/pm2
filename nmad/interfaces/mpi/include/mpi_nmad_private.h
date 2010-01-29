@@ -35,6 +35,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <Padico/Puk.h>
 #include <nm_public.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
@@ -234,21 +235,22 @@ typedef struct mpir_datatype_s {
 /** @name Internal data */
 /* @{ */
 /** Internal data */
-typedef struct mpir_internal_data_s {
+typedef struct mpir_internal_data_s
+{
   /** all the defined datatypes */
-  mpir_datatype_t     **datatypes;
-  /** ids of datatypes that can be created by end-users */
-  p_tbx_slist_t         available_datatypes;
+  mpir_datatype_t **datatypes;
+  /** pool of ids of datatypes that can be created by end-users */
+  puk_int_vect_t datatypes_pool;
 
   /** all the defined reduce operations */
-  mpir_operator_t     **operators;
-  /** ids of reduce operations that can be created by end-users */
-  p_tbx_slist_t         available_operators;
+  mpir_operator_t **operators;
+  /** pool of ids of reduce operations that can be created by end-users */
+  puk_int_vect_t operators_pool;
 
   /** all the defined communicators */
   mpir_communicator_t **communicators;
-  /** ids of communicators that can be created by end-users */
-  p_tbx_slist_t         available_communicators;
+  /** pool of ids of communicators that can be created by end-users */
+  puk_int_vect_t communicators_pool;
 
   /** total number of incoming messages */
   int 		     nb_incoming_msg;

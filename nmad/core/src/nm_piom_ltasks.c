@@ -19,14 +19,25 @@
 #ifdef PIOM_ENABLE_LTASKS
 int nm_poll_recv_task(void *args)
 {
-  struct nm_pkt_wrap * p_pw=args;
-  return nm_poll_recv(p_pw);
+  struct nm_pkt_wrap * p_pw = args;
+  int ret;
+  /* todo: lock something when using fine-grain locks */
+  if(nmad_trylock()) {
+    ret = nm_poll_recv(p_pw);
+    nmad_unlock();
+  }
+  return ret;
 }
 
 int nm_poll_send_task(void *args)
 {
   struct nm_pkt_wrap * p_pw=args;
-  return nm_poll_send(p_pw);
+  int ret;
+  if(nmad_trylock()) {
+    ret =  nm_poll_send(p_pw);
+    nmad_unlock();
+  }
+  return ret;
 }
 
 int nm_post_recv_task(void *args)
@@ -44,13 +55,20 @@ int nm_post_send_task(void *args)
 int nm_post_task(void *args)
 {
   struct nm_core * p_core=args;
-  return nm_piom_post_all(p_core);
+  int ret;
+  if(nmad_trylock()){
+    ret = nm_piom_post_all(p_core);
+    nmad_unlock();
+  }
+  return ret;
 }
 
 int nm_offload_task(void* args)
 {
   struct nm_pkt_wrap * p_pw=args;
+  nmad_lock();
   nm_post_send(p_pw);
+  nmad_unlock();
   return 0;
 }
 

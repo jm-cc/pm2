@@ -34,42 +34,6 @@ piom_spinlock_t piom_big_lock = PIOM_SPIN_LOCK_INITIALIZER;
 #endif  /* PIOMAN */
 
 
-/** Lock entirely NewMadeleine */
-void nmad_lock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_lock(&piom_big_lock);
-#endif
-}
-
-/** Try to lock NewMadeleine 
- * return 0 if NMad is already locked or 1 otherwise
- */
-int nmad_trylock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  return piom_spin_trylock(&piom_big_lock);
-#else
-  return 1;
-#endif
-}
-
-/** Unlock NewMadeleine */
-void nmad_unlock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_unlock(&piom_big_lock);
-#endif
-}
-
-void nmad_lock_init(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_lock_init(&piom_big_lock);
-#endif
-}
-
-
 /** Main function of the core scheduler loop.
  *
  * This is the heart of NewMadeleine...

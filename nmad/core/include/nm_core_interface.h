@@ -281,6 +281,22 @@ static inline int nm_core_enable_progression(struct nm_core*p_core)
 #endif /* PIOMAN_POLL */
 
 
+/* ** Locking ******************************************** */
+
+/* Lock entirely NewMadeleine */
+void nmad_lock(void);
+
+/* Try to lock NewMadeleine 
+ * return 0 if NMad is already locked or 1 otherwise
+ */
+int  nmad_trylock(void);
+
+/* Unlock NewMadeleine */
+void nmad_unlock(void);
+
+void nmad_lock_init(struct nm_core *p_core);
+
+
 
 #endif /* NM_CORE_INTERFACE_H */
 

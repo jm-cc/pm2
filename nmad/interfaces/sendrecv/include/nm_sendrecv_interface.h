@@ -169,9 +169,12 @@ static inline int nm_sr_issend(nm_session_t p_session,
 			       const void *data, uint32_t len,
 			       nm_sr_request_t *p_request)
 {
+  /* todo: also fix the fine-grain locking problem */
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_data(p_session, p_request, data, len);
   const int err = nm_sr_send_issend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -189,9 +192,11 @@ static inline int nm_sr_isend(nm_session_t p_session,
 			      const void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_data(p_session, p_request, data, len);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -201,12 +206,14 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
 				       nm_sr_request_t *p_request,
 				       void*ref)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_send_pack_data(p_session, p_request, data, len);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -225,9 +232,11 @@ static inline int nm_sr_rsend(nm_session_t p_session,
 			      const void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_data(p_session, p_request, data, len);
   const int err = nm_sr_send_rsend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -245,9 +254,11 @@ static inline int nm_sr_isend_iov(nm_session_t p_session,
 				  const struct iovec *iov, int num_entries,
 				  nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -257,12 +268,14 @@ static inline int nm_sr_isend_iov_with_ref(nm_session_t p_session,
 					   nm_sr_request_t *p_request,
 					   void*ref)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_send_pack_iov(p_session, p_request, iov, num_entries);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -279,9 +292,11 @@ static inline int nm_sr_isend_datatype(nm_session_t p_session,
 				       const struct CCSI_Segment *segp,
 				       nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_send_init(p_session, p_request);
   nm_sr_send_pack_datatype(p_session, p_request, segp);
   const int err = nm_sr_send_isend(p_session, p_request, p_gate, tag);
+  nmad_unlock();
   return err;
 }
 
@@ -326,9 +341,11 @@ static inline int nm_sr_irecv(nm_session_t p_session,
 			      void *data, uint32_t len,
 			      nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_data(p_session, p_request, data, len);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 
@@ -348,12 +365,14 @@ static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
 				       nm_sr_request_t *p_request,
 				       void *ref)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_data(p_session, p_request, data, len);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 
@@ -362,9 +381,11 @@ static inline int nm_sr_irecv_iov(nm_session_t p_session,
 				  struct iovec *iov, int num_entries,
 				  nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 
@@ -373,12 +394,14 @@ static inline int nm_sr_irecv_iov_with_ref(nm_session_t p_session,
 					   struct iovec *iov, int num_entries,
 					   nm_sr_request_t *p_request, void *ref)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_iov(p_session, p_request, iov, num_entries);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 
@@ -387,9 +410,11 @@ static inline int nm_sr_irecv_datatype(nm_session_t p_session,
 				       struct CCSI_Segment *segp,
 				       nm_sr_request_t *p_request)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_recv_unpack_datatype(p_session, p_request, segp);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 
@@ -400,12 +425,14 @@ static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
 						nm_sr_request_t *p_request,
 						void *ref)
 {
+  nmad_lock();
   nm_sr_recv_init(p_session, p_request);
   nm_sr_request_set_ref(p_session, p_request, ref);
   nm_sr_recv_unpack_datatype(p_session, p_request, segp);
   if(ref != NULL)
     nm_sr_request_set_completion_queue(p_session, p_request);
   const int err = nm_sr_recv_irecv(p_session, p_request, p_gate, tag, NM_TAG_MASK_FULL);
+  nmad_unlock();
   return err;
 }
 

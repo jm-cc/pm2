@@ -41,7 +41,6 @@ void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const stru
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate,
 		      nm_so_flag_t flags)
 {
-  nmad_lock();
   nm_lock_interface(p_core);
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
@@ -58,7 +57,6 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   int err = (*r->driver->pack)(r->_status, p_pack);
   nm_unlock_interface(p_core);
-  nmad_unlock();
   return err;
 }
 

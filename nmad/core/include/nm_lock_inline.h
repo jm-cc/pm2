@@ -36,42 +36,6 @@ extern piom_spinlock_t piom_big_lock;
 #endif /* FINE_GRAIN_LOCKING */
 
 
-/** Lock entirely NewMadeleine */
-static inline void nmad_lock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_lock(&piom_big_lock);
-#endif
-}
-
-/** Try to lock NewMadeleine 
- * return 0 if NMad is already locked or 1 otherwise
- */
-static inline int nmad_trylock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  return piom_spin_trylock(&piom_big_lock);
-#else
-  return 1;
-#endif
-}
-
-/** Unlock NewMadeleine */
-static inline void nmad_unlock(void)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_unlock(&piom_big_lock);
-#endif
-}
-
-static inline void nmad_lock_init(struct nm_core *p_core)
-{
-#ifdef NM_LOCK_BIGLOCK
-  piom_spin_lock_init(&piom_big_lock);
-#endif
-}
-
-
 /*
  * Lock the interface's list of packet to send
  * use this when entering try_and_commit or (un)pack()

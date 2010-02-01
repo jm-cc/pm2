@@ -31,13 +31,13 @@ rm -f /tmp/pm2test_"${USER}"_expected
 nb_hosts=$(echo $hosts | wc -w)
 (
 for f in $hosts ; do
-    echo "Communicator 1 is 93"
+    echo "Communicator 1 is 31"
 done
 for f in $hosts ; do
-    echo "Communicator 2 is 94"
+    echo "Communicator 2 is 30"
 done
 for f in $hosts ; do
-    echo "Communicator 3 is 93"
+    echo "Communicator 3 is 31"
 done
 for f in $(seq 1 2 $nb_hosts) ; do
     echo "The answer to life, the universe, and everything is 42"

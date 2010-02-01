@@ -31,13 +31,13 @@ rm -f /tmp/pm2test_"${USER}"_expected
 nb_hosts=$(echo $hosts | wc -w | tr -d ' ')
 ranks=$(expr $nb_hosts - 1)
 (for n in $(seq 0 $ranks) ; do
-    echo "a. [$n] Communicator 91 with $nb_hosts nodes"
+    echo "a. [$n] Communicator 1 with $nb_hosts nodes"
 done
 
 moitie=$(expr $nb_hosts / 2)
 for n in $(seq 0 $ranks) ; do
     local=$(expr \( $ranks - $n \) / 2)
-    echo "b. [$n] Communicator 93 with $moitie nodes, local rank $local"
+    echo "b. [$n] Communicator 31 with $moitie nodes, local rank $local"
 done
 
 if [ $nb_hosts -gt 2 ] ; then
@@ -57,7 +57,7 @@ fi
 quart=$(expr $nb_hosts / $diviseur)
 for n in $(seq 0 $ranks) ; do
     local=$(expr $n / $diviseur)
-    echo "d. [$n] Communicator 94 with $quart nodes, local rank $local"
+    echo "d. [$n] Communicator 30 with $quart nodes, local rank $local"
 done
 
 ) >> /tmp/pm2test_"${USER}"_expected

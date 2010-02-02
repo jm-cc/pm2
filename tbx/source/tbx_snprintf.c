@@ -2,7 +2,7 @@
  *  \brief TBX own simple and recursive printf
  *
  *  This file contains a simple and recursive snprintf, for internal debugging
- *  use, to avoid using libc's one.
+ *  use, to avoid using libc's one which may not be recursive.
  * 
  */
 

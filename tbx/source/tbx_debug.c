@@ -538,6 +538,7 @@ int pm2debug_printf(debug_type_t *type, int level, int line, const char* file,
 do_write:
 		if (eaten>PM2DEBUG_MAXLINELEN)
 			eaten=PM2DEBUG_MAXLINELEN;
+		/* Write everything in just one go to avoid any interleaving */
 		write(STDERR_FILENO,buffer,eaten);
 	}
 

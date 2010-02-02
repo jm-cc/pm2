@@ -25,12 +25,20 @@
 #include <string.h>
 #include <assert.h>
 
+/** A driver descriptor
+ */
+struct nm_session_driver_s
+{
+  struct nm_drv*p_drv;
+  int index;
+  char*name;
+};
+
 static struct
 {
   struct nm_core*p_core;    /**< the current nmad object. */
   int n_drivers;            /**< number of drivers */
-  struct nm_drv**drivers;   /**< array of drivers */
-  struct nm_drv*p_drv;      /**< the driver used for all connections */
+  struct nm_session_driver_s*drivers; /**< array of drivers */
   const char*local_url;     /**< the local nmad driver url */
   puk_hashtable_t gates;    /**< list of connected gates */
   puk_hashtable_t sessions; /**< table of active sessions, hashed by session hashcode */
@@ -116,8 +124,10 @@ static void nm_session_init_drivers(int*argc, char**argv)
       padico_string_t url_string = padico_string_new();
       padico_string_catf(url_string, "%s/%s", driver_name, driver_url);
       nm_session.n_drivers = 1;
-      nm_session.drivers = malloc(sizeof(struct nm_drv*));
-      nm_session.drivers[0] = p_drv;
+      nm_session.drivers = malloc(sizeof(struct nm_session_driver_s));
+      nm_session.drivers[0].p_drv = p_drv;
+      nm_session.drivers[0].index = -1;
+      nm_session.drivers[0].name = strdup(driver_name);
       nm_session.local_url = strdup(padico_string_get(url_string));
       padico_string_delete(url_string);
     }
@@ -174,16 +184,18 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	  assert(drv_iface != NULL);
 	  const char*driver_realname = drv_iface->name;
 	  nm_session.n_drivers++;
-	  nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_drv*));
-	  nm_session.drivers[nm_session.n_drivers - 1] = p_drv;
+	  nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_session_driver_s));
+	  nm_session.drivers[nm_session.n_drivers - 1].p_drv = p_drv;
+	  nm_session.drivers[nm_session.n_drivers - 1].index = (index >= 0)?:0;
+	  nm_session.drivers[nm_session.n_drivers - 1].name  = strdup(token);
 	  if(url_string == NULL)
 	    {
 	      url_string = padico_string_new();
-	      padico_string_catf(url_string, "%s/%s", driver_realname, driver_url);
+	      padico_string_catf(url_string, "%s#%s", token, driver_url);
 	    }
 	  else
 	    {
-	      padico_string_catf(url_string, "+%s/%s", driver_realname, driver_url);
+	      padico_string_catf(url_string, "+%s#%s", token, driver_url);
 	    }
 	  free(driver_name);
 	  token = strtok(NULL, "+");
@@ -278,7 +290,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	{
 	  char*driver_string = strdup(token);
 	  char*driver_name = driver_string;
-	  char*driver_url = strchr(driver_name, '/');
+	  char*driver_url = strchr(driver_name, '#');
 	  *driver_url = '\0';
 	  driver_url++;
 	  if(puk_hashtable_lookup(url_table, driver_name))
@@ -297,12 +309,16 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       int connected = 0;
       for(i = 0; i < nm_session.n_drivers; i++)
 	{
-	  struct nm_drv*p_drv = nm_session.drivers[i];
-	  const char*driver_name = p_drv->driver->name;
-	  const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
+	  struct nm_session_driver_s*p_session_drv = &nm_session.drivers[i];
+	  struct nm_drv*p_drv = p_session_drv->p_drv;
+	  const char*driver_declared_name = p_session_drv->name;
+	  const char*driver_real_name = p_drv->driver->name;
+	  const char*driver_url = puk_hashtable_lookup(url_table, driver_real_name);
+	  if(driver_url == NULL)
+	    driver_url = puk_hashtable_lookup(url_table, driver_declared_name);
 	  if(driver_url == NULL)
 	    {
-	      fprintf(stderr, "# session: peer node does not advertise driver %s- skipping.\n", driver_name);
+	      fprintf(stderr, "# session: peer node does not advertise any url for driver %s- skipping.\n", driver_real_name);
 	      continue;
 	    }
 	  if(is_server)

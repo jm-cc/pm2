@@ -281,6 +281,11 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  char*driver_url = strchr(driver_name, '/');
 	  *driver_url = '\0';
 	  driver_url++;
+	  if(puk_hashtable_lookup(url_table, driver_name))
+	    {
+	      fprintf(stderr, "# session: duplicate driver %s.\n", driver_name);
+	      abort();
+	    }
 	  puk_hashtable_insert(url_table, driver_name, driver_url);
 	  token = strtok(NULL, "+");
 	}

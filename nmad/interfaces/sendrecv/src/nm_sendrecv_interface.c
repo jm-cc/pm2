@@ -464,8 +464,8 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
     {
       const nm_sr_event_info_t info = { .send_completed.p_request = p_request };
-      nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
       nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
+      nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
     }
   NM_SO_SR_LOG_OUT();
 }
@@ -508,8 +508,8 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     .recv_completed.p_request = p_request,
     .recv_completed.p_gate = event->p_gate
   };
-  nm_sr_request_signal(p_request, sr_event);
   nm_sr_monitor_notify(p_request, sr_event, &info);
+  nm_sr_request_signal(p_request, sr_event);
 
   NM_SO_SR_LOG_OUT();
 }

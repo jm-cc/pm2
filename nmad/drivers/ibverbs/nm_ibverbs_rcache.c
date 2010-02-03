@@ -42,6 +42,7 @@ struct nm_ibverbs_rcache_sighdr
 struct nm_ibverbs_rcache
 {
   struct ibv_mr*mr;              /**< global MR (used for headers) */
+  struct ibv_pd*pd;              /**< protection domain */
   struct nm_ibverbs_segment seg; /**< remote segment */
   struct nm_ibverbs_cnx*cnx;
   struct
@@ -95,14 +96,14 @@ static const struct puk_adapter_driver_s nm_ibverbs_rcache_adapter =
 
 
 #ifdef NM_IBVERBS_RCACHE
-static struct ibv_pd*global_pd = NULL; /**< global IB protection domain */
-static void*nm_ibverbs_mem_reg(const void*ptr, size_t len)
+static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 {
-  struct ibv_mr*mr = ibv_reg_mr(global_pd, (void*)ptr, len, 
+  struct ibv_pd*pd = context;
+  struct ibv_mr*mr = ibv_reg_mr(pd, (void*)ptr, len, 
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   return mr;
 }
-static void nm_ibverbs_mem_unreg(const void*ptr, void*key)
+static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
 {
   struct ibv_mr*mr = key;
   ibv_dereg_mr(mr);
@@ -124,8 +125,12 @@ static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_
   struct nm_ibverbs_rcache*rcache = TBX_MALLOC(sizeof(struct nm_ibverbs_rcache));
  /* init state */
   memset(&rcache->headers, 0, sizeof(rcache->headers));
-  rcache->mr = NULL;
+  rcache->mr  = NULL;
   rcache->cnx = NULL;
+  rcache->pd  = NULL;
+#ifdef NM_IBVERBS_RCACHE
+  puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
+#endif /* NM_IBVERBS_RCACHE */
   return rcache;
 }
 
@@ -164,13 +169,7 @@ static void nm_ibverbs_rcache_cnx_create(void*_status, struct nm_ibverbs_cnx*p_i
 {
   struct nm_ibverbs_rcache*rcache = _status;
   rcache->cnx = p_ibverbs_cnx;
-#ifdef NM_IBVERBS_RCACHE
-  if(global_pd == NULL)
-    {
-      global_pd = p_ibverbs_drv->pd;
-      puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
-    }
-#endif /* NM_IBVERBS_RCACHE */
+  rcache->pd = p_ibverbs_drv->pd;
   /* register Memory Region */
   rcache->mr = ibv_reg_mr(p_ibverbs_drv->pd, &rcache->headers,
 			  sizeof(rcache->headers),
@@ -193,7 +192,7 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
   assert(n == 1);
   rcache->send.message = message;
   rcache->send.size = size;
-  rcache->send.mr = puk_mem_reg(message, size);
+  rcache->send.mr = puk_mem_reg(rcache->pd, message, size);
 #endif
 }
 
@@ -224,7 +223,7 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 			   rcache->mr,
 			   NM_IBVERBS_WRID_HEADER);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);  
-      puk_mem_unreg(rcache->send.message);
+      puk_mem_unreg(rcache->pd, rcache->send.message);
       rcache->send.message = NULL;
       rcache->send.size    = -1;
       rcache->send.mr = NULL;
@@ -247,8 +246,7 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   rcache->headers.rsig.busy = 0;
   rcache->recv.message = v->iov_base;
   rcache->recv.size = v->iov_len;
-  rcache->recv.mr = puk_mem_reg(rcache->recv.message, 
-					      rcache->recv.size);
+  rcache->recv.mr = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
   struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;
   h->raddr =  (uintptr_t)rcache->recv.message;
   h->rkey  = rcache->recv.mr->rkey;
@@ -271,7 +269,7 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
   struct nm_ibverbs_rcache_sighdr*rsig = &rcache->headers.rsig;
   if(rsig->busy)
     {
-      puk_mem_unreg(rcache->recv.message);
+      puk_mem_unreg(rcache->pd, rcache->recv.message);
       rcache->recv.message = NULL;
       rcache->recv.size = -1;
       rcache->recv.mr = NULL;

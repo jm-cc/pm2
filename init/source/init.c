@@ -358,6 +358,9 @@ void common_pre_init(int *_argc, char *_argv[],
    * Requires:
    * - nothing ? (to be tested)
    */
+#ifdef PIOM_ENABLE_LTASKS
+  piom_init_ltasks();
+#endif
   piom_io_init();
 #endif /* PIOMAN */
 

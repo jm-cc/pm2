@@ -18,7 +18,9 @@
 
 #ifdef PIOM_ENABLE_LTASKS
 
-/* specify the binding policy of communication requests
+/* specify the binding policy of communication requests.
+ * All these policies can be specified to NewMadeleine using 
+ * the NM_BINDING_POLICY environment variable
  */
 enum __nm_ltask_policy{
   /* bound to the core from which a request is submitted */

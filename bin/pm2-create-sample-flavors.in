@@ -219,7 +219,9 @@ registering_flavors() {
 
     register_flavor nmad-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
-        --marcel=mono --marcel=standard_main \
+        --marcel=numa --marcel=standard_main \
+	--marcel=enable_stats \
+        --init=topology \
 	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad-mpi \

@@ -41,40 +41,43 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
 #endif
 }
 
+/* todo: get a dynamic value here !
+ * it could be based on:
+ * - application hints
+ * - the history of previous request
+ * - compiler hints
+ */
 #define TIME_TO_POLL 20
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	LOG_IN();
-#ifdef MARCEL
-	if(cond->value & mask)
-		return ;
 
+#ifdef MARCEL
 	/* First, let's poll for a while before blocking */
-#if 1
 	tbx_tick_t t1, t2;
 	TBX_GET_TICK(t1);
 	do {
+		if(cond->value & mask){
+			/* We have to consume the semaphore. Otherwise, there may be a 
+			 *  problem since the application thread may re-initialize the condition
+			 *  before piom_cond_signal ends
+			 */
+			piom_sem_P(&cond->sem);
+			if(cond->cpt)
+				/* another thread is waiting for the same semaphore */
+				piom_sem_V(&cond->sem);
+			return;
+		}
 		__piom_check_polling(PIOM_POLL_WHEN_FORCED);
-		if(cond->value & mask)
-			return ;
 		TBX_GET_TICK(t2);
 	}while(TBX_TIMING_DELAY(t1, t2)<TIME_TO_POLL);
-#else
-	int i;
-	for(i=0;i<30;i++) {
-		__piom_check_polling(PIOM_POLL_WHEN_FORCED);
-		if(cond->value & mask)
-			return ;
-	}
-#endif
-#ifdef MARCEL
+
 	/* set highest priority so that the thread 
 	   is scheduled (almost) immediatly when done */
 	struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
 	struct marcel_sched_param old_param;
 	marcel_sched_getparam(MARCEL_SELF, &old_param);
 	marcel_sched_setparam(MARCEL_SELF, &sched_param);
-#endif
 
 	while(! (cond->value & mask)){
 		cond->cpt++;
@@ -85,14 +88,15 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 			piom_sem_V(&cond->sem);
 	}
 
-#ifdef MARCEL
 	marcel_sched_setparam(MARCEL_SELF, &old_param);
-#endif
-#else
-	/* no Marcel, do not block as possibly nobody will wake us... (We have neither timers nor supplementary VP) */
+#else  /* MARCEL */
+	/* no Marcel, do not block as possibly nobody will wake us... 
+	 *  (We have neither timers nor supplementary VP)
+	 */
 	while(! (cond->value & mask))
 		__piom_check_polling(PIOM_POLL_AT_IDLE);		
-#endif
+#endif	/* MARCEL */
+
 	LOG_OUT();
 }
 
@@ -100,7 +104,6 @@ __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
 	LOG_IN();
 	cond->value|=mask;
 	piom_sem_V(&cond->sem);
-	/* TODO: make this optional to save a few cycles */
 #ifdef PIOM_ENABLE_SHM
 	if(cond->alt_sem){
 		piom_shs_poll_success(cond->alt_sem);
@@ -114,7 +117,6 @@ __tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask){
 }
 
 __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
-	
 	cond->value=initial;
 #ifdef PIOM_ENABLE_SHM
 	cond->alt_sem=NULL;

@@ -397,4 +397,58 @@ piom_ltask_polling_is_required ()
 
     return 0;
 }
+
+
+#ifdef MARCEL
+piom_vpset_t piom_get_parent_machine(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_MACHINE)
+	l=l->father;
+    return l->vpset;
+}
+
+piom_vpset_t piom_get_parent_node(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_NODE)
+	l=l->father;
+    return l->vpset;
+}
+
+piom_vpset_t piom_get_parent_die(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_DIE)
+	l=l->father;
+    return l->vpset;
+}
+
+piom_vpset_t piom_get_parent_l3(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_L2)
+	l=l->father;
+    return l->vpset;
+}
+
+piom_vpset_t piom_get_parent_l2(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_L2)
+	l=l->father;
+    return l->vpset;
+}
+
+piom_vpset_t piom_get_parent_core(unsigned vp) {
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
+    while(l->type > MARCEL_LEVEL_VP)
+	l=l->father;
+    return l->vpset;
+}
+#else  /* MARCEL */
+piom_vpset_t piom_get_parent_machine(unsigned vp) { return piom_vpset_full; }
+piom_vpset_t piom_get_parent_node(unsigned vp) { return piom_vpset_full; }
+piom_vpset_t piom_get_parent_die(unsigned vp) { return piom_vpset_full; }
+piom_vpset_t piom_get_parent_l3(unsigned vp) { return piom_vpset_full; }
+piom_vpset_t piom_get_parent_l2(unsigned vp) { return piom_vpset_full; }
+piom_vpset_t piom_get_parent_core(unsigned vp) { return piom_vpset_full; }
+
+#endif /* MARCEL */
+
 #endif /* PIOM_ENABLE_LTASKS */

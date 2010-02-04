@@ -20,6 +20,8 @@
 #ifdef PIOM_ENABLE_LTASKS
 
 #include "nm_private.h"
+/* retrieve the binding policy */
+void nm_ltask_set_policy();
 
 /* ltask dedicated to polling a recv request  */
 int nm_poll_recv_task(void *args);

@@ -162,5 +162,13 @@ piom_ltask_create (struct piom_ltask *task,
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;
 }
+
+piom_vpset_t piom_get_parent_machine(unsigned vp);
+piom_vpset_t piom_get_parent_node(unsigned vp);
+piom_vpset_t piom_get_parent_die(unsigned vp);
+piom_vpset_t piom_get_parent_l3(unsigned vp);
+piom_vpset_t piom_get_parent_l2(unsigned vp);
+piom_vpset_t piom_get_parent_core(unsigned vp);
+
 #endif /* PIOM_ENABLE_LTASKS */
 #endif /* PIOM_LTASK_H */

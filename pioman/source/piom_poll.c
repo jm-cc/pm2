@@ -213,6 +213,15 @@ piom_poll_timer(unsigned long hid)
 
     if(server->state == PIOM_SERVER_STATE_HALTED)
 	return;
+
+#ifdef MA__LWPS
+    int cur_vp = marcel_current_vp();
+#else
+    int cur_vp = 0;
+#endif
+    if(__piom_core_status[cur_vp]  & PIOM_CORE_STATUS_POLLING)
+	return;
+
     PIOM_LOGF("Timer function for [%s]\n", server->name);
 #ifdef PIOM_USE_TASKLETS
     ma_tasklet_schedule(&server->poll_tasklet);
@@ -246,7 +255,6 @@ __piom_check_polling(unsigned polling_point)
     int cur_vp = marcel_current_vp();
 #else
     int cur_vp = 0;
-
 #endif
     
     _piom_spin_lock_softirq(&piom_poll_lock);

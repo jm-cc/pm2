@@ -127,7 +127,7 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
  * * * * that a per-LWP base will be used
  */
 typedef struct ma_timer_base_s ma_timer_base_t;
-ma_timer_base_t __ma_init_timer_base;
+ma_timer_base_t __ma_init_timer_base = {MA_SPIN_LOCK_UNLOCKED, NULL};
 
 static inline void detach_timer(struct ma_timer_list *timer,
 				int clear_pending)

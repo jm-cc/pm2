@@ -20,7 +20,7 @@
 #if defined(MARCEL)
 /****************************************************************/
 #  define FXT_MARCEL
-#  include "marcel-master___types.h"
+#  include "marcel.h"
 #  define FXT_PERTHREAD_GET(var) SELF_GETMEM(var)
 #  define FXT_PERTHREAD_SET(var, value) SELF_SETMEM(var, value)
 #  define FXT_PERTHREAD_DEFINE(type, var)

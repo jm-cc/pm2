@@ -40,8 +40,8 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 #endif /* MARCEL_REMOTE_TASKLET */
 
   piom_server_set_poll_settings(&p_drv->server,
-				//PIOM_POLL_AT_TIMER_SIG
-				 PIOM_POLL_AT_IDLE
+				PIOM_POLL_AT_TIMER_SIG
+				| PIOM_POLL_AT_IDLE
 				| PIOM_POLL_AT_YIELD
 				| PIOM_POLL_AT_CTX_SWITCH
 				| PIOM_POLL_WHEN_FORCED, 1, -1);

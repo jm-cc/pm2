@@ -112,14 +112,20 @@ piom_check_polling_for(piom_server_t server)
 		      struct piom_req, chain_req_grouped)->func_to_use != PIOM_FUNC_SYSCALL ) 
 #endif	/* PIOM_BLOCKING_CALLS */
 	    {
+#ifdef PIOM_THREAD_ENABLED
+		piom_server_unlock(server);	
+#endif
 		(*server->funcs[PIOM_FUNCTYPE_POLL_POLLONE].func)
 		    (server, PIOM_FUNCTYPE_POLL_POLLONE,
 		     req, nb, PIOM_OPT_REQ_IS_GROUPED);
+#ifdef PIOM_THREAD_ENABLED
+		piom_server_lock(server);
+#endif
 	    }
     } else if (server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func) {
 	/* poll all the requests with the pollanny callback */
 #ifdef PIOM_THREAD_ENABLED
-	piom_server_unlock(server);	
+	piom_server_unlock(server);
 #endif		
 	(*server->funcs[PIOM_FUNCTYPE_POLL_POLLANY].func)
 	    (server, PIOM_FUNCTYPE_POLL_POLLANY, NULL, nb, 0);

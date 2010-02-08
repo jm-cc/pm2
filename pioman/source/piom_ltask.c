@@ -16,7 +16,7 @@
 
 #include "pioman.h"
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
 
 #define PIOM_MAX_LTASK 256
 
@@ -451,4 +451,4 @@ piom_vpset_t piom_get_parent_core(unsigned vp) { return piom_vpset_full; }
 
 #endif /* MARCEL */
 
-#endif /* PIOM_ENABLE_LTASKS */
+#endif /* PIOM_DISABLE_LTASKS */

@@ -524,7 +524,7 @@ struct marcel_topo_level {
 #endif
 
 	ma_runqueue_t rq;		/**< \brief data for the scheduler (runqueue for Marcel) */
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
 	void *piom_ltask_data;
 #endif
 

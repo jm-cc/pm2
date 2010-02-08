@@ -73,7 +73,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   
-#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
+#if(defined(PIOMAN_POLL) && defined(PIOM_DISABLE_LTASKS))
   piom_req_success(&p_pw->inst);
 #endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv, p_pw->trk_id);
@@ -138,7 +138,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
+#if(defined(PIOMAN_POLL) && defined(PIOM_DISABLE_LTASKS))
     piom_req_init(&p_pw->inst);
     p_pw->inst.server = &p_pw->p_drv->server;
     p_pw->which = NM_PW_SEND;
@@ -163,9 +163,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 		p_pw->trk_id,
 		p_pw->proto_id);
 
-#ifdef PIOM_ENABLE_LTASKS
-      nm_submit_poll_send_ltask(p_pw);
-#else
+#ifdef PIOM_DISABLE_LTASKS
       /* todo: clean that mess ! */
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
@@ -185,7 +183,9 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
 #endif /* NMAD_POLL */
 
-#endif
+#else  /* PIOM_DISABLE_LTASKS */
+      nm_submit_poll_send_ltask(p_pw);
+#endif	/* PIOM_DISABLE_LTASKS */
     } 
   else if(err == NM_ESUCCESS)
     {

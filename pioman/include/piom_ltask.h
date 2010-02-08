@@ -22,7 +22,7 @@
 #include "marcel.h"
 #endif
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
 #ifdef MARCEL
 #define piom_vpset_t marcel_vpset_t
 #define piom_vpset_full MARCEL_VPSET_FULL
@@ -170,5 +170,5 @@ piom_vpset_t piom_get_parent_l3(unsigned vp);
 piom_vpset_t piom_get_parent_l2(unsigned vp);
 piom_vpset_t piom_get_parent_core(unsigned vp);
 
-#endif /* PIOM_ENABLE_LTASKS */
+#endif /* PIOM_DISABLE_LTASKS */
 #endif /* PIOM_LTASK_H */

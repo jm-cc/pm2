@@ -30,7 +30,7 @@
 #define MULT_DEFAULT	2
 #define INCR_DEFAULT	0
 #define WARMUPS_DEFAULT	10
-#define LOOPS_DEFAULT	1000
+#define LOOPS_DEFAULT	100
 #define THREADS_DEFAULT 8
 #define DATA_CONTROL_ACTIVATED 0
 
@@ -57,10 +57,12 @@ void usage_ping() {
 
 #ifdef MARCEL
 static pmarcel_sem_t ready_sem;
+static volatile int bench_complete = 0;
 
-static void greedy_func() {
+static any_t greedy_func(any_t arg) {
         marcel_sem_V(&ready_sem);
-	while(1);
+	while(!bench_complete) ;
+	return NULL;
 }
 #endif
 static void fill_buffer(char *buffer, int len) {
@@ -163,8 +165,15 @@ main(int	  argc,
   clear_buffer(buf, end_len);
 
 #ifdef MARCEL
+  /* set highest priority so that the thread 
+     is scheduled (almost) immediatly when done */
+  struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
+  struct marcel_sched_param old_param;
+  marcel_sched_getparam(MARCEL_SELF, &old_param);
+  marcel_sched_setparam(MARCEL_SELF, &sched_param);
+  
+
   marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, tbx_true);
  
   pid = malloc(sizeof(marcel_t) * threads);
   marcel_sem_init(&ready_sem,0);
@@ -251,9 +260,16 @@ main(int	  argc,
     marcel_attr_setvpset(&attr,  mask);
     marcel_create(&pid[i], &attr, (void*)greedy_func, NULL);
 /* wait for the thread to be actually launched before we continue */
-    marcel_sem_P(&ready_sem); 	
+    marcel_sem_P(&ready_sem); 
+  }
+
+  bench_complete = 1;
+  for (i=0 ; i<=threads ; i++) {
+	  marcel_join(pid[i], NULL);
   }
 #endif
+  fprintf(stderr, "Benchmark done!\n");
+
   nmad_exit();
   exit(0);
 }

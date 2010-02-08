@@ -577,7 +577,7 @@ piom_io_fast_poll(piom_server_t server,
 	return 0;
 }
 
-#ifndef PIOM_ENABLE_LTASKS
+#ifdef PIOM_DISABLE_LTASKS
 
 /* Function that reads a fd and uses PIOMan */
 int 
@@ -744,7 +744,7 @@ piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 	return piom_writev(fildes, iov, iovcnt);
 }
 #endif
-#endif /* PIOM_ENABLE_LTASKS */
+#endif /* PIOM_DISABLE_LTASKS */
 /* =============== Asynchronous I/O management =============== */
 
 int piom_tselect(int width, fd_set * __restrict readfds,

@@ -21,7 +21,7 @@
 
 #ifdef PIOMAN_POLL
 
-#ifndef PIOM_ENABLE_LTASKS
+#ifdef PIOM_DISABLE_LTASKS
 int nm_piom_poll(piom_server_t            server,
 		 piom_op_t                _op,
 		 piom_req_t               req,
@@ -43,7 +43,7 @@ int nm_piom_poll(piom_server_t            server,
   nmad_unlock();
   return err;
 }
-#endif
+#endif	/* PIOM_DISABLE_LTASKS */
 
 /* Posting functions */
 int nm_piom_post_all(struct nm_core	 *p_core)

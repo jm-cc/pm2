@@ -245,7 +245,7 @@ __piom_check_polling(unsigned polling_point)
 	piom_shs_poll(); 
 #endif
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
     piom_ltask_schedule();
 #endif
     if( tbx_fast_list_empty(&piom_list_poll))

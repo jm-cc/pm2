@@ -23,7 +23,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 {
   LOG_IN();
 
-#ifndef PIOM_ENABLE_LTASKS
+#ifdef PIOM_DISABLE_LTASKS
 
   piom_server_init(&p_drv->server, "NMad IO Server");
 
@@ -95,11 +95,11 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
   piom_req_submit(&p_drv->server, &post_rq->inst);
 
-#else  /* PIOM_ENABLE_LTASKS */
+#else  /* PIOM_DISABLE_LTASKS */
 
   nm_submit_post_drv_ltask(&p_drv->task, p_drv);
 
-#endif /* PIOM_ENABLE_LTASKS */
+#endif /* PIOM_DISABLE_LTASKS */
   return 0;
 }
 
@@ -383,9 +383,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
   piom_ltask_completed (&p_core->task);
-#endif	/* PIOM_ENABLE_LTASKS */
+#endif	/* PIOM_DISABLE_LTASKS */
 
   nm_lock_interface(p_core);
   struct nm_drv*p_drv = NULL;
@@ -397,9 +397,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
       nmad_unlock();
       nm_unlock_interface(p_core);
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
       piom_ltask_completed (&p_drv->task);
-#endif	/* PIOM_ENABLE_LTASKS */
+#endif	/* PIOM_DISABLE_LTASKS */
 
       piom_server_stop(&p_drv->server);
       nm_lock_interface(p_core);
@@ -421,15 +421,17 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  if(r->driver->cancel_recv_iov)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-#ifdef PIOM_ENABLE_LTASKS
-		  piom_ltask_completed(&p_pw->ltask);
-#else
+
+#ifdef PIOM_DISABLE_LTASKS
 #ifdef NMAD_POLL
 		  tbx_fast_list_del(&p_pw->link);
 #else /* NMAD_POLL */
 		  piom_req_success(&p_pw->inst);
 #endif /* NMAD_POLL */
-#endif /* PIOM_ENABLE_LTASKS */
+
+#else  /* PIOM_DISABLE_LTASKS */
+		  piom_ltask_completed(&p_pw->ltask);
+#endif /* PIOM_DISABLE_LTASKS */
 		  nm_so_pw_free(p_pw);
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
@@ -437,7 +439,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
   piom_exit_ltasks();
 #endif
 

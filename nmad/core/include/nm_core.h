@@ -81,7 +81,7 @@ struct nm_core
   /** Selected strategy */
   puk_component_t strategy_adapter;
   
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
   struct piom_ltask task;
 #endif
 };

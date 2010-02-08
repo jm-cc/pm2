@@ -62,11 +62,7 @@ struct nm_pw_contrib_s
 struct nm_pkt_wrap
 {
 #ifdef PIOMAN_POLL
-#ifdef PIOM_ENABLE_LTASKS
-
-  struct piom_ltask ltask;
-
-#else  /* PIOM_ENABLE_LTASKS */
+#ifdef PIOM_DISABLE_LTASKS
 
   struct piom_req inst;
   enum 
@@ -76,15 +72,19 @@ struct nm_pkt_wrap
       NM_PW_NONE = 3,
       NM_PW_ERROR = 4,
     } which;
-#endif	/* PIOM_ENABLE_LTASKS */
+
+#else  /* PIOM_DISABLE_LTASKS */
+  struct piom_ltask ltask;
+#endif	/* PIOM_DISABLE_LTASKS */
+
 #endif /* PIOMAN_POLL */
 
 #ifdef PIO_OFFLOAD
   tbx_bool_t data_to_offload;
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
   struct piom_ltask offload_ltask;
-#endif	/* PIOM_ENABLE_LTASKS */
+#endif	/* PIOM_DISABLE_LTASKS */
 
 #endif /* PIO_OFFLOAD */
   

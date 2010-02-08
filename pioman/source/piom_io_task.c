@@ -16,7 +16,7 @@
 
 /* TODO: use poll instead of select */
 
-#ifdef PIOM_ENABLE_LTASKS
+#ifndef PIOM_DISABLE_LTASKS
 #include "pioman.h"
 
 #ifdef MARCEL
@@ -394,4 +394,4 @@ void piom_io_task_init(void)
 	piom_init_ltasks();
 }
 
-#endif	/* PIOM_ENABLE_LTASKS */
+#endif	/* PIOM_DISABLE_LTASKS */

@@ -26,7 +26,7 @@
 #endif
 #include "tbx_compiler.h"
 
-#ifdef  PIOM_ENABLE_LTASKS
+#ifndef  PIOM_DISABLE_LTASKS
 #define piom_read piom_task_read
 #define piom_readv piom_task_readv
 #define piom_write piom_task_write
@@ -62,7 +62,7 @@ int piom_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
 int piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
 #endif
 
-#endif	/* PIOM_ENABLE_LTASKS */
+#endif	/* PIOM_DISABLE_LTASKS */
 
 void piom_io_init(void);
 void piom_io_stop(void);

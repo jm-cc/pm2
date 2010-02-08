@@ -84,7 +84,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-#if(defined(PIOMAN_POLL) && !defined(PIOM_ENABLE_LTASKS))
+#if(defined(PIOMAN_POLL) && defined(PIOM_DISABLE_LTASKS))
   piom_req_init(&p_pw->inst);
   p_pw->inst.server = &p_pw->p_drv->server;
   p_pw->which = NM_PW_RECV;
@@ -120,11 +120,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 		p_pw->p_drv,
 		p_pw->trk_id,
 		p_pw->proto_id);
-#ifdef PIOM_ENABLE_LTASKS
-      nm_submit_poll_recv_ltask(p_pw);
-#else
-      
-
+#ifdef PIOM_DISABLE_LTASKS
 #ifndef NMAD_POLL
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST | PIOM_STATE_ONE_SHOT;
       /* TODO : implementer les syscall */
@@ -134,8 +130,10 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 #endif /* PIOM_BLOCKING_CALLS */
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
 #endif /* NMAD_POLL */
-      
-#endif /* PIOM_ENABLE_LTASKS */
+
+#else  /* PIOM_DISABLE_LTASKS */
+      nm_submit_poll_recv_ltask(p_pw);      
+#endif /* PIOM_DISABLE_LTASKS */
     }
   else if(err == NM_ESUCCESS)
     {
@@ -280,11 +278,13 @@ int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
   if (err != NM_ESUCCESS) {
     NM_LOGF("drv->wait_recv returned %d", err);
   }
-#ifdef PIOM_ENABLE_LTASKS
-  piom_ltask_completed(&p_pw->ltask);
-#else
+
+#ifdef PIOM_DISABLE_LTASKS
   piom_req_success(&p_pw->inst);
-#endif
+#else
+  piom_ltask_completed(&p_pw->ltask);
+#endif	/* PIOM_DISABLE_LTASKS */
+
   /* process complete request */
   err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
   

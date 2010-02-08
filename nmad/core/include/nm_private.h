@@ -110,11 +110,17 @@ TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
 
 TBX_INTERNAL void nm_sched_out(struct nm_core *p_core);
+TBX_INTERNAL void nm_try_and_commit(struct nm_core *p_core);
+TBX_INTERNAL void nm_poll_out_drv(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_post_out_drv(struct nm_drv *p_drv);
+
 
 TBX_INTERNAL void nm_sched_in(struct nm_core *p_core);
+TBX_INTERNAL void nm_refill_in_drv(struct nm_drv* p_drv);
+TBX_INTERNAL void nm_poll_in_drv(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_post_in_drv(struct nm_drv *p_drv);
 
 TBX_INTERNAL int nm_poll_send(struct nm_pkt_wrap *p_pw);
-
 TBX_INTERNAL int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 
 #ifndef PIOM_POLLING_DISABLED

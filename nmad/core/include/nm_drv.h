@@ -76,8 +76,13 @@ struct nm_drv
   struct piom_server server;
   struct nm_pkt_wrap post_rq;
 #endif
-#if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS) && !defined(PIOM_ENABLE_LTASKS))
+
+#if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS))
   marcel_vpset_t vpset;
+#endif
+
+#ifdef PIOM_ENABLE_LTASKS
+  struct piom_ltask task;
 #endif
 
   /* NM core object. */

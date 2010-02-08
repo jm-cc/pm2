@@ -59,7 +59,22 @@ int nm_piom_post_all(struct nm_core	 *p_core)
   return err;
 }
 
+/* Posting functions */
+int nm_piom_post_on_drv(struct nm_drv	 *p_drv)
+{
+  int err = -NM_EUNKNOWN;
 
+  nm_try_and_commit(p_drv->p_core);
+
+  /* schedule & post out requests */
+  nm_post_out_drv(p_drv);
+  nm_poll_out_drv(p_drv);  
+  
+  /* post new receive requests */
+  nm_refill_in_drv(p_drv);
+  nm_post_in_drv(p_drv);
+  return err;
+}
 
 #ifdef PIOM_BLOCKING_CALLS
 

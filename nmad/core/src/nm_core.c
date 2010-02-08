@@ -190,7 +190,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nm_lock_status_init(p_core);  
 #ifdef PIOM_ENABLE_LTASKS
   nm_ltask_set_policy();
-  nm_submit_post_ltask(&p_core->task, p_core);
 #endif	/* PIOM_ENABLE_LTASKS */
 #endif /* PIOMAN */
 

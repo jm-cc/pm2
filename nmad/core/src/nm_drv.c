@@ -95,6 +95,10 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
   piom_req_submit(&p_drv->server, &post_rq->inst);
 
+#else  /* PIOM_ENABLE_LTASKS */
+
+  nm_submit_post_drv_ltask(&p_drv->task, p_drv);
+
 #endif /* PIOM_ENABLE_LTASKS */
   return 0;
 }
@@ -392,6 +396,11 @@ int nm_core_driver_exit(struct nm_core *p_core)
        */
       nmad_unlock();
       nm_unlock_interface(p_core);
+
+#ifdef PIOM_ENABLE_LTASKS
+      piom_ltask_completed (&p_drv->task);
+#endif	/* PIOM_ENABLE_LTASKS */
+
       piom_server_stop(&p_drv->server);
       nm_lock_interface(p_core);
       nmad_lock();

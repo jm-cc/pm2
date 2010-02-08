@@ -30,6 +30,7 @@ int nm_piom_poll(piom_server_t            server,
 
 int nm_piom_post_all(struct nm_core *p_core);
 
+int nm_piom_post_on_drv(struct nm_drv *p_drv);
 
 #ifdef PIOM_BLOCKING_CALLS
 

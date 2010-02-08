@@ -151,6 +151,86 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
   return err;
 }
 
+void nm_refill_in_drv(struct nm_drv* p_drv)
+{
+  struct nm_gate*p_gate = NULL;
+  struct nm_core *p_core = p_drv->p_core;
+  		
+  NM_FOR_EACH_GATE(p_gate, p_core)
+  {
+    /* Make sure the gate is not being connected
+  	* This may happen when using multiple threads
+  	*/
+    if(p_gate->status == NM_GATE_STATUS_CONNECTED) {
+      struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  	 if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
+  	 {
+  	   struct nm_pkt_wrap *p_pw;
+  	   nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+  	   nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
+  	 }
+    }
+  }
+}
+
+void nm_poll_in_drv(struct nm_drv *p_drv)
+{
+#ifdef NMAD_POLL
+  struct nm_core *p_core = p_drv->p_core;
+  if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
+  {
+    nm_poll_lock_in(p_core, p_drv);
+    if (!tbx_fast_list_empty(&p_drv->pending_recv_list))
+    {
+      NM_TRACEF("polling inbound requests");
+      struct nm_pkt_wrap*p_pw, *p_pw2;
+      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
+      {
+        nm_poll_unlock_in(p_core, p_drv);
+	nm_poll_recv(p_pw);
+	nm_poll_lock_in(p_core, p_drv);
+      }
+    }
+    nm_poll_unlock_in(p_core, p_drv);
+  }
+#endif
+}
+
+
+void nm_post_in_drv(struct nm_drv *p_drv)
+{
+  nm_trk_id_t trk;
+  struct nm_core *p_core = p_drv->p_core;
+  for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
+  {
+    if(!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
+    {
+      nm_so_lock_in(p_core, p_drv);
+      if (!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
+      {
+        NM_TRACEF("posting inbound requests");
+	struct nm_pkt_wrap*p_pw, *p_pw2;
+	tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
+	{
+  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[trk]))
+	  {		    
+  	    tbx_fast_list_del(&p_pw->link);
+	    nm_so_unlock_in(p_core, p_drv);
+	    nm_post_recv(p_pw);
+	    nm_so_lock_in(p_core, p_drv);
+	  }
+	  else
+	  {
+  	    /* the driver is busy, so don't insist */
+  	    break;
+	  }
+	}
+      }
+      nm_so_unlock_in(p_core, p_drv);
+    }
+  }
+}
+
 /** Main scheduler func for incoming requests.
    - this function must be called on a regular basis
  */
@@ -160,79 +240,21 @@ void nm_sched_in(struct nm_core *p_core)
   struct nm_drv*p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      struct nm_gate*p_gate = NULL;
-      NM_FOR_EACH_GATE(p_gate, p_core)
-	{
-		/* Make sure the gate is not being connected
-		 * This may happen when using multiple threads
-		 */
-		if(p_gate->status == NM_GATE_STATUS_CONNECTED) {
-			struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-			if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
-			{
-				struct nm_pkt_wrap *p_pw;
-				nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
-				nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
-			}
-		}
-	}
+      nm_refill_in_drv(p_drv);
     }
 
 #ifdef NMAD_POLL
   /* poll pending requests */
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
-	{
-	  nm_poll_lock_in(p_core, p_drv);
-	  if (!tbx_fast_list_empty(&p_drv->pending_recv_list))
-	    {
-	      NM_TRACEF("polling inbound requests");
-	      struct nm_pkt_wrap*p_pw, *p_pw2;
-	      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
-		{
-		  nm_poll_unlock_in(p_core, p_drv);
-		  nm_poll_recv(p_pw);
-		  nm_poll_lock_in(p_core, p_drv);
-		}
-	    }
-	}
-      nm_poll_unlock_in(p_core, p_drv);
+      nm_poll_in_drv(p_drv);
     }
 #endif /* NMAD_POLL */
 
   /* post new requests */
   NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
   {
-    nm_trk_id_t trk;
-    for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
-      {
-	if(!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
-	  {
-	    nm_so_lock_in(p_core, p_drv);
-	    if (!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
-	      {
-		NM_TRACEF("posting inbound requests");
-		struct nm_pkt_wrap*p_pw, *p_pw2;
-		tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
-		  {
-		    if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[trk]))
-		      {		    
-			tbx_fast_list_del(&p_pw->link);
-			nm_so_unlock_in(p_core, p_drv);
-			nm_post_recv(p_pw);
-			nm_so_lock_in(p_core, p_drv);
-		      }
-		    else
-		      {
-			/* the driver is busy, so don't insist */
-			break;
-		      }
-		  }
-	      }
-	    nm_so_unlock_in(p_core, p_drv);
-	  }
-      }
+    nm_post_in_drv(p_drv);
   }
 }
 

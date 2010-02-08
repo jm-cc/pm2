@@ -43,6 +43,7 @@ enum __nm_ltask_policy{
 
 static enum __nm_ltask_policy __policy = NM_BIND_ON_LOCAL_CORE;
 static int __policy_core = 0;
+
 /* retrieve the binding policy */
 void nm_ltask_set_policy()
 {
@@ -70,7 +71,7 @@ void nm_ltask_set_policy()
     fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_MACHINE\n");
     __policy = NM_BIND_ON_LOCAL_MACHINE;
   } else if(! strcmp(policy, "NM_BIND_ON_CORE")) {
-    __policy = NM_BIND_ON_LOCAL_CORE;
+    __policy = NM_BIND_ON_CORE;
     const char* core = getenv("PIOM_BINDING_CORE");
     if(core)
       __policy_core = atoi(core);
@@ -104,6 +105,75 @@ static piom_vpset_t nm_get_binding_policy()
     return PIOM_VPSET_VP(__policy_core);
   }
   return PIOM_VPSET_VP(PIOM_CURRENT_VP);
+}
+
+static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
+{
+  if(__policy != NM_BIND_ON_CORE)
+    return nm_get_binding_policy();
+
+  struct nm_core *p_core = p_drv->p_core;
+  struct tbx_fast_list_head *head = &p_core->driver_list;
+  struct tbx_fast_list_head *pos = head->next;
+  /* Get the driver number */
+  int drv_id = -1;
+  int i = 0;
+  for( i=0; pos != head; i++) 
+    {
+      if(&p_drv->_link == pos){
+	drv_id = i;
+	break;
+      }
+      pos = pos->next;
+    }
+  
+  assert(drv_id >= 0);
+
+  int binding_core = -1;
+  char* policy_backup = getenv("PIOM_BINDING_CORE");
+  if(!policy_backup)
+    {
+      fprintf(stderr, "PIOM_BINDING_CORE is not set. Please set this environment variable in order to specify a binding core.\n");
+      /* falling back to core #0 */
+      binding_core = 0;
+      goto out;
+    }
+
+  char* policy = strdup(policy_backup);
+  char* saveptr = NULL;
+  char*token = strtok_r(policy, "+", &saveptr);
+  int first_core = -1;
+
+  i=0;
+  while(token) {
+    first_core = atoi(token);
+    if(i == drv_id)
+      binding_core=atoi(token);
+    i++;
+    token = strtok_r(NULL, "+", &saveptr);
+  }
+
+  if(binding_core < 0)
+    {
+      if(first_core >= 0) 
+	{
+	  /* This means that the user specified one binding core and that we have at least 2 drivers.
+	   * Bind all the drivers to a single binding_core.
+	   */
+	  binding_core = first_core; 
+	  goto out;
+	}
+      /* PIOM_BINDING_CORE is set to something that cannot be parsed */
+      fprintf(stderr, "Cannot parse PIOM_BINDING_CORE ('%s'). Falling back to default (%d) for driver #%d\n", policy_backup, 0, drv_id);
+      binding_core=0;
+      goto out;
+    }
+
+ out:
+  fprintf(stderr, "# Driver #%d (%s) is bound to core #%d\n",  drv_id, p_drv->driver->name, binding_core);
+  p_drv->vpset = piom_get_parent_core(binding_core);
+  return p_drv->vpset;
+ 
 }
 
 int nm_poll_recv_task(void *args)
@@ -152,6 +222,16 @@ int nm_post_task(void *args)
   return ret;
 }
 
+int nm_post_on_drv_task(void *args)
+{
+  struct nm_drv * p_drv = args;
+  int ret;
+  nmad_lock();
+  ret = nm_piom_post_on_drv(p_drv);
+  nmad_unlock();
+  return ret;
+}
+
 int nm_offload_task(void* args)
 {
   struct nm_pkt_wrap * p_pw=args;
@@ -195,6 +275,18 @@ void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core)
 		    PIOM_LTASK_OPTION_REPEAT, 
 		    task_vpset);
   piom_ltask_submit(task);	
+}
+
+void nm_submit_post_drv_ltask(struct piom_ltask *task, struct nm_drv *p_drv)
+{
+  piom_vpset_t task_vpset = nm_get_binding_policy_drv(p_drv);
+ 
+  piom_ltask_create(task, 
+		    &nm_post_on_drv_task, 
+		    p_drv,
+		    PIOM_LTASK_OPTION_REPEAT, 
+		    task_vpset);
+  piom_ltask_submit(task);  
 }
 
 void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)

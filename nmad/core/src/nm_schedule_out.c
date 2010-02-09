@@ -163,14 +163,16 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 		p_pw->trk_id,
 		p_pw->proto_id);
 
-#ifdef PIOM_DISABLE_LTASKS
       /* todo: clean that mess ! */
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
       nm_poll_lock_out(p_pw->p_gate->p_core, p_pw->p_drv);
       tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_send_list);
       nm_poll_unlock_out(p_pw->p_gate->p_core, p_pw->p_drv);
+
 #else /* NMAD_POLL */
+
+#ifdef PIOM_DISABLE_LTASKS
       /* Submit  the pkt_wrapper to Pioman */
       piom_req_init(&p_pw->inst);
 #ifdef PIOM_BLOCKING_CALLS
@@ -181,11 +183,13 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
       p_pw->which = NM_PW_SEND;
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-#endif /* NMAD_POLL */
 
 #else  /* PIOM_DISABLE_LTASKS */
       nm_submit_poll_send_ltask(p_pw);
 #endif	/* PIOM_DISABLE_LTASKS */
+
+#endif /* NMAD_POLL */
+
     } 
   else if(err == NM_ESUCCESS)
     {
@@ -231,6 +235,7 @@ void nm_post_out_drv(struct nm_drv *p_drv)
 void nm_poll_out_drv(struct nm_drv *p_drv)
 {
 #ifdef NMAD_POLL
+  struct nm_core *p_core = p_drv->p_core;
   /* poll pending out requests	*/
   if(!tbx_fast_list_empty(&p_drv->pending_send_list))
   {

@@ -383,7 +383,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
 
-#ifndef PIOM_DISABLE_LTASKS
+#if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
   piom_ltask_completed (&p_core->task);
 #endif	/* PIOM_DISABLE_LTASKS */
 
@@ -422,16 +422,17 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 
-#ifdef PIOM_DISABLE_LTASKS
 #ifdef NMAD_POLL
 		  tbx_fast_list_del(&p_pw->link);
 #else /* NMAD_POLL */
+#ifdef PIOM_DISABLE_LTASKS
 		  piom_req_success(&p_pw->inst);
-#endif /* NMAD_POLL */
-
 #else  /* PIOM_DISABLE_LTASKS */
 		  piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOM_DISABLE_LTASKS */
+
+#endif /* NMAD_POLL */
+
 		  nm_so_pw_free(p_pw);
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
@@ -439,7 +440,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
-#ifndef PIOM_DISABLE_LTASKS
+#if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
   piom_exit_ltasks();
 #endif
 

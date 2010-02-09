@@ -120,8 +120,8 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 		p_pw->p_drv,
 		p_pw->trk_id,
 		p_pw->proto_id);
-#ifdef PIOM_DISABLE_LTASKS
 #ifndef NMAD_POLL
+#ifdef PIOM_DISABLE_LTASKS
       p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST | PIOM_STATE_ONE_SHOT;
       /* TODO : implementer les syscall */
 #ifdef PIOM_BLOCKING_CALLS
@@ -129,11 +129,11 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	p_pw->inst.func_to_use = PIOM_FUNC_POLLING;
 #endif /* PIOM_BLOCKING_CALLS */
       piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-#endif /* NMAD_POLL */
-
 #else  /* PIOM_DISABLE_LTASKS */
       nm_submit_poll_recv_ltask(p_pw);      
 #endif /* PIOM_DISABLE_LTASKS */
+#endif /* NMAD_POLL */
+
     }
   else if(err == NM_ESUCCESS)
     {

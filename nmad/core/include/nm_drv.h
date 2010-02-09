@@ -72,6 +72,7 @@ struct nm_drv
   /** Number of tracks opened on this driver. */
   uint8_t nb_tracks;
   
+#ifdef PIOMAN
 #ifdef PIOMAN_POLL
   struct piom_server server;
   struct nm_pkt_wrap post_rq;
@@ -84,7 +85,7 @@ struct nm_drv
 #ifndef PIOM_DISABLE_LTASKS
   struct piom_ltask task;
 #endif
-
+#endif	/* PIOMAN */
   /* NM core object. */
   struct nm_core *p_core;
   

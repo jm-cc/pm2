@@ -207,16 +207,16 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   int err;
   int flags = p_pw->flags;
 
-#ifdef PIOM_DISABLE_LTASKS
 #ifdef PIOMAN_POLL
+#ifdef PIOM_DISABLE_LTASKS
   if((p_pw->which == NM_PW_RECV) || (p_pw->which == NM_PW_SEND))
     {
       piom_req_free(&p_pw->inst);
     }
-#endif /* PIOMAN_POLL */
 #else
   piom_ltask_completed(&p_pw->ltask);
 #endif /* PIOM_DISABLE_LTASKS */
+#endif /* PIOMAN_POLL */
 
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {

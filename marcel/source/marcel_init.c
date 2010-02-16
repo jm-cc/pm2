@@ -763,7 +763,10 @@ void marcel_init_section(int sec)
 			call_init_function(&ma_init_info_marcel_linux_sched_call_UP_PREPARE);
 			call_init_function(&ma_init_info_softirq_init);
 			call_init_function(&ma_init_info_marcel_timers_call_UP_PREPARE);
+#ifndef PIOMAN
 			call_init_function(&ma_init_info_marcel_io_init);
+#endif
+
 #if defined(LINUX_SYS) || defined(GNU_SYS)
 			call_init_function(&ma_init_info_marcel_random_lwp_notifier_register);
 #endif				// LINUX_SYS || GNU_SYS

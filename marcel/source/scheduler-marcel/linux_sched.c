@@ -881,7 +881,7 @@ restart:
 		}
 		ma_local_bh_enable();
 #ifdef PIOMAN
-		if (!piom_polling_is_required(PIOM_POLL_AT_IDLE))
+		if (!piom_check_polling(PIOM_POLL_AT_IDLE))
 #else
 		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE))
 #endif /* PIOMAN */
@@ -896,9 +896,7 @@ restart:
 				 * polling again */
  			        marcel_sig_nanosleep();
 #endif
-#ifdef PIOMAN
-			__piom_check_polling(PIOM_POLL_AT_IDLE);
-#else
+#ifndef PIOMAN
 			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
 #endif /* PIOMAN */
 			didpoll = 1;

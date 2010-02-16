@@ -473,10 +473,7 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 
 		/* no more threads, now poll */
 #ifdef PIOMAN
-		dopoll = piom_polling_is_required(PIOM_POLL_AT_IDLE);
-		if (dopoll) {
-		        __piom_check_polling(PIOM_POLL_AT_IDLE);
-		}
+		dopoll = piom_check_polling(PIOM_POLL_AT_IDLE);
 #else
 		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
 		if (dopoll) {

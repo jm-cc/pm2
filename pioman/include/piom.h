@@ -173,7 +173,7 @@ struct piom_wait {
 
 static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
     TBX_UNUSED;
-static __tbx_inline__ void piom_check_polling(unsigned polling_point)
+static __tbx_inline__ int piom_check_polling(unsigned polling_point)
     TBX_UNUSED;
 void __piom_check_polling(unsigned polling_point);
 
@@ -197,11 +197,15 @@ static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
 
 /* Try to poll
  * Called from Marcel
+ * Return 0 if we didn't need to poll and 1 otherwise
  */
-static __tbx_inline__ void piom_check_polling(unsigned polling_point)
+static __tbx_inline__ int piom_check_polling(unsigned polling_point)
 {
-	if (piom_polling_is_required(polling_point))
-		__piom_check_polling(polling_point);
+    if (piom_polling_is_required(polling_point)){
+	__piom_check_polling(polling_point);
+	return 1;
+    }
+    return 0;
 }
 
 /********************************************************************

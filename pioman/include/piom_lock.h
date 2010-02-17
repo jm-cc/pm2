@@ -68,6 +68,19 @@ int piom_server_lock(piom_server_t server);
 int piom_server_unlock(piom_server_t server);
 #else  /* PIOM_THREAD_ENABLED */
 
+
+#define piom_server_lock_from_callback(server)   (void) 0
+#define piom_server_unlock_from_callback(server) (void) 0
+
+#define piom_server_lock_reentrant(server) 0
+#define piom_server_unlock_reentrant(server, old_owner) (void) 0
+
+#define piom_server_lock_reentrant_from_callback(server) (void) 0
+#define piom_server_relock_reentrant_from_callback(server, old_owner) (void) 0
+#define piom_server_unlock_reentrant_from_callback(server, old_owner) (void) 0
+
+#define piom_server_relock_reentrant(server, old_owner) (void) 0
+
 #define __piom_lock_server(server, owner)                    (void) 0
 #define __piom_unlock_server(server)                         (void) 0
 #define _piom_spin_trylock_softirq(lock)                     (void) 0

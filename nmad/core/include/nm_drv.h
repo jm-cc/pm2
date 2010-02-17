@@ -78,8 +78,8 @@ struct nm_drv
   struct nm_pkt_wrap post_rq;
 #endif
 
-#if(!defined(PIOM_POLLING_DISABLED) && defined(MA__LWPS))
-  marcel_vpset_t vpset;
+#ifndef PIOM_POLLING_DISABLED
+  piom_vpset_t vpset;
 #endif
 
 #ifndef PIOM_DISABLE_LTASKS

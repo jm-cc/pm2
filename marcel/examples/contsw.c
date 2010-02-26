@@ -16,6 +16,7 @@
 
 #include "marcel.h"
 #include <stdio.h>
+#include <setjmp.h>
 
 volatile int a=0;
 

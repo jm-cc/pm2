@@ -90,13 +90,25 @@ void mami_init(mami_manager_t **memory_manager_p) {
     mdebug_memory("Node #%d --> OS Node #%d\n", node, memory_manager->os_nodes[node]);
   }
 
+#ifdef HWLOC_API_VERSION
+  {
+    hwloc_obj_t root_obj = hwloc_get_root_obj(topology);
+    memory_manager->huge_page_size = root_obj->memory.page_types_len >= 2 ? root_obj->memory.page_types[1].size : 0;
+  }
+#else
   memory_manager->huge_page_size = hwloc_get_system_obj(topology)->attr->system.huge_page_size_kB * 1024;
+#endif
   mdebug_memory("Huge page size : %ld\n", memory_manager->huge_page_size);
   memory_manager->huge_page_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(int));
   if (!nb_nodes) memory_manager->huge_page_free[0] = 0;
   else {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+#ifdef HWLOC_API_VERSION
+      hwloc_obj_t obj = hwloc_get_obj_by_depth(topology, depth_node, node);
+      memory_manager->huge_page_free[node] = obj->memory.page_types_len >= 2 ? obj->memory.page_types[1].count : 0;
+#else
       memory_manager->huge_page_free[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.huge_page_free;
+#endif
     }
   }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
@@ -145,15 +157,25 @@ void mami_init(mami_manager_t **memory_manager_p) {
   memory_manager->mem_free = th_mami_malloc(memory_manager->nb_nodes * sizeof(unsigned long));
   if (nb_nodes) {
     for(node=0 ; node<memory_manager->nb_nodes ; node++) {
+#ifdef HWLOC_API_VERSION
+      memory_manager->mem_total[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->memory.total_memory >> 10;
+      memory_manager->mem_free[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->memory.total_memory >> 10;
+#else
       memory_manager->mem_total[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
       memory_manager->mem_free[node] = hwloc_get_obj_by_depth(topology, depth_node, node)->attr->node.memory_kB;
+#endif
     }
   }
   else {
     hwloc_obj_t obj = NULL;
     obj = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_SYSTEM, obj);
+#ifdef HWLOC_API_VERSION
+    memory_manager->mem_total[0] = obj->memory.total_memory >> 10;
+    memory_manager->mem_free[0] = obj->memory.total_memory >> 10;
+#else
     memory_manager->mem_total[0] = obj->attr->node.memory_kB;
     memory_manager->mem_free[0] = obj->attr->node.memory_kB;
+#endif
   }
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     mdebug_memory("Memory on node #%d = %ld\n", node, memory_manager->mem_total[node]);

@@ -469,10 +469,22 @@ ma_topo_level_type_from_hwloc(hwloc_obj_t t)
   enum marcel_topo_level_e mtype = MARCEL_LEVEL_MACHINE; /* default value which always exists */
 
   switch (t->type) {
+
+  /* only support topologies with a single machine */
+#ifdef HWLOC_API_VERSION
+  /* starting with 1.0, it means hwloc has a MACHINE level on top, and no SYSTEM level */
+  case HWLOC_OBJ_MACHINE: mtype = MARCEL_LEVEL_MACHINE; break;
+  case HWLOC_OBJ_SYSTEM:
+    marcel_fprintf(stderr, "SSI OSes like Kerrighed not supported yet\n");
+    MA_ALWAYS_BUG_ON(1);
+#else
+  /* before 1.0, hwloc always had SYSTEM on top and could not have MACHINE levels */
   case HWLOC_OBJ_SYSTEM: mtype = MARCEL_LEVEL_MACHINE; break;
   case HWLOC_OBJ_MACHINE:
     marcel_fprintf(stderr, "SSI OSes like Kerrighed not supported yet\n");
     MA_ALWAYS_BUG_ON(1);
+#endif
+
   case HWLOC_OBJ_NODE: mtype = MARCEL_LEVEL_NODE; break;
   case HWLOC_OBJ_SOCKET: mtype = MARCEL_LEVEL_DIE; break;
   case HWLOC_OBJ_CORE: mtype = MARCEL_LEVEL_CORE; break;
@@ -555,6 +567,11 @@ static void topo_discover(void) {
 	  marcel_topo_merge = 0; /* Synthetic topologies do not need merging */
 	}
 
+#ifdef HWLOC_API_VERSION
+	/* starting with hwloc 1.0, all topologies support by marcel have a MACHINE object on top */
+	MA_ALWAYS_BUG_ON(hwloc_get_root_obj(topology)->type != HWLOC_OBJ_MACHINE);
+#endif
+
 	for(l=topodepth-1; l>=0 && l<topodepth; l--) {
 	  struct marcel_topo_level *mlevels;
 	  int nbitems = hwloc_get_nbobjs_by_depth(topology, l);
@@ -562,7 +579,13 @@ static void topo_discover(void) {
 
 	  mdebug_topology("converting %d items from hwloc level depth %d (type %d)\n", nbitems, l, ltype);
 
-	  if (ltype == HWLOC_OBJ_SYSTEM) {
+	  if (ltype ==
+#ifdef HWLOC_API_VERSION
+	      HWLOC_OBJ_MACHINE
+#else
+	      HWLOC_OBJ_SYSTEM
+#endif
+              ) {
 	    mlevels = marcel_machine_level;
 	  } else {
 	    mlevels = __marcel_malloc((nbitems+MARCEL_NBMAXVPSUP+1)*sizeof(*mlevels));
@@ -600,34 +623,68 @@ static void topo_discover(void) {
 	    ma_topo_set_empty_os_numbers(mlevel);
 	    switch (mtype) {
 	    case MARCEL_LEVEL_MACHINE:
+#ifdef HWLOC_API_VERSION
+	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE] = tlevel->memory.total_memory >> 10;
+	      if (tlevel->memory.page_types_len >= 2) {
+		mlevel->huge_page_free = tlevel->memory.page_types[1].count;
+		mlevel->huge_page_size = tlevel->memory.page_types[1].size;
+	      } else {
+		mlevel->huge_page_free = 0;
+		mlevel->huge_page_size = 0;
+	      }
+#else
 	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE] = tlevel->attr->machine.memory_kB;
 	      mlevel->huge_page_free = tlevel->attr->machine.huge_page_free;
 	      mlevel->huge_page_size = tlevel->attr->machine.huge_page_size_kB * 1024;
+#endif
 	      dmi_board_name = tlevel->attr->machine.dmi_board_name;
 	      dmi_board_vendor = tlevel->attr->machine.dmi_board_vendor;
 	      break;
 	    case MARCEL_LEVEL_NODE:
 	      mlevel->os_node = tlevel->os_index;
+#ifdef HWLOC_API_VERSION
+	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = tlevel->memory.total_memory >> 10;
+	      if (tlevel->memory.page_types_len >= 2) {
+		mlevel->huge_page_free = tlevel->memory.page_types[1].count;
+		mlevel->huge_page_size = tlevel->memory.page_types[1].size;
+	      } else {
+		mlevel->huge_page_free = 0;
+		mlevel->huge_page_size = 0;
+	      }
+#else
 	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_NODE] = tlevel->attr->node.memory_kB;
 	      mlevel->huge_page_free = tlevel->attr->node.huge_page_free;
+#endif
 	      break;
 	    case MARCEL_LEVEL_DIE:
 	      mlevel->os_die = tlevel->os_index;
 	      break;
 	    case MARCEL_LEVEL_L3:
 	      mlevel->os_l3 = tlevel->os_index;
+#ifdef HWLOC_API_VERSION
+	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3] = tlevel->attr->cache.size >> 10;
+#else
 	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L3] = tlevel->attr->cache.memory_kB;
+#endif
 	      break;
 	    case MARCEL_LEVEL_L2:
 	      mlevel->os_l2 = tlevel->os_index;
+#ifdef HWLOC_API_VERSION
+	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] = tlevel->attr->cache.size >> 10;
+#else
 	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L2] = tlevel->attr->cache.memory_kB;
+#endif
 	      break;
 	    case MARCEL_LEVEL_CORE:
 	      mlevel->os_core = tlevel->os_index;
 	      break;
 	    case MARCEL_LEVEL_L1:
 	      mlevel->os_l1 = tlevel->os_index;
+#ifdef HWLOC_API_VERSION
+	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1] = tlevel->attr->cache.size >> 10;
+#else
 	      mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_L1] = tlevel->attr->cache.memory_kB;
+#endif
 	      break;
 	    case MARCEL_LEVEL_PROC:
 	      mlevel->os_cpu = tlevel->os_index;

@@ -25,6 +25,7 @@
 #define ma_savesigs _ma_savesigs
 #endif
         .globl ma_setjmp
+	.type ma_setjmp, @function
 ma_setjmp:
         movl    4(%esp), %ecx
         movl    %ebx, 0(%ecx)
@@ -55,6 +56,7 @@ ma_setjmp:
         pushl   %edx
 
         .globl setjmp
+	.type setjmp, @function
 setjmp:
         SAVE
         movl    4(%esp),%eax    // buffer
@@ -66,6 +68,7 @@ setjmp:
         ret
 
         .globl _setjmp
+	.type _setjmp, @function
 _setjmp:
         SAVE
         movl    4(%esp),%eax    // buffer
@@ -77,6 +80,7 @@ _setjmp:
         ret
 
         .globl __sigsetjmp
+	.type __sigsetjmp, @function
 __sigsetjmp:
         SAVE
         xorl    %eax, %eax
@@ -91,6 +95,7 @@ __sigsetjmp:
         	  
 #if !(defined(LINUX_SYS) || defined(GNU_SYS))
         .globl ma_i386_spinlock_contention
+	.type ma_i386_spinlock_contention, @function
 ma_i386_spinlock_contention:
 re:
         rep; nop

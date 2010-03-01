@@ -25,6 +25,7 @@
 #define ma_savesigs _ma_savesigs
 #endif
 	.globl ma_setjmp
+	.type ma_setjmp, @function
 ma_setjmp:
         movq    %rbx, 0(%rdi)
         movq    %rbp, 8(%rdi)
@@ -44,6 +45,7 @@ ma_setjmp:
 
 #ifdef MA__LIBPTHREAD
         .globl setjmp
+	.type setjmp, @function
 setjmp:
         movl    $1,%esi
 #ifdef __PIC__
@@ -53,11 +55,13 @@ setjmp:
 #endif
 
         .globl _setjmp
+	.type _setjmp, @function
 _setjmp:
         xorl    %esi,%esi
         // fallthrough to __sigsetjmp
 
         .globl __sigsetjmp
+	.type __sigsetjmp, @function
 __sigsetjmp:
         movq    %rbx, 0(%rdi)
         movq    %rbp, 8(%rdi)

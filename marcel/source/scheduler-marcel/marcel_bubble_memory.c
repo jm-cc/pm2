@@ -641,7 +641,7 @@ marcel_bubble_memory_sched_init (marcel_bubble_memory_sched_t *scheduler,
     {
       /* Create a `cache' scheduler that will be invoked when `memory' can't
 	 do a better job, e.g., within NUMA nodes.  */
-      err = marcel_bubble_cache_sched_init (cache_sched, tbx_false);
+      err = marcel_bubble_cache_sched_init (cache_sched, marcel_topo_level (0, 0), tbx_false);
       if (err)
 	marcel_free (cache_sched);
       else

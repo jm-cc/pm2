@@ -135,6 +135,7 @@ main (int argc, char *argv[]) {
 	scheduler =
 		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
 	ret = marcel_bubble_cache_sched_init ((struct marcel_bubble_cache_sched *) scheduler,
+																				marcel_topo_level (0, 0),
 																				tbx_true);
 	MA_BUG_ON (ret != 0);
 

@@ -186,7 +186,8 @@ void marcel_bubble_shake (void);
 #endif
 /** \brief Submits the bubble _b_ to the underlying bubble scheduler. */
 int marcel_bubble_submit (marcel_bubble_t *b);
-
+/** \brief Submits the bubble _b_ to the _sched_ bubble scheduler. */
+int marcel_bubble_submit_to_sched (marcel_bubble_sched_t *sched, marcel_bubble_t *b);
 /**
  ******************************************************************************
  * scheduler view

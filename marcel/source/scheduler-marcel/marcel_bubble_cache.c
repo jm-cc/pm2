@@ -760,6 +760,7 @@ cache_steal (marcel_bubble_sched_t *sched, unsigned int from_vp) {
 
 int
 marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
+				struct marcel_topo_level *root_level,
 				tbx_bool_t work_stealing) {
   memset (scheduler, 0, sizeof (*scheduler));
 
@@ -770,6 +771,7 @@ marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
   scheduler->scheduler.submit = cache_sched_submit;
   scheduler->scheduler.rawsubmit = cache_sched_rawsubmit;
   scheduler->scheduler.vp_is_idle = cache_steal;
+  scheduler->scheduler.root_level = root_level;
 
   scheduler->work_stealing = work_stealing;
 
@@ -780,6 +782,7 @@ marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
 static int
 make_default_scheduler (marcel_bubble_sched_t *scheduler) {
   return marcel_bubble_cache_sched_init ((marcel_bubble_cache_sched_t *) scheduler,
+					 marcel_topo_level (0,0),
 					 tbx_false);
 }
 

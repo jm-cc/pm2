@@ -167,6 +167,47 @@ int marcel_bubble_submit (marcel_bubble_t *b) {
   return 1;
 }
 
+static int ma_entity_is_in_sched_scope (marcel_bubble_sched_t *sched, marcel_entity_t *e) {
+  struct marcel_topo_level *sched_root_level = sched->root_level;
+  struct marcel_topo_level *entity_level = ma_get_parent_rq (e)->topolevel;
+
+  return ma_topo_is_in_subtree (sched_root_level, entity_level);
+}
+
+/* Calls the `submit' function of the bubble scheduler passed as argument. */
+int marcel_bubble_submit_to_sched (marcel_bubble_sched_t *sched, marcel_bubble_t *b) {
+  MA_BUG_ON (!sched->root_level);
+
+  ma_bubble_gather (b);
+
+  ma_local_bh_disable ();
+  ma_preempt_disable ();
+
+  /* Check whether bubble _b_ lies in the topology subtree handled by
+     scheduler _sched_. */
+  if (!ma_entity_is_in_sched_scope (sched, &b->as_entity)) {
+    ma_bubble_lock_all (b, marcel_topo_level (0, 0));
+    ma_move_entity (&b->as_entity, &sched->root_level->rq.as_holder);
+    ma_bubble_unlock_all (b, marcel_topo_level (0, 0));  
+  }
+  
+  if (sched->submit) {
+    sched->submit (sched, &b->as_entity);
+    
+    ma_preempt_enable_no_resched ();
+    ma_local_bh_enable ();
+    
+    ma_resched_existing_threads (sched->root_level);
+    
+    return 0;
+  }
+
+  ma_preempt_enable_no_resched ();
+  ma_local_bh_enable ();
+
+  return 1;  
+}
+
 /* Application is entering ending state, let's prevent idle
    schedulers from stealing anything. */ 
 void marcel_bubble_sched_end (void) {

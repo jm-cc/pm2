@@ -109,6 +109,9 @@ struct ma_bubble_sched_struct {
 	 * locked holder in nexth), or NULL if ma_schedule() must restart (and in such
 	 * case nexth must have been unlocked. */
 	ma_bubble_sched_sched sched;
+
+        /** \brief Level considered as root for this scheduler instance. */ 
+        struct marcel_topo_level *root_level;
 };
 
 

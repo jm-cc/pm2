@@ -459,7 +459,7 @@ marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
   bubble_sched_debug ("Cache: Submitting bubble %p from topo_level %s.\n", b, l->rq.as_holder.name);
 
   ma_cache_distribute_from (l);
-  ma_resched_existing_threads (l);
+  __ma_resched_topo_level (l);
 
   bubble_sched_debug ("Cache: Bubble %p submitted from topo_level %s.\n", b, l->rq.as_holder.name);
 }
@@ -741,7 +741,7 @@ cache_steal (marcel_bubble_sched_t *sched, unsigned int from_vp) {
 					 &args);
   ma_bubble_unlock_all (&marcel_root_bubble, marcel_topo_level(0,0));
 
-  ma_resched_existing_threads (me);
+  ma_resched_topo_level (me);
   ma_preempt_enable_no_resched ();
   ma_local_bh_enable ();
   ma_activate_idle_scheduler ();

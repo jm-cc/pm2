@@ -281,12 +281,6 @@ int increasing_order_entity_both_compar(const void *_e1, const void *_e2)
 }
 #endif /* MM_HEAP_ENABLED */
 
-void
-ma_resched_existing_threads(struct marcel_topo_level *l)
-{
-	__ma_resched_vpset(&l->vpset);
-}
-
 /* Lock the entity ! */
 int ma_count_threads_in_entity(marcel_entity_t *entity)
 {

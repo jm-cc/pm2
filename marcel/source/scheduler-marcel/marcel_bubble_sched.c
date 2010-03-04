@@ -197,7 +197,7 @@ int marcel_bubble_submit_to_sched (marcel_bubble_sched_t *sched, marcel_bubble_t
     ma_preempt_enable_no_resched ();
     ma_local_bh_enable ();
     
-    ma_resched_existing_threads (sched->root_level);
+    ma_resched_topo_level (sched->root_level);
     
     return 0;
   }

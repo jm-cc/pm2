@@ -139,6 +139,18 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 	ma_local_bh_enable();
 }
 
+void
+__ma_resched_topo_level(struct marcel_topo_level *l)
+{
+	__ma_resched_vpset(&l->vpset);
+}
+
+void
+ma_resched_topo_level(struct marcel_topo_level *l)
+{
+	ma_resched_vpset(&l->vpset);
+}
+
 /**
  * task_curr - is this task currently executing on a CPU?
  * @p: the task in question.

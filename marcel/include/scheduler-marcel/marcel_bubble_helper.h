@@ -106,7 +106,6 @@ unsigned int ma_load_on_rq (ma_runqueue_t *rq);
 /* \e rq must be already locked because else entities may die under your hand.  */
 int ma_get_entities_from_rq(ma_runqueue_t *rq, marcel_entity_t *e[], int ne);
 int ma_gather_all_bubbles_on_rq(ma_runqueue_t *rq);
-void ma_resched_existing_threads(struct marcel_topo_level *l);
 int ma_count_threads_in_entity(marcel_entity_t *entity);
 
 /* Burst bubble _bubble_ (i.e. extract its content) if _bubble_ is on

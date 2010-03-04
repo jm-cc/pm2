@@ -35,6 +35,10 @@ extern void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp);
 extern void ma_resched_vpset(const marcel_vpset_t *vpset);
 /** Same, but lwp rqs of the VPset are already locked */
 extern void __ma_resched_vpset(const marcel_vpset_t *vpset);
+/** Force VPs of a whole level to be rescheduled */
+extern void ma_resched_topo_level(struct marcel_topo_level *l);
+/** Same, but lwp rqs of the level VPset are already locked */
+extern void __ma_resched_topo_level(struct marcel_topo_level *l);
 
 
 #ifdef __MARCEL_KERNEL__

@@ -390,7 +390,9 @@ static __tbx_inline__ void ma_bubble_try_to_wake_up_and_rawunlock(marcel_bubble_
 static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock(marcel_bubble_t *b);
 static __tbx_inline__ void ma_bubble_try_to_wake_up_and_unlock_softirq(marcel_bubble_t *b);
 
+/** \brief Force the running threads of a given locked bubble \b to be rescheduled. */
 void __ma_resched_bubble_contents(marcel_bubble_t *b);
+/** \brief Force the running threads of a given unlocked bubble \b to be rescheduled. */
 void ma_resched_bubble_contents(marcel_bubble_t *b);
 
 #endif /** __MARCEL_KERNEL__ **/

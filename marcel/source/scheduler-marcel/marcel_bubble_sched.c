@@ -197,7 +197,7 @@ int marcel_bubble_submit_to_sched (marcel_bubble_sched_t *sched, marcel_bubble_t
     ma_preempt_enable_no_resched ();
     ma_local_bh_enable ();
     
-    ma_resched_topo_level (sched->root_level);
+    ma_resched_bubble_contents (b);
     
     return 0;
   }
@@ -1368,6 +1368,35 @@ const marcel_bubble_sched_t *marcel_lookup_bubble_scheduler(const char *name) {
 	return scheduler;
 }
 
+void __ma_resched_bubble_contents(marcel_bubble_t *b) {
+	marcel_entity_t *e;
+	for_each_entity_scheduled_in_bubble_begin (e, b) {
+		switch (e->type) {
+			case MA_BUBBLE_ENTITY:
+				__ma_resched_bubble_contents(b);
+			case MA_THREAD_ENTITY:
+				/* only resched running threads */
+				if (!(e->ready_holder_data)) {
+					marcel_task_t * const t = ma_task_entity(e);
+					const int vp	= ma_vpnum(t->lwp);
+					if (vp != -1) {
+						ma_set_tsk_need_togo(t);
+						ma_resched_task(t, vp, t->lwp);
+					}
+				}
+			default:
+				MA_BUG ();
+
+		}
+	}
+	for_each_entity_scheduled_in_bubble_end ();
+}
+
+void ma_resched_bubble_contents(marcel_bubble_t *b) {
+	ma_bubble_lock_all(b, marcel_machine_level);
+	__ma_resched_bubble_contents(b);
+	ma_bubble_unlock_all(b, marcel_machine_level);
+}
 
 
 /******************************************************************************

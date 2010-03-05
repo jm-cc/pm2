@@ -136,6 +136,8 @@ static struct nm_unpack_s*nm_unpack_find_matching(struct nm_core*p_core, nm_gate
 /** copy received data to its final destination */
 static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, const void *ptr, uint32_t len)
 {
+  assert(chunk_offset + len <= p_unpack->expected_len);
+  assert(p_unpack->cumulated_len + len <= p_unpack->expected_len);
   if(len > 0)
     {
       /* Copy data to its final destination */
@@ -149,32 +151,36 @@ static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, 
 	{
 	  /* destination is non contiguous */
 	  struct iovec*const iov = p_unpack->data;
-	  uint32_t pending_len = len;
-	  int offset = 0;
+	  int pending_len = len;
+	  int offset = 0; /* current offset in the destination */
 	  int i = 0;
 	  while(offset + iov[i].iov_len <= chunk_offset)
 	    {
 	      offset += iov[i].iov_len;
 	      i++;
 	    }
-	  uint32_t chunk_len = iov[i].iov_len - (chunk_offset - offset);
+	  assert(offset <= p_unpack->expected_len);
+	  const int block_offset = chunk_offset - offset;
+	  assert(block_offset >= 0);
+	  uint32_t chunk_len = iov[i].iov_len - block_offset;
 	  if(chunk_len > len)
 	    chunk_len = len;
-	  memcpy(iov[i].iov_base + (chunk_offset - offset), ptr, chunk_len);
+	  memcpy(iov[i].iov_base + block_offset, ptr, chunk_len);
 	  pending_len -= chunk_len;
 	  offset += iov[i].iov_len;
 	  i++;
 	  while(pending_len)
 	    {
+	      assert(pending_len > 0);
 	      if(offset + iov[i].iov_len >= chunk_offset + pending_len)
 		{
-		  memcpy(iov[i].iov_base, ptr + (len-pending_len), pending_len);
+		  memcpy(iov[i].iov_base, ptr + (len - pending_len), pending_len);
 		  pending_len = 0;
 		}
 	      else
 		{
 		  chunk_len = iov[i].iov_len;
-		  memcpy(iov[i].iov_base, ptr + (len-pending_len), chunk_len);
+		  memcpy(iov[i].iov_base, ptr + (len - pending_len), chunk_len);
 		  pending_len -= chunk_len;
 		  offset += iov[i].iov_len;
 		  i++;

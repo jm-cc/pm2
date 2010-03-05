@@ -32,6 +32,8 @@ int nm_core_gate_init(nm_core_t p_core, nm_gate_t*pp_gate)
   p_gate->p_core = p_core;
   p_gate->ref    = NULL;
 
+  nm_gdrv_vect_init(&p_gate->gdrv_array);
+
   FUT_DO_PROBE1(FUT_NMAD_INIT_GATE, p_gate);
 
   nm_so_tag_table_init(&p_gate->tags);

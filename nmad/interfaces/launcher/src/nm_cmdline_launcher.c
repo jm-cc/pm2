@@ -270,6 +270,8 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 		    }
 		}
 	    }
+	  free(ifa_list);
+	  ifa_list = NULL;
 	}
       if(local_launcher_url[0] == '\0')
 	{
@@ -315,6 +317,8 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
       fprintf(stderr, "launcher: nm_session_connect returned err = %d\n", err);
       abort();
     }
+  if(remote_session_url != NULL)
+    TBX_FREE(remote_session_url);
 }
 
 

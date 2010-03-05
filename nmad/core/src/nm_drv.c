@@ -499,6 +499,19 @@ int nm_core_driver_exit(struct nm_core *p_core)
     {
       nm_so_tag_table_destroy(&p_gate->tags);
       puk_instance_destroy(p_gate->strategy_instance);
+      nm_gdrv_vect_destroy(&p_gate->gdrv_array);
+    }
+  struct nm_gate*tmp_gate = NULL;
+  tbx_fast_list_for_each_entry_safe(p_gate, tmp_gate, &p_core->gate_list, _link)
+    {
+      tbx_fast_list_del(&p_gate->_link);
+      TBX_FREE(p_gate);
+    }
+  struct nm_drv*tmp_drv = NULL;
+  tbx_fast_list_for_each_entry_safe(p_drv, tmp_drv, &p_core->driver_list, _link)
+    {
+      tbx_fast_list_del(&p_drv->_link);
+      TBX_FREE(p_drv);
     }
 
   nm_unlock_interface(p_core);

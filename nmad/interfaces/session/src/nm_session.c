@@ -394,14 +394,28 @@ int nm_session_destroy(nm_session_t p_session)
     {
       nm_core_exit(nm_session.p_core);
       nm_session.p_core = NULL;
-      if(nm_session.drivers)
+      if(nm_session.drivers != NULL)
 	{
+	  int i;
+	  for(i = 0; i < nm_session.n_drivers; i++)
+	    {
+	      free(nm_session.drivers[i].name);
+	    }
 	  free(nm_session.drivers);
 	  nm_session.drivers = NULL;
 	}
       nm_session.n_drivers = 0;
       free((void*)nm_session.local_url);
       nm_session.local_url = NULL;
+      while(puk_hashtable_size(nm_session.gates) != 0)
+	{
+	  char*url = NULL;
+	  puk_hashtable_getentry(nm_session.gates, &url, NULL);
+	  puk_hashtable_remove(nm_session.gates, url);
+	  TBX_FREE(url);
+	}
+      puk_hashtable_delete(nm_session.gates);
+      puk_hashtable_delete(nm_session.sessions);
     }
   return NM_ESUCCESS;
 }

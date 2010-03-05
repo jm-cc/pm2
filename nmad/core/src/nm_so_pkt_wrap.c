@@ -75,6 +75,7 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
  */
 int nm_so_pw_exit()
 {
+  tbx_malloc_clean(nm_so_pw_contrib_mem);
   tbx_malloc_clean(nm_so_pw_nohd_mem);
   tbx_malloc_clean(nm_so_pw_buf_mem);
 

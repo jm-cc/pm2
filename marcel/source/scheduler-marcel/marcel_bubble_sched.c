@@ -1374,6 +1374,7 @@ void __ma_resched_bubble_contents(marcel_bubble_t *b) {
 		switch (e->type) {
 			case MA_BUBBLE_ENTITY:
 				__ma_resched_bubble_contents(b);
+				break;
 			case MA_THREAD_ENTITY:
 				/* only resched running threads */
 				if (!(e->ready_holder_data)) {
@@ -1384,6 +1385,7 @@ void __ma_resched_bubble_contents(marcel_bubble_t *b) {
 						ma_resched_task(t, vp, t->lwp);
 					}
 				}
+				break;
 			default:
 				MA_BUG ();
 

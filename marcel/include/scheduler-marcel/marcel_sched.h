@@ -160,6 +160,13 @@ int ma_wake_up_task(marcel_task_t * p);
 
 __tbx_inline__ static ma_runqueue_t *
 marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
+#ifdef MA__NUMA
+#include <hwloc.h>
+__tbx_inline__ static void
+ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_const_cpuset_t lset);
+__tbx_inline__ static ma_runqueue_t *
+marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset);
+#endif /* MA__NUMA */
 
 /* unsigned marcel_sched_add_vp(void); */
 void *marcel_sched_seed_runner(void *arg);

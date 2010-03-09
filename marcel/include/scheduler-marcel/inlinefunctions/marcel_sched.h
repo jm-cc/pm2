@@ -23,6 +23,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+#include <hwloc.h>
 
 
 /** Internal inline functions **/
@@ -49,6 +50,60 @@ marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset)
 		MA_BUG();
 	}
 }
+
+#ifdef MA__NUMA
+/* Convert from hwloc cpusets to marcel cpusets */
+__tbx_inline__ static void
+ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_const_cpuset_t lset)
+{
+#ifdef MA_HAVE_VPSUBSET
+  /* large vpset using an array of unsigned long subsets in both marcel and hwloc */
+  int i;
+  for(i=0; i<MA_VPSUBSET_COUNT && i<MA_VPSUBSET_COUNT; i++)
+    MA_VPSUBSET_SUBSET(*mset, i) = hwloc_cpuset_to_ith_ulong(lset, i);
+#elif MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32
+  /* marcel uses unsigned long long mask,
+   * and it's longer than hwloc's unsigned long mask,
+   * use 2 of the latter
+   */
+  *mset = (marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 0) | ((marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 1) << 32);
+#else
+  /* marcel uses int or unsigned long long mask,
+   * and it's smaller or equal-size than hwloc's unsigned long mask,
+   * use 1 of the latter
+   */
+  *mset = hwloc_cpuset_to_ith_ulong(lset, 0);
+#endif
+}
+
+/** Same as marcel_sched_vpset_init_rq, but using OS cpusets */
+__tbx_inline__ static ma_runqueue_t *
+marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset)
+{
+	if (tbx_unlikely(hwloc_cpuset_isfull(cpuset)))
+		return &ma_main_runqueue;
+	else if (tbx_unlikely(hwloc_cpuset_iszero(cpuset)))
+		return &ma_dontsched_runqueue;
+	else {
+		marcel_vpset_t marcel_cpuset;
+		struct marcel_topo_level *level = marcel_machine_level;
+		unsigned i;
+
+		ma_cpuset_from_hwloc(&marcel_cpuset, cpuset);
+		while (1) {
+			printf("at %s, %d children\n", level->rq.as_holder.name, level->arity);
+			for (i = 0; i < level->arity; i++)
+				if (marcel_vpset_isincluded(&marcel_cpuset, &level->children[i]->cpuset))
+					break;
+			if (i == level->arity)
+				/* No matching children, father is already best */
+				break;
+			level = level->children[i];
+		}
+		return &level->rq;
+	}
+}
+#endif /* MA__NUMA */
 
 static __tbx_setjmp_inline__
 int marcel_sched_internal_create(marcel_task_t *cur, marcel_task_t *new_task,

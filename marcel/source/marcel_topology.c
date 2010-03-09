@@ -512,29 +512,6 @@ ma_topo_level_type_from_hwloc(hwloc_obj_t t)
 
   return mtype;
 }
-
-static inline void
-ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_cpuset_t lset)
-{
-#ifdef MA_HAVE_VPSUBSET
-  /* large vpset using an array of unsigned long subsets in both marcel and hwloc */
-  int i;
-  for(i=0; i<MA_VPSUBSET_COUNT && i<MA_VPSUBSET_COUNT; i++)
-    MA_VPSUBSET_SUBSET(*mset, i) = hwloc_cpuset_to_ith_ulong(lset, i);
-#elif MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32
-  /* marcel uses unsigned long long mask,
-   * and it's longer than hwloc's unsigned long mask,
-   * use 2 of the latter
-   */
-  *mset = (marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 0) | ((marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 1) << 32);
-#else
-  /* marcel uses int or unsigned long long mask,
-   * and it's smaller or equal-size than hwloc's unsigned long mask,
-   * use 1 of the latter
-   */
-  *mset = hwloc_cpuset_to_ith_ulong(lset, 0);
-#endif
-}
 #endif /* MA__NUMA */
 
 /* Main discovery loop */

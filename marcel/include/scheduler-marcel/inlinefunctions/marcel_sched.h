@@ -91,9 +91,8 @@ marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset)
 
 		ma_cpuset_from_hwloc(&marcel_cpuset, cpuset);
 		while (1) {
-			printf("at %s, %d children\n", level->rq.as_holder.name, level->arity);
 			for (i = 0; i < level->arity; i++)
-				if (marcel_vpset_isincluded(&marcel_cpuset, &level->children[i]->cpuset))
+				if (marcel_vpset_isincluded(&level->children[i]->cpuset, &marcel_cpuset))
 					break;
 			if (i == level->arity)
 				/* No matching children, father is already best */

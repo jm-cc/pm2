@@ -228,7 +228,7 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 	      label, hash_code, p_session->label);
       abort();
     }
-#ifndef NM_TAG_STRUCT
+#ifndef NM_TAGS_AS_INDIRECT_HASH
   if(puk_hashtable_size(nm_session.sessions) > 0)
     {
       fprintf(stderr, "# session: current flavor does not support multiple sessions. Please activate option 'tag_huge'.\n");

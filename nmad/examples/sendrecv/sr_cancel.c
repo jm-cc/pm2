@@ -61,7 +61,7 @@ int main(int argc, char	**argv)
       printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
       err = nm_sr_rcancel(p_core, &request);
-      printf("nm_sr_cancel rc = %3d (expected: -NM_EALREADY = %d)\n", err, -NM_EALREADY);
+      printf("nm_sr_cancel rc = %3d (expected: -NM_ECANCELED = %d)\n", err, -NM_ECANCELED);
 
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
       nm_sr_swait(p_core, &request);

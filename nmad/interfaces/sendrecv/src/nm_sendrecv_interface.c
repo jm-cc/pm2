@@ -246,26 +246,22 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     TBX_FAILUREF("nm_sr_rtest- req=%p no recv posted!\n", p_request);
 #endif /* NMAD_DEBUG */
 
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
+  if( !nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED))
     {
 #ifdef NMAD_POLL
-      nm_core_t p_core = p_session->p_core;
-      nm_schedule(p_core);
-#else
+      nm_schedule(p_session->p_core);
+#else /* NMAD_POLL */
       piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif
+#endif /* NMAD_POLL */
     }
 
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
-      if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
-	{
-	  rc = -NM_ECANCELED;
-	}
-      else
-	{
-	  rc = NM_ESUCCESS;
-	}
+      rc = NM_ESUCCESS;
+    }
+  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
+    {
+      rc = -NM_ECANCELED;
     }
   else
     {
@@ -284,10 +280,10 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   nm_sr_flush(p_core);
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request,
 		 nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
-  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED)) 
+  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED)) 
     {
       nm_so_post_all_force(p_core);
-      nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED, p_core);
+      nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
     }
   NM_SO_SR_TRACE("request %p completed\n", p_request);
   NM_SO_SR_LOG_OUT();
@@ -423,6 +419,7 @@ int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
  *  -NM_ENOTIMPL    case where cancellation is not supported yet
  *  -NM_EINPROGRESS receipt is in progress, it is too late to cancel
  *  -NM_EALREADY    receipt is already completed
+ *  -NM_CANCELED    receipt was already canceled
  */
 int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
 {
@@ -436,6 +433,10 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
   if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED))
     {
       err = -NM_EALREADY;
+    }
+  else if(nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_CANCELLED))
+    {
+      err = -NM_ECANCELED;
     }
   else
     {
@@ -498,7 +499,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 
   if(event->status & NM_STATUS_UNPACK_CANCELLED)
     {
-      sr_event = NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED;
+      sr_event = NM_SR_STATUS_RECV_CANCELLED;
     }
   else
     {

@@ -33,7 +33,7 @@ nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
 nm_sr_test   rc = -14 (expected: -NM_ECANCELED = -14)
 nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
 nm_sr_cancel rc =   0 (expected:  NM_ESUCCESS = 0)
-nm_sr_cancel rc = -10 (expected: -NM_EALREADY = -10)
+nm_sr_cancel rc = -14 (expected: -NM_ECANCELED = -14)
 EOF
 ) > /tmp/pm2test_"${USER}"_expected
 

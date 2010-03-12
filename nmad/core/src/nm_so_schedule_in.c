@@ -366,7 +366,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
       tbx_fast_list_del(&p_unpack->_link);
       const struct nm_so_event_s event =
 	{
-	  .status =  NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED,
+	  .status = NM_STATUS_UNPACK_CANCELLED,
 	  .p_unpack = p_unpack
 	};
       nm_core_status_event(p_core, &event, &p_unpack->status);

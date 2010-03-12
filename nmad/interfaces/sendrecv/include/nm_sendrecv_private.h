@@ -203,6 +203,7 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_SEND_POSTED);
   NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
   p_request->ref = NULL;
+  TBX_INIT_FAST_LIST_HEAD(&p_request->_link);
 }
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
 					const void*data, uint32_t len)
@@ -264,6 +265,7 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
   nm_sr_status_init(&p_request->status, NM_SR_STATUS_RECV_POSTED);
   NM_SR_EVENT_INIT_MONITOR_NULL(p_request->monitor);
   p_request->ref = NULL;
+  TBX_INIT_FAST_LIST_HEAD(&p_request->_link);
 }
 
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 

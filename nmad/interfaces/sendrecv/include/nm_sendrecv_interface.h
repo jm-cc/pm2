@@ -115,6 +115,11 @@ extern int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_requ
 /** Ask to enqueue the request in the completion queue upon completion */
 extern int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request);
 
+/** Ask to not enqueue the request in the completion queue upon completion.
+ * Remove it from the completion queue if it was already enqueued.
+ */
+extern int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request);
+
 /** Add a user reference to a request */
 static inline int nm_sr_request_set_ref(nm_session_t p_session, nm_sr_request_t*p_request, void*ref);
 

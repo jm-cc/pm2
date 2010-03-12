@@ -111,7 +111,7 @@ static const struct nm_so_monitor_s nm_sr_monitor_pack_completed =
 static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed = 
   {
     .notifier = &nm_sr_event_unpack_completed,
-    .mask = NM_STATUS_UNPACK_COMPLETED
+    .mask = NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
   };
 
 static const struct nm_so_monitor_s nm_sr_monitor_unexpected = 
@@ -362,6 +362,18 @@ int nm_sr_request_set_completion_queue(nm_session_t p_session, nm_sr_request_t*p
 			&nm_sr_completion_enqueue);
   return NM_ESUCCESS;
 }
+
+int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t*p_request)
+{
+  nm_lock_interface(p_session->p_core);
+  nm_lock_status(p_session->p_core);
+  nm_sr_request_monitor(p_session, p_request, NM_SR_EVENT_SEND_COMPLETED | NM_SR_EVENT_RECV_COMPLETED, NULL);
+  tbx_fast_list_del(&p_request->_link);
+  nm_unlock_status(p_session->p_core);
+  nm_unlock_interface(p_session->p_core);
+  return NM_ESUCCESS;
+}
+
 
 int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {

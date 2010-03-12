@@ -333,7 +333,6 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 int nm_sr_request_monitor(nm_session_t p_session, nm_sr_request_t *p_request,
 			  nm_sr_event_t mask, nm_sr_event_notifier_t notifier)
 {
-  assert(p_request->monitor.notifier == NULL);
   p_request->monitor.mask = mask;
   p_request->monitor.notifier = notifier;
   return NM_ESUCCESS;
@@ -367,7 +366,7 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
 {
   nm_lock_interface(p_session->p_core);
   nm_lock_status(p_session->p_core);
-  nm_sr_request_monitor(p_session, p_request, NM_SR_EVENT_SEND_COMPLETED | NM_SR_EVENT_RECV_COMPLETED, NULL);
+  nm_sr_request_monitor(p_session, p_request, 0, NULL);
   tbx_fast_list_del(&p_request->_link);
   nm_unlock_status(p_session->p_core);
   nm_unlock_interface(p_session->p_core);

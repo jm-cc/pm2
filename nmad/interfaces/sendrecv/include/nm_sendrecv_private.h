@@ -49,7 +49,7 @@ typedef struct
 #define NM_SR_EVENT_INIT_MONITOR_NULL(monitor)				\
   do {									\
     monitor.mask = (nm_sr_event_t) 0;					\
-    monitor.notifier= NULL;						\
+    monitor.notifier = NULL;						\
   } while(0);								\
 
 #define NM_SR_EVENT_MONITOR_NULL ((nm_sr_event_monitor_t){ .mask = 0, .notifier = NULL })

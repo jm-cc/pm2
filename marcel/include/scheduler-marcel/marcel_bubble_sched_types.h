@@ -194,8 +194,12 @@ struct marcel_bubble {
 	struct tbx_fast_list_head natural_entities;
 	/** \brief Number of held entities */
 	unsigned nb_natural_entities;
-	/** \brief Semaphore for the join operation */
-	marcel_sem_t join;
+	/** \brief Condition variable for the join operation */
+	marcel_cond_t join_cond;
+	/** \brief Mutex for the join operation */
+	marcel_mutex_t join_mutex;
+	/** \brief Emptiness state for the join operation (1 == bubble empty, 0 == bubble not empty) */
+	int join_empty_state;
 
 	/** \brief List of entities queued in the so-called "thread cache" */
 	struct tbx_fast_list_head cached_entities;

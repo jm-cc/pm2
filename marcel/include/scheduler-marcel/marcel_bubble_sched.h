@@ -34,7 +34,9 @@
 	.as_holder = MA_HOLDER_INITIALIZER((b).as_holder, MA_BUBBLE_HOLDER), \
 	.natural_entities = TBX_FAST_LIST_HEAD_INIT((b).natural_entities), \
 	.nb_natural_entities = 0, \
-	.join = MARCEL_SEM_INITIALIZER(1), \
+	.join_mutex = MARCEL_MUTEX_INITIALIZER, \
+	.join_cond = MARCEL_COND_INITIALIZER, \
+	.join_empty_state = 1, \
 	.cached_entities = TBX_FAST_LIST_HEAD_INIT((b).cached_entities), \
 	.num_schedules = 0, \
 	.barrier = MARCEL_BARRIER_INITIALIZER(0), \

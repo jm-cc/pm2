@@ -432,7 +432,8 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	/* Basically does a remove together with an insert but without using an
 	 * intermediate runqueue */
 	marcel_bubble_t *src_bubble;
-	int res;
+	int src_bubble_becomes_empty;
+	int dst_bubble_was_empty = 0;
 
 	MA_BUG_ON(entity->natural_holder->type != MA_BUBBLE_HOLDER);
 	src_bubble = ma_bubble_holder(entity->natural_holder);
@@ -446,7 +447,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	entity->sched_holder = NULL;
 	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&src_bubble->barrier, -1);
-	res = (!--src_bubble->nb_natural_entities);
+	src_bubble_becomes_empty = (!--src_bubble->nb_natural_entities);
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_bubble,ma_bubble_entity(entity),src_bubble);
 	else
@@ -458,7 +459,7 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	/* insert entity in bubble dst */
 	if (!dst_bubble->nb_natural_entities) {
 		MA_BUG_ON(!tbx_fast_list_empty(&dst_bubble->natural_entities));
-		marcel_sem_P(&dst_bubble->join);
+		dst_bubble_was_empty = 1;
 	}
 
 	if (entity->type == MA_BUBBLE_ENTITY)
@@ -539,20 +540,38 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(src_entity_h);
 
+	if (dst_bubble_was_empty) {
+		marcel_mutex_lock(&dst_bubble->join_mutex);
+		ma_holder_lock_softirq(&dst_bubble->as_holder);
+		if (dst_bubble->join_empty_state == 1  &&  dst_bubble->nb_natural_entities == 1) {
+			dst_bubble->join_empty_state = 0;
+		}
+		ma_holder_unlock_softirq(&dst_bubble->as_holder);
+		marcel_mutex_unlock(&dst_bubble->join_mutex);
+	}
 	/* signal src bubble emptiness when applicable */
-	if (res)
-		marcel_sem_V(&src_bubble->join);
+	if (src_bubble_becomes_empty) {
+		marcel_mutex_lock(&src_bubble->join_mutex);
+		ma_holder_lock_softirq(&src_bubble->as_holder);
+		if (src_bubble->join_empty_state == 0  &&  src_bubble->nb_natural_entities == 0) {
+			src_bubble->join_empty_state = 1;
+			marcel_cond_signal(&src_bubble->join_cond);
+		}
+		ma_holder_unlock_softirq(&src_bubble->as_holder);
+		marcel_mutex_unlock(&src_bubble->join_mutex);
+	}
 }
 
 static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	int ret = 1;
+	int bubble_was_empty = 0;
 
 	ma_holder_lock_softirq(&bubble->as_holder);
 
 	/* XXX: will sleep (hence abort) if the bubble was joined ! */
 	if (!bubble->nb_natural_entities) {
 		MA_BUG_ON(!tbx_fast_list_empty(&bubble->natural_entities));
-		marcel_sem_P(&bubble->join);
+		bubble_was_empty = 1;
 	}
 
 	//bubble_sched_debugl(7,"__inserting %p in opened bubble %p\n",entity,bubble);
@@ -585,6 +604,15 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 		ret = 0;
 	}
 	ma_holder_unlock_softirq(&bubble->as_holder);
+	if (bubble_was_empty) {
+		marcel_mutex_lock(&bubble->join_mutex);
+		ma_holder_lock_softirq(&bubble->as_holder);
+		if (bubble->join_empty_state == 1  &&  bubble->nb_natural_entities == 1) {
+			bubble->join_empty_state = 0;
+		}
+		ma_holder_unlock_softirq(&bubble->as_holder);
+		marcel_mutex_unlock(&bubble->join_mutex);
+	}
 	return ret;
 }
 
@@ -669,8 +697,16 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);
-	if (bubble_becomes_empty)
-		marcel_sem_V(&bubble->join);
+	if (bubble_becomes_empty) {
+		marcel_mutex_lock(&bubble->join_mutex);
+		ma_holder_lock_softirq(&bubble->as_holder);
+		if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
+			bubble->join_empty_state = 1;
+			marcel_cond_signal(&bubble->join_cond);
+		}
+		ma_holder_unlock_softirq(&bubble->as_holder);
+		marcel_mutex_unlock(&bubble->join_mutex);
+	}
 	LOG_OUT();
 	return 0;
 }
@@ -733,7 +769,12 @@ void marcel_wake_up_bubble(marcel_bubble_t *bubble) {
 void marcel_bubble_join(marcel_bubble_t *bubble) {
 	ma_holder_t *h;
 	LOG_IN();
-	marcel_sem_P(&bubble->join);
+	marcel_mutex_lock(&bubble->join_mutex);
+	while (bubble->join_empty_state != 1) {
+		marcel_cond_wait(&bubble->join_cond, &bubble->join_mutex);
+	}
+	marcel_mutex_unlock(&bubble->join_mutex);
+
 	h = ma_bubble_holder_lock_softirq(bubble);
 	MA_BUG_ON(bubble->nb_natural_entities);
 	MA_BUG_ON(!tbx_fast_list_empty(&bubble->natural_entities));

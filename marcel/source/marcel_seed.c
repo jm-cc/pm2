@@ -15,6 +15,7 @@
 
 #include "marcel.h"
 
+#ifdef MA__BUBBLES
 /* \brief Attempt to extract a seed \e e from bubble \b. 
  * \return 1 in case of success, 0 in case of failure (in that case, *p_retry is set to 1 if attempt should be retried later, and to 0 otherwise) */
 static
@@ -233,4 +234,4 @@ next:
 	return 0;
 }
 
-
+#endif

@@ -16,6 +16,7 @@
 #ifndef __MARCEL_SEEDS_H__
 #define __MARCEL_SEEDS_H__
 
+#ifdef MA__BUBBLES
 /** \brief Look for ungerminated seeds in bubble \e b and instantiate those seeds inline.
  *  \param b The bubble to lookup.
  *  \param one_shot_mode Whether to process a single seed (1) or all the seeds (0).
@@ -24,5 +25,6 @@
 int
 marcel_seed_try_inlining (marcel_bubble_t * const b, int one_shot_mode, int recurse_mode);
 
+#endif
 #endif
 

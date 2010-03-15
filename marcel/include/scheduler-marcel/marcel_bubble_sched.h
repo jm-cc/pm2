@@ -77,6 +77,8 @@ int marcel_bubble_insertbubble(marcel_bubble_t *bubble, marcel_bubble_t *little_
  * setting its sched_holder and natural_holder accordingly. */
 int marcel_bubble_inserttask(marcel_bubble_t *bubble, marcel_task_t *task);
 
+int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity);
+
 /** \brief Removes entity \e entity from bubble \e bubble.
  * Put \e entity on \e bubble's holding runqueue as a fallback */
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity);

@@ -483,8 +483,20 @@ static void finish_task_switch(marcel_task_t *prev)
 			ma_task_sched_holder(prev) = NULL;
 		ma_holder_try_to_wake_up_and_unlock_softirq(prevh);
 		/* Note: since preemption was not re-enabled (see ma_schedule()), prev thread can't vanish between releasing prevh above and bubble lock below. */
-		if (remove_from_bubble)
-			marcel_bubble_removetask(bubble, prev);
+		if (remove_from_bubble) {
+			marcel_entity_t *prev_e = ma_entity_task(prev);
+			int becomes_empty = ma_bubble_removeentity(bubble, prev_e);
+
+			while (!marcel_mutex_trylock(&bubble->join_mutex))
+				;
+			ma_holder_lock_softirq(&bubble->as_holder);
+			if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
+				bubble->join_empty_state = 1;
+				marcel_cond_signal(&bubble->join_cond);
+			}
+			ma_holder_unlock_softirq(&bubble->as_holder);
+			marcel_mutex_unlock(&bubble->join_mutex);
+		}
 	} else
 #endif
 	{

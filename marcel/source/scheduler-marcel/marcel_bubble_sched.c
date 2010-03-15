@@ -660,9 +660,7 @@ int marcel_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	LOG_RETURN(0);
 }
 
-/* Removes entity from bubble.
- * Put entity on bubble's holding runqueue as a fallback */
-int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	int bubble_becomes_empty;
 	LOG_IN();
 
@@ -697,7 +695,14 @@ int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity)
 	} else
 		/* already out from the bubble, that's ok.  */
 		ma_entity_holder_unlock_softirq(h);
-	if (bubble_becomes_empty) {
+	LOG_OUT();
+	return bubble_becomes_empty;
+}
+/* Removes entity from bubble.
+ * Put entity on bubble's holding runqueue as a fallback */
+int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
+	LOG_IN();
+	if (ma_bubble_removeentity(bubble, entity)) {
 		marcel_mutex_lock(&bubble->join_mutex);
 		ma_holder_lock_softirq(&bubble->as_holder);
 		if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {

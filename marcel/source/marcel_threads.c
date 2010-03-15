@@ -585,15 +585,15 @@ static void marcel_exit_internal(any_t val)
 		ma_preempt_disable();
 
 		int detached = cur->cur_thread_seed->detached;
-		marcel_funerals(cur->cur_thread_seed);
-		if (!detached)
-			marcel_sem_V(&cur->cur_thread_seed->client);
-
 #ifdef MA__DEBUG
 		/* NOTE: this is quite costly, only do it to get gdb's
 		 * marcel-threads & marcel_top working */
 		marcel_one_task_less(cur->cur_thread_seed);
 #endif
+
+		marcel_funerals(cur->cur_thread_seed);
+		if (!detached)
+			marcel_sem_V(&cur->cur_thread_seed->client);
 
 		/* try to die */
 		ma_set_current_state(MA_TASK_DEAD);

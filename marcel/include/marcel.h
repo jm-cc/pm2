@@ -87,6 +87,7 @@ extern "C" {
 #include "marcel_polling.h"
 #include "marcel_rwlock.h"
 #include "marcel_sched_generic.h"
+#include "marcel_seed.h"
 #include "marcel_sem.h"
 #include "marcel_signal.h"
 #include "marcel_spin.h"

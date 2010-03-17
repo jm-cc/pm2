@@ -246,13 +246,15 @@ static void __marcel_init marcel_slot_init(void)
 {
 	unsigned nb_topo_containers = 1;
 	unsigned thread_cache_max;
+	const unsigned nb_slots_max = (unsigned)((ISOADDR_AREA_TOP-SLOT_AREA_BOTTOM)/THREAD_SLOT_SIZE);
+
 	LOG_IN();
 	{
 		unsigned l;
 		for (l=1; l<marcel_topo_nblevels; l++)
 			nb_topo_containers += marcel_topo_level_nbitems[l];
 	}
-	thread_cache_max = MARCEL_THREAD_CACHE_MAX/nb_topo_containers;
+	thread_cache_max = nb_slots_max/nb_topo_containers/4;
 	if (thread_cache_max < 1)
 		thread_cache_max = 1;
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)

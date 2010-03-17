@@ -382,6 +382,10 @@ retry:
 		ma_set_ready_holder(&p->as_entity,h);
 		ma_enqueue_entity(&p->as_entity,h);
 	}
+	if (p->as_entity.type == MA_THREAD_SEED_ENTITY) {
+		/* seed is now initialized, enable inlining */
+		p->cur_thread_seed_runner = NULL;
+	}
 	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	// on donne la main aussitôt, bien souvent le meilleur choix
 	if (ma_holder_type(h) == MA_RUNQUEUE_HOLDER)

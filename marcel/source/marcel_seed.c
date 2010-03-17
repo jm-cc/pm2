@@ -121,7 +121,7 @@ ma_seed_recursive_lookup (marcel_bubble_t * const b, marcel_bubble_t **p_steal_b
 
 				return seed;
 			}
-		} else if (e->type == MA_THREAD_SEED_ENTITY && (ma_task_entity (e)->state == MA_TASK_RUNNING) && (ma_task_entity (e)->cur_thread_seed_runner == NULL)) {
+		} else if (e->type == MA_THREAD_SEED_ENTITY && (ma_task_entity (e)->cur_thread_seed_runner == NULL)) {
 			if (!ma_seed_try_extract_from_bubble (b, e, &retry))
 				goto next;
 

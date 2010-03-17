@@ -242,7 +242,6 @@ restart:
 		/* this order prevents marcel_bubble_join() from returning */
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
 		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
-		marcel_bubble_removetask(bubble, seed);
 	} else
 #endif
 		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
@@ -258,6 +257,12 @@ restart:
 	ma_set_ready_holder(&MARCEL_SELF->as_entity,h3);
 	ma_entity_holder_rawunlock(h3);
 
+#ifdef MA__BUBBLES
+	if (h && h->type == MA_BUBBLE_HOLDER) {
+		marcel_bubble_t *bubble = ma_bubble_holder(h);
+		marcel_bubble_removetask(bubble, seed);
+	}
+#endif
 	/* now we're ready */
 	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();

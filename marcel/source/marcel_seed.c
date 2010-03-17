@@ -39,6 +39,11 @@ ma_seed_try_extract_from_bubble (marcel_bubble_t * const b, marcel_entity_t * co
 	h = ma_entity_active_holder (e);
 
 	if (h != &b->as_holder) {
+		if (!h) {
+			ma_preempt_enable ();
+			ma_local_bh_enable ();
+			goto next;
+		}
 		/* If h is the task bubble itself, things are easy: we do not have any additional locking to do.
 		 *
 		 * On the contrary, if h is not the task bubble, we need to lock it too avoid the instantiation
@@ -80,9 +85,6 @@ ma_seed_try_extract_from_bubble (marcel_bubble_t * const b, marcel_entity_t * co
 		/* Remove the seed from its ready holder. */
 		int state __attribute__((unused)) = ma_get_entity (e);
 	}
-
-	/* Some sanity check. */
-	MA_BUG_ON(e->natural_holder != &b->as_holder);
 
 	/* Remove the seed from the bubble. */
 	e->natural_holder = NULL;

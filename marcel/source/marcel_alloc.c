@@ -244,7 +244,17 @@ void *marcel_tls_slot_alloc(void)
 
 static void __marcel_init marcel_slot_init(void)
 {
+	unsigned nb_topo_containers = 1;
+	unsigned thread_cache_max;
 	LOG_IN();
+	{
+		unsigned l;
+		for (l=1; l<marcel_topo_nblevels; l++)
+			nb_topo_containers += marcel_topo_level_nbitems[l];
+	}
+	thread_cache_max = MARCEL_THREAD_CACHE_MAX/nb_topo_containers;
+	if (thread_cache_max < 1)
+		thread_cache_max = 1;
 #if defined(SOLARIS_SYS) || defined(IRIX_SYS) || defined(FREEBSD_SYS) || defined(DARWIN_SYS)
 	__zero_fd = open("/dev/zero", O_RDWR);
 #endif
@@ -258,10 +268,10 @@ static void __marcel_init marcel_slot_init(void)
 
 	marcel_unmapped_slot_allocator = ma_new_obj_allocator(1,
 			unmapped_slot_alloc, NULL, NULL, NULL,
-			POLICY_HIERARCHICAL, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL, thread_cache_max);
 	marcel_mapped_slot_allocator = ma_new_obj_allocator(0,
 							    mapped_slot_alloc, NULL, mapped_slot_free, NULL,
-							    POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
+							    POLICY_HIERARCHICAL_MEMORY, thread_cache_max);
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_memory_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 #endif /* MARCEL_STATS_ENABLED */
@@ -312,13 +322,13 @@ static void __marcel_init marcel_slot_init(void)
 #endif
 	marcel_tls_slot_allocator = ma_new_obj_allocator(0,
 			tls_slot_alloc, NULL, tls_slot_free, NULL,
-			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL_MEMORY, thread_cache_max);
 #endif
 	/* TODO: on pourrait réduire la taille */
 	marcel_thread_seed_allocator = ma_new_obj_allocator(0,
 			ma_obj_allocator_malloc, (void *) sizeof(marcel_task_t),
 			ma_obj_allocator_free, NULL,
-			POLICY_HIERARCHICAL_MEMORY, MARCEL_THREAD_CACHE_MAX);
+			POLICY_HIERARCHICAL_MEMORY, thread_cache_max);
 
 	LOG_OUT();
 }

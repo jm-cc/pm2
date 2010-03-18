@@ -380,6 +380,8 @@ marcel_sched_init_thread_seed(marcel_task_t* t,
 {
 	LOG_IN();
 	t->as_entity.type = MA_THREAD_SEED_ENTITY;
+	/* disable seed inlining while the seed is being initialized */
+	t->cur_thread_seed_runner = (void *)(intptr_t)1;
 	marcel_sched_internal_init_marcel_task(t, attr);
 #ifdef MARCEL_STATS_ENABLED
 	ma_task_stats_set(long, t, ma_stats_nbthreads_offset, 0);

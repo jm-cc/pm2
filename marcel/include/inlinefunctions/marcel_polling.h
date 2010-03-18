@@ -18,14 +18,12 @@
 #define __INLINEFUNCTIONS_MARCEL_POLLING_H__
 
 
-#include "marcel_polling.h"
-
-
 /** Public inline **/
 __tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
 						marcel_ev_op_t op,
 						marcel_ev_pcallback_t func)
 {
+#ifdef __MARCEL_KERNEL__
 #ifdef MA__DEBUG
 	/* Cette fonction doit être appelée entre l'initialisation et
 	 * le démarrage de ce serveur d'événements */
@@ -34,6 +32,7 @@ __tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t serve
 	MA_BUG_ON(op>=MA_EV_FUNCTYPE_SIZE || op<0);
 	/* On vérifie que la fonction n'est pas déjà là */
 	MA_BUG_ON(server->funcs[op]!=NULL);
+#endif
 #endif
 	server->funcs[op]=func;
 	return 0;

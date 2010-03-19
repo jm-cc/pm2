@@ -1021,6 +1021,7 @@ restart:
 		if (prev->state == MA_TASK_DEAD && !(ma_preempt_count() & MA_PREEMPT_ACTIVE) && prev->cur_thread_seed) { // && prev->shared_attr == next->shared_attr) {
 			/* yeepee, exec it */
 			prev->cur_thread_seed = next;
+			ma_set_current_state(MA_TASK_RUNNING);
 			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
 			ma_preempt_enable();
 			LOG_OUT();

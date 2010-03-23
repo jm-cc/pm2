@@ -30,7 +30,7 @@ struct marcel_bubble_gang_sched {
 
 ma_runqueue_t ma_gang_rq;
 static int keep_running;
-marcel_sem_t schedulers = MARCEL_SEM_INITIALIZER(0);
+static marcel_sem_t schedulers = MARCEL_SEM_INITIALIZER(0);
 
 any_t marcel_gang_scheduler(any_t runqueue) {
 	marcel_entity_t *e, *ee;

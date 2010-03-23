@@ -155,7 +155,7 @@ void profile_set_tracefile(char *fmt, ...)
   char pid[11];
   snprintf(pid, 11, "_%d", getpid ());
 
-  strcat(PROF_FILE_USER, "_user_");
+  strcat(PROF_FILE_USER, "_pm2user_");
   strcat(PROF_FILE_USER, getenv("USER"));
   strcat(PROF_FILE_USER, pid);
 #ifdef USE_FKT

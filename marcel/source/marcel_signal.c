@@ -158,8 +158,8 @@ DEF___C(unsigned int, alarm, (unsigned int nb_sec), (nb_sec))
 static void itimer_timeout(unsigned long data);
 
 static struct ma_timer_list itimer_timer = MA_TIMER_INITIALIZER(itimer_timeout, 0, 0);
-unsigned long interval;
-unsigned long valeur;
+static unsigned long interval;
+static unsigned long valeur;
 
 /* marcel timer handler that generates the SIGALARM signal for setitimer() */
 static void itimer_timeout(unsigned long data)

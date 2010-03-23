@@ -144,12 +144,6 @@ void profile_activate(int how, unsigned user_keymask, unsigned kernel_keymask)
 void profile_set_tracefile(char *fmt, ...)
 {
   va_list vl;
-  //char *prof_id;
-
-  //prof_id=getenv("PM2_PROFILE_ID");
-  //if (prof_id) {
-    //fprintf(stderr, "Using ID : %s\n", prof_id);
-  //}
 
   va_start(vl, fmt);
   vsprintf(PROF_FILE_USER, fmt, vl);
@@ -157,17 +151,16 @@ void profile_set_tracefile(char *fmt, ...)
   strcpy(PROF_FILE_KERNEL, PROF_FILE_USER);
 #endif
   va_end(vl);
+
+  char pid[11];
+  snprintf(pid, 11, "_%d", getpid ());
+
   strcat(PROF_FILE_USER, "_user_");
   strcat(PROF_FILE_USER, getenv("USER"));
-  //if (prof_id) {
-  //  strcat(PROF_FILE_USER, prof_id);
-  //}
+  strcat(PROF_FILE_USER, pid);
 #ifdef USE_FKT
   strcat(PROF_FILE_KERNEL, "_kernel_");
   strcat(PROF_FILE_KERNEL, getenv("USER"));
-  //if (prof_id) {
-  //  strcat(PROF_FILE_KERNEL, prof_id);
-  //}
 #endif
 }
 

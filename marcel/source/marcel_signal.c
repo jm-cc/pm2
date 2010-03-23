@@ -405,8 +405,6 @@ DEF___C(int,raise,(int sig),(sig))
 
 
 /*********************marcel_pidkill*************************/
-int nb_pidkill = 0;
-
 /* handler of signals coming from the kernel and other processes */
 #ifdef SA_SIGINFO
 static void marcel_pidkill(int sig, siginfo_t *info, void *uc)

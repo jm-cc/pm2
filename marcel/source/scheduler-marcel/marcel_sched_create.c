@@ -240,11 +240,11 @@ restart:
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		/* this order prevents marcel_bubble_join() from returning */
-		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
+		ma_local_bh_enable();
 		marcel_bubble_inserttask(bubble, MARCEL_SELF);
-		ma_preempt_disable();
 		ma_local_bh_disable();
+		ma_preempt_disable();
 		ma_task_sched_holder(MARCEL_SELF) = ma_task_sched_holder(seed);
 	} else
 #endif
@@ -264,11 +264,11 @@ restart:
 #ifdef MA__BUBBLES
 	if (h && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
-		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
+		ma_local_bh_enable();
 		marcel_bubble_removetask(bubble, seed);
-		ma_preempt_disable();
 		ma_local_bh_disable();
+		ma_preempt_disable();
 	}
 #endif
 	/* now we're ready */

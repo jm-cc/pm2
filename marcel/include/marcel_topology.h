@@ -178,8 +178,6 @@ extern unsigned marcel_nbnodes;
 #ifdef MA__NUMA
 /** \brief Maximum allowed arity in the level tree */
 extern unsigned marcel_topo_max_arity;
-/** \brief Is merge needed */
-extern unsigned marcel_topo_merge;
 /** \brief Direct access to node levels */
 extern struct marcel_topo_level *marcel_topo_node_level;
 /** \brief Direct access to core levels */

@@ -293,7 +293,7 @@ unsigned marcel_first_cpu = 0;
 unsigned marcel_vps_per_cpu = 1;
 #  ifdef MA__NUMA
 unsigned marcel_topo_max_arity = 4;
-unsigned marcel_topo_merge = 1;
+static unsigned marcel_topo_merge = 1;
 #  endif
 
 

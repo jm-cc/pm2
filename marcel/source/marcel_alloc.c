@@ -32,7 +32,6 @@
 #endif
 #endif
 
-ma_allocator_t *heapinfo_allocator;
 unsigned long ma_stats_memory_offset;
 
 static char *next_slot;

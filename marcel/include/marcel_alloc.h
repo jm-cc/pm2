@@ -129,7 +129,7 @@ void ma_free_nonuma(void *data, const char * __restrict file, unsigned line);
 
 
 /** Internal global variables **/
-extern ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
+extern ma_allocator_t *marcel_mapped_slot_allocator;
 #ifdef MA__PROVIDE_TLS
 extern ma_allocator_t *marcel_tls_slot_allocator;
 void marcel_tls_attach(marcel_t t);

@@ -41,7 +41,8 @@ static ma_spinlock_t next_slot_lock = MA_SPIN_LOCK_UNLOCKED;
 static int __zero_fd;
 #endif
 
-ma_allocator_t *marcel_mapped_slot_allocator, *marcel_unmapped_slot_allocator;
+ma_allocator_t *marcel_mapped_slot_allocator;
+static ma_allocator_t *marcel_unmapped_slot_allocator;
 ma_allocator_t *marcel_thread_seed_allocator;
 
 #if defined(MA__PROVIDE_TLS)

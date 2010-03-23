@@ -54,7 +54,7 @@ ma_allocator_t *marcel_tls_slot_allocator;
 unsigned long __main_thread_tls_base;
 #endif
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
-ma_allocator_t *marcel_ldt_allocator;
+static ma_allocator_t *marcel_ldt_allocator;
 static uintptr_t sysinfo;
 static unsigned long stack_guard, pointer_guard;
 static int gscope_flag, private_futex;

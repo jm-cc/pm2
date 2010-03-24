@@ -381,7 +381,6 @@ void marcel_settimeslice(unsigned long microsecs)
 	LOG_OUT();
 }
 
-#ifdef MA__TIMER
 /* returns microseconds */
 unsigned long marcel_gettimeslice(void)
 {
@@ -389,7 +388,6 @@ unsigned long marcel_gettimeslice(void)
 
 	LOG_RETURN(time_slice);
 }
-#endif
 
 
 #ifndef __MINGW32__

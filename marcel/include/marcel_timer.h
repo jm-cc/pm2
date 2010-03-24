@@ -45,10 +45,6 @@ unsigned long marcel_gettimeslice(void);
 /* Return the number of milliseconds elapsed since Marcel start */
 unsigned long marcel_clock(void);
 
-#ifndef MA__TIMER
-#define marcel_gettimeslice() MARCEL_MIN_TIMESLICE
-#endif
-
 /* always call disable_interrupts before calling exec*() */
 void marcel_sig_enable_interrupts(void);
 void marcel_sig_disable_interrupts(void);

@@ -125,6 +125,8 @@ static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_
   struct nm_ibverbs_rcache*rcache = TBX_MALLOC(sizeof(struct nm_ibverbs_rcache));
  /* init state */
   memset(&rcache->headers, 0, sizeof(rcache->headers));
+  memset(&rcache->send, 0, sizeof(rcache->send));
+  memset(&rcache->recv, 0, sizeof(rcache->recv));
   rcache->mr  = NULL;
   rcache->cnx = NULL;
   rcache->pd  = NULL;
@@ -190,6 +192,11 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
   char*message = v[0].iov_base;
   const int size = v[0].iov_len;
   assert(n == 1);
+  if(rcache->send.message != NULL)
+    {
+      fprintf(stderr, "Infiniband: double rendez-vous on sender side.\n");
+      abort();
+    }
   rcache->send.message = message;
   rcache->send.size = size;
   rcache->send.mr = puk_mem_reg(rcache->pd, message, size);
@@ -209,10 +216,8 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
       h->rkey  = 0;
       h->busy  = 0;
       nm_ibverbs_do_rdma(rcache->cnx, 
-			 rcache->send.message,
-			 rcache->send.size, raddr, IBV_WR_RDMA_WRITE,
-			 (rcache->send.size > rcache->cnx->max_inline ?
-			  IBV_SEND_SIGNALED : (IBV_SEND_SIGNALED | IBV_SEND_INLINE)),
+			 rcache->send.message, rcache->send.size,
+			 raddr, IBV_WR_RDMA_WRITE, IBV_SEND_SIGNALED,
 			 rcache->send.mr->lkey, rkey, NM_IBVERBS_WRID_DATA);
       rcache->headers.ssig.busy = 1;
       nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_sighdr),
@@ -222,12 +227,12 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 			   &rcache->seg,
 			   rcache->mr,
 			   NM_IBVERBS_WRID_HEADER);
-      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);  
-      puk_mem_unreg(rcache->pd, rcache->send.message);
+      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);
+      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);
+      puk_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
       rcache->send.message = NULL;
       rcache->send.size    = -1;
       rcache->send.mr = NULL;
-      nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);  
       return NM_ESUCCESS;
     }
   else
@@ -243,6 +248,11 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
 {
 #ifdef NM_IBVERBS_RCACHE
   struct nm_ibverbs_rcache*rcache = _status;
+  if(rcache->recv.message != NULL)
+    {
+      fprintf(stderr, "Infiniband: double rendez-vous on receiver side.\n");
+      abort();
+    }
   rcache->headers.rsig.busy = 0;
   rcache->recv.message = v->iov_base;
   rcache->recv.size = v->iov_len;
@@ -251,6 +261,7 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   h->raddr =  (uintptr_t)rcache->recv.message;
   h->rkey  = rcache->recv.mr->rkey;
   h->busy  = 1;
+
   nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_rdvhdr),
 		       &rcache->headers.shdr, 
 		       &rcache->headers.rhdr,
@@ -269,7 +280,8 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
   struct nm_ibverbs_rcache_sighdr*rsig = &rcache->headers.rsig;
   if(rsig->busy)
     {
-      puk_mem_unreg(rcache->pd, rcache->recv.message);
+      rsig->busy = 0;
+      puk_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
       rcache->recv.message = NULL;
       rcache->recv.size = -1;
       rcache->recv.mr = NULL;

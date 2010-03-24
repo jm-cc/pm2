@@ -190,12 +190,12 @@ static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx*__restrict__ p_ibverb
 }
 
 static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int size,
-				const void*__restrict__ ptr,
-				const void*__restrict__ _raddr,
-				const void*__restrict__ _lbase,
-				const struct nm_ibverbs_segment*seg,
-				const struct ibv_mr*__restrict__ mr,
-				int wrid)
+				       const void*__restrict__ ptr,
+				       const void*__restrict__ _raddr,
+				       const void*__restrict__ _lbase,
+				       const struct nm_ibverbs_segment*seg,
+				       const struct ibv_mr*__restrict__ mr,
+				       int wrid)
 {
   const uintptr_t _rbase = seg->raddr;
   const uint64_t raddr   = (uint64_t)(((uintptr_t)_raddr - (uintptr_t)_lbase) + _rbase);
@@ -274,9 +274,10 @@ static inline void nm_ibverbs_send_flushn_total(struct nm_ibverbs_cnx*__restrict
 
 static inline void nm_ibverbs_send_flushn(struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx, int wrid, int n)
 {
-  while(p_ibverbs_cnx->pending.wrids[wrid] > n) {
-    nm_ibverbs_rdma_poll(p_ibverbs_cnx);
-  }
+  while(p_ibverbs_cnx->pending.wrids[wrid] > n)
+    {
+      nm_ibverbs_rdma_poll(p_ibverbs_cnx);
+    }
 }
 
 #endif /* NM_IBVERBS_H */

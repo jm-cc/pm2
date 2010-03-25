@@ -284,20 +284,23 @@ static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void)
 #ifdef MARCEL_SMT_IDLE
 static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	if ((level = ma_per_lwp(core_level,lwp)) && level->arity)
+	unsigned vpnum = ma_vpnum(lwp);
+	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		ma_atomic_inc(&level->nbidle);
 }
 
 static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	if ((level = ma_per_lwp(core_level,lwp)) && level->arity)
+	unsigned vpnum = ma_vpnum(lwp);
+	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		return (ma_atomic_read(&level->nbidle) == level->arity);
 	return 1;
 }
 
 static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	if ((level = ma_per_lwp(core_level,lwp)) && level->arity)
+	unsigned vpnum = ma_vpnum(lwp);
+	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		ma_atomic_dec(&level->nbidle);
 }
 #endif

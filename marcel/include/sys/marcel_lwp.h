@@ -327,13 +327,7 @@ struct marcel_lwp {
 	unsigned online;
 	marcel_task_t *run_task;
 
-	struct marcel_topo_level
-#ifdef MA__NUMA
-		*node_level,
-		*core_level,
-		*cpu_level,
-#endif
-		*vp_level;
+	struct marcel_topo_level *vp_level;
 
 	char data[MA_PER_LWP_ROOM];
 
@@ -352,6 +346,14 @@ struct marcel_lwp {
 #endif
 #ifdef MA__LWPS
 	hwloc_cpuset_t cpuset;
+#endif
+
+#ifdef MARCEL_SIGNALS_ENABLED
+	/* Mask currently used for the timer and preemption signals, for
+	 * marcel_signal.c to apply them as well. Protected by
+	 * timer_sigmask_lock below.  */
+	sigset_t timer_sigmask;
+	ma_spinlock_t timer_sigmask_lock;
 #endif
 };
 

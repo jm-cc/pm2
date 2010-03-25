@@ -464,16 +464,17 @@ static void marcel_pidkill(int sig)
 void ma_update_lwp_blocked_signals(void) {
 	marcel_sigset_t should_block;
 	marcel_sigandset(&should_block, &ma_dfl_sigs, &SELF_GETMEM(curmask));
+	MA_BUG_ON(!ma_in_atomic());
 	if (!marcel_sigequalset(&should_block, &__ma_get_lwp_var(curmask))) {
 		/* We have to update the LWP's sigmask */
 		sigset_t kshould_block;
 		/* _softirq also disables the MA_SIGMASK_SOFTIRQ, to make sure
 		 * we do not miss a ma_dfl_ksigs change between our read and
 		 * the actual call to kthread_sigmask*/
-		ma_spin_lock_softirq(&ma_timer_sigmask_lock);
+		ma_spin_lock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 #ifdef __GLIBC__
 		sigandset(&kshould_block, &ma_dfl_ksigs, &SELF_GETMEM(kcurmask));
-		sigorset(&kshould_block, &kshould_block, &ma_timer_sigmask);
+		sigorset(&kshould_block, &kshould_block, &__ma_get_lwp_var(timer_sigmask));
 #else
 		int sig;
 
@@ -481,11 +482,11 @@ void ma_update_lwp_blocked_signals(void) {
 		for (sig = 1; sig < MARCEL_NSIG; sig++)
 			if (marcel_sigismember(&ma_dfl_sigs, sig) &&
 				marcel_sigismember(&SELF_GETMEM(curmask), sig) ||
-				sigismember(&ma_timer_sigmask))
+				sigismember(&__ma_get_lwp_var(timer_sigmask)))
 				sigaddset(&kshould_block, sig);
 #endif
 		marcel_kthread_sigmask(SIG_SETMASK, &kshould_block, NULL);
-		ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
+		ma_spin_unlock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 		__ma_get_lwp_var(curmask) = should_block;
 	}
 }

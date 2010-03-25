@@ -90,11 +90,12 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 
 #if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
 	/* On Linux, thread IDs are represented as `pid_t', which are integers.  */
+	unsigned vpnum = ma_vpnum(lwp);
 	mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 		 getpid(), program_invocation_name,
 		 lwp->pid,
-		 lwp->core_level?lwp->core_level->os_core:-1,
-		 lwp->node_level?lwp->node_level->os_node:-1);
+		 ma_vp_core_level[vpnum]?ma_vp_core_level[vpnum]->os_core:-1,
+		 ma_vp_node_level[vpnum]?ma_vp_node_level[vpnum]->os_node:-1);
 #endif
 
 	ret = ma_call_lwp_notifier(MA_LWP_ONLINE, lwp);
@@ -528,11 +529,12 @@ static void lwp_init(ma_lwp_t lwp)
 		ma_lwp_list_unlock_write();
 
 #if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
+		unsigned vpnum = ma_vpnum(lwp);
 		mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 			getpid(), program_invocation_name,
 			getpid(),
-			lwp->core_level?lwp->core_level->os_core:-1,
-			lwp->node_level?lwp->node_level->os_node:-1);
+			ma_vp_core_level[vpnum]?ma_vp_core_level[vpnum]->os_core:-1,
+			ma_vp_node_level[vpnum]?ma_vp_node_level[vpnum]->os_node:-1);
 #endif
 
 		LOG_OUT();

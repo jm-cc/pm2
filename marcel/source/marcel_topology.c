@@ -101,6 +101,7 @@ struct marcel_topo_level marcel_machine_level[1+MARCEL_NBMAXVPSUP+1] = {
 #ifdef MA__NUMA
 struct marcel_topo_level * ma_vp_die_level[MA_NR_VPS];
 struct marcel_topo_level * ma_vp_node_level[MA_NR_VPS];
+struct marcel_topo_level * ma_vp_core_level[MA_NR_VPS];
 #endif
 
 #undef marcel_topo_vp_level
@@ -1028,6 +1029,11 @@ static void topo_discover(void) {
 		
 		level++;
 	}
+	if (marcel_topo_core_level)
+		for (level = marcel_topo_core_level; !marcel_vpset_iszero(&level->cpuset); level++)
+			for(j=0; j<marcel_nbvps(); j++)
+				if (marcel_vpset_isset(&level->vpset, j))
+					ma_vp_core_level[j] = level;
 #endif /* MA__NUMA */
 
 	/* Now add supplementary VPs on the last level. */
@@ -1130,37 +1136,6 @@ initialize_topology(void) {
 __ma_initfunc(initialize_topology, MA_INIT_TOPOLOGY, "Finding Topology");
 
 
-static void topology_lwp_init(ma_lwp_t lwp) {
-	/* FIXME: node_level/core_level/cpu_level are not associated with LWPs but VPs ! */
-#  ifdef MA__NUMA
-	int i;
-	if (marcel_topo_node_level) {
-		for (i=0; !marcel_vpset_iszero(&marcel_topo_node_level[i].cpuset); i++) {
-			if (marcel_vpset_isset(&marcel_topo_node_level[i].cpuset,ma_vpnum(lwp))) {
-				ma_per_lwp(node_level,lwp) = &marcel_topo_node_level[i];
-				break;
-			}
-		}
-	}
-	if (marcel_topo_core_level) {
-		for (i=0; !marcel_vpset_iszero(&marcel_topo_core_level[i].cpuset); i++) {
-			if (marcel_vpset_isset(&marcel_topo_core_level[i].cpuset,ma_vpnum(lwp))) {
-				ma_per_lwp(core_level,lwp) = &marcel_topo_core_level[i];
-				break;
-			}
-		}
-	}
-	if (marcel_topo_cpu_level) {
-		for (i=0; !marcel_vpset_iszero(&marcel_topo_cpu_level[i].cpuset); i++) {
-			if (marcel_vpset_isset(&marcel_topo_cpu_level[i].cpuset,ma_vpnum(lwp))) {
-				ma_per_lwp(cpu_level,lwp) = &marcel_topo_cpu_level[i];
-				break;
-			}
-		}
-	}
-#  endif /* MA__NUMA */
-}
-
 void ma_disable_topology_vps(const marcel_vpset_t *vpset)
 {
 	unsigned vp;
@@ -1219,14 +1194,5 @@ void ma_enable_topology_vps(const marcel_vpset_t *vpset)
 		}
 	marcel_vpset_foreach_end()
 }
-
-static void topology_lwp_start(ma_lwp_t lwp TBX_UNUSED) {
-}
-
-MA_DEFINE_LWP_NOTIFIER_START_PRIO(topology, 400, "Topology",
-				  topology_lwp_init, "Initialisation de la topologie",
-				  topology_lwp_start, "Activation de la topologie");
-
-MA_LWP_NOTIFIER_CALL_UP_PREPARE(topology, MA_INIT_TOPOLOGY);
 
 #endif /* MA__LWPS */

@@ -57,11 +57,6 @@ ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
 /* Unit : microseconds */
 static volatile unsigned long time_slice = MARCEL_DEFAULT_TIME_SLICE;
 
-#ifdef MARCEL_SIGNALS_ENABLED
-sigset_t ma_timer_sigmask;
-ma_spinlock_t ma_timer_sigmask_lock = MA_SPIN_LOCK_UNLOCKED;
-#endif
-
 // Frequency of debug messages in timer_interrupt
 #ifndef TICK_RATE
 #define TICK_RATE 1
@@ -393,26 +388,28 @@ unsigned long marcel_gettimeslice(void)
 #ifndef __MINGW32__
 void marcel_sig_enable_interrupts(void)
 {
+	MA_BUG_ON(!ma_in_atomic());
 #ifdef MARCEL_SIGNALS_ENABLED
-	ma_spin_lock_softirq(&ma_timer_sigmask_lock);
-	sigemptyset(&ma_timer_sigmask);
+	ma_spin_lock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
+	sigemptyset(&__ma_get_lwp_var(timer_sigmask));
 #endif
 	marcel_kthread_sigmask(SIG_UNBLOCK, &sigalrmset, NULL);
 #ifdef MARCEL_SIGNALS_ENABLED
-	ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
+	ma_spin_unlock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 #endif
 }
 
 void marcel_sig_disable_interrupts(void)
 {
 #ifdef MARCEL_SIGNALS_ENABLED
-	ma_spin_lock_softirq(&ma_timer_sigmask_lock);
-	ma_timer_sigmask = sigalrmset;
+	ma_spin_lock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
+	__ma_get_lwp_var(timer_sigmask) = sigalrmset;
 #endif
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #ifdef MARCEL_SIGNALS_ENABLED
-	ma_spin_unlock_softirq(&ma_timer_sigmask_lock);
+	ma_spin_unlock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 #endif
+	MA_BUG_ON(!ma_in_atomic());
 }
 
 
@@ -458,6 +455,10 @@ static void sig_start_timer(ma_lwp_t lwp)
 
 	sigaction(MARCEL_RESCHED_SIGNAL, &sa, (struct sigaction *)NULL);
 
+#ifdef MARCEL_SIGNALS_ENABLED
+	sigemptyset(&lwp->timer_sigmask);
+	ma_spin_lock_init(&lwp->timer_sigmask_lock);
+#endif
 	marcel_sig_enable_interrupts();
 
 #ifdef DISTRIBUTE_SIGALRM
@@ -555,7 +556,7 @@ static void __marcel_init sig_init(void)
 	/* Block signals before starting LWPs, so that LWPs started by the
 	 * pthread library do not get signals at first. */
 #ifdef MARCEL_SIGNALS_ENABLED
-	ma_timer_sigmask = sigalrmset;
+	__ma_get_lwp_var(timer_sigmask) = sigalrmset;
 #endif
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #else

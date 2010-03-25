@@ -562,10 +562,12 @@ extern TBX_EXTERN struct marcel_topo_level marcel_machine_level[];
 /** \brief VP number to node number conversion array */
 extern struct marcel_topo_level *ma_vp_die_level[MA_NR_VPS];
 extern struct marcel_topo_level *ma_vp_node_level[MA_NR_VPS];
+extern struct marcel_topo_level *ma_vp_core_level[MA_NR_VPS];
 #else
 #define ma_machine_level (marcel_topo_levels[0])
 #define ma_vp_die_level (&ma_machine_level)
 #define ma_vp_node_level (&ma_machine_level)
+#define ma_vp_core_level (&ma_machine_level)
 #endif
 
 #ifdef MA__NUMA

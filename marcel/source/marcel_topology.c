@@ -1087,6 +1087,18 @@ static void topo_discover(void) {
                 }
         }
 #  endif
+
+
+#ifndef MARCEL_SMT_IDLE
+	for (l = 0; l+1 < marcel_topo_nblevels; l++)
+		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++)
+			if (marcel_topo_levels[l][i].merged_type &= 1<<MARCEL_LEVEL_CORE) {
+				fprintf(stderr, "Warning: several VPs are used on the same core, but the MARCEL_SMT_IDLE option is not set to optimize core sleep!\n");
+				goto out;
+			}
+out:
+	(void)0;
+#endif
 }
 
 void ma_topo_exit(void) {

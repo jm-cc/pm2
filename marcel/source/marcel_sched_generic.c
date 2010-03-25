@@ -507,6 +507,9 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
 		}
+#else
+		if (!dopoll)
+			ma_still_idle();
 #endif
 	}
 }

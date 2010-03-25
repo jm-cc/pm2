@@ -690,8 +690,12 @@ static void topo_discover(void) {
 #endif
 
 	/* Set the number of VPs, unless already specified.  */
-	if (ma__nb_vp == 0)
-		ma__nb_vp = marcel_nbprocessors;
+	if (ma__nb_vp == 0) {
+		if (marcel_cpu_stride)
+			ma__nb_vp = marcel_nbprocessors / marcel_cpu_stride;
+		else
+			ma__nb_vp = marcel_nbprocessors;
+	}
 
 	MA_ALWAYS_BUG_ON(!marcel_nbprocessors);
 

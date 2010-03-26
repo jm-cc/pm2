@@ -86,7 +86,7 @@ EOF
 
 		# marcel deps
 		[ "$pm2_opt" != marcel_poll ] || extra="$extra --modules=marcel"
-		[ "$pm2_opt" != pthread ] || extra="$extra --marcel=pmarcel --marcel=dont_use_pthread --marcel=enable_signals --marcel=enable_deviation --modules=puk --puk=enable_pukabi"
+		[ "$pm2_opt" != pthread ] || extra="$extra --marcel=pmarcel --marcel=enable_signals --marcel=enable_deviation --modules=puk --puk=enable_pukabi"
 		[ "$pm2_opt" != enable_once ] || extra="$extra --marcel=enable_cleanup"
 		[ "$pm2_opt" != enable_postexit ] || extra="$extra --marcel=enable_atexit"
 		[ "$pm2_opt" != enable_signals ] || extra="$extra --marcel=enable_deviation"

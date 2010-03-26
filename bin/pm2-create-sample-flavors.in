@@ -50,7 +50,7 @@ registering_flavors() {
 
     register_flavor marcel-numa \
 	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory \
+	--marcel=numa --marcel=bubbles \
 	--marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=enable_stats \
@@ -129,7 +129,7 @@ registering_flavors() {
 
     register_flavor marcel-bubbles \
 	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats \
@@ -138,7 +138,7 @@ registering_flavors() {
 
     register_flavor marcel-distrib \
 	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=pmarcel --marcel=enable_stats \
 	--marcel=enable_keys --marcel=enable_atexit \
@@ -148,7 +148,7 @@ registering_flavors() {
 
     register_flavor marcel-bubblegum \
 	--modules="marcel profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory --marcel=marcel_main \
+	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
 	--marcel=enable_stats \
@@ -157,8 +157,8 @@ registering_flavors() {
 
     register_flavor marcel-forestgomp-opt \
         --modules="marcel tbx init" \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory \
-	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=numa --marcel=bubbles \
+	--marcel=standard_main \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
         --init=topology \
@@ -166,8 +166,8 @@ registering_flavors() {
 
     register_flavor marcel-forestgomp-debug \
         --modules="marcel tbx init" \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory \
-	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=numa --marcel=bubbles \
+        --marcel=standard_main \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
@@ -176,8 +176,8 @@ registering_flavors() {
 
     register_flavor marcel-forestgomp-fxtdebug \
         --modules="marcel tbx init bubblelib bubbles profile" \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory \
-	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=numa --marcel=bubbles \
+	--marcel=standard_main \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=profile --marcel=bug_on \
@@ -188,7 +188,7 @@ registering_flavors() {
     register_flavor forestgomp-mami-debug \
         --modules="marcel tbx init memory" \
 	--marcel=numa --marcel=bubbles --memory=marcel --memory=enable_mami \
-	--marcel=standard_main --marcel=dont_use_pthread \
+	--marcel=standard_main \
 	--marcel=enable_stats --marcel=enable_keys \
 	--marcel=enable_cleanup --marcel=enable_once \
 	--marcel=valgrind --marcel=bug_on \
@@ -273,7 +273,7 @@ registering_flavors() {
 
     register_flavor libpthread \
 	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
-	--marcel=numa --marcel=bubbles --marcel=enable_numa_memory --marcel=dont_use_pthread \
+	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \

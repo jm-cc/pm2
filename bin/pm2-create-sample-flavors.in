@@ -155,46 +155,6 @@ registering_flavors() {
         --init=topology \
 	$DEBUG_OPTIONS --all=noinline
 
-    register_flavor marcel-forestgomp-opt \
-        --modules="marcel tbx init" \
-	--marcel=numa --marcel=bubbles \
-	--marcel=standard_main \
-	--marcel=enable_stats --marcel=enable_keys \
-	--marcel=enable_cleanup --marcel=enable_once \
-        --init=topology \
-	--all=opt --all=build_both
-
-    register_flavor marcel-forestgomp-debug \
-        --modules="marcel tbx init" \
-	--marcel=numa --marcel=bubbles \
-        --marcel=standard_main \
-	--marcel=enable_stats --marcel=enable_keys \
-	--marcel=enable_cleanup --marcel=enable_once \
-	--marcel=valgrind --marcel=bug_on \
-        --init=topology \
-	$DEBUG_OPTIONS --all=noinline --all=build_both
-
-    register_flavor marcel-forestgomp-fxtdebug \
-        --modules="marcel tbx init bubblelib bubbles profile" \
-	--marcel=numa --marcel=bubbles \
-	--marcel=standard_main \
-	--marcel=enable_stats --marcel=enable_keys \
-	--marcel=enable_cleanup --marcel=enable_once \
-	--marcel=profile --marcel=bug_on \
-	--profile=autostart \
-        --init=topology \
-	$DEBUG_OPTIONS --all=noinline --all=build_both
-
-    register_flavor forestgomp-mami-debug \
-        --modules="marcel tbx init memory" \
-	--marcel=numa --marcel=bubbles --memory=marcel --memory=enable_mami \
-	--marcel=standard_main \
-	--marcel=enable_stats --marcel=enable_keys \
-	--marcel=enable_cleanup --marcel=enable_once \
-	--marcel=valgrind --marcel=bug_on \
-        --init=topology \
-	$DEBUG_OPTIONS --all=noinline --all=build_both
-
     register_flavor leonie \
 	--modules="leonie leoparse tbx ntbx init" $DEBUG_OPTIONS $COMMON_OPTIONS $OPTIM_OPTIONS
 
@@ -280,6 +240,33 @@ registering_flavors() {
 	--marcel=enable_deviation --marcel=enable_signals \
 	--marcel=enable_stats \
 	--marcel=standard_main \
+        --init=topology \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization
+
+    register_flavor forestgomp \
+	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
+	--marcel=numa --marcel=bubbles \
+	--marcel=pmarcel --marcel=pthread \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_stats \
+	--marcel=standard_main \
+        --init=topology \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization
+
+    register_flavor forestgomp-mami \
+	--modules="marcel tbx init puk memory" --all=opt --all=build_dynamic \
+	--marcel=numa --marcel=bubbles \
+	--marcel=pmarcel --marcel=pthread \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_stats \
+	--marcel=standard_main \
+        --memory=enable_mami \
         --init=topology \
 	--puk=enable_pukabi \
 	--puk=disable_fd_virtualization

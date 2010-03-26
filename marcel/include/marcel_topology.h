@@ -590,7 +590,7 @@ static __tbx_inline__ int marcel_vpset_last(const marcel_vpset_t * vpset);
 /** \brief Compute the number of VPs in VP mask */
 static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset);
 /* Internal version, for inlining */
-static __tbx_inline__ unsigned __marcel_current_vp(void);
+static __tbx_inline__ int __marcel_current_vp(void);
 /** \brief Get the current VP level.
  *
  * Note that if preemption is enabled, this may change just after the function

@@ -1092,10 +1092,8 @@ static void topo_discover(void) {
                         marcel_nbnodes = marcel_nbnodes_aux;
                 }
         }
-#  endif
 
-
-#ifndef MARCEL_SMT_IDLE
+#    ifndef MARCEL_SMT_IDLE
 	for (l = 0; l+1 < marcel_topo_nblevels; l++)
 		for (i=0; !marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset); i++)
 			if (marcel_topo_levels[l][i].merged_type &= 1<<MARCEL_LEVEL_CORE) {
@@ -1104,7 +1102,9 @@ static void topo_discover(void) {
 			}
 out:
 	(void)0;
-#endif
+#    endif
+#  endif
+
 }
 
 void ma_topo_exit(void) {

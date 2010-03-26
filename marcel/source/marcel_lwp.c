@@ -219,7 +219,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 	// Lancement du thread noyau "propulseur". Il faut désactiver les
 	// signaux 'SIGALRM' pour que le kthread 'fils' hérite d'un masque
 	// correct.
-	marcel_sig_disable_interrupts();
+	__ma_sig_disable_interrupts();
 
 	{
 		void *initial_sp, *stack_base;
@@ -240,7 +240,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 													lwp_kthread_start_func, lwp);
 	}
 
-	marcel_sig_enable_interrupts();
+	__ma_sig_enable_interrupts();
 	LOG_RETURN(ma_per_lwp(vpnum, lwp));
 }
 

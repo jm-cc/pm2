@@ -386,9 +386,8 @@ unsigned long marcel_gettimeslice(void)
 
 
 #ifndef __MINGW32__
-void marcel_sig_enable_interrupts(void)
+void __ma_sig_enable_interrupts(void)
 {
-	MA_BUG_ON(!ma_in_atomic());
 #ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_lock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 	sigemptyset(&__ma_get_lwp_var(timer_sigmask));
@@ -399,7 +398,7 @@ void marcel_sig_enable_interrupts(void)
 #endif
 }
 
-void marcel_sig_disable_interrupts(void)
+void __ma_sig_disable_interrupts(void)
 {
 #ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_lock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
@@ -409,6 +408,17 @@ void marcel_sig_disable_interrupts(void)
 #ifdef MARCEL_SIGNALS_ENABLED
 	ma_spin_unlock_softirq(&__ma_get_lwp_var(timer_sigmask_lock));
 #endif
+}
+
+void marcel_sig_enable_interrupts(void)
+{
+	MA_BUG_ON(!ma_in_atomic());
+	__ma_sig_enable_interrupts();
+}
+
+void marcel_sig_disable_interrupts(void)
+{
+	__ma_sig_disable_interrupts();
 	MA_BUG_ON(!ma_in_atomic());
 }
 
@@ -459,7 +469,7 @@ static void sig_start_timer(ma_lwp_t lwp)
 	sigemptyset(&lwp->timer_sigmask);
 	ma_spin_lock_init(&lwp->timer_sigmask_lock);
 #endif
-	marcel_sig_enable_interrupts();
+	__ma_sig_enable_interrupts();
 
 #ifdef DISTRIBUTE_SIGALRM
 	if (ma_is_first_lwp(lwp))

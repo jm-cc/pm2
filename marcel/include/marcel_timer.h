@@ -78,6 +78,8 @@ void marcel_sig_nanosleep(void);
 void marcel_sig_create_timer(ma_lwp_t lwp);
 void marcel_sig_reset_timer(void);
 void marcel_sig_stop_itimer(void);
+void __ma_sig_enable_interrupts(void);
+void __ma_sig_disable_interrupts(void);
 #ifndef MA__TIMER
 #define marcel_sig_stop_itimer() (void)0
 #endif

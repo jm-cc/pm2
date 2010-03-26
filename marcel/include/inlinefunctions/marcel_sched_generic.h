@@ -74,10 +74,10 @@ static __tbx_inline__ void ma_still_idle(void) {
 #ifdef MA__LWPS
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		marcel_sig_disable_interrupts();
+		__ma_sig_disable_interrupts();
 		if (!ma_topology_lwp_idle_core(MA_LWP_SELF))
 			ma_sched_sig_pause();
-		marcel_sig_enable_interrupts();
+		__ma_sig_enable_interrupts();
 	}
 #  endif
 #endif

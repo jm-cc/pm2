@@ -524,12 +524,14 @@ static void finish_task_switch(marcel_task_t *prev)
  */
 asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 {
+	ma_preempt_disable();
 	finish_task_switch(prev);
 
 #ifdef MA__LWPS
 	if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task)))
 		ma_entering_idle();
 #endif
+	ma_preempt_enable();
 }
 
 /*
@@ -1070,9 +1072,7 @@ switch_tasks:
 		sched_debug("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
 #ifdef MA__LWPS
-		if (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task)))
-			ma_still_idle();
-		else
+		if (!(tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))))
 #endif
 		  {
 #ifdef PIOMAN

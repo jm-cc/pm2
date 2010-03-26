@@ -267,7 +267,7 @@ static __tbx_inline__ int marcel_vpset_weight(const marcel_vpset_t * vpset)
 #define PMARCEL_CPU_COUNT(cpusetp) marcel_vpset_weight(cpusetp)
 #define PMARCEL_CPU_COUNT_S(setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_COUNT(cpusetp); })
 
-static __tbx_inline__ unsigned __marcel_current_vp(void)
+static __tbx_inline__ int __marcel_current_vp(void)
 {
 	return ma_vpnum(MA_LWP_SELF);
 }
@@ -275,7 +275,7 @@ static __tbx_inline__ unsigned __marcel_current_vp(void)
 
 static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void)
 {
-	unsigned vp = marcel_current_vp();
+	int vp = marcel_current_vp();
 	if (vp == -1)
 		return NULL;
 	return &marcel_topo_vp_level[vp];
@@ -284,14 +284,14 @@ static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void)
 #ifdef MARCEL_SMT_IDLE
 static __tbx_inline__ void ma_topology_lwp_idle_start(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	unsigned vpnum = ma_vpnum(lwp);
+	int vpnum = ma_vpnum(lwp);
 	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		ma_atomic_inc(&level->nbidle);
 }
 
 static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	unsigned vpnum = ma_vpnum(lwp);
+	int vpnum = ma_vpnum(lwp);
 	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		return (ma_atomic_read(&level->nbidle) == level->arity);
 	return 1;
@@ -299,7 +299,7 @@ static __tbx_inline__  int ma_topology_lwp_idle_core(ma_lwp_t lwp) {
 
 static __tbx_inline__ void ma_topology_lwp_idle_end(ma_lwp_t lwp) {
 	struct marcel_topo_level *level;
-	unsigned vpnum = ma_vpnum(lwp);
+	int vpnum = ma_vpnum(lwp);
 	if (vpnum >= 0 && (level = ma_vp_core_level[vpnum]) && level->arity)
 		ma_atomic_dec(&level->nbidle);
 }

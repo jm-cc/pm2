@@ -34,12 +34,12 @@ EOF
 
 # Creation de la flavor
 create_test_flavor() {
-    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"		\
+    eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor="$flavor"	\
 	--modules="\"marcel tbx init\""                         \
         --init="topology" --marcel="numa" --marcel="bubbles"    \
 	--marcel="spinlock" --marcel="marcel_main"		\
 	--marcel="standard_main" --marcel="pmarcel"		\
-	--marcel="enable_stats"					\
+	--marcel="enable_stats" --marcel="smp_smt_idle"		\
 	--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 	--tbx="safe_malloc" --tbx="parano_malloc"		\
 	$TESTOPTIONS						\

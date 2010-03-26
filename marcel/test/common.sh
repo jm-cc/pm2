@@ -63,7 +63,8 @@ create_test_flavor() {
                 --init="topology" --marcel="numa" --marcel="bubbles"    \
 		--marcel="spinlock" --marcel="marcel_main"		\
 		--marcel="standard_main" --marcel="pmarcel"		\
-		--marcel="enable_stats"	--memory="enable_mami"	        \
+		--marcel="enable_stats" --memory="enable_mami"		\
+		--marcel="smp_smt_idle"					\
 		--marcel="bug_on" --marcel="malloc_preempt_debug"	\
 		--tbx="safe_malloc" --tbx="parano_malloc"		\
 		$TESTOPTIONS						\

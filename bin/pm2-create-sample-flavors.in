@@ -238,7 +238,7 @@ registering_flavors() {
 	--marcel=enable_keys --marcel=enable_atexit \
 	--marcel=enable_once --marcel=enable_cleanup \
 	--marcel=enable_deviation --marcel=enable_signals \
-	--marcel=enable_stats \
+	--marcel=enable_stats  --marcel=bug_on \
 	--marcel=standard_main \
         --init=topology \
 	--puk=enable_pukabi \

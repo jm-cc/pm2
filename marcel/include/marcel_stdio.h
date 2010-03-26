@@ -37,8 +37,8 @@
 #define marcel_fprintf fprintf
 #define marcel_sprintf sprintf
 #define marcel_snprintf snprintf
-#define marcel_fopen open
-#define marcel_fclose close
+#define marcel_fopen fopen
+#define marcel_fclose fclose
 #define marcel_fflush fflush
 #define marcel_scanf scanf
 #define marcel_fscanf fscanf

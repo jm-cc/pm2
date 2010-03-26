@@ -571,7 +571,7 @@ static void __marcel_init sig_init(void)
 	marcel_kthread_sigmask(SIG_BLOCK, &sigalrmset, NULL);
 #else
 #ifdef MARCEL_SIGNALS_ENABLED
-	sigemptyset(&ma_timer_sigmask);
+	sigemptyset(&(__ma_get_lwp_var(timer_sigmask)));
 #endif
 #endif
 }

@@ -208,7 +208,8 @@ void common_pre_init(int *_argc, char *_argv[],
       argv += 2;
     }
     hwloc_topology_init(&topology);
-    hwloc_topology_set_fsroot(topology, topology_fsys_root_path);
+   if (topology_fsys_root_path)
+      hwloc_topology_set_fsroot(topology, topology_fsys_root_path);
     if (synthetic_topology_description)
       hwloc_topology_set_synthetic(topology, synthetic_topology_description);
     hwloc_topology_load(topology);

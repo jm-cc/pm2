@@ -329,7 +329,7 @@ extern int ma_get_topo_type_depth (enum marcel_topo_level_e type);
 #define marcel_vpset_foreach_end() \
                 }
 
-#define __marcel_current_os_node() (marcel_current_node_level()->os_node)
+#define __marcel_current_os_node() (marcel_current_node_level()?marcel_current_node_level()->os_node:0)
 #define marcel_current_os_node() __marcel_current_os_node()
 
 #ifdef MARCEL_POSTEXIT_ENABLED
@@ -565,9 +565,6 @@ extern struct marcel_topo_level *ma_vp_node_level[MA_NR_VPS];
 extern struct marcel_topo_level *ma_vp_core_level[MA_NR_VPS];
 #else
 #define ma_machine_level (marcel_topo_levels[0])
-#define ma_vp_die_level (&ma_machine_level)
-#define ma_vp_node_level (&ma_machine_level)
-#define ma_vp_core_level (&ma_machine_level)
 #endif
 
 #ifdef MA__NUMA
@@ -598,9 +595,13 @@ static __tbx_inline__ int __marcel_current_vp(void);
  * bound to a VP (Marcel termination or blocking system calls) */
 static __tbx_inline__ struct marcel_topo_level * marcel_current_vp_level(void);
 
-/** \brief Get the die level of a given VP. */
+/** \brief Get the die level of a given VP, or any other type of level above. */
 struct marcel_topo_level * marcel_vp_die_level(unsigned vp);
+#ifdef MA__NUMA
 #define marcel_vp_die_level(vp) (ma_vp_die_level[vp])
+#else
+#define marcel_vp_die_level(vp) ma_machine_level
+#endif
 
 /** \brief Get the current die level.
  *
@@ -610,9 +611,29 @@ struct marcel_topo_level * marcel_vp_die_level(unsigned vp);
 struct marcel_topo_level * marcel_current_die_level(void);
 #define marcel_current_die_level() marcel_vp_die_level(marcel_current_vp())
 
-/** \brief Get the NUMA node level of a given VP. */
+/** \brief Get the core level of a given VP, NULL if there is no core nodes */
+struct marcel_topo_level * marcel_vp_core_level(unsigned vp);
+#ifdef MA__NUMA
+#define marcel_vp_core_level(vp) (ma_vp_core_level[vp])
+#else
+#define marcel_vp_core_level(vp) ((struct marcel_topo_level *) NULL)
+#endif
+
+/** \brief Get the current core level.
+ *
+ * Note that if preemption is enabled, this may change just after the function
+ * call. Also note that this may be NULL when the current LWP is not currently
+ * bound to a VP (Marcel termination or blocking system calls) */
+struct marcel_topo_level * marcel_current_core_level(void);
+#define marcel_current_core_level() marcel_vp_core_level(marcel_current_vp())
+
+/** \brief Get the NUMA node level of a given VP, NULL if there is no NUMA nodes */
 struct marcel_topo_level * marcel_vp_node_level(unsigned vp);
+#ifdef MA__NUMA
 #define marcel_vp_node_level(vp) (ma_vp_node_level[vp])
+#else
+#define marcel_vp_node_level(vp) ((struct marcel_topo_level *) NULL)
+#endif
 
 /** \brief Get the current NUMA node level.
  *

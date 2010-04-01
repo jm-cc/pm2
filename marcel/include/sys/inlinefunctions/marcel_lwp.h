@@ -95,7 +95,7 @@ static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp)
 	struct marcel_topo_level *l;
 	if (vp == -1)
 		vp = 0;
-	l = ma_vp_node_level[vp];
+	l = marcel_vp_node_level(vp);
 	if (!l)
 		return 0;
 	return l->os_node;

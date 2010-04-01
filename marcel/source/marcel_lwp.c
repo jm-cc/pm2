@@ -94,8 +94,8 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 	mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 		 getpid(), program_invocation_name,
 		 lwp->pid,
-		 ma_vp_core_level[vpnum]?ma_vp_core_level[vpnum]->os_core:-1,
-		 ma_vp_node_level[vpnum]?ma_vp_node_level[vpnum]->os_node:-1);
+		 marcel_vp_core_level(vpnum)?marcel_vp_core_level(vpnum)->os_core:-1,
+		 marcel_vp_node_level(vpnum)?marcel_vp_node_level(vpnum)->os_node:-1);
 #endif
 
 	ret = ma_call_lwp_notifier(MA_LWP_ONLINE, lwp);
@@ -199,7 +199,7 @@ unsigned marcel_lwp_add_lwp(int vpnum)
 
 	LOG_IN();
 
-	level = ma_vp_node_level[vpnum == -1 ? 0 : vpnum];
+	level = marcel_vp_node_level(vpnum == -1 ? 0 : vpnum);
 	lwp = marcel_malloc_node(sizeof(*lwp), level?level->os_node:0);
 	/* initialiser le lwp *avant* de l'enregistrer */
 	*lwp = (marcel_lwp_t) MA_LWP_INITIALIZER(lwp);
@@ -533,8 +533,8 @@ static void lwp_init(ma_lwp_t lwp)
 		mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 			getpid(), program_invocation_name,
 			getpid(),
-			ma_vp_core_level[vpnum]?ma_vp_core_level[vpnum]->os_core:-1,
-			ma_vp_node_level[vpnum]?ma_vp_node_level[vpnum]->os_node:-1);
+			marcel_vp_core_level(vpnum)?marcel_vp_core_level(vpnum)->os_core:-1,
+			marcel_vp_node_level(vpnum)?marcel_vp_node_level(vpnum)->os_node:-1);
 #endif
 
 		LOG_OUT();

@@ -48,6 +48,9 @@ any_t block(any_t arg)
     marcel_fprintf(stderr,"%s really sleeping (VP %d)\n", name, marcel_current_vp());
     ts.tv_sec = 1;
     ts.tv_nsec = 0;
+#ifdef MA__LIBPTHREAD
+#define nanosleep(t1,t2) syscall(SYS_nanosleep,t1,t2)
+#endif
     while (nanosleep(&ts,&ts))
       ;
     marcel_fprintf(stderr,"%s really slept (VP %d)\n", name, marcel_current_vp());

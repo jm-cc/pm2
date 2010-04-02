@@ -464,7 +464,6 @@ static void marcel_pidkill(int sig)
 void ma_update_lwp_blocked_signals(void) {
 	marcel_sigset_t should_block;
 	marcel_sigandset(&should_block, &ma_dfl_sigs, &SELF_GETMEM(curmask));
-	MA_BUG_ON(!ma_in_atomic());
 	if (!marcel_sigequalset(&should_block, &__ma_get_lwp_var(curmask))) {
 		/* We have to update the LWP's sigmask */
 		sigset_t kshould_block;

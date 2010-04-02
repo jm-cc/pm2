@@ -656,7 +656,7 @@ static void topo_discover(void) {
 	    case MARCEL_LEVEL_CORE:
 	      mlevel->os_core = tlevel->os_index;
 #ifdef MARCEL_SMT_IDLE
-	      ma_atomic_set(0, &tlevel->nbidle);
+	      ma_atomic_set(&mlevel->nbidle, 0);
 #endif
 	      break;
 	    case MARCEL_LEVEL_L1:

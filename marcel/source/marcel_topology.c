@@ -489,7 +489,7 @@ ma_topo_level_type_from_hwloc(hwloc_obj_t t)
   case HWLOC_OBJ_NODE: mtype = MARCEL_LEVEL_NODE; break;
   case HWLOC_OBJ_SOCKET: mtype = MARCEL_LEVEL_DIE; break;
   case HWLOC_OBJ_CORE: mtype = MARCEL_LEVEL_CORE; break;
-  case HWLOC_OBJ_PROC: mtype = MARCEL_LEVEL_PROC; break;
+  case HWLOC_OBJ_PU: mtype = MARCEL_LEVEL_PROC; break;
   case HWLOC_OBJ_MISC: mtype = MARCEL_LEVEL_MISC; break;
 
   case HWLOC_OBJ_CACHE: {
@@ -502,7 +502,7 @@ ma_topo_level_type_from_hwloc(hwloc_obj_t t)
       marcel_fprintf(stderr, "Cannot convert hwloc cache depth %d\n", t->attr->cache.depth);
       MA_ALWAYS_BUG_ON(1);
     }
-    break;      
+    break;
   }
 
   default:
@@ -578,7 +578,7 @@ static void topo_discover(void) {
 	    case HWLOC_OBJ_CORE:
 	      marcel_topo_core_level = mlevels;
 	      break;
-	    case HWLOC_OBJ_PROC:
+	    case HWLOC_OBJ_PU:
 	      marcel_topo_cpu_level = mlevels;
 	      break;
 	    default:

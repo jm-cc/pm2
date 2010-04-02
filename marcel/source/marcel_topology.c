@@ -464,6 +464,11 @@ static void topo_connect(void) {
 }
 
 #ifdef MA__NUMA
+
+#ifndef HWLOC_API_VERSION /* before 1.0, PU objects were called PROC */
+#define HWLOC_OBJ_PU HWLOC_OBJ_PROC
+#endif
+
 static enum marcel_topo_level_e
 ma_topo_level_type_from_hwloc(hwloc_obj_t t)
 {

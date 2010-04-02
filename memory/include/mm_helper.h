@@ -18,6 +18,8 @@
 #ifndef MM_HELPER_H
 #define MM_HELPER_H
 
+#include <sys/syscall.h>
+
 /* The following is normally defined in <linux/mempolicy.h>. But that file is not always available. */
 /* Policies */
 enum {

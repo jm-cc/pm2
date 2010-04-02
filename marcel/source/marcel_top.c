@@ -373,6 +373,12 @@ int marcel_init_top(const char *outfile) {
 			dup2(fds[1],STDIN_FILENO);
 			dup2(fds[1],STDOUT_FILENO);
 			//dup2(fds[1],STDERR_FILENO);
+
+#ifdef MA__LIBPTHREAD
+			// Avoid running the displaying command using marcel
+			putenv("LD_LIBRARY_PATH=");
+			putenv("LD_PRELOAD=");
+#endif
 			if (system(outfile) == -1) {
 				perror("system");
 				fprintf(stderr,"couldn't execute %s\n", outfile);

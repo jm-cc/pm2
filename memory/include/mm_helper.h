@@ -34,15 +34,15 @@ enum {
 #  define MPOL_MF_MOVE		(1<<1)	/* Move pages owned by this process to conform to mapping */
 
 #if !defined(__NR_move_pages)
-#  ifdef X86_64_ARCH
+#  if defined(X86_64_ARCH)
 #    define __NR_move_pages 279
-#  elif IA64_ARCH
+#  elif defined(IA64_ARCH)
 #    define __NR_move_pages 1276
-#  elif X86_ARCH
+#  elif defined(X86_ARCH)
 #    define __NR_move_pages 317
-#  elif PPC_ARCH
+#  elif defined(PPC_ARCH)
 #    define __NR_move_pages 301
-#  elif PPC64_ARCH
+#  elif defined(PPC64_ARCH)
 #    define __NR_move_pages 301
 #  else
 #    error Syscall move pages undefined
@@ -50,15 +50,15 @@ enum {
 #endif /* __NR_move_pages */
 
 #if !defined(__NR_mbind)
-#  ifdef X86_64_ARCH
+#  if defined(X86_64_ARCH)
 #    define __NR_mbind 237
-#  elif IA64_ARCH
+#  elif defined(IA64_ARCH)
 #    define __NR_mbind 1259
-#  elif X86_ARCH
+#  elif defined(X86_ARCH)
 #    define __NR_mbind 274
-#  elif PPC_ARCH
+#  elif defined(PPC_ARCH)
 #    define __NR_mbind 259
-#  elif PPC64_ARCH
+#  elif defined(PPC64_ARCH)
 #    define __NR_mbind 259
 #  else
 #    error Syscall mbind undefined
@@ -66,15 +66,15 @@ enum {
 #endif /* __NR_mbind */
 
 #if !defined(__NR_set_mempolicy)
-#  ifdef X86_64_ARCH
+#  if defined(X86_64_ARCH)
 #    define __NR_set_mempolicy 238
-#  elif IA64_ARCH
+#  elif defined(IA64_ARCH)
 #    define __NR_set_mempolicy 1261
-#  elif X86_ARCH
+#  elif defined(X86_ARCH)
 #    define __NR_set_mempolicy 276
-#  elif PPC_ARCH
+#  elif defined(PPC_ARCH)
 #    define __NR_set_mempolicy 261
-#  elif PPC64_ARCH
+#  elif defined(PPC64_ARCH)
 #    define __NR_set_mempolicy 261
 #  else
 #    error Syscall set_mempolicy undefined

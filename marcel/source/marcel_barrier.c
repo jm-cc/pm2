@@ -219,8 +219,10 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 	}
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
+	{
 		marcel_cond_signal(&b->c);
 		marcel_mutex_unlock(&b->m);
+	}
 #else
 		ma_fastlock_release(&b->lock);
 #endif

@@ -398,6 +398,11 @@ void __ma_sig_enable_interrupts(void)
 #endif
 }
 
+/* Preemption must be already disabled here, else we don't know which LWP we are
+ * disabling interrupts on!
+ *
+ * One exception is idle threads, which always run on the same LWP
+ */
 void __ma_sig_disable_interrupts(void)
 {
 #ifdef MARCEL_SIGNALS_ENABLED

@@ -34,7 +34,7 @@ static unsigned long lastms, lastjiffies, djiffies;
 static struct ma_timer_list timer;
 static struct ma_lwp_usage_stat totlst;
 #ifdef MA__BUBBLES
-static int bubbles = 0;
+int ma_top_bubbles = 0;
 #endif
 
 static int top_printf (const char *fmt, ...) TBX_FORMAT(printf, 1, 2);
@@ -235,8 +235,8 @@ void marcel_show_top(void) {
 		switch(cmd) {
 #ifdef MA__BUBBLES
 		case 'b':
-			bubbles = !bubbles;
-			top_printf("bubble view %sactivated\r\n",bubbles?"":"de");
+			ma_top_bubbles = !ma_top_bubbles;
+			top_printf("bubble view %sactivated\r\n",ma_top_bubbles?"":"de");
 			break;
 #endif
 		case 'h':
@@ -321,7 +321,7 @@ Total:  %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle %3llu%% 
 		(int) (2*sizeof(void*)), "self", MARCEL_MAXNAMESIZE,
 		"name", "pr", "cpu", "s", "lc", "natural", "sched", "ready");
 #ifdef MA__BUBBLES
-	if (bubbles) {
+	if (ma_top_bubbles) {
 		int i;
 		printbubble(&marcel_root_bubble);
 		for (i=0; i<NB_BUBBLES; i++)

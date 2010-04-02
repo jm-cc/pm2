@@ -36,6 +36,7 @@ void marcel_show_top(void);
 #ifdef MA__BUBBLES
 void ma_top_add_bubble(marcel_bubble_t *b);
 void ma_top_del_bubble(marcel_bubble_t *b);
+extern int ma_top_bubbles;
 #endif
 
 

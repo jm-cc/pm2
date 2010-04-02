@@ -76,6 +76,14 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 				argv[j++] = argv[i++];
 			else
 				i++;
+#ifdef MA__BUBBLES
+		} else if (!strcmp(argv[i], "--marcel-top-bubbles")) {
+			ma_top_bubbles = 1;
+			if (just_strip)
+				argv[j++] = argv[i++];
+			else
+				i++;
+#endif
 		} else
 #ifdef MA__LWPS
 		if (!strcmp(argv[i], "--marcel-nvp")) {
@@ -189,6 +197,9 @@ static void marcel_parse_cmdline_early(int *argc, char **argv,
 			    "--marcel-top file		Dump a top-like output to file\n"
 			    "--marcel-top |cmd		Same as above, but to command cmd via a pipe\n"
 			    "--marcel-xtop		Same as above, in a freshly created xterm\n"
+#ifdef MA__BUBBLES
+			    "--marcel-top-bubbles	In marcel-x?top, show the bubbles by default\n"
+#endif
 #ifdef MA__LWPS
 			    "--marcel-nvp n		Force number of VPs to n\n"
 			    "--marcel-firstcpu cpu	Allocate VPs from the given cpu"
@@ -270,6 +281,14 @@ static void marcel_parse_cmdline_lastly(int *argc, char **argv,
 				    "Error: can't launch xterm\n");
 				exit(1);
 			}
+#ifdef MA__BUBBLES
+		} else if (!strcmp(argv[i], "--marcel-top-bubbles")) {
+			i++;
+			if (just_strip)
+				continue;
+
+			ma_top_bubbles = 1;
+#endif
 		} else {
 			if (just_strip)
 				argv[j++] = argv[i++];

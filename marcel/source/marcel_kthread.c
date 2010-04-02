@@ -218,64 +218,68 @@ int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem)
 }
 TBX_FUN_ALIAS(void, marcel_kthread_mutex_trylock, marcel_kthread_sem_trywait, (marcel_kthread_mutex_t *lock), (lock));
 
-void marcel_kthread_cond_init(marcel_kthread_cond_t *cond)
-{
+void marcel_kthread_cond_init(marcel_kthread_cond_t *cond) {
 	*cond = 0;
 }
 
-void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond)
-{
-	if (*cond)
-	while (1) {
-		switch (syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, 1, NULL)) {
-		case 1:
-			return;
-		case -1:
-			perror("futex(WAKE) in kthread_cond_signal");
-			MA_BUG();
-			break;
-		case 0:
-			continue;
-		default:
-			MA_BUG();
-			break;
+void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond) {
+	if (*cond) {
+		while (1) {
+			switch (syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, 1, NULL)) {
+				case -1:
+					perror("futex(WAKE) in kthread_cond_signal");
+					MA_BUG();
+				case 0:
+					/* we know from the first 'if' that at
+					 * least one kthread is waiting but
+					 * none was waken up, thus let's try
+					 * again */
+					continue;
+				case 1:
+					/* one waiting kthread was waken up,
+					 * update cond state and leave */
+					(*cond)--;
+					return;
+				default:
+					/* should not be there since we expect
+					 * 0 or 1 waiting kthread to be waken
+					 * */
+					MA_BUG();
+			}
 		}
 	}
 }
 
 void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond)
 {
-	int nbwake = *cond;
-	while (1) {
+	while (*cond) {
 		int res;
-		switch ((res = syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, nbwake, NULL))) {
-		case -1:
-			perror("futex(WAKE) in kthread_cond_broadcast");
-			MA_BUG();
-		case 0:
-			return;
-		default:
-			if (res > 0 && res <= nbwake)
-				nbwake -= res;
-			else
+		switch ((res = syscall(SYS_futex, cond, FUTEX_WAKE_PRIVATE, *cond, NULL))) {
+			case -1:
+				perror("futex(WAKE) in kthread_cond_broadcast");
 				MA_BUG();
+			case 0:
+				continue;
+			default:
+				if (res > 0 && res <= *cond) {
+					(*cond) -= res;
+				} else
+					MA_BUG();
 		}
 	}
 }
 
 void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex)
 {
-	int val;
-	val = ++(*cond);
+	int val = ++(*cond);
 	marcel_kthread_mutex_unlock(mutex);
 	while (syscall(SYS_futex, cond, FUTEX_WAIT_PRIVATE, val, NULL) == -1) {
-		if (errno == EWOULDBLOCK)
+		if (errno == EWOULDBLOCK) {
 			val = *cond;
-		else if (errno != EINTR && errno != EAGAIN)
+		} else if (errno != EINTR && errno != EAGAIN)
 			MA_BUG();
 	}
 	marcel_kthread_mutex_lock(mutex);
-	(*cond)--;
 }
 
 extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);

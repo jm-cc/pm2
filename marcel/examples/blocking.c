@@ -90,9 +90,10 @@ int marcel_main(int argc, char **argv)
   }
   for (i=0;i<N;i++) {
     marcel_join(blockt[i],NULL);
-    marcel_fprintf(stderr,"%d finished sleeping\n", i);
+    marcel_fprintf(stderr,"%d joined\n", i);
   }
 
+  marcel_fprintf(stderr,"cancelling loop thread\n");
   marcel_cancel(loopt);
   marcel_end();
 #endif

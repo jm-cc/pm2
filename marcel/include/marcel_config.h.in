@@ -180,10 +180,6 @@
 /* Define to 1 if you have the <bits/libc-lock.h> header file. */
 #undef HAVE_BITS_LIBC_LOCK_H
 
-/* Define to 1 if you have the declaration of `SIGEV_THREAD_ID', and to 0 if
-   you don't. */
-#undef HAVE_DECL_SIGEV_THREAD_ID
-
 /* Define to 1 if you have the declaration of `_pthread_cleanup_pop', and to 0
    if you don't. */
 #undef HAVE_DECL__PTHREAD_CLEANUP_POP

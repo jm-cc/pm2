@@ -1248,15 +1248,15 @@ extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(int, yield, (void), ())
 
 #ifdef MA__LWPS
-static
-void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
+ma_holder_t *
+ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
 	ma_holder_t *old_h;
 	LOG_IN();
 	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
-	if (old_h == &new_rq->as_holder) {
+	if (old_h == new_holder) {
 		ma_task_holder_unlock_softirq(old_h);
 		LOG_OUT();
-		return;
+		return old_h;
 	}
 	ma_clear_ready_holder(&MARCEL_SELF->as_entity,old_h);
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
@@ -1266,12 +1266,12 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
 		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
 #endif
-	ma_holder_rawlock(&new_rq->as_holder);
-	ma_task_sched_holder(MARCEL_SELF) = &new_rq->as_holder;
-	ma_set_ready_holder(&MARCEL_SELF->as_entity,&new_rq->as_holder);
-	ma_holder_rawunlock(&new_rq->as_holder);
+	ma_holder_rawlock(new_holder);
+	ma_task_sched_holder(MARCEL_SELF) = new_holder;
+	ma_set_ready_holder(&MARCEL_SELF->as_entity,new_holder);
+	ma_holder_rawunlock(new_holder);
 	/* On teste si le LWP courant est interdit ou pas */
-	if (ma_spare_lwp() || !marcel_vpset_isset(vpset,ma_vpnum(MA_LWP_SELF))) {
+	if (do_move) {
 		ma_set_current_state(MA_TASK_MOVING);
 		ma_local_bh_enable();
 		ma_preempt_enable_no_resched();
@@ -1280,8 +1280,12 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 		ma_local_bh_enable();
 		ma_preempt_enable();
 	}
-	LOG_OUT();
+	LOG_RETURN(old_h);
 }
+#define ma_apply_vpset_rq(vpset, rq) \
+	ma_bind_to_holder(ma_spare_lwp() || !marcel_vpset_isset((vpset),ma_vpnum(MA_LWP_SELF)), &(rq)->as_holder)
+#define ma_apply_vpset(vpset) \
+	ma_apply_vpset_rq((vpset), marcel_sched_vpset_init_rq(vpset))
 #endif
 
 // Modifie le 'vpset' du thread courant. Le cas échéant, il faut donc
@@ -1292,10 +1296,8 @@ void __marcel_apply_vpset(const marcel_vpset_t *vpset, ma_runqueue_t *new_rq) {
 void marcel_apply_vpset(const marcel_vpset_t *vpset)
 {
 #ifdef MA__LWPS
-	ma_runqueue_t *new_rq;
 	LOG_IN();
-	new_rq=marcel_sched_vpset_init_rq(vpset);
-	__marcel_apply_vpset(vpset, new_rq);
+	ma_apply_vpset(vpset);
 	LOG_OUT();
 #endif
 }
@@ -1355,7 +1357,7 @@ void marcel_bind_to_topo_level(marcel_topo_level_t *level)
 {
 #ifdef MA__LWPS
 	LOG_IN();
-	__marcel_apply_vpset(&level->vpset, &level->rq);
+	ma_apply_vpset_rq(&level->vpset, &level->rq);
 	LOG_OUT();
 #endif
 }

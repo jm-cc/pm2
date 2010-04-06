@@ -141,6 +141,8 @@ extern TBX_EXTERN void marcel_unfreeze_sched(void);
 
 #ifdef __MARCEL_KERNEL__
 
+/* Bind scheduling to a specific holder, return the previous holder */
+ma_holder_t *ma_bind_to_holder(int do_move, ma_holder_t *new_holder);
 
 /** Internal macros **/
 #ifdef MARCEL_STATS_ENABLED

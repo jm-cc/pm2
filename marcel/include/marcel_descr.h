@@ -299,6 +299,10 @@ struct marcel_task {
 	char tls[MA_TLS_AREA_SIZE];
 #endif
 
+	/* Used for fork() handling, to put back fork() parent to where it
+	 * was. */
+	ma_holder_t *fork_holder;
+
 #if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	void *dummy; /*  Doit rester le _dernier_ champ */
 #endif

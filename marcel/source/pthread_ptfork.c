@@ -67,6 +67,9 @@ int system(const char *line)
 
 /* Prepare to the fork(2) call in the parent process.  */
 static void parent_prepare_fork(void) {
+	/* First move to the main LWP since it makes a load of things easier for handling the fork. */
+	ma_runqueue_t *rq = ma_lwp_rq(&__main_lwp);
+	SELF_GETMEM(fork_holder) = ma_bind_to_holder(!ma_is_first_lwp(MA_LWP_SELF), &rq->as_holder);
 	/* Acquire the `extlib' mutex, disable preemption, bottom halves and the
 	 * timer altogether so that the child can peacefully do its cleanup job
 	 * once its started.  */
@@ -82,6 +85,8 @@ static void cleanup_parent_after_fork(void) {
 	ma_local_bh_enable_no_resched();
 	ma_preempt_enable();
 	marcel_extlib_unprotect();
+	/* Go back to original holder */
+	ma_bind_to_holder(1, SELF_GETMEM(fork_holder));
 }
 
 /* Remove THREAD, a dangling thread descriptor in the child process, from the
@@ -158,7 +163,7 @@ static void cleanup_child_after_fork(void)
 
 	/* XXX: We only handle fork(2) invocations from the main LWP.  */
 	/* printf ("self = %p, lwp-self = %p\n", marcel_self(), MA_LWP_SELF); */
-	/* MA_BUG_ON(!ma_is_first_lwp(MA_LWP_SELF)); */
+	MA_BUG_ON(!ma_is_first_lwp(MA_LWP_SELF));
 #endif
 
 #ifdef MA__BUBBLES

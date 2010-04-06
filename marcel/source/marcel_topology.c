@@ -677,6 +677,11 @@ static void topo_discover(void) {
 	      break;
 	    case MARCEL_LEVEL_PROC:
 	      mlevel->os_cpu = tlevel->os_index;
+	      if (mlevel->os_cpu >= MARCEL_NBMAXCPUS) {
+	        /* these won't fit in marcel's vpset type and thus would abort strangely later */
+	      	fprintf(stderr," %d >= %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n", mlevel->os_cpu, MARCEL_NBMAXCPUS);
+		exit(1);
+	      }
 	      break;
 	    default:
 	      break;

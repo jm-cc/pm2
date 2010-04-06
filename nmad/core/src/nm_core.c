@@ -188,7 +188,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nmad_lock_init(p_core);
   nm_lock_interface_init(p_core);
   nm_lock_status_init(p_core);  
-#ifndef PIOM_DISABLE_LTASKS
+#if(!defined(PIOM_DISABLE_LTASKS) && defined(PIOMAN_POLL))
   nm_ltask_set_policy();
 #endif	/* PIOM_DISABLE_LTASKS */
 #endif /* PIOMAN */

@@ -44,7 +44,7 @@ static __tbx_inline__ void ma_sched_sig_pause(void) {
 	/* Make sure people see that we won't poll any more after that */
 	ma_smp_mb__after_clear_bit();
 	/* Make a last check once we've announced that */
-	if (!ma_get_need_resched())
+	if (ma_vpnum(MA_LWP_SELF) >= 0 && !ma_get_need_resched())
 		marcel_sig_pause();
 	/* Either we have need_resched or got a signal, re-announce that we
 	 * will be polling */

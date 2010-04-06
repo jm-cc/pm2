@@ -78,10 +78,15 @@ void marcel_sig_nanosleep(void);
 void marcel_sig_create_timer(ma_lwp_t lwp);
 void marcel_sig_reset_timer(void);
 void marcel_sig_stop_itimer(void);
+void marcel_sig_reset_perlwp_timer(void);
+void marcel_sig_stop_perlwp_itimer(void);
 void __ma_sig_enable_interrupts(void);
 void __ma_sig_disable_interrupts(void);
 #ifndef MA__TIMER
 #define marcel_sig_stop_itimer() (void)0
+#define marcel_sig_reset_itimer() (void)0
+#define marcel_sig_stop_perlwp_itimer() (void)0
+#define marcel_sig_reset_perlwp_itimer() (void)0
 #endif
 
 static __tbx_inline__ void disable_preemption(void);

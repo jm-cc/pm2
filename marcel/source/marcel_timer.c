@@ -348,7 +348,8 @@ void marcel_sig_create_timer(ma_lwp_t lwp)
 #endif
 }
 
-void marcel_sig_reset_timer(void)
+#undef marcel_sig_reset_perlwp_timer
+void marcel_sig_reset_perlwp_timer(void)
 {
 	LOG_IN();
 
@@ -362,6 +363,20 @@ void marcel_sig_reset_timer(void)
 	value.it_value = value.it_interval;
 	timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
     }
+#endif
+#endif
+	
+	LOG_OUT();
+}
+
+#undef marcel_sig_reset_timer
+void marcel_sig_reset_timer(void)
+{
+	LOG_IN();
+
+#ifdef MA__TIMER
+#ifdef MA__USE_TIMER_CREATE
+    marcel_sig_reset_perlwp_timer();
 #else
     {
 	struct itimerval value = {};
@@ -502,8 +517,8 @@ static void sig_start_timer(ma_lwp_t lwp)
 	LOG_OUT();
 }
 
-#undef marcel_sig_stop_itimer
-void marcel_sig_stop_itimer(void)
+#undef marcel_sig_stop_perlwp_itimer
+void marcel_sig_stop_perlwp_itimer(void)
 {
 #ifdef MA__TIMER
 #ifdef MA__USE_TIMER_CREATE
@@ -512,6 +527,16 @@ void marcel_sig_stop_itimer(void)
 	memset(&value,0,sizeof(value));
 	timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
     }
+#endif
+#endif
+}
+
+#undef marcel_sig_stop_itimer
+void marcel_sig_stop_itimer(void)
+{
+#ifdef MA__TIMER
+#ifdef MA__USE_TIMER_CREATE
+    marcel_sig_stop_perlwp_itimer();
 #else
     {
 	struct itimerval value;

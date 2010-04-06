@@ -489,13 +489,13 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 			if (vpnum != 0)
 				/* Not only sleep, but also disable the timer,
 				 * to completely avoid disturbing the CPU */
-				marcel_sig_stop_itimer();
+				marcel_sig_stop_perlwp_itimer();
 			marcel_sig_disable_interrupts();
 			while (marcel_vpset_isset(&marcel_disabled_vpset, vpnum) && !ma_get_need_resched())
 				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
 			if (vpnum != 0)
-				marcel_sig_reset_timer();
+				marcel_sig_reset_perlwp_timer();
 		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)

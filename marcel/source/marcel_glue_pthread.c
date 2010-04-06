@@ -121,6 +121,20 @@ lpt_t LPT_NAME(self)(void)
 DEF_PTHREAD(pthread_t, self, (void), ())
     DEF___PTHREAD(pthread_t, self, (void), ())
 
+struct xid_command
+{
+	int syscall_no;
+	long int id[3];
+	volatile int cntr;
+};
+
+static int
+__ma_setxid (struct xid_command *cmdp)
+{
+	fprintf(stderr,"TODO: execute setxid on all LWPs\n");
+	return syscall(cmdp->syscall_no, cmdp->id[0], cmdp->id[1], cmdp->id[2]);
+}
+
 
 
 #ifdef STATIC_BUILD
@@ -215,8 +229,7 @@ static struct pthread_functions
   void (*ptr___pthread_unwind) (__pthread_unwind_buf_t *)
        __attribute ((noreturn)) __ma_cleanup_fct_attribute;
   void (*ptr__nptl_deallocate_tsd) (void);
-  /* TODO implement setxid commands */
-  int (*ptr__nptl_setxid) (void /*struct xid_command*/ *);
+  int (*ptr__nptl_setxid) (struct xid_command *);
   void (*ptr_freeres) (void);
 } const ptr_pthread_functions = {
 	.ptr_pthread_attr_destroy = (void*) pthread_attr_destroy,
@@ -270,7 +283,7 @@ static struct pthread_functions
 	.ptr_nthreads = &nthreads,
 	.ptr___pthread_unwind = (void*) error_stub,
 	.ptr__nptl_deallocate_tsd = (void*) error_stub,
-	.ptr__nptl_setxid = (void*) error_stub,
+	.ptr__nptl_setxid = __ma_setxid,
 	.ptr_freeres = (void*) error_stub,
 };
 

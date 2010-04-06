@@ -218,7 +218,7 @@ static void timer_interrupt(int sig)
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
 		ma_for_each_lwp_from_begin(lwp,MA_LWP_SELF) {
-			if (lwp->vpnum != -1 && lwp->vpnum < marcel_nbvps())
+			if (lwp->vpnum != -1 && lwp->vpnum < marcel_nbvps() && !marcel_vp_is_disabled(lwp->vpnum))
 			        marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
 		} ma_for_each_lwp_from_end();
 	}

@@ -496,6 +496,9 @@ ma_topo_level_type_from_hwloc(hwloc_obj_t t)
   case HWLOC_OBJ_CORE: mtype = MARCEL_LEVEL_CORE; break;
   case HWLOC_OBJ_PU: mtype = MARCEL_LEVEL_PROC; break;
   case HWLOC_OBJ_MISC: mtype = MARCEL_LEVEL_MISC; break;
+#ifdef HWLOC_API_VERSION
+  case HWLOC_OBJ_GROUP: mtype = MARCEL_LEVEL_MISC; break;
+#endif
 
   case HWLOC_OBJ_CACHE: {
     switch (t->attr->cache.depth) {

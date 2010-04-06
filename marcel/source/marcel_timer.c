@@ -302,7 +302,9 @@ void marcel_sig_pause(void)
 #if !defined(USE_VIRTUAL_TIMER)
 	sigsuspend(&sigeptset);
 #else
+	__ma_sig_enable_interrupts();
 	SCHED_YIELD();
+	__ma_sig_disable_interrupts();
 #endif
 }
 

@@ -247,16 +247,34 @@ static void timer_interrupt(int sig)
 #  endif
 			{ ma_raise_softirq_from_hardirq(MA_TIMER_HARDIRQ); }
 #  if defined(MA__LWPS)
+	/*
+	 * We need to advance the time only once. This depends on the situation
+	 * (only one kernel signal redistributed by hand to other LWPs, or
+	 * signals already distributed by the kernel)
+	 */
 #    if !defined(MA_BOGUS_SIGINFO_CODE)
-		if (!info || info->si_code > 0
-#      ifdef MA__USE_TIMER_CREATE
-				|| (info->si_code == SI_TIMER && ma_is_first_lwp(MA_LWP_SELF))
-#      endif
+		if (!info ||
+		/* Distinguish by siginfo */
+#	if defined(MA__USE_TIMER_CREATE)
+			/* timer_create is per-lwp */
+			(info->si_code == SI_TIMER && ma_is_first_lwp(MA_LWP_SELF))
+#	else
+			/* traditional process-wide setitimer */
+
+			/* Sent by the kernel */
+			(info->si_code > 0
+#			if defined(USE_VIRTUAL_TIMER)
+				&& ma_is_first_lwp(MA_LWP_SELF)
+#			endif
+			)
+#	endif
 				)
-#    elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
-		if (ma_is_first_lwp(MA_LWP_SELF))
-#    else
+#    elif (MARCEL_TIMER_SIGNAL != MARCEL_TIMER_USERSIGNAL)
+		/* Distinguish by signal number */
 		if (sig == MARCEL_TIMER_SIGNAL)
+#    else
+		/* No way to distinguish them apart. */
+		if (ma_is_first_lwp(MA_LWP_SELF))
 #    endif
 #  endif
 		/* kernel timer signal */

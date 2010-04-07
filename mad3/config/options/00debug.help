@@ -1,1 +1,1 @@
-debug flags enabled (-DDEBUG, ...)
+debug flags enabled (-D*_DEBUG, ...)

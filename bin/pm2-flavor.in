@@ -697,6 +697,7 @@ do_get_ac() {
     	grep -v -- --flavor= | \
 	grep -v -- --builddir= | \
 	sed -e 's/--modules=\([^ ]*\)/--enable-\1/g' | \
+	sed -e 's/--\([^= ]*\)=enable_\([^ ]*\)/--\1=\2/g' | \
 	sed -e 's/--\([^= ]*\)=\([^ ]*\)/--enable-\1-\2/g' | \
 	sed -e 's/:/=/g' | \
 	sed -e 's/_/-/g'

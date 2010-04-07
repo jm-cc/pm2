@@ -1250,21 +1250,21 @@ DEF_PTHREAD_STRONG(int, yield, (void), ())
 #ifdef MA__LWPS
 ma_holder_t *
 ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
-	ma_holder_t *old_h;
+	ma_holder_t *old_sched_h, *old_natural_h;
 	LOG_IN();
-	old_h = ma_task_holder_lock_softirq(MARCEL_SELF);
-	if (old_h == new_holder) {
-		ma_task_holder_unlock_softirq(old_h);
+	old_sched_h = ma_task_holder_lock_softirq(MARCEL_SELF);
+	if (old_sched_h == new_holder) {
+		ma_task_holder_unlock_softirq(old_sched_h);
 		LOG_OUT();
-		return old_h;
+		return old_sched_h;
 	}
-	ma_clear_ready_holder(&MARCEL_SELF->as_entity,old_h);
+	ma_clear_ready_holder(&MARCEL_SELF->as_entity,old_sched_h);
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
-	ma_holder_rawunlock(old_h);
+	ma_holder_rawunlock(old_sched_h);
 #ifdef MA__BUBBLES
-	old_h = ma_task_natural_holder(MARCEL_SELF);
-	if (old_h && old_h->type == MA_BUBBLE_HOLDER)
-		marcel_bubble_removetask(ma_bubble_holder(old_h),MARCEL_SELF);
+	old_natural_h = ma_task_natural_holder(MARCEL_SELF);
+	if (old_natural_h && old_natural_h->type == MA_BUBBLE_HOLDER)
+		marcel_bubble_removetask(ma_bubble_holder(old_natural_h),MARCEL_SELF);
 #endif
 	ma_holder_rawlock(new_holder);
 	ma_task_sched_holder(MARCEL_SELF) = new_holder;
@@ -1280,7 +1280,7 @@ ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
 		ma_local_bh_enable();
 		ma_preempt_enable();
 	}
-	LOG_RETURN(old_h);
+	LOG_RETURN(old_sched_h);
 }
 #define ma_apply_vpset_rq(vpset, rq) \
 	ma_bind_to_holder(ma_spare_lwp() || !marcel_vpset_isset((vpset),ma_vpnum(MA_LWP_SELF)), &(rq)->as_holder)

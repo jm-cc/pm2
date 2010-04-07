@@ -58,7 +58,7 @@ fi
 EOF
 
 	add_option () {
-		# usage: add_option module output_module option
+		# usage: add_option module output_module option help_string
                 # This creates an autoconf --enable-output_module-bar option for
                 # a given pm2 option of some module.
 
@@ -70,6 +70,7 @@ EOF
 		option="$3"
 		extra="$4"
 		default="$5"
+		help="$6"
 
 		# strip path/extension to get the PM2 flavor option
 		pm2_opt="`echo "$option" | sed -e "s:^modules/$module/config/options/[0-9]*\\(.*\\).sh\$:\\1:"`"
@@ -120,9 +121,12 @@ EOF
 		# avoid believing the user gave them
 		[ "$default" = no -a "$pm2_opt" != build_static ] || VAR=PM2_FLAVOR_CONTENT_DEFAULT
 
+		HELP=
+		[ -n "$help" ] && HELP="[AS_HELP_STRING([--enable-$output_module-$ac_opt],[$help [default=$default]])]"
+
 		cat << EOF
 AC_ARG_ENABLE([$output_module-$ac_opt],
-	,
+	$HELP,
 	[PM2_CONFIG_OPTIONS="\$PM2_CONFIG_OPTIONS --enable-$output_module-$ac_opt=\$enableval"],
 	[enable_${output_module}_${ac_opt_}=$default])
 if test "\$enable_${output_module}_${ac_opt_}" != no
@@ -189,12 +193,14 @@ EOF
 	# add --enable-all-foo for generic options
 	for j in modules/generic/config/options/*.sh
 	do
-		if test "$j" = modules/generic/config/options/00opt.sh
-		then
-			add_option generic all "$j" "" "yes"
-		else
-			add_option generic all "$j" "" "no"
-		fi
+		case ${j#modules/generic/config/options/} in 
+			00opt.sh)	add_option generic all "$j" "" "yes" "enable compiler optimization flags";;
+			00debug.sh)	add_option generic all "$j" "" "no" "enable debug flags (-D*_DEBUG)";;
+			00gdb.sh)	add_option generic all "$j" "" "no" "enable debugger flags (-g)";;
+			00gprof.sh)	add_option generic all "$j" "" "no" "enable gprof flags (-pg)";;
+			00noinline.sh)	add_option generic all "$j" "" "no" "enable not inlining functions";;
+			*)		add_option generic all "$j" "" "no";;
+		esac
 	done
 
 	# Enable some options by default for some modules

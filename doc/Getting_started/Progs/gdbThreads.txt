@@ -1,0 +1,11 @@
+(gdb) info thread
+  2 Thread 0x1ffedff910 (LWP 18509)  0x00007ffff748d2f4 in do_sigsuspend (
+    set=<value optimized out>) at ../sysdeps/unix/sysv/linux/sigsuspend.c:63
+* 1 Thread 0x7ffff7fcf6f0 (LWP 18497)  0x000000000040c314 in burn (foo=0x0)
+    at delay.c:58
+(gdb) marcel-threads
+    marcel_t             name prio status cpu   natural_holder     sched_holder     ready_holder
+0x1ffdffeb00        user_task   20    RR   0            (nil)       rq machine       rq machine
+0x1ffe3feb00        user_task   20    IB   0            (nil)       rq machine            (nil)
+0x1ffe7feb00        user_task   20    IB   0            (nil)       rq machine            (nil)
+(gdb)

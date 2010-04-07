@@ -1,18 +1,10 @@
-(gdb) r
-Program received signal SIGINT, Interrupt.
-[Switching to Thread 16386 (LWP 25769)]
-0x4013c3e7 in sched_yield () from /lib/libc.so.6
+(gdb) set-ctx  0x1ffe3feb00
+switching to 0x1ffe3feb00(0x1ffe3feb00)
 (gdb) bt
-#0  0x4013c3e7 in sched_yield () from /lib/libc.so.6
-#1  0x0804dc6d in idle_func (arg=0x0) at marcel_archdep.h:41
-#2  0x0804973a in marcel_create (pid=0x0, attr=0x3ffe0000, func=0, arg=0x0)
-    at marcel_sched.h:35
-(gdb) set-ctx  &__main_thread_struct
-switching to &__main_thread_struct(0x64c420)
-(gdb) bt
-#0  0x0804d5d8 in marcel_give_hand (blocked=0xbffefb6c)
-    at source/marcel_sched.c:1173
-#1  0x0804ef40 in marcel_sem_P (s=0xbffefb6c) at source/marcel_sem.c:47
-#2  0x08049049 in marcel_main (argc=1, argv=0xbfffcb94) at sumtime.c:75
-#3  0x08049dc1 in main (argc=1, argv=0xbfffcb94) at source/marcel.c:1276
-(gdb)
+#0  0x00000000004142de in marcel_switch_to (cur=<value optimized out>, 
+    next=<value optimized out>)
+    at /home/samy/pm2-newsched/pm2/modules/marcel/source/marcel_sched_generic.c:153
+#1  0x0000000000421bc5 in do_switch ()
+    at /home/samy/pm2-newsched/pm2/marcel/source/scheduler-marcel/linux_sched.c:678
+#2  ma_schedule ()
+...

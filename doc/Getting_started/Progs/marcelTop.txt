@@ -1,5 +1,0 @@
-(gdb) marcel-threads
-0x3ff4fc00        user_task 43 I  1 machine nil
-(gdb) marcel-printthread &__main_thread_struct
-0xbffefc00             main 43 I  0 machine nil
-(gdb)

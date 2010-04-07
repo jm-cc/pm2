@@ -426,7 +426,7 @@ occur.
 The <TT>pm2-load</TT> utility provides a number of options.  The most useful
 one in a first place is <TT>pm2-load -d</TT>. It can be used with any flavor,
 but it is most rewarding when the current flavor enables the <TT>gdb</TT>
-for all the modules and for the application. If run with the <TT>-d</TT>
+flavor option for all the modules and for the application. If run with the <TT>-d</TT>
 option, <TT>pm2-load</TT> opens a <TT>gdb</TT> session on each (logical) node
 declared in the configuration, with a display on your console. Just
 typing <TT>r</TT> (for <TT>run</TT>) in the window will start the execution.
@@ -499,11 +499,16 @@ several gdb functions for printing thread state like the --marcel-xtop
 option:
 </P>
 
-<PROGRAM FILE="./Progs/marcelTop.txt"/>
+<PROGRAM FILE="./Progs/gdbThreads.txt"/>
 
 <P>
-One may switch to not-running threads' context thanks PM2-provided
-functions<FOOTNOTE>yet implemented on X86 only</FOOTNOTE>:
+Here we see that there are two kernel threads, and three marcel threads.
+Some threads are currently running (<TT>RR</TT> state), so to get their
+backtrace you need to switch to the corresponding kernel thread: here 0, thus
+<TT>thread 1</TT>, and then <TT>backtrace</TT> etc. Some other threads are
+currently blocked (<TT>IB</TT>) or ready but not running (<TT>Rr</TT>). In that
+case one may switch to their context thanks to PM2-provided
+functions<FOOTNOTE>yet implemented on X86 and IA64 only</FOOTNOTE>:
 </P>
 
 <PROGRAM FILE="./Progs/gdb.txt"/>
@@ -521,10 +526,8 @@ current running thread<FOOTNOTE>In theory, the PM2 process should
 then continue properly, but it seems gdb does not yet let this work
 correctly</FOOTNOTE>. Sometimes gdb has troubles with switching
 stacks, it emits a <TT>Couldn't write registers: Input/output
-  error.</TT> error. In such case, one can use the three
-<TT>__set-ctx1</TT>, <TT>__set-ctx2</TT>, and <TT>__set-ctx3</TT>
-commands one after the other, repeating them as many times as
-necessary until they all worked at least once.
+error.</TT> error. In such case, repeating the set-ctx command a few times seems
+to work...
 </P>
 
 <P>

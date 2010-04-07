@@ -33,6 +33,7 @@ PM2_CONFIGPROG="${PM2_OBJROOT}/bin/pm2-config"
 PM2_FLAVOR_PROG="${PM2_OBJROOT}/bin/${PROGNAME}"
 
 MODULES=`"${PM2_OBJROOT}/bin/pm2-module" modules --with-common`
+MODULES_NO_COMMON=`"${PM2_OBJROOT}/bin/pm2-module" modules`
 
 
 if [ -z "$MODULES" ]; then
@@ -547,7 +548,7 @@ do_set() {
 	    ;;
 	--all=*)
 	    optarg="${1#*=}"
-	    for mod in $MODULES; do
+	    for mod in $MODULES_NO_COMMON; do
 		do_list_addsub $mod "$optarg"
 	    done
 	    ;;

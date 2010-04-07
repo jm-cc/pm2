@@ -69,7 +69,9 @@ int system(const char *line)
 static void parent_prepare_fork(void) {
 	/* First move to the main LWP since it makes a load of things easier for handling the fork. */
 	ma_runqueue_t *rq = ma_lwp_rq(&__main_lwp);
+#ifdef MA__LWPS
 	SELF_GETMEM(fork_holder) = ma_bind_to_holder(!ma_is_first_lwp(MA_LWP_SELF), &rq->as_holder);
+#endif
 	/* Acquire the `extlib' mutex, disable preemption, bottom halves and the
 	 * timer altogether so that the child can peacefully do its cleanup job
 	 * once its started.  */
@@ -85,8 +87,10 @@ static void cleanup_parent_after_fork(void) {
 	ma_local_bh_enable_no_resched();
 	ma_preempt_enable();
 	marcel_extlib_unprotect();
+#ifdef MA__LWPS
 	/* Go back to original holder */
 	ma_bind_to_holder(1, SELF_GETMEM(fork_holder));
+#endif
 }
 
 /* Remove THREAD, a dangling thread descriptor in the child process, from the

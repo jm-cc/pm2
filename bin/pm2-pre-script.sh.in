@@ -57,9 +57,9 @@ while [ $# -gt 0 ]; do
 	    PM2_LD_PRELOAD="$1"
 	    shift
 	    if [ -n "$debug_file" ]; then
-		echo "set environment LD_PRELOAD $PM2_LD_PRELOAD" >> $debug_file
+		echo "set environment LD_PRELOAD ${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" >> $debug_file
 	    fi
-	    log "Using ld preload [${PM2_LD_PRELOAD}]"
+	    log "Using ld preload [${LD_PRELOAD:+${LD_PRELOAD}:}${PM2_LD_PRELOAD}]"
 	    ;;
 	--export)
 	    shift
@@ -153,9 +153,9 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
     if [ -n "$_PM2_CONFIG_PRELOAD" ]; then
 	PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}$_PM2_CONFIG_PRELOAD"
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_PRELOAD $PM2_LD_PRELOAD" >> $debug_file
+	    echo "set environment LD_PRELOAD ${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" >> $debug_file
 	fi
-	log "set environment LD_PRELOAD $PM2_LD_PRELOAD"
+	log "set environment LD_PRELOAD ${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD"
     fi
 
     # LD library path
@@ -163,9 +163,9 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = on ]; then
 
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH" >> $debug_file
+	    echo "set environment LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" >> $debug_file
 	fi
-	log "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH"
+	log "set environment LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH"
     fi
 
     # Chemin d'accès au chargeur
@@ -190,9 +190,9 @@ else
 
     if [ -n "$PM2_LD_LIBRARY_PATH" ]; then
 	if [ -n "$debug_file" ]; then
-	    echo "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH" >> $debug_file
+	    echo "set environment LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" >> $debug_file
 	fi
-	log "set environment LD_LIBRARY_PATH $PM2_LD_LIBRARY_PATH"
+	log "set environment LD_LIBRARY_PATH ${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH"
     fi
 
 

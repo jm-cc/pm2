@@ -32,7 +32,7 @@ void __marcel_init ma_deviate_init(void)
 // préemption désactivée et deviate_lock == 1
 static void marcel_deviate_record(marcel_t pid, marcel_handler_func_t h, any_t arg)
 {
-	deviate_record_t *ptr = ma_obj_alloc(deviate_records);
+	deviate_record_t *ptr = ma_obj_alloc(deviate_records, NULL);
 
 	ptr->func = h;
 	ptr->arg = arg;
@@ -54,7 +54,7 @@ static void do_execute_deviate_work(void)
 		any_t arg = ptr->arg;
 
 		cur->work.deviate_work = ptr->next;
-		ma_obj_free(deviate_records, ptr);
+		ma_obj_free(deviate_records, ptr, NULL);
 
 		ma_spin_unlock(&deviate_lock);
 		ma_preempt_enable();

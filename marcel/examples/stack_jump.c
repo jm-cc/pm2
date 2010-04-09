@@ -30,7 +30,7 @@ any_t thread_func(any_t arg)
   marcel_printf("marcel_self = %p, sp = %p\n", marcel_self(), (void *)get_sp());
 
   /* Allocation d'une pile annexe, *obligatoirement* de taille THREAD_SLOT_SIZE.  */
-  stack = marcel_slot_alloc();
+  stack = marcel_slot_alloc(NULL);
   marcel_printf("New stack goes from %p to %p\n", stack, stack + THREAD_SLOT_SIZE - 1);
 
   /* Préparation de la nouvelle pile pour accueillir le thread */

@@ -55,8 +55,8 @@ ma_allocator_t *ma_new_obj_allocator(int conservative,
 				      int max_size
 				      );
 void ma_obj_allocator_init(ma_allocator_t * allocator);
-TBX_FMALLOC void *ma_obj_alloc(ma_allocator_t *allocator);
-void ma_obj_free(ma_allocator_t *allocator, void *obj);
+TBX_FMALLOC void *ma_obj_alloc(ma_allocator_t *allocator, struct marcel_topo_level *level);
+void ma_obj_free(ma_allocator_t *allocator, void *obj, struct marcel_topo_level *level);
 void ma_obj_allocator_print(ma_allocator_t * allocator);
 void ma_obj_allocator_fini(ma_allocator_t *allocator);
 

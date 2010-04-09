@@ -23,7 +23,7 @@ void ma_container_add(ma_container_t * container, void *obj)
 	/* Mode conservatif */
 	if (container->conservative == 1) {
 		/*On alloue un nouveau noeud separement */
-		new_node = ma_obj_alloc(ma_node_allocator);
+		new_node = ma_obj_alloc(ma_node_allocator, NULL);
 	}
 	/* Mode non conservatif */
 	else {
@@ -68,7 +68,7 @@ void *ma_container_get(ma_container_t * container)
 	obj = node->obj;
 
 	if (container->conservative == 1)
-		ma_obj_free(ma_node_allocator, node);
+		ma_obj_free(ma_node_allocator, node, NULL);
 
 	container->nb_element--;
 
@@ -93,7 +93,7 @@ void ma_container_clear(ma_container_t * container, void (*destroy) (void *, voi
 			destroy(ptr2->obj, destroy_arg);
 		if (container->conservative == 1) {
 			/* Supprime le noeud */
-			ma_obj_free(ma_node_allocator, ptr2);
+			ma_obj_free(ma_node_allocator, ptr2, NULL);
 		}
 	}
 	ma_unlock_container(container);

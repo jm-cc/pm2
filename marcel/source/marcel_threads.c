@@ -287,7 +287,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 		/* Seeds are allowed to choose a priority, which is then inherited by
 			 their seed runner in `marcel_sched_seed_runner ()'.  */
 
-		new_task = ma_obj_alloc(marcel_thread_seed_allocator);
+		/* TODO: target VPset */
+		new_task = ma_obj_alloc(marcel_thread_seed_allocator, NULL);
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 
@@ -344,7 +345,8 @@ marcel_create_internal(marcel_t * __restrict pid,
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 		}
 #endif
-		bottom = marcel_tls_slot_alloc();
+		/* TODO: target VPset */
+		bottom = marcel_tls_slot_alloc(NULL);
 		PROF_EVENT(thread_stack_allocated);
 		new_task = ma_slot_task(bottom);
 		stack_base = bottom;

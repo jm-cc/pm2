@@ -91,7 +91,7 @@ static void *mapped_slot_alloc(void *foo TBX_UNUSED)
 
 
   retry:
-	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator);
+	ptr = ma_obj_alloc(marcel_unmapped_slot_allocator, NULL);
 	if (!ptr) {
 		if (!ma_in_atomic() && nb_try_left--) {
 			mdebugl(PM2DEBUG_DISPLEVEL, "Not enough room for new stack (stack size is %lx, stack allocation area is %lx-%lx), trying to wait for other threads to terminate.\n", THREAD_SLOT_SIZE, (unsigned long) SLOT_AREA_BOTTOM, (unsigned long) ISOADDR_AREA_TOP);
@@ -156,7 +156,7 @@ void marcel_tls_attach(marcel_t t) {
 	_dl_allocate_tls(tcb);
 
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
-	int ldt_entry = ((uintptr_t) ma_obj_alloc(marcel_ldt_allocator)) - 1;
+	int ldt_entry = ((uintptr_t) ma_obj_alloc(marcel_ldt_allocator, NULL)) - 1;
 
 	t->tls_desc = ldt_entry * 8 | 0x4;
 
@@ -196,12 +196,12 @@ void marcel_tls_attach(marcel_t t) {
 void marcel_tls_detach(marcel_t t) {
 #if defined(X86_ARCH) || defined(X86_64_ARCH)
 	if (t->tls_desc)
-		ma_obj_free(marcel_ldt_allocator, (void *) (uintptr_t) (t->tls_desc / 8 + 1));
+		ma_obj_free(marcel_ldt_allocator, (void *) (uintptr_t) (t->tls_desc / 8 + 1), NULL);
 #endif
 }
 
 static void *tls_slot_alloc(void *foo TBX_UNUSED) {
-	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator);
+	void *ptr = ma_obj_alloc(marcel_mapped_slot_allocator, NULL);
 	marcel_t t = ma_slot_task(ptr);
 	marcel_tls_attach(t);
 	return ptr;
@@ -213,7 +213,7 @@ static void tls_slot_free(void *slot, void *foo TBX_UNUSED) {
 	lpt_tcb_t *tcb = marcel_tcb(t);
 	marcel_tls_detach(t);
 	_dl_deallocate_tls(tcb, 0);
-	ma_obj_free(marcel_mapped_slot_allocator, slot);
+	ma_obj_free(marcel_mapped_slot_allocator, slot, NULL);
 }
 #endif /* MA__PROVIDE_TLS */
 
@@ -222,22 +222,22 @@ static void mapped_slot_free(void *slot, void *foo TBX_UNUSED)
 {
 	if (munmap(slot, THREAD_SLOT_SIZE) == -1)
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
-	ma_obj_free(marcel_unmapped_slot_allocator, slot);
+	ma_obj_free(marcel_unmapped_slot_allocator, slot, NULL);
 }
 
 /* No way to free mapped slots */
 
 #undef marcel_slot_alloc
-void *marcel_slot_alloc(void)
+void *marcel_slot_alloc(struct marcel_topo_level *level)
 {
-	return ma_obj_alloc(marcel_mapped_slot_allocator);
+	return ma_obj_alloc(marcel_mapped_slot_allocator, level);
 }
 
 #ifdef MA__PROVIDE_TLS
 #undef marcel_tls_slot_alloc
-void *marcel_tls_slot_alloc(void)
+void *marcel_tls_slot_alloc(struct marcel_topo_level *level)
 {
-	return ma_obj_alloc(marcel_tls_slot_allocator);
+	return ma_obj_alloc(marcel_tls_slot_allocator, level);
 }
 
 #endif

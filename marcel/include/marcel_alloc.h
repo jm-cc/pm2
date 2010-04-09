@@ -62,10 +62,10 @@ struct nodtab {
 
 
 /** Public functions **/
-TBX_FMALLOC void *marcel_slot_alloc(void);
-TBX_FMALLOC void *marcel_tls_slot_alloc(void);
-void marcel_slot_free(void *addr);
-void marcel_tls_slot_free(void *addr);
+TBX_FMALLOC void *marcel_slot_alloc(struct marcel_topo_level *level);
+TBX_FMALLOC void *marcel_tls_slot_alloc(struct marcel_topo_level *level);
+void marcel_slot_free(void *addr, struct marcel_topo_level *level);
+void marcel_tls_slot_free(void *addr, struct marcel_topo_level *level);
 void marcel_slot_exit(void);
 
 #ifdef MM_HEAP_ENABLED
@@ -113,14 +113,14 @@ void ma_free_nonuma(void *data, const char * __restrict file, unsigned line);
 
 /** Internal macros **/
 #ifdef MA__PROVIDE_TLS
-#  define marcel_tls_slot_alloc() ma_obj_alloc(marcel_tls_slot_allocator)
-#  define marcel_tls_slot_free(addr) ma_obj_free(marcel_tls_slot_allocator, addr)
+#  define marcel_tls_slot_alloc(level) ma_obj_alloc(marcel_tls_slot_allocator, level)
+#  define marcel_tls_slot_free(addr, level) ma_obj_free(marcel_tls_slot_allocator, addr, level)
 #else
 #  define marcel_tls_slot_alloc marcel_slot_alloc
 #  define marcel_tls_slot_free marcel_slot_free
 #endif
-#define marcel_slot_alloc() ma_obj_alloc(marcel_mapped_slot_allocator)
-#define marcel_slot_free(addr) ma_obj_free(marcel_mapped_slot_allocator, addr)
+#define marcel_slot_alloc(level) ma_obj_alloc(marcel_mapped_slot_allocator, level)
+#define marcel_slot_free(addr, level) ma_obj_free(marcel_mapped_slot_allocator, addr, level)
 
 #define ma_slot_task(slot) ((marcel_task_t *)((unsigned long) (slot) + THREAD_SLOT_SIZE - MAL(sizeof(marcel_task_t))))
 #define ma_slot_top_task(top) ((marcel_task_t *)((unsigned long) (top) - MAL(sizeof(marcel_task_t))))

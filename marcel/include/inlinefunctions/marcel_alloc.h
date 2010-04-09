@@ -27,14 +27,15 @@
 /** Internal inline functions **/
 static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
 	switch (task->stack_kind) {
+		/* TODO free them somewhere more appropriate than the current level? */
 	case MA_DYNAMIC_STACK:
-		marcel_tls_slot_free(marcel_stackbase(task));
+		marcel_tls_slot_free(marcel_stackbase(task), NULL);
 		break;
 	case MA_STATIC_STACK:
 		marcel_tls_detach(task);
 		break;
 	case MA_NO_STACK:
-		ma_obj_free(marcel_thread_seed_allocator, task);
+		ma_obj_free(marcel_thread_seed_allocator, task, NULL);
 		break;
 	default:
 		MA_BUG();

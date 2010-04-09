@@ -82,8 +82,7 @@ int  clone(int (*fn) (void *arg), void *child_stack_base,
 #endif
 
 
-// WARNING: stack is never freed. That's not a problem since kernel
-// threads only terminate at the end of the program, but...
+#warning stack is never freed. That s not a problem since kernel threads only terminate at the end of the program, but...
 void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
     void *stack_base, marcel_kthread_func_t func, void *arg)
 {
@@ -95,7 +94,7 @@ void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
 
 	LOG_IN();
 	if (!sp) {
-		stack_base = marcel_slot_alloc();
+		stack_base = marcel_slot_alloc(NULL);
 		sp = (char *) stack_base + THREAD_SLOT_SIZE;
 		mdebug("Allocating stack for kthread at %p\n", stack_base);
 	}

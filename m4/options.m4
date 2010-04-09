@@ -115,12 +115,18 @@ AC_DEFUN([PM2_OPTIONS], [
       # Use a pre-existing flavor.
       AC_MSG_CHECKING([whether flavor `$PM2_DEFAULT_FLAVOR' already exists'])
       if "${ac_top_builddir}./bin/pm2-flavor" check --flavor="$PM2_DEFAULT_FLAVOR" >/dev/null 2>&1; then
-	AC_MSG_RESULT([yes])
+        FLAGS=`"${ac_top_builddir}./bin/pm2-flavor" get_ac --flavor="$PM2_DEFAULT_FLAVOR"`
+	# drop newlines
+	FLAGS=`echo $FLAGS`
+	AC_MSG_RESULT([yes, using configuration flags `$FLAGS'])
       else
 	AC_MSG_RESULT([no])
 	AC_MSG_NOTICE([creating default flavor `$PM2_DEFAULT_FLAVOR'...])
 	if "$ac_abs_top_builddir/bin/pm2-create-sample-flavors" -f "$PM2_DEFAULT_FLAVOR"; then
-	  AC_MSG_NOTICE([flavor `$PM2_DEFAULT_FLAVOR' created])
+          FLAGS=`"${ac_top_builddir}./bin/pm2-flavor" get_ac --flavor="$PM2_DEFAULT_FLAVOR"`
+	  # drop newlines
+	  FLAGS=`echo $FLAGS`
+	  AC_MSG_NOTICE([flavor `$PM2_DEFAULT_FLAVOR' created, using configuration flags `$FLAGS'])
 	else
 	  sample_flavors="`"$ac_abs_top_builddir/bin/pm2-create-sample-flavors" -l`"
 	  AC_MSG_WARN([Flavor `$PM2_DEFAULT_FLAVOR' could not be created.])

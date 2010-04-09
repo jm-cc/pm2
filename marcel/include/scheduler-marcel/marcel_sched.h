@@ -73,18 +73,6 @@ int marcel_attr_getnaturalholder(__const marcel_attr_t *attr, ma_holder_t **h) _
 #define marcel_attr_getnaturalholder(attr,holder) marcel_sched_attr_getnaturalholder(&(attr)->sched,holder)
 
 
-int marcel_sched_attr_setnaturalrq(marcel_sched_attr_t *attr, ma_runqueue_t *rq) __THROW;
-#define marcel_sched_attr_setnaturalrq(attr, rq) marcel_sched_attr_setnaturalholder(attr, &(rq)->as_holder)
-/** Sets the natural runqueue for created thread */
-int marcel_attr_setnaturalrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
-#define marcel_attr_setnaturalrq(attr,rq) marcel_sched_attr_setnaturalrq(&(attr)->sched,rq)
-
-int marcel_sched_attr_getnaturalrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
-/** Gets the initial runqueue for created thread */
-int marcel_attr_getnaturalrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
-#define marcel_attr_getnaturalrq(attr,rq) marcel_sched_attr_getnaturalrq(&(attr)->sched,rq)
-
-
 #ifdef MA__BUBBLES
 int marcel_sched_attr_setnaturalbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
 #define marcel_sched_attr_setnaturalbubble(attr, bubble) marcel_sched_attr_setnaturalholder(attr, &(bubble)->as_holder)

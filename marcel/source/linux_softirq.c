@@ -417,7 +417,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp, int vp, const char *fm
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	if (lwp)
-		marcel_attr_setnaturalrq(&attr, ma_lwp_rq(lwp));
+		marcel_attr_setschedrq(&attr, ma_lwp_rq(lwp));
 	else
 		marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(vp));
 	marcel_attr_setflags(&attr, MA_SF_NORUN);
@@ -431,6 +431,7 @@ inline static marcel_task_t* ksofirqd_start(ma_lwp_t lwp, int vp, const char *fm
 #endif
 	err = marcel_create_special(&t, &attr, (void*(*)(void*))ksoftirqd, NULL);
 	MA_BUG_ON(err != 0);
+	marcel_wake_up_created_thread(t);
 
 	return t;
 }
@@ -447,10 +448,8 @@ static void ksoftirqd_start(ma_lwp_t lwp) {
 	if (ma_spare_lwp_ext(lwp))
 		return;
 	p=ksofirqd_start(NULL, ma_vpnum(lwp), "ksoftirqd/vp%2d",ma_vpnum(lwp));
-	marcel_wake_up_created_thread(p);
 	ma_topo_vpdata_l(ma_per_lwp(vp_level, lwp),ksoftirqd) = p;
 	p=ksofirqd_start(lwp, -1, "ksoftirqd/lwp%p",lwp);
-	marcel_wake_up_created_thread(p);
 	ma_per_lwp(ksoftirqd_task, lwp) = p;
 }
 

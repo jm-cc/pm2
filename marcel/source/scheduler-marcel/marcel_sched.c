@@ -41,15 +41,6 @@ int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t * attr,
 	return 0;
 }
 
-int marcel_sched_attr_getnaturalrq(__const marcel_sched_attr_t * attr,
-    ma_runqueue_t ** rq)
-{
-	ma_holder_t *h = attr->natural_holder;
-	MA_BUG_ON(h->type != MA_RUNQUEUE_HOLDER);
-	*rq = ma_rq_holder(h);
-	return 0;
-}
-
 #ifdef MA__BUBBLES
 int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t * attr,
     marcel_bubble_t ** b)

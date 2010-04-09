@@ -287,8 +287,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 		/* Seeds are allowed to choose a priority, which is then inherited by
 			 their seed runner in `marcel_sched_seed_runner ()'.  */
 
-		/* TODO: target VPset */
-		new_task = ma_obj_alloc(marcel_thread_seed_allocator, NULL);
+		new_task = ma_obj_alloc(marcel_thread_seed_allocator, attr->schedrq ? attr->schedrq->topolevel : NULL);
 		PROF_EVENT1(thread_seed_birth, MA_PROFILE_TID(new_task));
 		//new_task->shared_attr = attr;
 
@@ -345,8 +344,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 			MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 		}
 #endif
-		/* TODO: target VPset */
-		bottom = marcel_tls_slot_alloc(NULL);
+		bottom = marcel_tls_slot_alloc(attr->schedrq ? attr->schedrq->topolevel : NULL);
 		PROF_EVENT(thread_stack_allocated);
 		new_task = ma_slot_task(bottom);
 		stack_base = bottom;
@@ -1209,7 +1207,7 @@ static void __marcel_init main_thread_init(void)
 	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
 	marcel_attr_setnaturalbubble(&attr, &marcel_root_bubble);
 #else
-	marcel_attr_setnaturalrq(&attr, &ma_main_runqueue);
+	marcel_attr_setschedrq(&attr, &ma_main_runqueue);
 #endif
 
 	ma_set_task_lwp(__main_thread,&__main_lwp);

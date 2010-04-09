@@ -107,13 +107,17 @@ __tbx_inline__ static void
 marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 				const marcel_attr_t* __restrict attr)
 {
+#ifdef MA__LWPS
 	/* t->lwp */
-	if (attr->topo_level)
-		t->vpset = attr->topo_level->vpset;
+	if (attr->schedrq)
+		t->vpset = attr->schedrq->vpset;
 	else if (attr->__cpuset)
 		t->vpset = *attr->__cpuset; 
 	else
 		t->vpset = attr->vpset; 
+#else
+	marcel_vpset_vp(&t->vpset, 0);
+#endif
 	ma_set_task_state(t, MA_TASK_BORNING);
 	marcel_sched_internal_init_marcel_thread(t, attr);
 }

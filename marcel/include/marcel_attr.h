@@ -211,8 +211,8 @@ struct __marcel_attr_s {
 	 * TODO: option de flavor */
 	marcel_vpset_t vpset;
 
-	/** \brief Machine topology level on which the thread should be scheduled. */
-	marcel_topo_level_t *topo_level;
+	/** \brief Runqueue on which the thread should be scheduled. */
+	struct ma_runqueue *schedrq;
 
 	/** \brief Flags. 
 	 * TODO: document allowed flags, merge with other thread flag set */
@@ -347,6 +347,9 @@ int marcel_attr_gettopo_level(__const marcel_attr_t * __restrict attr, marcel_to
 
 #ifdef __MARCEL_KERNEL__
 
+
+int marcel_attr_setschedrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
+int marcel_attr_getschedrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
 
 /** Internal global variables **/
 extern marcel_attr_t marcel_attr_default;

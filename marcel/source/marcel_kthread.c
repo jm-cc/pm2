@@ -82,7 +82,9 @@ int  clone(int (*fn) (void *arg), void *child_stack_base,
 #endif
 
 
+#ifdef PM2_DEV
 #warning stack is never freed. That s not a problem since kernel threads only terminate at the end of the program, but...
+#endif
 void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
     void *stack_base, marcel_kthread_func_t func, void *arg)
 {

@@ -126,7 +126,7 @@ static marcel_t __marcel_start_gang_scheduler(marcel_func_t f, ma_runqueue_t *rq
 	marcel_attr_init(&attr);
 	marcel_attr_setname(&attr, "gang scheduler");
 	marcel_attr_setdetachstate(&attr, tbx_true);
-	marcel_attr_setnaturalrq(&attr, rq);
+	marcel_attr_setschedrq(&attr, rq);
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 	if (sys) {
 		marcel_attr_setflags(&attr, MA_SF_NORUN);

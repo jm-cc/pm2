@@ -702,7 +702,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 		 right after it's been created (or woken up).  */
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 
-	marcel_attr_setnaturalrq(&attr, ma_lwp_rq(MA_LWP_SELF));
+	marcel_attr_setschedrq(&attr, ma_lwp_rq(MA_LWP_SELF));
 	marcel_attr_setpreemptible(&attr, tbx_false);
 
 	if (schedule)
@@ -1403,10 +1403,6 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	rq = ma_lwp_rq(lwp);
-	snprintf(name,sizeof(name),"lwp%d",num);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,rq);
-	ma_init_rq(rq, name);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
 	if (num == -1)
 		/* "extra" LWPs are apart */
 		rq->father=NULL;
@@ -1419,12 +1415,9 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 	}
 	if (rq->father)
 		mdebug("runqueue %s has father %s\n",name,rq->father->as_holder.name);
-	snprintf(name,sizeof(name),"dontsched%d",num);
-	ma_init_rq(&ma_per_lwp(dontsched_runqueue,lwp),name);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 	marcel_vpset_zero(&(rq->vpset));
-	marcel_vpset_zero(&(ma_per_lwp(dontsched_runqueue,lwp).vpset));
 	if (num != -1 && num >= marcel_nbvps()) {
 		snprintf(name,sizeof(name), "vp%d", num);
 		rq = &marcel_topo_vp_level[num].rq;

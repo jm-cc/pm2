@@ -388,16 +388,32 @@ int lpt_attr_getaffinity_np(const lpt_attr_t *__attr, size_t cpusetsize, cpu_set
 versioned_symbol(libpthread, lpt_attr_getaffinity_np, pthread_attr_getaffinity_np, GLIBC_2_3_4);
 #endif
 
+int marcel_attr_setschedrq(marcel_attr_t * attr, ma_runqueue_t * rq)
+{
+	attr->schedrq = rq;
+	return 0;
+}
+
+int marcel_attr_getschedrq(__const marcel_attr_t * attr, ma_runqueue_t ** rq)
+{
+	*rq = attr->schedrq;
+	return 0;
+}
+
 int marcel_attr_settopo_level(marcel_attr_t * attr, marcel_topo_level_t *topo_level)
 {
-	attr->topo_level = topo_level;
+	attr->schedrq = &topo_level->rq;
 	return 0;
 }
 
 int marcel_attr_gettopo_level(__const marcel_attr_t * __restrict attr,
     marcel_topo_level_t ** __restrict topo_level)
 {
-	*topo_level = attr->topo_level;
+	ma_runqueue_t *rq = attr->schedrq;
+	if (!rq)
+		*topo_level = NULL;
+	else
+		*topo_level = rq->topolevel;
 	return 0;
 }
 

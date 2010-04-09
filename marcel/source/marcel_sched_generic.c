@@ -537,6 +537,7 @@ static any_t idle_func(any_t hlwp TBX_UNUSED)
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
 #ifdef MA__LWPS
+	unsigned num = ma_vpnum(lwp);
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
 #endif
@@ -566,7 +567,11 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	}
 #endif
 	marcel_attr_setprio(&attr, MA_IDLE_PRIO);
-	marcel_attr_setnaturalrq(&attr, ma_dontsched_rq(lwp));
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),-1,&ma_per_lwp(dontsched_runqueue,lwp));
+	snprintf(name,sizeof(name),"dontsched%d",num);
+	ma_init_rq(ma_dontsched_rq(lwp),name);
+	marcel_vpset_zero(&ma_dontsched_rq(lwp)->vpset);
+	marcel_attr_setschedrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
 			ma_vpnum(lwp) == -1 || ma_vpnum(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
 			(void*)(ma_lwp_t)lwp);

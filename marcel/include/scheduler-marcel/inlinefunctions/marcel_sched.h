@@ -162,6 +162,7 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 #  endif
 #endif
 	rq = NULL;
+	t->as_entity.sched_holder=NULL;
 #ifdef MA__LWPS
 #  ifdef MA__BUBBLES
 	if (SELF_GETMEM(cur_thread_seed)) {
@@ -176,38 +177,41 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 
 		return rq;
 	}
-	b = &SELF_GETMEM(default_children_bubble);
-	if (!b->as_entity.natural_holder) {
-		ma_holder_t *h;
-		marcel_bubble_init(b);
-		h = ma_task_natural_holder(MARCEL_SELF);
-		if (!h)
-			h = &ma_main_runqueue.as_holder;
-		b->as_entity.natural_holder = h;
-		if (h->type != MA_RUNQUEUE_HOLDER) {
-			marcel_bubble_t *bb = ma_bubble_holder(h);
-			b->as_entity.sched_level = bb->as_entity.sched_level + 1;
-			marcel_bubble_insertbubble(bb, b);
+	if (!MA_TASK_NOT_COUNTED_IN_RUNNING(t)) {
+		b = &SELF_GETMEM(default_children_bubble);
+		if (!b->as_entity.natural_holder) {
+			ma_holder_t *h;
+			marcel_bubble_init(b);
+			h = ma_task_natural_holder(MARCEL_SELF);
+			if (!h)
+				h = &ma_main_runqueue.as_holder;
+			b->as_entity.natural_holder = h;
+			if (h->type != MA_RUNQUEUE_HOLDER) {
+				marcel_bubble_t *bb = ma_bubble_holder(h);
+				b->as_entity.sched_level = bb->as_entity.sched_level + 1;
+				marcel_bubble_insertbubble(bb, b);
+			}
+			if (b->as_entity.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
+				ma_runqueue_t *rq;
+				ma_bubble_detach(b);
+				rq = ma_to_rq_holder(h);
+				if (!rq)
+					rq = &ma_main_runqueue;
+				b->as_entity.sched_holder = &rq->as_holder;
+				ma_holder_lock_softirq(&rq->as_holder);
+				ma_put_entity(&b->as_entity, &rq->as_holder, MA_ENTITY_READY);
+				ma_holder_unlock_softirq(&rq->as_holder);
+			}
 		}
-		if (b->as_entity.sched_level == MARCEL_LEVEL_KEEPCLOSED) {
-			ma_runqueue_t *rq;
-			ma_bubble_detach(b);
-			rq = ma_to_rq_holder(h);
-			if (!rq)
-				rq = &ma_main_runqueue;
-			b->as_entity.sched_holder = &rq->as_holder;
-			ma_holder_lock_softirq(&rq->as_holder);
-			ma_put_entity(&b->as_entity, &rq->as_holder, MA_ENTITY_READY);
-			ma_holder_unlock_softirq(&rq->as_holder);
-		}
+		marcel_bubble_insertentity(b, &t->as_entity);
 	}
-	t->as_entity.sched_holder=NULL;
-	marcel_bubble_insertentity(b, &t->as_entity);
 #  endif /* MA__BUBBLES */
 #endif /* MA__LWPS */
-	if (attr->topo_level) {
-		MA_BUG_ON(!marcel_vpset_isincluded(&attr->vpset, &attr->topo_level->vpset));
-		return &attr->topo_level->rq;
+	if (attr->schedrq) {
+#ifdef MA__LWPS
+		MA_BUG_ON(!marcel_vpset_isincluded(&attr->vpset, &attr->schedrq->vpset));
+#endif /* MA__LWPS */
+		return attr->schedrq;
 	}
 	if (!marcel_vpset_isfull(&attr->vpset))
 		return marcel_sched_vpset_init_rq(&attr->vpset);
@@ -319,6 +323,7 @@ marcel_sched_internal_init_marcel_task(marcel_task_t* t,
 		t->as_entity.natural_holder = h;
 #endif
 	} else {
+		// TODO: we should probably do it even when a natural holder is given, i.e. merge the h selection above within marcel_sched_select_runqueue
 		ma_runqueue_t *rq = marcel_sched_select_runqueue(t, attr);
 		if (rq) {
 			t->as_entity.sched_holder = &rq->as_holder;

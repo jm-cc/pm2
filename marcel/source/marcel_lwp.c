@@ -502,14 +502,12 @@ static void lwp_init(ma_lwp_t lwp)
 {
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
-#ifdef MA__LWPS
 	long vpnum;
-#endif
 
 	LOG_IN();
 
-#ifdef MA__LWPS
 	vpnum = ma_vpnum(lwp);
+#ifdef MA__LWPS
 	if (vpnum >= 0 && vpnum < marcel_nbvps()) {
 		lwp->cpuset = hwloc_cpuset_alloc();
 		hwloc_cpuset_set(lwp->cpuset, marcel_topo_vp_level[vpnum].os_cpu);
@@ -518,6 +516,10 @@ static void lwp_init(ma_lwp_t lwp)
 
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
+
+	snprintf(name,sizeof(name),"lwp%ld",vpnum);
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,ma_lwp_rq(lwp));
+	ma_init_rq(ma_lwp_rq(lwp), name);
  
 	lwp->polling_list = NULL;
 
@@ -529,7 +531,6 @@ static void lwp_init(ma_lwp_t lwp)
 		ma_lwp_list_unlock_write();
 
 #if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
-		unsigned vpnum = ma_vpnum(lwp);
 		mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 			getpid(), program_invocation_name,
 			getpid(),
@@ -550,13 +551,13 @@ static void lwp_init(ma_lwp_t lwp)
 	 * (le thread noyau fait un marcel_longjmp sur cette tâche)
 	 */
 	marcel_attr_init(&attr);
-	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%2d",ma_vpnum(lwp));
+	snprintf(name,MARCEL_MAXNAMESIZE,"run_task/%2ld",vpnum);
 	marcel_attr_setname(&attr,name);
 	marcel_attr_setdetachstate(&attr, tbx_true);
 	marcel_attr_setflags(&attr, MA_SF_NORUN | MA_SF_RUNTASK);
 	/* Elle doit prendre la main sur toute autre tâche de ce LWP */
 	marcel_attr_setprio(&attr, 0);
-	marcel_attr_setnaturalrq(&attr, ma_lwp_rq(lwp));
+	marcel_attr_setschedrq(&attr, ma_lwp_rq(lwp));
 #ifdef PM2
 	{
 		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);

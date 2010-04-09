@@ -82,7 +82,7 @@ int marcel_attr_setnaturalrq(marcel_attr_t *attr, ma_runqueue_t *rq) __THROW;
 int marcel_sched_attr_getnaturalrq(__const marcel_sched_attr_t *attr, ma_runqueue_t **rq) __THROW;
 /** Gets the initial runqueue for created thread */
 int marcel_attr_getnaturalrq(__const marcel_attr_t *attr, ma_runqueue_t **rq) __THROW;
-#define marcel_attr_getinitrq(attr,rq) marcel_sched_attr_getinitrq(&(attr)->sched,rq)
+#define marcel_attr_getnaturalrq(attr,rq) marcel_sched_attr_getnaturalrq(&(attr)->sched,rq)
 
 
 #ifdef MA__BUBBLES

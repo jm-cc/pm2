@@ -161,12 +161,6 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 	marcel_bubble_t *b;
 #  endif
 #endif
-	if (attr->topo_level) {
-		MA_BUG_ON(!marcel_vpset_isincluded(&attr->vpset, &attr->topo_level->vpset));
-		return &attr->topo_level->rq;
-	}
-	if (!marcel_vpset_isfull(&attr->vpset))
-		return marcel_sched_vpset_init_rq(&attr->vpset);
 	rq = NULL;
 #ifdef MA__LWPS
 #  ifdef MA__BUBBLES
@@ -209,10 +203,20 @@ marcel_sched_select_runqueue(marcel_task_t* t,
 	}
 	t->as_entity.sched_holder=NULL;
 	marcel_bubble_insertentity(b, &t->as_entity);
+#  endif /* MA__BUBBLES */
+#endif /* MA__LWPS */
+	if (attr->topo_level) {
+		MA_BUG_ON(!marcel_vpset_isincluded(&attr->vpset, &attr->topo_level->vpset));
+		return &attr->topo_level->rq;
+	}
+	if (!marcel_vpset_isfull(&attr->vpset))
+		return marcel_sched_vpset_init_rq(&attr->vpset);
+#ifdef MA__LWPS
+#  ifdef MA__BUBBLES
 	if (b->as_entity.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 		/* keep this thread inside the bubble */
 		return NULL;
-#  endif
+#  endif /* MA__BUBBLES */
 	switch (t->as_entity.sched_policy) {
 		case MARCEL_SCHED_SHARED:
 			rq = &ma_main_runqueue;

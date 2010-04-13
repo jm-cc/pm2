@@ -679,9 +679,6 @@ static void marcel_exit_internal(any_t val)
 
 	common_cleanup(cur);
 
-	/* go off */
-	ma_set_current_state(MA_TASK_DEAD);
-
 #ifndef MA__LWPS
 	/* See marcel_funerals for the sem_V in the smp case.
 	 * In mono, deadlock could occur if the only remaining thread is
@@ -708,6 +705,9 @@ static void marcel_exit_internal(any_t val)
 #endif
 		abort(); // For security
 	}
+
+	/* go off */
+	ma_set_current_state(MA_TASK_DEAD);
 
 	ma_schedule();
 }

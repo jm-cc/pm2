@@ -802,6 +802,10 @@ void marcel_print_jmp_buf(char *name, jmp_buf buf)
 /************************join****************************/
 static int TBX_UNUSED check_join(marcel_t tid)
 {
+	if (tid == marcel_self()) {
+		mdebug("check_join : thread %p is self\n", tid);
+		return EDEADLK;
+	}
 	/* conflit entre ESRCH et EINVAL selon l'ordre */
 	/* en effet ESRCH regarde aussi le champ detached */
 	if (!MARCEL_THREAD_ISALIVE(tid)) {

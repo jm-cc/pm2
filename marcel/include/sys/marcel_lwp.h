@@ -59,8 +59,9 @@
 #ifdef MA__LWPS
 extern marcel_vpset_t marcel_disabled_vpset;
 extern ma_lwp_t       ma_vp_lwp[MA_NR_VPS];
-extern unsigned       ma__nb_vp;
 #endif
+
+extern unsigned       ma__nb_vp;
 
 
 /** Public functions **/

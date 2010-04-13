@@ -696,13 +696,9 @@ static void marcel_exit_internal(any_t val)
 	if (!cur->detached)
 		marcel_sem_V(&cur->client);
 #endif
-	ma_schedule();
-}
-	
-DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
-{
-        LOG_IN();
+
 	if (marcel_self() == __main_thread) {
+		ma_preempt_enable();
 		marcel_end();
 #ifdef STANDARD_MAIN
 		exit(0);
@@ -710,8 +706,16 @@ DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
 		__marcel_main_ret = 0;
 		marcel_ctx_longjmp(__ma_initial_main_ctx, 1);
 #endif
-	} else
-		marcel_exit_internal(val);
+		abort(); // For security
+	}
+
+	ma_schedule();
+}
+	
+DEF_MARCEL_POSIX(void TBX_NORETURN, exit, (any_t val), (val),
+{
+	LOG_IN();
+	marcel_exit_internal(val);
 	abort(); // For security
 })
 DEF_PTHREAD(void TBX_NORETURN, exit, (void *val), (val))

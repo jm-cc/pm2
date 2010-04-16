@@ -428,21 +428,29 @@ void TBX_EXTERN ma_set_sched_holder(marcel_entity_t *e, marcel_bubble_t *bubble,
 	}
 }
 
+static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubble_t *dst_bubble, marcel_entity_t *entity);
+
 static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *entity) {
 	/* Basically does a remove together with an insert but without using an
 	 * intermediate runqueue */
 	marcel_bubble_t *src_bubble;
-	int src_bubble_becomes_empty;
-	int dst_bubble_was_empty = 0;
 
 	MA_BUG_ON(entity->natural_holder->type != MA_BUBBLE_HOLDER);
 	src_bubble = ma_bubble_holder(entity->natural_holder);
 	if (src_bubble == dst_bubble)
 		return;
 
-	/* remove entity from bubble src */
 	ma_holder_lock_softirq(&src_bubble->as_holder);
+	/* FIXME: that could happen if concurrent move to somewhere else */
 	MA_BUG_ON(entity->natural_holder != &src_bubble->as_holder);
+
+	ma_bubble_moveentity_locked(src_bubble, dst_bubble, entity);
+}
+
+static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubble_t *dst_bubble, marcel_entity_t *entity) {
+	/* remove entity from bubble src */
+	int src_bubble_becomes_empty;
+	int dst_bubble_was_empty = 0;
 	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
 	tbx_fast_list_del_init(&entity->natural_entities_item);
@@ -800,10 +808,33 @@ void marcel_bubble_join(marcel_bubble_t *bubble) {
 
 #undef marcel_sched_exit
 void marcel_sched_exit(marcel_t t) {
-	marcel_bubble_t *b = &t->default_children_bubble;
-	if (b->as_entity.natural_holder) {
+	marcel_bubble_t *b = &t->default_children_bubble, *target;
+	ma_holder_t *h, *h_target;
+	if ((h = b->as_entity.natural_holder)) {
 		/* bubble initialized */
+		if ((h_target = t->as_entity.natural_holder) && h_target->type == MA_BUBBLE_HOLDER)
+			target = ma_bubble_holder(h_target);
+		else
+			target = &marcel_root_bubble;
+
+		/* Disconnect bubble from the rest */
+		if (h->type == MA_BUBBLE_HOLDER
+				&& h != &b->as_holder)
+			marcel_bubble_removeentity(ma_bubble_holder(h), &b->as_entity);
+
+		while (1) {
+			/* Move children out of our bubble, so they can live
+			 * their lives */
+			ma_holder_lock_softirq(&b->as_holder);
+			if (tbx_fast_list_empty(&b->natural_entities)) {
+				ma_holder_unlock_softirq(&b->as_holder);
+				break;
+			}
+			ma_bubble_moveentity_locked(b, target, tbx_fast_list_entry(b->natural_entities.next, struct ma_entity, natural_entities_item));
+		}
 		marcel_bubble_join(b);
+		ma_top_del_bubble(b);
+		PROF_EVENT1(bubble_sched_join, bubble);
 	}
 }
 

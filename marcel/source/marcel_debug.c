@@ -24,10 +24,15 @@
  */
 int ma_gdb_postexit_enabled =
 #ifdef MARCEL_POSTEXIT_ENABLED
-	1;
+	1
 #else
-	0;
+	0
 #endif
+	;
+
+/* Dumb array to compensate for gdb's inability for recursion */
+struct tbx_fast_list_head *ma_gdb_cur[1024];
+marcel_bubble_t *ma_gdb_b[1024];
 #endif
 
 #ifdef PM2DEBUG

@@ -1,4 +1,10 @@
+# We do not want to print/stop on preemption signals.
 handle SIGXFSZ noprint nostop
+
+# We need to remember whether the current pc/sp/fp state of gdb is the state of
+# the kernel thread (thus no need to restore anything before continuing), or the
+# state of a user thread (and thus the state of the kernel thread needs to be
+# restored).
 set $marcel_saved=0
 
 define save-ctx
@@ -10,7 +16,8 @@ define save-ctx
   end
 end
 document save-ctx
-Saves the current marcel context
+Saves the current state of the currently selected kernel thread so it can be
+modified at will by set-ctx.
 Use rest-ctx to restore it
 end
 
@@ -25,11 +32,13 @@ define set-ctx
   else
     # The `ctx_yield' field of `marcel_t' is uninitialized, so we
     # can't use it to switch contexts.
-    printf "don't know how to switch to $arg0(%p)\n", $arg0
+    printf "don't know how to switch to $arg0(%p), is it perhaps already running in another kernel thread?\n", $arg0
   end
 end
 document set-ctx
-Switch to another marcel thread's context
+Switch to another Marcel thread's context, i.e. load into the currently selected
+kernel thread the state of a blocked Marcel thread. This also saves the current
+context if not done already.
 end
 
 define rest-ctx
@@ -41,8 +50,8 @@ define rest-ctx
   end
 end
 document rest-ctx
-Restores a previously-saved marcel context,
-so as to be able to continue execution
+Restores a previously-saved kerndl thread context, so as to be able to continue
+execution
 end
 
 define marcel-self
@@ -64,6 +73,8 @@ This macro relies on GDB's ability to expand CPP macros, which works
 only if the binaries were compiled with `-gdwarf-2 -g3'.
 end
 
+# These hooks allow the `continue', `step', etc. commands to automatically work
+# as expected.
 define marcel-continue
   set language c
   handle SIGALRM pass
@@ -106,6 +117,10 @@ define hook-nexti
   marcel-step
 end
 
+define hook-thread
+  marcel-step
+end
+
 define hook-finish
   marcel-continue
 end
@@ -118,7 +133,10 @@ end
 
 define ma-printrq
   set language c
-  printf " %16s", ($arg0)->as_holder.name
+  printf " %32s", ($arg0)->as_holder.name
+end
+document ma-printrq
+Nicely print a runqueue.
 end
 
 define ma_rq_holder
@@ -127,12 +145,18 @@ define ma_rq_holder
   print *$rq
   print $rq
 end
+document ma_rq_holder
+Similar to ma_rq_holder()
+end
 
 define ma_holder_rq
   set language c
   set $h = &((ma_holder_t *)$arg0)->as_holder
   print *$h
   print $h
+end
+document ma_holder_rq
+Similar to ma_holder_rq()
 end
 
 define ma_bubble_holder
@@ -141,12 +165,18 @@ define ma_bubble_holder
   print *$b
   print $b
 end
+document ma_bubble_holder
+Similar to ma_bubble_holder()
+end
 
 define ma_holder_bubble
   set language c
   set $h = &((marcel_bubble_t *)$arg0)->as_holder
   print *$h
   print $h
+end
+document ma_holder_bubble
+Similar to ma_holder_bubble()
 end
 
 define ma_bubble_entity
@@ -155,12 +185,18 @@ define ma_bubble_entity
   print *$b
   print $b
 end
+document ma_bubble_entity
+Similar to ma_bubble_entity()
+end
 
 define ma_entity_bubble
   set language c
   set $e = &((marcel_bubble_t *)$arg0)->as_entity
   print *$e
   print $e
+end
+document ma_entity_bubble
+Similar to ma_entity_bubble()
 end
 
 define ma_task_entity
@@ -169,12 +205,18 @@ define ma_task_entity
   print *$t
   print $t
 end
+document ma_task_entity
+Similar to ma_task_entity()
+end
 
 define ma_entity_task
   set language c
   set $e = &((marcel_task_t *)$arg0)->as_entity
   print *$e
   print $e
+end
+document ma_entity_task
+Similar to ma_entity_task()
 end
 
 define ma-printholder
@@ -185,6 +227,9 @@ define ma-printholder
   else
     printf " %16p", $arg0
   end
+end
+document ma-printholder
+Nicely print the content of a holder. Only runqueues are really nicely printed.
 end
 
 define marcel-printthread
@@ -220,7 +265,7 @@ define marcel-printthread
   else
     set $sched_state='B'
   end
-  printf "%16p %16s %4d %4c%c", \
+  printf "%16p %32s %4d %4c%c", \
     $arg0, $arg0->as_entity.name, $arg0->as_entity.prio, $state, $sched_state
   if $arg0->lwp
     printf " %3d", $arg0->lwp->vpnum
@@ -231,7 +276,7 @@ define marcel-printthread
   printf "\n"
 end
 document marcel-printthread
-Prints the state of a thread
+Nicely print the state of a thread
 end
 
 define marcel-threads
@@ -252,7 +297,7 @@ define marcel-threads
 end
 
 document marcel-threads
-Prints a list of marcel threads
+Prints a list of application-launched marcel threads.
 end
 
 define marcel-lwplist-threads
@@ -291,17 +336,73 @@ define marcel-allthreads
   marcel-lwplist-threads &ma_list_lwp_head_dead
 end
 
-document marcel-threads
-Prints a list of all marcel threads (including Marcel-private threads)
+document marcel-allthreads
+Prints a list of all marcel threads (including Marcel-private threads like Idle)
 end
 
-#document marcel
-#List of marcel-specific gdb functions:
-#marcel-threads    -- shows Marcel user threads
-#marcel-allthreads -- shows Marcel user and Marcel-private threads and
-#set-ctx           -- switch context to a blocked thread
-#rest-ctx          -- restore the context of the currently running thread
-#
-#Note: you can't switch context to a running thread through set-ctx: use the
-#thread gdb command instead.
-#end
+define ma-printbubble
+  set ma_gdb_b[$arg1] = $arg0
+  set $num=0
+  while $num<$arg1
+    printf "=="
+    set $num = $num + 1
+  end
+  printf "%16p %32s %4d          ", \
+    $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
+  ma-printholder $arg0->as_entity.natural_holder
+  ma-printholder $arg0->as_entity.sched_holder
+  ma-printholder $arg0->as_entity.ready_holder
+  printf "\n"
+  set ma_gdb_cur[$arg1] = $arg0->natural_entities.next
+  while ma_gdb_cur[$arg1] != &(ma_gdb_b[$arg1]->natural_entities)
+    set $ent = (marcel_entity_t*) (((char*)ma_gdb_cur[$arg1]) - (unsigned)(&(((marcel_entity_t*)0)->natural_entities_item)))
+    if $ent->type == MA_BUBBLE_ENTITY
+      set $b = (marcel_bubble_t*) (((char*)$ent) - (unsigned)(&(((marcel_bubble_t*)0)->as_entity)))
+      ma-printbubble $b ($arg1+1)
+    else
+      set $num=0
+      while $num<$arg1+1
+        printf "=="
+        set $num = $num + 1
+      end
+      set $t = (marcel_t) (((char*)$ent) - (unsigned)(&(((marcel_t)0)->as_entity)))
+      if $ent->type == MA_THREAD_ENTITY
+        marcel-printthread $t
+      else
+        marcel-printthread $t
+      end
+    end
+    set ma_gdb_cur[$arg1] = ma_gdb_cur[$arg1]->next
+  end
+end
+document ma-printbubble
+Nicely print a bubble
+end
+
+define marcel-bubbles
+  ma-printbubble (&marcel_root_bubble) 0
+end
+document marcel-bubbles
+Nicely print the hierarchy of bubbles
+end
+
+define marcel
+  echo That's me.
+end
+
+document marcel
+List of marcel-specific gdb functions:
+marcel-threads      -- shows Marcel user threads
+marcel-allthreads   -- shows Marcel user and Marcel-private threads and
+set-ctx             -- switch context to a blocked thread
+rest-ctx            -- restore the context of the thread currently running on the current kernel thread
+marcel-self         -- same as marcel_self()
+ma-printrq          -- nicely print a runqueue
+ma-printholder      -- nicely print a holder
+marcel-printthread  -- nicely print a Marcel thread
+marcel-bubbles      -- nicely print Marcel bubbles
+
+Note: you can't switch context to a running thread (RR state) through set-ctx:
+use the `thread' gdb command instead.  Look in the output of marcel-threads to
+know which VP it is running on and thus which kernel thread to switch to.
+end

@@ -515,7 +515,12 @@ functions<FOOTNOTE>yet implemented on X86 and IA64 only</FOOTNOTE>:
 
 <P>
 One can then use usual functions like <TT>frame</TT>, <TT>print</TT>,
-etc. to inspect the thread.
+etc. to inspect the thread. When the bubble option is enabled, the
+<TT>marcel-bubbles</TT> command shows the hierarchy of bubbles.
+</P>
+
+<P>
+The detailed list of available gdb functions is provided in <TT>help marcel</TT>
 </P>
 
 <P>

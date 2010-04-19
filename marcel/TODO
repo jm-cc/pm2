@@ -42,7 +42,7 @@ Nettoyer distinction LWP/VP: les VP (Processeurs Virtuels) sont quasiment toujou
 
 Problème: la doc d'AIX indique qu'on ne devrait pas utiliser de fonction pthread dans les traitants de signaux.... Apparemment un problème de réentrance (pthread_* prennent un gros mutex global). Il suffirait sans doute juste masquer les signaux autour des appels pthread_()
 
-marcel pthread: ajouter les hooks pour prévenir gdb quand on appelle clone().
+marcel pthread: ajouter les hooks pour prévenir gdb quand on appelle clone(). Note: Kevin Pouget a travaillé dessus et nous a envoyé un patch, il ne reste plus qu'à merger
 
 messages de debug: les préfixer avec Marcel (pour les gens qui utilisent à la fois Marcel, Madeleine, Padico, ...)
 
@@ -57,22 +57,14 @@ Attributs de threads ou de bulles: une fonction marcel_(bubble_)?attr_read(const
 
 pmarcel_create() avec PTHREAD_SCOPE_SYSTEM: les paramètres du lwp supplémentaire devraient être ceux d'attr.
 
-Réécrire la tambouille split de Vince pour générer un bête marcel.h et marcel-internal.h
-
 changement de contexte/pile: dans asm-generic, utiliser make context & co comme implémentation par défaut.
 
 Compiler avec g++ pour les cas (rares) où c'est le seul moyen de linker avec du code c++. Pb: il y a plein de casts implicites en void* partout, des opérations arithmétiques sur void*... Demander à Marc sur quels systèmes c'est nécessaire.
 
 Émulation d'un graphe de tâches: des threads qu'on ne réveille pas initialement, mais qu'on met en liste d'attente sur une variable conditionnelle qui est broadcastée à la fin du précédent. Pb: une tâche qui dépend de plusieurs...
 
-Supporter le cpu hotplug, pour des systèmes qui nous préviendrait de la préemption, ou avec qui on pourrait négocier le nombre de LWPs.
-
 RCU lists
 
 Utiliser /dev/rtc sous linux pour avoir une fréquence de préemption plus grande que par défaut (100-1000Hz).
 
 Tout ce qui est dans marcel_config.h devrait etre configurable dans la flavor.
-
-Windows-smp:
-Accepter une pile fournie par l'os pour les kthread.
-

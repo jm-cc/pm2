@@ -78,8 +78,8 @@ struct nm_so_short_data_header {
 
 struct nm_so_ctrl_rdv_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_RDV */
-  nm_seq_t seq;
   nm_core_tag_t tag_id;
+  nm_seq_t seq;
   uint8_t  flags;
   uint32_t len;
   uint32_t chunk_offset;
@@ -97,8 +97,8 @@ struct nm_so_ctrl_rtr_header {
 
 struct nm_so_ctrl_ack_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_ACK */
-  nm_seq_t seq;
   nm_core_tag_t tag_id;
+  nm_seq_t seq;
 } __attribute__((packed));
 
 /** a unified control header type
@@ -107,6 +107,12 @@ union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header rdv;
   struct nm_so_ctrl_rtr_header rtr;
   struct nm_so_ctrl_ack_header ack;
+  struct
+  {
+    nm_proto_t proto_id;
+    nm_core_tag_t tag_id;
+    nm_seq_t seq;
+  } generic;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;

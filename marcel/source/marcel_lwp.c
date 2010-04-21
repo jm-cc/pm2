@@ -518,7 +518,7 @@ static void lwp_init(ma_lwp_t lwp)
 #endif
 
 	snprintf(name,sizeof(name),"lwp%ld",vpnum);
-	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),num,ma_lwp_rq(lwp));
+	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWLWPRQ,2),vpnum,ma_lwp_rq(lwp));
 	ma_init_rq(ma_lwp_rq(lwp), name);
  
 	lwp->polling_list = NULL;

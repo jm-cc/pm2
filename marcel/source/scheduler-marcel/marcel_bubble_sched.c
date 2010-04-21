@@ -834,7 +834,7 @@ void marcel_sched_exit(marcel_t t) {
 		}
 		marcel_bubble_join(b);
 		ma_top_del_bubble(b);
-		PROF_EVENT1(bubble_sched_join, bubble);
+		PROF_EVENT1(bubble_sched_join, b);
 	}
 }
 

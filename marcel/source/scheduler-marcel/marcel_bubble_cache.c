@@ -455,13 +455,13 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
 }
 
 static void
-marcel_bubble_cache (marcel_bubble_t *b, struct marcel_topo_level *l) {
-  bubble_sched_debug ("Cache: Submitting bubble %p from topo_level %s.\n", b, l->rq.as_holder.name);
+marcel_bubble_cache (struct marcel_topo_level *l) {
+  bubble_sched_debug ("Cache: Distributing entities from topo_level %s.\n", l->rq.as_holder.name);
 
   ma_cache_distribute_from (l);
   __ma_resched_topo_level (l);
 
-  bubble_sched_debug ("Cache: Bubble %p submitted from topo_level %s.\n", b, l->rq.as_holder.name);
+  bubble_sched_debug ("Cache: Distribution from topo_level %s is now over.\n", l->rq.as_holder.name);
 }
 
 static void
@@ -529,9 +529,8 @@ cache_sched_rawsubmit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
     return 0;
 
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
-  marcel_bubble_t *b = ma_bubble_entity (e);
 
-  marcel_bubble_cache (b, from);
+  marcel_bubble_cache (from);
 
   if (MA_CACHE_FAVORS_LOAD_BALANCING)
     marcel_bubble_load_balance (from);
@@ -557,7 +556,7 @@ cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
 
   ma_topo_lock_all (from);
 
-  marcel_bubble_cache (b, from);
+  marcel_bubble_cache (from);
   
   if (MA_CACHE_FAVORS_LOAD_BALANCING)
     marcel_bubble_load_balance (from);

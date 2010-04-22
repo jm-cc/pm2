@@ -191,7 +191,7 @@ static void mad_launcher_get_gates(void*_status, nm_gate_t*gates)
 extern void nm_mad3_launcher_init(void)
 {
   puk_adapter_declare("NewMad_Launcher",
-                      puk_adapter_provides("PadicoAdapter",   &mad_launcher_adapter),
-                      puk_adapter_provides("NewMad_Launcher", &mad_launcher_driver ));
+                      puk_component_provides("PadicoAdapter", "adapter", &mad_launcher_adapter),
+                      puk_component_provides("NewMad_Launcher", "launcher", &mad_launcher_driver ));
 }
 

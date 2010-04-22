@@ -64,8 +64,8 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
 extern void nm_cmdline_launcher_declare(void)
 {
   puk_adapter_declare("NewMad_Launcher",
-                      puk_adapter_provides("PadicoAdapter", &nm_cmdline_launcher_adapter_driver),
-                      puk_adapter_provides("NewMad_Launcher", &nm_cmdline_launcher_driver ));
+                      puk_component_provides("PadicoAdapter", "adapter", &nm_cmdline_launcher_adapter_driver),
+                      puk_component_provides("NewMad_Launcher", "launcher", &nm_cmdline_launcher_driver ));
 
 }
 

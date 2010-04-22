@@ -552,14 +552,10 @@ cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   struct marcel_topo_level *from = ma_get_parent_rq (e)->topolevel;
   marcel_bubble_t *b = ma_bubble_entity (e);
 
-  /* Find the root level bubble of this hierarchy. */
-  while (b->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER)
-    b = ma_bubble_holder (b->as_entity.sched_holder);
-
   /* Update the marcel statistics on any entity contained in b. */
   ma_bubble_synthesize_stats (b);
 
-  ma_bubble_lock_all (b, from);
+  ma_topo_lock_all (from);
 
   marcel_bubble_cache (b, from);
   
@@ -569,7 +565,7 @@ cache_sched_submit (marcel_bubble_sched_t *self, marcel_entity_t *e) {
   /* Remember the distribution we've just applied. */
   ma_bubble_snapshot (from);
   
-  ma_bubble_unlock_all (b, from);
+  ma_topo_unlock_all (from);
 
   return 0;
 }

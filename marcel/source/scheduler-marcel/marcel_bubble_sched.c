@@ -447,6 +447,8 @@ static void ma_bubble_moveentity(marcel_bubble_t *dst_bubble, marcel_entity_t *e
 	ma_bubble_moveentity_locked(src_bubble, dst_bubble, entity);
 }
 
+/* Note: this version assumes that src_bubble is already locked, and will
+ * unlock it for the caller.  */
 static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubble_t *dst_bubble, marcel_entity_t *entity) {
 	/* remove entity from bubble src */
 	int src_bubble_becomes_empty;
@@ -830,6 +832,10 @@ void marcel_sched_exit(marcel_t t) {
 				ma_holder_unlock_softirq(&b->as_holder);
 				break;
 			}
+			/* We need to keep the lock on the bubble held until
+			 * the entity is moved out from this bubble.
+			 * ma_bubble_moveentity_locked will unlock the bubble
+			 * for us.  */
 			ma_bubble_moveentity_locked(b, target, tbx_fast_list_entry(b->natural_entities.next, struct ma_entity, natural_entities_item));
 		}
 		marcel_bubble_join(b);

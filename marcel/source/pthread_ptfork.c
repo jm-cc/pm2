@@ -170,6 +170,8 @@ static void cleanup_child_after_fork(void)
 	MA_BUG_ON(!ma_is_first_lwp(MA_LWP_SELF));
 #endif
 
+	ma_fork_generation++;
+
 #ifdef MA__BUBBLES
 	/* FIXME: At the end of this function, the child is left with a full
 	 * topology but only has a single LWP (thus a single VP).  Consequently,

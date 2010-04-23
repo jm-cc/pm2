@@ -92,7 +92,7 @@ template <int w>
   do { \
 	if (cond) { \
 		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		*(int*)0 = 0; \
+		while(1) *(volatile int*)0 = 0; \
 	} \
   } while (0)
 #define MA_WARN_ON(cond) \
@@ -110,7 +110,7 @@ template <int w>
   do { \
 	if (cond) { \
 		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		*(int*)0 = 0; \
+		while(1) *(volatile int*)0 = 0; \
 	} \
   } while (0)
 #define MA_ALWAYS_WARN_ON(cond) \

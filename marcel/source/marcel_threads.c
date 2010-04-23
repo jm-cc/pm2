@@ -694,7 +694,7 @@ static void marcel_exit_internal(any_t val)
 		marcel_sem_V(&cur->client);
 #endif
 
-	if (tbx_unlikely(marcel_self() == __main_thread)) {
+	if (tbx_unlikely(marcel_self() == __main_thread || ma_fork_generation)) {
 		ma_preempt_enable();
 
 		/* If we have already forked, we have already cleared the

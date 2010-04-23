@@ -70,6 +70,7 @@ int system(const char *line)
 static void parent_prepare_fork(void) {
 	/* First move to the main LWP since it makes a load of things easier for handling the fork. */
 	ma_runqueue_t *rq = ma_lwp_rq(&__main_lwp);
+	marcel_t self = marcel_self();
 #ifdef MA__LWPS
 	SELF_GETMEM(fork_holder) = ma_bind_to_holder(!ma_is_first_lwp(MA_LWP_SELF), &rq->as_holder);
 #endif
@@ -81,11 +82,12 @@ static void parent_prepare_fork(void) {
 	ma_local_bh_disable();
 	marcel_sig_stop_itimer();
 
-#if defined(X86_64_ARCH) && defined(MA__PROVIDE_TLS)
+#if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && defined(X86_64_ARCH)
 	/* Work-around what seems like a kernel bug: fs doesn't properly get
 	 * reloaded in child, so let's just make sure the base is in the MSR...
 	 */
-	syscall(SYS_arch_prctl, ARCH_SET_FS, marcel_tcb(marcel_self()));
+	if (self != __main_thread)
+		syscall(SYS_arch_prctl, ARCH_SET_FS, marcel_tcb(self));
 #endif
 }
 

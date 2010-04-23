@@ -694,9 +694,15 @@ static void marcel_exit_internal(any_t val)
 		marcel_sem_V(&cur->client);
 #endif
 
-	if (marcel_self() == __main_thread) {
+	if (tbx_unlikely(marcel_self() == __main_thread)) {
 		ma_preempt_enable();
-		marcel_end();
+
+		/* If we have already forked, we have already cleared the
+		 * scheduler in the child. Do not do anything else, and just
+		 * exit */
+		if (!ma_fork_generation)
+			marcel_end();
+
 #ifdef STANDARD_MAIN
 		exit(0);
 #else

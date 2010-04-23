@@ -161,7 +161,7 @@ void marcel_tls_attach(marcel_t t) {
 	t->tls_desc = ldt_entry * 8 | 0x4;
 
 	tcb->tcb = tcb;
-	tcb->self = t;
+	tcb->self = tcb;
 	tcb->multiple_threads = 1;
 	tcb->sysinfo = sysinfo;
 	tcb->stack_guard = stack_guard;

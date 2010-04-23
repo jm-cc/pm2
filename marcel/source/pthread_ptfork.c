@@ -42,6 +42,7 @@ extern pid_t __libc_fork(void);
  * libpthread does.  */
 pid_t __fork(void)
 {
+	/* We need to call libc's fork to get its internal locks & such properly reset */
         return __libc_fork();
 }
 
@@ -79,6 +80,13 @@ static void parent_prepare_fork(void) {
 	ma_preempt_disable();
 	ma_local_bh_disable();
 	marcel_sig_stop_itimer();
+
+#if defined(X86_64_ARCH) && defined(MA__PROVIDE_TLS)
+	/* Work-around what seems like a kernel bug: fs doesn't properly get
+	 * reloaded in child, so let's just make sure the base is in the MSR...
+	 */
+	syscall(SYS_arch_prctl, ARCH_SET_FS, marcel_tcb(marcel_self()));
+#endif
 }
 
 /* Restore the state of the parent process after fork(2).  */

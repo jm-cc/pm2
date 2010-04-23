@@ -228,9 +228,10 @@ elif [ -n "$debug_file" ]; then
 elif [ -n "$strace_file" ]; then
 
     log "Executing: exec strace -o $strace_file $prog $*"
-    LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
-    exec strace -f -o $strace_file $prog ${@:+"$@"}
+    exec strace \
+    	-E LD_PRELOAD="${LD_PRELOAD:+${LD_PRELOAD}:}$PM2_LD_PRELOAD" \
+	-E LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}$PM2_LD_LIBRARY_PATH" \
+	-f -o $strace_file $prog ${@:+"$@"}
 
 elif [ -n "$prescript" ]; then
 

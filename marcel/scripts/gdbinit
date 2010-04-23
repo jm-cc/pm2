@@ -344,11 +344,16 @@ define ma-printbubble
   set ma_gdb_b[$arg1] = $arg0
   set $num=0
   while $num<$arg1
-    printf "=="
+    printf "  "
     set $num = $num + 1
   end
-  printf "%16p %32s %4d          ", \
-    $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
+  if (ma_gdb_b[$arg1]->nb_natural_entities)
+    printf "+-O %16p %32s %4d          ", \
+      $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
+  else
+    printf "+-o %16p %32s %4d          ", \
+      $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
+  end
   ma-printholder $arg0->as_entity.natural_holder
   ma-printholder $arg0->as_entity.sched_holder
   ma-printholder $arg0->as_entity.ready_holder
@@ -362,9 +367,10 @@ define ma-printbubble
     else
       set $num=0
       while $num<$arg1+1
-        printf "=="
+        printf "  "
         set $num = $num + 1
       end
+      printf "+-~"
       set $t = (marcel_t) (((char*)$ent) - (unsigned)(&(((marcel_t)0)->as_entity)))
       if $ent->type == MA_THREAD_ENTITY
         marcel-printthread $t

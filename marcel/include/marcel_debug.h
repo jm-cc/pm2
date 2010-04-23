@@ -90,14 +90,14 @@ template <int w>
 #ifdef PM2_BUG_ON
 #define MA_BUG_ON(cond) \
   do { \
-	if (cond) { \
+	if (tbx_unlikely(cond)) { \
 		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
 		while(1) *(volatile int*)0 = 0; \
 	} \
   } while (0)
 #define MA_WARN_ON(cond) \
   do { \
-	if (cond) { \
+	if (tbx_unlikely(cond)) { \
 		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
   } while (0)
@@ -108,14 +108,14 @@ template <int w>
 
 #define MA_ALWAYS_BUG_ON(cond) \
   do { \
-	if (cond) { \
+	if (tbx_unlikely(cond)) { \
 		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
 		while(1) *(volatile int*)0 = 0; \
 	} \
   } while (0)
 #define MA_ALWAYS_WARN_ON(cond) \
   do { \
-	if (cond) { \
+	if (tbx_unlikely(cond)) { \
 		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
 	} \
   } while (0)

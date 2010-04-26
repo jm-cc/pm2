@@ -509,10 +509,19 @@ static void finish_task_switch(marcel_task_t *prev)
 			int becomes_empty = ma_bubble_removeentity(bubble, prev_e);
 
 			if (becomes_empty) {
+				/* ma_bubble_removeentity already did the work
+				 * requiring only the bubble lock, we now must
+				 * perform the work that requires both the
+				 * join_mutex and the bubble lock. However, we cannot block here.
+				 * Thus, we attempt a non blocking mutex_trylock and if it fails, we delegate
+				 * the work to a new thread. */
 				if (!marcel_mutex_trylock(&bubble->join_mutex)) {
 					marcel_attr_t attr;
 					marcel_attr_init(&attr);
 					marcel_attr_setdetachstate(&attr, tbx_true);
+					/* We force the root bubble here to
+					 * avoid interfering with the bubble we
+					 * are signaling */
 					marcel_attr_setnaturalbubble(&attr, &marcel_root_bubble);
 					marcel_t t;
 					marcel_create(&t, &attr, bubble_join_signal_cb, bubble);
@@ -525,6 +534,12 @@ static void finish_task_switch(marcel_task_t *prev)
 						do_signal = 1;
 					}
 					ma_holder_unlock_softirq(&bubble->as_holder);
+					/* The call to marcel_cond_signal
+					 * should not be performed in the
+					 * holder_lock critical section above
+					 * as it may result in a dead-lock when
+					 * locking the holder of the task to
+					 * wake up */
 					if (do_signal)
 						marcel_cond_signal(&bubble->join_cond);
 					marcel_mutex_unlock(&bubble->join_mutex);

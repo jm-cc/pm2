@@ -689,6 +689,12 @@ int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&bubble->barrier, -1);
 	bubble_becomes_empty = (!(bubble->nb_natural_entities - 1));
+	/* If the bubble becomes empty as a result of that removeentity call,
+	 * we do not update the nb_natural_entities now but delegate it to the
+	 * bubble signaling critical section. Otherwise, if another entity is
+	 * meanwhile added and then removed from the bubble, the bubble could
+	 * disappear before the signaling critical section is reached. To cite
+	 * a well known computer scientist: "Take care!"... :-) */
 	if (!bubble_becomes_empty)
 		bubble->nb_natural_entities--;
 	if ((entity)->type != MA_BUBBLE_ENTITY)

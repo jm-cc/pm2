@@ -169,18 +169,24 @@ ma_seed_bubble_minus_one (marcel_bubble_t *b) {
 
 	ma_holder_lock(&b->as_holder);
 	marcel_barrier_addcount (&b->barrier, -1);
-	empty = (!--b->nb_natural_entities);
+	empty = (!(b->nb_natural_entities-1));
+	if (!empty)
+		b->nb_natural_entities--;
 	ma_holder_unlock(&b->as_holder);
 
 	/* Perform the necessary signaling if the bubble becomes empty. */
 	if (empty) {
+		int do_signal = 0;
 		marcel_mutex_lock(&b->join_mutex);
 		ma_holder_lock(&b->as_holder);
+		b->nb_natural_entities--;
 		if (b->join_empty_state == 0  &&  b->nb_natural_entities == 0) {
 			b->join_empty_state = 1;
-			marcel_cond_signal(&b->join_cond);
+			do_signal = 1;
 		}
 		ma_holder_unlock(&b->as_holder);
+		if (do_signal)
+			marcel_cond_signal(&b->join_cond);
 		marcel_mutex_unlock(&b->join_mutex);
 	}
 }

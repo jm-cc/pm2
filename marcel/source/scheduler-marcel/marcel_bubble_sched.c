@@ -457,7 +457,10 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 	entity->sched_holder = NULL;
 	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&src_bubble->barrier, -1);
-	src_bubble_becomes_empty = (!--src_bubble->nb_natural_entities);
+	src_bubble_becomes_empty = (!(src_bubble->nb_natural_entities - 1));
+	if (!src_bubble_becomes_empty) {
+		src_bubble->nb_natural_entities--;
+	}
 	if (entity->type == MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_bubble,ma_bubble_entity(entity),src_bubble);
 	else
@@ -553,7 +556,7 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 	if (dst_bubble_was_empty) {
 		marcel_mutex_lock(&dst_bubble->join_mutex);
 		ma_holder_lock_softirq(&dst_bubble->as_holder);
-		if (dst_bubble->join_empty_state == 1  &&  dst_bubble->nb_natural_entities == 1) {
+		if (dst_bubble->join_empty_state == 1  &&  dst_bubble->nb_natural_entities > 0) {
 			dst_bubble->join_empty_state = 0;
 		}
 		ma_holder_unlock_softirq(&dst_bubble->as_holder);
@@ -561,13 +564,17 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 	}
 	/* signal src bubble emptiness when applicable */
 	if (src_bubble_becomes_empty) {
+		int do_signal = 0;
 		marcel_mutex_lock(&src_bubble->join_mutex);
 		ma_holder_lock_softirq(&src_bubble->as_holder);
+		src_bubble->nb_natural_entities--;
 		if (src_bubble->join_empty_state == 0  &&  src_bubble->nb_natural_entities == 0) {
 			src_bubble->join_empty_state = 1;
-			marcel_cond_signal(&src_bubble->join_cond);
+			do_signal = 1;
 		}
 		ma_holder_unlock_softirq(&src_bubble->as_holder);
+		if (do_signal)
+			marcel_cond_signal(&src_bubble->join_cond);
 		marcel_mutex_unlock(&src_bubble->join_mutex);
 	}
 }
@@ -617,7 +624,7 @@ static int __do_bubble_insertentity(marcel_bubble_t *bubble, marcel_entity_t *en
 	if (bubble_was_empty) {
 		marcel_mutex_lock(&bubble->join_mutex);
 		ma_holder_lock_softirq(&bubble->as_holder);
-		if (bubble->join_empty_state == 1  &&  bubble->nb_natural_entities == 1) {
+		if (bubble->join_empty_state == 1  &&  bubble->nb_natural_entities > 0) {
 			bubble->join_empty_state = 0;
 		}
 		ma_holder_unlock_softirq(&bubble->as_holder);
@@ -681,7 +688,9 @@ int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	entity->sched_holder = NULL;
 	tbx_fast_list_del_init(&entity->natural_entities_item);
 	marcel_barrier_addcount(&bubble->barrier, -1);
-	bubble_becomes_empty = (!--bubble->nb_natural_entities);
+	bubble_becomes_empty = (!(bubble->nb_natural_entities - 1));
+	if (!bubble_becomes_empty)
+		bubble->nb_natural_entities--;
 	if ((entity)->type != MA_BUBBLE_ENTITY)
 		PROF_EVENT2(bubble_sched_remove_thread, (void*)ma_task_entity(entity), bubble);
 	else
@@ -713,13 +722,17 @@ int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 int marcel_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 	LOG_IN();
 	if (ma_bubble_removeentity(bubble, entity)) {
+		int do_signal = 0;
 		marcel_mutex_lock(&bubble->join_mutex);
 		ma_holder_lock_softirq(&bubble->as_holder);
+		bubble->nb_natural_entities--;
 		if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
 			bubble->join_empty_state = 1;
-			marcel_cond_signal(&bubble->join_cond);
+			do_signal = 1;
 		}
 		ma_holder_unlock_softirq(&bubble->as_holder);
+		if (do_signal)
+			marcel_cond_signal(&bubble->join_cond);
 		marcel_mutex_unlock(&bubble->join_mutex);
 	}
 	LOG_OUT();

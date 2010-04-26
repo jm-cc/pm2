@@ -424,6 +424,23 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	return 0;
 }
 
+static void *bubble_join_signal_cb(void * arg) {
+	int do_signal = 0;
+	marcel_bubble_t *bubble = (marcel_bubble_t *)arg;
+	marcel_mutex_lock(&bubble->join_mutex);
+	ma_holder_lock_softirq(&bubble->as_holder);
+	bubble->nb_natural_entities--;
+	if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
+		bubble->join_empty_state = 1;
+		do_signal = 1;
+	}
+	ma_holder_unlock_softirq(&bubble->as_holder);
+	if (do_signal)
+		marcel_cond_signal(&bubble->join_cond);
+	marcel_mutex_unlock(&bubble->join_mutex);
+	return NULL;
+}
+
 /**
  * finish_task_switch - clean up after a task-switch
  * @prev: the thread we just switched away from.
@@ -492,15 +509,26 @@ static void finish_task_switch(marcel_task_t *prev)
 			int becomes_empty = ma_bubble_removeentity(bubble, prev_e);
 
 			if (becomes_empty) {
-				while (!marcel_mutex_trylock(&bubble->join_mutex))
-					;
-				ma_holder_lock_softirq(&bubble->as_holder);
-				if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
-					bubble->join_empty_state = 1;
-					marcel_cond_signal(&bubble->join_cond);
+				if (!marcel_mutex_trylock(&bubble->join_mutex)) {
+					marcel_attr_t attr;
+					marcel_attr_init(&attr);
+					marcel_attr_setdetachstate(&attr, tbx_true);
+					marcel_attr_setnaturalbubble(&attr, &marcel_root_bubble);
+					marcel_t t;
+					marcel_create(&t, &attr, bubble_join_signal_cb, bubble);
+				} else {
+					int do_signal = 0;
+					ma_holder_lock_softirq(&bubble->as_holder);
+					bubble->nb_natural_entities--;
+					if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
+						bubble->join_empty_state = 1;
+						do_signal = 1;
+					}
+					ma_holder_unlock_softirq(&bubble->as_holder);
+					if (do_signal)
+						marcel_cond_signal(&bubble->join_cond);
+					marcel_mutex_unlock(&bubble->join_mutex);
 				}
-				ma_holder_unlock_softirq(&bubble->as_holder);
-				marcel_mutex_unlock(&bubble->join_mutex);
 			}
 		}
 	} else

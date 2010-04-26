@@ -424,6 +424,7 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 	return 0;
 }
 
+#ifdef MA__BUBBLES
 static void *bubble_join_signal_cb(void * arg) {
 	int do_signal = 0;
 	marcel_bubble_t *bubble = (marcel_bubble_t *)arg;
@@ -440,6 +441,7 @@ static void *bubble_join_signal_cb(void * arg) {
 	marcel_mutex_unlock(&bubble->join_mutex);
 	return NULL;
 }
+#endif
 
 /**
  * finish_task_switch - clean up after a task-switch
@@ -1293,7 +1295,10 @@ DEF_PTHREAD_STRONG(int, yield, (void), ())
 #ifdef MA__LWPS
 ma_holder_t *
 ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
-	ma_holder_t *old_sched_h, *old_natural_h;
+	ma_holder_t *old_sched_h;
+#ifdef MA__BUBBLES
+	ma_holder_t *old_natural_h;
+#endif
 	LOG_IN();
 	old_sched_h = ma_task_holder_lock_softirq(MARCEL_SELF);
 	if (old_sched_h == new_holder) {

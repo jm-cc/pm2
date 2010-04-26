@@ -28,7 +28,7 @@ lock_t mylock = { .held = 0, .futex = MARCEL_FUTEX_INITIALIZER };
 
 int tot_retries;
 
-void lock(lock_t *l) {
+static void lock(lock_t *l) {
   int retries = 0;
   while (ma_test_and_set_bit(0, &l->held)) {
   /* Already held, sleep */
@@ -38,14 +38,14 @@ void lock(lock_t *l) {
   tot_retries += retries;
 }
 
-void unlock(lock_t *l) {
+static void unlock(lock_t *l) {
   ma_clear_bit(0, &l->held);
   marcel_futex_wake(&l->futex, 1);
 }
 
 int val;
 
-void *f(void *arg) {
+static void *f(void *arg) {
   int n = (intptr_t) arg;
 
   while (n--) {

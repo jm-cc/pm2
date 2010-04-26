@@ -225,7 +225,7 @@ define ma-printholder
     set $rq = ((ma_runqueue_t *)(((char*)$arg0)-(unsigned)(&(((ma_runqueue_t *)0)->as_holder))))
     ma-printrq $rq
   else
-    printf " %16p", $arg0
+    printf " %32p", $arg0
   end
 end
 document ma-printholder
@@ -348,10 +348,10 @@ define ma-printbubble
     set $num = $num + 1
   end
   if (ma_gdb_b[$arg1]->nb_natural_entities)
-    printf "+-O %16p %32s %4d          ", \
+    printf "+-O \t%16p %32s %4d          ", \
       $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
   else
-    printf "+-o %16p %32s %4d          ", \
+    printf "+-o \t%16p %32s %4d          ", \
       $arg0, $arg0->as_entity.name, $arg0->as_entity.prio
   end
   ma-printholder $arg0->as_entity.natural_holder
@@ -370,7 +370,7 @@ define ma-printbubble
         printf "  "
         set $num = $num + 1
       end
-      printf "+-~"
+      printf "+-~ \t"
       set $t = (marcel_t) (((char*)$ent) - (unsigned)(&(((marcel_t)0)->as_entity)))
       if $ent->type == MA_THREAD_ENTITY
         marcel-printthread $t

@@ -54,6 +54,11 @@ static __inline__ void init_marcel_thread(marcel_t t,
 {
 	LOG_IN();
 	PROF_THREAD_BIRTH(t);
+	if (attr->seed) {
+		t->as_entity = (struct ma_entity)MA_SCHED_ENTITY_INITIALIZER((t)->as_entity, MA_THREAD_SEED_ENTITY, MA_DEF_PRIO);
+	} else {
+		t->as_entity = (struct ma_entity)MA_SCHED_ENTITY_INITIALIZER((t)->as_entity, MA_THREAD_ENTITY, MA_DEF_PRIO);
+	}
 
 	/* we need to set the thread number early for tracing tools to early know
 	 * whether it is an interesting thread or not */

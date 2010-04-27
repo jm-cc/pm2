@@ -1808,7 +1808,12 @@ int _mami_current_node(void) {
   CPU_ZERO(&set);
   /* TODO: use hwloc's getcpubind */
   pthread_getaffinity_np(th_mami_self(), sizeof(set), &set);
+#ifdef HWLOC_API_VERSION
+  hwloc_set = hwloc_cpuset_alloc();
+  hwloc_cpuset_from_glibc_sched_affinity(topology, hwloc_set, &set, sizeof(cpu_set_t));
+#else
   hwloc_set = hwloc_cpuset_from_glibc_sched_affinity(topology, &set, sizeof(cpu_set_t));
+#endif
   obj = hwloc_get_next_obj_covering_cpuset_by_type(topology, hwloc_set, HWLOC_OBJ_NODE, NULL);
   hwloc_cpuset_free(hwloc_set);
   if (obj) return obj->os_index; else return -1;

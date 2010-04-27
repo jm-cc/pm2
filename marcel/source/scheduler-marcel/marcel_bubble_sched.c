@@ -683,7 +683,14 @@ int ma_bubble_removeentity(marcel_bubble_t *bubble, marcel_entity_t *entity) {
 
 	/* Remove entity from bubble */
 	ma_holder_lock_softirq(&bubble->as_holder);
-	MA_BUG_ON(entity->natural_holder != &bubble->as_holder);
+	if (entity->natural_holder != &bubble->as_holder) {
+		/* FIXME: The entity does not belong to the bubble anymore.
+		 * That should not happen but it does indeed in
+		 * marcel_sched_exit, for instance. Let's cancel the call until
+		 * we find out a cleaner solution */
+		ma_holder_unlock_softirq(&bubble->as_holder);
+		return 0;
+	}
 	entity->natural_holder = NULL;
 	entity->sched_holder = NULL;
 	tbx_fast_list_del_init(&entity->natural_entities_item);

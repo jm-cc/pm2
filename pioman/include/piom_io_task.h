@@ -20,6 +20,8 @@
 int piom_task_read(int fildes, void *buf, size_t nbytes);
 
 int piom_task_write(int fildes, const void *buf, size_t nbytes);
+int piom_task_select(int nfds, fd_set * __restrict rfds,
+		     fd_set * __restrict wfds);
 
 void piom_io_task_init(void);
 void piom_io_task_stop(void);

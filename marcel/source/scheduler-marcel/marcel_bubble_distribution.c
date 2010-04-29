@@ -50,7 +50,7 @@ ma_distribution_add_tail (marcel_entity_t *e, ma_distribution_t *distribution) {
    argument. */
 void
 ma_distribution_clean (ma_distribution_t *distribution) {
-  bzero (distribution->entities, distribution->max_entities * sizeof (distribution->entities[0]));
+  memset (distribution->entities, 0, distribution->max_entities * sizeof (distribution->entities[0]));
   distribution->nb_entities = 0;
   distribution->total_load = 0;
 }

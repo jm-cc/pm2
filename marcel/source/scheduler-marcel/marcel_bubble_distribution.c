@@ -46,6 +46,15 @@ ma_distribution_add_tail (marcel_entity_t *e, ma_distribution_t *distribution) {
   distribution->total_load += ma_entity_load (e);
 }
 
+/* Clean the fields of the ma_distribution_t structure passed in
+   argument. */
+void
+ma_distribution_clean (ma_distribution_t *distribution) {
+  bzero (distribution->entities, distribution->max_entities * sizeof (distribution->entities[0]));
+  distribution->nb_entities = 0;
+  distribution->total_load = 0;
+}
+
 /* Remove and return the last entity from the
    _distribution->entities array. */
 marcel_entity_t *

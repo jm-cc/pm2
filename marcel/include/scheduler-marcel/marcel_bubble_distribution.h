@@ -91,6 +91,10 @@ void ma_distribution_add (marcel_entity_t *e,
    array. */
 void ma_distribution_add_tail (marcel_entity_t *e, ma_distribution_t *distribution);
 
+/* Clean the fields of the ma_distribution_t structure passed in
+   argument. */
+void ma_distribution_clean (ma_distribution_t *distribution);
+
 /* Remove and return the last entity from the
    _distribution_->entities array. */
 marcel_entity_t *ma_distribution_remove_tail (ma_distribution_t *distribution);

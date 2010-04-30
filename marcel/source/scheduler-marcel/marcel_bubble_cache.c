@@ -38,6 +38,8 @@ struct marcel_bubble_cache_sched
 
 #define MA_CACHE_FAVORS_LOAD_BALANCING 0
 
+#define MA_CACHE_ACTS_AS_COMPACT 0
+
 /* Submits a set of entities on a marcel_topo_level */
 static void
 ma_cache_sched_submit (marcel_entity_t *e[], int ne, struct marcel_topo_level *l) {
@@ -251,6 +253,7 @@ ma_cache_distribute_entities_cache (struct marcel_topo_level *l,
 #define MA_CACHE_DISTRIBUTES_WITHOUT_BURSTING 0UL
 #define MA_CACHE_NEEDS_TO_BURST 1UL
 #define MA_CACHE_CANNOT_BURST 2UL
+#define MA_CACHE_FAMINE 3UL
 
 /* Checks wether enough entities are already positionned on
    the considered runqueues */
@@ -274,6 +277,15 @@ ma_cache_has_enough_entities (struct marcel_topo_level *l,
   if (prev_state) {
     return ret;
   }
+
+#if MA_CACHE_ACTS_AS_COMPACT
+  int nthreads = 0;
+  for (i = 0; i < ne; i++)
+    nthreads += ma_count_threads_in_entity (e[i]);
+
+  if (nthreads < nvp)
+    return MA_CACHE_FAMINE;
+#endif
 
   /* If not, initialize the entities_per_level array with the load of
      all entities scheduled in each topology subtree. */
@@ -376,6 +388,65 @@ unsigned int ma_cache_burst_one_bubble_from (struct marcel_topo_level *from, mar
 }
 
 static
+void ma_cache_distribute_entities_compact (struct marcel_topo_level *l) {
+  int i; 
+  int ne = ma_count_entities_on_rq (&l->rq);
+
+  marcel_entity_t *e[ne];
+  ma_get_entities_from_rq (&l->rq, e, ne);
+  
+  int nb_cores_to_occupy = 0;
+  int occupied_cores = 0;
+
+  for (i = 0; i < ne; i++)
+    nb_cores_to_occupy += ma_count_threads_in_entity (e[i]);
+
+  ma_distribution_t distribution[l->arity];
+  ma_distribution_init (distribution, l, l->arity, nb_cores_to_occupy);
+
+  int per_level_cores = marcel_vpset_weight (&distribution[0].level->vpset);
+  int assigned_load = 0;
+  int current_level = 0;
+
+  while (occupied_cores < nb_cores_to_occupy)
+    {
+      occupied_cores = 0;
+      
+      ne = ma_count_entities_on_rq (&l->rq);
+      marcel_entity_t *new_e[ne];
+      ma_get_entities_from_rq (&l->rq, new_e, ne);
+
+      for (i = 0; i < ne; i++)
+	{
+	  ma_distribution_add (new_e[i], &distribution[current_level], 0);
+	  assigned_load += ma_count_threads_in_entity (new_e[i]);
+
+	  if (distribution[current_level].total_load >= per_level_cores)
+	    {
+	      current_level++;
+	      occupied_cores += assigned_load > per_level_cores ? per_level_cores : assigned_load;
+	      assigned_load = 0;
+	    }
+	}
+
+      occupied_cores += assigned_load;
+
+      if (occupied_cores < nb_cores_to_occupy)
+	{
+	  int burst = ma_cache_burst_one_bubble_from (l, new_e, ne);
+	  MA_BUG_ON (!burst);
+
+	  for (i = 0; i < l->arity; i++)
+	    ma_distribution_clean (&distribution[i]);
+
+	  current_level = 0;
+	}
+      else
+	ma_apply_distribution (distribution, l->arity);
+    }
+}
+
+static
 void ma_cache_distribute_from (struct marcel_topo_level *l) {
   unsigned int ne, nvp = marcel_vpset_weight(&l->vpset);
   unsigned int arity = l->arity;
@@ -437,7 +508,11 @@ void ma_cache_distribute_from (struct marcel_topo_level *l) {
       
     case MA_CACHE_CANNOT_BURST:
       break;
-      
+
+    case MA_CACHE_FAMINE:
+      ma_cache_distribute_entities_compact (l);
+      break;
+ 
     default:
       MA_BUG ();
     }

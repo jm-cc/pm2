@@ -355,6 +355,7 @@
 #define VERSION_libpthread_GLIBC_2_3_3  GLIBC_2.3.3
 #define VERSION_libpthread_GLIBC_2_3_4  GLIBC_2.3.4
 #define VERSION_libpthread_GLIBC_2_4    GLIBC_2.4
+#define VERSION_libpthread_GLIBC_2_12   GLIBC_2.12
 #define VERSION_libpthread_GLIBC_PRIVATE        GLIBC_PRIVATE
 
 #ifndef VERSION_libpthread_GLIBC_2_0

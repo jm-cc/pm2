@@ -71,6 +71,11 @@ NDP(,mutexattr_getprotocol) NDP(,mutexattr_setprotocol)
 NDP(,mutexattr_getprioceiling) NDP(,mutexattr_setprioceiling)
 NDP(,mutex_getprioceiling) NDP(,mutex_setprioceiling)
 
+NDP(,sigqueue)
+
+NDP(,mutex_consisten) NDP(,mutexattr_getrobust)
+NDP(,mutexattr_setrobust)
+
 NDP(,condattr_setclock) NDP(,condattr_getclock)
 
 NDSSP(unwind)

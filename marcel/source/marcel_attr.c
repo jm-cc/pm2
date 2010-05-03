@@ -450,14 +450,18 @@ int marcel_setname(marcel_t __restrict pid, const char *__restrict name)
 	PROF_SET_THREAD_NAME(pid);
 	return 0;
 }
+#ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, marcel_setname, pthread_setname_np, GLIBC_2_12);
+#endif
 
 int marcel_getname(marcel_t __restrict pid, char *__restrict name, size_t n)
 {
 	getname(name, (pid->as_entity).name, n);
 	return 0;
 }
+#ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, marcel_getname, pthread_getname_np, GLIBC_2_12);
+#endif
 
 int marcel_attr_setid(marcel_attr_t * attr, int id)
 {

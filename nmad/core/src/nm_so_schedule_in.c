@@ -42,18 +42,21 @@ struct nm_unexpected_s
 };
 
 /** fast allocator for struct nm_unexpected_s */
-static p_tbx_memory_t nm_so_unexpected_mem = NULL;
+static p_tbx_memory_t nm_unexpected_mem = NULL;
+
+/** size of memory used by unexpected */
+static size_t nm_unexpected_mem_size = 0;
 
 #define NM_UNEXPECTED_PREALLOC (NM_TAGS_PREALLOC * 256)
 
 static inline struct nm_unexpected_s*nm_unexpected_alloc(void)
 {
-  if(tbx_unlikely(nm_so_unexpected_mem == NULL))
+  if(tbx_unlikely(nm_unexpected_mem == NULL))
     {
-      tbx_malloc_extended_init(&nm_so_unexpected_mem, sizeof(struct nm_unexpected_s),
+      tbx_malloc_extended_init(&nm_unexpected_mem, sizeof(struct nm_unexpected_s),
 			       NM_UNEXPECTED_PREALLOC, "nmad/core/unexpected", 1);
     }
-  struct nm_unexpected_s*chunk = tbx_malloc(nm_so_unexpected_mem);
+  struct nm_unexpected_s*chunk = tbx_malloc(nm_unexpected_mem);
   return chunk;
 }
 
@@ -70,11 +73,11 @@ void nm_unexpected_clean(struct nm_core*p_core)
 	  if(chunk->p_pw)
 	    nm_so_pw_free(chunk->p_pw);
 	  tbx_fast_list_del(&chunk->link);
-	  tbx_free(nm_so_unexpected_mem, chunk);
+	  tbx_free(nm_unexpected_mem, chunk);
 	}
     }
-  if(nm_so_unexpected_mem != NULL)
-    tbx_malloc_clean(nm_so_unexpected_mem);
+  if(nm_unexpected_mem != NULL)
+    tbx_malloc_clean(nm_unexpected_mem);
 }
 
 /** Find an unexpected chunk that matches an unpack request [p_gate, seq, tag]
@@ -231,9 +234,9 @@ static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t 
 }
 
 /** store an unexpected chunk of data (data/short_data/rdv) */
-static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate,
-					  void *header, uint32_t len, nm_core_tag_t tag, nm_seq_t seq,
-					  struct nm_pkt_wrap *p_pw)
+static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_gate,
+				       void *header, uint32_t len, nm_core_tag_t tag, nm_seq_t seq,
+				       struct nm_pkt_wrap *p_pw)
 {
   struct nm_unexpected_s*chunk = nm_unexpected_alloc();
   chunk->header = header;
@@ -242,6 +245,13 @@ static inline void nm_so_unexpected_store(struct nm_core*p_core, struct nm_gate*
   chunk->seq = seq;
   chunk->tag = tag;
   p_pw->header_ref_count++;
+  nm_unexpected_mem_size++;
+  if(nm_unexpected_mem_size > 32*1024)
+    {
+      fprintf(stderr, "nmad: warning- %d unexpected chunks allocated.\n", nm_unexpected_mem_size);
+      if(nm_unexpected_mem_size > 64*1024)
+	TBX_FAILUREF("nmad: %d unexpected chunks allocated.\n", nm_unexpected_mem_size);
+    }
 #warning Paulette: lock
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
   const struct nm_so_event_s event =
@@ -322,7 +332,8 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
       nm_so_pw_dec_header_ref_count(chunk->p_pw);
 #warning Paulette: lock
       tbx_fast_list_del(&chunk->link);
-      tbx_free(nm_so_unexpected_mem, chunk);
+      tbx_free(nm_unexpected_mem, chunk);
+      nm_unexpected_mem_size--;
       if(p_unpack->cumulated_len < p_unpack->expected_len)
 	chunk = nm_unexpected_find_matching(p_core, p_unpack);
       else
@@ -557,7 +568,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      }
 	    else
 	      { 
-		nm_so_unexpected_store(p_core, p_gate, sh, len, tag, seq, p_pw);
+		nm_unexpected_store(p_core, p_gate, sh, len, tag, seq, p_pw);
 	      }
 	    ptr += len;
 	  }
@@ -607,7 +618,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      }
 	    else
 	      { 
-		nm_so_unexpected_store(p_core, p_gate, dh, dh->len, tag, seq, p_pw);
+		nm_unexpected_store(p_core, p_gate, dh, dh->len, tag, seq, p_pw);
 	      }
 	  }
 	  break;
@@ -636,7 +647,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	      }
 	    else 
 	      {
-		nm_so_unexpected_store(p_core, p_gate, ch, len, tag, seq, p_pw);
+		nm_unexpected_store(p_core, p_gate, ch, len, tag, seq, p_pw);
 	      }
 	  }
 	  break;

@@ -372,9 +372,6 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
   struct utsname     utsname;
   struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
 
-  /* Increment the numer of gates */
-  p_tcp_drv->nb_gates++;
-  
   /* server socket						*/
   p_tcp_drv->server_fd	= nm_tcp_socket_create(&address, 0);
   SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));
@@ -424,13 +421,10 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
  *  @param p_drv the driver.
  *  @return The NM status code.
  */
-extern
-int
-nm_tcp_exit		(struct nm_drv *p_drv)
+extern int nm_tcp_exit(struct nm_drv *p_drv)
 {
   struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
   
-  p_tcp_drv->nb_gates--;
   TBX_FREE(p_tcp_drv->url);
 /*   SYSCALL(close(p_tcp_drv->server_fd)); */
   
@@ -474,6 +468,8 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   status->fd[p_crq->trk_id] = fd;
   NM_TRACE_PTR("tcp connect/accept status", status);
   
+  /* Increment the numer of gates */
+  p_tcp_drv->nb_gates++;
   p_tcp_trk->poll_array	= TBX_REALLOC(p_tcp_trk->poll_array, p_tcp_drv->nb_gates * sizeof(struct pollfd));
   p_tcp_trk->gate_map	= TBX_REALLOC(p_tcp_trk->gate_map, p_tcp_drv->nb_gates * sizeof(nm_gate_t));
 

@@ -42,7 +42,8 @@ int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long 
 		*pcell = &cell;
 		ma_fastlock_release(&futex->__lock);
 
-		ma_schedule_timeout(timeout);
+		if (((*addr) & mask) == val)
+			ma_schedule_timeout(timeout);
 
 		/* Dequeue if needed */
 		ma_fastlock_acquire(&futex->__lock);

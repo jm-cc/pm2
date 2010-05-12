@@ -27,37 +27,45 @@ struct blockcell {
 int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long mask, unsigned long val, signed long timeout)
 {
 	int ret = 0;
+	struct blockcell cell = { .task = MARCEL_SELF };
+	struct blockcell **pcell;
 
-	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+	if (((*addr) & mask) != val)
+		return EAGAIN;
 
-	if (((*addr) & mask) == val) {
-		struct blockcell cell = { .task = MARCEL_SELF };
-		struct blockcell **pcell;
+	/* Enqueue */
+	ma_fastlock_acquire(&futex->__lock);
 
-		/* Enqueue */
-		ma_fastlock_acquire(&futex->__lock);
-		pcell = (struct blockcell **) &futex->__lock.__status;
-		cell.prev = pcell;
-		cell.next = *pcell;
-		if (cell.next)
-			cell.next->prev = &cell.next;
-		*pcell = &cell;
-		ma_fastlock_release(&futex->__lock);
+	pcell = (struct blockcell **) &futex->__lock.__status;
+	cell.prev = pcell;
+	cell.next = *pcell;
+	if (cell.next)
+		cell.next->prev = &cell.next;
+	*pcell = &cell;
 
-		if (((*addr) & mask) == val)
-			ma_schedule_timeout(timeout);
+	/* Make sure wakers will see we have queued before reading the futex
+	 * value. */
+	ma_mb();
 
-		/* Dequeue if needed */
-		ma_fastlock_acquire(&futex->__lock);
-		if (cell.prev) {
-			*cell.prev = cell.next;
-			ret = ETIMEDOUT;
-		}
-		ma_fastlock_release(&futex->__lock);
-	} else
+	if (((*addr) & mask) != val)
 		ret = EAGAIN;
+	else {
+		ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+		ma_fastlock_release(&futex->__lock);
 
-	ma_set_current_state(MA_TASK_RUNNING);
+		ma_schedule_timeout(timeout);
+
+		ma_fastlock_acquire(&futex->__lock);
+		if (cell.prev)
+			ret = ETIMEDOUT;
+	}
+
+	/* Dequeue if needed */
+	if (cell.prev)
+		*cell.prev = cell.next;
+
+	ma_fastlock_release(&futex->__lock);
+
 	return ret;
 }
 

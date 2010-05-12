@@ -20,7 +20,7 @@
 
 #define PIOM_MAX_LTASK 256
 
-#ifndef MARCEL
+#ifndef MA__LWPS
 #define USE_GLOBAL_QUEUE 1
 #endif
 
@@ -399,7 +399,7 @@ piom_ltask_polling_is_required ()
 }
 
 
-#ifdef MARCEL
+#ifdef MA__NUMA
 piom_vpset_t piom_get_parent_machine(unsigned vp) {
     marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
     while(l->type > MARCEL_LEVEL_MACHINE)

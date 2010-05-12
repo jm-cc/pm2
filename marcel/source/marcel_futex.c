@@ -26,11 +26,13 @@ struct blockcell {
 
 int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long mask, unsigned long val, signed long timeout)
 {
+	int ret = 0;
+
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
+
 	if (((*addr) & mask) == val) {
 		struct blockcell cell = { .task = MARCEL_SELF };
 		struct blockcell **pcell;
-		int ret = 0;
 
 		/* Enqueue */
 		ma_fastlock_acquire(&futex->__lock);
@@ -52,11 +54,11 @@ int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long 
 			ret = ETIMEDOUT;
 		}
 		ma_fastlock_release(&futex->__lock);
-		return ret;
-	} else {
-		ma_set_current_state(MA_TASK_RUNNING);
-		return EAGAIN;
-	}
+	} else
+		ret = EAGAIN;
+
+	ma_set_current_state(MA_TASK_RUNNING);
+	return ret;
 }
 
 int marcel_futex_wake(marcel_futex_t *futex, unsigned nb)

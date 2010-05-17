@@ -21,7 +21,7 @@
 #include "../sendrecv/helper.h"
 
 
-/* This program performs a latency test with 0..n threads per CPU */
+/* This program performs a latency test with 0..n computing threads per CPU */
 #ifdef PIOMAN
 
 #define MIN_DEFAULT	0

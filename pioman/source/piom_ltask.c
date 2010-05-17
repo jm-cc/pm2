@@ -45,12 +45,16 @@ typedef struct piom_ltask_queue
     volatile uint8_t                  ltask_array_nb_items;
     volatile piom_ltask_queue_state_t state;
     piom_spinlock_t                   ltask_lock;
+    piom_vpset_t                      vpset;
 #ifdef DEBUG
     int                               id;
 #endif
 } piom_ltask_queue_t;
 
 void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
+
+/* when __paused != 0, no scheduling operation can be performed, except during __exit_queue */
+static volatile unsigned __paused = 0;
 
 static tbx_bool_t piom_ltask_initialized = tbx_false;
 #ifdef USE_GLOBAL_QUEUE
@@ -60,6 +64,40 @@ static tbx_bool_t *being_processed;
 
 #define GET_QUEUE(vp) ((piom_ltask_queue_t *)(marcel_topo_levels[marcel_topo_nblevels-1][vp])->piom_ltask_data)
 #define LOCAL_QUEUE (GET_QUEUE(marcel_current_vp()))
+
+void 
+piom_ltask_pause()
+{
+    __paused ++;
+    int i = 0;
+    int was_processing = 0;
+    int current_vp = 0;
+#ifdef MARCEL
+    current_vp = marcel_current_vp();
+#else
+    current_vp = 0;
+#endif
+
+    was_processing = being_processed[current_vp];
+    if(was_processing)
+	{
+	    being_processed[current_vp] = tbx_false;
+	}
+#ifdef MARCEL
+    for (i = 0; i < marcel_nbvps (); i++)
+#endif
+	{
+	    while(being_processed[i] == tbx_true);
+	}
+    if(was_processing)
+	being_processed[current_vp] = tbx_true;
+}
+
+void 
+piom_ltask_resume()
+{
+    __paused --;
+}
 
 /* Get the queue that matches a vpset:
  * - a local queue if only one vp is set in the vpset
@@ -107,6 +145,7 @@ __piom_init_queue (piom_ltask_queue_t * queue)
     piom_spin_lock_init (&queue->ltask_lock);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
+
 /* Remove a task from a queue and return it
  * Return NULL if the queue is empty
  */
@@ -200,19 +239,24 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     if (__piom_ltask_is_runnable (task))
 	{
 	    task->state = PIOM_LTASK_STATE_SCHEDULED;
-
 #ifdef MARCEL
+	    /* todo: utiliser marcel_disable_preemption */
 	    ma_local_bh_disable();
 #endif
+	 
 	    (*task->func_ptr) (task->data_ptr);
-	    
+
 	    if ((task->options & PIOM_LTASK_OPTION_REPEAT)
 		&& !(task->state & PIOM_LTASK_STATE_DONE))
 		{
 #ifdef MARCEL
 		    ma_local_bh_enable();
 #endif
-		    __piom_ltask_submit_in_queue (task, queue);
+		    /* If another thread is currently stopping the queue don't repost the task */
+		    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
+			__piom_ltask_submit_in_queue (task, queue);
+		    else
+			fprintf(stderr, "warning: task %p is leaved uncompleted\n", task);
 		}
 	    else
 		{
@@ -241,22 +285,52 @@ static __tbx_inline__ void
 __piom_exit_queue(piom_ltask_queue_t *queue)
 {
     queue->state = PIOM_LTASK_QUEUE_STATE_STOPPING;
+
     /* empty the list of tasks */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
-	__piom_ltask_schedule (queue);
+	{
+	    piom_vpset_t local_vpset = 1<<marcel_current_vp();
+	    if(queue->vpset & local_vpset)
+		__piom_ltask_schedule (queue);
+	}
 }
+
+static void __piom_ltask_update_timer();
+
+void 
+piom_ltask_poll_timer(unsigned long hid)
+{
+    if (piom_ltask_initialized && !being_processed[marcel_current_vp()] && !__paused) {
+	piom_ltask_schedule();
+    }
+    __piom_ltask_update_timer();
+}
+
+#ifdef MARCEL
+
+extern unsigned long volatile ma_jiffies;
+struct ma_timer_list ltask_poll_timer = MA_TIMER_INITIALIZER(piom_ltask_poll_timer, 0, 0);
+
+static void __piom_ltask_update_timer()
+{
+    ma_mod_timer(&ltask_poll_timer, ma_jiffies);
+}
+
+#else
+
+static void __piom_ltask_update_timer() { }
+
+#endif	/* MARCEL */
 
 void
 piom_init_ltasks ()
 {
     if (!piom_ltask_initialized)
 	{
-#ifdef DEBUG
-	    fprintf(stderr, "Using LTasks\n");
-#endif
 #ifdef USE_GLOBAL_QUEUE
 	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * 1);
 	    __piom_init_queue (&global_queue);
+	    global_queue.vpset= ~0;
 #else
 	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * marcel_nbvps ());
  	    int i, j;
@@ -265,9 +339,12 @@ piom_init_ltasks ()
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
 		    l->piom_ltask_data=TBX_MALLOC(sizeof (piom_ltask_queue_t));
 		    __piom_init_queue ((piom_ltask_queue_t*)l->piom_ltask_data);
+		    ((piom_ltask_queue_t*)l->piom_ltask_data)->vpset = l->vpset;
 		}
 	    }
 #endif	/* USE_GLOBAL_QUEUE */
+	    __piom_ltask_update_timer();
+
  	    piom_ltask_initialized = tbx_true;
 	}
 }
@@ -277,12 +354,11 @@ piom_exit_ltasks()
 {
     if (piom_ltask_initialized)
 	{
-
 #ifdef USE_GLOBAL_QUEUE
 	    __piom_exit_queue((piom_ltask_queue_t*)&global_queue);
 #else
 	    int i, j;
-	    for (i=0; i<marcel_topo_nblevels; i++) {
+	    for (i=marcel_topo_nblevels -1 ; i>=0; i--) {
 		for (j=0; j<marcel_topo_level_nbitems[i]; j++) {
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
 		    __piom_exit_queue((piom_ltask_queue_t*)l->piom_ltask_data);
@@ -292,11 +368,19 @@ piom_exit_ltasks()
 #endif
 	    TBX_FREE(being_processed);
 	    piom_ltask_initialized = tbx_false;
+
 	}
 
 }
 
-void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
+int 
+piom_ltask_test_activity()
+{
+    return piom_ltask_initialized;
+}
+
+void 
+__piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
 {
  begin:
     /* wait until a task is removed from the list */
@@ -305,6 +389,9 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 
     piom_spin_lock (&queue->ltask_lock);
     {
+	if(queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING)
+	    fprintf(stderr, "[PIOMan] warning: submitting a task (%p) to a queue (%p) that is being stopped\n", 
+		    task, queue);
 	/* the list is still full, wait until a task is removed from the list */
 	if (queue->ltask_array_nb_items + 1 == PIOM_MAX_LTASK)
 	    {
@@ -314,6 +401,7 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 	queue->ltask_array_nb_items++;
 	task->state = PIOM_LTASK_STATE_WAITING;
 	queue->ltask_array[queue->ltask_array_tail++] = task;
+	queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
     }
     piom_spin_unlock (&queue->ltask_lock);
 }
@@ -333,22 +421,24 @@ piom_ltask_submit (struct piom_ltask *task)
 void *
 piom_ltask_schedule ()
 {
-    struct piom_ltask *task;
+    struct piom_ltask *task = NULL;
+    if(piom_ltask_initialized && !__paused) {
 #ifdef USE_GLOBAL_QUEUE
-    task = __piom_ltask_schedule(&global_queue);
+	task = __piom_ltask_schedule(&global_queue);
 #else
-    struct marcel_topo_level *l;
-    piom_ltask_queue_t *cur_queue;
-    for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
-	l;			/* do this as long as there's a topo level */
-	l=l->father)
-	{
-	    cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
-	    task = __piom_ltask_schedule(cur_queue);
-	    if(task)
-		break;
-	}
+	struct marcel_topo_level *l;
+	piom_ltask_queue_t *cur_queue;
+	for(l=&marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
+	    l;			/* do this as long as there's a topo level */
+	    l=l->father)
+	    {
+		cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
+		task = __piom_ltask_schedule(cur_queue);
+		if(task)
+		    break;
+	    }
 #endif
+    }
     return task;
 }
 
@@ -356,14 +446,16 @@ void
 piom_ltask_wait_success (struct piom_ltask *task)
 {
     while (!(task->state & PIOM_LTASK_STATE_DONE))
-	piom_ltask_schedule ();
+	if(!__paused)
+	    piom_ltask_schedule ();
 }
 
 void
 piom_ltask_wait (struct piom_ltask *task)
 {
     while (!(task->state & PIOM_LTASK_STATE_COMPLETELY_DONE))
-	piom_ltask_schedule ();
+	if(!__paused)
+	    piom_ltask_schedule ();
 }
 
 int
@@ -388,8 +480,10 @@ piom_ltask_polling_is_required ()
 		l=l->father)
 		{
 		    cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
-		     if(cur_queue->ltask_array_nb_items && 
+		    if(cur_queue->ltask_array_nb_items && 
 		       (cur_queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING))
+			return 1;
+		    if(cur_queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 			return 1;
 		}
 #endif	/* USE_GLOBAL_QUEUE */

@@ -60,11 +60,21 @@ struct piom_ltask
     piom_vpset_t vp_mask;
 };
 
+
+/* return 1 if the ltask system is running, and 0 otherwise  */
+int piom_ltask_test_activity();
+
 /* initialize internal structures, etc. */
 void piom_init_ltasks ();
 
 /* destroy internal structures, stop task execution, etc. */
 void piom_exit_ltasks();
+
+/* pause task scheduling */
+void piom_ltask_pause();
+
+/* resume task scheduling */
+void piom_ltask_resume();
 
 /* submit a task
  * Beyond this point, the task may be scheduled at any time

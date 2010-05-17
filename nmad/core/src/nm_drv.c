@@ -382,8 +382,10 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
-
 #if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
+  nmad_unlock();
+  piom_ltask_pause();
+  nmad_lock();
   piom_ltask_completed (&p_core->task);
 #endif	/* PIOM_DISABLE_LTASKS */
 
@@ -441,9 +443,9 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	}
     }
 #if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
+  piom_ltask_resume();
   piom_exit_ltasks();
 #endif
-
   /* disconnect all gates */
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)

@@ -189,7 +189,7 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 	piom_vpset_t task_vpset = piom_vpset_full;
 
 	/* If the server is not running, just perform a classical read */
-	if(piom_test_activity())
+	if(piom_ltask_test_activity())
 	{
 		do {
 			ev.op = PIOM_POLL_READ;
@@ -222,7 +222,7 @@ piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 	piom_vpset_t task_vpset = piom_vpset_full;
 	
         /* If the server is not running, just perform a classical read */
-	if(piom_test_activity())
+	if(piom_ltask_test_activity())
 	{
 		ev.op = PIOM_POLL_READ;
 		ev.FD = fildes;
@@ -255,7 +255,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 	LOG_IN();
 
 	PROF_EVENT(piom_write_entry);
-	if(piom_test_activity())
+	if(piom_ltask_test_activity())
 	{
 		do {
 			ev.op = PIOM_POLL_WRITE;
@@ -288,7 +288,7 @@ piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 	struct piom_tcp_task_ev ev;
 	piom_vpset_t task_vpset = piom_vpset_full;
 
-	if(piom_test_activity())
+	if(piom_ltask_test_activity())
 	{
 	
 		ev.op = PIOM_POLL_WRITE;
@@ -317,7 +317,7 @@ piom_task_select(int nfds, fd_set * __restrict rfds,
 	struct piom_tcp_task_ev ev;
 	piom_vpset_t task_vpset = piom_vpset_full;
 
-	if(piom_test_activity())
+	if(piom_ltask_test_activity())
 	{	
 		ev.op = PIOM_POLL_SELECT;
 		ev.RFDS = rfds;

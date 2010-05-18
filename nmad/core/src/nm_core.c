@@ -208,8 +208,8 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
       abort();
     }
   p_core->strategy_adapter = strategy;
-  printf("# nmad: strategy = %s\n", strategy->name);
- return NM_ESUCCESS;
+  fprintf(stderr, "# nmad: strategy = %s\n", strategy->name);
+  return NM_ESUCCESS;
 }
 
 /** Shutdown the core struct and the main scheduler.

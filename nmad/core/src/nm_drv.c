@@ -369,7 +369,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       return err;
     }
 #ifndef CONFIG_PROTO_MAD3
-  printf("# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
+  fprintf(stderr, "# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
 #endif
 
   *pp_drv = p_drv;

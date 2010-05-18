@@ -101,12 +101,22 @@ static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
   struct ibv_pd*pd = context;
   struct ibv_mr*mr = ibv_reg_mr(pd, (void*)ptr, len, 
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  if(mr == NULL)
+    {
+      fprintf(stderr, "Infiniband: error while registering memory.\n");
+      abort();
+    }
   return mr;
 }
 static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
 {
   struct ibv_mr*mr = key;
-  ibv_dereg_mr(mr);
+  int rc = ibv_dereg_mr(mr);
+  if(rc != 0)
+    {
+      fprintf(stderr, "Infiniband: error whie deregistering memory.\n");
+      abort();
+    }
 }
 #endif /* BM_IBVERBS_RCACHE */
 

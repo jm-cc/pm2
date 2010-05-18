@@ -214,6 +214,11 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
   NM_SO_SR_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
+#ifdef NMAD_DEBUG
+  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_POSTED))
+    TBX_FAILUREF("nm_sr_swait- req=%p no send posted!\n", p_request);
+#endif /* NMAD_DEBUG */
+
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     {
       nm_so_post_all_force(p_core);
@@ -278,6 +283,11 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
   NM_SO_SR_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
+#ifdef NMAD_DEBUG
+  if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
+    TBX_FAILUREF("nm_sr_rwait- req=%p no send posted!\n", p_request);
+#endif /* NMAD_DEBUG */
+
   NM_SO_SR_TRACE("request %p completion = %d\n", p_request,
 		 nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED)) 

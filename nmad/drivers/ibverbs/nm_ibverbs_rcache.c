@@ -114,7 +114,7 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
   int rc = ibv_dereg_mr(mr);
   if(rc != 0)
     {
-      fprintf(stderr, "Infiniband: error whie deregistering memory.\n");
+      fprintf(stderr, "Infiniband: error while deregistering memory.\n");
       abort();
     }
 }

@@ -450,8 +450,8 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
   uint32_t                 ep_params_count = 0;
   struct nm_mx_drv* p_mx_drv = p_drv->priv;
   
-  tbx_malloc_init(&mx_pw_mem,   sizeof(struct nm_mx_pkt_wrap),
-		  INITIAL_PW_NUM,   "nmad/mx/pw");
+  tbx_malloc_extended_init(&mx_pw_mem,   sizeof(struct nm_mx_pkt_wrap),
+			   INITIAL_PW_NUM,   "nmad/mx/pw", 1);
   
   mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
   mx_nic_id_to_hostname(nic_id, hostname);

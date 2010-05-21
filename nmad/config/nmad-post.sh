@@ -12,7 +12,7 @@ for s in $PM2_NMAD_STRATEGIES; do
     PM2_NMAD_COMPONENTS="$PM2_NMAD_COMPONENTS NewMad_Strategy_${s}"
 done
 
-# force inclusion of components in binary (they may seem unused for ld)
+# force inclusion of components in binary (they may seem unused for ld when linking statically)
 for c in $PM2_NMAD_COMPONENTS; do
-    PM2_NMAD_EARLY_LDFLAGS_KERNEL="$PM2_NMAD_EARLY_LDFLAGS_KERNEL -Wl,-upadico_module_initializer__${c}"
+    PM2_NMAD_EARLY_LDFLAGS_KERNEL="$PM2_NMAD_EARLY_LDFLAGS_KERNEL -Wl,-u__padico_mod_instance_${c}"
 done

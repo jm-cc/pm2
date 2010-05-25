@@ -79,18 +79,13 @@ ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_const_cpuset_t lset)
 __tbx_inline__ static void
 ma_cpuset_to_hwloc(marcel_vpset_t mset, hwloc_cpuset_t *lset)
 {
-#ifdef MA_HAVE_VPSUBSET
+#if(defined(MA_HAVE_VPSUBSET) || (MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32))
   /* large vpset using an array of unsigned long subsets in both marcel and hwloc */
-  int i;
-  for(i=0; i<MA_VPSUBSET_COUNT && i<MA_VPSUBSET_COUNT; i++)
-	    hwloc_cpuset_from_ith_ulong(*lset, i, MA_VPSUBSET_SUBSET(mset, i));
-#elif MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32
-  /* marcel uses unsigned long long mask,
-   * and it's longer than hwloc's unsigned long mask,
-   * use 2 of the latter
-   */
-  hwloc_cpuset_from_ith_ulong(*lset, 0, (mset));
-  hwloc_cpuset_from_ith_ulong(*lset, 1, (mset)>>32);
+  int vp;
+  marcel_vpset_foreach_begin(vp, &mset)
+	  hwloc_cpuset_set(*lset, vp);
+  marcel_vpset_foreach_end()
+
 #else
   /* marcel uses int or unsigned long long mask,
    * and it's smaller or equal-size than hwloc's unsigned long mask,

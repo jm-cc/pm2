@@ -203,7 +203,7 @@ unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset)
 	/* Find the 'lowest' topo_level that match the vpset */
 	unsigned found = 0;
 	level = marcel_topo_levels[0];
-	while(level->vpset != vpset) {
+	while( marcel_vpset_isequal(&level->vpset, &vpset)) {
 		found = 0;
 #ifdef MA__NUMA
 		if(level->type < MARCEL_LEVEL_NODE)

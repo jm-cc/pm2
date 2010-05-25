@@ -192,17 +192,48 @@ static void *lwp_kthread_start_func(void *arg)
 	LOG_RETURN(NULL);
 }
 
-unsigned marcel_lwp_add_lwp(int vpnum)
+unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset)
 {
+	int i, vpnum = -1;
 	marcel_lwp_t *lwp;
 	struct marcel_topo_level *level;
+	signed os_node = 0;
 
 	LOG_IN();
+	/* Find the 'lowest' topo_level that match the vpset */
+	unsigned found = 0;
+	level = marcel_topo_levels[0];
+	while(level->vpset != vpset) {
+		found = 0;
+#ifdef MA__NUMA
+		if(level->type < MARCEL_LEVEL_NODE)
+			os_node = level->os_node;
+#endif
 
-	level = marcel_vp_node_level(vpnum == -1 ? 0 : vpnum);
-	lwp = marcel_malloc_node(sizeof(*lwp), level?level->os_node:0);
+		for(i=0; i<level->arity; i++)
+			if(marcel_vpset_isincluded(&level->children[i]->vpset, &vpset)) {
+				level = level->children[i];
+				found = 1;
+				break;				
+			}
+		if(!found)
+			break;
+	}
+	if(level->arity > 1)
+		/* the vpset is composed of several VPs */
+		vpnum = -1;
+	else 
+		vpnum = marcel_vpset_first(&vpset);
+
+	lwp = marcel_malloc_node(sizeof(*lwp), os_node);
 	/* initialiser le lwp *avant* de l'enregistrer */
 	*lwp = (marcel_lwp_t) MA_LWP_INITIALIZER(lwp);
+	lwp->vp_level = level;
+
+#ifdef MA__NUMA
+	lwp->cpuset = hwloc_cpuset_alloc();
+	ma_cpuset_to_hwloc(level->cpuset, &lwp->cpuset);
+#endif
 
 	ma_init_lwp_vpnum(vpnum, lwp);
 
@@ -257,7 +288,8 @@ unsigned marcel_lwp_add_vp(void)
 	if (num >= MA_NR_VPS)
 		MARCEL_EXCEPTION_RAISE("Too many vps\n");
 
-	return marcel_lwp_add_lwp(num);
+	marcel_vpset_t vpset = MARCEL_VPSET_VP(num);
+	return marcel_lwp_add_lwp(vpset);
 }
 
 #endif // MA__LWPS
@@ -362,7 +394,8 @@ int ma_lwp_block(void) {
 void marcel_enter_blocking_section(void) {
 	if (ma_lwp_block()) {
 		mdebug("need to start another LWP\n");
-		marcel_lwp_add_lwp(-1);
+		marcel_vpset_t vpset = MARCEL_VPSET_FULL;
+		marcel_lwp_add_lwp(vpset);
 	}
 }
 
@@ -508,12 +541,6 @@ static void lwp_init(ma_lwp_t lwp)
 
 	vpnum = ma_vpnum(lwp);
 #ifdef MA__LWPS
-	if (vpnum >= 0 && vpnum < marcel_nbvps()) {
-		lwp->cpuset = hwloc_cpuset_alloc();
-		hwloc_cpuset_set(lwp->cpuset, marcel_topo_vp_level[vpnum].os_cpu);
-	} else
-		lwp->cpuset = NULL;
-
 	marcel_sem_init(&lwp->kthread_stop, 0);
 #endif
 

@@ -612,7 +612,7 @@ static void __marcel_init marcel_gensched_start_lwps(void)
 	int i;
 	LOG_IN();
 	for(i=1; i<marcel_nbvps(); i++)
-		marcel_lwp_add_vp(MARCEL_VPSET_FULL);
+		marcel_lwp_add_vp(MARCEL_VPSET_VP(i));
 	mdebug("marcel_sched_init  : %i lwps created\n", marcel_nbvps());
 	LOG_OUT();
 }

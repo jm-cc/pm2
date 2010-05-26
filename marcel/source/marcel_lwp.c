@@ -192,7 +192,7 @@ static void *lwp_kthread_start_func(void *arg)
 	LOG_RETURN(NULL);
 }
 
-unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
+void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 {
 	int i;
 	marcel_lwp_t *lwp;
@@ -283,7 +283,9 @@ unsigned marcel_lwp_add_vp(marcel_vpset_t vpset)
 	if (num >= MA_NR_VPS)
 		MARCEL_EXCEPTION_RAISE("Too many vps\n");
 
-	return marcel_lwp_add_lwp(vpset, num);
+	marcel_lwp_add_lwp(vpset, num);
+
+	return num;
 }
 
 #endif // MA__LWPS

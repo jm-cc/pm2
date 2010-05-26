@@ -397,8 +397,8 @@ void marcel_lwp_fix_nb_vps(unsigned nb_lwp);
 #endif
 
 #ifdef MA__LWPS
-unsigned marcel_lwp_add_vp(void);
-unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset);
+unsigned marcel_lwp_add_vp(marcel_vpset_t vpset);
+unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum);
 void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
 void ma_lwp_wait_active(void);
 int ma_lwp_block(void);

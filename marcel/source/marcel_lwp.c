@@ -192,9 +192,9 @@ static void *lwp_kthread_start_func(void *arg)
 	LOG_RETURN(NULL);
 }
 
-unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset)
+unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 {
-	int i, vpnum = -1;
+	int i;
 	marcel_lwp_t *lwp;
 	struct marcel_topo_level *level;
 	signed os_node = 0;
@@ -219,11 +219,6 @@ unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset)
 		if(!found)
 			break;
 	}
-	if(level->arity > 1)
-		/* the vpset is composed of several VPs */
-		vpnum = -1;
-	else 
-		vpnum = marcel_vpset_first(&vpset);
 
 	lwp = marcel_malloc_node(sizeof(*lwp), os_node);
 	/* initialiser le lwp *avant* de l'enregistrer */
@@ -276,7 +271,7 @@ unsigned marcel_lwp_add_lwp(marcel_vpset_t vpset)
 }
 
 ma_atomic_t ma__last_vp = MA_ATOMIC_INIT(0);
-unsigned marcel_lwp_add_vp(void)
+unsigned marcel_lwp_add_vp(marcel_vpset_t vpset)
 {
 	unsigned num;
 
@@ -288,8 +283,7 @@ unsigned marcel_lwp_add_vp(void)
 	if (num >= MA_NR_VPS)
 		MARCEL_EXCEPTION_RAISE("Too many vps\n");
 
-	marcel_vpset_t vpset = MARCEL_VPSET_VP(num);
-	return marcel_lwp_add_lwp(vpset);
+	return marcel_lwp_add_lwp(vpset, num);
 }
 
 #endif // MA__LWPS
@@ -395,7 +389,7 @@ void marcel_enter_blocking_section(void) {
 	if (ma_lwp_block()) {
 		mdebug("need to start another LWP\n");
 		marcel_vpset_t vpset = MARCEL_VPSET_FULL;
-		marcel_lwp_add_lwp(vpset);
+		marcel_lwp_add_lwp(vpset, -1);
 	}
 }
 

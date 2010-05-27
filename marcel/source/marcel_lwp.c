@@ -267,7 +267,6 @@ void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 	}
 
 	__ma_sig_enable_interrupts();
-	LOG_RETURN(ma_per_lwp(vpnum, lwp));
 }
 
 ma_atomic_t ma__last_vp = MA_ATOMIC_INIT(0);

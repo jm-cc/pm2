@@ -295,8 +295,9 @@ struct marcel_task {
 #endif /* MARCEL_DEVIATION_ENABLED */
 
 #ifdef MA__PROVIDE_TLS
-	/* TLS Exec (non dynamique) */
-	char tls[MA_TLS_AREA_SIZE];
+	/* TLS Exec (non dynamique). Needs to be overly aligned so __thread
+	 * variables can be properly aligned */
+	char tls[MA_TLS_AREA_SIZE] TBX_ALIGN(16);
 #endif
 
 #ifdef MA__LWPS

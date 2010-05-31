@@ -22,7 +22,6 @@
 #include "marcel.h"
 #endif
 
-#ifndef PIOM_DISABLE_LTASKS
 #ifdef MARCEL
 #define piom_vpset_t marcel_vpset_t
 #define piom_vpset_full MARCEL_VPSET_FULL
@@ -34,6 +33,8 @@
 #define PIOM_VPSET_VP(vp) piom_vpset_full
 #define piom_vpset_set(vpset, vp) (vpset = vp)
 #endif /* MARCEL */
+
+#ifndef PIOM_DISABLE_LTASKS
 
 typedef unsigned piom_ltask_option_t;
 #define PIOM_LTASK_OPTION_NULL 0

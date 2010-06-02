@@ -57,7 +57,8 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 #ifdef NMAD_POLL
       tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
-      nm_so_pw_free(p_pw);
+
+      nm_pw_free(p_pw);
     }
   else if (err != -NM_EAGAIN)
     {
@@ -84,10 +85,15 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-#if(defined(PIOMAN_POLL) && defined(PIOM_DISABLE_LTASKS))
+
+#ifdef PIOMAN_POLL
+#ifdef PIOM_DISABLE_LTASKS
   piom_req_init(&p_pw->inst);
   p_pw->inst.server = &p_pw->p_drv->server;
   p_pw->which = NM_PW_RECV;
+#else
+  piom_ltask_init(&p_pw->ltask);
+#endif	/* PIOM_DISABLE_LTASKS */
 #endif /* PIOMAN_POLL */
 
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;

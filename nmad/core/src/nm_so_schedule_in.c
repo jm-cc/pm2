@@ -70,8 +70,13 @@ void nm_unexpected_clean(struct nm_core*p_core)
 #ifdef NMAD_DEBUG
 	  fprintf(stderr, "nm_unexpected_clean: chunk %p is still in use\n", chunk);
 #endif
-	  if(chunk->p_pw)
+	  if(chunk->p_pw) {
+#if(defined(PIOMAN_POLL) && !defined(PIOM_DISABLE_LTASKS))
+  	    piom_ltask_completed(&chunk->p_pw->ltask);
+#else
 	    nm_so_pw_free(chunk->p_pw);
+#endif
+	  }
 	  tbx_fast_list_del(&chunk->link);
 	  tbx_free(nm_unexpected_mem, chunk);
 	}
@@ -766,8 +771,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
 	  /* ** Large packet, data received directly in its final destination */
 	  nm_so_unpack_check_completion(p_core, p_unpack, len);
 	}
-    
-      nm_so_pw_free(p_pw);
+      nm_pw_free(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }
 

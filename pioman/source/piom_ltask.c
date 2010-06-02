@@ -221,6 +221,7 @@ __piom_ltask_queue_is_done (piom_ltask_queue_t *queue)
 
 /* Try to schedule a task from a given queue
  * Returns the task that have been scheduled (or NULL if no task)
+ * If it returns a task, this task have been freed.
  */
 static __tbx_inline__ void *
 __piom_ltask_schedule (piom_ltask_queue_t *queue)
@@ -238,7 +239,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     /* Make sure the task is runnable */
     if (__piom_ltask_is_runnable (task))
 	{
-	    task->state = PIOM_LTASK_STATE_SCHEDULED;
+	    task->state |= PIOM_LTASK_STATE_SCHEDULED;
 #ifdef MARCEL
 	    /* todo: utiliser marcel_disable_preemption */
 	    ma_local_bh_disable();
@@ -246,6 +247,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 	 
 	    (*task->func_ptr) (task->data_ptr);
 
+	    task->state ^= PIOM_LTASK_STATE_SCHEDULED;
 	    if ((task->options & PIOM_LTASK_OPTION_REPEAT)
 		&& !(task->state & PIOM_LTASK_STATE_DONE))
 		{
@@ -262,11 +264,19 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 		{
 		    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE;
 		    task->state |= PIOM_LTASK_STATE_DONE;
+		    if(task->continuation_ptr)
+			task->continuation_ptr(task->continuation_data_ptr);
 #ifdef MARCEL
 		    ma_local_bh_enable();
 #endif
 		}
+	} else {
+	if(task && task->state & PIOM_LTASK_STATE_DONE) {
+	    task->state |= PIOM_LTASK_STATE_COMPLETELY_DONE;
+	    if(task->continuation_ptr)
+		task->continuation_ptr(task->continuation_data_ptr);
 	}
+    }
 
     /* no more task to run, set the queue as stopped */
     if(__piom_ltask_queue_is_done(queue))

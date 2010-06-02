@@ -233,15 +233,36 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 }
 
 
+static __tbx_inline__ int
+nm_pw_free(struct nm_pkt_wrap *p_pw)
+{
+#if(defined(PIOMAN_POLL) && !defined(PIOM_DISABLE_LTASKS))
+  if(p_pw->ltask.state & PIOM_LTASK_STATE_SCHEDULED
+	  || p_pw->ltask.state & PIOM_LTASK_STATE_WAITING)
+  {
+ /* Do not free the pw right now because its ltask part is still used by PIOMan.
+  * Instead, ask PIOMan to free the pw once the task is over.
+  */
+    piom_ltask_add_continuation(&p_pw->ltask, (piom_ltask_func *)nm_so_pw_free, p_pw);
+    piom_ltask_completed(&p_pw->ltask);
+    return 0;
+  } else {
+	  nm_so_pw_free(p_pw);
+  }
+#else
+  nm_so_pw_free(p_pw);
+#endif
+  return 1;
+}
+
 static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
 {
   if(!(--p_pw->header_ref_count))
     {
-      nm_so_pw_free(p_pw);
+      nm_pw_free(p_pw);
     }
   return NM_ESUCCESS;
 }
-
 
 /* ** Receive functions ************************************ */
 /* ********************************************************* */

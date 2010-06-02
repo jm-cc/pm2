@@ -56,6 +56,8 @@ struct piom_ltask
 {
     piom_ltask_func *func_ptr;
     void *data_ptr;
+    piom_ltask_func *continuation_ptr;
+    void *continuation_data_ptr;
     piom_ltask_option_t options;
     piom_ltask_state_t state;
     piom_vpset_t vp_mask;
@@ -76,6 +78,16 @@ void piom_ltask_pause();
 
 /* resume task scheduling */
 void piom_ltask_resume();
+
+/* add a function that will be called after the task has succeed.
+ * It can be use for freeing the task structure.
+ */
+static inline
+void piom_ltask_add_continuation(struct piom_ltask *task, piom_ltask_func *continuation, void* arg)
+{
+    task->continuation_ptr = continuation;
+    task->continuation_data_ptr = arg;
+}
 
 /* submit a task
  * Beyond this point, the task may be scheduled at any time
@@ -108,7 +120,14 @@ int piom_ltask_polling_is_required ();
 static __tbx_inline__ int
 piom_ltask_test (struct piom_ltask *task)
 {
-    return task && (task->state == PIOM_LTASK_STATE_DONE);
+    return task && (task->state & PIOM_LTASK_STATE_DONE);
+}
+
+/* Test whether a task is completed */
+static __tbx_inline__ int
+piom_ltask_test_completed (struct piom_ltask *task)
+{
+    return task && (task->state & PIOM_LTASK_STATE_COMPLETELY_DONE);
 }
 
 /* Set a task as completed */
@@ -116,7 +135,7 @@ static __tbx_inline__ void
 piom_ltask_completed (struct piom_ltask *task)
 {
     if(task->state!=PIOM_LTASK_STATE_DONE)
-	task->state = PIOM_LTASK_STATE_DONE;
+	task->state |= PIOM_LTASK_STATE_DONE;
 }
 
 /* initialize a task */
@@ -125,6 +144,8 @@ piom_ltask_init (struct piom_ltask *task)
 {
     task->func_ptr = NULL;
     task->data_ptr = NULL;
+    task->continuation_ptr = NULL;
+    task->continuation_data_ptr = NULL;
     task->options = PIOM_LTASK_OPTION_NULL;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = piom_vpset_full;
@@ -169,6 +190,8 @@ piom_ltask_create (struct piom_ltask *task,
 {
     task->func_ptr = func_ptr;
     task->data_ptr = data_ptr;
+    task->continuation_ptr = NULL;
+    task->continuation_data_ptr = NULL;
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;

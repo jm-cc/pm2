@@ -479,8 +479,8 @@ void ma_update_lwp_blocked_signals(void) {
 
 		sigemptyset(&kshould_block);
 		for (sig = 1; sig < MARCEL_NSIG; sig++)
-			if (marcel_sigismember(&ma_dfl_sigs, sig) &&
-				marcel_sigismember(&SELF_GETMEM(curmask), sig) ||
+			if ((marcel_sigismember(&ma_dfl_sigs, sig) &&
+				marcel_sigismember(&SELF_GETMEM(curmask), sig)) ||
 				sigismember(&__ma_get_lwp_var(timer_sigmask)))
 				sigaddset(&kshould_block, sig);
 #endif

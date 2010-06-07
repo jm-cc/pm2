@@ -543,7 +543,11 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 		}
 
 		/* now put entity on the natural holder */
+		if (entity->natural_holder != sched_bubble_h  &&  entity->natural_holder != top_sched_bubble_h)
+		        ma_holder_rawlock(entity->natural_holder);
 		ma_put_entity(entity, entity->natural_holder, state);
+		if (entity->natural_holder != sched_bubble_h  &&  entity->natural_holder != top_sched_bubble_h)
+		        ma_holder_rawunlock(entity->natural_holder);
 
 		if (sched_bubble_h != top_sched_bubble_h)
 			ma_holder_rawunlock(sched_bubble_h);

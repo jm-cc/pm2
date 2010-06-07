@@ -509,6 +509,7 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 		for (;;) {
 			/* take a transient snapshot of the containing runqueue and the key bubbles in the hierarchy */
 			ma_holder_rawlock(entity->natural_holder);
+			sched_bubble_h = entity->sched_holder;
 			top_sched_bubble_h = sched_bubble_h;
 			while (ma_bubble_holder(top_sched_bubble_h)->as_entity.sched_holder->type != MA_RUNQUEUE_HOLDER) {
 				top_sched_bubble_h = ma_bubble_holder(top_sched_bubble_h)->as_entity.sched_holder;
@@ -533,7 +534,7 @@ static void ma_bubble_moveentity_locked(marcel_bubble_t *src_bubble, marcel_bubb
 			 * everything, and start-over until whatever comes first between
 			 * a stable situation or the end of time :-)
 			 */
-			if ((&ma_to_rq_holder(sched_bubble_h)->as_holder == rq_h))
+			if ((sched_bubble_h == entity->sched_holder) && (&ma_to_rq_holder(sched_bubble_h)->as_holder == rq_h))
 				break;
 
 			if (sched_bubble_h != top_sched_bubble_h)

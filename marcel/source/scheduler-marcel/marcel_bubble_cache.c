@@ -370,7 +370,7 @@ unsigned int ma_cache_burst_one_bubble_from (struct marcel_topo_level *from, mar
   for (i = 0; i < ne; i++) {
     if (e[i]->type == MA_BUBBLE_ENTITY && !bubble_has_exploded) {
       marcel_bubble_t *bb = ma_bubble_entity (e[i]);
-      if (bb->as_holder.nb_ready_entities) {
+      if (bb->as_holder.nb_ready_entities && (ma_entity_load(e[i]) != 1)) {
 	bubble_sched_debug ("exploding bubble %p\n", bb);
 	for_each_entity_scheduled_in_bubble_begin (ee, bb)
 	new_e[j++] = ee;

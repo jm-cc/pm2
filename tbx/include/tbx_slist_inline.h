@@ -1347,7 +1347,7 @@ tbx_slist_search_previous_set_nref(p_tbx_slist_nref_t         nref,
  end:
   LOG_OUT();
 
-  return tbx_false;
+  return result;
 }
 
 /*

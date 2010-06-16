@@ -122,7 +122,6 @@ template <int w>
 
 #define MA_BUG() do { \
 	MA_ALWAYS_BUG_ON(1); \
-	abort(); \
 } while (0)
 
 #ifndef MARCEL_TRACE

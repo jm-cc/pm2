@@ -785,7 +785,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 #ifndef MA__LWPS
 	int didpoll = 0;
 #endif
-	int hard_preempt;
+	int hard_preempt TBX_UNUSED;
 	int need_resched;
 	int vpnum;
 	LOG_IN();
@@ -1152,7 +1152,7 @@ int marcel_yield_to(marcel_t next)
 {
 	marcel_t prev = MARCEL_SELF;
 	ma_holder_t *nexth;
-	int busy;
+	int busy TBX_UNUSED;
 
 	if (next==prev)
 		return 0;

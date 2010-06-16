@@ -65,7 +65,8 @@ typedef ma_runqueue_t ma_topo_level_schedinfo;
 
 
 /** Internal macros **/
-#define MA_BITMAP_SIZE ((MA_MAX_PRIO+1+MA_BITS_PER_LONG)/MA_BITS_PER_LONG)
+#define MA_BITMAP_BITS (MA_MAX_PRIO+1+MA_BITS_PER_LONG)
+#define MA_BITMAP_SIZE (MA_BITMAP_BITS/MA_BITS_PER_LONG)
 
 #ifdef MA__LWPS
 /* \brief Runqueue of LWP \e lwp */

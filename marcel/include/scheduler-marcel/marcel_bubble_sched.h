@@ -285,8 +285,7 @@ extern ma_spinlock_t ma_idle_scheduler_lock;
 marcel_entity_t *ma_bubble_sched(marcel_entity_t *nextent,
 		ma_runqueue_t *rq, ma_holder_t **nexth, int prio);
 
-/** \brief Frobnicate \e bubble.  FIXME: This is unused, undefined, and thus
- * ought to be removed.  */
+/** \brief Deal with bubble time quanta expiration.  */
 int ma_bubble_tick(marcel_bubble_t *bubble);
 
 /** \brief Terminate the current scheduler.  Return zero on success.  */

@@ -202,11 +202,10 @@ static void __marcel_bubble_spread(marcel_entity_t *e[], int ne, struct marcel_t
 	unsigned long l_load[nl];
 	int l_n[nl];
 
-	int j, k, n, state;
+	int j, k, state;
 
 	/* Distribute from heaviest to lightest */
 	i = 0;
-	n = 0;
 	for (i=0; i<nl; i++) {
 		l_l[i] = l[i];
 		TBX_INIT_FAST_LIST_HEAD(&l_dist[i]);

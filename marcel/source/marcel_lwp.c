@@ -90,7 +90,7 @@ static void marcel_lwp_start(marcel_lwp_t *lwp)
 
 #if defined(LINUX_SYS) && defined(MARCEL_DONT_USE_POSIX_THREADS) && defined(MA__LWPS) && defined(MA__NUMA)
 	/* On Linux, thread IDs are represented as `pid_t', which are integers.  */
-	unsigned vpnum = ma_vpnum(lwp);
+	unsigned vpnum TBX_UNUSED = ma_vpnum(lwp);
 	mdebug_lwp("process %i (%s): LWP %u on core %i, node %i\n",
 		 getpid(), program_invocation_name,
 		 lwp->pid,
@@ -197,7 +197,7 @@ void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 	int i;
 	marcel_lwp_t *lwp;
 	struct marcel_topo_level *level;
-	signed os_node = 0;
+	signed os_node TBX_UNUSED = 0;
 
 	LOG_IN();
 	/* Find the 'lowest' topo_level that match the vpset */

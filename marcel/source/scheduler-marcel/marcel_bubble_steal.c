@@ -68,7 +68,7 @@ static marcel_bubble_t *find_interesting_bubble(ma_runqueue_t *rq, int up_power)
 static int see(struct marcel_topo_level *level, int up_power) {
 	/* have a look at work worth stealing from here */
 	ma_runqueue_t *rq = &level->rq, *rq2;
-	marcel_bubble_t *b, *b2;
+	marcel_bubble_t *b, *b2 TBX_UNUSED;
 	marcel_task_t *t;
 	marcel_entity_t *e;
 	int first = 1;

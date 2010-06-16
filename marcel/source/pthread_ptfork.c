@@ -107,7 +107,7 @@ static void cleanup_parent_after_fork(void) {
  * global thread list and from the runqueues.  */
 static void remove_thread(marcel_t thread)
 {
-	int state;
+	int state TBX_UNUSED;
 	ma_holder_t *holder;
 	char name[MARCEL_MAXNAMESIZE];
 

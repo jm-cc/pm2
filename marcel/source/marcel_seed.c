@@ -83,7 +83,7 @@ ma_seed_try_extract_from_bubble (marcel_bubble_t * const b, marcel_entity_t * co
 	/* Ok, now we are sure that we can safely instantiate the seed. */
 	{
 		/* Remove the seed from its ready holder. */
-		int state __attribute__((unused)) = ma_get_entity (e);
+		int state TBX_UNUSED = ma_get_entity (e);
 	}
 
 	/* Remove the seed from the bubble. */

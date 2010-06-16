@@ -257,7 +257,7 @@ __tbx_slist_default_dup(void *object)
   result = object;
   LOG_OUT();
 
-  return object;
+  return result;
 }
 
 static

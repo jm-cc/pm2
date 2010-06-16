@@ -1205,10 +1205,12 @@ static void __marcel_init main_thread_init(void)
 	marcel_attr_t attr;
 
 	LOG_IN();
+#ifndef STANDARD_MAIN
 	if (__main_thread == NULL) {
 		fprintf(stderr,"Couldn't find main thread's marcel_t, i.e. Marcel's main was not called yet. Please either load the stackalign module early, or use the STANDARD_MAIN option (but this will decrease performance)");
 		abort();
 	}
+#endif
 	memset(__main_thread, 0, sizeof(marcel_task_t));
 	
 #if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)

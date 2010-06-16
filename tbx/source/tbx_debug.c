@@ -149,7 +149,7 @@ static void print_register(debug_type_t* type)
 	    ||(reg_level > PM2DEBUG_ON && type->register_shown<2)) {
 		/* Si on doit afficher quelque chose */
 		if (type->show != PM2DEBUG_AUTO_REGISTER) {
-			const char *s1="", *s2="";
+			const char *s1="" TBX_UNUSED, *s2="" TBX_UNUSED;
 			type->register_shown=2;
 			if (type->actions[PM2DEBUG_SHOW] == PM2DEBUG_DEFAULT) {
 				s1="DEFAULT (";
@@ -198,7 +198,7 @@ static int apply_option(debug_type_t *type, char* option)
 	const char *chaine;
 	int addlen;
 	debug_action_t action;
-	int value;
+	int value TBX_UNUSED;
 	const char **opt;
 
 	if (strncmp(option, type->option_name, size))

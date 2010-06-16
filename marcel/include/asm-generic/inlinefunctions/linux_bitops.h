@@ -89,11 +89,11 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 {
 	int i;
-	for (i=0;i<140/MA_BITS_PER_LONG;i++) {
+	for (i=0;i<MAP_BITMAP_BITS/MA_BITS_PER_LONG;i++) {
 		if (tbx_unlikely(b[i]))
 			return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 	}
-	if (i*MA_BITS_PER_LONG==140)
+	if (i*MA_BITS_PER_LONG==MA_BITMAP_BITS)
 		abort();
 	return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
 }

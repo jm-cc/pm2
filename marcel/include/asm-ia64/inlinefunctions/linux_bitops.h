@@ -373,9 +373,14 @@ ma_sched_find_first_bit (unsigned long *b)
 {
 	if (tbx_unlikely(b[0]))
 		return __ma_ffs(b[0]);
+#if MA_BITMAP_BITS > 64
 	if (tbx_unlikely(b[1]))
 		return 64 + __ma_ffs(b[1]);
+#endif
+#if MA_BITMAP_BITS > 128
 	return __ma_ffs(b[2]) + 128;
+#endif
+	MA_BUG();
 }
 
 

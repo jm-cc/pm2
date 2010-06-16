@@ -149,7 +149,7 @@ static void print_register(debug_type_t* type)
 	    ||(reg_level > PM2DEBUG_ON && type->register_shown<2)) {
 		/* Si on doit afficher quelque chose */
 		if (type->show != PM2DEBUG_AUTO_REGISTER) {
-			const char *s1="" TBX_UNUSED, *s2="" TBX_UNUSED;
+			const char *s1 TBX_UNUSED ="", *s2 TBX_UNUSED="";
 			type->register_shown=2;
 			if (type->actions[PM2DEBUG_SHOW] == PM2DEBUG_DEFAULT) {
 				s1="DEFAULT (";

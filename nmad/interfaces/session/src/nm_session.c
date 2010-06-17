@@ -122,7 +122,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
       assert(drv_iface != NULL);
       const char*driver_name = drv_iface->name;
       padico_string_t url_string = padico_string_new();
-      padico_string_catf(url_string, "%s/%s", driver_name, driver_url);
+      padico_string_catf(url_string, "%s#%s", driver_name, driver_url);
       nm_session.n_drivers = 1;
       nm_session.drivers = malloc(sizeof(struct nm_session_driver_s));
       nm_session.drivers[0].p_drv = p_drv;

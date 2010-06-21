@@ -17,12 +17,12 @@
 #include "marcel.h"
 
 
-unsigned long marcel_generic_ffs(unsigned long x)
+unsigned long marcel_ffs(unsigned long x)
 {
-	return ma_generic_ffs(x);
+	return ma_ffs(x);
 }
 
-unsigned long marcel_generic_fls(unsigned long x)
+unsigned long marcel_fls(unsigned long x)
 {
-	return ma_generic_fls(x);
+	return ma_fls(x);
 }

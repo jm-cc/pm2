@@ -26,8 +26,8 @@
 
 
 /** Public functions **/
-unsigned long marcel_generic_ffs(unsigned long x);
-unsigned long marcel_generic_fls(unsigned long x);
+unsigned long marcel_ffs(unsigned long x);
+unsigned long marcel_fls(unsigned long x);
 
 
 #ifdef __MARCEL_KERNEL__

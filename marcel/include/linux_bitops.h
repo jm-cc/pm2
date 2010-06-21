@@ -24,6 +24,11 @@
 #include "linux_types.h"
 
 
+/** Public functions **/
+unsigned long marcel_generic_ffs(unsigned long x);
+unsigned long marcel_generic_fls(unsigned long x);
+
+
 #ifdef __MARCEL_KERNEL__
 TBX_VISIBILITY_PUSH_INTERNAL
 

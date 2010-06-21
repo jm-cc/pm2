@@ -59,6 +59,11 @@
 #define DEC_MARCEL(rtype, name, proto)		\
 	extern rtype MARCEL_NAME(name) proto
 
+/* Declare marcel_name and pmarcel_name */
+#define DEC_MARCEL_PMARCEL(rtype, name, proto) \
+	DEC_MARCEL(rtype, name, proto);	       \
+	extern rtype PMARCEL_NAME(name) proto
+
 
 /****************************************************************
  * Définitions

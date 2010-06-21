@@ -47,6 +47,7 @@ extern "C" {
 #include "sys/marcel_syscalls.h"
 #include "sys/marcel_exec.h"
 #include "sys/marcel_io_bridge.h"
+#include "sys/marcel_membarrier.h"
 
 #include "linux_bitops.h"
 #include "linux_interrupt.h"

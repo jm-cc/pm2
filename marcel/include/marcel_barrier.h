@@ -80,59 +80,19 @@ int pmarcel_barrier_wait_begin(pmarcel_barrier_t * barrier);
 int pmarcel_barrier_wait_end(pmarcel_barrier_t * barrier);
 #endif
 
-extern int marcel_barrier_init(marcel_barrier_t * __restrict barrier,
-			       __const marcel_barrierattr_t * __restrict attr,
-			       unsigned num) __THROW;
-
-extern int marcel_barrier_destroy(marcel_barrier_t * barrier) __THROW;
-
-extern int marcel_barrier_wait(marcel_barrier_t * __restrict barrier) __THROW;
-
-extern int marcel_barrierattr_init(marcel_barrierattr_t * attr) __THROW;
-
-extern int marcel_barrierattr_destroy(marcel_barrierattr_t * attr) __THROW;
-
-extern int marcel_barrierattr_getpshared(__const marcel_barrierattr_t *
-					 __restrict attr,
-					 int *__restrict pshared) __THROW;
-
-extern int marcel_barrierattr_setpshared(marcel_barrierattr_t * attr,
-					 int pshared) __THROW;
-
-extern int marcel_barrierattr_getmode(__const marcel_barrierattr_t *
-				      __restrict attr,
-				      ma_barrier_mode_t * __restrict mode) __THROW;
-
-extern int marcel_barrierattr_setmode(marcel_barrierattr_t * attr,
-				      ma_barrier_mode_t mode) __THROW;
-#ifdef MA__IFACE_PMARCEL
-extern int pmarcel_barrier_init(pmarcel_barrier_t * __restrict barrier,
-				__const pmarcel_barrierattr_t * __restrict attr,
-				unsigned num) __THROW;
-
-extern int pmarcel_barrier_destroy(pmarcel_barrier_t * barrier) __THROW;
-
-extern int pmarcel_barrier_wait(pmarcel_barrier_t * __restrict barrier) __THROW;
-
-extern int pmarcel_barrierattr_init(pmarcel_barrierattr_t * attr) __THROW;
-
-extern int pmarcel_barrierattr_destroy(pmarcel_barrierattr_t * attr) __THROW;
-
-extern int pmarcel_barrierattr_getpshared(__const pmarcel_barrierattr_t *
-					  __restrict attr,
-					  int *__restrict pshared) __THROW;
-
-extern int pmarcel_barrierattr_setpshared(pmarcel_barrierattr_t * attr,
-					  int pshared) __THROW;
-
-extern int pmarcel_barrierattr_getmode(__const pmarcel_barrierattr_t *
-				       __restrict attr,
-				       ma_barrier_mode_t * __restrict mode) __THROW;
-
-extern int pmarcel_barrierattr_setmode(pmarcel_barrierattr_t * attr,
-				       ma_barrier_mode_t mode) __THROW;
-
-#endif
+DEC_MARCEL_PMARCEL(int, barrier_init, (marcel_barrier_t * __restrict barrier,
+				       __const marcel_barrierattr_t * __restrict attr,
+				       unsigned num) __THROW);
+DEC_MARCEL_PMARCEL(int, barrier_destroy, (marcel_barrier_t * barrier) __THROW);
+DEC_MARCEL_PMARCEL(int, barrier_wait, (marcel_barrier_t * __restrict barrier) __THROW);
+DEC_MARCEL_PMARCEL(int, barrierattr_init, (marcel_barrierattr_t * attr) __THROW);
+DEC_MARCEL_PMARCEL(int, barrierattr_destroy(marcel_barrierattr_t * attr) __THROW);
+DEC_MARCEL_PMARCEL(int, marcel_barrierattr_getpshared(__const marcel_barrierattr_t *__restrict attr,
+						      int *__restrict pshared) __THROW);
+DEC_MARCEL_PMARCEL(int, barrierattr_setpshared(marcel_barrierattr_t * attr, int pshared) __THROW);
+DEC_MARCEL_PMARCEL(int, barrierattr_getmode(__const marcel_barrierattr_t *__restrict attr,
+					    ma_barrier_mode_t * __restrict mode) __THROW);
+DEC_MARCEL_PMARCEL(int, marcel_barrierattr_setmode(marcel_barrierattr_t * attr, ma_barrier_mode_t mode) __THROW);
 
 
 #endif /** __MARCEL_BARRIER_H__ **/

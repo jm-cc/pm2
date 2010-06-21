@@ -185,6 +185,11 @@ void marcel_spin_lock_tasklet_disable(marcel_spinlock_t * lock)
 	ma_spin_lock_softirq(&lock->lock);
 }
 
+int marcel_spin_trylock_tasklet_disable(marcel_spinlock_t * lock)
+{
+        return ma_spin_trylock_softirq(&lock->lock);
+}
+
 static inline void __ma_raise_softirq_bhoff(unsigned int nr)
 {
 	MA_BUG_ON(nr >= MA_NR_SOFTIRQs);

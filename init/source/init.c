@@ -16,6 +16,7 @@
 #include "pm2_common.h"
 #include "tbx_program_argument.h"
 #include "tbx_debug.h"
+#include "tbx_topology.h"
 #include <alloca.h>
 
 #ifdef NMAD

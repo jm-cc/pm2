@@ -120,7 +120,7 @@ print_topology (struct marcel_topo_level *level, FILE *output,
   unsigned i;
 
 	indent (output, indent_level);
-  marcel_print_level (level, output, 1, 0, " ", "#", ":", "");
+	marcel_print_level (level, output, 1, " ", "#", ":", "");
 
   for (i = 0; i < level->arity; i++)
     print_topology (level->children[i], output, indent_level + 2);
@@ -193,7 +193,7 @@ populate_bubble_hierarchy (marcel_bubble_t *bubble, const unsigned *level_breadt
 
 					for (i = 0; i < *level_breadth; i++)
 						{
-							child = marcel_malloc (sizeof (*child), __FILE__, __LINE__);
+							child = malloc(sizeof (*child));
 							if (child != NULL)
 								{
 									marcel_bubble_init (child);
@@ -256,7 +256,7 @@ free_bubble (marcel_bubble_t *bubble)
 
 	marcel_bubble_join (bubble);
 
-	marcel_free (bubble);
+	free (bubble);
 }
 
 /* Free the bubble hierarchy rooted at ROOT.  */
@@ -407,7 +407,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 
   /* Initialize Marcel.  It should pick use the "fake" topology described in
 		 TOPOLOGY_DESCRIPTION.  */
-  marcel_init (&argc, new_argv);
+  marcel_init (argc, new_argv);
 	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
 	scheduler = alloca (marcel_bubble_sched_instance_size (scheduler_class));

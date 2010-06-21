@@ -1,5 +1,0 @@
-Provide: madeleine
-Depend: mad3_proto tbx ntbx init
-Provide: module
-Conflict: madeleine
-Depend: mad3_linkmode

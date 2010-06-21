@@ -19,12 +19,13 @@
 
 
 #include "sys/marcel_flags.h"
-#include "sys/marcel_win_sys.h"
 #if !defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "asm-generic/marcel_archdep.h"
 #endif
 
+
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -32,7 +33,6 @@
 
 /* Linux PPC */
 #if defined(LINUX_SYS)
-#  include <setjmp.h>
 #  ifndef JB_GPR1
 #    define JB_GPR1 0
 #  endif
@@ -44,47 +44,42 @@
 #  define STACK_INFO
 #  define SP_FIELD(buf)           ((buf)[0])
 #endif
-
 #if defined(AIX_SYS)
 #  define SP_FIELD(buf)           ((buf)[3])
 #endif
 
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
-
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-#define get_sp() \
-({ \
-  register unsigned long sp asm("r1"); \
-  sp; \
-})
-
-#define get_fp() \
-({ \
-  register unsigned long sp asm("r31"); \
-  sp; \
-})
+#define get_sp()					\
+	({						\
+		register unsigned long sp asm("r1");	\
+		sp;					\
+	})
+#define get_fp()					\
+	({						\
+		register unsigned long sp asm("r31");	\
+		sp;					\
+	})
 #endif
-
 #ifdef DARWIN_SYS
 #define MA_ASM_R "r"
 #else
 #define MA_ASM_R
 #endif
+#define set_sp(val)					\
+	__asm__ __volatile__("mr "MA_ASM_R"1, %0\n"	\
+			     : : "r" (val) )
+#define set_fp(val)					\
+	__asm__ __volatile__("mr "MA_ASM_R"31, %0\n"	\
+			     : : "r" (val) )
 
-#define set_sp(val) \
-  __asm__ __volatile__("mr "MA_ASM_R"1, %0\n" \
-		  : : "r" (val) )
-
-#define set_fp(val) \
-  __asm__ __volatile__("mr "MA_ASM_R"31, %0\n" \
-		  : : "r" (val) )
-
-#define set_sp_fp(sp,fp) \
-  __asm__ __volatile__("mr "MA_ASM_R"1, %0\n" \
-		       "mr "MA_ASM_R"31, %1\n" \
-		  : : "r" (sp), "r" (fp) )
+#define set_sp_fp(sp,fp)				\
+	__asm__ __volatile__("mr "MA_ASM_R"1, %0\n"	\
+			     "mr "MA_ASM_R"31, %1\n"	\
+			     : : "r" (sp), "r" (fp) )
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

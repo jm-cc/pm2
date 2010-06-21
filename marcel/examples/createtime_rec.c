@@ -75,7 +75,7 @@ int marcel_main(int argc, char *argv[])
         marcel_t t;
         unsigned profondeur;
 
-        marcel_init(&argc, argv);
+        marcel_init(argc, argv);
         marcel_attr_init(&attr);
         profondeur = atoi(argv[1]?:"10");
 

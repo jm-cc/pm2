@@ -43,7 +43,6 @@ process_command_line(int    argc,
 
   tbx_arg_iterator(argc, argv, leo_usage);
 
-  LOG_IN();
   if (!tbx_argit_init())
     leo_usage();
 
@@ -284,8 +283,6 @@ process_command_line(int    argc,
           }
   }
 
-  LOG_OUT();
-
   return settings;
 }
 
@@ -296,21 +293,16 @@ init_leonie_object(int    argc,
 {
   p_leonie_t leonie = NULL;
 
-  LOG_IN();
   leonie = leonie_init();
 
-  TRACE("== Registering loaders");
   leonie->loaders = leo_loaders_register();
 
-  TRACE("== Processing command line");
   leonie->settings = process_command_line(argc, argv);
 
-  TRACE("== Initializing internal structures");
   leonie->net_server    = leo_net_server_init();
   leonie->networks      = leo_networks_init();
   leonie->directory     = leo_directory_init();
   leonie->spawn_groups  = leo_spawn_groups_init();
-  LOG_OUT();
 
   return leonie;
 }
@@ -321,7 +313,6 @@ parse_application_file(p_leonie_t leonie)
   p_leo_settings_t settings                = NULL;
   p_tbx_htable_t   application_file_htable = NULL;
 
-  LOG_IN();
   settings                   = leonie->settings;
   application_file_htable    =
     leoparse_parse_local_file(settings->config_file);
@@ -333,7 +324,6 @@ parse_application_file(p_leonie_t leonie)
 
   tbx_htable_free(application_file_htable);
   application_file_htable = NULL;
-  LOG_OUT();
 }
 
 static
@@ -370,58 +360,42 @@ main(int    argc,
 {
   p_leonie_t leonie = NULL;
 
-  LOG_IN();
   install_signal_handler();
 
   common_pre_init(&argc, argv, NULL);
   common_post_init(&argc, argv, NULL);
 
-  TRACE("== Initializing parser");
   leoparse_init(argc, argv);
   leoparse_purge_cmd_line(&argc, argv);
-  TRACE("== Initializing root data structure");
   leonie = init_leonie_object(argc, argv);
-  TRACE("== Parsing configuration file");
   parse_application_file(leonie);
-  TRACE("== Processing configuration");
   process_application(leonie);
 
-  TRACE("== Launching processes");
   spawn_processes(leonie);
-  TRACE("== Transmitting directory");
   send_directory(leonie);
 
-  TRACE("== Initializing drivers");
   init_drivers(leonie);
-  TRACE("== Initializing channels");
   init_channels(leonie);
   init_fchannels(leonie);
   init_vchannels(leonie);
   init_xchannels(leonie);
 
-  TRACE("== Standing by");
   exit_session(leonie);
 
-  TRACE("== Disconnecting virtual channels");
   dir_vchannel_disconnect(leonie);
 
-  TRACE("== Disconnecting multiplexing channels");
   dir_xchannel_disconnect(leonie);
 
-  TRACE("== Freeing data structures");
   directory_exit(leonie);
 
-  TRACE("== Wait processes end");
   wait_processes(leonie);
 
   if (leonie->settings->pause_mode || leonie->settings->gdb_mode || leonie->settings->valgrind_mode)
     {
-      DISP("Session cleaned");
+      fprintf(stderr, "Session cleaned");
       getchar();
       leonie_processes_cleanup();
     }
-  LOG_OUT();
 
-  TRACE("== Leonie server shutdown");
   return 0;
 }

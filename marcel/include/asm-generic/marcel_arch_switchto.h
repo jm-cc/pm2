@@ -19,13 +19,13 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 /* On se sert de ces macros si on veut détecter et/ou stopper la préemption
  * lors des signaux 
  * Voir l'architecture ia64... */
-
 #define MA_ARCH_SWITCHTO_LWP_FIX(current) ((void)0)
 
 /* Les deux macros suivantes doivent être utilisées par pair 
@@ -35,6 +35,7 @@
 #define MA_ARCH_INTERRUPT_EXIT_LWP_FIX(current, p_ucontext_t) ((void)0)
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

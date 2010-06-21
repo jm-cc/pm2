@@ -18,9 +18,7 @@
 #define __ASM_I386_MARCEL_ARCH_SWITCHTO_H__
 
 
-#ifdef __MARCEL_KERNEL__
 #include "asm-generic/marcel_arch_switchto.h"
-#endif
 
 
 #endif /** __ASM_I386_MARCEL_ARCH_SWITCHTO_H__ **/

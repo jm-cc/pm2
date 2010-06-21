@@ -24,47 +24,52 @@
 #include "marcel_sched_generic.h"
 
 
-/** Public global variables **/
+/** Public macros **/
 #ifdef MARCEL_STATS_ENABLED
 
 #define MA_VPSTATS_NO_LAST_VP -1
 #define MA_VPSTATS_CONFLICT -2
 
-/** \brief Offset of the "load" statistics (arbitrary user-provided) */
-extern unsigned long marcel_stats_load_offset;
+#define marcel_task_stats_set(cast,stats,type,val) *(cast *) marcel_task_stats_get((stats),(type))=(val)
+#define marcel_task_stats_add(cast,stats,type,val) *(cast *) marcel_task_stats_get((stats),(type))+=(val)
+#define marcel_task_stats_sub(cast,stats,type,val) *(cast *) marcel_task_stats_get((stats),(type))-=(val)
 
-/* TODO: Watch out! We make this available outside of Marcel for now
-   to be able to set artificial memory guidelines in example
-   programs. This should move to the marcel_variable section soon. */
-#ifdef MM_MAMI_ENABLED
-/** \brief Offset of the "per node allocated memory" (i.e. the total
-    amount of memory per node allocated by the considered entity)
-    statistics*/
-extern unsigned long ma_stats_memnode_offset;
-#endif /* MM_MAMI_ENABLED */
+#else				/* MARCEL_STATS_ENABLED */
+#define marcel_task_stats_set(cast,stats,type,val)
+#define marcel_task_stats_add(cast,stats,type,val)
+#define marcel_task_stats_sub(cast,stats,type,val)
 
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
+
+
+/** Public data types **/
+typedef enum {
+	LAST_VP,
+	LOAD,
+	MEMNODE
+} marcel_stats_type_t;
 
 
 /** Public functions **/
 #ifdef MARCEL_STATS_ENABLED
 
-long *marcel_task_stats_get(marcel_t t, unsigned long offset);
 /** \brief Application-level function for accessing statistics of a given thread (or the current one if \e t is NULL) */
-#define marcel_stats_get(t,kind) marcel_task_stats_get(t, marcel_stats_##kind##_offset)
+long *marcel_task_stats_get(marcel_t t, marcel_stats_type_t type);
 
+#ifdef MA__BUBBLES
 /** \brief Application-level function for accessing statistics of a given bubble. */
-#define marcel_bubble_stats_get(b,kind) ma_bubble_stats_get(b, marcel_stats_##kind##_offset)
+long *marcel_bubble_stats_get(struct marcel_bubble *b, marcel_stats_type_t type);
+#endif
 
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #ifdef MARCEL_STATS_ENABLED
-
 #define __ma_stats_get(stats, offset) ((void*)&((stats)[offset]))
 /** \brief Gets the statistical value at the given offset in the \e stats member
  * of the given object */
@@ -76,33 +81,40 @@ long *marcel_task_stats_get(marcel_t t, unsigned long offset);
 #define ma_stats_reset(object) __ma_stats_reset((object)->stats)
 /** \brief Synthesizes all statistics for the given objects */
 #define ma_stats_synthesize(dest, src) __ma_stats_synthesize((dest)->stats, (src)->stats)
-
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 #ifdef MARCEL_STATS_ENABLED
 #define ma_stats_set(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))=(val)
 #define ma_stats_add(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))+=(val)
 #define ma_stats_sub(cast,stats,offset,val) *(cast *) ma_stats_get((stats),(offset))-=(val)
-#else /* MARCEL_STATS_ENABLED */
+#else				/* MARCEL_STATS_ENABLED */
 #define ma_stats_set(cast,stats,offset,val)
 #define ma_stats_add(cast,stats,offset,val)
 #define ma_stats_sub(cast,stats,offset,val)
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 
 /** Internal data types **/
 #ifdef MARCEL_STATS_ENABLED
-
 /** \brief Type of a synthesizing function. */
-typedef void ma_stats_synthesis_t(void * __restrict dest, const void * __restrict src);
+typedef void ma_stats_synthesis_t(void *__restrict dest, const void *__restrict src);
 /** \brief Type of a reset function. */
 typedef void ma_stats_reset_t(void *dest);
 
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 
 /** Internal global variables **/
 #ifdef MARCEL_STATS_ENABLED
+
+/** \brief Offset of the "load" statistics (arbitrary user-provided) */
+extern unsigned long ma_stats_load_offset;
+#ifdef MARCEL_MAMI_ENABLED
+/** \brief Offset of the "per node allocated memory" (i.e. the total
+    amount of memory per node allocated by the considered entity)
+    statistics*/
+extern unsigned long ma_stats_memnode_offset;
+#endif				/* MARCEL_MAMI_ENABLED */
 
 /** \brief Offset of the "number of thread" statistics */
 extern unsigned long ma_stats_nbthreads_offset;
@@ -136,13 +148,14 @@ extern unsigned long ma_stats_last_topo_level_offset;
  * statistics */
 extern ma_stats_t ma_stats_reset_func, ma_stats_synthesis_func, ma_stats_size;
 
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 
 /** Internal functions **/
 #ifdef MARCEL_STATS_ENABLED
 /** \brief Declares a new statistics */
-unsigned long ma_stats_alloc(ma_stats_reset_t *reset_function, ma_stats_synthesis_t *synthesis_function, size_t size);
+unsigned long ma_stats_alloc(ma_stats_reset_t * reset_function,
+			     ma_stats_synthesis_t * synthesis_function, size_t size);
 void __ma_stats_reset(ma_stats_t stats);
 void __ma_stats_synthesize(ma_stats_t dest, ma_stats_t src);
 
@@ -154,14 +167,14 @@ ma_stats_reset_t ma_stats_long_sum_reset;
 ma_stats_synthesis_t ma_stats_long_max_synthesis;
 /** \brief "Max" reset function for longs (set to 0) */
 ma_stats_reset_t ma_stats_long_max_reset;
-#ifdef MM_MAMI_ENABLED
+#ifdef MARCEL_MAMI_ENABLED
 /** \brief "Sum" synthesis function for the array of long describing
     the amount of memory allocated on each node. */
 ma_stats_synthesis_t ma_stats_memnode_sum_synthesis;
 /** \brief "Sum" reset function for the array of long describing the
     amount of memory allocated on each node. */
 ma_stats_reset_t ma_stats_memnode_sum_reset;
-#endif /* MM_MAMI_ENABLED */
+#endif				/* MARCEL_MAMI_ENABLED */
 /** \brief "Sum" synthesis function for the last_vp statistics. */
 ma_stats_synthesis_t ma_stats_last_vp_sum_synthesis;
 /** \brief "Sum" reset function for the last_vp statistics (set to -1) */
@@ -184,10 +197,14 @@ size_t *ma_stats_size(unsigned long offset);
 /** \brief Recursive way to get a statistics of a Marcel entity (In
     case of a bubble, this function returns a synthesized statistics
     that reflects the statistics of all the contained entities.) */
-long *ma_cumulative_stats_get (marcel_entity_t *e, unsigned long offset);
-#endif /* MARCEL_STATS_ENABLED */
+long *ma_cumulative_stats_get(marcel_entity_t * e, unsigned long offset);
+
+/** Returns the location where are stored statistics designed by offset **/
+long *ma_task_stats_get(marcel_t t, unsigned long offset);
+#endif				/* MARCEL_STATS_ENABLED */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

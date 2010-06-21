@@ -38,29 +38,19 @@
 
 
 /** Public functions **/
-void marcel_sem_init(marcel_sem_t *s, int initial);
-void marcel_sem_P(marcel_sem_t *s);
-int marcel_sem_try_P(marcel_sem_t *s);
-void marcel_sem_V(marcel_sem_t *s);
-int marcel_sem_try_V(marcel_sem_t *s);
-int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout);
-
-DEC_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial) __THROW);
-DEC_POSIX(int, sem_destroy, (pmarcel_sem_t *s) __THROW);
-DEC_POSIX(int, sem_wait, (pmarcel_sem_t *s) __THROW);
-DEC_POSIX(int, sem_trywait, (pmarcel_sem_t *s) __THROW);
-DEC_POSIX(int, sem_timedwait, (pmarcel_sem_t *__restrict sem, 
-                          const struct timespec *__restrict abs_timeout) __THROW);
-DEC_POSIX(int, sem_post, (pmarcel_sem_t *s) __THROW);
-DEC_MARCEL_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval) __THROW);
-
-static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t* s);
-DEC_POSIX(int, sem_close, (pmarcel_sem_t *sem));
-DEC_POSIX(pmarcel_sem_t*, sem_open, (const char *name, int flags, ...));
-DEC_POSIX(int, sem_unlink, (const char *name));
+void marcel_sem_init(marcel_sem_t * s, int initial);
+void marcel_sem_P(marcel_sem_t * s);
+int marcel_sem_try_P(marcel_sem_t * s);
+void marcel_sem_V(marcel_sem_t * s);
+int marcel_sem_try_V(marcel_sem_t * s);
+int marcel_sem_timed_P(marcel_sem_t * s, unsigned long timeout);
+/** Public inline functions **/
+static __tbx_inline__ int marcel_sem_destroy(marcel_sem_t * s);
+DEC_MARCEL(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int *__restrict sval) __THROW);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal data structures **/
@@ -72,6 +62,7 @@ struct semcell_struct {
 };
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

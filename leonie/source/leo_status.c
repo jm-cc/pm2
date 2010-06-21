@@ -44,7 +44,7 @@ static const char *usage_str = "leonie [OPTION]... CONFIG_FILE [APP_OPTION]...";
 void
 leo_usage(void)
 {
-  DISP("Usage: %s", usage_str);
+  fprintf(stderr, "Usage: %s\n", usage_str);
   exit(EXIT_FAILURE);
 }
 
@@ -70,7 +70,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	  comma = " ";
 	}
 
-      DISP("%5s%s %s", s_opt, comma, buf_opt);
+      fprintf(stderr, "%5s%s %s\n", s_opt, comma, buf_opt);
 
       if (strlen(l_opt) > 60)
 	{
@@ -80,22 +80,22 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	    {
 	      strncpy(buf_opt, l_opt, 60);
 	      buf_opt[60] = '\0';
-	      DISP("      %s", buf_opt);
+	      fprintf(stderr, "      %s\n", buf_opt);
 	      l_opt += 60;
 	    }
 
-	  DISP("      %s", buf_opt);
+	  fprintf(stderr, "      %s\n", buf_opt);
 	}
 
       while (strlen(txt) > 40)
 	{
 	  strncpy(buf_txt, txt, 40);
 	  buf_txt[40] = '\0';
-	  DISP("                            %s", buf_txt);
+	  fprintf(stderr, "                            %s\n", buf_txt);
 	  txt += 40;
 	}
 
-      DISP("                            %s", txt);
+      fprintf(stderr, "                            %s\n", txt);
     }
   else
     {
@@ -113,7 +113,7 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	  comma = " ";
 	}
 
-      DISP("%5s%s %-20s %s", s_opt, comma, l_opt, buf_txt);
+      fprintf(stderr, "%5s%s %-20s %s\n", s_opt, comma, l_opt, buf_txt);
 
       if (strlen(txt) > 40)
 	{
@@ -123,11 +123,11 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 	    {
 	      strncpy(buf_txt, txt, 40);
 	      buf_txt[40] = '\0';
-	      DISP("                            %s", buf_txt);
+	      fprintf(stderr, "                            %s\n", buf_txt);
 	      txt += 40;
 	    }
 
-	  DISP("                            %s", txt);
+	  fprintf(stderr, "                            %s\n", txt);
 	}
     }
 }
@@ -135,13 +135,11 @@ __leo_option_help(char *s_opt, char *l_opt, char *txt)
 void
 leo_help(void)
 {
-  DISP("Usage: %s", usage_str);
-  DISP("Launch the PM2 session described in CONFIG_FILE");
-  DISP("");
+  fprintf(stderr, "Usage: %s\n", usage_str);
+  fprintf(stderr, "Launch the PM2 session described in CONFIG_FILE\n\n");
 
   __leo_option_help("", "--appli=APPLICATION",
 		    "Select APPLICATION as executable");
-  DISP("");
   __leo_option_help("-d", "",
 		    "Open session processes in gdb           (implies  -x)");
   __leo_option_help("[--d]", "",
@@ -152,7 +150,6 @@ leo_help(void)
 		    "Open session processes in valgrind      (implies  -x and -p)");
   __leo_option_help("[--vg]", "",
 		    "Do not open session processes in valgrind");
-  DISP("");
   __leo_option_help("-e", "",
 		    "Export PATH, PM2_ROOT, PM2_SRCROOT, PM2_OBJROOT and LEO_XTERM     to client nodes");
   __leo_option_help("[--e]", "",
@@ -160,25 +157,20 @@ leo_help(void)
 
   __leo_option_help("", "--flavor=FLAVOR",
 		    "Select FLAVOR as the application flavor");
-  DISP("");
   __leo_option_help("", "--leonie-host=HOSTNAME",
 		    "Force HOSTNAME to be the name of the    machine which leonie is started on      (default: gethostname/gethostbyname)");
-  DISP("");
   __leo_option_help("", "--wd=WORKING_DIR",
 		    "Change working directory to WORKING     _DIR at the beginning of session");
   __leo_option_help("[-cd]", "",
 		    "Change working directory at the         beginning of session");
   __leo_option_help("--cd", "",
 		    "Do not change working directory at      the beginning of session");
-  DISP("");
   __leo_option_help("-l", "",
 		    "Log session processes output to files");
   __leo_option_help("[--l]", "",
 		    "Do not log session processes output");
-  DISP("");
   __leo_option_help("", "--net=NETWORK_FILE[,NETWORK_FILE]...",
 		    "Use NETWORK_FILE for network definitions");
-  DISP("");
   __leo_option_help("[-p]", "",
 		    "Pause after session processes           termination");
   __leo_option_help("--p", "",
@@ -195,7 +187,6 @@ leo_help(void)
   __leo_option_help("-w", "", "Wait for the loader to fork");
   __leo_option_help("[--w]", "", "Do not wait for the loader to fork");
 
-  DISP("");
   exit(EXIT_SUCCESS);
 }
 
@@ -204,23 +195,21 @@ leonie_failure_cleanup(p_leo_settings_t settings)
 {
   pid_t pid = 0;
 
-  LOG_IN();
   if (settings && settings->pause_mode) {
-    DISP("A failure has been detected, hit return to close the session");
+    fprintf(stderr, "A failure has been detected, hit return to close the session\n");
     getchar();
   }
   else {
-    DISP("A failure has been detected, killing process ...");
+    fprintf(stderr, "A failure has been detected, killing process ...\n");
   }
   pid = getpid();
   kill(-pid, SIGTERM);
-  LOG_OUT();
 }
 
 void
 leo_terminate(const char *msg, p_leo_settings_t settings)
 {
-  DISP("error: %s", msg);
+  fprintf(stderr, "error: %s\n", msg);
   leonie_failure_cleanup(settings);
   exit(EXIT_FAILURE);
 }
@@ -238,9 +227,7 @@ leonie_processes_cleanup(void)
 {
   pid_t pid = 0;
 
-  LOG_IN();
   pid = getpid();
   kill(-pid, SIGHUP);
-  LOG_OUT();
 }
 

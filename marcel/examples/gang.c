@@ -65,7 +65,7 @@ int marcel_main(int argc, char **argv)
   struct marcel_sched_param p = { .sched_priority = MA_DEF_PRIO-1 } ;
   //marcel_t gangsched;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 #if defined(MM_MAMI_ENABLED)
   marcel_memory_init(&memory_manager);
 #endif

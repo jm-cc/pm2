@@ -24,17 +24,17 @@
 static volatile tbx_bool_t initialized = tbx_false;
 
 void
-ntbx_init(int    argc TBX_UNUSED,
+ntbx_init(int   *argc TBX_UNUSED,
 	  char **argv TBX_UNUSED)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   if (!initialized)
     {
       initialized = tbx_true;
     }
 
   ntbx_misc_init();
-  LOG_OUT();
+  PM2_LOG_OUT();
 
 }
 
@@ -42,15 +42,15 @@ void
 ntbx_purge_cmd_line(int   *argc TBX_UNUSED,
 		    char **argv TBX_UNUSED)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   /* --- */
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_exit(void)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   /* --- */
-  LOG_OUT();
+  PM2_LOG_OUT();
 }

@@ -14,8 +14,8 @@
  */
 
 
-#include "linux_runqueues.h"
-#include "linux_sched.h"
-#include "marcel_bubble_sched.h"
-#include "marcel_holder.h"
-#include "marcel_sched.h"
+#include "scheduler/inlinefunctions/linux_runqueues.h"
+#include "scheduler/inlinefunctions/linux_sched.h"
+#include "scheduler/inlinefunctions/marcel_bubble_sched.h"
+#include "scheduler/inlinefunctions/marcel_holder.h"
+#include "scheduler/inlinefunctions/marcel_sched.h"

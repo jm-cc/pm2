@@ -38,24 +38,21 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define ma_xchg(ptr,x)                                                          \
-  ({                                                                         \
-     __typeof__(*(ptr)) _x_ = (x);                                           \
-     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
-  })
-
-
-#define xchg_local(ptr,x)                                                    \
-  ({                                                                         \
-     __typeof__(*(ptr)) _x_ = (x);                                           \
-     (__typeof__(*(ptr))) __xchg_local((ptr),                                \
-                (unsigned long)_x_, sizeof(*(ptr)));                         \
-  })
-
-
+#define ma_xchg(ptr,x)							\
+	({								\
+		__typeof__(*(ptr)) _x_ = (x);				\
+		(__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
+	})
+#define xchg_local(ptr,x)						\
+	({								\
+		__typeof__(*(ptr)) _x_ = (x);				\
+		(__typeof__(*(ptr))) __xchg_local((ptr),		\
+						  (unsigned long)_x_, sizeof(*(ptr))); \
+	})
 /*
  * Macros to force memory ordering.  In these descriptions, "previous"
  * and "subsequent" refer to program order; "visible" means that all
@@ -78,7 +75,6 @@
  * it's (presumably) much slower than mf and (b) mf.a is supported for
  * sequential memory pages only.
  */
-
 #define ma_mb()		__asm__ __volatile__ ("sync" : : : "memory")
 #define ma_rmb()	__asm__ __volatile__ ("sync" : : : "memory")
 #define ma_wmb()	__asm__ __volatile__ ("eieio" : : : "memory")
@@ -95,7 +91,6 @@
 # define ma_smp_wmb()	ma_barrier()
 # define ma_smp_read_barrier_depends()	do { } while(0)
 #endif
-
 /*
  * XXX check on these---I suspect what Linus really wants here is
  * acquire vs release semantics but we can't discuss this stuff with
@@ -103,7 +98,6 @@
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
 #define ma_cpu_relax() ma_barrier()
 
 
@@ -112,16 +106,15 @@
  * taken from Linux (include/asm-powerpc/system.h)
  * Copyright (C) 1999 Cort Dougan <cort@cs.nmt.edu>
  */
+static __tbx_inline__ unsigned long __xchg_u32(volatile void *p, unsigned long val);
+static __tbx_inline__ unsigned long __xchg_u32_local(volatile void *p, unsigned long val);
 static __tbx_inline__ unsigned long
-__xchg_u32(volatile void *p, unsigned long val) ;
+__xchg(volatile void *ptr, unsigned long x, unsigned int size);
 static __tbx_inline__ unsigned long
-__xchg_u32_local(volatile void *p, unsigned long val) ;
-static __tbx_inline__ unsigned long
-__xchg(volatile void *ptr, unsigned long x, unsigned int size) ;
-static __tbx_inline__ unsigned long
-__xchg_local(volatile void *ptr, unsigned long x, unsigned int size) ;
+__xchg_local(volatile void *ptr, unsigned long x, unsigned int size);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

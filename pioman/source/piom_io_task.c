@@ -205,7 +205,7 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 			PIOM_LOGF("Reading in fd %i\n", fildes);
 			piom_sem_P(&ev.sem);
 			piom_ltask_wait(&ev.task);
-			LOG("IO reading fd %i", fildes);
+			PIOM_LOGF("IO reading fd %i", fildes);
 			n = read(fildes, buf, nbytes);
 		} while (n == -1 && errno == EINTR);
 		
@@ -252,7 +252,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 	struct piom_tcp_task_ev ev;
 	piom_vpset_t task_vpset = piom_vpset_full;
-	LOG_IN();
+	PIOM_LOG_IN();
 
 	PROF_EVENT(piom_write_entry);
 	if(piom_ltask_test_activity())
@@ -268,7 +268,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 					  PIOM_LTASK_OPTION_REPEAT,
 					  task_vpset);
 			piom_ltask_submit(&ev.task);
-			LOG("IO writing fd %i", fildes);
+			PIOM_LOGF("IO writing fd %i", fildes);
 			piom_sem_P(&ev.sem);
 			piom_ltask_wait(&ev.task);
 			n = write(fildes, buf, nbytes);
@@ -301,7 +301,7 @@ piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 				  PIOM_LTASK_OPTION_REPEAT,
 				  task_vpset);
 		piom_ltask_submit(&ev.task);
-		LOG("IO writing fd %i", fildes);
+		PIOM_LOGF("IO writing fd %i", fildes);
 		piom_sem_P(&ev.sem);
 		piom_ltask_wait(&ev.task);
 		return writev(fildes, iov, iovcnt);
@@ -392,6 +392,13 @@ piom_task_writev_exactly(int fildes, const struct iovec *iov, int iovcnt)
 void piom_io_task_init(void)
 {
 	piom_init_ltasks();
+
+	/* unregister Marcel IO so that *we* manage IO requests */
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
 }
 
 #endif	/* PIOM_DISABLE_LTASKS */

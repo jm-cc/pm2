@@ -36,29 +36,22 @@
  */
 
 
-#ifdef __MARCEL_KERNEL__
 #include "asm-generic/linux_rwlock.h"
 #include "asm/linux_atomic.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #ifdef MA__LWPS
 #define MA_RW_LOCK_BIAS		 0x01000000
-#endif
 
-#ifdef MA__LWPS
 #define MA_RW_LOCK_UNLOCKED MA_ATOMIC_INIT(MA_RW_LOCK_BIAS)
-
 #define ma_rwlock_init(x)	do { ma_atomic_init(x, MA_RW_LOCK_BIAS); } while(0)
-
 #define ma_rwlock_is_locked(x) (ma_atomic_read(x) != MA_RW_LOCK_BIAS)
-#endif
 
-#ifdef MA__LWPS
 #define _ma_raw_read_unlock(rw) ma_atomic_inc(rw)
 #define _ma_raw_write_unlock(rw) ma_atomic_add(MA_RW_LOCK_BIAS,rw);
 #endif
@@ -80,6 +73,7 @@ typedef ma_atomic_t ma_rwlock_t;
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

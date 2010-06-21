@@ -269,7 +269,7 @@ nm_mx_check_return(const char *msg, mx_return_t return_code)
 
     msg_mx = mx_strerror(return_code);
 
-    DISP("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
+    NM_WARN("%s failed with code %s = %d/0x%x", msg, msg_mx, return_code, return_code);
   }
 }
 
@@ -612,7 +612,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   p_mx_cnx->recv_match_info = pkt1.match_info;
   p_mx_trk->next_peer_id++;
   if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
-    DISP("reached maximal number of peers %d", p_mx_trk->next_peer_id);
+    NM_WARN("reached maximal number of peers %d", p_mx_trk->next_peer_id);
   
   NM_TRACEF("connect - pkt1.host_url: %s",	pkt1.host_url);
   NM_TRACEF("connect - pkt1.ep_url: %s",	pkt1.ep_url);
@@ -711,7 +711,7 @@ static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
   p_mx_cnx->recv_match_info = pkt2.match_info;
   p_mx_trk->next_peer_id++;
   if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
-    DISP("reached maximal number of peers %d", p_mx_trk->next_peer_id);
+    NM_WARN("reached maximal number of peers %d", p_mx_trk->next_peer_id);
   
   NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %llu",	pkt2.match_info);
   
@@ -877,8 +877,8 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
 #endif
   
   if (tbx_unlikely(status.code != MX_SUCCESS)) {
-    WARN("MX driver: request completed with non-successful status: %s",
-	 mx_strstatus(status.code));
+    NM_WARN("MX driver: request completed with non-successful status: %s",
+	    mx_strstatus(status.code));
     switch (status.code) {
     case MX_STATUS_PENDING:
     case MX_STATUS_BUFFERED:

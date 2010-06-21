@@ -19,12 +19,12 @@
 
 
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include <sched.h>
-#endif
+#include <pthread.h>
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal global variables **/
@@ -35,13 +35,15 @@ extern unsigned long int ma_fork_generation;
 #ifdef MA__LIBPTHREAD
 
 /** Convert an OS cpuset into a Marcel vpset */
-int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t *cpuset, marcel_vpset_t *vpset);
+int marcel_cpuset2vpset(size_t cpusetsize, const cpu_set_t * cpuset,
+			marcel_vpset_t * vpset);
 /** Convert a Marcel vpset into an OS cpuset */
-int marcel_vpset2cpuset(const marcel_vpset_t *vpset, size_t cpusetsize, cpu_set_t *cpuset);
+int marcel_vpset2cpuset(const marcel_vpset_t * vpset, size_t cpusetsize,
+			cpu_set_t * cpuset);
 
 /* pthread_cleanup_push_defer/pop_restore() handlers for glibc.  */
 void _pthread_cleanup_push_defer(struct _pthread_cleanup_buffer *buffer,
-    void (*routine) (void *), void *arg);
+				 void (*routine) (void *), void *arg);
 void _pthread_cleanup_pop_restore(struct _pthread_cleanup_buffer *buffer, int execute);
 
 /*
@@ -52,6 +54,7 @@ void __pthread_initialize_minimal(void);
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

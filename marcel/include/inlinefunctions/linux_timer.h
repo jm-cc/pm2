@@ -22,6 +22,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -32,12 +33,12 @@
  * init_timer() must be done to a timer prior calling *any* of the
  * other timer functions.
  */
-static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
+static __tbx_inline__ void ma_init_timer(struct marcel_timer_list *timer)
 {
 	timer->entry.next = NULL;
 	timer->base = &__ma_get_lwp_var(tvec_bases).t_base;
 #ifdef PM2_DEBUG
-	timer->magic = MA_TIMER_MAGIC;
+	timer->magic = MARCEL_TIMER_MAGIC;
 #endif
 }
 
@@ -51,7 +52,7 @@ static __tbx_inline__ void ma_init_timer(struct ma_timer_list * timer)
  *
  * return value: 1 if the timer is pending, 0 if not.
  */
-static __tbx_inline__ int ma_timer_pending(const struct ma_timer_list * timer)
+static __tbx_inline__ int ma_timer_pending(const struct marcel_timer_list *timer)
 {
 	return timer->entry.next != NULL;
 }
@@ -70,12 +71,13 @@ static __tbx_inline__ int ma_timer_pending(const struct ma_timer_list * timer)
  * Timers with an ->expired field in the past will be executed in the next
  * timer tick.
  */
-static __tbx_inline__ void ma_add_timer(struct ma_timer_list * timer)
+static __tbx_inline__ void ma_add_timer(struct marcel_timer_list *timer)
 {
 	__ma_mod_timer(timer, timer->expires);
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

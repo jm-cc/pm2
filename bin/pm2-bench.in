@@ -24,7 +24,7 @@ _PM2_BENCH_PROGNAME=pm2-bench
 
 _ALL_MODULES="`${PM2_OBJROOT}/bin/pm2-module modules`"
 
-_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx nmad pm2"
 
 pm2_bench_error() # msg
 {

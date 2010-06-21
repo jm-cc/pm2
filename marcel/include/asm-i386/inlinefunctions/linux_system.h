@@ -22,6 +22,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -39,29 +40,27 @@
  * of the instruction set reference 24319102.pdf. We need
  * the reader side to see the coherent 64bit value.
  */
-static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size)
+static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void *ptr,
+					      int size)
 {
 	switch (size) {
-		case 1:
-			__asm__ __volatile__("xchgb %b0,%1"
-				:"=q" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		case 2:
-			__asm__ __volatile__("xchgw %w0,%1"
-				:"=r" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		case 4:
-			__asm__ __volatile__("xchgl %0,%1"
-				:"=r" (x)
-				:"m" (*__ma_xg(ptr)), "0" (x)
-				:"memory");
-			break;
-		default:
-			abort();
+	case 1:
+	      __asm__ __volatile__("xchgb %b0,%1":"=q"(x)
+	      :		     "m"(*__ma_xg(ptr)), "0"(x)
+	      :		     "memory");
+		break;
+	case 2:
+	      __asm__ __volatile__("xchgw %w0,%1":"=r"(x)
+	      :		     "m"(*__ma_xg(ptr)), "0"(x)
+	      :		     "memory");
+		break;
+	case 4:
+	      __asm__ __volatile__("xchgl %0,%1":"=r"(x)
+	      :		     "m"(*__ma_xg(ptr)), "0"(x)
+	      :		     "memory");
+		break;
+	default:
+		abort();
 	}
 	return x;
 }
@@ -71,28 +70,29 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
-static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
-				      unsigned long repl, int size)
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr,
+							    unsigned long old,
+							    unsigned long repl, int size)
 {
 	unsigned long prev;
 	switch (size) {
 	case 1:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgb %b1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
+	      __asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgb %b1,%2":"=a"(prev)
+	      :		     "q"(repl), "m"(*__ma_xg(ptr)),
+				     "0"(old)
+	      :		     "memory");
 		return prev;
 	case 2:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgw %w1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
+	      __asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgw %w1,%2":"=a"(prev)
+	      :		     "q"(repl), "m"(*__ma_xg(ptr)),
+				     "0"(old)
+	      :		     "memory");
 		return prev;
 	case 4:
-		__asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgl %1,%2"
-				     : "=a"(prev)
-				     : "q"(repl), "m"(*__ma_xg(ptr)), "0"(old)
-				     : "memory");
+	      __asm__ __volatile__(MA_LOCK_PREFIX "cmpxchgl %1,%2":"=a"(prev)
+	      :		     "q"(repl), "m"(*__ma_xg(ptr)),
+				     "0"(old)
+	      :		     "memory");
 		return prev;
 	default:
 		abort();
@@ -101,6 +101,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, 
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

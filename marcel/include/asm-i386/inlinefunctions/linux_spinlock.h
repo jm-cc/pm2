@@ -22,68 +22,56 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 #ifdef MA__LWPS
-
 /*
  * This works. Despite all the confusion.
  * (except on PPro SMP or if we are using OOSTORE)
  * (PPro errata 66, 92)
  */
- 
 #if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
-
 #define ma_spin_unlock_string \
 	"mov"MA_SPINB" $1,%0" \
 		:"=m" (lock->lock) : : "memory"
-
-
-static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t * lock)
 {
-	__asm__ __volatile__(
-		ma_spin_unlock_string
-	);
+	__asm__ __volatile__(ma_spin_unlock_string);
 }
 
 #else
-
 #define ma_spin_unlock_string \
 	"xchg"MA_SPINB" %"MA_SPINb"0, %1" \
 		:"=q" (oldval), "=m" (lock->lock) \
 		:"0" (oldval) : "memory"
-
-static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_unlock(ma_spinlock_t * lock)
 {
 	MA_SPINT oldval = 1;
-	__asm__ __volatile__(
-		ma_spin_unlock_string
-	);
+	__asm__ __volatile__(ma_spin_unlock_string);
 }
 
 #endif
 
-static __tbx_inline__ int _ma_raw_spin_trylock(ma_spinlock_t *lock)
+static __tbx_inline__ int _ma_raw_spin_trylock(ma_spinlock_t * lock)
 {
 	MA_SPINT oldval;
-	__asm__ __volatile__(
-		"xchg"MA_SPINB" %"MA_SPINb"0,%1"
-		:"=q" (oldval), "=m" (lock->lock)
-		:"0" (0) : "memory");
+	__asm__ __volatile__("xchg" MA_SPINB " %" MA_SPINb "0,%1":"=q"(oldval),
+			     "=m"(lock->lock)
+			     :"0"(0):"memory");
 	return oldval > 0;
 }
 
-static __tbx_inline__ void _ma_raw_spin_lock(ma_spinlock_t *lock)
+static __tbx_inline__ void _ma_raw_spin_lock(ma_spinlock_t * lock)
 {
-	__asm__ __volatile__(
-		ma_spin_lock_string
-		:"=m" (lock->lock) : : "memory");
+	__asm__ __volatile__(ma_spin_lock_string:"=m"(lock->lock)::"memory");
 }
 
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

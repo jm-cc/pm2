@@ -24,11 +24,8 @@
 \endhtmlonly
 \section Introduction
 
-Two memory management interfaces are provided:
-
 <ul>
 <li> \ref mami
-<li> \ref memory_heap
 </ul>
 
 */

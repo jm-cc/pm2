@@ -102,7 +102,7 @@ int marcel_main(int argc, char *argv[])
 {
   marcel_attr_t attr;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   if(argc != 2) {
     marcel_fprintf(stderr, "Usage: %s <nb>\n", argv[0]);

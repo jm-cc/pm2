@@ -34,6 +34,13 @@
 #define __MARCEL_KERNEL__
 #endif
 
+/* Defined to some form of __attribute__ ((...)) if the compiler supports
+   a different, more efficient calling convention.  */ 
+#if defined(X86_ARCH) && !defined __BOUNDED_POINTERS__
+# define ma_libc_internal_function __attribute__ ((regparm (3), stdcall))
+#else
+# define ma_libc_internal_function
+#endif
 
 /* ============ constants ============= */
 #define NO_TIME_OUT		-1

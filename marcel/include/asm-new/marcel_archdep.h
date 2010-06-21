@@ -20,40 +20,35 @@
 
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
-#include "sys/marcel_win_sys.h"
 #if !defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "asm-generic/marcel_archdep.h"
 #endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #error "to write !"
-
 /*
  * Amount of room to keep free on top of the stack when creating threads, for
  * e.g. local data, sparc-like register window, etc.
  * If unsure, try 128.
  */
-#define TOP_STACK_FREE_AREA     
-
+#define TOP_STACK_FREE_AREA
 /*
  * How to access the stack pointer field in a jmp_buf.
  */
-#define SP_FIELD(buf)           
-
+#define SP_FIELD(buf)
 /* Same for PC, BSP and FP, if these exist.  */
-#define PC_FIELD(buf)           
-#define BSP_FIELD(buf)          
-#define FP_FIELD(buf)          
-
+#define PC_FIELD(buf)
+#define BSP_FIELD(buf)
+#define FP_FIELD(buf)
 /*
  * How to flush a sparc-like register window, if any.
  */
-#define call_ST_FLUSH_WINDOWS()  
-
+#define call_ST_FLUSH_WINDOWS()
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 /*
  * How to get the current stack pointer register, in the gcc or intel case it's
@@ -65,21 +60,19 @@
   sp; \
 })
 #endif
-
 /*
  * How to set the stack pointer register
  */
 #define set_sp(val)
-
 #ifdef MA__PROVIDE_TLS
-typedef struct {
-  /* LPT binary compatibility */
+    typedef struct {
+	/* LPT binary compatibility */
 
-  /* Needs to be the same as glibc's tcbhead_t structure, see glibc/nptl/sysdeps/<yourarch>/tls.h */
-  /* Fill the various fields from marcel/source/marcel_alloc.c */
+	/* Needs to be the same as glibc's tcbhead_t structure, see glibc/nptl/sysdeps/<yourarch>/tls.h */
+	/* Fill the various fields from marcel/source/marcel_alloc.c */
 
-  char padding[1024]; //for the NPTL thread structure
-  /* LPT binary compatibility end */
+	char padding[1024];	//for the NPTL thread structure
+	/* LPT binary compatibility end */
 } lpt_tcb_t;
 
 /*
@@ -107,6 +100,7 @@ typedef struct {
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

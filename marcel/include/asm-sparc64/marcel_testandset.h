@@ -18,45 +18,27 @@
 #define __ASM_SPARC64_MARCEL_TESTANDSET_H__
 
 
-/** Public macros **/
-#ifndef MARCEL_TESTANDSET___MACROS_H
-#define MARCEL_TESTANDSET___MACROS_H
-
 #include "tbx_compiler.h"
+
+
+/** Public macros **/
 #define MA_HAVE_TESTANDSET 1
 
 
-#endif /* MARCEL_TESTANDSET___MACROS_H */
-
-
-
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#ifndef MARCEL_TESTANDSET___MARCEL_MACROS_H
-#define MARCEL_TESTANDSET___MARCEL_MACROS_H
-
-#include "tbx_compiler.h"
-#define pm2_spinlock_release(spinlock) \
-  __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0):"memory")
-
-
-#endif /* MARCEL_TESTANDSET___MARCEL_MACROS_H */
-
+#define pm2_spinlock_release(spinlock)					\
+	__asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0):"memory")
 
 
 /** Internal functions **/
-#ifndef MARCEL_TESTANDSET___MARCEL_FUNCTIONS_H
-#define MARCEL_TESTANDSET___MARCEL_FUNCTIONS_H
-
-#include "tbx_compiler.h"
 static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
 
-#endif /* MARCEL_TESTANDSET___MARCEL_FUNCTIONS_H */
 
-
-
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

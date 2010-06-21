@@ -52,38 +52,30 @@
 entree:
   leop_file
 {
-  LOG("entree -->");
   $$ = $1;
   leoparse_result = $$;
-  LOG("entree <--");
 }
 ;
 
 leop_file:
   leop_htable
 {
-  LOG("leop_file -->");
   $$ = $1;
-  LOG("leop_file <--");
 }
 ;
 
 leop_htable:
   leop_htable LEOP_ID ':' leop_object ';'
 {
-  LOG("leop_htable (1) -->");
   tbx_htable_add($1, $2, $4);
   $$ = $1;
 
-  LOG("leop_htable (1) <--");
 }
 | LEOP_ID ':' leop_object ';'
 {
-  LOG("leop_htable (2) -->");
   $$ = TBX_MALLOC(sizeof(tbx_htable_t));
   tbx_htable_init($$, 0);
   tbx_htable_add($$, $1, $3);
-  LOG("leop_htable (2) <--");
 }
 ;
 

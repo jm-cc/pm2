@@ -30,7 +30,7 @@ static void f(void *arg) {
 int pm2_main(int argc, char *argv[]) {
   int i;
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if ((pm2_self()) == 0) {
     pm2_completion_init(&c, NULL, NULL);

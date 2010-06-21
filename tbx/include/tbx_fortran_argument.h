@@ -40,4 +40,4 @@ void tbx_fortran_init(int *argc, char ***argv);
 
 /* @} */
 
-#endif /* TBX_FORTRAN_ARGUMENT_H */
+#endif				/* TBX_FORTRAN_ARGUMENT_H */

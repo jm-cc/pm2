@@ -1,0 +1,22 @@
+#!/bin/bash
+
+PM2_ROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
+
+flavor="mami-sampling"
+x=$($PM2_ROOT/bin/pm2-flavor get --flavor=$flavor 2>/dev/null)
+if [ -z "$x" ] ; then
+    # create the flavor
+    eval $PM2_ROOT/bin/pm2-flavor set --flavor=\"$flavor\" \
+        --modules=\"init marcel tbx memory puk\" \
+        --common=\"fortran_target_none\" \
+        --init=\"topology\" \
+        --puk=\"enable_pukabi\" \
+        --marcel=\"numa standard_main bubble_sched_null smp_smt_idle enable_stats enable_mami\" \
+        --all=\"build_static opt\"
+fi
+
+make -C $PM2_OBJROOT/memory FLAVOR=$flavor -j
+make -C $PM2_OBJROOT/memory/examples FLAVOR=$flavor sampling_for_memory_access
+
+$PM2_ROOT/bin/pm2-load -f $flavor sampling_for_memory_access

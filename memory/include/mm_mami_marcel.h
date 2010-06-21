@@ -18,7 +18,7 @@
 #ifndef MM_MAMI_MARCEL_H
 #define MM_MAMI_MARCEL_H
 
-#include "pm2_common.h"
+#include <marcel.h>
 
 /** \addtogroup mami
  * @{ */
@@ -82,6 +82,11 @@ int mami_task_migrate_all(mami_manager_t *memory_manager,
                           marcel_t owner,
                           int node);
 
+extern
+int mami_task_migrate_all_callback(void *memory_manager,
+                                   marcel_t owner,
+                                   int node);
+
 #ifdef MA__BUBBLES
 /**
  * Attaches the memory to the specified bubble. If the memory is not
@@ -136,6 +141,11 @@ extern
 int mami_bubble_migrate_all(mami_manager_t *memory_manager,
                             marcel_bubble_t *owner,
                             int node);
+
+extern
+int mami_bubble_migrate_all_callback(void *memory_manager,
+                                     marcel_bubble_t *owner,
+                                     int node);
 #endif /* MA__BUBBLES */
 
 /**

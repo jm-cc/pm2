@@ -26,17 +26,19 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define pm2_spinlock_release(spinlock) \
-  __asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0):"memory")
+#define pm2_spinlock_release(spinlock)					\
+	__asm__ __volatile__("stbar\n\tstb %1,%0" : "=m"(*(spinlock)) : "r"(0):"memory")
 
 
 /** Internal functions **/
 static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

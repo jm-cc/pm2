@@ -44,7 +44,7 @@ define(SIGNAL_END, `marcel_signal_end_np($1, $2);')
       
 define(CREATE, `marcel_create_np($1)')
 
-define(MAIN_INITENV, `marcel_init(&argc, argv);marcel_mutex_init(&marcel_end_lock_np, NULL);marcel_cond_init(&marcel_end_cond_np, NULL);')
+define(MAIN_INITENV, `marcel_init(argc, argv);marcel_mutex_init(&marcel_end_lock_np, NULL);marcel_cond_init(&marcel_end_cond_np, NULL);')
 define(MAIN_END, `marcel_end()')
 define(MAIN_ENV, `#include "marcel_np.h"
                   #include "time.h"

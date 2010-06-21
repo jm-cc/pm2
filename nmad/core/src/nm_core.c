@@ -22,8 +22,6 @@
 
 #include <nm_private.h>
 
-debug_type_t debug_nm_so_trace = NEW_DEBUG_TYPE("NM_SO: ", "nm_so_trace");
-
 #ifdef PIOMAN
 #  ifdef FINE_GRAIN_LOCKING
 piom_spinlock_t nm_tac_lock;
@@ -153,10 +151,6 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
       common_post_init(argc, argv, NULL);
     }
 
-  /* init debug system */
-  pm2debug_register(&debug_nm_so_trace);
-  pm2debug_init_ext(argc, argv, 0 /* debug_flags */);
-
   FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 
   /* allocate core object and init lists */
@@ -230,7 +224,7 @@ int nm_core_exit(nm_core_t p_core)
 	  struct nm_pkt_wrap*p_pw, *p_pw2;
 	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
 	    {
-	      NM_SO_TRACE("extracting pw from post_recv_list\n");
+	      NM_TRACEF("extracting pw from post_recv_list\n");
 	      nm_pw_free(p_pw);
 	    }
 	}

@@ -21,31 +21,29 @@
 #include "scheduler-marcel/marcel_bubble_sched.h"
 
 
-/** Public data types **/
-#ifdef MM_MAMI_ENABLED
-struct mami_manager_s;
-#endif /* MM_MAMI_ENABLED */
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(memory);
 
+#ifdef MARCEL_MAMI_ENABLED
+typedef int (*bubble_migrate_all_func_t) (void *memory_manager, marcel_bubble_t * bubble, int node);
+typedef int (*task_migrate_all_func_t) (void *memory_manager, marcel_t task, int node);
 
-/** Public functions **/
-MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (memory);
-
-#ifdef MM_MAMI_ENABLED
 /** \brief Use \param memory_manager as the memory manager for \param
  * scheduler.  */
-extern void
-marcel_bubble_set_memory_manager (struct marcel_bubble_memory_sched *scheduler,
-                                  struct mami_manager_s *mm);
+extern void marcel_bubble_set_memory_manager(marcel_bubble_memory_sched_t * scheduler,
+					     void *memory_manager,
+					     bubble_migrate_all_func_t bubble_migrate_all_func,
+					     task_migrate_all_func_t task_migrate_all_func);
 
 /** \brief Initialize \param scheduler as a `memory' scheduler.  \param *
  * memory_manager is used to determine the amount of memory associated with a
  * thread on a given node, which then directs thread/memory migration
  * decisions.  If \param work_stealing is true, then work stealing is
  * enabled.  */
-extern int
-marcel_bubble_memory_sched_init (struct marcel_bubble_memory_sched *scheduler,
-                                 struct mami_manager_s *mami_manager,
-                                 tbx_bool_t work_stealing);
+extern int marcel_bubble_memory_sched_init(struct marcel_bubble_memory_sched *scheduler,
+					   void *memory_manager,
+					   bubble_migrate_all_func_t bubble_migrate_all_func,
+					   task_migrate_all_func_t task_migrate_all_func,
+					   tbx_bool_t work_stealing);
 #endif
 
 

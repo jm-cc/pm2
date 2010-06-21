@@ -40,15 +40,14 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
-static __tbx_inline__ int
-ma_ia64_atomic_add (int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_ia64_atomic_add(int i, ma_atomic_t * v)
 {
-	__ma_s32 old, repl;
+	int old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
-
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
@@ -57,12 +56,10 @@ ma_ia64_atomic_add (int i, ma_atomic_t *v)
 	return repl;
 }
 
-static __tbx_inline__ int
-ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
+static __tbx_inline__ int ma_ia64_atomic64_add(int64_t i, ma_atomic64_t * v)
 {
-	__ma_s64 old, repl;
+	int64_t old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
-
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
@@ -71,12 +68,10 @@ ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v)
 	return repl;
 }
 
-static __tbx_inline__ int
-ma_ia64_atomic_sub (int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_ia64_atomic_sub(int i, ma_atomic_t * v)
 {
-	__ma_s32 old, repl;
+	int old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
-
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
@@ -85,12 +80,10 @@ ma_ia64_atomic_sub (int i, ma_atomic_t *v)
 	return repl;
 }
 
-static __tbx_inline__ int
-ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
+static __tbx_inline__ int ma_ia64_atomic64_sub(int64_t i, ma_atomic64_t * v)
 {
-	__ma_s64 old, repl;
+	int64_t old, repl;
 	MA_CMPXCHG_BUGCHECK_DECL
-
 	do {
 		MA_CMPXCHG_BUGCHECK(v);
 		old = ma_atomic_read(v);
@@ -103,19 +96,18 @@ ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v)
  * Atomically add I to V and return TRUE if the resulting value is
  * negative.
  */
-static __tbx_inline__ int
-ma_atomic_add_negative (int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t * v)
 {
 	return ma_atomic_add_return(i, v) < 0;
 }
 
-static __tbx_inline__ int
-ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v)
+static __tbx_inline__ int ma_atomic64_add_negative(int64_t i, ma_atomic64_t * v)
 {
 	return ma_atomic64_add_return(i, v) < 0;
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -30,28 +30,30 @@ if [ -z "$result" ] ; then
 fi
 
 NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
-appdir="${PM2_OBJROOT}/memory/examples/mami"
+appdir="${PM2_OBJROOT}/memory/examples"
 check_all_lines=1
 
-level=$(basename $_t .level_3)
+level=$(basename $_t .level_2)
 if [ "$level" == "$_t" ] ; then
     flavor="test_memory_mami_marcel"
-    modules="marcel"
+    modules="marcel puk"
     options="fortran"
-    marcel="--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats fortran\""
+    marcel="--marcel=\"numa bubbles enable_stats standard_main smp_smt_idle enable_stats fortran enable_mami\""
+    puk="--puk=\"enable_pukabi\" --puk=\"disable_fd_virtualization\""
 else
     flavor="test_memory_mami_pthread"
     modules=""
     options=""
     marcel=""
+    puk=""
 fi
 
 create_test_flavor() {
 # Creation de la flavor
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"$modules tbx init memory\" \
-	--init=\"topology\" $marcel \
-        --memory=\"enable_mami $options\" \
+	--init=\"topology\" $marcel $puk \
+        --memory=\"$options\" \
         --common=\"fortran_target_gfortran\" \
 	--all=\"opt gdb debug\" --all=\"build_static\" $_output_redirect
 }

@@ -36,11 +36,11 @@
  *              Designed by David S. Miller, Alexey Kuznetsov and Ingo Molnar
  */
 
-#define MA_FILE_DEBUG linux_timer
+
 #include "marcel.h"
 
-static inline void set_running_timer(ma_tvec_base_t *base,
-				     struct ma_timer_list *timer)
+static inline void set_running_timer(ma_tvec_base_t * base LWPS_VAR_UNUSED,
+				     struct marcel_timer_list *timer LWPS_VAR_UNUSED)
 {
 #ifdef MA__LWPS
 	base->t_base.running_timer = timer;
@@ -48,15 +48,14 @@ static inline void set_running_timer(ma_tvec_base_t *base,
 }
 
 #ifdef PM2_DEBUG
-static void check_timer_failed(struct ma_timer_list *timer)
+static void check_timer_failed(struct marcel_timer_list *timer)
 {
 	static int whine_count;
 	if (whine_count < 16) {
 		whine_count++;
-		pm2debug("Uninitialised timer!\n");
-		pm2debug("This is just a warning.  Your computer is OK\n");
-		pm2debug("function=0x%p, data=0x%lx\n",
-			 timer->function, timer->data);
+		PM2_LOG("Uninitialised timer!\n");
+		PM2_LOG("This is just a warning.  Your computer is OK\n");
+		PM2_LOG("function=0x%p, data=0x%lx\n", timer->function, timer->data);
 	}
 	/*
 	 * Now fix it up
@@ -65,22 +64,22 @@ static void check_timer_failed(struct ma_timer_list *timer)
 }
 #endif
 
-static inline void check_timer(struct ma_timer_list *timer)
+static inline void check_timer(struct marcel_timer_list *timer TBX_UNUSED)
 {
 #ifdef PM2_DEBUG
-	if (timer->magic != MA_TIMER_MAGIC)
+	if (timer->magic != MARCEL_TIMER_MAGIC)
 		check_timer_failed(timer);
 #endif
 }
 
 
-static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer)
+static void internal_add_timer(ma_tvec_base_t * base, struct marcel_timer_list *timer)
 {
 	unsigned long expires = timer->expires;
 	unsigned long idx = expires - base->timer_jiffies;
 	struct tbx_fast_list_head *vec;
 
-	mdebug("adding timer [%p] at %li\n", timer, expires); 
+	MARCEL_LOG("adding timer [%p] at %li\n", timer, expires);
 
 	if (idx < TVR_SIZE) {
 		int i = expires & TVR_MASK;
@@ -127,10 +126,9 @@ static void internal_add_timer(ma_tvec_base_t *base, struct ma_timer_list *timer
  * * * * that a per-LWP base will be used
  */
 typedef struct ma_timer_base_s ma_timer_base_t;
-ma_timer_base_t __ma_init_timer_base = {MA_SPIN_LOCK_UNLOCKED, NULL};
+ma_timer_base_t __ma_init_timer_base = { MA_SPIN_LOCK_UNLOCKED, NULL };
 
-static inline void detach_timer(struct ma_timer_list *timer,
-				int clear_pending)
+static inline void detach_timer(struct marcel_timer_list *timer, int clear_pending)
 {
 	struct tbx_fast_list_head *entry = &timer->entry;
 
@@ -138,7 +136,7 @@ static inline void detach_timer(struct ma_timer_list *timer,
 	if (clear_pending)
 		entry->next = NULL;
 #ifdef PM2_DEBUG
-	entry->prev = (void*) 0x123;
+	entry->prev = (void *) 0x123;
 #endif
 }
 
@@ -154,24 +152,24 @@ static inline void detach_timer(struct ma_timer_list *timer,
  * possible to set timer->base = NULL and drop the lock: the timer remains
  * locked.
  */
-static ma_timer_base_t *lock_timer_base(struct ma_timer_list *timer)
+static ma_timer_base_t *lock_timer_base(struct marcel_timer_list *timer)
 {
-       ma_timer_base_t *base;
+	ma_timer_base_t *base;
 
-       for (;;) {
-               base = timer->base;
-               if (tbx_likely(base != NULL)) {
-                       ma_spin_lock_softirq(&base->lock);
-                       if (tbx_likely(base == timer->base))
-                               return base;
-                       /* The timer has migrated to another LWP */
-                       ma_spin_unlock_softirq(&base->lock);
-               }
-               ma_cpu_relax();
-       }
+	for (;;) {
+		base = timer->base;
+		if (tbx_likely(base != NULL)) {
+			ma_spin_lock_softirq(&base->lock);
+			if (tbx_likely(base == timer->base))
+				return base;
+			/* The timer has migrated to another LWP */
+			ma_spin_unlock_softirq(&base->lock);
+		}
+		ma_cpu_relax();
+	}
 }
 
-TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+int __ma_mod_timer(struct marcel_timer_list *timer, unsigned long expires)
 {
 	ma_timer_base_t *base;
 	ma_tvec_base_t *new_base;
@@ -179,8 +177,8 @@ TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires
 
 	MA_BUG_ON(!timer->function);
 
-	mdebug("modifying (or adding) timer [%p] from %li to %li\n",
-	       timer, timer->expires, expires);
+	MARCEL_LOG("modifying (or adding) timer [%p] from %li to %li\n",
+		   timer, timer->expires, expires);
 
 	check_timer(timer);
 
@@ -202,15 +200,15 @@ TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires
 		 * the timer is serialized wrt itself.
 		 */
 		if (tbx_unlikely(base->running_timer == timer)) {
-		        /* The timer remains on a former base */
-		        new_base = tbx_container_of(base, ma_tvec_base_t, t_base);
+			/* The timer remains on a former base */
+			new_base = tbx_container_of(base, ma_tvec_base_t, t_base);
 		} else {
-		        /* See the comment in lock_timer_base() */
-		        timer->base = NULL;
-		        ma_spin_unlock(&base->lock);
+			/* See the comment in lock_timer_base() */
+			timer->base = NULL;
+			ma_spin_unlock(&base->lock);
 			base = &new_base->t_base;
-		        ma_spin_lock(&base->lock);
-		        timer->base = base;
+			ma_spin_lock(&base->lock);
+			timer->base = base;
 		}
 	}
 
@@ -241,12 +239,12 @@ TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires
  * (ie. mod_timer() of an inactive timer returns 0, mod_timer() of an
  * active timer returns 1.)
  */
-TBX_EXTERN int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
+int marcel_mod_timer(struct marcel_timer_list *timer, unsigned long expires)
 {
 	MA_BUG_ON(!timer->function);
 
 	check_timer(timer);
-	mdebug("Real modifying timer at %li\n", expires);
+	MARCEL_LOG("Real modifying timer at %li\n", expires);
 
 	/*
 	 * This is a common optimization triggered by the
@@ -260,6 +258,26 @@ TBX_EXTERN int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
 }
 
 /***
+ * init_timer - initialize timer
+ * @timer: the timer to be modified
+ * @function: the function to be called when the timer expires
+ * @expires: the initial expire date
+ * @data: the data to be passed to function
+ */
+int marcel_init_timer(struct marcel_timer_list *timer, void *function, unsigned long expires, unsigned long data)
+{
+	MA_BUG_ON(!timer);
+	timer->function = function;
+	timer->expires = expires;
+	timer->data = data;
+	timer->base = &__ma_init_timer_base;
+#ifdef PM2_DEBUG
+	timer->magic = MA_TIMER_MAGIC;
+#endif
+	return 0;
+}
+
+/***
  * del_timer - deactive a timer.
  * @timer: the timer to be deactivated
  *
@@ -270,14 +288,14 @@ TBX_EXTERN int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires)
  * (ie. del_timer() of an inactive timer returns 0, del_timer() of an
  * active timer returns 1.)
  */
-TBX_EXTERN int ma_del_timer(struct ma_timer_list *timer)
+int marcel_del_timer(struct marcel_timer_list *timer)
 {
 	ma_timer_base_t *base;
 	int ret = 0;
 
 	check_timer(timer);
 
-	mdebug("Deleting timer [%p]\n", timer);
+	MARCEL_LOG("Deleting timer [%p]\n", timer);
 
 	if (ma_timer_pending(timer)) {
 		base = lock_timer_base(timer);
@@ -308,13 +326,13 @@ TBX_EXTERN int ma_del_timer(struct ma_timer_list *timer)
  *
  * The function returns whether it has deactivated a pending timer or not.
  */
-TBX_EXTERN int ma_del_timer_sync(struct ma_timer_list *timer)
+int ma_del_timer_sync(struct marcel_timer_list *timer)
 {
 	ma_timer_base_t *base;
 	int ret = -1;
 
 	check_timer(timer);
-	mdebug("Deleting timer sync [%p]\n", timer);
+	MARCEL_LOG("Deleting timer sync [%p]\n", timer);
 
 	do {
 		base = lock_timer_base(timer);
@@ -327,7 +345,7 @@ TBX_EXTERN int ma_del_timer_sync(struct ma_timer_list *timer)
 			detach_timer(timer, 1);
 			ret = 1;
 		}
-unlock:
+	      unlock:
 		ma_spin_unlock_softirq(&base->lock);
 	} while (ret < 0);
 
@@ -335,7 +353,7 @@ unlock:
 }
 #endif
 
-static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
+static int cascade(ma_tvec_base_t * base, ma_tvec_t * tv, int index)
 {
 	/* cascade all the timers from tv up one level */
 	struct tbx_fast_list_head *head, *curr;
@@ -347,9 +365,9 @@ static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
 	 * detach them individually, just clear the list afterwards.
 	 */
 	while (curr != head) {
-		struct ma_timer_list *tmp;
+		struct marcel_timer_list *tmp;
 
-		tmp = tbx_fast_list_entry(curr, struct ma_timer_list, entry);
+		tmp = tbx_fast_list_entry(curr, struct marcel_timer_list, entry);
 		MA_BUG_ON(tmp->base != &base->t_base);
 		curr = curr->next;
 		internal_add_timer(base, tmp);
@@ -368,36 +386,37 @@ static int cascade(ma_tvec_base_t *base, ma_tvec_t *tv, int index)
  */
 #define INDEX(N) (base->timer_jiffies >> (TVR_BITS + N * TVN_BITS)) & TVN_MASK
 
-static inline void __run_timers(ma_tvec_base_t *base)
+static inline void __run_timers(ma_tvec_base_t * base)
 {
-	struct ma_timer_list *timer;
+	struct marcel_timer_list *timer;
 
-	mdebugl(7, "Running Timers (next at %li, current : %li)\n",
-		base->timer_jiffies, ma_jiffies);
+	MARCEL_LOG("Running Timers (next at %li, current : %li)\n",
+		   base->timer_jiffies, ma_jiffies);
 
 	ma_spin_lock_softirq(&base->t_base.lock);
 	while (ma_time_after_eq(ma_jiffies, base->timer_jiffies)) {
 		struct tbx_fast_list_head work_list = TBX_FAST_LIST_HEAD_INIT(work_list);
 		struct tbx_fast_list_head *head = &work_list;
- 		int index = base->timer_jiffies & TVR_MASK;
- 
+		int index = base->timer_jiffies & TVR_MASK;
+
 		/*
 		 * Cascade timers:
 		 */
 		if (!index &&
-			(!cascade(base, &base->tv2, INDEX(0))) &&
-				(!cascade(base, &base->tv3, INDEX(1))) &&
-					!cascade(base, &base->tv4, INDEX(2)))
+		    (!cascade(base, &base->tv2, INDEX(0))) &&
+		    (!cascade(base, &base->tv3, INDEX(1))) &&
+		    !cascade(base, &base->tv4, INDEX(2)))
 			cascade(base, &base->tv5, INDEX(3));
-		++base->timer_jiffies; 
+		++base->timer_jiffies;
 		tbx_fast_list_splice_init(base->tv1.vec + index, &work_list);
 		while (!tbx_fast_list_empty(head)) {
-			void (*fn)(unsigned long);
+			void (*fn) (unsigned long);
 			unsigned long data;
 
-			timer = tbx_fast_list_entry(head->next,struct ma_timer_list,entry);
- 			fn = timer->function;
- 			data = timer->data;
+			timer =
+			    tbx_fast_list_entry(head->next, struct marcel_timer_list, entry);
+			fn = timer->function;
+			data = timer->data;
 
 			set_running_timer(base, timer);
 			detach_timer(timer, 1);
@@ -410,17 +429,18 @@ static inline void __run_timers(ma_tvec_base_t *base)
 	ma_spin_unlock_softirq(&base->t_base.lock);
 }
 
-static inline void do_process_times(struct marcel_task *p,
-	unsigned long user TBX_UNUSED, unsigned long system TBX_UNUSED)
+static inline void do_process_times(marcel_task_t *p,
+				    unsigned long user TBX_UNUSED,
+				    unsigned long system TBX_UNUSED)
 {
 	ma_atomic_inc(&p->top_utime);
 }
 
-static void update_one_process(struct marcel_task *p, unsigned long user,
-			unsigned long system, ma_lwp_t lwp TBX_UNUSED)
+static void update_one_process(marcel_task_t *p, unsigned long user,
+			       unsigned long system, ma_lwp_t lwp TBX_UNUSED)
 {
 	do_process_times(p, user, system);
-}	
+}
 
 /*
  * Called by the local, per-LWP timer interrupt on SMP.
@@ -436,7 +456,7 @@ static void ma_run_local_timers(void)
  */
 void ma_update_process_times(int user_tick)
 {
-	struct marcel_task *p = MARCEL_SELF;
+	marcel_task_t *p = MARCEL_SELF;
 	ma_lwp_t lwp = MA_LWP_SELF;
 	int system = user_tick ^ 1;
 
@@ -452,8 +472,8 @@ static void run_timer_softirq(struct ma_softirq_action *h TBX_UNUSED)
 {
 	ma_tvec_base_t *base = &__ma_get_lwp_var(tvec_bases);
 
-	mdebugl(8, "Running Softirq Timers (next at %li, current : %li)\n",
-		base->timer_jiffies, ma_jiffies);
+	MARCEL_LOG("Running Softirq Timers (next at %li, current : %li)\n",
+		   base->timer_jiffies, ma_jiffies);
 
 	if (ma_time_after_eq(ma_jiffies, base->timer_jiffies))
 		__run_timers(base);
@@ -461,7 +481,7 @@ static void run_timer_softirq(struct ma_softirq_action *h TBX_UNUSED)
 
 void ma_process_timeout(unsigned long __data)
 {
-	ma_wake_up_thread((marcel_task_t *)__data);
+	ma_wake_up_thread((marcel_task_t *) __data);
 }
 
 /**
@@ -490,12 +510,11 @@ void ma_process_timeout(unsigned long __data)
  *
  * In all cases the return value is guaranteed to be non-negative.
  */
-fastcall TBX_EXTERN signed long ma_schedule_timeout(signed long timeout)
+fastcall signed long ma_schedule_timeout(signed long timeout)
 {
 	unsigned long expire;
 
-	switch (timeout)
-	{
+	switch (timeout) {
 	case MA_MAX_SCHEDULE_TIMEOUT:
 		/*
 		 * These two special cases are useful to be comfortable
@@ -514,11 +533,10 @@ fastcall TBX_EXTERN signed long ma_schedule_timeout(signed long timeout)
 		 * should never happens anyway). You just have the printk()
 		 * that will tell you if something is gone wrong and where.
 		 */
-		if (timeout < 0)
-		{
-			pm2debug("schedule_timeout: wrong timeout "
-				 "value %lx from %p\n", timeout,
-				 __builtin_return_address(0));
+		if (timeout < 0) {
+			PM2_LOG("schedule_timeout: wrong timeout "
+				"value %lx from %p\n", timeout,
+				__builtin_return_address(0));
 			SELF_GETMEM(state) = MA_TASK_RUNNING;
 			goto out;
 		}
@@ -526,21 +544,21 @@ fastcall TBX_EXTERN signed long ma_schedule_timeout(signed long timeout)
 
 	expire = timeout + ma_jiffies;
 
-	ma_mod_timer(&SELF_GETMEM(schedule_timeout_timer), expire);
+	marcel_mod_timer(&SELF_GETMEM(schedule_timeout_timer), expire);
 	ma_schedule();
 	ma_del_timer_sync(&SELF_GETMEM(schedule_timeout_timer));
 
 	timeout = expire - ma_jiffies;
 
- out:
+      out:
 	return timeout < 0 ? 0 : timeout;
 }
 
-static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
+static void init_timers_lwp(ma_lwp_t lwp)
 {
 	int j;
 	ma_tvec_base_t *base;
-       
+
 	base = &ma_per_lwp(tvec_bases, lwp);
 	ma_spin_lock_init(&base->t_base.lock);
 	for (j = 0; j < TVN_SIZE; j++) {
@@ -560,7 +578,5 @@ static void __marcel_init init_timers_lwp(ma_lwp_t lwp)
 }
 
 MA_DEFINE_LWP_NOTIFIER_START(timers, "Timers Linux 2.6",
-			     init_timers_lwp, "Init timer",
-			     (void), "[none]");
+			     init_timers_lwp, "Init timer", (void), "[none]");
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(timers, MA_INIT_LINUX_TIMER);
-

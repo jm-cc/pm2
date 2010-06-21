@@ -62,7 +62,7 @@ static struct piom_ltask_queue global_queue;
 #endif
 static tbx_bool_t *being_processed;
 
-#define GET_QUEUE(vp) ((piom_ltask_queue_t *)(marcel_topo_levels[marcel_topo_nblevels-1][vp])->piom_ltask_data)
+#define GET_QUEUE(vp) ((piom_ltask_queue_t *)(marcel_topo_levels[marcel_topo_nblevels-1][vp])->ltask_data)
 #define LOCAL_QUEUE (GET_QUEUE(marcel_current_vp()))
 
 void 
@@ -119,9 +119,9 @@ __piom_get_queue (piom_vpset_t vpset)
 
     marcel_topo_level_t *l1 = &marcel_topo_levels[marcel_topo_nblevels-1][vp1];
     marcel_topo_level_t *l2 = &marcel_topo_levels[marcel_topo_nblevels-1][vp2];
-    marcel_topo_level_t *common_ancestor=ma_topo_common_ancestor (l1, l2);
+    marcel_topo_level_t *common_ancestor=marcel_topo_common_ancestor (l1, l2);
 
-    return (piom_ltask_queue_t *)common_ancestor->piom_ltask_data;
+    return (piom_ltask_queue_t *)common_ancestor->ltask_data;
 #endif	/* USE_GLOBAL_QUEUE */
 }
 
@@ -191,7 +191,7 @@ __piom_ltask_get (piom_ltask_queue_t ** queue)
 	l;			/* do this as long as there's a topo level */
 	l=l->father)
 	{	    
-	    cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
+	    cur_queue = (piom_ltask_queue_t *)(l->ltask_data);
 	    result = __piom_ltask_get_from_queue (cur_queue);
 	    if (result)
 		{
@@ -242,7 +242,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 	    task->state |= PIOM_LTASK_STATE_SCHEDULED;
 #ifdef MARCEL
 	    /* todo: utiliser marcel_disable_preemption */
-	    ma_local_bh_disable();
+	    marcel_tasklet_disable();
 #endif
 	 
 	    (*task->func_ptr) (task->data_ptr);
@@ -252,7 +252,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 		&& !(task->state & PIOM_LTASK_STATE_DONE))
 		{
 #ifdef MARCEL
-		    ma_local_bh_enable();
+		    marcel_tasklet_enable();
 #endif
 		    /* If another thread is currently stopping the queue don't repost the task */
 		    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
@@ -267,7 +267,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 		    if(task->continuation_ptr)
 			task->continuation_ptr(task->continuation_data_ptr);
 #ifdef MARCEL
-		    ma_local_bh_enable();
+		    marcel_tasklet_enable();
 #endif
 		}
 	} else {
@@ -318,12 +318,12 @@ piom_ltask_poll_timer(unsigned long hid)
 
 #ifdef MARCEL
 
-extern unsigned long volatile ma_jiffies;
-struct ma_timer_list ltask_poll_timer = MA_TIMER_INITIALIZER(piom_ltask_poll_timer, 0, 0);
+extern unsigned long volatile piom_jiffies;
+struct marcel_timer_list ltask_poll_timer;
 
 static void __piom_ltask_update_timer()
 {
-    ma_mod_timer(&ltask_poll_timer, ma_jiffies);
+    marcel_mod_timer(&ltask_poll_timer, piom_jiffies);
 }
 
 #else
@@ -337,6 +337,13 @@ piom_init_ltasks ()
 {
     if (!piom_ltask_initialized)
 	{
+	    /* register a callback to Marcel */
+	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
+	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
+	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
+	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
+	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+
 #ifdef USE_GLOBAL_QUEUE
 	    being_processed = TBX_MALLOC (sizeof (tbx_bool_t) * 1);
 	    __piom_init_queue (&global_queue);
@@ -347,12 +354,13 @@ piom_init_ltasks ()
 	    for (i=0; i<marcel_topo_nblevels; i++) {
 		for (j=0; j<marcel_topo_level_nbitems[i]; j++) {
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
-		    l->piom_ltask_data=TBX_MALLOC(sizeof (piom_ltask_queue_t));
-		    __piom_init_queue ((piom_ltask_queue_t*)l->piom_ltask_data);
-		    ((piom_ltask_queue_t*)l->piom_ltask_data)->vpset = l->vpset;
+		    l->ltask_data=TBX_MALLOC(sizeof (piom_ltask_queue_t));
+		    __piom_init_queue ((piom_ltask_queue_t*)l->ltask_data);
+		    ((piom_ltask_queue_t*)l->ltask_data)->vpset = l->vpset;
 		}
 	    }
 #endif	/* USE_GLOBAL_QUEUE */
+	    marcel_init_timer(&ltask_poll_timer, piom_ltask_poll_timer, 0, 0);
 	    __piom_ltask_update_timer();
 
  	    piom_ltask_initialized = tbx_true;
@@ -371,8 +379,8 @@ piom_exit_ltasks()
 	    for (i=marcel_topo_nblevels -1 ; i>=0; i--) {
 		for (j=0; j<marcel_topo_level_nbitems[i]; j++) {
 		    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
-		    __piom_exit_queue((piom_ltask_queue_t*)l->piom_ltask_data);
-		    TBX_FREE(l->piom_ltask_data);
+		    __piom_exit_queue((piom_ltask_queue_t*)l->ltask_data);
+		    TBX_FREE(l->ltask_data);
 		}
 	    }
 #endif
@@ -442,7 +450,7 @@ piom_ltask_schedule ()
 	    l;			/* do this as long as there's a topo level */
 	    l=l->father)
 	    {
-		cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
+		cur_queue = (piom_ltask_queue_t *)(l->ltask_data);
 		task = __piom_ltask_schedule(cur_queue);
 		if(task)
 		    break;
@@ -489,7 +497,7 @@ piom_ltask_polling_is_required ()
 		l;			/* do this as long as there's a topo level */
 		l=l->father)
 		{
-		    cur_queue = (piom_ltask_queue_t *)(l->piom_ltask_data);
+		    cur_queue = (piom_ltask_queue_t *)(l->ltask_data);
 		    if(cur_queue->ltask_array_nb_items && 
 		       (cur_queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING))
 			return 1;

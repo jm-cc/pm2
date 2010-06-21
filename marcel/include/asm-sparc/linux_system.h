@@ -35,6 +35,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -60,7 +61,6 @@
  * it's (presumably) much slower than mf and (b) mf.a is supported for
  * sequential memory pages only.
  */
-
 #define ma_mb()		__asm__ __volatile__ ("" : : : "memory")
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	ma_mb()
@@ -85,10 +85,10 @@
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
 #define ma_cpu_relax() ma_barrier()
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -19,26 +19,20 @@
 
 p_tbx_memory_t my_allocator;
 struct s_wrap {
-	int	 v;
+	int v;
 };
 
 static
-void *
-wrap(int i) {
+void *wrap(int i)
+{
 	struct s_wrap *w = tbx_malloc(my_allocator);
 	w->v = i;
 	return w;
 }
 
 static
-void
-free_wrap(struct s_wrap *w) {
-	tbx_free(my_allocator, w);
-}
-
-static
-void
-next(p_tbx_slist_t l) {
+void next(p_tbx_slist_t l)
+{
 	struct s_wrap *a;
 	struct s_wrap *b;
 	struct s_wrap *c;
@@ -53,14 +47,14 @@ next(p_tbx_slist_t l) {
 	tbx_slist_push(l, c);
 }
 
-int
-main(int    argc,
-		char **argv) {
-	p_tbx_slist_t	l;
-	int	 i;
+int main(int argc, char *argv[])
+{
+	p_tbx_slist_t l;
+	int i;
 
-	tbx_init(argc, argv);
-	tbx_malloc_init(&my_allocator, sizeof(struct s_wrap), 0, "appli/my_allocator");
+	tbx_init(&argc, &argv);
+	tbx_malloc_init(&my_allocator, sizeof(struct s_wrap), 0,
+			"appli/my_allocator");
 
 	l = tbx_slist_nil();
 	tbx_slist_push(l, wrap(0));
@@ -87,4 +81,3 @@ main(int    argc,
 
 	return 0;
 }
-

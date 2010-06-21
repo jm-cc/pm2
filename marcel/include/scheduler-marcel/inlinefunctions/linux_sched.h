@@ -23,6 +23,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -51,6 +52,7 @@ static __tbx_inline__ void ma_cond_resched_lock(ma_spinlock_t * lock)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

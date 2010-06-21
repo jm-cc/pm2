@@ -20,37 +20,32 @@
  * rw spinlock fallbacks
  */
 #ifdef MA__LWPS
-asm(
-".text\n"
-".align	4\n"
-".globl	__ma_write_lock_failed\n"
-"__ma_write_lock_failed:\n\t"
-	MA_LOCK_PREFIX "addl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n"
-"1:	rep; nop\n\t"
-	"cmpl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n\t"
-	"jne	1b\n\t"
-	MA_LOCK_PREFIX "subl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n\t"
-	"jnz	__ma_write_lock_failed\n\t"
-	"ret\n\t"
+asm(".text\n"
+    ".align	4\n"
+    ".globl	__ma_write_lock_failed\n"
+    "__ma_write_lock_failed:\n\t"
+    MA_LOCK_PREFIX "addl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n"
+    "1:	rep; nop\n\t"
+    "cmpl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n\t"
+    "jne	1b\n\t"
+    MA_LOCK_PREFIX "subl	$" MA_RW_LOCK_BIAS_STR ",(%eax)\n\t"
+    "jnz	__ma_write_lock_failed\n\t" "ret\n\t"
 #ifndef DARWIN_SYS
-".size __ma_write_lock_failed,.-__ma_write_lock_failed"
+    ".size __ma_write_lock_failed,.-__ma_write_lock_failed"
 #endif
-);
+    );
 
-asm(
-".text\n"
-".align	4\n"
-".globl	__ma_read_lock_failed\n"
-"__ma_read_lock_failed:\n\t"
-	MA_LOCK_PREFIX "incl	(%eax)\n"
-"1:	rep; nop\n\t"
-	"cmpl	$1,(%eax)\n\t"
-	"js	1b\n\t"
-	MA_LOCK_PREFIX "decl	(%eax)\n\t"
-	"js	__ma_read_lock_failed\n\t"
-	"ret\n\t"
+asm(".text\n"
+    ".align	4\n"
+    ".globl	__ma_read_lock_failed\n"
+    "__ma_read_lock_failed:\n\t"
+    MA_LOCK_PREFIX "incl	(%eax)\n"
+    "1:	rep; nop\n\t"
+    "cmpl	$1,(%eax)\n\t"
+    "js	1b\n\t"
+    MA_LOCK_PREFIX "decl	(%eax)\n\t" "js	__ma_read_lock_failed\n\t" "ret\n\t"
 #ifndef DARWIN_SYS
-".size __ma_read_lock_failed,.-__ma_read_lock_failed"
+    ".size __ma_read_lock_failed,.-__ma_read_lock_failed"
 #endif
-);
+    );
 #endif

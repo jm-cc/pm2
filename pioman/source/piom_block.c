@@ -97,7 +97,7 @@ __piom_need_export(piom_server_t server, piom_req_t req,
     /* check wether a core is idle */
     int i;
     for(i=0;i<marcel_nbvps();i++) {
-	if(marcel_idle_lwp(ma_get_lwp_by_vpnum(i)))
+	if(marcel_vp_is_idle(i))
 	    return 0;
     }
 #endif	/* MARCEL */

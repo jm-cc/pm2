@@ -456,9 +456,7 @@ do_pc_send_global(p_ntbx_process_container_t _pc,
       _f(_g, _client);
     }
 
-  LOG_IN();
   do_pc_global(_pc, _h);
-  LOG_OUT();
 }
 
 static
@@ -468,17 +466,14 @@ do_pc_cond_global(p_ntbx_process_container_t _pc,
 {
   ntbx_process_grank_t _g = -1;
 
-  LOG_IN();
   if (!ntbx_pc_first_global_rank(_pc, &_g))
     {
-      LOG_OUT();
       return;
     }
 
   while (_f(_g) && ntbx_pc_next_global_rank(_pc, &_g))
     ;
 
-  LOG_OUT();
 }
 
 static
@@ -493,9 +488,7 @@ do_pc_cond_send_global(p_ntbx_process_container_t _pc,
       return _f(_l, _client);
     }
 
-  LOG_IN();
   do_pc_cond_global(_pc, _h);
-  LOG_OUT();
 }
 
 // pc/local
@@ -591,9 +584,7 @@ do_pc_send_local(p_ntbx_process_container_t _pc,
       _f(_l, _client);
     }
 
-  LOG_IN();
   do_pc_local(_pc, _h);
-  LOG_OUT();
 }
 
 static
@@ -610,9 +601,7 @@ do_pc_send_local_s(p_ntbx_process_container_t _pc,
       _f(_l, _client, _s);
     }
 
-  LOG_IN();
   do_pc_local_s(_pc, _h);
-  LOG_OUT();
 }
 
 static
@@ -622,17 +611,14 @@ do_pc_cond_local(p_ntbx_process_container_t _pc,
 {
   ntbx_process_lrank_t _l = -1;
 
-  LOG_IN();
   if (!ntbx_pc_first_local_rank(_pc, &_l))
     {
-      LOG_OUT();
       return;
     }
 
   while (_f(_l) && ntbx_pc_next_local_rank(_pc, &_l))
     ;
 
-  LOG_OUT();
 }
 
 static
@@ -647,9 +633,7 @@ do_pc_cond_send_local(p_ntbx_process_container_t _pc,
       return _f(_l, _client);
     }
 
-  LOG_IN();
   do_pc_cond_local(_pc, _h);
-  LOG_OUT();
 }
 
 // pc
@@ -682,9 +666,7 @@ do_pc_send(p_ntbx_process_container_t _pc,
       _f(_client);
     }
 
-  LOG_IN();
   do_pc_local(_pc, _h);
-  LOG_OUT();
 }
 
 static
@@ -696,9 +678,7 @@ do_pc_send_string(p_ntbx_process_container_t _pc,
     leo_send_string(cl, _str);
   }
 
-  LOG_IN();
   do_pc_send(_pc, _h);
-  LOG_OUT();
 }
 
 static
@@ -713,9 +693,7 @@ do_pc_send_s(p_ntbx_process_container_t _pc,
       _f(_client, _s);
     }
 
-  LOG_IN();
   do_pc_local_s(_pc, _h);
-  LOG_OUT();
 }
 
 // slist

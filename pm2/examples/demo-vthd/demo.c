@@ -167,7 +167,7 @@ int pm2_main(int argc, char **argv)
   pm2_rawrpc_register(&ACK, ack_service);
   pm2_rawrpc_register(&INFO, info_service);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if(pm2_self() == 0) { /* master process */
 

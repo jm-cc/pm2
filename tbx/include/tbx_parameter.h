@@ -40,42 +40,36 @@
  * Data structures 
  * ---------------
  */
-typedef struct s_tbx_argument_option
-{
-  p_tbx_string_t option;
-  char           separator;
-  p_tbx_string_t value;
+typedef struct s_tbx_argument_option {
+	p_tbx_string_t option;
+	char separator;
+	p_tbx_string_t value;
 } tbx_argument_option_t;
 
-typedef struct s_tbx_arguments
-{
-  p_tbx_slist_t slist;
+typedef struct s_tbx_arguments {
+	p_tbx_slist_t slist;
 } tbx_arguments_t;
 
-typedef struct s_tbx_argument_set
-{
-  int    argc;
-  char **argv;
+typedef struct s_tbx_argument_set {
+	int argc;
+	char **argv;
 } tbx_argument_set_t;
 
-typedef struct s_tbx_environment_variable
-{
-  p_tbx_string_t name;
-  p_tbx_string_t value;
+typedef struct s_tbx_environment_variable {
+	p_tbx_string_t name;
+	p_tbx_string_t value;
 } tbx_environment_variable_t;
 
-typedef struct s_tbx_environment
-{
-  p_tbx_slist_t  slist;
-  p_tbx_htable_t htable;
+typedef struct s_tbx_environment {
+	p_tbx_slist_t slist;
+	p_tbx_htable_t htable;
 } tbx_environment_t;
 
-typedef struct s_tbx_command
-{
-  p_tbx_environment_t environment;
-  p_tbx_string_t      path;
-  p_tbx_string_t      name;
-  p_tbx_arguments_t   arguments;
+typedef struct s_tbx_command {
+	p_tbx_environment_t environment;
+	p_tbx_string_t path;
+	p_tbx_string_t name;
+	p_tbx_arguments_t arguments;
 } tbx_command_t;
 
 
@@ -116,7 +110,7 @@ typedef struct s_tbx_command
       (ARGV)++;                          \
       return tbx_argit_more_args();      \
     }
-  
+
 #define __TBX_ARGIT_OPT_CSTR(ARGC, ARGV) \
   char *tbx_argit_opt_cstr(void)         \
     {                                    \
@@ -218,7 +212,7 @@ __TBX_ARGIT_NEXT_OPT(ARGC, ARGV)               \
 __TBX_ARGIT_VALUE_CSTR(ARGC, ARGV, USAGE)      \
 __TBX_ARGIT_INVALID_ARG(ARGC, ARGV, USAGE)     \
 __TBX_ARGIT_INIT(ARGC, ARGV)
- 
+
 /* @} */
 
-#endif /* TBX_PARAMETER_H */
+#endif				/* TBX_PARAMETER_H */

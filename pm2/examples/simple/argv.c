@@ -20,7 +20,7 @@ int pm2_main(int argc, char **argv)
 {
   int i;
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   printf("argc = %d\n", argc);
   for(i=0; i<argc; i++)

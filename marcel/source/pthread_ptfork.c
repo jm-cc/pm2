@@ -19,39 +19,46 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 /* Child process increments this after fork.  */
 unsigned long int ma_fork_generation = 0;
 
-extern int __register_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void), void * dso);
+extern int __register_atfork(void (*prepare) (void), void (*parent) (void), void (*child) (void), void *dso);
 
-DEF_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child),
-{
-        return __register_atfork(prepare, parent, child, NULL); 
-})
+DEF_PMARCEL(int, atfork, (void (*prepare) (void), void (*parent) (void), void (*child) (void)),
+	    (prepare, parent, child), 
+	    {
+		    return __register_atfork(prepare, parent, child, NULL);
+	    }
+)
 
-DEF_PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child));
-DEF___PTHREAD(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)),(prepare,parent,child));
+DEF_PTHREAD(int, atfork, (void (*prepare) (void), void (*parent) (void), void (*child) (void)), 
+	    (prepare, parent, child))
+DEF___PTHREAD(int, atfork, (void (*prepare) (void), void (*parent) (void), void (*child) (void)),
+	      (prepare, parent, child))
 
 #ifdef MA__LIBPTHREAD
 #include <sys/syscall.h>
 
 extern pid_t __libc_fork(void);
+pid_t __fork(void);
 
 /* We need to provide our own version of `fork()' since that's what Glibc's
  * libpthread does.  */
 pid_t __fork(void)
 {
 	/* We need to call libc's fork to get its internal locks & such properly reset */
-        return __libc_fork();
+	return __libc_fork();
 }
-
-weak_alias (__fork, fork);
-weak_alias (__fork, vfork);
+DEF_WEAK_ALIAS(__fork, fork)
+DEF_WEAK_ALIAS(__fork, vfork)
 
 pid_t wait(int *status)
 {
-	return syscall(SYS_wait4,-1,status,0,NULL);
+	return syscall(SYS_wait4, -1, status, 0, NULL);
 }
 
 extern int __libc_system(const char *line);
@@ -61,17 +68,18 @@ int system(const char *line)
 	return __libc_system(line);
 }
 
-#endif /* MA__LIBPTHREAD */
-
+#endif				/* MA__LIBPTHREAD */
 
+
 /* fork(2) handling.  */
 
 /* Prepare to the fork(2) call in the parent process.  */
-static void parent_prepare_fork(void) {
-	/* First move to the main LWP since it makes a load of things easier for handling the fork. */
-	ma_runqueue_t *rq = ma_lwp_rq(&__main_lwp);
-	marcel_t self = marcel_self();
+static void parent_prepare_fork(void)
+{
 #ifdef MA__LWPS
+	/* First move to the main LWP since it makes a load of things 
+	 * easier for handling the fork. */
+	ma_runqueue_t *rq = ma_lwp_rq(&__main_lwp);
 	SELF_GETMEM(fork_holder) = ma_bind_to_holder(!ma_is_first_lwp(MA_LWP_SELF), &rq->as_holder);
 #endif
 	/* Acquire the `extlib' mutex, disable preemption, bottom halves and the
@@ -82,7 +90,10 @@ static void parent_prepare_fork(void) {
 	ma_local_bh_disable();
 	marcel_sig_stop_itimer();
 
-#if defined(MA__PROVIDE_TLS) && defined(LINUX_SYS) && defined(X86_64_ARCH)
+
+#if defined(LINUX_SYS) && defined(X86_64_ARCH) && defined(MA__PROVIDE_TLS)
+	marcel_t self = marcel_self();
+
 	/* Work-around what seems like a kernel bug: fs doesn't properly get
 	 * reloaded in child, so let's just make sure the base is in the MSR...
 	 */
@@ -92,7 +103,8 @@ static void parent_prepare_fork(void) {
 }
 
 /* Restore the state of the parent process after fork(2).  */
-static void cleanup_parent_after_fork(void) {
+static void cleanup_parent_after_fork(void)
+{
 	marcel_sig_reset_timer();
 	ma_local_bh_enable_no_resched();
 	ma_preempt_enable();
@@ -112,7 +124,7 @@ static void remove_thread(marcel_t thread)
 	char name[MARCEL_MAXNAMESIZE];
 
 	marcel_getname(thread, name, sizeof(name));
-	mdebug("process %i: removing thread %p aka. `%s'\n", getpid(), thread, name);
+	MARCEL_LOG("process %i: removing thread %p aka. `%s'\n", getpid(), thread, name);
 
 	marcel_setname(thread, "dead thread from parent process");
 
@@ -140,18 +152,15 @@ static void remove_thread(marcel_t thread)
 
 #ifdef MA__LWPS
 /* Remove LWP, a dangling LWP descriptor in the child process, from the
- * global LWP list.  */
+ * global LWP list. */
 static void remove_lwp(marcel_lwp_t * lwp)
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
+	MARCEL_LOG("process %i: removing LWP %p\n", getpid(), lwp);
 
-	mdebug("process %i: removing LWP %p\n", getpid(), lwp);
-
-#if 0 /* XXX: LWP may not be on-line yet so `idle_task' et al. may not exist
-			 * yet.  */
-#ifdef MA__LWPS
+#if 0				/* XXX: LWP may not be on-line yet so `idle_task' et al. may not exist
+				 * yet.  */
 	remove_thread(lwp->idle_task);
-#endif
 #ifdef MARCEL_POSTEXIT_ENABLED
 	remove_thread(lwp->postexit_task);
 #endif
@@ -165,22 +174,25 @@ static void remove_lwp(marcel_lwp_t * lwp)
 	 * free it for now.  */
 	/* marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_lwp_os_node(lwp)); */
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 #endif
 
 static void cleanup_child_after_fork(void)
 {
 	struct marcel_topo_level *vp;
+
+	/* FIXME: If the child tries to use `marcel_end()', then bad things will
+	 * happen since Marcel is left in a haphazard state.  */
+	ma_is_parent = tbx_flag_clear;
+
 #ifdef MA__LWPS
 	marcel_lwp_t *lwp, *next_lwp;
 
 	/* XXX: We only handle fork(2) invocations from the main LWP.  */
-	/* printf ("self = %p, lwp-self = %p\n", marcel_self(), MA_LWP_SELF); */
+	/* printf ("self = %p, lwp-self = %p\n", ma_self(), MA_LWP_SELF); */
 	MA_BUG_ON(!ma_is_first_lwp(MA_LWP_SELF));
 #endif
-
-	ma_fork_generation++;
 
 #ifdef MA__BUBBLES
 	/* FIXME: At the end of this function, the child is left with a full
@@ -200,13 +212,15 @@ static void cleanup_child_after_fork(void)
 	for_all_vp(vp) {
 		marcel_t thread, next_thread;
 
-		tbx_fast_list_for_each_entry_safe(thread, next_thread, &ma_topo_vpdata_l(vp, all_threads), all_threads) {
+		tbx_fast_list_for_each_entry_safe(thread, next_thread,
+						  &ma_topo_vpdata_l(vp, all_threads),
+						  all_threads) {
 			MA_BUG_ON(tbx_fast_list_empty(&thread->all_threads));
-			if (thread != marcel_self ()
+			if (thread != ma_self()
 #ifdef MA__LWPS
-					&& thread != __ma_get_lwp_var(idle_task)
+			    && thread != __ma_get_lwp_var(idle_task)
 #endif
-				)
+			    )
 				remove_thread(thread);
 		}
 	}
@@ -224,7 +238,7 @@ static void cleanup_child_after_fork(void)
 	/* __ma_get_lwp_var(vpnum) = 0; */
 
 	/* We're left with a single LWP, thus a single VP.  */
-	/* ma__nb_vp = 1; */
+	/* marcel_nb_vp = 1; */
 #endif
 
 	/* XXX: Tasklets assigned to LWPs that we just removed will never be
@@ -239,16 +253,14 @@ static void cleanup_child_after_fork(void)
 	ma_local_bh_enable_no_resched();
 	ma_preempt_enable();
 	marcel_extlib_unprotect();
-
-	/* FIXME: If the child tries to use `marcel_end()', then bad things will
-	 * happen since Marcel is left in a haphazard state.  */
 }
 
 
 /* "Best effort" fork(2) handling.  The intent is to allow at least
  * mono-threaded children to work correctly.  This is particularly important
  * for innoncent applications run over Marcel's libpthread.  */
-static void __marcel_init fork_handling_init(void) {
+static void fork_handling_init(void)
+{
 #ifdef MA__LWPS
 # define ma_atfork marcel_kthread_atfork
 #else
@@ -256,7 +268,8 @@ static void __marcel_init fork_handling_init(void) {
   __register_atfork((prepare), (parent), (child), NULL)
 #endif
 
-	ma_atfork(parent_prepare_fork, cleanup_parent_after_fork, cleanup_child_after_fork);
+	ma_atfork(parent_prepare_fork, cleanup_parent_after_fork,
+		  cleanup_child_after_fork);
 
 #undef ma_atfork
 }

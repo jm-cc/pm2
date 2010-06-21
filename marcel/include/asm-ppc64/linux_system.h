@@ -38,22 +38,21 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define ma_xchg(ptr,x)                                                          \
-  ({                                                                         \
-     __typeof__(*(ptr)) _x_ = (x);                                           \
-     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
-  })
-
-
-#define xchg_local(ptr,x)                                                    \
-  ({                                                                         \
-     __typeof__(*(ptr)) _x_ = (x);                                           \
-     (__typeof__(*(ptr))) __xchg_local((ptr),                                \
-                (unsigned long)_x_, sizeof(*(ptr)));                         \
-  })
+#define ma_xchg(ptr,x)							\
+	({								\
+		__typeof__(*(ptr)) _x_ = (x);				\
+		(__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_, sizeof(*(ptr))); \
+	})
+#define xchg_local(ptr,x)						\
+	({								\
+		__typeof__(*(ptr)) _x_ = (x);				\
+		(__typeof__(*(ptr))) __xchg_local((ptr),		\
+						  (unsigned long)_x_, sizeof(*(ptr))); \
+	})
 
 /*
  * Macros to force memory ordering.  In these descriptions, "previous"
@@ -93,7 +92,6 @@
 # define ma_smp_wmb()	ma_barrier()
 # define ma_smp_read_barrier_depends()	do { } while(0)
 #endif
-
 /*
  * XXX check on these---I suspect what Linus really wants here is
  * acquire vs release semantics but we can't discuss this stuff with
@@ -101,7 +99,6 @@
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
 /* Macros for adjusting thread priority (hardware multi-threading) */
 #define HMT_very_low()    asm volatile("or 31,31,31   # very low priority")
 #define HMT_low()         asm volatile("or 1,1,1     # low priority")
@@ -109,7 +106,6 @@
 #define HMT_medium()      asm volatile("or 2,2,2     # medium priority")
 #define HMT_medium_high() asm volatile("or 5,5,5      # medium high priority")
 #define HMT_high()        asm volatile("or 3,3,3     # high priority")
-
 #define ma_cpu_relax() do { HMT_low(); HMT_medium(); ma_barrier(); } while (0)
 
 
@@ -118,20 +114,15 @@
  * taken from Linux (include/asm-powerpc/system.h)
  * Copyright (C) 1999 Cort Dougan <cort@cs.nmt.edu>
  */
-static __tbx_inline__ unsigned long
-__xchg_u32(volatile void *p, unsigned long val) ;
-static __tbx_inline__ unsigned long
-__xchg_u32_local(volatile void *p, unsigned long val) ;
-static __tbx_inline__ unsigned long
-__xchg_u64(volatile void *p, unsigned long val) ;
-static __tbx_inline__ unsigned long
-__xchg_u64_local(volatile void *p, unsigned long val) ;
-static __tbx_inline__ unsigned long
-__xchg(volatile void *ptr, unsigned long x, unsigned int size) ;
-static __tbx_inline__ unsigned long
-__xchg_local(volatile void *ptr, unsigned long x, unsigned int size) ;
+static __tbx_inline__ unsigned long __xchg_u32(volatile void *p, unsigned long val);
+static __tbx_inline__ unsigned long __xchg_u32_local(volatile void *p, unsigned long val);
+static __tbx_inline__ unsigned long __xchg_u64(volatile void *p, unsigned long val);
+static __tbx_inline__ unsigned long __xchg_u64_local(volatile void *p, unsigned long val);
+static __tbx_inline__ unsigned long __xchg(volatile void *ptr, unsigned long x, unsigned int size);
+static __tbx_inline__ unsigned long __xchg_local(volatile void *ptr, unsigned long x, unsigned int size);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

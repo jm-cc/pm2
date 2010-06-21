@@ -19,239 +19,196 @@
 
 
 #include "sys/marcel_flags.h"
+#include "marcel_config.h"
+#include "tbx_compiler.h"
+#include "tbx_types.h"
+#include "tbx_macros.h"
 #include "marcel_utils.h"
-#include "tbx_debug.h"
-
-
-/** Public macros **/
-#ifndef mdebugl
-#  define mdebugl(level, fmt, ...) \
-      debug_printfl(&marcel_mdebug, level, fmt , ##__VA_ARGS__)
-#endif
-#define mdebug(fmt, ...) \
-    mdebugl(PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
-#define mdebug_state(fmt, ...) \
-    debug_printf(&marcel_debug_state, fmt , ##__VA_ARGS__)
-#define mdebug_work(fmt, ...) \
-    debug_printf(&marcel_debug_work, fmt , ##__VA_ARGS__)
-#define mdebug_deviate(fmt, ...) \
-    debug_printf(&marcel_debug_deviate, fmt , ##__VA_ARGS__)
-#define mdebug_sched_q(fmt, ...) \
-    debug_printf(&marcel_mdebug_sched_q, fmt , ##__VA_ARGS__)
-#define mdebug_allocator(fmt, args...) \
-    debug_printf(&marcel_allocator_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define mdebug_topology(fmt, args...) \
-    debug_printf(&marcel_topology_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define bubble_sched_debug(fmt, args...) \
-    debug_printf(&marcel_bubble_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define bubble_sched_debugl(level, fmt, args...) \
-    debug_printfl(&marcel_bubble_sched_debug, (level), "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define sched_debug(fmt, args...) \
-    debug_printf(&marcel_sched_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-#define mdebug_lwp(fmt, args...) \
-    debug_printf(&marcel_lwp_debug, "[%s] " fmt , __TBX_FUNCTION__, ##args)
-
-#if defined(PM2DEBUG)
-#  define MALLOCATOR_LOG_IN()  debug_printf(&marcel_allocator_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MALLOCATOR_LOG_OUT() debug_printf(&marcel_allocator_log, "%s: <--\n", __TBX_FUNCTION__)
-#else
-#  define MALLOCATOR_LOG_IN()
-#  define MALLOCATOR_LOG_OUT()
-#endif
+#include "tbx_log.h"
+#include "marcel_profile.h"
 
 
 /* Compile-time assertions.  Taken from Gnulib's LGPLv2+ `verify' module.  */
-
 /* Verify requirement R at compile-time, as an integer constant expression.
    Return 1.  */
-
-# ifdef __cplusplus
+#ifdef __cplusplus
 
 extern "C++" {
-
-template <int w>
-  struct verify_type__ { unsigned int verify_error_if_negative_size__: w; };
-#  define MA_VERIFY_TRUE(R) \
-     (sizeof (verify_type__<(R) ? 1 : -1>) != 0)
-
+	template < int w > struct verify_type__ {
+		unsigned int verify_error_if_negative_size__:w;
+	};
+#define MA_VERIFY_TRUE(R)				\
+  (sizeof (verify_type__<(R) ? 1 : -1>) != 0)
 }
-
-# else
-#  define MA_VERIFY_TRUE(R) \
-     (!!sizeof \
-      (struct { unsigned int verify_error_if_negative_size__: (R) ? 1 : -1; }))
-# endif
+#else
+#define MA_VERIFY_TRUE(R) \
+  (!!sizeof								\
+   (struct { unsigned int verify_error_if_negative_size__: (R) ? 1 : -1; }))
+#endif
 
 /** \brief Verify requirement \param R at compile-time, as a declaration
  * without a trailing ';'.  */
 # define MA_VERIFY(R) extern int (* verify_function__ (void)) [MA_VERIFY_TRUE (R)]
 
 
-#ifdef PM2_BUG_ON
-#define MA_BUG_ON(cond) \
-  do { \
-	if (tbx_unlikely(cond)) { \
-		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		while(1) *(volatile int*)0 = 0; \
-	} \
-  } while (0)
-#define MA_WARN_ON(cond) \
-  do { \
-	if (tbx_unlikely(cond)) { \
-		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
-	} \
-  } while (0)
-#else 
-#define MA_BUG_ON(cond) (void)0
-#define MA_WARN_ON(cond) (void)0
-#endif /* PM2_BUG_ON */
+#ifdef PM2DEBUG
 
+#ifdef MARCEL_LOGGER_DECLARE
+tbx_log_t marcel_events;
+tbx_log_t marcel_sched_events;
+tbx_log_t marcel_alloc_events;
+tbx_log_t marcel_timer_events;
+#else
+extern tbx_log_t marcel_events;
+extern tbx_log_t marcel_sched_events;
+extern tbx_log_t marcel_alloc_events;
+extern tbx_log_t marcel_timer_events;
+#endif /** LOGGER_DECLARE **/
+
+
+/** logger constructors and destructors **/
+#define MARCEL_LOG_ADD()                     tbx_logger_add(&marcel_events, "marcel")
+#define MARCEL_SCHED_LOG_ADD()               tbx_logger_add(&marcel_sched_events, "marcel_sched")
+#define MARCEL_ALLOC_LOG_ADD()               tbx_logger_add(&marcel_alloc_events, "marcel_alloc")
+#define MARCEL_TIMER_LOG_ADD()               tbx_logger_add(&marcel_timer_events, "marcel_timer")
+
+#define MARCEL_LOG_SET_LEVEL(level)          tbx_logger_set_level(&marcel_events, level)
+#define MARCEL_SCHED_LOG_SET_LEVEL(level)    tbx_logger_set_level(&marcel_sched_events, level)
+#define MARCEL_ALLOC_LOG_SET_LEVEL(level)    tbx_logger_set_level(&marcel_alloc_events, level)
+#define MARCEL_TIMER_LOG_SET_LEVEL(level)    tbx_logger_set_level(&marcel_timer_events, level)
+
+#define MARCEL_LOG_DEL()                     tbx_logger_del(&marcel_events)
+#define MARCEL_SCHED_LOG_DEL()               tbx_logger_del(&marcel_sched_events)
+#define MARCEL_ALLOC_LOG_DEL()               tbx_logger_del(&marcel_alloc_events)
+#define MARCEL_TIMER_LOG_DEL()               tbx_logger_del(&marcel_timer_events)
+
+/** LOG level macros **/
+#define MARCEL_LOG(format, ...)              marcel_logger_print(&marcel_events, LOG, format, ##__VA_ARGS__)
+#define MARCEL_SCHED_LOG(format, ...)        marcel_logger_print(&marcel_sched_events, LOG, format, ##__VA_ARGS__)
+#define MARCEL_ALLOC_LOG(format, ...)        marcel_logger_print(&marcel_alloc_events, LOG, format, ##__VA_ARGS__)
+#define MARCEL_TIMER_LOG(format, ...)        marcel_logger_print(&marcel_timer_events, LOG, format, ##__VA_ARGS__)
+#define MARCEL_LOG_RETURN(val)               do { __typeof__(val) _ret=(val) ; MARCEL_LOG_OUT() ; return _ret; } while (0)
+
+/** DISP level macros **/
+#define MARCEL_DISP(format, ...)             marcel_logger_print(&marcel_events, DISP, format, ##__VA_ARGS__)
+#define MARCEL_SCHED_DISP(format, ...)       marcel_logger_print(&marcel_sched_events, DISP, format, ##__VA_ARGS__)
+#define MARCEL_ALLOC_DISP(format, ...)       marcel_logger_print(&marcel_alloc_events, DISP, format, ##__VA_ARGS__)
+#define MARCEL_TIMER_DISP(format, ...)       marcel_logger_print(&marcel_timer_events, DISP, format, ##__VA_ARGS__)
+
+
+#else
+
+
+/** logger constructors and destructors **/
+#define MARCEL_LOG_ADD()                    (void)0
+#define MARCEL_SCHED_LOG_ADD()              (void)0
+#define MARCEL_ALLOC_LOG_ADD()              (void)0
+#define MARCEL_TIMER_LOG_ADD()              (void)0
+
+#define MARCEL_LOG_SET_LEVEL(level)          (void)0
+#define MARCEL_SCHED_LOG_SET_LEVEL(level)    (void)0
+#define MARCEL_ALLOC_LOG_SET_LEVEL(level)    (void)0
+#define MARCEL_TIMER_LOG_SET_LEVEL(level)    (void)0
+
+#define MARCEL_LOG_DEL()                    (void)0
+#define MARCEL_SCHED_LOG_DEL()              (void)0
+#define MARCEL_ALLOC_LOG_DEL()              (void)0
+#define MARCEL_TIMER_LOG_DEL()              (void)0
+
+/** LOG level macros **/
+#define MARCEL_LOG(format, ...)              (void)0
+#define MARCEL_SCHED_LOG(format, ...)        (void)0
+#define MARCEL_ALLOC_LOG(format, ...)        (void)0
+#define MARCEL_TIMER_LOG(format, ...)        (void)0
+#define MARCEL_LOG_RETURN(val)               return(val)
+
+/** DISP level macros **/
+#define MARCEL_DISP(format, ...)             (void)0
+#define MARCEL_SCHED_DISP(format, ...)       (void)0
+#define MARCEL_ALLOC_DISP(format, ...)       (void)0
+#define MARCEL_TIMER_DISP(format, ...)       (void)0
+
+#endif /** PM2DEBUG **/
+
+
+/** PM2DEBUG & PROFILE **/
+#define MARCEL_LOG_IN()                      do { MARCEL_LOG("%s: -->\n", __TBX_FUNCTION__) ; PROF_IN() ; } while(0)
+#define MARCEL_LOG_OUT()                     do { MARCEL_LOG("%s: <--\n", __TBX_FUNCTION__) ; PROF_OUT() ; } while(0)
+#define MARCEL_ALLOC_LOG_IN()                do { MARCEL_ALLOC_LOG("%s: -->\n", __TBX_FUNCTION__) ; PROF_IN() ; } while(0)
+#define MARCEL_ALLOC_LOG_OUT()               do { MARCEL_ALLOC_LOG("%s: <--\n", __TBX_FUNCTION__) ; PROF_OUT() ; } while(0)
+
+
+
+#ifndef MARCEL_TRACE
+#  define marcel_trace_on() (void)0
+#  define marcel_trace_off() (void)0
+#else
+#  define marcel_trace_on()      MARCEL_LOG_ADD(DISP, NULL)
+#  define marcel_trace_off()     MARCEL_LOG_DEL()
+#endif
+
+
+/** display the bug / warning message and self-kill or not the program **/
 #define MA_ALWAYS_BUG_ON(cond) \
-  do { \
-	if (tbx_unlikely(cond)) { \
-		mdebugl(0,"BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__); \
-		while(1) *(volatile int*)0 = 0; \
-	} \
-  } while (0)
-#define MA_ALWAYS_WARN_ON(cond) \
-  do { \
-	if (tbx_unlikely(cond)) { \
-		mdebugl(0,"%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
-	} \
+  do {			\
+    if (tbx_unlikely(cond)) {						\
+      MARCEL_LOG("BUG on '" #cond "' at %s:%u\n", __FILE__, __LINE__);	\
+      while(1) *(volatile int*)0 = 0;					\
+      abort();								\
+    }									\
   } while (0)
 
-#define MA_BUG() do { \
-	MA_ALWAYS_BUG_ON(1); \
-} while (0)
+#define MA_ALWAYS_WARN_ON(cond) \
+  do {			 \
+    if (tbx_unlikely(cond)) {						\
+      MARCEL_LOG("%s:%u:Warning on '" #cond "'\n", __FILE__, __LINE__); \
+    }									\
+  } while (0)
+
+#ifdef PM2_BUG_ON
+#define MA_BUG_ON(cond)  MA_ALWAYS_BUG_ON(cond)
+#define MA_WARN_ON(cond) MA_ALWAYS_WARN_ON(cond)
+#else
+#define MA_BUG_ON(cond)  (void)0
+#define MA_WARN_ON(cond) (void)0
+#endif
+#define MA_BUG()         MA_ALWAYS_BUG_ON(1)
+#define MA_WARN()        MA_WARN_ON(1)
+
+#ifdef MA__LWPS
+#define MA_LWP_BUG_ON(cond) MA_BUG_ON(cond)
+#else
+#define MA_LWP_BUG_ON(cond) (void)0
+#endif
+
+
+/** Public functions **/
+void marcel_debug_show_thread_info(tbx_bool_t show_info);
+void marcel_logger_print(tbx_log_t * logd, tbx_msg_level_t level, char *format, ...);
+
+
+#ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
+
 
 #ifndef MARCEL_TRACE
 #  define MTRACE(msg, pid) (void)0
 #  define MTRACE_TIMER(msg, pid) (void)0
-#  define marcel_trace_on() (void)0
-#  define marcel_trace_off() (void)0
 #else
-#  define MTRACE(msg, pid) \
-    (msg[0] ? debug_printf(&marcel_mtrace, \
-            "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
-            " [%06x], %3d T]\n", \
-            msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
-            pid->preempt_count, \
-            marcel_nbthreads() + 1) : 0)
-#  define MTRACE_TIMER(msg, pid) \
-    debug_printf(&marcel_mtrace_timer, \
-            "[%-14s:%3d (pid=%p(%-15s):%2lX)." \
-            " %3d T]\n", \
-            msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
-            marcel_nbthreads() + 1)
-#  define marcel_trace_on() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 1)
-#  define marcel_trace_off() pm2debug_setup(&marcel_mtrace, PM2DEBUG_SHOW, 0)
+#  define MTRACE(msg, pid)       MARCEL_DISP("[%-14s:%3d (pid=%p(%-15s):%2lX)  [%06x], %3d T]\n", \
+				       msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
+				       pid->preempt_count,		\
+				       marcel_nbthreads() + 1)
+#  define MTRACE_TIMER(msg, pid) MARCEL_DISP("[%-14s:%3d (pid=%p(%-15s):%2lX)  %3d T]\n", \
+					     msg, (pid)->number, (pid), (pid)->as_entity.name, (pid)->flags, \
+					     marcel_nbthreads() + 1)
 #endif
-
-
-/** Public data types **/
-
-
-/** Public global variables **/
-#ifdef PM2DEBUG
-extern debug_type_t marcel_debug;
-extern debug_type_t marcel_mdebug;
-extern debug_type_t marcel_debug_state;
-extern debug_type_t marcel_debug_work;
-extern debug_type_t marcel_debug_deviate;
-extern debug_type_t marcel_mdebug_sched_q;
-
-extern debug_type_t marcel_sched_debug;
-extern debug_type_t marcel_bubble_sched_debug;
-
-extern debug_type_t marcel_mtrace;
-extern debug_type_t marcel_mtrace_timer;
-
-extern debug_type_t marcel_allocator_debug;
-extern debug_type_t marcel_allocator_log;
-extern debug_type_t marcel_topology_debug;
-extern debug_type_t marcel_lwp_debug;
-#endif
-
-
-#ifdef __MARCEL_KERNEL__
-
-
-/** Internal macros **/
-#define MA_DEBUG_VAR_ATTRIBUTE \
-    TBX_SECTION(".ma.debug.var") TBX_ALIGNED
-
-#ifdef PM2DEBUG
-#define MA_DEBUG_VAR_NAME(name)   MA_DEBUG_VAR_NAME_S(name)
-#define MA_DEBUG_VAR_NAME_S(name) ma_debug_##name
-
-#define MA_DECLARE_DEBUG_NAME(name) MA_DECLARE_DEBUG_NAME_S(name)
-#define MA_DECLARE_DEBUG_NAME_S(name) \
-  extern debug_type_t MA_DEBUG_VAR_NAME(name)
-
-#define MA_DEBUG_DEFINE_NAME_DEPEND(name, dep) \
-  MA_DEBUG_DEFINE_NAME_S(name, dep)
-#define MA_DEBUG_DEFINE_NAME(name) \
-  MA_DEBUG_DEFINE_NAME_S(name, &marcel_debug)
-#define MA_DEBUG_DEFINE_NAME_S(name, dep) \
-  MA_DEBUG_VAR_ATTRIBUTE debug_type_t MA_DEBUG_VAR_NAME(name) \
-  = NEW_DEBUG_TYPE_DEPEND("MA-"#name": ", "marcel-"#name, dep)
-
-#define ma_debug(name, fmt, ...) \
-  ma_debugl(name, PM2DEBUG_STDLEVEL, fmt , ##__VA_ARGS__)
-#define ma_debugl(name, level, fmt, ...) \
-  debug_printfl(&MA_DEBUG_VAR_NAME(name), level, fmt , ##__VA_ARGS__)
-
-#if defined (MARCEL_KERNEL) && !defined(MA_FILE_DEBUG)
-#  define MA_DEBUG_NO_DEFINE
-#  define MA_FILE_DEBUG default
-#endif
-
-MA_DECLARE_DEBUG_NAME(default);
-
-#ifdef MA_FILE_DEBUG
-#  undef DEBUG_NAME
-#  define DEBUG_NAME CONCAT3(MODULE,_,MA_FILE_DEBUG)
-#  define DEBUG_STR_NAME marcel_xstr(MODULE) "-" marcel_xstr(MA_FILE_DEBUG)
-extern debug_type_t DEBUG_NAME_DISP(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_LOG(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_TRACE(DEBUG_NAME);
-extern debug_type_t DEBUG_NAME_WARN(DEBUG_NAME);
-
-#  define DEBUG_NAME_DISP_MODULE  DEBUG_NAME_DISP(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_LOG_MODULE   DEBUG_NAME_LOG(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_TRACE_MODULE DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
-#  define DEBUG_NAME_WARN_MODULE  DEBUG_NAME_TRACE(DEBUG_NAME_MODULE)
-#  define MA_DEBUG_DEFINE_STANDARD(DEBUG_VAR_NAME, DEBUG_STR_NAME) \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_DISP(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-disp: ", \
-		          DEBUG_STR_NAME "-disp", &DEBUG_NAME_DISP_MODULE); \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_LOG(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-log: ", \
-		          DEBUG_STR_NAME "-log", &DEBUG_NAME_LOG_MODULE); \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_TRACE(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-trace: ", \
-		          DEBUG_STR_NAME "-trace", &DEBUG_NAME_TRACE_MODULE) ; \
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t DEBUG_NAME_WARN(DEBUG_VAR_NAME) \
-  = NEW_DEBUG_TYPE_DEPEND(DEBUG_STR_NAME "-warn: ", \
-		          DEBUG_STR_NAME "-warn", &DEBUG_NAME_WARN_MODULE)
-
-/* Une variable de debug à définir pour ce fichier C */
-#  ifndef MA_DEBUG_NO_DEFINE
-/* On peut avoir envie de le définir nous même (à 1 par exemple) */
-MA_DEBUG_DEFINE_NAME_DEPEND(MA_FILE_DEBUG, &marcel_mdebug);
-MA_DEBUG_DEFINE_STANDARD(DEBUG_NAME, DEBUG_STR_NAME);
-#  endif
-#  undef mdebugl
-#  define mdebugl(level, fmt, ...) \
-  ma_debugl(MA_FILE_DEBUG, level, fmt , ##__VA_ARGS__)
-#endif
-#endif /* PM2DEBUG */
-
-
 /** Internal functions **/
-void marcel_debug_init(int* argc, char** argv, int debug_flags);
+void marcel_debug_init(void);
+void marcel_debug_exit(void);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -19,25 +19,16 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#ifdef WIN_SYS
-#define asmlinkage CPP_ASMLINKAGE __attribute__((__stdcall__))
-#define FASTCALL(x)	x __attribute__((__fastcall__))
-#define fastcall	__attribute__((__fastcall__))
-#else
 #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
 #define FASTCALL(x)	x __attribute__((regparm(3)))
 #define fastcall	__attribute__((regparm(3)))
-#endif
-
-//#ifdef CONFIG_X86_ALIGNMENT_16
-//#define __ALIGN .align 16,0x90
-//#define __ALIGN_STR ".align 16,0x90"
-//#endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

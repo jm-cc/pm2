@@ -19,27 +19,22 @@
 
 
 #include "marcel_keys.h"
-#ifdef __MARCEL_KERNEL__
 #include "marcel_descr.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
 #ifdef MARCEL_KEYS_ENABLED
-static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
+static __tbx_inline__ any_t *marcel_specificdatalocation(marcel_t pid, marcel_key_t key)
 {
-	if (key >= MAX_KEY_SPECIFIC
-	    || (!marcel_key_present[key]))
+	if (key >= MAX_KEY_SPECIFIC || (!marcel_key_present[key]))
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 	return &pid->key[key];
 }
-#endif /* MARCEL_KEYS_ENABLED */
+#endif				/* MARCEL_KEYS_ENABLED */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_MARCEL_KEYS_H__ **/

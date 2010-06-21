@@ -62,7 +62,7 @@ __piom_wake_req_waiters(piom_server_t server,
 			piom_req_t req, int code)
 {
     piom_wait_t wait, tmp;
-    LOG_IN();
+    PIOM_LOG_IN();
     FOREACH_WAIT_BASE_SAFE(wait, tmp, req) {
 #ifdef PIOM__DEBUG
 	switch (code) {
@@ -80,7 +80,7 @@ __piom_wake_req_waiters(piom_server_t server,
 	piom_sem_V(&wait->sem);
 #endif	/* PIOM_THREAD_ENABLED */
     }
-    LOG_RETURN(0);
+    PIOM_LOG_RETURN(0);
 }
 
 /* Wake up threads that are waiting for a server's event */
@@ -88,7 +88,7 @@ int
 __piom_wake_id_waiters(piom_server_t server, int code)
 {
     piom_wait_t wait, tmp;
-    LOG_IN();
+    PIOM_LOG_IN();
     tbx_fast_list_for_each_entry_safe(wait, tmp, &server->list_id_waiters,
 			     chain_wait) {
 #ifdef PIOM__DEBUG
@@ -109,7 +109,7 @@ __piom_wake_id_waiters(piom_server_t server, int code)
 	piom_sem_V(&wait->sem);
 #endif	/* PIOM_THREAD_ENABLED */
     }
-    LOG_RETURN(0);
+    PIOM_LOG_RETURN(0);
 }
 
 
@@ -118,7 +118,7 @@ int
 __piom_wait_req(piom_server_t server, piom_req_t req,
 		piom_wait_t wait, piom_time_t timeout)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     if (timeout) {
 	PIOM_EXCEPTION_RAISE(PIOM_NOT_IMPLEMENTED);
     }
@@ -164,12 +164,12 @@ __piom_wait_req(piom_server_t server, piom_req_t req,
 	    __piom_unregister_poll(server, req);
 	    __piom_unregister(server, req);
 
-	    LOG_RETURN(0);
+	    PIOM_LOG_RETURN(0);
 	}
     } while (!(req->state & PIOM_STATE_OCCURED));
 
 #endif	/* PIOM_THREAD_ENABLED */
-    LOG_RETURN(wait->ret);
+    PIOM_LOG_RETURN(wait->ret);
 }
 
 
@@ -185,7 +185,7 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
     piom_thread_t lock;
     int ret = 0;
     piom_server_t server;
-    LOG_IN();
+    PIOM_LOG_IN();
 
     PIOM_BUG_ON(!(req->state & PIOM_STATE_REGISTERED));
     server = req->server;
@@ -209,7 +209,7 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
 	piom_server_unlock_reentrant(server, lock);
     }
 
-    LOG_RETURN(ret);
+    PIOM_LOG_RETURN(ret);
 }
 
 /* TODO: support without Marcel */
@@ -217,7 +217,7 @@ piom_req_wait(piom_req_t req, piom_wait_t wait,
 int 
 piom_server_wait(piom_server_t server, piom_time_t timeout)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     struct piom_wait wait;
     piom_thread_t lock;
     lock = piom_server_lock_reentrant(server);
@@ -245,7 +245,7 @@ piom_server_wait(piom_server_t server, piom_time_t timeout)
 #endif	/* PIOM_THREAD_ENABLED */
     piom_server_relock_reentrant(server, lock);
 
-    LOG_RETURN(wait.ret);
+    PIOM_LOG_RETURN(wait.ret);
 }
 
 /* Register, wait and unregister a request */
@@ -253,7 +253,7 @@ int
 piom_wait(piom_server_t server, piom_req_t req,
 	  piom_wait_t wait, piom_time_t timeout)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     int checked = 0;
     int waken_up = 0;
 
@@ -266,7 +266,7 @@ piom_wait(piom_server_t server, piom_req_t req,
     __piom_init_req(req);
     __piom_register(server, req);
 #ifdef MARCEL
-    PIOM_LOGF("Marcel_poll (thread %p)...\n", marcel_self());
+    PIOM_LOGF("Marcel_poll (thread %p)...\n", PIOM_SELF);
 #endif	/* MARCEL */
     PIOM_LOGF("using pollid [%s]\n", server->name);
     req->state |= PIOM_STATE_ONE_SHOT | PIOM_STATE_NO_WAKE_SERVER;
@@ -295,7 +295,7 @@ piom_wait(piom_server_t server, piom_req_t req,
 	}
 
 	piom_server_unlock_reentrant(server, lock_owner);
-	LOG_RETURN(0);
+	PIOM_LOG_RETURN(0);
     }
 
     /* Add the request to the polling list */
@@ -312,7 +312,7 @@ piom_wait(piom_server_t server, piom_req_t req,
     /* Unregister the request */
     __piom_unregister(server, req);
     piom_server_unlock_reentrant(server, lock_owner);
-    LOG_RETURN(wait->ret);
+    PIOM_LOG_RETURN(wait->ret);
 }
 
 

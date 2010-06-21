@@ -47,14 +47,14 @@ main (int argc, char *argv[])
   thread_entry_point ((void *) 0);
 
   for (i = 0; i < THREADS; i++)
-    {
+  {
       err = pthread_create (&threads[i], NULL, thread_entry_point, (void *)(uintptr_t) i);
       if (err)
-	{
-	  perror ("pthread_create");
-	  exit (1);
-	}
-    }
+  	{
+  	  perror ("pthread_create");
+  	  exit (1);
+  	}
+  }
 
   /* Don't explicitly join threads.  At this point, all threads but the main
      thread are waiting on `mutex_lock ()', but the program should terminate

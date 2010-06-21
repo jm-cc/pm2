@@ -25,48 +25,46 @@
 #ifdef MA__LWPS
 #  if defined(SOLARIS_SYS)
 #    include <thread.h>
-#  else /*  pas SOLARIS */
+#  else				/*  pas SOLARIS */
 #    include <sched.h>
 #  endif
-#endif /*  MA__LWP */
+#endif				/*  MA__LWP */
 
 
 /** Public functions **/
-TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node, char *file,
-		unsigned line);
-extern void ma_free_node(void *ptr, size_t size,
-		char * __restrict file,  unsigned line);
+TBX_FMALLOC extern void *ma_malloc_node(size_t size, int node);
+extern void ma_free_node(void *ptr, size_t size);
 extern void ma_migrate_mem(void *ptr, size_t size, int node);
 extern int ma_is_numa_available(void);
 
 #ifndef MM_HEAP_ENABLED
 //refaire un malloc bas de gamme non numa
-#define ma_malloc_node(size, node, file, line) marcel_malloc(size, file, line)
-#define ma_free_node(ptr, size, file, line) marcel_free(ptr)
+#define ma_malloc_node(size, node)      ma_malloc_nonuma(size)
+#define ma_free_node(ptr, size)         ma_free_nonuma(ptr)
 #define ma_migrate_mem(ptr, size, node) (void)0
-#endif /* MM_HEAP_ENABLED */
+#endif				/* MM_HEAP_ENABLED */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #ifndef MA__LWPS
 #  define SCHED_YIELD()  do {} while(0)
-#else /*  MA__LWP */
+#else				/*  MA__LWP */
 #  if defined(SOLARIS_SYS)
 #    define SCHED_YIELD() \
 do { \
 	thr_yield(); \
 } while (0)
-#  else /*  pas SOLARIS */
+#  else				/*  pas SOLARIS */
 #    define SCHED_YIELD() \
 do { \
 	sched_yield(); \
 } while (0)
 #  endif
-#endif /*  MA__LWP */
-
+#endif				/*  MA__LWP */
 #define ma_lwp_relax() SCHED_YIELD()
 
 
@@ -76,6 +74,7 @@ extern int ma_numa_not_available;
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

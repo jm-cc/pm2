@@ -58,7 +58,7 @@ thread_init(marcel_t *t, marcel_bubble_t *b, intptr_t arg) {
 
 int main(int argc, char *argv[]) {
 
-   marcel_init(&argc,argv);
+   marcel_init(argc,argv);
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif

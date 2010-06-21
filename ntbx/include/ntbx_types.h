@@ -97,7 +97,6 @@ typedef enum
 /*...Client/Server structures...........*/
 typedef struct s_ntbx_client
 {
-  TBX_SHARED;
   unsigned long        local_host_ip; /*  network form ! */
   char                *local_host;
   p_tbx_slist_t        local_alias;

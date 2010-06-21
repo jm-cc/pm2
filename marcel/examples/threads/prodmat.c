@@ -56,7 +56,7 @@ int marcel_main(int argc, char **argv)
   int i,j;
 
   timing_init();
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   marcel_attr_init(&attr);
   //marcel_attr_setdetachstate(&attr, tbx_true);

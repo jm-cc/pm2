@@ -59,7 +59,7 @@ int pm2_main(int argc, char **argv)
 
   pm2_push_startup_func(startup_func, NULL);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if(pm2_config_size() < 2) {
     fprintf(stderr,

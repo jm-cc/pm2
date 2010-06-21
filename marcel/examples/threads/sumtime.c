@@ -71,7 +71,7 @@ int marcel_main(int argc, char **argv)
   unsigned long temps;
 
   timing_init();
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   marcel_attr_init(&attr);
   marcel_attr_setdetachstate(&attr, MARCEL_CREATE_DETACHED);

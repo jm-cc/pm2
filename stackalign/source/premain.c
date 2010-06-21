@@ -5,7 +5,7 @@
 #include <dlfcn.h>
 
 extern int __attribute__ ((weak)) go_marcel_main(int (*main_func)(int, char*[]), int argc, char *argv[]);
-extern int __attribute__ ((weak)) marcel_initialize(int *argc, char *argv[]);
+extern int __attribute__ ((weak)) marcel_initialize(int argc, char *argv[]);
 
 int  __attribute__ ((weak)) marcel_a_demare=0;
 
@@ -85,7 +85,7 @@ int marcel_main(int argc, char** argv)
 #ifdef PM2DEBUG
 		printf("initialising marcel\n");
 #endif
-		marcel_initialize(&argc, argv);
+		marcel_initialize(argc, argv);
 		marcel_a_demare=1;
 	}
 #ifdef PM2DEBUG
@@ -140,7 +140,7 @@ int BP_SYM (__libc_start_main) (int (*main) (int, char **, char **),
 		printf("starting direct. go_marcel_main=%p, marcel_initialize=%p\n", go_marcel_main, marcel_initialize);
 #endif
 		if (marcel_initialize)
-			marcel_initialize(&global_argc, global_ubp_av);
+			marcel_initialize(global_argc, global_ubp_av);
 		launch_libc_start_main();
 	}
 }

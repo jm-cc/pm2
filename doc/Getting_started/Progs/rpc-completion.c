@@ -23,7 +23,7 @@ static void service(void) {
 int pm2_main(int argc, char *argv[]) {
   pm2_rawrpc_register(&service_id, service);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if (pm2_self() == 0) {
     pm2_completion_t c;	/* Here! */

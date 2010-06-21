@@ -455,8 +455,8 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
       assert(p_large_pw->n_contribs == 1);
       const struct nm_pw_contrib_s*p_contrib = &p_large_pw->contribs[0];
       const struct nm_pack_s*p_pack = p_contrib->p_pack;
-      NM_SO_TRACE("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
-		  p_pack->seq, p_large_pw->chunk_offset);
+      NM_TRACEF("Searching the pw corresponding to the ack - cur_seq = %d - cur_offset = %d\n",
+		p_pack->seq, p_large_pw->chunk_offset);
       if((p_pack->seq == seq) && nm_tag_eq(p_pack->tag, tag) && (p_large_pw->chunk_offset == chunk_offset))
 	{
 	  FUT_DO_PROBE3(FUT_NMAD_NIC_RECV_ACK_RNDV, p_large_pw, p_gate, 1/* large output list*/);

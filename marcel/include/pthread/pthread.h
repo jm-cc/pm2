@@ -16,7 +16,7 @@
 #ifndef _MARCEL_PTHREAD_H
 #define _MARCEL_PTHREAD_H
 
-#ifdef MARCEL_EST_DEF
+#ifdef __MARCEL_H__
 #error "When this file is in the include path, marcel.h mustn't be #included directly. Always just #include <pthread.h>."
 #endif
 #include <marcel.h>
@@ -36,86 +36,50 @@
 
 extern "C++" {
 
-	inline void *
-	operator new (size_t _size) throw(std::bad_alloc) {
+	inline void *operator   new(size_t _size) throw(std::bad_alloc) {
 		void *mem;
 
-		if (tbx_likely (marcel_test_activity ()))
-			mem = marcel_malloc (_size, __FILE__, __LINE__);
-		else
-			mem = malloc (_size);
+		 mem = malloc(_size);
+		if (tbx_unlikely(mem == NULL))
+			throw std::bad_alloc();
 
-		if (tbx_unlikely (mem == NULL))
-			throw std::bad_alloc ();
-		return mem;
+		 return mem;
 	}
-
-	inline void *
-	operator new (size_t _size, const std::nothrow_t &_nt) throw() {
-		return marcel_malloc (_size, __FILE__, __LINE__);
+	inline void *operator   new(size_t _size, const std::nothrow_t & _nt) throw() {
+		return malloc(_size);
 	}
-	inline void *
-	operator new[] (size_t _size) throw(std::bad_alloc) {
+	inline void *operator   new[] (size_t _size) throw(std::bad_alloc) {
 		void *mem;
 
-		if (tbx_likely (marcel_test_activity ()))
-			mem = marcel_malloc (_size, __FILE__, __LINE__);
-		else
-			mem = malloc (_size);
+		mem = malloc(_size);
+		if (tbx_unlikely(mem == NULL))
+			throw std::bad_alloc();
 
-		if (tbx_unlikely (mem == NULL))
-			throw std::bad_alloc ();
 		return mem;
 	}
-	inline void *
-	operator new[] (size_t _size, const std::nothrow_t &_nt) throw() {
-		if (tbx_likely (marcel_test_activity ()))
-			return marcel_malloc (_size, __FILE__, __LINE__);
-		else
-			return malloc (_size);
+	inline void *operator   new[] (size_t _size, const std::nothrow_t & _nt) throw() {
+		return malloc(_size);
 	}
 
 	inline void
-	operator delete (void *mem) throw() {
-		if (tbx_likely (marcel_test_activity ()))
-			marcel_free (mem);
-		else
-			free (mem);
+	operator   delete(void *mem) throw() {
+		free(mem);
 	}
 	inline void
-	operator delete (void *mem, const std::nothrow_t &_nt) throw() {
-		if (tbx_likely (marcel_test_activity ()))
-			marcel_free (mem);
-		else
-			free (mem);
+	operator   delete(void *mem, const std::nothrow_t & _nt) throw() {
+		free(mem);
 	}
 	inline void
-	operator delete [] (void *mem) throw() {
-		if (tbx_likely (marcel_test_activity ()))
-			marcel_free (mem);
-		else
-			free (mem);
+	operator   delete[] (void *mem) throw() {
+		free(mem);
 	}
 	inline void
-	operator delete [] (void *mem, const std::nothrow_t &_nt) throw() {
-		if (tbx_likely (marcel_test_activity ()))
-			marcel_free (mem);
-		else
-			free (mem);
+	operator   delete[] (void *mem, const std::nothrow_t & _nt) throw() {
+		free(mem);
 	}
 }
 
-#endif /* __cplusplus */
-
-
-/* Standard C replacements.  */
-
-#define printf(format, ...)          marcel_printf(format,##__VA_ARGS__)
-#define fprintf(stream, format, ...) marcel_fprintf(stream, format,##__VA_ARGS__)
-#define malloc(size)                 tmalloc(size)
-#define calloc(nmemb, size)          tcalloc(nmemb, size)
-#define realloc(ptr, size)           trealloc(ptr, size)
-#define free(ptr)                    tfree(ptr)
+#endif				/* __cplusplus */
 
 
 #ifndef MA__IFACE_PMARCEL
@@ -232,7 +196,7 @@ extern "C++" {
 #define PTHREAD_PROCESS_SHARED PMARCEL_PROCESS_SHARED
 
 #undef PTHREAD_CREATE_DETACHED
-#define PTHREAD_CREATE_DETACHED PMARCEL_CREATE_DETACHED 
+#define PTHREAD_CREATE_DETACHED PMARCEL_CREATE_DETACHED
 #undef PTHREAD_CREATE_JOINABLE
 #define PTHREAD_CREATE_JOINABLE PMARCEL_CREATE_JOINABLE
 
@@ -261,7 +225,7 @@ extern "C++" {
 #undef PTHREAD_PRIO_PROTECT
 #define PTHREAD_PRIO_PROTECT PMARCEL_PRIO_PROTECT
 
-#undef PTHREAD_BARRIER_SERIAL_THREAD 
+#undef PTHREAD_BARRIER_SERIAL_THREAD
 #define PTHREAD_BARRIER_SERIAL_THREAD PMARCEL_BARRIER_SERIAL_THREAD
 
 #undef PTHREAD_RWLOCK_INITIALIZER
@@ -278,7 +242,7 @@ extern "C++" {
 #undef pthread_exit
 #define pthread_exit(ret) pmarcel_exit(ret)
 #undef pthread_atfork
-#define pthread_atfork(prepare,parent,child) pmarcel_atfork(prepare,parent,child) 
+#define pthread_atfork(prepare,parent,child) pmarcel_atfork(prepare,parent,child)
 
 /* marcel_thread.c */
 
@@ -293,29 +257,30 @@ extern "C++" {
 #undef pthread_cleanup_pop
 #define pthread_cleanup_pop(execute) pmarcel_cleanup_pop(execute)
 #undef pthread_setconcurrency
-#define pthread_setconcurrency(newlevel) pmarcel_setconcurrency(newlevel) 
+#define pthread_setconcurrency(newlevel) pmarcel_setconcurrency(newlevel)
 #undef pthread_getconcurrency
 #define pthread_getconcurrency() pmarcel_getconcurrency()
 #undef pthread_setcancelstate
-#define pthread_setcancelstate(state,oldstate) pmarcel_setcancelstate(state,oldstate) 
+#define pthread_setcancelstate(state,oldstate) pmarcel_setcancelstate(state,oldstate)
 #undef pthread_setcanceltype
 #define pthread_setcanceltype(type,oldtype) pmarcel_setcanceltype(type,oldtype)
 #undef pthread_testcancel
 #define pthread_testcancel() pmarcel_testcancel()
 #undef pthread_setschedprio
 #define pthread_setschedprio(thread,priority) pmarcel_setschedprio(thread,priority)
-
 #undef pthread_setschedparam
 #define pthread_setschedparam(thread,policy,param) pmarcel_setschedparam(thread,policy,param)
 #undef pthread_getschedparam
 #define pthread_getschedparam(thread,policy,param) pmarcel_getschedparam(thread,policy,param)
 #undef pthread_getcpuclockid
 #define pthread_getcpuclockid(thread_id,clock_id) pmarcel_getcpuclockid(thread_id,clock_id)
+#undef pthread_getaffinity_np
+#define pthread_getaffinity_np(thread, size, attr) pmarcel_getaffinity_np(thread, size, attr)
 
 /* marcel_attr.c */
 
 #undef pthread_attr_init
-#define pthread_attr_init(attr) pmarcel_attr_init(attr) 
+#define pthread_attr_init(attr) pmarcel_attr_init(attr)
 #undef pthread_attr_destroy
 #define pthread_attr_destroy(attr) pmarcel_attr_destroy(attr)
 #undef pthread_attr_setstacksize
@@ -354,8 +319,11 @@ extern "C++" {
 #define pthread_attr_setguardsize(attr, guardsize) pmarcel_attr_setguardsize(attr, guardsize)
 #undef pthread_attr_getguardsize
 #define pthread_attr_getguardsize(attr, guardsize) pmarcel_attr_getguardsize(attr, guardsize)
+#undef pthread_attr_getaffinity_np
+#define pthread_attr_getaffinity_np(thread, size, attr) pmarcel_attr_getaffinity_np(thread, size, attr)
 #undef pthread_getattr_np
 #define pthread_getattr_np(thread,attr) pmarcel_getattr_np(thread,attr)
+
 /* nptl_mutex.c */
 
 #undef pthread_mutex_init
@@ -420,7 +388,7 @@ extern "C++" {
 #undef sem_timedwait
 #define sem_timedwait(sem,time) pmarcel_sem_timedwait(sem,time)
 #undef sem_getvalue
-#define sem_getvalue(sem,sval) pmarcel_sem_getvalue(sem,sval) 
+#define sem_getvalue(sem,sval) pmarcel_sem_getvalue(sem,sval)
 
 /* marcel_spin.c */
 
@@ -479,7 +447,7 @@ extern "C++" {
 #undef sigpause
 #define sigpause(sig) pmarcel_sigpause(sig)
 
-#undef sigemptyset 
+#undef sigemptyset
 #define sigemptyset     pmarcel_sigemptyset
 #undef sigfillset
 #define sigfillset      pmarcel_sigfillset
@@ -487,7 +455,7 @@ extern "C++" {
 #define sigismember     pmarcel_sigismember
 #undef sigaddset
 #define sigaddset       pmarcel_sigaddset
-#undef sigdelset   
+#undef sigdelset
 #define sigdelset       pmarcel_sigdelset
 #undef sigisemptyset
 #define sigisemptyset   pmarcel_sigisemptyset
@@ -634,7 +602,7 @@ extern "C++" {
 #define pthread_cond_broadcast pmarcel_cond_broadcast
 #undef pthread_cond_wait
 #define pthread_cond_wait pmarcel_cond_wait
-#endif /* __cpluscplus */
+#endif				/* __cpluscplus */
 
 #ifdef __GNUC__
 
@@ -643,12 +611,12 @@ extern "C++" {
 
 	 XXX: This hack doesn't work on non-GCC or non-ELF platforms such as
 	 Mac OS X.  */
-static void	__attribute__ ((__constructor__))
-ma_initialize_pmarcel (void)
+static void __attribute__ ((__constructor__))
+    ma_initialize_pmarcel(void)
 {
-	if (!marcel_test_activity ()) {
-		marcel_init (NULL, NULL);
-		marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
+	if (!marcel_test_activity()) {
+		marcel_init(0, NULL);
+		marcel_ensure_abi_compatibility(MARCEL_HEADER_HASH);
 	}
 }
 
@@ -659,4 +627,4 @@ ma_initialize_pmarcel (void)
 #endif
 
 
-#endif  /*_MARCEL_PTHREAD_H*/
+#endif	/*_MARCEL_PTHREAD_H*/

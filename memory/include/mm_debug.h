@@ -13,41 +13,38 @@
  * General Public License for more details.
  */
 
-#if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #ifndef MM_DEBUG_H
 #define MM_DEBUG_H
 
-#include "pm2_common.h"
+#ifdef MEMORY_DEBUG
 
-extern debug_type_t debug_memory;
-extern debug_type_t debug_memory_log;
-extern debug_type_t debug_memory_ilog;
-extern debug_type_t debug_memory_warn;
+extern unsigned long _mami_debug_mask;
 
-#define mdebug_memory(fmt, args...) \
-    debug_printf(&debug_memory, "[%s] " fmt , __TBX_FUNCTION__, ##args)
+#  define MDEBUG_MEMORY_DEBUG_SET 2
+#  define MDEBUG_MEMORY_LOG_SET   4
+#  define MDEBUG_MEMORY_ILOG_SET  8
 
-#if defined(PM2DEBUG)
-#  define MEMORY_LOG_IN()        debug_printf(&debug_memory_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MEMORY_LOG_OUT()       debug_printf(&debug_memory_log, "%s: <--\n", __TBX_FUNCTION__)
-#  define MEMORY_ILOG_IN()       debug_printf(&debug_memory_ilog, "%s: -->\n", __TBX_FUNCTION__)
-#  define MEMORY_ILOG_OUT()      debug_printf(&debug_memory_ilog, "%s: <--\n", __TBX_FUNCTION__)
-#else
+#  define mdebug_memory_isset(flag)   ((_mami_debug_mask & flag) == flag)
+#  define mdebug_memory(fmt, args...) do { if (mdebug_memory_isset(MDEBUG_MEMORY_DEBUG_SET)) fprintf(stderr,"[%s] " fmt , __func__, ##args); } while(0)
+#  define MEMORY_LOG_IN()             do { if (mdebug_memory_isset(MDEBUG_MEMORY_LOG_SET)) fprintf(stderr,"%s: -->\n", __func__); } while(0)
+#  define MEMORY_LOG_OUT()            do { if (mdebug_memory_isset(MDEBUG_MEMORY_LOG_SET)) fprintf(stderr,"%s: <--\n", __func__); } while(0)
+#  define MEMORY_ILOG_IN()            do { if (mdebug_memory_isset(MDEBUG_MEMORY_ILOG_SET)) fprintf(stderr,"%s: -->\n", __func__); } while(0)
+#  define MEMORY_ILOG_OUT()           do { if (mdebug_memory_isset(MDEBUG_MEMORY_ILOG_SET)) fprintf(stderr,"%s: <--\n", __func__); } while(0)
+
+#else /* ! MEMORY_DEBUG */
+
+#  define mdebug_memory(fmt, args...)
 #  define MEMORY_LOG_IN()
 #  define MEMORY_LOG_OUT()
 #  define MEMORY_ILOG_IN()
 #  define MEMORY_ILOG_OUT()
-#endif
 
-/* --- debug functions --- */
+#endif /* MEMORY_DEBUG */
 
-#ifdef PM2DEBUG
-#define mdebug_memory_list(str,root) heap_print_list(str,root)
-#else
-#define	mdebug_memory_list(...)
-#endif
+void mm_debug_init(int argc, char **argv);
 
 
 #endif /* MM_DEBUG_H */
-#endif /* MM_MAMI_ENABLED || MM_HEAP_ENABLED */
+#endif /* MM_MAMI_ENABLED */

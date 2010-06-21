@@ -24,6 +24,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -34,84 +35,69 @@
  *
  * bit 0 is the LSB of addr; bit 32 is the LSB of (addr+1).
  */
-static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btsl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
+	__asm__ __volatile__(MA_LOCK_PREFIX "btsl %1,%0":"=m"(*addr)
+			     :"dIr"(nr));
 }
 
 
-static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__(
-		"btsl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
+      __asm__("btsl %1,%0":"=m"(*addr)
+      :	"dIr"(nr));
 }
 
-static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btrl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
+	__asm__ __volatile__(MA_LOCK_PREFIX "btrl %1,%0":"=m"(*addr)
+			     :"dIr"(nr));
 }
 
-static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__(
-		"btrl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
-}
-static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
-{
-	__asm__ __volatile__(
-		"btcl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
+	__asm__ __volatile__("btrl %1,%0":"=m"(*addr)
+			     :"dIr"(nr));
 }
 
-static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btcl %1,%0"
-		:"=m" (*addr)
-		:"dIr" (nr));
+	__asm__ __volatile__("btcl %1,%0":"=m"(*addr)
+			     :"dIr"(nr));
 }
 
-static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long *addr)
+{
+	__asm__ __volatile__(MA_LOCK_PREFIX "btcl %1,%0":"=m"(*addr)
+			     :"dIr"(nr));
+}
+
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btsl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr) : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX
+			     "btsl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+			     :"dIr"(nr):"memory");
 	return oldbit;
 }
 
-static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__(
-		"btsl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr));
+      __asm__("btsl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+      :	"dIr"(nr));
 	return oldbit;
 }
 
-static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btrl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr) : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX
+			     "btrl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+			     :"dIr"(nr):"memory");
 	return oldbit;
 }
 
@@ -119,10 +105,8 @@ static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long
 {
 	int oldbit;
 
-	__asm__(
-		"btrl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr));
+      __asm__("btrl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+      :	"dIr"(nr));
 	return oldbit;
 }
 
@@ -131,21 +115,18 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 {
 	int oldbit;
 
-	__asm__ __volatile__(
-		"btcl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr) : "memory");
+	__asm__ __volatile__("btcl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+			     :"dIr"(nr):"memory");
 	return oldbit;
 }
 
-static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long* addr)
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__( MA_LOCK_PREFIX
-		"btcl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit),"=m" (*addr)
-		:"dIr" (nr) : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX
+			     "btcl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
+			     :"dIr"(nr):"memory");
 	return oldbit;
 }
 
@@ -154,122 +135,14 @@ static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned l
 	return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
 }
 
-static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr)
+static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__(
-		"btl %2,%1\n\tsbbl %0,%0"
-		:"=r" (oldbit)
-		:"m" (*addr),"dIr" (nr));
+	__asm__ __volatile__("btl %2,%1\n\tsbbl %0,%0":"=r"(oldbit)
+			     :"m"(*addr), "dIr"(nr));
 	return oldbit;
 }
-
-/* #if 0 */
-/* static __tbx_inline__ int ma_find_first_zero_bit(const unsigned long *addr, unsigned size) */
-/* { */
-/* 	int d0, d1, d2; */
-/* 	int res; */
-
-/* 	if (!size) */
-/* 		return 0; */
-/* 	/\* This looks at memory. Mark it volatile to tell gcc not to move it around *\/ */
-/* 	__asm__ __volatile__( */
-/* 		"movl $-1,%%eax\n\t" */
-/* 		"xorl %%edx,%%edx\n\t" */
-/* 		"repe; scasl\n\t" */
-/* 		"je 1f\n\t" */
-/* 		"xorl -4(%%edi),%%eax\n\t" */
-/* 		"subl $4,%%edi\n\t" */
-/* 		"bsfl %%eax,%%edx\n" */
-/* 		"1:\tsubl %%ebx,%%edi\n\t" */
-/* 		"shll $3,%%edi\n\t" */
-/* 		"addl %%edi,%%edx" */
-/* 		:"=d" (res), "=&c" (d0), "=&D" (d1), "=&a" (d2) */
-/* 		:"1" ((size + 31) >> 5), "2" (addr), "b" (addr)); */
-/* 	return res; */
-/* } */
-/* #endif */
-
-/* #if 0 */
-/* static __tbx_inline__ int ma_find_first_bit(const unsigned long *addr, unsigned size) */
-/* { */
-/* 	int d0, d1; */
-/* 	int res; */
-
-/* 	/\* This looks at memory. Mark it volatile to tell gcc not to move it around *\/ */
-/* 	__asm__ __volatile__( */
-/* 		"xorl %%eax,%%eax\n\t" */
-/* 		"repe; scasl\n\t" */
-/* 		"jz 1f\n\t" */
-/* 		"leal -4(%%edi),%%edi\n\t" */
-/* 		"bsfl (%%edi),%%eax\n" */
-/* 		"1:\tsubl %%ebx,%%edi\n\t" */
-/* 		"shll $3,%%edi\n\t" */
-/* 		"addl %%edi,%%eax" */
-/* 		:"=a" (res), "=&c" (d0), "=&D" (d1) */
-/* 		:"1" ((size + 31) >> 5), "2" (addr), "b" (addr)); */
-/* 	return res; */
-/* } */
-/* #endif */
-
-/* #if 0 */
-/* static __tbx_inline__ int ma_find_next_zero_bit(const unsigned long *addr, int size, int offset) */
-/* { */
-/* 	unsigned long * p = ((unsigned long *) addr) + (offset >> 5); */
-/* 	int set = 0, bit = offset & 31, res; */
-	
-/* 	if (bit) { */
-/* 		/\* */
-/* 		 * Look for zero in the first 32 bits. */
-/* 		 *\/ */
-/* 		__asm__("bsfl %1,%0\n\t" */
-/* 			"jne 1f\n\t" */
-/* 			"movl $32, %0\n" */
-/* 			"1:" */
-/* 			: "=r" (set) */
-/* 			: "r" (~(*p >> bit))); */
-/* 		if (set < (32 - bit)) */
-/* 			return set + offset; */
-/* 		set = 32 - bit; */
-/* 		p++; */
-/* 	} */
-/* 	/\* */
-/* 	 * No zero yet, search remaining full bytes for a zero */
-/* 	 *\/ */
-/* 	res = ma_find_first_zero_bit (p, size - 32 * (p - (unsigned long *) addr)); */
-/* 	return (offset + set + res); */
-/* } */
-/* #endif */
-
-/* #if 0 */
-/* static __tbx_inline__ int ma_find_next_bit(const unsigned long *addr, int size, int offset) */
-/* { */
-/* 	const unsigned long *p = addr + (offset >> 5); */
-/* 	int set = 0, bit = offset & 31, res; */
-
-/* 	if (bit) { */
-/* 		/\* */
-/* 		 * Look for nonzero in the first 32 bits: */
-/* 		 *\/ */
-/* 		__asm__("bsfl %1,%0\n\t" */
-/* 			"jne 1f\n\t" */
-/* 			"movl $32, %0\n" */
-/* 			"1:" */
-/* 			: "=r" (set) */
-/* 			: "r" (*p >> bit)); */
-/* 		if (set < (32 - bit)) */
-/* 			return set + offset; */
-/* 		set = 32 - bit; */
-/* 		p++; */
-/* 	} */
-/* 	/\* */
-/* 	 * No set bit yet, search remaining full words for a bit */
-/* 	 *\/ */
-/* 	res = ma_find_first_bit (p, size - 32 * (p - addr)); */
-/* 	return (offset + set + res); */
-/* } */
-/* #endif */
 
 static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
@@ -278,8 +151,8 @@ static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 #else
 	__asm__("bsfl %1,%0"
 #endif
-		:"=r" (word)
-		:"r" (~word));
+      :	"=r"(word)
+      :	"r"(~word));
 	return word;
 }
 
@@ -290,8 +163,8 @@ static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 #else
 	__asm__("bsfl %1,%0"
 #endif
-		:"=r" (word)
-		:"rm" (word));
+      :	"=r"(word)
+      :	"rm"(word));
 	return word;
 }
 
@@ -329,6 +202,7 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

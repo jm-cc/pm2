@@ -88,7 +88,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
       p_pack->done += p_contrib->len;
       if(p_pack->done == p_pack->len)
 	{
-	  NM_SO_TRACE("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
+	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
 	  const struct nm_so_event_s event =
 	    {
 	      .status = NM_STATUS_PACK_COMPLETED,

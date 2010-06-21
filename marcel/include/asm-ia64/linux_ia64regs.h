@@ -26,6 +26,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -35,23 +36,17 @@
  * The "magic" numbers happen to match the values used by the Intel compiler's
  * getreg()/setreg() intrinsics.
  */
-
 /* Special Registers */
-
 #define _MA_IA64_REG_IP		1016	/* getreg only */
 #define _MA_IA64_REG_PSR		1019
 #define _MA_IA64_REG_PSR_L		1019
-
 /* General Integer Registers */
-
 #define _MA_IA64_REG_GP		1025	/* R1 */
 #define _MA_IA64_REG_R8		1032	/* R8 */
 #define _MA_IA64_REG_R9		1033	/* R9 */
 #define _MA_IA64_REG_SP		1036	/* R12 */
 #define _MA_IA64_REG_TP		1037	/* R13 */
-
 /* Application Registers */
-
 #define _MA_IA64_REG_AR_KR0	3072
 #define _MA_IA64_REG_AR_KR1	3073
 #define _MA_IA64_REG_AR_KR2	3074
@@ -79,9 +74,7 @@
 #define _MA_IA64_REG_AR_PFS	3136
 #define _MA_IA64_REG_AR_LC		3137
 #define _MA_IA64_REG_AR_EC		3138
-
 /* Control Registers */
-
 #define _MA_IA64_REG_CR_DCR	4096
 #define _MA_IA64_REG_CR_ITM	4097
 #define _MA_IA64_REG_CR_IVA	4098
@@ -108,9 +101,7 @@
 #define _MA_IA64_REG_CR_CMCV	4170
 #define _MA_IA64_REG_CR_LRR0	4176
 #define _MA_IA64_REG_CR_LRR1	4177
-
 /* Indirect Registers for getindreg() and setindreg() */
-
 #define _MA_IA64_REG_INDR_CPUID	9000	/* getindreg only */
 #define _MA_IA64_REG_INDR_DBR	9001
 #define _MA_IA64_REG_INDR_IBR	9002
@@ -120,6 +111,7 @@
 #define _MA_IA64_REG_INDR_RR	9006
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

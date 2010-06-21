@@ -36,25 +36,21 @@ struct lpt_condattr {
 
 /** Public functions **/
 #ifdef MA__IFACE_LPT
-extern int lpt_cond_init (lpt_cond_t *__restrict __cond,
-                              __const lpt_condattr_t *__restrict
-                              __cond_attr) __THROW;
-extern int lpt_cond_destroy (lpt_cond_t *__cond) __THROW;
-extern int lpt_cond_signal (lpt_cond_t *__cond) __THROW;
-extern int lpt_cond_broadcast (lpt_cond_t *__cond) __THROW;
-extern int lpt_cond_wait (lpt_cond_t *__restrict __cond,
-                              lpt_mutex_t *__restrict __mutex);
-extern int lpt_cond_timedwait (lpt_cond_t *__restrict __cond,
-                                   lpt_mutex_t *__restrict __mutex,
-                                   __const struct timespec *__restrict
-                                   __abstime);
-extern int lpt_condattr_init (lpt_condattr_t *__attr) __THROW;
-extern int lpt_condattr_destroy (lpt_condattr_t *__attr) __THROW;
-extern int lpt_condattr_getpshared (__const lpt_condattr_t *
-                                        __restrict __attr,
-                                        int *__restrict __pshared) __THROW;
-extern int lpt_condattr_setpshared (lpt_condattr_t *__attr,
-                                        int __pshared) __THROW;
+extern int lpt_cond_init(lpt_cond_t * __restrict __cond,
+			 __const lpt_condattr_t * __restrict __cond_attr) __THROW;
+extern int lpt_cond_destroy(lpt_cond_t * __cond) __THROW;
+extern int lpt_cond_signal(lpt_cond_t * __cond) __THROW;
+extern int lpt_cond_broadcast(lpt_cond_t * __cond) __THROW;
+extern int lpt_cond_wait(lpt_cond_t * __restrict __cond,
+			 lpt_mutex_t * __restrict __mutex);
+extern int lpt_cond_timedwait(lpt_cond_t * __restrict __cond,
+			      lpt_mutex_t * __restrict __mutex,
+			      __const struct timespec *__restrict __abstime);
+extern int lpt_condattr_init(lpt_condattr_t * __attr) __THROW;
+extern int lpt_condattr_destroy(lpt_condattr_t * __attr) __THROW;
+extern int lpt_condattr_getpshared(__const lpt_condattr_t *
+				   __restrict __attr, int *__restrict __pshared) __THROW;
+extern int lpt_condattr_setpshared(lpt_condattr_t * __attr, int __pshared) __THROW;
 
 #endif
 

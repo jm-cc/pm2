@@ -35,6 +35,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -60,7 +61,6 @@
  * it's (presumably) much slower than mf and (b) mf.a is supported for
  * sequential memory pages only.
  */
-
 #define ma_mb()		__asm__ __volatile__("mfence":::"memory")
 /*
  * Some non-Intel clones support out of order store. wmb() ceases to be a
@@ -69,12 +69,10 @@
 #define ma_rmb()	__asm__ __volatile__("lfence":::"memory")
 #define ma_wmb()	__asm__ __volatile__("sfence":::"memory")
 #define ma_read_barrier_depends()	do { } while(0)
-
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
-#define ma_cmpxchg(ptr,o,n)\
-	((__typeof__(*(ptr)))__ma_cmpxchg((ptr),(unsigned long)(o),\
-					(unsigned long)(n),sizeof(*(ptr))))
-
+#define ma_cmpxchg(ptr,o,n)						\
+	((__typeof__(*(ptr)))__ma_cmpxchg((ptr),(unsigned long)(o),	\
+					  (unsigned long)(n),sizeof(*(ptr))))
 #ifdef MA__LWPS
 # define ma_smp_mb()	ma_mb()
 # define ma_smp_rmb()	ma_rmb()
@@ -88,9 +86,7 @@
 # define ma_smp_read_barrier_depends()	do { } while(0)
 # define ma_set_mb(var, value) do { (var) = (value); ma_barrier(); } while (0)
 #endif
-
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
 #define ma_cpu_relax() asm volatile("rep; nop" ::: "memory")
 
 
@@ -102,8 +98,7 @@
  */
 #define __ma_xg(x) ((volatile long *)(x))
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
-
-static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size) ;
+static inline unsigned long __ma_xchg(unsigned long x, volatile void *ptr, int size);
 
 
 #ifdef MA__LWPS
@@ -117,10 +112,12 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
-static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr, unsigned long old,
-							    unsigned long repl, int size) ;
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr,
+							    unsigned long old,
+							    unsigned long repl, int size);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

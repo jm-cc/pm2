@@ -21,34 +21,28 @@
 #include "tbx_compiler.h"
 #include "asm/marcel_archdep.h"
 #include "sys/marcel_flags.h"
-#include "sys/marcel_win_sys.h"
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal functions **/
 #ifdef __GNUC__
 #ifndef __INTEL_COMPILER
-
 static __tbx_inline__ unsigned long get_bsp(void)
 {
-  register unsigned long bsp;
+	register unsigned long bsp;
 
-  __asm__(
-                  ";; \n\t" \
-                  "flushrs ;; \n\t" \
-                  "mov %0 = ar.bsp ;; \n\t"
-                  ";; \n\t" \
-                  : "=r" (bsp));
+      __asm__(";; \n\t" "flushrs ;; \n\t" "mov %0 = ar.bsp ;; \n\t" ";; \n\t":"=r"(bsp));
 
-  return bsp;
+	return bsp;
 }
-
 #endif
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

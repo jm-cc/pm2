@@ -15,7 +15,7 @@
 . ./mami.sh
 prog="attach_migratef"
 cat > /tmp/pm2test_"${USER}"_expected <<EOF
- Node=         -20 , err=           0
+ Unspecified node  , err=           0
  Node=           0 , err=           0
 EOF
 

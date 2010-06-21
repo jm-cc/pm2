@@ -19,44 +19,41 @@
 
 
 #include "asm/linux_atomic.h"
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #include "asm/marcel_compareexchange.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v)
 {
-#define __rien
-	MA_ATOMIC_ADD_RETURN(__rien);
-#undef __rien
+	MA_ATOMIC_ADD_RETURN();
 }
 
-static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_and_test(int i, ma_atomic_t * v)
 {
 	MA_ATOMIC_ADD_RETURN(repl == 0);
 }
 
-static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t * v)
 {
 	MA_ATOMIC_ADD_RETURN(repl < 0);
 }
 
-static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v);
-static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t * v);
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t * v)
 {
 	MA_ATOMIC_ADD_RETURN(repl);
 }
 
-static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v);
-static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t * v);
+static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t * v)
 {
 #ifdef MA_HAVE_COMPAREEXCHANGE
-	return pm2_compareexchange(&v->counter,old,repl,sizeof(v->counter));
+	return pm2_compareexchange(&v->counter, old, repl, sizeof(v->counter));
 #else
 	int cur;
 	ma_spin_lock_softirq(&v->lock);
@@ -69,6 +66,7 @@ static __tbx_inline__ int ma_atomic_xchg(int old, int repl, ma_atomic_t *v)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

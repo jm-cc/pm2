@@ -21,7 +21,7 @@
 /** Initialize PIOMan server for the given driver */
 static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
 {
-  LOG_IN();
+  NM_LOG_IN();
 
 #ifdef PIOM_DISABLE_LTASKS
 
@@ -36,7 +36,7 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
     vp = atoi(ENV_PIOM_POLL_VP);
   
   marcel_vpset_vp(&p_drv->vpset, vp%marcel_nbvps());
-  ma_remote_tasklet_set_vpset(&p_drv->server.poll_tasklet, &p_drv->vpset);
+  marcel_tasklet_set_vpset(&p_drv->server.poll_tasklet, &p_drv->vpset);
 #endif /* MARCEL_REMOTE_TASKLET */
 
   piom_server_set_poll_settings(&p_drv->server,
@@ -100,6 +100,8 @@ static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
   nm_submit_post_drv_ltask(&p_drv->task, p_drv);
 
 #endif /* PIOM_DISABLE_LTASKS */
+
+  NM_LOG_OUT();
   return 0;
 }
 

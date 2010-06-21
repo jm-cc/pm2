@@ -33,9 +33,9 @@
 #include <Padico/Puk-ABI.h>
 
 
-#define marcel_printf printf
-#define marcel_fprintf fprintf
-#define marcel_sprintf sprintf
+#define marcel_printf   printf
+#define marcel_fprintf  fprintf
+#define marcel_sprintf  sprintf
 #define marcel_snprintf snprintf
 #define marcel_fopen fopen
 #define marcel_fclose fclose
@@ -48,27 +48,9 @@
 
 
 #else
-#include <stdio.h>
 
 
-TBX_FORMAT(printf,1,2)
-int marcel_printf(const char * __restrict format, ...);
-TBX_FORMAT(printf,2,3)
-int marcel_fprintf(FILE * __restrict stream, const char * __restrict format, ...);
-TBX_FORMAT(printf,2,3)
-int marcel_sprintf(char * __restrict string, const char * __restrict format, ...);
-TBX_FORMAT(printf,3,4)
-int marcel_snprintf(char * __restrict string, size_t size, const char * __restrict format,...);
-FILE *marcel_fopen(const char * __restrict path, const char * __restrict mode);
-int marcel_fclose(FILE *stream);
-int marcel_fflush(FILE *stream);
-TBX_FORMAT(scanf,1,2)
-int marcel_scanf(const char *__restrict format, ...);
-TBX_FORMAT(scanf,2,3)
-int marcel_fscanf(FILE * __restrict stream, const char *__restrict format, ...);
-char *marcel_fgets(char *s, int size, FILE *stream);
-int marcel_feof(FILE *stream);
-ssize_t marcel_getdelim(char **lineptr, size_t *n, int delim, FILE *stream);
+#error "Please use PukABI"
 
 
 #endif /** PUK_ABI **/

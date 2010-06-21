@@ -35,14 +35,14 @@ ntbx_pack_int(int                  data,
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'i';
     }
 
   sprintf(ptr, "%*d-", NTBX_PACK_INT_LEN, data);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 int
@@ -53,7 +53,7 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
   int   data    = 0;
   int   i       = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'i')
@@ -63,7 +63,7 @@ ntbx_unpack_int(p_ntbx_pack_buffer_t pack_buffer)
   data = (int)strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
     TBX_FAILURE("synchronisation error");
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return data;
 }
@@ -79,14 +79,14 @@ ntbx_pack_long(long                 data,
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'l';
     }
 
   sprintf(ptr, "%*ld-", NTBX_PACK_LONG_LEN, data);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 long
@@ -97,7 +97,7 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
   long  data    = 0;
   int   i       = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'l')
@@ -107,7 +107,7 @@ ntbx_unpack_long(p_ntbx_pack_buffer_t pack_buffer)
   data = strtol(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
     TBX_FAILURE("synchronisation error");
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return data;
 }
@@ -123,14 +123,14 @@ ntbx_pack_unsigned_int(unsigned int         data,
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'I';
     }
 
   sprintf(ptr, "%*u-", NTBX_PACK_UINT_LEN, data);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 unsigned int
@@ -141,7 +141,7 @@ ntbx_unpack_unsigned_int(p_ntbx_pack_buffer_t pack_buffer)
   unsigned int  data    = 0;
   int           i       = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'I')
@@ -151,7 +151,7 @@ ntbx_unpack_unsigned_int(p_ntbx_pack_buffer_t pack_buffer)
   data = (unsigned int)strtoul(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
     TBX_FAILURE("synchronisation error");
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return data;
 }
@@ -167,14 +167,14 @@ ntbx_pack_unsigned_long(unsigned long        data,
   void *ptr = pack_buffer->buffer;
   int   i   = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'L';
     }
 
   sprintf(ptr, "%*ld-", NTBX_PACK_ULONG_LEN, data);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 unsigned long
@@ -185,7 +185,7 @@ ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
   unsigned long  data    = 0;
   int            i       = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'L')
@@ -195,7 +195,7 @@ ntbx_unpack_unsigned_long(p_ntbx_pack_buffer_t pack_buffer)
   data = strtoul(ptr, &end_ptr, 10);
   if (*end_ptr != '-')
     TBX_FAILURE("synchronisation error");
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return data;
 }
@@ -213,7 +213,7 @@ ntbx_pack_double(double               data,
   int     exponent = 0;
   double  mantissa = 0.0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       *(char*)ptr++ = 'D';
@@ -226,7 +226,7 @@ ntbx_pack_double(double               data,
 
   sprintf(ptr, "%*.*f-", NTBX_PACK_MANTISSA_LEN,
 	  NTBX_PACK_MANTISSA_LEN - 3, mantissa);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 double
@@ -239,7 +239,7 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
   double  mantissa = 0.0;
   double  data     = 0.0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   for (i = 0; i < NTBX_PACK_BUFFER_TAG_LEN; i++)
     {
       if (*(char*)ptr++ != 'D')
@@ -257,7 +257,7 @@ ntbx_unpack_double(p_ntbx_pack_buffer_t pack_buffer)
     TBX_FAILURE("synchronisation error");
 
   data = ldexp(mantissa, exponent);
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return data;
 }

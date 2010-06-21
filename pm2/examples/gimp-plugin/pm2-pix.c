@@ -197,7 +197,7 @@ pixelize (GDrawable *drawable)
   }
 #endif
 
-  pm2_init(&argc, argv, pvals.nbprocs, &les_modules, &nb_modules);
+  pm2_init(argc, argv, pvals.nbprocs, &les_modules, &nb_modules);
 
   regul_init(les_modules, nb_modules);
 
@@ -424,7 +424,7 @@ int pm2_main(int argc, char *argv[])
 
     regul_init_rpc();
 
-    pm2_init(&argc, argv, ONE_PER_NODE, &les_modules, &nb_modules);
+    pm2_init(argc, argv, ONE_PER_NODE, &les_modules, &nb_modules);
 
     regul_init(les_modules, nb_modules);
 

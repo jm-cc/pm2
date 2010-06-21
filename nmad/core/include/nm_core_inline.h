@@ -300,7 +300,7 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
 {
   struct nm_core*p_core = p_gate->p_core;
-  NM_SO_TRACE_LEVEL(3, "Packet posted on track %d\n", trk_id);
+  NM_TRACEF("Packet posted on track %d\n", trk_id);
   FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate, p_pw, p_drv, trk_id );
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);

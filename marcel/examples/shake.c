@@ -24,7 +24,7 @@ main (int argc, char **argv)
   marcel_attr_t thread_attr;
   marcel_barrierattr_t barrier_attr;
 
-  marcel_init (&argc, argv);
+  marcel_init(argc, argv);
 
   nb_vps = marcel_nbvps ();
   marcel_t tids[nb_vps];

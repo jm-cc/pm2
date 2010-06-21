@@ -40,23 +40,18 @@ p_tbx_memory_t tbx_list_manager_memory = NULL;
  * Initialization
  * --------------
  */
-void
-tbx_list_manager_init(void)
+void tbx_list_manager_init(void)
 {
-  tbx_malloc_init(&tbx_list_manager_memory,
-		  sizeof(tbx_list_element_t),
-		  INITIAL_LIST_ELEMENT,
-                  "tbx/list elements");
+	tbx_malloc_init(&tbx_list_manager_memory,
+			sizeof(tbx_list_element_t),
+			INITIAL_LIST_ELEMENT, "tbx/list elements");
 }
 
 /*
  * Destruction
  * --------------
  */
-void
-tbx_list_manager_exit(void)
+void tbx_list_manager_exit(void)
 {
-  tbx_malloc_clean(tbx_list_manager_memory);
+	tbx_malloc_clean(tbx_list_manager_memory);
 }
-
-

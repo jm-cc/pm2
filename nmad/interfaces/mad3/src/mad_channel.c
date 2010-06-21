@@ -60,7 +60,6 @@ mad_get_sub_channel(p_mad_channel_t channel,
   LOG_IN();
   darray = channel->sub_channel_darray;
 
-  TBX_LOCK_SHARED(darray);
   if (sub >= channel->max_sub)
     TBX_FAILURE("not enough resources to allocate anonymous sub channel");
 
@@ -81,7 +80,6 @@ mad_get_sub_channel(p_mad_channel_t channel,
 
       tbx_darray_set(darray, sub, sub_channel);
     }
-  TBX_UNLOCK_SHARED(darray);
 
   LOG_OUT();
 

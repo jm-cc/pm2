@@ -19,4 +19,3 @@
 
 #define MARCEL_COMPILE_INLINE_FUNCTIONS
 #include "marcel.h"
-

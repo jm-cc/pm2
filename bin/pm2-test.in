@@ -30,7 +30,7 @@ _PM2_TEST_PROGNAME=pm2-test
 
 _ALL_MODULES="`${PM2_OBJROOT}/bin/pm2-module modules`"
 
-_DIRTY_ORDERED_MODULES="tbx marcel ntbx mad3 nmad pm2"
+_DIRTY_ORDERED_MODULES="tbx marcel ntbx nmad pm2"
 
 shopt -s expand_aliases
 

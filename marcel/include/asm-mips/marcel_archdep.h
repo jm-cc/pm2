@@ -20,13 +20,13 @@
 
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
-#include "sys/marcel_win_sys.h"
 #if !defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "asm-generic/marcel_archdep.h"
 #endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -41,36 +41,36 @@
 #define call_ST_FLUSH_WINDOWS()  ((void)0)
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-#define get_sp() \
-({ \
-  register unsigned long sp asm("$sp"); \
-  sp; \
-})
+#define get_sp()					\
+	({						\
+		register unsigned long sp asm("$sp");	\
+		sp;					\
+	})
 #ifdef IRIX_SYS
-#define get_fp() \
-({ \
- register unsigned long fp asm("$fp"); \
-  fp; \
-})
+#define get_fp()					\
+	({						\
+		register unsigned long fp asm("$fp");	\
+		fp;					\
+	})
 #endif
 #endif
 
-#  define set_sp(val) \
-  __asm__ __volatile__("move $sp, %0" \
-                       : : "r" (val) : "memory", "sp" )
-
+#  define set_sp(val)						\
+	__asm__ __volatile__("move $sp, %0"			\
+			     : : "r" (val) : "memory", "sp" )
 #ifdef IRIX_SYS
-#  define set_fp(val) \
-  __asm__ __volatile__("move $fp, %0" \
-                       : : "r" (val) : "memory", "fp")
+#  define set_fp(val)						\
+	__asm__ __volatile__("move $fp, %0"			\
+			     : : "r" (val) : "memory", "fp")
 
-#define set_sp_fp(sp,fp) \
-  __asm__ __volatile__("move $sp, %0\n" \
-		       "move $fp, %1\n" \
-		  : : "r" (sp), "r" (fp) : "memory", "sp" /*, "fp" */)
+#define set_sp_fp(sp,fp)						\
+	__asm__ __volatile__("move $sp, %0\n"				\
+			     "move $fp, %1\n"				\
+			     : : "r" (sp), "r" (fp) : "memory", "sp" /*, "fp" */)
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

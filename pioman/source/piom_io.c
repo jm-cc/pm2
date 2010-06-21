@@ -87,10 +87,7 @@ typedef struct piom_tcp_ev {
 } *piom_tcp_ev_t;
 
 /* initialize the server */
-static struct piom_io_server piom_io_server = {
-	.server =
-	PIOM_SERVER_INIT(piom_io_server.server, "Unix TCP I/O"),
-};
+static struct piom_io_server piom_io_server;
 
 #ifdef MA__LWPS
 /* TODO: useless ? */
@@ -359,7 +356,7 @@ piom_io_block(piom_server_t server,
 				PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
 			}
 			if (!found) {
-				pm2debug
+				PIOM_DISPF
 				    ("IO syscall with bad fd not detected.\n"
 				     "Please, fix marcel code\n");
 			}
@@ -500,7 +497,7 @@ piom_io_poll(piom_server_t server,
 				PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
 			}
 			if (!found) {
-				pm2debug
+			    PIOM_DISPF
 				    ("IO poll with bad fd not detected.\n"
 				     "Please, fix marcel code\n");
 			}
@@ -586,7 +583,7 @@ piom_read(int fildes, void *buf, size_t nbytes)
 	int n;
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
-	LOG_IN();
+	PIOM_LOG_IN();
 
 	PROF_EVENT(piom_read_entry);
 	/* If the server is not running, just perform a classical read */
@@ -598,14 +595,13 @@ piom_read(int fildes, void *buf, size_t nbytes)
 			ev.FD = fildes;
 			PIOM_LOGF("Reading in fd %i\n", fildes);
 			piom_wait(&piom_io_server.server, &ev.inst, &wait, 0);
-			LOG("IO reading fd %i", fildes);
 			n = read(fildes, buf, nbytes);
 		} while (n == -1 && errno == EINTR);
 
 		PROF_EVENT(piom_read_exit);
-		LOG_RETURN(n);
+		PIOM_LOG_RETURN(n);
 	}else
-		LOG_RETURN(read(fildes, buf, nbytes));
+		PIOM_LOG_RETURN(read(fildes, buf, nbytes));
 }
 
 #ifndef __MINGW32__
@@ -614,14 +610,12 @@ piom_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
-	LOG_IN();
+	PIOM_LOG_IN();
 	ev.op = PIOM_POLL_READ;
 	ev.FD = fildes;
 	PIOM_LOGF("Reading in fd %i\n", fildes);
 	piom_wait(&piom_io_server.server, &ev.inst, &wait, 0);
-
-	LOG("IO readving fd %i", fildes);
-	LOG_RETURN(readv(fildes, iov, iovcnt));
+	PIOM_LOG_RETURN(readv(fildes, iov, iovcnt));
 }
 #endif
 
@@ -631,7 +625,7 @@ piom_write(int fildes, const void *buf, size_t nbytes)
 	int n;
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
-	LOG_IN();
+	PIOM_LOG_IN();
 
 	PROF_EVENT(piom_write_entry);
 	if(piom_io_server.server.state==PIOM_SERVER_STATE_LAUNCHED)
@@ -644,15 +638,14 @@ piom_write(int fildes, const void *buf, size_t nbytes)
 			PIOM_LOGF("Writing in fd %i\n", fildes);
 			piom_wait(&piom_io_server.server, &ev.inst, &wait, 0);
 
-			LOG("IO writing fd %i", fildes);
 			n = write(fildes, buf, nbytes);
 
 		} while (n == -1 && errno == EINTR);
 
 		PROF_EVENT(piom_write_exit);
-		LOG_RETURN(n);
+		PIOM_LOG_RETURN(n);
 	} else
-		LOG_RETURN(write(fildes, buf, nbytes));
+		PIOM_LOG_RETURN(write(fildes, buf, nbytes));
 }
 
 #ifndef __MINGW32__
@@ -661,13 +654,12 @@ piom_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
-	LOG_IN();
+	PIOM_LOG_IN();
 	ev.op = PIOM_POLL_WRITE;
 	ev.FD = fildes;
 	PIOM_LOGF("Writing in fd %i\n", fildes);
 	piom_wait(&piom_io_server.server, &ev.inst, &wait, 0);
-	LOG("IO writving fd %i", fildes);
-	LOG_RETURN(writev(fildes, iov, iovcnt));
+	PIOM_LOG_RETURN(writev(fildes, iov, iovcnt));
 }
 #endif
 
@@ -677,7 +669,7 @@ piom_select(int nfds, fd_set * __restrict rfds,
 {
 	struct piom_tcp_ev ev;
 	struct piom_wait wait;
-	LOG_IN();
+	PIOM_LOG_IN();
 	if(piom_io_server.server.state==PIOM_SERVER_STATE_LAUNCHED)
 	{	
 		PROF_EVENT(piom_select_entry);
@@ -688,7 +680,7 @@ piom_select(int nfds, fd_set * __restrict rfds,
 		PIOM_LOGF("Selecting within %i fds\n", nfds);
 		piom_wait(&piom_io_server.server, &ev.inst, &wait, 0);
 		PROF_EVENT(piom_select_exit);
-		LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
+		PIOM_LOG_RETURN(ev.ret_val >= 0 ? ev.ret_val :
 			   (errno = -ev.ret_val, -1));
 	}
 	return select(nfds, rfds, wfds, NULL, NULL);
@@ -700,7 +692,7 @@ piom_read_exactly(int fildes, void *buf, size_t nbytes)
 {
 	size_t to_read = nbytes, n;
 
-	LOG_IN();
+	PIOM_LOG_IN();
 	do {
 		n = piom_read(fildes, buf, to_read);
 		if (n < 0)
@@ -709,7 +701,7 @@ piom_read_exactly(int fildes, void *buf, size_t nbytes)
 		to_read -= n;
 	} while (to_read);
 
-	LOG_RETURN(nbytes);
+	PIOM_LOG_RETURN(nbytes);
 }
 
 #ifndef __MINGW32__
@@ -725,7 +717,7 @@ piom_write_exactly(int fildes, const void *buf, size_t nbytes)
 {
 	size_t to_write = nbytes, n;
 
-	LOG_IN();
+	PIOM_LOG_IN();
 	do {
 		n = piom_write(fildes, buf, to_write);
 		if (n < 0)
@@ -734,7 +726,7 @@ piom_write_exactly(int fildes, const void *buf, size_t nbytes)
 		to_write -= n;
 	} while (to_write);
 
-	LOG_RETURN(nbytes);
+	PIOM_LOG_RETURN(nbytes);
 }
 
 #ifndef __MINGW32__
@@ -790,7 +782,14 @@ int piom_tselect(int width, fd_set * __restrict readfds,
 /* Initialize the server and specifies the callbacks */
 void piom_io_init(void)
 {
-	LOG_IN();
+	PIOM_LOG_IN();
+	/* unregister Marcel IO so that *we* manage IO requests */
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
+	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+
 	piom_server_init(&piom_io_server.server, "Unix TCP I/O");
 #ifdef MA__LWPS
 //	piom_server_start_lwp(&piom_io_server.server, 1);
@@ -840,7 +839,7 @@ void piom_io_init(void)
 				  PIOM_CALLBACK_SLOWEST});
 
 	piom_server_start(&piom_io_server.server);
-	LOG_OUT();
+	PIOM_LOG_OUT();
 }
 
 void 

@@ -42,85 +42,73 @@ struct marcel_condattr {
 
 
 /** Public data types **/
-#ifdef __MINGW32__
-struct timespec {
-  time_t tv_sec;
-  long tv_nsec;
-};
-#endif
-
 union __marcel_condattr_t {
 	struct marcel_condattr __data;
 	long int __align;
-} ;
+};
 
 
 /** Public functions **/
 /* Initialize condition variable COND using attributes ATTR, or use
    the default values if later is NULL.  */
-extern int marcel_cond_init (marcel_cond_t *__restrict __cond,
-                              __const marcel_condattr_t *__restrict
-                              __cond_attr) __THROW;
+extern int marcel_cond_init(marcel_cond_t * __restrict __cond,
+			    __const marcel_condattr_t * __restrict __cond_attr) __THROW;
 
 /* Destroy condition variable COND.  */
-extern int marcel_cond_destroy (marcel_cond_t *__cond) __THROW;
+extern int marcel_cond_destroy(marcel_cond_t * __cond) __THROW;
 
 /* Wake up one thread waiting for condition variable COND.  */
-extern int marcel_cond_signal (marcel_cond_t *__cond) __THROW;
+extern int marcel_cond_signal(marcel_cond_t * __cond) __THROW;
 
 /* Wake up all threads waiting for condition variables COND.  */
-extern int marcel_cond_broadcast (marcel_cond_t *__cond) __THROW;
+extern int marcel_cond_broadcast(marcel_cond_t * __cond) __THROW;
 
 /* Wait for condition variable COND to be signaled or broadcast.
    MUTEX is assumed to be locked before.  */
-extern int marcel_cond_wait (marcel_cond_t *__restrict __cond,
-                              marcel_mutex_t *__restrict __mutex);
+extern int marcel_cond_wait(marcel_cond_t * __restrict __cond,
+			    marcel_mutex_t * __restrict __mutex);
 
 /* Wait for condition variable COND to be signaled or broadcast until
    ABSTIME.  MUTEX is assumed to be locked before.  ABSTIME is an
    absolute time specification; zero is the beginning of the epoch
    (00:00:00 GMT, January 1, 1970).  */
-extern int marcel_cond_timedwait (marcel_cond_t *__restrict __cond,
-                                   marcel_mutex_t *__restrict __mutex,
-                                   __const struct timespec *__restrict
-                                   __abstime);
+extern int marcel_cond_timedwait(marcel_cond_t * __restrict __cond,
+				 marcel_mutex_t * __restrict __mutex,
+				 __const struct timespec *__restrict __abstime);
 
 /* Initialize condition variable attribute ATTR.  */
-extern int marcel_condattr_init (marcel_condattr_t *__attr) __THROW;
+extern int marcel_condattr_init(marcel_condattr_t * __attr) __THROW;
 
 /* Destroy condition variable attribute ATTR.  */
-extern int marcel_condattr_destroy (marcel_condattr_t *__attr) __THROW;
+extern int marcel_condattr_destroy(marcel_condattr_t * __attr) __THROW;
 
 /* Get the process-shared flag of the condition variable attribute ATTR.  */
-extern int marcel_condattr_getpshared (__const marcel_condattr_t *
-                                        __restrict __attr,
-                                        int *__restrict __pshared) __THROW;
+extern int marcel_condattr_getpshared(__const marcel_condattr_t *
+				      __restrict __attr,
+				      int *__restrict __pshared) __THROW;
 
 /* Set the process-shared flag of the condition variable attribute ATTR.  */
-extern int marcel_condattr_setpshared (marcel_condattr_t *__attr,
-                                        int __pshared) __THROW;
+extern int marcel_condattr_setpshared(marcel_condattr_t * __attr, int __pshared) __THROW;
 
 
 #ifdef MA__IFACE_PMARCEL
-extern int pmarcel_cond_init (pmarcel_cond_t *__restrict __cond,
-                              __const pmarcel_condattr_t *__restrict
-                              __cond_attr) __THROW;
-extern int pmarcel_cond_destroy (pmarcel_cond_t *__cond) __THROW;
-extern int pmarcel_cond_signal (pmarcel_cond_t *__cond) __THROW;
-extern int pmarcel_cond_broadcast (pmarcel_cond_t *__cond) __THROW;
-extern int pmarcel_cond_wait (pmarcel_cond_t *__restrict __cond,
-                              pmarcel_mutex_t *__restrict __mutex);
-extern int pmarcel_cond_timedwait (pmarcel_cond_t *__restrict __cond,
-                                   pmarcel_mutex_t *__restrict __mutex,
-                                   __const struct timespec *__restrict
-                                   __abstime);
-extern int pmarcel_condattr_init (pmarcel_condattr_t *__attr) __THROW;
-extern int pmarcel_condattr_destroy (pmarcel_condattr_t *__attr) __THROW;
-extern int pmarcel_condattr_getpshared (__const pmarcel_condattr_t *
-                                        __restrict __attr,
-                                        int *__restrict __pshared) __THROW;
-extern int pmarcel_condattr_setpshared (pmarcel_condattr_t *__attr,
-                                        int __pshared) __THROW;
+extern int pmarcel_cond_init(pmarcel_cond_t * __restrict __cond,
+			     __const pmarcel_condattr_t * __restrict __cond_attr) __THROW;
+extern int pmarcel_cond_destroy(pmarcel_cond_t * __cond) __THROW;
+extern int pmarcel_cond_signal(pmarcel_cond_t * __cond) __THROW;
+extern int pmarcel_cond_broadcast(pmarcel_cond_t * __cond) __THROW;
+extern int pmarcel_cond_wait(pmarcel_cond_t * __restrict __cond,
+			     pmarcel_mutex_t * __restrict __mutex);
+extern int pmarcel_cond_timedwait(pmarcel_cond_t * __restrict __cond,
+				  pmarcel_mutex_t * __restrict __mutex,
+				  __const struct timespec *__restrict __abstime);
+extern int pmarcel_condattr_init(pmarcel_condattr_t * __attr) __THROW;
+extern int pmarcel_condattr_destroy(pmarcel_condattr_t * __attr) __THROW;
+extern int pmarcel_condattr_getpshared(__const pmarcel_condattr_t *
+				       __restrict __attr,
+				       int *__restrict __pshared) __THROW;
+extern int pmarcel_condattr_setpshared(pmarcel_condattr_t * __attr,
+				       int __pshared) __THROW;
 #endif
 
 

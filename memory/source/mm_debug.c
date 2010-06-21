@@ -13,13 +13,40 @@
  * General Public License for more details.
  */
 
-#if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "mm_debug.h"
 
-debug_type_t debug_memory = NEW_DEBUG_TYPE("MEMORY: ", "memory-debug");
-debug_type_t debug_memory_log = NEW_DEBUG_TYPE("MEMORY: ", "memory-log");
-debug_type_t debug_memory_ilog = NEW_DEBUG_TYPE("MEMORY: ", "memory-ilog");
-debug_type_t debug_memory_warn = NEW_DEBUG_TYPE("MEMORY: ", "memory-warn");
+unsigned long _mami_debug_mask;
 
-#endif /* MM_MAMI_ENABLED || MM_HEAP_ENABLED */
+void mm_debug_init(int argc, char **argv)
+{
+#ifdef MEMORY_DEBUG
+        int i;
+        _mami_debug_mask = 0;
+
+        for(i=0 ; i<argc ; i++) {
+                if (!strcmp(argv[i], "--help")) {
+                        fprintf(stderr, "Available options:\n");
+                        fprintf(stderr, "         --memory-debug\n");
+                        fprintf(stderr, "         --memory-log\n");
+                        fprintf(stderr, "         --memory-ilog\n");
+                        exit(1);
+                }
+                else if (!strcmp(argv[i], "--memory-debug")) {
+                        _mami_debug_mask |= MDEBUG_MEMORY_DEBUG_SET;
+                }
+                else if (!strcmp(argv[i], "--memory-log")) {
+                        _mami_debug_mask |= MDEBUG_MEMORY_LOG_SET;
+                }
+                else if (!strcmp(argv[i], "--memory-ilog")) {
+                        _mami_debug_mask |= MDEBUG_MEMORY_ILOG_SET;
+                }
+        }
+#endif
+}
+
+#endif /* MM_MAMI_ENABLED */

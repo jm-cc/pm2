@@ -21,12 +21,11 @@
 #include "sys/marcel_flags.h"
 #include "asm/linux_bitops.h"
 #include "tbx_compiler.h"
-#ifdef __MARCEL_KERNEL__
 #include "linux_types.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal functions **/
@@ -39,6 +38,7 @@ static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w);
 static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

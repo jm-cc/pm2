@@ -35,20 +35,20 @@ void marcel_sem_init(marcel_sem_t * s, int initial)
 	ma_spin_lock_init(&s->lock);
 }
 
-DEF_POSIX(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial), (s,pshared, initial),
+DEF_PMARCEL(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial), (s,pshared, initial),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (pshared) {
 		fprintf(stderr, "PROCESS_PSHARED not supported\n");
 		errno = ENOTSUP;
-		LOG_RETURN(-1);
+		MARCEL_LOG_RETURN(-1);
 	}
 	marcel_sem_init(s, initial);
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
-DEF_C(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial), (s,pshared, initial));
+DEF_C(int, sem_init, (pmarcel_sem_t *s, int pshared, unsigned int initial), (s,pshared, initial))
 
-DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
+DEF_PMARCEL(int, sem_destroy, (pmarcel_sem_t *s), (s),
 {
 	int res = 0;
 	ma_spin_lock_bh(&s->lock);
@@ -59,21 +59,21 @@ DEF_POSIX(int, sem_destroy, (pmarcel_sem_t *s), (s),
 	ma_spin_unlock_bh(&s->lock);
 	return res;
 })
-DEF_C(int, sem_destroy, (pmarcel_sem_t *s), (s));
+DEF_C(int, sem_destroy, (pmarcel_sem_t *s), (s))
 
 void marcel_sem_P(marcel_sem_t *s)
 {
 	semcell c;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	ma_spin_lock_bh(&s->lock);
 
 	if (--(s->value) < 0) {
 		c.next = NULL;
 		c.blocked = tbx_true;
-		c.task = marcel_self();
+		c.task = ma_self();
 		if (s->first == NULL)
 			s->first = s->last = &c;
 		else {
@@ -82,27 +82,27 @@ void marcel_sem_P(marcel_sem_t *s)
 		}
 
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-		    ma_spin_unlock_bh_no_resched(&s->lock), ma_spin_lock_bh(&s->lock));
+							   ma_spin_unlock_bh_no_resched(&s->lock), ma_spin_lock_bh(&s->lock));
 	}
 	ma_spin_unlock_bh(&s->lock);
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
-DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
+DEF_PMARCEL(int, sem_wait, (pmarcel_sem_t *s), (s),
 {
 	semcell c;
 	semcell **prev;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	ma_spin_lock_bh(&s->lock);
 
 	if (--(s->value) < 0) {
 		c.next = NULL;
 		c.blocked = tbx_true;
-		c.task = marcel_self();
+		c.task = ma_self();
 		if (s->first == NULL)
 			s->first = s->last = &c;
 		else {
@@ -116,30 +116,34 @@ DEF_POSIX(int, sem_wait, (pmarcel_sem_t *s), (s),
 			ma_spin_unlock_bh_no_resched(&s->lock);
 			ma_schedule();
 			ma_spin_lock_bh(&s->lock);
-			if (MA_GET_INTERRUPTED()) {
+			if (MA_GET_INTERRUPTED()
+#ifdef MARCEL_DEVIATION_ENABLED
+			    || c.task->canceled == MARCEL_IS_CANCELED
+#endif
+				) {
 				for (prev = &s->first; *prev != &c;
-				    prev = &(*prev)->next) ;
+				     prev = &(*prev)->next) ;
 				*prev = c.next;
 				s->value++;
 				ma_spin_unlock_bh(&s->lock);
 				errno = EINTR;
-				LOG_RETURN(-1);
+				MARCEL_LOG_RETURN(-1);
 			}
 		}
 	}
 
 	ma_spin_unlock_bh(&s->lock);
 
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
-DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s));
+DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s))
 
 int marcel_sem_try_P(marcel_sem_t *s)
 {
 	int result = 0;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	ma_spin_lock_bh(&s->lock);
 
@@ -152,10 +156,10 @@ int marcel_sem_try_P(marcel_sem_t *s)
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_RETURN(!result);
+	MARCEL_LOG_RETURN(!result);
 }
 
-DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
+DEF_PMARCEL(int, sem_trywait, (pmarcel_sem_t *s), (s),
 {
 	if (!marcel_sem_try_P(s)) {
 		errno = EAGAIN;
@@ -163,7 +167,7 @@ DEF_POSIX(int, sem_trywait, (pmarcel_sem_t *s), (s),
 	}
 	return 0;
 })
-DEF_C(int, sem_trywait, (pmarcel_sem_t *s), (s));
+DEF_C(int, sem_trywait, (pmarcel_sem_t *s), (s))
 
 /** \brief Attempt to do a timeout bounded P operation on the semaphore
  *
@@ -172,14 +176,13 @@ DEF_C(int, sem_trywait, (pmarcel_sem_t *s), (s));
  */
 int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 {
-	unsigned long jiffies_timeout = timeout ?
-	    (timeout * 1000 + marcel_gettimeslice() -
-	    1) / marcel_gettimeslice() : 0;
+	unsigned long jiffies_timeout = 
+		timeout ? (timeout * 1000 + marcel_gettimeslice() - 1) / marcel_gettimeslice() : 0;
 	semcell c;
 	semcell **prev;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	ma_spin_lock_bh(&s->lock);
 
@@ -187,12 +190,12 @@ int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 		if (jiffies_timeout == 0) {
 			s->value++;
 			ma_spin_unlock_bh(&s->lock);
-			LOG_OUT();
+			MARCEL_LOG_OUT();
 			return 0;
 		}
 		c.next = NULL;
 		c.blocked = tbx_true;
-		c.task = marcel_self();
+		c.task = ma_self();
 		if (s->first == NULL)
 			s->first = s->last = &c;
 		else {
@@ -206,11 +209,11 @@ int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 			ma_spin_lock_bh(&s->lock);
 			if (c.blocked) {
 				for (prev = &s->first; *prev != &c;
-				    prev = &(*prev)->next) ;
+				     prev = &(*prev)->next) ;
 				*prev = c.next;
 				s->value++;
 				ma_spin_unlock_bh(&s->lock);
-				LOG_OUT();
+				MARCEL_LOG_OUT();
 				return 0;
 			}
 		} while (c.blocked);
@@ -218,13 +221,13 @@ int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 	return 1;
 }
 
 /*******************sem_timedwait**********************/
-DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
-   const struct timespec *__restrict abs_timeout),(sem,abs_timeout),
+DEF_PMARCEL(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
+			       const struct timespec *__restrict abs_timeout),(sem,abs_timeout),
 {
 	struct timeval tv;
 	long long timeout;	// usec
@@ -232,28 +235,25 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 	semcell c;
 	semcell **prev;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	if (abs_timeout->tv_nsec < 0 || abs_timeout->tv_nsec >= 1000000000) {
 #ifdef MA__DEBUG
 		fprintf(stderr,
-		    "pmarcel_semtimedwait : valeur nsec(%ld) invalide\n",
-		    abs_timeout->tv_nsec);
+			"pmarcel_semtimedwait : valeur nsec(%ld) invalide\n",
+			abs_timeout->tv_nsec);
 #endif
 		errno = EINVAL;
 		return -1;
 	}
 
 	gettimeofday(&tv, NULL);
-	timeout = (abs_timeout->tv_sec - tv.tv_sec) * 1000000 +
-	    (abs_timeout->tv_nsec / 1000 - tv.tv_usec);
+	timeout = (abs_timeout->tv_sec - tv.tv_sec) * 1000000 + (abs_timeout->tv_nsec / 1000 - tv.tv_usec);
 	if (timeout < 0)
 		jiffies_timeout = 0;
 	else
-		jiffies_timeout =
-		    (timeout + marcel_gettimeslice() -
-		    1) / marcel_gettimeslice();
+		jiffies_timeout = (timeout + marcel_gettimeslice() - 1) / marcel_gettimeslice();
 
 	ma_spin_lock_bh(&s->lock);
 
@@ -261,13 +261,13 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 		if (jiffies_timeout == 0) {
 			s->value++;
 			ma_spin_unlock_bh(&s->lock);
-			LOG_OUT();
+			MARCEL_LOG_OUT();
 			errno = ETIMEDOUT;
 			return -1;
 		}
 		c.next = NULL;
 		c.blocked = tbx_true;
-		c.task = marcel_self();
+		c.task = ma_self();
 		if (s->first == NULL)
 			s->first = s->last = &c;
 		else {
@@ -282,11 +282,11 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 			ma_spin_lock_bh(&s->lock);
 			if (jiffies_timeout == 0 || MA_GET_INTERRUPTED()) {
 				for (prev = &s->first; *prev != &c;
-				    prev = &(*prev)->next) ;
+				     prev = &(*prev)->next) ;
 				*prev = c.next;
 				s->value++;
 				ma_spin_unlock_bh(&s->lock);
-				LOG_OUT();
+				MARCEL_LOG_OUT();
 				errno = jiffies_timeout ? EINTR : ETIMEDOUT;
 				return -1;
 			}
@@ -295,19 +295,17 @@ DEF_POSIX(int,sem_timedwait,(pmarcel_sem_t *__restrict s,
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
-
-DEF_C(int,sem_timedwait,(sem_t *__restrict sem, const struct timespec *__restrict abs_timeout),(sem,abs_timeout));
-
+DEF_C(int,sem_timedwait,(sem_t *__restrict sem, const struct timespec *__restrict abs_timeout),(sem,abs_timeout))
 
 
 void marcel_sem_V(marcel_sem_t *s)
 {
 	semcell *c;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	ma_spin_lock_bh(&s->lock);
 
@@ -315,93 +313,93 @@ void marcel_sem_V(marcel_sem_t *s)
 		c = s->first;
 		s->first = c->next;
 		ma_spin_unlock_bh(&s->lock);
-		c->blocked = 0;
+		c->blocked = tbx_false;
 		ma_smp_wmb();
 		ma_wake_up_thread(c->task);
 	} else {
 		ma_spin_unlock_bh(&s->lock);
 	}
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 int marcel_sem_try_V(marcel_sem_t *s)
 {
 	semcell *c;
 
-	LOG_IN();
-	LOG_PTR("semaphore", s);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("semaphore %p\n", s);
 
 	if (!(ma_spin_trylock_bh(&s->lock)))
-		LOG_RETURN(0);
+		MARCEL_LOG_RETURN(0);
 
 	if (s->value < 0) {
 		c = s->first;
 		if (!(ma_wake_up_thread_async(c->task))) {
 			ma_spin_unlock_bh(&s->lock);
-			LOG_RETURN(0);
+			MARCEL_LOG_RETURN(0);
 		}
 		/* This is a bit late, but since we hold the lock, the woken up
 		 * thread will spin waiting for us */
-		c->blocked = 0;
+		c->blocked = tbx_false;
 		s->first = c->next;
 	}
 
 	s->value++;
 	ma_spin_unlock_bh(&s->lock);
 
-	LOG_RETURN(1);
+	MARCEL_LOG_RETURN(1);
 }
 
-DEF_POSIX(int, sem_post, (pmarcel_sem_t *s), (s),
+DEF_PMARCEL(int, sem_post, (pmarcel_sem_t *s), (s),
 {
 	// TODO: vérifier tout overflow de value
 	marcel_sem_V(s);
 	return 0;
 })
-DEF_C(int, sem_post, (pmarcel_sem_t *s), (s));
+DEF_C(int, sem_post, (pmarcel_sem_t *s), (s))
 
-DEF_MARCEL_POSIX(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
+DEF_MARCEL_PMARCEL(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval),
 {
 	ma_spin_lock_bh(&s->lock);
 	*sval = s->value;
 	ma_spin_unlock_bh(&s->lock);
 	return 0;
 })
-DEF_C(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval));
+DEF_C(int, sem_getvalue, (pmarcel_sem_t * __restrict s, int * __restrict sval), (s, sval))
 
 
 /********************sem_close**************************/
-DEF_POSIX(int,sem_close,(pmarcel_sem_t *sem TBX_UNUSED),(sem),
+DEF_PMARCEL(int,sem_close,(pmarcel_sem_t *sem TBX_UNUSED),(sem),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	fprintf(stderr, "!! sem_close not implemented\n");
 	errno = ENOTSUP;
-	LOG_RETURN(-1);
+	MARCEL_LOG_RETURN(-1);
 })
 
 DEF_C(int,sem_close,(sem_t *sem),(sem))
 DEF___C(int,sem_close,(sem_t *sem),(sem))
 
 /********************sem_open***************************/
-DEF_POSIX(pmarcel_sem_t*,sem_open,(const char *name TBX_UNUSED, int flags TBX_UNUSED,...),(name,flags,...),
+DEF_PMARCEL(pmarcel_sem_t*,sem_open,(const char *name TBX_UNUSED, int flags TBX_UNUSED,...),(name,flags,...),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	fprintf(stderr, "!! sem_open not implemented\n");
 	errno = ENOTSUP;
-	LOG_RETURN(PMARCEL_SEM_FAILED);
+	MARCEL_LOG_RETURN(PMARCEL_SEM_FAILED);
 })
 
 DEF_C(sem_t *,sem_open,(const char *name, int flags,...),(name,flags,...))
 DEF___C(sem_t *,sem_open,(const char *name, int flags,...),(name,flags,...))
 
 /*******************sem_unlink**************************/
-DEF_POSIX(int,sem_unlink,(const char *name TBX_UNUSED),(name),
+DEF_PMARCEL(int,sem_unlink,(const char *name TBX_UNUSED),(name),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	fprintf(stderr, "!! sem_unlink not implemented\n");
 	errno = ENOTSUP;
-	LOG_RETURN(-1);
+	MARCEL_LOG_RETURN(-1);
 })
 
 DEF_C(int,sem_unlink,(const char *name),(name))

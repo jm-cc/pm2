@@ -58,7 +58,6 @@ void
 channel_disconnect(p_leo_dir_vxchannel_t vxchannel,
                    p_leo_dir_channel_t   channel)
 {
-  LOG_IN();
   {
     void _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
       tbx_bool_t _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
@@ -87,7 +86,6 @@ channel_disconnect(p_leo_dir_vxchannel_t vxchannel,
 
     do_pc_send_local(channel->pc, _d);
   }
-  LOG_OUT();
 }
 
 static
@@ -96,7 +94,6 @@ fchannel_disconnect(p_leo_dir_vxchannel_t vchannel,
                     p_leo_dir_fchannel_t  fchannel,
                     p_leo_dir_channel_t   channel)
 {
-  LOG_IN();
   {
     void _d(ntbx_process_lrank_t dl, p_ntbx_client_t dst) {
       tbx_bool_t _s(ntbx_process_lrank_t sl, p_ntbx_client_t src) {
@@ -125,7 +122,6 @@ fchannel_disconnect(p_leo_dir_vxchannel_t vchannel,
 
     do_pc_send_local(channel->pc, _d);
   }
-  LOG_OUT();
 }
 
 // dir_vchannel_disconnect: manages virtual channels disconnection
@@ -164,11 +160,9 @@ dir_vchannel_disconnect(p_leonie_t leonie)
       do_slist(vchannel->dir_fchannel_slist, _forward);
     }
 
-  LOG_IN();
   with_all_processes(dir, int_sync);
   do_slist(dir->vchannel_slist, _virtual);
   str_sync(dir);
-  LOG_OUT();
 }
 
 
@@ -196,11 +190,9 @@ dir_xchannel_disconnect(p_leonie_t leonie)
       do_slist(xchannel->dir_channel_slist, _regular);
     }
 
-  LOG_IN();
   with_all_processes(dir, int_sync);
   do_slist(dir->xchannel_slist, _mux);
   str_sync(dir);
-  LOG_OUT();
 }
 
 static
@@ -213,9 +205,7 @@ barrier(p_ntbx_process_container_t pc)
       wait_for_ack(_client);
   }
 
-  LOG_IN();
   do_pc_send(pc, _f);
-  LOG_OUT();
 }
 
 static
@@ -246,10 +236,8 @@ vchannel_exit(void *_p)
     do_pc_send_local(pc, _s);
   }
 
-  LOG_IN();
   pc = dir_vchannel->pc;
 
-  TRACE_STR("Vchannel", dir_vchannel->name);
   do_pc_send_string(pc, dir_vchannel->name);
 
   src_cmd = 0;
@@ -261,7 +249,6 @@ vchannel_exit(void *_p)
   dst_cmd = 0;
   _process_command();
   barrier(pc);
-  LOG_OUT();
 }
 
 // dir_vchannel_exit: manages virtual channels data structures clean-up
@@ -269,10 +256,8 @@ static
 void
 dir_vchannel_exit(p_leo_directory_t dir)
 {
-  LOG_IN();
   do_slist(dir->vchannel_slist, vchannel_exit);
   str_sync(dir);
-  LOG_OUT();
 }
 
 static
@@ -303,10 +288,8 @@ xchannel_exit(void *_p)
     do_pc_send_local(pc, _s);
   }
 
-  LOG_IN();
   pc = dir_xchannel->pc;
 
-  TRACE_STR("Xchannel", dir_xchannel->name);
   do_pc_send_string(pc, dir_xchannel->name);
 
   src_cmd = 0;
@@ -318,17 +301,14 @@ xchannel_exit(void *_p)
   dst_cmd = 0;
   _process_command();
   barrier(pc);
-  LOG_OUT();
 }
 
 static
 void
 dir_xchannel_exit(p_leo_directory_t dir)
 {
-  LOG_IN();
   do_slist(dir->xchannel_slist, xchannel_exit);
   str_sync(dir);
-  LOG_OUT();
 }
 
 static
@@ -364,12 +344,10 @@ dir_fchannel_exit(p_leo_directory_t dir)
       do_pc_send_local(pc, _s);
     }
 
-    LOG_IN();
     dir_channel = tbx_htable_get(dir->channel_htable,
                                  dir_fchannel->channel_name);
     pc          = dir_channel->pc;
 
-    TRACE_STR("Fchannel", dir_fchannel->name);
     do_pc_send_string(pc, dir_fchannel->name);
 
     src_cmd = 0;
@@ -381,13 +359,10 @@ dir_fchannel_exit(p_leo_directory_t dir)
     dst_cmd = 0;
     _process_command();
     barrier(pc);
-    LOG_OUT();
   }
 
-  LOG_IN();
   do_slist(dir->fchannel_slist, fchannel_exit);
   str_sync(dir);
-  LOG_OUT();
 }
 
 // dir_channel_exit: manages regular channels data structures clean-up
@@ -422,10 +397,8 @@ channel_exit(void *_p)
     do_pc_send_local(pc, _s);
   }
 
-  LOG_IN();
   pc = dir_channel->pc;
 
-  TRACE_STR("Channel", dir_channel->name);
   do_pc_send_string(pc, dir_channel->name);
 
   src_cmd = 0;
@@ -437,17 +410,14 @@ channel_exit(void *_p)
   dst_cmd = 0;
   _process_command();
   barrier(pc);
-  LOG_OUT();
 }
 
 static
 void
 dir_channel_exit(p_leo_directory_t dir)
 {
-  LOG_IN();
   do_slist(dir->channel_slist, channel_exit);
   str_sync(dir);
-  LOG_OUT();
 }
 
 // dir_driver_exit: manages driver data structures clean-up
@@ -462,21 +432,16 @@ driver_exit_pass1(void *_dir_driver)
 
     void _f(void *_q) {
       p_leo_dir_adapter_t dir_adapter = _q;
-      TRACE_STR("sending", dir_adapter->name);
       leo_send_string(_client, dir_adapter->name);
     }
 
     do_slist(dps->adapter_slist, _f);
-    TRACE_STR("sending", "-");
     leo_send_string(_client, "-");
   }
 
-  LOG_IN();
-  TRACE_STR("Driver", dir_driver->network_name);
   do_pc_send_string(dir_driver->pc, dir_driver->network_name);
   do_pc_send_s     (dir_driver->pc, _adapters);
   do_pc_send       (dir_driver->pc, wait_for_ack);
-  LOG_OUT();
 }
 
 static
@@ -485,11 +450,8 @@ driver_exit_pass2(void *_dir_driver)
 {
   p_leo_dir_driver_t dir_driver = _dir_driver;
 
-  LOG_IN();
-  TRACE_STR("Driver", dir_driver->network_name);
   do_pc_send_string(dir_driver->pc, dir_driver->network_name);
   do_pc_send(dir_driver->pc, wait_for_ack);
-  LOG_OUT();
 }
 
 static
@@ -497,17 +459,11 @@ void
 dir_driver_exit(p_leo_directory_t dir)
 {
 
-  LOG_IN();
-  TRACE("Freeing drivers");
-
-  TRACE("First pass");
   do_slist(dir->driver_slist, driver_exit_pass1);
   str_sync(dir);
 
-  TRACE("Second pass");
   do_slist(dir->driver_slist, driver_exit_pass2);
   str_sync(dir);
-  LOG_OUT();
 }
 
 // dir_vchannel_cleanup: manages local virtual channels data structures
@@ -551,7 +507,6 @@ dir_vchannel_cleanup(p_leo_directory_t dir)
       TBX_FREE(dir_vchannel);
     }
 
-  LOG_IN();
   do_extract_slist(dir->vchannel_slist, _h);
 
   tbx_slist_free(dir->vchannel_slist);
@@ -559,7 +514,6 @@ dir_vchannel_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->vchannel_htable);
   dir->vchannel_htable = NULL;
-  LOG_OUT();
 }
 
 // dir_vchannel_cleanup: manages local virtual channels data structures
@@ -599,7 +553,6 @@ dir_xchannel_cleanup(p_leo_directory_t dir)
     TBX_FREE(dir_xchannel);
   }
 
-  LOG_IN();
   do_extract_slist(dir->xchannel_slist, _h);
 
   tbx_slist_free(dir->xchannel_slist);
@@ -607,7 +560,6 @@ dir_xchannel_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->xchannel_htable);
   dir->xchannel_htable = NULL;
-  LOG_OUT();
 }
 
 // dir_fchannel_cleanup: manages local forwarding channels data structures
@@ -627,7 +579,6 @@ dir_fchannel_cleanup(p_leo_directory_t dir)
       TBX_FREE(dir_fchannel);
     }
 
-  LOG_IN();
   do_extract_slist(dir->fchannel_slist, _f);
 
   tbx_slist_free(dir->fchannel_slist);
@@ -635,7 +586,6 @@ dir_fchannel_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->fchannel_htable);
   dir->fchannel_htable = NULL;
-  LOG_OUT();
 }
 
 // dir_channel_cleanup: manages local regular channels data structures
@@ -655,7 +605,6 @@ dir_channel_cleanup(p_leo_directory_t dir)
       }
     }
 
-    LOG_IN();
     tbx_htable_extract(dir->channel_htable, dir_channel->name);
 
     ntbx_topology_table_exit(dir_channel->ttable);
@@ -671,10 +620,8 @@ dir_channel_cleanup(p_leo_directory_t dir)
     dir_channel->public = tbx_false;
 
     TBX_FREE(dir_channel);
-    LOG_OUT();
   }
 
-  LOG_IN();
   do_extract_slist(dir->channel_slist, _g);
 
   tbx_slist_free(dir->channel_slist);
@@ -682,7 +629,6 @@ dir_channel_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->channel_htable);
   dir->channel_htable = NULL;
-  LOG_OUT();
 }
 
 static
@@ -694,7 +640,6 @@ dps_cleanup(void *_s)
   void _f(void *_p) {
     p_leo_dir_adapter_t dir_adapter = _p;
 
-    LOG_IN();
     tbx_htable_extract(dps->adapter_htable, dir_adapter->name);
 
     TBX_FREE2(dir_adapter->name);
@@ -702,10 +647,8 @@ dps_cleanup(void *_s)
     TBX_CFREE2(dir_adapter->parameter);
     dir_adapter->mtu = 0;
     TBX_FREE(dir_adapter);
-    LOG_OUT();
   }
 
-  LOG_IN();
   if (dps) {
     do_extract_slist(dps->adapter_slist, _f);
 
@@ -715,7 +658,6 @@ dps_cleanup(void *_s)
     tbx_htable_free(dps->adapter_htable);
     dps->adapter_htable = NULL;
   }
-  LOG_OUT();
 }
 
 static
@@ -725,7 +667,6 @@ dir_driver_cleanup(p_leo_directory_t dir)
   void _f(void *_p) {
       p_leo_dir_driver_t dir_driver = _p;
 
-      LOG_IN();
       tbx_htable_extract(dir->driver_htable, dir_driver->network_name);
 
       do_pc_s(dir_driver->pc, dps_cleanup);
@@ -739,10 +680,8 @@ dir_driver_cleanup(p_leo_directory_t dir)
       dir_driver->device_name = NULL;
 
       TBX_FREE(dir_driver);
-      LOG_OUT();
     }
 
-  LOG_IN();
   do_extract_slist(dir->driver_slist, _f);
 
   tbx_slist_free(dir->driver_slist);
@@ -750,7 +689,6 @@ dir_driver_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->driver_htable);
   dir->driver_htable = NULL;
-  LOG_OUT();
 }
 
 // dir_node_cleanup: manages local node data structures clean-up
@@ -773,7 +711,6 @@ dir_node_cleanup(p_leo_directory_t dir)
       TBX_FREE(dir_node);
     }
 
-  LOG_IN();
   do_extract_slist(dir->node_slist, _f);
 
   tbx_slist_free(dir->node_slist);
@@ -781,7 +718,6 @@ dir_node_cleanup(p_leo_directory_t dir)
 
   tbx_htable_free(dir->node_htable);
   dir->node_htable = NULL;
-  LOG_OUT();
 }
 
 // dir_process_cleanup: manages local process data structures clean-up
@@ -806,11 +742,9 @@ dir_process_cleanup(p_leo_directory_t dir)
       process->ref = NULL;
   }
 
-  LOG_IN();
   do_extract_slist(dir->process_slist, _f);
   tbx_slist_free(dir->process_slist);
   dir->process_slist = NULL;
-  LOG_OUT();
 }
 
 // directory_exit: local directory data structure clean-up
@@ -823,7 +757,6 @@ directory_exit(p_leonie_t leonie)
 
   p_leo_directory_t dir   = NULL;
 
-  LOG_IN();
   dir = leonie->directory;
 
   dir_vchannel_exit(dir);
@@ -831,7 +764,6 @@ directory_exit(p_leonie_t leonie)
   dir_fchannel_exit(dir);
   dir_channel_exit(dir);
   dir_driver_exit(dir);
-  TRACE("Directory clean-up");
 
   with_all_processes(dir, _f);
 
@@ -842,7 +774,6 @@ directory_exit(p_leonie_t leonie)
   dir_driver_cleanup(dir);
   dir_node_cleanup(dir);
   dir_process_cleanup(dir);
-  LOG_OUT();
 }
 
 
@@ -854,8 +785,6 @@ wait_processes(p_leonie_t leonie)
   int                  nb_clients   =    0;
   int                  nb_clientsl  =    0;
   int                  pid;
-
-  LOG_IN();
 
   settings     = leonie->settings;
 
@@ -873,19 +802,8 @@ wait_processes(p_leonie_t leonie)
 	leo_error("waitpid", settings);
       }
 
-      if (WIFEXITED(status)) {
-	TRACE("%d : termine, code=%d\n", ret, WEXITSTATUS(status));
-      } else if (WIFSIGNALED(status)) {
-	TRACE("%d : tue par le signal %d", ret, WTERMSIG(status));
-      } else if (WIFSTOPPED(status)) {
-	TRACE("%d : arrete par le signal %d", ret, WSTOPSIG(status));
-      } else if (WIFCONTINUED(status)) {
-	TRACE("%d : relance", ret);
-      }
-
       nb_clientsl++;
     }
 
-  LOG_OUT();
 }
 

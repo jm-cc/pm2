@@ -31,6 +31,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -73,18 +74,16 @@
 #define ma_hweight32(x) ma_hweight64 ((x) & 0xfffffffful)
 #define ma_hweight16(x) ma_hweight64 ((x) & 0xfffful)
 #define ma_hweight8(x)  ma_hweight64 ((x) & 0xfful)
-
 #define ma_find_next_zero_bit(addr, size, offset) \
 			__ma_find_next_zero_bit((addr), (size), (offset))
 #define ma_find_next_bit(addr, size, offset) \
 			__ma_find_next_bit((addr), (size), (offset))
+
 /*
  * The optimizer actually does good code for this case..
  */
 #define ma_find_first_zero_bit(addr, size) ma_find_next_zero_bit((addr), (size), 0)
-
 #define ma_find_first_bit(addr, size) ma_find_next_bit((addr), (size), 0)
-
 #define __ma_clear_bit(nr, addr)	ma_clear_bit(nr, addr)
 
 
@@ -106,49 +105,29 @@
  *
  * bit 0 is the LSB of addr; bit 32 is the LSB of (addr+1).
  */
-static __tbx_inline__ void
-ma_set_bit (int nr, volatile void *addr);
-static __tbx_inline__ void
-__ma_set_bit (int nr, volatile void *addr);
-static __tbx_inline__ void
-ma_clear_bit (int nr, volatile void *addr);
-static __tbx_inline__ void
-ma_change_bit (int nr, volatile void *addr);
-static __tbx_inline__ void
-__ma_change_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-ma_test_and_set_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-__ma_test_and_set_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-ma_test_and_clear_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-__ma_test_and_clear_bit(int nr, volatile void * addr);
-static __tbx_inline__ int
-ma_test_and_change_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-__ma_test_and_change_bit (int nr, volatile void *addr);
-static __tbx_inline__ int
-ma_test_bit (int nr, const volatile void *addr);
-static __tbx_inline__ unsigned long
-ma_ffz (unsigned long x);
-static __tbx_inline__ unsigned long
-__ma_ffs (unsigned long x);
-static __tbx_inline__ unsigned long
-ma_ia64_fls (unsigned long x);
-static __tbx_inline__ int
-ma_fls (int x);
-static __tbx_inline__ unsigned long
-ma_hweight64 (unsigned long x);
-extern int __ma_find_next_zero_bit (void *addr, unsigned long size,
-				    unsigned long offset);
-extern int __ma_find_next_bit(const void *addr, unsigned long size,
-			      unsigned long offset);
-
-static __tbx_inline__ int
-ma_sched_find_first_bit (unsigned long *b);
+static __tbx_inline__ void ma_set_bit(int nr, volatile void *addr);
+static __tbx_inline__ void __ma_set_bit(int nr, volatile void *addr);
+static __tbx_inline__ void ma_clear_bit(int nr, volatile void *addr);
+static __tbx_inline__ void ma_change_bit(int nr, volatile void *addr);
+static __tbx_inline__ void __ma_change_bit(int nr, volatile void *addr);
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile void *addr);
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile void *addr);
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile void *addr);
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile void *addr);
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile void *addr);
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile void *addr);
+static __tbx_inline__ int ma_test_bit(int nr, const volatile void *addr);
+static __tbx_inline__ unsigned long ma_ffz(unsigned long x);
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long x);
+static __tbx_inline__ unsigned long ma_ia64_fls(unsigned long x);
+static __tbx_inline__ int ma_fls(int x);
+static __tbx_inline__ unsigned long ma_hweight64(unsigned long x);
+extern int __ma_find_next_zero_bit(void *addr, unsigned long size, unsigned long offset);
+extern int __ma_find_next_bit(const void *addr, unsigned long size, unsigned long offset);
+static __tbx_inline__ int ma_sched_find_first_bit(unsigned long *b);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

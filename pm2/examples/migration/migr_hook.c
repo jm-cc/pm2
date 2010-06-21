@@ -99,7 +99,7 @@ int pm2_main(int argc, char **argv)
   pm2_set_post_migration_func(post_migration);
   pm2_set_post_post_migration_func(post_post_migration);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if(pm2_config_size() < 2) {
     fprintf(stderr,

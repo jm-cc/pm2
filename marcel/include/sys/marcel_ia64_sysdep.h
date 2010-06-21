@@ -81,7 +81,7 @@
         br.call.sptk.many rp = _mcount                                  \
         ;;
 #else
-# define CALL_MCOUNT    /* Do nothing. */
+# define CALL_MCOUNT		/* Do nothing. */
 #endif
 
 #undef END
@@ -92,7 +92,7 @@
 #define ret                     br.ret.sptk.few b0
 
 
-#endif /* ASSEMBLER */
+#endif				/* ASSEMBLER */
 
 
 #endif /** __SYS_MARCEL_IA64_SYSDEP_H__ **/

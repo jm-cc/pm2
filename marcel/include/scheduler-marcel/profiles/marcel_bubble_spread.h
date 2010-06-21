@@ -22,11 +22,11 @@
 
 
 /** Public global variables **/
-MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (spread);
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(spread);
 
 
 /** Public functions **/
-extern void marcel_bubble_spread(marcel_bubble_t *b, struct marcel_topo_level *l);
+extern void marcel_bubble_spread(marcel_bubble_t * b, struct marcel_topo_level *l);
 
 
 #endif /** __MARCEL_BUBBLE_SPREAD_H__ **/

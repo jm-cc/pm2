@@ -19,12 +19,11 @@
 
 
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include "asm/linux_perlwp.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -32,6 +31,7 @@
 #define ma_put_lwp_var(var) ma_preempt_enable()
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

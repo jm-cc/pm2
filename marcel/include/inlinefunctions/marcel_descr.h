@@ -26,56 +26,51 @@
 
 
 /** Public inline **/
-static __tbx_inline__ char *marcel_stackbase(marcel_t pid)
-{
-	return (char *) pid->stack_base;
-}
-
-
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
-/** Internal inline functions **/
+/** Internal global variable **/
 #ifdef MA__SELF_VAR
-extern TBX_EXTERN
+    extern
 #ifdef MA__SELF_VAR_TLS
-	__thread
+ __thread
 #endif
-	marcel_t ma_self;
-MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
+ marcel_t __ma_self;
+
+static inline TBX_NOINST marcel_t ma_self(void)
 {
-	return ma_self;
+	return __ma_self;
 }
+
 #else
-/* TBX_NOINST car utilisé dans profile/source/fut_record.c */
-MARCEL_INLINE TBX_NOINST marcel_t marcel_self(void)
+static inline TBX_NOINST marcel_t ma_self(void)
 {
 	marcel_t self;
 	register unsigned long sp = get_sp();
 
 #ifdef STANDARD_MAIN
-	if (IS_ON_MAIN_STACK(sp))
+	if (sp >= ma_main_stacklimit)
 		self = &__main_thread_struct;
 	else
 #endif
 	{
 #ifdef ENABLE_STACK_JUMPING
 		self = *((marcel_t *) (((sp & ~(THREAD_SLOT_SIZE - 1)) +
-			    THREAD_SLOT_SIZE - sizeof(void *))));
+					THREAD_SLOT_SIZE - sizeof(void *))));
 #else
 		self = ma_slot_sp_task(sp);
 #endif
 		/* Detect stack overflow. If you encounter
 		 * this, increase THREAD_SLOT_SIZE */
-		MA_BUG_ON(sp >= (unsigned long) self
-		    && sp < (unsigned long) (self + 1));
+		MA_BUG_ON(sp >= (unsigned long) self && sp < (unsigned long) (self + 1));
 	}
 	return self;
 }
 #endif
-DEC_POSIX(pmarcel_t, self, (void));
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

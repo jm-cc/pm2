@@ -18,13 +18,7 @@
 #define __ASM_IA64_LINUX_PERLWP_H__
 
 
-#ifdef __MARCEL_KERNEL__
-
-
 #include "asm-generic/linux_perlwp.h"
-
-
-#endif /** __MARCEL_KERNEL__ **/
 
 
 #endif /** __ASM_IA64_LINUX_PERLWP_H__ **/

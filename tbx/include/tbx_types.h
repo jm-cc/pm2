@@ -59,10 +59,9 @@ typedef tbx_bool_t *p_tbx_bool_t;
 
 #else
 
-typedef enum e_tbx_bool
-{
-  tbx_false = 0, /* !< condition is false */
-  tbx_true       /* !< condition is true */
+typedef enum e_tbx_bool {
+	tbx_false = 0,		/* !< condition is false */
+	tbx_true		/* !< condition is true */
 } tbx_bool_t, *p_tbx_bool_t;
 
 #endif
@@ -79,10 +78,9 @@ typedef enum e_tbx_bool
  *  A flag value.
  * \sa tbx_flag_t, p_tbx_flag_t
  */
-typedef enum e_tbx_flag
-{
-  tbx_flag_clear = 0, /* !< flag is cleared */
-  tbx_flag_set   = 1  /* !< flag is set */
+typedef enum e_tbx_flag {
+	tbx_flag_clear = 0,	/* !< flag is cleared */
+	tbx_flag_set = 1	/* !< flag is set */
 } tbx_flag_t, *p_tbx_flag_t;
 
 
@@ -98,11 +96,10 @@ typedef enum e_tbx_flag
  *  A comparison function result value.
  * \sa tbx_cmp_t, p_tbx_cmp_t
  */
-typedef enum e_tbx_cmp
-{
-  tbx_cmp_eq =  0, /* !< objects are equal */
-  tbx_cmp_gt =  1, /* !< object 1 is greater than object 2 */
-  tbx_cmp_lt = -1  /* !< object 1 is lower than object 2 */
+typedef enum e_tbx_cmp {
+	tbx_cmp_eq = 0,		/* !< objects are equal */
+	tbx_cmp_gt = 1,		/* !< object 1 is greater than object 2 */
+	tbx_cmp_lt = -1		/* !< object 1 is lower than object 2 */
 } tbx_cmp_t, *p_tbx_cmp_t;
 
 
@@ -175,19 +172,19 @@ typedef int tbx_slist_offset_t, *p_tbx_slist_offset_t;
 /*! \typedef p_tbx_slist_search_func_t
  *  A slist search function.
  */
-typedef tbx_bool_t (*p_tbx_slist_search_func_t)(void *ref_obj, void *obj);
+typedef tbx_bool_t(*p_tbx_slist_search_func_t) (void *ref_obj, void *obj);
 
 
 /*! \typedef p_tbx_slist_cmp_func_t
  *  A slist comparison function.
  */
-typedef tbx_cmp_t (*p_tbx_slist_cmp_func_t)(void *ref_obj, void *obj);
+typedef tbx_cmp_t(*p_tbx_slist_cmp_func_t) (void *ref_obj, void *obj);
 
 
 /*! \typedef p_tbx_slist_dup_func_t
  *  A slist duplication function.
  */
-typedef void * (*p_tbx_slist_dup_func_t)(void *object);
+typedef void *(*p_tbx_slist_dup_func_t) (void *object);
 
 
 /*! \typedef tbx_darray_index_t
@@ -204,6 +201,6 @@ typedef int tbx_darray_index_t, *p_tbx_darray_index_t;
 /*! \typedef p_tbx_specific_dest_func_t
  *  A \em specific field destructor function.
  */
-typedef void (*p_tbx_specific_dest_func_t)(void *specific);
+typedef void (*p_tbx_specific_dest_func_t) (void *specific);
 
-#endif /* TBX_TYPES_H */
+#endif				/* TBX_TYPES_H */

@@ -38,16 +38,16 @@
 
 /** Public data types **/
 struct marcel_spinlock {
-  ma_spinlock_t lock ;
-} ;
+	ma_spinlock_t lock;
+};
 
 
 /** Public functions **/
-DEC_MARCEL_POSIX(int, spin_init, (marcel_spinlock_t *lock, int pshared) __THROW);
-DEC_MARCEL_POSIX(int, spin_destroy, (marcel_spinlock_t *lock) __THROW);
-DEC_MARCEL_POSIX(int, spin_lock, (marcel_spinlock_t *lock) __THROW);
-DEC_MARCEL_POSIX(int, spin_trylock, (marcel_spinlock_t *lock) __THROW);
-DEC_MARCEL_POSIX(int, spin_unlock, (marcel_spinlock_t *lock) __THROW);
+DEC_MARCEL(int, spin_init, (marcel_spinlock_t * lock, int pshared) __THROW);
+DEC_MARCEL(int, spin_destroy, (marcel_spinlock_t * lock) __THROW);
+DEC_MARCEL(int, spin_lock, (marcel_spinlock_t * lock) __THROW);
+DEC_MARCEL(int, spin_trylock, (marcel_spinlock_t * lock) __THROW);
+DEC_MARCEL(int, spin_unlock, (marcel_spinlock_t * lock) __THROW);
 
 
 #endif /** __MARCEL_SPIN_H__ **/

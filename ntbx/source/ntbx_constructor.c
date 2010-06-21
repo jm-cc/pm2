@@ -26,10 +26,8 @@ ntbx_client_cons(void)
 {
   p_ntbx_client_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_client_t));
-
-  TBX_INIT_SHARED(object);
 
   object->local_host	= NULL;
   object->local_alias	= tbx_slist_nil();
@@ -42,7 +40,7 @@ ntbx_client_cons(void)
   object->read_rq_flag	= tbx_false;
   object->write_rq	= 0;
   object->write_rq_flag	= tbx_false;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -52,14 +50,14 @@ ntbx_server_cons(void)
 {
   p_ntbx_server_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_server_t));
 
   object->local_host              = NULL;
   object->local_alias             = tbx_slist_nil();
   object->connection_data.data[0] = '\0';
   object->specific                = NULL;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -69,13 +67,13 @@ ntbx_process_info_cons(void)
 {
   p_ntbx_process_info_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_process_info_t));
 
   object->local_rank =   -1;
   object->process    = NULL;
   object->specific   = NULL;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -85,7 +83,7 @@ ntbx_pc_cons(void)
 {
   p_ntbx_process_container_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_process_container_t));
 
   object->local_array_size  = 0;
@@ -93,7 +91,7 @@ ntbx_pc_cons(void)
   object->global_array_size = 0;
   object->global_index      = NULL;
   object->count             = 0;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -103,14 +101,14 @@ ntbx_process_cons(void)
 {
   p_ntbx_process_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_process_t));
 
   object->global_rank =   -1;
   object->pid         =   -1;
   object->ref         = tbx_htable_empty_table();
   object->specific    = NULL;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -120,11 +118,11 @@ ntbx_topology_element_cons(void)
 {
   p_ntbx_topology_element_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_topology_element_t));
 
   object->specific = NULL;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }
@@ -134,12 +132,12 @@ ntbx_topology_table_cons(void)
 {
   p_ntbx_topology_table_t object = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   object = TBX_CALLOC(1, sizeof(ntbx_topology_table_t));
 
   object->table = NULL;
   object->size =    0;
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return object;
 }

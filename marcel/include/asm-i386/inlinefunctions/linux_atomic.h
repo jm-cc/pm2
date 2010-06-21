@@ -23,104 +23,90 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
-static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_add(int i, ma_atomic_t * v)
 {
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "addl %1,%0"
-		:"+m" (v->counter)
-		:"ir" (i));
+	__asm__ __volatile__(MA_LOCK_PREFIX "addl %1,%0":"+m"(v->counter)
+			     :"ir"(i));
 }
 
-static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_sub(int i, ma_atomic_t * v)
 {
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "subl %1,%0"
-		:"+m" (v->counter)
-		:"ir" (i));
+	__asm__ __volatile__(MA_LOCK_PREFIX "subl %1,%0":"+m"(v->counter)
+			     :"ir"(i));
 }
 
-static __tbx_inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_sub_and_test(int i, ma_atomic_t * v)
 {
 	unsigned char c;
 
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "subl %2,%0; sete %1"
-		:"+m" (v->counter), "=qm" (c)
-		:"ir" (i) : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "subl %2,%0; sete %1":"+m"(v->counter),
+			     "=qm"(c)
+			     :"ir"(i):"memory");
 	return c;
 }
 
-static __tbx_inline__ void ma_atomic_inc(ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_inc(ma_atomic_t * v)
 {
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "incl %0"
-		:"+m" (v->counter));
+	__asm__ __volatile__(MA_LOCK_PREFIX "incl %0":"+m"(v->counter));
 }
 
-static __tbx_inline__ void ma_atomic_dec(ma_atomic_t *v)
+static __tbx_inline__ void ma_atomic_dec(ma_atomic_t * v)
 {
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "decl %0"
-		:"+m" (v->counter));
+	__asm__ __volatile__(MA_LOCK_PREFIX "decl %0":"+m"(v->counter));
 }
 
-static __tbx_inline__ int ma_atomic_dec_and_test(ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_dec_and_test(ma_atomic_t * v)
 {
 	unsigned char c;
 
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "decl %0; sete %1"
-		:"+m" (v->counter), "=qm" (c)
-		: : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "decl %0; sete %1":"+m"(v->counter), "=qm"(c)
+			     ::"memory");
 	return c != 0;
 }
 
-static __tbx_inline__ int ma_atomic_inc_and_test(ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_inc_and_test(ma_atomic_t * v)
 {
 	unsigned char c;
 
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "incl %0; sete %1"
-		:"+m" (v->counter), "=qm" (c)
-		: : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "incl %0; sete %1":"+m"(v->counter), "=qm"(c)
+			     ::"memory");
 	return c != 0;
 }
 
-static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t * v)
 {
 	unsigned char c;
 
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "addl %2,%0; sets %1"
-		:"+m" (v->counter), "=qm" (c)
-		:"ir" (i) : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "addl %2,%0; sets %1":"+m"(v->counter),
+			     "=qm"(c)
+			     :"ir"(i):"memory");
 	return c;
 }
 
 /* Same as atomic_add, but return the resulting value after addition */
-static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_add_return(int i, ma_atomic_t * v)
 {
 	int __i;
 	/* Modern 486+ processor */
 	__i = i;
-	__asm__ __volatile__(
-		MA_LOCK_PREFIX "xaddl %0, %1;"
-		:"+r"(i), "+m" (v->counter)
-		: : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "xaddl %0, %1;":"+r"(i), "+m"(v->counter)
+			     ::"memory");
 	return i + __i;
 
 }
 
 /* Same as atomic_add, but return the resulting value after substraction */
-static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t *v)
+static __tbx_inline__ int ma_atomic_sub_return(int i, ma_atomic_t * v)
 {
-	return ma_atomic_add_return(-i,v);
+	return ma_atomic_add_return(-i, v);
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

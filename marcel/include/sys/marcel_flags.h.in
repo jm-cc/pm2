@@ -18,6 +18,9 @@
 #define __SYS_MARCEL_FLAGS_H__
 
 
+#include "tbx_compiler.h"
+
+
 #ifdef PM2DEBUG
 #  define MA__DEBUG
 #endif
@@ -38,15 +41,6 @@
 #  define __MARCEL_NUMA 1
 #else
 #  define __MARCEL_NUMA 0
-#endif
-
-#if ((__MARCEL_MONO + __MARCEL_SMP + __MARCEL_NUMA) == 0)
-#  error No MARCEL_... defined. Choose between MONO SMP and NUMA Marcel options in the flavor
-//#define MARCEL_MONO 1
-#endif
-
-#if ((__MARCEL_MONO + __MARCEL_SMP + __MARCEL_NUMA) > 1)
-#  error You must define at most one of MARCEL_MONO, MARCEL_SMP or MARCEL_NUMA Marcel options in the flavor
 #endif
 
 
@@ -117,7 +111,7 @@
 #ifdef MA__SELF_VAR
 #  undef MA__SELF_VAR
 #endif
-/* MA__SELF_VAR_TLS : if set, store ma_self in TLS (kernel or marcel) */
+/* MA__SELF_VAR_TLS : if set, store __ma_self in TLS (kernel or marcel) */
 #ifdef MA__SELF_VAR_TLS
 #  undef MA__SELF_VAR_TLS
 #endif
@@ -184,7 +178,7 @@
 #endif
 
 /* We may not want timer signals */
-#if defined(MA_DO_NOT_LAUNCH_SIGNAL_TIMER) || defined(__MINGW32__)
+#if defined(MA_DO_NOT_LAUNCH_SIGNAL_TIMER)
 #ifdef PM2_DEV
 #warning NO SIGNAL TIMER ENABLE
 #warning I hope you are debugging
@@ -192,11 +186,7 @@
 #  undef MA__TIMER
 #endif
 
-/* Define to 1 if you have the declaration of `SIGEV_THREAD_ID', and to 0 if
-   you don't. */
-#undef HAVE_DECL_SIGEV_THREAD_ID
-
-#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && HAVE_DECL_SIGEV_THREAD_ID
+#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && defined(HAVE_DECL_SIGEV_THREAD_ID)
 #define MA__USE_TIMER_CREATE
 #endif
 

@@ -23,21 +23,22 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  char ret = 0;
+	char ret = 0;
 
-  __asm__ __volatile__("ldstub [%0], %1"
-	: "=r"(spinlock), "=r"(ret)
-	: "0"(spinlock), "1" (ret) : "memory");
+	__asm__ __volatile__("ldstub [%0], %1":"=r"(spinlock), "=r"(ret)
+			     :"0"(spinlock), "1"(ret):"memory");
 
-  return (unsigned)ret;
+	return (unsigned) ret;
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

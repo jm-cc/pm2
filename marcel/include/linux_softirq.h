@@ -38,15 +38,16 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal data structures **/
-struct ma_tasklet_head
-{
-	struct ma_tasklet_struct *list;
+    struct ma_tasklet_head {
+	struct marcel_tasklet_struct *list;
 };
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

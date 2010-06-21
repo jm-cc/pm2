@@ -1,3 +1,0 @@
-Provide: mad3_linkmode
-Provide: static_libs
-Conflict: mad3_linkmode

@@ -18,7 +18,10 @@
 #include <errno.h>
 
 /* TODO: support without Marcel */
-extern unsigned long volatile ma_jiffies;
+#ifndef MA_JIFFIES_PER_TIMER_TICK
+#define MA_JIFFIES_PER_TIMER_TICK 1
+#endif
+unsigned long volatile piom_jiffies = MA_JIFFIES_PER_TIMER_TICK;
 volatile int *__piom_core_status = NULL;
 int __piom_nb_core = 0;
 
@@ -34,8 +37,8 @@ __piom_poll_start(piom_server_t server)
 	PIOM_LOGF("Starting timer polling for [%s] at period %i\n",
 		  server->name, server->period);
 #ifdef MARCEL
-	ma_mod_timer(&server->poll_timer,
-		     ma_jiffies + server->period);
+	marcel_mod_timer(&server->poll_timer,
+			 piom_jiffies + server->period);
 #else
 	/* TODO: timer without Marcel */
 #endif	/* MARCEL */
@@ -94,7 +97,7 @@ __piom_poll_stop(piom_server_t server)
     if (server->poll_points & PIOM_POLL_AT_TIMER_SIG) {
 	PIOM_LOGF("Stopping timer polling for [%s]\n", server->name);
 #ifdef MARCEL
-	ma_del_timer(&server->poll_timer);
+	marcel_del_timer(&server->poll_timer);
 #else
 	/* TODO: timer without Marcel */
 #endif		/* MARCEL */
@@ -122,9 +125,9 @@ piom_test_activity(void)
 {
     tbx_bool_t result = tbx_false;
 
-    LOG_IN();
+    PIOM_LOG_IN();
     result = tbx_flag_test(&piom_activity);
-    LOG_OUT();
+    PIOM_LOG_OUT();
 
     return result;
 }
@@ -134,16 +137,46 @@ piom_test_activity(void)
 void 
 piom_server_init(piom_server_t server, char *name)
 {
-    *server = (struct piom_server) PIOM_SERVER_INIT(*server, name);
     PIOM_LOGF( "New server %s : %p\n",name, server);
+
 #ifdef MARCEL
-    //	ma_open_softirq(MA_PIOM_SOFTIRQ, __piom_manage_ready, NULL);
-#endif /* MARCEL */
+    marcel_spin_init(&server->lock, 1);
+    server->lock_owner = NULL;
+    marcel_spin_init(&server->req_success_lock, 1);
+    marcel_spin_init(&server->req_ready_lock, 1);
+
+    marcel_tasklet_init(&server->poll_tasklet,&piom_poll_from_tasklet, (unsigned long)server, 1);
+    server->need_manage = 0;
+    marcel_init_timer(&server->poll_timer, piom_poll_timer, 0, (unsigned long)server);
+
+#ifdef PIOM_BLOCKING_CALLS
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_block_grouped);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_to_export);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_exported);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_lwp_ready);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_lwp_working);
+
+    server->lwp_lock = MARCEL_SPINLOCK_INITIALIZER;
+#endif  /* MA__LWPS */
+ 
+#endif	/* MARCEL */
+
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_registered);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_ready);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_success);
+    TBX_INIT_FAST_LIST_HEAD(&server->list_id_waiters);
+    server->registered_req_not_yet_polled = 0;
+    TBX_INIT_FAST_LIST_HEAD(&server->list_req_poll_grouped);
+    server->req_poll_grouped_nb = 0;
+    server->poll_points = 0;
+    server->period = 0;
+    server->stopable = 0;
+    server->max_poll = -1;
+    TBX_INIT_FAST_LIST_HEAD(&server->chain_poll);
+    server->state = PIOM_SERVER_STATE_INIT;
+    server->name = name;
 }
 
-#ifndef MA_JIFFIES_PER_TIMER_TICK
-#define MA_JIFFIES_PER_TIMER_TICK 1
-#endif
 
 /* Change a server's polling settings
  * this function has to be called between piom_server_init and piom_server_start
@@ -197,7 +230,7 @@ piom_server_start(piom_server_t server)
 int 
 piom_server_stop(piom_server_t server)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     piom_req_t req, tmp;
     if(server->state != PIOM_SERVER_STATE_LAUNCHED) {
 	PIOM_LOGF("server %p not started (%d)\n", server, server->state);
@@ -213,12 +246,12 @@ piom_server_stop(piom_server_t server)
     piom_server_unlock_reentrant(server, lock);
     
 #ifdef MARCEL
-    ma_tasklet_kill(&server->poll_tasklet);
+    //ma_tasklet_kill(&server->poll_tasklet);
 #endif
     
     lock = piom_server_lock_reentrant(server);
 #ifdef MARCEL
-    ma_tasklet_disable(&server->poll_tasklet);
+    //ma_tasklet_disable(&server->poll_tasklet);
 #endif
     
 #endif	/* PIOM_THREAD_ENABLED */
@@ -285,12 +318,12 @@ piom_server_stop(piom_server_t server)
 
 #ifdef PIOM_THREAD_ENABLED
 #ifdef MARCEL
-    ma_tasklet_enable(&server->poll_tasklet);
+    //ma_tasklet_enable(&server->poll_tasklet);
 #endif	/* MARCEL */
       piom_server_unlock_reentrant(server, lock);
 #endif /* PIOM_THREAD_ENABLED MARCEL */
 
-    LOG_RETURN(0);
+    PIOM_LOG_RETURN(0);
 
     return 0;
 }

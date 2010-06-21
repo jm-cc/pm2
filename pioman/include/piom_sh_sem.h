@@ -30,7 +30,9 @@ typedef  piom_sh_sem_t* p_piom_sh_sem_t;
 
 #ifdef MARCEL
 #include "marcel.h"
-typedef ma_atomic_t piom_atomic_t;
+//typedef ma_atomic_t piom_atomic_t;
+/* todo: we should use atomic operations only ! */
+typedef int piom_atomic_t;
 #else
 typedef int piom_atomic_t;
 #endif /* MARCEL */

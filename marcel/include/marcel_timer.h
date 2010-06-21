@@ -18,12 +18,10 @@
 #define __MARCEL_TIMER_H__
 
 
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "asm/linux_atomic.h"
 #include "sys/marcel_lwp.h"
-#endif
 
 
 /** Public macros **/
@@ -51,16 +49,15 @@ void marcel_sig_disable_interrupts(void);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #define MA_LWP_RESCHED(lwp) marcel_kthread_kill((lwp)->pid, MARCEL_RESCHED_SIGNAL)
-
 /** \brief Return the number of microseconds corresponding to \param ts, a
  * `struct timespec' pointer.  */
 #define MA_TIMESPEC_TO_USEC(_ts)								\
   ((_ts)->tv_sec * 1e6 + (_ts)->tv_nsec / 1e3)
-
 /** \brief Return the number of jiffies corresponding to \param ts, a pointer
  * to a `struct timespec' denoting a time interval.  */
 #define MA_TIMESPEC_TO_JIFFIES(_ts)							\
@@ -68,7 +65,7 @@ void marcel_sig_disable_interrupts(void);
 
 
 /** Internal global variables **/
-extern TBX_EXTERN ma_atomic_t __ma_preemption_disabled;
+extern ma_atomic_t __ma_preemption_disabled;
 
 
 /** Internal functions **/
@@ -94,6 +91,7 @@ static __tbx_inline__ void enable_preemption(void);
 static __tbx_inline__ unsigned int preemption_enabled(void);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

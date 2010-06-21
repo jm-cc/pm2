@@ -26,38 +26,38 @@ static ma_spinlock_t marcel_key_lock=MA_SPIN_LOCK_UNLOCKED;
 unsigned marcel_nb_keys=1;
 static unsigned marcel_last_key=0;
 
-DEF_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
-				    __const void* value), (key, value),
+DEF_MARCEL_PMARCEL(int, setspecific, (marcel_key_t key,
+				      __const void* value), (key, value),
 {
 	int ret = 0;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);
-		mdebug("(p)marcel_setspecific : valeur key(%d) invalide\n",
-		    key);
+		MARCEL_LOG("(p)marcel_setspecific : valeur key(%d) invalide\n",
+			   key);
 		ret = EINVAL;
 	} else
 		SELF_GETMEM(key)[key] = (any_t) value;
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 })
 DEF_PTHREAD(int, setspecific, (pthread_key_t key, __const void* value), (key, value))
 DEF___PTHREAD(int, setspecific, (pthread_key_t key, __const void* value), (key, value))
 
-DEF_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key), (key),
+DEF_MARCEL_PMARCEL(any_t, getspecific, (marcel_key_t key), (key),
 {
 	any_t ret;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (key >= MAX_KEY_SPECIFIC
 	    || (!marcel_key_present[key])) {
 		MA_WARN_ON(1);
-		mdebug("(p)marcel_setspecific : valeur key(%d) invalide\n",
-		    key);
+		MARCEL_LOG("(p)marcel_setspecific : valeur key(%d) invalide\n",
+			   key);
 		errno = EINVAL;
 		ret = NULL;
 	} else
 		ret = SELF_GETMEM(key)[key];
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 })
 DEF_PTHREAD(any_t, getspecific, (pthread_key_t key), (key))
 DEF___PTHREAD(any_t, getspecific, (pthread_key_t key), (key))
@@ -65,12 +65,12 @@ DEF___PTHREAD(any_t, getspecific, (pthread_key_t key), (key))
 /* 
  * Hummm... Should be 0, but for obscure reasons,
  * 0 is a RESERVED value. DON'T CHANGE IT !!! 
-*/
+ */
 
-DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
-				   marcel_key_destructor_t func), (key, func),
+DEF_MARCEL_PMARCEL(int, key_create, (marcel_key_t *key, 
+				     marcel_key_destructor_t func), (key, func),
 {				/* pour l'instant, le destructeur n'est pas utilise */
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 #ifdef MA__LIBPTHREAD
 	if (tbx_unlikely(!marcel_test_activity()))
@@ -80,12 +80,12 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 		   the GNU C Library, specifically `init()' in
 		   `$(GLIBC)/dlfcn/dlerror.c', is able to gracefully handle a situation
 		   where `pthread_key_create(3)' fails, we shamelessly fail.  */
-		LOG_RETURN(EAGAIN);
+		MARCEL_LOG_RETURN(EAGAIN);
 #endif
 
 	ma_spin_lock(&marcel_key_lock);
 	while ((++marcel_last_key < MAX_KEY_SPECIFIC) &&
-	    (marcel_key_present[marcel_last_key])) {
+	       (marcel_key_present[marcel_last_key])) {
 	}
 
 	if (marcel_last_key == MAX_KEY_SPECIFIC) {
@@ -100,12 +100,12 @@ DEF_MARCEL_POSIX(int, key_create, (marcel_key_t *key,
 	marcel_key_present[marcel_last_key] = 1;
 	marcel_key_destructor[marcel_last_key] = func;
 	ma_spin_unlock(&marcel_key_lock);
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
 DEF_PTHREAD(int, key_create, (pthread_key_t *key, void (*func)(void *)), (key, func)) DEF___PTHREAD(int, key_create, (pthread_key_t *key, 
-				   void (*func)(void *)), (key, func))
+														      void (*func)(void *)), (key, func))
 
-DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
+DEF_MARCEL_PMARCEL(int, key_delete, (marcel_key_t key), (key),
 {
 	/* Note: This function does *not* invoke KEY's destructors.  Quoting
 	   http://www.opengroup.org/onlinepubs/009695399/functions/pthread_key_delete.html,
@@ -113,7 +113,7 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 	   storage or perform any cleanup actions for data structures related to
 	   the deleted key or associated thread-specific data in any threads".  */
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 	ma_spin_lock(&marcel_key_lock);
 	if (marcel_key_present[key]) {
 		marcel_nb_keys--;
@@ -121,7 +121,7 @@ DEF_MARCEL_POSIX(int, key_delete, (marcel_key_t key), (key),
 		marcel_key_destructor[key] = NULL;
 	}
 	ma_spin_unlock(&marcel_key_lock);
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
 DEF_PTHREAD(int, key_delete, (pthread_key_t key), (key))
 //DEF___PTHREAD(int, key_delete, (pthread_key_t key), (key))

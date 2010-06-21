@@ -26,22 +26,24 @@
 /** Public macros **/
 /**
  * \brief Declare a bubble scheduler class named \a _name.  */
-#define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)										\
-  struct marcel_bubble_ ## _name ## _sched;															\
-  typedef struct marcel_bubble_ ## _name ## _sched											\
-          marcel_bubble_ ## _name ## _sched_t;													\
-  extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
+#define MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(_name)			\
+	struct marcel_bubble_ ## _name ## _sched;			\
+	typedef struct marcel_bubble_ ## _name ## _sched		\
+	marcel_bubble_ ## _name ## _sched_t;				\
+	extern marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class
 
 /**
  * \brief Define a bubble scheduler class named \a _name, with \a _default_ctor 
  * the default initializer for instances of this class.  */
-#define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)			\
-  marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class =	\
-	  {																																		\
-			.name = TBX_STRING(_name),																				\
-			.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
-			.instantiate = _default_ctor																			\
-		};
+#define MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS(_name, _default_ctor)	\
+	marcel_bubble_sched_class_t marcel_bubble_ ## _name ## _sched_class = \
+	{								\
+		.name = TBX_STRING(_name),				\
+		.instance_size = sizeof(struct marcel_bubble_ ## _name ## _sched), \
+		.instantiate = _default_ctor				\
+	}
+
+
 /** Public data types **/
 /** \brief A bubble scheduler class.  */
 struct ma_bubble_sched_class {
@@ -52,31 +54,35 @@ struct ma_bubble_sched_class {
 	size_t instance_size;
 
 	/** \brief A method to initialize an instance of this class with default
-			parameter values.  */
-	int (*instantiate)(marcel_bubble_sched_t *);
+	    parameter values.  */
+	int (*instantiate) (marcel_bubble_sched_t *);
 };
 
 
-//#ifdef __MARCEL_KERNEL__
+#ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal data structures **/
 /** \brief Forward declaration.  */
-typedef int (*ma_bubble_sched_init)(struct ma_bubble_sched_struct *);
-typedef int (*ma_bubble_sched_start)(struct ma_bubble_sched_struct *);
-typedef int (*ma_bubble_sched_exit)(struct ma_bubble_sched_struct *);
-typedef int (*ma_bubble_sched_submit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
-typedef int (*ma_bubble_sched_rawsubmit)(struct ma_bubble_sched_struct *, marcel_entity_t *);
-typedef int (*ma_bubble_sched_shake)(struct ma_bubble_sched_struct *);
-typedef int (*ma_bubble_sched_vp_is_idle)(struct ma_bubble_sched_struct *, unsigned);
-typedef int (*ma_bubble_sched_tick)(struct ma_bubble_sched_struct *, marcel_bubble_t *);
-typedef marcel_entity_t * (*ma_bubble_sched_sched)(struct ma_bubble_sched_struct *,
-						   marcel_entity_t *nextent, ma_runqueue_t *rq,
-						   ma_holder_t **nexth, int idx);
+typedef int (*ma_bubble_sched_init) (struct ma_bubble_sched_struct *);
+typedef int (*ma_bubble_sched_start) (struct ma_bubble_sched_struct *);
+typedef int (*ma_bubble_sched_exit) (struct ma_bubble_sched_struct *);
+typedef int (*ma_bubble_sched_submit) (struct ma_bubble_sched_struct *,
+				       marcel_entity_t *);
+typedef int (*ma_bubble_sched_rawsubmit) (struct ma_bubble_sched_struct *,
+					  marcel_entity_t *);
+typedef int (*ma_bubble_sched_shake) (struct ma_bubble_sched_struct *);
+typedef int (*ma_bubble_sched_vp_is_idle) (struct ma_bubble_sched_struct *, unsigned);
+typedef int (*ma_bubble_sched_tick) (struct ma_bubble_sched_struct *, marcel_bubble_t *);
+typedef marcel_entity_t *(*ma_bubble_sched_sched) (struct ma_bubble_sched_struct *,
+						   marcel_entity_t * nextent,
+						   ma_runqueue_t * rq,
+						   ma_holder_t ** nexth, int idx);
 
 /** \brief Bubble scheduler instances.  */
 struct ma_bubble_sched_struct {
-        const struct ma_bubble_sched_class *klass;
+	const struct ma_bubble_sched_class *klass;
 
 	/** \brief Initialization */
 	ma_bubble_sched_init init;
@@ -110,12 +116,13 @@ struct ma_bubble_sched_struct {
 	 * case nexth must have been unlocked. */
 	ma_bubble_sched_sched sched;
 
-        /** \brief Level considered as root for this scheduler instance. */ 
-        struct marcel_topo_level *root_level;
+	/** \brief Level considered as root for this scheduler instance. */
+	struct marcel_topo_level *root_level;
 };
 
 
-//#endif /** __MARCEL_KERNEL__ **/
+TBX_VISIBILITY_POP
+#endif /** __MARCEL_KERNEL__ **/
 
 
 #endif /** __MARCEL_BUBBLE_SCHED_INTERFACE_H__ **/

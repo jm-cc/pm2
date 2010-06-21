@@ -18,15 +18,7 @@
 #define __ASM_IA64_LINUX_LINKAGE_H__
 
 
-#ifdef __MARCEL_KERNEL__
-
-
-/** Internal macros **/
-//#define asmlinkage CPP_ASMLINKAGE __attribute__((syscall_linkage))
 #include "asm-generic/linux_linkage.h"
-
-
-#endif /** __MARCEL_KERNEL__ **/
 
 
 #endif /** __ASM_IA64_LINUX_LINKAGE_H__ **/

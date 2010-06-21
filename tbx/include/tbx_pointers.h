@@ -28,23 +28,22 @@
 #ifndef TBX_POINTERS_H
 #define TBX_POINTERS_H
 
-typedef struct s_tbx_list_element         *p_tbx_list_element_t;
-typedef struct s_tbx_list                 *p_tbx_list_t;
-typedef struct s_tbx_list_reference       *p_tbx_list_reference_t;
-typedef struct s_tbx_slist_nref           *p_tbx_slist_nref_t;
-typedef struct s_tbx_slist_element        *p_tbx_slist_element_t;
-typedef struct s_tbx_slist                *p_tbx_slist_t;
-typedef struct s_tbx_memory               *p_tbx_memory_t;
-typedef struct s_tbx_htable_element       *p_tbx_htable_element_t;
-typedef struct s_tbx_htable               *p_tbx_htable_t;
-typedef struct s_tbx_string               *p_tbx_string_t;
-typedef struct s_tbx_darray               *p_tbx_darray_t;
-typedef struct s_tbx_argument_option      *p_tbx_argument_option_t;
-typedef struct s_tbx_arguments            *p_tbx_arguments_t;
-typedef struct s_tbx_argument_set         *p_tbx_argument_set_t;
+typedef struct s_tbx_list_element *p_tbx_list_element_t;
+typedef struct s_tbx_list *p_tbx_list_t;
+typedef struct s_tbx_list_reference *p_tbx_list_reference_t;
+typedef struct s_tbx_slist_nref *p_tbx_slist_nref_t;
+typedef struct s_tbx_slist_element *p_tbx_slist_element_t;
+typedef struct s_tbx_slist *p_tbx_slist_t;
+typedef struct s_tbx_memory *p_tbx_memory_t;
+typedef struct s_tbx_htable_element *p_tbx_htable_element_t;
+typedef struct s_tbx_htable *p_tbx_htable_t;
+typedef struct s_tbx_string *p_tbx_string_t;
+typedef struct s_tbx_darray *p_tbx_darray_t;
+typedef struct s_tbx_argument_option *p_tbx_argument_option_t;
+typedef struct s_tbx_arguments *p_tbx_arguments_t;
+typedef struct s_tbx_argument_set *p_tbx_argument_set_t;
 typedef struct s_tbx_environment_variable *p_tbx_environment_variable_t;
-typedef struct s_tbx_environment          *p_tbx_environment_t;
-typedef struct s_tbx_command              *p_tbx_command_t;
+typedef struct s_tbx_environment *p_tbx_environment_t;
+typedef struct s_tbx_command *p_tbx_command_t;
 
-#endif /* TBX_POINTERS_H */
-
+#endif				/* TBX_POINTERS_H */

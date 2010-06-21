@@ -19,6 +19,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -45,11 +46,9 @@
 #define MA_HARDIRQ_SHIFT	(MA_SOFTIRQ_SHIFT + MA_SOFTIRQ_BITS)
 
 #define __MASK(x)	((1UL << (x))-1)
-
 #define MA_PREEMPT_MASK	(__MASK(MA_PREEMPT_BITS) << MA_PREEMPT_SHIFT)
 #define MA_HARDIRQ_MASK	(__MASK(MA_HARDIRQ_BITS) << MA_HARDIRQ_SHIFT)
 #define MA_SOFTIRQ_MASK	(__MASK(MA_SOFTIRQ_BITS) << MA_SOFTIRQ_SHIFT)
-
 #define ma_hardirq_count()	(ma_preempt_count() & MA_HARDIRQ_MASK)
 #define ma_softirq_count()	(ma_preempt_count() & MA_SOFTIRQ_MASK)
 #define ma_irq_count()	(ma_preempt_count() & (MA_HARDIRQ_MASK | MA_SOFTIRQ_MASK))
@@ -57,7 +56,6 @@
 #define MA_PREEMPT_OFFSET	(1UL << MA_PREEMPT_SHIFT)
 #define MA_SOFTIRQ_OFFSET	(1UL << MA_SOFTIRQ_SHIFT)
 #define MA_HARDIRQ_OFFSET	(1UL << MA_HARDIRQ_SHIFT)
-
 #define MA_PREEMPT_BUGMASK	((MA_PREEMPT_OFFSET|MA_SOFTIRQ_OFFSET|MA_HARDIRQ_OFFSET)<<7)
 
 /*
@@ -78,34 +76,31 @@
 #define ma_in_irq()		(ma_hardirq_count())
 #define ma_in_softirq()		(ma_softirq_count())
 #define ma_in_interrupt()	(ma_irq_count())
-
-
 #define ma_hardirq_trylock()	(!ma_in_interrupt())
 #define ma_hardirq_endlock()	do { } while (0)
-
 #define ma_irq_enter()		(ma_preempt_count() += MA_HARDIRQ_OFFSET)
 #define ma_nmi_enter()		(ma_irq_enter())
 #define ma_nmi_exit()		(ma_preempt_count() -= MA_HARDIRQ_OFFSET)
-
 #define ma_in_atomic()		(ma_preempt_count() & ~MA_PREEMPT_ACTIVE)
 #define ma_last_preempt()	((ma_preempt_count() & ~MA_PREEMPT_ACTIVE) == MA_PREEMPT_OFFSET)
 #define MA_IRQ_EXIT_OFFSET	(MA_HARDIRQ_OFFSET-1)
 #define ma_irq_exit()							\
-do {									\
-		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;			\
-		MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK); \
+	do {								\
+		ma_preempt_count() -= MA_IRQ_EXIT_OFFSET;		\
+		MA_BUG_ON(ma_preempt_count() & MA_PREEMPT_BUGMASK);	\
 		if (!ma_in_interrupt() && (ma_local_softirq_pending() || (ma_vpnum(MA_LWP_SELF) != -1 && ma_softirq_pending_vp(ma_vpnum(MA_LWP_SELF))))) \
-			ma_do_softirq();					\
+			ma_do_softirq();				\
 		ma_preempt_enable_no_resched();				\
-} while (0)
+	} while (0)
 
 #ifdef MA__LWPS
-  extern void ma_synchronize_irq (unsigned int irq);
+extern void ma_synchronize_irq(unsigned int irq);
 #else
 # define ma_synchronize_irq(irq)	ma_barrier()
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

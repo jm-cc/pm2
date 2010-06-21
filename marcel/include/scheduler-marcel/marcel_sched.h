@@ -58,51 +58,56 @@ extern marcel_sched_attr_t marcel_sched_attr_default;
 
 
 /** Public functions **/
-int marcel_sched_attr_init(marcel_sched_attr_t *attr);
+int marcel_sched_attr_init(marcel_sched_attr_t * attr);
 #define marcel_sched_attr_destroy(attr_ptr)	0
 
 
-int marcel_sched_attr_setnaturalholder(marcel_sched_attr_t *attr, ma_holder_t *h) __THROW;
+int marcel_sched_attr_setnaturalholder(marcel_sched_attr_t * attr,
+				       ma_holder_t * h) __THROW;
 /** Sets the natural holder for created thread */
-int marcel_attr_setnaturalholder(marcel_attr_t *attr, ma_holder_t *h) __THROW;
+int marcel_attr_setnaturalholder(marcel_attr_t * attr, ma_holder_t * h) __THROW;
 #define marcel_attr_setnaturalholder(attr,holder) marcel_sched_attr_setnaturalholder(&(attr)->sched,holder)
 
-int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t *attr, ma_holder_t **h) __THROW;
+int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t * attr,
+				       ma_holder_t ** h) __THROW;
 /** Gets the natural holder for created thread */
-int marcel_attr_getnaturalholder(__const marcel_attr_t *attr, ma_holder_t **h) __THROW;
+int marcel_attr_getnaturalholder(__const marcel_attr_t * attr, ma_holder_t ** h) __THROW;
 #define marcel_attr_getnaturalholder(attr,holder) marcel_sched_attr_getnaturalholder(&(attr)->sched,holder)
 
 
 #ifdef MA__BUBBLES
-int marcel_sched_attr_setnaturalbubble(marcel_sched_attr_t *attr, marcel_bubble_t *bubble) __THROW;
+int marcel_sched_attr_setnaturalbubble(marcel_sched_attr_t * attr,
+				       marcel_bubble_t * bubble) __THROW;
 #define marcel_sched_attr_setnaturalbubble(attr, bubble) marcel_sched_attr_setnaturalholder(attr, &(bubble)->as_holder)
 /** Sets the natural bubble for created thread */
-int marcel_attr_setnaturalbubble(marcel_attr_t *attr, marcel_bubble_t *bubble) __THROW;
+int marcel_attr_setnaturalbubble(marcel_attr_t * attr, marcel_bubble_t * bubble) __THROW;
 #define marcel_attr_setnaturalbubble(attr,bubble) marcel_sched_attr_setnaturalbubble(&(attr)->sched,bubble)
-int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t * attr,
+				       marcel_bubble_t ** bubble) __THROW;
 /** Gets the natural bubble for created thread */
-int marcel_attr_getnaturalbubble(__const marcel_attr_t *attr, marcel_bubble_t **bubble) __THROW;
+int marcel_attr_getnaturalbubble(__const marcel_attr_t * attr,
+				 marcel_bubble_t ** bubble) __THROW;
 #define marcel_attr_getnaturalbubble(attr,bubble) marcel_sched_attr_getnaturalbubble(&(attr)->sched,bubble)
 #endif
 
-int marcel_sched_attr_setinheritholder(marcel_sched_attr_t *attr, int yes) __THROW;
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t * attr, tbx_bool_t yes) __THROW;
 /** Makes created thread inherits holder from its parent */
-int marcel_attr_setinheritholder(marcel_attr_t *attr, int yes) __THROW;
+int marcel_attr_setinheritholder(marcel_attr_t * attr, int yes) __THROW;
 #define marcel_attr_setinheritholder(attr,yes) marcel_sched_attr_setinheritholder(&(attr)->sched,yes)
-int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t *attr, int *yes) __THROW;
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t * attr, tbx_bool_t *yes) __THROW;
 /** Whether created thread inherits holder from its parent */
-int marcel_attr_getinheritholder(__const marcel_attr_t *attr, int *yes) __THROW;
+int marcel_attr_getinheritholder(__const marcel_attr_t * attr, int *yes) __THROW;
 #define marcel_attr_getinheritholder(attr,yes) marcel_sched_attr_getinheritholder(&(attr)->sched,yes)
 
-int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t *attr, int policy) __THROW;
+int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t * attr, int policy) __THROW;
 /** Sets the scheduling policy */
-int marcel_attr_setschedpolicy(marcel_attr_t *attr, int policy) __THROW;
+int marcel_attr_setschedpolicy(marcel_attr_t * attr, int policy) __THROW;
 #define marcel_attr_setschedpolicy(attr,policy) marcel_sched_attr_setschedpolicy(&(attr)->sched,policy)
 int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t * __restrict attr,
-                               int * __restrict policy) __THROW;
+				     int *__restrict policy) __THROW;
 /** Gets the scheduling policy */
 int marcel_attr_getschedpolicy(__const marcel_attr_t * __restrict attr,
-                               int * __restrict policy) __THROW;
+			       int *__restrict policy) __THROW;
 #define marcel_attr_getschedpolicy(attr,policy) marcel_sched_attr_getschedpolicy(&(attr)->sched,policy)
 
 
@@ -119,7 +124,7 @@ int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_
 int marcel_sched_getscheduler(marcel_t t);
 
 
-void marcel_apply_vpset(const marcel_vpset_t *set);
+void marcel_apply_vpset(const marcel_vpset_t * set);
 
 /* ==== scheduler status ==== */
 
@@ -128,17 +133,16 @@ extern TBX_EXTERN void marcel_unfreeze_sched(void);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
-/* Bind scheduling to a specific holder, return the previous holder */
-ma_holder_t *ma_bind_to_holder(int do_move, ma_holder_t *new_holder);
 
 /** Internal macros **/
 #ifdef MARCEL_STATS_ENABLED
 #define ma_task_stats_get(t,offset) ma_stats_get(&(t)->as_entity,(offset))
 #define ma_task_stats_set(cast,t,offset,val) ma_stats_set(cast, &(t)->as_entity,(offset),val)
-#else /* MARCEL_STATS_ENABLED */
+#else				/* MARCEL_STATS_ENABLED */
 #define ma_task_stats_set(cast,t,offset,val)
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
 
 /** Internal global variables **/
@@ -146,19 +150,18 @@ extern marcel_schedpolicy_func_t ma_user_policy[MARCEL_MAX_USER_SCHED];
 
 
 /** Internal functions **/
+/* Bind scheduling to a specific holder, return the previous holder */
+ma_holder_t * ma_bind_to_holder(int do_move, ma_holder_t * new_holder);
+
 int ma_wake_up_task(marcel_task_t * p);
 
-__tbx_inline__ static ma_runqueue_t *
-marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
+__tbx_inline__ static ma_runqueue_t *marcel_sched_vpset_init_rq(const marcel_vpset_t *vpset);
 #ifdef MA__NUMA
 #include <hwloc.h>
-__tbx_inline__ static void
-ma_cpuset_from_hwloc(marcel_vpset_t *mset, hwloc_const_cpuset_t lset);
-__tbx_inline__ static void
-ma_cpuset_to_hwloc(marcel_vpset_t mset, hwloc_cpuset_t *lset);
-__tbx_inline__ static ma_runqueue_t *
-marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset);
-#endif /* MA__NUMA */
+__tbx_inline__ static void ma_cpuset_from_hwloc(marcel_vpset_t * mset, hwloc_const_cpuset_t lset);
+__tbx_inline__ static void ma_cpuset_to_hwloc(marcel_vpset_t mset, hwloc_cpuset_t *lset);
+__tbx_inline__ static ma_runqueue_t *marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset);
+#endif				/* MA__NUMA */
 
 /* unsigned marcel_sched_add_vp(void); */
 void *marcel_sched_seed_runner(void *arg);
@@ -172,7 +175,7 @@ extern void ma_unfreeze_thread(marcel_task_t * tsk);
 extern void marcel_breakpoint(void);
 #endif
 
-marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t *lwp);
+marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t * lwp);
 
 /**************************************************************************/
 /**************************************************************************/
@@ -182,35 +185,32 @@ marcel_t marcel_give_hand_from_upcall_new(marcel_t cur, marcel_lwp_t *lwp);
 /**************************************************************************/
 /**************************************************************************/
 
-static __tbx_setjmp_inline__
-int marcel_sched_internal_create(marcel_task_t *cur,
-					       marcel_task_t *new_task,
-					       __const marcel_attr_t *attr,
-					       __const int dont_schedule,
-					       __const unsigned long base_stack);
-int marcel_sched_internal_create_dontstart(marcel_task_t *cur,
-					       marcel_task_t *new_task,
-					       __const marcel_attr_t *attr,
-					       __const int dont_schedule,
-					       __const unsigned long base_stack);
+static __tbx_setjmp_inline__ int marcel_sched_internal_create(marcel_task_t * cur,
+							      marcel_task_t * new_task,
+							      __const marcel_attr_t * attr,
+							      __const int dont_schedule,
+							      __const unsigned long base_stack);
+int marcel_sched_internal_create_dontstart(marcel_task_t * cur,
+					   marcel_task_t * new_task,
+					   __const marcel_attr_t * attr,
+					   __const int dont_schedule,
+					   __const unsigned long base_stack);
 
-int marcel_sched_internal_create_start(marcel_task_t *cur,
-					       marcel_task_t *new_task,
-					       __const marcel_attr_t *attr,
-					       __const int dont_schedule,
-					       __const unsigned long base_stack);
+int marcel_sched_internal_create_start(marcel_task_t * cur,
+				       marcel_task_t * new_task,
+				       __const marcel_attr_t * attr,
+				       __const int dont_schedule,
+				       __const unsigned long base_stack);
 
 __tbx_inline__ static void
-marcel_sched_internal_init_marcel_task(marcel_task_t* t,
-		const marcel_attr_t *attr);
+marcel_sched_internal_init_marcel_task(marcel_task_t * t, const marcel_attr_t * attr);
 __tbx_inline__ static void
-marcel_sched_internal_init_marcel_thread(marcel_task_t* t,
-		const marcel_attr_t *attr);
+marcel_sched_internal_init_marcel_thread(marcel_task_t * t, const marcel_attr_t * attr);
 __tbx_inline__ static void
-marcel_sched_init_thread_seed(marcel_task_t* t,
-		const marcel_attr_t *attr);
+marcel_sched_init_thread_seed(marcel_task_t * t, const marcel_attr_t * attr);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

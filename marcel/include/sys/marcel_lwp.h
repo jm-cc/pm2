@@ -22,7 +22,6 @@
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "marcel_config.h"
-#ifdef __MARCEL_KERNEL__
 #include "tbx_fast_list.h"
 #include "asm/linux_atomic.h"
 #include "asm/linux_rwlock.h"
@@ -37,7 +36,6 @@
 #ifdef MA__LWPS
 #include <hwloc.h>
 #endif
-#endif /** __MARCEL_KERNEL__ **/
 
 
 /** Public macros **/
@@ -58,13 +56,12 @@
 /** Public variables **/
 #ifdef MA__LWPS
 extern marcel_vpset_t marcel_disabled_vpset;
-extern ma_lwp_t       ma_vp_lwp[MA_NR_VPS];
 #endif
-
-extern unsigned       ma__nb_vp;
+extern unsigned marcel_nb_vp;
 
 
 /** Public functions **/
+tbx_bool_t marcel_vp_is_idle(int vpnum);
 static __tbx_inline__ unsigned marcel_nbvps(void);
 #ifdef MARCEL_BLOCKING_ENABLED
 #  ifdef MA__LWPS
@@ -79,17 +76,18 @@ void marcel_leave_blocking_section(void);
 #ifdef MA__LWPS
 /** Tell Marcel to stop using the given vpset, i.e.
  *  migrate threads up and stop burning cpu time in idle. */
-void marcel_disable_vps(const marcel_vpset_t *vpset);
+void marcel_disable_vps(const marcel_vpset_t * vpset);
 /** Tell Marcel to use again the given vpset, i.e.
  *  let idle restart burning cpu time. */
-void marcel_enable_vps(const marcel_vpset_t *vpset);
-#else /* MA__LWPS */
+void marcel_enable_vps(const marcel_vpset_t * vpset);
+#else				/* MA__LWPS */
 #  define marcel_disable_vps(vpset) (void)0
 #  define marcel_enable_vps(vpset) (void)0
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal marcel_macros **/
@@ -97,6 +95,7 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
  * Accès aux LWP
  */
 #define ma_get_task_vpnum(task)			(ma_vpnum(THREAD_GETMEM(task,lwp)))
+
 #ifdef MA__LWPS
 #  define ma_vpnum(lwp)				(ma_per_lwp(vpnum, lwp))
 #  define ma_get_lwp_by_vpnum(vpnum)		(ma_vp_lwp[vpnum])
@@ -131,7 +130,6 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 	} \
 } while(0)
 #  define ma_is_first_lwp(lwp)			(lwp == &__main_lwp)
-
 #  define ma_any_lwp()				(!tbx_fast_list_empty(&ma_list_lwp_head))
 #  define ma_for_all_lwp(lwp) \
      tbx_fast_list_for_each_entry(lwp, &ma_list_lwp_head, lwp_list)
@@ -149,7 +147,6 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #  define ma_clr_lwp_nb(proc, value)		((void)0)
 #  define ma_set_lwp_nb(proc, value)		((void)0)
 #  define ma_is_first_lwp(lwp)			(1)
-
 #  define ma_any_lwp()				(1)
 #  define ma_for_all_lwp(lwp) \
 	for (lwp=&__main_lwp;lwp;lwp=NULL)
@@ -158,6 +155,7 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #  define ma_for_all_lwp_from_end() \
 	}
 #endif
+
 #define ma_spare_lwp_ext(lwp)			(ma_vpnum(lwp)==-1)
 #define ma_spare_lwp()				(ma_spare_lwp_ext(MA_LWP_SELF))
 #define ma_for_each_lwp_begin(lwp) \
@@ -166,7 +164,6 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #define ma_for_each_lwp_end() \
 		} \
 	}
-
 #define ma_for_each_lwp_from_begin(lwp, lwp_start) \
 	ma_for_all_lwp_from_begin(lwp, lwp_start) \
 		if (ma_lwp_online(lwp)) {
@@ -175,23 +172,20 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 	ma_for_all_lwp_from_end()
 
 #ifdef MA__LWPS
-  #if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
-    #define MA_LWP_SELF				(ma_lwp_self)
-  #else
-    #define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
-  #endif
+#if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
+#define MA_LWP_SELF				(ma_lwp_self)
 #else
-  #define MA_LWP_SELF				(&__main_lwp)
+#define MA_LWP_SELF				(ma_get_task_lwp(MARCEL_SELF))
 #endif
-
+#else
+#define MA_LWP_SELF				(&__main_lwp)
+#endif
 #define ma_softirq_pending_vp(vp) \
 	ma_topo_vpdata(vp,softirq_pending)
 #define ma_softirq_pending_lwp(lwp) \
 	ma_per_lwp(softirq_pending, (lwp))
 #define ma_local_softirq_pending() \
 	__ma_get_lwp_var(softirq_pending)
-
-
 #define MA_DEFINE_LWP_NOTIFIER_START(name, help, \
 			             prepare, prepare_help, \
 			             online, online_help) \
@@ -218,7 +212,6 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 				  ONLINE, online, online_help, \
 				  OFFLINE, offline, offline_help, \
 		  		  0, 1, 3, 4)
-
 #define MA_DEFINE_LWP_NOTIFIER_TWO_PRIO(name, prio, help, \
 				        ONE, one, one_help, \
 				        TWO, two, two_help, \
@@ -250,7 +243,7 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
   }; \
   static MA_DEFINE_NOTIFIER_BLOCK_INTERNAL(name##_nb, name##_notify, \
 	prio, help, 4, name##_helps); \
-  static void __marcel_init marcel_##name##_notifier_register(void) \
+  static void marcel_##name##_notifier_register(void) \
   { \
         ma_register_lwp_notifier(&name##_nb); \
   } \
@@ -258,7 +251,6 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
                 MA_INIT_REGISTER_LWP_NOTIFIER, \
                 MA_INIT_REGISTER_LWP_NOTIFIER_PRIO, \
                 "Registering notifier " #name " (" help ") at prio "#prio)
-
 #define MA_LWP_NOTIFIER_CALL_UP_PREPARE(name, section) \
   MA_LWP_NOTIFIER_CALL(name, section, MA_INIT_PRIO_BASE, UP_PREPARE)
 #define MA_LWP_NOTIFIER_CALL_UP_PREPARE_PRIO(name, section, prio) \
@@ -268,7 +260,7 @@ void marcel_enable_vps(const marcel_vpset_t *vpset);
 #define MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(name, section, prio) \
   MA_LWP_NOTIFIER_CALL(name, section, prio, ONLINE)
 #define MA_LWP_NOTIFIER_CALL(name, section, prio, PART) \
-  static void __marcel_init marcel_##name##_call_##PART(void) \
+  static void marcel_##name##_call_##PART(void) \
   { \
 	name##_notify(&name##_nb, (unsigned long)MA_LWP_##PART, \
 		   (void *)(ma_lwp_t)MA_LWP_SELF); \
@@ -288,8 +280,8 @@ struct marcel_lwp {
 	marcel_sem_t kthread_stop;
 	marcel_kthread_t pid;
 #endif
-	/*Polling par LWP*/
-	struct marcel_per_lwp_polling_s* polling_list;
+	/*Polling par LWP */
+	struct marcel_per_lwp_polling_s *polling_list;
 
 	marcel_task_t *current_thread;
 	struct ma_lwp_usage_stat lwp_usage;
@@ -311,7 +303,7 @@ struct marcel_lwp {
 
 #ifdef MARCEL_POSTEXIT_ENABLED
 	marcel_task_t *postexit_task;
-#endif /* MARCEL_POSTEXIT_ENABLED */
+#endif				/* MARCEL_POSTEXIT_ENABLED */
 
 	marcel_task_t *ksoftirqd_task;
 	unsigned long softirq_pending;
@@ -359,27 +351,36 @@ struct marcel_lwp {
 };
 
 #ifdef MA__LWPS
-#  define MA_LWP_INITIALIZER(lwp) { }
+#  define MA_LWP_INITIALIZER(lwp) {		\
+    .vp_level = NULL				\
+}
 #else
-#  define MA_LWP_INITIALIZER(lwp) { \
-	.vp_level = &marcel_machine_level[0], \
+#  define MA_LWP_INITIALIZER(lwp) {		\
+    .vp_level = &marcel_machine_level[0]	\
 }
 #endif
 
 
 /** Internal marcel_variables **/
-extern TBX_EXTERN marcel_lwp_t __main_lwp;
-extern TBX_EXTERN ma_atomic_t ma__last_vp;
+extern ma_atomic_t ma__last_vp;
+extern marcel_lwp_t __main_lwp;
+extern ma_lwp_t ma_vp_lwp[MA_NR_VPS];
+
+#ifndef MA__LWPS
+/* mono: no idle thread, but on interrupts we need to when whether we're
+ * idling. */
+extern tbx_bool_t ma_currently_idle;
+#endif
 
 #ifdef MA__LWPS
 // Verrou protégeant la liste chaînée des LWPs
-extern TBX_EXTERN ma_rwlock_t __ma_lwp_list_lock;
+extern ma_rwlock_t __ma_lwp_list_lock;
 extern struct tbx_fast_list_head ma_list_lwp_head;
 
 #if defined(MA__SELF_VAR) && (!defined(MA__LWPS) || !defined(MARCEL_DONT_USE_POSIX_THREADS))
-extern TBX_EXTERN __thread marcel_lwp_t *ma_lwp_self;
+extern __thread marcel_lwp_t *ma_lwp_self;
 #endif
-#endif /* MA__LWPS */ 
+#endif				/* MA__LWPS */
 
 
 /** Internal marcel_functions **/
@@ -388,8 +389,8 @@ static __tbx_inline__ void ma_lwp_list_unlock_read(void);
 static __tbx_inline__ void ma_lwp_list_lock_write(void);
 static __tbx_inline__ void ma_lwp_list_unlock_write(void);
 static __tbx_inline__ unsigned marcel_nballvps(void);
-static __tbx_inline__ marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp);
-static __tbx_inline__ marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp);
+static __tbx_inline__ marcel_lwp_t *marcel_lwp_next_lwp(marcel_lwp_t * lwp);
+static __tbx_inline__ marcel_lwp_t *marcel_lwp_prev_lwp(marcel_lwp_t * lwp);
 
 
 #if defined(MA__LWPS)
@@ -399,25 +400,26 @@ void marcel_lwp_fix_nb_vps(unsigned nb_lwp);
 #ifdef MA__LWPS
 unsigned marcel_lwp_add_vp(marcel_vpset_t vpset);
 void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum);
-void marcel_lwp_stop_lwp(marcel_lwp_t *lwp);
+void marcel_lwp_stop_lwp(marcel_lwp_t * lwp);
 void ma_lwp_wait_active(void);
 int ma_lwp_block(void);
 marcel_lwp_t *ma_lwp_wait_vp_active(void);
 #endif
 
-static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp);
+static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t * lwp);
 static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp);
+
 #ifdef MA__LWPS
 /* Need to know about LWPs going up/down? */
 extern int ma_register_lwp_notifier(struct ma_notifier_block *nb);
 extern void ma_unregister_lwp_notifier(struct ma_notifier_block *nb);
-
 #else
 static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb);
 static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb);
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

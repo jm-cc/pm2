@@ -41,8 +41,8 @@
  * ___________________________________________________________________________
  */
 p_tbx_memory_t tbx_slist_element_manager_memory = NULL;
-p_tbx_memory_t tbx_slist_nref_manager_memory    = NULL;
-p_tbx_memory_t tbx_slist_struct_manager_memory  = NULL;
+p_tbx_memory_t tbx_slist_nref_manager_memory = NULL;
+p_tbx_memory_t tbx_slist_struct_manager_memory = NULL;
 
 /*
  *  Functions
@@ -54,34 +54,28 @@ p_tbx_memory_t tbx_slist_struct_manager_memory  = NULL;
  * Initialization
  * --------------
  */
-void
-tbx_slist_manager_init(void)
+void tbx_slist_manager_init(void)
 {
-  LOG_IN();
-  tbx_malloc_extended_init(&tbx_slist_element_manager_memory,
-			   sizeof(tbx_slist_element_t),
-			   INITIAL_SLIST_ELEMENT,
-			   "tbx/slist elements", 
-			   1);
+	PM2_LOG_IN();
+	tbx_malloc_extended_init(&tbx_slist_element_manager_memory,
+				 sizeof(tbx_slist_element_t),
+				 INITIAL_SLIST_ELEMENT,
+				 "tbx/slist elements", 1);
 
-  tbx_malloc_init(&tbx_slist_nref_manager_memory,
-		  sizeof(tbx_slist_nref_t),
-		  INITIAL_SLIST_NREF,
-                  "tbx/slist nrefs");
-  tbx_malloc_init(&tbx_slist_struct_manager_memory,
-		  sizeof(tbx_slist_t),
-		  INITIAL_SLIST_NUMBER,
-                  "tbx/slists");
-  LOG_OUT();
+	tbx_malloc_init(&tbx_slist_nref_manager_memory,
+			sizeof(tbx_slist_nref_t),
+			INITIAL_SLIST_NREF, "tbx/slist nrefs");
+	tbx_malloc_init(&tbx_slist_struct_manager_memory,
+			sizeof(tbx_slist_t),
+			INITIAL_SLIST_NUMBER, "tbx/slists");
+	PM2_LOG_OUT();
 }
 
-void
-tbx_slist_manager_exit(void)
+void tbx_slist_manager_exit(void)
 {
-  LOG_IN();
-  tbx_malloc_clean(tbx_slist_element_manager_memory);
-  tbx_malloc_clean(tbx_slist_nref_manager_memory);
-  tbx_malloc_clean(tbx_slist_struct_manager_memory);
-  LOG_OUT();
+	PM2_LOG_IN();
+	tbx_malloc_clean(tbx_slist_element_manager_memory);
+	tbx_malloc_clean(tbx_slist_nref_manager_memory);
+	tbx_malloc_clean(tbx_slist_struct_manager_memory);
+	PM2_LOG_OUT();
 }
-

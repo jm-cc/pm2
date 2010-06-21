@@ -30,7 +30,7 @@
 
 #if defined(MARCEL_KERNEL)
 #define PROFILE_KEYMASK MARCEL_PROF_MASK
-#elif defined(NMAD_KERNEL) || defined(MAD3_KERNEL)
+#elif defined(NMAD_KERNEL)
 #define PROFILE_KEYMASK MAD_PROF_MASK
 #elif defined(PM2_KERNEL)
 #define PROFILE_KEYMASK PM2_PROF_MASK

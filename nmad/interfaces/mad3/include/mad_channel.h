@@ -33,7 +33,6 @@ typedef enum e_mad_channel_type
 
 typedef struct s_mad_channel
 {
-  TBX_SHARED;
   ntbx_process_lrank_t        process_lrank;
   mad_channel_type_t          type;
   mad_channel_id_t            id;

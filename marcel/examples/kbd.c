@@ -56,7 +56,7 @@ int marcel_main(int argc, char *argv[])
    passer_en_mode_interactif();
 
    /* Initialisation de la librairie de gestion des processus legers */
-   marcel_init(&argc, argv);
+   marcel_init(argc, argv);
 
    /* Creation d'un "thread" qui va executer ma_fonction("Hello") */
    marcel_create(&pid, NULL, ma_fonction, "Hello !");

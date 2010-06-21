@@ -19,14 +19,11 @@
 
 
 #include "linux_bitops.h"
-#ifdef __MARCEL_KERNEL__
 #include "asm/linux_types.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
 /*
  * ma_ffs: find first bit set. This is defined the same way as
@@ -40,9 +37,9 @@ static __tbx_inline__ unsigned long ma_generic_ffs(unsigned long x)
 #elif defined(__GNUC__)
 	return __builtin_ffs(x
 #if MA_BITS_PER_LONG >= 64
-			&0xffffffff)?:(__builtin_ffs(x>>32) + 32
+			     & 0xffffffff) ? : (__builtin_ffs(x >> 32) + 32
 #endif
-		);
+	    );
 #else
 	int r = 1;
 
@@ -88,13 +85,14 @@ static __tbx_inline__ unsigned long ma_generic_fls(unsigned long x)
 	if (!x)
 		return 0;
 #if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
-	return r-__builtin_clzl(x);
+	return r - __builtin_clzl(x);
 #else
 
 #if MA_BITS_PER_LONG >= 64
 	if ((x & 0xffffffff00000000UL)) {
 		x >>= 32;
-	} else r -= 32;
+	} else
+		r -= 32;
 #endif
 	if (!(x & 0xffff0000UL)) {
 		x <<= 16;
@@ -130,27 +128,27 @@ static __tbx_inline__ unsigned int ma_generic_hweight32(unsigned int w)
 #if (__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__) >= 4)
 	return __builtin_popcount(w);
 #else
-        unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
-        res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
-        res = (res & 0x0F0F0F0F) + ((res >> 4) & 0x0F0F0F0F);
-        res = (res & 0x00FF00FF) + ((res >> 8) & 0x00FF00FF);
-        return (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
+	unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
+	res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
+	res = (res & 0x0F0F0F0F) + ((res >> 4) & 0x0F0F0F0F);
+	res = (res & 0x00FF00FF) + ((res >> 8) & 0x00FF00FF);
+	return (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
 #endif
 }
 
 static __tbx_inline__ unsigned int ma_generic_hweight16(unsigned int w)
 {
-        unsigned int res = (w & 0x5555) + ((w >> 1) & 0x5555);
-        res = (res & 0x3333) + ((res >> 2) & 0x3333);
-        res = (res & 0x0F0F) + ((res >> 4) & 0x0F0F);
-        return (res & 0x00FF) + ((res >> 8) & 0x00FF);
+	unsigned int res = (w & 0x5555) + ((w >> 1) & 0x5555);
+	res = (res & 0x3333) + ((res >> 2) & 0x3333);
+	res = (res & 0x0F0F) + ((res >> 4) & 0x0F0F);
+	return (res & 0x00FF) + ((res >> 8) & 0x00FF);
 }
 
 static __tbx_inline__ unsigned int ma_generic_hweight8(unsigned int w)
 {
-        unsigned int res = (w & 0x55) + ((w >> 1) & 0x55);
-        res = (res & 0x33) + ((res >> 2) & 0x33);
-        return (res & 0x0F) + ((res >> 4) & 0x0F);
+	unsigned int res = (w & 0x55) + ((w >> 1) & 0x55);
+	res = (res & 0x33) + ((res >> 2) & 0x33);
+	return (res & 0x0F) + ((res >> 4) & 0x0F);
 }
 
 static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w)
@@ -159,10 +157,10 @@ static __tbx_inline__ unsigned long ma_generic_hweight64(unsigned long long w)
 	return __builtin_popcountll(w);
 #else
 #if MA_BITS_PER_LONG < 64
-	return ma_generic_hweight32((unsigned int)(w >> 32)) +
-				ma_generic_hweight32((unsigned int)w);
+	return ma_generic_hweight32((unsigned int) (w >> 32)) +
+	    ma_generic_hweight32((unsigned int) w);
 #else
-	ma_u64 res;
+	unsigned long long res;
 	res = (w & 0x5555555555555555ul) + ((w >> 1) & 0x5555555555555555ul);
 	res = (res & 0x3333333333333333ul) + ((res >> 2) & 0x3333333333333333ul);
 	res = (res & 0x0F0F0F0F0F0F0F0Ful) + ((res >> 4) & 0x0F0F0F0F0F0F0F0Ful);
@@ -179,7 +177,6 @@ static __tbx_inline__ unsigned long ma_hweight_long(unsigned long w)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_LINUX_BITOPS_H__ **/

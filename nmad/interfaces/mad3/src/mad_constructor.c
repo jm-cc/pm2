@@ -169,7 +169,6 @@ mad_driver_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_driver_t));
 
-  TBX_INIT_SHARED(object);
   object->id               =   -1;
   object->buffer_alignment =    0;
   object->connection_type  = mad_undefined_connection_type;
@@ -187,7 +186,6 @@ mad_adapter_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_adapter_t));
 
-  TBX_INIT_SHARED(object);
   object->id        =  -1;
   object->parameter = "-";
   LOG_OUT();
@@ -204,7 +202,6 @@ mad_channel_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_channel_t));
 
-  TBX_INIT_SHARED(object);
   object->id              =  -1;
   object->parameter       = "-";
   object->sub_channel_darray = tbx_darray_init();
@@ -227,7 +224,6 @@ mad_connection_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_connection_t));
 
-  TBX_INIT_SHARED(object);
   object->parameter = "-";
 
   object->user_buffer_list_reference = TBX_MALLOC(sizeof(tbx_list_reference_t));
@@ -254,7 +250,6 @@ mad_link_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_link_t));
 
-  TBX_INIT_SHARED(object);
   object->id = -1;
 
   object->link_mode        = mad_link_mode_buffer;
@@ -333,7 +328,6 @@ mad_madeleine_cons(void)
   LOG_IN();
   object = TBX_CALLOC(1, sizeof(mad_madeleine_t));
 
-  TBX_INIT_SHARED(object);
   object->device_htable        = tbx_htable_empty_table();
   object->network_htable       = tbx_htable_empty_table();
   object->channel_htable       = tbx_htable_empty_table();

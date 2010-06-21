@@ -49,468 +49,421 @@ static p_tbx_memory_t tbx_htable_manager_memory = NULL;
  * Initialization
  * --------------
  */
-void
-tbx_htable_manager_init(void)
+void tbx_htable_manager_init(void)
 {
-  LOG_IN();
-  tbx_malloc_init(&tbx_htable_manager_memory,
-		  sizeof(tbx_htable_element_t),
-		  INITIAL_HTABLE_ELEMENT,
-                  "tbx/htable elements");
-  LOG_OUT();
+	PM2_LOG_IN();
+	tbx_malloc_init(&tbx_htable_manager_memory,
+			sizeof(tbx_htable_element_t),
+			INITIAL_HTABLE_ELEMENT, "tbx/htable elements");
+	PM2_LOG_OUT();
 }
 
 void
-tbx_htable_init(p_tbx_htable_t            htable,
-		tbx_htable_bucket_count_t buckets)
+tbx_htable_init(p_tbx_htable_t htable, tbx_htable_bucket_count_t buckets)
 {
-  LOG_IN();
-  if (!buckets)
-    {
-      buckets = DEFAULT_BUCKET_COUNT;
-    }
+	PM2_LOG_IN();
+	if (!buckets) {
+		buckets = DEFAULT_BUCKET_COUNT;
+	}
 
-  htable->nb_bucket    = buckets;
-  htable->bucket_array = TBX_MALLOC(buckets * sizeof(tbx_htable_element_t));
-  htable->nb_element   = 0;
+	htable->nb_bucket = buckets;
+	htable->bucket_array =
+	    TBX_MALLOC(buckets * sizeof(tbx_htable_element_t));
+	htable->nb_element = 0;
 
-  while (buckets--)
-    {
-      htable->bucket_array[buckets] = NULL;
-    }
-  LOG_OUT();
+	while (buckets--) {
+		htable->bucket_array[buckets] = NULL;
+	}
+	PM2_LOG_OUT();
 }
 
-p_tbx_htable_t
-tbx_htable_empty_table(void)
+p_tbx_htable_t tbx_htable_empty_table(void)
 {
-  p_tbx_htable_t table = NULL;
+	p_tbx_htable_t table = NULL;
 
-  LOG_IN();
-  table = TBX_CALLOC(1, sizeof(tbx_htable_t));
-  CTRL_ALLOC(table);
+	PM2_LOG_IN();
+	table = TBX_CALLOC(1, sizeof(tbx_htable_t));
+	CTRL_ALLOC(table);
 
-  tbx_htable_init(table, 0);
-  LOG_OUT();
+	tbx_htable_init(table, 0);
+	PM2_LOG_OUT();
 
-  return table;
+	return table;
 }
 
-tbx_bool_t
-tbx_htable_empty(p_tbx_htable_t htable)
+tbx_bool_t tbx_htable_empty(p_tbx_htable_t htable)
 {
-  tbx_bool_t test = tbx_false;
+	tbx_bool_t test;
 
-  LOG_IN();
-  test = (htable->nb_element == 0);
-  LOG_OUT();
+	PM2_LOG_IN();
+	test = (htable->nb_element == 0) ? tbx_true : tbx_false;
+	PM2_LOG_OUT();
 
-  return test;
+	return test;
 }
 
-tbx_htable_element_count_t
-tbx_htable_get_size(p_tbx_htable_t htable)
+tbx_htable_element_count_t tbx_htable_get_size(p_tbx_htable_t htable)
 {
-  tbx_htable_element_count_t count = -1;
+	tbx_htable_element_count_t count = -1;
 
-  LOG_IN();
-  count = htable->nb_element;
-  LOG_OUT();
+	PM2_LOG_IN();
+	count = htable->nb_element;
+	PM2_LOG_OUT();
 
-  return count;
+	return count;
 }
 
 static
-tbx_htable_bucket_count_t
-__tbx_htable_get_bucket(p_tbx_htable_t  htable,
-			const char     *key,
-                        size_t	key_len)
+    tbx_htable_bucket_count_t
+__tbx_htable_get_bucket(p_tbx_htable_t htable,
+			const char *key, size_t key_len)
 {
-  tbx_htable_bucket_count_t bucket  = 0;
+	tbx_htable_bucket_count_t bucket = 0;
 
-  LOG_IN();
-  while(key_len--)
-    {
-      bucket += key[key_len];
-    }
+	PM2_LOG_IN();
+	while (key_len--) {
+		bucket += key[key_len];
+	}
 
-  bucket %= htable->nb_bucket;
-  LOG_OUT();
+	bucket %= htable->nb_bucket;
+	PM2_LOG_OUT();
 
-  return bucket;
+	return bucket;
 }
 
 void
-tbx_htable_add_ext(p_tbx_htable_t  htable,
-                   const char     *key,
-                   const size_t    key_len,
-                   void           *object)
+tbx_htable_add_ext(p_tbx_htable_t htable,
+		   const char *key, const size_t key_len, void *object)
 {
-  tbx_htable_bucket_count_t bucket  = -1;
-  p_tbx_htable_element_t    element = NULL;
+	tbx_htable_bucket_count_t bucket = -1;
+	p_tbx_htable_element_t element = NULL;
 
-  LOG_IN();
-  bucket  = __tbx_htable_get_bucket(htable, key, key_len);
-  element = tbx_malloc(tbx_htable_manager_memory);
-  element->key     = TBX_MALLOC(key_len);
-  memcpy(element->key, key, key_len);
-  element->key_len = key_len;
-  element->object  = object;
-  element->next    = htable->bucket_array[bucket];
+	PM2_LOG_IN();
+	bucket = __tbx_htable_get_bucket(htable, key, key_len);
+	element = tbx_malloc(tbx_htable_manager_memory);
+	element->key = TBX_MALLOC(key_len);
+	memcpy(element->key, key, key_len);
+	element->key_len = key_len;
+	element->object = object;
+	element->next = htable->bucket_array[bucket];
 
-  htable->bucket_array[bucket] = element;
-  htable->nb_element++;
-  LOG_OUT();
+	htable->bucket_array[bucket] = element;
+	htable->nb_element++;
+	PM2_LOG_OUT();
 }
 
-void
-tbx_htable_add(p_tbx_htable_t  htable,
-	       const char     *key,
-	       void           *object)
+void tbx_htable_add(p_tbx_htable_t htable, const char *key, void *object)
 {
-  tbx_htable_add_ext(htable, key, strlen(key)+1, object);
+	tbx_htable_add_ext(htable, key, strlen(key) + 1, object);
 }
 
 static
-p_tbx_htable_element_t
-__tbx_htable_get_element(p_tbx_htable_t  htable,
-			 const char     *key,
-                         const size_t	 key_len)
+    p_tbx_htable_element_t
+__tbx_htable_get_element(p_tbx_htable_t htable,
+			 const char *key, const size_t key_len)
 {
-  tbx_htable_bucket_count_t bucket  = -1;
-  p_tbx_htable_element_t    element = NULL;
+	tbx_htable_bucket_count_t bucket = -1;
+	p_tbx_htable_element_t element = NULL;
 
-  LOG_IN();
-  bucket  = __tbx_htable_get_bucket(htable, key, key_len);
-  element = htable->bucket_array[bucket];
+	PM2_LOG_IN();
+	bucket = __tbx_htable_get_bucket(htable, key, key_len);
+	element = htable->bucket_array[bucket];
 
-  while (element)
-    {
-      if (element->key_len != key_len)
-        goto next;
+	while (element) {
+		if (element->key_len != key_len)
+			goto next;
 
-      if (!memcmp(key, element->key, key_len))
-	goto end;
+		if (!memcmp(key, element->key, key_len))
+			goto end;
 
-    next:
-      element = element->next;
-    }
-
- end:
-  LOG_OUT();
-
-  return element;
-}
-
-void *
-tbx_htable_get_ext(p_tbx_htable_t  htable,
-                   const char     *key,
-                   const size_t    key_len)
-{
-  p_tbx_htable_element_t  element = NULL;
-  void                   *result  = NULL;
-
-  LOG_IN();
-
-  LOG("tbx_htable_get: key = <%s>", key);
-
-  element = __tbx_htable_get_element(htable, key, key_len);
-
-  if (element)
-    {
-      result = element->object;
-    }
-  LOG_OUT();
-
-  return result;
-}
-
-void *
-tbx_htable_get(p_tbx_htable_t  htable,
-	       const char     *key)
-{
-  return tbx_htable_get_ext(htable, key, strlen(key)+1);
-}
-
-void *
-tbx_htable_replace_ext(p_tbx_htable_t  htable,
-                       const char     *key,
-                       const size_t    key_len,
-                       void           *object)
-{
-  p_tbx_htable_element_t  element = NULL;
-  void                   *result  = NULL;
-
-  LOG_IN();
-  element = __tbx_htable_get_element(htable, key, key_len);
-
-  if (element)
-    {
-      result = element->object;
-      element->object = object;
-    }
-  else
-    {
-      tbx_htable_add(htable, key, object);
-    }
-
-  LOG_OUT();
-
-  return result;
-}
-
-void *
-tbx_htable_replace(p_tbx_htable_t  htable,
-		   const char     *key,
-		   void           *object) {
-  return tbx_htable_replace_ext(htable, key, strlen(key)+1, object);
-}
-
-void *
-tbx_htable_extract_ext(p_tbx_htable_t  htable,
-                       const char     *key,
-                       const size_t    key_len)
-{
-  tbx_htable_bucket_count_t  bucket  = -1;
-  p_tbx_htable_element_t    *element = NULL;
-
-  LOG_IN();
-  bucket  = __tbx_htable_get_bucket(htable, key, key_len);
-  element = &(htable->bucket_array[bucket]);
-
-  while (*element)
-    {
-      if ((*element)->key_len != key_len || memcmp(key, (*element)->key, key_len))
-	{
-	  element = &((*element)->next);
+	      next:
+		element = element->next;
 	}
-      else
-	{
-	  p_tbx_htable_element_t  tmp_element = NULL;
-	  void                   *object      = NULL;
 
-	  tmp_element = *element;
+      end:
+	PM2_LOG_OUT();
 
-	  object   = tmp_element->object;
-	  tmp_element->object = NULL;
+	return element;
+}
 
-	  *element = tmp_element->next;
-	  tmp_element->next = NULL;
+void *tbx_htable_get_ext(p_tbx_htable_t htable,
+			 const char *key, const size_t key_len)
+{
+	p_tbx_htable_element_t element = NULL;
+	void *result = NULL;
 
-	  TBX_FREE(tmp_element->key);
-	  tmp_element->key     = NULL;
-	  tmp_element->key_len = 0;
+	PM2_LOG_IN();
 
-	  tbx_free(tbx_htable_manager_memory, tmp_element);
+	PM2_LOG("tbx_htable_get: key = <%s>", key);
 
-	  htable->nb_element--;
+	element = __tbx_htable_get_element(htable, key, key_len);
 
-	  LOG_OUT();
-	  return object;
+	if (element) {
+		result = element->object;
 	}
-    }
+	PM2_LOG_OUT();
 
-  LOG_OUT();
-  return NULL;
+	return result;
 }
 
-void *
-tbx_htable_extract(p_tbx_htable_t  htable,
-		   const char     *key) {
-  return tbx_htable_extract_ext(htable, key, strlen(key)+1);
-}
-
-void
-tbx_htable_free(p_tbx_htable_t htable)
+void *tbx_htable_get(p_tbx_htable_t htable, const char *key)
 {
-  LOG_IN();
-  if (htable->nb_element)
-    TBX_FAILURE("htable is not empty");
-
-  TBX_FREE(htable->bucket_array);
-  htable->bucket_array = NULL;
-  htable->nb_bucket = 0;
-  TBX_FREE(htable);
-  LOG_OUT();
+	return tbx_htable_get_ext(htable, key, strlen(key) + 1);
 }
 
-void
-tbx_htable_cleanup_and_free(p_tbx_htable_t htable)
+void *tbx_htable_replace_ext(p_tbx_htable_t htable,
+			     const char *key,
+			     const size_t key_len, void *object)
 {
-  LOG_IN();
-  if (htable->nb_element)
-    {
-      while (htable->nb_bucket--)
-	{
-	  p_tbx_htable_element_t element = NULL;
+	p_tbx_htable_element_t element = NULL;
+	void *result = NULL;
 
-	  element = htable->bucket_array[htable->nb_bucket];
+	PM2_LOG_IN();
+	element = __tbx_htable_get_element(htable, key, key_len);
 
-	  while (element)
-	    {
-	      p_tbx_htable_element_t temp = NULL;
-
-	      temp = element->next;
-
-	      TBX_FREE(element->key);
-	      element->key    = NULL;
-	      element->object = NULL;
-	      element->next   = NULL;
-
-	      tbx_free(tbx_htable_manager_memory, element);
-
-              htable->nb_element--;
-	      element = temp;
-	    }
-
-	  htable->bucket_array[htable->nb_bucket] = NULL;
+	if (element) {
+		result = element->object;
+		element->object = object;
+	} else {
+		tbx_htable_add(htable, key, object);
 	}
-    }
 
-  if (htable->nb_element)
-    TBX_FAILURE("inconsistent htable state");
+	PM2_LOG_OUT();
 
-  TBX_FREE(htable->bucket_array);
-  htable->bucket_array = NULL;
-  TBX_FREE(htable);
-  LOG_OUT();
+	return result;
 }
 
-void
-tbx_htable_manager_exit(void)
+void *tbx_htable_replace(p_tbx_htable_t htable,
+			 const char *key, void *object)
 {
-  LOG_IN();
-  tbx_malloc_clean(tbx_htable_manager_memory);
-  LOG_OUT();
+	return tbx_htable_replace_ext(htable, key, strlen(key) + 1,
+				      object);
 }
 
-p_tbx_slist_t
-tbx_htable_get_key_slist(p_tbx_htable_t htable)
+void *tbx_htable_extract_ext(p_tbx_htable_t htable,
+			     const char *key, const size_t key_len)
 {
-  p_tbx_slist_t slist = NULL;
+	tbx_htable_bucket_count_t bucket = -1;
+	p_tbx_htable_element_t *element = NULL;
 
-  LOG_IN();
-  slist = tbx_slist_nil();
+	PM2_LOG_IN();
+	bucket = __tbx_htable_get_bucket(htable, key, key_len);
+	element = &(htable->bucket_array[bucket]);
 
-  if (htable->nb_element)
-    {
-      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+	while (*element) {
+		if ((*element)->key_len != key_len
+		    || memcmp(key, (*element)->key, key_len)) {
+			element = &((*element)->next);
+		} else {
+			p_tbx_htable_element_t tmp_element = NULL;
+			void *object = NULL;
 
-      while (bucket--)
-	{
-	  p_tbx_htable_element_t element = NULL;
+			tmp_element = *element;
 
-	  element = htable->bucket_array[bucket];
+			object = tmp_element->object;
+			tmp_element->object = NULL;
 
-	  while (element)
-	    {
-	      char *key_copy = NULL;
+			*element = tmp_element->next;
+			tmp_element->next = NULL;
 
-	      key_copy = tbx_strdup(element->key);
-	      tbx_slist_append(slist, key_copy);
+			TBX_FREE(tmp_element->key);
+			tmp_element->key = NULL;
+			tmp_element->key_len = 0;
 
-	      element = element->next;
-	    }
+			tbx_free(tbx_htable_manager_memory, tmp_element);
+
+			htable->nb_element--;
+
+			PM2_LOG_OUT();
+			return object;
+		}
 	}
-    }
-  LOG_OUT();
 
-  return slist;
+	PM2_LOG_OUT();
+	return NULL;
+}
+
+void *tbx_htable_extract(p_tbx_htable_t htable, const char *key)
+{
+	return tbx_htable_extract_ext(htable, key, strlen(key) + 1);
+}
+
+void tbx_htable_free(p_tbx_htable_t htable)
+{
+	PM2_LOG_IN();
+	if (htable->nb_element)
+		TBX_FAILURE("htable is not empty");
+
+	TBX_FREE(htable->bucket_array);
+	htable->bucket_array = NULL;
+	htable->nb_bucket = 0;
+	TBX_FREE(htable);
+	PM2_LOG_OUT();
+}
+
+void tbx_htable_cleanup_and_free(p_tbx_htable_t htable)
+{
+	PM2_LOG_IN();
+	if (htable->nb_element) {
+		while (htable->nb_bucket--) {
+			p_tbx_htable_element_t element = NULL;
+
+			element = htable->bucket_array[htable->nb_bucket];
+
+			while (element) {
+				p_tbx_htable_element_t temp = NULL;
+
+				temp = element->next;
+
+				TBX_FREE(element->key);
+				element->key = NULL;
+				element->object = NULL;
+				element->next = NULL;
+
+				tbx_free(tbx_htable_manager_memory,
+					 element);
+
+				htable->nb_element--;
+				element = temp;
+			}
+
+			htable->bucket_array[htable->nb_bucket] = NULL;
+		}
+	}
+
+	if (htable->nb_element)
+		TBX_FAILURE("inconsistent htable state");
+
+	TBX_FREE(htable->bucket_array);
+	htable->bucket_array = NULL;
+	TBX_FREE(htable);
+	PM2_LOG_OUT();
+}
+
+void tbx_htable_manager_exit(void)
+{
+	PM2_LOG_IN();
+	tbx_malloc_clean(tbx_htable_manager_memory);
+	PM2_LOG_OUT();
+}
+
+p_tbx_slist_t tbx_htable_get_key_slist(p_tbx_htable_t htable)
+{
+	p_tbx_slist_t slist = NULL;
+
+	PM2_LOG_IN();
+	slist = tbx_slist_nil();
+
+	if (htable->nb_element) {
+		tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+
+		while (bucket--) {
+			p_tbx_htable_element_t element = NULL;
+
+			element = htable->bucket_array[bucket];
+
+			while (element) {
+				char *key_copy = NULL;
+
+				key_copy = tbx_strdup(element->key);
+				tbx_slist_append(slist, key_copy);
+
+				element = element->next;
+			}
+		}
+	}
+	PM2_LOG_OUT();
+
+	return slist;
 }
 
 static
-void
-tbx_htable_keystr(char   *key,
-                  size_t  key_len,
-                  char   *buf) {
-  char t[] = "0123456789abcdef";
+void tbx_htable_keystr(char *key, size_t key_len, char *buf)
+{
+	char t[] = "0123456789abcdef";
 
-  while (key_len) {
-    *buf++ = t[ ((unsigned char)*key) >> 8];
-    *buf++ = t[(((unsigned char)*key) >> 8) + 1];
-    key++;
-  }
+	while (key_len) {
+		*buf++ = t[((unsigned char) *key) >> 8];
+		*buf++ = t[(((unsigned char) *key) >> 8) + 1];
+		key++;
+	}
 
-  *buf = '\0';
+	*buf = '\0';
 }
 
-void
-tbx_htable_dump_keys(p_tbx_htable_t htable)
+void tbx_htable_dump_keys(p_tbx_htable_t htable)
 {
-  LOG_IN();
-  if (htable->nb_element)
-    {
-      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+	PM2_LOG_IN();
+	if (htable->nb_element) {
+		tbx_htable_bucket_count_t bucket = htable->nb_bucket;
 
-      while (bucket--)
-	{
-	  p_tbx_htable_element_t element = NULL;
+		while (bucket--) {
+			p_tbx_htable_element_t element = NULL;
 
-	  element = htable->bucket_array[bucket];
+			element = htable->bucket_array[bucket];
 
-	  while (element)
-	    {
-              char keystr[element->key_len*2+1];
+			while (element) {
+				char keystr[element->key_len * 2 + 1];
 
-              tbx_htable_keystr(element->key, element->key_len, keystr);
-	      DISP("%s", keystr);
-	      element = element->next;
-	    }
+				tbx_htable_keystr(element->key,
+						  element->key_len,
+						  keystr);
+				PM2_DISP("%s", keystr);
+				element = element->next;
+			}
+		}
 	}
-    }
-  LOG_OUT();
+	PM2_LOG_OUT();
 }
 
-void
-tbx_htable_dump_keys_strvals(p_tbx_htable_t htable)
+void tbx_htable_dump_keys_strvals(p_tbx_htable_t htable)
 {
-  LOG_IN();
-  if (htable->nb_element)
-    {
-      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+	PM2_LOG_IN();
+	if (htable->nb_element) {
+		tbx_htable_bucket_count_t bucket = htable->nb_bucket;
 
-      while (bucket--)
-	{
-	  p_tbx_htable_element_t element = NULL;
+		while (bucket--) {
+			p_tbx_htable_element_t element = NULL;
 
-	  element = htable->bucket_array[bucket];
+			element = htable->bucket_array[bucket];
 
-	  while (element)
-	    {
-              char keystr[element->key_len*2+1];
+			while (element) {
+				char keystr[element->key_len * 2 + 1];
 
-              tbx_htable_keystr(element->key, element->key_len, keystr);
-	      DISP("%s: '%s'", keystr, (char *)(element->object));
-	      element = element->next;
-	    }
+				tbx_htable_keystr(element->key,
+						  element->key_len,
+						  keystr);
+				PM2_DISP("%s: '%s'", keystr,
+					 (char *) (element->object));
+				element = element->next;
+			}
+		}
 	}
-    }
-  LOG_OUT();
+	PM2_LOG_OUT();
 }
 
-void
-tbx_htable_dump_keys_ptrvals(p_tbx_htable_t htable)
+void tbx_htable_dump_keys_ptrvals(p_tbx_htable_t htable)
 {
-  LOG_IN();
-  if (htable->nb_element)
-    {
-      tbx_htable_bucket_count_t bucket = htable->nb_bucket;
+	PM2_LOG_IN();
+	if (htable->nb_element) {
+		tbx_htable_bucket_count_t bucket = htable->nb_bucket;
 
-      while (bucket--)
-	{
-	  p_tbx_htable_element_t element = NULL;
+		while (bucket--) {
+			p_tbx_htable_element_t element = NULL;
 
-	  element = htable->bucket_array[bucket];
+			element = htable->bucket_array[bucket];
 
-	  while (element)
-	    {
-              char keystr[element->key_len*2+1];
+			while (element) {
+				char keystr[element->key_len * 2 + 1];
 
-              tbx_htable_keystr(element->key, element->key_len, keystr);
-	      DISP("%s: %p", keystr, element->object);
-	      element = element->next;
-	    }
+				tbx_htable_keystr(element->key,
+						  element->key_len,
+						  keystr);
+				PM2_DISP("%s: %p", keystr,
+					 element->object);
+				element = element->next;
+			}
+		}
 	}
-    }
-  LOG_OUT();
+	PM2_LOG_OUT();
 }

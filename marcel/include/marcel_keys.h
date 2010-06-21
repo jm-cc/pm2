@@ -24,47 +24,42 @@
 
 /** Public data types **/
 #ifdef MARCEL_KEYS_ENABLED
-typedef void (*marcel_key_destructor_t)(any_t);
-#endif /* MARCEL_KEYS_ENABLED */
+typedef void (*marcel_key_destructor_t) (any_t);
+#endif				/* MARCEL_KEYS_ENABLED */
 
 
 /** Public functions **/
 #ifdef MARCEL_KEYS_ENABLED
 
-DEC_MARCEL_POSIX(int, key_create, (marcel_key_t *key, 
-				   marcel_key_destructor_t any_t) __THROW);
-DEC_MARCEL_POSIX(int, key_delete, (marcel_key_t key) __THROW);
+DEC_MARCEL(int, key_create, (marcel_key_t * key, marcel_key_destructor_t any_t) __THROW);
+DEC_MARCEL(int, key_delete, (marcel_key_t key) __THROW);
 
-DEC_MARCEL_POSIX(int, setspecific, (marcel_key_t key,
-				    __const void* value));
-DEC_MARCEL_POSIX(any_t, getspecific, (marcel_key_t key));
+DEC_MARCEL(int, setspecific, (marcel_key_t key, __const void *value));
+DEC_MARCEL(any_t, getspecific, (marcel_key_t key));
 
-#endif /* MARCEL_KEYS_ENABLED */
+#endif				/* MARCEL_KEYS_ENABLED */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal global variables **/
 #ifdef MARCEL_KEYS_ENABLED
-
 extern unsigned marcel_nb_keys;
 extern marcel_key_destructor_t marcel_key_destructor[MAX_KEY_SPECIFIC];
 extern int marcel_key_present[MAX_KEY_SPECIFIC];
-
 extern volatile unsigned _nb_keys;
-
-#endif /* MARCEL_KEYS_ENABLED */
+#endif				/* MARCEL_KEYS_ENABLED */
 
 
 /** Internal functions **/
 #ifdef MARCEL_KEYS_ENABLED
-
-static __tbx_inline__ any_t* marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
-
-#endif /* MARCEL_KEYS_ENABLED */
+static __tbx_inline__ any_t *marcel_specificdatalocation(marcel_t pid, marcel_key_t key);
+#endif				/* MARCEL_KEYS_ENABLED */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

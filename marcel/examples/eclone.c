@@ -70,7 +70,7 @@ int marcel_main(int argc, char *argv[])
 {
   int i;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
 #  ifndef IA64_ARCH
   clone_init(&clone_var, N);

@@ -39,29 +39,34 @@ void piom_server_relock_reentrant(piom_server_t server, piom_thread_t old_owner)
 
 #ifdef MARCEL
 
-#define _piom_spin_lock_softirq(lock)    ma_spin_lock_softirq(lock)
-#define _piom_spin_unlock_softirq(lock)  ma_spin_unlock_softirq(lock)
-#define _piom_spin_trylock_softirq(lock) ma_spin_trylock_softirq(lock)
-#define _piom_write_lock_softirq(lock)   ma_write_lock_softirq(lock)
-#define _piom_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
-#define _piom_read_lock_softirq(lock)    ma_read_lock_softirq(lock)
-#define _piom_read_unlock_softirq(lock)  ma_read_unlock_softirq(lock)
+#define _piom_spin_lock_softirq(lock)    marcel_spin_lock_tasklet_disable(lock)
+#define _piom_spin_unlock_softirq(lock)  marcel_spin_unlock_tasklet_enable(lock)
+#define _piom_spin_trylock_softirq(lock) marcel_spin_trylock_tasklet_disable(lock)
 
-#define _piom_spin_lock(lock)   ma_spin_lock(lock)
-#define _piom_spin_unlock(lock) ma_spin_unlock(lock)
+#define _piom_spin_lock(lock)            marcel_spin_lock(lock)
+#define _piom_spin_unlock(lock)          marcel_spin_unlock(lock)
+#define _piom_spin_trylock(lock)         marcel_spin_trylock(lock)
+
+//#define _piom_write_lock_softirq(lock)   ma_write_lock_softirq(lock)
+//#define _piom_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
+//#define _piom_read_lock_softirq(lock)    ma_read_lock_softirq(lock)
+//#define _piom_read_unlock_softirq(lock)  ma_read_unlock_softirq(lock)
 
 #else  /* MARCEL */
 
 #define _piom_spin_lock_softirq(lock)    piom_spin_lock(lock)
 #define _piom_spin_unlock_softirq(lock)  piom_spin_unlock(lock)
 #define _piom_spin_trylock_softirq(lock) piom_spin_trylock(lock)
+
+#define _piom_spin_lock(lock)            piom_spin_lock(lock)
+#define _piom_spin_unlock(lock)          piom_spin_unlock(lock)
+#define _piom_spin_trylock(lock)         piom_spin_trylock(lock)
+
 #define _piom_write_lock_softirq(lock)   piom_write_lock(lock)
 #define _piom_write_unlock_softirq(lock) piom_write_unlock(lock)
 #define _piom_read_lock_softirq(lock)    piom_read_lock(lock)
 #define _piom_read_unlock_softirq(lock)  piom_read_unlock(lock)
 
-#define _piom_spin_lock(lock)   piom_spin_lock(lock)
-#define _piom_spin_unlock(lock) piom_spin_unlock(lock)
 #endif	/* MARCEL */
 
 int piom_server_lock(piom_server_t server);

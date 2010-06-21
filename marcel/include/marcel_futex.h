@@ -43,10 +43,11 @@ typedef struct {
  * timeout is in jiffies (use marcel_gettimeslice() to convert from us), or
  * MA_MAX_SCHEDULE_TIMEOUT to request indefinite sleep.
  */
-extern int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long mask, unsigned long val, signed long timeout);
+extern int marcel_futex_wait(marcel_futex_t * futex, unsigned long *addr,
+			     unsigned long mask, unsigned long val, signed long timeout);
 
 /* Wakes nb threads queued on the futex. UINT_MAX will wake all of them. */
-extern int marcel_futex_wake(marcel_futex_t *futex, unsigned nb);
+extern int marcel_futex_wake(marcel_futex_t * futex, unsigned nb);
 
 
 #endif /** __MARCEL_FUTEX_H__ **/

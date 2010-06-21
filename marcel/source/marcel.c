@@ -18,9 +18,7 @@
 #include "marcel_alloc.h"
 #include "sys/marcel_work.h"
 
-#include "pm2_common.h"
 #include "tbx.h"
-#include "pm2_profile.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,39 +29,8 @@
 #include <fcntl.h>
 #include <signal.h>
 
-#ifdef UNICOS_SYS
-#include <sys/mman.h>
-#endif
 
 /* Miscellaneous functions */
-
-#ifdef RS6K_ARCH
-int _jmg(int r)
-{
-	if (r != 0)
-		ma_preempt_enable();
-	return r;
-}
-
-#undef longjmp
-void LONGJMP(jmp_buf buf, int val)
-{
-	static jmp_buf _buf;
-	static int _val;
-
-	ma_preempt_disable();
-	memcpy(_buf, buf, sizeof(jmp_buf));
-	_val = val;
-#ifdef PM2_DEV
-#warning set_sp() should not be directly used
-#endif
-	set_sp(SP_FIELD(buf) - 256);
-	longjmp(_buf, _val);
-}
-
-#define longjmp(buf, v)	LONGJMP(buf, v)
-#endif
-
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 marcel_exception_t
     MARCEL_TASKING_ERROR =
@@ -78,7 +45,7 @@ marcel_exception_t
     "TIME OUT while being blocked on a semaphor", MARCEL_NOT_IMPLEMENTED =
     "MARCEL_NOT_IMPLEMENTED (sorry)", MARCEL_USE_ERROR =
     "MARCEL_USE_ERROR: Marcel was not compiled to enable this functionality";
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 #ifdef MA__DEBUG
 /* C'EST ICI QU'IL EST PRATIQUE DE METTRE UN POINT D'ARRET
@@ -93,8 +60,7 @@ void marcel_breakpoint(void)
    its stack pointer */
 unsigned long marcel_usablestack(void)
 {
-	return (unsigned long) get_sp() -
-	    (unsigned long) marcel_self()->stack_base;
+	return ((unsigned long) get_sp() - (unsigned long) ma_self()->stack_base);
 }
 
 /* ================== Gestion des exceptions : ================== */
@@ -102,7 +68,7 @@ unsigned long marcel_usablestack(void)
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 int _marcel_raise_exception(marcel_exception_t ex)
 {
-	marcel_t cur = marcel_self();
+	marcel_t cur = ma_self();
 
 	if (ex == NULL)
 		ex = cur->cur_exception;
@@ -110,10 +76,9 @@ int _marcel_raise_exception(marcel_exception_t ex)
 	if (cur->cur_excep_blk == NULL) {
 		ma_preempt_disable();
 		fprintf(stderr, "\nUnhandled exception %s in task %d on LWP(%d)"
-		    "\nFILE : %s, LINE : %d\n",
-		    ex, cur->number, ma_vpnum(MA_LWP_SELF), cur->exfile,
-		    cur->exline);
-		*(int*)0 = -1;	/* To generate a core file */
+			"\nFILE : %s, LINE : %u\n",
+			ex, cur->number, ma_vpnum(MA_LWP_SELF), cur->exfile, cur->exline);
+		*(int *) 0 = -1;	/* To generate a core file */
 		exit(1);
 	} else {
 		cur->cur_exception = ex;
@@ -121,7 +86,7 @@ int _marcel_raise_exception(marcel_exception_t ex)
 		marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
 	}
 }
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 /* When calling external libraries, we have to disable preemption, to make sure
  * that they will not see a kernel thread change, in case they take a kernel
@@ -129,7 +94,7 @@ int _marcel_raise_exception(marcel_exception_t ex)
  */
 int marcel_extlib_protect(void)
 {
-	marcel_thread_preemption_disable();
+	ma_some_thread_preemption_disable(ma_self());
 	return 0;
 }
 
@@ -138,31 +103,35 @@ int marcel_extlib_unprotect(void)
 	/* Release preemption after releasing the mutex, in case we'd try to
 	 * immediately schedule a thread that calls marcel_extlib_protect(),
 	 * thus requiring two useless context switches. */
-	marcel_thread_preemption_enable();
+	ma_some_thread_preemption_enable(ma_self());
 	return 0;
 }
 
-void marcel_start_playing(void) {
+void marcel_start_playing(void)
+{
 	PROF_EVENT(fut_start_playing);
 }
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)
-static int rand_lwp_init(ma_lwp_t lwp) {
+static int rand_lwp_init(ma_lwp_t lwp)
+{
 	srand48_r(ma_vpnum(lwp), &ma_per_lwp(random_buffer, lwp));
 	return 0;
 }
 
-static int rand_lwp_start(ma_lwp_t lwp TBX_UNUSED) {
+static int rand_lwp_start(ma_lwp_t lwp TBX_UNUSED)
+{
 	return 0;
 }
 
 MA_DEFINE_LWP_NOTIFIER_START(random_lwp, "Initialisation générateur aléatoire",
-		rand_lwp_init, "Initialisation générateur",
-		rand_lwp_start, "");
+			     rand_lwp_init, "Initialisation générateur",
+			     rand_lwp_start, "");
 
 MA_LWP_NOTIFIER_CALL_UP_PREPARE(random_lwp, MA_INIT_MAIN_LWP);
 
-long marcel_random(void) {
+long marcel_random(void)
+{
 	long res;
 	ma_local_bh_disable();
 	ma_preempt_disable();

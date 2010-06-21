@@ -32,10 +32,9 @@
  * Functions
  * =========
  */
-void
-tbx_default_specific_dest(void *specific)
+void tbx_default_specific_dest(void *specific)
 {
-  LOG_IN();
-  TBX_FREE(specific);
-  LOG_OUT();
+	PM2_LOG_IN();
+	TBX_FREE(specific);
+	PM2_LOG_OUT();
 }

@@ -18,6 +18,12 @@
 #define __ASM_X86_64_LINUX_SPINLOCK_H__
 
 
+/** Public macros **/
+#ifdef X86_64_ARCH
+#define MA_SPINB "l"
+#define MA_SPINb ""
+#define MA_SPINT int
+#endif
 #include "asm-i386/linux_spinlock.h"
 
 

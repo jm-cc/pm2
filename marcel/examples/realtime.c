@@ -49,7 +49,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_trace_on();
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);

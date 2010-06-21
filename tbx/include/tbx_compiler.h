@@ -83,15 +83,15 @@ void __memory_barrier(void);
 #define TBX_WEAK        __attribute__ ((__weak__))
 #if defined(DARWIN_SYS) || defined(OSF_SYS) || defined(IRIX_SYS)
 /* those systems don't support aliases, or only weak aliases */
-#  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
-     ret name proto { return alias args; }
-#  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
-     ret name proto TBX_WEAK { return alias args; }
+#  define TBX_FUN_ALIAS(ret, target, alias, proto, args) \
+     ret alias proto { return target args; }
+#  define TBX_FUN_WEAKALIAS(ret, target, alias, proto, args) \
+     ret alias proto TBX_WEAK { return target args; }
 #else
-#  define TBX_FUN_ALIAS(ret,name,alias,proto,args) \
-     __typeof__(name) name __attribute__ ((__alias__(TBX_STRING(alias))))
-#  define TBX_FUN_WEAKALIAS(ret,name,alias,proto,args) \
-     TBX_FUN_ALIAS(ret, name, alias, proto, args) TBX_WEAK
+#  define TBX_FUN_ALIAS(ret, target, alias, proto, args) \
+     __typeof__(alias) alias __attribute__((__alias__(TBX_STRING(target))))
+#  define TBX_FUN_WEAKALIAS(ret, target, alias, proto, args) \
+     TBX_FUN_ALIAS(ret, target, alias, proto, args) TBX_WEAK
 #endif
 #define TBX_FORMAT(...) __attribute__ ((__format__(__VA_ARGS__)))
 
@@ -110,6 +110,7 @@ void __memory_barrier(void);
 #  define __tbx_attribute_used__	__attribute__((__used__))
 #  define __tbx_attribute_pure__	__attribute__((pure))
 #  define __tbx_warn_unused_result__
+#  define __tbx_attribute_nonnull__(list)
 #  define tbx_prefetch(a,...)		__builtin_prefetch(a, ## __VA_ARGS__)
 #  define TBX_RETURNS_TWICE
 
@@ -191,6 +192,12 @@ void __memory_barrier(void);
 #  error Sorry, your compiler is too old/not recognized.
 #endif
 
+#ifdef PM2_MAINTAINER_MODE
+#  undef TBX_VISIBILITY
+#  undef TBX_VISIBILITY_PUSH_DEFAULT
+#  undef TBX_VISIBILITY_PUSH_INTERNAL
+#  undef TBX_VISIBILITY_POP
+#endif
 #ifndef TBX_VISIBILITY
 #  define TBX_VISIBILITY(vis)
 #  define TBX_VISIBILITY_PUSH_DEFAULT
@@ -267,7 +274,7 @@ void __memory_barrier(void);
  * 		int __tbx_deprecated__ foo(void)
  */
 #ifndef __tbx_deprecated__
-# define __tbx_deprecated__		/* unimplemented */
+# define __tbx_deprecated__	/* unimplemented */
 #endif
 
 /*
@@ -345,4 +352,4 @@ void __memory_barrier(void);
 
 /* @} */
 
-#endif /* TBX_COMPILER_H_EST_DEF */
+#endif				/* TBX_COMPILER_H_EST_DEF */

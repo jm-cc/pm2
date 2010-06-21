@@ -771,10 +771,10 @@ LC_ALL=C
 export LANG LC_ALL
 
 # Note: these are module names
-_PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse puk pm2 mad3 nmad marcel pioman tbx ntbx init stackalign leonie ezflavor bubblelib bubbles bubblegum fut2paje memory"
+_PM2_CONFIG_DIRTY_ORDERED_MODULES="profile leoparse puk pm2 nmad marcel pioman tbx ntbx init stackalign leonie ezflavor bubblelib bubbles bubblegum fut2paje memory"
 
 # Note: these are library names
-_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 mad3 nmad marcel pioman xpaulette pthread tbx ntbx profile pm2debug stackalign bubblelib mami"
+_PM2_CONFIG_DIRTY_ORDERED_LIBS="init leoparse pm2 nmad marcel pioman xpaulette pthread tbx ntbx profile pm2debug stackalign bubblelib mami"
 
 if [ "$1" = --source-mode ] ; then
     pm2_config_set_vars "DUMMY ARGS"

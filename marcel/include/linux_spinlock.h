@@ -38,13 +38,11 @@
 #include "asm/linux_atomic.h"
 #include "asm/linux_spinlock.h"
 #include "asm/marcel_compareexchange.h"
-#ifdef __MARCEL_KERNEL__
 #include "marcel_utils.h"
 #include "linux_preempt.h"
 #ifdef MA__LWPS
 #include "asm/linux_rwlock.h"
 #endif
-#endif /**__MARCEL_KERNEL__ **/
 
 
 /** Public data types **/
@@ -54,40 +52,38 @@
 #if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
 typedef struct {
-        unsigned long magic;
-        volatile unsigned long lock;
-        volatile unsigned int babble;
-        const char *module;
-        marcel_t owner;
-        char *ofile;
-        int oline;
+	unsigned long magic;
+	volatile unsigned long lock;
+	volatile unsigned int babble;
+	const char *module;
+	marcel_t owner;
+	char *ofile;
+	int oline;
 	void *bt[TBX_BACKTRACE_DEPTH];
 	size_t btsize;
 } ma_spinlock_t;
 #define MA_SPINLOCK_MAGIC  0x1D244B3C
 #define MA_SPIN_LOCK_UNLOCKED { .magic=MA_SPINLOCK_MAGIC, .lock=0, .babble=10, .module=__FILE__ , .owner=NULL , .ofile=NULL, .oline=0}
-#else /* MARCEL_DEBUG_SPINLOCK */
+#else				/* MARCEL_DEBUG_SPINLOCK */
 /*
  * gcc versions before ~2.95 have a nasty bug with empty initializers.
  */
 #if (__GNUC__ > 2)
-  typedef struct { } ma_spinlock_t;
-  #define MA_SPIN_LOCK_UNLOCKED { }
+typedef struct {
+} ma_spinlock_t;
+#define MA_SPIN_LOCK_UNLOCKED { }
 #else
-  typedef struct { int gcc_is_buggy; } ma_spinlock_t;
-  #define MA_SPIN_LOCK_UNLOCKED { 0 }
+typedef struct {
+	int gcc_is_buggy;
+} ma_spinlock_t;
+#define MA_SPIN_LOCK_UNLOCKED { 0 }
 #endif
-#endif /* MARCEL_DEBUG_SPINLOCK */
-#endif /* MA__LWPS */
-
-
-/** Public functions **/
-#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
-TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
-#endif
+#endif				/* MARCEL_DEBUG_SPINLOCK */
+#endif				/* MA__LWPS */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -96,30 +92,25 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
  */
 #define MA_LOCK_SECTION_NAME			\
 	".text.lock." __ma_stringify(MODULE)
-
 #define MA_LOCK_SECTION_START(extra)		\
 	".subsection 1\n\t"			\
 	extra					\
 	".ifndef " MA_LOCK_SECTION_NAME "\n\t"	\
 	MA_LOCK_SECTION_NAME ":\n\t"		\
 	".endif\n\t"
-
 #define MA_LOCK_SECTION_END			\
 	".previous\n\t"
 
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #define ma_spin_is_locked_nofail(x) ma_spin_is_locked(x)
-
 /* XXX: we do not check the owner */
 #define ma_spin_check_locked(x) ma_spin_is_locked(x)
 #endif
 
 #if !defined(MA__LWPS) && defined(MA_HAVE_COMPAREEXCHANGE)
 #ifdef MARCEL_DEBUG_SPINLOCK
-
 /* #define SPIN_ABORT() */
-#define SPIN_ABORT() MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR) 
-	
+#define SPIN_ABORT() MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR)
 #define ma_spin_lock_init(x) \
         do { \
                 (x)->magic = MA_SPINLOCK_MAGIC; \
@@ -131,22 +122,20 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
                 (x)->oline = 0; \
 		(x)->btsize = 0; \
         } while (0)
-
 #define MA_CHECK_LOCK(x) \
         do { \
                 if ((x)->magic != MA_SPINLOCK_MAGIC) { \
-                        pm2debug("%s:%d: spin_is_locked on uninitialized spinlock %p.\n", \
+                        PM2_LOG("%s:%d: spin_is_locked on uninitialized spinlock %p.\n", \
                                         __FILE__, __LINE__, (x)); \
 			SPIN_ABORT(); \
                 } \
         } while(0)
-
 #define _ma_raw_spin_lock(x)               \
         do { \
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_lock(%s:%p) already locked by %p:%s:%d\n", \
+                        PM2_LOG("%s:%d: spin_lock(%s:%p) already locked by %p:%s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
 					(x), (x)->owner, (x)->ofile, (x)->oline); \
 			if ((x)->btsize) \
@@ -162,7 +151,6 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 			(x)->btsize = __TBX_RECORD_SOME_TRACE((x)->bt, TBX_BACKTRACE_DEPTH); \
 		} \
           } while (0)
-
 /* without debugging, spin_is_locked on UP always says
  * FALSE. --> printk if already locked. */
 #define ma_spin_is_locked(x) \
@@ -170,7 +158,7 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_is_locked(%s:%p) already locked by %p:%s:%d\n", \
+                        PM2_LOG("%s:%d: spin_is_locked(%s:%p) already locked by %p:%s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->ofile, (x)->oline); \
 			if ((x)->btsize) \
@@ -179,20 +167,17 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
                 } \
                 0; \
         })
-
 #define ma_spin_is_locked_nofail(x) \
         ({ \
                 MA_CHECK_LOCK(x); \
                 (x)->lock; \
 	 })
-
 /* TODO: also check that we are the owner */
 #define ma_spin_check_locked(x) \
         ({ \
                 MA_CHECK_LOCK(x); \
                 (x)->lock && (x)->owner == MARCEL_SELF; \
 	 })
-
 /* without debugging, spin_trylock on UP always says
  * TRUE. --> printk if already locked. */
 #define _ma_raw_spin_trylock(x) \
@@ -200,7 +185,7 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_trylock(%s:%p) already locked by %p:%s:%d\n", \
+                        PM2_LOG("%s:%d: spin_trylock(%s:%p) already locked by %p:%s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, \
                                         (x), (x)->owner, (x)->ofile, (x)->oline); \
 			if ((x)->btsize) \
@@ -217,13 +202,12 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 		} \
                 1; \
         })
-
 #define ma_spin_unlock_wait(x)     \
         do { \
                 MA_CHECK_LOCK(x); \
                 if ((x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_unlock_wait(%s:%p) owned by %p:%s:%d\n", \
+                        PM2_LOG("%s:%d: spin_unlock_wait(%s:%p) owned by %p:%s:%d\n", \
                                         __FILE__,__LINE__, (x)->module, (x), \
                                         (x)->owner, (x)->ofile, (x)->oline); \
 			if ((x)->btsize) \
@@ -235,19 +219,18 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 			SELF_GETMEM(spinlock_backtrace) = 0; \
 		} \
         } while (0)
-
 #define _ma_raw_spin_unlock(x) \
         do { \
                 MA_CHECK_LOCK(x); \
                 if (!(x)->lock&&(x)->babble) { \
                         (x)->babble--; \
-                        pm2debug("%s:%d: spin_unlock(%s:%p) not locked\n", \
+                        PM2_LOG("%s:%d: spin_unlock(%s:%p) not locked\n", \
                                         __FILE__,__LINE__, (x)->module, (x));\
 			SPIN_ABORT(); \
                 } \
                 (x)->lock = 0; \
         } while (0)
-#else /* MARCEL_DEBUG_SPINLOCK */
+#else				/* MARCEL_DEBUG_SPINLOCK */
 /*
  * If MA__LWPS is unset, declare the _raw_* definitions as nops
  */
@@ -259,18 +242,20 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 #define _ma_raw_spin_trylock(lock)	((void)(lock), 1)
 #define ma_spin_unlock_wait(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_spin_unlock(lock)	do { (void)(lock); } while(0)
-#endif /* MARCEL_DEBUG_SPINLOCK */
-#endif /* MA__LWPS */
+#endif				/* MARCEL_DEBUG_SPINLOCK */
+#endif				/* MA__LWPS */
 
 #ifndef MA__LWPS
 /* RW spinlocks: No debug version */
-
 #if (__GNUC__ > 2)
-  typedef struct { } ma_rwlock_t;
-  #define MA_RW_LOCK_UNLOCKED { }
+    typedef struct {
+} ma_rwlock_t;
+#define MA_RW_LOCK_UNLOCKED { }
 #else
-  typedef struct { int gcc_is_buggy; } ma_rwlock_t;
-  #define MA_RW_LOCK_UNLOCKED { 0 }
+    typedef struct {
+	int gcc_is_buggy;
+} ma_rwlock_t;
+#define MA_RW_LOCK_UNLOCKED { 0 }
 #endif
 
 #define ma_rwlock_init(lock)	do { (void)(lock); } while(0)
@@ -279,7 +264,7 @@ TBX_EXTERN void __ma_preempt_spin_lock(ma_spinlock_t *lock);
 #define _ma_raw_write_lock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_unlock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_trylock(lock) ({ (void)(lock); (1); })
-#endif /* !MA__LWPS */
+#endif				/* !MA__LWPS */
 
 /*
  * Define the various spin_lock and rw_lock methods.  Note we define these
@@ -347,21 +332,6 @@ do { \
 	ma_preempt_enable(); \
 } while(0)
 
-/*
-#define ma_spin_lock_irqsave(lock, flags) \
-do { \
-	ma_local_irq_save(flags); \
-	ma_preempt_disable(); \
-	_ma_raw_spin_lock(lock); \
-} while (0)
-
-#define spin_lock_irq(lock) \
-do { \
-	ma_local_irq_disable(); \
-	ma_preempt_disable(); \
-	_ma_raw_spin_lock(lock); \
-} while (0)
-*/
 #define ma_spin_lock_softirq(lock) ma_spin_lock_bh(lock)
 
 #define ma_spin_lock_bh(lock) \
@@ -371,21 +341,6 @@ do { \
 	  _ma_raw_spin_lock(lock); \
 } while (0)
 
-/*
-#define ma_read_lock_irqsave(lock, flags) \
-do { \
-	ma_local_irq_save(flags); \
-	ma_preempt_disable(); \
-	_ma_raw_read_lock(lock); \
-} while (0)
-
-#define ma_read_lock_irq(lock) \
-do { \
-	ma_local_irq_disable(); \
-	ma_preempt_disable(); \
-	_ma_raw_read_lock(lock); \
-} while (0)
-*/
 #define ma_read_lock_softirq(lock) ma_read_lock_bh(lock)
 
 #define ma_read_lock_bh(lock) \
@@ -395,21 +350,6 @@ do { \
 	_ma_raw_read_lock(lock); \
 } while (0)
 
-/*
-#define ma_write_lock_irqsave(lock, flags) \
-do { \
-	ma_local_irq_save(flags); \
-	ma_preempt_disable(); \
-	_ma_raw_write_lock(lock); \
-} while (0)
-
-#define ma_write_lock_irq(lock) \
-do { \
-	ma_local_irq_disable(); \
-	ma_preempt_disable(); \
-	_ma_raw_write_lock(lock); \
-} while (0)
-*/
 #define ma_write_lock_softirq(lock) ma_write_lock_bh(lock)
 
 #define ma_write_lock_bh(lock) \
@@ -419,27 +359,6 @@ do { \
 	_ma_raw_write_lock(lock); \
 } while (0)
 
-/*
-#define ma_spin_unlock_irqrestore(lock, flags) \
-do { \
-	_ma_raw_spin_unlock(lock); \
-	ma_local_irq_restore(flags); \
-	ma_preempt_enable(); \
-} while (0)
-
-#define _ma_raw_spin_unlock_irqrestore(lock, flags) \
-do { \
-	_ma_raw_spin_unlock(lock); \
-	ma_local_irq_restore(flags); \
-} while (0)
-
-#define ma_spin_unlock_irq(lock) \
-do { \
-	_ma_raw_spin_unlock(lock); \
-	ma_local_irq_enable(); \
-	ma_preempt_enable(); \
-} while (0)
-*/
 #define ma_spin_unlock_softirq(lock) ma_spin_unlock_bh(lock)
 #define ma_spin_unlock_softirq_no_resched(lock) ma_spin_unlock_bh_no_resched(lock)
 
@@ -457,21 +376,6 @@ do { \
 	ma_local_bh_enable(); \
 } while (0)
 
-/*
-#define ma_read_unlock_irqrestore(lock, flags) \
-do { \
-	_ma_raw_read_unlock(lock); \
-	ma_local_irq_restore(flags); \
-	ma_preempt_enable(); \
-} while (0)
-
-#define ma_read_unlock_irq(lock) \
-do { \
-	_ma_raw_read_unlock(lock); \
-	ma_local_irq_enable(); \
-	ma_preempt_enable(); \
-} while (0)
-*/
 #define ma_read_unlock_softirq(lock) ma_read_unlock_bh(lock)
 
 #define ma_read_unlock_bh(lock) \
@@ -481,21 +385,6 @@ do { \
 	ma_local_bh_enable(); \
 } while (0)
 
-/*
-#define ma_write_unlock_irqrestore(lock, flags) \
-do { \
-	_ma_raw_write_unlock(lock); \
-	ma_local_irq_restore(flags); \
-	ma_preempt_enable(); \
-} while (0)
-
-#define ma_write_unlock_irq(lock) \
-do { \
-	_ma_raw_write_unlock(lock); \
-	ma_local_irq_enable(); \
-	ma_preempt_enable(); \
-} while (0)
-*/
 #define ma_write_unlock_softirq(lock) ma_write_unlock_bh(lock)
 
 #define ma_write_unlock_bh(lock) \
@@ -513,14 +402,19 @@ do { \
 
 
 /** Internal functions **/
+#if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
+void __ma_preempt_spin_lock(ma_spinlock_t * lock);
+#endif
+
 #if defined(MA__LWPS)
-TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock);
+void __ma_preempt_write_lock(ma_rwlock_t * lock);
 #endif
 
 /* "lock on reference count zero" */
-extern int ma_atomic_dec_and_lock(ma_atomic_t *atomic, ma_spinlock_t *lock);
+extern int ma_atomic_dec_and_lock(ma_atomic_t * atomic, ma_spinlock_t * lock);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

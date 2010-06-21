@@ -54,12 +54,12 @@ int marcel_main(int argc, char **argv)
   marcel_t t;
   unsigned long start;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   marcel_setname(marcel_self(),"main");
   marcel_printf("wait a bit (%p)\n",marcel_self());
   marcel_delay(1000);
-  lwp = marcel_lwp_add_vp(MARCEL_VPSET_FULL);
+  lwp = marcel_lwp_add_vp();
   marcel_printf("created additionnal LWP, wait a bit\n");
   marcel_delay(1000);
   marcel_attr_init(&attr);

@@ -116,7 +116,7 @@ static void
 add_main_function (FILE *fd, Element *root_bubble)
 {
   fprintf (fd, "int main (int argc, char *argv[]) {\n");
-  fprintf (fd, "   marcel_init (&argc, argv);\n");
+  fprintf (fd, "   marcel_init (argc, argv);\n");
   fprintf (fd, "#ifdef PROFILE\n");
   fprintf (fd, "   profile_activate (FUT_ENABLE, MARCEL_PROF_MASK, 0);\n");
   fprintf (fd, "#endif\n\n");

@@ -237,7 +237,7 @@ int marcel_main(int argc, char **argv)
 #ifdef PTHREAD
   tbx_timing_init();
 #else
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   marcel_trace_on();
 #endif

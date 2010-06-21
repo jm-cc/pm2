@@ -18,9 +18,7 @@
 #define __ASM_I386_LINUX_HARDIRQ_H__
 
 
-#ifdef __MARCEL_KERNEL__
 #include "asm-generic/linux_hardirq.h"
-#endif
 
 
 #endif /** __ASM_I386_LINUX_HARDIRQ_H__ **/

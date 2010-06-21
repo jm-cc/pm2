@@ -20,19 +20,18 @@
 
 #include "sys/marcel_flags.h"
 #include "asm/marcel_arch_switchto.h"
-#ifdef __MARCEL_KERNEL__
 #include "marcel_types.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
-/** Internal macros **/
+TBX_VISIBILITY_PUSH_INTERNAL
 
+
+/** Internal macros **/
 /* effectue un setjmp. On doit être RUNNING avant et après
  * */
 #define MA_THR_SETJMP(current) \
   marcel_ctx_setjmp(current->ctx_yield)
-
 /* On vient de reprendre la main.
  * */
 #define MA_THR_RESTARTED(current, info) \
@@ -40,9 +39,8 @@
     MA_ARCH_SWITCHTO_LWP_FIX(current); \
     MTRACE(info, current);             \
   } while(0)
-
 #ifdef MA__SELF_VAR
-#  define MA_SET_INITIAL_SELF(self)	do { ma_self = (self); } while(0)
+#  define MA_SET_INITIAL_SELF(self)	do { __ma_self = (self); } while(0)
 #  if defined(MA__LWPS) && defined(MARCEL_DONT_USE_POSIX_THREADS)
 #    define MA_SET_SELF(self)	((void)0)
 #  else
@@ -52,6 +50,7 @@
 #  define MA_SET_INITIAL_SELF(self)	((void)0)
 #  define MA_SET_SELF(self)	((void)0)
 #endif
+
 /* on effectue un longjmp. Le thread courrant ET le suivant doivent
  * être RUNNING. La variable previous_task doit être correctement
  * positionnée pour pouvoir annuler la propriété RUNNING du thread
@@ -65,25 +64,22 @@
     call_ST_FLUSH_WINDOWS();               \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)
-
-
 /* détruit le contexte en mettant des valeurs empoisonnées.
  * Utile pour le débuggage. */
 #define MA_THR_DESTROYJMP(current) \
   marcel_ctx_destroyjmp(current->ctx_yield);
-
-
 /** Internal data types **/
-enum {
+    enum {
 	FIRST_RETURN,
 	NORMAL_RETURN
 };
 
 
 /** Internal functions **/
-marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next);
+marcel_task_t *marcel_switch_to(marcel_task_t * cur, marcel_task_t * next);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

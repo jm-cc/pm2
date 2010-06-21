@@ -19,16 +19,18 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define get_sp() \
-({ \
-	unsigned long long __var; \
-	(unsigned long) (&__var + 1); \
-})
+#define get_sp()				\
+	({					\
+		unsigned long long __var;	\
+		(unsigned long) (&__var + 1);	\
+	})
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

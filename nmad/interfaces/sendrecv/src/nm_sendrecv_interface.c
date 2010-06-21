@@ -72,31 +72,7 @@ extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem)
 }
 #endif /* PIOM_ENABLE_SHM */
 
-/* ** Debug ************************************************ */
-
-static debug_type_t debug_nm_sr_trace TBX_UNUSED = NEW_DEBUG_TYPE("NM_SO_SR: ", "nm_sr_trace");
-static debug_type_t debug_nm_sr_log TBX_UNUSED = NEW_DEBUG_TYPE("NM_SO_SR_LOG: ", "nm_sr_log");
-
-#define NM_SO_SR_TRACE(fmt, args...) \
-  debug_printf(&debug_nm_sr_trace,"[%s] " fmt ,__TBX_FUNCTION__  , ##args)
-
-#define NM_SO_SR_TRACE_LEVEL(level, fmt, args...) \
-  debug_printfl(&debug_nm_sr_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
-
-#define NM_SO_SR_LOG_IN() \
-  debug_printf(&debug_nm_sr_log, "%s, : -->\n", __TBX_FUNCTION__)
-
-#define NM_SO_SR_LOG_OUT() \
-  debug_printf(&debug_nm_sr_log, "%s, : <--\n", __TBX_FUNCTION__)
-
-void nm_sr_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_flags TBX_UNUSED)
-{
-  pm2debug_register(&debug_nm_sr_trace);
-  pm2debug_register(&debug_nm_sr_log);
-  pm2debug_init_ext(argc, argv, debug_flags);
-}
-
-
+/* ** Events *********************************************** */
 
 static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event);
 static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event);
@@ -125,7 +101,7 @@ static const struct nm_so_monitor_s nm_sr_monitor_unexpected =
 int nm_sr_init(nm_session_t p_session)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
 
   if(!nm_sr_data.init_done)
     {
@@ -141,15 +117,15 @@ int nm_sr_init(nm_session_t p_session)
 
       nm_sr_data.init_done = 1;
     }
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
 int nm_sr_exit(nm_session_t p_session)
 {
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
 
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -162,7 +138,7 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
   int rc = NM_ESUCCESS;
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
@@ -188,8 +164,8 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 
   nm_unlock_status(p_core);
   nm_unlock_interface(p_core);
-  NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, rc);
-  NM_SO_SR_LOG_OUT();
+  NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
+  NM_LOG_OUT();
   return rc;
 }
 
@@ -211,7 +187,7 @@ extern int nm_sr_flush(struct nm_core *p_core)
 int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef NMAD_DEBUG
@@ -225,7 +201,7 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
     }
 
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -244,7 +220,7 @@ int nm_sr_scancel(nm_session_t p_session, nm_sr_request_t *p_request)
 int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request) 
 {
   int rc = NM_ESUCCESS;
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   assert(nm_sr_data.init_done);
 #ifdef NMAD_DEBUG
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_POSTED))
@@ -272,15 +248,15 @@ int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request)
     {
       rc = -NM_EAGAIN;
     }
-  NM_SO_SR_TRACE("req=%p; rc=%d\n", p_request, rc);
-  NM_SO_SR_LOG_OUT();
+  NM_TRACEF("req=%p; rc=%d\n", p_request, rc);
+  NM_LOG_OUT();
   return rc;
 }
 
 int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 {
   nm_core_t p_core = p_session->p_core;
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   assert(nm_sr_data.init_done);
   nm_sr_flush(p_core);
 #ifdef NMAD_DEBUG
@@ -288,24 +264,24 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
     TBX_FAILUREF("nm_sr_rwait- req=%p no recv posted!\n", p_request);
 #endif /* NMAD_DEBUG */
 
-  NM_SO_SR_TRACE("request %p completion = %d\n", p_request,
-		 nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
+  NM_TRACEF("request %p completion = %d\n", p_request,
+	    nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED)) 
     {
       nm_so_post_all_force(p_core);
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
     }
-  NM_SO_SR_TRACE("request %p completed\n", p_request);
-  NM_SO_SR_LOG_OUT();
+  NM_TRACEF("request %p completed\n", p_request);
+  NM_LOG_OUT();
   return nm_sr_rtest(p_session, p_request);
 }
 
 int nm_sr_recv_source(nm_session_t p_session, nm_sr_request_t *p_request, nm_gate_t *pp_gate)
 {
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   if(pp_gate)
     *pp_gate = p_request->req.unpack.p_gate;
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -480,7 +456,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
 {
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   const nm_status_t status = p_pack->status;
   if( (status & NM_STATUS_PACK_COMPLETED) &&
       ( (!(status & NM_PACK_SYNCHRONOUS)) || (status & NM_STATUS_ACK_RECEIVED)) )
@@ -489,7 +465,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
       nm_sr_monitor_notify(p_request, NM_SR_STATUS_SEND_COMPLETED, &info);
       nm_sr_request_signal(p_request, NM_SR_STATUS_SEND_COMPLETED);
     }
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
 }
 
 static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
@@ -515,7 +491,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
 {
   struct nm_unpack_s*p_unpack = event->p_unpack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req.unpack);
-  NM_SO_SR_LOG_IN();
+  NM_LOG_IN();
   nm_sr_status_t sr_event;
 
   if(event->status & NM_STATUS_UNPACK_CANCELLED)
@@ -533,20 +509,18 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
   nm_sr_monitor_notify(p_request, sr_event, &info);
   nm_sr_request_signal(p_request, sr_event);
 
-  NM_SO_SR_LOG_OUT();
+  NM_LOG_OUT();
 }
 
 int nm_sr_progress(nm_session_t p_session)
 {
+  NM_LOG_IN();
   /* We assume that PIOMan makes the communications progress */
 #ifdef NMAD_POLL
-  nm_core_t p_core = p_session->p_core;
-  NM_SO_SR_LOG_IN();
-  nm_schedule(p_core);
-  NM_SO_SR_LOG_OUT();
+  nm_schedule(p_session->p_core);
 #else
   piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
-
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }

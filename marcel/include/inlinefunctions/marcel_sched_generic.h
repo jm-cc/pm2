@@ -23,11 +23,11 @@
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
 #ifdef MA__LWPS
-static __tbx_inline__ void ma_about_to_idle(void) {
+static __tbx_inline__ void ma_about_to_idle(void)
+{
 #  ifdef PIOMAN
 	/* TODO: appeler PIOMan */
 #  endif
@@ -37,7 +37,8 @@ static __tbx_inline__ void ma_about_to_idle(void) {
 #ifdef MA__LWPS
 /* To be called from idle only, call marcel_sig_pause after making sure that
  * we have announced other LWPs that we stopped polling */
-static __tbx_inline__ void ma_sched_sig_pause(void) {
+static __tbx_inline__ void ma_sched_sig_pause(void)
+{
 	MA_BUG_ON(MARCEL_SELF != __ma_get_lwp_var(idle_task));
 	/* Tell other LWPs that we will stop polling need_resched */
 	ma_clear_thread_flag(TIF_POLLING_NRFLAG);
@@ -52,16 +53,17 @@ static __tbx_inline__ void ma_sched_sig_pause(void) {
 }
 #endif
 
-static __tbx_inline__ void ma_entering_idle(void) {
+static __tbx_inline__ void ma_entering_idle(void)
+{
 #ifdef MA__LWPS
-	PROF_EVENT1(sched_idle_start,ma_vpnum(MA_LWP_SELF));
+	PROF_EVENT1(sched_idle_start, ma_vpnum(MA_LWP_SELF));
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
-		marcel_sig_disable_interrupts();
+		__ma_sig_disable_interrupts();
 		ma_topology_lwp_idle_start(MA_LWP_SELF);
 		if (!(ma_topology_lwp_idle_core(MA_LWP_SELF)))
 			ma_sched_sig_pause();
-		marcel_sig_enable_interrupts();
+		__ma_sig_enable_interrupts();
 	}
 #  endif
 #endif
@@ -70,7 +72,8 @@ static __tbx_inline__ void ma_entering_idle(void) {
 #endif
 }
 
-static __tbx_inline__ void ma_still_idle(void) {
+static __tbx_inline__ void ma_still_idle(void)
+{
 #ifdef MA__LWPS
 #  ifdef MARCEL_SMT_IDLE
 	if (!(ma_preempt_count() & MA_PREEMPT_ACTIVE)) {
@@ -85,7 +88,8 @@ static __tbx_inline__ void ma_still_idle(void) {
 #endif
 }
 
-static __tbx_inline__ void ma_leaving_idle(void) {
+static __tbx_inline__ void ma_leaving_idle(void)
+{
 #ifdef MA__LWPS
 	PROF_EVENT1(sched_idle_stop, ma_vpnum(MA_LWP_SELF));
 #  ifdef MARCEL_SMT_IDLE
@@ -97,24 +101,24 @@ static __tbx_inline__ void ma_leaving_idle(void) {
 #endif
 }
 
-__tbx_inline__ static void 
-marcel_get_vpset(marcel_task_t* __restrict t, marcel_vpset_t *vpset)
+__tbx_inline__ static void
+marcel_get_vpset(marcel_task_t * __restrict t, marcel_vpset_t * vpset)
 {
-	     *vpset = t->vpset;
+	*vpset = t->vpset;
 }
 
-__tbx_inline__ static void 
-marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
-				const marcel_attr_t* __restrict attr)
+__tbx_inline__ static void
+marcel_sched_init_marcel_thread(marcel_task_t * __restrict t,
+				const marcel_attr_t * __restrict attr)
 {
 #ifdef MA__LWPS
 	/* t->lwp */
 	if (attr->schedrq)
 		t->vpset = attr->schedrq->vpset;
 	else if (attr->__cpuset)
-		t->vpset = *attr->__cpuset; 
+		t->vpset = *attr->__cpuset;
 	else
-		t->vpset = attr->vpset; 
+		t->vpset = attr->vpset;
 #else
 	marcel_vpset_vp(&t->vpset, 0);
 #endif
@@ -122,19 +126,18 @@ marcel_sched_init_marcel_thread(marcel_task_t* __restrict t,
 	marcel_sched_internal_init_marcel_thread(t, attr);
 }
 
-__tbx_inline__ static int marcel_sched_create(marcel_task_t* __restrict cur,
-				      marcel_task_t* __restrict new_task,
-				      __const marcel_attr_t * __restrict attr,
-				      __const int dont_schedule,
-				      __const unsigned long base_stack)
+__tbx_inline__ static int marcel_sched_create(marcel_task_t * __restrict cur,
+					      marcel_task_t * __restrict new_task,
+					      __const marcel_attr_t * __restrict attr,
+					      __const int dont_schedule,
+					      __const unsigned long base_stack)
 {
-	LOG_IN();
-	LOG_RETURN(marcel_sched_internal_create(cur, new_task, attr, 
-						dont_schedule, base_stack));
+	MARCEL_LOG_IN();
+	MARCEL_LOG_RETURN(marcel_sched_internal_create(cur, new_task, attr,
+						       dont_schedule, base_stack));
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_MARCEL_SCHED_GENERIC_H__ **/

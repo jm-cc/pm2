@@ -22,10 +22,10 @@
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
-static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
+static __tbx_inline__ void ma_free_task_stack(marcel_t task)
+{
 	switch (task->stack_kind) {
 		/* TODO free them somewhere more appropriate than the current level? */
 	case MA_DYNAMIC_STACK:
@@ -43,7 +43,6 @@ static __tbx_inline__ void ma_free_task_stack(marcel_t task) {
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_MARCEL_ALLOC_H__ **/

@@ -38,17 +38,16 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Public inline functions functions **/
 static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int val)
 {
 	__ma_u32 retval;
+	unsigned long dummy;
 
-	//if (cpu_has_llsc && R10000_LLSC_WAR) {
-		unsigned long dummy;
-
-		__asm__ __volatile__(
+	__asm__ __volatile__(
 		"	.set	mips3					\n"
 		"1:	ll	%0, %3			# xchg_u32	\n"
 		"	.set	mips0					\n"
@@ -63,34 +62,6 @@ static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int
 		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
 		: "R" (*m), "Jr" (val)
 		: "memory");
-#if 0
-	} else if (cpu_has_llsc) {
-		unsigned long dummy;
-
-		__asm__ __volatile__(
-		"	.set	mips3					\n"
-		"1:	ll	%0, %3			# xchg_u32	\n"
-		"	.set	mips0					\n"
-		"	move	%2, %z4					\n"
-		"	.set	mips3					\n"
-		"	sc	%2, %1					\n"
-		"	beqz	%2, 1b					\n"
-#ifdef MA__LWPS
-		"	sync						\n"
-#endif
-		"	.set	mips0					\n"
-		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
-		: "R" (*m), "Jr" (val)
-		: "memory");
-	} else {
-		unsigned long flags;
-
-		local_irq_save(flags);
-		retval = *m;
-		*m = val;
-		local_irq_restore(flags);	/* implies memory barrier  */
-	}
-#endif
 
 	return retval;
 }
@@ -99,11 +70,9 @@ static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int
 static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long * m, unsigned long val)
 {
 	__ma_u64 retval;
+	unsigned long dummy;
 
-	//if (cpu_has_llsc && R10000_LLSC_WAR) {
-		unsigned long dummy;
-
-		__asm__ __volatile__(
+	__asm__ __volatile__(
 		"	.set	mips3					\n"
 		"1:	lld	%0, %3			# xchg_u64	\n"
 		"	move	%2, %z4					\n"
@@ -116,33 +85,7 @@ static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long * m, un
 		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
 		: "R" (*m), "Jr" (val)
 		: "memory");
-#if 0
-	} else if (cpu_has_llsc) {
-		unsigned long dummy;
-
-		__asm__ __volatile__(
-		"	.set	mips3					\n"
-		"1:	lld	%0, %3			# xchg_u64	\n"
-		"	move	%2, %z4					\n"
-		"	scd	%2, %1					\n"
-		"	beqz	%2, 1b					\n"
-#ifdef CONFIG_SMP
-		"	sync						\n"
-#endif
-		"	.set	mips0					\n"
-		: "=&r" (retval), "=m" (*m), "=&r" (dummy)
-		: "R" (*m), "Jr" (val)
-		: "memory");
-	} else {
-		unsigned long flags;
-
-		local_irq_save(flags);
-		retval = *m;
-		*m = val;
-		local_irq_restore(flags);	/* implies memory barrier  */
-	}
-#endif
-
+	
 	return retval;
 }
 #endif
@@ -168,13 +111,11 @@ static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * p
 }
 
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m, unsigned long old,
-	unsigned long replace)
+								unsigned long replace)
 {
 	__ma_u32 retval;
 
-	/* XXX assume this */
-	//if (cpu_has_llsc && R10000_LLSC_WAR) {
-		__asm__ __volatile__(
+	__asm__ __volatile__(
 		"	.set	push					\n"
 		"	.set	noat					\n"
 		"	.set	mips3					\n"
@@ -192,61 +133,23 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m
 		"	.set	pop					\n"
 		: "=&r" (retval),
 #if (__GNUC__ >= 3)
-			"=R" (*m)
+		  "=R" (*m)
 #else
-			"=m" (*m)
+		  "=m" (*m)
 #endif
 		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
-#if 0
-	} else if (cpu_has_llsc) {
-		__asm__ __volatile__(
-		"	.set	push					\n"
-		"	.set	noat					\n"
-		"	.set	mips3					\n"
-		"1:	ll	%0, %2			# __cmpxchg_u32	\n"
-		"	bne	%0, %z3, 2f				\n"
-		"	.set	mips0					\n"
-		"	move	$1, %z4					\n"
-		"	.set	mips3					\n"
-		"	sc	$1, %1					\n"
-		"	beqz	$1, 1b					\n"
-#ifdef MA__LWPS
-		"	sync						\n"
-#endif
-		"2:							\n"
-		"	.set	pop					\n"
-		: "=&r" (retval),
-#if (__GNUC__ >= 3)
-			"=R" (*m)
-#else
-			"=m" (*m)
-#endif
-		: "R" (*m), "Jr" (old), "Jr" (replace)
-		: "memory");
-	} else {
-		unsigned long flags;
-
-		local_irq_save(flags);
-		retval = *m;
-		if (retval == old)
-			*m = replace;
-		local_irq_restore(flags);	/* implies memory barrier  */
-	}
-#endif
 
 	return retval;
 }
 
 #if MA_BITS_PER_LONG == 64
 static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned long old,
-	unsigned long replace)
+						     unsigned long replace)
 {
 	__ma_u64 retval;
 
-	/* XXX assume this */
-//	if (cpu_has_llsc) {
-		__asm__ __volatile__(
+	__asm__ __volatile__(
 		"	.set	push					\n"
 		"	.set	noat					\n"
 		"	.set	mips3					\n"
@@ -262,46 +165,12 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 		"	.set	pop					\n"
 		: "=&r" (retval),
 #if (__GNUC__ >= 3)
-			"=R" (*m)
+		  "=R" (*m)
 #else
-			"=m" (*m)
+		  "=m" (*m)
 #endif
 		: "R" (*m), "Jr" (old), "Jr" (replace)
 		: "memory");
-#if 0
-	} else if (cpu_has_llsc) {
-		__asm__ __volatile__(
-		"	.set	push					\n"
-		"	.set	noat					\n"
-		"	.set	mips3					\n"
-		"1:	lld	%0, %2			# __cmpxchg_u64	\n"
-		"	bne	%0, %z3, 2f				\n"
-		"	move	$1, %z4					\n"
-		"	scd	$1, %1					\n"
-		"	beqz	$1, 1b					\n"
-#ifdef MA__LWPS
-		"	sync						\n"
-#endif
-		"2:							\n"
-		"	.set	pop					\n"
-		: "=&r" (retval),
-#if (__GNUC__ >= 3)
-			"=R" (*m)
-#else
-			"=m" (*m)
-#endif
-		: "R" (*m), "Jr" (old), "Jr" (replace)
-		: "memory");
-	} else {
-		unsigned long flags;
-
-		local_irq_save(flags);
-		retval = *m;
-		if (retval == old)
-			*m = replace;
-		local_irq_restore(flags);	/* implies memory barrier  */
-	}
-#endif
 
 	return retval;
 }
@@ -310,7 +179,7 @@ static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned 
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr, unsigned long old,
-	unsigned long replace, int size)
+							    unsigned long replace, int size)
 {
 	switch (size) {
 	case 1:
@@ -329,6 +198,7 @@ static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr,
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

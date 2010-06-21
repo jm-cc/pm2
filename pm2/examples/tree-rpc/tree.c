@@ -95,7 +95,7 @@ int pm2_main(int argc, char **argv)
 
   DECLARE_LRPC_WITH_NAME(DICHOTOMY, "fac", OPTIMIZE_IF_LOCAL);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if(pm2_self() == 0) { /* master process */
 

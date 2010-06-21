@@ -39,6 +39,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -52,21 +53,20 @@
  * semaphore.h for details.  -ben
  */
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
-
 #ifdef MA__LWPS
-static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t * rw)
 {
 	__ma_build_read_lock(rw, "__ma_read_lock_failed");
 }
 
-static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t * rw)
 {
 	__ma_build_write_lock(rw, "__ma_write_lock_failed");
 }
 
-static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t * lock)
 {
-	ma_atomic_t *count = (ma_atomic_t *)lock;
+	ma_atomic_t *count = (ma_atomic_t *) lock;
 	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, count))
 		return 1;
 	ma_atomic_add(MA_RW_LOCK_BIAS, count);
@@ -75,6 +75,7 @@ static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *lock)
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -36,13 +36,12 @@
 
 
 #include "asm/linux_rwlock.h"
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #include "asm/linux_atomic.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -56,34 +55,34 @@
  * semaphore.h for details.  -ben
  */
 /* the spinlock helpers are in arch/i386/kernel/semaphore.c */
-
 #ifdef MA__LWPS
-extern TBX_EXTERN void __ma_read_lock_failed(ma_rwlock_t *rw);
-static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw)
+extern void __ma_read_lock_failed(ma_rwlock_t * rw);
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t * rw)
 {
-	if (ma_atomic_add_negative(-1,rw))
+	if (ma_atomic_add_negative(-1, rw))
 		__ma_read_lock_failed(rw);
 }
 
-extern TBX_EXTERN void __ma_write_lock_failed(ma_rwlock_t *rw);
-static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw)
+extern void __ma_write_lock_failed(ma_rwlock_t * rw);
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t * rw)
 {
-	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
+	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, rw))
 		__ma_write_lock_failed(rw);
 }
 #endif
 
 #ifdef MA__LWPS
-static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t *rw)
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t * rw)
 {
-	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS,rw))
+	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, rw))
 		return 1;
-	ma_atomic_add(MA_RW_LOCK_BIAS,rw);
+	ma_atomic_add(MA_RW_LOCK_BIAS, rw);
 	return 0;
 }
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

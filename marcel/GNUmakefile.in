@@ -36,8 +36,10 @@ endif
 
 SCHED_NAME=marcel
 MOD_SRC += $(PM2_SRCROOT)/marcel/source/scheduler-$(SCHED_NAME)
+MOD_SRC += $(PM2_SRCROOT)/marcel/source/scheduler-$(SCHED_NAME)/profiles
 MOD_SRC += $(PM2_SRCROOT)/marcel/source/arch-$(MOD_ARCH)
 MOD_SRC += $(PM2_SRCROOT)/marcel/source/arch-generic
+MOD_SRC += $(PM2_SRCROOT)/marcel/source/sys
 
 #ifeq ($(MOD_ARCH),)
 #$(warning MOD_ARCH not defined)
@@ -73,7 +75,7 @@ $(MOD_GEN_INC)/marcel_abi.h:
 $(MOD_GEN_OBJ)/marcel_bubble_sched.o $(MOD_GEN_OBJ)/marcel_bubble_sched.pic: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 $(MOD_GEN_CPP)/marcel_bubble_sched.i: $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 
-$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard $(PM2_SRCROOT)/marcel/source/scheduler-marcel/marcel_bubble_*.c)
+$(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard $(PM2_SRCROOT)/marcel/source/scheduler-marcel/profiles/marcel_bubble_*.c)
 	$(COMMON_BUILD)
 	@( schedulers=`cat $^							\
 	 | sed -n -e 's/.*MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *\([^,]*\).*/\1/p' \
@@ -91,7 +93,7 @@ $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h: $(wildcard $(PM2_SRCROOT)/marcel/so
 	echo "  { NULL, NULL }" ;						\
 	echo "};" ) > "$@"
 
-dot_h: symlinks $(MOD_GEN_INC)/marcel_abi.h
+dot_h: symlinks $(MOD_GEN_INC)/marcel_abi.h $(MOD_GEN_INC)/marcel_bubble_sched_lookup.h
 
 symlinks: $(MOD_GEN_INC)/asm $(MOD_GEN_INC)/scheduler
 

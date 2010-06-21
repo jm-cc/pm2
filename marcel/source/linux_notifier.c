@@ -21,7 +21,6 @@
  *  Copyright (C) 1991, 1992  Linus Torvalds
  */
 
-#define MA_FILE_DEBUG notifier
 #include "marcel.h"
 
 static ma_rwlock_t notifier_lock = MA_RW_LOCK_UNLOCKED;
@@ -35,27 +34,26 @@ static ma_rwlock_t notifier_lock = MA_RW_LOCK_UNLOCKED;
  *
  *	Currently always returns zero.
  */
- 
+
 int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
-	struct ma_notifier_block **list=&c->chain;
-	LOG_IN();
+	struct ma_notifier_block **list = &c->chain;
+	MARCEL_LOG_IN();
 	/* Niveau 6 parce que init donne déjà les infos */
-	mdebugl(6, "Chain [%s]: registering notifier '%s' at prio %i\n",
-		c->name, n->name, n->priority);
+	MARCEL_LOG("Chain [%s]: registering notifier '%s' at prio %i\n",
+		   c->name, n->name, n->priority);
 	ma_write_lock(&notifier_lock);
-	while(*list)
-	{
-		if(n->priority > (*list)->priority)
+	while (*list) {
+		if (n->priority > (*list)->priority)
 			break;
-		mdebugl(7, "Skipping notifier '%s' at prio %i\n",
-				(*list)->name, (*list)->priority);
-		list= &((*list)->next);
+		MARCEL_LOG("Skipping notifier '%s' at prio %i\n",
+			   (*list)->name, (*list)->priority);
+		list = &((*list)->next);
 	}
 	n->next = *list;
-	*list=n;
+	*list = n;
 	ma_write_unlock(&notifier_lock);
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
 
 /**
@@ -67,28 +65,25 @@ int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_b
  *
  *	Returns zero on success, or %-ENOENT on failure.
  */
- 
+
 int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n)
 {
-	struct ma_notifier_block **nl=&c->chain;
-	LOG_IN();
-	mdebug("Chain [%s]: unregistering notifier '%s' at prio %i\n",
-		c->name, n->name, n->priority);
+	struct ma_notifier_block **nl = &c->chain;
+	MARCEL_LOG_IN();
+	MARCEL_LOG("Chain [%s]: unregistering notifier '%s' at prio %i\n",
+		   c->name, n->name, n->priority);
 	ma_write_lock(&notifier_lock);
-	while((*nl)!=NULL)
-	{
-		if((*nl)==n)
-		{
-			*nl=n->next;
+	while ((*nl) != NULL) {
+		if ((*nl) == n) {
+			*nl = n->next;
 			ma_write_unlock(&notifier_lock);
-			LOG_RETURN(0);
+			MARCEL_LOG_RETURN(0);
 		}
-		nl=&((*nl)->next);
+		nl = &((*nl)->next);
 	}
 	ma_write_unlock(&notifier_lock);
-	mdebug("Chain [%s]: notifier '%s' not found\n",
-		c->name, n->name);
-	LOG_RETURN(-1);
+	MARCEL_LOG("Chain [%s]: notifier '%s' not found\n", c->name, n->name);
+	MARCEL_LOG_RETURN(-1);
 }
 
 /**
@@ -106,30 +101,25 @@ int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier
  *	Otherwise, the return value is the return value
  *	of the last notifier function called.
  */
- 
-int ma_notifier_call_chain(struct ma_notifier_chain *n, unsigned long val, void *v)
+
+int ma_notifier_call_chain(struct ma_notifier_chain *n, int val, void *v)
 {
-	int ret=MA_NOTIFY_DONE;
+	int ret = MA_NOTIFY_DONE;
 	struct ma_notifier_block *nb = n->chain;
 
-	LOG_IN();
-	mdebug("Chain [%s]: calling notifiers with value %li\n",
-		n->name, val);
-	while(nb)
-	{
-		mdebug("Chain [%s]  prio %4i: %s\n",
-		       n->name, nb->priority,
-		       ((val>=0)&&(val<nb->nb_actions)&&(nb->actions_name))?
-			(nb->actions_name)[val]:nb->name);
-		ret=nb->notifier_call(nb,val,v);
-		if(ret&MA_NOTIFY_STOP_MASK)
-		{
-			mdebug("Chain [%s]: calling notifiers aborted\n",
-				n->name);
-		LOG_RETURN(ret);
+	MARCEL_LOG_IN();
+	MARCEL_LOG("Chain [%s]: calling notifiers with value %d\n", n->name, val);
+	while (nb) {
+		MARCEL_LOG("Chain [%s]  prio %4i: %s\n",
+			   n->name, nb->priority,
+			   ((val >= 0) && (val < nb->nb_actions) && (nb->actions_name)) ?
+			   (nb->actions_name)[val] : nb->name);
+		ret = nb->notifier_call(nb, val, v);
+		if (ret & MA_NOTIFY_STOP_MASK) {
+			MARCEL_LOG("Chain [%s]: calling notifiers aborted\n", n->name);
+			MARCEL_LOG_RETURN(ret);
 		}
-		nb=nb->next;
+		nb = nb->next;
 	}
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 }
-

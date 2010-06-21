@@ -166,7 +166,7 @@ static int strat_aggreg_autoextended_flush(void*_status,
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
 
   tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
-    NM_SO_TRACE("Marking pw %p as completed\n", p_so_pw);
+    NM_TRACEF("Marking pw %p as completed\n", p_so_pw);
     p_so_pw->is_completed = tbx_true;
   }
 
@@ -271,12 +271,12 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
   struct nm_pkt_wrap *p_pw = nm_l2so(out_list->next);
   if(p_pw->is_completed == tbx_true) 
     {
-      NM_SO_TRACE("pw %p is completed\n", p_pw);
+      NM_TRACEF("pw %p is completed\n", p_pw);
       tbx_fast_list_del(out_list->next);
     } 
   else 
     {
-      NM_SO_TRACE("pw is not completed\n");
+      NM_TRACEF("pw is not completed\n");
       goto out;
     }
 

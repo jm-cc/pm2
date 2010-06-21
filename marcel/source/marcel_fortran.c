@@ -20,71 +20,82 @@
 
 #ifdef MARCEL_FORTRAN
 
-void marcel_init_(void) {
-  int i, argc;
-  char **argv;
+void marcel_init_(void)
+{
+	int i, argc;
+	char **argv;
 
-  tbx_fortran_init(&argc, &argv);
-  marcel_init (&argc, argv);
+	tbx_fortran_init(&argc, &argv);
+	marcel_init(argc, argv);
 
-  for(i = 0; i < argc; i++){
-    free (argv[i]);
-  }
+	for (i = 0; i < argc; i++) {
+		free(argv[i]);
+	}
 
-  free(argv);
+	free(argv);
 }
 
 
-void marcel_end_ (void){
-  marcel_end();
+void marcel_end_(void)
+{
+	marcel_end();
 }
 
 
-void marcel_self_(marcel_t *self){
-  *self = marcel_self();
+void marcel_self_(marcel_t * self)
+{
+	*self = ma_self();
 }
 
 // a tester sur d'autres architectures et compilateurs
-void marcel_create_(marcel_t *pid, void* (*func)(void*), void *arg){
-  marcel_create (pid, NULL,  func, arg);
+void marcel_create_(marcel_t * pid, void *(*func) (void *), void *arg)
+{
+	marcel_create(pid, NULL, func, arg);
 }
 
 
-void marcel_join_(marcel_t *pid){
-  marcel_join(*pid, NULL);
+void marcel_join_(marcel_t * pid)
+{
+	marcel_join(*pid, NULL);
 }
 
 
-void marcel_yield_(void) {
-  marcel_yield();
+void marcel_yield_(void)
+{
+	marcel_yield();
 }
 
 
 #ifdef MARCEL_STATS_ENABLED
-void marcel_set_load_(int *load) {
-  *marcel_stats_get(marcel_self(), load) = *load;
+void marcel_set_load_(int *load)
+{
+	*marcel_task_stats_get(ma_self(), LOAD) = *load;
 }
 #endif
 
 /* Utile pour debug */
-void marcel_rien_(void) {
+void marcel_rien_(void)
+{
 }
 
 #ifdef MA__BUBBLES
 
 /* TODO: rajouter la bulle qu'on soumet en parametre */
-void marcel_bubble_submit_(void) {
-  marcel_bubble_submit(&marcel_root_bubble);
+void marcel_bubble_submit_(void)
+{
+	marcel_bubble_submit(&marcel_root_bubble);
 }
 
-void marcel_bubble_sched_begin_ () {
-  marcel_bubble_sched_begin ();
+void marcel_bubble_sched_begin_()
+{
+	marcel_bubble_sched_begin();
 }
 
-void marcel_bubble_shake_ () {
-  marcel_bubble_shake ();
+void marcel_bubble_shake_()
+{
+	marcel_bubble_shake();
 }
 
-#endif /* MA__BUBBLES */
+#endif				/* MA__BUBBLES */
 
 #endif

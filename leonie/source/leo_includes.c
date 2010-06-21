@@ -38,7 +38,6 @@ merge_network_entries(p_tbx_htable_t dst,
   p_tbx_slist_t  dst_slist = NULL;
   p_tbx_slist_t  src_slist = NULL;
 
-  LOG_IN();
   dst_dev = leoparse_read_id(src, "dev");
   src_dev = leoparse_read_id(src, "dev");
 
@@ -50,7 +49,6 @@ merge_network_entries(p_tbx_htable_t dst,
   src_slist = leoparse_read_as_slist(src, "hosts");
 
   tbx_slist_merge_after(src_slist, dst_slist);
-  LOG_OUT();
 }
 
 void
@@ -59,7 +57,6 @@ process_network_include_file(p_leo_networks_t networks,
 {
   p_tbx_slist_t network_slist = NULL;
 
-  LOG_IN();
   network_slist = leoparse_read_as_slist(include_htable, "networks");
   if (network_slist)
     {
@@ -96,7 +93,6 @@ process_network_include_file(p_leo_networks_t networks,
       tbx_slist_free(network_slist);
       network_slist = NULL;
     }
-  LOG_OUT();
 }
 
 void
@@ -105,7 +101,6 @@ include_network_files(p_leo_networks_t networks,
 {
   p_tbx_htable_t filename_htable = NULL;
 
-  LOG_IN();
   filename_htable = tbx_htable_empty_table();
 
   tbx_slist_ref_to_head(include_files_slist);
@@ -121,7 +116,6 @@ include_network_files(p_leo_networks_t networks,
 	{
 	  p_tbx_htable_t include_htable = NULL;
 
-	  TRACE_STR("Including", filename);
 	  tbx_htable_add(filename_htable, filename, filename);
 
 	  include_htable = leoparse_parse_local_file(filename);
@@ -135,6 +129,5 @@ include_network_files(p_leo_networks_t networks,
 
   tbx_htable_cleanup_and_free(filename_htable);
   filename_htable = NULL;
-  LOG_OUT();
 }
 

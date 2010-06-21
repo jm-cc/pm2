@@ -17,6 +17,7 @@
 #include "pioman.h"
 
 static int job_scheduled = 0;
+extern unsigned long volatile piom_jiffies;
 
 /* Try to group requests (polling version) */
 int 
@@ -57,8 +58,8 @@ __piom_update_timer(piom_server_t server)
 	PIOM_LOGF("Update timer polling for [%s] at period %i\n",
 		  server->name, server->period);
 #ifdef MARCEL
-	ma_mod_timer(&server->poll_timer,
-		     ma_jiffies + server->period);
+	marcel_mod_timer(&server->poll_timer,
+			 piom_jiffies + server->period);
 #else
 	/* TODO: timer support without Marcel */
 #endif	/* MARCEL */
@@ -228,7 +229,7 @@ piom_poll_timer(unsigned long hid)
 
     PIOM_LOGF("Timer function for [%s]\n", server->name);
 #ifdef PIOM_USE_TASKLETS
-    ma_tasklet_schedule(&server->poll_tasklet);
+    __ma_tasklet_schedule(&server->poll_tasklet);
 #else
     piom_check_polling_for(server);
 #endif	/* PIOM_USE_TASKLETS */
@@ -287,15 +288,15 @@ __piom_check_polling(unsigned polling_point)
 #ifdef MARCEL
 		    /* disable bh to avoid piom_poll_timer to be invoked 
 		       while scheduling the tasklet */
-		    ma_local_bh_disable();
+		    marcel_tasklet_disable();
 #endif
 #ifdef PIOM_USE_TASKLETS
-		    ma_tasklet_schedule(&server->poll_tasklet);
+		    __ma_tasklet_schedule(&server->poll_tasklet);
 #else
 		    piom_check_polling_for(server);
 #endif /* PIOM_USE_TASKLETS */
 #ifdef MARCEL
-		    ma_local_bh_enable();
+		    marcel_tasklet_enable();
 #endif
 		}
 	    }
@@ -331,11 +332,11 @@ __piom_check_polling(unsigned polling_point)
 	}
 	if (server->poll_points & polling_point) {		
 #ifdef MARCEL		
-	    ma_local_bh_disable();
+	    marcel_tasklet_disable();
 	    job_scheduled=1;
 	    scheduled++;
-	    ma_tasklet_schedule(&server->poll_tasklet);
-	    ma_local_bh_enable();
+	    __ma_tasklet_schedule(&server->poll_tasklet);
+	    marcel_tasklet_enable();
 #else
 	    piom_check_polling_for(server);
 #endif /* MARCEL */
@@ -346,10 +347,10 @@ __piom_check_polling(unsigned polling_point)
     if(!scheduled)
 	{
 	    tbx_fast_list_for_each_entry(server, &piom_list_poll, chain_poll) {
-		ma_local_bh_disable();
+		marcel_tasklet_disable();
 		job_scheduled=1;
-		ma_tasklet_schedule(&server->poll_tasklet);
-		ma_local_bh_enable();
+		__ma_tasklet_schedule(&server->poll_tasklet);
+		marcel_tasklet_enable();
 	    }
 	}
 #endif /* MARCEL */
@@ -407,16 +408,16 @@ piom_poll_req(piom_req_t req, unsigned usec)
 void 
 piom_poll_force(piom_server_t server)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     PIOM_LOGF("Poll forced for [%s]\n", server->name);
     if (__piom_need_poll(server)) {
 #ifdef PIOM_USE_TASKLETS
-	ma_tasklet_schedule(&server->poll_tasklet);
+	__ma_tasklet_schedule(&server->poll_tasklet);
 #else
 	piom_check_polling_for(server);
 #endif	/* PIOM_USE_TASKLETS */
     }
-    LOG_OUT();
+    PIOM_LOG_OUT();
 }
 
 /* Force synchronous polling for a specified server 
@@ -425,7 +426,7 @@ piom_poll_force(piom_server_t server)
 void 
 piom_poll_force_sync(piom_server_t server)
 {
-    LOG_IN();
+    PIOM_LOG_IN();
     PIOM_LOGF("Sync poll forced for [%s]\n", server->name);
 #ifdef MARCEL
     marcel_task_t *lock;
@@ -436,5 +437,5 @@ piom_poll_force_sync(piom_server_t server)
 #ifdef MARCEL
     piom_server_unlock_reentrant(server, lock);
 #endif	/* MARCEL */
-    LOG_OUT();
+    PIOM_LOG_OUT();
 }

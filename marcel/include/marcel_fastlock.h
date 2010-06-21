@@ -18,8 +18,8 @@
 #define __MARCEL_FASTLOCK_H__
 
 
-#include <stdint.h>
 #include "sys/marcel_flags.h"
+#include "tbx_intdef.h"
 #include "linux_spinlock.h"
 #include "marcel_debug.h"
 
@@ -37,11 +37,10 @@ typedef int __marcel_atomic_lock_t;
 
 /** Public data structures **/
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
-struct _marcel_fastlock
-{
-  long int __status;   /* "Free" or "taken" or head of waiting list */
-  ma_spinlock_t __spinlock;  /* Used by compare_and_swap emulation. Also,
-			  adaptive SMP lock stores spin count here. */
+struct _marcel_fastlock {
+	long int __status;	/* "Free" or "taken" or head of waiting list */
+	ma_spinlock_t __spinlock;	/* Used by compare_and_swap emulation. Also,
+					   adaptive SMP lock stores spin count here. */
 };
 
 #define _pmarcel_fastlock _marcel_fastlock
@@ -51,22 +50,21 @@ struct _marcel_fastlock
  * In that case we have to use ma_bit_spin_lock, which is significantly slower
  * that ma_spin_lock
  */
-struct _lpt_fastlock
-{
-  /* Bit 0: Spinlock, accessed via `lpt_lock_acquire ()' and
-            `lpt_lock_release ()'.
+struct _lpt_fastlock {
+	/* Bit 0: Spinlock, accessed via `lpt_lock_acquire ()' and
+	   `lpt_lock_release ()'.
 
-     Bit 1: Status, 1 means "taken", 0 means "free".
+	   Bit 1: Status, 1 means "taken", 0 means "free".
 
-     Remaining bits: Head of the waiting list (i.e., address of the first
-            `lpt_blockcell_t').  This assumes that `lpt_blockcell_t's are
-            4-byte aligned.  */
-  long int __status;
+	   Remaining bits: Head of the waiting list (i.e., address of the first
+	   `lpt_blockcell_t').  This assumes that `lpt_blockcell_t's are
+	   4-byte aligned.  */
+	long int __status;
 };
 
 /* Make sure that the `__status' field of `_lpt_fastlock' is large enough to
    hold a pointer.  */
-MA_VERIFY (sizeof (long int) >= sizeof (void *));
+MA_VERIFY(sizeof(long int) >= sizeof(void *));
 
 
 /* Return true if LOCK is marked as taken.  */
@@ -82,7 +80,7 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
 #define MA_LPT_FASTLOCK_SET_STATUS(_lock, _taken)			\
   do { \
     /* Make sure it's locked */						\
-    MA_BUG_ON (((_lock)->__status & 1) != 1);		\
+    MA_LWP_BUG_ON (((_lock)->__status & 1) != 1);				\
     (_lock)->__status = (((_taken) & 1) << 1) | 1;			\
   } while (0)
 #define MA_MARCEL_FASTLOCK_SET_STATUS(_lock, _taken)			\
@@ -103,7 +101,7 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
       /* CELL must be 4-byte aligned.  */				\
       MA_BUG_ON ((((uintptr_t) (_cell)) & 3L) != 0);			\
       /* Make sure it's locked */		\
-      MA_BUG_ON (((_lock)->__status & 1L) != 1);			\
+      MA_LWP_BUG_ON (((_lock)->__status & 1L) != 1);			\
       (_lock)->__status = ((_lock)->__status & 3L) | ((uintptr_t) (_cell)); \
     }									\
   while (0)
@@ -115,6 +113,34 @@ MA_VERIFY (sizeof (long int) >= sizeof (void *));
       (_lock)->__status = 1 | ((uintptr_t) (_cell)); \
     }									\
   while (0)
+
+
+#ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
+
+
+/** Internal functions **/
+/** \brief Wait on \param lock until a signal() or broadcast() call is
+ * made.  */
+extern void __lpt_lock_wait(struct _lpt_fastlock *lock);
+
+/** \brief If \param value and \param expected_value are equal, wait on
+ * \param lock until a signal() or broadcast() call is made or \param abstime
+ * is reached.  In the latter case, return \e ETIMEDOUT; otherwise return \e
+ * EWOULDBLOCK.  This is similar to the \e futex(2) \e FUTEX_WAIT
+ * behavior.  */
+extern int __lpt_lock_timed_wait(struct _lpt_fastlock *lock, struct timespec *abstime,
+				 long *value, long expected_value);
+
+/** \brief Wake up every thread waiting on \param lock.  */
+extern void __lpt_lock_broadcast(struct _lpt_fastlock *lock);
+
+/** \brief Wake up one of the threads waiting on \param lock.  */
+extern void __lpt_lock_signal(struct _lpt_fastlock *lock);
+
+
+TBX_VISIBILITY_POP
+#endif /** __MARCEL_KERNEL__ **/
 
 
 #endif /** __MARCEL_FASTLOCK_H__ **/

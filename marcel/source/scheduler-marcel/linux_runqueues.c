@@ -23,15 +23,15 @@
 
 ma_runqueue_t ma_dontsched_runqueue;
 
-void ma_init_rq(ma_runqueue_t *rq, const char *name)
+void ma_init_rq(ma_runqueue_t * rq, const char *name)
 {
 	int j, k;
 	ma_prio_array_t *array;
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	ma_holder_init(&rq->as_holder, MA_RUNQUEUE_HOLDER);
-	snprintf((rq)->as_holder.name,MARCEL_MAXNAMESIZE,"rq %s",name);
+	snprintf((rq)->as_holder.name, MARCEL_MAXNAMESIZE, "rq %s", name);
 	for (j = 0; j < 1; j++) {
 		array = rq->active + j;
 		array->nr_active = 0;
@@ -46,7 +46,7 @@ void ma_init_rq(ma_runqueue_t *rq, const char *name)
 	// level set by topology
 	// cpuset set by topology
 #endif
-	rq->topolevel = NULL; /* will be set by the caller if needed */
+	rq->topolevel = NULL;	/* will be set by the caller if needed */
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }

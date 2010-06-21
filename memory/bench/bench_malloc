@@ -18,7 +18,6 @@ initialize_bench()
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init memory\" \
 	--marcel=numa --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle \
-        --memory=enable_mami \
 	--init=topology \
         --all=\"opt build_static static\"
     ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts
@@ -44,7 +43,7 @@ finalize_bench()
 
 hosts=${BENCHHOST:-"localhost"}
 flavor="bench_memory_mami_${hosts}"
-appdir="${PM2_OBJROOT}/memory/examples/mami"
+appdir="${PM2_OBJROOT}/memory/examples"
 loop="memory"
 
 prog="mami_bench"

@@ -32,6 +32,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -61,7 +62,6 @@
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	ma_mb()
 #define ma_read_barrier_depends()	do { } while(0)
-
 #ifdef MA__LWPS
 # define ma_smp_mb()	ma_mb()
 # define ma_smp_rmb()	ma_rmb()
@@ -81,8 +81,6 @@
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
-//#define safe_halt()         ia64_pal_halt_light()    /* PAL_HALT_LIGHT */
 
 /*
  * On IA-64, we don't want to hold the runqueue's lock during the low-level context-switch,
@@ -108,24 +106,12 @@
  * of that CPU which will not be released, because there we wait for the
  * tasklist_lock to become available.
  */
-#if 0
-  /* On n'a pas ces problèmes avec marcel. Pas besoin de version spécifique ici
-   * */
-#define ma_prepare_arch_switch(rq, next)		\
-do {						\
-	ma_spin_lock(&(next)->switch_lock);	\
-	ma_spin_unlock(&(rq)->lock);		\
-} while (0)
-#define ma_finish_arch_switch(rq, prev)	ma_spin_unlock_irq(&(prev)->switch_lock)
-#define ma_task_running(rq, p) 		((rq)->curr == (p) || ma_spin_is_locked(&(p)->switch_lock))
-#endif
-
 #define ma_ia64_platform_is(x) (strcmp(x, platform_name) == 0)
-
 /* From processor.h */
 #define ma_cpu_relax()    ma_ia64_hint(ma_ia64_hint_pause)
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

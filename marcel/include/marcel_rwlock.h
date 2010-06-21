@@ -39,56 +39,50 @@
  * yet.  Being architecture-dependent, it's not a good fit for this header
  * (see Glibc's `nptl/sysdep/pthread/pthread.h').  */
 /* #undef MARCEL_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP */
-enum
-{
-  MARCEL_RWLOCK_PREFER_READER_NP,
-  MARCEL_RWLOCK_PREFER_WRITER_NP,
-  MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP,
-  MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
+enum {
+	MARCEL_RWLOCK_PREFER_READER_NP,
+	MARCEL_RWLOCK_PREFER_WRITER_NP,
+	MARCEL_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP,
+	MARCEL_RWLOCK_DEFAULT_NP = MARCEL_RWLOCK_PREFER_WRITER_NP
 };
 
 
 /** Public functions **/
-DEC_MARCEL_POSIX(int, rwlock_init, (marcel_rwlock_t * __restrict rwlock,
-			       const marcel_rwlockattr_t * __restrict attr)
-		 __THROW);
+DEC_MARCEL(int, rwlock_init, (marcel_rwlock_t * __restrict rwlock,
+			      const marcel_rwlockattr_t * __restrict attr) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_destroy, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_destroy, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_rdlock, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_rdlock, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
-				      const struct timespec * __restrict abstime)
-		 __THROW);
+DEC_MARCEL(int, rwlock_timedrdlock, (marcel_rwlock_t * __restrict rwlock,
+				     const struct timespec * __restrict abstime) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_timedwrlock, (marcel_rwlock_t * __restrict rwlock,
-				      const struct timespec * __restrict abstime)
-		 __THROW);
+DEC_MARCEL(int, rwlock_timedwrlock, (marcel_rwlock_t * __restrict rwlock,
+				     const struct timespec * __restrict abstime) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_tryrdlock, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_tryrdlock, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_wrlock, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_wrlock, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_trywrlock, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_trywrlock, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlock_unlock, (marcel_rwlock_t *rwlock) __THROW);
+DEC_MARCEL(int, rwlock_unlock, (marcel_rwlock_t * rwlock) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_init, (marcel_rwlockattr_t *attr) __THROW);
+DEC_MARCEL(int, rwlockattr_init, (marcel_rwlockattr_t * attr) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_destroy, (marcel_rwlockattr_t *attr) __THROW);
+DEC_MARCEL(int, rwlockattr_destroy, (marcel_rwlockattr_t * attr) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_getpshared,
-		 (const marcel_rwlockattr_t * __restrict attr,
-		  int * __restrict pshared) __THROW);
+DEC_MARCEL(int, rwlockattr_getpshared,
+	   (const marcel_rwlockattr_t * __restrict attr,
+	    int *__restrict pshared) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_setpshared,
-		 (marcel_rwlockattr_t *attr, int pshared) __THROW);
+DEC_MARCEL(int, rwlockattr_setpshared, (marcel_rwlockattr_t * attr, int pshared) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_getkind_np,
-		 (const marcel_rwlockattr_t * __restrict attr,
-		  int * __restrict pref) __THROW);
+DEC_MARCEL(int, rwlockattr_getkind_np,
+	   (const marcel_rwlockattr_t * __restrict attr, int *__restrict pref) __THROW);
 
-DEC_MARCEL_POSIX(int, rwlockattr_setkind_np, (marcel_rwlockattr_t *attr, int pref) __THROW);
+DEC_MARCEL(int, rwlockattr_setkind_np, (marcel_rwlockattr_t * attr, int pref) __THROW);
 
 
 #endif /** __MARCEL_RWLOCK_H__ **/

@@ -38,6 +38,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -67,8 +68,6 @@
 #define ma_mb()		tbx_mb()
 #define ma_rmb()	ma_mb()
 #define ma_wmb()	ma_mb()
-
-
 /**
  * read_barrier_depends - Flush all pending reads that subsequents reads
  * depend on.
@@ -120,9 +119,7 @@
  * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
  * in cases like thiswhere there are no data dependencies.
  **/
-
 #define ma_read_barrier_depends()	do { } while(0)
-
 /* SMP variants are required to enforce the garantees only in LWP mode */
 #ifdef MA__LWPS
 # define ma_smp_mb()	ma_mb()
@@ -135,7 +132,6 @@
 # define ma_smp_wmb()	ma_barrier()
 # define ma_smp_read_barrier_depends()	do { } while(0)
 #endif
-
 /*
  * XXX check on these---I suspect what Linus really wants here is
  * acquire vs release semantics but we can't discuss this stuff with
@@ -143,7 +139,6 @@
  */
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
 /*
  * Make the CPU have a few cycles rest, a good thing to insert into busy-wait
  * loops. Can also be a temporary low priority hint for an SMT processor.
@@ -151,6 +146,7 @@
 #define ma_cpu_relax() ma_barrier()
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

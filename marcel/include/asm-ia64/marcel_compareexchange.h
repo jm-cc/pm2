@@ -27,12 +27,14 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #define pm2_compareexchange(p,o,n,s) ma_ia64_cmpxchg(acq,(p),(o),(n),(s))
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

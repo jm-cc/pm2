@@ -146,7 +146,7 @@ ntbx_tcp_read(int     socket_fd,
 	      size_t  length)
 {
         size_t bytes_read = 0;
-        LOG_IN();
+        PM2_LOG_IN();
         while (bytes_read < length) {
                 int status;
 
@@ -165,7 +165,7 @@ ntbx_tcp_read(int     socket_fd,
                         bytes_read += status;
                 }
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -176,7 +176,7 @@ ntbx_tcp_write(int           socket_fd,
 	       const size_t  length)
 {
         size_t bytes_written = 0;
-        LOG_IN();
+        PM2_LOG_IN();
         while (bytes_written < length) {
                 int status;
 
@@ -195,7 +195,7 @@ ntbx_tcp_write(int           socket_fd,
                         bytes_written += status;
                 }
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 /*
@@ -208,7 +208,7 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
 		      char                  *host_name) {
         struct hostent *host_entry;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!(host_entry = gethostbyname(host_name))) {
                 char *msg = NULL;
 
@@ -223,7 +223,7 @@ ntbx_tcp_address_fill(p_ntbx_tcp_address_t   address,
                (size_t)host_entry->h_length);
 
         memset(address->sin_zero, 0, 8);
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 void
@@ -232,7 +232,7 @@ ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address,
 			 unsigned long         *ip) {
         struct hostent *host_entry;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!(host_entry = gethostbyaddr((char *)ip,
                                          sizeof(unsigned long), AF_INET))) {
                 char *msg = NULL;
@@ -247,7 +247,7 @@ ntbx_tcp_address_fill_ip(p_ntbx_tcp_address_t   address,
                host_entry->h_addr,
                (size_t)host_entry->h_length);
         memset(address->sin_zero, 0, 8);
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 void
@@ -256,11 +256,11 @@ ntbx_tcp_socket_setup(ntbx_tcp_socket_t desc) {
         socklen_t     len    = sizeof(int);
         struct linger ling   = { 1, 50 };
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
         SYSCALL(setsockopt(desc, SOL_SOCKET, SO_LINGER, (char *)&ling,
                            sizeof(struct linger)));
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 void
@@ -268,9 +268,9 @@ ntbx_tcp_socket_setup_delay(ntbx_tcp_socket_t desc) {
         int           val    = 0;
         socklen_t     len    = sizeof(int);
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 void
@@ -278,9 +278,9 @@ ntbx_tcp_socket_setup_nodelay(ntbx_tcp_socket_t desc) {
         int           val    = 1;
         socklen_t     len    = sizeof(int);
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -291,9 +291,9 @@ ntbx_tcp_client_setup_delay(p_ntbx_client_t  client) {
         int           val    = 0;
         socklen_t     len    = sizeof(int);
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 void
@@ -303,9 +303,9 @@ ntbx_tcp_client_setup_nodelay(p_ntbx_client_t  client) {
         int           val    = 1;
         socklen_t     len    = sizeof(int);
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(setsockopt(desc, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 ntbx_tcp_socket_t
@@ -315,7 +315,7 @@ ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
         ntbx_tcp_address_t temp;
         int                desc;
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(desc = socket(AF_INET, SOCK_STREAM, 0));
 
         temp.sin_family      = AF_INET;
@@ -328,7 +328,7 @@ ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
                 SYSCALL(getsockname(desc, (struct sockaddr *)address, &len));
         }
 
-        LOG_OUT();
+        PM2_LOG_OUT();
         return desc;
 }
 
@@ -344,9 +344,9 @@ ntbx_tcp_socket_create(p_ntbx_tcp_address_t address,
 void
 ntbx_tcp_server_init(p_ntbx_server_t server)
 {
-        LOG_IN();
+        PM2_LOG_IN();
         ntbx_tcp_server_init_ext(server, 0);
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -359,7 +359,7 @@ ntbx_tcp_server_init_ext(p_ntbx_server_t server,
         struct hostent              *local_host_entry = NULL;
         ntbx_tcp_address_t           address;
 
-        LOG_IN();
+        PM2_LOG_IN();
         server->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
         CTRL_ALLOC(server->local_host);
         gethostname(server->local_host, MAXHOSTNAMELEN);
@@ -415,7 +415,7 @@ ntbx_tcp_server_init_ext(p_ntbx_server_t server,
 
         tcp_specific->port = (ntbx_tcp_port_t)ntohs(address.sin_port);
         sprintf(server->connection_data.data, "%d", tcp_specific->port);
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -427,7 +427,7 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
         struct hostent              *local_host_entry = NULL;
         ntbx_tcp_address_t           address;
 
-        LOG_IN();
+        PM2_LOG_IN();
         client->local_host = TBX_MALLOC(MAXHOSTNAMELEN + 1);
         memset(client->local_host, 0, MAXHOSTNAMELEN + 1);
         gethostname(client->local_host, MAXHOSTNAMELEN);
@@ -471,7 +471,7 @@ ntbx_tcp_client_init(p_ntbx_client_t client)
         tcp_specific->descriptor = ntbx_tcp_socket_create(&address, 0);
 
         ntbx_tcp_socket_setup(tcp_specific->descriptor);
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -483,7 +483,7 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
 {
         p_ntbx_tcp_client_specific_t tcp_specific = NULL;
 
-        LOG_IN();
+        PM2_LOG_IN();
         tcp_specific = client->specific;
 
         while (!tbx_slist_is_nil(client->local_alias)) {
@@ -512,7 +512,7 @@ ntbx_tcp_client_reset(p_ntbx_client_t client)
         client->read_rq_flag	= tbx_false;
         client->write_rq	= 0;
         client->write_rq_flag	= tbx_false;
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -522,7 +522,7 @@ ntbx_tcp_server_reset(p_ntbx_server_t server)
 {
         p_ntbx_tcp_server_specific_t tcp_specific = NULL;
 
-        LOG_IN();
+        PM2_LOG_IN();
         tcp_specific = server->specific;
 
         while (!tbx_slist_is_nil(server->local_alias)) {
@@ -535,7 +535,7 @@ ntbx_tcp_server_reset(p_ntbx_server_t server)
         SYSCALL(close(tcp_specific->descriptor));
         TBX_FREE(tcp_specific);
         server->specific = NULL;
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -555,7 +555,7 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
                 atoi((char *)server_connection_data);
         ntbx_tcp_address_t           server_address;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (server_ip)
                 ntbx_tcp_address_fill_ip(&server_address, server_port, server_ip);
         else if (server_host_name)
@@ -598,7 +598,7 @@ ntbx_tcp_client_connect_body(p_ntbx_client_t           client,
                 }
         }
 
-        LOG_OUT();
+        PM2_LOG_OUT();
         return ntbx_success;
 }
 
@@ -633,7 +633,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
         ntbx_tcp_address_t           remote_address;
         ntbx_tcp_socket_t            descriptor;
 
-        LOG_IN();
+        PM2_LOG_IN();
         while ((descriptor = accept(server_specific->descriptor,
                                     (struct sockaddr *)&remote_address,
                                     &remote_address_len)) == -1) {
@@ -677,7 +677,7 @@ ntbx_tcp_server_accept(p_ntbx_server_t server, p_ntbx_client_t client)
                         ptr++;
                 }
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
         return ntbx_success;
 }
 
@@ -690,7 +690,7 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
 {
         p_ntbx_tcp_client_specific_t tcp_specific = client->specific;
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(close(tcp_specific->descriptor));
 
         while (!tbx_slist_is_nil(client->local_alias)) {
@@ -711,7 +711,7 @@ ntbx_tcp_client_disconnect(p_ntbx_client_t client)
         client->specific = NULL;
         TBX_FREE(client->remote_host);
         client->remote_host = NULL;
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -721,7 +721,7 @@ ntbx_tcp_server_disconnect(p_ntbx_server_t server)
 {
         p_ntbx_tcp_server_specific_t tcp_specific = server->specific;
 
-        LOG_IN();
+        PM2_LOG_IN();
         SYSCALL(close(tcp_specific->descriptor));
 
         while (!tbx_slist_is_nil(server->local_alias)) {
@@ -733,7 +733,7 @@ ntbx_tcp_server_disconnect(p_ntbx_server_t server)
 
         TBX_FREE(tcp_specific);
         server->specific = NULL;
-        LOG_OUT();
+        PM2_LOG_OUT();
 }
 
 
@@ -748,7 +748,7 @@ ntbx_tcp_read_poll(int              nb_clients,
         int              max_fds = 0;
         int              i;
 
-        LOG_IN();
+        PM2_LOG_IN();
 
         FD_ZERO(&read_fds);
         for (i = 0; i < nb_clients; i++) {
@@ -816,7 +816,7 @@ ntbx_tcp_write_poll(int              nb_clients,
         int              max_fds = 0;
         int              i;
 
-        LOG_IN();
+        PM2_LOG_IN();
         FD_ZERO(&write_fds);
         for (i = 0; i < nb_clients; i++) {
                 p_ntbx_tcp_client_specific_t tcp_specific = client_array[i]->specific;
@@ -869,7 +869,7 @@ ntbx_tcp_write_poll(int              nb_clients,
                                 }
                         }
 
-                        LOG_OUT();
+                        PM2_LOG_OUT();
                         return status;
                 }
         }
@@ -888,7 +888,7 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         p_ntbx_tcp_client_specific_t client_specific = client->specific;
         size_t                       bytes_read      = 0;
 
-        LOG_IN();
+        PM2_LOG_IN();
         while (bytes_read < length) {
                 int status;
 
@@ -931,10 +931,9 @@ ntbx_tcp_read_block(p_ntbx_client_t  client,
         }
 
         if (!client->read_rq_flag) {
-                TRACE("read block[%zu], %zu bytes", client->read_rq, length);
                 client->read_rq++;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
 
         return ntbx_success;
 }
@@ -948,7 +947,7 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
         p_ntbx_tcp_client_specific_t client_specific = client->specific;
         size_t                       bytes_written   = 0;
 
-        LOG_IN();
+        PM2_LOG_IN();
         while (bytes_written < length) {
                 int status;
 
@@ -991,10 +990,9 @@ ntbx_tcp_write_block(p_ntbx_client_t  client,
         }
 
         if (!client->write_rq_flag) {
-                TRACE("write block[%zu], %zu bytes", client->write_rq, length);
                 client->write_rq++;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
 
         return ntbx_success;
 }
@@ -1009,7 +1007,7 @@ ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
         int	   status		= ntbx_failure;
         tbx_bool_t rq_flag_toggled	= tbx_false;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!client->read_rq_flag) {
                 client->read_rq_flag = tbx_true;
                 rq_flag_toggled      = tbx_true;
@@ -1017,11 +1015,10 @@ ntbx_tcp_read_pack_buffer(p_ntbx_client_t      client,
 
         status = ntbx_tcp_read_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
         if (rq_flag_toggled) {
-                TRACE("read buffer[%zu]", client->read_rq);
                 client->read_rq++;
                 client->read_rq_flag = tbx_false;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
 
         return status;
 }
@@ -1035,7 +1032,7 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
         int status = ntbx_failure;
         tbx_bool_t rq_flag_toggled	= tbx_false;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!client->write_rq_flag) {
                 client->write_rq_flag = tbx_true;
                 rq_flag_toggled      = tbx_true;
@@ -1043,11 +1040,10 @@ ntbx_tcp_write_pack_buffer(p_ntbx_client_t      client,
 
         status = ntbx_tcp_write_block(client, pack_buffer, sizeof(ntbx_pack_buffer_t));
         if (rq_flag_toggled) {
-                TRACE("write buffer[%zu]", client->write_rq);
                 client->write_rq++;
                 client->write_rq_flag = tbx_false;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
         return status;
 }
 
@@ -1065,7 +1061,7 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
         ntbx_pack_buffer_t pack_buffer;
 
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!client->read_rq_flag) {
                 client->read_rq_flag = tbx_true;
                 rq_flag_toggled      = tbx_true;
@@ -1080,9 +1076,6 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
         }
 
         len = ntbx_unpack_int(&pack_buffer);
-        if (rq_flag_toggled) {
-                TRACE("read string[%zu] len = '%d'", client->read_rq, len);
-        }
         if (len < 0)
                 TBX_FAILURE("synchronization error");
 
@@ -1092,11 +1085,10 @@ ntbx_tcp_read_string(p_ntbx_client_t   client,
         status = ntbx_tcp_read_block(client, *string, len);
 
         if (rq_flag_toggled) {
-                TRACE("read string[%zu] = '%s'", client->read_rq, *string);
                 client->read_rq++;
                 client->read_rq_flag = tbx_false;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
         return status;
 }
 
@@ -1111,7 +1103,7 @@ ntbx_tcp_write_string(p_ntbx_client_t  client,
         tbx_bool_t         rq_flag_toggled = tbx_false;
         ntbx_pack_buffer_t pack_buffer;
 
-        LOG_IN();
+        PM2_LOG_IN();
         if (!client->write_rq_flag) {
                 client->write_rq_flag = tbx_true;
                 rq_flag_toggled      = tbx_true;
@@ -1127,11 +1119,10 @@ ntbx_tcp_write_string(p_ntbx_client_t  client,
 
         status = ntbx_tcp_write_block(client, string, len);
         if (rq_flag_toggled) {
-                TRACE("write string[%zu] = '%s'", client->write_rq, string);
                 client->write_rq++;
                 client->write_rq_flag = tbx_false;
         }
-        LOG_OUT();
+        PM2_LOG_OUT();
         return status;
 }
 

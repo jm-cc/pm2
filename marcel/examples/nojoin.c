@@ -43,7 +43,7 @@ int marcel_main(int argc, char *argv[])
 {
   int i;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   for(i=0; i<NB; i++)
     marcel_create(NULL, NULL, writer, (any_t)mess[i]);

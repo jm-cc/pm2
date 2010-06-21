@@ -26,7 +26,7 @@
  * --------------
  */
 void
-ntbx_init(int    argc,
+ntbx_init(int   *argc,
 	  char **argv);
 
 void

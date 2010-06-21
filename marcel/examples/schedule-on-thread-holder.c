@@ -96,7 +96,7 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  marcel_init (&argc, argv);
+  marcel_init(argc, argv);
 
   start_new_team (my_job, &threads_per_team, nb_teams - 1);
 

@@ -30,16 +30,18 @@ void marcel_show_top(void);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal functions **/
 #ifdef MA__BUBBLES
-void ma_top_add_bubble(marcel_bubble_t *b);
-void ma_top_del_bubble(marcel_bubble_t *b);
+void ma_top_add_bubble(marcel_bubble_t * b);
+void ma_top_del_bubble(marcel_bubble_t * b);
 extern int ma_top_bubbles;
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

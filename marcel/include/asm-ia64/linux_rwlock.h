@@ -18,13 +18,7 @@
 #define __ASM_IA64_LINUX_RWLOCK_H__
 
 
-#ifdef __MARCEL_KERNEL__
-
-
 #include "asm-ia64/linux_spinlock.h"
-
-
-#endif /** __MARCEL_KERNEL__ **/
 
 
 #endif /** __ASM_IA64_LINUX_RWLOCK_H__ **/

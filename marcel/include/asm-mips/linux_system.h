@@ -35,6 +35,9 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
+
+
 /** Internal macros **/
 /*
  * Macros to force memory ordering.  In these descriptions, "previous"
@@ -58,7 +61,6 @@
  * it's (presumably) much slower than mf and (b) mf.a is supported for
  * sequential memory pages only.
  */
-
 /* dans le noyau linux, ils disent que cela dépend du processeur: utiliser sync ou wb */
 #define __ma_sync() \
 	__asm__ __volatile__(			\
@@ -70,7 +72,6 @@
 		: /* no output */		\
 		: /* no input */		\
 		: "memory")
-
 #define __ma_fast_iob()				\
 	__asm__ __volatile__(			\
 		".set	push\n\t"		\
@@ -81,7 +82,6 @@
 		: /* no output */		\
 		: "m" (*(int *)CKSEG1)		\
 		: "memory")
-
 #define ma_fast_wmb()	__ma_sync()
 #define ma_fast_rmb()	__ma_sync()
 #define ma_fast_mb()	__ma_sync()
@@ -94,9 +94,9 @@
 #ifdef IRIX_SYS
 extern void cacheflush(void);
 #define ma_cacheflush cacheflush
-#else /* IRIX_SYS */
+#else				/* IRIX_SYS */
 #error "to write !"
-#endif /* IRIX_SYS */
+#endif				/* IRIX_SYS */
 
 #define ma_mb()		ma_fast_wmb()
 #define ma_rmb()	ma_fast_rmb()
@@ -118,39 +118,47 @@ extern void cacheflush(void);
 
 #define ma_set_mb(var, value)	do { (var) = (value); ma_mb(); } while (0)
 #define ma_set_wmb(var, value)	do { (var) = (value); ma_wmb(); } while (0)
-
-static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int * m, unsigned int val) ;
+static __tbx_inline__ unsigned long __ma_xchg_u32(volatile int *m, unsigned int val);
 
 #if MA_BITS_PER_LONG == 64
-static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long * m, unsigned long val) ;
+static __tbx_inline__ unsigned long __ma_xchg_u64(volatile unsigned long *m, unsigned long val);
 #endif
 
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 extern void __ma_xchg_called_with_bad_pointer(void);
-extern unsigned long __ma_xchg_u8(volatile unsigned long * m, unsigned long val);
-extern unsigned long __ma_xchg_u16(volatile unsigned long * m, unsigned long val);
+extern unsigned long __ma_xchg_u8(volatile unsigned long *m, unsigned long val);
+extern unsigned long __ma_xchg_u16(volatile unsigned long *m, unsigned long val);
 
-static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void * ptr, int size) ;
+static __tbx_inline__ unsigned long __ma_xchg(unsigned long x, volatile void *ptr,
+					      int size);
 #define ma_xchg(ptr,x) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
-static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int * m, unsigned long old, unsigned long replace) ;
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg_u32(volatile int *m,
+								unsigned long old,
+								unsigned long replace);
 
 #if MA_BITS_PER_LONG == 64
-static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int * m, unsigned long old, unsigned long replace) ;
+static __tbx_inline__ unsigned long __ma_cmpxchg_u64(volatile int *m, unsigned long old, unsigned long replace);
 #endif
 
 /* This function doesn't exist, so you'll get a linker error
    if something tries to do an invalid xchg().  */
 extern void __ma_cmpxchg_called_with_bad_pointer(void);
-extern unsigned long __ma_cmpxchg_u8(volatile int *m, unsigned long old, unsigned long replace);
-extern unsigned long __ma_cmpxchg_u16(volatile int *m, unsigned long old, unsigned long replace);
+extern unsigned long __ma_cmpxchg_u8(volatile int *m, unsigned long old,
+				     unsigned long replace);
+extern unsigned long __ma_cmpxchg_u16(volatile int *m, unsigned long old,
+				      unsigned long replace);
 
-static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void * ptr, unsigned long old, unsigned long replace, int size) ;
+static __tbx_inline__ unsigned long TBX_NOINST __ma_cmpxchg(volatile void *ptr,
+							    unsigned long old,
+							    unsigned long replace,
+							    int size);
 #define ma_cmpxchg(ptr,old,replace) ((__typeof__(*(ptr)))__ma_cmpxchg((ptr), (unsigned long)(old), (unsigned long)(replace),sizeof(*(ptr))))
 
 #define ma_cpu_relax() ma_barrier()
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

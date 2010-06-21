@@ -24,19 +24,19 @@ void __piom_server_lock_from_spare_vp(piom_spinlock_t* lock)
 {
 #ifdef PIOM_BLOCKING_CALLS
     int local_vp=marcel_current_vp();
-    if(!ma_spin_trylock(lock)) {
+    if(!marcel_spin_trylock(lock)) {
 	if(marcel_current_vp() >= marcel_nbvps()){
 	    /* We are on a spare VP (RT thread with high priority). 
 	     * So there's no chance that the spinlock gets unlocked.
 	     * Release the CPU so that the corresponding thread can unlock the spinlock
 	     */
 	    int prio = __piom_lower_my_priority();
-	    while(!ma_spin_trylock(lock)){
+	    while(!marcel_spin_trylock(lock)){
 		sched_yield();
 	    }
 	    __piom_higher_my_priority(prio);
 	}else{
-	    while(!ma_spin_trylock(lock));
+	    while(!marcel_spin_trylock(lock));
 	}
     }
 #else
@@ -48,7 +48,7 @@ static __tbx_inline__
 void __piom_server_unlock_from_spare_vp(piom_spinlock_t* lock)
 {
 #ifdef PIOM_BLOCKING_CALLS
-    ma_spin_unlock(lock);
+    marcel_spin_unlock(lock);
 #else
     _piom_spin_unlock_softirq(lock);
 #endif
@@ -64,7 +64,9 @@ __piom_server_lock(piom_server_t server,
 {
     __piom_server_lock_from_spare_vp(&server->lock);
 #ifdef PIOM_USE_TASKLETS
-    ma_tasklet_disable(&server->poll_tasklet);
+    /* todo: fix me ! */
+    //ma_tasklet_disable(&server->poll_tasklet);
+    marcel_tasklet_disable();
 #endif
     server->lock_owner = owner;
 }
@@ -77,7 +79,9 @@ __piom_server_unlock(piom_server_t server)
     PIOM_BUG_ON(server->lock_owner != PIOM_SELF);
     server->lock_owner = PIOM_THREAD_NULL;
 #ifdef PIOM_USE_TASKLETS
-    ma_tasklet_enable(&server->poll_tasklet);
+    /* todo: fix me ! */
+    //ma_tasklet_enable(&server->poll_tasklet);
+    marcel_tasklet_enable();
 #endif
     __piom_server_unlock_from_spare_vp(&server->lock);
 }
@@ -142,7 +146,7 @@ piom_server_lock_reentrant(piom_server_t server)
 {
     if (server->lock_owner == PIOM_SELF) {
 	/* the calling thread already has the lock */
-	LOG_RETURN(PIOM_SELF);
+	PIOM_LOG_RETURN(PIOM_SELF);
     }
     /* the calling thread doesn't hold the lock */
     __piom_server_lock(server, PIOM_SELF);

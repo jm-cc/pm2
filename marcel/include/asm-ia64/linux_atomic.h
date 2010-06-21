@@ -41,26 +41,27 @@
 
 
 /** Public data types **/
-typedef struct { volatile __ma_s32 counter; } ma_atomic_t;
-typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
+typedef struct {
+	volatile int32_t counter;
+} ma_atomic_t;
+typedef struct {
+	volatile int64_t counter;
+} ma_atomic64_t;
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define MA_ATOMIC_INIT(i)	((ma_atomic_t) { (i) })
-#define MA_ATOMIC64_INIT(i)	((ma_atomic64_t) { (i) })
-
+#define MA_ATOMIC_INIT(i)	{ (i) }
+#define MA_ATOMIC64_INIT(i)	{ (i) }
 #define ma_atomic_read(v)	((v)->counter)
 #define ma_atomic64_read(v)	((v)->counter)
-
 #define ma_atomic_set(v,i)	(((v)->counter) = (i))
 #define ma_atomic64_set(v,i)	(((v)->counter) = (i))
-
 #define ma_atomic_init(v,i)	ma_atomic_set((v),(i))
 #define ma_atomic64_init(v,i)	ma_atomic64_set((v),(i))
-
 #define ma_atomic_add_return(i,v)						\
 ({									\
 	int __ia64_aar_i = (i);						\
@@ -72,7 +73,6 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 		? ma_ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
 		: ma_ia64_atomic_add(__ia64_aar_i, v);			\
 })
-
 #define ma_atomic64_add_return(i,v)					\
 ({									\
 	long __ia64_aar_i = (i);					\
@@ -84,7 +84,6 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 		? ma_ia64_fetch_and_add(__ia64_aar_i, &(v)->counter)	\
 		: ma_ia64_atomic64_add(__ia64_aar_i, v);			\
 })
-
 #define ma_atomic_sub_return(i,v)						\
 ({									\
 	int __ia64_asr_i = (i);						\
@@ -96,7 +95,6 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 		? ma_ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
 		: ma_ia64_atomic_sub(__ia64_asr_i, v);			\
 })
-
 #define ma_atomic64_sub_return(i,v)					\
 ({									\
 	long __ia64_asr_i = (i);					\
@@ -108,31 +106,26 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 		? ma_ia64_fetch_and_add(-__ia64_asr_i, &(v)->counter)	\
 		: ma_ia64_atomic64_sub(__ia64_asr_i, v);			\
 })
-
 #define ma_atomic_dec_return(v)		ma_atomic_sub_return(1, (v))
 #define ma_atomic_inc_return(v)		ma_atomic_add_return(1, (v))
 #define ma_atomic64_dec_return(v)	ma_atomic64_sub_return(1, (v))
 #define ma_atomic64_inc_return(v)	ma_atomic64_add_return(1, (v))
-
 #define ma_atomic_sub_and_test(i,v)	(ma_atomic_sub_return((i), (v)) == 0)
 #define ma_atomic_dec_and_test(v)	(ma_atomic_sub_return(1, (v)) == 0)
 #define ma_atomic_inc_and_test(v)	(ma_atomic_add_return(1, (v)) != 0)
 #define ma_atomic64_sub_and_test(i,v)	(ma_atomic64_sub_return((i), (v)) == 0)
 #define ma_atomic64_dec_and_test(v)	(ma_atomic64_sub_return(1, (v)) == 0)
 #define ma_atomic64_inc_and_test(v)	(ma_atomic64_add_return(1, (v)) != 0)
-
 #define ma_atomic_add(i,v)		ma_atomic_add_return((i), (v))
 #define ma_atomic_sub(i,v)		ma_atomic_sub_return((i), (v))
 #define ma_atomic_inc(v)		ma_atomic_add(1, (v))
 #define ma_atomic_dec(v)		ma_atomic_sub(1, (v))
-
 #define ma_atomic64_add(i,v)		ma_atomic64_add_return((i), (v))
 #define ma_atomic64_sub(i,v)		ma_atomic64_sub_return((i), (v))
 #define ma_atomic64_inc(v)		ma_atomic64_add(1, (v))
 #define ma_atomic64_dec(v)		ma_atomic64_sub(1, (v))
-
-#define ma_atomic_xchg(o,r,v) ma_cmpxchg(&(v)->counter,o,r)
-#define ma_atomic64_xchg(o,r,v) ma_cmpxchg(&(v)->counter,o,r)
+#define ma_atomic_xchg(o,r,v)           ma_cmpxchg(&(v)->counter,o,r)
+#define ma_atomic64_xchg(o,r,v)         ma_cmpxchg(&(v)->counter,o,r)
 
 /* Atomic operations are already serializing */
 #define ma_smp_mb__before_atomic_dec()	ma_barrier()
@@ -142,21 +135,16 @@ typedef struct { volatile __ma_s64 counter; } ma_atomic64_t;
 
 
 /** Internal functions **/
-static __tbx_inline__ int
-ma_ia64_atomic_add (int i, ma_atomic_t *v);
+static __tbx_inline__ int ma_ia64_atomic_add(int i, ma_atomic_t * v);
 
-static __tbx_inline__ int
-ma_ia64_atomic64_add (__ma_s64 i, ma_atomic64_t *v);
-static __tbx_inline__ int
-ma_ia64_atomic_sub (int i, ma_atomic_t *v);
-static __tbx_inline__ int
-ma_ia64_atomic64_sub (__ma_s64 i, ma_atomic64_t *v);
-static __tbx_inline__ int
-ma_atomic_add_negative (int i, ma_atomic_t *v);
-static __tbx_inline__ int
-ma_atomic64_add_negative (__ma_s64 i, ma_atomic64_t *v);
+static __tbx_inline__ int ma_ia64_atomic64_add(int64_t i, ma_atomic64_t * v);
+static __tbx_inline__ int ma_ia64_atomic_sub(int i, ma_atomic_t * v);
+static __tbx_inline__ int ma_ia64_atomic64_sub(int64_t i, ma_atomic64_t * v);
+static __tbx_inline__ int ma_atomic_add_negative(int i, ma_atomic_t * v);
+static __tbx_inline__ int ma_atomic64_add_negative(int64_t i, ma_atomic64_t * v);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

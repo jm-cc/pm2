@@ -19,8 +19,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
 /*
  * Taking a spin lock usually also disable preemption (since else other
@@ -35,20 +34,18 @@
  * INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING loop), then we can use the
  * *_no_resched version to avoid calling ma_schedule() twice.
  */
-
-
 #include "linux_spinlock.h"
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #include "asm/linux_spinlock.h"
 #endif
-
 /*
  *  bit-based spin_lock()
  *
  * Don't use this unless you really need to: spin_lock() and spin_unlock()
  * are significantly faster.
  */
-static __tbx_inline__ void ma_bit_spin_lock(int bitnum, unsigned long *addr)
+static __tbx_inline__ void ma_bit_spin_lock(int bitnum LWPS_VAR_UNUSED,
+					    unsigned long *addr LWPS_VAR_UNUSED)
 {
 	/*
 	 * Assuming the lock is uncontended, this never enters
@@ -69,7 +66,8 @@ static __tbx_inline__ void ma_bit_spin_lock(int bitnum, unsigned long *addr)
 /*
  * Return true if it was acquired
  */
-static __tbx_inline__ int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
+static __tbx_inline__ int ma_bit_spin_trylock(int bitnum LWPS_VAR_UNUSED,
+					      unsigned long *addr LWPS_VAR_UNUSED)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	int ret;
@@ -88,7 +86,8 @@ static __tbx_inline__ int ma_bit_spin_trylock(int bitnum, unsigned long *addr)
 /*
  *  bit-based spin_unlock()
  */
-static __tbx_inline__ void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
+static __tbx_inline__ void ma_bit_spin_unlock(int bitnum LWPS_VAR_UNUSED,
+					      unsigned long *addr LWPS_VAR_UNUSED)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	MA_BUG_ON(!ma_test_bit(bitnum, addr));
@@ -101,7 +100,8 @@ static __tbx_inline__ void ma_bit_spin_unlock(int bitnum, unsigned long *addr)
 /*
  * Return true if the lock is held.
  */
-static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
+static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum LWPS_VAR_UNUSED,
+						unsigned long *addr LWPS_VAR_UNUSED)
 {
 #if defined(MA__LWPS) || defined(MA_DEBUG_SPINLOCK)
 	return ma_test_bit(bitnum, addr);
@@ -111,7 +111,6 @@ static __tbx_inline__ int ma_bit_spin_is_locked(int bitnum, unsigned long *addr)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_LINUX_SPINLOCK_H__ **/

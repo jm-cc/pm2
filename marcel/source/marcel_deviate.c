@@ -19,14 +19,16 @@
 #ifdef MARCEL_DEVIATION_ENABLED
 #define MAX_RECORDS    1024
 
-static ma_allocator_t * deviate_records;
+static ma_allocator_t *deviate_records;
 static ma_spinlock_t deviate_lock = MA_SPIN_LOCK_UNLOCKED;
 
-void __marcel_init ma_deviate_init(void)
+void ma_deviate_init(void)
 {
 	deviate_records = ma_new_obj_allocator(0,
-	    ma_obj_allocator_malloc, (void *) sizeof(deviate_record_t),
-	    ma_obj_allocator_free, NULL, POLICY_HIERARCHICAL_MEMORY, 0);
+					       ma_obj_allocator_malloc,
+					       (void *) sizeof(deviate_record_t),
+					       ma_obj_allocator_free, NULL,
+					       POLICY_HIERARCHICAL_MEMORY, 0);
 }
 
 // préemption désactivée et deviate_lock == 1
@@ -46,7 +48,7 @@ static void marcel_deviate_record(marcel_t pid, marcel_handler_func_t h, any_t a
 // préemption désactivée et deviate_lock == 1
 static void do_execute_deviate_work(void)
 {
-	marcel_t cur = marcel_self();
+	marcel_t cur = ma_self();
 	deviate_record_t *ptr;
 
 	while ((ptr = cur->work.deviate_work) != NULL) {
@@ -85,7 +87,7 @@ void marcel_execute_deviate_work(void)
 static void TBX_NORETURN insertion_relai(marcel_handler_func_t f, void *arg)
 {
 	marcel_ctx_t back;
-	marcel_t cur = marcel_self();
+	marcel_t cur = ma_self();
 
 	/* save the way back to the thread's normal path */
 	memcpy(back, cur->ctx_yield, sizeof(marcel_ctx_t));
@@ -93,12 +95,12 @@ static void TBX_NORETURN insertion_relai(marcel_handler_func_t f, void *arg)
 	/* set the current path to here */
 	if (MA_THR_SETJMP(cur) == FIRST_RETURN) {
 		/* and return at once to father */
-		cur = marcel_self();
+		cur = ma_self();
 		marcel_ctx_set_tls_reg(cur->father);
 		marcel_ctx_longjmp(cur->father->ctx_yield, NORMAL_RETURN);
 	} else {
 		/* later on, actually do the work */
-		cur = marcel_self();
+		cur = ma_self();
 		MA_THR_DESTROYJMP(cur);
 		MA_THR_RESTARTED(cur, "Deviation");
 		MA_BUG_ON(!ma_in_atomic());
@@ -126,13 +128,13 @@ void marcel_do_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 		f_to_call = h;
 		argument = arg;
 
-		pid->father = marcel_self();
+		pid->father = ma_self();
 
 		initial_sp =
 		    MAL_BOT((unsigned long) marcel_ctx_get_sp(pid->ctx_yield)) -
 		    TOP_STACK_FREE_AREA - 256;
 
-		marcel_ctx_switch_stack(marcel_self(), pid, initial_sp, &arg);
+		marcel_ctx_switch_stack(ma_self(), pid, initial_sp, &arg);
 
 		(*relai_func) (f_to_call, argument);
 
@@ -143,10 +145,10 @@ void marcel_do_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 
 void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	ma_preempt_disable();
-	if (pid == marcel_self()) {
+	if (pid == ma_self()) {
 		if (!ma_last_preempt() || pid->not_deviatable) {
 			ma_spin_lock(&deviate_lock);
 			marcel_deviate_record(pid, h, arg);
@@ -156,7 +158,7 @@ void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 			ma_preempt_enable();
 			(*h) (arg);
 		}
-		LOG_OUT();
+		MARCEL_LOG_OUT();
 		return;
 	}
 	// On prend ce verrou très tôt pour s'assurer que la tâche cible ne
@@ -171,7 +173,7 @@ void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 		ma_spin_unlock(&deviate_lock);
 		ma_preempt_enable();
 
-		LOG_OUT();
+		MARCEL_LOG_OUT();
 		return;
 	}
 	// En premier lieu, il faut empêcher la tâche 'cible' de changer
@@ -187,12 +189,12 @@ void marcel_deviate(marcel_t pid, marcel_handler_func_t h, any_t arg)
 
 	ma_wake_up_state(pid, MA_TASK_INTERRUPTIBLE | MA_TASK_FROZEN);
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 void marcel_enable_deviation(void)
 {
-	marcel_t cur = marcel_self();
+	marcel_t cur = ma_self();
 
 	ma_preempt_disable();
 	ma_spin_lock(&deviate_lock);
@@ -214,4 +216,4 @@ void marcel_disable_deviation(void)
 	ma_spin_unlock(&deviate_lock);
 	ma_preempt_enable();
 }
-#endif /* MARCEL_DEVIATION_ENABLED */
+#endif				/* MARCEL_DEVIATION_ENABLED */

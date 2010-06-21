@@ -22,7 +22,7 @@
 
 
 /** Public global variables **/
-MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (steal);
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(steal);
 
 
 #endif /** __MARCEL_BUBBLE_STEAL_H__ **/

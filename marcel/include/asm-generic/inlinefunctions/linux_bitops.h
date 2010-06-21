@@ -22,6 +22,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -35,55 +36,55 @@
  *
  * C language equivalents written by Theodore Ts'o, 9/26/92
  */
-
-static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long *addr)
 	ATOMIC_BITOPT_RETURN(|,)
 
-static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long *addr)
 	BITOPT_RETURN(|,)
 
-static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr)
-	ATOMIC_BITOPT_RETURN(& ~,)
+static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long *addr)
+	ATOMIC_BITOPT_RETURN(&~,)
 
-static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr)
-	BITOPT_RETURN(& ~,)
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long *addr)
+	BITOPT_RETURN(&~,)
 
-static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long *addr)
 	ATOMIC_BITOPT_RETURN(^,)
 
-static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr)
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long *addr)
 	BITOPT_RETURN(^,)
 
 static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
 {
-        return ((1UL << (nr % MA_BITS_PER_LONG)) & (addr[nr / MA_BITS_PER_LONG])) != 0;
+	return ((1UL << (nr % MA_BITS_PER_LONG)) & (addr[nr / MA_BITS_PER_LONG])) != 0;
 }
-static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr)
+
+static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long *addr)
 {
-	unsigned long	mask;
+	unsigned long mask;
 
 	addr += nr / MA_BITS_PER_LONG;
 	mask = 1UL << (nr % MA_BITS_PER_LONG);
 	return ((mask & *addr) != 0);
 }
-	
-static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr)
-	ATOMIC_BITOPT_RETURN(|,(old & mask) != 0)
 
-static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr)
-	BITOPT_RETURN(|,(old & mask) != 0)
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long *addr)
+	ATOMIC_BITOPT_RETURN(|, (old & mask) != 0)
 
-static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr)
-	ATOMIC_BITOPT_RETURN(& ~,(old & mask) != 0)
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *addr)
+	BITOPT_RETURN(|, (old & mask) != 0)
 
-static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long * addr)
-	BITOPT_RETURN(& ~,(old & mask) != 0)
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *addr)
+	ATOMIC_BITOPT_RETURN(&~, (old & mask) != 0)
 
-static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long * addr)
-	ATOMIC_BITOPT_RETURN(^,(old & mask) != 0)
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr)
+	BITOPT_RETURN(&~, (old & mask) != 0)
 
-static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long * addr)
-	BITOPT_RETURN(^,(old & mask) != 0)
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long *addr)
+	ATOMIC_BITOPT_RETURN(^, (old & mask) != 0)
+
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr)
+	BITOPT_RETURN(^, (old & mask) != 0)
 
 
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
@@ -91,14 +92,15 @@ static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b)
 	int i;
 	for (i=0;i<MAP_BITMAP_BITS/MA_BITS_PER_LONG;i++) {
 		if (tbx_unlikely(b[i]))
-			return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
+			return ma___ffs(b[i]) + MA_BITS_PER_LONG * i;
 	}
 	if (i*MA_BITS_PER_LONG==MA_BITMAP_BITS)
 		abort();
-	return ma___ffs(b[i]) + MA_BITS_PER_LONG*i;
+	return ma___ffs(b[i]) + MA_BITS_PER_LONG * i;
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

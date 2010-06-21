@@ -32,24 +32,32 @@ registering_flavors() {
     DEBUG_OPTIONS="--all=debug --all=gdb"
 
     register_flavor default \
-	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="pm2 marcel puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=mono --marcel=marcel_main \
 	--marcel=enable_keys --marcel=enable_migration \
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp \
 	--marcel=enable_postexit --marcel=enable_userspace --marcel=enable_atexit --marcel=enable_deviation \
-	--mad3=tcp
 
     register_flavor marcel-mono \
-	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=mono --marcel=marcel_main
 
     register_flavor marcel-smp \
-	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=smp --marcel=marcel_main \
 	--marcel=smp_smt_idle \
         --init=topology
 
     register_flavor marcel-numa \
-	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles \
 	--marcel=marcel_main \
 	--marcel=smp_smt_idle \
@@ -57,20 +65,26 @@ registering_flavors() {
         --init=topology
 
     register_flavor marcel-topology-32 \
-	--modules="marcel tbx init" $DEBUG_OPTIONS \
+	--modules="marcel puk tbx init" $DEBUG_OPTIONS \
 	$COMMON_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:32 \
         --init=topology
 
     register_flavor marcel-topology \
-	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--modules="marcel puk tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:64 \
         --init=topology
 
     register_flavor marcel-topology-256 \
-	--modules="marcel tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--modules="marcel puk tbx init" $DEBUG_OPTIONS $COMMON_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=marcel_main \
 	--marcel=smp_smt_idle --marcel=nbmaxcpus:256 \
         --init=topology
@@ -78,57 +92,54 @@ registering_flavors() {
     register_flavor mami-pthread-opt \
 	--modules="tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
         --memory=pthread \
-        --memory=enable_mami \
         --init=topology
 
     register_flavor mami-pthread-debug \
 	--modules="tbx init memory" $COMMON_OPTIONS $DEBUG_OPTIONS \
         --memory=pthread \
-        --memory=enable_mami \
         --init=topology
 
     register_flavor mami-opt \
-	--modules="marcel tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init memory" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
-	--marcel=smp_smt_idle \
-        --memory=enable_mami \
+	--marcel=smp_smt_idle --marcel=enable_mami \
         --init=topology
 
     register_flavor mami-debug \
-	--modules="marcel tbx init memory" \
+	--modules="marcel puk tbx init memory" \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
-	--marcel=smp_smt_idle \
+	--marcel=smp_smt_idle --marcel=enable_mami \
 	--marcel=valgrind \
-        --memory=enable_mami \
         --init=topology \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
     register_flavor mami-fortran-debug \
-	--modules="marcel tbx init memory" \
+	--modules="marcel puk tbx init memory" \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=enable_stats --marcel=standard_main \
-	--marcel=smp_smt_idle \
+	--marcel=smp_smt_idle --marcel=enable_mami \
 	--marcel=fortran \
         --memory=marcel \
-        --memory=enable_mami --memory=fortran \
+        --memory=fortran \
         --common=fortran_target_gfortran \
         --init=topology \
 	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
 
-    register_flavor heap-debug \
-	--modules="marcel tbx init memory" \
-	--marcel=numa --marcel=marcel_main \
-	--marcel=smp_smt_idle \
-	--marcel=valgrind \
-        --memory=enable_heap_allocator \
-        --init=topology \
-	$DEBUG_OPTIONS --all=noinline $COMMON_OPTIONS
-
     register_flavor marcel \
-	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=mono --marcel=marcel_main
 
     register_flavor marcel-bubbles \
-	--modules="marcel profile tbx init bubblelib bubbles" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk profile tbx init bubblelib bubbles" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
@@ -137,7 +148,9 @@ registering_flavors() {
 	--bubbles=gdb --bubbles=noinline
 
     register_flavor marcel-distrib \
-	--modules="marcel tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="marcel puk tbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=pmarcel --marcel=enable_stats \
@@ -147,7 +160,9 @@ registering_flavors() {
         --init=topology
 
     register_flavor marcel-bubblegum \
-	--modules="marcel profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
+	--modules="marcel puk profile tbx init bubblelib bubbles bubblegum"	$COMMON_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=numa --marcel=bubbles --marcel=marcel_main \
 	--marcel=smp_smt_idle \
 	--marcel=profile \
@@ -161,17 +176,15 @@ registering_flavors() {
     register_flavor leoparse \
 	--modules="leoparse tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS
 
-    register_flavor mad3 \
-	--modules="mad3 marcel tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
-	--mad3=tcp --marcel=mono --marcel=marcel_main
-
     register_flavor pm2 \
-	--modules="pm2 marcel mad3 tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--modules="pm2 marcel nmad puk tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=mono --marcel=marcel_main \
 	--marcel=enable_keys --marcel=enable_migration \
 	--marcel=enable_atexit --marcel=enable_postexit --marcel=enable_deviation \
 	--marcel=enable_userspace \
-	--mad3=tcp
+	--nmad=tag_as_flat_array --nmad=strat_custom --nmad=tcp
 
     register_flavor nmad \
 	--modules="puk nmad tbx ntbx init" $COMMON_OPTIONS $OPTIM_OPTIONS \
@@ -179,6 +192,7 @@ registering_flavors() {
 
     register_flavor nmad-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
         --marcel=numa --marcel=standard_main \
 	--marcel=enable_stats \
         --init=topology \
@@ -198,6 +212,7 @@ registering_flavors() {
 
     register_flavor nmad-mpi-pioman \
 	--modules="puk nmad tbx ntbx init pioman marcel" $COMMON_OPTIONS $OPTIM_OPTIONS \
+	--puk=enable_pukabi \
         --nmad=tag_as_hashtable --nmad=strat_custom --nmad=mpi_emu --nmad=mad3_emu \
 	--nmad=tcp \
         --marcel=smp --marcel=standard_main \
@@ -223,7 +238,9 @@ registering_flavors() {
 	--modules="ezflavor" $COMMON_OPTIONS $OPTIM_OPTIONS
 
     register_flavor pmarcel \
-	--modules="marcel tbx init stackalign" --all=opt $COMMON_OPTIONS \
+	--modules="marcel puk tbx init stackalign" --all=opt $COMMON_OPTIONS \
+	--puk=enable_pukabi \
+	--puk=disable_fd_virtualization \
 	--marcel=smp \
 	--marcel=marcel_main --marcel=pmarcel \
 	--marcel=enable_keys --marcel=enable_atexit \
@@ -232,7 +249,7 @@ registering_flavors() {
         --init=topology
 
     register_flavor libpthread \
-	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
+	--modules="marcel puk tbx init" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit \
@@ -266,7 +283,7 @@ registering_flavors() {
 	--marcel=enable_deviation --marcel=enable_signals \
 	--marcel=enable_stats \
 	--marcel=standard_main \
-        --memory=enable_mami \
+        --memory=enable_mami --marcel=enable_mami \
         --init=topology \
 	--puk=enable_pukabi \
 	--puk=disable_fd_virtualization

@@ -39,13 +39,12 @@
  * Data structures
  * ---------------
  */
-typedef struct s_tbx_string
-{
-  size_t  length;
-  size_t  allocated_length;
-  char   *data;
+typedef struct s_tbx_string {
+	size_t length;
+	size_t allocated_length;
+	char *data;
 } tbx_string_t;
 
 /* @} */
 
-#endif /* TBX_STRING_H */
+#endif				/* TBX_STRING_H */

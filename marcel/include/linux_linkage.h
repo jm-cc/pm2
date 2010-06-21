@@ -19,9 +19,7 @@
 
 
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include "asm/linux_linkage.h"
-#endif
 
 
 /** Public macros **/
@@ -32,6 +30,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -46,6 +45,7 @@
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

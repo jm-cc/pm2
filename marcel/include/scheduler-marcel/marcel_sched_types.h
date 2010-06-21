@@ -27,8 +27,7 @@
 
 /** Public data types **/
 typedef struct marcel_sched_attr marcel_sched_attr_t;
-typedef unsigned (*marcel_schedpolicy_func_t)(marcel_t pid,
-					      unsigned current_lwp);
+typedef unsigned (*marcel_schedpolicy_func_t) (marcel_t pid, unsigned current_lwp);
 struct marcel_sched_param {
 	int __sched_priority;
 };
@@ -63,21 +62,21 @@ struct marcel_sched_attr {
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal data structures **/
 struct ma_lwp_usage_stat {
 	unsigned long long user;
 	unsigned long long nice;
-	//unsigned long long system;
 	unsigned long long softirq;
 	unsigned long long irq;
 	unsigned long long idle;
-	//unsigned long long iowait;
-        unsigned long long disabled;
+	unsigned long long disabled;
 };
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

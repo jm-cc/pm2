@@ -21,98 +21,74 @@
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "marcel_timer.h"
-#ifdef __MARCEL_KERNEL__
 #include "tbx_fast_list.h"
-#endif
 
 
 /** Public macros **/
-/*[S]****************************************************************
- * Initialisation d'un serveur
- */
-
-/* Initialisation statique
- * var : la variable constante marcel_ev_server_t
- * name: une chaîne de caractères pour identifier ce serveur dans les
- *        messages de debug
- */
-#define MARCEL_EV_SERVER_DEFINE(var, name) \
-  struct marcel_ev_server ma_s_#var = MARCEL_EV_SERVER_INIT(ma_s_#var, name); \
-  const MARCEL_EV_SERVER_DECLARE(var) = &ma_s_#var
-
-/*[S]****************************************************************
- * Les constantes pour le polling
- * Elles peuvent être ORed
- */
-#define MARCEL_EV_POLL_AT_TIMER_SIG  1
-#define MARCEL_EV_POLL_AT_YIELD      2
-#define MARCEL_EV_POLL_AT_LIB_ENTRY  4
-#define MARCEL_EV_POLL_AT_IDLE       8
-
 /*[C]****************************************************************
- * Itérateurs pour les call-backs
+ * ItÃ©rateurs pour les call-backs
  */
 
 /****************************************************************
- * Itérateur pour les requêtes groupées de la scrutation (polling)
+ * ItÃ©rateur pour les requÃªtes groupÃ©es de la scrutation (polling)
  */
 
-/* Itérateur avec le type de base
-   marcel_ev_req_t req : itérateur
+/* ItÃ©rateur avec le type de base
+   marcel_ev_req_t req : itÃ©rateur
    marcel_ev_server_t server : serveur
 */
 #define FOREACH_REQ_POLL_BASE(req, server) \
   tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, chain_req_grouped)
 
-/* Idem mais protégé (usage interne) */
+/* Idem mais protÃ©gÃ© (usage interne) */
 #define FOREACH_REQ_POLL_BASE_SAFE(req, tmp, server) \
   tbx_fast_list_for_each_entry_safe((req), (tmp), &(server)->list_req_poll_grouped, chain_req_grouped)
 
-/* Itérateur avec un type utilisateur
+/* ItÃ©rateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
-                     (itérateur)
+                     (itÃ©rateur)
    marcel_ev_server_t server : serveur
-   member : nom de struct marcel_ev dans la structure pointée par req
+   member : nom de struct marcel_ev dans la structure pointÃ©e par req
 */
 #define FOREACH_REQ_POLL(req, server, member) \
   tbx_fast_list_for_each_entry((req), &(server)->list_req_poll_grouped, member.chain_req_grouped)
 
 
 /****************************************************************
- * Itérateur pour les attentes d'événements rattachés à une requête
+ * ItÃ©rateur pour les attentes d'Ã©vÃ©nements rattachÃ©s Ã  une requÃªte
  */
 
-/* Itérateur avec le type de base
-   marcel_ev_wait_t wait : itérateur
-   marcel_ev_req_t req : requête
+/* ItÃ©rateur avec le type de base
+   marcel_ev_wait_t wait : itÃ©rateur
+   marcel_ev_req_t req : requÃªte
 */
 #define FOREACH_WAIT_BASE(wait, req) \
   tbx_fast_list_for_each_entry((wait), &(req)->list_wait, chain_wait)
 
-/* Idem mais protégé (usage interne) */
+/* Idem mais protÃ©gÃ© (usage interne) */
 #define FOREACH_WAIT_BASE_SAFE(wait, tmp, req) \
   tbx_fast_list_for_each_entry_safe((wait), (tmp), &(req)->list_wait, chain_wait)
 
-/* Itérateur avec un type utilisateur
+/* ItÃ©rateur avec un type utilisateur
    [User Type] req : pointeur sur structure contenant un struct marcel_req
-                     (itérateur)
+                     (itÃ©rateur)
    marcel_ev_server_t server : serveur
-   member : nom de struct marcel_ev dans la structure pointée par req
+   member : nom de struct marcel_ev dans la structure pointÃ©e par req
 */
 #define FOREACH_WAIT(wait, req, member) \
   tbx_fast_list_for_each_entry((wait), &(req)->list_wait, member.chain_wait)
 
 
 
-/* Macro utilisable dans les call-backs pour indiquer qu'une requête
-   a reçu un événement.
+/* Macro utilisable dans les call-backs pour indiquer qu'une requÃªte
+   a reÃ§u un Ã©vÃ©nement.
 
-   * la requête sera fournie à marcel_ev_get_success_req() (tant
-   qu'elle n'est pas désenregistrée)
-   * les threads encore en attente d'un événement lié à cette requête seront
-   réveillés et renverront le code 0
+   * la requÃªte sera fournie Ã  marcel_ev_get_success_req() (tant
+   qu'elle n'est pas dÃ©senregistrÃ©e)
+   * les threads encore en attente d'un Ã©vÃ©nement liÃ© Ã  cette requÃªte seront
+   rÃ©veillÃ©s et renverront le code 0
 
-   marcel_ev_req_t req : requête
+   marcel_ev_req_t req : requÃªte
 */
 #define MARCEL_EV_REQ_SUCCESS(req) \
   do { \
@@ -120,65 +96,30 @@
   } while(0)
 
 
-/*  =============== PRIVATE =============== */
-/****************************************************************
- * Ce qui suit n'a pas vocation à être utilisé hors de Marcel
+/*[S]****************************************************************
+ * Les constantes pour le polling
+ * Elles peuvent Ãªtre ORed
  */
-
-#define MARCEL_EV_SERVER_DECLARE(var) \
-  const marcel_ev_server_t var
-#define MARCEL_EV_SERVER_INIT(var, sname) \
-  { \
-    .lock=MA_SPIN_LOCK_UNLOCKED, \
-    .lock_owner=NULL, \
-    .list_req_registered=TBX_FAST_LIST_HEAD_INIT((var).list_req_registered), \
-    .list_req_ready=TBX_FAST_LIST_HEAD_INIT((var).list_req_ready), \
-    .list_req_success=TBX_FAST_LIST_HEAD_INIT((var).list_req_success), \
-    .list_id_waiters=TBX_FAST_LIST_HEAD_INIT((var).list_id_waiters), \
-    .req_success_lock=MA_SPIN_LOCK_UNLOCKED, \
-    .registered_req_not_yet_polled=0, \
-    .list_req_poll_grouped=TBX_FAST_LIST_HEAD_INIT((var).list_req_poll_grouped), \
-    .req_poll_grouped_nb=0, \
-    .funcs={NULL, }, \
-    .poll_points=0, \
-    .frequency=0, \
-    .chain_poll=TBX_FAST_LIST_HEAD_INIT((var).chain_poll), \
-    .poll_tasklet= MA_TASKLET_INIT((var).poll_tasklet, \
-                     &marcel_poll_from_tasklet, \
-                     (unsigned long)(marcel_ev_server_t)&(var), 1 ), \
-    .poll_timer= MA_TIMER_INITIALIZER(marcel_poll_timer, 0, \
-                   (unsigned long)(marcel_ev_server_t)&(var)), \
-    .state=MA_EV_SERVER_STATE_INIT, \
-    .name=sname, \
-  }
+#define MA_EV_POLL_AT_TIMER_SIG  (1 << MARCEL_SCHEDULING_POINT_TIMER     )
+#define MA_EV_POLL_AT_YIELD      (1 << MARCEL_SCHEDULING_POINT_YIELD     )
+#define MA_EV_POLL_AT_LIB_ENTRY  (1 << MARCEL_SCHEDULING_POINT_LIB_ENTRY )
+#define MA_EV_POLL_AT_IDLE       (1 << MARCEL_SCHEDULING_POINT_IDLE      )
+#define MA_EV_POLL_AT_CTX_SWITCH (1 << MARCEL_SCHEDULING_POINT_CTX_SWITCH)
 
 
 /** Public data types **/
-/* Une requête définit une entité qui pourra recevoir un événement que
- * l'on pourra attendre.  Diverses requêtes d'un serveur pourront être
- * groupées (afin de déterminer plus rapidement l'ensemble des états
- * de chacune des requêtes à chaque scrutation)
- */
-typedef struct marcel_ev_req *marcel_ev_req_t;
-
-/* Un thread peut attendre l'arrivée effective d'un événement
- * correspondant à une requête. Le thread est déschedulé tant que la
- * requête n'est pas prête (que l'événement n'est pas reçu).
- */
-typedef struct marcel_ev_wait *marcel_ev_wait_t;
-
-/* Attribut pouvant être attaché aux événements */
+/* Attribut pouvant Ãªtre attachÃ© aux Ã©vÃ©nements */
 enum {
-	/* Désactive la requête lorsque survient l'occurrence
-	 * suivante de l'événement */
-	MARCEL_EV_ATTR_ONE_SHOT=1,
-	/* Ne réveille pas les threads en attente d'événements du
+	/* DÃ©sactive la requÃªte lorsque survient l'occurrence
+	 * suivante de l'Ã©vÃ©nement */
+	MARCEL_EV_ATTR_ONE_SHOT = 1,
+	/* Ne rÃ©veille pas les threads en attente d'Ã©vÃ©nements du
 	 * serveur (ie marcel_ev_server_wait())*/
-	MARCEL_EV_ATTR_NO_WAKE_SERVER=2,
+	MARCEL_EV_ATTR_NO_WAKE_SERVER = 2
 };
 
 /*[SC]****************************************************************
- * Les différents opérations call-backs possibles
+ * Les diffÃ©rents opÃ©rations call-backs possibles
  */
 typedef enum {
 	/* server, XX, req to poll, nb_req_grouped, flags */
@@ -196,242 +137,210 @@ typedef enum {
  */
 enum {
 	/* Pour POLL_POLLONE */
-	MARCEL_EV_OPT_REQ_IS_GROUPED=1,
-	MARCEL_EV_OPT_REQ_ITER=2,
+	MARCEL_EV_OPT_REQ_IS_GROUPED = 1,
+	MARCEL_EV_OPT_REQ_ITER = 2
 };
 
+/****************************************************************
+ * Structure serveur d'Ã©vÃ©nements
+ */
+enum {
+	MARCEL_EV_STATE_OCCURED = 1,
+	MARCEL_EV_STATE_GROUPED = 2,
+	MARCEL_EV_STATE_ONE_SHOT = 4,
+	MARCEL_EV_STATE_NO_WAKE_SERVER = 8,
+	MARCEL_EV_STATE_REGISTERED = 16
+};
+
+/* Une requï¿½te dï¿½finit une entitï¿½ qui pourra recevoir un ï¿½vï¿½nement que
+ * l'on pourra attendre.  Diverses requï¿½tes d'un serveur pourront ï¿½tre
+ * groupï¿½es (afin de dï¿½terminer plus rapidement l'ensemble des ï¿½tats
+ * de chacune des requï¿½tes ï¿½ chaque scrutation)
+ */
+typedef struct marcel_ev_req *marcel_ev_req_t;
+
+/* Un thread peut attendre l'arrivï¿½e effective d'un ï¿½vï¿½nement
+ * correspondant ï¿½ une requï¿½te. Le thread est dï¿½schedulï¿½ tant que la
+ * requï¿½te n'est pas prï¿½te (que l'ï¿½vï¿½nement n'est pas reï¿½u).
+ */
+typedef struct marcel_ev_wait *marcel_ev_wait_t;
 
 /*[C]****************************************************************
  * Le prototype des call-back
  * server : le serveur
- * op : l'opération (call-back) demandée
- * req : pour *(POLL|WAIT)ONE* : la requête à tester en particulier
- * nb_req : pour POLL_* : le nombre de requêtes groupées
- * option : flags dépendant de l'opération
+ * op : l'opÃ©ration (call-back) demandÃ©e
+ * req : pour *(POLL|WAIT)ONE* : la requÃªte Ã  tester en particulier
+ * nb_req : pour POLL_* : le nombre de requÃªtes groupÃ©es
+ * option : flags dÃ©pendant de l'opÃ©ration
  *  - pour POLL_POLLONE :
- *     + EV_IS_GROUPED : si la requête est déjà groupée
- *     + EV_ITER : si POLL_POLLONE est appelée sur toutes les requêtes
+ *     + EV_IS_GROUPED : si la requÃªte est dÃ©jÃ  groupÃ©e
+ *     + EV_ITER : si POLL_POLLONE est appelÃ©e sur toutes les requÃªtes
  *                 en attente (ie POLL_POLLANY n'est pas disponible)
  *
- * La valeur de retour est pour l'instant ignorée.
+ * La valeur de retour est pour l'instant ignorÃ©e.
  */
 typedef struct marcel_ev_server *marcel_ev_server_t;
-typedef int (marcel_ev_callback_t)(marcel_ev_server_t server,
-				  marcel_ev_op_t op,
-				  marcel_ev_req_t req,
-				  int nb_ev, int option);
+typedef int (marcel_ev_callback_t) (marcel_ev_server_t server,
+				    marcel_ev_op_t op,
+				    marcel_ev_req_t req, int nb_ev, int option);
 typedef marcel_ev_callback_t *marcel_ev_pcallback_t;
-
-/*[U]****************************************************************
- * Les types abstaits pour le serveur et les événements
- */
-/* Le serveur définit les call-backs et les paramètres de scrutation à
- * utiliser. Il va éventuellement regrouper les ressources
- * enregistrées (en cas de scrutation active par exemple)
- */
-struct marcel_ev_server {
-	/* Spinlock régissant l'accès à cette structure */
-	ma_spinlock_t lock;
-	/* Thread propriétaire du lock (pour le locking applicatif) */
-	marcel_task_t *lock_owner;
-	/* Liste des requêtes soumises */
-	struct tbx_fast_list_head list_req_registered;
-	/* Liste des requêtes signalées prêtes par les call-backs */
-	struct tbx_fast_list_head list_req_ready;
-	/* Liste des requêtes pour ceux en attente dans la liste précédente */
-	struct tbx_fast_list_head list_req_success;
-	/* Liste des attentes en cours sur les événements */
-	struct tbx_fast_list_head list_id_waiters;
-	/* Spinlock régissant l'accès à la liste précédente */
-	ma_spinlock_t req_success_lock;
-	/* Polling events registered but not yet polled */
-	int registered_req_not_yet_polled;
-
-	/* Liste des requêtes groupées pour le polling (ou en cours de groupage) */
-	struct tbx_fast_list_head list_req_poll_grouped;
-	/* Nombre de requêtes dans la liste précédente */
-	int req_poll_grouped_nb;
-
-	/* Call-backs */
-	marcel_ev_pcallback_t funcs[MA_EV_FUNCTYPE_SIZE];
-	/* Points et fréquence de scrutation */
-	unsigned poll_points;
-	unsigned frequency;
-	/* Chaine des serveurs en cours de polling 
-	   (state == 2 et tâches en attente de polling) */
-	struct tbx_fast_list_head chain_poll;
-	/* Tasklet et timer utilisée pour la scrutation */
-	struct ma_tasklet_struct poll_tasklet;
-	struct ma_timer_list poll_timer;
-	/* État du serveur */
-	int state;
-	/* Nom (utilisé pour le débug) */
-	const char* name;
-};
 
 
 /** Public functions **/
-/* Idem, mais dynamique */
-/* #ifndef __cplusplus */
-void marcel_ev_server_init(marcel_ev_server_t server, char* name);
-/* #endif */
+void marcel_ev_server_init(marcel_ev_server_t server, char *name);
 
 /* Enregistrement des call-backs utilisables */
-__tbx_inline__ static int marcel_ev_server_add_callback(marcel_ev_server_t server, 
-						marcel_ev_op_t op,
-						marcel_ev_callback_t *func);
-/* Réglage des paramètres de scrutation */
-int marcel_ev_server_set_poll_settings(marcel_ev_server_t server, 
-				       unsigned poll_points,
-				       unsigned poll_frequency);
+int marcel_ev_server_add_callback(marcel_ev_server_t server, marcel_ev_op_t op,
+				  marcel_ev_callback_t * func);
 
-/* Démarrage du serveur
- * Il devient possible d'attendre des événements
+/* RÃ©glage des paramÃ¨tres de scrutation */
+int marcel_ev_server_set_poll_settings(marcel_ev_server_t server,
+				       unsigned poll_points, unsigned poll_frequency);
+
+/* DÃ©marrage du serveur
+ * Il devient possible d'attendre des Ã©vÃ©nements
  */
 int marcel_ev_server_start(marcel_ev_server_t server);
 
-/* Arrêt du serveur
- * Il est nécessaire de le réinitialiser pour le redémarrer
+/* ArrÃªt du serveur
+ * Il est nÃ©cessaire de le rÃ©initialiser pour le redÃ©marrer
  */
 int marcel_ev_server_stop(marcel_ev_server_t server);
 
 /*[U]****************************************************************
- * Fonctions à l'usage des threads applicatifs
+ * Fonctions Ã  l'usage des threads applicatifs
  */
 
 /* Un raccourci pratique des fonctions suivantes, utile si l'on ne
- * soumet la requête qu'une seule fois. Les opérations suivantes sont
- * effectuées : initialisation, soumission et attente d'un
- * événement avec ONE_SHOT positionné */
+ * soumet la requÃªte qu'une seule fois. Les opÃ©rations suivantes sont
+ * effectuÃ©es : initialisation, soumission et attente d'un
+ * Ã©vÃ©nement avec ONE_SHOT positionnÃ© */
 int marcel_ev_wait(marcel_ev_server_t server, marcel_ev_req_t req,
 		   marcel_ev_wait_t wait, marcel_time_t timeout);
 
-/* Exclusion mutuelle pour un serveur d'événements
+/* Exclusion mutuelle pour un serveur d'Ã©vÃ©nements
  *
- * - les call-backs sont TOUJOURS appelés à l'intérieur de cette
+ * - les call-backs sont TOUJOURS appelÃ©s Ã  l'intÃ©rieur de cette
  *   exclusion mutuelle.
- * - les call-backs BLOCK_ONE|ALL doivent relâcher puis reprendre ce
- *   lock avant et après l'appel système bloquant avec les deux fonctions
- *   prévues pour (marcel_ev_callback_*).
- * - les fonctions précédentes peuvent être appelées avec ou sans ce
+ * - les call-backs BLOCK_ONE|ALL doivent relÃ¢cher puis reprendre ce
+ *   lock avant et aprÃ¨s l'appel systÃ¨me bloquant avec les deux fonctions
+ *   prÃ©vues pour (marcel_ev_callback_*).
+ * - les fonctions prÃ©cÃ©dentes peuvent Ãªtre appelÃ©es avec ou sans ce
  *   lock
- * - le lock est relâché automatiquement par les fonctions d'attente
+ * - le lock est relÃ¢chÃ© automatiquement par les fonctions d'attente
  *   (marcel_ev_*wait*())
 
- * - les call-backs et les réveils des threads en attente sur les
- *   événements signalés par le call-back sont atomiques (vis-à-vis de 
+ * - les call-backs et les rÃ©veils des threads en attente sur les
+ *   Ã©vÃ©nements signalÃ©s par le call-back sont atomiques (vis-Ã -vis de 
  *   ce lock)
  * - si le lock est pris avant les fonctions d'attente (ev_wait_*),
- *   la mise en attente est atomique vis-à-vis des call-backs
- *   ie: un call-back signalant l'événement attendu réveillera cette
+ *   la mise en attente est atomique vis-Ã -vis des call-backs
+ *   ie: un call-back signalant l'Ã©vÃ©nement attendu rÃ©veillera cette
  *   attente
- * - si un événement à la propriété ONE_SHOT, le désenregistrement est
- *   atomic vis-à-vis du call-back qui a généré l'événement.
+ * - si un Ã©vÃ©nement Ã  la propriÃ©tÃ© ONE_SHOT, le dÃ©senregistrement est
+ *   atomic vis-Ã -vis du call-back qui a gÃ©nÃ©rÃ© l'Ã©vÃ©nement.
  */
 int marcel_ev_lock(marcel_ev_server_t server);
 int marcel_ev_unlock(marcel_ev_server_t server);
 
-/* Utilisé dans les initialiseurs */
+/* UtilisÃ© dans les initialiseurs */
 void marcel_poll_from_tasklet(unsigned long id);
 void marcel_poll_timer(unsigned long id);
+int marcel_check_polling(unsigned polling_point);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
+
+
+/** Internal macros **/
+#define MARCEL_EV_SERVER_DECLARE(var) \
+	const marcel_ev_server_t var
 
 
 /** Internal data types **/
-/****************************************************************
- * État d'un serveur d'événements
- */
+/* Etat serveur evenements */
 enum {
-	/* Non initialisé */
 	MA_EV_SERVER_STATE_NONE,
-	/* En cours d'initialisation */
-	MA_EV_SERVER_STATE_INIT=1,
-	/* En fonctionnement */
-	MA_EV_SERVER_STATE_LAUNCHED=2,
-	/* En arrêt */
-	MA_EV_SERVER_STATE_HALTED=3,
+	MA_EV_SERVER_STATE_INIT = 1,
+	MA_EV_SERVER_STATE_LAUNCHED = 2,
+	MA_EV_SERVER_STATE_HALTED = 3
 };
 
-/****************************************************************
- * Structure serveur d'événements
+
+/*[U]****************************************************************
+ * Les types abstaits pour le serveur et les Ã©vÃ©nements
  */
-enum {
-	MARCEL_EV_STATE_OCCURED=1,
-	MARCEL_EV_STATE_GROUPED=2,
-	MARCEL_EV_STATE_ONE_SHOT=4,
-	MARCEL_EV_STATE_NO_WAKE_SERVER=8,
-	MARCEL_EV_STATE_REGISTERED=16,
-};
+/* Le serveur dÃ©finit les call-backs et les paramÃ¨tres de scrutation Ã 
+ * utiliser. Il va Ã©ventuellement regrouper les ressources
+ * enregistrÃ©es (en cas de scrutation active par exemple)
+ */
+struct marcel_ev_server {
+	/* Spinlock rÃ©gissant l'accÃ¨s Ã  cette structure */
+	ma_spinlock_t lock;
+	/* Thread propriÃ©taire du lock (pour le locking applicatif) */
+	marcel_task_t *lock_owner;
+	/* Liste des requÃªtes soumises */
+	struct tbx_fast_list_head list_req_registered;
+	/* Liste des requÃªtes signalÃ©es prÃªtes par les call-backs */
+	struct tbx_fast_list_head list_req_ready;
+	/* Liste des requÃªtes pour ceux en attente dans la liste prÃ©cÃ©dente */
+	struct tbx_fast_list_head list_req_success;
+	/* Liste des attentes en cours sur les Ã©vÃ©nements */
+	struct tbx_fast_list_head list_id_waiters;
+	/* Spinlock rÃ©gissant l'accÃ¨s Ã  la liste prÃ©cÃ©dente */
+	ma_spinlock_t req_success_lock;
+	/* Polling events registered but not yet polled */
+	int registered_req_not_yet_polled;
 
+	/* Liste des requÃªtes groupÃ©es pour le polling (ou en cours de groupage) */
+	struct tbx_fast_list_head list_req_poll_grouped;
+	/* Nombre de requÃªtes dans la liste prÃ©cÃ©dente */
+	int req_poll_grouped_nb;
+
+	/* Call-backs */
+	marcel_ev_pcallback_t funcs[MA_EV_FUNCTYPE_SIZE];
+	/* Points et frÃ©quence de scrutation */
+	unsigned poll_points;
+	unsigned frequency;
+	/* Chaine des serveurs en cours de polling 
+	   (state == 2 et tÃ¢ches en attente de polling) */
+	struct tbx_fast_list_head chain_poll;
+	/* Tasklet et timer utilisÃ©e pour la scrutation */
+	struct marcel_tasklet_struct poll_tasklet;
+	struct marcel_timer_list poll_timer;
+	/* Ã‰tat du serveur */
+	int state;
+	/* Nom (utilisÃ© pour le dÃ©bug) */
+	const char *name;
+};
 
 /** Internal data structures **/
-/* struct marcel_ev_server { */
-/* 	/\* Spinlock régissant l'accès à cette structure *\/ */
-/* 	ma_spinlock_t lock; */
-/* 	/\* Thread propriétaire du lock (pour le locking applicatif) *\/ */
-/* 	marcel_task_t *lock_owner; */
-/* 	/\* Liste des requêtes soumises *\/ */
-/* 	struct tbx_fast_list_head list_req_registered; */
-/* 	/\* Liste des requêtes signalées prêtes par les call-backs *\/ */
-/* 	struct tbx_fast_list_head list_req_ready; */
-/* 	/\* Liste des requêtes pour ceux en attente dans la liste précédente *\/ */
-/* 	struct tbx_fast_list_head list_req_success; */
-/* 	/\* Liste des attentes en cours sur les événements *\/ */
-/* 	struct tbx_fast_list_head list_id_waiters; */
-/* 	/\* Spinlock régissant l'accès à la liste précédente *\/ */
-/* 	ma_spinlock_t req_success_lock; */
-/* 	/\* Polling events registered but not yet polled *\/ */
-/* 	int registered_req_not_yet_polled; */
-
-/* 	/\* Liste des requêtes groupées pour le polling (ou en cours de groupage) *\/ */
-/* 	struct tbx_fast_list_head list_req_poll_grouped; */
-/* 	/\* Nombre de requêtes dans la liste précédente *\/ */
-/* 	int req_poll_grouped_nb; */
-
-/* 	/\* Call-backs *\/ */
-/* 	marcel_ev_pcallback_t funcs[MA_EV_FUNCTYPE_SIZE]; */
-/* 	/\* Points et fréquence de scrutation *\/ */
-/* 	unsigned poll_points; */
-/* 	unsigned frequency; */
-/* 	/\* Chaine des serveurs en cours de polling  */
-/* 	   (state == 2 et tâches en attente de polling) *\/ */
-/* 	struct tbx_fast_list_head chain_poll; */
-/* 	/\* Tasklet et timer utilisée pour la scrutation *\/ */
-/* 	struct ma_tasklet_struct poll_tasklet; */
-/* 	struct ma_timer_list poll_timer; */
-/* 	/\* État du serveur *\/ */
-/* 	int state; */
-/* 	/\* Nom (utilisé pour le débug) *\/ */
-/* 	const char* name; */
-/* }; */
-
 struct marcel_ev_req {
-	/* Chaine des requêtes soumises */
+	/* Chaine des requÃªtes soumises */
 	struct tbx_fast_list_head chain_req_registered;
-	/* Chaine des requêtes groupées en attente */
+	/* Chaine des requÃªtes groupÃ©es en attente */
 	struct tbx_fast_list_head chain_req_grouped;
-	/* Chaine des requêtes signalées OK par un call-back */
+	/* Chaine des requÃªtes signalÃ©es OK par un call-back */
 	struct tbx_fast_list_head chain_req_ready;
-	/* Chaine des requêtes à signaler au serveur */
+	/* Chaine des requÃªtes Ã  signaler au serveur */
 	struct tbx_fast_list_head chain_req_success;
-	/* État */
+	/* Ã‰tat */
 	int state;
-	/* Serveur attaché */
+	/* Serveur attachÃ© */
 	marcel_ev_server_t server;
-	/* Liste des attentes en cours sur cette requête */
+	/* Liste des attentes en cours sur cette requÃªte */
 	struct tbx_fast_list_head list_wait;
 };
 
 struct marcel_ev_wait {
-	/* Chaine des événements groupé en attente */
+	/* Chaine des Ã©vÃ©nements groupÃ© en attente */
 	struct tbx_fast_list_head chain_wait;
 
 	marcel_sem_t sem;
 	/* 0: event
 	   -ECANCELED: marcel_unregister called
-	*/
+	 */
 	int ret;
 	marcel_task_t *task;
 };
@@ -439,19 +348,17 @@ struct marcel_ev_wait {
 
 /** Internal global variables **/
 /* Liste des serveurs en cours de polling 
- * (state == 2 et tâches en attente de polling) 
+ * (state == 2 et tÃ¢ches en attente de polling) 
  */
-extern TBX_EXTERN struct tbx_fast_list_head ma_ev_list_poll;
+extern struct tbx_fast_list_head ma_ev_list_poll;
 
 
 /** Internal functions **/
-static __tbx_inline__ int marcel_polling_is_required(unsigned polling_point)
-TBX_UNUSED;
-static __tbx_inline__ void marcel_check_polling(unsigned polling_point)
-TBX_UNUSED;
-void TBX_EXTERN __marcel_check_polling(unsigned polling_point);
+int ma_polling_is_required(unsigned polling_point);
+void __ma_check_polling(unsigned polling_point);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

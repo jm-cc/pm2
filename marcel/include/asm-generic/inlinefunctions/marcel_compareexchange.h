@@ -19,92 +19,92 @@
 
 
 #include "asm/marcel_compareexchange.h"
-#ifdef __MARCEL_KERNEL__
 #include <stdlib.h>
 #include "tbx_compiler.h"
+#include "tbx_intdef.h"
 #include "asm/marcel_testandset.h"
 #include "linux_spinlock.h"
 #include "asm/linux_types.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 static __tbx_inline__ unsigned long
-pm2_exchange(volatile void *ptr,
-		unsigned long repl, int size)
+pm2_exchange(volatile void *ptr, unsigned long repl, int size)
 {
 	unsigned long prev;
 	ma_spin_lock_softirq(&ma_compareexchange_spinlock);
 	switch (size) {
-	case 1: {
-			volatile ma_u8 *p = ptr;
+	case 1:{
+			volatile uint8_t *p = ptr;
 			prev = *p;
 			*p = repl;
 			break;
 		}
-	case 2: {
-			volatile ma_u16 *p = ptr;
+	case 2:{
+			volatile uint16_t *p = ptr;
 			prev = *p;
 			*p = repl;
 			break;
 		}
 	case 4:
 		{
-			volatile ma_u32 *p = ptr;
+			volatile uint32_t *p = ptr;
 			prev = *p;
 			*p = repl;
 			break;
 		}
-        case 8:
-                {
-                        volatile ma_u64 *p = ptr;
+	case 8:
+		{
+			volatile uint64_t *p = ptr;
 			prev = *p;
 			*p = repl;
-                        break;
-                }
+			break;
+		}
 	default:
 		abort();
 	}
 	ma_spin_unlock_softirq(&ma_compareexchange_spinlock);
 	return prev;
 }
+
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))pm2_exchange((ptr),(unsigned long)(v),sizeof(*(ptr))))
+
 static __tbx_inline__ unsigned long
-pm2_compareexchange(volatile void *ptr, unsigned long old,
-		unsigned long repl, int size)
+pm2_compareexchange(volatile void *ptr, unsigned long old, unsigned long repl, int size)
 {
 	unsigned long prev;
 	ma_spin_lock_softirq(&ma_compareexchange_spinlock);
 	switch (size) {
-	case 1: {
-			volatile ma_u8 *p = ptr;
-			if (old == (prev=*p))
+	case 1:{
+			volatile uint8_t *p = ptr;
+			if (old == (prev = *p))
 				*p = repl;
 			break;
 		}
-	case 2: {
-			volatile ma_u16 *p = ptr;
-			if (old == (prev=*p))
+	case 2:{
+			volatile uint16_t *p = ptr;
+			if (old == (prev = *p))
 				*p = repl;
 			break;
 		}
 	case 4:
 		{
-			volatile ma_u32 *p = ptr;
-			if (old == (prev=*p))
+			volatile uint32_t *p = ptr;
+			if (old == (prev = *p))
 				*p = repl;
 			break;
 		}
-        case 8:
-                {
-                        volatile ma_u64 *p = ptr;
-                        if (old == (prev=*p))
-                                *p = repl;
-                        break;
-                }
+	case 8:
+		{
+			volatile uint64_t *p = ptr;
+			if (old == (prev = *p))
+				*p = repl;
+			break;
+		}
 	default:
 		abort();
 	}
@@ -113,6 +113,7 @@ pm2_compareexchange(volatile void *ptr, unsigned long old,
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

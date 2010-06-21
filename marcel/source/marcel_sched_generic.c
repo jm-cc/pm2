@@ -15,9 +15,6 @@
  */
 
 #include "marcel.h"
-#ifdef PIOMAN
-#include "pioman.h"
-#endif /* PIOMAN */
 #include "tbx_compiler.h"
 #include <signal.h>
 #include <sys/time.h>
@@ -26,122 +23,118 @@
 
 /* marcel_nanosleep
  */
-DEF_MARCEL_POSIX(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
+DEF_MARCEL_PMARCEL(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp),
 {
-        unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
+	unsigned long long nsec = rqtp->tv_nsec + 1000000000*rqtp->tv_sec;
 	int todosleep;
-        LOG_IN();
+	MARCEL_LOG_IN();
 
-        if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0)) {
-                mdebug("(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
-  	   errno = EINVAL;
-                LOG_RETURN(-1);
-   }
+	if ((rqtp->tv_nsec<0)||(rqtp->tv_nsec > 999999999)||(rqtp->tv_sec < 0)) {
+		MARCEL_SCHED_LOG("(p)marcel_nanosleep : valeur nsec(%ld) invalide\n",rqtp->tv_nsec);
+		errno = EINVAL;
+		MARCEL_LOG_RETURN(-1);
+	}
 
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
-   todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
+	todosleep = ma_schedule_timeout(nsec/(1000*marcel_gettimeslice()));
 
-        if (rmtp) {
-	   nsec = todosleep*(1000*marcel_gettimeslice());
-      rmtp->tv_sec = nsec/1000000000;
-      rmtp->tv_nsec = nsec%1000000000;
+	if (rmtp) {
+		nsec = todosleep*(1000*marcel_gettimeslice());
+		rmtp->tv_sec = nsec/1000000000;
+		rmtp->tv_nsec = nsec%1000000000;
 	}
 
-        if (todosleep) {
-	   errno = EINTR;
-				    LOG_RETURN(-1);
+	if (todosleep) {
+		errno = EINTR;
+		MARCEL_LOG_RETURN(-1);
 	}
-   else
-      LOG_RETURN(0);
+	else
+		MARCEL_LOG_RETURN(0);
 })
-
-DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
-DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp));
+DEF___C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp))
+DEF_C(int,nanosleep,(const struct timespec *rqtp,struct timespec *rmtp),(rqtp,rmtp))
 
 /* marcel_usleep
  */
 DEF_MARCEL(int,usleep,(unsigned long usec),(usec),
 {
-	     LOG_IN();
+	MARCEL_LOG_IN();
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((usec+marcel_gettimeslice()-1)/marcel_gettimeslice());
 
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
 
-DEF_POSIX(int,usleep,(unsigned long usec),(usec),
+DEF_PMARCEL(int,usleep,(unsigned long usec),(usec),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	if (usec > 1000000) {
-		mdebug("(p)marcel_usleep : valeur usec(%ld) invalide\n", usec);
+		MARCEL_SCHED_LOG("(p)marcel_usleep : valeur usec(%ld) invalide\n", usec);
 		errno = EINVAL;
-		LOG_RETURN(-1);
+		MARCEL_LOG_RETURN(-1);
 	}
 
 	marcel_usleep(usec);
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
 
-DEF_C(int,usleep,(unsigned long usec),(usec));
-DEF___C(int,usleep,(unsigned long usec),(usec));
+DEF_C(int,usleep,(unsigned long usec),(usec))
+DEF___C(int,usleep,(unsigned long usec),(usec))
 
 /* marcel_sleep
  */
-DEF_MARCEL_POSIX(int,sleep,(unsigned long sec),(sec),
+DEF_MARCEL_PMARCEL(int,sleep,(unsigned long sec),(sec),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	ma_set_current_state(MA_TASK_INTERRUPTIBLE);
 	ma_schedule_timeout((1000000*sec)/marcel_gettimeslice());
 
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 })
 
 #ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, pmarcel_sleep, sleep, GLIBC_2_0);
 #endif
-DEF___C(int,sleep,(unsigned long sec),(sec));
+DEF___C(int,sleep,(unsigned long sec),(sec))
 
-DEF_MARCEL_POSIX(int,sched_get_priority_max,(int policy),(policy),
+DEF_MARCEL_PMARCEL(int,sched_get_priority_max,(int policy),(policy),
 {
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if ((policy == SCHED_RR) || (policy == SCHED_FIFO))
-		LOG_RETURN(MA_MAX_USER_RT_PRIO);
+		MARCEL_LOG_RETURN(MA_MAX_USER_RT_PRIO);
 	else if (policy == SCHED_OTHER)
-		LOG_RETURN(0);
+		MARCEL_LOG_RETURN(0);
 
-	mdebug("sched_get_priority_max : valeur policy(%d) invalide\n", policy);
+	MARCEL_SCHED_LOG("sched_get_priority_max : valeur policy(%d) invalide\n", policy);
 	errno = EINVAL;
-	LOG_RETURN(-1);
+	MARCEL_LOG_RETURN(-1);
 })
+DEF_C(int,sched_get_priority_max,(int policy),(policy))
+DEF___C(int,sched_get_priority_max,(int policy),(policy))
 
-DEF_C(int,sched_get_priority_max,(int policy),(policy));
-DEF___C(int,sched_get_priority_max,(int policy),(policy));
-
-DEF_MARCEL_POSIX(int,sched_get_priority_min,(int policy),(policy),
+DEF_MARCEL_PMARCEL(int,sched_get_priority_min,(int policy),(policy),
 {
-	LOG_IN();
-	if ((policy == SCHED_RR) || (policy == SCHED_OTHER)
-	    || (policy == SCHED_FIFO))
-		LOG_RETURN(0);
-	mdebug("sched_get_priority_min : valeur policy(%d) invalide\n", policy);
+	MARCEL_LOG_IN();
+	if ((policy == SCHED_RR) || (policy == SCHED_OTHER) || (policy == SCHED_FIFO))
+		MARCEL_LOG_RETURN(0);
+	MARCEL_SCHED_LOG("sched_get_priority_min : valeur policy(%d) invalide\n", policy);
 	errno = EINVAL;
-	LOG_RETURN(-1);
+	MARCEL_LOG_RETURN(-1);
 })
-
-DEF_C(int,sched_get_priority_min,(int policy),(policy));
-DEF___C(int,sched_get_priority_min,(int policy),(policy));
+DEF_C(int,sched_get_priority_min,(int policy),(policy))
+DEF___C(int,sched_get_priority_min,(int policy),(policy))
 
 
 #ifdef MA__SELF_VAR
 #ifdef MA__SELF_VAR_TLS
 __thread
 #endif
-	marcel_t ma_self
+marcel_t __ma_self
 #ifdef STANDARD_MAIN
-		= &__main_thread_struct
+= &__main_thread_struct
 #endif
-		;
+	;
 #endif
 marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 {
@@ -160,9 +153,8 @@ marcel_task_t *marcel_switch_to(marcel_task_t *cur, marcel_task_t *next)
 			}
 			return __ma_get_lwp_var(previous_thread);
 		}
-		debug_printf(&MA_DEBUG_VAR_NAME(default),
-			     "switchto(`%s' [%p], `%s' [%p]) on LWP(%d)\n",
-		       cur->as_entity.name, cur, next->as_entity.name, next, ma_vpnum(ma_get_task_lwp(cur)));
+		MARCEL_SCHED_LOG("switchto(`%s' [%p], `%s' [%p]) on LWP(%d)\n",
+				 cur->as_entity.name, cur, next->as_entity.name, next, ma_vpnum(ma_get_task_lwp(cur)));
 		__ma_get_lwp_var(previous_thread)=cur;
 		MA_THR_LONGJMP(cur->number, (next), NORMAL_RETURN);
 	}
@@ -184,7 +176,7 @@ unsigned marcel_nbthreads(void)
 	unsigned num = 0;
 	struct marcel_topo_level *vp;
 	for_all_vp(vp)
-	    num += ma_topo_vpdata_l(vp, nb_tasks);
+		num += ma_topo_vpdata_l(vp, nb_tasks);
 	return num + 1;		/* + 1 pour le main */
 }
 
@@ -206,7 +198,7 @@ unsigned long marcel_createdthreads(void)
 	unsigned long num = 0;
 	struct marcel_topo_level *vp;
 	for_all_vp(vp)
-	    num += ma_topo_vpdata_l(vp, task_number);
+		num += ma_topo_vpdata_l(vp, task_number);
 	return num;
 }
 
@@ -248,7 +240,12 @@ void marcel_one_task_less(marcel_t pid)
 	ma_spin_lock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
 
 	tbx_fast_list_del(&pid->all_threads);
-	if(((--(ma_topo_vpdata_l(vp,nb_tasks))) == 0) && (ma_topo_vpdata_l(vp,main_is_waiting)))
+
+	/** main_thread is not in nb_tasks **/
+	if (pid != __main_thread)
+		--(ma_topo_vpdata_l(vp,nb_tasks)) ;
+
+	if((ma_topo_vpdata_l(vp,nb_tasks) == 0) && (ma_topo_vpdata_l(vp,main_is_waiting)))
 		ma_wake_up_thread(__main_thread);
 
 	ma_spin_unlock_softirq(&ma_topo_vpdata_l(vp,threadlist_lock));
@@ -292,10 +289,10 @@ void marcel_threadslist(int max, marcel_t *pids, int *nb, int which)
 	struct marcel_topo_level *vp;
 
 
-	     if(((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
-		((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
-		((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
-		((which & READY_ONLY) && (which & NOT_READY_ONLY)))
+	if(((which & MIGRATABLE_ONLY) && (which & NOT_MIGRATABLE_ONLY)) ||
+	   ((which & DETACHED_ONLY) && (which & NOT_DETACHED_ONLY)) ||
+	   ((which & BLOCKED_ONLY) && (which & NOT_BLOCKED_ONLY)) ||
+	   ((which & READY_ONLY) && (which & NOT_READY_ONLY)))
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
 	for_all_vp(vp) {
@@ -331,10 +328,10 @@ void marcel_snapshot(snapshot_func_t f)
 void ma_wait_all_tasks_end(void)
 {
 	struct marcel_topo_level *vp;
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 #ifdef MA__DEBUG
-	if (marcel_self() != __main_thread) {
+	if (ma_self() != __main_thread) {
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
 	}
 #endif 
@@ -356,7 +353,7 @@ retry:
 	if (a_new_thread)
 		goto retry;
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 void ma_gensched_shutdown(void)
@@ -366,7 +363,7 @@ void ma_gensched_shutdown(void)
 	marcel_vpset_t vpset;
 #endif
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	if(MARCEL_SELF != __main_thread)
 		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
@@ -383,16 +380,16 @@ void ma_gensched_shutdown(void)
 	 * pthread_kill() in the middle of pthread_exit() */
 	marcel_sig_stop_itimer();
 
-	mdebug("blocking this LWP\n");
+	MARCEL_SCHED_LOG("blocking this LWP\n");
 	ma_lwp_block();
 
-	mdebug("stopping LWPs (1)\n");
+	MARCEL_SCHED_LOG("stopping LWPs (1)\n");
 	/* We must switch to the main kernel thread for proper
 	 * termination. However, it may be currently a spare LWP, so we
 	 * have to wait for it to become active. */
 	while ((lwp = ma_lwp_wait_vp_active())) {
 		if (lwp == &__main_lwp) {
-			mdebug("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
+			MARCEL_SCHED_LOG("main LWP is active, jumping to it at vp %d\n", ma_vpnum(lwp));
 			vpset = MARCEL_VPSET_VP(ma_vpnum(lwp));
 			/* To match ma_lwp_block() above */
 			ma_preempt_enable();
@@ -400,14 +397,14 @@ void ma_gensched_shutdown(void)
 			marcel_apply_vpset(&vpset);
 			MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 			/* Ok, we're in the main kernel thread now */
-			mdebug("block it too\n");
+			MARCEL_SCHED_LOG("block it too\n");
 			ma_lwp_block();
 		} else marcel_lwp_stop_lwp(lwp);
 	}
 
 	MA_BUG_ON(MA_LWP_SELF != &__main_lwp);
 
-	mdebug("stopping LWPs (2)\n");
+	MARCEL_SCHED_LOG("stopping LWPs (2)\n");
 	for(;;) {
 		lwp_found=NULL;
 		ma_lwp_list_lock_read();
@@ -426,17 +423,10 @@ void ma_gensched_shutdown(void)
 
 		marcel_lwp_stop_lwp(lwp_found);
 	}
-#else
-	/* Destroy master-sched's stack */
-	//marcel_cancel(__main_lwp.sched.idle_task);
-#ifdef PM2
-	/* __sched_task is detached, so we can free its stack now */
-	//__TBX_FREE(marcel_stackbase(ma_per_lwp(idle_task,&__main_lwp)), __FILE__, __LINE__);
-#endif
 #endif
 	marcel_sig_exit();
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 #ifdef MA__LWPS
@@ -472,30 +462,23 @@ static any_t TBX_NORETURN idle_poll_func(any_t hlwp)
 		//PROF_EVENT(idle_tested_need_resched);
 
 		/* no more threads, now poll */
-#ifdef PIOMAN
-		dopoll = piom_check_polling(PIOM_POLL_AT_IDLE);
-#else
-		dopoll = marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE);
-		if (dopoll) {
-		        __marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-		}
+		dopoll = ma_schedule_hooks(MARCEL_SCHEDULING_POINT_IDLE);
 
-#endif
 		ma_preempt_disable();
 		vpnum = ma_vpnum(lwp);
 		if (marcel_vp_is_disabled(vpnum)) {
-			/* FIXME: we still need a VP to account time, we always
+		        /* FIXME: we still need a VP to account time, we always
 			 * keep VP0 for that */
 			if (vpnum != 0)
-				/* Not only sleep, but also disable the timer,
+			        /* Not only sleep, but also disable the timer,
 				 * to completely avoid disturbing the CPU */
-				marcel_sig_stop_perlwp_itimer();
+			        marcel_sig_stop_perlwp_itimer();
 			marcel_sig_disable_interrupts();
 			while (marcel_vpset_isset(&marcel_disabled_vpset, vpnum) && !ma_get_need_resched())
 				ma_sched_sig_pause();
 			marcel_sig_enable_interrupts();
 			if (vpnum != 0)
-				marcel_sig_reset_perlwp_timer();
+			        marcel_sig_reset_perlwp_timer();
 		}
 #ifdef MARCEL_IDLE_PAUSE
 		if (dopoll)
@@ -537,11 +520,11 @@ static any_t idle_func(any_t hlwp TBX_UNUSED)
 static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 {
 #ifdef MA__LWPS
-	unsigned num = ma_vpnum(lwp);
+	int num = ma_vpnum(lwp);
 	marcel_attr_t attr;
 	char name[MARCEL_MAXNAMESIZE];
 #endif
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	if (!ma_is_first_lwp(lwp))
 		/* run_task DOIT démarrer en contexte d'irq */
@@ -561,7 +544,7 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_attr_setflags(&attr, MA_SF_POLL|MA_SF_NORUN);
 #ifdef PM2
 	{
-		char *stack = __TBX_MALLOC(2*THREAD_SLOT_SIZE, __FILE__, __LINE__);
+		char *stack = malloc(2*THREAD_SLOT_SIZE) ;
 		
 		marcel_attr_setstackaddr(&attr, (void*)((unsigned long)(stack + THREAD_SLOT_SIZE) & ~(THREAD_SLOT_SIZE-1)));
 	}
@@ -573,18 +556,18 @@ static void marcel_sched_lwp_init(marcel_lwp_t* lwp)
 	marcel_vpset_zero(&ma_dontsched_rq(lwp)->vpset);
 	marcel_attr_setschedrq(&attr, ma_dontsched_rq(lwp));
 	marcel_create_special(&(ma_per_lwp(idle_task, lwp)), &attr,
-			ma_vpnum(lwp) == -1 || ma_vpnum(lwp)<marcel_nbvps()?idle_poll_func:idle_func,
-			(void*)(ma_lwp_t)lwp);
+			      ma_vpnum(lwp) == -1 || ma_vpnum(lwp)<(int)marcel_nbvps()?idle_poll_func:idle_func,
+			      (void*)(ma_lwp_t)lwp);
 	MTRACE("IdleTask", ma_per_lwp(idle_task, lwp));
 #endif
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 
-static void marcel_sched_lwp_start(ma_lwp_t lwp)
+static void marcel_sched_lwp_start(ma_lwp_t lwp LWPS_VAR_UNUSED)
 {
-	LOG_IN();
+        MARCEL_LOG_IN();
 	MA_BUG_ON(!ma_in_irq());
 
 #ifdef MA__LWPS
@@ -596,7 +579,7 @@ static void marcel_sched_lwp_start(ma_lwp_t lwp)
 	ma_preempt_count()=0;
 	ma_barrier();
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 MA_DEFINE_LWP_NOTIFIER_START_PRIO(generic_sched, 100, "Sched generic",
@@ -607,14 +590,14 @@ MA_LWP_NOTIFIER_CALL_UP_PREPARE(generic_sched, MA_INIT_GENSCHED_IDLE);
 MA_LWP_NOTIFIER_CALL_ONLINE_PRIO(generic_sched, MA_INIT_GENSCHED_PREEMPT, MA_INIT_GENSCHED_PREEMPT_PRIO);
 
 #ifdef MA__LWPS
-static void __marcel_init marcel_gensched_start_lwps(void)
+static void marcel_gensched_start_lwps(void)
 {
-	int i;
-	LOG_IN();
+        unsigned int i;
+	MARCEL_LOG_IN();
 	for(i=1; i<marcel_nbvps(); i++)
 		marcel_lwp_add_vp(MARCEL_VPSET_VP(i));
-	mdebug("marcel_sched_init  : %i lwps created\n", marcel_nbvps());
-	LOG_OUT();
+	MARCEL_SCHED_LOG("marcel_sched_init  : %i lwps created\n", marcel_nbvps());
+	MARCEL_LOG_OUT();
 }
 
 __ma_initfunc(marcel_gensched_start_lwps, MA_INIT_GENSCHED_START_LWPS, "Création et démarrage des LWPs");

@@ -463,7 +463,7 @@ int pm2_main(int argc, char **argv)
 
   pm2_rawrpc_register(&SYNC_DISPLAY, sync_display_service);
 
-  pm2_init(&argc_save, argv_save);
+  pm2_init(argc_save, argv_save);
 
   marcel_key_create(&color_key, NULL);
 

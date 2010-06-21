@@ -32,8 +32,8 @@
 /** Public functions **/
 int *pmarcel___errno_location(void);
 int *pmarcel___h_errno_location(void);
-DEC_MARCEL_POSIX(int *, __errno_location, (void));
-DEC_MARCEL_POSIX(int *, __h_errno_location, (void));
+DEC_MARCEL(int *, __errno_location, (void));
+DEC_MARCEL(int *, __h_errno_location, (void));
 
 
 #endif /** __MARCEL_ERRNO_H__ **/

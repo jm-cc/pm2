@@ -30,6 +30,13 @@
 
 #include <nm_private.h>
 
+#ifdef CONFIG_PUK_PUKABI
+#include <Padico/Puk-ABI.h>
+#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
+#else /* CONFIG_PUK_PUKABI */
+#define NM_SYS(SYMBOL) SYMBOL
+#endif /* CONFIG_PUK_PUKABI */
+
 /** TCP driver per-instance data.
  */
 struct nm_tcp_drv
@@ -277,18 +284,22 @@ nm_tcp_socket_create(struct sockaddr_in	*address,
                      unsigned short 	 port) {
         socklen_t          len  = sizeof(struct sockaddr_in);
         struct sockaddr_in temp;
-        int                desc;
 
-        SYSCALL(desc = socket(AF_INET, SOCK_STREAM, 0));
+        int desc = NM_SYS(socket)(AF_INET, SOCK_STREAM, 0);
+	if(desc == -1)
+	  {
+	    perror("socket");
+	    TBX_FAILURE("socket() system call failed.");
+	  }
 
         temp.sin_family      = AF_INET;
         temp.sin_addr.s_addr = htonl(INADDR_ANY);
         temp.sin_port        = htons(port);
 
-        SYSCALL(bind(desc, (struct sockaddr *)&temp, len));
+        NM_SYS(bind)(desc, (struct sockaddr *)&temp, len);
 
         if (address) {
-                SYSCALL(getsockname(desc, (struct sockaddr *)address, &len));
+	  NM_SYS(getsockname)(desc, (struct sockaddr *)address, &len);
         }
 
         return desc;
@@ -374,15 +385,15 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
 
   /* server socket						*/
   p_tcp_drv->server_fd	= nm_tcp_socket_create(&address, 0);
-  SYSCALL(listen(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN)));
+  NM_SYS(listen)(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN));
   
   /* retrieve the system hostname and use it as a default hostname,
    * leonie or the user will replace it if needed
    */
   uname(&utsname);
 #ifndef CONFIG_PROTO_MAD3
-  WARN("Using system uts nodename \"%s\" for local url, might need to be superseded by a network-valid name",
-       utsname.nodename);
+  NM_WARN("Using system uts nodename \"%s\" for local url, might need to be superseded by a network-valid name",
+	  utsname.nodename);
 #endif
   
   /* driver url encoding						*/
@@ -457,8 +468,8 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   int	    val = 1;
   socklen_t len = sizeof(int);
   
-  SYSCALL(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len));
-  SYSCALL(fcntl(fd, F_SETFL, O_NONBLOCK));
+  NM_SYS(setsockopt)(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len);
+  NM_SYS(fcntl)(fd, F_SETFL, O_NONBLOCK);
   
   NM_TRACE_VAL("tcp connect/accept trk id", p_crq->trk_id);
   NM_TRACE_VAL("tcp connect/accept gate id", p_gate);
@@ -502,8 +513,8 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
   remote_hostname = strtok_r(remote_drv_url, ":", &saveptr);
   if (!*saveptr) {
     /* reached the end of the string => was no ':' */
-    WARN("Missing colon in url \"%s\", prefix \"<hostname>:\" required",
-	 remote_drv_url);
+    NM_WARN("Missing colon in url \"%s\", prefix \"<hostname>:\" required",
+	    remote_drv_url);
     err = -NM_EINVAL;
     goto out;
   }
@@ -514,8 +525,8 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
   
   nm_tcp_address_fill(&address, port, remote_hostname);
   
-  SYSCALL(connect(fd, (struct sockaddr *)&address,
-		  sizeof(struct sockaddr_in)));
+  NM_SYS(connect)(fd, (struct sockaddr *)&address,
+		  sizeof(struct sockaddr_in));
   
   err = nm_tcp_connect_accept(_status, p_crq, fd);
   
@@ -535,7 +546,7 @@ static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq)
   int fd;
   int err;
 
-  SYSCALL(fd = accept(p_tcp_drv->server_fd, NULL, NULL));
+  fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
   
   err = nm_tcp_connect_accept(_status, p_crq, fd);
   
@@ -552,19 +563,19 @@ static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq)
   int fd = status->fd[p_crq->trk_id];
   
   /* half-close for sending */
-  SYSCALL(shutdown(fd, SHUT_WR));
+  NM_SYS(shutdown)(fd, SHUT_WR);
  
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */
   int ret = -1;
   do
     {
       int dummy = 0;
-      ret = read(fd, &dummy, sizeof(dummy));
+      ret = NM_SYS(read)(fd, &dummy, sizeof(dummy));
     }
   while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
 
  /* safely close fd when EOS is reached */
-  SYSCALL(close(fd));
+  NM_SYS(close)(fd);
   
   return NM_ESUCCESS;
 }
@@ -584,7 +595,7 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   pollfd.revents = 0;
   
  poll_again:
-  ret	= poll(&pollfd, 1, timeout);
+  ret = NM_SYS(poll)(&pollfd, 1, timeout);
   if (ret < 0) {
     
     /* redo interrupted poll			*/
@@ -594,7 +605,7 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     perror("poll");
     
     /* poll syscall failed				*/
-    WARN("-NM_ESCFAILD");
+    NM_WARN("-NM_ESCFAILD");
     err = -NM_ESCFAILD;
     goto out;
   }
@@ -608,13 +619,13 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   /* fd ready, check condition				*/
   if (pollfd.revents != POLLOUT) {
     if (pollfd.revents & POLLHUP) {
-      WARN("-NM_ECLOSED");
+      NM_WARN("-NM_ECLOSED");
       err = -NM_ECLOSED;
     } else if (pollfd.revents & POLLNVAL) {
-      WARN("-NM_EINVAL");
+      NM_WARN("-NM_EINVAL");
       err = -NM_EINVAL;
     } else {
-      WARN("-NM_EBROKEN");
+      NM_WARN("-NM_EBROKEN");
       err = -NM_EBROKEN;
     }
     
@@ -692,7 +703,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
       NM_TRACE_VAL("tcp incoming multi poll: gate 0 fd", p_tcp_trk->poll_array[0].fd);
       
     multi_poll_again:
-      ret	= poll(p_tcp_trk->poll_array, p_tcp_drv->nb_gates, timeout);
+      ret	= NM_SYS(poll)(p_tcp_trk->poll_array, p_tcp_drv->nb_gates, timeout);
       NM_TRACE_VAL("tcp incoming multi poll: poll ret", ret);
       if (ret < 0) {
 	if (errno == EINTR)
@@ -700,7 +711,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 	
 	perror("poll");
 	
-	WARN("-NM_ESCFAILD");
+	NM_WARN("-NM_ESCFAILD");
 	err = -NM_ESCFAILD;
 	goto out;
       }
@@ -729,7 +740,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
       i++;
     }
     
-    WARN("-NM_EINVAL");
+    NM_WARN("-NM_EINVAL");
     err = -NM_EINVAL;
     goto out;
     
@@ -766,7 +777,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 	  err = -NM_ECLOSED;
 	} else if (p_gate_pollfd->revents & POLLNVAL) {
 	  NM_TRACEF("tcp incoming single poll: pollnval");
-	  WARN("-NM_EINVAL");
+	  NM_WARN("-NM_EINVAL");
 	  err = -NM_EINVAL;
 	} else {
 	  NM_TRACEF("tcp incoming single poll: connection broken");
@@ -787,7 +798,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   NM_TRACE_VAL("tcp incoming single poll: pollfd", pollfd.fd);
   
  poll_single_again:
-  ret	= poll(&pollfd, 1, timeout);
+  ret	= NM_SYS(poll)(&pollfd, 1, timeout);
   if (ret < 0) {
     
     /* redo interrupted poll			*/
@@ -814,14 +825,14 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   if (pollfd.revents != POLLIN) {
     if (pollfd.revents & POLLHUP) {
       NM_TRACEF("tcp incoming single poll: pollhup");
-      WARN("-NM_ECLOSED");
+      NM_WARN("-NM_ECLOSED");
       err = -NM_ECLOSED;
     } else if (pollfd.revents & POLLNVAL) {
       NM_TRACEF("tcp incoming single poll: pollnval");
-      WARN("-NM_EINVAL");
+      NM_WARN("-NM_EINVAL");
       err = -NM_EINVAL;
     } else {
-      WARN("-NM_EBROKEN");
+      NM_WARN("-NM_EBROKEN");
       err = -NM_EBROKEN;
     }
     
@@ -957,7 +968,7 @@ nm_tcp_send 	(void*_status,
                 }
 
         writev_again:
-                ret	= writev(fd, p_cur, p_vi->v_cur_size);
+                ret	= NM_SYS(writev)(fd, p_cur, p_vi->v_cur_size);
                 NM_TRACE_VAL("tcp outgoing writev status", ret);
 
                 if (ret < 0) {
@@ -1012,9 +1023,9 @@ nm_tcp_send 	(void*_status,
 		/* MSG_MORE is Linux, not POSIX. It cuts the latency in half when available.
 		 * @todo The same feature may be achieved with TCP_CORK (and bloated code).
 		 */
-		ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, MSG_MORE);
+		ret	= NM_SYS(send)(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, MSG_MORE);
 #else /* MSG_MORE */
-		ret	= send(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, 0);
+		ret	= NM_SYS(send)(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length, 0);
 #endif /* MSG_MORE */
                 NM_TRACE_VAL("tcp outgoing write status", ret);
 
@@ -1183,7 +1194,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
        as well.
     */
     
-    ret	= read(fd, p_cur->iov_base,
+    ret	= NM_SYS(read)(fd, p_cur->iov_base,
 	       tbx_min(p_cur->iov_len, p_tcp_pw->rem_length));
     NM_TRACE_VAL("tcp incoming read status", ret);
     
@@ -1244,8 +1255,8 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 	NM_TRACEF("tcp incoming iov: truncating message");
 	/* message truncated
 	 */
-	WARN_VAL("message truncated: remaining bytes", p_tcp_pw->rem_length);
-	WARN("-NM_EINVAL");
+	NM_WARN("message truncated: remaining bytes", p_tcp_pw->rem_length);
+	NM_WARN("-NM_EINVAL");
 	err	= -NM_EINVAL;
       } else {
 	NMAD_EVENT_RCV_END(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
@@ -1276,7 +1287,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     NM_TRACEF("tcp incoming: receiving header");
     NM_TRACE_VAL("tcp header incoming gate id", p_pw->p_gate);
   read_header_again:
-    ret	= read(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
+    ret	= NM_SYS(read)(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
     NM_TRACE_VAL("tcp header incoming read status", ret);
     
     if (ret < 0) {

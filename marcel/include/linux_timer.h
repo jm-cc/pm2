@@ -22,14 +22,12 @@
 #include "tbx_compiler.h"
 #include "tbx_fast_list.h"
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include "linux_spinlock.h"
 #include "marcel_types.h"
-#endif
 
 
 /** Public data structures **/
-struct ma_timer_list {
+struct marcel_timer_list {
 	struct tbx_fast_list_head entry;
 	unsigned long expires;
 
@@ -37,14 +35,21 @@ struct ma_timer_list {
 	unsigned long magic;
 #endif
 
-	void (*function)(unsigned long);
+	void (*function) (unsigned long);
 	unsigned long data;
 
 	struct ma_timer_base_s *base;
 };
 
 
+/** Public functions **/
+extern int marcel_init_timer(struct marcel_timer_list *timer, void *function, unsigned long expires, unsigned long data);
+extern int marcel_del_timer(struct marcel_timer_list *timer);
+extern int marcel_mod_timer(struct marcel_timer_list *timer, unsigned long expires);
+extern int marcel_init_timer(struct marcel_timer_list *timer, void *function, unsigned long expires, unsigned long data);
+
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -58,10 +63,9 @@ struct ma_timer_list {
 #define TVN_MASK (TVN_SIZE - 1)
 #define TVR_MASK (TVR_SIZE - 1)
 
-#define MA_TIMER_MAGIC	0x4b87ad6e
 
+#define MA_TIMER_MAGIC 0x4b87ad6e
 #ifdef PM2_DEBUG
-
 #define MA_TIMER_INITIALIZER_MAGIC .magic = MA_TIMER_MAGIC,
 #else
 #define MA_TIMER_INITIALIZER_MAGIC
@@ -71,8 +75,8 @@ struct ma_timer_list {
 		.expires = (_expires),				\
 		.data = (_data),				\
 		.base = &__ma_init_timer_base,			\
-		MA_TIMER_INITIALIZER_MAGIC			\
-	}
+		MA_TIMER_INITIALIZER_MAGIC		        \
+}
 
 
 /** Internal data types **/
@@ -90,7 +94,7 @@ typedef struct ma_tvec_root_s {
 
 struct ma_timer_base_s {
 	ma_spinlock_t lock;
-	struct ma_timer_list *running_timer;
+	struct marcel_timer_list *running_timer;
 };
 
 struct ma_tvec_t_base_s {
@@ -101,7 +105,7 @@ struct ma_tvec_t_base_s {
 	ma_tvec_t tv3;
 	ma_tvec_t tv4;
 	ma_tvec_t tv5;
-};/*  ____cacheline_aligned_in_smp; */
+};				/*  ____cacheline_aligned_in_smp; */
 
 
 /** Internal global variables **/
@@ -109,21 +113,19 @@ extern struct ma_timer_base_s __ma_init_timer_base;
 
 
 /** Internal functions **/
-extern void ma_add_timer_on(struct ma_timer_list *timer, ma_lwp_t lwp);
-extern TBX_EXTERN int ma_del_timer(struct ma_timer_list * timer);
-extern TBX_EXTERN int __ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
-extern TBX_EXTERN int ma_mod_timer(struct ma_timer_list *timer, unsigned long expires);
+extern int __ma_mod_timer(struct marcel_timer_list *timer, unsigned long expires);
 
 #ifdef MA__LWPS
-  extern TBX_EXTERN int ma_del_timer_sync(struct ma_timer_list * timer);
+extern int ma_del_timer_sync(struct marcel_timer_list *timer);
 #else
-# define ma_del_timer_sync(t) ma_del_timer(t)
+# define ma_del_timer_sync(t) marcel_del_timer(t)
 #endif
 
 extern void ma_init_timers(void);
 extern void ma_update_process_times(int user_tick);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

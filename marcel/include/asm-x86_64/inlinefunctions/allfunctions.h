@@ -14,10 +14,9 @@
  */
 
 
-#include "linux_atomic.h"
-#include "linux_bitops.h"
-#include "linux_rwlock.h"
-#include "linux_spinlock.h"
-#include "linux_system.h"
-#include "marcel_testandset.h"
-
+#include "asm/inlinefunctions/linux_atomic.h"
+#include "asm/inlinefunctions/linux_bitops.h"
+#include "asm/inlinefunctions/linux_rwlock.h"
+#include "asm/inlinefunctions/linux_spinlock.h"
+#include "asm/inlinefunctions/linux_system.h"
+#include "asm/inlinefunctions/marcel_testandset.h"

@@ -20,19 +20,14 @@
 
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include "asm/linux_hardirq.h"
 #include "sys/marcel_work.h"
 #include "linux_thread_info.h"
 #include "marcel_compiler.h"
-#endif
-
-
-/** Public functions **/
-TBX_EXTERN void ma_preempt_schedule(int irq);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -41,6 +36,7 @@ TBX_EXTERN void ma_preempt_schedule(int irq);
 	if (ma_init_done[MA_INIT_SCHEDULER]) \
 		SELF_GETMEM(preempt_backtrace_size) = __TBX_RECORD_SOME_TRACE(SELF_GETMEM(preempt_backtrace), TBX_BACKTRACE_DEPTH); \
 } while(0)
+
 #define ma_show_preempt_backtrace() do { \
 	if (SELF_GETMEM(preempt_backtrace_size)) \
 		__TBX_PRINT_SOME_TRACE(SELF_GETMEM(preempt_backtrace), SELF_GETMEM(preempt_backtrace_size)); \
@@ -49,6 +45,7 @@ TBX_EXTERN void ma_preempt_schedule(int irq);
 #define ma_record_preempt_backtrace() (void)0
 #define ma_show_preempt_backtrace() (void)0
 #endif
+
 #define ma_preempt_count() (SELF_GETMEM(preempt_count))
 
 #define ma_preempt_count_inc() \
@@ -99,10 +96,14 @@ do { \
         ma_preempt_check_resched(0); \
 } while (0)
 
-
 #define MA_PREEMPT_ACTIVE  (1UL << 25)
 
 
+/** Internal functions **/
+void ma_preempt_schedule(int irq);
+
+
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

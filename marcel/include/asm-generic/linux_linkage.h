@@ -19,6 +19,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -31,12 +32,14 @@
 #ifndef asmlinkage
 #define asmlinkage CPP_ASMLINKAGE
 #endif
+
 #ifndef FASTCALL
 #define FASTCALL(x) x
 #define fastcall
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

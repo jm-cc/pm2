@@ -21,8 +21,7 @@
 #include "scheduler-marcel/marcel_bubble_sched.h"
 
 
-/** Public global variables **/
-MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (cache);
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(cache);
 
 /** \brief The class of a `cache' bubble scheduler.  */
 extern marcel_bubble_sched_class_t marcel_bubble_cache_sched_class;
@@ -31,10 +30,9 @@ extern marcel_bubble_sched_class_t marcel_bubble_cache_sched_class;
  * root_level represents the root level of the topology tree this
  * scheduler is instantiated on. If \param work_stealing is true, then
  * work stealing is enabled, otherwise it is disabled.  */
-extern int
-marcel_bubble_cache_sched_init (struct marcel_bubble_cache_sched *scheduler,
-				struct marcel_topo_level *root_level,
-				tbx_bool_t work_stealing);
+extern int marcel_bubble_cache_sched_init(struct marcel_bubble_cache_sched *scheduler,
+					  struct marcel_topo_level *root_level,
+					  tbx_bool_t work_stealing);
 
 
 #endif /** __MARCEL_BUBBLE_CACHE_H__ **/

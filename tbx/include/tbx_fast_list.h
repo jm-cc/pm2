@@ -1,9 +1,7 @@
 /*! \file tbx_fast_list.h
  *  \brief TBX fast linked-list data structures
  *
- *  This file contains the TBX management data structures for the
- *  Marcel-specialized linked list.
- * 
+ *  This file contains the TBX management data structures
  */
 
 
@@ -67,7 +65,8 @@ struct tbx_fast_list_head {
  * tbx_fast_list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-static __tbx_inline__ int tbx_fast_list_empty(const struct tbx_fast_list_head *head)
+static __tbx_inline__ int tbx_fast_list_empty(const struct
+					      tbx_fast_list_head *head)
 {
 	return head->next == head;
 }
@@ -78,9 +77,12 @@ static __tbx_inline__ int tbx_fast_list_empty(const struct tbx_fast_list_head *h
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static __tbx_inline__ void __tbx_fast_list_add(struct tbx_fast_list_head * lnew,
-	struct tbx_fast_list_head * prev,
-	struct tbx_fast_list_head * next)
+static __tbx_inline__ void __tbx_fast_list_add(struct tbx_fast_list_head
+					       *lnew,
+					       struct tbx_fast_list_head
+					       *prev,
+					       struct tbx_fast_list_head
+					       *next)
 {
 	next->prev = lnew;
 	lnew->next = next;
@@ -96,22 +98,37 @@ static __tbx_inline__ void __tbx_fast_list_add(struct tbx_fast_list_head * lnew,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-static __tbx_inline__ void tbx_fast_list_add(struct tbx_fast_list_head *lnew, struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_add(struct tbx_fast_list_head
+					     *lnew,
+					     struct tbx_fast_list_head
+					     *head)
 {
 	__tbx_fast_list_add(lnew, head, head->next);
 }
 
 /* Try to use these instead if the list head is locklessly read by other processors */
-static __tbx_inline__ void __tbx_shared_fast_list_add(struct tbx_fast_list_head * lnew,
-	struct tbx_fast_list_head * prev,
-	struct tbx_fast_list_head * next)
+static __tbx_inline__ void __tbx_shared_fast_list_add(struct
+						      tbx_fast_list_head
+						      *lnew,
+						      struct
+						      tbx_fast_list_head
+						      *prev,
+						      struct
+						      tbx_fast_list_head
+						      *next)
 {
-	TBX_SHARED_SET(next->prev,lnew);
+	TBX_SHARED_SET(next->prev, lnew);
 	lnew->next = next;
 	lnew->prev = prev;
-	TBX_SHARED_SET(prev->next,lnew);
+	TBX_SHARED_SET(prev->next, lnew);
 }
-static __tbx_inline__ void tbx_shared_fast_list_add(struct tbx_fast_list_head *lnew, struct tbx_fast_list_head *head)
+
+static __tbx_inline__ void tbx_shared_fast_list_add(struct
+						    tbx_fast_list_head
+						    *lnew,
+						    struct
+						    tbx_fast_list_head
+						    *head)
 {
 	__tbx_shared_fast_list_add(lnew, head, head->next);
 }
@@ -124,7 +141,10 @@ static __tbx_inline__ void tbx_shared_fast_list_add(struct tbx_fast_list_head *l
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-static __tbx_inline__ void tbx_fast_list_add_tail(struct tbx_fast_list_head *lnew, struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_add_tail(struct tbx_fast_list_head
+						  *lnew,
+						  struct tbx_fast_list_head
+						  *head)
 {
 	__tbx_fast_list_add(lnew, head->prev, head);
 }
@@ -136,8 +156,10 @@ static __tbx_inline__ void tbx_fast_list_add_tail(struct tbx_fast_list_head *lne
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-static __tbx_inline__ void __tbx_fast_list_del(struct tbx_fast_list_head * prev,
-				  struct tbx_fast_list_head * next)
+static __tbx_inline__ void __tbx_fast_list_del(struct tbx_fast_list_head
+					       *prev,
+					       struct tbx_fast_list_head
+					       *next)
 {
 	next->prev = prev;
 	prev->next = next;
@@ -149,7 +171,8 @@ static __tbx_inline__ void __tbx_fast_list_del(struct tbx_fast_list_head * prev,
  * Note: tbx_fast_list_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-static __tbx_inline__ void tbx_fast_list_del(struct tbx_fast_list_head *entry)
+static __tbx_inline__ void tbx_fast_list_del(struct tbx_fast_list_head
+					     *entry)
 {
 	__tbx_fast_list_del(entry->prev, entry->next);
 #ifdef PM2DEBUG
@@ -161,21 +184,28 @@ static __tbx_inline__ void tbx_fast_list_del(struct tbx_fast_list_head *entry)
  * tbx_fast_list_del_init - deletes entry from list and reinitialize it.
  * @entry: the element to delete from the list.
  */
-static __tbx_inline__ void tbx_fast_list_del_init(struct tbx_fast_list_head *entry)
+static __tbx_inline__ void tbx_fast_list_del_init(struct tbx_fast_list_head
+						  *entry)
 {
 	__tbx_fast_list_del(entry->prev, entry->next);
-	TBX_INIT_FAST_LIST_HEAD(entry); 
+	TBX_INIT_FAST_LIST_HEAD(entry);
 }
 
 /* Try to use these instead if the list head is locklessly read by other processors */
-static __tbx_inline__ void __tbx_shared_fast_list_del(struct tbx_fast_list_head * prev,
-				  struct tbx_fast_list_head * next)
+static __tbx_inline__ void __tbx_shared_fast_list_del(struct
+						      tbx_fast_list_head
+						      *prev,
+						      struct
+						      tbx_fast_list_head
+						      *next)
 {
-	TBX_SHARED_SET(next->prev,prev);
-	TBX_SHARED_SET(prev->next,next);
+	TBX_SHARED_SET(next->prev, prev);
+	TBX_SHARED_SET(prev->next, next);
 }
 
-static __tbx_inline__ void tbx_shared_fast_list_del(struct tbx_fast_list_head *entry)
+static __tbx_inline__ void tbx_shared_fast_list_del(struct
+						    tbx_fast_list_head
+						    *entry)
 {
 	__tbx_shared_fast_list_del(entry->prev, entry->next);
 #ifdef PM2DEBUG
@@ -183,10 +213,12 @@ static __tbx_inline__ void tbx_shared_fast_list_del(struct tbx_fast_list_head *e
 #endif
 }
 
-static __tbx_inline__ void tbx_shared_fast_list_del_init(struct tbx_fast_list_head *entry)
+static __tbx_inline__ void tbx_shared_fast_list_del_init(struct
+							 tbx_fast_list_head
+							 *entry)
 {
 	__tbx_shared_fast_list_del(entry->prev, entry->next);
-	TBX_INIT_FAST_LIST_HEAD(entry); 
+	TBX_INIT_FAST_LIST_HEAD(entry);
 }
 
 /**
@@ -194,10 +226,13 @@ static __tbx_inline__ void tbx_shared_fast_list_del_init(struct tbx_fast_list_he
  * @list: the entry to move
  * @head: the head that will precede our entry
  */
-static __tbx_inline__ void tbx_fast_list_move(struct tbx_fast_list_head *list, struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_move(struct tbx_fast_list_head
+					      *list,
+					      struct tbx_fast_list_head
+					      *head)
 {
-        __tbx_fast_list_del(list->prev, list->next);
-        tbx_fast_list_add(list, head);
+	__tbx_fast_list_del(list->prev, list->next);
+	tbx_fast_list_add(list, head);
 }
 
 /**
@@ -205,25 +240,31 @@ static __tbx_inline__ void tbx_fast_list_move(struct tbx_fast_list_head *list, s
  * @list: the entry to move
  * @head: the head that will follow our entry
  */
-static __tbx_inline__ void tbx_fast_list_move_tail(struct tbx_fast_list_head *list,
-                                  struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_move_tail(struct
+						   tbx_fast_list_head
+						   *list,
+						   struct
+						   tbx_fast_list_head
+						   *head)
 {
-        __tbx_fast_list_del(list->prev, list->next);
-        tbx_fast_list_add_tail(list, head);
+	__tbx_fast_list_del(list->prev, list->next);
+	tbx_fast_list_add_tail(list, head);
 }
 
-static __tbx_inline__ void __tbx_fast_list_splice(struct tbx_fast_list_head *list,
-                                 struct tbx_fast_list_head *head)
+static __tbx_inline__ void __tbx_fast_list_splice(struct tbx_fast_list_head
+						  *list,
+						  struct tbx_fast_list_head
+						  *head)
 {
-        struct tbx_fast_list_head *first = list->next;
-        struct tbx_fast_list_head *last = list->prev;
-        struct tbx_fast_list_head *at = head->next;
+	struct tbx_fast_list_head *first = list->next;
+	struct tbx_fast_list_head *last = list->prev;
+	struct tbx_fast_list_head *at = head->next;
 
-        first->prev = head;
-        head->next = first;
+	first->prev = head;
+	head->next = first;
 
-        last->next = at;
-        at->prev = last;
+	last->next = at;
+	at->prev = last;
 }
 
 /**
@@ -231,10 +272,13 @@ static __tbx_inline__ void __tbx_fast_list_splice(struct tbx_fast_list_head *lis
  * @list: the new list to add.
  * @head: the place to add it in the first list.
  */
-static __tbx_inline__ void tbx_fast_list_splice(struct tbx_fast_list_head *list, struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_splice(struct tbx_fast_list_head
+						*list,
+						struct tbx_fast_list_head
+						*head)
 {
-        if (!tbx_fast_list_empty(list))
-                __tbx_fast_list_splice(list, head);
+	if (!tbx_fast_list_empty(list))
+		__tbx_fast_list_splice(list, head);
 }
 
 /**
@@ -244,13 +288,17 @@ static __tbx_inline__ void tbx_fast_list_splice(struct tbx_fast_list_head *list,
  *
  * The list at @list is reinitialised
  */
-static __tbx_inline__ void tbx_fast_list_splice_init(struct tbx_fast_list_head *list,
-                                    struct tbx_fast_list_head *head)
+static __tbx_inline__ void tbx_fast_list_splice_init(struct
+						     tbx_fast_list_head
+						     *list,
+						     struct
+						     tbx_fast_list_head
+						     *head)
 {
-        if (!tbx_fast_list_empty(list)) {
-                __tbx_fast_list_splice(list, head);
-                TBX_INIT_FAST_LIST_HEAD(list);
-        }
+	if (!tbx_fast_list_empty(list)) {
+		__tbx_fast_list_splice(list, head);
+		TBX_INIT_FAST_LIST_HEAD(list);
+	}
 }
 
 /**
@@ -292,7 +340,7 @@ static __tbx_inline__ void tbx_fast_list_splice_init(struct tbx_fast_list_head *
 #define tbx_fast_list_for_each_prev(pos, head) \
         for (pos = (head)->prev, tbx_prefetch(pos->prev); pos != (head); \
                 pos = pos->prev, tbx_prefetch(pos->prev))
-                
+
 /**
  * tbx_fast_list_for_each_safe   -       iterate over a list safe against removal of list
  entry
@@ -377,85 +425,86 @@ al of list entry
  * Mostly useful for hash tables where the two pointer list head is 
  * too wasteful.
  * You lose the ability to access the tail in O(1).
- */ 
+ */
 
-struct hlist_head { 
-        struct hlist_node *first; 
-}; 
+struct hlist_head {
+	struct hlist_node *first;
+};
 
-struct hlist_node { 
-        struct hlist_node *next, **pprev; 
-}; 
+struct hlist_node {
+	struct hlist_node *next, **pprev;
+};
 
-#define HLIST_HEAD_INIT { .first = NULL } 
+#define HLIST_HEAD_INIT { .first = NULL }
 #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
-#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL) 
+#define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)
 #define INIT_HLIST_NODE(ptr) ((ptr)->next = NULL, (ptr)->pprev = NULL)
 #define THRASH_HLIST_NODE(ptr) ((ptr)->next = (struct hlist_node *)0x123, (ptr)->pprev = (struct hlist_node **)0x321)
 
-static __tbx_inline__ int hlist_unhashed(const struct hlist_node *h) 
-{ 
-        return !h->pprev;
-} 
-
-static __tbx_inline__ int hlist_empty(const struct hlist_head *h) 
-{ 
-        return !h->first;
-} 
-
-static __tbx_inline__ void __hlist_del(struct hlist_node *n) 
+static __tbx_inline__ int hlist_unhashed(const struct hlist_node *h)
 {
-        struct hlist_node *next = n->next;
-        struct hlist_node **pprev = n->pprev;
-        *pprev = next;  
-        if (next) 
-                next->pprev = pprev;
-}  
+	return !h->pprev;
+}
+
+static __tbx_inline__ int hlist_empty(const struct hlist_head *h)
+{
+	return !h->first;
+}
+
+static __tbx_inline__ void __hlist_del(struct hlist_node *n)
+{
+	struct hlist_node *next = n->next;
+	struct hlist_node **pprev = n->pprev;
+	*pprev = next;
+	if (next)
+		next->pprev = pprev;
+}
 
 static __tbx_inline__ void hlist_del(struct hlist_node *n)
 {
-        __hlist_del(n);
+	__hlist_del(n);
 #ifdef PM2DEBUG
 	THRASH_HLIST_NODE(n);
 #endif
-        /*n->next = LIST_POISON1;
-	  n->pprev = LIST_POISON2;*/
+	/*n->next = LIST_POISON1;
+	   n->pprev = LIST_POISON2; */
 }
 
-static __tbx_inline__ void hlist_del_init(struct hlist_node *n) 
+static __tbx_inline__ void hlist_del_init(struct hlist_node *n)
 {
-        if (n->pprev)  {
-                __hlist_del(n);
-                INIT_HLIST_NODE(n);
-        }
-}  
+	if (n->pprev) {
+		__hlist_del(n);
+		INIT_HLIST_NODE(n);
+	}
+}
 
-static __tbx_inline__ void hlist_add_head(struct hlist_node *n, struct hlist_head *h)
-{ 
-        struct hlist_node *first = h->first;
-        n->next = first; 
-        if (first) 
-                first->pprev = &n->next;
-        h->first = n; 
-        n->pprev = &h->first; 
-} 
+static __tbx_inline__ void hlist_add_head(struct hlist_node *n,
+					  struct hlist_head *h)
+{
+	struct hlist_node *first = h->first;
+	n->next = first;
+	if (first)
+		first->pprev = &n->next;
+	h->first = n;
+	n->pprev = &h->first;
+}
 
 /* next must be != NULL */
-static __tbx_inline__ void hlist_add_before(struct hlist_node *n, struct hlist_node 
-*next)
+static __tbx_inline__ void hlist_add_before(struct hlist_node *n, struct hlist_node
+					    *next)
 {
-        n->pprev = next->pprev;
-        n->next = next; 
-        next->pprev = &n->next; 
-        *(n->pprev) = n;
+	n->pprev = next->pprev;
+	n->next = next;
+	next->pprev = &n->next;
+	*(n->pprev) = n;
 }
 
 static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
-                                       struct hlist_node *next)
+					   struct hlist_node *next)
 {
-        next->next      = n->next;
-        *(next->pprev)  = n;
-        n->next         = next;
+	next->next = n->next;
+	*(next->pprev) = n;
+	n->next = next;
 }
 
 #define hlist_entry(ptr, type, member) container_of(ptr,type,member)
@@ -463,7 +512,7 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
 /* Cannot easily do prefetch unfortunately */
 #define hlist_for_each(pos, head) \
         for (pos = (head)->first; pos && ({ tbx_prefetch(pos->next); 1; }); \
-             pos = pos->next) 
+             pos = pos->next)
 
 #define hlist_for_each_safe(pos, n, head) \
         for (pos = (head)->first; n = pos ? pos->next : 0, pos; \
@@ -521,4 +570,4 @@ static __tbx_inline__ void hlist_add_after(struct hlist_node *n,
 
 #endif
 
-#endif /* TBX_FAST_LIST_H */
+#endif				/* TBX_FAST_LIST_H */

@@ -34,7 +34,7 @@ void service(void *arg) {
 
 int pm2_main(int argc, char *argv[]) {
   gethostname(hostname, 128);
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
   if (pm2_self() == 0) {
     /* Master process */
     pm2_thread_create(service, NULL);

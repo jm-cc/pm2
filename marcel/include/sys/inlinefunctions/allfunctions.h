@@ -14,6 +14,6 @@
  */
 
 
-#include "marcel_archsetjmp.h"
-#include "marcel_lwp.h"
-#include "marcel_privatedefs.h"
+#include "sys/inlinefunctions/marcel_archsetjmp.h"
+#include "sys/inlinefunctions/marcel_lwp.h"
+#include "sys/inlinefunctions/marcel_stackjump.h"

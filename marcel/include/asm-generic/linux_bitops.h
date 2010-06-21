@@ -18,46 +18,43 @@
 #define __ASM_GENERIC_LINUX_BITOPS_H__
 
 
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #include "asm/marcel_compareexchange.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#define ATOMIC_BITOPT_RETURN(op,retexpr) \
-{ \
-	unsigned long	mask, old, repl, ret; \
-	\
-	addr += nr / MA_BITS_PER_LONG; \
-	mask = 1UL << (nr % MA_BITS_PER_LONG); \
-	old = *addr; \
-	while (1) { \
-		repl = old op mask; \
-		ret = pm2_compareexchange(addr,old,repl,sizeof(*addr)); \
-		if (tbx_likely(ret == old)) \
-			return retexpr; \
-		old = ret; \
-	} \
-}
-#define BITOPT_RETURN(op,retexpr) \
-{ \
-	unsigned long	mask, old; \
-	\
-	addr += nr / MA_BITS_PER_LONG; \
-	mask = 1UL << (nr % MA_BITS_PER_LONG); \
-	old = *addr; \
-	*addr = old op mask; \
-	return retexpr; \
-}
-
-//static __tbx_inline__ int ma__test_bit(int nr, const unsigned long * addr);
-#define ma_test_bit(nr,addr) \
-	(__builtin_constant_p(nr) ? \
-	 ma_constant_test_bit((nr),(addr)) : \
+#define ATOMIC_BITOPT_RETURN(op,retexpr)				\
+	{								\
+		unsigned long	mask, old, repl, ret;			\
+									\
+		addr += nr / MA_BITS_PER_LONG;				\
+		mask = 1UL << (nr % MA_BITS_PER_LONG);			\
+		old = *addr;						\
+		while (1) {						\
+			repl = old op mask;				\
+			ret = pm2_compareexchange(addr,old,repl,sizeof(*addr)); \
+			if (tbx_likely(ret == old))			\
+				return retexpr;				\
+			old = ret;					\
+		}							\
+	}
+#define BITOPT_RETURN(op,retexpr)			\
+	{						\
+		unsigned long	mask, old;		\
+							\
+		addr += nr / MA_BITS_PER_LONG;		\
+		mask = 1UL << (nr % MA_BITS_PER_LONG);	\
+		old = *addr;				\
+		*addr = old op mask;			\
+		return retexpr;				\
+	}
+#define ma_test_bit(nr,addr)			\
+	(__builtin_constant_p(nr) ?		\
+	 ma_constant_test_bit((nr),(addr)) :	\
 	 ma_variable_test_bit((nr),(addr)))
 
 /*
@@ -81,29 +78,29 @@
 #define ma_hweight32(x) ma_generic_hweight32(x)
 #define ma_hweight16(x) ma_generic_hweight16(x)
 #define ma_hweight8(x) ma_generic_hweight8(x)
-
 #define ma_smp_mb__before_clear_bit()   ma_barrier()
 #define ma_smp_mb__after_clear_bit()    ma_barrier()
 
 
 /** Internal functions **/
-static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long * addr) ;
-static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long * addr) ;
-static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long * addr);
-static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long * addr);
+static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long *addr);
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned long *addr);
 static __tbx_inline__ int ma_sched_find_first_bit(const unsigned long *b);
-static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr) ;
-static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long * addr) ;
+static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr);
+static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long *addr);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

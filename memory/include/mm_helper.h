@@ -13,7 +13,7 @@
  * General Public License for more details.
  */
 
-#if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #ifndef MM_HELPER_H
 #define MM_HELPER_H
@@ -90,10 +90,10 @@ int _mm_mbind(void *start, unsigned long len, int mode,
               const unsigned long *nmask, unsigned long maxnode, unsigned flags);
 
 extern
-int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag);
+int _mm_move_pages(const void **pageaddrs, unsigned long pages, int *nodes, int *status, int flag);
 
 extern
 int _mm_use_synthetic_topology(void);
 
 #endif /* MM_HELPER_H */
-#endif /* MM_MAMI_ENABLED || MM_HEAP_ENABLED */
+#endif /* MM_MAMI_ENABLED */

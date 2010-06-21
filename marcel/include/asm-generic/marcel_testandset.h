@@ -29,14 +29,14 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #ifdef MA_HAVE_COMPAREEXCHANGE
 #define pm2_spinlock_testandset(spinlock) ma_cmpxchg(spinlock, 0, 1)
 #define pm2_spinlock_release(spinlock) (void)ma_cmpxchg(spinlock, 1, 0)
-#endif
-#ifndef MA_HAVE_COMPAREEXCHANGE
+#else
 #define pm2_spinlock_release(spinlock) do { ma_mb(); (*(spinlock) = 0); } while(0)
 #endif
 
@@ -49,10 +49,12 @@ extern ma_spinlock_t testandset_spinlock;
 
 /** Internal functions **/
 #ifndef MA_HAVE_COMPAREEXCHANGE
-static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
+static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
+    __tbx_deprecated__;
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

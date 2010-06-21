@@ -33,7 +33,7 @@ static void f(void *arg) {
 
 int pm2_main(int argc, char *argv[]) {
   int i;
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
   if ((pm2_self()) == 0) {
     marcel_sem_init(&sem, 0);	/* Here! */
 

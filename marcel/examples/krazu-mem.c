@@ -51,30 +51,30 @@ void * f (void *arg) {
 
 int
 main (int argc, char **argv) {
-  marcel_init (&argc, argv);
+  marcel_init (argc, argv);
 
   unsigned int i, j;
   marcel_bubble_t main_bubble;
   marcel_t threads[NUM_THREADS];
   marcel_attr_t thread_attr;
-  marcel_memory_manager_t krazu_manager;
+  mami_manager_t *krazu_manager;
 
-  marcel_memory_init (&krazu_manager);
+  mami_init (&krazu_manager, argc, argv);
 
   marcel_bubble_init (&main_bubble);
   marcel_bubble_insertbubble (&marcel_root_bubble, &main_bubble);
 
-  tabs = marcel_memory_malloc (&krazu_manager,
-			       NUM_THREADS * sizeof (int *),
-			       MARCEL_MEMORY_MEMBIND_POLICY_FIRST_TOUCH,
-			       0);
+  tabs = mami_malloc (krazu_manager,
+                      NUM_THREADS * sizeof (int *),
+                      MAMI_MEMBIND_POLICY_FIRST_TOUCH,
+                      0);
 
   for (i = 0; i < NUM_THREADS; i++) {
     unsigned int node = i % (marcel_nbnodes + 1);
-    tabs[i] = marcel_memory_malloc (&krazu_manager,
-				    TAB_SIZE * sizeof (int),
-				    MARCEL_MEMORY_MEMBIND_POLICY_SPECIFIC_NODE,
-				    node);
+    tabs[i] = mami_malloc (krazu_manager,
+                           TAB_SIZE * sizeof (int),
+                           MAMI_MEMBIND_POLICY_SPECIFIC_NODE,
+                           node);
   }
 
   marcel_attr_init (&thread_attr);
@@ -86,7 +86,7 @@ main (int argc, char **argv) {
     marcel_attr_setid (&thread_attr, i);
     marcel_create (threads + i, &thread_attr, f, NULL);
     for (j = 0; j < marcel_nbnodes + 1; j++) {
-      ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[j] =
+      ((long *) marcel_task_stats_get (threads[i], MEMNODE))[j] =
 	(j == i % (marcel_nbnodes + 1)) ? TAB_SIZE : 0;
     }
   }
@@ -96,10 +96,10 @@ main (int argc, char **argv) {
   marcel_bubble_join (&main_bubble);
 
   for (i = 0; i < NUM_THREADS; i++)
-    marcel_memory_free (&krazu_manager, tabs[i]);
-  marcel_memory_free (&krazu_manager, tabs);
+    mami_free (krazu_manager, tabs[i]);
+  mami_free (krazu_manager, tabs);
 
-  marcel_memory_exit (&krazu_manager);
+  mami_exit (&krazu_manager);
   marcel_end ();
 
   return EXIT_SUCCESS;

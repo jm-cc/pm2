@@ -67,7 +67,6 @@ int
 leoparse_yy_input(char         *buffer,
 		  unsigned int  max_size)
 {
-  LOG_IN();
 
 #ifdef LEOPARSE_REMOTE
   if (!parser_file_handle)
@@ -83,14 +82,12 @@ leoparse_yy_input(char         *buffer,
 
 	  if (status)
 	    {
-	      LOG_OUT();
 	      return status;
 	    }
 	  else
 	    {
 	      if (feof(parser_file_ptr))
 		{
-		  LOG_OUT();
 		  return 0; /* YY_NULL */
 		}
 	      else
@@ -149,7 +146,6 @@ leoparse_yy_input(char         *buffer,
 	  len                   += size;
 	}
 
-      LOG_OUT();
       return len;
     }
 #endif /* LEOPARSE_REMOTE */
@@ -162,7 +158,6 @@ leoparse_yy_input(char         *buffer,
 void
 leoparse_open_local_parser_file(const char *file_name)
 {
-  LOG_IN();
   if (parser_file_ptr)
     TBX_FAILURE("invalid file ptr");
 
@@ -186,7 +181,6 @@ leoparse_open_local_parser_file(const char *file_name)
   parser_filename   = file_name;
   parser_line_num   = 1;
   parser_column_num = 0;
-  LOG_OUT();
 }
 
 void
@@ -194,7 +188,6 @@ leoparse_close_local_parser_file(void)
 {
   int status;
   
-  LOG_IN();
   if (!parser_file_ptr)
     TBX_FAILURE("invalid file ptr");
   
@@ -210,7 +203,6 @@ leoparse_close_local_parser_file(void)
   while(status);
   parser_filename = NULL;
   parser_file_ptr = NULL;
-  LOG_OUT();
 }
 
 /*
@@ -243,7 +235,6 @@ void
 leoparse_init(int    argc TBX_UNUSED,
 	      char **argv TBX_UNUSED)
 {
-  LOG_IN();
   if (!initialized)
     {
       initialized        = tbx_true;
@@ -260,14 +251,11 @@ leoparse_init(int    argc TBX_UNUSED,
 
     }
   
-  LOG_OUT();
 }
 
 void
 leoparse_purge_cmd_line(int   *argc TBX_UNUSED,
 			char **argv TBX_UNUSED)
 {
-  LOG_IN();
   /* --- */
-  LOG_OUT();
 }

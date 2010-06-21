@@ -19,6 +19,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -26,6 +27,7 @@
 #define __ma_get_lwp_var(var) (MA_LWP_SELF->var)
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

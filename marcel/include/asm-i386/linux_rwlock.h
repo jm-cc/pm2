@@ -42,6 +42,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -49,113 +50,108 @@
 #define MA_RW_LOCK_BIAS		 0x01000000
 #define MA_RW_LOCK_BIAS_STR	"0x01000000"
 #define MA_RW_LOCK_UNLOCKED { MA_RW_LOCK_BIAS }
-
 #define ma_rwlock_init(x)	do { *(x) = (ma_rwlock_t) MA_RW_LOCK_UNLOCKED; } while(0)
-
 #define ma_rwlock_is_locked(x) ((x)->lock != MA_RW_LOCK_BIAS)
 
 #ifdef MA__HAS_SUBSECTION
-#define __ma_build_read_lock_ptr(rw, helper)   \
-	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t" \
-		     "js 2f\n" \
-		     "1:\n" \
-		     MA_LOCK_SECTION_START("") \
-		     "2:\tcall " helper "\n\t" \
-		     "jmp 1b\n" \
-		     MA_LOCK_SECTION_END \
+#define __ma_build_read_lock_ptr(rw, helper)		\
+	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t"	\
+		     "js 2f\n"				\
+		     "1:\n"				\
+		     MA_LOCK_SECTION_START("")		\
+		     "2:\tcall " helper "\n\t"		\
+		     "jmp 1b\n"				\
+		     MA_LOCK_SECTION_END		\
 		     ::"a" (rw) : "memory")
-
 #define __ma_build_read_lock_const(rw, helper)   \
-	asm volatile(MA_LOCK_PREFIX "subl $1,%0\n\t" \
-		     "js 2f\n" \
-		     "1:\n" \
-		     MA_LOCK_SECTION_START("") \
-		     "2:\tpushl %%eax\n\t" \
-		     "leal %0,%%eax\n\t" \
-		     "call " helper "\n\t" \
-		     "popl %%eax\n\t" \
-		     "jmp 1b\n" \
-		     MA_LOCK_SECTION_END \
+	asm volatile(MA_LOCK_PREFIX "subl $1,%0\n\t"	\
+		     "js 2f\n"				\
+		     "1:\n"				\
+		     MA_LOCK_SECTION_START("")		\
+		     "2:\tpushl %%eax\n\t"		\
+		     "leal %0,%%eax\n\t"		\
+		     "call " helper "\n\t"		\
+		     "popl %%eax\n\t"			\
+		     "jmp 1b\n"				\
+		     MA_LOCK_SECTION_END			\
 		     :"=m" (*(volatile int *)rw) : : "memory")
-
-#define __ma_build_read_lock(rw, helper)	do { \
-						if (__builtin_constant_p(rw)) \
-							__ma_build_read_lock_const(rw, helper); \
-						else \
-							__ma_build_read_lock_ptr(rw, helper); \
-					} while (0)
-
-#define __ma_build_write_lock_ptr(rw, helper) \
+#define __ma_build_read_lock(rw, helper)				\
+	do {								\
+		if (__builtin_constant_p(rw))				\
+			__ma_build_read_lock_const(rw, helper);		\
+		else							\
+			__ma_build_read_lock_ptr(rw, helper);		\
+	} while (0)
+#define __ma_build_write_lock_ptr(rw, helper)				\
 	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",(%0)\n\t" \
-		     "jnz 2f\n" \
-		     "1:\n" \
-		     MA_LOCK_SECTION_START("") \
-		     "2:\tcall " helper "\n\t" \
-		     "jmp 1b\n" \
-		     MA_LOCK_SECTION_END \
+		     "jnz 2f\n"						\
+		     "1:\n"						\
+		     MA_LOCK_SECTION_START("")				\
+		     "2:\tcall " helper "\n\t"				\
+		     "jmp 1b\n"						\
+		     MA_LOCK_SECTION_END				\
 		     ::"a" (rw) : "memory")
-
-#define __ma_build_write_lock_const(rw, helper) \
+#define __ma_build_write_lock_const(rw, helper)				\
 	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",%0\n\t" \
-		     "jnz 2f\n" \
-		     "1:\n" \
-		     MA_LOCK_SECTION_START("") \
-		     "2:\tpushl %%eax\n\t" \
-		     "leal %0,%%eax\n\t" \
-		     "call " helper "\n\t" \
-		     "popl %%eax\n\t" \
-		     "jmp 1b\n" \
-		     MA_LOCK_SECTION_END \
+		     "jnz 2f\n"						\
+		     "1:\n"						\
+		     MA_LOCK_SECTION_START("")				\
+		     "2:\tpushl %%eax\n\t"				\
+		     "leal %0,%%eax\n\t"				\
+		     "call " helper "\n\t"				\
+		     "popl %%eax\n\t"					\
+		     "jmp 1b\n"						\
+		     MA_LOCK_SECTION_END				\
 		     :"=m" (*(volatile int *)rw) : : "memory")
-#else /* MA__HAS_SUBSECTION */
-#define __ma_build_read_lock_ptr(rw, helper)   \
+
+#else				/* MA__HAS_SUBSECTION */
+
+#define __ma_build_read_lock_ptr(rw, helper)	       \
 	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t" \
-		     "jns 1f\n\t" \
-		     "call " helper "\n\t" \
-		     "1:\n" \
+		     "jns 1f\n\t"		       \
+		     "call " helper "\n\t"	       \
+		     "1:\n"			       \
 		     ::"a" (rw) : "memory")
-
-#define __ma_build_read_lock_const(rw, helper)   \
+#define __ma_build_read_lock_const(rw, helper)	     \
 	asm volatile(MA_LOCK_PREFIX "subl $1,%0\n\t" \
-		     "jns 1f\n" \
-		     "\tpushl %%eax\n\t" \
-		     "leal %0,%%eax\n\t" \
-		     "call " helper "\n\t" \
-		     "popl %%eax\n\t" \
-		     "1:\n" \
+		     "jns 1f\n"			     \
+		     "\tpushl %%eax\n\t"	     \
+		     "leal %0,%%eax\n\t"	     \
+		     "call " helper "\n\t"	     \
+		     "popl %%eax\n\t"		     \
+		     "1:\n"					\
 		     :"=m" (*(volatile int *)rw) : : "memory")
-
-#define __ma_build_read_lock(rw, helper)	do { \
-						if (__builtin_constant_p(rw)) \
-							__ma_build_read_lock_const(rw, helper); \
-						else \
-							__ma_build_read_lock_ptr(rw, helper); \
-					} while (0)
-
-#define __ma_build_write_lock_ptr(rw, helper) \
+#define __ma_build_read_lock(rw, helper)				\
+	do {								\
+		if (__builtin_constant_p(rw))				\
+			__ma_build_read_lock_const(rw, helper);		\
+		else							\
+			__ma_build_read_lock_ptr(rw, helper);		\
+	} while (0)
+#define __ma_build_write_lock_ptr(rw, helper)				\
 	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",(%0)\n\t" \
-		     "jz 1f\n" \
-		     "\tcall " helper "\n\t" \
-		     "1:\n" \
+		     "jz 1f\n"						\
+		     "\tcall " helper "\n\t"				\
+		     "1:\n"						\
 		     ::"a" (rw) : "memory")
-
-#define __ma_build_write_lock_const(rw, helper) \
+#define __ma_build_write_lock_const(rw, helper)				\
 	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",%0\n\t" \
-		     "jz 1f\n" \
-		     "\tpushl %%eax\n\t" \
-		     "leal %0,%%eax\n\t" \
-		     "call " helper "\n\t" \
-		     "popl %%eax\n\t" \
-		     "1:\n" \
+		     "jz 1f\n"						\
+		     "\tpushl %%eax\n\t"				\
+		     "leal %0,%%eax\n\t"				\
+		     "call " helper "\n\t"				\
+		     "popl %%eax\n\t"					\
+		     "1:\n"						\
 		     :"=m" (*(volatile int *)rw) : : "memory")
-#endif /* MA__HAS_SUBSECTION */
+#endif				/* MA__HAS_SUBSECTION */
 
-#define __ma_build_write_lock(rw, helper)	do { \
-						if (__builtin_constant_p(rw)) \
-							__ma_build_write_lock_const(rw, helper); \
-						else \
-							__ma_build_write_lock_ptr(rw, helper); \
-					} while (0)
+#define __ma_build_write_lock(rw, helper)				\
+	do {								\
+		if (__builtin_constant_p(rw))				\
+			__ma_build_write_lock_const(rw, helper);	\
+		else							\
+			__ma_build_write_lock_ptr(rw, helper);		\
+	} while (0)
 #endif
 
 #ifdef MA__LWPS
@@ -184,12 +180,13 @@ typedef struct {
 
 /** Internal inline functions **/
 #ifdef MA__LWPS
-static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t *rw) ;
-static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t *rw) ;
-static __tbx_inline__ int  _ma_raw_write_trylock(ma_rwlock_t *lock) ;
+static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t * rw);
+static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t * rw);
+static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t * lock);
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

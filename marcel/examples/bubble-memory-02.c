@@ -25,7 +25,7 @@
 
 #include "bubble-testing.h"
 
-#ifdef MM_MAMI_ENABLED
+#ifdef MARCEL_MAMI_ENABLED
 
 #define NB_BUBBLES 4
 #define THREADS_PER_BUBBLE 4
@@ -67,13 +67,13 @@ main (int argc, char *argv[])
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
   argc += 2;
 
-  marcel_init (&argc, new_argv);
+  marcel_init (argc, new_argv);
 
   /* Make sure we're currently testing the memory scheduler. */
   scheduler =
     alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memory_sched_class));
   ret = marcel_bubble_memory_sched_init ((struct marcel_bubble_memory_sched *) scheduler,
-					 NULL, tbx_false);
+					 NULL, NULL, NULL, tbx_false);
   MA_BUG_ON (ret != 0);
 
   marcel_bubble_change_sched (scheduler);
@@ -90,7 +90,7 @@ main (int argc, char *argv[])
 
   marcel_attr_init (&attr);
 
-  ((long *) ma_task_stats_get (marcel_self (), ma_stats_memnode_offset))[0] = 1024;
+  ((long *) marcel_task_stats_get (marcel_self (), MEMNODE))[0] = 1024;
 
   for (team = 0; team < NB_BUBBLES; team++)
     {
@@ -109,7 +109,7 @@ main (int argc, char *argv[])
 	    continue; /* The main thread has already been created. */
 
 	  marcel_create (threads + i, &attr, thread_entry_point, &start_signal);
-	  ((long *) ma_task_stats_get (threads[i], ma_stats_memnode_offset))[0] = 1024;
+	  ((long *) marcel_task_stats_get (threads[i], MEMNODE))[0] = 1024;
 	}
     }
 
@@ -156,7 +156,7 @@ main (int argc, char *argv[])
   return ret;
 }
 
-#else /* MM_MAMI_ENABLED */
+#else /* MARCEL_MAMI_ENABLED */
 #  warning MaMI must be enabled for this program
 int main (int argc, char *argv[])
 {
@@ -164,4 +164,4 @@ int main (int argc, char *argv[])
 
   return 0;
 }
-#endif /* MM_MAMI_ENABLED */
+#endif /* MARCEL_MAMI_ENABLED */

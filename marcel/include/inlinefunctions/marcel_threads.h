@@ -21,64 +21,41 @@
 #include "marcel_threads.h"
 
 
-/** Public inline **/
 /*
  * Compare two marcel thread ids.
  */
 static __tbx_inline__ int marcel_equal(marcel_t pid1, marcel_t pid2)
 {
-  return (pid1 == pid2);
-}
-
-static __tbx_inline__ void __marcel_some_thread_preemption_enable(marcel_t t)
-{
-#ifdef MA__DEBUG
-	MA_BUG_ON(!THREAD_GETMEM(t, not_preemptible));
-#endif
-        ma_barrier();
-	THREAD_GETMEM(t, not_preemptible)--;
-}
-static __tbx_inline__ void marcel_some_thread_preemption_enable(marcel_t t) {
-	__marcel_some_thread_preemption_enable(t);
-}
-
-static __tbx_inline__ void __marcel_some_thread_preemption_disable(marcel_t t) {
-	THREAD_GETMEM(t, not_preemptible)++;
-        ma_barrier();
-}
-
-static __tbx_inline__ void marcel_some_thread_preemption_disable(marcel_t t) {
-	__marcel_some_thread_preemption_disable(t);
-}
-
-static __tbx_inline__ int __marcel_some_thread_is_preemption_disabled(marcel_t t) {
-	return THREAD_GETMEM(t, not_preemptible) != 0;
-}
-
-static __tbx_inline__ int marcel_some_thread_is_preemption_disabled(marcel_t t) {
-	return __marcel_some_thread_is_preemption_disabled(t);
+	return (pid1 == pid2);
 }
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
-/** Internal inline functions **/
-#ifdef MARCEL_MIGRATION_ENABLED
-
-MARCEL_INLINE void marcel_disablemigration(marcel_t pid)
+static __tbx_inline__ void ma_some_thread_preemption_enable(marcel_t t)
 {
-  pid->not_migratable++;
+#ifdef MA__DEBUG
+	MA_BUG_ON(!THREAD_GETMEM(t, not_preemptible));
+#endif
+	ma_barrier();
+	THREAD_GETMEM(t, not_preemptible)--;
 }
 
-MARCEL_INLINE void marcel_enablemigration(marcel_t pid)
+static __tbx_inline__ void ma_some_thread_preemption_disable(marcel_t t)
 {
-  pid->not_migratable--;
+	THREAD_GETMEM(t, not_preemptible)++;
+	ma_barrier();
 }
 
-#endif /* MARCEL_MIGRATION_ENABLED */
+static __tbx_inline__ int ma_some_thread_is_preemption_disabled(marcel_t t)
+{
+	return THREAD_GETMEM(t, not_preemptible) != 0;
+}
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

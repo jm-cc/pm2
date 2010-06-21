@@ -22,18 +22,24 @@
 #include "linux_jiffies.h"
 
 
-/** Public global variables **/
+#ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
+
+
+/** Internal functions **/
 /*
  * The 64-bit value is not volatile - you MUST NOT read it
  * without sampling the sequence number in xtime_lock.
  * get_jiffies_64() will do this for you as appropriate.
  */
 #if (MA_BITS_PER_LONG >= 64)
-static __tbx_inline__ ma_u64 ma_get_jiffies_64(void)
+static __tbx_inline__ unsigned long long ma_get_jiffies_64(void)
 {
-	return (ma_u64)ma_jiffies;
+	return (unsigned long long) ma_jiffies;
 }
 #endif
 
 
+TBX_VISIBILITY_POP
+#endif /** __MARCEL_KERNEL__ **/
 #endif /** __INLINEFUNCTIONS_LINUX_JIFFIES_H__ **/

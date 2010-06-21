@@ -19,20 +19,17 @@
 
 
 #include "sys/marcel_flags.h"
-#ifdef __MARCEL_KERNEL__
 #include "linux_spinlock.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #define OBJ_MINSIZE (sizeof(ma_node_t))
-
-
 /** Internal data types **/
-typedef struct ma_node_t {
+    typedef struct ma_node_t {
 	struct ma_node_t *next_node;
 	void *obj;
 } ma_node_t;
@@ -47,9 +44,9 @@ typedef struct ma_container_t {
 
 
 /** Internal functions **/
-void ma_container_add(ma_container_t * container, void * obj);
+void ma_container_add(ma_container_t * container, void *obj);
 
-void * ma_container_get(ma_container_t * container);
+void *ma_container_get(ma_container_t * container);
 
 int ma_container_nb_element(ma_container_t * container);
 
@@ -61,9 +58,11 @@ void ma_unlock_container(ma_container_t * container);
 
 void ma_container_init(ma_container_t * container, int conservative, int max_size);
 
-void ma_container_clear(ma_container_t * container, void (*destroy)(void *, void *), void * destroy_arg );
+void ma_container_clear(ma_container_t * container, void (*destroy) (void *, void *),
+			void *destroy_arg);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

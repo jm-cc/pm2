@@ -10,7 +10,7 @@ int pm2_main(int argc, char *argv[]);
 
 int pm2_main(int argc, char *argv[])
 {
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   cout << "Hello World!" << endl;
 

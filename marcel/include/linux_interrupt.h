@@ -43,31 +43,66 @@
 #include "tbx_compiler.h"
 #include "sys/marcel_flags.h"
 #include "marcel_types.h"
-#ifdef __MARCEL_KERNEL__
 #include "asm/linux_atomic.h"
 #include "sys/marcel_lwp.h"
 #include "linux_bitops.h"
 #include "linux_linkage.h"
-#endif
 
 
 /** Public data structures **/
-struct ma_tasklet_struct {
-	struct ma_tasklet_struct *next;
+struct marcel_tasklet_struct {
+	struct marcel_tasklet_struct *next;
 	unsigned long state;
 	ma_atomic_t count;
-	void (*func)(unsigned long);
+	void (*func) (unsigned long);
 	unsigned long data;
 #ifdef MARCEL_REMOTE_TASKLETS
 	marcel_vpset_t vp_set;
 	struct tbx_fast_list_head associated_bubble;
 	unsigned priority;
 #endif
-	int preempt;	/* do send a signal to force quick tasklet scheduling */
+	int preempt;		/* do send a signal to force quick tasklet scheduling */
 };
 
 
+/** Public macros **/
+#ifdef MARCEL_REMOTE_TASKLETS
+#  define MARCEL_REMOTE_TASKLET_INIT		.vp_set=MARCEL_VPSET_FULL,
+#else				/* MARCEL_REMOTE_TASKLETS */
+#  define MARCEL_REMOTE_TASKLET_INIT
+#endif				/* MARCEL_REMOTE_TASKLETS */
+#define MARCEL_TASKLET_INIT_COUNT(name, _func, _data, _count, _preempt) { \
+		.next=NULL, \
+		.state=0, \
+		.count=MA_ATOMIC_INIT(_count), \
+                .preempt=_preempt, \
+		.func=_func, \
+		.data=_data, \
+		MARCEL_REMOTE_TASKLET_INIT \
+}
+#define MARCEL_TASKLET_INIT(name, _func, _data, _preempt) \
+	MARCEL_TASKLET_INIT_COUNT(name, _func, _data, 0, _preempt)
+#define MARCEL_DECLARE_TASKLET(name, _func, _data, _preempt) \
+	struct marcel_tasklet_struct name = MARCEL_TASKLET_INIT(name, _func, _data, _preempt)
+#define MARCEL_TASKLET_INIT_DISABLED(name, _func, _data, _preempt) \
+	MARCEL_TASKLET_INIT_COUNT(name, _func, _data, 1, _preempt)
+#define MARCEL_DECLARE_TASKLET_DISABLED(name, _func, _data, _preempt) \
+	struct marcel_tasklet_struct name = MARCEL_TASKLET_INIT_DISABLED(name, _func, _data, _preempt)
+
+
+/** Public functions **/
+void marcel_tasklet_init(struct marcel_tasklet_struct *t, void (*func) (unsigned long), unsigned long data, int preempt);
+void marcel_tasklet_set_vpset(struct marcel_tasklet_struct *t, marcel_vpset_t vp_set);
+
+void marcel_tasklet_disable(void);
+void marcel_spin_lock_tasklet_disable(marcel_spinlock_t * lock);
+int  marcel_spin_trylock_tasklet_disable(marcel_spinlock_t * lock);
+void marcel_tasklet_enable(void);
+void marcel_spin_unlock_tasklet_enable(marcel_spinlock_t * lock);
+
+
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -85,35 +120,9 @@ struct ma_tasklet_struct {
 	do { ma_barrier(); ma_preempt_count() -= MA_SOFTIRQ_OFFSET; } while (0)
 
 
-#ifdef MARCEL_REMOTE_TASKLETS
-#  define MA_REMOTE_TASKLET_INIT		.vp_set=MARCEL_VPSET_FULL,
-#else /* MARCEL_REMOTE_TASKLETS */
-#  define MA_REMOTE_TASKLET_INIT
-#endif /* MARCEL_REMOTE_TASKLETS */
-
-#define MA_TASKLET_INIT_COUNT(name, _func, _data, _count, _preempt) { \
-		.next=NULL, \
-		.state=0, \
-		.count=MA_ATOMIC_INIT(_count), \
-                .preempt=_preempt, \
-		.func=_func, \
-		.data=_data, MA_REMOTE_TASKLET_INIT \
-	}
-
-#define MA_TASKLET_INIT(name, _func, _data, _preempt) \
-	MA_TASKLET_INIT_COUNT(name, _func, _data, 0, _preempt)
-#define MA_DECLARE_TASKLET(name, _func, _data, _preempt) \
-	struct ma_tasklet_struct name = MA_TASKLET_INIT(name, _func, _data, _preempt)
-
-#define MA_TASKLET_INIT_DISABLED(name, _func, _data, _preempt) \
-	MA_TASKLET_INIT_COUNT(name, _func, _data, 1, _preempt)
-#define MA_DECLARE_TASKLET_DISABLED(name, _func, _data, _preempt) \
-	struct ma_tasklet_struct name = MA_TASKLET_INIT_DISABLED(name, _func, _data, _preempt)
-
-
 /** Internal data types **/
 enum {
-	MA_TIMER_HARDIRQ=0,
+	MA_TIMER_HARDIRQ = 0,
 	MA_HI_SOFTIRQ,
 	MA_TIMER_SOFTIRQ,
 	MA_TASKLET_SOFTIRQ,
@@ -132,7 +141,7 @@ enum {
 
 /** Internal data structures **/
 struct ma_softirq_action {
-	void (*action)(struct ma_softirq_action *);
+	void (*action) (struct ma_softirq_action *);
 	void *data;
 };
 
@@ -140,31 +149,32 @@ struct ma_softirq_action {
 /** Internal functions **/
 /* Enable bottom-halves, check for pending bottom halves, but do not try to
  * reschedule, i.e. the caller promises that he will call schedule shortly. */
-extern void TBX_EXTERN ma_local_bh_enable_no_resched(void);
+extern void ma_local_bh_enable_no_resched(void);
 /* Enable bottom-halves, check for pending bottom halves, and possibly
  * reschedule */
-extern void TBX_EXTERN ma_local_bh_enable(void);
+extern void ma_local_bh_enable(void);
 
-asmlinkage TBX_EXTERN void ma_do_softirq(void);
-extern TBX_EXTERN void ma_open_softirq(int nr, void (*action)(struct ma_softirq_action*), void *data);
-extern TBX_EXTERN void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
-extern TBX_EXTERN void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
-extern TBX_EXTERN void FASTCALL(ma_raise_softirq(unsigned int nr));
-extern TBX_EXTERN void FASTCALL(ma_raise_softirq_lwp(ma_lwp_t lwp, unsigned int nr));
-extern TBX_EXTERN void FASTCALL(__ma_tasklet_schedule(struct ma_tasklet_struct *t));
-extern TBX_EXTERN void FASTCALL(__ma_tasklet_hi_schedule(struct ma_tasklet_struct *t));
-extern TBX_EXTERN void ma_tasklet_kill(struct ma_tasklet_struct *t);
-extern void tasklet_kill_immediate(struct ma_tasklet_struct *t, ma_lwp_t lwp);
-extern TBX_EXTERN void ma_tasklet_init(struct ma_tasklet_struct *t,
-			void (*func)(unsigned long), unsigned long data, int preempt);
+asmlinkage void ma_do_softirq(void);
+extern void ma_open_softirq(int nr, void (*action) (struct ma_softirq_action *),
+			    void *data);
+extern void FASTCALL(ma_raise_softirq_from_hardirq(unsigned int nr));
+extern void FASTCALL(ma_raise_softirq_bhoff(unsigned int nr));
+extern void FASTCALL(ma_raise_softirq(unsigned int nr));
+extern void FASTCALL(ma_raise_softirq_lwp(ma_lwp_t lwp, unsigned int nr));
+extern void FASTCALL(__ma_tasklet_schedule(struct marcel_tasklet_struct *t));
+extern void FASTCALL(__ma_tasklet_hi_schedule(struct marcel_tasklet_struct *t));
+extern void ma_tasklet_kill(struct marcel_tasklet_struct *t);
+extern void tasklet_kill_immediate(struct marcel_tasklet_struct *t, ma_lwp_t lwp);
+extern void ma_tasklet_init(struct marcel_tasklet_struct *t,
+			    void (*func) (unsigned long), unsigned long data,
+			    int preempt);
 
 #ifndef ma_invoke_softirq
 #  define ma_invoke_softirq() ma_do_softirq()
 #endif
 
 
-
-
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

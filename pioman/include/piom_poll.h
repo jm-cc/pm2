@@ -24,8 +24,9 @@
 #define PIOM_POLL_AT_YIELD      2
 #define PIOM_POLL_AT_LIB_ENTRY  4
 #define PIOM_POLL_AT_IDLE       8
-#define PIOM_POLL_WHEN_FORCED   16
-#define PIOM_POLL_AT_CTX_SWITCH 32
+#define PIOM_POLL_AT_CTX_SWITCH 16
+#define PIOM_POLL_WHEN_FORCED   32
+
 
 /* Used by initializers */
 void piom_poll_from_tasklet(unsigned long id);

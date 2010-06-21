@@ -18,8 +18,6 @@
 #include "marcel.h"
 #include "tbx_compiler.h"
 
-#warning "[1;33m<<< [1;37mScheduler [1;32mmarcel[1;37m selected[1;33m >>>[0m"
-
 marcel_sched_attr_t marcel_sched_attr_default = MARCEL_SCHED_ATTR_INITIALIZER;
 
 int marcel_sched_attr_init(marcel_sched_attr_t * attr)
@@ -35,7 +33,7 @@ int marcel_sched_attr_setnaturalholder(marcel_sched_attr_t * attr, ma_holder_t *
 }
 
 int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t * attr,
-    ma_holder_t ** h)
+				       ma_holder_t ** h)
 {
 	*h = attr->natural_holder;
 	return 0;
@@ -43,7 +41,7 @@ int marcel_sched_attr_getnaturalholder(__const marcel_sched_attr_t * attr,
 
 #ifdef MA__BUBBLES
 int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t * attr,
-    marcel_bubble_t ** b)
+				       marcel_bubble_t ** b)
 {
 	ma_holder_t *h = attr->natural_holder;
 	MA_BUG_ON(h->type != MA_BUBBLE_HOLDER);
@@ -52,14 +50,13 @@ int marcel_sched_attr_getnaturalbubble(__const marcel_sched_attr_t * attr,
 }
 #endif
 
-int marcel_sched_attr_setinheritholder(marcel_sched_attr_t * attr, int yes)
+int marcel_sched_attr_setinheritholder(marcel_sched_attr_t * attr, tbx_bool_t yes)
 {
 	attr->inheritholder = yes;
 	return 0;
 }
 
-int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t * attr,
-    int *yes)
+int marcel_sched_attr_getinheritholder(__const marcel_sched_attr_t * attr, tbx_bool_t *yes)
 {
 	*yes = attr->inheritholder;
 	return 0;
@@ -72,7 +69,7 @@ int marcel_sched_attr_setschedpolicy(marcel_sched_attr_t * attr, int policy)
 }
 
 int marcel_sched_attr_getschedpolicy(__const marcel_sched_attr_t *
-    __restrict attr, int *__restrict policy)
+				     __restrict attr, int *__restrict policy)
 {
 	*policy = attr->sched_policy;
 	return 0;
@@ -86,8 +83,7 @@ void marcel_schedpolicy_create(int *policy, marcel_schedpolicy_func_t func)
 	    MARCEL_MAX_USER_SCHED + __MARCEL_SCHED_AVAILABLE)
 		MARCEL_EXCEPTION_RAISE(MARCEL_CONSTRAINT_ERROR);
 
-	ma_user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] =
-	    func;
+	ma_user_policy[next_schedpolicy_available - __MARCEL_SCHED_AVAILABLE] = func;
 	*policy = next_schedpolicy_available++;
 }
 
@@ -102,8 +98,7 @@ int marcel_sched_getparam(marcel_t t, struct marcel_sched_param *p)
 	return 0;
 }
 
-int marcel_sched_setscheduler(marcel_t t, int policy,
-    const struct marcel_sched_param *p)
+int marcel_sched_setscheduler(marcel_t t, int policy, const struct marcel_sched_param *p)
 {
 	t->as_entity.sched_policy = policy;
 	return ma_sched_change_prio(t, p->sched_priority);

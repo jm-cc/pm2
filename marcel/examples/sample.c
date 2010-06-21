@@ -17,6 +17,7 @@
 /* sample.c */
 
 #include "marcel.h"
+#include "pm2_common.h"
 
 any_t ALL_IS_OK = (any_t)123456789L;
 
@@ -43,7 +44,7 @@ int marcel_main(int argc, char *argv[])
   marcel_t pid[NB];
   int i;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv) ;
 
   for(i=0; i<NB; i++)
     marcel_create(&pid[i], NULL, writer, (any_t)mess[i]);
@@ -59,7 +60,7 @@ int marcel_main(int argc, char *argv[])
       tprintf("Thread %p completed ok.\n", pid[i]);
   }
 
-  marcel_end();
+  marcel_end() ;
 
   return 0;
 }

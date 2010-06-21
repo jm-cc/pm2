@@ -25,15 +25,12 @@
 
 
 #include "sys/marcel_flags.h"
-
-
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #include "marcel_types.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal functions **/
@@ -46,13 +43,14 @@ static __tbx_inline__ void ma_clear_thread_flag(int flag);
 static __tbx_inline__ int ma_test_and_set_thread_flag(int flag);
 static __tbx_inline__ int ma_test_and_clear_thread_flag(int flag);
 static __tbx_inline__ int ma_test_thread_flag(int flag);
-static __tbx_inline__ void ma_set_ti_thread_flag(marcel_task_t *ti, int flag);
-static __tbx_inline__ void ma_clear_ti_thread_flag(marcel_task_t *ti, int flag);
-static __tbx_inline__ int ma_test_and_set_ti_thread_flag(marcel_task_t *ti, int flag);
-static __tbx_inline__ int ma_test_and_clear_ti_thread_flag(marcel_task_t *ti, int flag);
-static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t *ti, int flag);
+static __tbx_inline__ void ma_set_ti_thread_flag(marcel_task_t * ti, int flag);
+static __tbx_inline__ void ma_clear_ti_thread_flag(marcel_task_t * ti, int flag);
+static __tbx_inline__ int ma_test_and_set_ti_thread_flag(marcel_task_t * ti, int flag);
+static __tbx_inline__ int ma_test_and_clear_ti_thread_flag(marcel_task_t * ti, int flag);
+static __tbx_inline__ int ma_test_ti_thread_flag(marcel_task_t * ti, int flag);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

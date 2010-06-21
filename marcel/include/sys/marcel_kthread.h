@@ -20,6 +20,7 @@
 
 #include "marcel_utils.h"
 #include "sys/marcel_kthread.h"
+#include <signal.h>
 #ifdef MA__LWPS
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 #   include <semaphore.h>
@@ -31,22 +32,20 @@
 #     include <unistd.h>
 #   endif
 # endif
-#endif /* MA__LWPS */
-#ifdef __MARCEL_KERNEL__
-#include <signal.h>
+#endif				/* MA__LWPS */
 #ifdef LINUX_SYS
 #include "asm/linux_atomic.h"
 #endif
-#endif /* __MARCEL_KERNEL__ */
-
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal marcel_types **/
 #ifdef MA__LWPS
-typedef void * (*marcel_kthread_func_t)(void *arg);
+typedef void *(*marcel_kthread_func_t) (void *arg);
+
 # ifndef MARCEL_DONT_USE_POSIX_THREADS
 typedef pthread_t marcel_kthread_t;
 typedef pthread_mutex_t marcel_kthread_mutex_t;
@@ -68,18 +67,17 @@ typedef int marcel_kthread_cond_t;
 #     error CANNOT AVOID USING PTHREADS ON THIS ARCHITECTURE. SORRY.
 #   endif
 # endif
-#endif // MA__LWPS
+#endif				// MA__LWPS
 
 
 /** Internal marcel_functions **/
 #ifdef MA__LWPS
 int marcel_gettid(void);
 
-void marcel_kthread_create(marcel_kthread_t *pid, void *sp,
-			   void *stack_base,
-			   marcel_kthread_func_t func, void *arg);
+void marcel_kthread_create(marcel_kthread_t * pid, void *sp,
+			   void *stack_base, marcel_kthread_func_t func, void *arg);
 
-void marcel_kthread_join(marcel_kthread_t *pid);
+void marcel_kthread_join(marcel_kthread_t * pid);
 
 void marcel_kthread_exit(void *retval);
 
@@ -87,25 +85,28 @@ marcel_kthread_t marcel_kthread_self(void);
 
 void marcel_kthread_kill(marcel_kthread_t pid, int sig);
 
-void marcel_kthread_mutex_init(marcel_kthread_mutex_t *lock);
-void marcel_kthread_mutex_lock(marcel_kthread_mutex_t *lock);
-void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t *lock);
-int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t *lock);
+void marcel_kthread_mutex_init(marcel_kthread_mutex_t * lock);
+void marcel_kthread_mutex_lock(marcel_kthread_mutex_t * lock);
+void marcel_kthread_mutex_unlock(marcel_kthread_mutex_t * lock);
+int marcel_kthread_mutex_trylock(marcel_kthread_mutex_t * lock);
 
-void marcel_kthread_sem_init(marcel_kthread_sem_t *sem, int pshared, unsigned int value);
-void marcel_kthread_sem_wait(marcel_kthread_sem_t *sem);
-void marcel_kthread_sem_post(marcel_kthread_sem_t *sem);
-int marcel_kthread_sem_trywait(marcel_kthread_sem_t *sem);
-void marcel_kthread_cond_init(marcel_kthread_cond_t *cond);
-void marcel_kthread_cond_signal(marcel_kthread_cond_t *cond);
-void marcel_kthread_cond_broadcast(marcel_kthread_cond_t *cond);
-void marcel_kthread_cond_wait(marcel_kthread_cond_t *cond, marcel_kthread_mutex_t *mutex);
-void marcel_kthread_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void));
-#endif // MA__LWPS
+void marcel_kthread_sem_init(marcel_kthread_sem_t * sem, int pshared, unsigned int value);
+void marcel_kthread_sem_wait(marcel_kthread_sem_t * sem);
+void marcel_kthread_sem_post(marcel_kthread_sem_t * sem);
+int marcel_kthread_sem_trywait(marcel_kthread_sem_t * sem);
+void marcel_kthread_cond_init(marcel_kthread_cond_t * cond);
+void marcel_kthread_cond_signal(marcel_kthread_cond_t * cond);
+void marcel_kthread_cond_broadcast(marcel_kthread_cond_t * cond);
+void marcel_kthread_cond_wait(marcel_kthread_cond_t * cond,
+			      marcel_kthread_mutex_t * mutex);
+void marcel_kthread_atfork(void (*prepare) (void), void (*parent) (void),
+			   void (*child) (void));
+#endif				// MA__LWPS
 
-void marcel_kthread_sigmask(int how, sigset_t *newmask, sigset_t *oldmask);
+void marcel_kthread_sigmask(int how, sigset_t * newmask, sigset_t * oldmask);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

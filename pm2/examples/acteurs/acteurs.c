@@ -47,7 +47,7 @@ int pm2_main(int argc, char **argv)
   DECLARE_LRPC(SEND_MESSAGE);
   DECLARE_LRPC(DESTROY_ACTOR);
 
-  pm2_init(&argc, argv, 2, &les_modules, &nb_modules);
+  pm2_init(argc, argv, 2, &les_modules, &nb_modules);
 
   if(pm2_self() == les_modules[0]) { /* master process */
 

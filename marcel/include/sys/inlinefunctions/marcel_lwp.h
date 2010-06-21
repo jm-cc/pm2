@@ -20,6 +20,7 @@
 
 #include "sys/marcel_lwp.h"
 #include "tbx_compiler.h"
+#include "tbx_debug.h"
 #include "linux_spinlock.h"
 #include "marcel_topology.h"
 
@@ -28,42 +29,43 @@
 static __tbx_inline__ unsigned marcel_nbvps(void)
 {
 #ifdef MA__LWPS
-  return ma__nb_vp;
+	return marcel_nb_vp;
 #else
-  return 1;
+	return 1;
 #endif
 }
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal marcel_inline **/
 static __tbx_inline__ void ma_lwp_list_lock_read(void)
 {
 #ifdef MA__LWPS
-  ma_read_lock(&__ma_lwp_list_lock);
+	ma_read_lock(&__ma_lwp_list_lock);
 #endif
 }
 
 static __tbx_inline__ void ma_lwp_list_unlock_read(void)
 {
 #ifdef MA__LWPS
-  ma_read_unlock(&__ma_lwp_list_lock);
+	ma_read_unlock(&__ma_lwp_list_lock);
 #endif
 }
 
 static __tbx_inline__ void ma_lwp_list_lock_write(void)
 {
 #ifdef MA__LWPS
-  ma_write_lock(&__ma_lwp_list_lock);
+	ma_write_lock(&__ma_lwp_list_lock);
 #endif
 }
 
 static __tbx_inline__ void ma_lwp_list_unlock_write(void)
 {
 #ifdef MA__LWPS
-  ma_write_unlock(&__ma_lwp_list_lock);
+	ma_write_unlock(&__ma_lwp_list_lock);
 #endif
 }
 
@@ -73,25 +75,25 @@ static __tbx_inline__ void ma_lwp_list_unlock_write(void)
 static __tbx_inline__ unsigned marcel_nballvps(void)
 {
 #ifdef MA__LWPS
-  return ma_atomic_read(&ma__last_vp) + 1;
+	return ma_atomic_read(&ma__last_vp) + 1;
 #else
-  return 1;
+	return 1;
 #endif
 }
 
-__tbx_inline__ static marcel_lwp_t* marcel_lwp_next_lwp(marcel_lwp_t* lwp)
+__tbx_inline__ static marcel_lwp_t *marcel_lwp_next_lwp(marcel_lwp_t * lwp)
 {
-  return tbx_fast_list_entry(lwp->lwp_list.next, marcel_lwp_t, lwp_list);
+	return tbx_fast_list_entry(lwp->lwp_list.next, marcel_lwp_t, lwp_list);
 }
 
-__tbx_inline__ static marcel_lwp_t* marcel_lwp_prev_lwp(marcel_lwp_t* lwp)
+__tbx_inline__ static marcel_lwp_t *marcel_lwp_prev_lwp(marcel_lwp_t * lwp)
 {
-  return tbx_fast_list_entry(lwp->lwp_list.prev, marcel_lwp_t, lwp_list);
+	return tbx_fast_list_entry(lwp->lwp_list.prev, marcel_lwp_t, lwp_list);
 }
 
-static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp)
+static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t * lwp)
 {
-	unsigned vp = ma_vpnum(lwp);
+	int vp = ma_vpnum(lwp);
 	struct marcel_topo_level *l;
 	if (vp == -1)
 		vp = 0;
@@ -102,25 +104,33 @@ static __tbx_inline__ unsigned ma_lwp_os_node(marcel_lwp_t *lwp)
 }
 
 #ifndef MA__LWPS
-static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb)
+static __tbx_inline__ int ma_register_lwp_notifier(struct ma_notifier_block *nb
+						   TBX_UNUSED)
 {
-        return 0;
+	return 0;
 }
-static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb)
-{
-}
-#endif /* MA__LWPS */
 
+static __tbx_inline__ void ma_unregister_lwp_notifier(struct ma_notifier_block *nb
+						      TBX_UNUSED)
+{
+}
+#endif				/* MA__LWPS */
+
+
+#ifdef MA__LWPS
 static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp)
 {
-#ifdef MA__LWPS
-	return ma_per_lwp(online,lwp);
-#else
-	return 1;
-#endif
+	return ma_per_lwp(online, lwp);
 }
+#else
+static __tbx_inline__ int ma_lwp_online(ma_lwp_t lwp TBX_UNUSED)
+{
+	return 1;
+}
+#endif				/* MA__LWPS */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -45,7 +45,7 @@ thread_entry_point (void *arg)
 {
   struct thread_args *ta = arg;
   ma_atomic_t *start = ta->signal;
-  unsigned long current_vp = *(unsigned long *) ma_task_stats_get (marcel_self (), ma_stats_last_vp_offset);
+  unsigned long current_vp = *(unsigned long *) marcel_task_stats_get (marcel_self (), LAST_VP);
   unsigned int current_node;
 
   current_node = current_vp / 4;
@@ -78,14 +78,14 @@ main (int argc, char *argv[])
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
   argc += 2;
 
-  marcel_init (&argc, new_argv);
-  mami_init (&memory_manager);
+  marcel_init (argc, new_argv);
+  mami_init(&memory_manager, argc, new_argv);
 
   /* Make sure we're currently testing the memory scheduler. */
   scheduler =
     alloca (marcel_bubble_sched_instance_size (&marcel_bubble_memory_sched_class));
   ret = marcel_bubble_memory_sched_init ((struct marcel_bubble_memory_sched *) scheduler,
-					 memory_manager, tbx_false);
+					 memory_manager, mami_bubble_migrate_all_callback, mami_task_migrate_all_callback, tbx_false);
   MA_BUG_ON (ret != 0);
 
   marcel_bubble_change_sched (scheduler);

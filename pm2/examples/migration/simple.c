@@ -55,7 +55,7 @@ int pm2_main(int argc, char **argv)
 {
   int i;
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if(pm2_self() == 0) { /* master process */
 

@@ -29,7 +29,7 @@
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 #  define MARCEL_EXCEPTION_BEGIN { \
                          marcel_exception_block_t _excep_blk;				\
-          	       marcel_t __cur = marcel_self();			\
+			 marcel_t __cur = marcel_self();		\
                          _excep_blk.old_blk=__cur->cur_excep_blk; \
                          __cur->cur_excep_blk=&_excep_blk; \
                          if (marcel_ctx_setjmp(_excep_blk.ctx) == 0) {
@@ -61,17 +61,17 @@
 	SELF_GETMEM(cur_excep_blk)=_##name##_excep_blk.old_blk; \
 	if(_##name##_val == 1) _marcel_raise_exception(NULL); }
 
-#else /* MARCEL_EXCEPTIONS_ENABLED */
+#else				/* MARCEL_EXCEPTIONS_ENABLED */
 #  define MARCEL_EXCEPTION_RAISE(ex) (abort())
 #  define MARCEL_EXCEPTION_RRAISE    MARCEL_EXCEPTION_RAISE(NULL)
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 
 /** Public data types **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 typedef char *marcel_exception_t;
 typedef struct marcel_exception_block marcel_exception_block_t;
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 
 /** Public data structures **/
@@ -80,22 +80,19 @@ struct marcel_exception_block {
 	marcel_ctx_t ctx;
 	struct marcel_exception_block *old_blk;
 };
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 
 /** Public global variables **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 extern marcel_exception_t
-  MARCEL_TASKING_ERROR,
-  MARCEL_DEADLOCK_ERROR,
-  MARCEL_STORAGE_ERROR,
-  MARCEL_CONSTRAINT_ERROR,
-  MARCEL_PROGRAM_ERROR,
-  MARCEL_STACK_ERROR,
-  MARCEL_TIME_OUT,
-  MARCEL_NOT_IMPLEMENTED,
-  MARCEL_USE_ERROR;
-#else /* MARCEL_EXCEPTIONS_ENABLED */
+    MARCEL_TASKING_ERROR,
+    MARCEL_DEADLOCK_ERROR,
+    MARCEL_STORAGE_ERROR,
+    MARCEL_CONSTRAINT_ERROR,
+    MARCEL_PROGRAM_ERROR,
+    MARCEL_STACK_ERROR, MARCEL_TIME_OUT, MARCEL_NOT_IMPLEMENTED, MARCEL_USE_ERROR;
+#else				/* MARCEL_EXCEPTIONS_ENABLED */
 #  define MARCEL_TASKING_ERROR		NULL
 #  define MARCEL_DEADLOCK_ERROR		NULL
 #  define MARCEL_STORAGE_ERROR		NULL
@@ -105,13 +102,13 @@ extern marcel_exception_t
 #  define MARCEL_TIME_OUT		NULL
 #  define MARCEL_NOT_IMPLEMENTED	NULL
 #  define MARCEL_USE_ERROR		NULL
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 
 /** Public functions **/
 #ifdef MARCEL_EXCEPTIONS_ENABLED
 int TBX_NORETURN _marcel_raise_exception(marcel_exception_t ex);
-#endif /* MARCEL_EXCEPTIONS_ENABLED */
+#endif				/* MARCEL_EXCEPTIONS_ENABLED */
 
 
 #endif /** __MARCEL_EXCEPTION_H__ **/

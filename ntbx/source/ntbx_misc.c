@@ -43,9 +43,9 @@
 void
 ntbx_misc_init(void)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   /* Nothing to do */
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 //
@@ -62,7 +62,7 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
 {
   p_ntbx_process_info_t process_info = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (local_rank < 0)
     {
       local_rank = pc->count;
@@ -140,7 +140,7 @@ ntbx_pc_add(p_ntbx_process_container_t  pc,
   pc->count++;
 
   tbx_htable_add(process->ref, name, object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 ntbx_process_lrank_t
@@ -148,7 +148,7 @@ ntbx_pc_local_max(p_ntbx_process_container_t pc)
 {
   ntbx_process_lrank_t lrank = -1;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->local_array_size)
     {
       lrank = pc->local_array_size;
@@ -159,7 +159,7 @@ ntbx_pc_local_max(p_ntbx_process_container_t pc)
 	}
       while ((lrank >= 0) && !pc->local_index[lrank]);
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return lrank;
 }
@@ -170,7 +170,7 @@ ntbx_pc_local_to_global(p_ntbx_process_container_t pc,
 {
   ntbx_process_grank_t global_rank = -1;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((local_rank >= 0) && (local_rank < pc->local_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -181,7 +181,7 @@ ntbx_pc_local_to_global(p_ntbx_process_container_t pc,
 	  global_rank = process_info->process->global_rank;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return global_rank;
 }
@@ -192,7 +192,7 @@ ntbx_pc_get_local_process(p_ntbx_process_container_t pc,
 {
   p_ntbx_process_t process = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((local_rank >= 0) && (local_rank < pc->local_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -200,7 +200,7 @@ ntbx_pc_get_local_process(p_ntbx_process_container_t pc,
       process_info = pc->local_index[local_rank];
       process = process_info->process;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return process;
 }
@@ -211,12 +211,12 @@ ntbx_pc_get_local(p_ntbx_process_container_t pc,
 {
   p_ntbx_process_info_t process_info = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((local_rank >= 0) && (local_rank < pc->local_array_size))
     {
       process_info = pc->local_index[local_rank];
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return process_info;
 }
@@ -227,7 +227,7 @@ ntbx_pc_get_local_specific(p_ntbx_process_container_t pc,
 {
   void *result = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((local_rank >= 0) && (local_rank < pc->local_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -239,7 +239,7 @@ ntbx_pc_get_local_specific(p_ntbx_process_container_t pc,
 	  result = process_info->specific;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -250,7 +250,7 @@ ntbx_pc_first_local_rank(p_ntbx_process_container_t  pc,
 {
   tbx_bool_t result = tbx_false;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->count)
     {
       *local_rank = 0;
@@ -262,7 +262,7 @@ ntbx_pc_first_local_rank(p_ntbx_process_container_t  pc,
 
       result = tbx_true;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -273,7 +273,7 @@ ntbx_pc_next_local_rank(p_ntbx_process_container_t  pc,
 {
   tbx_bool_t result = tbx_false;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->count)
     {
       (*local_rank)++;
@@ -289,7 +289,7 @@ ntbx_pc_next_local_rank(p_ntbx_process_container_t  pc,
 	  (*local_rank)++;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -299,7 +299,7 @@ ntbx_pc_global_max(p_ntbx_process_container_t pc)
 {
   ntbx_process_grank_t grank = -1;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->global_array_size)
     {
       grank = pc->global_array_size;
@@ -310,7 +310,7 @@ ntbx_pc_global_max(p_ntbx_process_container_t pc)
 	}
       while ((grank >= 0) && !pc->local_index[grank]);
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return grank;
 }
@@ -321,7 +321,7 @@ ntbx_pc_global_to_local(p_ntbx_process_container_t pc,
 {
   ntbx_process_lrank_t local_rank = -1;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((global_rank >= 0) && (global_rank < pc->global_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -333,7 +333,7 @@ ntbx_pc_global_to_local(p_ntbx_process_container_t pc,
 	  local_rank = process_info->local_rank;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return local_rank;
 }
@@ -344,7 +344,7 @@ ntbx_pc_get_global_process(p_ntbx_process_container_t pc,
 {
   p_ntbx_process_t process = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((global_rank >= 0) && (global_rank < pc->global_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -352,7 +352,7 @@ ntbx_pc_get_global_process(p_ntbx_process_container_t pc,
       process_info = pc->global_index[global_rank];
       process = process_info->process;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return process;
 }
@@ -363,13 +363,13 @@ ntbx_pc_get_global(p_ntbx_process_container_t pc,
 {
   p_ntbx_process_info_t process_info = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((global_rank >= 0)
       && (global_rank < pc->global_array_size))
     {
       process_info = pc->global_index[global_rank];
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return process_info;
 }
@@ -380,7 +380,7 @@ ntbx_pc_get_global_specific(p_ntbx_process_container_t pc,
 {
   void *result = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if ((global_rank >= 0) && (global_rank < pc->global_array_size))
     {
       p_ntbx_process_info_t process_info = NULL;
@@ -388,7 +388,7 @@ ntbx_pc_get_global_specific(p_ntbx_process_container_t pc,
       process_info = pc->global_index[global_rank];
       result = process_info->specific;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -399,7 +399,7 @@ ntbx_pc_first_global_rank(p_ntbx_process_container_t pc,
 {
   tbx_bool_t result = tbx_false;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->count)
     {
       *global_rank = 0;
@@ -411,7 +411,7 @@ ntbx_pc_first_global_rank(p_ntbx_process_container_t pc,
 
       result = tbx_true;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -422,7 +422,7 @@ ntbx_pc_next_global_rank(p_ntbx_process_container_t pc,
 {
   tbx_bool_t result = tbx_false;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (pc->count)
     {
       (*global_rank)++;
@@ -438,7 +438,7 @@ ntbx_pc_next_global_rank(p_ntbx_process_container_t pc,
 	  (*global_rank)++;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }
@@ -456,7 +456,7 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
   p_ntbx_topology_table_t ttable = NULL;
   ntbx_process_lrank_t    size   =    0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   size = pc->local_array_size;
 
   while (size)
@@ -565,7 +565,7 @@ ntbx_topology_table_init(p_ntbx_process_container_t  pc,
 	  break;
 	}
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return ttable;
 }
@@ -577,7 +577,7 @@ ntbx_topology_table_set(p_ntbx_topology_table_t ttable,
 {
   ntbx_process_lrank_t size = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
@@ -591,7 +591,7 @@ ntbx_topology_table_set(p_ntbx_topology_table_t ttable,
       ttable->table[size * src + dst] =
 	ntbx_topology_element_cons();
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
@@ -602,7 +602,7 @@ ntbx_topology_table_clear(p_ntbx_topology_table_t ttable,
   p_ntbx_topology_element_t element = NULL;
   ntbx_process_lrank_t      size    =    0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
@@ -619,7 +619,7 @@ ntbx_topology_table_clear(p_ntbx_topology_table_t ttable,
       element                         = NULL;
       ttable->table[size * src + dst] = NULL;
     }
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 p_ntbx_topology_element_t
@@ -630,7 +630,7 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
   p_ntbx_topology_element_t element = NULL;
   ntbx_process_lrank_t      size    =    0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   size = ttable->size;
 
   if ((src < 0) || (dst < 0))
@@ -640,7 +640,7 @@ ntbx_topology_table_get(p_ntbx_topology_table_t ttable,
     TBX_FAILURE("out-of-bound parameters");
 
   element = ttable->table[size * src + dst];
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return element;
 }
@@ -650,7 +650,7 @@ ntbx_topology_table_exit(p_ntbx_topology_table_t ttable)
 {
   ntbx_process_lrank_t size = 0;
 
-  LOG_IN();
+  PM2_LOG_IN();
   size = ttable->size;
 
   if (size)
@@ -673,7 +673,7 @@ ntbx_topology_table_exit(p_ntbx_topology_table_t ttable)
     }
 
   ntbx_topology_table_dest(ttable, NULL);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 
@@ -687,7 +687,7 @@ ntbx_true_name(char *host_name)
   struct hostent *host_entry = NULL;
   char           *result     = NULL;
 
-  LOG_IN();
+  PM2_LOG_IN();
   if (!strcmp(host_name, "localhost"))
     {
       host_name = TBX_MALLOC(MAXHOSTNAMELEN + 1);
@@ -716,7 +716,7 @@ ntbx_true_name(char *host_name)
     }
 
   result = host_entry->h_name;
-  LOG("ntbx_true_name: %s --> %s", host_name, result);
+  PM2_LOG("ntbx_true_name: %s --> %s", host_name, result);
 
   {
     char	**ptr;
@@ -726,10 +726,9 @@ ntbx_true_name(char *host_name)
     len	= strlen(result);
 
     while (*ptr) {
-      LOG_STR("  alias", *ptr);
 
       if (!strncmp(result, *ptr, len) && ((*ptr)[len] == '.')) {
-        LOG("  prefering %s over %s", *ptr, result);
+        PM2_LOG("  prefering %s over %s", *ptr, result);
         result	= *ptr;
         len	= strlen(result);
       }
@@ -739,7 +738,7 @@ ntbx_true_name(char *host_name)
   }
 
   result	= tbx_strdup(result);
-  LOG_OUT();
+  PM2_LOG_OUT();
 
   return result;
 }

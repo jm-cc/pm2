@@ -39,14 +39,12 @@
  * Data structures 
  * ---------------
  */
-typedef struct s_tbx_darray
-{
-  TBX_SHARED;
-  tbx_darray_index_t   length;
-  tbx_darray_index_t   allocated_length;
-  void               **data;
+typedef struct s_tbx_darray {
+	tbx_darray_index_t length;
+	tbx_darray_index_t allocated_length;
+	void **data;
 } tbx_darray_t;
 
 /* @} */
 
-#endif /* TBX_DARRAY_H */
+#endif				/* TBX_DARRAY_H */

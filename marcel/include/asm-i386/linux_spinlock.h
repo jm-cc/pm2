@@ -23,11 +23,7 @@
 
 
 /** Public macros **/
-#ifdef X86_64_ARCH
-#define MA_SPINB "l"
-#define MA_SPINb ""
-#define MA_SPINT int
-#else
+#ifdef X86_ARCH
 #define MA_SPINB "b"
 #define MA_SPINb "b"
 #define MA_SPINT char
@@ -36,7 +32,7 @@
 #ifdef MA__LWPS
 #define MA_SPIN_LOCK_UNLOCKED { 1 }
 #define ma_spin_lock_init(x)	do { *(x) = (ma_spinlock_t) MA_SPIN_LOCK_UNLOCKED; } while(0)
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
 /** Public data types **/
@@ -47,10 +43,11 @@
 typedef struct {
 	volatile unsigned int lock;
 } ma_spinlock_t;
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -63,7 +60,6 @@ typedef struct {
  */
 #define ma_spin_is_locked(x)	(*(volatile signed MA_SPINT *)(&(x)->lock) <= 0)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
-
 #ifdef MA__HAS_SUBSECTION
 #define ma_spin_lock_string \
 	"\n1:\t" \
@@ -83,9 +79,10 @@ typedef struct {
 	"call ma_i386_spinlock_contention\n\t" \
 	"1:\n"
 #endif
-#endif /* MA__LWPS */
+#endif				/* MA__LWPS */
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

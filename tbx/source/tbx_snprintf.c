@@ -32,22 +32,22 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#ifdef MARCEL
 
-static size_t my_strnlen(const char *s, size_t count) {
+static size_t my_strnlen(const char *s, size_t count)
+{
 	const char *sc;
 
 	for (sc = s; count-- && *sc != '\0'; ++sc)
-		/* nothing */;
-	return sc-s;
+		/* nothing */ ;
+	return sc - s;
 }
 
 static int skip_atoi(const char **s)
 {
-	int i=0;
+	int i = 0;
 
 	while (isdigit(**s))
-		i = i*10 + *((*s)++) - '0';
+		i = i * 10 + *((*s)++) - '0';
 	return i;
 }
 
@@ -59,22 +59,25 @@ static int skip_atoi(const char **s)
 #define SPECIAL	32		/* 0x */
 #define LARGE	64		/* use 'ABCDEF' instead of 'abcdef' */
 
-static inline int p_do_div(unsigned long long *num, int base) {
+static inline int p_do_div(unsigned long long *num, int base)
+{
 	int res;
-	res=*num%base;
-	*num/=base;
+	res = *num % base;
+	*num /= base;
 	return res;
 }
 
-int do_div(unsigned long long num, int base);
 #define do_div(a,b) p_do_div(&(a),(b))
 
-static char * number(char * buf, char * end, unsigned long long num, int base, int size, int precision, int type)
+static char *number(char *buf, char *end, unsigned long long num, int base,
+		    int size, int precision, int type)
 {
-	char c,sign,tmp[66];
+	char c, sign, tmp[66];
 	const char *digits;
-	static const char small_digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-	static const char large_digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	static const char small_digits[] =
+	    "0123456789abcdefghijklmnopqrstuvwxyz";
+	static const char large_digits[] =
+	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	int i;
 
 	digits = (type & LARGE) ? large_digits : small_digits;
@@ -82,12 +85,15 @@ static char * number(char * buf, char * end, unsigned long long num, int base, i
 		type &= ~ZEROPAD;
 	if (base < 2 || base > 36)
 		return 0;
-	c = (type & ZEROPAD) ? '0' : ' ';
+	if (type & ZEROPAD) 
+		c = '0';
+	else
+		c = ' ';
 	sign = 0;
 	if (type & SIGN) {
 		if ((signed long long) num < 0) {
 			sign = '-';
-			num = - (signed long long) num;
+			num = -(signed long long) num;
 			size--;
 		} else if (type & PLUS) {
 			sign = '+';
@@ -105,14 +111,15 @@ static char * number(char * buf, char * end, unsigned long long num, int base, i
 	}
 	i = 0;
 	if (num == 0)
-		tmp[i++]='0';
-	else while (num != 0)
-		tmp[i++] = digits[do_div(num,base)];
+		tmp[i++] = '0';
+	else
+		while (num != 0)
+			tmp[i++] = digits[do_div(num, base)];
 	if (i > precision)
 		precision = i;
 	size -= precision;
-	if (!(type&(ZEROPAD+LEFT))) {
-		while(size-->0) {
+	if (!(type & (ZEROPAD + LEFT))) {
+		while (size-- > 0) {
 			if (buf <= end)
 				*buf = ' ';
 			++buf;
@@ -124,11 +131,11 @@ static char * number(char * buf, char * end, unsigned long long num, int base, i
 		++buf;
 	}
 	if (type & SPECIAL) {
-		if (base==8) {
+		if (base == 8) {
 			if (buf <= end)
 				*buf = '0';
 			++buf;
-		} else if (base==16) {
+		} else if (base == 16) {
 			if (buf <= end)
 				*buf = '0';
 			++buf;
@@ -194,8 +201,8 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	int precision;		/* min. # of digits for integers; max
 				   number of chars for from string */
 	int qualifier;		/* 'h', 'l', or 'L' for integer fields */
-				/* 'z' support added 23/7/1999 S.H.    */
-				/* 'z' changed to 'Z' --davidm 1/25/99 */
+	/* 'z' support added 23/7/1999 S.H.    */
+	/* 'z' changed to 'Z' --davidm 1/25/99 */
 
 	/* Reject out-of-range values early */
 	if (tbx_unlikely((int) size < 0)) {
@@ -203,8 +210,9 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		static int warn = 1;
 		//WARN_ON(warn);
 		if (warn) {
-			static const char warn[] = "negative size given to vsnprintf !\n";
-			write(STDIN_FILENO,warn,sizeof(warn)-1);
+			static const char warn_msg[] =
+			    "negative size given to vsnprintf !\n";
+			tbx_write(STDIN_FILENO, warn_msg, sizeof(warn_msg) - 1);
 		}
 		warn = 0;
 		return 0;
@@ -218,7 +226,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		size = end - buf + 1;
 	}
 
-	for (; *fmt ; ++fmt) {
+	for (; *fmt; ++fmt) {
 		if (*fmt != '%') {
 			if (str <= end)
 				*str = *fmt;
@@ -228,16 +236,27 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		/* process flags */
 		flags = 0;
-		repeat:
-			++fmt;		/* this also skips first '%' */
-			switch (*fmt) {
-				case '-': flags |= LEFT; goto repeat;
-				case '+': flags |= PLUS; goto repeat;
-				case ' ': flags |= SPACE; goto repeat;
-				case '#': flags |= SPECIAL; goto repeat;
-				case '0': flags |= ZEROPAD; goto repeat;
-				default: break;
-			}
+	      repeat:
+		++fmt;		/* this also skips first '%' */
+		switch (*fmt) {
+		case '-':
+			flags |= LEFT;
+			goto repeat;
+		case '+':
+			flags |= PLUS;
+			goto repeat;
+		case ' ':
+			flags |= SPACE;
+			goto repeat;
+		case '#':
+			flags |= SPECIAL;
+			goto repeat;
+		case '0':
+			flags |= ZEROPAD;
+			goto repeat;
+		default:
+			break;
+		}
 
 		/* get field width */
 		field_width = -1;
@@ -256,7 +275,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		/* get the precision */
 		precision = -1;
 		if (*fmt == '.') {
-			++fmt;	
+			++fmt;
 			if (isdigit(*fmt))
 				precision = skip_atoi(&fmt);
 			else if (*fmt == '*') {
@@ -271,7 +290,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		/* get the conversion qualifier */
 		qualifier = -1;
 		if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L' ||
-		    *fmt =='Z' || *fmt == 'z') {
+		    *fmt == 'Z' || *fmt == 'z') {
 			qualifier = *fmt;
 			++fmt;
 			if (qualifier == 'l' && *fmt == 'l') {
@@ -284,112 +303,113 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		base = 10;
 
 		switch (*fmt) {
-			case 'c':
-				if (!(flags & LEFT)) {
-					while (--field_width > 0) {
-						if (str <= end)
-							*str = ' ';
-						++str;
-					}
-				}
-				c = (unsigned char) va_arg(args, int);
-				if (str <= end)
-					*str = c;
-				++str;
+		case 'c':
+			if (!(flags & LEFT)) {
 				while (--field_width > 0) {
 					if (str <= end)
 						*str = ' ';
 					++str;
 				}
-				continue;
+			}
+			c = (unsigned char) va_arg(args, int);
+			if (str <= end)
+				*str = c;
+			++str;
+			while (--field_width > 0) {
+				if (str <= end)
+					*str = ' ';
+				++str;
+			}
+			continue;
 
-			case 's':
-				s = va_arg(args, char *);
-				if ((unsigned long)s < /*PAGE_SIZE*/ 4096)
-					s = "<NULL>";
+		case 's':
+			s = va_arg(args, char *);
+			if ((unsigned long) s < /*PAGE_SIZE */ 4096)
+				s = "<NULL>";
 
-				len = my_strnlen(s, precision);
+			len = my_strnlen(s, precision);
 
-				if (!(flags & LEFT)) {
-					while (len < field_width--) {
-						if (str <= end)
-							*str = ' ';
-						++str;
-					}
-				}
-				for (i = 0; i < len; ++i) {
-					if (str <= end)
-						*str = *s;
-					++str; ++s;
-				}
+			if (!(flags & LEFT)) {
 				while (len < field_width--) {
 					if (str <= end)
 						*str = ' ';
 					++str;
 				}
-				continue;
-
-			case 'p':
-				if (field_width == -1) {
-					field_width = 2*sizeof(void *);
-					flags |= ZEROPAD;
-				}
-				str = number(str, end,
-						(unsigned long) va_arg(args, void *),
-						16, field_width, precision, flags);
-				continue;
-
-
-			case 'n':
-				/* FIXME:
-				* What does C99 say about the overflow case here? */
-				if (qualifier == 'l') {
-					long * ip = va_arg(args, long *);
-					*ip = (str - buf);
-				} else if (qualifier == 'Z' || qualifier == 'z') {
-					size_t * ip = va_arg(args, size_t *);
-					*ip = (str - buf);
-				} else {
-					int * ip = va_arg(args, int *);
-					*ip = (str - buf);
-				}
-				continue;
-
-			case '%':
+			}
+			for (i = 0; i < len; ++i) {
 				if (str <= end)
-					*str = '%';
+					*str = *s;
 				++str;
-				continue;
-
-				/* integer number formats - set up the flags and "break" */
-			case 'o':
-				base = 8;
-				break;
-
-			case 'X':
-				flags |= LARGE;
-			case 'x':
-				base = 16;
-				break;
-
-			case 'd':
-			case 'i':
-				flags |= SIGN;
-			case 'u':
-				break;
-
-			default:
+				++s;
+			}
+			while (len < field_width--) {
 				if (str <= end)
-					*str = '%';
+					*str = ' ';
 				++str;
-				if (*fmt) {
-					if (str <= end)
-						*str = *fmt;
-					++str;
-				} else {
-					--fmt;
-				}
-				continue;
+			}
+			continue;
+
+		case 'p':
+			if (field_width == -1) {
+				field_width = 2 * sizeof(void *);
+				flags |= ZEROPAD;
+			}
+			str = number(str, end,
+				     (unsigned long) va_arg(args, void *),
+				     16, field_width, precision, flags);
+			continue;
+
+
+		case 'n':
+			/* FIXME:
+			 * What does C99 say about the overflow case here? */
+			if (qualifier == 'l') {
+				long *ip = va_arg(args, long *);
+				*ip = (str - buf);
+			} else if (qualifier == 'Z' || qualifier == 'z') {
+				size_t *ip = va_arg(args, size_t *);
+				*ip = (str - buf);
+			} else {
+				int *ip = va_arg(args, int *);
+				*ip = (str - buf);
+			}
+			continue;
+
+		case '%':
+			if (str <= end)
+				*str = '%';
+			++str;
+			continue;
+
+			/* integer number formats - set up the flags and "break" */
+		case 'o':
+			base = 8;
+			break;
+
+		case 'X':
+			flags |= LARGE;
+		case 'x':
+			base = 16;
+			break;
+
+		case 'd':
+		case 'i':
+			flags |= SIGN;
+		case 'u':
+			break;
+
+		default:
+			if (str <= end)
+				*str = '%';
+			++str;
+			if (*fmt) {
+				if (str <= end)
+					*str = *fmt;
+				++str;
+			} else {
+				--fmt;
+			}
+			continue;
 		}
 		if (qualifier == 'L')
 			num = va_arg(args, long long);
@@ -409,7 +429,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 				num = (signed int) num;
 		}
 		str = number(str, end, num, base,
-				field_width, precision, flags);
+			     field_width, precision, flags);
 	}
 	if (str <= end)
 		*str = '\0';
@@ -417,9 +437,9 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		/* don't write out a null byte if the buf size is zero */
 		*end = '\0';
 	/* the trailing null byte doesn't count towards the total
-	* ++str;
-	*/
-	return str-buf;
+	 * ++str;
+	 */
+	return str - buf;
 }
 
 /**
@@ -434,14 +454,13 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
  * as per ISO C99.  If the return is greater than or equal to
  * @size, the resulting string is truncated.
  */
-int tbx_snprintf(char * buf, size_t size, const char *fmt, ...)
+int tbx_snprintf(char *buf, size_t size, const char *fmt, ...)
 {
 	va_list args;
 	int i;
 
 	va_start(args, fmt);
-	i=tbx_vsnprintf(buf,size,fmt,args);
+	i = tbx_vsnprintf(buf, size, fmt, args);
 	va_end(args);
 	return i;
 }
-#endif

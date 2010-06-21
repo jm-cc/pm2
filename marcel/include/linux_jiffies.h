@@ -23,21 +23,8 @@
 #include "linux_types.h"
 
 
-/** Public global variables **/
-/*
- * The 64-bit value is not volatile - you MUST NOT read it
- * without sampling the sequence number in xtime_lock.
- * get_jiffies_64() will do this for you as appropriate.
- */
-extern ma_u64 ma_jiffies_64;
-extern unsigned long volatile ma_jiffies;
-
-#if (MA_BITS_PER_LONG < 64)
-ma_u64 ma_get_jiffies_64(void);
-#endif
-
-
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -59,14 +46,26 @@ ma_u64 ma_get_jiffies_64(void);
 	 typecheck(unsigned long, b) && \
 	 ((long)(b) - (long)(a) < 0))
 #define ma_time_before(a,b)	ma_time_after(b,a)
-
 #define ma_time_after_eq(a,b)	\
 	(typecheck(unsigned long, a) && \
 	 typecheck(unsigned long, b) && \
 	 ((long)(a) - (long)(b) >= 0))
 #define ma_time_before_eq(a,b)	ma_time_after_eq(b,a)
 
+/*
+ * The 64-bit value is not volatile - you MUST NOT read it
+ * without sampling the sequence number in xtime_lock.
+ * get_jiffies_64() will do this for you as appropriate.
+ */
+extern unsigned long long ma_jiffies_64;
+extern unsigned long volatile ma_jiffies;
 
+#if (MA_BITS_PER_LONG < 64)
+unsigned long long ma_get_jiffies_64(void);
+#endif
+
+
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

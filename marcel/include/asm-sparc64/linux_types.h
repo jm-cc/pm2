@@ -22,30 +22,4 @@
 #define MA_BITS_PER_LONG 64
 
 
-/** Public data types **/
-typedef __signed__ char __ma_s8;
-typedef unsigned char __ma_u8;
-
-typedef __signed__ short __ma_s16;
-typedef unsigned short __ma_u16;
-
-typedef __signed__ int __ma_s32;
-typedef unsigned int __ma_u32;
-
-typedef __signed__ long __ma_s64;
-typedef unsigned long __ma_u64;
-
-typedef __signed__ char ma_s8;
-typedef unsigned char ma_u8;
-
-typedef __signed__ short ma_s16;
-typedef unsigned short ma_u16;
-
-typedef __signed__ int ma_s32;
-typedef unsigned int ma_u32;
-
-typedef __signed__ long ma_s64;
-typedef unsigned long ma_u64;
-
-
 #endif /** __ASM_SPARC64_LINUX_TYPES_H__ **/

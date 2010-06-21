@@ -24,7 +24,6 @@
 /** Public functions **/
 #ifdef MARCEL_FORTRAN
 
-
 extern
 void marcel_init_(void);
 
@@ -32,13 +31,13 @@ extern
 void marcel_end_(void);
 
 extern
-void marcel_self_(marcel_t *self);
+void marcel_self_(marcel_t * self);
 
 extern
-void marcel_create_(marcel_t *pid, void* (*func)(void*), void *arg);
+void marcel_create_(marcel_t * pid, void *(*func) (void *), void *arg);
 
 extern
-void marcel_join_(marcel_t *pid);
+void marcel_join_(marcel_t * pid);
 
 extern
 void marcel_yield_(void);
@@ -63,9 +62,8 @@ void marcel_bubble_shake_(void);
 extern
 void marcel_spread_(void);
 
-#endif /* MA__BUBBLES */
-
-#endif /* MARCEL_FORTRAN */
+#endif				/* MA__BUBBLES */
+#endif				/* MARCEL_FORTRAN */
 
 
 #endif /** __MARCEL_FORTRAN_H__ **/

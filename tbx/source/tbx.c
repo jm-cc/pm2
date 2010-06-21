@@ -24,15 +24,15 @@
  * Tbx.c
  * =====
  */
+#define   TBX_C
 #include "tbx.h"
 
-static const    char tbx_no_safe_malloc_stats[]="--tbx-no-safe-malloc-stats";
-static volatile tbx_bool_t initialized = tbx_false;
+// number of module using tbx
+static volatile int initialized = 0;
 
-int
-tbx_initialized(void)
+int tbx_initialized(void)
 {
-        return initialized;
+	return initialized;
 }
 
 void
@@ -41,137 +41,92 @@ tbx_dump(unsigned char *p,
         int		c = 0;
         size_t	l = 0;
 
-        while (n) {
-                if (!c) {
-                        DISP_NO_NL("%016zx ", 16*l);
-                }
+	while (n) {
+		if (!c) {
+			PM2_DISP("%016zx ", 16 * l);
+		}
 
-                DISP_NO_NL("%02x ", *p++);
+		PM2_DISP("%02x ", *p++);
 
-                c++;
-                if (c == 8) {
-                        DISP_NO_NL(" ");
-                } else if (c == 16) {
-                        l++;
-                        c = 0;
-                        DISP_NO_NL("\n");
-                        if (l >= 4) {
-                                DISP_NO_NL("...\n");
-                                break;
-                        }
-                } else if (n == 1) {
-                        DISP_NO_NL("\n");
-                }
+		c++;
+		if (c == 8) {
+			PM2_DISP(" ");
+		} else if (c == 16) {
+			l++;
+			c = 0;
+			PM2_DISP("\n");
+			if (l >= 4) {
+				PM2_DISP("...\n");
+				break;
+			}
+		} else if (n == 1) {
+			PM2_DISP("\n");
+		}
 
-                n--;
-        }
+		n--;
+	}
 }
 
-void
-tbx_init(int    argc TBX_UNUSED,
-	 char **argv TBX_UNUSED)
+void tbx_purge_cmd_line(void)
 {
-  if (!initialized)
-    {
+	tbx_pa_free_module_args("tbx");
+}
 
-      LOG_IN();
+void tbx_init(int *argc, char ***argv)
+{
+	if (! initialized) {
+		/* Parser */
+		tbx_pa_parse(*argc, *argv, PM2_ENVVARNAME);
 
-      argc--; argv++;
+		/* Timer */
+		tbx_timing_init();
 
-      while (argc)
-	{
-#ifdef TBX_SAFE_MALLOC
-	  if (!strcmp(*argv, tbx_no_safe_malloc_stats))
-	    {
-	      tbx_set_print_stats_mode(tbx_false); // tbx_true by default
-	    }
-#endif /* TBX_SAFE_MALLOC */
+		/* List manager */
+		tbx_list_manager_init();
 
-	  argc--; argv++;
+		/* Slist manager */
+		tbx_slist_manager_init();
+
+		/* Hash table manager */
+		tbx_htable_manager_init();
+
+		/* String manager */
+		tbx_string_manager_init();
+
+		/* Dynamic array manager */
+		tbx_darray_manager_init();
 	}
 
-      initialized = tbx_true;
-
-      /* Safe malloc */
-#ifdef TBX_SAFE_MALLOC
-      tbx_safe_malloc_init();
-#endif /* TBX_SAFE_MALLOC */
-
-      /* Timer */
-      tbx_timing_init();
-
-      /* List manager */
-      tbx_list_manager_init();
-
-      /* Slist manager */
-      tbx_slist_manager_init();
-
-      /* Hash table manager */
-      tbx_htable_manager_init();
-
-      /* String manager */
-      tbx_string_manager_init();
-
-      /* Dynamic array manager */
-      tbx_darray_manager_init();
-
-      LOG_OUT();
-    }
-
+	tbx_pa_get_args(argc, argv);
+	initialized++;
 }
 
-void
-tbx_exit(void)
+void tbx_exit(void)
 {
-  LOG_IN();
-  /* Dynamic array manager */
-  tbx_darray_manager_exit();
+	if (initialized) {
+		if (1 == initialized) {
+			/* Dynamic array manager */
+			tbx_darray_manager_exit();
 
-  /* String manager */
-  tbx_string_manager_exit();
+			/* String manager */
+			tbx_string_manager_exit();
 
-  /* Hash table manager */
-  tbx_htable_manager_exit();
+			/* Hash table manager */
+			tbx_htable_manager_exit();
 
-  /* Slist manager */
-  tbx_slist_manager_exit();
+			/* Slist manager */
+			tbx_slist_manager_exit();
 
-  /* List manager */
-  tbx_list_manager_exit();
+			/* List manager */
+			tbx_list_manager_exit();
 
-  /* Timer */
-  tbx_timing_exit();
+			/* Timer */
+			tbx_timing_exit();
 
-#ifdef TBX_SAFE_MALLOC
-  tbx_safe_malloc_exit();
-#endif /* TBX_SAFE_MALLOC */
-  LOG_OUT();
-}
+			/* Parser */
+			tbx_pa_free_args();
+		}
 
-
-void
-tbx_purge_cmd_line(int   *_argc TBX_UNUSED,
-		   char **_argv TBX_UNUSED)
-{
-  int     argc = *_argc;
-  char ** argv =  _argv;
-  LOG_IN();
-
-  argv++; _argv++; argc--;
-
-  while (argc)
-    {
-#ifdef TBX_SAFE_MALLOC
-      if (!strcmp(*_argv, tbx_no_safe_malloc_stats))
-	{
-	  _argv++; (*_argc)--; argc--;
-	  continue;
+		initialized-- ;
 	}
-#endif /* TBX_SAFE_MALLOC */
-
-      *argv++ = *_argv++; argc--;
-    }
-
-  LOG_OUT();
 }
-

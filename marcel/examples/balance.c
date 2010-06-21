@@ -207,7 +207,7 @@ int marcel_main(int argc, char *argv[]) {
 #endif
 #endif
 
-	marcel_init(&argc, argv);
+	marcel_init(argc, argv);
 
 	if (argc>1)
 		iterations = atoi(argv[1]);

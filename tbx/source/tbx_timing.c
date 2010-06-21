@@ -32,91 +32,78 @@
 #include <time.h>
 #include <unistd.h>
 #include "tbx.h"
-#ifdef MA__LIBPTHREAD
-#include <sys/syscall.h>
-#endif
 
-static double      scale        = 0.0;
+
+static double scale = 0.0;
 unsigned long long tbx_residual = 0;
-tbx_tick_t         tbx_new_event ;
-tbx_tick_t         tbx_last_event;
+tbx_tick_t tbx_new_event;
+tbx_tick_t tbx_last_event;
 
-void
-tbx_timing_init(void)
+void tbx_timing_init(void)
 {
-  static tbx_tick_t t1, t2;
-  int i;
+	static tbx_tick_t t1, t2;
+	int i;
 
-  LOG_IN();
-  tbx_residual = (unsigned long long)1 << 32;
-  for(i=0; i<5; i++) {
-    TBX_GET_TICK(t1);
-    TBX_GET_TICK(t2);
-    tbx_residual = tbx_min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
-  }
+	PM2_LOG_IN();
+	tbx_residual = (unsigned long long) 1 << 32;
+	for (i = 0; i < 5; i++) {
+		TBX_GET_TICK(t1);
+		TBX_GET_TICK(t2);
+		tbx_residual =
+		    tbx_min(tbx_residual, TBX_TICK_RAW_DIFF(t1, t2));
+	}
 
 #ifdef TBX_TIMING_GETTIMEOFDAY
-  scale = 1.0;
+	scale = 1.0;
 #else
-  {
-    struct timeval tv1,tv2;
-    struct timespec ts = {0,50000000};
+	{
+		struct timeval tv1, tv2;
+		struct timespec ts = { 0, 50000000 };
 
-    TBX_GET_TICK(t1);
-    gettimeofday(&tv1,0);
-#ifdef __MINGW32__
-    Sleep(50);
-#else
-#ifdef MA__LIBPTHREAD
-    syscall(SYS_nanosleep,&ts,NULL);
-#else
-    nanosleep(&ts,NULL);
-#endif
-#endif
-    TBX_GET_TICK(t2);
-    gettimeofday(&tv2,0);
-    scale = ((tv2.tv_sec*1e6 + tv2.tv_usec) -
-	     (tv1.tv_sec*1e6 + tv1.tv_usec)) /
-             (double)(TBX_TICK_DIFF(t1, t2));
-  }
+		TBX_GET_TICK(t1);
+		gettimeofday(&tv1, 0);
+		tbx_nanosleep(&ts, NULL);
+		TBX_GET_TICK(t2);
+		gettimeofday(&tv2, 0);
+		scale = ((tv2.tv_sec * 1e6 + tv2.tv_usec) -
+			 (tv1.tv_sec * 1e6 + tv1.tv_usec)) /
+		    (double) (TBX_TICK_DIFF(t1, t2));
+	}
 #endif
 
-  TBX_GET_TICK(tbx_last_event);
-  LOG_OUT();
+	TBX_GET_TICK(tbx_last_event);
+	PM2_LOG_OUT();
 }
 
-void
-tbx_timing_exit(void)
+void tbx_timing_exit(void)
 {
-  LOG_IN();
-  /* nothing */
-  LOG_OUT();
+	PM2_LOG_IN();
+	/* nothing */
+	PM2_LOG_OUT();
 }
 
-double
-tbx_tick2usec(long long t)
+double tbx_tick2usec(long long t)
 {
-  return (double)(t)*scale;
+	return (double) (t) * scale;
 }
 
-char *
-tbx_tick2str(long long t)
+char *tbx_tick2str(long long t)
 {
-  long long h = 0, m=0, s=0, ms=0, micros=0;
-  long long t2 = 0;
-  char *result;
+	long long h = 0, m = 0, s = 0, ms = 0, micros = 0;
+	long long t2 = 0;
+	char *result;
 
-  result = (char *) malloc(100 * sizeof(char));
-  t2 = t;
-  h = t2 / 1000 / 1000 / 60 / 60;
-  t2 = t2 - (h * 60 * 60 * 1000 * 1000);
-  m = t2 / 1000 / 1000 / 60;
-  t2 = t2 - (m * 60 * 1000 * 1000);
-  s = t2 / 1000 / 1000;
-  t2 = t2 - (s * 1000 * 1000);
-  ms = t2 / 1000;
-  t2 = t2 - (ms * 1000);
-  micros = t2;
-  sprintf(result, "%lld:%lld:%lld:%lld:%lld", h, m, s, ms, micros);
-  return result;
+	result = (char *) malloc(100 * sizeof(char));
+	t2 = t;
+	h = t2 / 1000 / 1000 / 60 / 60;
+	t2 = t2 - (h * 60 * 60 * 1000 * 1000);
+	m = t2 / 1000 / 1000 / 60;
+	t2 = t2 - (m * 60 * 1000 * 1000);
+	s = t2 / 1000 / 1000;
+	t2 = t2 - (s * 1000 * 1000);
+	ms = t2 / 1000;
+	t2 = t2 - (ms * 1000);
+	micros = t2;
+	sprintf(result, "%lld:%lld:%lld:%lld:%lld", h, m, s, ms, micros);
+	return result;
 }

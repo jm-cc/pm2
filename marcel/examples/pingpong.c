@@ -66,7 +66,7 @@ int marcel_main(int argc, char *argv[])
 {
   int essais = 3;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   if(argc < 2 || argc > 3) {
     marcel_fprintf(stderr, "Usage: %s <nb> <vp>\n", argv[0]);

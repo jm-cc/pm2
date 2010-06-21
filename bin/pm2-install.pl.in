@@ -125,15 +125,6 @@ foreach my $m ( @modules ) {
 			system "cp -v ${l} ${install_dir}/lib"
 		}
 	}
-
-	if ($m eq 'marcel') {
-		# marcel.lds special case
-		my $f	= "${pm2_root}/marcel/scripts/marcel.lds";
-
-		if ( -r $f ) {
-			system "cp -v ${f} ${install_dir}/lib"
-		}
-	}
 }
 
 # install headers
@@ -208,7 +199,6 @@ print "install_ldflags: \t${install_ldflags}\n";
 
 # tweak ldlibs
 my $install_ldlibs	= $ldlibs;
-$install_ldlibs		=~ s,\S+/marcel.lds,${install_dir}/lib/marcel.lds,;
 $install_ldlibs		=~ s/^\s+//g;
 $install_ldlibs		=~ s/\s+$//g;
 $install_ldlibs		=~ s/\s\s+/ /g;

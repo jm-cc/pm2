@@ -359,7 +359,7 @@ static int strat_qos_ack_callback(void *_status,
 	      seq = status->p_ack->seq;
 	      track_id = status->p_ack->track_id;
 
-	      NM_SO_TRACE("ACK completed for tag = %d, seq = %u\n", tag, seq);
+	      NM_TRACEF("ACK completed for tag = %d, seq = %u\n", tag, seq);
 
 	      tbx_fast_list_for_each_entry(p_so_large_pw, &nm_so_tag_get(&p_gate->tags, tag)->pending_large_send, link)
 		{

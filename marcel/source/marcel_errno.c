@@ -19,7 +19,7 @@
 
 #undef errno
 #pragma weak errno
-DEF_MARCEL_POSIX(int *, __errno_location,(void),(),
+DEF_MARCEL_PMARCEL(int *, __errno_location,(void),(),
 {
 	int * res;
 
@@ -38,16 +38,15 @@ DEF_MARCEL_POSIX(int *, __errno_location,(void),(),
 	return res;
 })
 #ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel___errno_location,
-		__errno_location, GLIBC_2_0);
+versioned_symbol(libpthread, pmarcel___errno_location, __errno_location, GLIBC_2_0);
 #endif
-DEF___C(int *, __errno_location,(void),());
+DEF___C(int *, __errno_location,(void),())
 
 #undef h_errno
 #pragma weak h_errno
-DEF_MARCEL_POSIX(int *, __h_errno_location,(void),(),
+DEF_MARCEL_PMARCEL(int *, __h_errno_location,(void),(),
 {
-        LOG_IN();
+	MARCEL_LOG_IN();
 	int * res;
 
 #ifdef MA__PROVIDE_TLS
@@ -62,9 +61,9 @@ DEF_MARCEL_POSIX(int *, __h_errno_location,(void),(),
 		res=&_first_h_errno;
 	}
 #endif
-        LOG_RETURN(res);
+	MARCEL_LOG_RETURN(res);
 })
 extern int *__h_errno_location(void);
-DEF_C(int *, __h_errno_location,(void),());
-DEF___C(int *, __h_errno_location,(void),());
+DEF_C(int *, __h_errno_location,(void),())
+DEF___C(int *, __h_errno_location,(void),())
 

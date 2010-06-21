@@ -38,16 +38,14 @@
  * Initialization
  * --------------
  */
-void
-tbx_darray_manager_init(void)
+void tbx_darray_manager_init(void)
 {
-  LOG_IN();
-  LOG_OUT();
+	PM2_LOG_IN();
+	PM2_LOG_OUT();
 }
 
-void
-tbx_darray_manager_exit(void)
+void tbx_darray_manager_exit(void)
 {
-  LOG_IN();
-  LOG_OUT();
+	PM2_LOG_IN();
+	PM2_LOG_OUT();
 }

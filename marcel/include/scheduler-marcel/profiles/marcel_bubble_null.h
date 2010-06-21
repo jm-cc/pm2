@@ -22,7 +22,7 @@
 
 
 /** Public global variables **/
-MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS (null);
+MARCEL_DECLARE_BUBBLE_SCHEDULER_CLASS(null);
 
 /**
  * \brief The canonical instance of the `null' scheduler.  This instance is

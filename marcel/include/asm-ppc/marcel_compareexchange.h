@@ -26,6 +26,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -35,15 +36,17 @@
 #define MA_SYNC_ON_SMP
 #endif
 
-#define ma_cmpxchg(ptr,o,n)\
-	((__typeof__(*(ptr)))pm2_compareexchange((ptr),(unsigned long)(o),\
-					(unsigned long)(n),sizeof(*(ptr))))
+#define ma_cmpxchg(ptr,o,n) ((__typeof__(*(ptr)))pm2_compareexchange((ptr),(unsigned long)(o), \
+								     (unsigned long)(n),sizeof(*(ptr))))
 
 
 /** Internal functions **/
-static __tbx_inline__ unsigned long pm2_compareexchange (volatile void *ptr, unsigned long old, unsigned long repl, int size);
+static __tbx_inline__ unsigned long pm2_compareexchange(volatile void *ptr,
+							unsigned long old,
+							unsigned long repl, int size);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

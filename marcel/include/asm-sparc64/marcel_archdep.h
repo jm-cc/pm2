@@ -19,7 +19,6 @@
 
 
 #include "sys/marcel_flags.h"
-#include "sys/marcel_win_sys.h"
 #include "tbx_compiler.h"
 #if !defined(__GNUC__) || defined(__INTEL_COMPILER)
 #include "asm-generic/marcel_archdep.h"
@@ -27,10 +26,10 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-
 /* Solaris sparc */
 #if defined(SOLARIS_SYS)
 #  define STACK_INFO
@@ -53,18 +52,19 @@
 extern void call_ST_FLUSH_WINDOWS(void);
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-#define get_sp() \
-({ \
-  register unsigned long sp asm("%sp"); \
-  sp; \
-})
+#define get_sp()					\
+	({						\
+		register unsigned long sp asm("%sp");	\
+		sp;					\
+	})
 #endif
 
-#  define set_sp(val) \
-    __asm__ __volatile__("mov %0, %%sp\n\t" \
-                         : : "r" (val) : "memory", "sp")
+#  define set_sp(val)						\
+	__asm__ __volatile__("mov %0, %%sp\n\t"			\
+			     : : "r" (val) : "memory", "sp")
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

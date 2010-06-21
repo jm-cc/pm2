@@ -36,40 +36,6 @@ static p_mad_madeleine_t pm2_mad_madeleine = NULL;
 marcel_key_t pm2_mad_send_key = -1;
 marcel_key_t pm2_mad_recv_key = -1;
 
-/*
- * Functions
- * ---------
- */
-#ifdef MAD3
-int
-mad_can_send_to_self()
-{
-  return 0;
-}
-
-void
-pm2_begin_packing(p_mad_channel_t channel,
-		  int             global_rank)
-{
-  p_ntbx_process_container_t pc         = NULL;
-  ntbx_process_lrank_t       local_rank =   -1;
-  p_mad_connection_t         out        = NULL;
-  
-  LOG_IN();
-  pc         = channel->pc;
-  local_rank = ntbx_pc_global_to_local(pc, global_rank);
-
-  if (local_rank == -1)
-    TBX_FAILURE("connection unavailable");
-  
-  out = mad_begin_packing(channel, local_rank);
-  if (!out)
-    TBX_FAILURE("invalid connection");
-  marcel_setspecific(pm2_mad_send_key, out);
-  LOG_OUT();
-}
-#endif // MADIII
-
 
 void
 pm2_mad_init(p_mad_madeleine_t madeleine)

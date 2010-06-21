@@ -18,20 +18,21 @@
 #define __ASM_I386_LINUX_SYSTEM_H__
 
 
-#ifdef __MARCEL_KERNEL__
 #include <stdlib.h>
 #include "tbx_compiler.h"
-#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
 #define ma_nop() __asm__ __volatile__ ("nop")
 #define ma_xchg(ptr,v) ((__typeof__(*(ptr)))__ma_xchg((unsigned long)(v),(ptr),sizeof(*(ptr))))
 #define ma_tas(ptr) (xchg((ptr),1))
-struct __ma_xchg_dummy { unsigned long a[100]; };
+    struct __ma_xchg_dummy {
+	unsigned long a[100];
+};
 #define __ma_xg(x) ((struct __ma_xchg_dummy *)(x))
 
 /*
@@ -48,47 +49,6 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
  * of the instruction set reference 24319102.pdf. We need
  * the reader side to see the coherent 64bit value.
  */
-/* #if 0 */
-/* static __tbx_inline__ void __ma_set_64bit (unsigned long long * ptr, */
-/* 		unsigned int low, unsigned int high) */
-/* { */
-/* 	__asm__ __volatile__ ( */
-/* 		"\n1:\t" */
-/* 		"movl (%0), %%eax\n\t" */
-/* 		"movl 4(%0), %%edx\n\t" */
-/* 		"lock cmpxchg8b (%0)\n\t" */
-/* 		"jnz 1b" */
-/* 		: /\* no outputs *\/ */
-/* 		:	"D"(ptr), */
-/* 			"b"(low), */
-/* 			"c"(high) */
-/* 		:	"ax","dx","memory"); */
-/* } */
-
-/* static __tbx_inline__ void __ma_set_64bit_constant (unsigned long long *ptr, */
-/* 						 unsigned long long value) */
-/* { */
-/* 	__ma_set_64bit(ptr,(unsigned int)(value), (unsigned int)((value)>>32ULL)); */
-/* } */
-/* #define ma_ll_low(x)	*(((unsigned int*)(void*)&(x))+0) */
-/* #define ma_ll_high(x)	*(((unsigned int*)(void*)&(x))+1) */
-
-/* static __tbx_inline__ void __ma_set_64bit_var (unsigned long long *ptr, */
-/* 			 unsigned long long value) */
-/* { */
-/* 	__ma_set_64bit(ptr,ma_ll_low(value), ma_ll_high(value)); */
-/* } */
-
-/* #define ma_set_64bit(ptr,value) \ */
-/* (__builtin_constant_p(value) ? \ */
-/*  __ma_set_64bit_constant(ptr, value) : \ */
-/*  __ma_set_64bit_var(ptr, value) ) */
-
-/* #define _ma_set_64bit(ptr,value) \ */
-/* (__builtin_constant_p(value) ? \ */
-/*  __ma_set_64bit(ptr, (unsigned int)(value), (unsigned int)((value)>>32ULL) ) : \ */
-/*  __ma_set_64bit(ptr, ma_ll_low(value), ma_ll_high(value)) ) */
-/* #endif */
 
 /*
  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
@@ -105,17 +65,6 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
 #define ma_cmpxchg(ptr,o,n)\
 	((__typeof__(*(ptr)))__ma_cmpxchg((ptr),(unsigned long)(o),\
 					(unsigned long)(n),sizeof(*(ptr))))
-    
-/* #if 0 */
-/* struct ma_alt_instr {  */
-/* 	__u8 *instr; 		/\* original instruction *\/ */
-/* 	__u8 *replacement; */
-/* 	__u8  cpuid;		/\* cpuid bit set for replacement *\/ */
-/* 	__u8  instrlen;		/\* length of original instruction *\/ */
-/* 	__u8  replacementlen; 	/\* length of new instruction, <= instrlen *\/  */
-/* 	__u8  pad; */
-/* };  */
-/* #endif */
 
 /* 
  * Alternative instructions for different CPU types or capabilities.
@@ -129,23 +78,8 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
  * For non barrier like inlines please define new variants
  * without volatile and memory clobber.
  */
-/* #if 0 */
-/* #define ma_alternative(oldinstr, newinstr, feature) 	\ */
-/* 	asm volatile ("661:\n\t" oldinstr "\n662:\n" 		     \ */
-/* 		      ".section .altinstructions,\"a\"\n"     	     \ */
-/* 		      "  .align 4\n"				       \ */
-/* 		      "  .long 661b\n"            /\* label *\/          \ */
-/* 		      "  .long 663f\n"		  /\* new instruction *\/ 	\ */
-/* 		      "  .byte %c0\n"             /\* feature bit *\/    \ */
-/* 		      "  .byte 662b-661b\n"       /\* sourcelen *\/      \ */
-/* 		      "  .byte 664f-663f\n"       /\* replacementlen *\/ \ */
-/* 		      ".previous\n"						\ */
-/* 		      ".section .altinstr_replacement,\"ax\"\n"			\ */
-/* 		      "663:\n\t" newinstr "\n664:\n"   /\* replacement *\/    \ */
-/* 		      ".previous" :: "i" (feature) : "memory")   */
-/* #endif */
 #define ma_alternative(oldinstr, newinstr, feature) 	\
-	asm volatile (oldinstr ::: "memory")  
+	asm volatile (oldinstr ::: "memory")
 
 
 /*
@@ -170,7 +104,7 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
 		      ".previous\n"						\
 		      ".section .altinstr_replacement,\"ax\"\n"			\
 		      "663:\n\t" newinstr "\n664:\n"   /* replacement */ 	\
-		      ".previous" :: "i" (feature), input)  
+		      ".previous" :: "i" (feature), input)
 
 /*
  * Force strict CPU ordering.
@@ -216,30 +150,10 @@ struct __ma_xchg_dummy { unsigned long a[100]; };
 
 #define ma_set_wmb(var, value) do { var = value; ma_wmb(); } while (0)
 
-/* interrupt control.. */
-//#define local_save_flags(x)	do { typecheck(unsigned long,x); __asm__ __volatile__("pushfl ; popl %0":"=g" (x): /* no input */); } while (0)
-//#define local_irq_restore(x) 	do { typecheck(unsigned long,x); __asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory", "cc"); } while (0)
-//#define local_irq_disable() 	__asm__ __volatile__("cli": : :"memory")
-//#define local_irq_enable()	__asm__ __volatile__("sti": : :"memory")
-/* used in the idle loop; sti takes one instruction cycle to complete */
-//#define safe_halt()		__asm__ __volatile__("sti; hlt": : :"memory")
-
-/*
-#define irqs_disabled()			\
-({					\
-	unsigned long flags;		\
-	local_save_flags(flags);	\
-	!(flags & (1<<9));		\
-})
-*/
-
-/* For spinlocks etc */
-//#define local_irq_save(x)	__asm__ __volatile__("pushfl ; popl %0 ; cli":"=g" (x): /* no input */ :"memory")
-
-
 #define ma_cpu_relax() asm volatile("rep; nop" ::: "memory")
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -81,45 +81,39 @@ enum {
 
 /** Public functions **/
 #ifdef MA__IFACE_LPT
-extern int lpt_mutex_init (lpt_mutex_t * __restrict __mutex,
-		__const lpt_mutexattr_t * __restrict __mutexattr)
-	__THROW;
-extern int lpt_mutex_destroy (lpt_mutex_t *__mutex) __THROW;
-extern int lpt_mutex_trylock (lpt_mutex_t *_mutex) __THROW;
-extern int lpt_mutex_lock (lpt_mutex_t *__mutex) __THROW;
-extern int lpt_mutex_timedlock (lpt_mutex_t *__restrict __mutex,
-		__const struct timespec *__restrict
-		__abstime) __THROW;
-extern int lpt_mutex_unlock (lpt_mutex_t *__mutex) __THROW;
-extern int lpt_mutexattr_init (lpt_mutexattr_t *__attr) __THROW;
-extern int lpt_mutexattr_destroy (lpt_mutexattr_t *__attr) __THROW;
-extern int lpt_mutexattr_getpshared (__const lpt_mutexattr_t *
-		__restrict __attr,
-		int *__restrict __pshared) __THROW;
-extern int lpt_mutexattr_setpshared (lpt_mutexattr_t *__attr,
-		int __pshared) __THROW;
-extern int lpt_mutexattr_gettype (__const lpt_mutexattr_t *__restrict
-		__attr, int *__restrict __kind) __THROW;
-extern int lpt_mutexattr_settype (lpt_mutexattr_t *__attr, int __kind)
-	__THROW;
+extern int lpt_mutex_init(lpt_mutex_t * __restrict __mutex,
+			  __const lpt_mutexattr_t * __restrict __mutexattr) __THROW;
+extern int lpt_mutex_destroy(lpt_mutex_t * __mutex) __THROW;
+extern int lpt_mutex_trylock(lpt_mutex_t * _mutex) __THROW;
+extern int lpt_mutex_lock(lpt_mutex_t * __mutex) __THROW;
+extern int lpt_mutex_timedlock(lpt_mutex_t * __restrict __mutex,
+			       __const struct timespec *__restrict __abstime) __THROW;
+extern int lpt_mutex_unlock(lpt_mutex_t * __mutex) __THROW;
+extern int lpt_mutexattr_init(lpt_mutexattr_t * __attr) __THROW;
+extern int lpt_mutexattr_destroy(lpt_mutexattr_t * __attr) __THROW;
+extern int lpt_mutexattr_getpshared(__const lpt_mutexattr_t *
+				    __restrict __attr, int *__restrict __pshared) __THROW;
+extern int lpt_mutexattr_setpshared(lpt_mutexattr_t * __attr, int __pshared) __THROW;
+extern int lpt_mutexattr_gettype(__const lpt_mutexattr_t * __restrict
+				 __attr, int *__restrict __kind) __THROW;
+extern int lpt_mutexattr_settype(lpt_mutexattr_t * __attr, int __kind) __THROW;
 #endif
 #ifdef MARCEL_ONCE_ENABLED
 #  ifdef MA__IFACE_LPT
-extern int lpt_once (lpt_once_t *__once_control,
-		void (*__init_routine) (void)) __THROW;
-extern void lpt_once_fork_prepare (void);
-extern void lpt_once_fork_parent (void);
-extern void lpt_once_fork_child (void);
+extern int lpt_once(lpt_once_t * __once_control, void (*__init_routine) (void)) __THROW;
+extern void lpt_once_fork_prepare(void);
+extern void lpt_once_fork_parent(void);
+extern void lpt_once_fork_child(void);
 #  endif
 #  ifdef MA__LIBPTHREAD
-extern void __pthread_once_fork_prepare (void);
-extern void __pthread_once_fork_parent (void);
-extern void __pthread_once_fork_child (void);
-extern void __pmarcel_once_fork_prepare (void);
-extern void __pmarcel_once_fork_parent (void);
-extern void __pmarcel_once_fork_child (void);
+extern void __pthread_once_fork_prepare(void);
+extern void __pthread_once_fork_parent(void);
+extern void __pthread_once_fork_child(void);
+extern void __pmarcel_once_fork_prepare(void);
+extern void __pmarcel_once_fork_parent(void);
+extern void __pmarcel_once_fork_child(void);
 #  endif
-#endif /* MARCEL_ONCE_ENABLED */
+#endif				/* MARCEL_ONCE_ENABLED */
 
 
 #endif /** __MARCEL_LPT_MUTEX_H__ **/

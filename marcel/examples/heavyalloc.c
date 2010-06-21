@@ -52,7 +52,7 @@ int marcel_main(int argc, char *argv[])
   unsigned long i;
   unsigned long temps;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   if(argc > 1)
     NB = atoi(argv[1]);

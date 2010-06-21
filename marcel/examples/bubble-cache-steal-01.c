@@ -89,7 +89,7 @@ main (int argc, char *argv[]) {
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
 	argc += 2;
 
-	marcel_init (&argc, new_argv);
+	marcel_init(argc, new_argv);
 	marcel_mutex_init (&write_lock, NULL);
 
 	/* Creating threads and bubbles hierarchy.  */
@@ -133,10 +133,13 @@ main (int argc, char *argv[]) {
 	/* Make sure we're currently testing the Cache scheduler, with work
 		 stealing enabled.  */
 	scheduler =
-		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
-	ret = marcel_bubble_cache_sched_init ((struct marcel_bubble_cache_sched *) scheduler,
-																				marcel_topo_level (0, 0),
-																				tbx_true);
+					alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
+	ret =
+					marcel_bubble_cache_sched_init((struct
+																					marcel_bubble_cache_sched *)
+																				 scheduler, marcel_topo_level(0,
+																																			0),
+																				 tbx_true);
 	MA_BUG_ON (ret != 0);
 
 	/* We asked for work stealing, so it should be available.  */

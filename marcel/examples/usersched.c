@@ -55,7 +55,7 @@ int marcel_main(int argc, char *argv[])
   marcel_attr_t attr;
   int i;
 
-   marcel_init(&argc, argv);
+   marcel_init(argc, argv);
 
    marcel_schedpolicy_create(&MY_SCHED_POLICY, my_sched_func);
 

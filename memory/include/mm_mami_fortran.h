@@ -21,7 +21,7 @@
 #ifndef MM_MAMI_FORTRAN_H
 #define MM_MAMI_FORTRAN_H
 
-#include "marcel.h"
+#include <marcel.h>
 #include "mm_mami.h"
 
 extern

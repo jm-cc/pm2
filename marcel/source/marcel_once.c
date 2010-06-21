@@ -40,30 +40,30 @@ static void marcel_once_cancelhandler(void *arg)
 	marcel_mutex_unlock(&once_masterlock);
 	marcel_cond_broadcast(&once_finished);
 }
-#endif /* MARCEL_DEVIATION_ENABLED */
-int marcel_once(marcel_once_t * once_control, 
-	void (*init_routine)(void))
+#endif				/* MARCEL_DEVIATION_ENABLED */
+int marcel_once(marcel_once_t * once_control, void (*init_routine) (void))
 {
-        LOG_IN();
+	MARCEL_LOG_IN();
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {
 		ma_smp_rmb();
-                LOG_RETURN(0);
+		MARCEL_LOG_RETURN(0);
 	}
 	/* Lock and test again */
-	
+
 	state_changed = 0;
-	
+
 	marcel_mutex_lock(&once_masterlock);
-	
+
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
-	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != ma_fork_generation)
+	if ((*once_control & 3) == IN_PROGRESS
+	    && (*once_control & ~3) != (long) ma_fork_generation)
 		*once_control = NEVER;
-	
+
 	/* If init_routine is being called from another routine, wait until
 	   it completes. */
 	while ((*once_control & 3) == IN_PROGRESS) {
@@ -75,48 +75,48 @@ int marcel_once(marcel_once_t * once_control,
 		marcel_mutex_unlock(&once_masterlock);
 #ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_push(marcel_once_cancelhandler, once_control);
-#endif /* MARCEL_DEVIATION_ENABLED */
+#endif				/* MARCEL_DEVIATION_ENABLED */
 		init_routine();
 #ifdef MARCEL_DEVIATION_ENABLED
-		marcel_cleanup_pop(0);
-#endif /* MARCEL_DEVIATION_ENABLED */
+		marcel_cleanup_pop(tbx_false);
+#endif				/* MARCEL_DEVIATION_ENABLED */
 		marcel_mutex_lock(&once_masterlock);
 		ma_smp_wmb();
 		*once_control = DONE;
 		state_changed = 1;
 	}
 	marcel_mutex_unlock(&once_masterlock);
-	
+
 	if (state_changed)
 		marcel_cond_broadcast(&once_finished);
-	
-        LOG_RETURN(0);
+
+	MARCEL_LOG_RETURN(0);
 }
 
 #  ifdef MA__IFACE_PMARCEL
-int pmarcel_once(pmarcel_once_t * once_control, 
-	void (*init_routine)(void))
+int pmarcel_once(pmarcel_once_t * once_control, void (*init_routine) (void))
 {
-        LOG_IN();
+	MARCEL_LOG_IN();
 	/* flag for doing the condition broadcast outside of mutex */
 	int state_changed;
 
 	/* Test without locking first for speed */
 	if (*once_control == DONE) {
 		ma_smp_rmb();
-                LOG_RETURN(0);
+		MARCEL_LOG_RETURN(0);
 	}
 	/* Lock and test again */
-	
+
 	state_changed = 0;
-	
+
 	marcel_mutex_lock(&once_masterlock);
-	
+
 	/* If this object was left in an IN_PROGRESS state in a parent
 	   process (indicated by stale generation field), reset it to NEVER. */
-	if ((*once_control & 3) == IN_PROGRESS && (*once_control & ~3) != ma_fork_generation)
+	if ((*once_control & 3) == IN_PROGRESS
+	    && (*once_control & ~3) != (long) ma_fork_generation)
 		*once_control = NEVER;
-	
+
 	/* If init_routine is being called from another routine, wait until
 	   it completes. */
 	while ((*once_control & 3) == IN_PROGRESS) {
@@ -128,24 +128,23 @@ int pmarcel_once(pmarcel_once_t * once_control,
 		marcel_mutex_unlock(&once_masterlock);
 #ifdef MARCEL_DEVIATION_ENABLED
 		marcel_cleanup_push(marcel_once_cancelhandler, once_control);
-#endif /* MARCEL_DEVIATION_ENABLED */
+#endif				/* MARCEL_DEVIATION_ENABLED */
 		init_routine();
 #ifdef MARCEL_DEVIATION_ENABLED
-		marcel_cleanup_pop(0);
-#endif /* MARCEL_DEVIATION_ENABLED */
+		marcel_cleanup_pop(tbx_false);
+#endif				/* MARCEL_DEVIATION_ENABLED */
 		marcel_mutex_lock(&once_masterlock);
 		ma_smp_wmb();
 		*once_control = DONE;
 		state_changed = 1;
 	}
 	marcel_mutex_unlock(&once_masterlock);
-	
+
 	if (state_changed)
 		marcel_cond_broadcast(&once_finished);
-	
-        LOG_RETURN(0);
+
+	MARCEL_LOG_RETURN(0);
 }
 #  endif
 
-#endif /* MARCEL_ONCE_ENABLED */
-
+#endif				/* MARCEL_ONCE_ENABLED */

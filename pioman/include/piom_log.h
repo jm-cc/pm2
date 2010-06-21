@@ -33,6 +33,7 @@
 #define PIOM_LOG_CHAR(val)		fprintf(stderr, "%s, %c" ,, __TBX_FUNCTION__ (char)(val))
 #define PIOM_LOG_PTR(str, ptr)		fprintf(stderr, "%s, " str " = %p\n", __TBX_FUNCTION__ , (void *)(ptr))
 #define PIOM_LOG_STR(str, str2)		fprintf(stderr,"%s, "  str ": %s\n", __TBX_FUNCTION__ , (char *)(str2))
+#define PIOM_LOG_RETURN(val)            do { PIOM_LOG_OUT(); return (val); } while (0)
 #else
 #define PIOM_LOGF(str, ...)     (void)(0)
 #define PIOM_LOG_IN()           (void)(0)
@@ -41,6 +42,7 @@
 #define PIOM_LOG_VAL(str, val)  (void)(0)
 #define PIOM_LOG_PTR(str, ptr)  (void)(0)
 #define PIOM_LOG_STR(str, str2) (void)(0)
+#define PIOM_LOG_RETURN(val)    return (val)
 #endif	/* CONFIG_LOG */
 
 #ifdef CONFIG_TRACE

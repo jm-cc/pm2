@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -15,8 +14,13 @@
  */
 
 
+#define MARCEL_LOGGER_DECLARE
 #include "marcel.h"
 #include "tbx_compiler.h"
+
+
+static tbx_bool_t debug_show_thread = tbx_false;
+
 
 #ifdef MARCEL_GDB
 /*
@@ -24,101 +28,56 @@
  */
 int ma_gdb_postexit_enabled =
 #ifdef MARCEL_POSTEXIT_ENABLED
-	1
+    1;
 #else
-	0
+    0;
 #endif
-	;
 
 /* Dumb array to compensate for gdb's inability for recursion */
 struct tbx_fast_list_head *ma_gdb_cur[1024];
 marcel_bubble_t *ma_gdb_b[1024];
 #endif
 
-#ifdef PM2DEBUG
-MA_DEBUG_DEFINE_NAME_DEPEND(default, &marcel_mdebug);
-
-MA_DEBUG_DEFINE_STANDARD(marcel_default, "marcel-default");
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug=
-  NEW_DEBUG_TYPE_DEPEND("MA: ", "ma", NULL);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_state=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-state", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_work=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-work", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_debug_deviate=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-deviate", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mdebug_sched_q=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-mdebug-sched-q", &marcel_debug);
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_allocator_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-allocator-debug", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_allocator_log=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-allocator-log", &marcel_debug);
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_topology_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-topology-debug", &marcel_debug);
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_sched_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-sched", &marcel_debug);
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_bubble_sched_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-bubble-sched", &marcel_debug);
-
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_lwp_debug=
-  NEW_DEBUG_TYPE_DEPEND("MAR: ", "mar-lwp-debug", &marcel_debug);
-
-#ifdef MARCEL_TRACE
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace=
-  NEW_DEBUG_TYPE_DEPEND("MAR_TRACE: ", "mar-trace", &marcel_debug);
-MA_DEBUG_VAR_ATTRIBUTE debug_type_t marcel_mtrace_timer=
-  NEW_DEBUG_TYPE_DEPEND("MAR_TRACE: ", "mar-trace-timer", &marcel_debug);
-#endif
-
-#endif //PM2DEBUG
-
-void marcel_debug_init(int* argc TBX_UNUSED, char** argv TBX_UNUSED, int debug_flags TBX_UNUSED)
+void marcel_debug_init()
 {
-	static int called=0;
-	if (called) 
-		return;
-	called=1;
+	marcel_debug_show_thread_info(tbx_false);
 
-	pm2debug_init_ext(argc, argv, debug_flags);
+	MARCEL_LOG_ADD();
+	MARCEL_SCHED_LOG_ADD();
+	MARCEL_ALLOC_LOG_ADD();
+	MARCEL_TIMER_LOG_ADD();
 }
 
-typedef struct { debug_type_t d;} TBX_ALIGNED debug_type_aligned_t;
+void marcel_debug_exit()
+{
+	MARCEL_LOG_DEL();
+	MARCEL_SCHED_LOG_DEL();
+	MARCEL_ALLOC_LOG_DEL();
+	MARCEL_TIMER_LOG_DEL();
 
-#ifdef PM2DEBUG
-#  ifndef DARWIN_SYS
-static debug_type_t ma_dummy1 TBX_SECTION(".ma.debug.size.0") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
-static debug_type_t ma_dummy2 TBX_SECTION(".ma.debug.size.1") TBX_ALIGNED =  NEW_DEBUG_TYPE("dummy", "dummy");
-extern debug_type_aligned_t __ma_debug_pre_start[];
-extern debug_type_aligned_t __ma_debug_start[];
-extern debug_type_aligned_t __ma_debug_end[];
-#  endif
+	marcel_debug_show_thread_info(tbx_false);
+}
+
+void marcel_debug_show_thread_info(tbx_bool_t show_info)
+{
+	debug_show_thread = show_info;
+}
+
+void marcel_logger_print(tbx_log_t * logd, tbx_msg_level_t level, char *format, ...)
+{
+	va_list args;
+
+	if (tbx_likely(debug_show_thread)) {
+#ifdef MA___LWPS
+		tbx_logger_print(logd, level, "[P%02d] ",
+				 (MA_LWP_SELF) ? ma_get_task_vpnum(ma_self()) : -1);
 #endif
 
-static void __marcel_init marcel_debug_init_auto(void)
-{
-#ifdef PM2DEBUG
-#  ifndef DARWIN_SYS
-	debug_type_aligned_t *var;
-	unsigned long __ma_debug_size_entry;
-	unsigned long TBX_UNUSED __ma_debug_size=(void*)&(__ma_debug_start[1])-(void*)__ma_debug_start;
-	if (&ma_dummy2 < &ma_dummy1)
-		__ma_debug_size_entry = (void*)&ma_dummy1-(void*)&ma_dummy2;
-	else
-		__ma_debug_size_entry = (void*)&ma_dummy2-(void*)&ma_dummy1;
-
-	MA_BUG_ON(__ma_debug_size_entry != __ma_debug_size);
-	for(var=__ma_debug_start; var < __ma_debug_end; var++) {
-		pm2debug_register(&var->d);
+		tbx_logger_print(logd, level, "(%12p:% 3d:%-15s) ", ma_self(),
+				 ma_self()->number, ma_self()->as_entity.name);
 	}
-#  endif
-#endif
-}
 
-__ma_initfunc_prio(marcel_debug_init_auto, MA_INIT_DEBUG, MA_INIT_DEBUG_PRIO, "Register debug variables");
+	va_start(args, format);
+	tbx_logger_vprint(logd, level, format, args);
+	va_end(args);
+}

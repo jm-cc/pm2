@@ -47,8 +47,6 @@ leo_default_loader(p_leo_settings_t settings,
 		   p_tbx_slist_t    process_slist)
 {
   int process_rank = 1;
-  LOG_IN();
-  TRACE("default loader selected");
 
   if (tbx_slist_is_nil(process_slist))
     return;
@@ -239,7 +237,6 @@ leo_default_loader(p_leo_settings_t settings,
 	p_tbx_command_t   rsh_command = NULL;
 	p_tbx_arguments_t args        = NULL;
 
-	LOG_STR("leo_rsh", leo_rsh);
 	rsh_command = tbx_command_init_to_cstring(leo_rsh);
 	args = rsh_command->arguments;
 
@@ -282,12 +279,10 @@ leo_default_loader(p_leo_settings_t settings,
 
 	      while (arg_set->argv[i])
 		{
-		  TRACE_STR("execvp command", arg_set->argv[i]);
 		  i++;
 		}
 	    }
 
-	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
 	    leo_error("execvp", settings);
 	  }
@@ -307,7 +302,6 @@ leo_default_loader(p_leo_settings_t settings,
       process_rank ++;
     }
   while (tbx_slist_ref_forward(process_slist));
-  LOG_OUT();
 }
 
 static
@@ -316,14 +310,12 @@ leo_default_loader_register(p_tbx_htable_t loaders)
 {
   p_leo_loader_t loader = NULL;
 
-  LOG_IN();
   loader = leo_loader_init();
 
   loader->name        = strdup("default");
   loader->loader_func = leo_default_loader;
 
   tbx_htable_add(loaders, loader->name, loader);
-  LOG_OUT();
 }
 
 // ... MPI QsNet loader .................................................. //
@@ -333,9 +325,6 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
                   p_ntbx_server_t  net_server,
                   p_tbx_slist_t    process_slist)
 {
-  LOG_IN();
-  TRACE("default loader selected");
-
   if (tbx_slist_is_nil(process_slist))
     return;
 
@@ -511,7 +500,6 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 	p_tbx_command_t   rsh_command = NULL;
 	p_tbx_arguments_t args        = NULL;
 
-	LOG_STR("leo_rsh", leo_rsh);
 	rsh_command = tbx_command_init_to_cstring(leo_rsh);
 	args = rsh_command->arguments;
 
@@ -549,12 +537,10 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
 
 	      while (arg_set->argv[i])
 		{
-		  TRACE_STR("execvp command", arg_set->argv[i]);
 		  i++;
 		}
 	    }
 
-	    TRACE_STR("execvp command", arg_set->argv[0]);
 	    execvp(arg_set->argv[0], arg_set->argv);
 	    leo_error("execvp", settings);
 	  }
@@ -573,7 +559,6 @@ leo_mpi_qs_loader(p_leo_settings_t settings,
       }
     }
   while (tbx_slist_ref_forward(process_slist));
-  LOG_OUT();
 }
 
 static
@@ -582,14 +567,12 @@ leo_mpi_qs_loader_register(p_tbx_htable_t loaders)
 {
   p_leo_loader_t loader = NULL;
 
-  LOG_IN();
   loader = leo_loader_init();
 
   loader->name        = strdup("mpi_qs");
   loader->loader_func = leo_mpi_qs_loader;
 
   tbx_htable_add(loaders, loader->name, loader);
-  LOG_OUT();
 }
 
 // ... BIP loader ...................................................... //
@@ -600,9 +583,6 @@ leo_bipload_loader(p_leo_settings_t settings,
 		   p_tbx_slist_t    process_slist)
 {
   char *master_host_name = NULL;
-
-  LOG_IN();
-  TRACE("default loader selected");
 
   if (tbx_slist_is_nil(process_slist))
     return;
@@ -693,7 +673,6 @@ leo_bipload_loader(p_leo_settings_t settings,
       p_tbx_command_t   rsh_command = NULL;
       p_tbx_arguments_t args        = NULL;
 
-      LOG_STR("leo_rsh", leo_rsh);
       rsh_command = tbx_command_init_to_cstring(leo_rsh);
       args = rsh_command->arguments;
 
@@ -730,7 +709,6 @@ leo_bipload_loader(p_leo_settings_t settings,
 
 	    while (arg_set->argv[i])
 	      {
-		TRACE_STR("execvp command", arg_set->argv[i]);
 		i++;
 	      }
 	  }
@@ -911,7 +889,6 @@ leo_bipload_loader(p_leo_settings_t settings,
       p_tbx_command_t   rsh_command = NULL;
       p_tbx_arguments_t args        = NULL;
 
-      LOG_STR("leo_rsh", leo_rsh);
       rsh_command = tbx_command_init_to_cstring(leo_rsh);
       args = rsh_command->arguments;
 
@@ -948,7 +925,6 @@ leo_bipload_loader(p_leo_settings_t settings,
 
 	    while (arg_set->argv[i])
 	      {
-		TRACE_STR("execvp command", arg_set->argv[i]);
 		i++;
 	      }
 	  }
@@ -976,7 +952,6 @@ leo_bipload_loader(p_leo_settings_t settings,
     }
   }
 
-  LOG_OUT();
 }
 
 static
@@ -985,7 +960,6 @@ leo_bipload_loader_register(p_tbx_htable_t loaders)
 {
   p_leo_loader_t loader = NULL;
 
-  LOG_IN();
   loader = leo_loader_init();
 
   loader->name        = strdup("bipload");
@@ -993,7 +967,6 @@ leo_bipload_loader_register(p_tbx_htable_t loaders)
 
   tbx_htable_add(loaders, loader->name, loader);
 
-  LOG_OUT();
 }
 
 // ... Loaders registration ............................................ //
@@ -1002,7 +975,6 @@ leo_loaders_register(void)
 {
   p_tbx_htable_t loaders = NULL;
 
-  LOG_IN();
   if (!(leo_rsh = getenv("LEO_RSH")))
     {
       if (!(leo_rsh = getenv("PM2_RSH")))
@@ -1021,7 +993,6 @@ leo_loaders_register(void)
   leo_default_loader_register(loaders);
   leo_mpi_qs_loader_register(loaders);
   leo_bipload_loader_register(loaders);
-  LOG_OUT();
 
   return loaders;
 }

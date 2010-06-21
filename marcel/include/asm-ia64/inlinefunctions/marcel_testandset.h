@@ -22,24 +22,25 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 #ifndef __INTEL_COMPILER
 static __tbx_inline__ unsigned pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-        register long result;
+	register long result;
 
-        __asm__ __volatile__ (
-                "mov ar.ccv=r0\n"
-                ";;\n"
-                "cmpxchg4.acq %0=[%2],%1,ar.ccv\n"
-                : "=r"(result) : "r"(1), "r"(spinlock) : "ar.ccv", "memory");
-        return result;
+	__asm__ __volatile__("mov ar.ccv=r0\n"
+			     ";;\n"
+			     "cmpxchg4.acq %0=[%2],%1,ar.ccv\n":"=r"(result):"r"(1),
+			     "r"(spinlock):"ar.ccv", "memory");
+	return result;
 }
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

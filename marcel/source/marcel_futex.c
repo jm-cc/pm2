@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2009 "the PM2 team" (see AUTHORS file)
@@ -24,10 +23,11 @@ struct blockcell {
 	struct blockcell **prev;	/* Address of pointer pointing to us */
 };
 
-int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long mask, unsigned long val, signed long timeout)
+int marcel_futex_wait(marcel_futex_t * futex, unsigned long *addr, unsigned long mask,
+		      unsigned long val, signed long timeout)
 {
 	int ret = 0;
-	struct blockcell cell = { .task = MARCEL_SELF };
+	struct blockcell cell = {.task = MARCEL_SELF };
 	struct blockcell **pcell;
 
 	if (((*addr) & mask) != val)
@@ -69,7 +69,7 @@ int marcel_futex_wait(marcel_futex_t *futex, unsigned long *addr, unsigned long 
 	return ret;
 }
 
-int marcel_futex_wake(marcel_futex_t *futex, unsigned nb)
+int marcel_futex_wake(marcel_futex_t * futex, unsigned nb)
 {
 	struct blockcell *cell;
 	struct blockcell **pcell;
@@ -77,7 +77,7 @@ int marcel_futex_wake(marcel_futex_t *futex, unsigned nb)
 
 	/* Make sure the written value is seen by others */
 	/* This is already done by acquire,
-	ma_mb();
+	   ma_mb();
 	 */
 
 	ma_fastlock_acquire(&futex->__lock);

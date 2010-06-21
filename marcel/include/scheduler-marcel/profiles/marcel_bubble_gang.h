@@ -56,6 +56,7 @@ any_t marcel_gang_scheduler(any_t runqueue);
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal global variables **/
@@ -67,6 +68,7 @@ any_t marcel_gang_scheduler(any_t runqueue);
 extern ma_runqueue_t ma_gang_rq;
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

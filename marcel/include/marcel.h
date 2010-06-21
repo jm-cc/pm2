@@ -27,12 +27,9 @@ extern "C" {
 #include "sys/marcel_flags.h"
 #include "marcel_config.h"
 #include "marcel_compiler.h"
-#include <pthread.h>
-#if defined(MA__LIBPTHREAD) || defined(MA__PROVIDE_TLS)
-#include "pthread_libc-symbols.h"
-#endif
+#include "marcel_debug.h"
+#include "marcel_profile.h"
 
-#include "asm/marcel_profile.h"
 #include "asm/linux_system.h"
 #include "asm/marcel_ctx.h"
 #include "asm/marcel_arch_switchto.h"
@@ -41,12 +38,15 @@ extern "C" {
 #include "asm/marcel_compareexchange.h"
 #include "asm/linux_hardirq.h"
 
-#include "sys/marcel_privatedefs.h"
+#include "sys/marcel_stackjump.h"
 #include "sys/marcel_kthread.h"
 #include "sys/marcel_work.h"
 #include "sys/isomalloc_archdep.h"
 #include "sys/marcel_lwp.h"
 #include "sys/marcel_archsetjmp.h"
+#include "sys/marcel_syscalls.h"
+#include "sys/marcel_exec.h"
+#include "sys/marcel_io_bridge.h"
 
 #include "linux_bitops.h"
 #include "linux_interrupt.h"
@@ -66,10 +66,8 @@ extern "C" {
 #include "marcel_barrier.h"
 #include "marcel_cond.h"
 #include "marcel_container.h"
-#include "marcel_debug.h"
 #include "marcel_descr.h"
 #include "marcel_errno.h"
-
 #include "marcel_exception.h"
 #include "marcel_fastlock.h"
 #include "marcel_fortran.h"
@@ -101,6 +99,7 @@ extern "C" {
 #include "marcel_top.h"
 #include "marcel_topology.h"
 #include "marcel_utils.h"
+#include "marcel_valgrind.h"
 
 #include "scheduler-marcel/linux_runqueues.h"
 #include "scheduler-marcel/linux_sched.h"
@@ -113,11 +112,8 @@ extern "C" {
 #include "scheduler-marcel/marcel_sched.h"
 
 #include "scheduler/profiles/marcel_bubble_cache.h"
-#include "scheduler/profiles/marcel_bubble_mspread.h"
-#include "scheduler/profiles/marcel_bubble_memaware.h"
 #include "scheduler/profiles/marcel_bubble_spread.h"
 #include "scheduler/profiles/marcel_bubble_explode.h"
-#include "scheduler/profiles/marcel_bubble_msteal.h"
 #include "scheduler/profiles/marcel_bubble_gang.h"
 #include "scheduler/profiles/marcel_bubble_null.h"
 #include "scheduler/profiles/marcel_bubble_steal.h"
@@ -129,14 +125,9 @@ extern "C" {
 #include "inlinefunctions/allfunctions.h"
 
 #include "tbx.h"
-#include "pm2_common.h"
-#include "pm2_profile.h"
-#include "pm2_valgrind.h"
-
+#include "tbx_topology.h"
 
 #ifdef __cplusplus
 }
 #endif
-
-
 #endif /** __MARCEL_H__ **/

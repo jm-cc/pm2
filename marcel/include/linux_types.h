@@ -23,6 +23,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -34,20 +35,7 @@
 	memset(name, 0, MA_BITS_TO_LONGS(bits)*sizeof(unsigned long))
 
 
-/** Internal data types **/
-#ifndef __MA_BIT_TYPES_DEFINED__
-#define __MA_BIT_TYPES_DEFINED__
-
-typedef		__ma_u8		ma_u_int8_t;
-typedef		__ma_s8		ma_int8_t;
-typedef		__ma_u16	ma_u_int16_t;
-typedef		__ma_s16	ma_int16_t;
-typedef		__ma_u32	ma_u_int32_t;
-typedef		__ma_s32	ma_int32_t;
-
-#endif /* !(__MA_BIT_TYPES_DEFINED__) */
-
-
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

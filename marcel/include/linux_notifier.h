@@ -28,6 +28,7 @@ struct ma_notifier_chain;
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -43,17 +44,16 @@ struct ma_notifier_chain;
         .nb_actions     = nb, \
         .actions_name   = helps, \
   }
-
 #define MA_DEFINE_NOTIFIER_CHAIN(var, help) \
   struct ma_notifier_chain var = { \
         .chain = NULL, \
         .name  = help, \
   }
 
-#define MA_NOTIFY_DONE		0x0000		/* Don't care */
-#define MA_NOTIFY_OK		0x0001		/* Suits me */
-#define MA_NOTIFY_STOP_MASK	0x8000		/* Don't call further */
-#define MA_NOTIFY_BAD		(MA_NOTIFY_STOP_MASK|0x0002)	/* Bad/Veto action	*/
+#define MA_NOTIFY_DONE		0x0000	/* Don't care */
+#define MA_NOTIFY_OK		0x0001	/* Suits me */
+#define MA_NOTIFY_STOP_MASK	0x8000	/* Don't call further */
+#define MA_NOTIFY_BAD		(MA_NOTIFY_STOP_MASK|0x0002)	/* Bad/Veto action      */
 
 /*
  *	Declared notifiers so far. I can imagine quite a few more chains
@@ -61,38 +61,39 @@ struct ma_notifier_chain;
  *	device units up), device [un]mount chain, module load/unload chain,
  *	low memory chain, screenblank chain (for plug in modular screenblankers) 
  *	VC switch chains (for loadable kernel svgalib VC switch helpers) etc...
- */ 
-#define MA_LWP_ONLINE		0x0002 /* LWP (ma_lwp_t)v is up */
-#define MA_LWP_UP_PREPARE	0x0003 /* LWP (ma_lwp_t)v coming up */
-#define MA_LWP_UP_CANCELED	0x0004 /* LWP (ma_lwp_t)v NOT coming up */
-#define MA_LWP_OFFLINE		0x0005 /* LWP (ma_lwp_t)v offline (still scheduling) */
-#define MA_LWP_DEAD		0x0006 /* LWP (ma_lwp_t)v dead */
+ */
+#define MA_LWP_ONLINE		0x0002	/* LWP (ma_lwp_t)v is up */
+#define MA_LWP_UP_PREPARE	0x0003	/* LWP (ma_lwp_t)v coming up */
+#define MA_LWP_UP_CANCELED	0x0004	/* LWP (ma_lwp_t)v NOT coming up */
+#define MA_LWP_OFFLINE		0x0005	/* LWP (ma_lwp_t)v offline (still scheduling) */
+#define MA_LWP_DEAD		0x0006	/* LWP (ma_lwp_t)v dead */
 
 
 /** Internal data structures **/
-struct ma_notifier_block
-{
-	int (*notifier_call)(struct ma_notifier_block *self, unsigned long, void *);
+    struct ma_notifier_block {
+	int (*notifier_call) (struct ma_notifier_block * self, unsigned long, void *);
 	struct ma_notifier_block *next;
 	int priority;
-	const char* name;
+	const char *name;
 	int nb_actions;
 	const char **actions_name;
 };
 
-struct ma_notifier_chain
-{
+struct ma_notifier_chain {
 	struct ma_notifier_block *chain;
-	const char* name;
+	const char *name;
 };
 
 
 /** Internal functions **/
-extern int ma_notifier_chain_register(struct ma_notifier_chain *c, struct ma_notifier_block *n);
-extern int ma_notifier_chain_unregister(struct ma_notifier_chain *c, struct ma_notifier_block *n);
-extern int ma_notifier_call_chain(struct ma_notifier_chain *c, unsigned long val, void *v);
+extern int ma_notifier_chain_register(struct ma_notifier_chain *c,
+				      struct ma_notifier_block *n);
+extern int ma_notifier_chain_unregister(struct ma_notifier_chain *c,
+					struct ma_notifier_block *n);
+extern int ma_notifier_call_chain(struct ma_notifier_chain *c, int val, void *v);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

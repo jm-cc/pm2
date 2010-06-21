@@ -22,17 +22,19 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL 
 
 
 static __tbx_inline__ long get_gs(void)
 {
-  register long gs;
+	register long gs;
 
-    __asm__("movl %%gs, %0" : "=r" (gs));
-    return gs;
+      __asm__("movl %%gs, %0":"=r"(gs));
+	return gs;
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

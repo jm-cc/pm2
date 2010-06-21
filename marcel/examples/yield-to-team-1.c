@@ -44,7 +44,7 @@ static void * f (void *arg)
 int
 main (int argc, char **argv)
 {
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
   int i;
   /* Oversubscribe the machine */
   unsigned nb_threads = marcel_nbprocessors * 2;

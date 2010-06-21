@@ -50,7 +50,7 @@ main (int argc, char *argv[])
   unsigned i;
   marcel_t threads[THREADS];
 
-  marcel_init (&argc, argv);
+  marcel_init(argc, argv);
 
   //  printf ("parent = %i\n", getpid());
 
@@ -90,7 +90,7 @@ main (int argc, char *argv[])
       assert (alive[0] == marcel_self ());
 
       /* The `extlib_protect' mutex should still be usable.  */
-      marcel_free (marcel_malloc (123, __FILE__, __LINE__));
+      free(malloc(123));
 
       /* This call invokes the scheduler under the hood.  Thus, Marcel must
 	 still be running at this point.  */

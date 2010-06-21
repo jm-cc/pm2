@@ -68,7 +68,6 @@ typedef struct s_mad_dynamic
 
 typedef struct s_mad_madeleine
 {
-  TBX_SHARED;
   p_mad_dynamic_t     dynamic;
   p_mad_settings_t    settings;
   p_mad_session_t     session;

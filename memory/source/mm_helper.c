@@ -13,64 +13,75 @@
  * General Public License for more details.
  */
 
-#if defined(MM_MAMI_ENABLED) || defined(MM_HEAP_ENABLED)
+#if defined(MM_MAMI_ENABLED)
 
 #define _GNU_SOURCE
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <stdio.h>
+#ifdef MARCEL
+#  include <marcel.h>
+#else
+#  include <tbx_topology.h>
+#endif
+
 #include "mm_helper.h"
 #include "mm_debug.h"
 
 int _mm_mbind_call(void *start, unsigned long len, int mode,
-                   const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
-  if (_mm_use_synthetic_topology()) {
-      return 0;
-  }
+                   const unsigned long *nmask, unsigned long maxnode, unsigned flags)
+{
+        if (_mm_use_synthetic_topology()) {
+                return 0;
+        }
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
-  return syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+        return syscall6(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #else
-  return syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
+        return syscall(__NR_mbind, (long)start, len, mode, (long)nmask, maxnode, flags);
 #endif
 }
 
 int _mm_mbind(void *start, unsigned long len, int mode,
-              const unsigned long *nmask, unsigned long maxnode, unsigned flags) {
-  int err = 0;
+              const unsigned long *nmask, unsigned long maxnode, unsigned flags)
+{
+        int err = 0;
 
-  MEMORY_ILOG_IN();
-  mdebug_memory("binding on mask %lu\n", nmask?*nmask:0);
-  err = _mm_mbind_call(start, len, mode, nmask, maxnode, flags);
-  if (err < 0) perror("(_mm_mbind) mbind");
-  MEMORY_ILOG_OUT();
-  return err;
+        MEMORY_ILOG_IN();
+        mdebug_memory("binding on mask %lu\n", nmask?*nmask:0);
+        err = _mm_mbind_call(start, len, mode, nmask, maxnode, flags);
+        if (err < 0) perror("(_mm_mbind) mbind");
+        MEMORY_ILOG_OUT();
+        return err;
 }
 
-int _mm_move_pages(void **pageaddrs, int pages, int *nodes, int *status, int flag) {
-  int err=0;
+int _mm_move_pages(const void **pageaddrs, unsigned long pages, int *nodes, int *status, int flag)
+{
+        int err=0;
 
-  MEMORY_ILOG_IN();
-  if (_mm_use_synthetic_topology()) {
-      MEMORY_ILOG_OUT();
-      return err;
-  }
-  if (nodes) mdebug_memory("binding on numa node #%d\n", nodes[0]);
+        MEMORY_ILOG_IN();
+        if (_mm_use_synthetic_topology()) {
+                MEMORY_ILOG_OUT();
+                return err;
+        }
+        if (nodes) mdebug_memory("binding on numa node #%d\n", nodes[0]);
 
 #if defined (X86_64_ARCH) && defined (X86_ARCH)
-  err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
+        err = syscall6(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #else
-  err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
+        err = syscall(__NR_move_pages, 0, pages, pageaddrs, nodes, status, flag);
 #endif
-  if (err < 0) perror("(_mm_move_pages) move_pages");
-  MEMORY_ILOG_OUT();
-  return err;
+        if (err < 0) perror("(_mm_move_pages) move_pages");
+        MEMORY_ILOG_OUT();
+        return err;
 }
 
-int _mm_use_synthetic_topology(void) {
+int _mm_use_synthetic_topology(void)
+{
 #ifdef MARCEL
-  return marcel_use_fake_topology;
+        return marcel_use_fake_topology;
 #else
-  return !hwloc_topology_is_thissystem(topology);
+        return !hwloc_topology_is_thissystem(topology);
 #endif
 }
 
-#endif /* MM_MAMI_ENABLED || MM_HEAP_ENABLED */
+#endif /* MM_MAMI_ENABLED */

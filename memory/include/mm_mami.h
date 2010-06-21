@@ -59,7 +59,8 @@
 #ifndef MM_MAMI_H
 #define MM_MAMI_H
 
-#include "pm2_common.h"
+#include <stdio.h>
+#include <pm2_common.h>
 
 /** \addtogroup mami_init
  * @{ */
@@ -109,7 +110,7 @@ typedef int mami_stats_t;
  * @param memory_manager pointer to the memory manager
  */
 extern
-void mami_init(mami_manager_t **memory_manager);
+void mami_init(mami_manager_t **memory_manager, int argc, char **argv);
 
 /**
  * Shutdowns the memory manager.

@@ -33,6 +33,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
@@ -53,14 +54,11 @@
  *
  * bit 0 is the LSB of addr; bit 32 is the LSB of (addr+1).
  */
-static __tbx_inline__ void
-ma_set_bit (int nr, volatile void *addr)
+static __tbx_inline__ void ma_set_bit(int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t bit, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	bit = 1 << (nr & 31);
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -78,23 +76,19 @@ ma_set_bit (int nr, volatile void *addr)
  * If it's called on the same region of memory simultaneously, the effect
  * may be that only one operation succeeds.
  */
-static __tbx_inline__ void
-__ma_set_bit (int nr, volatile void *addr)
+static __tbx_inline__ void __ma_set_bit(int nr, volatile void *addr)
 {
-	*((volatile __ma_u32 *) addr + (nr >> 5)) |= (1 << (nr & 31));
+	*((volatile uint32_t *) addr + (nr >> 5)) |= (1 << (nr & 31));
 }
 
 /*
  * clear_bit() has "acquire" semantics.
  */
-static __tbx_inline__ void
-ma_clear_bit (int nr, volatile void *addr)
+static __tbx_inline__ void ma_clear_bit(int nr, volatile void *addr)
 {
-	__ma_u32 mask, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t mask, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	mask = ~(1 << (nr & 31));
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -102,22 +96,6 @@ ma_clear_bit (int nr, volatile void *addr)
 		repl = old & mask;
 	} while (ma_cmpxchg_acq(m, old, repl) != old);
 }
-
-/**
- * __clear_bit - Clears a bit in memory (non-atomic version)
- */
-/* #section marcel_functions
- *static __tbx_inline__ void
- *__ma_clear_bit (int nr, volatile void *addr);
- *#section marcel_inline
- *static __tbx_inline__ void
- *__ma_clear_bit (int nr, volatile void *addr)
- *{
- *	volatile __ma_u32 *p = (volatile __ma_u32 *) addr + (nr >> 5);
- *	__ma_u32 m = 1 << (nr & 31);
- *	*p &= ~m;
- *}
- */
 
 /**
  * change_bit - Toggle a bit in memory
@@ -128,14 +106,11 @@ ma_clear_bit (int nr, volatile void *addr)
  * Note that @nr may be almost arbitrarily large; this function is not
  * restricted to acting on a single-word quantity.
  */
-static __tbx_inline__ void
-ma_change_bit (int nr, volatile void *addr)
+static __tbx_inline__ void ma_change_bit(int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t bit, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	bit = (1 << (nr & 31));
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -153,10 +128,9 @@ ma_change_bit (int nr, volatile void *addr)
  * If it's called on the same region of memory simultaneously, the effect
  * may be that only one operation succeeds.
  */
-static __tbx_inline__ void
-__ma_change_bit (int nr, volatile void *addr)
+static __tbx_inline__ void __ma_change_bit(int nr, volatile void *addr)
 {
-	*((volatile __ma_u32 *) addr + (nr >> 5)) ^= (1 << (nr & 31));
+	*((volatile uint32_t *) addr + (nr >> 5)) ^= (1 << (nr & 31));
 }
 
 /**
@@ -167,14 +141,11 @@ __ma_change_bit (int nr, volatile void *addr)
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __tbx_inline__ int
-ma_test_and_set_bit (int nr, volatile void *addr)
+static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t bit, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	bit = 1 << (nr & 31);
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -193,11 +164,10 @@ ma_test_and_set_bit (int nr, volatile void *addr)
  * If two examples of this operation race, one can appear to succeed
  * but actually fail.  You must protect multiple accesses with a lock.
  */
-static __tbx_inline__ int
-__ma_test_and_set_bit (int nr, volatile void *addr)
+static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile void *addr)
 {
-	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
-	__ma_u32 m = 1 << (nr & 31);
+	uint32_t *p = (uint32_t *) addr + (nr >> 5);
+	uint32_t m = 1 << (nr & 31);
 	int oldbitset = (*p & m) != 0;
 
 	*p |= m;
@@ -212,14 +182,11 @@ __ma_test_and_set_bit (int nr, volatile void *addr)
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __tbx_inline__ int
-ma_test_and_clear_bit (int nr, volatile void *addr)
+static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile void *addr)
 {
-	__ma_u32 mask, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t mask, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	mask = ~(1 << (nr & 31));
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -239,11 +206,10 @@ ma_test_and_clear_bit (int nr, volatile void *addr)
  * If two examples of this operation race, one can appear to succeed
  * but actually fail.  You must protect multiple accesses with a lock.
  */
-static __tbx_inline__ int
-__ma_test_and_clear_bit(int nr, volatile void * addr)
+static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile void *addr)
 {
-	__ma_u32 *p = (__ma_u32 *) addr + (nr >> 5);
-	__ma_u32 m = 1 << (nr & 31);
+	uint32_t *p = (uint32_t *) addr + (nr >> 5);
+	uint32_t m = 1 << (nr & 31);
 	int oldbitset = *p & m;
 
 	*p &= ~m;
@@ -258,14 +224,11 @@ __ma_test_and_clear_bit(int nr, volatile void * addr)
  * This operation is atomic and cannot be reordered.  
  * It also implies a memory barrier.
  */
-static __tbx_inline__ int
-ma_test_and_change_bit (int nr, volatile void *addr)
+static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile void *addr)
 {
-	__ma_u32 bit, old, repl;
-	volatile __ma_u32 *m;
-	MA_CMPXCHG_BUGCHECK_DECL
-
-	m = (volatile __ma_u32 *) addr + (nr >> 5);
+	uint32_t bit, old, repl;
+	volatile uint32_t *m;
+	MA_CMPXCHG_BUGCHECK_DECL m = (volatile uint32_t *) addr + (nr >> 5);
 	bit = (1 << (nr & 31));
 	do {
 		MA_CMPXCHG_BUGCHECK(m);
@@ -278,21 +241,19 @@ ma_test_and_change_bit (int nr, volatile void *addr)
 /*
  * WARNING: non atomic version.
  */
-static __tbx_inline__ int
-__ma_test_and_change_bit (int nr, volatile void *addr)
+static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile void *addr)
 {
-	__ma_u32 old, bit = (1 << (nr & 31));
-	__ma_u32 *m = (__ma_u32 *) addr + (nr >> 5);
+	uint32_t old, bit = (1 << (nr & 31));
+	uint32_t *m = (uint32_t *) addr + (nr >> 5);
 
 	old = *m;
 	*m = old ^ bit;
 	return (old & bit) != 0;
 }
 
-static __tbx_inline__ int
-ma_test_bit (int nr, const volatile void *addr)
+static __tbx_inline__ int ma_test_bit(int nr, const volatile void *addr)
 {
-	return 1 & (((const volatile __ma_u32 *) addr)[nr >> 5] >> (nr & 31));
+	return 1 & (((const volatile uint32_t *) addr)[nr >> 5] >> (nr & 31));
 }
 
 /**
@@ -302,8 +263,7 @@ ma_test_bit (int nr, const volatile void *addr)
  * Returns the bit-number (0..63) of the first (least significant) zero bit.  Undefined if
  * no zero exists, so code should check against ~0UL first...
  */
-static __tbx_inline__ unsigned long
-ma_ffz (unsigned long x)
+static __tbx_inline__ unsigned long ma_ffz(unsigned long x)
 {
 	unsigned long result;
 	result = ma_ia64_popcnt(x & (~x - 1));
@@ -316,11 +276,10 @@ ma_ffz (unsigned long x)
  *
  * Undefined if no bit exists, so code should check against 0 first.
  */
-static __tbx_inline__ unsigned long
-__ma_ffs (unsigned long x)
+static __tbx_inline__ unsigned long __ma_ffs(unsigned long x)
 {
 	unsigned long result;
-	result = ma_ia64_popcnt((x-1) & ~x);
+	result = ma_ia64_popcnt((x - 1) & ~x);
 	return result;
 }
 
@@ -329,24 +288,21 @@ __ma_ffs (unsigned long x)
  * @x: The value to search
  * undefined for x == 0
  */
-static __tbx_inline__ unsigned long
-ma_ia64_fls (unsigned long x)
+static __tbx_inline__ unsigned long ma_ia64_fls(unsigned long x)
 {
 	long double d = x;
 	long exp;
 #ifdef __INTEL_COMPILER
 	exp = ia64_getf_exp(d);
 #else
-	__asm__ ("getf.exp %0=%1" : "=r"(exp) : "f"(d));
+      __asm__("getf.exp %0=%1": "=r"(exp):"f"(d));
 #endif
-	//	exp = ma_ia64_getf_exp(d);
 	return exp - 0xffff;
 }
 
-static __tbx_inline__ int
-ma_fls (int x)
+static __tbx_inline__ int ma_fls(int x)
 {
-	return ma_ia64_fls((unsigned int) x)+1;
+	return ma_ia64_fls((unsigned int) x) + 1;
 }
 
 /*
@@ -355,21 +311,18 @@ ma_fls (int x)
  * "int" values only and the result value is the bit number + 1.  ffs(0) is defined to
  * return zero.
  */
-static __tbx_inline__ unsigned long
-ma_hweight64 (unsigned long x)
+static __tbx_inline__ unsigned long ma_hweight64(unsigned long x)
 {
 	unsigned long result;
 #ifdef __INTEL_COMPILER
 	result = ia64_popcnt(x);
 #else
-	__asm__ ("popcnt %0=%1" : "=r" (result) : "r" (x));
+      __asm__("popcnt %0=%1": "=r"(result):"r"(x));
 #endif
-     //	result = ma_ia64_popcnt(x);
 	return result;
 }
 
-static __tbx_inline__ int
-ma_sched_find_first_bit (unsigned long *b)
+static __tbx_inline__ int ma_sched_find_first_bit(unsigned long *b)
 {
 	if (tbx_unlikely(b[0]))
 		return __ma_ffs(b[0]);
@@ -384,6 +337,7 @@ ma_sched_find_first_bit (unsigned long *b)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

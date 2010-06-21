@@ -49,13 +49,11 @@ find_process(p_tbx_htable_t    node_htable,
   p_tbx_slist_t     slist     = NULL;
   char             *true_name = NULL;
 
-  LOG_IN();
   slist = tbx_htable_get(node_htable, *p_host_name);
   if (slist)
     goto found;
 
   true_name = ntbx_true_name(*p_host_name);
-  TRACE_STR("trying", true_name);
   slist     = tbx_htable_get(node_htable, true_name);
   if (slist)
     {
@@ -65,11 +63,9 @@ find_process(p_tbx_htable_t    node_htable,
       goto found;
     }
 
-  TRACE("client provided hostname not found, trying client remote host");
     {
 
       char *alias = client->remote_host;
-      TRACE_STR("trying", alias);
 
       slist = tbx_htable_get(node_htable, alias);
       if (slist)
@@ -80,7 +76,6 @@ find_process(p_tbx_htable_t    node_htable,
         }
 
       true_name = ntbx_true_name(alias);
-      TRACE_STR("trying", true_name);
       slist = tbx_htable_get(node_htable, true_name);
       if (slist)
         {
@@ -90,20 +85,17 @@ find_process(p_tbx_htable_t    node_htable,
           goto found;
         }
 
-      TRACE("alias mismatched");
     }
 
   if (tbx_slist_is_nil(client->remote_alias))
     TBX_FAILURE("invalid client answer");
 
-  TRACE("client provided hostname not found, trying aliases");
   tbx_slist_ref_to_head(client->remote_alias);
   do
     {
       char *alias = NULL;
 
       alias = tbx_slist_ref_get(client->remote_alias);
-      TRACE_STR("trying", alias);
 
       slist = tbx_htable_get(node_htable, alias);
       if (slist)
@@ -114,7 +106,6 @@ find_process(p_tbx_htable_t    node_htable,
         }
 
       true_name = ntbx_true_name(alias);
-      TRACE_STR("trying", true_name);
       slist = tbx_htable_get(node_htable, true_name);
       if (slist)
         {
@@ -124,14 +115,12 @@ find_process(p_tbx_htable_t    node_htable,
           goto found;
         }
 
-      TRACE("alias mismatched");
     }
   while (tbx_slist_ref_forward(client->remote_alias));
 
   TBX_FAILURE("client hostname not found");
 
  found:
-  TRACE_STR("retained host name", *p_host_name);
   process = tbx_slist_extract(slist);
 
   if (tbx_slist_is_nil(slist))
@@ -140,7 +129,6 @@ find_process(p_tbx_htable_t    node_htable,
       tbx_slist_free(slist);
       slist = NULL;
     }
-  LOG_OUT();
 
   return process;
 }
@@ -170,9 +158,7 @@ connect_processes(p_leonie_t    leonie,
     tbx_slist_append(slist, process);
   }
 
-  LOG_IN();
   if (tbx_slist_is_nil(process_slist)) {
-    LOG_OUT();
     return;
   }
 
@@ -195,11 +181,7 @@ connect_processes(p_leonie_t    leonie,
       if (status == ntbx_failure)
 	TBX_FAILURE("client failed to connect");
 
-      TRACE("Incoming connection detected");
       host_name = leo_receive_string(client);
-
-      TRACE_STR("process location", host_name);
-      TRACE_STR("client remote host", client->remote_host);
 
       process = find_process(node_htable, client, &host_name);
 
@@ -213,12 +195,10 @@ connect_processes(p_leonie_t    leonie,
       leo_send_int(client, 0);
        
       TBX_FREE(host_name);
-      TRACE_VAL("connected process", process->global_rank);
     }
   while (!tbx_htable_empty(node_htable));
 
   tbx_htable_free(node_htable);
-  LOG_OUT();
 }
 
 // spawn_processes: spawns the session processes by groups using the static
@@ -231,7 +211,6 @@ spawn_processes(p_leonie_t leonie)
   p_leo_settings_t     settings     = NULL;
   p_ntbx_server_t      net_server   = NULL;
 
-  LOG_IN();
   spawn_groups = leonie->spawn_groups;
   loaders      = leonie->loaders;
   settings     = leonie->settings;
@@ -259,7 +238,6 @@ spawn_processes(p_leonie_t leonie)
       connect_processes(leonie, spawn_group->process_slist);
     }
   while (tbx_slist_ref_forward(spawn_groups->slist));
-  LOG_OUT();
 }
 
 // send_directory: sends the internal directory structure to each session
@@ -272,14 +250,11 @@ send_processes(p_leo_directory_t dir,
   void _send_data(void *_dir_process) {
     p_ntbx_process_t dir_process = _dir_process;
 
-    TRACE_VAL("Process", dir_process->global_rank);
     leo_send_int(client, dir_process->global_rank);
   }
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending processes");
   len = tbx_slist_get_length(dir->process_slist);
   if (len <= 0)
     TBX_FAILURE("invalid number of processes");
@@ -287,7 +262,6 @@ send_processes(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->process_slist, _send_data);
   leo_send_string(client, "end{processes}");
-  LOG_OUT();
 }
 
 static
@@ -305,7 +279,6 @@ send_nodes(p_leo_directory_t dir,
       leo_send_int(client, l);
     }
 
-    TRACE_STR("Node", dir_node->name);
     leo_send_string(client, dir_node->name);
     do_pc_local(dir_node->pc, _f);
     leo_send_int(client, -1);
@@ -313,8 +286,6 @@ send_nodes(p_leo_directory_t dir,
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending nodes");
   len = tbx_slist_get_length(dir->node_slist);
   if (len <= 0)
     TBX_FAILURE("invalid number of nodes");
@@ -322,7 +293,6 @@ send_nodes(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->node_slist, _send_data);
   leo_send_string(client, "end{nodes}");
-  LOG_OUT();
 }
 
 static
@@ -333,19 +303,15 @@ send_adapters(p_tbx_slist_t   adapter_slist,
   void _send_adapter_data(void *_dir_adapter) {
     p_leo_dir_adapter_t dir_adapter = _dir_adapter;
 
-    LOG_IN();
     leo_send_string(client, dir_adapter->name);
     leo_send_string(client, dir_adapter->selector);
-    LOG_OUT();
   }
 
   int len = 0;
 
-  LOG_IN();
   len = tbx_slist_get_length(adapter_slist);
   leo_send_int(client, len);
   do_slist(adapter_slist, _send_adapter_data);
-  LOG_OUT();
 }
 
 static
@@ -360,28 +326,21 @@ send_drivers(p_leo_directory_t dir,
       p_leo_dir_driver_process_specific_t dps = _dps;
       ntbx_process_grank_t                g   = -1;
 
-      LOG_IN();
       g = ntbx_pc_local_to_global(dir_driver->pc, l);
       leo_send_int(client, g);
       leo_send_int(client, l);
       send_adapters(dps->adapter_slist, client);
       leo_send_string(client, dps->parameter);
-      LOG_OUT();
     }
 
-    LOG_IN();
-    TRACE_STR("Driver", dir_driver->network_name);
     leo_send_string(client, dir_driver->network_name);
     leo_send_string(client, dir_driver->device_name);
     do_pc_local_s(dir_driver->pc, _process_specific);
     leo_send_int(client, -1);
-    LOG_OUT();
   }
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending drivers");
   len = tbx_slist_get_length(dir->driver_slist);
 
   if (len < 0)
@@ -390,7 +349,6 @@ send_drivers(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->driver_slist, _send_driver_data);
   leo_send_string(client, "end{drivers}");
-  LOG_OUT();
 }
 
 static
@@ -420,7 +378,6 @@ send_channels(p_leo_directory_t dir,
       }
     }
 
-    TRACE_STR("Channel", dir_channel->name);
     leo_send_string(client, dir_channel->name);
     leo_send_unsigned_int(client, dir_channel->public);
     leo_send_unsigned_int(client, 0 ); // mergeable ; backward compatibility
@@ -433,8 +390,6 @@ send_channels(p_leo_directory_t dir,
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending channels");
   len = tbx_slist_get_length(dir->channel_slist);
 
   if (len < 0)
@@ -443,7 +398,6 @@ send_channels(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->channel_slist, _send_channel_data);
   leo_send_string(client, "end{channels}");
-  LOG_OUT();
 }
 
 void
@@ -462,7 +416,6 @@ send_fchannels(p_leo_directory_t dir,
       leo_send_string(client, "default");
     }
 
-    TRACE_STR("Fchannel", dir_fchannel->name);
     leo_send_string(client, dir_fchannel->name);
     leo_send_string(client, dir_fchannel->channel_name);
 
@@ -472,8 +425,6 @@ send_fchannels(p_leo_directory_t dir,
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending fchannels");
   len = tbx_slist_get_length(dir->fchannel_slist);
 
   if (len < 0)
@@ -482,7 +433,6 @@ send_fchannels(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->fchannel_slist, _send_fchannel_data);
   leo_send_string(client, "end{fchannels}");
-  LOG_OUT();
 }
 
 static
@@ -497,25 +447,19 @@ send_table(p_leo_dir_vxchannel_t dir_vxchannel,
       p_leo_dir_connection_data_t cdata =
         _cdata;
 
-      LOG_IN();
       leo_send_int   (client, dg);
       leo_send_int   (client, dl);
       leo_send_string(client, cdata->channel_name);
       leo_send_int   (client, cdata->destination_rank);
-      LOG_OUT();
     }
 
-    LOG_IN();
     leo_send_int(client, sg);
     leo_send_int(client, sl);
     do_pc_global_local_s(cnx->pc, _cnx_dst);
     leo_send_int(client, -1);
-    LOG_OUT();
   }
 
-  LOG_IN();
   do_pc_global_local_s(dir_vxchannel->pc, _cnx_src);
-  LOG_OUT();
 }
 
 void
@@ -536,8 +480,6 @@ send_vchannels(p_leo_directory_t dir,
     p_leo_dir_vxchannel_t dir_vchannel = _dir_vchannel;
     int                   len          = 0;
 
-    LOG_IN();
-    TRACE_STR("Vchannel", dir_vchannel->name);
     leo_send_string(client, dir_vchannel->name);
 
     len = tbx_slist_get_length(dir_vchannel->dir_channel_slist);
@@ -548,16 +490,12 @@ send_vchannels(p_leo_directory_t dir,
     leo_send_int(client, len);
     do_slist(dir_vchannel->dir_fchannel_slist, _send_fchannel);
 
-    TRACE("Virtual channel routing table");
     send_table(dir_vchannel, client);
     leo_send_int(client, -1);
-    LOG_OUT();
   }
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending vchannels");
   len = tbx_slist_get_length(dir->vchannel_slist);
 
   if (len < 0)
@@ -566,7 +504,6 @@ send_vchannels(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->vchannel_slist, _send_vchannel_data);
   leo_send_string(client, "end{vchannels}");
-  LOG_OUT();
 }
 
 void
@@ -586,8 +523,6 @@ send_xchannels(p_leo_directory_t dir,
     p_leo_dir_vxchannel_t dir_xchannel = _dir_xchannel;
     int                   len          = 0;
 
-    LOG_IN();
-    TRACE_STR("Xchannel", dir_xchannel->name);
     leo_send_string(client, dir_xchannel->name);
 
     len = tbx_slist_get_length(dir_xchannel->dir_channel_slist);
@@ -598,16 +533,12 @@ send_xchannels(p_leo_directory_t dir,
     leo_send_int(client, len);
     do_slist(dir_xchannel->sub_channel_name_slist, _send_sub_channel_name);
 
-    TRACE("Mux channel routing table");
     send_table(dir_xchannel, client);
     leo_send_int(client, -1);
-    LOG_OUT();
   }
 
   int len = 0;
 
-  LOG_IN();
-  TRACE("Sending xchannels");
   len = tbx_slist_get_length(dir->xchannel_slist);
 
   if (len < 0)
@@ -616,7 +547,6 @@ send_xchannels(p_leo_directory_t dir,
   leo_send_int(client, len);
   do_slist(dir->xchannel_slist, _send_xchannel_data);
   leo_send_string(client, "end{xchannels}");
-  LOG_OUT();
 }
 
 void
@@ -624,9 +554,6 @@ send_directory(p_leonie_t leonie)
 {
   p_leo_directory_t  dir         = NULL;
   p_tbx_slist_nref_t process_ref = NULL;
-
-  LOG_IN();
-  TRACE("Directory transmission");
 
   dir = leonie->directory;
 
@@ -640,9 +567,7 @@ send_directory(p_leonie_t leonie)
       //p_tbx_slist_t    slist   = NULL;
       //int              len     =    0;
 
-      TRACE("Starting tranmission loop");
       process = tbx_slist_nref_get(process_ref);
-      TRACE_VAL("Transmitting to", process->global_rank);
 
       client = process_to_client(process);
       ntbx_tcp_client_setup_delay(client);
@@ -677,7 +602,5 @@ send_directory(p_leonie_t leonie)
 
   tbx_slist_nref_free(process_ref);
 
-  TRACE("Directory transmission completed");
-  LOG_OUT();
 }
 

@@ -19,18 +19,18 @@
 
 p_tbx_memory_t my_allocator;
 struct s_object {
-	int	 a;
-	void	*b;
+	int a;
+	void *b;
 };
 
-int
-main(int    argc,
-		char **argv) {
-	void	*t[N];
-	int	 i;
+int main(int argc, char *argv[])
+{
+	void *t[N];
+	int i;
 
-	tbx_init(argc, argv);
-	tbx_malloc_init(&my_allocator, sizeof(struct s_object), 0, "appli/my_allocator");
+	tbx_init(&argc, &argv);
+	tbx_malloc_init(&my_allocator, sizeof(struct s_object), 0,
+			"appli/my_allocator");
 
 	printf("Phase 1\n");
 	for (i = 0; i < N; i++) {
@@ -49,7 +49,7 @@ main(int    argc,
 	}
 
 	/* Leave one block unfreed to make tbx_malloc_clean checker complain */
-	for (i = 0; i < N-1; i++) {
+	for (i = 0; i < N - 1; i++) {
 		tbx_free(my_allocator, t[i]);
 	}
 
@@ -57,4 +57,3 @@ main(int    argc,
 
 	return 0;
 }
-

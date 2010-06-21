@@ -44,7 +44,7 @@ int marcel_main(int argc, char *argv[])
   marcel_attr_t writer_attr;
   void *ptr;
 
-   marcel_init(&argc, argv);
+   marcel_init(argc, argv);
 
    marcel_attr_init(&writer_attr);
 

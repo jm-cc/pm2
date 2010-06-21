@@ -27,6 +27,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -53,10 +54,9 @@
 		__ma_bad_size_for_ia64_fetch_and_add();				\
 	}									\
 })
-
 #define ma_ia64_fetchadd(i,v,sem)								\
 ({											\
-	__ma_u64 _tmp;									\
+	uint64_t _tmp;									\
 	volatile __typeof__(*(v)) *_v = (v);						\
 	/* Can't use a switch () here: gcc isn't always smart enough for that... */	\
 	if ((i) == -16)									\
@@ -79,90 +79,81 @@
 		_tmp = __ma_bad_increment_for_ia64_fetch_and_add();			\
 	(__typeof__(*(v))) (_tmp);	/* return old value */				\
 })
-
-#define ma_ia64_fetch_and_add(i,v)	(ma_ia64_fetchadd(i, v, rel) + (i)) /* return new value */
-
+#define ma_ia64_fetch_and_add(i,v)	(ma_ia64_fetchadd(i, v, rel) + (i))	/* return new value */
 #define __ma_xchg(x,ptr,size)						\
 ({									\
 	unsigned long __xchg_result;					\
 									\
 	switch (size) {							\
 	      case 1:							\
-		__xchg_result = ma_ia64_xchg1((volatile __ma_u8 *)ptr, x);	\
-		break;							\
+		      __xchg_result = ma_ia64_xchg1((volatile uint8_t *)ptr, x); \
+		      break;						\
 									\
 	      case 2:							\
-		__xchg_result = ma_ia64_xchg2((volatile __ma_u16 *)ptr, x);	\
-		break;							\
+		      __xchg_result = ma_ia64_xchg2((volatile uint16_t *)ptr, x); \
+		      break;						\
 									\
 	      case 4:							\
-		__xchg_result = ma_ia64_xchg4((volatile __ma_u32 *)ptr, x);	\
-		break;							\
+		      __xchg_result = ma_ia64_xchg4((volatile uint32_t *)ptr, x); \
+		      break;						\
 									\
 	      case 8:							\
-		__xchg_result = ma_ia64_xchg8((volatile __ma_u64 *)ptr, x);	\
-		break;							\
+		      __xchg_result = ma_ia64_xchg8((volatile uint64_t *)ptr, x); \
+		      break;						\
 	      default:							\
-		ma_ia64_xchg_called_with_bad_pointer();			\
+		      ma_ia64_xchg_called_with_bad_pointer();		\
 	}								\
 	__xchg_result;							\
 })
-
 #define ma_xchg(ptr,x)							     \
   ((__typeof__(*(ptr))) __ma_xchg ((unsigned long) (x), (ptr), sizeof(*(ptr))))
-
 /*
  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
  * store NEW in MEM.  Return the initial value in MEM.  Success is
  * indicated by comparing RETURN with OLD.
  */
-
 #define __MA_HAVE_ARCH_CMPXCHG 1
-
 #define ma_ia64_cmpxchg(sem,ptr,old,repl,size)						\
 ({											\
-	__ma_u64 _o_, _r_;									\
+	uint64_t _o_, _r_;									\
 											\
-	switch (size) {									\
-	      case 1: _o_ = (__ma_u8 ) (long) (old); break;				\
-	      case 2: _o_ = (__ma_u16) (long) (old); break;				\
-	      case 4: _o_ = (__ma_u32) (long) (old); break;				\
-	      case 8: _o_ = (__ma_u64) (long) (old); break;				\
+	switch (size) {							\
+	      case 1: _o_ = (uint8_t) (long) (old); break;		\
+	      case 2: _o_ = (uint16_t) (long) (old); break;				\
+	      case 4: _o_ = (uint32_t) (long) (old); break;				\
+	      case 8: _o_ = (uint64_t) (long) (old); break;		\
 	      default: break;								\
 	}										\
 	switch (size) {									\
 	      case 1:									\
-	      	_r_ = ma_ia64_cmpxchg1_##sem((volatile __ma_u8 *)(void*) ptr, repl, _o_);			\
-		break;									\
+		      _r_ = ma_ia64_cmpxchg1_##sem((volatile uint8_t *)(void*) ptr, repl, _o_); \
+		      break;						\
 											\
 	      case 2:									\
-	       _r_ = ma_ia64_cmpxchg2_##sem((volatile __ma_u16 *)(void*)  ptr, repl, _o_);			\
-		break;									\
+		      _r_ = ma_ia64_cmpxchg2_##sem((volatile uint16_t *)(void*)  ptr, repl, _o_);	\
+		      break;						\
 											\
 	      case 4:									\
-	      	_r_ = ma_ia64_cmpxchg4_##sem((volatile __ma_u32 *)(void*)  ptr, repl, _o_);			\
-		break;									\
+		      _r_ = ma_ia64_cmpxchg4_##sem((volatile uint32_t *)(void*)  ptr, repl, _o_); \
+		      break;						\
 											\
 	      case 8:									\
-		_r_ = ma_ia64_cmpxchg8_##sem((volatile __ma_u64 *)(void*)  ptr, repl, _o_);			\
-		break;									\
+		      _r_ = ma_ia64_cmpxchg8_##sem((volatile uint64_t *)(void*)  ptr, repl, _o_); \
+		      break;						\
 											\
 	      default:									\
-		_r_ = ma_ia64_cmpxchg_called_with_bad_pointer();				\
-		break;									\
+		      _r_ = ma_ia64_cmpxchg_called_with_bad_pointer();	\
+		      break;						\
 	}										\
 	(__typeof__(old)) _r_;								\
 })
-
 #define ma_cmpxchg_acq(ptr,o,n)	ma_ia64_cmpxchg(acq, (ptr), (o), (n), sizeof(*(ptr)))
 #define ma_cmpxchg_rel(ptr,o,n)	ma_ia64_cmpxchg(rel, (ptr), (o), (n), sizeof(*(ptr)))
-
 /* for compatibility with other platforms: */
 #define ma_cmpxchg(ptr,o,n)	ma_cmpxchg_acq(ptr,o,n)
-
-#if 0 && defined(CONFIG_IA64_DEBUG_CMPXCHG)
-# define CMPXCHG_BUGCHECK_DECL	int _cmpxchg_bugcheck_count = 128;
-# define CMPXCHG_BUGCHECK(v)							\
+#ifdef CONFIG_IA64_DEBUG_CMPXCHG
+# define MA_CMPXCHG_BUGCHECK_DECL	int _cmpxchg_bugcheck_count = 128;
+# define MA_CMPXCHG_BUGCHECK(v)							\
   do {										\
 	if (_cmpxchg_bugcheck_count-- <= 0) {					\
 		void *ip;							\
@@ -172,10 +163,10 @@
 		break;								\
 	}									\
   } while (0)
-#else /* !CONFIG_IA64_DEBUG_CMPXCHG */
+#else				/* !CONFIG_IA64_DEBUG_CMPXCHG */
 # define MA_CMPXCHG_BUGCHECK_DECL
 # define MA_CMPXCHG_BUGCHECK(v)
-#endif /* !CONFIG_IA64_DEBUG_CMPXCHG */
+#endif				/* !CONFIG_IA64_DEBUG_CMPXCHG */
 
 
 /** Internal functions **/
@@ -183,22 +174,23 @@
  * Force an unresolved reference if someone tries to use
  * ia64_fetch_and_add() with a bad value.
  */
-extern unsigned long __ma_bad_size_for_ia64_fetch_and_add (void);
-extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add (void);
+extern unsigned long __ma_bad_size_for_ia64_fetch_and_add(void);
+extern unsigned long __ma_bad_increment_for_ia64_fetch_and_add(void);
 
 /*
  * This function doesn't exist, so you'll get a linker error if
  * something tries to do an invalid xchg().
  */
-extern void ma_ia64_xchg_called_with_bad_pointer (void);
+extern void ma_ia64_xchg_called_with_bad_pointer(void);
 
 /*
  * This function doesn't exist, so you'll get a linker error
  * if something tries to do an invalid cmpxchg().
  */
-extern long ma_ia64_cmpxchg_called_with_bad_pointer (void);
+extern long ma_ia64_cmpxchg_called_with_bad_pointer(void);
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -45,7 +45,7 @@ int marcel_main(int argc, char *argv[])
 { marcel_t pid;
   any_t status;
 
-   marcel_init(&argc, argv);
+   marcel_init(argc, argv);
 
    marcel_create(&pid, NULL, func, (any_t)"boys");
 

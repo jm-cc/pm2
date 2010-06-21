@@ -187,7 +187,7 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   
   TBX_INIT_FAST_LIST_HEAD(&p_pw->link);
 
-  NM_SO_TRACE_LEVEL(3,"creating a pw %p (%d bytes)\n", p_pw, p_pw->length);
+  NM_TRACEF("creating a pw %p (%d bytes)\n", p_pw, p_pw->length);
 
   *pp_pw = p_pw;
 
@@ -243,10 +243,10 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
   if((flags & NM_PW_BUFFER) || (flags & NM_PW_GLOBAL_HEADER))
     {
       tbx_free(nm_so_pw_buf_mem, p_pw);
-      NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_buf_mem\n", p_pw);
+      NM_TRACEF("pw %p is removed from nm_so_pw_buf_mem\n", p_pw);
     }
   else if(flags & NM_PW_NOHEADER) {
-    NM_SO_TRACE_LEVEL(3,"pw %p is removed from nm_so_pw_nohd_mem\n", p_pw);
+    NM_TRACEF("pw %p is removed from nm_so_pw_nohd_mem\n", p_pw);
     tbx_free(nm_so_pw_nohd_mem, p_pw);
   }
 

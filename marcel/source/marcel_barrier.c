@@ -20,45 +20,59 @@
 
 #include "marcel_fastlock.h"
 
-int marcel_barrierattr_init(marcel_barrierattr_t *attr) {
-	LOG_IN();
-	attr->pshared	= MARCEL_PROCESS_PRIVATE;
-	attr->mode	= MA_BARRIER_SLEEP_MODE;
-	LOG_RETURN(0);
+int marcel_barrierattr_init(marcel_barrierattr_t * attr)
+{
+	MARCEL_LOG_IN();
+	attr->pshared = MARCEL_PROCESS_PRIVATE;
+	attr->mode = MA_BARRIER_SLEEP_MODE;
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrierattr_destroy (marcel_barrierattr_t *attr TBX_UNUSED) {
-	LOG_IN();
-	LOG_RETURN(0);
+
+int marcel_barrierattr_destroy(marcel_barrierattr_t * attr TBX_UNUSED)
+{
+	MARCEL_LOG_IN();
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrierattr_getpshared(__const marcel_barrierattr_t *attr, int *pshared) {
-	LOG_IN();
+
+int marcel_barrierattr_getpshared(__const marcel_barrierattr_t * attr, int *pshared)
+{
+	MARCEL_LOG_IN();
 	*pshared = attr->pshared;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrierattr_setpshared (marcel_barrierattr_t *attr, int pshared) {
-	LOG_IN();
+
+int marcel_barrierattr_setpshared(marcel_barrierattr_t * attr, int pshared)
+{
+	MARCEL_LOG_IN();
 	if (pshared != MARCEL_PROCESS_PRIVATE
 	    && __builtin_expect(pshared != MARCEL_PROCESS_SHARED, 0)) {
-		LOG_RETURN(EINVAL);
+		MARCEL_LOG_RETURN(EINVAL);
 	}
 	if (pshared == MARCEL_PROCESS_SHARED) {
-		LOG_RETURN(ENOTSUP);
+		MARCEL_LOG_RETURN(ENOTSUP);
 	}
 	attr->pshared = pshared;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrierattr_getmode(__const marcel_barrierattr_t *attr, ma_barrier_mode_t *mode) {
-	LOG_IN();
+
+int marcel_barrierattr_getmode(__const marcel_barrierattr_t * attr,
+			       ma_barrier_mode_t * mode)
+{
+	MARCEL_LOG_IN();
 	*mode = attr->mode;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrierattr_setmode (marcel_barrierattr_t *attr, ma_barrier_mode_t mode) {
-	LOG_IN();
+
+int marcel_barrierattr_setmode(marcel_barrierattr_t * attr, ma_barrier_mode_t mode)
+{
+	MARCEL_LOG_IN();
 	attr->mode = mode;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrier_setcount(marcel_barrier_t *b, unsigned int count) {
-	LOG_IN();
+
+int marcel_barrier_setcount(marcel_barrier_t * b, unsigned int count)
+{
+	MARCEL_LOG_IN();
 #ifdef MA_BARRIER_USE_MUTEX
 	marcel_mutex_lock(&b->m);
 #else
@@ -73,22 +87,25 @@ int marcel_barrier_setcount(marcel_barrier_t *b, unsigned int count) {
 #else
 	ma_fastlock_release(&b->lock);
 #endif
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrier_getcount(const marcel_barrier_t * b,
-		unsigned int *count) {
-	LOG_IN();
+
+int marcel_barrier_getcount(const marcel_barrier_t * b, unsigned int *count)
+{
+	MARCEL_LOG_IN();
 	*count = b->init_count;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrier_addcount(marcel_barrier_t *b, int v) {
-	LOG_IN();
+
+int marcel_barrier_addcount(marcel_barrier_t * b, int v)
+{
+	MARCEL_LOG_IN();
 #ifdef MA_BARRIER_USE_MUTEX
 	marcel_mutex_lock(&b->m);
 #else
 	ma_fastlock_acquire(&b->lock);
 #endif
-	b->init_count	+= v;
+	b->init_count += v;
 	ma_atomic_add(v, &b->leftB);
 #ifdef MA_BARRIER_USE_MUTEX
 	marcel_cond_signal(&b->c);
@@ -96,26 +113,26 @@ int marcel_barrier_addcount(marcel_barrier_t *b, int v) {
 #else
 	ma_fastlock_release(&b->lock);
 #endif
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
-int marcel_barrier_init(marcel_barrier_t *b,
-		__const marcel_barrierattr_t *attr,
-		unsigned int count) {
+
+int marcel_barrier_init(marcel_barrier_t * b,
+			__const marcel_barrierattr_t * attr, unsigned int count)
+{
 	ma_barrier_mode_t mode;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	mode = MA_BARRIER_SLEEP_MODE;
 	if (__builtin_expect(count == 0, 0)) {
-		LOG_RETURN(EINVAL);
+		MARCEL_LOG_RETURN(EINVAL);
 	}
 	if (attr != NULL) {
 		if (attr->pshared != MARCEL_PROCESS_PRIVATE
-		    && __builtin_expect(attr->pshared != MARCEL_PROCESS_SHARED,
-			0)) {
-			LOG_RETURN(EINVAL);
+		    && __builtin_expect(attr->pshared != MARCEL_PROCESS_SHARED, 0)) {
+			MARCEL_LOG_RETURN(EINVAL);
 		}
 
 		if (attr->pshared == MARCEL_PROCESS_SHARED) {
-			LOG_RETURN(ENOTSUP);
+			MARCEL_LOG_RETURN(ENOTSUP);
 		}
 
 		mode = attr->mode;
@@ -130,14 +147,15 @@ int marcel_barrier_init(marcel_barrier_t *b,
 	ma_atomic_init(&b->leftB, count);
 	ma_atomic_init(&b->leftE, 0);
 	b->mode = mode;
-	LOG_RETURN(0);
+	MARCEL_LOG_RETURN(0);
 }
 
 
-int marcel_barrier_destroy (marcel_barrier_t *b) {
+int marcel_barrier_destroy(marcel_barrier_t * b)
+{
 	int ret = 0;
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
@@ -151,18 +169,19 @@ int marcel_barrier_destroy (marcel_barrier_t *b) {
 			marcel_cond_wait(&b->c, &b->m);
 #else
 			blockcell c;
-			__marcel_register_spinlocked(&b->lock, marcel_self(),
-					&c);
+			__marcel_register_spinlocked(&b->lock, ma_self(), &c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_fastlock_release(&b->lock),
-					ma_fastlock_acquire(&b->lock));
+								   ma_fastlock_release
+								   (&b->lock),
+								   ma_fastlock_acquire
+								   (&b->lock));
 #endif
 		}
 	} else {
 		while (ma_atomic_read(&b->leftE))
 			marcel_yield();
 	}
-	if (__builtin_expect(ma_atomic_read(&b->leftB) != b->init_count, 0)) {
+	if (__builtin_expect(ma_atomic_read(&b->leftB) != (int) b->init_count, 0)) {
 		ret = EBUSY;
 	}
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
@@ -171,19 +190,23 @@ int marcel_barrier_destroy (marcel_barrier_t *b) {
 #else
 		ma_fastlock_release(&b->lock);
 #endif
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 }
-int marcel_barrier_wait(marcel_barrier_t *b) {
+
+int marcel_barrier_wait(marcel_barrier_t * b)
+{
 	int ret = 0;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	marcel_barrier_wait_begin(b);
 	if (!marcel_barrier_wait_end(b))
 		ret = MARCEL_BARRIER_SERIAL_THREAD;
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 }
-int marcel_barrier_wait_begin(marcel_barrier_t *b) {
+
+int marcel_barrier_wait_begin(marcel_barrier_t * b)
+{
 	int ret;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
@@ -196,15 +219,15 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 			marcel_cond_wait(&b->c, &b->m);
 #else
 			blockcell c;
-			__marcel_register_spinlocked(&b->lock, marcel_self(),
-					&c);
+			__marcel_register_spinlocked(&b->lock, ma_self(), &c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_fastlock_release(&b->lock),
-					ma_fastlock_acquire(&b->lock));
+								   ma_fastlock_release
+								   (&b->lock),
+								   ma_fastlock_acquire
+								   (&b->lock));
 #endif
-		}
-	else
-		while(ma_atomic_read(&b->leftE))
+	} else
+		while (ma_atomic_read(&b->leftE))
 			marcel_yield();
 	ret = ma_atomic_dec_return(&b->leftB);
 	if (!ret) {
@@ -226,11 +249,13 @@ int marcel_barrier_wait_begin(marcel_barrier_t *b) {
 #else
 		ma_fastlock_release(&b->lock);
 #endif
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 }
-int marcel_barrier_wait_end(marcel_barrier_t *b) {
+
+int marcel_barrier_wait_end(marcel_barrier_t * b)
+{
 	int ret;
-	LOG_IN();
+	MARCEL_LOG_IN();
 	if (b->mode == MA_BARRIER_SLEEP_MODE)
 #ifdef MA_BARRIER_USE_MUTEX
 		marcel_mutex_lock(&b->m);
@@ -243,15 +268,16 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 			marcel_cond_wait(&b->c, &b->m);
 #else
 			blockcell c;
-			__marcel_register_spinlocked(&b->lock, marcel_self(),
-					&c);
+			__marcel_register_spinlocked(&b->lock, ma_self(), &c);
 			INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(c.blocked,
-					ma_fastlock_release(&b->lock),
-					ma_fastlock_acquire(&b->lock));
+								   ma_fastlock_release
+								   (&b->lock),
+								   ma_fastlock_acquire
+								   (&b->lock));
 #endif
 		}
 	} else {
-		while(!ma_atomic_read(&b->leftE))
+		while (!ma_atomic_read(&b->leftE))
 			marcel_yield();
 	}
 	ret = ma_atomic_dec_return(&b->leftE);
@@ -265,44 +291,64 @@ int marcel_barrier_wait_end(marcel_barrier_t *b) {
 		ma_fastlock_release(&b->lock);
 #endif
 	}
-	LOG_RETURN(ret);
+	MARCEL_LOG_RETURN(ret);
 }
 
 #ifdef MA__IFACE_PMARCEL
-int pmarcel_barrierattr_init(pmarcel_barrierattr_t *attr) {
+int pmarcel_barrierattr_init(pmarcel_barrierattr_t * attr)
+{
 	return marcel_barrierattr_init(attr);
 }
-int pmarcel_barrierattr_destroy (pmarcel_barrierattr_t *attr) {
+
+int pmarcel_barrierattr_destroy(pmarcel_barrierattr_t * attr)
+{
 	return marcel_barrierattr_destroy(attr);
 }
-int pmarcel_barrierattr_getpshared(__const pmarcel_barrierattr_t *attr, int *pshared) {
+
+int pmarcel_barrierattr_getpshared(__const pmarcel_barrierattr_t * attr, int *pshared)
+{
 	return marcel_barrierattr_getpshared(attr, pshared);
 }
-int pmarcel_barrierattr_setpshared (pmarcel_barrierattr_t *attr, int pshared) {
+
+int pmarcel_barrierattr_setpshared(pmarcel_barrierattr_t * attr, int pshared)
+{
 	return marcel_barrierattr_setpshared(attr, pshared);
 }
-int pmarcel_barrierattr_getmode(__const pmarcel_barrierattr_t *attr, ma_barrier_mode_t *mode) {
+
+int pmarcel_barrierattr_getmode(__const pmarcel_barrierattr_t * attr,
+				ma_barrier_mode_t * mode)
+{
 	return marcel_barrierattr_getmode(attr, mode);
 }
-int pmarcel_barrierattr_setmode (pmarcel_barrierattr_t *attr, ma_barrier_mode_t mode) {
+
+int pmarcel_barrierattr_setmode(pmarcel_barrierattr_t * attr, ma_barrier_mode_t mode)
+{
 	return marcel_barrierattr_setmode(attr, mode);
 }
-int pmarcel_barrier_init(pmarcel_barrier_t *b,
-			__const pmarcel_barrierattr_t *attr,
-			unsigned int count) {
+
+int pmarcel_barrier_init(pmarcel_barrier_t * b,
+			 __const pmarcel_barrierattr_t * attr, unsigned int count)
+{
 	return marcel_barrier_init(b, attr, count);
 }
-int pmarcel_barrier_destroy (pmarcel_barrier_t *b) {
+
+int pmarcel_barrier_destroy(pmarcel_barrier_t * b)
+{
 	return marcel_barrier_destroy(b);
 }
-int pmarcel_barrier_wait(pmarcel_barrier_t *b) {
+
+int pmarcel_barrier_wait(pmarcel_barrier_t * b)
+{
 	return marcel_barrier_wait(b);
 }
-int pmarcel_barrier_wait_begin(pmarcel_barrier_t *b) {
+
+int pmarcel_barrier_wait_begin(pmarcel_barrier_t * b)
+{
 	return marcel_barrier_wait_begin(b);
 }
-int pmarcel_barrier_wait_end(pmarcel_barrier_t *b) {
+
+int pmarcel_barrier_wait_end(pmarcel_barrier_t * b)
+{
 	return marcel_barrier_wait_end(b);
 }
 #endif
-

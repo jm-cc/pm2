@@ -31,7 +31,7 @@
 
 
 /** Public data types **/
-typedef struct ma_bubble_sched_class  marcel_bubble_sched_class_t;
+typedef struct ma_bubble_sched_class marcel_bubble_sched_class_t;
 typedef struct ma_bubble_sched_struct marcel_bubble_sched_t;
 
 /* \brief Holder type wrapper. */
@@ -46,10 +46,10 @@ typedef struct marcel_bubble marcel_bubble_t;
 /** \brief Holder types: runqueue or bubble */
 enum marcel_holder {
 	/** \brief runqueue [::ma_runqueue] type holder. */
-	MA_RUNQUEUE_HOLDER,
+	MA_RUNQUEUE_HOLDER
 #ifdef MA__BUBBLES
 	/** \brief bubble [::marcel_bubble] type holder. */
-	MA_BUBBLE_HOLDER,
+	, MA_BUBBLE_HOLDER
 #endif
 };
 
@@ -62,7 +62,7 @@ enum marcel_entity {
 	/** \brief thread type entity (task [::marcel_task] subtype). */
 	MA_THREAD_ENTITY,
 	/** \brief thread seed (task [::marcel_task] subtype)*/
-	MA_THREAD_SEED_ENTITY,
+	MA_THREAD_SEED_ENTITY
 };
 
 /** \brief Virtual class of an entity holder. An \e holder is a container
@@ -84,7 +84,7 @@ struct ma_holder {
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Synthesis of statistics of contained entities */
 	ma_stats_t stats;
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 };
 
 /** \brief Virtual class of a holder entity. An \e entity is a containee of a \e holder (::ma_holder).
@@ -138,9 +138,9 @@ struct ma_entity {
 	/** \brief Remaining time slice until the entity gets preempted out. */
 	ma_atomic_t time_slice;
 #ifdef MA__BUBBLES
-        /* Marks the entity as settled on the current runqueue. Used by some
-        bubble schedulers. (can be 0 or 1) */
-        unsigned int settled;
+	/* Marks the entity as settled on the current runqueue. Used by some
+	   bubble schedulers. (can be 0 or 1) */
+	unsigned int settled;
 	/** \brief Item linker to the list of natural entities
 	 * (marcel_bubble#natural_entities)  in the entity's natural holding bubble. */
 	struct tbx_fast_list_head natural_entities_item;
@@ -160,20 +160,19 @@ struct ma_entity {
 #ifdef MARCEL_STATS_ENABLED
 	/** \brief Statistics for the entity */
 	ma_stats_t stats;
-#endif /* MARCEL_STATS_ENABLED */
+#endif				/* MARCEL_STATS_ENABLED */
 
-#ifdef MM_MAMI_ENABLED
+#ifdef MARCEL_MAMI_ENABLED
 	/** \brief List of memory areas attached to the entity.*/
 	struct tbx_fast_list_head memory_areas;
 	/** \brief Lock for serializing access to ma_entity#memory_areas */
 	marcel_spinlock_t memory_areas_lock;
-
-#endif /* MM_MAMI_ENABLED */
+#endif				/* MARCEL_MAMI_ENABLED */
 
 #ifdef MM_HEAP_ENABLED
 	/** \brief Back pointer to the NUMA heap allocator used to allocated this object */
 	heap_heap_t *heap;
-#endif /* MM_HEAP_ENABLED */
+#endif				/* MM_HEAP_ENABLED */
 
 #ifdef MA__BUBBLES
 	/** \brief General-purpose list item linker for bubble schedulers */
@@ -204,20 +203,20 @@ struct marcel_bubble {
 	/** \brief List of entities queued in the so-called "thread cache" */
 	struct tbx_fast_list_head cached_entities;
 	/** \brief Number of threads that we ran in a row, shouldn't be greater than hold->nb_ready_entities. */
-	int num_schedules;
+	unsigned long num_schedules;
 
-        /** \brief Barrier for the barrier operation */
+	/** \brief Barrier for the barrier operation */
 	marcel_barrier_t barrier;
 
 	/** \brief Whether the bubble is preemptible, i.e., whether one of its
 			threads can be preempted by a thread from another bubble.  */
 	tbx_bool_t not_preemptible;
 
-        /** \brief Dead bubbles (temporary field)*/
+	/** \brief Dead bubbles (temporary field)*/
 	int old;
 
-        /** bubble identifier */
-        int id;
+	/** bubble identifier */
+	int id;
 #endif
 };
 

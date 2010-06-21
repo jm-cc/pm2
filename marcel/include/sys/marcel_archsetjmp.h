@@ -19,79 +19,34 @@
 
 
 #include <setjmp.h>
-#include <tbx_compiler.h>
-#include <stdint.h>
+#include "tbx_compiler.h"
+#include "tbx_intdef.h"
+#include "asm/marcel_archdep.h"
 
 
-#if defined(ALPHA_ARCH) && defined(LINUX_SYS)
+#if defined(__MARCEL_KERNEL__)
+TBX_VISIBILITY_PUSH_INTERNAL
 
-#ifdef setjmp
-#undef setjmp
-#endif
-
-#define setjmp(env) __sigsetjmp ((env), 0)
-
-#endif
-
-#if defined(RS6K_ARCH)
-
-_PRIVATE_ extern int _jmg(int r);
-_PRIVATE_ extern TBX_NORETURN void LONGJMP(jmp_buf buf, int val);
-#ifdef setjmp
-#undef setjmp
-#endif
-
-#ifdef longjmp
-#undef longjmp
-#endif
-
-#define setjmp(buf)		_jmg(setjmp(buf))
-#define longjmp(buf, v)		LONGJMP(buf, v)
-
-#endif
-
-#if defined(X86_ARCH)
-#define MA_JMPBUF
-
-#define MARCEL_JB_BX   0
-#define MARCEL_JB_SI   1
-#define MARCEL_JB_DI   2
-#define MARCEL_JB_BP   3
-#define MARCEL_JB_SP   4
-#define MARCEL_JB_PC   5
-
-typedef intptr_t ma_jmp_buf[6];
-
-extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
-
-static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
-
-#elif defined(X86_64_ARCH)
-#define MA_JMPBUF
-
-#define MARCEL_JB_RBX   0
-#define MARCEL_JB_RBP   1
-#define MARCEL_JB_R12   2
-#define MARCEL_JB_R13   3
-#define MARCEL_JB_R14   4
-#define MARCEL_JB_R15   5
-#define MARCEL_JB_RSP   6
-#define MARCEL_JB_PC    7
-
-typedef intptr_t ma_jmp_buf[8];
-
-extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
-
-static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
-#endif
 
 #ifdef MA_JMPBUF
+
+/** Internal macros **/
 #define jmp_buf ma_jmp_buf
 #undef setjmp
 #define setjmp ma_setjmp
 #undef longjmp
 #define longjmp ma_longjmp
+
+
+/** Internal functions **/
+extern int TBX_RETURNS_TWICE ma_setjmp(ma_jmp_buf buf);
+static __tbx_inline__ void TBX_NORETURN TBX_UNUSED ma_longjmp(ma_jmp_buf buf, int val);
+
 #endif
 
 
-#endif /* __SYS_MARCEL_ARCHSETJMP_H__ */
+TBX_VISIBILITY_POP
+#endif /** __MARCEL_KERNEL__ **/
+
+
+#endif				/* __SYS_MARCEL_ARCHSETJMP_H__ */

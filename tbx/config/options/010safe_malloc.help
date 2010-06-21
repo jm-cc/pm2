@@ -1,1 +1,0 @@
-Uses a small 'safe malloc' library that tries to verify bad malloc/free usage.

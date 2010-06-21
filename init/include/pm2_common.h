@@ -22,7 +22,6 @@ struct _struct_common_attr_t;
 typedef struct _struct_common_attr_t common_attr_t;
 
 #if !defined(MARCEL_KERNEL) && \
-    !defined(MAD3_KERNEL)   && \
     !defined(PM2_KERNEL)    && \
     !defined(PIOM_KERNEL)   && \
     !defined(TBX_KERNEL)    && \
@@ -82,7 +81,7 @@ void common_pre_init(int *argc, char *argv[],
 void common_post_init(int *argc, char *argv[],
 		      common_attr_t *attr);
 
-static __inline__ void common_init(int *argc, char *argv[],
+static __inline__ void common_init(int *argc, char *argv[], 
 				   common_attr_t *attr)
 {
   common_pre_init(argc, argv, attr);

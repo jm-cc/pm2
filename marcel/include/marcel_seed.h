@@ -13,8 +13,10 @@
  * General Public License for more details.
  */
 
+
 #ifndef __MARCEL_SEEDS_H__
 #define __MARCEL_SEEDS_H__
+
 
 #ifdef MA__BUBBLES
 /** \brief Look for ungerminated seeds in bubble \e b and instantiate those seeds inline.
@@ -23,8 +25,8 @@
  *  \param recurse_mode Whether to lookup the bubble and its child bubbles (1) or the bubble only (0).
  * */
 int
-marcel_seed_try_inlining (marcel_bubble_t * const b, int one_shot_mode, int recurse_mode);
-
-#endif
+marcel_seed_try_inlining(marcel_bubble_t * const b, int one_shot_mode, int recurse_mode);
 #endif
 
+
+#endif /** __MARCEL_SEEDS_H__ **/

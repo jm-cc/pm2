@@ -34,7 +34,7 @@ int pm2_main(int argc, char *argv[]) {
   gethostname(hostname, 128);
   pm2_rawrpc_register(&service_id, service);
 
-  pm2_init(&argc, argv);
+  pm2_init(argc, argv);
 
   if (pm2_self() == 0) {
     /* Master process */

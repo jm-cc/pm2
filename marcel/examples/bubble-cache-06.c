@@ -58,13 +58,15 @@ main (int argc, char *argv[])
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
 	argc += 2;
 
-	marcel_init (&argc, new_argv);
+	marcel_init(argc, new_argv);
 
 	scheduler =
 		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));
-	ret = marcel_bubble_cache_sched_init ((marcel_bubble_cache_sched_t *) scheduler,
-																				marcel_topo_level (0, 0),
-																				tbx_false);
+	ret =
+					marcel_bubble_cache_sched_init((marcel_bubble_cache_sched_t *)
+																				 scheduler, marcel_topo_level(0,
+																																			0),
+																				 tbx_false);
 	MA_BUG_ON (ret != 0);
 
 	marcel_bubble_change_sched (scheduler);
@@ -74,7 +76,8 @@ main (int argc, char *argv[])
 	marcel_attr_t attrs[NB_THREADS];
 
 	/* The main thread is one of the _heavy_ threads. */
-	ma_task_stats_set (unsigned long, marcel_self(), marcel_stats_load_offset, BIG_LOAD);
+	//	marcel_fprintf(stderr, "Setting VP #%d with %d threads\n", 0, BIG_LOAD);
+	marcel_task_stats_set(unsigned long, marcel_self(), LOAD,	BIG_LOAD);
 	/* The main thread is thread 0. */
 	marcel_self ()->id = 0;
 	threads[0] = marcel_self ();
@@ -86,10 +89,12 @@ main (int argc, char *argv[])
 		marcel_attr_setnaturalbubble (&attrs[i], &marcel_root_bubble);
 		marcel_attr_setid (&attrs[i], i);
 		marcel_create (threads + i, &attrs[i], thread_entry_point, &start_signal);
-		ma_task_stats_set (unsigned long,
-											 threads[i],
-											 marcel_stats_load_offset,
-											 (i == NB_THREADS - 1) ? BIG_LOAD : LITTLE_LOAD);
+		//		marcel_fprintf(stderr, "Setting VP #%d with %d threads\n",
+		//									 i, (i == NB_THREADS - 1) ? BIG_LOAD : LITTLE_LOAD);
+		marcel_task_stats_set(unsigned long, threads[i], LOAD,
+													(i ==
+													 NB_THREADS -
+													 1) ? BIG_LOAD : LITTLE_LOAD);
 	}
 
 	/* Threads have been created, let's distribute them. */

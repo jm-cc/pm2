@@ -22,8 +22,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
-
-
+TBX_VISIBILITY_PUSH_INTERNAL
 /** Internal inline functions **/
 static __tbx_inline__ void disable_preemption(void)
 {
@@ -41,7 +40,6 @@ static __tbx_inline__ unsigned int preemption_enabled(void)
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
-
-
 #endif /** __INLINEFUNCTIONS_MARCEL_TIMER_H__ **/

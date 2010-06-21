@@ -1,5 +1,6 @@
 MARCEL {
     MARCEL_*;
+    ma_* ;
     __main_lwp;
     __main_thread_struct;
     go_marcel_main;

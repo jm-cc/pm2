@@ -20,34 +20,35 @@
 #ifdef MARCEL
 #define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
-#define piom_spinlock_t ma_spinlock_t
+#define piom_spinlock_t marcel_spinlock_t
 
-#define PIOM_SPIN_LOCK_INITIALIZER	MA_SPIN_LOCK_UNLOCKED
-#define piom_spin_lock_init(lock)      ma_spin_lock_init(lock)
-#define piom_spin_lock(lock) 	       ma_spin_lock_softirq(lock)
-#define piom_spin_unlock(lock) 	       ma_spin_unlock_softirq(lock)
-#define piom_spin_trylock(lock)	       ma_spin_trylock_softirq(lock)
-
-
-#define piom_rwlock_t               ma_rwlock_t
-#define PIOM_RW_LOCK_UNLOCKED       MA_RW_LOCK_UNLOCKED
-#define piom_rwlock_init(lock)      ma_rwlock_init(lock)
-#define piom_rwlock_is_locked(lock) ma_rwlock_is_locked(lock)
+#define PIOM_SPIN_LOCK_INITIALIZER	MARCEL_SPINLOCK_INITIALIZER
+#define piom_spin_lock_init(lock)      marcel_spin_init(lock, 1)
+#define piom_spin_lock(lock) 	       marcel_spin_lock_tasklet_disable(lock)
+#define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
+#define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)
 
 
-#define piom_read_lock(lock)    ma_read_lock(lock)
-#define piom_read_unlock(lock)  ma_read_unlock(lock)
-#define piom_write_lock(lock)   ma_write_lock(lock)
-#define piom_write_unlock(lock) ma_write_unlock(lock)
+#define piom_rwlock_t               marcel_rwlock_t
+#define PIOM_RW_LOCK_UNLOCKED       MARCEL_RW_LOCK_UNLOCKED
+#define piom_rwlock_init(lock)      marcel_rwlock_init(lock)
+#define piom_rwlock_is_locked(lock) marcel_rwlock_is_locked(lock)
 
-#define piom_read_lock_softirq(lock)    ma_read_lock_softirq(lock)
-#define piom_read_unlock_softirq(lock)  ma_read_unlock_softirq(lock)
-#define piom_write_lock_softirq(lock)   ma_write_lock_softirq(lock)
-#define piom_write_unlock_softirq(lock) ma_write_unlock_softirq(lock)
+
+#define piom_read_lock(lock)    marcel_rwlock_rdlock(lock)
+#define piom_read_unlock(lock)  marcel_rwlock_unlock(lock)
+#define piom_write_lock(lock)   marcel_rwlock_wrlock(lock)
+#define piom_write_unlock(lock) marcel_rwlockunlock(lock)
+
+/* todo: what about preemption ? */
+#define piom_read_lock_softirq(lock)    marcel_rwlock_rdlock(lock)
+#define piom_read_unlock_softirq(lock)  marcel_rwlock_unlock(lock)
+#define piom_write_lock_softirq(lock)   marcel_rwlock_wrlock(lock)
+#define piom_write_unlock_softirq(lock) marcel_rwlock_unlock(lock)
 
 #define piom_thread_t     marcel_t
 #define PIOM_THREAD_NULL NULL
-#define PIOM_SELF       MARCEL_SELF
+#define PIOM_SELF       marcel_self()
 #define PIOM_CURRENT_VP marcel_current_vp()
 
 #elif(defined(PIOM_PTHREAD_LOCK))

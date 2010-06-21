@@ -21,8 +21,6 @@
 
 #ifdef MA__LWPS
 
-//#define MA_IA64_PSR_I_BIT          14
-
 	/*
 	 * This routine handles spinlock contention.  It uses a non-standard calling
 	 * convention to avoid converting leaf routines into interior routines.  Because
@@ -59,9 +57,7 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention_pre3_4)
 	.save rp, r28
 	.body
 	nop 0
-#if 0
-	tbit.nz p15,p0=r27,IA64_PSR_I_BIT
-#endif
+
 	.restore sp		// pop existing prologue after next insn
 	mov b6 = r28
 	.prologue
@@ -69,10 +65,6 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention_pre3_4)
 	.altrp b6
 	.body
 	;;
-#if 0
-(p15)	ssm psr.i		// reenable interrupts if they were on
-				// DavidM says that srlz.d is slow and is not required in this case
-#endif
 .wait:
 	// exponential backoff, kdb, lockmeter etc. go in here
 	hint @pause
@@ -81,28 +73,19 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention_pre3_4)
 	;;
 	cmp4.ne p14,p0=r30,r0
 (p14)	br.cond.sptk.few .wait
-#if 0
-(p15)	rsm psr.i		// disable interrupts if we reenabled them
-#endif
+
 	br.cond.sptk.few b6	// lock is now free, try to acquire
 END(ma_ia64_spinlock_contention_pre3_4)
 
 #else
 
 GLOBAL_ENTRY(ma_ia64_spinlock_contention)
-//	.hidden ma_ia64_spinlock_contention
+	.hidden ma_ia64_spinlock_contention
 	.prologue
 	.altrp b6
 	.body
-#if 0
-	tbit.nz p15,p0=r27,MA_IA64_PSR_I_BIT
-	;;
-#endif
+
 .wait:
-#if 0
-(p15)	ssm psr.i		// reenable interrupts if they were on
-				// DavidM says that srlz.d is slow and is not required in this case
-#endif
 .wait2:
 	// exponential backoff, kdb, lockmeter etc. go in here
 	hint @pause
@@ -111,9 +94,6 @@ GLOBAL_ENTRY(ma_ia64_spinlock_contention)
 	cmp4.ne p14,p0=r30,r0
 	mov r30 = 1
 (p14)	br.cond.sptk.few .wait2
-#if 0
-(p15)	rsm psr.i		// disable interrupts if we reenabled them
-#endif
 	;;
 	cmpxchg4.acq r30=[r31], r30, ar.ccv
 	;;

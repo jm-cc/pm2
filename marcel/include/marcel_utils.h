@@ -21,6 +21,11 @@
 #include "sys/marcel_flags.h"
 
 
+/** Public constants **/
+#define MARCEL_TEST_SUCCEEDED 0
+#define MARCEL_TEST_SKIPPED   77
+
+
 /** Public macros **/
 #define marcel_xstr(s) marcel_str(s)
 #define marcel_str(s) #s
@@ -31,8 +36,8 @@
 
 /** Public data types **/
 #ifndef __ASSEMBLY__
-typedef void* any_t;
-typedef void (*marcel_handler_func_t)(any_t);
+typedef void *any_t;
+typedef void (*marcel_handler_func_t) (any_t);
 #endif
 
 

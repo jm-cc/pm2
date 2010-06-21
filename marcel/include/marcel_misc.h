@@ -28,8 +28,8 @@
 #define MARCEL_ONCE_INITIALIZER { 0 }
 
 /* ============== stack ============= */
-TBX_FMALLOC marcel_t marcel_alloc_stack (unsigned size) __tbx_deprecated__;
-unsigned long        marcel_usablestack(void);
+TBX_FMALLOC marcel_t marcel_alloc_stack(unsigned size) __tbx_deprecated__;
+unsigned long marcel_usablestack(void);
 
 /* ============= miscellaneous ============ */
 void marcel_start_playing(void);
@@ -38,7 +38,8 @@ void marcel_start_playing(void);
 long marcel_random(void);
 #endif
 
-DEC_MARCEL_POSIX(int,atfork,(void (*prepare)(void),void (*parent)(void),void (*child)(void)) __THROW);
+DEC_MARCEL(int, atfork,
+	   (void (*prepare) (void), void (*parent) (void), void (*child) (void)) __THROW);
 
 
 #endif /** __MARCEL_MISC_H__ **/

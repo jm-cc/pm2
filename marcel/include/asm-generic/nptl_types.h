@@ -25,28 +25,25 @@
 /** Public data structures **/
 /* Data structure for read-write lock variable handling.  The
    structure of the attribute type is not exposed on purpose.  */
-typedef union
-{
-  struct
-  {
-    long int __lock;
-    unsigned int __nr_readers;
-    struct _lpt_fastlock __readers_wakeup;
-    struct _lpt_fastlock __writer_wakeup;
-    unsigned int __nr_readers_queued;
-    unsigned int __nr_writers_queued;
-    unsigned char __flags;
-    unsigned char __shared;
-    marcel_t __writer;
-  } __data;
-  long int __align;
+typedef union {
+	struct {
+		long int __lock;
+		unsigned int __nr_readers;
+		struct _lpt_fastlock __readers_wakeup;
+		struct _lpt_fastlock __writer_wakeup;
+		unsigned int __nr_readers_queued;
+		unsigned int __nr_writers_queued;
+		unsigned char __flags;
+		unsigned char __shared;
+		marcel_t __writer;
+	} __data;
+	long int __align;
 } lpt_rwlock_t;
 
 
-typedef union
-{
-  struct marcel_rwlockattr __attr;
-  long int __align;
+typedef union {
+	struct marcel_rwlockattr __attr;
+	long int __align;
 } lpt_rwlockattr_t;
 
 

@@ -26,7 +26,7 @@ void
 ntbx_client_dest_ext(p_ntbx_client_t            object,
 		     p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   if (object->local_host)
     {
       TBX_FREE(object->local_host);
@@ -64,22 +64,22 @@ ntbx_client_dest_ext(p_ntbx_client_t            object,
     }
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_client_dest(p_ntbx_client_t object)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   ntbx_client_dest_ext(object, NULL);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_server_dest_ext(p_ntbx_server_t            object,
 		     p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   if (object->local_host)
     {
       TBX_FREE(object->local_host);
@@ -107,15 +107,15 @@ ntbx_server_dest_ext(p_ntbx_server_t            object,
     }
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_server_dest(p_ntbx_server_t object)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   ntbx_server_dest_ext(object, NULL);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 
@@ -123,7 +123,7 @@ void
 ntbx_process_info_dest(p_ntbx_process_info_t      object,
 		       p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   object->local_rank =   -1;
   object->process    = NULL;
 
@@ -140,14 +140,14 @@ ntbx_process_info_dest(p_ntbx_process_info_t      object,
     }
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_pc_dest(p_ntbx_process_container_t object,
 	     p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   while (object->local_array_size--)
     {
       if (object->local_index[object->local_array_size])
@@ -177,14 +177,14 @@ ntbx_pc_dest(p_ntbx_process_container_t object,
   object->count             = 0;
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_process_dest(p_ntbx_process_t           object,
 		  p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   object->global_rank = -1;
 
   object->ref         = NULL;
@@ -202,14 +202,14 @@ ntbx_process_dest(p_ntbx_process_t           object,
     }
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_topology_element_dest(p_ntbx_topology_element_t  object,
 			   p_tbx_specific_dest_func_t dest_func)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   if (object->specific)
     {
       if (dest_func)
@@ -223,14 +223,14 @@ ntbx_topology_element_dest(p_ntbx_topology_element_t  object,
     }
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }
 
 void
 ntbx_topology_table_dest(p_ntbx_topology_table_t    object,
 			 p_tbx_specific_dest_func_t dest_func TBX_UNUSED)
 {
-  LOG_IN();
+  PM2_LOG_IN();
   if (object->table)
     {
       TBX_FREE(object->table);
@@ -240,5 +240,5 @@ ntbx_topology_table_dest(p_ntbx_topology_table_t    object,
   object->size = 0;
 
   TBX_FREE(object);
-  LOG_OUT();
+  PM2_LOG_OUT();
 }

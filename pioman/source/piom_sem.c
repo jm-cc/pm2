@@ -50,7 +50,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
 #define TIME_TO_POLL 20
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
-	LOG_IN();
+	PIOM_LOG_IN();
 
 #ifdef MARCEL
 	/* First, let's poll for a while before blocking */
@@ -76,8 +76,8 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	   is scheduled (almost) immediatly when done */
 	struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
 	struct marcel_sched_param old_param;
-	marcel_sched_getparam(MARCEL_SELF, &old_param);
-	marcel_sched_setparam(MARCEL_SELF, &sched_param);
+	marcel_sched_getparam(PIOM_SELF, &old_param);
+	marcel_sched_setparam(PIOM_SELF, &sched_param);
 
 	while(! (cond->value & mask)){
 		cond->cpt++;
@@ -88,7 +88,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 			piom_sem_V(&cond->sem);
 	}
 
-	marcel_sched_setparam(MARCEL_SELF, &old_param);
+	marcel_sched_setparam(PIOM_SELF, &old_param);
 #else  /* MARCEL */
 	/* no Marcel, do not block as possibly nobody will wake us... 
 	 *  (We have neither timers nor supplementary VP)
@@ -97,11 +97,11 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 		__piom_check_polling(PIOM_POLL_AT_IDLE);		
 #endif	/* MARCEL */
 
-	LOG_OUT();
+	PIOM_LOG_OUT();
 }
 
 __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
-	LOG_IN();
+	PIOM_LOG_IN();
 	cond->value|=mask;
 	piom_sem_V(&cond->sem);
 #ifdef PIOM_ENABLE_SHM
@@ -109,7 +109,7 @@ __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
 		piom_shs_poll_success(cond->alt_sem);
 	}
 #endif
-	LOG_OUT();
+	PIOM_LOG_OUT();
 }
 
 __tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask){

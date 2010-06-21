@@ -61,7 +61,7 @@ int marcel_main(int argc, char *argv[])
 {
   int nt, n, i;
 
-  marcel_init(&argc, argv);
+  marcel_init(argc, argv);
 
   if (argc < 3) {
     marcel_fprintf(stderr, "usage: %s <nbthreads> <nbloops>\n", argv[0]);

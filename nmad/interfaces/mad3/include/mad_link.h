@@ -28,8 +28,6 @@
  */
 typedef struct s_mad_link
 {
-  TBX_SHARED;
-
   // Common use fields
   p_mad_connection_t        connection;
   mad_link_id_t             id;

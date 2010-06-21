@@ -30,109 +30,43 @@
 #include "tbx_compiler.h"
 #include "tbx_macros.h"
 
-#  define TBX_INIT_MSHARED(st)                  \
-  do {                                          \
-    if((st)->is_critical)			\
-      { TBX_INIT_CRITICAL_SHARED((st)); }	\
-    else                                        \
-      { TBX_INIT_SHARED((st)); }		\
-  }while(0)
-				      
-#  define TBX_LOCK_MSHARED(st)                  \
-  do {                                          \
-    if((st)->is_critical)			\
-      { TBX_LOCK_CRITICAL_SHARED((st)); }	\
-    else					\
-      { TBX_LOCK_SHARED((st)); }		\
-  } while (0)
-
-#  define TBX_TRYLOCK_MSHARED(st)            \
-  do {                                       \
-    if((st)->is_critical)		     \
-      { TBX_TRYLOCK_CRITICAL_SHARED((st)); } \
-    else				     \
-      { TBX_TRYLOCK_SHARED((st)); }	     \
-  } while (0)
-
-#  define TBX_UNLOCK_MSHARED(st)            \
-  do {                                      \
-    if((st)->is_critical)		    \
-      { TBX_UNLOCK_CRITICAL_SHARED((st)); } \
-    else				    \
-      { TBX_UNLOCK_SHARED((st)); }	    \
-  } while (0)
-
-#  define TBX_MLOCK()             \
-  do {                            \
-    if((st)->is_critical)	  \
-      { TBX_CRITICAL_LOCK((st)); }\
-    else			  \
-      { TBX_LOCK((st)); }	  \
-  } while (0)
-
-#  define TBX_MUNLOCK()              \
-  do {                               \
-    if((st)->is_critical)	     \
-      { TBX_CRITICAL_UNLOCK((st)); } \
-    else			     \
-      { TBX_UNLOCK((st)); }	     \
-  } while (0)
-
-#  define TBX_MYIELD()              \
-  do {                              \
-    if((st)->is_critical)	    \
-      { TBX_CRITICAL_YIELD((st)); } \
-    else			    \
-      { TBX_YIELD((st)); }	    \
-  } while (0)
-
 
 /*
  * Aligned block allocation
  * ------------------------
  */
-TBX_FMALLOC
-static
-__inline__
-void *
-tbx_aligned_malloc(size_t      size,
-		   tbx_align_t align)
+TBX_FMALLOC static
+ __inline__ void *tbx_aligned_malloc(size_t size, tbx_align_t align)
 {
-  char        *ptr;
-  char        *ini;
-  tbx_align_t  mask = align - 1;
+	char *ptr;
+	char *ini;
+	tbx_align_t mask = align - 1;
 
-  if (align < sizeof(void *)) {
-          align = sizeof(void *);
-  }
+	if (align < sizeof(void *)) {
+		align = sizeof(void *);
+	}
 
-  ini = ptr = (char*)TBX_MALLOC (size + 2 * align - 1);
+	ini = ptr = (char *) TBX_MALLOC(size + 2 * align - 1);
 
-  if (ptr != NULL && ((tbx_align_t) ptr & mask) != 0)
-    {
-      ptr = (char *) (((tbx_align_t) ptr + mask) & ~mask);
-    }
+	if (ptr != NULL && ((tbx_align_t) ptr & mask) != 0) {
+		ptr = (char *) (((tbx_align_t) ptr + mask) & ~mask);
+	}
 
-  if (ptr != NULL)
-    {
-      *(char **) ptr = ini;
-      ptr += align;
-    }
+	if (ptr != NULL) {
+		*(char **) ptr = ini;
+		ptr += align;
+	}
 
-  return (void *)ptr;
+	return (void *) ptr;
 }
 
-static
-__inline__
-void
-tbx_aligned_free (void *ptr,
-		  tbx_align_t   align)
+static __inline__ void tbx_aligned_free(void *ptr, tbx_align_t align)
 {
-  if (align < sizeof(void *)) {
-          align = sizeof(void *);
-  }
+	if (align < sizeof(void *)) {
+		align = sizeof(void *);
+	}
 
-  TBX_FREE (*(char **) ((char *) ptr - align));
+	TBX_FREE(*(char **) ((char *) ptr - align));
 }
 
 /*
@@ -151,217 +85,220 @@ tbx_aligned_free (void *ptr,
 #else
 #  define TBX_MALLOC_BTRACE_DEPTH  0
 #  define TBX_MALLOC_DEBUG_LEN     0
-#endif /* HAVE_BACKTRACE */
+#endif				/* HAVE_BACKTRACE */
 
 static
-__inline__
-void
-tbx_malloc_extended_init(p_tbx_memory_t *mem,
-			 size_t          block_len,
-			 long            initial_block_number,
-			 const char     *name,
-			 int             is_critical)
+    __inline__
+    void
+tbx_malloc_extended_init(p_tbx_memory_t * mem,
+			 size_t block_len,
+			 long initial_block_number,
+			 const char *name, int is_critical)
 {
 
-  p_tbx_memory_t temp_mem  = NULL;
+	p_tbx_memory_t temp_mem = NULL;
 
-  temp_mem = (p_tbx_memory_t)TBX_MALLOC(sizeof(tbx_memory_t));
-  CTRL_ALLOC(temp_mem);
-  
-  temp_mem->is_critical = is_critical;
-  TBX_INIT_MSHARED(temp_mem);
+	temp_mem = (p_tbx_memory_t) TBX_MALLOC(sizeof(tbx_memory_t));
+	CTRL_ALLOC(temp_mem);
+
+	temp_mem->is_critical = is_critical;
 #ifdef TBX_MALLOC_DEBUG_NAME
-  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, name)) {
-    pm2debug("tbx_malloc_init: %s\n", name);
-  }
-#endif /* TBX_MALLOC_DEBUG_NAME */
+	if (tbx_streq(TBX_MALLOC_DEBUG_NAME, name)) {
+		PM2_LOG("tbx_malloc_init: %s\n", name);
+	}
+#endif				/* TBX_MALLOC_DEBUG_NAME */
 
-  if (initial_block_number <= 0)
-    {
-      initial_block_number = DEFAULT_BLOCK_NUMBER;
-    }
-
-  if (block_len < sizeof(void *))
-    {
-      block_len = sizeof(void *);
-    }
-
-  temp_mem->first_mem =
-    TBX_MALLOC(initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len) + sizeof(void *));
-  CTRL_ALLOC(temp_mem->first_mem);
-  memset(temp_mem->first_mem, 0, initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len) + sizeof(void *));
-
-  if (temp_mem->first_mem == NULL)
-    TBX_FAILURE("not enough memory");
-
-  temp_mem->current_mem = temp_mem->first_mem;
-
-  *(void **)((char*)temp_mem->current_mem + initial_block_number * (TBX_MALLOC_DEBUG_LEN+block_len)) = NULL;
-
-  temp_mem->block_len    = block_len;
-  temp_mem->mem_len      = initial_block_number;
-  temp_mem->first_free   = NULL;
-  temp_mem->first_new    = 0;
-  temp_mem->nb_allocated = 0;
-  temp_mem->name         = name;
-
-  *mem = temp_mem;
-}
-
-static
-__inline__
-void
-tbx_malloc_init(p_tbx_memory_t *mem,
-		size_t          block_len,
-		long            initial_block_number,
-                const char     *name)
-{
-  tbx_malloc_extended_init(mem, 
-			   block_len, 
-			   initial_block_number, 
-			   name, 
-			   0);
-}
-
-TBX_FMALLOC
-static
-__inline__
-void *
-tbx_malloc(p_tbx_memory_t mem)
-{
-  void *ptr = NULL;
-
-  TBX_LOCK_MSHARED(mem);
-  if (mem->first_free != NULL)
-    {
-      LOG_PTR("tbx_malloc: first free", mem->first_free);
-      ptr = mem->first_free;
-      mem->first_free = *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) ;
-    }
-  else
-    {
-      if (mem->first_new >= mem->mem_len)
-	{
-          const size_t  mem_size = mem->mem_len * (TBX_MALLOC_DEBUG_LEN+mem->block_len);
-	  void   *new_mem        = TBX_MALLOC(mem_size + sizeof(void *));
-          memset(new_mem, 0, mem_size + sizeof(void *));
-
-	  *(void **)((char*)new_mem + mem_size) = NULL;
-	  *(void **)((char*)mem->current_mem + mem_size) = new_mem;
-	  mem->current_mem = new_mem;
-	  mem->first_new = 0 ;
+	if (initial_block_number <= 0) {
+		initial_block_number = DEFAULT_BLOCK_NUMBER;
 	}
 
-      ptr = (char*)mem->current_mem + ((mem->block_len+TBX_MALLOC_DEBUG_LEN) * mem->first_new);
-      mem->first_new++;
-    }
-#ifdef TBX_MALLOC_DEBUG_NAME
-  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
-    pm2debug("tbx_malloc(%s): 0x%p\n", mem->name, ptr);
-  }
-#endif /* TBX_MALLOC_DEBUG_NAME */
+	if (block_len < sizeof(void *)) {
+		block_len = sizeof(void *);
+	}
 
-#if TBX_MALLOC_BTRACE_DEPTH
-  backtrace(ptr, TBX_MALLOC_BTRACE_DEPTH);
-  ptr += TBX_MALLOC_DEBUG_LEN;
-#endif /* TBX_MALLOC_BTRACE_DEPTH */
+	temp_mem->first_mem =
+	    TBX_MALLOC(initial_block_number *
+		       (TBX_MALLOC_DEBUG_LEN + block_len) +
+		       sizeof(void *));
+	CTRL_ALLOC(temp_mem->first_mem);
+	memset(temp_mem->first_mem, 0,
+	       initial_block_number * (TBX_MALLOC_DEBUG_LEN + block_len) +
+	       sizeof(void *));
 
-  mem->nb_allocated++;
-  TBX_UNLOCK_MSHARED(mem);
+	if (temp_mem->first_mem == NULL)
+		TBX_FAILURE("not enough memory");
 
-  return ptr ;
+	temp_mem->current_mem = temp_mem->first_mem;
+
+	*(void **) ((char *) temp_mem->current_mem +
+		    initial_block_number * (TBX_MALLOC_DEBUG_LEN +
+					    block_len)) = NULL;
+
+	temp_mem->block_len = block_len;
+	temp_mem->mem_len = initial_block_number;
+	temp_mem->first_free = NULL;
+	temp_mem->first_new = 0;
+	temp_mem->nb_allocated = 0;
+	temp_mem->name = name;
+
+	*mem = temp_mem;
 }
 
 static
-__inline__
-void
-tbx_free(p_tbx_memory_t  mem,
-	 void           *ptr)
+ __inline__
+    void
+tbx_malloc_init(p_tbx_memory_t * mem,
+		size_t block_len,
+		long initial_block_number, const char *name)
 {
-  TBX_LOCK_MSHARED(mem);
-#if TBX_MALLOC_BTRACE_DEPTH
-  ptr -= TBX_MALLOC_DEBUG_LEN;
-  memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
-#endif /* TBX_MALLOC_BTRACE_DEPTH */
-
-#ifdef TBX_MALLOC_DEBUG_NAME
-  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
-    pm2debug("tbx_free(%s): 0x%p\n", mem->name, ptr);
-  }
-#endif /* TBX_MALLOC_DEBUG_NAME */
-  *(void **)(TBX_MALLOC_DEBUG_LEN+(char*)ptr) = mem->first_free ;
-  mem->first_free = ptr;
-  mem->nb_allocated--;
-  TBX_UNLOCK_MSHARED(mem);
+	tbx_malloc_extended_init(mem,
+				 block_len, initial_block_number, name, 0);
 }
 
-static
-__inline__
-void
-tbx_malloc_clean(p_tbx_memory_t mem)
+TBX_FMALLOC static
+ __inline__ void *tbx_malloc(p_tbx_memory_t mem)
 {
-  void *block_mem = NULL;
-  /* todo: why mem is locked but not unlocked ? */
-  TBX_LOCK_MSHARED(mem);
+	void *ptr = NULL;
+
+	if (mem->first_free != NULL) {
+		PM2_LOG("tbx_malloc: first free", mem->first_free);
+		ptr = mem->first_free;
+		mem->first_free =
+		    *(void **) (TBX_MALLOC_DEBUG_LEN + (char *) ptr);
+	} else {
+		if (mem->first_new >= mem->mem_len) {
+			const size_t mem_size =
+			    mem->mem_len * (TBX_MALLOC_DEBUG_LEN +
+					    mem->block_len);
+			void *new_mem =
+			    TBX_MALLOC(mem_size + sizeof(void *));
+			memset(new_mem, 0, mem_size + sizeof(void *));
+
+			*(void **) ((char *) new_mem + mem_size) = NULL;
+			*(void **) ((char *) mem->current_mem + mem_size) =
+			    new_mem;
+			mem->current_mem = new_mem;
+			mem->first_new = 0;
+		}
+
+		ptr =
+		    (char *) mem->current_mem +
+		    ((mem->block_len +
+		      TBX_MALLOC_DEBUG_LEN) * mem->first_new);
+		mem->first_new++;
+	}
 #ifdef TBX_MALLOC_DEBUG_NAME
-  if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
-    pm2debug("tbx_malloc_clean: %s\n", mem->name);
-  }
-#endif /* TBX_MALLOC_DEBUG_NAME */
-  if (mem->nb_allocated) {
-    int n = mem->nb_allocated;
-
-    block_mem = mem->first_mem;
-
-    while (n && block_mem != NULL) {
-        long i = 0;
-
-        for (i = 0; i < mem->mem_len; i++) {
-          void **ptr = (void **)((char*)block_mem + i*(mem->block_len+TBX_MALLOC_DEBUG_LEN));
-
-          if (!*ptr)
-            continue;
-
-          pm2debug("tbx_malloc_clean: %s - memory block 0x%p still in use\n", mem->name, ptr);
+	if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
+		PM2_LOG("tbx_malloc(%s): 0x%p\n", mem->name, ptr);
+	}
+#endif				/* TBX_MALLOC_DEBUG_NAME */
 
 #if TBX_MALLOC_BTRACE_DEPTH
-          {
-            int j = 0;
-            char ** str_array;
-            str_array = backtrace_symbols(ptr,  TBX_MALLOC_BTRACE_DEPTH);
-            for (j = 0; j < TBX_MALLOC_BTRACE_DEPTH; j++) {
-              pm2debug(" tbx_malloc_clean: f[%d]: %s\n", j, str_array[j]);
-            }
-          }
-#endif /* TBX_MALLOC_BTRACE_DEPTH */
+	backtrace(ptr, TBX_MALLOC_BTRACE_DEPTH);
+	ptr += TBX_MALLOC_DEBUG_LEN;
+#endif				/* TBX_MALLOC_BTRACE_DEPTH */
 
-          n++;
-        }
+	mem->nb_allocated++;
 
-        block_mem = *(void **)((char*)block_mem
-                               + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
-      }
+	return ptr;
+}
 
-    WARN("tbx_malloc_clean: attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use", mem->name, mem->nb_allocated);
-  }
+static __inline__ void tbx_free(p_tbx_memory_t mem, void *ptr)
+{
+#if TBX_MALLOC_BTRACE_DEPTH
+	ptr -= TBX_MALLOC_DEBUG_LEN;
+	memset(ptr, 0, TBX_MALLOC_DEBUG_LEN);
+#endif				/* TBX_MALLOC_BTRACE_DEPTH */
 
-  block_mem = mem->first_mem;
+#ifdef TBX_MALLOC_DEBUG_NAME
+	if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
+		PM2_LOG("tbx_free(%s): 0x%p\n", mem->name, ptr);
+	}
+#endif				/* TBX_MALLOC_DEBUG_NAME */
+	*(void **) (TBX_MALLOC_DEBUG_LEN + (char *) ptr) = mem->first_free;
+	mem->first_free = ptr;
+	mem->nb_allocated--;
+}
 
-  while (block_mem != NULL)
-    {
-      void *next_block_mem = NULL;
+static __inline__ void tbx_malloc_clean(p_tbx_memory_t mem)
+{
+	void *block_mem = NULL;
+#ifdef TBX_MALLOC_DEBUG_NAME
+	if (tbx_streq(TBX_MALLOC_DEBUG_NAME, mem->name)) {
+		PM2_LOG("tbx_malloc_clean: %s\n", mem->name);
+	}
+#endif				/* TBX_MALLOC_DEBUG_NAME */
+	if (mem->nb_allocated) {
+		int n = mem->nb_allocated;
 
-      next_block_mem = *(void **)((char*)block_mem
-				  + mem->mem_len * (mem->block_len+TBX_MALLOC_DEBUG_LEN));
-      TBX_FREE(block_mem);
-      block_mem = next_block_mem;
-    }
+		block_mem = mem->first_mem;
 
-  mem->first_mem = mem->current_mem = mem->first_free = NULL ;
-  TBX_FREE(mem);
+		while (n && block_mem != NULL) {
+			long i = 0;
+
+			for (i = 0; i < mem->mem_len; i++) {
+				void **ptr =
+				    (void **) ((char *) block_mem +
+					       i * (mem->block_len +
+						    TBX_MALLOC_DEBUG_LEN));
+
+				if (!*ptr)
+					continue;
+
+				PM2_LOG
+				    ("tbx_malloc_clean: %s - memory block 0x%p still in use\n",
+				     mem->name, ptr);
+
+#if TBX_MALLOC_BTRACE_DEPTH
+				{
+					int j = 0;
+					char **str_array;
+					str_array =
+					    backtrace_symbols(ptr,
+							      TBX_MALLOC_BTRACE_DEPTH);
+					for (j = 0;
+					     j < TBX_MALLOC_BTRACE_DEPTH;
+					     j++) {
+						PM2_LOG
+						    (" tbx_malloc_clean: f[%d]: %s\n",
+						     j, str_array[j]);
+					}
+				}
+#endif				/* TBX_MALLOC_BTRACE_DEPTH */
+
+				n++;
+			}
+
+			block_mem = *(void **) ((char *) block_mem
+						+
+						mem->mem_len *
+						(mem->block_len +
+						 TBX_MALLOC_DEBUG_LEN));
+		}
+
+		PM2_DISP
+		    ("tbx_malloc_clean: attempt to clean the '%s' memory allocator while %ld block(s) remain(s) in use",
+		     mem->name, mem->nb_allocated);
+	}
+
+	block_mem = mem->first_mem;
+
+	while (block_mem != NULL) {
+		void *next_block_mem = NULL;
+
+		next_block_mem = *(void **) ((char *) block_mem
+					     +
+					     mem->mem_len *
+					     (mem->block_len +
+					      TBX_MALLOC_DEBUG_LEN));
+		TBX_FREE(block_mem);
+		block_mem = next_block_mem;
+	}
+
+	mem->first_mem = mem->current_mem = mem->first_free = NULL;
+	TBX_FREE(mem);
 }
 
 /* @} */
 
-#endif /* TBX_MALLOC_INLINE_H */
-
+#endif				/* TBX_MALLOC_INLINE_H */

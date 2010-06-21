@@ -40,7 +40,7 @@ marcel_main(int argc, char *argv[]) {
 	void *status;
 	marcel_t pid;
 
-	marcel_init(&argc, argv);
+	marcel_init(argc, argv);
 
 	marcel_sem_init(&sem, 0);
 

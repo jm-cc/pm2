@@ -19,32 +19,33 @@
 
 
 #include "asm/marcel_testandset.h"
-#ifdef __MARCEL_KERNEL__
 #include "tbx_compiler.h"
 #ifndef MA_HAVE_COMPAREEXCHANGE
 #include "linux_spinlock.h"
 #include "asm/linux_types.h"
 #endif
-#endif /** __MARCEL_KERNEL__ **/
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 #ifndef MA_HAVE_COMPAREEXCHANGE
-static __tbx_inline__ unsigned __tbx_deprecated__ pm2_spinlock_testandset(volatile unsigned *spinlock)
+static __tbx_inline__ unsigned __tbx_deprecated__ 
+pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  unsigned ret;
-  ma_spin_lock_softirq(&testandset_spinlock);
-  if (!(ret = *spinlock))
-    *spinlock = 1;
-  ma_spin_unlock_softirq(&testandset_spinlock);
-  return ret;
+	unsigned ret;
+	ma_spin_lock_softirq(&testandset_spinlock);
+	if (!(ret = *spinlock))
+		*spinlock = 1;
+	ma_spin_unlock_softirq(&testandset_spinlock);
+	return ret;
 }
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

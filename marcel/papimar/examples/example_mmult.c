@@ -78,7 +78,7 @@ main(int argc, char **argv) {
 		papimar_error("PAPI_thread_init", r);
 	}
 
-	marcel_init(&argc, argv);
+	marcel_init(argc, argv);
 
 	if (argc > 1) {
 		n = atoi(argv[1]);

@@ -24,24 +24,24 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal inline functions **/
 static __tbx_inline__ unsigned __tbx_deprecated__
 pm2_spinlock_testandset(volatile unsigned *spinlock)
 {
-  unsigned ret;
+	unsigned ret;
 
-  __asm__ __volatile__(
-       MA_LOCK_PREFIX "xchgl %0, %1"
-       : "=q"(ret), "=m"(*spinlock)
-       : "0"(1), "m"(*spinlock)
-       : "memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "xchgl %0, %1":"=q"(ret), "=m"(*spinlock)
+			     :"0"(1), "m"(*spinlock)
+			     :"memory");
 
-  return ret;
+	return ret;
 }
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

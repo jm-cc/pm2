@@ -133,7 +133,7 @@ int pm2_main(int argc, char **argv)
 
    DECLARE_LRPC(PROCESSING);
 
-   pm2_init(&argc, argv);
+   pm2_init(argc, argv);
 
    if(pm2_self() == 0) { /* master process */
 

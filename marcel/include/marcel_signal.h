@@ -62,7 +62,7 @@
      marcel_sigset_t *__set = (set);       \
      *__set = *__set|mask;                 \
      0; })
-     
+
 #define marcel_sigdelset(set,sig)          \
   ({ unsigned int mask = marcel_sigoneset(sig);  \
      marcel_sigset_t *__set = (set);       \
@@ -92,7 +92,7 @@
   ({ marcel_sigset_t notright;                     \
      marcel_signotset(&notright,(right));          \
            marcel_sigandset((dest), (left), &(notright)); \
-     0; }) 
+     0; })
 
 #define marcel_signandisempty(left,right)     \
   ({ marcel_sigset_t nand;                    \
@@ -105,7 +105,7 @@
      marcel_sigismember(&nand,(sig)); })
 
 #define marcel_sigequalset(left,right)        \
-  (*(left)==*(right)) 
+  (*(left)==*(right))
 
 #define marcel_sig_omnislash_ismember(feu,glace,foudre,sig) \
   ({ marcel_sigset_t antifeu;                      \
@@ -149,54 +149,63 @@ struct marcel_sigaction {
 
 
 /** Public functions **/
-typedef void (*ma_sighandler_t)(int);
+typedef void (*ma_sighandler_t) (int);
 
 int pmarcel_pause(void);
-DEC_MARCEL_POSIX(int,pause,(void) __THROW);
+DEC_MARCEL(int, pause, (void) __THROW);
 
 unsigned int pmarcel_alarm(unsigned int nb_sec);
-DEC_MARCEL_POSIX(unsigned int, alarm,(unsigned int nb_sec));
+DEC_MARCEL(unsigned int, alarm, (unsigned int nb_sec));
 
 int pmarcel_getitimer(int which, struct itimerval *value);
-DEC_MARCEL_POSIX(int, getitimer, (int which, struct itimerval *value));
+DEC_MARCEL(int, getitimer, (int which, struct itimerval * value));
 
 int pmarcel_setitimer(int which, const struct itimerval *value, struct itimerval *ovalue);
-DEC_MARCEL_POSIX(int, setitimer, (int which, const struct itimerval *value, struct itimerval *ovalue));
+DEC_MARCEL(int, setitimer,
+	   (int which, const struct itimerval * value, struct itimerval * ovalue));
 
 int pmarcel_kill(pmarcel_t thread, int sig);
-DEC_MARCEL_POSIX(int, kill, (marcel_t thread, int sig) __THROW);
+DEC_MARCEL(int, kill, (marcel_t thread, int sig) __THROW);
 
 int pmarcel_raise(int sig);
-DEC_MARCEL_POSIX(int, raise, (int sig) __THROW);
+DEC_MARCEL(int, raise, (int sig) __THROW);
 
-int pmarcel_sigmask(int how, __const marcel_sigset_t *set, marcel_sigset_t *oset);
-DEC_MARCEL_POSIX(int, sigmask, (int how, __const marcel_sigset_t *set, marcel_sigset_t *oset) __THROW);
+int pmarcel_sigmask(int how, __const marcel_sigset_t * set, marcel_sigset_t * oset);
+DEC_MARCEL(int, sigmask,
+	   (int how, __const marcel_sigset_t * set, marcel_sigset_t * oset) __THROW);
 
-int pmarcel_sigpending(marcel_sigset_t *set);
-DEC_MARCEL_POSIX(int, sigpending, (marcel_sigset_t *set) __THROW);
+int pmarcel_sigpending(marcel_sigset_t * set);
+DEC_MARCEL(int, sigpending, (marcel_sigset_t * set) __THROW);
 
-int pmarcel_sigtimedwait(const marcel_sigset_t *__restrict set, siginfo_t *__restrict info,const struct timespec *__restrict timeout);
+int pmarcel_sigtimedwait(const marcel_sigset_t * __restrict set,
+			 siginfo_t * __restrict info,
+			 const struct timespec *__restrict timeout);
 
-DEC_MARCEL_POSIX(int, sigtimedwait, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info,const struct timespec *__restrict timeout) __THROW);
+DEC_MARCEL(int, sigtimedwait,
+	   (const marcel_sigset_t * __restrict set, siginfo_t * __restrict info,
+	    const struct timespec * __restrict timeout) __THROW);
 
-int pmarcel_sigwait(const marcel_sigset_t *__restrict set, int *__restrict sig);
-DEC_MARCEL_POSIX(int, sigwait, (const marcel_sigset_t *__restrict set, int *__restrict sig) __THROW);
+int pmarcel_sigwait(const marcel_sigset_t * __restrict set, int *__restrict sig);
+DEC_MARCEL(int, sigwait,
+	   (const marcel_sigset_t * __restrict set, int *__restrict sig) __THROW);
 
-int pmarcel_sigwaitinfo(const marcel_sigset_t *__restrict set, siginfo_t *__restrict info);
+int pmarcel_sigwaitinfo(const marcel_sigset_t * __restrict set,
+			siginfo_t * __restrict info);
 
-DEC_MARCEL_POSIX(int, sigwaitinfo, (const marcel_sigset_t *__restrict set, siginfo_t *__restrict info) __THROW);
+DEC_MARCEL(int, sigwaitinfo,
+	   (const marcel_sigset_t * __restrict set, siginfo_t * __restrict info) __THROW);
 
-int pmarcel_sigsuspend(const marcel_sigset_t *sigmask);
-DEC_MARCEL_POSIX(int,sigsuspend, (const marcel_sigset_t *sigmask) __THROW);
+int pmarcel_sigsuspend(const marcel_sigset_t * sigmask);
+DEC_MARCEL(int, sigsuspend, (const marcel_sigset_t * sigmask) __THROW);
 
 int TBX_RETURNS_TWICE pmarcel_sigsetjmp(sigjmp_buf env, int savemask);
-DEC_MARCEL_POSIX(int TBX_RETURNS_TWICE, sigsetjmp, (sigjmp_buf env, int savemask) __THROW);
+DEC_MARCEL(int TBX_RETURNS_TWICE, sigsetjmp, (sigjmp_buf env, int savemask) __THROW);
 
 void TBX_NORETURN pmarcel_siglongjmp(sigjmp_buf env, int val);
-DEC_MARCEL_POSIX(void TBX_NORETURN, siglongjmp, (sigjmp_buf env, int val) __THROW);
+DEC_MARCEL(void TBX_NORETURN, siglongjmp, (sigjmp_buf env, int val) __THROW);
 
 void *pmarcel_signal(int sig, void *handler);
-DEC_MARCEL_POSIX(void *,signal,(int sig, void *handler) __THROW);
+DEC_MARCEL(void *, signal, (int sig, void *handler) __THROW);
 
 #ifdef OSF_SYS
 /* Hack around gcc's signal.h stupid #define sigaction _Esigaction */
@@ -204,37 +213,53 @@ DEC_MARCEL_POSIX(void *,signal,(int sig, void *handler) __THROW);
 #define sigaction(a,b,c) _Esigaction(a,b,c)
 #endif
 
-int pmarcel_sigaction(int sig, const struct marcel_sigaction *act,struct marcel_sigaction *oact);
-DEC_MARCEL_POSIX(int,sigaction,(int sig, const struct marcel_sigaction *act,
-                     struct marcel_sigaction *oact) __THROW);
+int pmarcel_sigaction(int sig, const struct marcel_sigaction *act,
+		      struct marcel_sigaction *oact);
+DEC_MARCEL(int, sigaction,
+	   (int sig, const struct marcel_sigaction * act,
+	    struct marcel_sigaction * oact) __THROW);
 
 int marcel_deliver_sig(void);
 int marcel_call_function(int sig);
-int marcel_distribwait_sigext(siginfo_t *info);
-int marcel_distribwait_thread(siginfo_t *info,marcel_t thread);
-void ma_signals_init(void);
+int marcel_distribwait_sigext(siginfo_t * info);
+int marcel_distribwait_thread(siginfo_t * info, marcel_t thread);
 
 /**************************marcel_sigset_t*********************/
 
-void marcel_testset(__const marcel_sigset_t * set,char *what);
+void marcel_testset(__const marcel_sigset_t * set, char *what);
 
 /****************autres fonctions******************/
 int pmarcel_sighold(int sig);
-DEC_MARCEL_POSIX(int,sighold,(int sig) __THROW);
+DEC_MARCEL(int, sighold, (int sig) __THROW);
 
 int pmarcel_sigrelse(int sig);
-DEC_MARCEL_POSIX(int,sigrelse,(int sig) __THROW);
+DEC_MARCEL(int, sigrelse, (int sig) __THROW);
 
 int pmarcel_sigignore(int sig);
-DEC_MARCEL_POSIX(int,sigignore,(int sig) __THROW);
+DEC_MARCEL(int, sigignore, (int sig) __THROW);
 
 int pmarcel_sigpause(int sig);
-DEC_MARCEL_POSIX(int,sigpause,(int sig) __THROW);
+DEC_MARCEL(int, sigpause, (int sig) __THROW);
 
-void (*pmarcel_sigset(int sig,void (*dispo)(int)));
+void (*pmarcel_sigset(int sig, void (*dispo) (int)));
+
+
+#ifdef MA__LIBPTHREAD
+int lpt_sigmask(int how, __const sigset_t * set, sigset_t * oset);
+int lpt_sigprocmask(int how, __const sigset_t * set, sigset_t * oset);
+int lpt_sigpending(sigset_t * set);
+int lpt_sigtimedwait(__const sigset_t * __restrict set, siginfo_t * __restrict info,
+		     __const struct timespec *__restrict timeout);
+int lpt_sigwaitinfo(__const sigset_t * __restrict set, siginfo_t * __restrict info);
+int lpt_sigwait(__const sigset_t * __restrict set, int *__restrict sig);
+int lpt_sigsuspend(const sigset_t * sigmask);
+void *lpt___sysv_signal(int sig, void *handler);
+int lpt_sigaction(int sig, const struct sigaction *act, struct sigaction *oact);
+#endif
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -259,18 +284,18 @@ void __ma_restore_rt(void);
 	MA_KERNEL_SIGACTION_RESTORER; \
 	syscall(SYS_rt_sigaction, num, _act, oact, _NSIG / 8); \
 })
-typedef struct ma_kernel_sigaction {
-      union {
+    typedef struct ma_kernel_sigaction {
+	union {
 #undef sa_handler
-            __sighandler_t sa_handler;
+		__sighandler_t sa_handler;
 #define sa_handler __sigaction_handler.sa_handler
 #undef sa_sigaction
-            void (*sa_sigaction) (int, siginfo_t *, void *);
+		void (*sa_sigaction) (int, siginfo_t *, void *);
 #define sa_sigaction __sigaction_handler.sa_sigaction
-      } __sigaction_handler;
-      unsigned long sa_flags;
-      void (*sa_restorer) (void);
-      sigset_t sa_mask;
+	} __sigaction_handler;
+	unsigned long sa_flags;
+	void (*sa_restorer) (void);
+	sigset_t sa_mask;
 } ma_kernel_sigaction_t;
 #else
 #error Need to know how to send signals directly to kernel
@@ -310,12 +335,15 @@ void ma_update_lwp_blocked_signals(void);
 #endif
 
 /* Called on thread termination */
+void ma_signals_init(void);
+int ma_savesigs(sigjmp_buf env, int savemask);
 void ma_sigexit(void);
 #ifndef MARCEL_SIGNALS_ENABLED
 #define ma_sigexit() ((void)0)
 #endif
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

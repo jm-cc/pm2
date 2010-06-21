@@ -26,6 +26,7 @@
 
 
 #ifdef __MARCEL_KERNEL__
+TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
@@ -33,10 +34,11 @@
 
 
 /** Internal functions **/
-static __tbx_inline__ unsigned 
+static __tbx_inline__ unsigned
 pm2_spinlock_testandset(volatile unsigned *spinlock) __tbx_deprecated__;
 
 
+TBX_VISIBILITY_POP
 #endif /** __MARCEL_KERNEL__ **/
 
 

@@ -457,9 +457,6 @@ WARN_LOGFILE           =
 
 INPUT                  = \
                          ../memory/doc/memory.doxy \
-                         ../memory/include/mm_heap_alloc.h \
-                         ../memory/include/mm_heap_numa_alloc.h \
-                         ../memory/include/mm_heap_numa.h \
                          ../memory/include/mm_mami.h \
                          ../memory/include/mm_mami_marcel.h
 
@@ -1033,7 +1030,6 @@ PREDEFINED             = MA__LWPS \
                          MA__NUMA \
                          MA__BUBBLES \
 			 MARCEL_STATS_ENABLED \
-                         MM_HEAP_ENABLED \
 			 MM_MAMI_ENABLED \
                          LINUX_SYS \
                          MARCEL \

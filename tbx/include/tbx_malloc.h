@@ -2,7 +2,6 @@
  *  \brief TBX memory allocators data structures.
  *
  *  This file provides TBX memory allocators data structures:
- *  - The 'safe-malloc' allocator: a debug version of malloc.
  *  - The fast memory allocator:   a fast specialized allocator dedicated
  *    to allocation of memory blocks of identical size.
  *
@@ -39,37 +38,21 @@
  */
 
 /*
- * tbx_safe_malloc
- * ---------------
- */
-typedef enum
-{
-  tbx_safe_malloc_ERRORS_ONLY,
-  tbx_safe_malloc_VERBOSE
-} tbx_safe_malloc_mode_t, *p_tbx_safe_malloc_mode_t;
-
-
-/*
  * tbx_malloc
  * ----------
  */
-typedef struct s_tbx_memory
-{
-  union {
-    TBX_SHARED;
-    TBX_CRITICAL_SHARED;
-  };
-  int     is_critical;
-  void    *first_mem;
-  void    *current_mem;
-  size_t   block_len;
-  long     mem_len;
-  void    *first_free;
-  long     first_new;
-  long     nb_allocated;
-  const char *name;
+typedef struct s_tbx_memory {
+	int is_critical;
+	void *first_mem;
+	void *current_mem;
+	size_t block_len;
+	long mem_len;
+	void *first_free;
+	long first_new;
+	long nb_allocated;
+	const char *name;
 } tbx_memory_t;
 
 /* @} */
 
-#endif /* TBX_MALLOC_H */
+#endif				/* TBX_MALLOC_H */

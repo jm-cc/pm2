@@ -113,11 +113,11 @@ typedef struct timeval tbx_tick_t, *p_tbx_tick_t;
 #define TBX_TIMING_DELAY(t1, t2) tbx_tick2usec(TBX_TICK_DIFF(t1, t2))
 
 extern unsigned long long tbx_residual;
-extern tbx_tick_t         tbx_new_event;
-extern tbx_tick_t         tbx_last_event;
+extern tbx_tick_t tbx_new_event;
+extern tbx_tick_t tbx_last_event;
 
 char *tbx_tick2str(long long t);
 
 /* @} */
 
-#endif /* TBX_TIMING_H */
+#endif				/* TBX_TIMING_H */

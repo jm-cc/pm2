@@ -43,8 +43,6 @@ typedef enum e_mad_connection_way
 
 typedef struct s_mad_connection
 {
-  TBX_SHARED;
-
   /* Common use fields */
   mad_connection_nature_t  nature;
   ntbx_process_lrank_t     remote_rank;

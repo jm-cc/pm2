@@ -36,7 +36,7 @@ main (int argc, char *argv[])
   unsigned i;
   marcel_t threads[THREADS];
 
-  marcel_init (&argc, argv);
+  marcel_init(argc, argv);
 
   for (i = 0; i < THREADS; i++)
     {

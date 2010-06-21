@@ -22,6 +22,15 @@
 
 #include <nm_session_interface.h>
 
+#include <nm_log.h>
+#define LOG_IN     NM_LOG_IN
+#define LOG_OUT    NM_LOG_OUT
+#define DISP       NM_DISPF
+#define TRACE      NM_TRACEF
+#define TRACE_VAL  NM_TRACE_VAL
+#define TRACE_STR  NM_TRACE_STR
+#define TRACE_CHAR NM_TRACE_CHAR
+
 /*
  * Structures
  * ----------

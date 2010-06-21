@@ -1,4 +1,3 @@
-
 /*
  * PM2: Parallel Multithreaded Machine
  * Copyright (C) 2001 "the PM2 team" (see AUTHORS file)
@@ -39,33 +38,23 @@
 #include "marcel.h"
 #include <errno.h>
 
-#ifdef PIOMAN
-#include "pioman.h"
-#endif /* PIOMAN */
 #ifdef CONFIG_NUMA
 #define cpu_to_node_mask(cpu) node_to_cpumask(cpu_to_node(cpu))
 #else
 #define cpu_to_node_mask(cpu) (cpu_online_map)
 #endif
 
-#define TASK_TASK_PREEMPT(p, q) \
+#define TASK_TASK_PREEMPT(p, q)				\
 	((q)->as_entity.prio - (p)->as_entity.prio)
 
-#define TASK_PREEMPTS_TASK(p, q) \
+#define TASK_PREEMPTS_TASK(p, q)		\
 	TASK_TASK_PREEMPT(p, q) > 0
 
-#define TASK_PREEMPTS_CURR(p, lwp) \
+#define TASK_PREEMPTS_CURR(p, lwp)					\
 	TASK_PREEMPTS_TASK((p), ma_per_lwp(current_thread, (lwp)))
 
-#define TASK_CURR_PREEMPT(p, lwp) \
+#define TASK_CURR_PREEMPT(p, lwp)					\
 	TASK_TASK_PREEMPT((p), ma_per_lwp(current_thread, (lwp)))
-
-
-#ifndef MA__LWPS
-/* mono: no idle thread, but on interrupts we need to when whether we're
- * idling. */
-static int currently_idle;
-#endif
 
 /*
  * ma_resched_task - mark a task 'to be rescheduled now'.
@@ -74,7 +63,7 @@ static int currently_idle;
  * might also involve a LWP killing to trigger the scheduler on
  * the target LWP.
  */
-void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
+void ma_resched_task(marcel_task_t *p LWPS_VAR_UNUSED, int vp, ma_lwp_t lwp LWPS_VAR_UNUSED)
 {
 	PROF_EVENT2(sched_resched_task, p, vp);
 #ifdef MA__LWPS
@@ -97,8 +86,8 @@ void ma_resched_task(marcel_task_t *p, int vp, ma_lwp_t lwp)
 	/* minimise the chance of sending an interrupt to poll_idle() */
 	if (!ma_test_tsk_thread_flag(p,TIF_POLLING_NRFLAG)) {
 
-               PROF_EVENT2(sched_resched_lwp, ma_vpnum(MA_LWP_SELF), ma_vpnum(lwp));
-	       MA_LWP_RESCHED(lwp);
+		PROF_EVENT2(sched_resched_lwp, ma_vpnum(MA_LWP_SELF), ma_vpnum(lwp));
+		MA_LWP_RESCHED(lwp);
 	} else PROF_EVENT2(sched_resched_lwp_already_polling, p, ma_vpnum(lwp));
 out:
 	ma_preempt_enable();
@@ -112,13 +101,13 @@ void __ma_resched_vpset(const marcel_vpset_t *vpset)
 	unsigned vp;
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
-		if (lwp) {
-			marcel_t current = ma_per_lwp(current_thread, lwp);
-			ma_set_tsk_need_togo(current);
-			ma_resched_task(current,vp,lwp);
-		}
+	if (lwp) {
+		marcel_t current = ma_per_lwp(current_thread, lwp);
+		ma_set_tsk_need_togo(current);
+		ma_resched_task(current,vp,lwp);
+	}
 	marcel_vpset_foreach_end()
-}
+		}
 
 void ma_resched_vpset(const marcel_vpset_t *vpset)
 {
@@ -127,15 +116,15 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 	ma_local_bh_disable();
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
-		if (lwp) {
-			marcel_t current = ma_per_lwp(current_thread, lwp);
-			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
-			ma_set_tsk_need_togo(current);
-			ma_resched_task(current,vp,lwp);
-			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
-		}
+	if (lwp) {
+		marcel_t current = ma_per_lwp(current_thread, lwp);
+		ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
+		ma_set_tsk_need_togo(current);
+		ma_resched_task(current,vp,lwp);
+		ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
+	}
 	marcel_vpset_foreach_end()
-	ma_preempt_enable_no_resched();
+		ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
 
@@ -223,7 +212,7 @@ static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, 
 	int success = 0;
 	long old_state;
 	ma_runqueue_t *rq;
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	old_state = p->state;
 	if (old_state & state) {
@@ -267,7 +256,7 @@ static int __ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync, 
 		success = 1;
 	}
 
-	LOG_RETURN(success);
+	MARCEL_LOG_RETURN(success);
 }
 
 int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
@@ -279,10 +268,10 @@ int ma_try_to_wake_up(marcel_task_t * p, unsigned int state, int sync)
 	return success;
 }
 
-TBX_EXTERN int fastcall ma_wake_up_thread(marcel_task_t * p)
+int fastcall ma_wake_up_thread(marcel_task_t * p)
 {
 	return ma_try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
-			      MA_TASK_UNINTERRUPTIBLE, 0);
+				 MA_TASK_UNINTERRUPTIBLE, 0);
 }
 
 int fastcall ma_wake_up_state(marcel_task_t *p, unsigned int state)
@@ -299,7 +288,7 @@ int fastcall ma_wake_up_thread_async(marcel_task_t * p)
 		return 0;
 	}
 	success = __ma_try_to_wake_up(p, MA_TASK_INTERRUPTIBLE |
-				MA_TASK_UNINTERRUPTIBLE, 1, h);
+				      MA_TASK_UNINTERRUPTIBLE, 1, h);
 	ma_holder_try_to_wake_up_and_unlock_softirq(h);
 	return success;
 }
@@ -314,9 +303,9 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 {
 	ma_holder_t *h;
 	ma_runqueue_t *rq;
-	LOG_IN();
+	MARCEL_LOG_IN();
 
-	sched_debug("wake up created thread %p\n",p);
+	MARCEL_SCHED_LOG("wake up created thread %p\n",p);
 	if (ma_entity_task(p)->type == MA_THREAD_ENTITY) {
 		MA_BUG_ON(p->state != MA_TASK_BORNING);
 #ifdef MARCEL_STATS_ENABLED
@@ -332,7 +321,7 @@ void marcel_wake_up_created_thread(marcel_task_t * p)
 	h = ma_task_natural_holder(p);
 
 	if (h && ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
-		bubble_sched_debugl(7,"wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
+		MARCEL_SCHED_LOG("wake up task %p in bubble %p\n",p, ma_bubble_holder(h));
 		if (tbx_fast_list_empty(&p->as_entity.natural_entities_item))
 			marcel_bubble_inserttask(ma_bubble_holder(h),p);
 	}
@@ -368,8 +357,8 @@ retry:
 
 #ifdef MA__BUBBLES
 	if (h->type == MA_BUBBLE_HOLDER
-		&& ma_bubble_holder(h)->as_entity.sched_holder
-		&& ma_bubble_holder(h)->as_entity.sched_holder->type == MA_BUBBLE_HOLDER) {
+	    && ma_bubble_holder(h)->as_entity.sched_holder
+	    && ma_bubble_holder(h)->as_entity.sched_holder->type == MA_BUBBLE_HOLDER) {
 		/* It got moved just before locking, retry */
 		ma_holder_unlock_softirq(h);
 		goto retry;
@@ -401,7 +390,7 @@ retry:
 		PROF_EVENT(resched_for_woken_up_created_thread);
 		try_to_resched(p, h);
 	}
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 int ma_sched_change_prio(marcel_t t, int prio) {
@@ -428,7 +417,9 @@ int ma_sched_change_prio(marcel_t t, int prio) {
 static void *bubble_join_signal_cb(void * arg) {
 	int do_signal = 0;
 	marcel_bubble_t *bubble = (marcel_bubble_t *)arg;
+
 	marcel_mutex_lock(&bubble->join_mutex);
+
 	ma_holder_lock_softirq(&bubble->as_holder);
 	bubble->nb_natural_entities--;
 	if (bubble->join_empty_state == 0  &&  bubble->nb_natural_entities == 0) {
@@ -436,8 +427,10 @@ static void *bubble_join_signal_cb(void * arg) {
 		do_signal = 1;
 	}
 	ma_holder_unlock_softirq(&bubble->as_holder);
+
 	if (do_signal)
 		marcel_cond_signal(&bubble->join_cond);
+
 	marcel_mutex_unlock(&bubble->join_mutex);
 	return NULL;
 }
@@ -465,12 +458,12 @@ static void finish_task_switch(marcel_task_t *prev)
 	ma_holder_t *h;
 #endif
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 	prev_task_state = prev->state;
 
 	if (prev->state && ((prev->state == MA_TASK_DEAD)
-				|| !(THREAD_GETMEM(prev,preempt_count) & MA_PREEMPT_ACTIVE))
-			) {
+			    || !(THREAD_GETMEM(prev,preempt_count) & MA_PREEMPT_ACTIVE))
+		) {
 		if (prev->state & MA_TASK_MOVING) {
 			/* moving, make it running elsewhere */
 			MTRACE("moving",prev);
@@ -482,7 +475,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		} else {
 			/* yes, deactivate */
 			MTRACE("going to sleep",prev);
-			sched_debug("%p going to sleep\n",prev);
+			MARCEL_SCHED_LOG("%p going to sleep\n",prev);
 			ma_clear_ready_holder(&prev->as_entity,prevh);
 #ifdef MARCEL_STATS_ENABLED
 			ma_task_stats_set(long, prev, ma_stats_nbready_offset, 0);
@@ -499,7 +492,7 @@ static void finish_task_switch(marcel_task_t *prev)
 
 #ifdef MA__BUBBLES
 	if ((h = (ma_task_natural_holder(prev)))
-		&& h->type == MA_BUBBLE_HOLDER) {
+	    && h->type == MA_BUBBLE_HOLDER) {
 		marcel_bubble_t *bubble = ma_bubble_holder(h);
 		int remove_from_bubble;
 		if ((remove_from_bubble = (prev->state & MA_TASK_DEAD)))
@@ -509,7 +502,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		if (remove_from_bubble) {
 			marcel_entity_t *prev_e = ma_entity_task(prev);
 			int becomes_empty = ma_bubble_removeentity(bubble, prev_e);
-
+			
 			if (becomes_empty) {
 				/* ma_bubble_removeentity already did the work
 				 * requiring only the bubble lock, we now must
@@ -560,7 +553,7 @@ static void finish_task_switch(marcel_task_t *prev)
 		/* mourn it */
 		marcel_funerals(prev);
 	}
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 /**
@@ -569,7 +562,7 @@ static void finish_task_switch(marcel_task_t *prev)
  */
 asmlinkage void ma_schedule_tail(marcel_task_t *prev)
 {
-	ma_preempt_disable();
+        ma_preempt_disable();
 	finish_task_switch(prev);
 
 #ifdef MA__LWPS
@@ -609,8 +602,10 @@ unsigned long ma_nb_ready_entities(void)
 void ma_scheduler_tick(int user_ticks, int sys_ticks)
 {
 	struct ma_lwp_usage_stat *lwpstat = &__ma_get_lwp_var(lwp_usage);
-	int vpnum = ma_vpnum(MA_LWP_SELF);
 	marcel_task_t *p = MARCEL_SELF;
+#ifdef MA__LWPS
+	int vpnum = ma_vpnum(MA_LWP_SELF);
+#endif
 
 	PROF_EVENT(sched_tick);
 
@@ -621,11 +616,11 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 	//      rcu_check_callbacks(cpu, user_ticks);
 
 // TODO Pour l'instant, on n'a pas de notion de tick système
-#define sys_ticks user_ticks
+	sys_ticks = user_ticks ;
 	if (ma_hardirq_count()) {
 		lwpstat->irq += sys_ticks;
 		sys_ticks = 0;
-	/* note: this timer irq context must be accounted for as well */
+		/* note: this timer irq context must be accounted for as well */
 	} else if (ma_softirq_count() - MA_SOFTIRQ_OFFSET) {
 		lwpstat->softirq += sys_ticks;
 		sys_ticks = 0;
@@ -634,35 +629,36 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 #ifdef MA__LWPS
 	if (p == __ma_get_lwp_var(idle_task))
 #else
-	if (currently_idle)
+		if (ma_currently_idle)
 #endif
-	{
-		if (marcel_vp_is_disabled(vpnum))
-			lwpstat->disabled += sys_ticks;
+		{
+#ifdef MA__LWPS
+			if (marcel_vp_is_disabled(vpnum))
+				lwpstat->disabled += sys_ticks;
+			else
+#endif
+				// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
+				/*if (atomic_read(&rq->nr_iowait) > 0)
+				  lwpstat->iowait += sys_ticks;
+				  else*/
+				lwpstat->idle += sys_ticks;
+			//rebalance_tick(rq, 1);
+			//return;
+			sys_ticks = 0;
+		} else if (p->as_entity.prio >= MA_BATCH_PRIO)
+			lwpstat->nice += user_ticks;
 		else
-		// TODO on n'a pas non plus de notion d'iowait, est-ce qu'on le veut vraiment ?
-		/*if (atomic_read(&rq->nr_iowait) > 0)
-			lwpstat->iowait += sys_ticks;
-		else*/
-			lwpstat->idle += sys_ticks;
-		//rebalance_tick(rq, 1);
-		//return;
-		sys_ticks = 0;
-	} else if (p->as_entity.prio >= MA_BATCH_PRIO)
-		lwpstat->nice += user_ticks;
-	else
-		lwpstat->user += user_ticks;
+			lwpstat->user += user_ticks;
 	//lwpstat->system += sys_ticks;
-#undef sys_ticks
 
 	/* Task might have expired already, but not scheduled off yet */
 	//if (p->as_entity.array != rq->active) {
 	
 	// C'est normal quand le thread est en cours de migration par exemple. Il faudrait prendre le verrou pour faire cette vérification
 	if (0 && !MA_TASK_IS_RUNNING(p)) {
-		pm2debug("Strange: %s running, but not running (ready_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
-				p->as_entity.name, ma_task_ready_holder(p),
-				ma_task_ready_holder_data(p), __FILE__, __LINE__);
+		PM2_LOG("Strange: %s running, but not running (ready_holder == %p, holder_data == %p) !, report or look at it (%s:%i)\n",
+			p->as_entity.name, ma_task_ready_holder(p),
+			ma_task_ready_holder_data(p), __FILE__, __LINE__);
 		ma_set_need_resched(1);
 		goto out;
 	}
@@ -671,7 +667,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 		MA_BUG_ON(ma_atomic_read(&p->as_entity.time_slice)>MARCEL_TASK_TIMESLICE);
 		if (ma_atomic_dec_and_test(&p->as_entity.time_slice)) {
 			ma_set_need_resched(1);
-			sched_debug("scheduler_tick: time slice expired\n");
+			MARCEL_SCHED_LOG("scheduler_tick: time slice expired\n");
 			ma_atomic_set(&p->as_entity.time_slice,MARCEL_TASK_TIMESLICE);
 		}
 		// attention: rq->lock ne doit pas être pris pour pouvoir
@@ -681,7 +677,7 @@ void ma_scheduler_tick(int user_ticks, int sys_ticks)
 			marcel_bubble_t *b;
 			ma_holder_t *h;
 			if ((h = ma_task_natural_holder(p)) && 
-					ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
+			    ma_holder_type(h) != MA_RUNQUEUE_HOLDER) {
 				b = ma_bubble_holder(h);
 				if (ma_atomic_dec_and_test(&b->as_entity.time_slice))
 					ma_bubble_tick(b);
@@ -698,7 +694,7 @@ out:
 /* Scheduling functions start here.  */
 
 
-static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now) {
+static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsigned long now STATS_VAR_UNUSED) {
 	tbx_prefetch(next);
 
 #ifdef MARCEL_STATS_ENABLED
@@ -711,7 +707,7 @@ static marcel_t do_switch(marcel_t prev, marcel_t next, ma_holder_t *nexth, unsi
 	__ma_get_lwp_var(current_thread) = next;
 	ma_dequeue_entity(&next->as_entity, nexth);
 
-	sched_debug("unlock(%p)\n",nexth);
+	MARCEL_SCHED_LOG("unlock(%p)\n",nexth);
 	ma_holder_rawunlock(nexth);
 	ma_set_task_lwp(next, MA_LWP_SELF);
 
@@ -744,7 +740,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 	marcel_attr_setdetachstate(&attr, tbx_true);
 
 	/* Start the seed runner with the highest priority so that it's scheduled
-		 right after it's been created (or woken up).  */
+	   right after it's been created (or woken up).  */
 	marcel_attr_setprio(&attr, MA_SYS_RT_PRIO);
 
 	marcel_attr_setschedrq(&attr, ma_lwp_rq(MA_LWP_SELF));
@@ -756,7 +752,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 		err = marcel_create_dontsched(&runner, &attr, marcel_sched_seed_runner, seed);
 
 	/* Note: `seed->cur_thread_seed_runner' will be assigned in
-		 `marcel_sched_seed_runner ()' when RUNNER is actually scheduled.  */
+	   `marcel_sched_seed_runner ()' when RUNNER is actually scheduled.  */
 
 	if (result != NULL)
 		*result = runner;
@@ -768,7 +764,7 @@ static int instantiate_thread_seed(marcel_t seed, tbx_bool_t schedule, marcel_t 
 /*
  * schedule() is the main scheduler function.
  */
-asmlinkage TBX_EXTERN int ma_schedule(void)
+asmlinkage int ma_schedule(void)
 {
 	marcel_task_t *prev, *cur, *next, *prev_as_next;
 	marcel_entity_t *nextent;
@@ -787,8 +783,8 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 #endif
 	int hard_preempt TBX_UNUSED;
 	int need_resched;
-	int vpnum;
-	LOG_IN();
+	int vpnum LWPS_VAR_UNUSED;
+	MARCEL_LOG_IN();
 	need_resched = ma_get_need_resched();
 	/*
 	 * Test if we are atomic.  Since do_exit() needs to call into
@@ -798,7 +794,7 @@ asmlinkage TBX_EXTERN int ma_schedule(void)
 	MA_BUG_ON(ma_preempt_count()<0);
 	if (tbx_likely(!(SELF_GETMEM(state) & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
-			pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
+			PM2_LOG("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
 			ma_show_preempt_backtrace();
 			MA_BUG();
 		}
@@ -837,10 +833,10 @@ need_resched_atomic:
 		prev_as_prio = prev->as_entity.prio;
 
 	if (prev->state &&
-			/* garde-fou pour éviter de s'endormir
-			 * par simple préemption */
-			((prev->state == MA_TASK_DEAD) ||
-			!(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
+	    /* garde-fou pour éviter de s'endormir
+	     * par simple préemption */
+	    ((prev->state == MA_TASK_DEAD) ||
+	     !(ma_preempt_count() & MA_PREEMPT_ACTIVE))) {
 		if (tbx_unlikely((prev->state & MA_TASK_INTERRUPTIBLE) &&
 				 tbx_unlikely(0 /*work_pending(prev)*/)))
 			prev->state = MA_TASK_RUNNING;
@@ -851,7 +847,7 @@ need_resched_atomic:
 	vpnum = ma_vpnum(MA_LWP_SELF);
 	if (ma_need_togo() || go_to_sleep || marcel_vp_is_disabled(vpnum)) {
 		if (go_to_sleep && !go_to_sleep_traced) {
-			sched_debug("schedule: go to sleep\n");
+			MARCEL_SCHED_LOG("schedule: go to sleep\n");
 			PROF_EVENT(sched_thread_blocked);
 			go_to_sleep_traced = 1;
 		}
@@ -888,18 +884,18 @@ restart:
 
 	/* Iterate over runqueues that cover this LWP */
 #ifdef MA__LWPS
-	sched_debug("default prio: %d\n",max_prio);
+	MARCEL_SCHED_LOG("default prio: %d\n",max_prio);
 	for (currq = ma_lwp_rq(MA_LWP_SELF); currq; currq = currq->father) {
 #else
-	sched_debug("default prio: %d\n",max_prio);
-	currq = &ma_main_runqueue;
+		MARCEL_SCHED_LOG("default prio: %d\n",max_prio);
+		currq = &ma_main_runqueue;
 #endif
 		if (!currq->as_holder.nb_ready_entities) {
-			sched_debug("apparently nobody in %s\n",currq->as_holder.name);
+			MARCEL_SCHED_LOG("apparently nobody in %s\n",currq->as_holder.name);
 		} else {
 			idx = ma_sched_find_first_bit(currq->active->bitmap);
 			if (idx < max_prio) {
-				sched_debug("found better prio %d in %s\n",idx,currq->as_holder.name);
+				MARCEL_SCHED_LOG("found better prio %d in %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				max_prio = idx;
 				nexth = &currq->as_holder;
@@ -907,10 +903,10 @@ restart:
 				hard_preempt = 1;
 			}
 			if (cur && need_resched && idx == prev_as_prio && idx < MA_IDLE_PRIO) {
-			/* still wanted to schedule prev, but it needs resched
-			 * and this is same prio
-			 */
-				sched_debug("found same prio %d in %s\n",idx,currq->as_holder.name);
+				/* still wanted to schedule prev, but it needs resched
+				 * and this is same prio
+				 */
+				MARCEL_SCHED_LOG("found same prio %d in %s\n",idx,currq->as_holder.name);
 				cur = NULL;
 				nexth = &currq->as_holder;
 			}
@@ -938,46 +934,41 @@ restart:
 				}
 			}
 		}
-		sched_debug("rebalance\n");
+		MARCEL_SCHED_LOG("rebalance\n");
 //		load_balance(rq, 1, cpu_to_node_mask(smp_processor_id()));
 #ifdef MA__BUBBLES
 		if (ma_idle_scheduler_is_running ())
-		    if (ma_vpnum(MA_LWP_SELF) < marcel_nbvps())
-		    {
-		      if (ma_bubble_notify_idle_vp(ma_vpnum(MA_LWP_SELF)))
-			goto need_resched_atomic;
-		    }
+			if (ma_vpnum(MA_LWP_SELF) < (int)marcel_nbvps() && ma_vpnum(MA_LWP_SELF) >= 0)
+			{
+				if (ma_bubble_notify_idle_vp(ma_vpnum(MA_LWP_SELF)))
+					goto need_resched_atomic;
+			}
 #endif
 		cur = __ma_get_lwp_var(idle_task);
 #else /* MONO */
 		/* mono: nobody can use our stack, so there's no need for idle
 		 * thread */
-		if (!currently_idle) {
+		if (!ma_currently_idle) {
 			ma_entering_idle();
-			currently_idle = 1;
+			ma_currently_idle = tbx_true;
 		}
 		ma_local_bh_enable();
-#ifdef PIOMAN
-		if (!piom_check_polling(PIOM_POLL_AT_IDLE))
-#else
-		if (!marcel_polling_is_required(MARCEL_EV_POLL_AT_IDLE))
-#endif /* PIOMAN */
+
+
+#ifdef MARCEL_IDLE_PAUSE
+		if (didpoll)
+			/* already polled a bit, sleep a bit before
+			 * polling again */
+			marcel_sig_nanosleep();
+#endif
+		didpoll = ma_schedule_hooks(MARCEL_SCHEDULING_POINT_IDLE);
+		if(!didpoll)
 		{
 		        marcel_sig_disable_interrupts();
 			marcel_sig_pause();
 			marcel_sig_enable_interrupts();
-		} else {
-#ifdef MARCEL_IDLE_PAUSE
-		        if (didpoll)
-			        /* already polled a bit, sleep a bit before
-				 * polling again */
- 			        marcel_sig_nanosleep();
-#endif
-#ifndef PIOMAN
-			__marcel_check_polling(MARCEL_EV_POLL_AT_IDLE);
-#endif /* PIOMAN */
-			didpoll = 1;
-		}
+		} 
+
 		ma_check_work();
 		need_resched = 1;
 		ma_local_bh_disable();
@@ -985,9 +976,9 @@ restart:
 #endif /* MONO */
 	} else {
 #ifndef MA__LWPS
-		if (currently_idle) {
+		if (ma_currently_idle) {
 			ma_leaving_idle();
-			currently_idle = 0;
+			ma_currently_idle = tbx_false;
 		}
 #endif
 	}
@@ -1008,7 +999,7 @@ restart:
 	}
 #endif
 	ma_holder_lock(nexth);
-	sched_debug("locked(%p)\n",nexth);
+	MARCEL_SCHED_LOG("locked(%p)\n",nexth);
 
 	if (cur) /* either prev or idle */ {
 	        next = cur;
@@ -1020,7 +1011,7 @@ restart:
 	rq = ma_rq_holder(nexth);
 #ifdef MA__LWPS
 	if (tbx_unlikely(!(rq->active->nr_active))) { //+rq->expired->nr_active))) {
-		sched_debug("someone stole the task we saw, restart\n");
+		MARCEL_SCHED_LOG("someone stole the task we saw, restart\n");
 		ma_holder_unlock(&rq->as_holder);
 		goto restart;
 	}
@@ -1030,19 +1021,12 @@ restart:
 
 	/* now look for next *different* task */
 	array = rq->active;
-#if 0
-	if (tbx_unlikely(!array->nr_active)) {
-		sched_debug("arrays switch\n");
-		/* XXX: todo: handle all rqs... */
-		rq_arrays_switch(rq);
-	}
-#endif
 
 	idx = ma_sched_find_first_bit(array->bitmap);
 #ifdef MA__LWPS
 	if (tbx_unlikely(idx > max_prio)) {
 	        /* We had seen a high-priority task, but it's not there any more */
-		sched_debug("someone stole the high-priority task we saw, restart\n");
+		MARCEL_SCHED_LOG("someone stole the high-priority task we saw, restart\n");
 		ma_holder_unlock(&rq->as_holder);
 		goto restart;
 	}
@@ -1071,15 +1055,15 @@ restart:
 			ma_set_current_state(MA_TASK_RUNNING);
 			/* we disabled preemption once in marcel_exit_internal, re-enable it once */
 			ma_preempt_enable();
-			LOG_OUT();
+			MARCEL_LOG_OUT();
 			if (!prev->f_to_call)
 				/* marcel_exit was called directly from the
 				 * runner loop, just return (faster) */
-				LOG_RETURN(0);
+				MARCEL_LOG_RETURN(0);
 			else
 				marcel_ctx_longjmp(SELF_GETMEM(ctx_restart), 0);
 		} else {
-			int err;
+			int err TBX_UNUSED;
 
 			err = instantiate_thread_seed(next, tbx_true, NULL);
 			MA_BUG_ON(err != 0);
@@ -1091,7 +1075,7 @@ restart:
 	MA_BUG_ON(nextent->type != MA_THREAD_ENTITY);
 
 switch_tasks:
-	sched_debug("prio %d in %s, next %p(%s)\n",idx,nexth->name,next,next->as_entity.name);
+	MARCEL_SCHED_LOG("prio %d in %s, next %p(%s)\n",idx,nexth->name,next,next->as_entity.name);
 	MTRACE("previous",prev);
 	MTRACE("next",next);
 
@@ -1099,7 +1083,7 @@ switch_tasks:
 	 * safely deactivate ourselves */
 
 	if (go_to_sleep && ((prev->state == MA_TASK_DEAD) ||
-				!(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
+			    !(ma_preempt_count() & MA_PREEMPT_ACTIVE)))
 		/* on va dormir, il _faut_ donner la main à quelqu'un d'autre */
 		MA_BUG_ON(next==prev);
 
@@ -1114,16 +1098,16 @@ switch_tasks:
 
 		/* TODO: si !hard_preempt, appeler le polling */
 	} else {
-		sched_debug("unlock(%p)\n",nexth);
+		MARCEL_SCHED_LOG("unlock(%p)\n",nexth);
 		ma_holder_unlock_softirq(nexth);
 #ifdef MA__LWPS
-		if (!(tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))))
+		if (! (tbx_unlikely(MARCEL_SELF == __ma_get_lwp_var(idle_task))))
 #endif
-		  {
+		{
 #ifdef PIOMAN
-		    /* TODO: appeler le polling pour lui faire faire un peu de poll */
+			/* TODO: appeler le polling pour lui faire faire un peu de poll */
 #endif
-		  }
+		}
 	}
 
 #ifdef MA__LWPS
@@ -1132,38 +1116,37 @@ out:
 //	reacquire_kernel_lock(current);
 	ma_preempt_enable_no_resched();
 	if (tbx_unlikely(ma_get_need_resched() && ma_thread_preemptible())) {
-		sched_debug("need resched\n");
+		MARCEL_SCHED_LOG("need resched\n");
 		need_resched = 1;
 		goto need_resched;
 	}
-	sched_debug("switched\n");
+	MARCEL_SCHED_LOG("switched\n");
 
 	MA_BUG_ON(ma_preempt_count()<0);
 	if (tbx_unlikely(ma_in_atomic())) {
-		pm2debug("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
+		PM2_LOG("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",ma_preempt_count());
 		ma_show_preempt_backtrace();
 		MA_BUG();
 	}
 
-	LOG_RETURN(didswitch);
+	MARCEL_LOG_RETURN(didswitch);
 }
 
 int marcel_yield_to(marcel_t next)
 {
 	marcel_t prev = MARCEL_SELF;
 	ma_holder_t *nexth;
-	int busy TBX_UNUSED;
 
 	if (next==prev)
 		return 0;
 
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 	nexth = ma_task_holder_lock_softirq(next);
 	if (ma_entity_task(next)->type == MA_THREAD_SEED_ENTITY) {
 		if (!next->cur_thread_seed_runner) {
-			int err;
 			marcel_t runner;
+			int err TBX_UNUSED;
 
 			err = instantiate_thread_seed(next, tbx_false, &runner);
 			MA_BUG_ON(err != 0);
@@ -1183,11 +1166,12 @@ int marcel_yield_to(marcel_t next)
 	}
 
 	if (!MA_TASK_IS_READY(next)) {
-		busy = MA_TASK_IS_RUNNING(next);
+#ifdef PM2DEBUG
+	        int busy = MA_TASK_IS_RUNNING(next);
+#endif
 		ma_task_holder_unlock_softirq(nexth);
-		sched_debug("marcel_yield: %s task %p\n",
-			busy?"busy":"not enqueued", next);
-		LOG_OUT();
+		MARCEL_SCHED_LOG("marcel_yield: %s task %p\n", busy ?"busy":"not enqueued", next);
+		MARCEL_LOG_OUT();
 		return -1;
 	}
 
@@ -1196,7 +1180,7 @@ int marcel_yield_to(marcel_t next)
 	
 	prev = do_switch(prev, next, nexth, marcel_clock());
 
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 	return 0;
 }
 
@@ -1205,41 +1189,41 @@ int marcel_yield_to(marcel_t next)
    the same runqueue to respect affinity relations.  The _padding_
    argument represents the "gap" between two values in _mask_.*/
 int marcel_yield_to_team(marcel_t *team, char *mask, unsigned padding, unsigned nb_teammates) {
-  unsigned i;
+	unsigned i;
 
-  MA_BUG_ON(!padding);
+	MA_BUG_ON(!padding);
 
-  /* To be on the safe side (MA_BUG_ON could be disabled, depending on
-     flavor configuration)*/
-  if (!padding)
-    padding = 1;
+	/* To be on the safe side (MA_BUG_ON could be disabled, depending on
+	   flavor configuration)*/
+	if (!padding)
+		padding = 1;
 
-  for (i = 0; i < nb_teammates; i++) {
-    if (mask[i * padding])
-      continue;
+	for (i = 0; i < nb_teammates; i++) {
+		if (mask[i * padding])
+			continue;
     
-    /* We're looking for a ready (R*) thread... */
-    if (!team[i] || team[i] == marcel_self() || team[i]->state != MA_TASK_RUNNING)
-      continue;
+		/* We're looking for a ready (R*) thread... */
+		if (!team[i] || team[i] == ma_self() || team[i]->state != MA_TASK_RUNNING)
+			continue;
       
-    /* ... that is scheduled on the same runqueue we're being executed... */
-    /* TODO: handle cases where the team[i] runqueue is inside the
-       subtree under the marcel_self() runqueue. */
-    if (ma_to_rq_holder(ma_task_sched_holder(marcel_self())) != ma_to_rq_holder(ma_task_sched_holder(team[i])))
-      continue;
+		/* ... that is scheduled on the same runqueue we're being executed... */
+		/* TODO: handle cases where the team[i] runqueue is inside the
+		   subtree under the ma_self() runqueue. */
+		if (ma_to_rq_holder(ma_task_sched_holder(ma_self())) != ma_to_rq_holder(ma_task_sched_holder(team[i])))
+			continue;
       
-    /* ... and is not currently running (!RR). */
-    if (MA_TASK_IS_RUNNING(team[i]))
-      continue;
+		/* ... and is not currently running (!RR). */
+		if (MA_TASK_IS_RUNNING(team[i]))
+			continue;
 
-    /* Hurray ! We finally found someone !*/
-    if (marcel_yield_to(team[i]) == 0) {
-      sched_debug("marcel_yield_to_team: We successfully yielded to thread %d::%p\n", i, team[i]);
-      return 0;
-    }
-  }
+		/* Hurray ! We finally found someone !*/
+		if (marcel_yield_to(team[i]) == 0) {
+			MARCEL_SCHED_LOG("marcel_yield_to_team: We successfully yielded to thread %d::%p\n", i, team[i]);
+			return 0;
+		}
+	}
   
-  return -1;
+	return -1;
 }
 
 void ma_preempt_schedule(int irq)
@@ -1274,20 +1258,16 @@ need_resched:
 // Effectue un changement de contexte + éventuellement exécute des
 // fonctions de scrutation...
 
-DEF_MARCEL_POSIX(int, yield, (void), (),
-{
-  LOG_IN();
-#ifdef PIOMAN
-  piom_check_polling(PIOM_POLL_AT_YIELD);
-#else
-  marcel_check_polling(MARCEL_EV_POLL_AT_YIELD);
-#endif
-  ma_set_need_resched(1);
-  ma_schedule();
+DEF_MARCEL_PMARCEL(int, yield, (void), (),
+		   {
+			   MARCEL_LOG_IN();
+			   ma_schedule_hooks(MARCEL_SCHEDULING_POINT_YIELD);
+			   ma_set_need_resched(1);
+			   ma_schedule();
 
-  LOG_OUT();
-  return 0;
-})
+			   MARCEL_LOG_OUT();
+			   return 0;
+		   })
 /* La définition n'est pas toujours dans pthread.h */
 extern int pthread_yield (void) __THROW;
 DEF_PTHREAD_STRONG(int, yield, (void), ())
@@ -1296,16 +1276,16 @@ DEF_PTHREAD_STRONG(int, yield, (void), ())
 ma_holder_t *
 ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
 	ma_holder_t *old_sched_h;
-#ifdef MA__BUBBLES
-	ma_holder_t *old_natural_h;
-#endif
-	LOG_IN();
+	ma_holder_t *old_natural_h BUBBLE_VAR_UNUSED;
+
+	MARCEL_LOG_IN();
 	old_sched_h = ma_task_holder_lock_softirq(MARCEL_SELF);
 	if (old_sched_h == new_holder) {
 		ma_task_holder_unlock_softirq(old_sched_h);
-		LOG_OUT();
+		MARCEL_LOG_OUT();
 		return old_sched_h;
 	}
+
 	ma_clear_ready_holder(&MARCEL_SELF->as_entity,old_sched_h);
 	ma_task_sched_holder(MARCEL_SELF) = NULL;
 	ma_holder_rawunlock(old_sched_h);
@@ -1328,11 +1308,11 @@ ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
 		ma_local_bh_enable();
 		ma_preempt_enable();
 	}
-	LOG_RETURN(old_sched_h);
+	MARCEL_LOG_RETURN(old_sched_h);
 }
-#define ma_apply_vpset_rq(vpset, rq) \
+#define ma_apply_vpset_rq(vpset, rq)					\
 	ma_bind_to_holder(ma_spare_lwp() || !marcel_vpset_isset((vpset),ma_vpnum(MA_LWP_SELF)), &(rq)->as_holder)
-#define ma_apply_vpset(vpset) \
+#define ma_apply_vpset(vpset)						\
 	ma_apply_vpset_rq((vpset), marcel_sched_vpset_init_rq(vpset))
 #endif
 
@@ -1341,28 +1321,32 @@ ma_bind_to_holder(int do_move, ma_holder_t *new_holder) {
 // adéquate...
 // IMPORTANT : cette fonction doit marcher si on l'appelle en section atomique
 // pour se déplacer sur le LWP courant (cf terminaison des threads)
-void marcel_apply_vpset(const marcel_vpset_t *vpset)
+void marcel_apply_vpset(const marcel_vpset_t *vpset LWPS_VAR_UNUSED)
 {
 #ifdef MA__LWPS
-	LOG_IN();
+	MARCEL_LOG_IN();
 	ma_apply_vpset(vpset);
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 #endif
 }
 
-DEF_POSIX(int, setaffinity_np, (pmarcel_t pid, size_t cpusetsize TBX_UNUSED, const pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
-{
-	MA_BUG_ON((marcel_t) pid != marcel_self());
-	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
-	marcel_apply_vpset(cpuset);
-	return 0;
-})
+DEF_PMARCEL(int, setaffinity_np, (pmarcel_t pid TBX_UNUSED, size_t cpusetsize TBX_UNUSED, const pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+	    {
+		    MA_BUG_ON((marcel_t) pid != ma_self());
+		    MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE / 8);
+		    marcel_apply_vpset(cpuset);
+		    return 0;
+	    })
 
 #ifdef MA__LIBPTHREAD
 int lpt_setaffinity_np(pthread_t pid, size_t cpusetsize, const cpu_set_t *cpuset)
 {
 	marcel_vpset_t vpset;
 	int ret;
+	
+	if (0 != pid)
+		return EINVAL;
+
 	if ((ret = marcel_cpuset2vpset(cpusetsize, cpuset, &vpset)))
 		return ret;
 	marcel_apply_vpset(&vpset);
@@ -1371,28 +1355,27 @@ int lpt_setaffinity_np(pthread_t pid, size_t cpusetsize, const cpu_set_t *cpuset
 versioned_symbol(libpthread, lpt_setaffinity_np, pthread_setaffinity_np, GLIBC_2_3_4);
 #endif
 
-DEF_POSIX(int, getaffinity_np, (pmarcel_t pid, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
-{
+DEF_PMARCEL(int, getaffinity_np, (pmarcel_t pid LWPS_VAR_UNUSED, size_t cpusetsize TBX_UNUSED, pmarcel_cpu_set_t *cpuset), (pid, cpusetsize, cpuset),
+	    {
 #ifdef MA__LWPS
-	marcel_t task = (marcel_t) pid;
-	ma_holder_t *h = ma_task_sched_holder(task);
-	ma_runqueue_t *rq = ma_to_rq_holder(h);
-	MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE);
-	if (!rq)
-		return EIO;
-	*cpuset = rq->vpset;
-	fprintf(stderr,"%"MARCEL_PRIxVPSET"\n", MARCEL_VPSET_PRINTF_VALUE(*cpuset));
+		    marcel_t task = (marcel_t) pid;
+		    ma_holder_t *h = ma_task_sched_holder(task);
+		    ma_runqueue_t *rq = ma_to_rq_holder(h);
+		    MA_BUG_ON(cpusetsize != PMARCEL_CPU_SETSIZE / 8);
+		    if (!rq)
+			    return EIO;
+		    *cpuset = rq->vpset;
 #else
-	*cpuset = MARCEL_VPSET_VP(1);
+		    *cpuset = MARCEL_VPSET_VP(1);
 #endif
-	return 0;
-})
+		    return 0;
+	    })
 #ifdef MA__LIBPTHREAD
 int lpt_getaffinity_np(pthread_t pid, size_t cpusetsize, cpu_set_t *cpuset)
 {
 	marcel_vpset_t vpset;
 	int ret;
-	if ((ret = pmarcel_getaffinity_np(pid, PMARCEL_CPU_SETSIZE, &vpset)))
+	if ((ret = pmarcel_getaffinity_np(pid, sizeof(vpset), &vpset)))
 		return ret;
 	if ((ret = marcel_vpset2cpuset(&vpset, cpusetsize, cpuset)))
 		return ret;
@@ -1401,12 +1384,12 @@ int lpt_getaffinity_np(pthread_t pid, size_t cpusetsize, cpu_set_t *cpuset)
 versioned_symbol(libpthread, lpt_getaffinity_np, pthread_getaffinity_np, GLIBC_2_3_4);
 #endif
 
-void marcel_bind_to_topo_level(marcel_topo_level_t *level)
+void marcel_bind_to_topo_level(marcel_topo_level_t *level LWPS_VAR_UNUSED)
 {
 #ifdef MA__LWPS
-	LOG_IN();
+	MARCEL_LOG_IN();
 	ma_apply_vpset_rq(&level->vpset, &level->rq);
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 #endif
 }
 
@@ -1434,20 +1417,20 @@ int marcel_idle_lwp(ma_lwp_t lwp)
 }
 #endif
 
-TBX_EXTERN void __ma_cond_resched(void)
+void __ma_cond_resched(void)
 {
 	ma_set_current_state(MA_TASK_RUNNING);
 	ma_schedule();
 }
 
-static void linux_sched_lwp_init(ma_lwp_t lwp)
+static void linux_sched_lwp_init(ma_lwp_t lwp LWPS_VAR_UNUSED)
 {
 #ifdef MA__LWPS
-	unsigned num = ma_vpnum(lwp);
+        int num = ma_vpnum(lwp);
 	char name[16];
 	ma_runqueue_t *rq;
 #endif
-	LOG_IN();
+	MARCEL_LOG_IN();
 	/* en mono, rien par lwp, tout est initialisé dans sched_init */
 #ifdef MA__LWPS
 	rq = ma_lwp_rq(lwp);
@@ -1456,29 +1439,33 @@ static void linux_sched_lwp_init(ma_lwp_t lwp)
 		rq->father=NULL;
 	else {
 		rq->father=&marcel_topo_vp_level[num].rq;
-		if (num < marcel_nbvps()) {
+		if (num < (int)marcel_nbvps()) {
 			marcel_vpset_set(&ma_main_runqueue.vpset,num);
 			marcel_vpset_set(&ma_dontsched_runqueue.vpset,num);
 		}
 	}
 	if (rq->father)
-		mdebug("runqueue %s has father %s\n",name,rq->father->as_holder.name);
+		MARCEL_LOG("runqueue %s has father %s\n",name,rq->father->as_holder.name);
 	rq->level = marcel_topo_nblevels-1;
 	ma_per_lwp(current_thread,lwp) = ma_per_lwp(run_task,lwp);
 	marcel_vpset_zero(&(rq->vpset));
-	if (num != -1 && num >= marcel_nbvps()) {
-		snprintf(name,sizeof(name), "vp%d", num);
-		rq = &marcel_topo_vp_level[num].rq;
-		ma_init_rq(rq, name);
-		rq->level = marcel_topo_nblevels-1;
-		rq->father = NULL;
-		marcel_vpset_vp(&rq->vpset, num);
-		mdebug("runqueue %s is a supplementary runqueue\n", name);
-		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
+	if (num != -1)
+	{
+		if (num >= (int)marcel_nbvps()) {
+			snprintf(name,sizeof(name), "vp%d", num);
+			rq = &marcel_topo_vp_level[num].rq;
+			ma_init_rq(rq, name);
+			rq->level = marcel_topo_nblevels-1;
+			rq->father = NULL;
+			marcel_vpset_vp(&rq->vpset, num);
+			MARCEL_LOG("runqueue %s is a supplementary runqueue\n", name);
+			PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),rq->level,rq);
+		}
+		else
+			ma_remote_tasklet_init(&marcel_topo_vp_level[num].vpdata.tasklet_lock);
 	}
-	ma_remote_tasklet_init(&marcel_topo_vp_level[num].vpdata.tasklet_lock);
 #endif
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 static void linux_sched_lwp_start(ma_lwp_t lwp)
@@ -1514,14 +1501,14 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 	for (i=0;i<level->arity;i++) {
 #ifdef MA__NUMA
 		if (level->children[i]->type == MARCEL_LEVEL_FAKE)
-			snprintf(name, sizeof(name), "Fake%d-%d",
-				levelnum, level->children[i]->number);
+			snprintf(name, sizeof(name), "Fake%d-%u",
+				 levelnum, level->children[i]->number);
 		else if (level->children[i]->type == MARCEL_LEVEL_MISC)
-			snprintf(name, sizeof(name), "Misc%d-%d",
-				levelnum, level->children[i]->number);
+			snprintf(name, sizeof(name), "Misc%d-%u",
+				 levelnum, level->children[i]->number);
 		else
 #endif
-			snprintf(name,sizeof(name), "%s%d",
+			snprintf(name,sizeof(name), "%s%u",
 				 marcel_topo_level_string(level->children[i]->type),
 				 level->children[i]->number);
 		newrq = &level->children[i]->rq;
@@ -1530,14 +1517,14 @@ static void init_subrunqueues(struct marcel_topo_level *level, ma_runqueue_t *rq
 		newrq->level = levelnum;
 		newrq->father = rq;
 		newrq->vpset = level->children[i]->vpset;
-		mdebug("runqueue %s has father %s\n", name, rq->as_holder.name);
+		MARCEL_LOG("runqueue %s has father %s\n", name, rq->as_holder.name);
 		PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ,2),levelnum,newrq);
 		init_subrunqueues(level->children[i],newrq,levelnum+1);
 	}
 }
 #endif
 
-void __marcel_init ma_linux_sched_init0(void)
+void ma_linux_sched_init0(void)
 {
 	ma_init_rq(&ma_main_runqueue,"machine");
 	ma_main_runqueue.topolevel = marcel_machine_level;
@@ -1556,19 +1543,21 @@ void __marcel_init ma_linux_sched_init0(void)
 }
 
 
+TBX_VISIBILITY_PUSH_INTERNAL
 unsigned long ma_stats_nbthreads_offset, ma_stats_nbthreadseeds_offset,
-		ma_stats_nbrunning_offset, ma_stats_nbready_offset,
-                ma_stats_last_ran_offset, ma_stats_last_vp_offset, 
-                ma_stats_last_topo_level_offset;
-unsigned long marcel_stats_load_offset;
-#ifdef MM_MAMI_ENABLED
+	ma_stats_nbrunning_offset, ma_stats_nbready_offset,
+	ma_stats_last_ran_offset, ma_stats_last_vp_offset, 
+	ma_stats_last_topo_level_offset;
+unsigned long ma_stats_load_offset;
+#ifdef MARCEL_MAMI_ENABLED
 unsigned long ma_stats_memnode_offset;
-#endif /* MM_MAMI_ENABLED */
+#endif /* MARCEL_MAMI_ENABLED */
+TBX_VISIBILITY_POP
 
-static void __marcel_init linux_sched_init(void)
+static void linux_sched_init(void)
 {
 	ma_holder_t *h;
-	LOG_IN();
+	MARCEL_LOG_IN();
 
 #ifdef MARCEL_STATS_ENABLED
 	ma_stats_nbthreads_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
@@ -1576,13 +1565,13 @@ static void __marcel_init linux_sched_init(void)
 	ma_stats_nbrunning_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_nbready_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_ran_offset = ma_stats_alloc(ma_stats_long_max_reset, ma_stats_long_max_synthesis, sizeof(long));
-#ifdef MM_MAMI_ENABLED
+#ifdef MARCEL_MAMI_ENABLED
 	ma_stats_memnode_offset = ma_stats_alloc(ma_stats_memnode_sum_reset, ma_stats_memnode_sum_synthesis, marcel_nbnodes * sizeof(long));
-#endif /* MM_MAMI_ENABLED */
+#endif /* MARCEL_MAMI_ENABLED */
 	ma_stats_last_vp_offset = ma_stats_alloc (ma_stats_last_vp_sum_reset, ma_stats_last_vp_sum_synthesis, sizeof (long));
-	marcel_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
+	ma_stats_load_offset = ma_stats_alloc(ma_stats_long_sum_reset, ma_stats_long_sum_synthesis, sizeof(long));
 	ma_stats_last_topo_level_offset = ma_stats_alloc (ma_stats_last_topo_level_sum_reset, NULL, sizeof (long));
-	ma_task_stats_set(long, __main_thread, marcel_stats_load_offset, 1);
+	ma_task_stats_set(long, __main_thread, ma_stats_load_offset, 1);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbthreads_offset, 1);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbthreadseeds_offset, 0);
 	ma_task_stats_set(long, __main_thread, ma_stats_nbrunning_offset, 1);
@@ -1615,7 +1604,7 @@ static void __marcel_init linux_sched_init(void)
 	h = ma_task_holder_lock(MARCEL_SELF);
 	ma_dequeue_entity(&MARCEL_SELF->as_entity, h);
 	ma_task_holder_unlock(h);
-	LOG_OUT();
+	MARCEL_LOG_OUT();
 }
 
 __ma_initfunc_prio(linux_sched_init, MA_INIT_LINUX_SCHED, MA_INIT_LINUX_SCHED_PRIO, "Scheduler Linux 2.6");
@@ -1660,7 +1649,7 @@ void __ma_preempt_spin_lock(ma_spinlock_t *lock)
 #endif
 
 #if defined(MA__LWPS)
-TBX_EXTERN void __ma_preempt_write_lock(ma_rwlock_t *lock)
+void __ma_preempt_write_lock(ma_rwlock_t *lock)
 {
 	if (ma_preempt_count() > 1) {
 #ifdef PROFILE

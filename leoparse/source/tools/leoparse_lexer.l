@@ -48,7 +48,6 @@ INTEGER        {DIGIT}+
 {ID}                               {
   yylval.str = malloc(yyleng + 1);
   strcpy(yylval.str, yytext);
-  LOG_STR("ID", yylval.str);
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -60,7 +59,6 @@ INTEGER        {DIGIT}+
   yylval.str = malloc(yyleng - 1);
   strncpy(yylval.str, yytext + 1, yyleng - 2);
   yylval.str[yyleng - 1] = '\0';
-  LOG_STR("STRING", yylval.str);
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -73,7 +71,6 @@ INTEGER        {DIGIT}+
   strncpy(tmp, yytext, yyleng);
   tmp[yyleng] = '\0';
   yylval.val = atoi(tmp);
-  LOG_VAL("INTEGER", yylval.val);
   free(tmp);
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
@@ -84,7 +81,6 @@ INTEGER        {DIGIT}+
 }
 
 ".."                                 {
-  LOG("<..>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -93,7 +89,6 @@ INTEGER        {DIGIT}+
   return LEOP_RANGE;
 }
 "{"                                 {
-  LOG("<{>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -102,7 +97,6 @@ INTEGER        {DIGIT}+
   return '{';
 }
 "}"                                 {
-  LOG("<}>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -111,7 +105,6 @@ INTEGER        {DIGIT}+
   return '}';
 }
 ":"                                 {
-  LOG("<:>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -120,7 +113,6 @@ INTEGER        {DIGIT}+
   return ':';
 }
 ";"                                 {
-  LOG("<;>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -129,7 +121,6 @@ INTEGER        {DIGIT}+
   return ';';
 }
 ","                                 {
-  LOG("<,>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -138,7 +129,6 @@ INTEGER        {DIGIT}+
   return ',';
 }
 "["                                 {
-  LOG("<[>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -147,7 +137,6 @@ INTEGER        {DIGIT}+
   return '[';
 }
 "]"                                 {
-  LOG("<]>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -156,7 +145,6 @@ INTEGER        {DIGIT}+
   return ']';
 }
 "("                                 {
-  LOG("<(>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -165,7 +153,6 @@ INTEGER        {DIGIT}+
   return '(';
 }
 ")"                                 {
-  LOG("<)>");
   yylloc.first_line   = parser_line_num;
   yylloc.first_column = parser_column_num;
   yylloc.last_line    = parser_line_num;
@@ -222,6 +209,5 @@ INTEGER        {DIGIT}+
 //  yylloc.last_column  = parser_column_num;
 //  parser_column_num++;
 //  yylval.str = "unknown token";
-//  LOG("Inconnu !!!");
 //  return yytext[0];
 //}

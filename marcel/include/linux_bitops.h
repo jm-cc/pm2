@@ -19,6 +19,7 @@
 
 
 #include "sys/marcel_flags.h"
+#include "marcel_compiler.h"
 #include "asm/linux_bitops.h"
 #include "tbx_compiler.h"
 #include "linux_types.h"

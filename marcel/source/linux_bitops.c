@@ -14,7 +14,7 @@
  */
 
 
-#include "linux_bitops.h"
+#include "marcel.h"
 
 
 unsigned long marcel_generic_ffs(unsigned long x)

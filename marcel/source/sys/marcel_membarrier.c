@@ -17,7 +17,7 @@
  */
 
 
-#include "sys/marcel_membarrier.h"
+#include "marcel.h"
 
 
 /** Public functions **/

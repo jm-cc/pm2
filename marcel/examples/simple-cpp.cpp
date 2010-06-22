@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 	int err;
 	marcel_t t;
 
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 	err = marcel_create(&t,NULL,f,NULL);
 	MA_BUG_ON(err != 0);
 	marcel_end();

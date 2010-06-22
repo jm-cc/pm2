@@ -167,7 +167,7 @@ int main(int argc, char * argv[]) {
   marcel_t threads[3];
   marcel_attr_t attr;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
 
   marcel_attr_init(&attr);
   // Start the 1st thread on the first VP

@@ -79,7 +79,7 @@ main (int argc, char *argv[])
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
   argc += 2;
 
-  marcel_init (argc, new_argv);
+  marcel_init(&argc, new_argv);
   marcel_mutex_init (&write_lock, NULL);
 
   /* Make sure we're currently testing the memory scheduler. */

@@ -33,7 +33,7 @@ main (int argc, char *argv[])
   new_argv[2] = sched_arg;
   new_argv[3] = NULL;
 
-  marcel_init(argc, new_argv);
+  marcel_init(&argc, new_argv);
   marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
   prev_sched = marcel_bubble_change_sched (&marcel_bubble_null_sched);

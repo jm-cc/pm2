@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
   int i, err, node;
   size_t size;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
 
   size=getpagesize()*10;

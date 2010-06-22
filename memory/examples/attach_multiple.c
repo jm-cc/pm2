@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) {
   int err;
   marcel_t threads[2];
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);

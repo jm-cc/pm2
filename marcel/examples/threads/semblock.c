@@ -38,7 +38,7 @@ int marcel_main(int argc, char *argv[])
 	
 	timing_init();
 	
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 	
 	marcel_sem_init(&s1,0);
 	marcel_sem_init(&s2,0);

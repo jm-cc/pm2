@@ -58,7 +58,7 @@ main (int argc, char *argv[])
   memcpy (&new_argv[3], &argv[1], argc * sizeof (*argv));
 	argc += 2;
 
-	marcel_init(argc, new_argv);
+	marcel_init(&argc, new_argv);
 
 	scheduler =
 		alloca (marcel_bubble_sched_instance_size (&marcel_bubble_cache_sched_class));

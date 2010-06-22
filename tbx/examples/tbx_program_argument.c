@@ -92,5 +92,6 @@ int main()
 		return 1;
 
 	tbx_pa_free_args();
+	printf("Success\n");
 	return 0;
 }

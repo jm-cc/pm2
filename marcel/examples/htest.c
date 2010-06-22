@@ -7,7 +7,7 @@
 #if defined(MARCEL_NUMA) && defined(BROKEN)
 int main(int argc, char *argv[]) {
 
-	marcel_init(argc,argv);
+	marcel_init(&argc,argv);
 #ifdef PROFILE
    profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif

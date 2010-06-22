@@ -45,7 +45,7 @@ int marcel_main(int argc, char *argv[])
 	
 	timing_init();
 	
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 	
 	marcel_mutex_init(&m, NULL);
 

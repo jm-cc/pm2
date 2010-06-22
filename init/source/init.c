@@ -159,18 +159,19 @@ void common_pre_init(int *argc, char *argv[], common_attr_t *attr)
 #endif /* PIOMAN */
 }
 
-void common_post_init(int *argc, char *argv[],
-		      common_attr_t *attr)
+void common_post_init(int *argc, char *argv[], common_attr_t *attr)
 {
+	char **full_argv;
+
 #ifdef TBX
-	tbx_pa_get_args(argc, &argv);
+	tbx_pa_get_args(argc, &full_argv);
 #endif
   
 	if (!attr)
 		attr = &default_static_attr;
 
 #ifdef PM2
-	pm2_init_set_rank(argc, argv, pm2self, pm2_conf_size);
+	pm2_init_set_rank(argc, full_argv, pm2self, pm2_conf_size);
 #endif /* PM2 */
 
 #if defined(PROFILE) && defined(PM2)
@@ -203,23 +204,23 @@ void common_post_init(int *argc, char *argv[],
 #endif /* MARCEL */
 
 #ifdef PM2
-	pm2_init_thread_related(argc, argv);
+	pm2_init_thread_related(argc, full_argv);
 #endif /* PM2 */
 
 #ifdef PM2
-	pm2_init_exec_startup_funcs(argc, argv);
+	pm2_init_exec_startup_funcs(argc, full_argv);
 #endif
 
 #ifdef PM2
-	pm2_net_init_channels(argc, argv);
+	pm2_net_init_channels(argc, full_argv);
 #endif /* PM2 */
 
 #ifdef PM2
-	pm2_net_servers_start(argc, argv);
+	pm2_net_servers_start(argc, full_argv);
 #endif /* PM2 */
 
 #ifdef PM2
-	//pm2_init_purge_cmdline(argc, argv);
+	//pm2_init_purge_cmdline(argc, full_argv);
 #endif /* PM2 */
 
 #ifdef MARCEL
@@ -227,11 +228,12 @@ void common_post_init(int *argc, char *argv[],
 #endif /* PM2 */
 
 #ifdef NTBX
-	//ntbx_purge_cmd_line(argc, argv);
+	//ntbx_purge_cmd_line(argc, full_argv);
 #endif /* NTBX */
 
 #ifdef TBX
 	tbx_purge_cmd_line();
+	tbx_pa_copy_args(argc, argv);
 #endif /* TBX */
 }
 

@@ -53,7 +53,7 @@ main (int argc, char *argv[])
   marcel_t threads[THREADS];
   marcel_vpset_t vpset = MARCEL_VPSET_VP (0);
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   /* Make sure we run on VP#0, which is the one that receives SIGALRM on
      Linux 2.6+.  */

@@ -19,7 +19,7 @@ int
 main (int argc, char ** argv) {
 	marcel_t t1,t2;
 	marcel_fprintf (stderr, "supervisor test\n");
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 	marcel_supervisor_init ();
 	marcel_fprintf (stderr, "nb vps = %d\n", marcel_nbvps());
 	marcel_fprintf (stderr, "creating user thread\n");

@@ -39,7 +39,7 @@ int marcel_main(int argc, char *argv[])
    marcel_t pid1,pid2;
    struct marcel_sched_param sched_param = { .sched_priority = MA_BATCH_PRIO };
 
-   marcel_init(argc, argv);
+   marcel_init(&argc, argv);
 
    marcel_create(&pid1, NULL, sample, (any_t) 1);
    marcel_create(&pid2, NULL, sample, (any_t) 2);

@@ -100,7 +100,7 @@ int marcel_main(int argc, char **argv)
   unsigned long temps;
   marcel_t pid;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   if(argc > 1) {
 

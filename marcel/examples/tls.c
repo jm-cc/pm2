@@ -57,7 +57,7 @@ main (int argc, char *argv[])
   intptr_t i;
   marcel_t threads[THREADS];
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
   tls_data = -1;

@@ -33,7 +33,7 @@ int main(int argc, char * argv[]) {
   ma_allocator_t *mami_records;
   mami_record_t *record;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager);
 
   mami_records = ma_new_obj_allocator(0,

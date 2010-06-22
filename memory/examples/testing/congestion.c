@@ -109,7 +109,7 @@ int main(int argc, char * argv[]) {
   struct timeval tv1, tv2;
   unsigned long us, ns;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   marcel_attr_init(&attr);
 
   marcel_barrier_init(&allbarrier, NULL, 3);

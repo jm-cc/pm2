@@ -26,7 +26,7 @@ main (int argc, char *argv[])
 {
   assert (!marcel_test_activity ());
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
   assert (marcel_test_activity ());
 
   marcel_end ();

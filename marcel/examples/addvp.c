@@ -54,7 +54,7 @@ int marcel_main(int argc, char **argv)
   marcel_t t;
   unsigned long start;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_setname(marcel_self(),"main");
   marcel_printf("wait a bit (%p)\n",marcel_self());

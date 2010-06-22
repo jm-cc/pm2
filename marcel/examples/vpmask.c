@@ -46,7 +46,7 @@ int marcel_main(int argc, char *argv[])
 
   marcel_trace_on();
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
 

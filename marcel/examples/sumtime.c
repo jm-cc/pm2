@@ -123,7 +123,7 @@ int main(int argc, char **argv)
   job j;
 
   marcel_trace_on();
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_setname(marcel_self(), "sumtime");
 

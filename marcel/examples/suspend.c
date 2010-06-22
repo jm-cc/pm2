@@ -36,7 +36,7 @@ int marcel_main(int argc, char *argv[])
   any_t status;
   marcel_attr_t attr;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_attr_init(&attr);
   marcel_attr_setvpset(&attr, MARCEL_VPSET_VP(marcel_nbvps()-1));

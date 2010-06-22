@@ -57,7 +57,7 @@ int marcel_main(int argc, char *argv[])
    marcel_t writer1_pid, writer2_pid, writer3_pid, writer4_pid;
    marcel_attr_t writer_attr;
 
-   marcel_init(argc, argv);
+   marcel_init(&argc, argv);
 
    marcel_attr_init(&writer_attr);
 

@@ -42,7 +42,7 @@ static any_t f(any_t foo) {
 
 int marcel_main(int argc, char *argv[])
 {
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_signal(SIGUSR1, handler);
   marcel_signal(SIGUSR2, SIG_DFL);

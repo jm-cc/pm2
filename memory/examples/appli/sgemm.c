@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
   char *initialisation_policy_texts[3] = {"GLOBAL_INITIALISATION",
                                           "LOCAL_INITIALISATION "};
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   if (argc != 4) {
     marcel_printf("Error. Syntax: pm2-load sgemm <matrix_size> <migration_policy> <initialisation_policy>\n");

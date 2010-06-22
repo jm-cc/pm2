@@ -243,7 +243,7 @@ int marcel_main(int argc, char *argv[])
 {
   int essais = 3;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
   marcel_vpset_t vpset = MARCEL_VPSET_VP(0);
   marcel_apply_vpset(&vpset);
 

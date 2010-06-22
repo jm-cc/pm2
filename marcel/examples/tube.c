@@ -181,7 +181,7 @@ int marcel_main(int argc, char **argv)
 #ifdef PTHREAD
   timing_init();
 #else
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 #endif
 
   marcel_attr_init(&attr);

@@ -611,11 +611,12 @@ extern "C++" {
 
 	 XXX: This hack doesn't work on non-GCC or non-ELF platforms such as
 	 Mac OS X.  */
-static void __attribute__ ((__constructor__))
-    ma_initialize_pmarcel(void)
+static void __attribute__ ((__constructor__)) ma_initialize_pmarcel(void)
 {
+	int argc = 0;
+
 	if (!marcel_test_activity()) {
-		marcel_init(0, NULL);
+		marcel_init(&argc, NULL);
 		marcel_ensure_abi_compatibility(MARCEL_HEADER_HASH);
 	}
 }

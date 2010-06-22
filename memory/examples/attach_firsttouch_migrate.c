@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
   size_t size;
   int err;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
   mami_unset_kernel_migration(memory_manager);
   size = 10000*sizeof(int);

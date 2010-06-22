@@ -33,7 +33,7 @@ int marcel_main(int argc, char *argv[])
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif
 
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 
 	for (i = 2; i < marcel_nbvps(); i++)
 		if (marcel_random() % 2)

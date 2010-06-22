@@ -31,7 +31,7 @@ int marcel_main(int argc, char *argv[])
   marcel_fprintf(stderr,
 	  "WARNING: this program will deliberately cause an EXCEPTION in a few us...\n");
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_create(NULL, NULL, func, NULL);
 

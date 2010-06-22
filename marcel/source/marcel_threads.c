@@ -1356,7 +1356,7 @@ DEF_PTHREAD(int,getconcurrency,(void),())
 DEF___PTHREAD(int,getconcurrency,(void),())
 
 /***************************setcancelstate************************/
-#ifdef MARCEL_DEVIATION_ENABLED
+#if defined(MARCEL_DEVIATION_ENABLED) && defined(MARCEL_POSIX)
 static int check_setcancelstate(int state)
 {
 	if ((state != MARCEL_CANCEL_ENABLE) && (state != MARCEL_CANCEL_DISABLE)) {
@@ -1388,8 +1388,10 @@ DEF_PMARCEL(int, setcancelstate,(int state, int *oldstate),(state, oldstate),
 
 DEF_PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
 DEF___PTHREAD(int, setcancelstate, (int state,int *oldstate), (state,oldstate))
+#endif
 
 /****************************setcanceltype************************/
+#if defined(MARCEL_DEVIATION_ENABLED) && defined(MARCEL_POSIX)
 static int check_setcanceltype(int type)
 {
 	if ((type != MARCEL_CANCEL_ASYNCHRONOUS) && (type != MARCEL_CANCEL_DEFERRED)) {
@@ -1421,12 +1423,14 @@ DEF_PMARCEL(int, setcanceltype,(int type, int *oldtype),(type, oldtype),
 
 DEF_PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
 DEF___PTHREAD(int, setcanceltype, (int type,int *oldtype), (type,oldtype))
+#endif
 
 /*****************************testcancel***************************/
 //TODO : test_cancel shall create a cancellation point in the calling
 //       thread. The pthread_testcancel() function shall have no effect 
 //       if cancelability is disabled.
 
+#if defined(MARCEL_DEVIATION_ENABLED) && defined(MARCEL_POSIX)
 DEF_PMARCEL(void, testcancel,(void),(),
 {
 	MARCEL_LOG_IN();
@@ -1466,8 +1470,7 @@ DEF_STRONG_ALIAS(__pmarcel_enable_asynccancel, __pthread_enable_asynccancel)
 DEF_STRONG_ALIAS(__pmarcel_disable_asynccancel, __pthread_disable_asynccancel)
 #endif
 #endif
-
-#endif /* MARCEL_DEVIATION_ENABLED */
+#endif
 
 /***********************setprio_posix2marcel******************/
 static int setprio_posix2marcel(marcel_t thread,int prio,int policy)

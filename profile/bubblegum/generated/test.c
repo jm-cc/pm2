@@ -11,7 +11,7 @@ marcel_attr_t attr1, attr2, attr;
 marcel_t t1, t2, t3, t4, t5;
 
 int main(int argc, char *argv[]) {
-	marcel_init(argc,argv);
+	marcel_init(&argc,argv);
 	profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 	marcel_printf("started\n");
 

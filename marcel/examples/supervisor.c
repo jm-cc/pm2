@@ -20,7 +20,7 @@ main (int argc, char ** argv) {
 	marcel_attr_t attr;
 	marcel_vpset_t vpset = MARCEL_VPSET_ZERO;
 	marcel_fprintf (stderr, "supervisor test\n");
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 	marcel_supervisor_init ();
 	marcel_fprintf (stderr, "creating user thread\n");
 	marcel_attr_init (&attr);

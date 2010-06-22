@@ -62,7 +62,7 @@ int marcel_main(int argc, char *argv[])
 
 #else
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_create(NULL, NULL, thread_func, NULL);
 

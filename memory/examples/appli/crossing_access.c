@@ -60,7 +60,7 @@ main (int argc, char **argv)
   unsigned int maxnode = numa_max_node () + 1;
   tbx_tick_t t1, t2;
 
-  marcel_init (argc, argv);
+  marcel_init(&argc, argv);
 
   if (argc < 3) {
     usage ();

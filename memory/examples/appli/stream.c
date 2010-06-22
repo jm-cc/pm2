@@ -162,7 +162,7 @@ int main(int argc, char **argv)
   double		  t, times[4][NTIMES];
   mami_manager_t          *memory_manager;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   marcel_attr_init(&attr);
   mami_init(&memory_manager);
 

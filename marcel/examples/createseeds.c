@@ -52,7 +52,7 @@ int marcel_main(int argc, char *argv[])
 	marcel_attr_t attr;
 	marcel_t t;
 
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 
 	marcel_cond_init(&c, NULL);
 	marcel_mutex_init(&m, NULL);

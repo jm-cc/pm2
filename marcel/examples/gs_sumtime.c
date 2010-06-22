@@ -54,7 +54,7 @@ static any_t sum(any_t arg) {
 int marcel_main(int argc, char **argv) {/* Here! */
   job j;
 
-  marcel_init(argc, argv) ;
+  marcel_init(&argc, argv) ;
 
   marcel_sem_init(&j.sem, 0);/* Here! */
   j.inf = 1;

@@ -90,7 +90,7 @@ int main(int argc, char * argv[])
   unsigned long maxnode;
   int nodes[PAGES];
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
 #ifdef PROFILE
   profile_activate(FUT_ENABLE, MARCEL_PROF_MASK, 0);
 #endif

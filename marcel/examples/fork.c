@@ -50,7 +50,7 @@ main (int argc, char *argv[])
   unsigned i;
   marcel_t threads[THREADS];
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   //  printf ("parent = %i\n", getpid());
 

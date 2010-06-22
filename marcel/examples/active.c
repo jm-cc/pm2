@@ -38,7 +38,7 @@ int marcel_main(int argc, char *argv[])
 { any_t status;
   marcel_t pid;
 
-   marcel_init(argc, argv);
+   marcel_init(&argc, argv);
 
    tprintf("thread creation\n");
 

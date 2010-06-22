@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
   marcel_memory_manager_t memory_manager;
   int i, err, node;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   marcel_memory_init(&memory_manager);
 
   // Allocate the buffer

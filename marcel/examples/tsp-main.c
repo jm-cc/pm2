@@ -114,7 +114,7 @@ int marcel_main (int argc, char **argv)
   unsigned long temps;
 
 #ifdef MARCEL
- marcel_init(argc, argv) ;
+ marcel_init(&argc, argv) ;
 #endif
 
  if (argc != 4)

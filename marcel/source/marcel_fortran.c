@@ -26,7 +26,7 @@ void marcel_init_(void)
 	char **argv;
 
 	tbx_fortran_init(&argc, &argv);
-	marcel_init(argc, argv);
+	marcel_init(&argc, argv);
 
 	for (i = 0; i < argc; i++) {
 		free(argv[i]);

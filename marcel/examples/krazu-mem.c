@@ -51,7 +51,7 @@ void * f (void *arg) {
 
 int
 main (int argc, char **argv) {
-  marcel_init (argc, argv);
+  marcel_init(&argc, argv);
 
   unsigned int i, j;
   marcel_bubble_t main_bubble;

@@ -29,7 +29,7 @@ int marcel_main(int argc, char *argv[])
 {
   marcel_once_t once = MARCEL_ONCE_INITIALIZER;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_once(&once, f);
   marcel_once(&once, f);

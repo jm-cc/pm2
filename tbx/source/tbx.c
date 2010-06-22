@@ -67,13 +67,16 @@ tbx_dump(unsigned char *p,
 	}
 }
 
-void tbx_purge_cmd_line(void)
+void tbx_purge_cmd_line()
 {
 	tbx_pa_free_module_args("tbx");
 }
 
 void tbx_init(int *argc, char ***argv)
 {
+	if (! argc || ! argv)
+		return;
+
 	if (! initialized) {
 		/* Parser */
 		tbx_pa_parse(*argc, *argv, PM2_ENVVARNAME);

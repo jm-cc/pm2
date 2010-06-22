@@ -21,10 +21,13 @@
 #define PM2_ENVVARNAME "PM2_ARGS"
 
 
-// returns arguments from command-line and environnement previously parsed by tbx
+//  previously parsed by tbx
 int tbx_pa_get_args(int *argc, char ***argv);
 
-// parse environment arguments and store them with argc and argv
+// copy remaining arguments into argv
+void tbx_pa_copy_args(int *argc, char *argv[]);
+
+// returns arguments from command-line and environnement
 int tbx_pa_parse(int cmdline_argc, char *cmdline_argv[], char *env_varname);
 
 // free memory allocated by tbx_get_args

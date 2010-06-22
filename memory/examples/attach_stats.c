@@ -24,7 +24,7 @@ void stats(void *ptr);
 int main(int argc, char * argv[]) {
   int *ptr;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);

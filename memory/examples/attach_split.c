@@ -24,7 +24,7 @@ int main(int argc, char * argv[]) {
   marcel_t self;
   mami_manager_t *memory_manager;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 10*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);

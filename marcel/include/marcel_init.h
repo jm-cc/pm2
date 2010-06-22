@@ -71,10 +71,11 @@
 
 #define MA_INIT_MAX_PARTS  MA_INIT_START_LWPS
 
+/* print help menu item */
 #define MARCEL_SHOW_OPTION(name, descr)  fprintf(stderr, "\t--%s\r\t\t\t\t\t\t%s\n", name, descr)
 
 /* initialization */
-#define marcel_init(argc, argv)	  do { marcel_init_data(argc, argv); marcel_start_sched(); marcel_purge_cmdline(); } while(0)
+#define marcel_init(argc, argv)	  marcel_initialize(argc, argv)
 
 /** Public functions **/
 /**
@@ -96,7 +97,7 @@ int marcel_test_activity(void);
 
 void marcel_purge_cmdline(void);
 
-void marcel_initialize(int argc, char *argv[]);
+void marcel_initialize(int *argc, char *argv[]);
 
 /*  When completed, calls to marcel_self() are ok, etc. */
 /*  So do calls to the Unix Fork primitive. */

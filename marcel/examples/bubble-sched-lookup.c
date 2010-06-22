@@ -23,7 +23,7 @@ main (int argc, char *argv[])
 #define lookup marcel_lookup_bubble_scheduler_class
   int success;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
   marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
   success =

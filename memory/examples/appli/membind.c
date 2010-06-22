@@ -88,7 +88,7 @@ main (int argc, char **argv)
   unsigned int nb_nodes, i;
   struct timespec t1, t2;
 
-  marcel_init (argc, argv);
+  marcel_init(&argc, argv);
 
   if (argc < 5) {
     usage ();

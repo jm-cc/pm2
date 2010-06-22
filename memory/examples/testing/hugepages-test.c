@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
   int nbpages, dest, node, realnode;
   size_t size;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   if (argc < 3) {
     marcel_printf("Error. Syntax: hugepages-test <nbpages> <node> <dest>\n");

@@ -72,7 +72,7 @@ int marcel_main(int argc, char **argv)
   int n = 3, i;
   char blockname[]="block/XXX";
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   if (argc > 1)
 	  n = atoi(argv[1]);

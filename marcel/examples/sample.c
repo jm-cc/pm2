@@ -44,7 +44,7 @@ int marcel_main(int argc, char *argv[])
   marcel_t pid[NB];
   int i;
 
-  marcel_init(argc, argv) ;
+  marcel_init(&argc, argv) ;
 
   for(i=0; i<NB; i++)
     marcel_create(&pid[i], NULL, writer, (any_t)mess[i]);

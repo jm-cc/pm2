@@ -62,7 +62,7 @@ int marcel_main(int argc, char *argv[])
   marcel_t writer1_pid, writer2_pid;
 
    marcel_trace_on();
-   marcel_init(argc, argv);
+   marcel_init(&argc, argv);
 
 /*   marcel_create(NULL, NULL, busy, NULL); */
 

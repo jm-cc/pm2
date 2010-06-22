@@ -26,7 +26,7 @@
 
 
 static tbx_bool_t arg_defined = tbx_false;
-static struct p_args { int argc; char **argv;} cmd_env_args;
+static struct { int argc; char **argv; } cmd_env_args;
 
 
 static inline int isquote(char c);
@@ -37,6 +37,9 @@ static void parse_env(char *env_varname);
 // returns arguments from command-line and environnement previously parsed by tbx
 int tbx_pa_get_args(int *argc, char ***argv)
 {
+	if (! argc || ! argv)
+		return 0;
+
 	if (arg_defined) {
 		*argc = cmd_env_args.argc;
 		*argv = cmd_env_args.argv;
@@ -44,6 +47,20 @@ int tbx_pa_get_args(int *argc, char ***argv)
 	}
 
 	return 0;
+}
+
+// copy remaining arguments into argv
+void tbx_pa_copy_args(int *argc, char *argv[])
+{
+	int i;
+
+	if (! arg_defined || ! argc || ! argv)
+		return;
+
+	// copy remaining arguments
+	for (i = 0; i < cmd_env_args.argc; i++)
+		argv[i] = cmd_env_args.argv[i];
+	*argc = cmd_env_args.argc;	
 }
 
 // parse environment arguments and store them with argc and argv
@@ -78,12 +95,11 @@ int tbx_pa_parse(int cmdline_argc, char *cmdline_argv[], char *env_varname)
 	}
 
 	// retrieve argument from the environment
-	if (env_varname)
+	if (env_varname && getenv(env_varname))
 		parse_env(getenv(env_varname));
 
 	// argv should be NULL terminated
-	cmd_env_args.argv = (char **) realloc(cmd_env_args.argv,
-					      (cmd_env_args.argc + 1) * sizeof(char *));
+	cmd_env_args.argv = (char **) realloc(cmd_env_args.argv, (cmd_env_args.argc + 1) * sizeof(char *));
 	cmd_env_args.argv[cmd_env_args.argc] = NULL;
 	
 	arg_defined = tbx_true;
@@ -111,7 +127,7 @@ void tbx_pa_free_module_args(char *module_name)
 	int module_name_sz;
 	tbx_bool_t is_module_option;
 
-	if (! arg_defined)
+	if (! arg_defined || ! module_name)
 		return;
 
 	is_module_option = tbx_false;
@@ -158,9 +174,6 @@ static void parse_env(char *env_rval)
 	int start, arglen;
 	int i, env_rval_len;
 	int argv_size;
-
-	if (NULL == env_rval)
-		return;
 
 	argv_size = cmd_env_args.argc;
 	env_rval_len = strlen(env_rval);

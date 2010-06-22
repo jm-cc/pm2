@@ -55,7 +55,7 @@ double **grid1, **grid2;
 int main(int argc, char *argv[]) {
   int grid_size, nb_workers, nb_iters, migration_policy, initialisation_policy;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
   marcel_mutex_init(&mutex, NULL);
   marcel_cond_init(&go, NULL);
 

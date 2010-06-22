@@ -288,4 +288,5 @@ void *marcel_sched_seed_runner(void *arg)
 	marcel_exit_canreturn(ret);
 
 	goto restart;
+	return NULL;
 }

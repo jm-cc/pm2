@@ -82,7 +82,7 @@ int marcel_main(int argc, char *argv[])
   any_t status;
   marcel_attr_t attr;
 
-  marcel_init(argc, argv);
+  marcel_init(&argc, argv);
 
   marcel_sem_init(&sem1, 0);
   marcel_sem_init(&sem2, 0);

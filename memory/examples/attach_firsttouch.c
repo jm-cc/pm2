@@ -54,7 +54,7 @@ int main(int argc, char * argv[]) {
   marcel_t thread;
   marcel_attr_t attr;
 
-  marcel_init(argc,argv);
+  marcel_init(&argc,argv);
   marcel_attr_init(&attr);
   mami_init(&memory_manager, argc, argv);
 

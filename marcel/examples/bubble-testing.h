@@ -407,7 +407,7 @@ test_marcel_bubble_scheduler (int argc, char *argv[],
 
   /* Initialize Marcel.  It should pick use the "fake" topology described in
 		 TOPOLOGY_DESCRIPTION.  */
-  marcel_init (argc, new_argv);
+  marcel_init(&argc, new_argv);
 	marcel_ensure_abi_compatibility (MARCEL_HEADER_HASH);
 
 	scheduler = alloca (marcel_bubble_sched_instance_size (scheduler_class));

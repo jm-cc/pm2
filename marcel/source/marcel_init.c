@@ -54,11 +54,14 @@ int marcel_test_activity(void)
 	return (int)tbx_flag_test(&ma_activity);
 }
 
-void marcel_initialize(int argc, char *argv[])
+void marcel_initialize(int *argc, char *argv[])
 {
-	if (!marcel_test_activity()) {
+	if (! marcel_test_activity()) {
 		MARCEL_LOG_IN();
-		marcel_init(argc, argv);
+		marcel_init_data(*argc, argv); 
+		marcel_start_sched(); 
+		marcel_purge_cmdline();
+		tbx_pa_copy_args(argc, argv);
 		MARCEL_LOG_OUT();
 	}
 }
@@ -419,19 +422,18 @@ void marcel_start_sched(void)
 	marcel_init_section(MA_INIT_START_LWPS);
 }
 
-void marcel_purge_cmdline(void)
+// Remove marcel-specific arguments from command line
+void marcel_purge_cmdline()
 {
 	static volatile tbx_bool_t already_called = tbx_false;
 
-	marcel_init_section(MA_INIT_MAX_PARTS);
-
 	// Only execute this function once
-	if (already_called)
-		return;
-	already_called = tbx_true;
+	if (! already_called) {
+		already_called = tbx_true;
+		tbx_pa_free_module_args("marcel");
 
-	// Remove marcel-specific arguments from command line
-	tbx_pa_free_module_args("marcel");
+		marcel_init_section(MA_INIT_MAX_PARTS);
+	}
 }
 
 void marcel_end(void)
@@ -662,29 +664,31 @@ extern const __ma_init_info_t ma_init_info_marcel_ksoftirqd_call_ONLINE;
 extern const __ma_init_info_t ma_init_info_marcel_gensched_start_lwps;
 #endif
 
-TBX_VISIBILITY_PUSH_INTERNAL __ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS + 1] = { {
-											 MA_INIT_SELF,
-											 "Init self"},
-{
- MA_INIT_TLS, "Init TLS"}, {
-			    MA_INIT_MAIN_LWP, "Init Main LWP"}, {
-								 MA_INIT_SCHEDULER,
-								 "Init scheduler"}, {
-										     MA_INIT_START_LWPS,
-										     "Init LWPS"}
+TBX_VISIBILITY_PUSH_INTERNAL __ma_init_index_t ma_init_start[MA_INIT_MAX_PARTS + 1] = { 
+	{
+		MA_INIT_SELF, "Init self"
+	},
+	{
+		MA_INIT_TLS, "Init TLS"
+	}, 
+	{
+		MA_INIT_MAIN_LWP, "Init Main LWP"
+	}, 
+	{
+		MA_INIT_SCHEDULER, "Init scheduler"
+	}, 
+	{
+		MA_INIT_START_LWPS,
+		"Init LWPS"
+	}
 };
 
 TBX_VISIBILITY_POP static void call_init_function(const __ma_init_info_t * infos)
 {
-	MARCEL_LOG("Init launching for prio %i: %s (%s)\n",
+	MARCEL_LOG("Init launching for prio %i: %s (%s)\n", 
 		   (int) (MA_INIT_PRIO_BASE - infos->prio), *infos->debug, infos->file);
 	infos->func();
 }
-
-#ifdef MARCEL_LIBNUMA
-extern void numa_init(void);
-#pragma weak numa_init
-#endif
 
 void marcel_init_section(int sec)
 {
@@ -699,10 +703,6 @@ void marcel_init_section(int sec)
 			   ma_init_start[section].prio, ma_init_start[section].debug);
 
 		if (section == MA_INIT_SELF) {
-#ifdef MARCEL_LIBNUMA
-			if (numa_init)
-				numa_init();
-#endif
 #ifdef PROFILE
 			profile_init();
 #endif
@@ -801,12 +801,14 @@ void marcel_constructor(void) __attribute__ ((constructor));
 static
 void marcel_constructor(void)
 {
+	int argc = 0;
+
 	if (!marcel_test_activity()) {
 		MARCEL_LOG_IN();
 #  ifdef __PIC__
 		__pthread_initialize_minimal();
 #  endif
-		marcel_init(0, NULL);
+		marcel_init(&argc, NULL);
 		MARCEL_LOG_OUT();
 	}
 }

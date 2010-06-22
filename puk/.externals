@@ -1,3 +1,3 @@
-externals/packaging-tools  svn://scm.gforge.inria.fr/svn/padico/PadicoTM/trunk/admin
-externals/building-tools   svn://scm.gforge.inria.fr/svn/padico/PadicoTM/trunk/PadicoTM/adm
-externals/Puk              svn://scm.gforge.inria.fr/svn/padico/PadicoTM/trunk/PadicoTM/Puk
+/svn/padico/PadicoTM/trunk/admin        externals/packaging-tools
+/svn/padico/PadicoTM/trunk/PadicoTM/adm externals/building-tools
+/svn/padico/PadicoTM/trunk/PadicoTM/Puk externals/Puk

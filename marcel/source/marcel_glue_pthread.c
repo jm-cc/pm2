@@ -32,11 +32,13 @@ extern int __pthread_create_2_1(pthread_t *, const pthread_attr_t *, void *(*)(v
 int __pthread_create_2_1(pthread_t * thread, const pthread_attr_t * attr,
 			 void *(*start_routine) (void *), void *arg)
 {
+	int argc = 0;
+
 	MARCEL_LOG_IN();
 	marcel_attr_t new_attr;
 
 	if (__builtin_expect(ma_activity, tbx_true) == tbx_false)
-		marcel_init(0, NULL);
+		marcel_init(&argc, NULL);
 
 	if (attr != NULL) {
 		int policy;

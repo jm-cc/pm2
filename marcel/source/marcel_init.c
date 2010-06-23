@@ -56,6 +56,9 @@ int marcel_test_activity(void)
 
 void marcel_initialize(int *argc, char *argv[])
 {
+	if (! argc)
+		exit(1);
+
 	if (! marcel_test_activity()) {
 		MARCEL_LOG_IN();
 		marcel_init_data(*argc, argv); 

@@ -56,8 +56,10 @@ int marcel_test_activity(void)
 
 void marcel_initialize(int *argc, char *argv[])
 {
-	if (! argc)
+	if (! argc) {
+		fprintf(stderr, "Marcel: invalid argument\n");
 		exit(1);
+	}
 
 	if (! marcel_test_activity()) {
 		MARCEL_LOG_IN();

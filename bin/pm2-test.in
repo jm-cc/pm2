@@ -362,6 +362,7 @@ fi
 _to_test="$_prefix $_suffix"
 
 failures=""
+skipped_tests=""
 nb_tests=0
 nb_skipped_tests=0
 nb_passes=0
@@ -369,6 +370,7 @@ nb_failures=0
 _l=$_init_level
 while [ $_l -le $_level ]; do
     failures_per_level=""
+    skipped_tests_per_level=""
     nb_tests_per_level=0
     nb_skipped_tests_per_level=0
     nb_passes_per_level=0
@@ -377,6 +379,7 @@ while [ $_l -le $_level ]; do
     for _m in $_to_test ; do
 	echo "*** Testing module $_m ***"
 	failures_per_module=""
+	skipped_tests_per_module=""
 	nb_tests_per_module=0
 	nb_skipped_tests_per_module=0
 	nb_failures_per_module=0
@@ -408,7 +411,7 @@ while [ $_l -le $_level ]; do
                 if [ $is_test_selected == 1 ] ; then
                     echo "....Preloading level [$_l], module [$_m], Test [$_tst_name]"
 
-		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; nb_skipped_tests_per_module=`expr $nb_skipped_tests_per_module + 1` ; continue; }'
+		    alias pm2_skip_test='{ echo "....Skipping level [$_l], module [$_m], Test [$_tst_name]" ; nb_skipped_tests_per_module=`expr $nb_skipped_tests_per_module + 1` ; skipped_tests_per_module="$skipped_tests_per_module $_tst_name" ; continue; }'
 
 		    # Source
                     . ./$_t
@@ -510,6 +513,9 @@ while [ $_l -le $_level ]; do
 		echo ">>> Some of the level [$_l] tests for module [$_m] did fail: $failures_per_module"
 		failures_per_level="$failures_per_level [Module $_m: $failures_per_module]"
 	    fi
+	    if [ -n "$skipped_tests_per_module" ] ; then
+		skipped_tests_per_level="$skipped_tests_per_level [Module $_m: $skipped_tests_per_module]"
+	    fi
 	    nb_tests_per_level=`expr $nb_tests_per_level + $nb_tests_per_module`
 	    nb_skipped_tests_per_level=`expr $nb_skipped_tests_per_level + $nb_skipped_tests_per_module`
 	    nb_passes_per_level=`expr $nb_passes_per_level + $nb_passes_per_module`
@@ -524,6 +530,9 @@ while [ $_l -le $_level ]; do
     else
 	echo ">>>>>> Results for Level [$_l]: some tests have failed: $failures_per_level"
 	failures="$failures [Level $_l: $failures_per_level]"
+    fi
+    if [ -n "$skipped_tests_per_level" ] ; then
+	skipped_tests="$skipped_tests [Level $_l: $skipped_tests_per_level]"
     fi
     nb_tests=`expr $nb_tests + $nb_tests_per_level`
     nb_skipped_tests=`expr $nb_skipped_tests + $nb_skipped_tests_per_level`
@@ -541,5 +550,9 @@ echo "# of skipped tests	$nb_skipped_tests"
 if [ -n "$failures" ] ; then
     echo ""
     echo "Failures: $failures"
+fi
+if [ -n "$skipped_tests" ] ; then
+    echo ""
+    echo "Skipped tests: $skipped_tests"
 fi
 exit 0

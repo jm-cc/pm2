@@ -29,8 +29,9 @@ initialize_bench()
         marcel_options=""
     fi
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-        --modules=\"init marcel ntbx tbx\" $init_options \
+        --modules=\"init marcel ntbx tbx puk\" $init_options \
         --marcel=\"marcel_main $marcel $marcel_options ${BENCHMARCELOPTIONS}\" \
+	--puk=\"enable_pukabi disable_fd_virtualization\" \
         --all=\"opt build_static static\"
 
     ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts

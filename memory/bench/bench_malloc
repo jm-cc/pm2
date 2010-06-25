@@ -17,8 +17,8 @@ initialize_bench()
 {
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"marcel tbx init memory puk\" \
-	--marcel=numa --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle \
-	--puk=\"enable_pukabi disable_fd_virtualization\" \
+	--marcel=numa --marcel=enable_stats --marcel=standard_main --marcel=smp_smt_idle --marcel=enable_mami \
+        --puk=enable_pukabi --puk=disable_fd_virtualization \
 	--init=topology \
         --all=\"opt build_static static\"
     ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts

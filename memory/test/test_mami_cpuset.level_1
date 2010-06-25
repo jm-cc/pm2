@@ -14,8 +14,7 @@
 
 . ./mami.sh
 prog="cpuset"
-nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
-for node in $(echo $nodes) ; do
-    echo "Memory allocated on node $node (requested node $node)"
-done > /tmp/pm2test_"${USER}"_expected
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
 

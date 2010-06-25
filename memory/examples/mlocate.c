@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int node, err;
@@ -27,26 +29,26 @@ int main(int argc, char * argv[]) {
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
-
+  MAMI_CHECK_MALLOC(ptr);
   err = mami_locate(memory_manager, ptr, 1000, &node);
-  if (err < 0) perror("(1) mami_locate unexpectedly failed");
-  else printf("(1) The memory is located on node #%d\n", node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+  if (node != 0) {
+    fprintf(stderr, "(1) The memory is NOT located on node #0 but on node #%d\n", node);
+    return 1;
+  }
+  mami_free(memory_manager, ptr);
 
   err = mami_locate(memory_manager, NULL, 0, &node);
-  if (err < 0) perror("(2) mami_locate successfully failed");
-  else printf("(2) The memory is located on node #%d\n", node);
-
-  mami_free(memory_manager, ptr);
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "(2) mami_locate");
 
   ptr = malloc(1000);
   err = mami_locate(memory_manager, ptr, 1000, &node);
-  if (err < 0) perror("(3) mami_locate successfully failed");
-  else printf("(3) The memory is located on node #%d\n", node);
-
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "(2) mami_locate");
   free(ptr);
-  mami_exit(&memory_manager);
 
+  mami_exit(&memory_manager);
   common_exit(NULL);
+  fprintf(stdout, "Success\n");
   return 0;
 }
 

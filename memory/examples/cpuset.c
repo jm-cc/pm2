@@ -14,13 +14,15 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
+#include "mm_mami.h"
+#include "mm_mami_private.h"
+#include "helper.h"
+
 int main(int argc, char * argv[]) {
-  int node, cnode;
+  int node, cnode, err;
   void *ptr;
   mami_manager_t *memory_manager;
 
@@ -29,14 +31,20 @@ int main(int argc, char * argv[]) {
 
   for(node=0 ; node<memory_manager->nb_nodes ; node++) {
     ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, node);
+    MAMI_CHECK_MALLOC(ptr);
     cnode = -1;
-    mami_locate(memory_manager, ptr, 100, &cnode);
-    fprintf(stderr, "Memory allocated on node %d (requested node %d)\n", cnode, node);
+    err = mami_locate(memory_manager, ptr, 100, &cnode);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+    if (cnode != node) {
+      fprintf(stderr, "Error: Memory allocated on node %d (requested node %d)\n", cnode, node);
+      return 1;
+    }
     mami_free(memory_manager, ptr);
   }
 
   mami_exit(&memory_manager);
   common_exit(NULL);
+  fprintf(stdout, "Success\n");
   return 0;
 }
 

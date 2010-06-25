@@ -14,10 +14,7 @@
 
 . ./mami.sh
 prog="check_location"
-nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
-(
-    for node in $(echo $nodes) ; do
-        echo "MaMI: The 4 pages are all on node #$node"
-    done
-) > /tmp/pm2test_"${USER}"_expected
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
 

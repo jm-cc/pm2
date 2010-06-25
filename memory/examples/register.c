@@ -15,9 +15,11 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include "mm_mami.h"
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int err;
@@ -29,19 +31,21 @@ int main(int argc, char * argv[]) {
 
   ptr = memalign(getpagesize(), 50*getpagesize());
   err = mami_register(memory_manager, ptr, 50000);
-  if (err < 0) perror("mami_register(1) unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_register(1)");
 
   err = mami_register(memory_manager, ptr, 50000);
-  if (err < 0) perror("mami_register(2) succesfully failed");
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "mami_register(2)");
 
   err = mami_unregister(memory_manager, ptr);
-  if (err < 0) perror("mami_unregister(1) unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_unregister(1)");
+
   err = mami_unregister(memory_manager, ptr);
-  if (err < 0) perror("mami_unregister(2) succesfully failed");
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "mami_unregister(2)");
 
   free(ptr);
   mami_exit(&memory_manager);
   common_exit(NULL);
+  fprintf(stdout, "Success\n");
   return 0;
 }
 

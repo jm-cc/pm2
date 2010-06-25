@@ -14,13 +14,16 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
   void *ptr;
+  int err;
   unsigned long memtotal1, memfree1;
   unsigned long memtotal2, memfree2;
   unsigned long memtotal3, memfree3;
@@ -28,31 +31,38 @@ int main(int argc, char * argv[]) {
   common_init(&argc, argv, NULL);
   mami_init(&memory_manager, argc, argv);
 
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree1);
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal1);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree1);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  MAMI_CHECK_MALLOC(ptr);
 
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal2);
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree2);
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal2);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree2);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
 
   mami_free(memory_manager, ptr);
 
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
-  mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_TOTAL, &memtotal3);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
+  err = mami_stats(memory_manager, 0, MAMI_STAT_MEMORY_FREE, &memfree3);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_stats");
 
   if (memfree1 == memfree3 && (memfree1-memfree2) == getpagesize()) {
-    printf("Success\n");
+    fprintf(stdout, "Success\n");
   }
   else {
-    printf("Error\n");
-    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal1, memfree1);
-    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal2, memfree2);
-    printf("Memtotal: %ld -- Memfree: %ld\n", memtotal3, memfree3);
+    fprintf(stderr, "Error\n");
+    fprintf(stderr, "Memtotal: %ld -- Memfree: %ld\n", memtotal1, memfree1);
+    fprintf(stderr, "Memtotal: %ld -- Memfree: %ld\n", memtotal2, memfree2);
+    fprintf(stderr, "Memtotal: %ld -- Memfree: %ld\n", memtotal3, memfree3);
+    return 1;
   }
 
   mami_exit(&memory_manager);
-
   common_exit(NULL);
   return 0;
 }

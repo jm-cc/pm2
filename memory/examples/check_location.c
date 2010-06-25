@@ -14,13 +14,15 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
+#include "mm_mami.h"
+#include "mm_mami_private.h"
+#include "helper.h"
+
 int main(int argc, char * argv[]) {
-  int n, node;
+  int n, node, err;
   void *ptr;
   mami_manager_t *memory_manager;
 
@@ -29,14 +31,21 @@ int main(int argc, char * argv[]) {
 
   for(n=0 ; n<memory_manager->nb_nodes ; n++) {
     ptr = mami_malloc(memory_manager, 4*getpagesize(), MAMI_MEMBIND_POLICY_SPECIFIC_NODE, n);
-    mami_locate(memory_manager, ptr, 1, &node);
-    if (node != n) printf("Wrong location: %d, asked for %d\n", node, n);
-    mami_check_pages_location(memory_manager, ptr, 1, n);
+    MAMI_CHECK_MALLOC(ptr);
+    err = mami_locate(memory_manager, ptr, 1, &node);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+    if (node != n) {
+      fprintf(stderr, "Wrong location: %d, asked for %d\n", node, n);
+      return 1;
+    }
+    err = mami_check_pages_location(memory_manager, ptr, 1, n);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_check_pages_location");
     mami_free(memory_manager, ptr);
   }
 
   mami_exit(&memory_manager);
   common_exit(NULL);
+  fprintf(stdout, "Success\n");
   return 0;
 }
 

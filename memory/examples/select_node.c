@@ -14,39 +14,41 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
+#include "mm_mami.h"
+#include "mm_mami_private.h"
+#include "helper.h"
+
 int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
-  int anode, bnode;
+  int anode, bnode, err;
   void *ptr;
   size_t size;
 
   common_init(&argc, argv, NULL);
   mami_init(&memory_manager, argc, argv);
 
-  mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &anode);
+  err = mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &anode);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_select_node");
+
   size = memory_manager->mem_total[anode]/4;
   ptr = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, anode);
-  if (!ptr) {
-    printf("mami_malloc failed\n");
+  MAMI_CHECK_MALLOC(ptr);
+
+  err = mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &bnode);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_select_node");
+  if (anode == bnode) {
+    fprintf(stderr, "The least loaded anode is: %d\n", anode);
+    fprintf(stderr, "The least loaded bnode is: %d\n", bnode);
+    return 1;
   }
-  else {
-    mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &bnode);
-    if (anode != bnode) {
-      printf("Success\n");
-    }
-    else {
-      printf("The least loaded anode is: %d\n", anode);
-      printf("The least loaded bnode is: %d\n", bnode);
-    }
-    mami_free(memory_manager, ptr);
-  }
+
+  mami_free(memory_manager, ptr);
   mami_exit(&memory_manager);
   common_exit(NULL);
+  fprintf(stdout, "Success\n");
   return 0;
 }
 

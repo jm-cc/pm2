@@ -30,6 +30,7 @@ if [ -z "$result" ] ; then
 fi
 
 NB_NODES=$(ls -d /sys/devices/system/node/node*| wc -w)
+LAST_NODE=$(($NB_NODES - 1))
 appdir="${PM2_OBJROOT}/memory/examples"
 check_all_lines=1
 

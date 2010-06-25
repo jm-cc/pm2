@@ -19,33 +19,23 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-static void first_touch(void *buffer, size_t size);
+static void do_first_touch(void *buffer, size_t size);
 static mami_manager_t *memory_manager;
+static any_t first_touch(any_t arg);
 
 int main(int argc, char * argv[]) {
-  void *buffer;
-  size_t size;
   int err;
+  marcel_t thread;
+  marcel_attr_t attr;
 
   marcel_init(&argc,argv);
+  marcel_attr_init(&attr);
   mami_init(&memory_manager, argc, argv);
   mami_unset_kernel_migration(memory_manager);
-  size = 10000*sizeof(int);
 
-  // Case with user-allocated memory
-  posix_memalign(&buffer, getpagesize(), size);
-  first_touch(buffer, size);
-  err = mami_unregister(memory_manager, buffer);
-  if (err < 0) perror("mami_unregister unexpectedly failed");
-  free(buffer);
-
-  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
-  if (err < 0) perror("mami_membind unexpectedly failed");
-
-  // Case with mami-allocated memory
-  buffer = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  first_touch(buffer, size);
-  mami_free(memory_manager, buffer);
+  marcel_attr_settopo_level_on_node(&attr, marcel_nbnodes-1);
+  marcel_create(&thread, &attr, first_touch, NULL);
+  marcel_join(thread, NULL);
 
   // Finish marcel
   mami_exit(&memory_manager);
@@ -53,7 +43,31 @@ int main(int argc, char * argv[]) {
   return 0;
 }
 
-static void first_touch(void *buffer, size_t size) {
+static any_t first_touch(any_t arg) {
+  void *buffer;
+  size_t size;
+  int err;
+
+  size = 10000*sizeof(int);
+
+  // Case with user-allocated memory
+  fprintf(stderr, "... Testing user-allocated memory\n");
+  posix_memalign(&buffer, getpagesize(), size);
+  do_first_touch(buffer, size);
+  err = mami_unregister(memory_manager, buffer);
+  if (err < 0) perror("mami_unregister unexpectedly failed");
+  free(buffer);
+
+  // Case with mami-allocated memory
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_FIRST_TOUCH, 0);
+  if (err < 0) perror("mami_membind unexpectedly failed");
+  fprintf(stderr, "... Testing MaMI-allocated memory\n");
+  buffer = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  do_first_touch(buffer, size);
+  mami_free(memory_manager, buffer);
+}
+
+static void do_first_touch(void *buffer, size_t size) {
   int i, err;
   int node;
 

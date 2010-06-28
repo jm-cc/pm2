@@ -354,7 +354,7 @@ void marcel_init_data(int argc, char *argv[])
 	// defines process stack limits
 	getrlimit(RLIMIT_STACK, &rlim);
 	if (rlim.rlim_cur == RLIM_INFINITY)
-		TBX_FAILURE("Please configure your system with a correct stack size limit: ulimit -s xxxx\n");
+		TBX_FAILURE("Please configure your system with a non-infinite stack size limit so that Marcel can know where the main stack ends: ulimit -s xxxx\n");
 	ma_main_stacklimit = get_sp() - rlim.rlim_cur;
 
 #ifdef TBX

@@ -153,12 +153,14 @@ do_the_test()
         echo "Running program <$prog> with flavor <$flavor>..."
         ${PM2_OBJROOT}/bin/pm2-conf -f $flavor $hosts
 
+	echo "Starting date: $(date)"
         if [ -z "$net" ] ; then
             (${PM2_OBJROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         else
             protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
             (${PM2_OBJROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
+	echo "Ending date: $(date)"
 	if [ `cat $file_status` -ne 0 ] ; then
 	    failures_per_module="$failures_per_module $test_name ($prog flavor $flavor)"
 	    nb_failures_per_module=`expr $nb_failures_per_module + 1`

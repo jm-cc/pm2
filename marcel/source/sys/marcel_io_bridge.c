@@ -73,9 +73,11 @@ int ma_schedule_hooks(marcel_scheduling_point_t scheduling_point)
 	   f(scheduling_point);
 	   But this require that the callback may be called after it is unregistered
 	 */
-	marcel_rwlock_rdlock(&__ma_scheduling_hook_lock);
-	for (i = 0; i < __ma_nb_scheduling_hooks[scheduling_point]; i++)
-		nb_poll += (*__ma_scheduling_hook[i][scheduling_point]) (scheduling_point);
-	marcel_rwlock_unlock(&__ma_scheduling_hook_lock);
+	if (__ma_nb_scheduling_hooks[scheduling_point]) {
+		marcel_rwlock_rdlock(&__ma_scheduling_hook_lock);
+		for (i = 0; i < __ma_nb_scheduling_hooks[scheduling_point]; i++)
+			nb_poll += (*__ma_scheduling_hook[i][scheduling_point]) (scheduling_point);
+		marcel_rwlock_unlock(&__ma_scheduling_hook_lock);
+	}
 	return nb_poll;
 }

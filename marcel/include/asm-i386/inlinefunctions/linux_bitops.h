@@ -26,6 +26,23 @@
 #ifdef __MARCEL_KERNEL__
 TBX_VISIBILITY_PUSH_INTERNAL
 
+#if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
+/* Technically wrong, but this avoids compilation errors on some gcc
+   versions. */
+#define MA_BITOP_ADDR(x) "=m" (*(volatile long *) (x))
+#else
+#define MA_BITOP_ADDR(x) "+m" (*(volatile long *) (x))
+#endif
+
+#define MA_ADDR				MA_BITOP_ADDR(addr)
+
+/*
+ * We do the locked ops that don't return the old value as
+ * a mask operation on a byte.
+ */
+#define MA_IS_IMMEDIATE(nr)		(__builtin_constant_p(nr))
+#define MA_CONST_MASK_ADDR(nr, addr)	MA_BITOP_ADDR((void *)(addr) + ((nr)>>3))
+#define MA_CONST_MASK(nr)			(1 << ((nr) & 7))
 
 /** Internal inline functions **/
 /*
@@ -37,48 +54,66 @@ TBX_VISIBILITY_PUSH_INTERNAL
  */
 static __tbx_inline__ void ma_set_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__(MA_LOCK_PREFIX "btsl %1,%0":"=m"(*addr)
-			     :"dIr"(nr));
+	if (MA_IS_IMMEDIATE(nr)) {
+		__asm__ __volatile__(MA_LOCK_PREFIX "orb %1,%0"
+			: MA_CONST_MASK_ADDR(nr, addr)
+			: "iq" ((uint8_t)MA_CONST_MASK(nr))
+			: "memory");
+	} else {
+		__asm__ __volatile__(MA_LOCK_PREFIX "bts %1,%0"
+				: MA_BITOP_ADDR(addr) :"Ir"(nr) : "memory");
+	}
 }
 
 
 static __tbx_inline__ void __ma_set_bit(int nr, volatile unsigned long *addr)
 {
-      __asm__("btsl %1,%0":"=m"(*addr)
-      :	"dIr"(nr));
+	__asm__ __volatile__("bts %1,%0" : MA_ADDR :	"Ir"(nr) : "memory");
 }
 
 static __tbx_inline__ void ma_clear_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__(MA_LOCK_PREFIX "btrl %1,%0":"=m"(*addr)
-			     :"dIr"(nr));
+	if (MA_IS_IMMEDIATE(nr)) {
+		__asm__ __volatile__(MA_LOCK_PREFIX "andb %1,%0"
+			: MA_CONST_MASK_ADDR(nr, addr)
+			: "iq" ((uint8_t)~MA_CONST_MASK(nr)));
+	} else {
+		__asm__ __volatile__(MA_LOCK_PREFIX "btr %1,%0"
+				: MA_BITOP_ADDR(addr)
+				: "Ir" (nr));
+	}
 }
 
 static __tbx_inline__ void __ma_clear_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__("btrl %1,%0":"=m"(*addr)
-			     :"dIr"(nr));
+	__asm__ __volatile__("btr %1,%0" : MA_ADDR : "Ir" (nr));
 }
 
 static __tbx_inline__ void __ma_change_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__("btcl %1,%0":"=m"(*addr)
-			     :"dIr"(nr));
+	__asm__ __volatile__("btc %1,%0" : MA_ADDR : "Ir" (nr));
 }
 
 static __tbx_inline__ void ma_change_bit(int nr, volatile unsigned long *addr)
 {
-	__asm__ __volatile__(MA_LOCK_PREFIX "btcl %1,%0":"=m"(*addr)
-			     :"dIr"(nr));
+	if (MA_IS_IMMEDIATE(nr)) {
+		__asm__ __volatile__(MA_LOCK_PREFIX "xorb %1,%0"
+			: MA_CONST_MASK_ADDR(nr, addr)
+			: "iq" ((uint8_t)MA_CONST_MASK(nr)));
+	} else {
+		__asm__ __volatile__(MA_LOCK_PREFIX "btc %1,%0"
+				: MA_BITOP_ADDR(addr)
+				: "Ir" (nr));
+	}
 }
 
 static __tbx_inline__ int ma_test_and_set_bit(int nr, volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__(MA_LOCK_PREFIX
-			     "btsl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-			     :"dIr"(nr):"memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "bts %2,%1\n\t"
+			"sbb %0,%0" : "=r" (oldbit), MA_ADDR : "Ir" (nr) : "memory");
+
 	return oldbit;
 }
 
@@ -86,8 +121,10 @@ static __tbx_inline__ int __ma_test_and_set_bit(int nr, volatile unsigned long *
 {
 	int oldbit;
 
-      __asm__("btsl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-      :	"dIr"(nr));
+      __asm__("bts %2,%1\n\t"
+	      "sbb %0,%0"
+	      : "=r" (oldbit), MA_ADDR
+	      : "Ir" (nr));
 	return oldbit;
 }
 
@@ -95,9 +132,10 @@ static __tbx_inline__ int ma_test_and_clear_bit(int nr, volatile unsigned long *
 {
 	int oldbit;
 
-	__asm__ __volatile__(MA_LOCK_PREFIX
-			     "btrl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-			     :"dIr"(nr):"memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "btr %2,%1\n\t"
+			"sbb %0,%0"
+			: "=r" (oldbit), MA_ADDR : "Ir" (nr) : "memory");
+
 	return oldbit;
 }
 
@@ -105,8 +143,10 @@ static __tbx_inline__ int __ma_test_and_clear_bit(int nr, volatile unsigned long
 {
 	int oldbit;
 
-      __asm__("btrl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-      :	"dIr"(nr));
+      __asm__("btr %2,%1\n\t"
+		      "sbb %0,%0"
+		      : "=r" (oldbit), MA_ADDR
+		      :	"Ir" (nr));
 	return oldbit;
 }
 
@@ -115,8 +155,11 @@ static __tbx_inline__ int __ma_test_and_change_bit(int nr, volatile unsigned lon
 {
 	int oldbit;
 
-	__asm__ __volatile__("btcl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-			     :"dIr"(nr):"memory");
+	__asm__ __volatile__("btc %2,%1\n\t"
+			"sbb %0,%0"
+			: "=r" (oldbit), MA_ADDR
+			: "Ir" (nr) : "memory");
+
 	return oldbit;
 }
 
@@ -124,47 +167,44 @@ static __tbx_inline__ int ma_test_and_change_bit(int nr, volatile unsigned long 
 {
 	int oldbit;
 
-	__asm__ __volatile__(MA_LOCK_PREFIX
-			     "btcl %2,%1\n\tsbbl %0,%0":"=r"(oldbit), "=m"(*addr)
-			     :"dIr"(nr):"memory");
+	__asm__ __volatile__(MA_LOCK_PREFIX "btc %2,%1\n\t"
+			"sbb %0,%0"
+			: "=r" (oldbit), MA_ADDR : "Ir" (nr) : "memory");
+
 	return oldbit;
 }
 
 static __tbx_inline__ int ma_constant_test_bit(int nr, const volatile unsigned long *addr)
 {
-	return ((1UL << (nr & 31)) & (addr[nr >> 5])) != 0;
+	return ((1UL << (nr % MA_BITS_PER_LONG)) &
+		(((unsigned long *)addr)[nr / MA_BITS_PER_LONG])) != 0;
 }
 
 static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned long *addr)
 {
 	int oldbit;
 
-	__asm__ __volatile__("btl %2,%1\n\tsbbl %0,%0":"=r"(oldbit)
-			     :"m"(*addr), "dIr"(nr));
-	return oldbit;
-}
+	__asm__ __volatile__("bt %2,%1\n\t"
+			"sbb %0,%0"
+			: "=r" (oldbit)
+			: "m" (*(unsigned long *)addr), "Ir" (nr));
 
-static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
-{
-#ifdef X86_64_ARCH
-	__asm__("bsfq %1,%0"
-#else
-	__asm__("bsfl %1,%0"
-#endif
-      :	"=r"(word)
-      :	"r"(~word));
-	return word;
+	return oldbit;
 }
 
 static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 {
-#ifdef X86_64_ARCH
-	__asm__("bsfq %1,%0"
-#else
-	__asm__("bsfl %1,%0"
-#endif
-      :	"=r"(word)
-      :	"rm"(word));
+	__asm__("bsf %1,%0"
+      :	"=r" (word)
+      :	"rm" (word));
+	return word;
+}
+
+static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
+{
+	__asm__("bsf %1,%0"
+      :	"=r" (word)
+      :	"r" (~word));
 	return word;
 }
 

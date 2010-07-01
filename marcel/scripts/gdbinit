@@ -283,7 +283,7 @@ define marcel-threads
   set language c
   printf "        marcel_t                             name prio status cpu   natural_holder     sched_holder     ready_holder\n"
   set $num=0
-  while $num<ma__nb_vp
+  while $num<marcel_nb_vp
     set $vp=&marcel_topo_vp_level[$num]
     set $all_threads=&$vp->vpdata.all_threads
     set $threade=$all_threads->next

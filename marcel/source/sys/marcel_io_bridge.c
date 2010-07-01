@@ -17,9 +17,11 @@
 
 #define MAX_SCHEDULING_HOOKS 8
 
+/* TODO: this is a contention point, implement RCU lists and use them instead */
+
 static marcel_scheduling_hook_t * __ma_scheduling_hook[MAX_SCHEDULING_HOOKS][MARCEL_SCHEDULING_POINT_MAX];
 static unsigned __ma_nb_scheduling_hooks[MARCEL_SCHEDULING_POINT_MAX];
-static marcel_rwlock_t __ma_scheduling_hook_lock = MARCEL_RWLOCK_INITIALIZER;
+static ma_rwlock_t __ma_scheduling_hook_lock = MA_RW_LOCK_UNLOCKED;
 
 
 void ma_init_scheduling_hook()
@@ -33,10 +35,10 @@ void ma_init_scheduling_hook()
 void marcel_register_scheduling_hook(marcel_scheduling_hook_t hook,
 				     marcel_scheduling_point_t point)
 {
-	marcel_rwlock_wrlock(&__ma_scheduling_hook_lock);
+	ma_write_lock(&__ma_scheduling_hook_lock);
 	__ma_scheduling_hook[__ma_nb_scheduling_hooks[point]][point] = hook;
 	__ma_nb_scheduling_hooks[point]++;
-	marcel_rwlock_unlock(&__ma_scheduling_hook_lock);
+	ma_write_unlock(&__ma_scheduling_hook_lock);
 }
 
 int marcel_unregister_scheduling_hook(marcel_scheduling_hook_t hook,
@@ -46,7 +48,7 @@ int marcel_unregister_scheduling_hook(marcel_scheduling_hook_t hook,
 	int found = 0;
 
 	/** ordre entre les hooks ??? **/
-	marcel_rwlock_wrlock(&__ma_scheduling_hook_lock);
+	ma_write_lock(&__ma_scheduling_hook_lock);
 	for (i = 0; i < __ma_nb_scheduling_hooks[point]; i++)
 		if ((__ma_scheduling_hook[i][point] == hook) || found) {
 			__ma_scheduling_hook[i][point] =
@@ -57,7 +59,7 @@ int marcel_unregister_scheduling_hook(marcel_scheduling_hook_t hook,
 		}
 	if (found)
 		__ma_nb_scheduling_hooks[point]--;
-	marcel_rwlock_unlock(&__ma_scheduling_hook_lock);
+	ma_write_unlock(&__ma_scheduling_hook_lock);
 	return found;
 }
 
@@ -74,10 +76,10 @@ int ma_schedule_hooks(marcel_scheduling_point_t scheduling_point)
 	   But this require that the callback may be called after it is unregistered
 	 */
 	if (__ma_nb_scheduling_hooks[scheduling_point]) {
-		marcel_rwlock_rdlock(&__ma_scheduling_hook_lock);
+		ma_read_lock(&__ma_scheduling_hook_lock);
 		for (i = 0; i < __ma_nb_scheduling_hooks[scheduling_point]; i++)
 			nb_poll += (*__ma_scheduling_hook[i][scheduling_point]) (scheduling_point);
-		marcel_rwlock_unlock(&__ma_scheduling_hook_lock);
+		ma_read_unlock(&__ma_scheduling_hook_lock);
 	}
 	return nb_poll;
 }

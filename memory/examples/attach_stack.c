@@ -19,14 +19,31 @@
 
 #if defined(MM_MAMI_ENABLED)
 
+static any_t stack(any_t arg);
+static mami_manager_t *memory_manager;
+
 int main(int argc, char * argv[]) {
-  mami_manager_t *memory_manager;
-  int ptr[getpagesize()*10/sizeof(int)];
-  int i, err, node;
-  size_t size;
+  marcel_t thread;
+  marcel_attr_t attr;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
+  marcel_attr_init(&attr);
+
+  marcel_attr_settopo_level_on_node(&attr, 0);
+  marcel_create(&thread, &attr, stack, NULL);
+  marcel_join(thread, NULL);
+
+  // Finish marcel
+  mami_exit(&memory_manager);
+  marcel_end();
+  return 0;
+}
+
+static any_t stack(any_t arg) {
+  int ptr[getpagesize()*10/sizeof(int)];
+  int i, err, node;
+  size_t size;
 
   size=getpagesize()*10;
   err = mami_task_attach(memory_manager, ptr, size, marcel_self(), &node);
@@ -65,11 +82,6 @@ int main(int argc, char * argv[]) {
 
   err = mami_unregister(memory_manager, ptr);
   if (err < 0) perror("mami_unregister unexpectedly failed");
-
-  // Finish marcel
-  mami_exit(&memory_manager);
-  marcel_end();
-  return 0;
 }
 
 #else

@@ -265,9 +265,7 @@ registering_flavors() {
 	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
-	--marcel=enable_keys --marcel=enable_atexit \
-	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_keys \
 	--marcel=enable_stats --marcel=maintainer_mode \
 	--marcel=standard_main \
         --init=topology \
@@ -278,9 +276,7 @@ registering_flavors() {
 	--modules="marcel tbx init puk memory" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
-	--marcel=enable_keys --marcel=enable_atexit \
-	--marcel=enable_once --marcel=enable_cleanup \
-	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_keys \
 	--marcel=enable_stats --marcel=maintainer_mode \
 	--marcel=standard_main \
         --memory=enable_mami --marcel=enable_mami \

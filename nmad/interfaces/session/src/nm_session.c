@@ -118,7 +118,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	  fprintf(stderr, "# session: error %d while loading driver %s\n", err, p_drv->driver->name);
 	  abort();
 	}
-      const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
+      const struct nm_drv_iface_s*drv_iface = puk_component_get_driver_NewMad_Driver(driver_assembly, NULL);
       assert(drv_iface != NULL);
       const char*driver_name = drv_iface->name;
       padico_string_t url_string = padico_string_new();
@@ -180,7 +180,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	      fprintf(stderr, "# session: error %d while loading driver %s\n", err, p_drv->driver->name);
 	      abort();
 	    }
-	  const struct nm_drv_iface_s*drv_iface = puk_adapter_get_driver_NewMad_Driver(driver_assembly, NULL);
+	  const struct nm_drv_iface_s*drv_iface = puk_component_get_driver_NewMad_Driver(driver_assembly, NULL);
 	  assert(drv_iface != NULL);
 	  const char*driver_realname = drv_iface->name;
 	  nm_session.n_drivers++;

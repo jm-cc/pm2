@@ -128,7 +128,7 @@ int nm_core_driver_load(nm_core_t p_core,
   memset(p_drv, 0, sizeof(struct nm_drv));
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
-  p_drv->driver   = puk_adapter_get_driver_NewMad_Driver(p_drv->assembly, NULL);
+  p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
 
   nm_trk_id_t trk_id;;
   for(trk_id = 0; trk_id < NM_SO_MAX_TRACKS; trk_id++)

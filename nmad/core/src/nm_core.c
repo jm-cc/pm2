@@ -194,8 +194,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
 
 int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
 {
-  puk_iface_t strat_iface = puk_iface_NewMad_Strategy();
-  puk_facet_t strat_facet = puk_adapter_get_facet(strategy, strat_iface, NULL);
+  puk_facet_t strat_facet = puk_component_get_facet_NewMad_Strategy(strategy, NULL);
   if(strat_facet == NULL)
     {
       fprintf(stderr, "# nmad: component %s given as strategy has no interface 'NewMad_Strategy'\n", strategy->name);

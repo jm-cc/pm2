@@ -487,7 +487,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_iovec_size		= 0;
 	}
       p_ibverbs_drv->trks_array[i].method_iface =
-	puk_adapter_get_driver_NewMad_ibverbs_method(p_ibverbs_drv->trks_array[i].method, NULL);
+	puk_component_get_driver_NewMad_ibverbs_method(p_ibverbs_drv->trks_array[i].method, NULL);
     }
   
   err = NM_ESUCCESS;

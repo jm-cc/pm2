@@ -32,10 +32,13 @@
 
 #ifdef CONFIG_PUK_PUKABI
 #include <Padico/Puk-ABI.h>
-#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
-#else /* CONFIG_PUK_PUKABI */
-#define NM_SYS(SYMBOL) SYMBOL
 #endif /* CONFIG_PUK_PUKABI */
+
+#if defined(CONFIG_PUK_PUKABI) && defined(PADICO_ENABLE_PUKABI_FSYS)
+#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
+#else  /* PADICO_ENABLE_PUKABI_FSYS */
+#define NM_SYS(SYMBOL) SYMBOL
+#endif /* PADICO_ENABLE_PUKABI_FSYS */
 
 /** TCP driver per-instance data.
  */
@@ -1255,7 +1258,6 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 	NM_TRACEF("tcp incoming iov: truncating message");
 	/* message truncated
 	 */
-	NM_WARN("message truncated: remaining bytes", p_tcp_pw->rem_length);
 	NM_WARN("-NM_EINVAL");
 	err	= -NM_EINVAL;
       } else {

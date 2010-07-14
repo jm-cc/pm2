@@ -17,6 +17,7 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_core_interface.h>
+#include <pm2_common.h>
 
 #ifdef CONFIG_PROTO_MAD3
 #include <nm_mad3_public.h>
@@ -61,6 +62,10 @@ int nm_launcher_init(int *argc, char**argv)
   if(init_done)
     return NM_ESUCCESS;
   init_done = 1;
+
+  common_pre_init(argc, argv, NULL);
+  common_post_init(argc, argv, NULL);
+
   /*
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)
    */

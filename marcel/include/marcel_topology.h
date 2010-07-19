@@ -126,8 +126,8 @@ enum marcel_topo_level_memory_type_e {
 #    define MA_VPSUBSET_ZERO		0UL
 #    define MA_VPSUBSET_FULL		~0UL
 /* actual whole-vpset values */
-#    define MARCEL_VPSET_ZERO		(marcel_vpset_t){ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_ZERO }
-#    define MARCEL_VPSET_FULL		(marcel_vpset_t){ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_FULL }
+#    define MARCEL_VPSET_ZERO		{ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_ZERO }
+#    define MARCEL_VPSET_FULL		{ .s[0 ... MA_VPSUBSET_COUNT-1] = MA_VPSUBSET_FULL }
 #    define MARCEL_VPSET_VP(vp)		({ marcel_vpset_t __set = MARCEL_VPSET_ZERO; MA_VPSUBSET_VPSUBSET(__set,vp) = MA_VPSUBSET_VAL(vp); __set; })
 /* displaying vpsets */
 #if MA_BITS_PER_LONG == 32

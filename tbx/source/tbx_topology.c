@@ -34,6 +34,7 @@ void tbx_topology_init(int argc, char *argv[])
 {
 	int i;
 	char *topology_fsys_root_path = NULL;
+	char *topology_xml_path = NULL;
 
 	if (already_defined)
 		return;
@@ -49,6 +50,17 @@ void tbx_topology_init(int argc, char *argv[])
 					"Fatal error: --synthetic-topology option must be followed "
 					"by <topology-description>.\n");
 				show_synthetic_topology_help();
+				exit(1);
+			}
+		}
+
+		if (!strcmp(argv[i], "--topology-xml")) {
+			if (i < argc - 1)
+				topology_xml_path = argv[i + 1];
+			else {
+				fprintf(stderr,
+					"Fatal error: --topology-xml option must be followed "
+					"by the path of a XML file.\n");
 				exit(1);
 			}
 		}
@@ -70,6 +82,8 @@ void tbx_topology_init(int argc, char *argv[])
     hwloc_topology_set_fsroot(topology, topology_fsys_root_path);
   if (synthetic_topology_description)
     hwloc_topology_set_synthetic(topology, synthetic_topology_description);
+  if (topology_xml_path)
+    hwloc_topology_set_xml(topology, topology_xml_path);
   hwloc_topology_load(topology);
 
 	already_defined = tbx_true;

@@ -27,7 +27,7 @@ registering_flavors() {
 # START OF LIST OF SAMPLE FLAVORS
 #########################################################
 
-    COMMON_OPTIONS="--all=build_static --common=static"
+    COMMON_OPTIONS="--all=build_static"
     OPTIM_OPTIONS="--all=opt"
     DEBUG_OPTIONS="--all=debug --all=gdb"
 

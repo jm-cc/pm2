@@ -159,7 +159,7 @@ __tbx_inline__ static ma_runqueue_t *marcel_sched_vpset_init_rq(const marcel_vps
 #ifdef MA__NUMA
 #include <hwloc.h>
 __tbx_inline__ static void ma_cpuset_from_hwloc(marcel_vpset_t * mset, hwloc_const_cpuset_t lset);
-__tbx_inline__ static void ma_cpuset_to_hwloc(marcel_vpset_t mset, hwloc_cpuset_t *lset);
+__tbx_inline__ static void ma_cpuset_to_hwloc(marcel_vpset_t *mset, hwloc_cpuset_t lset);
 __tbx_inline__ static ma_runqueue_t *marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset);
 #endif				/* MA__NUMA */
 

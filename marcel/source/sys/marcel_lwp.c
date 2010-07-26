@@ -241,7 +241,7 @@ void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 
 #ifdef MA__NUMA
 	lwp->cpuset = hwloc_cpuset_alloc();
-	ma_cpuset_to_hwloc(level->cpuset, &lwp->cpuset);
+	ma_cpuset_to_hwloc(&level->cpuset, lwp->cpuset);
 #endif
 
 	ma_init_lwp_vpnum(vpnum, lwp);

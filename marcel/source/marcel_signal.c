@@ -85,6 +85,7 @@ int marcel_deliver_sig(void);
 		".text\n"				\
 		".align 16\n"				\
 		".global __ma_"#name"\n"		\
+		".internal __ma_"#name"\n"		\
 		".type __ma_"#name",@function\n"	\
 		"__ma_"#name":\n"			\
 		"	movq $" #syscall ", %rax\n"	\

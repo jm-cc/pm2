@@ -38,7 +38,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  define PC_FIELD(buf)           ((buf)[JB_PC])
 #endif
 
-#define call_ST_FLUSH_WINDOWS()  ((void)0)
+#define ma_ST_FLUSH_WINDOWS()  ((void)0)
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp()					\

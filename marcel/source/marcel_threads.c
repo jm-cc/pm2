@@ -1159,7 +1159,7 @@ void marcel_begin_hibernation(marcel_t __restrict t, transfert_func_t transf,
 		ma_preempt_disable();
 		if (marcel_ctx_setjmp(cur->ctx_migr) == FIRST_RETURN) {
 
-			call_ST_FLUSH_WINDOWS();
+			ma_ST_FLUSH_WINDOWS();
 			top = ma_task_slot_top(cur);
 			bottom =
 				ALIGNED_32((unsigned long) marcel_ctx_get_sp(cur->

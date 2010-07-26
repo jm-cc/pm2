@@ -49,7 +49,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #  define SP_FIELD(buf)           ((buf)->__jmpbuf[JB_SP])
 #endif
 
-extern void call_ST_FLUSH_WINDOWS(void);
+extern void ma_ST_FLUSH_WINDOWS(void);
 
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp()					\

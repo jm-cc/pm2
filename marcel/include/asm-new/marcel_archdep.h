@@ -48,7 +48,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 /*
  * How to flush a sparc-like register window, if any.
  */
-#define call_ST_FLUSH_WINDOWS()
+#define ma_ST_FLUSH_WINDOWS()
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 /*
  * How to get the current stack pointer register, in the gcc or intel case it's

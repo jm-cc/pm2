@@ -32,7 +32,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #define SP_FIELD(buf)           ((buf).uc_mcontext.sc_gr[JB_SP])
 #define BSP_FIELD(buf)          ((buf).uc_mcontext.sc_ar_bsp)
 
-#define call_ST_FLUSH_WINDOWS()  ((void)0)
+#define ma_ST_FLUSH_WINDOWS()  ((void)0)
 
 #ifdef __GNUC__
 #ifndef __INTEL_COMPILER

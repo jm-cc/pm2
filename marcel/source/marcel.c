@@ -82,7 +82,7 @@ int _marcel_raise_exception(marcel_exception_t ex)
 		exit(1);
 	} else {
 		cur->cur_exception = ex;
-		call_ST_FLUSH_WINDOWS();
+		ma_ST_FLUSH_WINDOWS();
 		marcel_ctx_longjmp(cur->cur_excep_blk->ctx, 1);
 	}
 }

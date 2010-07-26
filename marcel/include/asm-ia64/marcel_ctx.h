@@ -71,7 +71,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 		unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
 		marcel_ctx_set_tls_reg(new_task);			\
 		MA_SET_INITIAL_SELF(new_task);				\
-		call_ST_FLUSH_WINDOWS();				\
+		ma_ST_FLUSH_WINDOWS();				\
 		set_sp_bsp(_sp, new_task->stack_base);			\
 	} while (0)
 
@@ -81,7 +81,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 		unsigned long _local = ((unsigned long)(cur_top)) - get_sp(); \
 		unsigned long _sp = ((unsigned long)(top)) - MAL(_local) - 0x200; \
 		marcel_ctx_set_tls_reg(to_task);			\
-		call_ST_FLUSH_WINDOWS();				\
+		ma_ST_FLUSH_WINDOWS();				\
 		set_sp_bsp(_sp, marcel_ctx_get_bsp(to_task->ctx_yield)); \
 	} while (0)
 

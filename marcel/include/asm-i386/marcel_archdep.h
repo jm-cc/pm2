@@ -46,7 +46,7 @@ typedef intptr_t ma_jmp_buf[6];
 #define FP_FIELD(buf)           ((buf)[MARCEL_JB_BP])
 #define PC_FIELD(buf)           ((buf)[MARCEL_JB_PC])
 
-#define call_ST_FLUSH_WINDOWS()  ((void)0)
+#define ma_ST_FLUSH_WINDOWS()  ((void)0)
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #define get_sp()			\
 	({						\

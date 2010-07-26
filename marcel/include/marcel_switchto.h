@@ -61,7 +61,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
     PROF_SWITCH_TO(cur_num, next); \
     marcel_ctx_set_tls_reg(next); \
     MA_SET_SELF(next); \
-    call_ST_FLUSH_WINDOWS();               \
+    ma_ST_FLUSH_WINDOWS();               \
     marcel_ctx_longjmp(next->ctx_yield, ret);              \
   } while(0)
 /* détruit le contexte en mettant des valeurs empoisonnées.

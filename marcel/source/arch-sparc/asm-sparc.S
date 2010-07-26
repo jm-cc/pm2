@@ -24,8 +24,8 @@
 
 	.seg	"text"
 
-	.global	call_ST_FLUSH_WINDOWS
-call_ST_FLUSH_WINDOWS:
+	.global	ma_ST_FLUSH_WINDOWS
+ma_ST_FLUSH_WINDOWS:
 	retl
 	ta	ST_FLUSH_WINDOWS
 

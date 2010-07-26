@@ -25,6 +25,7 @@
 #define ma_savesigs _ma_savesigs
 #endif
         .globl ma_setjmp
+        .internal ma_setjmp
 	.type  ma_setjmp, @function
 ma_setjmp:
         movl    4(%esp), %ecx

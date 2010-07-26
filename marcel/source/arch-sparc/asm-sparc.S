@@ -25,6 +25,7 @@
 	.seg	"text"
 
 	.global	ma_ST_FLUSH_WINDOWS
+	.internal	ma_ST_FLUSH_WINDOWS
 ma_ST_FLUSH_WINDOWS:
 	retl
 	ta	ST_FLUSH_WINDOWS

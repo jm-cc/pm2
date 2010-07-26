@@ -253,6 +253,8 @@ static void tbx_logger_show_registered(void)
 {
 	int i;
 
+	fprintf(stderr,"List of registered debugging modules:\n");
+
 	for (i = 0; i < instance_num; i++)
 		fprintf(stderr, "registered module (level): %s (%d)\n",
 			reg_logd[i]->prefix, (int)reg_logd[i]->level);

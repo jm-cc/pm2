@@ -619,7 +619,7 @@ static void topo_discover(void)
 
 	if (marcel_nbvps() > MARCEL_NBMAXCPUS) {
 		fprintf(stderr,
-			"%u > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
+			"nbvp %u > NBMAXCPUS %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
 			marcel_nbvps(), MARCEL_NBMAXCPUS);
 		exit(1);
 	}
@@ -782,7 +782,7 @@ static void topo_discover(void)
 				if (mlevel->os_cpu >= MARCEL_NBMAXCPUS) {
 					/* these won't fit in marcel's vpset type and thus would abort strangely later */
 					fprintf(stderr,
-						" %d >= %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
+						"CPU id %d >= NBMAXCPUS %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
 						mlevel->os_cpu, MARCEL_NBMAXCPUS);
 					exit(1);
 				}
@@ -824,7 +824,7 @@ static void topo_discover(void)
 
 	if (marcel_nbvps() > MARCEL_NBMAXCPUS) {
 		fprintf(stderr,
-			"%u > %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
+			"nbvps %u > NBMAXCPUS %d, please increase MARCEL_NBMAXCPUS in marcel/include/marcel_config.h or using the nbmaxcpus: flavor option\n",
 			marcel_nbvps(), MARCEL_NBMAXCPUS);
 		exit(1);
 	}

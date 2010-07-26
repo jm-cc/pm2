@@ -1,13 +1,11 @@
 % leonie --x --p --appli=mad_ping appli.cfg --debug:register
 (ffffffff:-99:               ) register debug name: register [default] (show=5)
 (ffffffff:-99:               ) register debug name: default [default] (show=2)
-(ffffffff:-99:               ) register debug name: ma [default] (show=DEFAULT (2))
-(ffffffff:-99:               ) register debug name: mar-mdebug [ma] (show=DEFAULT (2))
-(ffffffff:-99:               ) register debug name: marcel-init [mar-mdebug] (show=DEFAULT (2))
+(ffffffff:-99:               ) register debug name: marcel [default] (show=DEFAULT (2))
 (ffffffff:-99:               ) register debug name: log [default] (show=DEFAULT (2))
 ....
 
-% leonie --x --p --appli=mad_ping appli.cfg --debug:mar-mdebug
+% leonie --x --p --appli=mad_ping appli.cfg --debug:marcel
 (ffffffff:-99:               )                  <main_thread is bffefe00>
 (ffffffff:-99:               ) Init running level 3 (Init scheduler) start
 (ffffffff:-99:               ) Init running level 0 (Init self)

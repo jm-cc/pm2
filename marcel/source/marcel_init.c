@@ -372,6 +372,9 @@ void marcel_init_data(int argc, char *argv[])
 	tbx_init(&argc, &argv);
 #endif				/* TBX */
 
+	// Initialize debug facilities
+	marcel_debug_init();
+
 #ifdef PM2_TOPOLOGY
 	// Launch hwloc
 	tbx_topology_init(argc, argv);
@@ -381,8 +384,6 @@ void marcel_init_data(int argc, char *argv[])
 	marcel_parse_cmdline_early(argc, argv);
 	marcel_init_section(MA_INIT_SCHEDULER);
 
-	// Initialize debug facilities
-	marcel_debug_init();
 	marcel_parse_cmdline_lastly(argc, argv);
 
 #ifdef CONFIG_PUK_PUKABI

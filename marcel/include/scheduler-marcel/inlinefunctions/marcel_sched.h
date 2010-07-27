@@ -92,7 +92,7 @@ ma_cpuset_to_hwloc(marcel_vpset_t *mset, hwloc_cpuset_t lset)
 	 * and it's smaller or equal-size than hwloc's unsigned long mask,
 	 * use 1 of the latter
 	 */
-	hwloc_cpuset_from_ith_ulong(lset, 0, mset);
+	hwloc_cpuset_from_ith_ulong(lset, 0, *mset);
 #endif
 }
 

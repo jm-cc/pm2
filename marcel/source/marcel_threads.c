@@ -79,17 +79,6 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	 * whether it is an interesting thread or not */
 	t->flags = attr->flags;
 
-	if (t == __main_thread) {
-		t->number = 0;
-	} else if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
-		marcel_one_more_task(t);
-	} else {
-		/* TODO: per_lwp ? */
-		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
-		t->number = ma_atomic_dec_return(&norun_pid);
-	}
-	PROF_EVENT2_ALWAYS(set_thread_number, t, t->number);
-
 	/* Free within schedule_tail */
 	t->preempt_count = MA_PREEMPT_OFFSET | MA_SOFTIRQ_OFFSET;
 	t->not_preemptible = attr->not_preemptible;
@@ -123,7 +112,7 @@ static __inline__ void init_marcel_thread(marcel_t t,
 	strncpy((t->as_entity).name, attr->name, MARCEL_MAXNAMESIZE);
 	t->id = attr->id;
 	PROF_EVENT2(set_thread_id, t, t->id);
-	//t->number above
+	//t->number below
 
 	//t->softirq_pending_in_hardirq = 0;
 
@@ -227,6 +216,17 @@ static __inline__ void init_marcel_thread(marcel_t t,
 #if defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	*((marcel_t *) (ma_task_slot_top(t) - sizeof(void *))) = t;
 #endif
+
+	if (t == __main_thread) {
+		t->number = 0;
+	} else if (!(MA_TASK_NOT_COUNTED_IN_RUNNING(t))) {
+		marcel_one_more_task(t);
+	} else {
+		/* TODO: per_lwp ? */
+		static ma_atomic_t norun_pid = MA_ATOMIC_INIT(0);
+		t->number = ma_atomic_dec_return(&norun_pid);
+	}
+	PROF_EVENT2_ALWAYS(set_thread_number, t, t->number);
 
 	MARCEL_LOG_OUT();
 }

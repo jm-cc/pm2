@@ -14,13 +14,11 @@
 
 . ./mami.sh
 prog="next_touch"
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
+
 if [ ! -d /sys/devices/system/node/node1 ] ; then
     pm2_skip_test
 fi
-
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Address is located on node 0
-Address is located on node 0
-Address is located on node 1
-EOF
 

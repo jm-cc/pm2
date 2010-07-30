@@ -13,18 +13,12 @@
 # General Public License for more details.
 
 . ./mami.sh
-
 prog="next_touch_multiple"
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
+
 if [ ! -d /sys/devices/system/node/node2 ] ; then
     pm2_skip_test
 fi
-
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-Address is located on node $NB_NODES
-Address is located on node 1
-MaMI: The 3 pages are all on node #1
-Address is located on node 1
-Address is located on node 2
-MaMI: The 3 pages are all on node #2
-EOF
 

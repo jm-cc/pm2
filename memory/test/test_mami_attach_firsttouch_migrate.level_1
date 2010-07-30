@@ -13,16 +13,8 @@
 # General Public License for more details.
 
 . ./mami.sh
-
 prog="attach_firsttouch_migrate"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-... Testing user-allocated memory
-Memory not located on any node
-Memory located on node $LAST_NODE
-MaMI: The 10 pages are all on node #$LAST_NODE
-... Testing MaMI-allocated memory
-Memory located on node $NB_NODES
-Memory located on node $LAST_NODE
-MaMI: The 10 pages are all on node #$LAST_NODE
-EOF
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
 

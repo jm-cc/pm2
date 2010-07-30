@@ -14,10 +14,12 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int err, node;
@@ -35,21 +37,25 @@ int main(int argc, char * argv[]) {
   }
   else {
     ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
+    MAMI_CHECK_MALLOC(ptr);
     ptr2 = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+    MAMI_CHECK_MALLOC(ptr2);
 
     err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
-    if (err < 0) perror("mami_task_attach unexpectedly failed");
+    MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
     err = mami_task_attach(memory_manager, ptr2, 1000, self, &node);
-    if (err < 0) perror("mami_task_attach unexpectedly failed");
+    MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
 
-    mami_task_migrate_all(memory_manager, self, 1);
-    if (err < 0) perror("mami_migrate_all unexpectedly failed");
+    err = mami_task_migrate_all(memory_manager, self, 1);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_task_migrate_all");
 
-    mami_check_pages_location(memory_manager, ptr, 1000, 1);
-    mami_check_pages_location(memory_manager, ptr2, 1000, 1);
+    err = mami_check_pages_location(memory_manager, ptr, 1000, 1);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_check_pages_location");
+    err = mami_check_pages_location(memory_manager, ptr2, 1000, 1);
+    MAMI_CHECK_RETURN_VALUE(err, "mami_check_pages_location");
 
     err = mami_task_unattach_all(memory_manager, self);
-    if (err < 0) perror("mami_task_unattach_all unexpectedly failed");
+    MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach_all");
 
     mami_free(memory_manager, ptr);
     mami_free(memory_manager, ptr2);

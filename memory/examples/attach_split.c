@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int err, node;
@@ -28,19 +30,18 @@ int main(int argc, char * argv[]) {
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 10*getpagesize(), MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr);
   self = marcel_self();
 
   err = mami_task_attach(memory_manager, ptr, (2*getpagesize())-10, self, &node);
-  if (err < 0) perror("mami_attach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
 
   err = mami_task_unattach(memory_manager, ptr, self);
-  if (err < 0) perror("mami_unattach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach");
 
   mami_free(memory_manager, ptr);
-  mami_exit(&memory_manager);
-  marcel_printf("Success\n");
 
-  // Finish marcel
+  mami_exit(&memory_manager);
   marcel_end();
   return 0;
 }

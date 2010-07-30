@@ -14,47 +14,11 @@
 
 . ./mami.sh
 prog="attach_distribute"
+args="--no-print"
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
+
 if [ ! -d /sys/devices/system/node/node2 ] ; then
     pm2_skip_test
 fi
-
-args="--no-print"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-... Allocating memory on first touch node
-Stats are correct
-... Attaching current thread to memory area
-Stats are correct
-... Moving memory area to node #0
-Stats are correct
-... Distributing pages with a round-robin policy
-Stats are correct
-... Distributing pages evenly on nodes #0 and #1
-Stats are correct
-... Unattaching current thread from memory area
-Stats are correct
-... Re-attaching current thread to memory area
-Stats are correct
-... Gathering memory area to node #2
-Stats are correct
-... Unattaching current thread from memory area
-Stats are correct
-... Allocating memory on node #1
-Stats are correct
-... Attaching current thread to memory area
-Stats are correct
-... Moving memory area to node #0
-Stats are correct
-... Distributing pages with a round-robin policy
-Stats are correct
-... Distributing pages evenly on nodes #0 and #1
-Stats are correct
-... Unattaching current thread from memory area
-Stats are correct
-... Re-attaching current thread to memory area
-Stats are correct
-... Gathering memory area to node #2
-Stats are correct
-... Unattaching current thread from memory area
-Stats are correct
-EOF
-

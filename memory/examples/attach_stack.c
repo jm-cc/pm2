@@ -14,10 +14,12 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
 
 static any_t stack(any_t arg);
 static mami_manager_t *memory_manager;
@@ -25,6 +27,7 @@ static mami_manager_t *memory_manager;
 int main(int argc, char * argv[]) {
   marcel_t thread;
   marcel_attr_t attr;
+  any_t status;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
@@ -32,7 +35,8 @@ int main(int argc, char * argv[]) {
 
   marcel_attr_settopo_level_on_node(&attr, 0);
   marcel_create(&thread, &attr, stack, NULL);
-  marcel_join(thread, NULL);
+  marcel_join(thread, &status);
+  if (status == ALL_IS_NOT_OK) return 1;
 
   // Finish marcel
   mami_exit(&memory_manager);
@@ -47,24 +51,24 @@ static any_t stack(any_t arg) {
 
   size=getpagesize()*10;
   err = mami_task_attach(memory_manager, ptr, size, marcel_self(), &node);
-  if (err < 0) perror("mami_task_attach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE_THREAD(err, "mami_task_attach");
 
   err = mami_locate(memory_manager, ptr, size, &node);
-  if (err < 0) perror("mami_locate unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE_THREAD(err, "mami_locate");
 
   if (node != MAMI_MULTIPLE_LOCATION_NODE) {
     err = mami_check_pages_location(memory_manager, ptr, size, node);
-    if (err < 0) perror("mami_check_pages_location unexpectedly failed");
+    MAMI_CHECK_RETURN_VALUE_THREAD(err, "mami_check_pages_location");
   }
 
   mami_unset_kernel_migration(memory_manager);
   err = mami_migrate_on_next_touch(memory_manager, ptr);
-  if (err < 0) perror("mami_migrate_on_next_touch unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE_THREAD(err, "mami_migrate_on_next_touch");
 
   for(i=0 ; i<10000 ; i++) ptr[i] = 12;
 
   err = mami_locate(memory_manager, ptr, size, &node);
-  if (err < 0) perror("mami_locate unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE_THREAD(err, "mami_locate");
   marcel_fprintf(stderr, "Memory located on node %d\n", node);
 
   err = mami_check_pages_location(memory_manager, ptr, size, node);

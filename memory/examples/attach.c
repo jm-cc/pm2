@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int err, node;
@@ -30,22 +32,24 @@ int main(int argc, char * argv[]) {
   self = marcel_self();
 
   err = mami_task_attach(memory_manager, ptr, 100, self, &node);
-  if (err < 0) perror("mami_task_attach successfully failed");
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "mami_task_attach");
 
   ptr = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  MAMI_CHECK_MALLOC(ptr);
   ptr2 = mami_malloc(memory_manager, 1000, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
+  MAMI_CHECK_MALLOC(ptr2);
 
   err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
-  if (err < 0) perror("mami_task_attach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
   err = mami_task_unattach(memory_manager, ptr, self);
-  if (err < 0) perror("mami_task_unattach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach");
 
   err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
-  if (err < 0) perror("mami_task_attach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
   err = mami_task_attach(memory_manager, ptr2, 1000, self, &node);
-  if (err < 0) perror("mami_task_attach unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
   err = mami_task_unattach_all(memory_manager, self);
-  if (err < 0) perror("mami_task_unattach_all unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach_all");
 
   mami_free(memory_manager, ptr);
   mami_free(memory_manager, ptr2);

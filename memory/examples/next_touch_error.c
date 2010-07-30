@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
@@ -29,12 +31,7 @@ int main(int argc, char * argv[]) {
   b = malloc(100);
   mami_unset_kernel_migration(memory_manager);
   err = mami_migrate_on_next_touch(memory_manager, b);
-  if (err < 0) {
-    perror("mami_migrate_on_next_touch");
-  }
-  else {
-    printf("mami_migrate_on_next_touch should have failed\n");
-  }
+  MAMI_CHECK_RETURN_VALUE_IS(err, EINVAL, "mami_migrate_on_next_touch");
 
   mami_exit(&memory_manager);
   common_exit(NULL);

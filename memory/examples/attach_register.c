@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int err, node;
@@ -30,13 +32,13 @@ int main(int argc, char * argv[]) {
   ptr = malloc(1000);
   self = marcel_self();
   err = mami_task_attach(memory_manager, ptr, 1000, self, &node);
-  marcel_printf("mami_task_attach with unregistered memory: %d\n", err);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_attach");
 
   err = mami_task_unattach(memory_manager, ptr, self);
-  marcel_printf("mami_task_unattach: %d\n", err);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach");
 
   err = mami_unregister(memory_manager, ptr);
-  marcel_printf("mami_task_unregister: %d\n", err);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_unregister");
 
   mami_exit(&memory_manager);
 

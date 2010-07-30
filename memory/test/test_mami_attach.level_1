@@ -14,7 +14,7 @@
 
 . ./mami.sh
 prog="attach"
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-mami_task_attach successfully failed: Invalid argument
-EOF
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
 

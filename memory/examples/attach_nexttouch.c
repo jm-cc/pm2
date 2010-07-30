@@ -14,29 +14,34 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
 
 #if defined(MM_MAMI_ENABLED)
 
-void stats(char *msg, void *ptr);
+#include <mm_mami.h>
+#include "helper.h"
+
+int stats(char *msg, void *ptr, long stat);
 
 int main(int argc, char * argv[]) {
   mami_manager_t *memory_manager;
-  int *ptr;
+  int *ptr, err;
 
   marcel_init(&argc,argv);
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 0);
-  stats("[after malloc]", ptr);
+  MAMI_CHECK_MALLOC(ptr);
+  stats("[after malloc]", ptr, 0);
 
-  mami_attach_on_next_touch(memory_manager, ptr);
-  stats("[after attach_on_next_touch]", ptr);
+  err = mami_attach_on_next_touch(memory_manager, ptr);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_attach_on_next_touch");
+  stats("[after attach_on_next_touch]", ptr, 0);
   ptr[0] = 42;
-  stats("[after touching]", ptr);
+  stats("[after touching]", ptr, 4096);
 
-  mami_task_unattach(memory_manager, ptr, marcel_self());
-  stats("[after unattach]", ptr);
+  err = mami_task_unattach(memory_manager, ptr, marcel_self());
+  MAMI_CHECK_RETURN_VALUE(err, "mami_task_unattach");
+  stats("[after unattach]", ptr, 0);
 
   mami_free(memory_manager, ptr);
   mami_exit(&memory_manager);
@@ -46,11 +51,20 @@ int main(int argc, char * argv[]) {
   return 0;
 }
 
-void stats(char *msg, void *ptr) {
+int stats(char *msg, void *ptr, long stat) {
   marcel_entity_t *entity;
   int err, node;
+  long* stats;
 
-  marcel_printf("%s stats=%ld\n", msg, ((long *) marcel_task_stats_get (marcel_self(), MEMNODE))[0]);
+  stats = (long *) marcel_task_stats_get (marcel_self(), MEMNODE);
+  if (stats[0] != stat) {
+    fprintf(stderr, "%s Value %ld != Expected value %ld\n", msg, stats[0], stat);
+    return 1;
+  }
+  else {
+    fprintf(stderr, "%s Value %ld == Expected value %ld\n", msg, stats[0], stat);
+    return 0;
+  }
 }
 
 #else

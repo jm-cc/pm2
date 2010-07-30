@@ -17,8 +17,8 @@
 
 #if defined(MM_MAMI_ENABLED)
 
-#include "mm_mami.h"
-#include "mm_mami_private.h"
+#include <mm_mami.h>
+#include <mm_mami_private.h>
 #include "helper.h"
 
 int main(int argc, char * argv[]) {

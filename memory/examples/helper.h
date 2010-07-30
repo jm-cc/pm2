@@ -13,7 +13,16 @@
  * General Public License for more details.
  */
 
+any_t ALL_IS_OK = (any_t)123456789L;
+any_t ALL_IS_NOT_OK = (any_t)987654321L;
+
 #define MAMI_CHECK_MALLOC(ptr) {if (!ptr) { fprintf(stderr, "mami_malloc failed\n"); return 1; }}
+#define MAMI_CHECK_MALLOC_HAS_FAILED(ptr) {if (ptr) { fprintf(stderr, "mami_malloc should have failed\n"); return 1; }}
 #define MAMI_CHECK_RETURN_VALUE(err, message) {if (err < 0) { perror(message); return 1; }}
 #define MAMI_CHECK_RETURN_VALUE_IS(err, value, message) {if (err >= 0 || errno != value) { perror(message); return 1; }}
+
+#define MAMI_CHECK_MALLOC_THREAD(ptr) {if (!ptr) { fprintf(stderr, "mami_malloc failed\n"); return ALL_IS_NOT_OK; }}
+#define MAMI_CHECK_MALLOC_HAS_FAILED_THREAD(ptr) {if (ptr) { fprintf(stderr, "mami_malloc should have failed\n"); return ALL_IS_NOT_OK; }}
+#define MAMI_CHECK_RETURN_VALUE_THREAD(err, message) {if (err < 0) { perror(message); return ALL_IS_NOT_OK; }}
+#define MAMI_CHECK_RETURN_VALUE_IS_THREAD(err, value, message) {if (err >= 0 || errno != value) { perror(message); return ALL_IS_NOT_OK; }}
 

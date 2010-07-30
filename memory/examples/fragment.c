@@ -14,43 +14,43 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
+
 int main(int argc, char * argv[]) {
   size_t bigsize;
-  int *ptr, *ptr2;
+  int *ptr, *ptr2, ret;
   mami_manager_t *memory_manager;
 
   common_init(&argc, argv, NULL);
   mami_init(&memory_manager, argc, argv);
 
-  mami_membind(memory_manager, MAMI_MEMBIND_POLICY_HUGE_PAGES, 0);
+  ret = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_HUGE_PAGES, 0);
+  MAMI_CHECK_RETURN_VALUE(ret, "mami_membind");
   if (memory_manager->huge_page_free[0] == 0) {
-    printf("No huge page available.\n");
+    fprintf(stderr, "No huge page available.\n");
   }
   else {
     bigsize = memory_manager->huge_page_free[0] * memory_manager->huge_page_size;
 
     ptr = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    MAMI_CHECK_MALLOC(ptr);
     ptr2 = mami_malloc(memory_manager, bigsize/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-    if (ptr && ptr2) {
-      printf("Success\n");
-      mami_free(memory_manager, ptr);
-      mami_free(memory_manager, ptr2);
-      ptr2 = mami_malloc(memory_manager, bigsize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-      if (!ptr2) perror("mami_malloc unexpectedly failed");
-      mami_free(memory_manager, ptr2);
-    }
-    else {
-      printf("Failure. Could not allocated with huge pages.\n");
-    }
+    MAMI_CHECK_MALLOC(ptr2);
+
+    mami_free(memory_manager, ptr);
+    mami_free(memory_manager, ptr2);
+
+    ptr2 = mami_malloc(memory_manager, bigsize, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+    MAMI_CHECK_MALLOC(ptr2);
+    mami_free(memory_manager, ptr2);
   }
 
   mami_exit(&memory_manager);
-
   common_exit(NULL);
   return 0;
 }

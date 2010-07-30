@@ -14,13 +14,15 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
 
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
+
 int main(int argc, char * argv[]) {
-  int node, least_loaded_node, maxnode;
+  int err, node, least_loaded_node, maxnode;
   void *ptr, *ptr2, *ptr3, *ptr4;
   mami_manager_t *memory_manager;
 
@@ -28,35 +30,51 @@ int main(int argc, char * argv[]) {
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  mami_locate(memory_manager, ptr, 100, &node);
+  MAMI_CHECK_MALLOC(ptr);
+  err = mami_locate(memory_manager, ptr, 100, &node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+
   if (node == th_mami_current_node()) {
-    printf("Memory allocated on current node\n");
+    fprintf(stderr, "Memory allocated on current node\n");
   }
   else {
-    printf("Error. Memory NOT allocated on current node (%d != %d)\n", node, th_mami_current_node());
+    fprintf(stderr, "Error. Memory NOT allocated on current node (%d != %d)\n", node, th_mami_current_node());
+    return 1;
   }
 
   maxnode = memory_manager->nb_nodes-1;
-  mami_membind(memory_manager, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, maxnode);
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, maxnode);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_membind");
   ptr2 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  mami_locate(memory_manager, ptr2, 100, &node);
+  MAMI_CHECK_MALLOC(ptr2);
+  err = mami_locate(memory_manager, ptr2, 100, &node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+
   if (node == maxnode) {
-    printf("Memory allocated on given node\n");
+    fprintf(stderr, "Memory allocated on given node\n");
   }
   else {
-    printf("Error. Memory NOT allocated on given node (%d != %d)\n", node, maxnode);
+    fprintf(stderr, "Error. Memory NOT allocated on given node (%d != %d)\n", node, maxnode);
+    return 1;
   }
 
   ptr3 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_SPECIFIC_NODE, 1);
-  mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &least_loaded_node);
-  mami_membind(memory_manager, MAMI_MEMBIND_POLICY_LEAST_LOADED_NODE, 0);
+  MAMI_CHECK_MALLOC(ptr3);
+  err = mami_select_node(memory_manager, MAMI_LEAST_LOADED_NODE, &least_loaded_node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_select_node");
+  err = mami_membind(memory_manager, MAMI_MEMBIND_POLICY_LEAST_LOADED_NODE, 0);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_membind");
   ptr4 = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
-  mami_locate(memory_manager, ptr4, 100, &node);
+  MAMI_CHECK_MALLOC(ptr4);
+  err = mami_locate(memory_manager, ptr4, 100, &node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+
   if (node == least_loaded_node) {
-    printf("Memory allocated on least loaded node\n");
+    fprintf(stderr, "Memory allocated on least loaded node\n");
   }
   else {
-    printf("Error. Memory NOT allocated on least loaded node (%d != %d)\n", node, least_loaded_node);
+    fprintf(stderr, "Error. Memory NOT allocated on least loaded node (%d != %d)\n", node, least_loaded_node);
+    return 1;
   }
 
   mami_free(memory_manager, ptr);

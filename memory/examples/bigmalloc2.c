@@ -14,10 +14,12 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   void *ptr;
@@ -28,9 +30,9 @@ int main(int argc, char * argv[]) {
 
   ptr = mami_malloc(memory_manager, memory_manager->initially_preallocated_pages*getpagesize(),
                     MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr);
   mami_free(memory_manager, ptr);
 
-  printf("Success\n");
   mami_exit(&memory_manager);
   common_exit(NULL);
   return 0;

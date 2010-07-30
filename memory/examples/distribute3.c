@@ -14,12 +14,14 @@
  */
 
 #include <stdio.h>
-#include <sys/mman.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
-#include "mm_helper.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <sys/mman.h>
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include <mm_helper.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   int node, *nodes;
@@ -34,24 +36,28 @@ int main(int argc, char * argv[]) {
   ptr = mmap(NULL, 50000, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
   for(i=0 ; i<memory_manager->nb_nodes ; i++) nodemask += (1<<i);
   err = _mm_mbind(ptr, 50000, MPOL_INTERLEAVE, &nodemask, memory_manager->nb_nodes+2, MPOL_MF_MOVE|MPOL_MF_STRICT);
-  if (err < 0) perror("_mm_mbind unexpectedly failed");
+  MAMI_CHECK_RETURN_VALUE(err, "_mm_mbind");
   memset(ptr, 0, 50000);
 
-  mami_register(memory_manager, ptr, 50000);
+  err = mami_register(memory_manager, ptr, 50000);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_register");
 
   nodes = malloc(sizeof(int) * memory_manager->nb_nodes);
   for(i=0 ; i<memory_manager->nb_nodes ; i++) nodes[i] = i;
   err = mami_distribute(memory_manager, ptr, nodes, memory_manager->nb_nodes);
-  if (err < 0) perror("mami_distribute unexpectedly failed");
-  else {
-    mami_migrate_on_node(memory_manager, ptr, 1);
-    mami_locate(memory_manager, ptr, 50000, &node);
-    if (node == 1)
-      fprintf(stderr, "Node is %d as expected\n", node);
-    else
+  MAMI_CHECK_RETURN_VALUE(err, "mami_distribute");
+
+  err = mami_migrate_on_node(memory_manager, ptr, 1);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_migrate_on_node");
+  err = mami_locate(memory_manager, ptr, 50000, &node);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_locate");
+
+  if (node != 1) {
       fprintf(stderr, "Node is NOT 1 as expected but %d\n", node);
-    mami_check_pages_location(memory_manager, ptr, 50000, 1);
+      return 1;
   }
+  err = mami_check_pages_location(memory_manager, ptr, 50000, 1);
+  MAMI_CHECK_RETURN_VALUE(err, "mami_check_pages_location");
 
   free(nodes);
   mami_unregister(memory_manager, ptr);

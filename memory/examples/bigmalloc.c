@@ -14,10 +14,12 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-#include "mm_mami_private.h"
 
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include <mm_mami_private.h>
+#include "helper.h"
 
 int main(int argc, char * argv[]) {
   void *ptr1, *ptr2, *ptr3, *ptr4, *ptr5;
@@ -29,10 +31,15 @@ int main(int argc, char * argv[]) {
 
   size = memory_manager->initially_preallocated_pages * getpagesize();
   ptr1 = mami_malloc(memory_manager, size+1, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr1);
   ptr2 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr2);
   ptr3 = mami_malloc(memory_manager, size/2, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr3);
   ptr4 = mami_malloc(memory_manager, 4, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr4);
   ptr5 = mami_malloc(memory_manager, size, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr5);
 
   mami_free(memory_manager, ptr1);
   mami_free(memory_manager, ptr2);
@@ -41,8 +48,6 @@ int main(int argc, char * argv[]) {
   mami_free(memory_manager, ptr5);
 
   mami_exit(&memory_manager);
-
-  printf("Success\n");
   common_exit(NULL);
   return 0;
 }

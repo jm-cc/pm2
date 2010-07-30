@@ -14,14 +14,10 @@
 
 . ./mami.sh
 prog="distribute"
+check_all_lines=0
+rm -f /tmp/pm2test_"${USER}"_expected
+touch /tmp/pm2test_"${USER}"_expected
+
 if [ ! -d /sys/devices/system/node/node1 ] ; then
     pm2_skip_test
 fi
-
-cat > /tmp/pm2test_"${USER}"_expected <<EOF
-mami_distribute successfully failed: Invalid argument
-Node is 1 as expected
-Node is <MAMI_MULTIPLE_LOCATION_NODE> as expected
-Node is 0 as expected
-MaMI: The 13 pages are all on node #0
-EOF

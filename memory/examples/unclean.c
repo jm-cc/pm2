@@ -14,9 +14,11 @@
  */
 
 #include <stdio.h>
-#include "mm_mami.h"
-
 #if defined(MM_MAMI_ENABLED)
+
+#include <mm_mami.h>
+#include "helper.h"
+
 
 int main(int argc, char * argv[]) {
   void *ptr;
@@ -26,6 +28,7 @@ int main(int argc, char * argv[]) {
   mami_init(&memory_manager, argc, argv);
 
   ptr = mami_malloc(memory_manager, 100, MAMI_MEMBIND_POLICY_DEFAULT, 0);
+  MAMI_CHECK_MALLOC(ptr);
   mami_exit(&memory_manager);
 
   common_exit(NULL);

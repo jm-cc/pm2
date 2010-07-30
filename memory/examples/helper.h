@@ -13,8 +13,8 @@
  * General Public License for more details.
  */
 
-any_t ALL_IS_OK = (any_t)123456789L;
-any_t ALL_IS_NOT_OK = (any_t)987654321L;
+void *ALL_IS_OK = (void *)123456789L;
+void *ALL_IS_NOT_OK = (void *)987654321L;
 
 #define MAMI_CHECK_MALLOC(ptr) {if (!ptr) { fprintf(stderr, "mami_malloc failed\n"); return 1; }}
 #define MAMI_CHECK_MALLOC_HAS_FAILED(ptr) {if (ptr) { fprintf(stderr, "mami_malloc should have failed\n"); return 1; }}

@@ -262,23 +262,27 @@ registering_flavors() {
 	--puk=disable_fd_virtualization
 
     register_flavor forestgomp \
-	--modules="marcel tbx init puk" --all=opt --all=build_dynamic \
+	--modules="marcel puk tbx init" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
-	--marcel=enable_keys \
-	--marcel=enable_stats --marcel=maintainer_mode \
-	--marcel=standard_main \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_stats  --marcel=bug_on \
+	--marcel=standard_main --marcel=maintainer_mode \
         --init=topology \
 	--puk=enable_pukabi \
 	--puk=disable_fd_virtualization
 
     register_flavor forestgomp-mami \
-	--modules="marcel tbx init puk memory" --all=opt --all=build_dynamic \
+	--modules="marcel puk tbx init memory" --all=opt --all=build_dynamic \
 	--marcel=numa --marcel=bubbles \
 	--marcel=pmarcel --marcel=pthread \
-	--marcel=enable_keys \
-	--marcel=enable_stats --marcel=maintainer_mode \
-	--marcel=standard_main \
+	--marcel=enable_keys --marcel=enable_atexit \
+	--marcel=enable_once --marcel=enable_cleanup \
+	--marcel=enable_deviation --marcel=enable_signals \
+	--marcel=enable_stats  --marcel=bug_on \
+	--marcel=standard_main --marcel=maintainer_mode \
         --memory=enable_mami --marcel=enable_mami \
         --init=topology \
 	--puk=enable_pukabi \

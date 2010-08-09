@@ -20,6 +20,8 @@
 #include "bubblelib_output.h"
 #include "tbx_fast_list.h"
 
+#include <stdint.h>
+
 /*******************************************************************************
  * Parameters
  */

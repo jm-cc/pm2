@@ -943,7 +943,7 @@ void marcel_bubble_join(marcel_bubble_t * bubble)
 	    && h->type == MA_BUBBLE_HOLDER && h != &bubble->as_holder)
 		marcel_bubble_removeentity(ma_bubble_holder(h), &bubble->as_entity);
 	ma_top_del_bubble(bubble);
-	PROF_EVENT1(bubble_sched_join, b);
+	PROF_EVENT1(bubble_sched_join, bubble);
 
 	MARCEL_LOG_OUT();
 }
@@ -985,7 +985,7 @@ void marcel_sched_exit(marcel_t t)
 		}
 		marcel_bubble_join(b);
 		ma_top_del_bubble(b);
-		PROF_EVENT1(bubble_sched_join, bubble);
+		PROF_EVENT1(bubble_sched_join, b);
 	}
 }
 

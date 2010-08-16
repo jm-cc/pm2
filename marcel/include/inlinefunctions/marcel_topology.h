@@ -30,7 +30,7 @@ static __tbx_inline__ void marcel_vpset_zero(marcel_vpset_t * set)
 }
 
 #define PMARCEL_CPU_ZERO(cpusetp) marcel_vpset_zero(cpusetp)
-#define PMARCEL_CPU_ZERO_S(setsize, cpusetp) ({ MA_BUG_ON(setsize > PMARCEL_CPU_ZEROSIZE); PMARCEL_CPU_ZERO(cpusetp); })
+#define PMARCEL_CPU_ZERO_S(setsize, cpusetp) ({ MA_BUG_ON((setsize) != PMARCEL_CPU_SETSIZE); PMARCEL_CPU_ZERO(cpusetp); })
 
 static __tbx_inline__ void marcel_vpset_fill(marcel_vpset_t * set)
 {

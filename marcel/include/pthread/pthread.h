@@ -559,15 +559,15 @@ extern "C++" {
 #undef CPU_COUNT
 #define CPU_COUNT(cpu) PMARCEL_CPU_COUNT(cpu)
 #undef CPU_SET_S
-#define CPU_SET_S(cpu, cpusetp) PMARCEL_CPU_SET_S(cpu, cpusetp)
+#define CPU_SET_S(cpu, setsize, cpusetp) PMARCEL_CPU_SET_S(cpu, setsize, cpusetp)
 #undef CPU_CLR_S
-#define CPU_CLR_S(cpu, cpusetp) PMARCEL_CPU_CLR_S(cpu, cpusetp)
+#define CPU_CLR_S(cpu, setsize, cpusetp) PMARCEL_CPU_CLR_S(cpu, setsize, cpusetp)
 #undef CPU_ISSET_S
-#define CPU_ISSET_S(cpu, cpusetp) PMARCEL_CPU_ISSET_S(cpu, cpusetp)
+#define CPU_ISSET_S(cpu, setsize, cpusetp) PMARCEL_CPU_ISSET_S(cpu, setsize, cpusetp)
 #undef CPU_ZERO_S
-#define CPU_ZERO_S(cpu) PMARCEL_CPU_ZERO_S(cpu)
+#define CPU_ZERO_S(cpu, setsize, cpusetp) PMARCEL_CPU_ZERO_S(cpu, setsize, cpusetp)
 #undef CPU_COUNT_S
-#define CPU_COUNT_S(cpu) PMARCEL_CPU_COUNT_S(cpu)
+#define CPU_COUNT_S(setsize, cpu) PMARCEL_CPU_COUNT_S(setsize, cpu)
 
 #if defined(__cplusplus)
 #undef pthread_once

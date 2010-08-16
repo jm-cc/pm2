@@ -565,7 +565,7 @@ extern "C++" {
 #undef CPU_ISSET_S
 #define CPU_ISSET_S(cpu, setsize, cpusetp) PMARCEL_CPU_ISSET_S(cpu, setsize, cpusetp)
 #undef CPU_ZERO_S
-#define CPU_ZERO_S(cpu, setsize, cpusetp) PMARCEL_CPU_ZERO_S(cpu, setsize, cpusetp)
+#define CPU_ZERO_S(setsize, cpusetp) PMARCEL_CPU_ZERO_S(setsize, cpusetp)
 #undef CPU_COUNT_S
 #define CPU_COUNT_S(setsize, cpu) PMARCEL_CPU_COUNT_S(setsize, cpu)
 

@@ -1595,6 +1595,8 @@ DEF_MARCEL_PMARCEL(int,sigpause,(int sig),(sig),
 
 #ifdef MA__LIBPTHREAD
 versioned_symbol(libpthread, pmarcel_sigpause, sigpause, GLIBC_2_0);
+versioned_symbol(libpthread, pmarcel_sigpause, __sigpause, GLIBC_2_0);
+versioned_symbol(libpthread, pmarcel_sigpause, __xpg_sigpause, GLIBC_2_2);
 #endif
 
 #ifndef OSF_SYS

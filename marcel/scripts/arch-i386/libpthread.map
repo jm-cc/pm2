@@ -188,6 +188,8 @@ MARCEL {
     __pthread_mutex_timedlock;
 
     __res_state;
+
+    __xpg_sigpause
   } GLIBC_2.1.2;
 
   GLIBC_2.2.3 {

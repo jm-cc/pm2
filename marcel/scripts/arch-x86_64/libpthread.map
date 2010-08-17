@@ -186,6 +186,8 @@ MARCEL {
 
     __res_state;
 
+    __xpg_sigpause
+
 # GLIBC_2.2.3 {
 # global:
     # Extensions.

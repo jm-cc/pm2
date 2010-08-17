@@ -185,6 +185,8 @@ MARCEL {
     __pthread_mutex_timedlock;
 
     __res_state;
+
+    __xpg_sigpause
   local:
     *;
   };

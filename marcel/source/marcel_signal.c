@@ -34,7 +34,7 @@
  *
  * - Kernel or other processes to our process.  marcel_pidkill() handles the
  *   signal by just setting ksiginfo and raising the MA_SIGNAL_SOFTIRQ.  The
- *   softirq handler can then handle it less expectedly later: choose a thread
+ *   softirq handler can then handle it less unexpectedly later: choose a thread
  *   that doesn't block it (marcel_sigtransfer), and deviate it into running
  *   marcel_deliver_sig.
  * - kernel to an LWP (SIGSEGV for instance).  This actually is directed to the

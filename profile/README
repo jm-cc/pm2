@@ -1,1 +1,2 @@
-If your FxT is not installed to /usr or /usr/local, please define FXT_PREFIX to the place where you installed it.
+If your FxT is not installed to /usr or /usr/local, please define
+PKG_CONFIG_PATH to the place where fxt.pc resides.

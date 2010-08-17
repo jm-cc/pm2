@@ -47,16 +47,14 @@ MODULE=profile
 TYPE=pm2
 SEARCHDIR=./
 
-# TODO : trouver FXT_ROOT tout seul...
-export FXT_PREFIX=${FXT_PREFIX:-/usr/local}
-export FXT_ROOT=${FXT_PREFIX:+$FXT_PREFIX/include/fxt}
+export FXT_ROOT=@FXT_PREFIX@/include/fxt
 
 if [ ! -f "$FXT_ROOT/fxt.h" ]
 then
     echo "FxT's \`$FXT_ROOT/fxt.h' doesn't exist." >&2
     echo "" >&2
-    echo "Please make sure the \`FXT_PREFIX' environment variable points to FxT's" >&2
-    echo "installation directory." >&2
+    echo "Please make sure the \`PKG_CONFIG_PATH' environment variable points to FxT's" >&2
+    echo "fxt.pc." >&2
     exit 1
 fi
 

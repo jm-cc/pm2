@@ -21,7 +21,11 @@ AC_DEFUN([PM2_PROFILE_DEPENDENCIES], [
   save_LDFLAGS="$LDFLAGS"
 
   # Starting from 2009-06-24, FxT's CVS has a `pkg-config' file.
-  PKG_CHECK_MODULES([FXT], [fxt], [HAVE_FXT="yes"], [HAVE_FXT="no"])
+  PKG_CHECK_MODULES([FXT], [fxt], [
+    HAVE_FXT="yes"
+    _PKG_CONFIG([FXT_PREFIX], [variable=prefix], fxt)
+    FXT_PREFIX="$pkg_cv_FXT_PREFIX"
+  ], [HAVE_FXT="no"])
 
   AC_ARG_WITH([ming-prefix],
     [AS_HELP_STRING([--with-ming-prefix=DIRECTORY],
@@ -39,6 +43,7 @@ AC_DEFUN([PM2_PROFILE_DEPENDENCIES], [
   fi
 
   AC_SUBST([HAVE_FXT])
+  AC_SUBST([FXT_PREFIX])
 
   AC_SUBST([HAVE_MING])
   AC_SUBST([MING_CPPFLAGS])

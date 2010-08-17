@@ -1580,23 +1580,37 @@ versioned_symbol(libpthread, pmarcel_sigignore, sigignore, GLIBC_2_1);
 #endif
 #endif
 
-DEF_MARCEL_PMARCEL(int,sigpause,(int sig),(sig),
+static int marcel___sigpause(int sig_or_mask, int is_sig)
 {
 	MARCEL_LOG_IN();
 	marcel_sigset_t set;
-	marcel_sigemptyset(&set);
-	marcel_sigaddset(&set,sig);
+	if (is_sig) {
+		marcel_sigemptyset(&set);
+		marcel_sigaddset(&set,sig_or_mask);
+	} else {
+		set = sig_or_mask;
+	}
 	int ret = marcel_sigsuspend(&set);
 	if (ret != -1)
 		MARCEL_LOG("(p)marcel_sigpause : marcel_sigsuspend ne retourne pas -1\n");
 	errno = EINTR;
 	MARCEL_LOG_RETURN(-1);
+}
+
+DEF_MARCEL_PMARCEL(int,sigpause,(int mask),(mask),
+{
+	return marcel___sigpause(mask, 0);
+})
+
+DEF_MARCEL_PMARCEL(int,xpg_sigpause,(int sig),(sig),
+{
+	return marcel___sigpause(sig, 1);
 })
 
 #ifdef MA__LIBPTHREAD
+versioned_symbol(libpthread, pmarcel___sigpause, __sigpause, GLIBC_2_0);
 versioned_symbol(libpthread, pmarcel_sigpause, sigpause, GLIBC_2_0);
-versioned_symbol(libpthread, pmarcel_sigpause, __sigpause, GLIBC_2_0);
-versioned_symbol(libpthread, pmarcel_sigpause, __xpg_sigpause, GLIBC_2_2);
+versioned_symbol(libpthread, pmarcel_xpg_sigpause, __xpg_sigpause, GLIBC_2_2);
 #endif
 
 #ifndef OSF_SYS

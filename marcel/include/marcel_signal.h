@@ -238,8 +238,11 @@ DEC_MARCEL(int, sigrelse, (int sig) __THROW);
 int pmarcel_sigignore(int sig);
 DEC_MARCEL(int, sigignore, (int sig) __THROW);
 
-int pmarcel_sigpause(int sig);
-DEC_MARCEL(int, sigpause, (int sig) __THROW);
+int pmarcel_sigpause(int mask);
+DEC_MARCEL(int, sigpause, (int mask) __THROW);
+
+int pmarcel_xpg_sigpause(int sig);
+DEC_MARCEL(int, xpg_sigpause, (int sig) __THROW);
 
 void (*pmarcel_sigset(int sig, void (*dispo) (int)));
 

@@ -215,6 +215,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 /* Note that libc always has versioned symbols, thus setting GLIBC_2_0 by
  * default (which is leveraged to the correct version automatically according
  * to the architecture) */
+/* To know the correct symbol version, check out objdump -T /lib/libc.so.6 on a 32bit x86 box */
 /* Define a strong alias name -> lpt_name */
 #ifdef MA__LIBPTHREAD
 #define DEF_LIBC_STRONG(rtype, name, proto, args)			\

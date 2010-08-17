@@ -276,7 +276,7 @@ registering_flavors() {
 
     register_flavor forestgomp-fxt \
 	--modules="marcel puk tbx init bubbles bubblelib fut2paje profile" --all=build_dynamic \
-	--marcel=opt --marcel=build_dynamic --marcel=numa \ 
+	--marcel=opt --marcel=build_dynamic --marcel=numa \
         --marcel=bubbles --marcel=pmarcel --marcel=pthread \
 	--marcel=enable_keys --marcel=enable_atexit --marcel=enable_once \
         --marcel=enable_cleanup --marcel=enable_deviation --marcel=enable_signals \

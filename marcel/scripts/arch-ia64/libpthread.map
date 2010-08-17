@@ -186,7 +186,7 @@ MARCEL {
 
     __res_state;
 
-    __xpg_sigpause
+    __xpg_sigpause;
   local:
     *;
   };

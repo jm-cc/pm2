@@ -32,6 +32,18 @@ TBX_NOINST marcel_t marcel_self()
 	return ma_self() ;
 }
 
+/** thread identity **/
+TBX_NOINST int marcel_thread_id(marcel_t thread)
+{
+	return thread->id;
+}
+
+/** thread identity **/
+TBX_NOINST int marcel_thread_number(marcel_t thread)
+{
+	return thread->number;
+}
+
 /** thread stackbase **/
 char *marcel_stackbase(marcel_t t)
 {

@@ -37,7 +37,7 @@
 
 #include "marcel.h"
 
-#define PROF_THREAD_ID()  (marcel_self()->number)
+#define PROF_THREAD_ID()  (marcel_thread_number(marcel_self()))
 
 #else // MARCEL
 

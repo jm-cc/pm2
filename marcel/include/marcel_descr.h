@@ -67,9 +67,10 @@ typedef struct _marcel_rwlock_info {
 
 /** Public functions **/
 /* ==== get current thread or LWP id ==== */
-/* To be preferred for accessing the current thread's identifier */
 char *marcel_stackbase(marcel_t pid);
 TBX_NOINST marcel_t marcel_self(void);
+TBX_NOINST int marcel_thread_id(marcel_t thread);
+TBX_NOINST int marcel_thread_number(marcel_t thread);
 
 
 #ifdef __MARCEL_KERNEL__

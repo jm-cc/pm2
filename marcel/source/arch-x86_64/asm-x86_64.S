@@ -76,10 +76,15 @@ __sigsetjmp:
         movq    (%rsp), %rdx
         movq    %rdx, 56(%rdi)
 
+#ifdef MARCEL_SIGNALS_ENABLED
 #ifdef __PIC__
         jmp     ma_savesigs@PLT
 #else
         jmp     ma_savesigs
+#endif
+#else
+        xorl    %eax, %eax
+	ret
 #endif
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)

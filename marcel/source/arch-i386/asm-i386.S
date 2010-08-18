@@ -61,10 +61,12 @@ ma_setjmp:
 setjmp:
         SAVE
         movl    4(%esp),%eax    // buffer
+#ifdef MARCEL_SIGNALS_ENABLED
         pushl   $1
         pushl   %eax
         call    ma_savesigs
         addl    $8, %esp
+#endif
         xorl    %eax, %eax
         ret
 
@@ -73,21 +75,27 @@ setjmp:
 _setjmp:
         SAVE
         movl    4(%esp),%eax    // buffer
+#ifdef MARCEL_SIGNALS_ENABLED
         pushl   $0
         pushl   %eax
         call    ma_savesigs
         addl    $8, %esp
+#endif
         xorl    %eax, %eax
         ret
 
         .globl __sigsetjmp
 __sigsetjmp:
         SAVE
-        xorl    %eax, %eax
+#ifdef MARCEL_SIGNALS_ENABLED
 #ifdef __PIC__
         jmp     ma_savesigs@PLT
 #else
         jmp     ma_savesigs
+#endif
+#else
+        xorl    %eax, %eax
+	ret
 #endif
 
 #if defined(LINUX_SYS) || defined(GNU_SYS)

@@ -1,6 +1,4 @@
 Depend: marcel_pmarcel
-Depend: marcel_signals
-Depend: marcel_deviation
 Depend: marcel_once
 Depend: marcel_keys
 Depend: pukabi

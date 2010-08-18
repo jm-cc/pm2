@@ -409,6 +409,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator)
 	if (allocator->policy == POLICY_LOCAL) {
 		ma_lwp_t lwp;
 		fprintf(stderr, "local\n");
+		ma_lwp_list_lock_read();
 		ma_for_all_lwp(lwp)
 		    fprintf(stderr, "%4d", ma_vpnum(lwp));
 		fprintf(stderr, "\n");
@@ -417,6 +418,7 @@ void ma_obj_allocator_print(ma_allocator_t * allocator)
 					    ma_per_lwp_self_data(allocator->
 								 container.offset))->
 			    nb_element);
+		ma_lwp_list_unlock_read();
 		fprintf(stderr, "\n");
 		return;
 	}

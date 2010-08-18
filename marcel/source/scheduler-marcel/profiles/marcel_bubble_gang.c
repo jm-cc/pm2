@@ -73,6 +73,7 @@ any_t marcel_gang_scheduler(any_t runqueue)
 		PROF_EVENT1(rq_unlock, work_rq);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
+		ma_lwp_list_lock_read();
 		ma_for_each_lwp_begin(lwp)
 		    if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq, ma_vpnum(lwp))) {
 			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
@@ -80,8 +81,8 @@ any_t marcel_gang_scheduler(any_t runqueue)
 			ma_resched_task(ma_per_lwp(current_thread, lwp), ma_vpnum(lwp),
 					lwp);
 			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
-		}
-		ma_for_each_lwp_end();
+		} ma_for_each_lwp_end();
+		ma_lwp_list_unlock_read();
 		PROF_EVENTSTR(sched_status, "gang scheduler: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE * marcel_gettimeslice() / 1000);
 	}
@@ -113,6 +114,7 @@ static any_t TBX_NORETURN marcel_gang_cleaner(any_t foo)
 		ma_holder_unlock_softirq(&ma_gang_rq.as_holder);
 		ma_lwp_t lwp;
 		/* And eventually preempt currently running thread */
+		ma_lwp_list_lock_read();
 		ma_for_each_lwp_begin(lwp)
 		    if (lwp != MA_LWP_SELF && ma_rq_covers(work_rq, ma_vpnum(lwp))) {
 			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
@@ -120,8 +122,8 @@ static any_t TBX_NORETURN marcel_gang_cleaner(any_t foo)
 			ma_resched_task(ma_per_lwp(current_thread, lwp), ma_vpnum(lwp),
 					lwp);
 			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
-		}
-		ma_for_each_lwp_end();
+		} ma_for_each_lwp_end();
+		ma_lwp_list_unlock_read();
 		PROF_EVENTSTR(sched_status, "gang cleaner: done");
 		marcel_delay(MARCEL_BUBBLE_TIMESLICE * marcel_gettimeslice() / 1000);
 	}

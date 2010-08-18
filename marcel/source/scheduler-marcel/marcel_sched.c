@@ -152,8 +152,10 @@ void TBX_EXTERN marcel_freeze_sched(void)
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
+		ma_lwp_list_lock_read();
 		ma_for_all_lwp(lwp)
 		    ma_holder_rawlock(&ma_lwp_rq(lwp)->as_holder);
+		ma_lwp_list_unlock_read();
 	}
 #endif
 	frozen_scheduler++;
@@ -166,8 +168,10 @@ void TBX_EXTERN marcel_unfreeze_sched(void)
 #ifdef MA__LWPS
 	{
 		ma_lwp_t lwp;
+		ma_lwp_list_lock_read();
 		ma_for_all_lwp(lwp)
 		    ma_holder_rawunlock(&ma_lwp_rq(lwp)->as_holder);
+		ma_lwp_list_unlock_read();
 	}
 #endif
 	ma_holder_unlock_softirq(&ma_main_runqueue.as_holder);

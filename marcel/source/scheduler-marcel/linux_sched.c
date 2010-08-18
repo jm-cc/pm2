@@ -165,6 +165,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 		return;
 
 	/* TODO: scalability concern */
+	ma_lwp_list_lock_read();
 	ma_for_all_lwp_from_begin(lwp, MA_LWP_SELF) {
 		i = ma_vpnum(lwp);
 		if (rq == ma_lwp_rq(lwp)) {
@@ -186,6 +187,7 @@ static void try_to_resched(marcel_task_t *p, ma_holder_t *h)
 			}
 		}
 	} ma_for_all_lwp_from_end();
+	ma_lwp_list_unlock_read();
 
 	if (chosen)
 		ma_resched_task(ma_per_lwp(current_thread, chosen), chosenvp, chosen);

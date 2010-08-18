@@ -480,6 +480,7 @@ static void update_lwps_blocked_signals(int wait TBX_UNUSED) {
 	/* Make sure no two LWPs run sem_V */
 	ma_atomic_inc(&nr_pending_blocked_signals_updates);
 	ma_preempt_disable();
+	ma_lwp_list_lock_read();
 	ma_for_all_lwp(lwp) {
 		if (lwp == MA_LWP_SELF)
 			ma_update_lwp_blocked_signals();
@@ -489,6 +490,7 @@ static void update_lwps_blocked_signals(int wait TBX_UNUSED) {
 			ma_raise_softirq_lwp(lwp, MA_SIGMASK_SOFTIRQ);
 		}
 	}
+	ma_lwp_list_unlock_read();
 	ma_preempt_enable();
 	if (ma_atomic_dec_return(&nr_pending_blocked_signals_updates))
 		marcel_sem_P(&blocked_signals_sem);

@@ -315,6 +315,7 @@ void marcel_show_top(void)
 		   (lastms / 1000 / 60) % 60, (lastms / 1000) % 60);
 
 	memset(&total_usage, 0, sizeof(total_usage));
+	ma_lwp_list_lock_read();
 	ma_for_all_lwp(lwp) {
 		// cette lecture n'est pas atomique, il peut y avoir un tick
 		// entre-temps, ce n'est pas extrêmement grave...
@@ -340,6 +341,7 @@ void marcel_show_top(void)
 			top_printf("\
 lwp %2d, %3llu%% user %3llu%% nice %3llu%% sirq %3llu%% irq %3llu%% idle %3llu%% disabled\r\n", ma_vpnum(lwp), lst.user * 100 / tot, lst.nice * 100 / tot, lst.softirq * 100 / tot, lst.irq * 100 / tot, lst.idle * 100 / tot, lst.disabled * 100 / tot);
 	}
+	ma_lwp_list_unlock_read();
 	total_total =
 	    total_usage.user + total_usage.nice + total_usage.softirq + total_usage.irq +
 	    total_usage.idle + total_usage.disabled;
@@ -440,6 +442,7 @@ void marcel_exit_top(void)
 	if (top_file >= 0)
 		ma_del_timer_sync(&timer);
 
+	ma_lwp_list_lock_read();
 	ma_for_all_lwp(lwp) {
 		struct ma_lwp_usage_stat lst;
 		lst = ma_per_lwp(lwp_usage, lwp);
@@ -449,6 +452,7 @@ void marcel_exit_top(void)
 		totlst.irq += lst.irq;
 		totlst.idle += lst.idle;
 	}
+	ma_lwp_list_unlock_read();
 	tot = totlst.user + totlst.nice + totlst.softirq + totlst.irq + totlst.idle;
 	if (tot) {
 		if (top_file >= 0) {

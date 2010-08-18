@@ -631,7 +631,6 @@ static void lwp_init(ma_lwp_t lwp)
 	/* On passe lwp_start_func() comme fonction, mais seul le LWP
 	 * 0 l'exécutera. Les autres LWP en SMP utiliseront ce thread
 	 * pour exécuter lwp_kthread_start_func().
-	 * En mode act-smp, ce thread sera aussi exécuté normalement.
 	 */
 	marcel_create_special(&(ma_per_lwp(run_task, lwp)), &attr, lwp_start_func, NULL);
 	ma_set_task_state((ma_per_lwp(run_task, lwp)), MA_TASK_RUNNING);

@@ -116,15 +116,15 @@ void ma_resched_vpset(const marcel_vpset_t *vpset)
 	ma_local_bh_disable();
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
-	if (lwp) {
-		marcel_t current = ma_per_lwp(current_thread, lwp);
-		ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
-		ma_set_tsk_need_togo(current);
-		ma_resched_task(current,vp,lwp);
-		ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
-	}
-	marcel_vpset_foreach_end()
-		ma_preempt_enable_no_resched();
+		if (lwp) {
+			marcel_t current = ma_per_lwp(current_thread, lwp);
+			ma_holder_rawlock(&ma_lwp_vprq(lwp)->as_holder);
+			ma_set_tsk_need_togo(current);
+			ma_resched_task(current,vp,lwp);
+			ma_holder_rawunlock(&ma_lwp_vprq(lwp)->as_holder);
+		}
+	marcel_vpset_foreach_end();
+	ma_preempt_enable_no_resched();
 	ma_local_bh_enable();
 }
 

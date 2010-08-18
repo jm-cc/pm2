@@ -186,7 +186,8 @@
 #  undef MA__TIMER
 #endif
 
-#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && defined(HAVE_DECL_SIGEV_THREAD_ID)
+#undef PM2_HAVE_DECL_SIGEV_THREAD_ID
+#if defined(MA__LWPS) && defined(LINUX_SYS) && !defined(OLD_ITIMER_REAL) && defined(PM2_HAVE_DECL_SIGEV_THREAD_ID)
 #define MA__USE_TIMER_CREATE
 #endif
 

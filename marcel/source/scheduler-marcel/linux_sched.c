@@ -101,13 +101,13 @@ void __ma_resched_vpset(const marcel_vpset_t *vpset)
 	unsigned vp;
 	marcel_vpset_foreach_begin(vp, vpset)
 		ma_lwp_t lwp = ma_get_lwp_by_vpnum(vp);
-	if (lwp) {
-		marcel_t current = ma_per_lwp(current_thread, lwp);
-		ma_set_tsk_need_togo(current);
-		ma_resched_task(current,vp,lwp);
-	}
-	marcel_vpset_foreach_end()
+		if (lwp) {
+			marcel_t current = ma_per_lwp(current_thread, lwp);
+			ma_set_tsk_need_togo(current);
+			ma_resched_task(current,vp,lwp);
 		}
+	marcel_vpset_foreach_end()
+}
 
 void ma_resched_vpset(const marcel_vpset_t *vpset)
 {

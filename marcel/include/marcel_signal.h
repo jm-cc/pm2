@@ -238,7 +238,7 @@ DEC_MARCEL(int, sigrelse, (int sig) __THROW);
 int pmarcel_sigignore(int sig);
 DEC_MARCEL(int, sigignore, (int sig) __THROW);
 
-int marcel___sigpause(int sig_or_mask, int is_sig)
+int marcel___sigpause(int sig_or_mask, int is_sig);
 int pmarcel_sigpause(int mask);
 DEC_MARCEL(int, sigpause, (int mask) __THROW);
 

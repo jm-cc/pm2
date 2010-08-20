@@ -1582,7 +1582,7 @@ versioned_symbol(libpthread, pmarcel_sigignore, sigignore, GLIBC_2_1);
 #endif
 #endif
 
-static int marcel___sigpause(int sig_or_mask, int is_sig)
+int marcel___sigpause(int sig_or_mask, int is_sig)
 {
 	MARCEL_LOG_IN();
 	marcel_sigset_t set;
@@ -1610,7 +1610,7 @@ DEF_MARCEL_PMARCEL(int,xpg_sigpause,(int sig),(sig),
 })
 
 #ifdef MA__LIBPTHREAD
-versioned_symbol(libpthread, pmarcel___sigpause, __sigpause, GLIBC_2_0);
+versioned_symbol(libpthread, marcel___sigpause, __sigpause, GLIBC_2_0);
 versioned_symbol(libpthread, pmarcel_sigpause, sigpause, GLIBC_2_0);
 versioned_symbol(libpthread, pmarcel_xpg_sigpause, __xpg_sigpause, GLIBC_2_2);
 #endif

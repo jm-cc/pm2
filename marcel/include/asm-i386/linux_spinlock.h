@@ -60,25 +60,16 @@ TBX_VISIBILITY_PUSH_INTERNAL
  */
 #define ma_spin_is_locked(x)	(*(volatile signed MA_SPINT *)(&(x)->lock) <= 0)
 #define ma_spin_unlock_wait(x)	do { ma_barrier(); } while(ma_spin_is_locked(x))
-#ifdef MA__HAS_SUBSECTION
 #define ma_spin_lock_string \
 	"\n1:\t" \
 	"lock ; dec"MA_SPINB" %0\n\t" \
-	"js 2f\n" \
-	MA_LOCK_SECTION_START("") \
+	"jns 3f\n" \
 	"2:\t" \
 	"rep;nop\n\t" \
 	"cmp"MA_SPINB" $0,%0\n\t" \
 	"jle 2b\n\t" \
-	"jmp 1b\n" \
-	MA_LOCK_SECTION_END
-#else
-#define ma_spin_lock_string \
-	"lock ; dec"MA_SPINB" %0\n\t" \
-	"jns 1f\n\t" \
-	"call ma_i386_spinlock_contention\n\t" \
-	"1:\n"
-#endif
+	"jmp 1b\n\t" \
+	"3:\n"
 #endif				/* MA__LWPS */
 
 

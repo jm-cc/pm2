@@ -53,59 +53,6 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #define ma_rwlock_init(x)	do { *(x) = (ma_rwlock_t) MA_RW_LOCK_UNLOCKED; } while(0)
 #define ma_rwlock_is_locked(x) ((x)->lock != MA_RW_LOCK_BIAS)
 
-#ifdef MA__HAS_SUBSECTION
-#define __ma_build_read_lock_ptr(rw, helper)		\
-	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t"	\
-		     "js 2f\n"				\
-		     "1:\n"				\
-		     MA_LOCK_SECTION_START("")		\
-		     "2:\tcall " helper "\n\t"		\
-		     "jmp 1b\n"				\
-		     MA_LOCK_SECTION_END		\
-		     ::"a" (rw) : "memory")
-#define __ma_build_read_lock_const(rw, helper)   \
-	asm volatile(MA_LOCK_PREFIX "subl $1,%0\n\t"	\
-		     "js 2f\n"				\
-		     "1:\n"				\
-		     MA_LOCK_SECTION_START("")		\
-		     "2:\tpushl %%eax\n\t"		\
-		     "leal %0,%%eax\n\t"		\
-		     "call " helper "\n\t"		\
-		     "popl %%eax\n\t"			\
-		     "jmp 1b\n"				\
-		     MA_LOCK_SECTION_END			\
-		     :"=m" (*(volatile int *)rw) : : "memory")
-#define __ma_build_read_lock(rw, helper)				\
-	do {								\
-		if (__builtin_constant_p(rw))				\
-			__ma_build_read_lock_const(rw, helper);		\
-		else							\
-			__ma_build_read_lock_ptr(rw, helper);		\
-	} while (0)
-#define __ma_build_write_lock_ptr(rw, helper)				\
-	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",(%0)\n\t" \
-		     "jnz 2f\n"						\
-		     "1:\n"						\
-		     MA_LOCK_SECTION_START("")				\
-		     "2:\tcall " helper "\n\t"				\
-		     "jmp 1b\n"						\
-		     MA_LOCK_SECTION_END				\
-		     ::"a" (rw) : "memory")
-#define __ma_build_write_lock_const(rw, helper)				\
-	asm volatile(MA_LOCK_PREFIX "subl $" MA_RW_LOCK_BIAS_STR ",%0\n\t" \
-		     "jnz 2f\n"						\
-		     "1:\n"						\
-		     MA_LOCK_SECTION_START("")				\
-		     "2:\tpushl %%eax\n\t"				\
-		     "leal %0,%%eax\n\t"				\
-		     "call " helper "\n\t"				\
-		     "popl %%eax\n\t"					\
-		     "jmp 1b\n"						\
-		     MA_LOCK_SECTION_END				\
-		     :"=m" (*(volatile int *)rw) : : "memory")
-
-#else				/* MA__HAS_SUBSECTION */
-
 #define __ma_build_read_lock_ptr(rw, helper)	       \
 	asm volatile(MA_LOCK_PREFIX "subl $1,(%0)\n\t" \
 		     "jns 1f\n\t"		       \
@@ -143,7 +90,6 @@ TBX_VISIBILITY_PUSH_INTERNAL
 		     "popl %%eax\n\t"					\
 		     "1:\n"						\
 		     :"=m" (*(volatile int *)rw) : : "memory")
-#endif				/* MA__HAS_SUBSECTION */
 
 #define __ma_build_write_lock(rw, helper)				\
 	do {								\

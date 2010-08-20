@@ -86,21 +86,6 @@ typedef struct {
 TBX_VISIBILITY_PUSH_INTERNAL
 
 
-/** Internal macros **/
-/*
- * Must define these before including other files, inline functions need them
- */
-#define MA_LOCK_SECTION_NAME			\
-	".text.lock." __ma_stringify(MODULE)
-#define MA_LOCK_SECTION_START(extra)		\
-	".subsection 1\n\t"			\
-	extra					\
-	".ifndef " MA_LOCK_SECTION_NAME "\n\t"	\
-	MA_LOCK_SECTION_NAME ":\n\t"		\
-	".endif\n\t"
-#define MA_LOCK_SECTION_END			\
-	".previous\n\t"
-
 #if defined(MA__LWPS) || !defined(MA_HAVE_COMPAREEXCHANGE)
 #define ma_spin_is_locked_nofail(x) ma_spin_is_locked(x)
 /* XXX: we do not check the owner */

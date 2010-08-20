@@ -104,14 +104,3 @@ __sigsetjmp:
 .size setjmp,.-setjmp
 #endif
 #endif
-        	  
-#if !(defined(LINUX_SYS) || defined(GNU_SYS))
-        .globl ma_i386_spinlock_contention
-	.type  ma_i386_spinlock_contention, @function
-ma_i386_spinlock_contention:
-re:
-        rep; nop
-        cmpb $0,(%eax)
-        jle re
-        ret
-#endif

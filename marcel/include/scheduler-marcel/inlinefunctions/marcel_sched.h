@@ -185,7 +185,7 @@ static __tbx_inline__ ma_runqueue_t *marcel_sched_select_runqueue(marcel_task_t 
 #ifdef MA__LWPS
 	register marcel_lwp_t *cur_lwp = MA_LWP_SELF;
 #  ifdef MA__BUBBLES
-	marcel_bubble_t *b;
+	marcel_bubble_t *b = NULL;
 #  endif
 #endif
 	rq = NULL;
@@ -245,7 +245,7 @@ static __tbx_inline__ ma_runqueue_t *marcel_sched_select_runqueue(marcel_task_t 
 		return marcel_sched_vpset_init_rq(&attr->vpset);
 #ifdef MA__LWPS
 #  ifdef MA__BUBBLES
-	if (b->as_entity.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
+	if (b && b->as_entity.sched_level >= MARCEL_LEVEL_KEEPCLOSED)
 		/* keep this thread inside the bubble */
 		return NULL;
 #  endif			/* MA__BUBBLES */

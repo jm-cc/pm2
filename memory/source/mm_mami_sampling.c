@@ -288,8 +288,8 @@ int mami_sampling_of_memory_migration(mami_manager_t *memory_manager,
                 fprintf(stderr, "Error when opening file <%s>\n", filename);
                 return -1;
         }
-        fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\n");
-        fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\n");
+        fprintf(out, "Source\tDest\tPages\tSize\tMigration_Time\tBandwidth\n");
+        fprintf(stdout, "Source\tDest\tPages\tSize\tMigration_Time\tBandwidth\n");
 
         th_mami_attr_init(&attr);
         for(source=minsource; source<=maxsource ; source++) {

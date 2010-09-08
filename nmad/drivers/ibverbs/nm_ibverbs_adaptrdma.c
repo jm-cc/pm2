@@ -30,20 +30,16 @@ static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
 #define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
-#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_BEG 0x04
-#define NM_IBVERBS_ADAPTRDMA_FLAG_REGISTER_END 0x08
-
-//#define NMAD_IB_CHECKSUM
 
 /** on the wire header of method 'adaptrdma' */
-struct nm_ibverbs_adaptrdma_header
+struct nm_ibverbs_adaptrdma_header 
 {
-#ifdef NMAD_IB_CHECKSUM
+#ifdef NM_IBVERBS_CHECKSUM
   uint64_t checksum;
 #endif
   volatile uint32_t offset;
-  volatile uint32_t busy;
-};
+  volatile uint32_t busy; /* 'busy' has to be the last field in the struct */
+} __attribute__((packed));
 
 /** Connection state for tracks sending with adaptive RDMA super-pipeline */
 struct nm_ibverbs_adaptrdma 
@@ -222,19 +218,8 @@ static int nm_ibverbs_adaptrdma_send_poll(void*_status)
 	nm_ibverbs_adaptrdma_get_header(adaptrdma->send.sbuf, packet_size + block_size);
       memcpy(adaptrdma->send.sbuf + packet_size, 
 	     &adaptrdma->send.message[adaptrdma->send.done], frag_size);
-#ifdef NMAD_IB_CHECKSUM
-      {
-	uint64_t checksum = 0;
-	int i;
-	const int checksum_blocks = frag_size / sizeof(uint64_t);
-	const uint64_t*ptr = (const uint64_t*)&adaptrdma->send.message[adaptrdma->send.done];
-	for(i = 0 ; i < checksum_blocks ; i++)
-	  {
-	    checksum += *ptr;
-	    ptr++;
-	  }
-	h->checksum = checksum;
-      }
+#ifdef NM_IBVERBS_CHECKSUM
+      h->checksum = nm_ibverbs_checksum(&adaptrdma->send.message[adaptrdma->send.done], frag_size);
 #endif
       h->busy   = NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR;
       h->offset = frag_size;
@@ -291,27 +276,14 @@ static int nm_ibverbs_adaptrdma_poll_one(void*_status)
 	goto wouldblock;
       const int frag_size = h->offset;
       const int flag = h->busy;
-      memcpy(&adaptrdma->recv.message[adaptrdma->recv.done],
-	     adaptrdma->recv.rbuf, frag_size);
-#ifdef NMAD_IB_CHECKSUM
-      {
-	/* checksum */
-	uint64_t checksum = 0;
-	const int checksum_blocks = frag_size / sizeof(uint64_t);
-	int i;
-	const uint64_t*ptr = (const uint64_t*)&adaptrdma->recv.message[adaptrdma->recv.done];
-	for(i = 0 ; i < checksum_blocks ; i++)
-	  {
-	    checksum += *ptr;
-	    ptr++;
-	  }
-	if(checksum != h->checksum)
-	  {
-	    fprintf(stderr, "# nmad: checksum failed- expected = %llu; computed = %llu\n",
-		    (unsigned long long)h->checksum, (unsigned long long)checksum);
-	    abort();
-	  }
-      }
+      memcpy(&adaptrdma->recv.message[adaptrdma->recv.done], adaptrdma->recv.rbuf, frag_size);
+#ifdef NM_IBVERBS_CHECKSUM
+      /* checksum */
+      if(nm_ibverbs_checksum(&adaptrdma->recv.message[adaptrdma->recv.done], frag_size) != h->checksum)
+	{
+	  fprintf(stderr, "# nmad: IB checksum failed.\n");
+	  abort();
+	}
 #endif
       /* clear blocks */
       void*_rbuf = adaptrdma->recv.rbuf;

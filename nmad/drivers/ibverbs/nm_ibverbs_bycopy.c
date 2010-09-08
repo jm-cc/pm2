@@ -35,6 +35,9 @@ struct nm_ibverbs_bycopy_header
 {
   uint16_t offset;         /**< data offset (packet_size = BUFSIZE - offset) */
   uint8_t  ack;            /**< credits acknowledged */
+#ifdef NM_IBVERBS_CHECKSUM
+  uint64_t checksum;
+#endif
   volatile uint8_t status; /**< binary mask- describes the content of the message */
 }  __attribute__((packed));
 
@@ -269,6 +272,9 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
       packet->header.offset = offset;
       packet->header.ack    = bycopy->window.to_ack;
       packet->header.status = NM_IBVERBS_BYCOPY_STATUS_DATA;
+#ifdef NM_IBVERBS_CHECKSUM
+      packet->header.checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
+#endif
       bycopy->window.to_ack = 0;
       bycopy->send.done += packet_size;
       if(bycopy->send.done >= bycopy->send.msg_size)
@@ -323,6 +329,14 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
       complete = (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_LAST);
       const int offset = packet->header.offset;
       const int packet_size = NM_IBVERBS_BYCOPY_BUFSIZE - offset;
+#ifdef NM_IBVERBS_CHECKSUM
+      const uint64_t checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
+      if(checksum != packet->header.checksum)
+	{
+	  fprintf(stderr, "# nmad: IB checksum failed.\n");
+	  abort();
+	}
+#endif
       memcpy(bycopy->recv.buf_posted + bycopy->recv.done, &packet->data[offset], packet_size);
       bycopy->recv.msg_size += packet_size;
       bycopy->recv.done += packet_size;

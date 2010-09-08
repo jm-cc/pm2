@@ -307,7 +307,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       if (node != PM2_NUIOA_ANY_NODE) 
 	{
 	  /* if this driver wants something */
-	  DISP("# nmad: marking nuioa node %d as preferred for driver %s", node, p_drv->driver->name);
+	  NM_DISPF("# nmad: marking nuioa node %d as preferred for driver %s", node, p_drv->driver->name);
 	  if (nuioa_with_latency) 
 	    {
 	      /* choosing by latency: take this network if it's the first one
@@ -338,7 +338,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	      /* if the first driver wants something else, it's a conflict,
 	       * display a message once */
 	      if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
-		DISP("found conflicts between preferred nuioa nodes of drivers");
+		NM_DISPF("found conflicts between preferred nuioa nodes of drivers");
 	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
 	    }
 	  }
@@ -360,7 +360,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       nodemask_set(&mask, preferred_node);
       numa_bind(&mask);
 #endif
-      DISP("# nmad: binding to nuioa node %d", preferred_node);
+      NM_DISPF("# nmad: binding to nuioa node %d", preferred_node);
     }
 #endif /* PM2_NUIOA */
 

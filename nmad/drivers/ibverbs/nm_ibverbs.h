@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2010(see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,11 +43,12 @@ enum {
 enum nm_ibverbs_cnx_kind
   {
     NM_IBVERBS_CNX_NONE      = 0,
-    NM_IBVERBS_CNX_BYCOPY    = 0x01,
-    NM_IBVERBS_CNX_REGRDMA   = 0x02,
-    NM_IBVERBS_CNX_ADAPTRDMA = 0x04,
-    NM_IBVERBS_CNX_RCACHE    = 0x08,
-    NM_IBVERBS_CNX_AUTO      = 0x10
+    NM_IBVERBS_CNX_BYCOPY    = 0x0001,
+    NM_IBVERBS_CNX_REGRDMA   = 0x0002,
+    NM_IBVERBS_CNX_ADAPTRDMA = 0x0004,
+    NM_IBVERBS_CNX_RCACHE    = 0x0008,
+    NM_IBVERBS_CNX_LR2       = 0x0010,
+    NM_IBVERBS_CNX_AUTO      = 0x0100
   };
 
 struct nm_ibverbs_segment 

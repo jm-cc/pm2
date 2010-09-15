@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006 (see AUTHORS file)
+ * Copyright (C) 2010 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -207,20 +207,20 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       const int block_size = lr2_steps[lr2->send.step].block_size;
       const int chunk_payload_max = chunk_size - sizeof(struct lr2_header_s) * chunk_size / block_size;
       const int chunk_payload = lr2->send.todo > chunk_payload_max ? chunk_payload_max : lr2->send.todo;
-      int packet_todo = chunk_payload;
+      int chunk_todo = chunk_payload;
       void*base_sbuf = lr2->send.sbuf;
       void*base_rbuf = lr2->send.rbuf;
-      while(packet_todo > 0)
+      while(chunk_todo > 0)
 	{
-	  const int block_payload = (packet_todo > block_size - sizeof(struct lr2_header_s)) ? 
-	    (block_size - sizeof(struct lr2_header_s)) : packet_todo;
-	  memcpy(lr2->send.sbuf, &lr2->send.message[lr2->send.done + chunk_payload - packet_todo], block_payload);
+	  const int block_payload = (chunk_todo > block_size - sizeof(struct lr2_header_s)) ? 
+	    (block_size - sizeof(struct lr2_header_s)) : chunk_todo;
+	  memcpy(lr2->send.sbuf, &lr2->send.message[lr2->send.done + chunk_payload - chunk_todo], block_payload);
 #ifdef NM_IBVERBS_CHECKSUM
 	  const uint64_t checksum = nm_ibverbs_checksum(lr2->send.sbuf, block_payload);
 #endif
 	  lr2->send.sbuf += block_payload;
 	  lr2->send.rbuf += block_payload;
-	  packet_todo -= block_payload;
+	  chunk_todo -= block_payload;
 	  struct lr2_header_s*h = lr2->send.sbuf;
 	  h->busy = 1;
 #ifdef NM_IBVERBS_CHECKSUM
@@ -272,13 +272,13 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
       const int message_todo = lr2->recv.size - lr2->recv.done;
       const int chunk_payload_max = chunk_size - sizeof(struct lr2_header_s) * chunk_size / block_size;
       const int chunk_payload = message_todo > chunk_payload_max ? chunk_payload_max : message_todo;
-      int packet_todo = chunk_payload;
-      while(packet_todo > 0)
+      int chunk_todo = chunk_payload;
+      while(chunk_todo > 0)
 	{
-	  const int block_payload = (packet_todo > block_size - sizeof(struct lr2_header_s)) ? 
-	    (block_size - sizeof(struct lr2_header_s)) : packet_todo;
+	  const int block_payload = (chunk_todo > block_size - sizeof(struct lr2_header_s)) ? 
+	    (block_size - sizeof(struct lr2_header_s)) : chunk_todo;
 	  struct lr2_header_s*h = lr2->recv.rbuf + block_payload;
-	  if((packet_todo == chunk_payload) && !h->busy)
+	  if((chunk_todo == chunk_payload) && !h->busy)
 	    goto wouldblock;
 	  else
 	    while(!h->busy)
@@ -295,7 +295,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	    }
 #endif
     	  h->busy = 0;
-	  packet_todo -= block_payload;
+	  chunk_todo -= block_payload;
 	  lr2->recv.done += block_payload;
 	  lr2->recv.rbuf += block_payload + sizeof(struct lr2_header_s);
 	}

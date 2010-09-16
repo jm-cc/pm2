@@ -194,7 +194,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
       else if(argv[i][0] != '-')
 	{
 	  remote_launcher_url = argv[i];
-	  fprintf(stderr, "# laucher: remote url = %s\n", remote_launcher_url);
+	  fprintf(stderr, "# launcher: remote url = %s\n", remote_launcher_url);
 	  /* update command line  */
 	  *argc = *argc - 1;
 	  int j;
@@ -278,7 +278,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	  fprintf(stderr, "# launcher: cannot get local address\n");
 	  abort();
 	} 
-      fprintf(stderr, "# laucher: local url = '%s'\n", local_launcher_url);
+      fprintf(stderr, "# launcher: local url = '%s'\n", local_launcher_url);
       int sock = accept(server_sock, (struct sockaddr*)&addr, &addr_len);
       assert(sock > -1);
       close(server_sock);

@@ -55,6 +55,17 @@ struct lr2_header_s
   volatile uint32_t busy; /* 'busy' has to be the last field in the struct */
 } __attribute__((packed));
 
+static const int lr2_hsize = sizeof(struct lr2_header_s);
+
+static inline int nm_ibverbs_min(const int a, const int b)
+{
+  if(b > a)
+    return a;
+  else
+    return b;
+}
+
+
 /** Connection state for tracks sending with lr2 */
 struct nm_ibverbs_lr2
 {  
@@ -70,7 +81,7 @@ struct nm_ibverbs_lr2
   struct
   {
     const char*message;
-    int todo;
+    int size;
     int done;
     void*rbuf;
     void*sbuf;
@@ -190,7 +201,7 @@ static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
   struct nm_ibverbs_lr2*lr2 = _status;
   assert(n == 1);
   lr2->send.message = v[0].iov_base;
-  lr2->send.todo    = v[0].iov_len;
+  lr2->send.size    = v[0].iov_len;
   lr2->send.done    = 0;
   lr2->send.rbuf    = lr2->buffer.rbuf;
   lr2->send.sbuf    = lr2->buffer.sbuf;
@@ -201,52 +212,35 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
 
-  while(lr2->send.todo > 0)
+  while(lr2->send.done < lr2->send.size)
     {
       const int chunk_size = lr2_steps[lr2->send.step].chunk_size;
       const int block_size = lr2_steps[lr2->send.step].block_size;
-      const int chunk_payload_max = chunk_size - sizeof(struct lr2_header_s) * chunk_size / block_size;
-      const int chunk_payload = lr2->send.todo > chunk_payload_max ? chunk_payload_max : lr2->send.todo;
-      int chunk_todo = chunk_payload;
-      void*base_sbuf = lr2->send.sbuf;
-      void*base_rbuf = lr2->send.rbuf;
-      while(chunk_todo > 0)
+      const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_size - lr2_hsize * chunk_size / block_size);
+      int chunk_done = 0;
+      int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
+      while(chunk_done < chunk_payload)
 	{
-	  const int block_payload = (chunk_todo > block_size - sizeof(struct lr2_header_s)) ? 
-	    (block_size - sizeof(struct lr2_header_s)) : chunk_todo;
-	  memcpy(lr2->send.sbuf, &lr2->send.message[lr2->send.done + chunk_payload - chunk_todo], block_payload);
-#ifdef NM_IBVERBS_CHECKSUM
-	  const uint64_t checksum = nm_ibverbs_checksum(lr2->send.sbuf, block_payload);
-#endif
-	  lr2->send.sbuf += block_payload;
-	  lr2->send.rbuf += block_payload;
-	  chunk_todo -= block_payload;
-	  struct lr2_header_s*h = lr2->send.sbuf;
+	  const int block_payload = nm_ibverbs_min(chunk_payload - chunk_done, block_size - lr2_hsize);
+	  memcpy(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
+	  struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
 	  h->busy = 1;
 #ifdef NM_IBVERBS_CHECKSUM
-	  h->checksum = checksum;
+	  h->checksum = nm_ibverbs_checksum(lr2->send.sbuf + chunk_offset, block_payload);
 #endif
-	  lr2->send.sbuf += sizeof(struct lr2_header_s);
-	  lr2->send.rbuf += sizeof(struct lr2_header_s);
+	  chunk_done   += block_payload;
+	  chunk_offset += block_payload + lr2_hsize;
 	}
-      while(lr2->cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 1)
-	{
-	  nm_ibverbs_rdma_poll(lr2->cnx);
-	}
-      nm_ibverbs_rdma_send(lr2->cnx, lr2->send.sbuf - base_sbuf, base_sbuf, base_rbuf,
-		       &lr2->buffer,
-		       &lr2->seg,
-		       lr2->mr,
-		       NM_IBVERBS_WRID_PACKET);
+      nm_ibverbs_send_flushn(lr2->cnx, NM_IBVERBS_WRID_PACKET, 1);
+      nm_ibverbs_rdma_send(lr2->cnx, chunk_offset, lr2->send.sbuf, lr2->send.rbuf,
+			   &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_PACKET);
       lr2->send.done += chunk_payload;
-      lr2->send.todo -= chunk_payload;
+      lr2->send.sbuf += chunk_offset;
+      lr2->send.rbuf += chunk_offset;
       if(lr2->send.step < lr2_nsteps - 1)
 	lr2->send.step++;
     }
-  while(lr2->cnx->pending.wrids[NM_IBVERBS_WRID_PACKET] > 0)
-    {
-      nm_ibverbs_rdma_poll(lr2->cnx);
-    }
+  nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_PACKET);
   return NM_ESUCCESS;
 }
 
@@ -260,7 +254,6 @@ static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)
   lr2->recv.step    = 0;
 }
 
-
 static int nm_ibverbs_lr2_poll_one(void*_status)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
@@ -269,14 +262,11 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
     {
       const int chunk_size = lr2_steps[lr2->recv.step].chunk_size;
       const int block_size = lr2_steps[lr2->recv.step].block_size;
-      const int message_todo = lr2->recv.size - lr2->recv.done;
-      const int chunk_payload_max = chunk_size - sizeof(struct lr2_header_s) * chunk_size / block_size;
-      const int chunk_payload = message_todo > chunk_payload_max ? chunk_payload_max : message_todo;
+      const int chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_size - lr2_hsize * chunk_size / block_size);
       int chunk_todo = chunk_payload;
       while(chunk_todo > 0)
 	{
-	  const int block_payload = (chunk_todo > block_size - sizeof(struct lr2_header_s)) ? 
-	    (block_size - sizeof(struct lr2_header_s)) : chunk_todo;
+	  const int block_payload = nm_ibverbs_min(chunk_todo, block_size - lr2_hsize);
 	  struct lr2_header_s*h = lr2->recv.rbuf + block_payload;
 	  if((chunk_todo == chunk_payload) && !h->busy)
 	    goto wouldblock;
@@ -284,7 +274,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	    while(!h->busy)
 	      {
 	      }
-	  memcpy(&lr2->recv.message[lr2->recv.done], lr2->recv.rbuf, block_payload);
+	  memcpy(lr2->recv.message + lr2->recv.done, lr2->recv.rbuf, block_payload);
 #ifdef NM_IBVERBS_CHECKSUM
 	  const uint64_t checksum = nm_ibverbs_checksum(lr2->recv.rbuf, block_payload);
 	  if(h->checksum != checksum)
@@ -297,7 +287,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
     	  h->busy = 0;
 	  chunk_todo -= block_payload;
 	  lr2->recv.done += block_payload;
-	  lr2->recv.rbuf += block_payload + sizeof(struct lr2_header_s);
+	  lr2->recv.rbuf += block_payload + lr2_hsize;
 	}
       if(lr2->recv.step < lr2_nsteps - 1)
 	lr2->recv.step++;

@@ -22,7 +22,8 @@
 
 /* *** method: 'lr2' *************************************** */
 
-#define NM_IBVERBS_LR2_BUFSIZE (16*1024*1024)
+#define NM_IBVERBS_LR2_BUFSIZE (512*1024)
+#define NM_IBVERBS_LR2_NBUF 3
 
 struct lr2_step_s
 {
@@ -39,9 +40,11 @@ static const struct lr2_step_s lr2_steps[] =
     { 64*1024, 8192 },
     { 88*1024, 8192 },
     { 128*1024, 8192 },
-    { 160*1024, 8192 },
-    { 200*1024, 8192 },
-    { 288*1024, 8192 },
+    /*
+      { 160*1024, 8192 },
+      { 200*1024, 8192 },
+      { 256*1024, 8192 },
+    */
     { 0, 0}
   };
 static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(struct lr2_step_s) - 1;
@@ -74,8 +77,9 @@ struct nm_ibverbs_lr2
   struct nm_ibverbs_cnx*cnx;
   struct
   {
-    char sbuf[NM_IBVERBS_LR2_BUFSIZE];
-    char rbuf[NM_IBVERBS_LR2_BUFSIZE];
+    char sbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
+    char rbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
+    volatile uint32_t rack, sack;
   } buffer;
 
   struct
@@ -86,6 +90,7 @@ struct nm_ibverbs_lr2
     void*rbuf;
     void*sbuf;
     int step;
+    int nbuffer;
   } send;
 
   struct
@@ -95,6 +100,7 @@ struct nm_ibverbs_lr2
     void*rbuf;
     int done;
     int step;
+    int nbuffer;
   } recv;
 };
 
@@ -145,6 +151,7 @@ static void* nm_ibverbs_lr2_instanciate(puk_instance_t instance, puk_context_t c
 {
   struct nm_ibverbs_lr2*lr2 = TBX_MALLOC(sizeof(struct nm_ibverbs_lr2));
   memset(&lr2->buffer, 0, sizeof(lr2->buffer));
+  lr2->buffer.rack = 0;
   lr2->mr = NULL;
   return lr2;
 }
@@ -206,6 +213,8 @@ static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
   lr2->send.rbuf    = lr2->buffer.rbuf;
   lr2->send.sbuf    = lr2->buffer.sbuf;
   lr2->send.step    = 0;
+  lr2->send.nbuffer = 0;
+  lr2->buffer.rack  = 0;
 }
 
 static int nm_ibverbs_lr2_send_poll(void*_status)
@@ -217,6 +226,21 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       const int chunk_size = lr2_steps[lr2->send.step].chunk_size;
       const int block_size = lr2_steps[lr2->send.step].block_size;
       const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_size - lr2_hsize * chunk_size / block_size);
+      if((lr2->send.sbuf + chunk_size) > (((void*)lr2->buffer.sbuf) + (lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
+	{
+	  /* swap buffers */
+	  lr2->send.nbuffer = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	  /* flow control rationale- receiver may be:
+	   *   . reading buffer N -> ok for writing N + 1
+	   *   . already be ready for N + 1 -> ok
+	   *   . reading N - 1 (~= N + 2) -> wait
+	   * */
+	  const int n2 = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	  while(lr2->buffer.rack == n2)
+	    { /* busy wait */ }
+	}
       int chunk_done = 0;
       int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
       while(chunk_done < chunk_payload)
@@ -252,6 +276,7 @@ static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)
   lr2->recv.size    = v->iov_len;
   lr2->recv.rbuf    = lr2->buffer.rbuf;
   lr2->recv.step    = 0;
+  lr2->recv.nbuffer = 0;
 }
 
 static int nm_ibverbs_lr2_poll_one(void*_status)
@@ -263,6 +288,17 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
       const int chunk_size = lr2_steps[lr2->recv.step].chunk_size;
       const int block_size = lr2_steps[lr2->recv.step].block_size;
       const int chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_size - lr2_hsize * chunk_size / block_size);
+      if((lr2->recv.rbuf + chunk_size) > (((void*)lr2->buffer.rbuf) + (lr2->recv.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
+      {
+	/* swap buffers */
+	lr2->recv.nbuffer = (lr2->recv.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	lr2->recv.rbuf = ((void*)lr2->buffer.rbuf) + lr2->recv.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_ACK);
+	lr2->buffer.sack = lr2->recv.nbuffer;
+	nm_ibverbs_rdma_send(lr2->cnx, sizeof(uint32_t),
+			     (void*)&lr2->buffer.sack, (void*)&lr2->buffer.rack,
+			     &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_ACK);
+      }
       int chunk_todo = chunk_payload;
       while(chunk_todo > 0)
 	{
@@ -276,15 +312,18 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	      }
 	  memcpy(lr2->recv.message + lr2->recv.done, lr2->recv.rbuf, block_payload);
 #ifdef NM_IBVERBS_CHECKSUM
-	  const uint64_t checksum = nm_ibverbs_checksum(lr2->recv.rbuf, block_payload);
+	  const uint64_t checksum = nm_ibverbs_checksum(lr2->recv.message + lr2->recv.done, block_payload);
 	  if(h->checksum != checksum)
 	    {
-	      fprintf(stderr, "Infiniband: lr2- checksum failed; step = %d; received = %llX; expected = %llX.\n",
-		      lr2->recv.step, h->checksum, checksum);
+	      fprintf(stderr, "Infiniband: lr2- checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
+		      lr2->recv.step, lr2->recv.done, lr2->recv.size, 
+		      (long long unsigned)h->checksum, (long long unsigned)checksum);
 	      abort();
 	    }
+    	  h->checksum = 0;
 #endif
     	  h->busy = 0;
+	  memset(lr2->recv.rbuf, 0, block_payload);
 	  chunk_todo -= block_payload;
 	  lr2->recv.done += block_payload;
 	  lr2->recv.rbuf += block_payload + lr2_hsize;

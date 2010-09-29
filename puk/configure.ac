@@ -3,7 +3,7 @@ dnl ----- configure.ac for Puk in PM2 -----
 AC_PREREQ(2.50)
 
 AC_INIT(Puk/Puk.h)
-AC_CONFIG_HEADER(Puk/padico_config.h Puk/PukABI/Puk-ABI-config.h)
+AC_CONFIG_HEADER(Puk/padico_config.h PukABI/Puk-ABI-config.h)
 
 m4_include([building-tools/misc.m4])
 m4_include([building-tools/compiler.m4])

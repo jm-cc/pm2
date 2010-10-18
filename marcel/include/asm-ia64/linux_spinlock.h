@@ -66,6 +66,16 @@ TBX_VISIBILITY_PUSH_INTERNAL
 				ma_cpu_relax();				\
 		}							\
 	} while (0)
+#define _ma_raw_read_trylock(rw)							\
+	do {								\
+		ma_rwlock_t *__ma_read_lock_ptr = (rw);			\
+		if (((volatile int *)__ma_read_lock_ptr)[1] > 0) return 0;	\
+		if (tbx_unlikely(ma_ia64_fetchadd(1, (volatile int *) __ma_read_lock_ptr, acq) < 0)) { \
+			ma_ia64_fetchadd(-1, (volatile int *) __ma_read_lock_ptr, rel);	\
+			return 0; \
+		}							\
+		return 1; \
+	} while (0)
 #define _ma_raw_read_unlock(rw)					\
 	do {							\
 		ma_rwlock_t *__ma_read_lock_ptr = (rw);			\

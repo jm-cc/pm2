@@ -220,13 +220,14 @@ static void timer_interrupt(int sig)
 	{
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
-		ma_lwp_list_lock_read();
-		ma_for_each_lwp_from_begin(lwp, MA_LWP_SELF) {
-			if (lwp->vpnum != -1 && lwp->vpnum < (int) marcel_nbvps()
-			    && !marcel_vp_is_disabled(lwp->vpnum))
-				marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
-		} ma_for_each_lwp_from_end();
-		ma_lwp_list_unlock_read();
+		if (ma_lwp_list_trylock_read()) {
+			ma_for_each_lwp_from_begin(lwp, MA_LWP_SELF) {
+				if (lwp->vpnum != -1 && lwp->vpnum < (int) marcel_nbvps()
+				    && !marcel_vp_is_disabled(lwp->vpnum))
+					marcel_kthread_kill(lwp->pid, MARCEL_TIMER_USERSIGNAL);
+			} ma_for_each_lwp_from_end();
+			ma_lwp_list_unlock_read();
+		}
 	}
 #endif
 

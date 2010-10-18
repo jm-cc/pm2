@@ -48,6 +48,14 @@ static __tbx_inline__ void ma_lwp_list_lock_read(void)
 #endif
 }
 
+/** Internal marcel_inline **/
+static __tbx_inline__ void ma_lwp_list_trylock_read(void)
+{
+#ifdef MA__LWPS
+	ma_read_trylock(&__ma_lwp_list_lock);
+#endif
+}
+
 static __tbx_inline__ void ma_lwp_list_unlock_read(void)
 {
 #ifdef MA__LWPS

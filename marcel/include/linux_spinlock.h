@@ -245,6 +245,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 
 #define ma_rwlock_init(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_read_lock(lock)	do { (void)(lock); } while(0)
+#define _ma_raw_read_trylock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_read_unlock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_lock(lock)	do { (void)(lock); } while(0)
 #define _ma_raw_write_unlock(lock)	do { (void)(lock); } while(0)
@@ -257,6 +258,9 @@ TBX_VISIBILITY_PUSH_INTERNAL
  * methods are defined as nops in the case they are not required.
  */
 #define ma_spin_trylock(lock)	({ma_preempt_disable(); _ma_raw_spin_trylock(lock) ? \
+				1 : ({ma_preempt_enable(); 0;});})
+
+#define ma_read_trylock(lock)	({ma_preempt_disable();_ma_raw_read_trylock(lock) ? \
 				1 : ({ma_preempt_enable(); 0;});})
 
 #define ma_write_trylock(lock)	({ma_preempt_disable();_ma_raw_write_trylock(lock) ? \

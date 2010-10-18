@@ -69,9 +69,15 @@ static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t * rw)
 	if (!ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, rw))
 		__ma_write_lock_failed(rw);
 }
-#endif
 
-#ifdef MA__LWPS
+static __tbx_inline__ int _ma_raw_read_trylock(ma_rwlock_t * rw)
+{
+	if (!ma_atomic_add_negative(-1, rw))
+		return 1;
+	ma_atomic_add(1, rw);
+	return 0;
+}
+
 static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t * rw)
 {
 	if (ma_atomic_sub_and_test(MA_RW_LOCK_BIAS, rw))

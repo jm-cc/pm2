@@ -21,4 +21,4 @@ PM2_DEFAULT_LOADER=${PM2_SRCROOT}/nmad/bin/nmadload_conf_not_needed
 PM2_NMAD_EARLY_LDFLAGS="$PM2_NMAD_EARLY_LDFLAGS -Wl,--export-dynamic"
 
 # list of component. Most of work is done in nmad-post.sh.
-PM2_NMAD_COMPONENTS=
+PM2_NMAD_COMPONENTS="NewMad_Launcher_cmdline"

@@ -20,6 +20,12 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+
+static int nm_strat_split_all_init(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Strategy_split_all, &nm_strat_split_all_init, NULL, NULL);
+
 #define DATATYPE_DENSITY 2*1024
 
 
@@ -92,7 +98,7 @@ struct nm_so_strat_split_all {
 };
 
 /* Initialization */
-extern int nm_strat_split_all_init(void)
+static int nm_strat_split_all_init(void)
 {
   puk_component_declare("NewMad_Strategy_split_all",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_split_all_adapter_driver),
@@ -102,7 +108,6 @@ extern int nm_strat_split_all_init(void)
 
   return NM_ESUCCESS;
 }
-PADICO_MODULE_BUILTIN(NewMad_Strategy_split_all, &nm_strat_split_all_init, NULL, NULL);
 
 
 /** Initialize the gate storage for split_all strategy.

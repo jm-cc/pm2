@@ -24,10 +24,6 @@
 #endif
 
 
-#if !defined(CONFIG_PROTO_MAD3) && !defined(CONFIG_PADICO)
-extern void nm_cmdline_launcher_declare(void);
-#endif
-
 static puk_instance_t launcher_instance = NULL;
 static struct puk_receptacle_NewMad_Launcher_s r;
 static nm_gate_t *gates = NULL;
@@ -74,16 +70,17 @@ int nm_launcher_init(int *argc, char**argv)
   }
 
 #if defined(CONFIG_PROTO_MAD3)
-  nm_mad3_launcher_init();
-#elif !defined(CONFIG_PADICO)
-  nm_cmdline_launcher_declare();
+  const char launcher_name[] = "NewMad_Launcher_mad3";
+#elif defined(CONFIG_PADICO)
+  const char launcher_name[] = "NewMad_Launcher_newmadico";
+#else 
+  const char launcher_name[] = "NewMad_Launcher_cmdline";
 #endif
 
   /*
-   * NewMad initialization is performed by component 'NewMad_Launcher'
-   * (from proto_mad3 or from PadicoTM)
+   * NewMad initialization is performed by component 'NewMad_Launcher_*'
    */
-  puk_adapter_t launcher = puk_adapter_resolve("NewMad_Launcher");
+  puk_component_t launcher = puk_adapter_resolve(launcher_name);
   launcher_instance = puk_adapter_instanciate(launcher);
   puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
   (*r.driver->init)(r._status, argc, &*argv, "NewMadeleine");

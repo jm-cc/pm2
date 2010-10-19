@@ -17,6 +17,13 @@
 
 #include "nm_ibverbs.h"
 
+#include <Padico/Module.h>
+
+/* module declaration */
+static int nm_ibverbs_adaptrdma_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_ibverbs_adaptrdma, &nm_ibverbs_adaptrdma_load, NULL, NULL);
+
 /* *** method: 'adaptrdma' ********************************* */
 
 static const int nm_ibverbs_adaptrdma_block_granularity = 2048;
@@ -111,7 +118,6 @@ static int nm_ibverbs_adaptrdma_load(void)
 			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_adaptrdma_method));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_adaptrdma, &nm_ibverbs_adaptrdma_load, NULL, NULL);
 
 static void* nm_ibverbs_adaptrdma_instanciate(puk_instance_t instance, puk_context_t context)
 {

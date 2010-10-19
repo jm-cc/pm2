@@ -34,6 +34,11 @@
 #include <net/if.h>
 #include <netpacket/packet.h>
 
+#include <Padico/Module.h>
+
+static int nm_cmdline_launcher_declare(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Launcher_cmdline, &nm_cmdline_launcher_declare, NULL, NULL);
 
 /* ** Cmd line launcher ************************************ */
 
@@ -61,12 +66,12 @@ const static struct newmad_launcher_driver_s nm_cmdline_launcher_driver =
     .get_gates    = &nm_cmdline_launcher_get_gates
   };
 
-extern void nm_cmdline_launcher_declare(void)
+static int nm_cmdline_launcher_declare(void)
 {
-  puk_adapter_declare("NewMad_Launcher",
+  puk_adapter_declare("NewMad_Launcher_cmdline",
                       puk_component_provides("PadicoAdapter", "adapter", &nm_cmdline_launcher_adapter_driver),
                       puk_component_provides("NewMad_Launcher", "launcher", &nm_cmdline_launcher_driver ));
-
+  return 0;
 }
 
 

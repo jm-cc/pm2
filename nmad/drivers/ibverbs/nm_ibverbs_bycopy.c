@@ -17,6 +17,13 @@
 
 #include "nm_ibverbs.h"
 
+#include <Padico/Module.h>
+
+static int nm_ibverbs_bycopy_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_ibverbs_bycopy, &nm_ibverbs_bycopy_load, NULL, NULL);
+
+
 /* *** method: 'bycopy' ************************************ */
 
 #define NM_IBVERBS_BYCOPY_BLOCKSIZE 8192
@@ -126,7 +133,6 @@ static int nm_ibverbs_bycopy_load(void)
 			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_bycopy_method));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_bycopy, &nm_ibverbs_bycopy_load, NULL, NULL);
 
 static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_t context)
 {

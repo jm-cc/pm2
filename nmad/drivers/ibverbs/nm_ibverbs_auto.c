@@ -17,6 +17,12 @@
 
 #include "nm_ibverbs.h"
 
+#include <Padico/Module.h>
+
+static int nm_ibverbs_auto_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_ibverbs_auto, &nm_ibverbs_auto_load, NULL, NULL);
+
 
 /* *** method: 'auto' *********************************** */
 
@@ -72,7 +78,6 @@ static int nm_ibverbs_auto_load(void)
 			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_auto_method));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_auto, &nm_ibverbs_auto_load, NULL, NULL);
 
 static void*nm_ibverbs_auto_instanciate(puk_instance_t instance, puk_context_t context)
 {

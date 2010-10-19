@@ -20,6 +20,13 @@
 
 #include "nm_ibverbs.h"
 
+#include <Padico/Module.h>
+
+static int nm_ibverbs_lr2_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_ibverbs_lr2, &nm_ibverbs_lr2_load, NULL, NULL);
+
+
 /* *** method: 'lr2' *************************************** */
 
 #define NM_IBVERBS_LR2_BUFSIZE (512*1024)
@@ -143,7 +150,6 @@ static int nm_ibverbs_lr2_load(void)
 			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_lr2_method));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_lr2, &nm_ibverbs_lr2_load, NULL, NULL);
 
 /* ********************************************************* */
 

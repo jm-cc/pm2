@@ -23,6 +23,14 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+
+/* module declaration */
+static int nm_mx_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Driver_mx, &nm_mx_load, NULL, NULL);
+
+
 //#define DEBUG 1
 
 /** Initial number of packet wrappers */
@@ -220,6 +228,7 @@ static const struct puk_adapter_driver_s nm_mx_adapter_driver =
     .destroy     = &nm_mx_destroy
   };
 
+
 /** Component declaration */
 static int nm_mx_load(void)
 {
@@ -228,7 +237,6 @@ static int nm_mx_load(void)
 			puk_component_provides("NewMad_Driver", "driver", &nm_mx_driver));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_Driver_mx, &nm_mx_load, NULL, NULL);
 
 
 /** Return capabilities */

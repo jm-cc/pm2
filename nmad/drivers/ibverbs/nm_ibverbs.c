@@ -32,6 +32,12 @@
 
 #include "nm_ibverbs.h"
 
+#include <Padico/Module.h>
+
+static int nm_ibverbs_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Driver_ibverbs, &nm_ibverbs_load, NULL, NULL);
+
 
 /* *********************************************************
  * Rationale of the newmad/ibverbs driver
@@ -151,7 +157,6 @@ static int nm_ibverbs_load(void)
 			puk_component_provides("NewMad_Driver", "driver", &nm_ibverbs_driver));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_Driver_ibverbs, &nm_ibverbs_load, NULL, NULL);
 
 
 /** Instanciate functions */
@@ -465,7 +470,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 #ifdef NM_IBVERBS_RCACHE
 	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_rcache");
 #else
-	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_auto");
+	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_lr2");
 #endif
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;

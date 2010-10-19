@@ -21,6 +21,12 @@
 #include <Padico/Puk-ABI.h>
 #endif
 
+#include <Padico/Module.h>
+
+static int nm_ibverbs_rcache_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_ibverbs_rcache, &nm_ibverbs_rcache_load, NULL, NULL);
+
 
 /* *** method: 'rcache' ********************************* */
 
@@ -128,7 +134,6 @@ static int nm_ibverbs_rcache_load(void)
 			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_rcache_method));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_rcache, &nm_ibverbs_rcache_load, NULL, NULL);
 
 static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_t context)
 {

@@ -40,6 +40,12 @@
 #define NM_SYS(SYMBOL) SYMBOL
 #endif /* PADICO_ENABLE_PUKABI_FSYS */
 
+#include <Padico/Module.h>
+
+static int nm_tcp_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Driver_tcp, &nm_tcp_load, NULL, NULL);
+
 /** TCP driver per-instance data.
  */
 struct nm_tcp_drv
@@ -214,8 +220,6 @@ static int nm_tcp_load(void)
 			puk_component_provides("NewMad_Driver", "driver", &nm_tcp_driver));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_Driver_tcp, &nm_tcp_load, NULL, NULL);
-
 
 
 /** Instanciate functions */

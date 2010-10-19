@@ -19,6 +19,12 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+
+static int nm_strat_split_balance_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_load, NULL, NULL);
+
 /* Components structures:
  */
 
@@ -68,7 +74,6 @@ static int nm_strat_split_balance_load(void)
 			puk_component_attr("nm_so_copy_on_send_threshold", NULL));
   return NM_ESUCCESS;
 }
-PADICO_MODULE_BUILTIN(NewMad_Strategy_split_balance, &nm_strat_split_balance_load, NULL, NULL);
 
 
 /** Initialize the gate storage for split_balance strategy.

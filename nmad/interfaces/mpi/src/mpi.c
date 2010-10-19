@@ -20,9 +20,6 @@
 
 #include "mpi.h"
 #include "mpi_nmad_private.h"
-#ifdef CONFIG_PROTO_MAD3
-#include <nm_mad3_public.h>
-#endif
 #include <stdint.h>
 #include <assert.h>
 #include <errno.h>

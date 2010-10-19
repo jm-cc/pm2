@@ -19,10 +19,6 @@
 #include <nm_core_interface.h>
 #include <pm2_common.h>
 
-#ifdef CONFIG_PROTO_MAD3
-#include <nm_mad3_public.h>
-#endif
-
 
 static puk_instance_t launcher_instance = NULL;
 static struct puk_receptacle_NewMad_Launcher_s r;

@@ -1136,11 +1136,12 @@ int MPI_Init(int *argc,
       padico_puk_init(*argc, *argv);
     }
 
-#ifdef CONFIG_PROTO_MAD3
-  /*
-   * Explicitely load NewMad_Launcher if proto_mad3 is selected
-   */
-  nm_mad3_launcher_init();
+#if defined(CONFIG_PROTO_MAD3)
+  const char launcher_name[] = "NewMad_Launcher_mad3";
+#elif defined(CONFIG_PADICO)
+  const char launcher_name[] = "NewMad_Launcher_newmadico";
+#else 
+  const char launcher_name[] = "NewMad_Launcher_cmdline";
 #endif
 
   /*

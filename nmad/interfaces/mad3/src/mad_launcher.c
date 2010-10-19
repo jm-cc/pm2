@@ -25,6 +25,13 @@
 #include <nm_mad3_public.h>
 #include <nm_mad3_private.h>
 
+#include <Padico/Module.h>
+
+static int nm_mad3_launcher_init(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Launcher_mad3, &nm_mad3_launcher_init, NULL, NULL);
+
+
 struct mad_launcher_status_s
 {
   p_mad_madeleine_t madeleine;
@@ -188,10 +195,11 @@ static void mad_launcher_get_gates(void*_status, nm_gate_t*gates)
 
 /* ********************************************************* */
 
-extern void nm_mad3_launcher_init(void)
+static int nm_mad3_launcher_init(void)
 {
-  puk_adapter_declare("NewMad_Launcher",
+  puk_adapter_declare("NewMad_Launcher_mad3",
                       puk_component_provides("PadicoAdapter", "adapter", &mad_launcher_adapter),
                       puk_component_provides("NewMad_Launcher", "launcher", &mad_launcher_driver ));
+  return 0;
 }
 

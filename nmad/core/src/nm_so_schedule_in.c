@@ -23,12 +23,12 @@
 #include <ccs_public.h>
 #include <segment.h>
 
-static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				  const void*ptr, nm_so_short_data_header_t*h);
-static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				  const void*ptr, nm_so_data_header_t*h);
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, 
-			   struct nm_so_ctrl_rdv_header*h);
+static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_short_data_header_t*h, struct nm_pkt_wrap *p_pw);
+static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_data_header_t*h, struct nm_pkt_wrap *p_pw);
+static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+			   struct nm_so_ctrl_rdv_header*h, struct nm_pkt_wrap *p_pw);
 
 /** a chunk of unexpected message to be stored */
 struct nm_unexpected_s
@@ -259,15 +259,6 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
     }
 #warning Paulette: lock
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
-  const struct nm_so_event_s event =
-    {
-      .status = NM_STATUS_UNEXPECTED,
-      .p_gate = p_pw->p_gate,
-      .tag = tag,
-      .seq = seq,
-      .len = len
-    };
-  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
 }
 
 void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct iovec*iov, int num_entries)
@@ -315,20 +306,20 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 	  {
 	    struct nm_so_short_data_header *h = header;
 	    const void *ptr = header + NM_SO_SHORT_DATA_HEADER_SIZE;
-	    nm_short_data_handler(p_core, p_unpack, ptr, h);
+	    nm_short_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_DATA:
 	  {
 	    struct nm_so_data_header *h = header;
 	    const void *ptr = header + NM_SO_DATA_HEADER_SIZE + h->skip;
-	    nm_small_data_handler(p_core, p_unpack, ptr, h);
+	    nm_small_data_handler(p_core, p_gate, p_unpack, ptr, h, NULL);
 	  }
 	  break;
 	case NM_PROTO_RDV:
 	  {
 	    struct nm_so_ctrl_rdv_header *rdv = header;
-	    nm_rdv_handler(p_core, p_unpack, rdv);
+	    nm_rdv_handler(p_core, p_gate, p_unpack, rdv, NULL);
 	  }
 	  break;
 	}
@@ -392,52 +383,116 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     return -NM_ENOTIMPL;
 }
 
-/** Process a short data request with a matching unpack (NM_PROTO_SHORT_DATA).
+/** Process a short data request (NM_PROTO_SHORT_DATA)- p_unpack may be NULL (unexpected)
  */
-static void nm_short_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_short_data_header_t*h)
+static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_short_data_header_t*h, struct nm_pkt_wrap *p_pw)
 {
-  if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+  const uint32_t len = h->len;
+  const uint32_t chunk_offset = 0;
+  if(p_unpack)
     {
-      const uint32_t len = h->len;
-      const uint32_t chunk_offset = 0;
-      const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
-      nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
-      nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
-      nm_so_unpack_check_completion(p_core, p_unpack, len);
-      struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
-      uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
-      uh->len = NM_SO_SHORT_DATA_HEADER_SIZE + len;
+      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+	{
+	  const uint8_t flags = NM_PROTO_FLAG_LASTCHUNK;
+	  nm_so_data_flags_decode(p_unpack, flags, chunk_offset, len);
+	  nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
+	  nm_so_unpack_check_completion(p_core, p_unpack, len);
+	  struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
+	  uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
+	  uh->len = NM_SO_SHORT_DATA_HEADER_SIZE + len;
+	}
+    }
+  else
+    {
+      const nm_core_tag_t tag = h->tag_id;
+      const nm_seq_t seq = h->seq;
+      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
+      const struct nm_so_event_s event =
+	{
+	  .status = NM_STATUS_UNEXPECTED,
+	  .p_gate = p_gate,
+	  .tag = tag,
+	  .seq = seq,
+	  .len = len
+	};
+      nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
     }
 }
 
-/** Process a small data request with a matching unpack (NM_PROTO_DATA).
+/** Process a small data request (NM_PROTO_DATA)- p_unpack may be NULL (unexpected)
  */
-static void nm_small_data_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const void*ptr, nm_so_data_header_t*h)
-{
-  if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
-    {
-      const uint32_t len = h->len;
-      const uint32_t chunk_offset = h->chunk_offset;
-      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
-      nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
-      nm_so_unpack_check_completion(p_core, p_unpack, len);
-      const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(len) : len;
-      const uint32_t unused_len = (h->skip == 0) ? size : 0;
-      struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
-      uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
-      uh->len = NM_SO_DATA_HEADER_SIZE + unused_len;
-    }
-}
-
-/** Process a received rendez-vous request with a matching unpack
- */
-static void nm_rdv_handler(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_so_ctrl_rdv_header*h)
+static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate,  struct nm_unpack_s*p_unpack,
+				  const void*ptr, nm_so_data_header_t*h, struct nm_pkt_wrap *p_pw)
 {
   const uint32_t len = h->len;
   const uint32_t chunk_offset = h->chunk_offset;
-  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
-  nm_so_rdv_success(p_core, p_unpack, len, chunk_offset);
-  h->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
+  if(p_unpack)
+    {
+      if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
+	{
+	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
+	  nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
+	  nm_so_unpack_check_completion(p_core, p_unpack, len);
+	  const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(len) : len;
+	  const uint32_t unused_len = (h->skip == 0) ? size : 0;
+	  struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
+	  uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
+	  uh->len = NM_SO_DATA_HEADER_SIZE + unused_len;
+	}
+    }
+  else
+    {
+      const nm_core_tag_t tag = h->tag_id;
+      const nm_seq_t seq = h->seq;
+      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
+      if(chunk_offset == 0)
+	{
+	  const struct nm_so_event_s event =
+	    {
+	      .status = NM_STATUS_UNEXPECTED,
+	      .p_gate = p_gate,
+	      .tag = tag,
+	      .seq = seq,
+	      .len = len
+	    };
+	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
+	}
+    }
+}
+
+/** Process a received rendez-vous request (NM_PROTO_RDV)- 
+ * either p_unpack may be NULL (storing unexpected) or p_pw (unpacking unexpected)
+ */
+static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
+			   struct nm_so_ctrl_rdv_header*h, struct nm_pkt_wrap *p_pw)
+{
+  const uint32_t len = h->len;
+  const uint32_t chunk_offset = h->chunk_offset;
+  if(p_unpack)
+    {
+      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
+      nm_so_rdv_success(p_core, p_unpack, len, chunk_offset);
+      h->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
+    }
+  else
+    {
+      const nm_core_tag_t tag = h->tag_id;
+      const nm_seq_t seq = h->seq;
+      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
+      if(chunk_offset == 0)
+	{
+	  const struct nm_so_event_s event =
+	    {
+	      .status = NM_STATUS_UNEXPECTED,
+	      .p_gate = p_gate,
+	      .tag = tag,
+	      .seq = seq,
+	      .len = len
+	    };
+	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
+	}
+    }
 }
 
 /** Process a complete rendez-vous ready-to-receive request.
@@ -567,14 +622,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	    struct nm_gate*p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
 	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    if(p_unpack)
-	      {
-		nm_short_data_handler(p_core, p_unpack, ptr, sh);
-	      }
-	    else
-	      { 
-		nm_unexpected_store(p_core, p_gate, sh, len, tag, seq, p_pw);
-	      }
+	    nm_short_data_handler(p_core, p_gate, p_unpack, ptr, sh, p_pw);
 	    ptr += len;
 	  }
 	  break;
@@ -616,15 +664,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	    struct nm_gate*p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
 	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    if(p_unpack)
-	      {
-		/* Cool! We already have a matching unpack for this packet */
-		nm_small_data_handler(p_core, p_unpack, data, dh);
-	      }
-	    else
-	      { 
-		nm_unexpected_store(p_core, p_gate, dh, dh->len, tag, seq, p_pw);
-	      }
+	    nm_small_data_handler(p_core, p_gate, p_unpack, data, dh, p_pw);
 	  }
 	  break;
 
@@ -642,18 +682,10 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
 	    const nm_core_tag_t tag = ch->rdv.tag_id;
 	    const nm_seq_t seq = ch->rdv.seq;
-	    const uint32_t len = ch->rdv.len;
 	    struct nm_gate *p_gate = p_pw->p_gate;
 	    struct nm_core*p_core = p_gate->p_core;
 	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    if(p_unpack)
-	      {
-		nm_rdv_handler(p_core, p_unpack, &ch->rdv);
-	      }
-	    else 
-	      {
-		nm_unexpected_store(p_core, p_gate, ch, len, tag, seq, p_pw);
-	      }
+	    nm_rdv_handler(p_core, p_gate, p_unpack, &ch->rdv, p_pw);
 	  }
 	  break;
 

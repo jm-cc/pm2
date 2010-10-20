@@ -539,7 +539,7 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_crq->trk_id);
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
   
-  p_ibverbs_cnx->method_instance = puk_component_instanciate(p_ibverbs_drv->trks_array[p_crq->trk_id].method, NULL, NULL);
+  p_ibverbs_cnx->method_instance = puk_adapter_instanciate(p_ibverbs_drv->trks_array[p_crq->trk_id].method);
   puk_instance_indirect_NewMad_ibverbs_method(p_ibverbs_cnx->method_instance, NULL, &p_ibverbs_cnx->method);
   
   (*p_ibverbs_cnx->method.driver->cnx_create)(p_ibverbs_cnx->method._status, p_ibverbs_cnx, p_ibverbs_drv);

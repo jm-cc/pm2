@@ -19,6 +19,9 @@
 #include <nm_core_interface.h>
 #include <pm2_common.h>
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(NewMad_Core);
+
 
 static puk_instance_t launcher_instance = NULL;
 static struct puk_receptacle_NewMad_Launcher_s r;

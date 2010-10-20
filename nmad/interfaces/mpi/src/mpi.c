@@ -24,6 +24,9 @@
 #include <assert.h>
 #include <errno.h>
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(NewMad_Core);
+
 static puk_instance_t launcher_instance = NULL;
 static mpir_internal_data_t mpir_internal_data;
 

@@ -22,6 +22,9 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
+
 #ifdef PIOMAN
 #  ifdef FINE_GRAIN_LOCKING
 piom_spinlock_t nm_tac_lock;

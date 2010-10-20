@@ -84,8 +84,8 @@ static void*nm_ibverbs_auto_instanciate(puk_instance_t instance, puk_context_t c
   struct nm_ibverbs_auto*status = TBX_MALLOC(sizeof(struct nm_ibverbs_auto));
   puk_component_t adaptrdma = puk_adapter_resolve("NewMad_ibverbs_adaptrdma");
   puk_component_t regrdma   = puk_adapter_resolve("NewMad_ibverbs_regrdma");
-  status->adaptrdma.instance = puk_component_instanciate(adaptrdma, NULL, NULL);
-  status->regrdma.instance   = puk_component_instanciate(regrdma, NULL, NULL);
+  status->adaptrdma.instance = puk_adapter_instanciate(adaptrdma);
+  status->regrdma.instance   = puk_adapter_instanciate(regrdma);
   puk_instance_indirect_NewMad_ibverbs_method(status->adaptrdma.instance, NULL, &status->adaptrdma.r);
   puk_instance_indirect_NewMad_ibverbs_method(status->regrdma.instance, NULL, &status->regrdma.r);
   status->r_send = NULL;

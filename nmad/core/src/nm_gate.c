@@ -15,6 +15,9 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(NewMad_Core);
+
 /** Initialize a new gate.
  *
  * out parameters:

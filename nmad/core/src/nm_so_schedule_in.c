@@ -476,20 +476,20 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 			   struct nm_so_ctrl_rdv_header*h, struct nm_pkt_wrap *p_pw)
 {
-  const uint32_t len = h->len;
+  const uint32_t chunk_len = h->len;
   const uint32_t chunk_offset = h->chunk_offset;
   if(p_unpack)
     {
-      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
-      nm_so_rdv_success(p_core, p_unpack, len, chunk_offset);
+      nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
+      nm_so_rdv_success(p_core, p_unpack, chunk_len, chunk_offset);
       h->proto_id = NM_PROTO_CTRL_UNUSED; /* mark as read */
     }
   else
     {
       const nm_core_tag_t tag = h->tag_id;
       const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
-      if(chunk_offset == 0)
+      nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
+      if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
 	{
 	  const struct nm_so_event_s event =
 	    {
@@ -497,7 +497,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
 	      .p_gate = p_gate,
 	      .tag = tag,
 	      .seq = seq,
-	      .len = len
+	      .len = chunk_offset + chunk_len
 	    };
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
 	}

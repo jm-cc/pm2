@@ -18,4 +18,6 @@ export FLAVOR_DEFAULT:=nmad
 
 PM2_SRCDIR := @abs_srcdir@
 
+LDFLAGS += -lpthread
+
 include $(PM2_SRCROOT)/make/apps.mak

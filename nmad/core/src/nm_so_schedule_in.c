@@ -209,7 +209,7 @@ static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, 
 static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct nm_unpack_s*p_unpack, int chunk_len)
 {
   p_unpack->cumulated_len += chunk_len;
-  if(p_unpack->cumulated_len >= p_unpack->expected_len)
+  if(p_unpack->cumulated_len == p_unpack->expected_len)
     {
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
@@ -220,13 +220,22 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 	};
       nm_core_status_event(p_core, &event, &p_unpack->status);
     }
+  else if(p_unpack->cumulated_len > p_unpack->expected_len)
+    {
+      fprintf(stderr, "# nmad: received more data than expected.\n");
+      abort();
+    }
 }
 
 /** decode and manage data flags found in data/short_data/rdv packets */
 static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t flags,
 					   uint32_t chunk_offset, uint32_t chunk_len)
 {
-  assert(chunk_len <= p_unpack->expected_len);
+  if(chunk_offset + chunk_len > p_unpack->expected_len)
+    {
+      fprintf(stderr, "# nmad: received more data than expected.\n");
+      abort();
+    }
   if(flags & NM_PROTO_FLAG_LASTCHUNK)
     {
       /* Update the real size to receive */
@@ -425,16 +434,16 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate,  struct nm_unpack_s*p_unpack,
 				  const void*ptr, nm_so_data_header_t*h, struct nm_pkt_wrap *p_pw)
 {
-  const uint32_t len = h->len;
+  const uint32_t chunk_len = h->len;
   const uint32_t chunk_offset = h->chunk_offset;
   if(p_unpack)
     {
       if(!(p_unpack->status & NM_STATUS_UNPACK_CANCELLED))
 	{
-	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, len);
-	  nm_so_copy_data(p_unpack, chunk_offset, ptr, len);
-	  nm_so_unpack_check_completion(p_core, p_unpack, len);
-	  const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(len) : len;
+	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
+	  nm_so_copy_data(p_unpack, chunk_offset, ptr, chunk_len);
+	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
+	  const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(chunk_len) : chunk_len;
 	  const uint32_t unused_len = (h->skip == 0) ? size : 0;
 	  struct nm_so_unused_header*uh = (struct nm_so_unused_header*)h;
 	  uh->proto_id = NM_PROTO_UNUSED; /* mark as read */
@@ -445,8 +454,8 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
     {
       const nm_core_tag_t tag = h->tag_id;
       const nm_seq_t seq = h->seq;
-      nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
-      if(chunk_offset == 0)
+      nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
+      if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
 	{
 	  const struct nm_so_event_s event =
 	    {
@@ -454,7 +463,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	      .p_gate = p_gate,
 	      .tag = tag,
 	      .seq = seq,
-	      .len = len
+	      .len = chunk_offset + chunk_len
 	    };
 	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
 	}

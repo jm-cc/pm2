@@ -504,7 +504,7 @@ static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
     }
   const nm_sr_event_info_t info = { 
     .recv_completed.p_request = p_request,
-    .recv_completed.p_gate = event->p_gate
+    .recv_completed.p_gate = p_unpack->p_gate
   };
   nm_sr_monitor_notify(p_request, sr_event, &info);
   nm_sr_request_signal(p_request, sr_event);

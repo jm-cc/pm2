@@ -23,6 +23,9 @@
 #define TBX_CHECKSUM_H
 
 #include <stdint.h>
+#ifdef __SSE4_1__
+#include <smmintrin.h>
+#endif
 
 /** Dummy checksum function that actually does not checksum.
  */
@@ -163,9 +166,9 @@ static inline uint32_t tbx_checksum_fletcher64(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
 {
-  const uint32_t*data = _data;
-  const int len = _len / 4;
-  uint32_t hash, i;
+  const uint64_t*data = _data;
+  const int len = _len / 8;
+  uint64_t hash, i;
   for(hash = i = 0; i < len; ++i)
     {
       hash += data[i];
@@ -175,7 +178,8 @@ static inline uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
   hash += (hash << 3);
   hash ^= (hash >> 11);
   hash += (hash << 15);
-  return hash;
+  const uint32_t h32 = (hash & 0xFFFFFFFF) ^ ((hash & 0xFFFFFFFF00000000) >> 32);
+  return h32;
 }
 
 
@@ -313,6 +317,82 @@ static inline uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t _len)
   const uint32_t h32 = (h & 0xFFFFFFFF) ^ ((h & 0xFFFFFFFF00000000) >> 32);
   return h32;
 } 
+
+
+/* ********************************************************* */
+/** Paul Hsieh SuperFastHash
+ * distributed by author under the terms of GPLv2
+ */
+#define get16bits(d) (*((const uint16_t *) (d)))
+static inline uint32_t tbx_checksum_hsieh(const void*_data, size_t len)
+{
+  const char*data = _data;
+  uint32_t hash = len, tmp;
+  int rem;
+  
+  if (len <= 0 || data == NULL) return 0;
+  
+  rem = len & 3;
+  len >>= 2;
+  
+  /* Main loop */
+  for (;len > 0; len--) 
+    {
+      hash  += get16bits (data);
+      tmp    = (get16bits (data+2) << 11) ^ hash;
+      hash   = (hash << 16) ^ tmp;
+      data  += 2*sizeof (uint16_t);
+      hash  += hash >> 11;
+    }
+  
+  /* Handle end cases */
+  switch (rem) {
+  case 3: hash += get16bits (data);
+    hash ^= hash << 16;
+    hash ^= data[sizeof (uint16_t)] << 18;
+    hash += hash >> 11;
+    break;
+  case 2: hash += get16bits (data);
+    hash ^= hash << 11;
+    hash += hash >> 17;
+    break;
+  case 1: hash += *data;
+    hash ^= hash << 10;
+    hash += hash >> 1;
+  }
+  
+  /* Force "avalanching" of final 127 bits */
+  hash ^= hash << 3;
+  hash += hash >> 5;
+  hash ^= hash << 4;
+  hash += hash >> 17;
+  hash ^= hash << 25;
+  hash += hash >> 6;
+  
+  return hash;
+}
+
+
+/* ********************************************************* */
+/** CRC32 using SSE 4.2
+ */
+static inline uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
+{
+#if defined(__SSE4_2__)
+  const int len = _len / 4;
+  const uint32_t*data = _data;
+  uint32_t crc = 0;
+  int i;
+  for(i = 0; i < len; i++)
+    {
+      _mm_crc32_u32(crc, data[i]);
+    }
+  return crc;
+#else
+  fprintf(stderr, "# tbx: CRC32 requires SSE4.2.\n"
+  abort();
+#endif
+}
 
 #endif /* TBX_CHECKSUM_H */
 

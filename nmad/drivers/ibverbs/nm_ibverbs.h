@@ -24,6 +24,8 @@
 /** enable checksum in bycopy/adaptrdma methods (*not* rcache) */
 #define NM_IBVERBS_CHECKSUM
 
+#define nm_ibverbs_checksum tbx_checksum_block64
+
 
 /** list of WRIDs used in the driver. */
 enum {
@@ -285,19 +287,6 @@ static inline void nm_ibverbs_send_flushn(struct nm_ibverbs_cnx*__restrict__ p_i
     }
 }
 
-static inline uint64_t nm_ibverbs_checksum(const void*buffer, int size)
-{
-  uint64_t checksum = 0;
-  int i;
-  const int checksum_blocks = size / sizeof(uint64_t);
-  const uint64_t*ptr = (const uint64_t*)buffer;
-  for(i = 0 ; i < checksum_blocks ; i++)
-    {
-      checksum += *ptr;
-      ptr++;
-    }
-  return checksum;
-}
 
 #endif /* NM_IBVERBS_H */
 

@@ -70,6 +70,7 @@
 #include "tbx_slist.h"
 #include "tbx_list.h"
 #include "tbx_htable.h"
+#include "tbx_checksum.h"
 #include "tbx_string.h"
 #include "tbx_darray.h"
 #include "tbx_parameter.h"
@@ -81,6 +82,5 @@
 #include "tbx_slist_inline.h"
 #include "tbx_list_inline.h"
 #include "tbx_darray_inline.h"
-
 
 #endif				/* TBX_H */

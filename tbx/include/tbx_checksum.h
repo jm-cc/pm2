@@ -201,6 +201,25 @@ static inline uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
 
 
 /* ********************************************************* */
+/** Knuth hashing.
+ * Algorithm by Donald Knuth
+ */
+static inline uint32_t tbx_checksum_knuth(const void*_data, size_t _len)
+{
+  const uint64_t*data = _data;
+  int len = _len / 8;
+  uint64_t h = _len;
+  int i;
+  for(i = 0; i < len; i++)
+    {
+      h = ((h << 5) ^ (h >> 27)) ^ data[i];
+    }
+  const uint32_t h32 = (h & 0xFFFFFFFF) ^ ((h & 0xFFFFFFFF00000000) >> 32);
+  return h32;
+}
+
+
+/* ********************************************************* */
 /** MurmurHash2A, by Austin Appleby
  * Reference implementation in public domain, from:
  * http://sites.google.com/site/murmurhash/
@@ -245,6 +264,12 @@ static inline uint32_t tbx_checksum_murmurhash2a (const void*_data, size_t len)
   return h;
 }
 
+
+/* ********************************************************* */
+/** MurmurHash64A, by Austin Appleby
+ * 64-bit version of MurmurHash2A, folded to 32 bits.
+ * Reference implementation in public domain, onverted from C++ to C.
+ */
 static inline uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t _len)
 {
   const int seed = 0;

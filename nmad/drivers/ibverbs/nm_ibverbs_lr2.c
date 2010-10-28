@@ -60,7 +60,7 @@ static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(struct lr2_step_s) - 1;
 struct lr2_header_s
 {
 #ifdef NM_IBVERBS_CHECKSUM
-  volatile uint64_t checksum;
+  volatile uint32_t checksum;
 #endif
   volatile uint32_t busy; /* 'busy' has to be the last field in the struct */
 } __attribute__((packed));

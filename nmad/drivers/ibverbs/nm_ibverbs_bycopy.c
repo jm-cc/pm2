@@ -43,7 +43,7 @@ struct nm_ibverbs_bycopy_header
   uint16_t offset;         /**< data offset (packet_size = BUFSIZE - offset) */
   uint8_t  ack;            /**< credits acknowledged */
 #ifdef NM_IBVERBS_CHECKSUM
-  uint64_t checksum;
+  uint32_t checksum;
 #endif
   volatile uint8_t status; /**< binary mask- describes the content of the message */
 }  __attribute__((packed));

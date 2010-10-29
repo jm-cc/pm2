@@ -23,6 +23,9 @@
 #define TBX_CHECKSUM_H
 
 #include <stdint.h>
+#ifdef __SSE2__
+#include <emmintrin.h>
+#endif
 #ifdef __SSE4_1__
 #include <smmintrin.h>
 #endif
@@ -32,6 +35,39 @@
 static inline uint32_t tbx_checksum_dummy(const void*_data, size_t _len)
 {
   return 0;
+}
+
+/* ********************************************************* */
+/** 32 bit XOR checksum
+ * . optimized with SSE2 128 bits XOR if available.
+ * . using 64 bit XOR then folded to 32 bits else.
+ */
+static inline uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
+{
+#ifdef __SSE2__
+  const uint64_t*data = _data;
+  int len = _len / 8;
+  __m128i sum128 = _mm_setzero_si128();
+  int i;
+  for(i = 0; i < len; i += 2)
+    {
+      sum128 = _mm_xor_si128(sum128, _mm_set_epi64x(data[i], data[i + 1]));
+    }
+  const uint32_t sum32 = _mm_extract_epi32(sum128, 0) ^  _mm_extract_epi32(sum128, 1) ^
+    _mm_extract_epi32(sum128, 2) ^ _mm_extract_epi32(sum128, 3);
+  return sum32;
+#else
+  const uint64_t*data = _data;
+  int len = _len / 8;
+  uint64_t sum64 = 0;
+  int i;
+  for(i = 0; i < len; i++)
+    {
+      sum64 ^= data[i];
+    }
+  const uint32_t sum32 = (sum64 & 0xFFFFFFFF) ^ ((sum64 & 0xFFFFFFFF00000000) >> 32);
+  return sum32;
+#endif
 }
 
 /* ********************************************************* */

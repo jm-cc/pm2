@@ -24,6 +24,7 @@ static const struct tbx_checksum_s
   uint32_t (*func)(const void*, size_t);
 } checksums[] =
   {
+    { .name = "xor32",         .func = &tbx_checksum_xor32 },
     { .name = "plain32",       .func = &tbx_checksum_plain32 },
     { .name = "block64",       .func = &tbx_checksum_block64 },
     { .name = "Adler32",       .func = &tbx_checksum_adler32 },
@@ -56,10 +57,10 @@ int main(int argc, char *argv[])
       struct timespec t1, t2;
       printf("# %s\n", checksums[i].name);
       clock_gettime(CLOCK_MONOTONIC, &t1);
-      int checksum = (*checksums[i].func)(buffer, max_size);
+      uint32_t checksum = (*checksums[i].func)(buffer, max_size);
       clock_gettime(CLOCK_MONOTONIC, &t2);
       double time_usec = (t2.tv_sec - t1.tv_sec) * 1000000.0 + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
-      printf("  checksum = %x; time = %f usec.; %f MB/s\n", (unsigned)checksum, time_usec, max_size/time_usec);
+      printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s\n", (unsigned)checksum, time_usec, max_size/time_usec);
     }
 
   tbx_exit();

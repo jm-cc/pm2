@@ -375,24 +375,59 @@ static inline uint32_t tbx_checksum_hsieh(const void*_data, size_t len)
 
 /* ********************************************************* */
 /** CRC32 using SSE 4.2
+ * Code from Linux kernel 2.6.27 (GPL v2)
+ * @author Austin Zhang
  */
+
+#if defined(__SSE4_2__)
+
+#define SCALE_F sizeof(unsigned long)
+#ifdef CONFIG_X86_64
+#define REX_PRE "0x48, "
+#else
+#define REX_PRE
+#endif
+
+static inline uint32_t crc32c_intel_le_hw_byte(uint32_t crc, unsigned char const *data, size_t length)
+{
+  while (length--) {
+    __asm__ __volatile__(
+			 ".byte 0xf2, 0xf, 0x38, 0xf0, 0xf1"
+			 :"=S"(crc)
+			 :"0"(crc), "c"(*data)
+			 );
+    data++;
+  }
+  
+  return crc;
+}
+static inline uint32_t crc32c_intel_le_hw(uint32_t crc, unsigned char const *p, size_t len)
+{
+  unsigned int iquotient = len / SCALE_F;
+  unsigned int iremainder = len % SCALE_F;
+  unsigned long *ptmp = (unsigned long *)p;
+  
+  while (iquotient--) {
+    __asm__ __volatile__(
+			 ".byte 0xf2, " REX_PRE "0xf, 0x38, 0xf1, 0xf1;"
+			 :"=S"(crc)
+			 :"0"(crc), "c"(*ptmp)
+			 );
+    ptmp++;
+  }
+  
+  if (iremainder)
+    crc = crc32c_intel_le_hw_byte(crc, (unsigned char *)ptmp, iremainder);
+  
+  return crc;
+}
+
 static inline uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
 {
-#if defined(__SSE4_2__)
-  const int len = _len / 4;
-  const uint32_t*data = _data;
-  uint32_t crc = 0;
-  int i;
-  for(i = 0; i < len; i++)
-    {
-      _mm_crc32_u32(crc, data[i]);
-    }
-  return crc;
-#else
-  fprintf(stderr, "# tbx: CRC32 requires SSE4.2.\n");
-  abort();
-#endif
+  uint32_t h = crc32c_intel_le_hw(0, _data, _len);
+  return h;
 }
+#endif
 
 #endif /* TBX_CHECKSUM_H */
 

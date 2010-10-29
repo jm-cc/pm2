@@ -26,9 +26,6 @@
 #ifdef __SSE2__
 #include <emmintrin.h>
 #endif
-#ifdef __SSE4_1__
-#include <smmintrin.h>
-#endif
 
 /** Dummy checksum function that actually does not checksum.
  */
@@ -53,8 +50,11 @@ static inline uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
     {
       sum128 = _mm_xor_si128(sum128, _mm_set_epi64x(data[i], data[i + 1]));
     }
-  const uint32_t sum32 = _mm_extract_epi32(sum128, 0) ^  _mm_extract_epi32(sum128, 1) ^
-    _mm_extract_epi32(sum128, 2) ^ _mm_extract_epi32(sum128, 3);
+  const uint32_t sum32 =
+    (_mm_extract_epi16(sum128, 0) | (_mm_extract_epi16(sum128, 1) << 16)) ^ 
+    (_mm_extract_epi16(sum128, 2) | (_mm_extract_epi16(sum128, 3) << 16)) ^ 
+    (_mm_extract_epi16(sum128, 4) | (_mm_extract_epi16(sum128, 5) << 16)) ^ 
+    (_mm_extract_epi16(sum128, 6) | (_mm_extract_epi16(sum128, 7) << 16));
   return sum32;
 #else
   const uint64_t*data = _data;

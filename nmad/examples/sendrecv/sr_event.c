@@ -69,7 +69,7 @@ int main(int argc, char **argv)
   const size_t short_len = 1 + strlen(short_msg);
   const size_t small_len = 1 + strlen(small_msg);
 
-  buf = malloc(long_len);
+  buf = malloc(2 * long_len); /* large enough to receive iovecs */
   
   init(&argc, argv);
   

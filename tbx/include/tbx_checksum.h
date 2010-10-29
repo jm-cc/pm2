@@ -389,7 +389,7 @@ static inline uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
     }
   return crc;
 #else
-  fprintf(stderr, "# tbx: CRC32 requires SSE4.2.\n"
+  fprintf(stderr, "# tbx: CRC32 requires SSE4.2.\n");
   abort();
 #endif
 }

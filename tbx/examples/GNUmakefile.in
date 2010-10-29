@@ -29,6 +29,8 @@ endif # FLAVOR
 
 CFLAGS ?= -Wall -Wmissing-prototypes
 
+CFLAGS += -march=native
+LDFLAGS += -lrt
 
 include $(PM2_SRCROOT)/make/apps.mak
 

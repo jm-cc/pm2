@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     {
       buffer[i] = rand();
     }
+  printf("\n# ## in memory (128 MB block)\n");
   for(i = 0; checksums[i].name; i++)
     {
       struct timespec t1, t2;
@@ -60,9 +61,24 @@ int main(int argc, char *argv[])
       uint32_t checksum = (*checksums[i].func)(buffer, max_size);
       clock_gettime(CLOCK_MONOTONIC, &t2);
       double time_usec = (t2.tv_sec - t1.tv_sec) * 1000000.0 + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
-      printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s\n", (unsigned)checksum, time_usec, max_size/time_usec);
+      printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s; %6.3f nsec/word\n",
+	     (unsigned)checksum, time_usec, max_size/time_usec, (1000.0*time_usec*8)/max_size);
     }
-
+  printf("\n# ## in cache (64 kB block)\n");
+  for(i = 0; checksums[i].name; i++)
+    {
+      const int small_size = 64 * 1024;
+      struct timespec t1, t2;
+      printf("# %s\n", checksums[i].name);
+      uint32_t checksum = (*checksums[i].func)(buffer, small_size);
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      checksum = (*checksums[i].func)(buffer, small_size);
+      clock_gettime(CLOCK_MONOTONIC, &t2);
+      double time_usec = (t2.tv_sec - t1.tv_sec) * 1000000.0 + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
+      printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s; %6.3f nsec/word\n",
+	     (unsigned)checksum, time_usec, small_size/time_usec, (1000.0*time_usec*8)/small_size);
+    }
+  
   tbx_exit();
   return 0;
 }

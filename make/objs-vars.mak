@@ -172,7 +172,7 @@ MOD_DEPENDS   = $(strip $(patsubst %,$(MOD_GEN_DEP)/%.d, \
 			$(notdir $(MOD_OBJECTS) $(MOD_PICS) $(MOD_PREPROC))))
 # Flags de compilation pour avoir les dépendances au cours de la compilation
 ifneq ($(DEP_ON_FLY),false)
-CPPFLAGS += -MMD -MP -MF $(MOD_GEN_DEP)/$(notdir $@).d
+CPPFLAGS += -cpp -MMD -MP -MF $(MOD_GEN_DEP)/$(notdir $@).d
 #	-MT '$(MOD_GEN_DEP)/$(notdir $@).d'
 endif
 CC_DEPFLAGS = -MM

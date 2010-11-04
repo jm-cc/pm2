@@ -371,9 +371,9 @@ nm_tcp_query		(struct nm_drv *p_drv,
 #endif
 #ifdef PM2_NUIOA
 	p_tcp_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
 	p_tcp_drv->caps.latency = INT_MAX;
 	p_tcp_drv->caps.bandwidth = 0;
-#endif
 
         p_drv->priv = p_tcp_drv;
 	err = NM_ESUCCESS;

@@ -217,9 +217,9 @@ static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *pa
   p_qsnet_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
   p_qsnet_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
-  p_qsnet_drv->caps.latency = 225 ; /* from sr_ping */
-  p_qsnet_drv->caps.bandwidth = 837; /* from sr_ping, hardcode 900 instead? */
 #endif
+  p_qsnet_drv->caps.latency = 2250 ; /* from sr_ping */
+  p_qsnet_drv->caps.bandwidth = 837; /* from sr_ping, hardcode 900 instead? */
   
   p_drv->priv = p_qsnet_drv;
   err = NM_ESUCCESS;

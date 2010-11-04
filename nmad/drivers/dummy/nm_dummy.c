@@ -174,9 +174,9 @@ nm_dummy_query			(struct nm_drv *p_drv,
         p_dummy_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
 	p_dummy_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
 	p_dummy_drv->caps.latency = INT_MAX;
 	p_dummy_drv->caps.bandwidth = 0;
-#endif
 
 	p_drv->priv = p_dummy_drv;
 	err = NM_ESUCCESS;

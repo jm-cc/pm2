@@ -59,9 +59,7 @@ static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(struct lr2_step_s) - 1;
 /** on the wire header of method 'lr2' */
 struct lr2_header_s
 {
-#ifdef NM_IBVERBS_CHECKSUM
   volatile uint32_t checksum;
-#endif
   volatile uint32_t busy; /* 'busy' has to be the last field in the struct */
 } __attribute__((packed));
 
@@ -257,9 +255,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	  memcpy(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
 	  struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
 	  h->busy = 1;
-#ifdef NM_IBVERBS_CHECKSUM
 	  h->checksum = nm_ibverbs_checksum(lr2->send.sbuf + chunk_offset, block_payload);
-#endif
 	  chunk_done   += block_payload;
 	  chunk_offset += block_payload + lr2_hsize;
 	}
@@ -319,8 +315,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	      {
 	      }
 	  memcpy(lr2->recv.message + lr2->recv.done, lr2->recv.rbuf, block_payload);
-#ifdef NM_IBVERBS_CHECKSUM
-	  const uint64_t checksum = nm_ibverbs_checksum(lr2->recv.message + lr2->recv.done, block_payload);
+	  const uint32_t checksum = nm_ibverbs_checksum(lr2->recv.message + lr2->recv.done, block_payload);
 	  if(h->checksum != checksum)
 	    {
 	      fprintf(stderr, "Infiniband: lr2- checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
@@ -329,7 +324,6 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	      abort();
 	    }
     	  h->checksum = 0;
-#endif
     	  h->busy = 0;
 	  memset(lr2->recv.rbuf, 0, block_payload);
 	  chunk_todo -= block_payload;

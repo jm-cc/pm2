@@ -41,9 +41,7 @@ static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 /** on the wire header of method 'adaptrdma' */
 struct nm_ibverbs_adaptrdma_header 
 {
-#ifdef NM_IBVERBS_CHECKSUM
-  uint64_t checksum;
-#endif
+  uint32_t checksum;
   volatile uint32_t offset;
   volatile uint32_t busy; /* 'busy' has to be the last field in the struct */
 } __attribute__((packed));
@@ -224,9 +222,7 @@ static int nm_ibverbs_adaptrdma_send_poll(void*_status)
 	nm_ibverbs_adaptrdma_get_header(adaptrdma->send.sbuf, packet_size + block_size);
       memcpy(adaptrdma->send.sbuf + packet_size, 
 	     &adaptrdma->send.message[adaptrdma->send.done], frag_size);
-#ifdef NM_IBVERBS_CHECKSUM
       h->checksum = nm_ibverbs_checksum(&adaptrdma->send.message[adaptrdma->send.done], frag_size);
-#endif
       h->busy   = NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR;
       h->offset = frag_size;
       adaptrdma->send.todo -= frag_size;
@@ -283,14 +279,12 @@ static int nm_ibverbs_adaptrdma_poll_one(void*_status)
       const int frag_size = h->offset;
       const int flag = h->busy;
       memcpy(&adaptrdma->recv.message[adaptrdma->recv.done], adaptrdma->recv.rbuf, frag_size);
-#ifdef NM_IBVERBS_CHECKSUM
       /* checksum */
       if(nm_ibverbs_checksum(&adaptrdma->recv.message[adaptrdma->recv.done], frag_size) != h->checksum)
 	{
 	  fprintf(stderr, "# nmad: IB checksum failed.\n");
 	  abort();
 	}
-#endif
       /* clear blocks */
       void*_rbuf = adaptrdma->recv.rbuf;
       adaptrdma->recv.done += frag_size;

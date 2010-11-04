@@ -21,8 +21,8 @@
 #include <nm_private.h>
 #include <infiniband/verbs.h>
 
-/** enable checksum in bycopy/adaptrdma methods (*not* rcache) */
-#define NM_IBVERBS_CHECKSUM
+/** checksum algorithm. Set it to tbx_checksum_dummy to disable checksums.
+ */
 #ifdef __SSE4_2__
 #define nm_ibverbs_checksum tbx_checksum_crc32
 #else

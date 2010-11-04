@@ -127,7 +127,7 @@ typedef struct {
 /** Internal inline functions **/
 #ifdef MA__LWPS
 static __tbx_inline__ void _ma_raw_read_lock(ma_rwlock_t * rw);
-static __tbx_inline__ void _ma_raw_read_trylock(ma_rwlock_t * rw);
+static __tbx_inline__ int _ma_raw_read_trylock(ma_rwlock_t * rw);
 static __tbx_inline__ void _ma_raw_write_lock(ma_rwlock_t * rw);
 static __tbx_inline__ int _ma_raw_write_trylock(ma_rwlock_t * lock);
 #endif

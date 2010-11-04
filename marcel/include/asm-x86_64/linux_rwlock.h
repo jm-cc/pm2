@@ -17,6 +17,7 @@
 #ifndef __ASM_X86_64_LINUX_RWLOCK_H__
 #define __ASM_X86_64_LINUX_RWLOCK_H__
 
+/* TODO: share code with i386 */
 
 #include "asm-generic/linux_rwlock.h"
 

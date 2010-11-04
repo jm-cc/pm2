@@ -234,18 +234,20 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_size - lr2_hsize * chunk_size / block_size);
       if((lr2->send.sbuf + chunk_size) > (((void*)lr2->buffer.sbuf) + (lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
 	{
-	  /* swap buffers */
-	  lr2->send.nbuffer = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
-	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
-	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	  /* flow control rationale- receiver may be:
 	   *   . reading buffer N -> ok for writing N + 1
 	   *   . already be ready for N + 1 -> ok
 	   *   . reading N - 1 (~= N + 2) -> wait
 	   * */
-	  const int n2 = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
-	  while(lr2->buffer.rack == n2)
-	    { /* busy wait */ }
+	  const int n2 = (lr2->send.nbuffer + 2) % NM_IBVERBS_LR2_NBUF;
+	  if(lr2->buffer.rack == n2)
+	    { 
+	      return -NM_EAGAIN;
+	    }
+	  /* swap buffers */
+	  lr2->send.nbuffer = (lr2->send.nbuffer + 1) % NM_IBVERBS_LR2_NBUF;
+	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
+	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	}
       int chunk_done = 0;
       int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */

@@ -39,6 +39,7 @@ static inline struct nm_gate_drv*nm_gate_drv_get(struct nm_gate*p_gate, nm_drv_t
  */
 static inline struct nm_drv*nm_drv_default(struct nm_gate*p_gate)
 {
+  assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
   nm_gdrv_vect_itor_t i = nm_gdrv_vect_begin(&p_gate->gdrv_array);
   return (*i)->p_drv;
 }
@@ -47,6 +48,9 @@ static inline struct nm_drv*nm_drv_default(struct nm_gate*p_gate)
  */
 static inline struct nm_drv*nm_drv_get_by_index(struct nm_gate*p_gate, int index)
 {
+  assert(!nm_gdrv_vect_empty(&p_gate->gdrv_array));
+  assert(index < nm_gdrv_vect_size(&p_gate->gdrv_array));
+  assert(index >= 0);
   struct nm_gate_drv*p_gdrv = nm_gdrv_vect_at(&p_gate->gdrv_array, index);
   return p_gdrv->p_drv;
 }

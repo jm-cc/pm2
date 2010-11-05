@@ -161,20 +161,21 @@ void nm_refill_in_drv(struct nm_drv* p_drv)
   struct nm_core *p_core = p_drv->p_core;
   		
   NM_FOR_EACH_GATE(p_gate, p_core)
-  {
-    /* Make sure the gate is not being connected
-  	* This may happen when using multiple threads
-  	*/
-    if(p_gate->status == NM_GATE_STATUS_CONNECTED) {
-      struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  	 if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
-  	 {
-  	   struct nm_pkt_wrap *p_pw;
-  	   nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
-  	   nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
-  	 }
+    {
+      /* Make sure the gate is not being connected
+       * This may happen when using multiple threads
+       */
+      if(p_gate->status == NM_GATE_STATUS_CONNECTED) 
+	{
+	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	  if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
+	    {
+	      struct nm_pkt_wrap *p_pw;
+	      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
+	    }
+	}
     }
-  }
 }
 
 void nm_poll_in_drv(struct nm_drv *p_drv)
@@ -246,7 +247,7 @@ void nm_sched_in(struct nm_core *p_core)
     {
       nm_refill_in_drv(p_drv);
     }
-
+  
 #ifdef NMAD_POLL
   /* poll pending requests */
   NM_FOR_EACH_DRIVER(p_drv, p_core)
@@ -254,12 +255,12 @@ void nm_sched_in(struct nm_core *p_core)
       nm_poll_in_drv(p_drv);
     }
 #endif /* NMAD_POLL */
-
+  
   /* post new requests */
   NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
-  {
-    nm_post_in_drv(p_drv);
-  }
+    {
+      nm_post_in_drv(p_drv);
+    }
 }
 
 #ifdef PIOM_BLOCKING_CALLS
@@ -275,10 +276,12 @@ int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
   nmad_unlock();
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err;
-  do {
-	  err = r->driver->wait_recv_iov(r->_status, p_pw);
-  }while(err == -NM_EAGAIN);
-
+  do 
+    {
+      err = r->driver->wait_recv_iov(r->_status, p_pw);
+    }
+  while(err == -NM_EAGAIN);
+  
   nmad_lock();
 
   if (err != NM_ESUCCESS) {

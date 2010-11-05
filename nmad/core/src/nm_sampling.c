@@ -25,17 +25,13 @@
 
 #define LAT_IDX 2
 
-#ifndef SAMPLING
-#define STRAT_ISO_SPLIT
-#endif
-
 
 struct nm_sampling_set_s
 {
-  double*bandwidth;
-  int nb_samples;
-  double bw;
-  double lat;
+  double*bandwidth_samples; /**< bandiwidth samples in MB/s */
+  int nb_samples;           /**< number of samples */
+  double bw;                /**< asymptotic bandiwdth in MB/s */
+  double lat;               /**< latency in usec. */
 };
 
 static struct
@@ -81,50 +77,59 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
     }
 
   sampling_file = fopen(sampling_file_path, "r");
-  if(!sampling_file)
+  if(sampling_file)
     {
-      TBX_FAILUREF("Sampling file <%s> does not exist. Check if the sampling has been done.", sampling_file_path);
+      fprintf(stderr, "# sampling: reading sampling file %s...\n", sampling_file_path);
+      /* count sampling entries */
+      int nb_entries = 0;
+      char *s = NULL;
+      do
+	{
+	  char str[LINE_SIZE];
+	  s = fgets(str, LINE_SIZE, sampling_file);
+	  if(s && isdigit(str[0]))
+	    nb_entries++;
+	}
+      while(s);
+      
+      p_set->nb_samples = nb_entries;
+      p_set->bandwidth_samples = TBX_MALLOC(nb_entries * sizeof(double));
+      
+      /* load the sampling file */
+      fseek(sampling_file, 0L, SEEK_SET);
+      int cur_entry = 0;
+      while(1)
+	{
+	  char str[LINE_SIZE];
+	  s = fgets(str, LINE_SIZE, sampling_file);
+	  if(!s)
+	    break;
+	  
+	  if(!isdigit(str[0]))
+	    continue;
+	  
+	  s = strchr(str, '\t') + 1;
+	  
+	  p_set->bandwidth_samples[cur_entry++] = atof(s);
+	}
+      
+      fclose(sampling_file);
+      
+      /* compute latency and bandwidth */
+      p_set->bw = p_set->bandwidth_samples[nb_entries - 1];
+      p_set->lat = (1 << LAT_IDX) / p_set->bandwidth_samples[LAT_IDX];
     }
-
-  fprintf(stderr, "# sampling: reading sampling file %s...\n", sampling_file_path);
-  /* count sampling entries */
-  int nb_entries = 0;
-  char *s = NULL;
-  do
+  else
     {
-      char str[LINE_SIZE];
-      s = fgets(str, LINE_SIZE, sampling_file);
-      if(s && isdigit(str[0]))
-	nb_entries++;
+      fprintf(stderr, "# sampling: file <%s> does not exist. Taking default capabilities of driver.\n",
+	      sampling_file_path);
+      p_set->nb_samples = 0;
+      p_set->bandwidth_samples = NULL;
+      p_set->bw  = (p_drv->driver->get_capabilities(p_drv))->bandwidth;
+      p_set->lat = (p_drv->driver->get_capabilities(p_drv))->latency / 1000.0;
+      fprintf(stderr, "# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
+	      p_drv->driver->name, p_set->lat, p_set->bw);
     }
-  while(s);
-
-  p_set->nb_samples = nb_entries;
-  p_set->bandwidth = TBX_MALLOC(nb_entries * sizeof(double));
-
-  /* load the sampling file */
-  fseek(sampling_file, 0L, SEEK_SET);
-  int cur_entry = 0;
-  while(1)
-    {
-      char str[LINE_SIZE];
-      s = fgets(str, LINE_SIZE, sampling_file);
-      if(!s)
-	break;
-      
-      if(!isdigit(str[0]))
-	continue;
-      
-      s = strchr(str, '\t') + 1;
-      
-      p_set->bandwidth[cur_entry++] = atof(s);
-    }
-
-  fclose(sampling_file);
-
-  /* compute latency and bandwidth */
-  p_set->bw = p_set->bandwidth[nb_entries - 1];
-  p_set->lat = (1 << LAT_IDX) / p_set->bandwidth[LAT_IDX];
 
   return NM_ESUCCESS;
 }
@@ -180,6 +185,7 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
   nm_ns_cleanup();
   nm_ns.nb_drvs = p_core->nb_drivers;
 
+  /* load samples from disk */
 #ifdef SAMPLING
   struct nm_sampling_set_s*p_set = TBX_MALLOC(sizeof(struct nm_sampling_set_s));
   nm_ns_parse_sampling(p_set, p_drv);
@@ -188,7 +194,7 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
   puk_hashtable_insert(nm_ns.sampling_sets, p_drv, p_set);
 #endif
 
-  /* 2 - ordonner les bw et les lats */
+  /* sort drivers by bandwidth and latency */
   nm_ns.p_drvs_by_bw = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
   nm_ns.p_drvs_by_lat = TBX_MALLOC(nm_ns.nb_drvs * sizeof(struct nm_drv*));
   int i = 0;
@@ -232,17 +238,24 @@ int nm_ns_exit(struct nm_core *p_core)
 double nm_ns_evaluate_bw(struct nm_drv *p_drv, int length)
 {
   const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, p_drv);
-  const double *samples = p_set->bandwidth;
-  int sample_id = 0;
-  double coef = 0;
-  int sampling_start_id = 0;
-  
-  frexp(2, &sampling_start_id);
-  coef = frexp(length, &sample_id);
-  
-  sample_id -= sampling_start_id;
-  
-  return samples[sample_id] + coef * (samples[sample_id] - samples[sample_id - 1]);
+  if(p_set->nb_samples > 0)
+    {
+      const double *samples = p_set->bandwidth_samples;
+      int sample_id = 0;
+      double coef = 0;
+      int sampling_start_id = 0;
+      
+      frexp(2, &sampling_start_id);
+      coef = frexp(length, &sample_id);
+      
+      sample_id -= sampling_start_id;
+      
+      return samples[sample_id] + coef * (samples[sample_id] - samples[sample_id - 1]);
+    }
+  else
+    {
+      return p_set->bw;
+    }
 }
 
 double nm_ns_evaluate_transfer_time(struct nm_drv *driver, int length)
@@ -282,7 +295,7 @@ int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_d
 int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
 			       int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
-#ifdef STRAT_ISO_SPLIT
+#ifndef SAMPLING
   {
     int assigned_len = 0;
     int chunk_index = 0;
@@ -301,11 +314,11 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       }
     *nb_chunks = chunk_index;
   }
-#else
+#else /* SAMPLING */
   {
-    // warning : on suppose qu'un fragment est obligatoirement envoyé sur chaque driver.
-    // à la stratégie de déterminer s'il est judicieux
-    // d'employer ou non l'ensemble des drivers disponibles
+    /** @warning we suppose each driver will be used here.
+     * It is up to the strategy to decided whether all drivers have to be used.
+     */
     int sum_bw = 0;
     int i;
     for(i = 0; i < *nb_chunks; i++)
@@ -324,7 +337,7 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       }
     chunks[i].len = tbx_aligned(pending_len, sizeof(uint32_t));
   }
-#endif
+#endif /* SAMPLING */
 
   return NM_ESUCCESS;
 }

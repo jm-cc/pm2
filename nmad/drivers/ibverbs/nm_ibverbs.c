@@ -206,7 +206,7 @@ static void nm_ibverbs_addr_send(const void*_status,
   const struct nm_ibverbs*status = _status;
   int rc = send(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
   if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
-    fprintf(stderr, "Infiniband: cannot send address to peer.\n");
+    fprintf(stderr, "nmad ibverbs: cannot send address to peer.\n");
     abort();
   }
 }
@@ -217,7 +217,7 @@ static void nm_ibverbs_addr_recv(void*_status,
   const struct nm_ibverbs*status = _status;
   int rc = recv(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
   if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
-    fprintf(stderr, "Infiniband: cannot get address from peer.\n");
+    fprintf(stderr, "nmad ibverbs: cannot get address from peer.\n");
     abort();
   }
 }
@@ -299,7 +299,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   /* find IB device */
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) {
-    fprintf(stderr, "Infiniband: no device found.\n");
+    fprintf(stderr, "nmad ibverbs: no device found.\n");
     err = -NM_ENOTFOUND;
     goto out;
   }
@@ -328,13 +328,78 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   /* open IB context */
   p_ibverbs_drv->context = ibv_open_device(p_ibverbs_drv->ib_dev);
   if(p_ibverbs_drv->context == NULL) {
-    fprintf(stderr, "Infiniband: cannot open IB context.\n");
+    fprintf(stderr, "nmad ibverbs: cannot open IB context.\n");
     err = -NM_ESCFAILD;
     goto out;
   }
 
   ibv_free_device_list(dev_list);
   
+  /* get IB context attributes */
+  struct ibv_device_attr device_attr;
+  int rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
+  if(rc != 0) {
+    fprintf(stderr, "nmad ibverbs: cannot get device capabilities.\n");
+    abort();
+  }
+
+  /* detect LID */
+  struct ibv_port_attr port_attr;
+  rc = ibv_query_port(p_ibverbs_drv->context, NM_IBVERBS_PORT, &port_attr);
+  if(rc != 0) {
+    fprintf(stderr, "nmad ibverbs: cannot get local port attributes.\n");
+    err = -NM_EUNKNOWN;
+    goto out;
+  }
+  p_ibverbs_drv->lid = port_attr.lid;
+  if(p_ibverbs_drv->lid == 0)
+    {
+      fprintf(stderr, "nmad ibverbs: WARNING: LID is null- subnet manager has probably crashed.\n");
+    }
+
+  /* IB capabilities */
+  p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
+  p_ibverbs_drv->ib_caps.max_qp_wr     = device_attr.max_qp_wr;
+  p_ibverbs_drv->ib_caps.max_cq        = device_attr.max_cq;
+  p_ibverbs_drv->ib_caps.max_cqe       = device_attr.max_cqe;
+  p_ibverbs_drv->ib_caps.max_mr        = device_attr.max_mr;
+  p_ibverbs_drv->ib_caps.max_mr_size   = device_attr.max_mr_size;
+  p_ibverbs_drv->ib_caps.page_size_cap = device_attr.page_size_cap;
+  p_ibverbs_drv->ib_caps.max_msg_size  = port_attr.max_msg_sz;
+  
+  int link_width = -1;
+  switch(port_attr.active_width)
+    {
+    case 1: link_width = 1;  break;
+    case 2: link_width = 4;  break;
+    case 4: link_width = 8;  break;
+    case 8: link_width = 12; break;
+    }
+  int link_rate = -1;
+  const char*s_link_rate = "unknown";
+  switch(port_attr.active_speed)
+    {
+    case 0x01: link_rate = 2;  s_link_rate = "SDR"; break;
+    case 0x02: link_rate = 4;  s_link_rate = "DDR"; break;
+    case 0x04: link_rate = 8;  s_link_rate = "QDR"; break;
+    case 0x08: link_rate = 14; s_link_rate = "FDR"; break;
+    case 0x10: link_rate = 25; s_link_rate = "EDR"; break;
+    }
+  const int data_rate = link_width * link_rate;
+
+  fprintf(stderr, "# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
+	  ibv_get_device_name(p_ibverbs_drv->ib_dev), link_width, s_link_rate, data_rate, p_ibverbs_drv->lid);
+#ifdef DEBUG
+  fprintf(stderr, "# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+	  p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
+	  p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
+  fprintf(stderr, "# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+	  p_ibverbs_drv->ib_caps.max_mr,
+	  (unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
+	  (unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
+	  (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
+#endif
+
   /* driver capabilities encoding */
   p_ibverbs_drv->caps.has_trk_rq_dgram			= 1;
   p_ibverbs_drv->caps.has_trk_rq_rdv		        = 1;
@@ -345,8 +410,8 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
 #endif
   p_ibverbs_drv->caps.latency = 1350; /* from sampling */
-  p_ibverbs_drv->caps.bandwidth = 1400; /* from sr_ping, use 200 * link width instead? */
-  
+  p_ibverbs_drv->caps.bandwidth = 1024 * (data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+
   p_drv->priv = p_ibverbs_drv;
   err = NM_ESUCCESS;
   
@@ -362,33 +427,12 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   
   srand48(getpid() * time(NULL));
   
-  /* get IB context attributes */
-  struct ibv_device_attr device_attr;
-  rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
-  if(rc != 0) {
-    fprintf(stderr, "Infiniband: cannot get device capabilities.\n");
-    abort();
-  }
   /* allocate Protection Domain */
   p_ibverbs_drv->pd = ibv_alloc_pd(p_ibverbs_drv->context);
   if(p_ibverbs_drv->pd == NULL) {
-    fprintf(stderr, "Infiniband: cannot allocate IB protection domain.\n");
+    fprintf(stderr, "nmad ibverbs: cannot allocate IB protection domain.\n");
     abort();
   }
-  /* detect LID */
-  struct ibv_port_attr port_attr;
-  rc = ibv_query_port(p_ibverbs_drv->context, NM_IBVERBS_PORT, &port_attr);
-  if(rc != 0) {
-    fprintf(stderr, "Infiniband: cannot get local port attributes.\n");
-    err = -NM_EUNKNOWN;
-    goto out;
-  }
-  p_ibverbs_drv->lid = port_attr.lid;
-  fprintf(stderr, "# Infiniband: local LID = 0x%02X\n", p_ibverbs_drv->lid);
-  if(p_ibverbs_drv->lid == 0)
-    {
-      fprintf(stderr, "Infiniband: WARNING: LID is null- subnet manager has probably crashed.\n");
-    }
   
   /* open helper socket */
   p_ibverbs_drv->server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -400,7 +444,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   addr.sin_addr.s_addr = INADDR_ANY;
   rc = bind(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, addr_len);
   if(rc) {
-    fprintf(stderr, "Infiniband: bind error (%s)\n", strerror(errno));
+    fprintf(stderr, "nmad ibverbs: bind error (%s)\n", strerror(errno));
     abort();
   }
   rc = getsockname(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
@@ -430,34 +474,10 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
     }
   else
     {
-      fprintf(stderr, "Infiniband: cannot get local address\n");
+      fprintf(stderr, "nmad ibverbs: cannot get local address\n");
       err = -NM_EUNREACH;
       goto out;
      }
-
-  /* IB capabilities */
-  p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
-  p_ibverbs_drv->ib_caps.max_qp_wr     = device_attr.max_qp_wr;
-  p_ibverbs_drv->ib_caps.max_cq        = device_attr.max_cq;
-  p_ibverbs_drv->ib_caps.max_cqe       = device_attr.max_cqe;
-  p_ibverbs_drv->ib_caps.max_mr        = device_attr.max_mr;
-  p_ibverbs_drv->ib_caps.max_mr_size   = device_attr.max_mr_size;
-  p_ibverbs_drv->ib_caps.page_size_cap = device_attr.page_size_cap;
-  p_ibverbs_drv->ib_caps.max_msg_size  = port_attr.max_msg_sz;
-  
-  fprintf(stderr, "# Infiniband: capabilities for device '%s'- \n",
-	  ibv_get_device_name(p_ibverbs_drv->ib_dev));
-  fprintf(stderr, "# Infiniband:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
-	  p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
-	  p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
-  fprintf(stderr, "# Infiniband:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
-	  p_ibverbs_drv->ib_caps.max_mr,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
-  
-  fprintf(stderr, "# Infiniband:   active_width=%d; active_speed=%d\n",
-	  (int)port_attr.active_width, (int)port_attr.active_speed);
 
   /* open tracks */
   p_ibverbs_drv->nb_trks = nb_trks;
@@ -547,14 +567,14 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
   /* init incoming CQ */
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_ibverbs_drv->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
   if(p_ibverbs_cnx->if_cq == NULL) {
-    fprintf(stderr, "Infiniband: cannot create in CQ\n");
+    fprintf(stderr, "nmad ibverbs: cannot create in CQ\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
   /* init outgoing CQ */
   p_ibverbs_cnx->of_cq = ibv_create_cq(p_ibverbs_drv->context, NM_IBVERBS_TX_DEPTH, NULL, NULL, 0);
   if(p_ibverbs_cnx->of_cq == NULL) {
-    fprintf(stderr, "Infiniband: cannot create out CQ\n");
+    fprintf(stderr, "nmad ibverbs: cannot create out CQ\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
@@ -573,7 +593,7 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
   };
   p_ibverbs_cnx->qp = ibv_create_qp(p_ibverbs_drv->pd, &qp_init_attr);
   if(p_ibverbs_cnx->qp == NULL) {
-    fprintf(stderr, "Infiniband: couldn't create QP\n");
+    fprintf(stderr, "nmad ibverbs: couldn't create QP\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
@@ -592,7 +612,7 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
 			 IBV_QP_PORT               |
 			 IBV_QP_ACCESS_FLAGS);
   if(rc != 0) {
-    fprintf(stderr, "Infiniband: failed to modify QP to INIT\n");
+    fprintf(stderr, "nmad ibverbs: failed to modify QP to INIT\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
@@ -637,7 +657,7 @@ static int nm_ibverbs_cnx_connect(void*_status, struct nm_cnx_rq*p_crq)
 			 IBV_QP_MAX_DEST_RD_ATOMIC |
 			 IBV_QP_MIN_RNR_TIMER);
   if(rc != 0) {
-    fprintf(stderr, "Infiniband: failed to modify QP to RTR\n");
+    fprintf(stderr, "nmad ibverbs: failed to modify QP to RTR\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
@@ -656,7 +676,7 @@ static int nm_ibverbs_cnx_connect(void*_status, struct nm_cnx_rq*p_crq)
 		     IBV_QP_SQ_PSN             |
 		     IBV_QP_MAX_QP_RD_ATOMIC);
   if(rc != 0) {
-    fprintf(stderr,"Infiniband: failed to modify QP to RTS\n");
+    fprintf(stderr,"nmad ibverbs: failed to modify QP to RTS\n");
     err = -NM_EUNKNOWN;
     goto out;
   }
@@ -690,7 +710,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
     };
     int rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
     if(rc) {
-      fprintf(stderr, "Infiniband: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
+      fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
       err = -NM_EUNREACH;
       goto out;
     }

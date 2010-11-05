@@ -29,6 +29,10 @@
 #include <nm_core_interface.h>
 #include <sys/uio.h>
 
+#ifdef PIOM_ENABLE_SHM
+#include <pioman.h>
+#endif
+
 /** a request status or event */
 typedef uint8_t nm_sr_status_t;
 

@@ -30,7 +30,7 @@
 
 
 #define piom_rwlock_t               marcel_rwlock_t
-#define PIOM_RW_LOCK_UNLOCKED       MARCEL_RW_LOCK_UNLOCKED
+#define PIOM_RW_LOCK_UNLOCKED       MARCEL_RWLOCK_INITIALIZER
 #define piom_rwlock_init(lock)      marcel_rwlock_init(lock)
 #define piom_rwlock_is_locked(lock) marcel_rwlock_is_locked(lock)
 
@@ -38,7 +38,7 @@
 #define piom_read_lock(lock)    marcel_rwlock_rdlock(lock)
 #define piom_read_unlock(lock)  marcel_rwlock_unlock(lock)
 #define piom_write_lock(lock)   marcel_rwlock_wrlock(lock)
-#define piom_write_unlock(lock) marcel_rwlockunlock(lock)
+#define piom_write_unlock(lock) marcel_rwlock_unlock(lock)
 
 /* todo: what about preemption ? */
 #define piom_read_lock_softirq(lock)    marcel_rwlock_rdlock(lock)

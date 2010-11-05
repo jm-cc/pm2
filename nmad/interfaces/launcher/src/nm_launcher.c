@@ -23,31 +23,44 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-static puk_instance_t launcher_instance = NULL;
-static struct puk_receptacle_NewMad_Launcher_s r;
-static nm_gate_t *gates = NULL;
+static struct
+{
+  puk_instance_t instance;
+  struct puk_receptacle_NewMad_Launcher_s r;
+  nm_gate_t *gates;
+  int size;
+} launcher =
+  {
+    .instance = NULL, .gates = NULL, .size = -1
+  };
 
 int nm_launcher_get_rank(int *rank)
 {
-  *rank = (*r.driver->get_rank)(r._status);
+  assert(launcher.instance != NULL);
+  *rank = (*launcher.r.driver->get_rank)(launcher.r._status);
   return NM_ESUCCESS;
 }
 
 int nm_launcher_get_size(int *size)
 {
-  *size  = (*r.driver->get_size)(r._status);
+  assert(launcher.instance != NULL);
+  *size  = (*launcher.r.driver->get_size)(launcher.r._status);
   return NM_ESUCCESS;
 }
 
 int nm_launcher_get_session(nm_session_t *p_session)
 {
-  *p_session  = (*r.driver->get_session)(r._status);
+  assert(launcher.instance != NULL);
+  *p_session  = (*launcher.r.driver->get_session)(launcher.r._status);
   return NM_ESUCCESS;
 }
 
-int nm_launcher_get_gate(int dest, nm_gate_t *gate)
+int nm_launcher_get_gate(int dest, nm_gate_t*pp_gate)
 {
-  *gate = gates[dest];
+  assert(launcher.gates != NULL);
+  assert(dest >= 0 && dest < launcher.size);
+  nm_gate_t p_gate = launcher.gates[dest];
+  *pp_gate = p_gate;
   return NM_ESUCCESS;
 }
 
@@ -79,16 +92,16 @@ int nm_launcher_init(int *argc, char**argv)
   /*
    * NewMad initialization is performed by component 'NewMad_Launcher_*'
    */
-  puk_component_t launcher = puk_adapter_resolve(launcher_name);
-  launcher_instance = puk_adapter_instanciate(launcher);
-  puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
-  (*r.driver->init)(r._status, argc, &*argv, "NewMadeleine");
+  puk_component_t launcher_component = puk_adapter_resolve(launcher_name);
+  launcher.instance = puk_adapter_instanciate(launcher_component);
+  puk_instance_indirect_NewMad_Launcher(launcher.instance, NULL, &launcher.r);
+  (*launcher.r.driver->init)(launcher.r._status, argc, &*argv, "NewMadeleine");
 
-  nm_sr_init((*r.driver->get_session)(r._status));
+  nm_sr_init((*launcher.r.driver->get_session)(launcher.r._status));
 
-  int size = (*r.driver->get_size)(r._status);
-  gates = TBX_MALLOC(size * sizeof(nm_gate_t));
-  (*r.driver->get_gates)(r._status, gates);
+  launcher.size = (*launcher.r.driver->get_size)(launcher.r._status);
+  launcher.gates = TBX_MALLOC(launcher.size * sizeof(nm_gate_t));
+  (*launcher.r.driver->get_gates)(launcher.r._status, launcher.gates);
   
   return NM_ESUCCESS;
 }
@@ -99,8 +112,8 @@ int nm_launcher_exit(void)
   if(exit_done)
     return NM_ESUCCESS;
   exit_done = 1;
-  free(gates);
-  puk_instance_destroy(launcher_instance);
+  free(launcher.gates);
+  puk_instance_destroy(launcher.instance);
   padico_puk_shutdown();
   return NM_ESUCCESS;
 }

@@ -29,10 +29,10 @@ create_test_flavor() {
     fi
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	--modules=\"puk nmad tbx ntbx init $modules\" \
-	--nmad=\"${net} sched_opt strat_custom ${mpi} mad3_emu $tag\" \
+	--nmad=\"${net} strat_custom ${mpi} mad3_emu $tag\" \
 	$options \
 	--common=\"fortran_target_none\" \
-	--all=\"build_static\"
+	--all=\"build_dynamic debug gdb\"
 }
 
 prerun_test() {

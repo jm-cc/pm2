@@ -707,15 +707,19 @@ static void topo_discover(void)
 					mlevel->huge_page_size = 0;
 				}
 #else
-				mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE] =
-				    tlevel->attr->machine.memory_kB;
-				mlevel->huge_page_free =
-				    tlevel->attr->machine.huge_page_free;
-				mlevel->huge_page_size =
-				    tlevel->attr->machine.huge_page_size_kB * 1024;
+				if (tlevel->attr) {
+				    mlevel->memory_kB[MARCEL_TOPO_LEVEL_MEMORY_MACHINE] =
+					tlevel->attr->machine.memory_kB;
+				    mlevel->huge_page_free =
+					tlevel->attr->machine.huge_page_free;
+				    mlevel->huge_page_size =
+					tlevel->attr->machine.huge_page_size_kB * 1024;
+				}
 #endif
-				dmi_board_name = tlevel->attr->machine.dmi_board_name;
-				dmi_board_vendor = tlevel->attr->machine.dmi_board_vendor;
+				if (tlevel->attr) {
+				    dmi_board_name = tlevel->attr->machine.dmi_board_name;
+				    dmi_board_vendor = tlevel->attr->machine.dmi_board_vendor;
+				}
 				break;
 			case MARCEL_LEVEL_NODE:
 				mlevel->os_node = tlevel->os_index;

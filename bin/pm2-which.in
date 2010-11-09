@@ -96,7 +96,7 @@ pm2_which_do_search() # file
 	_fifo="$*"
 
 	for _f in $_rep/* ; do
-	    if [ -d "$_f" ] ; then
+	    if [ -d "$_f" -a ! -h "$_f" ] ; then
 		_fifo="$_fifo $_f"
 	    elif [ "$_rep/$_file" = "$_f" -a -x "$_f" ] ; then
 		_PM2_WHICH_RESULT="${_PM2_WHICH_RESULT:+$_PM2_WHICH_RESULT }$_f"

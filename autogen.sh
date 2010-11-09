@@ -308,4 +308,11 @@ cp ./puk/configure.ac ./puk/externals/
 echo "    generating puk/externals/Puk/padico_config.h.in [autoheader] ..."
 ( cd ./puk/externals ; ${AUTOHEADER:-autoheader} -f )
 
+echo "Initializing PadicoTM..."
+echo "0.4.0" > ./padicotm/VERSION
+echo "    generating padicotm/externals/PadicoTM/configure [autoconf] ..."
+( cd ./padicotm/externals/PadicoTM ; ${AUTOCONF:-autoconf} )
+echo "    generating padicotm/externals/PadicoTM/Puk/padico_config.h.in [autoheader] ..."
+( cd ./padicotm/externals/PadicoTM ; ${AUTOHEADER:-autoheader} -f )
+
 echo "Done."

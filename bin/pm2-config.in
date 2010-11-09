@@ -371,7 +371,7 @@ pm2_config_set_vars()
     export _PM2_CONFIG_FC
 
     # CFLAGS
-    _PM2_CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS}"
+    _PM2_CONFIG_CFLAGS="-D${PM2_ARCH} -D${PM2_SYS} -I${_PM2_CONFIG_BUILD}/include"
     for _lib in appli common $PM2_LIBS ; do
 	eval _LIB='$'${_lib}_to_upper
 	eval _flags=\"'$'PM2_${_LIB}_CFLAGS -D${_LIB}\"

@@ -22,64 +22,34 @@ include $(PM2_SRCROOT)/make/libs-vars.mak
 
 pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 
-PADICO_ROOT     := $(pm2_build_dir)/padicotm
+PADICO_ROOT     := $(pm2_build_dir)/
 PADICO_SRCDIR   := @abs_srcdir@/externals/PadicoTM
 PADICO_BUILDDIR := $(PADICO_ROOT)/build/PadicoTM
+PADICO_CORE     := $(PM2_FLAVOR)
 
-PADICO_CONFIG_FILES := \
-  $(PADICO_SRCDIR)/configure \
-  $(PADICO_SRCDIR)/Puk/padico_config.h.in \
-  $(PADICO_SRCDIR)/../../VERSION
+export PADICO_ROOT
+export PADICO_CORE
+
+PADICO_CORE_FILES := \
+  $(PADICO_ROOT)/var/mod/$(PM2_FLAVOR).mk \
+  $(PADICO_ROOT)/var/mod/$(PM2_FLAVOR).sh
 
 # ## front-end rules
 # ##
 
+dot_h: $(PADICO_CORE_FILES)
+
 libs:
-	make -C $(PADICO_ROOT)/build/PadicoTM install
+	env PATH=$(PADICO_ROOT)/bin:$(PATH) make -C $(PADICO_ROOT)/build/PadicoTM modules
 
 flavormaks:
 
 link:
 
-dot_h: $(PADICO_BUILDDIR)/config.status
-
-# ## configure options
-
-PUK_ENABLE_PUKABI         := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_ENABLE_PUKABI)
-PUK_CONFIGURE_EXTRA_FLAGS := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --getvar=PM2_PUK_CONFIGURE_EXTRA_FLAGS)
-
-PUK_LIBS = $(PADICO_ROOT)/lib/libPadicoPuk.so
-
-ifeq ($(PUK_ENABLE_PUKABI),yes)
-  PUK_LIBS += $(PADICO_ROOT)/lib/PukABI/libPukABI.so
-endif
-
-# ## configure
+# ## config
 # ##
 
-$(PADICO_BUILDDIR)/config.status:
-	-@mkdir -p $(PADICO_BUILDDIR)
-	-@mkdir -p $(PADICO_ROOT)/opt
-	-ln -s $(PM2_SRCROOT) $(PADICO_ROOT)/opt/pm2
-	-@mkdir -p $(PADICO_ROOT)/build/opt
-	-ln -s $(PM2_OBJROOT) $(PADICO_ROOT)/build/opt/pm2
-	-@echo "   configuring PadicoTM"
-	( cd $(PADICO_BUILDDIR) ; \
-           $(PADICO_SRCDIR)/configure LIBS= LDFLAGS= CFLAGS= --prefix=$(PADICO_ROOT) $(PUK_CONFIGURE_EXTRA_FLAGS) )
+$(PADICO_CORE_FILES):
+	$(PADICO_ROOT)/bin/padico-mkcore $(PADICO_CORE) --pm2-flavor=$(PM2_FLAVOR)
 
-# ## build
-# ##
-
-$(PADICO_BUILDDIR)/Puk/libPadicoPuk.so: $(PADICO_BUILDDIR)/config.status
-	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PADICO_BUILDDIR)/Puk
-
-$(PADICO_BUILDDIR)/PukABI/libPukABI.so: $(PADICO_BUILDDIR)/config.status
-	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PADICO_BUILDDIR)/PukABI
-
-# ## install
-# ##
-
-$(PUK_LIBS): $(PADICO_BUILDDIR)/Puk/libPadicoPuk.so
-	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PADICO_BUILDDIR) install
-	@touch $(PUK_LIBS)
 

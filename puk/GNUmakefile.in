@@ -85,6 +85,7 @@ $(PADICO_BUILDDIR)/PukABI/libPukABI.so: $(PADICO_BUILDDIR)/config.status
 $(PUK_LIBS): $(PADICO_BUILDDIR)/Puk/libPadicoPuk.so
 	$(MAKE) PADICO_ROOT=$(PADICO_ROOT) -C $(PADICO_BUILDDIR) install
 	@touch $(PUK_LIBS)
+	-ln -s $(PADICO_ROOT)/lib/PukABI/libPukABI.so $(PADICO_ROOT)/lib/libPukABI.so
 
 
 

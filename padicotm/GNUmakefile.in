@@ -11,24 +11,37 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+# module: padicotm
+
 PM2_ROOT    := @abs_top_srcdir@
 PM2_SRCROOT := @abs_top_srcdir@
 PM2_OBJROOT := @abs_top_builddir@
 export PM2_ROOT PM2_SRCROOT PM2_OBJROOT
 
-include $(PM2_OBJROOT)/make/common-vars.mak
+include $(PM2_SRCROOT)/make/libs-vars.mak
 
 pm2_build_dir  := $(shell $(PM2_OBJROOT)/bin/pm2-config --flavor=$(FLAVOR) --builddir)
 
 PADICO_ROOT     := $(pm2_build_dir)/padicotm
 PADICO_SRCDIR   := @abs_srcdir@/externals/PadicoTM
-PADICO_BUILDDIR := $(PADICO_ROOT)/build
+PADICO_BUILDDIR := $(PADICO_ROOT)/build/PadicoTM
 
 PADICO_CONFIG_FILES := \
   $(PADICO_SRCDIR)/configure \
   $(PADICO_SRCDIR)/Puk/padico_config.h.in \
   $(PADICO_SRCDIR)/../../VERSION
 
+# ## front-end rules
+# ##
+
+libs:
+	make -C $(PADICO_ROOT)/build/PadicoTM install
+
+flavormaks:
+
+link:
+
+dot_h: $(PADICO_BUILDDIR)/config.status
 
 # ## configure options
 
@@ -46,6 +59,10 @@ endif
 
 $(PADICO_BUILDDIR)/config.status:
 	-@mkdir -p $(PADICO_BUILDDIR)
+	-@mkdir -p $(PADICO_ROOT)/opt
+	-ln -s $(PM2_SRCROOT) $(PADICO_ROOT)/opt/pm2
+	-@mkdir -p $(PADICO_ROOT)/build/opt
+	-ln -s $(PM2_OBJROOT) $(PADICO_ROOT)/build/opt/pm2
 	-@echo "   configuring PadicoTM"
 	( cd $(PADICO_BUILDDIR) ; \
            $(PADICO_SRCDIR)/configure LIBS= LDFLAGS= CFLAGS= --prefix=$(PADICO_ROOT) $(PUK_CONFIGURE_EXTRA_FLAGS) )

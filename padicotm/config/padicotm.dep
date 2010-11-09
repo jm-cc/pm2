@@ -1,0 +1,6 @@
+Provide: padicotm
+Provide: module
+Depend: puk
+Depend: pukabi
+Depend: dynamic_libs
+

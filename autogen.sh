@@ -300,14 +300,6 @@ done
 echo "Invoking PM2 autoreconf..."
 ACLOCAL="aclocal $LOCAL" ${AUTORECONF:-autoreconf} --verbose -f -i
 
-echo "Initializing Puk..."
-echo "0.4.0" > ./puk/VERSION
-echo "    generating puk/externals/configure [autoconf] ..."
-cp ./puk/configure.ac ./puk/externals/
-( cd ./puk/externals ; ${AUTOCONF:-autoconf} )
-echo "    generating puk/externals/Puk/padico_config.h.in [autoheader] ..."
-( cd ./puk/externals ; ${AUTOHEADER:-autoheader} -f )
-
 echo "Initializing PadicoTM..."
 echo "0.4.0" > ./padicotm/VERSION
 echo "    generating padicotm/externals/PadicoTM/configure [autoconf] ..."

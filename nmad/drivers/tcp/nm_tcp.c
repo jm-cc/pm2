@@ -392,7 +392,7 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
 
   /* server socket						*/
   p_tcp_drv->server_fd	= nm_tcp_socket_create(&address, 0);
-  NM_SYS(listen)(p_tcp_drv->server_fd, tbx_min(5, SOMAXCONN));
+  NM_SYS(listen)(p_tcp_drv->server_fd, tbx_min(128, SOMAXCONN));
   
   /* retrieve the system hostname and use it as a default hostname,
    * leonie or the user will replace it if needed

@@ -471,23 +471,29 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
     # LD library path
     PM2_LD_LIBRARY_PATH="$_PM2_CONFIG_LD_LIBRARY_PATH"
 
-    # Mad3 special case
-    case " $_PM2_CONFIG_MODULES " in
-    *\ mad3\ *)
-	# Mad III mode
-	log "Mad III selected"
-	mad3 "${prog_args[@]}"
-	exit $?
-	;;
-    *)
-	;;
+    # external launcher
+    case "$_PM2_CONFIG_LAUNCHER" in
+	leonie)
+            log "Leonie selected"
+	    mad3 "${prog_args[@]}"
+	    exit $?
+	    ;;
+	padico-launch)
+	    log "padico-launch selected"
+	    set --  --source-mode
+	    . ${PM2_OBJROOT}/bin/pm2-conf-file
+	    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
+	    log "PM2 config file: ${PM2_CONF_FILE}"
+	    n=$( cat ${PM2_CONF_FILE} | sort | uniq | wc -l )
+	    pm2_load_args=""
+	    [ "$PM2_DEBUG" = "on" ]           && pm2_load_args="${pm2_load_args} -d"
+	    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} --padico-valgrind"
+	    [ "$PM2_XMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -c"
+	    [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} --padico-pause"
+	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME}
+	    exit $?
+	    ;;
     esac
-
-    if [ "$_PM2_CONFIG_LAUNCHER" == "leonie" ] ; then
-        log "Leonie selected"
-	mad3 "${prog_args[@]}"
-	exit $?
-    fi
 
 else # USE_LOCAL_FLAVOR
 

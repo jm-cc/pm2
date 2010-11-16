@@ -18,7 +18,7 @@
 
 #include "helper.h"
 
-#define OVERRUN 10
+#define OVERRUN 32
 
 static void nm_test_iovec_fill(char*sbuf, char*rbuf, int iov_count, int entry_size)
 {
@@ -115,14 +115,14 @@ int main(int argc, char ** argv)
   nm_test_iovec_full(4, 4);
   nm_test_iovec_full(32, 4);
   nm_test_iovec_full(1024, 4);
-  nm_test_iovec_full(32*1024, 4);
+  nm_test_iovec_full(8*1024, 4);
 
   nm_test_iovec_full(1, 65*1024);
   nm_test_iovec_full(8, 65*1024);
 
   nm_test_iovec_full(1,  1024*1024);
-  nm_test_iovec_full(4,  1024*1024);
-  nm_test_iovec_full(32, 1024*1024);
+  nm_test_iovec_full(4,   512*1024);
+  nm_test_iovec_full(32,  256*1024);
 
   nmad_exit();
   return 0;

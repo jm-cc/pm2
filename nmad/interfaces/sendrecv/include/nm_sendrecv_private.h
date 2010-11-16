@@ -26,6 +26,9 @@
 #ifdef PIOMAN
 #include <pioman.h>
 #endif
+#ifdef MARCEL
+#include <marcel.h>
+#endif
 
 /* ** Polling and locking ********************************** */
 

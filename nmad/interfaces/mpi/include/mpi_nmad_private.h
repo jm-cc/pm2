@@ -28,7 +28,7 @@
  * @{
  */
 
-#if !(defined(CONFIG_PROTO_MAD3) || defined(CONFIG_PADICO))
+#if !(defined(CONFIG_PROTO_MAD3) || defined(PADICO))
 #error "Mad-MPI requires either proto_mad3 or PadicoTM"
 #endif
 
@@ -37,6 +37,7 @@
 
 #include <Padico/Puk.h>
 #include <nm_public.h>
+#include <nm_private.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
 #include <tbx.h>
@@ -64,28 +65,9 @@
 
 /** @name Debugging facilities */
 /* @{ */
-#if defined(NMAD_DEBUG)
-extern debug_type_t debug_mpi_nmad_trace;
-extern debug_type_t debug_mpi_nmad_transfer;
-extern debug_type_t debug_mpi_nmad_log;
-#  define MPI_NMAD_TRACE(fmt, args...)                  debug_printf(&debug_mpi_nmad_trace, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
-#  define MPI_NMAD_TRACE_NOF(fmt, args...)              debug_printf(&debug_mpi_nmad_trace, fmt, ##args)
-#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...)     debug_printfl(&debug_mpi_nmad_trace, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
-#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...) debug_printfl(&debug_mpi_nmad_trace, level, fmt, ##args)
-#  define MPI_NMAD_TRANSFER(fmt, args...)               debug_printf(&debug_mpi_nmad_transfer, "[%s] " fmt ,__TBX_FUNCTION__ ,##args)
-#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)  debug_printfl(&debug_mpi_nmad_transfer, level, "[%s] " fmt ,__TBX_FUNCTION__  , ##args)
-#  define MPI_NMAD_LOG_IN()                             debug_printf(&debug_mpi_nmad_log, "%s: -->\n", __TBX_FUNCTION__)
-#  define MPI_NMAD_LOG_OUT()                            debug_printf(&debug_mpi_nmad_log, "%s: <--\n", __TBX_FUNCTION__)
-#else
-#  define MPI_NMAD_TRACE(fmt, args...)
-#  define MPI_NMAD_TRACE_NOF(fmt, args...)
-#  define MPI_NMAD_TRACE_LEVEL(level, fmt, args...)
-#  define MPI_NMAD_TRACE_NOF_LEVEL(level, fmt, args...)
-#  define MPI_NMAD_TRANSFER(fmt, args...)
-#  define MPI_NMAD_TRANSFER_LEVEL(level, fmt, args...)
-#  define MPI_NMAD_LOG_IN()
-#  define MPI_NMAD_LOG_OUT()
-#endif /* NMAD_DEBUG */
+#define MPI_NMAD_TRACE(fmt, args...)    NM_TRACEF(fmt , ##args)
+#define MPI_NMAD_LOG_IN()               NM_LOG_IN()
+#define MPI_NMAD_LOG_OUT()              NM_LOG_OUT()
 /* @} */
 
 #define ERROR(...) { fprintf(stderr, "\n\n************\nERROR: %s\n\t", __TBX_FUNCTION__); fprintf(stderr, __VA_ARGS__); \

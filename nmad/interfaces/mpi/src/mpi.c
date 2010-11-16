@@ -1138,7 +1138,7 @@ int MPI_Init(int *argc,
 
 #if defined(CONFIG_PROTO_MAD3)
   const char launcher_name[] = "NewMad_Launcher_mad3";
-#elif defined(CONFIG_PADICO)
+#elif defined(CONFIG_PADICO) || defined(PADICOTM)
   const char launcher_name[] = "NewMad_Launcher_newmadico";
 #else 
   const char launcher_name[] = "NewMad_Launcher_cmdline";
@@ -1148,8 +1148,10 @@ int MPI_Init(int *argc,
    * NewMad initialization is performed by component 'NewMad_Launcher'
    * (from proto_mad3 or from PadicoTM)
    */
-  puk_adapter_t launcher = puk_adapter_resolve("NewMad_Launcher");
+  puk_adapter_t launcher = puk_adapter_resolve(launcher_name);
+  assert(launcher != NULL);
   launcher_instance = puk_adapter_instanciate(launcher);
+  assert(launcher_instance != NULL);
   struct puk_receptacle_NewMad_Launcher_s r;
   puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
   const char*session = puk_mod_getattr(NULL, "PADICO_BOOT_ID") ?:"Mad-MPI";
@@ -2885,21 +2887,21 @@ int MPI_Comm_split(MPI_Comm comm,
   recvbuf = malloc(3*mpir_communicator->size*sizeof(int));
 
 #ifdef NMAD_DEBUG
-  MPI_NMAD_TRACE_LEVEL(3, "[%d] Sending: ", mpir_communicator->rank);
+  MPI_NMAD_TRACE("[%d] Sending: ", mpir_communicator->rank);
   for(i=0 ; i<mpir_communicator->size*3 ; i++) {
-    MPI_NMAD_TRACE_NOF_LEVEL(3, "%d ", sendbuf[i]);
+    MPI_NMAD_TRACE("%d ", sendbuf[i]);
   }
-  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+  MPI_NMAD_TRACE("\n");
 #endif /* NMAD_DEBUG */
 
   MPI_Alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
 
 #ifdef NMAD_DEBUG
-  MPI_NMAD_TRACE_LEVEL(3, "[%d] Received: ", mpir_communicator->rank);
+  MPI_NMAD_TRACE("[%d] Received: ", mpir_communicator->rank);
   for(i=0 ; i<mpir_communicator->size*3 ; i++) {
-    MPI_NMAD_TRACE_NOF_LEVEL(3, "%d ", recvbuf[i]);
+    MPI_NMAD_TRACE("%d ", recvbuf[i]);
   }
-  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+  MPI_NMAD_TRACE("\n");
 #endif /* NMAD_DEBUG */
 
   // Counting how many nodes have the same color
@@ -2931,12 +2933,12 @@ int MPI_Comm_split(MPI_Comm comm,
   }
 
 #ifdef NMAD_DEBUG
-  MPI_NMAD_TRACE_LEVEL(3, "[%d] Conodes: ", mpir_communicator->rank);
+  MPI_NMAD_TRACE("[%d] Conodes: ", mpir_communicator->rank);
   for(i=0 ; i<nb_conodes ; i++) {
     int *ptr = conodes[i];
-    MPI_NMAD_TRACE_NOF_LEVEL(3, "[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
+    MPI_NMAD_TRACE("[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
   }
-  MPI_NMAD_TRACE_NOF_LEVEL(3, "\n");
+  MPI_NMAD_TRACE("\n");
 #endif /* NMAD_DEBUG */
 
   // Create the new communicator

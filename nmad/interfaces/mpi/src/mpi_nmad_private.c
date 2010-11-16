@@ -23,12 +23,6 @@
 #include "mpi_nmad_private.h"
 #include "nm_log.h"
 
-#if defined(NMAD_DEBUG)
-debug_type_t debug_mpi_nmad_trace=NEW_DEBUG_TYPE("MPI_NMAD: ", "mpi_nmad_trace");
-debug_type_t debug_mpi_nmad_transfer=NEW_DEBUG_TYPE("MPI_NMAD_TRANSFER: ", "mpi_nmad_transfer");
-debug_type_t debug_mpi_nmad_log=NEW_DEBUG_TYPE("MPI_NMAD_LOG: ", "mpi_nmad_log");
-#endif /* NMAD_DEBUG */
-
 /**
  * Increases by one the counter of incoming messages. The counter is
  * used for termination detection.
@@ -545,7 +539,7 @@ static inline int mpir_isend_wrapper(mpir_internal_data_t *mpir_internal_data,
   }
 
   MPI_NMAD_TRACE("Sending data\n");
-  MPI_NMAD_TRANSFER("Sent --> gate %p : %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
+  MPI_NMAD_TRACE("Sent --> gate %p : %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
 
   switch(mpir_request->communication_mode)
     {
@@ -564,7 +558,7 @@ static inline int mpir_isend_wrapper(mpir_internal_data_t *mpir_internal_data,
       TBX_FAILUREF("madmpi: unkown mode %d for isend", mpir_request->communication_mode);
       break;
     }
-  MPI_NMAD_TRANSFER("Sent finished\n");
+  MPI_NMAD_TRACE("Sent finished\n");
   return err;
 }
 
@@ -839,9 +833,9 @@ static inline int mpir_irecv_wrapper(mpir_internal_data_t *mpir_internal_data,
   }
 
   MPI_NMAD_TRACE("Posting recv request\n");
-  MPI_NMAD_TRANSFER("Recv --< gate %p: %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
+  MPI_NMAD_TRACE("Recv --< gate %p: %ld bytes\n", mpir_request->gate, (long)mpir_request->count * mpir_datatype->size);
   err = nm_sr_irecv(mpir_internal_data->p_session, mpir_request->gate, mpir_request->request_tag, buffer, mpir_request->count * mpir_datatype->size, &(mpir_request->request_nmad));
-  MPI_NMAD_TRANSFER("Recv finished, request = %p\n", &(mpir_request->request_nmad));
+  MPI_NMAD_TRACE("Recv finished, request = %p\n", &(mpir_request->request_nmad));
 
   return err;
 }
@@ -960,19 +954,19 @@ int mpir_wait(mpir_internal_data_t *mpir_internal_data,
   MPI_NMAD_TRACE("Waiting for a request %d\n", mpir_request->request_type);
   if (mpir_request->request_type == MPI_REQUEST_RECV) {
     MPI_NMAD_TRACE("Calling nm_sr_rwait\n");
-    MPI_NMAD_TRANSFER("Calling nm_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
+    MPI_NMAD_TRACE("Calling nm_sr_rwait for request=%p\n", &(mpir_request->request_nmad));
     err = nm_sr_rwait(mpir_internal_data->p_session, &mpir_request->request_nmad);
     mpir_datatype = mpir_get_datatype(mpir_internal_data, mpir_request->request_datatype);
     if (!mpir_datatype->is_contig && mpir_request->contig_buffer) {
       mpir_datatype_split(mpir_internal_data, mpir_request);
     }
-    MPI_NMAD_TRANSFER("Returning from nm_sr_rwait\n");
+    MPI_NMAD_TRACE("Returning from nm_sr_rwait\n");
   }
   else if (mpir_request->request_type == MPI_REQUEST_SEND) {
     MPI_NMAD_TRACE("Calling nm_sr_swait\n");
-    MPI_NMAD_TRANSFER("Calling nm_sr_swait\n");
+    MPI_NMAD_TRACE("Calling nm_sr_swait\n");
     err = nm_sr_swait(mpir_internal_data->p_session, &mpir_request->request_nmad);
-    MPI_NMAD_TRANSFER("Returning from nm_sr_swait\n");
+    MPI_NMAD_TRACE("Returning from nm_sr_swait\n");
     if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
       if (mpir_request->contig_buffer != NULL) {
         FREE_AND_SET_NULL(mpir_request->contig_buffer);
@@ -981,15 +975,15 @@ int mpir_wait(mpir_internal_data_t *mpir_internal_data,
   }
   else if (mpir_request->request_type == MPI_REQUEST_PACK_RECV) {
     nm_pack_cnx_t *connection = &(mpir_request->request_cnx);
-    MPI_NMAD_TRANSFER("Calling nm_end_unpacking\n");
+    MPI_NMAD_TRACE("Calling nm_end_unpacking\n");
     err = nm_end_unpacking(connection);
-    MPI_NMAD_TRANSFER("Returning from nm_end_unpacking\n");
+    MPI_NMAD_TRACE("Returning from nm_end_unpacking\n");
   }
   else if (mpir_request->request_type == MPI_REQUEST_PACK_SEND) {
     nm_pack_cnx_t *connection = &(mpir_request->request_cnx);
     MPI_NMAD_TRACE("Waiting for completion end_packing\n");
     err = nm_end_packing(connection);
-    MPI_NMAD_TRANSFER("Returning from nm_end_packing\n");
+    MPI_NMAD_TRACE("Returning from nm_end_packing\n");
   }
   else {
     MPI_NMAD_TRACE("Waiting operation invalid for request type %d\n", mpir_request->request_type);
@@ -1176,8 +1170,8 @@ int mpir_type_create_resized(mpir_internal_data_t *mpir_internal_data,
     return MPI_ERR_OTHER;
   }
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating resized type (%d) with extent=%ld, based on type %d with a extent %ld\n",
-		       *newtype, (long)mpir_internal_data->datatypes[*newtype]->extent, oldtype, (long)mpir_old_datatype->extent);
+  MPI_NMAD_TRACE("Creating resized type (%d) with extent=%ld, based on type %d with a extent %ld\n",
+		 *newtype, (long)mpir_internal_data->datatypes[*newtype]->extent, oldtype, (long)mpir_old_datatype->extent);
   return MPI_SUCCESS;
 }
 
@@ -1195,7 +1189,7 @@ int mpir_type_unlock(mpir_internal_data_t *mpir_internal_data,
 		     MPI_Datatype datatype) {
   mpir_datatype_t *mpir_datatype = mpir_get_datatype(mpir_internal_data, datatype);
 
-  MPI_NMAD_TRACE_LEVEL(3, "Unlocking datatype %d (%d)\n", datatype, mpir_datatype->active_communications);
+  MPI_NMAD_TRACE("Unlocking datatype %d (%d)\n", datatype, mpir_datatype->active_communications);
   mpir_datatype->active_communications --;
   if (mpir_datatype->active_communications == 0 && mpir_datatype->free_requested == 1) {
     MPI_NMAD_TRACE("Freeing datatype %d\n", datatype);
@@ -1210,11 +1204,11 @@ int mpir_type_free(mpir_internal_data_t *mpir_internal_data,
 
   if (mpir_datatype->active_communications != 0) {
     mpir_datatype->free_requested = 1;
-    MPI_NMAD_TRACE_LEVEL(3, "Datatype %d still in use (%d). Cannot be released\n", datatype, mpir_datatype->active_communications);
+    MPI_NMAD_TRACE("Datatype %d still in use (%d). Cannot be released\n", datatype, mpir_datatype->active_communications);
     return MPI_DATATYPE_ACTIVE;
   }
   else {
-    MPI_NMAD_TRACE_LEVEL(3, "Releasing datatype %d\n", datatype);
+    MPI_NMAD_TRACE("Releasing datatype %d\n", datatype);
     FREE_AND_SET_NULL(mpir_internal_data->datatypes[datatype]->old_sizes);
     FREE_AND_SET_NULL(mpir_internal_data->datatypes[datatype]->old_types);
     if (mpir_internal_data->datatypes[datatype]->dte_type == MPIR_INDEXED || mpir_internal_data->datatypes[datatype]->dte_type == MPIR_STRUCT) {
@@ -1262,9 +1256,9 @@ int mpir_type_contiguous(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[*newtype]->lb = 0;
   mpir_internal_data->datatypes[*newtype]->extent = mpir_internal_data->datatypes[*newtype]->old_sizes[0] * count;
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new contiguous type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		       (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
-		       oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
+  MPI_NMAD_TRACE("Creating new contiguous type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
+		 (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
+		 oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -1297,10 +1291,10 @@ int mpir_type_vector(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[*newtype]->lb = 0;
   mpir_internal_data->datatypes[*newtype]->extent = mpir_internal_data->datatypes[*newtype]->old_sizes[0] * count * blocklength;
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
-                       *newtype, (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
-                       mpir_internal_data->datatypes[*newtype]->elements, mpir_internal_data->datatypes[*newtype]->blocklens[0],
-                       oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
+  MPI_NMAD_TRACE("Creating new (h)vector type (%d) with size=%ld, extent=%ld, elements=%d, blocklen=%d based on type %d with a extent %ld\n",
+		 *newtype, (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
+		 mpir_internal_data->datatypes[*newtype]->elements, mpir_internal_data->datatypes[*newtype]->blocklens[0],
+		 oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -1341,9 +1335,9 @@ int mpir_type_indexed(mpir_internal_data_t *mpir_internal_data,
   }
   mpir_internal_data->datatypes[*newtype]->extent = (mpir_internal_data->datatypes[*newtype]->indices[count-1] + mpir_old_datatype->extent * mpir_internal_data->datatypes[*newtype]->blocklens[count-1]);
 
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new index type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
-		       (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
-		       oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
+  MPI_NMAD_TRACE("Creating new index type (%d) with size=%ld, extent=%ld based on type %d with a extent %ld\n", *newtype,
+		 (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent,
+		 oldtype, (long)mpir_internal_data->datatypes[*newtype]->old_sizes[0]);
   return MPI_SUCCESS;
 }
 
@@ -1387,8 +1381,8 @@ int mpir_type_struct(mpir_internal_data_t *mpir_internal_data,
    * previous struct.
    */
   mpir_internal_data->datatypes[*newtype]->extent = mpir_internal_data->datatypes[*newtype]->indices[count-1] + mpir_internal_data->datatypes[*newtype]->blocklens[count-1] * mpir_internal_data->datatypes[*newtype]->old_sizes[count-1];
-  MPI_NMAD_TRACE_LEVEL(3, "Creating new struct type (%d) with size=%ld and extent=%ld\n", *newtype,
-		       (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent);
+  MPI_NMAD_TRACE("Creating new struct type (%d) with size=%ld and extent=%ld\n", *newtype,
+		 (long)mpir_internal_data->datatypes[*newtype]->size, (long)mpir_internal_data->datatypes[*newtype]->extent);
   return MPI_SUCCESS;
 }
 

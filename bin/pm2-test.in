@@ -23,6 +23,10 @@ export PM2_HOME="@PM2_HOME@"
 export PM2_SYS="@PM2_SYS@"
 export PM2_ARCH="@PM2_ARCH@"
 
+# don't be confused by various ssh warnings
+export PM2_RSH="ssh -q"
+export PADICO_RSH="ssh -q"
+
 # To be on the safe side.
 unset PM2_FLAVOR
 
@@ -185,8 +189,8 @@ do_the_test()
             # expected output file
             head_command="head -$nbl"
         fi
-        grep -v '^#' $file_result | grep -v Puk: | grep -v PadicoTM | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $sort_command | $head_command > $file_filtered
-        if diff -u $file_expected $file_filtered ; then
+        grep -v '^#' $file_result | grep -v ".ssh.rc" | grep -v "X11 forwarding" | grep -v xauth | $sort_command | $head_command > $file_filtered
+        if diff --strip-trailing-cr -u $file_expected $file_filtered ; then
 	    echo "Test ok!"
 	    nb_passes_per_module=`expr $nb_passes_per_module + 1`
         else

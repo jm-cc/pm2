@@ -124,15 +124,14 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   p_pw->p_unpack = p_unpack;
-  const uint32_t iov_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
-  nm_so_pw_add_raw(p_pw, iov[i].iov_base + iov_offset, iov[i].iov_len - iov_offset, 0);
-  pending_len -= iov[i].iov_len - iov_offset;
-  i++;
+  uint32_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
   while(pending_len > 0)
     {
-      nm_so_pw_add_raw(p_pw, iov[i].iov_base, iov[i].iov_len, 0);
-      pending_len -= iov[i].iov_len;
+      const uint32_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
+      nm_so_pw_add_raw(p_pw, iov[i].iov_base + entry_offset, entry_len, 0);
+      pending_len -= entry_len;
       i++;
+      entry_offset = 0;
     }
   p_pw->chunk_offset = chunk_offset;
   nm_so_pw_store_pending_large_recv(p_pw, p_gate);

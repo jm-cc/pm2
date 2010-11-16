@@ -222,7 +222,8 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     }
   else if(p_unpack->cumulated_len > p_unpack->expected_len)
     {
-      fprintf(stderr, "# nmad: received more data than expected.\n");
+      fprintf(stderr, "# nmad: received more data than expected in unpack (unpacked = %d; expected = %d; chunk = %d).\n",
+	      p_unpack->cumulated_len, p_unpack->expected_len, chunk_len);
       abort();
     }
 }
@@ -231,17 +232,18 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
 static inline void nm_so_data_flags_decode(struct nm_unpack_s*p_unpack, uint8_t flags,
 					   uint32_t chunk_offset, uint32_t chunk_len)
 {
-  if(chunk_offset + chunk_len > p_unpack->expected_len)
+  const uint32_t chunk_end = chunk_offset + chunk_len;
+  if(chunk_end > p_unpack->expected_len)
     {
-      fprintf(stderr, "# nmad: received more data than expected.\n");
+      fprintf(stderr, "# nmad: received more data than expected (received = %d; expected = %d).\n",
+	      chunk_offset + chunk_len, p_unpack->expected_len);
       abort();
     }
   if(flags & NM_PROTO_FLAG_LASTCHUNK)
     {
       /* Update the real size to receive */
-      const uint32_t size = chunk_offset + chunk_len;
-      assert(size <= p_unpack->expected_len);
-      p_unpack->expected_len = size;
+      assert(chunk_end <= p_unpack->expected_len);
+      p_unpack->expected_len = chunk_end;
     }
   if((p_unpack->cumulated_len == 0) && (flags & NM_PROTO_FLAG_ACKREQ))
     nm_so_post_ack(p_unpack->p_gate, p_unpack->tag, p_unpack->seq);

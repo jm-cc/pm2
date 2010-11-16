@@ -398,10 +398,6 @@ static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
    * leonie or the user will replace it if needed
    */
   uname(&utsname);
-#ifndef CONFIG_PROTO_MAD3
-  NM_WARN("Using system uts nodename \"%s\" for local url, might need to be superseded by a network-valid name",
-	  utsname.nodename);
-#endif
   
   /* driver url encoding						*/
   port		= ntohs(address.sin_port);

@@ -484,7 +484,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    . ${PM2_OBJROOT}/bin/pm2-conf-file
 	    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
 	    log "PM2 config file: ${PM2_CONF_FILE}"
-	    n=$( cat ${PM2_CONF_FILE} | sort | uniq | wc -l )
+	    n=$( cat ${PM2_CONF_FILE} | wc -l )
 	    pm2_load_args=""
 	    [ "$PM2_DEBUG" = "on" ]           && pm2_load_args="${pm2_load_args} -d"
 	    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} --padico-valgrind"

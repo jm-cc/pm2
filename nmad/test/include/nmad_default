@@ -28,8 +28,9 @@ create_test_flavor() {
 	tag="tag_as_hashtable"
     fi
     eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-	--modules=\"puk nmad tbx ntbx init $modules\" \
-	--nmad=\"${net} strat_custom ${mpi} mad3_emu $tag\" \
+	--modules=\"puk nmad tbx init padicotm $modules\" \
+	--nmad=\"${net} strat_custom ${mpi} $tag\" \
+	--puk=enable_pukabi \
 	$options \
 	--common=\"fortran_target_none\" \
 	--all=\"build_dynamic debug gdb\"

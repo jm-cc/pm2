@@ -42,7 +42,7 @@ static inline uint32_t tbx_checksum_dummy(const void*_data, size_t _len)
 static inline uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
 {
 #ifdef __SSE2__
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   int len = _len / 8;
   __m128i sum128 = _mm_setzero_si128();
   int i;
@@ -57,7 +57,7 @@ static inline uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
     (_mm_extract_epi16(sum128, 6) | (_mm_extract_epi16(sum128, 7) << 16));
   return sum32;
 #else
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   int len = _len / 8;
   uint64_t sum64 = 0;
   int i;
@@ -76,7 +76,7 @@ static inline uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
 {
-  const uint32_t*data = _data;
+  const uint32_t*data = (const uint32_t*)_data;
   const unsigned int len = _len / sizeof(uint32_t);
   int i;
   uint32_t sum = 0;
@@ -95,7 +95,7 @@ static inline uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_block64(const void*_data, size_t _len)
 {
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   const unsigned int len = _len / sizeof(uint64_t);
   int i;
   uint64_t sum = 0;
@@ -143,7 +143,7 @@ static inline uint32_t tbx_checksum_block64(const void*_data, size_t _len)
 #define DO16(buf) DO8(buf); DO8(buf);
 static inline uint32_t tbx_checksum_adler32(const void*_data, size_t len)
 {
-  const char*buf = _data;
+  const char*buf = (const char*)_data;
   const unsigned long adler = 0;
   unsigned long s1 = adler & 0xffff;
   unsigned long s2 = (adler >> 16) & 0xffff;
@@ -177,7 +177,7 @@ static inline uint32_t tbx_checksum_adler32(const void*_data, size_t len)
  */
 static inline uint32_t tbx_checksum_fletcher64(const void*_data, size_t _len)
 {
-  const uint32_t*data = _data;
+  const uint32_t*data = (const uint32_t*)_data;
   int len = _len / 4;
   uint64_t sum1 = 0xffffffff, sum2 = 0xffffffff;
   int i;
@@ -202,7 +202,7 @@ static inline uint32_t tbx_checksum_fletcher64(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
 {
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   const int len = _len / 8;
   uint64_t hash, i;
   for(hash = i = 0; i < len; ++i)
@@ -227,7 +227,7 @@ static inline uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
 {
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   const int len = _len / 8;
   uint64_t hash = 14695981039346656037ULL;
   int i;
@@ -246,7 +246,7 @@ static inline uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
  */
 static inline uint32_t tbx_checksum_knuth(const void*_data, size_t _len)
 {
-  const uint64_t*data = _data;
+  const uint64_t*data = (const uint64_t*)_data;
   int len = _len / 8;
   uint64_t h = _len;
   int i;
@@ -362,7 +362,7 @@ static inline uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t _len)
 #define get16bits(d) (*((const uint16_t *) (d)))
 static inline uint32_t tbx_checksum_hsieh(const void*_data, size_t len)
 {
-  const char*data = _data;
+  const char*data = (const char*)_data;
   uint32_t hash = len, tmp;
   int rem;
   

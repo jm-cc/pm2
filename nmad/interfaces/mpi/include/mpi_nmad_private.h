@@ -28,7 +28,7 @@
  * @{
  */
 
-#if !(defined(CONFIG_PROTO_MAD3) || defined(PADICO))
+#if !(defined(CONFIG_PROTO_MAD3) || defined(PADICOTM) || defined(CONFIG_PADICO))
 #error "Mad-MPI requires either proto_mad3 or PadicoTM"
 #endif
 

@@ -23,14 +23,14 @@
 #include "helper.h"
 
 #define MIN_DEFAULT     0
-#define MAX_DEFAULT     (8 * 1024 * 1024)
+#define MAX_DEFAULT     (128 * 1024 * 1024)
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
 #define WARMUPS_DEFAULT 100
 #define LOOPS_DEFAULT   1000
 #define PASSES_DEFAULT  50
 
-#define MAX_DATA        (32ULL * 1024ULL * 1024ULL) /* 32 MB */
+#define MAX_DATA        (128ULL * 1024ULL * 1024ULL) /* 32 MB */
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)

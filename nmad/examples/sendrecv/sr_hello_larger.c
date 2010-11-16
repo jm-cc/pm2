@@ -46,7 +46,7 @@ static void process(char *msg)
     nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request1);
     nm_sr_rwait(p_core, &request1);
 
-    sleep(2);
+    sleep(1);
 
     nm_sr_irecv(p_core, gate_id, 0, buf2, len, &request2);
     nm_sr_rwait(p_core, &request2);

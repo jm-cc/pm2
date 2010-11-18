@@ -21,7 +21,7 @@ create_test_flavor() {
     options=""
     if [ "${ext}" == "pioman" ] ; then
 	modules="marcel pioman"
-	options="--marcel=\"numa smp_remote_tasklet enable_stats enable_once enable_keys enable_cleanup standard_main\" --init=\"topology\""
+	options="--marcel=\"numa smp_remote_tasklet smp_smt_idle enable_stats enable_once enable_keys enable_cleanup standard_main\" --init=\"topology\""
     fi
     tag="tag_as_flat_array"
     if [ "$mpi" == "mpi_emu" ] ; then

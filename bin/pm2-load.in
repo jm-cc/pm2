@@ -60,6 +60,10 @@ Usage: $PROGNAME { option } command
     --wd directory        : Set working directory to given directory at the beginning of the session
     --protocol name       : Use protocol named "name"
     --network file        : Specify the network configuration file
+
+   PadicoTM options:
+    --padico,<arg>        : give <arg> to padico-launch
+    --protocol <name>     : use <name> network [ same as --padico,-net,<name> ]
 EOF
     exit $1
 }
@@ -395,6 +399,10 @@ while [ $# -gt 0 ]; do
             shift
             ;;
 # end Madeleine only
+	--padico,*)
+	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} `echo $1 | tr ',' ' ' | sed 's/--padico //'`"
+	    shift
+	    ;;
 	-u|--use-local-flavor)
 	    shift
 	    PM2_USE_LOCAL_FLAVOR=on
@@ -490,7 +498,10 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} --padico-valgrind"
 	    [ "$PM2_XMODE" = "on" ]           && pm2_load_args="${pm2_load_args} -c"
 	    [ "$PM2_PMODE" = "on" ]           && pm2_load_args="${pm2_load_args} --padico-pause"
-	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME}
+	    for p in ${PM2_PROTOCOL}; do
+		pm2_load_args="${pm2_load_args} -net $p"
+	    done
+	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} ${PM2_PADICO_ARGS} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME}
 	    exit $?
 	    ;;
     esac

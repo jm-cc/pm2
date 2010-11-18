@@ -42,11 +42,11 @@ initialize_bench()
 
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
-         --modules=\"puk init nmad ntbx tbx\" \
-         --nmad=\"sched_opt strat_aggreg mad3_emu ${dev} nuioa ib_rcache\" \
-	 --puk=\"enable_pukabi disable_fd_virtualization\" \
+         --modules=\"puk init nmad tbx padicotm\" \
+         --nmad=\"strat_aggreg ${dev} nuioa ib_rcache\" \
+	 --puk=\"enable_pukabi\" \
          --common=\"fortran_target_none\" \
-         --all=\"build_static opt\" $flavor_options
+         --all=\"build_dynamic opt\" $flavor_options
 
 	echo "Device = ${dev}, network = ${net}, hosts = ${hosts}, numactl = ${numactl}"
         ${PM2_OBJROOT}/bin/pm2-conf -f $flavor `echo $hosts | tr ',' ' '`
@@ -80,22 +80,10 @@ run_bench()
             args="--numactl"
         fi
 
-	# create a network configuration file
-	networks_file=$(echo $(dirname $(${PM2_OBJROOT}/bin/pm2-conf-file -f $flavor))"/.pm2_network.cfg")
-	(cat<<EOF
-networks : ({
-	name  : $net;
- 	hosts : ($hosts);
-	dev   : $net;
-            });
-EOF
-	    ) > $networks_file
-
-
 	nb_runs=5
 	for i in $(seq 1 $nb_runs) ; do
 		date
-        	${PM2_OBJROOT}/bin/pm2-load $args --network $networks_file --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        	${PM2_OBJROOT}/bin/pm2-load $args --protocol $net -f $flavor $prog
 	done
 	date
 }

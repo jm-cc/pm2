@@ -168,31 +168,14 @@ static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, 
 	      i++;
 	    }
 	  assert(offset <= p_unpack->expected_len);
-	  const int block_offset = chunk_offset - offset;
-	  assert(block_offset >= 0);
-	  uint32_t chunk_len = iov[i].iov_len - block_offset;
-	  if(chunk_len > len)
-	    chunk_len = len;
-	  memcpy(iov[i].iov_base + block_offset, ptr, chunk_len);
-	  pending_len -= chunk_len;
-	  offset += iov[i].iov_len;
-	  i++;
-	  while(pending_len)
+	  uint32_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0;
+	  while(pending_len > 0)
 	    {
-	      assert(pending_len > 0);
-	      if(offset + iov[i].iov_len >= chunk_offset + pending_len)
-		{
-		  memcpy(iov[i].iov_base, ptr + (len - pending_len), pending_len);
-		  pending_len = 0;
-		}
-	      else
-		{
-		  chunk_len = iov[i].iov_len;
-		  memcpy(iov[i].iov_base, ptr + (len - pending_len), chunk_len);
-		  pending_len -= chunk_len;
-		  offset += iov[i].iov_len;
-		  i++;
-		}
+	      const uint32_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
+	      memcpy(iov[i].iov_base + entry_offset, ptr + len - pending_len, entry_len);
+	      pending_len -= entry_len;
+	      i++;
+	      entry_offset = 0;
 	    }
 	}
       else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)

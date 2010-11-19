@@ -31,12 +31,13 @@ void nmad_exit()
 
 void init(int *argc, char **argv)
 {
-  int rank, peer;
+  int rank, peer, size;
   nm_launcher_init(argc, argv);
   nm_launcher_get_session(&p_core);
   nm_launcher_get_rank(&rank);
-  is_server = !rank;
-  peer = 1 - rank;
+  nm_launcher_get_size(&size);
+  is_server = (rank == 0);
+  peer = (rank + 1) % size;
   nm_launcher_get_gate(peer, &gate_id);
 }
 

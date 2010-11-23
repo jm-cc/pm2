@@ -42,11 +42,11 @@ typedef unsigned piom_ltask_option_t;
 
 typedef enum
     {
-	PIOM_LTASK_STATE_NONE = 0x00,	/* not yet submitted */
-	PIOM_LTASK_STATE_WAITING = 0x01,	/* submitted to the task manager */
+	PIOM_LTASK_STATE_NONE      = 0x00,	/* not yet submitted */
+	PIOM_LTASK_STATE_WAITING   = 0x01,	/* submitted to the task manager */
 	PIOM_LTASK_STATE_SCHEDULED = 0x02,	/* being scheduled */
-	PIOM_LTASK_STATE_DONE = 0x04,	/* the task is successfull */
-	PIOM_LTASK_STATE_COMPLETELY_DONE = 0x08	/* the task is successfull and its execution is over  */
+	PIOM_LTASK_STATE_DONE      = 0x04,      /* the task is successfull */
+	PIOM_LTASK_STATE_COMPLETELY_DONE = 0x08 /* the task is successfull and its execution is over  */
     } piom_ltask_state_t;
 
 
@@ -54,12 +54,13 @@ typedef int (piom_ltask_func) (void *arg);
 
 struct piom_ltask
 {
+    volatile piom_ltask_state_t state;
+    volatile int masked;
     piom_ltask_func *func_ptr;
     void *data_ptr;
     piom_ltask_func *continuation_ptr;
     void *continuation_data_ptr;
     piom_ltask_option_t options;
-    piom_ltask_state_t state;
     piom_vpset_t vp_mask;
 };
 
@@ -142,6 +143,7 @@ piom_ltask_completed (struct piom_ltask *task)
 static __tbx_inline__ void
 piom_ltask_init (struct piom_ltask *task)
 {
+    task->masked = 0;
     task->func_ptr = NULL;
     task->data_ptr = NULL;
     task->continuation_ptr = NULL;
@@ -188,6 +190,7 @@ piom_ltask_create (struct piom_ltask *task,
 		   void *data_ptr,
 		   piom_ltask_option_t options, piom_vpset_t vp_mask)
 {
+    task->masked = 0;
     task->func_ptr = func_ptr;
     task->data_ptr = data_ptr;
     task->continuation_ptr = NULL;
@@ -196,6 +199,12 @@ piom_ltask_create (struct piom_ltask *task,
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;
 }
+
+/** suspend the ltask scheduling */
+void piom_ltask_mask(struct piom_ltask *ltask);
+
+/** re-enable a previously masked ltask */
+void piom_ltask_unmask(struct piom_ltask *ltask);
 
 piom_vpset_t piom_get_parent_machine(unsigned vp);
 piom_vpset_t piom_get_parent_node(unsigned vp);

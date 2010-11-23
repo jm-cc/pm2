@@ -14,7 +14,9 @@
  * General Public License for more details.
  */
 
-#include "pioman.h"
+#include <assert.h>
+
+#include <pioman.h>
 
 #ifndef PIOM_DISABLE_LTASKS
 
@@ -109,19 +111,21 @@ __piom_get_queue (piom_vpset_t vpset)
 #ifdef USE_GLOBAL_QUEUE
     return &global_queue;
 #else
-    int vp1, vp2;
-    vp1 = marcel_vpset_first(&vpset);
-    vp2 = marcel_vpset_last(&vpset);
+    int vp1 = marcel_vpset_first(&vpset);
+    int vp2 = marcel_vpset_last(&vpset);
 
     if(vp2 > marcel_nbvps())
 	/* deal with the MARCEL_VPSET_FULL case */
 	vp2 = marcel_nbvps()-1;
-
+    if(vp1 < 0)
+	vp1 = 0;
     marcel_topo_level_t *l1 = &marcel_topo_levels[marcel_topo_nblevels-1][vp1];
     marcel_topo_level_t *l2 = &marcel_topo_levels[marcel_topo_nblevels-1][vp2];
-    marcel_topo_level_t *common_ancestor=marcel_topo_common_ancestor (l1, l2);
-
-    return (piom_ltask_queue_t *)common_ancestor->ltask_data;
+    marcel_topo_level_t *common_ancestor = marcel_topo_common_ancestor(l1, l2);
+    assert(common_ancestor != NULL);
+    piom_ltask_queue_t*queue = (piom_ltask_queue_t *)common_ancestor->ltask_data;
+    assert(queue != NULL);
+    return queue;
 #endif	/* USE_GLOBAL_QUEUE */
 }
 
@@ -207,7 +211,7 @@ __piom_ltask_get (piom_ltask_queue_t ** queue)
 static __tbx_inline__ int
 __piom_ltask_is_runnable (struct piom_ltask *task)
 {
-    return task && (task->state == PIOM_LTASK_STATE_WAITING);
+    return task && (task->state == PIOM_LTASK_STATE_WAITING) && !task->masked;
 }
 
 /* Test wether the queue can be stopped */
@@ -433,6 +437,8 @@ piom_ltask_submit (struct piom_ltask *task)
 #else
     queue = __piom_get_queue (task->vp_mask);
 #endif
+    assert(task != NULL);
+    assert(queue != NULL);
     __piom_ltask_submit_in_queue(task, queue);
 }
 
@@ -474,6 +480,22 @@ piom_ltask_wait (struct piom_ltask *task)
     while (!(task->state & PIOM_LTASK_STATE_COMPLETELY_DONE))
 	if(!__paused)
 	    piom_ltask_schedule ();
+}
+
+void piom_ltask_mask(struct piom_ltask *task)
+{
+    assert(!task->masked);
+    task->masked = 1;
+    while(task->state & PIOM_LTASK_STATE_SCHEDULED)
+	{
+	    piom_ltask_schedule();
+	}
+}
+
+void piom_ltask_unmask(struct piom_ltask *task)
+{
+    assert(task->masked);
+    task->masked = 0;
 }
 
 int

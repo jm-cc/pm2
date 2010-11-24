@@ -501,7 +501,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    for p in ${PM2_PROTOCOL}; do
 		pm2_load_args="${pm2_load_args} -net $p"
 	    done
-	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} ${PM2_PADICO_ARGS} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME}
+	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} ${PM2_PADICO_ARGS} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME} "${prog_args[@]}"
 	    exit $?
 	    ;;
     esac

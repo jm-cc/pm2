@@ -118,6 +118,19 @@ int nm_launcher_exit(void)
   free(launcher.gates);
   puk_instance_destroy(launcher.instance);
   padico_puk_shutdown();
+#if defined(PADICOTM) && defined(MARCEL)
+  /* ** Big Hack(tm) to break circular dependancy.
+   * When using Marcel+NewMadeleine+PadicoTM, on shutdown:
+   * . PadicoTM waits for the binary to complete
+   * . the binary calls nmad_exit()
+   * . nmad_exit() calls common_exit()
+   * . common_exit() calls marcel_end()
+   * . marcel_end() waits all threads to complete
+   * . PadicoTM threads are not likely to complete since it is waiting
+   *   for the binary to shutdown...
+   */
+  __puk_abi_wrap__exit(0);
+#endif
   return NM_ESUCCESS;
 }
 

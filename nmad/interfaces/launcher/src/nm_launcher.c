@@ -117,7 +117,6 @@ int nm_launcher_exit(void)
   exit_done = 1;
   free(launcher.gates);
   puk_instance_destroy(launcher.instance);
-  padico_puk_shutdown();
 #if defined(PADICOTM) && defined(MARCEL)
   /* ** Big Hack(tm) to break circular dependancy.
    * When using Marcel+NewMadeleine+PadicoTM, on shutdown:
@@ -130,6 +129,8 @@ int nm_launcher_exit(void)
    *   for the binary to shutdown...
    */
   __puk_abi_wrap__exit(0);
+#else
+  padico_puk_shutdown();
 #endif
   return NM_ESUCCESS;
 }

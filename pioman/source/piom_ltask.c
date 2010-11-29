@@ -22,7 +22,7 @@
 
 #define PIOM_MAX_LTASK 256
 
-#define USE_GLOBAL_QUEUE 1
+//#define USE_GLOBAL_QUEUE 1
 
 #ifndef MA__NUMA
 #define USE_GLOBAL_QUEUE 1

@@ -274,23 +274,37 @@ static int nm_self_disconnect(void*_status, struct nm_cnx_rq*p_crq)
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  const int fd = status->fd[1 + 2*p_pw->trk_id];
-  struct iovec*iov = p_pw->v;
-  const int n = p_pw->v_nb;
-  struct iovec send_iov[1 + n];
-  int size = 0;
-  int i;
-  for(i = 0; i < n; i++)
+  if(p_pw->trk_id == 0)
     {
-      send_iov[i+1] = (struct iovec){ .iov_base = iov[i].iov_base, .iov_len = iov[i].iov_len };
-      size += iov[i].iov_len;
+      const int fd = status->fd[1];
+      struct iovec*iov = p_pw->v;
+      const int n = p_pw->v_nb;
+      struct iovec send_iov[1 + n];
+      int size = 0;
+      int i;
+      for(i = 0; i < n; i++)
+	{
+	  send_iov[i+1] = (struct iovec){ .iov_base = iov[i].iov_base, .iov_len = iov[i].iov_len };
+	  size += iov[i].iov_len;
+	}
+      send_iov[0] = (struct iovec){ .iov_base = &size, .iov_len = sizeof(size) };
+      int rc = NM_SYS(writev)(fd, send_iov, n+1);
+      if(rc < 0 || rc < size + sizeof(size))
+	{
+	  fprintf(stderr, "nmad: self- error %d while sending message.\n", errno);
+	  abort();
+	}
     }
-  send_iov[0] = (struct iovec){ .iov_base = &size, .iov_len = sizeof(size) };
-  int rc = NM_SYS(writev)(fd, send_iov, n+1);
-  if(rc < 0)
+  else
     {
-      fprintf(stderr, "nmad: self- error %d while sending message.\n", errno);
-      abort();
+      const int fd = status->fd[2];
+      assert(p_pw->v_nb == 1);
+      struct nm_pkt_wrap*p_pw_recv = NULL;
+      int rc = NM_SYS(read)(fd, &p_pw_recv, sizeof(p_pw_recv));
+      assert(rc == sizeof(p_pw_recv));
+      assert(p_pw_recv->v[0].iov_len == p_pw->v[0].iov_len);
+      memcpy(p_pw_recv->v[0].iov_base, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+      p_pw_recv->drv_priv = (void*)0x01;
     }
   return NM_ESUCCESS;
 }
@@ -302,49 +316,71 @@ static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
 
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
+  struct nm_self*status = (struct nm_self*)_status;
   if(p_pw->v_nb != 1)
     {
       fprintf(stderr, "nmad: self- iovec not supported on recv side yet.\n");
       abort();
     }
-  return nm_self_poll_recv(_status, p_pw);
+  if(p_pw->trk_id == 0)
+    {
+      return nm_self_poll_recv(_status, p_pw);
+    }
+  else
+    {
+      p_pw->drv_priv = NULL;
+      const int fd = status->fd[3];
+      int rc = NM_SYS(write)(fd, &p_pw, sizeof(p_pw));
+      assert(rc == sizeof(p_pw));
+      return -NM_EAGAIN;
+    }
 }
 
 
 static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  struct nm_self*status = (struct nm_self*)_status;
-  const int fd = status->fd[2*p_pw->trk_id];
-  struct iovec*iov = &p_pw->v[0];
-  int size = 0;
-  struct pollfd fds = { .fd = fd, .events = POLLIN };
-  int rc = NM_SYS(poll)(&fds, 1, 0);
-  if(rc == 0)
+  if(p_pw->trk_id == 0)
     {
-      return -NM_EAGAIN;
+      struct nm_self*status = (struct nm_self*)_status;
+      const int fd = status->fd[2*p_pw->trk_id];
+      struct iovec*iov = &p_pw->v[0];
+      int size = 0;
+      struct pollfd fds = { .fd = fd, .events = POLLIN };
+      int rc = NM_SYS(poll)(&fds, 1, 0);
+      if(rc == 0)
+	{
+	  return -NM_EAGAIN;
+	}
+      else if((rc < 0) || ((rc > 0) && (fds.revents & (POLLERR|POLLHUP|POLLNVAL))))
+	{
+	  return -NM_ECLOSED;
+	}
+      rc = NM_SYS(read)(fd, &size, sizeof(size));
+      int err = errno;
+      if(rc < sizeof(size))
+	{
+	  fprintf(stderr, "nmad: self- error %d while reading header (%s).\n", errno, strerror(errno));
+	  abort();
+	}
+      else if(size > iov->iov_len)
+	{
+	  fprintf(stderr, "nmad: self- received more data than expected.\n");
+	  abort();
+	}
+      rc = NM_SYS(read)(fd, iov->iov_base, size);
+      if(rc < 0 || rc != size)
+	{
+	  fprintf(stderr, "nmad: self- error %d while reading data.\n", errno);
+	  abort();
+	}
+      return NM_ESUCCESS;
     }
-  else if((rc < 0) || ((rc > 0) && (fds.revents & (POLLERR|POLLHUP|POLLNVAL))))
+  else
     {
-      return -NM_ECLOSED;
+      if(p_pw->drv_priv == NULL)
+	return NM_ESUCCESS;
+      else
+	return -NM_EAGAIN;
     }
-  rc = NM_SYS(read)(fd, &size, sizeof(size));
-  int err = errno;
-  if(rc < sizeof(size))
-    {
-      fprintf(stderr, "nmad: self- error %d while reading header (%s).\n", errno, strerror(errno));
-      abort();
-    }
-  else if(size > iov->iov_len)
-    {
-      fprintf(stderr, "nmad: self- received more data than expected.\n");
-      abort();
-    }
-  rc = NM_SYS(read)(fd, iov->iov_base, size);
-  if(rc < 0 || rc != size)
-    {
-      fprintf(stderr, "nmad: self- error %d while reading data.\n", errno);
-      abort();
-    }
-  return NM_ESUCCESS;
 }
 

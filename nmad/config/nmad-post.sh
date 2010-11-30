@@ -4,6 +4,9 @@ PM2_NMAD_INTERFACES="session sendrecv launcher pack bmi $PM2_NMAD_INTERFACES"
 # add default strategies
 PM2_NMAD_STRATEGIES="default aggreg aggreg_extended aggreg_autoextended split_balance split_all $PM2_NMAD_STRATEGIES"
 
+# add default drivers
+PM2_NMAD_DRIVERS="self $PM2_NMAD_DRIVERS"
+
 # compute list of components
 for d in $PM2_NMAD_DRIVERS; do
     PM2_NMAD_COMPONENTS="$PM2_NMAD_COMPONENTS NewMad_Driver_${d}"

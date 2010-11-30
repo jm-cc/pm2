@@ -568,17 +568,12 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = ../marcel/include/scheduler-marcel/marcel_bubble_sched.h \
-                         ../marcel/include/scheduler-marcel/marcel_bubble_sched_interface.h \
-                         ../marcel/include/scheduler-marcel/marcel_sched.h \
-                         ../marcel/include/scheduler-marcel/marcel_holder.h \
-                         ../marcel/include/scheduler-marcel/linux_runqueues.h \
+INPUT                  = ../marcel/include/scheduler-marcel/ \
+                         ../marcel/include/scheduler-marcel/profiles \
+                         ../marcel/include/scheduler-marcel/inlinefunctions/ \
+			 ../marcel/include/marcel_sched_generic.h \
                          ../marcel/include/marcel_topology.h \
                          ../marcel/include/marcel_stats.h \
-                         ../marcel/include/scheduler-marcel/linux_sched.h \
-                         ../marcel/include/scheduler-marcel/marcel_bubble_gang.h \
-                         ../marcel/include/scheduler-marcel/marcel_bubble_spread.h \
-                         ../marcel/include/scheduler-marcel/marcel_bubble_steal.h \
                          ../marcel/include/marcel_attr.h \
                          ../marcel/include/marcel_descr.h
 
@@ -1275,6 +1270,7 @@ PREDEFINED             = MA__LWPS \
                          MA__BUBBLES \
                          MARCEL_STATS_ENABLED \
                          LINUX_SYS \
+			 __MARCEL_KERNEL__ \
                          DOXYGEN
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then

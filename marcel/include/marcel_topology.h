@@ -353,7 +353,7 @@ TBX_VISIBILITY_PUSH_INTERNAL
 			vp != &marcel_topo_vp_level[number]; \
 			vp++, ({if (vp == &marcel_topo_vp_level[marcel_nbvps()]) vp = &marcel_topo_vp_level[0]; }))
 #define ma_per_vp(vp, field) (marcel_topo_vp[vp].(field))
-#ifdef MARCEL_BLOCKING_ENABLED
+#ifdef MARCEL_BLOCKING_ENABLED
 #  define ma_set_need_resched(v) \
 	do { \
 		__ma_get_lwp_var(need_resched) = (v); \

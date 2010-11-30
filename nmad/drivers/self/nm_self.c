@@ -255,19 +255,12 @@ static int nm_self_accept(void*_status, struct nm_cnx_rq *p_crq)
 static int nm_self_disconnect(void*_status, struct nm_cnx_rq*p_crq)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  int fd = status->fd[p_crq->trk_id];
-  /* half-close for sending */
-  NM_SYS(shutdown)(fd, SHUT_WR);
-  /* flush (and throw away) remaining bytes in the pipe up to the EOS */
-  int ret = -1;
-  do
-    {
-      int dummy = 0;
-      ret = read(fd, &dummy, sizeof(dummy));
-    }
-  while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
-  /* safely close fd when EOS is reached */
-  NM_SYS(close)(fd);
+  const int rfd = status->fd[p_crq->trk_id];
+  const int wfd = status->fd[1+p_crq->trk_id];
+  NM_SYS(close)(rfd);
+  NM_SYS(close)(wfd);
+  status->fd[p_crq->trk_id] = -1;
+  status->fd[1+p_crq->trk_id] = -1;
   return NM_ESUCCESS;
 }
 
@@ -356,10 +349,10 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 	  return -NM_ECLOSED;
 	}
       rc = NM_SYS(read)(fd, &size, sizeof(size));
-      int err = errno;
+      const int err = errno;
       if(rc < sizeof(size))
 	{
-	  fprintf(stderr, "nmad: self- error %d while reading header (%s).\n", errno, strerror(errno));
+	  fprintf(stderr, "nmad: self- error %d while reading header (%s).\n", err, strerror(err));
 	  abort();
 	}
       else if(size > iov->iov_len)

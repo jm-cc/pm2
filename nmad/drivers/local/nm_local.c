@@ -27,6 +27,22 @@
 
 #include <nm_private.h>
 
+#include <Padico/Module.h>
+
+static int nm_local_load(void);
+
+PADICO_MODULE_BUILTIN(NewMad_Driver_local, &nm_local_load, NULL, NULL);
+
+#ifdef CONFIG_PUK_PUKABI
+#include <Padico/Puk-ABI.h>
+#endif /* CONFIG_PUK_PUKABI */
+
+#if defined(CONFIG_PUK_PUKABI) && defined(PADICO_ENABLE_PUKABI_FSYS)
+#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
+#else  /* PADICO_ENABLE_PUKABI_FSYS */
+#define NM_SYS(SYMBOL) SYMBOL
+#endif /* PADICO_ENABLE_PUKABI_FSYS */
+
 /** 'local' driver per-instance data.
  */
 struct nm_local_drv
@@ -120,8 +136,6 @@ static int nm_local_load(void)
 			puk_component_provides("NewMad_Driver", "driver", &nm_local_driver));
   return 0;
 }
-PADICO_MODULE_BUILTIN(NewMad_Driver_local, &nm_local_load, NULL, NULL);
-
 
 
 /** Instanciate functions */
@@ -182,15 +196,15 @@ static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int n
   addr.sun_family = AF_UNIX;
   snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/nmad_local.%d", pid);
   p_local_drv->url = strdup(addr.sun_path);
-  p_local_drv->server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-  unlink(addr.sun_path);
-  int rc = bind(p_local_drv->server_fd, (struct sockaddr*)&addr, sizeof(addr));
+  p_local_drv->server_fd = NM_SYS(socket)(AF_UNIX, SOCK_STREAM, 0);
+  NM_SYS(unlink)(addr.sun_path);
+  int rc = NM_SYS(bind)(p_local_drv->server_fd, (struct sockaddr*)&addr, sizeof(addr));
   if(rc != 0)
     {
       fprintf(stderr, "nmad: local- bind error: %s\n", strerror(errno));
       abort();
     }
-  rc = listen(p_local_drv->server_fd, 128);
+  rc = NM_SYS(listen)(p_local_drv->server_fd, 128);
   if(rc != 0)
     {
       fprintf(stderr, "nmad: local- listen error: %s\n", strerror(errno));
@@ -221,6 +235,10 @@ static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int n
 static int nm_local_exit(struct nm_drv*p_drv)
 {
   struct nm_local_drv*p_local_drv = p_drv->priv;
+  struct sockaddr_un addr;
+  addr.sun_family = AF_UNIX;
+  snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/nmad_local.%d", getpid());
+  NM_SYS(unlink)(addr.sun_path);
   TBX_FREE(p_local_drv->url);
   TBX_FREE(p_local_drv);
   return NM_ESUCCESS;
@@ -230,10 +248,10 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct sockaddr_un addr;
   struct nm_local*status = (struct nm_local*)_status;
-  int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  int fd = NM_SYS(socket)(AF_UNIX, SOCK_STREAM, 0);
   addr.sun_family = AF_UNIX;
   strcpy(addr.sun_path, p_crq->remote_drv_url);
-  int rc = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
+  int rc = NM_SYS(connect)(fd, (struct sockaddr*)&addr, sizeof(addr));
   if(rc != 0)
     {
       fprintf(stderr, "nmad: local- cannot connect to %s\n", addr.sun_path);
@@ -247,7 +265,7 @@ static int nm_local_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_local_drv*p_local_drv = p_crq->p_drv->priv;
   struct nm_local*status = (struct nm_local*)_status;
-  int fd = accept(p_local_drv->server_fd, NULL, NULL);
+  int fd = NM_SYS(accept)(p_local_drv->server_fd, NULL, NULL);
   if(fd < 0)
     {
       fprintf(stderr, "nmad: local- error while accepting\n");
@@ -262,38 +280,43 @@ static int nm_local_disconnect(void*_status, struct nm_cnx_rq*p_crq)
   struct nm_local*status = (struct nm_local*)_status;
   int fd = status->fd[p_crq->trk_id];
   /* half-close for sending */
-  SYSCALL(shutdown(fd, SHUT_WR));
+  NM_SYS(shutdown)(fd, SHUT_WR);
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */
   int ret = -1;
   do
     {
       int dummy = 0;
-      ret = read(fd, &dummy, sizeof(dummy));
+      ret = NM_SYS(read)(fd, &dummy, sizeof(dummy));
     }
   while (ret > 0 || ((ret == -1 && errno == EAGAIN)));
   /* safely close fd when EOS is reached */
-  SYSCALL(close(fd));
+  NM_SYS(close)(fd);
   return NM_ESUCCESS;
 }
 
 static int nm_local_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_local*status = (struct nm_local*)_status;
-  struct iovec*iov = &p_pw->v[0];
   const int fd = status->fd[p_pw->trk_id];
-  if(p_pw->v_nb != 1)
+  struct iovec*iov = p_pw->v;
+  const int n = p_pw->v_nb;
+  struct iovec send_iov[1 + n];
+  int size = 0;
+  int i;
+  for(i = 0; i < n; i++)
     {
-      fprintf(stderr, "nmad: local- iovec not supported on send side yet.\n");
-      abort();
+      send_iov[i+1] = (struct iovec){ .iov_base = iov[i].iov_base, .iov_len = iov[i].iov_len };
+      size += iov[i].iov_len;
     }
-  int size = iov->iov_len;
-  struct iovec send_iov[2] = 
+  send_iov[0] = (struct iovec){ .iov_base = &size, .iov_len = sizeof(size) };
+  int rc = NM_SYS(writev)(fd, send_iov, n+1);
+  const int err = errno;
+  if(rc < 0 && err == EPIPE)
     {
-      [0] = { .iov_base = &size, .iov_len = sizeof(size) },
-      [1] = { .iov_base = iov->iov_base, .iov_len = iov->iov_len }
-    };
-  int rc = writev(fd, &send_iov, 2);
-  if(rc < 0)
+      return -NM_ECLOSED;
+    }
+  else if(rc < 0 || rc < size + sizeof(size))
+    
     {
       fprintf(stderr, "nmad: local- error %d while sending message.\n", errno);
       abort();
@@ -323,7 +346,7 @@ static int nm_local_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
   const int fd = status->fd[p_pw->trk_id];
   struct iovec*iov = &p_pw->v[0];
   int size = 0;
-  int rc = recv(fd, &size, sizeof(size), MSG_DONTWAIT);
+  int rc = NM_SYS(recv)(fd, &size, sizeof(size), MSG_DONTWAIT);
   int err = errno;
   if(rc == 0)
     {
@@ -343,7 +366,7 @@ static int nm_local_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
       fprintf(stderr, "nmad: local- received more data than expected.\n");
       abort();
     }
-  rc = recv(fd, iov->iov_base, size, MSG_WAITALL);
+  rc = NM_SYS(recv)(fd, iov->iov_base, size, MSG_WAITALL);
   if(rc < 0 || rc != size)
     {
       fprintf(stderr, "nmad: local- error %d while reading data.\n", errno);

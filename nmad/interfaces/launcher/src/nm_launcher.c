@@ -19,6 +19,10 @@
 #include <nm_core_interface.h>
 #include <pm2_common.h>
 
+#ifdef CONFIG_PUK_PUKABI
+#include <Padico/Puk-ABI.h>
+#endif /* CONFIG_PUK_PUKABI */
+
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
@@ -117,7 +121,7 @@ int nm_launcher_exit(void)
   exit_done = 1;
   free(launcher.gates);
   puk_instance_destroy(launcher.instance);
-#if defined(PADICOTM) && defined(MARCEL)
+#if defined(PADICOTM)
   /* ** Big Hack(tm) to break circular dependancy.
    * When using Marcel+NewMadeleine+PadicoTM, on shutdown:
    * . PadicoTM waits for the binary to complete

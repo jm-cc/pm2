@@ -60,7 +60,8 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 /* when __paused != 0, no scheduling operation can be performed, except during __exit_queue */
 static volatile unsigned __paused = 0;
 
-static tbx_bool_t piom_ltask_initialized = tbx_false;
+/** refcounter on piom_ltask */
+static int piom_ltask_initialized = 0;
 #ifdef USE_GLOBAL_QUEUE
 static struct piom_ltask_queue global_queue;
 #endif
@@ -300,11 +301,11 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     /* no more task to run, set the queue as stopped */
     if(__piom_ltask_queue_is_done(queue))
 	queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
-    else
+    
 #ifdef MARCEL
-	being_processed[marcel_current_vp ()] = tbx_false;
+    being_processed[marcel_current_vp ()] = tbx_false;
 #else
-	being_processed[0] = tbx_false;
+    being_processed[0] = tbx_false;
 #endif
     return task;
 }
@@ -351,8 +352,7 @@ static void __piom_ltask_update_timer() { }
 
 #endif	/* MARCEL */
 
-void
-piom_init_ltasks ()
+void piom_init_ltasks(void)
 {
     if (!piom_ltask_initialized)
 	{
@@ -384,14 +384,14 @@ piom_init_ltasks ()
 	    marcel_init_timer(&ltask_poll_timer, piom_ltask_poll_timer, 0, 0);
 	    __piom_ltask_update_timer();
 
- 	    piom_ltask_initialized = tbx_true;
 	}
+    piom_ltask_initialized++;
 }
 
-void
-piom_exit_ltasks()
+void piom_exit_ltasks(void)
 {
-    if (piom_ltask_initialized)
+    piom_ltask_initialized--;
+    if(piom_ltask_initialized == 0)
 	{
 #ifdef USE_GLOBAL_QUEUE
 	    __piom_exit_queue((piom_ltask_queue_t*)&global_queue);
@@ -406,16 +406,13 @@ piom_exit_ltasks()
 	    }
 #endif
 	    TBX_FREE(being_processed);
-	    piom_ltask_initialized = tbx_false;
-
 	}
 
 }
 
-int 
-piom_ltask_test_activity()
+int piom_ltask_test_activity(void)
 {
-    return piom_ltask_initialized;
+    return (piom_ltask_initialized != 0);
 }
 
 void 

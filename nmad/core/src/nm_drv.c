@@ -388,7 +388,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
   nmad_unlock();
   piom_ltask_pause();
   nmad_lock();
-  piom_ltask_completed (&p_core->task);
+  piom_ltask_completed(&p_core->task);
 #endif	/* PIOM_DISABLE_LTASKS */
 
   nm_lock_interface(p_core);

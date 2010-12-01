@@ -38,6 +38,16 @@ static int nm_ibverbs_load(void);
 
 PADICO_MODULE_BUILTIN(NewMad_Driver_ibverbs, &nm_ibverbs_load, NULL, NULL);
 
+#ifdef CONFIG_PUK_PUKABI
+#include <Padico/Puk-ABI.h>
+#endif /* CONFIG_PUK_PUKABI */
+
+#if defined(CONFIG_PUK_PUKABI) && defined(PADICO_ENABLE_PUKABI_FSYS)
+#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
+#else  /* PADICO_ENABLE_PUKABI_FSYS */
+#define NM_SYS(SYMBOL) SYMBOL
+#endif /* PADICO_ENABLE_PUKABI_FSYS */
+
 
 /* *********************************************************
  * Rationale of the newmad/ibverbs driver
@@ -204,7 +214,7 @@ static void nm_ibverbs_addr_send(const void*_status,
 				 const struct nm_ibverbs_cnx_addr*addr)
 {
   const struct nm_ibverbs*status = _status;
-  int rc = send(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
+  int rc = NM_SYS(send)(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), 0);
   if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
     fprintf(stderr, "nmad ibverbs: cannot send address to peer.\n");
     abort();
@@ -215,7 +225,7 @@ static void nm_ibverbs_addr_recv(void*_status,
 				 struct nm_ibverbs_cnx_addr*addr)
 {
   const struct nm_ibverbs*status = _status;
-  int rc = recv(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
+  int rc = NM_SYS(recv)(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
   if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
     fprintf(stderr, "nmad ibverbs: cannot get address from peer.\n");
     abort();
@@ -435,20 +445,20 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   }
   
   /* open helper socket */
-  p_ibverbs_drv->server_sock = socket(AF_INET, SOCK_STREAM, 0);
+  p_ibverbs_drv->server_sock = NM_SYS(socket)(AF_INET, SOCK_STREAM, 0);
   assert(p_ibverbs_drv->server_sock > -1);
   struct sockaddr_in addr;
   unsigned addr_len = sizeof addr;
   addr.sin_family = AF_INET;
   addr.sin_port = htons(0);
   addr.sin_addr.s_addr = INADDR_ANY;
-  rc = bind(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, addr_len);
+  rc = NM_SYS(bind)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, addr_len);
   if(rc) {
     fprintf(stderr, "nmad ibverbs: bind error (%s)\n", strerror(errno));
     abort();
   }
-  rc = getsockname(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
-  listen(p_ibverbs_drv->server_sock, 255);
+  rc = NM_SYS(getsockname)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
+  NM_SYS(listen)(p_ibverbs_drv->server_sock, 255);
 	
   /* driver url encoding */
 
@@ -524,7 +534,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 static int nm_ibverbs_close(struct nm_drv *p_drv)
 {
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
-  close(p_ibverbs_drv->server_sock);
+  NM_SYS(close)(p_ibverbs_drv->server_sock);
   TBX_FREE(p_ibverbs_drv->trks_array);
   TBX_FREE(p_ibverbs_drv->url);
   TBX_FREE(p_ibverbs_drv);
@@ -696,7 +706,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
       goto out;
     }
   if(status->sock == -1) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = NM_SYS(socket)(AF_INET, SOCK_STREAM, 0);
     assert(fd > -1);
     status->sock = fd;
     assert(strlen(p_crq->remote_drv_url) == 12);
@@ -708,7 +718,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
       .sin_port   = peer_port,
       .sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
     };
-    int rc = connect(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+    int rc = NM_SYS(connect)(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
     if(rc) {
       fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
       err = -NM_EUNREACH;
@@ -744,7 +754,7 @@ static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq)
   if(status->sock == -1) {
     struct sockaddr_in addr;
     unsigned addr_len = sizeof addr;
-    int fd = accept(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
+    int fd = NM_SYS(accept)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
     assert(fd > -1);
     status->sock = fd;
   }

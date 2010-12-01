@@ -120,7 +120,7 @@ typedef struct MPI_Status_s MPI_Status;
 
 /** Request handle */
 struct MPI_Request_s{
-  char request[256];
+  char request[272];
 };
 
 /** Request handle */

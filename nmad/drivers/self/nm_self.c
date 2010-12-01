@@ -344,6 +344,10 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 	{
 	  return -NM_EAGAIN;
 	}
+      else if(rc<0 && errno == EINTR)
+        {
+	  return -NM_EAGAIN;
+        }
       else if((rc < 0) || ((rc > 0) && (fds.revents & (POLLERR|POLLHUP|POLLNVAL))))
 	{
 	  return -NM_ECLOSED;

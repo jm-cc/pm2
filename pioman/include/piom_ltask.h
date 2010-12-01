@@ -62,6 +62,7 @@ struct piom_ltask
     void *continuation_data_ptr;
     piom_ltask_option_t options;
     piom_vpset_t vp_mask;
+    struct piom_ltask_queue*queue;
 };
 
 
@@ -106,6 +107,10 @@ void piom_ltask_wait_success (struct piom_ltask *task);
  */
 void piom_ltask_wait(struct piom_ltask *task);
 
+/* Cancel a task.
+ * Slow! Use only for clean shutdown.
+ */
+void piom_ltask_cancel(struct piom_ltask*task);
 
 /* Try to schedule a task
  * Returns the task that have been scheduled (or NULL if no task)
@@ -151,6 +156,7 @@ piom_ltask_init (struct piom_ltask *task)
     task->options = PIOM_LTASK_OPTION_NULL;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = piom_vpset_full;
+    task->queue = NULL;
 }
 
 /* change the func_ptr of a task */
@@ -198,6 +204,7 @@ piom_ltask_create (struct piom_ltask *task,
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;
+    task->queue = NULL;
 }
 
 /** suspend the ltask scheduling */

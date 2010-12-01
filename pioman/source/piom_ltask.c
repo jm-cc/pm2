@@ -426,6 +426,7 @@ __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
 		task, queue);
     queue->ltask_array_nb_items++;
     task->state = PIOM_LTASK_STATE_WAITING;
+    task->queue = queue;
     queue->ltask_array[queue->ltask_array_tail] = task;
     queue->ltask_array_tail = (queue->ltask_array_tail + 1) % PIOM_MAX_LTASK;
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
@@ -501,6 +502,28 @@ void piom_ltask_unmask(struct piom_ltask *task)
 {
     assert(task->masked);
     task->masked = 0;
+}
+
+void piom_ltask_cancel(struct piom_ltask*task)
+{
+    piom_ltask_pause();
+    if(task)
+	{
+	    struct piom_ltask_queue*queue = task->queue;
+	    if(task->queue)
+		{
+		    int i;
+		    for(i = 0; i < PIOM_MAX_LTASK; i++)
+			{
+			    if(queue->ltask_array[i] == task)
+				queue->ltask_array[i] = NULL;
+			}
+		}
+	    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE | PIOM_LTASK_STATE_DONE;
+	    if(task->continuation_ptr)
+		task->continuation_ptr(task->continuation_data_ptr);
+	}
+    piom_ltask_pause();
 }
 
 int

@@ -1,3 +1,3 @@
-Provide: nmad_tag_container nmad_tag_huge
+Provide: nmad_tag_container nmad_tag_huge nmad_tag_as_hashtable
 Conflict: nmad_tag_container
 

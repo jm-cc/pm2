@@ -388,7 +388,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
   nmad_unlock();
   piom_ltask_pause();
   nmad_lock();
-  piom_ltask_completed(&p_core->task);
 #endif	/* PIOM_DISABLE_LTASKS */
 
   nm_lock_interface(p_core);
@@ -402,7 +401,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
       nm_unlock_interface(p_core);
 
 #ifndef PIOM_DISABLE_LTASKS
-      piom_ltask_completed (&p_drv->task);
+      piom_ltask_cancel(&p_drv->task);
 #endif	/* PIOM_DISABLE_LTASKS */
 
       piom_server_stop(&p_drv->server);
@@ -426,20 +425,16 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		    r->driver->cancel_recv_iov(r->_status, p_pw);
 		  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 
-#ifdef NMAD_POLL
+#if defined(NMAD_POLL)
 		  tbx_fast_list_del(&p_pw->link);
 		  nm_so_pw_free(p_pw);
-#else /* NMAD_POLL */
-#ifdef PIOM_DISABLE_LTASKS
+#elif defined(PIOM_DISABLE_LTASKS)
 		  piom_req_success(&p_pw->inst);
 		  nm_so_pw_free(p_pw);
-#else  /* PIOM_DISABLE_LTASKS */
-
+#else /* ltasks */
+		  piom_ltask_cancel(&p_pw->ltask);
 		  nm_pw_free(p_pw);		  
-#endif /* PIOM_DISABLE_LTASKS */
-
-#endif /* NMAD_POLL */
-
+#endif
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
 	      p_gdrv->active_recv[NM_TRK_SMALL] = 0;

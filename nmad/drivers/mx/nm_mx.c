@@ -573,6 +573,9 @@ static int nm_mx_close(struct nm_drv *p_drv)
 /** Connect to a new MX peer */
 static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mx_lock);
+#endif /* PIOMAN */
   struct nm_mx	*status	= _status;
   struct nm_gate   *p_gate   = p_crq->p_gate;
   struct nm_drv    *p_drv    = p_crq->p_drv;
@@ -653,12 +656,20 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   
   free(url);
 
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mx_lock);
+#endif /* PIOMAN */
+
   return NM_ESUCCESS;
 }
 
 /** Accept the connection request from a MX peer */
 static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
+#ifdef PIOMAN
+  piom_spin_lock(&nm_mx_lock);
+#endif /* PIOMAN */
+
   struct nm_mx *status = _status;
   struct nm_gate *p_gate = p_crq->p_gate;
   struct nm_drv *p_drv = p_crq->p_drv;
@@ -734,6 +745,10 @@ static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
 
   NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
     
+#ifdef PIOMAN
+  piom_spin_unlock(&nm_mx_lock);
+#endif /* PIOMAN */
+
   return NM_ESUCCESS;
 }
 

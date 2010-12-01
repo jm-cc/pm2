@@ -100,6 +100,42 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
   mpir_internal_data->datatypes[MPI_LONG_LONG]->size = sizeof(long long);
 
+  mpir_internal_data->datatypes[MPI_LOGICAL]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_REAL]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_REAL4]->size = 4*sizeof(char);
+  mpir_internal_data->datatypes[MPI_REAL8]->size = 8*sizeof(char);
+  mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
+  mpir_internal_data->datatypes[MPI_INTEGER]->size = sizeof(float);
+  mpir_internal_data->datatypes[MPI_INTEGER4]->size = sizeof(int32_t);
+  mpir_internal_data->datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
+  mpir_internal_data->datatypes[MPI_PACKED]->size = sizeof(char);
+
+  mpir_internal_data->datatypes[MPI_DATATYPE_NULL]->elements = 1;
+  mpir_internal_data->datatypes[MPI_CHAR]->elements = 1;
+  mpir_internal_data->datatypes[MPI_UNSIGNED_CHAR]->elements = 1;
+  mpir_internal_data->datatypes[MPI_BYTE]->elements = 1;
+  mpir_internal_data->datatypes[MPI_SHORT]->elements = 1;
+  mpir_internal_data->datatypes[MPI_UNSIGNED_SHORT]->elements = 1;
+  mpir_internal_data->datatypes[MPI_INT]->elements = 1;
+  mpir_internal_data->datatypes[MPI_UNSIGNED]->elements = 1;
+  mpir_internal_data->datatypes[MPI_LONG]->elements = 1;
+  mpir_internal_data->datatypes[MPI_UNSIGNED_LONG]->elements = 1;
+  mpir_internal_data->datatypes[MPI_FLOAT]->elements = 1;
+  mpir_internal_data->datatypes[MPI_DOUBLE]->elements = 1;
+  mpir_internal_data->datatypes[MPI_LONG_DOUBLE]->elements = 1;
+  mpir_internal_data->datatypes[MPI_LONG_LONG_INT]->elements = 1;
+  mpir_internal_data->datatypes[MPI_LONG_LONG]->elements = 1;
+
+  mpir_internal_data->datatypes[MPI_LOGICAL]->elements = 1;
+  mpir_internal_data->datatypes[MPI_REAL]->elements = 1;
+  mpir_internal_data->datatypes[MPI_REAL4]->elements = 1;
+  mpir_internal_data->datatypes[MPI_REAL8]->elements = 1;
+  mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->elements = 1;
+  mpir_internal_data->datatypes[MPI_INTEGER]->elements = 1;
+  mpir_internal_data->datatypes[MPI_INTEGER4]->elements = 1;
+  mpir_internal_data->datatypes[MPI_INTEGER8]->elements = 1;
+  mpir_internal_data->datatypes[MPI_PACKED]->elements = 1;
+
   /* todo: elements=2 */
   mpir_internal_data->datatypes[MPI_LONG_INT]->size = sizeof(long)+sizeof(int);
   mpir_internal_data->datatypes[MPI_SHORT_INT]->size = sizeof(short)+sizeof(int);
@@ -115,15 +151,6 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
   mpir_internal_data->datatypes[MPI_DOUBLE_COMPLEX]->elements = 2;
 
-  mpir_internal_data->datatypes[MPI_LOGICAL]->size = sizeof(float);
-  mpir_internal_data->datatypes[MPI_REAL]->size = sizeof(float);
-  mpir_internal_data->datatypes[MPI_REAL4]->size = 4*sizeof(char);
-  mpir_internal_data->datatypes[MPI_REAL8]->size = 8*sizeof(char);
-  mpir_internal_data->datatypes[MPI_DOUBLE_PRECISION]->size = sizeof(double);
-  mpir_internal_data->datatypes[MPI_INTEGER]->size = sizeof(float);
-  mpir_internal_data->datatypes[MPI_INTEGER4]->size = sizeof(int32_t);
-  mpir_internal_data->datatypes[MPI_INTEGER8]->size = sizeof(int64_t);
-  mpir_internal_data->datatypes[MPI_PACKED]->size = sizeof(char);
 
   for(i = MPI_DATATYPE_NULL; i <= _MPI_DATATYPE_MAX; i++)
     {

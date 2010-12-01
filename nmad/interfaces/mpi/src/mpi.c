@@ -1108,6 +1108,27 @@ mpir_internal_data_t *get_mpir_internal_data() {
   return &mpir_internal_data;
 }
 
+
+int MPI_Issend(void* buf,
+	       int count,
+	       MPI_Datatype datatype,
+	       int dest,
+               int tag,
+	       MPI_Comm comm,
+	       MPI_Request *request) {
+#warning Implement MPI_Issend !
+  return MPI_ERR_UNKNOWN;
+}
+
+int MPI_Waitsome(int incount,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *array_of_indices,
+		 MPI_Status *array_of_statuses) {
+#warning Implement MPI_Waitsome !
+  return MPI_ERR_UNKNOWN;
+}
+
 int MPI_Init(int *argc,
              char ***argv) {
   int ret;
@@ -1416,6 +1437,17 @@ int MPI_Get_version(int *version,
   *version = MADMPI_VERSION;
   *subversion = MADMPI_SUBVERSION;
   return MPI_SUCCESS;
+}
+
+int MPI_Bsend(void *buffer,
+	      int count,
+	      MPI_Datatype datatype,
+	      int dest,
+	      int tag,
+	      MPI_Comm comm) {
+	/* todo: only valid for small messages ? */
+	fprintf(stderr, "Warning: bsend called. it may be invalid\n");
+	return MPI_Send(buffer, count, datatype, dest, tag, comm);
 }
 
 int MPI_Send(void *buffer,

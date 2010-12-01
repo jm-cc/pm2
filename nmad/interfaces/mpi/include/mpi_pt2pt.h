@@ -44,6 +44,15 @@ int MPI_Send(void *buffer,
              int tag,
              MPI_Comm comm);
 
+
+int MPI_Issend(void* buf,
+	       int count,
+	       MPI_Datatype datatype,
+	       int dest,
+               int tag,
+	       MPI_Comm comm,
+	       MPI_Request *request);
+
 /**
  * Posts a standard-mode, non blocking send.
  * @param buffer initial address of send buffer

@@ -21,6 +21,7 @@
 #ifndef MPI_TYPES_H
 #define MPI_TYPES_H
 
+#define MPI_BSEND_OVERHEAD 0
 /** \addtogroup mpi_interface */
 /* @{ */
 
@@ -166,6 +167,12 @@ typedef int MPI_Datatype;
 #define MPI_LONG_DOUBLE      ((MPI_Datatype)12)
 #define MPI_LONG_LONG_INT    ((MPI_Datatype)13)
 #define MPI_LONG_LONG        ((MPI_Datatype)13)
+
+#define MPI_LONG_INT         ((MPI_Datatype)14)
+#define MPI_SHORT_INT        ((MPI_Datatype)15)
+#define MPI_FLOAT_INT        ((MPI_Datatype)16)
+#define MPI_DOUBLE_INT       ((MPI_Datatype)17)
+#define MPI_2INT             ((MPI_Datatype)18)
 
 #define MPI_COMPLEX          ((MPI_Datatype)23)
 #define MPI_DOUBLE_COMPLEX   ((MPI_Datatype)24)

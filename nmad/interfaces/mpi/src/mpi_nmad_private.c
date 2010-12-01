@@ -99,8 +99,22 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->datatypes[MPI_LONG_DOUBLE]->size = sizeof(long double);
   mpir_internal_data->datatypes[MPI_LONG_LONG_INT]->size = sizeof(long long int);
   mpir_internal_data->datatypes[MPI_LONG_LONG]->size = sizeof(long long);
+
+  /* todo: elements=2 */
+  mpir_internal_data->datatypes[MPI_LONG_INT]->size = sizeof(long)+sizeof(int);
+  mpir_internal_data->datatypes[MPI_SHORT_INT]->size = sizeof(short)+sizeof(int);
+  mpir_internal_data->datatypes[MPI_FLOAT_INT]->size = sizeof(float)+sizeof(int);
+  mpir_internal_data->datatypes[MPI_DOUBLE_INT]->size = sizeof(double) + sizeof(int);
+
+  mpir_internal_data->datatypes[MPI_2INT]->size = 2*sizeof(int);
+  mpir_internal_data->datatypes[MPI_2INT]->elements = 2;
+
   mpir_internal_data->datatypes[MPI_COMPLEX]->size = 2*sizeof(float);
+  mpir_internal_data->datatypes[MPI_COMPLEX]->elements = 2;
+
   mpir_internal_data->datatypes[MPI_DOUBLE_COMPLEX]->size = 2*sizeof(double);
+  mpir_internal_data->datatypes[MPI_DOUBLE_COMPLEX]->elements = 2;
+
   mpir_internal_data->datatypes[MPI_LOGICAL]->size = sizeof(float);
   mpir_internal_data->datatypes[MPI_REAL]->size = sizeof(float);
   mpir_internal_data->datatypes[MPI_REAL4]->size = 4*sizeof(char);

@@ -182,8 +182,8 @@ static int nm_local_query(struct nm_drv *p_drv,
 #ifdef PM2_NUIOA
   p_local_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
-  p_local_drv->caps.latency = INT_MAX;
-  p_local_drv->caps.bandwidth = 0;
+  p_local_drv->caps.latency = 10000;
+  p_local_drv->caps.bandwidth = 1000;
   p_drv->priv = p_local_drv;
   return NM_ESUCCESS;
 }
@@ -318,7 +318,7 @@ static int nm_local_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   else if(rc < 0 || rc < size + sizeof(size))
     
     {
-      fprintf(stderr, "nmad: local- error %d while sending message.\n", errno);
+      fprintf(stderr, "nmad: local- error %d while sending message (%s).\n", err, strerror(err));
       abort();
     }
   return NM_ESUCCESS;
@@ -352,13 +352,13 @@ static int nm_local_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
     {
       return -NM_ECLOSED;
     }
-  if(rc < 0 && err == EAGAIN)
+  else if(rc < 0 && err == EAGAIN)
     {
       return -NM_EAGAIN;
     }
   else if(rc < 0)
     {
-      fprintf(stderr, "nmad: local- error %d while reading header.\n", errno);
+      fprintf(stderr, "nmad: local- error %d while reading header (%s).\n", err, strerror(err));
       abort();
     }
   else if(size > iov->iov_len)
@@ -369,7 +369,7 @@ static int nm_local_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
   rc = NM_SYS(recv)(fd, iov->iov_base, size, MSG_WAITALL);
   if(rc < 0 || rc != size)
     {
-      fprintf(stderr, "nmad: local- error %d while reading data.\n", errno);
+      fprintf(stderr, "nmad: local- error %d while reading data (%s).\n", err, strerror(err));
       abort();
     }
   return NM_ESUCCESS;

@@ -17,7 +17,7 @@
 
 # pm2-bench settings
 flavor="bench_nmad_marcel"
-flavor_options="--nmad=tag_as_flat_array --modules=marcel --modules=pioman --marcel=\"opt numa smp_remote_tasklet standard_main enable_keys enable_stats enable_once enable_cleanup\" --init=topology"
+flavor_options="--nmad=tag_as_hashtable --modules=marcel --modules=pioman --marcel=\"opt numa smp_remote_tasklet smp_smt_idle standard_main enable_keys enable_stats enable_once enable_cleanup pmarcel\" --init=topology"
 appdir="${PM2_OBJROOT}/nmad/examples/sendrecv"
 prog="sr_bench"
 result_file="pm2_bench_${prog}_marcel_${USER}_result"

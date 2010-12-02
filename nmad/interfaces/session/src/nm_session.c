@@ -141,25 +141,19 @@ static void nm_session_add_driver(puk_component_t component, int index)
 static void nm_session_init_drivers(int*argc, char**argv)
 {
   const char*assembly_name = getenv("NMAD_ASSEMBLY");
+  const char*driver_env = getenv("NMAD_DRIVER");
+
+  if((!driver_env) && (!assembly_name))
+    {
+      driver_env = "custom";
+    }
 
   nm_session.n_drivers = 0;
   nm_session.drivers = NULL;
   nm_session.url_string = NULL;
 
-  if(assembly_name)
+  if(driver_env)
     {
-      /* assembly name given (e.g. NewMadico) */
-      fprintf(stderr, "# session: loading assembly %s\n", assembly_name);
-      puk_component_t driver_assembly = puk_adapter_resolve(assembly_name);
-      nm_session_add_driver(driver_assembly, -1);
-    }
-  else
-    {
-      const char*driver_env = getenv("NMAD_DRIVER");
-      if(!driver_env)
-	{
-	  driver_env = "custom";
-	}
       /* parse driver_string */
       char*driver_string = strdup(driver_env); /* strtok writes into the string */
       char*token = strtok(driver_string, "+");
@@ -190,6 +184,13 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	  token = strtok(NULL, "+");
 	}
       free(driver_string);
+    }
+  else
+    {
+      /* assembly name given (e.g. NewMadico) */
+      fprintf(stderr, "# session: loading assembly %s\n", assembly_name);
+      puk_component_t driver_assembly = puk_adapter_resolve(assembly_name);
+      nm_session_add_driver(driver_assembly, -1);
     }
   /* load default driver */
   puk_component_t driver_self = puk_adapter_resolve("NewMad_Driver_self");

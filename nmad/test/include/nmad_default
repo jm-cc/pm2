@@ -37,7 +37,7 @@ create_test_flavor() {
 }
 
 prerun_test() {
-    nmad-driver-conf -f --${net}
+    nmad-driver-conf -f --driver=${net}
     nmad-strategy-conf -f --strategy=${strat}
     # should compare all the lines of the output and not only the number
     # of lines present in the expected output file

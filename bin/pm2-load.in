@@ -53,7 +53,7 @@ Usage: $PROGNAME { option } command
     --strategy name       : Use strategy named "name"
     -h|--help             : Display this help message
 
-   Madeleine/Leonie options:
+   Leonie options:
     -x                    : Run command through xterm
     -p                    : Pause at the end of the command
     -cd                   : Change working directory at the beginning of the session
@@ -61,9 +61,16 @@ Usage: $PROGNAME { option } command
     --protocol name       : Use protocol named "name"
     --network file        : Specify the network configuration file
 
-   PadicoTM options:
+   PadicoTM launcher options:
     --padico,<arg>        : give <arg> to padico-launch
-    --protocol <name>     : use <name> network [ same as --padico,-net,<name> ]
+    -x                    : Run command through xterm       [ same as --padico,-c ]
+    -p                    : Pause at the end of the command [ same as --padico,--padico-pause ]
+    -v                    : Be verbose about bootstrap process
+    --protocol <name>     : use <name> network              [ same as --padico,-net,<name> ]
+    -D<label>=<value>     : define <label>=<value> in process environment
+    -machinefile <file>   : use <file> as list of hosts (overrides pm2-conf)
+    -nodelist <h1>,<h2>...: comma-separated list of hosts (overrides pm2-conf)
+    -np <n>               : start <n> processes
 EOF
     exit $1
 }
@@ -333,7 +340,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_LOGS_ON_NODE_0=only
 	    ;;
-# begin Madeleine only
+# begin Leonie only
 	--l) # Logs off
 	    shift
 	    PM2_LOGS_ON_NODE_0=off
@@ -370,10 +377,6 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_X11MODE=off
 	    ;;
-	-p) # Pause mode on
-	    shift
-	    PM2_PMODE=on
-	    ;;
 	--p) # Pause mode off
 	    shift
 	    PM2_PMODE=off
@@ -398,10 +401,27 @@ while [ $# -gt 0 ]; do
             PM2_WDIR=$1
             shift
             ;;
-# end Madeleine only
+# end Leonie only
+	-p) # Pause mode on
+	    shift
+	    PM2_PMODE=on
+	    ;;
 	--padico,*)
 	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} `echo $1 | tr ',' ' ' | sed 's/--padico //'`"
 	    shift
+	    ;;
+	-D*=*|-v)
+	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} $1"
+	    shift
+	    ;;
+	-machinefile|--hostfile|-nodelist)
+	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} $1 $2"
+	    PM2_PADICO_CONF_FILE=true
+	    shift 2
+	    ;;
+	-np|-n)
+	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} $1 $2"
+	    shift 2
 	    ;;
 	-u|--use-local-flavor)
 	    shift
@@ -488,11 +508,13 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    ;;
 	padico-launch)
 	    log "padico-launch selected"
-	    set --  --source-mode
-	    . ${PM2_OBJROOT}/bin/pm2-conf-file
-	    [ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
-	    log "PM2 config file: ${PM2_CONF_FILE}"
-	    n=$( cat ${PM2_CONF_FILE} | wc -l )
+	    if [ "x${PM2_PADICO_CONF_FILE}" = "x" ]; then
+		set --  --source-mode
+		. ${PM2_OBJROOT}/bin/pm2-conf-file
+		[ -f $PM2_CONF_FILE ] || _pm2_load_error "Error: PM2 is not yet configured for the flavor $PM2_FLAVOR (please run pm2-conf)."
+		log "PM2 config file: ${PM2_CONF_FILE}"
+		PM2_PADICO_ARGS="${PM2_PADICO_ARGS} -f ${PM2_CONF_FILE}"
+	    fi
 	    pm2_load_args=""
 	    [ "$PM2_DEBUG" = "on" ]           && pm2_load_args="${pm2_load_args} -d"
 	    [ "$PM2_VALGRIND" = "on" ]        && pm2_load_args="${pm2_load_args} --padico-valgrind"
@@ -501,7 +523,7 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    for p in ${PM2_PROTOCOL}; do
 		pm2_load_args="${pm2_load_args} -net $p"
 	    done
-	    ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} ${PM2_PADICO_ARGS} -f ${PM2_CONF_FILE} -n ${n} ${PM2_CMD_NAME} "${prog_args[@]}"
+	    exec ${_PM2_CONFIG_BUILD}/bin/padico-launch ${pm2_load_args} ${PM2_PADICO_ARGS} ${PM2_CMD_NAME} "${prog_args[@]}"
 	    exit $?
 	    ;;
     esac

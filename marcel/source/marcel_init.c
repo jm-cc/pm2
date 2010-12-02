@@ -72,9 +72,80 @@ void marcel_initialize(int *argc, char *argv[])
 }
 
 
+static void marcel_init_set_nvp(char* str)
+{
+#ifdef MA__LWPS
+	marcel_nb_vp = atoi(str);
+	if (marcel_nb_vp < 1 || marcel_nb_vp > MA_NR_VPS) {
+		fprintf(stderr,
+			"Error: nb of VP should be between 1 and %ld\n",
+			(long) MA_NR_VPS);
+		exit(1);
+	}
+#endif	/* MA__LWPS */
+}
+
+static void marcel_init_set_firstcpu(char* str)
+{
+#ifdef MA__LWPS
+	int first_cpu;
+	first_cpu = atoi(str);
+	if (first_cpu < 0) {
+		fprintf(stderr, "Error: CPU number should be positive\n");
+		exit(1);
+	}
+	fprintf(stderr, "first cpu = %d\n", first_cpu);
+	marcel_first_cpu = first_cpu;
+#endif	/* MA__LWPS */
+}
+
+static void marcel_init_set_cpustride(char*str)
+{
+#ifdef MA__LWPS
+	int stride;
+	stride = atoi(str);
+	if (stride < 0) {
+		fprintf(stderr, "Error: CPU stride should be positive\n");
+		exit(1);
+	}
+	marcel_cpu_stride = stride;
+#endif	/* MA__LWPS */
+}
+
+static void marcel_init_set_maxarity(char*str)
+{
+#ifdef MA__NUMA
+	int topo_max_arity;
+	topo_max_arity = atoi(str);
+	if (topo_max_arity < 0) {
+		fprintf(stderr,
+			"Error: Maximum topology arity should be positive\n");
+		exit(1);
+	}
+	marcel_topo_max_arity = topo_max_arity;
+#endif	/* MA__NUMA */
+}
+
 static void marcel_parse_cmdline_early(int argc, char *argv[])
 {
 	int i;
+
+	char* env_str = getenv("MARCEL_NVP");
+	if(env_str)
+		marcel_init_set_nvp(env_str);
+
+	env_str = getenv("MARCEL_FIRSTCPU");
+	if(env_str)
+		marcel_init_set_firstcpu(env_str);
+
+	env_str = getenv("MARCEL_CPUSTRIDE");
+	if(env_str)
+		marcel_init_set_cpustride(env_str);
+
+	env_str = getenv("MARCEL_MAXARITY");
+	if(env_str)
+		marcel_init_set_maxarity(env_str);
+
 
 	i = 1;
 	while (i < argc) {
@@ -87,17 +158,8 @@ static void marcel_parse_cmdline_early(int argc, char *argv[])
 					"by <nb_of_virtual_processors>.\n");
 				exit(1);
 			}
-			marcel_nb_vp = atoi(argv[i - 1]);
-			if (marcel_nb_vp < 1 || marcel_nb_vp > MA_NR_VPS) {
-				fprintf(stderr,
-					"Error: nb of VP should be between 1 and %ld\n",
-					(long) MA_NR_VPS);
-				exit(1);
-			}
-
+			marcel_init_set_nvp(argv[i - 1]);
 		} else if (!strcmp(argv[i], "--marcel-cpustride")) {
-			int stride;
-
 			i += 2;
 			if (i > argc) {
 				fprintf(stderr,
@@ -105,17 +167,8 @@ static void marcel_parse_cmdline_early(int argc, char *argv[])
 					"by <nb_of_processors_to_seek>.\n");
 				exit(1);
 			}
-			stride = atoi(argv[i - 1]);
-			if (stride < 0) {
-				fprintf(stderr, "Error: CPU stride should be positive\n");
-				exit(1);
-			}
-			marcel_cpu_stride = stride;
-
-
+			marcel_init_set_cpustride(argv[i - 1]);
 		} else if (!strcmp(argv[i], "--marcel-firstcpu")) {
-			int first_cpu;
-
 			i += 2;
 			if (i > argc) {
 				fprintf(stderr,
@@ -123,16 +176,10 @@ static void marcel_parse_cmdline_early(int argc, char *argv[])
 					"by <num_of_first_processor>.\n");
 				exit(1);
 			}
-			first_cpu = atoi(argv[i - 1]);
-			if (first_cpu < 0) {
-				fprintf(stderr, "Error: CPU number should be positive\n");
-				exit(1);
-			}
-			marcel_first_cpu = first_cpu;
+			marcel_init_set_firstcpu(argv[i - 1]);
 		} else
 #ifdef MA__NUMA
 		if (!strcmp(argv[i], "--marcel-maxarity")) {
-			int topo_max_arity;
 			i += 2;
 			if (i > argc) {
 				fprintf(stderr,
@@ -140,13 +187,7 @@ static void marcel_parse_cmdline_early(int argc, char *argv[])
 					"by <maximum_topology_arity>.\n");
 				exit(1);
 			}
-			topo_max_arity = atoi(argv[i - 1]);
-			if (topo_max_arity < 0) {
-				fprintf(stderr,
-					"Error: Maximum topology arity should be positive\n");
-				exit(1);
-			}
-			marcel_topo_max_arity = topo_max_arity;
+			marcel_init_set_maxarity(argv[i - 1]);
 		} else
 #endif
 #endif

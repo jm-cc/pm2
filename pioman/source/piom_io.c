@@ -783,12 +783,14 @@ int piom_tselect(int width, fd_set * __restrict readfds,
 void piom_io_init(void)
 {
 	PIOM_LOG_IN();
+#ifdef MARCEL
 	/* unregister Marcel IO so that *we* manage IO requests */
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+#endif /* MARCEL */
 
 	piom_server_init(&piom_io_server.server, "Unix TCP I/O");
 #ifdef MA__LWPS

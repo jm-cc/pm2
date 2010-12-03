@@ -70,21 +70,22 @@ static volatile int *being_processed = NULL;
 #define GET_QUEUE(vp) ((piom_ltask_queue_t *)(marcel_topo_levels[marcel_topo_nblevels-1][vp])->ltask_data)
 #define LOCAL_QUEUE (GET_QUEUE(marcel_current_vp()))
 
+#ifdef MARCEL
+#define piom_ltask_current_vp() marcel_current_vp()
+#define piom_ltask_nvp()        marcel_nbvps()
+#else
+#define piom_ltask_current_vp() (0)
+#define piom_ltask_nvp()        (1)
+#endif
+
 void 
 piom_ltask_pause()
 {
     __paused ++;
     int i = 0;
-    int current_vp = 0;
-#ifdef MARCEL
-    current_vp = marcel_current_vp();
-#else
-    current_vp = 0;
-#endif
+    int current_vp = piom_ltask_current_vp();
     
-#ifdef MARCEL
-    for (i = 0; i < marcel_nbvps (); i++)
-#endif
+    for (i = 0; i < piom_ltask_nvp(); i++)
 	{
 	    if(i != current_vp)
 		while(being_processed[i] != 0)
@@ -137,12 +138,10 @@ __piom_init_queue (piom_ltask_queue_t * queue)
     queue->ltask_array_tail = 0;
     queue->ltask_array_head = 0;
     queue->ltask_array_nb_items = 0;
-#ifdef MARCEL
-    for (i = 0; i < marcel_nbvps (); i++)
+
+    for (i = 0; i < piom_ltask_nvp(); i++)
 	being_processed[i] = 0;
-#else
-    being_processed[0] = 0;
-#endif
+
     piom_spin_lock_init (&queue->ltask_lock);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
@@ -232,11 +231,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
     if(! (queue->state & PIOM_LTASK_QUEUE_STATE_RUNNING)
        && ! (queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING))
 	return NULL;
-#ifdef MARCEL
-    const int current_vp = marcel_current_vp();
-#else
-    const int current_vp = 0;
-#endif
+    const int current_vp = piom_ltask_current_vp();
     being_processed[current_vp] = 1;
     struct piom_ltask *task = __piom_ltask_get_from_queue (queue);
     if(task)
@@ -309,8 +304,10 @@ __piom_exit_queue(piom_ltask_queue_t *queue)
     /* empty the list of tasks */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
+#ifdef MARCEL
 	    piom_vpset_t local_vpset = 1<<marcel_current_vp();
 	    if(queue->vpset & local_vpset)
+#endif
 		__piom_ltask_schedule (queue);
 	}
 }
@@ -320,7 +317,7 @@ static void __piom_ltask_update_timer();
 void 
 piom_ltask_poll_timer(unsigned long hid)
 {
-    if (piom_ltask_initialized && !being_processed[marcel_current_vp()] && !__paused) {
+    if (piom_ltask_initialized && !being_processed[piom_ltask_current_vp()] && !__paused) {
 	piom_ltask_schedule();
     }
     __piom_ltask_update_timer();
@@ -346,13 +343,14 @@ void piom_init_ltasks(void)
 {
     if (!piom_ltask_initialized)
 	{
+#ifdef MARCEL
 	    /* register a callback to Marcel */
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
-#ifdef MARCEL
+
 	    being_processed = TBX_MALLOC (sizeof(int) * marcel_nbvps ());
 #else
 	    being_processed = TBX_MALLOC (sizeof(int) * 1);
@@ -371,7 +369,9 @@ void piom_init_ltasks(void)
 		}
 	    }
 #endif	/* USE_GLOBAL_QUEUE */
+#ifdef MARCEL
 	    marcel_init_timer(&ltask_poll_timer, piom_ltask_poll_timer, 0, 0);
+#endif
 	    __piom_ltask_update_timer();
 
 	}
@@ -529,11 +529,7 @@ void piom_ltask_cancel(struct piom_ltask*task)
 int
 piom_ltask_polling_is_required ()
 {
-#ifdef MARCEL
-    int vp = marcel_current_vp();
-#else
-    int vp = 0;
-#endif
+    int vp = piom_ltask_current_vp();
     if (piom_ltask_initialized && !being_processed[vp])
 	{
 #ifdef USE_GLOBAL_QUEUE

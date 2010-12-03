@@ -254,7 +254,6 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 	piom_vpset_t task_vpset = piom_vpset_full;
 	PIOM_LOG_IN();
 
-	PROF_EVENT(piom_write_entry);
 	if(piom_ltask_test_activity())
 	{
 		do {
@@ -393,12 +392,14 @@ void piom_io_task_init(void)
 {
 	piom_init_ltasks();
 
+#ifdef MARCEL
 	/* unregister Marcel IO so that *we* manage IO requests */
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_TIMER);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_YIELD);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_LIB_ENTRY);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_IDLE);
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
+#endif /* MARCEL */
 }
 
 #endif	/* PIOM_DISABLE_LTASKS */

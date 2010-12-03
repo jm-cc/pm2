@@ -1,1 +1,2 @@
-PadicoTM modules
+PadicoTM modules. Note: if used with Marcel, PadicoTM needs:
+pmarcel, enable_keys, standard_main, pioman.

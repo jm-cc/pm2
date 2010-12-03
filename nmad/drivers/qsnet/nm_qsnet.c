@@ -220,6 +220,7 @@ static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *pa
 #endif
   p_qsnet_drv->caps.latency = 2250 ; /* from sr_ping */
   p_qsnet_drv->caps.bandwidth = 837; /* from sr_ping, hardcode 900 instead? */
+  p_qsnet_drv->caps.min_period = 0;
   
   p_drv->priv = p_qsnet_drv;
   err = NM_ESUCCESS;

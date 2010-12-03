@@ -422,6 +422,7 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   p_ibverbs_drv->caps.latency = 1350; /* from sampling */
   p_ibverbs_drv->caps.bandwidth = 1024 * (data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
 
+  p_ibverbs_drv->caps.min_period = 0;
   p_drv->priv = p_ibverbs_drv;
   err = NM_ESUCCESS;
   

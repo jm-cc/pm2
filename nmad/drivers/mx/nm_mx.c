@@ -439,6 +439,8 @@ nm_mx_query		(struct nm_drv *p_drv,
   p_mx_drv->caps.latency = 2690 ; /* from sr_ping */ 
   p_mx_drv->caps.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
 
+  p_mx_drv->caps.min_period = 0; /* from sr_ping, use MX_LINE_SPEED instead? */
+
   p_drv->priv = p_mx_drv;
   err = NM_ESUCCESS;
   

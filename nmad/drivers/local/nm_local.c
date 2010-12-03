@@ -184,6 +184,7 @@ static int nm_local_query(struct nm_drv *p_drv,
 #endif
   p_local_drv->caps.latency = 10000;
   p_local_drv->caps.bandwidth = 1000;
+  p_local_drv->caps.min_period = 0;
   p_drv->priv = p_local_drv;
   return NM_ESUCCESS;
 }

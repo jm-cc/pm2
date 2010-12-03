@@ -374,6 +374,7 @@ nm_tcp_query		(struct nm_drv *p_drv,
 #endif
 	p_tcp_drv->caps.latency = 50000;
 	p_tcp_drv->caps.bandwidth = 100;
+	p_tcp_drv->caps.min_period = 0;
 
         p_drv->priv = p_tcp_drv;
 	err = NM_ESUCCESS;

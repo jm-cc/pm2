@@ -35,6 +35,10 @@ struct nm_drv_cap {
 	 */
 	int rdv_threshold;
 
+	/** Minimum delay between poll (in microseconds)
+	 */
+	int min_period;
+
         /* recv selection						*/
 
         /** May receive from a specific gate.

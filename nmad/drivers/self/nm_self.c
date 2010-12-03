@@ -186,6 +186,8 @@ static int nm_self_query(struct nm_drv *p_drv,
 #endif
   p_self_drv->caps.latency = INT_MAX;
   p_self_drv->caps.bandwidth = 0;
+
+  p_self_drv->caps.min_period = 100;
   p_drv->priv = p_self_drv;
   return NM_ESUCCESS;
 }

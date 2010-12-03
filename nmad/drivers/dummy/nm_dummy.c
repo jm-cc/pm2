@@ -177,6 +177,7 @@ nm_dummy_query			(struct nm_drv *p_drv,
 #endif
 	p_dummy_drv->caps.latency = INT_MAX;
 	p_dummy_drv->caps.bandwidth = 0;
+	p_dummy_drv->caps.min_period = 0;
 
 	p_drv->priv = p_dummy_drv;
 	err = NM_ESUCCESS;

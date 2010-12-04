@@ -17,6 +17,7 @@
 #ifndef PIOM_LTASK_H
 #define PIOM_LTASK_H
 
+#include "piom_sem.h"
 #include "pioman.h"
 #ifdef MARCEL
 #include "marcel.h"
@@ -55,6 +56,7 @@ typedef int (piom_ltask_func) (void *arg);
 struct piom_ltask
 {
     volatile piom_ltask_state_t state;
+    piom_cond_t done;
     volatile int masked;
     piom_ltask_func *func_ptr;
     void *data_ptr;
@@ -140,8 +142,10 @@ piom_ltask_test_completed (struct piom_ltask *task)
 static __tbx_inline__ void
 piom_ltask_completed (struct piom_ltask *task)
 {
-    if(task->state!=PIOM_LTASK_STATE_DONE)
+    if(! (task->state & PIOM_LTASK_STATE_DONE)) {
 	task->state |= PIOM_LTASK_STATE_DONE;
+    }
+    piom_cond_signal(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
 /* initialize a task */
@@ -157,6 +161,7 @@ piom_ltask_init (struct piom_ltask *task)
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = piom_vpset_full;
     task->queue = NULL;
+    piom_cond_init(&task->done, 0);
 }
 
 /* change the func_ptr of a task */
@@ -205,6 +210,7 @@ piom_ltask_create (struct piom_ltask *task,
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;
     task->queue = NULL;
+    piom_cond_init(&task->done, 0);
 }
 
 /** suspend the ltask scheduling */

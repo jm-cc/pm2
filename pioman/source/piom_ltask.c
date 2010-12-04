@@ -249,9 +249,9 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 		    /* todo: utiliser marcel_disable_preemption */
 		    marcel_tasklet_disable();
 #endif
-		    
+
 		    (*task->func_ptr) (task->data_ptr);
-		    
+
 		    task->state ^= PIOM_LTASK_STATE_SCHEDULED;
 		    if ((task->options & PIOM_LTASK_OPTION_REPEAT)
 			&& !(task->state & PIOM_LTASK_STATE_DONE))
@@ -270,7 +270,7 @@ __piom_ltask_schedule (piom_ltask_queue_t *queue)
 		    else
 			{
 			    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE;
-			    task->state |= PIOM_LTASK_STATE_DONE;
+			    piom_ltask_completed (task);
 			    if(task->continuation_ptr)
 				task->continuation_ptr(task->continuation_data_ptr);
 #ifdef MARCEL
@@ -475,14 +475,13 @@ piom_ltask_schedule ()
 void
 piom_ltask_wait_success (struct piom_ltask *task)
 {
-    while (!(task->state & PIOM_LTASK_STATE_DONE))
-	if(!__paused)
-	    piom_ltask_schedule ();
+    piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
 void
 piom_ltask_wait (struct piom_ltask *task)
 {
+    piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
     while (!(task->state & PIOM_LTASK_STATE_COMPLETELY_DONE))
 	if(!__paused)
 	    piom_ltask_schedule ();
@@ -519,7 +518,8 @@ void piom_ltask_cancel(struct piom_ltask*task)
 				queue->ltask_array[i] = NULL;
 			}
 		}
-	    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE | PIOM_LTASK_STATE_DONE;
+	    task->state = PIOM_LTASK_STATE_COMPLETELY_DONE;
+	    piom_ltask_completed (task);
 	    if(task->continuation_ptr)
 		task->continuation_ptr(task->continuation_data_ptr);
 	}

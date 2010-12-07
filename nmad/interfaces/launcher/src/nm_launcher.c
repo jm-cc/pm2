@@ -75,9 +75,11 @@ int nm_launcher_init(int *argc, char**argv)
     return NM_ESUCCESS;
   init_done = 1;
 
-  common_pre_init(argc, argv, NULL);
-  common_post_init(argc, argv, NULL);
-
+  if(!tbx_initialized())
+    {
+      common_pre_init(argc, argv, NULL);
+      common_post_init(argc, argv, NULL);
+    }
   /*
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)
    */

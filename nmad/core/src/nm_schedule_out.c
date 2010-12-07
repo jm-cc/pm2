@@ -284,6 +284,38 @@ void nm_try_and_commit(struct nm_core *p_core)
     }
 }
 
+static inline void nm_out_prefetch(struct nm_core*p_core)
+{
+  /* check whether all drivers are idle */
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
+    {
+      if(!tbx_fast_list_empty(&p_drv->pending_send_list))
+	{
+	  return;
+	}
+    }
+
+  struct nm_gate*p_gate = NULL;
+  NM_FOR_EACH_GATE(p_gate, p_core)
+    {
+      if(!tbx_fast_list_empty(&p_gate->pending_large_send))
+	{
+	  struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_send.next);
+	  if(!p_pw->flags & NM_PW_PREFETCHED)
+	    {
+	      p_drv = nm_drv_default(p_gate);
+	      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	      if(p_gdrv->receptacle.driver->prefetch_send)
+		{
+		  (p_gdrv->receptacle.driver->prefetch_send)(p_gdrv->receptacle._status, p_pw);
+		  p_pw->flags |= NM_PW_PREFETCHED;
+		}
+	    }
+	}
+    }  
+}
+
 /** Main scheduler func for outgoing requests.
    - this function must be called once for each gate on a regular basis
  */
@@ -305,6 +337,9 @@ void nm_sched_out(struct nm_core *p_core)
     {
       nm_poll_out_drv(p_drv);
     }
+
+  nm_out_prefetch(p_core);
+
 #endif /* NMAD_POLL */
   
 }

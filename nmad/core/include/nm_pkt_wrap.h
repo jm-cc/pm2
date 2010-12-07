@@ -29,23 +29,28 @@ typedef uint32_t nm_pw_flag_t;
 
 /** Headerless pkt, if set.
  */
-#define NM_PW_NOHEADER      0x0001
+#define NM_PW_NOHEADER      (nm_pw_flag_t)0x0001
 
 /** Pkt has been allocated with full (NM_SO_MAX_UNEXPECTED) contiguous buffer, if set.
  */
-#define NM_PW_BUFFER        0x0002
+#define NM_PW_BUFFER        (nm_pw_flag_t)0x0002
 
 /** Pkt has been allocated with a contiguous buffer and a global header has been prepared.
  */
-#define NM_PW_GLOBAL_HEADER 0x0004
+#define NM_PW_GLOBAL_HEADER (nm_pw_flag_t)0x0004
 
 /** v[0].iov_base has been dyanmically allocated
  */
-#define NM_PW_DYNAMIC_V0    0x0008
+#define NM_PW_DYNAMIC_V0    (nm_pw_flag_t)0x0008
 
 /** Pkt has been finalized- ready to send on the wire.
  */
-#define NM_PW_FINALIZED     0x0100
+#define NM_PW_FINALIZED     (nm_pw_flag_t)0x0010
+
+/** Pkt has been prefetched
+ */
+#define NM_PW_PREFETCHED    (nm_pw_flag_t)0x0020
+
 /*@}*/
 
 /* Data flags */

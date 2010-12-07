@@ -134,6 +134,8 @@ struct nm_drv_iface_s
   int (*poll_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
   int (*poll_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
 
+  int (*prefetch_send)(void*_status, struct nm_pkt_wrap *p_pw);
+
   int (*cancel_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);
 
   int (*poll_send_any_iov)(void*_status, struct nm_pkt_wrap **p_pw);

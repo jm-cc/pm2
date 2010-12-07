@@ -171,10 +171,7 @@ struct nm_pkt_wrap
 };
 
 
-#define nm_l2so(l) \
-        ((struct nm_pkt_wrap *)((char *)(l) -\
-         (unsigned long)(&((struct nm_pkt_wrap *)0)->link)))
-
+#define nm_l2so(l) tbx_fast_list_entry(l, struct nm_pkt_wrap, link)
 
 int nm_so_pw_init(struct nm_core *p_core);
 

@@ -27,28 +27,34 @@
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
 #define WARMUPS_DEFAULT 100
-#define LOOPS_DEFAULT   1000
-#define PASSES_DEFAULT  50
+#define LOOPS_DEFAULT   100
 
-#define MAX_DATA        (128ULL * 1024ULL * 1024ULL) /* 32 MB */
-
-static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
+static inline int _passes(uint32_t len)
 {
-  if (!len)
-    return 1+increment;
+  if(len > 2 * 1024 * 1024)
+    return 5;
+  if(len > 64 * 1024)
+    return 50;
   else
-    return len*multiplier+increment;
+    return 500;
 }
 
-static uint32_t _iterations(int iterations, uint32_t len)
+static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
+  if(len == 0)
+    len = 1;
+  return len * multiplier + increment;
+}
+
+static inline uint32_t _iterations(int iterations, uint32_t len)
+{
+  const uint64_t max_data = 8 * 1024 * 1024;
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
-  if(data_size  > MAX_DATA)
+  if(data_size  > max_data)
     {
-      iterations = (MAX_DATA / (uint64_t)len);
-      if(iterations < 2)
-	iterations = 2;
+      iterations = (max_data / (uint64_t)len);
+      if(iterations < 1)
+	iterations = 1;
     }
   return iterations;
 }
@@ -133,7 +139,7 @@ int main(int argc, char	**argv)
 	  int k;
 	  clear_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
-	  for(k = 0; k < iterations * PASSES_DEFAULT + warmups; k++)
+	  for(k = 0; k < iterations * _passes(len) + warmups; k++)
 	    {
 	      nm_sr_request_t request;
 	      
@@ -171,7 +177,7 @@ int main(int argc, char	**argv)
 	  
 	  double best = -1;
 	  int p;
-	  for(p = 0; p < PASSES_DEFAULT; p++)
+	  for(p = 0; p < _passes(len); p++)
 	    {
 	      TBX_GET_TICK(t1);
 	      for(k = 0; k < iterations; k++)

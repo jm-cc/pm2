@@ -235,13 +235,14 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ -z "$LDFLAGS" ] ; then
         LDFLAGS="$LDFLAGSBASE"
     fi
-    dir=$(dirname $0)
-    link=$(readlink $0)
-    if [ -n "$link" ] ; then
-        dir=$(echo $dir"/"$(dirname $link))
-    fi
-    . $dir/mpicc.ext
-    $Show $CLINKER $USER_CFLAGS $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST $dir/ext/obj/$arch/arg_ifort.o
+    # dir=$(dirname $0)
+    # link=$(readlink $0)
+    # if [ -n "$link" ] ; then
+    #     dir=$(echo $dir"/"$(dirname $link))
+    # fi
+    # . $dir/mpicc.ext
+    $Show $CLINKER $USER_CFLAGS $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST 
+    # $dir/ext/obj/$arch/arg_ifort.o
     status=$?
 fi
 exit $status

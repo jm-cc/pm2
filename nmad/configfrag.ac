@@ -29,7 +29,6 @@ m4_define([nmad_bin_scripts], [			\
 	nmad/examples/session/GNUmakefile	\
 	nmad/sampling/GNUmakefile		\
 	nmad/interfaces/mpi/scripts/mpicc	\
-	nmad/interfaces/mpi/scripts/mpicc.ext	\
 	nmad/interfaces/mpi/scripts/mpicxx	\
 	nmad/interfaces/mpi/scripts/mpif77	\
 	nmad/interfaces/mpi/scripts/mpif90	\

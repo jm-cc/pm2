@@ -26,17 +26,19 @@
 #define MAX_DEFAULT     (128 * 1024 * 1024)
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
-#define WARMUPS_DEFAULT 100
+#define WARMUPS_DEFAULT 10
 #define LOOPS_DEFAULT   100
 
 static inline int _passes(uint32_t len)
 {
   if(len > 2 * 1024 * 1024)
     return 5;
-  if(len > 64 * 1024)
-    return 50;
+  else if(len > 64 * 1024)
+    return 20;
+  else if(len > 4096)
+    return 200;
   else
-    return 500;
+    return 1000;
 }
 
 static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -48,13 +50,13 @@ static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increme
 
 static inline uint32_t _iterations(int iterations, uint32_t len)
 {
-  const uint64_t max_data = 8 * 1024 * 1024;
+  const uint64_t max_data = 16 * 1024 * 1024;
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
   if(data_size  > max_data)
     {
       iterations = (max_data / (uint64_t)len);
-      if(iterations < 1)
-	iterations = 1;
+      if(iterations < 2)
+	iterations = 2;
     }
   return iterations;
 }
@@ -139,6 +141,8 @@ int main(int argc, char	**argv)
 	  int k;
 	  clear_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
+	  if(warmups > iterations)
+	    warmups = iterations;
 	  for(k = 0; k < iterations * _passes(len) + warmups; k++)
 	    {
 	      nm_sr_request_t request;
@@ -162,6 +166,8 @@ int main(int argc, char	**argv)
 	{
 	  int k;
 	  iterations = _iterations(iterations, len);
+	  if(warmups > iterations)
+	    warmups = iterations;
 	  fill_buffer(buf, len);
 	  
 	  for(k = 0; k < warmups; k++)

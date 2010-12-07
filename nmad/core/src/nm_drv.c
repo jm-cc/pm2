@@ -347,7 +347,19 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 
   
 #ifdef PM2_NUIOA
-  if (nuioa && preferred_node != PM2_NUIOA_ANY_NODE && preferred_node != PM2_NUIOA_CONFLICTING_NODES)
+  if(!nuioa)
+    {
+      fprintf(stderr, "# nmad: nuioa- NUMA not available\n");
+    }
+  else if(preferred_node ==  PM2_NUIOA_ANY_NODE)
+    {
+      fprintf(stderr, "# nmad: nuioa- any node. Not binding.\n");
+    }
+  else if(preferred_node == PM2_NUIOA_CONFLICTING_NODES)
+    {
+      fprintf(stderr, "# nmad: nuioa- conflicting nodes.\n");
+    }
+  else
     {
 #if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
       struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
@@ -360,7 +372,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       nodemask_set(&mask, preferred_node);
       numa_bind(&mask);
 #endif
-      NM_DISPF("# nmad: binding to nuioa node %d", preferred_node);
+      fprintf(stderr, "# nmad: binding to nuioa node %d", preferred_node);
     }
 #endif /* PM2_NUIOA */
 

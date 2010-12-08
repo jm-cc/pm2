@@ -161,8 +161,7 @@ do_the_test()
         if [ -z "$net" ] ; then
             (${PM2_OBJROOT}/bin/pm2-load --x11 -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         else
-            protocols=$(echo $net | tr ' ' '\012' | sed 's/^/--protocol /')
-            (${PM2_OBJROOT}/bin/pm2-load --x11 $protocols -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
+            (${PM2_OBJROOT}/bin/pm2-load -DNMAD_DRIVER=${net} -f $flavor $prog $args; echo "$?" > $file_status) 2>&1 | tee $file_result | grep '^\(####\|\[Marcel\]\)'
         fi
 	echo "Ending date: $(date)"
 	if [ `cat $file_status` -ne 0 ] ; then

@@ -117,6 +117,7 @@ static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_ibverbs_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
+static int nm_ibverbs_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw);
 static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -143,6 +144,8 @@ static const struct nm_drv_iface_s nm_ibverbs_driver =
     /* TODO: add poll_any callbacks  */
     .poll_send_any_iov  = NULL,
     .poll_recv_any_iov  = NULL,
+
+    .prefetch_send      = &nm_ibverbs_send_prefetch,
 
     .cancel_recv_iov    = &nm_ibverbs_cancel_recv_iov,
 
@@ -803,6 +806,17 @@ static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
   int err = (*p_ibverbs_cnx->method.driver->send_poll)(p_ibverbs_cnx->method._status);
   return err;
+}
+
+static int nm_ibverbs_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw)
+{
+  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, NM_TRK_LARGE);
+  if(p_ibverbs_cnx->method.driver->send_prefetch)
+    {
+      (*p_ibverbs_cnx->method.driver->send_prefetch)(p_ibverbs_cnx->method._status,
+						     p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+    }
+  return NM_ESUCCESS;
 }
 
 static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,

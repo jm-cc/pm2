@@ -40,9 +40,8 @@ struct lr2_step_s
 
 static const struct lr2_step_s lr2_steps[] =
   {
-    {  6*1024, 1024 },
-    { 16*1024, 1024 },
-    { 24*1024, 4096 },
+    { 12*1024, 1024 },
+    { 24*1024, 1024 },
     { 40*1024, 8192 },
     { 64*1024, 8192 },
     { 88*1024, 8192 },
@@ -96,6 +95,7 @@ struct nm_ibverbs_lr2
     void*sbuf;
     int step;
     int nbuffer;
+    const void*prefetch;
   } send;
 
   struct
@@ -114,6 +114,7 @@ static void nm_ibverbs_lr2_addr_pack(void*_status, struct nm_ibverbs_cnx_addr*ad
 static void nm_ibverbs_lr2_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
 static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_lr2_send_poll(void*_status);
+static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size);
 static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_lr2_poll_one(void*_status);
 
@@ -124,6 +125,7 @@ static const struct nm_ibverbs_method_iface_s nm_ibverbs_lr2_method =
     .addr_unpack = &nm_ibverbs_lr2_addr_unpack,
     .send_post   = &nm_ibverbs_lr2_send_post,
     .send_poll   = &nm_ibverbs_lr2_send_poll,
+    .send_prefetch = &nm_ibverbs_lr2_send_prefetch,
     .recv_init   = &nm_ibverbs_lr2_recv_init,
     .poll_one    = &nm_ibverbs_lr2_poll_one,
     .poll_any    = NULL,
@@ -174,6 +176,7 @@ static void nm_ibverbs_lr2_cnx_create(void*_status, struct nm_ibverbs_cnx*p_ibve
   lr2->cnx = p_ibverbs_cnx;
   lr2->mr = ibv_reg_mr(p_ibverbs_drv->pd, &lr2->buffer, sizeof(lr2->buffer),
 		       IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
+  lr2->send.prefetch = NULL;
   if(lr2->mr == NULL)
     {
       TBX_FAILURE("Infiniband: lr2 cannot register MR.\n");
@@ -211,6 +214,7 @@ static void nm_ibverbs_lr2_send_post(void*_status, const struct iovec*v, int n)
 {
   struct nm_ibverbs_lr2*lr2 = _status;
   assert(n == 1);
+  assert(lr2->send.message == NULL);
   lr2->send.message = v[0].iov_base;
   lr2->send.size    = v[0].iov_len;
   lr2->send.done    = 0;
@@ -247,17 +251,25 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	}
-      int chunk_done = 0;
+      int chunk_done = 0;   /**< offset in the message, i.e. payload */
       int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
-      while(chunk_done < chunk_payload)
+      if((lr2->send.prefetch == lr2->send.message) && (lr2->send.done == 0))
 	{
-	  const int block_payload = nm_ibverbs_min(chunk_payload - chunk_done, block_size - lr2_hsize);
-	  memcpy(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
-	  struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
-	  h->busy = 1;
-	  h->checksum = nm_ibverbs_checksum(lr2->send.sbuf + chunk_offset, block_payload);
-	  chunk_done   += block_payload;
-	  chunk_offset += block_payload + lr2_hsize;
+	  chunk_done = chunk_payload;
+	  chunk_offset = chunk_size;
+	}
+      else
+	{
+	  while(chunk_done < chunk_payload)
+	    {
+	      const int block_payload = nm_ibverbs_min(chunk_payload - chunk_done, block_size - lr2_hsize);
+	      memcpy(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
+	      struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
+	      h->busy = 1;
+	      h->checksum = nm_ibverbs_checksum(lr2->send.sbuf + chunk_offset, block_payload);
+	      chunk_done   += block_payload;
+	      chunk_offset += block_payload + lr2_hsize;
+	    }
 	}
       nm_ibverbs_send_flushn(lr2->cnx, NM_IBVERBS_WRID_PACKET, 1);
       nm_ibverbs_rdma_send(lr2->cnx, chunk_offset, lr2->send.sbuf, lr2->send.rbuf,
@@ -265,11 +277,36 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       lr2->send.done += chunk_payload;
       lr2->send.sbuf += chunk_offset;
       lr2->send.rbuf += chunk_offset;
+      lr2->send.prefetch = NULL;
       if(lr2->send.step < lr2_nsteps - 1)
 	lr2->send.step++;
     }
   nm_ibverbs_send_flush(lr2->cnx, NM_IBVERBS_WRID_PACKET);
+  lr2->send.message = NULL;
   return NM_ESUCCESS;
+}
+
+static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t size)
+{
+  struct nm_ibverbs_lr2*lr2 = _status;
+  if((lr2->send.prefetch == NULL) && (lr2->send.message == NULL))
+    {
+      const int block_size = lr2_steps[0].block_size;
+      const int chunk_size = lr2_steps[0].chunk_size;
+      const int block_payload = block_size - lr2_hsize;
+      int chunk_done = 0;
+      int chunk_offset = 0;
+      while(chunk_offset < chunk_size)
+	{
+	  memcpy(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
+	  struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
+	  h->busy = 1;
+	  h->checksum = nm_ibverbs_checksum(ptr + chunk_done, block_payload);
+	  chunk_done   += block_payload;
+	  chunk_offset += block_size;
+	}
+      lr2->send.prefetch = ptr;
+    }
 }
 
 static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n)

@@ -100,11 +100,15 @@ struct nm_ibverbs_cnx;
 
 struct nm_ibverbs_method_iface_s
 {
+  /* connection management */
   void (*cnx_create)(void*_status, struct nm_ibverbs_cnx*cnx, struct nm_ibverbs_drv*p_ibverbs_drv);
   void (*addr_pack)(void*_status,  struct nm_ibverbs_cnx_addr*addr);
   void (*addr_unpack)(void*_status, struct nm_ibverbs_cnx_addr*addr);
+  /* sending primitives */
   void (*send_post)(void*_status, const struct iovec*v, int n);
   int  (*send_poll)(void*_status);
+  void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
+  /* receiving primitives */
   void (*recv_init)(void*_status, struct iovec*v, int n);
   int  (*poll_one)(void*_status);
   int  (*poll_any)(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate);

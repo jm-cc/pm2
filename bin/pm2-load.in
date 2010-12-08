@@ -381,7 +381,7 @@ while [ $# -gt 0 ]; do
 	    shift
 	    PM2_PMODE=off
 	    ;;
-	--protocol)
+	--protocol|-protocol)
 	    shift
 	    PM2_PROTOCOL="$PM2_PROTOCOL $1"
 	    shift

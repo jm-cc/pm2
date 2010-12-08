@@ -284,6 +284,7 @@ void nm_try_and_commit(struct nm_core *p_core)
     }
 }
 
+#ifdef NMAD_POLL
 static inline void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
@@ -302,7 +303,7 @@ static inline void nm_out_prefetch(struct nm_core*p_core)
       if(!tbx_fast_list_empty(&p_gate->pending_large_send))
 	{
 	  struct nm_pkt_wrap *p_pw = nm_l2so(p_gate->pending_large_send.next);
-	  if(!p_pw->flags & NM_PW_PREFETCHED)
+	  if(!(p_pw->flags & NM_PW_PREFETCHED))
 	    {
 	      p_drv = nm_drv_default(p_gate);
 	      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -315,6 +316,7 @@ static inline void nm_out_prefetch(struct nm_core*p_core)
 	}
     }  
 }
+#endif /* NMAD_POLL */
 
 /** Main scheduler func for outgoing requests.
    - this function must be called once for each gate on a regular basis

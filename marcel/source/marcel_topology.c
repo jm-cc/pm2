@@ -898,7 +898,7 @@ static void topo_discover(void)
 			if (marcel_vpset_iszero(&marcel_topo_levels[l][i].cpuset)) {
 				MARCEL_LOG("became empty, dropping it\n");
 				marcel_topo_level_nbitems[l]--;
-				memcpy(&marcel_topo_levels[l][i],
+				memmove(&marcel_topo_levels[l][i],
 				       &marcel_topo_levels[l][i + 1],
 				       sizeof(marcel_topo_levels[l][i]) *
 				       (marcel_topo_level_nbitems[l] - i + 1));
@@ -1390,7 +1390,7 @@ void ma_disable_topology_vps(const marcel_vpset_t * vpset)
 			for (i = 0; i < father->arity; i++) {
 				if (father->children[i] == l) {
 					father->arity--;
-					memcpy(&father->children[i],
+					memmove(&father->children[i],
 					       &father->children[i + 1],
 					       (father->arity -
 						i) * sizeof(father->children[0]));
@@ -1420,7 +1420,7 @@ void ma_enable_topology_vps(const marcel_vpset_t * vpset)
 				if (father->children[i] != l
 				    && marcel_vpset_first(&l->vpset) <
 				    marcel_vpset_first(&father->children[i]->vpset)) {
-					memcpy(&father->children[i + 1],
+					memmove(&father->children[i + 1],
 					       &father->children[i],
 					       (father->arity -
 						i) * sizeof(father->children[0]));

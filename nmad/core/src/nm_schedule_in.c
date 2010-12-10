@@ -39,7 +39,12 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
       if(r->driver->get_capabilities(p_pw->p_drv)->min_period > 0)
 	{
 	  struct timespec t;
-	  clock_gettime(CLOCK_MONOTONIC, &t);
+#ifdef CLOCK_MONOTONIC_RAW
+	  const clockid_t clock = CLOCK_MONOTONIC_RAW;
+#else
+	  const clockid_t clock = CLOCK_MONOTONIC;
+#endif
+	  clock_gettime(clock, &t);
 	  if(t.tv_sec < next_poll.tv_sec ||
 	     (t.tv_sec == next_poll.tv_sec && t.tv_nsec < next_poll.tv_nsec))
 	    return -NM_EAGAIN;

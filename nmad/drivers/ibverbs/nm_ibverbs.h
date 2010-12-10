@@ -23,11 +23,8 @@
 
 /** checksum algorithm. Set it to tbx_checksum_dummy to disable checksums.
  */
-#ifdef __SSE4_2__
-#define nm_ibverbs_checksum tbx_checksum_crc32
-#else
 #define nm_ibverbs_checksum tbx_checksum_block64
-#endif
+
 
 /** list of WRIDs used in the driver. */
 enum {

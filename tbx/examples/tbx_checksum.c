@@ -16,7 +16,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <values.h>
+#include <float.h>
 #include <tbx.h>
 
 #define ITER_SMALL 10000
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
       printf("# %s\n", checksums[i].name);
       int j;
       uint32_t checksum = 0;
-      double best = MAXDOUBLE;
+      double best = DBL_MAX;
       for(j = 0; j < ITER_LARGE; j++)
 	{
 	  clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
       printf("# %s\n", checksums[i].name);
       uint32_t checksum = (*checksums[i].func)(buffer, small_size);
       int j;
-      double best = MAXDOUBLE;
+      double best = DBL_MAX;
       for(j = 0; j < ITER_SMALL; j++)
 	{
 	  clock_gettime(CLOCK_MONOTONIC, &t1);

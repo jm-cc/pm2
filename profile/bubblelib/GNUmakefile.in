@@ -19,8 +19,8 @@ PM2_OBJROOT := @abs_top_builddir@
 LIBNAME=bubblelib
 FLAVOR_DEFAULT := marcel-bubbles
 
-CFLAGS += @FXT_CFLAGS@ @MING_CPPFLAGS@
-LDFLAGS += @FXT_LIBS@ @MING_LDFLAGS@
+CFLAGS += @FXT_CFLAGS@ @MING_CFLAGS@
+LDFLAGS += @FXT_LIBS@ @MING_LIBS@
 
 ifneq (@HAVE_MING@,yes)
 $(error Ming is missing.  Get it from http://www.libming.org/ .)

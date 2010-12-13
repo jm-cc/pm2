@@ -27,27 +27,12 @@ AC_DEFUN([PM2_PROFILE_DEPENDENCIES], [
     FXT_PREFIX="$pkg_cv_FXT_PREFIX"
   ], [HAVE_FXT="no"])
 
-  AC_ARG_WITH([ming-prefix],
-    [AS_HELP_STRING([--with-ming-prefix=DIRECTORY],
-      [use DIRECTORY as the Ming library installation prefix])],
-    [ming_prefix="$withval"
-     MING_CPPFLAGS="-I$ming_prefix/include"
-     MING_LDFLAGS="-L$ming_prefix/lib"
-     CPPFLAGS="$MING_CPPFLAGS $CPPFLAGS"
-     LDFLAGS="$MING_LDFLAGS $LDFLAGS"],
-    [ming_prefix=""])
-
-  AC_CHECK_LIB([ming], [Ming_init], [HAVE_MING="yes"], [HAVE_MING="no"])
-  if test "x$HAVE_MING" = "xyes"; then
-     AC_CHECK_HEADER([ming.h], [HAVE_MING="yes"], [HAVE_MING="no"])
-  fi
+  PKG_CHECK_MODULES([MING], [libming], [HAVE_MING="yes"], [HAVE_MING="no"])
 
   AC_SUBST([HAVE_FXT])
   AC_SUBST([FXT_PREFIX])
 
   AC_SUBST([HAVE_MING])
-  AC_SUBST([MING_CPPFLAGS])
-  AC_SUBST([MING_LDFLAGS])
 
   CPPFLAGS="$save_CPPFLAGS"
   LDFLAGS="$save_LDFLAGS"

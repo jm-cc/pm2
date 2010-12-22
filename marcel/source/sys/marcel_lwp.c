@@ -240,7 +240,7 @@ void marcel_lwp_add_lwp(marcel_vpset_t vpset, int vpnum)
 	lwp->vp_level = level;
 
 #ifdef MA__NUMA
-	lwp->cpuset = hwloc_cpuset_alloc();
+	lwp->cpuset = hwloc_bitmap_alloc();
 	ma_cpuset_to_hwloc(&level->cpuset, lwp->cpuset);
 #endif
 
@@ -324,7 +324,7 @@ void marcel_lwp_stop_lwp(marcel_lwp_t * lwp)
 		 */
 #ifndef MARCEL_GDB
 		if (lwp->cpuset)
-			hwloc_cpuset_free(lwp->cpuset);
+			hwloc_bitmap_free(lwp->cpuset);
 		marcel_free_node(lwp, sizeof(marcel_lwp_t), ma_lwp_os_node(lwp));
 #endif
 	}
@@ -650,7 +650,7 @@ static int lwp_start(ma_lwp_t lwp LWPS_VAR_UNUSED)
 
 #if defined(MA__LWPS)
 	if (!marcel_use_fake_topology && lwp->cpuset) {
-		long target = hwloc_cpuset_first(lwp->cpuset);
+		long target = hwloc_bitmap_first(lwp->cpuset);
 		if (hwloc_set_cpubind(topology, lwp->cpuset, HWLOC_CPUBIND_THREAD)) {
 			perror("hwloc_set_cpubind");
 			fprintf(stderr, "while binding LWP %d on CPU%ld\n", ma_vpnum(lwp), target);

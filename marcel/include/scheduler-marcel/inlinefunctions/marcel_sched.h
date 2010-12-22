@@ -22,6 +22,17 @@
 #include "scheduler-marcel/marcel_sched.h"
 #include <hwloc.h>
 
+#ifndef HWLOC_BITMAP_H
+/* hwloc <1.1 does not offer the bitmap API yet */
+#define hwloc_bitmap_alloc hwloc_cpuset_alloc
+#define hwloc_bitmap_free hwloc_cpuset_free
+#define hwloc_bitmap_first hwloc_cpuset_first
+#define hwloc_bitmap_to_ith_ulong hwloc_cpuset_to_ith_ulong
+#define hwloc_bitmap_set hwloc_cpuset_set
+#define hwloc_bitmap_from_ith_ulong hwloc_cpuset_from_ith_ulong
+#define hwloc_bitmap_isfull hwloc_cpuset_isfull
+#define hwloc_bitmap_iszero hwloc_cpuset_iszero
+#endif
 
 #ifdef __MARCEL_KERNEL__
 TBX_VISIBILITY_PUSH_INTERNAL
@@ -60,21 +71,21 @@ ma_cpuset_from_hwloc(marcel_vpset_t * mset, hwloc_const_cpuset_t lset)
 	/* large vpset using an array of unsigned long subsets in both marcel and hwloc */
 	int i;
 	for (i = 0; i < MA_VPSUBSET_COUNT && i < MA_VPSUBSET_COUNT; i++)
-		MA_VPSUBSET_SUBSET(*mset, i) = hwloc_cpuset_to_ith_ulong(lset, i);
+		MA_VPSUBSET_SUBSET(*mset, i) = hwloc_bitmap_to_ith_ulong(lset, i);
 #elif MA_BITS_PER_LONG == 32 && MARCEL_NBMAXCPUS > 32
 	/* marcel uses unsigned long long mask,
 	 * and it's longer than hwloc's unsigned long mask,
 	 * use 2 of the latter
 	 */
-	*mset = (marcel_vpset_t) hwloc_cpuset_to_ith_ulong(lset, 0) | ((marcel_vpset_t)
-								       hwloc_cpuset_to_ith_ulong
+	*mset = (marcel_vpset_t) hwloc_bitmap_to_ith_ulong(lset, 0) | ((marcel_vpset_t)
+								       hwloc_bitmap_to_ith_ulong
 								       (lset, 1) << 32);
 #else
 	/* marcel uses int or unsigned long long mask,
 	 * and it's smaller or equal-size than hwloc's unsigned long mask,
 	 * use 1 of the latter
 	 */
-	*mset = hwloc_cpuset_to_ith_ulong(lset, 0);
+	*mset = hwloc_bitmap_to_ith_ulong(lset, 0);
 #endif
 }
 
@@ -86,22 +97,22 @@ ma_cpuset_to_hwloc(marcel_vpset_t *mset, hwloc_cpuset_t lset)
 	int vp;
         for (vp = 0; vp < MARCEL_NBMAXCPUS; vp++)
                 if (marcel_vpset_isset(mset, vp))
-			hwloc_cpuset_set(lset, vp);
+			hwloc_bitmap_set(lset, vp);
 #else
 	/* marcel uses int or unsigned long long mask,
 	 * and it's smaller or equal-size than hwloc's unsigned long mask,
 	 * use 1 of the latter
 	 */
-	hwloc_cpuset_from_ith_ulong(lset, 0, *mset);
+	hwloc_bitmap_from_ith_ulong(lset, 0, *mset);
 #endif
 }
 
 /** Same as marcel_sched_vpset_init_rq, but using OS cpusets */
 __tbx_inline__ static ma_runqueue_t *marcel_sched_cpuset_init_rq(hwloc_const_cpuset_t cpuset)
 {
-	if (tbx_unlikely(hwloc_cpuset_isfull(cpuset)))
+	if (tbx_unlikely(hwloc_bitmap_isfull(cpuset)))
 		return &ma_main_runqueue;
-	else if (tbx_unlikely(hwloc_cpuset_iszero(cpuset)))
+	else if (tbx_unlikely(hwloc_bitmap_iszero(cpuset)))
 		return &ma_dontsched_runqueue;
 	else {
 		marcel_vpset_t marcel_cpuset;

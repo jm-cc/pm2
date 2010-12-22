@@ -716,10 +716,15 @@ static void topo_discover(void)
 					tlevel->attr->machine.huge_page_size_kB * 1024;
 				}
 #endif
+#if (defined HWLOC_API_VERSION) && HWLOC_API_VERSION >= 0x00010100
+				dmi_board_name = hwloc_obj_get_info_by_name(tlevel, "DMIBoardName");
+				dmi_board_vendor = hwloc_obj_get_info_by_name(tlevel, "DMIBoardVendor");
+#else
 				if (tlevel->attr) {
 				    dmi_board_name = tlevel->attr->machine.dmi_board_name;
 				    dmi_board_vendor = tlevel->attr->machine.dmi_board_vendor;
 				}
+#endif
 				break;
 			case MARCEL_LEVEL_NODE:
 				mlevel->os_node = tlevel->os_index;

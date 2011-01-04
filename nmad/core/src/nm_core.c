@@ -205,7 +205,7 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
       abort();
     }
   p_core->strategy_adapter = strategy;
-  fprintf(stderr, "# nmad: strategy = %s\n", strategy->name);
+  NM_DISPF("# nmad: strategy = %s\n", strategy->name);
   return NM_ESUCCESS;
 }
 
@@ -240,7 +240,7 @@ int nm_core_exit(nm_core_t p_core)
       struct nm_pkt_wrap*p_pw, *p_pw2;
       tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
 	{
-	  NM_DISPF("extracting pw from pending_recv_list\n");
+	  NM_WARN("purging pw from pending_recv_list\n");
 	  nm_so_pw_free(p_pw);
 	}
     }

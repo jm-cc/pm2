@@ -110,13 +110,13 @@ static int nm_core_gate_connect_accept(struct nm_core	*p_core,
       if (connect_flag) {
 	err = p_gdrv->receptacle.driver->connect(p_gdrv->receptacle._status, &rq);
 	if (err != NM_ESUCCESS) {
-	  NM_DISPF("drv.ops.connect returned %d", err);
+	  NM_WARN("drv.ops.connect returned %d", err);
 	  goto out;
 	}
       } else {
 	err = p_gdrv->receptacle.driver->accept(p_gdrv->receptacle._status, &rq);
 	if (err != NM_ESUCCESS) {
-	  NM_DISPF("drv.ops.accept returned %d", err);
+	  NM_WARN("drv.ops.accept returned %d", err);
 	  goto out;
 	}
       }

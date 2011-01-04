@@ -400,17 +400,17 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
     }
   const int data_rate = link_width * link_rate;
 
-  fprintf(stderr, "# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
-	  ibv_get_device_name(p_ibverbs_drv->ib_dev), link_width, s_link_rate, data_rate, p_ibverbs_drv->lid);
+  NM_DISPF("# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
+	   ibv_get_device_name(p_ibverbs_drv->ib_dev), link_width, s_link_rate, data_rate, p_ibverbs_drv->lid);
 #ifdef DEBUG
-  fprintf(stderr, "# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
-	  p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
-	  p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
-  fprintf(stderr, "# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
-	  p_ibverbs_drv->ib_caps.max_mr,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
-	  (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
+  NM_DISPF("# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+	   p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
+	   p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
+  NM_DISPF("# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+	   p_ibverbs_drv->ib_caps.max_mr,
+	   (unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
+	   (unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
+	   (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
 #endif
 
   /* driver capabilities encoding */

@@ -84,7 +84,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
     }
   else if (err != -NM_EAGAIN)
     {
-      NM_DISPF("drv->poll_recv returned %d", err);
+      NM_WARN("drv->poll_recv returned %d", err);
     }
   return err;
 }

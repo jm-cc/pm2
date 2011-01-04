@@ -278,7 +278,7 @@ void nm_try_and_commit(struct nm_core *p_core)
 	  int err = nm_strat_try_and_commit(p_gate);
 	  if (err < 0)
 	    {
-	      NM_DISPF("sched.schedule_out returned %d", err);
+	      NM_WARN("sched.schedule_out returned %d", err);
 	    }
 	}
     }
@@ -362,7 +362,7 @@ int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
     {
       if (tbx_unlikely(err < 0))
 	{
-	  NM_DISPF("poll_send returned %d", err);
+	  NM_WARN("poll_send returned %d", err);
 	}
       nm_so_process_complete_send(p_pw->p_gate, p_pw);
     }

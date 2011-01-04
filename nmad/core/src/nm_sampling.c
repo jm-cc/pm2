@@ -79,7 +79,7 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
   sampling_file = fopen(sampling_file_path, "r");
   if(sampling_file)
     {
-      fprintf(stderr, "# sampling: reading sampling file %s...\n", sampling_file_path);
+      NM_DISPF("# sampling: reading sampling file %s...\n", sampling_file_path);
       /* count sampling entries */
       int nb_entries = 0;
       char *s = NULL;
@@ -121,14 +121,14 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
     }
   else
     {
-      fprintf(stderr, "# sampling: file <%s> does not exist. Taking default capabilities of driver.\n",
-	      sampling_file_path);
+      NM_DISPF("# sampling: file <%s> does not exist. Taking default capabilities of driver.\n",
+	       sampling_file_path);
       p_set->nb_samples = 0;
       p_set->bandwidth_samples = NULL;
       p_set->bw  = (p_drv->driver->get_capabilities(p_drv))->bandwidth;
       p_set->lat = (p_drv->driver->get_capabilities(p_drv))->latency / 1000.0;
-      fprintf(stderr, "# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
-	      p_drv->driver->name, p_set->lat, p_set->bw);
+      NM_DISPF("# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
+	       p_drv->driver->name, p_set->lat, p_set->bw);
     }
 
   return NM_ESUCCESS;

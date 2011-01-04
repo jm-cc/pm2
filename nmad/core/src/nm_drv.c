@@ -179,7 +179,7 @@ int nm_core_driver_query(nm_core_t p_core,
   err = p_drv->driver->query(p_drv, param, 1);
   if (err != NM_ESUCCESS)
     {
-      NM_DISPF("drv.query returned %d", err);
+      NM_WARN("drv.query returned %d", err);
       goto out;
     }
 
@@ -240,7 +240,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   err = p_drv->driver->init(p_drv, trk_caps, nb_trks);
   if (err != NM_ESUCCESS)
     {
-      NM_DISPF("drv.init returned %d", err);
+      NM_WARN("drv.init returned %d", err);
       goto out;
     }
   p_drv->nb_tracks = nb_trks;
@@ -290,14 +290,14 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
   int err = nm_core_driver_load(p_core, driver, &p_drv);
   if (err != NM_ESUCCESS) 
     {
-      NM_DISPF("nm_core_driver_load returned %d", err);
+      NM_WARN("nm_core_driver_load returned %d", err);
       return err;
     }
   
   err = nm_core_driver_query(p_core, p_drv, param);
   if (err != NM_ESUCCESS) 
     {
-      NM_DISPF("nm_core_driver_query returned %d", err);
+      NM_WARN("nm_core_driver_query returned %d", err);
       return err;
     }
 #ifdef PM2_NUIOA
@@ -338,7 +338,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	      /* if the first driver wants something else, it's a conflict,
 	       * display a message once */
 	      if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
-		NM_DISPF("found conflicts between preferred nuioa nodes of drivers");
+		NM_WARN("found conflicts between preferred nuioa nodes of drivers");
 	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
 	    }
 	  }
@@ -349,15 +349,15 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 #ifdef PM2_NUIOA
   if(!nuioa)
     {
-      fprintf(stderr, "# nmad: nuioa- NUMA not available\n");
+      NM_DISPF("# nmad: nuioa- NUMA not available\n");
     }
   else if(preferred_node ==  PM2_NUIOA_ANY_NODE)
     {
-      fprintf(stderr, "# nmad: nuioa- any node. Not binding.\n");
+      NM_DISPF("# nmad: nuioa- any node. Not binding.\n");
     }
   else if(preferred_node == PM2_NUIOA_CONFLICTING_NODES)
     {
-      fprintf(stderr, "# nmad: nuioa- conflicting nodes.\n");
+      NM_DISPF("# nmad: nuioa- conflicting nodes.\n");
     }
   else
     {
@@ -372,18 +372,18 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       nodemask_set(&mask, preferred_node);
       numa_bind(&mask);
 #endif
-      fprintf(stderr, "# nmad: binding to nuioa node %d", preferred_node);
+      NM_DISPF("# nmad: binding to nuioa node %d", preferred_node);
     }
 #endif /* PM2_NUIOA */
 
   err = nm_core_driver_init(p_core, p_drv, p_url);
   if (err != NM_ESUCCESS) 
     {
-      NM_DISPF("nm_core_driver_init returned %d", err);
+      NM_WARN("nm_core_driver_init returned %d", err);
       return err;
     }
 #ifndef CONFIG_PROTO_MAD3
-  fprintf(stderr, "# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
+  NM_DISPF("# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
 #endif
 
   *pp_drv = p_drv;

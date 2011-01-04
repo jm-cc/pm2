@@ -329,7 +329,7 @@ nm_tcp_address_fill(struct sockaddr_in	*address,
                 char *msg = NULL;
 
                 msg	= nm_tcp_h_errno_to_str();
-                NM_DISPF("gethostbyname error: %s", msg);
+                NM_WARN("gethostbyname error: %s", msg);
         }
 
         address->sin_family	= AF_INET;

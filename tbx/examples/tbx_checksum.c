@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
   printf("\n# ## in cache (64 kB block)\n");
   for(i = 0; checksums[i].name; i++)
     {
-      const int small_size = 64 * 1024;
+      const int small_size = 32 * 1024;
       struct timespec t1, t2;
       printf("# %s\n", checksums[i].name);
       uint32_t checksum = (*checksums[i].func)(buffer, small_size);

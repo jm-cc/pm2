@@ -23,7 +23,7 @@
 #include "helper.h"
 
 #define MIN_DEFAULT     0
-#define MAX_DEFAULT     (128 * 1024 * 1024)
+#define MAX_DEFAULT     (512 * 1024 * 1024)
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
 #define WARMUPS_DEFAULT 10

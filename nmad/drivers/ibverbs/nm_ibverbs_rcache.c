@@ -109,7 +109,7 @@ static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(mr == NULL)
     {
-      fprintf(stderr, "Infiniband: error while registering memory.\n");
+      fprintf(stderr, "Infiniband: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
       abort();
     }
   return mr;

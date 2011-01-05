@@ -508,6 +508,9 @@ if [ "$PM2_USE_LOCAL_FLAVOR" = off ] ; then
 	    ;;
 	padico-launch)
 	    log "padico-launch selected"
+	    if [ "x${OAR_NODEFILE}" = "x" ]; then
+		PM2_PADICO_CONF_FILE=true
+	    fi
 	    if [ "x${PM2_PADICO_CONF_FILE}" = "x" ]; then
 		set --  --source-mode
 		. ${PM2_OBJROOT}/bin/pm2-conf-file

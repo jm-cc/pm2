@@ -1,4 +1,7 @@
 PM2_PUK_LIBNAME=PadicoPuk
 PM2_PUK_CFLAGS="$PM2_PUK_CFLAGS -DPADICO -DPUK"
 PM2_PUK_LIBS="-lPadicoPuk -lexpat -ldl"
+if [ "x${EXPAT_ROOT}" != "x" ]; then
+  PM2_PUK_LIBS="-L${EXPAT_ROOT}/lib ${PM2_PUK_LIBS}"
+fi
 PM2_PUK_GENERATE_INCLUDE=true

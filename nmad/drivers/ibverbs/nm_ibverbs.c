@@ -501,11 +501,26 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
     {
       if(trk_caps[i].rq_type == nm_trk_rq_rdv)
 	{
+	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
+	  static const char const ib_lr2[] = "NewMad_ibverbs_lr2";
+	  static puk_component_t ib_method = NULL;
+	  if(ib_method == NULL)
+	    {
+	      if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
+		{
+		  ib_method = puk_adapter_resolve(ib_rcache);
+		  NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+		}
+	      else
+		{
 #ifdef NM_IBVERBS_RCACHE
-	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_rcache");
+		  ib_method = puk_adapter_resolve(ib_rcache);
 #else
-	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_lr2");
+		  ib_method = puk_adapter_resolve(ib_lr2);
 #endif
+		}
+	    }
+	  p_ibverbs_drv->trks_array[i].method = ib_method;
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;

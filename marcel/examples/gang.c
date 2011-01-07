@@ -40,7 +40,7 @@ any_t work(any_t arg) {
 #if defined(MM_MAMI_ENABLED)
   int node;
 #endif
-  *marcel_stats_get(marcel_self(), load) = rand()%10;
+  *marcel_task_stats_get(marcel_self(), LOAD) = rand()%10;
 #if defined(MM_MAMI_ENABLED)
   marcel_memory_task_attach(&memory_manager,NULL,(rand()%10)<<20,NULL,&node);
 #endif

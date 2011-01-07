@@ -26,7 +26,7 @@
 
 #ifdef PROFILE
 #include "fut_pm2.h"
-static volatile unsigned *volatile __pm2_profile_active_p = &__pm2_profile_active;
+static volatile tbx_bool_t *volatile __pm2_profile_active_p = &__pm2_profile_active;
 #define __pm2_profile_active (*__pm2_profile_active_p)
 #endif
 

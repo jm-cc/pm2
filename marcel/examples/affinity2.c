@@ -53,7 +53,7 @@ thread_init(marcel_t *t, marcel_bubble_t *b, intptr_t arg) {
 	marcel_attr_setprio(&attr, MA_DEF_PRIO);
 	marcel_attr_setname(&attr,"thread");
 	marcel_create(t, &attr, f, (any_t)arg);
-	*marcel_stats_get(*t, load) = 10;
+	*marcel_task_stats_get(*t, LOAD) = 10;
 }
 
 int main(int argc, char *argv[]) {

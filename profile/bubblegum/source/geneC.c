@@ -90,11 +90,11 @@ add_static_functions (FILE *fd)
   fprintf (fd, "                                     marcel_bubble_t *parent_bubble) {\n");
   fprintf (fd, "  marcel_attr_t thread_attr;\n");
   fprintf (fd, "  marcel_attr_init (&thread_attr);\n");
-  fprintf (fd, "  marcel_attr_setinitbubble (&thread_attr, parent_bubble);\n");
+  fprintf (fd, "  marcel_attr_setnaturalbubble (&thread_attr, parent_bubble);\n");
   fprintf (fd, "  marcel_attr_setid (&thread_attr, id);\n");
   fprintf (fd, "  marcel_attr_setname (&thread_attr, name);\n\n");
   fprintf (fd, "  marcel_create (thread, &thread_attr, start_routine, (any_t)(intptr_t)wload);\n");
-  fprintf (fd, "  *marcel_stats_get (*thread, load) = wload;\n}\n\n");
+  fprintf (fd, "  *marcel_task_stats_get (*thread, LOAD) = wload;\n}\n\n");
 
   /* Write down the f () function. */
   fprintf (fd, "static void *f (void *foo) {\n");
@@ -116,7 +116,7 @@ static void
 add_main_function (FILE *fd, Element *root_bubble)
 {
   fprintf (fd, "int main (int argc, char *argv[]) {\n");
-  fprintf (fd, "   marcel_init (argc, argv);\n");
+  fprintf (fd, "   marcel_init (&argc, argv);\n");
   fprintf (fd, "#ifdef PROFILE\n");
   fprintf (fd, "   profile_activate (FUT_ENABLE, MARCEL_PROF_MASK, 0);\n");
   fprintf (fd, "#endif\n\n");

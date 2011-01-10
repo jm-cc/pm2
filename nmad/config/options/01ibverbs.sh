@@ -18,7 +18,7 @@ PM2_PROTOCOLS="nmad-ibverbs $PM2_PROTOCOLS"
 PM2_NMAD_DRIVERS="ibverbs $PM2_NMAD_DRIVERS"
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -march=native"
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -DCONFIG_IBVERBS"
-if [ "${IBHOME}" != "x/usr" ]; then
+if [ "x${IBHOME}" != "x/usr" ]; then
     PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${IBHOME}/include"
     PM2_NMAD_LD_PATH="$PM2_NMAD_LD_PATH -L${IBLIBPATH} -Wl,-rpath,${IBLIBPATH}"
 fi

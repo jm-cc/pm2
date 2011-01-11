@@ -1,5 +1,7 @@
 This document describes nmad configuration.
 
+for any question, mailto: Alexandre.Denis@inria.fr
+
 
 Strategy
 ========
@@ -35,6 +37,17 @@ e.g. NMAD_DRIVER=mx+ibverbs
 2. if NMAD_DRIVER is not set, the default driver may be set using the
 command nmad-driver-conf. If a single driver is enabled in the flavor,
 then it will be used by default.
+
+
+Infiniband tuning
+=================
+
+Infiniband may be tuned at run time through environment variables:
+
+-- NMAD_IBVERBS_RCACHE enables the registration cache.
+
+-- NMAD_IBVERBS_CHECKSUM enables the checksum computation on the fly
+   in the driver.
 
 
 Tags

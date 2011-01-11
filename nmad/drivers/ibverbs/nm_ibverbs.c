@@ -105,6 +105,8 @@ struct nm_ibverbs
   int sock;    /**< connected socket for IB address exchange */
 };
 
+extern tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
+
 /* ********************************************************* */
 
 /* ** component declaration */
@@ -165,6 +167,16 @@ static const struct puk_adapter_driver_s nm_ibverbs_adapter_driver =
 
 static int nm_ibverbs_load(void)
 {
+  if(getenv("NMAD_IBVERBS_CHECKSUM"))
+    {
+      _nm_ibverbs_checksum = tbx_checksum_block64;
+      NM_DISPF("# nmad ibverbs: checksum enabled.\n");
+    }
+  else
+    {
+      _nm_ibverbs_checksum = tbx_checksum_dummy;
+    }
+
   puk_component_declare("NewMad_Driver_ibverbs",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_adapter_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_ibverbs_driver));

@@ -27,6 +27,8 @@
 #include <emmintrin.h>
 #endif
 
+typedef uint32_t (*tbx_checksum_func_t)(const void*_data, size_t _len);
+
 /** Dummy checksum function that actually does not checksum.
  */
 static inline uint32_t tbx_checksum_dummy(const void*_data, size_t _len)

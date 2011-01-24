@@ -53,19 +53,12 @@ Usage: $PROGNAME { option } command
     --strategy name       : Use strategy named "name"
     -h|--help             : Display this help message
 
-   Leonie options:
-    -x                    : Run command through xterm
-    -p                    : Pause at the end of the command
-    -cd                   : Change working directory at the beginning of the session
-    --wd directory        : Set working directory to given directory at the beginning of the session
-    --protocol name       : Use protocol named "name"
-    --network file        : Specify the network configuration file
-
-   PadicoTM launcher options:
+   MPI/PadicoTM launcher options:
     --padico,<arg>        : give <arg> to padico-launch
     -x                    : Run command through xterm       [ same as --padico,-c ]
     -p                    : Pause at the end of the command [ same as --padico,--padico-pause ]
     -v                    : Be verbose about bootstrap process
+    -q                    : Quiet mode. Suppresses every traces.
     --protocol <name>     : use <name> network              [ same as --padico,-net,<name> ]
     -D<label>=<value>     : define <label>=<value> in process environment
     -machinefile <file>   : use <file> as list of hosts (overrides pm2-conf)
@@ -410,7 +403,7 @@ while [ $# -gt 0 ]; do
 	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} `echo $1 | tr ',' ' ' | sed 's/--padico //'`"
 	    shift
 	    ;;
-	-D*=*|-v)
+	-D*=*|-v|-q)
 	    PM2_PADICO_ARGS="${PM2_PADICO_ARGS} $1"
 	    shift
 	    ;;

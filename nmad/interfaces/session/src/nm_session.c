@@ -188,7 +188,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
   else
     {
       /* assembly name given (e.g. NewMadico) */
-      fprintf(stderr, "# session: loading assembly %s\n", assembly_name);
+      NM_DISPF(stderr, "# session: loading assembly %s\n", assembly_name);
       puk_component_t driver_assembly = puk_adapter_resolve(assembly_name);
       nm_session_add_driver(driver_assembly, -1);
     }

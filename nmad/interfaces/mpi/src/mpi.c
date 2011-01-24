@@ -1282,6 +1282,7 @@ int MPI_Finalize(void) {
 
   MPI_NMAD_LOG_IN();
 
+  MPI_Barrier(MPI_COMM_WORLD);
   err = mpir_internal_exit(&mpir_internal_data);
 
   puk_instance_destroy(launcher_instance);

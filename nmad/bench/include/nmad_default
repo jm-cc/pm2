@@ -43,7 +43,7 @@ initialize_bench()
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
          --modules=\"puk init nmad tbx padicotm\" \
-         --nmad=\"strat_aggreg ${dev} nuioa ib_rcache\" \
+         --nmad=\"strat_aggreg ${dev} nuioa\" \
 	 --puk=\"enable_pukabi\" \
          --common=\"fortran_target_none\" \
          --all=\"build_dynamic opt\" $flavor_options
@@ -83,7 +83,7 @@ run_bench()
 	nb_runs=5
 	for i in $(seq 1 $nb_runs) ; do
 		date
-        	${PM2_OBJROOT}/bin/pm2-load $args --protocol $net -f $flavor $prog
+        	${PM2_OBJROOT}/bin/pm2-load $args -DNMAD_DRIVER=$net -f $flavor $prog
 	done
 	date
 }

@@ -29,7 +29,7 @@
 #define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
 
 static const int param_min_size = 1;
-static const int param_max_size = (8*1024*1024);
+static const int param_max_size = (32*1024*1024);
 static const int param_dryrun_count = 10;
 
 static unsigned char*data_send = NULL;
@@ -484,7 +484,8 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
 
       fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 	      size, lat, bw_mbyte, eager_lat, rdv_lat, eager_iov_lat, memcpy_lat, eager_iov_split, eager_iov_aggreg);
-      fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
+      if(sampling_file)
+	fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
       struct nm_sample_s sample =
 	{
 	  .size = size,
@@ -663,14 +664,18 @@ int main(int argc, char **argv)
 
   if(!is_server)
     {
-      const char*filename = argv[1];
-      fprintf(stderr, "# sampling:  writing file %s\n", filename);
-      fprintf(stderr, "# size\t|raw latency\t|raw bw \t| trk#0 latency\t| trk#1 latency\t| trk#0 iov\t| memcpy\t|2 pkts \t| aggreg\n");
-      FILE*sampling_file = fopen(filename, "w");
-      if(sampling_file == NULL)
+      FILE*sampling_file = NULL;
+      if(argv[1] != NULL)
 	{
-	  fprintf(stderr, "# ## sampling: cannot write file %s.\n", filename);
-	  abort();
+	  const char*filename = argv[1];
+	  fprintf(stderr, "# sampling:  writing file %s\n", filename);
+	  fprintf(stderr, "# size\t|raw latency\t|raw bw \t| trk#0 latency\t| trk#1 latency\t| trk#0 iov\t| memcpy\t|2 pkts \t| aggreg\n");
+	  sampling_file = fopen(filename, "w");
+	  if(sampling_file == NULL)
+	    {
+	      fprintf(stderr, "# ## sampling: cannot write file %s.\n", filename);
+	      abort();
+	    }
 	}
       nm_ns_ping(p_drv, p_gate, sampling_file);
       fclose(sampling_file);

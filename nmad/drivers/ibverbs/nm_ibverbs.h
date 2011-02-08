@@ -21,11 +21,23 @@
 #include <nm_private.h>
 #include <infiniband/verbs.h>
 
-/** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
- */
-#define nm_ibverbs_checksum(DATA, LEN) (*_nm_ibverbs_checksum)((DATA), (LEN))
 
 TBX_INTERNAL extern tbx_checksum_func_t _nm_ibverbs_checksum;
+
+/** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
+ */
+static inline uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
+{
+  if(_nm_ibverbs_checksum)
+    return (*_nm_ibverbs_checksum)(data, len);
+  else
+    return 0;
+}
+
+static inline int nm_ibverbs_checksum_enabled()
+{
+  return _nm_ibverbs_checksum != NULL;
+}
 
 
 /** list of WRIDs used in the driver. */

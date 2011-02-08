@@ -30,6 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_ibverbs_bycopy, &nm_ibverbs_bycopy_load, NULL, NULL
 #define NM_IBVERBS_BYCOPY_RBUF_NUM  8
 
 #define NM_IBVERBS_BYCOPY_BUFSIZE     (NM_IBVERBS_BYCOPY_BLOCKSIZE - sizeof(struct nm_ibverbs_bycopy_header))
+#define NM_IBVERBS_BYCOPY_DATA_SIZE (nm_ibverbs_checksum_enabled() ? NM_IBVERBS_BYCOPY_BUFSIZE : NM_IBVERBS_BYCOPY_BUFSIZE + sizeof(uint32_t))
 #define NM_IBVERBS_BYCOPY_SBUF_NUM    2
 #define NM_IBVERBS_BYCOPY_CREDITS_THR ((NM_IBVERBS_BYCOPY_RBUF_NUM / 2) + 1)
 
@@ -40,9 +41,9 @@ PADICO_MODULE_BUILTIN(NewMad_ibverbs_bycopy, &nm_ibverbs_bycopy_load, NULL, NULL
 
 struct nm_ibverbs_bycopy_header 
 {
+  uint32_t checksum;       /**< data checksum, if enabled; contains data otherwise */
   uint16_t offset;         /**< data offset (packet_size = BUFSIZE - offset) */
   uint8_t  ack;            /**< credits acknowledged */
-  uint32_t checksum;
   volatile uint8_t status; /**< binary mask- describes the content of the message */
 }  __attribute__((packed));
 
@@ -252,8 +253,8 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
       /* 3- prepare and send packet */
       struct nm_ibverbs_bycopy_packet*__restrict__ packet = &bycopy->buffer.sbuf[bycopy->send.current_packet];
       const int remaining = bycopy->send.msg_size - bycopy->send.done;
-      const int offset = (remaining > NM_IBVERBS_BYCOPY_BUFSIZE) ? 0 : (NM_IBVERBS_BYCOPY_BUFSIZE - remaining);
-      int available   = NM_IBVERBS_BYCOPY_BUFSIZE - offset;
+      const int offset = (remaining > NM_IBVERBS_BYCOPY_DATA_SIZE) ? 0 : (NM_IBVERBS_BYCOPY_DATA_SIZE - remaining);
+      int available   = NM_IBVERBS_BYCOPY_DATA_SIZE - offset;
       int packet_size = 0;
       while((packet_size < available) &&
 	    (bycopy->send.v_current < bycopy->send.n))
@@ -271,12 +272,13 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
 	      bycopy->send.v_done = 0;
 	    }
 	}
-      assert(NM_IBVERBS_BYCOPY_BUFSIZE - offset == packet_size);
+      assert(NM_IBVERBS_BYCOPY_DATA_SIZE - offset == packet_size);
       
       packet->header.offset = offset;
       packet->header.ack    = bycopy->window.to_ack;
       packet->header.status = NM_IBVERBS_BYCOPY_STATUS_DATA;
-      packet->header.checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
+      if(nm_ibverbs_checksum_enabled())
+	packet->header.checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
       bycopy->window.to_ack = 0;
       bycopy->send.done += packet_size;
       if(bycopy->send.done >= bycopy->send.msg_size)
@@ -330,13 +332,16 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
 	}
       complete = (packet->header.status & NM_IBVERBS_BYCOPY_STATUS_LAST);
       const int offset = packet->header.offset;
-      const int packet_size = NM_IBVERBS_BYCOPY_BUFSIZE - offset;
-      const uint32_t checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
-      if(checksum != packet->header.checksum)
+      const int packet_size = NM_IBVERBS_BYCOPY_DATA_SIZE - offset;
+      if(nm_ibverbs_checksum_enabled())
 	{
-	  fprintf(stderr, "# nmad: IB checksum failed- received = %x; expected = %x.\n",
-		  (unsigned)packet->header.checksum, (unsigned)checksum);
-	  abort();
+	  const uint32_t checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
+	  if(checksum != packet->header.checksum)
+	    {
+	      fprintf(stderr, "# nmad: IB checksum failed- received = %x; expected = %x.\n",
+		      (unsigned)packet->header.checksum, (unsigned)checksum);
+	      abort();
+	    }
 	}
       memcpy(bycopy->recv.buf_posted + bycopy->recv.done, &packet->data[offset], packet_size);
       bycopy->recv.msg_size += packet_size;

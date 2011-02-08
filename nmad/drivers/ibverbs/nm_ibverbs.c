@@ -174,7 +174,7 @@ static int nm_ibverbs_load(void)
     }
   else
     {
-      _nm_ibverbs_checksum = tbx_checksum_dummy;
+      _nm_ibverbs_checksum = NULL;
     }
 
   puk_component_declare("NewMad_Driver_ibverbs",

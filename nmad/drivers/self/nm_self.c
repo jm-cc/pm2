@@ -44,7 +44,7 @@ PADICO_MODULE_BUILTIN(NewMad_Driver_self, &nm_self_load, NULL, NULL);
 #endif /* PADICO_ENABLE_PUKABI_FSYS */
 
 
-/** 'self' driver per-instance data.
+/** 'self' per-driver data.
  */
 struct nm_self_drv
 {
@@ -57,13 +57,12 @@ struct nm_self_drv
   int nb_trks;
 };
 
-/** 'self' per-gate data.
+/** 'self' per-gate data (singleton, actually)
  */
 struct nm_self
 {
-  /** one fd per track.
-   */
-  int fd[4];
+  int fd[4];   /**< one fd pair per track. */
+  volatile int pending; /**< pending data on track #0 */
 };
 
 
@@ -144,7 +143,15 @@ static int nm_self_load(void)
 static void*nm_self_instanciate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_self*status = TBX_MALLOC(sizeof(struct nm_self));
+  static int init_done = 0;
+  if(init_done)
+    {
+      fprintf(stderr, "nmad: self- cannot create more than 1 instance for 'self'.\n");
+      abort();
+    }
+  init_done = 1;
   memset(status, 0, sizeof(struct nm_self));
+  status->pending = 0;
   return status;
 }
 
@@ -187,7 +194,7 @@ static int nm_self_query(struct nm_drv *p_drv,
   p_self_drv->caps.latency = INT_MAX;
   p_self_drv->caps.bandwidth = 0;
 
-  p_self_drv->caps.min_period = 100;
+  p_self_drv->caps.min_period = 0;
   p_drv->priv = p_self_drv;
   return NM_ESUCCESS;
 }
@@ -289,6 +296,7 @@ static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 	  fprintf(stderr, "nmad: self- error %d while sending message.\n", errno);
 	  abort();
 	}
+      __sync_fetch_and_add(&status->pending, size);
     }
   else
     {
@@ -337,6 +345,8 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
   if(p_pw->trk_id == 0)
     {
       struct nm_self*status = (struct nm_self*)_status;
+      if(status->pending == 0)
+	return -NM_EAGAIN;
       const int fd = status->fd[2*p_pw->trk_id];
       struct iovec*iov = &p_pw->v[0];
       int size = 0;
@@ -372,6 +382,7 @@ static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 	  fprintf(stderr, "nmad: self- error %d while reading data.\n", errno);
 	  abort();
 	}
+      __sync_fetch_and_sub(&status->pending, size);
       return NM_ESUCCESS;
     }
   else

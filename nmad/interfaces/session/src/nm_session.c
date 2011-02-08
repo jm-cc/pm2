@@ -291,8 +291,6 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  struct nm_drv*p_drv = nm_session.drivers[i].p_drv;
 	  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, "-");
 	  assert(err == NM_ESUCCESS);
-	  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, "-");
-	  assert(err == NM_ESUCCESS);
 	  remote_url = strdup(url);
 	}
       else

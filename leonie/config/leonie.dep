@@ -1,3 +1,0 @@
-Depend: tbx ntbx leoparse init
-Provide: module
-Conflict: pm2 madeleine marcel

@@ -1059,8 +1059,9 @@ int mpir_test(mpir_internal_data_t *mpir_internal_data,
 int mpir_probe(mpir_internal_data_t *mpir_internal_data,
 	       nm_gate_t gate,
 	       nm_gate_t *out_gate,
-	       nm_tag_t tag) {
-  return nm_sr_probe(mpir_internal_data->p_session, gate, out_gate, tag, NM_TAG_MASK_FULL);
+	       nm_tag_t tag)
+{
+  return nm_sr_probe(mpir_internal_data->p_session, gate, out_gate, tag, NM_TAG_MASK_FULL, NULL, NULL);
 }
 
 int mpir_cancel(mpir_internal_data_t *mpir_internal_data,

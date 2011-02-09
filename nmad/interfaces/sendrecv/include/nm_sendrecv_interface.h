@@ -452,13 +452,19 @@ extern int nm_sr_recv_source(nm_session_t p_session,
 
 /** Unblockingly check if a packet is available for extraction on the (gate,tag) pair .
  *  @param p_session a pointer to a nmad session object.
- *  @param p_gate a pointer to the destination gate.
- *  @param p_out_gate a pointer to the destination gate.
- *  @param tag the message tag.
+ *  @param p_gate a pointer to the expected gate.
+ *  @param p_out_gate return value with the originating gate.
+ *  @param tag the expected message tag.
+ *  @param tag_mask a mask to be applied on tag before matching
+ *  @param p_out_tag return value with the tag
+ *  @param p_out_len return value with the message length
  *  @return The NM status.
+ *  @note p_out_gate, p_out_tag and p_out_len may be NULL
  */
 extern int nm_sr_probe(nm_session_t p_session,
-		       nm_gate_t p_gate, nm_gate_t *p_out_gate, nm_tag_t tag, nm_tag_t tag_mask);
+		       nm_gate_t p_gate, nm_gate_t *p_out_gate,
+		       nm_tag_t tag, nm_tag_t tag_mask, nm_tag_t*p_out_tag,
+		       uint32_t*p_out_len);
 
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);

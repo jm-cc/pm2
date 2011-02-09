@@ -219,7 +219,9 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 
 int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 
-int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask, struct nm_gate**pp_out_gate);
+int nm_core_iprobe(struct nm_core*p_core,
+		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
+		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, uint32_t*p_out_size);
 
 
 

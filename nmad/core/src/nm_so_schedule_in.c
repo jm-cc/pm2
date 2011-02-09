@@ -334,8 +334,9 @@ int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
   return NM_ESUCCESS;
 }
 
-int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate, 
-		 nm_core_tag_t tag, nm_core_tag_t tag_mask, struct nm_gate**pp_out_gate)
+int nm_core_iprobe(struct nm_core*p_core,
+		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
+		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, uint32_t*p_out_size)
 {
   struct nm_unexpected_s*chunk;
   tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
@@ -346,8 +347,50 @@ int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate,
 	 nm_tag_match(chunk->tag, tag, tag_mask) && /* tag matches */
 	 (chunk->seq == next_seq) /* seq number matches */ )
 	{
-	  *pp_out_gate = p_gate;
-	  return NM_ESUCCESS;
+	  const void*header = chunk->header;
+	  const nm_proto_t proto_id = (*(nm_proto_t *)header) & NM_PROTO_ID_MASK;
+	  int matches = 0;
+	  int len = -1;
+	  switch(proto_id)
+	    {
+	    case NM_PROTO_SHORT_DATA:
+	      {
+		const struct nm_so_short_data_header *h = header;
+		len = h->len;
+		matches = 1;
+	      }
+	      break;
+	    case NM_PROTO_DATA:
+	      {
+		const struct nm_so_data_header *h = header;
+		if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
+		  {
+		    len = h->len + h->chunk_offset;
+		    matches = 1;
+		  }
+	      }
+	      break;
+	    case NM_PROTO_RDV:
+	      {
+		const struct nm_so_ctrl_rdv_header *rdv = header;
+		if(rdv->flags & NM_PROTO_FLAG_LASTCHUNK)
+		  {
+		    len = rdv->len + rdv->chunk_offset;
+		    matches = 1;
+		  }
+	      }
+	      break;
+	    }
+	  if(matches)
+	    {
+	      if(pp_out_gate)
+		*pp_out_gate = chunk->p_gate;
+	      if(p_out_tag)
+		*p_out_tag = chunk->tag;
+	      if(p_out_size)
+		*p_out_size = len;
+	      return NM_ESUCCESS;
+	    }
 	}
     }
   *pp_out_gate = NM_ANY_GATE;

@@ -16,10 +16,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/ezflavor					\
   bin/fut-print.pl				\
   bin/fut-codes.pl				\
-  bin/leoar					\
-  bin/leo-load					\
-  bin/leo-network				\
-  bin/leo-network.pl				\
   bin/marcel-install				\
   bin/marcel-fut.pl				\
   bin/nmad-fut2nam.pl				\

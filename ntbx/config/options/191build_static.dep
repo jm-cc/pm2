@@ -1,3 +1,0 @@
-Provide: ntbx_linkmode
-Provide: static_libs
-Conflict: ntbx_linkmode

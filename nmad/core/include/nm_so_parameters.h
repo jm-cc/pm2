@@ -18,15 +18,11 @@
 #define NM_SO_PARAMETERS_H
 
 
-#if defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-#  define NM_SO_MAX_UNEXPECTED                (1024 * 1024)
-#else
 /** Maximum size of unexpected packets. Used for preallocated header zone within packet wrappers */
-#  define NM_SO_MAX_UNEXPECTED                (64 * 1024)
-#endif
+#define NM_SO_MAX_UNEXPECTED  (16 * 1024)
 
 /* Number of preallocated iovec entries within packet wrappers */
-#define NM_SO_PREALLOC_IOV_LEN 16
+#define NM_SO_PREALLOC_IOV_LEN 8
 
 /** Threshold (in bytes) between by-copy / zero-copy with multi-ack methods
  * for datatype transfers

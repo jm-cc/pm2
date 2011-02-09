@@ -341,7 +341,7 @@ int nm_so_iprobe(struct nm_core*p_core, struct nm_gate*p_gate,
   tbx_fast_list_for_each_entry(chunk, &p_core->unexpected, link)
     {
       struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&chunk->p_gate->tags, chunk->tag);
-      const nm_seq_t next_seq = p_so_tag->recv_seq_number;
+      const nm_seq_t next_seq = nm_seq_next(p_so_tag->recv_seq_number);
       if(((p_gate == chunk->p_gate) || (p_gate == NM_ANY_GATE)) && /* gate matches */
 	 nm_tag_match(chunk->tag, tag, tag_mask) && /* tag matches */
 	 (chunk->seq == next_seq) /* seq number matches */ )

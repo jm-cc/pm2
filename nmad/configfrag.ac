@@ -23,7 +23,6 @@ m4_define([nmad_bin_scripts], [			\
 	nmad/examples/mpi/optimized/GNUmakefile	\
 	nmad/examples/mpi/basics/GNUmakefile	\
 	nmad/examples/pack/GNUmakefile		\
-	nmad/examples/sched_opt/GNUmakefile	\
 	nmad/examples/sendrecv/GNUmakefile	\
 	nmad/examples/session/GNUmakefile	\
 	nmad/sampling/GNUmakefile		\

@@ -4,5 +4,4 @@ Provide: nmad_launcher
 Depend: puk
 Depend: pukabi
 Depend: dynamic_libs
-Conflict: mad3_emu
 

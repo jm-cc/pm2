@@ -382,9 +382,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       NM_WARN("nm_core_driver_init returned %d", err);
       return err;
     }
-#ifndef CONFIG_PROTO_MAD3
   NM_DISPF("# nmad: driver name = %s; url = %s\n", driver->name, *p_url);
-#endif
 
   *pp_drv = p_drv;
   return NM_ESUCCESS;

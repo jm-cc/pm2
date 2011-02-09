@@ -34,7 +34,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/pm2-flavor				\
   bin/pm2-flavor-diff				\
   bin/pm2-flavor-file				\
-  bin/pm2-gdb-load				\
   bin/pm2-gen-make.sh				\
   bin/pm2-indent-log.pl				\
   bin/pm2-install.pl				\

@@ -11,15 +11,11 @@ ezflavor      : A GTK interface to configure PM2
 FILES         : This file!
 generic       : Generic configuration options
 init          : Initialisation code for any PM2 module
-leonie        : Bootstrap module
-leoparse      : Parser for the bootstrap module
 lib           : External libraries used by PM2
-mad3          : Madeleine 3 module (communication library)
 make          : Shared makefiles
 marcel        : Marcel module (threads library)
 modules       : Links to all the PM2 modules
 nmad          : NewMadeleine module (communication library)
-ntbx          : Network toolbox for PM2
 pm2           : micro-PM2 module
 profile       : Profiling management routines
 puk           : 

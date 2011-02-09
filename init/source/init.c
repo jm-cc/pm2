@@ -164,10 +164,6 @@ void common_post_init(int *argc, char *argv[], common_attr_t *attr)
 #endif /* PROFILE */
 
 #if defined(PROFILE) && defined(NMAD)
-#  if defined(CONFIG_PROTO_MAD3)
-	profile_set_tracefile("/tmp/prof_file_%d",
-			      mad_get_madeleine()->session->process_rank);
-#  else
 	{
 #    define PM2_INIT_MAX_HOSTNAME_LEN 17
 		char         hn[PM2_INIT_MAX_HOSTNAME_LEN];
@@ -181,7 +177,6 @@ void common_post_init(int *argc, char *argv[], common_attr_t *attr)
 				      hn, pid);
 	}
 #    undef PM2_INIT_MAX_HOSTNAME_LEN
-#  endif
 #endif /* PROFILE */
 
 #ifdef MARCEL

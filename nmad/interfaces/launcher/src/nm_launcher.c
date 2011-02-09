@@ -90,9 +90,6 @@ int nm_launcher_init(int *argc, char**argv)
 #if defined(CONFIG_PADICO) || defined(PADICOTM)
   /* Newmadico launcher, from an external PadicoTM or from pm2 module 'padicotm' */
   const char launcher_name[] = "NewMad_Launcher_newmadico";
-#elif defined(CONFIG_PROTO_MAD3)
-  /* legacy launcher from mad3_emu, using leonie */
-  const char launcher_name[] = "NewMad_Launcher_mad3";
 #else
   /* last resort: command-line launcher */
   const char launcher_name[] = "NewMad_Launcher_cmdline";

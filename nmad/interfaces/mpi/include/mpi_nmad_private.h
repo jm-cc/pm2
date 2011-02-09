@@ -28,8 +28,8 @@
  * @{
  */
 
-#if !(defined(CONFIG_PROTO_MAD3) || defined(PADICOTM) || defined(CONFIG_PADICO))
-#error "Mad-MPI requires either proto_mad3 or PadicoTM"
+#if !(defined(PADICOTM) || defined(CONFIG_PADICO))
+#error "Mad-MPI requires PadicoTM"
 #endif
 
 #include <stdint.h>
@@ -41,10 +41,6 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
 #include <tbx.h>
-#ifdef CONFIG_PROTO_MAD3
-#include <madeleine.h>
-#include <nm_mad3_private.h>
-#endif
 #include <nm_launcher.h>
 
 #define MADMPI_VERSION    1

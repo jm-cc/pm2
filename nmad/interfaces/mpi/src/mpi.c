@@ -1223,9 +1223,7 @@ int MPI_Init(int *argc,
       padico_puk_init(*argc, *argv);
     }
 
-#if defined(CONFIG_PROTO_MAD3)
-  const char launcher_name[] = "NewMad_Launcher_mad3";
-#elif defined(CONFIG_PADICO) || defined(PADICOTM)
+#if defined(CONFIG_PADICO) || defined(PADICOTM)
   const char launcher_name[] = "NewMad_Launcher_newmadico";
 #else 
   const char launcher_name[] = "NewMad_Launcher_cmdline";
@@ -1233,7 +1231,7 @@ int MPI_Init(int *argc,
 
   /*
    * NewMad initialization is performed by component 'NewMad_Launcher'
-   * (from proto_mad3 or from PadicoTM)
+   * (from cmdline or PadicoTM)
    */
   puk_adapter_t launcher = puk_adapter_resolve(launcher_name);
   assert(launcher != NULL);

@@ -21,11 +21,6 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
-#ifdef CONFIG_PROTO_MAD3
-#include <madeleine.h>
-#include <nm_mad3_private.h>
-#endif
-
 #include <tbx.h>
 #include <nm_public.h>
 #include <nm_private.h>

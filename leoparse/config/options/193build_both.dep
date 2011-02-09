@@ -1,4 +1,0 @@
-Provide: leoparse_linkmode
-Provide: static_libs
-Provide: dynamic_libs
-Conflict: leoparse_linkmode

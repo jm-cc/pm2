@@ -13,24 +13,6 @@
 # General Public License for more details.
 
 
-compile_leonie()
-{
-    echo "Compiling Leonie"
-    x=$(pm2-flavor get --flavor=leonie 2>/dev/null)
-    if [ "$x" == "" ] ; then
-        pm2-create-sample-flavors leonie
-    fi
-    LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-    if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-        make FLAVOR=leonie -C $PM2_OBJROOT/modules/leonie | sed -e 's/^/..../'
-        LEONIE_DIR=$(pm2-config --flavor=leonie --bindir leonie 2>/dev/null)
-        if [ ! -x "$LEONIE_DIR"/leonie ] ; then
-            echo "Could not compile leonie. Aborting"
-            exit 1
-        fi
-    fi
-}
-
 # args: loop variable
 initialize_bench()
 {
@@ -61,10 +43,11 @@ initialize_bench()
         # Creation de la flavor
         eval ${PM2_OBJROOT}/bin/pm2-flavor set --flavor=\"$flavor\" \
 	 --init=\"topology\" \
-         --modules=\"puk init nmad ntbx tbx pioman marcel\" \
+         --modules=\"puk init nmad tbx padicotm pioman marcel\" \
          --marcel=\"smp marcel_main\" \
-         --nmad=\"sched_opt strat_default mad3_emu ${dev} tag_as_flat_array\" \
+         --nmad=\"strat_default ${dev} tag_as_hashtable\" \
          --pioman=\"blocking_calls\" \
+	 --puk=\"enable_pukabi\" \
          --common=\"fortran_target_none\" \
          --all=\"build_static opt\" $flavor_options
 
@@ -100,22 +83,11 @@ run_bench()
             args="--numactl"
         fi
 
-	# create a network configuration file
-	networks_file=$(echo $(dirname $(${PM2_OBJROOT}/bin/pm2-conf-file -f $flavor))"/.pm2_network.cfg")
-	(cat<<EOF
-networks : ({
-	name  : $net;
- 	hosts : ($hosts);
-	dev   : $net;
-            });
-EOF
-	    ) > $networks_file
-
 
 	nb_runs=5
 	for i in $(seq 1 $nb_runs) ; do
 		date
-        	${PM2_OBJROOT}/bin/pm2-load $args --network $networks_file --protocol $net -f $flavor $leo_args $prog $leo_appli_args
+        	${PM2_OBJROOT}/bin/pm2-load $args -DNMAD_DRIVER=$net -f $flavor $prog
 	done
         finalize_bench
 	date
@@ -136,8 +108,6 @@ finalize_bench()
 
 ####################
 
-# Compilation du lanceur leonie
-compile_leonie 2>&1 | sed -e 's/^/..../'
 
-#
+
 

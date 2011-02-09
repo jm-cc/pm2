@@ -126,21 +126,6 @@ void common_pre_init(int *argc, char *argv[], common_attr_t *attr)
 	tbx_init(argc, &argv) ;
 #endif /* TBX */
 
-#ifdef NTBX
-	/*
-	 * Net-Toolbox services
-	 * --------------------
-	 *
-	 * Provides:
-	 * - pack/unpack routines for hetereogeneous architecture communication
-	 * - safe non-blocking client-server framework over TCP
-	 *
-	 * Requires:
-	 * - TBX services
-	 */
-	ntbx_init(argc, argv);
-#endif /* NTBX */
-
 #ifdef PIOMAN
 	/*
 	 * PIOMan IO initialization
@@ -227,10 +212,6 @@ void common_post_init(int *argc, char *argv[], common_attr_t *attr)
 	marcel_purge_cmdline();
 #endif /* PM2 */
 
-#ifdef NTBX
-	//ntbx_purge_cmd_line(argc, full_argv);
-#endif /* NTBX */
-
 #ifdef TBX
 	tbx_purge_cmd_line();
 	tbx_pa_copy_args(argc, argv);
@@ -267,22 +248,6 @@ common_exit(common_attr_t *attr)
 	pm2_thread_exit();
 	block_exit();
 #endif // PM2
-
-#ifdef NTBX
-	//
-	// NTBX clean-up
-	// -------------
-	//
-	// Provides:
-	// - ntbx structures clean-up
-	//
-	// Requires:
-	// - Marcel synchronization services
-	// - TBX full activity
-	//
-
-	ntbx_exit();
-#endif // NTBX
 
 #ifdef TBX
 	//

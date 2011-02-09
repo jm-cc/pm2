@@ -156,11 +156,7 @@ EOF
 			[ "$module" != bubbles ] || extra="$extra --modules=bubblelib --modules=marcel --marcel=profile --modules=profile"
 			[ "$module" != bubblelib ] || extra="$extra --modules=marcel --marcel=profile --modules=profile"
 			[ "$module" != fut2paje ] || extra="$extra --modules=profile"
-			[ "$module" != leonie ] || extra="$extra --modules=ntbx --modules=leoparse"
-			[ "$module" != leoparse ] || extra="$extra --modules=ntbx"
-			[ "$module" != mad3 ] || extra="$extra --modules=ntbx"
-			[ "$module" != nmad ] || extra="$extra --modules=ntbx --modules=puk"
-			[ "$module" != memory ] || extra="$extra --modules=ntbx"
+			[ "$module" != nmad ] || extra="$extra --modules=puk --modules=padicotm"
 			[ "$module" != stackalign ] || extra="$extra --modules=marcel"
 			[ "$module" = ezflavor ] || extra="$extra --modules=init --modules=tbx"
 
@@ -256,30 +252,8 @@ then
 		PM2_FLAVOR_CONTENT="$PM2_FLAVOR_CONTENT --nmad=tag_as_hashtable"
 	fi
 
-	# Mad3 enabled but no protocol set?
-	if echo "$PM2_FLAVOR_CONTENT" | grep -- --modules=mad3 >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=bip >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=gm >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=madico >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=mpi >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=mpl >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=mx >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=quadrics >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=rand >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=sbp >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=sctp >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=sisci >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=tcp >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=udp >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=via >/dev/null && \
-		! echo "$PM2_FLAVOR_CONTENT" | grep -- --mad3=vrp >/dev/null
-	then
-		# Default to TCP
-		PM2_FLAVOR_CONTENT="$PM2_FLAVOR_CONTENT --mad3=tcp"
-	fi
 fi
 EOF
-	# default mad3 proto (tcp I guess)
 
 	echo '])'
 ) > m4/pm2-flavor-options.m4

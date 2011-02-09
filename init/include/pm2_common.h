@@ -25,7 +25,6 @@ typedef struct _struct_common_attr_t common_attr_t;
     !defined(PM2_KERNEL)    && \
     !defined(PIOM_KERNEL)   && \
     !defined(TBX_KERNEL)    && \
-    !defined(NTBX_KERNEL)   && \
     !defined(PROFILE_KERNEL)
 
 
@@ -37,10 +36,6 @@ typedef struct _struct_common_attr_t common_attr_t;
 #include "tbx.h"
 #endif /* TBX */
 
-#ifdef NTBX
-#include "ntbx.h"
-#endif /* NTBX */
-
 #ifdef MARCEL
 #include "marcel.h"
 #endif /* MARCEL */
@@ -48,10 +43,6 @@ typedef struct _struct_common_attr_t common_attr_t;
 #ifdef PIOMAN
 #include "pioman.h"
 #endif /* PIOMAN */
-
-#if defined(MAD) || (defined(NMAD) && defined(CONFIG_PROTO_MAD3))
-#include "madeleine.h"
-#endif /* MAD */
 
 #ifdef PM2
 #include "pm2.h"

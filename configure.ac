@@ -20,7 +20,6 @@ m4_define([pm2_bin_scripts], [			\
   bin/marcel-fut.pl				\
   bin/nmad-fut2nam.pl				\
   bin/nmad-fut2txt.pl				\
-  bin/nmad-install				\
   bin/nmad-trace.py				\
   bin/pm2-all					\
   bin/pm2-bench					\

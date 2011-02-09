@@ -67,12 +67,7 @@ typedef enum {
 
 int checkArguments(int argc, char **argv, int startPos, int *use_hindex, int *short_message, int *minSize, int *maxSize, int *stride, int *blocks, int *size, char *tests);
 
-#ifdef MPICH_PM2
-#define PRINT(str, ...)        mad_leonie_print(str, ## __VA_ARGS__)
-#define PRINT_NO_NL(str, ...)  mad_leonie_print_without_nl(str, ## __VA_ARGS__)
-#else // MPICH_PM2
 #define PRINT(str, ...)        fprintf(stdout, str "\n", ## __VA_ARGS__)
 #define PRINT_NO_NL(str, ...)  fprintf(stdout, str, ## __VA_ARGS__)
-#endif // MPICH_PM2
 
 #endif // TOOLBOX_H

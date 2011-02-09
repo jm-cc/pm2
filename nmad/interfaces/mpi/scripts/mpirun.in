@@ -50,14 +50,6 @@ Environment variables:
 EOF
 }
 
-# backward compatibility with old leonie-based mpirun for Mad-MPI
-if [ "x${MPI_NMAD_PROTOCOL}" != "x" ]; then
-    NMAD_DRIVER="${MPI_NMAD_PROTOCOL}"
-fi
-if [ "x${MPI_NMAD_STRATEGY}" != "x" ]; then
-    NMAD_STRATEGY="${MPI_NMAD_STRATEGY}"
-fi
-
 # generate -D for driver and strategy
 if [ "x${NMAD_DRIVER}" != "x" ]; then
     args="${args} -DNMAD_DRIVER=${NMAD_DRIVER}"

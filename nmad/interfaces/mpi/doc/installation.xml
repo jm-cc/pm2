@@ -190,27 +190,6 @@ Compile <MACRO NAME="madmpi"/>.
 <CODE FILE="./code/compileMadMpi.txt"/>
 </LI>
 
-<LI>
-<P>
-You need to provide a network configuration file, located in
-<LATEX>\begin{quote}</LATEX>
-<TT>${PM2_SRCROOT}/nmad/examples/mpi/networks.cfg</TT>
-<LATEX>\end{quote}</LATEX>
-This file is
-mandatory but users can select another location by defining the
-appropriate environment variable (see Section <REF
-LABEL="advanced"/>). When loading a <MACRO NAME="madmpi"/>
-application, the network configuration file is read to determine which
-network links to use between the different machines involved in the
-execution. The sample file
-<LATEX>\begin{quote}</LATEX>
-<TT>$PM2_ROOT/leonie/examples/networks.cfg</TT>
-<LATEX>\end{quote}</LATEX>
-can be used as a model
-to describe your network configuration.
-</P>
-</LI>
-
 <LI> 
 <P>
 Users should add to their <TT>PATH</TT> the element

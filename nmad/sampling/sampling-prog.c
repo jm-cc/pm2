@@ -24,6 +24,7 @@
 #include <nm_private.h>
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
+#include <nm_launcher.h>
 
 /* Maximum size of a small message for a faked strategy */
 #define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
@@ -66,8 +67,6 @@ static void nm_ns_initialize_pw(struct nm_core *p_core,
 				struct nm_pkt_wrap **pp_pw)
 {
   struct nm_pkt_wrap *p_pw = NULL;
-  const nm_tag_t tag = 0;
-  const uint8_t seq = 0;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
@@ -130,7 +129,7 @@ static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, void*pt
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag = 0;
+  const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
@@ -162,7 +161,7 @@ static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag = 0;
+  const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   if(len <= NM_MAX_SMALL)
@@ -195,8 +194,6 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag  = 0;
-  const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   char*buf = NULL;
   if(len <= NM_MAX_SMALL)
@@ -253,7 +250,7 @@ static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag = 0;
+  const nm_core_tag_t tag = nm_tag_build(0, 0);
   const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   if(_len <= NM_MAX_SMALL)
@@ -282,10 +279,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag  = 0;
-  const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
-  char*buf = NULL;
   if(_len <= NM_MAX_SMALL)
     {
       nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
@@ -312,22 +306,22 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 	      const struct nm_so_short_data_header*dh = (const struct nm_so_short_data_header*)p_proto;
 	      const size_t data_len = dh->len;
 	      memcpy(ptr, dh + 1, dh->len);
-	      p_proto += NM_SO_SHORT_DATA_HEADER_SIZE + dh->len;
+	      p_proto += NM_SO_SHORT_DATA_HEADER_SIZE + data_len;
 	      ptr += dh->len;
 	    }
 	  else if(proto_id == NM_PROTO_DATA)
 	    {
 	      const struct nm_so_data_header*dh = (const struct nm_so_data_header*)p_proto;
 	      const size_t data_len = dh->len;
-	      memcpy(ptr, dh + dh->skip, dh->len);
-	      const size_t size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	      memcpy(ptr, dh + dh->skip, data_len);
+	      const size_t size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(data_len) : data_len;
 	      p_proto += NM_SO_DATA_HEADER_SIZE;
 	      if(dh->skip == 0)
 		p_proto += size;
-	      ptr += dh->len;
+	      ptr += data_len;
 	    }
 	  else
-	    TBX_FAILUREF("unexpected proto %x; len = %d (%d)\n", proto_id, len, _len);
+	    TBX_FAILUREF("unexpected proto %x; len = %d (%d)\n", proto_id, (int)len, (int)_len);
 	} while( !(proto & NM_PROTO_LAST) );
       nm_so_pw_free(p_pw);
     }
@@ -344,8 +338,6 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag = 0;
-  const uint8_t seq  = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   nm_so_pw_add_raw(p_pw, ptr, len, 0);
@@ -367,8 +359,6 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
 {
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  const nm_tag_t tag  = 0;
-  const uint8_t seq   = 0;
   struct nm_pkt_wrap*p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   nm_so_pw_add_raw(p_pw, ptr, len, 0);

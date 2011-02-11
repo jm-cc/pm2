@@ -1,7 +1,7 @@
 PM2_NMAD_LIBNAME=nmad
 PM2_NMAD_MODULE_DEPEND_LIB="${PM2_NMAD_MODULE_DEPEND_LIB} tbx ntbx marcel"
 
-PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_SRCROOT}/nmad/core/include"
+PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_SRCROOT}/nmad/include"
 
 # 'session' interface
 PM2_NMAD_CFLAGS="$PM2_NMAD_CFLAGS -I${PM2_SRCROOT}/nmad/interfaces/session/include"

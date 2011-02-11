@@ -28,7 +28,7 @@ include $(PM2_SRCROOT)/make/libs-vars.mak
 
 # NewMad core
 # ----------------------------------------------------------
-MOD_SRC += $(PM2_SRCROOT)/nmad/core/src
+MOD_SRC += $(PM2_SRCROOT)/nmad/src
 
 # Drivers
 #-----------------------------------------------------------

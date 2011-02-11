@@ -18,7 +18,7 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
 #include <ccs_public.h>
-#include <pm2_common.h>
+#include <tbx.h>
 
 static int is_server = -1;
 static nm_session_t p_core = NULL;
@@ -26,7 +26,7 @@ static nm_gate_t gate_id = NULL;
 
 void nmad_exit()
 {
-  common_exit(NULL);
+  nm_launcher_exit();
 }
 
 void init(int *argc, char **argv)

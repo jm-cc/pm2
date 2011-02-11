@@ -18,8 +18,6 @@
 #include <sys/uio.h>
 #include <assert.h>
 
-#include <pm2_common.h>
-
 #include <nm_private.h>
 
 

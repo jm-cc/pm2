@@ -17,7 +17,15 @@
 #ifndef NM_PRIVATE_H
 #define NM_PRIVATE_H
 
+#ifdef NMAD_AUTOCONF
+#include <Padico/Puk.h>
+#include <tbx.h>
+#ifdef PIOMAN
+#include <pioman.h>
+#endif
+#else
 #include <pm2_common.h>
+#endif
 
 #include <nm_public.h>
 #include <nm_core_interface.h>

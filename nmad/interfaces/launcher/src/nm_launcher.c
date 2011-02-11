@@ -17,7 +17,7 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_core_interface.h>
-#include <pm2_common.h>
+#include <tbx.h>
 
 #ifdef CONFIG_PUK_PUKABI
 #include <Padico/Puk-ABI.h>
@@ -77,8 +77,12 @@ int nm_launcher_init(int *argc, char**argv)
 
   if(!tbx_initialized())
     {
+#ifdef NMAD_AUTOCONF
+      tbx_init(argc, &argv);
+#else
       common_pre_init(argc, argv, NULL);
       common_post_init(argc, argv, NULL);
+#endif
     }
   /*
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)

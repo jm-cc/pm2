@@ -148,12 +148,7 @@ static inline nm_tag_t nm_sr_tag_get(nm_core_tag_t core_tag)
 }
 static inline void nm_sr_tag_build(nm_session_t p_session, nm_tag_t tag, nm_core_tag_t*core_tag)
 {
-#ifdef NM_TAGS_STRUCT
-  core_tag->tag = tag;
-  core_tag->hashcode = p_session->hash_code;
-#else
-  *core_tag = tag;
-#endif
+  *core_tag = nm_tag_build(p_session->hash_code, tag);
 }
 
 /* ** Requests inline ************************************** */

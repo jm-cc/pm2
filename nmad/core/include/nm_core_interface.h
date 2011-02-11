@@ -148,14 +148,23 @@ typedef struct
 #define NM_CORE_TAG_NONE      ((nm_core_tag_t){ .tag = 0, .hashcode = 0x0 })
 #define NM_CORE_TAG_INIT_NONE(t) { t.tag = 0 ; t.hashcode = 0x0; }
 #define NM_CORE_TAG_INIT_MASK_FULL(t) { t.tag = NM_TAG_MASK_FULL; t.hashcode = 0xFFFFFFFF; }
-#else
+static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
+{
+  const nm_core_tag_t core_tag = { .tag = tag, .hashcode = hashcode };
+  return core_tag;
+}
+#else /* NM_TAGS_AS_INDIRECT_HASH */
 /** An internal tag */
 typedef nm_tag_t nm_core_tag_t;
 #define NM_CORE_TAG_MASK_FULL NM_TAG_MASK_FULL
 #define NM_CORE_TAG_NONE ((nm_tag_t)0)
 #define NM_CORE_TAG_INIT_NONE(tag) { tag = 0; }
 #define NM_CORE_TAG_INIT_MASK_FULL(tag) { tag = NM_TAG_MASK_FULL; }
-
+static inline nm_core_tag_t nm_tag_build(uint32_t hashcode, nm_tag_t tag)
+{
+  const nm_core_tag_t core_tag = tag;
+  return core_tag;
+}
 #endif /* NM_TAGS_AS_INDIRECT_HASH */
 
 /** An unpack request */

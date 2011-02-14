@@ -18,6 +18,9 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_core_interface.h>
 #include <tbx.h>
+#ifndef NMAD_AUTOCONF
+#include <pm2_common.h>
+#endif
 
 #ifdef CONFIG_PUK_PUKABI
 #include <Padico/Puk-ABI.h>

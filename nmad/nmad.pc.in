@@ -1,0 +1,9 @@
+
+prefix=@nmad_root@
+
+Name: nmad
+Description: NewMadeleine
+Version: $Rev$
+Requires: tbx Puk PukABI
+Libs: @NMAD_LIBS@
+Cflags: @NMAD_CFLAGS@

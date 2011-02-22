@@ -1,67 +1,32 @@
 # autoconf-based makefile for nmad
 
-srcdir := @nmad_srcdir@
+srcdir := @srcdir@
 VPATH  := $(srcdir)
 
 include $(PADICO_ROOT)/etc/common_vars.mk
 
-TARGET_BIN = examples/sendrecv/sr_ping sampling/sampling-prog
+TARGET_BIN = #sampling/sampling-prog
 TARGET_LIB = libnmad.so
 TARGET_MOD =
 SUBDIRS =
 
-INSTALL_BIN     = $(TARGET_BIN)
-INSTALL_LIB     = $(TARGET_LIB)
-INSTALL_INCLUDE = $(wildcard $(srcdir)/include/*.h)
+INSTALL_BIN       = $(TARGET_BIN)
+INSTALL_LIB       = $(TARGET_LIB)
+INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h)
+INSTALL_PKGCONFIG = nmad.pc
 
 INSTALL_PREFIX := @nmad_root@
 INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
-include $(PADICO_ROOT)/etc/common_rules.mk
-
-# ## nmad base
-# include from srcdir must be before include from install dir in case of re-install
-CFLAGS  := -DNMAD -DNMAD_AUTOCONF -I$(srcdir)/include -I@nmad_builddir@/include -I$(srcdir)/ccs $(CFLAGS)
-LDFLAGS += -Wl,--export-dynamic
-
-# ## external modules
-CFLAGS += @PUK_CFLAGS@ @PUKABI_CFLAGS@ @TBX_CFLAGS@
-LIBS   += @PUK_LIBS@ @PUKABI_LIBS@ @TBX_LIBS@
+CFLAGS  := @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS) -DNMAD_AUTOCONF
+LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
+LIBS    := @NMAD_LIBS@ @NMAD_EXT_LIBS@ $(LIBS)
 
 NMAD_DRIVERS    = @nmad_drivers@
 NMAD_STRATEGIES = @nmad_strategies@
 NMAD_INTERFACES = @nmad_interfaces@
-
-
-# ## hacks which should be converted into autoconf options
-# ##
-
-# ## tags
-# option
-CFLAGS += -DCONFIG_TAG_HUGE
-
-# ## sampling
-# option
-#CFLAGS += -DSAMPLING
-
-# ## Mad-MPI
-# option
-NMAD_INTERFACES += mpi
-CFLAGS += -DMAD_MPI
-
-# ## Fortran
-# option
-CFLAGS += -DPM2_FORTRAN_TARGET_NONE
-
-# ## NUIOA
-# option
-#CFLAGS += -DPM2_NUIOA
-
-
-# ## hacks end
-
 
 # compute flags and directories from options
 SRC_DIRS += src ccs
@@ -69,6 +34,7 @@ SRC_DIRS += $(foreach drv,   $(NMAD_DRIVERS),    drivers/$(drv) )
 SRC_DIRS += $(foreach strat, $(NMAD_STRATEGIES), strategies/strat_$(strat) )
 SRC_DIRS += $(foreach int,   $(NMAD_INTERFACES), interfaces/$(int)/src )
 CFLAGS   += $(foreach int,   $(NMAD_INTERFACES), -I$(srcdir)/interfaces/$(int)/include )
+INSTALL_INCLUDE += $(foreach int, $(NMAD_INTERFACES), $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 
 # make multiple directories fit inside a single module
 SRC_FILES := $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
@@ -76,14 +42,15 @@ OBJ_FILES := $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
 DEP_FILES := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
 CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
 TARGET_DEP += $(DEP_FILES)
+
+include $(PADICO_ROOT)/etc/common_rules.mk
+
 -include $(DEP_FILES)
 
 libnmad.so: LIBS += -lrt
 libnmad.so: $(OBJ_FILES)
 
+
 $(TARGET_BIN): LIBS += -L. -lnmad
-$(TARGET_BIN): $(TARGET_LIB)
-$(TARGET_BIN): %: %.pic.o
-
-
+$(TARGET_BIN): %: %.pic.o $(TARGET_LIB)
 

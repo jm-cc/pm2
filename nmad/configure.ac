@@ -39,52 +39,110 @@ AC_SUBST(nmad_srcdir)
 AC_MSG_RESULT(${nmad_srcdir})
 
 
-dnl -- required packages
-dnl --------------------------------------------------------
-
-PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([TBX],    [ tbx ])
-PKG_CHECK_MODULES([PUKABI], [ PukABI ])
-PKG_CHECK_MODULES([PUK],    [ Puk ])
-
-
-
-dnl -- nmad content
-dnl --------------------------------------------------------
-
-nmad_drivers="self local tcp"
-AC_SUBST(nmad_drivers)
-
-nmad_strategies="default aggreg aggreg_extended aggreg_autoextended split_balance"
-AC_SUBST(nmad_strategies)
-
-nmad_interfaces="launcher pack sendrecv session"
-AC_SUBST(nmad_interfaces)
-
-
 dnl -- options
 dnl --------------------------------------------------------
 
-tag_container="tag_as_hashtable"
+dnl -- base CFLAGS
+dnl --
+NMAD_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include -I${nmad_srcdir}/ccs"
+
+dnl -- tag container
+dnl --
+AC_MSG_CHECKING([for tag container])
+tag_container="TAG_AS_HASHTABLE"
 AC_ARG_ENABLE(taghuge,
-	      [  --enable-taghuge  Enable 64 bit tags ],
+	      [  --enable-taghuge   Enable 64 bit tags ],
               [ if test $enableval = yes; then
-                    tag_container="tag_huge";
+                    tag_container="TAG_HUGE";
                 fi
               ],
 	      [])
 AC_ARG_ENABLE(tagarray,
 	      [  --enable-tagarray  Enable 8 bit tags in flat array ],
               [ if test $enableval = yes; then
-                    tag_container="tag_as_flat_array";
+                    tag_container="TAG_AS_FLAT_ARRAY";
                 fi
               ],
 	      [])
-dnl -- TODO
+NMAD_CFLAGS="${NMAD_CFLAGS} -DCONFIG_${tag_container}"
+AC_MSG_RESULT([${tag_container}])
+
+dnl -- Mad-MPI
+dnl --
+AC_ARG_ENABLE(mpi,
+	      [  --enable-mpi       Enable builtin MPI implementation Mad-MPI],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
+		    nmad_interfaces="${nmad_interfaces} mpi"
+	        fi
+	      ],
+	      [])
+
+dnl -- sampling
+dnl --
+AC_ARG_ENABLE(sampling,
+	      [  --enable-sampling  Enable network sampling],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([SAMPLING], 1, [enable sampling])
+	        fi
+	      ],
+	      [])
+
+dnl -- Fortran
+NMAD_CFLAGS="${NMAD_CFLAGS} -DPM2_FORTRAN_TARGET_NONE"
+
+dnl -- NUIOA
+dnl --
+dnl - TODO- enable NUIOA by default if numa.h is present
+dnl - TODO- check for numa.h
+AC_ARG_ENABLE(nuioa,
+	      [  --enable-nuioa     Enable NUMA control on I/O],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([PM2_NUIOA], 1, [enable NUIOA])
+	        fi
+	      ],
+	      [])
+
+
+dnl -- external packages
+dnl --------------------------------------------------------
+
+PKG_PROG_PKG_CONFIG
+PKG_CHECK_MODULES([tbx],    [ tbx ])
+PKG_CHECK_MODULES([Puk],    [ Puk ])
+
+PKG_CHECK_MODULES([PukABI], [ PukABI ])
+
+NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS}"
+AC_SUBST(NMAD_CFLAGS)
+AC_SUBST(NMAD_EXT_CFLAGS)
+
+NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS}"
+AC_SUBST(NMAD_EXT_LIBS)
+NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
+AC_SUBST(NMAD_LIBS)
+
+NMAD_LDFLAGS="${NMAD_LDFLAGS} -Wl,--export-dynamic"
+AC_SUBST(NMAD_LDFLAGS)
+
+
+dnl -- nmad content
+dnl --------------------------------------------------------
+
+nmad_drivers="${nmad_drivers} self local tcp"
+AC_SUBST(nmad_drivers)
+
+nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
+AC_SUBST(nmad_strategies)
+
+nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
+AC_SUBST(nmad_interfaces)
+
+
 
 
 out_sh=""
-out_mk="Makefile"
+out_mk="Makefile examples/sendrecv/Makefile nmad.pc"
 
 dnl -- output 
 

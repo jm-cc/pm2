@@ -103,6 +103,7 @@ AC_ARG_ENABLE(nuioa,
 	      ],
 	      [])
 
+dnl -- TODO: debug, optimize, Myrinet, Infiniband, PIOMan, Marcel, fine_grain_lock
 
 dnl -- external packages
 dnl --------------------------------------------------------
@@ -110,6 +111,13 @@ dnl --------------------------------------------------------
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([tbx],    [ tbx ])
 PKG_CHECK_MODULES([Puk],    [ Puk ])
+
+AC_MSG_CHECKING([for Puk root])
+puk_root="`pkg-config --variable=prefix Puk`"
+AC_SUBST([puk_root])
+AC_MSG_RESULT([${puk_root}])
+AC_CHECK_FILE([${puk_root}/etc/common_rules.mk],
+	      [], [ AC_MSG_ERROR([required ${puk_root}/etc/common_rules.mk not found]) ])
 
 PKG_CHECK_MODULES([PukABI], [ PukABI ])
 
@@ -148,3 +156,4 @@ dnl -- output
 
 dnl AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
 AC_OUTPUT(${out_mk} ${out_sh})
+

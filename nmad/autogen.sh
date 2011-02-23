@@ -1,1 +1,4 @@
-autoreconf
+#! /bin/sh
+
+autoreconf -v
+

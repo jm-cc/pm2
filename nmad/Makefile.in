@@ -3,7 +3,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include $(PADICO_ROOT)/etc/common_vars.mk
+include @puk_root@/etc/common_vars.mk
 
 TARGET_BIN = #sampling/sampling-prog
 TARGET_LIB = libnmad.so
@@ -22,7 +22,7 @@ TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
 CFLAGS  := @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS) -DNMAD_AUTOCONF
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := @NMAD_LIBS@ @NMAD_EXT_LIBS@ $(LIBS)
+LIBS    := @NMAD_EXT_LIBS@ $(LIBS)
 
 NMAD_DRIVERS    = @nmad_drivers@
 NMAD_STRATEGIES = @nmad_strategies@
@@ -43,7 +43,7 @@ DEP_FILES := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
 CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
 TARGET_DEP += $(DEP_FILES)
 
-include $(PADICO_ROOT)/etc/common_rules.mk
+include @puk_root@/etc/common_rules.mk
 
 -include $(DEP_FILES)
 

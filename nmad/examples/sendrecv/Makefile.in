@@ -1,7 +1,7 @@
 srcdir := @srcdir@
 VPATH  := $(srcdir)
 
-include $(PADICO_ROOT)/etc/common_vars.mk
+include @puk_root@/etc/common_vars.mk
 
 TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
 TARGET_LIB =
@@ -21,6 +21,6 @@ CFLAGS  := $(shell pkg-config --cflags nmad)
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
 LIBS    := $(shell pkg-config --libs nmad)
 
-include $(PADICO_ROOT)/etc/common_rules.mk
+include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o

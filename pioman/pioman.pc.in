@@ -1,0 +1,9 @@
+
+prefix=@pioman_root@
+
+Name: pioman
+Description: PIOMan
+Version: $Rev$
+Requires: tbx @requires_marcel@
+Libs: @PIOMAN_LIBS@
+Cflags: @PIOMAN_CFLAGS@

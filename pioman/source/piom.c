@@ -17,8 +17,6 @@
 
 #ifdef MARCEL
 #include "marcel.h"
-#include "linux_spinlock.h"
-#include "linux_interrupt.h"
 #endif	/* MARCEL */
 
 #include <errno.h>

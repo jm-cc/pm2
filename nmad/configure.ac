@@ -39,12 +39,19 @@ AC_SUBST(nmad_srcdir)
 AC_MSG_RESULT(${nmad_srcdir})
 
 
+dnl -- tools
+dnl --------------------------------------------------------
+
+AC_PATH_PROG([BASH], [bash])
+AC_SUBST([BASH])
+
+
 dnl -- options
 dnl --------------------------------------------------------
 
 dnl -- base CFLAGS
 dnl --
-NMAD_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include -I${nmad_srcdir}/ccs"
+NMAD_CFLAGS="-DNMAD -DNMAD_AUTOCONF -I${nmad_srcdir}/include -I${nmad_builddir}/include -I${nmad_srcdir}/ccs"
 
 dnl -- tag container
 dnl --
@@ -149,11 +156,11 @@ AC_SUBST(nmad_interfaces)
 
 
 
-out_sh=""
+out_sh="bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample"
 out_mk="Makefile examples/sendrecv/Makefile nmad.pc"
 
 dnl -- output 
 
-dnl AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
+AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
 AC_OUTPUT(${out_mk} ${out_sh})
 

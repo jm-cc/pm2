@@ -1,0 +1,167 @@
+#!@BASH@
+###########
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2007 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+
+# Get some variables
+PATH="@abs_top_builddir@/bin:$PATH"
+PM2_ROOT="@abs_top_srcdir@"
+PM2_SRCROOT="@abs_top_srcdir@"
+PM2_OBJROOT="@abs_top_builddir@"
+
+PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+DRIVER_DIR="$PM2_CONF_DIR/nmad/driver"
+
+ACTION="write"
+CHOSEN_DRIVER=""
+
+# Help functions
+usage() {
+    cat  1>&2 <<EOF
+
+Usage:
+$0 [<opt>] <action>
+
+where mandatory action is among:
+  --help, -h            display this help message
+  --get, -g             display the current driver
+  --gen-default         generate default driver files
+  --driver=<driver>     choose driver <driver>
+    possible <driver> values are: tcp, mx, ibverbs, qsnet
+    Shortcuts are available:
+      --tcp             for --driver=tcp
+      --mx              for --driver=mx
+      --ibverbs         for --driver=ibverbs
+      --qsnet           for --driver=qsnet
+
+options <opt> are among:
+   --force-overwrite, -f  force overwriting existing files
+EOF
+}
+
+if [ $# = 0 ]; then
+    usage
+    exit 1
+fi
+
+# Manage args
+while test $# -gt 0; do
+    CMD="$1"
+    case "$CMD" in
+	--get|-g)
+	    ACTION="get"
+	    ;;
+	--gen-default)
+	    ACTION="gen_default"
+	    ;;
+	--force-overwrite|-f)
+	    ACTION="force_write"
+	    ;;
+	--driver=*)
+	    CHOSEN_DRIVER=$( echo "$CMD" | sed -e 's,--driver=,,g' )
+	    ;;
+	--mx)
+	    CHOSEN_DRIVER=mx
+	    ;;
+	--qsnet)
+	    CHOSEN_DRIVER=qsnet
+	    ;;
+	--ibverbs|--ib)
+	    CHOSEN_DRIVER=ibverbs
+	    ;;
+	--tcp)
+	    CHOSEN_DRIVER=tcp
+	    ;;
+	-h|-help|--help)
+	    usage
+	    exit 0
+	    ;;
+	*)
+	    echo "Unknown argument: $CMD"
+	    usage
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+
+nmad_driver_write() {
+    driver=$1
+    driver_file=${DRIVER_DIR}/driver_${driver}.xml
+# Create .pm2/driver directory if it doesn't exist
+    if [ ! -e $DRIVER_DIR ]; then
+	mkdir -p ${DRIVER_DIR}
+    fi
+# Write XML driver files if they don't exist
+    if [ ! -e  ${driver_file} ] || [ ${ACTION} = "force_write" ] ; then
+	echo -n "# Writing driver file: ${driver}... " 1>&2
+	cat > ${driver_file} <<EOF
+<?xml version="1.0"?>
+<!DOCTYPE puk:composite SYSTEM "${PADICO_ROOT}/etc/NetSelector.dtd">
+<puk:composite id="driver-${driver}">
+  <puk:component id="0" name="NewMad_Driver_${driver}"/>
+  <puk:entry-point iface="NewMad_Driver" provider-id="0"/>
+</puk:composite>
+EOF
+	echo "done." 1>&2
+    fi
+}
+
+nmad_driver_set_custom() {
+    ln -sf ${DRIVER_DIR}/driver_${1}.xml ${DRIVER_DIR}/driver_custom.xml
+}
+
+nmad_driver_write_default() {
+    nmad_driver_write tcp
+    nmad_driver_write local
+    nmad_driver_write mx
+    nmad_driver_write qsnet
+    nmad_driver_write ibverbs
+    driver_file=${DRIVER_DIR}/driver_custom.xml
+    if [ ! -e  ${driver_file} ]; then
+	nmad_driver_set_custom tcp
+    fi
+}
+
+case ${ACTION} in
+    gen_default)
+	echo "Generating default nmad drivers files..." 1>&2
+	nmad_driver_write_default
+	;;
+
+    get)
+	readlink ${DRIVER_DIR}/driver_custom.xml | sed -e "s,${DRIVER_DIR}/driver_\(.*\).xml,\1,g"
+	;;
+
+    write|force_write)
+
+	if [ -z "$CHOSEN_DRIVER" ]; then
+	    usage
+	    exit 1
+	fi
+
+	nmad_driver_write $CHOSEN_DRIVER
+
+	# Link the chosen driver
+	if [ ! -r ${DRIVER_DIR}/driver_${CHOSEN_DRIVER}.xml ]; then
+	    echo "$0: driver \"${CHOSEN_DRIVER}\" does not exist."
+	    echo
+	    usage
+	    exit 1
+	fi
+	nmad_driver_set_custom ${CHOSEN_DRIVER}
+	;;
+esac

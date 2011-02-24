@@ -10,7 +10,7 @@ TARGET_LIB = libnmad.so
 TARGET_MOD =
 SUBDIRS =
 
-INSTALL_BIN       = $(TARGET_BIN)
+INSTALL_BIN       = $(TARGET_BIN) bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample
 INSTALL_LIB       = $(TARGET_LIB)
 INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h)
 INSTALL_PKGCONFIG = nmad.pc
@@ -20,7 +20,7 @@ INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
-CFLAGS  := @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS) -DNMAD_AUTOCONF
+CFLAGS  := @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS)
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
 LIBS    := @NMAD_EXT_LIBS@ $(LIBS)
 

@@ -110,15 +110,18 @@ AC_ARG_ENABLE(nuioa,
 	      ],
 	      [])
 
-dnl -- TODO: debug, optimize, Myrinet, Infiniband, PIOMan, Marcel, fine_grain_lock
+dnl -- TODO: debug, optimize, fine_grain_lock
 
 dnl -- external packages
 dnl --------------------------------------------------------
 
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([tbx],    [ tbx ])
-PKG_CHECK_MODULES([Puk],    [ Puk ])
 
+dnl -- tbx
+PKG_CHECK_MODULES([tbx],    [ tbx ])
+
+dnl -- Puk
+PKG_CHECK_MODULES([Puk],    [ Puk ])
 AC_MSG_CHECKING([for Puk root])
 puk_root="`pkg-config --variable=prefix Puk`"
 AC_SUBST([puk_root])
@@ -126,13 +129,88 @@ AC_MSG_RESULT([${puk_root}])
 AC_CHECK_FILE([${puk_root}/etc/common_rules.mk],
 	      [], [ AC_MSG_ERROR([required ${puk_root}/etc/common_rules.mk not found]) ])
 
+dnl -- PukABI
 PKG_CHECK_MODULES([PukABI], [ PukABI ])
 
-NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS}"
+dnl -- PIOMan
+AC_ARG_WITH([pioman],
+	    [AS_HELP_STRING([--with-pioman], [use pioman I/O manager @<:@default=no@:>@] )])
+if test "x${with_pioman}" = "xyes"; then
+   PKG_CHECK_MODULES([pioman], [ pioman ])
+fi
+AC_SUBST(with_pioman)
+
+dnl -- Marcel
+AC_ARG_WITH([marcel],
+	    [AS_HELP_STRING([--with-marcel], [use marcel threads @<:@default=no@:>@] )])
+if test "x${with_marcel}" = "xyes"; then
+   PKG_CHECK_MODULES([marcel], [ marcel ])
+fi
+
+dnl -- ibverbs
+HAVE_INFINIBAND=no
+AC_ARG_WITH([ibverbs],
+	    [AS_HELP_STRING([--with-ibverbs], [use Infiniband ibverbs @<:@default=check@:>@] )])
+if test "x${with_ibverbs}" != "xno" ; then
+    save_CFLAGS="${CFLAGS}"
+    CFLAGS="${CFLAGS} -I${IBHOME}/include"
+    AC_CHECK_HEADER(infiniband/verbs.h, 
+                    [ HAVE_INFINIBAND=yes ],
+                    [ HAVE_INFINIBAND=no  ])
+    CFLAGS="${save_CFLAGS}"
+    AC_SUBST(HAVE_INFINIBAND)
+    if test ${HAVE_INFINIBAND} = yes; then
+        AC_DEFINE([CONFIG_IBVERBS], 1, [enable ibverbs support])
+        nmad_drivers="${nmad_drivers} ibverbs"
+        if test "x$IBHOME" != "x" -a "x${IBHOME}" != "x/usr"; then
+      	   if test "x${IBLIBPATH}" = "x" ; then
+      	      IBLIBPATH=${IBHOME}/lib
+           fi
+      	   ibverbs_CLAGS="-I$IBHOME/include"
+      	   ibverbs_LIBS="-L$IBLIBPATH"
+        fi
+	ibverbs_LIBS="${ibverbs_LIBS} -libverbs"
+    elif test "x${with_ibverbs}" != "xcheck"; then
+        AC_MSG_FAILURE([--with-ibverbs was given, but infiniband/verbs.h is not found])
+    fi
+fi
+
+dnl -- MX
+if test "x$MX_DIR" = "x" ; then
+    if test -r /opt/mx/include/myriexpress.h ; then
+        MX_DIR=/opt/mx
+    fi
+fi
+HAVE_MX=no
+AC_ARG_WITH([mx],
+	    [AS_HELP_STRING([--with-mx], [use Myrinet MX @<:@default=check@:>@] )])
+if test "x${with_mx}" != "xno" ; then
+    save_CFLAGS="${CFLAGS}"
+    CFLAGS="${CFLAGS} -I${MX_DIR}/include"
+    AC_CHECK_HEADER(myriexpress.h, 
+                    [ HAVE_MX=yes ],
+                    [ HAVE_MX=no  ])
+    CFLAGS="${save_CFLAGS}"
+    AC_SUBST(HAVE_MX)
+    if test ${HAVE_MX} = yes; then
+        AC_DEFINE([CONFIG_MX], 1, [enable MX support])
+        nmad_drivers="${nmad_drivers} mx"
+        if test "x${MX_DIR}" != "x" -a "x${MX_DIR}" != "x/usr"; then
+      	   mx_CFLAGS="-I${MX_DIR}/include"
+      	   mx_LIBS="-L${MX_DIR}/lib"
+        fi
+	mx_LIBS="${mx_LIBS} -lmyriexpress"
+    elif test "x${with_mx}" != "xcheck"; then
+        AC_MSG_FAILURE([--with-mx was given, but myrinetexpress.h is not found])
+    fi
+fi
+
+dnl -- compute flags
+NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${marcel_CFLAGS} ${ibverbs_CFLAGS} ${mx_CFLAGS}"
 AC_SUBST(NMAD_CFLAGS)
 AC_SUBST(NMAD_EXT_CFLAGS)
 
-NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS}"
+NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${marcel_LIBS} ${ibverbs_LIBS} ${mx_LIBS}"
 AC_SUBST(NMAD_EXT_LIBS)
 NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
 AC_SUBST(NMAD_LIBS)

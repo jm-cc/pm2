@@ -20,6 +20,13 @@
 #include <tbx.h>
 #ifndef NMAD_AUTOCONF
 #include <pm2_common.h>
+#else
+#ifdef MARCEL
+#include <marcel.h>
+#endif
+#ifdef PIOMAN
+#include <pioman.h>
+#endif
 #endif
 
 #ifdef CONFIG_PUK_PUKABI
@@ -82,6 +89,13 @@ int nm_launcher_init(int *argc, char**argv)
     {
 #ifdef NMAD_AUTOCONF
       tbx_init(argc, &argv);
+#ifdef MARCEL
+      marcel_init(argc, argv);
+#endif /* MARCEL */
+#ifdef PIOMAN
+      piom_init_ltasks();
+      piom_io_init();
+#endif /* PIOMAN */
 #else
       common_pre_init(argc, argv, NULL);
       common_post_init(argc, argv, NULL);
@@ -94,7 +108,7 @@ int nm_launcher_init(int *argc, char**argv)
     padico_puk_init(*argc, &*argv);
   }
 
-#if defined(CONFIG_PADICO) || defined(PADICOTM)
+#if 0 && defined(CONFIG_PADICO) || defined(PADICOTM)
   /* Newmadico launcher, from an external PadicoTM or from pm2 module 'padicotm' */
   const char launcher_name[] = "NewMad_Launcher_newmadico";
 #else

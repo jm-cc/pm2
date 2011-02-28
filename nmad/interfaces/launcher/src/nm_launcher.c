@@ -108,13 +108,8 @@ int nm_launcher_init(int *argc, char**argv)
     padico_puk_init(*argc, &*argv);
   }
 
-#if 0 && defined(CONFIG_PADICO) || defined(PADICOTM)
-  /* Newmadico launcher, from an external PadicoTM or from pm2 module 'padicotm' */
-  const char launcher_name[] = "NewMad_Launcher_newmadico";
-#else
-  /* last resort: command-line launcher */
-  const char launcher_name[] = "NewMad_Launcher_cmdline";
-#endif
+  const char*launcher_name =
+    (puk_mod_getbyname("PadicoTM") != NULL) ? "NewMad_Launcher_newmadico" : "NewMad_Launcher_cmdline";
 
   /*
    * NewMad initialization is performed by component 'NewMad_Launcher_*'

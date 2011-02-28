@@ -137,7 +137,11 @@ AC_ARG_WITH([pioman],
 	    [AS_HELP_STRING([--with-pioman], [use pioman I/O manager @<:@default=no@:>@] )])
 if test "x${with_pioman}" = "xyes"; then
    PKG_CHECK_MODULES([pioman], [ pioman ])
+  requires_pioman="pioman"
+else
+  requires_pioman=
 fi
+AC_SUBST([requires_pioman])
 AC_SUBST(with_pioman)
 
 dnl -- Marcel
@@ -145,7 +149,11 @@ AC_ARG_WITH([marcel],
 	    [AS_HELP_STRING([--with-marcel], [use marcel threads @<:@default=no@:>@] )])
 if test "x${with_marcel}" = "xyes"; then
    PKG_CHECK_MODULES([marcel], [ marcel ])
+  requires_marcel="marcel"
+else
+  requires_marcel=
 fi
+AC_SUBST([requires_marcel])
 
 dnl -- ibverbs
 HAVE_INFINIBAND=no

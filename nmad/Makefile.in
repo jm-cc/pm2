@@ -35,6 +35,7 @@ SRC_DIRS += $(foreach strat, $(NMAD_STRATEGIES), strategies/strat_$(strat) )
 SRC_DIRS += $(foreach int,   $(NMAD_INTERFACES), interfaces/$(int)/src )
 CFLAGS   += $(foreach int,   $(NMAD_INTERFACES), -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, $(NMAD_INTERFACES), $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
+INSTALL_BIN += $(foreach int, $(NMAD_INTERFACES), $(wildcard $(srcdir)/interfaces/$(int)/bin/*) )
 
 # make multiple directories fit inside a single module
 SRC_FILES := $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))

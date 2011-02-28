@@ -49,7 +49,7 @@ AC_PROG_CC
 AC_PROG_CPP
 
 BASE_CFLAGS="-Wall"
-DEBUG_CFLAGS="-g"
+DEBUG_CFLAGS="-g -DDEBUG"
 OPT_CFLAGS="-O4 -march=native"
 CPICFLAGS="-fPIC"
 CDEPFLAGS="-MM"
@@ -78,11 +78,26 @@ dnl --------------------------------------------------------
 dnl -- base flags
 dnl --
 PIOMAN_CFLAGS="-DPIOMAN -I${pioman_srcdir}/include"
-AC_SUBST(PIOMAN_CFLAGS)
 
 PIOMAN_LIBS="-L${pioman_root}/lib -Wl,-rpath,${pioman_root}/lib -lpioman"
-AC_SUBST(PIOMAN_LIBS)
 
+AC_ARG_ENABLE(debug,
+	      [AS_HELP_STRING([ --enable-debug ], [ enable debug @<:@default=no@:>@] )],
+	      [ if test $enableval = yes; then 
+	            PIOMAN_CFLAGS="${PIOMAN_CFLAGS} ${DEBUG_CFLAGS}"
+	        fi
+	      ],
+	      [])
+AC_ARG_ENABLE(optimize,
+	      [AS_HELP_STRING([ --enable-optimize ], [ enable compiler optimizations @<:@default=no@:>@] )],
+	      [ if test $enableval = yes; then 
+	            PIOMAN_CFLAGS="${PIOMAN_CFLAGS} ${OPT_CFLAGS}"
+	        fi
+	      ],
+	      [])
+
+AC_SUBST(PIOMAN_CFLAGS)
+AC_SUBST(PIOMAN_LIBS)
 
 dnl -- external packages
 dnl --------------------------------------------------------

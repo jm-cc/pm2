@@ -1,4 +1,4 @@
-# Makefile for F77 Mad-MPI examples
+# Makefile for f77 Mad-MPI examples
 
 srcdir := @srcdir@
 VPATH  := $(srcdir)
@@ -18,18 +18,15 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
-
-CFLAGS  := $(shell pkg-config --cflags nmad)
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := $(shell pkg-config --libs nmad)
-
 include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-F77 = @F77@
-LD = $(F77)
-F77FLAGS = @FFLAGS@ @NMAD_CFLAGS@ -I@nmad_root@/include
+F77      := @nmad_root@/bin/mpif77
+F77FLAGS := 
+LD       := $(F77)
+LDFLAGS  :=
+LIBS     :=
 
 %.pic.o: %.f
 	@$(SHOWMK) "  [F77]    $@"

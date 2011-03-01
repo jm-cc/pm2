@@ -51,7 +51,7 @@ dnl --------------------------------------------------------
 
 dnl -- base CFLAGS
 dnl --
-NMAD_CFLAGS="-DNMAD -DNMAD_AUTOCONF -I${nmad_srcdir}/include -I${nmad_builddir}/include"
+NMAD_CFLAGS="-DNMAD -DNMAD_AUTOCONF -I${nmad_root}/include"
 
 dnl -- tag container
 dnl --
@@ -71,7 +71,11 @@ AC_ARG_ENABLE(tagarray,
                 fi
               ],
 	      [])
-NMAD_CFLAGS="${NMAD_CFLAGS} -DCONFIG_${tag_container}"
+case ${tag_container} in
+     TAG_AS_HASHTABLE)  AC_DEFINE([CONFIG_TAG_AS_HASHTABLE], [1], [use 32 bits tags in hashtable]);;
+     TAG_HUGE)          AC_DEFINE([CONFIG_TAG_HUGE], [1], [use 64 bits tags in hashtable]);;
+     TAG_AS_FLAT_ARRAY) AC_DEFINE([CONFIG_TAG_AS_FLAT_ARRAY], [1], [use 8 bits tags in arrays]);;
+esac
 AC_MSG_RESULT([${tag_container}])
 
 dnl -- sampling

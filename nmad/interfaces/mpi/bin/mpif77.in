@@ -33,7 +33,7 @@ verbose=0
 # consistently with the MPICH library chosen.  By including the library
 # and include paths here, we can use the same mpicc for a range of 
 # libraries and compilers, including ones for 32 and 64 bit systems.
-F77=$@F77@
+F77=@F77@
 F77LINKER=@F77@
 LDFLAGSBASE="@NMAD_LDFLAGS@"
 CFLAGS="@NMAD_CFLAGS@"
@@ -217,7 +217,7 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ -z "$LDFLAGS" ] ; then
         LDFLAGS="$LDFLAGSBASE"
     fi
-    $Show $F77LINKER $CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
+    $Show $F77LINKER $CFLAGS -Wall $LDFLAGS $linkobjs $linkargs ${LIBS}
     status=$?
 fi
 exit $status

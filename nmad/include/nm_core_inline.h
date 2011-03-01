@@ -240,7 +240,7 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 static __tbx_inline__ int
 nm_pw_free(struct nm_pkt_wrap *p_pw)
 {
-#if(defined(PIOMAN_POLL) && !defined(PIOM_DISABLE_LTASKS))
+#if(defined(PIOMAN_POLL))
   if(p_pw->ltask.state & PIOM_LTASK_STATE_SCHEDULED
      || p_pw->ltask.state & PIOM_LTASK_STATE_WAITING)
     {

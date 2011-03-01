@@ -71,7 +71,7 @@ void nm_unexpected_clean(struct nm_core*p_core)
 	  fprintf(stderr, "nm_unexpected_clean: chunk %p is still in use\n", chunk);
 #endif
 	  if(chunk->p_pw) {
-#if(defined(PIOMAN_POLL) && !defined(PIOM_DISABLE_LTASKS))
+#if(defined(PIOMAN_POLL))
   	    piom_ltask_completed(&chunk->p_pw->ltask);
 #else
 	    nm_so_pw_free(chunk->p_pw);
@@ -793,11 +793,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
     }
   /* stop polling for this pw */
 #ifdef PIOMAN_POLL
-#ifdef PIOM_DISABLE_LTASKS
-  piom_req_success(&p_pw->inst);
-#else  /* PIOM_DISABLE_LTASKS */
   piom_ltask_completed(&p_pw->ltask);
-#endif	/* PIOM_DISABLE_LTASKS */
 #endif /* PIOMAN_POLL */
 
 #ifdef NMAD_POLL

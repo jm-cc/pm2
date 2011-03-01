@@ -15,99 +15,6 @@
 
 #include <nm_private.h>
 
-#ifdef PIOMAN
-
-#ifdef PIOMAN_POLL
-/** Initialize PIOMan server for the given driver */
-static int nm_core_init_piom_drv(struct nm_core*p_core, struct nm_drv *p_drv)
-{
-  NM_LOG_IN();
-
-#ifdef PIOM_DISABLE_LTASKS
-
-  piom_server_init(&p_drv->server, "NMad IO Server");
-
-#ifdef  MARCEL_REMOTE_TASKLETS
-  /* drivers are bound to core #0 unless PIOM_POLL_VP is set */
-  /* todo: try to distribute this in order to allow concurrent polling */
-  int vp = 0;
-  char* ENV_PIOM_POLL_VP = getenv("PIOM_POLL_VP");
-  if(ENV_PIOM_POLL_VP)
-    vp = atoi(ENV_PIOM_POLL_VP);
-  
-  marcel_vpset_vp(&p_drv->vpset, vp%marcel_nbvps());
-  marcel_tasklet_set_vpset(&p_drv->server.poll_tasklet, &p_drv->vpset);
-#endif /* MARCEL_REMOTE_TASKLET */
-
-  piom_server_set_poll_settings(&p_drv->server,
-				PIOM_POLL_AT_TIMER_SIG
-				| PIOM_POLL_AT_IDLE
-				| PIOM_POLL_AT_YIELD
-				| PIOM_POLL_AT_CTX_SWITCH
-				| PIOM_POLL_WHEN_FORCED, 1, -1);
-
-  /* Définition des callbacks */
-  piom_server_add_callback(&p_drv->server, PIOM_FUNCTYPE_POLL_POLLONE,
-			   (piom_pcallback_t) {
-			     .func = &nm_piom_poll,
-			     .speed = PIOM_CALLBACK_NORMAL_SPEED
-			     }
-			   );
-
-#ifdef PIOM_BLOCKING_CALLS
-  if((p_drv->driver->get_capabilities(p_drv))->is_exportable)
-    {
-      //		piom_server_start_lwp(&p_drv->server, 1);
-      piom_server_add_callback(&p_drv->server, PIOM_FUNCTYPE_BLOCK_WAITONE,
-			       (piom_pcallback_t) {
-				 .func = &nm_piom_block,
-				 .speed = PIOM_CALLBACK_NORMAL_SPEED
-			       });
-    }
-#endif /* PIOM_BLOCKING_CALLS */
-
-  piom_server_start(&p_drv->server);
-
-  struct nm_pkt_wrap *post_rq = &p_drv->post_rq;
-  nm_so_pw_raz(post_rq);
-  post_rq->p_drv  = p_drv;
-
-  post_rq->trk_id = -1;
-  post_rq->p_gate = NULL;
-  post_rq->p_gdrv = NULL;
-  post_rq->drv_priv   = NULL;
-
-  post_rq->flags = 0;
-  post_rq->length = 0;
-
-  post_rq->v_size          = 0;
-  post_rq->v_nb            = 0;
-  post_rq->v = NULL;
-
-  post_rq->contribs = NULL;
-  post_rq->contribs_size = 0;
-  post_rq->n_contribs = 0;
-
-  piom_req_init(&post_rq->inst);
-  post_rq->inst.server=&p_drv->server;
-  post_rq->which = NM_PW_NONE;
-  post_rq->inst.priority=PIOM_REQ_PRIORITY_LOW;
-  post_rq->inst.state|=PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
-  piom_req_submit(&p_drv->server, &post_rq->inst);
-
-#else  /* PIOM_DISABLE_LTASKS */
-
-  nm_submit_post_drv_ltask(&p_drv->task, p_drv);
-
-#endif /* PIOM_DISABLE_LTASKS */
-
-  NM_LOG_OUT();
-  return 0;
-}
-
-#endif /* PIOMAN_POLL */
-
-#endif /* PIOMAN */
 
 
 /** Load a driver.
@@ -258,7 +165,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
 #ifdef PIOMAN_POLL
-  nm_core_init_piom_drv(p_core, p_drv);
+  nm_submit_post_drv_ltask(&p_drv->task, p_drv);
 #endif
 
   nm_ns_update(p_core, p_drv);
@@ -394,11 +301,11 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
-#if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
+#if(defined(PIOMAN))
   nmad_unlock();
   piom_ltask_pause();
   nmad_lock();
-#endif	/* PIOM_DISABLE_LTASKS */
+#endif	/* PIOMAN */
 
   nm_lock_interface(p_core);
   struct nm_drv*p_drv = NULL;
@@ -409,12 +316,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
        */
       nmad_unlock();
       nm_unlock_interface(p_core);
-
-#ifndef PIOM_DISABLE_LTASKS
       piom_ltask_cancel(&p_drv->task);
-#endif	/* PIOM_DISABLE_LTASKS */
-
-      piom_server_stop(&p_drv->server);
       nm_lock_interface(p_core);
       nmad_lock();
 #endif /* PIOMAN_POLL */
@@ -438,10 +340,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 #if defined(NMAD_POLL)
 		  tbx_fast_list_del(&p_pw->link);
 		  nm_so_pw_free(p_pw);
-#elif defined(PIOM_DISABLE_LTASKS)
-		  piom_req_success(&p_pw->inst);
-		  nm_so_pw_free(p_pw);
-#else /* ltasks */
+#else
 		  piom_ltask_cancel(&p_pw->ltask);
 		  nm_pw_free(p_pw);		  
 #endif
@@ -451,7 +350,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
-#if(defined(PIOMAN) && !defined(PIOM_DISABLE_LTASKS))
+#if(defined(PIOMAN))
   piom_ltask_resume();
   piom_exit_ltasks();
 #endif

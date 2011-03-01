@@ -109,13 +109,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->proto_id);
 
 #ifdef PIOMAN_POLL
-#ifdef PIOM_DISABLE_LTASKS
-  piom_req_init(&p_pw->inst);
-  p_pw->inst.server = &p_pw->p_drv->server;
-  p_pw->which = NM_PW_RECV;
-#else
   piom_ltask_init(&p_pw->ltask);
-#endif	/* PIOM_DISABLE_LTASKS */
 #endif /* PIOMAN_POLL */
 
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -149,17 +143,7 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 		p_pw->trk_id,
 		p_pw->proto_id);
 #ifndef NMAD_POLL
-#ifdef PIOM_DISABLE_LTASKS
-      p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST | PIOM_STATE_ONE_SHOT;
-      /* TODO : implementer les syscall */
-#ifdef PIOM_BLOCKING_CALLS
-      if (! ((r->driver->get_capabilities(p_pw->p_drv))->is_exportable))
-	p_pw->inst.func_to_use = PIOM_FUNC_POLLING;
-#endif /* PIOM_BLOCKING_CALLS */
-      piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-#else  /* PIOM_DISABLE_LTASKS */
       nm_submit_poll_recv_ltask(p_pw);      
-#endif /* PIOM_DISABLE_LTASKS */
 #endif /* NMAD_POLL */
 
     }
@@ -310,11 +294,7 @@ int nm_piom_block_recv(struct nm_pkt_wrap  *p_pw)
     NM_LOGF("drv->wait_recv returned %d", err);
   }
 
-#ifdef PIOM_DISABLE_LTASKS
-  piom_req_success(&p_pw->inst);
-#else
   piom_ltask_completed(&p_pw->ltask);
-#endif	/* PIOM_DISABLE_LTASKS */
 
   /* process complete request */
   err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);

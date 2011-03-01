@@ -480,18 +480,6 @@ extern int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 extern int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req);
 
 
-#if 0
-static inline int nm_sr_disable_progression(nm_session_t p_session)
-{
-  return nm_core_disable_progression(p_session->p_core);
-}
-
-static inline int nm_sr_enable_progression(nm_session_t p_session)
-{
-  return nm_core_enable_progression(p_session->p_core);
-}
-#endif
-
 /* @} */
 
 #include <nm_sendrecv_private.h> /* private header included for inlining */

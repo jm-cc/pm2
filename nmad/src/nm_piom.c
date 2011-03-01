@@ -21,30 +21,6 @@
 
 #ifdef PIOMAN_POLL
 
-#ifdef PIOM_DISABLE_LTASKS
-int nm_piom_poll(piom_server_t            server,
-		 piom_op_t                _op,
-		 piom_req_t               req,
-		 int                       nb_ev,
-		 int                       option)
-{
-  nmad_lock();
-  struct nm_pkt_wrap * pkt= struct_up(req, struct nm_pkt_wrap, inst);
-  int err;
-  
-  if (pkt->which == NM_PW_SEND)
-    err = nm_poll_send(pkt);
-  else if(pkt->which == NM_PW_RECV)
-    err = nm_poll_recv(pkt);
-  else
-    err = nm_piom_post_all(pkt->p_drv->p_core);
-
-  PROF_EVENT(piom_polling_done);
-  nmad_unlock();
-  return err;
-}
-#endif	/* PIOM_DISABLE_LTASKS */
-
 /* Posting functions */
 int nm_piom_post_all(struct nm_core	 *p_core)
 {

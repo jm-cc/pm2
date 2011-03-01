@@ -68,29 +68,6 @@ int nm_schedule(struct nm_core *p_core)
 }
 
 
-#ifdef PIOMAN_POLL
-int nm_core_disable_progression(struct nm_core*p_core)
-{
-  struct nm_drv*p_drv;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      piom_pause_server(&p_drv->server);
-    }
-  return 0;
-}
-
-int nm_core_enable_progression(struct nm_core *p_core)
-{
-  struct nm_drv*p_drv;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      piom_resume_server(&p_drv->server);
-    }
-  return 0;
-}
-#endif	/* PIOMAN_POLL */
-
-
 /** Add an event monitor to the list */
 void nm_so_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m)
 {
@@ -189,10 +166,10 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   nmad_lock_init(p_core);
   nm_lock_interface_init(p_core);
   nm_lock_status_init(p_core);  
-#if(!defined(PIOM_DISABLE_LTASKS) && defined(PIOMAN_POLL))
+#if(defined(PIOMAN_POLL))
   piom_init_ltasks();
   nm_ltask_set_policy();
-#endif	/* PIOM_DISABLE_LTASKS */
+#endif	/* PIOM_POLL */
 #endif /* PIOMAN */
 
   *pp_core = p_core;

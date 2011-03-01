@@ -273,25 +273,6 @@ int nm_schedule(nm_core_t p_core);
 #endif
 
 
-/* The following functions are deprecated- don't use! */
-
-#ifdef PIOMAN_POLL
-int nm_core_disable_progression(struct nm_core*p_core);
-
-int nm_core_enable_progression(struct nm_core*p_core);
-
-#else /* PIOMAN_POLL */
-static inline int nm_core_disable_progression(struct nm_core*p_core)
-{
-  return 0;
-}
-static inline int nm_core_enable_progression(struct nm_core*p_core)
-{
-  return 0;
-}
-#endif /* PIOMAN_POLL */
-
-
 
 #endif /* NM_CORE_INTERFACE_H */
 

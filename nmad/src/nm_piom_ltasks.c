@@ -16,8 +16,6 @@
 #include <nm_private.h>
 #if PIOMAN_POLL
 
-#ifndef PIOM_DISABLE_LTASKS
-
 /* specify the binding policy of communication requests.
  * All these policies can be specified to NewMadeleine using 
  * the NM_BINDING_POLICY environment variable
@@ -301,7 +299,6 @@ void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
   piom_ltask_submit(task);	
 }
 
-#endif /* PIOM_DISABLE_LTASKS */
-#else
+#else /* PIOMAN_POLL */
 
 #endif /* PIOMAN_POLL */

@@ -73,9 +73,6 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
   
-#if(defined(PIOMAN_POLL) && defined(PIOM_DISABLE_LTASKS))
-  piom_req_success(&p_pw->inst);
-#endif
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_SEND_PACKET, p_pw, p_pw->p_drv, p_pw->trk_id);
   
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
@@ -140,13 +137,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 	    p_pw->trk_id,
 	    p_pw->proto_id);
 #ifdef PIOMAN_POLL
-#ifdef PIOM_DISABLE_LTASKS
-    piom_req_init(&p_pw->inst);
-    p_pw->inst.server = &p_pw->p_drv->server;
-    p_pw->which = NM_PW_SEND;
-#else
   piom_ltask_init(&p_pw->ltask);
-#endif	/* PIOM_DISABLE_LTASKS */
 #endif /* PIOMAN_POLL */
 
 #ifdef PIO_OFFLOAD
@@ -169,7 +160,6 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 		p_pw->trk_id,
 		p_pw->proto_id);
 
-      /* todo: clean that mess ! */
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
       nm_poll_lock_out(p_pw->p_gate->p_core, p_pw->p_drv);
@@ -178,21 +168,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 
 #else /* NMAD_POLL */
 
-#ifdef PIOM_DISABLE_LTASKS
-      /* Submit  the pkt_wrapper to Pioman */
-      piom_req_init(&p_pw->inst);
-#ifdef PIOM_BLOCKING_CALLS
-      /* TODO : implementer les syscalls */
-      if (! ((r->driver->get_capabilities(p_pw->p_drv))->is_exportable))
-	p_pw->inst.func_to_use = PIOM_FUNC_POLLING;
-#endif /* PIOM_BLOCKING_CALLS */
-      p_pw->inst.state |= PIOM_STATE_DONT_POLL_FIRST|PIOM_STATE_ONE_SHOT;
-      p_pw->which = NM_PW_SEND;
-      piom_req_submit(&p_pw->p_drv->server, &p_pw->inst);
-
-#else  /* PIOM_DISABLE_LTASKS */
       nm_submit_poll_send_ltask(p_pw);
-#endif	/* PIOM_DISABLE_LTASKS */
 
 #endif /* NMAD_POLL */
 

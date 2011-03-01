@@ -17,7 +17,6 @@
 #define NM_PIOM_LTASKS_H
 
 #ifdef PIOMAN_POLL
-#ifndef PIOM_DISABLE_LTASKS
 
 #include "nm_private.h"
 /* retrieve the binding policy */
@@ -51,7 +50,6 @@ void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw);
 void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core);
 void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw);
 void nm_submit_post_drv_ltask(struct piom_ltask *task, struct nm_drv *p_drv);
-#endif /* PIOM_DISABLE_LTASKS */
 
 #endif /* PIOMAN_POLL */
 

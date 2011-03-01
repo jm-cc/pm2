@@ -17,7 +17,6 @@
 #include <nm_launcher.h>
 #include <nm_sendrecv_interface.h>
 #include <nm_pack_interface.h>
-#include <ccs_public.h>
 #include <tbx.h>
 
 static int is_server = -1;

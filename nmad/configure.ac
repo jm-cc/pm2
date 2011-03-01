@@ -81,6 +81,7 @@ AC_ARG_ENABLE(mpi,
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
 		    nmad_interfaces="${nmad_interfaces} mpi"
+		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
 	        fi
 	      ],
 	      [])
@@ -242,7 +243,7 @@ AC_SUBST(nmad_interfaces)
 
 
 
-out_sh="bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample"
+out_sh="${out_sh} bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample"
 out_mk="Makefile examples/sendrecv/Makefile nmad.pc"
 
 dnl -- output 

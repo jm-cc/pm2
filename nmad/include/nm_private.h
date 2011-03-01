@@ -112,8 +112,6 @@ typedef uint16_t nm_drv_id_t;
 
 #include "nm_sampling.h"
 
-#include <ccs_public.h>
-
 TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 
 TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
@@ -161,15 +159,5 @@ static inline int nm_so_iov_len(const struct iovec *iov, int nb_entries)
     }
   return len;
 }
-/** Compute the cumulated size of a datatype segment.
- */
-static inline int nm_so_datatype_size(const struct DLOOP_Segment *segp)
-{
-  DLOOP_Handle handle = segp->handle;
-  int data_sz;
-  CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
-  return data_sz;
-}
-
 
 #endif /* NM_PRIVATE_H */

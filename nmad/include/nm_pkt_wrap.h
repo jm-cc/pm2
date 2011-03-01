@@ -18,8 +18,6 @@
 
 #include <sys/uio.h>
 
-#include <ccs_public.h>
-
 /** @name Packet wrapper flags.
  * Flag constants for the flag field of pw.
  */
@@ -148,10 +146,6 @@ struct nm_pkt_wrap
 
   tbx_tick_t start_transfer_time;
   
-  struct DLOOP_Segment *segp;
-  /** Current position in the datatype */
-  DLOOP_Offset datatype_offset;
-
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];
 
@@ -176,10 +170,6 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 
 void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
 		       const void *data, uint32_t len, uint32_t offset, int flags);
-
-int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-			  uint32_t len, const struct DLOOP_Segment *segp);
-
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 

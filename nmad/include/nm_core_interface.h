@@ -207,7 +207,7 @@ static inline void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack,
 
 void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries);
 
-void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const struct CCSI_Segment *segp);
+void nm_core_pack_datatype(nm_core_t p_core, struct nm_pack_s*p_pack, const void*_datatype);
 
 int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_tag_t tag, nm_gate_t p_gate, nm_so_flag_t flags);
 
@@ -222,7 +222,7 @@ static inline void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s
 
 void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct iovec*iov, int num_entries);
 
-void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct CCSI_Segment*segp);
+void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void*_datatype);
 
 int nm_core_unpack_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct nm_gate *p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask);
 

@@ -210,9 +210,9 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 
 static void
 strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
-				      uint32_t len, const struct DLOOP_Segment *segp)
+				      uint32_t len, const void*_datatype)
 {
-
+#if 0
   struct nm_pkt_wrap *p_pw;
   struct nm_so_strat_split_balance*status = _status;
 
@@ -237,12 +237,14 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
   nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
   tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
   status->nb_packets++;
+#endif
 }
 
 static void
 strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
-					  uint32_t len, const struct DLOOP_Segment *segp)
+					  uint32_t len, const void*_datatype)
 {
+#if 0
   struct nm_pkt_wrap *p_pw = NULL;
   
   /* First allocate a packet wrapper */
@@ -279,6 +281,7 @@ strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
   union nm_so_generic_ctrl_header ctrl;
   nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
   strat_split_balance_pack_ctrl(_status, p_pack->p_gate, &ctrl);
+#endif
 }
 
 static int strat_split_balance_todo(void*_status,
@@ -331,19 +334,13 @@ static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
     }
   else if(p_pack->status & NM_PACK_TYPE_DATATYPE)
     {
-      struct DLOOP_Segment *segp = p_pack->data;
-      DLOOP_Handle handle = segp->handle;
-      int data_sz;
-      CCSI_datadesc_get_size_macro(handle, data_sz); // * count?
-#warning a revoir dans ccs
-      //data_sz *= segp->handle.ref_count;
-      if(data_sz <= status->nm_so_max_small)
+      if(len <= status->nm_so_max_small)
 	{
-	  strat_split_balance_agregate_datatype(_status, p_pack, data_sz, segp);
+	  strat_split_balance_agregate_datatype(_status, p_pack, len, NULL);
 	}
       else 
 	{
-	  strat_split_balance_launch_large_datatype(_status, p_pack, data_sz, segp);
+	  strat_split_balance_launch_large_datatype(_status, p_pack, len, NULL);
 	}
     }
   return NM_ESUCCESS;

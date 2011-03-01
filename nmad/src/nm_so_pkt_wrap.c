@@ -346,34 +346,6 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     }
 }
 
-// function dedicated to the datatypes which do not require a rendezvous
-int nm_so_pw_add_datatype(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-			  uint32_t len, const struct DLOOP_Segment *segp)
-{
-  if(len) 
-    {
-      const uint32_t size = nm_so_aligned(len);
-      DLOOP_Offset first = 0;
-      DLOOP_Offset last  = len;
-      {
-	struct iovec *vec =  &p_pw->v[0];
-	/* Add header */
-	struct nm_so_data_header *h = vec->iov_base + vec->iov_len;
-	nm_so_init_data(h, p_pack->tag, p_pack->seq, NM_PROTO_FLAG_LASTCHUNK | NM_PROTO_FLAG_ALIGNED, 0, len, 0);
-	vec->iov_len += NM_SO_DATA_HEADER_SIZE;
-	p_pw->length += NM_SO_DATA_HEADER_SIZE;
-      }
-      
-      /* flatten datatype into contiguous memory */
-      CCSI_Segment_pack(segp, first, &last, p_pw->v[0].iov_base + p_pw->v[0].iov_len);
-      
-      p_pw->v[0].iov_len += size;
-      p_pw->length += size;
-      nm_pw_add_contrib(p_pw, p_pack, len);
-    }
-
-  return NM_ESUCCESS;
-}
 
 /** Finalize the incremental building of the packet.
  *

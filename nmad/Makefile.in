@@ -29,7 +29,7 @@ NMAD_STRATEGIES = @nmad_strategies@
 NMAD_INTERFACES = @nmad_interfaces@
 
 # compute flags and directories from options
-SRC_DIRS += src ccs
+SRC_DIRS += src
 SRC_DIRS += $(foreach drv,   $(NMAD_DRIVERS),    drivers/$(drv) )
 SRC_DIRS += $(foreach strat, $(NMAD_STRATEGIES), strategies/strat_$(strat) )
 SRC_DIRS += $(foreach int,   $(NMAD_INTERFACES), interfaces/$(int)/src )

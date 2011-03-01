@@ -20,9 +20,6 @@
 
 #include <nm_private.h>
 
-#include <ccs_public.h>
-#include <segment.h>
-
 static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 				  const void*ptr, nm_so_short_data_header_t*h, struct nm_pkt_wrap *p_pw);
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
@@ -180,10 +177,7 @@ static void nm_so_copy_data(struct nm_unpack_s*p_unpack, uint32_t chunk_offset, 
 	}
       else if(p_unpack->status & NM_UNPACK_TYPE_DATATYPE)
 	{
-	  /* data is described by a datatype */
-	  DLOOP_Offset last = chunk_offset + len;
-	  struct DLOOP_Segment*const segp = p_unpack->data;
-	  CCSI_Segment_unpack(segp, chunk_offset, &last, ptr);
+	  padico_fatal("nmad: copy data for datatype- not supported");
 	}	    
     }
 }
@@ -247,9 +241,9 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   nm_unexpected_mem_size++;
   if(nm_unexpected_mem_size > 32*1024)
     {
-      fprintf(stderr, "nmad: warning- %d unexpected chunks allocated.\n", nm_unexpected_mem_size);
+      fprintf(stderr, "nmad: warning- %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
-	TBX_FAILUREF("nmad: %d unexpected chunks allocated.\n", nm_unexpected_mem_size);
+	TBX_FAILUREF("nmad: %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
     }
 #warning Paulette: lock
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
@@ -264,12 +258,10 @@ void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, stru
 
 }
 
-void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct CCSI_Segment*segp)
+void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void*_datatype)
 { 
   p_unpack->status = NM_UNPACK_TYPE_DATATYPE;
-  p_unpack->data = segp;
-  p_unpack->cumulated_len = 0;
-  p_unpack->expected_len = nm_so_datatype_size(segp);
+  padico_fatal("nmad: unpack datatype- not supported.");
 }
 
 /** Handle an unpack request.
@@ -815,27 +807,8 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       /* ** Large packet - track #1 ************************ */
       struct nm_unpack_s*p_unpack = p_pw->p_unpack;
       const uint32_t len = p_pw->length;
-      if(p_unpack->status & NM_UNPACK_TYPE_COPY_DATATYPE)
-	{
-	  /* ** Large packet, packed datatype -> finalize */
-	  DLOOP_Offset last = p_pw->length;
-	  /* unpack contigous data into their final destination */
-	  CCSI_Segment_unpack(p_pw->segp, 0, &last, p_pw->v[0].iov_base);
-	  nm_so_unpack_check_completion(p_core, p_unpack, len);
-	  if(last < p_pw->length)
-	    {
-	      /* we are expecting more data */
-	      p_pw->v[0].iov_base += last;
-	      p_pw->v[0].iov_len -= last;
-	      nm_core_post_recv(p_pw, p_gate, NM_TRK_LARGE, p_pw->p_drv);
-	      goto out;
-	    }
-	}
-      else
-	{
-	  /* ** Large packet, data received directly in its final destination */
-	  nm_so_unpack_check_completion(p_core, p_unpack, len);
-	}
+      /* ** Large packet, data received directly in its final destination */
+      nm_so_unpack_check_completion(p_core, p_unpack, len);
       nm_pw_free(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }

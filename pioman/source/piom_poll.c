@@ -223,9 +223,7 @@ piom_poll_timer(unsigned long hid)
     if(__piom_core_status[cur_vp]  & PIOM_CORE_STATUS_POLLING)
 	return;
 
-#ifndef PIOM_DISABLE_LTASKS
     piom_ltask_schedule();
-#endif
 
     PIOM_LOGF("Timer function for [%s]\n", server->name);
 #ifdef PIOM_USE_TASKLETS
@@ -250,9 +248,7 @@ __piom_check_polling(unsigned polling_point)
 	piom_shs_poll(); 
 #endif
 
-#ifndef PIOM_DISABLE_LTASKS
     piom_ltask_schedule();
-#endif
     if( tbx_fast_list_empty(&piom_list_poll))
 	return;	
 

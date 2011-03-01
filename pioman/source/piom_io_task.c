@@ -16,7 +16,7 @@
 
 /* TODO: use poll instead of select */
 
-#ifndef PIOM_DISABLE_LTASKS
+
 #include "pioman.h"
 
 #ifdef MARCEL
@@ -401,5 +401,3 @@ void piom_io_task_init(void)
 	marcel_unregister_scheduling_hook(marcel_check_polling, MARCEL_SCHEDULING_POINT_CTX_SWITCH);
 #endif /* MARCEL */
 }
-
-#endif	/* PIOM_DISABLE_LTASKS */

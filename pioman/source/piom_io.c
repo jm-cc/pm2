@@ -574,7 +574,7 @@ piom_io_fast_poll(piom_server_t server,
 	return 0;
 }
 
-#ifdef PIOM_DISABLE_LTASKS
+#if 0 /* PIOM_DISABLE_LTASKS */
 
 /* Function that reads a fd and uses PIOMan */
 int 

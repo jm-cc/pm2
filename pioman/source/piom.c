@@ -25,26 +25,6 @@
  * See piom_io.c for an implementation example
  */
 
-/*
- * Compatibility stuff
- * TODO: is this still used somewhere ?
- */
-#define MAX_POLL_IDS    16
-
-/* TODO: dupliquer les fonctions de lock, unlock pour support sans Marcel */
-#ifdef MARCEL
-typedef struct per_lwp_polling_s {
-    int *data;
-    int value_to_match;
-    void (*func) (void *);
-    void *arg;
-    marcel_t task;
-    volatile tbx_bool_t blocked;
-    struct piom_per_lwp_polling_s *next;
-} piom_per_lwp_polling_t;
-#endif	/* MARCEL */
-
-/* End of compatibility stuff */
 
 /* piom_list_poll is the list that contains the polling servers that 
  * have something to poll

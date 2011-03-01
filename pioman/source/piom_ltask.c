@@ -18,8 +18,6 @@
 
 #include <pioman.h>
 
-#ifndef PIOM_DISABLE_LTASKS
-
 #define PIOM_MAX_LTASK 256
 
 //#define USE_GLOBAL_QUEUE 1
@@ -609,4 +607,3 @@ piom_vpset_t piom_get_parent_core(unsigned vp) { return piom_vpset_full; }
 
 #endif /* MARCEL */
 
-#endif /* PIOM_DISABLE_LTASKS */

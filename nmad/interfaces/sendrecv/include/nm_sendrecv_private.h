@@ -86,19 +86,6 @@ static inline void nm_sr_request_signal(nm_sr_request_t*p_request, nm_sr_status_
 {
   piom_cond_signal(&p_request->status, mask);
 }
-/** Post PIOMan poll requests (except when offloading PIO)
- */
-static inline void nm_so_post_all(nm_core_t p_core)
-{
-}
-/** Post PIOMan poll requests even when offloading PIO.
- * This avoids scheduling a tasklet on another lwp
- */
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{
-	/* todo: add a kind of ma_tasklet_schedule here */
-  /*  nm_piom_post_all(p_core); */
-}
 #else /* PIOMAN_POLL */
 static inline void  nm_sr_status_init(nm_sr_cond_t*status, nm_sr_status_t bitmask)
 {
@@ -130,10 +117,6 @@ static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask
       }
     }
 }
-static inline void nm_so_post_all(nm_core_t p_core)
-{ /* do nothing */ }
-static inline void nm_so_post_all_force(nm_core_t p_core)
-{ /* do nothing */ }
 #endif /* PIOMAN_POLL */
 
 /* ** Tags mangling **************************************** */
@@ -230,7 +213,6 @@ static inline int nm_sr_send_isend(nm_session_t p_session, nm_sr_request_t*p_req
   NM_CORE_TAG_INIT_NONE(core_tag);
   nm_sr_tag_build(p_session, tag, &core_tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, 0);
-  nm_so_post_all(p_core);
   return err;
 }
 static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -241,7 +223,6 @@ static inline int nm_sr_send_issend(nm_session_t p_session, nm_sr_request_t*p_re
   NM_CORE_TAG_INIT_NONE(core_tag);
   nm_sr_tag_build(p_session, tag, &core_tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, NM_PACK_SYNCHRONOUS);
-  nm_so_post_all(p_core);
   return err;
 }
 static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_request,
@@ -252,7 +233,6 @@ static inline int nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_req
   NM_CORE_TAG_INIT_NONE(core_tag);
   nm_sr_tag_build(p_session, tag, &core_tag);
   const int err = nm_core_pack_send(p_core, &p_request->req.pack, core_tag, p_gate, 0);
-  nm_so_post_all(p_core);
   return err;
 }
 

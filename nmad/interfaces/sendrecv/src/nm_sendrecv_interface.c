@@ -197,7 +197,6 @@ int nm_sr_swait(nm_session_t p_session, nm_sr_request_t *p_request)
 
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_SEND_COMPLETED))
     {
-      nm_so_post_all_force(p_core);
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_SEND_COMPLETED, p_core);
     }
 
@@ -268,7 +267,6 @@ int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request)
 	    nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED));
   if(!nm_sr_status_test(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED)) 
     {
-      nm_so_post_all_force(p_core);
       nm_sr_status_wait(&p_request->status, NM_SR_STATUS_RECV_COMPLETED | NM_SR_STATUS_RECV_CANCELLED, p_core);
     }
   NM_TRACEF("request %p completed\n", p_request);

@@ -132,11 +132,6 @@ TBX_INTERNAL void nm_post_in_drv(struct nm_drv *p_drv);
 TBX_INTERNAL int nm_poll_send(struct nm_pkt_wrap *p_pw);
 TBX_INTERNAL int nm_poll_recv(struct nm_pkt_wrap*p_pw);
 
-#ifndef PIOM_POLLING_DISABLED
-
-TBX_INTERNAL int nm_piom_post_all(nm_core_t p_core);
-
-#endif /* PIOM_POLLING_DISABLED */
 
 /* ** SchedOpt internal functions */
 

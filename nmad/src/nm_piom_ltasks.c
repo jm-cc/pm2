@@ -211,12 +211,14 @@ int nm_post_send_task(void *args)
 
 int nm_post_task(void *args)
 {
-  struct nm_core * p_core=args;
+  struct nm_core * p_core = args;
   int ret = -NM_EUNKNOWN;
-  if(nmad_trylock()){
-    ret = nm_piom_post_all(p_core);
-    nmad_unlock();
-  }
+  if(nmad_trylock())
+    {
+      nm_sched_out(p_core);
+      nm_sched_in(p_core);
+      nmad_unlock();
+    }
   return ret;
 }
 
@@ -225,7 +227,16 @@ int nm_post_on_drv_task(void *args)
   struct nm_drv * p_drv = args;
   int ret;
   nmad_lock();
-  ret = nm_piom_post_on_drv(p_drv);
+  nm_try_and_commit(p_drv->p_core);
+
+  /* schedule & post out requests */
+  nm_post_out_drv(p_drv);
+  nm_poll_out_drv(p_drv);  
+  
+  /* post new receive requests */
+  nm_refill_in_drv(p_drv);
+  nm_post_in_drv(p_drv);
+
   nmad_unlock();
   return ret;
 }

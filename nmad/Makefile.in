@@ -12,7 +12,7 @@ SUBDIRS =
 
 INSTALL_BIN       = $(TARGET_BIN) bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample
 INSTALL_LIB       = $(TARGET_LIB)
-INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h)
+INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h) @nmad_builddir@/include/nm_config.h
 INSTALL_PKGCONFIG = nmad.pc
 
 INSTALL_PREFIX := @nmad_root@

@@ -1,0 +1,36 @@
+/** @file public config for nmad.
+ * This file contains only prefixed symbols and may be safely installed
+ */
+
+/* enable ibverbs support */
+#undef CONFIG_IBVERBS
+
+/* enable MX support */
+#undef CONFIG_MX
+
+/* use 8 bits tags in arrays */
+#undef CONFIG_TAG_AS_FLAT_ARRAY
+
+/* use 32 bits tags in hashtable */
+#undef CONFIG_TAG_AS_HASHTABLE
+
+/* use 64 bits tags in hashtable */
+#undef CONFIG_TAG_HUGE
+
+/* enable Mad-MPI */
+#undef MAD_MPI
+
+/* GNU gfortran Fortran support */
+#undef NMAD_FORTRAN_TARGET_GFORTRAN
+
+/* Intel ifort Fortran support */
+#undef NMAD_FORTRAN_TARGET_IFORT
+
+/* no Fortran support */
+#undef NMAD_FORTRAN_TARGET_NONE
+
+/* enable NUIOA */
+#undef PM2_NUIOA
+
+/* enable sampling */
+#undef NMAD_SAMPLING

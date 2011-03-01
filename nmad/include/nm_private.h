@@ -18,7 +18,7 @@
 #define NM_PRIVATE_H
 
 #ifdef NMAD_AUTOCONF
-#include "nm_config.h"
+#include "nm_private_config.h"
 #include <Padico/Puk.h>
 #include <tbx.h>
 #ifdef PIOMAN

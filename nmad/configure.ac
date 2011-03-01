@@ -5,7 +5,7 @@ dnl -- contains excerpts from PadicoTM configure.ac
 AC_PREREQ(2.50)
 AC_REVISION($Revision: 3960 $)
 AC_INIT(include/nm_public.h)
-AC_CONFIG_HEADER(include/nm_config.h)
+AC_CONFIG_HEADER(include/nm_private_config.h include/nm_config.h)
 
 
 dnl -- directories
@@ -83,7 +83,7 @@ dnl --
 AC_ARG_ENABLE(sampling,
 	      [  --enable-sampling  Enable network sampling],
 	      [ if test $enableval = yes; then
-	            AC_DEFINE([SAMPLING], 1, [enable sampling])
+	            AC_DEFINE([NMAD_SAMPLING], 1, [enable sampling])
 	        fi
 	      ],
 	      [])

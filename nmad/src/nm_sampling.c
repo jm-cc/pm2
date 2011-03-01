@@ -135,7 +135,7 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
 }
 
 
-#ifdef SAMPLING
+#ifdef NMAD_SAMPLING
 static int compare_lat(const void*_drv1, const void*_drv2)
 {
   const struct nm_drv**pp_drv1 = (const struct nm_drv**)_drv1;
@@ -152,7 +152,7 @@ static int compare_lat(const void*_drv1, const void*_drv2)
 }
 #endif
 
-#ifdef SAMPLING
+#ifdef NMAD_SAMPLING
 static int compare_bw(const void*_drv1, const void*_drv2)
 {
   const struct nm_drv**pp_drv1 = (const struct nm_drv**)_drv1;
@@ -186,7 +186,7 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
   nm_ns.nb_drvs = p_core->nb_drivers;
 
   /* load samples from disk */
-#ifdef SAMPLING
+#ifdef NMAD_SAMPLING
   struct nm_sampling_set_s*p_set = TBX_MALLOC(sizeof(struct nm_sampling_set_s));
   nm_ns_parse_sampling(p_set, p_drv);
   if(nm_ns.sampling_sets == NULL)
@@ -204,7 +204,7 @@ int nm_ns_update(struct nm_core*p_core, struct nm_drv*p_drv)
       nm_ns.p_drvs_by_lat[i] = p_drv;
       i++;
     }
-#ifdef SAMPLING
+#ifdef NMAD_SAMPLING
   qsort(nm_ns.p_drvs_by_bw, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_bw);
   qsort(nm_ns.p_drvs_by_lat, nm_ns.nb_drvs, sizeof(struct nm_drv*), compare_lat);
 #endif
@@ -295,7 +295,7 @@ int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_d
 int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
 			       int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
-#ifndef SAMPLING
+#ifndef NMAD_SAMPLING
   {
     int assigned_len = 0;
     int chunk_index = 0;
@@ -314,7 +314,7 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       }
     *nb_chunks = chunk_index;
   }
-#else /* SAMPLING */
+#else /* NMAD_SAMPLING */
   {
     /** @warning we suppose each driver will be used here.
      * It is up to the strategy to decided whether all drivers have to be used.
@@ -337,7 +337,7 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       }
     chunks[i].len = tbx_aligned(pending_len, sizeof(uint32_t));
   }
-#endif /* SAMPLING */
+#endif /* NMAD_SAMPLING */
 
   return NM_ESUCCESS;
 }

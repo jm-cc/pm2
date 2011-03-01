@@ -1702,8 +1702,7 @@ int MPI_Recv(void *buffer,
              MPI_Comm comm,
              MPI_Status *status) {
   MPI_Request           request;
-  MPI_Request          *request_ptr = &request;
-  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_request_t       *mpir_request = (mpir_request_t *)&request;
   mpir_communicator_t  *mpir_communicator;
   int                  err = 0;
 

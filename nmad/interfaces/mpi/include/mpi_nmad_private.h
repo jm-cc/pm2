@@ -143,7 +143,7 @@ typedef struct mpir_request_s {
   int count;
   /** pointer to the data to be exchanged */
   void *buffer;
-} mpir_request_t;
+} __attribute__((__may_alias__)) mpir_request_t;
 /* @} */
 
 /** @name Reduce operators */

@@ -304,7 +304,11 @@ static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
       assert(p_pw->v_nb == 1);
       struct nm_pkt_wrap*p_pw_recv = NULL;
       int rc = NM_SYS(read)(fd, &p_pw_recv, sizeof(p_pw_recv));
-      assert(rc == sizeof(p_pw_recv));
+      if(rc != sizeof(p_pw_recv))
+	{
+	  fprintf(stderr, "nmad: self- error while sending large data.\n");
+	  abort();
+	}
       assert(p_pw_recv->v[0].iov_len == p_pw->v[0].iov_len);
       memcpy(p_pw_recv->v[0].iov_base, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
       p_pw_recv->drv_priv = (void*)0x01;
@@ -334,7 +338,11 @@ static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
       p_pw->drv_priv = NULL;
       const int fd = status->fd[3];
       int rc = NM_SYS(write)(fd, &p_pw, sizeof(p_pw));
-      assert(rc == sizeof(p_pw));
+      if(rc != sizeof(p_pw))
+	{
+	  fprintf(stderr, "nmad: self- received truncated data.\n");
+	  abort();
+	}
       return -NM_EAGAIN;
     }
 }

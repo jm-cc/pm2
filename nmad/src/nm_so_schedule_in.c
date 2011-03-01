@@ -813,7 +813,6 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       nm_so_process_large_pending_recv(p_gate);
     }
 
- out:
   /* Hum... Well... We're done guys! */
   err = NM_ESUCCESS;
   return err;

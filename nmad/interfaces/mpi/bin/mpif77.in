@@ -15,21 +15,6 @@
 
 # Main program
 
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_ROOT="@abs_top_srcdir@"
-PM2_SRCROOT="@abs_top_srcdir@"
-PM2_OBJROOT="@abs_top_builddir@"
-export PATH PM2_ROOT PM2_SRCROOT PM2_OBJROOT
-
-if [ "$1" = "-flavor" ]
-then
-    shift
-    PM2_FLAVOR=$1
-    shift
-else
-    PM2_FLAVOR="${PM2_FLAVOR:-@PM2_DEFAULT_FLAVOR@}"
-fi
-export PM2_FLAVOR
 
 DoLink=1
 DoCompile=0
@@ -48,15 +33,12 @@ verbose=0
 # consistently with the MPICH library chosen.  By including the library
 # and include paths here, we can use the same mpicc for a range of 
 # libraries and compilers, including ones for 32 and 64 bit systems.
-PM2_FORTRAN_TARGET=$(pm2-config --flavor=$PM2_FLAVOR --fc)
-F77=${PM2_F77:-${PM2_FORTRAN_TARGET:-gfortran}}
-F77LINKER=${PM2_F77:-${PM2_FORTRAN_TARGET:-gfortran}}
-LDFLAGSBASE=""
-USER_CFLAGS=$(pm2-config --flavor=$PM2_FLAVOR --cflags)
-BASE_LIB_LIST=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-l)
-LIB_PATH=$(pm2-config --flavor=$PM2_FLAVOR --libs-only-L)
-MPIVERSION="1.0.0 (release) of : 2006/11/20 17:30:00"
-#
+F77=$@F77@
+F77LINKER=@F77@
+LDFLAGSBASE="@NMAD_LDFLAGS@"
+CFLAGS="@NMAD_CFLAGS@"
+LIBS="@NMAD_LIBS@ @NMAD_EXT_LIBS@"
+
 #
 for arg in "$@" ; do
     # Special processing for -o name
@@ -134,7 +116,6 @@ for arg in "$@" ; do
             ;;
 	-v)
             verbose=1
-            echo "mpicc for $MPIVERSION"
             compileargs="$compileargs -v"
             linkargs="$linkargs -v"
             ;;
@@ -224,7 +205,7 @@ if [ $DoCompile = 1 -o $show_compile = 1 ] ; then
     if [ $HasDashC != 1 ] ; then
         compileargs="-c $compileargs"
     fi
-    $Show $F77 -Wall $USER_CFLAGS $compileargs
+    $Show $F77 -Wall $CFLAGS $compileargs
     status=$?
     if [ $status != 0 ] ; then
 	exit $status
@@ -236,7 +217,7 @@ if [ $DoLink = 1 -o $show_link = 1 ] ; then
     if [ -z "$LDFLAGS" ] ; then
         LDFLAGS="$LDFLAGSBASE"
     fi
-    $Show $F77LINKER $USER_CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
+    $Show $F77LINKER $CFLAGS -Wall $LDFLAGS $clibpath $LIB_PATH $linkobjs $linkargs $mpilibs $BASE_LIB_LIST
     status=$?
 fi
 exit $status

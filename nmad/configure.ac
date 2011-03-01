@@ -74,18 +74,6 @@ AC_ARG_ENABLE(tagarray,
 NMAD_CFLAGS="${NMAD_CFLAGS} -DCONFIG_${tag_container}"
 AC_MSG_RESULT([${tag_container}])
 
-dnl -- Mad-MPI
-dnl --
-AC_ARG_ENABLE(mpi,
-	      [  --enable-mpi       Enable builtin MPI implementation Mad-MPI],
-	      [ if test $enableval = yes; then
-	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
-		    nmad_interfaces="${nmad_interfaces} mpi"
-		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
-	        fi
-	      ],
-	      [])
-
 dnl -- sampling
 dnl --
 AC_ARG_ENABLE(sampling,
@@ -96,8 +84,6 @@ AC_ARG_ENABLE(sampling,
 	      ],
 	      [])
 
-dnl -- Fortran
-NMAD_CFLAGS="${NMAD_CFLAGS} -DPM2_FORTRAN_TARGET_NONE"
 
 dnl -- NUIOA
 dnl --
@@ -214,6 +200,48 @@ if test "x${with_mx}" != "xno" ; then
     fi
 fi
 
+dnl -- Fortran
+AC_MSG_CHECKING([for Fortran support in tbx])
+nmad_fortran_target=none
+echo $tbx_CFLAGS | grep -q FORTRAN_COMPILER
+__tbx_have_fortran=$?
+if test ${__tbx_have_fortran} -eq 0; then
+  echo $tbx_CFLAGS | grep -q GNU_FORTRAN_COMPILER
+  __tbx_have_gfortran=$?
+  echo $tbx_CFLAGS | grep -q INTEL_FORTRAN_COMPILER
+  __tbx_have_ifort=$?
+  if test ${__tbx_have_gfortran} -eq 0; then
+    nmad_fortran_target=gfortran
+    AC_DEFINE([NMAD_FORTRAN_TARGET_GFORTRAN], 0, [GNU gfortran Fortran support])
+  elif test ${__tbx_have_ifort} -eq 0; then
+    nmad_fortran_target=ifort
+    AC_DEFINE([NMAD_FORTRAN_TARGET_IFORT], 0, [Intel ifort Fortran support])
+  fi
+else
+  AC_DEFINE([NMAD_FORTRAN_TARGET_NONE], 0, [no Fortran support])
+fi
+AC_MSG_RESULT([${nmad_fortran_target}])
+AC_PROG_FC([], [90])
+AC_PROG_F77
+dnl -- TODO- check whether tbx and nmad FC match, don't know about F77
+
+
+dnl -- Mad-MPI
+dnl --
+AC_ARG_ENABLE(mpi,
+	      [  --enable-mpi       Enable builtin MPI implementation Mad-MPI],
+	      [ if test $enableval = yes; then
+	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
+		    nmad_interfaces="${nmad_interfaces} mpi"
+		    out_mk="${out_mk} examples/mpi/basics/Makefile"
+		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
+		    if test "x${nmad_target_fortran}" != "xnone"; then
+		        out_mk="${out_mk} examples/mpi/fortran/Makefile examples/mpi/f90/Makefile"
+		    fi
+	        fi
+	      ],
+	      [])
+
 dnl -- compute flags
 NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${marcel_CFLAGS} ${ibverbs_CFLAGS} ${mx_CFLAGS}"
 AC_SUBST(NMAD_CFLAGS)
@@ -241,10 +269,8 @@ nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
 AC_SUBST(nmad_interfaces)
 
 
-
-
 out_sh="${out_sh} bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample"
-out_mk="Makefile examples/sendrecv/Makefile nmad.pc"
+out_mk="${out_mk} Makefile examples/sendrecv/Makefile nmad.pc"
 
 dnl -- output 
 

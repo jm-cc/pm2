@@ -1,0 +1,38 @@
+# Makefile fpr f90 Mad-MPI examples 
+
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.f90, %, $(wildcard $(srcdir)/*.f90))
+TARGET_LIB =
+TARGET_MOD =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+
+
+CFLAGS  := $(shell pkg-config --cflags nmad)
+LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
+LIBS    := $(shell pkg-config --libs nmad)
+
+include @puk_root@/etc/common_rules.mk
+
+$(TARGET_BIN): %: %.pic.o
+
+F90 = @FC@
+LD = $(F90)
+
+F90FLAGS = @FCFLAGS@ @NMAD_CFLAGS@ -I@nmad_root@/include
+
+%.pic.o: %.f90
+	@$(SHOWMK) "  [F90]    $@"
+	$(Q)$(F90) $(F90FLAGS) -c -o $@ $<
+

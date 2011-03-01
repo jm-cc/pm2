@@ -32,7 +32,7 @@ static mpir_internal_data_t mpir_internal_data;
 
 #define MAX_ARG_LEN 64
 
-#if defined PM2_FORTRAN_TARGET_GFORTRAN
+#if defined NMAD_FORTRAN_TARGET_GFORTRAN
 /* GFortran iargc/getargc bindings
  */
 void _gfortran_getarg_i4(int32_t *num, char *value, int val_len)	__attribute__ ((weak));
@@ -50,7 +50,7 @@ int mpi_init_(void) {
   tbx_fortran_init(&argc, &argv);
   return MPI_Init(&argc, &argv);
 }
-#elif defined PM2_FORTRAN_TARGET_IFORT
+#elif defined NMAD_FORTRAN_TARGET_IFORT
 /* Ifort iargc/getargc bindings
  */
 /** Initialisation by Fortran code.
@@ -68,13 +68,13 @@ int mpi_init_() {
   tbx_fortran_init(&argc, &argv);
   return MPI_Init(&argc, &argv);
 }
-#elif defined PM2_FORTRAN_TARGET_NONE
+#elif defined NMAD_FORTRAN_TARGET_NONE
 /* Nothing */
 #else
 #  error unknown FORTRAN TARGET for Mad MPI
 #endif
 
-#ifndef PM2_FORTRAN_TARGET_NONE
+#ifndef NMAD_FORTRAN_TARGET_NONE
 /* Alias Fortran
  */
 
@@ -1168,7 +1168,7 @@ void mpi_group_translate_ranks_(int *group1,
 				    ranks2);
 }
 
-#endif /* PM2_FORTRAN_TARGET_NONE */
+#endif /* NMAD_FORTRAN_TARGET_NONE */
 
 mpir_internal_data_t *get_mpir_internal_data() {
   return &mpir_internal_data;

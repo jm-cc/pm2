@@ -61,7 +61,8 @@ static void nm_test_iovec_symmetrical_regular(char*sbuf, char*rbuf, int iov_coun
   struct iovec riov[iov_count], siov[iov_count];
   nm_sr_request_t sreq, rreq;
 
-  printf("iovec test, %dx %d bytes%s\n", iov_count, entry_size, (src == NM_ANY_GATE?", anysrc":""));
+  if(is_server)
+    printf("iovec test, %dx %d bytes%s\n", iov_count, entry_size, (src == NM_ANY_GATE?", anysrc":""));
 
   nm_test_iovec_fill(sbuf, rbuf, iov_count, entry_size);
 
@@ -91,7 +92,8 @@ static void nm_test_iovec_symmetrical_regular(char*sbuf, char*rbuf, int iov_coun
     }
   nm_sr_rwait(p_core, &rreq);
   nm_test_iovec_check(rbuf, iov_count, entry_size);
-  printf("  ok.\n");
+  if(is_server)
+    printf("  ok.\n");
 }
 
 static void nm_test_iovec_full(int iov_count, int entry_size)

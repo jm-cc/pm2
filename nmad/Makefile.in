@@ -70,6 +70,12 @@ libnmad.so: $(OBJ_FILES)
 
 $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 
+check: tests
+
+tests: install
+	$(MAKE) -C examples/pack/ tests
+	$(MAKE) -C examples/sendrecv/ tests
+
 $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
 	@$(SHOWMK) "  [F90]    $@"
 	$(Q)$(MKDIR) $(madmpi_f90_builddir)

@@ -24,3 +24,8 @@ LIBS    := $(shell pkg-config --libs nmad)
 include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
+
+TESTS += latency ping ping_any large_small_large_small
+
+include @nmad_srcdir@/nmad-tests.mk
+

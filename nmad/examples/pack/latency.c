@@ -22,7 +22,7 @@
 
 #include "helper.h"
 
-#define LOOPS   2000
+#define LOOPS   20000
 
 int main(int argc, char**argv)
 {
@@ -67,7 +67,7 @@ int main(int argc, char**argv)
       
       TBX_GET_TICK(t2);
       
-      printf("latency = %lf us\n", TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+      printf("latency = %lf usec.\n", TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
       
     }
   

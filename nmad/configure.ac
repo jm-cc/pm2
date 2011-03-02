@@ -148,6 +148,7 @@ AC_SUBST([requires_marcel])
 
 dnl -- ibverbs
 HAVE_INFINIBAND=no
+with_ibverbs=check
 AC_ARG_WITH([ibverbs],
 	    [AS_HELP_STRING([--with-ibverbs], [use Infiniband ibverbs @<:@default=check@:>@] )])
 if test "x${with_ibverbs}" != "xno" ; then
@@ -181,6 +182,7 @@ if test "x$MX_DIR" = "x" ; then
     fi
 fi
 HAVE_MX=no
+with_mx=check
 AC_ARG_WITH([mx],
 	    [AS_HELP_STRING([--with-mx], [use Myrinet MX @<:@default=check@:>@] )])
 if test "x${with_mx}" != "xno" ; then

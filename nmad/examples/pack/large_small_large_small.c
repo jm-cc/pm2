@@ -101,7 +101,7 @@ main(int	  argc,
           }
           TBX_GET_TICK(t2);
 
-          printf("%d + %d \t%lf\n", LARGE_SIZE, SMALL_SIZE, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+          printf("%d x (%d + %d) \t%lf usec.\n", NB_PACKS, LARGE_SIZE, SMALL_SIZE, TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
 
         }
 

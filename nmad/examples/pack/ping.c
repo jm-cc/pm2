@@ -22,25 +22,20 @@
 
 #include "helper.h"
 
-#define MAX     (8 * 1024 * 1024)
-#define LOOPS   2000
+#define MAX     (1024 * 1024)
+#define LOOPS   100
 
 static __inline__
 uint32_t _next(uint32_t len)
 {
-        if(!len)
-                return 4;
-//        else if(len < 32)
-//                return len + 4;
-//        else if(len < 1024)
-//                return len + 32;
-        else
-                return len << 1;
+  if(!len)
+    return 1;
+  else
+    return len * 2;
 }
 
-int
-main(int	  argc,
-     char	**argv) {
+int main(int argc, char**argv)
+{
 	nm_pack_cnx_t cnx;
         char			*buf		= NULL;
         uint32_t		 len;

@@ -1,0 +1,80 @@
+iovec test, 1x 4 bytes
+  ok.
+iovec test, 1x 4 bytes, anysrc
+  ok.
+iovec test, 1x 4 bytes
+  ok.
+iovec test, 1x 4 bytes, anysrc
+  ok.
+iovec test, 4x 4 bytes
+  ok.
+iovec test, 4x 4 bytes, anysrc
+  ok.
+iovec test, 4x 4 bytes
+  ok.
+iovec test, 4x 4 bytes, anysrc
+  ok.
+iovec test, 32x 4 bytes
+  ok.
+iovec test, 32x 4 bytes, anysrc
+  ok.
+iovec test, 32x 4 bytes
+  ok.
+iovec test, 32x 4 bytes, anysrc
+  ok.
+iovec test, 1024x 4 bytes
+  ok.
+iovec test, 1024x 4 bytes, anysrc
+  ok.
+iovec test, 1024x 4 bytes
+  ok.
+iovec test, 1024x 4 bytes, anysrc
+  ok.
+iovec test, 8192x 4 bytes
+  ok.
+iovec test, 8192x 4 bytes, anysrc
+  ok.
+iovec test, 8192x 4 bytes
+  ok.
+iovec test, 8192x 4 bytes, anysrc
+  ok.
+iovec test, 1x 66560 bytes
+  ok.
+iovec test, 1x 66560 bytes, anysrc
+  ok.
+iovec test, 1x 66560 bytes
+  ok.
+iovec test, 1x 66560 bytes, anysrc
+  ok.
+iovec test, 8x 66560 bytes
+  ok.
+iovec test, 8x 66560 bytes, anysrc
+  ok.
+iovec test, 8x 66560 bytes
+  ok.
+iovec test, 8x 66560 bytes, anysrc
+  ok.
+iovec test, 1x 1048576 bytes
+  ok.
+iovec test, 1x 1048576 bytes, anysrc
+  ok.
+iovec test, 1x 1048576 bytes
+  ok.
+iovec test, 1x 1048576 bytes, anysrc
+  ok.
+iovec test, 4x 524288 bytes
+  ok.
+iovec test, 4x 524288 bytes, anysrc
+  ok.
+iovec test, 4x 524288 bytes
+  ok.
+iovec test, 4x 524288 bytes, anysrc
+  ok.
+iovec test, 32x 262144 bytes
+  ok.
+iovec test, 32x 262144 bytes, anysrc
+  ok.
+iovec test, 32x 262144 bytes
+  ok.
+iovec test, 32x 262144 bytes, anysrc
+  ok.

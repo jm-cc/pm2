@@ -31,7 +31,7 @@
 
 static const int param_min_size = 1;
 static const int param_max_size = (32*1024*1024);
-static const int param_dryrun_count = 10;
+static const int param_dryrun_count = 2;
 
 static unsigned char*data_send = NULL;
 static unsigned char*data_recv = NULL;
@@ -54,10 +54,12 @@ static inline int nm_ns_nb_samples(int size)
 {
   if(size < 32768)
     return 1000;
-  else if(size < 1024 * 1024)
+  else if(size < 512 * 1024)
     return 100;
-  else
+  else if(size < 8 * 1024 * 1024)
     return 20;
+  else 
+    return 5;
 }
 
 static void nm_ns_initialize_pw(struct nm_core *p_core,
@@ -668,7 +670,8 @@ int main(int argc, char **argv)
 	    }
 	}
       nm_ns_ping(p_drv, p_gate, sampling_file);
-      fclose(sampling_file);
+      if(sampling_file != NULL)
+	fclose(sampling_file);
       nm_ns_compute_thresholds();
     }
   else

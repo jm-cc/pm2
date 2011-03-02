@@ -16,24 +16,25 @@
 # General Public License for more details.
 #
 
-# Get some variables
-PATH="@abs_top_builddir@/bin:$PATH"
-PM2_SRCROOT="@abs_top_srcdir@"
-PM2_OBJROOT="@abs_top_builddir@"
+usage() {
+    cat 1>&2 <<EOF
+usage: $0 <host1> <host2> <network>
+EOF
+}
 
-PM2_CONF_DIR=${PM2_CONF_DIR:-${HOME}/.pm2}
+if [ "x$1" = "x-h" -o "x$1" = "x--help" ]; then
+    usage
+    exit 0
+fi
 
-
-if [ -z "$3" ] ; then
-    echo "Error. Syntax: $0 <machine1> <machine2> <network1> ... <networkn>"
+if [ $# != 3 ] ; then
+    usage
     exit 1
 fi
 
-machine1=$1 #echo "machine1 = $machine1"
-machine2=$2 #echo "machine2 = $machine2"
-
-shift
-shift
+host1="$1"
+host2="$2"
+network="$3"
 
 if [ "x${LEO_RSH}" = "x" ]; then
   SSH=ssh
@@ -41,43 +42,25 @@ else
   SSH="${LEO_RSH}"
 fi
 
-for network in $*; do
-    #echo "network = $network"
+if [ ! -d @nmad_srcdir@/drivers/${network} ]; then
+    echo "# ${0}: network '${network}' not supported by nmad." 1>&2
+    exit 1
+fi
 
-    if [ ! -d ${PM2_SRCROOT}/nmad/drivers/${network} ]; then
-	echo "# Network '${network}' not supported." 2>&1
-	exit -1
-    fi
+arch=`uname -m`
+sampling_dir="${PM2_CONF_DIR:-${HOME}/.pm2}/nmad/sampling"
+mkdir -p ${sampling_dir}
+sampling_file="${sampling_dir}/${network}_${arch}.nm_ns"
+sampling_prog="@nmad_root@/bin/sampling-prog"
+if [ ! -x "${sampling_prog}" ]; then
+    echo "# ${0}: cannot find sampling prog." 1>&2
+    exit 1
+fi
 
-    flavor="nmad-sampling-"$network
-    export PM2_FLAVOR="${flavor}"
-    echo "# sampling flavor: ${flavor}"
+echo "# ${0}: starting sampling for network ${network} on hosts ${host1} ${host2}" 1>&2
 
-    # flavor creation
-    pm2-flavor set --flavor=$flavor --modules="init nmad tbx puk padicotm" \
-        --common="fortran_target_none" --all="opt build_dynamic" \
-        --nmad="$network strat_default tag_as_hashtable" --puk="enable_pukabi"
+padico-launch -q -n 2 -nodelist ${host1},${host2} -DNMAD_DRIVER=${network} ${sampling_prog} ${sampling_file}
 
-    #récupération de l'architecture sur laquelle on va lancer l'échantillonnnage
-    uname -m > /tmp/architecture.$$
-    arch=`cat /tmp/architecture.$$` #echo "Arch = $arch"
-    rm -f /tmp/architecture.$$
-
-    #compilation du test d'échantillonage avec une flavor prédéfinie
-    prog=$( pm2-which -f $flavor sampling-prog 2>/dev/null )
-    make FLAVOR=$flavor -C $PM2_OBJROOT/nmad/sampling sampling-prog
- 
-    sampling_dir="${PM2_CONF_DIR}/nmad/sampling"
-    if [ ! -w ${sampling_dir} ]; then
-	mkdir -p ${sampling_dir}
-    fi
-    sampling_file="${sampling_dir}/${network}_${arch}.nm_ns"
-    echo "# starting sampling for network ${network}"
-    $PM2_OBJROOT/bin/pm2-conf --flavor $flavor $machine1 $machine2
-    $PM2_OBJROOT/bin/pm2-load --padico,-q --flavor $flavor -DNMAD_DRIVER=${network} sampling-prog ${sampling_file}
-
-    #cat $sampling_file
-    echo "# sampling done for network ${network}"
-done
+echo "# ${0}: sampling done." 1>&2
 
 

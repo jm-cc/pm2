@@ -5,7 +5,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = #sampling/sampling-prog
+TARGET_BIN = sampling/sampling-prog
 TARGET_LIB = libnmad.so
 TARGET_MOD =
 SUBDIRS =
@@ -52,6 +52,6 @@ libnmad.so: LIBS += -lrt
 libnmad.so: $(OBJ_FILES)
 
 
-$(TARGET_BIN): LIBS += -L. -lnmad
-$(TARGET_BIN): %: %.pic.o $(TARGET_LIB)
+$(TARGET_BIN): LIBS := -L. @NMAD_LIBS@ $(LIBS)
+$(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 

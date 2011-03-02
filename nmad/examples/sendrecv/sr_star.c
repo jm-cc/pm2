@@ -24,7 +24,7 @@
 #include <nm_launcher.h>
 
 //#define STAR_DEBUG
-#define PRINT(str, ...)		fprintf(stderr, "[%d] " str "\n", rank, ## __VA_ARGS__)
+#define PRINT(str, ...)		printf("[%d] " str "\n", rank, ## __VA_ARGS__)
 
 int main(int argc, char **argv) {
   int numtasks;

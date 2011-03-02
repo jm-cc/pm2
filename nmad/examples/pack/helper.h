@@ -25,7 +25,7 @@ static nm_gate_t gate_id = NULL;
 
 void nmad_exit()
 {
-  common_exit(NULL);
+  nm_launcher_exit();
 }
 
 void init(int *argc, char **argv)

@@ -18,19 +18,15 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
-
-CFLAGS  := $(shell pkg-config --cflags nmad)
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := $(shell pkg-config --libs nmad)
-
 include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-F90 = @FC@
-LD = $(F90)
-
-F90FLAGS = @FCFLAGS@ @NMAD_CFLAGS@ -I@nmad_root@/include
+F90      := @nmad_root@/bin/mpif90
+F77FLAGS := 
+LD       := $(F90)
+LDFLAGS  :=
+LIBS     :=
 
 %.pic.o: %.f90
 	@$(SHOWMK) "  [F90]    $@"

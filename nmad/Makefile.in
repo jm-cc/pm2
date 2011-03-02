@@ -20,38 +20,61 @@ INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
 
+# set compilers and flags
 CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS)
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := @NMAD_EXT_LIBS@ $(LIBS)
-
-NMAD_DRIVERS    = @nmad_drivers@
-NMAD_STRATEGIES = @nmad_strategies@
-NMAD_INTERFACES = @nmad_interfaces@
+LIBS    := @NMAD_EXT_LIBS@ -lrt $(LIBS)
+BINLIBS := -L. @NMAD_LIBS@
+FC      := @FC@
+FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 
 # compute flags and directories from options
 SRC_DIRS += src
-SRC_DIRS += $(foreach drv,   $(NMAD_DRIVERS),    drivers/$(drv) )
-SRC_DIRS += $(foreach strat, $(NMAD_STRATEGIES), strategies/strat_$(strat) )
-SRC_DIRS += $(foreach int,   $(NMAD_INTERFACES), interfaces/$(int)/src )
-CFLAGS   += $(foreach int,   $(NMAD_INTERFACES), -I$(srcdir)/interfaces/$(int)/include )
-INSTALL_INCLUDE += $(foreach int, $(NMAD_INTERFACES), $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
-INSTALL_BIN += $(foreach int, $(NMAD_INTERFACES), $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
+SRC_DIRS += $(foreach drv,   @nmad_drivers@,    drivers/$(drv) )
+SRC_DIRS += $(foreach strat, @nmad_strategies@, strategies/strat_$(strat) )
+SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
+CFLAGS   += $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
+INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
+INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
 
 # make multiple directories fit inside a single module
-SRC_FILES := $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
-OBJ_FILES := $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
-DEP_FILES := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
+SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
+OBJ_FILES = $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
+DEP_FILES = $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
 CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
 TARGET_DEP += $(DEP_FILES)
+
+# Fortran 90 module for Mad-MPI
+#   hardwired MPI module content.
+#   See interfaces/mpi/src/f90modules/README on how to extract module content from source
+madmpi_f90_srcdir   := $(srcdir)/interfaces/mpi/src/f90modules
+madmpi_f90_builddir := ./interfaces/mpi/src/f90modules
+ifneq ($(findstring mpi,  @nmad_interfaces@),)
+ifneq (@nmad_fortran_support@,none)
+CFLAGS  += -I$(madmpi_f90_builddir)
+MADMPI_F90_FILES := mpi_constants mpi1 mpi
+MADMPI_F90_SRC   := $(patsubst %, $(madmpi_f90_srcdir)/%.f90,   $(MADMPI_F90_FILES))
+MADMPI_F90_MODS  := $(patsubst %, $(madmpi_f90_builddir)/%.mod, $(MADMPI_F90_FILES))
+MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FILES))
+CLEAN_MORE       += $(MADMPI_F90_MODS) $(MADMPI_F90_OBJS)
+INSTALL_INCLUDE  += $(MADMPI_F90_MODS)
+TARGETS          += $(MADMPI_F90_MODS)
+endif
+endif
 
 include @puk_root@/etc/common_rules.mk
 
 -include $(DEP_FILES)
 
-libnmad.so: LIBS += -lrt
 libnmad.so: $(OBJ_FILES)
 
-
-$(TARGET_BIN): LIBS := -L. @NMAD_LIBS@ $(LIBS)
 $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 
+$(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
+	@$(SHOWMK) "  [F90]    $@"
+	$(Q)$(MKDIR) $(madmpi_f90_builddir)
+	$(Q)( cd $(madmpi_f90_builddir) ; $(FC) $(FFLAGS) -c -o ./$*.o $< ) # change dir because -M<dir> is not portable
+
+# dirty ordered modules because of no make dep for Fortran
+$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
+$(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod

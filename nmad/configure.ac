@@ -225,6 +225,7 @@ else
   AC_DEFINE([NMAD_FORTRAN_TARGET_NONE], 0, [no Fortran support])
 fi
 AC_MSG_RESULT([${nmad_fortran_target}])
+AC_SUBST([nmad_fortran_target])
 AC_PROG_FC([], [90])
 AC_PROG_F77
 dnl -- TODO- check whether tbx and nmad FC match, don't know about F77

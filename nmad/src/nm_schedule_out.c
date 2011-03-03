@@ -99,8 +99,6 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 	}
     }
 
-  nm_pw_free(p_pw);
-
   nm_strat_try_and_commit(p_gate);
   
   return NM_ESUCCESS;
@@ -231,9 +229,10 @@ void nm_poll_out_drv(struct nm_drv *p_drv)
 	const int err = nm_poll_send(p_pw);
 	nm_poll_lock_out(p_core, p_drv);
 	if(err == NM_ESUCCESS)
-	{
-  	  tbx_fast_list_del(&p_pw->link);
-	}
+	  {
+	    tbx_fast_list_del(&p_pw->link);
+	    nm_pw_free(p_pw);
+	  }
       }
     }
     nm_poll_unlock_out(p_core, p_drv);

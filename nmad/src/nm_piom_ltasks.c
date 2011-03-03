@@ -192,6 +192,10 @@ int nm_poll_send_task(void *args)
   int ret = -NM_EUNKNOWN;
   if(nmad_trylock()) {
     ret =  nm_poll_send(p_pw);
+    if(ret == NM_ESUCCESS)
+      {
+	nm_pw_free(p_pw);
+      }
     nmad_unlock();
   }
   return ret;

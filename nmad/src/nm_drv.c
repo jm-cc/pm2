@@ -382,19 +382,17 @@ int nm_core_driver_exit(struct nm_core *p_core)
   /* deinstantiate all drivers */
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
-      NM_FOR_EACH_DRIVER(p_drv, p_core)
+      nm_gdrv_vect_itor_t i;
+      puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
 	{
-	  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if (p_gdrv != NULL)
+	  struct nm_gate_drv*p_gdrv = *i;
+	  *i = NULL;
+	  if(p_gdrv->instance != NULL)
 	    {
-	      p_drv->nb_tracks = 0;
-	      if(p_gdrv->instance != NULL)
-		{
-		  puk_instance_destroy(p_gdrv->instance);
-		  p_gdrv->instance = NULL;
-		}
-	      TBX_FREE(p_gdrv);
+	      puk_instance_destroy(p_gdrv->instance);
+	      p_gdrv->instance = NULL;
 	    }
+	  TBX_FREE(p_gdrv);
 	}
     }
   NM_FOR_EACH_DRIVER(p_drv, p_core)

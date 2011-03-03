@@ -135,17 +135,6 @@ fi
 AC_SUBST([requires_pioman])
 AC_SUBST(with_pioman)
 
-dnl -- Marcel
-AC_ARG_WITH([marcel],
-	    [AS_HELP_STRING([--with-marcel], [use marcel threads @<:@default=no@:>@] )])
-if test "x${with_marcel}" = "xyes"; then
-   PKG_CHECK_MODULES([marcel], [ marcel ])
-  requires_marcel="marcel"
-else
-  requires_marcel=
-fi
-AC_SUBST([requires_marcel])
-
 dnl -- ibverbs
 HAVE_INFINIBAND=no
 with_ibverbs=check
@@ -250,11 +239,11 @@ AC_ARG_ENABLE(mpi,
 	      [])
 
 dnl -- compute flags
-NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${marcel_CFLAGS} ${ibverbs_CFLAGS} ${mx_CFLAGS}"
+NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${ibverbs_CFLAGS} ${mx_CFLAGS}"
 AC_SUBST(NMAD_CFLAGS)
 AC_SUBST(NMAD_EXT_CFLAGS)
 
-NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${marcel_LIBS} ${ibverbs_LIBS} ${mx_LIBS}"
+NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${ibverbs_LIBS} ${mx_LIBS}"
 AC_SUBST(NMAD_EXT_LIBS)
 NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
 AC_SUBST(NMAD_LIBS)

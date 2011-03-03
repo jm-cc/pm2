@@ -4,6 +4,6 @@ prefix=@nmad_root@
 Name: nmad
 Description: NewMadeleine
 Version: $Rev$
-Requires: tbx Puk PukABI @requires_marcel@ @requires_pioman@
+Requires: tbx Puk PukABI @requires_pioman@
 Libs: @NMAD_LIBS@
 Cflags: @NMAD_CFLAGS@

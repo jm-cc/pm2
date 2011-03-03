@@ -21,9 +21,6 @@
 #ifndef NMAD_AUTOCONF
 #include <pm2_common.h>
 #else
-#ifdef MARCEL
-#include <marcel.h>
-#endif
 #ifdef PIOMAN
 #include <pioman.h>
 #endif
@@ -89,13 +86,6 @@ int nm_launcher_init(int *argc, char**argv)
     {
 #ifdef NMAD_AUTOCONF
       tbx_init(argc, &argv);
-#ifdef MARCEL
-      marcel_init(argc, argv);
-#endif /* MARCEL */
-#ifdef PIOMAN
-      piom_init_ltasks();
-      piom_io_init();
-#endif /* PIOMAN */
 #else
       common_pre_init(argc, argv, NULL);
       common_post_init(argc, argv, NULL);

@@ -32,3 +32,7 @@ LIBS     :=
 	@$(SHOWMK) "  [F90]    $@"
 	$(Q)$(F90) $(F90FLAGS) -c -o $@ $<
 
+TESTS += pi3f90
+
+include @nmad_srcdir@/nmad-tests.mk
+

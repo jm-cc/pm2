@@ -36,6 +36,7 @@ SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
 CFLAGS   += $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
+EXAMPLE_DIRS = examples/pack/ examples/sendrecv/
 
 # make multiple directories fit inside a single module
 SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
@@ -50,6 +51,7 @@ TARGET_DEP += $(DEP_FILES)
 madmpi_f90_srcdir   := $(srcdir)/interfaces/mpi/src/f90modules
 madmpi_f90_builddir := ./interfaces/mpi/src/f90modules
 ifneq ($(findstring mpi,  @nmad_interfaces@),)
+EXAMPLE_DIRS += examples/mpi/basics
 ifneq (@nmad_fortran_support@,none)
 CFLAGS  += -I$(madmpi_f90_builddir)
 MADMPI_F90_FILES := mpi_constants mpi1 mpi
@@ -59,6 +61,7 @@ MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FIL
 CLEAN_MORE       += $(MADMPI_F90_MODS) $(MADMPI_F90_OBJS)
 INSTALL_INCLUDE  += $(MADMPI_F90_MODS)
 TARGETS          += $(MADMPI_F90_MODS)
+EXAMPLE_DIRS += examples/mpi/fortran examples/mpi/f90
 endif
 endif
 
@@ -73,8 +76,10 @@ $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 check: tests
 
 tests: install
-	$(MAKE) -C examples/pack/ tests
-	$(MAKE) -C examples/sendrecv/ tests
+	@( for d in $(EXAMPLE_DIRS); do \
+             echo "  [TESTS]  in $$d/"; \
+             $(MAKE) -C $$d tests; \
+           done )
 
 $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
 	@$(SHOWMK) "  [F90]    $@"

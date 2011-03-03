@@ -22,75 +22,69 @@
 
 #include "helper.h"
 
-#define SIZE  (64 * 1024)
+#define SIZE  (128 * 1024)
 
 const char *msg_beg	= "hello", *msg_end = "world!";
 
-int
-main(int	  argc,
-     char	**argv) {
-  char			*buf		= NULL;
-
+int main(int argc, char	**argv)
+{
   init(&argc, argv);
-  buf = malloc(SIZE+1);
-  memset(buf, 0, SIZE+1);
 
-  if (is_server) {
-    nm_sr_request_t request;
-    nm_sr_request_t request0;
+  /* build template message */
+  char*template_buf = malloc(SIZE+1);
+  memset(template_buf, ' ', SIZE);
+  char*dst = template_buf;
+  char*src = (char *) msg_beg;
+  while(*src)
+    *dst++ = *src++;
+  dst = template_buf + SIZE - strlen(msg_end) - 1;
+  src = (char *) msg_end;
+  while(*src)
+    *dst++ = *src++;
+  dst = template_buf + SIZE - 1;
+  *dst = '\0';
 
-    /* server */
-    memset(buf, 'z', SIZE);
-    *(buf + SIZE - 1) = '\0';
-
-    nm_sr_irecv(p_core, gate_id, 1, buf, SIZE, &request0);
-
-    int i = 0;
-    while(i++ < 10000)
-      nm_sr_stest(p_core, &request0);
-
-    //nm_sr_irecv(interface, NM_ANY_GATE, 0, buf, len, &request);
-    nm_sr_irecv(p_core, gate_id, 0, buf, SIZE, &request);
-    nm_sr_rwait(p_core, &request);
-
-    nm_sr_rwait(p_core, &request0);
-
-  } else {
-    nm_sr_request_t request;
-
-    /* client */
+  if (is_server)
     {
-      char *src, *dst;
-
-      memset(buf, ' ', SIZE);
-      dst = buf;
-      src = (char *) msg_beg;
-      while(*src)
-        *dst++ = *src++;
-
-      dst = buf + SIZE - strlen(msg_end) - 1;
-      src = (char *) msg_end;
-      while(*src)
-        *dst++ = *src++;
-
-      dst = buf + SIZE - 1;
-      *dst = '\0';
-
-      //printf("Here's the message we're going to send : [%s]\n", buf);
+      nm_sr_request_t request0;
+      nm_sr_request_t request1;
+      
+      /* server */
+      char*buf0 = malloc(SIZE+1);
+      char*buf1 = malloc(SIZE+1);
+      memset(buf1, 0, SIZE+1);
+      memset(buf0, 0, SIZE+1);
+      
+      nm_sr_irecv(p_core, gate_id, 1, buf0, SIZE, &request0);
+      nm_sr_irecv(p_core, gate_id, 0, buf1, SIZE, &request1);
+      nm_sr_rwait(p_core, &request1);
+      nm_sr_rwait(p_core, &request0);
+      
+      if(memcmp(buf0, template_buf, SIZE) != 0)
+	{
+	  printf("buffer 0: data corrupted.\n");
+	  abort();
+	}
+      if(memcmp(buf1, template_buf, SIZE) != 0)
+	{
+	  printf("buffer 1: data corrupted.\n");
+	  abort();
+	}
+      printf("received buffers, data ok.\n");
+    } 
+  else 
+    {
+      nm_sr_request_t request;
+      char*buf = malloc(SIZE+1);
+      memcpy(buf, template_buf, SIZE+1);
+      
+      nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request);
+      nm_sr_swait(p_core, &request);
+      
+      nm_sr_isend(p_core, gate_id, 1, buf, SIZE, &request);
+      nm_sr_swait(p_core, &request);
     }
 
-    nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request);
-    nm_sr_swait(p_core, &request);
-
-
-    sleep(10);
-    nm_sr_isend(p_core, gate_id, 1, buf, SIZE, &request);
-    nm_sr_swait(p_core, &request);
-  }
-
-  if (is_server) {
-    printf("buffer contents: %s\n", buf);
-  }
 
   return 0;
 }

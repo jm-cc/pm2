@@ -5,6 +5,8 @@ NMAD_DRIVER = tcp
 NMAD_NODES = 2
 NMAD_HOSTS = localhost
 
+TEST_FILTER = cat
+
 TARGET_TESTS = $(patsubst %, test-%, $(TESTS))
 
 
@@ -18,10 +20,10 @@ $(TARGET_TESTS): test-%: %
           t="$*"; \
           testid="$${USER}-$$$$" ; \
           if [ -r $(srcdir)/$*.out ]; then \
-            padico-launch -q -n $(NMAD_NODES) -nodelist $(NMAD_HOSTS) -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | cat > /tmp/result-$${testid} ; \
+            padico-launch -q -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
             rc=$$? ; \
           else \
-            padico-launch -q -n $(NMAD_NODES) -nodelist $(NMAD_HOSTS) -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t ; \
+            padico-launch -q -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t ; \
             rc=$$? ; \
           fi ; \
           if [ "x$${rc}" != "x0" ]; then \

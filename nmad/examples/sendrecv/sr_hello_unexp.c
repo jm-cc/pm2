@@ -61,7 +61,7 @@ int main(int argc, char**argv)
       nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
       nm_sr_swait(p_core, &request);
       
-      sleep(1);
+      usleep(100*1000);
       nm_sr_isend(p_core, gate_id, 1, buf, len, &request);
       nm_sr_swait(p_core, &request);
     }

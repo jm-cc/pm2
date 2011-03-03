@@ -5,7 +5,6 @@ include @puk_root@/etc/common_vars.mk
 
 TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
 TARGET_LIB =
-TARGET_MOD =
 SUBDIRS =
 
 INSTALL_BIN     = $(TARGET_BIN)
@@ -14,7 +13,7 @@ INSTALL_INCLUDE =
 
 INSTALL_PREFIX := @nmad_root@
 
-TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CC       := @nmad_root@/bin/mpicc
 CFLAGS   := 
@@ -25,3 +24,37 @@ LIBS     :=
 include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
+
+TESTS +=
+
+include @nmad_srcdir@/nmad-tests.mk
+
+
+test-star: NMAD_NODES = 4
+
+test-star2: NMAD_NODES = 4
+
+test-scatter: NMAD_NODES = 4
+
+test-group: NMAD_NODES = 4
+test-group: TEST_FILTER = sort --ignore-case
+
+test-global: NMAD_NODES = 8
+test-global: TEST_FILTER = sort
+
+test-gatherv: NMAD_NODES = 4
+
+test-gather: NMAD_NODES = 4
+
+test-datatype: NMAD_NODES = 4 
+test-datatype: TEST_FILTER = sort
+
+test-freedatatype: TEST_FILTER = sort
+
+test-communicator: TEST_FILTER = sort
+
+test-anysource: NMAD_NODES = 8
+
+test-alltoall: NMAD_NODES = 8
+
+test-allgather: NMAD_NODES = 8

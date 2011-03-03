@@ -1,0 +1,9 @@
+ISending to child 1 completed
+ISending to child 2 completed
+ISending to child 3 completed
+Waiting for sending to child 1 completed
+Waiting for sending to child 2 completed
+Waiting for sending to child 3 completed
+Message from child 1 [12.450000,3.140000]
+Message from child 2 [12.450000,3.140000]
+Message from child 3 [12.450000,3.140000]

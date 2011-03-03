@@ -225,7 +225,7 @@ int nm_post_task(void *args)
 int nm_post_on_drv_task(void *args)
 {
   struct nm_drv * p_drv = args;
-  int ret;
+  int ret = NM_ESUCCESS;
   nmad_lock();
   nm_try_and_commit(p_drv->p_core);
 

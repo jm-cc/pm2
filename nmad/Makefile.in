@@ -7,8 +7,6 @@ include @puk_root@/etc/common_vars.mk
 
 TARGET_BIN = sampling/sampling-prog
 TARGET_LIB = libnmad.so
-TARGET_MOD =
-SUBDIRS =
 
 INSTALL_BIN       = $(TARGET_BIN) bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample
 INSTALL_LIB       = $(TARGET_LIB)
@@ -18,7 +16,7 @@ INSTALL_PKGCONFIG = nmad.pc
 INSTALL_PREFIX := @nmad_root@
 INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
-TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+TARGETS = $(TARGET_BIN) $(TARGET_LIB)
 
 # set compilers and flags
 CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS)
@@ -44,6 +42,7 @@ OBJ_FILES = $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
 DEP_FILES = $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
 CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
 TARGET_DEP += $(DEP_FILES)
+TARGET_CLEAN += clean-examples
 
 # Fortran 90 module for Mad-MPI
 #   hardwired MPI module content.
@@ -79,6 +78,20 @@ tests: install
 	@( for d in $(EXAMPLE_DIRS); do \
              echo "  [TESTS]  in $$d/"; \
              $(MAKE) -C $$d tests; \
+           done )
+
+examples: install
+	@( for d in $(EXAMPLE_DIRS); do \
+             echo "  [ALL]    in $$d/"; \
+             $(MAKE) -C $$d ; \
+             echo "  [INST]   in $$d/"; \
+             $(MAKE) -C $$d install ; \
+           done )
+
+clean-examples:
+	@( for d in $(EXAMPLE_DIRS); do \
+             echo "  [CLEAN]  in $$d"; \
+             $(MAKE) -C $$d clean; \
            done )
 
 $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90

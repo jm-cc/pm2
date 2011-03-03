@@ -32,5 +32,5 @@ include @nmad_srcdir@/nmad-tests.mk
 
 test-sr_star: NMAD_NODES = 4
 
-test-sr_event: TEST_FILTER = sort
+test-sr_event: TEST_FILTER = sort -i
 

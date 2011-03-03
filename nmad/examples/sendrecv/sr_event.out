@@ -18,8 +18,18 @@
    buffer contents: hello, world
    buffer contents: hello, world
    buffer contents: hello, world
-:: event NM_SR_EVENT_RECV_COMPLETED- tag = 0; size = 13; ref = 0xdeadbeef; from gate = peer
+   receiving tag = 1 in event handler...
+   receiving tag = 1 in event handler...
+   receiving tag = 1 in event handler...
+   receiving tag = 1 in event handler...
+   receiving tag = 1 in event handler...
+   unexpected recv done 13 bytes.
+   unexpected recv done 131072 bytes.
+   unexpected recv done 131373 bytes.
+   unexpected recv done 26 bytes.
+   unexpected recv done 301 bytes.
 :: event NM_SR_EVENT_RECV_COMPLETED- tag = 0; size = 13; ref = (nil); from gate = peer
+:: event NM_SR_EVENT_RECV_COMPLETED- tag = 0; size = 13; ref = 0xdeadbeef; from gate = peer
 :: event NM_SR_EVENT_RECV_COMPLETED- tag = 1; size = 131072; ref = (nil); from gate = peer
 :: event NM_SR_EVENT_RECV_COMPLETED- tag = 1; size = 131373; ref = (nil); from gate = peer
 :: event NM_SR_EVENT_RECV_COMPLETED- tag = 1; size = 13; ref = (nil); from gate = peer
@@ -32,13 +42,3 @@
 :: event NM_SR_EVENT_RECV_UNEXPECTED- tag = 1; len = 13; from gate = peer
 :: event NM_SR_EVENT_RECV_UNEXPECTED- tag = 1; len = 26; from gate = peer
 :: event NM_SR_EVENT_RECV_UNEXPECTED- tag = 1; len = 301; from gate = peer
-   receiving tag = 1 in event handler...
-   receiving tag = 1 in event handler...
-   receiving tag = 1 in event handler...
-   receiving tag = 1 in event handler...
-   receiving tag = 1 in event handler...
-   unexpected recv done 131072 bytes.
-   unexpected recv done 131373 bytes.
-   unexpected recv done 13 bytes.
-   unexpected recv done 26 bytes.
-   unexpected recv done 301 bytes.

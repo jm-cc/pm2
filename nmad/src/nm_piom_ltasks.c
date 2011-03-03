@@ -47,26 +47,26 @@ void nm_ltask_set_policy()
 {
   const char* policy = getenv("PIOM_BINDING_POLICY");
   if(!policy){
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_CORE\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_CORE\n");
     goto out;
   }
   if(! strcmp(policy, "NM_BIND_ON_LOCAL_CORE")) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_CORE\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_CORE\n");
     __policy = NM_BIND_ON_LOCAL_CORE;
   } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_L2")) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_L2\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_L2\n");
     __policy = NM_BIND_ON_LOCAL_L2;
   } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_L3")) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_L3\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_L3\n");
     __policy = NM_BIND_ON_LOCAL_L3;
   } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_DIE" )) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_DIE\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_DIE\n");
     __policy = NM_BIND_ON_LOCAL_DIE;
   } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_NODE")) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_NODE\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_NODE\n");
     __policy = NM_BIND_ON_LOCAL_NODE;
   } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_MACHINE")) {
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_LOCAL_MACHINE\n");
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_MACHINE\n");
     __policy = NM_BIND_ON_LOCAL_MACHINE;
   } else if(! strcmp(policy, "NM_BIND_ON_CORE")) {
     __policy = NM_BIND_ON_CORE;
@@ -75,9 +75,9 @@ void nm_ltask_set_policy()
       __policy_core = atoi(core);
     else
       __policy_core = 0;
-    fprintf(stderr, "# Binding policy: NM_BIND_ON_CORE %d\n", __policy_core);
+    NM_DISPF("# nmad: binding policy = NM_BIND_ON_CORE %d\n", __policy_core);
   } else if(policy) {
-    fprintf(stderr, "unknown binding policy: %s\n", policy);
+    NM_DISPF("# nmad: unknown binding policy %s\n", policy);
   }
  out:
   
@@ -131,7 +131,7 @@ static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
   char* policy_backup = getenv("PIOM_BINDING_CORE");
   if(!policy_backup)
     {
-      fprintf(stderr, "PIOM_BINDING_CORE is not set. Please set this environment variable in order to specify a binding core.\n");
+      NM_DISPF("# nmad: PIOM_BINDING_CORE is not set. Please set this environment variable in order to specify a binding core.\n");
       /* falling back to core #0 */
       binding_core = 0;
       goto out;
@@ -162,13 +162,13 @@ static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
 	  goto out;
 	}
       /* PIOM_BINDING_CORE is set to something that cannot be parsed */
-      fprintf(stderr, "Cannot parse PIOM_BINDING_CORE ('%s'). Falling back to default (%d) for driver #%d\n", policy_backup, 0, drv_id);
+      NM_DISPF("Cannot parse PIOM_BINDING_CORE ('%s'). Falling back to default (%d) for driver #%d\n", policy_backup, 0, drv_id);
       binding_core=0;
       goto out;
     }
 
  out:
-  fprintf(stderr, "# Driver #%d (%s) is bound to core #%d\n",  drv_id, p_drv->driver->name, binding_core);
+  NM_DISPF("# nmad: driver #%d (%s) is bound to core #%d\n",  drv_id, p_drv->driver->name, binding_core);
   p_drv->vpset = piom_get_parent_core(binding_core);
   return p_drv->vpset;
  

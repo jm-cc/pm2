@@ -26,6 +26,9 @@
 #define PIOM_THREAD_ENABLED
 #endif
 
+extern void pioman_init(int*argc, char**argv);
+extern void pioman_exit(void);
+
 #include "piom_lock_types.h"
 #include "piom.h"
 #include "piom_log.h"

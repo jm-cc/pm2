@@ -26,6 +26,25 @@
  */
 
 
+
+void pioman_init(int*argc, char**argv)
+{
+#ifdef MARCEL
+    marcel_init(argc, argv);
+#endif /* MARCEL */
+    piom_init_ltasks();
+    /*    piom_io_task_init(); */
+}
+
+void pioman_exit(void)
+{
+    /*
+      piom_io_task_stop();
+    */
+    piom_exit_ltasks();
+}
+
+
 /* piom_list_poll is the list that contains the polling servers that 
  * have something to poll
  */

@@ -72,10 +72,10 @@ struct piom_ltask
 int piom_ltask_test_activity();
 
 /* initialize internal structures, etc. */
-void piom_init_ltasks ();
+TBX_INTERNAL void piom_init_ltasks(void);
 
 /* destroy internal structures, stop task execution, etc. */
-void piom_exit_ltasks();
+TBX_INTERNAL void piom_exit_ltasks(void);
 
 /* pause task scheduling */
 void piom_ltask_pause();

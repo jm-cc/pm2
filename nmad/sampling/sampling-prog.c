@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/uio.h>
 #include <assert.h>
+#include <values.h>
 
 #include <nm_private.h>
 #include <nm_session_interface.h>
@@ -35,6 +36,14 @@ static const int param_dryrun_count = 2;
 
 static unsigned char*data_send = NULL;
 static unsigned char*data_recv = NULL;
+static double clock_offset = 0.0;
+
+struct nm_sample_bench_s
+{
+  const char*name;
+  void (*send)(struct nm_drv *p_drv, nm_gate_t p_gate, const void*message, size_t size);
+  void (*recv)(struct nm_drv *p_drv, nm_gate_t p_gate, void*message, size_t size);
+};
 
 struct nm_sample_s
 {
@@ -62,19 +71,6 @@ static inline int nm_ns_nb_samples(int size)
     return 5;
 }
 
-static void nm_ns_initialize_pw(struct nm_core *p_core,
-				struct nm_drv  *p_drv,
-				struct nm_gate *p_gate,
-				unsigned char *ptr,
-				struct nm_pkt_wrap **pp_pw)
-{
-  struct nm_pkt_wrap *p_pw = NULL;
-  nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
-  nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
-  *pp_pw = p_pw;
-}
-
 static void nm_ns_fill_data(unsigned char * data)
 {
   unsigned char c = 0;
@@ -89,10 +85,20 @@ static void nm_ns_fill_data(unsigned char * data)
 
 /* *** raw driver send/recv ******************************** */
 
-static void nm_ns_pw_send(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_Driver_s*r, void*ptr, size_t len)
+static void nm_ns_pw_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 {
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   int err;
-  p_pw->v[0].iov_base = ptr;
+  static struct nm_pkt_wrap*p_pw = NULL;
+  /* cache and reuse the same packet wrapper */
+  if(p_pw == NULL)
+    {  
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
+      nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
+    }
+  p_pw->v[0].iov_base = (void*)ptr;
   p_pw->v[0].iov_len  = len;
   p_pw->length = len;
   err = r->driver->post_send_iov(r->_status, p_pw);
@@ -107,9 +113,18 @@ static void nm_ns_pw_send(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
     }
 }
 
-static void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_Driver_s*r, void*ptr, size_t len)
+static void nm_ns_pw_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
 {
+  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   int err;
+  static struct nm_pkt_wrap*p_pw = NULL;
+  if(p_pw == NULL)
+    {  
+      nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+      nm_so_pw_add_raw(p_pw, ptr, param_min_size, 0);
+      nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
+    }
   p_pw->v[0].iov_base = ptr;
   p_pw->v[0].iov_len  = len;
   p_pw->length = len;
@@ -127,7 +142,7 @@ static void nm_ns_pw_recv(struct nm_pkt_wrap*p_pw, struct puk_receptacle_NewMad_
 
 /* *** eager send/recv on trk #0 *************************** */
 
-static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -159,7 +174,7 @@ static void nm_ns_eager_send_copy(struct nm_drv*p_drv, nm_gate_t p_gate, void*pt
   nm_so_pw_free(p_pw);
 }
 
-static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
@@ -169,12 +184,12 @@ static void nm_ns_eager_send_iov(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr
   if(len <= NM_MAX_SMALL)
     {
       nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
-      nm_so_pw_add_data_in_iovec(p_pw, tag, seq, ptr, len, 0, 0);
+      nm_so_pw_add_data_in_iovec(p_pw, tag, seq, (void*)ptr, len, 0, 0);
     }
   else
     {
       nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-      nm_so_pw_add_raw(p_pw, ptr, len, 0);
+      nm_so_pw_add_raw(p_pw, (void*)ptr, len, 0);
     }
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
   nm_so_pw_finalize(p_pw);
@@ -247,7 +262,7 @@ static void nm_ns_eager_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, si
 
 /* *** eager, aggregation ********************************** */
 
-static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t _len)
+static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t _len)
 { 
   const size_t len = _len / 2;
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
@@ -258,8 +273,8 @@ static void nm_ns_eager_send_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
   if(_len <= NM_MAX_SMALL)
     {
       nm_so_pw_alloc(NM_PW_GLOBAL_HEADER, &p_pw);
-      nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr, len, 0, 0);
-      nm_so_pw_add_data_in_header(p_pw, tag, seq, ptr + len, len, 0, 0);
+      nm_so_pw_add_data_in_header(p_pw, tag, seq, (void*)ptr, len, 0, 0);
+      nm_so_pw_add_data_in_header(p_pw, tag, seq, (void*)ptr + len, len, 0, 0);
       nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
       nm_so_pw_finalize(p_pw);
       int err = r->driver->post_send_iov(r->_status, p_pw);
@@ -332,7 +347,7 @@ static void nm_ns_eager_recv_aggreg(struct nm_drv*p_drv, nm_gate_t p_gate, void*
 
 /* *** rdv send/recv on trk #1 ***************************** */
 
-static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
 { 
   int rdv_req = 1, ok_to_send = 0;
   nm_ns_eager_send_copy(p_drv, p_gate, &rdv_req, sizeof(rdv_req));
@@ -342,7 +357,7 @@ static void nm_ns_rdv_send(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   struct nm_pkt_wrap*p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
-  nm_so_pw_add_raw(p_pw, ptr, len, 0);
+  nm_so_pw_add_raw(p_pw, (void*)ptr, len, 0);
   nm_so_pw_assign(p_pw, NM_TRK_LARGE, p_drv, p_gate);
   int err = r->driver->post_send_iov(r->_status, p_pw);
   while(err == -NM_EAGAIN)
@@ -383,98 +398,147 @@ static void nm_ns_rdv_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size
   nm_so_pw_free(p_pw);
 }
 
+/* *** memcpy ********************************************** */
+
+static struct
+{
+  char*buffer;
+  size_t size;
+} workspace = { .buffer = NULL, .size = 0};
+
+static void nm_ns_copy_send(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+{
+  if(workspace.size < len)
+    {
+      workspace.buffer = realloc(workspace.buffer, len);
+      workspace.size = len;
+    }
+  memcpy(workspace.buffer, ptr, len);
+}
+static void nm_ns_copy_recv(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+{
+  if(workspace.size < len)
+    {
+      workspace.buffer = realloc(workspace.buffer, len);
+      workspace.size = len;
+    }
+  memcpy(ptr, workspace.buffer, len);
+}
+
+/* *** eager x2 ******************************************** */
+
+static void nm_ns_eager_send_x2(struct nm_drv*p_drv, nm_gate_t p_gate, const void*ptr, size_t len)
+{
+  nm_ns_eager_send_iov(p_drv, p_gate, ptr, len/2);
+  nm_ns_eager_send_iov(p_drv, p_gate, ptr + len/2, len/2);
+}
+static void nm_ns_eager_recv_x2(struct nm_drv*p_drv, nm_gate_t p_gate, void*ptr, size_t len)
+{
+  nm_ns_eager_recv(p_drv, p_gate, ptr, len/2);
+  nm_ns_eager_recv(p_drv, p_gate, ptr + len/2, len/2);
+}
+
 /* *** pingpong ******************************************** */
 
-static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*sampling_file)
+static double nm_ns_ping_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
 {
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap * sending_pw = NULL;
-  struct nm_pkt_wrap * receiving_pw = NULL;
-  int size = 0;
-
-  nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_send, &sending_pw);
-  nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_recv, &receiving_pw);
-
+  const int roundtrips = nm_ns_nb_samples(size);
+  double*time_array = malloc(sizeof(double)*roundtrips);
   int i;
-  for(i = 0; i < param_dryrun_count; i++)
+  for(i = 0; i < roundtrips; i++)
     {
-      nm_ns_pw_send(sending_pw, r, data_send, param_min_size);
-      nm_ns_pw_recv(receiving_pw, r, data_recv, param_min_size);
+      struct timespec t1, t2;
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      (*p_bench->send)(p_drv, p_gate, data_send, size);
+      (*p_bench->recv)(p_drv, p_gate, data_recv, size);
+      clock_gettime(CLOCK_MONOTONIC, &t2);
+      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0 - clock_offset;
+      const double t = delay / 2.0;
+      time_array[i] = t;
     }
+  double min = DBL_MAX;
+  for(i = 0; i < roundtrips; i++)
+    {
+      if(time_array[i] < min)
+	min = time_array[i];
+    }
+  free(time_array);
+  return min;
+}
+
+static void nm_ns_pong_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const struct nm_sample_bench_s*p_bench, size_t size)
+{
+  const int roundtrips = nm_ns_nb_samples(size);
+  int i;
+  for(i = 0; i < roundtrips; i++)
+    {
+      (*p_bench->recv)(p_drv, p_gate, data_recv, size);
+      (*p_bench->send)(p_drv, p_gate, data_send, size);
+    }
+}
+
+/* *** benches ********************************************* */
+
+const static struct nm_sample_bench_s nm_sample_bench_drv =
+  {
+    .name = "raw driver trk#0",
+    .send = &nm_ns_pw_send,
+    .recv = &nm_ns_pw_recv
+  };
+const static struct nm_sample_bench_s nm_sample_bench_trk0_copy =
+  {
+    .name = "trk#0 protocol with copy",
+    .send = &nm_ns_eager_send_copy,
+    .recv = &nm_ns_eager_recv
+  };
+const static struct nm_sample_bench_s nm_sample_bench_trk1 =
+  {
+    .name = "trk#1 protocol",
+    .send = &nm_ns_rdv_send,
+    .recv = &nm_ns_rdv_recv
+  };
+const static struct nm_sample_bench_s nm_sample_bench_trk0_iov =
+  {
+    .name = "trk#0 protocol with iov",
+    .send = &nm_ns_eager_send_iov,
+    .recv = &nm_ns_eager_recv
+  };
+const static struct nm_sample_bench_s nm_sample_bench_memcpy =
+  {
+    .name = "memcpy",
+    .send = &nm_ns_copy_send,
+    .recv = &nm_ns_copy_recv
+  };
+const static struct nm_sample_bench_s nm_sample_bench_trk0_x2 =
+  {
+    .name = "trk#0 protocol split packets",
+    .send = &nm_ns_eager_send_x2,
+    .recv = &nm_ns_eager_recv_x2
+  };
+const static struct nm_sample_bench_s nm_sample_bench_trk0_aggreg =
+  {
+    .name = "trk#0 aggreg protocol",
+    .send = &nm_ns_eager_send_aggreg,
+    .recv = &nm_ns_eager_recv_aggreg
+  };
+
+static void nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*sampling_file)
+{
+  int size = 0;
 
   for (size = param_min_size; size <= param_max_size; size*= 2)
     {
-      const int param_nb_samples = nm_ns_nb_samples(size);
-      int nb_samples;
-      tbx_tick_t t1, t2;
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_pw_send(sending_pw, r, data_send, size);
-	  nm_ns_pw_recv(receiving_pw, r, data_recv, size);
-	}
-      TBX_GET_TICK(t2);
-      double lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-      double bw_million_byte = size / lat;
-      double bw_mbyte        = bw_million_byte / 1.048576;
+      const double lat             = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_drv, size);
+      const double bw_million_byte = size / lat;
+      const double bw_mbyte        = bw_million_byte / 1.048576;
+      const double eager_lat       = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_trk0_copy, size);
+      const double rdv_lat         = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_trk1, size);
+      const double eager_iov_lat   = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_trk0_iov, size);
+      const double memcpy_lat      = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_memcpy, size);
+      const double eager_iov_split = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_trk0_x2, size);
+      const double eager_iov_aggreg = nm_ns_ping_one(p_drv, p_gate, &nm_sample_bench_trk0_aggreg, size);
 
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_send_copy(p_drv, p_gate, data_send, size);
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size);
-	}
-      TBX_GET_TICK(t2);
-      double eager_lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_rdv_send(p_drv, p_gate, data_send, size);
-	  nm_ns_rdv_recv(p_drv, p_gate, data_recv, size);
-	}
-      TBX_GET_TICK(t2);
-      double rdv_lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send, size);
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size);
-	}
-      TBX_GET_TICK(t2);
-      double eager_iov_lat = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  memcpy(data_recv, data_send, size);
-	}
-      TBX_GET_TICK(t2);
-      double memcpy_lat = TBX_TIMING_DELAY(t1, t2) / param_nb_samples;
-      
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send, size/2);
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send+size/2, size/2);
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size/2);
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv+size/2, size/2);
-	}
-      TBX_GET_TICK(t2);
-      double eager_iov_split = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-
-      TBX_GET_TICK(t1);
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_send_aggreg(p_drv, p_gate, data_send, size);
-	  nm_ns_eager_recv_aggreg(p_drv, p_gate, data_recv, size);
-	}
-      TBX_GET_TICK(t2);
-      double eager_iov_aggreg = TBX_TIMING_DELAY(t1, t2) / (2 * param_nb_samples);
-
-      fprintf(stderr, "%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+      fprintf(stderr, "%9d\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\t%9.3lf\n",
 	      size, lat, bw_mbyte, eager_lat, rdv_lat, eager_iov_lat, memcpy_lat, eager_iov_split, eager_iov_aggreg);
       if(sampling_file)
 	fprintf(sampling_file, "%d\t%lf\n", size, bw_mbyte);
@@ -492,76 +556,23 @@ static int nm_ns_ping(struct nm_drv *p_drv, struct nm_gate *p_gate, FILE*samplin
       nm_sample_vect_push_back(samples, sample);
       size = (size==0? 1:size);
     }
-
-  nm_so_pw_free(sending_pw);
-  nm_so_pw_free(receiving_pw);
-
-  return NM_ESUCCESS;
 }
 
-static int nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
+static void nm_ns_pong(struct nm_drv *p_drv, struct nm_gate *p_gate)
 {
-  struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-  struct nm_pkt_wrap * sending_pw = NULL;
-  struct nm_pkt_wrap * receiving_pw = NULL;
   int size = 0;
-
-  nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_send, &sending_pw);
-  nm_ns_initialize_pw(p_drv->p_core, p_drv, p_gate, data_recv, &receiving_pw);
-
-  int i;
-  for(i = 0; i < param_dryrun_count; i++)
-    {
-      nm_ns_pw_recv(receiving_pw, r, data_recv, param_min_size);
-      nm_ns_pw_send(sending_pw, r, data_send, param_min_size);
-    }
-
   for (size = param_min_size; size <= param_max_size; size*= 2)
     {
-      const int param_nb_samples = nm_ns_nb_samples(size);
-      int nb_samples;
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_pw_recv(receiving_pw, r, data_recv, size);
-	  nm_ns_pw_send(sending_pw, r, data_send, size);
-	}
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size);
-	  nm_ns_eager_send_copy(p_drv, p_gate, data_send, size);
-	}
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_rdv_recv(p_drv, p_gate, data_recv, size);
-	  nm_ns_rdv_send(p_drv, p_gate, data_send, size);
-	}
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size);
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send, size);
-	}
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv, size/2);
-	  nm_ns_eager_recv(p_drv, p_gate, data_recv+size/2, size/2);
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send, size/2);
-	  nm_ns_eager_send_iov(p_drv, p_gate, data_send+size/2, size/2);
-	}
-      for(nb_samples = 0; nb_samples < param_nb_samples; nb_samples++)
-	{
-	  nm_ns_eager_recv_aggreg(p_drv, p_gate, data_recv, size);
-	  nm_ns_eager_send_aggreg(p_drv, p_gate, data_send, size);
-	}
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_drv, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_trk0_copy, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_trk1, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_trk0_iov, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_memcpy, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_trk0_x2, size);
+      nm_ns_pong_one(p_drv, p_gate, &nm_sample_bench_trk0_aggreg, size);
+
       size = (size==0? 1:size);
     }
-  
-  nm_so_pw_free(sending_pw);
-  nm_so_pw_free(receiving_pw);
-  TBX_FREE(data_send);
-  TBX_FREE(data_recv);
-
-  return NM_ESUCCESS;
 }
 
 /* ********************************************************* */
@@ -654,6 +665,23 @@ int main(int argc, char **argv)
   data_recv = TBX_MALLOC(param_max_size);
   nm_ns_fill_data(data_send);
 
+  /* clock calibration */
+  double offset = 100.0;
+  int i;
+  for(i = 0; i < 1000; i++)
+    {
+      struct timespec t1, t2;
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      clock_gettime(CLOCK_MONOTONIC, &t2);
+      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
+      if(delay < offset)
+	offset = delay;
+    }
+  struct timespec res;
+  clock_getres(CLOCK_MONOTONIC, &res);
+  fprintf(stderr, "# clock offset = %f; res = %ld:%ld\n", offset, res.tv_sec, res.tv_nsec);
+  clock_offset = offset;
+
   if(!is_server)
     {
       FILE*sampling_file = NULL;
@@ -661,7 +689,7 @@ int main(int argc, char **argv)
 	{
 	  const char*filename = argv[1];
 	  fprintf(stderr, "# sampling:  writing file %s\n", filename);
-	  fprintf(stderr, "# size\t|raw latency\t|raw bw \t| trk#0 latency\t| trk#1 latency\t| trk#0 iov\t| memcpy\t|2 pkts \t| aggreg\n");
+	  fprintf(stderr, "# size\t | raw lat.\t | raw bw \t | trk#0 lat.\t | trk#1 lat.\t | trk#0 iov\t | memcpy\t | 2 pkts \t | aggreg\n");
 	  sampling_file = fopen(filename, "w");
 	  if(sampling_file == NULL)
 	    {
@@ -680,6 +708,9 @@ int main(int argc, char **argv)
     }
 
   nm_launcher_exit();
+
+  TBX_FREE(data_send);
+  TBX_FREE(data_recv);
 
   return 0;
 }

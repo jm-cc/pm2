@@ -19,23 +19,41 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <values.h>
 
 #include "helper.h"
 
-#define LOOPS   20000
+#define LOOPS 20000
+
+static double clock_offset = 0.0;
 
 int main(int argc, char**argv)
 {
   nm_pack_cnx_t cnx;
   
   init(&argc, argv);
-  
+
+  /* clock calibration */
+  double offset = 100.0;
+  int i;
+  for(i = 0; i < 1000; i++)
+    {
+      struct timespec t1, t2;
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      clock_gettime(CLOCK_MONOTONIC, &t2);
+      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
+      if(delay < offset)
+	offset = delay;
+    }
+  struct timespec res;
+  clock_getres(CLOCK_MONOTONIC, &res);
+  clock_offset = offset;
+
   if (is_server)
     {
-      int k;
       /* server
        */
-      for(k = 0; k < LOOPS; k++)
+      for(i = 0; i < LOOPS; i++)
 	{
 	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
 	  nm_unpack(&cnx, NULL, 0);
@@ -48,14 +66,14 @@ int main(int argc, char**argv)
     }
   else
     {
-      tbx_tick_t t1, t2;
-      int k;
       /* client
        */
-      TBX_GET_TICK(t1);
-      
-      for(k = 0; k < LOOPS; k++) 
+      double min = DBL_MAX;
+      for(i = 0; i < LOOPS; i++) 
 	{
+	  struct timespec t1, t2;
+	  clock_gettime(CLOCK_MONOTONIC, &t1);
+
 	  nm_begin_packing(p_core, gate_id, 0, &cnx);
 	  nm_pack(&cnx, NULL, 0);
 	  nm_end_packing(&cnx);
@@ -63,11 +81,14 @@ int main(int argc, char**argv)
 	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
 	  nm_unpack(&cnx, NULL, 0);
 	  nm_end_unpacking(&cnx);
+	  clock_gettime(CLOCK_MONOTONIC, &t2);
+	  const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0 - clock_offset;
+	  const double t = delay / 2.0;
+	  if(t < min)
+	    min = t;
 	}
       
-      TBX_GET_TICK(t2);
-      
-      printf("latency = %lf usec.\n", TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
+      printf("latency: %9.3lf usec.\n", min);
       
     }
   

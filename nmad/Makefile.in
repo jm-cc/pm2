@@ -72,32 +72,57 @@ libnmad.so: $(OBJ_FILES)
 
 $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 
+# ## Tests
+
 check: tests
 
-tests: install
-	@( for d in $(EXAMPLE_DIRS); do \
-             echo "  [TESTS]  in $$d/"; \
-             $(MAKE) -C $$d tests; \
-           done )
+TESTS_RESULTS = @nmad_builddir@/.test-results
+CLEAN_MORE += $(TESTS_RESULTS)
 
+tests: install
+	$(Q)-/bin/rm @nmad_builddir@/.test-results
+	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
+	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
+	$(Q)echo "TESTS_FAILED = "                        >> $(TESTS_RESULTS)
+	$(Q)( for d in $(EXAMPLE_DIRS); do \
+                echo "  [TESTS]  in $$d/"; \
+                $(MAKE) -C $$d tests TESTS_RESULTS=$(TESTS_RESULTS) ; \
+              done )
+	$(Q)$(MAKE) show-tests-results
+
+-include $(TESTS_RESULTS)
+show-tests-results:
+	@echo
+	@echo " Tests results:"
+	@echo "   success: $(words $(TESTS_SUCCESS))"
+	@echo "   failed:  $(words $(TESTS_FAILED)) [ $(TESTS_FAILED) ]"
+	@echo
+
+# ## Examples
+#
 examples: install
-	@( for d in $(EXAMPLE_DIRS); do \
-             echo "  [ALL]    in $$d/"; \
-             $(MAKE) -C $$d ; \
-             echo "  [INST]   in $$d/"; \
-             $(MAKE) -C $$d install ; \
-           done )
+	$(Q)( \
+              for d in $(EXAMPLE_DIRS); do \
+                echo "  [ALL]    in $$d/"; \
+                $(MAKE) -C $$d ; \
+                echo "  [INST]   in $$d/"; \
+                $(MAKE) -C $$d install ; \
+              done )
 
 clean-examples:
-	@( for d in $(EXAMPLE_DIRS); do \
-             echo "  [CLEAN]  in $$d"; \
-             $(MAKE) -C $$d clean; \
-           done )
+	$(Q)( \
+              for d in $(EXAMPLE_DIRS); do \
+                echo "  [CLEAN]  in $$d"; \
+                $(MAKE) -C $$d clean; \
+              done )
 
+# ## Fortran stuff
+#
 $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
 	@$(SHOWMK) "  [F90]    $@"
 	$(Q)$(MKDIR) $(madmpi_f90_builddir)
-	$(Q)( cd $(madmpi_f90_builddir) ; $(FC) $(FFLAGS) -c -o ./$*.o $< ) # change dir because -M<dir> is not portable
+	$(Q)( cd $(madmpi_f90_builddir) ; $(FC) $(FFLAGS) -c -o ./$*.o $< ) 
+        # change dir end gen mod in . because -M<dir> is not portable
 
 # dirty ordered modules because of no make dep for Fortran
 $(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod

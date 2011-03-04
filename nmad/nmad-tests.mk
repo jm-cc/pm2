@@ -21,6 +21,9 @@ $(TARGET_TESTS): test-%: %
 	@( \
           t="$*"; \
           testid="$${USER}-$$$$" ; \
+          if [ "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
+             echo "# running test $* in $(srcdir)" >> $(TESTS_RESULTS) ; \
+          fi ; \
           if [ -r $(srcdir)/$*.out ]; then \
             padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
             rc=$$? ; \
@@ -31,7 +34,9 @@ $(TARGET_TESTS): test-%: %
           if [ "x$${rc}" != "x0" ]; then \
             echo "           FAILED- rc=$rc" ; \
             if [ -r /tmp/result-$${testid} ]; then rm /tmp/result-$${testid}; fi ;\
-            exit $${rc}; \
+            if [ "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
+              echo "TESTS_FAILED += $*" >> $(TESTS_RESULTS) ; \
+            fi ; \
           fi ; \
           if [ -r $(srcdir)/$*.out ]; then \
             echo "           checking output" ; \
@@ -41,9 +46,14 @@ $(TARGET_TESTS): test-%: %
 	      echo "           FAILED- wrong output" ; \
               diff  --strip-trailing-cr -u /tmp/result-$${testid} $(srcdir)/$*.out ; \
 	      rm /tmp/result-$${testid}; \
-              exit $${rc}; \
+              if [ "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
+                echo "TESTS_FAILED += $*" >> $(TESTS_RESULTS) ; \
+              fi ; \
             fi ; \
 	    rm /tmp/result-$${testid}; \
+          fi ; \
+          if [ "x$${rc}" = "x0" -a "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
+             echo "TESTS_SUCCESS += $*" >> $(TESTS_RESULTS) ; \
           fi ; \
           exit $$rc \
         )

@@ -54,8 +54,7 @@ $(TARGET_TESTS): test-%: %
           fi ; \
           if [ "x$${rc}" = "x0" -a "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
              echo "TESTS_SUCCESS += $*" >> $(TESTS_RESULTS) ; \
+             echo "           SUCCESS." ; \
           fi ; \
-          exit $$rc \
         )
-	@echo "           SUCCESS."
 

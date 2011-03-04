@@ -7,6 +7,8 @@ NMAD_HOSTS = localhost
 
 TEST_FILTER = cat
 
+TEST_TIMEOUT = 60
+
 TARGET_TESTS = $(patsubst %, test-%, $(TESTS))
 
 
@@ -20,10 +22,10 @@ $(TARGET_TESTS): test-%: %
           t="$*"; \
           testid="$${USER}-$$$$" ; \
           if [ -r $(srcdir)/$*.out ]; then \
-            padico-launch -q -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
+            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
             rc=$$? ; \
           else \
-            padico-launch -q -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t ; \
+            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t ; \
             rc=$$? ; \
           fi ; \
           if [ "x$${rc}" != "x0" ]; then \

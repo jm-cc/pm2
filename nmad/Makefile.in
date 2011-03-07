@@ -73,7 +73,7 @@ libnmad.so: $(OBJ_FILES)
 $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 
 # ## Tests
-
+#
 check: tests
 
 TESTS_RESULTS = @nmad_builddir@/.test-results
@@ -97,6 +97,15 @@ show-tests-results:
 	@echo "   success: $(words $(TESTS_SUCCESS))"
 	@echo "   failed:  $(words $(TESTS_FAILED)) [ $(TESTS_FAILED) ]"
 	@echo
+
+# ## Benchmarks
+#
+bench: install
+	$(Q)( for d in $(EXAMPLE_DIRS); do \
+                echo "  [BENCH]  in $$d/"; \
+                $(MAKE) -C $$d bench  ; \
+              done )
+
 
 # ## Examples
 #

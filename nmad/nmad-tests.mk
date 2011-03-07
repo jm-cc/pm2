@@ -11,9 +11,11 @@ TEST_TIMEOUT = 60
 
 TARGET_TESTS = $(patsubst %, test-%, $(TESTS))
 
+TARGET_BENCH = $(patsubst %, bench-%, $(BENCH))
 
 tests: $(TARGET_TESTS)
 
+bench: $(TARGET_BENCH)
 
 $(TARGET_TESTS): test-%: %
 	@echo "  [TEST]   $*"
@@ -57,4 +59,10 @@ $(TARGET_TESTS): test-%: %
              echo "           SUCCESS." ; \
           fi ; \
         )
+
+$(TARGET_BENCH): bench-%: %
+	@echo "  [BENCH]  $*"
+	@echo "           running $(NMAD_NODES) nodes on hosts: $(NMAD_HOSTS); network: $(NMAD_DRIVER)"
+	@padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* 
+	@echo "           done."
 

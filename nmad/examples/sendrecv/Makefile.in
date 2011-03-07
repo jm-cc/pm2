@@ -26,7 +26,7 @@ $(TARGET_BIN): %: %.pic.o
 
 sr_thread: LIBS += -lpthread
 
-TESTS += sr_ping
+BENCH += sr_bench
 
 include @nmad_srcdir@/nmad-tests.mk
 

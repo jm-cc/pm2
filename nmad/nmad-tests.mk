@@ -13,7 +13,18 @@ TARGET_TESTS = $(patsubst %, test-%, $(TESTS))
 
 TARGET_BENCH = $(patsubst %, bench-%, $(BENCH))
 
-tests: $(TARGET_TESTS)
+tests:
+	$(Q)( for t in $(TARGET_TESTS); do \
+                $(MAKE) $${t} ; \
+                rc=$$? ; \
+                if [ $${rc} != 0 ]; then \
+                  if [ "x$(TESTS_RESULTS)" != "x" -a -w "$(TESTS_RESULTS)" ]; then \
+                    echo "TESTS_FAILED += $$t"  >> "$(TESTS_RESULTS)" ; \
+                    echo "  [TEST]   $$t compilation FAILED" ; \
+                  fi ; \
+                fi ; \
+              done \
+            )
 
 bench: $(TARGET_BENCH)
 

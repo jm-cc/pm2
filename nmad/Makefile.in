@@ -34,7 +34,7 @@ SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
 CFLAGS   += $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
-EXAMPLE_DIRS = examples/pack/ examples/sendrecv/
+EXAMPLE_DIRS = examples/pack examples/sendrecv
 
 # make multiple directories fit inside a single module
 SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
@@ -92,6 +92,10 @@ tests: install
 
 -include $(TESTS_RESULTS)
 show-tests-results:
+	@echo
+	@echo "%-------------------"
+	@echo 
+	@echo " Tests series: $(patsubst examples/%, %, $(EXAMPLE_DIRS))"
 	@echo
 	@echo " Tests results:"
 	@echo "   success: $(words $(TESTS_SUCCESS))"

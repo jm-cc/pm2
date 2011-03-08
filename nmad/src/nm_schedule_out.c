@@ -174,8 +174,8 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
     {
       /* immediate succes, process request completion */
       NM_TRACEF("request completed immediately");
-      
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+      nm_pw_free(p_pw);
     }
   else
     {

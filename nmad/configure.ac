@@ -229,7 +229,7 @@ AC_ARG_ENABLE(mpi,
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    out_mk="${out_mk} examples/mpi/basics/Makefile"
+		    out_mk="${out_mk} examples/mpi/basics/Makefile examples/mpi/benchmarks/Makefile"
 		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
 		    if test "x${nmad_target_fortran}" != "xnone"; then
 		        out_mk="${out_mk} examples/mpi/fortran/Makefile examples/mpi/f90/Makefile"

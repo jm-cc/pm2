@@ -33,8 +33,8 @@
 #define MAX_DEFAULT      (8 * 1024 * 1024)
 #define MULT_DEFAULT     2
 #define INCR_DEFAULT     0
-#define WARMUPS_DEFAULT  100
-#define LOOPS_DEFAULT    2000
+#define WARMUPS_DEFAULT  10
+#define LOOPS_DEFAULT    200
 #define NB_TESTS_DEFAULT 1
 
 // Types
@@ -62,9 +62,9 @@ static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
   if (!len)
-    return 1+increment;
+    return 1;
   else
-    return len*multiplier+increment;
+    return len * multiplier + increment;
 }
 
 static void usage_bench(void) {

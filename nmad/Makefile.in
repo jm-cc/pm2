@@ -50,7 +50,7 @@ TARGET_CLEAN += clean-examples
 madmpi_f90_srcdir   := $(srcdir)/interfaces/mpi/src/f90modules
 madmpi_f90_builddir := ./interfaces/mpi/src/f90modules
 ifneq ($(findstring mpi,  @nmad_interfaces@),)
-EXAMPLE_DIRS += examples/mpi/basics
+EXAMPLE_DIRS += examples/mpi/basics examples/mpi/benchmarks
 ifneq (@nmad_fortran_support@,none)
 CFLAGS  += -I$(madmpi_f90_builddir)
 MADMPI_F90_FILES := mpi_constants mpi1 mpi

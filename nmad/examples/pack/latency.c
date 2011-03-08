@@ -22,37 +22,22 @@
 #include <values.h>
 
 #include "helper.h"
+#include "../sendrecv/clock.h"
 
 #define LOOPS 20000
-
-static double clock_offset = 0.0;
 
 int main(int argc, char**argv)
 {
   nm_pack_cnx_t cnx;
   
   init(&argc, argv);
-
-  /* clock calibration */
-  double offset = 100.0;
-  int i;
-  for(i = 0; i < 1000; i++)
-    {
-      struct timespec t1, t2;
-      clock_gettime(CLOCK_MONOTONIC, &t1);
-      clock_gettime(CLOCK_MONOTONIC, &t2);
-      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
-      if(delay < offset)
-	offset = delay;
-    }
-  struct timespec res;
-  clock_getres(CLOCK_MONOTONIC, &res);
-  clock_offset = offset;
+  clock_init();
 
   if (is_server)
     {
       /* server
        */
+      int i;
       for(i = 0; i < LOOPS; i++)
 	{
 	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
@@ -68,6 +53,7 @@ int main(int argc, char**argv)
     {
       /* client
        */
+      int i;
       double min = DBL_MAX;
       for(i = 0; i < LOOPS; i++) 
 	{
@@ -82,13 +68,13 @@ int main(int argc, char**argv)
 	  nm_unpack(&cnx, NULL, 0);
 	  nm_end_unpacking(&cnx);
 	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0 - clock_offset;
+	  const double delay = clock_diff(t1, t2);
 	  const double t = delay / 2.0;
 	  if(t < min)
 	    min = t;
 	}
       
-      printf("latency: %9.3lf usec.\n", min);
+      printf("pack latency: %9.3lf usec.\n", min);
       
     }
   

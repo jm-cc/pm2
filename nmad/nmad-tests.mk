@@ -8,6 +8,7 @@ NMAD_HOSTS = localhost
 TEST_FILTER = cat
 
 TEST_TIMEOUT = 60
+BENCH_TIMEOUT = 180
 
 TARGET_TESTS = $(patsubst %, test-%, $(TESTS))
 
@@ -74,6 +75,6 @@ $(TARGET_TESTS): test-%: %
 $(TARGET_BENCH): bench-%: %
 	@echo "  [BENCH]  $*"
 	@echo "           running $(NMAD_NODES) nodes on hosts: $(NMAD_HOSTS); network: $(NMAD_DRIVER)"
-	@padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* 
+	@padico-launch -q --timeout $(BENCH_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* 
 	@echo "           done."
 

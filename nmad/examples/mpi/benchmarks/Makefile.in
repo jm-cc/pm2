@@ -1,0 +1,50 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN = pingpong mpi_latency
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+CC       := @nmad_root@/bin/mpicc
+CFLAGS   := 
+LD       := $(CC)
+LDFLAGS  :=
+LIBS     :=
+
+include @puk_root@/etc/common_rules.mk
+
+#$(TARGET_BIN): %: %.pic.o
+
+TESTS +=
+BENCH += mpi_latency
+
+include @nmad_srcdir@/nmad-tests.mk
+
+
+mpi_para_ping: mpi_para_ping.pic.o
+
+pingpong: pingpong.pic.o structType.pic.o vectorType.pic.o indexType.pic.o toolbox.pic.o
+
+index: index.pic.o indexType.pic.o toolbox.pic.o
+
+vector: vector.pic.o vectorType.pic.o toolbox.pic.o
+
+struct: struct.pic.o structType.pic.o toolbox.pic.o
+
+indexType_hetero_size: indexType_hetero_size.pic.o
+
+mpi_multi_ping: mpi_multi_ping.pic.o
+
+mpi_latency: mpi_latency.pic.o
+
+mpi_multi_ping_hetero: mpi_multi_ping_hetero.pic.o

@@ -19,27 +19,17 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <values.h>
 
 #include "helper.h"
+#include "clock.h"
 
 #define MIN_DEFAULT     0
 #define MAX_DEFAULT     (512 * 1024 * 1024)
 #define MULT_DEFAULT    2
 #define INCR_DEFAULT    0
-#define WARMUPS_DEFAULT 10
-#define LOOPS_DEFAULT   100
+#define LOOPS_DEFAULT   100000
 
-static inline int _passes(uint32_t len)
-{
-  if(len > 2 * 1024 * 1024)
-    return 5;
-  else if(len > 64 * 1024)
-    return 20;
-  else if(len > 4096)
-    return 200;
-  else
-    return 1000;
-}
 
 static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
 {
@@ -50,7 +40,9 @@ static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increme
 
 static inline uint32_t _iterations(int iterations, uint32_t len)
 {
-  const uint64_t max_data = 16 * 1024 * 1024;
+  const uint64_t max_data = 512 * 1024 * 1024;
+  if(len <= 0)
+    len = 1;
   uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
   if(data_size  > max_data)
     {
@@ -70,7 +62,6 @@ static void usage_ping(void) {
   fprintf(stderr, "\tNext(0)      = 1+increment\n");
   fprintf(stderr, "\tNext(length) = length*multiplier+increment\n");
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
-  fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
 static void fill_buffer(char *buffer, int len) {
@@ -92,10 +83,10 @@ int main(int argc, char	**argv)
   uint32_t         multiplier     = MULT_DEFAULT;
   uint32_t         increment      = INCR_DEFAULT;
   int              iterations     = LOOPS_DEFAULT;
-  int              warmups        = WARMUPS_DEFAULT;
   int              i;
   
   init(&argc, argv);
+  clock_init();
   
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
@@ -119,9 +110,6 @@ int main(int argc, char	**argv)
     else if (!strcmp(argv[i], "-N")) {
       iterations = atoi(argv[i+1]);
     }
-    else if (!strcmp(argv[i], "-W")) {
-      warmups = atoi(argv[i+1]);
-    }
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
@@ -130,7 +118,6 @@ int main(int argc, char	**argv)
     }
   }
   
-  char* buf = malloc(end_len);
   if(is_server)
     {
       /* server
@@ -139,11 +126,10 @@ int main(int argc, char	**argv)
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
 	  int k;
+	  char* buf = malloc(len);
 	  clear_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
-	  if(warmups > iterations)
-	    warmups = iterations;
-	  for(k = 0; k < iterations * _passes(len) + warmups; k++)
+	  for(k = 0; k < iterations; k++)
 	    {
 	      nm_sr_request_t request;
 	      
@@ -153,69 +139,50 @@ int main(int argc, char	**argv)
 	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
 	      nm_sr_swait(p_core, &request);
 	    }
+	  free(buf);
 	}
     }
   else 
     {
       /* client
        */
-      tbx_tick_t t1, t2;
+      struct timespec t1, t2;
       printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
       uint32_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
-	  int k;
+	  char* buf = malloc(len);
 	  iterations = _iterations(iterations, len);
-	  if(warmups > iterations)
-	    warmups = iterations;
-	  fill_buffer(buf, len);
-	  
-	  for(k = 0; k < warmups; k++)
+	  double lat = DBL_MAX;
+	  int k;
+	  for(k = 0; k < iterations; k++)
 	    {
 	      nm_sr_request_t request;
-	      
+	      clock_gettime(CLOCK_MONOTONIC, &t1);
 	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
 	      nm_sr_swait(p_core, &request);
-	      
 	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
 	      nm_sr_rwait(p_core, &request);
-	    }
-	  
-	  double best = -1;
-	  int p;
-	  for(p = 0; p < _passes(len); p++)
-	    {
-	      TBX_GET_TICK(t1);
-	      for(k = 0; k < iterations; k++)
-		{
-		  nm_sr_request_t request;
-		  
-		  nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-		  nm_sr_swait(p_core, &request);
-		  
-		  nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-		  nm_sr_rwait(p_core, &request);
-		}	  
-	      TBX_GET_TICK(t2);	  
-	      double sum = TBX_TIMING_DELAY(t1, t2);
-	      if(best < 0 || sum < best)
-		best = sum;
-	    }
-	  double lat	         = best / (2 * iterations);
-	  double bw_million_byte = len * (iterations / (best / 2));
+	      clock_gettime(CLOCK_MONOTONIC, &t2);
+	      const double delay = clock_diff(t1, t2);
+	      const double t = delay / 2;
+	      if(t < lat)
+		lat = t;
+	    }	  
+	  double bw_million_byte = len / lat;
 	  double bw_mbyte        = bw_million_byte / 1.048576;
 	  
 #ifdef MARCEL
-	  printf("%d\t%lf\t%8.3f\t%8.3f\tmarcel\n",
+	  printf("%9d\t%9.3lf\t%9.3f\t%9.3f\tmarcel\n",
 		 len, lat, bw_million_byte, bw_mbyte);
 #else
-	  printf("%d\t%lf\t%8.3f\t%8.3f\n",
+	  printf("%9d\t%9.3lf\t%9.3f\t%9.3f\n",
 		 len, lat, bw_million_byte, bw_mbyte);
 #endif
+	  free(buf);
 	}
     }
   
-  free(buf);
   nmad_exit();
   exit(0);
 }

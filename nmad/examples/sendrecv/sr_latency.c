@@ -19,65 +19,55 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <values.h>
 
 #include "helper.h"
+#include "clock.h"
 
-#define WARMUP  100
-#define LOOPS   5000
+#define LOOPS   20000
 
-int
-main(int	  argc,
-     char	**argv) {
-        init(&argc, argv);
+int main(int argc, char**argv)
+{
+  init(&argc, argv);
+  clock_init();
 
-        if (is_server) {
-	  int k;
-                /* server
-                 */
-		for(k = 0; k < LOOPS + WARMUP; k++) {
-		  nm_sr_request_t request;
-
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_rwait(p_core, &request);
-
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_swait(p_core, &request);
-		  }
-
-        } else {
-	  tbx_tick_t t1, t2;
-	  int k;
-                /* client
-                 */
-		/* Warm up */
-		for(k = 0; k < WARMUP; k++) {
-		  nm_sr_request_t request;
-
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_swait(p_core, &request);
-
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_rwait(p_core, &request);
-		}
-
-		TBX_GET_TICK(t1);
-
-		for(k = 0; k < LOOPS; k++) {
-		  nm_sr_request_t request;
-
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_swait(p_core, &request);
-
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_rwait(p_core, &request);
-		}
-
-		TBX_GET_TICK(t2);
-
-		printf("latency = %lf us\n", TBX_TIMING_DELAY(t1, t2)/(2*LOOPS));
-
-        }
-
-        nmad_exit();
-        exit(0);
+  if (is_server) 
+    {
+      int k;
+      /* server
+       */
+      for(k = 0; k < LOOPS; k++)
+	{
+	  nm_sr_request_t request;
+	  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
+	  nm_sr_rwait(p_core, &request);
+	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
+	  nm_sr_swait(p_core, &request);
+	}
+    }
+  else 
+    {
+      /* client
+       */
+      int k;
+      double min = DBL_MAX;
+      for(k = 0; k < LOOPS; k++)
+	{
+	  nm_sr_request_t request;
+	  struct timespec t1, t2;
+	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
+	  nm_sr_swait(p_core, &request);
+	  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
+	  nm_sr_rwait(p_core, &request);
+	  clock_gettime(CLOCK_MONOTONIC, &t2);
+	  const double delay = clock_diff(t1, t2);
+	  const double t = delay / 2.0;
+	  if(t < min)
+	    min = t;
+	}
+      printf("sendrecv latency: %9.3lf usec.\n", min);
+    }
+  nmad_exit();
+  exit(0);
 }

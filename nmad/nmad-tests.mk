@@ -39,33 +39,31 @@ $(TARGET_TESTS): test-%: %
              echo "# running test $* in $(srcdir)" >> "$(TESTS_RESULTS)" ; \
           fi ; \
           if [ -r $(srcdir)/$*.out ]; then \
-            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
+            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
             rc=$$? ; \
           else \
-            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$$t ; \
+            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t ; \
             rc=$$? ; \
           fi ; \
           if [ "x$${rc}" != "x0" ]; then \
-            echo "           FAILED- rc=$rc" ; \
+            echo "           FAILED- rc=$${rc}" ; \
             if [ -r /tmp/result-$${testid} ]; then rm /tmp/result-$${testid}; fi ;\
             if [ "x$(TESTS_RESULTS)" != "x" -a -w "$(TESTS_RESULTS)" ]; then \
               echo "TESTS_FAILED += $*" >> "$(TESTS_RESULTS)" ; \
             fi ; \
-          fi ; \
-          if [ -r $(srcdir)/$*.out ]; then \
+          elif [ -r $(srcdir)/$*.out ]; then \
             echo "           checking output" ; \
             diff  --strip-trailing-cr -u /tmp/result-$${testid} $(srcdir)/$*.out > /dev/null ; \
             rc=$$? ; \
             if [ "x$${rc}" != "x0" ]; then \
 	      echo "           FAILED- wrong output" ; \
               diff  --strip-trailing-cr -u /tmp/result-$${testid} $(srcdir)/$*.out ; \
-	      rm /tmp/result-$${testid}; \
               if [ "x$(TESTS_RESULTS)" != "x" -a -w $(TESTS_RESULTS) ]; then \
                 echo "TESTS_FAILED += $*" >> "$(TESTS_RESULTS)" ; \
               fi ; \
             fi ; \
-	    rm /tmp/result-$${testid}; \
           fi ; \
+          if [ -r /tmp/result-$${testid} ]; then rm /tmp/result-$${testid}; fi ;\
           if [ "x$${rc}" = "x0" -a "x$(TESTS_RESULTS)" != "x" -a -w "$(TESTS_RESULTS)" ]; then \
              echo "TESTS_SUCCESS += $*" >> "$(TESTS_RESULTS)" ; \
              echo "           SUCCESS." ; \

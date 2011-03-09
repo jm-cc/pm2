@@ -156,7 +156,7 @@ if test "x${with_ibverbs}" != "xno" ; then
       	      IBLIBPATH=${IBHOME}/lib
            fi
       	   ibverbs_CLAGS="-I$IBHOME/include"
-      	   ibverbs_LIBS="-L$IBLIBPATH"
+      	   ibverbs_LIBS="-Wl,-rpath,${IBLIBPATH} -L${IBLIBPATH}"
         fi
 	ibverbs_LIBS="${ibverbs_LIBS} -libverbs"
     elif test "x${with_ibverbs}" != "xcheck"; then
@@ -166,8 +166,12 @@ fi
 
 dnl -- MX
 if test "x$MX_DIR" = "x" ; then
-    if test -r /opt/mx/include/myriexpress.h ; then
-        MX_DIR=/opt/mx
+    if test "x${MX_ROOT}" = "x"; then
+        if test -r /opt/mx/include/myriexpress.h ; then
+    	    MX_DIR=/opt/mx
+        fi
+    else
+	MX_DIR=${MX_ROOT}
     fi
 fi
 HAVE_MX=no
@@ -187,7 +191,7 @@ if test "x${with_mx}" != "xno" ; then
         nmad_drivers="${nmad_drivers} mx"
         if test "x${MX_DIR}" != "x" -a "x${MX_DIR}" != "x/usr"; then
       	   mx_CFLAGS="-I${MX_DIR}/include"
-      	   mx_LIBS="-L${MX_DIR}/lib"
+      	   mx_LIBS="-Wl,-rpath,${MX_DIR}/lib -L${MX_DIR}/lib"
         fi
 	mx_LIBS="${mx_LIBS} -lmyriexpress"
     elif test "x${with_mx}" != "xcheck"; then

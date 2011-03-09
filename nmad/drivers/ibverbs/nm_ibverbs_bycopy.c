@@ -16,6 +16,7 @@
 /* -*- Mode: C; tab-width: 2; c-basic-offset: 2 -*- */
 
 #include "nm_ibverbs.h"
+#include <errno.h>
 
 #include <Padico/Module.h>
 
@@ -164,7 +165,9 @@ static void nm_ibverbs_bycopy_cnx_create(void*_status, struct nm_ibverbs_cnx*p_i
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(bycopy->mr == NULL)
     {
-      TBX_FAILURE("Infiniband: bycopy cannot register MR.\n");
+      const int err = errno;
+      TBX_FAILUREF("Infiniband: bycopy cannot register MR (errno = %d; %s).\n",
+		   err, strerror(err));
     }
   bycopy->cnx = p_ibverbs_cnx;
 }

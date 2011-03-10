@@ -1,0 +1,32 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
+TARGET_LIB =
+TARGET_MOD =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+
+
+CFLAGS  := $(shell pkg-config --cflags nmad)
+LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
+LIBS    := $(shell pkg-config --libs nmad)
+
+include @puk_root@/etc/common_rules.mk
+
+$(TARGET_BIN): %: %.pic.o
+
+TESTS += 
+BENCH += driver_latency core_latency
+
+include @nmad_srcdir@/nmad-tests.mk
+

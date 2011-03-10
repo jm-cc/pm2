@@ -34,7 +34,7 @@ SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
 CFLAGS   += $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
-EXAMPLE_DIRS = examples/pack examples/sendrecv
+EXAMPLE_DIRS = examples/pack examples/sendrecv examples/lowlevel
 
 # make multiple directories fit inside a single module
 SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
@@ -99,7 +99,8 @@ show-tests-results:
 	@echo
 	@echo " Tests results:"
 	@echo "   success: $(words $(TESTS_SUCCESS))"
-	@echo "   failed:  $(words $(TESTS_FAILED)) [ $(TESTS_FAILED) ]"
+	@echo "   failed:  $(words $(TESTS_FAILED))"
+	@( if [ "$(words $(TESTS_FAILED))" != 0 ]; then echo "     [ $(TESTS_FAILED) ]"; fi )
 	@echo
 
 # ## Benchmarks

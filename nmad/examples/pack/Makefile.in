@@ -25,8 +25,8 @@ include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
-TESTS += latency large_small_large_small
-BENCH += latency ping ping_any
+TESTS += pack_latency large_small_large_small
+BENCH += pack_latency pack_ping pack_ping_anysrc
 
 include @nmad_srcdir@/nmad-tests.mk
 

@@ -256,8 +256,10 @@ struct nm_so_monitor_s
   nm_event_notifier_t notifier;
   nm_status_t mask;
 };
-/** Add an event monitor. */
-void nm_so_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m);
+/** Register an event monitor. */
+void nm_core_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m);
+/** Unregister an event monitor. */
+void nm_core_monitor_remove(nm_core_t p_core, const struct nm_so_monitor_s*m);
 
 
 /* ** Progression ****************************************** */

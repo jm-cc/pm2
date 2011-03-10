@@ -106,9 +106,9 @@ int nm_sr_init(nm_session_t p_session)
   if(!nm_sr_data.init_done)
     {
       /* Fill-in scheduler callbacks */
-      nm_so_monitor_add(p_core, &nm_sr_monitor_unexpected);
-      nm_so_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
-      nm_so_monitor_add(p_core, &nm_sr_monitor_pack_completed);
+      nm_core_monitor_add(p_core, &nm_sr_monitor_unexpected);
+      nm_core_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
+      nm_core_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       
       TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_rreq);
       TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_sreq);
@@ -123,8 +123,14 @@ int nm_sr_init(nm_session_t p_session)
 
 int nm_sr_exit(nm_session_t p_session)
 {
+  nm_core_t p_core = p_session->p_core;
   NM_LOG_IN();
-
+  if(nm_sr_data.init_done)
+    {
+      nm_core_monitor_remove(p_core, &nm_sr_monitor_unexpected);
+      nm_core_monitor_remove(p_core, &nm_sr_monitor_unpack_completed);
+      nm_core_monitor_remove(p_core, &nm_sr_monitor_pack_completed);
+    }
   NM_LOG_OUT();
   return NM_ESUCCESS;
 }

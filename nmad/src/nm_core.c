@@ -69,9 +69,18 @@ int nm_schedule(struct nm_core *p_core)
 
 
 /** Add an event monitor to the list */
-void nm_so_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m)
+void nm_core_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m)
 {
   nm_so_monitor_vect_push_back(&p_core->monitors, m);
+}
+
+void nm_core_monitor_remove(nm_core_t p_core, const struct nm_so_monitor_s*m)
+{
+  nm_so_monitor_itor_t i = nm_so_monitor_vect_find(&p_core->monitors, m);
+  if(i)
+    {
+      nm_so_monitor_vect_erase(&p_core->monitors, i);
+    }
 }
 
 /** Load a newmad component from disk. The actual path loaded is

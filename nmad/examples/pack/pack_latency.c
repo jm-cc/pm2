@@ -24,7 +24,7 @@
 #include "helper.h"
 #include "../sendrecv/clock.h"
 
-#define LOOPS 20000
+#define LOOPS 50000
 
 int main(int argc, char**argv)
 {
@@ -74,7 +74,7 @@ int main(int argc, char**argv)
 	    min = t;
 	}
       
-      printf("pack latency: %9.3lf usec.\n", min);
+      printf("pack latency:     %9.3lf usec.\n", min);
       
     }
   

@@ -22,7 +22,7 @@
 #include <mpi.h>
 #include "../../sendrecv/clock.h"
 
-#define LOOPS   20000
+#define LOOPS   50000
 
 int main(int argc, char**argv)
 {
@@ -69,7 +69,7 @@ int main(int argc, char**argv)
 	  if(t < min)
 	    min = t;
 	}
-      printf("MPI latency: %9.3lf usec.\n", min);
+      printf("MPI latency:      %9.3lf usec.\n", min);
     }
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();

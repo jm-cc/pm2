@@ -24,7 +24,7 @@
 #include "helper.h"
 #include "clock.h"
 
-#define LOOPS   20000
+#define LOOPS   50000
 
 int main(int argc, char**argv)
 {
@@ -51,10 +51,10 @@ int main(int argc, char**argv)
        */
       int k;
       double min = DBL_MAX;
+      struct timespec t1, t2;
       for(k = 0; k < LOOPS; k++)
 	{
 	  nm_sr_request_t request;
-	  struct timespec t1, t2;
 	  clock_gettime(CLOCK_MONOTONIC, &t1);
 	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
 	  nm_sr_swait(p_core, &request);

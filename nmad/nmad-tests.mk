@@ -21,13 +21,21 @@ tests:
                 if [ $${rc} != 0 ]; then \
                   if [ "x$(TESTS_RESULTS)" != "x" -a -w "$(TESTS_RESULTS)" ]; then \
                     echo "TESTS_FAILED += $$t"  >> "$(TESTS_RESULTS)" ; \
-                    echo "  [TEST]   $$t compilation FAILED" ; \
                   fi ; \
+                  echo "  [TEST]   $$t compilation FAILED" ; \
                 fi ; \
               done \
             )
 
-bench: $(TARGET_BENCH)
+bench:
+	$(Q)( for b in $(TARGET_BENCH); do \
+                $(MAKE) $${b} ; \
+                rc=$$? ; \
+                if [ $${rc} != 0 ]; then \
+                    echo "  [BENCH]  $$b compilation FAILED" ; \
+                fi ; \
+              done \
+            )
 
 $(TARGET_TESTS): test-%: %
 	@echo "  [TEST]   $*"
@@ -73,6 +81,17 @@ $(TARGET_TESTS): test-%: %
 $(TARGET_BENCH): bench-%: %
 	@echo "  [BENCH]  $*"
 	@echo "           running $(NMAD_NODES) nodes on hosts: $(NMAD_HOSTS); network: $(NMAD_DRIVER)"
-	@padico-launch -q --timeout $(BENCH_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* 
+	@( if [ -r /tmp/bench-$${USER}-$$$$ ]; then \
+             rm /tmp/bench-$${USER}-$$$$; \
+           fi ; \
+           if [ "x$(BENCH_RESULTS)" = "x" ]; then \
+             out=/dev/null ;\
+           else \
+             out=$(BENCH_RESULTS) ; \
+           fi ; \
+           echo "# starting bench $*" >> $${out} ; \
+           padico-launch -q --timeout $(BENCH_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* | tee /tmp/bench-$${USER}-$$$$ ; \
+           cat /tmp/bench-$${USER}-$$$$ >> $${out} ; \
+           rm /tmp/bench-$${USER}-$$$$ )
 	@echo "           done."
 

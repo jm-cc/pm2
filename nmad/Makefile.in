@@ -76,11 +76,12 @@ $(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
 #
 check: tests
 
-TESTS_RESULTS = @nmad_builddir@/.test-results
+TESTS_RESULTS := @nmad_builddir@/.test-results
 CLEAN_MORE += $(TESTS_RESULTS)
+-include $(TESTS_RESULTS)
 
 tests: install
-	$(Q)-/bin/rm @nmad_builddir@/.test-results
+	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
 	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
 	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
 	$(Q)echo "TESTS_FAILED = "                        >> $(TESTS_RESULTS)
@@ -90,7 +91,6 @@ tests: install
               done )
 	$(Q)$(MAKE) show-tests-results
 
--include $(TESTS_RESULTS)
 show-tests-results:
 	@echo
 	@echo "%-------------------"
@@ -104,12 +104,24 @@ show-tests-results:
 
 # ## Benchmarks
 #
+
+BENCH_RESULTS := @nmad_builddir@/.bench-results
+CLEAN_MORE += $(BENCH_RESULTS)
+
 bench: install
+	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
+	$(Q)echo "# automatically generated tests results" > $(BENCH_RESULTS)
 	$(Q)( for d in $(EXAMPLE_DIRS); do \
                 echo "  [BENCH]  in $$d/"; \
-                $(MAKE) -C $$d bench  ; \
+                $(MAKE) -C $$d bench BENCH_RESULTS=$(BENCH_RESULTS) ; \
               done )
-
+	@echo
+	@echo "%-------------------"
+	@echo 
+	@echo " Bench summary"
+	@echo
+	@grep "latency:" $(BENCH_RESULTS)
+	@echo
 
 # ## Examples
 #

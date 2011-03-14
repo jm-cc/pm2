@@ -28,7 +28,7 @@
 #define MAX_DATA        (512ULL * 1024ULL * 1024ULL) /* 100 MB */
 
 
-static __inline__ uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
+static __inline__ uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
 {
   if (!len)
     return 1+increment;
@@ -79,7 +79,7 @@ int main(int argc, char**argv)
   uint32_t	 len;
   uint32_t	 start_len	= MIN_DEFAULT;
   uint32_t	 end_len	= MAX_DEFAULT;
-  uint32_t	 multiplier	= MULT_DEFAULT;
+  double         multiplier	= MULT_DEFAULT;
   uint32_t	 increment	= INCR_DEFAULT;
   int		 iterations	= LOOPS_DEFAULT;
   int		 i;
@@ -103,7 +103,7 @@ int main(int argc, char**argv)
       increment = atoi(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-M")) {
-      multiplier = atoi(argv[i+1]);
+      multiplier = atof(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-N")) {
       iterations = atoi(argv[i+1]);

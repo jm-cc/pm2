@@ -31,7 +31,7 @@
 #define LOOPS_DEFAULT   100000
 
 
-static inline uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
+static inline uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
 {
   if(len == 0)
     len = 1;
@@ -80,7 +80,7 @@ int main(int argc, char	**argv)
 {
   uint32_t	 start_len      = MIN_DEFAULT;
   uint32_t	 end_len        = MAX_DEFAULT;
-  uint32_t         multiplier     = MULT_DEFAULT;
+  double         multiplier     = MULT_DEFAULT;
   uint32_t         increment      = INCR_DEFAULT;
   int              iterations     = LOOPS_DEFAULT;
   int              i;
@@ -105,7 +105,7 @@ int main(int argc, char	**argv)
       increment = atoi(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-M")) {
-      multiplier = atoi(argv[i+1]);
+      multiplier = atof(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-N")) {
       iterations = atoi(argv[i+1]);

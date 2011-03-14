@@ -59,7 +59,7 @@ static unsigned char *main_buffer = NULL;
 // Functions
 //......................
 static __inline__
-uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
+uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
 {
   if (!len)
     return 1;
@@ -88,7 +88,7 @@ main(int    argc,
         int rank_dst;
         uint32_t	 start_len      = MIN_DEFAULT;
         uint32_t	 end_len        = MAX_DEFAULT;
-        uint32_t         multiplier     = MULT_DEFAULT;
+        double           multiplier     = MULT_DEFAULT;
         uint32_t         increment      = INCR_DEFAULT;
         int              iterations     = LOOPS_DEFAULT;
         int              warmups        = WARMUPS_DEFAULT;
@@ -128,7 +128,7 @@ main(int    argc,
                         increment = atoi(argv[i+1]);
                 }
                 else if (!strcmp(argv[i], "-M")) {
-                        multiplier = atoi(argv[i+1]);
+                        multiplier = atof(argv[i+1]);
                 }
                 else if (!strcmp(argv[i], "-N")) {
                         iterations = atoi(argv[i+1]);
@@ -146,22 +146,22 @@ main(int    argc,
                 }
         }
 
-        fprintf(stdout, "(%s): My rank is %d\n", host_name, comm_rank);
+        fprintf(stdout, "# (%s): My rank is %d\n", host_name, comm_rank);
 
         ping_side	= !(comm_rank & 1);
         rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
         if (ping_side) {
-                fprintf(stdout, "(%d): ping with %d\n", comm_rank, rank_dst);
+                fprintf(stdout, "# (%d): ping with %d\n", comm_rank, rank_dst);
                 log = 1;
         } else {
-                fprintf(stdout, "(%d): pong with %d\n", comm_rank, rank_dst);
+                fprintf(stdout, "# (%d): pong with %d\n", comm_rank, rank_dst);
                 log = 0;
         }
 
         if (comm_rank == 0) {
-                fprintf(stdout, "The configuration size is %d\n", comm_size);
-		fprintf(stdout, "src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
+                fprintf(stdout, "# The configuration size is %d\n", comm_size);
+		fprintf(stdout, "# src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
 	}
 
         main_buffer = malloc(end_len);

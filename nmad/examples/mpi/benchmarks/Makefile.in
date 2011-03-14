@@ -19,7 +19,7 @@ CC       := @nmad_root@/bin/mpicc
 CFLAGS   := 
 LD       := $(CC)
 LDFLAGS  :=
-LIBS     :=
+LIBS     := -lm -lrt
 
 include @puk_root@/etc/common_rules.mk
 

@@ -25,6 +25,10 @@
 #include <string.h>
 #include <assert.h>
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(NewMad_Core);
+
+
 /** A driver descriptor
  */
 struct nm_session_driver_s

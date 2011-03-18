@@ -100,8 +100,7 @@ struct nm_ibverbs_trk
 
 struct nm_ibverbs
 {
-  struct nm_ibverbs_cnx*cnx_array;
-  int nb_cnx;
+  struct nm_ibverbs_cnx cnx_array[2];
   int sock;    /**< connected socket for IB address exchange */
 };
 
@@ -189,17 +188,13 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
 {
   struct nm_ibverbs*status = TBX_MALLOC(sizeof (struct nm_ibverbs));
   status->sock = -1;
-  status->cnx_array = NULL;
+  memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * 2);
   return status;
 }
 
 static void nm_ibverbs_destroy(void*_status)
 {
   struct nm_ibverbs*status = _status;
-  if(status->cnx_array)
-    {
-      TBX_FREE(status->cnx_array);
-    }
   TBX_FREE(_status);
 }
 
@@ -573,30 +568,10 @@ static int nm_ibverbs_close(struct nm_drv *p_drv)
 }
 
 
-static int nm_ibverbs_gate_create(void*_status,
-				  struct nm_cnx_rq*p_crq)
-{
-  int err = NM_ESUCCESS;
-  struct nm_ibverbs*status = _status;
-  if(!status->cnx_array)
-    {
-      status->nb_cnx    = p_crq->p_drv->nb_tracks;
-      status->cnx_array = TBX_MALLOC(sizeof(struct nm_ibverbs_cnx) * status->nb_cnx);
-      if(!status->cnx_array){
-	err = -NM_ENOMEM;
-	goto out;
-      }
-      memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * status->nb_cnx);
-    }
-  
- out:
-  return err;
-}
-
 static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
 {
   struct nm_drv *p_drv = p_crq->p_drv;
-  int err = nm_ibverbs_gate_create(_status, p_crq);	
+  int err = NM_ESUCCESS;
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_crq->trk_id);
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
   
@@ -663,6 +638,7 @@ static int nm_ibverbs_cnx_create(void*_status, struct nm_cnx_rq*p_crq)
   p_ibverbs_cnx->local_addr.psn = lrand48() & 0xffffff;
   p_ibverbs_cnx->local_addr.n   = 0;
   (*p_ibverbs_cnx->method.driver->addr_pack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->local_addr);
+
  out:
   return err;
 }
@@ -730,32 +706,28 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_ibverbs*status = _status;
   
-  int err = nm_ibverbs_gate_create(_status, p_crq);
-  if(err)
+  int err = NM_ESUCCESS;
+  if(status->sock == -1)
     {
-      err = -NM_ENOMEM;
-      goto out;
+      int fd = NM_SYS(socket)(AF_INET, SOCK_STREAM, 0);
+      assert(fd > -1);
+      status->sock = fd;
+      assert(strlen(p_crq->remote_drv_url) == 12);
+      in_addr_t peer_addr;
+      int peer_port;
+      sscanf(p_crq->remote_drv_url, "%08x%04x", &peer_addr, &peer_port);
+      struct sockaddr_in inaddr = {
+	.sin_family = AF_INET,
+	.sin_port   = peer_port,
+	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
+      };
+      int rc = NM_SYS(connect)(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      if(rc) {
+	fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
+	err = -NM_EUNREACH;
+	goto out;
+      }
     }
-  if(status->sock == -1) {
-    int fd = NM_SYS(socket)(AF_INET, SOCK_STREAM, 0);
-    assert(fd > -1);
-    status->sock = fd;
-    assert(strlen(p_crq->remote_drv_url) == 12);
-    in_addr_t peer_addr;
-    int peer_port;
-    sscanf(p_crq->remote_drv_url, "%08x%04x", &peer_addr, &peer_port);
-    struct sockaddr_in inaddr = {
-      .sin_family = AF_INET,
-      .sin_port   = peer_port,
-      .sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
-    };
-    int rc = NM_SYS(connect)(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
-    if(rc) {
-      fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
-      err = -NM_EUNREACH;
-      goto out;
-    }
-  }
   
   err = nm_ibverbs_cnx_create(_status, p_crq);
   if(err)
@@ -767,6 +739,12 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
   (*p_ibverbs_cnx->method.driver->addr_unpack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->remote_addr);
   err = nm_ibverbs_cnx_connect(_status, p_crq);
   
+  if(p_crq->trk_id >= 1)
+    {
+      NM_SYS(close)(status->sock);
+      status->sock = -1;
+    }
+
  out:
   return err;
 }
@@ -775,21 +753,15 @@ static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_ibverbs*status = _status;
   struct nm_ibverbs_drv*p_ibverbs_drv = p_crq->p_drv->priv;
-  
-  int err =  nm_ibverbs_gate_create(_status, p_crq);
-  if(err)
+  int err = NM_ESUCCESS;
+  if(status->sock == -1)
     {
-      err = -NM_ENOMEM;
-      goto out;
+      struct sockaddr_in addr;
+      unsigned addr_len = sizeof addr;
+      int fd = NM_SYS(accept)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
+      assert(fd > -1);
+      status->sock = fd;
     }
-  if(status->sock == -1) {
-    struct sockaddr_in addr;
-    unsigned addr_len = sizeof addr;
-    int fd = NM_SYS(accept)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
-    assert(fd > -1);
-    status->sock = fd;
-  }
-  
   err = nm_ibverbs_cnx_create(_status, p_crq);
   if(err)
     goto out;
@@ -800,6 +772,12 @@ static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq)
   (*p_ibverbs_cnx->method.driver->addr_unpack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->remote_addr);
   err = nm_ibverbs_cnx_connect(_status, p_crq);
   
+  if(p_crq->trk_id >= 1)
+    {
+      NM_SYS(close)(status->sock);
+      status->sock = -1;
+    }
+
  out:
   return err;
 }

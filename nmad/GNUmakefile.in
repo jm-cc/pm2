@@ -43,10 +43,6 @@ MOD_SRC += $(foreach STRAT, $(NMAD_STRATEGIES), $(PM2_SRCROOT)/nmad/strategies/s
 MOD_SRC += $(foreach INTERFACE, $(NMAD_INTERFACES), $(PM2_SRCROOT)/nmad/interfaces/$(INTERFACE)/src)
 
 
-# Datatype de MPICH
-#---------------------------------------------------------------------
-MOD_SRC += $(PM2_SRCROOT)/nmad/ccs
-
 # Regles communes aux librairies
 #---------------------------------------------------------------------
 include $(PM2_SRCROOT)/make/libs-rules.mak

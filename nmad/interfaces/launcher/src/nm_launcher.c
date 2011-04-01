@@ -139,7 +139,7 @@ int nm_launcher_exit(void)
    */
   __puk_abi_wrap__exit(0);
 #else
-  padico_puk_shutdown();
+  /* padico_puk_shutdown(); */
 #endif
   return NM_ESUCCESS;
 }

@@ -160,6 +160,7 @@ main(int    argc,
         }
 
         if (comm_rank == 0) {
+                fprintf(stdout, "# mpi_bench begin\n");
                 fprintf(stdout, "# The configuration size is %d\n", comm_size);
 		fprintf(stdout, "# src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
 	}
@@ -263,6 +264,10 @@ main(int    argc,
 
                 }
         }
+	if(comm_rank ==0)
+	  {
+                fprintf(stdout, "# mpi_bench end\n");
+	  }
 
         free(main_buffer);
 

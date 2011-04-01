@@ -147,6 +147,7 @@ int main(int argc, char	**argv)
       /* client
        */
       struct timespec t1, t2;
+      printf("# sr_bench begin\n");
       printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
       uint32_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
@@ -181,6 +182,7 @@ int main(int argc, char	**argv)
 #endif
 	  free(buf);
 	}
+      printf("# sr_bench end\n");
     }
   
   nmad_exit();

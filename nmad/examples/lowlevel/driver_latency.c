@@ -46,6 +46,19 @@ int main(int argc, char **argv)
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
+  /* flush pending recv requests posted by nm_refill_in_drv() */
+  if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
+    {
+      struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+      struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+      struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
+      int err = r->driver->cancel_recv_iov(r->_status, p_pw);
+      assert(err == NM_ESUCCESS);
+      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+      p_gdrv->active_recv[NM_TRK_SMALL] = 0;
+      tbx_fast_list_del(&p_pw->link);
+    }
+
   /* benchmark */
   struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;

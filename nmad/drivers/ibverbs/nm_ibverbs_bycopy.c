@@ -147,6 +147,8 @@ static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_
   bycopy->window.credits  = NM_IBVERBS_BYCOPY_RBUF_NUM;
   bycopy->window.to_ack   = 0;
   bycopy->mr              = NULL;
+  bycopy->recv.buf_posted = NULL;
+  bycopy->send.v          = NULL;
   return bycopy;
 }
 
@@ -259,7 +261,7 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
       const int offset = (remaining > NM_IBVERBS_BYCOPY_DATA_SIZE) ? 0 : (NM_IBVERBS_BYCOPY_DATA_SIZE - remaining);
       int available   = NM_IBVERBS_BYCOPY_DATA_SIZE - offset;
       int packet_size = 0;
-      while((packet_size < available) &&
+      while((available > 0) &&
 	    (bycopy->send.v_current < bycopy->send.n))
 	{
 	  const int v_remaining = bycopy->send.v[bycopy->send.v_current].iov_len - bycopy->send.v_done;

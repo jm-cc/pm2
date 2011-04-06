@@ -13,11 +13,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-export PATH="@abs_top_builddir@/bin:$PATH"
-export PM2_ROOT="@abs_top_srcdir@"
-export PM2_SRCROOT="@abs_top_srcdir@"
-export PM2_OBJROOT="@abs_top_builddir@"
-
 usage() {
     cat <<EOF
 mpirun [<mpirun_option>...] <progname> [<option>...]
@@ -31,13 +26,12 @@ mpirun [<mpirun_option>...] <progname> [<option>...]
     -np|-n <n>
             specify the number of processors to run on
     -v      Verbose - throw in some comments
+    -q      Quiet -- suppress all messages on stdout
     -debug  Start processes under the gdb debugger.
-    -valgrind
-            Start processes under valgrind.
-    -x
-            Starts each processus in a graphical console
-    -protocol <name>
-            Uses the specified network protocol to start the application
+    -c      Starts each processus in a graphical console
+    -p      Pause after program exit, do not close consoles
+
+For advanced configuration, see padico-launch --help
 
 On exit, mpirun returns a status of zero unless mpirun detected a problem, in
 which case it returns a non-zero status.
@@ -70,5 +64,5 @@ elif [ $# = 1 ]; then
     esac
 fi
 
-exec ${PM2_OBJROOT}/bin/pm2-load ${args} "$@"
+exec padico-launch ${args} "$@"
 

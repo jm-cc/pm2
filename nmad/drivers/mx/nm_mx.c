@@ -31,7 +31,6 @@ static int nm_mx_load(void);
 PADICO_MODULE_BUILTIN(NewMad_Driver_mx, &nm_mx_load, NULL, NULL);
 
 
-//#define DEBUG 1
 
 /** Initial number of packet wrappers */
 #define INITIAL_PW_NUM		16
@@ -799,7 +798,7 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "[MX] post send %d (pw=%p)\n", len, p_pw);
+    NM_TRACEF("[MX] post send %d (pw=%p)\n", len, p_pw);
 #endif
     
     NMAD_EVENT_SND_START(p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->length);
@@ -868,7 +867,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     }
     
 #ifdef DEBUG
-    fprintf(stderr, "[MX] post recv %d (pw=%p)\n", len, p_pw);
+    NM_TRACEF("[MX] post recv %d (pw=%p)\n", len, p_pw);
 #endif
     mx_ret	= mx_irecv(p_mx_drv->ep, seg_list, p_pw->v_nb, match_info,
 			   match_mask, p_pw,&p_mx_pw->rq);
@@ -897,7 +896,7 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
     }
 #ifdef DEBUG
   if (status.code == MX_SUCCESS) {
-	  fprintf(stderr, "\t[MX] Success (pw=%p)\n", p_pw);
+	  NM_TRACEF("\t[MX] Success (pw=%p)\n", p_pw);
   }
 #endif
   

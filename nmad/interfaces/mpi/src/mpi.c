@@ -1369,16 +1369,23 @@ int MPI_Get_processor_name(char *name,
   }
 }
 
-double MPI_Wtime(void) {
-  tbx_tick_t time;
+double MPI_Wtime(void)
+{
+  static tbx_tick_t orig_time;
+  static int orig_done = 0;
 
   MPI_NMAD_LOG_IN();
-
+  if(!orig_done)
+    {
+      TBX_GET_TICK(orig_time);
+      orig_done = 1;
+    }
+  tbx_tick_t time;
   TBX_GET_TICK(time);
-  double usec = tbx_tick2usec(time);
+  const double usec = TBX_TIMING_DELAY(orig_time, time);
 
   MPI_NMAD_LOG_OUT();
-  return usec / 1000000;
+  return usec / 1000000.0;
 }
 
 double MPI_Wtick(void) {

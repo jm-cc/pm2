@@ -57,12 +57,11 @@ int main(int argc, char**argv)
       double min = DBL_MAX;
       for(k = 0; k < LOOPS; k++)
 	{
-	  tbx_tick_t t1, t2;
-	  TBX_GET_TICK(t1);
+	  const double t1 = MPI_Wtime();
 	  MPI_Send(NULL, 0, MPI_CHAR, peer, 0, MPI_COMM_WORLD);
 	  MPI_Recv(NULL, 0, MPI_CHAR, peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  TBX_GET_TICK(t2);
-	  const double delay = TBX_TIMING_DELAY(t1, t2);
+	  const double t2 = MPI_Wtime();
+	  const double delay = (t2 - t1) * 1000000.0;
 	  const double t = delay / 2.0;
 	  if(t < min)
 	    min = t;

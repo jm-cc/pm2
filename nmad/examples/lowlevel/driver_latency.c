@@ -26,13 +26,10 @@
 #include <nm_session_interface.h>
 #include <nm_launcher.h>
 
-#include "../sendrecv/clock.h"
-
 const int roundtrips = 50000;
 
 int main(int argc, char **argv)
 {
-  clock_init();
   int rank, peer;
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
@@ -78,8 +75,8 @@ int main(int argc, char **argv)
       int i;
       for(i = 0; i < roundtrips; i++)
 	{
-	  struct timespec t1, t2;
-	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  tbx_tick_t t1, t2;
+	  TBX_GET_TICK(t1);
 	  int err = r->driver->post_send_iov(r->_status, p_pw);
 	  while(err == -NM_EAGAIN)
 	    {
@@ -94,8 +91,8 @@ int main(int argc, char **argv)
 	    }
 	  if(err != NM_ESUCCESS)
 	    abort();
-	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = clock_diff(t1, t2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2;
 	  if(t < min)
 	    min = t;

@@ -22,7 +22,6 @@
 #include <values.h>
 
 #include "helper.h"
-#include "../sendrecv/clock.h"
 
 #define LOOPS 50000
 
@@ -31,7 +30,6 @@ int main(int argc, char**argv)
   nm_pack_cnx_t cnx;
   
   init(&argc, argv);
-  clock_init();
 
   if (is_server)
     {
@@ -57,8 +55,8 @@ int main(int argc, char**argv)
       double min = DBL_MAX;
       for(i = 0; i < LOOPS; i++) 
 	{
-	  struct timespec t1, t2;
-	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  tbx_tick_t t1, t2;
+	  TBX_GET_TICK(t1);
 
 	  nm_begin_packing(p_core, gate_id, 0, &cnx);
 	  nm_pack(&cnx, NULL, 0);
@@ -67,8 +65,8 @@ int main(int argc, char**argv)
 	  nm_begin_unpacking(p_core, gate_id, 0, &cnx);
 	  nm_unpack(&cnx, NULL, 0);
 	  nm_end_unpacking(&cnx);
-	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = clock_diff(t1, t2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2.0;
 	  if(t < min)
 	    min = t;

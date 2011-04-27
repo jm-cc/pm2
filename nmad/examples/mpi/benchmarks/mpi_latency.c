@@ -20,14 +20,12 @@
 #include <values.h>
 
 #include <mpi.h>
-#include "../../sendrecv/clock.h"
 
 #define LOOPS   50000
 
 int main(int argc, char**argv)
 {
   MPI_Init(&argc, &argv);
-  clock_init();
 
   int rank, size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -59,12 +57,12 @@ int main(int argc, char**argv)
       double min = DBL_MAX;
       for(k = 0; k < LOOPS; k++)
 	{
-	  struct timespec t1, t2;
-	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  tbx_tick_t t1, t2;
+	  TBX_GET_TICK(t1);
 	  MPI_Send(NULL, 0, MPI_CHAR, peer, 0, MPI_COMM_WORLD);
 	  MPI_Recv(NULL, 0, MPI_CHAR, peer, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = clock_diff(t1, t2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2.0;
 	  if(t < min)
 	    min = t;

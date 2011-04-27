@@ -26,6 +26,7 @@
 #include <nm_session_interface.h>
 #include <nm_session_private.h>
 #include <nm_launcher.h>
+#include <tbx.h>
 
 /* Maximum size of a small message for a faked strategy */
 #define NM_MAX_SMALL  (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE)
@@ -36,7 +37,6 @@ static const int param_dryrun_count = 2;
 
 static unsigned char*data_send = NULL;
 static unsigned char*data_recv = NULL;
-static double clock_offset = 0.0;
 
 struct nm_sample_bench_s
 {
@@ -447,12 +447,12 @@ static double nm_ns_ping_one(struct nm_drv *p_drv, struct nm_gate *p_gate, const
   int i;
   for(i = 0; i < roundtrips; i++)
     {
-      struct timespec t1, t2;
-      clock_gettime(CLOCK_MONOTONIC, &t1);
+      tbx_tick_t t1, t2;
+      TBX_GET_TICK(t1);
       (*p_bench->send)(p_drv, p_gate, data_send, size);
       (*p_bench->recv)(p_drv, p_gate, data_recv, size);
-      clock_gettime(CLOCK_MONOTONIC, &t2);
-      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0 - clock_offset;
+      TBX_GET_TICK(t2);
+      const double delay = TBX_TIMING_DELAY(t1, t2);
       const double t = delay / 2.0;
       time_array[i] = t;
     }
@@ -679,23 +679,6 @@ int main(int argc, char **argv)
   data_send = TBX_MALLOC(param_max_size);
   data_recv = TBX_MALLOC(param_max_size);
   nm_ns_fill_data(data_send);
-
-  /* clock calibration */
-  double offset = 100.0;
-  int i;
-  for(i = 0; i < 1000; i++)
-    {
-      struct timespec t1, t2;
-      clock_gettime(CLOCK_MONOTONIC, &t1);
-      clock_gettime(CLOCK_MONOTONIC, &t2);
-      const double delay = 1000000.0*(t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1000.0;
-      if(delay < offset)
-	offset = delay;
-    }
-  struct timespec res;
-  clock_getres(CLOCK_MONOTONIC, &res);
-  fprintf(stderr, "# clock offset = %f; res = %ld:%ld\n", offset, res.tv_sec, res.tv_nsec);
-  clock_offset = offset;
 
   if(!is_server)
     {

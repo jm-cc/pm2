@@ -22,14 +22,12 @@
 #include <values.h>
 
 #include "helper.h"
-#include "clock.h"
 
 #define LOOPS   50000
 
 int main(int argc, char**argv)
 {
   init(&argc, argv);
-  clock_init();
 
   if (is_server) 
     {
@@ -51,17 +49,17 @@ int main(int argc, char**argv)
        */
       int k;
       double min = DBL_MAX;
-      struct timespec t1, t2;
+      tbx_tick_t t1, t2;
       for(k = 0; k < LOOPS; k++)
 	{
 	  nm_sr_request_t request;
-	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  TBX_GET_TICK(t1);
 	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
 	  nm_sr_swait(p_core, &request);
 	  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
 	  nm_sr_rwait(p_core, &request);
-	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = clock_diff(t1, t2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2.0;
 	  if(t < min)
 	    min = t;

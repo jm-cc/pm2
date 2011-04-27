@@ -27,13 +27,10 @@
 #include <nm_session_private.h>
 #include <nm_launcher.h>
 
-#include "../sendrecv/clock.h"
-
 const int roundtrips = 50000;
 
 int main(int argc, char **argv)
 {
-  clock_init();
   int rank, peer;
   nm_launcher_init(&argc, argv);
   nm_session_t p_session = NULL;
@@ -61,8 +58,8 @@ int main(int argc, char **argv)
       int i;
       for(i = 0; i < roundtrips; i++)
 	{
-	  struct timespec t1, t2;
-	  clock_gettime(CLOCK_MONOTONIC, &t1);
+	  tbx_tick_t t1, t2;
+	  TBX_GET_TICK(t1);
 	  struct nm_pack_s pack;
 	  nm_core_pack_data(p_core, &pack, &buffer, sizeof(buffer));
 	  nm_core_pack_send(p_core, &pack, tag, p_gate, 0);
@@ -73,8 +70,8 @@ int main(int argc, char **argv)
 	  nm_core_unpack_recv(p_core, &unpack, p_gate, tag, NM_CORE_TAG_MASK_FULL);
 	  while((unpack.status & NM_STATUS_UNPACK_COMPLETED) == 0)
 	    nm_schedule(p_core);
-	  clock_gettime(CLOCK_MONOTONIC, &t2);
-	  const double delay = clock_diff(t1, t2);
+	  TBX_GET_TICK(t2);
+	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2;
 	  if(t < min)
 	    min = t;

@@ -22,7 +22,6 @@
 #include <values.h>
 
 #include "helper.h"
-#include "clock.h"
 
 #define MIN_DEFAULT     0
 #define MAX_DEFAULT     (512 * 1024 * 1024)
@@ -86,7 +85,6 @@ int main(int argc, char	**argv)
   int              i;
   
   init(&argc, argv);
-  clock_init();
   
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
@@ -146,7 +144,7 @@ int main(int argc, char	**argv)
     {
       /* client
        */
-      struct timespec t1, t2;
+      tbx_tick_t t1, t2;
       printf("# sr_bench begin\n");
       printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
       uint32_t	 len;
@@ -159,13 +157,13 @@ int main(int argc, char	**argv)
 	  for(k = 0; k < iterations; k++)
 	    {
 	      nm_sr_request_t request;
-	      clock_gettime(CLOCK_MONOTONIC, &t1);
+	      TBX_GET_TICK(t1);
 	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
 	      nm_sr_swait(p_core, &request);
 	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
 	      nm_sr_rwait(p_core, &request);
-	      clock_gettime(CLOCK_MONOTONIC, &t2);
-	      const double delay = clock_diff(t1, t2);
+	      TBX_GET_TICK(t2);
+	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
 	      if(t < lat)
 		lat = t;

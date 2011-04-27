@@ -659,6 +659,7 @@ int main(int argc, char **argv)
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
+#ifndef PIOMAN
   /* flush pending recv requests posted by nmrefill_in_drv() */
   if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
     {
@@ -671,6 +672,7 @@ int main(int argc, char **argv)
       p_gdrv->active_recv[NM_TRK_SMALL] = 0;
       tbx_fast_list_del(&p_pw->link);
     }
+#endif
 
   samples = nm_sample_vect_new();
 

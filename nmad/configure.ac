@@ -97,7 +97,9 @@ dnl - TODO- check for numa.h
 AC_ARG_ENABLE(nuioa,
 	      [  --enable-nuioa     Enable NUMA control on I/O],
 	      [ if test $enableval = yes; then
+	      	    AC_CHECK_HEADER(numa.h, [], [ AC_MSG_ERROR([numa.h is required for NUIOA]) ])
 	            AC_DEFINE([PM2_NUIOA], 1, [enable NUIOA])
+		    numa_LIBS="-lnuma"
 	        fi
 	      ],
 	      [])
@@ -248,7 +250,7 @@ NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} $
 AC_SUBST(NMAD_CFLAGS)
 AC_SUBST(NMAD_EXT_CFLAGS)
 
-NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${ibverbs_LIBS} ${mx_LIBS}"
+NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${ibverbs_LIBS} ${mx_LIBS} ${numa_LIBS}"
 AC_SUBST(NMAD_EXT_LIBS)
 NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
 AC_SUBST(NMAD_LIBS)

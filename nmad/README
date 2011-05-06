@@ -1,0 +1,100 @@
+This document describes nmad installation and configuration.
+
+for any question, mailto: Alexandre.Denis@inria.fr
+
+Installation
+============
+
+nmad requires other pm2 modules: tbx, Puk, PukABI, (optionnlly) pioman
+PadicoTM may be used as a launcher, and should be built *after* nmad.
+
+Requirements:
+  -- autoconf (v 2.50 or later)
+  -- pkg-config
+  -- hwloc (optional)
+  -- libnuma (optional)
+  -- ibverbs for IB support (set $IBHOME if not installed in /usr)
+  -- MX for Myrinet support (set $MX_DIR if not installed in /usr)
+
+Build:
+./autogen.sh
+mkdir build ; cd build
+../configure <your options here>
+make
+make install
+
+Note: nmad purposely cannot be configured in its source directory
+
+Usefull configure flags (see ./configure --help)
+  --enable-taghuge        Enable 64 bit tags
+  --enable-tagarray       Enable 8 bit tags in flat array
+  --enable-sampling       Enable network sampling
+  --enable-nuioa          Enable NUMA control on I/O
+  --enable-mpi            Enable builtin MPI implementation Mad-MPI
+  --with-pioman           use pioman I/O manager [default=no]
+  --with-ibverbs          use Infiniband ibverbs [default=check]
+  --with-mx               use Myrinet MX [default=check]
+
+Strategy
+========
+
+The strategy used by nmad is selected using the following rules:
+
+1. if the environment variable NMAD_STRATEGY is set, it is used
+whatever the other configuration parameters are.
+
+2. if a strategy is selected in the flavor, it will be used by
+default.
+
+3. if the strategy selected in the flavor is 'strat_custom', then the
+strategy may be selected using command 'nmad-strategy-conf'.
+
+Valid strategies are: 
+  default, aggreg, aggreg_autoextended, split_balance.
+
+The following are deprecated/unmatained:
+  split_all, qos
+
+
+Drivers
+=======
+
+The drivers used by nmad are selected using the following rules:
+
+1. if the environment variable NMAD_DRIVER is set, it is used by
+default. It may contain the name of a single driver for single rail,
+or a list of multiple drivers separated by '+' for multirail,
+e.g. NMAD_DRIVER=mx+ibverbs
+
+2. if NMAD_DRIVER is not set, the default driver may be set using the
+command nmad-driver-conf. If a single driver is enabled in the flavor,
+then it will be used by default.
+
+
+Infiniband tuning
+=================
+
+Infiniband may be tuned at run time through environment variables:
+
+-- NMAD_IBVERBS_RCACHE enables the registration cache.
+
+-- NMAD_IBVERBS_CHECKSUM enables the checksum computation on the fly
+   in the driver.
+
+
+Tags
+====
+
+-- tag_as_flat_array: tags are 8 bits, stored in flat arrays.
+-- tag_as_hashtable: tags are 32 bits, stored in hashtables. It is
+   expected that the tags actually used will be sparse.
+-- tag_huge: users tags are 64 bits + 32 bits session tag added by
+   nmad core, stored in hashtables with indirect hashing. Performance
+   penalty is ~250ns compared to flat_array.
+
+Note: only 'tag_huge' supports multiple sessions.
+
+Configure with --enable-taghuge for tag_huge, --enable-tagarray for
+tag_array. Default is tag_as_hashtable.
+
+

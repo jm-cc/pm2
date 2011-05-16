@@ -126,6 +126,7 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_
   struct iovec*hvec = &p_pw->v[0];
   struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
   hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+  assert(len <= hvec->iov_len);
   const uint32_t size = nm_so_aligned(len);
   nm_so_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
   if(len)

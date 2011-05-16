@@ -399,6 +399,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
 	      /* Ctrl header */
 	      proto_hsize = NM_SO_CTRL_HEADER_SIZE;
 	    }
+	  assert(remaining_bytes >= proto_hsize);
 	  remaining_bytes -= proto_hsize;
 	  if(remaining_bytes == 0)
 	    {

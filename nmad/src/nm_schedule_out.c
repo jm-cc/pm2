@@ -42,6 +42,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
 {
   nmad_lock();
   nm_lock_interface(p_core);
+  assert(p_gate != NULL);
   struct nm_so_tag_s*p_so_tag = nm_so_tag_get(&p_gate->tags, tag);
   const nm_seq_t seq = nm_seq_next(p_so_tag->send_seq_number);
   p_so_tag->send_seq_number = seq;
@@ -108,6 +109,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
  */
 __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 {
+  assert(p_pw->flags & NM_PW_FINALIZED);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = r->driver->poll_send_iov(r->_status, p_pw);
   if (err != -NM_EAGAIN)

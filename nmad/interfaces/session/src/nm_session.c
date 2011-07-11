@@ -128,7 +128,7 @@ static void nm_session_add_driver(puk_component_t component, int index)
   nm_session.n_drivers++;
   nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_session_driver_s));
   nm_session.drivers[nm_session.n_drivers - 1].p_drv = p_drv;
-  nm_session.drivers[nm_session.n_drivers - 1].index = (index >= 0)?:0;
+  nm_session.drivers[nm_session.n_drivers - 1].index = (index >= 0)?index:0;
   nm_session.drivers[nm_session.n_drivers - 1].name  = strdup(driver_realname);
   if(nm_session.url_string == NULL)
     {

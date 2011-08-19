@@ -125,16 +125,17 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
   struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
-  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
-  assert(len <= hvec->iov_len);
-  const uint32_t size = nm_so_aligned(len);
   nm_so_init_data(h, tag, seq, flags | NM_PROTO_FLAG_ALIGNED, 0, len, chunk_offset);
+  hvec->iov_len += NM_SO_DATA_HEADER_SIZE;
+  p_pw->length  += NM_SO_DATA_HEADER_SIZE;
   if(len)
     {
+      const uint32_t size = nm_so_aligned(len);
+      assert(len <= nm_so_pw_remaining_data(p_pw));
       memcpy(hvec->iov_base + hvec->iov_len, data, len);
       hvec->iov_len += size;
+      p_pw->length  += size;
     }
-  p_pw->length += NM_SO_DATA_HEADER_SIZE + size;
 }
 
 /** Add small data to pw, in iovec */

@@ -1,3 +1,0 @@
-Provide: memory_linkmode
-Provide: static_libs
-Conflict: memory_linkmode

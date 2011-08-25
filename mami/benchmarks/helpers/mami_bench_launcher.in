@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# MaMI --- NUMA Memory Interface
+#
+# Copyright (C) 2008, 2009, 2010, 2011  Centre National de la Recherche Scientifique
+#
+# MaMI is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# MaMI is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
+
+
+scriptpath=`readlink -f $0`
+scriptdir=`dirname $scriptpath`
+testdir=$scriptdir/..
+helperdir=$testdir/helpers
+
+find_programs()
+{
+    if [ -f $1/../Makefile ] ; then
+	BENCH_DIR="$1/../../benchmarks"
+    else
+	BENCH_DIR="$2/bin/benchmarks"
+    fi
+}
+
+find_programs $scriptdir @prefix@
+
+testname=`basename $0`
+
+if test x$PM2_BENCH_DIR = x ; then
+    PM2_BENCH_DIR=/tmp/regression_$$
+fi
+mkdir -p $PM2_BENCH_DIR/raw
+
+case $testname in
+    mami_bench)
+        $BENCH_DIR/mami_bench 1000000 2>&1 | tee $PM2_BENCH_DIR/raw/mami_bench_result_${PM2_BENCH_ID}
+        TIME=`grep "time=" $PM2_BENCH_DIR/raw/mami_bench_result_${PM2_BENCH_ID} | awk -F'=' '{print $3}'| sed 's/ms//' 2>/dev/null`
+        if [ "$TIME" = "" ] ; then
+            TIME="-"
+        fi
+        echo $PM2_BENCH_ID $TIME >> ${PM2_BENCH_DIR}/mami_bench.txt
+        ;;
+    *)
+        echo "Test <$testname> unknown" >&2 && exit 1
+esac

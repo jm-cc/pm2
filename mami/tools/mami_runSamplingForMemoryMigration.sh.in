@@ -1,0 +1,23 @@
+#!/bin/bash
+
+nodes=$(ls -d /sys/devices/system/node/node* | sed 's:/sys/devices/system/node/node::g')
+
+for node in $(echo $nodes) ; do
+    LD_BIND_NOW=y $(dirname $0)/mami_sampling_for_memory_migration -src $node
+done
+
+pathname=$PM2_SAMPLING_DIR
+if [ -z "$pathname" ] ; then
+    pathname="/var/local/pm2"
+fi
+pathname=$pathname"/memory"
+
+hostname=$(uname -n)
+(
+    head -1 $pathname/sampling_for_memory_migration_${hostname}_source_0.dat
+    for node in $(echo $nodes) ; do
+        grep -v Source "$pathname/sampling_for_memory_migration_${hostname}_source_${node}.dat"
+    done
+) > $pathname/sampling_for_memory_migration_${hostname}.dat
+
+$(dirname $0)/mami_analyzeSamplingForMemoryMigration.pl

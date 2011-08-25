@@ -1,0 +1,3 @@
+#!/bin/sh
+
+LD_BIND_NOW=y $(dirname $0)/mami_sampling_for_memory_access

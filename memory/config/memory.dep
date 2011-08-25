@@ -1,5 +1,0 @@
-Provide: module
-Depend: tbx
-Depend: memory_linkmode
-Depend: hwloc
-

@@ -1,8 +1,0 @@
-PM2_STACKALIGN_LIBNAME=stackalign
-PM2_STACKALIGN_LIBS="-ldl"
-
-PM2_STACKALIGN_BUILD_DYNAMIC=yes
-# On ne veut pas de link avec stackalign
-PM2_STACKALIGN_DO_NOT_LINK_LIB_WITH_OTHERS=yes
-
-PM2_LD_PRELOAD="${PM2_LD_PRELOAD:+${PM2_LD_PRELOAD}:}libstackalign.so"

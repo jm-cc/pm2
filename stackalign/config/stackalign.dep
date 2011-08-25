@@ -1,3 +1,0 @@
-Depend: marcel tbx init
-Conflict: pm2
-Provide: module

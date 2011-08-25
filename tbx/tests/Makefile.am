@@ -20,5 +20,5 @@ AM_LDFLAGS  = $(GLOBAL_AM_LDFLAGS) $(PKG_AM_LDFLAGS)
 LDADD       = $(GLOBAL_AM_LDADD) $(abs_top_builddir)/source/libtbx.la
 
 
-check_PROGRAMS = tbx_malloc tbx_slist tbx_program_argument tbx_checksum tbx_snprintf
+check_PROGRAMS = tbx_malloc tbx_slist tbx_program_argument tbx_checksum tbx_snprintf tbx_topology
 TESTS = $(check_PROGRAMS)

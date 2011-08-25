@@ -60,6 +60,9 @@ void tbx_init(int *argc, char ***argv)
 
 		/* Dynamic array manager */
 		tbx_darray_manager_init();
+
+		/** String manager */
+		tbx_string_manager_init();
 	}
 
 	tbx_pa_get_args(argc, argv);
@@ -84,6 +87,9 @@ void tbx_exit(void)
 
 			/* List manager */
 			tbx_list_manager_exit();
+
+			/** String manager */
+			tbx_string_manager_exit();
 
 			/* Parser */
 			tbx_pa_free_args();

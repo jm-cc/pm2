@@ -1,0 +1,37 @@
+--- Makefile.old	2011-07-19 14:04:17.000000000 +0200
++++ Makefile	2011-07-19 14:05:31.000000000 +0200
+@@ -30,6 +30,7 @@
+ LOGFILE = $(top_builddir)/logfile
+ 
+ LDFLAGS := $(shell cat LDFLAGS | grep -v \^\#)
++EXEC_PREFIX := $(shell cat EXEC_PREFIX | grep -v \^\#)
+ 
+ RUN_TESTS := $(shell $(top_builddir)/locate-test \
+              --execs $(top_builddir)/$(POSIX_TARGET))
+@@ -54,7 +55,7 @@
+ tests-pretty:
+ 	$(MAKE) all | column -t -s:
+ 
+-CFLAGS = -g -O2 -Wall -Werror -D_POSIX_C_SOURCE=200112L
++CFLAGS = -g -O2 -Wall -D_POSIX_C_SOURCE=200112L
+ 
+ # add -std=c99, -std=gnu99 if compiler supports it (gcc-2.95.3 does not).
+ check_gcc = $(shell if $(CC) $(1) -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then echo "$(1)"; else echo "$(2)"; fi)
+@@ -99,7 +100,7 @@
+ %.run-test: %.test $(top_builddir)/t0 $(top_builddir)/t0.val
+ 	@COMPLOG=$(LOGFILE).$$$$; \
+ 	[ -f $< ] || exit 0; \
+-	$(TIMEOUT) $< > $$COMPLOG 2>&1; \
++	$(EXEC_PREFIX) $(TIMEOUT) $< > $$COMPLOG 2>&1; \
+ 	RESULT=$$?; \
+ 	if [ $$RESULT -eq 1 ]; \
+ 	then \
+@@ -147,7 +148,7 @@
+ %.run-test: %.sh $(top_builddir)/t0 $(top_builddir)/t0.val
+ 	@COMPLOG=$(LOGFILE).$$$$; \
+ 	chmod +x $<; \
+-	$(TIMEOUT) $< > $$COMPLOG 2>&1; \
++	$(EXEC_PREFIX) $(TIMEOUT) $< > $$COMPLOG 2>&1; \
+ 	RESULT=$$?; \
+ 	if [ $$RESULT -eq 0 ]; \
+ 	then \

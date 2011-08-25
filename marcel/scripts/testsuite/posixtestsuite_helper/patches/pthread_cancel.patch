@@ -1,0 +1,100 @@
+diff -aruN conformance.old/interfaces/pthread_cancel/5-2.c conformance/interfaces/pthread_cancel/5-2.c
+--- conformance.old/interfaces/pthread_cancel/5-2.c	2010-10-11 15:12:06.000000000 +0200
++++ conformance/interfaces/pthread_cancel/5-2.c	2010-10-11 15:27:15.000000000 +0200
+@@ -89,6 +89,8 @@
+ #endif
+ 
+ sigset_t usersigs;
++pthread_t th_sig1, th_sig2;
++pthread_barrier_t barrier;
+ 
+ typedef struct
+ {
+@@ -117,6 +119,8 @@
+ 		UNRESOLVED( ret, "Unable to block SIGUSR1 and SIGUSR2 in signal thread" );
+ 	}
+ 
++	pthread_barrier_wait(&barrier);
++
+ 	while ( do_it )
+ 	{
+ #ifdef WITH_SYNCHRO
+@@ -200,6 +204,7 @@
+ 		UNRESOLVED( ret, "Unable to unblock SIGUSR1 and SIGUSR2 in worker thread" );
+ 	}
+ 
++	pthread_barrier_wait(&barrier);
+ 
+ 	while ( do_it )
+ 	{
+@@ -216,7 +221,6 @@
+ 		{
+ 			UNRESOLVED( ret, "pthread_self returned an unexpected error" );
+ 		}
+-
+ 	}
+ 
+ 
+@@ -227,6 +231,16 @@
+ 		UNRESOLVED( ret, "Failed to join the canceled thread" );
+ 	}
+ 
++	if ( ( ret = pthread_join( th_sig1, NULL ) ) )
++	{
++		UNRESOLVED( ret, "Signal 1 sender thread join failed" );
++	}
++
++	if ( ( ret = pthread_join( th_sig2, NULL ) ) )
++	{
++		UNRESOLVED( ret, "Signal 2 sender thread join failed" );
++	}
++
+ 	return NULL;
+ }
+ 
+@@ -234,7 +248,7 @@
+ int main ( int argc, char * argv[] )
+ {
+ 	int ret;
+-	pthread_t th_work, th_sig1, th_sig2;
++	pthread_t th_work;
+ 	thestruct arg1, arg2;
+ 
+ 	struct sigaction sa;
+@@ -279,6 +293,8 @@
+ 		UNRESOLVED( ret, "Unable to block SIGUSR1 and SIGUSR2 in main thread" );
+ 	}
+ 
++	pthread_barrier_init(&barrier, NULL, 4);
++
+ #ifdef WITH_SYNCHRO
+ 	if ( sem_init( &semsig1, 0, 1 ) )
+ 	{
+@@ -316,7 +332,7 @@
+ 		UNRESOLVED( ret, "Signal 2 sender thread creation failed" );
+ 	}
+ 
+-
++	pthread_barrier_wait(&barrier);
+ 
+ 	/* Let's wait for a while now */
+ 	sleep( 1 );
+@@ -329,18 +345,6 @@
+ 	}
+ 	while ( do_it );
+ 
+-
+-	if ( ( ret = pthread_join( th_sig1, NULL ) ) )
+-	{
+-		UNRESOLVED( ret, "Signal 1 sender thread join failed" );
+-	}
+-
+-	if ( ( ret = pthread_join( th_sig2, NULL ) ) )
+-	{
+-		UNRESOLVED( ret, "Signal 2 sender thread join failed" );
+-	}
+-
+-
+ 	if ( ( ret = pthread_join( th_work, NULL ) ) )
+ 	{
+ 		UNRESOLVED( ret, "Worker thread join failed" );

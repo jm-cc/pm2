@@ -1,0 +1,24 @@
+diff -aruN conformance.old/interfaces/sem_unlink/5-1.c conformance/interfaces/sem_unlink/5-1.c
+--- conformance.old/interfaces/sem_unlink/5-1.c	2010-12-01 12:44:07.000000000 +0100
++++ conformance/interfaces/sem_unlink/5-1.c	2010-12-01 12:42:44.000000000 +0100
+@@ -164,7 +164,7 @@
+ 	if ( NAME_MAX > 0 )
+ 	{
+ 		/* create a semaphore with a name longer than NAME_MAX */
+-		sem_name = calloc( NAME_MAX + 2, sizeof( char ) );
++		sem_name = calloc( NAME_MAX + 3, sizeof( char ) );
+ 
+ 		if ( sem_name == NULL )
+ 		{
+@@ -174,9 +174,9 @@
+ 		/* the space was allocated */
+ 		sem_name[ 0 ] = '/';
+ 
+-		sem_name[ NAME_MAX + 1 ] = '\0';
++		sem_name[ NAME_MAX + 2 ] = '\0';
+ 
+-		memset( sem_name + 1, 'N', NAME_MAX );
++		memset( sem_name + 1, 'N', NAME_MAX + 1 );
+ 
+ 		/* Create the semaphore */
+ 		sem = sem_open( sem_name, O_CREAT , 0777, 1 );

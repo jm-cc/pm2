@@ -1,0 +1,42 @@
+0 . Requirements ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+To be compiled, PM2 software needs:
+
+* GNU Make >= 3.81
+* GCC >= 3.3 (older versions may work but are no longer supported)
+* GNU Bash (shells such as zsh or ksh may work but are untested)
+* Perl
+* GNU Autoconf > 2.50 when using NewMadeleine and/or puk.
+
+* hwloc (when enabling MaMI or Marcel NUMA options)
+* tbx
+
+
+TO BE COMPLETED
+
+
+0 . Installing hwloc (optional)
+
+Sources for hwloc can be obtained either as a tarball at the
+following address:
+
+http://www.open-mpi.org/projects/hwloc/
+
+or from the Subversion server:
+
+$ svn checkout http://svn.open-mpi.org/svn/hwloc/trunk hwloc
+
+Follow the provided instructions to install the library.
+
+
+I . Installing Tbx
+
+Sources for tbx can be obtained from the Subversion server:
+$ svn checkout svn://scm.gforge.inria.fr/svn/pm2/branches/pm2-autotools/tbx
+
+Build the toolbox library and install it:
+$ ./autogen.sh && ./configure --prefix=/somewhere [--enable-hwloc] && make && make install
+If you plan to use hwloc, do not forget to build tbx with hwloc support.
+
+Configure your environment to enable pkgconfig tbx support:
+$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/somewhere/lib/pkgconfig

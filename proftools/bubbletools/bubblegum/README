@@ -1,0 +1,10 @@
+In order to compile bubblegum, you need the following libraries and their -dev
+or -devel part:
+
+- libgtkglext1
+- libfreetype
+- libsdl-image
+- libfxt (available on cvs -d :pserver:anonymous@cvs.sv.gnu.org:/sources/fkt co FxT )
+- libxml
+
+You also need the "bubblelib" and "bubbles" modules and their dependencies.

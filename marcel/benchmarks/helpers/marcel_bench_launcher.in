@@ -1,0 +1,137 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2011 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+
+scriptpath=`readlink -f $0`
+scriptdir=`dirname $scriptpath`
+testdir=$scriptdir/..
+helperdir=$testdir/helpers
+
+find_programs()
+{
+    if [ -f $1/../Makefile ] ; then
+	BENCH_DIR="$1/../../benchmarks"
+    else
+	BENCH_DIR="$2/bin/bench"
+    fi
+}
+
+find_programs $scriptdir @prefix@
+
+testname=`basename $0`
+
+if test x$PM2_BENCH_DIR = x ; then
+    PM2_BENCH_DIR=/tmp/regression_$$
+fi
+if test x$PM2_BENCH_ID = x ; then
+    PM2_BENCH_ID=0
+fi
+mkdir -p $PM2_BENCH_DIR/raw/$PM2_BENCH_ID
+
+case $testname in
+    cond)
+        $BENCH_DIR/cond 1000000 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_cond_result_${PM2_BENCH_ID}
+        CONDTIME=`grep "time =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_cond_result_${PM2_BENCH_ID} | tail -1 | awk '{print $3}' | sed 's/us//'`
+        if [ -z "$CONDTIME" ] ; then
+            CONDTIME="-"
+        fi
+        echo $PM2_BENCH_ID $CONDTIME | tee -a ${PM2_BENCH_DIR}/marcel_cond.txt
+        ;;
+    contsw)
+        $BENCH_DIR/contsw 1 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID}
+        SETJMPTIME=`grep "setjmp'time =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID} |tail -1| awk '{print $3}' | sed 's/us//'`
+        if [ -z "$SETJMPTIME" ] ; then
+            SETJMPTIME="-"
+        fi
+        echo $PM2_BENCH_ID $SETJMPTIME | tee -a ${PM2_BENCH_DIR}/marcel_contsw_setjmp.txt
+
+        LONGJMPTIME=`grep "longjmp'time =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID} |tail -1| awk '{print $3}' | sed 's/us//'`
+        if [ -z "$LONGJMPTIME" ] ; then
+            LONGJMPTIME="-"
+        fi
+        echo $PM2_BENCH_ID $LONGJMPTIME | tee -a ${PM2_BENCH_DIR}/marcel_contsw_longjmp.txt
+
+        SCHEDSWITCHTIME=`grep "contsw'time (schedule+switch) =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID} |tail -2|head -1|awk '{print $4}'| sed 's/us//'`
+        if [ -z "$SCHEDSWITCHTIME" ] ; then
+            SCHEDSWITCHTIME="-"
+        fi
+        echo $PM2_BENCH_ID $SCHEDSWITCHTIME | tee -a ${PM2_BENCH_DIR}/marcel_contsw_schedswitch.txt
+
+        SCHEDTIME=`grep "contsw'time (schedule) =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID} |tail -1|awk '{print $4}'| sed 's/us//'`
+        if [ -z "$SCHEDTIME" ] ; then
+            SCHEDTIME="-"
+        fi
+        echo $PM2_BENCH_ID $SCHEDTIME | tee -a ${PM2_BENCH_DIR}/marcel_contsw_schedule.txt
+
+        YIELDTIME=`grep "contsw'time (yield_to) =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_contsw_result_${PM2_BENCH_ID} |tail -1|awk '{print $4}'| sed 's/us//'`
+        if [ -z "$YIELDTIME" ] ; then
+            YIELDTIME="-"
+        fi
+        echo $PM2_BENCH_ID $YIELDTIME | tee -a ${PM2_BENCH_DIR}/marcel_contsw_yield.txt
+        ;;
+    create)
+        $BENCH_DIR/create 10000000 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_create_result_${PM2_BENCH_ID}
+        CREATETIME=`grep "time =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_create_result_${PM2_BENCH_ID} | tail -1 | awk '{print $5}' | sed 's/us//'`
+        if [ -z "$CREATETIME" ] ; then
+            CREATETIME="-"
+        fi
+        echo $PM2_BENCH_ID $CREATETIME | tee -a ${PM2_BENCH_DIR}/marcel_create.txt
+        ;;
+    createtasks)
+#        $BENCH_DIR/createtasks 200 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_createtasks_result_${PM2_BENCH_ID}
+#        CREATETIME=`grep "create =" marcel_createtasks_result_${PM2_BENCH_ID} | tail -3 | awk 'BEGIN{SUM=0} {SUM+=$3} END{print SUM/3}'`
+#        if [ "$CREATETIME" == "0" ] ; then
+#            CREATETIME="-"
+#        fi
+#        echo $PM2_BENCH_ID $CREATETIME | tee -a ${PM2_BENCH_DIR}/marcel_createtasks_createseed_create.txt
+        ;;
+    createseeds)
+#        $BENCH_DIR/createseeds 10 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_createseeds_result_${PM2_BENCH_ID}
+        ;;
+    pingpong)
+        $BENCH_DIR/pingpong 1000000 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_pingpong_result_${PM2_BENCH_ID}
+        PINGPONG=`grep "pingpong =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_pingpong_result_${PM2_BENCH_ID} | tail -1 | awk '{print $3}' | sed 's/us//'`
+        if [ -z "$PINGPONG" ] ; then
+            PINGPONG="-"
+        fi
+        echo $PM2_BENCH_ID $PINGPONG | tee -a ${PM2_BENCH_DIR}/marcel_pingpong.txt
+        ;;
+    semaphore)
+        $BENCH_DIR/pingpong 1000000 0 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_semaphore_result_${PM2_BENCH_ID}
+        SEMAPHORE=`grep "pingpong =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_semaphore_result_${PM2_BENCH_ID} | tail -1 | awk '{print $3}' | sed 's/us//'`
+        if [ -z "$SEMAPHORE" ] ; then
+            SEMAPHORE="-"
+        fi
+        echo $PM2_BENCH_ID $SEMAPHORE | tee -a ${PM2_BENCH_DIR}/marcel_semaphore.txt
+        ;;
+    sumtime)
+        $BENCH_DIR/sumtime 1000 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_sumtime_result_${PM2_BENCH_ID}
+        SUMTIME=`grep "time=" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_sumtime_result_${PM2_BENCH_ID} | sed s'/.*time=//' | sed 's/ms//'`
+        if [ -z "$SUMTIME" ] ; then
+            SUMTIME="-"
+        fi
+        echo $PM2_BENCH_ID $SUMTIME | tee -a ${PM2_BENCH_DIR}/marcel_sumtime.txt
+        ;;
+    tsp)
+        $BENCH_DIR/tsp 16 16 100 2>&1 | tee $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_tsp_result_${PM2_BENCH_ID}
+        TSPTIME=`grep "time =" $PM2_BENCH_DIR/raw/${PM2_BENCH_ID}/marcel_tsp_result_${PM2_BENCH_ID} | sed 's/.*time = //' | sed 's/ms//'`
+        if [ -z "$TSPTIME" ] ; then
+            TSPTIME="-"
+        fi
+        echo $PM2_BENCH_ID $TSPTIME | tee -a ${PM2_BENCH_DIR}/marcel_tsp.txt
+        ;;
+    *)
+        echo "Test <$testname> unknown" >&2 && exit 1
+esac

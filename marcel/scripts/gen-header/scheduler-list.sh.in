@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2008 "the PM2 team" (see AUTHORS file)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+schedulers=`cat @abs_top_srcdir@/source/scheduler/profiles/marcel_bubble_*.c \
+    | sed -n -e 's/.*MARCEL_DEFINE_BUBBLE_SCHEDULER_CLASS *( *\([^,]*\).*/\1/p' \
+    | sort | uniq`
+
+(echo "/* Automatically generated, do not edit.  */" ;
+ echo
+ echo "#ifndef __MARCEL_BUBBLE_SCHED_LOOKUP_H__"
+ echo "#define __MARCEL_BUBBLE_SCHED_LOOKUP_H__"
+ echo
+ echo "struct ma_bubble_sched_desc {" ;
+ echo "  const char *name; const marcel_bubble_sched_class_t *klass;" ;
+ echo "};" ;
+ echo
+ echo "static const struct ma_bubble_sched_desc" ;
+ echo "ma_bubble_schedulers[] = {" ;
+ for sched in $schedulers ;
+ do
+   echo "  { \"$sched\", &marcel_bubble_${sched}_sched_class }," ;
+ done ;
+ echo "  { NULL, NULL }" ;
+ echo "};" 
+ echo
+ echo "#endif /** __MARCEL_BUBBLE_SCHED_LOOKUP_H__ **/")

@@ -1,0 +1,81 @@
+#!/bin/sh
+
+
+#
+# PM2: Parallel Multithreaded Machine
+# Copyright (C) 2010 "the PM2 team" (see AUTHORS file)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+
+
+## Prepare execution environment
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+datarootdir=@datarootdir@
+localedir=@localedir@
+pkglibdir=@libdir@/@PACKAGE@
+
+if [ -f ${pkglibdir}/libpthread.so ]; then
+    ld_preload=${pkglibdir}/libpthread.so
+fi
+ld_preload=${ld_preload}:${LD_PRELOAD}
+ld_library_path=${pkglibdir}:${LD_LIBRARY_PATH}
+
+
+## Checks arguments
+if [ $# -eq 0 ] || [ "$1" = -h ] || [ "$1" = --help ]; then
+    echo "This is a wrapper script to launch application with Marcel."
+    echo
+    echo "Usage: $0 [OPTION] [PROGRAM] [PROGRAM ARGUMENTS]"
+    echo "*   -d or --debug  launch application with gdb"
+    echo "*   -t or --trace  launch application with strace"
+    echo "*   -h or --help   print this message"
+    exit 1
+fi
+
+##  Exec program with gdb
+if [ "$1" = -d ] || [ "$1" = --debug ]; then
+    shift
+
+    GDB="${GDB:-gdb}"
+    
+    for f in `ls ${localedir}/gdbinit*`;
+    do
+	GDB_SCRIPTS="${GDB_SCRIPTS} -x ${f}"
+    done
+    
+    exec ${GDB} ${GDB_SCRIPTS}                                              \
+	--eval-command "set environment LD_PRELOAD ${ld_preload}"	    \
+	--eval-command "set environment LD_LIBRARY_PATH ${ld_library_path}" \
+	--eval-command "set environment LD_BIND_NOW y" \
+	--args "$@"
+
+##  Exec program with strace
+elif [ "$1" = -t ] || [ "$1" = --trace ]; then
+    shift
+    
+    STRACE="${STRACE:-strace}"
+
+    exec ${STRACE} -E LD_PRELOAD="${ld_preload}"           \
+	           -E LD_LIBRARY_PATH="${ld_library_path}" \
+	           -E LD_BIND_NOW="y" \
+                   -o strace -f                            \
+	           "$@"
+
+##  Exec program
+else
+    export LD_PRELOAD="${ld_preload}"
+    export LD_LIBRARY_PATH="${ld_library_path}"
+    export LD_BIND_NOW="y"
+    exec "$@"
+fi

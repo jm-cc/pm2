@@ -1,0 +1,111 @@
+diff -aruN conformance.old/interfaces/pthread_atfork/3-3.c conformance/interfaces/pthread_atfork/3-3.c
+--- conformance.old/interfaces/pthread_atfork/3-3.c	2010-10-06 14:51:24.158356067 +0200
++++ conformance/interfaces/pthread_atfork/3-3.c	2010-10-06 15:23:51.914826271 +0200
+@@ -80,7 +80,7 @@
+ /*****************************    Test case   *********************************/
+ /******************************************************************************/
+ 
+-char do_it = 1;
++volatile char do_it = 1;
+ unsigned long count_ope = 0;
+ #ifdef WITH_SYNCHRO
+ sem_t semsig1;
+@@ -89,6 +89,8 @@
+ #endif
+ 
+ sigset_t usersigs;
++pthread_t th_sig1, th_sig2;
++pthread_barrier_t barrier;
+ 
+ typedef struct
+ {
+@@ -117,6 +119,8 @@
+ 		UNRESOLVED( ret, "Unable to block SIGUSR1 and SIGUSR2 in signal thread" );
+ 	}
+ 
++	pthread_barrier_wait(&barrier);
++
+ 	while ( do_it )
+ 	{
+ #ifdef WITH_SYNCHRO
+@@ -196,6 +200,7 @@
+ 		UNRESOLVED( ret, "Unable to unblock SIGUSR1 and SIGUSR2 in worker thread" );
+ 	}
+ 
++	pthread_barrier_wait(&barrier);
+ 
+ 	while ( do_it )
+ 	{
+@@ -209,6 +214,16 @@
+ 
+ 	}
+ 
++	if ( ( ret = pthread_join( th_sig1, NULL ) ) )
++	{
++		UNRESOLVED( ret, "Signal 1 sender thread join failed" );
++	}
++
++	if ( ( ret = pthread_join( th_sig2, NULL ) ) )
++	{
++		UNRESOLVED( ret, "Signal 2 sender thread join failed" );
++	}
++
+ 	return NULL;
+ }
+ 
+@@ -217,7 +232,7 @@
+ int main ( int argc, char * argv[] )
+ {
+ 	int ret;
+-	pthread_t th_work, th_sig1, th_sig2, me;
++	pthread_t th_work, me;
+ 	thestruct arg1, arg2;
+ 
+ 	struct sigaction sa;
+@@ -277,6 +292,12 @@
+ 
+ 	me = pthread_self();
+ 
++	ret = pthread_barrier_init(&barrier, NULL, 4);
++	if ( ret != 0 )
++	{
++		UNRESOLVED( ret, "Unable to init the barrier" );
++	}
++
+ 	if ( ( ret = pthread_create( &th_work, NULL, test, &me ) ) )
+ 	{
+ 		UNRESOLVED( ret, "Worker thread creation failed" );
+@@ -301,7 +322,7 @@
+ 		UNRESOLVED( ret, "Signal 2 sender thread creation failed" );
+ 	}
+ 
+-
++	pthread_barrier_wait(&barrier);
+ 
+ 	/* Let's wait for a while now */
+ 	sleep( 1 );
+@@ -314,24 +335,11 @@
+ 	}
+ 	while ( do_it );
+ 
+-
+-	if ( ( ret = pthread_join( th_sig1, NULL ) ) )
+-	{
+-		UNRESOLVED( ret, "Signal 1 sender thread join failed" );
+-	}
+-
+-	if ( ( ret = pthread_join( th_sig2, NULL ) ) )
+-	{
+-		UNRESOLVED( ret, "Signal 2 sender thread join failed" );
+-	}
+-
+-
+ 	if ( ( ret = pthread_join( th_work, NULL ) ) )
+ 	{
+ 		UNRESOLVED( ret, "Worker thread join failed" );
+ 	}
+ 
+-
+ #if VERBOSE > 0
+ 	output( "Test executed successfully.\n" );
+ 

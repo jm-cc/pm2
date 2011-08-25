@@ -1,0 +1,21 @@
+diff -aruN conformance/interfaces/sem_timedwait/9-1.c conformance.new/interfaces/sem_timedwait/9-1.c
+--- conformance/interfaces/sem_timedwait/9-1.c	2011-03-03 10:20:55.000000000 +0100
++++ conformance.new/interfaces/sem_timedwait/9-1.c	2011-03-03 10:20:35.000000000 +0100
+@@ -64,7 +64,7 @@
+                         perror("Error calling sigemptyset\n");
+                         return CHILDFAIL;
+                 }
+-                if (sigaction(SIGABRT, &act, 0) == -1) {
++                if (sigaction(SIGUSR1, &act, 0) == -1) {
+                         perror("Error calling sigaction\n");
+                         return CHILDFAIL;
+                 }
+@@ -84,7 +84,7 @@
+         } else { // parent to send a signal to child
+                 int i;
+                 sleep(1);
+-                status = kill(pid,SIGABRT);  // send signal to child
++                status = kill(pid,SIGUSR1);  // send signal to child
+                 if (wait(&i) == -1) {
+                         perror("Error waiting for child to exit\n");
+                         return PTS_UNRESOLVED;

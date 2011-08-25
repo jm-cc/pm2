@@ -1,0 +1,9 @@
+Test loader configuration
+-------------------------
+
+make check does not run tests directly. There is a small program (source is test_loader.c)
+which runs each test 8 times per default and kills the test 250 seconds later (deadlock check).
+
+You can tune this behavious by setting the following environment variables:
+- MARCEL_TEST_ITER
+- MARCEL_TEST_TIMEOUT: time in seconds

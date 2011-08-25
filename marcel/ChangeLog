@@ -1,0 +1,63 @@
+* 2.99.1 (01/27/2011):
+	- lot of bug fixes:
+		* signal handling: fix deadlock, follows posix behaviour
+		* fork handling: fix deadlock, recursive fork() works
+		* coverage improvement: a lot of tests are imported from the glibc
+	- do not depend on PukABI anymore: marcel_gluec_ files do the job internally
+
+	- can be built as a single package: use autotools
+	- reduce targeted systems: Darwin, FreeBSD, Solaris, Linux
+	- reduce supported architectures: Sparc, X86(64), PPC64, IA64
+	- source tree clean-up
+
+* 2.99.2 (04/04/2011):
+	- fix time_slice value with virtual timer
+	- fix schedule signal distribution on Darwin with virtual timer
+	- fix named semaphore implementation on Darwin (cause SIGSEGV)
+	- fix possible race condition in update_lwps_global_sigmask
+	- fix execution order of handlers registered with *_atfork()
+	- fix binding of main LWP
+	- fix marcel_sigignore bug (cause SIGSEGV)
+	- fix marcel_kthread_kill signal safety on Darwin / FreeBSD
+
+	- named semaphore implementation is more POSIX compliant (SUSv3)
+	- hyperthreading technology or similar is not used in the default config (use --enable-smt)
+	- check if an external memory allocator is provided (Bash memory allocator is not thread safe)
+
+	TODO:
+	- schedulers (!= cache and null) are still broken
+	- sigmask update must not append in the signal handler context
+	- allow the user to disable the 'memory allocator check'
+
+* 2.99.3 (06/15/2011):
+	- fix stack area on Linux/IA64
+	- fix marcel_puts behaviour: '\n' was missing
+	- fix build on OpenSolaris Systems
+	- fix TLS support check
+	- fix: barrier mode is an external type
+
+	- change default scheduler policy to SCHED_BALANCE
+	- define pread/pwrite with pread64/pwrite64
+	- lock code factorisation: cond, rwlock, mutex, futex, f*lockfile
+	- add facilities to disable external allocator check
+
+	- remove MARCEL_INLINE declaration
+	- clean implementation of spinlock for X86/X86_64
+	- remove non posix definitions from marcel_pmarcel.h
+
+	Optimisations:
+	- marcel_vpset_t is an uint_fast(32/64)_t (if available) when nbprocessors <= 64
+	- inline ma_local_bh_(enable|disable) functions
+	- ma_schedule: do not take the nexth lock if previous task is the next one
+	- ma_schedule: remove unused variables
+	- try_to_resched: lwp address is stored in the lwp runqueue data structure
+	- try_to_resched: search a lwp to run the thread thanks to the vpset (introduce marcel_vpset_next())
+	- fastlock: lpt_fastlock use the marcel_fastlock implementation
+	- fastlock: lock-free path when the lock is uncontested by multiple threads
+	- fastlock: use a slab allocator for blockcell instead of malloc/free
+	- idle_poll_func
+
+	TODO:
+	- schedulers (!= cache and null) are still broken
+	- sigmask update must not append in the signal handler context
+	

@@ -1,0 +1,36 @@
+diff -aruN conformance.old/interfaces/sigset/6-1.c conformance/interfaces/sigset/6-1.c
+--- conformance.old/interfaces/sigset/6-1.c	2010-09-14 16:01:05.592504243 +0200
++++ conformance/interfaces/sigset/6-1.c	2010-09-14 15:58:15.348772463 +0200
+@@ -42,7 +42,7 @@
+                	return PTS_UNRESOLVED;
+         }
+ 
+-        if (sigset(SIGCHLD,SIG_HOLD) != SIG_HOLD) {
++        if (sigset(SIGCHLD,SIG_HOLD) == SIG_HOLD) {
+                 perror("Unexpected error while using sigset()");
+                	return PTS_UNRESOLVED;
+         }
+diff -aruN conformance.old/interfaces/sigset/7-1.c conformance/interfaces/sigset/7-1.c
+--- conformance.old/interfaces/sigset/7-1.c	2010-09-14 16:01:00.105838275 +0200
++++ conformance/interfaces/sigset/7-1.c	2010-09-14 15:58:36.848768274 +0200
+@@ -46,7 +46,7 @@
+                	return PTS_UNRESOLVED;
+         }
+ 
+-        if (sigset(SIGCHLD,SIG_HOLD) != SIG_HOLD) {
++        if (sigset(SIGCHLD,SIG_HOLD) == SIG_HOLD) {
+                 perror("Unexpected error while using sigset()");
+                	return PTS_UNRESOLVED;
+         }
+diff -aruN conformance.old/interfaces/sigset/8-1.c conformance/interfaces/sigset/8-1.c
+--- conformance.old/interfaces/sigset/8-1.c	2010-09-14 16:01:09.689170211 +0200
++++ conformance/interfaces/sigset/8-1.c	2010-09-14 15:58:48.802100349 +0200
+@@ -20,7 +20,7 @@
+ int main()
+ {
+ 
+-        if (sigset(SIGCHLD,SIG_HOLD) != SIG_HOLD) {
++        if (sigset(SIGCHLD,SIG_HOLD) == SIG_HOLD) {
+ 		printf("Test FAILED: sigset() didn't return SIG_HOLD\n");
+ 		return PTS_FAIL;
+ 	}

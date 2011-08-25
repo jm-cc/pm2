@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@
+Description: Library for supporting PAPI events sampling at the Marcel thread level
+Version: @PACKAGE_VERSION@
+URL: @PACKAGE_BUGREPORT@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lpapimar
+Libs.private: -lpapi
+Cflags: -I${includedir}
+

@@ -1,0 +1,5 @@
+libpapimar
+----------
+
+'libpapimar' is a tiny library for writing PAPI sampling hooks to be used with Marcel threads.
+

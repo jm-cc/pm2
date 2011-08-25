@@ -1,0 +1,8 @@
+* 1.0.1 (06/15/2011):
+	- fix build on Darwin systems
+	- fix build on OpenSolaris systems
+	- clean exported CFLAGS in pkg-config file
+	- add --enable-strip to strip the library
+
+	- merge tbx_intdef.h into tbx_types.h
+	- TBX_GET_TICK use clock_gettime or gettimeofday which are more accurate when CPU clock changes

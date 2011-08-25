@@ -1,0 +1,25 @@
+diff -aruN conformance.old/interfaces/pthread_cond_timedwait/2-2.c conformance/interfaces/pthread_cond_timedwait/2-2.c
+--- conformance.old/interfaces/pthread_cond_timedwait/2-2.c	2010-10-11 16:36:48.000000000 +0200
++++ conformance/interfaces/pthread_cond_timedwait/2-2.c	2010-10-11 16:39:12.000000000 +0200
+@@ -77,7 +77,7 @@
+ int main()
+ {
+ 	pthread_t  thread1;
+-	int th_ret;
++	long th_ret;
+ 
+ 	if (pthread_mutex_init(&td.mutex, NULL) != 0) {
+ 		fprintf(stderr,"Fail to initialize mutex\n");
+diff -aruN conformance.old/interfaces/pthread_cond_timedwait/2-3.c conformance/interfaces/pthread_cond_timedwait/2-3.c
+--- conformance.old/interfaces/pthread_cond_timedwait/2-3.c	2010-10-11 16:36:48.000000000 +0200
++++ conformance/interfaces/pthread_cond_timedwait/2-3.c	2010-10-11 16:39:22.000000000 +0200
+@@ -67,7 +67,8 @@
+ int main()
+ {
+ 	pthread_t  thread1;
+-	int rc, th_ret;
++	int rc; 
++	long th_ret;
+ 
+ 	if (pthread_mutex_init(&td.mutex, NULL) != 0) {
+ 		fprintf(stderr,"Fail to initialize mutex\n");

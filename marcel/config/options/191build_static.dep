@@ -1,3 +1,0 @@
-Provide: marcel_linkmode
-Provide: static_libs
-Conflict: marcel_linkmode

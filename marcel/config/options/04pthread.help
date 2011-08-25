@@ -1,2 +1,0 @@
-enable libpthread generation
-This enables pthread_* functions that are binary equivalent to Linux' libpthread, permitting to run existing binary applications.

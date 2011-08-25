@@ -1,4 +1,0 @@
-Provide: tbx_linkmode
-Provide: static_libs
-Provide: dynamic_libs
-Conflict: tbx_linkmode

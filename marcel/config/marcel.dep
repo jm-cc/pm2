@@ -1,4 +1,0 @@
-Provide: module
-Depend: marcel_proctype tbx
-Depend: marcel_linkmode
-Depend: pukabi

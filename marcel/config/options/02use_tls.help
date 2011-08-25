@@ -1,1 +1,0 @@
-Use system's TLS to store marcel_self instead of computing from the SP value.

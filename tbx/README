@@ -32,7 +32,7 @@ Follow the provided instructions to install the library.
 I . Installing Tbx
 
 Sources for tbx can be obtained from the Subversion server:
-$ svn checkout svn://scm.gforge.inria.fr/svn/pm2/branches/pm2-autotools/tbx
+$ svn checkout svn://scm.gforge.inria.fr/svn/pm2/trunk/tbx
 
 Build the toolbox library and install it:
 $ ./autogen.sh && ./configure --prefix=/somewhere [--enable-hwloc] && make && make install

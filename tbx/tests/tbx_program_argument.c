@@ -91,6 +91,11 @@ int main()
 	    parsed_argc != 0)
 		return 1;
 
+	printf("copy unparsed args\n");
+	tbx_pa_copy_args(&cmd_argv_size, cmd_argv);
+	if (cmd_argv_size != 0 || parsed_argc != cmd_argv_size)
+		return 1;
+
 	tbx_pa_free_args();
 	printf("Success\n");
 	return 0;

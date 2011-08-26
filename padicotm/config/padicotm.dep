@@ -1,7 +1,0 @@
-Provide: padicotm
-Provide: module
-Provide: nmad_launcher
-Depend: puk
-Depend: pukabi
-Depend: dynamic_libs
-

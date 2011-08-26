@@ -1,3 +1,0 @@
-Provide: puk_linkmode
-Provide: static_libs
-Conflict: puk_linkmode

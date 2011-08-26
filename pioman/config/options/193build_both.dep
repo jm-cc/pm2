@@ -1,4 +1,0 @@
-Provide: pioman_linkmode
-Provide: static_libs
-Provide: dynamic_libs
-Conflict: pioman_linkmode

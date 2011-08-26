@@ -1,4 +1,0 @@
-Provide: madeleine
-Depend: nmad_proto tbx init puk nmad_tag_container
-Conflict: madeleine
-Depend: nmad_linkmode

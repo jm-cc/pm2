@@ -1,2 +1,0 @@
-Use flat arrays for tables indexed by tags.
-It consumes quite a lot of memory and limits available tags to 127, but is the lowest latency solution.

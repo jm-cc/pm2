@@ -160,7 +160,10 @@ Program <REF LABEL="prog:hello-mad"/> shows a minimal Madeleine program. Compile
 
 <PROGRAM FILE="./Progs/makeHelloMad.txt"/>
 
+<!--
 <PROGRAM FILE="./Progs/gs_mad_hello.c" LABEL="prog:hello-mad" TITLE="Minimal Madeleine program"/>
+-->
+
 
 <P>
 You can also choose to do the compilation by using the Makefile given
@@ -353,7 +356,9 @@ Program <REF LABEL="prog:hello-marcel"/> shows a minimal Marcel program. Compile
 
 <PROGRAM FILE="./Progs/makeAndRunHelloMarcel.txt"/>
 
+<!--
 <PROGRAM FILE="./Progs/gs_sumtime.c" LABEL="prog:hello-marcel" TITLE="Minimal Marcel program"/>
+-->
 
 <SUBSUBSECTION TITLE="The marcel_main function">
 

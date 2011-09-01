@@ -25,22 +25,6 @@
 #include "sys/marcel_debug.h"
 
 
-/** Public macros **/
-#define MA_MARCEL_FASTLOCK_UNLOCKED					\
-	{ .__status = {0}, .__waiting = NULL, .__spinlock = MA_SPIN_LOCK_UNLOCKED}
-#define MA_PMARCEL_FASTLOCK_UNLOCKED MA_MARCEL_FASTLOCK_UNLOCKED
-/* This must remain 0 to keep ABI compatibility with static initializers.  */
-#define MA_LPT_FASTLOCK_UNLOCKED { .__mlock = NULL }
-
-/** __marcel_lock_(timed_)wait flag options */
-#define MA_CHECK_INTR     (1)
-#define MA_CHECK_CANCEL   (MA_CHECK_INTR<<1)
-
-
-/** Public data types **/
-typedef int __marcel_atomic_lock_t;
-
-
 /** Public data structures **/
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _marcel_fastlock {
@@ -71,6 +55,17 @@ TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macro **/
+#define MA_MARCEL_FASTLOCK_UNLOCKED					\
+	{ .__status = MA_ATOMIC_INIT(0), .__waiting = NULL, .__spinlock = MA_SPIN_LOCK_UNLOCKED}
+#define MA_PMARCEL_FASTLOCK_UNLOCKED MA_MARCEL_FASTLOCK_UNLOCKED
+/* This must remain 0 to keep ABI compatibility with static initializers.  */
+#define MA_LPT_FASTLOCK_UNLOCKED { .__mlock = NULL }
+
+/** __marcel_lock_(timed_)wait flag options */
+#define MA_CHECK_INTR     (1)
+#define MA_CHECK_CANCEL   (MA_CHECK_INTR<<1)
+
+/** Access _ma_fastlock structure from _lpt_fastlock */
 #define LPT_FASTLOCK_2_MA_FASTLOCK(lock) ((lock)->__mlock)
 
 /* Return the head of LOCK's wait list.  */

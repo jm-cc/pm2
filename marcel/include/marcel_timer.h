@@ -48,7 +48,7 @@
 #  endif
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif /** MA__TIMER **/
-#define MARCEL_RESCHED_SIGNAL     SIGXFSZ
+#define MARCEL_RESCHED_SIGNAL       SIGXFSZ
 
 
 /** Public data types **/

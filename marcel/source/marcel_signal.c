@@ -1384,6 +1384,10 @@ DEF_MARCEL_PMARCEL(int,sigaction,(int sig, const struct marcel_sigaction *act,
 		MARCEL_LOG_RETURN(0);
 	}
 
+	/** some programs like gcc-4.5 and gcc-4.6 call sigaction() but marcel may be not initialized yet ! */
+	if (tbx_unlikely(! ma_any_lwp()))
+		return 0;
+
 #ifdef MA__DEBUG
 	if (sig == MARCEL_RESCHED_SIGNAL)
 		MA_WARN_USER("warning: signal %d not supported\n", sig);

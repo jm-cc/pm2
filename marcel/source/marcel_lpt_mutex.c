@@ -65,12 +65,12 @@ int lpt_mutex_lock(lpt_mutex_t * mutex)
 	MARCEL_LOG_IN();
 
 	MA_BUG_ON(sizeof(mutex->__size) < sizeof(mutex->__data));
-	switch (mutex->__data.__kind) {
+	switch (__builtin_expect(mutex->__data.__kind, LPT_MUTEX_NORMAL)) {
 	        case LPT_MUTEX_RECURSIVE_NP:
 			/* Check whether we already hold the mutex.  */
 			if (mutex->__data.__owner == ma_self()) {
 				/* Just bump the counter.  */
-				if (__builtin_expect(mutex->__data.__count + 1 == 0, 0))
+				if (tbx_unlikely(mutex->__data.__count + 1 == 0))
 					/* Overflow of the counter.  */
 					MARCEL_LOG_RETURN(EAGAIN);
 				++mutex->__data.__count;
@@ -80,17 +80,19 @@ int lpt_mutex_lock(lpt_mutex_t * mutex)
 
 	        case LPT_MUTEX_ERRORCHECK_NP:
 			/* Check whether we already hold the mutex.  */
-			if (mutex->__data.__owner == ma_self())
+			if (tbx_unlikely(mutex->__data.__owner == ma_self()))
 				MARCEL_LOG_RETURN(EDEADLK);
 			break;
 	}
 
 	/* Get the mutex */
 	__lpt_lock(&mutex->__data.__lock, ma_self());
-	mutex->__data.__count = 1;
 
 	/* Record the ownership.  */
-	mutex->__data.__owner = ma_self();
+	if (tbx_unlikely(mutex->__data.__kind != LPT_MUTEX_NORMAL)) {
+		mutex->__data.__count = 1;
+		mutex->__data.__owner = ma_self();
+	}
 	++mutex->__data.__nusers;
 
 	MARCEL_LOG_RETURN(0);
@@ -103,7 +105,7 @@ int lpt_mutex_trylock(lpt_mutex_t * mutex)
 {
 	MARCEL_LOG_IN();
 
-	if (mutex->__data.__kind == LPT_MUTEX_RECURSIVE_NP) {
+	if (tbx_unlikely(mutex->__data.__kind == LPT_MUTEX_RECURSIVE_NP)) {
 		/* Check whether we already hold the mutex.  */
 		if (mutex->__data.__owner == ma_self()) {
 			/* Just bump the counter.  */
@@ -117,8 +119,10 @@ int lpt_mutex_trylock(lpt_mutex_t * mutex)
 
 	if (__lpt_trylock(&mutex->__data.__lock) != 0) {
 		/* Record the ownership.  */
-		mutex->__data.__owner = ma_self();
-		mutex->__data.__count = 1;
+		if (tbx_unlikely(mutex->__data.__kind != LPT_MUTEX_NORMAL)) {
+			mutex->__data.__owner = ma_self();
+			mutex->__data.__count = 1;
+		}
 		++mutex->__data.__nusers;
 		MARCEL_LOG_RETURN(0);
 	}
@@ -155,13 +159,13 @@ int lpt_mutex_timedlock(lpt_mutex_t * mutex, const struct timespec *abstime)
 {
 	MARCEL_LOG_IN();
 
-	if (__builtin_expect(abstime->tv_nsec, 0) < 0
-	    || __builtin_expect(abstime->tv_nsec, 0) >= 1000000000) {
+	if (tbx_unlikely(abstime->tv_nsec < 0 || 
+			 abstime->tv_nsec >= 1000000000)) {
 		MARCEL_LOG("lpt_mutex_timedlock : valeur temporelle invalide\n");
 		MARCEL_LOG_RETURN(EINVAL);
 	}
 
-	switch (mutex->__data.__kind) {
+	switch (__builtin_expect(mutex->__data.__kind, LPT_MUTEX_NORMAL)) {
 	        case LPT_MUTEX_RECURSIVE_NP:
 			if (mutex->__data.__owner == ma_self()) {
 				mutex->__data.__count++;
@@ -175,13 +179,18 @@ int lpt_mutex_timedlock(lpt_mutex_t * mutex, const struct timespec *abstime)
 			break;
 	}
 
-	if (mutex->__data.__nusers != 0 && tbx_unlikely(__lpt_mutex_blockcell(mutex, abstime)))
+	if (tbx_unlikely(mutex->__data.__nusers != 0 && 
+			 __lpt_mutex_blockcell(mutex, abstime)))
 		MARCEL_LOG_RETURN(ETIMEDOUT);
 
 	__lpt_lock(&mutex->__data.__lock, NULL);
-	mutex->__data.__count = 1;
+
+	/** Record thr ownership */
+	if (tbx_unlikely(mutex->__data.__kind != LPT_MUTEX_NORMAL)) {
+		mutex->__data.__count = 1;
+		mutex->__data.__owner = ma_self();
+	}
 	mutex->__data.__nusers++;
-	mutex->__data.__owner = ma_self();
 
 	MARCEL_LOG_RETURN(0);
 }
@@ -192,30 +201,20 @@ int lpt_mutex_unlock(lpt_mutex_t * mutex)
 {
 	MARCEL_LOG_IN();
 
-	switch (mutex->__data.__kind) {
-	        case LPT_MUTEX_RECURSIVE_NP:
-			if (mutex->__data.__owner != MARCEL_SELF)
-				MARCEL_LOG_RETURN(EPERM);
+	if (tbx_unlikely(mutex->__data.__kind == LPT_MUTEX_RECURSIVE_NP ||
+			 mutex->__data.__kind == LPT_MUTEX_ERRORCHECK_NP)) {
+		if (mutex->__data.__owner != MARCEL_SELF)
+			MARCEL_LOG_RETURN(EPERM);
 
-			if (--mutex->__data.__count != 0)
-				/* We still hold the mutex.  */
-				MARCEL_LOG_RETURN(0);
-			break;
+		if (--mutex->__data.__count != 0)
+			/* We still hold the mutex.  */
+			MARCEL_LOG_RETURN(0);
 
-	        case LPT_MUTEX_ERRORCHECK_NP:
-			if (mutex->__data.__owner != MARCEL_SELF)
-				MARCEL_LOG_RETURN(EPERM);
-
-	        default:
-			mutex->__data.__count = 0;
-			break;
+		mutex->__data.__owner = 0;
 	}
 
-	/* Always reset the owner field.  */
-	mutex->__data.__owner = 0;
-	--mutex->__data.__nusers;
-
 	/* Unlock.  */
+	--mutex->__data.__nusers;
 	__lpt_unlock(&mutex->__data.__lock);
 
 	MARCEL_LOG_RETURN(0);
@@ -301,8 +300,8 @@ int lpt_mutexattr_setpshared(lpt_mutexattr_t * attr, int pshared)
 	MARCEL_LOG_IN();
 	struct lpt_mutexattr *iattr;
 
-	if (pshared != LPT_PROCESS_PRIVATE
-	    && __builtin_expect(pshared != LPT_PROCESS_SHARED, 0)) {
+	if (pshared != LPT_PROCESS_PRIVATE &&
+	    tbx_unlikely(pshared != LPT_PROCESS_SHARED)) {
 		MARCEL_LOG("lpt_mutexattr_setpshared : valeur pshared(%d)  invalide\n",
 			   pshared);
 		MARCEL_LOG_RETURN(EINVAL);

@@ -80,9 +80,10 @@ int marcel_recursivemutex_lock(marcel_recursivemutex_t * mutex)
 	if (mutex->__data.owner == ma_self()) {
 		mutex->__data.__count++;
 		return mutex->__data.__count + 1;
-	}
+	} else
+		mutex->__data.owner = ma_self();
+
 	__marcel_lock(&mutex->__data.__lock, ma_self());
-	mutex->__data.owner = ma_self();
 	/* and __count is 0 */
 	return 1;
 }
@@ -90,11 +91,13 @@ int marcel_recursivemutex_lock(marcel_recursivemutex_t * mutex)
 int marcel_recursivemutex_trylock(marcel_recursivemutex_t * mutex)
 {
 	if (mutex->__data.owner == ma_self()) {
-		mutex->__data.__count++;
+		mutex->__data.__count ++;
 		return mutex->__data.__count + 1;
 	}
+
 	if (!__marcel_trylock(&mutex->__data.__lock))
 		return 0;
+
 	mutex->__data.owner = ma_self();
 	/* and __count is 0 */
 	return 1;
@@ -106,6 +109,7 @@ int marcel_recursivemutex_unlock(marcel_recursivemutex_t * mutex)
 		mutex->__data.__count--;
 		return mutex->__data.__count + 1;
 	}
+	
 	mutex->__data.owner = NULL;
 	__marcel_unlock(&mutex->__data.__lock);
 	return 0;
@@ -158,7 +162,7 @@ int pmarcel_mutex_lock(pmarcel_mutex_t * mutex)
 {
 	MARCEL_LOG_IN();
 
-	switch (mutex->__data.__kind) {
+	switch (__builtin_expect(mutex->__data.__kind, PMARCEL_MUTEX_NORMAL)) {
 	        case PMARCEL_MUTEX_RECURSIVE_NP:
 			/* Check whether we already hold the mutex.  */
 			if (mutex->__data.__owner == ma_self()) {
@@ -181,8 +185,10 @@ int pmarcel_mutex_lock(pmarcel_mutex_t * mutex)
 	__marcel_lock(&mutex->__data.__lock, ma_self());
 
 	/* Record the ownership.  */
-	mutex->__data.__count = 1;
-	mutex->__data.__owner = ma_self();
+	if (tbx_unlikely(mutex->__data.__kind != PMARCEL_MUTEX_NORMAL)) {
+		mutex->__data.__count = 1;
+		mutex->__data.__owner = ma_self();
+	}
 	++mutex->__data.__nusers;
 
 	MARCEL_LOG_RETURN(0);
@@ -192,7 +198,7 @@ int pmarcel_mutex_trylock(pmarcel_mutex_t * mutex)
 {
 	MARCEL_LOG_IN();
 
-	if (mutex->__data.__kind == PMARCEL_MUTEX_RECURSIVE_NP) {
+	if (tbx_unlikely(mutex->__data.__kind == PMARCEL_MUTEX_RECURSIVE_NP)) {
 		if (mutex->__data.__owner == ma_self()) {
 			if (tbx_unlikely(mutex->__data.__count + 1 == 0))
 				MARCEL_LOG_RETURN(EAGAIN);
@@ -202,10 +208,13 @@ int pmarcel_mutex_trylock(pmarcel_mutex_t * mutex)
 	}
 
 	if (__marcel_trylock(&mutex->__data.__lock) != 0) {
-		/** record the ownership */
-		mutex->__data.__owner = ma_self();
-		mutex->__data.__count = 1;
+		if (tbx_unlikely(mutex->__data.__kind != PMARCEL_MUTEX_NORMAL)) {
+			/** record the ownership */
+			mutex->__data.__owner = ma_self();
+			mutex->__data.__count = 1;
+		}
 		++mutex->__data.__nusers;
+
 		MARCEL_LOG_RETURN(0);
 	}
 
@@ -237,13 +246,12 @@ int pmarcel_mutex_timedlock(pmarcel_mutex_t * mutex, const struct timespec *abst
 {
 	MARCEL_LOG_IN();
 
-	if (__builtin_expect(abstime->tv_nsec, 0) < 0
-	    || __builtin_expect(abstime->tv_nsec, 0) >= 1000000000) {
+	if (tbx_unlikely(abstime->tv_nsec < 0 || abstime->tv_nsec >= 1000000000)) {
 		MARCEL_LOG("pmarcel_mutex_timedlock : valeur temporelle invalide\n");
 		MARCEL_LOG_RETURN(EINVAL);
 	}
 
-	switch (mutex->__data.__kind) {
+	switch (__builtin_expect(mutex->__data.__kind, PMARCEL_MUTEX_NORMAL)) {
 	        case PMARCEL_MUTEX_RECURSIVE_NP:
 			if (mutex->__data.__owner == ma_self()) {
 				mutex->__data.__count++;
@@ -257,13 +265,18 @@ int pmarcel_mutex_timedlock(pmarcel_mutex_t * mutex, const struct timespec *abst
 			break;
 	}
 
-	if (mutex->__data.__nusers != 0 && tbx_unlikely(__pmarcel_mutex_blockcell(mutex, abstime)))
+	if ( tbx_unlikely(mutex->__data.__nusers != 0 && 
+			  __pmarcel_mutex_blockcell(mutex, abstime)))
 		MARCEL_LOG_RETURN(ETIMEDOUT);
 
 	__marcel_lock(&mutex->__data.__lock, NULL);
-	mutex->__data.__count = 1;
+	
+	/** Record the owership */
+	if (tbx_unlikely(mutex->__data.__kind != PMARCEL_MUTEX_NORMAL)) {
+		mutex->__data.__count = 1;
+		mutex->__data.__owner = ma_self();
+	}
 	mutex->__data.__nusers++;
-	mutex->__data.__owner = ma_self();
 
 	MARCEL_LOG_RETURN(0);
 }
@@ -272,27 +285,19 @@ int pmarcel_mutex_unlock(pmarcel_mutex_t * mutex)
 {
 	MARCEL_LOG_IN();
 
-	switch (mutex->__data.__kind) {
-	        case PMARCEL_MUTEX_RECURSIVE_NP:
-			if (mutex->__data.__owner != MARCEL_SELF)
-				MARCEL_LOG_RETURN(EPERM);
+	if (tbx_unlikely(mutex->__data.__kind == PMARCEL_MUTEX_RECURSIVE_NP ||
+			 mutex->__data.__kind == PMARCEL_MUTEX_ERRORCHECK_NP)) {
+		if (mutex->__data.__owner != MARCEL_SELF)
+			MARCEL_LOG_RETURN(EPERM);
 
-			if (--mutex->__data.__count != 0)
-				/* We still hold the mutex.  */
-				MARCEL_LOG_RETURN(0);
-			break;
+		if (--mutex->__data.__count != 0)
+			/* We still hold the mutex.  */
+			MARCEL_LOG_RETURN(0);
 
-	        case PMARCEL_MUTEX_ERRORCHECK_NP:
-			if (mutex->__data.__owner != MARCEL_SELF)
-				MARCEL_LOG_RETURN(EPERM);
-			
-	        default:
-			mutex->__data.__count = 0;
-			break;
+		mutex->__data.__owner = 0;
 	}
 
 	/* Always reset the owner field.  */
-	mutex->__data.__owner = 0;
 	--mutex->__data.__nusers;
 
 	/* Unlock.  */
@@ -340,8 +345,8 @@ int pmarcel_mutexattr_gettype(const pmarcel_mutexattr_t * __restrict attr,
 int pmarcel_mutexattr_setpshared(pmarcel_mutexattr_t * attr, int pshared)
 {
 	MARCEL_LOG_IN();
-	if (pshared != PMARCEL_PROCESS_PRIVATE
-	    && __builtin_expect(pshared != PMARCEL_PROCESS_SHARED, 0)) {
+	if (pshared != PMARCEL_PROCESS_PRIVATE &&
+	    tbx_unlikely(pshared != PMARCEL_PROCESS_SHARED)) {
 		MARCEL_LOG_RETURN(EINVAL);
 	}
 	/* For now it is not possible to share a mutex variable.  */

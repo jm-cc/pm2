@@ -36,7 +36,7 @@
 /** Public data structures **/
 /* Fast locks (not abstract because mutexes and conditions aren't abstract). */
 struct _marcel_fastlock {
-	ma_atomic_t   __status;         /* "Free" or "taken" or head of waiting list */
+	ma_atomic_t   __status;         /* "Free" or "taken" */
 	void         *__waiting;	/* Head of waiting list */
 	ma_spinlock_t __spinlock;	/* Used by compare_and_swap emulation. Also,
 					   adaptive SMP lock stores spin count here. */

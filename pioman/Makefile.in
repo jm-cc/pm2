@@ -24,7 +24,7 @@ CPICFLAGS      := @CPICFLAGS@
 # optimize linker hash tables
 OPT_LDFLAGS    := @OPT_LDFLAGS@
 
-CFLAGS   = $(CPPFLAGS) $(BASE_CFLAGS) -I. -I@pioman_root@/include
+CFLAGS   = $(CPPFLAGS) $(BASE_CFLAGS) -I$(srcdir)/include -I@pioman_root@/include
 
 # basic shell commands
 ECHO    = echo

@@ -42,11 +42,11 @@ typedef unsigned piom_ltask_option_t;
 
 typedef enum
     {
-	PIOM_LTASK_STATE_NONE      = 0x00,	/* not yet submitted */
-	PIOM_LTASK_STATE_WAITING   = 0x01,	/* submitted to the task manager */
-	PIOM_LTASK_STATE_SCHEDULED = 0x02,	/* being scheduled */
-	PIOM_LTASK_STATE_DONE      = 0x04,      /* the task is successfull */
-	PIOM_LTASK_STATE_COMPLETELY_DONE = 0x08 /* the task is successfull and its execution is over  */
+	PIOM_LTASK_STATE_NONE       = 0x00,  /* not yet submitted */
+	PIOM_LTASK_STATE_READY      = 0x01,  /* submitted to the task manager, ready to be scheduled */
+	PIOM_LTASK_STATE_SCHEDULED  = 0x02,  /* being scheduled */
+	PIOM_LTASK_STATE_DONE       = 0x04,  /* task has been scheduled and is successfull */
+	PIOM_LTASK_STATE_TERMINATED = 0x08   /* task is terminated, resources may be freed */
     } piom_ltask_state_t;
 
 
@@ -67,87 +67,87 @@ struct piom_ltask
 };
 
 
-/* return 1 if the ltask system is running, and 0 otherwise  */
-int piom_ltask_test_activity();
+/** Tests whether the ltask system is running.
+    return 1 if running, 0 otherwise  */
+extern int piom_ltask_test_activity(void);
 
-/* initialize internal structures, etc. */
-TBX_INTERNAL void piom_init_ltasks(void);
+/** initialize ltask system */
+extern void piom_init_ltasks(void);
 
-/* destroy internal structures, stop task execution, etc. */
-TBX_INTERNAL void piom_exit_ltasks(void);
+/** destroy internal structures, stop task execution, etc. */
+extern void piom_exit_ltasks(void);
 
-/* pause task scheduling */
-void piom_ltask_pause();
+/** pause task scheduling */
+extern void piom_ltask_pause(void);
 
 /* resume task scheduling */
-void piom_ltask_resume();
+extern void piom_ltask_resume(void);
 
-/* add a function that will be called after the task has succeed.
+/** add a function that will be called after the task has succeed.
  * It can be use for freeing the task structure.
  */
-static inline
-void piom_ltask_add_continuation(struct piom_ltask *task, piom_ltask_func *continuation, void* arg)
+static inline void piom_ltask_add_continuation(struct piom_ltask *task, piom_ltask_func *continuation, void* arg)
 {
     task->continuation_ptr = continuation;
     task->continuation_data_ptr = arg;
 }
 
-/* submit a task
+/** submit a task
  * Beyond this point, the task may be scheduled at any time
  */
-void piom_ltask_submit (struct piom_ltask *task);
+extern void piom_ltask_submit(struct piom_ltask *task);
 
-/* Wait for the completion of a task
+/** Wait for the completion of a task
  * (ie. wait until the task state matches PIOM_LTASK_STATE_DONE)
  */
-void piom_ltask_wait_success (struct piom_ltask *task);
+extern void piom_ltask_wait_success(struct piom_ltask *task);
 
 
-/* Wait for the terminaison of a task
- * (ie. wait until the task state matches PIOM_LTASK_STATE_COMPLETELY_DONE)
+/** Wait for the termination of a task
+ * (ie. wait until the task state matches PIOM_LTASK_STATE_TERMINATED)
  */
-void piom_ltask_wait(struct piom_ltask *task);
+extern void piom_ltask_wait(struct piom_ltask *task);
 
-/* Cancel a task.
+/** Cancel a task.
  * Slow! Use only for clean shutdown.
  */
-void piom_ltask_cancel(struct piom_ltask*task);
+extern void piom_ltask_cancel(struct piom_ltask*task);
 
-/* Try to schedule a task
+/** Try to schedule a task
  * Returns the task that have been scheduled (or NULL if no task)
  */
-void *piom_ltask_schedule ();
+extern void *piom_ltask_schedule(void);
 
 /* Check whether a task should be executed on the current vp
  * (ie: the local queue or the global queue is not empty)
  */
-int piom_ltask_polling_is_required ();
+extern int piom_ltask_polling_is_required(void);
 
-/* Test whether a task is completed */
-static __tbx_inline__ int
-piom_ltask_test (struct piom_ltask *task)
+/** Test whether a task is completed */
+static inline int piom_ltask_test_completed(struct piom_ltask *task)
 {
     return task && (task->state & PIOM_LTASK_STATE_DONE);
 }
 
-/* Test whether a task is completed */
-static __tbx_inline__ int
-piom_ltask_test_completed (struct piom_ltask *task)
+/** Test whether a task is terminated (may be freed) */
+static inline int piom_ltask_test_terminated(struct piom_ltask *task)
 {
-    return task && (task->state & PIOM_LTASK_STATE_COMPLETELY_DONE);
+    return task && (task->state & PIOM_LTASK_STATE_TERMINATED);
 }
 
-/* Set a task as completed */
-static __tbx_inline__ void
-piom_ltask_completed (struct piom_ltask *task)
+/** Notify task completion. */
+static inline void piom_ltask_completed(struct piom_ltask *task)
 {
-    if(! (task->state & PIOM_LTASK_STATE_DONE)) {
-	task->state |= PIOM_LTASK_STATE_DONE;
-    }
+    if(! (task->state & PIOM_LTASK_STATE_DONE))
+	{
+	    task->state |= PIOM_LTASK_STATE_DONE;
+	}
     piom_cond_signal(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
-/* initialize a task */
+/* initialize a task
+ * *** OBSOLETE- use piom_ltask_create() directly
+ */
 static __tbx_inline__ void
 piom_ltask_init (struct piom_ltask *task)
 {
@@ -163,42 +163,12 @@ piom_ltask_init (struct piom_ltask *task)
     piom_cond_init(&task->done, 0);
 }
 
-/* change the func_ptr of a task */
-static __tbx_inline__ void
-piom_ltask_set_func (struct piom_ltask *task, piom_ltask_func * func_ptr)
-{
-    task->func_ptr = func_ptr;
-}
 
-/* change the data_ptr of a task */
-static __tbx_inline__ void
-piom_ltask_set_data (struct piom_ltask *task, void *data_ptr)
-{
-    task->data_ptr = data_ptr;
-}
-
-/* change the options of a task */
-static __tbx_inline__ void
-piom_ltask_set_options (struct piom_ltask *task, piom_ltask_option_t option)
-{
-    task->options |= option;
-}
-
-/* change the vpmask of a task 
- * This function should not be called if the task is already submitted
- */
-static __tbx_inline__ void
-piom_ltask_set_vpmask (struct piom_ltask *task, piom_vpset_t mask)
-{
-    task->vp_mask = mask;
-}
-
-/* create a new task (initialize it with the params) */
-static __tbx_inline__ void
-piom_ltask_create (struct piom_ltask *task,
-		   piom_ltask_func * func_ptr,
-		   void *data_ptr,
-		   piom_ltask_option_t options, piom_vpset_t vp_mask)
+/** create a new ltask. */
+static inline void piom_ltask_create (struct piom_ltask *task,
+				      piom_ltask_func * func_ptr,
+				      void *data_ptr,
+				      piom_ltask_option_t options, piom_vpset_t vp_mask)
 {
     task->masked = 0;
     task->func_ptr = func_ptr;
@@ -212,11 +182,13 @@ piom_ltask_create (struct piom_ltask *task,
     piom_cond_init(&task->done, 0);
 }
 
-/** suspend the ltask scheduling */
-void piom_ltask_mask(struct piom_ltask *ltask);
+/** suspend the ltask scheduling
+ * @note blocks if the ltask is currently scheduled
+ */
+extern void piom_ltask_mask(struct piom_ltask *ltask);
 
 /** re-enable a previously masked ltask */
-void piom_ltask_unmask(struct piom_ltask *ltask);
+extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
 piom_vpset_t piom_get_parent_machine(unsigned vp);
 piom_vpset_t piom_get_parent_node(unsigned vp);

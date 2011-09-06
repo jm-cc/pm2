@@ -187,10 +187,8 @@ static __tbx_inline__ int piom_polling_is_required(unsigned polling_point)
 	return 1;
 #endif	/* PIOM_ENABLE_SHM */
 
-#ifndef PIOM_DISABLE_LTASKS
     if(piom_ltask_polling_is_required())
 	return 1;
-#endif	/* PIOM_DISABLE_LTASKS */
 
     return (!tbx_fast_list_empty(&piom_list_poll));
 }

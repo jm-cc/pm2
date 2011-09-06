@@ -26,7 +26,6 @@
 #endif
 #include "tbx_compiler.h"
 
-#ifndef  PIOM_DISABLE_LTASKS
 #define piom_read piom_task_read
 #define piom_readv piom_task_readv
 #define piom_write piom_task_write
@@ -36,33 +35,7 @@
 #define piom_readv_exactly piom_task_readv_exactly
 #define piom_write_exactly piom_task_write_exactly
 #define piom_writev_exactly piom_task_writev_exactly
-#else
-int piom_read(int fildes, void *buf, size_t nbytes);
 
-int piom_write(int fildes, const void *buf, size_t nbytes);
-
-int piom_select(int nfds, fd_set * __restrict rfds,
-		fd_set * __restrict wfds);
-
-#ifndef __MINGW32__
-int piom_readv(int fildes, const struct iovec *iov, int iovcnt);
-
-int piom_writev(int fildes, const struct iovec *iov, int iovcnt);
-#endif
-
-/* To force reading/writing an exact number of bytes */
-
-int piom_read_exactly(int fildes, void *buf, size_t nbytes);
-
-int piom_write_exactly(int fildes, const void *buf, size_t nbytes);
-
-#ifndef __MINGW32__
-int piom_readv_exactly(int fildes, const struct iovec *iov, int iovcnt);
-
-int piom_writev_exactly(int fildes, const struct iovec *iov, int iovcnt);
-#endif
-
-#endif	/* PIOM_DISABLE_LTASKS */
 
 void piom_io_init(void);
 void piom_io_stop(void);

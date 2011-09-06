@@ -35,7 +35,6 @@
 #define piom_vpset_set(vpset, vp) (vpset = vp)
 #endif /* MARCEL */
 
-#ifndef PIOM_DISABLE_LTASKS
 
 typedef unsigned piom_ltask_option_t;
 #define PIOM_LTASK_OPTION_NULL 0
@@ -226,5 +225,4 @@ piom_vpset_t piom_get_parent_l3(unsigned vp);
 piom_vpset_t piom_get_parent_l2(unsigned vp);
 piom_vpset_t piom_get_parent_core(unsigned vp);
 
-#endif /* PIOM_DISABLE_LTASKS */
 #endif /* PIOM_LTASK_H */

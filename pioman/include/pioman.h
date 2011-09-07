@@ -33,16 +33,9 @@ extern void pioman_exit(void);
 #include "piom.h"
 #include "piom_log.h"
 #include "piom_debug.h"
-#include "piom_req_handling.h"
-#include "piom_server.h"
-#include "piom_iterator.h"
-#include "piom_lock.h"
-#include "piom_sh_sem.h"
+
 #include "piom_sem.h"
-#include "piom_block.h"
-#include "piom_poll.h"
 #include "piom_ltask.h"
-#include "piom_io.h"
 #include "piom_io_task.h"
 #include "tbx.h"
 

@@ -68,7 +68,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 				piom_sem_V(&cond->sem);
 			return;
 		}
-		__piom_check_polling(PIOM_POLL_WHEN_FORCED);
+		piom_check_polling(PIOM_POLL_WHEN_FORCED);
 		TBX_GET_TICK(t2);
 	}while(TBX_TIMING_DELAY(t1, t2)<TIME_TO_POLL);
 
@@ -94,7 +94,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	 *  (We have neither timers nor supplementary VP)
 	 */
 	while(! (cond->value & mask))
-		__piom_check_polling(PIOM_POLL_AT_IDLE);		
+	  piom_check_polling(PIOM_POLL_AT_IDLE);		
 #endif	/* MARCEL */
 
 	PIOM_LOG_OUT();
@@ -152,7 +152,7 @@ int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
 __tbx_inline__ void piom_sem_P(piom_sem_t *sem){
 	(*sem)--;
 	while((*sem) < 0){
-		__piom_check_polling(PIOM_POLL_AT_IDLE);
+	  piom_check_polling(PIOM_POLL_AT_IDLE);
 	}
 }
 
@@ -166,7 +166,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask){
 	while(! (*cond & mask))
-		__piom_check_polling(PIOM_POLL_AT_IDLE);		
+	  piom_check_polling(PIOM_POLL_AT_IDLE);		
 }
 __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
 	*cond |= mask;

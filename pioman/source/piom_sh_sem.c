@@ -139,7 +139,7 @@ int piom_shs_P(piom_sh_sem_t *sem){
 		return 0;
 	(sem->value)++;
 	while(sem->value<=0){
-		__piom_check_polling(PIOM_POLL_AT_IDLE);
+	  piom_check_polling(PIOM_POLL_AT_IDLE);
 		if(--(sem->value)>=0)
 			return 0;
 		(sem->value)++;

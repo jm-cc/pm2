@@ -25,18 +25,6 @@
 
 #if defined(PIOM_THREAD_ENABLED)
 
-void piom_server_lock_from_callback(piom_server_t server);
-void piom_server_unlock_from_callback(piom_server_t server);
-
-piom_thread_t piom_server_lock_reentrant(piom_server_t server);
-void piom_server_unlock_reentrant(piom_server_t server, piom_thread_t old_owner);
-
-piom_thread_t piom_server_lock_reentrant_from_callback(piom_server_t server);
-void piom_server_relock_reentrant_from_callback(piom_server_t server, piom_thread_t old_owner);
-void piom_server_unlock_reentrant_from_callback(piom_server_t server, piom_thread_t old_owner);
-
-void piom_server_relock_reentrant(piom_server_t server, piom_thread_t old_owner);
-
 #ifdef MARCEL
 
 #define _piom_spin_lock_softirq(lock)    marcel_spin_lock_tasklet_disable(lock)
@@ -69,30 +57,9 @@ void piom_server_relock_reentrant(piom_server_t server, piom_thread_t old_owner)
 
 #endif	/* MARCEL */
 
-int piom_server_lock(piom_server_t server);
-int piom_server_unlock(piom_server_t server);
 #else  /* PIOM_THREAD_ENABLED */
 
-
-#define piom_server_lock_from_callback(server)   (void) 0
-#define piom_server_unlock_from_callback(server) (void) 0
-
-#define piom_server_lock_reentrant(server) 0
-#define piom_server_unlock_reentrant(server, old_owner) (void) 0
-
-#define piom_server_lock_reentrant_from_callback(server) (void) 0
-#define piom_server_relock_reentrant_from_callback(server, old_owner) (void) 0
-#define piom_server_unlock_reentrant_from_callback(server, old_owner) (void) 0
-
-#define piom_server_relock_reentrant(server, old_owner) (void) 0
-
-#define __piom_lock_server(server, owner)                    (void) 0
-#define __piom_unlock_server(server)                         (void) 0
 #define _piom_spin_trylock_softirq(lock)                     (void) 0
-#define piom_ensure_lock_server(server)                      0
-#define piom_lock_server_owner(server, owner)                (void) 0
-#define piom_restore_lock_server_locked(server, old_owner)   (void) 0
-#define piom_restore_lock_server_unlocked(server, old_owner) (void) 0
 
 #define _piom_spin_lock_softirq(lock)    (void) 0
 #define _piom_spin_unlock_softirq(lock)  (void) 0
@@ -103,8 +70,6 @@ int piom_server_unlock(piom_server_t server);
 
 #define _piom_spin_lock(lock)   (void) 0
 #define _piom_spin_unlock(lock) (void) 0
-#define piom_server_lock(server)    (void) 0
-#define piom_server_unlock(server)  (void) 0
 #endif	/* PIOM_THREAD_ENABLED */
 
 #endif	/* PIOM_LOCK_H */

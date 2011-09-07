@@ -62,7 +62,7 @@ int nm_schedule(struct nm_core *p_core)
 
   return NM_ESUCCESS;
 #else  /* NMAD_POLL */
-  __piom_check_polling(PIOM_POLL_WHEN_FORCED);
+  piom_check_polling(PIOM_POLL_WHEN_FORCED);
   return 0;
 #endif /* NMAD_POLL */
 }

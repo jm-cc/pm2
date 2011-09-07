@@ -271,7 +271,7 @@ static void piom_ltask_poll_timer(unsigned long hid)
 
 #ifdef MARCEL
 
-extern unsigned long volatile piom_jiffies;
+unsigned long volatile piom_jiffies = MA_JIFFIES_PER_TIMER_TICK;
 struct marcel_timer_list ltask_poll_timer;
 
 static void __piom_ltask_update_timer(void)

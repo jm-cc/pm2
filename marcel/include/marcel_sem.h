@@ -43,7 +43,6 @@ typedef struct semcell_struct {
 	marcel_t task;
 	struct semcell_struct *next;
 	struct semcell_struct *prev;
-	tbx_bool_t blocked;
 } semcell;
 
 struct semaphor_struct {
@@ -68,7 +67,6 @@ DEC_MARCEL(int, sem_unlink, (const char *name));
 DEC_MARCEL(void, sem_P, (marcel_sem_t * s));
 DEC_MARCEL(int, sem_try_P, (marcel_sem_t * s));
 DEC_MARCEL(void, sem_V, (marcel_sem_t * s));
-DEC_MARCEL(int, sem_try_V, (marcel_sem_t * s));
 DEC_MARCEL(int, sem_timed_P, (marcel_sem_t * s, unsigned long timeout));
 
 

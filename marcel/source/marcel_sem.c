@@ -31,7 +31,6 @@ static ma_spinlock_t shm_sems_lock = MA_SPIN_LOCK_UNLOCKED;
 /** helpers to (un)register semcell item from the waiting queue */
 static __tbx_inline__ void ma_register_semcell(marcel_sem_t *s, semcell *c)
 {
-	c->blocked = tbx_true;
 	c->task = ma_self();
 	c->next = NULL;
 	if (s->list) {
@@ -44,8 +43,10 @@ static __tbx_inline__ void ma_register_semcell(marcel_sem_t *s, semcell *c)
 	}
 }
 
-static __tbx_inline__ void ma_unregister_semcell(marcel_sem_t *s, semcell *c)
+static __tbx_inline__ marcel_t ma_unregister_semcell(marcel_sem_t *s, semcell *c)
 {
+	marcel_t task;
+
 	if (tbx_likely(c == s->list)) {
 		s->list = c->next;
 		if (s->list)
@@ -57,6 +58,10 @@ static __tbx_inline__ void ma_unregister_semcell(marcel_sem_t *s, semcell *c)
 		else
 			s->list->prev = c->prev;
 	}
+
+	task = c->task;
+	c->task = NULL;
+	return task;
 }
 
 
@@ -106,12 +111,10 @@ void marcel_sem_P(marcel_sem_t *s)
 
 	ma_spin_lock(&s->lock);
 	if (tbx_unlikely(--(s->value) < 0)) {
-		ma_local_bh_disable();
 		ma_register_semcell(s, &c);
-		SLEEP_ON_CONDITION_RELEASING(ma_access_once(c.blocked),
-					     ma_spin_unlock_bh_no_resched(&s->lock), 
-					     ma_spin_lock_bh(&s->lock));
-		ma_local_bh_enable_no_resched();
+		SLEEP_ON_CONDITION_RELEASING(ma_access_once(c.task),
+					     ma_spin_unlock_no_resched(&s->lock), 
+					     ma_spin_lock(&s->lock));
 	}
 	ma_spin_unlock(&s->lock);
 
@@ -130,31 +133,28 @@ DEF_MARCEL_PMARCEL(int, sem_wait, (marcel_sem_t *s), (s),
 
 	ma_spin_lock(&s->lock);
 	if (--(s->value) < 0) {
-		ma_local_bh_disable();
 		ma_register_semcell(s, &c);
 
 		MA_SET_INTERRUPTED(0);
 		INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-			ma_access_once(c.blocked),
+			ma_access_once(c.task),
 			MA_GET_INTERRUPTED()
 #if defined(MARCEL_DEVIATION_ENABLED) && defined(MA__IFACE_PMARCEL)
 			|| c.task->canceled == MARCEL_IS_CANCELED
 #endif
-			, ma_spin_unlock_bh_no_resched(&s->lock), 
-			ma_spin_lock_bh(&s->lock));
+			, ma_spin_unlock_no_resched(&s->lock), 
+			ma_spin_lock(&s->lock));
 
 		/** task was interrupted */
-		if (tbx_unlikely(ma_access_once(c.blocked) == tbx_true)) {
+		if (tbx_unlikely(ma_access_once(c.task))) {
 			ma_unregister_semcell(s, &c);
 			s->value++;
 			errno = EINTR;
 			ret = -1;
 		}
-
-		ma_local_bh_enable_no_resched();
 	}
-
 	ma_spin_unlock(&s->lock);
+
 	MARCEL_LOG_RETURN(ret);
 })
 DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s))
@@ -206,35 +206,31 @@ int marcel_sem_timed_P(marcel_sem_t *s, unsigned long timeout)
 
 	ma_spin_lock(&s->lock);
 	if (tbx_unlikely(--(s->value) < 0)) {
-		ma_local_bh_disable();
-
 		if (0 == jiffies_timeout) {
 			s->value++;
 			errno = ETIMEDOUT;
-			ma_spin_unlock_bh(&s->lock);
+			ma_spin_unlock(&s->lock);
 			MARCEL_LOG_RETURN(0);
 		}
 
 		ma_register_semcell(s, &c);
 
 		INTERRUPTIBLE_TIMED_SLEEP_ON_CONDITION_RELEASING(
-			ma_access_once(c.blocked),
+			ma_access_once(c.task),
 			0,
-			ma_spin_unlock_bh_no_resched(&s->lock),
-			ma_spin_lock_bh(&s->lock),
+			ma_spin_unlock_no_resched(&s->lock),
+			ma_spin_lock(&s->lock),
 			jiffies_timeout);
 
 		/** task was interrupted */
-		if (tbx_unlikely(ma_access_once(c.blocked) == tbx_true)) {
+		if (tbx_unlikely(ma_access_once(c.task))) {
 			ma_unregister_semcell(s, &c);
 			s->value++;
 			ret = 0;
 		}
-
-		ma_local_bh_enable_no_resched();
 	}
-
 	ma_spin_unlock(&s->lock);
+
 	MARCEL_LOG_RETURN(ret);
 }
 
@@ -269,12 +265,10 @@ DEF_MARCEL_PMARCEL(int, sem_timedwait,(marcel_sem_t *__restrict s,
 	ret = 0;
 	ma_spin_lock(&s->lock);
 	if (tbx_unlikely(--(s->value) < 0)) {
-		ma_local_bh_disable();
-
 		if (jiffies_timeout == 0) {
 			s->value++;
 			errno = ETIMEDOUT;
-			ma_spin_unlock_bh(&s->lock);
+			ma_spin_unlock(&s->lock);
 			MARCEL_LOG_RETURN(-1);
 		}
 
@@ -282,97 +276,39 @@ DEF_MARCEL_PMARCEL(int, sem_timedwait,(marcel_sem_t *__restrict s,
 
 		MA_SET_INTERRUPTED(0);
 		INTERRUPTIBLE_TIMED_SLEEP_ON_CONDITION_RELEASING(
-			ma_access_once(c.blocked),
+			ma_access_once(c.task),
 			MA_GET_INTERRUPTED(),
-			ma_spin_unlock_bh_no_resched(&s->lock),
-			ma_spin_lock_bh(&s->lock),
+			ma_spin_unlock_no_resched(&s->lock),
+			ma_spin_lock(&s->lock),
 			jiffies_timeout);
 
 		/** task was interrupted */
-		if (tbx_unlikely(ma_access_once(c.blocked) == tbx_true)) {
+		if (tbx_unlikely(ma_access_once(c.task))) {
 			ma_unregister_semcell(s, &c);
 			s->value++;
 			errno = MA_GET_INTERRUPTED() ? EINTR : ETIMEDOUT;
 			ret = -1;
 		}
-
-		ma_local_bh_enable_no_resched();
 	}
-
 	ma_spin_unlock(&s->lock);
+
 	MARCEL_LOG_RETURN(ret);
 })
 DEF_C(int,sem_timedwait,(sem_t *__restrict sem, const struct timespec *__restrict abs_timeout),(sem,abs_timeout))
 
-__tbx_inline__ static void __ma_sem_v(marcel_sem_t *s)
-{
-	semcell *dflt;
-	
-	if (++(s->value) <= 0) {
-		dflt = s->list;
-		
-#ifdef MA__LWPS
-		semcell *c;
-		ma_holder_t *h;
-                ma_lwp_t lwp;
-
-                /** try to find a task that can be scheduled now */
-		c = dflt;
-                do {
-                        if (MA_LWP_SELF == ma_get_task_lwp(c->task)) {
-                                dflt = c;
-                                break;
-                        }
-
-                        h = ma_task_holder_lock_softirq_async(c->task);
-                        lwp = ma_find_lwp_for_task(c->task, h);
-                        if (lwp) {
-				ma_unregister_semcell(s, c);
-				c->blocked = tbx_false;
-				ma_smp_wmb();
-				ma_awake_task(c->task, 
-					      MA_TASK_INTERRUPTIBLE|MA_TASK_UNINTERRUPTIBLE, &h);
-				ma_holder_try_to_wake_up_and_unlock_softirq(h);
-                                ma_resched_task(ma_per_lwp(current_thread, lwp), lwp);
-				return;
-                        }
-                        ma_task_holder_unlock_softirq(h);
-			
-                        c = c->next;
-                } while (tbx_likely(c));
-#endif /** MA__LWPS **/
-		
-		ma_unregister_semcell(s, dflt);
-		dflt->blocked = tbx_false;
-		ma_smp_wmb();
-		
-		ma_wake_up_thread(dflt->task);
-	}
-}
-
 void marcel_sem_V(marcel_sem_t *s)
 {
+	marcel_t task;
+
 	MARCEL_LOG_IN();
 
 	ma_spin_lock(&s->lock);
-	__ma_sem_v(s);
+	if (++(s->value) <= 0) {
+		task = ma_unregister_semcell(s, s->list);
+		ma_wake_up_thread(task);
+	}
 	ma_spin_unlock(&s->lock);
 	MARCEL_LOG_OUT();
-}
-
-int marcel_sem_try_V(marcel_sem_t *s)
-{
-	int ret;
-
-	MARCEL_LOG_IN();
-
-	ret = 0;
-	if (ma_spin_trylock(&s->lock)) {
-		__ma_sem_v(s);
-		ma_spin_unlock(&s->lock);
-	}
-
-	MARCEL_LOG_RETURN(ret);
 }
 
 DEF_MARCEL_PMARCEL(int, sem_post, (marcel_sem_t *s), (s),

@@ -155,6 +155,7 @@ static int see(struct marcel_topo_level *level, int up_power)
 			ma_holder_rawlock(&b2->as_holder);
 			MARCEL_SCHED_LOG("detaching bubble %p from %p\n", b2, b);
 		} else {
+			b2 = NULL;
 			t = ma_task_entity(e);
 			MARCEL_SCHED_LOG("detaching task %p from %p\n", t, b);
 		}

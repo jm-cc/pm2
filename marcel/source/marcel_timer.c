@@ -32,6 +32,23 @@ unsigned long marcel_clock(void)
 	return ma_jiffies * time_slice / 1000;
 }
 
+#ifdef MA__USE_TIMER_CREATE
+static void ma_slice2timer(struct itimerspec *clk_prop)
+{
+	clk_prop->it_interval.tv_sec = time_slice / 1000000;
+	clk_prop->it_interval.tv_nsec = (time_slice % 1000000)*1000;
+	clk_prop->it_value = clk_prop->it_interval;
+}
+#else
+static void ma_slice2timer(struct itimerval *clk_prop)
+{
+	clk_prop->it_interval.tv_sec = time_slice / 1000000;
+	clk_prop->it_interval.tv_usec = time_slice % 1000000;
+	clk_prop->it_value = clk_prop->it_interval;
+}
+#endif
+
+
 #if defined(MARCEL_SIGNALS_ENABLED) && defined(MA__LIBPTHREAD)
 #ifndef SYS_signal
 static ma_sighandler_t TBX_UNUSED ma_signal(int sig, ma_sighandler_t handler)
@@ -327,9 +344,7 @@ void marcel_sig_reset_perlwp_timer(void)
 	{
 		struct itimerspec value;
 
-		value.it_interval.tv_sec = 0;
-		value.it_interval.tv_nsec = time_slice * 1000;
-		value.it_value = value.it_interval;
+		ma_slice2timer(&value);
 		timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
 	}
 #endif
@@ -350,10 +365,7 @@ void marcel_sig_reset_timer(void)
 	{
 		struct itimerval value;
 
-		value.it_interval.tv_usec = time_slice;
-		value.it_interval.tv_sec = 0;
-		value.it_value = value.it_interval;
-
+		ma_slice2timer(&value);
 		if (ma_setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *) NULL)) {
 			perror("can't start itimer");
 			exit(1);

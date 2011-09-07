@@ -66,14 +66,14 @@ static __tbx_inline__ void ma_fastlock_acquire(struct _marcel_fastlock *fastlock
 	ma_spin_lock(&fastlock->__spinlock);
 }
 
-static __tbx_inline__ int ma_fastlock_is_taken(struct _marcel_fastlock *fastlock)
-{
-	return ma_spin_is_locked(&fastlock->__spinlock);
-}
-
 static __tbx_inline__ void ma_fastlock_release(struct _marcel_fastlock *fastlock)
 {
 	ma_spin_unlock(&fastlock->__spinlock);
+}
+
+static __tbx_inline__ void ma_fastlock_release_no_resched(struct _marcel_fastlock *fastlock)
+{
+	ma_spin_unlock_no_resched(&fastlock->__spinlock);
 }
 
 static __tbx_inline__ void lpt_fastlock_acquire(struct _lpt_fastlock *fastlock)
@@ -97,7 +97,6 @@ typedef struct __blockcell {
 	marcel_t task;
 	struct __blockcell *next;
 	struct __blockcell *prev;
-	tbx_bool_t blocked;
 } blockcell;
 
 
@@ -109,7 +108,6 @@ void __marcel_register_lock_spinlocked(struct _marcel_fastlock *lock, marcel_t s
 
 	MARCEL_LOG_IN();
 
-	c->blocked = tbx_true;
 	c->task = self;
 	first = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
 
@@ -167,13 +165,15 @@ void __lpt_register_lock_spinlocked(struct _lpt_fastlock *lock, marcel_t self, b
 	__marcel_register_lock_spinlocked(LPT_FASTLOCK_2_MA_FASTLOCK(lock), self, c);
 }
 
-static __tbx_inline__ void
-__marcel_unregister_lock_spinlocked(struct _marcel_fastlock *lock, blockcell * c)
+static __tbx_inline__ 
+marcel_t __marcel_unregister_lock_spinlocked(struct _marcel_fastlock *lock, blockcell * c)
 {
 	blockcell *first;
+	marcel_t  task;
 
 	MARCEL_LOG_IN();
 	MARCEL_LOG("unregistering %p (cell %p) in lock %p\n", c->task, c, lock);
+
 	first = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
 
 	if (tbx_likely(first == c)) {
@@ -188,13 +188,17 @@ __marcel_unregister_lock_spinlocked(struct _marcel_fastlock *lock, blockcell * c
 		else
 			first->prev = c->prev;
 	}
-	MARCEL_LOG_OUT();
+
+	task = c->task;
+	c->task = NULL;
+
+	MARCEL_LOG_RETURN(task);
 }
 
 static __tbx_inline__ 
-void __lpt_unregister_lock_spinlocked(struct _lpt_fastlock *lock, blockcell * c)
+marcel_t __lpt_unregister_lock_spinlocked(struct _lpt_fastlock *lock, blockcell * c)
 {
-	__marcel_unregister_lock_spinlocked(LPT_FASTLOCK_2_MA_FASTLOCK(lock), c);
+	return __marcel_unregister_lock_spinlocked(LPT_FASTLOCK_2_MA_FASTLOCK(lock), c);
 }
 
 
@@ -213,18 +217,17 @@ void __marcel_lock_wait(struct _marcel_fastlock *lock, marcel_t self, unsigned i
 	__marcel_register_lock_spinlocked(lock, self, c);
 
 	MARCEL_LOG("blocking %p (cell %p) in lock %p\n", self, c, lock);
-
 	INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(
-		ma_access_once(c->blocked) == tbx_true,
+		ma_access_once(c->task),
 		(((flags & MA_CHECK_INTR) && MA_GET_INTERRUPTED())
 #if defined(MARCEL_DEVIATION_ENABLED) && defined(MA__IFACE_PMARCEL)
 		 || ((flags & MA_CHECK_CANCEL) && self->canceled == MARCEL_IS_CANCELED)
 #endif
-		),
-		ma_fastlock_release(lock),
+			),
+		ma_fastlock_release_no_resched(lock),
 		ma_fastlock_acquire(lock));
 
-	if (tbx_unlikely(tbx_true == ma_access_once(c->blocked)))
+	if (tbx_unlikely(c->task))
 		__marcel_unregister_lock_spinlocked(lock, c);
 
 	/* list (waiting threads) was updated before by 
@@ -255,17 +258,17 @@ int __marcel_lock_timed_wait(struct _marcel_fastlock *lock, marcel_t self,
 	MARCEL_LOG("blocking %p (cell %p) in lock %p\n", self, c, lock);
 	timeout = ma_jiffies_from_us(timeout);
 	INTERRUPTIBLE_TIMED_SLEEP_ON_CONDITION_RELEASING(
-		ma_access_once(c->blocked) == tbx_true,
+		ma_access_once(c->task),
 		(((flags & MA_CHECK_INTR) && MA_GET_INTERRUPTED())
 #if defined(MARCEL_DEVIATION_ENABLED) && defined(MA__IFACE_PMARCEL)
 		 || ((flags & MA_CHECK_CANCEL) && self->canceled == MARCEL_IS_CANCELED)
 #endif
 		),
-		ma_fastlock_release(lock),
+		ma_fastlock_release_no_resched(lock),
 		ma_fastlock_acquire(lock),
 		timeout);
-
-	if (tbx_unlikely(ma_access_once(c->blocked) == tbx_true)) {
+	
+	if (tbx_unlikely(c->task)) {
 		ret = (timeout) ? EINTR : ETIMEDOUT;
 		__marcel_unregister_lock_spinlocked(lock, c);
 	} else
@@ -308,91 +311,41 @@ static __tbx_inline__ void __lpt_lock(struct _lpt_fastlock *lock, marcel_t self)
 	__marcel_lock(LPT_FASTLOCK_2_MA_FASTLOCK(lock), self);
 }
 
-
-static __tbx_inline__ int __marcel_lock_signal(struct _marcel_fastlock *lock)
+static __tbx_inline__ void __marcel_lock_signal(struct _marcel_fastlock *lock)
 {
+	marcel_t task;
 	blockcell *first;
 
 	first = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
-	if (first == NULL) {
-		ma_atomic_set(&lock->__status, 0); /* free */
-		ma_smp_wmb();
-		return 0;
+	if (tbx_likely(first == NULL)) {
+		(void)ma_atomic_xchg(1, 0, &lock->__status); /* free */
+		return;
+	} else {
+		task = __marcel_unregister_lock_spinlocked(lock, first);
+		ma_wake_up_thread(task);
 	}
-
-#ifdef MA__LWPS
-	blockcell *curr;
-	ma_holder_t *h;
-	ma_lwp_t lwp;
-
-	/** try to find a task that can be scheduled now */
-	curr = first;
-	do {
-		if (MA_LWP_SELF == ma_get_task_lwp(curr->task)) {
-			first = curr;
-			break;
-		}
-
-		h = ma_task_holder_lock_softirq_async(curr->task);
-		lwp = ma_find_lwp_for_task(curr->task, h);
-		if (tbx_likely(lwp)) {
-			__marcel_unregister_lock_spinlocked(lock, curr);
-			curr->blocked = tbx_false;
-			ma_smp_wmb();
-			ma_awake_task(curr->task, 
-				      MA_TASK_INTERRUPTIBLE|MA_TASK_UNINTERRUPTIBLE, &h);
-			ma_holder_try_to_wake_up_and_unlock_softirq(h);
-			ma_resched_task(ma_per_lwp(current_thread, lwp), lwp);
-
-			return 1;
-		}
-		ma_task_holder_unlock_softirq(h);
-                        
-		curr = curr->next;
-		if (! curr)
-			break;
-
-#ifdef MARCEL_CHECK_PRIO_ON_LOCKS
-		/** check priority constraint */
-		if (first->task->as_entity.prio != curr->task->as_entity.prio)
-			break;
-#endif
-	} while (1);
-#endif /* MA__LWPS **/
-
-	__marcel_unregister_lock_spinlocked(lock, first);
-	first->blocked = tbx_false;
-	ma_smp_wmb();
-	ma_wake_up_thread(first->task);
-
-	return 1;
 }
 
-static __tbx_inline__ int __lpt_lock_signal(struct _lpt_fastlock *lock)
+static __tbx_inline__ void __lpt_lock_signal(struct _lpt_fastlock *lock)
 {
-	return __marcel_lock_signal(LPT_FASTLOCK_2_MA_FASTLOCK(lock));
+	__marcel_lock_signal(LPT_FASTLOCK_2_MA_FASTLOCK(lock));
 }
 
 static __tbx_inline__ void __marcel_lock_broadcast(struct _marcel_fastlock *lock)
 {
-	blockcell *cell;
+	blockcell *c;
+	marcel_t task;
 
-	cell = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
-	while (cell) {
-		cell->blocked = tbx_false;
-		cell = cell->next;
-	}
-	ma_smp_wmb();
-
-	cell = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
-	while (cell) {
-		ma_wake_up_thread(cell->task);
-		cell = cell->next;
+	c = MA_MARCEL_FASTLOCK_WAIT_LIST(lock);
+	while (c) {
+		task = c->task;
+		c->task = NULL;
+		ma_wake_up_thread(task);
+		c = c->next;
 	}
 
-	ma_atomic_set(&lock->__status, 0);
 	MA_MARCEL_FASTLOCK_SET_WAIT_LIST(lock, NULL);
-	ma_smp_wmb();
+	ma_atomic_set(&lock->__status, 0);
 }
 
 static __tbx_inline__ void __lpt_lock_broadcast(struct _lpt_fastlock *lock)
@@ -400,24 +353,22 @@ static __tbx_inline__ void __lpt_lock_broadcast(struct _lpt_fastlock *lock)
 	__marcel_lock_broadcast(LPT_FASTLOCK_2_MA_FASTLOCK(lock));
 }
 
-static __tbx_inline__ int __marcel_unlock(struct _marcel_fastlock *lock)
+static __tbx_inline__ void __marcel_unlock(struct _marcel_fastlock *lock)
 {
-	int ret;
-
 	MARCEL_LOG_IN();
 
 	ma_fastlock_acquire(lock);
-	ret = __marcel_lock_signal(lock);
+	__marcel_lock_signal(lock);
 	ma_fastlock_release(lock);
 
-	MARCEL_LOG_RETURN(ret);
+	MARCEL_LOG_OUT();
 }
 
-static __tbx_inline__ int __lpt_unlock(struct _lpt_fastlock *lock)
+static __tbx_inline__ void __lpt_unlock(struct _lpt_fastlock *lock)
 {
 	if (tbx_unlikely(NULL == LPT_FASTLOCK_2_MA_FASTLOCK(lock)))
 		__lpt_init_lock(lock);
-	return __marcel_unlock(LPT_FASTLOCK_2_MA_FASTLOCK(lock));
+	__marcel_unlock(LPT_FASTLOCK_2_MA_FASTLOCK(lock));
 }
 
 static __tbx_inline__ int __marcel_trylock(struct _marcel_fastlock *lock)

@@ -47,7 +47,8 @@ int marcel_mutex_trylock(marcel_mutex_t * mutex)
 
 int marcel_mutex_unlock(marcel_mutex_t * mutex)
 {
-	return __marcel_unlock(&mutex->__data.__lock);
+	__marcel_unlock(&mutex->__data.__lock);
+	return 0;
 }
 
 int marcel_mutexattr_init(marcel_mutexattr_t * attr TBX_UNUSED)

@@ -380,6 +380,12 @@ do { \
 } while (0)
 #endif
 
+#define ma_spin_unlock_no_resched(lock) \
+do { \
+	_ma_raw_spin_unlock(lock); \
+	ma_preempt_enable_no_resched(); \
+} while (0)
+
 #define ma_spin_unlock_softirq_no_resched(lock) ma_spin_unlock_bh_no_resched(lock)
 #define ma_spin_unlock_bh_no_resched(lock) \
 do { \

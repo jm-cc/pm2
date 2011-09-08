@@ -79,15 +79,21 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
 	marcel_sched_getparam(PIOM_SELF, &old_param);
 	marcel_sched_setparam(PIOM_SELF, &sched_param);
 
-	while(! (cond->value & mask)){
-		cond->cpt++;
-		piom_sem_P(&cond->sem);
-		cond->cpt--;
-		if(cond->cpt)
-			/* another thread is waiting for the same semaphore */
-			piom_sem_V(&cond->sem);
-	}
-
+	if(ma_in_atomic())
+	  {
+	    fprintf(stderr, "pioman: FATAL- trying to wait while in scheduling hook.\n");
+	    abort();
+	  }
+	while(! (cond->value & mask))
+	  {
+	    cond->cpt++;
+	    piom_sem_P(&cond->sem);
+	    cond->cpt--;
+	    if(cond->cpt)
+	      /* another thread is waiting for the same semaphore */
+	      piom_sem_V(&cond->sem);
+	  }
+	
 	marcel_sched_setparam(PIOM_SELF, &old_param);
 #else  /* MARCEL */
 	/* no Marcel, do not block as possibly nobody will wake us... 

@@ -301,11 +301,6 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 int nm_core_driver_exit(struct nm_core *p_core)
 {
   int err = NM_ESUCCESS;
-#if(defined(PIOMAN))
-  nmad_unlock();
-  piom_ltask_pause();
-  nmad_lock();
-#endif	/* PIOMAN */
 
   nm_lock_interface(p_core);
   struct nm_drv*p_drv = NULL;
@@ -351,7 +346,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	}
     }
 #if(defined(PIOMAN))
-  piom_ltask_resume();
   piom_exit_ltasks();
 #endif
   /* disconnect all gates */

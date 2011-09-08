@@ -39,3 +39,25 @@ void pioman_exit(void)
     piom_exit_ltasks();
 }
 
+/** Polling point. May be called from the application to force polling,
+ * from marcel hooks, from timer handler.
+ * @return 0 if we didn't need to poll and 1 otherwise
+ */
+int piom_check_polling(unsigned polling_point)
+{
+    int ret = 0;
+#ifdef PIOM_ENABLE_SHM
+    if(piom_shs_polling_is_required())
+	{
+	    piom_shs_poll(); 
+	    ret = 1;
+	}
+#endif	/* PIOM_ENABLE_SHM */
+
+    if(piom_ltask_polling_is_required())
+	{
+	    piom_ltask_schedule();
+	    ret = 1;
+	}
+    return ret;
+}

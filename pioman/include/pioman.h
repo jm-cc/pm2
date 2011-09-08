@@ -28,6 +28,21 @@
 extern void pioman_init(int*argc, char**argv);
 extern void pioman_exit(void);
 
+
+/* Polling constants. Define the polling points */
+#define PIOM_POLL_AT_TIMER_SIG  1
+#define PIOM_POLL_AT_YIELD      2
+#define PIOM_POLL_AT_LIB_ENTRY  4
+#define PIOM_POLL_AT_IDLE       8
+#define PIOM_POLL_AT_CTX_SWITCH 16
+#define PIOM_POLL_WHEN_FORCED   32
+
+/** Polling point. May be called from the application to force polling,
+ * from marcel hooks, from timer handler.
+ * @return 0 if we didn't need to poll and 1 otherwise
+ */
+extern int piom_check_polling(unsigned polling_point);
+
 #include "piom_lock_types.h"
 #include "piom.h"
 #include "piom_log.h"

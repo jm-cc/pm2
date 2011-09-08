@@ -26,51 +26,9 @@
 #include "piom_sem.h"
 
 
-#ifndef MARCEL
-/* Without Marcel compliance */
-#define piom_time_t int*
-#else
-#define piom_time_t marcel_time_t
-#endif	/* MARCEL */
-
-/* Polling constants. Defines the polling points */
-#define PIOM_POLL_AT_TIMER_SIG  1
-#define PIOM_POLL_AT_YIELD      2
-#define PIOM_POLL_AT_LIB_ENTRY  4
-#define PIOM_POLL_AT_IDLE       8
-#define PIOM_POLL_AT_CTX_SWITCH 16
-#define PIOM_POLL_WHEN_FORCED   32
-
 
 #define PIOM_EXCEPTION_RAISE(e) abort();
 
-/********************************************************************
- *  INLINE FUNCTIONS
- */
-
-
-/* Try to poll
- * Called from Marcel
- * Return 0 if we didn't need to poll and 1 otherwise
- */
-static inline int piom_check_polling(unsigned polling_point)
-{
-    int ret = 0;
-#ifdef PIOM_ENABLE_SHM
-    if(piom_shs_polling_is_required())
-	{
-	    piom_shs_poll(); 
-	    ret = 1;
-	}
-#endif	/* PIOM_ENABLE_SHM */
-
-    if(piom_ltask_polling_is_required())
-	{
-	    piom_ltask_schedule();
-	    ret = 1;
-	}
-    return ret;
-}
 
 
 #endif /* PIOM_H */

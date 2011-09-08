@@ -259,31 +259,6 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
 	}
 }
 
-static void __piom_ltask_update_timer();
-
-static void piom_ltask_poll_timer(unsigned long hid)
-{
-    if (piom_ltask_initialized && !being_processed[piom_ltask_current_vp()] && !__paused) {
-	piom_ltask_schedule();
-    }
-    __piom_ltask_update_timer();
-}
-
-#ifdef MARCEL
-
-unsigned long volatile piom_jiffies = MA_JIFFIES_PER_TIMER_TICK;
-struct marcel_timer_list ltask_poll_timer;
-
-static void __piom_ltask_update_timer(void)
-{
-    marcel_mod_timer(&ltask_poll_timer, piom_jiffies);
-}
-
-#else
-
-static void __piom_ltask_update_timer() { }
-
-#endif	/* MARCEL */
 
 void piom_init_ltasks(void)
 {
@@ -318,11 +293,6 @@ void piom_init_ltasks(void)
 			}
 		}
 #endif	/* USE_GLOBAL_QUEUE */
-#ifdef MARCEL
-	    marcel_init_timer(&ltask_poll_timer, &piom_ltask_poll_timer, 0, 0);
-#endif
-	    __piom_ltask_update_timer();
-
 	}
     piom_ltask_initialized++;
 }

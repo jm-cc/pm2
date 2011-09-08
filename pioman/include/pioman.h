@@ -18,7 +18,6 @@
 #define PIOMAN_H
 
 #ifdef MARCEL
-#define MARCEL_INTERNAL_INCLUDE
 #include "marcel.h"
 #endif
 

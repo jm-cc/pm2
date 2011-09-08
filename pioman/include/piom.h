@@ -23,7 +23,6 @@
 #include "piom_sh_sem.h"
 #include "piom_ltask.h"
 
-#include "piom_lock.h"
 #include "piom_sem.h"
 
 
@@ -72,11 +71,6 @@ static inline int piom_check_polling(unsigned polling_point)
 	}
     return ret;
 }
-
-/********************************************************************
- *  FUNCTIONS PROTOTYPES 
- */
-int piom_test_activity(void);
 
 
 #endif /* PIOM_H */

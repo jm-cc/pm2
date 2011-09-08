@@ -48,12 +48,16 @@ static inline void nm_sr_monitor_notify(nm_sr_request_t*p_request, nm_sr_status_
     {
       if(event & i->mask)
 	{
+	  nmad_unlock();
 	  (*i->notifier)(event, info);
+	  nmad_lock();
 	}
     }
   if(p_request && (event & p_request->monitor.mask) && p_request->monitor.notifier)
     {
+      nmad_unlock();
       (*p_request->monitor.notifier)(event, info);
+      nmad_lock();
     }
 }
 

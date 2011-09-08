@@ -31,6 +31,9 @@ piom_spinlock_t nm_tac_lock;
 piom_spinlock_t nm_status_lock;
 #  else
 piom_spinlock_t piom_big_lock = PIOM_SPIN_LOCK_INITIALIZER;
+#    ifdef DEBUG
+volatile marcel_t piom_big_lock_holder = NULL;
+#    endif /* DEBUG */
 #  endif /* FINE_GRAIN_LOCKING */
 #endif  /* PIOMAN */
 

@@ -32,6 +32,9 @@ extern piom_spinlock_t nm_status_lock;
 #  ifdef PIOMAN
 #    define NM_LOCK_BIGLOCK
 extern piom_spinlock_t piom_big_lock;
+#    ifdef DEBUG
+extern volatile marcel_t piom_big_lock_holder;
+#    endif /* DEBUG */
 #  endif
 #endif /* FINE_GRAIN_LOCKING */
 
@@ -40,7 +43,14 @@ extern piom_spinlock_t piom_big_lock;
 static inline void nmad_lock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
+#ifdef DEBUG
+  if(marcel_self() == piom_big_lock_holder)
+    fprintf(stderr, "nmad: WARNING- self already holds spinlock.\n");
+#endif
   piom_spin_lock(&piom_big_lock);
+#ifdef DEBUG
+  piom_big_lock_holder = marcel_self();
+#endif
 #endif
 }
 
@@ -50,7 +60,12 @@ static inline void nmad_lock(void)
 static inline int nmad_trylock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
-  return piom_spin_trylock(&piom_big_lock);
+  int rc = piom_spin_trylock(&piom_big_lock);
+#ifdef DEBUG
+  if(rc == 1)
+    piom_big_lock_holder = marcel_self();
+#endif
+  return rc;
 #else
   return 1;
 #endif
@@ -60,6 +75,9 @@ static inline int nmad_trylock(void)
 static inline void nmad_unlock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
+#ifdef DEBUG
+  piom_big_lock_holder = NULL;
+#endif
   piom_spin_unlock(&piom_big_lock);
 #endif
 }

@@ -43,7 +43,7 @@ DEF_MARCEL_PMARCEL(int,nanosleep,(const struct timespec *rqtp,struct timespec *r
 	__pmarcel_disable_asynccancel(old);
 
 	if (rmtp) {
-		nsec = todosleep * 1000 * marcel_gettimeslice();
+		nsec = todosleep * 1000 * MARCEL_CLOCK_RATE;
 		rmtp->tv_sec = nsec/1000000000;
 		rmtp->tv_nsec = nsec%1000000000;
 	}
@@ -103,7 +103,7 @@ DEF_MARCEL_PMARCEL(int,sleep,(unsigned long sec),(sec),
 	todosleep = ma_schedule_timeout(ma_jiffies_from_us((1000000*sec)));
 	__pmarcel_disable_asynccancel(old);
 
-	MARCEL_LOG_RETURN(todosleep * marcel_gettimeslice() / 1000000);
+	MARCEL_LOG_RETURN(todosleep * MARCEL_CLOCK_RATE / 1000000);
 })
 
 #ifdef MA__LIBPTHREAD

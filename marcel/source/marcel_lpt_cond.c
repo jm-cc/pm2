@@ -135,7 +135,9 @@ versioned_symbol(libpthread, lpt_cond_destroy, pthread_cond_destroy, GLIBC_2_3_2
 int lpt_cond_signal(lpt_cond_t * cond)
 {
 	MARCEL_LOG_IN();
-	__lpt_unlock(&cond->__data.__lock);
+	lpt_fastlock_acquire(&cond->__data.__lock);
+	__lpt_lock_signal(&cond->__data.__lock);
+	lpt_fastlock_release(&cond->__data.__lock);
 	MARCEL_LOG_RETURN(0);
 }
 versioned_symbol(libpthread, lpt_cond_signal, pthread_cond_signal, GLIBC_2_3_2);
@@ -145,7 +147,7 @@ int lpt_cond_broadcast(lpt_cond_t * cond)
 	MARCEL_LOG_IN();
 
 	lpt_fastlock_acquire(&cond->__data.__lock);
-	__lpt_lock_broadcast(&cond->__data.__lock);
+	__lpt_lock_broadcast(&cond->__data.__lock, -1);
 	lpt_fastlock_release(&cond->__data.__lock);
 
 	MARCEL_LOG_RETURN(0);
@@ -157,11 +159,8 @@ int lpt_cond_wait(lpt_cond_t * __restrict cond, lpt_mutex_t * __restrict mutex)
 	MARCEL_LOG_IN();
 
 	/** release the mutex and wait on cond */
-	lpt_fastlock_acquire(&mutex->__data.__lock);
 	lpt_fastlock_acquire(&cond->__data.__lock);
-	mutex->__data.__owner = 0;
-	__lpt_lock_signal(&mutex->__data.__lock);
-	lpt_fastlock_release(&mutex->__data.__lock);
+	lpt_mutex_unlock(mutex);
 	__lpt_lock_wait(&cond->__data.__lock, ma_self(), MA_CHECK_CANCEL);
 	lpt_fastlock_release(&cond->__data.__lock);
 
@@ -200,11 +199,8 @@ int lpt_cond_timedwait(lpt_cond_t * __restrict cond, lpt_mutex_t * __restrict mu
 		MARCEL_LOG_RETURN(ETIMEDOUT);
 
 	/** release the mutex and wait on cond */
-	lpt_fastlock_acquire(&mutex->__data.__lock);
 	lpt_fastlock_acquire(&cond->__data.__lock);
-	mutex->__data.__owner = 0;
-	__lpt_lock_signal(&mutex->__data.__lock);
-	lpt_fastlock_release(&mutex->__data.__lock);
+	lpt_mutex_unlock(mutex);
 	ret = __lpt_lock_timed_wait(&cond->__data.__lock, ma_self(), timeout, MA_CHECK_CANCEL);
 	lpt_fastlock_release(&cond->__data.__lock);
 

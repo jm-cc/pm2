@@ -35,22 +35,9 @@ int marcel_futex_wait(marcel_futex_t * futex, unsigned long *addr, unsigned long
 int marcel_futex_wake(marcel_futex_t * futex, unsigned nb)
 {
 	int wokenup;
-        marcel_t task;
-	blockcell *c;
-
-	wokenup = 0;
 
 	ma_fastlock_acquire(&futex->__lock);
-	c = MA_MARCEL_FASTLOCK_WAIT_LIST(&futex->__lock);
-        while (c && nb) {
-		nb--;
-		task = c->task;
-		c->task = NULL;
-
-                wokenup += ma_wake_up_thread(task);
-		c = c->next;
-        }
-	MA_MARCEL_FASTLOCK_SET_WAIT_LIST(&futex->__lock, c)
+	wokenup = __marcel_lock_broadcast(&futex->__lock, nb);
 	ma_fastlock_release(&futex->__lock);
 
 	return wokenup;

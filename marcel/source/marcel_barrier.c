@@ -209,7 +209,7 @@ DEF_MARCEL(int, barrier_wait_begin, (marcel_barrier_t * b), (b),
 	}
 
 	if (b->mode == MARCEL_BARRIER_SLEEP_MODE) {
-		__marcel_lock_broadcast(&b->lock);
+		__marcel_lock_broadcast(&b->lock, -1);
 		ma_fastlock_release(&b->lock);
 	}
 
@@ -234,7 +234,7 @@ DEF_MARCEL(int, barrier_wait_end, (marcel_barrier_t * b), (b),
 	ret = ma_atomic_dec_return(&b->leftE);
 
 	if (b->mode == MARCEL_BARRIER_SLEEP_MODE) {
-		__marcel_lock_broadcast(&b->lock);
+		__marcel_lock_broadcast(&b->lock, -1);
 		ma_fastlock_release(&b->lock);
 	}
 

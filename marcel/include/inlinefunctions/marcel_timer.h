@@ -43,11 +43,11 @@ static __tbx_inline__ unsigned int preemption_enabled(void)
 
 static __tbx_inline__ unsigned int ma_jiffies_from_us(unsigned int microsecs)
 {
-	unsigned int ticks = (microsecs)*MA_JIFFIES_PER_TIMER_TICK;
-	if (tbx_likely(ticks % marcel_gettimeslice()))
-		return ticks/marcel_gettimeslice() + 1;
+	unsigned int ticks = microsecs;
+	if (tbx_likely(ticks % MARCEL_CLOCK_RATE))
+		return ticks/MARCEL_CLOCK_RATE + 1;
 	else
-		return ticks/marcel_gettimeslice();
+		return ticks/MARCEL_CLOCK_RATE;
 }
 
 

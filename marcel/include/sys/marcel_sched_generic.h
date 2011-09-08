@@ -34,38 +34,33 @@
 #define NOT_DETACHED_ONLY	 8
 #define BLOCKED_ONLY		16
 #define NOT_BLOCKED_ONLY	32
-#define READY_ONLY           64
-#define NOT_READY_ONLY      128
+#define READY_ONLY              64
+#define NOT_READY_ONLY         128
 
 
-#define SLEEP_ON_CONDITION_RELEASING(cond, release, get)	\
-	while ((cond)) {						\
+#define SLEEP_ON_CONDITION_RELEASING(cond)				\
+	INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(cond, 0)
+
+#define INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(cond, isintr)	\
+	while (1) {							\
 		ma_set_current_state(MA_TASK_INTERRUPTIBLE);		\
-		release;						\
-		ma_schedule();						\
-		get;							\
+		if ((cond) && tbx_likely(! (isintr)))			\
+			ma_schedule();					\
+		else {							\
+			ma_set_current_state(MA_TASK_RUNNING);		\
+			break;						\
+		}							\
 	}
 
-#define INTERRUPTIBLE_SLEEP_ON_CONDITION_RELEASING(cond, isintr, release, get) \
-	while ((cond)) {						\
+#define INTERRUPTIBLE_TIMED_SLEEP_ON_CONDITION_RELEASING(cond, isintr, timeout) \
+	while (1) {							\
 		ma_set_current_state(MA_TASK_INTERRUPTIBLE);		\
-		if (tbx_unlikely((isintr)))				\
+		if ((cond) && (timeout) && tbx_likely(! (isintr)))	\
+			(timeout) = ma_schedule_timeout((timeout));	\
+		else {							\
+			ma_set_current_state(MA_TASK_RUNNING);		\
 			break;						\
-									\
-		release;						\
-		ma_schedule();						\
-		get;							\
-	}
-
-#define INTERRUPTIBLE_TIMED_SLEEP_ON_CONDITION_RELEASING(cond, isintr, release, get, timeout) \
-	while ((cond) && ((timeout) > 0)) {				\
-		ma_set_current_state(MA_TASK_INTERRUPTIBLE);		\
-		if (tbx_unlikely((isintr)))				\
-			break;						\
-									\
-		release;						\
-		(timeout) = ma_schedule_timeout((timeout));		\
-		get;							\
+		}							\
 	}
 
 

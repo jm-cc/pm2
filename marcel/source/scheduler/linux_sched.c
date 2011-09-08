@@ -723,7 +723,7 @@ asmlinkage int ma_schedule(void)
 	MA_BUG_ON(ma_preempt_count()<0);
 	if (tbx_likely(!(SELF_GETMEM(state) & MA_TASK_DEAD))) {
 		if (tbx_unlikely(ma_in_atomic())) {
-			PM2_LOG("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",
+			PM2_ERR("bad: scheduling while atomic (%06x)! Did you forget to unlock a spinlock?\n",
 				ma_preempt_count());
 			ma_show_preempt_backtrace();
 			MA_BUG();

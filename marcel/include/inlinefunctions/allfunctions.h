@@ -20,3 +20,4 @@
 #include "inlinefunctions/marcel_threads.h"
 #include "inlinefunctions/marcel_timer.h"
 #include "inlinefunctions/marcel_topology.h"
+#include "inlinefunctions/marcel_mutex.h"

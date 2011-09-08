@@ -71,7 +71,9 @@ DEF_MARCEL_PMARCEL(int, cond_destroy, (marcel_cond_t * cond), (cond),
 DEF_MARCEL_PMARCEL(int, cond_signal, (marcel_cond_t * cond), (cond),
 {
 	MARCEL_LOG_IN();
-	__marcel_unlock(&cond->__data.__lock);
+	ma_fastlock_acquire(&cond->__data.__lock);
+	__marcel_lock_signal(&cond->__data.__lock);
+	ma_fastlock_release(&cond->__data.__lock);
 	MARCEL_LOG_RETURN(0);
 })
 
@@ -80,7 +82,7 @@ DEF_MARCEL_PMARCEL(int, cond_broadcast, (marcel_cond_t * cond), (cond),
 	MARCEL_LOG_IN();
 	
 	ma_fastlock_acquire(&cond->__data.__lock);
-	__marcel_lock_broadcast(&cond->__data.__lock);
+	__marcel_lock_broadcast(&cond->__data.__lock, -1);
 	ma_fastlock_release(&cond->__data.__lock);
 
 	MARCEL_LOG_RETURN(0);
@@ -92,10 +94,8 @@ DEF_MARCEL(int, cond_wait, (marcel_cond_t * __restrict cond, marcel_mutex_t * __
 	MARCEL_LOG_IN();
 
 	/** release mutex and wait on cond */
-	ma_fastlock_acquire(&mutex->__data.__lock);
 	ma_fastlock_acquire(&cond->__data.__lock);
-	__marcel_lock_signal(&mutex->__data.__lock);
-	ma_fastlock_release(&mutex->__data.__lock);
+	marcel_mutex_unlock(mutex);
 	__marcel_lock_wait(&cond->__data.__lock, ma_self(), 0);
 	ma_fastlock_release(&cond->__data.__lock);
 
@@ -111,11 +111,8 @@ DEF_PMARCEL(int, cond_wait, (pmarcel_cond_t * __restrict cond, pmarcel_mutex_t *
 	MARCEL_LOG_IN();
 
 	/** release the mutex and wait on cond */
-	ma_fastlock_acquire(&mutex->__data.__lock);
 	ma_fastlock_acquire(&cond->__data.__lock);
-	mutex->__data.__owner = 0;
-	__marcel_lock_signal(&mutex->__data.__lock);
-	ma_fastlock_release(&mutex->__data.__lock);
+	pmarcel_mutex_unlock(mutex);
 	__marcel_lock_wait(&cond->__data.__lock, ma_self(), MA_CHECK_CANCEL);
 	ma_fastlock_release(&cond->__data.__lock);
 
@@ -146,10 +143,8 @@ DEF_MARCEL(int, cond_timedwait, (marcel_cond_t * __restrict cond, marcel_mutex_t
 		MARCEL_LOG_RETURN(ETIMEDOUT);
 
 	/** release mutex and wait on cond */
-	ma_fastlock_acquire(&mutex->__data.__lock);
 	ma_fastlock_acquire(&cond->__data.__lock);
-	__marcel_lock_signal(&mutex->__data.__lock);
-	ma_fastlock_release(&mutex->__data.__lock);
+	marcel_mutex_unlock(mutex);
 	ret = __marcel_lock_timed_wait(&cond->__data.__lock, ma_self(), timeout, 0);
 	ma_fastlock_release(&cond->__data.__lock);
 
@@ -185,11 +180,8 @@ DEF_PMARCEL(int, cond_timedwait, (pmarcel_cond_t * __restrict cond, pmarcel_mute
 		MARCEL_LOG_RETURN(ETIMEDOUT);
 
 	/** release the mutex and wait on cond */
-	ma_fastlock_acquire(&mutex->__data.__lock);
 	ma_fastlock_acquire(&cond->__data.__lock);
-	mutex->__data.__owner = 0;
-	__marcel_lock_signal(&mutex->__data.__lock);
-	ma_fastlock_release(&mutex->__data.__lock);
+	pmarcel_mutex_unlock(mutex);
 	ret = __marcel_lock_timed_wait(&cond->__data.__lock, ma_self(), timeout, MA_CHECK_CANCEL);
 	ma_fastlock_release(&cond->__data.__lock);
 

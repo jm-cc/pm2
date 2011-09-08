@@ -24,29 +24,13 @@
 
 volatile unsigned long ma_jiffies = 0;
 ma_atomic_t __ma_preemption_disabled = MA_ATOMIC_INIT(0);
-static volatile unsigned long time_slice = MARCEL_MIN_TIME_SLICE; // microseconds
+static volatile unsigned long time_slice = MARCEL_TIME_SLICE; // microseconds
 
 
 unsigned long marcel_clock(void)
 {
 	return ma_jiffies * time_slice / 1000;
 }
-
-#ifdef MA__USE_TIMER_CREATE
-static void ma_slice2timer(struct itimerspec *clk_prop)
-{
-	clk_prop->it_interval.tv_sec = time_slice / 1000000;
-	clk_prop->it_interval.tv_nsec = (time_slice % 1000000)*1000;
-	clk_prop->it_value = clk_prop->it_interval;
-}
-#else
-static void ma_slice2timer(struct itimerval *clk_prop)
-{
-	clk_prop->it_interval.tv_sec = time_slice / 1000000;
-	clk_prop->it_interval.tv_usec = time_slice % 1000000;
-	clk_prop->it_value = clk_prop->it_interval;
-}
-#endif
 
 
 #if defined(MARCEL_SIGNALS_ENABLED) && defined(MA__LIBPTHREAD)
@@ -69,29 +53,9 @@ static ma_sighandler_t TBX_UNUSED ma_signal(int sig, ma_sighandler_t handler)
 #endif
 #endif
 
-// Frequency of debug messages in timer_interrupt
-#ifndef TICK_RATE
-#define TICK_RATE 1
-#endif
 // Softirq called by the timer
 static void timer_action(struct ma_softirq_action *a TBX_UNUSED)
 {
-#ifdef MA__DEBUG
-	static unsigned long tick = 0;
-	if (++tick == TICK_RATE) {
-		MARCEL_TIMER_LOG("\t\t\t<<tick>>\n");
-		tick = 0;
-	}
-#endif
-
-#ifdef MA__DEBUG
-	if (MA_LWP_SELF == NULL) {
-		PM2_LOG("WARNING!!! MA_LWP_SELF == NULL in thread %p!\n", MARCEL_SELF);
-		MARCEL_EXCEPTION_RAISE(MARCEL_PROGRAM_ERROR);
-	}
-#endif
-	MTRACE_TIMER("TimerSig", MARCEL_SELF);
-
 	ma_update_process_times(1);
 }
 
@@ -166,25 +130,19 @@ static void timer_interrupt(int sig TIMER_VAR_UNUSED, siginfo_t * info LWPS_VAR_
 static void timer_interrupt(int sig)
 #endif
 {
-#ifdef MA__TIMER
-#ifdef MA__DEBUG
-	static unsigned long tick = 0;
-#endif
-#endif
-
 #ifdef SA_SIGINFO
 	/* Don't do anything before this */
 	MA_ARCH_INTERRUPT_ENTER_LWP_FIX(MARCEL_SELF, uc);
 #endif
 
 	/* Avoid recursing interrupts. Not completely safe, but better than nothing */
-	if (ma_in_irq()) {
+	if (tbx_unlikely(ma_in_irq()))
 		return;
-	}
 	ma_irq_enter();
 
 	PROF_EVENT(timer_interrupt);
 
+#ifdef MA__DEBUG
 	/* check that stack isn't overflowing */
 #if !defined(ENABLE_STACK_JUMPING) && !defined(MA__SELF_VAR)
 	if (marcel_stackbase(MARCEL_SELF))
@@ -195,16 +153,17 @@ static void timer_interrupt(int sig)
 			     THREAD_SLOT_SIZE);
 			MA_BUG();
 		}
-#endif
+#  endif
+#endif /** MA__DEBUG **/
 
 #ifdef MA__DISTRIBUTE_PREEMPT_SIG
-#if !defined(MA_BOGUS_SIGINFO_CODE)
+#  if !defined(MA_BOGUS_SIGINFO_CODE)
 	if (!info || info->si_code == SI_KERNEL)
-#elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
-#error "Can't distinguish between kernel and user signal"
-#else
+#  elif MARCEL_TIMER_SIGNAL == MARCEL_TIMER_USERSIGNAL
+#    error "Can't distinguish between kernel and user signal"
+#  else
 	if (sig == MARCEL_TIMER_SIGNAL)
-#endif
+#  endif
 	{
 		/* kernel timer signal, distribute */
 		ma_lwp_t lwp;
@@ -216,17 +175,7 @@ static void timer_interrupt(int sig)
 		} ma_for_each_lwp_from_end();
 		ma_lwp_list_unlock_read();
 	}
-#endif
-
-#ifdef MA__TIMER
-#ifdef MA__DEBUG
-	if (sig == MARCEL_TIMER_SIGNAL)
-		if (++tick == TICK_RATE) {
-			MARCEL_TIMER_LOG("\t\t\t<<Sig handler>>\n");
-			tick = 0;
-		}
-#endif
-#endif
+#endif /** MA__DISTRIBUTE_PREMPT_SIG **/
 
 #ifdef MA__TIMER
 	if (
@@ -271,16 +220,18 @@ static void timer_interrupt(int sig)
 #  endif
 			/* kernel timer signal */
 		{
-			ma_jiffies += MA_JIFFIES_PER_TIMER_TICK;
+			ma_jiffies ++;
 		}
 	}
 #endif
 
 #if MA__SIGNAL_NODEFER
 	ma_irq_exit();
-	ma_preempt_check_resched(0);
+	if (0 == (ma_jiffies % (time_slice / MARCEL_CLOCK_RATE)))
+		ma_preempt_check_resched(0);
 #else
-	ma_preempt_check_resched(MA_HARDIRQ_OFFSET);
+	if (0 == (ma_jiffies % (time_slice / MARCEL_CLOCK_RATE)))
+		ma_preempt_check_resched(MA_HARDIRQ_OFFSET);
 	ma_irq_exit();
 #endif
 
@@ -344,7 +295,9 @@ void marcel_sig_reset_perlwp_timer(void)
 	{
 		struct itimerspec value;
 
-		ma_slice2timer(&value);
+		value.it_interval.tv_sec = 0;
+		value.it_interval.tv_nsec = MARCEL_CLOCK_RATE*1000;
+		value.it_value = value.it_interval;
 		timer_settime(__ma_get_lwp_var(timer), 0, &value, NULL);
 	}
 #endif
@@ -365,7 +318,9 @@ void marcel_sig_reset_timer(void)
 	{
 		struct itimerval value;
 
-		ma_slice2timer(&value);
+		value.it_interval.tv_sec = 0;
+		value.it_interval.tv_usec = MARCEL_CLOCK_RATE;
+		value.it_value = value.it_interval;
 		if (ma_setitimer(MARCEL_ITIMER_TYPE, &value, (struct itimerval *) NULL)) {
 			perror("can't start itimer");
 			exit(1);
@@ -381,8 +336,8 @@ void marcel_settimeslice(unsigned long microsecs)
 {
 	MARCEL_LOG_IN();
 
-	if (microsecs && (microsecs < MARCEL_MIN_TIME_SLICE)) {
-		time_slice = MARCEL_MIN_TIME_SLICE;
+	if (microsecs && (microsecs < MARCEL_CLOCK_RATE)) {
+		time_slice = MARCEL_CLOCK_RATE;
 	} else {
 		time_slice = microsecs;
 	}

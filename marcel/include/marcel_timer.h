@@ -26,26 +26,22 @@
 
 /** Public macros **/
 /* Timer tick period, in us */
-#define MA_JIFFIES_PER_TIMER_TICK   1
-#define MARCEL_MIN_TIME_SLICE	    80000
-#if MARCEL_MIN_TIME_SLICE < 10000 || MARCEL_MIN_TIME_SLICE >= 1000000
-#  error " Marcel timeslice value should be in [10000; 1000000["
+#define MARCEL_CLOCK_RATE 80000
+#define MARCEL_TIME_SLICE (3*MARCEL_CLOCK_RATE)
+/** If MARCEL_TIME_SLICE is too low ... schedule overhead implies poor perf. **/
+#if (MARCEL_TIME_SLICE < MARCEL_CLOCK_RATE)
+#  error "Marcel timeslice value should be greater than MARCEL_CLOCK_RATE"
 #endif
+#if (MARCEL_CLOCK_RATE < 10000) || (MARCEL_CLOCK_RATE > 100000)
+#  error "Marcel timeslice value should be in [10000; 100000]"
+#endif
+
 
 /* Timer time and signal */
 #ifdef MA__TIMER
-#  if defined(MA__LWPS) && (!defined(SA_SIGINFO) || !defined(SI_KERNEL))
-/* no way to distinguish between a signal from the kernel or from another LWP */
-#    define MA_BOGUS_SIGINFO_CODE
-#  endif
-
 /*  Signal utilisé pour la premption automatique */
 #  define MARCEL_TIMER_SIGNAL       SIGALRM
-#  ifdef MA_BOGUS_SIGINFO_CODE
-#    define MARCEL_TIMER_USERSIGNAL SIGVTALRM
-#  else
-#    define MARCEL_TIMER_USERSIGNAL MARCEL_TIMER_SIGNAL
-#  endif
+#  define MARCEL_TIMER_USERSIGNAL   SIGVTALRM
 #  define MARCEL_ITIMER_TYPE        ITIMER_REAL
 #endif /** MA__TIMER **/
 #define MARCEL_RESCHED_SIGNAL       SIGXFSZ
@@ -98,6 +94,14 @@ TBX_VISIBILITY_PUSH_INTERNAL
 #    error "ma_nanosleep not defined"
 #  endif
 #endif
+
+/* Timer time and signal */
+#ifdef MA__TIMER
+#  if defined(MA__LWPS) && (!defined(SA_SIGINFO) || !defined(SI_KERNEL))
+/* no way to distinguish between a signal from the kernel or from another LWP */
+#    define MA_BOGUS_SIGINFO_CODE
+#  endif
+#endif /** MA__TIMER **/
 
 
 /** Internal global variables **/

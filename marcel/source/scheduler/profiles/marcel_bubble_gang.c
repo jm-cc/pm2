@@ -74,7 +74,7 @@ static any_t marcel_gang_scheduler(any_t runqueue)
 
 	PROF_ALWAYS_PROBE(FUT_CODE(FUT_RQS_NEWRQ, 2), -1, &ma_gang_rq);
 	while (keep_running) {
-		marcel_delay(MARCEL_BUBBLE_TIMESLICE * marcel_gettimeslice() / 1000);
+		marcel_delay(MARCEL_BUBBLE_TIMESLICE * MARCEL_CLOCK_RATE / 1000);
 
 		/* First clean the work_rq runqueue */
 		PROF_EVENT1(rq_lock, work_rq);

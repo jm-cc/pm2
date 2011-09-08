@@ -27,7 +27,7 @@
 
 /** Public macros **/
 #define MA_MARCEL_FASTLOCK_UNLOCKED					\
-	{ .__status = {0}, .__waiting = NULL, .__spinlock = MA_SPIN_LOCK_UNLOCKED}
+	{ .__status = {1}, .__waiting = NULL, .__spinlock = MA_SPIN_LOCK_UNLOCKED}
 #define MA_PMARCEL_FASTLOCK_UNLOCKED MA_MARCEL_FASTLOCK_UNLOCKED
 /* This must remain 0 to keep ABI compatibility with static initializers.  */
 #define MA_LPT_FASTLOCK_UNLOCKED { .__mlock = NULL }

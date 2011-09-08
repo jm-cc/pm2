@@ -150,7 +150,7 @@ DEF_MARCEL_PMARCEL(unsigned int, alarm, (unsigned int nb_sec), (nb_sec),
 	
 	if (alarm_timer.expires > ma_jiffies) {
 		MARCEL_LOG_OUT();
-		ret = ((alarm_timer.expires - ma_jiffies) * marcel_gettimeslice()) / 1000000;
+		ret = ((alarm_timer.expires - ma_jiffies) * MARCEL_CLOCK_RATE) / 1000000;
 	}
 	
 	if (nb_sec) {
@@ -265,14 +265,14 @@ DEF_MARCEL_PMARCEL(int, setitimer, (int which TBX_UNUSED, const struct itimerval
 	}
 
 	if (itimer_timer.expires > ma_jiffies)
-		ret = ((itimer_timer.expires - ma_jiffies) * marcel_gettimeslice()) / 1000000;
+		ret = ((itimer_timer.expires - ma_jiffies) * MARCEL_CLOCK_RATE) / 1000000;
 	
 	interval = value->it_interval.tv_sec * 1000000 + value->it_interval.tv_usec;
 	valeur = value->it_value.tv_sec * 1000000 + value->it_value.tv_usec;
 
 	if (valeur) {
 		ma_init_timer(&itimer_timer);
-		itimer_timer.expires = ma_jiffies + valeur / marcel_gettimeslice();
+		itimer_timer.expires = ma_jiffies + valeur / MARCEL_CLOCK_RATE;
 		ma_add_timer(&itimer_timer);
 	}
 	MARCEL_LOG_RETURN(ret);

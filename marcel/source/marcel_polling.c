@@ -649,7 +649,7 @@ int marcel_ev_server_set_poll_settings(marcel_ev_server_t server,
 	server->poll_points = poll_points;
 	if (poll_points & MARCEL_EV_POLL_AT_TIMER_SIG) {
 		frequency = frequency ? : 1;
-		server->frequency = frequency * MA_JIFFIES_PER_TIMER_TICK;
+		server->frequency = frequency;
 	}
 	return 0;
 }

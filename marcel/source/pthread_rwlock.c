@@ -570,7 +570,7 @@ DEF_MARCEL_PMARCEL (int, rwlock_unlock, (lpt_rwlock_t *rwlock), (rwlock),
 		if (rwlock->__data.__nr_readers_queued) {
 			lpt_fastlock_acquire(&rwlock->__data.__readers_wakeup);
 			__lpt_unlock(&rwlock->__data.__lock);
-			__lpt_lock_broadcast (&rwlock->__data.__readers_wakeup);
+			__lpt_lock_broadcast (&rwlock->__data.__readers_wakeup, -1);
 			lpt_fastlock_release(&rwlock->__data.__readers_wakeup);
 			return 0;
 		}

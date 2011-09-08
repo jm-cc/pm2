@@ -29,7 +29,7 @@
 
 /** Public macros **/
 #define MARCEL_SEM_INITIALIZER(initial) { \
-	.value = initial, \
+	.value = {initial},	  \
 	.list = NULL, \
 	.lock = MA_SPIN_LOCK_UNLOCKED \
 }
@@ -46,7 +46,7 @@ typedef struct semcell_struct {
 } semcell;
 
 struct semaphor_struct {
-        int value;
+        ma_atomic_t value;
         struct semcell_struct *list;
         ma_spinlock_t lock;     /* For preventing concurrent access from multiple LWPs */
 };

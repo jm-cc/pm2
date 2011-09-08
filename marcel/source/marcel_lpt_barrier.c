@@ -150,7 +150,7 @@ int lpt_barrier_wait_begin(lpt_barrier_t * _b)
 
 	ret = ma_atomic_dec_return(&b->leftB);
 	if (!ret) {
-		__lpt_lock_broadcast(&b->lock);
+		__lpt_lock_broadcast(&b->lock, -1);
 		ma_atomic_set(&b->leftB, b->init_count);
 		ma_atomic_set(&b->leftE, b->init_count);
 	}
@@ -172,7 +172,7 @@ int lpt_barrier_wait_end(lpt_barrier_t * _b)
 
 	ret = ma_atomic_dec_return(&b->leftE);
 	if (!ret)
-		__lpt_lock_broadcast(&b->lock);
+		__lpt_lock_broadcast(&b->lock, -1);
 	lpt_fastlock_release(&b->lock);
 	
 	MARCEL_LOG_RETURN(ret);

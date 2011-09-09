@@ -150,7 +150,7 @@ MARCEL_HFILES = 	marcel_supervisor.h marcel_polling.h marcel_topology.h marcel_r
 			marcel_descr.h marcel_cond.h marcel_init.h\
 			inlinefunctions/marcel_topology.h inlinefunctions/marcel_alloc.h\
 			inlinefunctions/marcel_descr.h inlinefunctions/marcel_timer.h\
-			inlinefunctions/marcel_threads.h\
+			inlinefunctions/marcel_threads.h inlinefunctions/marcel_mutex.h\
 			inlinefunctions/marcel_keys.h inlinefunctions/allfunctions.h\
 			marcel_timer.h pthread/pthread.h marcel_fortran.h marcel_sem.h\
 			marcel_futex.h marcel_seed.h marcel_threads.h\

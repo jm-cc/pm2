@@ -108,10 +108,6 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->trk_id,
 	    p_pw->proto_id);
 
-#ifdef PIOMAN_POLL
-  piom_ltask_init(&p_pw->ltask);
-#endif /* PIOMAN_POLL */
-
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   /* post request */
   if(p_pw->p_gate)

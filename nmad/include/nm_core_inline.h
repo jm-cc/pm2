@@ -243,8 +243,7 @@ static __tbx_inline__ int
 nm_pw_free(struct nm_pkt_wrap *p_pw)
 {
 #if(defined(PIOMAN_POLL))
-  if(p_pw->ltask.state & PIOM_LTASK_STATE_SCHEDULED
-     || p_pw->ltask.state & PIOM_LTASK_STATE_READY)
+  if(!piom_ltask_test_terminated(&p_pw->ltask))
     {
       /* Do not free the pw right now because its ltask part is still used by PIOMan.
        * Instead, ask PIOMan to free the pw once the task is over.

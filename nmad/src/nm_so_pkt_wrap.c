@@ -186,9 +186,6 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   *pp_pw = p_pw;
 
  out:
-#ifdef PIOMAN_POLL
-  piom_ltask_init(&p_pw->ltask);
-#endif	/* PIOMAN_POLL */
   return err;
 }
 

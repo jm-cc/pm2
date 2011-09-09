@@ -135,9 +135,6 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-#ifdef PIOMAN_POLL
-  piom_ltask_init(&p_pw->ltask);
-#endif /* PIOMAN_POLL */
 
 #ifdef PIO_OFFLOAD
     nm_so_pw_offloaded_finalize(p_pw);

@@ -145,30 +145,12 @@ static inline void piom_ltask_completed(struct piom_ltask *task)
     piom_cond_signal(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
-/* initialize a task
- * *** OBSOLETE- use piom_ltask_create() directly
- */
-static __tbx_inline__ void
-piom_ltask_init (struct piom_ltask *task)
-{
-    task->masked = 0;
-    task->func_ptr = NULL;
-    task->data_ptr = NULL;
-    task->continuation_ptr = NULL;
-    task->continuation_data_ptr = NULL;
-    task->options = PIOM_LTASK_OPTION_NULL;
-    task->state = PIOM_LTASK_STATE_NONE;
-    task->vp_mask = piom_vpset_full;
-    task->queue = NULL;
-    piom_cond_init(&task->done, 0);
-}
-
 
 /** create a new ltask. */
-static inline void piom_ltask_create (struct piom_ltask *task,
-				      piom_ltask_func * func_ptr,
-				      void *data_ptr,
-				      piom_ltask_option_t options, piom_vpset_t vp_mask)
+static inline void piom_ltask_create(struct piom_ltask *task,
+				     piom_ltask_func * func_ptr,
+				     void *data_ptr,
+				     piom_ltask_option_t options, piom_vpset_t vp_mask)
 {
     task->masked = 0;
     task->func_ptr = func_ptr;

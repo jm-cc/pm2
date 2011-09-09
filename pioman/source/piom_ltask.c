@@ -240,11 +240,7 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
     /* empty the list of tasks */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
-#ifdef MARCEL
-	    piom_vpset_t local_vpset = 1<<marcel_current_vp();
-	    if(queue->vpset & local_vpset)
-#endif
-		__piom_ltask_schedule (queue);
+	    __piom_ltask_schedule (queue);
 	}
 }
 

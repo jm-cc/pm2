@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include <semaphore.h>
-#include "pm2_common.h"
+#include <pioman.h>
 
 #define DEFAULT_LOOPS 1000000
 #define DEFAULT_WARMUP 10000
@@ -95,7 +95,7 @@ void* th1_func(void *arg){
 
 int main(int argc, char ** argv)
 {
-	common_init(&argc, argv, NULL);
+        pioman_init(&argc, argv);
 	
 	if (argc > 1 && !strcmp(argv[1], "--help")) {
 		usage();
@@ -173,6 +173,6 @@ int main(int argc, char ** argv)
 	piom_exit_ltasks();
 
 out:
-	common_exit(NULL);
+	pioman_exit();
 	return 0;
 }

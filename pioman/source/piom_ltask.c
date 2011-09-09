@@ -36,8 +36,7 @@ typedef enum
 	PIOM_LTASK_QUEUE_STATE_STOPPING = 0x02,
 	/* stopped: no more request in the queue, 
 	   no more task from this queue being executed */
-	PIOM_LTASK_QUEUE_STATE_STOPPED  = 0x04,
-	PIOM_LTASK_QUEUE_STATE_PAUSE    = 0x10
+	PIOM_LTASK_QUEUE_STATE_STOPPED  = 0x04
     } piom_ltask_queue_state_t;
 
 typedef struct piom_ltask_queue
@@ -69,21 +68,6 @@ static struct piom_ltask_queue global_queue;
 #define piom_ltask_nvp()        (1)
 #endif
 
-
-void piom_ltask_queue_pause(piom_ltask_queue_t*queue)
-{
-    assert(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING);
-    queue->state = PIOM_LTASK_QUEUE_STATE_PAUSE;
-    while(queue->processing != 0)
-	{
-	}
-}
-
-void piom_ltask_queue_resume(piom_ltask_queue_t*queue)
-{
-    assert(queue->state == PIOM_LTASK_QUEUE_STATE_PAUSE);
-    queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
-}
 
 
 /* Get the queue that matches a vpset:
@@ -197,7 +181,7 @@ static inline void* __piom_ltask_schedule(piom_ltask_queue_t *queue)
 			    /* If another thread is currently stopping the queue don't repost the task */
 			    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
 				{
-				    __piom_ltask_submit_in_queue (task, queue);
+				    __piom_ltask_submit_in_queue(task, queue);
 				}
 			    else
 				{
@@ -402,26 +386,27 @@ void piom_ltask_unmask(struct piom_ltask *task)
     task->masked = 0;
 }
 
-void piom_ltask_cancel(struct piom_ltask*task)
+void piom_ltask_cancel(struct piom_ltask*ltask)
 {
-    piom_ltask_mask(task);
-    struct piom_ltask_queue*queue = task->queue;
+    piom_ltask_mask(ltask);
+    struct piom_ltask_queue*queue = ltask->queue;
     if(queue)
 	{
-	    piom_ltask_queue_pause(queue);
 	    int i;
 	    for(i = 0; i < PIOM_MAX_LTASK; i++)
 		{
-		    if(queue->ltask_array[i] == task)
-				queue->ltask_array[i] = NULL;
+		    struct piom_ltask*ltask2 = __piom_ltask_get_from_queue(queue);
+		    if(ltask2 == ltask)
+			break;
+		    else if(ltask2 != NULL)
+			__piom_ltask_submit_in_queue(ltask2, queue);
 		}
-	    piom_ltask_queue_resume(queue);
 	}
-    task->state = PIOM_LTASK_STATE_TERMINATED;
-    piom_ltask_completed (task);
-    if(task->continuation_ptr)
-	task->continuation_ptr(task->continuation_data_ptr);
-    piom_ltask_unmask(task);
+    ltask->state = PIOM_LTASK_STATE_TERMINATED;
+    piom_ltask_completed(ltask);
+    if(ltask->continuation_ptr)
+	ltask->continuation_ptr(ltask->continuation_data_ptr);
+    piom_ltask_unmask(ltask);
 }
 
 int piom_ltask_polling_is_required(void)

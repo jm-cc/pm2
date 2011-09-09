@@ -29,14 +29,14 @@
 typedef enum
     {
 	/* not yet initialized */
-	PIOM_LTASK_QUEUE_STATE_NONE     = 0x00,
+	PIOM_LTASK_QUEUE_STATE_NONE,
 	/* running */
-	PIOM_LTASK_QUEUE_STATE_RUNNING  = 0x01,
+	PIOM_LTASK_QUEUE_STATE_RUNNING,
 	/* being stopped */
-	PIOM_LTASK_QUEUE_STATE_STOPPING = 0x02,
+	PIOM_LTASK_QUEUE_STATE_STOPPING,
 	/* stopped: no more request in the queue, 
 	   no more task from this queue being executed */
-	PIOM_LTASK_QUEUE_STATE_STOPPED  = 0x04
+	PIOM_LTASK_QUEUE_STATE_STOPPED
     } piom_ltask_queue_state_t;
 
 typedef struct piom_ltask_queue
@@ -144,10 +144,12 @@ static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t *
  * Returns the task that have been scheduled (or NULL if no task)
  * If it returns a task, this task have been freed.
  */
-static inline void* __piom_ltask_schedule(piom_ltask_queue_t *queue)
+static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 {
-    if(! (queue->state & PIOM_LTASK_QUEUE_STATE_RUNNING)
-       && ! (queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING))
+    if( (queue->processing) || 
+	(queue->ltask_array_nb_items == 0) ||
+	( (queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
+	  && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) )
 	{
 	    return NULL;
 	}
@@ -224,7 +226,7 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
     /* empty the list of tasks */
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
-	    __piom_ltask_schedule (queue);
+	    __piom_ltask_queue_schedule (queue);
 	}
 }
 
@@ -302,10 +304,10 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
     while(queue->ltask_array_nb_items + 1 >= PIOM_MAX_LTASK)
 	{
 	    piom_spin_unlock(&queue->ltask_lock);
-	    __piom_ltask_schedule(queue);
+	    __piom_ltask_queue_schedule(queue);
 	    piom_spin_lock(&queue->ltask_lock);
 	}
-    if(queue->state & PIOM_LTASK_QUEUE_STATE_STOPPING)
+    if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 	{
 	    fprintf(stderr, "PIOMan: WARNING- submitting a task (%p) to a queue (%p) that is being stopped\n", 
 		    task, queue);
@@ -335,25 +337,26 @@ void piom_ltask_submit(struct piom_ltask *task)
 
 void*piom_ltask_schedule(void)
 {
-    struct piom_ltask *task = NULL;
+    struct piom_ltask*ltask = NULL;
     if(piom_ltask_initialized)
 	{
 #ifdef USE_GLOBAL_QUEUE
-	    task = __piom_ltask_schedule(&global_queue);
+	    ltask = __piom_ltask_queue_schedule(&global_queue);
 #else /* USE_GLOBAL_QUEUE */
-	    struct marcel_topo_level *l;
-	    for(l = &marcel_topo_levels[marcel_topo_nblevels-1][marcel_current_vp()];
+	    const int vp = piom_ltask_current_vp();
+	    const struct marcel_topo_level *l;
+	    for(l = &marcel_topo_levels[marcel_topo_nblevels - 1][vp];
 		l;			/* do this as long as there's a topo level */
 		l=l->father)
 		{
-		    piom_ltask_queue_t*cur_queue = (piom_ltask_queue_t *)(l->ltask_data);
-		    task = __piom_ltask_schedule(cur_queue);
-		    if(task)
+		    piom_ltask_queue_t*queue = (piom_ltask_queue_t*)(l->ltask_data);
+		    ltask = __piom_ltask_queue_schedule(queue);
+		    if(ltask)
 			break;
 		}
 #endif /* USE_GLOBAL_QUEUE */
 	}
-    return task;
+    return ltask;
 }
 
 void piom_ltask_wait_success(struct piom_ltask *task)
@@ -407,42 +410,6 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
     if(ltask->continuation_ptr)
 	ltask->continuation_ptr(ltask->continuation_data_ptr);
     piom_ltask_unmask(ltask);
-}
-
-int piom_ltask_polling_is_required(void)
-{
-    if (piom_ltask_initialized)
-	{
-#ifdef USE_GLOBAL_QUEUE
-	    if((!global_queue->processing) && 
-	       (global_queue.ltask_array_nb_items != 0) && 
-	       (global_queue.state == PIOM_LTASK_QUEUE_STATE_RUNNING))
-		{
-		    return 1;
-		}
-#else /* USE_GLOBAL_QUEUE */
-	    const int vp = piom_ltask_current_vp();
-	    struct marcel_topo_level *l;
-	    for(l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-		l;			/* do this as long as there's a topo level */
-		l=l->father)
-		{
-		    const piom_ltask_queue_t*queue = (piom_ltask_queue_t *)(l->ltask_data);
-		    if(!queue->processing)
-			{
-			    if(((queue->ltask_array_nb_items != 0) && 
-				(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING))
-			       || 
-			       (queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
-				{
-				    return 1;
-				}
-			}
-		}
-#endif /* USE_GLOBAL_QUEUE */
-	}
-
-    return 0;
 }
 
 

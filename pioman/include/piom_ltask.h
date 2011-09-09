@@ -118,11 +118,6 @@ extern void piom_ltask_cancel(struct piom_ltask*task);
  */
 extern void *piom_ltask_schedule(void);
 
-/* Check whether a task should be executed on the current vp
- * (ie: the local queue or the global queue is not empty)
- */
-extern int piom_ltask_polling_is_required(void);
-
 /** Test whether a task is completed */
 static inline int piom_ltask_test_completed(struct piom_ltask *task)
 {

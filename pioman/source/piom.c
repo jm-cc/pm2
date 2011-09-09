@@ -54,10 +54,7 @@ int piom_check_polling(unsigned polling_point)
 	}
 #endif	/* PIOM_ENABLE_SHM */
 
-    if(piom_ltask_polling_is_required())
-	{
-	    piom_ltask_schedule();
-	    ret = 1;
-	}
+    void*task = piom_ltask_schedule();
+    ret = (task != NULL);
     return ret;
 }

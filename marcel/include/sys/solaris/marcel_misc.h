@@ -34,10 +34,6 @@ TBX_VISIBILITY_PUSH_INTERNAL
 
 
 /** Internal macros **/
-#ifdef MA__LWPS
-#  define SCHED_YIELD() do { thr_yield(); } while (0)
-#endif
-
 #define MA_WARN_ABOUT_MALLOC()						\
 	do { MA_WARN_USER("this program appears to provide its own malloc(3)" \
 			  ", which may not be thread-safe\n");		\

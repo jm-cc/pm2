@@ -30,7 +30,7 @@ PADICO_MODULE_BUILTIN(NewMad_Core, NULL, NULL, NULL);
 piom_spinlock_t nm_tac_lock;
 piom_spinlock_t nm_status_lock;
 #  else
-piom_spinlock_t piom_big_lock = PIOM_SPIN_LOCK_INITIALIZER;
+piom_spinlock_t piom_big_lock;
 #    ifdef DEBUG
 volatile marcel_t piom_big_lock_holder = NULL;
 #    endif /* DEBUG */

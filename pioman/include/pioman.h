@@ -44,7 +44,6 @@ extern void pioman_exit(void);
 extern int piom_check_polling(unsigned polling_point);
 
 #include "piom_lock.h"
-#include "piom.h"
 #include "piom_log.h"
 #include "piom_debug.h"
 

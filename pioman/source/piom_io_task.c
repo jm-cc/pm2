@@ -24,7 +24,6 @@
 #include "marcel_timer.h"
 #endif	/* MARCEL */
 
-#include "piom.h"
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -121,7 +120,7 @@ piom_io_task_check_select(piom_tcp_task_ev_t ev,
 		break;
 		}
 	default:
-		PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
+	        abort();
 	}
 	return 0;
 }
@@ -163,7 +162,7 @@ piom_io_task_poll(void *arg)
 			break;
 		}
 	default:
-		PIOM_EXCEPTION_RAISE(PIOM_PROGRAM_ERROR);
+                abort();
 	}
 
 	timerclear(&tv);

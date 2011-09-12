@@ -30,6 +30,8 @@ int main(int argc, char * argv[]) {
   th_mami_t threads[2];
   th_mami_attr_t attr;
 
+  return MAMI_TEST_SKIPPED;
+
   mami_init(&memory_manager, argc, argv);
   th_mami_attr_init(&attr);
 

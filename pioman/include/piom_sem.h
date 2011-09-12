@@ -23,20 +23,18 @@
 #include "tbx_fast_list.h"
 
 #ifdef PIOM_THREAD_ENABLED
-//#include "marcel.h"
-//#include "marcel_sem.h"
 
-#ifdef MARCEL
+#ifdef PIOMAN_LOCK_MARCEL
 typedef marcel_sem_t piom_sem_t;
-#else
-#include <semaphore.h>
+#elif defined(PIOMAN_LOCK_PTHREAD)
 typedef sem_t piom_sem_t;
-#endif
+#else
+#  error "PIOMan: no lock scheme defined."
+#endif 
 
-typedef struct {
-#ifdef MARCEL
-    marcel_cond_t cond;
-#endif
+typedef struct
+{
+    uint8_t value;
     piom_spinlock_t lock;
     piom_sem_t sem;
     /* additional semaphore used to signal this condition
@@ -45,11 +43,10 @@ typedef struct {
 #ifdef PIOM_ENABLE_SHM
     p_piom_sh_sem_t alt_sem;
 #endif
-    uint8_t value;
     int cpt;
 } piom_cond_t;
 
-#else
+#else /* PIOM_THREAD_ENABLED */
 
 typedef int piom_sem_t;
 typedef uint8_t piom_cond_t;

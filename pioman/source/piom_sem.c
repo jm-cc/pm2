@@ -130,9 +130,6 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
 	cond->cpt=0;
 	piom_sem_init(&cond->sem, 0);
 	piom_spin_lock_init(&cond->lock);
-#ifdef MARCEL
-	marcel_cond_init(&cond->cond,NULL);
-#endif
 }
 
 __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){

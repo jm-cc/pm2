@@ -14,19 +14,14 @@
  * General Public License for more details.
  */
 #include "pioman.h"
-
-#ifdef MARCEL
-#include "marcel.h"
-#endif	/* MARCEL */
-
 #include <errno.h>
 
 
 void pioman_init(int*argc, char**argv)
 {
-#ifdef MARCEL
+#ifdef PIOMAN_MARCEL
     marcel_init(argc, argv);
-#endif /* MARCEL */
+#endif /* PIOMAN_MARCEL */
     piom_init_ltasks();
     /*    piom_io_task_init(); */
 }

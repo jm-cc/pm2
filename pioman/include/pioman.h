@@ -17,12 +17,22 @@
 #ifndef PIOMAN_H
 #define PIOMAN_H
 
-#ifdef MARCEL
-#include "marcel.h"
-#endif
+/* XXX test */
+#define PIOMAN_PTHREAD
 
-#if(defined(MARCEL) || defined(PIOM_PTHREAD_LOCK))
+
+#if defined(PIOMAN_PTHREAD)
+#include <pthread.h>
+#include <semaphore.h>
 #define PIOM_THREAD_ENABLED
+#define PIOMAN_LOCK_PTHREAD
+#elif defined(MARCEL)
+#include <marcel.h>
+#define PIOM_THREAD_ENABLED
+#define PIOMAN_LOCK_MARCEL
+#else
+#undef PIOM_THREAD_ENABLED
+#define PIOMAN_LOCK_NONE
 #endif
 
 extern void pioman_init(int*argc, char**argv);

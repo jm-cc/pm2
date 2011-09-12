@@ -60,15 +60,6 @@ static struct piom_ltask_queue global_queue;
 #endif
 
 
-#ifdef MARCEL
-#define piom_ltask_current_vp() marcel_current_vp()
-#define piom_ltask_nvp()        marcel_nbvps()
-#else
-#define piom_ltask_current_vp() (0)
-#define piom_ltask_nvp()        (1)
-#endif
-
-
 
 /* Get the queue that matches a vpset:
  * - a local queue if only one vp is set in the vpset

@@ -17,23 +17,19 @@
 #ifndef PIOM_LTASK_H
 #define PIOM_LTASK_H
 
-#include "piom_sem.h"
 #include "pioman.h"
-#ifdef MARCEL
-#include "marcel.h"
-#endif
 
-#ifdef MARCEL
+#ifdef PIOMAN_MARCEL
 #define piom_vpset_t marcel_vpset_t
 #define piom_vpset_full MARCEL_VPSET_FULL
 #define PIOM_VPSET_VP(vp) MARCEL_VPSET_VP(vp)
 #define piom_vpset_set(vpset, vp) marcel_vpset_set(vpset, vp)
-#else
+#else /* PIOMAN_MARCEL */
 #define piom_vpset_t unsigned 
 #define piom_vpset_full (unsigned) 1
 #define PIOM_VPSET_VP(vp) piom_vpset_full
 #define piom_vpset_set(vpset, vp) (vpset = vp)
-#endif /* MARCEL */
+#endif /* PIOMAN_MARCEL */
 
 
 typedef unsigned piom_ltask_option_t;

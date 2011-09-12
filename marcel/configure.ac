@@ -224,9 +224,9 @@ OPTION_APPLY(gcc_instrument, [ ADD_TO(PKG_AM_CPPFLAGS, -DPM2_INSTRUMENT) ADD_TO(
 OPTION_APPLY(debug, [ ADD_TO(PKG_AM_CPPFLAGS, -DMARCEL_DEBUG -DMARCEL_GDB) 
 		      ADD_TO(GLOBAL_AM_CFLAGS, -gdwarf-2 -g3 -fno-omit-frame-pointer) ])
 OPTION_APPLY(gprof, [ ADD_TO(GLOBAL_AM_CFLAGS, -fprofile-arcs -pg -fno-omit-frame-pointer) 
-		      ADD_TO(GLOBAL_AMD_LDFLAGS, [-Wl,-pg -Wl,-fprofile-arcs]) ])
+		      ADD_TO(GLOBAL_AM_LDFLAGS, [-pg -fprofile-arcs]) ])
 OPTION_APPLY(coverage, [ ADD_TO(GLOBAL_AM_CFLAGS, -O0 --coverage) ADD_TO(GLOBAL_AM_LDFLAGS, --coverage) ])
-OPTION_APPLY(inline, [ ADD_TO(PKG_AM_CPPFLAGS, -DPM2_NOINLINE -DTBX_DISABLE_VISIBILITY) 
+OPTION_APPLY(inline, [ ADD_TO(PKG_AM_CPPFLAGS, -DPM2_NOINLINE -DTBX_DISABLE_VISIBILITY)
 		       ADD_TO(GLOBAL_AM_CFLAGS, -fno-inline) ])
 OPTION_APPLY(stacks_guard, ADD_TO(PKG_AM_CPPFLAGS, -DPM2STACKSGUARD))
 OPTION_APPLY(trace, ADD_TO(PKG_AM_CPPFLAGS, -DMARCEL_TRACE))
@@ -240,7 +240,7 @@ OPTION_APPLY(allocator_check, ADD_TO(PKG_AM_CPPFLAGS, -DMARCEL_ALLOCATOR_NOCHECK
 ### Optimisation
 OPTION_APPLY(optimize, [ ADD_TO(PKG_AM_CPPFLAGS, -DPM2_OPT -DNDEBUG) 
 		       	 ADD_TO(GLOBAL_AM_CPPFLAGS, -DNDEBUG)
-		       	 ADD_TO(GLOBAL_AM_CFLAGS, -ffast-math -fomit-frame-pointer -O3)
+		       	 ADD_TO(GLOBAL_AM_CFLAGS, -ffast-math -O3)
 			 ADD_TO(GLOBAL_AM_LDFLAGS, [-Wl,-O2]) ])
 OPTION_APPLY(strip, [ ADD_TO(GLOBAL_AM_LDFLAGS, [-Wl,-s]) ])
 

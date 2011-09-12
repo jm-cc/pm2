@@ -45,7 +45,6 @@ extern int piom_check_polling(unsigned polling_point);
 
 #include "piom_lock.h"
 #include "piom_log.h"
-#include "piom_debug.h"
 
 #include "piom_sem.h"
 #include "piom_ltask.h"

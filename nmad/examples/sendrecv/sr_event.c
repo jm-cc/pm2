@@ -27,7 +27,9 @@ static const char small_msg[] = "01234567890123456789012345678901234567890123456
 #define long_len (1024*128)
 static const char long_msg[long_len] = { '.' };
 static char *buf = NULL;
-static nm_sr_request_t unexpected_request;
+#define MAX_UNEXPECTED 10
+static int n_unexpected = 0;
+static nm_sr_request_t unexpected_requests[MAX_UNEXPECTED];
 
 static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
 {
@@ -56,10 +58,14 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       if(tag == 1)
 	{
 	  printf("   receiving tag = %d in event handler...\n", tag);
-	  nm_sr_irecv(p_core, from, tag, buf, len, &unexpected_request);
+	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
+	  nm_sr_irecv(p_core, from, tag, buf, len, request);
+	}
+      else
+	{
+	  printf("   not receiving in handler.\n");
 	}
     }
-  printf("\n");
 }
 
 int main(int argc, char **argv)
@@ -97,6 +103,12 @@ int main(int argc, char **argv)
       nm_sr_irecv_with_ref(p_core, NM_ANY_GATE, 0, buf, short_len, &request0, (void*)0xDEADBEEF);
       nm_sr_rwait(p_core, &request0);
 
+      /* flush pending requests */
+      int i;
+      for(i = 0; i < n_unexpected; i++)
+	{
+	  nm_sr_rwait(p_core, &unexpected_requests[i]);
+	}
     }
   else
     {
@@ -133,7 +145,7 @@ int main(int argc, char **argv)
       nm_sr_isend(p_core, gate_id, 2, short_msg, short_len, &request);
       nm_sr_swait(p_core, &request);
     }
-  
+
   free(buf);
   nmad_exit();
   exit(0);

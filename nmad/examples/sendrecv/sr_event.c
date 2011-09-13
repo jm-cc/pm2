@@ -27,6 +27,7 @@ static const char small_msg[] = "01234567890123456789012345678901234567890123456
 #define long_len (1024*128)
 static const char long_msg[long_len] = { '.' };
 static char *buf = NULL;
+static nm_sr_request_t unexpected_request;
 
 static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
 {
@@ -55,10 +56,7 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       if(tag == 1)
 	{
 	  printf("   receiving tag = %d in event handler...\n", tag);
-	  nm_sr_request_t request;
-	  nm_sr_irecv(p_core, from, tag, buf, len, &request);
-	  nm_sr_rwait(p_core, &request);
-	  printf("   unexpected recv done %d bytes.\n", len);
+	  nm_sr_irecv(p_core, from, tag, buf, len, &unexpected_request);
 	}
     }
   printf("\n");

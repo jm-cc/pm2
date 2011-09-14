@@ -235,11 +235,17 @@ static void nm_ibverbs_addr_recv(void*_status,
 				 struct nm_ibverbs_cnx_addr*addr)
 {
   const struct nm_ibverbs*status = _status;
-  int rc = NM_SYS(recv)(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
-  if(rc != sizeof(struct nm_ibverbs_cnx_addr)) {
-    fprintf(stderr, "nmad ibverbs: cannot get address from peer.\n");
-    abort();
-  }
+  int rc = -1;
+ retry_recv:
+  rc = NM_SYS(recv)(status->sock, addr, sizeof(struct nm_ibverbs_cnx_addr), MSG_WAITALL);
+  int err = errno;
+  if(rc == -1 && err == EINTR)
+    goto retry_recv;
+  if(rc != sizeof(struct nm_ibverbs_cnx_addr)) 
+    {
+      fprintf(stderr, "nmad ibverbs: cannot get address from peer (%s).\n", strerror(err));
+      abort();
+    }
 }
 
 #ifdef PM2_NUIOA
@@ -721,12 +727,19 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
 	.sin_port   = peer_port,
 	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
       };
-      int rc = NM_SYS(connect)(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
-      if(rc) {
-	fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
-	err = -NM_EUNREACH;
-	goto out;
-      }
+      int rc = -1;
+    retry_connect:
+      rc = NM_SYS(connect)(fd, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      if(rc)
+	{
+	  int error = errno;
+	  if(error == EINTR)
+	    goto retry_connect;
+	  fprintf(stderr, "nmad ibverbs: cannot connect to %s:%d (%s)\n",
+		  inet_ntoa(inaddr.sin_addr), peer_port, strerror(error));
+	  err = -NM_EUNREACH;
+	  goto out;
+	}
     }
   
   err = nm_ibverbs_cnx_create(_status, p_crq);
@@ -758,8 +771,17 @@ static int nm_ibverbs_accept(void*_status, struct nm_cnx_rq *p_crq)
     {
       struct sockaddr_in addr;
       unsigned addr_len = sizeof addr;
-      int fd = NM_SYS(accept)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
-      assert(fd > -1);
+      int fd = -1;
+    retry_accept:
+      fd = NM_SYS(accept)(p_ibverbs_drv->server_sock, (struct sockaddr*)&addr, &addr_len);
+      int error = errno;
+      if(fd < 0)
+	{
+	  if(error == EINTR)
+	    goto retry_accept;
+	  fprintf(stderr, "nmad ibverbs: error while accepting connection (%s)\n", strerror(error));
+	  abort();
+	}
       status->sock = fd;
     }
   err = nm_ibverbs_cnx_create(_status, p_crq);

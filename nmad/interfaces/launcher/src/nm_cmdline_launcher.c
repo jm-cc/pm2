@@ -150,17 +150,26 @@ static void nm_launcher_addr_send(int sock, const char*url)
 static void nm_launcher_addr_recv(int sock, char**p_url)
 {
   int len = -1;
-  int rc = recv(sock, &len, sizeof(len), MSG_WAITALL);
+  int rc = -1;
+ retry_recv:
+  rc = recv(sock, &len, sizeof(len), MSG_WAITALL);
+  int err = errno;
+  if(rc == -1 && err == EINTR)
+    goto retry_recv;
   if(rc != sizeof(len))
     {
-      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      fprintf(stderr, "# launcher: cannot get address from peer (%s).\n", strerror(err));
       abort();
     }
   char*url = TBX_MALLOC(len);
+ retry_recv2:
   rc = recv(sock, url, len, MSG_WAITALL);
+  err = errno;
+  if(rc == -1 && err == EINTR)
+    goto retry_recv2;
   if(rc != len)
     {
-      fprintf(stderr, "# launcher: cannot get address from peer.\n");
+      fprintf(stderr, "# launcher: cannot get address from peer (%s).\n", strerror(err));
       abort();
     }
   *p_url = url;
@@ -252,7 +261,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	}
       if(rc) 
 	{
-	  fprintf(stderr, "# launcher: bind error (%s)\n", strerror(errno));
+	  fprintf(stderr, "# launcher: bind error (%s)\n", strerror(err));
 	  abort();
 	}
       rc = getsockname(server_sock, (struct sockaddr*)&addr, &addr_len);
@@ -284,8 +293,17 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	  abort();
 	} 
       fprintf(stderr, "# launcher: local url = '%s'\n", local_launcher_url);
-      int sock = accept(server_sock, (struct sockaddr*)&addr, &addr_len);
-      assert(sock > -1);
+      int sock = -1;
+    retry_accept:
+      sock = accept(server_sock, (struct sockaddr*)&addr, &addr_len);
+      err = errno;
+      if(sock < 0)
+	{
+	  if(err == EINTR)
+	    goto retry_accept;
+	  fprintf(stderr, "# launcher: accept() failed- err = %d (%s)\n", err, strerror(err));
+	  abort();
+	}
       close(server_sock);
       nm_launcher_addr_send(sock, local_session_url);
       nm_launcher_addr_recv(sock, &remote_session_url);
@@ -305,9 +323,14 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	.sin_port   = peer_port,
 	.sin_addr   = (struct in_addr){ .s_addr = ntohl(peer_addr) }
       };
-      int rc = connect(sock, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      int rc = -1;
+    retry_connect:
+      rc = connect(sock, (struct sockaddr*)&inaddr, sizeof(struct sockaddr_in));
+      int err = errno;
       if(rc)
 	{
+	  if(err == EINTR)
+	    goto retry_connect;
 	  fprintf(stderr, "# launcher: cannot connect to %s:%d\n", inet_ntoa(inaddr.sin_addr), peer_port);
 	  abort();
 	}

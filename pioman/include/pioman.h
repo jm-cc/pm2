@@ -18,7 +18,7 @@
 #define PIOMAN_H
 
 /* XXX test */
-#define PIOMAN_PTHREAD
+//#define PIOMAN_PTHREAD
 
 
 #if defined(PIOMAN_PTHREAD)

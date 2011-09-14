@@ -234,12 +234,12 @@ static __inline__ void init_marcel_thread(marcel_t t,
 #endif
 
 #ifdef MARCEL_DEVIATION_ENABLED
-#ifdef MARCEL_POSIX
+#  ifdef MARCEL_POSIX
 	ma_spin_lock_init(&t->cancellock);
 	t->cancelstate = MARCEL_CANCEL_ENABLE;
 	t->canceltype = MARCEL_CANCEL_DEFERRED;
 	t->canceled = MARCEL_NOT_CANCELED;
-#endif
+#  endif
 #endif /* MARCEL_DEVIATION_ENABLED */
 
 	//t->tls
@@ -324,7 +324,7 @@ marcel_create_internal(marcel_t * __restrict pid,
 	__pthread_multiple_threads = 1;
 #endif
 
-	if (!attr)
+	if (! attr)
 		attr = &marcel_attr_default;
 
 	/* TODO: we could even go further by having the programmer promise that
@@ -483,11 +483,12 @@ DEF_PMARCEL(int,create,(pmarcel_t * __restrict pid, __const pmarcel_attr_t * __r
 			marcel_func_t func, any_t __restrict arg),(pid,attr,func,arg),
 {
 	int status;
-	pmarcel_attr_t new_attr;
 
 	MARCEL_LOG_IN();
 
 	if (attr) {
+		pmarcel_attr_t new_attr;
+		
 		new_attr = *attr;
 		if (new_attr.__flags & MA_ATTR_FLAG_INHERITSCHED) {
 			/* set marcel priority and marcel policy */
@@ -513,10 +514,12 @@ DEF_PMARCEL(int,create,(pmarcel_t * __restrict pid, __const pmarcel_attr_t * __r
 			marcel_attr_setvpset(&new_attr, MARCEL_VPSET_VP(lwp));
 		}
 #endif
+		status = marcel_create_internal((marcel_t *)pid, &new_attr, 
+						func, arg, 0, (unsigned long)&arg);
 	} else
-		new_attr = marcel_attr_default;
-
-	status = marcel_create_internal((marcel_t *)pid, &new_attr, func, arg, 0, (unsigned long)&arg);
+		status = marcel_create_internal((marcel_t *)pid, NULL, 
+						func, arg, 0, (unsigned long)&arg);
+	
 	MARCEL_LOG_RETURN(status);
 })
 
@@ -524,20 +527,23 @@ DEF_PMARCEL(int,create,(pmarcel_t * __restrict pid, __const pmarcel_attr_t * __r
 int lpt_create(pthread_t * thread, const pthread_attr_t * attr,
 	       void *(*start_routine) (void *), void *arg)
 {
-	pmarcel_attr_t new_attr;
+	int status;
 
 	MARCEL_LOG_IN();
 
-	new_attr = marcel_attr_default;
 	if (attr) {
+		pmarcel_attr_t new_attr = marcel_attr_default;
+
 		/* The ATTR attribute is not really of type `pthread_attr_t *'.  It has
 		   the old size and access to the new members might crash the program.
 		   We convert the struct now.  */
 		memcpy(&new_attr, attr,
 		       tbx_offset_of(marcel_attr_t, __stacksize) + sizeof(new_attr.__stacksize));
-	}
+		status = pmarcel_create((pmarcel_t *) thread, &new_attr, start_routine, arg);
+	} else
+		status = pmarcel_create((pmarcel_t *) thread, NULL, start_routine, arg);
 
-	MARCEL_LOG_RETURN(pmarcel_create((pmarcel_t *) thread, &new_attr, start_routine, arg));
+	MARCEL_LOG_RETURN(status);
 }
 versioned_symbol(libpthread, lpt_create, pthread_create, GLIBC_2_1);
 #endif
@@ -1358,7 +1364,7 @@ static void main_thread_init(void)
 #endif /* MARCEL_MIGRATION_ENABLED */
 	marcel_attr_setschedpolicy(&attr, MARCEL_SCHED_SHARED);
 #ifdef MA__BUBBLES
-	PROF_EVENT1_ALWAYS(bubble_sched_new,&marcel_root_bubble);
+	PROF_EVENT1_ALWAYS(bubble_sched_new, &marcel_root_bubble);
 	marcel_attr_setnaturalbubble(&attr, &marcel_root_bubble);
 #else
 	marcel_attr_setschedrq(&attr, &ma_main_runqueue);

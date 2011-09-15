@@ -101,7 +101,9 @@ int main()
 		return EXIT_FAILURE;
 
 	printf("tbxstring: reverse\n");
-	if (! tbx_streq(tbx_string_to_cstring_and_free(tbx_string_init_to_cstring("abcd")), "dcba"))
+	tbxstring = tbx_string_init_to_cstring("abcde");
+	tbx_string_reverse(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "edcba"))
 		return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;

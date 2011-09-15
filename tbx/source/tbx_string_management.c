@@ -499,9 +499,10 @@ p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
 
 	while (offset < src_length) {
 		switch (src_data[offset]) {
-		case '\\':
-		case '"':
-			tbx_string_append_char(dst_string, '\\');
+		case '"': {
+			if (offset > 0 && src_data[offset - 1] != '\\')
+				tbx_string_append_char(dst_string, '\\');
+		}
 		default:
 			tbx_string_append_char(dst_string, src_data[offset++]);
 			break;

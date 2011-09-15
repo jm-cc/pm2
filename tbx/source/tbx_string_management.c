@@ -381,8 +381,8 @@ p_tbx_string_t tbx_string_init_to_uint(unsigned int data)
 
 void tbx_string_reverse(p_tbx_string_t string)
 {
-	size_t offset_left = 0;
-	size_t offset_right = string->length - 1;
+	ssize_t offset_left = 0;
+	ssize_t offset_right = string->length - 1;
 
 	PM2_LOG_IN();
 	while (offset_left < offset_right) {

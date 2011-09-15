@@ -590,7 +590,7 @@ p_tbx_string_t tbx_string_double_quote_and_free(p_tbx_string_t src_string);
 
 p_tbx_string_t tbx_string_single_quote(const p_tbx_string_t src_string);
 
-p_tbx_string_t tbx_string_single_quote_free(p_tbx_string_t src_string);
+p_tbx_string_t tbx_string_single_quote_and_free(p_tbx_string_t src_string);
 
 p_tbx_slist_t
 tbx_string_split(const p_tbx_string_t src_string, const char *IFS);

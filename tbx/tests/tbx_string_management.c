@@ -93,6 +93,16 @@ int main()
 	if (strcmp("1", tbx_string_to_cstring(tbxstring)))
 		return EXIT_FAILURE;
 
+	tbx_string_free(tbxstring);
+
+	printf("tbxstring: to_char VS to_cstring\n");
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbx_string_init_to_cstring("a")),
+			tbx_string_to_cstring_and_free(tbx_string_init_to_char('a'))))
+		return EXIT_FAILURE;
+
+	printf("tbxstring: reverse\n");
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbx_string_init_to_cstring("abcd")), "dcba"))
+		return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
 }

@@ -486,7 +486,7 @@ tbx_string_init_to_string_and_free(p_tbx_string_t src_string)
 	return dst_string;
 }
 
-p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
+static p_tbx_string_t tbx_string_quote(p_tbx_string_t src_string, char quote)
 {
 	char *src_data = src_string->data;
 	size_t src_length = src_string->length;
@@ -494,24 +494,32 @@ p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
 	size_t offset = 0;
 
 	PM2_LOG_IN();
+
 	// Leading double quote
-	dst_string = tbx_string_init_to_char('"');
+	dst_string = tbx_string_init_to_char(quote);
 
 	while (offset < src_length) {
-		switch (src_data[offset]) {
-		case '"': {
+		if (src_data[offset] == quote) {
 			if (offset > 0 && src_data[offset - 1] != '\\')
 				tbx_string_append_char(dst_string, '\\');
 		}
-		default:
-			tbx_string_append_char(dst_string, src_data[offset++]);
-			break;
-		}
+
+		tbx_string_append_char(dst_string, src_data[offset++]);
 	}
 
-
 	// Trailing double quote
-	tbx_string_append_char(dst_string, '"');
+	tbx_string_append_char(dst_string, quote);
+	PM2_LOG_OUT();
+
+	return dst_string;
+}
+
+p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
+{
+	p_tbx_string_t dst_string = NULL;
+
+	PM2_LOG_IN();
+	dst_string = tbx_string_quote(src_string, '"');
 	PM2_LOG_OUT();
 
 	return dst_string;
@@ -534,9 +542,7 @@ p_tbx_string_t tbx_string_single_quote(p_tbx_string_t src_string)
 	p_tbx_string_t dst_string = NULL;
 
 	PM2_LOG_IN();
-	dst_string = tbx_string_init_to_char('\'');
-	tbx_string_append_string(dst_string, src_string);
-	tbx_string_append_char(dst_string, '\'');
+	dst_string = tbx_string_quote(src_string, '\'');
 	PM2_LOG_OUT();
 
 	return dst_string;

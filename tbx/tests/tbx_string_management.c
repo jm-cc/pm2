@@ -119,6 +119,12 @@ int main()
 	tbx_string_append_string_and_free(tbxstring, tbxstring2);
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "aa"))
 		return EXIT_FAILURE;
+
+	tbxstring  = tbx_string_init();
+	tbxstring2 = tbx_string_init();
+	tbx_string_append_string_and_free(tbxstring, tbxstring2);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), ""))
+		return EXIT_FAILURE;
 	
 	
 	printf("tbxstring: double quotes\n");
@@ -131,6 +137,19 @@ int main()
 	tbxstring2 = tbx_string_double_quote_and_free(tbxstring);
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "\"a\\\"b\"")) // print "a\"b"
 	  return EXIT_FAILURE;
+
+
+	printf("tbxstring: simple quotes\n");
+	tbxstring  = tbx_string_init();
+	tbxstring2 = tbx_string_single_quote_free(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "''")) // print: ''
+		return EXIT_FAILURE;
+
+	tbxstring  = tbx_string_init_to_cstring("a'b");
+	tbxstring2 = tbx_string_single_quote_free(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "'a\\\'b'")) // print "a\'b"
+		return EXIT_FAILURE;
+	
 
 	return EXIT_SUCCESS;
 }

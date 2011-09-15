@@ -244,17 +244,13 @@ void tbx_string_append_cstring(p_tbx_string_t string, const char *cstring)
 			if (string->length + length >
 			    string->allocated_length) {
 				string->allocated_length =
-				    tbx_max(2 *
-					    (string->allocated_length + 1),
-					    string->allocated_length +
-					    length);
-				string->data =
-				    TBX_REALLOC(string->data,
-						string->allocated_length);
+				    tbx_max(2 * (string->allocated_length + 1),
+					    string->allocated_length + length);
+				string->data = TBX_REALLOC(string->data,
+							   string->allocated_length);
 			}
 
-			memcpy(string->data + string->length, cstring,
-			       length);
+			memcpy(string->data + string->length, cstring, length);
 			string->length += length;
 		}
 	} else {
@@ -278,11 +274,9 @@ void tbx_string_append_char(p_tbx_string_t string, int data)
 	if (string->allocated_length) {
 		string->length++;
 		if (string->length > string->allocated_length) {
-			string->allocated_length =
-			    2 * (string->allocated_length + 1);
-			string->data =
-			    TBX_REALLOC(string->data,
-					string->allocated_length);
+			string->allocated_length = 2 * (string->allocated_length + 1);
+			string->data = TBX_REALLOC(string->data,
+						   string->allocated_length);
 		}
 
 		string->data[string->length - 1] = (char) data;
@@ -403,8 +397,7 @@ tbx_string_set_to_string(p_tbx_string_t dst_string,
 	tbx_string_reset(dst_string);
 	if (src_string->length) {
 		dst_string->data = TBX_MALLOC(src_string->length);
-		memcpy(dst_string->data, src_string->data,
-		       src_string->length);
+		memcpy(dst_string->data, src_string->data, src_string->length);
 		dst_string->length = src_string->length;
 		dst_string->allocated_length = src_string->length;
 	}
@@ -431,19 +424,14 @@ tbx_string_append_string(p_tbx_string_t dst_string,
 			if (dst_string->length + src_string->length >
 			    dst_string->allocated_length) {
 				dst_string->allocated_length =
-				    tbx_max(2 *
-					    (dst_string->allocated_length +
-					     1),
-					    dst_string->allocated_length +
-					    src_string->length);
-				dst_string->data =
-				    TBX_REALLOC(dst_string->data,
-						dst_string->
-						allocated_length);
+				    tbx_max(2 * (dst_string->allocated_length + 1),
+					    dst_string->allocated_length + src_string->length);
+				dst_string->data = TBX_REALLOC(dst_string->data,
+							       dst_string->allocated_length);
 			}
 
-			memcpy(dst_string->data + dst_string->length,
-			       src_string->data, src_string->length);
+			memcpy(dst_string->data + dst_string->length, src_string->data, 
+			       src_string->length);
 			dst_string->length += src_string->length;
 		} else {
 			tbx_string_set_to_string(dst_string, src_string);
@@ -513,15 +501,10 @@ p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
 		switch (src_data[offset]) {
 		case '\\':
 		case '"':
-			{
-				tbx_string_append_char(dst_string, '\\');
-			}
+			tbx_string_append_char(dst_string, '\\');
 			break;
 		default:
-			{
-				tbx_string_append_char(dst_string,
-						       src_data[offset++]);
-			}
+			tbx_string_append_char(dst_string, src_data[offset++]);
 			break;
 		}
 	}
@@ -600,8 +583,7 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 							offset++;
 							copy_mode = tbx_false;
 
-							tbx_slist_append(slist,
-									 dst_string);
+							tbx_slist_append(slist, dst_string);
 							dst_string = NULL;
 
 							goto next_1;
@@ -640,8 +622,7 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 					break;
 				}
 
-				tbx_string_append_char(dst_string,
-						       data[offset++]);
+				tbx_string_append_char(dst_string, data[offset++]);
 			} else {
 				const char *ptr = IFS;
 
@@ -705,8 +686,7 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
 			name->allocated_length = name->length;
 			name->data = TBX_MALLOC(name->allocated_length);
 
-			memcpy(name->data, path_name->data + idx,
-			       name->length);
+			memcpy(name->data, path_name->data + idx, name->length);
 
 			path_name->length = (idx > 0) ? idx - 1 : idx;
 
@@ -734,14 +714,10 @@ long tbx_cstr_to_long(const char *s)
 		TBX_FAILUREF("failed to convert string '%s' to <long>", s);
 
 	if (val == LONG_MIN && errno == ERANGE)
-		TBX_FAILUREF
-		    ("underflow error while converting string '%s' to <long>",
-		     s);
+		TBX_FAILUREF("underflow error while converting string '%s' to <long>", s);
 
 	if (val == LONG_MAX && errno == ERANGE)
-		TBX_FAILUREF
-		    ("overflow error while converting string '%s' to <long>",
-		     s);
+		TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
 
 	PM2_LOG_OUT();
 
@@ -760,9 +736,7 @@ unsigned long tbx_cstr_to_unsigned_long(const char *s)
 		TBX_FAILUREF("failed to convert string '%s' to <long>", s);
 
 	if (val == LONG_MAX && errno == ERANGE)
-		TBX_FAILUREF
-		    ("overflow error while converting string '%s' to <long>",
-		     s);
+		TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
 
 	PM2_LOG_OUT();
 

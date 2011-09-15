@@ -502,7 +502,6 @@ p_tbx_string_t tbx_string_double_quote(p_tbx_string_t src_string)
 		case '\\':
 		case '"':
 			tbx_string_append_char(dst_string, '\\');
-			break;
 		default:
 			tbx_string_append_char(dst_string, src_data[offset++]);
 			break;

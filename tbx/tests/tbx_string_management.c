@@ -34,15 +34,15 @@ static int check_strdup_eq(char *src)
 
 int main()
 {
-	p_tbx_string_t tbxstring;
+	p_tbx_string_t tbxstring, tbxstring2;
 	char *cstring;
 
-	printf("strdup/streq\n");	
+	printf("tbxstring: strdup/streq\n");	
 	if (! check_strdup_eq("") || ! check_strdup_eq("abcd"))
 		return EXIT_FAILURE;
 	
 
-	printf("0-length tbxstring\n");
+	printf("tbxstring: empty\n");
 	tbxstring = tbx_string_init();
 	if (0 != tbx_string_length(tbxstring))
 		return EXIT_FAILURE;
@@ -78,24 +78,24 @@ int main()
 	tbx_string_append_cstring(tbxstring, "bcd");
 	cstring = tbx_string_to_cstring(tbxstring);
 	tbx_string_set_to_cstring(tbxstring, "abcd");
-	if (strcmp(cstring, tbx_string_to_cstring(tbxstring)))
+	if (strcmp(cstring, tbx_string_to_cstring_and_free(tbxstring)))
 		return EXIT_FAILURE;
 
 
 	printf("tbxstring: -1\n");
-	tbx_string_set_to_int(tbxstring, -1);
-	if (strcmp("-1", tbx_string_to_cstring(tbxstring)))
+	tbxstring = tbx_string_init_to_int(-1);
+	if (strcmp("-1", tbx_string_to_cstring_and_free(tbxstring)))
 		return EXIT_FAILURE;
 
 
 	printf("tbxstring: 1\n");
-	tbx_string_set_to_uint(tbxstring, 1);
+	tbxstring = tbx_string_init_to_uint(1);
 	if (strcmp("1", tbx_string_to_cstring(tbxstring)))
 		return EXIT_FAILURE;
 
-	tbx_string_free(tbxstring);
 
 	printf("tbxstring: to_char VS to_cstring\n");
+	tbx_string_free(tbxstring);
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbx_string_init_to_cstring("a")),
 			tbx_string_to_cstring_and_free(tbx_string_init_to_char('a'))))
 		return EXIT_FAILURE;
@@ -105,6 +105,32 @@ int main()
 	tbx_string_reverse(tbxstring);
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "edcba"))
 		return EXIT_FAILURE;
+
+	tbxstring = tbx_string_init_to_cstring("abcd");
+	tbx_string_reverse(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "dcba"))
+		return EXIT_FAILURE;
+
+
+	printf("tbxstring: init_to_string/append_string\n");
+	tbxstring2 = tbx_string_init_to_cstring("a");
+	tbxstring  = tbx_string_init_to_string_and_free(tbxstring2);
+	tbxstring2 = tbx_string_dup(tbxstring);
+	tbx_string_append_string_and_free(tbxstring, tbxstring2);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "aa"))
+		return EXIT_FAILURE;
+	
+	
+	printf("tbxstring: double quotes\n");
+	tbxstring  = tbx_string_init();
+	tbxstring2 = tbx_string_double_quote_and_free(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "\"\"")) // print: ""
+		return EXIT_FAILURE;
+
+	tbxstring  = tbx_string_init_to_cstring("a\"b");
+	tbxstring2 = tbx_string_double_quote_and_free(tbxstring);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "\"a\\\"b\"")) // print "a\"b"
+	  return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
 }

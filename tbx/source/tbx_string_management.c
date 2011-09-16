@@ -660,39 +660,3 @@ tbx_string_split_and_free(p_tbx_string_t src_string, const char *IFS)
 
 	return slist;
 }
-
-p_tbx_string_t
-tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
-{
-	p_tbx_string_t name = NULL;
-	size_t idx = 0;
-
-	PM2_LOG_IN();
-	name = tbx_string_init();
-	idx = path_name->length;
-
-	if (idx) {
-		while ((idx > 0) && (path_name->data[idx - 1] != '\\')) {
-			idx--;
-		}
-
-		name->length = path_name->length - idx;
-		if (name->length) {
-			name->allocated_length = name->length;
-			name->data = TBX_MALLOC(name->allocated_length);
-
-			memcpy(name->data, path_name->data + idx, name->length);
-
-			path_name->length = (idx > 0) ? idx - 1 : idx;
-
-			if (!path_name->length) {
-				TBX_FREE(path_name->data);
-				path_name->data = NULL;
-				path_name->allocated_length = 0;
-			}
-		}
-	}
-	PM2_LOG_OUT();
-
-	return name;
-}

@@ -595,9 +595,6 @@ tbx_string_split(const p_tbx_string_t src_string, const char *IFS);
 p_tbx_slist_t
 tbx_string_split_and_free(p_tbx_string_t src_string, const char *IFS);
 
-p_tbx_string_t
-tbx_string_extract_name_from_pathname(p_tbx_string_t path_name);
-
 /* @} */
 
 /** \addtogroup darray_interface

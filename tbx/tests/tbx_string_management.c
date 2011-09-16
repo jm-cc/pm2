@@ -115,7 +115,7 @@ int main()
 	printf("tbxstring: init_to_string/append_string\n");
 	tbxstring2 = tbx_string_init_to_cstring("a");
 	tbxstring  = tbx_string_init_to_string_and_free(tbxstring2);
-	tbxstring2 = tbx_string_dup(tbxstring);
+	tbxstring2 = tbx_string_init_to_string(tbxstring);
 	tbx_string_append_string_and_free(tbxstring, tbxstring2);
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "aa"))
 		return EXIT_FAILURE;

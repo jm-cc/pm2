@@ -462,25 +462,14 @@ p_tbx_string_t tbx_string_init_to_string(p_tbx_string_t src_string)
 	return dst_string;
 }
 
-p_tbx_string_t tbx_string_dup(p_tbx_string_t src_string)
-{
-	p_tbx_string_t dst_string = NULL;
-
-	PM2_LOG_IN();
-	dst_string = tbx_string_init_to_string(src_string);
-	PM2_LOG_OUT();
-
-	return dst_string;
-}
-
 p_tbx_string_t
 tbx_string_init_to_string_and_free(p_tbx_string_t src_string)
 {
 	p_tbx_string_t dst_string = NULL;
 
 	PM2_LOG_IN();
-	dst_string = tbx_string_init_to_string(src_string);
-	tbx_string_free(src_string);
+	dst_string = tbx_string_init();
+	tbx_set_to_string_and_free(dst_string, src_string);
 	PM2_LOG_OUT();
 
 	return dst_string;
@@ -706,45 +695,4 @@ tbx_string_extract_name_from_pathname(p_tbx_string_t path_name)
 	PM2_LOG_OUT();
 
 	return name;
-}
-
-long tbx_cstr_to_long(const char *s)
-{
-	long val = 0;
-	char *p = NULL;
-
-	PM2_LOG_IN();
-	val = strtol(s, &p, 0);
-
-	if (p == s)
-		TBX_FAILUREF("failed to convert string '%s' to <long>", s);
-
-	if (val == LONG_MIN && errno == ERANGE)
-		TBX_FAILUREF("underflow error while converting string '%s' to <long>", s);
-
-	if (val == LONG_MAX && errno == ERANGE)
-		TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
-
-	PM2_LOG_OUT();
-
-	return val;
-}
-
-unsigned long tbx_cstr_to_unsigned_long(const char *s)
-{
-	unsigned long val = 0;
-	char *p = NULL;
-
-	PM2_LOG_IN();
-	val = strtoul(s, &p, 0);
-
-	if (p == s)
-		TBX_FAILUREF("failed to convert string '%s' to <long>", s);
-
-	if (val == LONG_MAX && errno == ERANGE)
-		TBX_FAILUREF("overflow error while converting string '%s' to <long>", s);
-
-	PM2_LOG_OUT();
-
-	return val;
 }

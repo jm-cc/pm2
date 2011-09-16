@@ -579,10 +579,7 @@ tbx_string_append_string_and_free(p_tbx_string_t dst_string,
 
 p_tbx_string_t tbx_string_init_to_string(const p_tbx_string_t src_string);
 
-p_tbx_string_t tbx_string_dup(p_tbx_string_t src_string);
-
-p_tbx_string_t
-tbx_string_init_to_string_and_free(p_tbx_string_t src_string);
+p_tbx_string_t tbx_string_init_to_string_and_free(p_tbx_string_t src_string);
 
 p_tbx_string_t tbx_string_double_quote(const p_tbx_string_t src_string);
 
@@ -600,10 +597,6 @@ tbx_string_split_and_free(p_tbx_string_t src_string, const char *IFS);
 
 p_tbx_string_t
 tbx_string_extract_name_from_pathname(p_tbx_string_t path_name);
-
-long tbx_cstr_to_long(const char *s);
-
-unsigned long tbx_cstr_to_unsigned_long(const char *s);
 
 /* @} */
 

@@ -469,7 +469,7 @@ tbx_string_init_to_string_and_free(p_tbx_string_t src_string)
 
 	PM2_LOG_IN();
 	dst_string = tbx_string_init();
-	tbx_set_to_string_and_free(dst_string, src_string);
+	tbx_string_set_to_string_and_free(dst_string, src_string);
 	PM2_LOG_OUT();
 
 	return dst_string;

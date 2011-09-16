@@ -32,10 +32,13 @@ static int check_strdup_eq(char *src)
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
 	p_tbx_string_t tbxstring, tbxstring2;
+	p_tbx_slist_t  tbxsplit;
 	char *cstring;
+
+	tbx_init(&argc, &argv);
 
 	printf("tbxstring: strdup/streq\n");	
 	if (! check_strdup_eq("") || ! check_strdup_eq("abcd"))
@@ -150,6 +153,36 @@ int main()
 	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring2), "'a\\\'b'")) // print "a\'b"
 		return EXIT_FAILURE;
 	
+	
+	printf("tbxstring: split\n");
+	tbxstring = tbx_string_init_to_cstring("a,b\\,'c");
+	tbxsplit  = tbx_string_split_and_free(tbxstring, ",");
+	tbxstring = (typeof(tbxstring))tbx_slist_remove_from_head(tbxsplit);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "a"))
+		return EXIT_FAILURE;
+	tbxstring = (typeof(tbxstring))tbx_slist_remove_from_head(tbxsplit);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "b\\"))
+		return EXIT_FAILURE;
+	tbxstring = (typeof(tbxstring))tbx_slist_remove_from_head(tbxsplit);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "'c"))
+		return EXIT_FAILURE;
+
+	tbxstring = tbx_string_init_to_cstring("a,'b,c'");
+	tbxsplit  = tbx_string_split_and_free(tbxstring, ",");
+	tbxstring = (typeof(tbxstring))tbx_slist_remove_from_head(tbxsplit);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "a"))
+		return EXIT_FAILURE;
+	tbxstring = (typeof(tbxstring))tbx_slist_remove_from_head(tbxsplit);
+	if (! tbx_streq(tbx_string_to_cstring_and_free(tbxstring), "'b,c'"))
+		return EXIT_FAILURE;
+
+	tbxstring = tbx_string_init_to_cstring("");
+	tbxsplit  = tbx_string_split_and_free(tbxstring, ",");
+	if (! tbx_slist_is_nil(tbxsplit))
+		return EXIT_FAILURE;
+
+		
+	tbx_exit();
 
 	return EXIT_SUCCESS;
 }

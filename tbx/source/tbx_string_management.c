@@ -564,13 +564,14 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 		tbx_bool_t single_mode = tbx_false;
 		tbx_bool_t double_mode = tbx_false;
 		tbx_bool_t copy_mode = tbx_false;
-		tbx_bool_t quoting_mode = tbx_false;
 
-		IFS = (IFS) ? : " \t\n";
+		if (! IFS) 
+			IFS = " \t\n";
 
-		do {
+	new_word:
+		while (offset < length) {
 			if (copy_mode) {
-				if (!single_mode && !double_mode && !quoting_mode) {
+				if (tbx_false == single_mode && tbx_false == double_mode) {
 					const char *ptr = IFS;
 
 					while (*ptr) {
@@ -580,41 +581,22 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 
 							tbx_slist_append(slist, dst_string);
 							dst_string = NULL;
-
-							goto next_1;
+							
+							goto new_word;
 						}
 
 						ptr++;
 					}
 				}
 
-				switch (data[offset]) {
-				case '\\':
-					{
-						if (!single_mode) {
-							quoting_mode = (tbx_bool_t)!quoting_mode;
-						}
-					}
-					break;
-				case '\'':
-					{
-						if (!quoting_mode && !double_mode) {
-							single_mode = (tbx_bool_t)!single_mode;
-						}
-					}
-					break;
-				case '"':
-					{
-						if (!quoting_mode && !single_mode) {
-							double_mode = (tbx_bool_t)!double_mode;
-						}
-					}
-					break;
-				default:
-					{
-						/* Nothing */
-					}
-					break;
+				if (data[offset] == '\'') {
+					if (tbx_false == double_mode && (offset == 0 || data[offset - 1] != '\\'))
+						single_mode = (single_mode) ? tbx_false : tbx_true;
+				}
+
+				if (data[offset] == '\'') {
+					if (tbx_false == single_mode && (offset == 0 || data[offset - 1] != '\\'))
+						double_mode = (double_mode) ? tbx_false : tbx_true;
 				}
 
 				tbx_string_append_char(dst_string, data[offset++]);
@@ -624,7 +606,7 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 				while (*ptr) {
 					if (*ptr == data[offset]) {
 						offset++;
-						goto next_1;
+						goto new_word;
 					}
 
 					ptr++;
@@ -633,10 +615,7 @@ p_tbx_slist_t tbx_string_split(p_tbx_string_t src_string, const char *IFS)
 				dst_string = tbx_string_init();
 				copy_mode = tbx_true;
 			}
-		      next_1:
-			;
 		}
-		while (offset < length);
 
 		if (dst_string) {
 			tbx_slist_append(slist, dst_string);

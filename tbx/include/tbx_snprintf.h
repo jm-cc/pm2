@@ -35,14 +35,15 @@
 
 #include "tbx_compiler.h"
 
-/** \defgroup snprintf_interface snprintf interface
+/** \defgroup s(n)printf_interface s(n)printf interface
  *
- * This is the snprintf interface
+ * This is the s(n)printf interface
  */
 
 int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
-TBX_FORMAT(printf, 3, 4)
+int tbx_vsprintf(char *buf, const char *fmt, va_list args);
 int tbx_snprintf(char *buf, size_t size, const char *fmt, ...);
+int tbx_sprintf(char *buf, const char *fmt, ...);
 
 
 #endif				/* TBX_SNPRINTF_H */

@@ -204,27 +204,11 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	/* 'z' support added 23/7/1999 S.H.    */
 	/* 'z' changed to 'Z' --davidm 1/25/99 */
 
-	/* Reject out-of-range values early */
-	if (tbx_unlikely((int) size < 0)) {
-		/* There can be only one.. */
-		static int warn = 1;
-		//WARN_ON(warn);
-		if (warn) {
-			static const char warn_msg[] =
-			    "negative size given to vsnprintf !\n";
-			tbx_write(STDIN_FILENO, warn_msg, sizeof(warn_msg) - 1);
-		}
-		warn = 0;
-		return 0;
-	}
-
 	str = buf;
-	end = buf + size - 1;
-
-	if (end < buf - 1) {
-		end = ((void *) -1);
-		size = end - buf + 1;
-	}
+	if ((ssize_t)size > 0)
+		end = buf + size - 1;
+	else
+		end = (char *)-1; /* no size for buf specified, use top address as the limit */
 
 	for (; *fmt; ++fmt) {
 		if (*fmt != '%') {
@@ -236,39 +220,41 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		/* process flags */
 		flags = 0;
-	      repeat:
+	repeat:
 		++fmt;		/* this also skips first '%' */
 		switch (*fmt) {
-		case '-':
-			flags |= LEFT;
-			goto repeat;
-		case '+':
-			flags |= PLUS;
-			goto repeat;
-		case ' ':
-			flags |= SPACE;
-			goto repeat;
-		case '#':
-			flags |= SPECIAL;
-			goto repeat;
-		case '0':
-			flags |= ZEROPAD;
-			goto repeat;
-		default:
-			break;
+		        case '-':
+				flags |= LEFT;
+				goto repeat;
+		        case '+':
+				flags |= PLUS;
+				goto repeat;
+		        case ' ':
+				flags |= SPACE;
+				goto repeat;
+		        case '#':
+				flags |= SPECIAL;
+				goto repeat;
+		        case '0':
+				flags |= ZEROPAD;
+				goto repeat;
+		        default:
+				break;
 		}
 
 		/* get field width */
 		field_width = -1;
 		if (isdigit(*fmt))
 			field_width = skip_atoi(&fmt);
-		else if (*fmt == '*') {
-			++fmt;
-			/* it's the next argument */
-			field_width = va_arg(args, int);
-			if (field_width < 0) {
-				field_width = -field_width;
-				flags |= LEFT;
+		else {
+			if (*fmt == '*') {
+				++fmt;
+				/* it's the next argument */
+				field_width = va_arg(args, int);
+				if (field_width < 0) {
+					field_width = -field_width;
+					flags |= LEFT;
+				}
 			}
 		}
 
@@ -304,7 +290,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		switch (*fmt) {
 		case 'c':
-			if (!(flags & LEFT)) {
+			if ((flags & LEFT)) {
 				while (--field_width > 0) {
 					if (str <= end)
 						*str = ' ';
@@ -329,24 +315,28 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 			len = my_strnlen(s, precision);
 
-			if (!(flags & LEFT)) {
+			if ((flags & LEFT)) {
 				while (len < field_width--) {
 					if (str <= end)
 						*str = ' ';
 					++str;
 				}
 			}
-			for (i = 0; i < len; ++i) {
+
+			for (i = 0; i < len; i++) {
 				if (str <= end)
 					*str = *s;
 				++str;
 				++s;
 			}
+
 			while (len < field_width--) {
 				if (str <= end)
 					*str = ' ';
 				++str;
 			}
+			*str = 0;
+
 			continue;
 
 		case 'p':
@@ -443,6 +433,28 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 }
 
 /**
+ * vsprintf - Format a string and place it in a buffer
+ * @buf: The buffer to place the result into
+ * @fmt: The format string to use
+ * @args: Arguments for the format string
+ *
+ * The return value is the number of characters which would
+ * be generated for the given input, excluding the trailing
+ * '\0', as per ISO C99. If you want to have the exact
+ * number of characters written into @buf as return value
+ * (not including the trailing '\0'), use vscnprintf. If the
+ * return is greater than or equal to @size, the resulting
+ * string is truncated.
+ *
+ * Call this function if you are already dealing with a va_list.
+ * You probably want snprintf instead.
+ */
+int tbx_vsprintf(char *buf, const char *fmt, va_list args)
+{
+	return tbx_vsnprintf(buf, (size_t)-1, fmt, args);
+}
+
+/**
  * snprintf - Format a string and place it in a buffer
  * @buf: The buffer to place the result into
  * @size: The size of the buffer, including the trailing null space
@@ -461,6 +473,28 @@ int tbx_snprintf(char *buf, size_t size, const char *fmt, ...)
 
 	va_start(args, fmt);
 	i = tbx_vsnprintf(buf, size, fmt, args);
+	va_end(args);
+	return i;
+}
+
+/**
+ * sprintf - Format a string and place it in a buffer
+ * @buf: The buffer to place the result into
+ * @fmt: The format string to use
+ * @...: Arguments for the format string
+ *
+ * The return value is the number of characters which would be
+ * generated for the given input, excluding the trailing null,
+ * as per ISO C99.  If the return is greater than or equal to
+ * @size, the resulting string is truncated.
+ */
+int tbx_sprintf(char *buf, const char *fmt, ...)
+{
+	va_list args;
+	int i;
+
+	va_start(args, fmt);
+	i = tbx_vsprintf(buf, fmt, args);
 	va_end(args);
 	return i;
 }

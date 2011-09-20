@@ -81,7 +81,7 @@ static char *number(char *buf, char *end, unsigned long long num, int base,
 	int i;
 
 	digits = (type & LARGE) ? large_digits : small_digits;
-	if (type & LEFT)
+	if (!(type & LEFT))
 		type &= ~ZEROPAD;
 	if (base < 2 || base > 36)
 		return 0;
@@ -290,7 +290,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		switch (*fmt) {
 		case 'c':
-			if ((flags & LEFT)) {
+			if (! (flags & LEFT)) {
 				while (--field_width > 0) {
 					if (str <= end)
 						*str = ' ';
@@ -315,7 +315,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 			len = my_strnlen(s, precision);
 
-			if ((flags & LEFT)) {
+			if (! (flags & LEFT)) {
 				while (len < field_width--) {
 					if (str <= end)
 						*str = ' ';

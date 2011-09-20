@@ -37,7 +37,7 @@
 #define snprintf(buf, size, ...) tbx_snprintf(buf, size, __VA_ARGS__)
 
 
-static int tst_sprintf(void)
+static int tst_gnu_sprintf(void)
 {
 	char buf[100];
 	int result = 0;
@@ -97,7 +97,7 @@ static int tst_sprintf(void)
 }
 
 
-static int tst_sprintf2(void)
+static int tst_gnu_sprintf2(void)
 {
 #if LDBL_MANT_DIG >= 106
 	volatile union { long double l; long long x[2]; } u, v;

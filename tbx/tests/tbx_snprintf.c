@@ -29,7 +29,11 @@
 #include <string.h>
 #include <float.h>
 #include <math.h>
+#include <stdarg.h>
 #include "tbx.h"
+
+
+#define BUFSZ 100
 
 
 /** Check tbx version of s(n)printf */
@@ -177,19 +181,75 @@ static int tst_gnu_sprintf2(void)
 }
 
 
+#undef sprintf
+#undef snprintf
+
+static int cmp_snprintf_result(char *s, ...)
+{
+	va_list glibc_args;
+	char glibc_output[BUFSZ];
+	int glibc_state;
+
+	va_list tbx_args;
+	char tbx_output[BUFSZ];
+	int tbx_state;
+
+	va_start(glibc_args, s);
+	va_copy(tbx_args, glibc_args);
+
+	tbx_state = tbx_vsnprintf(tbx_output, BUFSZ, s, tbx_args);
+	va_end(tbx_args);
+
+	glibc_state = vsnprintf(glibc_output, BUFSZ, s, glibc_args);
+	va_end(glibc_args);
+
+	if ((tbx_state == glibc_state) && (!strcmp(tbx_output, glibc_output)))
+		return 1;
+
+	return 0;
+}
+
+static int tst_snprintf_integers(void)
+{
+	if (! cmp_snprintf_result("%d", 100000000) ||
+	    ! cmp_snprintf_result("%d", -10000000) ||
+	    ! cmp_snprintf_result("%x", 100000000) ||
+	    ! cmp_snprintf_result("%x", -10000000) ||
+	    ! cmp_snprintf_result("%X", 100000000) ||
+	    ! cmp_snprintf_result("%X", -10000000) ||
+	    ! cmp_snprintf_result("%u", 100000000) ||
+	    ! cmp_snprintf_result("%u", -10000000) ||
+	    ! cmp_snprintf_result("%o", 100000000) ||
+	    ! cmp_snprintf_result("%o", -10000000) ||
+	    ! cmp_snprintf_result("%c", 100000000) ||
+	    ! cmp_snprintf_result("%c", -10000000) ||
+	    ! cmp_snprintf_result("%p", snprintf))
+		return EXIT_FAILURE;
+		
+	return EXIT_SUCCESS;
+}
+
+
+
 int main()
 {
-	if (EXIT_FAILURE == tst_sprintf()) {
-		fprintf(stderr, "tst_snprintf: FAIL\n");
+	if (EXIT_FAILURE == tst_gnu_sprintf()) {
+		fprintf(stderr, "tst_gnu_snprintf: FAIL\n");
 		return EXIT_FAILURE;
 	}
-	printf("tst_snprintf: PASS\n");
+	printf("tst_gnu_snprintf: PASS\n");
 
-	if (EXIT_FAILURE == tst_sprintf2()) {
-		fprintf(stderr, "tst_snprintf2: FAIL\n");
+	if (EXIT_FAILURE == tst_gnu_sprintf2()) {
+		fprintf(stderr, "tst_gnu_snprintf2: FAIL\n");
 		return EXIT_FAILURE;
 	}
-	printf("tst_snprintf2: PASS\n");
+	printf("tst_gnu_snprintf2: PASS\n");
+
+	if (EXIT_FAILURE == tst_snprintf_integers()) {
+		fprintf(stderr, "tst_snprintf_integers: FAIL\n");
+		return EXIT_FAILURE;
+	}
+	printf("tst_snprintf_integers: PASS\n");
 
 	return EXIT_SUCCESS;
 }

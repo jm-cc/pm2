@@ -75,9 +75,9 @@ static char *number(char *buf, char *end, unsigned long long num, int base,
 	char c, sign, tmp[66];
 	const char *digits;
 	static const char small_digits[] =
-	    "0123456789abcdefghijklmnopqrstuvwxyz";
+		"0123456789abcdefghijklmnopqrstuvwxyz";
 	static const char large_digits[] =
-	    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	int i;
 
 	digits = (type & LARGE) ? large_digits : small_digits;
@@ -144,7 +144,7 @@ static char *number(char *buf, char *end, unsigned long long num, int base,
 			++buf;
 		}
 	}
-	if (!(type & LEFT)) {
+	if (! (type & LEFT)) {
 		while (size-- > 0) {
 			if (buf <= end)
 				*buf = c;
@@ -341,13 +341,9 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		case 'p':
 			flags |= SPECIAL;
-			if (field_width == -1) {
-				field_width = 2 * sizeof(void *);
-				flags |= ZEROPAD;
-			}
 			str = number(str, end,
 				     (unsigned long) va_arg(args, void *),
-				     16, field_width, precision, flags);
+				     16, -1, precision, flags);
 			continue;
 
 

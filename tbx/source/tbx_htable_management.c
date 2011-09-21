@@ -134,15 +134,29 @@ void tbx_htable_add_ext(p_tbx_htable_t htable,
 
 	PM2_LOG_IN();
 	bucket = __tbx_htable_get_bucket(htable, key, key_len);
-	element = tbx_malloc(tbx_htable_manager_memory);
-	element->key = TBX_MALLOC(key_len);
-	memcpy(element->key, key, key_len);
-	element->key_len = key_len;
-	element->object = object;
-	element->next = htable->bucket_array[bucket];
 
-	htable->bucket_array[bucket] = element;
-	htable->nb_element++;
+	/** check if an object was already registered with this key ! */
+	element = (bucket) ? htable->bucket_array[bucket] : NULL;
+	while (element) {
+		if (element->key_len == key_len &&
+		    ! memcmp(key, element->key, key_len))
+			break;
+
+		element = element->next;
+	}
+
+	if (tbx_likely(NULL ==  element)) {
+		element = tbx_malloc(tbx_htable_manager_memory);
+		element->key = TBX_MALLOC(key_len);
+		memcpy(element->key, key, key_len);
+		element->key_len = key_len;
+		element->object = object;
+		element->next = htable->bucket_array[bucket];
+
+		htable->bucket_array[bucket] = element;
+		htable->nb_element++;
+	}
+
 	PM2_LOG_OUT();
 }
 
@@ -163,17 +177,13 @@ __tbx_htable_get_element(p_tbx_htable_t htable,
 	bucket = __tbx_htable_get_bucket(htable, key, key_len);
 	element = (bucket) ? htable->bucket_array[bucket] : NULL;
 	while (element) {
-		if (element->key_len != key_len)
-			goto next;
+		if (element->key_len == key_len &&
+		    ! memcmp(key, element->key, key_len))
+			break;
 
-		if (!memcmp(key, element->key, key_len))
-			goto end;
-
-	      next:
 		element = element->next;
 	}
 
-end:
 	PM2_LOG_OUT();
 
 	return element;

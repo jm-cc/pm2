@@ -21,5 +21,5 @@ LDADD       = $(GLOBAL_AM_LDADD) $(abs_top_builddir)/source/libtbx.la
 
 
 check_PROGRAMS = 	tbx_malloc tbx_slist tbx_program_argument tbx_checksum tbx_snprintf \
-			tbx_topology tbx_string_management
+			tbx_topology tbx_string_management tbx_htable
 TESTS = $(check_PROGRAMS)

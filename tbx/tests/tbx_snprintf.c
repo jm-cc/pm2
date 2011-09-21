@@ -230,26 +230,77 @@ static int tst_snprintf_integers(void)
 }
 
 
+static int tst_snprintf_format(void)
+{
+	if (! cmp_snprintf_result("%-15c", 'a')    ||
+	    ! cmp_snprintf_result("%*c", -15, 'a') ||
+	    ! cmp_snprintf_result("%15c", 'a')     ||
+	    ! cmp_snprintf_result("%+15c", 'a')    ||
+	    ! cmp_snprintf_result("%*c", 15, 'a')  ||
+	    ! cmp_snprintf_result("%-15s", "a")    ||
+	    ! cmp_snprintf_result("%*s", -15, "a") ||
+	    ! cmp_snprintf_result("%15s", "a")     ||
+	    ! cmp_snprintf_result("%+15s", "a")    ||
+	    ! cmp_snprintf_result("%*s", 15, "a")  ||
+	    ! cmp_snprintf_result("%0d", 1000000)  ||
+	    ! cmp_snprintf_result("%-0d", 100000)  ||
+	    ! cmp_snprintf_result("% d", 100000)   ||
+	    ! cmp_snprintf_result("% d", -10000)   ||
+	    ! cmp_snprintf_result("%#o", 0100)     ||
+	    ! cmp_snprintf_result("%#o", 100)      ||
+	    ! cmp_snprintf_result("%#x", 0x100)    ||
+	    ! cmp_snprintf_result("%#X", 0x100)    ||
+	    ! cmp_snprintf_result("%#X", 100))
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
+}
+
+
+static int tst_snprintf_misc(void)
+{
+	char buf[BUFSZ];
+
+	memset(buf, 63, BUFSZ);
+	if (! cmp_snprintf_result("%s", buf) ||
+	    ! cmp_snprintf_result(""))
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
+}
+
 
 int main()
 {
 	if (EXIT_FAILURE == tst_gnu_sprintf()) {
 		fprintf(stderr, "tst_gnu_snprintf: FAIL\n");
 		return EXIT_FAILURE;
-	}
-	printf("tst_gnu_snprintf: PASS\n");
+	} else
+		printf("tst_gnu_snprintf: PASS\n");
 
 	if (EXIT_FAILURE == tst_gnu_sprintf2()) {
 		fprintf(stderr, "tst_gnu_snprintf2: FAIL\n");
 		return EXIT_FAILURE;
-	}
-	printf("tst_gnu_snprintf2: PASS\n");
+	} else
+		printf("tst_gnu_snprintf2: PASS\n");
 
 	if (EXIT_FAILURE == tst_snprintf_integers()) {
 		fprintf(stderr, "tst_snprintf_integers: FAIL\n");
 		return EXIT_FAILURE;
-	}
-	printf("tst_snprintf_integers: PASS\n");
+	} else
+		printf("tst_snprintf_integers: PASS\n");
+
+	if (EXIT_FAILURE == tst_snprintf_format()) {
+		fprintf(stderr, "tst_snprintf_format: FAIL\n");
+		return EXIT_FAILURE;
+	} else
+		printf("tst_snprintf_format: PASS\n");
+
+	if (EXIT_FAILURE == tst_snprintf_misc()) {
+		fprintf(stderr, "tst_snprintf_misc: FAIL\n");
+		return EXIT_FAILURE;
+	} else
+		printf("tst_snprintf_misc: PASS\n");
 
 	return EXIT_SUCCESS;
 }

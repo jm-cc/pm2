@@ -250,7 +250,8 @@ static int tst_snprintf_format(void)
 	    ! cmp_snprintf_result("%#o", 100)      ||
 	    ! cmp_snprintf_result("%#x", 0x100)    ||
 	    ! cmp_snprintf_result("%#X", 0x100)    ||
-	    ! cmp_snprintf_result("%#X", 100))
+	    ! cmp_snprintf_result("%#X", 100)      ||
+	    ! cmp_snprintf_result("%.2f", 123.123))
 		return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
@@ -262,7 +263,9 @@ static int tst_snprintf_misc(void)
 	char buf[BUFSZ];
 
 	memset(buf, 63, BUFSZ);
-	if (! cmp_snprintf_result("%s", buf) ||
+	if (! cmp_snprintf_result("%s", buf)    ||
+	    ! cmp_snprintf_result("toto")       ||
+	    ! cmp_snprintf_result("%ld", 10000) ||
 	    ! cmp_snprintf_result(""))
 		return EXIT_FAILURE;
 

@@ -33,15 +33,6 @@
 #include <ctype.h>
 
 
-static size_t my_strnlen(const char *s, size_t count)
-{
-	const char *sc;
-
-	for (sc = s; count-- && *sc != '\0'; ++sc)
-		/* nothing */ ;
-	return sc - s;
-}
-
 static int skip_atoi(const char **s)
 {
 	int i = 0;
@@ -81,14 +72,18 @@ static char *number(char *buf, char *end, unsigned long long num, int base,
 	int i;
 
 	digits = (type & LARGE) ? large_digits : small_digits;
-	if (!(type & LEFT))
-		type &= ~ZEROPAD;
+
 	if (base < 2 || base > 36)
 		return 0;
+
+	if (!(type & LEFT))
+		type &= ~ZEROPAD;
+
 	if (type & ZEROPAD) 
 		c = '0';
 	else
 		c = ' ';
+
 	sign = 0;
 	if (type & SIGN) {
 		if ((signed long long) num < 0) {
@@ -109,12 +104,15 @@ static char *number(char *buf, char *end, unsigned long long num, int base,
 		else if (base == 8)
 			size--;
 	}
+
 	i = 0;
 	if (num == 0)
 		tmp[i++] = '0';
-	else
+	else {
 		while (num != 0)
 			tmp[i++] = digits[do_div(num, base)];
+	}
+
 	if (i > precision)
 		precision = i;
 	size -= precision;
@@ -275,8 +273,7 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 
 		/* get the conversion qualifier */
 		qualifier = -1;
-		if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L' ||
-		    *fmt == 'Z' || *fmt == 'z') {
+		if (*fmt == 'h' || *fmt == 'l' || *fmt == 'L' || *fmt == 'Z' || *fmt == 'z') {
 			qualifier = *fmt;
 			++fmt;
 			if (qualifier == 'l' && *fmt == 'l') {
@@ -289,131 +286,152 @@ int tbx_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 		base = 10;
 
 		switch (*fmt) {
-		case 'c':
-			if (! (flags & LEFT)) {
+		        case 'c':
+				if (! (flags & LEFT)) {
+					while (--field_width > 0) {
+						if (str <= end)
+							*str = ' ';
+						++str;
+					}
+				}
+				c = (unsigned char) va_arg(args, int);
+				if (str <= end)
+					*str = c;
+				++str;
 				while (--field_width > 0) {
 					if (str <= end)
 						*str = ' ';
 					++str;
 				}
-			}
-			c = (unsigned char) va_arg(args, int);
-			if (str <= end)
-				*str = c;
-			++str;
-			while (--field_width > 0) {
-				if (str <= end)
-					*str = ' ';
-				++str;
-			}
-			continue;
+				continue;
 
-		case 's':
-			s = va_arg(args, char *);
-			if ((unsigned long) s < /*PAGE_SIZE */ 4096)
-				s = "<NULL>";
+		        case 's':
+				s = va_arg(args, char *);
+				if ((unsigned long) s < /*PAGE_SIZE */ 4096)
+					s = "<NULL>";
+				
+				len = strnlen(s, precision);
+				
+				if (! (flags & LEFT)) {
+					while (len < field_width--) {
+						if (str <= end)
+							*str = ' ';
+						++str;
+					}
+				}
 
-			len = my_strnlen(s, precision);
+				for (i = 0; i < len; i++) {
+					if (str <= end)
+						*str = *s;
+					++str;
+					++s;
+				}
 
-			if (! (flags & LEFT)) {
 				while (len < field_width--) {
 					if (str <= end)
 						*str = ' ';
 					++str;
 				}
+				*str = 0;
+
+				continue;
+
+		        case 'p':
+				flags |= SPECIAL;
+				str = number(str, end,
+					     (unsigned long) va_arg(args, void *),
+					     16, -1, precision, flags);
+				continue;
+				
+				
+		        case 'n':
+				/* FIXME:
+				 * What does C99 say about the overflow case here? */
+				if (qualifier == 'l') {
+					long *ip = va_arg(args, long *);
+					*ip = (str - buf);
+				} else if (qualifier == 'Z' || qualifier == 'z') {
+					size_t *ip = va_arg(args, size_t *);
+					*ip = (str - buf);
+				} else {
+					int *ip = va_arg(args, int *);
+					*ip = (str - buf);
+				}
+				continue;
+				
+				/* integer number formats - set up the flags and "break" */
+		        case 'o':
+				base = 8;
+				break;
+
+		        case 'X':
+				flags |= LARGE;
+		        case 'x':
+				base = 16;
+				break;
+
+		        case 'd':
+		        case 'i':
+				flags |= SIGN;
+		        case 'u':
+				break;
+
+				/** fallback to glibc implementation if we are using float */
+		        case 'f':
+		        case 'F':
+		        case 'g':
+		        case 'G':
+		        case 'a':
+		        case 'A': {
+				int nbchars;
+				char format[1000];
+				double val;
+
+				format[0] = '%';
+				nbchars = 1;
+				if (field_width > 0)
+					nbchars += sprintf(format+nbchars, "%d", field_width);
+				if (precision > 0)
+					sprintf(format+nbchars, ".%d%c", precision, *fmt);
+				else
+					sprintf(format+nbchars, "%c", *fmt);
+					
+				val = va_arg(args, double);
+				nbchars = snprintf(str, end-str+1, format, val);
+				if (nbchars > 0)
+					str += nbchars;
 			}
-
-			for (i = 0; i < len; i++) {
-				if (str <= end)
-					*str = *s;
-				++str;
-				++s;
-			}
-
-			while (len < field_width--) {
-				if (str <= end)
-					*str = ' ';
-				++str;
-			}
-			*str = 0;
-
-			continue;
-
-		case 'p':
-			flags |= SPECIAL;
-			str = number(str, end,
-				     (unsigned long) va_arg(args, void *),
-				     16, -1, precision, flags);
-			continue;
-
-
-		case 'n':
-			/* FIXME:
-			 * What does C99 say about the overflow case here? */
-			if (qualifier == 'l') {
-				long *ip = va_arg(args, long *);
-				*ip = (str - buf);
-			} else if (qualifier == 'Z' || qualifier == 'z') {
-				size_t *ip = va_arg(args, size_t *);
-				*ip = (str - buf);
-			} else {
-				int *ip = va_arg(args, int *);
-				*ip = (str - buf);
-			}
-			continue;
-
-		case '%':
-			if (str <= end)
-				*str = '%';
-			++str;
-			continue;
-
-			/* integer number formats - set up the flags and "break" */
-		case 'o':
-			base = 8;
-			break;
-
-		case 'X':
-			flags |= LARGE;
-		case 'x':
-			base = 16;
-			break;
-
-		case 'd':
-		case 'i':
-			flags |= SIGN;
-		case 'u':
-			break;
-
-		default:
-			if (str <= end)
-				*str = '%';
-			++str;
-			if (*fmt) {
-				if (str <= end)
-					*str = *fmt;
-				++str;
-			} else {
-				--fmt;
-			}
-			continue;
+		        default:
+				continue;
+				
 		}
-		if (qualifier == 'L')
-			num = va_arg(args, long long);
-		else if (qualifier == 'l') {
-			num = va_arg(args, unsigned long);
-			if (flags & SIGN)
-				num = (signed long) num;
-		} else if (qualifier == 'Z' || qualifier == 'z') {
-			num = va_arg(args, size_t);
-		} else if (qualifier == 'h') {
-			num = (unsigned short) va_arg(args, int);
-			if (flags & SIGN)
-				num = (signed short) num;
-		} else {
-			num = va_arg(args, unsigned int);
-			if (flags & SIGN)
-				num = (signed int) num;
+
+		switch (qualifier) {
+		        case 'z':
+		        case 'Z':
+				num = va_arg(args, size_t);
+				break;
+
+		        case 'L':
+				num = va_arg(args, long long);
+				break;
+
+		        case 'l':
+				num = va_arg(args, long long);
+				if (flags & SIGN)
+					num = (signed long)num;
+				break;
+
+		        case 'h':			
+				num = (unsigned short) va_arg(args, int);
+				if (flags & SIGN)
+					num = (signed short) num;
+				break;
+				
+		        default:
+				num = va_arg(args, unsigned int);
+				if (flags & SIGN)
+					num = (signed int) num;
 		}
 		str = number(str, end, num, base,
 			     field_width, precision, flags);

@@ -69,6 +69,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 				       struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
+  nmad_lock_assert();
 
   NM_TRACEF("send request complete: gate %p, drv %p, trk %d",
 	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
@@ -109,16 +110,26 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
  */
 __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 {
+  nmad_lock_assert();
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   int err = r->driver->poll_send_iov(r->_status, p_pw);
-  if (err != -NM_EAGAIN)
+  if(err == NM_ESUCCESS)
     {
-      if (tbx_unlikely(err < 0))
-	{
-	  TBX_FAILUREF("poll_send failed- err = %d", err);
-	}
+#ifdef PIOMAN_POLL
+      piom_ltask_destroy(&p_pw->ltask);
+#endif /* PIOMAN_POLL */
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+    }
+  else if(err == -NM_EAGAIN)
+    {
+#ifdef PIOMAN_POLL
+      nm_submit_poll_send_ltask(p_pw);
+#endif
+    }
+  else
+    {
+      TBX_FAILUREF("poll_send failed- err = %d", err);
     }
   return err;
 }
@@ -128,6 +139,8 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 */
 void nm_post_send(struct nm_pkt_wrap*p_pw)
 {
+  nmad_lock_assert();
+
   /* ready to send					*/
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv, p_pw->trk_id);
   NM_TRACEF("posting new send request: gate %p, drv %p, trk %d, proto %d",
@@ -191,6 +204,7 @@ void nm_post_out_drv(struct nm_drv *p_drv)
   struct nm_core *p_core = p_drv->p_core;
   /* post new requests	*/
   nm_trk_id_t trk;
+  nmad_lock_assert();
   for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
   {
     if(!tbx_fast_list_empty(&p_drv->post_sched_out_list[trk]))
@@ -244,6 +258,7 @@ void nm_try_and_commit(struct nm_core *p_core)
 {
   /* schedule new requests on all gates */
   struct nm_gate*p_gate = NULL;
+  nmad_lock_assert();
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)

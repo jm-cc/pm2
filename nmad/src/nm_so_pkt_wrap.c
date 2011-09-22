@@ -117,6 +117,8 @@ int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw)
   struct nm_pkt_wrap *p_pw;
   int err = NM_ESUCCESS;
 
+  nmad_lock_assert();
+
   if(flags & NM_PW_BUFFER) 
     {
       /* full buffer as v[0]- used for short receive */
@@ -198,6 +200,8 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 {
   int err;
   int flags = p_pw->flags;
+
+  nmad_lock_assert();
   
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {

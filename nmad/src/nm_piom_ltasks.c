@@ -179,10 +179,15 @@ int nm_poll_recv_task(void *args)
   struct nm_pkt_wrap * p_pw = args;
   int ret = -NM_EUNKNOWN;
   /* todo: lock something when using fine-grain locks */
-  if(nmad_trylock()) {
-    ret = nm_poll_recv(p_pw);
-    nmad_unlock();
-  }
+  if(nmad_trylock())
+    {
+      ret = nm_poll_recv(p_pw);
+      nmad_unlock();
+    }
+  else
+    {
+      nm_submit_poll_recv_ltask(p_pw);
+    }
   return ret;
 }
 
@@ -190,14 +195,19 @@ int nm_poll_send_task(void *args)
 {
   struct nm_pkt_wrap * p_pw=args;
   int ret = -NM_EUNKNOWN;
-  if(nmad_trylock()) {
-    ret =  nm_poll_send(p_pw);
-    if(ret == NM_ESUCCESS)
-      {
-	nm_pw_free(p_pw);
-      }
-    nmad_unlock();
-  }
+  if(nmad_trylock())
+    {
+      ret =  nm_poll_send(p_pw);
+      if(ret == NM_ESUCCESS)
+	{
+	  nm_pw_free(p_pw);
+	}
+      nmad_unlock();
+    }
+  else
+    {
+      nm_submit_poll_send_ltask(p_pw);
+    }
   return ret;
 }
 
@@ -257,11 +267,10 @@ int nm_offload_task(void* args)
 void nm_submit_poll_recv_ltask(struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
-
   piom_ltask_create(&p_pw->ltask, 
 		    &nm_poll_recv_task, 
 		    p_pw,
-		    PIOM_LTASK_OPTION_REPEAT, 
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
 		    task_vpset);
   piom_ltask_submit(&p_pw->ltask);	
 }
@@ -273,7 +282,7 @@ void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw)
   piom_ltask_create(&p_pw->ltask, 
 		    &nm_poll_send_task, 
 		    p_pw,
-		    PIOM_LTASK_OPTION_REPEAT, 
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
 		    task_vpset);
   piom_ltask_submit(&p_pw->ltask);	
 }
@@ -309,7 +318,7 @@ void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
   piom_ltask_create(task, 
 		    &nm_offload_task, 
 		    p_pw,
-		    PIOM_LTASK_OPTION_NULL, 
+		    PIOM_LTASK_OPTION_ONESHOT, 
 		    task_vpset);
   piom_ltask_submit(task);	
 }

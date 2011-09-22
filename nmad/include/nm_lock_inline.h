@@ -79,6 +79,7 @@ static inline void nmad_unlock(void)
 {
 #ifdef NM_LOCK_BIGLOCK
 #ifdef DEBUG
+  assert(piom_big_lock_holder == PIOM_SELF);
   piom_big_lock_holder = PIOM_THREAD_NULL;
 #endif
   piom_spin_unlock(&piom_big_lock);
@@ -92,6 +93,15 @@ static inline void nmad_lock_init(struct nm_core *p_core)
 #endif
 }
 
+/** assert that current thread holds the lock */
+static inline void nmad_lock_assert(void)
+{
+#ifdef NM_LOCK_BIGLOCK
+#ifdef DEBUG
+  assert(PIOM_SELF == piom_big_lock_holder);
+#endif
+#endif
+}
 
 /*
  * Lock the interface's list of packet to send

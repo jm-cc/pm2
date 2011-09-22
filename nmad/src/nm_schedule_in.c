@@ -65,7 +65,16 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
    
   if(err == NM_ESUCCESS)
     {
+#ifdef PIOMAN_POLL
+      piom_ltask_destroy(&p_pw->ltask);
+#endif /* PIOMAN_POLL */
       err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+    }
+  else if(err == -NM_EAGAIN)
+    {
+#ifdef PIOMAN_POLL
+      nm_submit_poll_recv_ltask(p_pw);      
+#endif /* PIOMAN_POLL */
     }
   else if(err == -NM_ECLOSED)
     {
@@ -101,7 +110,6 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
     {
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
     }
-  
   NM_TRACEF("posting new recv request: gate %p, drv %p, trk %d, proto %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,
@@ -124,30 +132,30 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
        * even if it completes immediately. It will be removed from
        * the list by nm_so_process_complete_recv().
        */
-      nm_poll_lock_in(p_pw->p_gate->p_core, p_pw->p_drv);
-      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
-      nm_poll_unlock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+  nm_poll_lock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+  tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
+  nm_poll_unlock_in(p_pw->p_gate->p_core, p_pw->p_drv);
 #endif /* NMAD_POLL */
-
+  
   /* process post command status				*/
   
-  if (err == -NM_EAGAIN)
+  if(err == NM_ESUCCESS)
+    {
+      /* immediate succes, process request completion */
+      NM_TRACEF("request completed immediately");
+      nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+    }
+  else  if (err == -NM_EAGAIN)
     {
       NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d, proto %d",
 		p_pw->p_gate,
 		p_pw->p_drv,
 		p_pw->trk_id,
 		p_pw->proto_id);
-#ifndef NMAD_POLL
+#ifdef PIOMAN_POLL
       nm_submit_poll_recv_ltask(p_pw);      
-#endif /* NMAD_POLL */
+#endif /* PIOMAN_POLL */
 
-    }
-  else if(err == NM_ESUCCESS)
-    {
-      /* immediate succes, process request completion */
-      NM_TRACEF("request completed immediately");
-      nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
     }
   else if(err != -NM_ECLOSED)
     {

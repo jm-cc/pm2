@@ -242,7 +242,8 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 static __tbx_inline__ int
 nm_pw_free(struct nm_pkt_wrap *p_pw)
 {
-#if(defined(PIOMAN_POLL))
+#if 0 
+  //(defined(PIOMAN_POLL))
   if(!piom_ltask_test_terminated(&p_pw->ltask))
     {
       /* Do not free the pw right now because its ltask part is still used by PIOMan.

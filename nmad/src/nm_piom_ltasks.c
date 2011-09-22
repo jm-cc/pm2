@@ -200,7 +200,7 @@ int nm_poll_send_task(void *args)
       ret =  nm_poll_send(p_pw);
       if(ret == NM_ESUCCESS)
 	{
-	  nm_pw_free(p_pw);
+	  nm_so_pw_free(p_pw);
 	}
       nmad_unlock();
     }

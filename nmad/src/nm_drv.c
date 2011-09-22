@@ -337,7 +337,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 		  nm_so_pw_free(p_pw);
 #else
 		  piom_ltask_cancel(&p_pw->ltask);
-		  nm_pw_free(p_pw);		  
+		  nm_so_pw_free(p_pw);		  
 #endif
 		}
 	      p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;

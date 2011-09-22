@@ -89,7 +89,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
       tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
 
-      nm_pw_free(p_pw);
+      nm_so_pw_free(p_pw);
     }
   else if (err != -NM_EAGAIN)
     {

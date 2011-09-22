@@ -221,7 +221,7 @@ int nm_core_exit(nm_core_t p_core)
 	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
 	    {
 	      NM_TRACEF("extracting pw from post_recv_list\n");
-	      nm_pw_free(p_pw);
+	      nm_so_pw_free(p_pw);
 	    }
 	}
     }

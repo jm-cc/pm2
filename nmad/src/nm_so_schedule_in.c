@@ -805,7 +805,7 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
       const uint32_t len = p_pw->length;
       /* ** Large packet, data received directly in its final destination */
       nm_so_unpack_check_completion(p_core, p_unpack, len);
-      nm_pw_free(p_pw);
+      nm_so_pw_free(p_pw);
       nm_so_process_large_pending_recv(p_gate);
     }
 

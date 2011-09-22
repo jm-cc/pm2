@@ -215,8 +215,6 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 				{
 				    task->state = PIOM_LTASK_STATE_TERMINATED;
 				    piom_ltask_completed (task);
-				    if(task->continuation_ptr)
-					(*task->continuation_ptr)(task->continuation_data_ptr);
 				    piom_tasklet_unmask();
 				}
 			}
@@ -224,8 +222,6 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	    else if(task->state & PIOM_LTASK_STATE_DONE) 
 		{
 		    task->state |= PIOM_LTASK_STATE_TERMINATED;
-		    if(task->continuation_ptr)
-			task->continuation_ptr(task->continuation_data_ptr);
 		}
 	}
     /* no more task to run, set the queue as stopped */
@@ -487,8 +483,6 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 	{
 	    ltask->state = PIOM_LTASK_STATE_TERMINATED;
 	    piom_ltask_completed(ltask);
-	    if(ltask->continuation_ptr)
-		ltask->continuation_ptr(ltask->continuation_data_ptr);
 	}
 }
 

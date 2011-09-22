@@ -58,8 +58,6 @@ struct piom_ltask
     volatile int masked;
     piom_ltask_func *func_ptr;
     void *data_ptr;
-    piom_ltask_func *continuation_ptr;
-    void *continuation_data_ptr;
     piom_ltask_option_t options;
     piom_vpset_t vp_mask;
     struct piom_ltask_queue*queue;
@@ -81,15 +79,6 @@ extern void piom_ltask_pause(void);
 
 /* resume task scheduling */
 extern void piom_ltask_resume(void);
-
-/** add a function that will be called after the task has succeed.
- * It can be use for freeing the task structure.
- */
-static inline void piom_ltask_add_continuation(struct piom_ltask *task, piom_ltask_func *continuation, void* arg)
-{
-    task->continuation_ptr = continuation;
-    task->continuation_data_ptr = arg;
-}
 
 /** submit a task
  * Beyond this point, the task may be scheduled at any time
@@ -155,8 +144,6 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     task->masked = 0;
     task->func_ptr = func_ptr;
     task->data_ptr = data_ptr;
-    task->continuation_ptr = NULL;
-    task->continuation_data_ptr = NULL;
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;

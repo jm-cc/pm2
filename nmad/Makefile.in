@@ -19,7 +19,7 @@ INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 TARGETS = $(TARGET_BIN) $(TARGET_LIB)
 
 # set compilers and flags
-CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@ $(CFLAGS)
+CFLAGS  += @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
 LIBS    := @NMAD_EXT_LIBS@ -lrt $(LIBS)
 BINLIBS := -L. @NMAD_LIBS@
@@ -63,6 +63,9 @@ TARGETS          += $(MADMPI_F90_MODS)
 EXAMPLE_DIRS += examples/mpi/fortran examples/mpi/f90
 endif
 endif
+
+# add source and build dir *first* in include order
+CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include $(CFLAGS)
 
 include @puk_root@/etc/common_rules.mk
 

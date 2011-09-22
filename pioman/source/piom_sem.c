@@ -16,28 +16,31 @@
 
 #include "pioman.h"
 
-#if defined(PIOM_THREAD_ENABLED)
-__tbx_inline__ void piom_sem_P(piom_sem_t *sem){
+#if defined(PIOMAN_MULTITHREAD)
+__tbx_inline__ void piom_sem_P(piom_sem_t *sem)
+{
 #ifdef MARCEL
-	marcel_sem_P(sem);
+  marcel_sem_P(sem);
 #else
-	while (sem_wait(sem) == -1);
+  while (sem_wait(sem) == -1);
 #endif
 }
 
-__tbx_inline__ void piom_sem_V(piom_sem_t *sem){
+__tbx_inline__ void piom_sem_V(piom_sem_t *sem)
+{
 #ifdef MARCEL
-	marcel_sem_V(sem);
+  marcel_sem_V(sem);
 #else
-	sem_post(sem);
+  sem_post(sem);
 #endif
 }
 
-__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
+__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
+{
 #ifdef MARCEL
-	marcel_sem_init(sem, initial);
+  marcel_sem_init(sem, initial);
 #else
-	sem_init(sem, 0, initial);
+  sem_init(sem, 0, initial);
 #endif
 }
 
@@ -49,91 +52,102 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
  */
 #define TIME_TO_POLL 20
 
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask) {
-	PIOM_LOG_IN();
-
-#ifdef MARCEL
-	/* First, let's poll for a while before blocking */
-	tbx_tick_t t1, t2;
-	TBX_GET_TICK(t1);
-	do {
-		if(cond->value & mask){
-			/* We have to consume the semaphore. Otherwise, there may be a 
-			 *  problem since the application thread may re-initialize the condition
-			 *  before piom_cond_signal ends
-			 */
-			piom_sem_P(&cond->sem);
-			if(cond->cpt)
-				/* another thread is waiting for the same semaphore */
-				piom_sem_V(&cond->sem);
-			return;
-		}
-		piom_check_polling(PIOM_POLL_WHEN_FORCED);
-		TBX_GET_TICK(t2);
-	}while(TBX_TIMING_DELAY(t1, t2)<TIME_TO_POLL);
-
-	/* set highest priority so that the thread 
-	   is scheduled (almost) immediatly when done */
-	struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
-	struct marcel_sched_param old_param;
-	marcel_sched_getparam(PIOM_SELF, &old_param);
-	marcel_sched_setparam(PIOM_SELF, &sched_param);
-
-	if(ma_in_atomic())
-	  {
-	    fprintf(stderr, "pioman: FATAL- trying to wait while in scheduling hook.\n");
-	    abort();
-	  }
-	while(! (cond->value & mask))
-	  {
-	    cond->cpt++;
-	    piom_sem_P(&cond->sem);
-	    cond->cpt--;
-	    if(cond->cpt)
-	      /* another thread is waiting for the same semaphore */
-	      piom_sem_V(&cond->sem);
-	  }
-	
-	marcel_sched_setparam(PIOM_SELF, &old_param);
-#else  /* MARCEL */
-	/* no Marcel, do not block as possibly nobody will wake us... 
-	 *  (We have neither timers nor supplementary VP)
-	 */
-	while(! (cond->value & mask))
-	  piom_check_polling(PIOM_POLL_AT_IDLE);		
-#endif	/* MARCEL */
-
-	PIOM_LOG_OUT();
-}
-
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
-	PIOM_LOG_IN();
-	cond->value|=mask;
-	piom_sem_V(&cond->sem);
-#ifdef PIOM_ENABLE_SHM
-	if(cond->alt_sem){
-		piom_shs_poll_success(cond->alt_sem);
+__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
+{
+  PIOM_LOG_IN();
+  
+#ifdef PIOMAN_MULTITHREAD
+  /* First, let's poll for a while before blocking */
+  tbx_tick_t t1, t2;
+  TBX_GET_TICK(t1);
+  do
+    {
+      if(cond->value & mask)
+	{
+	  /* We have to consume the semaphore. Otherwise, there may be a 
+	   *  problem since the application thread may re-initialize the condition
+	   *  before piom_cond_signal ends
+	   */
+	  piom_sem_P(&cond->sem);
+	  if(cond->cpt)
+	    /* another thread is waiting for the same semaphore */
+	    piom_sem_V(&cond->sem);
+	  return;
 	}
-#endif
-	PIOM_LOG_OUT();
+      piom_check_polling(PIOM_POLL_AT_IDLE);
+      TBX_GET_TICK(t2);
+    }
+  while(TBX_TIMING_DELAY(t1, t2) < TIME_TO_POLL);
+#ifdef PIOMAN_MARCEL
+  /* set highest priority so that the thread 
+     is scheduled (almost) immediatly when done */
+  struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
+  struct marcel_sched_param old_param;
+  marcel_sched_getparam(PIOM_SELF, &old_param);
+  marcel_sched_setparam(PIOM_SELF, &sched_param);
+  if(ma_in_atomic())
+    {
+      fprintf(stderr, "pioman: FATAL- trying to wait while in scheduling hook.\n");
+      abort();
+    }
+#endif /* PIOMAN_MARCEL */
+
+  while(!(cond->value & mask))
+    {
+      cond->cpt++;
+      piom_sem_P(&cond->sem);
+      cond->cpt--;
+      if(cond->cpt)
+	/* another thread is waiting for the same semaphore */
+	piom_sem_V(&cond->sem);
+    }
+#ifdef PIOMAN_MARCEL
+  marcel_sched_setparam(PIOM_SELF, &old_param);
+#endif /* PIOMAN_MARCEL */
+#else  /* PIOMAN_MULTITHREAD */
+  /* no Marcel, do not block as possibly nobody will wake us... 
+   *  (We have neither timers nor supplementary VP)
+   */
+  while(!(cond->value & mask))
+    piom_check_polling(PIOM_POLL_AT_IDLE);		
+#endif	/* PIOMAN_MULTITHREAD */
+  
+  PIOM_LOG_OUT();
 }
 
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask){
-	return cond->value & mask;
-}
-
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
-	cond->value=initial;
+__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask)
+{
+  PIOM_LOG_IN();
+  cond->value |= mask;
+  piom_sem_V(&cond->sem);
 #ifdef PIOM_ENABLE_SHM
-	cond->alt_sem=NULL;
+  if(cond->alt_sem)
+    {
+      piom_shs_poll_success(cond->alt_sem);
+    }
 #endif
-	cond->cpt=0;
-	piom_sem_init(&cond->sem, 0);
-	piom_spin_lock_init(&cond->lock);
+  PIOM_LOG_OUT();
 }
 
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
-	cond->value&=mask;
+__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask)
+{
+  return cond->value & mask;
+}
+
+__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
+{
+  cond->value = initial;
+#ifdef PIOM_ENABLE_SHM
+  cond->alt_sem = NULL;
+#endif
+  cond->cpt = 0;
+  piom_sem_init(&cond->sem, 0);
+  piom_spin_lock_init(&cond->lock);
+}
+
+__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask)
+{
+  cond->value &= mask;
 }
 
 #ifdef PIOM_ENABLE_SHM
@@ -152,37 +166,46 @@ int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
 /* Warning: we assume that Marcel is not running and there is no thread here
  * these functions are not reentrant
  */
-__tbx_inline__ void piom_sem_P(piom_sem_t *sem){
-	(*sem)--;
-	while((*sem) < 0){
-	  piom_check_polling(PIOM_POLL_AT_IDLE);
-	}
+__tbx_inline__ void piom_sem_P(piom_sem_t *sem)
+{
+  (*sem)--;
+  while((*sem) < 0)
+    {
+      piom_check_polling(PIOM_POLL_AT_IDLE);
+    }
 }
 
-__tbx_inline__ void piom_sem_V(piom_sem_t *sem){
-	(*sem)++;
+__tbx_inline__ void piom_sem_V(piom_sem_t *sem)
+{
+  (*sem)++;
 }
 
-__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial){
-	(*sem)=initial;
+__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
+{
+  (*sem) = initial;
 }
 
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask){
-	while(! (*cond & mask))
-	  piom_check_polling(PIOM_POLL_AT_IDLE);		
+__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
+{
+  while(! (*cond & mask))
+    piom_check_polling(PIOM_POLL_AT_IDLE);		
 }
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask){
-	*cond |= mask;
+__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask)
+{
+  *cond |= mask;
 }
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask){
-	return *cond & mask;
+__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask)
+{
+  return *cond & mask;
 }
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial){
-	*cond = initial;
+__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
+{
+  *cond = initial;
 }
 
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask){
-	*cond &=mask;
+__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask)
+{
+  *cond &=mask;
 }
 
 #ifdef PIOM_ENABLE_SHM
@@ -195,4 +218,4 @@ int piom_cond_attach_sem(piom_cond_t *cond, piom_sh_sem_t *sh_sem){
 	return 0;
 }
 #endif
-#endif /* PIOM_THREAD_ENABLED */
+#endif /* PIOMAN_MULTITHREAD */

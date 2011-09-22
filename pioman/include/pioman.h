@@ -17,22 +17,25 @@
 #ifndef PIOMAN_H
 #define PIOMAN_H
 
-/* XXX test */
-//#define PIOMAN_PTHREAD
-
 
 #if defined(PIOMAN_PTHREAD)
-#include <pthread.h>
-#include <semaphore.h>
-#define PIOM_THREAD_ENABLED
-#define PIOMAN_LOCK_PTHREAD
-#elif defined(MARCEL)
-#include <marcel.h>
-#define PIOM_THREAD_ENABLED
-#define PIOMAN_LOCK_MARCEL
+#  include <pthread.h>
+#  include <semaphore.h>
+#  include <sched.h>
+#  define PIOMAN_MULTITHREAD
+#  define PIOMAN_LOCK_PTHREAD
+#  define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#elif defined(PIOMAN_MARCEL)
+#  include <marcel.h>
+#  define PIOMAN_MULTITHREAD
+#  define PIOMAN_LOCK_MARCEL
+#  ifndef MA__NUMA
+#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  endif
 #else
-#undef PIOM_THREAD_ENABLED
-#define PIOMAN_LOCK_NONE
+#  undef  PIOMAN_MULTITHREAD
+#  define PIOMAN_LOCK_NONE
+#  define PIOMAN_LTASK_GLOBAL_QUEUE 1
 #endif
 
 extern void pioman_init(int*argc, char**argv);

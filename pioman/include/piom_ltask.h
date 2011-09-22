@@ -33,16 +33,19 @@
 
 
 typedef unsigned piom_ltask_option_t;
-#define PIOM_LTASK_OPTION_NULL 0
-#define PIOM_LTASK_OPTION_REPEAT 1
+#define PIOM_LTASK_OPTION_NONE    0x00
+#define PIOM_LTASK_OPTION_REPEAT  0x01 /**< repeat until task completion */
+#define PIOM_LTASK_OPTION_ONESHOT 0x02 /**< task is scheduled once */
+#define PIOM_LTASK_OPTION_DESTROY 0x04 /**< handler destroys the ltask- must be oneshot, without wait */
 
 typedef enum
     {
-	PIOM_LTASK_STATE_NONE       = 0x00,  /* not yet submitted */
-	PIOM_LTASK_STATE_READY      = 0x01,  /* submitted to the task manager, ready to be scheduled */
-	PIOM_LTASK_STATE_SCHEDULED  = 0x02,  /* being scheduled */
-	PIOM_LTASK_STATE_DONE       = 0x04,  /* task has been scheduled and is successfull */
-	PIOM_LTASK_STATE_TERMINATED = 0x08   /* task is terminated, resources may be freed */
+	PIOM_LTASK_STATE_NONE       = 0x00,  /**< not yet submitted */
+	PIOM_LTASK_STATE_READY      = 0x01,  /**< submitted to a queue, ready to be scheduled */
+	PIOM_LTASK_STATE_SCHEDULED  = 0x02,  /**< being scheduled */
+	PIOM_LTASK_STATE_DONE       = 0x04,  /**< task has been scheduled and is successfull */
+	PIOM_LTASK_STATE_TERMINATED = 0x08,  /**< task is terminated, resources may be freed */
+	PIOM_LTASK_STATE_DESTROYED  = 0x10   /**< task destroyed by user handler */
     } piom_ltask_state_t;
 
 
@@ -136,6 +139,12 @@ static inline void piom_ltask_completed(struct piom_ltask *task)
     piom_cond_signal(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
+/**< Notify task destruction, if option DESTROY was set. */
+static inline void piom_ltask_destroy(struct piom_ltask*ltask)
+{
+    assert(ltask->state & PIOM_LTASK_STATE_SCHEDULED);
+    ltask->state = PIOM_LTASK_STATE_DESTROYED;
+}
 
 /** create a new ltask. */
 static inline void piom_ltask_create(struct piom_ltask *task,

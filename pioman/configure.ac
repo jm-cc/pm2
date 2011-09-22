@@ -50,7 +50,7 @@ AC_PROG_CPP
 
 BASE_CFLAGS="-Wall"
 DEBUG_CFLAGS="-g -DDEBUG"
-OPT_CFLAGS="-O4 -march=native"
+OPT_CFLAGS="-O4 -march=native -DNDEBUG"
 CPICFLAGS="-fPIC"
 CDEPFLAGS="-MM"
 DYNLIB_LDFLAGS="-shared -rdynamic"
@@ -96,9 +96,6 @@ AC_ARG_ENABLE(optimize,
 	      ],
 	      [])
 
-AC_SUBST(PIOMAN_CFLAGS)
-AC_SUBST(PIOMAN_LIBS)
-
 dnl -- external packages
 dnl --------------------------------------------------------
 
@@ -111,17 +108,29 @@ AC_ARG_WITH([marcel],
 if test "x${with_marcel}" = "xyes"; then
   PKG_CHECK_MODULES([marcel], [ marcel ])
   requires_marcel="marcel"
+   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_MARCEL"
 else
   requires_marcel=
 fi
 AC_SUBST([requires_marcel])
 
+AC_ARG_WITH([pthread],
+	[AS_HELP_STRING([--with-pthread], [use pthread @<:@default=no@:>@] )])
+if test "x${with_pthread}" = "xyes"; then
+   pioman_LIBS="${pioman_LIBS} -lpthread -lrt"
+   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_PTHREAD"
+   PIOMAN_LIBS="${PIOMAN_LIBS} -lpthread -lrt"
+fi
+
 PIOMAN_EXT_CFLAGS="${tbx_CFLAGS} ${marcel_CFLAGS}"
 AC_SUBST(PIOMAN_EXT_CFLAGS)
 
-PIOMAN_EXT_LIBS="${tbx_LIBS} ${marcel_LIBS}"
+PIOMAN_EXT_LIBS="${tbx_LIBS} ${marcel_LIBS} ${pioman_LIBS}"
 AC_SUBST(PIOMAN_EXT_LIBS)
 
+
+AC_SUBST(PIOMAN_CFLAGS)
+AC_SUBST(PIOMAN_LIBS)
 
 
 out_sh=""

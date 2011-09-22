@@ -22,7 +22,9 @@
 #include "pioman.h"
 #include "tbx_fast_list.h"
 
-#ifdef PIOM_THREAD_ENABLED
+typedef uint8_t piom_cond_value_t;
+
+#ifdef PIOMAN_MULTITHREAD
 
 #ifdef PIOMAN_LOCK_MARCEL
 typedef marcel_sem_t piom_sem_t;
@@ -34,7 +36,7 @@ typedef sem_t piom_sem_t;
 
 typedef struct
 {
-    uint8_t value;
+    piom_cond_value_t value;
     piom_spinlock_t lock;
     piom_sem_t sem;
     /* additional semaphore used to signal this condition
@@ -46,12 +48,12 @@ typedef struct
     int cpt;
 } piom_cond_t;
 
-#else /* PIOM_THREAD_ENABLED */
+#else /* PIOMAN_MULTITHREAD */
 
 typedef int piom_sem_t;
-typedef uint8_t piom_cond_t;
+typedef piom_cond_value_t piom_cond_t;
 
-#endif	/* PIOM_THREAD_ENABLED */
+#endif	/* PIOMAN_MULTITHREAD */
 
 void piom_sem_P(piom_sem_t *sem);
 void piom_sem_V(piom_sem_t *sem);

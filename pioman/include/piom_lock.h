@@ -17,6 +17,8 @@
 #ifndef PIOM_LOCK_H
 #define PIOM_LOCK_H
 
+#include <assert.h>
+
 #ifdef PIOMAN_LOCK_MARCEL
 
 /* ** locks for Marcel ************************************* */
@@ -50,11 +52,35 @@
 
 /* ** locks for pthread ************************************ */
 
+extern volatile int __piom_ltask_handler_masked;
+
 #define piom_spinlock_t                pthread_spinlock_t
 #define piom_spin_lock_init(lock)      pthread_spin_init(lock, 0)
-#define piom_spin_lock(lock)           pthread_spin_lock(lock)
-#define piom_spin_unlock(lock)         pthread_spin_unlock(lock)
-#define piom_spin_trylock(lock)        (pthread_spin_trylock(lock)==0)
+
+
+static inline int piom_spin_lock(piom_spinlock_t*lock)
+{
+    __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
+    assert(__piom_ltask_handler_masked > 0);
+    return pthread_spin_lock(lock);
+}
+static inline int piom_spin_unlock(piom_spinlock_t*lock)
+{
+    assert(__piom_ltask_handler_masked > 0);
+    int rc = pthread_spin_unlock(lock);
+    __sync_fetch_and_sub(&__piom_ltask_handler_masked, 1);
+    return rc;
+}
+static inline int piom_spin_trylock(piom_spinlock_t *lock)
+{
+    __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
+    int rc = (pthread_spin_trylock(lock) == 0);
+    if(!rc)
+	{
+	    __sync_fetch_and_sub(&__piom_ltask_handler_masked, 1);
+	}
+    return rc;
+}
 
 #define piom_rwlock_t                  pthread_rwlock_t
 #define PIOM_RW_LOCK_UNLOCKED          PTHREAD_RW_LOCK_UNLOCKED
@@ -74,7 +100,7 @@
 #define piom_ltask_current_vp() (0)
 #define piom_ltask_nvp()        (1)
 
-#elif defined(PIOMAN_LOCKNONE)
+#elif defined(PIOMAN_LOCK_NONE)
 
 /* ** no locks ********************************************* */
 

@@ -50,34 +50,47 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
  * - the history of previous request
  * - compiler hints
  */
-#define TIME_TO_POLL 20
+/** time to do a busy wait before blocking, in usec. */
+#define PIOMAN_BUSY_WAIT_USEC 50
+/** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
+#define PIOMAN_BUSY_WAIT_LOOP 100
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
 {
   PIOM_LOG_IN();
-  
+
 #ifdef PIOMAN_MULTITHREAD
   /* First, let's poll for a while before blocking */
-  tbx_tick_t t1, t2;
-  TBX_GET_TICK(t1);
+  tbx_tick_t t1;
+  int busy_wait = 1;
   do
     {
-      if(cond->value & mask)
+      int i;
+      for(i = 0; i < PIOMAN_BUSY_WAIT_LOOP ; i++)
 	{
-	  /* We have to consume the semaphore. Otherwise, there may be a 
-	   *  problem since the application thread may re-initialize the condition
-	   *  before piom_cond_signal ends
-	   */
-	  piom_sem_P(&cond->sem);
-	  if(cond->cpt)
-	    /* another thread is waiting for the same semaphore */
-	    piom_sem_V(&cond->sem);
-	  return;
+	  if(cond->value & mask)
+	    {
+	      /* consume the semaphore */
+	      piom_sem_P(&cond->sem);
+	      return;
+	    }
+	  piom_check_polling(PIOM_POLL_AT_IDLE);
 	}
-      piom_check_polling(PIOM_POLL_AT_IDLE);
-      TBX_GET_TICK(t2);
+      /* amortize cost of TBX_GET_TICK() */
+      if(busy_wait == 1)
+	{
+	  TBX_GET_TICK(t1);
+	  busy_wait = 2;
+	}
+      else
+	{
+	  tbx_tick_t t2;
+	  TBX_GET_TICK(t2);
+	  if(TBX_TIMING_DELAY(t1, t2) > PIOMAN_BUSY_WAIT_USEC)
+	    busy_wait = 0;
+	}
     }
-  while(TBX_TIMING_DELAY(t1, t2) < TIME_TO_POLL);
+  while(busy_wait);
 #ifdef PIOMAN_MARCEL
   /* set highest priority so that the thread 
      is scheduled (almost) immediatly when done */
@@ -94,18 +107,14 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
 
   while(!(cond->value & mask))
     {
-      cond->cpt++;
       piom_sem_P(&cond->sem);
-      cond->cpt--;
-      if(cond->cpt)
-	/* another thread is waiting for the same semaphore */
-	piom_sem_V(&cond->sem);
     }
 #ifdef PIOMAN_MARCEL
   marcel_sched_setparam(PIOM_SELF, &old_param);
 #endif /* PIOMAN_MARCEL */
+
 #else  /* PIOMAN_MULTITHREAD */
-  /* no Marcel, do not block as possibly nobody will wake us... 
+  /* no threads, do not block as possibly nobody will wake us... 
    *  (We have neither timers nor supplementary VP)
    */
   while(!(cond->value & mask))
@@ -140,7 +149,6 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
 #ifdef PIOM_ENABLE_SHM
   cond->alt_sem = NULL;
 #endif
-  cond->cpt = 0;
   piom_sem_init(&cond->sem, 0);
   piom_spin_lock_init(&cond->lock);
 }

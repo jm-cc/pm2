@@ -36,16 +36,15 @@ typedef sem_t piom_sem_t;
 
 typedef struct
 {
-    piom_cond_value_t value;
-    piom_spinlock_t lock;
+    volatile piom_cond_value_t value;
     piom_sem_t sem;
+    piom_spinlock_t lock;
     /* additional semaphore used to signal this condition
        and others */
     /* todo: is there a need for 2 semaphores ? */    
 #ifdef PIOM_ENABLE_SHM
     p_piom_sh_sem_t alt_sem;
 #endif
-    int cpt;
 } piom_cond_t;
 
 #else /* PIOMAN_MULTITHREAD */

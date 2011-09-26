@@ -53,6 +53,7 @@ static __tbx_inline__ void __lpt_lock(struct _lpt_fastlock *lock, marcel_t self)
 static __tbx_inline__ void __marcel_unlock(struct _marcel_fastlock *lock)
 {
 	blockcell *first;
+	marcel_t task;
 
         MARCEL_LOG_IN();
 
@@ -64,8 +65,9 @@ static __tbx_inline__ void __marcel_unlock(struct _marcel_fastlock *lock)
 			if (tbx_likely(first)) {
 				first->blocked = tbx_false;
 				__marcel_unregister_lock_spinlocked(lock, first);
+				task = first->task;
 				ma_fastlock_release(lock);
-				ma_wake_up_thread(first->task);
+				ma_wake_up_thread(task);
 				break;
 			} else {
 				ma_fastlock_release(lock);

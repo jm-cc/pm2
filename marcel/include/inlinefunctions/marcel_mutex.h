@@ -65,7 +65,8 @@ static __tbx_inline__ void __marcel_unlock(struct _marcel_fastlock *lock)
 			if (tbx_likely(first)) {
 				first->blocked = tbx_false;
 				__marcel_unregister_lock_spinlocked(lock, first);
-				task = first->task;
+				task = first->task; /* first can be freed in __marcel_lock_*_wait: 
+						       if the fastlock is release */
 				ma_fastlock_release(lock);
 				ma_wake_up_thread(task);
 				break;

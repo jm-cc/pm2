@@ -33,15 +33,6 @@
 #include <ctype.h>
 
 
-static size_t tbx_strnlen(const char *s, size_t count)
-{
-	const char *sc;
-
-	for (sc = s; count-- && *sc != '\0'; ++sc)
-		/* nothing */ ;
-	return sc - s;
-}
-
 static int skip_atoi(const char **s)
 {
 	int i = 0;

@@ -514,6 +514,8 @@ char *tbx_strdup(const char *src);
 
 tbx_bool_t tbx_streq(const char *s1, const char *s2);
 
+size_t tbx_strnlen(const char *s, size_t count);
+
 p_tbx_string_t tbx_string_init(void);
 
 void tbx_string_free(p_tbx_string_t string);

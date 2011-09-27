@@ -37,9 +37,12 @@
 
 
 /** Check tbx version of s(n)printf */
+#undef sprintf
 #define sprintf(buf, ...) tbx_sprintf(buf, __VA_ARGS__)
+#undef snprintf
 #define snprintf(buf, size, ...) tbx_snprintf(buf, size, __VA_ARGS__)
-
+#undef strnlen
+#define strnlen(s, max) tbx_strnlen(s, max)
 
 static int tst_gnu_sprintf(void)
 {

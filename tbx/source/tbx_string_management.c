@@ -85,6 +85,15 @@ tbx_bool_t tbx_streq(const char *s1, const char *s2)
 	return result;
 }
 
+size_t tbx_strnlen(const char *s, size_t count)
+{
+	const char *sc;
+
+	for (sc = s; count-- && *sc != '\0'; ++sc)
+		/* nothing */ ;
+	return sc - s;
+}
+
 p_tbx_string_t tbx_string_init(void)
 {
 	p_tbx_string_t string = NULL;

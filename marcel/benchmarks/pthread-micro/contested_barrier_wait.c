@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long count;
 static pthread_barrier_t b;
 
 static void *lock_unlock(void *arg)
@@ -33,9 +32,6 @@ static void test_exec(void)
 {
 	int i;
 	pthread_t *t;
-
-	printf("-- Contested barrier_wait test (duration: %ds) --\n", 
-	       TEST_TIME);
 
 	pthread_barrier_init(&b, NULL, nproc);
 
@@ -54,7 +50,6 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld barriers crossed in %d seconds [%ld barriers/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 	exit(0); // erk ... some threads are still waiting in the barrier
 }

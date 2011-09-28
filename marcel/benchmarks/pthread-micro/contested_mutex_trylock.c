@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long count;
 static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
 static void *lock_unlock(void *arg)
@@ -36,9 +35,6 @@ static void test_exec(void)
 	int i;
 	pthread_t *t;
 
-	printf("-- Contested mutex_trylock test (duration: %ds) --\n", 
-	       TEST_TIME);
-
 	count = 0;
 	t = malloc(sizeof(*t) * nproc);
 	for (i = 0; i < nproc; i++)
@@ -52,6 +48,5 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld mutex taken in %d seconds [%ld lock/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 }

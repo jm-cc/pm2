@@ -17,7 +17,6 @@
 #include <semaphore.h>
 #include "main.c"
 
-static unsigned long count;
 static sem_t s;
 
 static void *lock_unlock(void *arg)
@@ -36,9 +35,6 @@ static void test_exec(void)
 {
 	pthread_t t;
 
-	printf("-- Uncontested sem_trywait test (duration: %ds) --\n", 
-	       TEST_TIME);
-
 	sem_init(&s, 0, 1);
 
 	count = 0;
@@ -51,6 +47,5 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld semaphore taken in %d seconds [%ld lock/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 }

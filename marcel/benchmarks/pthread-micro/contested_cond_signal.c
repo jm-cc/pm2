@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long count;
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
@@ -37,9 +36,6 @@ static void test_exec(void)
 	int i;
 	pthread_t *t;
 
-	printf("-- Contested cond_signal test (duration: %ds) --\n", 
-	       TEST_TIME);
-
 	pthread_mutex_lock(&m);
 
 	count = 0;
@@ -57,7 +53,6 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld cond_signal in %d seconds [%ld cond_signal/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 	pthread_cond_broadcast(&c);
 }

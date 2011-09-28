@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long count;
 static pthread_rwlock_t r;
 
 static void *lock_unlock(void *arg)
@@ -35,9 +34,6 @@ static void test_exec(void)
 {
 	pthread_t t;
 
-	printf("-- Uncontested rwlock_trywrlock test (duration: %ds) --\n", 
-	       TEST_TIME);
-
 	pthread_rwlock_init(&r, NULL);
 
 	count = 0;
@@ -50,6 +46,5 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld rwlock_trywrlock taken in %d seconds [%ld rwlock_trywrlock/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 }

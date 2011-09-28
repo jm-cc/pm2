@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long *count;
+static unsigned long *th_count;
 static pthread_rwlock_t r;
 
 static void *lock_unlock(void *arg)
@@ -25,7 +25,7 @@ static void *lock_unlock(void *arg)
 
 	while (! isend) {
 		pthread_rwlock_rdlock(&r);
-		count[rank]++;
+		th_count[rank]++;
 		pthread_rwlock_unlock(&r);
 	}
 
@@ -37,22 +37,19 @@ static void test_exec(void)
 	int i;
 	pthread_t *t;
 
-	printf("-- Contested rwlock_rdlock test (duration: %ds) --\n", 
-	       TEST_TIME);
-
 	pthread_rwlock_init(&r, NULL);
 
-	count = malloc(sizeof(*count) * nproc);
+	th_count = malloc(sizeof(*th_count) * nproc);
 	t = malloc(sizeof(*t) * nproc);
 	for (i = 0; i < nproc; i++) {
-		count[i] = 0;
+		th_count[i] = 0;
 		pthread_create(&t[i], NULL, lock_unlock, (void *)((long)i));
 	}
 
 	for (i = 0; i < nproc; i++)
 		pthread_join(t[i], NULL);
 	free(t);
-	free(count);
+	free(th_count);
 
 	pthread_rwlock_destroy(&r);
 }
@@ -60,13 +57,11 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	int i;
-	unsigned long res;
 
-	res = 0;
-	for (i = 0; i < nproc; i++)
-		res += count[i];
-			
 	isend = 1;
-	printf("%ld rwlock_rdlock taken in %d seconds [%ld rwlock_rdlock/s]\n",
-	       res, TEST_TIME, res/TEST_TIME);
+
+	count = 0;
+	for (i = 0; i < nproc; i++)
+		count += th_count[i];
+	print_results();
 }

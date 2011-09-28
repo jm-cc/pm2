@@ -16,8 +16,6 @@
 #include <pthread.h>
 #include "main.c"
 
-static unsigned long count;
-
 static void *do_nothing(void *arg)
 {
 	return arg;
@@ -26,9 +24,6 @@ static void *do_nothing(void *arg)
 static void test_exec(void)
 {
 	pthread_t t;
-
-	printf("-- Thread creation test (duration: %ds) --\n", 
-	       TEST_TIME);
 
 	count = 0;
 	while (!isend) {
@@ -41,6 +36,5 @@ static void test_exec(void)
 static void test_print_results(int sig)
 {
 	isend = 1;
-	printf("%ld thread created in %d seconds [%ld threads/s]\n",
-	       count, TEST_TIME, count/TEST_TIME);
+	print_results();
 }

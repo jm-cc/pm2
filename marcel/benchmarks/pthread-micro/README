@@ -1,0 +1,3 @@
+- Test duration can be modified by editing TEST_TIME value in main.c
+- For benchmarking, a simple output can be obtained by setting the environment
+  variable PT_AUTOBENCH.

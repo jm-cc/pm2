@@ -14,20 +14,29 @@
  */
 
 #include <pthread.h>
+#include <errno.h>
 #include "main.c"
 
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 
-static void *lock_unlock(void *arg)
+static void *th_waiters(void *arg)
 {
+	pthread_mutex_lock(&m);
 	while (! isend) {
 		pthread_cond_wait(&c, &m);
 		count++;
-		pthread_cond_signal(&c);
 	}
 	pthread_mutex_unlock(&m);
 
+	return arg;
+}
+
+static void *th_signal(void *arg)
+{
+	while (! isend)
+		pthread_cond_signal(&c);
+	
 	return arg;
 }
 
@@ -36,13 +45,11 @@ static void test_exec(void)
 	int i;
 	pthread_t *t;
 
-	pthread_mutex_lock(&m);
-
 	count = 0;
 	t = malloc(sizeof(*t) * nproc);
-	for (i = 0; i < nproc; i++)
-		pthread_create(&t[i], NULL, lock_unlock, NULL);
-	pthread_cond_signal(&c);
+	for (i = 0; i < nproc-1; i++)
+		pthread_create(&t[i], NULL, th_waiters, NULL);
+	pthread_create(&t[i], NULL, th_signal, NULL);
 
 	for (i = 0; i < nproc; i++)
 		pthread_join(t[i], NULL);

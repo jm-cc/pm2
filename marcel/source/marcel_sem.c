@@ -182,13 +182,17 @@ DEF_C(int, sem_wait, (pmarcel_sem_t *s), (s))
 
 int marcel_sem_try_P(marcel_sem_t *s)
 {
+	int oldval;
+
 	MARCEL_LOG_IN();
 	MARCEL_LOG("semaphore %p\n", s);
 
-	if (tbx_likely(! ma_atomic_add_negative(-1, &s->value)))
-		MARCEL_LOG_RETURN(1);
-
-	ma_atomic_inc(&s->value);
+	oldval = ma_atomic_read(&s->value);
+	if (oldval > 0) {
+		if (tbx_likely(oldval == ma_atomic_xchg(oldval, oldval-1, &s->value)))
+			MARCEL_LOG_RETURN(1);
+	}
+	
 	MARCEL_LOG_RETURN(0);
 }
 

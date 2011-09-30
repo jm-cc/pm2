@@ -57,6 +57,9 @@ static __tbx_inline__ void __marcel_unlock(struct _marcel_fastlock *lock)
 
         MARCEL_LOG_IN();
 
+	if (tbx_unlikely(ma_atomic_read(&lock->__status) == 1))
+		return;
+
         if (ma_atomic_inc_return(&lock->__status) <= 0) {
 		ma_fastlock_acquire(lock);
 

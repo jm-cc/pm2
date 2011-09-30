@@ -95,6 +95,4 @@ for test in ${WORKDIR}/build/benchs/bin/*; do
 done
 
 ## Upload WWWDIR
-mkdir /tmp/titi
-rsync -avz ${WWWDIR}/ /tmp/titi/
-#rsync -avz $BENCH_PATH/www/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/marcel/benchs/
+rsync -avz ${WWWDIR}/ scm.gforge.inria.fr:/home/groups/pm2/htdocs/marcel/benchs/

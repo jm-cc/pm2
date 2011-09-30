@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Marcel benchmark</title>
+    <link href="./flot/examples/layout.css" rel="stylesheet" type="text/css"></link>
+    <!--[if IE]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
+    <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="process_result.js"></script>
+  </head>
+  <body>
+    <h1 style='text-align: center'>NPTL/Marcel benchmark</h1>
+    <form name="dateSelect" style="text-align: right">
+      <select name="year" onChange="printChoice()"></select>
+      <select name="month" style="margin-left:5px;" onChange="printChoice(testName, testData, testDataOnReceive)"></select>
+    </form>
+    <div id="testGraphs" style="text-align: center;"></div>
+
+    <script language="javascript" type="text/javascript">
+      /** select date */
+      var currentYear = "";
+      var currentMonth = "";
+
+      /** button options */
+      var year = document.dateSelect.year;
+      year.options[year.options.length] = new Option('2011','Y1');
+      
+      var month = document.dateSelect.month;
+      month.options[month.options.length] = new Option('Jan','M1');
+      month.options[month.options.length] = new Option('Feb','M2');
+      month.options[month.options.length] = new Option('Mar','M3');
+      month.options[month.options.length] = new Option('Apr','M4');
+      month.options[month.options.length] = new Option('May','M5');
+      month.options[month.options.length] = new Option('Jun','M6');
+      month.options[month.options.length] = new Option('Jul','M7');
+      month.options[month.options.length] = new Option('Aug','M8');
+      month.options[month.options.length] = new Option('Sep','M9');
+      month.options[month.options.length] = new Option('Oct','M10');
+      month.options[month.options.length] = new Option('Nov','M11');
+      month.options[month.options.length] = new Option('Dec','M12');
+
+      /** button default option */
+      var now = new Date();
+      year.options[year.options.length - 1].selected = true;
+      month.options[now.getMonth()].selected = true;
+
+      /** process and graph benchmark results */
+      var testName = [];
+      var testData = [];
+      var testDataOnReceive = [];
+      var previousPoint = null;    
+      var options = {
+        lines: { show: true },
+        points: { show: true },
+        grid: { hoverable: true, clickable: true },
+        xaxis: { tickDecimals: 0, tickSize: 1 },
+        yaxis: { tickDecimals: 0 }
+      };
+
+
+      initTestHolders(testName, testData, testDataOnReceive);
+      printChoice(testName, testData, testDataOnReceive);
+
+      var iter;
+      for (iter = 0; iter < testName.length; iter++)
+        toolTipSetUp("#" + getPlaceHolderName(testName[iter]));
+    </script>
+   </body>
+</html>

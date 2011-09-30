@@ -58,7 +58,7 @@ static void print_results(void)
 	if (getenv(TEST_AUTOBENCHMARK_ENV))
 		printf("%ld\n", count/TEST_TIME);
 	else
-		printf("%ld %s in %d seconds: [%ld/s]\n", count, strstr(testname, "_")+1, TEST_TIME, count/TEST_TIME);	
+		printf("%ld %s in %d seconds: [%ld op/s]\n", count, strstr(testname, "_")+1, TEST_TIME, count/TEST_TIME);	
 }
 
 

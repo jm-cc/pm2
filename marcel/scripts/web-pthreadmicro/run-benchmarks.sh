@@ -70,10 +70,10 @@ cd ${WORKDIR}
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:${WORKDIR}/build/tbx/lib/pkgconfig:${WORKDIR}/build/marcel/lib/pkgconfig
 export PATH=${PATH}:${WORKDIR}/build/marcel/bin
 
-# rm -rf build && mkdir build
-# cd ${WORKDIR}/src/tbx && ./autogen.sh && ./configure --enable-optimize --prefix=${WORKDIR}/build/tbx && make && make install
-# cd ${WORKDIR}/src/marcel && ./autogen.sh && ./configure --enable-optimize --prefix=${WORKDIR}/build/marcel --with-libtype=pthread && make && make install
-# cd ${WORKDIR}/src/marcel/benchmarks/pthread-micro && ./autogen.sh && ./configure --prefix=${WORKDIR}/build/benchs && make && make install
+rm -rf build && mkdir build
+cd ${WORKDIR}/src/tbx && ./autogen.sh && ./configure --enable-optimize --prefix=${WORKDIR}/build/tbx && make && make install
+cd ${WORKDIR}/src/marcel && ./autogen.sh && ./configure --enable-optimize --prefix=${WORKDIR}/build/marcel --with-libtype=pthread && make && make install
+cd ${WORKDIR}/src/marcel/benchmarks/pthread-micro && ./autogen.sh && ./configure --prefix=${WORKDIR}/build/benchs && make && make install
 
 ## Execute benchmarks
 [ ! -d ${PERFDIR}/${YEAR}/${MONTH} ] && mkdir -p ${PERFDIR}/${YEAR}/${MONTH}

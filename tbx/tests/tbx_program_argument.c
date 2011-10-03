@@ -14,6 +14,8 @@
  */
 
 
+#undef NDEBUG
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "tbx_program_argument.h"
@@ -38,63 +40,53 @@ int main()
 	cmd_argv[cmd_argv_size] = NULL;
 
 	printf("parse args\n");
-	if (! tbx_pa_parse(cmd_argv_size, cmd_argv, NULL))
-		return 1;
+	assert(tbx_pa_parse(cmd_argv_size, cmd_argv, NULL));
 
 	printf("getargs\n");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != cmd_argv_size)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == cmd_argv_size);
 
 	printf("free: null-module\n");
 	tbx_pa_free_module_args("null-module");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != cmd_argv_size)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == cmd_argv_size);
 
 	printf("free: tbx\n");
 	tbx_pa_free_module_args("tbx");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != 3)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == 3);
 
 	printf("free: marcel\n");
 	tbx_pa_free_module_args("marcel");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != 0)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == 0);
 
 	tbx_pa_free_args();
 
 	putenv("PM2_ARGS=--tbx-optbis --marcel-optbis marcel-optbis-value");
 	tbx_pa_parse(cmd_argv_size, cmd_argv, "PM2_ARGS");
 	cmd_argv_size += 3;
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != cmd_argv_size)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == cmd_argv_size);
 
 	printf("free: null-module\n");
 	tbx_pa_free_module_args("null-module");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != cmd_argv_size)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == cmd_argv_size);
 
 	printf("free: tbx\n");
 	tbx_pa_free_module_args("tbx");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != 5)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == 5);
 
 	printf("free: marcel\n");
 	tbx_pa_free_module_args("marcel");
-	if (! tbx_pa_get_args(&parsed_argc, &parsed_argv) ||
-	    parsed_argc != 0)
-		return 1;
+	assert(tbx_pa_get_args(&parsed_argc, &parsed_argv) &&
+	       parsed_argc == 0);
 
 	printf("copy unparsed args\n");
 	tbx_pa_copy_args(&cmd_argv_size, cmd_argv);
-	if (cmd_argv_size != 0 || parsed_argc != cmd_argv_size)
-		return 1;
+	assert(cmd_argv_size == 0 && parsed_argc == cmd_argv_size);
 
 	tbx_pa_free_args();
 	return 0;

@@ -14,6 +14,8 @@
  */
 
 
+#undef NDEBUG
+#include <assert.h>
 #include <stdlib.h>
 #include "tbx.h"
 
@@ -30,45 +32,37 @@ int main(int argc, char *argv[])
 
 	/** check empty table state */
 	table = tbx_htable_empty_table();
-	if (tbx_false == tbx_htable_empty(table) || 
-	    0 != tbx_htable_get_size(table))
-		return EXIT_FAILURE;
+	assert (tbx_true == tbx_htable_empty(table) &&
+		0 == tbx_htable_get_size(table));
 
 	/** check key list of empty table */
 	keylist = tbx_htable_get_key_slist(table);
-	if (tbx_false == tbx_slist_is_nil(keylist))
-		return EXIT_FAILURE;
+	assert(tbx_true == tbx_slist_is_nil(keylist));
 	tbx_slist_clear_and_free(keylist);
 
 	/** check replace with add */
 	tbx_htable_add(table, a, a);
 	tbx_htable_add(table, b, b);
 	tbx_htable_add(table, b, a);
-	if (2 != tbx_htable_get_size(table) ||
-	    b != tbx_htable_get(table, b) ||
-	    tbx_true == tbx_htable_empty(table))
-		return EXIT_FAILURE;
+	assert(2 == tbx_htable_get_size(table) &&
+	       b == tbx_htable_get(table, b)   &&
+	       tbx_false == tbx_htable_empty(table));
 
 	/** check key list */
 	keylist = tbx_htable_get_key_slist(table);
-	if (! strcmp(a, tbx_slist_extract(keylist)))
-		 return EXIT_FAILURE;
-	if (! strcmp(b, tbx_slist_extract(keylist)))
-		return EXIT_FAILURE;
-	if (tbx_false == tbx_slist_is_nil(keylist))
-		return EXIT_FAILURE;
+	assert(strcmp(a, tbx_slist_extract(keylist)));
+	assert(strcmp(b, tbx_slist_extract(keylist)));
+	assert(tbx_true == tbx_slist_is_nil(keylist));
 	tbx_slist_clear_and_free(keylist);
 
 	/** extract all elements */
 	tbx_htable_extract(table, a);
 	tbx_htable_extract(table, b);
-	if (0 != tbx_htable_get_size(table) ||
-	    tbx_false == tbx_htable_empty(table) ||
-	    NULL != tbx_htable_get(table, a))
-		return EXIT_FAILURE;
+	assert(0 == tbx_htable_get_size(table)     &&
+	       tbx_true == tbx_htable_empty(table) &&
+	       NULL == tbx_htable_get(table, a));
 
-	tbx_htable_free(table);
-	
+	tbx_htable_free(table);	
 	tbx_exit();
 
 	return EXIT_SUCCESS;

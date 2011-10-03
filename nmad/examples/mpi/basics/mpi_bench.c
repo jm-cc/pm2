@@ -24,18 +24,19 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <values.h>
 
 #include <mpi.h>
 
 // Setup
 
 #define MIN_DEFAULT      0
-#define MAX_DEFAULT      (8 * 1024 * 1024)
+#define MAX_DEFAULT      (512 * 1024 * 1024)
 #define MULT_DEFAULT     2
 #define INCR_DEFAULT     0
-#define WARMUPS_DEFAULT  10
-#define LOOPS_DEFAULT    200
-#define NB_TESTS_DEFAULT 1
+#define WARMUPS_DEFAULT  2
+#define LOOPS_DEFAULT    50
+#define NB_TESTS_DEFAULT 5
 
 // Types
 //......................
@@ -67,6 +68,21 @@ uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
     return len * multiplier + increment;
 }
 
+static inline uint32_t _iterations(int iterations, uint32_t len)
+{
+  const uint64_t max_data = 512 * 1024 * 1024;
+  if(len <= 0)
+    len = 1;
+  uint64_t data_size = ((uint64_t)iterations * (uint64_t)len);
+  if(data_size  > max_data)
+    {
+      iterations = (max_data / (uint64_t)len);
+      if(iterations < 1)
+	iterations = 1;
+    }
+  return iterations;
+}
+
 static void usage_bench(void) {
   fprintf(stderr, "-S start_len  - starting length [%d]\n", MIN_DEFAULT);
   fprintf(stderr, "-E end_len    - ending length [%d]\n", MAX_DEFAULT);
@@ -79,11 +95,9 @@ static void usage_bench(void) {
   fprintf(stderr, "-W warmup     - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
-int
-main(int    argc,
-     char **argv)
+int main(int argc, char **argv)
 {
-        int log, i;
+        int i;
         int ping_side;
         int rank_dst;
         uint32_t	 start_len      = MIN_DEFAULT;
@@ -151,19 +165,16 @@ main(int    argc,
         ping_side	= !(comm_rank & 1);
         rank_dst	= ping_side?(comm_rank | 1):(comm_rank & ~1);
 
-        if (ping_side) {
-                fprintf(stdout, "# (%d): ping with %d\n", comm_rank, rank_dst);
-                log = 1;
-        } else {
-                fprintf(stdout, "# (%d): pong with %d\n", comm_rank, rank_dst);
-                log = 0;
-        }
+        if (ping_side)
+	  {
+	    fprintf(stdout, "# (%d): ping with %d\n", comm_rank, rank_dst);
+	    fprintf(stdout, "# warming up...\n");
+	  } 
+	else 
+	  {
+	    fprintf(stdout, "# (%d): pong with %d\n", comm_rank, rank_dst);
+	  }
 
-        if (comm_rank == 0) {
-                fprintf(stdout, "# mpi_bench begin\n");
-                fprintf(stdout, "# The configuration size is %d\n", comm_size);
-		fprintf(stdout, "# src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
-	}
 
         main_buffer = malloc(end_len);
 
@@ -180,99 +191,75 @@ main(int    argc,
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
+        if (comm_rank == 0)
+	  {
+	    fprintf(stdout, "# mpi_bench begin\n");
+	    fprintf(stdout, "# The configuration size is %d\n", comm_size);
+	    fprintf(stdout, "# src|dst|size        |latency     |10^6 B/s|MB/s    |\n");
+	  }
         /* Test */
         {
-                uint32_t size = 0;
+	  uint32_t size = 0;
+	  for (size = start_len; size <= end_len; size = _next(size, multiplier, increment)) 
+	    {
+	      iterations = _iterations(iterations, size);
+	      if (ping_side) 
+		{
+		  int nb_tests = tests;
+		  double t1;
+		  double t2;
+		  double lat;
+		  double bw_million_byte;
+		  double bw_mbyte;
+		  double delay = DBL_MAX;
 
-                for (size = start_len;
-                     size <= end_len;
-                     size = _next(size, multiplier, increment)) {
-                        if (ping_side) {
-                                int		nb_tests	= tests;
-                                double		sum		= 0.0;
-                                double		t1;
-                                double		t2;
-                                double		lat;
-                                double		bw_million_byte;
-				double          bw_mbyte;
-
-                                sum = 0;
-
-                                while (nb_tests--) {
-                                        int nb_samples = iterations;
-
-                                        MPI_Barrier(MPI_COMM_WORLD);
-                                        t1 = MPI_Wtime();
-                                        while (nb_samples--) {
-                                                MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                                        }
-                                        t2 = MPI_Wtime();
-                                        MPI_Barrier(MPI_COMM_WORLD);
-
-                                        sum += t2 - t1;
-                                }
-
-                                sum *= 1e6;
-
-                                bw_million_byte	= (size * (double)tests * (double)iterations)
-                                        / (sum / 2);
-                                lat		= sum / tests / iterations / 2;
-				bw_mbyte = bw_million_byte / 1.048576;
-
-
-                                if (log)
-                                        fprintf(stdout, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
-						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
-                        } else {
-                                int		nb_tests	= tests;
-                                double		sum		= 0.0;
-                                double		t1;
-                                double		t2;
-                                double		lat;
-                                double		bw_million_byte;
-				double          bw_mbyte;
-
-                                sum = 0;
-
-                                while (nb_tests--) {
-                                        int nb_samples = iterations;
-
-                                        MPI_Barrier(MPI_COMM_WORLD);
-                                        t1 = MPI_Wtime();
-                                        while (nb_samples--) {
-                                                MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                                                MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
-                                        }
-                                        MPI_Barrier(MPI_COMM_WORLD);
-                                        t2 = MPI_Wtime();
-                                        sum += t2 - t1;
-                                }
-
-
-                                sum *= 1e6;
-
-                                bw_million_byte	= (size * (double)tests * (double)iterations)
-                                        / (sum / 2);
-                                lat		= sum / tests / iterations / 2;
-				bw_mbyte = bw_million_byte / 1.048576;
-
-                                if (log && ping_side)
-                                        fprintf(stdout, "%3d %3d %12d %12.3f %8.3f %8.3f\n",
-						comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
-                        }
-
-                }
+		  while (nb_tests--) 
+		    {
+		      int nb_samples = iterations;
+		      MPI_Barrier(MPI_COMM_WORLD);
+		      t1 = MPI_Wtime();
+		      while (nb_samples--) 
+			{
+			  MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+			  MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		      t2 = MPI_Wtime();
+		      MPI_Barrier(MPI_COMM_WORLD);
+		      const double t = t2 - t1;
+		      if(t < delay)
+			delay = t;
+		    }
+		  delay *= 1e6;
+		  bw_million_byte = (size * (double)iterations) / (delay / 2);
+		  lat = delay / iterations / 2;
+		  bw_mbyte = bw_million_byte / 1.048576;
+		  printf("%3d %3d %12d %12.3f %8.3f %8.3f\n",
+			 comm_rank, rank_dst, size, lat, bw_million_byte, bw_mbyte);
+		} 
+	      else 
+		{
+		  int		nb_tests	= tests;
+		  while (nb_tests--) 
+		    {
+		      int nb_samples = iterations;
+		      
+		      MPI_Barrier(MPI_COMM_WORLD);
+		      while (nb_samples--) 
+			{
+			  MPI_Recv(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			  MPI_Send(main_buffer, size, MPI_CHAR, rank_dst, 0, MPI_COMM_WORLD);
+			}
+		      MPI_Barrier(MPI_COMM_WORLD);
+		    }
+		}
+	    }
         }
-	if(comm_rank ==0)
+	if(comm_rank == 0)
 	  {
-                fprintf(stdout, "# mpi_bench end\n");
+	    fprintf(stdout, "# mpi_bench end\n");
 	  }
 
         free(main_buffer);
-
-        if (log)
-                fprintf(stdout, "Exiting\n");
 
  out:
         MPI_Finalize();

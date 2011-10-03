@@ -12,7 +12,7 @@ WORKDIR=${ROOTDIR}/tmp
 
 export PT_AUTOBENCH=y
 export LANG=C
-DAY=`date +%d`
+DAY=`date +%-d`
 MONTH=`date +%b`
 YEAR=`date +%G`
 
@@ -33,8 +33,8 @@ update_json_file()
     echo    "  label: '${testclass}'," >> ${file}
     echo -n "  data: ["                >> ${file}
     for d in `seq 1 ${DAY}`; do
-	if [ -f "${testclass}-${TESTNAME}-$d.perf" ]; then
-	    perf=`cat "${testclass}-${TESTNAME}-$d.perf"`
+	if [ -f "${testclass}-${testname}-$d.perf" ]; then
+	    perf=`cat "${testclass}-${testname}-$d.perf"`
 	else
 	    perf=""
 	fi

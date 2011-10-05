@@ -18,6 +18,7 @@
 #define __SYS_MARCEL_GLUEC_REALSYM_H__
 
 
+#include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/resource.h>

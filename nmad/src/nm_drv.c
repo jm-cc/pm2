@@ -214,7 +214,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       if (node != PM2_NUIOA_ANY_NODE) 
 	{
 	  /* if this driver wants something */
-	  NM_DISPF("# nmad: marking nuioa node %d as preferred for driver %s", node, p_drv->driver->name);
+	  NM_DISPF("# nmad: marking nuioa node %d as preferred for driver %s\n", node, p_drv->driver->name);
 	  if (nuioa_with_latency) 
 	    {
 	      /* choosing by latency: take this network if it's the first one
@@ -279,7 +279,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       nodemask_set(&mask, preferred_node);
       numa_bind(&mask);
 #endif
-      NM_DISPF("# nmad: binding to nuioa node %d", preferred_node);
+      NM_DISPF("# nmad: binding to nuioa node %d\n", preferred_node);
     }
 #endif /* PM2_NUIOA */
 
@@ -345,9 +345,6 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	    }
 	}
     }
-#if(defined(PIOMAN))
-  piom_exit_ltasks();
-#endif
   /* disconnect all gates */
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
@@ -417,6 +414,10 @@ int nm_core_driver_exit(struct nm_core *p_core)
     }
 
   nm_unlock_interface(p_core);
+
+#if(defined(PIOMAN))
+  piom_exit_ltasks();
+#endif
 
   return err;
 }

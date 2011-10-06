@@ -296,7 +296,7 @@ nm_tcp_socket_create(struct sockaddr_in	*address,
 	if(desc == -1)
 	  {
 	    perror("socket");
-	    TBX_FAILURE("socket() system call failed.");
+	    TBX_FAILUREF("socket() system call failed.");
 	  }
 
         temp.sin_family      = AF_INET;
@@ -525,9 +525,16 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
   fd	= nm_tcp_socket_create(NULL, 0);
   
   nm_tcp_address_fill(&address, port, remote_hostname);
-  
-  NM_SYS(connect)(fd, (struct sockaddr *)&address,
-		  sizeof(struct sockaddr_in));
+  int rc = -1;
+ connect_again:
+  rc = NM_SYS(connect)(fd, (struct sockaddr *)&address, sizeof(struct sockaddr_in));
+  if(rc < 0)
+    {
+      if(errno == EINTR)
+	goto connect_again;
+      else
+	TBX_FAILUREF("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
+    }
   
   err = nm_tcp_connect_accept(_status, p_crq, fd);
   
@@ -546,8 +553,15 @@ static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq)
   struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
   int fd;
   int err;
-
+ accept_again:
   fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
+   if(fd < 0)
+    {
+      if(errno == EINTR)
+	goto accept_again;
+      else
+	TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
+    }
   
   err = nm_tcp_connect_accept(_status, p_crq, fd);
   
@@ -562,10 +576,19 @@ static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq)
 {
   struct nm_tcp*status = (struct nm_tcp*)_status;
   int fd = status->fd[p_crq->trk_id];
-  
+  int rc = -1;
+
   /* half-close for sending */
-  NM_SYS(shutdown)(fd, SHUT_WR);
- 
+ shutdown_retry:
+  rc = NM_SYS(shutdown)(fd, SHUT_WR);
+  if(rc < 0)
+    {
+      if(errno == EINTR)
+	goto shutdown_retry;
+      else
+	TBX_FAILUREF("nmad: shutdown() failed- error %d (%s)\n", errno, strerror(errno));
+    }
+
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */
   int ret = -1;
   do

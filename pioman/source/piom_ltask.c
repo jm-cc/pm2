@@ -254,11 +254,20 @@ static void __piom_ltask_sighandler(int num)
 }
 static void*__piom_ltask_idle(void*_dummy)
 {
+    int num_skip = 0;
     while(global_queue.state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    if(!__piom_ltask_handler_masked)
 		{
 		    piom_check_polling(PIOM_POLL_AT_IDLE);
+		    num_skip = 0;
+		}
+	    else
+		{
+		    num_skip++;
+		    if((num_skip > 1000) && (num_skip % 1000 == 0))
+			fprintf(stderr, "PIOMan: WARNING- idle thread cannot acquire lock (count = %d); suspecting deadlock.\n", num_skip);
+		    usleep(10);
 		}
 	    usleep(1);
 	}

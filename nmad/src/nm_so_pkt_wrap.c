@@ -102,6 +102,10 @@ void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 
   p_pw->chunk_offset = 0;
   p_pw->is_completed = tbx_true;
+
+#ifdef PIOMAN_POLL
+  piom_ltask_init(&p_pw->ltask);
+#endif
 }
 
 

@@ -49,8 +49,10 @@
 #define MARCEL_SCHED_AFFINITY    2
 /** \brief Creates the thread on the least loaded LWP */
 #define MARCEL_SCHED_BALANCE     3
+/** \brief Creates the thread on another LWP (roud-robin selection) */
+#define MARCEL_SCHED_RR          4
 /** \brief Number of available scheduling policies */
-#define __MARCEL_SCHED_AVAILABLE 4
+#define __MARCEL_SCHED_AVAILABLE 5
 
 
 /** Public global variables **/

@@ -157,8 +157,12 @@ int marcel_sched_internal_create(marcel_task_t * cur, marcel_task_t * new_task,
 		      courant */
 		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_OTHER)
 		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_BALANCE)
-		   /* If the new task is less prioritized than us, don't schedule it yet */
+
+		   /* Round-robin policy: check if the task will run on this LWP */
+		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_RR &&
+		       new_task->as_entity.sched_holder != &ma_lwp_rq(MA_LWP_SELF)->as_holder)
 #endif
+		   /* If the new task is less prioritized than us, don't schedule it yet */
 		   || (new_task->as_entity.prio > SELF_GETMEM(as_entity.prio))
 #ifdef MA__BUBBLES
 		   /* on est placé dans une bulle (on ne sait donc pas si l'on a
@@ -300,7 +304,7 @@ static __tbx_inline__ ma_runqueue_t *marcel_sched_select_runqueue(marcel_task_t 
 			for_vp_from(vp, ma_vpnum(cur_lwp)) {
 				marcel_lwp_t *lwp = ma_get_lwp_by_vpnum(vp->number);
 				if (lwp && ma_per_lwp(online, lwp)) {
-					rq2 = &vp->rq;
+					rq2 = ma_lwp_vprq(lwp);
 					if (rq2->as_holder.nb_ready_entities < best) {
 						rq = rq2;
 						best = rq2->as_holder.nb_ready_entities;
@@ -309,7 +313,27 @@ static __tbx_inline__ ma_runqueue_t *marcel_sched_select_runqueue(marcel_task_t 
 			}
 			break;
 		}
-			
+
+	        case MARCEL_SCHED_RR: {
+			static ma_atomic_t idx = MA_ATOMIC_INIT(0);
+			int vp;
+			ma_lwp_t lwp;
+
+			do {
+				vp = (ma_atomic_inc_return(&idx)-1) % marcel_nbvps();
+				if (marcel_vp_is_disabled(vp)) // assume we have at least one VP !!
+					continue;
+				
+				lwp = ma_get_lwp_by_vpnum(vp);
+				if (lwp && ma_per_lwp(online, lwp)) {
+					rq = ma_lwp_vprq(lwp);
+					break;
+				}
+			} while (1); // assume we have at least one lwp online (main lwp for example)
+
+			break;
+		}
+		
 	        default: {
 			unsigned policy = t->as_entity.sched_policy - __MARCEL_SCHED_AVAILABLE;
 			unsigned vpnum = ma_user_policy[policy](t, ma_vpnum(cur_lwp));

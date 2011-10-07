@@ -580,8 +580,16 @@ tbx_bool_t ma_currently_idle;
 tbx_bool_t marcel_vp_is_idle(int vpnum LWPS_VAR_UNUSED)
 {
 #ifdef MA__LWPS
-	ma_lwp_t lwp = ma_get_lwp_by_vpnum(vpnum);
-	return (lwp && ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp)) ? tbx_true : tbx_false;
+	ma_lwp_t lwp;
+
+	if (marcel_vp_is_disabled(vpnum))
+		return tbx_false;
+
+	lwp = ma_get_lwp_by_vpnum(vpnum);
+	if (lwp && ma_lwp_curr(lwp) == ma_per_lwp(idle_task, lwp))
+		return tbx_true;
+
+	return tbx_false;
 #else
 	return 	ma_currently_idle;
 #endif

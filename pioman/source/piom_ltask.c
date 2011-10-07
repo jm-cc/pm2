@@ -223,6 +223,11 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		{
 		    task->state |= PIOM_LTASK_STATE_TERMINATED;
 		}
+	    else if(task->state == PIOM_LTASK_STATE_NONE)
+		{
+		    fprintf(stderr, "PIOMan: FATAL- wrong state for scheduled ltask.\n");
+		    abort();
+		}
 	}
     /* no more task to run, set the queue as stopped */
     if( (queue->ltask_array_nb_items == 0) && 
@@ -399,6 +404,7 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 void piom_ltask_submit(struct piom_ltask *task)
 {
     piom_ltask_queue_t *queue;
+    assert(task->state == PIOM_LTASK_STATE_NONE || tast->state == PIOM_LTASK_STATE_DONE);
     task->state = PIOM_LTASK_STATE_NONE;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
     queue = &global_queue;
@@ -436,12 +442,14 @@ void*piom_ltask_schedule(void)
 
 void piom_ltask_wait_success(struct piom_ltask *task)
 {
+    assert(ltask->state != PIOM_LTASK_STATE_NONE);
     assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
     piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
 }
 
 void piom_ltask_wait(struct piom_ltask *task)
 {
+    assert(ltask->state != PIOM_LTASK_STATE_NONE);
     assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
     piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
     while (!(task->state & PIOM_LTASK_STATE_TERMINATED))
@@ -468,6 +476,7 @@ void piom_ltask_unmask(struct piom_ltask *task)
 
 void piom_ltask_cancel(struct piom_ltask*ltask)
 {
+    assert(ltask->state != PIOM_LTASK_STATE_NONE);
     const int options = ltask->options;
     ltask->masked = 1;
     if(!(options & PIOM_LTASK_OPTION_DESTROY))

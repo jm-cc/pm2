@@ -135,6 +135,12 @@ static inline void piom_ltask_destroy(struct piom_ltask*ltask)
     ltask->state = PIOM_LTASK_STATE_DESTROYED;
 }
 
+static inline void piom_ltask_init(struct piom_ltask*ltask)
+{
+    ltask->state = PIOM_LTASK_STATE_NONE;
+    ltask->queue = NULL;
+}
+
 /** create a new ltask. */
 static inline void piom_ltask_create(struct piom_ltask *task,
 				     piom_ltask_func * func_ptr,

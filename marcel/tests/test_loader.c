@@ -23,7 +23,7 @@
 #include <string.h>
 #include "tbx_compiler.h"
 
-#define  TIMEOUT      250
+#define  TIMEOUT      1200
 #define  BUF_SZ       2048
 #define  ITER_MAX     8
 
@@ -40,8 +40,10 @@ static void test_cleaner(int sig TBX_UNUSED)
 	pid_t child_gid;
 
 	// send signal to all loader family members
+	fprintf(stderr, "Test is blocked since %d seconds ... mark it as failed\n", TIMEOUT);
 	child_gid = getpgid(child_pid);
 	kill(-child_gid, SIGKILL);
+
 	exit(EXIT_FAILURE);
 }
 

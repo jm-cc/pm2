@@ -21,7 +21,7 @@
 #include <string.h>
 
 
-#define TEST_TIME 10
+#define TEST_TIME 60
 #define TEST_AUTOBENCHMARK_ENV "PT_AUTOBENCH"
 
 

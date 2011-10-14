@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
 					return status;
 				}
 			} else {
-				printf("Interrupted by a signal maybe\n");
+				if (WIFSIGNALED(child_exit_status))
+					printf("Interrupted by a signal %d\n", WTERMSIG(child_exit_status));
 				return EXIT_FAILURE;
 			}
 		}

@@ -45,6 +45,20 @@ AC_DEFUN([IS_SUPPORTED_CFLAG],
 ])
 
 
+# IS_SUPPORTED_VENDOR_CFLAG(flag, vendor-list)
+# --------------------------------------------
+# Check if CC_VENDROR is in vendor-list before issuing IS_SUPPORTED_CFLAGS
+AC_DEFUN([IS_SUPPORTED_VENDOR_CFLAG],
+[
+	for v in $2; do
+	    if test $CC_VENDOR = $v; then
+	       IS_SUPPORTED_CFLAG($1)
+	       break;
+	    fi
+	done
+])
+
+
 # COMPILER_VENDOR
 # ---------------
 # Check if $CC points to the GNU cc tool or Intel cc tool
@@ -59,6 +73,7 @@ AC_DEFUN([COMPILER_VENDOR],
 [
 	AC_REQUIRE([AC_PROG_CC])
 	AC_MSG_CHECKING(CC compiler vendor)
+	
 	if $CC -help 2>&1 | grep -i intel >/dev/null 2>&1; then
 	   ADD_TO(GLOBAL_AM_CFLAGS, -wd187)
 	   ADD_TO(GLOBAL_AM_CFLAGS, -wd981)
@@ -67,14 +82,16 @@ AC_DEFUN([COMPILER_VENDOR],
 	   ADD_TO(CFLAGS, -we10006)
 	   ADD_TO(CFLAGS, -we10156)
 	   ADD_TO(CFLAGS, -we10159)
-	   AC_MSG_RESULT(intel)
+	   CC_VENDOR="intel"
+	elif $CC --version 2>&1 | grep -i clang >/dev/null 2>&1; then
+	   CC_VENDOR="llvm"
+	elif test "x$GCC" = "xyes"; then
+	   CC_VENDOR="GNU"
 	else
-	   if test "x$GCC" = "xyes"; then
-	      AC_MSG_RESULT(gnu)
-	   else
-	      AC_MSG_RESULT(unknown)
- 	   fi
-	fi
+	   CC_VENDOR="unknow"
+ 	fi
+
+	AC_MSG_RESULT($CC_VENDOR)
 ])
 
 
@@ -115,6 +132,7 @@ AC_DEFUN([CHECK__C_COMPILER],
 	IS_SUPPORTED_CFLAG(-Wextra)
 	IS_SUPPORTED_CFLAG(-Winit-self)
 	IS_SUPPORTED_CFLAG(-Wpointer-arith)
-	IS_SUPPORTED_CFLAG(-Wjump-misses-init)
-	IS_SUPPORTED_CFLAG(-Wno-clobbered)
+
+	IS_SUPPORTED_VENDOR_CFLAG(-Wjump-misses-init, GNU intel)
+	IS_SUPPORTED_VENDOR_CFLAG(-Wno-clobbered, GNU intel)
 ])

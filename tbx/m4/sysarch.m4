@@ -49,7 +49,6 @@ AC_DEFUN([TARGET_SYS_ARCH], [dnl
   ### Solaris
   if test $TARGET_SYS = SOLARIS_SYS; then
      ADD_TO(GLOBAL_AM_CPPFLAGS, -D_XOPEN_SOURCE=500 -D_STDC_C99 -D_XPG6 -D__EXTENSIONS__)
-     ADD_TO(GLOBAL_AM_CFLAGS, -std=gnu99)
      if test $TARGET_ARCH = X86_ARCH; then
      	ADD_TO(GLOBAL_AM_LDADD, -lsocket -lrt)
      else

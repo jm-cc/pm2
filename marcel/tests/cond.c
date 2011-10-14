@@ -17,7 +17,6 @@
 #include "marcel.h"
 #include <stdio.h>
 
-//static volatile int a = 0;
 static marcel_cond_t cond;
 static marcel_mutex_t mutex;
 static marcel_sem_t sem;

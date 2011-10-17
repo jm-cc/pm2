@@ -40,58 +40,66 @@
 	(1UL << ((sig) - 1))
 
 #define marcel_sigemptyset(set)						\
-	({ *(set) = MARCEL_SIGSET_EMPTY;				\
-	   0;})
+	do {								\
+		*(set) = MARCEL_SIGSET_EMPTY;				\
+	} while (0);
 
-#define marcel_sigfillset(set) \
-	({ *(set) = MARCEL_SIGSET_FULL;		\
-	   0; })
+#define marcel_sigfillset(set)			\
+	do {					\
+		*(set) = MARCEL_SIGSET_FULL;	\
+	} while (0);
 
-#define marcel_sigisemptyset(set)          \
-	({ (*(set) == MARCEL_SIGSET_EMPTY); })
+#define marcel_sigisemptyset(set)			\
+	({ *(set) == MARCEL_SIGSET_EMPTY; })
 
-#define marcel_sigisfullset(set)           \
-	({ (*(set) == MARCEL_SIGSET_FULL); })
+#define marcel_sigisfullset(set)		\
+	({ *(set) == MARCEL_SIGSET_FULL; })
 
-#define marcel_sigismember(set,sig)        \
+#define marcel_sigismember(set,sig)			\
 	({ unsigned int mask = marcel_sigoneset(sig);	\
 	   ((*(set)&mask) ? 1 : 0); })
 
-#define marcel_sigaddset(set,sig)          \
-	({ unsigned int mask = marcel_sigoneset(sig);	\
-	   marcel_sigset_t *__set = (set);		\
-	   *__set = *__set|mask;			\
-	   0; })
+#define marcel_sigaddset(set,sig)				\
+	do {							\
+		unsigned int mask = marcel_sigoneset(sig);	\
+		marcel_sigset_t *__set = (set);			\
+		*__set = *__set|mask;				\
+	} while (0);
 
-#define marcel_sigdelset(set,sig)          \
-	({ unsigned int mask = marcel_sigoneset(sig);	\
-	   marcel_sigset_t *__set = (set);		\
-	   if ((*__set&mask) == mask)			\
-		   *__set = *__set&~mask;		\
-	   0; })
+#define marcel_sigdelset(set,sig)				\
+	do {							\
+		unsigned int mask = marcel_sigoneset(sig);	\
+		marcel_sigset_t *__set = (set);			\
+		if ((*__set&mask) == mask)			\
+			*__set = *__set&~mask;			\
+	} while (0);
 
-#define marcel_signotset(dest,set)         \
-	({ *(dest) = ~*(set);		   \
-	   0; })
+#define marcel_signotset(dest,set)		\
+	do {					\
+		*(dest) = ~*(set);		\
+	} while (0);
 
 #define marcel_sigandset(dest, left, right)      \
-	({ *(dest) = *(left)&*(right);           \
-	   0; })
+	do {					 \
+		*(dest) = *(left)&*(right);	 \
+	} while (0);
 
-#define marcel_sigorset(dest, left, right) \
-	({ *(dest) = *(left)|*(right);	   \
-	   0; })
+#define marcel_sigorset(dest, left, right)	\
+	do {					\
+		*(dest) = *(left)|*(right);	\
+	} while (0);
 
 #define marcel_sigorismember(left,right,sig)  \
-	({ marcel_sigset_t aura;	      \
+	({ marcel_sigset_t aura;			\
 	   marcel_sigorset(&aura,(left),(right));	\
 	   marcel_sigismember(&aura,(sig)); })
 
-#define marcel_signandset(dest, left, right)       \
-	({ marcel_sigset_t notright;		   \
-	   marcel_signotset(&notright,(right));	  \
-           marcel_sigandset((dest), (left), &(notright)); \
-	   0; })
+#define marcel_signandset(dest, left, right)			\
+	do {							\
+		marcel_sigset_t notright;			\
+		marcel_signotset(&notright,(right));		\
+		marcel_sigandset((dest), (left), &(notright));	\
+	} while (0);
 
 #define marcel_signandisempty(left,right)     \
 	({ marcel_sigset_t nand;	      \

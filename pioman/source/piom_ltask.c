@@ -302,7 +302,7 @@ void piom_init_ltasks(void)
 		{
 		    .sa_handler = &__piom_ltask_sighandler,
 		    .sa_mask    = set,
-		    .sa_flags   = 0
+		    .sa_flags   = SA_RESTART
 		};
 	    sigaction(signal_number, &action, NULL);
 	    struct sigevent sev = 

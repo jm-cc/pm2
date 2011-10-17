@@ -149,18 +149,8 @@ int marcel_sched_internal_create(marcel_task_t * cur, marcel_task_t * new_task,
 		   || dont_schedule
 #ifdef MA__LWPS
 		   /* On ne peut pas placer ce thread sur le LWP courant */
-		   ||
-		   (!marcel_vpset_isset
-		    (&THREAD_GETMEM(new_task, vpset), ma_vpnum(MA_LWP_SELF)))
-		   /* Si la politique est du type 'placer sur le LWP le moins
-		      chargé', alors on ne peut pas placer ce thread sur le LWP
-		      courant */
-		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_OTHER)
-		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_BALANCE)
-
-		   /* Round-robin policy: check if the task will run on this LWP */
-		   || (new_task->as_entity.sched_policy == MARCEL_SCHED_RR &&
-		       new_task->as_entity.sched_holder != &ma_lwp_rq(MA_LWP_SELF)->as_holder)
+		   || (!marcel_vpset_isset(&THREAD_GETMEM(new_task, vpset), ma_vpnum(MA_LWP_SELF)))
+		   || (new_task->as_entity.sched_holder != &ma_lwp_rq(MA_LWP_SELF)->as_holder)
 #endif
 		   /* If the new task is less prioritized than us, don't schedule it yet */
 		   || (new_task->as_entity.prio > SELF_GETMEM(as_entity.prio))

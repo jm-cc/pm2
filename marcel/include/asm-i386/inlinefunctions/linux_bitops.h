@@ -194,7 +194,7 @@ static __tbx_inline__ int ma_variable_test_bit(int nr, const volatile unsigned l
 
 static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 {
-	__asm__("bsfl %1,%0"
+	__asm__("bsf %1,%0"
 		:	"=r" (word)
 		:	"rm" (word));
 	return word;
@@ -202,7 +202,7 @@ static __tbx_inline__ unsigned long __ma_ffs(unsigned long word)
 
 static __tbx_inline__ unsigned long ma_ffz(unsigned long word)
 {
-	__asm__("bsfl %1,%0"
+	__asm__("bsf %1,%0"
 		:	"=r" (word)
 		:	"r" (~word));
 	return word;

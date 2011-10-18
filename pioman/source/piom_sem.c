@@ -150,7 +150,7 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
   cond->alt_sem = NULL;
 #endif
   piom_sem_init(&cond->sem, 0);
-  piom_spin_lock_init(&cond->lock);
+  piom_spin_init(&cond->lock);
 }
 
 __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask)

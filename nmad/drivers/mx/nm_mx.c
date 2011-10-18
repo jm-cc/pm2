@@ -465,7 +465,7 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
   mx_board_number_to_nic_id(p_mx_drv->board_number, &nic_id);
   mx_nic_id_to_hostname(nic_id, hostname);
 #ifdef PIOMAN
-  piom_spin_lock_init(&nm_mx_lock);
+  piom_spin_init(&nm_mx_lock);
 #endif /* PIOMAN */
 #if 0 && MX_API >= 0x301
   /* disabled for now since it conflicts with test_any/wait_any, to be reworked */

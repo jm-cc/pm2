@@ -124,7 +124,7 @@ static inline void __piom_init_queue(piom_ltask_queue_t * queue)
     queue->ltask_array_nb_items = 0;
     queue->processing = 0;
 
-    piom_spin_lock_init (&queue->ltask_lock);
+    piom_spin_init (&queue->ltask_lock);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
 

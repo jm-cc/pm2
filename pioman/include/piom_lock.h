@@ -25,7 +25,7 @@
 
 #define piom_spinlock_t marcel_spinlock_t
 
-#define piom_spin_lock_init(lock)      marcel_spin_init(lock, 1)
+#define piom_spin_init(lock)           marcel_spin_init(lock, 1)
 #define piom_spin_lock(lock) 	       marcel_spin_lock_tasklet_disable(lock)
 #define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
 #define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)
@@ -54,8 +54,8 @@
 
 extern volatile int __piom_ltask_handler_masked;
 
-#define piom_spinlock_t                pthread_spinlock_t
-#define piom_spin_lock_init(lock)      pthread_spin_init(lock, 0)
+#define piom_spinlock_t           pthread_spinlock_t
+#define piom_spin_init(lock)      pthread_spin_init(lock, 0)
 
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
@@ -105,7 +105,7 @@ static inline int piom_spin_trylock(piom_spinlock_t *lock)
 /* ** no locks ********************************************* */
 
 #define piom_spinlock_t		       int
-#define piom_spin_lock_init(lock)      (void) 0
+#define piom_spin_init(lock)           (void) 0
 #define piom_spin_lock(lock) 	       (void) 0
 #define piom_spin_trylock(lock)        1
 #define piom_spin_unlock(lock) 	       (void) 0

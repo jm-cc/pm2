@@ -89,7 +89,7 @@ static inline void nmad_unlock(void)
 static inline void nmad_lock_init(struct nm_core *p_core)
 {
 #ifdef NM_LOCK_BIGLOCK
-  piom_spin_lock_init(&piom_big_lock);
+  piom_spin_init(&piom_big_lock);
 #endif
 }
 
@@ -134,7 +134,7 @@ static inline void nm_unlock_interface(struct nm_core *p_core)
 static inline void nm_lock_interface_init(struct nm_core *p_core)
 {
 #ifdef NM_LOCK_CORE
-  piom_spin_lock_init(&nm_tac_lock);
+  piom_spin_init(&nm_tac_lock);
 #endif
 }
 
@@ -165,7 +165,7 @@ static inline void nm_unlock_status(struct nm_core *p_core)
 static inline void nm_lock_status_init(struct nm_core *p_core)
 {
 #ifdef NM_LOCK_CORE
-  piom_spin_lock_init(&nm_status_lock);
+  piom_spin_init(&nm_status_lock);
 #endif
 }
 
@@ -197,7 +197,7 @@ static inline void nm_so_unlock_out(struct nm_core*p_core, struct nm_drv*p_drv)
 static inline void nm_so_lock_out_init(struct nm_core*p_core, struct nm_drv*p_drv)
 {
 #ifdef NM_LOCK_POST
-  piom_spin_lock_init(&p_drv->post_sched_out_lock);
+  piom_spin_init(&p_drv->post_sched_out_lock);
 #endif
 }
 
@@ -228,7 +228,7 @@ static inline void nm_so_unlock_in(struct nm_core*p_core, struct nm_drv*p_drv)
 static inline void nm_so_lock_in_init(struct nm_core*p_core, struct nm_drv*p_drv)
 {
 #ifdef NM_LOCK_POST
-  piom_spin_lock_init(&p_drv->post_recv_lock);
+  piom_spin_init(&p_drv->post_recv_lock);
 #endif
 }
 
@@ -261,7 +261,7 @@ static inline void nm_poll_unlock_in(struct nm_core*p_core, struct nm_drv*p_drv)
 static inline void nm_poll_lock_in_init(struct nm_core*p_core, struct nm_drv*p_drv)
 {
 #ifdef NM_LOCK_POLL
-  piom_spin_lock_init(&p_drv->pending_recv_lock);
+  piom_spin_init(&p_drv->pending_recv_lock);
 #endif
  }
 
@@ -292,7 +292,7 @@ static inline void nm_poll_unlock_out(struct nm_core*p_core, struct nm_drv*p_drv
 static inline void nm_poll_lock_out_init(struct nm_core*p_core, struct nm_drv*p_drv)
 {
 #ifdef NM_LOCK_POLL
-  piom_spin_lock_init(&p_drv->pending_send_lock);
+  piom_spin_init(&p_drv->pending_send_lock);
 #endif
 }
 

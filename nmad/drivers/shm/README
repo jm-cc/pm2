@@ -1,0 +1,4 @@
+This is a placeholder for driver 'shm', to make sure scripts know
+driver 'shm' exists when enumerating drivers.
+The real NewMad_Driver_shm component is in PadicoTM/Services/Shm/
+and is dynamically loaded.

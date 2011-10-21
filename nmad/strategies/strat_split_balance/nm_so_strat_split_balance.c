@@ -70,8 +70,8 @@ static int nm_strat_split_balance_load(void)
   puk_component_declare("NewMad_Strategy_split_balance",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_split_balance_adapter_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_split_balance_driver),
-			puk_component_attr("nm_so_max_small", NULL),
-			puk_component_attr("nm_so_copy_on_send_threshold", NULL));
+			puk_component_attr("nm_so_max_small", "16342"),
+			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
 
@@ -88,11 +88,11 @@ static void*strat_split_balance_instanciate(puk_instance_t ai, puk_context_t con
 
   NM_LOGF("[loading strategy: <split_balance>]");
 
-  const char*nm_so_max_small = puk_context_getattr(context, "nm_so_max_small");
+  const char*nm_so_max_small = puk_instance_getattr(ai, "nm_so_max_small");
   status->nm_so_max_small = atoi(nm_so_max_small);
   NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
 
-  const char*nm_so_copy_on_send_threshold = puk_context_getattr(context, "nm_so_copy_on_send_threshold");
+  const char*nm_so_copy_on_send_threshold = puk_instance_getattr(ai, "nm_so_copy_on_send_threshold");
   status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
   NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
 

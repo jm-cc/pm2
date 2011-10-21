@@ -92,10 +92,10 @@ static void nm_session_init_strategy(int*argc, char**argv)
 #elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
       strategy_name = "aggreg_autoextended";
 #else /*  defined(CONFIG_STRAT_CUSTOM) */
-      strategy_name = "custom";
+      strategy_name = "aggreg";
 #endif
     }
-  puk_component_t strategy = nm_core_component_load("strategy", strategy_name);
+  puk_component_t strategy = nm_core_component_load("Strategy", strategy_name);
   int err = nm_core_set_strategy(nm_session.p_core, strategy);
   if(err != NM_ESUCCESS)
     {
@@ -149,7 +149,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
 
   if((!driver_env) && (!assembly_name))
     {
-      driver_env = "custom";
+      driver_env = "tcp";
     }
 
   nm_session.n_drivers = 0;
@@ -182,7 +182,7 @@ static void nm_session_init_drivers(int*argc, char**argv)
 	      free(driver_name);
 	      driver_name = strdup("mx");
 	    }
-	  puk_component_t driver_assembly = nm_core_component_load("driver", driver_name);
+	  puk_component_t driver_assembly = nm_core_component_load("Driver", driver_name);
 	  nm_session_add_driver(driver_assembly, index);
 	  free(driver_name);
 	  token = strtok(NULL, "+");

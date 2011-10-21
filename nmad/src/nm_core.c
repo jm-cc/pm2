@@ -91,29 +91,12 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_so_monitor_s*m)
  */
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
-  char filename[1024];
-  int rc = 0;
-  const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
-  const char*home = getenv("HOME");
-  if(pm2_conf_dir)
-    {
-      /* $PM2_CONF_DIR/nmad/<entity>/<entity>_<name>.xml */
-      rc = snprintf(filename, 1024, "%s/nmad/%s/%s_%s.xml", pm2_conf_dir, entity, entity, name);
-    }
-  else if(home)
-    {
-      /* $HOME/.pm2/nmad/<entity>/<entity>_<name>.xml */
-      rc = snprintf(filename, 1024, "%s/.pm2/nmad/%s/%s_%s.xml", home, entity, entity, name);
-    }
-  else
-    {
-      TBX_FAILURE("nmad: cannot compute PM2_CONF_DIR. Environment variable $HOME is not set.\n");
-    }
-  assert(rc < 1024 && rc > 0);
-  puk_component_t component = puk_adapter_parse_file(filename);
+  char component_name[1024];
+  snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
+  puk_component_t component = puk_adapter_resolve(component_name);
   if(component == NULL)
     {
-      padico_fatal("nmad: failed to load component '%s' (%s)\n", name, filename);
+      padico_fatal("nmad: failed to load component '%s'\n", component_name);
     }
   return component;
 }

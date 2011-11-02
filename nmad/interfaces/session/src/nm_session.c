@@ -116,6 +116,10 @@ static void nm_session_add_driver(puk_component_t component, int index)
       param.key = NM_DRIVER_QUERY_BY_INDEX;
       param.value.index = index;
     }
+  else
+    {
+      index = 0;
+    }
   int err = nm_core_driver_load_init(nm_session.p_core, component, &param, &p_drv, &driver_url);
   if(err != NM_ESUCCESS)
     {
@@ -128,17 +132,17 @@ static void nm_session_add_driver(puk_component_t component, int index)
   nm_session.n_drivers++;
   nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_session_driver_s));
   nm_session.drivers[nm_session.n_drivers - 1].p_drv = p_drv;
-  nm_session.drivers[nm_session.n_drivers - 1].index = (index >= 0)?index:0;
+  nm_session.drivers[nm_session.n_drivers - 1].index = index;
   nm_session.drivers[nm_session.n_drivers - 1].name  = strdup(driver_realname);
   if(nm_session.url_string == NULL)
     {
       nm_session.url_string = padico_string_new();
-      padico_string_catf(nm_session.url_string, "%s#%s", driver_realname, driver_url);
     }
   else
     {
-      padico_string_catf(nm_session.url_string, "+%s#%s", driver_realname, driver_url);
+      padico_string_catf(nm_session.url_string, "+");
     }
+  padico_string_catf(nm_session.url_string, "%s:%d#%s", driver_realname, index, driver_url);
 }
 
 /** Initialize the drivers */
@@ -146,7 +150,8 @@ static void nm_session_init_drivers(int*argc, char**argv)
 {
   const char*assembly_name = getenv("NMAD_ASSEMBLY");
   const char*driver_env = getenv("NMAD_DRIVER");
-
+  if(driver_env && (strlen(driver_env) == 0))
+    driver_env = NULL;
   if((!driver_env) && (!assembly_name))
     {
       driver_env = "tcp";
@@ -313,7 +318,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	      driver_url++;
 	      if(puk_hashtable_lookup(url_table, driver_name))
 		{
-		  fprintf(stderr, "# session: duplicate driver %s.\n", driver_name);
+		  fprintf(stderr, "# session: duplicate driver %s in url '%s'.\n", driver_name, url);
 		  abort();
 		}
 	      puk_hashtable_insert(url_table, driver_name, driver_url);
@@ -327,36 +332,33 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  int connected = 0;
 	  for(i = 0; i < nm_session.n_drivers; i++)
 	    {
-	      struct nm_session_driver_s*p_session_drv = &nm_session.drivers[i];
-	      struct nm_drv*p_drv = p_session_drv->p_drv;
-	      const char*driver_declared_name = p_session_drv->name;
-	      const char*driver_real_name = p_drv->driver->name;
-	      const char*driver_url = puk_hashtable_lookup(url_table, driver_real_name);
-	      if(driver_url == NULL)
-		driver_url = puk_hashtable_lookup(url_table, driver_declared_name);
-	      if(strcmp(driver_real_name, "self") == 0)
+	      const struct nm_session_driver_s*p_session_drv = &nm_session.drivers[i];
+	      char driver_name[256];
+	      snprintf(driver_name, 256, "%s:%d", p_session_drv->p_drv->driver->name, p_session_drv->index);
+	      const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
+	      if(strcmp(p_session_drv->p_drv->driver->name, "self") == 0)
 		continue;
 	      if(driver_url == NULL)
 		{
-		  fprintf(stderr, "# session: peer node does not advertise any url for driver %s- skipping.\n",
-			  driver_real_name);
+		  fprintf(stderr, "# session: peer node does not advertise any url for driver %s in url '%s'- skipping.\n",
+			  driver_name, url);
 		  continue;
 		}
 	      if(is_server)
 		{
-		  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
+		  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_session_drv->p_drv, driver_url);
 		  if(err != NM_ESUCCESS)
 		    {
-		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, p_drv->driver->name);
+		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
 		      abort();
 		    }
 		}
 	      else
 		{
-		  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
+		  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_session_drv->p_drv, driver_url);
 		  if(err != NM_ESUCCESS)
 		    {
-		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, p_drv->driver->name);
+		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
 		      abort();
 		    }
 		}

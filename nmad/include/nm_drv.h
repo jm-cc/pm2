@@ -19,6 +19,21 @@
 struct nm_cnx_rq;
 struct nm_pkt_wrap;
 
+
+/** Performance information for driver. This information is determined
+ *  at init time and may depend on hardware and board number.
+ */
+struct nm_drv_profile_s
+{
+#ifdef PM2_NUIOA
+  int numa_node;  /**< NUMA node where the card is attached */
+#endif
+  /** Approximative performance of the board
+   */
+  int latency;   /**< in nanoseconds (10^-9 s) */
+  int bandwidth; /**< in MB/s */
+};
+
 /** Driver.
  */
 struct nm_drv
@@ -70,8 +85,11 @@ struct nm_drv
   void *priv;
 
   /** Number of tracks opened on this driver. */
-  uint8_t nb_tracks;
+  int nb_tracks;
   
+  /** Performance information */
+  struct nm_drv_profile_s profile;
+
 #ifdef PIOMAN
   struct piom_ltask task;
 #ifndef PIOM_POLLING_DISABLED
@@ -99,6 +117,17 @@ struct nm_cnx_rq
   /** Remote driver url.  */
   const char *remote_drv_url;
 };
+
+/** Static driver capabilities.
+ */
+struct nm_drv_cap_s
+{
+  int has_recv_any;  /**< driver accepts receive from NM_GATE_ANY */
+  int rdv_threshold; /**< preferred length for switching to rendez-vous. */
+  int min_period;    /**< minimum delay between poll (in microseconds) */
+  int is_exportable; /**< blocking calls may be exported by PIOMan */
+};
+
 
 /** Driver for 'NewMad_Driver' component interface.
  */
@@ -129,7 +158,7 @@ struct nm_drv_iface_s
 
   const char* (*get_driver_url)(struct nm_drv *p_drv);
 
-  struct nm_drv_cap*(*get_capabilities)(struct nm_drv *p_drv);
+  const struct nm_drv_cap_s capabilities; /**< static capabilities */
 
   int (*post_recv_iov_all)(struct nm_pkt_wrap *p_pw);
   int (*poll_recv_iov_all)(struct nm_pkt_wrap *p_pw);

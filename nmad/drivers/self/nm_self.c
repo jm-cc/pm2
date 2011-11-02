@@ -52,8 +52,6 @@ struct nm_self_drv
   int fd[4];
   /** url */
   char*url;
-  /** capabilities */
-  struct nm_drv_cap caps;
   int nb_trks;
 };
 
@@ -67,7 +65,6 @@ struct nm_self
 
 
 /** self NewMad Driver */
-static struct nm_drv_cap*nm_self_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_self_get_driver_url(struct nm_drv *p_drv);
 static int nm_self_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
@@ -106,15 +103,16 @@ static const struct nm_drv_iface_s nm_self_driver =
     .poll_recv_any_iov  = NULL,
 
     .get_driver_url     = &nm_self_get_driver_url,
-    .get_capabilities   = &nm_self_get_capabilities,
 
 #ifdef PIOM_BLOCKING_CALLS
     .wait_send_iov	= &nm_self_wait_send_iov,
     .wait_recv_iov	= &nm_self_wait_recv_iov,
 
     .wait_recv_any_iov  = NULL,
-    .wait_send_any_iov  = NULL
+    .wait_send_any_iov  = NULL,
 #endif
+    .capabilities.min_period    = 0,
+    .capabilities.is_exportable = 0
   };
 
 /** 'PadicoAdapter' facet for self driver */
@@ -160,13 +158,6 @@ static void nm_self_destroy(void*_status)
   TBX_FREE(_status);
 }
 
-/** Return capabilities */
-static struct nm_drv_cap*nm_self_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_self_drv *p_self_drv = p_drv->priv;
-  return &p_self_drv->caps;
-}
-
 /** Url function */
 static const char*nm_self_get_driver_url(struct nm_drv *p_drv)
 {
@@ -182,19 +173,12 @@ static int nm_self_query(struct nm_drv *p_drv,
   struct nm_self_drv* p_self_drv = TBX_MALLOC(sizeof(struct nm_self_drv));
   memset(p_self_drv, 0, sizeof(struct nm_self_drv));
   
-  p_self_drv->caps.has_trk_rq_dgram = 1;
-  p_self_drv->caps.has_selective_receive = 1;
-  p_self_drv->caps.has_concurrent_selective_receive = 1;
-#ifdef PIOM_BLOCKING_CALLS
-  p_self_drv->caps.is_exportable = 0;
-#endif
 #ifdef PM2_NUIOA
-  p_self_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
-  p_self_drv->caps.latency = INT_MAX;
-  p_self_drv->caps.bandwidth = 0;
+  p_drv->profile.latency = INT_MAX;
+  p_drv->profile.bandwidth = 0;
 
-  p_self_drv->caps.min_period = 0;
   p_drv->priv = p_self_drv;
   return NM_ESUCCESS;
 }

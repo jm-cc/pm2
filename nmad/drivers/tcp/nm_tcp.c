@@ -54,8 +54,6 @@ struct nm_tcp_drv
   int server_fd;
   /** url */
   char*url;
-  /** capabilities */
-  struct nm_drv_cap caps;
   int nb_gates;
   /** tracks of the TCP driver */
   struct nm_tcp_trk*trks_array;
@@ -161,7 +159,6 @@ static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static struct nm_drv_cap*nm_tcp_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_tcp_get_driver_url(struct nm_drv *p_drv);
 #ifdef PIOM_BLOCKING_CALLS
 static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -190,15 +187,16 @@ static const struct nm_drv_iface_s nm_tcp_driver =
     .poll_recv_any_iov  = NULL,
 
     .get_driver_url     = &nm_tcp_get_driver_url,
-    .get_capabilities   = &nm_tcp_get_capabilities,
 
 #ifdef PIOM_BLOCKING_CALLS
     .wait_send_iov	= &nm_tcp_wait_send_iov,
     .wait_recv_iov	= &nm_tcp_wait_recv_iov,
 
     .wait_recv_any_iov  = NULL,
-    .wait_send_any_iov  = NULL
+    .wait_send_any_iov  = NULL,
 #endif
+    .capabilities.is_exportable = 1,
+    .capabilities.min_period    = 0
   };
 
 /** 'PadicoAdapter' facet for Tcp driver */
@@ -234,13 +232,6 @@ static void*nm_tcp_instanciate(puk_instance_t instance, puk_context_t context)
 static void nm_tcp_destroy(void*_status)
 {
   TBX_FREE(_status);
-}
-
-/** Return capabilities */
-static struct nm_drv_cap*nm_tcp_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
-  return &p_tcp_drv->caps;
 }
 
 /** Url function */
@@ -363,18 +354,11 @@ nm_tcp_query		(struct nm_drv *p_drv,
 	p_tcp_drv->nb_gates = 0;
 
         /* driver capabilities encoding					*/
-        p_tcp_drv->caps.has_trk_rq_dgram		= 1;
-        p_tcp_drv->caps.has_selective_receive		= 1;
-        p_tcp_drv->caps.has_concurrent_selective_receive	= 1;
-#ifdef PIOM_BLOCKING_CALLS
-        p_tcp_drv->caps.is_exportable	= 1;
-#endif
 #ifdef PM2_NUIOA
-	p_tcp_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
-	p_tcp_drv->caps.latency = 50000;
-	p_tcp_drv->caps.bandwidth = 100;
-	p_tcp_drv->caps.min_period = 0;
+	p_drv->profile.latency = 50000;
+	p_drv->profile.bandwidth = 100;
 
         p_drv->priv = p_tcp_drv;
 	err = NM_ESUCCESS;

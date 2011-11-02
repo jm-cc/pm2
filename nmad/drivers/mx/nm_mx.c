@@ -48,7 +48,6 @@ struct nm_mx_drv
   uint32_t board_number;        /**< Board number */
   mx_endpoint_t ep;             /**< MX endpoint */
   uint32_t ep_id;               /**< Endpoint ID */
-  struct nm_drv_cap caps;       /**< Capabilities of the driver */
   char*url;                     /**< driver url, containing MX hostname and endpoint ID */
   struct nm_mx_trk*trks_array;  /**< tracks of the MX driver*/
   int nb_trks;                  /**< number of tracks */
@@ -164,7 +163,6 @@ static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
-static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
 #ifdef PIOM_BLOCKING_CALLS
 static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -200,7 +198,6 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .cancel_recv_iov    = &nm_mx_cancel_recv_iov,
 
     .get_driver_url     = &nm_mx_get_driver_url,
-    .get_capabilities   = &nm_mx_get_capabilities,
 
 #ifdef PIOM_BLOCKING_CALLS
     .wait_recv_iov      = &nm_mx_block_iov,
@@ -208,12 +205,14 @@ static const struct nm_drv_iface_s nm_mx_driver =
 
 #if MX_API >= 0x301
     .wait_recv_any_iov  = &nm_mx_block_any_iov,
-    .wait_send_any_iov  = &nm_mx_block_any_iov
+    .wait_send_any_iov  = &nm_mx_block_any_iov,
 #else
     .wait_recv_any_iov  = NULL,
-    .wait_send_any_iov  = NULL
+    .wait_send_any_iov  = NULL,
 #endif
 #endif
+    .capabilities.min_period = 0,
+    .capabilities.is_exportable = 1
   };
 
 /* 'PadicoAdapter' facet for MX driver */
@@ -237,13 +236,6 @@ static int nm_mx_load(void)
   return 0;
 }
 
-
-/** Return capabilities */
-static struct nm_drv_cap*nm_mx_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_mx_drv* p_mx_drv = p_drv->priv;
-  return &p_mx_drv->caps;
-}
 
 /** Instanciate functions */
 static void*nm_mx_instanciate(puk_instance_t instance, puk_context_t context){
@@ -425,20 +417,11 @@ nm_mx_query		(struct nm_drv *p_drv,
   total_use_count++;
   
   /* driver capabilities encoding					*/
-  p_mx_drv->caps.has_trk_rq_dgram			= 1;
-  p_mx_drv->caps.has_selective_receive		= 1;
-  p_mx_drv->caps.has_concurrent_selective_receive	= 0;
-#ifdef PIOM_BLOCKING_CALLS
-  /* disabled for now because mx_wait doesn't work very well... */
-  p_mx_drv->caps.is_exportable                    = 1;
-#endif
 #ifdef PM2_NUIOA
-  p_mx_drv->caps.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
+  p_drv->profile.numa_node = nm_mx_get_numa_node(p_mx_drv->board_number);
 #endif
-  p_mx_drv->caps.latency = 2690 ; /* from sr_ping */ 
-  p_mx_drv->caps.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
-
-  p_mx_drv->caps.min_period = 0; /* from sr_ping, use MX_LINE_SPEED instead? */
+  p_drv->profile.latency = 2690 ; /* from sr_ping */ 
+  p_drv->profile.bandwidth = 1220; /* from sr_ping, use MX_LINE_SPEED instead? */
 
   p_drv->priv = p_mx_drv;
   err = NM_ESUCCESS;

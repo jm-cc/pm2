@@ -36,6 +36,9 @@ int nm_core_driver_load(nm_core_t p_core,
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
   p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
+#ifdef PM2_NUIOA
+  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
 
   nm_trk_id_t trk_id;;
   for(trk_id = 0; trk_id < NM_SO_MAX_TRACKS; trk_id++)
@@ -210,7 +213,7 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 #ifdef PM2_NUIOA
   if (nuioa) 
     {
-      const int node = p_drv->driver->get_capabilities(p_drv)->numa_node;
+      const int node = p_drv->profile.numa_node;
       if (node != PM2_NUIOA_ANY_NODE) 
 	{
 	  /* if this driver wants something */
@@ -220,9 +223,9 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	      /* choosing by latency: take this network if it's the first one
 	       * or if its latency is lower than the previous one */
 	      if (preferred_node == PM2_NUIOA_ANY_NODE
-		  || p_drv->driver->get_capabilities(p_drv)->latency < nuioa_current_best) {
+		  || p_drv->profile.latency < nuioa_current_best) {
 		preferred_node = node;
-		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->latency;
+		nuioa_current_best = p_drv->profile.latency;
 	      }
 	    }
 	  else if (nuioa_with_bandwidth) 
@@ -230,9 +233,9 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	      /* choosing by bandwidth: take this network if it's the first one
 	       * or if its bandwidth is higher than the previous one */
 	      if (preferred_node == PM2_NUIOA_ANY_NODE
-		  || p_drv->driver->get_capabilities(p_drv)->bandwidth > nuioa_current_best) {
+		  || p_drv->profile.bandwidth > nuioa_current_best) {
 		preferred_node = node;
-		nuioa_current_best = p_drv->driver->get_capabilities(p_drv)->bandwidth;
+		nuioa_current_best = p_drv->profile.bandwidth;
 	      }
 	    }
 	  else if (preferred_node == PM2_NUIOA_ANY_NODE)

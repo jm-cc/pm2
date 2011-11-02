@@ -24,7 +24,6 @@
 #include "nm_public.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
-#include "nm_drv_cap.h"
 #include "nm_trk.h"
 #include "nm_gate.h"
 #include "nm_core.h"
@@ -46,8 +45,6 @@
 struct nm_gm_drv {
         int gm;
         char*url;
-        /** capabilities */
-        struct nm_drv_cap caps;
         int nb_gates;
 };
 
@@ -115,7 +112,6 @@ static int nm_gm_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_gm_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static struct nm_drv_cap*nm_gm_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_gm_get_driver_url(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_gm_driver =
@@ -139,8 +135,8 @@ static const struct nm_drv_iface_s nm_gm_driver =
     .poll_recv_iov      = &nm_gm_poll_recv_iov,
 
     .get_driver_url     = &nm_gm_get_driver_url,
-    .get_capabilities   = &nm_gm_get_capabilities
 
+    .capabilities.min_period = 0
   };
 
 static void*nm_gm_instanciate(puk_instance_t, puk_context_t);
@@ -162,12 +158,6 @@ static int nm_gm_load(void)
 }
 PADICO_MODULE_BUILTIN(NewMad_Driver_gm, &nm_gm_load, NULL, NULL);
 
-
-static struct nm_drv_cap*nm_gm_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_gm_drv *p_gm_drv = p_drv->priv;
-  return &p_gm_drv->caps;
-}
 
 static void*nm_gm_instanciate(puk_instance_t instance, puk_context_t context){
   struct nm_gm*status = TBX_MALLOC(sizeof (struct nm_gm));
@@ -447,15 +437,11 @@ nm_gm_query			(struct nm_drv *p_drv,
 	p_drv->priv	= p_gm_drv;
 
 	/* driver capabilities encoding					*/
-	p_gm_drv->caps.has_trk_rq_dgram			= 1;
-	p_gm_drv->caps.has_selective_receive		= 0;
-	p_gm_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
-	p_gm_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
-	p_gm_drv->caps.latency = INT_MAX;
-	p_gm_drv->caps.bandwidth = 0;
-	p_gm_drv->caps.min_period = 0;
+	p_drv->profile.latency = INT_MAX;
+	p_drv->profile.bandwidth = 0;
 
 	err = NM_ESUCCESS;
 

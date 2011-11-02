@@ -76,7 +76,6 @@ static int nm_dummy_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_poll_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_dummy_poll_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static struct nm_drv_cap*nm_dummy_get_capabilities(struct nm_drv *p_drv);
 static const char*nm_dummy_get_driver_url(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_dummy_driver =
@@ -98,8 +97,8 @@ static const struct nm_drv_iface_s nm_dummy_driver =
     .poll_recv_iov      = &nm_dummy_poll_recv_iov,
 
     .get_driver_url     = &nm_dummy_get_driver_url,
-    .get_capabilities   = &nm_dummy_get_capabilities
 
+    .capabilities.min_period = 0
   };
 
 /** 'PadicoAdapter' facet for Dummy driver */
@@ -124,13 +123,6 @@ static int nm_dummy_load(void)
 PADICO_MODULE_BUILTIN(NewMad_Driver_dummy, &nm_dummy_load, NULL, NULL);
 
 
-
-/** Return capabilities */
-static struct nm_drv_cap*nm_dummy_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_dummy_drv *p_dummy_drv = p_drv->priv;
-  return &p_dummy_drv->caps;
-}
 
 /** Instanciate functions */
 static void*nm_dummy_instanciate(puk_instance_t instance, puk_context_t context){
@@ -169,15 +161,11 @@ nm_dummy_query			(struct nm_drv *p_drv,
         memset(p_dummy_drv, 0, sizeof (struct nm_dummy_drv));
 
         /* driver capabilities encoding					*/
-        p_dummy_drv->caps.has_trk_rq_dgram			= 1;
-        p_dummy_drv->caps.has_selective_receive		        = 0;
-        p_dummy_drv->caps.has_concurrent_selective_receive	= 0;
 #ifdef PM2_NUIOA
-	p_dummy_drv->caps.numa_node = PM2_NUIOA_ANY_NODE;
+	p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
-	p_dummy_drv->caps.latency = INT_MAX;
-	p_dummy_drv->caps.bandwidth = 0;
-	p_dummy_drv->caps.min_period = 0;
+	p_drv->profile.latency = INT_MAX;
+	p_drv->profile.bandwidth = 0;
 
 	p_drv->priv = p_dummy_drv;
 	err = NM_ESUCCESS;

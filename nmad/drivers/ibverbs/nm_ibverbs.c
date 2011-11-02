@@ -123,7 +123,6 @@ static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static const char* nm_ibverbs_get_driver_url(struct nm_drv *p_drv);
-static struct nm_drv_cap*nm_ibverbs_get_capabilities(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_ibverbs_driver =
   {
@@ -151,7 +150,9 @@ static const struct nm_drv_iface_s nm_ibverbs_driver =
     .cancel_recv_iov    = &nm_ibverbs_cancel_recv_iov,
 
     .get_driver_url     = &nm_ibverbs_get_driver_url,
-    .get_capabilities   = &nm_ibverbs_get_capabilities
+
+    .capabilities.min_period    = 0,
+    .capabilities.rdv_threshold = 32 * 1024
   };
 
 /** 'PadicoAdapter' facet for Ibverbs driver */
@@ -204,12 +205,6 @@ const static char*nm_ibverbs_get_driver_url(struct nm_drv *p_drv)
   return p_ibverbs_drv->url;
 }
 
-/** Return capabilities */
-static struct nm_drv_cap*nm_ibverbs_get_capabilities(struct nm_drv *p_drv)
-{
-  struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
-  return &p_ibverbs_drv->caps;
-}
 
 /* ** helpers ********************************************** */
 
@@ -426,19 +421,13 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
 	   (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
 #endif
 
-  /* driver capabilities encoding */
-  p_ibverbs_drv->caps.has_trk_rq_dgram			= 1;
-  p_ibverbs_drv->caps.has_trk_rq_rdv		        = 1;
-  p_ibverbs_drv->caps.has_selective_receive		= 1;
-  p_ibverbs_drv->caps.has_concurrent_selective_receive	= 0;
-  p_ibverbs_drv->caps.rdv_threshold                     = 256 * 1024;
+  /* driver profile encoding */
 #ifdef PM2_NUIOA
-  p_ibverbs_drv->caps.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
+  p_drv->profile.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
 #endif
-  p_ibverbs_drv->caps.latency = 1350; /* from sampling */
-  p_ibverbs_drv->caps.bandwidth = 1024 * (data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+  p_drv->profile.latency = 1350; /* from sampling */
+  p_drv->profile.bandwidth = 1024 * (data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
 
-  p_ibverbs_drv->caps.min_period = 0;
   p_drv->priv = p_ibverbs_drv;
   err = NM_ESUCCESS;
   

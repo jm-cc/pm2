@@ -125,8 +125,8 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
 	       sampling_file_path);
       p_set->nb_samples = 0;
       p_set->bandwidth_samples = NULL;
-      p_set->bw  = (p_drv->driver->get_capabilities(p_drv))->bandwidth;
-      p_set->lat = (p_drv->driver->get_capabilities(p_drv))->latency / 1000.0;
+      p_set->bw  = p_drv->profile.bandwidth;
+      p_set->lat = p_drv->profile.latency / 1000.0;
       NM_DISPF("# sampling: capabilities for driver %s; lat = %5.2f usec.; bw = %5.2f MB/s\n",
 	       p_drv->driver->name, p_set->lat, p_set->bw);
     }

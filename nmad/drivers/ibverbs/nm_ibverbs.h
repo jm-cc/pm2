@@ -103,7 +103,6 @@ struct nm_ibverbs_drv
     uint64_t max_msg_size;    /**< maximum message size */
   } ib_caps;
   char*url;                   /**< Infiniband url for this node */
-  struct nm_drv_cap caps;     /**< capabilities */
   int server_sock;            /**< socket used for connection */
 };
 

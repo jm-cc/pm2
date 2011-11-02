@@ -88,7 +88,6 @@ typedef uint16_t nm_drv_id_t;
 
 #include "nm_so_parameters.h"
 
-#include "nm_drv_cap.h"
 #include "nm_trk_cap.h"
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"

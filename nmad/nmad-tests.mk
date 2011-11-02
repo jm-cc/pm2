@@ -47,10 +47,10 @@ $(TARGET_TESTS): test-%: %
              echo "# running test $* in $(srcdir)" >> "$(TESTS_RESULTS)" ; \
           fi ; \
           if [ -r $(srcdir)/$*.out ]; then \
-            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
+            padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t | $(TEST_FILTER) > /tmp/result-$${testid} ; \
             rc=$$? ; \
           else \
-            padico-launch -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t ; \
+            padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(TEST_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) $(CURDIR)/$$t ; \
             rc=$$? ; \
           fi ; \
           if [ "x$${rc}" != "x0" ]; then \
@@ -90,7 +90,7 @@ $(TARGET_BENCH): bench-%: %
              out=$(BENCH_RESULTS) ; \
            fi ; \
            echo "# starting bench $*" >> $${out} ; \
-           padico-launch -q --timeout $(BENCH_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* | tee /tmp/bench-$${USER}-$$$$ ; \
+           padico-launch $(NMAD_EXTRA_ARGS) -q --timeout $(BENCH_TIMEOUT) -n $(NMAD_NODES) -nodelist "$(NMAD_HOSTS)" -DNMAD_DRIVER=$(NMAD_DRIVER) ./$* | tee /tmp/bench-$${USER}-$$$$ ; \
            cat /tmp/bench-$${USER}-$$$$ >> $${out} ; \
            rm /tmp/bench-$${USER}-$$$$ )
 	@echo "           done."

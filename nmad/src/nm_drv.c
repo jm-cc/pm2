@@ -15,6 +15,9 @@
 
 #include <nm_private.h>
 
+static int nm_core_driver_load(nm_core_t p_core, puk_component_t driver, nm_drv_t*pp_drv);
+
+static int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char**p_url);
 
 
 /** Load a driver.
@@ -69,37 +72,6 @@ int nm_core_driver_load(nm_core_t p_core,
 }
 
 
-/** Query resources and register them for a driver.
- *
- */
-int nm_core_driver_query(nm_core_t p_core,
-			 nm_drv_t p_drv,
-			 struct nm_driver_query_param *param)
-{
-  int err;
-
-  NM_LOG_IN();
-
-  if (!p_drv->driver->query)
-    {
-      err = -NM_EINVAL;
-      goto out;
-    }
-
-  err = p_drv->driver->query(p_drv, param, 1);
-  if (err != NM_ESUCCESS)
-    {
-      NM_WARN("drv.query returned %d", err);
-      goto out;
-    }
-
-  err = NM_ESUCCESS;
-
- out:
-  NM_LOG_OUT();
-
-  return err;
-}
 
 /** Initialize a driver using previously registered resources.
  *
@@ -168,7 +140,7 @@ int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char **p_url)
   FUT_DO_PROBESTR(FUT_NMAD_INIT_NIC_URL, p_drv->assembly->name);
 
 #ifdef PIOMAN_POLL
-  nm_submit_post_drv_ltask(&p_drv->task, p_drv);
+  nm_ltask_submit_post_drv(&p_drv->task, p_drv);
 #endif
 
   nm_ns_update(p_core, p_drv);
@@ -204,12 +176,16 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       return err;
     }
   
-  err = nm_core_driver_query(p_core, p_drv, param);
-  if (err != NM_ESUCCESS) 
+  if(!p_drv->driver->query)
     {
-      NM_WARN("nm_core_driver_query returned %d", err);
-      return err;
+      TBX_FAILUREF("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
     }
+  err = p_drv->driver->query(p_drv, param, 1);
+  if(err != NM_ESUCCESS)
+    {
+      TBX_FAILUREF("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
+    }
+
 #ifdef PM2_NUIOA
   if (nuioa) 
     {

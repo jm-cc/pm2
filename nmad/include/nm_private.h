@@ -79,13 +79,6 @@ static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 typedef uint16_t nm_drv_id_t;
 
 
-/** Maximum number of drivers.
- * @note There should *not* be a hard-coded value.
- */
-#define NM_DRV_MAX 4
-
-#define NM_DRV_NONE ((struct nm_drv*)NULL)
-
 #include "nm_so_parameters.h"
 
 #include "nm_trk_cap.h"
@@ -95,7 +88,6 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_errno.h"
 #include "nm_log.h"
 #ifdef PIOMAN
-#include "nm_piom.h"
 #include "nm_piom_ltasks.h"
 #endif
 
@@ -115,19 +107,21 @@ TBX_INTERNAL int nm_core_driver_exit(struct nm_core *p_core);
 
 TBX_INTERNAL void nm_unexpected_clean(struct nm_core*p_core);
 
-TBX_INTERNAL void nm_sched_out(struct nm_core *p_core);
 TBX_INTERNAL void nm_try_and_commit(struct nm_core *p_core);
-TBX_INTERNAL void nm_poll_out_drv(struct nm_drv *p_drv);
-TBX_INTERNAL void nm_post_out_drv(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_drv_post_send(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_drv_poll_send(struct nm_drv *p_drv);
 
+TBX_INTERNAL void nm_drv_refill_recv(struct nm_drv* p_drv);
+TBX_INTERNAL void nm_drv_post_recv(struct nm_drv*p_drv);
+TBX_INTERNAL void nm_drv_poll_recv(struct nm_drv *p_drv);
 
-TBX_INTERNAL void nm_sched_in(struct nm_core *p_core);
-TBX_INTERNAL void nm_refill_in_drv(struct nm_drv* p_drv);
-TBX_INTERNAL void nm_poll_in_drv(struct nm_drv *p_drv);
-TBX_INTERNAL void nm_post_in_drv(struct nm_drv *p_drv);
+TBX_INTERNAL void nm_pw_post_send(struct nm_pkt_wrap*p_pw);
+TBX_INTERNAL int  nm_pw_poll_send(struct nm_pkt_wrap *p_pw);
+TBX_INTERNAL int  nm_pw_poll_recv(struct nm_pkt_wrap*p_pw);
 
-TBX_INTERNAL int nm_poll_send(struct nm_pkt_wrap *p_pw);
-TBX_INTERNAL int nm_poll_recv(struct nm_pkt_wrap*p_pw);
+TBX_INTERNAL void nm_out_prefetch(struct nm_core*p_core);
+
+TBX_INTERNAL void nm_drv_post_all(struct nm_drv*p_drv);
 
 
 /* ** SchedOpt internal functions */
@@ -143,8 +137,6 @@ TBX_INTERNAL int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
 TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core	*p_core,
 					     struct nm_pkt_wrap *p_pw);
 
-
-TBX_INTERNAL void nm_post_send(struct nm_pkt_wrap*p_pw);
 
 /** Compute the cumulated size of an iovec.
  */

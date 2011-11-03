@@ -20,7 +20,8 @@
  * All these policies can be specified to NewMadeleine using 
  * the NM_BINDING_POLICY environment variable
  */
-enum __nm_ltask_policy{
+enum nm_ltask_policy_e
+{
   /* bound to the core from which a request is submitted */
   NM_BIND_ON_LOCAL_CORE,
   /* can be executed by any core that share a L2 cache */
@@ -39,11 +40,11 @@ enum __nm_ltask_policy{
   NM_BIND_ON_CORE, 
 };
 
-static enum __nm_ltask_policy __policy = NM_BIND_ON_LOCAL_CORE;
+static enum nm_ltask_policy_e __policy = NM_BIND_ON_LOCAL_CORE;
 static int __policy_core = 0;
 
 /* retrieve the binding policy */
-void nm_ltask_set_policy()
+void nm_ltask_set_policy(void)
 {
   const char* policy = getenv("PIOM_BINDING_POLICY");
   if(!policy){
@@ -84,7 +85,7 @@ void nm_ltask_set_policy()
   return ;
 }
 
-static piom_vpset_t nm_get_binding_policy()
+static piom_vpset_t nm_get_binding_policy(void)
 {
   switch(__policy) {
   case  NM_BIND_ON_LOCAL_CORE:
@@ -174,30 +175,33 @@ static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
  
 }
 
-int nm_poll_recv_task(void *args)
+/* ********************************************************* */
+/* ** tasks */
+
+static int nm_task_poll_recv(void*_pw)
 {
-  struct nm_pkt_wrap * p_pw = args;
+  struct nm_pkt_wrap*p_pw = _pw;
   int ret = -NM_EUNKNOWN;
   /* todo: lock something when using fine-grain locks */
   if(nmad_trylock())
     {
-      ret = nm_poll_recv(p_pw);
+      ret = nm_pw_poll_recv(p_pw);
       nmad_unlock();
     }
   else
     {
-      nm_submit_poll_recv_ltask(p_pw);
+      nm_ltask_submit_poll_recv(p_pw);
     }
   return ret;
 }
 
-int nm_poll_send_task(void *args)
+static int nm_task_poll_send(void*_pw)
 {
-  struct nm_pkt_wrap * p_pw=args;
+  struct nm_pkt_wrap*p_pw = _pw;
   int ret = -NM_EUNKNOWN;
   if(nmad_trylock())
     {
-      ret =  nm_poll_send(p_pw);
+      ret = nm_pw_poll_send(p_pw);
       if(ret == NM_ESUCCESS)
 	{
 	  nm_so_pw_free(p_pw);
@@ -206,117 +210,72 @@ int nm_poll_send_task(void *args)
     }
   else
     {
-      nm_submit_poll_send_ltask(p_pw);
+      nm_ltask_submit_poll_send(p_pw);
     }
   return ret;
 }
 
-int nm_post_recv_task(void *args)
+static int nm_task_post_on_drv(void*_drv)
 {
-  TBX_FAILURE("Not yet implemented!\n");
-  return 0;
-}
-
-int nm_post_send_task(void *args)
-{
-  TBX_FAILURE("Not yet implemented!\n");
-  return 0;
-}
-
-int nm_post_task(void *args)
-{
-  struct nm_core * p_core = args;
-  int ret = -NM_EUNKNOWN;
-  if(nmad_trylock())
-    {
-      nm_sched_out(p_core);
-      nm_sched_in(p_core);
-      nmad_unlock();
-    }
-  return ret;
-}
-
-int nm_post_on_drv_task(void *args)
-{
-  struct nm_drv * p_drv = args;
+  struct nm_drv*p_drv = _drv;
   int ret = NM_ESUCCESS;
   nmad_lock();
   nm_try_and_commit(p_drv->p_core);
-
-  /* schedule & post out requests */
-  nm_post_out_drv(p_drv);
-  nm_poll_out_drv(p_drv);  
-  
-  /* post new receive requests */
-  nm_refill_in_drv(p_drv);
-  nm_post_in_drv(p_drv);
-
+  nm_drv_post_all(p_drv);
   nmad_unlock();
   return ret;
 }
 
-int nm_offload_task(void* args)
+static int nm_task_offload(void* args)
 {
   struct nm_pkt_wrap * p_pw=args;
   nmad_lock();
-  nm_post_send(p_pw);
+  nm_pw_post_send(p_pw);
   nmad_unlock();
   return 0;
 }
 
-void nm_submit_poll_recv_ltask(struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
   piom_ltask_create(&p_pw->ltask, 
-		    &nm_poll_recv_task, 
+		    &nm_task_poll_recv, 
 		    p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
 		    task_vpset);
   piom_ltask_submit(&p_pw->ltask);	
 }
 
-void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
 
   piom_ltask_create(&p_pw->ltask, 
-		    &nm_poll_send_task, 
+		    &nm_task_poll_send,
 		    p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
 		    task_vpset);
   piom_ltask_submit(&p_pw->ltask);	
 }
 
-void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core)
-{
-  piom_vpset_t task_vpset = nm_get_binding_policy();
-
-  piom_ltask_create(task, 
-		    &nm_post_task, 
-		    p_core,
-		    PIOM_LTASK_OPTION_REPEAT, 
-		    task_vpset);
-  piom_ltask_submit(task);	
-}
-
-void nm_submit_post_drv_ltask(struct piom_ltask *task, struct nm_drv *p_drv)
+void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy_drv(p_drv);
  
   piom_ltask_create(task, 
-		    &nm_post_on_drv_task, 
+		    &nm_task_post_on_drv,
 		    p_drv,
 		    PIOM_LTASK_OPTION_REPEAT, 
 		    task_vpset);
   piom_ltask_submit(task);  
 }
 
-void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
+void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
 
   piom_ltask_create(task, 
-		    &nm_offload_task, 
+		    &nm_task_offload,
 		    p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT, 
 		    task_vpset);

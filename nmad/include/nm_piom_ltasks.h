@@ -19,37 +19,27 @@
 #ifdef PIOMAN_POLL
 
 #include "nm_private.h"
-/* retrieve the binding policy */
-void nm_ltask_set_policy();
 
-/* ltask dedicated to polling a recv request  */
-int nm_poll_recv_task(void *args);
-
-/* ltask dedicated to polling a send request  */
-int nm_poll_send_task(void *args);
-
-/* ltask dedicated to posting a recv request  
- * (not yet implemented!)
+/** apply the PIOMan binding policy (from env variable) 
  */
-int nm_post_recv_task(void *args);
+void nm_ltask_set_policy(void);
 
-/* ltask dedicated to posting a send request  
- * (not yet implemented!)
+/** submit an ltask for a recv pw
  */
-int nm_post_send_task(void *args);
+void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw);
 
-/* ltask dedicated to posting  requests */
-int nm_post_task(void *args);
+/** submit an ltask for a send pw
+ */
+void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw);
 
-/* ltask dedicated to offloading a request submission */
-int nm_offload_task(void* args);
+/** submit an ltask to post requests on a given driver (both send and recv).
+ */
+void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv);
 
-/* submit new ltasks */
-void nm_submit_poll_recv_ltask(struct nm_pkt_wrap *p_pw);
-void nm_submit_poll_send_ltask(struct nm_pkt_wrap *p_pw);
-void nm_submit_post_ltask(struct piom_ltask *task, struct nm_core *p_core);
-void nm_submit_offload_ltask(struct piom_ltask *task, struct nm_pkt_wrap *p_pw);
-void nm_submit_post_drv_ltask(struct piom_ltask *task, struct nm_drv *p_drv);
+/** submit an ltask to offload a pw processing (not implemented yet).
+ */
+void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw);
+
 
 #endif /* PIOMAN_POLL */
 

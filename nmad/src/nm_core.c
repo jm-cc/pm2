@@ -38,6 +38,17 @@ volatile piom_thread_t piom_big_lock_holder = PIOM_THREAD_NULL;
 #endif  /* PIOMAN */
 
 
+void nm_drv_post_all(struct nm_drv*p_drv)
+{ 
+ /* schedule & post out requests */
+  nm_drv_post_send(p_drv);
+  nm_drv_poll_send(p_drv);  
+  
+  /* post new receive requests */
+  nm_drv_refill_recv(p_drv);
+  nm_drv_post_recv(p_drv);
+}
+
 /** Main function of the core scheduler loop.
  *
  * This is the heart of NewMadeleine...
@@ -47,21 +58,37 @@ int nm_schedule(struct nm_core *p_core)
 #ifdef NMAD_POLL
   nmad_lock();  
 
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   static int scheduling_in_progress = 0;
   assert(!scheduling_in_progress);
   scheduling_in_progress = 1;  
-#endif /* NMAD_DEBUG */
+#endif /* DEBUG */
 
-  nm_sched_out(p_core);
+  nm_try_and_commit(p_core);
 
-  nm_sched_in(p_core);
+  /* post new requests	*/
+  struct nm_drv*p_drv = NULL;
+  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
+  {
+    nm_drv_post_all(p_drv);
+  }
+
+#ifdef NMAD_POLL
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
+    {
+      /* poll pending recv requests */
+      nm_drv_poll_recv(p_drv);
+      /* poll pending out requests */
+      nm_drv_poll_send(p_drv);
+    }
+  nm_out_prefetch(p_core);
+#endif /* NMAD_POLL */
   
   nmad_unlock();
   
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   scheduling_in_progress = 0;
-#endif /* NMAD_DEBUG */
+#endif /* DEBUG */
 
   return NM_ESUCCESS;
 #else  /* NMAD_POLL */

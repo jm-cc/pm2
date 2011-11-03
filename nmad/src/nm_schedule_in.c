@@ -22,7 +22,7 @@
 
 /** Poll active incoming requests 
  */
-__inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
+__inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 {
   int err;
 
@@ -73,7 +73,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
   else if(err == -NM_EAGAIN)
     {
 #ifdef PIOMAN_POLL
-      nm_submit_poll_recv_ltask(p_pw);      
+      nm_ltask_submit_poll_recv(p_pw);      
 #endif /* PIOMAN_POLL */
     }
   else if(err == -NM_ECLOSED)
@@ -100,7 +100,7 @@ __inline__ int nm_poll_recv(struct nm_pkt_wrap*p_pw)
 
 /** Actually post a recv request to the driver
  */
-static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
+static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
 {
   int err = NM_ESUCCESS;
   
@@ -153,19 +153,19 @@ static __inline__ int nm_post_recv(struct nm_pkt_wrap*p_pw)
 		p_pw->trk_id,
 		p_pw->proto_id);
 #ifdef PIOMAN_POLL
-      nm_submit_poll_recv_ltask(p_pw);      
+      nm_ltask_submit_poll_recv(p_pw);      
 #endif /* PIOMAN_POLL */
 
     }
   else if(err != -NM_ECLOSED)
     {
-      TBX_FAILUREF("nm_post_recv failed- err = %d", err);
+      TBX_FAILUREF("nm_pw_post_recv failed- err = %d", err);
     }
   
   return err;
 }
 
-void nm_refill_in_drv(struct nm_drv* p_drv)
+void nm_drv_refill_recv(struct nm_drv* p_drv)
 {
   struct nm_gate*p_gate = NULL;
   struct nm_core *p_core = p_drv->p_core;
@@ -188,7 +188,7 @@ void nm_refill_in_drv(struct nm_drv* p_drv)
     }
 }
 
-void nm_poll_in_drv(struct nm_drv *p_drv)
+void nm_drv_poll_recv(struct nm_drv *p_drv)
 {
 #ifdef NMAD_POLL
   struct nm_core *p_core = p_drv->p_core;
@@ -202,7 +202,7 @@ void nm_poll_in_drv(struct nm_drv *p_drv)
       tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
       {
         nm_poll_unlock_in(p_core, p_drv);
-	nm_poll_recv(p_pw);
+	nm_pw_poll_recv(p_pw);
 	nm_poll_lock_in(p_core, p_drv);
       }
     }
@@ -212,7 +212,7 @@ void nm_poll_in_drv(struct nm_drv *p_drv)
 }
 
 
-void nm_post_in_drv(struct nm_drv *p_drv)
+void nm_drv_post_recv(struct nm_drv*p_drv)
 {
   nm_trk_id_t trk;
   struct nm_core *p_core = p_drv->p_core;
@@ -231,7 +231,7 @@ void nm_post_in_drv(struct nm_drv *p_drv)
 	  {		    
   	    tbx_fast_list_del(&p_pw->link);
 	    nm_so_unlock_in(p_core, p_drv);
-	    nm_post_recv(p_pw);
+	    nm_pw_post_recv(p_pw);
 	    nm_so_lock_in(p_core, p_drv);
 	  }
 	  else
@@ -246,32 +246,6 @@ void nm_post_in_drv(struct nm_drv *p_drv)
   }
 }
 
-/** Main scheduler func for incoming requests.
-   - this function must be called on a regular basis
- */
-void nm_sched_in(struct nm_core *p_core)
-{
-  /* refill input requests */
-  struct nm_drv*p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      nm_refill_in_drv(p_drv);
-    }
-  
-#ifdef NMAD_POLL
-  /* poll pending requests */
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      nm_poll_in_drv(p_drv);
-    }
-#endif /* NMAD_POLL */
-  
-  /* post new requests */
-  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
-    {
-      nm_post_in_drv(p_drv);
-    }
-}
 
 #ifdef PIOM_BLOCKING_CALLS
 

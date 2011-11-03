@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
-  /* flush pending recv requests posted by nm_refill_in_drv() */
+  /* flush pending recv requests posted by nm_drv_refill_recv() */
   if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
     {
       struct nm_gate_drv*p_gdrv = nm_gate_drv_get(p_gate, p_drv);

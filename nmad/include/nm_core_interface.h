@@ -69,13 +69,6 @@ struct nm_driver_query_param
   } value;
 };
 
-int nm_core_driver_load(nm_core_t p_core, puk_component_t driver, nm_drv_t*pp_drv);
-
-int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char**p_url);
-
-int nm_core_driver_query(nm_core_t p_core, nm_drv_t p_drv, struct nm_driver_query_param *param);
-
-
 int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 			     struct nm_driver_query_param*param,
 			     nm_drv_t *pp_drv, const char**p_url);

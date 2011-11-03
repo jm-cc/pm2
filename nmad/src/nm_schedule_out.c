@@ -108,7 +108,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 
 /** Poll an active outgoing request.
  */
-__inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
+__inline__ int nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
 {
   nmad_lock_assert();
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
@@ -124,7 +124,7 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
   else if(err == -NM_EAGAIN)
     {
 #ifdef PIOMAN_POLL
-      nm_submit_poll_send_ltask(p_pw);
+      nm_ltask_submit_poll_send(p_pw);
 #endif
     }
   else
@@ -137,7 +137,7 @@ __inline__ int nm_poll_send(struct nm_pkt_wrap *p_pw)
 /** Post a new outgoing request.
     - this function must handle immediately completed requests properly
 */
-void nm_post_send(struct nm_pkt_wrap*p_pw)
+void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 {
   nmad_lock_assert();
 
@@ -177,7 +177,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 
 #else /* NMAD_POLL */
 
-      nm_submit_poll_send_ltask(p_pw);
+      nm_ltask_submit_poll_send(p_pw);
 
 #endif /* NMAD_POLL */
 
@@ -199,7 +199,7 @@ void nm_post_send(struct nm_pkt_wrap*p_pw)
 /** Main scheduler func for outgoing requests on a specific driver.
    - this function must be called once for each driver on a regular basis
  */
-void nm_post_out_drv(struct nm_drv *p_drv)
+void nm_drv_post_send(struct nm_drv *p_drv)
 {
   struct nm_core *p_core = p_drv->p_core;
   /* post new requests	*/
@@ -216,7 +216,7 @@ void nm_post_out_drv(struct nm_drv *p_drv)
       {
         tbx_fast_list_del(&p_pw->link);
 	nm_so_unlock_out(p_core, p_drv);
-	nm_post_send(p_pw);
+	nm_pw_post_send(p_pw);
 	nm_so_lock_out(p_core, p_drv);
       }
       nm_so_unlock_out(p_core, p_drv);
@@ -224,7 +224,7 @@ void nm_post_out_drv(struct nm_drv *p_drv)
   }
 }
 
-void nm_poll_out_drv(struct nm_drv *p_drv)
+void nm_drv_poll_send(struct nm_drv *p_drv)
 {
 #ifdef NMAD_POLL
   struct nm_core *p_core = p_drv->p_core;
@@ -239,7 +239,7 @@ void nm_poll_out_drv(struct nm_drv *p_drv)
       tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_send_list, link)
       {
         nm_poll_unlock_out(p_core, p_drv);
-	const int err = nm_poll_send(p_pw);
+	const int err = nm_pw_poll_send(p_pw);
 	nm_poll_lock_out(p_core, p_drv);
 	if(err == NM_ESUCCESS)
 	  {
@@ -273,7 +273,7 @@ void nm_try_and_commit(struct nm_core *p_core)
 }
 
 #ifdef NMAD_POLL
-static inline void nm_out_prefetch(struct nm_core*p_core)
+void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
   struct nm_drv*p_drv = NULL;
@@ -306,33 +306,6 @@ static inline void nm_out_prefetch(struct nm_core*p_core)
 }
 #endif /* NMAD_POLL */
 
-/** Main scheduler func for outgoing requests.
-   - this function must be called once for each gate on a regular basis
- */
-void nm_sched_out(struct nm_core *p_core)
-{
-  
-  nm_try_and_commit(p_core);
-
-  /* post new requests	*/
-  struct nm_drv*p_drv = NULL;
-  NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core)
-  {
-    nm_post_out_drv(p_drv);
-  }
-
-#ifdef NMAD_POLL
-  /* poll pending out requests	*/
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
-    {
-      nm_poll_out_drv(p_drv);
-    }
-
-  nm_out_prefetch(p_core);
-
-#endif /* NMAD_POLL */
-  
-}
 
 #ifdef PIOM_BLOCKING_CALLS
 

@@ -270,8 +270,10 @@ static void*__piom_ltask_idle(void*_dummy)
 	    else
 		{
 		    num_skip++;
-		    if((num_skip > 1000) && (num_skip % 1000 == 0))
+#ifdef DEBUG
+		    if((num_skip > 10000) && (num_skip % 1000 == 0))
 			fprintf(stderr, "PIOMan: WARNING- idle thread cannot acquire lock (count = %d); suspecting deadlock.\n", num_skip);
+#endif
 		    usleep(10);
 		}
 	    usleep(1);

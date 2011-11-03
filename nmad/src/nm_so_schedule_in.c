@@ -778,19 +778,28 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   struct nm_gate *p_gate = p_pw->p_gate;
   int err;
 
-  /* clear the input request field in gate track */
-  if (p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+  assert(p_gate != NULL);
+
+  nm_lock_interface(p_core);
+
+  /* clear the input request field */
+  if(p_pw->p_gdrv && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
     {
+      /* request was posted on a given gate */
       p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+      assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 1);
+      p_pw->p_gdrv->active_recv[p_pw->trk_id] = 0;
+    }
+  else if((!p_pw->p_gdrv) && p_pw->p_drv->p_in_rq == p_pw)
+    {
+      /* request was posted on a driver, for any gate */
+      p_pw->p_drv->p_in_rq = NULL;
     }
 
 #ifdef NMAD_POLL
   tbx_fast_list_del(&p_pw->link);
 #endif /* NMAD_POLL */
 
-  nm_lock_interface(p_core);
-  assert(p_pw->p_gdrv->active_recv[p_pw->trk_id] == 1);
-  p_pw->p_gdrv->active_recv[p_pw->trk_id] = 0;
   nm_unlock_interface(p_core);
 
   if(p_pw->trk_id == NM_TRK_SMALL)

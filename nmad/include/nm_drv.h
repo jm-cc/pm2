@@ -47,6 +47,9 @@ struct nm_drv
   /** Driver interface, for use when no instance is needed */
   const struct nm_drv_iface_s*driver;
   
+  /** recv request for trk#0 if driver supports recv_any */
+  struct nm_pkt_wrap*p_in_rq;
+
 #ifdef NMAD_POLL
   /* We don't use these lists since PIOMan already manage a 
      list of requests to poll */

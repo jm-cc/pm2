@@ -39,6 +39,7 @@ int nm_core_driver_load(nm_core_t p_core,
   p_drv->p_core   = p_core;
   p_drv->assembly = driver_assembly;
   p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
+  p_drv->p_in_rq  = NULL;
 #ifdef PM2_NUIOA
   p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif

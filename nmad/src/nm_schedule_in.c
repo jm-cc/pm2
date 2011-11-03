@@ -33,9 +33,9 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 	    p_pw->p_drv,
 	    p_pw->trk_id,
 	    p_pw->proto_id);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(p_pw->p_gate)
     {
+      struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
       if(r->driver->capabilities.min_period > 0)
 	{
 	  struct timespec t;
@@ -60,7 +60,7 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
     }
   else
     {
-      err = r->driver->poll_recv_iov_all(p_pw);
+      err = p_pw->p_drv->driver->poll_recv_iov(NULL, p_pw);
     }
    
   if(err == NM_ESUCCESS)
@@ -68,7 +68,7 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 #ifdef PIOMAN_POLL
       piom_ltask_destroy(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
-      err = nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+      err = nm_so_process_complete_recv(p_pw->p_drv->p_core, p_pw);
     }
   else if(err == -NM_EAGAIN)
     {
@@ -80,10 +80,13 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
     {
       struct nm_gate*p_gate = p_pw->p_gate;
       p_gate->status = NM_GATE_STATUS_DISCONNECTING;
-      p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-      if (p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+      if(p_pw->p_gdrv)
 	{
-	  p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+	  p_pw->p_gdrv->active_recv[NM_TRK_SMALL] = 0;
+	  if (p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] == p_pw)
+	    {
+	      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = NULL;
+	    }
 	}
 #ifdef NMAD_POLL
       tbx_fast_list_del(&p_pw->link);
@@ -104,58 +107,45 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
 {
   int err = NM_ESUCCESS;
   
-  /* update incoming request field in gate track if
-     the request specifies a gate */
-  if (p_pw->p_gate)
-    {
-      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
-    }
   NM_TRACEF("posting new recv request: gate %p, drv %p, trk %d, proto %d",
-	    p_pw->p_gate,
-	    p_pw->p_drv,
-	    p_pw->trk_id,
-	    p_pw->proto_id);
+	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->proto_id);
 
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  /* post request */
   if(p_pw->p_gate)
     {
+      struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+      /* update incoming request field in gate track if
+	 the request specifies a gate */
+      p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id] = p_pw;
       err = r->driver->post_recv_iov(r->_status, p_pw);
     } 
   else
     {
-      err = r->driver->post_recv_iov_all(p_pw);
+      err = p_pw->p_drv->driver->post_recv_iov(NULL, p_pw);
     }
   
 #ifdef NMAD_POLL
-      /* always put the request in the list of pending requests,
-       * even if it completes immediately. It will be removed from
-       * the list by nm_so_process_complete_recv().
-       */
-  nm_poll_lock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+  /* always put the request in the list of pending requests,
+   * even if it completes immediately. It will be removed from
+   * the list by nm_so_process_complete_recv().
+   */
+  nm_poll_lock_in(p_pw->p_drv->p_core, p_pw->p_drv);
   tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
-  nm_poll_unlock_in(p_pw->p_gate->p_core, p_pw->p_drv);
+  nm_poll_unlock_in(p_pw->p_drv->p_core, p_pw->p_drv);
 #endif /* NMAD_POLL */
-  
-  /* process post command status				*/
   
   if(err == NM_ESUCCESS)
     {
       /* immediate succes, process request completion */
       NM_TRACEF("request completed immediately");
-      nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+      nm_so_process_complete_recv(p_pw->p_drv->p_core, p_pw);
     }
-  else  if (err == -NM_EAGAIN)
+  else if(err == -NM_EAGAIN)
     {
       NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d, proto %d",
-		p_pw->p_gate,
-		p_pw->p_drv,
-		p_pw->trk_id,
-		p_pw->proto_id);
+		p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->proto_id);
 #ifdef PIOMAN_POLL
       nm_ltask_submit_poll_recv(p_pw);      
 #endif /* PIOMAN_POLL */
-
     }
   else if(err != -NM_ECLOSED)
     {
@@ -165,24 +155,38 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
   return err;
 }
 
-void nm_drv_refill_recv(struct nm_drv* p_drv)
+void nm_drv_refill_recv(struct nm_drv*p_drv)
 {
-  struct nm_gate*p_gate = NULL;
   struct nm_core *p_core = p_drv->p_core;
-  		
-  NM_FOR_EACH_GATE(p_gate, p_core)
+
+  if(p_drv->driver->capabilities.has_recv_any)
     {
-      /* Make sure the gate is not being connected
-       * This may happen when using multiple threads
-       */
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED) 
+      /* recv any available- single pw with no gate */
+      struct nm_pkt_wrap *p_pw;
+      if(p_drv->p_in_rq == NULL)
 	{
-	  struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-	  if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
+	  nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+	  nm_core_post_recv(p_pw, NM_GATE_NONE, NM_TRK_SMALL, p_drv);
+	}
+    }
+  else
+    {
+      /* no recv any- post a pw per gate */
+      struct nm_gate*p_gate = NULL;
+      NM_FOR_EACH_GATE(p_gate, p_core)
+	{
+	  /* Make sure the gate is not being connected
+	   * This may happen when using multiple threads
+	   */
+	  if(p_gate->status == NM_GATE_STATUS_CONNECTED) 
 	    {
-	      struct nm_pkt_wrap *p_pw;
-	      nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
-	      nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
+	      struct nm_gate_drv *p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+	      if(p_gdrv != NULL && !p_gdrv->active_recv[NM_TRK_SMALL])
+		{
+		  struct nm_pkt_wrap *p_pw;
+		  nm_so_pw_alloc(NM_PW_BUFFER, &p_pw);
+		  nm_core_post_recv(p_pw, p_gate, NM_TRK_SMALL, p_drv);
+		}
 	    }
 	}
     }

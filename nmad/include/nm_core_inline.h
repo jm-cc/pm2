@@ -69,14 +69,22 @@ static __inline__ uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
   return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
 
+/** assign packet to given driver, gate, and track */
 static __inline__ void nm_so_pw_assign(struct nm_pkt_wrap*p_pw, nm_trk_id_t trk_id, nm_drv_t p_drv, nm_gate_t p_gate)
 {
-  p_pw->p_gate = p_gate;
-  /* Packet is assigned to given driver */
   p_pw->p_drv = p_drv;
-  p_pw->p_gdrv = nm_gate_drv_get(p_gate, p_drv);
-  /* Packet is assigned to given track */
   p_pw->trk_id = trk_id;
+  if(p_gate == NM_GATE_NONE)
+    {
+      assert(p_drv->p_in_rq == NULL);
+      p_drv->p_in_rq = p_pw;
+      p_pw->p_gdrv = NULL;
+    }
+  else
+    {
+      p_pw->p_gate = p_gate;
+      p_pw->p_gdrv = nm_gate_drv_get(p_gate, p_drv);
+    }
 }
 
 /** Ensures p_pw->v contains at least n entries
@@ -259,13 +267,16 @@ static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
 static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
 					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
 {
-  struct nm_core*p_core = p_gate->p_core;
+  struct nm_core*p_core = p_drv->p_core;
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   nm_so_lock_in(p_core, p_drv);
   tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_recv_list[trk_id]);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-  assert(p_gdrv->active_recv[trk_id] == 0);
-  p_gdrv->active_recv[trk_id] = 1;
+  if(p_gdrv)
+    {
+      assert(p_gdrv->active_recv[trk_id] == 0);
+      p_gdrv->active_recv[trk_id] = 1;
+    }
   nm_so_unlock_in(p_core, p_drv);
 }
 

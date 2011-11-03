@@ -298,6 +298,21 @@ int nm_core_driver_exit(struct nm_core *p_core)
       /* cancel any pending active recv request 
        */
 
+      if(p_drv->p_in_rq)
+	{
+	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;
+	  p_drv->p_in_rq = NULL;
+	  if(p_drv->driver->cancel_recv_iov)
+	    p_drv->driver->cancel_recv_iov(NULL, p_pw);
+#if defined(NMAD_POLL)
+	  tbx_fast_list_del(&p_pw->link);
+	  nm_so_pw_free(p_pw);
+#else
+	  piom_ltask_cancel(&p_pw->ltask);
+	  nm_so_pw_free(p_pw);		  
+#endif
+	}
+
       struct nm_gate*p_gate = NULL;
       NM_FOR_EACH_GATE(p_gate, p_core)
 	{

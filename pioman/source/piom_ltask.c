@@ -478,30 +478,38 @@ void piom_ltask_unmask(struct piom_ltask *task)
 
 void piom_ltask_cancel(struct piom_ltask*ltask)
 {
+    int found = 0;
     assert(ltask->state != PIOM_LTASK_STATE_NONE);
     const int options = ltask->options;
     ltask->masked = 1;
-    if(!(options & PIOM_LTASK_OPTION_DESTROY))
+    /* loop to retry, since we iterate without stopping the queue
+     * and without lock. Some tasklet may steal the ltask between
+     * test and dequeue. *Theoretically* starvation is possible.
+     */
+    while(!found)
 	{
 	    while(ltask->state & PIOM_LTASK_STATE_SCHEDULED)
 		{ }
-	}
-    struct piom_ltask_queue*queue = ltask->queue;
-    if(queue)
-	{
-	    int i;
-	    for(i = 0; i < PIOM_MAX_LTASK; i++)
+	    struct piom_ltask_queue*queue = ltask->queue;
+	    if(queue)
 		{
-		    struct piom_ltask*ltask2 = __piom_ltask_get_from_queue(queue);
-		    if(ltask2 == ltask)
-			break;
-		    else if(ltask2 != NULL)
-			__piom_ltask_submit_in_queue(ltask2, queue);
+		    int i;
+		    for(i = 0; i < PIOM_MAX_LTASK; i++)
+			{
+			    struct piom_ltask*ltask2 = __piom_ltask_get_from_queue(queue);
+			    if(ltask2 == ltask)
+				{
+				    found = 1;
+				    break;
+				}
+			    else if(ltask2 != NULL)
+				__piom_ltask_submit_in_queue(ltask2, queue);
+			}
 		}
 	}
+    ltask->state = PIOM_LTASK_STATE_TERMINATED;
     if(!(options & PIOM_LTASK_OPTION_DESTROY))
 	{
-	    ltask->state = PIOM_LTASK_STATE_TERMINATED;
 	    piom_ltask_completed(ltask);
 	}
 }

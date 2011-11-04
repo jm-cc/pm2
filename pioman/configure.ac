@@ -50,7 +50,7 @@ AC_PROG_CPP
 
 BASE_CFLAGS="-Wall"
 DEBUG_CFLAGS="-g -DDEBUG"
-OPT_CFLAGS="-O4 -march=native -DNDEBUG"
+OPT_CFLAGS="-O4 -DNDEBUG"
 CPICFLAGS="-fPIC"
 CDEPFLAGS="-MM"
 DYNLIB_LDFLAGS="-shared -rdynamic"
@@ -80,6 +80,15 @@ dnl --
 PIOMAN_CFLAGS="-DPIOMAN -I${pioman_srcdir}/include"
 
 PIOMAN_LIBS="-L${pioman_root}/lib -Wl,-rpath,${pioman_root}/lib -lpioman"
+
+gcc_version="`${CC} -dumpversion`"
+case $gcc_version in
+   2.*|3.*|4.0*|4.1*)
+    ;;
+   *) dnl  -march=native is only available since gcc 4.2
+	OPT_CFLAGS="$OPT_CFLAGS -march=native"
+	;;
+esac
 
 AC_ARG_ENABLE(debug,
 	      [AS_HELP_STRING([ --enable-debug ], [ enable debug @<:@default=no@:>@] )],

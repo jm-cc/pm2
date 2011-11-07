@@ -81,19 +81,7 @@ static void nm_session_init_strategy(int*argc, char**argv)
   const char*strategy_name = getenv("NMAD_STRATEGY");
   if(!strategy_name)
     {
-#if defined(CONFIG_STRAT_SPLIT_BALANCE)
-      strategy_name = "split_balance";
-#elif defined(CONFIG_STRAT_SPLIT_ALL)
-      strategy_name = "split_all";
-#elif defined(CONFIG_STRAT_DEFAULT)
-      strategy_name = "default";
-#elif defined(CONFIG_STRAT_AGGREG)
       strategy_name = "aggreg";
-#elif defined(CONFIG_STRAT_AGGREG_AUTOEXTENDED)
-      strategy_name = "aggreg_autoextended";
-#else /*  defined(CONFIG_STRAT_CUSTOM) */
-      strategy_name = "aggreg";
-#endif
     }
   puk_component_t strategy = nm_core_component_load("Strategy", strategy_name);
   int err = nm_core_set_strategy(nm_session.p_core, strategy);

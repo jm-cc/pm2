@@ -52,7 +52,7 @@ dnl --------------------------------------------------------
 
 dnl -- base CFLAGS
 dnl --
-NMAD_CFLAGS="-DNMAD -DNMAD_AUTOCONF -I${nmad_root}/include"
+NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
 
 dnl -- tag container
 dnl --

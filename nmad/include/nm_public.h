@@ -27,11 +27,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <nm_errno.h>
-
-#ifdef NMAD_AUTOCONF
-/* include private configuration only if we are building nmad */
 #include <nm_config.h>
-#endif
 
 /* ** Gates ************************************************ */
 

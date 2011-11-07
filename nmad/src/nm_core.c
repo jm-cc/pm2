@@ -149,12 +149,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
    */
   if(!tbx_initialized())
     {
-#ifdef NMAD_AUTOCONF
       tbx_init(argc, &argv);
-#else
-      common_pre_init(argc, argv, NULL);
-      common_post_init(argc, argv, NULL);
-#endif
     }
 
   FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);

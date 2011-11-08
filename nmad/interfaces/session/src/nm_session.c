@@ -29,26 +29,20 @@
 PADICO_MODULE_HOOK(NewMad_Core);
 
 
-/** A driver descriptor
- */
-struct nm_session_driver_s
-{
-  struct nm_drv*p_drv;
-};
-
 static struct
 {
-  struct nm_core*p_core;    /**< the current nmad object. */
-  const char*local_url;     /**< the local nmad driver url */
+  struct nm_core*p_core;      /**< the current nmad object. */
+  const char*local_url;       /**< the local nmad driver url */
   padico_string_t url_string; /**< local url as a string */
-  puk_hashtable_t gates;    /**< list of connected gates */
-  puk_hashtable_t sessions; /**< table of active sessions, hashed by session hashcode */
-  int ref_count;            /**< ref. counter for core = number of active sessions */
+  puk_hashtable_t gates;      /**< connected gates, hashed by remote url */
+  puk_hashtable_t sessions;   /**< active sessions, hashed by session hashcode */
+  int ref_count;              /**< ref. counter for core = number of active sessions */
 
 } nm_session =
   {
     .p_core    = NULL,
     .local_url = NULL,
+    .url_string = NULL,
     .gates     = NULL,
     .sessions  = NULL,
     .ref_count = 0
@@ -88,7 +82,7 @@ static void nm_session_init_strategy(void)
 }
 
 /** add the given driver to the session */
-static void nm_session_add_driver(puk_component_t component, int index)
+void nm_session_add_driver(puk_component_t component, int index)
 {
   assert(component != NULL);
   const char*driver_url = NULL;
@@ -105,8 +99,6 @@ static void nm_session_add_driver(puk_component_t component, int index)
       fprintf(stderr, "# session: error %d while loading driver %s\n", err, p_drv->driver->name);
       abort();
     }
-  const struct nm_drv_iface_s*drv_iface = puk_component_get_driver_NewMad_Driver(component, NULL);
-  assert(drv_iface != NULL);
   if(nm_session.url_string == NULL)
     {
       nm_session.url_string = padico_string_new();
@@ -115,70 +107,54 @@ static void nm_session_add_driver(puk_component_t component, int index)
     {
       padico_string_catf(nm_session.url_string, "+");
     }
-  padico_string_catf(nm_session.url_string, "%s:%d#%s", drv_iface->name, p_drv->index, driver_url);
+  padico_string_catf(nm_session.url_string, "%s:%d#%s", p_drv->driver->name, p_drv->index, driver_url);
 }
 
-/** Initialize the drivers */
-static void nm_session_init_drivers(int*argc, char**argv)
+/** Initialize default drivers */
+static void nm_session_init_drivers(void)
 {
-  const char*assembly_name = getenv("NMAD_ASSEMBLY");
   const char*driver_env = getenv("NMAD_DRIVER");
   if(driver_env && (strlen(driver_env) == 0))
     driver_env = NULL;
-  if((!driver_env) && (!assembly_name))
+  if(!driver_env)
     {
       driver_env = "tcp";
     }
 
-  nm_session.url_string = NULL;
-
-  if(driver_env)
+  /* parse driver_string */
+  char*driver_string = strdup(driver_env); /* strtok writes into the string */
+  char*token = strtok(driver_string, "+");
+  while(token)
     {
-      /* parse driver_string */
-      char*driver_string = strdup(driver_env); /* strtok writes into the string */
-      char*token = strtok(driver_string, "+");
-      while(token)
+      char*driver_name = strdup(token); /* take a copy so as our writes don't confuse strtok */
+      char*index_string = strchr(driver_name, ':');
+      int index = -1;
+      if(index_string)
 	{
-	  char*driver_name = strdup(token); /* take a copy so as our writes don't confuse strtok */
-	  char*index_string = strchr(driver_name, ':');
-	  int index = -1;
-	  if(index_string)
-	    {
-	      *index_string = '\0';
-	      index_string++;
-	      index = atoi(index_string);
-	    }
-	  if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
-	    {
-	      free(driver_name);
-	      driver_name = strdup("ibverbs");
-	    }
-	  else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
-	    {
-	      free(driver_name);
-	      driver_name = strdup("mx");
-	    }
-	  puk_component_t driver_assembly = nm_core_component_load("Driver", driver_name);
-	  nm_session_add_driver(driver_assembly, index);
-	  free(driver_name);
-	  token = strtok(NULL, "+");
+	  *index_string = '\0';
+	  index_string++;
+	  index = atoi(index_string);
 	}
-      free(driver_string);
+      if((strcmp(driver_name, "ib") == 0) || (strcmp(driver_name, "ibv") == 0))
+	{
+	  free(driver_name);
+	  driver_name = strdup("ibverbs");
+	}
+      else if((strcmp(driver_name, "myri") == 0) || (strcmp(driver_name, "myrinet") == 0))
+	{
+	  free(driver_name);
+	  driver_name = strdup("mx");
+	}
+      puk_component_t driver_assembly = nm_core_component_load("Driver", driver_name);
+      nm_session_add_driver(driver_assembly, index);
+      free(driver_name);
+      token = strtok(NULL, "+");
     }
-  else
-    {
-      /* assembly name given (e.g. NewMadico) */
-      NM_DISPF("# session: loading assembly %s\n", assembly_name);
-      puk_component_t driver_assembly = puk_adapter_resolve(assembly_name);
-      nm_session_add_driver(driver_assembly, -1);
-    }
+  free(driver_string);
+
   /* load default driver */
   puk_component_t driver_self = puk_adapter_resolve("NewMad_Driver_self");
   nm_session_add_driver(driver_self, -1);
-  /* get local url */
-  nm_session.local_url = strdup(padico_string_get(nm_session.url_string));
-  padico_string_delete(nm_session.url_string);
-  nm_session.url_string = NULL;
 }
 
 
@@ -226,6 +202,7 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 	  abort();
 	}
     }
+  p_session->p_core = nm_session.p_core;
   nm_session.ref_count++;
   *pp_session = p_session;
   return NM_ESUCCESS;
@@ -237,11 +214,14 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
       
   /* load strategy */
   nm_session_init_strategy();
-  
-  /* load driver */
-  nm_session_init_drivers(argc, argv);
 
-  p_session->p_core = nm_session.p_core;
+  if(nm_session.p_core->nb_drivers == 0)
+    {
+      /* load driver */
+      nm_session_init_drivers();
+    }
+  if(nm_session.local_url == NULL)
+    nm_session.local_url = padico_strdup(padico_string_get(nm_session.url_string));
   nm_sr_init(p_session);
   *p_local_url = nm_session.local_url;
 

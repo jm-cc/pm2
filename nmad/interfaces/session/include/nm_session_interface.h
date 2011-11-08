@@ -17,12 +17,21 @@
 #define NM_SESSION_INTERFACE_H
 
 #include <nm_public.h>
+#include <Padico/Puk.h>
 
 typedef struct nm_session_s*nm_session_t;
 
 /** Create an empty session object.
  */
 int nm_session_create(nm_session_t*pp_session, const char*label);
+
+
+/** Add a driver to the session.
+ * @note call to this function is optional. Default drivers will be loaded
+ * if no driver is loaded manually.
+ */
+#warning TODO- include index as a NewMad_Driver component attribute
+void nm_session_add_driver(puk_component_t component, int index);
 
 /** Initializes a session object.
  * 'p_local_url' is a return parameter, pointing to an object allocated in the session- do not free nor modify!

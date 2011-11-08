@@ -90,6 +90,9 @@ struct nm_drv
   /** Number of tracks opened on this driver. */
   int nb_tracks;
   
+  /** Index of the board managed by this instance of driver */
+  int index;
+
   /** Performance information */
   struct nm_drv_profile_s profile;
 

@@ -34,25 +34,20 @@ PADICO_MODULE_HOOK(NewMad_Core);
 struct nm_session_driver_s
 {
   struct nm_drv*p_drv;
-  int index;
-  char*name;
 };
 
 static struct
 {
   struct nm_core*p_core;    /**< the current nmad object. */
-  int n_drivers;            /**< number of drivers */
-  struct nm_session_driver_s*drivers; /**< array of drivers */
   const char*local_url;     /**< the local nmad driver url */
   padico_string_t url_string; /**< local url as a string */
   puk_hashtable_t gates;    /**< list of connected gates */
   puk_hashtable_t sessions; /**< table of active sessions, hashed by session hashcode */
   int ref_count;            /**< ref. counter for core = number of active sessions */
+
 } nm_session =
   {
     .p_core    = NULL,
-    .n_drivers = 0,
-    .drivers   = NULL,
     .local_url = NULL,
     .gates     = NULL,
     .sessions  = NULL,
@@ -76,7 +71,7 @@ uint32_t nm_session_code_hash(const void*key)
 }
 
 /** Initialize the strategy */
-static void nm_session_init_strategy(int*argc, char**argv)
+static void nm_session_init_strategy(void)
 {
   const char*strategy_name = getenv("NMAD_STRATEGY");
   if(!strategy_name)
@@ -104,10 +99,6 @@ static void nm_session_add_driver(puk_component_t component, int index)
       param.key = NM_DRIVER_QUERY_BY_INDEX;
       param.value.index = index;
     }
-  else
-    {
-      index = 0;
-    }
   int err = nm_core_driver_load_init(nm_session.p_core, component, &param, &p_drv, &driver_url);
   if(err != NM_ESUCCESS)
     {
@@ -116,12 +107,6 @@ static void nm_session_add_driver(puk_component_t component, int index)
     }
   const struct nm_drv_iface_s*drv_iface = puk_component_get_driver_NewMad_Driver(component, NULL);
   assert(drv_iface != NULL);
-  const char*driver_realname = drv_iface->name;
-  nm_session.n_drivers++;
-  nm_session.drivers = realloc(nm_session.drivers, nm_session.n_drivers * sizeof(struct nm_session_driver_s));
-  nm_session.drivers[nm_session.n_drivers - 1].p_drv = p_drv;
-  nm_session.drivers[nm_session.n_drivers - 1].index = index;
-  nm_session.drivers[nm_session.n_drivers - 1].name  = strdup(driver_realname);
   if(nm_session.url_string == NULL)
     {
       nm_session.url_string = padico_string_new();
@@ -130,7 +115,7 @@ static void nm_session_add_driver(puk_component_t component, int index)
     {
       padico_string_catf(nm_session.url_string, "+");
     }
-  padico_string_catf(nm_session.url_string, "%s:%d#%s", driver_realname, index, driver_url);
+  padico_string_catf(nm_session.url_string, "%s:%d#%s", drv_iface->name, p_drv->index, driver_url);
 }
 
 /** Initialize the drivers */
@@ -145,8 +130,6 @@ static void nm_session_init_drivers(int*argc, char**argv)
       driver_env = "tcp";
     }
 
-  nm_session.n_drivers = 0;
-  nm_session.drivers = NULL;
   nm_session.url_string = NULL;
 
   if(driver_env)
@@ -223,15 +206,26 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 #ifndef NM_TAGS_AS_INDIRECT_HASH
   if(puk_hashtable_size(nm_session.sessions) > 0)
     {
-      fprintf(stderr, "# session: current flavor does not support multiple sessions. Please activate option 'tag_huge'.\n");
+      fprintf(stderr, "# session: current flavor does not support multiple sessions. Please activate configure option '--enable-taghuge'.\n");
       abort();
     }
-#endif /* NM_TAG_STRUCT */
+#endif /* NM_TAG_AS_INDIRECT_HASH */
   p_session = TBX_MALLOC(sizeof(struct nm_session_s));
   p_session->p_core = NULL;
   p_session->label = strdup(label);
   p_session->hash_code = hash_code;
   puk_hashtable_insert(nm_session.sessions, &p_session->hash_code, p_session);
+  if(nm_session.p_core == NULL)
+    {
+      /* Initializes the global nmad core */
+      int fake_argc = 0;
+      int err = nm_core_init(&fake_argc, NULL, &nm_session.p_core);
+      if(err != NM_ESUCCESS)
+	{
+	  fprintf(stderr, "# session: error %d while initializing nmad core.\n", err);
+	  abort();
+	}
+    }
   nm_session.ref_count++;
   *pp_session = p_session;
   return NM_ESUCCESS;
@@ -240,22 +234,13 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_local_url)
 {
   assert(p_session != NULL);
-  if(nm_session.p_core == NULL)
-    {
-      /* Initializes the global nmad core */
-      int err = nm_core_init(argc, argv, &nm_session.p_core);
-      if(err != NM_ESUCCESS)
-	{
-	  fprintf(stderr, "# session: error %d while initializing nmad core.\n", err);
-	  abort();
-	}
       
-      /* load strategy */
-      nm_session_init_strategy(argc, argv);
-      
-      /* load driver */
-      nm_session_init_drivers(argc, argv);
-    }
+  /* load strategy */
+  nm_session_init_strategy();
+  
+  /* load driver */
+  nm_session_init_drivers(argc, argv);
+
   p_session->p_core = nm_session.p_core;
   nm_sr_init(p_session);
   *p_local_url = nm_session.local_url;
@@ -278,14 +263,12 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       if(strcmp(url, nm_session.local_url) == 0)
 	{
 	  /* ** loopback connect- use driver 'self' (hardwired) */
-	  int i;
-	  for(i = 0; i < nm_session.n_drivers; i++)
+	  struct nm_drv*p_drv;
+	  NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	    {
-	      if(strcmp(nm_session.drivers[i].name, "self") == 0)
+	      if(strcmp(p_drv->driver->name, "self") == 0)
 		break;
 	    }
-	  assert(i < nm_session.n_drivers);
-	  struct nm_drv*p_drv = nm_session.drivers[i].p_drv;
 	  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, "-");
 	  assert(err == NM_ESUCCESS);
 	  remote_url = strdup(url);
@@ -316,15 +299,14 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  /* connect gate */
 	  const int is_server = (strcmp(url, nm_session.local_url) > 0);
 	  /* connect all drivers */
-	  int i;
 	  int connected = 0;
-	  for(i = 0; i < nm_session.n_drivers; i++)
+	  struct nm_drv*p_drv;
+	  NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
 	    {
-	      const struct nm_session_driver_s*p_session_drv = &nm_session.drivers[i];
 	      char driver_name[256];
-	      snprintf(driver_name, 256, "%s:%d", p_session_drv->p_drv->driver->name, p_session_drv->index);
+	      snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
 	      const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
-	      if(strcmp(p_session_drv->p_drv->driver->name, "self") == 0)
+	      if(strcmp(p_drv->driver->name, "self") == 0)
 		continue;
 	      if(driver_url == NULL)
 		{
@@ -334,7 +316,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 		}
 	      if(is_server)
 		{
-		  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_session_drv->p_drv, driver_url);
+		  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
 		  if(err != NM_ESUCCESS)
 		    {
 		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
@@ -343,7 +325,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 		}
 	      else
 		{
-		  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_session_drv->p_drv, driver_url);
+		  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
 		  if(err != NM_ESUCCESS)
 		    {
 		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
@@ -406,17 +388,6 @@ int nm_session_destroy(nm_session_t p_session)
     {
       nm_core_exit(nm_session.p_core);
       nm_session.p_core = NULL;
-      if(nm_session.drivers != NULL)
-	{
-	  int i;
-	  for(i = 0; i < nm_session.n_drivers; i++)
-	    {
-	      free(nm_session.drivers[i].name);
-	    }
-	  free(nm_session.drivers);
-	  nm_session.drivers = NULL;
-	}
-      nm_session.n_drivers = 0;
       free((void*)nm_session.local_url);
       nm_session.local_url = NULL;
       while(puk_hashtable_size(nm_session.gates) != 0)

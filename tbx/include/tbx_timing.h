@@ -43,7 +43,7 @@
  */
 
 
-#ifdef USE_CLOCK_GETTIME
+#ifdef TBX_USE_CLOCK_GETTIME
 
 
 typedef struct timespec tbx_tick_t, *p_tbx_tick_t;
@@ -76,7 +76,7 @@ static inline tbx_tick_t tbx_tick_raw_diff(const tbx_tick_t*const t1, const tbx_
 }
 
 #else
-#ifdef USE_MACH_ABSOLUTE_TIME
+#ifdef TBX_USE_MACH_ABSOLUTE_TIME
 #  include <mach/mach_time.h>
 
 
@@ -114,8 +114,8 @@ static inline tbx_tick_t tbx_tick_raw_diff(const tbx_tick_t*const t1, const tbx_
 }
 
 
-#endif /** USE_MACH_ABSOLUTE_TIME **/
-#endif /** USE_CLOCK_GETTIME **/
+#endif /** TBX_USE_MACH_ABSOLUTE_TIME **/
+#endif /** TBX_USE_CLOCK_GETTIME **/
 
 
 #define TBX_TIMING_DELAY(start, end) tbx_ticks2delay(&(start), &(end))

@@ -38,11 +38,11 @@ static double tbx_tick2usec_raw(tbx_tick_t t)
 {
 	double raw_delay;
 
-#if defined(USE_MACH_ABSOLUTE_TIME)
+#if defined(TBX_USE_MACH_ABSOLUTE_TIME)
 	mach_timebase_info_data_t info;
 	mach_timebase_info(&info);
 	raw_delay = ((double)t * info.numer / info.denom / 1000.0);
-#elif defined(USE_CLOCK_GETTIME)
+#elif defined(TBX_USE_CLOCK_GETTIME)
 	raw_delay = 1000000.0 * t.tv_sec + t.tv_nsec / 1000.0;
 #else
 	raw_delay = 1000000.0 *t.tv_sec + t.tv_usec;

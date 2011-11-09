@@ -71,7 +71,7 @@ AC_DEFUN([TBX__TIMING_METHOD],
 		AC_SEARCH_LIBS([clock_gettime], 
           		       [c, rt], 
 			       [ 
-					ADD_TO(PKG_AM_CPPFLAGS, -DUSE_CLOCK_GETTIME)
+					ADD_TO(PKG_AM_CPPFLAGS, -DTBX_USE_CLOCK_GETTIME)
 					ADD_TO(PKG_AM_LDFLAGS, $LIBS) 
 			       ],
 			       [], [])
@@ -79,7 +79,7 @@ AC_DEFUN([TBX__TIMING_METHOD],
 	[
 		AC_CHECK_DECLS([mach_absolute_time],
 		[
-			ADD_TO(PKG_AM_CPPFLAGS, -DUSE_MACH_ABSOLUTE_TIME)
+			ADD_TO(PKG_AM_CPPFLAGS, -DTBX_USE_MACH_ABSOLUTE_TIME)
 		], [],
 		[[
 			#include <mach/mach_time.h>

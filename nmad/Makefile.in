@@ -18,23 +18,25 @@ INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
 TARGETS = $(TARGET_BIN) $(TARGET_LIB)
 
-# set compilers and flags
-CFLAGS  += @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := @NMAD_EXT_LIBS@ -lrt $(LIBS)
-BINLIBS := -L. @NMAD_LIBS@
-FC      := @FC@
-FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
-
 # compute flags and directories from options
 SRC_DIRS += src
 SRC_DIRS += $(foreach drv,   @nmad_drivers@,    drivers/$(drv) )
 SRC_DIRS += $(foreach strat, @nmad_strategies@, strategies/strat_$(strat) )
 SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
-CFLAGS   += $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
+EXTRA_NMAD_CFLAGS := $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
 EXAMPLE_DIRS = examples/pack examples/sendrecv examples/lowlevel
+
+# set compilers and flags
+#   add source dirs and build dir *first* in include order
+#   add install dir and dependancies *last* in include order
+CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include $(EXTRA_NMAD_CFLAGS) $(CFLAGS) @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@
+LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
+LIBS    := @NMAD_EXT_LIBS@ -lrt $(LIBS)
+BINLIBS := -L. @NMAD_LIBS@
+FC      := @FC@
+FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 
 # make multiple directories fit inside a single module
 SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
@@ -63,9 +65,6 @@ TARGETS          += $(MADMPI_F90_MODS)
 EXAMPLE_DIRS += examples/mpi/fortran examples/mpi/f90
 endif
 endif
-
-# add source and build dir *first* in include order
-CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include $(CFLAGS)
 
 include @puk_root@/etc/common_rules.mk
 

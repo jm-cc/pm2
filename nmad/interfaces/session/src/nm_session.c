@@ -28,7 +28,6 @@
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
 
-
 static struct
 {
   struct nm_core*p_core;      /**< the current nmad object. */
@@ -37,7 +36,7 @@ static struct
   puk_hashtable_t gates;      /**< connected gates, hashed by remote url */
   puk_hashtable_t sessions;   /**< active sessions, hashed by session hashcode */
   int ref_count;              /**< ref. counter for core = number of active sessions */
-
+  nm_session_selector_t selector;
 } nm_session =
   {
     .p_core    = NULL,
@@ -82,6 +81,7 @@ static void nm_session_init_strategy(void)
 }
 
 /** add the given driver to the session */
+#warning TODO- include index as a NewMad_Driver component attribute
 void nm_session_add_driver(puk_component_t component, int index)
 {
   assert(component != NULL);
@@ -228,10 +228,68 @@ int nm_session_init(nm_session_t p_session, int*argc, char**argv, const char**p_
   return NM_ESUCCESS;
 }
 
+void nm_session_set_selector(nm_session_selector_t selector)
+{
+  nm_session.selector = selector;
+}
+
+/** default selector to choose drivers */
+static nm_drv_vect_t nm_session_default_selector(const char*peer_url)
+{
+  nm_drv_vect_t v = nm_drv_vect_new();
+  if(strcmp(peer_url, nm_session.local_url) == 0)
+    {
+      /* ** loopback connect- use driver 'self' (hardwired) */
+      struct nm_drv*p_drv;
+      NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
+	{
+	  if(strcmp(p_drv->driver->name, "self") == 0)
+	    {
+	      nm_drv_vect_push_back(v, p_drv);
+	      break;
+	    }
+	}
+    }
+  else
+    {
+      /* ** remote connection- find common drivers */
+      struct nm_drv*p_drv;
+      NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
+	{
+	  char driver_name[256];
+	  snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
+	  if(strcmp(p_drv->driver->name, "self") == 0)
+	    {
+	      continue;
+	    }
+	  else if(strstr(peer_url, driver_name) != NULL)
+	    {
+	      nm_drv_vect_push_back(v, p_drv);
+	    }
+	  else
+	    {
+	      fprintf(stderr, "# session: peer node does not advertise any url for driver %s in url '%s'- skipping.\n",
+		      driver_name, peer_url);
+	      continue;
+	    }
+	}
+    }
+  return v;
+}
+
 int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url)
 {
   assert(p_session != NULL);
   assert(nm_session.gates != NULL);
+  if(nm_session.selector == NULL)
+    nm_session.selector = &nm_session_default_selector;
+  nm_drv_vect_t v = (*nm_session.selector)(url);
+  if(nm_drv_vect_empty(v))
+    {
+      fprintf(stderr, "# session: no common driver found for local (%s) and peer (%s) node. Abort.\n",
+	      nm_session.local_url, url);
+      abort();
+   }
   nm_gate_t p_gate = puk_hashtable_lookup(nm_session.gates, url);
   char*remote_url = NULL;
   while(p_gate == NULL)
@@ -279,45 +337,26 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	  /* connect gate */
 	  const int is_server = (strcmp(url, nm_session.local_url) > 0);
 	  /* connect all drivers */
-	  int connected = 0;
-	  struct nm_drv*p_drv;
-	  NM_FOR_EACH_DRIVER(p_drv, nm_session.p_core)
+	  nm_drv_vect_itor_t i;
+	  puk_vect_foreach(i, nm_drv, v)
 	    {
+	      struct nm_drv*p_drv = *i;
 	      char driver_name[256];
 	      snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
 	      const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
-	      if(strcmp(p_drv->driver->name, "self") == 0)
-		continue;
-	      if(driver_url == NULL)
-		{
-		  fprintf(stderr, "# session: peer node does not advertise any url for driver %s in url '%s'- skipping.\n",
-			  driver_name, url);
-		  continue;
-		}
 	      if(is_server)
 		{
 		  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
-		  if(err != NM_ESUCCESS)
-		    {
-		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
-		      abort();
-		    }
 		}
 	      else
 		{
 		  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
-		  if(err != NM_ESUCCESS)
-		    {
-		      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
-		      abort();
-		    }
 		}
-	      connected++;
-	    }
-	  if(connected == 0)
-	    {
-	      fprintf(stderr, "# session: no common driver found for local and peer node. Abort.\n");
-	      abort();
+	      if(err != NM_ESUCCESS)
+		{
+		  fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
+		  abort();
+		}
 	    }
 	  /* destroy the url hashtable */
 	  puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(url_table);
@@ -354,6 +393,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       /* lookup again, in case the new gate is not the expected one */
       p_gate = puk_hashtable_lookup(nm_session.gates, url);
     }
+  nm_drv_vect_delete(v);
   *pp_gate = p_gate;
   return NM_ESUCCESS;
 }

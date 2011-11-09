@@ -30,8 +30,16 @@ int nm_session_create(nm_session_t*pp_session, const char*label);
  * @note call to this function is optional. Default drivers will be loaded
  * if no driver is loaded manually.
  */
-#warning TODO- include index as a NewMad_Driver component attribute
 void nm_session_add_driver(puk_component_t component, int index);
+
+
+PUK_VECT_TYPE(nm_drv, struct nm_drv*);
+/** Type for 'selector'. Returns drivers to connect to given gate.
+ */
+typedef nm_drv_vect_t (*nm_session_selector_t)(const char*url);
+/** Declare the selector to use to establish connections
+ */
+void nm_session_set_selector(nm_session_selector_t selector);
 
 /** Initializes a session object.
  * 'p_local_url' is a return parameter, pointing to an object allocated in the session- do not free nor modify!

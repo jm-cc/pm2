@@ -639,6 +639,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
       if(proto_flag & NM_PROTO_LAST)
 	done = 1;
       assert(proto_id != 0);
+      assert(ptr <= vec->iov_base + vec->iov_len);
       switch(proto_id)
 	{
 	case NM_PROTO_SHORT_DATA:

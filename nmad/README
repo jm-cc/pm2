@@ -5,7 +5,7 @@ for any question, mailto: Alexandre.Denis@inria.fr
 Installation
 ============
 
-nmad requires other pm2 modules: tbx, Puk, PukABI, (optionnlly) pioman
+* nmad requires other pm2 modules: tbx, Puk, PukABI, (optionnally) pioman.
 PadicoTM may be used as a launcher, and should be built *after* nmad.
 
 Requirements:
@@ -35,6 +35,13 @@ Usefull configure flags (see ./configure --help)
   --with-ibverbs          use Infiniband ibverbs [default=check]
   --with-mx               use Myrinet MX [default=check]
 
+* To build multiple modules at once, we recommend to use the build script
+  located in pm2/scripts/pm2-build-packages using a given or a custom
+  configuration file, e.g.:
+% cd pm2/scripts
+% ./pm2-build-packages ./example-nmad+pioman+pthread.conf --prefix=$HOME/soft/x86_64
+
+
 Strategy
 ========
 
@@ -43,11 +50,7 @@ The strategy used by nmad is selected using the following rules:
 1. if the environment variable NMAD_STRATEGY is set, it is used
 whatever the other configuration parameters are.
 
-2. if a strategy is selected in the flavor, it will be used by
-default.
-
-3. if the strategy selected in the flavor is 'strat_custom', then the
-strategy may be selected using command 'nmad-strategy-conf'.
+2. if the variable is not set, strategy 'aggreg' is used by default.
 
 Valid strategies are: 
   default, aggreg, aggreg_autoextended, split_balance.
@@ -65,10 +68,36 @@ The drivers used by nmad are selected using the following rules:
 default. It may contain the name of a single driver for single rail,
 or a list of multiple drivers separated by '+' for multirail,
 e.g. NMAD_DRIVER=mx+ibverbs
+An optionnal board number may be given if multiple boards with the
+same driver are present, e.g. NMAD_DRIVER=ibverbs:0+ibverbs:1 for
+dual-IB.
 
-2. if NMAD_DRIVER is not set, the default driver may be set using the
-command nmad-driver-conf. If a single driver is enabled in the flavor,
-then it will be used by default.
+2. if nmad is launched through the newmadico nmad launcher (default
+choice if session is started with padico-launch), then PadicoTM
+default NetSelector rules apply:
+  . intra-process uses 'self'
+  . intra-node inter-process uses 'shm'
+  . inter-node uses 'ibverbs' if InfinibandVerbs is loaded
+    (i.e. "-net ib" was given to padico-launch) and nodes are on the
+    same IB subnet (same subnet manager).
+  . inter-node uses 'mx' if PSP-MX is loaded (i.e. "-net mx" was given
+    to padico-launch) and nodes are on the same Myrinet network (same
+    mapper).
+  . inter-node uses 'tcp' if IP is available, and neither IB nor MX
+    are available.
+  . as last resort, newmadico over PadicoTM control channel is used if
+    no direct connection is possible.
+Usual NetSelector customization is possible.
+
+3. if nmad is launched through the cmdline launcher, then a
+"-R <string>" parameter is taken as a railstring, with the same syntax
+as NMAD_DRIVER
+
+4. if another launcher is used, it may set a selector using the
+'sesion' interface.
+
+5. in any other case, 'self' is used for intra-process; 'tcp' for
+inter-process.
 
 
 Infiniband tuning
@@ -76,10 +105,24 @@ Infiniband tuning
 
 Infiniband may be tuned at run time through environment variables:
 
--- NMAD_IBVERBS_RCACHE enables the registration cache.
+-- NMAD_IBVERBS_RCACHE enables the registration cache (requires PukABI)
 
 -- NMAD_IBVERBS_CHECKSUM enables the checksum computation on the fly
    in the driver.
+
+
+Launcher
+========
+
+If upper layers do not provide their own launcher, it is recommended
+to use padico-launch as a launcher for nmad. It accepts parameters
+similar to mpirun. Please see padico-launch --help for up-to-date
+documentation.
+
+Environment variables may be set using -D parameters, e.g.:
+% padico-launch -c -n 2 -nodelist jack0,jack1 -DNMAD_DRIVER=ib+mx -DNMAD_STRATEGY=split_balance sr_bench
+starts program 'sr_bench' on hosts jack0 and jack1, using multi-rail
+over Infiniband and Myrinet.
 
 
 Tags

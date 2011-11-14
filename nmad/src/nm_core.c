@@ -113,8 +113,8 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_so_monitor_s*m)
     }
 }
 
-/** Load a newmad component from disk. The actual path loaded is
- * ${PM2_CONF_DIR}/nmad/'entity'/'entity'_'driver'.xml
+/** Load a newmad component from disk. The actual component is
+ * NewMad_<entity>_<name> where <entity> is either 'driver' or 'strategy'.
  */
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {

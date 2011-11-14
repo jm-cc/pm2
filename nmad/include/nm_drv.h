@@ -132,6 +132,7 @@ struct nm_drv_cap_s
   int rdv_threshold; /**< preferred length for switching to rendez-vous. */
   int min_period;    /**< minimum delay between poll (in microseconds) */
   int is_exportable; /**< blocking calls may be exported by PIOMan */
+  int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
 };
 
 

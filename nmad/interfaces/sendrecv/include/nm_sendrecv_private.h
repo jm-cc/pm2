@@ -16,7 +16,8 @@
 #ifndef NM_SENDRECV_PRIVATE_H
 #define NM_SENDRECV_PRIVATE_H
 
-/** @file This file contains private bits of the sendrecv interface.
+/** @file 
+ * This file contains private bits of the sendrecv interface.
  * Though it is not part of the interface, it is included in 
  * nm_sendrecv_interface.h for the sake of inlining.
  */

@@ -16,9 +16,9 @@
 #ifndef NM_SENDRECV_INTERFACE_H
 #define NM_SENDRECV_INTERFACE_H
 
-/** \defgroup sr_interface SendRecv interface
+/** @defgroup sr_interface SendRecv interface
  *
- * This is the NM SendRecv interface
+ * This is the nmad SendRecv interface, the main interface to send and receive packets.
  *
  * @{
  */
@@ -245,7 +245,7 @@ static inline int nm_sr_rsend(nm_session_t p_session,
  *  @param p_gate a pointer to the destination gate.
  *  @param tag the message tag.
  *  @param iov
- *  @param nb_entries
+ *  @param num_entries
  *  @param p_request a pointer to a sendrecv request to be filled.
  *  @return The NM status.
  */
@@ -306,7 +306,7 @@ extern int nm_sr_progress(nm_session_t p_session);
 
 /** Wait for the completion of a non blocking send request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to check.
+ *  @param p_request the request to check.
  *  @return The NM status.
  */
 extern int nm_sr_swait(nm_session_t p_session,
@@ -314,7 +314,7 @@ extern int nm_sr_swait(nm_session_t p_session,
 
 /** Cancel a emission request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to cancel.
+ *  @param p_request the request to cancel.
  *  @return The NM status.
  */
 extern int nm_sr_scancel(nm_session_t p_session,
@@ -421,7 +421,7 @@ static inline int nm_sr_irecv_datatype_with_ref(nm_session_t p_session,
 
 /** Test for the completion of a non blocking receive request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to check.
+ *  @param p_request the request to check.
  *  @return The NM status.
  */
 extern int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request);
@@ -429,21 +429,21 @@ extern int nm_sr_rtest(nm_session_t p_session, nm_sr_request_t *p_request);
 
 /** Wait for the completion of a non blocking receive request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to check.
+ *  @param p_request the request to check.
  *  @return The NM status.
  */
 extern int nm_sr_rwait(nm_session_t p_session, nm_sr_request_t *p_request);
 
 /** Cancel a reception request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to cancel.
+ *  @param p_request the request to cancel.
  *  @return The NM status.
  */
 extern int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request);
 
 /** Retrieve the pkt source of a complete any source receive request.
  *  @param p_session a pointer to a nmad session object.
- *  @param request the request to check.
+ *  @param p_request the request to check.
  *  @param p_gate a pointer to the destination gate.
  *  @return The NM status.
  */

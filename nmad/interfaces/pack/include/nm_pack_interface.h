@@ -16,9 +16,9 @@
 #ifndef NM_PACK_INTERFACE_H
 #define NM_PACK_INTERFACE_H
 
-/** \defgroup pack_interface Pack interface
+/** @defgroup pack_interface Pack interface
  *
- * This is the NM Pack interface
+ * This is the nmad Pack interface, an nmad interface that mimics the old interface from mad3.
  *
  * @{
  */

@@ -8,7 +8,7 @@ include @puk_root@/etc/common_vars.mk
 TARGET_BIN = sampling/sampling-prog
 TARGET_LIB = libnmad.so
 
-INSTALL_BIN       = $(TARGET_BIN) bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample
+INSTALL_BIN       = $(TARGET_BIN) bin/nmad-sample
 INSTALL_LIB       = $(TARGET_LIB)
 INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h) @nmad_builddir@/include/nm_config.h @nmad_builddir@/include/nm_private_config.h
 INSTALL_PKGCONFIG = nmad.pc

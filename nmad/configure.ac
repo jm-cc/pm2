@@ -272,7 +272,7 @@ nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
 AC_SUBST(nmad_interfaces)
 
 
-out_sh="${out_sh} bin/nmad-driver-conf bin/nmad-strategy-conf bin/nmad-sample"
+out_sh="${out_sh} bin/nmad-sample"
 out_mk="${out_mk} Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc"
 
 dnl -- output 

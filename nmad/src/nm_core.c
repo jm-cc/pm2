@@ -99,17 +99,17 @@ int nm_schedule(struct nm_core *p_core)
 
 
 /** Add an event monitor to the list */
-void nm_core_monitor_add(nm_core_t p_core, const struct nm_so_monitor_s*m)
+void nm_core_monitor_add(nm_core_t p_core, const struct nm_core_monitor_s*m)
 {
-  nm_so_monitor_vect_push_back(&p_core->monitors, m);
+  nm_core_monitor_vect_push_back(&p_core->monitors, m);
 }
 
-void nm_core_monitor_remove(nm_core_t p_core, const struct nm_so_monitor_s*m)
+void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
 {
-  nm_so_monitor_itor_t i = nm_so_monitor_vect_find(&p_core->monitors, m);
+  nm_core_monitor_itor_t i = nm_core_monitor_vect_find(&p_core->monitors, m);
   if(i)
     {
-      nm_so_monitor_vect_erase(&p_core->monitors, i);
+      nm_core_monitor_vect_erase(&p_core->monitors, i);
     }
 }
 
@@ -166,7 +166,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   /* Initialize "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_init(p_core);
 
-  nm_so_monitor_vect_init(&p_core->monitors);
+  nm_core_monitor_vect_init(&p_core->monitors);
 
   /* unpacks */
   TBX_INIT_FAST_LIST_HEAD(&p_core->unpacks);
@@ -250,7 +250,7 @@ int nm_core_exit(nm_core_t p_core)
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */
   nm_so_pw_exit();
 
-  nm_so_monitor_vect_destroy(&p_core->monitors);
+  nm_core_monitor_vect_destroy(&p_core->monitors);
 
   nmad_unlock();
 

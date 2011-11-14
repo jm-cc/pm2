@@ -51,7 +51,7 @@
 #ifndef NM_CORE_H
 #define NM_CORE_H
 
-PUK_VECT_TYPE(nm_so_monitor, const struct nm_so_monitor_s*);
+PUK_VECT_TYPE(nm_core_monitor, const struct nm_core_monitor_s*);
 
 /** Core NewMadeleine structure.
  */
@@ -75,8 +75,8 @@ struct nm_core
   /** List of pending packs waiting for an ack */
   struct tbx_fast_list_head pending_packs;
   
-  /** Monitors for upper layers to track events in nmad scheduler */
-  struct nm_so_monitor_vect_s monitors;
+  /** Monitors for upper layers to track events in nmad core */
+  struct nm_core_monitor_vect_s monitors;
   
   /** Selected strategy */
   puk_component_t strategy_adapter;

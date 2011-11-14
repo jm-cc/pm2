@@ -190,7 +190,7 @@ static inline void nm_so_unpack_check_completion(struct nm_core*p_core, struct n
     {
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
-      const struct nm_so_event_s event =
+      const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_COMPLETED,
 	  .p_unpack = p_unpack
@@ -389,7 +389,7 @@ int nm_core_iprobe(struct nm_core*p_core,
   return -NM_EAGAIN;
 }
 
-int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
+int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
 {
   if(p_unpack->status & (NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNEXPECTED))
     {
@@ -400,7 +400,7 @@ int nm_so_cancel_unpack(struct nm_core*p_core, struct nm_unpack_s*p_unpack)
     {
 #warning Paulette: lock
       tbx_fast_list_del(&p_unpack->_link);
-      const struct nm_so_event_s event =
+      const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNPACK_CANCELLED,
 	  .p_unpack = p_unpack
@@ -437,7 +437,7 @@ static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
       const nm_core_tag_t tag = h->tag_id;
       const nm_seq_t seq = h->seq;
       nm_unexpected_store(p_core, p_gate, h, len, tag, seq, p_pw);
-      const struct nm_so_event_s event =
+      const struct nm_core_event_s event =
 	{
 	  .status = NM_STATUS_UNEXPECTED,
 	  .p_gate = p_gate,
@@ -477,7 +477,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
       nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
       if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
 	{
-	  const struct nm_so_event_s event =
+	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_UNEXPECTED,
 	      .p_gate = p_gate,
@@ -511,7 +511,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
       nm_unexpected_store(p_core, p_gate, h, chunk_len, tag, seq, p_pw);
       if(h->flags & NM_PROTO_FLAG_LASTCHUNK)
 	{
-	  const struct nm_so_event_s event =
+	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_UNEXPECTED,
 	      .p_gate = p_gate,
@@ -599,7 +599,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
 	{
 #warning Paulette: lock
 	  tbx_fast_list_del(&p_pack->_link);
-	  const struct nm_so_event_s event =
+	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_ACK_RECEIVED,
 	      .p_pack = p_pack

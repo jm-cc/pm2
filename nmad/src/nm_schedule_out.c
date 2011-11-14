@@ -87,7 +87,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
       if(p_pack->done == p_pack->len)
 	{
 	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
-	  const struct nm_so_event_s event =
+	  const struct nm_core_event_s event =
 	    {
 	      .status = NM_STATUS_PACK_COMPLETED,
 	      .p_pack = p_pack
@@ -270,6 +270,17 @@ void nm_try_and_commit(struct nm_core *p_core)
 	    }
 	}
     }
+}
+
+int nm_core_flush(nm_gate_t p_gate)
+{
+  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+  if(tbx_unlikely(r->driver->flush))
+    {
+      return (*r->driver->flush)(r->_status, p_gate);
+    }
+  else
+    return -NM_ENOTIMPL;
 }
 
 #ifdef NMAD_POLL

@@ -78,23 +78,23 @@ extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem)
 
 /* ** Events *********************************************** */
 
-static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event);
-static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event);
-static void nm_sr_event_unexpected(const struct nm_so_event_s*const event);
+static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event);
+static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event);
+static void nm_sr_event_unexpected(const struct nm_core_event_s*const event);
 
-static const struct nm_so_monitor_s nm_sr_monitor_pack_completed = 
+static const struct nm_core_monitor_s nm_sr_monitor_pack_completed = 
   {
     .notifier = &nm_sr_event_pack_completed,
     .mask = NM_STATUS_PACK_COMPLETED | NM_STATUS_ACK_RECEIVED
   };
 
-static const struct nm_so_monitor_s nm_sr_monitor_unpack_completed = 
+static const struct nm_core_monitor_s nm_sr_monitor_unpack_completed = 
   {
     .notifier = &nm_sr_event_unpack_completed,
     .mask = NM_STATUS_UNPACK_COMPLETED | NM_STATUS_UNPACK_CANCELLED
   };
 
-static const struct nm_so_monitor_s nm_sr_monitor_unexpected = 
+static const struct nm_core_monitor_s nm_sr_monitor_unexpected = 
   {
     .notifier = &nm_sr_event_unexpected,
     .mask = NM_STATUS_UNEXPECTED
@@ -188,7 +188,7 @@ extern int nm_sr_flush(struct nm_core *p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
-	  ret = nm_so_flush(p_gate);
+	  ret = nm_core_flush(p_gate);
 	}
     } 
   return ret;
@@ -457,7 +457,7 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
     }
   else
     {
-      err = nm_so_cancel_unpack(p_core, &p_request->req.unpack);
+      err = nm_core_unpack_cancel(p_core, &p_request->req.unpack);
     }
   nm_unlock_status(p_core);
   nm_unlock_interface(p_core);
@@ -472,7 +472,7 @@ int nm_sr_rcancel(nm_session_t p_session, nm_sr_request_t *p_request)
  *  @param seq the fragment sequence number.
  *  @return The NM status.
  */
-static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
+static void nm_sr_event_pack_completed(const struct nm_core_event_s*const event)
 {
   struct nm_pack_s*p_pack = event->p_pack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_pack, struct nm_sr_request_s, req.pack);
@@ -488,7 +488,7 @@ static void nm_sr_event_pack_completed(const struct nm_so_event_s*const event)
   NM_LOG_OUT();
 }
 
-static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
+static void nm_sr_event_unexpected(const struct nm_core_event_s*const event)
 {
   nm_tag_t sr_tag = nm_sr_tag_get(event->tag);
 
@@ -507,7 +507,7 @@ static void nm_sr_event_unexpected(const struct nm_so_event_s*const event)
  *  @param is_any_src whether to check for a specific gate or for any gate.
  *  @return The NM status.
  */
-static void nm_sr_event_unpack_completed(const struct nm_so_event_s*const event)
+static void nm_sr_event_unpack_completed(const struct nm_core_event_s*const event)
 {
   struct nm_unpack_s*p_unpack = event->p_unpack;
   struct nm_sr_request_s*p_request = tbx_container_of(p_unpack, struct nm_sr_request_s, req.unpack);

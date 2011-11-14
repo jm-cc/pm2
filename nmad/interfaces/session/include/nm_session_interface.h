@@ -16,6 +16,9 @@
 #ifndef NM_SESSION_INTERFACE_H
 #define NM_SESSION_INTERFACE_H
 
+#include <nm_public.h>
+#include <Padico/Puk.h>
+
 /** @defgroup session_interface Session interface
  * This is the session interface, the nmad interface used to build sessions.
  * It loads drivers and established connections. It expects an external entity
@@ -24,9 +27,6 @@
  * interface that manages url exchange for them.
  * @{
  */
-
-#include <nm_public.h>
-#include <Padico/Puk.h>
 
 typedef struct nm_session_s*nm_session_t;
 

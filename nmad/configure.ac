@@ -25,6 +25,7 @@ dnl -- install dir
 AC_MSG_CHECKING([nmad install directory])
 nmad_root=$prefix
 AC_SUBST(nmad_root)
+AC_DEFINE_UNQUOTED([NMAD_ROOT], ["${nmad_root}"], [nmad install directory])
 if test x$prefix = xNONE; then
   AC_MSG_ERROR([No prefix given. Please supply a '--prefix' parameter.])
 fi

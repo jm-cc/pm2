@@ -48,7 +48,7 @@ if [ ! -d @nmad_srcdir@/drivers/${network} ]; then
 fi
 
 arch=`uname -m`
-sampling_dir="${PM2_CONF_DIR:-${HOME}/.pm2}/nmad/sampling"
+sampling_dir="@nmad_root@/var/sampling"
 mkdir -p ${sampling_dir}
 sampling_file="${sampling_dir}/${network}_${arch}.nm_ns"
 sampling_prog="@nmad_root@/bin/sampling-prog"

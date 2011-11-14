@@ -60,21 +60,9 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
   struct utsname machine_info;
   uname(&machine_info);
   const char *archi = machine_info.machine;
-  
-  const char*pm2_conf_dir = getenv("PM2_CONF_DIR");
-  if(pm2_conf_dir)
-    {
-      snprintf(sampling_file_path, sizeof(sampling_file_path),
-	       "%s/nmad/sampling/%s_%s.nm_ns",
-	       pm2_conf_dir, p_drv->driver->name, archi);
-    }
-  else
-    {
-      const char*home = getenv("HOME");
-      snprintf(sampling_file_path, sizeof(sampling_file_path),
-	       "%s/.pm2/nmad/sampling/%s_%s.nm_ns",
-	       home, p_drv->driver->name, archi);
-    }
+  snprintf(sampling_file_path, sizeof(sampling_file_path),
+	   "%s/var/sampling/%s_%s.nm_ns",
+	   NMAD_ROOT, p_drv->driver->name, archi);
 
   sampling_file = fopen(sampling_file_path, "r");
   if(sampling_file)

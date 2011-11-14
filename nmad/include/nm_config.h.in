@@ -34,3 +34,6 @@
 
 /* enable sampling */
 #undef NMAD_SAMPLING
+
+/* nmad install path */
+#undef NMAD_ROOT

@@ -2989,23 +2989,23 @@ int MPI_Comm_split(MPI_Comm comm,
   }
   recvbuf = malloc(3*mpir_communicator->size*sizeof(int));
 
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   MPI_NMAD_TRACE("[%d] Sending: ", mpir_communicator->rank);
   for(i=0 ; i<mpir_communicator->size*3 ; i++) {
     MPI_NMAD_TRACE("%d ", sendbuf[i]);
   }
   MPI_NMAD_TRACE("\n");
-#endif /* NMAD_DEBUG */
+#endif /* DEBUG */
 
   MPI_Alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
 
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   MPI_NMAD_TRACE("[%d] Received: ", mpir_communicator->rank);
   for(i=0 ; i<mpir_communicator->size*3 ; i++) {
     MPI_NMAD_TRACE("%d ", recvbuf[i]);
   }
   MPI_NMAD_TRACE("\n");
-#endif /* NMAD_DEBUG */
+#endif /* DEBUG */
 
   // Counting how many nodes have the same color
   nb_conodes=0;
@@ -3035,14 +3035,14 @@ int MPI_Comm_split(MPI_Comm comm,
     qsort(conodes, nb_conodes, sizeof(int *), nodecmp);
   }
 
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   MPI_NMAD_TRACE("[%d] Conodes: ", mpir_communicator->rank);
   for(i=0 ; i<nb_conodes ; i++) {
     int *ptr = conodes[i];
     MPI_NMAD_TRACE("[%d %d %d] ", *ptr, *(ptr+1), *(ptr+2));
   }
   MPI_NMAD_TRACE("\n");
-#endif /* NMAD_DEBUG */
+#endif /* DEBUG */
 
   // Create the new communicator
   if (color == MPI_UNDEFINED) {

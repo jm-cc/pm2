@@ -64,15 +64,15 @@ void nm_unexpected_clean(struct nm_core*p_core)
     {
       if(chunk)
 	{
-#ifdef NMAD_DEBUG
-	  fprintf(stderr, "nm_unexpected_clean: chunk %p is still in use\n", chunk);
-#endif
+#ifdef DEBUG
+	  fprintf(stderr, "nmad: WARNING- chunk %p is still in use\n", chunk);
+#endif /* DEBUG */
 	  if(chunk->p_pw) {
 #if(defined(PIOMAN_POLL))
   	    piom_ltask_completed(&chunk->p_pw->ltask);
-#else
+#else /* PIOMAN_POLL */
 	    nm_so_pw_free(chunk->p_pw);
-#endif
+#endif /* PIOMAN_POLL */
 	  }
 	  tbx_fast_list_del(&chunk->link);
 	  tbx_free(nm_unexpected_mem, chunk);
@@ -241,9 +241,9 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   nm_unexpected_mem_size++;
   if(nm_unexpected_mem_size > 32*1024)
     {
-      fprintf(stderr, "nmad: warning- %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
+      fprintf(stderr, "nmad: WARNING- %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
       if(nm_unexpected_mem_size > 64*1024)
-	TBX_FAILUREF("nmad: %d unexpected chunks allocated.\n", (int)nm_unexpected_mem_size);
+	TBX_FAILUREF("nmad: FATAL- %d unexpected chunks allocated; giving up.\n", (int)nm_unexpected_mem_size);
     }
 #warning Paulette: lock
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
@@ -576,14 +576,13 @@ static void nm_rtr_handler(struct nm_pkt_wrap *p_rtr_pw, struct nm_so_ctrl_rtr_h
 	  return;
 	}
     }
-  fprintf(stderr, "cannot find matching packet for seq = %d; offset = %d- dumping pending large packets\n", seq, chunk_offset);
+  fprintf(stderr, "nmad: FATAL- cannot find matching packet for received RTR: seq = %d; offset = %d- dumping pending large packets\n", seq, chunk_offset);
   tbx_fast_list_for_each_entry(p_large_pw, &p_gate->pending_large_send, link)
     {
       const struct nm_pack_s*p_pack = p_large_pw->contribs[0].p_pack;
       fprintf(stderr, "  packet- seq = %d; chunk_offset = %d\n", p_pack->seq, p_large_pw->chunk_offset);
     }
-  TBX_FAILUREF("PANIC- nm_rtr_callback cannot find pending packet wrapper for seq = %d; offset = %d!\n",
-	      seq, chunk_offset);
+  abort();
 }
 /** Process an acknowledgement.
  */

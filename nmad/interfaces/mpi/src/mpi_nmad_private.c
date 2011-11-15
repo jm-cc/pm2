@@ -284,7 +284,7 @@ static inline int mpir_datatype_vector_aggregate(void *newptr,
 						 void *buffer,
 						 mpir_datatype_t *mpir_datatype,
 						 int count) {
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   void * const orig = buffer;
   void * const dest = newptr;
 #endif
@@ -309,7 +309,7 @@ static inline int mpir_datatype_vector_pack(nm_pack_cnx_t *connection,
 					    void *buffer,
 					    mpir_datatype_t *mpir_datatype,
 					    int count) {
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   void *const orig = buffer;
 #endif
   int               i, j, err = MPI_SUCCESS;
@@ -378,7 +378,7 @@ static inline int mpir_datatype_indexed_aggregate(void *newptr,
 						  void *buffer,
 						  mpir_datatype_t *mpir_datatype,
 						  int count) {
-#ifdef NMAD_DEBUG
+#ifdef DEBUG
   void *const dest = newptr;
 #endif
   int i, j;

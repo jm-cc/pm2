@@ -198,7 +198,9 @@ static inline void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack,
   p_pack->scheduled = 0;
 }
 
-/** build pack request from iov */
+/** build pack request from iov.
+ * iov and data pointed by iov should remain valid until pack completion.
+ */
 void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries);
 
 /** build a pack request for datatype (obsolete) */
@@ -217,8 +219,10 @@ static inline void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s
   p_unpack->expected_len = len;
 }
 
-/** build an unpack request from iov (do not post) */
-void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct iovec*iov, int num_entries);
+/** build an unpack request from iov (do not post)
+ * iov should remain valid until unpack completion.
+ */
+void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries);
 
 /** build an unpack request from datatype (obsolete) */
 void nm_core_unpack_datatype(struct nm_core*p_core, struct nm_unpack_s*p_unpack, void*_datatype);

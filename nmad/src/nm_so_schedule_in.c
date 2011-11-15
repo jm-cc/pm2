@@ -249,7 +249,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
   tbx_fast_list_add_tail(&chunk->link, &p_core->unexpected);
 }
 
-void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, struct iovec*iov, int num_entries)
+void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries)
 { 
   p_unpack->status = NM_UNPACK_TYPE_IOV;
   p_unpack->data = iov;

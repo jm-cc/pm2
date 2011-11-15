@@ -144,6 +144,17 @@ clean-examples:
                 $(MAKE) -C $$d clean; \
               done )
 
+# ## Doxygen
+#
+docs: doxygen
+
+doxygen: doc/Doxyfile $(SRC_FILES)
+	doxygen doc/Doxyfile
+	@echo
+	@echo "# documentation generated in: @nmad_builddir@/doc/html/index.html"
+	@echo
+
+
 # ## Fortran stuff
 #
 $(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90

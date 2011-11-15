@@ -141,3 +141,11 @@ Configure with --enable-taghuge for tag_huge, --enable-tagarray for
 tag_array. Default is tag_as_hashtable.
 
 
+Documentation
+=============
+
+To generate doxygen documentation:
+
+% cd <prefix>/build/nmad
+% make docs
+

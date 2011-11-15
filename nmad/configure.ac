@@ -274,7 +274,7 @@ AC_SUBST(nmad_interfaces)
 
 
 out_sh="${out_sh} bin/nmad-sample"
-out_mk="${out_mk} Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc"
+out_mk="${out_mk} Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
 
 dnl -- output 
 

@@ -878,12 +878,12 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
       p_pw->p_gate = p_mx_trk->gate_map[status.match_info];
     }
 #ifdef DEBUG
-  if (status.code == MX_SUCCESS) {
+  if (status.code == MX_STATUS_SUCCESS) {
 	  NM_TRACEF("\t[MX] Success (pw=%p)\n", p_pw);
   }
 #endif
   
-  if (tbx_unlikely(status.code != MX_SUCCESS)) {
+  if (tbx_unlikely(status.code != MX_STATUS_SUCCESS)) {
     NM_WARN("MX driver: request completed with non-successful status: %s",
 	    mx_strstatus(status.code));
     switch (status.code) {

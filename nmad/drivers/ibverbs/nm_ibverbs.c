@@ -104,7 +104,7 @@ struct nm_ibverbs
   int sock;    /**< connected socket for IB address exchange */
 };
 
-extern tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
+tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
 
 /* ********************************************************* */
 
@@ -251,7 +251,6 @@ static void nm_ibverbs_addr_recv(void*_status,
 static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
 {
 #ifdef LINUX_SYS
-  int i, nb_nodes;
   FILE *sysfile = NULL;
   char file[128] = "";
   char line[NM_IBVERBS_NUIOA_SYSFILE_LENGTH]="";
@@ -285,7 +284,8 @@ static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
   fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
   fclose(sysfile);
   
-  nb_nodes = numa_max_node();
+  int nb_nodes = numa_max_node();
+  int i;
   for(i = 0; i <= nb_nodes; i++)
     {
       unsigned long mask;

@@ -252,7 +252,7 @@ static inline void nm_unexpected_store(struct nm_core*p_core, struct nm_gate*p_g
 void nm_core_unpack_iov(struct nm_core*p_core, struct nm_unpack_s*p_unpack, const struct iovec*iov, int num_entries)
 { 
   p_unpack->status = NM_UNPACK_TYPE_IOV;
-  p_unpack->data = iov;
+  p_unpack->data = (void*)iov;
   p_unpack->cumulated_len = 0;
   p_unpack->expected_len = nm_so_iov_len(iov, num_entries);
 

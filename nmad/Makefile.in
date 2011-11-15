@@ -5,7 +5,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = sampling/sampling-prog
+TARGET_BIN = interfaces/sampling/sampling-prog
 TARGET_LIB = libnmad.so
 
 INSTALL_BIN       = $(TARGET_BIN) bin/nmad-sample
@@ -42,7 +42,7 @@ FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
 OBJ_FILES = $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
 DEP_FILES = $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
-CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES) sampling/sampling-prog.pic.o
+CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES) interfaces/sampling/sampling-prog.pic.o
 TARGET_DEP += $(DEP_FILES)
 TARGET_CLEAN += clean-examples
 

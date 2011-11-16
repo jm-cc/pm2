@@ -150,6 +150,22 @@ struct nm_tcp_pkt_wrap
   struct nm_iovec_iter	vi;
 };
 
+#define NM_TCP_URL_SIZE_MAX 128
+/** identity of peer node */
+struct nm_tcp_peer_id_s
+{
+  nm_trk_id_t trk_id;
+  char url[NM_TCP_URL_SIZE_MAX];
+};
+/** pending connection */
+struct nm_tcp_pending_s
+{
+  int fd;
+  struct nm_tcp_peer_id_s peer;
+};
+PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
+
+
 /** Tcp NewMad Driver */
 static int nm_tcp_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
@@ -485,29 +501,15 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
  */
 static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
-  uint16_t		 port;
-  struct sockaddr_in	 address;
-  int			 fd;
-  int			 err;
-  char 			*saveptr = NULL;
-  char *remote_hostname, *remote_port;
-  /* save the url since strtok might change it */
-  char *remote_drv_url = tbx_strdup(p_crq->remote_drv_url);
-  
-  /* TCP connect 				*/
-  remote_hostname = strtok_r(remote_drv_url, ":", &saveptr);
-  if (!*saveptr) {
-    /* reached the end of the string => was no ':' */
-    NM_WARN("Missing colon in url \"%s\", prefix \"<hostname>:\" required",
-	    remote_drv_url);
-    err = -NM_EINVAL;
-    goto out;
-  }
-  
-  remote_port = strtok_r(NULL, "#", &saveptr);
-  port	= strtol(remote_port, (char **)NULL, 10);
-  fd	= nm_tcp_socket_create(NULL, 0);
-  
+  struct nm_tcp_drv*p_tcp_drv = p_crq->p_drv->priv;
+  char*remote_url = tbx_strdup(p_crq->remote_drv_url);  /* save the url since we write into it it */
+  char*remote_hostname = remote_url;
+  char*remote_port = strchr(remote_url, ':');
+  *remote_port = '\0';
+  remote_port++;
+  uint16_t port = atoi(remote_port);
+  int fd = nm_tcp_socket_create(NULL, 0);
+  struct sockaddr_in address;
   nm_tcp_address_fill(&address, port, remote_hostname);
   int rc = -1;
  connect_again:
@@ -519,11 +521,18 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
       else
 	TBX_FAILUREF("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
     }
-  
-  err = nm_tcp_connect_accept(_status, p_crq, fd);
-  
- out:
-  TBX_FREE(remote_drv_url);
+  struct nm_tcp_peer_id_s id;
+  memset(&id.url, 0, sizeof(id.url));
+  id.trk_id = p_crq->trk_id;
+  strncpy(id.url, p_tcp_drv->url, sizeof(id.url));
+  rc = NM_SYS(write)(fd, &id, sizeof(id));
+  if(rc != sizeof(id))
+    {
+      fprintf(stderr, "nmad: tcp- error while sending id to peer node.\n");
+      abort();
+    }
+  int err = nm_tcp_connect_accept(_status, p_crq, fd);
+  TBX_FREE(remote_url);
   return err;
 }
 
@@ -533,22 +542,55 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
  */
 static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
+  static nm_tcp_pending_vect_t pending_fds = NULL;
   struct nm_drv     *p_drv     = p_crq->p_drv;
   struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
-  int fd;
-  int err;
- accept_again:
-  fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
-   if(fd < 0)
+  int fd = -1;
+  if(pending_fds != NULL)
     {
-      if(errno == EINTR)
-	goto accept_again;
-      else
-	TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
+      nm_tcp_pending_vect_itor_t i;
+      puk_vect_foreach(i, nm_tcp_pending, pending_fds)
+	{
+	  if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
+	    {
+	      fd = i->fd;
+	      nm_tcp_pending_vect_erase(pending_fds, i);
+	      break;
+	    }
+	}
     }
-  
-  err = nm_tcp_connect_accept(_status, p_crq, fd);
-  
+  while(fd == -1)
+    {
+      fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
+      if(fd < 0)
+	{
+	  if(errno != EINTR)
+	    TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
+	}
+      else
+	{
+	  struct nm_tcp_peer_id_s id;
+	  int rc = NM_SYS(recv)(fd, &id, sizeof(id), MSG_WAITALL);
+	  if(rc != sizeof(id))
+	    {
+	      fprintf(stderr, "nmad: tcp- error while receiving peer node id.\n");
+	      abort();
+	    }
+	  if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
+	    {
+	      struct nm_tcp_pending_s pending =
+		{
+		  .fd = fd,
+		  .peer = id
+		};
+	      if(pending_fds == NULL)
+		pending_fds = nm_tcp_pending_vect_new();
+	      nm_tcp_pending_vect_push_back(pending_fds, pending);
+	      fd = -1;
+	    }
+	}
+    }
+  int err = nm_tcp_connect_accept(_status, p_crq, fd);
   return err;
 }
 

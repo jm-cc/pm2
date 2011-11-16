@@ -24,6 +24,16 @@
 #include <pioman.h>
 #endif
 
+#ifdef CONFIG_PUK_PUKABI
+#include <Padico/Puk-ABI.h>
+#endif /* CONFIG_PUK_PUKABI */
+
+#if defined(CONFIG_PUK_PUKABI) && defined(PADICO_ENABLE_PUKABI_FSYS)
+#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
+#else  /* PADICO_ENABLE_PUKABI_FSYS */
+#define NM_SYS(SYMBOL) SYMBOL
+#endif /* PADICO_ENABLE_PUKABI_FSYS */
+
 #include <nm_public.h>
 #include <nm_core_interface.h>
 #include <nm_log.h>

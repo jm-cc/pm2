@@ -47,7 +47,9 @@ PADICO_MODULE_BUILTIN(NewMad_Driver_local, &nm_local_load, NULL, NULL);
  */
 struct nm_local_drv
 {
-  /** server socket	*/
+  /* server socket address */
+  struct sockaddr_un addr;
+  /** server socket fd */
   int server_fd;
   /** url */
   char*url;
@@ -63,6 +65,20 @@ struct nm_local
   int	fd[2];
 };
 
+#define NM_LOCAL_URL_SIZE_MAX 64
+/** identity of peer node */
+struct nm_local_peer_id_s
+{
+  nm_trk_id_t trk_id;
+  char url[NM_LOCAL_URL_SIZE_MAX];
+};
+/** pending connection */
+struct nm_local_pending_s
+{
+  int fd;
+  struct nm_local_peer_id_s peer;
+};
+PUK_VECT_TYPE(nm_local_pending, struct nm_local_pending_s);
 
 /** local NewMad Driver */
 static const char*nm_local_get_driver_url(struct nm_drv *p_drv);
@@ -176,14 +192,13 @@ static int nm_local_query(struct nm_drv *p_drv,
 static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   struct nm_local_drv*p_local_drv = p_drv->priv;
-  const pid_t pid = getpid();
-  struct sockaddr_un addr;
-  addr.sun_family = AF_UNIX;
-  snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/nmad_local.%d", pid);
-  p_local_drv->url = strdup(addr.sun_path);
+  p_local_drv->addr.sun_family = AF_UNIX;
+  snprintf(p_local_drv->addr.sun_path, sizeof(p_local_drv->addr.sun_path),
+	   "/tmp/nmad_local_%s.%d", getenv("LOGNAME"), getpid());
+  p_local_drv->url = strdup(p_local_drv->addr.sun_path);
   p_local_drv->server_fd = NM_SYS(socket)(AF_UNIX, SOCK_STREAM, 0);
-  NM_SYS(unlink)(addr.sun_path);
-  int rc = NM_SYS(bind)(p_local_drv->server_fd, (struct sockaddr*)&addr, sizeof(addr));
+  NM_SYS(unlink)(p_local_drv->addr.sun_path);
+  int rc = NM_SYS(bind)(p_local_drv->server_fd, (struct sockaddr*)&p_local_drv->addr, sizeof(p_local_drv->addr));
   if(rc != 0)
     {
       fprintf(stderr, "nmad: local- bind error: %s\n", strerror(errno));
@@ -220,10 +235,7 @@ static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int n
 static int nm_local_exit(struct nm_drv*p_drv)
 {
   struct nm_local_drv*p_local_drv = p_drv->priv;
-  struct sockaddr_un addr;
-  addr.sun_family = AF_UNIX;
-  snprintf(addr.sun_path, sizeof(addr.sun_path), "/tmp/nmad_local.%d", getpid());
-  NM_SYS(unlink)(addr.sun_path);
+  NM_SYS(unlink)(p_local_drv->addr.sun_path);
   TBX_FREE(p_local_drv->url);
   TBX_FREE(p_local_drv);
   return NM_ESUCCESS;
@@ -231,8 +243,9 @@ static int nm_local_exit(struct nm_drv*p_drv)
 
 static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
-  struct sockaddr_un addr;
+  struct nm_local_drv*p_local_drv = p_crq->p_drv->priv;
   struct nm_local*status = (struct nm_local*)_status;
+  struct sockaddr_un addr;
   int fd = NM_SYS(socket)(AF_UNIX, SOCK_STREAM, 0);
   addr.sun_family = AF_UNIX;
   strcpy(addr.sun_path, p_crq->remote_drv_url);
@@ -242,19 +255,66 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
       fprintf(stderr, "nmad: local- cannot connect to %s\n", addr.sun_path);
       abort();
     }
+  struct nm_local_peer_id_s id;
+  memset(&id.url, 0, sizeof(id.url));
+  id.trk_id = p_crq->trk_id;
+  strncpy(id.url, p_local_drv->url, sizeof(id.url));
+  rc = NM_SYS(write)(fd, &id, sizeof(id));
+  if(rc != sizeof(id))
+    {
+      fprintf(stderr, "nmad: local- error while sending id to peer node.\n");
+      abort();
+    }
   status->fd[p_crq->trk_id] = fd;
   return NM_ESUCCESS;
 }
 
 static int nm_local_accept(void*_status, struct nm_cnx_rq *p_crq)
 {
+  static nm_local_pending_vect_t pending_fds = NULL;
   struct nm_local_drv*p_local_drv = p_crq->p_drv->priv;
   struct nm_local*status = (struct nm_local*)_status;
-  int fd = NM_SYS(accept)(p_local_drv->server_fd, NULL, NULL);
-  if(fd < 0)
+  int fd = -1;
+  if(pending_fds != NULL)
     {
-      fprintf(stderr, "nmad: local- error while accepting\n");
-      abort();
+      nm_local_pending_vect_itor_t i;
+      puk_vect_foreach(i, nm_local_pending, pending_fds)
+	{
+	  if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
+	    {
+	      fd = i->fd;
+	      nm_local_pending_vect_erase(pending_fds, i);
+	      break;
+	    }
+	}
+    }
+  while(fd == -1)
+    {
+      fd = NM_SYS(accept)(p_local_drv->server_fd, NULL, NULL);
+      if(fd < 0)
+	{
+	  fprintf(stderr, "nmad: local- error while accepting\n");
+	  abort();
+	}
+      struct nm_local_peer_id_s id;
+      int rc = NM_SYS(recv)(fd, &id, sizeof(id), MSG_WAITALL);
+      if(rc != sizeof(id))
+	{
+	  fprintf(stderr, "nmad: local- error while receiving peer node id.\n");
+	  abort();
+	}
+      if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
+	{
+	  struct nm_local_pending_s pending =
+	    {
+	      .fd = fd,
+	      .peer = id
+	    };
+	  if(pending_fds == NULL)
+	    pending_fds = nm_local_pending_vect_new();
+	  nm_local_pending_vect_push_back(pending_fds, pending);
+	  fd = -1;
+	}
     }
   status->fd[p_crq->trk_id] = fd;
   return NM_ESUCCESS;

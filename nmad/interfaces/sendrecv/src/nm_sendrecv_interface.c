@@ -334,6 +334,7 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
   nm_sr_event_monitor_t m = { .mask = mask, .notifier = notifier };
   if(mask == NM_SR_EVENT_RECV_UNEXPECTED)
     {
+      fprintf(stderr, "nmad: WARNING- nm_sr_monitor() set for event UNEXPECTED.\n");
       int rc = nm_sr_probe(p_session, NM_GATE_NONE, NULL,
 			   0, NM_TAG_MASK_NONE, NULL, NULL);
       if(rc == NM_ESUCCESS)
@@ -342,6 +343,7 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
 	}
     }
   nm_sr_event_monitor_vect_push_back(&nm_sr_data.monitors, m);
+  usleep(200*1000);
   return NM_ESUCCESS;
 }
 

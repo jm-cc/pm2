@@ -342,7 +342,7 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
 	  const uint32_t checksum = nm_ibverbs_checksum(&packet->data[offset], packet_size);
 	  if(checksum != packet->header.checksum)
 	    {
-	      fprintf(stderr, "# nmad: IB checksum failed- received = %x; expected = %x.\n",
+	      fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed- received = %x; expected = %x.\n",
 		      (unsigned)packet->header.checksum, (unsigned)checksum);
 	      abort();
 	    }

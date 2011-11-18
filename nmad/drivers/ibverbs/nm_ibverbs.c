@@ -265,11 +265,11 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   
   /* find IB device */
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
-  if(!dev_list) {
-    fprintf(stderr, "nmad ibverbs: no device found.\n");
-    err = -NM_ENOTFOUND;
-    goto out;
-  }
+  if(!dev_list) 
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
+      abort();
+    }
   
   dev_number = 0;
   for(i = 0; i < nparam; i++)
@@ -294,34 +294,35 @@ static int nm_ibverbs_query(struct nm_drv *p_drv,
   
   /* open IB context */
   p_ibverbs_drv->context = ibv_open_device(p_ibverbs_drv->ib_dev);
-  if(p_ibverbs_drv->context == NULL) {
-    fprintf(stderr, "nmad ibverbs: cannot open IB context.\n");
-    err = -NM_ESCFAILD;
-    goto out;
-  }
+  if(p_ibverbs_drv->context == NULL)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: cannot open IB context.\n");
+      abort();
+    }
 
   ibv_free_device_list(dev_list);
   
   /* get IB context attributes */
   struct ibv_device_attr device_attr;
   int rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
-  if(rc != 0) {
-    fprintf(stderr, "nmad ibverbs: cannot get device capabilities.\n");
-    abort();
-  }
+  if(rc != 0)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get device capabilities.\n");
+      abort();
+    }
 
   /* detect LID */
   struct ibv_port_attr port_attr;
   rc = ibv_query_port(p_ibverbs_drv->context, NM_IBVERBS_PORT, &port_attr);
-  if(rc != 0) {
-    fprintf(stderr, "nmad ibverbs: cannot get local port attributes.\n");
-    err = -NM_EUNKNOWN;
-    goto out;
-  }
+  if(rc != 0)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local port attributes.\n");
+      abort();
+    }
   p_ibverbs_drv->lid = port_attr.lid;
   if(p_ibverbs_drv->lid == 0)
     {
-      fprintf(stderr, "nmad ibverbs: WARNING: LID is null- subnet manager has probably crashed.\n");
+      fprintf(stderr, "nmad- WARNING- ibverbs: LID is null- subnet manager has probably crashed.\n");
     }
 
   /* IB capabilities */
@@ -389,10 +390,11 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   
   /* allocate Protection Domain */
   p_ibverbs_drv->pd = ibv_alloc_pd(p_ibverbs_drv->context);
-  if(p_ibverbs_drv->pd == NULL) {
-    fprintf(stderr, "nmad ibverbs: cannot allocate IB protection domain.\n");
-    abort();
-  }
+  if(p_ibverbs_drv->pd == NULL)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: cannot allocate IB protection domain.\n");
+      abort();
+    }
   
   /* open helper socket */
   nm_ibverbs_connect_create(p_ibverbs_drv);

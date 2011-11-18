@@ -108,7 +108,7 @@ static void*nm_ibverbs_mem_reg(void*context, const void*ptr, size_t len)
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(mr == NULL)
     {
-      fprintf(stderr, "Infiniband: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
+      fprintf(stderr, "nmad: FATAL- ibverbs: error while registering memory- ptr = %p; len = %d.\n", ptr, (int)len);
       abort();
     }
   return mr;
@@ -119,7 +119,7 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
   int rc = ibv_dereg_mr(mr);
   if(rc != 0)
     {
-      fprintf(stderr, "Infiniband: error while deregistering memory.\n");
+      fprintf(stderr, "nmad: FATAL- ibverbs: error while deregistering memory.\n");
       abort();
     }
 }
@@ -206,7 +206,7 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
   assert(n == 1);
   if(rcache->send.message != NULL)
     {
-      fprintf(stderr, "Infiniband: double rendez-vous on sender side.\n");
+      fprintf(stderr, "nmad: FATAL- ibverbs: rendez-vous already posted on sender side.\n");
       abort();
     }
   rcache->send.message = message;
@@ -264,7 +264,7 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   struct nm_ibverbs_rcache*rcache = _status;
   if(rcache->recv.message != NULL)
     {
-      fprintf(stderr, "Infiniband: double rendez-vous on receiver side.\n");
+      fprintf(stderr, "nmad: FATAL- ibverbs: rendez-vous already posted on receiver side.\n");
       abort();
     }
   rcache->headers.rsig.busy = 0;

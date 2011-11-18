@@ -282,7 +282,7 @@ static int nm_ibverbs_adaptrdma_poll_one(void*_status)
       /* checksum */
       if(nm_ibverbs_checksum(&adaptrdma->recv.message[adaptrdma->recv.done], frag_size) != h->checksum)
 	{
-	  fprintf(stderr, "# nmad: IB checksum failed.\n");
+	  fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed.\n");
 	  abort();
 	}
       /* clear blocks */
@@ -306,7 +306,7 @@ static int nm_ibverbs_adaptrdma_poll_one(void*_status)
 	  break;
 	  
 	default:
-	  fprintf(stderr, "Infiniband: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
+	  fprintf(stderr, "nmad: FATAL- ibverbs: unexpected flag 0x%x in adaptrdma_recv()\n", flag);
 	  abort();
 	  break;
 	}

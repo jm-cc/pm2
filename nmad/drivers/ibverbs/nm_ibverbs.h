@@ -252,10 +252,11 @@ static inline int nm_ibverbs_do_rdma(struct nm_ibverbs_cnx*__restrict__ p_ibverb
   assert(wrid < _NM_IBVERBS_WRID_MAX);
   p_ibverbs_cnx->pending.wrids[wrid]++;
   p_ibverbs_cnx->pending.total++;
-  if(rc) {
-    fprintf(stderr, "Infiniband: post RDMA write failed (rc=%d).\n", rc);
-    return -NM_EUNKNOWN;
-  }
+  if(rc) 
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: post RDMA write failed (rc=%d).\n", rc);
+      abort();
+    }
   return NM_ESUCCESS;
 }
 
@@ -291,10 +292,11 @@ static inline int nm_ibverbs_rdma_send(struct nm_ibverbs_cnx*p_ibverbs_cnx, int 
   assert(wrid < _NM_IBVERBS_WRID_MAX);
   p_ibverbs_cnx->pending.wrids[wrid]++;
   p_ibverbs_cnx->pending.total++;
-  if(rc) {
-    fprintf(stderr, "Infiniband: post RDMA send failed.\n");
-    return -NM_EUNKNOWN;
-  }
+  if(rc) 
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: post RDMA send failed.\n");
+      abort();
+    }
   return NM_ESUCCESS;
 }
 
@@ -313,15 +315,14 @@ static inline int nm_ibverbs_rdma_poll(struct nm_ibverbs_cnx*__restrict__ p_ibve
       }
     else if(ne > 0)
       {
-	fprintf(stderr, "Infiniband: WC send failed- status=%d (%s)\n",
+	fprintf(stderr, "nmad: FATAL- ibverbs: WC send failed- status=%d (%s)\n", 
 		wc.status, nm_ibverbs_status_strings[wc.status]);
-	TBX_FAILURE("Infiniband: error while sending.\n");
-	return -NM_EUNKNOWN;
+	abort();
       }
     else if(ne < 0)
       {
-	fprintf(stderr, "Infiniband: WC polling failed.\n");
-	return -NM_EUNKNOWN;
+	fprintf(stderr, "nmad: FATAL- ibverbs: WC polling failed.\n");
+	abort();
       }
   } while(ne > 0);
   return (done > 0) ? NM_ESUCCESS : -NM_EAGAIN;

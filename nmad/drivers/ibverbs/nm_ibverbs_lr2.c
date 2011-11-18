@@ -355,7 +355,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	  const uint32_t checksum = nm_ibverbs_checksum(lr2->recv.message + lr2->recv.done, block_payload);
 	  if(h->checksum != checksum)
 	    {
-	      fprintf(stderr, "Infiniband: lr2- checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
+	      fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
 		      lr2->recv.step, lr2->recv.done, lr2->recv.size, 
 		      (long long unsigned)h->checksum, (long long unsigned)checksum);
 	      abort();

@@ -162,8 +162,7 @@ static void nm_ibverbs_bycopy_cnx_create(void*_status, struct nm_ibverbs_cnx*p_i
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
   /* register Memory Region */
-  bycopy->mr = ibv_reg_mr(p_ibverbs_drv->pd, &bycopy->buffer,
-			  sizeof(bycopy->buffer),
+  bycopy->mr = ibv_reg_mr(p_ibverbs_drv->pd, &bycopy->buffer, sizeof(bycopy->buffer),
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(bycopy->mr == NULL)
     {

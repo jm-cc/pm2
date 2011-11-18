@@ -21,6 +21,17 @@
 #include <nm_private.h>
 #include <infiniband/verbs.h>
 
+/* *** global IB parameters ******************************** */
+
+#define NM_IBVERBS_PORT         1
+#define NM_IBVERBS_TX_DEPTH     4
+#define NM_IBVERBS_RX_DEPTH     2
+#define NM_IBVERBS_RDMA_DEPTH   4
+#define NM_IBVERBS_MAX_SG_SQ    1
+#define NM_IBVERBS_MAX_SG_RQ    1
+#define NM_IBVERBS_MAX_INLINE   128
+#define NM_IBVERBS_MTU          IBV_MTU_1024
+
 
 TBX_INTERNAL extern tbx_checksum_func_t _nm_ibverbs_checksum;
 
@@ -52,6 +63,7 @@ enum {
   NM_IBVERBS_WRID_RECV,
   NM_IBVERBS_WRID_SEND,
   NM_IBVERBS_WRID_READ,
+  NM_IBVERBS_WRID_SYNC,   /**< synchronize connection establishment */
   _NM_IBVERBS_WRID_MAX
 };
 
@@ -66,6 +78,8 @@ enum nm_ibverbs_cnx_kind
     NM_IBVERBS_CNX_AUTO      = 0x0100
   };
 
+/** an RDMA segment. Each method usually use one segment per connection.
+ */
 struct nm_ibverbs_segment 
 {
   enum nm_ibverbs_cnx_kind kind;
@@ -73,13 +87,23 @@ struct nm_ibverbs_segment
   uint32_t rkey;
 };
 
+/** the address for a connection (one per track+gate).
+ */
 struct nm_ibverbs_cnx_addr 
 {
   uint16_t lid;
   uint32_t qpn;
   uint32_t psn;
-  struct nm_ibverbs_segment segments[16];
+  struct nm_ibverbs_segment segments[8];
   int n;
+};
+
+/** driver track
+ */
+struct nm_ibverbs_trk
+{
+  puk_component_t method;
+  const struct nm_ibverbs_method_iface_s*method_iface;
 };
 
 /** Global state of the HCA */
@@ -89,8 +113,7 @@ struct nm_ibverbs_drv
   struct ibv_context*context; /**< global IB context */
   struct ibv_pd*pd;           /**< global IB protection domain */
   uint16_t lid;               /**< local IB LID */
-  struct nm_ibverbs_trk*trks_array; /**< tracks of the driver*/
-  int nb_trks;                      /**< number of tracks */
+  struct nm_ibverbs_trk trks_array[2]; /**< tracks of the driver*/
   struct
   {
     int max_qp;               /**< maximum number of QP */
@@ -102,10 +125,11 @@ struct nm_ibverbs_drv
     uint64_t page_size_cap;   /**< maximum page size for device */
     uint64_t max_msg_size;    /**< maximum message size */
   } ib_caps;
-  char*url;                   /**< Infiniband url for this node */
-  int server_sock;            /**< socket used for connection */
+  char*url;                   /**< driver url for this node (used by connector) */
+  struct nm_ibverbs_connect_s*connector; /**< connection manager to exchange addresses */
 };
 
+/* forward declaration to resolve circular dependancy */
 struct nm_ibverbs_cnx;
 
 struct nm_ibverbs_method_iface_s
@@ -146,6 +170,29 @@ struct nm_ibverbs_cnx
 };
 
 
+/* ********************************************************* */
+/* ** connection management */
+
+__PUK_SYM_INTERNAL
+void nm_ibverbs_connect_create(struct nm_ibverbs_drv*p_ibverbs_drv);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_connect_send(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id,
+			     const struct nm_ibverbs_cnx_addr*local_addr, int ack);
+__PUK_SYM_INTERNAL
+int nm_ibverbs_connect_recv(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id,
+			    struct nm_ibverbs_cnx_addr*remote_addr);
+__PUK_SYM_INTERNAL
+int nm_ibverbs_connect_wait_ack(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_drv*p_ibverbs_drv);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx);
+__PUK_SYM_INTERNAL
+void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx*p_ibverbs_cnx);
 
 /* ** RDMA toolbox ***************************************** */
 
@@ -303,6 +350,59 @@ static inline void nm_ibverbs_send_flushn(struct nm_ibverbs_cnx*__restrict__ p_i
     }
 }
 
+/** RDMA used to synchronize connection establishment
+ */
+static inline void nm_ibverbs_sync_send_post(const void*buf, int size, struct nm_ibverbs_cnx*cnx)
+{
+  struct ibv_sge list = {
+    .addr   = (uintptr_t)buf,
+    .length = size,
+    .lkey   = cnx->local_addr.segments[0].rkey
+  };
+  struct ibv_send_wr wr = {
+    .wr_id      = NM_IBVERBS_WRID_SYNC,
+    .sg_list    = &list,
+    .num_sge    = 1,
+    .opcode     = IBV_WR_RDMA_WRITE,
+    .send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE,
+    .next       = NULL,
+    .imm_data   = 0,
+    .wr.rdma =
+    {
+      .remote_addr = cnx->remote_addr.segments[0].raddr,
+      .rkey        = cnx->remote_addr.segments[0].rkey
+    }
+  };
+  struct ibv_send_wr*bad_wr = NULL;
+  int rc = ibv_post_send(cnx->qp, &wr, &bad_wr);
+  if(rc)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: post sync send failed.\n");
+      abort();
+    }
+}
+static inline int nm_ibverbs_sync_send_wait(struct nm_ibverbs_cnx*cnx)
+{
+  struct ibv_wc wc;
+  int ne = 0;
+  do
+    {
+      ne = ibv_poll_cq(cnx->of_cq, 1, &wc);
+      if(ne < 0)
+	{
+	  fprintf(stderr, "nmad: FATAL- ibverbs: poll out CQ failed.\n");
+	  abort();
+	}
+    }
+  while(ne == 0);
+  if(ne != 1 || wc.status != IBV_WC_SUCCESS)
+    {
+      fprintf(stderr, "nmad: WARNING- ibverbs: WC send failed (status=%d; %s)\n",
+	      wc.status, nm_ibverbs_status_strings[wc.status]);
+      return 1;
+    }
+  return 0;
+}
 
 #endif /* NM_IBVERBS_H */
 

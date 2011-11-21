@@ -313,7 +313,7 @@ static int nm_ibverbs_connect_poll(struct nm_ibverbs_drv*p_ibverbs_drv)
   struct pollfd fds = { .fd = p_ibverbs_drv->connector->sock, .events = POLLIN };
   int rc = -1;
  retry_poll:
-  rc = NM_SYS(poll)(&fds, 1, 600);
+  rc = NM_SYS(poll)(&fds, 1, NM_IBVERBS_TIMEOUT_ACK);
   if(rc == -1)
     {
       const int err = errno;

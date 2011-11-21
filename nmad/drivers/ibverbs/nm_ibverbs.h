@@ -32,6 +32,11 @@
 #define NM_IBVERBS_MAX_INLINE   128
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
+/** timeout to receive connection ACK after sending connect address to peer (in msec.) */
+#define NM_IBVERBS_TIMEOUT_ACK   600
+/** timeout to receive connection check after sending ACK and check (in msec.) */
+#define NM_IBVERBS_TIMEOUT_CHECK 20
+
 
 TBX_INTERNAL extern tbx_checksum_func_t _nm_ibverbs_checksum;
 

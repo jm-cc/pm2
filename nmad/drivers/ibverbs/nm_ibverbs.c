@@ -33,6 +33,7 @@
 #include "nm_ibverbs.h"
 
 #include <Padico/Module.h>
+#include <tbx.h>
 
 static int nm_ibverbs_load(void);
 
@@ -498,8 +499,8 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
       rc = nm_ibverbs_connect_wait_ack(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id);
     }
   while(rc != 0);
-  
-  do
+
+  for(;;)
     {
       /* check connection */
       nm_ibverbs_sync_send_post((void*)&buffer[1], sizeof(int), p_ibverbs_cnx);
@@ -513,8 +514,26 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
 	  nm_ibverbs_cnx_qp_rts(p_ibverbs_cnx);
 	}
+      else if(buffer[0] == 0)
+	{
+	  tbx_tick_t t1, t2;
+	  TBX_GET_TICK(t1);
+	  do
+	    {
+	      TBX_GET_TICK(t2);
+	    }
+	  while(buffer[0] == 0 && TBX_TIMING_DELAY(t1, t2) < NM_IBVERBS_TIMEOUT_CHECK);
+	  if(buffer[0] == 0)
+	    {
+	      nm_ibverbs_connect_send(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->local_addr, 1);
+	    }
+	}
+      else
+	{
+	  /* connection ok- escape from loop */
+	  break;
+	}
     }
-  while(rc != 0);
 
   return NM_ESUCCESS;
 }

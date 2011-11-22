@@ -32,10 +32,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_tcp_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_Driver_tcp, &nm_tcp_load, NULL, NULL);
-
 /** TCP driver per-instance data.
  */
 struct nm_tcp_drv
@@ -217,14 +213,12 @@ static const struct puk_adapter_driver_s nm_tcp_adapter_driver =
 
 
 /** Component declaration */
-static int nm_tcp_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_Driver_tcp,
   puk_component_declare("NewMad_Driver_tcp",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_tcp_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_tcp_driver));
-  return 0;
-}
+			puk_component_provides("NewMad_Driver", "driver", &nm_tcp_driver)));
 
+/* ********************************************************* */
 
 /** Instanciate functions */
 static void*nm_tcp_instanciate(puk_instance_t instance, puk_context_t context)

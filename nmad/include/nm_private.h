@@ -24,15 +24,16 @@
 #include <pioman.h>
 #endif
 
-#ifdef CONFIG_PUK_PUKABI
+#if defined(PUKABI)
 #include <Padico/Puk-ABI.h>
-#endif /* CONFIG_PUK_PUKABI */
-
-#if defined(CONFIG_PUK_PUKABI) && defined(PADICO_ENABLE_PUKABI_FSYS)
-#define NM_SYS(SYMBOL) PUK_ABI_WRAP(SYMBOL)
-#else  /* PADICO_ENABLE_PUKABI_FSYS */
+#define NM_SYS(SYMBOL) PUK_ABI_FSYS_WRAP(SYMBOL)
+#else  /* PUKABI */
 #define NM_SYS(SYMBOL) SYMBOL
-#endif /* PADICO_ENABLE_PUKABI_FSYS */
+#endif /* PUKABI */
+
+#ifndef NMAD
+#error "NMAD flag not set while including nm_private.h."
+#endif /* NMAD */
 
 #include <nm_public.h>
 #include <nm_core_interface.h>

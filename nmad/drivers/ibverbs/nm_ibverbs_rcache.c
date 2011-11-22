@@ -23,10 +23,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_ibverbs_rcache_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_rcache, &nm_ibverbs_rcache_load, NULL, NULL);
-
 
 /* *** method: 'rcache' ********************************* */
 
@@ -125,13 +121,11 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
 }
 
 
-static int nm_ibverbs_rcache_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
   puk_component_declare("NewMad_ibverbs_rcache",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_rcache_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_rcache_method));
-  return 0;
-}
+			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_rcache_method)));
+
 
 static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_t context)
 {

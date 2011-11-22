@@ -20,10 +20,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_ibverbs_bycopy_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_bycopy, &nm_ibverbs_bycopy_load, NULL, NULL);
-
 
 /* *** method: 'bycopy' ************************************ */
 
@@ -126,13 +122,11 @@ static const struct puk_adapter_driver_s nm_ibverbs_bycopy_adapter =
     .destroy = &nm_ibverbs_bycopy_destroy
   };
 
-static int nm_ibverbs_bycopy_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_ibverbs_bycopy,
   puk_component_declare("NewMad_ibverbs_bycopy",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_bycopy_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_bycopy_method));
-  return 0;
-}
+			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_bycopy_method)));
+
 
 static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_t context)
 {

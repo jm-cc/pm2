@@ -37,24 +37,8 @@
 /** timeout to receive connection check after sending ACK and check (in msec.) */
 #define NM_IBVERBS_TIMEOUT_CHECK 20
 
-
-TBX_INTERNAL extern tbx_checksum_func_t _nm_ibverbs_checksum;
-
-/** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
- */
-static inline uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
-{
-  if(_nm_ibverbs_checksum)
-    return (*_nm_ibverbs_checksum)(data, len);
-  else
-    return 0;
-}
-
-static inline int nm_ibverbs_checksum_enabled()
-{
-  return _nm_ibverbs_checksum != NULL;
-}
-
+uint32_t nm_ibverbs_checksum(const char*data, uint32_t len);
+int nm_ibverbs_checksum_enabled(void);
 
 /** list of WRIDs used in the driver. */
 enum {

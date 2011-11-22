@@ -51,10 +51,6 @@ AC_SUBST([BASH])
 dnl -- options
 dnl --------------------------------------------------------
 
-dnl -- base CFLAGS
-dnl --
-NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
-
 dnl -- tag container
 dnl --
 AC_MSG_CHECKING([for tag container])
@@ -153,7 +149,6 @@ if test "x${with_ibverbs}" != "xno" ; then
     CFLAGS="${save_CFLAGS}"
     AC_SUBST(HAVE_INFINIBAND)
     if test ${HAVE_INFINIBAND} = yes; then
-        AC_DEFINE([CONFIG_IBVERBS], 1, [enable ibverbs support])
         nmad_drivers="${nmad_drivers} ibverbs"
         if test "x$IBHOME" != "x" -a "x${IBHOME}" != "x/usr"; then
       	   if test "x${IBLIBPATH}" = "x" ; then
@@ -163,6 +158,8 @@ if test "x${with_ibverbs}" != "xno" ; then
       	   ibverbs_LIBS="-Wl,-rpath,${IBLIBPATH} -L${IBLIBPATH}"
         fi
 	ibverbs_LIBS="${ibverbs_LIBS} -libverbs"
+	AC_SUBST([ibverbs_CFLAGS])
+	AC_SUBST([ibverbs_LIBS])
     elif test "x${with_ibverbs}" != "xcheck"; then
         AC_MSG_FAILURE([--with-ibverbs was given, but infiniband/verbs.h is not found])
     fi
@@ -191,13 +188,14 @@ if test "x${with_mx}" != "xno" ; then
     CFLAGS="${save_CFLAGS}"
     AC_SUBST(HAVE_MX)
     if test ${HAVE_MX} = yes; then
-        AC_DEFINE([CONFIG_MX], 1, [enable MX support])
         nmad_drivers="${nmad_drivers} mx"
         if test "x${MX_DIR}" != "x" -a "x${MX_DIR}" != "x/usr"; then
       	   mx_CFLAGS="-I${MX_DIR}/include"
       	   mx_LIBS="-Wl,-rpath,${MX_DIR}/lib -L${MX_DIR}/lib"
         fi
 	mx_LIBS="${mx_LIBS} -lmyriexpress"
+	AC_SUBST([mx_CFLAGS])
+	AC_SUBST([mx_LIBS])
     elif test "x${with_mx}" != "xcheck"; then
         AC_MSG_FAILURE([--with-mx was given, but myrinetexpress.h is not found])
     fi
@@ -246,13 +244,22 @@ AC_ARG_ENABLE(mpi,
 	      ],
 	      [])
 
-dnl -- compute flags
-NMAD_EXT_CFLAGS="${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS} ${ibverbs_CFLAGS} ${mx_CFLAGS}"
-AC_SUBST(NMAD_CFLAGS)
-AC_SUBST(NMAD_EXT_CFLAGS)
+dnl -- flags to build nmad
+dnl --
 
-NMAD_EXT_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${ibverbs_LIBS} ${mx_LIBS} ${numa_LIBS}"
-AC_SUBST(NMAD_EXT_LIBS)
+NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS}"
+AC_SUBST(NMAD_CORE_CFLAGS)
+
+NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS}"
+AC_SUBST(NMAD_CORE_LIBS)
+
+
+dnl -- flags to use an installed nmad
+dnl --
+
+NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
+AC_SUBST(NMAD_CFLAGS)
+
 NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
 AC_SUBST(NMAD_LIBS)
 
@@ -274,7 +281,7 @@ AC_SUBST(nmad_interfaces)
 
 
 out_sh="${out_sh} bin/nmad-sample"
-out_mk="${out_mk} Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
+out_mk="${out_mk} Makefile drivers/self/Makefile drivers/ibverbs/Makefile drivers/local/Makefile drivers/tcp/Makefile drivers/mx/Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
 
 dnl -- output 
 

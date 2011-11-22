@@ -25,11 +25,6 @@
 
 #include <Padico/Module.h>
 
-/* module declaration */
-static int nm_mx_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_Driver_mx, &nm_mx_load, NULL, NULL);
-
 
 
 /** Initial number of packet wrappers */
@@ -228,13 +223,10 @@ static const struct puk_adapter_driver_s nm_mx_adapter_driver =
 
 
 /** Component declaration */
-static int nm_mx_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_Driver_mx,
   puk_component_declare("NewMad_Driver_mx",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_mx_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_mx_driver));
-  return 0;
-}
+			puk_component_provides("NewMad_Driver", "driver", &nm_mx_driver)));
 
 
 /** Instanciate functions */

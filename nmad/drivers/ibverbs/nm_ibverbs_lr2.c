@@ -22,10 +22,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_ibverbs_lr2_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_lr2, &nm_ibverbs_lr2_load, NULL, NULL);
-
 
 /* *** method: 'lr2' *************************************** */
 
@@ -143,13 +139,11 @@ static const struct puk_adapter_driver_s nm_ibverbs_lr2_adapter =
 
 /* ********************************************************* */
 
-static int nm_ibverbs_lr2_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
   puk_component_declare("NewMad_ibverbs_lr2",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_lr2_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_lr2_method));
-  return 0;
-}
+			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_lr2_method)));
+
 
 /* ********************************************************* */
 

@@ -35,11 +35,6 @@
 #include <Padico/Module.h>
 #include <tbx.h>
 
-static int nm_ibverbs_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_Driver_ibverbs, &nm_ibverbs_load, NULL, NULL);
-
-
 
 /* *********************************************************
  * Rationale of the newmad/ibverbs driver
@@ -79,7 +74,7 @@ struct nm_ibverbs
   struct nm_ibverbs_cnx cnx_array[2];
 };
 
-tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
+static tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
 
 /* ********************************************************* */
 
@@ -139,23 +134,11 @@ static const struct puk_adapter_driver_s nm_ibverbs_adapter_driver =
     .destroy     = &nm_ibverbs_destroy
   };
 
-static int nm_ibverbs_load(void)
-{
-  if(getenv("NMAD_IBVERBS_CHECKSUM"))
-    {
-      _nm_ibverbs_checksum = tbx_checksum_block64;
-      NM_DISPF("# nmad ibverbs: checksum enabled.\n");
-    }
-  else
-    {
-      _nm_ibverbs_checksum = NULL;
-    }
 
+PADICO_MODULE_COMPONENT(NewMad_Driver_ibverbs,
   puk_component_declare("NewMad_Driver_ibverbs",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_ibverbs_driver));
-  return 0;
-}
+			puk_component_provides("NewMad_Driver", "driver", &nm_ibverbs_driver)) );
 
 
 /** Instanciate functions */
@@ -163,6 +146,11 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
 {
   struct nm_ibverbs*status = TBX_MALLOC(sizeof(struct nm_ibverbs));
   memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * 2);
+  if(_nm_ibverbs_checksum == NULL && getenv("NMAD_IBVERBS_CHECKSUM") != NULL)
+    {
+      _nm_ibverbs_checksum = tbx_checksum_block64;
+      NM_DISPF("# nmad ibverbs: checksum enabled.\n");
+    }
   return status;
 }
 
@@ -187,6 +175,25 @@ static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status, nm_trk_id_t
   struct nm_ibverbs_cnx*p_ibverbs_cnx = &status->cnx_array[trk_id];
   return p_ibverbs_cnx;
 }
+
+/* ** checksum ********************************************* */
+
+
+/** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
+ */
+uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
+{
+  if(_nm_ibverbs_checksum)
+    return (*_nm_ibverbs_checksum)(data, len);
+  else
+    return 0;
+}
+
+int nm_ibverbs_checksum_enabled(void)
+{
+  return _nm_ibverbs_checksum != NULL;
+}
+
 
 #ifdef PM2_NUIOA
 /* ******************** numa node ***************************** */

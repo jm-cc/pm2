@@ -29,10 +29,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_local_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_Driver_local, &nm_local_load, NULL, NULL);
-
 
 /** 'local' driver per-instance data.
  */
@@ -134,13 +130,10 @@ static const struct puk_adapter_driver_s nm_local_adapter_driver =
 
 
 /** Component declaration */
-static int nm_local_load(void)
-{
+PADICO_MODULE_COMPONENT(NewMad_Driver_local,
   puk_component_declare("NewMad_Driver_local",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_local_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_local_driver));
-  return 0;
-}
+			puk_component_provides("NewMad_Driver", "driver", &nm_local_driver)));
 
 
 /** Instanciate functions */

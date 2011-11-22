@@ -16,24 +16,25 @@ INSTALL_PKGCONFIG = nmad.pc
 INSTALL_PREFIX := @nmad_root@
 INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
-TARGETS = $(TARGET_BIN) $(TARGET_LIB)
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 # compute flags and directories from options
 SRC_DIRS += src
-SRC_DIRS += $(foreach drv,   @nmad_drivers@,    drivers/$(drv) )
 SRC_DIRS += $(foreach strat, @nmad_strategies@, strategies/strat_$(strat) )
 SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
-EXTRA_NMAD_CFLAGS := $(foreach int,   @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
+EXTRA_NMAD_CFLAGS := $(foreach int, @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
 INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
 INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
 EXAMPLE_DIRS = examples/pack examples/sendrecv examples/lowlevel
 
+SUBDIRS += $(foreach drv, @nmad_drivers@, drivers/$(drv) )
+
 # set compilers and flags
 #   add source dirs and build dir *first* in include order
 #   add install dir and dependancies *last* in include order
-CFLAGS  := -I@nmad_srcdir@/include -I@nmad_builddir@/include $(EXTRA_NMAD_CFLAGS) $(CFLAGS) @NMAD_CFLAGS@ @NMAD_EXT_CFLAGS@
+CFLAGS  := @NMAD_CORE_CFLAGS@ $(EXTRA_NMAD_CFLAGS) $(CFLAGS)
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := @NMAD_EXT_LIBS@ -lrt $(LIBS)
+LIBS    := @NMAD_CORE_LIBS@ -lrt $(LIBS)
 BINLIBS := -L. @NMAD_LIBS@
 FC      := @FC@
 FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
@@ -82,7 +83,8 @@ TESTS_RESULTS := @nmad_builddir@/.test-results
 CLEAN_MORE += $(TESTS_RESULTS)
 -include $(TESTS_RESULTS)
 
-tests: install
+tests: 
+	$(Q)$(MAKE) install
 	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
 	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
 	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
@@ -111,7 +113,8 @@ show-tests-results:
 BENCH_RESULTS := @nmad_builddir@/.bench-results
 CLEAN_MORE += $(BENCH_RESULTS)
 
-bench: install
+bench:
+	$(Q)$(MAKE) install
 	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
 	$(Q)echo "# automatically generated tests results" > $(BENCH_RESULTS)
 	$(Q)( for d in $(EXAMPLE_DIRS); do \
@@ -128,7 +131,8 @@ bench: install
 
 # ## Examples
 #
-examples: install
+examples:
+	$(Q)$(MAKE) install
 	$(Q)( \
               for d in $(EXAMPLE_DIRS); do \
                 echo "  [ALL]    in $$d/"; \

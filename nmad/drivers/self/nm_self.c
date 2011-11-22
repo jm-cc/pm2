@@ -29,10 +29,6 @@
 
 #include <Padico/Module.h>
 
-static int nm_self_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_Driver_self, &nm_self_load, NULL, NULL);
-
 
 /** 'self' per-driver data.
  */
@@ -116,14 +112,10 @@ static const struct puk_adapter_driver_s nm_self_adapter_driver =
 
 
 /** Component declaration */
-static int nm_self_load(void)
-{
-  puk_component_declare("NewMad_Driver_self",
-			puk_component_provides("PadicoAdapter", "adapter", &nm_self_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_self_driver));
-  return 0;
-}
-
+PADICO_MODULE_COMPONENT(NewMad_Driver_self,
+			puk_component_declare("NewMad_Driver_self",
+					      puk_component_provides("PadicoAdapter", "adapter", &nm_self_adapter_driver),
+					      puk_component_provides("NewMad_Driver", "driver", &nm_self_driver)));
 
 
 /** Instanciate functions */

@@ -1,0 +1,30 @@
+
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_MOD = NewMad_Driver_ibverbs NewMad_ibverbs_lr2 NewMad_ibverbs_bycopy NewMad_ibverbs_rcache
+TARGET_BIN =
+TARGET_LIB =
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+
+INSTALL_BIN = $(TARGET_BIN)
+INSTALL_LIB = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+INSTALL_INIT =
+
+CFLAGS :=  @NMAD_CORE_CFLAGS@ $(CFLAGS) @ibverbs_CFLAGS@ 
+MODLIBS += @ibverbs_LIBS@
+
+include @puk_root@/etc/common_rules.mk
+
+NewMad_Driver_ibverbs: nm_ibverbs.pic.o nm_ibverbs_connect.pic.o
+
+NewMad_ibverbs_bycopy: nm_ibverbs_bycopy.pic.o
+
+NewMad_ibverbs_lr2: nm_ibverbs_lr2.pic.o
+
+NewMad_ibverbs_rcache: nm_ibverbs_rcache.pic.o
+

@@ -28,10 +28,6 @@
  * @{
  */
 
-#if !(defined(PADICOTM) || defined(CONFIG_PADICO))
-#error "Mad-MPI requires PadicoTM"
-#endif
-
 #include <stdint.h>
 #include <unistd.h>
 
@@ -248,8 +244,7 @@ typedef struct mpir_internal_data_s
 /**
  * Initialises internal data
  */
-int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
-		       struct puk_receptacle_NewMad_Launcher_s*r);
+int mpir_internal_init(mpir_internal_data_t *mpir_internal_data);
 
 /**
  * Internal shutdown of the application.

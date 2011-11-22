@@ -1215,37 +1215,12 @@ int MPI_Init(int *argc,
       abort();
     }
 
-  /*
-   * Lazy Puk initialization (it may already have been initialized in PadicoTM)
-   */
-  if(!padico_puk_initialized())
-    {
-      padico_puk_init(*argc, *argv);
-    }
-
-#if defined(CONFIG_PADICO) || defined(PADICOTM)
-  const char launcher_name[] = "NewMad_Launcher_newmadico";
-#else 
-  const char launcher_name[] = "NewMad_Launcher_cmdline";
-#endif
-
-  /*
-   * NewMad initialization is performed by component 'NewMad_Launcher'
-   * (from cmdline or PadicoTM)
-   */
-  puk_adapter_t launcher = puk_adapter_resolve(launcher_name);
-  assert(launcher != NULL);
-  launcher_instance = puk_adapter_instanciate(launcher);
-  assert(launcher_instance != NULL);
-  struct puk_receptacle_NewMad_Launcher_s r;
-  puk_instance_indirect_NewMad_Launcher(launcher_instance, NULL, &r);
-  const char*session = puk_mod_getattr(NULL, "PADICO_BOOT_ID") ?:"Mad-MPI";
-  (*r.driver->init)(r._status, argc, *argv, session);
+  nm_launcher_init(argc, *argv);
 
   /*
    * Internal initialisation
    */
-  ret = mpir_internal_init(&mpir_internal_data, &r);
+  ret = mpir_internal_init(&mpir_internal_data);
 
   MPI_NMAD_LOG_OUT();
   return ret;

@@ -17,9 +17,9 @@
 
 #include "nm_ibverbs.h"
 
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
 #include <Padico/Puk-ABI.h>
-#endif
+#endif /* PUKABI */
 
 #include <Padico/Module.h>
 
@@ -137,9 +137,9 @@ static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_
   rcache->mr  = NULL;
   rcache->cnx = NULL;
   rcache->pd  = NULL;
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
   puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
-#endif /* CONFIG_PUK_PUKABI */
+#endif /* PUKABI */
   return rcache;
 }
 
@@ -205,11 +205,11 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
     }
   rcache->send.message = message;
   rcache->send.size = size;
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
   rcache->send.mr = puk_mem_reg(rcache->pd, message, size);
-#else
+#else /* PUKABI */
   rcache->send.mr = nm_ibverbs_mem_reg(rcache->pd, message, size);
-#endif
+#endif /* PUKABI */
 }
 
 static int nm_ibverbs_rcache_send_poll(void*_status)
@@ -237,11 +237,11 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 			   NM_IBVERBS_WRID_HEADER);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
       puk_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
-#else
+#else /* PUKABI */
       nm_ibverbs_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
-#endif
+#endif /* PUKABI */
       rcache->send.message = NULL;
       rcache->send.size    = -1;
       rcache->send.mr = NULL;
@@ -264,11 +264,11 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   rcache->headers.rsig.busy = 0;
   rcache->recv.message = v->iov_base;
   rcache->recv.size = v->iov_len;
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
   rcache->recv.mr = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-#else
+#else /* PUKABI */
   rcache->recv.mr = nm_ibverbs_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-#endif
+#endif /* PUKABI */
   struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;
   h->raddr =  (uintptr_t)rcache->recv.message;
   h->rkey  = rcache->recv.mr->rkey;
@@ -291,11 +291,11 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
   if(rsig->busy)
     {
       rsig->busy = 0;
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
       puk_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
-#else
+#else /* PUKABI */
       nm_ibverbs_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
-#endif
+#endif /* PUKABI */
       rcache->recv.message = NULL;
       rcache->recv.size = -1;
       rcache->recv.mr = NULL;

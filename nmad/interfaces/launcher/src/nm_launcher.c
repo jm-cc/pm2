@@ -22,9 +22,9 @@
 #include <pioman.h>
 #endif
 
-#ifdef CONFIG_PUK_PUKABI
+#ifdef PUKABI
 #include <Padico/Puk-ABI.h>
-#endif /* CONFIG_PUK_PUKABI */
+#endif /* PUKABI */
 
 #include <Padico/Module.h>
 PADICO_MODULE_HOOK(NewMad_Core);
@@ -117,21 +117,6 @@ int nm_launcher_exit(void)
   exit_done = 1;
   free(launcher.gates);
   puk_instance_destroy(launcher.instance);
-#if defined(PADICOTM)
-  /* ** Big Hack(tm) to break circular dependancy.
-   * When using Marcel+NewMadeleine+PadicoTM, on shutdown:
-   * . PadicoTM waits for the binary to complete
-   * . the binary calls nmad_exit()
-   * . nmad_exit() calls common_exit()
-   * . common_exit() calls marcel_end()
-   * . marcel_end() waits all threads to complete
-   * . PadicoTM threads are not likely to complete since it is waiting
-   *   for the binary to shutdown...
-   */
-  __puk_abi_wrap__exit(0);
-#else
-  /* padico_puk_shutdown(); */
-#endif
   return NM_ESUCCESS;
 }
 

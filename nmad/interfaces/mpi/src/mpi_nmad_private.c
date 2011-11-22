@@ -55,19 +55,21 @@ static inline void mpir_dec_nb_outgoing_msg(mpir_internal_data_t *mpir_internal_
   mpir_internal_data->nb_outgoing_msg --;
 }
 
-int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
-		       struct puk_receptacle_NewMad_Launcher_s*r) {
+int mpir_internal_init(mpir_internal_data_t *mpir_internal_data)
+{
   int i;
   int dest;
 
-  const int global_size  = (*r->driver->get_size)(r->_status);
-  const int process_rank = (*r->driver->get_rank)(r->_status);
+  int global_size  = -1;
+  int process_rank = -1;
+  nm_launcher_get_size(&global_size);
+  nm_launcher_get_rank(&process_rank);
 
   mpir_internal_data->nb_outgoing_msg = 0;
   mpir_internal_data->nb_incoming_msg = 0;
 
   /** Set the NewMadeleine interfaces */
-  mpir_internal_data->p_session = (*r->driver->get_session)(r->_status);
+  nm_launcher_get_session(&mpir_internal_data->p_session);
 
   nm_sr_init(mpir_internal_data->p_session);
 
@@ -218,15 +220,14 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data,
   mpir_internal_data->gates = malloc(global_size * sizeof(nm_gate_t));
   mpir_internal_data->dests = puk_hashtable_new_ptr();
 
-  (*r->driver->get_gates)(r->_status, mpir_internal_data->gates);
   for(dest = 0; dest < global_size; dest++)
     {
-      const nm_gate_t gate = mpir_internal_data->gates[dest];
-      if(gate != NM_ANY_GATE)
-	{
-	  intptr_t rank_as_ptr = dest + 1;
-	  puk_hashtable_insert(mpir_internal_data->dests, gate, (void*)rank_as_ptr);
-	}
+      nm_gate_t gate;
+      nm_launcher_get_gate(dest, &gate);
+      mpir_internal_data->gates[dest] = gate;
+      assert(gate != NM_ANY_GATE);
+      intptr_t rank_as_ptr = dest + 1;
+      puk_hashtable_insert(mpir_internal_data->dests, gate, (void*)rank_as_ptr);
     }
 
   return MPI_SUCCESS;

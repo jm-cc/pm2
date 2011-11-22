@@ -425,11 +425,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 		}
 	      else
 		{
-#ifdef NM_IBVERBS_RCACHE
-		  ib_method = puk_adapter_resolve(ib_rcache);
-#else
 		  ib_method = puk_adapter_resolve(ib_lr2);
-#endif
 		}
 	    }
 	  p_ibverbs_drv->trks_array[i].method = ib_method;

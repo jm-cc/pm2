@@ -167,9 +167,6 @@ struct nm_drv_iface_s
 
   const struct nm_drv_cap_s capabilities; /**< static capabilities */
 
-  int (*post_recv_iov_all)(struct nm_pkt_wrap *p_pw);
-  int (*poll_recv_iov_all)(struct nm_pkt_wrap *p_pw);
-
 #if( defined(PIOMAN) && defined(MA__LWPS))
   int (*wait_recv_iov)(void*_status, struct nm_pkt_wrap*p_pw);
   int (*wait_send_iov)(void*_status, struct nm_pkt_wrap*p_pw);

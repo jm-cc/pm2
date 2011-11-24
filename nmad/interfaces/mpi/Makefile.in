@@ -1,0 +1,66 @@
+# makefile for Mad-MPI
+
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_LIB = libmadmpi.so
+TARGET_BIN =
+TARGET_MOD =
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB) $(TARGET_MOD)
+
+INSTALL_BIN = $(TARGET_BIN) $(wildcard bin/*)
+INSTALL_LIB = $(TARGET_LIB)
+INSTALL_INCLUDE = $(wildcard $(srcdir)/include/*.h)
+INSTALL_INIT =
+
+INSTALL_PREFIX := @nmad_root@
+INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
+
+CFLAGS := @NMAD_CORE_CFLAGS@ $(CFLAGS)
+LIBS   := -L@nmad_builddir@ @NMAD_LIBS@ $(LIBS)
+
+# main lib objects
+SRC_FILES  := $(wildcard $(srcdir)/src/*.c)
+OBJ_FILES  := $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
+DEP_FILES  := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
+CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
+TARGET_DEP += $(DEP_FILES)
+
+# Fortran 90 module for Mad-MPI
+#   hardwired MPI module content.
+#   See src/f90modules/README on how to extract module content from source
+madmpi_f90_srcdir   := $(srcdir)/src/f90modules
+madmpi_f90_builddir := ./src/f90modules
+FC      := @FC@
+FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
+ifneq (@nmad_fortran_support@,none)
+CFLAGS  += -I$(madmpi_f90_builddir)
+MADMPI_F90_FILES := mpi_constants mpi1 mpi
+MADMPI_F90_SRC   := $(patsubst %, $(madmpi_f90_srcdir)/%.f90,   $(MADMPI_F90_FILES))
+MADMPI_F90_MODS  := $(patsubst %, $(madmpi_f90_builddir)/%.mod, $(MADMPI_F90_FILES))
+MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FILES))
+CLEAN_MORE       += $(MADMPI_F90_MODS) $(MADMPI_F90_OBJS)
+INSTALL_INCLUDE  += $(MADMPI_F90_MODS)
+TARGETS          += $(MADMPI_F90_MODS)
+endif
+
+include @puk_root@/etc/common_rules.mk
+
+$(TARGET_LIB): $(OBJ_FILES)
+
+
+# ## Fortran stuff
+#
+$(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
+	@$(SHOWMK) "  [F90]    $@"
+	$(Q)$(MKDIR) $(madmpi_f90_builddir)
+	$(Q)( cd $(madmpi_f90_builddir) ; $(FC) $(FFLAGS) -c -o ./$*.o $< ) 
+        # change dir end gen mod in . because -M<dir> is not portable
+
+# dirty ordered modules because of no make dep for Fortran
+$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
+$(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod
+

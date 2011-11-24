@@ -35,7 +35,7 @@ verbose=0
 CC="@CC@"
 CLINKER="@CC@"
 CFLAGS="`pkg-config --cflags nmad`"
-LIBS="`pkg-config --libs nmad`"
+LIBS="`pkg-config --libs nmad` -lmadmpi"
 
 #
 #

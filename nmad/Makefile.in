@@ -5,67 +5,40 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = interfaces/sampling/sampling-prog
+TARGET_BIN =
 TARGET_LIB = libnmad.so
 
-INSTALL_BIN       = $(TARGET_BIN) bin/nmad-sample
+INSTALL_BIN       = $(TARGET_BIN)
 INSTALL_LIB       = $(TARGET_LIB)
-INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h) @nmad_builddir@/include/nm_config.h @nmad_builddir@/include/nm_private_config.h
+INSTALL_INCLUDE  += $(wildcard $(srcdir)/include/*.h) $(wildcard @nmad_builddir@/include/*.h)
 INSTALL_PKGCONFIG = nmad.pc
 
 INSTALL_PREFIX := @nmad_root@
 INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
-TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+TARGETS = $(TARGET_BIN) $(TARGET_LIB) subdirs
 
-# compute flags and directories from options
-SRC_DIRS += src
-SRC_DIRS += $(foreach strat, @nmad_strategies@, strategies/strat_$(strat) )
-SRC_DIRS += $(foreach int,   @nmad_interfaces@, interfaces/$(int)/src )
-EXTRA_NMAD_CFLAGS := $(foreach int, @nmad_interfaces@, -I$(srcdir)/interfaces/$(int)/include )
-INSTALL_INCLUDE += $(foreach int, @nmad_interfaces@, $(wildcard $(srcdir)/interfaces/$(int)/include/*.h) )
-INSTALL_BIN     += $(foreach int, @nmad_interfaces@, $(wildcard @nmad_builddir@/interfaces/$(int)/bin/*) )
-EXAMPLE_DIRS = examples/pack examples/sendrecv examples/lowlevel
+# ## dirs with their own Makefile- build as subdirs
+DIRS_WITHMK := $(patsubst %/Makefile, %, $(foreach d, @nmad_alldirs@, $(wildcard $(d)/Makefile)))
+SUBDIRS     += $(DIRS_WITHMK)
 
-SUBDIRS += $(foreach drv, @nmad_drivers@, drivers/$(drv) )
+# ## dirs without separate makefile- include in libnmad
+DIRS_NOMK  := $(filter-out $(DIRS_WITHMK), @nmad_alldirs@)
+SRC_FILES  := $(foreach d, src $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/*.c) $(wildcard $(srcdir)/$(d)/src/*.c))
+OBJ_FILES  := $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
+DEP_FILES  := $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
+CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES)
+TARGET_DEP += $(DEP_FILES)
+INSTALL_INCLUDE += $(foreach d, $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/include/*.h))
 
 # set compilers and flags
 #   add source dirs and build dir *first* in include order
 #   add install dir and dependancies *last* in include order
-CFLAGS  := @NMAD_CORE_CFLAGS@ $(EXTRA_NMAD_CFLAGS) $(CFLAGS)
+CFLAGS  := @NMAD_CORE_CFLAGS@ $(CFLAGS)
 LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
 LIBS    := @NMAD_CORE_LIBS@ -lrt $(LIBS)
-BINLIBS := -L. @NMAD_LIBS@
-FC      := @FC@
-FFLAGS  := @FFLAGS@ -I@nmad_srcdir@/interfaces/mpi/include
 
-# make multiple directories fit inside a single module
-SRC_FILES = $(foreach d, $(SRC_DIRS), $(wildcard $(srcdir)/$(d)/*.c ))
-OBJ_FILES = $(patsubst $(srcdir)/%.c, ./%.pic.o, $(SRC_FILES))
-DEP_FILES = $(patsubst $(srcdir)/%.c, ./%.d, $(SRC_FILES))
-CLEAN_MORE += $(OBJ_FILES) $(DEP_FILES) interfaces/sampling/sampling-prog.pic.o
-TARGET_DEP += $(DEP_FILES)
 TARGET_CLEAN += clean-examples
-
-# Fortran 90 module for Mad-MPI
-#   hardwired MPI module content.
-#   See interfaces/mpi/src/f90modules/README on how to extract module content from source
-madmpi_f90_srcdir   := $(srcdir)/interfaces/mpi/src/f90modules
-madmpi_f90_builddir := ./interfaces/mpi/src/f90modules
-ifneq ($(findstring mpi,  @nmad_interfaces@),)
-EXAMPLE_DIRS += examples/mpi/basics examples/mpi/benchmarks
-ifneq (@nmad_fortran_support@,none)
-CFLAGS  += -I$(madmpi_f90_builddir)
-MADMPI_F90_FILES := mpi_constants mpi1 mpi
-MADMPI_F90_SRC   := $(patsubst %, $(madmpi_f90_srcdir)/%.f90,   $(MADMPI_F90_FILES))
-MADMPI_F90_MODS  := $(patsubst %, $(madmpi_f90_builddir)/%.mod, $(MADMPI_F90_FILES))
-MADMPI_F90_OBJS  := $(patsubst %, $(madmpi_f90_builddir)/%.o,   $(MADMPI_F90_FILES))
-CLEAN_MORE       += $(MADMPI_F90_MODS) $(MADMPI_F90_OBJS)
-INSTALL_INCLUDE  += $(MADMPI_F90_MODS)
-TARGETS          += $(MADMPI_F90_MODS)
-EXAMPLE_DIRS += examples/mpi/fortran examples/mpi/f90
-endif
-endif
 
 include @puk_root@/etc/common_rules.mk
 
@@ -73,80 +46,30 @@ include @puk_root@/etc/common_rules.mk
 
 libnmad.so: $(OBJ_FILES)
 
-$(TARGET_BIN): %: %.pic.o | $(TARGET_LIB)
+ifneq ($(MAKECMDGOALS),clean)
+$(SUBDIRS): | $(TARGET_LIB)
+endif
 
-# ## Tests
-#
+# ## Examples, tests, bench
+
+.PHONY: examples check tests bench
+
+examples:
+	$(Q)$(MAKE) install
+	$(Q)$(MAKE) -C examples install
+
+clean-examples:
+	$(Q)$(MAKE) -C examples clean
+
 check: tests
 
-TESTS_RESULTS := @nmad_builddir@/.test-results
-CLEAN_MORE += $(TESTS_RESULTS)
--include $(TESTS_RESULTS)
-
-tests: 
+tests:
 	$(Q)$(MAKE) install
-	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
-	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
-	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
-	$(Q)echo "TESTS_FAILED = "                        >> $(TESTS_RESULTS)
-	$(Q)( for d in $(EXAMPLE_DIRS); do \
-                echo "  [TESTS]  in $$d/"; \
-                $(MAKE) -C $$d tests TESTS_RESULTS=$(TESTS_RESULTS) ; \
-              done )
-	$(Q)$(MAKE) show-tests-results
-
-show-tests-results:
-	@echo
-	@echo "%-------------------"
-	@echo 
-	@echo " Tests series: $(patsubst examples/%, %, $(EXAMPLE_DIRS))"
-	@echo
-	@echo " Tests results:"
-	@echo "   success: $(words $(TESTS_SUCCESS))"
-	@echo "   failed:  $(words $(TESTS_FAILED))"
-	@( if [ "$(words $(TESTS_FAILED))" != 0 ]; then echo "     [ $(TESTS_FAILED) ]"; fi )
-	@echo
-
-# ## Benchmarks
-#
-
-BENCH_RESULTS := @nmad_builddir@/.bench-results
-CLEAN_MORE += $(BENCH_RESULTS)
+	$(Q)$(MAKE) -C examples tests
 
 bench:
 	$(Q)$(MAKE) install
-	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
-	$(Q)echo "# automatically generated tests results" > $(BENCH_RESULTS)
-	$(Q)( for d in $(EXAMPLE_DIRS); do \
-                echo "  [BENCH]  in $$d/"; \
-                $(MAKE) -C $$d bench BENCH_RESULTS=$(BENCH_RESULTS) ; \
-              done )
-	@echo
-	@echo "%-------------------"
-	@echo 
-	@echo " Bench summary"
-	@echo
-	@grep "latency:" $(BENCH_RESULTS)
-	@echo
-
-# ## Examples
-#
-examples:
-	$(Q)$(MAKE) install
-	$(Q)( \
-              for d in $(EXAMPLE_DIRS); do \
-                echo "  [ALL]    in $$d/"; \
-                $(MAKE) -C $$d ; \
-                echo "  [INST]   in $$d/"; \
-                $(MAKE) -C $$d install ; \
-              done )
-
-clean-examples:
-	$(Q)( \
-              for d in $(EXAMPLE_DIRS); do \
-                echo "  [CLEAN]  in $$d"; \
-                $(MAKE) -C $$d clean; \
-              done )
+	$(Q)$(MAKE) -C examples bench
 
 # ## Doxygen
 #
@@ -158,15 +81,3 @@ doxygen: doc/Doxyfile $(SRC_FILES)
 	@echo "# documentation generated in: @nmad_builddir@/doc/html/index.html"
 	@echo
 
-
-# ## Fortran stuff
-#
-$(madmpi_f90_builddir)/%.o $(madmpi_f90_builddir)/%.mod: $(madmpi_f90_srcdir)/%.f90
-	@$(SHOWMK) "  [F90]    $@"
-	$(Q)$(MKDIR) $(madmpi_f90_builddir)
-	$(Q)( cd $(madmpi_f90_builddir) ; $(FC) $(FFLAGS) -c -o ./$*.o $< ) 
-        # change dir end gen mod in . because -M<dir> is not portable
-
-# dirty ordered modules because of no make dep for Fortran
-$(madmpi_f90_builddir)/mpi.mod: | $(madmpi_f90_builddir)/mpi1.mod
-$(madmpi_f90_builddir)/mpi1.mod: | $(madmpi_f90_builddir)/mpi_constants.mod

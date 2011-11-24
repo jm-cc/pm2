@@ -37,7 +37,7 @@ F77="@F77@"
 F77LINKER="@F77@"
 LDFLAGSBASE="@NMAD_LDFLAGS@"
 CFLAGS="@NMAD_CFLAGS@"
-LIBS="@NMAD_LIBS@"
+LIBS="@NMAD_LIBS@ -lmadmpi"
 
 #
 for arg in "$@" ; do

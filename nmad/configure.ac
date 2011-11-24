@@ -82,6 +82,7 @@ AC_ARG_ENABLE(sampling,
 	      [  --enable-sampling  Enable network sampling],
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([NMAD_SAMPLING], 1, [enable sampling])
+		    nmad_interfaces="${nmad_interfaces} sampling"
 	        fi
 	      ],
 	      [])
@@ -244,15 +245,25 @@ AC_ARG_ENABLE(mpi,
 	      ],
 	      [])
 
-dnl -- flags to build nmad
+
+dnl -- nmad content
 dnl --
 
-NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS}"
-AC_SUBST(NMAD_CORE_CFLAGS)
+nmad_drivers="${nmad_drivers} self local tcp"
+nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
+nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
 
-NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS}"
-AC_SUBST(NMAD_CORE_LIBS)
-
+nmad_alldirs=
+for d in ${nmad_drivers}; do
+    nmad_alldirs="${nmad_alldirs} drivers/${d}"
+done
+for s in ${nmad_strategies}; do
+    nmad_alldirs="${nmad_alldirs} strategies/strat_${s}"
+done
+for i in ${nmad_interfaces}; do
+    nmad_alldirs="${nmad_alldirs} interfaces/${i}"
+done
+AC_SUBST(nmad_alldirs)
 
 dnl -- flags to use an installed nmad
 dnl --
@@ -266,24 +277,28 @@ AC_SUBST(NMAD_LIBS)
 NMAD_LDFLAGS="${NMAD_LDFLAGS} -Wl,--export-dynamic"
 AC_SUBST(NMAD_LDFLAGS)
 
+dnl -- flags to build nmad
+dnl --
 
-dnl -- nmad content
-dnl --------------------------------------------------------
+NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
+for d in ${nmad_alldirs}; do
+    if test -r ${nmad_srcdir}/${d}/include; then
+       NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} -I${nmad_srcdir}/${d}/include"
+    fi
+done
+NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS}"
+AC_SUBST(NMAD_CORE_CFLAGS)
 
-nmad_drivers="${nmad_drivers} self local tcp"
-AC_SUBST(nmad_drivers)
+NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS}"
+AC_SUBST(NMAD_CORE_LIBS)
 
-nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
-AC_SUBST(nmad_strategies)
-
-nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
-AC_SUBST(nmad_interfaces)
-
-
-out_sh="${out_sh} bin/nmad-sample"
-out_mk="${out_mk} Makefile drivers/self/Makefile drivers/ibverbs/Makefile drivers/local/Makefile drivers/tcp/Makefile drivers/mx/Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
 
 dnl -- output 
+dnl --
+
+out_sh="${out_sh} interfaces/sampling/nmad-sample"
+out_mk="${out_mk} Makefile interfaces/mpi/Makefile interfaces/sampling/Makefile drivers/self/Makefile drivers/ibverbs/Makefile drivers/local/Makefile drivers/tcp/Makefile drivers/mx/Makefile examples/Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
+
 
 AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])
 AC_OUTPUT(${out_mk} ${out_sh})

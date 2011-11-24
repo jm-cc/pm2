@@ -1,0 +1,82 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN =
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+EXAMPLE_DIRS = pack sendrecv lowlevel
+ifneq ($(findstring interfaces/mpi, @nmad_alldirs@),)
+EXAMPLE_DIRS += mpi/basics mpi/benchmarks
+ifneq (@nmad_fortran_support@,none)
+EXAMPLE_DIRS += mpi/fortran mpi/f90
+endif
+endif
+
+SUBDIRS += $(EXAMPLE_DIRS)
+
+include @puk_root@/etc/common_rules.mk
+
+# ## Tests
+#
+check: tests
+
+TESTS_RESULTS := @nmad_builddir@/.test-results
+CLEAN_MORE += $(TESTS_RESULTS)
+-include $(TESTS_RESULTS)
+
+tests:
+	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
+	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
+	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
+	$(Q)echo "TESTS_FAILED = "                        >> $(TESTS_RESULTS)
+	$(Q)( for d in $(EXAMPLE_DIRS); do \
+                echo "  [TESTS]  in $$d/"; \
+                $(MAKE) -C $$d tests TESTS_RESULTS=$(TESTS_RESULTS) ; \
+              done )
+	$(Q)$(MAKE) show-tests-results
+
+show-tests-results:
+	@echo
+	@echo "%-------------------"
+	@echo 
+	@echo " Tests series: $(EXAMPLE_DIRS)"
+	@echo
+	@echo " Tests results:"
+	@echo "   success: $(words $(TESTS_SUCCESS))"
+	@echo "   failed:  $(words $(TESTS_FAILED))"
+	@( if [ "$(words $(TESTS_FAILED))" != 0 ]; then echo "     [ $(TESTS_FAILED) ]"; fi )
+	@echo
+
+# ## Benchmarks
+#
+
+BENCH_RESULTS := @nmad_builddir@/.bench-results
+CLEAN_MORE += $(BENCH_RESULTS)
+
+bench:
+	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
+	$(Q)echo "# automatically generated tests results" > $(BENCH_RESULTS)
+	$(Q)( for d in $(EXAMPLE_DIRS); do \
+                echo "  [BENCH]  in $$d/"; \
+                $(MAKE) -C $$d bench BENCH_RESULTS=$(BENCH_RESULTS) ; \
+              done )
+	@echo
+	@echo "%-------------------"
+	@echo 
+	@echo " Bench summary"
+	@echo
+	@grep "latency:" $(BENCH_RESULTS)
+	@echo
+
+

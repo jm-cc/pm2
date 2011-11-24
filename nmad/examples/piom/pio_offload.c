@@ -19,7 +19,9 @@
 #include <unistd.h>
 
 #include "../sendrecv/helper.h"
-#include "tbx.h"
+#include <tbx.h>
+#include <marcel.h>
+
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(8 * 1024 * 1024)
 #define MULT_DEFAULT	2

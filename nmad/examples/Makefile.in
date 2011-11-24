@@ -15,15 +15,9 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-EXAMPLE_DIRS = pack sendrecv lowlevel
-ifneq ($(findstring interfaces/mpi, @nmad_alldirs@),)
-EXAMPLE_DIRS += mpi/basics mpi/benchmarks
-ifneq (@nmad_fortran_support@,none)
-EXAMPLE_DIRS += mpi/fortran mpi/f90
-endif
-endif
+SUBDIRS += @nmad_examples@
 
-SUBDIRS += $(EXAMPLE_DIRS)
+EXAMPLE_DIRS := @nmad_examples@
 
 include @puk_root@/etc/common_rules.mk
 

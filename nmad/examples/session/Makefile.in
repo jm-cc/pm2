@@ -1,0 +1,24 @@
+srcdir := @srcdir@
+VPATH  := $(srcdir)
+
+include @puk_root@/etc/common_vars.mk
+
+TARGET_BIN = $(patsubst $(srcdir)/%.c, %, $(wildcard $(srcdir)/*.c))
+TARGET_LIB =
+SUBDIRS =
+
+INSTALL_BIN     = $(TARGET_BIN)
+INSTALL_LIB     = $(TARGET_LIB)
+INSTALL_INCLUDE = 
+
+INSTALL_PREFIX := @nmad_root@
+
+TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
+
+CFLAGS  := $(shell pkg-config --cflags nmad)
+LIBS    := $(shell pkg-config --libs nmad)
+
+include @puk_root@/etc/common_rules.mk
+
+$(TARGET_BIN): %: %.pic.o
+

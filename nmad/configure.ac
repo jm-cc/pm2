@@ -127,10 +127,21 @@ PKG_CHECK_MODULES([PukABI], [ PukABI ])
 dnl -- PIOMan
 AC_ARG_WITH([pioman],
 	    [AS_HELP_STRING([--with-pioman], [use pioman I/O manager @<:@default=no@:>@] )])
+AC_MSG_CHECKING([for PIOMan])
 if test "x${with_pioman}" = "xyes"; then
-   PKG_CHECK_MODULES([pioman], [ pioman ])
+  AC_MSG_RESULT([yes])
+  PKG_CHECK_MODULES([pioman], [ pioman ])
   requires_pioman="pioman"
+  AC_MSG_CHECKING([whether PIOMan is linked against Marcel.])
+  has_marcel="`pkg-config --cflags pioman | grep -i PIOMAN_MARCEL`"
+  if test "x${has_marcel}" != "x" ; then
+     nmad_examples="${nmad_examples} piom"
+     AC_MSG_RESULT([yes])
+  else
+     AC_MSG_RESULT([no])
+  fi
 else
+  AC_MSG_RESULT([no])
   requires_pioman=
 fi
 AC_SUBST([requires_pioman])
@@ -236,10 +247,10 @@ AC_ARG_ENABLE(mpi,
 	      [ if test $enableval = yes; then
 	            AC_DEFINE([MAD_MPI], 1, [enable Mad-MPI])
 		    nmad_interfaces="${nmad_interfaces} mpi"
-		    out_mk="${out_mk} examples/mpi/basics/Makefile examples/mpi/benchmarks/Makefile"
+		    nmad_examples="${nmad_examples} mpi/basics mpi/benchmarks"
 		    out_sh="${out_sh} interfaces/mpi/bin/mpirun interfaces/mpi/bin/mpicc interfaces/mpi/bin/mpicxx interfaces/mpi/bin/mpif77 interfaces/mpi/bin/mpif90"
 		    if test "x${nmad_target_fortran}" != "xnone"; then
-		        out_mk="${out_mk} examples/mpi/fortran/Makefile examples/mpi/f90/Makefile"
+		        nmad_examples="${nmad_examples} mpi/fortran mpi/f90"
 		    fi
 	        fi
 	      ],
@@ -252,6 +263,7 @@ dnl --
 nmad_drivers="${nmad_drivers} self local tcp"
 nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session"
+nmad_examples="pack sendrecv lowlevel session ${nmad_examples}"
 
 nmad_alldirs=
 for d in ${nmad_drivers}; do
@@ -264,6 +276,7 @@ for i in ${nmad_interfaces}; do
     nmad_alldirs="${nmad_alldirs} interfaces/${i}"
 done
 AC_SUBST(nmad_alldirs)
+AC_SUBST(nmad_examples)
 
 dnl -- flags to use an installed nmad
 dnl --
@@ -296,8 +309,19 @@ AC_SUBST(NMAD_CORE_LIBS)
 dnl -- output 
 dnl --
 
+for d in ${nmad_alldirs}; do
+    if test -r ${nmad_srcdir}/${d}/Makefile.in; then
+       out_mk="${out_mk} ${d}/Makefile"
+    fi
+done
+for e in ${nmad_examples}; do
+    if test -r ${nmad_srcdir}/examples/${e}/Makefile.in; then
+       out_mk="${out_mk} examples/${e}/Makefile"
+    fi
+done
+
 out_sh="${out_sh} interfaces/sampling/nmad-sample"
-out_mk="${out_mk} Makefile interfaces/mpi/Makefile interfaces/sampling/Makefile drivers/self/Makefile drivers/ibverbs/Makefile drivers/local/Makefile drivers/tcp/Makefile drivers/mx/Makefile examples/Makefile examples/sendrecv/Makefile examples/pack/Makefile examples/lowlevel/Makefile nmad.pc doc/Doxyfile"
+out_mk="${out_mk} Makefile examples/Makefile nmad.pc doc/Doxyfile"
 
 
 AC_OUTPUT_COMMANDS([chmod +x ${out_sh} ], [ out_sh="${out_sh}" ])

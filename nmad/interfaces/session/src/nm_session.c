@@ -375,6 +375,13 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       nm_sr_swait(p_session, &sreq1);
       nm_sr_swait(p_session, &sreq2);
       remote_url[remote_url_size] = '\0';
+
+      if(strcmp(remote_url, url) != 0)
+	{
+	  fprintf(stderr, "nmad: WARNING- expected connection from %s; got connection from %s\n",
+		  url, remote_url);
+	}
+
       /* insert new gate into hashtable */
       puk_hashtable_insert(nm_session.gates, remote_url, p_gate);
       /* lookup again, in case the new gate is not the expected one */

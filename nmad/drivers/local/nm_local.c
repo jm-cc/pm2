@@ -72,8 +72,8 @@ static const char*nm_local_get_driver_url(struct nm_drv *p_drv);
 static int nm_local_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_local_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_local_exit(struct nm_drv* p_drv);
-static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_local_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_local_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_local_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 static int nm_local_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_local_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_local_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
@@ -92,7 +92,6 @@ static const struct nm_drv_iface_s nm_local_driver =
     .close              = &nm_local_exit,
 
     .connect		= &nm_local_connect,
-    .accept		= &nm_local_connect,
     .disconnect         = &nm_local_disconnect,
 
     .post_send_iov	= &nm_local_send_iov,
@@ -224,20 +223,20 @@ static int nm_local_exit(struct nm_drv*p_drv)
   return NM_ESUCCESS;
 }
 
-static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_local_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   static nm_local_pending_vect_t pending_fds = NULL;
 
-  struct nm_local_drv*p_local_drv = p_crq->p_drv->priv;
+  struct nm_local_drv*p_local_drv = p_drv->priv;
   struct nm_local*status = (struct nm_local*)_status;
 
-  if(strcmp(p_local_drv->url, p_crq->remote_drv_url) > 0)
+  if(strcmp(p_local_drv->url, remote_url) > 0)
     {
       /* ** connect */
       struct sockaddr_un addr;
       int fd = NM_SYS(socket)(AF_UNIX, SOCK_STREAM, 0);
       addr.sun_family = AF_UNIX;
-      strcpy(addr.sun_path, p_crq->remote_drv_url);
+      strcpy(addr.sun_path, remote_url);
       int rc = NM_SYS(connect)(fd, (struct sockaddr*)&addr, sizeof(addr));
       if(rc != 0)
 	{
@@ -246,7 +245,7 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 	}
       struct nm_local_peer_id_s id;
       memset(&id.url, 0, sizeof(id.url));
-      id.trk_id = p_crq->trk_id;
+      id.trk_id = trk_id;
       strncpy(id.url, p_local_drv->url, sizeof(id.url));
       rc = NM_SYS(write)(fd, &id, sizeof(id));
       if(rc != sizeof(id))
@@ -254,7 +253,7 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  fprintf(stderr, "nmad: local- error while sending id to peer node.\n");
 	  abort();
 	}
-      status->fd[p_crq->trk_id] = fd;
+      status->fd[trk_id] = fd;
     }
   else
     {
@@ -264,7 +263,7 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  nm_local_pending_vect_itor_t i;
 	  puk_vect_foreach(i, nm_local_pending, pending_fds)
 	    {
-	      if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
+	      if((strcmp(i->peer.url, remote_url) == 0) && (i->peer.trk_id == trk_id))
 		{
 		  fd = i->fd;
 		  nm_local_pending_vect_erase(pending_fds, i);
@@ -287,7 +286,7 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 	      fprintf(stderr, "nmad: local- error while receiving peer node id.\n");
 	      abort();
 	    }
-	  if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
+	  if((strcmp(id.url, remote_url) != 0) || (id.trk_id != trk_id))
 	    {
 	      struct nm_local_pending_s pending =
 		{
@@ -300,15 +299,15 @@ static int nm_local_connect(void*_status, struct nm_cnx_rq *p_crq)
 	      fd = -1;
 	    }
 	}
-      status->fd[p_crq->trk_id] = fd;
+      status->fd[trk_id] = fd;
     }
   return NM_ESUCCESS;
 }
 
-static int nm_local_disconnect(void*_status, struct nm_cnx_rq*p_crq)
+static int nm_local_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
   struct nm_local*status = (struct nm_local*)_status;
-  int fd = status->fd[p_crq->trk_id];
+  int fd = status->fd[trk_id];
   /* half-close for sending */
   NM_SYS(shutdown)(fd, SHUT_WR);
   /* flush (and throw away) remaining bytes in the pipe up to the EOS */

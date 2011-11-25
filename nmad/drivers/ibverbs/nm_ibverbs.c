@@ -83,8 +83,8 @@ static tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
 static int nm_ibverbs_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_ibverbs_close(struct nm_drv*p_drv);
-static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_ibverbs_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_ibverbs_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_ibverbs_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*p_pw);
 static int nm_ibverbs_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw);
@@ -102,7 +102,6 @@ static const struct nm_drv_iface_s nm_ibverbs_driver =
     .close              = &nm_ibverbs_close,
 
     .connect		= &nm_ibverbs_connect,
-    .accept		= &nm_ibverbs_connect,
     .disconnect         = &nm_ibverbs_disconnect,
     
     .post_send_iov	= &nm_ibverbs_post_send_iov,
@@ -464,12 +463,11 @@ static int nm_ibverbs_close(struct nm_drv *p_drv)
 }
 
 
-static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_ibverbs_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
-  struct nm_drv *p_drv = p_crq->p_drv;
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_crq->trk_id);
-  p_ibverbs_cnx->method_instance = puk_adapter_instanciate(p_ibverbs_drv->trks_array[p_crq->trk_id].method);
+  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, trk_id);
+  p_ibverbs_cnx->method_instance = puk_adapter_instanciate(p_ibverbs_drv->trks_array[trk_id].method);
   puk_instance_indirect_NewMad_ibverbs_method(p_ibverbs_cnx->method_instance, NULL, &p_ibverbs_cnx->method);
   /* connection create */
   nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_ibverbs_drv);
@@ -483,8 +481,8 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
   int rc = -1;
   do
     {
-      nm_ibverbs_connect_send(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->local_addr, 0);
-      rc = nm_ibverbs_connect_recv(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->remote_addr);
+      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 0);
+      rc = nm_ibverbs_connect_recv(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->remote_addr);
     }
   while(rc != 0);
   (*p_ibverbs_cnx->method.driver->addr_unpack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->remote_addr);
@@ -498,8 +496,8 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
   /* exchange ack */
   do
     {
-      nm_ibverbs_connect_send(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->local_addr, 1);
-      rc = nm_ibverbs_connect_wait_ack(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id);
+      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
+      rc = nm_ibverbs_connect_wait_ack(p_ibverbs_drv, remote_url, trk_id);
     }
   while(rc != 0);
 
@@ -511,7 +509,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
       if(rc)
 	{
 	  fprintf(stderr, "nmad: WARNING- ibverbs: connection failed to come up before RNR timeout; reset QP and try again.\n");
-	  nm_ibverbs_connect_send(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->local_addr, 1);
+	  nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
 	  nm_ibverbs_cnx_qp_reset(p_ibverbs_cnx);
 	  nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
 	  nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
@@ -528,7 +526,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  while(buffer[0] == 0 && TBX_TIMING_DELAY(t1, t2) < NM_IBVERBS_TIMEOUT_CHECK);
 	  if(buffer[0] == 0)
 	    {
-	      nm_ibverbs_connect_send(p_ibverbs_drv, p_crq->remote_drv_url, p_crq->trk_id, &p_ibverbs_cnx->local_addr, 1);
+	      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
 	    }
 	}
       else
@@ -541,7 +539,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_cnx_rq *p_crq)
   return NM_ESUCCESS;
 }
 
-static int nm_ibverbs_disconnect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_ibverbs_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
   int err;
   

@@ -135,10 +135,6 @@ struct nm_mx_pkt_wrap
 #define NM_MX_MATCH_INFO(peer, track) ( (((uint64_t)peer) << NM_MX_PEER_ID_MATCHING_SHIFT) | (((uint64_t)track) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
 /** Administrative message mask */
 #define NM_MX_ADMIN_MATCH_MASK (UINT64_C(1) << NM_MX_ADMIN_MATCHING_SHIFT)
-/** Connect matching info, with the administrative bit */
-#define NM_MX_CONNECT_MATCH_INFO(track) ( UINT64_C(0xdeadbeef) | NM_MX_ADMIN_MATCH_MASK | (((uint64_t)track) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
-/** Accept matching info, with the administrative bit */
-#define NM_MX_ACCEPT_MATCH_INFO(track) ( UINT64_C(0xbeefdead) | NM_MX_ADMIN_MATCH_MASK | (((uint64_t)track) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
 /*@}*/
 
 /* MX 'NewMad_Driver' facet */
@@ -146,8 +142,8 @@ struct nm_mx_pkt_wrap
 static int nm_mx_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_mx_close(struct nm_drv *p_drv);
-static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -169,7 +165,6 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .close              = &nm_mx_close,
 
     .connect		= &nm_mx_connect,
-    .accept		= &nm_mx_connect,
     .disconnect         = &nm_mx_disconnect,
 
     .post_send_iov	= &nm_mx_post_send_iov,
@@ -538,16 +533,15 @@ static int nm_mx_close(struct nm_drv *p_drv)
 
 
 /** Connect to a new MX peer */
-static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
 #endif /* PIOMAN */
   struct nm_mx*status = _status;
-  struct nm_gate   *p_gate   = p_crq->p_gate;
-  struct nm_mx_drv *p_mx_drv = p_crq->p_drv->priv;
-  struct nm_mx_trk *p_mx_trk = &p_mx_drv->trks_array[p_crq->trk_id];
-  struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[p_crq->trk_id];
+  struct nm_mx_drv *p_mx_drv = p_drv->priv;
+  struct nm_mx_trk *p_mx_trk = &p_mx_drv->trks_array[trk_id];
+  struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[trk_id];
   
   /* ** fill gate_map */
   p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
@@ -555,7 +549,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   
   /* ** parse url */
   NM_TRACEF("connect - drv_url: %s", url);
-  char*url = strdup(p_crq->remote_drv_url);
+  char*url = strdup(remote_url);
   char*ep_url = strchr(url, '/');
   if(!ep_url)
     {
@@ -577,7 +571,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   struct nm_mx_adm_pkt pkt1;
   
   strcpy(pkt1.url, p_mx_drv->url);
-  pkt1.match_info	= NM_MX_MATCH_INFO(p_crq->trk_id, p_mx_trk->next_peer_id);
+  pkt1.match_info	= NM_MX_MATCH_INFO(trk_id, p_mx_trk->next_peer_id);
   p_mx_cnx->recv_match_info = pkt1.match_info;
   p_mx_trk->next_peer_id++;
   if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
@@ -599,7 +593,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
       nm_mx_adm_pkt_vect_itor_t i;
       puk_vect_foreach(i, nm_mx_adm_pkt, p_mx_drv->pending_adm)
 	{
-	  if(strcmp(p_crq->remote_drv_url, i->url) == 0)
+	  if(strcmp(remote_url, i->url) == 0)
 	    {
 	      match_info = i->match_info;
 	      nm_mx_adm_pkt_vect_erase(p_mx_drv->pending_adm, i);
@@ -621,7 +615,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   while(match_info == 0);
   p_mx_cnx->send_match_info = match_info;
   
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
+  NMAD_EVENT_NEW_TRK(p_gate, p_drv, trk_id);
   
   free(url);
 
@@ -633,7 +627,7 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
 }
 
 /** Disconnect from a new MX peer */
-static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq) 
+static int nm_mx_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
   int err = NM_ESUCCESS;
   

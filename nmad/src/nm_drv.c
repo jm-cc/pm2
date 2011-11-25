@@ -358,13 +358,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
 	      nm_trk_id_t trk_id;
 	      for(trk_id = 0 ; trk_id < p_drv->nb_tracks; trk_id++)
 		{
-		  struct nm_cnx_rq	 rq	= {
-		    .p_gate			= p_gate,
-		    .p_drv			= p_drv,
-		    .trk_id			= trk_id,
-		    .remote_drv_url		= NULL,
-		  };
-		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, &rq);
+		  p_gdrv->receptacle.driver->disconnect(p_gdrv->receptacle._status, p_gate, p_drv, trk_id);
 		  p_gdrv->p_in_rq_array[trk_id] = NULL;
 		}
 	    }

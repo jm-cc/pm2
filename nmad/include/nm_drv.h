@@ -16,7 +16,6 @@
 #ifndef NM_DRV_H
 #define NM_DRV_H
 
-struct nm_cnx_rq;
 struct nm_pkt_wrap;
 
 
@@ -112,18 +111,6 @@ struct nm_drv
 #define NM_FOR_EACH_DRIVER(p_drv, p_core) \
   tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
 
-/** Request for connecting/disconnecting a gate with a driver. */
-struct nm_cnx_rq
-{
-  
-  struct nm_gate *p_gate;
-  struct nm_drv  *p_drv;
-  nm_trk_id_t trk_id;
-  
-  /** Remote driver url.  */
-  const char *remote_drv_url;
-};
-
 /** Static driver capabilities.
  */
 struct nm_drv_cap_s
@@ -146,9 +133,8 @@ struct nm_drv_iface_s
   int (*init)      (struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
   int (*close)     (struct nm_drv *p_drv);
 
-  int (*connect)   (void*_status, struct nm_cnx_rq *p_crq);
-  int (*accept)    (void*_status, struct nm_cnx_rq *p_crq);
-  int (*disconnect)(void*_status, struct nm_cnx_rq *p_crq);
+  int (*connect)   (void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+  int (*disconnect)(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 
   int (*post_send_iov)(void*_status, struct nm_pkt_wrap *p_pw);
   int (*post_recv_iov)(void*_status, struct nm_pkt_wrap *p_pw);

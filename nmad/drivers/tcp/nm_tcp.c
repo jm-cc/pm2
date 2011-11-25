@@ -156,8 +156,8 @@ PUK_VECT_TYPE(nm_tcp_pending, struct nm_tcp_pending_s);
 static int nm_tcp_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_tcp_exit(struct nm_drv* p_drv);
-static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_tcp_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_tcp_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static const char*nm_tcp_get_driver_url(struct nm_drv *p_drv);
@@ -175,7 +175,6 @@ static const struct nm_drv_iface_s nm_tcp_driver =
     .close              = &nm_tcp_exit,
 
     .connect		= &nm_tcp_connect,
-    .accept		= &nm_tcp_connect,
     .disconnect         = &nm_tcp_disconnect,
 
     .post_send_iov	= &nm_tcp_send_iov,
@@ -441,17 +440,17 @@ extern int nm_tcp_exit(struct nm_drv *p_drv)
  *  @param p_crq the connection request.
  *  @return The NM status code.
  */
-static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_tcp_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_tcp*status = _status;
-  struct nm_tcp_drv*p_tcp_drv = p_crq->p_drv->priv;
+  struct nm_tcp_drv*p_tcp_drv = p_drv->priv;
   int fd = -1;
-  if(strcmp(p_tcp_drv->url, p_crq->remote_drv_url) > 0)
+  if(strcmp(p_tcp_drv->url, remote_url) > 0)
     {
       /* ** connect */
-      char*remote_url = tbx_strdup(p_crq->remote_drv_url);  /* save the url since we write into it it */
-      char*remote_hostname = remote_url;
-      char*remote_port = strchr(remote_url, ':');
+      char*parse_url = tbx_strdup(remote_url);  /* save the url since we write into it it */
+      char*remote_hostname = parse_url;
+      char*remote_port = strchr(parse_url, ':');
       *remote_port = '\0';
       remote_port++;
       uint16_t port = atoi(remote_port);
@@ -470,7 +469,7 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 	}
       struct nm_tcp_peer_id_s id;
       memset(&id.url, 0, sizeof(id.url));
-      id.trk_id = p_crq->trk_id;
+      id.trk_id = trk_id;
       strncpy(id.url, p_tcp_drv->url, sizeof(id.url));
       rc = NM_SYS(write)(fd, &id, sizeof(id));
       if(rc != sizeof(id))
@@ -478,7 +477,7 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  fprintf(stderr, "nmad: tcp- error while sending id to peer node.\n");
 	  abort();
 	}
-      TBX_FREE(remote_url);
+      TBX_FREE(parse_url);
     }
   else
     {
@@ -488,7 +487,7 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 	  nm_tcp_pending_vect_itor_t i;
 	  puk_vect_foreach(i, nm_tcp_pending, pending_fds)
 	    {
-	      if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
+	      if((strcmp(i->peer.url, remote_url) == 0) && (i->peer.trk_id == trk_id))
 		{
 		  fd = i->fd;
 		  nm_tcp_pending_vect_erase(pending_fds, i);
@@ -513,7 +512,7 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 		  fprintf(stderr, "nmad: tcp- error while receiving peer node id.\n");
 		  abort();
 		}
-	      if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
+	      if((strcmp(id.url, remote_url) != 0) || (id.trk_id != trk_id))
 		{
 		  struct nm_tcp_pending_s pending =
 		    {
@@ -529,26 +528,26 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 	}
     }
 
-  struct nm_tcp_trk *p_tcp_trk = &p_tcp_drv->trks_array[p_crq->trk_id];
+  struct nm_tcp_trk *p_tcp_trk = &p_tcp_drv->trks_array[trk_id];
   int	    val = 1;
   socklen_t len = sizeof(int);
   
   NM_SYS(setsockopt)(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len);
   NM_SYS(fcntl)(fd, F_SETFL, O_NONBLOCK);
   
-  status->fd[p_crq->trk_id] = fd;
+  status->fd[trk_id] = fd;
   
   /* Increment the numer of gates */
   p_tcp_drv->nb_gates++;
   p_tcp_trk->poll_array	= TBX_REALLOC(p_tcp_trk->poll_array, p_tcp_drv->nb_gates * sizeof(struct pollfd));
   p_tcp_trk->gate_map	= TBX_REALLOC(p_tcp_trk->gate_map, p_tcp_drv->nb_gates * sizeof(nm_gate_t));
 
-  p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].fd = status->fd[p_crq->trk_id];
+  p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].fd = status->fd[trk_id];
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].events = POLLIN;
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].revents = 0;
-  p_tcp_trk->gate_map[p_tcp_drv->nb_gates - 1] = p_crq->p_gate;
+  p_tcp_trk->gate_map[p_tcp_drv->nb_gates - 1] = p_gate;
   
-  NMAD_EVENT_NEW_TRK(p_crq->p_gate, p_drv, p_crq->trk_id);
+  NMAD_EVENT_NEW_TRK(p_gate, p_drv, trk_id);
 
   return NM_ESUCCESS;
 }
@@ -558,10 +557,10 @@ static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
  *  @param p_crq the connection request.
  *  @return The NM status code.
  */
-static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_tcp_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
   struct nm_tcp*status = (struct nm_tcp*)_status;
-  int fd = status->fd[p_crq->trk_id];
+  int fd = status->fd[trk_id];
   int rc = -1;
 
   /* half-close for sending */

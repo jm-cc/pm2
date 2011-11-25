@@ -77,8 +77,6 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 
 int nm_core_gate_init(nm_core_t p_core, nm_gate_t *pp_gate);
 
-int nm_core_gate_accept(nm_core_t p_core, nm_gate_t p_gate, nm_drv_t p_drv, const char *url);
-
 int nm_core_gate_connect(nm_core_t p_core, nm_gate_t gate, nm_drv_t  p_drv, const char *url);
 
 

@@ -55,8 +55,8 @@ static const char*nm_self_get_driver_url(struct nm_drv *p_drv);
 static int nm_self_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
 static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_self_exit(struct nm_drv* p_drv);
-static int nm_self_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_self_disconnect(void*_status, struct nm_cnx_rq *p_crq);
+static int nm_self_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
@@ -75,7 +75,6 @@ static const struct nm_drv_iface_s nm_self_driver =
     .close              = &nm_self_exit,
 
     .connect		= &nm_self_connect,
-    .accept		= &nm_self_connect,
     .disconnect         = &nm_self_disconnect,
 
     .post_send_iov	= &nm_self_send_iov,
@@ -210,23 +209,23 @@ static int nm_self_exit(struct nm_drv*p_drv)
   return NM_ESUCCESS;
 }
 
-static int nm_self_connect(void*_status, struct nm_cnx_rq *p_crq)
+static int nm_self_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  struct nm_self_drv*p_self_drv = p_crq->p_drv->priv;
+  struct nm_self_drv*p_self_drv = p_drv->priv;
   memcpy(&status->fd[0], &p_self_drv->fd[0], 4*sizeof(int));
   return NM_ESUCCESS;
 }
 
-static int nm_self_disconnect(void*_status, struct nm_cnx_rq*p_crq)
+static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  const int rfd = status->fd[p_crq->trk_id];
-  const int wfd = status->fd[1+p_crq->trk_id];
+  const int rfd = status->fd[trk_id];
+  const int wfd = status->fd[1+trk_id];
   NM_SYS(close)(rfd);
   NM_SYS(close)(wfd);
-  status->fd[p_crq->trk_id] = -1;
-  status->fd[1+p_crq->trk_id] = -1;
+  status->fd[trk_id] = -1;
+  status->fd[1+trk_id] = -1;
   return NM_ESUCCESS;
 }
 

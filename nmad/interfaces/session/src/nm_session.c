@@ -315,8 +315,6 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       token = strtok(NULL, "+");
     }
   free(parse_string);
-  /* connect gate */
-  const int is_server = (strcmp(url, nm_session.local_url) > 0);
   /* connect all drivers */
   nm_drv_vect_itor_t i;
   puk_vect_foreach(i, nm_drv, v)
@@ -325,14 +323,7 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
       char driver_name[256];
       snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
       const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
-      if(is_server)
-	{
-	  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
-	}
-      else
-	{
-	  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
-	}
+      err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
       if(err != NM_ESUCCESS)
 	{
 	  fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);

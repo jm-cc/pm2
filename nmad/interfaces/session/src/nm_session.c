@@ -33,7 +33,6 @@ static struct
   struct nm_core*p_core;      /**< the current nmad object. */
   const char*local_url;       /**< the local nmad driver url */
   padico_string_t url_string; /**< local url as a string */
-  puk_hashtable_t gates;      /**< connected gates, hashed by remote url */
   puk_hashtable_t sessions;   /**< active sessions, hashed by session hashcode */
   int ref_count;              /**< ref. counter for core = number of active sessions */
   nm_session_selector_t selector;
@@ -43,7 +42,6 @@ static struct
     .p_core    = NULL,
     .local_url = NULL,
     .url_string = NULL,
-    .gates     = NULL,
     .sessions  = NULL,
     .ref_count = 0,
     .selector  = NULL
@@ -167,7 +165,6 @@ int nm_session_create(nm_session_t*pp_session, const char*label)
 {
   if(!nm_session.sessions)
     {
-      nm_session.gates = puk_hashtable_new_string();
       nm_session.sessions = puk_hashtable_new(&nm_session_code_hash, &nm_session_code_eq);
     }
   assert(label != NULL);
@@ -283,7 +280,6 @@ static nm_drv_vect_t nm_session_default_selector(const char*peer_url, void*_arg)
 int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url)
 {
   assert(p_session != NULL);
-  assert(nm_session.gates != NULL);
   if(nm_session.selector == NULL)
     nm_session.selector = &nm_session_default_selector;
   nm_drv_vect_t v = (*nm_session.selector)(url, nm_session.selector_arg);
@@ -293,100 +289,69 @@ int nm_session_connect(nm_session_t p_session, nm_gate_t*pp_gate, const char*url
 	      nm_session.local_url, url);
       abort();
    }
-  nm_gate_t p_gate = puk_hashtable_lookup(nm_session.gates, url);
-  char*remote_url = NULL;
-  while(p_gate == NULL)
+  assert(nm_session.p_core != NULL);
+  /* create gate */
+  nm_gate_t p_gate = NULL;
+  int err = nm_core_gate_init(nm_session.p_core, &p_gate);
+  assert(err == NM_ESUCCESS);
+  
+  /* parse remote url, store in hashtable (driver_name -> driver_url) */
+  puk_hashtable_t url_table = puk_hashtable_new_string();
+  char*parse_string = strdup(url);
+  char*token = strtok(parse_string, "+");
+  while(token != NULL)
     {
-      assert(nm_session.p_core != NULL);
-      /* create gate */
-      int err = nm_core_gate_init(nm_session.p_core, &p_gate);
-      assert(err == NM_ESUCCESS);
-
-      /* parse remote url, store in hashtable (driver_name -> driver_url) */
-      puk_hashtable_t url_table = puk_hashtable_new_string();
-      char*parse_string = strdup(url);
-      char*token = strtok(parse_string, "+");
-      while(token != NULL)
+      char*driver_string = strdup(token);
+      char*driver_name = driver_string;
+      char*driver_url = strchr(driver_name, '#');
+      *driver_url = '\0';
+      driver_url++;
+      if(puk_hashtable_lookup(url_table, driver_name))
 	{
-	  char*driver_string = strdup(token);
-	  char*driver_name = driver_string;
-	  char*driver_url = strchr(driver_name, '#');
-	  *driver_url = '\0';
-	  driver_url++;
-	  if(puk_hashtable_lookup(url_table, driver_name))
-	    {
-	      fprintf(stderr, "# session: duplicate driver %s in url '%s'.\n", driver_name, url);
-	      abort();
-	    }
-	  puk_hashtable_insert(url_table, driver_name, driver_url);
-	  token = strtok(NULL, "+");
+	  fprintf(stderr, "# session: duplicate driver %s in url '%s'.\n", driver_name, url);
+	  abort();
 	}
-      free(parse_string);
-      /* connect gate */
-      const int is_server = (strcmp(url, nm_session.local_url) > 0);
-      /* connect all drivers */
-      nm_drv_vect_itor_t i;
-      puk_vect_foreach(i, nm_drv, v)
-	{
-	  struct nm_drv*p_drv = *i;
-	  char driver_name[256];
-	  snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
-	  const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
-	  if(is_server)
-	    {
-	      err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
-	    }
-	  else
-	    {
-	      err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
-	    }
-	  if(err != NM_ESUCCESS)
-	    {
-	      fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
-	      abort();
-	    }
-	}
-      /* destroy the url hashtable */
-      puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(url_table);
-      char*url_entry = (char*)puk_hashtable_enumerator_next_key(e);
-      while(url_entry != NULL)
-	{
-	  puk_hashtable_remove(url_table, url_entry);
-	  free(url_entry);
-	  url_entry = (char*)puk_hashtable_enumerator_next_key(e);
-	};
-      puk_hashtable_enumerator_delete(e);
-      puk_hashtable_delete(url_table);
-      url_table = NULL;
-      /* get peer identity */
-      nm_sr_request_t sreq1, sreq2, rreq1, rreq2;
-      nm_tag_t tag = 42;
-      int local_url_size = strlen(nm_session.local_url);
-      err = nm_sr_isend(p_session, p_gate, tag, &local_url_size, sizeof(local_url_size), &sreq1);
-      if(err != NM_ESUCCESS)
-	abort();
-      nm_sr_isend(p_session, p_gate, tag, nm_session.local_url, local_url_size, &sreq2);
-      int remote_url_size = -1;
-      nm_sr_irecv(p_session, p_gate, tag, &remote_url_size, sizeof(remote_url_size), &rreq1);
-      nm_sr_rwait(p_session, &rreq1);
-      remote_url = TBX_MALLOC(remote_url_size + 1);
-      nm_sr_irecv(p_session, p_gate, tag, remote_url, remote_url_size, &rreq2);
-      nm_sr_rwait(p_session, &rreq2);
-      nm_sr_swait(p_session, &sreq1);
-      nm_sr_swait(p_session, &sreq2);
-      remote_url[remote_url_size] = '\0';
-
-      if(strcmp(remote_url, url) != 0)
-	{
-	  fprintf(stderr, "nmad: WARNING- expected connection from %s; got connection from %s\n",
-		  url, remote_url);
-	}
-
-      /* insert new gate into hashtable */
-      puk_hashtable_insert(nm_session.gates, remote_url, p_gate);
-      /* lookup again, in case the new gate is not the expected one */
-      p_gate = puk_hashtable_lookup(nm_session.gates, url);
+      puk_hashtable_insert(url_table, driver_name, driver_url);
+      token = strtok(NULL, "+");
     }
+  free(parse_string);
+  /* connect gate */
+  const int is_server = (strcmp(url, nm_session.local_url) > 0);
+  /* connect all drivers */
+  nm_drv_vect_itor_t i;
+  puk_vect_foreach(i, nm_drv, v)
+    {
+      struct nm_drv*p_drv = *i;
+      char driver_name[256];
+      snprintf(driver_name, 256, "%s:%d", p_drv->driver->name, p_drv->index);
+      const char*driver_url = puk_hashtable_lookup(url_table, driver_name);
+      if(is_server)
+	{
+	  err = nm_core_gate_accept(nm_session.p_core, p_gate, p_drv, driver_url);
+	}
+      else
+	{
+	  err = nm_core_gate_connect(nm_session.p_core, p_gate, p_drv, driver_url);
+	}
+      if(err != NM_ESUCCESS)
+	{
+	  fprintf(stderr, "# session: error %d while connecting driver %s\n", err, driver_name);
+	  abort();
+	}
+    }
+  /* destroy the url hashtable */
+  puk_hashtable_enumerator_t e = puk_hashtable_enumerator_new(url_table);
+  char*url_entry = (char*)puk_hashtable_enumerator_next_key(e);
+  while(url_entry != NULL)
+    {
+      puk_hashtable_remove(url_table, url_entry);
+      free(url_entry);
+      url_entry = (char*)puk_hashtable_enumerator_next_key(e);
+    };
+  puk_hashtable_enumerator_delete(e);
+  puk_hashtable_delete(url_table);
+  url_table = NULL;
+
   nm_drv_vect_delete(v);
   *pp_gate = p_gate;
   return NM_ESUCCESS;
@@ -404,14 +369,6 @@ int nm_session_destroy(nm_session_t p_session)
       nm_session.p_core = NULL;
       free((void*)nm_session.local_url);
       nm_session.local_url = NULL;
-      while(puk_hashtable_size(nm_session.gates) != 0)
-	{
-	  char*url = NULL;
-	  puk_hashtable_getentry(nm_session.gates, &url, NULL);
-	  puk_hashtable_remove(nm_session.gates, url);
-	  TBX_FREE(url);
-	}
-      puk_hashtable_delete(nm_session.gates);
       puk_hashtable_delete(nm_session.sessions);
     }
   return NM_ESUCCESS;

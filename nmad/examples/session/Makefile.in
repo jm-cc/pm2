@@ -22,3 +22,7 @@ include @puk_root@/etc/common_rules.mk
 
 $(TARGET_BIN): %: %.pic.o
 
+TESTS += session_mini
+
+include @nmad_srcdir@/nmad-tests.mk
+

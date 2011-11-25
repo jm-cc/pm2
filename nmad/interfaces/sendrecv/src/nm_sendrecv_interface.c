@@ -334,9 +334,11 @@ int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifi
   nm_sr_event_monitor_t m = { .mask = mask, .notifier = notifier };
   if(mask == NM_SR_EVENT_RECV_UNEXPECTED)
     {
-      fprintf(stderr, "nmad: WARNING- nm_sr_monitor() set for event UNEXPECTED.\n");
-      int rc = nm_sr_probe(p_session, NM_GATE_NONE, NULL,
-			   0, NM_TAG_MASK_NONE, NULL, NULL);
+      if(!tbx_fast_list_empty(&p_session->p_core->gate_list))
+	{
+	  fprintf(stderr, "nmad: WARNING- nm_sr_monitor() set for event UNEXPECTED after connecting gate. Behavior is unspecified.\n");
+	}
+      int rc = nm_sr_probe(p_session, NM_GATE_NONE, NULL, 0, NM_TAG_MASK_NONE, NULL, NULL);
       if(rc == NM_ESUCCESS)
 	{
 	  TBX_FAILURE("nmad: FATAL- cannot set UNEXPECTED monitor: pending unexpected messages.\n");

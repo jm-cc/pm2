@@ -157,7 +157,6 @@ static int nm_tcp_query(struct nm_drv *p_drv, struct nm_driver_query_param *para
 static int nm_tcp_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_tcp_exit(struct nm_drv* p_drv);
 static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -176,7 +175,7 @@ static const struct nm_drv_iface_s nm_tcp_driver =
     .close              = &nm_tcp_exit,
 
     .connect		= &nm_tcp_connect,
-    .accept		= &nm_tcp_accept,
+    .accept		= &nm_tcp_connect,
     .disconnect         = &nm_tcp_disconnect,
 
     .post_send_iov	= &nm_tcp_send_iov,
@@ -438,17 +437,98 @@ extern int nm_tcp_exit(struct nm_drv *p_drv)
 }
 
 
-/** Implement the code common to connect and accept operations.
+/** Open a connection.
  *  @param p_crq the connection request.
- *  @param fd the socket of the connection.
  *  @return The NM status code.
  */
-static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
+static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
 {
-  struct nm_tcp *status        = _status;
-  struct nm_gate *p_gate       = p_crq->p_gate;
-  struct nm_drv *p_drv         = p_crq->p_drv;
-  struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
+  struct nm_tcp*status = _status;
+  struct nm_tcp_drv*p_tcp_drv = p_crq->p_drv->priv;
+  int fd = -1;
+  if(strcmp(p_tcp_drv->url, p_crq->remote_drv_url) > 0)
+    {
+      /* ** connect */
+      char*remote_url = tbx_strdup(p_crq->remote_drv_url);  /* save the url since we write into it it */
+      char*remote_hostname = remote_url;
+      char*remote_port = strchr(remote_url, ':');
+      *remote_port = '\0';
+      remote_port++;
+      uint16_t port = atoi(remote_port);
+      fd = nm_tcp_socket_create(NULL, 0);
+      struct sockaddr_in address;
+      nm_tcp_address_fill(&address, port, remote_hostname);
+      int rc = -1;
+    connect_again:
+      rc = NM_SYS(connect)(fd, (struct sockaddr *)&address, sizeof(struct sockaddr_in));
+      if(rc < 0)
+	{
+	  if(errno == EINTR)
+	    goto connect_again;
+	  else
+	    TBX_FAILUREF("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
+	}
+      struct nm_tcp_peer_id_s id;
+      memset(&id.url, 0, sizeof(id.url));
+      id.trk_id = p_crq->trk_id;
+      strncpy(id.url, p_tcp_drv->url, sizeof(id.url));
+      rc = NM_SYS(write)(fd, &id, sizeof(id));
+      if(rc != sizeof(id))
+	{
+	  fprintf(stderr, "nmad: tcp- error while sending id to peer node.\n");
+	  abort();
+	}
+      TBX_FREE(remote_url);
+    }
+  else
+    {
+      static nm_tcp_pending_vect_t pending_fds = NULL;
+      if(pending_fds != NULL)
+	{
+	  nm_tcp_pending_vect_itor_t i;
+	  puk_vect_foreach(i, nm_tcp_pending, pending_fds)
+	    {
+	      if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
+		{
+		  fd = i->fd;
+		  nm_tcp_pending_vect_erase(pending_fds, i);
+		  break;
+		}
+	    }
+	}
+      while(fd == -1)
+	{
+	  fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
+	  if(fd < 0)
+	    {
+	      if(errno != EINTR)
+		TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
+	    }
+	  else
+	    {
+	      struct nm_tcp_peer_id_s id;
+	      int rc = NM_SYS(recv)(fd, &id, sizeof(id), MSG_WAITALL);
+	      if(rc != sizeof(id))
+		{
+		  fprintf(stderr, "nmad: tcp- error while receiving peer node id.\n");
+		  abort();
+		}
+	      if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
+		{
+		  struct nm_tcp_pending_s pending =
+		    {
+		      .fd = fd,
+		      .peer = id
+		    };
+		  if(pending_fds == NULL)
+		    pending_fds = nm_tcp_pending_vect_new();
+		  nm_tcp_pending_vect_push_back(pending_fds, pending);
+		  fd = -1;
+		}
+	    }
+	}
+    }
+
   struct nm_tcp_trk *p_tcp_trk = &p_tcp_drv->trks_array[p_crq->trk_id];
   int	    val = 1;
   socklen_t len = sizeof(int);
@@ -456,13 +536,7 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   NM_SYS(setsockopt)(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, len);
   NM_SYS(fcntl)(fd, F_SETFL, O_NONBLOCK);
   
-  NM_TRACE_VAL("tcp connect/accept trk id", p_crq->trk_id);
-  NM_TRACE_VAL("tcp connect/accept gate id", p_gate);
-  NM_TRACE_VAL("tcp connect/accept drv id", p_drv);
-  NM_TRACE_VAL("tcp connect/accept new socket on fd", fd);
-  
   status->fd[p_crq->trk_id] = fd;
-  NM_TRACE_PTR("tcp connect/accept status", status);
   
   /* Increment the numer of gates */
   p_tcp_drv->nb_gates++;
@@ -472,111 +546,13 @@ static int nm_tcp_connect_accept(void*_status, struct nm_cnx_rq	*p_crq, int fd)
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].fd = status->fd[p_crq->trk_id];
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].events = POLLIN;
   p_tcp_trk->poll_array[p_tcp_drv->nb_gates - 1].revents = 0;
-  p_tcp_trk->gate_map[p_tcp_drv->nb_gates - 1] = p_gate;
+  p_tcp_trk->gate_map[p_tcp_drv->nb_gates - 1] = p_crq->p_gate;
   
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
-  
+  NMAD_EVENT_NEW_TRK(p_crq->p_gate, p_drv, p_crq->trk_id);
+
   return NM_ESUCCESS;
 }
 
-/** Open an outgoing connection.
- *  @param p_crq the connection request.
- *  @return The NM status code.
- */
-static int nm_tcp_connect(void*_status, struct nm_cnx_rq *p_crq)
-{
-  struct nm_tcp_drv*p_tcp_drv = p_crq->p_drv->priv;
-  char*remote_url = tbx_strdup(p_crq->remote_drv_url);  /* save the url since we write into it it */
-  char*remote_hostname = remote_url;
-  char*remote_port = strchr(remote_url, ':');
-  *remote_port = '\0';
-  remote_port++;
-  uint16_t port = atoi(remote_port);
-  int fd = nm_tcp_socket_create(NULL, 0);
-  struct sockaddr_in address;
-  nm_tcp_address_fill(&address, port, remote_hostname);
-  int rc = -1;
- connect_again:
-  rc = NM_SYS(connect)(fd, (struct sockaddr *)&address, sizeof(struct sockaddr_in));
-  if(rc < 0)
-    {
-      if(errno == EINTR)
-	goto connect_again;
-      else
-	TBX_FAILUREF("nmad: connect() failed- error %d (%s)\n", errno, strerror(errno));
-    }
-  struct nm_tcp_peer_id_s id;
-  memset(&id.url, 0, sizeof(id.url));
-  id.trk_id = p_crq->trk_id;
-  strncpy(id.url, p_tcp_drv->url, sizeof(id.url));
-  rc = NM_SYS(write)(fd, &id, sizeof(id));
-  if(rc != sizeof(id))
-    {
-      fprintf(stderr, "nmad: tcp- error while sending id to peer node.\n");
-      abort();
-    }
-  int err = nm_tcp_connect_accept(_status, p_crq, fd);
-  TBX_FREE(remote_url);
-  return err;
-}
-
-/** Open an incoming connection.
- *  @param p_crq the connection request.
- *  @return The NM status code.
- */
-static int nm_tcp_accept(void*_status, struct nm_cnx_rq *p_crq)
-{
-  static nm_tcp_pending_vect_t pending_fds = NULL;
-  struct nm_drv     *p_drv     = p_crq->p_drv;
-  struct nm_tcp_drv *p_tcp_drv = p_drv->priv;
-  int fd = -1;
-  if(pending_fds != NULL)
-    {
-      nm_tcp_pending_vect_itor_t i;
-      puk_vect_foreach(i, nm_tcp_pending, pending_fds)
-	{
-	  if((strcmp(i->peer.url, p_crq->remote_drv_url) == 0) && (i->peer.trk_id == p_crq->trk_id))
-	    {
-	      fd = i->fd;
-	      nm_tcp_pending_vect_erase(pending_fds, i);
-	      break;
-	    }
-	}
-    }
-  while(fd == -1)
-    {
-      fd = NM_SYS(accept)(p_tcp_drv->server_fd, NULL, NULL);
-      if(fd < 0)
-	{
-	  if(errno != EINTR)
-	    TBX_FAILUREF("nmad: accept() failed- error %d (%s)\n", errno, strerror(errno));
-	}
-      else
-	{
-	  struct nm_tcp_peer_id_s id;
-	  int rc = NM_SYS(recv)(fd, &id, sizeof(id), MSG_WAITALL);
-	  if(rc != sizeof(id))
-	    {
-	      fprintf(stderr, "nmad: tcp- error while receiving peer node id.\n");
-	      abort();
-	    }
-	  if((strcmp(id.url, p_crq->remote_drv_url) != 0) || (id.trk_id != p_crq->trk_id))
-	    {
-	      struct nm_tcp_pending_s pending =
-		{
-		  .fd = fd,
-		  .peer = id
-		};
-	      if(pending_fds == NULL)
-		pending_fds = nm_tcp_pending_vect_new();
-	      nm_tcp_pending_vect_push_back(pending_fds, pending);
-	      fd = -1;
-	    }
-	}
-    }
-  int err = nm_tcp_connect_accept(_status, p_crq, fd);
-  return err;
-}
 
 /** Closes a connection.
  *  @param p_crq the connection request.

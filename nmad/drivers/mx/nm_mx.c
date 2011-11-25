@@ -37,6 +37,14 @@ piom_spinlock_t  nm_mx_lock;
 /** MX packet wrapper allocator */
 static p_tbx_memory_t mx_pw_mem;
 
+/** MX specific administrative packet data */
+struct nm_mx_adm_pkt
+{
+  uint64_t match_info;
+  char url[MX_MAX_HOSTNAME_LEN + 16];
+};
+PUK_VECT_TYPE(nm_mx_adm_pkt, struct nm_mx_adm_pkt);
+
 /** MX specific driver data */
 struct nm_mx_drv
 {
@@ -46,6 +54,7 @@ struct nm_mx_drv
   char*url;                     /**< driver url, containing MX hostname and endpoint ID */
   struct nm_mx_trk*trks_array;  /**< tracks of the MX driver*/
   int nb_trks;                  /**< number of tracks */
+  nm_mx_adm_pkt_vect_t pending_adm; /**< pending adm packets with match info */
 };
 
 struct nm_mx_trk 
@@ -85,18 +94,6 @@ struct nm_mx_pkt_wrap
 #endif
 };
 
-/** MX specific first administrative packet data */
-struct nm_mx_adm_pkt_1 
-{
-  uint64_t match_info;
-  char url[MX_MAX_HOSTNAME_LEN + 16];
-};
-
-/** MX specific second administrative packet data */
-struct nm_mx_adm_pkt_2 
-{
-  uint64_t match_info;
-};
 
 /** Endpoint filter */
 /* Note: if this value fails, please use the probable date of the
@@ -150,7 +147,6 @@ static int nm_mx_query(struct nm_drv *p_drv, struct nm_driver_query_param *param
 static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
 static int nm_mx_close(struct nm_drv *p_drv);
 static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq);
-static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq);
 static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
@@ -173,7 +169,7 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .close              = &nm_mx_close,
 
     .connect		= &nm_mx_connect,
-    .accept		= &nm_mx_accept,
+    .accept		= &nm_mx_connect,
     .disconnect         = &nm_mx_disconnect,
 
     .post_send_iov	= &nm_mx_post_send_iov,
@@ -251,9 +247,7 @@ const static char*nm_mx_get_driver_url(struct nm_drv *p_drv)
  */
 
 /** Display the MX return value */
-static __tbx_inline__
-void
-nm_mx_check_return(const char *msg, mx_return_t return_code) 
+static __tbx_inline__ void nm_mx_check_return(const char *msg, mx_return_t return_code) 
 {
   if (tbx_unlikely(return_code != MX_SUCCESS)) {
     const char *msg_mx = NULL;
@@ -267,9 +261,7 @@ nm_mx_check_return(const char *msg, mx_return_t return_code)
 
 #ifdef PM2_NUIOA
 /** Return the preferred NUMA node of the board */
-static
-int 
-nm_mx_get_numa_node(uint32_t board_number)
+static int nm_mx_get_numa_node(uint32_t board_number)
 {
 #if MX_API >= 0x301
   mx_return_t ret;
@@ -301,9 +293,7 @@ static int *board_use_count = NULL;
 static int total_use_count;
 static uint32_t boards;
 
-static
-int
-nm_mx_init_boards(void)
+static int nm_mx_init_boards(void)
 {
   mx_return_t	mx_ret	= MX_SUCCESS;
   int err;
@@ -329,11 +319,9 @@ nm_mx_init_boards(void)
 }
 
 /** Query MX resources */
-static
-int
-nm_mx_query		(struct nm_drv *p_drv,
-                         struct nm_driver_query_param *params,
-			 int nparam) 
+static int nm_mx_query(struct nm_drv *p_drv,
+		       struct nm_driver_query_param *params,
+		       int nparam) 
 {
   mx_return_t	mx_ret	= MX_SUCCESS;
   uint32_t board_number;
@@ -475,6 +463,7 @@ static int nm_mx_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_t
   
   p_mx_drv->ep    = ep;
   p_mx_drv->ep_id = ep_id;
+  p_mx_drv->pending_adm = nm_mx_adm_pkt_vect_new();
   
   /* compute URL */
   hostname[MX_MAX_HOSTNAME_LEN-1] = '\0';
@@ -541,6 +530,8 @@ static int nm_mx_close(struct nm_drv *p_drv)
   
   TBX_FREE(p_mx_drv->url);
   p_mx_drv->url = NULL;
+
+  nm_mx_adm_pkt_vect_delete(p_mx_drv->pending_adm);
   
   return NM_ESUCCESS;
 }
@@ -552,20 +543,19 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
 #ifdef PIOMAN
   piom_spin_lock(&nm_mx_lock);
 #endif /* PIOMAN */
-  struct nm_mx	*status	= _status;
+  struct nm_mx*status = _status;
   struct nm_gate   *p_gate   = p_crq->p_gate;
-  struct nm_drv    *p_drv    = p_crq->p_drv;
-  struct nm_mx_drv *p_mx_drv = p_drv->priv;
+  struct nm_mx_drv *p_mx_drv = p_crq->p_drv->priv;
   struct nm_mx_trk *p_mx_trk = &p_mx_drv->trks_array[p_crq->trk_id];
   struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[p_crq->trk_id];
-  char *url = strdup(p_crq->remote_drv_url);
-  uint64_t		 r_nic_id	= 0;
-  mx_return_t	mx_ret	= MX_SUCCESS;
   
+  /* ** fill gate_map */
   p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
   p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
   
+  /* ** parse url */
   NM_TRACEF("connect - drv_url: %s", url);
+  char*url = strdup(p_crq->remote_drv_url);
   char*ep_url = strchr(url, '/');
   if(!ep_url)
     {
@@ -573,26 +563,18 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
     }
   *ep_url = '\0';
   ep_url++;
+  p_mx_cnx->r_ep_id = strtol(ep_url, NULL, 0);
 
-  mx_ret = mx_hostname_to_nic_id((char*)url, &r_nic_id);
+  /* ** connect endpoint */
+  uint64_t r_nic_id = 0;
+  mx_return_t mx_ret = mx_hostname_to_nic_id((char*)url, &r_nic_id);
   nm_mx_check_return("(connect) mx_hostname_to_nic_id", mx_ret);
-  {
-    char *ptr = NULL;
-    p_mx_cnx->r_ep_id = strtol(ep_url, &ptr, 0);
-  }
-
-  NM_TRACEF("mx_connect -->");
   mx_ret = mx_connect(p_mx_drv->ep, r_nic_id, p_mx_cnx->r_ep_id,
 		      NM_MX_ENDPOINT_FILTER, MX_INFINITE, &p_mx_cnx->r_ep_addr);
-  NM_TRACEF("mx_connect <--");
   nm_mx_check_return("mx_connect", mx_ret);
 
-  NM_TRACEF("send pkt1 -->");
-  struct nm_mx_adm_pkt_1 pkt1;
-  mx_request_t	rq;
-  mx_status_t 	s;
-  mx_segment_t	sg;
-  uint32_t	r;
+  /* ** send matching info */
+  struct nm_mx_adm_pkt pkt1;
   
   strcpy(pkt1.url, p_mx_drv->url);
   pkt1.match_info	= NM_MX_MATCH_INFO(p_crq->trk_id, p_mx_trk->next_peer_id);
@@ -601,32 +583,43 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
     NM_WARN("reached maximal number of peers %d", p_mx_trk->next_peer_id);
   
-  NM_TRACEF("connect - pkt1.host_url: %s",	pkt1.host_url);
-  NM_TRACEF("connect - pkt1.ep_url: %s",	pkt1.ep_url);
-  NM_TRACEF("connect - pkt1.match_info (sender should contact us with this MI): %llu",	pkt1.match_info);
-  
-  sg.segment_ptr		= &pkt1;
-  sg.segment_length	= sizeof(pkt1);
-  mx_ret = mx_isend(p_mx_drv->ep, &sg, 1, p_mx_cnx->r_ep_addr,
-		    NM_MX_CONNECT_MATCH_INFO(p_crq->trk_id), 0, &rq);
+  mx_segment_t sg = { .segment_ptr = &pkt1, .segment_length = sizeof(pkt1) };
+  mx_request_t rq;
+  mx_ret = mx_isend(p_mx_drv->ep, &sg, 1, p_mx_cnx->r_ep_addr, NM_MX_ADMIN_MATCH_MASK, 0, &rq);
   nm_mx_check_return("mx_isend", mx_ret);
+  mx_status_t s;
+  uint32_t r;
   mx_ret = mx_wait(p_mx_drv->ep, &rq, MX_INFINITE, &s, &r);
   nm_mx_check_return("mx_wait", mx_ret);
-  NM_TRACEF("send pkt1 <--");
-  
-  NM_TRACEF("recv pkt2 -->");
-  struct nm_mx_adm_pkt_2   pkt2;
-  sg.segment_ptr		= &pkt2;
-  sg.segment_length	= sizeof(pkt2);
-  mx_ret = mx_irecv(p_mx_drv->ep, &sg, 1, NM_MX_ACCEPT_MATCH_INFO(p_crq->trk_id),
-		    MX_MATCH_MASK_NONE, 0, &rq);
-  nm_mx_check_return("mx_irecv", mx_ret);
-  mx_ret = mx_wait(p_mx_drv->ep, &rq, MX_INFINITE, &s, &r);
-  nm_mx_check_return("mx_wait", mx_ret);
-  NM_TRACEF("recv pkt2 <--");
-  
-  p_mx_cnx->send_match_info	= pkt2.match_info;
-  NM_TRACEF("connect - pkt2.match_info (we will contact our peer with this MI): %llu",	pkt2.match_info);
+
+  /* ** receive matching info */
+  uint64_t match_info = 0;
+  do
+    {
+      nm_mx_adm_pkt_vect_itor_t i;
+      puk_vect_foreach(i, nm_mx_adm_pkt, p_mx_drv->pending_adm)
+	{
+	  if(strcmp(p_crq->remote_drv_url, i->url) == 0)
+	    {
+	      match_info = i->match_info;
+	      nm_mx_adm_pkt_vect_erase(p_mx_drv->pending_adm, i);
+	      break;
+	    }
+	}
+      if(match_info == 0)
+	{
+	  struct nm_mx_adm_pkt pkt2;
+	  sg.segment_ptr    = &pkt2;
+	  sg.segment_length = sizeof(pkt2);
+	  mx_ret = mx_irecv(p_mx_drv->ep, &sg, 1, NM_MX_ADMIN_MATCH_MASK, NM_MX_ADMIN_MATCH_MASK, 0, &rq);
+	  nm_mx_check_return("mx_irecv", mx_ret);
+	  mx_ret = mx_wait(p_mx_drv->ep, &rq, MX_INFINITE, &s, &r);
+	  nm_mx_check_return("mx_wait", mx_ret);
+	  nm_mx_adm_pkt_vect_push_back(p_mx_drv->pending_adm, pkt2);
+	}
+    }
+  while(match_info == 0);
+  p_mx_cnx->send_match_info = match_info;
   
   NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
   
@@ -639,100 +632,8 @@ static int nm_mx_connect(void*_status, struct nm_cnx_rq *p_crq)
   return NM_ESUCCESS;
 }
 
-/** Accept the connection request from a MX peer */
-static int nm_mx_accept(void*_status, struct nm_cnx_rq *p_crq)
-{
-#ifdef PIOMAN
-  piom_spin_lock(&nm_mx_lock);
-#endif /* PIOMAN */
-
-  struct nm_mx *status = _status;
-  struct nm_gate *p_gate = p_crq->p_gate;
-  struct nm_drv *p_drv = p_crq->p_drv;
-  struct nm_mx_drv *p_mx_drv = p_drv->priv;
-  struct nm_mx_trk *p_mx_trk = &p_mx_drv->trks_array[p_crq->trk_id];
-  struct nm_mx_cnx *p_mx_cnx = &status->cnx_array[p_crq->trk_id];
-  uint64_t		 r_nic_id	= 0;
-  mx_return_t	mx_ret	= MX_SUCCESS;
-
-  p_mx_trk->gate_map = TBX_REALLOC(p_mx_trk->gate_map, sizeof(nm_gate_t) * (p_mx_trk->next_peer_id + 1));
-  p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
-  
-  NM_TRACEF("recv pkt1 -->");
-  struct nm_mx_adm_pkt_1   pkt1;
-  mx_request_t	rq;
-  mx_status_t 	s;
-  mx_segment_t	sg;
-  uint32_t	r;
-  sg.segment_ptr		= &pkt1;
-  sg.segment_length	= sizeof(pkt1);
-  mx_ret = mx_irecv(p_mx_drv->ep, &sg, 1,
-		    NM_MX_CONNECT_MATCH_INFO(p_crq->trk_id),
-		    MX_MATCH_MASK_NONE, 0, &rq);
-  nm_mx_check_return("mx_irecv", mx_ret);
-  mx_ret = mx_wait(p_mx_drv->ep, &rq, MX_INFINITE, &s, &r);
-  nm_mx_check_return("mx_wait", mx_ret);
-  NM_TRACEF("recv pkt1 <--");
-  NM_TRACEF("accept - pkt1.url: %s", pkt1.url);
-  
-  char*url = pkt1.url;
-  char*ep_url = strchr(url, '/');
-  if(!ep_url)
-    {
-      TBX_FAILUREF("MX: cannot parse url %s.\n", url);
-    }
-  *ep_url = '\0';
-  ep_url++;
-  {
-    char *ptr = NULL;
-    p_mx_cnx->r_ep_id = strtol(ep_url, &ptr, 0);
-  }
-  
-  mx_ret = mx_hostname_to_nic_id(url, &r_nic_id);
-  nm_mx_check_return("(accept) mx_hostname_to_nic_id", mx_ret);
-   
-  p_mx_cnx->send_match_info	= pkt1.match_info;
-  NM_TRACEF("accept - pkt1.match_info (we will contact our peer with this MI): %llu",	pkt1.match_info);
-  
-  NM_TRACEF("mx_connect -->");
-  mx_ret = mx_connect(p_mx_drv->ep, r_nic_id, p_mx_cnx->r_ep_id,
-		      NM_MX_ENDPOINT_FILTER, MX_INFINITE, &p_mx_cnx->r_ep_addr);
-  NM_TRACEF("mx_connect <--");
-  nm_mx_check_return("mx_connect", mx_ret);
-  
-  NM_TRACEF("send pkt2 -->");
-  struct nm_mx_adm_pkt_2   pkt2;
-  pkt2.match_info	= NM_MX_MATCH_INFO(p_crq->trk_id, p_mx_trk->next_peer_id);
-  p_mx_cnx->recv_match_info = pkt2.match_info;
-  p_mx_trk->next_peer_id++;
-  if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
-    NM_WARN("reached maximal number of peers %d", p_mx_trk->next_peer_id);
-  
-  NM_TRACEF("accept - pkt2.match_info (sender should contact us with this MI): %llu",	pkt2.match_info);
-  
-  sg.segment_ptr		= &pkt2;
-  sg.segment_length	= sizeof(pkt2);
-  mx_ret = mx_issend(p_mx_drv->ep, &sg, 1, p_mx_cnx->r_ep_addr,
-		     NM_MX_ACCEPT_MATCH_INFO(p_crq->trk_id), 0, &rq);
-  nm_mx_check_return("mx_issend", mx_ret);
-  mx_ret = mx_wait(p_mx_drv->ep, &rq, MX_INFINITE, &s, &r);
-  nm_mx_check_return("mx_wait", mx_ret);
-  NM_TRACEF("send pkt2 <--");
-
-  NMAD_EVENT_NEW_TRK(p_gate, p_drv, p_crq->trk_id);
-    
-#ifdef PIOMAN
-  piom_spin_unlock(&nm_mx_lock);
-#endif /* PIOMAN */
-
-  return NM_ESUCCESS;
-}
-
 /** Disconnect from a new MX peer */
-static
-int
-nm_mx_disconnect	(void*_status,
-			 struct nm_cnx_rq *p_crq) 
+static int nm_mx_disconnect(void*_status, struct nm_cnx_rq *p_crq) 
 {
   int err = NM_ESUCCESS;
   

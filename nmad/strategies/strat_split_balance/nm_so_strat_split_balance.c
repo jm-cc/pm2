@@ -39,9 +39,6 @@ static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
     .pack               = &strat_split_balance_pack,
     .pack_ctrl          = &strat_split_balance_pack_ctrl,
     .try_and_commit     = &strat_split_balance_try_and_commit,
-#ifdef NMAD_QOS
-    .ack_callback    = NULL,
-#endif /* NMAD_QOS */
     .rdv_accept          = &strat_split_balance_rdv_accept,
     .flush               = NULL,
     .todo                = &strat_split_balance_todo

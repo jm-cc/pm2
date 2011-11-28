@@ -54,19 +54,12 @@ struct nm_strategy_iface_s
 		    int*nb_chunks,
 		    struct nm_rdv_chunk*chunks);
 
-  int (*flush)(void*_status,
-               struct nm_gate *p_gate);
+  /** flush pending packs */
+  int (*flush)(void*_status, struct nm_gate *p_gate);
 
-  /** Returns NULL if there is no packet to send */
-  int (*todo)(void* _status, 
-	      struct nm_gate*p_gate);
+  /** Returns 1 if there are packets to send */
+  int (*todo)(void* _status, struct nm_gate*p_gate);
 
-#ifdef NMAD_QOS
-  int (*ack_callback)(void *_status,
-                      struct nm_pkt_wrap *p_pw,
-                      nm_tag_t tag_id, nm_seq_t seq,
-                      nm_trk_id_t track_id, uint8_t finished);
-#endif /* NMAD_QOS */
 };
 
 PUK_IFACE_TYPE(NewMad_Strategy, struct nm_strategy_iface_s);

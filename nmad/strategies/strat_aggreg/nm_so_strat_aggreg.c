@@ -39,9 +39,6 @@ static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
     .pack               = &strat_aggreg_pack,
     .pack_ctrl          = &strat_aggreg_pack_ctrl,
     .try_and_commit     = &strat_aggreg_try_and_commit,
-#ifdef NMAD_QOS
-    .ack_callback       = NULL,
-#endif /* NMAD_QOS */
     .rdv_accept          = &strat_aggreg_rdv_accept,
     .flush               = NULL,
     .todo                = &strat_aggreg_todo

@@ -615,10 +615,6 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
  */
 static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 {
-#ifdef NMAD_QOS
-  struct puk_receptacle_NewMad_Strategy_s*strategy = &p_pw->p_gate->strategy_receptacle;
-  unsigned ack_received = 0;
-#endif /* NMAD_QOS */
 
   /* Each 'unread' header will increment this counter. When the
      counter will reach 0 again, the packet wrapper can (and will) be
@@ -722,21 +718,7 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  {
 	    union nm_so_generic_ctrl_header *ch = ptr;
 	    ptr += NM_SO_CTRL_HEADER_SIZE;
-#ifdef NMAD_QOS
-	    int r;
-	    if(strategy->driver->ack_callback != NULL)
-	      {
-		ack_received = 1;
-		r = strategy->driver->ack_callback(strategy->_status,
-						   p_pw,
-						   ch->rtr.tag_id,
-						   ch->rtr.seq,
-						   ch->rtr.track_id,
-						   0);
-	      }
-	    else
-#endif /* NMAD_QOS */
-	      nm_rtr_handler(p_pw, &ch->rtr);
+	    nm_rtr_handler(p_pw, &ch->rtr);
 	  }
 	  break;
 
@@ -760,12 +742,6 @@ static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
 	  
 	} /* switch */
     } /* while */
-  
-#ifdef NMAD_QOS
-  if(ack_received)
-    strategy->driver->ack_callback(strategy->_status,
-				   p_pw, 0, 0, 128, 1);
-#endif /* NMAD_QOS */
   
   nm_so_pw_dec_header_ref_count(p_pw);
 }

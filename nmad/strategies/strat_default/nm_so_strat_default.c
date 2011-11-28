@@ -41,9 +41,6 @@ static const struct nm_strategy_iface_s nm_strat_default_driver =
     .pack               = &strat_default_pack,
     .pack_ctrl          = &strat_default_pack_ctrl,
     .try_and_commit     = &strat_default_try_and_commit,
-#ifdef NMAD_QOS
-    .ack_callback    = NULL,
-#endif /* NMAD_QOS */
     .rdv_accept          = &strat_default_rdv_accept,
     .flush               = NULL
 };

@@ -102,7 +102,28 @@ AC_ARG_ENABLE(nuioa,
 	      ],
 	      [])
 
-dnl -- TODO: debug, optimize, fine_grain_lock
+dnl -- DEBUG
+AC_ARG_ENABLE(debug,
+	      [  --enable-debug     Enable debugging symbols],
+	      [ if test $enableval = yes; then
+		    debug_CFLAGS="-g -DNMAD_DEBUG"
+	        fi
+	      ],
+	      [])
+
+
+dnl -- OPTIMIZE
+AC_ARG_ENABLE(optimize,
+	      [  --enable-optimizz     Enable the compiler optimization],
+	      [ if test $enableval = yes; then
+		    opt_CFLAGS="-O3 -DNMAD_OPT"
+		else
+		    opt_CFLAGS="-O0"
+	        fi
+	      ],
+	      [])
+dnl -- TODO: fine_grain_lock
+
 
 dnl -- external packages
 dnl --------------------------------------------------------
@@ -293,7 +314,7 @@ AC_SUBST(NMAD_LDFLAGS)
 dnl -- flags to build nmad
 dnl --
 
-NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
+NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include  ${debug_CFLAGS} ${opt_CFLAGS}"
 for d in ${nmad_alldirs}; do
     if test -r ${nmad_srcdir}/${d}/include; then
        NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} -I${nmad_srcdir}/${d}/include"

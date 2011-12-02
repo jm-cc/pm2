@@ -18,7 +18,7 @@ INSTALL_PREFIX := @nmad_root@
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CFLAGS  := @NMAD_CORE_CFLAGS@
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
+LDFLAGS := @NMAD_CORE_LDFLAGS@
 BINLIBS := -L@nmad_builddir@ @NMAD_LIBS@ @NMAD_CORE_LIBS@
 
 include @puk_root@/etc/common_rules.mk

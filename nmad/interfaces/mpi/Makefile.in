@@ -19,8 +19,9 @@ INSTALL_INIT =
 INSTALL_PREFIX := @nmad_root@
 INSTALL_INCLUDE_PATH := $(INSTALL_PREFIX)/include
 
-CFLAGS := @NMAD_CORE_CFLAGS@ $(CFLAGS)
-LIBS   := -L@nmad_builddir@ @NMAD_LIBS@ $(LIBS)
+CFLAGS  := @NMAD_CORE_CFLAGS@
+LDFLAGS := @NMAD_CORE_LDFLAGS@
+LIBS    := -L@nmad_builddir@ @NMAD_LIBS@
 
 # main lib objects
 SRC_FILES  := $(wildcard $(srcdir)/src/*.c)

@@ -32,11 +32,9 @@ TARGET_DEP += $(DEP_FILES)
 INSTALL_INCLUDE += $(foreach d, $(DIRS_NOMK), $(wildcard $(srcdir)/$(d)/include/*.h))
 
 # set compilers and flags
-#   add source dirs and build dir *first* in include order
-#   add install dir and dependancies *last* in include order
-CFLAGS  := @NMAD_CORE_CFLAGS@ $(CFLAGS)
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := @NMAD_CORE_LIBS@ -lrt $(LIBS)
+CFLAGS  := @NMAD_CORE_CFLAGS@
+LDFLAGS := @NMAD_CORE_LDFLAGS@
+LIBS    := @NMAD_CORE_LIBS@
 
 TARGET_CLEAN += clean-examples
 

@@ -91,11 +91,11 @@ AC_ARG_ENABLE(sampling,
 dnl -- NUIOA
 dnl --
 dnl - TODO- enable NUIOA by default if numa.h is present
-dnl - TODO- check for numa.h
 AC_ARG_ENABLE(nuioa,
 	      [  --enable-nuioa     Enable NUMA control on I/O],
 	      [ if test $enableval = yes; then
 	      	    AC_CHECK_HEADER(numa.h, [], [ AC_MSG_ERROR([numa.h is required for NUIOA]) ])
+		    AC_SEARCH_LIBS(numa_available, numa, [], [ AC_MSG_ERROR([Cannot find working libnuma ]) ])
 	            AC_DEFINE([PM2_NUIOA], 1, [enable NUIOA])
 		    numa_LIBS="-lnuma"
 	        fi
@@ -106,7 +106,8 @@ dnl -- DEBUG
 AC_ARG_ENABLE(debug,
 	      [  --enable-debug     Enable debugging symbols],
 	      [ if test $enableval = yes; then
-		    debug_CFLAGS="-g -DNMAD_DEBUG"
+	      	    NMAD_ENABLE_DEBUG=yes
+		    AC_SUBST(NMAD_ENABLE_DEBUG)
 	        fi
 	      ],
 	      [])
@@ -114,11 +115,10 @@ AC_ARG_ENABLE(debug,
 
 dnl -- OPTIMIZE
 AC_ARG_ENABLE(optimize,
-	      [  --enable-optimizz     Enable the compiler optimization],
+	      [  --enable-optimize  Enable compiler optimization flags],
 	      [ if test $enableval = yes; then
-		    opt_CFLAGS="-O3 -DNMAD_OPT"
-		else
-		    opt_CFLAGS="-O0"
+	      	    NMAD_ENABLE_DEBUG=yes
+		    AC_SUBST(NMAD_ENABLE_DEBUG)
 	        fi
 	      ],
 	      [])
@@ -303,27 +303,36 @@ dnl -- flags to use an installed nmad
 dnl --
 
 NMAD_CFLAGS="-DNMAD -I${nmad_root}/include"
-AC_SUBST(NMAD_CFLAGS)
 
 NMAD_LIBS="-L${nmad_root}/lib -Wl,-rpath,${nmad_root}/lib -lnmad"
-AC_SUBST(NMAD_LIBS)
 
-NMAD_LDFLAGS="${NMAD_LDFLAGS} -Wl,--export-dynamic"
-AC_SUBST(NMAD_LDFLAGS)
+AC_SUBST(NMAD_CFLAGS)
+AC_SUBST(NMAD_LIBS)
 
 dnl -- flags to build nmad
 dnl --
 
-NMAD_CORE_CFLAGS="-DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include  ${debug_CFLAGS} ${opt_CFLAGS}"
+NMAD_LDFLAGS="${NMAD_CORE_LDFLAGS} -Wl,--export-dynamic"
+
+NMAD_CORE_CFLAGS="\$(BASE_CFLAGS) -DNMAD -I${nmad_srcdir}/include -I${nmad_builddir}/include"
+if test "x${NMAD_ENABLE_OPTIMIZE}" = "xyes"; then
+   NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} \$(OPT_CFLAGS)"
+   NMAD_CORE_LDFLAGS="${NMAD_CORE_LDFLAGS} \$(OPT_LDFLAGS)"
+fi
+if test "x${NMAD_ENABLE_DEBUG}" = "xyes"; then
+   NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} \$(DEBUG_CFLAGS)"
+fi
 for d in ${nmad_alldirs}; do
     if test -r ${nmad_srcdir}/${d}/include; then
        NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} -I${nmad_srcdir}/${d}/include"
     fi
 done
 NMAD_CORE_CFLAGS="${NMAD_CORE_CFLAGS} ${tbx_CFLAGS} ${PukABI_CFLAGS} ${Puk_CFLAGS} ${pioman_CFLAGS}"
-AC_SUBST(NMAD_CORE_CFLAGS)
 
-NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS}"
+NMAD_CORE_LIBS="${tbx_LIBS} ${PukABI_LIBS} ${Puk_LIBS} ${pioman_LIBS} ${numa_LIBS} -lrt"
+
+AC_SUBST(NMAD_CORE_CFLAGS)
+AC_SUBST(NMAD_CORE_LDFLAGS)
 AC_SUBST(NMAD_CORE_LIBS)
 
 

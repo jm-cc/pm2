@@ -33,7 +33,7 @@ verbose=0
 # libraries and compilers, including ones for 32 and 64 bit systems.
 F90="@FC@"
 F90LINKER="${F90}"
-LDFLAGSBASE="@NMAD_LDFLAGS@"
+LDFLAGSBASE="@NMAD_CORE_LDFLAGS@"
 CFLAGS="@NMAD_CFLAGS@"
 LIBS="@NMAD_LIBS@ -lmadmpi"
 

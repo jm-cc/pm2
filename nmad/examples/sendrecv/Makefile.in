@@ -16,9 +16,16 @@ INSTALL_PREFIX := @nmad_root@
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 
-CFLAGS  := $(shell pkg-config --cflags nmad)
-LDFLAGS := @NMAD_LDFLAGS@ $(LDFLAGS)
-LIBS    := $(shell pkg-config --libs nmad)
+CFLAGS  = $(shell pkg-config --cflags nmad)
+LDFLAGS =
+LIBS    = $(shell pkg-config --libs nmad)
+ifeq (@NMAD_ENABLE_OPTIMIZE@,yes)
+CFLAGS  += $(OPT_LDFLAGS)
+LDFLAGS += $(OPT_LDFLAGS)
+endif
+ifeq (@NMAD_ENABLE_DEBUG,yes)
+CFLAGS += $(DEBUG_CFLAGS)
+endif
 
 include @puk_root@/etc/common_rules.mk
 

@@ -117,8 +117,8 @@ dnl -- OPTIMIZE
 AC_ARG_ENABLE(optimize,
 	      [  --enable-optimize  Enable compiler optimization flags],
 	      [ if test $enableval = yes; then
-	      	    NMAD_ENABLE_DEBUG=yes
-		    AC_SUBST(NMAD_ENABLE_DEBUG)
+	      	    NMAD_ENABLE_OPTIMIZE=yes
+		    AC_SUBST(NMAD_ENABLE_OPTIMIZE)
 	        fi
 	      ],
 	      [])

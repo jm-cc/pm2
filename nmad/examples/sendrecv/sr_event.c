@@ -61,10 +61,6 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
 	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
 	  nm_sr_irecv(p_core, from, tag, buf, len, request);
 	}
-      else
-	{
-	  printf("   not receiving in handler.\n");
-	}
     }
 }
 
@@ -82,6 +78,10 @@ int main(int argc, char **argv)
       /* ** server */
       nm_sr_request_t request0, request1;
 
+      /* set global handler for unexpected */
+      memset(buf, 0, long_len);
+      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
+
       /* per-request event. */
       memset(buf, 0, long_len);
       nm_sr_recv_init(p_core, &request0);
@@ -90,9 +90,7 @@ int main(int argc, char **argv)
       nm_sr_recv_irecv(p_core, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
       nm_sr_rwait(p_core, &request0);
 
-      /* set global event handlers */
-      memset(buf, 0, long_len);
-      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
+      /* set global handler for recv complete */
       nm_sr_monitor(p_core, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
 
       /* receive the last packet to force all others to be unexpected */

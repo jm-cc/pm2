@@ -65,19 +65,21 @@ typedef int8_t nm_trk_id_t;
 /** Compute next sequence number */
 static inline nm_seq_t nm_seq_next(nm_seq_t seq)
 {
-  if((seq + 1) == NM_SEQ_NONE)
-    return NM_SEQ_FIRST;
-  else
-    return seq + 1;
+  assert(seq != NM_SEQ_NONE);
+  seq++;
+  if(seq == NM_SEQ_NONE)
+    seq++;
+  return seq;
 }
 
 /** Compute previous sequence number */
 static inline nm_seq_t nm_seq_prev(nm_seq_t seq)
 {
-  if((seq - 1) == NM_SEQ_NONE)
-    return seq - 2;
-  else
-    return seq - 1;
+  assert(seq != NM_SEQ_NONE);
+  seq--;
+  if(seq == NM_SEQ_NONE)
+    seq--;
+  return seq;
 }
 
 

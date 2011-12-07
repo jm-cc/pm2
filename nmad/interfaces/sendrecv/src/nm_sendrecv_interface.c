@@ -396,11 +396,14 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
 int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   nm_core_t p_core = p_session->p_core;
+  if(tbx_fast_list_empty(&nm_sr_data.completed_rreq))
+    {
 #ifdef NMAD_POLL
-  nm_schedule(p_core);
+      nm_schedule(p_core);
 #else
-  piom_check_polling(PIOM_POLL_WHEN_FORCED);
+      piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
+    }
 
   nm_lock_interface(p_core);
   nm_lock_status(p_core);
@@ -428,7 +431,10 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   nm_core_t p_core = p_session->p_core;
-  nm_schedule(p_core);
+  if(tbx_fast_list_empty(&nm_sr_data.completed_sreq))
+    {
+      nm_schedule(p_core);
+    }
   if(!tbx_fast_list_empty(&nm_sr_data.completed_sreq))
     {
       nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_sreq.next, struct nm_sr_request_s, _link);

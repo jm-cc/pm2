@@ -162,15 +162,15 @@ extract_package_unpacked_archive() {
     basedir="$1"
     for d in ${basedir}/*; do
 	if [ -d ${d} ]; then
-	    package_srcdir=${d}
+	    srcdir=${d}
 	    break
 	fi
     done
-    if [ ! -r ${package_srcdir} ]; then
+    if [ ! -r ${srcdir} ]; then
 	echo "# ** no directory found in archive ${package}" 1>&2
 	exit 1
     fi
-    echo "${package_srcdir}"
+    echo "${srcdir}"
 }
 
 # make the given path absolute
@@ -230,6 +230,7 @@ extract_package() {
 
 build_package() {
     package="$1"
+    orig_dir="${PWD}"
     # find package srcdir, unpack if needed
     package_srcdir="`extract_package ${package}`"
     echo "# package srcdir: ${package_srcdir}" 1>&2
@@ -290,6 +291,7 @@ build_package() {
     echo "# ## done: ${package_name}" 1>&2
     echo
     echo
+    cd "${orig_dir}"
 }
 
 echo
@@ -323,10 +325,15 @@ while true; do
 	  fi
 	  ;;
       cmd)
+	  echo "# running cmd: ${content}" 1>&2
 	  eval "${content}"
 	  ;;
+      export)
+	  echo "# set environment variable: ${content}" 1>&2
+	  eval "export ${content}"
+	  ;;
       *=*)
-          echo "# set variable: ${v} ${content}" 1>&2
+          echo "# set local variable: ${v} ${content}" 1>&2
 	  eval "${v} ${content}"
 	  ;;
       pkg)

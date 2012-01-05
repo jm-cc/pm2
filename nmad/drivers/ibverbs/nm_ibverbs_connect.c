@@ -245,7 +245,7 @@ void nm_ibverbs_connect_create(struct nm_ibverbs_drv*p_ibverbs_drv)
       abort();
     }
   int rcvbuf = 64 * 1024;
-  rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
+  rc = NM_SYS(setsockopt)(fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
   p_ibverbs_drv->connector->sock = fd;
 
   /* encode url */

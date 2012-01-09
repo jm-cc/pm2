@@ -19,9 +19,11 @@
 #include <time.h>
 
 #include <pioman.h>
+#include "piom_lfqueue.h"
 
 #define PIOM_MAX_LTASK 256
 
+PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 
 typedef enum
     {
@@ -38,13 +40,9 @@ typedef enum
 
 typedef struct piom_ltask_queue
 {
-    struct piom_ltask                *ltask_array[PIOM_MAX_LTASK];
-    volatile int                      ltask_array_head;
-    volatile int                      ltask_array_tail;
-    volatile int                      ltask_array_nb_items;
+    struct piom_ltask_lfqueue_s       ltask_queue;
     volatile piom_ltask_queue_state_t state;
     volatile int                      processing;
-    piom_spinlock_t                   ltask_lock;
     piom_vpset_t                      vpset;
 } piom_ltask_queue_t;
 
@@ -113,45 +111,21 @@ static inline piom_ltask_queue_t*__piom_get_queue(piom_vpset_t vpset)
 }
 
 /* Initialize a queue */
-static inline void __piom_init_queue(piom_ltask_queue_t * queue)
+static inline void __piom_init_queue(piom_ltask_queue_t*queue)
 {
     queue->state = PIOM_LTASK_QUEUE_STATE_NONE;
-    int i;
-    for (i = 0; i < PIOM_MAX_LTASK; i++)
-	queue->ltask_array[i] = NULL;
-    queue->ltask_array_tail = 0;
-    queue->ltask_array_head = 0;
-    queue->ltask_array_nb_items = 0;
+    piom_ltask_lfqueue_init(&queue->ltask_queue);
     queue->processing = 0;
-
-    piom_spin_init (&queue->ltask_lock);
     queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
 }
 
 /* Remove a task from a queue and return it
  * Return NULL if the queue is empty
  */
-static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t * queue)
+static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t*queue)
 {
-    if (!queue->ltask_array_nb_items)
-	return NULL;
-    struct piom_ltask *result = NULL;
-    piom_spin_lock (&queue->ltask_lock);
-    {
-	if (!queue->ltask_array_nb_items)
-	    result = NULL;
-	else
-	    {
-		result = queue->ltask_array[queue->ltask_array_head];
-		queue->ltask_array[queue->ltask_array_head] = NULL;
-		queue->ltask_array_head = (queue->ltask_array_head + 1 ) % PIOM_MAX_LTASK;
-		queue->ltask_array_nb_items--;
-		assert(queue->ltask_array_nb_items >= 0 && queue->ltask_array_nb_items < PIOM_MAX_LTASK);
-		assert(queue->ltask_array_head >= 0 && queue->ltask_array_head < PIOM_MAX_LTASK);
-	    }
-    }
-    piom_spin_unlock (&queue->ltask_lock);
-    return result;
+    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&queue->ltask_queue);
+    return task;
 }
 
 
@@ -162,7 +136,6 @@ static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t *
 static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 {
     if( (queue->processing) || 
-	(queue->ltask_array_nb_items == 0) ||
 	( (queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
 	  && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) )
 	{
@@ -230,7 +203,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		}
 	}
     /* no more task to run, set the queue as stopped */
-    if( (queue->ltask_array_nb_items == 0) && 
+    if( (task == NULL) && 
 	(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING) )
 	{
 	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
@@ -375,32 +348,19 @@ int piom_ltask_test_activity(void)
 
 void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
 {
-    piom_spin_lock(&queue->ltask_lock);
-
-    assert(queue->ltask_array_nb_items >= 0 && queue->ltask_array_nb_items < PIOM_MAX_LTASK);
-    assert(queue->ltask_array_head >= 0 && queue->ltask_array_head < PIOM_MAX_LTASK);
-    assert(queue->ltask_array_tail >= 0 && queue->ltask_array_tail < PIOM_MAX_LTASK);
-
-    /* wait until a task is removed from the list */
-    while(queue->ltask_array_nb_items + 1 >= PIOM_MAX_LTASK)
-	{
-	    piom_spin_unlock(&queue->ltask_lock);
-	    __piom_ltask_queue_schedule(queue);
-	    piom_spin_lock(&queue->ltask_lock);
-	}
     if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 	{
 	    fprintf(stderr, "PIOMan: WARNING- submitting a task (%p) to a queue (%p) that is being stopped\n", 
 		    task, queue);
 	}
-    queue->ltask_array_nb_items++;
     task->state = PIOM_LTASK_STATE_READY;
     task->queue = queue;
-    queue->ltask_array[queue->ltask_array_tail] = task;
-    queue->ltask_array_tail = (queue->ltask_array_tail + 1) % PIOM_MAX_LTASK;
-    queue->state = PIOM_LTASK_QUEUE_STATE_RUNNING;
-
-    piom_spin_unlock(&queue->ltask_lock);
+    /* wait until a task is removed from the list */
+    int rc = -1;
+    while(rc != 0)
+	{
+	    rc = piom_ltask_lfqueue_enqueue(&queue->ltask_queue, task);
+	}
 }
 
 void piom_ltask_submit(struct piom_ltask *task)

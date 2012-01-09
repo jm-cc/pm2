@@ -20,6 +20,8 @@
 
 #include <nm_private.h>
 
+PADICO_MODULE_HOOK(NewMad_Core);
+
 void nm_core_pack_iov(nm_core_t p_core, struct nm_pack_s*p_pack, const struct iovec*iov, int num_entries)
 {
   p_pack->status = NM_PACK_TYPE_IOV;
@@ -57,6 +59,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
     }
   struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
   int err = (*r->driver->pack)(r->_status, p_pack);
+  p_pack->data = NULL;
   nm_unlock_interface(p_core);
   nmad_unlock();
   return err;
@@ -143,11 +146,10 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 
   /* ready to send					*/
   FUT_DO_PROBE3(FUT_NMAD_NIC_OPS_TRACK_TO_DRIVER, p_pw, p_pw->p_drv, p_pw->trk_id);
-  NM_TRACEF("posting new send request: gate %p, drv %p, trk %d, proto %d",
+  NM_TRACEF("posting new send request: gate %p, drv %p, trk %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,
-	    p_pw->trk_id,
-	    p_pw->proto_id);
+	    p_pw->trk_id);
 
 #ifdef PIO_OFFLOAD
     nm_so_pw_offloaded_finalize(p_pw);
@@ -163,11 +165,10 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
   
   if (err == -NM_EAGAIN)
     {
-      NM_TRACEF("new request pending: gate %p, drv %p, trk %d, proto %d",
+      NM_TRACEF("new request pending: gate %p, drv %p, trk %d",
 		p_pw->p_gate,
 		p_pw->p_drv,
-		p_pw->trk_id,
-		p_pw->proto_id);
+		p_pw->trk_id);
 
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */

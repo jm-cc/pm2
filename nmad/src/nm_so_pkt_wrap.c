@@ -20,6 +20,7 @@
 
 #include <nm_private.h>
 
+PADICO_MODULE_HOOK(NewMad_Core);
 
 
 /** Fast packet allocator constant for initial number of entries. */

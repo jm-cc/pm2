@@ -20,6 +20,9 @@
 
 #include <nm_private.h>
 
+PADICO_MODULE_HOOK(NewMad_Core);
+
+
 /** Poll active incoming requests 
  */
 __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
@@ -28,11 +31,10 @@ __inline__ int nm_pw_poll_recv(struct nm_pkt_wrap*p_pw)
 
   static struct timespec next_poll = { .tv_sec = 0, .tv_nsec = 0 };
 
-  NM_TRACEF("polling inbound request: gate %p, drv %p, trk %d, proto %d",
+  NM_TRACEF("polling inbound request: gate %p, drv %p, trk %d",
 	    p_pw->p_gate,
 	    p_pw->p_drv,
-	    p_pw->trk_id,
-	    p_pw->proto_id);
+	    p_pw->trk_id);
   if(p_pw->p_gate)
     {
       struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
@@ -107,8 +109,8 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
 {
   int err = NM_ESUCCESS;
   
-  NM_TRACEF("posting new recv request: gate %p, drv %p, trk %d, proto %d",
-	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->proto_id);
+  NM_TRACEF("posting new recv request: gate %p, drv %p, trk %d",
+	    p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
 
   if(p_pw->p_gate)
     {
@@ -141,8 +143,8 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
     }
   else if(err == -NM_EAGAIN)
     {
-      NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d, proto %d",
-		p_pw->p_gate, p_pw->p_drv, p_pw->trk_id, p_pw->proto_id);
+      NM_TRACEF("new recv request pending: gate %p, drv %p, trk %d",
+		p_pw->p_gate, p_pw->p_drv, p_pw->trk_id);
 #ifdef PIOMAN_POLL
       nm_ltask_submit_poll_recv(p_pw);      
 #endif /* PIOMAN_POLL */

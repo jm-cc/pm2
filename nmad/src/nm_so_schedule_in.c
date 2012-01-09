@@ -20,6 +20,8 @@
 
 #include <nm_private.h>
 
+PADICO_MODULE_HOOK(NewMad_Core);
+
 static void nm_short_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,
 				  const void*ptr, nm_so_short_data_header_t*h, struct nm_pkt_wrap *p_pw);
 static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct nm_unpack_s*p_unpack,

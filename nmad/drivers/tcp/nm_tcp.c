@@ -756,7 +756,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   active_gate_found:
     p_tcp_trk->next_entry	= i;
     p_pw->p_gate		= p_tcp_trk->gate_map[i];
-    NM_TRACE_VAL("gateless request: active gate id ", p_pw->p_gate);
+    NM_TRACE_PTR("gateless request: active gate id ", p_pw->p_gate);
   }
 
   /* gate already selected or selective recv 		*/
@@ -765,7 +765,7 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
 
   if (p_tcp_trk->nb_incoming) {
     /* check former multipoll result 			*/
-    NM_TRACE_VAL("tcp incoming single poll: checking gate id", p_gate);
+    NM_TRACE_PTR("tcp incoming single poll: checking gate id", p_gate);
     struct nm_tcp_pkt_wrap*p_tcp_pw = p_pw->drv_priv;
     p_gate_pollfd = p_tcp_trk->poll_array + p_tcp_pw->pollfd_index;
     
@@ -964,7 +964,7 @@ nm_tcp_send 	(void*_status,
                 p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
 
                 NM_TRACE_VAL("tcp outgoing trk id", p_pw->trk_id);
-                NM_TRACE_VAL("tcp outgoing gate id", p_pw->p_gate);
+                NM_TRACE_PTR("tcp outgoing gate id", p_pw->p_gate);
                 NM_TRACE_VAL("tcp outgoing fd", status->fd[p_pw->trk_id]);
                 NM_TRACE_VAL("tcp outgoing cur size", p_vi->v_cur_size);
                 NM_TRACE_PTR("tcp outgoing cur base", p_cur->iov_base);
@@ -1026,7 +1026,7 @@ nm_tcp_send 	(void*_status,
                 } while (ret);
         } else {
                 NM_TRACEF("tcp outgoing: sending header");
-                NM_TRACE_VAL("tcp header outgoing gate id", p_pw->p_gate);
+                NM_TRACE_PTR("tcp header outgoing gate id", p_pw->p_gate);
         write_again:
 #ifdef MSG_MORE
 		/* MSG_MORE is Linux, not POSIX. It cuts the latency in half when available.
@@ -1185,7 +1185,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     p_cur	= p_pw->v + p_tcp_pw->vi.v_cur;
     
     NM_TRACE_VAL("tcp incoming trk id", p_pw->trk_id);
-    NM_TRACE_VAL("tcp incoming gate id", p_pw->p_gate);
+    NM_TRACE_PTR("tcp incoming gate id", p_pw->p_gate);
     NM_TRACE_VAL("tcp incoming fd", status->fd[p_pw->trk_id]);
     NM_TRACE_VAL("tcp incoming cur size", p_vi->v_cur_size);
     NM_TRACE_PTR("tcp incoming cur base", p_cur->iov_base);
@@ -1293,7 +1293,7 @@ static int nm_tcp_recv(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
     goto read_body_again;
   } else {
     NM_TRACEF("tcp incoming: receiving header");
-    NM_TRACE_VAL("tcp header incoming gate id", p_pw->p_gate);
+    NM_TRACE_PTR("tcp header incoming gate id", p_pw->p_gate);
   read_header_again:
     ret	= NM_SYS(read)(fd, p_tcp_pw->ptr, p_tcp_pw->rem_length);
     NM_TRACE_VAL("tcp header incoming read status", ret);

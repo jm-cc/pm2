@@ -15,6 +15,8 @@
 
 #include <nm_private.h>
 
+PADICO_MODULE_HOOK(NewMad_Core);
+
 static int nm_core_driver_load(nm_core_t p_core, puk_component_t driver, nm_drv_t*pp_drv);
 
 static int nm_core_driver_init(nm_core_t p_core, nm_drv_t p_drv, const char**p_url);

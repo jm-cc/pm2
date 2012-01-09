@@ -21,7 +21,8 @@
 #include <nm_sendrecv_interface.h>
 #include <nm_session_private.h>
 
-//#define DEBUG 1
+PADICO_MODULE_HOOK(NewMad_Core);
+
 /** Structure that contains all sendrecv-related static variables.
  */
 static struct

@@ -23,6 +23,9 @@
 #include "mpi_nmad_private.h"
 #include "nm_log.h"
 
+#include <Padico/Module.h>
+PADICO_MODULE_HOOK(NewMad_Core);
+
 /**
  * Increases by one the counter of incoming messages. The counter is
  * used for termination detection.

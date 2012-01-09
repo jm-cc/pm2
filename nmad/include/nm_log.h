@@ -21,33 +21,18 @@
 
 #ifdef NDEBUG
 #define NM_WARN(str, ...)       (void)(0)
-#else
-#define NM_WARN(str, ...)       fprintf(stderr, "%s, " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
-#endif
+#else /* NDEBUG */
+#define NM_WARN(str, ...)       padico_warning("nmad (%s)-" str, __TBX_FUNCTION__ , ## __VA_ARGS__)
+#endif /* NDEBUG */
 
-#ifdef CONFIG_LOG
-#define NM_LOGF(str, ...)	fprintf(stderr, "%s, " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
-#define NM_LOG_IN()		fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
-#define NM_LOG_OUT()		fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
-#else /* CONFIG_LOG */
-#define NM_LOGF(str, ...)       (void)(0)
-#define NM_LOG_IN()             (void)(0)
-#define NM_LOG_OUT()            (void)(0)
-#endif /* CONFIG_LOG */
+#define NM_TRACEF(str, ...)	padico_trace("%s " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
+#define NM_TRACE_VAL(str, val)	NM_TRACEF("%s = %d", str, (int)val)
+#define NM_TRACE_PTR(str, ptr)	NM_TRACEF("%s = %p", str, (void*)ptr)
+#define NM_TRACE_STR(str, str2)	NM_TRACEF("%s: %s", str, str2)
 
-#ifdef CONFIG_TRACE
-#define NM_TRACEF(str, ...)	fprintf(stderr, "%s, " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
-#define NM_TRACE_VAL(str, val)	fprintf(stderr, "%s, " str " = %d\n", __TBX_FUNCTION__ , (int)(val))
-#define NM_TRACE_CHAR(val)	fprintf(stderr, "%s, %c" , (char)(val))
-#define NM_TRACE_PTR(str, ptr)	fprintf(stderr, "%s, " str " = %p\n", __TBX_FUNCTION__ , (void *)(ptr))
-#define NM_TRACE_STR(str, str2)	fprintf(stderr, "%s, " str ": %s\n", __TBX_FUNCTION__ , (char *)(str2))
-#else /* CONFIG_TRACE */
-#define NM_TRACEF(str, ...)     (void)(0)
-#define NM_TRACE_IN()           (void)(0)
-#define NM_TRACE_VAL(str, val)  (void)(0)
-#define NM_TRACE_PTR(str, ptr)  (void)(0)
-#define NM_TRACE_STR(str, str2) (void)(0)
-#endif /* CONFIG_TRACE */
+#define NM_LOGF(str, ...)	NM_TRACEF(str , ## __VA_ARGS__)
+#define NM_LOG_IN()		NM_TRACEF("%s: -->\n", __TBX_FUNCTION__)
+#define NM_LOG_OUT()		NM_TRACEF("%s: <--\n", __TBX_FUNCTION__)
 
 
 /* Profiling/post-portem analysis

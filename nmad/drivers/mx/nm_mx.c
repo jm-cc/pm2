@@ -548,7 +548,7 @@ static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_dr
   p_mx_trk->gate_map[p_mx_trk->next_peer_id] = p_gate;
   
   /* ** parse url */
-  NM_TRACEF("connect - drv_url: %s", url);
+  NM_TRACEF("connect - drv_url: %s", remote_url);
   char*url = strdup(remote_url);
   char*ep_url = strchr(url, '/');
   if(!ep_url)

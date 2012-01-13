@@ -33,10 +33,6 @@ typedef uint8_t nm_proto_t;
 #define NM_PROTO_SHORT_DATA  0x04
 /** an ack for a ssend (sent when receiving first chunk) */
 #define NM_PROTO_ACK         0x05
-/** unused data chunk (already read) */
-#define NM_PROTO_UNUSED      0x08
-/** unused control chunk (already read) */
-#define NM_PROTO_CTRL_UNUSED 0x09
 /** ctrl chunk for strategy (don't decode in nm core) */
 #define NM_PROTO_STRAT       0x0A
 
@@ -55,11 +51,6 @@ typedef uint8_t nm_proto_t;
 
 // Warning : All header structs (except the global one) _MUST_ begin
 // with the 'proto_id' field
-
-struct nm_so_unused_header {
-  nm_proto_t proto_id; /**< proto ID- should be NM_PROTO_UNUSED */
-  uint32_t len;        /**< length to skip, including this header */
-};
 
 struct nm_so_data_header {
   nm_proto_t proto_id;  /**< proto ID- should be NM_PROTO_DATA */

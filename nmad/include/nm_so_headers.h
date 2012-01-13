@@ -37,6 +37,8 @@ typedef uint8_t nm_proto_t;
 #define NM_PROTO_UNUSED      0x08
 /** unused control chunk (already read) */
 #define NM_PROTO_CTRL_UNUSED 0x09
+/** ctrl chunk for strategy (don't decode in nm core) */
+#define NM_PROTO_STRAT       0x0A
 
 /* flag for last proto in packet */
 #define NM_PROTO_LAST        0x80
@@ -101,7 +103,7 @@ struct nm_so_ctrl_ack_header {
   nm_seq_t seq;
 } __attribute__((packed));
 
-/** a unified control header type
+/** a unified control header type (except strat)
  */
 union nm_so_generic_ctrl_header {
   struct nm_so_ctrl_rdv_header rdv;
@@ -113,6 +115,13 @@ union nm_so_generic_ctrl_header {
     nm_core_tag_t tag_id;
     nm_seq_t seq;
   } generic;
+};
+
+/** header for strategy provate packets */
+struct nm_strat_header
+{
+  nm_proto_t proto_id; /**< should be NM_PROTO_STRAT */
+  uint32_t size;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;

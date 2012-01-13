@@ -487,7 +487,7 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	      .seq = seq,
 	      .len = chunk_offset + chunk_len
 	    };
-	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
+	  nm_core_status_event(p_core, &event, NULL);
 	}
     }
 }
@@ -521,7 +521,7 @@ static void nm_rdv_handler(struct nm_core*p_core, struct nm_gate*p_gate, struct 
 	      .seq = seq,
 	      .len = chunk_offset + chunk_len
 	    };
-	  nm_core_status_event(p_pw->p_gate->p_core, &event, NULL);
+	  nm_core_status_event(p_core, &event, NULL);
 	}
     }
 }
@@ -611,141 +611,137 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, struct nm_so_ctrl_ack_h
     }
 }
 
-/** Iterate over the headers of a freshly received ctrl pkt.
- *
- *  @param p_pw the pkt wrapper pointer.
+/** decode one chunk of headers.
+ * @returns the number of processed bytes in global header, 
+ *          -1 if done (last chunk)
  */
-static void nm_decode_headers(struct nm_pkt_wrap *p_pw)
+static inline int nm_decode_header_chunk(struct nm_core*p_core, void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
 {
+  int rc = 0;
+  const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;
+  const nm_proto_t proto_flag = (*(nm_proto_t *)ptr) & NM_PROTO_FLAG_MASK;
 
-  /* Each 'unread' header will increment this counter. When the
-     counter will reach 0 again, the packet wrapper can (and will) be
-     safely destroyed.
-     Increment it here for our own use while processing the packet. */
-  p_pw->header_ref_count++;
-
-  struct iovec *vec = p_pw->v;
-  void *ptr = vec->iov_base;
-  int done = 0;
-
-  while(!done)
+  assert(proto_id != 0);
+  switch(proto_id)
     {
-      /* Decode header */
-      const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;
-      const nm_proto_t proto_flag = (*(nm_proto_t *)ptr) & NM_PROTO_FLAG_MASK;
-      if(proto_flag & NM_PROTO_LAST)
-	done = 1;
-      assert(proto_id != 0);
-      assert(ptr <= vec->iov_base + vec->iov_len);
-      switch(proto_id)
-	{
-	case NM_PROTO_SHORT_DATA:
+    case NM_PROTO_SHORT_DATA:
+      {
+	struct nm_so_short_data_header*sh = ptr;
+	rc = NM_SO_SHORT_DATA_HEADER_SIZE;
+	const uint32_t len = sh->len;
+	const nm_core_tag_t tag = sh->tag_id;
+	const nm_seq_t seq = sh->seq;
+	struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
+	nm_short_data_handler(p_core, p_gate, p_unpack, ptr, sh, p_pw);
+	rc += len;
+      }
+      break;
+      
+    case NM_PROTO_DATA:
+      {
+	/* Data header */
+	struct nm_so_data_header *dh = ptr;
+	rc = NM_SO_DATA_HEADER_SIZE;
+	/* Retrieve data location */
+	unsigned long skip = dh->skip;
+	void*data = ptr;
+	if(dh->len) 
 	  {
-	    struct nm_so_short_data_header*sh = ptr;
-	    ptr += NM_SO_SHORT_DATA_HEADER_SIZE;
-	    const uint32_t len = sh->len;
-	    const nm_core_tag_t tag = sh->tag_id;
-	    const nm_seq_t seq = sh->seq;
-	    struct nm_gate*p_gate = p_pw->p_gate;
-	    struct nm_core*p_core = p_gate->p_core;
-	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    nm_short_data_handler(p_core, p_gate, p_unpack, ptr, sh, p_pw);
-	    ptr += len;
-	  }
-	  break;
-
-	case NM_PROTO_DATA:
-	  {
-	    /* Data header */
-	    struct nm_so_data_header *dh = ptr;
-	    ptr += NM_SO_DATA_HEADER_SIZE;
-	    /* Retrieve data location */
-	    unsigned long skip = dh->skip;
-	    void*data = ptr;
-	    if(dh->len) 
+	    const struct iovec *v = p_pw->v;
+	    uint32_t rlen = (v->iov_base + v->iov_len) - data;
+	    if (skip < rlen)
 	      {
-		const struct iovec *v = vec;
-		uint32_t rlen = (v->iov_base + v->iov_len) - data;
-		if (skip < rlen)
-		  {
-		    data += skip;
-		  }
-		else
-		  {
-		    do
-		      {
-			skip -= rlen;
-			v++;
-			rlen = v->iov_len;
-		      } while (skip >= rlen);
-		    data = v->iov_base + skip;
-		  }
+		data += skip;
 	      }
-	    const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	    if(dh->skip == 0)
-	      { /* data is just after the header */
-		ptr += size;
-	      }  /* else the next header is just behind */
-	    const nm_core_tag_t tag = dh->tag_id;
-	    const nm_seq_t seq = dh->seq;
-	    struct nm_gate*p_gate = p_pw->p_gate;
-	    struct nm_core*p_core = p_gate->p_core;
-	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    nm_small_data_handler(p_core, p_gate, p_unpack, data, dh, p_pw);
+	    else
+	      {
+		do
+		  {
+		    skip -= rlen;
+		    v++;
+		    rlen = v->iov_len;
+		  } while (skip >= rlen);
+		data = v->iov_base + skip;
+	      }
 	  }
-	  break;
-
-	case NM_PROTO_UNUSED:
+	const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
+	if(dh->skip == 0)
+	  { /* data is just after the header */
+	    rc += size;
+	  }  /* else the next header is just behind */
+	const nm_core_tag_t tag = dh->tag_id;
+	const nm_seq_t seq = dh->seq;
+	struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
+	nm_small_data_handler(p_core, p_gate, p_unpack, data, dh, p_pw);
+      }
+      break;
+      
+    case NM_PROTO_UNUSED:
+      {
+	/* Unused data header- skip */
+	struct nm_so_unused_header*uh = ptr;
+	rc = uh->len;
+      }
+      break;
+      
+    case NM_PROTO_RDV:
+      {
+	union nm_so_generic_ctrl_header *ch = ptr;
+	rc = NM_SO_CTRL_HEADER_SIZE;
+	const nm_core_tag_t tag = ch->rdv.tag_id;
+	const nm_seq_t seq = ch->rdv.seq;
+	struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
+	nm_rdv_handler(p_core, p_gate, p_unpack, &ch->rdv, p_pw);
+      }
+      break;
+      
+    case NM_PROTO_RTR:
+      {
+	union nm_so_generic_ctrl_header *ch = ptr;
+	rc = NM_SO_CTRL_HEADER_SIZE;
+	nm_rtr_handler(p_pw, &ch->rtr);
+      }
+      break;
+      
+    case NM_PROTO_ACK:
+      {
+	union nm_so_generic_ctrl_header *ch = ptr;
+	rc = NM_SO_CTRL_HEADER_SIZE;
+	nm_ack_handler(p_pw, &ch->ack);
+      }
+      break;
+      
+    case NM_PROTO_CTRL_UNUSED:
+      {
+	rc = NM_SO_CTRL_HEADER_SIZE;
+      }
+      break;
+      
+    case NM_PROTO_STRAT:
+      {
+	const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
+	const struct nm_strat_header*h = ptr;
+	fprintf(stderr, "XXX received proto_id = strat; size = %d.\n", h->size);
+	if(strategy->driver->proto)
 	  {
-	    /* Unused data header- skip */
-	    struct nm_so_unused_header*uh = ptr;
-	    ptr += uh->len;
+	    (*strategy->driver->proto)(strategy->_status, ptr + sizeof(struct nm_strat_header), h->size);
 	  }
-	  break;
-	  
-	case NM_PROTO_RDV:
+	else
 	  {
-	    union nm_so_generic_ctrl_header *ch = ptr;
-	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    const nm_core_tag_t tag = ch->rdv.tag_id;
-	    const nm_seq_t seq = ch->rdv.seq;
-	    struct nm_gate *p_gate = p_pw->p_gate;
-	    struct nm_core*p_core = p_gate->p_core;
-	    struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	    nm_rdv_handler(p_core, p_gate, p_unpack, &ch->rdv, p_pw);
+	    padico_fatal("nmad: strategy cannot process NM_PROTO_STRAT.\n");
 	  }
-	  break;
-
-	case NM_PROTO_RTR:
-	  {
-	    union nm_so_generic_ctrl_header *ch = ptr;
-	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    nm_rtr_handler(p_pw, &ch->rtr);
-	  }
-	  break;
-
-	case NM_PROTO_ACK:
-	  {
-	    union nm_so_generic_ctrl_header *ch = ptr;
-	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	    nm_ack_handler(p_pw, &ch->ack);
-	  }
-	  break;
-	  
-	case NM_PROTO_CTRL_UNUSED:
-	  {
-	    ptr += NM_SO_CTRL_HEADER_SIZE;
-	  }
-	  break;
-	  
-	default:
-	  TBX_FAILUREF("nmad: received header with invalid proto_id %d\n", proto_id);
-	  break;
-	  
-	} /* switch */
-    } /* while */
-  
-  nm_so_pw_dec_header_ref_count(p_pw);
+	rc = h->size;
+      }
+      break;
+      
+    default:
+      TBX_FAILUREF("nmad: received header with invalid proto_id %d\n", proto_id);
+      break;
+      
+    }
+  if(proto_flag & NM_PROTO_LAST)
+    rc = -1;
+  return rc;
 }
 
 
@@ -783,7 +779,24 @@ int nm_so_process_complete_recv(struct nm_core *p_core,	struct nm_pkt_wrap *p_pw
   if(p_pw->trk_id == NM_TRK_SMALL)
     {
       /* ** Small packets - track #0 *********************** */
-      nm_decode_headers(p_pw);
+      struct nm_gate*p_gate = p_pw->p_gate;
+      struct nm_core*p_core = p_gate->p_core;
+      struct iovec *vec = p_pw->v;
+      void *ptr = vec->iov_base;
+      /* Each 'unread' header will increment this counter. When the
+	 counter will reach 0 again, the packet wrapper can (and will) be
+	 safely destroyed.
+	 Increment it here for our own use while processing the packet. */
+      p_pw->header_ref_count++;
+      int done = 0;
+      while(done != -1)
+	{
+	  /* Iterate over header chunks */
+	  assert(ptr < vec->iov_base + vec->iov_len);
+	  done = nm_decode_header_chunk(p_core, ptr, p_pw, p_gate);
+	  ptr += done;
+	}
+      nm_so_pw_dec_header_ref_count(p_pw);
     }
   else if(p_pw->trk_id == NM_TRK_LARGE)
     {

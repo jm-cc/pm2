@@ -60,6 +60,9 @@ struct nm_strategy_iface_s
   /** Returns 1 if there are packets to send */
   int (*todo)(void* _status, struct nm_gate*p_gate);
 
+  /** process strat private protocol */
+  void (*proto)(void*_status, const char*ptr, uint32_t len);
+
 };
 
 PUK_IFACE_TYPE(NewMad_Strategy, struct nm_strategy_iface_s);

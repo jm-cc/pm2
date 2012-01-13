@@ -632,7 +632,7 @@ static inline int nm_decode_header_chunk(struct nm_core*p_core, void*ptr, struct
 	const nm_core_tag_t tag = sh->tag_id;
 	const nm_seq_t seq = sh->seq;
 	struct nm_unpack_s*p_unpack = nm_unpack_find_matching(p_core, p_gate, seq, tag);
-	nm_short_data_handler(p_core, p_gate, p_unpack, ptr, sh, p_pw);
+	nm_short_data_handler(p_core, p_gate, p_unpack, ptr + NM_SO_SHORT_DATA_HEADER_SIZE, sh, p_pw);
 	rc += len;
       }
       break;
@@ -644,7 +644,7 @@ static inline int nm_decode_header_chunk(struct nm_core*p_core, void*ptr, struct
 	rc = NM_SO_DATA_HEADER_SIZE;
 	/* Retrieve data location */
 	unsigned long skip = dh->skip;
-	void*data = ptr;
+	void*data = ptr + NM_SO_DATA_HEADER_SIZE;
 	if(dh->len) 
 	  {
 	    const struct iovec *v = p_pw->v;

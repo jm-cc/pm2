@@ -61,7 +61,7 @@ struct nm_strategy_iface_s
   int (*todo)(void* _status, struct nm_gate*p_gate);
 
   /** process strat private protocol */
-  void (*proto)(void*_status, const char*ptr, uint32_t len);
+  void (*proto)(void*_status, struct nm_gate*p_gate, struct nm_pkt_wrap*p_pw, const void*ptr, uint32_t len);
 
 };
 

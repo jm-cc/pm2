@@ -607,7 +607,7 @@ static void nm_ack_handler(struct nm_pkt_wrap *p_ack_pw, const struct nm_so_ctrl
  * @returns the number of processed bytes in global header, 
  *          -1 if done (last chunk)
  */
-static inline int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate)
 {
   int rc = 0;
   const nm_proto_t proto_id = (*(nm_proto_t *)ptr) & NM_PROTO_ID_MASK;
@@ -699,10 +699,9 @@ static inline int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, 
       {
 	const struct puk_receptacle_NewMad_Strategy_s*strategy = &p_gate->strategy_receptacle;
 	const struct nm_strat_header*h = ptr;
-	fprintf(stderr, "XXX received proto_id = strat; size = %d.\n", h->size);
 	if(strategy->driver->proto)
 	  {
-	    (*strategy->driver->proto)(strategy->_status, ptr + sizeof(struct nm_strat_header), h->size);
+	    (*strategy->driver->proto)(strategy->_status, p_gate, p_pw, ptr, h->size);
 	  }
 	else
 	  {
@@ -713,7 +712,7 @@ static inline int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, 
       break;
       
     default:
-      TBX_FAILUREF("nmad: received header with invalid proto_id %d\n", proto_id);
+      padico_fatal("nmad: received header with invalid proto_id %d\n", proto_id);
       break;
       
     }

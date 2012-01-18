@@ -59,8 +59,6 @@ int nm_core_driver_load(nm_core_t p_core,
 #ifdef NMAD_POLL
   TBX_INIT_FAST_LIST_HEAD(&p_drv->pending_recv_list);
   TBX_INIT_FAST_LIST_HEAD(&p_drv->pending_send_list);
-  nm_poll_lock_in_init(p_core, p_drv);
-  nm_poll_lock_out_init(p_core, p_drv);
 #endif /* NMAD_POLL*/
 
   tbx_fast_list_add_tail(&p_drv->_link, &p_core->driver_list);

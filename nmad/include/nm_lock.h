@@ -56,19 +56,4 @@ static inline int  nm_so_trylock_in(struct nm_core* p_core, struct nm_drv*p_drv)
 static inline void nm_so_unlock_in(struct nm_core* p_core, struct nm_drv*p_drv);
 static inline void nm_so_lock_in_init(struct nm_core* p_core, struct nm_drv*p_drv);
 
-#ifdef NMAD_POLL
-/* Lock used to access pending_recv_list */
-static inline void nm_poll_lock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline int  nm_poll_trylock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_poll_unlock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_poll_lock_in_init(struct nm_core* p_core, struct nm_drv*p_drv);
-
-/* Lock used to access pending_send_list */
-static inline void nm_poll_lock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline int  nm_poll_trylock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_poll_unlock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_poll_lock_out_init(struct nm_core* p_core, struct nm_drv*p_drv);
-
-#endif /* NMAD_POLL */
-
 #endif	/* NM_LOCK_H */

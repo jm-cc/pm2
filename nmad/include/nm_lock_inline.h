@@ -24,9 +24,6 @@
 extern piom_spinlock_t nm_tac_lock;
 /** lock for status */
 extern piom_spinlock_t nm_status_lock;
-#  ifdef NMAD_POLL
-#    define NM_LOCK_POLL
-#  endif /* NMAD_POLL */
 #  endif /* PIOMAN */
 #else /* FINE_GRAIN_LOCKING */
 #  ifdef PIOMAN
@@ -231,72 +228,6 @@ static inline void nm_so_lock_in_init(struct nm_core*p_core, struct nm_drv*p_drv
   piom_spin_init(&p_drv->post_recv_lock);
 #endif
 }
-
-#ifdef NMAD_POLL
-
-/*
- *   Lock used to access pending_recv_list 
- */
-
-static inline void nm_poll_lock_in(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_lock(&p_drv->pending_recv_lock);
-#endif
-}
-static inline int nm_poll_trylock_in(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  return piom_spin_trylock(&p_drv->pending_recv_lock);
-#else
-  return 1;
-#endif
-}
-static inline void nm_poll_unlock_in(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_unlock(&p_drv->pending_recv_lock);
-#endif
-}
-static inline void nm_poll_lock_in_init(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_init(&p_drv->pending_recv_lock);
-#endif
- }
-
-/*
- * Lock used for accessing pending_send_list 
- */
-
-static inline void nm_poll_lock_out(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_lock(&p_drv->pending_send_lock);
-#endif
- }
-static inline int nm_poll_trylock_out(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  return piom_spin_trylock(&p_drv->pending_send_lock);
-#else
-  return 1;
-#endif
-}
-static inline void nm_poll_unlock_out(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_unlock(&p_drv->pending_send_lock);
-#endif
-}
-static inline void nm_poll_lock_out_init(struct nm_core*p_core, struct nm_drv*p_drv)
-{
-#ifdef NM_LOCK_POLL
-  piom_spin_init(&p_drv->pending_send_lock);
-#endif
-}
-
-#endif /* NMAD_POLL */
 
 
 #endif /* NM_LOCK_INLINE */

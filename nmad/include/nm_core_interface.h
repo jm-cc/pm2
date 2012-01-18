@@ -275,7 +275,7 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m);
 
 int nm_schedule(nm_core_t p_core);
 
-#if(!defined(PIOMAN) || defined(PIOM_POLLING_DISABLED))
+#if(!defined(PIOMAN))
 /* use nmad progression */
 #define NMAD_POLL 1
 #else

@@ -172,10 +172,7 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
-      nm_poll_lock_out(p_pw->p_gate->p_core, p_pw->p_drv);
       tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_send_list);
-      nm_poll_unlock_out(p_pw->p_gate->p_core, p_pw->p_drv);
-
 #else /* NMAD_POLL */
 
       nm_ltask_submit_poll_send(p_pw);
@@ -232,16 +229,13 @@ void nm_drv_poll_send(struct nm_drv *p_drv)
   /* poll pending out requests	*/
   if(!tbx_fast_list_empty(&p_drv->pending_send_list))
   {
-    nm_poll_lock_out(p_core, p_drv);
     if (!tbx_fast_list_empty(&p_drv->pending_send_list))
     {
       NM_TRACEF("polling outbound requests");
       struct nm_pkt_wrap*p_pw, *p_pw2;
       tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_send_list, link)
       {
-        nm_poll_unlock_out(p_core, p_drv);
 	const int err = nm_pw_poll_send(p_pw);
-	nm_poll_lock_out(p_core, p_drv);
 	if(err == NM_ESUCCESS)
 	  {
 	    tbx_fast_list_del(&p_pw->link);
@@ -249,7 +243,6 @@ void nm_drv_poll_send(struct nm_drv *p_drv)
 	  }
       }
     }
-    nm_poll_unlock_out(p_core, p_drv);
   }
 #endif /* NMAD_POLL */
 }

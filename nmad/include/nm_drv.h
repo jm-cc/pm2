@@ -55,17 +55,9 @@ struct nm_drv
 
   /** Outgoing active pw. */
   struct tbx_fast_list_head pending_send_list;
-#ifdef PIOMAN
-  /** Lock used to access pending_send_list */
-  piom_spinlock_t pending_send_lock;
-#endif
 
   /** recv pw posted to the driver. */
   struct tbx_fast_list_head pending_recv_list;
-#ifdef PIOMAN
-  /** Lock used to access pending_recv_list */
-  piom_spinlock_t pending_recv_lock;
-#endif /* PIOMAN */
 #endif /* NMAD_POLL */
 
   /** Post-scheduler outgoing lists, to be posted to thre driver. */
@@ -97,9 +89,7 @@ struct nm_drv
 
 #ifdef PIOMAN
   struct piom_ltask task;
-#ifndef PIOM_POLLING_DISABLED
   piom_vpset_t vpset;
-#endif
 #endif	/* PIOMAN */
   /* NM core object. */
   struct nm_core *p_core;

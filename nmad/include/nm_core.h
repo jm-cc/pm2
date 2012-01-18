@@ -66,6 +66,17 @@ struct nm_core
   /** Number of drivers currently loaded. */
   int nb_drivers;
 
+#ifdef NMAD_POLL
+  /* if PIOMan is enabled, it already manages a 
+     list of requests to poll */
+
+  /** Outgoing active pw. */
+  struct tbx_fast_list_head pending_send_list;
+
+  /** recv pw */
+  struct tbx_fast_list_head pending_recv_list;
+#endif /* NMAD_POLL */
+
   /** List of posted unpacks */
   struct tbx_fast_list_head unpacks;
   

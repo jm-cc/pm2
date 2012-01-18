@@ -130,7 +130,7 @@ static int nm_pw_post_recv(struct nm_pkt_wrap*p_pw)
    * even if it completes immediately. It will be removed from
    * the list by nm_so_process_complete_recv().
    */
-  tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_recv_list);
+  tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->p_core->pending_recv_list);
 #endif /* NMAD_POLL */
   
   if(err == NM_ESUCCESS)
@@ -190,25 +190,6 @@ void nm_drv_refill_recv(struct nm_drv*p_drv)
 	    }
 	}
     }
-}
-
-void nm_drv_poll_recv(struct nm_drv *p_drv)
-{
-#ifdef NMAD_POLL
-  struct nm_core *p_core = p_drv->p_core;
-  if(!tbx_fast_list_empty(&p_drv->pending_recv_list))
-  {
-    if (!tbx_fast_list_empty(&p_drv->pending_recv_list))
-    {
-      NM_TRACEF("polling inbound requests");
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
-      {
-	nm_pw_poll_recv(p_pw);
-      }
-    }
-  }
-#endif
 }
 
 

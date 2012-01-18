@@ -47,9 +47,9 @@ int main(int argc, char **argv)
   /* take over the driver
    * flush pending recv requests posted by nm_drv_refill_recv() 
    */
-  while(!tbx_fast_list_empty(&p_drv->pending_recv_list))
+  while(!tbx_fast_list_empty(&p_drv->p_core->pending_recv_list))
     {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_drv->pending_recv_list.next);
+      struct nm_pkt_wrap*p_pw = nm_l2so(p_drv->p_core->pending_recv_list.next);
       tbx_fast_list_del(&p_pw->link);
       if(p_pw->p_gdrv)
 	{

@@ -42,7 +42,6 @@ void nm_drv_post_all(struct nm_drv*p_drv)
 { 
  /* schedule & post out requests */
   nm_drv_post_send(p_drv);
-  nm_drv_poll_send(p_drv);  
   
   /* post new receive requests */
   nm_drv_refill_recv(p_drv);
@@ -73,16 +72,33 @@ int nm_schedule(struct nm_core *p_core)
     nm_drv_post_all(p_drv);
   }
 
-#ifdef NMAD_POLL
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
+  /* poll pending recv requests */
+  if (!tbx_fast_list_empty(&p_core->pending_recv_list))
     {
-      /* poll pending recv requests */
-      nm_drv_poll_recv(p_drv);
-      /* poll pending out requests */
-      nm_drv_poll_send(p_drv);
+      NM_TRACEF("polling inbound requests");
+      struct nm_pkt_wrap*p_pw, *p_pw2;
+      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_recv_list, link)
+	{
+	  nm_pw_poll_recv(p_pw);
+	}
     }
+  /* poll pending out requests */
+  if (!tbx_fast_list_empty(&p_core->pending_send_list))
+    {
+      NM_TRACEF("polling outbound requests");
+      struct nm_pkt_wrap*p_pw, *p_pw2;
+      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_send_list, link)
+	{
+	  const int err = nm_pw_poll_send(p_pw);
+	  if(err == NM_ESUCCESS)
+	    {
+	      tbx_fast_list_del(&p_pw->link);
+	      nm_so_pw_free(p_pw);
+	    }
+	}
+    }
+
   nm_out_prefetch(p_core);
-#endif /* NMAD_POLL */
   
   nmad_unlock();
   
@@ -177,6 +193,11 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   /* pending packs */
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_packs);
 
+#ifdef NMAD_POLL
+  TBX_INIT_FAST_LIST_HEAD(&p_core->pending_recv_list);
+  TBX_INIT_FAST_LIST_HEAD(&p_core->pending_send_list);
+#endif /* NMAD_POLL*/
+
   p_core->strategy_adapter = NULL;
 
 #ifdef PIOMAN
@@ -233,14 +254,11 @@ int nm_core_exit(nm_core_t p_core)
 
 #ifdef NMAD_POLL
   /* Sanity check- everything is supposed to be empty here */
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
+  struct nm_pkt_wrap*p_pw, *p_pw2;
+  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_recv_list, link)
     {
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_recv_list, link)
-	{
-	  NM_WARN("purging pw from pending_recv_list\n");
-	  nm_so_pw_free(p_pw);
-	}
+      NM_WARN("purging pw from pending_recv_list\n");
+      nm_so_pw_free(p_pw);
     }
 #endif /* NMAD_POLL */
   

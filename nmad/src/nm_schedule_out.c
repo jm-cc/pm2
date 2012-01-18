@@ -172,11 +172,9 @@ void nm_pw_post_send(struct nm_pkt_wrap*p_pw)
 
 #ifdef NMAD_POLL
       /* put the request in the list of pending requests */
-      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->pending_send_list);
+      tbx_fast_list_add_tail(&p_pw->link, &p_pw->p_drv->p_core->pending_send_list);
 #else /* NMAD_POLL */
-
       nm_ltask_submit_poll_send(p_pw);
-
 #endif /* NMAD_POLL */
 
     } 
@@ -222,32 +220,6 @@ void nm_drv_post_send(struct nm_drv *p_drv)
   }
 }
 
-void nm_drv_poll_send(struct nm_drv *p_drv)
-{
-#ifdef NMAD_POLL
-  struct nm_core *p_core = p_drv->p_core;
-  /* poll pending out requests	*/
-  if(!tbx_fast_list_empty(&p_drv->pending_send_list))
-  {
-    if (!tbx_fast_list_empty(&p_drv->pending_send_list))
-    {
-      NM_TRACEF("polling outbound requests");
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->pending_send_list, link)
-      {
-	const int err = nm_pw_poll_send(p_pw);
-	if(err == NM_ESUCCESS)
-	  {
-	    tbx_fast_list_del(&p_pw->link);
-	    nm_so_pw_free(p_pw);
-	  }
-      }
-    }
-  }
-#endif /* NMAD_POLL */
-}
-
-
 void nm_try_and_commit(struct nm_core *p_core)
 {
   /* schedule new requests on all gates */
@@ -282,14 +254,11 @@ void nm_out_prefetch(struct nm_core*p_core)
 {
   /* check whether all drivers are idle */
   struct nm_drv*p_drv = NULL;
-  NM_FOR_EACH_DRIVER(p_drv, p_core)
+  if(!tbx_fast_list_empty(&p_core->pending_send_list))
     {
-      if(!tbx_fast_list_empty(&p_drv->pending_send_list))
-	{
-	  return;
-	}
+      return;
     }
-
+  
   struct nm_gate*p_gate = NULL;
   NM_FOR_EACH_GATE(p_gate, p_core)
     {

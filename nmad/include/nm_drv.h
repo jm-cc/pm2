@@ -49,17 +49,6 @@ struct nm_drv
   /** recv request for trk#0 if driver supports recv_any */
   struct nm_pkt_wrap*p_in_rq;
 
-#ifdef NMAD_POLL
-  /* We don't use these lists since PIOMan already manage a 
-     list of requests to poll */
-
-  /** Outgoing active pw. */
-  struct tbx_fast_list_head pending_send_list;
-
-  /** recv pw posted to the driver. */
-  struct tbx_fast_list_head pending_recv_list;
-#endif /* NMAD_POLL */
-
   /** Post-scheduler outgoing lists, to be posted to thre driver. */
   struct tbx_fast_list_head post_sched_out_list[NM_SO_MAX_TRACKS];
 

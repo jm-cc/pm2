@@ -124,8 +124,6 @@ struct nm_pkt_wrap
   /** pre-allcoated iovec */
   struct iovec       prealloc_v[NM_SO_PREALLOC_IOV_LEN];
 
-  tbx_bool_t is_completed;
-
   /* ** fields used when sending */
 
   /** list of contributions in this pw (sending) */

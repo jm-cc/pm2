@@ -132,25 +132,23 @@ static int strat_aggreg_autoextended_pack_ctrl(void*_status,
   int err;
 
   /* We first try to find an existing packet to form an aggregate */
-  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
-
-    if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE) {
-      /* There's not enough room to add our ctrl header to this paquet */
-      p_so_pw->is_completed = tbx_true;
-      goto next;
+  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link)
+    {
+      if(nm_so_pw_remaining_header_area(p_so_pw) < NM_SO_CTRL_HEADER_SIZE) 
+	{
+	  /* There's not enough room to add our ctrl header to this paquet */
+	  nm_so_pw_finalize(p_so_pw);
+	}
+      else
+	{
+	  err = nm_so_pw_add_control(p_so_pw, p_ctrl);
+	  nb_ctrl_aggregation ++;
+	  goto out;
+	}
     }
 
-    err = nm_so_pw_add_control(p_so_pw, p_ctrl);
-    nb_ctrl_aggregation ++;
-    goto out;
-
-  next:
-    ;
-  }
-
   /* Simply form a new packet wrapper */
-  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl,
-					     &p_so_pw);
+  err = nm_so_pw_alloc_and_fill_with_control(p_ctrl, &p_so_pw);
   if(err != NM_ESUCCESS)
     goto out;
 
@@ -166,12 +164,13 @@ static int strat_aggreg_autoextended_flush(void*_status,
 {
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
-
-  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) {
-    NM_TRACEF("Marking pw %p as completed\n", p_so_pw);
-    p_so_pw->is_completed = tbx_true;
-  }
-
+  NM_LOG_IN();
+  tbx_fast_list_for_each_entry(p_so_pw, &status->out_list, link) 
+    {
+      NM_TRACEF("Marking pw %p as completed\n", p_so_pw);
+      nm_so_pw_finalize(p_so_pw);
+    }
+  NM_LOG_OUT();
   return NM_ESUCCESS;
 }
 
@@ -180,6 +179,7 @@ static int strat_aggreg_autoextended_todo(void*_status,
 {
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   struct tbx_fast_list_head *out_list = &(status)->out_list;
+  NM_LOG_IN();
   return !(tbx_fast_list_empty(out_list));
 }
 
@@ -213,7 +213,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
 	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 	  if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
 	    {
-	      p_pw->is_completed = tbx_true;
+	      nm_so_pw_finalize(p_pw);
 	    }
 	  else
 	    {
@@ -231,14 +231,13 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
       if(len <= status->nm_so_copy_on_send_threshold)
 	flags |= NM_SO_DATA_USE_COPY;
       nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, flags, &p_pw);
-      p_pw->is_completed = tbx_false;
       tbx_fast_list_add_tail(&p_pw->link, &status->out_list);
     }
   else
     {
       /* large packet */
       nm_so_pw_alloc_and_fill_with_data(p_pack, p_pack->data, len, 0, 1, NM_PW_NOHEADER, &p_pw);
-      p_pw->is_completed = tbx_true;
+      nm_so_pw_finalize(p_pw);
       tbx_fast_list_add_tail(&p_pw->link, &p_pack->p_gate->pending_large_send);
       union nm_so_generic_ctrl_header ctrl;
       nm_so_init_rdv(&ctrl, p_pack, len, 0, NM_PROTO_FLAG_LASTCHUNK);
@@ -271,7 +270,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
 
   /* Simply take the head of the list */
   struct nm_pkt_wrap *p_pw = nm_l2so(out_list->next);
-  if(p_pw->is_completed == tbx_true) 
+  if((p_pw->flags & NM_PW_FINALIZED) != 0)
     {
       NM_TRACEF("pw %p is completed\n", p_pw);
       tbx_fast_list_del(out_list->next);

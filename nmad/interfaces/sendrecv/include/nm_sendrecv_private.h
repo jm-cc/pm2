@@ -109,6 +109,7 @@ static inline void nm_sr_status_wait(nm_sr_cond_t*status, nm_sr_status_t bitmask
   if(status != NULL)
     {
       while(!((*status) & bitmask)) {
+	nm_sr_flush(p_core);
 	nm_schedule(p_core);
 #if(!defined(FINE_GRAIN_LOCKING) && defined(MARCEL))
 	if(!((*status) & bitmask)) {

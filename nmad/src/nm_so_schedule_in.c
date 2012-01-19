@@ -462,8 +462,6 @@ static void nm_small_data_handler(struct nm_core*p_core, struct nm_gate*p_gate, 
 	  nm_so_data_flags_decode(p_unpack, h->flags, chunk_offset, chunk_len);
 	  nm_so_copy_data(p_unpack, chunk_offset, ptr, chunk_len);
 	  nm_so_unpack_check_completion(p_core, p_unpack, chunk_len);
-	  const unsigned long size = (h->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(chunk_len) : chunk_len;
-	  const uint32_t unused_len = (h->skip == 0) ? size : 0;
 	}
     }
   else

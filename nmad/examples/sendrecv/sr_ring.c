@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     nm_sr_isend(p_core, gate, tag, buffer, 2*sizeof(float), &out_request);
     nm_sr_swait(p_core, &out_request);
   }
-
+  PRINT("done.");
   nmad_exit();
   exit(0);
 }

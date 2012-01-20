@@ -233,6 +233,7 @@ void nm_try_and_commit(struct nm_core *p_core)
 {
   /* schedule new requests on all gates */
   struct nm_gate*p_gate = NULL;
+  NM_LOG_IN();
   nmad_lock_assert();
   NM_FOR_EACH_GATE(p_gate, p_core)
     {
@@ -245,6 +246,7 @@ void nm_try_and_commit(struct nm_core *p_core)
 	    }
 	}
     }
+  NM_LOG_OUT();
 }
 
 int nm_core_flush(nm_gate_t p_gate)

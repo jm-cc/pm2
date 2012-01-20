@@ -25,14 +25,14 @@
 #define NM_WARN(str, ...)       padico_warning("nmad (%s)-" str, __TBX_FUNCTION__ , ## __VA_ARGS__)
 #endif /* NDEBUG */
 
-#define NM_TRACEF(str, ...)	padico_trace(str, ## __VA_ARGS__)
+#define NM_TRACEF(str, ...)	padico_trace(str "\n", ## __VA_ARGS__)
 #define NM_TRACE_VAL(str, val)	NM_TRACEF("%s = %d", str, (int)val)
 #define NM_TRACE_PTR(str, ptr)	NM_TRACEF("%s = %p", str, (void*)ptr)
 #define NM_TRACE_STR(str, str2)	NM_TRACEF("%s: %s", str, str2)
 
 #define NM_LOGF(str, ...)	NM_TRACEF(str , ## __VA_ARGS__)
-#define NM_LOG_IN()		NM_TRACEF("-->\n")
-#define NM_LOG_OUT()		NM_TRACEF("<--\n")
+#define NM_LOG_IN()		NM_TRACEF("-->")
+#define NM_LOG_OUT()		NM_TRACEF("<--")
 
 
 /* Profiling/post-portem analysis

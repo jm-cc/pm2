@@ -65,11 +65,33 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
   return err;
 }
 
+/** register pw contribution to pack upon pw send completion.
+ */
+void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p_completion)
+{
+  struct nm_pw_contrib_s*p_contrib = &p_completion->contrib;
+  struct nm_pack_s*p_pack = p_contrib->p_pack;
+  p_pack->done += p_contrib->len;
+  if(p_pack->done == p_pack->len)
+    {
+      NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
+      const struct nm_core_event_s event =
+	{
+	  .status = NM_STATUS_PACK_COMPLETED,
+	  .p_pack = p_pack
+	};
+      nm_core_status_event(p_pw->p_drv->p_core, &event, &p_pack->status);
+    }
+  else if(p_pack->done > p_pack->len)
+    { 
+      TBX_FAILUREF("more bytes sent than posted (should have been = %d; actually sent = %d)\n",
+		   p_pack->len, p_pack->done);
+    }
+}
 
 /** Process a complete successful outgoing request.
  */
-static int nm_so_process_complete_send(struct nm_core *p_core,
-				       struct nm_pkt_wrap *p_pw)
+static int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   nmad_lock_assert();
@@ -82,26 +104,10 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
 
   int i;
-  for(i = 0; i < p_pw->n_contribs; i++)
+  for(i = 0; i < p_pw->n_completions; i++)
     {
-      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[i];
-      struct nm_pack_s*p_pack = p_contrib->p_pack;
-      p_pack->done += p_contrib->len;
-      if(p_pack->done == p_pack->len)
-	{
-	  NM_TRACEF("all chunks sent for msg seq=%u len=%u!\n", p_pack->seq, p_pack->len);
-	  const struct nm_core_event_s event =
-	    {
-	      .status = NM_STATUS_PACK_COMPLETED,
-	      .p_pack = p_pack
-	    };
-	  nm_core_status_event(p_core, &event, &p_pack->status);
-	}
-      else if(p_pack->done > p_pack->len)
-	{ 
-	  TBX_FAILUREF("more bytes sent than posted (should have been = %d; actually sent = %d)\n",
-		       p_pack->len, p_pack->done);
-	}
+      struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
+      (*p_completion->notifier)(p_pw, p_completion);
     }
 
   nm_strat_try_and_commit(p_gate);
@@ -111,7 +117,7 @@ static int nm_so_process_complete_send(struct nm_core *p_core,
 
 /** Poll an active outgoing request.
  */
-__inline__ int nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
+__inline__ void nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
 {
   nmad_lock_assert();
   assert(p_pw->flags & NM_PW_FINALIZED || p_pw->flags & NM_PW_NOHEADER);
@@ -123,6 +129,10 @@ __inline__ int nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
       piom_ltask_destroy(&p_pw->ltask);
 #endif /* PIOMAN_POLL */
       nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+#ifdef NMAD_POLL
+      tbx_fast_list_del(&p_pw->link);
+#endif /* NMAD_POLL */
+      nm_so_pw_free(p_pw);
     }
   else if(err == -NM_EAGAIN)
     {
@@ -134,7 +144,6 @@ __inline__ int nm_pw_poll_send(struct nm_pkt_wrap *p_pw)
     {
       TBX_FAILUREF("poll_send failed- err = %d", err);
     }
-  return err;
 }
 
 /** Post a new outgoing request.

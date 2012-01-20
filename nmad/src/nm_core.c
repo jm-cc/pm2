@@ -89,12 +89,7 @@ int nm_schedule(struct nm_core *p_core)
       struct nm_pkt_wrap*p_pw, *p_pw2;
       tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_core->pending_send_list, link)
 	{
-	  const int err = nm_pw_poll_send(p_pw);
-	  if(err == NM_ESUCCESS)
-	    {
-	      tbx_fast_list_del(&p_pw->link);
-	      nm_so_pw_free(p_pw);
-	    }
+	  nm_pw_poll_send(p_pw);
 	}
     }
 

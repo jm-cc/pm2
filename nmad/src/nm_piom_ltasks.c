@@ -198,21 +198,16 @@ static int nm_task_poll_recv(void*_pw)
 static int nm_task_poll_send(void*_pw)
 {
   struct nm_pkt_wrap*p_pw = _pw;
-  int ret = -NM_EUNKNOWN;
   if(nmad_trylock())
     {
-      ret = nm_pw_poll_send(p_pw);
-      if(ret == NM_ESUCCESS)
-	{
-	  nm_so_pw_free(p_pw);
-	}
+      nm_pw_poll_send(p_pw);
       nmad_unlock();
     }
   else
     {
       nm_ltask_submit_poll_send(p_pw);
     }
-  return ret;
+  return NM_ESUCCESS;
 }
 
 static int nm_task_post_on_drv(void*_drv)

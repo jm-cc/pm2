@@ -217,32 +217,38 @@ static inline int nm_so_pw_alloc_and_fill_with_control(const union nm_so_generic
     goto out;
 }
 
+static inline void nm_pw_add_completion(struct nm_pkt_wrap*p_pw, const struct nm_pw_completion_s*p_completion)
+{
+  if(p_pw->n_completions >= p_pw->completions_size)
+    {
+      p_pw->completions_size *= 2;
+      if(p_pw->completions == p_pw->prealloc_completions)
+	{
+	  p_pw->completions = TBX_MALLOC(sizeof(struct nm_pw_completion_s) * p_pw->completions_size);
+	  memcpy(p_pw->completions, p_pw->prealloc_completions, sizeof(struct nm_pw_completion_s) * NM_SO_PREALLOC_IOV_LEN);
+	}
+      else
+	{
+	  p_pw->completions = TBX_REALLOC(p_pw->completions, sizeof(struct nm_pw_completion_s) * p_pw->completions_size);
+	}
+    }
+  memcpy(&p_pw->completions[p_pw->n_completions], p_completion, sizeof(struct nm_pw_completion_s));
+  p_pw->n_completions++;
+}
+
 static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, uint32_t len)
 {
-  if(p_pw->n_contribs > 0 && p_pw->contribs[p_pw->n_contribs - 1].p_pack == p_pack)
+   if(p_pw->n_completions > 0 &&
+      p_pw->completions[p_pw->n_completions - 1].notifier == &nm_pw_contrib_complete &&
+      p_pw->completions[p_pw->n_completions - 1].contrib.p_pack == p_pack)
     {
-      p_pw->contribs[p_pw->n_contribs - 1].len += len;
+      p_pw->completions[p_pw->n_completions - 1].contrib.len += len;
     }
-  else
-    {
-      if(p_pw->n_contribs >= p_pw->contribs_size)
-	{
-	  p_pw->contribs_size *= 2;
-	  if(p_pw->contribs == p_pw->prealloc_contribs)
-	    {
-	      p_pw->contribs = TBX_MALLOC(sizeof(struct nm_pw_contrib_s) * p_pw->contribs_size);
-	      memcpy(p_pw->contribs, p_pw->prealloc_contribs, sizeof(struct nm_pw_contrib_s) * NM_SO_PREALLOC_IOV_LEN);
-	    }
-	  else
-	    {
-	      p_pw->contribs = TBX_REALLOC(p_pw->contribs, sizeof(struct nm_pw_contrib_s) * p_pw->contribs_size);
-	    }
-	}
-      struct nm_pw_contrib_s*p_contrib = &p_pw->contribs[p_pw->n_contribs];
-      p_contrib->len = len;
-      p_contrib->p_pack = p_pack;
-      p_pw->n_contribs++;
-    }
+   else
+     {
+       const struct nm_pw_completion_s completion = { .notifier = &nm_pw_contrib_complete, .contrib.p_pack = p_pack, .contrib.len = len };
+       nm_pw_add_completion(p_pw, &completion);
+     }
   p_pack->scheduled += len;
 }
 

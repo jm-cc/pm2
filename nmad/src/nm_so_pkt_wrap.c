@@ -34,10 +34,6 @@ static p_tbx_memory_t nm_so_pw_nohd_mem = NULL;
  */
 static p_tbx_memory_t nm_so_pw_buf_mem = NULL;
 
-/** Allocator for packet contributions
- */
-static p_tbx_memory_t nm_so_pw_contrib_mem = NULL;
-
 
 /** Initialize the fast allocator structs for SO pkt wrapper.
  *
@@ -46,11 +42,6 @@ static p_tbx_memory_t nm_so_pw_contrib_mem = NULL;
  */
 int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
 {
-  tbx_malloc_extended_init(&nm_so_pw_contrib_mem,
-		  sizeof(struct nm_pw_contrib_s),
-		  INITIAL_PKT_NUM, "nmad/core/pw_contrib",
-		  1);
-
   tbx_malloc_extended_init(&nm_so_pw_nohd_mem,
 			   sizeof(struct nm_pkt_wrap),
 			   INITIAL_PKT_NUM, "nmad/core/nm_pkt_wrap/nohd", 
@@ -70,7 +61,6 @@ int nm_so_pw_init(struct nm_core *p_core TBX_UNUSED)
  */
 int nm_so_pw_exit()
 {
-  tbx_malloc_clean(nm_so_pw_contrib_mem);
   tbx_malloc_clean(nm_so_pw_nohd_mem);
   tbx_malloc_clean(nm_so_pw_buf_mem);
 
@@ -78,7 +68,7 @@ int nm_so_pw_exit()
 }
 
 
-void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
+static inline void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
 {
   p_pw->p_drv  = NULL;
   p_pw->trk_id = NM_TRK_NONE;
@@ -93,15 +83,14 @@ void nm_so_pw_raz(struct nm_pkt_wrap *p_pw)
   p_pw->v_size  = NM_SO_PREALLOC_IOV_LEN;
   p_pw->v_nb    = 0;
 
-  p_pw->contribs = p_pw->prealloc_contribs;
-  p_pw->contribs_size = NM_SO_PREALLOC_IOV_LEN;
-  p_pw->n_contribs = 0;
+  p_pw->completions = p_pw->prealloc_completions;
+  p_pw->completions_size = NM_SO_PREALLOC_IOV_LEN;
+  p_pw->n_completions = 0;
 
   p_pw->p_unpack = NULL;
+  p_pw->chunk_offset = 0;
 
   p_pw->header_ref_count = 0;
-
-  p_pw->chunk_offset = 0;
 
 #ifdef PIOMAN_POLL
   piom_ltask_init(&p_pw->ltask);
@@ -218,9 +207,9 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
       TBX_FREE(p_pw->v);
     }
   /* clean the contribs */
-  if(p_pw->contribs != p_pw->prealloc_contribs)
+  if(p_pw->completions != p_pw->prealloc_completions)
     {
-      TBX_FREE(p_pw->contribs);
+      TBX_FREE(p_pw->completions);
     }
   
 #ifdef DEBUG

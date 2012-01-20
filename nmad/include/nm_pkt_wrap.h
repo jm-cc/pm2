@@ -54,10 +54,26 @@ typedef uint32_t nm_pw_flag_t;
 /* Data flags */
 #define NM_SO_DATA_USE_COPY            0x0200
 
+/** forward declaration for circular dependancy */
+struct nm_pkt_wrap;
+
+/** contribution of a pw to a pack */
 struct nm_pw_contrib_s
 {
   struct nm_pack_s*p_pack;
   uint32_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
+};
+/** notification of pw send/recv completion */
+struct nm_pw_completion_s
+{
+  /** function called to notify pw completion */
+  void (*notifier)(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p_completion);
+  /** data for notification function */
+  union
+  {
+    struct nm_pw_contrib_s contrib;
+    void*key;
+  };
 };
 
 /** Internal packet wrapper.
@@ -126,14 +142,14 @@ struct nm_pkt_wrap
 
   /* ** fields used when sending */
 
-  /** list of contributions in this pw (sending) */
-  struct nm_pw_contrib_s*contribs;
-  /** number of contribs actually stored in this pw */
-  int n_contribs;
-  /** size of the allocated contribs array */
-  int contribs_size;
-  /** pre-allocated contribs */
-  struct nm_pw_contrib_s prealloc_contribs[NM_SO_PREALLOC_IOV_LEN];
+  /** list of completion notifier for this pw (sending) */
+  struct nm_pw_completion_s*completions;
+  /** number of completion notifiers actually registered in this pw */
+  int n_completions;
+  /** size of the allocated completions array */
+  int completions_size;
+  /** pre-allocated completions */
+  struct nm_pw_completion_s prealloc_completions[NM_SO_PREALLOC_IOV_LEN];
 
   /* ** fields used when receiving */
 
@@ -143,7 +159,7 @@ struct nm_pkt_wrap
   struct nm_unpack_s*p_unpack;
 
   tbx_tick_t start_transfer_time;
-  
+
   /* The following field MUST be the LAST within the structure */
   NM_SO_ALIGN_TYPE   buf[1];
 
@@ -155,8 +171,6 @@ struct nm_pkt_wrap
 int nm_so_pw_init(struct nm_core *p_core);
 
 int nm_so_pw_exit(void);
-
-void nm_so_pw_raz(struct nm_pkt_wrap *p_pw);
 
 int nm_so_pw_alloc(int flags, struct nm_pkt_wrap **pp_pw);
 

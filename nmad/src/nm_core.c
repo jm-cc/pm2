@@ -229,6 +229,25 @@ int nm_core_exit(nm_core_t p_core)
 {
   nmad_lock();
 
+  /* flush strategies */
+  int strat_done = 0;
+  while(!strat_done)
+    {
+      int todo = 0;
+      struct nm_gate*p_gate = NULL;
+      NM_FOR_EACH_GATE(p_gate, p_core)
+	{
+	  struct puk_receptacle_NewMad_Strategy_s*r = &p_gate->strategy_receptacle;
+	  if(r->driver->todo && r->driver->todo(r->_status, p_gate)) 
+	    {
+	      todo = 1;
+	    }
+	}
+      if(todo)
+	nm_schedule(p_core);
+      strat_done = !todo;
+    }
+
   nm_core_driver_exit(p_core);
 
   /* purge receive requests not posted yet to the driver */
@@ -257,7 +276,7 @@ int nm_core_exit(nm_core_t p_core)
     }
 #endif /* NMAD_POLL */
   
-  /** Remove any remaining unexpected chunk */
+  /* Remove any remaining unexpected chunk */
   nm_unexpected_clean(p_core);
 
   /* Shutdown "Lightning Fast" Packet Wrappers Manager */

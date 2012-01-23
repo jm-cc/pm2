@@ -146,6 +146,7 @@ TBX_INTERNAL int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
 TBX_INTERNAL int nm_so_process_complete_recv(struct nm_core	*p_core,
 					     struct nm_pkt_wrap *p_pw);
 
+int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_wrap *p_pw, struct nm_gate*p_gate);
 
 /** Compute the cumulated size of an iovec.
  */

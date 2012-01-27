@@ -23,6 +23,11 @@
  *
  */
 
+#ifndef NMAD
+#error NMAD flags not defined. Please compile with flags returned by pkg-config --cflags nmad
+#endif /* NMAD */
+
+
 /* don't include pm2_common.h or tbx.h here. They are not needed and not ISO C compliant */
 #include <stdlib.h>
 #include <stdint.h>

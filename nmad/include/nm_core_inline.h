@@ -246,7 +246,10 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
     }
    else
      {
-       const struct nm_pw_completion_s completion = { .notifier = &nm_pw_contrib_complete, .contrib.p_pack = p_pack, .contrib.len = len };
+       struct nm_pw_completion_s completion;
+       completion.notifier       = &nm_pw_contrib_complete;
+       completion.contrib.p_pack = p_pack;
+       completion.contrib.len    = len;
        nm_pw_add_completion(p_pw, &completion);
      }
   p_pack->scheduled += len;

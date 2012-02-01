@@ -302,6 +302,12 @@ void nm_ibverbs_connect_send(struct nm_ibverbs_drv*p_ibverbs_drv, const char*rem
     {
       if(errno == EINTR)
 	goto retry_send;
+      else if(errno == EPERM)
+	{
+	  /* Linux returns undocumented EPERM if UDP packet is droped because of throttle */
+	  usleep(1000);
+	  goto retry_send;
+	}
       fprintf(stderr, "nmad: FATAL- ibverbs: error while sending address to %s (%s)\n", remote_url, strerror(errno));
       abort();
     }

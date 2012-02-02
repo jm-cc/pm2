@@ -630,32 +630,15 @@ int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct nm_pkt_
     case NM_PROTO_DATA:
       {
 	/* Data header */
-	const struct nm_so_data_header *dh = ptr;
+	const struct nm_so_data_header*dh = ptr;
 	rc = NM_SO_DATA_HEADER_SIZE;
 	/* Retrieve data location */
-	unsigned long skip = dh->skip;
-	const void*data = ptr + NM_SO_DATA_HEADER_SIZE;
-	if(dh->len) 
-	  {
-	    const struct iovec *v = p_pw->v;
-	    uint32_t rlen = (v->iov_base + v->iov_len) - data;
-	    if (skip < rlen)
-	      {
-		data += skip;
-	      }
-	    else
-	      {
-		do
-		  {
-		    skip -= rlen;
-		    v++;
-		    rlen = v->iov_len;
-		  } while (skip >= rlen);
-		data = v->iov_base + skip;
-	      }
-	  }
+	const unsigned long skip = dh->skip;
+	const void*data = ptr + NM_SO_DATA_HEADER_SIZE + skip;
+	assert(p_pw->v_nb == 1);
+	assert(data + dh->len <= p_pw->v->iov_base + p_pw->v->iov_len);
 	const unsigned long size = (dh->flags & NM_PROTO_FLAG_ALIGNED) ? nm_so_aligned(dh->len) : dh->len;
-	if(dh->skip == 0)
+	if(skip == 0)
 	  { /* data is just after the header */
 	    rc += size;
 	  }  /* else the next header is just behind */

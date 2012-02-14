@@ -48,30 +48,40 @@ static inline uint32_t tbx_checksum_dummy(const void*_data TBX_UNUSED, size_t _l
  */
 static inline uint32_t tbx_checksum_xor32(const void *_data, size_t _len)
 {
-	const uint64_t *data = (const uint64_t*)_data;
-	size_t i, len;
-	
-	len = _len / sizeof(*data);
+  const uint64_t *data = (const uint64_t*)_data;
+  size_t i;
 #ifdef __SSE2__
-	__m128i sum128;
-
-	sum128 = _mm_setzero_si128();
-	for(i = 0; i < len; i += 2) 
-		sum128 = _mm_xor_si128(sum128, _mm_set_epi64x(data[i], data[i + 1]));
-
-	return (uint32_t)((_mm_extract_epi16(sum128, 0) | (_mm_extract_epi16(sum128, 1) << 16)) ^ 
-			  (_mm_extract_epi16(sum128, 2) | (_mm_extract_epi16(sum128, 3) << 16)) ^ 
-			  (_mm_extract_epi16(sum128, 4) | (_mm_extract_epi16(sum128, 5) << 16)) ^ 
-			  (_mm_extract_epi16(sum128, 6) | (_mm_extract_epi16(sum128, 7) << 16)));
-#else
-	uint64_t sum64;
-
-	sum64 = 0;
-	for(i = 0; i < len; i++)
-		sum64 ^= data[i];
-
-	return (uint32_t)((sum64 & 0xFFFFFFFF) ^ ((sum64 & 0xFFFFFFFF00000000ULL) >> 32));
-#endif
+  const size_t len64 = _len / sizeof(uint64_t);
+  const size_t len128 = len64 / 2;
+  __m128i sum128 = _mm_setzero_si128();
+  for(i = 0; i < len128; i++) 
+    sum128 = _mm_xor_si128(sum128, _mm_set_epi64x(data[i * 2], data[i * 2 + 1]));
+  size_t tail = len128 * (2 * sizeof(uint64_t));
+  uint32_t sum_tail = 0;
+  while(tail < _len)
+    {
+      uint32_t tail_data = 0;
+      size_t tail_chunk = 0;
+      while((tail < _len) && (tail_chunk < sizeof(uint32_t)))
+	{
+	  tail_data <<= 8;
+	  tail_data |= ((const uint8_t*)_data)[tail];
+	  tail++;
+	}
+      sum_tail ^= tail_data;
+    }
+  return (uint32_t)((_mm_extract_epi16(sum128, 0) | (_mm_extract_epi16(sum128, 1) << 16)) ^ 
+		    (_mm_extract_epi16(sum128, 2) | (_mm_extract_epi16(sum128, 3) << 16)) ^ 
+		    (_mm_extract_epi16(sum128, 4) | (_mm_extract_epi16(sum128, 5) << 16)) ^ 
+		    (_mm_extract_epi16(sum128, 6) | (_mm_extract_epi16(sum128, 7) << 16)) ^ 
+		    sum_tail);
+#else /* __SSE2__ */
+  const size_t len = _len / sizeof(*data);
+  uint64_t sum64 = 0;
+  for(i = 0; i < len; i++)
+    sum64 ^= data[i];
+  return (uint32_t)((sum64 & 0xFFFFFFFF) ^ ((sum64 & 0xFFFFFFFF00000000ULL) >> 32));
+#endif /* __SSE2__ */
 }
 
 /* ********************************************************* */
@@ -81,14 +91,13 @@ static inline uint32_t tbx_checksum_xor32(const void *_data, size_t _len)
 static inline uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
 {
 	const uint32_t *data = (const uint32_t*)_data;
-        size_t i, len;
-	uint32_t sum;
-
-	sum = 0;
-	len = _len / sizeof(*data);
+	const size_t len = _len / sizeof(uint32_t);
+        size_t i;
+	uint32_t sum = 0;
 	for(i = 0; i < len; i++)
-		sum += data[i];
-
+	  {
+	    sum += data[i];
+	  }
 	return sum;
 }
 
@@ -101,15 +110,13 @@ static inline uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
 static inline uint32_t tbx_checksum_block64(const void*_data, size_t _len)
 {
 	const uint64_t *data = (const uint64_t*)_data;
-	size_t len, i;
-	uint64_t sum;
-
-	len = _len / sizeof(*data);
-	sum = 0;
-
+	const size_t len = _len / sizeof(uint64_t);
+	uint64_t sum = 0;
+	size_t i;
 	for(i = 0; i < len; i++)
-		sum += data[i];
-
+	  {
+	    sum += data[i];
+	  }
 	return (uint32_t)((sum & 0xFFFFFFFF) ^ ((sum & 0xFFFFFFFF00000000ULL) >> 32));
 }
 

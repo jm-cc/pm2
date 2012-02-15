@@ -145,10 +145,16 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
 {
   struct nm_ibverbs*status = TBX_MALLOC(sizeof(struct nm_ibverbs));
   memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * 2);
-  if(_nm_ibverbs_checksum == NULL && getenv("NMAD_IBVERBS_CHECKSUM") != NULL)
+  const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
+  if(_nm_ibverbs_checksum == NULL &&  checksum_env != NULL)
     {
-      _nm_ibverbs_checksum = tbx_checksum_block64;
-      NM_DISPF("# nmad ibverbs: checksum enabled.\n");
+      if((strcmp(checksum_env, "1") == 0) || (strcmp(checksum_env, "default") == 0))
+	checksum_env = "xor";
+      tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
+      if(checksum == NULL)
+	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
+      _nm_ibverbs_checksum = checksum->func;
+      NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
     }
   return status;
 }
@@ -557,6 +563,7 @@ static int nm_ibverbs_disconnect(void*_status, struct nm_gate*p_gate, struct nm_
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
+  assert(p_pw->drv_priv == NULL);
   p_pw->drv_priv = p_ibverbs_cnx;
   (*p_ibverbs_cnx->method.driver->send_post)(p_ibverbs_cnx->method._status, &p_pw->v[0], p_pw->v_nb);
   int err = nm_ibverbs_poll_send_iov(_status, p_pw);
@@ -567,6 +574,8 @@ static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
 {
   struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
   int err = (*p_ibverbs_cnx->method.driver->send_poll)(p_ibverbs_cnx->method._status);
+  if(err == NM_ESUCCESS)
+    p_pw->drv_priv = NULL;
   return err;
 }
 

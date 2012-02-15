@@ -24,4 +24,4 @@ lib_LTLIBRARIES = libtbx.la
 
 libtbx_la_SOURCES = 	tbx.c tbx_htable_management.c tbx_log.c tbx_slist_management.c tbx_timing.c 	\
 			tbx_darray_management.c tbx_list_management.c tbx_snprintf.c tbx_topology.c 	\
-			tbx_fortran_argument.c tbx_program_argument.c tbx_string_management.c
+			tbx_fortran_argument.c tbx_program_argument.c tbx_string_management.c tbx_checksum.c

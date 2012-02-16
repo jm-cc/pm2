@@ -2942,6 +2942,13 @@ int MPI_Comm_group(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
+static int nodecmp(const void *v1, const void *v2) 
+{
+  int **node1 = (int **)v1;
+  int **node2 = (int **)v2;
+  return ((*node1)[1] - (*node2)[1]);
+}
+
 int MPI_Comm_split(MPI_Comm comm,
 		   int color,
 		   int key,
@@ -3001,15 +3008,8 @@ int MPI_Comm_split(MPI_Comm comm,
   }
 
   // Sorting the nodes with the same color according to their key
-  {
-    int nodecmp(const void *v1, const void *v2) {
-      int **node1 = (int **)v1;
-      int **node2 = (int **)v2;
-      return ((*node1)[1] - (*node2)[1]);
-    }
-    qsort(conodes, nb_conodes, sizeof(int *), nodecmp);
-  }
-
+  qsort(conodes, nb_conodes, sizeof(int *), &nodecmp);
+  
 #ifdef DEBUG
   MPI_NMAD_TRACE("[%d] Conodes: ", mpir_communicator->rank);
   for(i=0 ; i<nb_conodes ; i++) {

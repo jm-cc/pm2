@@ -20,7 +20,7 @@ CFLAGS   :=
 LD       := $(CC)
 LDFLAGS  :=
 LIBS     :=
-CC_DEP   := $(CC)
+CC_DEP   := $(CC) -MM
 
 include @puk_root@/etc/common_rules.mk
 

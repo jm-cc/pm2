@@ -73,7 +73,7 @@ for arg in "$@" ; do
                 DoLink=1
             fi
             ;;
-	-E|-M)
+	-E|-M*)
 	    # For compilers that support -E as a way to get at the C preprocessor
 	    # Also, for compilers that support -M for creating dependencies
             compileargs="$compileargs $arg"

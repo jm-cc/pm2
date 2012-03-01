@@ -146,10 +146,8 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
   struct nm_ibverbs*status = TBX_MALLOC(sizeof(struct nm_ibverbs));
   memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * 2);
   const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
-  if(_nm_ibverbs_checksum == NULL &&  checksum_env != NULL)
+  if(_nm_ibverbs_checksum == NULL && checksum_env != NULL)
     {
-      if((strcmp(checksum_env, "1") == 0) || (strcmp(checksum_env, "default") == 0))
-	checksum_env = "xor";
       tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
       if(checksum == NULL)
 	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);

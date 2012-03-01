@@ -20,22 +20,70 @@
  */
 
 
+#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #ifdef __SSE2__
 #include <emmintrin.h>
 #endif
-#include "tbx_compiler.h"
-#include "tbx_checksum.h"
+#include "tbx.h"
 
 #if defined(__SSE2__) && defined(__INTEL_COMPILER)
 __m128i _mm_set_epi64x(__int64 i1, __int64 i2);
 #endif
 
+#ifdef __x86_64__
+#define cpuid(func, ax, bx, cx, dx)\
+	__asm__ __volatile__ ("cpuid":\
+	"=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
+
+static inline int tbx_support_sse4_1(void)
+{ 
+  int ax, bx, cx, dx;
+  cpuid(1, ax, bx, cx, dx);
+  return (cx >> 19) & 1;
+}
+static inline int tbx_support_sse4_2(void)
+{ 
+  int ax, bx, cx, dx;
+  cpuid(1, ax, bx, cx, dx);
+  return (cx >> 20) & 1;
+}
+static inline int tbx_support_sse3(void)
+{ 
+  int ax, bx, cx, dx;
+  cpuid(1, ax, bx, cx, dx);
+  return (cx >> 9) & 1;
+}
+static inline int tbx_support_sse2(void)
+{ 
+  int ax, bx, cx, dx;
+  cpuid(1, ax, bx, cx, dx);
+  return (dx >> 26) & 1;
+}
+static inline int tbx_support_sse(void)
+{ 
+  int ax, bx, cx, dx;
+  cpuid(1, ax, bx, cx, dx);
+  return (dx >> 25) & 1;
+}
+#else /* __x86_64__ */
+static inline int tbx_support_sse4_2(void)
+{ return 0; }
+static inline int tbx_support_sse4_1(void)
+{ return 0; }
+static inline int tbx_support_sse3(void)
+{ return 0; }
+static inline int tbx_support_sse2(void)
+{ return 0; }
+static inline int tbx_support_sse(void)
+{ return 0; }
+#endif /* __x86_64__ */
 
 static const struct tbx_checksum_s checksums[] =
 {
-  { .short_name = "xor",           .name = "xor32",                 .func = &tbx_checksum_xor32 },
+  { .short_name = "dummy",         .name = "No checksum",           .func = &tbx_checksum_dummy },
+  { .short_name = "xor",           .name = "SSE2 xor32",            .func = &tbx_checksum_xor32 },
   { .short_name = "plain",         .name = "plain32",               .func = &tbx_checksum_plain32 },
   { .short_name = "block64",       .name = "block64",               .func = &tbx_checksum_block64 },
   { .short_name = "adler",         .name = "Adler32",               .func = &tbx_checksum_adler32 },
@@ -53,6 +101,25 @@ static const struct tbx_checksum_s checksums[] =
 tbx_checksum_t tbx_checksum_get(const char*short_name)
 {
   int i = 0;
+
+  if(short_name == NULL || (strcmp(short_name, "default") == 0) || (strcmp(short_name, "1") == 0))
+    {
+      if(tbx_support_sse4_2())
+	short_name = "crc";
+      else if(tbx_support_sse2())
+	short_name = "xor";
+      else
+	short_name = "plain";
+    }
+
+  if((strcmp("xor", short_name) == 0) &&
+     (!tbx_support_sse2()))
+    TBX_FAILUREF("tbx_checksum: FATAL- CPU does not support SSE2, cannot use 'xor' checksum.\n");
+
+  if((strcmp("crc", short_name) == 0) &&
+     (!tbx_support_sse4_2()))
+    TBX_FAILUREF("tbx_checksum: FATAL- CPU does not support SSE4.2, cannot use 'crc' checksum.\n");
+
   while(checksums[i].short_name != NULL)
     {
       if(strcmp(checksums[i].short_name, short_name) == 0)
@@ -473,11 +540,12 @@ uint32_t tbx_checksum_hsieh(const void *_data, size_t len)
  */
 
 #define SCALE_F sizeof(unsigned long)
-#ifdef CONFIG_X86_64
+#ifdef __x86_64__
 #define REX_PRE "0x48, "
 #else
 #define REX_PRE
 #endif
+
 
 static inline uint32_t crc32c_intel_le_hw_byte(uint32_t crc, unsigned char const *data, size_t length)
 {

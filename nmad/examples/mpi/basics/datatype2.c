@@ -62,7 +62,9 @@ void struct_datatype(int rank) {
 
   MPI_Type_struct(3, blocklens, displacements, types, &mytype);
   MPI_Type_commit(&mytype);
+#ifdef NMAD
   MPI_Type_optimized(&mytype, 1);
+#endif
 
   if (ping_side) {
     struct part_s particles[10];

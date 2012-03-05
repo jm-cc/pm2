@@ -23,8 +23,8 @@ void send_with_different_communicators(int rank, MPI_Comm comm);
 
 int main(int argc, char **argv) {
   int numtasks, rank;
-  int comm1;
-  int comm2;
+  MPI_Comm comm1;
+  MPI_Comm comm2;
 
   // Initialise MPI
   MPI_Init(&argc,&argv);

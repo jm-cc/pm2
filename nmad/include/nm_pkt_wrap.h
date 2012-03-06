@@ -73,7 +73,7 @@ struct nm_pw_completion_s
   {
     struct nm_pw_contrib_s contrib;
     void*key;
-  };
+  } data;
 };
 
 /** Internal packet wrapper.

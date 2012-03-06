@@ -69,7 +69,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
  */
 void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p_completion)
 {
-  struct nm_pw_contrib_s*p_contrib = &p_completion->contrib;
+  struct nm_pw_contrib_s*p_contrib = &p_completion->data.contrib;
   struct nm_pack_s*p_pack = p_contrib->p_pack;
   p_pack->done += p_contrib->len;
   if(p_pack->done == p_pack->len)

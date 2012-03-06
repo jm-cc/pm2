@@ -240,16 +240,16 @@ static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p
 {
    if(p_pw->n_completions > 0 &&
       p_pw->completions[p_pw->n_completions - 1].notifier == &nm_pw_contrib_complete &&
-      p_pw->completions[p_pw->n_completions - 1].contrib.p_pack == p_pack)
+      p_pw->completions[p_pw->n_completions - 1].data.contrib.p_pack == p_pack)
     {
-      p_pw->completions[p_pw->n_completions - 1].contrib.len += len;
+      p_pw->completions[p_pw->n_completions - 1].data.contrib.len += len;
     }
    else
      {
        struct nm_pw_completion_s completion;
        completion.notifier       = &nm_pw_contrib_complete;
-       completion.contrib.p_pack = p_pack;
-       completion.contrib.len    = len;
+       completion.data.contrib.p_pack = p_pack;
+       completion.data.contrib.len    = len;
        nm_pw_add_completion(p_pw, &completion);
      }
   p_pack->scheduled += len;

@@ -201,6 +201,15 @@ extract_package_tarbz2() {
     ( cd ${prefix}/src/${n} ; tar xjf ${package} )
     extract_package_unpacked_archive "${prefix}/src/${n}"
 }
+# package is a .atr.xz
+extract_package_tarxz() {
+    package="`extract_package_make_abs $1`"
+    n=$( basename ${package} .tar.xz )
+    mkdir -p ${prefix}/src/${n}
+    echo "# unpacking package: ${package}" 1>&2
+    ( cd ${prefix}/src/${n} ; tar xJf ${package} )
+    extract_package_unpacked_archive "${prefix}/src/${n}"
+}
 
 # frontend to extract packages
 extract_package() {
@@ -219,6 +228,9 @@ extract_package() {
 		;;
 	    *.tar.bz2)
 		extract_package_tarbz2 "${package}"
+		;;
+	    *.tar.xz)
+		extract_package_tarxz "${package}"
 		;;
 	    *)
 		echo "# ** cannot detect kind for package ${package}" 1>&2

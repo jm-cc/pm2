@@ -270,11 +270,15 @@ build_package() {
     # configure
     cd ${prefix}/build/${package_name}
     if [ "x${build_option_noconf}" = "x" ]; then
-	echo "# configure: ${package_name}" 1>&2
-	${package_srcdir}/configure --prefix=${prefix} ${common_options} $*
-	rc=$?
-	if [ $rc != 0 ]; then exit 1; fi
-	echo
+	if [ -x ${package_srcdir}/configure ]; then
+	    echo "# configure: ${package_name}" 1>&2
+	    ${package_srcdir}/configure --prefix=${prefix} ${common_options} $*
+	    rc=$?
+	    if [ $rc != 0 ]; then exit 1; fi
+	    echo
+	else
+	    cp -r ${package_srcdir}/* ${prefix}/build/${package_name}/
+	fi
     fi
     # make clean
     if [ "x${build_option_clean}" != "x" ]; then

@@ -150,6 +150,9 @@ int mpir_internal_init(mpir_internal_data_t *mpir_internal_data)
   mpir_internal_data->datatypes[MPI_2INT]->size = 2*sizeof(int);
   mpir_internal_data->datatypes[MPI_2INT]->elements = 2;
 
+  mpir_internal_data->datatypes[MPI_2DOUBLE_PRECISION]->size = 2*sizeof(double);
+  mpir_internal_data->datatypes[MPI_2DOUBLE_PRECISION]->elements = 2;
+
   mpir_internal_data->datatypes[MPI_COMPLEX]->size = 2*sizeof(float);
   mpir_internal_data->datatypes[MPI_COMPLEX]->elements = 2;
 

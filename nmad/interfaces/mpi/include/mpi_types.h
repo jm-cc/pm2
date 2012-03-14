@@ -173,6 +173,8 @@ typedef int MPI_Datatype;
 #define MPI_FLOAT_INT        ((MPI_Datatype)16)
 #define MPI_DOUBLE_INT       ((MPI_Datatype)17)
 #define MPI_2INT             ((MPI_Datatype)18)
+#define MPI_2DOUBLE_PRECISION ((MPI_Datatype)19)
+
 
 #define MPI_COMPLEX          ((MPI_Datatype)23)
 #define MPI_DOUBLE_COMPLEX   ((MPI_Datatype)24)

@@ -40,8 +40,8 @@ AC_DEFUN([CHECK__FORTRAN_COMPILER],
 	if test "x${FC}" != x; then
 	   # Gnu Fortran compiler ?
 	   AC_MSG_CHECKING([whether GNU Fortran compiler is being used])
-	   if $FC -v 2>&1 | grep -i gnu >/dev/null 2>&1; then
-	      ADD_TO(PKG_AM_CPPFLAGS, -DGNU_FORTRAN_COMPILER)
+	   if $FC -v 2>&1 | grep -i -E 'gnu|gcc|gfortran' >/dev/null 2>&1; then
+	      ADD_TO(PKG_AM_CPPFLAGS, -DTBX_FORTRAN_COMPILER_GNU)
 	      AC_MSG_RESULT(yes)
 	   else
 	      AC_MSG_RESULT(no)
@@ -50,7 +50,7 @@ AC_DEFUN([CHECK__FORTRAN_COMPILER],
 	   # Intel Fortran compiler ?
 	   AC_MSG_CHECKING([whether Intel Fortran compiler is being used])
 	   if $FC -v 2>&1 | grep -i intel >/dev/null 2>&1; then
-	      ADD_TO(PKG_AM_CPPFLAGS, -DINTEL_FORTRAN_COMPILER)
+	      ADD_TO(PKG_AM_CPPFLAGS, -DTBX_FORTRAN_COMPILER_INTEL)
 	      AC_MSG_RESULT(yes)
 	   else
 	      AC_MSG_RESULT(no)

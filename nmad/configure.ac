@@ -240,9 +240,9 @@ nmad_fortran_target=none
 echo $tbx_CFLAGS | grep -q FORTRAN_COMPILER
 __tbx_have_fortran=$?
 if test ${__tbx_have_fortran} -eq 0; then
-  echo $tbx_CFLAGS | grep -q GNU_FORTRAN_COMPILER
+  echo $tbx_CFLAGS | grep -q TBX_FORTRAN_COMPILER_GNU
   __tbx_have_gfortran=$?
-  echo $tbx_CFLAGS | grep -q INTEL_FORTRAN_COMPILER
+  echo $tbx_CFLAGS | grep -q TBX_FORTRAN_COMPILER_INTEL
   __tbx_have_ifort=$?
   if test ${__tbx_have_gfortran} -eq 0; then
     nmad_fortran_target=gfortran

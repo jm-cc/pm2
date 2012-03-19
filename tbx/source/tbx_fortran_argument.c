@@ -31,7 +31,7 @@
 #define MAX_ARG_LEN 128
 
 
-#ifdef GNU_FORTRAN_COMPILER
+#ifdef TBX_FORTRAN_COMPILER_GNU
 
 
 /* GFortran iargc/getargc bindings
@@ -77,7 +77,7 @@ void tbx_fortran_init(int *argc, char ***argv)
 }
 
 
-#elif defined INTEL_FORTRAN_COMPILER
+#elif defined TBX_FORTRAN_COMPILER_INTEL
 
 
 /* Ifort iargc/getargc bindings

@@ -1966,6 +1966,59 @@ int MPI_Testany(int count,
   return err;
 }
 
+int MPI_Testall(int count,
+		MPI_Request *array_of_requests,
+		int *flag,
+		MPI_Status *statuses) {
+  int i, err = 0;
+  int count_inactive = 0;
+  mpir_request_t *mpir_request;
+
+  MPI_NMAD_LOG_IN();
+
+  /* flag is true only if all requests have completed. Otherwise, flag is
+   * false and neither the array_of_requests nor the array_of_statuses is
+   * modified.
+   */
+  for(i=0 ; i<count ; i++) {
+    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      count_inactive++;
+      continue;
+    }
+
+    err = mpir_test(&mpir_internal_data, mpir_request);
+    if(err != NM_ESUCCESS) {
+      /* at least one request is not completed */
+      *flag = 0;
+      MPI_NMAD_LOG_OUT();
+      return err;
+    }
+  }
+
+  /* all the requests are completed */
+  for(i=0 ; i<count ; i++) {
+    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    if (mpir_request->request_type == MPI_REQUEST_ZERO) {
+      count_inactive++;
+      continue;
+    }
+
+    err = MPI_Test(&(array_of_requests[i]), flag, &(statuses[i]));
+    if(*flag != 1) {
+      /* at least one request is not completed */
+      ERROR("Error during MPI_Testall: request #%d should be completed, but it is not !");
+      MPI_NMAD_LOG_OUT();
+      return MPI_ERR_INTERN;
+    }
+
+  }
+
+  *flag = 1;
+
+  MPI_NMAD_LOG_OUT();
+  return err;
+}
 
 /* TODO : handle the case where statuses == MPI_STATUSES_IGNORE */
 int MPI_Testsome(int count,

@@ -305,6 +305,19 @@ int MPI_Testsome(int count,
 		 int *outcount,
 		 int *indices,
 		 MPI_Status *statuses);
+/**
+ * Tests for the completion of all previously initiated requests.
+ * @param count list length
+ * @param array_of_requests array of request handles
+ * @param flag  True if all requests have completed; false otherwise (logical)
+ * @param statuses array of statuses of the completed operations
+ * @return MPI status
+ */
+int MPI_Testall(int count,
+		MPI_Request *array_of_requests,
+		int *flag,
+		MPI_Status *statuses);
+
 
 /**
  * Nonblocking operation that returns flag = true if there is a

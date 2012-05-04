@@ -26,6 +26,9 @@
 #ifdef __SSE2__
 #include <emmintrin.h>
 #endif
+#ifdef __SSE4__
+#include <smmintrin.h>
+#endif
 #include "tbx.h"
 
 #if defined(__SSE2__) && defined(__INTEL_COMPILER)
@@ -80,21 +83,65 @@ static inline int tbx_support_sse(void)
 { return 0; }
 #endif /* __x86_64__ */
 
+static uint32_t tbx_checksum_dummy(const void*_data TBX_UNUSED, size_t _len TBX_UNUSED);
+static uint32_t tbx_checksum_xor32(const void*_data, size_t _len);
+static uint32_t tbx_checksum_adler32(const void*_data, size_t len);
+static uint32_t tbx_checksum_jenkins(const void*_data, size_t _len);
+static uint32_t tbx_checksum_knuth(const void*_data, size_t _len);
+static uint32_t tbx_checksum_murmurhash2a (const void *_data, size_t len);
+static uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t len);
+static uint32_t tbx_checksum_hsieh(const void *_data, size_t len);
+
+static uint32_t tbx_checksum_plain32(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_plain32(void*_dest, const void*_src, size_t _len);
+
+static uint32_t tbx_checksum_block64(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_block64(void*_dest, const void*_src, size_t _len);
+
+static uint32_t tbx_checksum_fletcher64(const void *_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_fletcher64(void*_dest, const void*_src, size_t _len);
+
+static uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_fnv1a(void*_dest, const void*_src, size_t _len);
+
+static uint32_t tbx_checksum_crc32(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len);
+
+
 static const struct tbx_checksum_s checksums[] =
 {
   { .short_name = "dummy",         .name = "No checksum",           .func = &tbx_checksum_dummy },
   { .short_name = "xor",           .name = "SSE2 xor32",            .func = &tbx_checksum_xor32 },
-  { .short_name = "plain",         .name = "plain32",               .func = &tbx_checksum_plain32 },
-  { .short_name = "block64",       .name = "block64",               .func = &tbx_checksum_block64 },
+  { .short_name = "plain",         .name = "plain32",              
+    .func              = &tbx_checksum_plain32,
+    .checksum_and_copy = &tbx_checksum_and_copy_plain32 
+  },
+  { .short_name = "block64",       .name = "block64",            
+    .func              = &tbx_checksum_block64 ,
+    .checksum_and_copy = &tbx_checksum_and_copy_block64
+  },
   { .short_name = "adler",         .name = "Adler32",               .func = &tbx_checksum_adler32 },
-  { .short_name = "fletcher",      .name = "Fletcher64",            .func = &tbx_checksum_fletcher64 },
+  { .short_name = "fletcher",      .name = "Fletcher64",
+    .func              = &tbx_checksum_fletcher64,
+    .checksum_and_copy = &tbx_checksum_and_copy_fletcher64
+  },
   { .short_name = "jenkins",       .name = "Jenkins one-at-a-time", .func = &tbx_checksum_jenkins },
-  { .short_name = "fnv1a",         .name = "FNV1a",                 .func = &tbx_checksum_fnv1a },
+  { .short_name = "fnv1a",         .name = "FNV1a", 
+    .func              = &tbx_checksum_fnv1a,
+    .checksum_and_copy = &tbx_checksum_and_copy_fnv1a
+  },
   { .short_name = "knuth",         .name = "Knuth",                 .func = &tbx_checksum_knuth },
   { .short_name = "murmurhash2a",  .name = "MurmurHash2a",          .func = &tbx_checksum_murmurhash2a },
   { .short_name = "murmurhash64a", .name = "MurmurHash64a",         .func = &tbx_checksum_murmurhash64a },
   { .short_name = "hsieh",         .name = "Paul Hsieh SuperFast",  .func = &tbx_checksum_hsieh },
-  { .short_name = "crc",           .name = "SSE4.2 CRC32",          .func = &tbx_checksum_crc32 },
+  { .short_name = "crc",           .name = "SSE4.2 CRC32",         
+    .func              = &tbx_checksum_crc32,
+#if defined (__SSE4_2__) 
+    .checksum_and_copy = &tbx_checksum_and_copy_crc32
+#else  /* __SSE4_2__ */
+    .checksum_and_copy = NULL
+#endif /* __SSE4_2__ */
+  },
   { .short_name = NULL, .name = NULL, .func = NULL }
 };
 
@@ -136,6 +183,17 @@ tbx_checksum_t tbx_checksum_get(const char*short_name)
 static inline uint32_t tbx_checksum_fold64(uint64_t sum)
 {
   return (uint32_t)((sum & 0xFFFFFFFF) ^ ((sum & 0xFFFFFFFF00000000ULL) >> 32));
+}
+
+static inline void tbx_checksum_copy_tail(void*_dest, const void*_src, size_t done, size_t len)
+{
+  char*dest = _dest;
+  const char*src = _src;
+  while(done < len)
+    {
+      dest[done] = src[done];
+      done++;
+    }
 }
 
 
@@ -193,7 +251,7 @@ uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
 /** Plain 32 bits sum
  * @author Alexandre DENIS
  */
-uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
+static uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
 {
   const uint32_t *data = (const uint32_t*)_data;
   const size_t len = _len / sizeof(uint32_t);
@@ -206,13 +264,30 @@ uint32_t tbx_checksum_plain32(const void*_data, size_t _len)
   return sum;
 }
 
+static uint32_t tbx_checksum_and_copy_plain32(void*_dest, const void*_src, size_t _len)
+{
+  const uint32_t*src = (const uint32_t*)_src;
+  uint32_t*dest = (uint32_t*)_dest;
+  const size_t len = _len / sizeof(uint32_t);
+  uint32_t sum = 0;
+  size_t i;
+  for(i = 0; i < len; i++)
+    {
+      const uint32_t data = src[i];
+      sum += data;
+      dest[i] = data;
+    }
+  tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint32_t), _len);
+  return sum;
+}
+
 
 /* ********************************************************* */
 /** Optimized sum with 64 bits blocks with xor-folding for a 32 bit result.
  * @todo tail of block is missing for length not multiple of 8 bytes.
  * @author Alexandre DENIS
  */
-uint32_t tbx_checksum_block64(const void*_data, size_t _len)
+static uint32_t tbx_checksum_block64(const void*_data, size_t _len)
 {
   const uint64_t *data = (const uint64_t*)_data;
   const size_t len = _len / sizeof(uint64_t);
@@ -225,6 +300,22 @@ uint32_t tbx_checksum_block64(const void*_data, size_t _len)
   return tbx_checksum_fold64(sum);
 }
 
+static uint32_t tbx_checksum_and_copy_block64(void*_dest, const void*_src, size_t _len)
+{
+  uint64_t*dest = _dest;
+  const uint64_t*src = _src;
+  const size_t len = _len / sizeof(uint64_t);
+  uint64_t sum = 0;
+  int i;
+  for(i = 0; i < len; i++)
+    {
+      const uint64_t b = src[i];
+      sum += b;
+      dest[i] = b;
+    }
+  tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint64_t), _len);
+  return tbx_checksum_fold64(sum);
+}
 
 
 /* ********************************************************* */
@@ -296,7 +387,7 @@ uint32_t tbx_checksum_adler32(const void*_data, size_t len)
  * 64 bits words to get half-decent performance.
  * @author Alexandre DENIS
  */
-uint32_t tbx_checksum_fletcher64(const void *_data, size_t _len)
+static uint32_t tbx_checksum_fletcher64(const void *_data, size_t _len)
 {
   const uint32_t *data = (const uint32_t*)_data;
   const size_t len = _len / sizeof(*data);
@@ -308,6 +399,26 @@ uint32_t tbx_checksum_fletcher64(const void *_data, size_t _len)
       sum2 += sum1;
     }
   /* Second reduction step to reduce sums to 32 bits */
+  sum1 = (sum1 & 0xffffffff) + (sum1 >> 32);
+  sum2 = (sum2 & 0xffffffff) + (sum2 >> 32);
+  return (uint32_t)(sum1 + sum2);
+}
+
+static uint32_t tbx_checksum_and_copy_fletcher64(void*_dest, const void*_src, size_t _len)
+{
+  const uint64_t*src = _src;
+  uint64_t*dest = _dest;
+  const size_t len = _len / sizeof(uint64_t);
+  uint64_t sum1 = 0xffffffff, sum2 = 0xffffffff;
+  size_t i;
+  for(i = 0; i < len; i++)
+    {
+      const uint64_t data = src[i];
+      sum1 += data;
+      sum2 += sum1;
+      dest[i] = data;
+    }
+  tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint32_t), _len);
   sum1 = (sum1 & 0xffffffff) + (sum1 >> 32);
   sum2 = (sum2 & 0xffffffff) + (sum2 >> 32);
   return (uint32_t)(sum1 + sum2);
@@ -345,7 +456,7 @@ uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
  * Code from the reference FNV implementation (public domain).
  * @author Glenn Fowler, Landon Curt Noll, and Phong Vo.
  */
-uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
+static uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
 {
   const uint64_t *data = (const uint64_t *)_data;
   const size_t len = _len / sizeof(*data);
@@ -356,6 +467,24 @@ uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len)
       hash ^= data[i];
       hash *= 1099511628211ULL;
     }
+  return tbx_checksum_fold64(hash);
+}
+
+static uint32_t tbx_checksum_and_copy_fnv1a(void*_dest, const void*_src, size_t _len)
+{
+  const uint64_t*src = _src;
+  uint64_t*dest = _dest;
+  const size_t len = _len / sizeof(uint64_t);
+  uint64_t hash = 14695981039346656037ULL;
+  size_t i;
+  for(i = 0; i < len; i++)
+    {
+      const uint64_t data = src[i];
+      hash ^= data;
+      hash *= 1099511628211ULL;
+      dest[i] = data;
+    }
+  tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint64_t), _len);
   return tbx_checksum_fold64(hash);
 }
 
@@ -585,7 +714,26 @@ static inline uint32_t crc32c_intel_le_hw(uint32_t crc, unsigned char const *p, 
 	return crc;
 }
 
-uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
+static uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
 {
 	return crc32c_intel_le_hw(0, _data, _len);
 }
+#if defined (__SSE4_2__) 
+static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len)
+{
+  uint32_t*dest = _dest;
+  const uint32_t*src = _src;
+  const size_t len = _len / sizeof(uint32_t);
+  uint64_t c = 0;
+  int i;
+  for(i = 0; i < len; i++)
+    {
+      const uint32_t b = src[i];
+      c = __builtin_ia32_crc32si(c, b);
+      dest[i] = b;
+    }
+  tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint32_t), _len);
+  return (uint32_t)c;
+}
+#endif /* __SSE4_2__ */
+

@@ -29,6 +29,7 @@
 #include "tbx_compiler.h"
 
 typedef uint32_t (*tbx_checksum_func_t)(const void*_data, size_t _len);
+typedef uint32_t (*tbx_checksum_copy_func_t)(void*_dest, const void*_src, size_t _len);
 
 /** a checksum algorithm */
 struct tbx_checksum_s
@@ -36,24 +37,11 @@ struct tbx_checksum_s
   const char*short_name;
   const char*name;
   tbx_checksum_func_t func;
+  tbx_checksum_copy_func_t checksum_and_copy;
 };
 typedef const struct tbx_checksum_s*tbx_checksum_t;
 
 extern tbx_checksum_t tbx_checksum_get(const char*short_name);
-
-extern uint32_t tbx_checksum_dummy(const void*_data TBX_UNUSED, size_t _len TBX_UNUSED);
-extern uint32_t tbx_checksum_xor32(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_plain32(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_block64(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_adler32(const void*_data, size_t len);
-extern uint32_t tbx_checksum_fletcher64(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_jenkins(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_knuth(const void*_data, size_t _len);
-extern uint32_t tbx_checksum_murmurhash2a (const void *_data, size_t len);
-extern uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t len);
-extern uint32_t tbx_checksum_hsieh(const void *_data, size_t len);
-extern uint32_t tbx_checksum_crc32(const void*_data, size_t _len);
 
 
 #endif /* TBX_CHECKSUM_H */

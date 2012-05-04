@@ -44,18 +44,20 @@ static const char*checksums[] =
 int main(int argc, char *argv[])
 {
 	tbx_tick_t t1, t2;
-	char *buffer;
+	char *buffer, *buf2;
 	double best, time_usec;
 	uint32_t checksum;
 	int i, j;
 
 	if (! (buffer = (char *)malloc(MAX_SIZE)))
 		return EXIT_FAILURE;
+	buf2 = malloc(MAX_SIZE);
 	for(i = 0; i < MAX_SIZE; i++)
 		buffer[i] = (char)rand();
 
 	tbx_init(&argc, &argv);
 
+	/* ** asymptotic behavior */
 	printf("\n# ## in memory (128 MB block)\n");
 	for (i = 0; i < sizeof(checksums)/sizeof(char*); i++)
 	  {
@@ -75,7 +77,7 @@ int main(int argc, char *argv[])
 	    printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s; %6.3f nsec/word\n",
 		   (unsigned)checksum, best, MAX_SIZE/best, (1000.0*best*8)/MAX_SIZE);
 	}
-
+	/* ** in cache */
 	printf("\n# ## in cache (64 kB block)\n");
 	for (i = 0; i < sizeof(checksums)/sizeof(char*); i++)
 	  {
@@ -95,6 +97,58 @@ int main(int argc, char *argv[])
 	    printf("  checksum = %08x; time = %6.2f usec.; %6.2f MB/s; %6.3f nsec/word\n",
 		   (unsigned)checksum, best, small_size/best, (1000.0*best*8)/small_size);
 	}
+	/* ** memcpy, checksum */
+	printf("\n# ## memcpy, checksum- 128MB block\n");
+	for (i = 0; i < sizeof(checksums)/sizeof(char*); i++)
+	  {
+	    tbx_checksum_t c = tbx_checksum_get(checksums[i]);
+	    printf("# ## %s\n", checksums[i]);
+	    printf("#  size (byte) | time (usec.) | BW (MB/s) | nsec/word | (checksum value)\n");
+	    ssize_t copy_size;
+	    for(copy_size = 16*1024; copy_size <= MAX_SIZE; copy_size *= 2)
+	      {
+		best = DBL_MAX;
+		for (j = 0; j < ITER_LARGE; j++) 
+		  {
+		    TBX_GET_TICK(t1);
+		    memcpy(buf2, buffer, copy_size);
+		    checksum = (*c->func)(buffer, copy_size);
+		    TBX_GET_TICK(t2);
+		    time_usec = TBX_TIMING_DELAY(t1, t2);
+		    if(time_usec < best)
+		      best = time_usec;
+		  }
+		printf("%8d \t %6.2f \t %6.2f \t %6.3f \t %08x\n",
+		       (int)copy_size, best, copy_size/best, (1000.0*best*8)/MAX_SIZE, (unsigned)checksum);
+	      }
+	  }
+	/* ** checksum and copy */
+	printf("\n# ## checksum_and_copy- 128MB block\n");
+	for (i = 0; i < sizeof(checksums)/sizeof(char*); i++)
+	  {
+	    tbx_checksum_t c = tbx_checksum_get(checksums[i]);
+	    if(c->checksum_and_copy != NULL)
+	      {
+		printf("# ## %s\n", checksums[i]);
+		printf("#  size (byte) | time (usec.) | BW (MB/s) | nsec/word | (checksum value)\n");
+		ssize_t copy_size;
+		for(copy_size = 16*1024; copy_size <= MAX_SIZE; copy_size *= 2)
+		  {
+		    best = DBL_MAX;
+		    for (j = 0; j < ITER_LARGE; j++) 
+		      {
+			TBX_GET_TICK(t1);
+			checksum = (*c->checksum_and_copy)(buf2, buffer, copy_size);
+			TBX_GET_TICK(t2);
+			time_usec = TBX_TIMING_DELAY(t1, t2);
+			if(time_usec < best)
+			  best = time_usec;
+		      }
+		    printf("%8d \t %6.2f \t %6.2f \t %6.3f \t %08x\n",
+			   (int)copy_size, best, copy_size/best, (1000.0*best*8)/MAX_SIZE, (unsigned)checksum);
+		  }
+	      }
+	  }
 	
 	tbx_exit();
 	free(buffer);

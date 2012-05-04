@@ -74,7 +74,7 @@ struct nm_ibverbs
   struct nm_ibverbs_cnx cnx_array[2];
 };
 
-static tbx_checksum_func_t _nm_ibverbs_checksum = NULL;
+static tbx_checksum_t _nm_ibverbs_checksum = NULL;
 
 /* ********************************************************* */
 
@@ -151,7 +151,7 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
       tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
       if(checksum == NULL)
 	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
-      _nm_ibverbs_checksum = checksum->func;
+      _nm_ibverbs_checksum = checksum;
       NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
     }
   return status;
@@ -187,7 +187,7 @@ static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status, nm_trk_id_t
 uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
 {
   if(_nm_ibverbs_checksum)
-    return (*_nm_ibverbs_checksum)(data, len);
+    return (*_nm_ibverbs_checksum->func)(data, len);
   else
     return 0;
 }
@@ -195,6 +195,27 @@ uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
 int nm_ibverbs_checksum_enabled(void)
 {
   return _nm_ibverbs_checksum != NULL;
+}
+
+uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, uint32_t len)
+{
+  if(_nm_ibverbs_checksum)
+    {
+      if(_nm_ibverbs_checksum->checksum_and_copy)
+	{
+	  return (*_nm_ibverbs_checksum->checksum_and_copy)(_dest, _src, len);
+	}
+      else
+	{
+	  memcpy(_dest, _src, len);
+	  return nm_ibverbs_checksum(_dest, len);
+	}
+    }
+  else
+    {
+      memcpy(_dest, _src, len);
+    }
+  return 0;
 }
 
 

@@ -38,6 +38,7 @@
 #define NM_IBVERBS_TIMEOUT_CHECK 20
 
 uint32_t nm_ibverbs_checksum(const char*data, uint32_t len);
+uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, uint32_t len);
 int nm_ibverbs_checksum_enabled(void);
 
 /** list of WRIDs used in the driver. */

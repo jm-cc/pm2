@@ -257,10 +257,9 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	  while(chunk_done < chunk_payload)
 	    {
 	      const int block_payload = nm_ibverbs_min(chunk_payload - chunk_done, block_size - lr2_hsize);
-	      memcpy(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
 	      struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
+	      h->checksum = nm_ibverbs_memcpy_and_checksum(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + chunk_done, block_payload);
 	      h->busy = 1;
-	      h->checksum = nm_ibverbs_checksum(lr2->send.sbuf + chunk_offset, block_payload);
 	      chunk_done   += block_payload;
 	      chunk_offset += block_payload + lr2_hsize;
 	    }
@@ -292,10 +291,9 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
       int chunk_offset = 0;
       while(chunk_offset < chunk_size)
 	{
-	  memcpy(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
 	  struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
+	  h->checksum = nm_ibverbs_memcpy_and_checksum(&lr2->buffer.sbuf[chunk_offset], ptr + chunk_done, block_payload);
 	  h->busy = 1;
-	  h->checksum = nm_ibverbs_checksum(ptr + chunk_done, block_payload);
 	  chunk_done   += block_payload;
 	  chunk_offset += block_size;
 	}
@@ -345,8 +343,8 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	    while(!h->busy)
 	      {
 	      }
-	  memcpy(lr2->recv.message + lr2->recv.done, lr2->recv.rbuf, block_payload);
-	  const uint32_t checksum = nm_ibverbs_checksum(lr2->recv.message + lr2->recv.done, block_payload);
+	  const uint32_t checksum =
+	    nm_ibverbs_memcpy_and_checksum(lr2->recv.message + lr2->recv.done, lr2->recv.rbuf, block_payload);
 	  if(h->checksum != checksum)
 	    {
 	      fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",

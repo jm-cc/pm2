@@ -86,11 +86,10 @@ static inline int tbx_support_sse(void)
 static uint32_t tbx_checksum_dummy(const void*_data TBX_UNUSED, size_t _len TBX_UNUSED);
 static uint32_t tbx_checksum_xor32(const void*_data, size_t _len);
 static uint32_t tbx_checksum_adler32(const void*_data, size_t len);
-static uint32_t tbx_checksum_jenkins(const void*_data, size_t _len);
-static uint32_t tbx_checksum_knuth(const void*_data, size_t _len);
 static uint32_t tbx_checksum_murmurhash2a (const void *_data, size_t len);
 static uint32_t tbx_checksum_murmurhash64a(const void*_data, size_t len);
 static uint32_t tbx_checksum_hsieh(const void *_data, size_t len);
+
 
 static uint32_t tbx_checksum_plain32(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_plain32(void*_dest, const void*_src, size_t _len);
@@ -98,11 +97,17 @@ static uint32_t tbx_checksum_and_copy_plain32(void*_dest, const void*_src, size_
 static uint32_t tbx_checksum_block64(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_block64(void*_dest, const void*_src, size_t _len);
 
+static uint32_t tbx_checksum_jenkins(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_jenkins(void*_dest, const void*_src, size_t _len);
+
 static uint32_t tbx_checksum_fletcher64(const void *_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_fletcher64(void*_dest, const void*_src, size_t _len);
 
 static uint32_t tbx_checksum_fnv1a(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_fnv1a(void*_dest, const void*_src, size_t _len);
+
+static uint32_t tbx_checksum_knuth(const void*_data, size_t _len);
+static uint32_t tbx_checksum_and_copy_knuth(void*_dest, const void*_src, size_t _len);
 
 static uint32_t tbx_checksum_crc32(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len);
@@ -125,18 +130,24 @@ static const struct tbx_checksum_s checksums[] =
     .func              = &tbx_checksum_fletcher64,
     .checksum_and_copy = &tbx_checksum_and_copy_fletcher64
   },
-  { .short_name = "jenkins",       .name = "Jenkins one-at-a-time", .func = &tbx_checksum_jenkins },
+  { .short_name = "jenkins",       .name = "Jenkins one-at-a-time",
+    .func              = &tbx_checksum_jenkins ,
+    .checksum_and_copy = &tbx_checksum_and_copy_jenkins
+  },
   { .short_name = "fnv1a",         .name = "FNV1a", 
     .func              = &tbx_checksum_fnv1a,
     .checksum_and_copy = &tbx_checksum_and_copy_fnv1a
   },
-  { .short_name = "knuth",         .name = "Knuth",                 .func = &tbx_checksum_knuth },
+  { .short_name = "knuth",         .name = "Knuth",
+    .func              = &tbx_checksum_knuth,
+    .checksum_and_copy = &tbx_checksum_and_copy_knuth
+  },
   { .short_name = "murmurhash2a",  .name = "MurmurHash2a",          .func = &tbx_checksum_murmurhash2a },
   { .short_name = "murmurhash64a", .name = "MurmurHash64a",         .func = &tbx_checksum_murmurhash64a },
   { .short_name = "hsieh",         .name = "Paul Hsieh SuperFast",  .func = &tbx_checksum_hsieh },
   { .short_name = "crc",           .name = "SSE4.2 CRC32",         
     .func              = &tbx_checksum_crc32,
-#if defined (__SSE4_2__) 
+#if defined (__SSE4_2__) && !defined(__INTEL_COMPILER)
     .checksum_and_copy = &tbx_checksum_and_copy_crc32
 #else  /* __SSE4_2__ */
     .checksum_and_copy = NULL
@@ -156,7 +167,7 @@ tbx_checksum_t tbx_checksum_get(const char*short_name)
       else if(tbx_support_sse2())
 	short_name = "xor";
       else
-	short_name = "plain";
+	short_name = "fnv1a";
     }
 
   if((strcmp("xor", short_name) == 0) &&
@@ -306,7 +317,7 @@ static uint32_t tbx_checksum_and_copy_block64(void*_dest, const void*_src, size_
   const uint64_t*src = _src;
   const size_t len = _len / sizeof(uint64_t);
   uint64_t sum = 0;
-  int i;
+  size_t i;
   for(i = 0; i < len; i++)
     {
       const uint64_t b = src[i];
@@ -448,7 +459,24 @@ uint32_t tbx_checksum_jenkins(const void*_data, size_t _len)
   hash += (hash << 15);
   return tbx_checksum_fold64(hash);
 }
-
+static uint32_t tbx_checksum_and_copy_jenkins(void*_dest, const void*_src, size_t _len)
+{ 
+  const uint64_t*src = _src;
+  uint64_t*dest = _dest;
+  const size_t len = _len / sizeof(uint64_t);
+  uint64_t hash = 0;
+  size_t i;
+  for(i = 0; i < len; ++i) 
+    {
+      const uint64_t data = src[i];
+      hash += data + (hash << 10) + (hash >> 6);
+      dest[i] = data;
+    }
+  hash += (hash << 3);
+  hash ^= (hash >> 11);
+  hash += (hash << 15);
+  return tbx_checksum_fold64(hash);
+}
 
 /* ********************************************************* */
 /** Fowler-Noll-Vo hash function, version FNV1a.
@@ -493,7 +521,7 @@ static uint32_t tbx_checksum_and_copy_fnv1a(void*_dest, const void*_src, size_t 
 /** Knuth hashing.
  * Algorithm by Donald Knuth
  */
-uint32_t tbx_checksum_knuth(const void*_data, size_t _len)
+static uint32_t tbx_checksum_knuth(const void*_data, size_t _len)
 {
   const uint64_t *data = (const uint64_t *)_data;
   const size_t len = _len / sizeof(*data);
@@ -505,7 +533,22 @@ uint32_t tbx_checksum_knuth(const void*_data, size_t _len)
     }
   return tbx_checksum_fold64(h);
 }
+static uint32_t tbx_checksum_and_copy_knuth(void*_dest, const void*_src, size_t _len)
+{
+  const uint64_t*src = _src;
+  uint64_t*dest = _dest;
+  const size_t len = _len / sizeof(uint64_t);
+  uint64_t h = _len;
+  size_t i;
+  for(i = 0; i < len; i++)
+    {
+      const uint64_t data = src[i];
+      h = ((h << 5) ^ (h >> 27)) ^ data;
+      dest[i] = data;
+    }
+  return tbx_checksum_fold64(h);
 
+}
 
 /* ********************************************************* */
 /** MurmurHash2A, by Austin Appleby
@@ -718,14 +761,14 @@ static uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
 {
 	return crc32c_intel_le_hw(0, _data, _len);
 }
-#if defined (__SSE4_2__) 
+#if defined (__SSE4_2__) && !defined(__INTEL_COMPILER)
 static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len)
 {
   uint32_t*dest = _dest;
   const uint32_t*src = _src;
   const size_t len = _len / sizeof(uint32_t);
   uint64_t c = 0;
-  int i;
+  size_t i;
   for(i = 0; i < len; i++)
     {
       const uint32_t b = src[i];

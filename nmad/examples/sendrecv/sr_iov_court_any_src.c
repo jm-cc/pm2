@@ -43,13 +43,13 @@ void court_contigu_vers_court_contigu(void){
 
     memset(iov[0].iov_base, 0, strlen(buf)+1);
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -76,13 +76,13 @@ void court_contigu_vers_court_contigu_plus_long(void){
 
     memset(iov[0].iov_base, 0, strlen(buf)+10);
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -119,15 +119,15 @@ void court_contigu_vers_court_disperse(void){
     memset(buf2, 0, strlen(msg2));
     memset(buf3, 0, strlen(msg3)+1);
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 3, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 3, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
     char *buf  = "hello, world";
 
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -178,8 +178,8 @@ void court_disperse_vers_court_disperse_identique(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 3, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 3, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -194,8 +194,8 @@ void court_disperse_vers_court_disperse_identique(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -243,8 +243,8 @@ void court_disperse_vers_court_disperse_disymetrique(void){
     iov[1].iov_len  = strlen(msg3) + 1;
     iov[1].iov_base = buf2;
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 2, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 2, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -263,8 +263,8 @@ void court_disperse_vers_court_disperse_disymetrique(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -311,8 +311,8 @@ void court_disperse_vers_court_contigu(void){
     iov[0].iov_len  = strlen(msg1) + strlen(msg2) + strlen(msg3) + 1;
     iov[0].iov_base = buf;
 
-    nm_sr_irecv_iov(p_core, NM_ANY_GATE, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, NM_ANY_GATE, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -331,8 +331,8 @@ void court_disperse_vers_court_contigu(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
   }
 
   if (is_server) {
@@ -363,7 +363,7 @@ int
 main(int argc, char **argv) {
   int i = 0;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   while(i++ < 100){
     court_contigu_vers_court_contigu();
@@ -374,6 +374,6 @@ main(int argc, char **argv) {
     court_disperse_vers_court_contigu();
   }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

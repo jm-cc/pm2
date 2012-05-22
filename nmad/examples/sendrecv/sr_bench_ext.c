@@ -36,7 +36,7 @@ struct bench_ext_s
 static void bench_ext_poll(void)
 {
   nm_sr_request_t*request = NULL;
-  nm_sr_recv_success(p_core, &request);
+  nm_sr_recv_success(p_session, &request);
 }
 
 const static struct bench_ext_s bench_poll = 
@@ -53,10 +53,10 @@ static void bench_ext_sr_server(void)
   static int buf;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_irecv(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_irecv(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_sr_client(void)
@@ -64,10 +64,10 @@ static void bench_ext_sr_client(void)
   static int buf = 0;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_irecv(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_irecv(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_sr = 
@@ -82,19 +82,19 @@ const static struct bench_ext_s bench_sr =
 static void bench_ext_sr0_server(void)
 {
   nm_sr_request_t request;
-  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_sr0_client(void)
 {
   nm_sr_request_t request;
-  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_sr0 = 
@@ -111,10 +111,10 @@ static void bench_ext_sranysrc_server(void)
   static int buf;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_irecv(p_core, NM_GATE_NONE, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_irecv(p_session, NM_GATE_NONE, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_sranysrc_client(void)
@@ -122,10 +122,10 @@ static void bench_ext_sranysrc_client(void)
   static int buf = 0;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_irecv(p_core, NM_GATE_NONE, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_irecv(p_session, NM_GATE_NONE, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_sranysrc = 
@@ -142,12 +142,12 @@ static void bench_ext_sranytag_server(void)
   static int buf;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_recv_init(p_core, &request);
-  nm_sr_recv_unpack_data(p_core, &request, &buf, len);
-  nm_sr_recv_irecv(p_core, &request, gate_id, 0, NM_TAG_MASK_NONE);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_recv_init(p_session, &request);
+  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_NONE);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_sranytag_client(void)
@@ -155,12 +155,12 @@ static void bench_ext_sranytag_client(void)
   static int buf = 0;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_isend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_recv_init(p_core, &request);
-  nm_sr_recv_unpack_data(p_core, &request, &buf, len);
-  nm_sr_recv_irecv(p_core, &request, gate_id, 0, NM_TAG_MASK_NONE);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_isend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_recv_init(p_session, &request);
+  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_NONE);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_sranytag = 
@@ -179,10 +179,10 @@ static void bench_ext_sriov_server(void)
   static struct iovec v[2] = { [0] = {.iov_base = &buf[0], .iov_len = sizeof(int) }, 
 			       [1] = {.iov_base = &buf[1], .iov_len = sizeof(int) } };
   nm_sr_request_t request;
-  nm_sr_irecv_iov(p_core, gate_id, 0, v, 2, &request);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_isend_iov(p_core, gate_id, 0, v, 2, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_irecv_iov(p_session, p_gate, 0, v, 2, &request);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_isend_iov(p_session, p_gate, 0, v, 2, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_sriov_client(void)
@@ -191,10 +191,10 @@ static void bench_ext_sriov_client(void)
   static struct iovec v[2] = { [0] = {.iov_base = &buf[0], .iov_len = sizeof(int) }, 
 			       [1] = {.iov_base = &buf[1], .iov_len = sizeof(int) } };
   nm_sr_request_t request;
-  nm_sr_isend_iov(p_core, gate_id, 0, v, 2, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_irecv_iov(p_core, gate_id, 0, v, 2, &request);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_isend_iov(p_session, p_gate, 0, v, 2, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_irecv_iov(p_session, p_gate, 0, v, 2, &request);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_sriov = 
@@ -211,10 +211,10 @@ static void bench_ext_ssend_server(void)
   static int buf;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_irecv(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
-  nm_sr_issend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
+  nm_sr_irecv(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
+  nm_sr_issend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
 }
 
 static void bench_ext_ssend_client(void)
@@ -222,10 +222,10 @@ static void bench_ext_ssend_client(void)
   static int buf = 0;
   static const int len = sizeof(buf);
   nm_sr_request_t request;
-  nm_sr_issend(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_swait(p_core, &request);
-  nm_sr_irecv(p_core, gate_id, 0, &buf, len, &request);
-  nm_sr_rwait(p_core, &request);
+  nm_sr_issend(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_swait(p_session, &request);
+  nm_sr_irecv(p_session, p_gate, 0, &buf, len, &request);
+  nm_sr_rwait(p_session, &request);
 }
 
 const static struct bench_ext_s bench_ssend = 
@@ -244,19 +244,19 @@ static void bench_ext_success_server(void)
   nm_sr_request_t request;
   nm_sr_request_t*p_request = NULL;
 
-  nm_sr_recv_init(p_core, &request);
-  nm_sr_recv_unpack_data(p_core, &request, &buf, len);
-  nm_sr_request_set_completion_queue(p_core, &request);
-  nm_sr_recv_irecv(p_core, &request, gate_id, 0, NM_TAG_MASK_FULL);
-  while(nm_sr_recv_success(p_core, &p_request) != -NM_ESUCCESS)
+  nm_sr_recv_init(p_session, &request);
+  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_request_set_completion_queue(p_session, &request);
+  nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_FULL);
+  while(nm_sr_recv_success(p_session, &p_request) != -NM_ESUCCESS)
     {
     };
 
-  nm_sr_send_init(p_core, &request);
-  nm_sr_send_pack_data(p_core, &request, &buf, len);
-  nm_sr_request_set_completion_queue(p_core, &request);
-  nm_sr_send_isend(p_core, &request, gate_id, 0);
-  while(nm_sr_send_success(p_core, &p_request) != -NM_ESUCCESS)
+  nm_sr_send_init(p_session, &request);
+  nm_sr_send_pack_data(p_session, &request, &buf, len);
+  nm_sr_request_set_completion_queue(p_session, &request);
+  nm_sr_send_isend(p_session, &request, p_gate, 0);
+  while(nm_sr_send_success(p_session, &p_request) != -NM_ESUCCESS)
     {
     };
 }
@@ -268,19 +268,19 @@ static void bench_ext_success_client(void)
   nm_sr_request_t request;
   nm_sr_request_t*p_request = NULL;
 
-  nm_sr_send_init(p_core, &request);
-  nm_sr_send_pack_data(p_core, &request, &buf, len);
-  nm_sr_request_set_completion_queue(p_core, &request);
-  nm_sr_send_isend(p_core, &request, gate_id, 0);
-  while(nm_sr_send_success(p_core, &p_request) != -NM_ESUCCESS)
+  nm_sr_send_init(p_session, &request);
+  nm_sr_send_pack_data(p_session, &request, &buf, len);
+  nm_sr_request_set_completion_queue(p_session, &request);
+  nm_sr_send_isend(p_session, &request, p_gate, 0);
+  while(nm_sr_send_success(p_session, &p_request) != -NM_ESUCCESS)
     {
     };
 
-  nm_sr_recv_init(p_core, &request);
-  nm_sr_recv_unpack_data(p_core, &request, &buf, len);
-  nm_sr_request_set_completion_queue(p_core, &request);
-  nm_sr_recv_irecv(p_core, &request, gate_id, 0, NM_TAG_MASK_FULL);
-  while(nm_sr_recv_success(p_core, &p_request) != -NM_ESUCCESS)
+  nm_sr_recv_init(p_session, &request);
+  nm_sr_recv_unpack_data(p_session, &request, &buf, len);
+  nm_sr_request_set_completion_queue(p_session, &request);
+  nm_sr_recv_irecv(p_session, &request, p_gate, 0, NM_TAG_MASK_FULL);
+  while(nm_sr_recv_success(p_session, &p_request) != -NM_ESUCCESS)
     {
     };
 }
@@ -327,7 +327,7 @@ static void bench_ext_run(const struct bench_ext_s*bench)
 
 int main(int argc, char**argv)
 {
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   bench_ext_run(&bench_poll);
   bench_ext_run(&bench_sr);
@@ -338,7 +338,7 @@ int main(int argc, char**argv)
   bench_ext_run(&bench_ssend);
   bench_ext_run(&bench_success);
   
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }
 

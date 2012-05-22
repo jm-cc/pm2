@@ -27,7 +27,7 @@
 
 int main(int argc, char**argv)
 {
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (is_server) 
     {
@@ -37,10 +37,10 @@ int main(int argc, char**argv)
       for(k = 0; k < LOOPS; k++)
 	{
 	  nm_sr_request_t request;
-	  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-	  nm_sr_rwait(p_core, &request);
-	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-	  nm_sr_swait(p_core, &request);
+	  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+	  nm_sr_rwait(p_session, &request);
+	  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+	  nm_sr_swait(p_session, &request);
 	}
     }
   else 
@@ -54,10 +54,10 @@ int main(int argc, char**argv)
 	{
 	  nm_sr_request_t request;
 	  TBX_GET_TICK(t1);
-	  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-	  nm_sr_swait(p_core, &request);
-	  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-	  nm_sr_rwait(p_core, &request);
+	  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+	  nm_sr_swait(p_session, &request);
+	  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+	  nm_sr_rwait(p_session, &request);
 	  TBX_GET_TICK(t2);
 	  const double delay = TBX_TIMING_DELAY(t1, t2);
 	  const double t = delay / 2.0;
@@ -66,6 +66,6 @@ int main(int argc, char**argv)
 	}
       printf("sendrecv latency: %9.3lf usec.\n", min);
     }
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

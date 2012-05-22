@@ -9,7 +9,7 @@
 
 static int rank, peer;
 static nm_session_t p_session = NULL;
-static nm_gate_t gate_id = NULL;
+static nm_gate_t p_gate = NULL;
 char * sbuf;
 char * rbuf;
 struct iovec * riov;
@@ -27,23 +27,23 @@ void pingpong(int iter)
    
   for(i = 0; i < iter; ++i){
     if(rank == 0){
-      if(nm_sr_irecv_iov(p_session, gate_id, 42, 
+      if(nm_sr_irecv_iov(p_session, p_gate, 42, 
 			 riov, count, 
 			 &rreq) != NM_ESUCCESS)
 	errx(1, "NM Irecv failed \n");
       nm_sr_rwait(p_session, &rreq);
-      if(nm_sr_isend_iov(p_session, gate_id, 42, 
+      if(nm_sr_isend_iov(p_session, p_gate, 42, 
 			 siov, count, 
 			 &sreq) != NM_ESUCCESS)
 	errx(1, "NM Isend failed \n");
       nm_sr_swait(p_session, &sreq);
     }else{
-      if(nm_sr_isend_iov(p_session, gate_id, 42, 
+      if(nm_sr_isend_iov(p_session, p_gate, 42, 
 			 siov, count, 
 			 &sreq) != NM_ESUCCESS)
 	errx(1, "NM Isend failed \n");
       nm_sr_swait(p_session, &sreq);
-      if(nm_sr_irecv_iov(p_session, gate_id, 42, 
+      if(nm_sr_irecv_iov(p_session, p_gate, 42, 
 			 riov, count, 
 			 &rreq) != NM_ESUCCESS)
 	errx(1, "NM Irecv failed \n");
@@ -62,7 +62,7 @@ int main(int argc, char ** argv)
   nm_launcher_get_session(&p_session);
   nm_launcher_get_rank(&rank);
   peer = 1 - rank;
-  nm_launcher_get_gate(peer, &gate_id);
+  nm_launcher_get_gate(peer, &p_gate);
     
   size = SIZE;
   iter = ITER;

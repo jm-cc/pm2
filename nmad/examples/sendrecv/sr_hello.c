@@ -30,7 +30,7 @@ main(int	  argc,
         char		*buf	= NULL;
         uint64_t	 len;
 
-        init(&argc, argv);
+        nm_examples_init(&argc, argv);
 
         len = 1+strlen(msg);
         buf = malloc((size_t)len);
@@ -41,8 +41,8 @@ main(int	  argc,
            */
           memset(buf, 0, len);
 
-          nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
-          nm_sr_rwait(p_core, &request);
+          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request);
+          nm_sr_rwait(p_session, &request);
 
         } else {
 	  nm_sr_request_t request;
@@ -50,8 +50,8 @@ main(int	  argc,
            */
           strcpy(buf, msg);
 
-          nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-          nm_sr_swait(p_core, &request);
+          nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+          nm_sr_swait(p_session, &request);
         }
 
         if (is_server) {
@@ -59,6 +59,6 @@ main(int	  argc,
         }
 
 	free(buf);
-        nmad_exit();
+        nm_examples_exit();
         exit(0);
 }

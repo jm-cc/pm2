@@ -30,7 +30,7 @@ main(int	  argc,
      char	**argv) {
         char			*buf		= NULL;
 
-        init(&argc, argv);
+        nm_examples_init(&argc, argv);
         buf = malloc(SIZE);
 	memset(buf, 0, SIZE);
 
@@ -39,19 +39,19 @@ main(int	  argc,
            */
           nm_sr_request_t request[5];
 
-          nm_sr_irecv(p_core, gate_id, 0, buf, SIZE, &request[0]);
-          nm_sr_rwait(p_core, &request[0]);
+          nm_sr_irecv(p_session, p_gate, 0, buf, SIZE, &request[0]);
+          nm_sr_rwait(p_session, &request[0]);
 
-          nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, SIZE, &request[1]);
-          nm_sr_rwait(p_core, &request[1]);
+          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, SIZE, &request[1]);
+          nm_sr_rwait(p_session, &request[1]);
 
-          nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, SIZE, &request[2]);
-          nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, SIZE, &request[3]);
-          nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, SIZE, &request[4]);
+          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, SIZE, &request[2]);
+          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, SIZE, &request[3]);
+          nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, SIZE, &request[4]);
 
-          nm_sr_rwait(p_core, &request[3]);
-          nm_sr_rwait(p_core, &request[2]);
-          nm_sr_rwait(p_core, &request[4]);
+          nm_sr_rwait(p_session, &request[3]);
+          nm_sr_rwait(p_session, &request[2]);
+          nm_sr_rwait(p_session, &request[4]);
 
           printf("success\n");
         }
@@ -60,21 +60,21 @@ main(int	  argc,
            */
           nm_sr_request_t request[5];
 
-          nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request[0]);
-          nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request[1]);
-          nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request[2]);
-          nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request[3]);
-          nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request[4]);
+          nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request[0]);
+          nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request[1]);
+          nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request[2]);
+          nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request[3]);
+          nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request[4]);
 
-          nm_sr_swait(p_core, &request[0]);
-          nm_sr_swait(p_core, &request[1]);
-          nm_sr_swait(p_core, &request[3]);
-          nm_sr_swait(p_core, &request[2]);
-          nm_sr_swait(p_core, &request[4]);
+          nm_sr_swait(p_session, &request[0]);
+          nm_sr_swait(p_session, &request[1]);
+          nm_sr_swait(p_session, &request[3]);
+          nm_sr_swait(p_session, &request[2]);
+          nm_sr_swait(p_session, &request[4]);
           printf("success\n");
         }
 
 	free(buf);
-        nmad_exit();
+        nm_examples_exit();
         return 0;
 }

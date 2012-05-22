@@ -28,7 +28,7 @@ const char *msg_beg	= "hello", *msg_end = "world!";
 
 int main(int argc, char	**argv)
 {
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   /* build template message */
   char*template_buf = malloc(SIZE+1);
@@ -55,10 +55,10 @@ int main(int argc, char	**argv)
       memset(buf1, 0, SIZE+1);
       memset(buf0, 0, SIZE+1);
       
-      nm_sr_irecv(p_core, gate_id, 1, buf0, SIZE, &request0);
-      nm_sr_irecv(p_core, gate_id, 0, buf1, SIZE, &request1);
-      nm_sr_rwait(p_core, &request1);
-      nm_sr_rwait(p_core, &request0);
+      nm_sr_irecv(p_session, p_gate, 1, buf0, SIZE, &request0);
+      nm_sr_irecv(p_session, p_gate, 0, buf1, SIZE, &request1);
+      nm_sr_rwait(p_session, &request1);
+      nm_sr_rwait(p_session, &request0);
       
       if(memcmp(buf0, template_buf, SIZE) != 0)
 	{
@@ -78,11 +78,11 @@ int main(int argc, char	**argv)
       char*buf = malloc(SIZE+1);
       memcpy(buf, template_buf, SIZE+1);
       
-      nm_sr_isend(p_core, gate_id, 0, buf, SIZE, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, SIZE, &request);
+      nm_sr_swait(p_session, &request);
       
-      nm_sr_isend(p_core, gate_id, 1, buf, SIZE, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 1, buf, SIZE, &request);
+      nm_sr_swait(p_session, &request);
     }
 
 

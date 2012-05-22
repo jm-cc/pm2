@@ -80,17 +80,17 @@ static void nm_test_iovec_symmetrical_regular(char*sbuf, char*rbuf, int iov_coun
   if(is_server)
     {
       usleep(100*1000);
-      nm_sr_isend_iov(p_core, gate_id, 42, siov, iov_count, &sreq);
-      nm_sr_swait(p_core, &sreq);
-      nm_sr_irecv_iov(p_core, src, 42, riov, iov_count, &rreq);
+      nm_sr_isend_iov(p_session, p_gate, 42, siov, iov_count, &sreq);
+      nm_sr_swait(p_session, &sreq);
+      nm_sr_irecv_iov(p_session, src, 42, riov, iov_count, &rreq);
     }
   else
     {
-      nm_sr_irecv_iov(p_core, src, 42, riov, iov_count, &rreq);
-      nm_sr_isend_iov(p_core, gate_id, 42, siov, iov_count, &sreq);
-      nm_sr_swait(p_core, &sreq);
+      nm_sr_irecv_iov(p_session, src, 42, riov, iov_count, &rreq);
+      nm_sr_isend_iov(p_session, p_gate, 42, siov, iov_count, &sreq);
+      nm_sr_swait(p_session, &sreq);
     }
-  nm_sr_rwait(p_core, &rreq);
+  nm_sr_rwait(p_session, &rreq);
   nm_test_iovec_check(rbuf, iov_count, entry_size);
   if(is_server)
     printf("  ok.\n");
@@ -100,9 +100,9 @@ static void nm_test_iovec_full(int iov_count, int entry_size)
 {
   char*sbuf = malloc(iov_count * entry_size + OVERRUN);
   char*rbuf = malloc(iov_count * entry_size + OVERRUN);
-  nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, gate_id, 0); 
+  nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, p_gate, 0); 
   nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, NM_ANY_GATE, 0); 
-  nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, gate_id, OVERRUN); 
+  nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, p_gate, OVERRUN); 
   nm_test_iovec_symmetrical_regular(sbuf, rbuf, iov_count, entry_size, NM_ANY_GATE, OVERRUN); 
   free(sbuf);
   free(rbuf);
@@ -111,7 +111,7 @@ static void nm_test_iovec_full(int iov_count, int entry_size)
 int main(int argc, char ** argv)
 {
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   nm_test_iovec_full(1, 4);
   nm_test_iovec_full(4, 4);
@@ -126,6 +126,6 @@ int main(int argc, char ** argv)
   nm_test_iovec_full(4,   512*1024);
   nm_test_iovec_full(32,  256*1024);
 
-  nmad_exit();
+  nm_examples_exit();
   return 0;
 }

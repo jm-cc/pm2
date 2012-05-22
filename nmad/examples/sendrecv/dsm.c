@@ -28,7 +28,7 @@
 
 int main(int argc, char **argv)
 {
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   if (is_server)
     {
@@ -58,19 +58,19 @@ int main(int argc, char **argv)
 	  j = 0;
 	  for(n = 0; n < NB_PAGES; n++)
 	    {
-	      nm_sr_irecv(p_core, gate_id, 0, &source[n],      sizeof(int), &r_request[i++]);
-	      nm_sr_irecv(p_core, gate_id, 0, &numero_page[n], sizeof(int), &r_request[i++]);
-	      nm_sr_irecv(p_core, gate_id, 0, &envoi_diff[n],  sizeof(tbx_bool_t), &r_request[i++]);
-	      nm_sr_irecv(p_core, gate_id, 0, &type_acces[n],  sizeof(int), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &source[n],      sizeof(int), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &numero_page[n], sizeof(int), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &envoi_diff[n],  sizeof(tbx_bool_t), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &type_acces[n],  sizeof(int), &r_request[i++]);
 	      
-	      nm_sr_isend(p_core, gate_id, 0, &n_page, sizeof(int), &s_request[j++]);
-	      nm_sr_isend(p_core, gate_id, 0, &trouve, sizeof(tbx_bool_t), &s_request[j++]);
-	      nm_sr_isend(p_core, gate_id, 0, page, PAGE_SIZE, &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &n_page, sizeof(int), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &trouve, sizeof(tbx_bool_t), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, page, PAGE_SIZE, &s_request[j++]);
 	    }
 	  for(n = 0; n < i; n++)
-	    nm_sr_rwait(p_core, &r_request[n]);
+	    nm_sr_rwait(p_session, &r_request[n]);
 	  for(n = 0; n < j; n++)
-	    nm_sr_swait(p_core, &s_request[n]);
+	    nm_sr_swait(p_session, &s_request[n]);
 	}
     }
   else 
@@ -107,20 +107,20 @@ int main(int argc, char **argv)
 	  j = 0;
 	  for(n = 0; n < NB_PAGES; n++)
 	    {
-	      nm_sr_isend(p_core, gate_id, 0, &mon_id, sizeof(int), &s_request[j++]);
-	      nm_sr_isend(p_core, gate_id, 0, &n_page, sizeof(int), &s_request[j++]);
-	      nm_sr_isend(p_core, gate_id, 0, &envoi_diff, sizeof(tbx_bool_t), &s_request[j++]);
-	      nm_sr_isend(p_core, gate_id, 0, &type_acces, sizeof(int), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &mon_id, sizeof(int), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &n_page, sizeof(int), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &envoi_diff, sizeof(tbx_bool_t), &s_request[j++]);
+	      nm_sr_isend(p_session, p_gate, 0, &type_acces, sizeof(int), &s_request[j++]);
 	      
-	      nm_sr_irecv(p_core, gate_id, 0, &numero_page[n], sizeof(int), &r_request[i++]);
-	      nm_sr_irecv(p_core, gate_id, 0, &trouve[n],  sizeof(tbx_bool_t), &r_request[i++]);
-	      nm_sr_irecv(p_core, gate_id, 0, page,  sizeof(int), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &numero_page[n], sizeof(int), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, &trouve[n],  sizeof(tbx_bool_t), &r_request[i++]);
+	      nm_sr_irecv(p_session, p_gate, 0, page,  sizeof(int), &r_request[i++]);
 	    }
 	  
 	  for(n = 0; n < j; n++)
-	    nm_sr_swait(p_core, &s_request[n]);
+	    nm_sr_swait(p_session, &s_request[n]);
 	  for(n = 0; n < i; n++)
-	    nm_sr_rwait(p_core, &r_request[n]);
+	    nm_sr_rwait(p_session, &r_request[n]);
 	}
       
       TBX_GET_TICK(t2);
@@ -131,6 +131,6 @@ int main(int argc, char **argv)
       
       printf("%d\t%d\t%lf\t%lf\n", PAGE_SIZE, NB_PAGES, tps_par_page, tps);
     }
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

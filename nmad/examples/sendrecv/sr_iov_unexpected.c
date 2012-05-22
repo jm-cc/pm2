@@ -60,7 +60,7 @@ void large_contigu_vers_large_contigu(void){
   dst = message + SIZE - 1;
   *dst = '\0';
 
-  /* init recv buffers */
+  /* nm_examples_init recv buffers */
   iov[0].iov_len  = SIZE;
   iov[0].iov_base = malloc(SIZE);
   memset(iov[0].iov_base, 0, SIZE);
@@ -73,29 +73,29 @@ void large_contigu_vers_large_contigu(void){
     nm_sr_request_t request1;
 
     /* server */
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
 
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     nm_sr_request_t request;
     /* client */
 
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request);
+    nm_sr_swait(p_session, &request);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request);
+    nm_sr_swait(p_session, &request);
 
     sleep(2);
   }
@@ -122,7 +122,7 @@ void court_contigu_vers_court_contigu(void){
   char *recv_plop = NULL;
   nm_sr_request_t request0, request1;
 
-  /* init recv buffers */
+  /* nm_examples_init recv buffers */
   iov[0].iov_len  = strlen(buf) + 1;
   iov[0].iov_base = malloc(strlen(buf)+1);
   memset(iov[0].iov_base, 0, strlen(buf)+1);
@@ -134,27 +134,27 @@ void court_contigu_vers_court_contigu(void){
   if (is_server) {
     /* server */
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -202,7 +202,7 @@ void large_contigu_vers_large_contigu_plus_long(void){
     *dst++ = *src++;
 
 
-  /* init recv buffers */
+  /* nm_examples_init recv buffers */
   iov[0].iov_len  = SIZE + 10;
   iov[0].iov_base = malloc(SIZE + 10);
   if(!iov[0].iov_base){
@@ -219,29 +219,29 @@ void large_contigu_vers_large_contigu_plus_long(void){
     nm_sr_request_t request1;
 
     /* server */
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
 
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     nm_sr_request_t request;
     /* client */
 
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request);
+    nm_sr_swait(p_session, &request);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request);
+    nm_sr_swait(p_session, &request);
 
     sleep(2);
   }
@@ -266,7 +266,7 @@ void court_contigu_vers_court_contigu_plus_long(void){
   struct iovec iov[1];
   nm_sr_request_t request0, request1;
 
-  /* init recv buffers */
+  /* nm_examples_init recv buffers */
   iov[0].iov_len  = strlen(buf) + 10;
   iov[0].iov_base = malloc(strlen(buf)+10);
   memset(iov[0].iov_base, 0, strlen(buf)+10);
@@ -276,27 +276,27 @@ void court_contigu_vers_court_contigu_plus_long(void){
 
   if (is_server) {
     /* server */
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -344,16 +344,16 @@ void large_contigu_vers_large_disperse(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -374,13 +374,13 @@ void large_contigu_vers_large_disperse(void){
     while(*src)
       *dst++ = *src++;
 
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -458,28 +458,28 @@ void court_contigu_vers_court_disperse(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
     char *buf  = "hello, world";
 
-    nm_sr_isend(p_core, gate_id, 0, buf, 1+strlen(buf), &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend(p_session, p_gate, 0, buf, 1+strlen(buf), &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -542,16 +542,16 @@ void large_disperse_vers_large_disperse_identique(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -572,13 +572,13 @@ void large_disperse_vers_large_disperse_identique(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -654,16 +654,16 @@ void court_disperse_vers_court_disperse_identique(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -678,13 +678,13 @@ void court_disperse_vers_court_disperse_identique(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -745,16 +745,16 @@ void large_disperse_vers_large_disperse_disymetrique(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 2, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 2, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -779,13 +779,13 @@ void large_disperse_vers_large_disperse_disymetrique(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -853,16 +853,16 @@ void court_disperse_vers_court_disperse_disymetrique(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 2, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 2, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -881,13 +881,13 @@ void court_disperse_vers_court_disperse_disymetrique(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -946,16 +946,16 @@ void large_disperse_vers_large_contigu(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -980,13 +980,13 @@ void large_disperse_vers_large_contigu(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -1055,16 +1055,16 @@ void court_disperse_vers_court_contigu(void){
     recv_plop = malloc(strlen(plop)+1);
     memset(recv_plop, 0, strlen(plop)+1);
 
-    nm_sr_irecv(p_core, gate_id, 1, recv_plop, strlen(plop)+1, &request0);
+    nm_sr_irecv(p_session, p_gate, 1, recv_plop, strlen(plop)+1, &request0);
 
     int i = 0;
     while(i++ < 100000)
-      nm_sr_rtest(p_core, &request0);
+      nm_sr_rtest(p_session, &request0);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request1);
+    nm_sr_rwait(p_session, &request1);
 
-    nm_sr_rwait(p_core, &request0);
+    nm_sr_rwait(p_session, &request0);
 
   } else {
     /* client */
@@ -1083,13 +1083,13 @@ void court_disperse_vers_court_contigu(void){
     iov[2].iov_len  = strlen(msg3) + 1;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request0);
-    nm_sr_swait(p_core, &request0);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request0);
+    nm_sr_swait(p_session, &request0);
 
     sleep(5);
 
-    nm_sr_isend(p_core, gate_id, 1, (void *)plop, strlen(plop)+1, &request1);
-    nm_sr_swait(p_core, &request1);
+    nm_sr_isend(p_session, p_gate, 1, (void *)plop, strlen(plop)+1, &request1);
+    nm_sr_swait(p_session, &request1);
 
     sleep(2);
   }
@@ -1125,7 +1125,7 @@ int
 main(int argc, char **argv) {
   int i = 0;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   while(i++ < 3){
     large_contigu_vers_large_contigu();
@@ -1147,6 +1147,6 @@ main(int argc, char **argv) {
     court_disperse_vers_court_contigu();
   }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

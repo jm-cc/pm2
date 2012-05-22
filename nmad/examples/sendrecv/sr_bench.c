@@ -84,11 +84,11 @@ int main(int argc, char	**argv)
   int              iterations     = LOOPS_DEFAULT;
   int              i;
   
-  init(&argc, argv);
+  nm_examples_init_topo(&argc, argv, NM_EXAMPLES_TOPO_PAIRS);
   
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nmad_exit();
+    nm_examples_exit();
     exit(0);
   }
   
@@ -111,7 +111,7 @@ int main(int argc, char	**argv)
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nmad_exit();
+      nm_examples_exit();
       exit(0);
     }
   }
@@ -131,11 +131,11 @@ int main(int argc, char	**argv)
 	    {
 	      nm_sr_request_t request;
 	      
-	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_rwait(p_core, &request);
+	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 	      
-	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_swait(p_core, &request);
+	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
 	    }
 	  free(buf);
 	}
@@ -158,10 +158,10 @@ int main(int argc, char	**argv)
 	    {
 	      nm_sr_request_t request;
 	      TBX_GET_TICK(t1);
-	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_swait(p_core, &request);
-	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_rwait(p_core, &request);
+	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
+	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 	      TBX_GET_TICK(t2);
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
@@ -183,6 +183,6 @@ int main(int argc, char	**argv)
       printf("# sr_bench end\n");
     }
   
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

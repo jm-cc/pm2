@@ -47,7 +47,7 @@ static void store_big_string(char *big_buf, unsigned max)
 int
 main(int	  argc,
      char	**argv) {
-        init(&argc, argv);
+        nm_examples_init(&argc, argv);
 
         if (is_server) {
 	  int k;
@@ -56,11 +56,11 @@ main(int	  argc,
 		for(k = 0; k < LOOPS; k++) {
 		  nm_sr_request_t request;
 
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_rwait(p_core, &request);
+		  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+		  nm_sr_rwait(p_session, &request);
 
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_swait(p_core, &request);
+		  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+		  nm_sr_swait(p_session, &request);
 		  }
 
 		{
@@ -68,18 +68,18 @@ main(int	  argc,
 		  char buf[16], *big_buf, *sbig_buf;
 		  nm_gate_t from_gate, gate1;
 
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &r1);
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &r2);
-		  nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, 16, &r3);
+		  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &r1);
+		  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &r2);
+		  nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, 16, &r3);
 
-		  nm_sr_rwait(p_core, &r1);
+		  nm_sr_rwait(p_session, &r1);
 		  printf("Got msg 1!\n");
 
-		  nm_sr_rwait(p_core, &r2);
+		  nm_sr_rwait(p_session, &r2);
 		  printf("Got msg 2!\n");
 
-		  nm_sr_rwait(p_core, &r3);
-		  nm_sr_recv_source(p_core, &r3, &from_gate);
+		  nm_sr_rwait(p_session, &r3);
+		  nm_sr_recv_source(p_session, &r3, &from_gate);
 		  nm_launcher_get_gate(1, &gate1);
                   if (strcmp(buf, "Hello!") == 0 && from_gate == gate1) {
                     printf("Got correct msg 3 from peer #1\n");
@@ -89,8 +89,8 @@ main(int	  argc,
                   }
 
 		  big_buf = malloc(MAX);
-		  nm_sr_irecv(p_core, NM_ANY_GATE, 0, big_buf, MAX, &r4);
-		  nm_sr_rwait(p_core, &r4);
+		  nm_sr_irecv(p_session, NM_ANY_GATE, 0, big_buf, MAX, &r4);
+		  nm_sr_rwait(p_session, &r4);
 
 		  sbig_buf = malloc(MAX);
 		  store_big_string(sbig_buf, MAX);
@@ -112,11 +112,11 @@ main(int	  argc,
 		for(k = 0; k < LOOPS; k++) {
 		  nm_sr_request_t request;
 
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_swait(p_core, &request);
+		  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &request);
+		  nm_sr_swait(p_session, &request);
 
-		  nm_sr_irecv(p_core, gate_id, 0, NULL, 0, &request);
-		  nm_sr_rwait(p_core, &request);
+		  nm_sr_irecv(p_session, p_gate, 0, NULL, 0, &request);
+		  nm_sr_rwait(p_session, &request);
 		}
 
 		{
@@ -124,27 +124,27 @@ main(int	  argc,
 		  char buf[16], *big_buf;
 
 
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &r1);
-		  nm_sr_isend(p_core, gate_id, 0, NULL, 0, &r2);
+		  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &r1);
+		  nm_sr_isend(p_session, p_gate, 0, NULL, 0, &r2);
 
 		  strcpy(buf, "Hello!");
-		  nm_sr_isend(p_core, gate_id, 0, buf, 16, &r3);
+		  nm_sr_isend(p_session, p_gate, 0, buf, 16, &r3);
 
 		  big_buf = malloc(MAX);
 		  store_big_string(big_buf, MAX);
 
-		  nm_sr_isend(p_core, gate_id, 0, big_buf, MAX, &r4);
+		  nm_sr_isend(p_session, p_gate, 0, big_buf, MAX, &r4);
 
-		  nm_sr_swait(p_core, &r1);
-		  nm_sr_swait(p_core, &r2);
-		  nm_sr_swait(p_core, &r3);
-		  nm_sr_swait(p_core, &r4);
+		  nm_sr_swait(p_session, &r1);
+		  nm_sr_swait(p_session, &r2);
+		  nm_sr_swait(p_session, &r3);
+		  nm_sr_swait(p_session, &r4);
 
 		  free(big_buf);
 		}
 
         }
 
-        nmad_exit();
+        nm_examples_exit();
         exit(0);
 }

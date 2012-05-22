@@ -60,11 +60,11 @@ main(int	  argc,
   int		 warmups	= WARMUPS_DEFAULT;
   int		 i;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nmad_exit();
+    nm_examples_exit();
     exit(0);
   }
 
@@ -90,7 +90,7 @@ main(int	  argc,
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nmad_exit();
+      nm_examples_exit();
       exit(0);
     }
   }
@@ -110,19 +110,19 @@ main(int	  argc,
       nm_sr_request_t request;
 
       for(k = 0; k < warmups; k++) {
-        nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-        nm_sr_swait(p_core, &request);
+        nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+        nm_sr_swait(p_session, &request);
       }
 
       TBX_GET_TICK(t1);
 
       for(k = 0; k < iterations; k++) {
-        nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-        nm_sr_swait(p_core, &request);
+        nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+        nm_sr_swait(p_session, &request);
       }
 
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
 
       TBX_GET_TICK(t2);
 
@@ -144,16 +144,16 @@ main(int	  argc,
       nm_sr_request_t request;
 
       for(k = 0; k < warmups + iterations; k++) {
-        nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-        nm_sr_rwait(p_core, &request);
+        nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+        nm_sr_rwait(p_session, &request);
       }
  
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
    }
   }
 
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

@@ -29,7 +29,7 @@ int main(int argc, char**argv)
   int len = 1 + strlen(msg);
   char*buf = malloc((size_t)len);
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   if (is_server)
     {
@@ -39,16 +39,16 @@ int main(int argc, char**argv)
        */
       memset(buf, 0, len);
       
-      nm_sr_irecv(p_core, gate_id, 1, buf, len, &request0);
+      nm_sr_irecv(p_session, p_gate, 1, buf, len, &request0);
       
       int i = 0;
       while(i++ < 10000)
-	nm_sr_rtest(p_core, &request0);
+	nm_sr_rtest(p_session, &request0);
       
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
       
-      nm_sr_rwait(p_core, &request0);
+      nm_sr_rwait(p_session, &request0);
       
     }
   else
@@ -58,12 +58,12 @@ int main(int argc, char**argv)
        */
       strcpy(buf, msg);
       
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
       
       usleep(100*1000);
-      nm_sr_isend(p_core, gate_id, 1, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 1, buf, len, &request);
+      nm_sr_swait(p_session, &request);
     }
   
   if (is_server) 
@@ -72,6 +72,6 @@ int main(int argc, char**argv)
     }
   
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

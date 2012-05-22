@@ -25,8 +25,8 @@ void *server(void* foo) {
 
 	nm_sr_request_t request;
 	for (i = 0; i < N; i++) {
-		nm_sr_irecv(p_core, gate_id, 0, buf, sizeof(buf), &request);
-		nm_sr_rwait(p_core, &request);
+		nm_sr_irecv(p_session, p_gate, 0, buf, sizeof(buf), &request);
+		nm_sr_rwait(p_session, &request);
 	}
 
 	return NULL;
@@ -35,7 +35,7 @@ void *server(void* foo) {
 int main(int argc, char *argv[]) {
 	int i = 0;
 
-	init(&argc, argv);
+	nm_examples_init(&argc, argv);
 
 #ifdef MARCEL
 	marcel_t t;
@@ -48,8 +48,8 @@ int main(int argc, char *argv[]) {
 		char buf[128];
 		nm_sr_request_t request;
 		//usleep(1);
-		nm_sr_isend(p_core, gate_id, 0, buf, sizeof(buf), &request);
-		nm_sr_swait(p_core, &request);
+		nm_sr_isend(p_session, p_gate, 0, buf, sizeof(buf), &request);
+		nm_sr_swait(p_session, &request);
 		if (i%(N/50) == 0)
 			printf("%d\n",i);
 	}
@@ -59,6 +59,6 @@ int main(int argc, char *argv[]) {
 	pthread_join(t, NULL);
 #endif
 
-	nmad_exit();
+	nm_examples_exit();
 	return 0;
 }

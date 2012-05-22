@@ -29,7 +29,7 @@ int main(int argc, char**argv)
   char *buf = malloc(len);
   char *ref = "ref";
       
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   if (is_server)
     {
@@ -40,25 +40,25 @@ int main(int argc, char**argv)
        */
       memset(buf, 0, len);
       
-      nm_sr_irecv_with_ref(p_core, NM_ANY_GATE, 0, buf, len, &request, ref);
+      nm_sr_irecv_with_ref(p_session, NM_ANY_GATE, 0, buf, len, &request, ref);
       do
 	{
-	  nm_sr_recv_success(p_core, &req2);
+	  nm_sr_recv_success(p_session, &req2);
 	}
       while(!req2);
       
       printf("received buffer: %s\n", buf);
 
       char*ref2;
-      nm_sr_get_ref(p_core, req2, (void**)&ref2);
+      nm_sr_get_ref(p_session, req2, (void**)&ref2);
       printf("ref = %s; ref2 = %s\n", ref, ref2);
 
       size_t size = 0;
-      nm_sr_get_size(p_core, req2, &size);
+      nm_sr_get_size(p_session, req2, &size);
       printf("size = %zu\n", size);
       
       nm_tag_t tag = 0;
-      nm_sr_get_rtag(p_core, req2, &tag);
+      nm_sr_get_rtag(p_session, req2, &tag);
       printf("tag = %lu", (unsigned long)tag);
     }
   else
@@ -69,18 +69,18 @@ int main(int argc, char**argv)
        */
       strcpy(buf, msg);
       
-      nm_sr_isend_with_ref(p_core, gate_id, 0, buf, len, &request, ref);
+      nm_sr_isend_with_ref(p_session, p_gate, 0, buf, len, &request, ref);
       do
 	{
-	  nm_sr_send_success(p_core, &req2);
+	  nm_sr_send_success(p_session, &req2);
 	}
       while(!req2);
 
       char*ref2;
-      nm_sr_get_ref(p_core, req2, (void**)&ref2);
+      nm_sr_get_ref(p_session, req2, (void**)&ref2);
       printf("ref = %s; ref2 = %s\n", ref, ref2);
     }
   
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

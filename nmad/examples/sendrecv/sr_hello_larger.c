@@ -43,13 +43,13 @@ static void process(char *msg)
 
     len *= 2;
 
-    nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request1);
-    nm_sr_rwait(p_core, &request1);
+    nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request1);
+    nm_sr_rwait(p_session, &request1);
 
     sleep(1);
 
-    nm_sr_irecv(p_core, gate_id, 0, buf2, len, &request2);
-    nm_sr_rwait(p_core, &request2);
+    nm_sr_irecv(p_session, p_gate, 0, buf2, len, &request2);
+    nm_sr_rwait(p_session, &request2);
 
     if (!strcmp(buf, msg) && !strcmp(buf2, msg)) {
       printf("Messages successfully received\n");
@@ -65,11 +65,11 @@ static void process(char *msg)
 
     len = 1+strlen(msg);
 
-    nm_sr_isend(p_core, gate_id, 0, msg, len, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, msg, len, &request);
+    nm_sr_swait(p_session, &request);
 
-    nm_sr_isend(p_core, gate_id, 0, msg, len, &request2);
-    nm_sr_swait(p_core, &request2);
+    nm_sr_isend(p_session, p_gate, 0, msg, len, &request2);
+    nm_sr_swait(p_session, &request2);
   }
 }
 
@@ -81,7 +81,7 @@ const char *msg_end   = "world!";
 int main(int argc, char	**argv)
 {
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   process((char *)short_msg);
 
@@ -104,6 +104,6 @@ int main(int argc, char	**argv)
     free(long_msg);
   }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

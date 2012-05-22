@@ -72,13 +72,13 @@ void large_contigu_vers_large_contigu(void){
     }
     memset(iov[0].iov_base, 0, SIZE);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -135,13 +135,13 @@ void large_contigu_vers_large_contigu_plus_long(void){
     }
     memset(iov[0].iov_base, 0, SIZE + 10);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -184,8 +184,8 @@ void large_contigu_vers_large_disperse(void){
     memset(buf2, 0, strlen(msg2));
     memset(buf3, 0, msg3_len);
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -206,8 +206,8 @@ void large_contigu_vers_large_disperse(void){
     while(*src)
       *dst++ = *src++;
 
-    nm_sr_isend(p_core, gate_id, 0, message, SIZE, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend(p_session, p_gate, 0, message, SIZE, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -279,8 +279,8 @@ void large_disperse_vers_large_disperse_identique(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -301,8 +301,8 @@ void large_disperse_vers_large_disperse_identique(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -371,8 +371,8 @@ void large_disperse_vers_large_disperse_disymetrique(void){
     iov[1].iov_len  = msg3_len;
     iov[1].iov_base = buf2;
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 2, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 2, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -397,8 +397,8 @@ void large_disperse_vers_large_disperse_disymetrique(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -459,8 +459,8 @@ void large_disperse_vers_large_contigu(void){
     iov[0].iov_len  = strlen(msg1) + strlen(msg2) + msg3_len;
     iov[0].iov_base = buf;
 
-    nm_sr_irecv_iov(p_core, gate_id, 0, iov, 1, &request);
-    nm_sr_rwait(p_core, &request);
+    nm_sr_irecv_iov(p_session, p_gate, 0, iov, 1, &request);
+    nm_sr_rwait(p_session, &request);
 
   } else {
     /* client */
@@ -485,8 +485,8 @@ void large_disperse_vers_large_contigu(void){
     iov[2].iov_len  = msg3_len;
     iov[2].iov_base = buf3;
 
-    nm_sr_isend_iov(p_core, gate_id, 0, iov, 3, &request);
-    nm_sr_swait(p_core, &request);
+    nm_sr_isend_iov(p_session, p_gate, 0, iov, 3, &request);
+    nm_sr_swait(p_session, &request);
 
     usleep(50*1000);
   }
@@ -538,7 +538,7 @@ int
 main(int argc, char **argv) {
   int i = 0;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   while(i++ < 3){
     large_contigu_vers_large_contigu();
@@ -549,6 +549,6 @@ main(int argc, char **argv) {
     large_disperse_vers_large_contigu();
   }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

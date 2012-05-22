@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
   nm_sr_request_t out_request;
   nm_sr_request_t in_request;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   nm_launcher_get_rank(&rank);
   nm_launcher_get_size(&numtasks);
 
@@ -47,13 +47,13 @@ int main(int argc, char **argv) {
 
     nm_launcher_get_gate(dest, &gate);
     PRINT("sending to node %d, gate %p", dest, gate);
-    nm_sr_isend(p_core, gate, tag, buffer, 2*sizeof(float), &out_request);
-    nm_sr_swait(p_core, &out_request);
+    nm_sr_isend(p_session, gate, tag, buffer, 2*sizeof(float), &out_request);
+    nm_sr_swait(p_session, &out_request);
 
     nm_launcher_get_gate(source, &gate);
     PRINT("receiving from node %d, gate %p", source, gate);
-    nm_sr_irecv(p_core, gate, tag, r_buffer, 2*sizeof(float), &in_request);
-    nm_sr_rwait(p_core, &in_request);
+    nm_sr_irecv(p_session, gate, tag, r_buffer, 2*sizeof(float), &in_request);
+    nm_sr_rwait(p_session, &in_request);
 
     PRINT("Message [%f,%f]\n", r_buffer[0], r_buffer[1]);
   }
@@ -68,15 +68,15 @@ int main(int argc, char **argv) {
     
     nm_launcher_get_gate(source, &gate);
     PRINT("receiving from node %d, gate %p", source, gate);
-    nm_sr_irecv(p_core, gate, tag, buffer, 2*sizeof(float), &in_request);
-    nm_sr_rwait(p_core, &in_request);
+    nm_sr_irecv(p_session, gate, tag, buffer, 2*sizeof(float), &in_request);
+    nm_sr_rwait(p_session, &in_request);
 
     nm_launcher_get_gate(dest, &gate);
     PRINT("sending to node %d, gate %p", dest, gate);
-    nm_sr_isend(p_core, gate, tag, buffer, 2*sizeof(float), &out_request);
-    nm_sr_swait(p_core, &out_request);
+    nm_sr_isend(p_session, gate, tag, buffer, 2*sizeof(float), &out_request);
+    nm_sr_swait(p_session, &out_request);
   }
   PRINT("done.");
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

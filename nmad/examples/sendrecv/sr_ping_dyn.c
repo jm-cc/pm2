@@ -84,11 +84,11 @@ int main(int argc, char**argv)
   int		 iterations	= LOOPS_DEFAULT;
   int		 i;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nmad_exit();
+    nm_examples_exit();
     exit(0);
   }
 
@@ -111,7 +111,7 @@ int main(int argc, char**argv)
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nmad_exit();
+      nm_examples_exit();
       exit(0);
     }
   }
@@ -129,14 +129,14 @@ int main(int argc, char**argv)
 	      char*buf = malloc(len);
 	      clear_buffer(buf, len);
 	      
-	      nm_sr_isend(p_core, gate_id, 1, NULL, 0, &request);
-	      nm_sr_swait(p_core, &request);
+	      nm_sr_isend(p_session, p_gate, 1, NULL, 0, &request);
+	      nm_sr_swait(p_session, &request);
 
-	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_rwait(p_core, &request);
+	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 	      
-	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_swait(p_core, &request);
+	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
 	      free(buf);
 	    }
 	}
@@ -161,13 +161,13 @@ int main(int argc, char**argv)
 	      clear_buffer(buf, len);
 	      
 	      tbx_tick_t t1, t2;
-	      nm_sr_irecv(p_core, gate_id, 1, NULL, 0, &request);
-	      nm_sr_rwait(p_core, &request);
+	      nm_sr_irecv(p_session, p_gate, 1, NULL, 0, &request);
+	      nm_sr_rwait(p_session, &request);
 	      TBX_GET_TICK(t1);
-	      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_swait(p_core, &request);
-	      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-	      nm_sr_rwait(p_core, &request);
+	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
+	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 	      TBX_GET_TICK(t2);
 	      free(buf);
 	      sum += TBX_TIMING_DELAY(t1, t2);
@@ -180,6 +180,6 @@ int main(int argc, char**argv)
 	}
     }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

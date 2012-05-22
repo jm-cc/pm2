@@ -29,7 +29,7 @@ int main(int argc, char	**argv)
   size_t len = 1 + strlen(msg);
   char *buf = malloc(len);;
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   if (is_server)
     {
@@ -38,36 +38,36 @@ int main(int argc, char	**argv)
        */
       memset(buf, 0, len);
       
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
       printf("buffer contents: %s\n", buf);
 
-      int err = nm_sr_rcancel(p_core, &request);
+      int err = nm_sr_rcancel(p_session, &request);
       printf("nm_sr_cancel rc = %3d (expected: -NM_EALREADY = %d)\n", err, -NM_EALREADY);
 
-      nm_sr_irecv(p_core, NM_GATE_NONE, 0, buf, len, &request);
-      err = nm_sr_rcancel(p_core, &request);
+      nm_sr_irecv(p_session, NM_GATE_NONE, 0, buf, len, &request);
+      err = nm_sr_rcancel(p_session, &request);
       printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
-      err = nm_sr_rtest(p_core, &request);
+      err = nm_sr_rtest(p_session, &request);
       printf("nm_sr_test   rc = %3d (expected: -NM_ECANCELED = %d)\n", err, -NM_ECANCELED);
 
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request2);
-      err = nm_sr_rcancel(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request2);
+      err = nm_sr_rcancel(p_session, &request);
       printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
-      err = nm_sr_rcancel(p_core, &request2);
+      err = nm_sr_rcancel(p_session, &request2);
       printf("nm_sr_cancel rc = %3d (expected:  NM_ESUCCESS = %d)\n", err, NM_ESUCCESS);
 
-      err = nm_sr_rcancel(p_core, &request);
+      err = nm_sr_rcancel(p_session, &request);
       printf("nm_sr_cancel rc = %3d (expected: -NM_ECANCELED = %d)\n", err, -NM_ECANCELED);
 
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
 
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
     }
   else
     {
@@ -76,17 +76,17 @@ int main(int argc, char	**argv)
        */
       strcpy(buf, msg);
       
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
 
-      nm_sr_irecv(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
+      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
 
-      nm_sr_isend(p_core, gate_id, 0, buf, len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+      nm_sr_swait(p_session, &request);
     }
  
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   return 0;
 }

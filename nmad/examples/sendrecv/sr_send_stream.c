@@ -31,7 +31,7 @@ int main(int	  argc, char	**argv)
   char		*buf	= NULL;
   uint64_t	 len;
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   len = 1+strlen(msg);
   buf = malloc((size_t)len);
@@ -45,8 +45,8 @@ int main(int	  argc, char	**argv)
       memset(buf, 0, len);
       for(i = 0; i < COUNT; i++)
 	{
-	  nm_sr_irecv(p_core, NM_ANY_GATE, 0, buf, len, &request);
-	  nm_sr_rwait(p_core, &request);
+	  nm_sr_irecv(p_session, NM_ANY_GATE, 0, buf, len, &request);
+	  nm_sr_rwait(p_session, &request);
 	}
     }
   else
@@ -58,11 +58,11 @@ int main(int	  argc, char	**argv)
       strcpy(buf, msg);
       for(i = 0; i < COUNT; i++)
 	{
-	  nm_sr_isend(p_core, gate_id, 0, buf, len, &requests[i]);
+	  nm_sr_isend(p_session, p_gate, 0, buf, len, &requests[i]);
 	}
       for(i = 0; i < COUNT; i++)
 	{
-	  nm_sr_swait(p_core, &requests[i]);
+	  nm_sr_swait(p_session, &requests[i]);
 	}
   }
   
@@ -71,6 +71,6 @@ int main(int	  argc, char	**argv)
   }
   
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

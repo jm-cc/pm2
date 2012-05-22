@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   int numtasks;
   int rank;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   nm_launcher_get_rank(&rank);
   nm_launcher_get_size(&numtasks);
 
@@ -49,14 +49,14 @@ int main(int argc, char **argv) {
 
     for(child=1 ; child<numtasks ; child++) {
       nm_launcher_get_gate(child, &gate);
-      nm_sr_isend(p_core, gate, child, buffer, 2*sizeof(float), &out_requests[child-1]);
+      nm_sr_isend(p_session, gate, child, buffer, 2*sizeof(float), &out_requests[child-1]);
 #ifdef STAR_DEBUG
       PRINT("Isending to child %d completed", child);
 #endif
     }
 
     for(child=1 ; child<numtasks ; child++) {
-      nm_sr_swait(p_core, &out_requests[child-1]);
+      nm_sr_swait(p_session, &out_requests[child-1]);
 #ifdef STAR_DEBUG
       PRINT("Waiting to child %d completed", child);
 #endif
@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
 #ifdef STAR_DEBUG
       PRINT("Waiting from child %d", child);
 #endif
-      nm_sr_irecv(p_core, gate, child, r_buffer, 2*sizeof(float), &in_requests[child-1]);
-      nm_sr_rwait(p_core, &in_requests[child-1]);
+      nm_sr_irecv(p_session, gate, child, r_buffer, 2*sizeof(float), &in_requests[child-1]);
+      nm_sr_rwait(p_session, &in_requests[child-1]);
 
       if (r_buffer[0] != buffer[0] && r_buffer[1] != buffer[1]) {
 	PRINT("Expected [%f,%f] - Received [%f,%f]", buffer[0], buffer[1], r_buffer[0], r_buffer[1]);
@@ -88,21 +88,21 @@ int main(int argc, char **argv) {
     nm_sr_request_t in_request;
 
     nm_launcher_get_gate(0, &gate);
-    nm_sr_irecv(p_core, gate, rank, r_buffer, 2*sizeof(float), &in_request);
-    nm_sr_rwait(p_core, &in_request);
+    nm_sr_irecv(p_session, gate, rank, r_buffer, 2*sizeof(float), &in_request);
+    nm_sr_rwait(p_session, &in_request);
 
 #ifdef STAR_DEBUG
     PRINT("Received from father and sending back");
 #endif
 
     nm_launcher_get_gate(0, &gate);
-    nm_sr_isend(p_core, gate, rank, r_buffer, 2*sizeof(float), &out_request);
-    nm_sr_swait(p_core, &out_request);
+    nm_sr_isend(p_session, gate, rank, r_buffer, 2*sizeof(float), &out_request);
+    nm_sr_swait(p_session, &out_request);
 #ifdef STAR_DEBUG
     PRINT("Waiting completed");
 #endif
   }
 
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

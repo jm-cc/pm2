@@ -34,7 +34,7 @@ int main(int argc, char	**argv)
   int i;
   int max_pending;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   for(max_pending = 4; max_pending <= MAX_PENDING; max_pending *= 2)
     {
@@ -45,11 +45,11 @@ int main(int argc, char	**argv)
 	  memset(buf, 0, len);
 	  for(i = 0; i < max_pending; i++)
 	    {
-	      nm_sr_irecv(p_core, NM_ANY_GATE, 0, &buf[i], 1, &requests[i]);
+	      nm_sr_irecv(p_session, NM_ANY_GATE, 0, &buf[i], 1, &requests[i]);
 	    }
 	  for(i = 0; i < max_pending; i++)
 	    {
-	      nm_sr_rwait(p_core, &requests[i]);
+	      nm_sr_rwait(p_session, &requests[i]);
 	    }
 	  for(i = 0; i < max_pending - 1; i++)
 	    {
@@ -71,15 +71,15 @@ int main(int argc, char	**argv)
 	  buf[max_pending - 1] = 0;
 	  for(i = 0; i < max_pending; i++)
 	    {
-	      nm_sr_isend(p_core, gate_id, 0, &buf[i], 1, &requests[i]);
+	      nm_sr_isend(p_session, p_gate, 0, &buf[i], 1, &requests[i]);
 	    }
 	  for(i = 0; i < max_pending; i++)
 	    {
-	      nm_sr_swait(p_core, &requests[i]);
+	      nm_sr_swait(p_session, &requests[i]);
 	    }
 	}
     }
   
-  nmad_exit();
+  nm_examples_exit();
   return 0;
 }

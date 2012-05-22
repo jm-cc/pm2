@@ -103,11 +103,11 @@ main(int	  argc,
   nm_tag_t       tag            = 0;
   int		 i;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nmad_exit();
+    nm_examples_exit();
     exit(0);
   }
 
@@ -133,7 +133,7 @@ main(int	  argc,
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nmad_exit();
+      nm_examples_exit();
       exit(0);
     }
   }
@@ -148,14 +148,14 @@ main(int	  argc,
       for(k = 0; k < iterations + warmups; k++) {
         nm_sr_request_t request;
 
-        nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_rwait(p_core, &request);
+        nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_rwait(p_session, &request);
 
 #if DATA_CONTROL_ACTIVATED
         control_buffer("réception", buf, len);
 #endif
-        nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_swait(p_core, &request);
+        nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_swait(p_session, &request);
 	tag++;
       }
     }
@@ -177,11 +177,11 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("envoi", buf, len);
 #endif
-        nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_swait(p_core, &request);
+        nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_swait(p_session, &request);
 
-        nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_rwait(p_core, &request);
+        nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);
 #endif
@@ -196,11 +196,11 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("envoi", buf, len);
 #endif
-        nm_sr_isend(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_swait(p_core, &request);
+        nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_swait(p_session, &request);
 
-        nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-        nm_sr_rwait(p_core, &request);
+        nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+        nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);
 #endif
@@ -220,6 +220,6 @@ main(int	  argc,
   }
 
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

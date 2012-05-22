@@ -30,29 +30,29 @@ int main(int argc, char	**argv) {
   nm_sr_request_t request_small;
   nm_sr_request_t request_big;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   buf = malloc(BIG);
   memset(buf, 0, BIG);
 
   if (is_server) {
-    nm_sr_irecv(p_core, gate_id, 0, buf, SMALL, &request_small);
-    nm_sr_rwait(p_core, &request_small);
+    nm_sr_irecv(p_session, p_gate, 0, buf, SMALL, &request_small);
+    nm_sr_rwait(p_session, &request_small);
 
-    nm_sr_irecv(p_core, gate_id, 0, buf, BIG, &request_big);
-    nm_sr_rwait(p_core, &request_big);
+    nm_sr_irecv(p_session, p_gate, 0, buf, BIG, &request_big);
+    nm_sr_rwait(p_session, &request_big);
     printf("success\n");
   }
   else {
-    nm_sr_rsend(p_core, gate_id, 0, buf, SMALL, &request_small);
-    nm_sr_swait(p_core, &request_small);
+    nm_sr_rsend(p_session, p_gate, 0, buf, SMALL, &request_small);
+    nm_sr_swait(p_session, &request_small);
 
-    nm_sr_rsend(p_core, gate_id, 0, buf, BIG, &request_big);
-    nm_sr_swait(p_core, &request_big);
+    nm_sr_rsend(p_session, p_gate, 0, buf, BIG, &request_big);
+    nm_sr_swait(p_session, &request_big);
     printf("success\n");
   }
 
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

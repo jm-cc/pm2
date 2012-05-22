@@ -7,7 +7,7 @@
 
 static int rank, peer;
 static nm_session_t p_session = NULL;
-static nm_gate_t gate_id = NULL;
+static nm_gate_t p_gate = NULL;
 
 #define SIZE (1024*1024)
 #define NB_IOV 8
@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
   nm_launcher_get_session(&p_session);
   nm_launcher_get_rank(&rank);
   peer = 1 - rank;
-  nm_launcher_get_gate(peer, &gate_id);
+  nm_launcher_get_gate(peer, &p_gate);
     
   if(rank == 0)
     {
@@ -69,7 +69,7 @@ int main(int argc, char ** argv)
       
       fprintf(stderr, "### Irecv %d x %d bytes ###\n", NB_IOV, SIZE);
 
-      if(nm_sr_irecv_iov(p_session, gate_id, 42, iov, NB_IOV, &rreq) != NM_ESUCCESS)
+      if(nm_sr_irecv_iov(p_session, p_gate, 42, iov, NB_IOV, &rreq) != NM_ESUCCESS)
 	{
 	  fprintf(stderr, "NM Irecv failed \n");
 	  abort();
@@ -87,7 +87,7 @@ int main(int argc, char ** argv)
 
       fprintf(stderr, "### Isend %d x %d bytes ###\n", NB_IOV, SIZE);
 
-      if(nm_sr_isend_iov(p_session, gate_id, 42, iov, NB_IOV, &sreq) != NM_ESUCCESS)
+      if(nm_sr_isend_iov(p_session, p_gate, 42, iov, NB_IOV, &sreq) != NM_ESUCCESS)
 	{
 	  fprintf(stderr, "NM Isend failed \n");
 	  abort();
@@ -102,7 +102,7 @@ int main(int argc, char ** argv)
       fill_buffer(sbuf, NB_IOV * SIZE, 0);
       memset(rbuf, 3, NB_IOV * SIZE);
       fprintf(stderr, "### Isend %d bytes ###\n", NB_IOV * SIZE);
-      if(nm_sr_isend(p_session, gate_id, 42, sbuf, NB_IOV * SIZE, &sreq) != NM_ESUCCESS)
+      if(nm_sr_isend(p_session, p_gate, 42, sbuf, NB_IOV * SIZE, &sreq) != NM_ESUCCESS)
 	{
 	  fprintf(stderr, "NM Isend failed \n");
 	  abort();
@@ -110,7 +110,7 @@ int main(int argc, char ** argv)
       nm_sr_swait(p_session, &sreq);
       
       fprintf(stderr, "### Irecv %d bytes ###\n", NB_IOV * SIZE);
-      if(nm_sr_irecv(p_session, gate_id, 42, rbuf, NB_IOV * SIZE, &rreq) != NM_ESUCCESS) 
+      if(nm_sr_irecv(p_session, p_gate, 42, rbuf, NB_IOV * SIZE, &rreq) != NM_ESUCCESS) 
 	{
 	  fprintf(stderr, "NM Irecv failed \n");
 	  abort();

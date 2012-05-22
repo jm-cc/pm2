@@ -40,11 +40,11 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       size_t size;
       nm_tag_t tag;
       void*ref;
-      nm_sr_get_rtag(p_core, p_request, &tag);
-      nm_sr_get_size(p_core, p_request, &size);
-      nm_sr_get_ref(p_core, p_request, &ref);
+      nm_sr_get_rtag(p_session, p_request, &tag);
+      nm_sr_get_size(p_session, p_request, &size);
+      nm_sr_get_ref(p_session, p_request, &ref);
       printf(":: event NM_SR_EVENT_RECV_COMPLETED- tag = %d; size = %d; ref = %p; from gate = %s\n",
-	     tag, size, ref, from?(from == gate_id ? "peer":"unknown"):"(nil)");
+	     tag, size, ref, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(size < 1024)
 	printf("   buffer contents: %s\n", buf);
     }
@@ -54,12 +54,12 @@ static void request_notifier(nm_sr_event_t event, const nm_sr_event_info_t*info)
       const nm_tag_t tag = info->recv_unexpected.tag;
       const size_t len = info->recv_unexpected.len;
       printf(":: event NM_SR_EVENT_RECV_UNEXPECTED- tag = %d; len = %d; from gate = %s\n",
-	     tag, len, from?(from == gate_id ? "peer":"unknown"):"(nil)");
+	     tag, len, from?(from == p_gate ? "peer":"unknown"):"(nil)");
       if(tag == 1)
 	{
 	  printf("   receiving tag = %d in event handler...\n", tag);
 	  nm_sr_request_t*request = &unexpected_requests[n_unexpected++];
-	  nm_sr_irecv(p_core, from, tag, buf, len, request);
+	  nm_sr_irecv(p_session, from, tag, buf, len, request);
 	}
     }
 }
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
   buf = malloc(2 * long_len); /* large enough to receive iovecs */
   
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
   
   if(is_server)
     {
@@ -80,32 +80,32 @@ int main(int argc, char **argv)
 
       /* set global handler for unexpected */
       memset(buf, 0, long_len);
-      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
+      nm_sr_monitor(p_session, NM_SR_EVENT_RECV_UNEXPECTED, &request_notifier);
 
       /* per-request event. */
       memset(buf, 0, long_len);
-      nm_sr_recv_init(p_core, &request0);
-      nm_sr_recv_unpack_data(p_core, &request0, buf, short_len);
-      nm_sr_request_monitor(p_core, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
-      nm_sr_recv_irecv(p_core, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
-      nm_sr_rwait(p_core, &request0);
+      nm_sr_recv_init(p_session, &request0);
+      nm_sr_recv_unpack_data(p_session, &request0, buf, short_len);
+      nm_sr_request_monitor(p_session, &request0, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
+      nm_sr_recv_irecv(p_session, &request0, NM_ANY_GATE, 0, NM_TAG_MASK_FULL);
+      nm_sr_rwait(p_session, &request0);
 
       /* set global handler for recv complete */
-      nm_sr_monitor(p_core, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
+      nm_sr_monitor(p_session, NM_SR_EVENT_RECV_COMPLETED, &request_notifier);
 
       /* receive the last packet to force all others to be unexpected */
-      nm_sr_irecv(p_core, NM_ANY_GATE, 2, buf, short_len, &request1);
-      nm_sr_rwait(p_core, &request1);
+      nm_sr_irecv(p_session, NM_ANY_GATE, 2, buf, short_len, &request1);
+      nm_sr_rwait(p_session, &request1);
 
       /* test the *_with_ref feature */
-      nm_sr_irecv_with_ref(p_core, NM_ANY_GATE, 0, buf, short_len, &request0, (void*)0xDEADBEEF);
-      nm_sr_rwait(p_core, &request0);
+      nm_sr_irecv_with_ref(p_session, NM_ANY_GATE, 0, buf, short_len, &request0, (void*)0xDEADBEEF);
+      nm_sr_rwait(p_session, &request0);
 
       /* flush pending requests */
       int i;
       for(i = 0; i < n_unexpected; i++)
 	{
-	  nm_sr_rwait(p_core, &unexpected_requests[i]);
+	  nm_sr_rwait(p_session, &unexpected_requests[i]);
 	}
     }
   else
@@ -113,38 +113,38 @@ int main(int argc, char **argv)
       /* ** client */
       nm_sr_request_t request;
       /* test EVENT_RECV_COMPLETED */
-      nm_sr_isend(p_core, gate_id, 0, short_msg, short_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, short_msg, short_len, &request);
+      nm_sr_swait(p_session, &request);
       /* test EVENT_RECV_COMPLETED with ref */
-      nm_sr_isend(p_core, gate_id, 0, short_msg, short_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 0, short_msg, short_len, &request);
+      nm_sr_swait(p_session, &request);
       /* short unexpected (12 bytes) */
-      nm_sr_isend(p_core, gate_id, 1, short_msg, short_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 1, short_msg, short_len, &request);
+      nm_sr_swait(p_session, &request);
       /* small unexpected (300 bytes) */
-      nm_sr_isend(p_core, gate_id, 1, small_msg, small_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 1, small_msg, small_len, &request);
+      nm_sr_swait(p_session, &request);
       /* iovec unexpected (12+12 bytes) */
       struct iovec iov1[2] = 
 	{ [0] = { .iov_base = (void*)short_msg, .iov_len = short_len }, 
 	  [1] = { .iov_base = (void*)short_msg, .iov_len = short_len } };
-      nm_sr_isend_iov(p_core, gate_id, 1, iov1, 2, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend_iov(p_session, p_gate, 1, iov1, 2, &request);
+      nm_sr_swait(p_session, &request);
       /* large unexpected (128 kB) */
-      nm_sr_isend(p_core, gate_id, 1, long_msg, long_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 1, long_msg, long_len, &request);
+      nm_sr_swait(p_session, &request);
       /* iovec unexpected (300+128kB) */
       struct iovec iov2[2] = 
 	{ [0] = { .iov_base = (void*)small_msg, .iov_len = small_len }, 
 	  [1] = { .iov_base = (void*)long_msg,  .iov_len = long_len } };
-      nm_sr_isend_iov(p_core, gate_id, 1, iov2, 2, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend_iov(p_session, p_gate, 1, iov2, 2, &request);
+      nm_sr_swait(p_session, &request);
       /* sync message */
-      nm_sr_isend(p_core, gate_id, 2, short_msg, short_len, &request);
-      nm_sr_swait(p_core, &request);
+      nm_sr_isend(p_session, p_gate, 2, short_msg, short_len, &request);
+      nm_sr_swait(p_session, &request);
     }
 
   free(buf);
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }

@@ -269,33 +269,45 @@ void piom_init_ltasks(void)
 #endif /* PIOMAN_MARCEL */
 
 #ifdef PIOMAN_PTHREAD 
-	    const int signal_number = SIGRTMIN + 1;
-	    const long timeslice_nsec = 4 * 1000 * 1000; /* 4 msec. */
-	    sigset_t set;
-	    sigemptyset(&set);
-	    const struct sigaction action =
+	    const char*env_piom_enable_progression = getenv("PIOM_ENABLE_PROGRESSION");
+	    const char*env_piom_enable_idle_thread = getenv("PIOM_ENABLE_IDLE_THREAD");
+	    const char*env_piom_enable_sighandler  = getenv("PIOM_ENABLE_SIGHANDLER");
+	    int piom_enable_progression = env_piom_enable_progression ? atoi(env_piom_enable_progression) : 1;
+	    int piom_enable_idle_thread = env_piom_enable_idle_thread ? atoi(env_piom_enable_idle_thread) : piom_enable_progression;
+	    int piom_enable_sighandler  = env_piom_enable_sighandler  ? atoi(env_piom_enable_sighandler) : piom_enable_progression;
+	    if(piom_enable_sighandler)
 		{
-		    .sa_handler = &__piom_ltask_sighandler,
-		    .sa_mask    = set,
-		    .sa_flags   = SA_RESTART
-		};
-	    sigaction(signal_number, &action, NULL);
-	    struct sigevent sev = 
+		    const int signal_number = SIGRTMIN + 1;
+		    const long timeslice_nsec = 4 * 1000 * 1000; /* 4 msec. */
+		    sigset_t set;
+		    sigemptyset(&set);
+		    const struct sigaction action =
+			{
+			    .sa_handler = &__piom_ltask_sighandler,
+			    .sa_mask    = set,
+			    .sa_flags   = SA_RESTART
+			};
+		    sigaction(signal_number, &action, NULL);
+		    struct sigevent sev = 
+			{
+			    .sigev_notify = SIGEV_SIGNAL,
+			    .sigev_signo  = signal_number
+			};
+		    timer_create(CLOCK_MONOTONIC, &sev, &timer_id);
+		    const struct itimerspec spec =
+			{
+			    .it_interval.tv_sec  = 0,
+			    .it_interval.tv_nsec = timeslice_nsec,
+			    .it_value.tv_sec     = 0,
+			    .it_value.tv_nsec    = timeslice_nsec
+			};
+		    timer_settime(timer_id, 0, &spec, NULL);
+		}
+	    if(piom_enable_idle_thread)
 		{
-		    .sigev_notify = SIGEV_SIGNAL,
-		    .sigev_signo  = signal_number
-		};
-	    timer_create(CLOCK_MONOTONIC, &sev, &timer_id);
-	    const struct itimerspec spec =
-		{
-		    .it_interval.tv_sec  = 0,
-		    .it_interval.tv_nsec = timeslice_nsec,
-		    .it_value.tv_sec     = 0,
-		    .it_value.tv_nsec    = timeslice_nsec
-		};
-	    timer_settime(timer_id, 0, &spec, NULL);
-	    pthread_create(&idle_thread, NULL, &__piom_ltask_idle, NULL);
-	    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER)); 
+		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle, NULL);
+		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER)); 
+		}
 #endif /* PIOMAN_PTHREAD */
 
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE

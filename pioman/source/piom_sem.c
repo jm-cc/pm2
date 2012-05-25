@@ -55,7 +55,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 /** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
 #define PIOMAN_BUSY_WAIT_LOOP 100
 
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   PIOM_LOG_IN();
 
@@ -124,7 +124,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
   PIOM_LOG_OUT();
 }
 
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {
   PIOM_LOG_IN();
   cond->value |= mask;
@@ -132,19 +132,18 @@ __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask)
   PIOM_LOG_OUT();
 }
 
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
 {
   return cond->value & mask;
 }
 
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
+__tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
 {
   cond->value = initial;
   piom_sem_init(&cond->sem, 0);
-  piom_spin_init(&cond->lock);
 }
 
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 {
   cond->value &= mask;
 }
@@ -173,25 +172,25 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
   (*sem) = initial;
 }
 
-__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   while(! (*cond & mask))
     piom_check_polling(PIOM_POLL_AT_IDLE);		
 }
-__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {
   *cond |= mask;
 }
-__tbx_inline__ int piom_cond_test(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ int piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask)
 {
   return *cond & mask;
 }
-__tbx_inline__ void piom_cond_init(piom_cond_t *cond, uint8_t initial)
+__tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
 {
   *cond = initial;
 }
 
-__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, uint8_t mask)
+__tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 {
   *cond &=mask;
 }

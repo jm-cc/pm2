@@ -38,7 +38,6 @@ typedef struct
 {
     volatile piom_cond_value_t value;
     piom_sem_t sem;
-    piom_spinlock_t lock;
 } piom_cond_t;
 
 #else /* PIOMAN_MULTITHREAD */
@@ -52,10 +51,10 @@ void piom_sem_P(piom_sem_t *sem);
 void piom_sem_V(piom_sem_t *sem);
 void piom_sem_init(piom_sem_t *sem, int initial);
 
-void piom_cond_wait(piom_cond_t *cond, uint8_t mask);
-void piom_cond_signal(piom_cond_t *cond, uint8_t mask);
-int  piom_cond_test(piom_cond_t *cond, uint8_t mask);
-void piom_cond_init(piom_cond_t *cond, uint8_t initial);
-void piom_cond_mask(piom_cond_t *cond, uint8_t mask);
+void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask);
+void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask);
+int  piom_cond_test(piom_cond_t *cond, piom_cond_value_t mask);
+void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial);
+void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask);
 
 #endif	/* PIOM_SEM_H */

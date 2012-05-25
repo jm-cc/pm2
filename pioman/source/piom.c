@@ -41,14 +41,6 @@ void pioman_exit(void)
 int piom_check_polling(unsigned polling_point)
 {
     int ret = 0;
-#ifdef PIOM_ENABLE_SHM
-    if(piom_shs_polling_is_required())
-	{
-	    piom_shs_poll(); 
-	    ret = 1;
-	}
-#endif	/* PIOM_ENABLE_SHM */
-
     void*task = piom_ltask_schedule();
     ret = (task != NULL);
     return ret;

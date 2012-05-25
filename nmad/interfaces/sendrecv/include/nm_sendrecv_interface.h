@@ -29,9 +29,6 @@
 #include <nm_core_interface.h>
 #include <sys/uio.h>
 
-#ifdef PIOM_ENABLE_SHM
-#include <pioman.h>
-#endif
 
 /** a request status or event */
 typedef uint8_t nm_sr_status_t;
@@ -98,16 +95,6 @@ extern int nm_sr_init(nm_session_t p_session);
  *  @return The NM status.
  */
 extern int nm_sr_exit(nm_session_t p_session);
-
-#ifdef PIOM_ENABLE_SHM
-/** Attach a piom_sem_t to a request. This piom_sem_t is woken 
- *  up when the request is completed.
- *  @param p_request a pointer to a NM/SO request to be filled.
- *  @param p_sem a pointer to the piom_sem_t to attach.
- *  @return The NM status.
- */
-extern int nm_sr_attach(nm_sr_request_t *p_request, piom_sh_sem_t *p_sem);
-#endif	/* PIOM_ENABLE_SHM */
 
 
 /* ** Operations on requests (send or recv) **************** */

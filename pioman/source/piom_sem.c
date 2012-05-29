@@ -65,7 +65,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 /** time to do a busy wait before blocking, in usec. */
 #define PIOMAN_BUSY_WAIT_USEC 50
 /** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
-#define PIOMAN_BUSY_WAIT_LOOP 100
+#define PIOMAN_BUSY_WAIT_LOOP 10000
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
@@ -79,7 +79,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
       int i;
       for(i = 0; i < PIOMAN_BUSY_WAIT_LOOP ; i++)
 	{
-	  if(cond->value & mask)
+	  if(piom_cond_test(cond, mask))
 	    {
 	      /* consume the semaphore */
 	      piom_sem_P(&cond->sem);
@@ -131,7 +131,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 __tbx_inline__ void piom_cond_signal(piom_cond_t *cond, piom_cond_value_t mask)
 {
   PIOM_LOG_IN();
-  cond->value |= mask;
+  __sync_fetch_and_or(&cond->value, mask);  /* cond->value |= mask; */
   piom_sem_V(&cond->sem);
   PIOM_LOG_OUT();
 }
@@ -149,7 +149,7 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
 
 __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 {
-  cond->value &= mask;
+  __sync_fetch_and_and(&cond->value, mask); /* cond->value &= mask; */
 }
 
 #else  /* PIOMAN_MULTITHREADED */

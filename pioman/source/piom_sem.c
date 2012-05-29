@@ -102,7 +102,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	}
     }
   while(busy_wait);
-#ifdef PIOMAN_MARCEL
+#if defined (PIOMAN_MARCEL)
   /* set highest priority so that the thread 
      is scheduled (almost) immediatly when done */
   struct marcel_sched_param sched_param = { .sched_priority = MA_MAX_SYS_RT_PRIO };
@@ -114,6 +114,11 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
       fprintf(stderr, "pioman: FATAL- trying to wait while in scheduling hook.\n");
       abort();
     }
+#elif defined (PIOMAN_PTHREAD)
+  struct sched_param old_param;
+  int policy = -1;
+  pthread_getschedparam(pthread_self(), &policy, &old_param);
+  pthread_setschedprio(pthread_self(), sched_get_priority_max(policy));
 #endif /* PIOMAN_MARCEL */
 
   while(!(piom_cond_test(cond, mask)))
@@ -121,8 +126,10 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
       piom_sem_P(&cond->sem);
     }
 
-#ifdef PIOMAN_MARCEL
+#if defined (PIOMAN_MARCEL)
   marcel_sched_setparam(PIOM_SELF, &old_param);
+#elif defined (PIOMAN_PTHREAD)
+  pthread_setschedprio(pthread_self(), old_param.sched_priority);
 #endif /* PIOMAN_MARCEL */
   
   PIOM_LOG_OUT();

@@ -24,27 +24,22 @@
 
 typedef uint8_t piom_cond_value_t;
 
-#ifdef PIOMAN_MULTITHREAD
-
 #ifdef PIOMAN_LOCK_MARCEL
 typedef marcel_sem_t piom_sem_t;
 #elif defined(PIOMAN_LOCK_PTHREAD)
 typedef sem_t piom_sem_t;
-#else
-#  error "PIOMan: no lock scheme defined."
+#else /* PIOMAN_LOCK_NONE */
+typedef int piom_sem_t;
 #endif 
 
+#if defined(PIOMAN_MULTITHREAD)
 typedef struct
 {
     volatile piom_cond_value_t value;
     piom_sem_t sem;
 } piom_cond_t;
-
 #else /* PIOMAN_MULTITHREAD */
-
-typedef int piom_sem_t;
 typedef piom_cond_value_t piom_cond_t;
-
 #endif	/* PIOMAN_MULTITHREAD */
 
 void piom_sem_P(piom_sem_t *sem);

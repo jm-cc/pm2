@@ -16,33 +16,45 @@
 
 #include "pioman.h"
 
-#if defined(PIOMAN_MULTITHREAD)
 __tbx_inline__ void piom_sem_P(piom_sem_t *sem)
 {
-#ifdef MARCEL
+#if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_P(sem);
-#else
-  while (sem_wait(sem) == -1);
-#endif
+#elif defined (PIOMAN_LOCK_PTHREAD)
+  while(sem_wait(sem) == -1)
+    ;
+#else /* PIOMAN_LOCK_NONE */
+  (*sem)--;
+  while((*sem) < 0)
+    {
+      piom_check_polling(PIOM_POLL_AT_IDLE);
+    }
+#endif /* PIOMAN_LOCK_* */
 }
 
 __tbx_inline__ void piom_sem_V(piom_sem_t *sem)
 {
-#ifdef MARCEL
+#if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_V(sem);
-#else
+#elif defined (PIOMAN_LOCK_PTHREAD)
   sem_post(sem);
-#endif
+#else /* PIOMAN_LOCK_NONE */
+  (*sem)++;
+#endif /* PIOMAN_LOCK_* */
 }
 
 __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 {
-#ifdef MARCEL
+#if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_init(sem, initial);
-#else
+#elif defined (PIOMAN_LOCK_PTHREAD)
   sem_init(sem, 0, initial);
-#endif
+#else /* PIOMAN_LOCK_NONE */
+  (*sem) = initial;
+#endif /* PIOMAN_LOCK_* */
 }
+
+#if defined(PIOMAN_MULTITHREAD)
 
 /* todo: get a dynamic value here !
  * it could be based on:
@@ -59,7 +71,6 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   PIOM_LOG_IN();
 
-#ifdef PIOMAN_MULTITHREAD
   /* First, let's poll for a while before blocking */
   tbx_tick_t t1;
   int busy_wait = 1;
@@ -105,21 +116,14 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
     }
 #endif /* PIOMAN_MARCEL */
 
-  while(!(cond->value & mask))
+  while(!(piom_cond_test(cond, mask)))
     {
       piom_sem_P(&cond->sem);
     }
+
 #ifdef PIOMAN_MARCEL
   marcel_sched_setparam(PIOM_SELF, &old_param);
 #endif /* PIOMAN_MARCEL */
-
-#else  /* PIOMAN_MULTITHREAD */
-  /* no threads, do not block as possibly nobody will wake us... 
-   *  (We have neither timers nor supplementary VP)
-   */
-  while(!(cond->value & mask))
-    piom_check_polling(PIOM_POLL_AT_IDLE);		
-#endif	/* PIOMAN_MULTITHREAD */
   
   PIOM_LOG_OUT();
 }
@@ -148,29 +152,11 @@ __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
   cond->value &= mask;
 }
 
-#else  /* MARCEL */
+#else  /* PIOMAN_MULTITHREADED */
 
 /* Warning: we assume that Marcel is not running and there is no thread here
  * these functions are not reentrant
  */
-__tbx_inline__ void piom_sem_P(piom_sem_t *sem)
-{
-  (*sem)--;
-  while((*sem) < 0)
-    {
-      piom_check_polling(PIOM_POLL_AT_IDLE);
-    }
-}
-
-__tbx_inline__ void piom_sem_V(piom_sem_t *sem)
-{
-  (*sem)++;
-}
-
-__tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
-{
-  (*sem) = initial;
-}
 
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
@@ -192,7 +178,7 @@ __tbx_inline__ void piom_cond_init(piom_cond_t *cond, piom_cond_value_t initial)
 
 __tbx_inline__ void piom_cond_mask(piom_cond_t *cond, piom_cond_value_t mask)
 {
-  *cond &=mask;
+  *cond &= mask;
 }
 
 #endif /* PIOMAN_MULTITHREAD */

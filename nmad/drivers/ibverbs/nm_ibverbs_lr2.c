@@ -28,28 +28,11 @@
 #define NM_IBVERBS_LR2_BUFSIZE (512*1024)
 #define NM_IBVERBS_LR2_NBUF 3
 
-struct lr2_step_s
-{
-  int chunk_size;
-  int block_size;
-};
+#define NM_IBVERBS_LR2_BLOCKSIZE 4096
 
-static const struct lr2_step_s lr2_steps[] =
-  {
-    { 12*1024, 1024 },
-    { 24*1024, 1024 },
-    { 40*1024, 8192 },
-    { 64*1024, 8192 },
-    { 88*1024, 8192 },
-    { 128*1024, 8192 },
-    /*
-      { 160*1024, 8192 },
-      { 200*1024, 8192 },
-      { 256*1024, 8192 },
-    */
-    { 0, 0}
-  };
-static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(struct lr2_step_s) - 1;
+static const int lr2_steps[] =
+  { 12*1024, 24*1024, 40*1024, 64*1024, 88*1024, 128*1024, /* 160*1024, 200*1024, 256*1024, */ 0};
+static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(int) - 1;
 
 /** on the wire header of method 'lr2' */
 struct lr2_header_s
@@ -224,8 +207,8 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 
   while(lr2->send.done < lr2->send.size)
     {
-      const int chunk_size = lr2_steps[lr2->send.step].chunk_size;
-      const int block_size = lr2_steps[lr2->send.step].block_size;
+      const int chunk_size = lr2_steps[lr2->send.step];
+      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
       const int block_max_payload = block_size - lr2_hsize;
       const int chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
       const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_max_payload);
@@ -285,8 +268,8 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
   struct nm_ibverbs_lr2*lr2 = _status;
   if((lr2->send.prefetch == NULL) && (lr2->send.message == NULL))
     {
-      const int block_size = lr2_steps[0].block_size;
-      const int chunk_size = lr2_steps[0].chunk_size;
+      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
+      const int chunk_size = lr2_steps[0];
       const int block_payload = block_size - lr2_hsize;
       int chunk_done = 0;
       int chunk_offset = 0;
@@ -319,8 +302,8 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 
   while(lr2->recv.done < lr2->recv.size)
     {
-      const int chunk_size = lr2_steps[lr2->recv.step].chunk_size;
-      const int block_size = lr2_steps[lr2->recv.step].block_size;
+      const int chunk_size = lr2_steps[lr2->recv.step];
+      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
       const int block_max_payload = block_size - lr2_hsize;
       const int chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
       const int chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_max_payload);

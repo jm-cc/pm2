@@ -254,7 +254,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       else
 	{
 	  int chunk_todo = chunk_payload;
-	  lr2->send.rbuf += (chunk_max_payload - chunk_payload) % block_size;
+	  lr2->send.rbuf += (chunk_max_payload - chunk_payload) % block_max_payload;
 	  while(chunk_todo > 0)
 	    {
 	      const int block_payload = (chunk_todo % block_max_payload == 0) ?
@@ -290,6 +290,7 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
       const int block_payload = block_size - lr2_hsize;
       int chunk_done = 0;
       int chunk_offset = 0;
+      assert(size > block_payload * (chunk_size/block_size));
       while(chunk_offset < chunk_size)
 	{
 	  struct lr2_header_s*h = (struct lr2_header_s*)(&lr2->buffer.sbuf[chunk_offset] + block_payload);
@@ -335,7 +336,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 			     &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_ACK);
       }
       int chunk_todo = chunk_payload;
-      int chunk_offset = (chunk_max_payload - chunk_payload) % block_size;
+      int chunk_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
       while(chunk_todo > 0)
 	{
 	  const int block_payload = (chunk_todo % block_max_payload == 0) ?

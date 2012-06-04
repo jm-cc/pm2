@@ -50,6 +50,9 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy);
 
 int nm_core_exit(nm_core_t p_core);
 
+/** disable schedopt for raw driver use */
+void nm_core_schedopt_disable(nm_core_t p_core);
+
 
 /* ** Drivers ********************************************** */
 

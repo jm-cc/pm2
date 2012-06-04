@@ -77,6 +77,9 @@ struct nm_core
   struct tbx_fast_list_head pending_recv_list;
 #endif /* NMAD_POLL */
 
+  /** whether schedopt is enabled atop drivers */
+  int enable_schedopt;
+
   /** List of posted unpacks */
   struct tbx_fast_list_head unpacks;
   

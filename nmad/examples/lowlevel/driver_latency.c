@@ -44,31 +44,8 @@ int main(int argc, char **argv)
   assert(p_gate != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
-  /* take over the driver
-   * flush pending recv requests posted by nm_drv_refill_recv() 
-   */
-  while(!tbx_fast_list_empty(&p_drv->p_core->pending_recv_list))
-    {
-      struct nm_pkt_wrap*p_pw = nm_l2so(p_drv->p_core->pending_recv_list.next);
-      tbx_fast_list_del(&p_pw->link);
-      if(p_pw->p_gdrv)
-	{
-	  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
-	  assert(p_pw == p_gdrv->p_in_rq_array[NM_TRK_SMALL]);
-	  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
-	  int err = r->driver->cancel_recv_iov(r->_status, p_pw);
-	  assert(err == NM_ESUCCESS);
-	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
-	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
-	}
-      else
-	{
-	  assert(p_drv->p_in_rq == p_pw);
-	  int err = p_drv->driver->cancel_recv_iov(NULL, p_pw);
-	  assert(err == NM_ESUCCESS);
-	  p_drv->p_in_rq = NULL;
-	}
-    }
+  /* take over the driver */
+  nm_core_schedopt_disable(p_drv->p_core);
 
   /* hack here-
    * make sure the peer node has flushed its pending recv requests,

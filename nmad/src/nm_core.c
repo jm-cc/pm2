@@ -44,7 +44,8 @@ void nm_drv_post_all(struct nm_drv*p_drv)
   nm_drv_post_send(p_drv);
   
   /* post new receive requests */
-  nm_drv_refill_recv(p_drv);
+  if(p_drv->p_core->enable_schedopt)
+    nm_drv_refill_recv(p_drv);
   nm_drv_post_recv(p_drv);
 }
 
@@ -192,6 +193,7 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_recv_list);
   TBX_INIT_FAST_LIST_HEAD(&p_core->pending_send_list);
 #endif /* NMAD_POLL*/
+  p_core->enable_schedopt = 1;
 
   p_core->strategy_adapter = NULL;
 
@@ -221,6 +223,42 @@ int nm_core_set_strategy(nm_core_t p_core, puk_component_t strategy)
   p_core->strategy_adapter = strategy;
   NM_DISPF("# nmad: strategy = %s\n", strategy->name);
   return NM_ESUCCESS;
+}
+
+void nm_core_schedopt_disable(nm_core_t p_core)
+{
+  p_core->enable_schedopt = 0;
+#ifdef NMAD_POLL
+  /* flush pending recv requests posted by nm_drv_refill_recv() */
+  while(!tbx_fast_list_empty(&p_core->pending_recv_list))
+    {
+      struct nm_pkt_wrap*p_pw = nm_l2so(p_core->pending_recv_list.next);
+      tbx_fast_list_del(&p_pw->link);
+      if(p_pw->p_gdrv)
+	{
+	  struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
+	  assert(p_pw == p_gdrv->p_in_rq_array[NM_TRK_SMALL]);
+	  struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
+	  int err = r->driver->cancel_recv_iov(r->_status, p_pw);
+	  assert(err == NM_ESUCCESS);
+	  p_gdrv->p_in_rq_array[NM_TRK_SMALL] = NULL;
+	  p_gdrv->active_recv[NM_TRK_SMALL] = 0;
+	}
+      else
+	{
+	  assert(p_pw->p_drv->p_in_rq == p_pw);
+	  int err = p_pw->p_drv->driver->cancel_recv_iov(NULL, p_pw);
+	  assert(err == NM_ESUCCESS);
+	  p_pw->p_drv->p_in_rq = NULL;
+	}
+    }
+#else /* NMAD_POLL */
+  struct nm_drv*p_drv;
+  NM_FOR_EACH_DRIVER(p_drv, p_core)
+    {
+      piom_ltask_mask(&p_drv->task);
+    }
+#endif /* NMAD_POLL */
 }
 
 /** Shutdown the core struct and the main scheduler.

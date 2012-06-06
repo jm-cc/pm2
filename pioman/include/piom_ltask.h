@@ -43,8 +43,8 @@ typedef enum
 	PIOM_LTASK_STATE_NONE       = 0x00,  /**< not yet submitted */
 	PIOM_LTASK_STATE_READY      = 0x01,  /**< submitted to a queue, ready to be scheduled */
 	PIOM_LTASK_STATE_SCHEDULED  = 0x02,  /**< being scheduled */
-	PIOM_LTASK_STATE_DONE       = 0x04,  /**< task has been scheduled and is successfull */
-	PIOM_LTASK_STATE_TERMINATED = 0x08,  /**< task is terminated, resources may be freed */
+	PIOM_LTASK_STATE_SUCCESS    = 0x04,  /**< task has been scheduled and is successfull */
+	PIOM_LTASK_STATE_TERMINATED = 0x08,  /**< task is successfull and processing is completed; resources may be freed */
 	PIOM_LTASK_STATE_DESTROYED  = 0x10   /**< task destroyed by user handler */
     } piom_ltask_state_t;
 
@@ -86,7 +86,7 @@ extern void piom_ltask_resume(void);
 extern void piom_ltask_submit(struct piom_ltask *task);
 
 /** Wait for the completion of a task
- * (ie. wait until the task state matches PIOM_LTASK_STATE_DONE)
+ * (ie. wait until the task state matches PIOM_LTASK_STATE_SUCCESS)
  */
 extern void piom_ltask_wait_success(struct piom_ltask *task);
 
@@ -106,26 +106,14 @@ extern void piom_ltask_cancel(struct piom_ltask*task);
  */
 extern void *piom_ltask_schedule(void);
 
-/** Test whether a task is completed */
-static inline int piom_ltask_test_completed(struct piom_ltask *task)
-{
-    return task && (task->state & PIOM_LTASK_STATE_DONE);
-}
-
-/** Test whether a task is terminated (may be freed) */
-static inline int piom_ltask_test_terminated(struct piom_ltask *task)
-{
-    return task && (task->state & PIOM_LTASK_STATE_TERMINATED);
-}
-
 /** Notify task completion. */
 static inline void piom_ltask_completed(struct piom_ltask *task)
 {
-    if(! (task->state & PIOM_LTASK_STATE_DONE))
+    if(! (task->state & PIOM_LTASK_STATE_SUCCESS))
 	{
-	    task->state |= PIOM_LTASK_STATE_DONE;
+	    task->state |= PIOM_LTASK_STATE_SUCCESS;
 	}
-    piom_cond_signal(&task->done, PIOM_LTASK_STATE_DONE);
+    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
 }
 
 /**< Notify task destruction, if option DESTROY was set. */

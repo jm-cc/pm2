@@ -164,35 +164,31 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		    (*task->func_ptr)(task->data_ptr);
 		    if(options & PIOM_LTASK_OPTION_DESTROY)
 			{
-			    /* ltask has been destroyed */
+			    /* ltask was destroyed by handler */
 			    piom_tasklet_unmask();
 			}
-		    else
+		    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
 			{
 			    task->state ^= PIOM_LTASK_STATE_SCHEDULED;
-			    if ((task->options & PIOM_LTASK_OPTION_REPEAT)
-				&& !(task->state & PIOM_LTASK_STATE_DONE))
+			    piom_tasklet_unmask();
+			    /* If another thread is currently stopping the queue don't repost the task */
+			    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
 				{
-				    piom_tasklet_unmask();
-				    /* If another thread is currently stopping the queue don't repost the task */
-				    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
-					{
-					    __piom_ltask_submit_in_queue(task, queue);
-					}
-				    else
-					{
-					    fprintf(stderr, "PIOMan: WARNING- task %p is leaved uncompleted\n", task);
-					}
+				    __piom_ltask_submit_in_queue(task, queue);
 				}
 			    else
 				{
-				    task->state = PIOM_LTASK_STATE_TERMINATED;
-				    piom_ltask_completed (task);
-				    piom_tasklet_unmask();
+				    fprintf(stderr, "PIOMan: WARNING- task %p is left uncompleted\n", task);
 				}
 			}
+		    else
+			{
+			    task->state = PIOM_LTASK_STATE_TERMINATED;
+			    piom_ltask_completed (task);
+			    piom_tasklet_unmask();
+			}
 		} 
-	    else if(task->state & PIOM_LTASK_STATE_DONE) 
+	    else if(task->state & PIOM_LTASK_STATE_SUCCESS) 
 		{
 		    task->state |= PIOM_LTASK_STATE_TERMINATED;
 		}
@@ -378,7 +374,7 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 void piom_ltask_submit(struct piom_ltask *task)
 {
     piom_ltask_queue_t *queue;
-    assert(task->state == PIOM_LTASK_STATE_NONE || tast->state == PIOM_LTASK_STATE_DONE);
+    assert(task->state == PIOM_LTASK_STATE_NONE || tast->state == PIOM_LTASK_STATE_SUCCESS);
     task->state = PIOM_LTASK_STATE_NONE;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
     queue = &global_queue;
@@ -418,14 +414,12 @@ void piom_ltask_wait_success(struct piom_ltask *task)
 {
     assert(ltask->state != PIOM_LTASK_STATE_NONE);
     assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
-    piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
+    piom_cond_wait(&task->done, PIOM_LTASK_STATE_SUCCESS);
 }
 
 void piom_ltask_wait(struct piom_ltask *task)
 {
-    assert(ltask->state != PIOM_LTASK_STATE_NONE);
-    assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
-    piom_cond_wait(&task->done, PIOM_LTASK_STATE_DONE);
+    piom_ltask_wait_success(task);
     while (!(task->state & PIOM_LTASK_STATE_TERMINATED))
 	{
 	    piom_ltask_schedule();

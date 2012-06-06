@@ -63,7 +63,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
  * - compiler hints
  */
 /** time to do a busy wait before blocking, in usec. */
-#define PIOMAN_BUSY_WAIT_USEC 50
+#define PIOMAN_BUSY_WAIT_USEC 5
 /** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
 #define PIOMAN_BUSY_WAIT_LOOP 10000
 

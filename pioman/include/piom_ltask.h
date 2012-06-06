@@ -33,10 +33,12 @@
 
 
 typedef unsigned piom_ltask_option_t;
-#define PIOM_LTASK_OPTION_NONE    0x00
-#define PIOM_LTASK_OPTION_REPEAT  0x01 /**< repeat until task completion */
-#define PIOM_LTASK_OPTION_ONESHOT 0x02 /**< task is scheduled once */
-#define PIOM_LTASK_OPTION_DESTROY 0x04 /**< handler destroys the ltask- must be oneshot, without wait */
+#define PIOM_LTASK_OPTION_NONE     0x00
+#define PIOM_LTASK_OPTION_REPEAT   0x01 /**< repeat until task completion */
+#define PIOM_LTASK_OPTION_ONESHOT  0x02 /**< task is scheduled once */
+#define PIOM_LTASK_OPTION_DESTROY  0x04 /**< handler destroys the ltask- must be oneshot, without wait */
+#define PIOM_LTASK_OPTION_NOWAIT   0x08 /**< no wait will be performed on the task- bypass completion notification */
+#define PIOM_LTASK_OPTION_BLOCKING 0x10 /**< task has a blocking function */
 
 typedef enum
     {
@@ -45,20 +47,22 @@ typedef enum
 	PIOM_LTASK_STATE_SCHEDULED  = 0x02,  /**< being scheduled */
 	PIOM_LTASK_STATE_SUCCESS    = 0x04,  /**< task has been scheduled and is successfull */
 	PIOM_LTASK_STATE_TERMINATED = 0x08,  /**< task is successfull and processing is completed; resources may be freed */
-	PIOM_LTASK_STATE_DESTROYED  = 0x10   /**< task destroyed by user handler */
+	PIOM_LTASK_STATE_DESTROYED  = 0x10,  /**< task destroyed by user handler */
+	PIOM_LTASK_STATE_BLOCKED    = 0x20   /**< task is blocked on syscall */
     } piom_ltask_state_t;
 
 
-typedef int (piom_ltask_func) (void *arg);
+typedef int (*piom_ltask_func_t)(void*arg);
 
 struct piom_ltask
 {
-    volatile piom_ltask_state_t state;
-    piom_cond_t done;
-    volatile int masked;
-    piom_ltask_func *func_ptr;
-    void *data_ptr;
-    piom_ltask_option_t options;
+    volatile piom_ltask_state_t state; /**< current state of ltask (bitmask) */
+    volatile int masked;               /**< temporarily disable polling */
+    piom_ltask_func_t func_ptr;        /**< function used for polling */
+    void *data_ptr;                    /**< user-supplied pointer given to polling function */
+    piom_ltask_option_t options;       /**< special options */
+    piom_cond_t done;                  /**< condition to wait for task completion */
+    piom_ltask_func_t blocking_func;   /**< function used for blocking system call (passive wait) */
     piom_vpset_t vp_mask;
     struct piom_ltask_queue*queue;
 };
@@ -109,11 +113,11 @@ extern void *piom_ltask_schedule(void);
 /** Notify task completion. */
 static inline void piom_ltask_completed(struct piom_ltask *task)
 {
-    if(! (task->state & PIOM_LTASK_STATE_SUCCESS))
+    task->state |= PIOM_LTASK_STATE_SUCCESS;
+    if(!(task->options & PIOM_LTASK_OPTION_NOWAIT))
 	{
-	    task->state |= PIOM_LTASK_STATE_SUCCESS;
+	    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
 	}
-    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
 }
 
 /**< Notify task destruction, if option DESTROY was set. */
@@ -131,18 +135,24 @@ static inline void piom_ltask_init(struct piom_ltask*ltask)
 
 /** create a new ltask. */
 static inline void piom_ltask_create(struct piom_ltask *task,
-				     piom_ltask_func * func_ptr,
-				     void *data_ptr,
+				     piom_ltask_func_t func_ptr, void *data_ptr,
 				     piom_ltask_option_t options, piom_vpset_t vp_mask)
 {
     task->masked = 0;
     task->func_ptr = func_ptr;
     task->data_ptr = data_ptr;
+    task->blocking_func = NULL;
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
     task->vp_mask = vp_mask;
     task->queue = NULL;
     piom_cond_init(&task->done, 0);
+}
+
+static inline void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func)
+{
+    task->blocking_func = func;
+    task->options |= PIOM_LTASK_OPTION_BLOCKING;
 }
 
 /** suspend the ltask scheduling

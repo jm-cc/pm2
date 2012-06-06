@@ -47,17 +47,33 @@ typedef struct piom_ltask_queue
 } piom_ltask_queue_t;
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
+static void*__piom_ltask_lwp_worker(void*_dummy);
+
 
 /** refcounter on piom_ltask */
 static volatile int piom_ltask_initialized = 0;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
 static struct piom_ltask_queue global_queue;
 #endif
-
 #ifdef PIOMAN_PTHREAD
-static timer_t timer_id;
+/** low-priority thread for idle polling */
 static pthread_t idle_thread;
+/** disable ltask dispatching while locking */
 volatile int __piom_ltask_handler_masked = 0;
+
+/** number of spare LWPs running */
+static const int          __piom_ltask_lwps_num = 4; /* TODO- tune */
+/** number of available LWPs */
+static int                __piom_ltask_lwps_avail = 0;
+/** signal new tasks to LWPs */
+static sem_t              __piom_ltask_lwps_ready;
+/** ltasks queue to feed LWPs */
+static struct piom_ltask_lfqueue_s __piom_ltask_lwps_queue;
+#endif
+
+/* ********************************************************* */
+
+#if defined(PIOMAN_PTHREAD)
 static inline void piom_tasklet_mask(void)
 {
     __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
@@ -271,6 +287,7 @@ void piom_init_ltasks(void)
 	    int piom_enable_progression = env_piom_enable_progression ? atoi(env_piom_enable_progression) : 1;
 	    int piom_enable_idle_thread = env_piom_enable_idle_thread ? atoi(env_piom_enable_idle_thread) : piom_enable_progression;
 	    int piom_enable_sighandler  = env_piom_enable_sighandler  ? atoi(env_piom_enable_sighandler) : piom_enable_progression;
+	    /* ** timer-based polling */
 	    if(piom_enable_sighandler)
 		{
 		    const int signal_number = SIGRTMIN + 1;
@@ -289,6 +306,7 @@ void piom_init_ltasks(void)
 			    .sigev_notify = SIGEV_SIGNAL,
 			    .sigev_signo  = signal_number
 			};
+		    timer_t timer_id;
 		    timer_create(CLOCK_MONOTONIC, &sev, &timer_id);
 		    const struct itimerspec spec =
 			{
@@ -299,15 +317,28 @@ void piom_init_ltasks(void)
 			};
 		    timer_settime(timer_id, 0, &spec, NULL);
 		}
+	    /* ** idle polling */
 	    if(piom_enable_idle_thread)
 		{
 		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle, NULL);
 		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER)); 
 		}
+	    /* ** spare LWPs for blocking calls */
+	    {
+		sem_init(&__piom_ltask_lwps_ready, 0, 0);
+		piom_ltask_lfqueue_init(&__piom_ltask_lwps_queue);
+		int i;
+		for(i = 0; i < __piom_ltask_lwps_num; i++)
+		    {
+			pthread_t tid;
+			pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
+			__piom_ltask_lwps_avail++;
+		    }
+	    }
 #endif /* PIOMAN_PTHREAD */
 
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
-	    __piom_init_queue (&global_queue);
+	    __piom_init_queue(&global_queue);
 	    global_queue.vpset= ~0;
 #else /* PIOMAN_LTASK_GLOBAL_QUEUE */
  	    int i, j;
@@ -354,7 +385,7 @@ int piom_ltask_test_activity(void)
     return (piom_ltask_initialized != 0);
 }
 
-void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
+static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue)
 {
     if(queue->state == PIOM_LTASK_QUEUE_STATE_STOPPING)
 	{
@@ -371,10 +402,39 @@ void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *q
 	}
 }
 
+static void*__piom_ltask_lwp_worker(void*_dummy)
+{
+    for(;;)
+	{
+	    sem_wait(&__piom_ltask_lwps_ready);
+	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&__piom_ltask_lwps_queue);
+	    assert(task != NULL);
+	    (*task->blocking_func)(task->data_ptr);
+	    __sync_fetch_and_add(&__piom_ltask_lwps_avail, 1);
+	}
+    return NULL;
+}
+
+static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)
+{
+    if(__sync_fetch_and_sub(&__piom_ltask_lwps_avail, 1) > 0)
+	{
+	    piom_ltask_lfqueue_enqueue(&__piom_ltask_lwps_queue, task);
+	    sem_post(&__piom_ltask_lwps_ready);
+	    return 0;
+	}
+    else
+	{
+	    /* rollback */
+	    __sync_fetch_and_add(&__piom_ltask_lwps_avail, 1);
+	}
+    return -1;
+}
+
 void piom_ltask_submit(struct piom_ltask *task)
 {
     piom_ltask_queue_t *queue;
-    assert(task->state == PIOM_LTASK_STATE_NONE || tast->state == PIOM_LTASK_STATE_SUCCESS);
+    assert(task->state == PIOM_LTASK_STATE_NONE || task->state == PIOM_LTASK_STATE_SUCCESS);
     task->state = PIOM_LTASK_STATE_NONE;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
     queue = &global_queue;
@@ -383,7 +443,17 @@ void piom_ltask_submit(struct piom_ltask *task)
 #endif /* PIOMAN_LTASK_GLOBAL_QUEUE */
     assert(task != NULL);
     assert(queue != NULL);
-    __piom_ltask_submit_in_queue(task, queue);
+    if(task->options & PIOM_LTASK_OPTION_BLOCKING)
+	{
+	    if(__piom_ltask_submit_in_lwp(task) != 0)
+		{
+		    __piom_ltask_submit_in_queue(task, queue);
+		}
+	}
+    else
+	{
+	    __piom_ltask_submit_in_queue(task, queue);
+	}
 }
 
 void*piom_ltask_schedule(void)
@@ -414,6 +484,7 @@ void piom_ltask_wait_success(struct piom_ltask *task)
 {
     assert(ltask->state != PIOM_LTASK_STATE_NONE);
     assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
+    assert(!(task->options & PIOM_LTASK_OPTION_NOWAIT));
     piom_cond_wait(&task->done, PIOM_LTASK_STATE_SUCCESS);
 }
 

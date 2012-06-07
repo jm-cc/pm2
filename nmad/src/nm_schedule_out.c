@@ -91,7 +91,7 @@ void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p
 
 /** Process a complete successful outgoing request.
  */
-static int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
+int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw)
 {
   struct nm_gate *p_gate = p_pw->p_gate;
   nmad_lock_assert();
@@ -292,27 +292,3 @@ void nm_out_prefetch(struct nm_core*p_core)
 #endif /* NMAD_POLL */
 
 
-#ifdef PIOM_BLOCKING_CALLS
-
-int nm_piom_block_send(struct nm_pkt_wrap  *p_pw)
-{
-  nmad_unlock();
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err;
-  do {
-    err = r->driver->wait_send_iov(r->_status, p_pw);
-  }while(err == -NM_EAGAIN);
-
-  nmad_lock();
-  if (err != -NM_EAGAIN)
-    {
-      if (tbx_unlikely(err < 0))
-	{
-	  NM_WARN("poll_send returned %d", err);
-	}
-      nm_so_process_complete_send(p_pw->p_gate, p_pw);
-    }
-  return err; 
-}
-
-#endif /* PIOM_BLOCKING_CALLS */

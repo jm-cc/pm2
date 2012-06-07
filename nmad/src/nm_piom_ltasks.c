@@ -195,6 +195,31 @@ static int nm_task_poll_recv(void*_pw)
   return ret;
 }
 
+static int nm_task_block_recv(void*_pw)
+{
+  struct nm_pkt_wrap*p_pw = _pw;
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  int err;
+  do
+    {
+      err = r->driver->wait_recv_iov(r->_status, p_pw);
+    }
+  while(err == -NM_EAGAIN);
+  nmad_lock();
+  if(err == NM_ESUCCESS)
+    {
+      piom_ltask_destroy(&p_pw->ltask);
+      nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+    }
+  else
+    {
+      nm_ltask_submit_poll_send(p_pw);
+      NM_WARN("poll_recv returned %d", err);
+    }
+  nmad_unlock();
+  return NM_ESUCCESS;
+}
+
 static int nm_task_poll_send(void*_pw)
 {
   struct nm_pkt_wrap*p_pw = _pw;
@@ -207,6 +232,32 @@ static int nm_task_poll_send(void*_pw)
     {
       nm_ltask_submit_poll_send(p_pw);
     }
+  return NM_ESUCCESS;
+}
+
+static int nm_task_block_send(void*_pw)
+{
+  struct nm_pkt_wrap*p_pw = _pw;
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  int err;
+  do
+    {
+      err = r->driver->wait_send_iov(r->_status, p_pw);
+    }
+  while(err == -NM_EAGAIN);
+  nmad_lock();
+  if(err == NM_ESUCCESS)
+    {
+      piom_ltask_destroy(&p_pw->ltask);
+      nm_so_process_complete_send(p_pw->p_gate->p_core, p_pw);
+      nm_so_pw_free(p_pw);
+    }
+  else
+    {
+      nm_ltask_submit_poll_send(p_pw);
+      NM_WARN("poll_send returned %d", err);
+    }
+  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -233,11 +284,14 @@ static int nm_task_offload(void* args)
 void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
-  piom_ltask_create(&p_pw->ltask, 
-		    &nm_task_poll_recv, 
-		    p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
+  piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_vpset);
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  if(r->driver->capabilities.is_exportable && (r->driver->wait_recv_iov != NULL))
+    {
+      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv);
+    }
   piom_ltask_submit(&p_pw->ltask);	
 }
 
@@ -245,12 +299,15 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
   piom_vpset_t task_vpset = nm_get_binding_policy();
 
-  piom_ltask_create(&p_pw->ltask, 
-		    &nm_task_poll_send,
-		    p_pw,
-		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY, 
+  piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
+		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_vpset);
-  piom_ltask_submit(&p_pw->ltask);	
+  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
+  if(r->driver->capabilities.is_exportable && (r->driver->wait_send_iov != NULL))
+    {
+      piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_send);
+    }
+  piom_ltask_submit(&p_pw->ltask);
 }
 
 void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
@@ -260,7 +317,7 @@ void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
   piom_ltask_create(task, 
 		    &nm_task_post_on_drv,
 		    p_drv,
-		    PIOM_LTASK_OPTION_REPEAT, 
+		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
 		    task_vpset);
   piom_ltask_submit(task);  
 }

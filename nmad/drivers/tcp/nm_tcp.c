@@ -161,10 +161,8 @@ static int nm_tcp_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*
 static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static const char*nm_tcp_get_driver_url(struct nm_drv *p_drv);
-#ifdef PIOM_BLOCKING_CALLS
 static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-#endif
 
 static const struct nm_drv_iface_s nm_tcp_driver =
   {
@@ -182,19 +180,12 @@ static const struct nm_drv_iface_s nm_tcp_driver =
 
     .poll_send_iov	= &nm_tcp_send_iov,
     .poll_recv_iov	= &nm_tcp_recv_iov,
-    /* TODO: add poll_any callbacks  */
-    .poll_send_any_iov  = NULL,
-    .poll_recv_any_iov  = NULL,
 
-    .get_driver_url     = &nm_tcp_get_driver_url,
-
-#ifdef PIOM_BLOCKING_CALLS
     .wait_send_iov	= &nm_tcp_wait_send_iov,
     .wait_recv_iov	= &nm_tcp_wait_recv_iov,
 
-    .wait_recv_any_iov  = NULL,
-    .wait_send_any_iov  = NULL,
-#endif
+    .get_driver_url     = &nm_tcp_get_driver_url,
+
     .capabilities.is_exportable = 1,
     .capabilities.min_period    = 0
   };
@@ -649,31 +640,6 @@ static int nm_tcp_poll_out(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   return err;
 }
 
-#ifdef PIOM_BLOCKING_CALLS
-/** Check if a pkt wrapper send request may progress.
- *  @param p_pw the pkt wrapper.
- *  @return The NM status code.
- */
-__tbx_inline__
-static
-int
-nm_tcp_outgoing_block	(void*_status,
-			 struct nm_pkt_wrap *p_pw) {
-	return nm_tcp_poll_out(_status, p_pw, -1);
-}
-#endif
-
-/** Check if a pkt wrapper send request may progress.
- *  @param p_pw the pkt wrapper.
- *  @return The NM status code.
- */
-__tbx_inline__
-static
-int
-nm_tcp_outgoing_poll	(void*_status,
-			 struct nm_pkt_wrap *p_pw) {
-	return nm_tcp_poll_out(_status, p_pw, 0);
-}
 
 /** Check if a pkt wrapper receive request may progress.
  *  @param p_pw the pkt wrapper.
@@ -857,28 +823,6 @@ static int nm_tcp_poll_in(void*_status, struct nm_pkt_wrap *p_pw, int timeout)
   return err;
 }
 
-#ifdef PIOM_BLOCKING_CALLS
-/** Check if a pkt wrapper receive request may progress.
- *  @param p_pw the pkt wrapper.
- *  @return The NM status code.
- */
-static __tbx_inline__ int nm_tcp_incoming_block(void*_status,
-						struct nm_drv *p_drv,
-						struct nm_pkt_wrap *p_pw)
-{
-  return nm_tcp_poll_in(_status, p_pw, -1);
-}
-#endif
-
-/** Check if a pkt wrapper receive request may progress.
- *  @param p_pw the pkt wrapper.
- *  @return The NM status code.
- */
-static __tbx_inline__ int nm_tcp_incoming_poll(void*_status, struct nm_drv *p_drv,
-					       struct nm_pkt_wrap *p_pw)
-{
-  return nm_tcp_poll_in(_status, p_pw, 0);
-}
 
 /** Post a new send request or try to make a pending request progress.
  */
@@ -1089,19 +1033,15 @@ nm_tcp_send 	(void*_status,
         goto out;
 }
 
-static
-int
-nm_tcp_send_iov	(void*_status, struct nm_pkt_wrap *p_pw) {
-	return nm_tcp_send(_status, p_pw, 0);
+static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw) 
+{
+  return nm_tcp_send(_status, p_pw, 0);
 }
 
-#ifdef PIOM_BLOCKING_CALLS
-static
-int
-nm_tcp_wait_send_iov	(void*_status, struct nm_pkt_wrap *p_pw) {
-	return nm_tcp_send(_status, p_pw, -1);
+static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  return nm_tcp_send(_status, p_pw, -1);
 }
-#endif
 
 /** Post a new receive request or try to make a pending request progress.
  */
@@ -1359,9 +1299,8 @@ static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return nm_tcp_recv(_status, p_pw, 0);
 }
 
-#ifdef PIOM_BLOCKING_CALLS
 static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   return nm_tcp_recv(_status, p_pw, -1);
 }
-#endif
+

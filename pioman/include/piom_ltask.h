@@ -123,7 +123,7 @@ static inline void piom_ltask_completed(struct piom_ltask *task)
 /**< Notify task destruction, if option DESTROY was set. */
 static inline void piom_ltask_destroy(struct piom_ltask*ltask)
 {
-    assert(ltask->state & PIOM_LTASK_STATE_SCHEDULED);
+    assert((ltask->state & PIOM_LTASK_STATE_SCHEDULED) || (ltask->state & PIOM_LTASK_STATE_BLOCKED));
     ltask->state = PIOM_LTASK_STATE_DESTROYED;
 }
 

@@ -62,7 +62,7 @@ static pthread_t idle_thread;
 volatile int __piom_ltask_handler_masked = 0;
 
 /** number of spare LWPs running */
-static const int          __piom_ltask_lwps_num = 4; /* TODO- tune */
+static int                __piom_ltask_lwps_num = 0;
 /** number of available LWPs */
 static int                __piom_ltask_lwps_avail = 0;
 /** signal new tasks to LWPs */
@@ -347,13 +347,20 @@ void piom_init_ltasks(void)
 	    /* ** spare LWPs for blocking calls */
 	    if(piom_enable_lwp)
 		{
+		    __piom_ltask_lwps_num = piom_enable_lwp;
+		    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_enable_lwp);
 		    sem_init(&__piom_ltask_lwps_ready, 0, 0);
 		    piom_ltask_lfqueue_init(&__piom_ltask_lwps_queue);
 		    int i;
 		    for(i = 0; i < __piom_ltask_lwps_num; i++)
 			{
 			    pthread_t tid;
-			    pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
+			    int err = pthread_create(&tid, NULL, &__piom_ltask_lwp_worker, NULL);
+			    if(err)
+				{
+				    fprintf(stderr, "PIOMan: FATAL- cannot create spare LWP #%d\n", i);
+				    abort();
+				}
 			    __piom_ltask_lwps_avail++;
 			}
 		}

@@ -79,12 +79,6 @@ extern void piom_init_ltasks(void);
 /** destroy internal structures, stop task execution, etc. */
 extern void piom_exit_ltasks(void);
 
-/** pause task scheduling */
-extern void piom_ltask_pause(void);
-
-/* resume task scheduling */
-extern void piom_ltask_resume(void);
-
 /** submit a task
  * Beyond this point, the task may be scheduled at any time
  */
@@ -119,6 +113,19 @@ static inline void piom_ltask_completed(struct piom_ltask *task)
 	{
 	    piom_cond_signal(&task->done, PIOM_LTASK_STATE_SUCCESS);
 	}
+}
+
+static inline void piom_ltask_state_set(struct piom_ltask*ltask, piom_ltask_state_t state)
+{
+    __sync_fetch_and_or(&ltask->state, state);
+}
+static inline void piom_ltask_state_unset(struct piom_ltask*ltask, piom_ltask_state_t state)
+{
+    __sync_fetch_and_and(&ltask->state, ~state);
+}
+static inline int piom_ltask_state_test(struct piom_ltask*ltask, piom_ltask_state_t state)
+{
+    return ((ltask->state & state) != 0);
 }
 
 /**< Notify task destruction, if option DESTROY was set. */

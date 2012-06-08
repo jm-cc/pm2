@@ -176,7 +176,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	    else if(task->state == PIOM_LTASK_STATE_READY)
 		{
 		    /* wait is pending: poll */
-		    task->state |= PIOM_LTASK_STATE_SCHEDULED;
+		    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
 		    piom_tasklet_mask();
 		    const int options = task->options;
 		    (*task->func_ptr)(task->data_ptr);
@@ -187,7 +187,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 			}
 		    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
 			{
-			    task->state ^= PIOM_LTASK_STATE_SCHEDULED;
+			    piom_ltask_state_unset(task, PIOM_LTASK_STATE_SCHEDULED);
 			    piom_tasklet_unmask();
 			    /* If another thread is currently stopping the queue don't repost the task */
 			    if(queue->state == PIOM_LTASK_QUEUE_STATE_RUNNING)
@@ -208,7 +208,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		} 
 	    else if(task->state & PIOM_LTASK_STATE_SUCCESS) 
 		{
-		    task->state |= PIOM_LTASK_STATE_TERMINATED;
+		    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
 		}
 	    else if(task->state == PIOM_LTASK_STATE_NONE)
 		{
@@ -275,10 +275,10 @@ static void*__piom_ltask_lwp_worker(void*_dummy)
 	    struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&__piom_ltask_lwps_queue);
 	    const int options = task->options;
 	    assert(task != NULL);
-	    __sync_fetch_and_or(&task->state, PIOM_LTASK_STATE_BLOCKED);
+	    piom_ltask_state_set(task, PIOM_LTASK_STATE_BLOCKED);
 	    (*task->blocking_func)(task->data_ptr);
 	    if(!(options & PIOM_LTASK_OPTION_DESTROY))
-		__sync_fetch_and_and(&task->state, ~PIOM_LTASK_STATE_BLOCKED);
+		piom_ltask_state_unset(task, PIOM_LTASK_STATE_BLOCKED);
 	    __sync_fetch_and_add(&__piom_ltask_lwps_avail, 1);
 	}
     return NULL;
@@ -536,7 +536,7 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
      * and without lock. Some tasklet may steal the ltask between
      * test and dequeue. *Theoretically* starvation is possible.
      */
-    __sync_fetch_and_or(&ltask->state, PIOM_LTASK_STATE_CANCELLED);
+    piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     while(!found)
 	{
 	    PIOM_TRACEF("piom_ltask_cancel()- ltask = %p; state = 0x%X; loop\n", ltask, ltask->state);

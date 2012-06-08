@@ -199,24 +199,27 @@ static int nm_task_block_recv(void*_pw)
 {
   struct nm_pkt_wrap*p_pw = _pw;
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  int err;
-  do
-    {
-      err = r->driver->wait_recv_iov(r->_status, p_pw);
-    }
-  while(err == -NM_EAGAIN);
-  nmad_lock();
+  int err = r->driver->wait_recv_iov(r->_status, p_pw);
   if(err == NM_ESUCCESS)
     {
+      nmad_lock();
       piom_ltask_destroy(&p_pw->ltask);
       nm_so_process_complete_recv(p_pw->p_gate->p_core, p_pw);
+      nmad_unlock();
+    }
+  else if((p_pw->ltask.state & PIOM_LTASK_STATE_CANCELLED) || (err == -NM_ECLOSED))
+    {
+      piom_ltask_destroy(&p_pw->ltask);
+      return NM_ESUCCESS;
+    }
+  else if(err == -NM_EAGAIN)
+    {
+      nm_ltask_submit_poll_recv(p_pw);
     }
   else
     {
-      nm_ltask_submit_poll_send(p_pw);
-      NM_WARN("poll_recv returned %d", err);
+      NM_WARN("wait_recv returned err = %d\n", err);
     }
-  nmad_unlock();
   return NM_ESUCCESS;
 }
 
@@ -255,7 +258,7 @@ static int nm_task_block_send(void*_pw)
   else
     {
       nm_ltask_submit_poll_send(p_pw);
-      NM_WARN("poll_send returned %d", err);
+      NM_WARN("wait_send returned %d", err);
     }
   nmad_unlock();
   return NM_ESUCCESS;
@@ -302,6 +305,7 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_vpset);
+  assert(p_pw->p_gdrv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(r->driver->capabilities.is_exportable && (r->driver->wait_send_iov != NULL))
     {

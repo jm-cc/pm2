@@ -48,7 +48,8 @@ typedef enum
 	PIOM_LTASK_STATE_SUCCESS    = 0x04,  /**< task has been scheduled and is successfull */
 	PIOM_LTASK_STATE_TERMINATED = 0x08,  /**< task is successfull and processing is completed; resources may be freed */
 	PIOM_LTASK_STATE_DESTROYED  = 0x10,  /**< task destroyed by user handler */
-	PIOM_LTASK_STATE_BLOCKED    = 0x20   /**< task is blocked on syscall */
+	PIOM_LTASK_STATE_BLOCKED    = 0x20,  /**< task is blocked on syscall */
+	PIOM_LTASK_STATE_CANCELLED  = 0x40
     } piom_ltask_state_t;
 
 

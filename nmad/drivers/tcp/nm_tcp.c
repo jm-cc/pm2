@@ -187,6 +187,7 @@ static const struct nm_drv_iface_s nm_tcp_driver =
     .get_driver_url     = &nm_tcp_get_driver_url,
 
     .capabilities.is_exportable = 1,
+    .capabilities.has_recv_any  = 0,
     .capabilities.min_period    = 0
   };
 
@@ -1040,7 +1041,7 @@ static int nm_tcp_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 
 static int nm_tcp_wait_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  return nm_tcp_send(_status, p_pw, -1);
+  return nm_tcp_send(_status, p_pw, 1000);
 }
 
 /** Post a new receive request or try to make a pending request progress.
@@ -1301,6 +1302,6 @@ static int nm_tcp_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 
 static int nm_tcp_wait_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  return nm_tcp_recv(_status, p_pw, -1);
+  return nm_tcp_recv(_status, p_pw, 500);
 }
 

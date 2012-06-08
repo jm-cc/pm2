@@ -290,8 +290,8 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_vpset);
-  struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
-  if(r->driver->capabilities.is_exportable && (r->driver->wait_recv_iov != NULL))
+  const struct nm_drv_iface_s*driver = p_pw->p_drv->driver;
+  if(driver->capabilities.is_exportable && (driver->wait_recv_iov != NULL))
     {
       piom_ltask_set_blocking(&p_pw->ltask, &nm_task_block_recv);
     }

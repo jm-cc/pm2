@@ -148,13 +148,11 @@ static int nm_mx_post_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
-#ifdef PIOM_BLOCKING_CALLS
-static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
-#endif
 
 static const struct nm_drv_iface_s nm_mx_driver =
   {
@@ -185,18 +183,9 @@ static const struct nm_drv_iface_s nm_mx_driver =
 
     .get_driver_url     = &nm_mx_get_driver_url,
 
-#ifdef PIOM_BLOCKING_CALLS
     .wait_recv_iov      = &nm_mx_block_iov,
     .wait_send_iov      = &nm_mx_block_iov,
 
-#if MX_API >= 0x301
-    .wait_recv_any_iov  = &nm_mx_block_any_iov,
-    .wait_send_any_iov  = &nm_mx_block_any_iov,
-#else
-    .wait_recv_any_iov  = NULL,
-    .wait_send_any_iov  = NULL,
-#endif
-#endif
     .capabilities.min_period = 0,
     .capabilities.is_exportable = 1
   };
@@ -832,7 +821,6 @@ static int nm_mx_get_err(struct nm_pkt_wrap *p_pw,
   return err;
 }
 
-#ifdef PIOM_BLOCKING_CALLS
 static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_mx_pkt_wrap	*p_mx_pw	= NULL;
@@ -849,7 +837,6 @@ static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw)
   
   return nm_mx_get_err(p_pw, status, mx_ret);
 }
-#endif
 
 /** Load MX operations */
 static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw)

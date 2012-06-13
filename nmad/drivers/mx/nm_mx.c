@@ -132,9 +132,11 @@ struct nm_mx_pkt_wrap
 /** @name Actual matching info generation */
 /*@{*/
 /** Regular messages matching info */
-#define NM_MX_MATCH_INFO(peer, track) ( (((uint64_t)peer) << NM_MX_PEER_ID_MATCHING_SHIFT) | (((uint64_t)track) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
+#define NM_MX_MATCH_INFO(peer, track) ( (((uint64_t)peer) << NM_MX_PEER_ID_MATCHING_SHIFT) | (((uint64_t)(1+track)) << NM_MX_TRACK_ID_MATCHING_SHIFT) )
 /** Administrative message mask */
 #define NM_MX_ADMIN_MATCH_MASK (UINT64_C(1) << NM_MX_ADMIN_MATCHING_SHIFT)
+
+#define NM_MX_TRACK_MATCH_MASK (((uint64_t)0xFF) << NM_MX_TRACK_ID_MATCHING_SHIFT)
 /*@}*/
 
 /* MX 'NewMad_Driver' facet */
@@ -149,9 +151,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw);
 static int nm_mx_block_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
-static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **p_pw);
 static const char*nm_mx_get_driver_url(struct nm_drv *p_drv);
 
 static const struct nm_drv_iface_s nm_mx_driver =
@@ -171,23 +171,17 @@ static const struct nm_drv_iface_s nm_mx_driver =
     .poll_send_iov      = &nm_mx_poll_iov,
     .poll_recv_iov      = &nm_mx_poll_iov,
 
-#if MX_API >= 0x301
-    .poll_send_any_iov  = &nm_mx_poll_any_iov,
-    .poll_recv_any_iov  = &nm_mx_poll_any_iov,
-#else
-    .poll_send_any_iov  = NULL,
-    .poll_recv_any_iov  = NULL,
-#endif
+    .wait_recv_iov      = &nm_mx_block_iov,
+    .wait_send_iov      = &nm_mx_block_iov,
 
     .cancel_recv_iov    = &nm_mx_cancel_recv_iov,
 
     .get_driver_url     = &nm_mx_get_driver_url,
 
-    .wait_recv_iov      = &nm_mx_block_iov,
-    .wait_send_iov      = &nm_mx_block_iov,
 
-    .capabilities.min_period = 0,
-    .capabilities.is_exportable = 1
+    .capabilities.min_period    = 0,
+    .capabilities.is_exportable = 1,
+    .capabilities.has_recv_any  = 1
   };
 
 /* 'PadicoAdapter' facet for MX driver */
@@ -560,7 +554,7 @@ static int nm_mx_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_dr
   struct nm_mx_adm_pkt pkt1;
   
   strcpy(pkt1.url, p_mx_drv->url);
-  pkt1.match_info	= NM_MX_MATCH_INFO(trk_id, p_mx_trk->next_peer_id);
+  pkt1.match_info = NM_MX_MATCH_INFO(p_mx_trk->next_peer_id, trk_id);
   p_mx_cnx->recv_match_info = pkt1.match_info;
   p_mx_trk->next_peer_id++;
   if (p_mx_trk->next_peer_id == (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1)
@@ -695,15 +689,15 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   
   p_pw->drv_priv = p_mx_pw;
   
-  if (tbx_likely(p_pw->p_gate))
+  if(p_pw->p_gate)
     {
       struct nm_mx_cnx*p_mx_cnx = &status->cnx_array[p_pw->trk_id];
       match_mask	= MX_MATCH_MASK_NONE;
       match_info	= p_mx_cnx->recv_match_info;
     } else {
       /* filter out administrative pkts */
-      match_info	= 0;
-      match_mask	= NM_MX_ADMIN_MATCH_MASK;
+      match_mask	= NM_MX_TRACK_MATCH_MASK;
+      match_info	= NM_MX_MATCH_INFO(0, p_pw->trk_id);
     }
 #ifdef PROFILE
   p_mx_pw->send_bool = 0;
@@ -729,7 +723,7 @@ static int nm_mx_post_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     NM_TRACEF("[MX] post recv %d (pw=%p)\n", len, p_pw);
 #endif
     mx_ret	= mx_irecv(p_mx_drv->ep, seg_list, p_pw->v_nb, match_info,
-			   match_mask, p_pw,&p_mx_pw->rq);
+			   match_mask, p_pw, &p_mx_pw->rq);
     nm_mx_check_return("mx_irecv", mx_ret);
   }
   err = nm_mx_poll_iov_locked(_status, p_pw);
@@ -847,8 +841,18 @@ static int nm_mx_poll_iov_locked(void*_status, struct nm_pkt_wrap *p_pw)
   assert(p_mx_pw != NULL);
   mx_return_t mx_ret = mx_test(*(p_mx_pw->p_ep), &p_mx_pw->rq, &status, &result);
   nm_mx_check_return("mx_test", mx_ret);
-  if (tbx_unlikely(!result))
+  if(!result)
     return -NM_EAGAIN;
+
+  if(p_pw->p_gate == NULL)
+    {
+      struct nm_mx_drv *p_mx_drv = p_pw->p_drv->priv;
+      struct nm_mx_trk *p_mx_trk = &p_mx_drv->trks_array[p_pw->trk_id];
+      const uint16_t peer_id = (status.match_info >> NM_MX_PEER_ID_MATCHING_SHIFT) & ( (1 << NM_MX_PEER_ID_MATCHING_BITS) - 1 );
+      assert(peer_id < p_mx_trk->next_peer_id);
+      nm_gate_t p_gate = p_mx_trk->gate_map[peer_id];
+      p_pw->p_gate = p_gate;
+    }
   
   return nm_mx_get_err(p_pw, status, mx_ret);
 }
@@ -887,25 +891,6 @@ static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 
 
 #if MX_API >= 0x301
-/** Poll the completion of any iov request in MX */
-static int nm_mx_poll_any_iov(void*_status, struct nm_pkt_wrap **pp_pw)
-{
-  mx_return_t mx_ret = MX_SUCCESS;
-  struct nm_pkt_wrap *p_pw;
-  mx_status_t status;
-  uint32_t result;
-  struct nm_mx_drv* p_mx_drv = (*pp_pw)->p_drv->priv;
-  /* poll any MX request, except the administrative ones */
-  mx_ret = mx_test_any(p_mx_drv->ep, 0, NM_MX_ADMIN_MATCH_MASK, &status, &result);
-  nm_mx_check_return("mx_test_any", mx_ret);
-  
-  if (tbx_unlikely(!result))
-    return -NM_EAGAIN;
-  
-  p_pw = status.context;
-  *pp_pw = p_pw;
-  return nm_mx_get_err(p_pw, status, mx_ret);
-}
 
 #ifdef PIOM_BLOCKING_CALLS
 /** Wait for the completion of any iov request in MX */

@@ -882,29 +882,3 @@ static int nm_mx_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
   return err;
 }
 
-
-#if MX_API >= 0x301
-
-#ifdef PIOM_BLOCKING_CALLS
-/** Wait for the completion of any iov request in MX */
-static int nm_mx_block_any_iov(void*_status, struct nm_pkt_wrap **pp_pw)
-{
-  mx_return_t mx_ret = MX_SUCCESS;
-  struct nm_pkt_wrap *p_pw;
-  mx_status_t status;
-  uint32_t result;
-  struct nm_mx_drv* p_mx_drv = (*pp_pw)->p_drv->priv;
-  
-  /* Wait for any MX request, except the administrative ones */
-  mx_ret = mx_wait_any(p_mx_drv->ep, MX_INFINITE, 0, NM_MX_ADMIN_MATCH_MASK, &status, &result);
-  nm_mx_check_return("mx_test_any", mx_ret);
-  
-  if (tbx_unlikely(!result))
-    return -NM_EAGAIN;
-  
-  p_pw = status.context;
-  *pp_pw = p_pw;
-  return nm_mx_get_err(p_pw, status, mx_ret);
-}
-#endif /* PIOM_BLOCKING_CALLS */
-#endif /* MX_API >= 0x301 */

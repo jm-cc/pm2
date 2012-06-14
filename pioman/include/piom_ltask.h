@@ -64,6 +64,7 @@ struct piom_ltask
     piom_ltask_option_t options;       /**< special options */
     piom_cond_t done;                  /**< condition to wait for task completion */
     piom_ltask_func_t blocking_func;   /**< function used for blocking system call (passive wait) */
+    struct timespec origin;            /**< time origin for blocking call timeout */
     piom_vpset_t vp_mask;
     struct piom_ltask_queue*queue;
 };

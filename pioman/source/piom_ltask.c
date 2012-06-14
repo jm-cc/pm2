@@ -421,6 +421,17 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 	    fprintf(stderr, "PIOMan: WARNING- submitting a task (%p) to a queue (%p) that is being stopped\n", 
 		    task, queue);
 	}
+    if(task->options & PIOM_LTASK_OPTION_BLOCKING)
+	{
+	    struct timespec t;
+	    clock_gettime(CLOCK_MONOTONIC, &t);
+	    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 + (t.tv_nsec - task->origin.tv_nsec) / 1000;
+	    if(d_usec > 5)
+		{
+		    if(__piom_ltask_submit_in_lwp(task) == 0)
+			return;
+		}
+	}
     task->state = PIOM_LTASK_STATE_READY;
     task->queue = queue;
     /* wait until a task is removed from the list */
@@ -464,15 +475,9 @@ void piom_ltask_submit(struct piom_ltask *task)
     assert(queue != NULL);
     if(task->options & PIOM_LTASK_OPTION_BLOCKING)
 	{
-	    if(__piom_ltask_submit_in_lwp(task) != 0)
-		{
-		    __piom_ltask_submit_in_queue(task, queue);
-		}
+	    clock_gettime(CLOCK_MONOTONIC, &task->origin);
 	}
-    else
-	{
-	    __piom_ltask_submit_in_queue(task, queue);
-	}
+    __piom_ltask_submit_in_queue(task, queue);
 }
 
 void*piom_ltask_schedule(void)

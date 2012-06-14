@@ -426,7 +426,7 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 	    struct timespec t;
 	    clock_gettime(CLOCK_MONOTONIC, &t);
 	    const long d_usec = (t.tv_sec - task->origin.tv_sec) * 1000000 + (t.tv_nsec - task->origin.tv_nsec) / 1000;
-	    if(d_usec > 5)
+	    if(d_usec > task->blocking_delay)
 		{
 		    if(__piom_ltask_submit_in_lwp(task) == 0)
 			return;
@@ -473,10 +473,6 @@ void piom_ltask_submit(struct piom_ltask *task)
 #endif /* PIOMAN_LTASK_GLOBAL_QUEUE */
     assert(task != NULL);
     assert(queue != NULL);
-    if(task->options & PIOM_LTASK_OPTION_BLOCKING)
-	{
-	    clock_gettime(CLOCK_MONOTONIC, &task->origin);
-	}
     __piom_ltask_submit_in_queue(task, queue);
 }
 

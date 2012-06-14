@@ -65,6 +65,7 @@ struct piom_ltask
     piom_cond_t done;                  /**< condition to wait for task completion */
     piom_ltask_func_t blocking_func;   /**< function used for blocking system call (passive wait) */
     struct timespec origin;            /**< time origin for blocking call timeout */
+    int blocking_delay;                /**< time (in usec.) to poll before switching to blocking call */
     piom_vpset_t vp_mask;
     struct piom_ltask_queue*queue;
 };
@@ -158,10 +159,12 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     piom_cond_init(&task->done, 0);
 }
 
-static inline void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func)
+static inline void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec)
 {
     task->blocking_func = func;
+    task->blocking_delay = delay_usec;
     task->options |= PIOM_LTASK_OPTION_BLOCKING;
+    clock_gettime(CLOCK_MONOTONIC, &task->origin);
 }
 
 /** suspend the ltask scheduling

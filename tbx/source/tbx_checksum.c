@@ -234,7 +234,7 @@ uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
 {
   const uint64_t *data = (const uint64_t*)_data;
   size_t i;
-#ifdef TBX_SSE_XOR
+#if (TBX_SSE_XOR == 1)
   const size_t len64 = _len / sizeof(uint64_t);
   const size_t len128 = len64 / 2;
   __m128i sum128 = _mm_setzero_si128();

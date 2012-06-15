@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = pingpong mpi_latency mpi_multi_ping
+TARGET_BIN = pingpong mpi_latency mpi_overlap mpi_multi_ping
 TARGET_LIB =
 SUBDIRS =
 
@@ -49,3 +49,5 @@ mpi_multi_ping: mpi_multi_ping.pic.o
 mpi_latency: mpi_latency.pic.o
 
 mpi_multi_ping_hetero: mpi_multi_ping_hetero.pic.o
+
+mpi_overlap: mpi_overlap.pic.o

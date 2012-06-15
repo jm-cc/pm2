@@ -157,14 +157,12 @@ static const struct tbx_checksum_s checksums[] =
   { .short_name = "murmurhash2a",  .name = "MurmurHash2a",          .func = &tbx_checksum_murmurhash2a },
   { .short_name = "murmurhash64a", .name = "MurmurHash64a",         .func = &tbx_checksum_murmurhash64a },
   { .short_name = "hsieh",         .name = "Paul Hsieh SuperFast",  .func = &tbx_checksum_hsieh },
+#if (TBX_SSE_CRC32 == 1)
   { .short_name = "crc",           .name = "SSE4.2 CRC32",         
     .func              = &tbx_checksum_crc32,
-#if (TBX_SSE_CRC32 == 1)
     .checksum_and_copy = &tbx_checksum_and_copy_crc32
-#else  /* TBX_SSE_CRC32 */
-    .checksum_and_copy = NULL
-#endif /* TBX_SSE_CRC32 */
   },
+#endif /* TBX_SSE_CRC32 */
   { .short_name = NULL, .name = NULL, .func = NULL }
 };
 

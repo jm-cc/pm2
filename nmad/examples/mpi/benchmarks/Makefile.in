@@ -3,7 +3,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_BIN = pingpong mpi_latency
+TARGET_BIN = pingpong mpi_latency mpi_multi_ping
 TARGET_LIB =
 SUBDIRS =
 

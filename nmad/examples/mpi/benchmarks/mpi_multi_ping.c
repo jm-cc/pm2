@@ -19,9 +19,6 @@
 #include <string.h>
 #include <unistd.h>
 
-//#include <fcntl.h>
-//#include <execinfo.h>
-
 #include <mpi.h>
 
 #define NB_PACKS 4

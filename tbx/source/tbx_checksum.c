@@ -31,6 +31,17 @@
 #endif
 #include "tbx.h"
 
+#if defined(__SSE2__) && !defined(__INTEL_COMPILER)
+#  define TBX_SSE_XOR 1
+#else
+#  define TBX_SSE_XOR 0
+#endif
+#if defined (__SSE4_2__) && !defined(__INTEL_COMPILER)
+#  define TBX_SSE_CRC32 1
+#else
+#  define TBX_SSE_CRC32 0
+#endif
+
 #if defined(__SSE2__) && defined(__INTEL_COMPILER)
 __m128i _mm_set_epi64x(__int64 i1, __int64 i2);
 #endif
@@ -109,9 +120,10 @@ static uint32_t tbx_checksum_and_copy_fnv1a(void*_dest, const void*_src, size_t 
 static uint32_t tbx_checksum_knuth(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_knuth(void*_dest, const void*_src, size_t _len);
 
+#if (TBX_SSE_CRC32 == 1)
 static uint32_t tbx_checksum_crc32(const void*_data, size_t _len);
 static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len);
-
+#endif
 
 static const struct tbx_checksum_s checksums[] =
 {
@@ -147,11 +159,11 @@ static const struct tbx_checksum_s checksums[] =
   { .short_name = "hsieh",         .name = "Paul Hsieh SuperFast",  .func = &tbx_checksum_hsieh },
   { .short_name = "crc",           .name = "SSE4.2 CRC32",         
     .func              = &tbx_checksum_crc32,
-#if defined (__SSE4_2__) && !defined(__INTEL_COMPILER)
+#if (TBX_SSE_CRC32 == 1)
     .checksum_and_copy = &tbx_checksum_and_copy_crc32
-#else  /* __SSE4_2__ */
+#else  /* TBX_SSE_CRC32 */
     .checksum_and_copy = NULL
-#endif /* __SSE4_2__ */
+#endif /* TBX_SSE_CRC32 */
   },
   { .short_name = NULL, .name = NULL, .func = NULL }
 };
@@ -162,9 +174,9 @@ tbx_checksum_t tbx_checksum_get(const char*short_name)
 
   if(short_name == NULL || (strcmp(short_name, "default") == 0) || (strcmp(short_name, "1") == 0))
     {
-      if(tbx_support_sse4_2())
+      if(TBX_SSE_CRC32 && tbx_support_sse4_2())
 	short_name = "crc";
-      else if(tbx_support_sse2())
+      else if(TBX_SSE_XOR && tbx_support_sse2())
 	short_name = "xor";
       else
 	short_name = "fnv1a";
@@ -224,7 +236,7 @@ uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
 {
   const uint64_t *data = (const uint64_t*)_data;
   size_t i;
-#ifdef __SSE2__
+#ifdef TBX_SSE_XOR
   const size_t len64 = _len / sizeof(uint64_t);
   const size_t len128 = len64 / 2;
   __m128i sum128 = _mm_setzero_si128();
@@ -249,13 +261,13 @@ uint32_t tbx_checksum_xor32(const void*_data, size_t _len)
 		    (_mm_extract_epi16(sum128, 4) | (_mm_extract_epi16(sum128, 5) << 16)) ^ 
 		    (_mm_extract_epi16(sum128, 6) | (_mm_extract_epi16(sum128, 7) << 16)) ^ 
 		    sum_tail);
-#else /* __SSE2__ */
+#else /* TBX_SSE_XOR */
   const size_t len = _len / sizeof(*data);
   uint64_t sum64 = 0;
   for(i = 0; i < len; i++)
     sum64 ^= data[i];
   return tbx_checksum_fold64(sum64);
-#endif /* __SSE2__ */
+#endif /* TBX_SSE_XOR */
 }
 
 /* ********************************************************* */
@@ -711,6 +723,8 @@ uint32_t tbx_checksum_hsieh(const void *_data, size_t len)
  * @author Austin Zhang
  */
 
+#if (TBX_SSE_CRC32 == 1)
+
 #define SCALE_F sizeof(unsigned long)
 #ifdef __x86_64__
 #define REX_PRE "0x48, "
@@ -761,7 +775,6 @@ static uint32_t tbx_checksum_crc32(const void*_data, size_t _len)
 {
 	return crc32c_intel_le_hw(0, _data, _len);
 }
-#if defined (__SSE4_2__) && !defined(__INTEL_COMPILER)
 static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t _len)
 {
   uint32_t*dest = _dest;
@@ -778,5 +791,5 @@ static uint32_t tbx_checksum_and_copy_crc32(void*_dest, const void*_src, size_t 
   tbx_checksum_copy_tail(_dest, _src, len * sizeof(uint32_t), _len);
   return (uint32_t)c;
 }
-#endif /* __SSE4_2__ */
+#endif /* TBX_SSE_CRC32 */
 

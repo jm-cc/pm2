@@ -517,6 +517,14 @@ void piom_ltask_wait(struct piom_ltask *task)
 	}
 }
 
+void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec)
+{
+    task->blocking_func = func;
+    task->blocking_delay = delay_usec;
+    task->options |= PIOM_LTASK_OPTION_BLOCKING;
+    clock_gettime(CLOCK_MONOTONIC, &task->origin);
+}
+
 void piom_ltask_mask(struct piom_ltask *task)
 {
     assert(!task->masked);

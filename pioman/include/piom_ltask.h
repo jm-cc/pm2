@@ -159,13 +159,7 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     piom_cond_init(&task->done, 0);
 }
 
-static inline void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec)
-{
-    task->blocking_func = func;
-    task->blocking_delay = delay_usec;
-    task->options |= PIOM_LTASK_OPTION_BLOCKING;
-    clock_gettime(CLOCK_MONOTONIC, &task->origin);
-}
+extern void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec);
 
 /** suspend the ltask scheduling
  * @note blocks if the ltask is currently scheduled

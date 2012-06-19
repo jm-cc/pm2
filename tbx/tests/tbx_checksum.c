@@ -35,7 +35,8 @@ static const char*checksums[] =
     "knuth",
     "murmurhash2a",
     "murmurhash64a",
-    "hsieh"
+    "hsieh",
+    "softcrc"
 #ifdef __SSE4_2__
     ,"crc"
 #endif /* __SSE4_2__ */

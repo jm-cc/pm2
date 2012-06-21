@@ -303,9 +303,7 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
   const nm_seq_t seq = p_pack->seq;
   nm_proto_t proto_flags = 0;
   assert(!p_pw->p_unpack);
-
-  /* add the contrib ref to the pw */
-  nm_pw_add_contrib(p_pw, p_pack, len);
+  int completed = 0;
   if(p_pack->scheduled == p_pack->len)
     {
       proto_flags |= NM_PROTO_FLAG_LASTCHUNK;
@@ -321,11 +319,13 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
       if((proto_flags == NM_PROTO_FLAG_LASTCHUNK) && (len < 255) && (offset == 0))
 	{
 	  nm_so_pw_add_short_data(p_pw, tag, seq, data, len);
+	  completed = 1;
 	}
       else if(flags & NM_SO_DATA_USE_COPY)
 	{
 	  /* Data immediately follows its header */
 	  nm_so_pw_add_data_in_header(p_pw, tag, seq, data, len, offset, proto_flags);
+	  completed = 1;
 	}
       else 
 	{
@@ -337,6 +337,23 @@ void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
     {
       /* ** Add raw data to pw, without header */
       nm_so_pw_add_raw(p_pw, data, len, offset);
+    }
+  if(completed)
+    {
+      /* immediate completion */
+      struct nm_pw_completion_s completion =
+	{ 
+	  .notifier = &nm_pw_contrib_complete,
+	  .data.contrib.p_pack = p_pack,
+	  .data.contrib.len    = len
+	};
+      p_pack->scheduled += len;
+      nm_pw_contrib_complete(p_pw, &completion);
+    }
+  else
+    {
+      /* add the contrib ref to the pw */
+      nm_pw_add_contrib(p_pw, p_pack, len);
     }
 }
 

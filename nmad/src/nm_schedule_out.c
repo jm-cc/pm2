@@ -80,7 +80,7 @@ void nm_pw_contrib_complete(struct nm_pkt_wrap*p_pw, struct nm_pw_completion_s*p
 	  .status = NM_STATUS_PACK_COMPLETED,
 	  .p_pack = p_pack
 	};
-      nm_core_status_event(p_pw->p_drv->p_core, &event, &p_pack->status);
+      nm_core_status_event(p_pack->p_gate->p_core, &event, &p_pack->status);
     }
   else if(p_pack->done > p_pack->len)
     { 

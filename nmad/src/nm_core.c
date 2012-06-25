@@ -257,6 +257,25 @@ void nm_core_schedopt_disable(nm_core_t p_core)
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
       piom_ltask_mask(&p_drv->task);
+      if(p_drv->p_in_rq)
+	{
+	  struct nm_pkt_wrap*p_pw = p_drv->p_in_rq;
+	  piom_ltask_mask(&p_pw->ltask);
+	}
+    }
+  struct nm_gate*p_gate;
+  NM_FOR_EACH_GATE(p_gate, p_core)
+    {
+      nm_gdrv_vect_itor_t i;
+      puk_vect_foreach(i, nm_gdrv, &p_gate->gdrv_array)
+	{
+	  struct nm_gate_drv*p_gdrv = *i;
+	  struct nm_pkt_wrap*p_pw = p_gdrv->p_in_rq_array[NM_TRK_SMALL];
+	  if(p_pw != NULL)
+	    {
+	      piom_ltask_mask(&p_pw->ltask);
+	    }
+	}
     }
 #endif /* NMAD_POLL */
 }

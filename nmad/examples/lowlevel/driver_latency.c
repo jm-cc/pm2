@@ -40,8 +40,9 @@ int main(int argc, char **argv)
   const int peer = 1 - rank;
   nm_gate_t p_gate = NULL;
   nm_launcher_get_gate(peer, &p_gate);
-  struct nm_drv*p_drv = nm_drv_default(p_gate);
   assert(p_gate != NULL);
+  struct nm_drv*p_drv = nm_drv_default(p_gate);
+  assert(p_drv != NULL);
   assert(p_gate->status == NM_GATE_STATUS_CONNECTED);
 
   /* take over the driver */
@@ -58,7 +59,9 @@ int main(int argc, char **argv)
   struct puk_receptacle_NewMad_Driver_s*r = &p_gdrv->receptacle;
   static struct nm_pkt_wrap*p_pw = NULL;
   char buffer = 42;
+  nmad_lock();
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
+  nmad_unlock();
   nm_so_pw_add_raw(p_pw, &buffer, sizeof(buffer), 0);
   nm_so_pw_assign(p_pw, NM_TRK_SMALL, p_drv, p_gate);
   

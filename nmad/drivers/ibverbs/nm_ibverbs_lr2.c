@@ -54,15 +54,15 @@ static inline int nm_ibverbs_min(const int a, const int b)
 /** Connection state for tracks sending with lr2 */
 struct nm_ibverbs_lr2
 {  
-  struct ibv_mr*mr;
-  struct nm_ibverbs_segment seg; /**< remote segment */
-  struct nm_ibverbs_cnx*cnx;
   struct
   {
     char sbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
     char rbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
     volatile uint32_t rack, sack;
   } buffer;
+  struct ibv_mr*mr;
+  struct nm_ibverbs_segment seg; /**< remote segment */
+  struct nm_ibverbs_cnx*cnx;
 
   struct
   {

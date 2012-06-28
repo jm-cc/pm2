@@ -112,10 +112,10 @@ server(any_t arg) {
     for(k = 0; k < loops + warmups; k++) {
       nm_sr_request_t request, request2;
 
-      nm_sr_isend(p_core, gate_id, tag, buf, len, &request2);
-      nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
-      nm_sr_swait(p_core, &request2);
+      nm_sr_isend(p_session, p_gate, tag, buf, len, &request2);
+      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
+      nm_sr_swait(p_session, &request2);
 
 #if DATA_CONTROL_ACTIVATED
       control_buffer("réception", buf, len);
@@ -146,10 +146,10 @@ client(any_t arg) {
 #if DATA_CONTROL_ACTIVATED
 	    control_buffer("envoi", buf, len);
 #endif
-	    nm_sr_isend(p_core, gate_id, tag, buf, len, &request2);
-	    nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-	    nm_sr_rwait(p_core, &request);
-	    nm_sr_swait(p_core, &request2);
+	    nm_sr_isend(p_session, p_gate, tag, buf, len, &request2);
+	    nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+	    nm_sr_rwait(p_session, &request);
+	    nm_sr_swait(p_session, &request2);
 
 #if DATA_CONTROL_ACTIVATED
 	    control_buffer("reception", buf, len);
@@ -163,10 +163,10 @@ client(any_t arg) {
 #if DATA_CONTROL_ACTIVATED
       control_buffer("envoi", buf, len);
 #endif
-      nm_sr_isend(p_core, gate_id, tag, buf, len, &request2);
-      nm_sr_irecv(p_core, gate_id, tag, buf, len, &request);
-      nm_sr_rwait(p_core, &request);
-      nm_sr_swait(p_core, &request2);
+      nm_sr_isend(p_session, p_gate, tag, buf, len, &request2);
+      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+      nm_sr_rwait(p_session, &request);
+      nm_sr_swait(p_session, &request2);
 #if DATA_CONTROL_ACTIVATED
       control_buffer("reception", buf, len);
 #endif
@@ -202,11 +202,11 @@ main(int	  argc,
   threads =    THREADS_DEFAULT;
   warmups =    WARMUPS_DEFAULT;
 
-  init(&argc, argv);
+  nm_examples_init(&argc, argv);
 
   if (argc > 1 && !strcmp(argv[1], "--help")) {
     usage_ping();
-    nmad_exit();
+    nm_examples_exit();
     exit(0);
   }
 
@@ -226,7 +226,7 @@ main(int	  argc,
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
       usage_ping();
-      nmad_exit();
+      nm_examples_exit();
       exit(0);
     }
   }
@@ -259,7 +259,7 @@ main(int	  argc,
   }
 #endif
   printf("##### Benchmark Done!####\n");
-  nmad_exit();
+  nm_examples_exit();
   exit(0);
 }
 

@@ -620,6 +620,8 @@ static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
 				      struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
 {
   int err = (*p_ibverbs_cnx->method.driver->poll_one)(p_ibverbs_cnx->method._status);
+  if(err == NM_ESUCCESS)
+    p_pw->drv_priv = NULL;
   return err;
 }
 

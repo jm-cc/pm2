@@ -281,11 +281,14 @@ static int nm_ibverbs_bycopy_send_poll(void*_status)
       bycopy->send.done += packet_size;
       if(bycopy->send.done >= bycopy->send.msg_size)
 	packet->header.status |= NM_IBVERBS_BYCOPY_STATUS_LAST;
-      
+      int padding = 0;
+      const int size = sizeof(struct nm_ibverbs_bycopy_packet) - offset;
+      if(size >= 2048)
+	padding = offset % 64;
       nm_ibverbs_rdma_send(bycopy->cnx,
-			   sizeof(struct nm_ibverbs_bycopy_packet) - offset,
-			   &packet->data[offset],
-			   &bycopy->buffer.rbuf[bycopy->window.next_out].data[offset],
+			   sizeof(struct nm_ibverbs_bycopy_packet) - offset + padding,
+			   &packet->data[offset - padding],
+			   &bycopy->buffer.rbuf[bycopy->window.next_out].data[offset - padding],
 			   &bycopy->buffer,
 			   &bycopy->seg,
 			   bycopy->mr,

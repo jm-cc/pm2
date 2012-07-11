@@ -59,7 +59,7 @@ struct nm_ibverbs_lr2
     char sbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
     char rbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
     volatile uint32_t rack, sack;
-  } buffer;
+  } buffer; /* buffers should be 64-byte aligned */
   struct ibv_mr*mr;
   struct nm_ibverbs_segment seg; /**< remote segment */
   struct nm_ibverbs_cnx*cnx;
@@ -131,7 +131,8 @@ PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
 
 static void* nm_ibverbs_lr2_instanciate(puk_instance_t instance, puk_context_t context)
 {
-  struct nm_ibverbs_lr2*lr2 = TBX_MALLOC(sizeof(struct nm_ibverbs_lr2));
+  struct nm_ibverbs_lr2*lr2 = NULL;
+  posix_memalign((void**)&lr2, 4096, sizeof(struct nm_ibverbs_lr2));
   memset(&lr2->buffer, 0, sizeof(lr2->buffer));
   lr2->buffer.rack = 0;
   lr2->mr = NULL;

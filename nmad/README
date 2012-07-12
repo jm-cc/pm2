@@ -42,6 +42,22 @@ Usefull configure flags (see ./configure --help)
 % ./pm2-build-packages ./example-nmad+pioman+pthread.conf --prefix=$HOME/soft/x86_64
 
 
+Launcher
+========
+
+If upper layers do not provide their own launcher, it is recommended
+to use padico-launch as a launcher for nmad. It accepts parameters
+similar to mpirun. Please see padico-launch --help for up-to-date
+documentation.
+
+Environment variables may be set using -D parameters, e.g.:
+% padico-launch -c -n 2 -nodelist jack0,jack1 -DNMAD_DRIVER=ib+mx -DNMAD_STRATEGY=split_balance sr_bench
+starts program 'sr_bench' on hosts jack0 and jack1, using multi-rail
+over Infiniband and Myrinet.
+
+Mad-MPI mpirun is actually a symlink to padico-launch.
+
+
 Strategy
 ========
 
@@ -105,24 +121,21 @@ Infiniband tuning
 
 Infiniband may be tuned at run time through environment variables:
 
--- NMAD_IBVERBS_RCACHE enables the registration cache (requires PukABI)
+-- NMAD_IBVERBS_RCACHE=1 enables the registration cache (requires PukABI)
 
--- NMAD_IBVERBS_CHECKSUM enables the checksum computation on the fly
+-- NMAD_IBVERBS_CHECKSUM=1 enables the checksum computation on the fly
    in the driver.
 
-
-Launcher
-========
-
-If upper layers do not provide their own launcher, it is recommended
-to use padico-launch as a launcher for nmad. It accepts parameters
-similar to mpirun. Please see padico-launch --help for up-to-date
-documentation.
-
-Environment variables may be set using -D parameters, e.g.:
-% padico-launch -c -n 2 -nodelist jack0,jack1 -DNMAD_DRIVER=ib+mx -DNMAD_STRATEGY=split_balance sr_bench
-starts program 'sr_bench' on hosts jack0 and jack1, using multi-rail
-over Infiniband and Myrinet.
+When opensm is used as subnet manager, subnet GID must be customized
+with a value unique to the given subnet, so as nmad is able to
+automatically detect IB connectivity. As root:
+-- create the default opensm config file:
+% opensm -o -c /var/cache/opensm/opensm.opts
+-- in the above file, customize the line with subnet_prefix to some
+other value than the factory default 0xfe80000000000000. Set the same
+subnet GID on all nodes of the subnet.
+-- restart opensm:
+% /etc/init.d/infiniband restart
 
 
 Tags

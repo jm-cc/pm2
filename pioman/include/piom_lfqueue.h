@@ -14,9 +14,14 @@
  *  Only 'init', 'enqueue', 'dequeue' operations are available.
  *  Others operations such as 'empty', 'size' are useless for lock-free
  *  Iterators are not possible.
- *  push_front/push_back/po_front/pop_back is probably possible at a high
+ *  push_front/push_back/pop_front/pop_back is probably possible at a high
  *  cost in code size and performance. For simplicity and performance, only
- *  'enqueue' = push_back; 'dequeue' = pop_front are available (2 atomic ops each).
+ *  'enqueue' = push_back; 'dequeue' = pop_front are available (1 atomic op each).
+ * Conventions:
+ *   _head: next cell to enqueue
+ *   _tail: next cell to dequeue
+ *   _head == _tail     => queue empty
+ *   _head == _tail - 1 => queue full
  */
 #define PIOM_LFQUEUE_TYPE(ENAME, TYPE, LFQUEUE_NULL, LFQUEUE_SIZE)	\
   typedef TYPE ENAME ## _lfqueue_elem_t;				\
@@ -46,23 +51,23 @@
     ;									\
     const unsigned head = queue->_head;					\
     const unsigned tail = queue->_tail;					\
-    if(head >= tail + (unsigned)(LFQUEUE_SIZE) - 1)			\
+    const unsigned next = (head + 1) % (LFQUEUE_SIZE);			\
+    if(head == (tail + (unsigned)(LFQUEUE_SIZE) - 1) % (LFQUEUE_SIZE))	\
       {									\
-	/* queue full */						\
+	/* queue full, abort enqueue */					\
 	return -1;							\
       }									\
     if(single)								\
       {									\
-	queue->_head = head + 1;					\
+	queue->_head = next;						\
       }									\
     else								\
-      if(!__sync_bool_compare_and_swap(&queue->_head, head, head + 1))	\
+      if(!__sync_bool_compare_and_swap(&queue->_head, head, next))	\
 	goto retry;							\
     /* slot is still NULL for concurrent readers, already reserved if concurrent writers */ \
-    const unsigned cell = head % (unsigned)(LFQUEUE_SIZE);		\
+    assert(queue->_queue[head] = (LFQUEUE_NULL));			\
     /* store value in reserved slot */					\
-    assert(queue->_queue[cell] == (LFQUEUE_NULL));			\
-    queue->_queue[cell] = e;						\
+    queue->_queue[head] = e;						\
     return 0;								\
   }									\
 									\
@@ -79,23 +84,23 @@
     /* try to dequeue */						\
   retry:								\
     tail = queue->_tail;						\
-    if(tail >= queue->_head)						\
+    const unsigned next = (tail + 1) % (LFQUEUE_SIZE);			\
+    if(tail == queue->_head)						\
       {									\
 	/* queue was empty, abort dequeue */				\
 	return e;							\
       }									\
     if(single)								\
       { 								\
-	queue->_tail = tail + 1;					\
+	queue->_tail = next;						\
       }									\
     else								\
-      if(!__sync_bool_compare_and_swap(&queue->_tail, tail, tail + 1))	\
+      if(!__sync_bool_compare_and_swap(&queue->_tail, tail, next))	\
 	goto retry;							\
-    const unsigned cell = tail % (LFQUEUE_SIZE);			\
-    e = queue->_queue[cell];						\
+    e = queue->_queue[tail];						\
     while(e == (LFQUEUE_NULL)) 						\
-      { __sync_synchronize(); e = queue->_queue[cell]; }		\
-    queue->_queue[cell] = (LFQUEUE_NULL);				\
+      { __sync_synchronize(); e = queue->_queue[tail]; }		\
+    queue->_queue[tail] = (LFQUEUE_NULL);				\
     assert(e != (LFQUEUE_NULL));					\
     return e;								\
   }									\

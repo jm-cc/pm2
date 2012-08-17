@@ -19,20 +19,13 @@
 
 #include <Padico/Module.h>
 
-/* module declaration */
-static int nm_ibverbs_adaptrdma_load(void);
-
-PADICO_MODULE_BUILTIN(NewMad_ibverbs_adaptrdma, &nm_ibverbs_adaptrdma_load, NULL, NULL);
-
 /* *** method: 'adaptrdma' ********************************* */
 
-static const int nm_ibverbs_adaptrdma_block_granularity = 2048;
+static const int nm_ibverbs_adaptrdma_block_granularity = 4096;
 static const int nm_ibverbs_adaptrdma_step_base         = 16  * 1024;
 static const int nm_ibverbs_adaptrdma_step_overrun      = 16  * 1024;
-static const int nm_ibverbs_adaptrdma_reg_threshold     = 384 * 1024;
-static const int nm_ibverbs_adaptrdma_reg_remaining     = 120 * 1024;
 
-#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (3 * 1024 * 1024)
+#define NM_IBVERBS_ADAPTRDMA_BUFSIZE (16 * 1024 * 1024)
 #define NM_IBVERBS_ADAPTRDMA_HDRSIZE (sizeof(struct nm_ibverbs_adaptrdma_header))
 
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
@@ -109,13 +102,13 @@ static const struct puk_adapter_driver_s nm_ibverbs_adaptrdma_adapter =
     .destroy = &nm_ibverbs_adaptrdma_destroy
   };
 
-static int nm_ibverbs_adaptrdma_load(void)
-{
+
+/* ********************************************************* */
+
+PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
   puk_component_declare("NewMad_ibverbs_adaptrdma",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_adaptrdma_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_adaptrdma_method));
-  return 0;
-}
+			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_adaptrdma_method)));
 
 static void* nm_ibverbs_adaptrdma_instanciate(puk_instance_t instance, puk_context_t context)
 {
@@ -175,7 +168,7 @@ static void nm_ibverbs_adaptrdma_addr_unpack(void*_status, struct nm_ibverbs_cnx
 static inline int nm_ibverbs_adaptrdma_block_size(int done)
 {
   if(done < 16 * 1024)
-    return 2048;
+    return 4096;
   else if(done < 128 * 1024)
     return  4096;
   else if(done < 512 * 1024)
@@ -242,7 +235,7 @@ static int nm_ibverbs_adaptrdma_send_poll(void*_status)
 		       &adaptrdma->seg,
 		       adaptrdma->mr,
 		       NM_IBVERBS_WRID_PACKET);
-  adaptrdma->send.size_guard *= (adaptrdma->send.size_guard <= 8192) ? 4 : 2;
+  adaptrdma->send.size_guard *= (adaptrdma->send.size_guard <= 8192) ? 2 : 1.5;
   nm_ibverbs_rdma_poll(adaptrdma->cnx);
   adaptrdma->send.sbuf += packet_size;
   adaptrdma->send.rbuf += packet_size;

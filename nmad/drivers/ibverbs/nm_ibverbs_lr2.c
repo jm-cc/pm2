@@ -29,6 +29,7 @@
 #define NM_IBVERBS_LR2_NBUF 3
 
 #define NM_IBVERBS_LR2_BLOCKSIZE 4096
+#define NM_IBVERBS_LR2_ALIGN     64
 
 static const int lr2_steps[] =
   { 12*1024, 24*1024, 40*1024, 64*1024, 88*1024, 128*1024, /* 160*1024, 200*1024, 256*1024, */ 0};
@@ -58,7 +59,7 @@ struct nm_ibverbs_lr2
   {
     char sbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
     char rbuf[NM_IBVERBS_LR2_BUFSIZE * NM_IBVERBS_LR2_NBUF];
-    volatile uint32_t rack, sack;
+    volatile uint32_t sack, rack;
   } buffer; /* buffers should be 64-byte aligned */
   struct ibv_mr*mr;
   struct nm_ibverbs_segment seg; /**< remote segment */
@@ -213,6 +214,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       const int block_max_payload = block_size - lr2_hsize;
       const int chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
       const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_max_payload);
+      /* ** N-buffering */
       if((lr2->send.sbuf + chunk_size) > (((void*)lr2->buffer.sbuf) + (lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
 	{
 	  /* flow control rationale- receiver may be:
@@ -230,7 +232,9 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	  lr2->send.sbuf = ((void*)lr2->buffer.sbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	}
+      /* ** fill buffer (one chunk made of multiple blocks) */
       int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
+      int base_offset = 0;
       if((lr2->send.prefetch == lr2->send.message) && (lr2->send.done == 0))
 	{
 	  chunk_offset = chunk_size;
@@ -238,7 +242,10 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
       else
 	{
 	  int chunk_todo = chunk_payload;
-	  lr2->send.rbuf += (chunk_max_payload - chunk_payload) % block_max_payload;
+	  base_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
+	  const int padding = (base_offset % NM_IBVERBS_LR2_ALIGN);
+	  chunk_offset = base_offset;
+	  base_offset -= padding;
 	  while(chunk_todo > 0)
 	    {
 	      const int block_payload = (chunk_todo % block_max_payload == 0) ?
@@ -249,8 +256,9 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	      chunk_offset += block_payload + lr2_hsize;
 	    }
 	}
+      /* ** send chunk */
       nm_ibverbs_send_flushn(lr2->cnx, NM_IBVERBS_WRID_PACKET, 1);
-      nm_ibverbs_rdma_send(lr2->cnx, chunk_offset, lr2->send.sbuf, lr2->send.rbuf,
+      nm_ibverbs_rdma_send(lr2->cnx, chunk_offset - base_offset, lr2->send.sbuf + base_offset, lr2->send.rbuf + base_offset,
 			   &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_PACKET);
       lr2->send.done += chunk_payload;
       lr2->send.sbuf += chunk_offset;

@@ -76,6 +76,8 @@ struct nm_ibverbs
 
 static tbx_checksum_t _nm_ibverbs_checksum = NULL;
 
+int nm_ibverbs_alignment = 64;
+
 /* ********************************************************* */
 
 /* ** component declaration */
@@ -154,6 +156,9 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
       _nm_ibverbs_checksum = checksum;
       NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
     }
+  const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
+  if(align_env != NULL)
+    nm_ibverbs_alignment = atoi(align_env);
   return status;
 }
 

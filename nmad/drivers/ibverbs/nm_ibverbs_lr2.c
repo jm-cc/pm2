@@ -29,7 +29,6 @@
 #define NM_IBVERBS_LR2_NBUF 3
 
 #define NM_IBVERBS_LR2_BLOCKSIZE 4096
-#define NM_IBVERBS_LR2_ALIGN     64
 
 static const int lr2_steps[] =
   { 12*1024, 24*1024, 40*1024, 64*1024, 88*1024, 128*1024, /* 160*1024, 200*1024, 256*1024, */ 0};
@@ -243,7 +242,7 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	{
 	  int chunk_todo = chunk_payload;
 	  base_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
-	  const int padding = (base_offset % NM_IBVERBS_LR2_ALIGN);
+	  const int padding = (nm_ibverbs_alignment > 0) ? (base_offset % nm_ibverbs_alignment) : 0;
 	  chunk_offset = base_offset;
 	  base_offset -= padding;
 	  while(chunk_todo > 0)

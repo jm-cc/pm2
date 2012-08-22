@@ -134,7 +134,15 @@ static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_
   assert(sizeof(struct nm_ibverbs_bycopy_packet) % 1024 == 0);
   assert(NM_IBVERBS_BYCOPY_CREDITS_THR > NM_IBVERBS_BYCOPY_RBUF_NUM / 2);
   /* init */
-  struct nm_ibverbs_bycopy*bycopy = TBX_MALLOC(sizeof(struct nm_ibverbs_bycopy));
+  struct nm_ibverbs_bycopy*bycopy = NULL;
+  if(nm_ibverbs_memalign > 0)
+    {
+      posix_memalign((void**)&bycopy, nm_ibverbs_memalign, sizeof(struct nm_ibverbs_bycopy));
+    }
+  else
+    {
+      bycopy = TBX_MALLOC(sizeof(struct nm_ibverbs_bycopy));
+    }
   memset(&bycopy->buffer, 0, sizeof(bycopy->buffer));
   bycopy->window.next_out = 1;
   bycopy->window.next_in  = 1;

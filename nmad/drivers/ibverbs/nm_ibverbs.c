@@ -76,7 +76,10 @@ struct nm_ibverbs
 
 static tbx_checksum_t _nm_ibverbs_checksum = NULL;
 
+/** ptr alignment enforced in every packets (through padding) */
 int nm_ibverbs_alignment = 64;
+/** ptr alignment enforced for buffer allocation */
+int nm_ibverbs_memalign  = 4096;
 
 /* ********************************************************* */
 
@@ -158,7 +161,16 @@ static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t conte
     }
   const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
   if(align_env != NULL)
-    nm_ibverbs_alignment = atoi(align_env);
+    {
+      nm_ibverbs_alignment = atoi(align_env);
+      NM_DISPF("# nmad ibverbs: alignment forced to %d\n", nm_ibverbs_alignment);
+    }
+  const char*memalign_env = getenv("NMAD_IBVERBS_MEMALIGN");
+  if(memalign_env != NULL)
+    {
+      nm_ibverbs_memalign = atoi(memalign_env);
+      NM_DISPF("# nmad ibverbs: memalign forced to %d\n", nm_ibverbs_memalign);
+    }
   return status;
 }
 

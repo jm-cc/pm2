@@ -42,6 +42,7 @@ uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, uint32_t le
 int nm_ibverbs_checksum_enabled(void);
 
 extern int nm_ibverbs_alignment;
+extern int nm_ibverbs_memalign;
 
 /** list of WRIDs used in the driver. */
 enum {

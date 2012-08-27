@@ -189,7 +189,7 @@ static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_req
   TBX_INIT_FAST_LIST_HEAD(&p_request->_link);
 }
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					const void*data, uint32_t len)
+					const void*data, nm_len_t len)
 {
   nm_core_t p_core = p_session->p_core;
   nm_core_pack_data(p_core, &p_request->req.pack, data, len);
@@ -249,7 +249,7 @@ static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_req
 }
 
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  void*data, uint32_t len)
+					  void*data, nm_len_t len)
 {
   nm_core_t p_core = p_session->p_core;
   nm_core_unpack_data(p_core, &p_request->req.unpack, data, len);

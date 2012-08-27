@@ -70,6 +70,10 @@ typedef uint64_t nm_tag_t;
 #define NM_TAG_MASK_FULL ((nm_tag_t)-1)
 #define NM_TAG_MASK_NONE ((nm_tag_t)0)
 
+/* ** packets length and offsets *************************** */
+
+typedef uint64_t nm_len_t;
+
 
 /* ** datatypes ******************************************** */
 

@@ -236,20 +236,20 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
  */
 int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			struct nm_pkt_wrap *p_pw2,
-			uint32_t offset)
+			nm_len_t offset)
 {
   assert(p_pw->flags & NM_PW_NOHEADER);
   assert(p_pw2->flags & NM_PW_NOHEADER);
   assert(p_pw2->length == 0);
-  const uint32_t total_length = p_pw->length;
+  const nm_len_t total_length = p_pw->length;
   int idx_pw = 0;
-  uint32_t len = 0;
+  nm_len_t len = 0;
   while(len < total_length)
     {
       if(len >= offset)
 	{
 	  /* consume the whole segment */
-	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len;
+	  const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len;
 	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base, chunk_len, 0);
 	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->length -= chunk_len;
@@ -261,8 +261,8 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
       else if(len + p_pw->v[idx_pw].iov_len > offset)
 	{
 	  /* cut in the middle of an iovec segment */
-	  const int iov_offset = offset - len;
-	  const uint32_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
+	  const nm_len_t iov_offset = offset - len;
+	  const nm_len_t chunk_len = p_pw->v[idx_pw].iov_len - iov_offset;
 	  nm_so_pw_add_raw(p_pw2, p_pw->v[idx_pw].iov_base + iov_offset, chunk_len, 0);
 	  len += p_pw->v[idx_pw].iov_len;
 	  p_pw->v[idx_pw].iov_len = iov_offset;
@@ -295,8 +295,8 @@ int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
  */
 void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw,
 		       struct nm_pack_s*p_pack,
-		       const void *data, uint32_t len,
-		       uint32_t offset,
+		       const void *data, nm_len_t len,
+		       nm_len_t offset,
 		       int flags)
 {
   const nm_core_tag_t tag = p_pack->tag;
@@ -364,7 +364,7 @@ int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw)
       do 
 	{
 	  const nm_proto_t proto_id = *(nm_proto_t*)ptr;
-	  uint32_t proto_hsize = 0;
+	  nm_len_t proto_hsize = 0;
 	  if(proto_id == NM_PROTO_DATA)
 	    {
 	      /* Data header */

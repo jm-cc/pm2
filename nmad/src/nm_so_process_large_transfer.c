@@ -21,10 +21,10 @@
 #include <nm_private.h>
 
 static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
-			       uint32_t len, uint32_t chunk_offset);
+			       nm_len_t len, nm_len_t chunk_offset);
 
 static void init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*unpack,
-				       uint32_t len, uint32_t chunk_offset);
+				       nm_len_t len, nm_len_t chunk_offset);
 
 static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, struct nm_gate*p_gate)
 {
@@ -36,7 +36,7 @@ static inline void nm_so_pw_store_pending_large_recv(struct nm_pkt_wrap*p_pw, st
 /* ********************************************************* */
 
 static void nm_so_post_multi_rtr(struct nm_gate*p_gate, struct nm_pkt_wrap *p_pw,
-				 uint32_t chunk_offset, int nb_chunks, struct nm_rdv_chunk*chunks)
+				 nm_len_t chunk_offset, int nb_chunks, struct nm_rdv_chunk*chunks)
 {
   int i;
   const nm_seq_t seq = p_pw->p_unpack->seq;
@@ -74,7 +74,7 @@ static void nm_so_post_multi_rtr(struct nm_gate*p_gate, struct nm_pkt_wrap *p_pw
 /** Process a rdv request with a matching unpack already posted
  */
 int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-                      uint32_t len, uint32_t chunk_offset)
+                      nm_len_t len, nm_len_t chunk_offset)
 {
   if(p_unpack->status & NM_UNPACK_TYPE_CONTIGUOUS)
     {
@@ -100,12 +100,12 @@ int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
  * (that may span across multiple entries of the recv-side iovec)
  */
 static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-			       uint32_t len, uint32_t chunk_offset)
+			       nm_len_t len, nm_len_t chunk_offset)
 {
   struct iovec*iov      = p_unpack->data;
   struct nm_gate*p_gate = p_unpack->p_gate;
   int pending_len = len;
-  uint32_t offset = 0;
+  nm_len_t offset = 0;
   int i = 0;
   /* find the iovec entry for the given chunk_offset */
   while(offset + iov[i].iov_len <= chunk_offset)
@@ -117,10 +117,10 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
   p_pw->p_unpack = p_unpack;
-  uint32_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
+  nm_len_t entry_offset = (offset < chunk_offset) ? (chunk_offset - offset) : 0; /* offset inside the iov entry */
   while(pending_len > 0)
     {
-      const uint32_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
+      const nm_len_t entry_len = (pending_len > (iov[i].iov_len - entry_offset)) ? (iov[i].iov_len - entry_offset) : pending_len;
       nm_so_pw_add_raw(p_pw, iov[i].iov_base + entry_offset, entry_len, 0);
       pending_len -= entry_len;
       i++;
@@ -140,7 +140,7 @@ static int init_large_iov_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpac
 
 
 static void init_large_contiguous_recv(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				       uint32_t len, uint32_t chunk_offset)
+				       nm_len_t len, nm_len_t chunk_offset)
 {
   struct nm_gate*p_gate = p_unpack->p_gate;
   struct nm_pkt_wrap *p_pw = NULL;

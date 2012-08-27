@@ -30,14 +30,14 @@
 #define LOOPS_DEFAULT   100000
 
 
-static inline uint32_t _next(uint32_t len, double multiplier, uint32_t increment)
+static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment)
 {
   if(len == 0)
     len = 1;
   return len * multiplier + increment;
 }
 
-static inline uint32_t _iterations(int iterations, uint32_t len)
+static inline nm_len_t _iterations(int iterations, nm_len_t len)
 {
   const uint64_t max_data = 512 * 1024 * 1024;
   if(len <= 0)
@@ -63,26 +63,26 @@ static void usage_ping(void) {
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
 }
 
-static void fill_buffer(char *buffer, int len)
+static void fill_buffer(char *buffer, nm_len_t len)
 {
-  int i = 0;
+  nm_len_t i = 0;
 
   for (i = 0; i < len; i++) {
     buffer[i] = 'a'+(i%26);
   }
 }
 
-static void clear_buffer(char *buffer, int len)
+static void clear_buffer(char *buffer, nm_len_t len)
 {
   memset(buffer, 0, len);
 }
 
 int main(int argc, char	**argv)
 {
-  uint32_t	 start_len      = MIN_DEFAULT;
-  uint32_t	 end_len        = MAX_DEFAULT;
+  nm_len_t	 start_len      = MIN_DEFAULT;
+  nm_len_t	 end_len        = MAX_DEFAULT;
   double         multiplier     = MULT_DEFAULT;
-  uint32_t         increment      = INCR_DEFAULT;
+  nm_len_t         increment      = INCR_DEFAULT;
   int              iterations     = LOOPS_DEFAULT;
   int              i;
   
@@ -122,7 +122,7 @@ int main(int argc, char	**argv)
     {
       /* server
        */
-      uint32_t	 len;
+      nm_len_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
 	  int k;
@@ -149,7 +149,7 @@ int main(int argc, char	**argv)
       tbx_tick_t t1, t2;
       printf("# sr_bench begin\n");
       printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
-      uint32_t	 len;
+      nm_len_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
 	  char* buf = malloc(len);
@@ -175,11 +175,11 @@ int main(int argc, char	**argv)
 	  double bw_mbyte        = bw_million_byte / 1.048576;
 	  
 #ifdef MARCEL
-	  printf("%9d\t%9.3lf\t%9.3f\t%9.3f\tmarcel\n",
-		 len, lat, bw_million_byte, bw_mbyte);
+	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\tmarcel\n",
+		 (long long)len, lat, bw_million_byte, bw_mbyte);
 #else
-	  printf("%9d\t%9.3lf\t%9.3f\t%9.3f\n",
-		 len, lat, bw_million_byte, bw_mbyte);
+	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\n",
+		 (long long)len, lat, bw_million_byte, bw_mbyte);
 #endif
 	  free(buf);
 	}

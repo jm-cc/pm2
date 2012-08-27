@@ -136,7 +136,7 @@ TBX_INTERNAL void nm_drv_post_all(struct nm_drv*p_drv);
 /* ** SchedOpt internal functions */
 
 TBX_INTERNAL int nm_so_rdv_success(struct nm_core*p_core, struct nm_unpack_s*unpack,
-				   uint32_t len, uint32_t chunk_offset);
+				   nm_len_t len, nm_len_t chunk_offset);
 
 TBX_INTERNAL int nm_so_process_large_pending_recv(struct nm_gate*p_gate);
 
@@ -156,7 +156,7 @@ extern int nm_decode_header_chunk(struct nm_core*p_core, const void*ptr, struct 
  */
 static inline int nm_so_iov_len(const struct iovec *iov, int nb_entries)
 {
-  uint32_t len = 0;
+  nm_len_t len = 0;
   int i;
   for(i = 0; i < nb_entries; i++)
     {

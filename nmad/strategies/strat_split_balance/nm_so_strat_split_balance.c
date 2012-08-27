@@ -32,7 +32,7 @@ static int strat_split_balance_todo(void*, struct nm_gate*);
 static int strat_split_balance_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_split_balance_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_split_balance_try_and_commit(void*, struct nm_gate*);
-static int strat_split_balance_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
+static int strat_split_balance_rdv_accept(void*, struct nm_gate*, nm_len_t, int*, struct nm_rdv_chunk*);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_balance_driver =
   {
@@ -151,7 +151,7 @@ strat_split_balance_pack_ctrl(void *_status,
 
 static void
 strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
-				       const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+				       const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc_and_fill_with_data(p_pack, data, len, chunk_offset, is_last_chunk, NM_PW_NOHEADER, &p_pw);
@@ -163,7 +163,7 @@ strat_split_balance_launch_large_chunk(void *_status, struct nm_pack_s*p_pack,
 
 static void 
 strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack,
-					  const void *data, uint32_t len, uint32_t chunk_offset, uint8_t is_last_chunk)
+					  const void *data, nm_len_t len, nm_len_t chunk_offset, uint8_t is_last_chunk)
 {
   struct nm_so_strat_split_balance*status = _status;
   struct nm_pkt_wrap *p_pw;
@@ -177,8 +177,8 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
       /* We first try to find an existing packet to form an aggregate */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
-	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+	  const nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 	  if(size <= h_rlen)
 	    {
 	      /* We can copy data into the header zone */
@@ -207,7 +207,7 @@ strat_split_balance_try_to_agregate_small(void *_status, struct nm_pack_s*p_pack
 
 static void
 strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
-				      uint32_t len, const void*_datatype)
+				      nm_len_t len, const void*_datatype)
 {
 #if 0
   struct nm_pkt_wrap *p_pw;
@@ -219,8 +219,8 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
       /* We first try to find an existing packet to form an aggregate */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
-	  uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+	  nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 	  if(size <= h_rlen)
 	    {
 	      nm_so_pw_add_datatype(p_pw, p_pack, len, segp);
@@ -239,7 +239,7 @@ strat_split_balance_agregate_datatype(void*_status, struct nm_pack_s*p_pack,
 
 static void
 strat_split_balance_launch_large_datatype(void*_status, struct nm_pack_s*p_pack,
-					  uint32_t len, const void*_datatype)
+					  nm_len_t len, const void*_datatype)
 {
 #if 0
   struct nm_pkt_wrap *p_pw = NULL;
@@ -294,7 +294,7 @@ static int strat_split_balance_todo(void*_status,
 static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_split_balance*status = _status;
-  const uint32_t len = p_pack->len;
+  const nm_len_t len = p_pack->len;
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
     {
       if(len <= status->nm_so_max_small)
@@ -311,7 +311,7 @@ static int strat_split_balance_pack(void *_status, struct nm_pack_s*p_pack)
   else if(p_pack->status & NM_PACK_TYPE_IOV)
     {
       struct iovec*iov = p_pack->data;
-      uint32_t offset = 0;
+      nm_len_t offset = 0;
       int i;
       for(i = 0; offset < len; i++)
 	{
@@ -377,7 +377,7 @@ static int strat_split_balance_try_and_commit(void *_status, struct nm_gate *p_g
 
 /* Warning: drv_id and trk_id are IN/OUT parameters. They initially
    hold values "suggested" by the caller. */
-static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate, uint32_t len,
+static int strat_split_balance_rdv_accept(void *_status, struct nm_gate *p_gate, nm_len_t len,
 					  int*nb_chunks, struct nm_rdv_chunk*chunks)
 
 {

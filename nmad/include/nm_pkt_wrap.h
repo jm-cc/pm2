@@ -61,7 +61,7 @@ struct nm_pkt_wrap;
 struct nm_pw_contrib_s
 {
   struct nm_pack_s*p_pack;
-  uint32_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
+  nm_len_t len; /**< length of the pack enclosed in the pw (a pw may contain a partial chunk of a pack) */
 };
 /** notification of pw send/recv completion */
 struct nm_pw_completion_s
@@ -114,15 +114,15 @@ struct nm_pkt_wrap
   nm_pw_flag_t		 flags;
   
   /** Cumulated amount of data (everything included) referenced by this wrap. */
-  uint32_t		 length;
+  nm_len_t		 length;
 
   /** actual number of allocated entries in the iovec. */
-  uint32_t		 v_size;
+  int		 v_size;
   
   /** Number of *used* entries in io vector.
       - first unused entry after iov  contents is v[v_nb]
   */
-  uint32_t		 v_nb;
+  int		 v_nb;
   
   /** IO vector. */
   struct iovec		*v;
@@ -154,7 +154,7 @@ struct nm_pkt_wrap
   /* ** fields used when receiving */
 
   /** offset of this chunk in the message */
-  uint32_t chunk_offset;
+  nm_len_t chunk_offset;
 
   struct nm_unpack_s*p_unpack;
 
@@ -178,10 +178,10 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw);
 
 int nm_so_pw_split_data(struct nm_pkt_wrap *p_pw,
 			struct nm_pkt_wrap *pp_pw2,
-			uint32_t offset);
+			nm_len_t offset);
 
 void nm_so_pw_add_data(struct nm_pkt_wrap *p_pw, struct nm_pack_s*p_pack,
-		       const void *data, uint32_t len, uint32_t offset, int flags);
+		       const void *data, nm_len_t len, nm_len_t offset, int flags);
 
 int nm_so_pw_finalize(struct nm_pkt_wrap *p_pw);
 

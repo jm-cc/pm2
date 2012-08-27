@@ -32,7 +32,7 @@ static int strat_aggreg_todo(void*, struct nm_gate*);
 static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_aggreg_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_try_and_commit(void*, struct nm_gate*);
-static int strat_aggreg_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
+static int strat_aggreg_rdv_accept(void*, struct nm_gate*, nm_len_t, int*, struct nm_rdv_chunk*);
 
 static const struct nm_strategy_iface_s nm_so_strat_aggreg_driver =
   {
@@ -160,7 +160,7 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
     {
-      const uint32_t len = p_pack->len;
+      const nm_len_t len = p_pack->len;
       if(len <= status->nm_so_max_small) 
 	{
 	  /* Small packet */
@@ -184,7 +184,7 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
   else if(p_pack->status & NM_PACK_TYPE_IOV)
     {
       struct iovec*iov = p_pack->data;
-      uint32_t offset = 0;
+      nm_len_t offset = 0;
       int i;
       for(i = 0; offset < p_pack->len; i++)
 	{
@@ -251,7 +251,7 @@ static int strat_aggreg_try_and_commit(void *_status,
  *  @param trk_id the suggested track id.
  *  @return The NM status.
  */
-static int strat_aggreg_rdv_accept(void*_status, struct nm_gate *p_gate, uint32_t len,
+static int strat_aggreg_rdv_accept(void*_status, struct nm_gate *p_gate, nm_len_t len,
 				   int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
   *nb_chunks = 1;

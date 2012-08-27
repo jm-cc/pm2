@@ -23,7 +23,7 @@ struct nm_rdv_chunk
 {
   nm_drv_t p_drv;
   nm_trk_id_t trk_id;
-  uint32_t len;
+  nm_len_t len;
 };
 
 typedef const union nm_so_generic_ctrl_header*nm_generic_header_t;
@@ -50,7 +50,7 @@ struct nm_strategy_iface_s
       hold values "suggested" by the caller. */
   int (*rdv_accept)(void*_status,
 		    struct nm_gate *p_gate,
-		    uint32_t len,
+		    nm_len_t len,
 		    int*nb_chunks,
 		    struct nm_rdv_chunk*chunks);
 
@@ -61,7 +61,7 @@ struct nm_strategy_iface_s
   int (*todo)(void* _status, struct nm_gate*p_gate);
 
   /** process strat private protocol */
-  void (*proto)(void*_status, struct nm_gate*p_gate, struct nm_pkt_wrap*p_pw, const void*ptr, uint32_t len);
+  void (*proto)(void*_status, struct nm_gate*p_gate, struct nm_pkt_wrap*p_pw, const void*ptr, nm_len_t len);
 
 };
 

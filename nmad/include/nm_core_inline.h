@@ -58,13 +58,13 @@ static inline struct nm_drv*nm_drv_get_by_index(struct nm_gate*p_gate, int index
 
 /* ** Packet wrapper management **************************** */
 
-static __inline__ uint32_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_pw)
+static __inline__ nm_len_t nm_so_pw_remaining_header_area(struct nm_pkt_wrap *p_pw)
 {
   const struct iovec *vec = &p_pw->v[0];
   return NM_SO_MAX_UNEXPECTED - ((vec->iov_base + vec->iov_len) - (void *)p_pw->buf);
 }
 
-static __inline__ uint32_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
+static __inline__ nm_len_t nm_so_pw_remaining_data(struct nm_pkt_wrap *p_pw)
 {
   return NM_SO_MAX_UNEXPECTED - p_pw->length;
 }
@@ -111,7 +111,7 @@ static inline struct iovec*nm_pw_grow_iovec(struct nm_pkt_wrap*p_pw)
 
 /** Add short data to pw, with compact header */
 static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-					   const void*data, uint32_t len)
+					   const void*data, nm_len_t len)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
@@ -128,7 +128,7 @@ static inline void nm_so_pw_add_short_data(struct nm_pkt_wrap*p_pw, nm_core_tag_
 
 /** Add small data to pw, in header */
 static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-					       const void*data, uint32_t len, uint32_t chunk_offset, uint8_t flags)
+					       const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t flags)
 {
   assert(p_pw->flags & NM_PW_GLOBAL_HEADER);
   struct iovec*hvec = &p_pw->v[0];
@@ -138,7 +138,7 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_
   p_pw->length  += NM_SO_DATA_HEADER_SIZE;
   if(len)
     {
-      const uint32_t size = nm_so_aligned(len);
+      const nm_len_t size = nm_so_aligned(len);
       assert(len <= nm_so_pw_remaining_data(p_pw));
       memcpy(hvec->iov_base + hvec->iov_len, data, len);
       hvec->iov_len += size;
@@ -148,7 +148,7 @@ static inline void nm_so_pw_add_data_in_header(struct nm_pkt_wrap*p_pw, nm_core_
 
 /** Add small data to pw, in iovec */
 static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_tag_t tag, nm_seq_t seq,
-					      const void*data, uint32_t len, uint32_t chunk_offset, uint8_t proto_flags)
+					      const void*data, nm_len_t len, nm_len_t chunk_offset, uint8_t proto_flags)
 {
   struct iovec*hvec = &p_pw->v[0];
   struct nm_so_data_header *h = hvec->iov_base + hvec->iov_len;
@@ -163,7 +163,7 @@ static inline void nm_so_pw_add_data_in_iovec(struct nm_pkt_wrap*p_pw, nm_core_t
 }
 
 /** Add raw data to pw, without header */
-static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, uint32_t len, uint32_t chunk_offset)
+static inline void nm_so_pw_add_raw(struct nm_pkt_wrap*p_pw, const void*data, nm_len_t len, nm_len_t chunk_offset)
 {
   assert(p_pw->flags & NM_PW_NOHEADER);
   struct iovec*vec = nm_pw_grow_iovec(p_pw);
@@ -183,8 +183,8 @@ static inline int nm_so_pw_add_control(struct nm_pkt_wrap*p_pw, const union nm_s
 }
 
 
-static inline void nm_so_pw_alloc_and_fill_with_data(struct nm_pack_s*p_pack, const void*ptr, uint32_t chunk_len,
-						     uint32_t chunk_offset, tbx_bool_t is_last_chunk,
+static inline void nm_so_pw_alloc_and_fill_with_data(struct nm_pack_s*p_pack, const void*ptr, nm_len_t chunk_len,
+						     nm_len_t chunk_offset, tbx_bool_t is_last_chunk,
 						     int flags, struct nm_pkt_wrap **pp_pw)
 {
   struct nm_pkt_wrap *p_pw;
@@ -236,7 +236,7 @@ static inline void nm_pw_add_completion(struct nm_pkt_wrap*p_pw, const struct nm
   p_pw->n_completions++;
 }
 
-static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, uint32_t len)
+static inline void nm_pw_add_contrib(struct nm_pkt_wrap*p_pw, struct nm_pack_s*p_pack, nm_len_t len)
 {
    if(p_pw->n_completions > 0 &&
       p_pw->completions[p_pw->n_completions - 1].notifier == &nm_pw_contrib_complete &&
@@ -345,7 +345,7 @@ static inline int nm_strat_try_and_commit(struct nm_gate *p_gate)
 /** Post a ready-to-receive
  */
 static inline void nm_so_post_rtr(struct nm_gate*p_gate,  nm_core_tag_t tag, nm_seq_t seq,
-				  nm_drv_t p_drv, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
+				  nm_drv_t p_drv, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 {
   nm_so_generic_ctrl_header_t h;
   int gdrv_index = -1, k = 0;

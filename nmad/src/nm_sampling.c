@@ -280,14 +280,14 @@ int nm_ns_inc_lats(struct nm_core *p_core, struct nm_drv*const**p_drvs, int*nb_d
   return NM_ESUCCESS;
 }
 
-int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
+int nm_ns_multiple_split_ratio(nm_len_t len, struct nm_core *p_core,
 			       int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
 #ifndef NMAD_SAMPLING
   {
-    int assigned_len = 0;
+    nm_len_t assigned_len = 0;
     int chunk_index = 0;
-    int chunk_len = tbx_aligned(len / *nb_chunks, sizeof(uint32_t));
+    nm_len_t chunk_len = tbx_aligned(len / *nb_chunks, sizeof(nm_len_t));
 
     while(chunk_index < *nb_chunks - 1 && assigned_len + chunk_len < len)
       {
@@ -319,11 +319,11 @@ int nm_ns_multiple_split_ratio(uint32_t len, struct nm_core *p_core,
       {
 	const struct nm_sampling_set_s*p_set = puk_hashtable_lookup(nm_ns.sampling_sets, chunks[i].p_drv);
 	const int drv_bw = p_set->bw;
-	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(uint32_t));
+	chunks[i].len = tbx_aligned((pending_len / sum_bw) * drv_bw, sizeof(nm_len_t));
 	pending_len -= chunks[i].len;
 	sum_bw -= drv_bw;
       }
-    chunks[i].len = tbx_aligned(pending_len, sizeof(uint32_t));
+    chunks[i].len = tbx_aligned(pending_len, sizeof(nm_len_t));
   }
 #endif /* NMAD_SAMPLING */
 

@@ -39,7 +39,7 @@ struct nm_ssa_data_req {
 };
 
 struct nm_ssa_pw{
-  uint32_t cumulated_len;
+  nm_len_t cumulated_len;
   struct tbx_fast_list_head reqs;
   struct tbx_fast_list_head link;
 };
@@ -55,14 +55,14 @@ static int strat_split_all_todo(void*, struct nm_gate*);
 static int strat_split_all_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_split_all_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_split_all_pack_ctrl_chunk(void*, struct nm_pkt_wrap *, const union nm_so_generic_ctrl_header *);
-static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, uint32_t, const union nm_so_generic_ctrl_header *, struct nm_pkt_wrap **);
+static int strat_split_all_pack_extended_ctrl(void*, struct nm_gate *, nm_len_t, const union nm_so_generic_ctrl_header *, struct nm_pkt_wrap **);
 static int strat_split_all_pack_extended_ctrl_end(void*,
                                                 struct nm_gate *p_gate,
                                                 struct nm_pkt_wrap *p_so_pw);
 static int strat_split_all_try_and_commit(void*, struct nm_gate*);
 static int strat_split_all_rdv_accept(void*, struct nm_gate*, nm_drv_id_t*, nm_trk_id_t*);
-static int strat_split_all_extended_rdv_accept(void*, struct nm_gate *, uint32_t, int *,
-						   nm_drv_id_t *, uint32_t *);
+static int strat_split_all_extended_rdv_accept(void*, struct nm_gate *, nm_len_t, int *,
+						   nm_drv_id_t *, nm_len_t *);
 static int strat_split_all_split_small(void *_status, struct nm_gate *p_gate, void *link, int *nb_cores, struct nm_pkt_wrap **out_pw);
 
 static const struct nm_strategy_iface_s nm_so_strat_split_all_driver =
@@ -142,7 +142,7 @@ static void strat_split_all_destroy(void*status)
 static int 
 strat_split_all_pack_extended_ctrl(void *_status,
 				       struct nm_gate *p_gate,
-				       uint32_t cumulated_header_len,
+				       nm_len_t cumulated_header_len,
 				       const union nm_so_generic_ctrl_header *p_ctrl,
 				       struct nm_pkt_wrap **pp_so_pw){
   return NM_ESUCCESS;
@@ -171,7 +171,7 @@ strat_split_all_pack_ctrl(void *_status,
   struct nm_ssa_pw *p_ssa_pw = NULL;
   struct nm_ssa_data_req *p_req = tbx_malloc(nm_ssa_data_req_mem);
   union nm_so_generic_ctrl_header *header = tbx_malloc(nm_ssa_header_mem);
-  uint32_t remaining_len = 0;
+  nm_len_t remaining_len = 0;
   int err;
 
   *header = *p_ctrl;
@@ -210,8 +210,8 @@ strat_split_all_pack_ctrl(void *_status,
 //strat_split_all_process_large(void *_status,
 //                              struct nm_gate *p_gate,
 //                              uint8_t tag, uint8_t seq,
-//                              void *data, uint32_t len,
-//                              uint32_t chunk_offset, uint8_t is_last_chunk){
+//                              void *data, nm_len_t len,
+//                              nm_len_t chunk_offset, uint8_t is_last_chunk){
 //  struct nm_so_strat_split_all*status = _status;
 //  struct nm_so_gate *p_so_gate = (struct nm_so_gate *)p_gate->p_so_gate;
 //  struct nm_pkt_wrap *p_so_pw = NULL;
@@ -280,8 +280,8 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
   struct nm_ssa_data_req *p_req = NULL;
   struct nm_so_data_header *header = NULL;
   
-  uint32_t remaining_len = 0;
-  uint32_t size = 0;
+  nm_len_t remaining_len = 0;
+  nm_len_t size = 0;
   int err;
   int flags=0; 
 
@@ -327,8 +327,8 @@ strat_split_all_pack(void *_status, struct nm_pack_s*p_pack)
 static int build_wrapper(struct nm_so_strat_split_all *status,
                          struct nm_gate *p_gate,
                          struct nm_ssa_pw *p_ssa_pw,
-                         uint32_t threshold,
-                         uint32_t offset,
+                         nm_len_t threshold,
+                         nm_len_t offset,
                          tbx_bool_t need_split,
                          int drv_id,
                          struct nm_pkt_wrap **pp_so_pw){
@@ -337,7 +337,7 @@ static int build_wrapper(struct nm_so_strat_split_all *status,
   struct nm_ssa_data_req *p_req = NULL, *p_req_next;
   struct nm_pkt_wrap *p_so_pw = NULL;
   struct tbx_fast_list_head* reqs_list = &p_ssa_pw->reqs;
-  uint32_t proto_id = 0;
+  nm_len_t proto_id = 0;
   struct nm_so_data_header *h = NULL;
   int flags = 0;
   int err;
@@ -556,7 +556,7 @@ strat_split_all_split_small(void *_status,
   struct nm_so_strat_split_all *status = _status;
   struct nm_ssa_pw *p_ssa_pw = link;
   int drv_id = -1;
-  uint32_t split_ratio = 0;
+  nm_len_t split_ratio = 0;
   struct nm_pkt_wrap *p_so_pw1 = NULL, *p_so_pw2 = NULL;
   int cumulated_len = p_ssa_pw->cumulated_len;
   tbx_tick_t t1,t2;
@@ -628,10 +628,10 @@ strat_split_all_rdv_accept(void *_status,
 static int
 strat_split_all_extended_rdv_accept(void *_status,
 					struct nm_gate *p_gate,
-					uint32_t len_to_send,
+					nm_len_t len_to_send,
 					int * nb_drv,
 					nm_drv_id_t *drv_ids,
-					uint32_t *chunk_lens){
+					nm_len_t *chunk_lens){
   int nb_drivers = p_gate->p_core->nb_drivers;
   uint8_t *ordered_drv_id_by_bw = NULL;
   int cur_drv_idx = 0;

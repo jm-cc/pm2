@@ -57,8 +57,8 @@ struct nm_so_data_header {
   nm_core_tag_t tag_id;
   nm_seq_t seq;
   uint8_t  flags;
-  uint32_t len;
-  uint32_t chunk_offset;
+  nm_len_t len;
+  nm_len_t chunk_offset;
   uint16_t skip;
 } __attribute__((packed));
 
@@ -74,8 +74,8 @@ struct nm_so_ctrl_rdv_header {
   nm_core_tag_t tag_id;
   nm_seq_t seq;
   uint8_t  flags;
-  uint32_t len;
-  uint32_t chunk_offset;
+  nm_len_t len;
+  nm_len_t chunk_offset;
 } __attribute__((packed));
 
 struct nm_so_ctrl_rtr_header {
@@ -84,8 +84,8 @@ struct nm_so_ctrl_rtr_header {
   nm_seq_t seq;
   nm_trk_id_t trk_id;
   uint16_t drv_index;   /**< index of the driver relative to the gate */
-  uint32_t chunk_offset;
-  uint32_t chunk_len;
+  nm_len_t chunk_offset;
+  nm_len_t chunk_len;
 } __attribute__((packed));
 
 struct nm_so_ctrl_ack_header {
@@ -108,11 +108,11 @@ union nm_so_generic_ctrl_header {
   } generic;
 };
 
-/** header for strategy provate packets */
+/** header for strategy private packets */
 struct nm_strat_header
 {
   nm_proto_t proto_id; /**< should be NM_PROTO_STRAT */
-  uint32_t size;
+  nm_len_t size;
 };
 
 typedef union nm_so_generic_ctrl_header nm_so_generic_ctrl_header_t;
@@ -129,7 +129,7 @@ typedef struct nm_so_short_data_header nm_so_short_data_header_t;
   nm_so_aligned(sizeof(union nm_so_generic_ctrl_header))
 
 static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_core_tag_t tag_id, nm_seq_t seq, uint8_t flags,
-				   uint16_t skip, uint32_t len, uint32_t chunk_offset)
+				   uint16_t skip, nm_len_t len, nm_len_t chunk_offset)
 { 
   p_header->proto_id = NM_PROTO_DATA;
   p_header->tag_id   = tag_id;
@@ -141,7 +141,7 @@ static inline void nm_so_init_data(nm_so_data_header_t*p_header, nm_core_tag_t t
 }
 
 static inline void nm_so_init_short_data(nm_so_short_data_header_t*p_header, nm_core_tag_t tag_id, 
-					 nm_seq_t seq, uint32_t len)
+					 nm_seq_t seq, nm_len_t len)
 {
   p_header->proto_id = NM_PROTO_SHORT_DATA;
   p_header->tag_id   = tag_id;
@@ -150,7 +150,7 @@ static inline void nm_so_init_short_data(nm_so_short_data_header_t*p_header, nm_
 }
 
 static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, struct nm_pack_s*p_pack,
-				  uint32_t len, uint32_t chunk_offset, uint8_t rdv_flags)
+				  nm_len_t len, nm_len_t chunk_offset, uint8_t rdv_flags)
 {
   if(p_pack->status & NM_PACK_SYNCHRONOUS)
     rdv_flags |= NM_PROTO_FLAG_ACKREQ;
@@ -163,7 +163,7 @@ static inline void nm_so_init_rdv(union nm_so_generic_ctrl_header*p_ctrl, struct
 }
 
 static inline void nm_so_init_rtr(union nm_so_generic_ctrl_header*p_ctrl, nm_core_tag_t tag, nm_seq_t seq,
-				  uint16_t drv_index, nm_trk_id_t trk_id, uint32_t chunk_offset, uint32_t chunk_len)
+				  uint16_t drv_index, nm_trk_id_t trk_id, nm_len_t chunk_offset, nm_len_t chunk_len)
 { 
   p_ctrl->rtr.proto_id = NM_PROTO_RTR;
   p_ctrl->rtr.tag_id   = tag;

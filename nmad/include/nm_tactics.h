@@ -30,8 +30,8 @@ static inline void nm_tactic_pack_ctrl(const union nm_so_generic_ctrl_header*p_c
 
 /** Pack small data into an existing packet wrapper on track #0
  */
-static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const char*data, int len, int offset,
-						int copy_threshold, struct nm_pkt_wrap*p_pw)
+static inline void nm_tactic_pack_small_into_pw(struct nm_pack_s*p_pack, const char*data, nm_len_t len, nm_len_t offset,
+						nm_len_t copy_threshold, struct nm_pkt_wrap*p_pw)
 {
   if(len < copy_threshold)
     nm_so_pw_add_data(p_pw, p_pack, data, len, offset, NM_PW_GLOBAL_HEADER | NM_SO_DATA_USE_COPY);
@@ -53,7 +53,7 @@ static inline void nm_tactic_pack_small_new_pw(struct nm_pack_s*p_pack, const ch
 /** Pack large data into a new packet wrapper stored as pending large,
  * and pack a rdv for this data.
  */
-static inline void nm_tactic_pack_rdv(struct nm_pack_s*p_pack, const char*data, int len, int offset)
+static inline void nm_tactic_pack_rdv(struct nm_pack_s*p_pack, const char*data, nm_len_t len, nm_len_t offset)
 {
   struct nm_pkt_wrap *p_pw = NULL;
   nm_so_pw_alloc(NM_PW_NOHEADER, &p_pw);
@@ -76,8 +76,8 @@ static inline struct nm_pkt_wrap*nm_tactic_try_to_aggregate(struct tbx_fast_list
   struct nm_pkt_wrap*p_pw = NULL;
   tbx_fast_list_for_each_entry(p_pw, out_list, link)
     {
-      const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-      const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
+      const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+      const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
       if((header_len + NM_SO_ALIGN_FRONTIER < h_rlen) && 
 	 (data_len + NM_SO_ALIGN_FRONTIER < d_rlen))
 	{

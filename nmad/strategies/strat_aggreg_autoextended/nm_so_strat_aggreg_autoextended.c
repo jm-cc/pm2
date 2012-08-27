@@ -33,7 +33,7 @@ static int strat_aggreg_autoextended_todo(void*, struct nm_gate*);
 static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack);
 static int strat_aggreg_autoextended_pack_ctrl(void*, struct nm_gate *, const union nm_so_generic_ctrl_header*);
 static int strat_aggreg_autoextended_try_and_commit(void*, struct nm_gate*);
-static int strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*, uint32_t, int*, struct nm_rdv_chunk*);
+static int strat_aggreg_autoextended_rdv_accept(void*, struct nm_gate*, nm_len_t, int*, struct nm_rdv_chunk*);
 static int strat_aggreg_autoextended_flush(void*, struct nm_gate*);
 
 static const struct nm_strategy_iface_s nm_so_strat_aggreg_autoextended_driver =
@@ -198,7 +198,7 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
   struct nm_so_strat_aggreg_autoextended_gate *status = _status;
   struct nm_pkt_wrap *p_pw = NULL;
   int flags = 0;
-  const uint32_t len = p_pack->len;
+  const nm_len_t len = p_pack->len;
 
   if(!(p_pack->status & NM_PACK_TYPE_CONTIGUOUS))
     TBX_FAILURE("strat_aggreg_autoextended supports only contiguous packs.");
@@ -208,9 +208,9 @@ static int strat_aggreg_autoextended_pack(void*_status, struct nm_pack_s*p_pack)
       /* small packet */
       tbx_fast_list_for_each_entry(p_pw, &status->out_list, link)
 	{
-	  const uint32_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
-	  const uint32_t d_rlen = nm_so_pw_remaining_data(p_pw);
-	  const uint32_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
+	  const nm_len_t h_rlen = nm_so_pw_remaining_header_area(p_pw);
+	  const nm_len_t d_rlen = nm_so_pw_remaining_data(p_pw);
+	  const nm_len_t size = NM_SO_DATA_HEADER_SIZE + nm_so_aligned(len);
 	  if(size > d_rlen || NM_SO_DATA_HEADER_SIZE > h_rlen)
 	    {
 	      nm_so_pw_finalize(p_pw);
@@ -297,7 +297,7 @@ static int strat_aggreg_autoextended_try_and_commit(void*_status,
  *  @param trk_id the suggested track id.
  *  @return The NM status.
  */
-static int strat_aggreg_autoextended_rdv_accept(void*_status, struct nm_gate *p_gate, uint32_t len,
+static int strat_aggreg_autoextended_rdv_accept(void*_status, struct nm_gate *p_gate, nm_len_t len,
 						int*nb_chunks, struct nm_rdv_chunk*chunks)
 {
   *nb_chunks = 1;

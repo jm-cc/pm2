@@ -30,9 +30,9 @@
 
 #define NM_IBVERBS_LR2_BLOCKSIZE 4096
 
-static const int lr2_steps[] =
+static const nm_len_t lr2_steps[] =
   { 12*1024, 24*1024, 40*1024, 64*1024, 88*1024, 128*1024, /* 160*1024, 200*1024, 256*1024, */ 0};
-static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(int) - 1;
+static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(nm_len_t) - 1;
 
 /** on the wire header of method 'lr2' */
 struct lr2_header_s
@@ -40,9 +40,9 @@ struct lr2_header_s
   volatile uint32_t checksum; /* has to be the last field in the struct */
 } __attribute__((packed));
 
-static const int lr2_hsize = sizeof(struct lr2_header_s);
+static const nm_len_t lr2_hsize = sizeof(struct lr2_header_s);
 
-static inline int nm_ibverbs_min(const int a, const int b)
+static inline nm_len_t nm_ibverbs_min(const nm_len_t a, const nm_len_t b)
 {
   if(b > a)
     return a;
@@ -67,8 +67,8 @@ struct nm_ibverbs_lr2
   struct
   {
     const char*message;
-    int size;
-    int done;
+    nm_len_t size;
+    nm_len_t done;
     void*rbuf;
     void*sbuf;
     int step;
@@ -79,9 +79,9 @@ struct nm_ibverbs_lr2
   struct
   {
     char*message;
-    int size;
+    nm_len_t size;
     void*rbuf;
-    int done;
+    nm_len_t done;
     int step;
     int nbuffer;
   } recv;
@@ -211,11 +211,11 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 
   while(lr2->send.done < lr2->send.size)
     {
-      const int chunk_size = lr2_steps[lr2->send.step];
-      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
-      const int block_max_payload = block_size - lr2_hsize;
-      const int chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
-      const int chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_max_payload);
+      const nm_len_t chunk_size = lr2_steps[lr2->send.step];
+      const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
+      const nm_len_t block_max_payload = block_size - lr2_hsize;
+      const nm_len_t chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
+      const nm_len_t chunk_payload = nm_ibverbs_min(lr2->send.size - lr2->send.done, chunk_max_payload);
       /* ** N-buffering */
       if((lr2->send.sbuf + chunk_size) > (((void*)lr2->buffer.sbuf) + (lr2->send.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
 	{
@@ -235,22 +235,22 @@ static int nm_ibverbs_lr2_send_poll(void*_status)
 	  lr2->send.rbuf = ((void*)lr2->buffer.rbuf) + lr2->send.nbuffer * NM_IBVERBS_LR2_BUFSIZE;
 	}
       /* ** fill buffer (one chunk made of multiple blocks) */
-      int chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
-      int base_offset = 0;
+      nm_len_t chunk_offset = 0; /**< offset in the sbuf/rbuf, i.e. payload + headers */
+      nm_len_t base_offset = 0;
       if((lr2->send.prefetch == lr2->send.message) && (lr2->send.done == 0))
 	{
 	  chunk_offset = chunk_size;
 	}
       else
 	{
-	  int chunk_todo = chunk_payload;
+	  nm_len_t chunk_todo = chunk_payload;
 	  base_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
-	  const int padding = (nm_ibverbs_alignment > 0) ? (base_offset % nm_ibverbs_alignment) : 0;
+	  const nm_len_t padding = (nm_ibverbs_alignment > 0) ? (base_offset % nm_ibverbs_alignment) : 0;
 	  chunk_offset = base_offset;
 	  base_offset -= padding;
 	  while(chunk_todo > 0)
 	    {
-	      const int block_payload = (chunk_todo % block_max_payload == 0) ?
+	      const nm_len_t block_payload = (chunk_todo % block_max_payload == 0) ?
 		block_max_payload : (chunk_todo % block_max_payload);
 	      struct lr2_header_s*h = lr2->send.sbuf + chunk_offset + block_payload;
 	      h->checksum = 1 | nm_ibverbs_memcpy_and_checksum(lr2->send.sbuf + chunk_offset, lr2->send.message + lr2->send.done + (chunk_payload - chunk_todo), block_payload);
@@ -279,11 +279,11 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
   struct nm_ibverbs_lr2*lr2 = _status;
   if((lr2->send.prefetch == NULL) && (lr2->send.message == NULL))
     {
-      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
-      const int chunk_size = lr2_steps[0];
-      const int block_payload = block_size - lr2_hsize;
-      int chunk_done = 0;
-      int chunk_offset = 0;
+      const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
+      const nm_len_t chunk_size = lr2_steps[0];
+      const nm_len_t block_payload = block_size - lr2_hsize;
+      nm_len_t chunk_done = 0;
+      nm_len_t chunk_offset = 0;
       assert(size > block_payload * (chunk_size/block_size));
       while(chunk_offset < chunk_size)
 	{
@@ -313,11 +313,11 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 
   while(lr2->recv.done < lr2->recv.size)
     {
-      const int chunk_size = lr2_steps[lr2->recv.step];
-      const int block_size = NM_IBVERBS_LR2_BLOCKSIZE;
-      const int block_max_payload = block_size - lr2_hsize;
-      const int chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
-      const int chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_max_payload);
+      const nm_len_t chunk_size = lr2_steps[lr2->recv.step];
+      const nm_len_t block_size = NM_IBVERBS_LR2_BLOCKSIZE;
+      const nm_len_t block_max_payload = block_size - lr2_hsize;
+      const nm_len_t chunk_max_payload = chunk_size - lr2_hsize * chunk_size / block_size;
+      const nm_len_t chunk_payload = nm_ibverbs_min(lr2->recv.size - lr2->recv.done, chunk_max_payload);
       if((lr2->recv.rbuf + chunk_size) > (((void*)lr2->buffer.rbuf) + (lr2->recv.nbuffer + 1) * NM_IBVERBS_LR2_BUFSIZE))
       {
 	/* swap buffers */
@@ -329,11 +329,11 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 			     (void*)&lr2->buffer.sack, (void*)&lr2->buffer.rack,
 			     &lr2->buffer, &lr2->seg, lr2->mr, NM_IBVERBS_WRID_ACK);
       }
-      int chunk_todo = chunk_payload;
-      int chunk_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
+      nm_len_t chunk_todo = chunk_payload;
+      nm_len_t chunk_offset = (chunk_max_payload - chunk_payload) % block_max_payload;
       while(chunk_todo > 0)
 	{
-	  const int block_payload = (chunk_todo % block_max_payload == 0) ?
+	  const nm_len_t block_payload = (chunk_todo % block_max_payload == 0) ?
 	    block_max_payload : (chunk_todo % block_max_payload);
 	  struct lr2_header_s*h = lr2->recv.rbuf + chunk_offset + block_payload;
 	  if((chunk_todo == chunk_payload) && !h->checksum)

@@ -165,8 +165,8 @@ struct nm_unpack_s
 {
   nm_status_t status;
   void *data;
-  int expected_len;
-  int cumulated_len;
+  nm_len_t expected_len;
+  nm_len_t cumulated_len;
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
@@ -179,9 +179,9 @@ struct nm_pack_s
 {
   nm_status_t status;
   void*data; /**< actually, char*, struct iovec*, or DLOOP_Segment* depending on pack type (see status) */
-  int len;       /**< cumulated data length */
-  int scheduled; /**< cumulated length of data scheduled for sending */
-  int done;      /**< cumulated length of data sent so far */
+  nm_len_t len;       /**< cumulated data length */
+  nm_len_t scheduled; /**< cumulated length of data scheduled for sending */
+  nm_len_t done;      /**< cumulated length of data sent so far */
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
@@ -190,7 +190,7 @@ struct nm_pack_s
 
 /** build a pack request for contiguous data */
 static inline void nm_core_pack_data(nm_core_t p_core, struct nm_pack_s*p_pack,
-				     const void*data, uint32_t len)
+				     const void*data, nm_len_t len)
 {
   p_pack->status = NM_PACK_TYPE_CONTIGUOUS;
   p_pack->data   = (void*)data;
@@ -212,7 +212,7 @@ int nm_core_pack_send(struct nm_core*p_core, struct nm_pack_s*p_pack, nm_core_ta
 
 /** build an unpack request for contiguous data (do not post request) */
 static inline void nm_core_unpack_data(struct nm_core*p_core, struct nm_unpack_s*p_unpack,
-				       void *data, uint32_t len)
+				       void *data, nm_len_t len)
 {
   p_unpack->status = NM_UNPACK_TYPE_CONTIGUOUS;
   p_unpack->data = data;
@@ -239,7 +239,7 @@ int nm_core_unpack_cancel(struct nm_core*p_core, struct nm_unpack_s*p_unpack);
 /** probe unexpected packet */
 int nm_core_iprobe(struct nm_core*p_core,
 		   struct nm_gate*p_gate, nm_core_tag_t tag, nm_core_tag_t tag_mask,
-		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, uint32_t*p_out_size);
+		   struct nm_gate**pp_out_gate, nm_core_tag_t*p_out_tag, nm_len_t*p_out_size);
 
 /** Flush the given gate. */
 int nm_core_flush(nm_gate_t p_gate);
@@ -254,7 +254,7 @@ struct nm_core_event_s
   nm_gate_t p_gate;
   nm_core_tag_t tag;
   nm_seq_t seq;
-  uint32_t len;
+  nm_len_t len;
   struct nm_unpack_s*p_unpack;
   struct nm_pack_s*p_pack;
 };

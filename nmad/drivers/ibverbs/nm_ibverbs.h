@@ -37,8 +37,8 @@
 /** timeout to receive connection check after sending ACK and check (in msec.) */
 #define NM_IBVERBS_TIMEOUT_CHECK 20
 
-uint32_t nm_ibverbs_checksum(const char*data, uint32_t len);
-uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, uint32_t len);
+uint32_t nm_ibverbs_checksum(const char*data, nm_len_t len);
+uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t len);
 int nm_ibverbs_checksum_enabled(void);
 
 extern int nm_ibverbs_alignment;

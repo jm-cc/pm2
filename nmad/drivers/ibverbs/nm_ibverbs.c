@@ -201,7 +201,7 @@ static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status, nm_trk_id_t
 
 /** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
  */
-uint32_t nm_ibverbs_checksum(const char*data, uint32_t len)
+uint32_t nm_ibverbs_checksum(const char*data, nm_len_t len)
 {
   if(_nm_ibverbs_checksum)
     return (*_nm_ibverbs_checksum->func)(data, len);
@@ -214,7 +214,7 @@ int nm_ibverbs_checksum_enabled(void)
   return _nm_ibverbs_checksum != NULL;
 }
 
-uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, uint32_t len)
+uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t len)
 {
   if(_nm_ibverbs_checksum)
     {

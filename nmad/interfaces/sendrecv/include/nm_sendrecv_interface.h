@@ -66,7 +66,7 @@ typedef union
   {
     nm_gate_t p_gate;
     nm_tag_t tag;
-    uint32_t len;
+    nm_len_t len;
   } recv_unexpected;
   struct
   {
@@ -131,7 +131,7 @@ static inline int nm_sr_get_stag(nm_session_t p_session, nm_sr_request_t *p_requ
 
 static inline void nm_sr_send_init(nm_session_t p_session, nm_sr_request_t*p_request);
 static inline void nm_sr_send_pack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					const void*, uint32_t len);
+					const void*, nm_len_t len);
 static inline void nm_sr_send_pack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 				       const struct iovec*iov, int num_entries);
 static inline void nm_sr_send_pack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
@@ -148,7 +148,7 @@ static inline int  nm_sr_send_rsend(nm_session_t p_session, nm_sr_request_t*p_re
 
 static inline void nm_sr_recv_init(nm_session_t p_session, nm_sr_request_t*p_request);
 static inline void nm_sr_recv_unpack_data(nm_session_t p_session, nm_sr_request_t*p_request, 
-					  void*, uint32_t len);
+					  void*, nm_len_t len);
 static inline void nm_sr_recv_unpack_iov(nm_session_t p_session, nm_sr_request_t*p_request,
 					 struct iovec*iov, int num_entry);
 static inline void nm_sr_recv_unpack_datatype(nm_session_t p_session, nm_sr_request_t*p_request, 
@@ -162,7 +162,7 @@ static inline int  nm_sr_recv_irecv(nm_session_t p_session, nm_sr_request_t*p_re
 /** Synchronous send. */
 static inline int nm_sr_issend(nm_session_t p_session,
 			       nm_gate_t p_gate, nm_tag_t tag,
-			       const void *data, uint32_t len,
+			       const void *data, nm_len_t len,
 			       nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
@@ -182,7 +182,7 @@ static inline int nm_sr_issend(nm_session_t p_session,
  */
 static inline int nm_sr_isend(nm_session_t p_session,
 			      nm_gate_t p_gate, nm_tag_t tag,
-			      const void *data, uint32_t len,
+			      const void *data, nm_len_t len,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
@@ -193,7 +193,7 @@ static inline int nm_sr_isend(nm_session_t p_session,
 
 static inline int nm_sr_isend_with_ref(nm_session_t p_session,
 				       nm_gate_t p_gate, nm_tag_t tag,
-				       const void *data, uint32_t len,
+				       const void *data, nm_len_t len,
 				       nm_sr_request_t *p_request,
 				       void*ref)
 {
@@ -218,7 +218,7 @@ static inline int nm_sr_isend_with_ref(nm_session_t p_session,
  */
 static inline int nm_sr_rsend(nm_session_t p_session,
 			      nm_gate_t p_gate, nm_tag_t tag,
-			      const void *data, uint32_t len,
+			      const void *data, nm_len_t len,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_send_init(p_session, p_request);
@@ -319,7 +319,7 @@ extern int nm_sr_scancel(nm_session_t p_session,
  */
 static inline int nm_sr_irecv(nm_session_t p_session,
 			      nm_gate_t p_gate, nm_tag_t tag,
-			      void *data, uint32_t len,
+			      void *data, nm_len_t len,
 			      nm_sr_request_t *p_request)
 {
   nm_sr_recv_init(p_session, p_request);
@@ -340,7 +340,7 @@ static inline int nm_sr_irecv(nm_session_t p_session,
  */
 static inline int nm_sr_irecv_with_ref(nm_session_t p_session,
 				       nm_gate_t p_gate, nm_tag_t tag,
-				       void *data, uint32_t len,
+				       void *data, nm_len_t len,
 				       nm_sr_request_t *p_request,
 				       void *ref)
 {
@@ -451,7 +451,7 @@ extern int nm_sr_recv_source(nm_session_t p_session,
 extern int nm_sr_probe(nm_session_t p_session,
 		       nm_gate_t p_gate, nm_gate_t *p_out_gate,
 		       nm_tag_t tag, nm_tag_t tag_mask, nm_tag_t*p_out_tag,
-		       uint32_t*p_out_len);
+		       nm_len_t*p_out_len);
 
 /** monitors sendrecv events globally */
 extern int nm_sr_monitor(nm_session_t p_session, nm_sr_event_t mask, nm_sr_event_notifier_t notifier);

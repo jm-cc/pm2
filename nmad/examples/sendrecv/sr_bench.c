@@ -63,7 +63,8 @@ static void usage_ping(void) {
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
 }
 
-static void fill_buffer(char *buffer, int len) {
+static void fill_buffer(char *buffer, int len)
+{
   int i = 0;
 
   for (i = 0; i < len; i++) {
@@ -71,7 +72,8 @@ static void fill_buffer(char *buffer, int len) {
   }
 }
 
-static void clear_buffer(char *buffer, int len) {
+static void clear_buffer(char *buffer, int len)
+{
   memset(buffer, 0, len);
 }
 
@@ -151,6 +153,7 @@ int main(int argc, char	**argv)
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
 	  char* buf = malloc(len);
+	  fill_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
 	  double lat = DBL_MAX;
 	  int k;

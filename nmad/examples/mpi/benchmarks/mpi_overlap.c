@@ -4,7 +4,7 @@
 #include <tbx.h>
 
 #define LEN (512 * 1024)
-#define COUNT 20
+#define COUNT 50
 
 static char buffer[LEN];
 
@@ -31,8 +31,9 @@ int main(int argc, char**argv)
 
   int c;
   printf("# computation (usec.) | total time (usec.)\n");
-  for(c = 0; c < 10000; c += 250)
+  for(c = 0; c < 10000; c = 1 + c*1.2)
     {
+      MPI_Barrier(MPI_COMM_WORLD);
       if(self == 0)
 	{
 	  tbx_tick_t t1, t2;

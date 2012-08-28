@@ -96,13 +96,13 @@ int main(int argc, char	**argv)
   
   for(i=1 ; i<argc ; i+=2) {
     if (!strcmp(argv[i], "-S")) {
-      start_len = atoi(argv[i+1]);
+      start_len = atoll(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-E")) {
-      end_len = atoi(argv[i+1]);
+      end_len = atoll(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-I")) {
-      increment = atoi(argv[i+1]);
+      increment = atoll(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-M")) {
       multiplier = atof(argv[i+1]);

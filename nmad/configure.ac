@@ -143,7 +143,18 @@ AC_CHECK_FILE([${puk_root}/etc/common_rules.mk],
 	      [], [ AC_MSG_ERROR([required ${puk_root}/etc/common_rules.mk not found]) ])
 
 dnl -- PukABI
-PKG_CHECK_MODULES([PukABI], [ PukABI ])
+AC_ARG_WITH([pukabi],
+	    [AS_HELP_STRING([--with-pukabi], [use PukABI ABI interceptor @<:@default=yes@>@] )])
+AC_MSG_CHECKING([for PukABI])
+if test "x${with_pukabi}" = "xno"; then
+  AC_MSG_RESULT([no])
+else
+  AC_MSG_RESULT([yes])
+  PKG_CHECK_MODULES([PukABI], [ PukABI ])
+  requires_pukabi="PukABI"
+fi
+AC_SUBST([requires_pukabi])
+AC_SUBST(with_pukabi)
 
 dnl -- PIOMan
 AC_ARG_WITH([pioman],

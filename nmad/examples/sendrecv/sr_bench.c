@@ -77,6 +77,18 @@ static void clear_buffer(char *buffer, nm_len_t len)
   memset(buffer, 0, len);
 }
 
+static int comp_double(const void*_a, const void*_b)
+{
+  const double*a = _a;
+  const double*b = _b;
+  if(*a < *b)
+    return -1;
+  else if(*a > *b)
+    return 1;
+  else
+    return 0;
+}
+
 int main(int argc, char	**argv)
 {
   nm_len_t	 start_len      = MIN_DEFAULT;
@@ -147,6 +159,7 @@ int main(int argc, char	**argv)
       /* client
        */
       tbx_tick_t t1, t2;
+      double*lats = malloc(sizeof(double) * iterations);
       printf("# sr_bench begin\n");
       printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
       nm_len_t	 len;
@@ -155,7 +168,6 @@ int main(int argc, char	**argv)
 	  char* buf = malloc(len);
 	  fill_buffer(buf, len);
 	  iterations = _iterations(iterations, len);
-	  double lat = DBL_MAX;
 	  int k;
 	  for(k = 0; k < iterations; k++)
 	    {
@@ -168,18 +180,27 @@ int main(int argc, char	**argv)
 	      TBX_GET_TICK(t2);
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
-	      if(t < lat)
-		lat = t;
-	    }	  
-	  double bw_million_byte = len / lat;
+	      lats[k] = t;
+	    }
+	  qsort(lats, iterations, sizeof(double), &comp_double);
+	  const double min_lat = lats[0];
+	  const double max_lat = lats[iterations - 1];
+	  const double med_lat = lats[(iterations - 1) / 2];
+	  double avg_lat = 0.0;
+	  for(k = 0; k < iterations; k++)
+	    {
+	      avg_lat += lats[k];
+	    }
+	  avg_lat /= iterations;
+	  double bw_million_byte = len / min_lat;
 	  double bw_mbyte        = bw_million_byte / 1.048576;
 	  
 #ifdef MARCEL
-	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\tmarcel\n",
-		 (long long)len, lat, bw_million_byte, bw_mbyte);
+	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\tmarcel\n",
+		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
 #else
-	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\n",
-		 (long long)len, lat, bw_million_byte, bw_mbyte);
+	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
+		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
 #endif
 	  free(buf);
 	}

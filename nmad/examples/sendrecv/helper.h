@@ -59,3 +59,43 @@ static void nm_examples_exit(void)
 {
   nm_launcher_exit();
 }
+
+/* ********************************************************* */
+
+/* barrier accross all nodes */
+static void nm_examples_barrier(nm_tag_t tag)
+{
+  int i;
+  int rank = -1, size = -1;;
+  nm_launcher_get_rank(&rank);
+  nm_launcher_get_size(&size);
+  if(rank == 0)
+    {
+      for(i = 1; i < size; i++)
+	{
+	  nm_gate_t g;
+	  nm_launcher_get_gate(i, &g);
+	  nm_sr_request_t request;
+	  nm_sr_irecv(p_session, g, tag, NULL, 0, &request);
+	  nm_sr_rwait(p_session, &request);
+	}
+      for(i = 1; i < size; i++)
+	{
+	  nm_gate_t g;
+	  nm_launcher_get_gate(i, &g);
+	  nm_sr_request_t request;
+	  nm_sr_isend(p_session, g, tag, NULL, 0, &request);
+	  nm_sr_swait(p_session, &request);
+	}
+    }
+  else
+    {
+      nm_gate_t g;
+      nm_launcher_get_gate(0, &g);
+      nm_sr_request_t request;
+      nm_sr_isend(p_session, g, tag, NULL, 0, &request);
+      nm_sr_swait(p_session, &request);
+      nm_sr_irecv(p_session, g, tag, NULL, 0, &request);
+      nm_sr_rwait(p_session, &request);
+    }
+}

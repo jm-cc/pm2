@@ -29,6 +29,8 @@
 #define INCR_DEFAULT    0
 #define LOOPS_DEFAULT   100000
 
+const nm_tag_t data_tag = 0x01;
+const nm_tag_t sync_tag = 0x02;
 
 static inline nm_len_t _next(nm_len_t len, double multiplier, nm_len_t increment)
 {
@@ -145,13 +147,14 @@ int main(int argc, char	**argv)
 	    {
 	      nm_sr_request_t request;
 	      
-	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_irecv(p_session, p_gate, data_tag, buf, len, &request);
 	      nm_sr_rwait(p_session, &request);
 	      
-	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_isend(p_session, p_gate, data_tag, buf, len, &request);
 	      nm_sr_swait(p_session, &request);
 	    }
 	  free(buf);
+	  nm_examples_barrier(sync_tag);
 	}
     }
   else 
@@ -173,9 +176,9 @@ int main(int argc, char	**argv)
 	    {
 	      nm_sr_request_t request;
 	      TBX_GET_TICK(t1);
-	      nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_isend(p_session, p_gate, data_tag, buf, len, &request);
 	      nm_sr_swait(p_session, &request);
-	      nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	      nm_sr_irecv(p_session, p_gate, data_tag, buf, len, &request);
 	      nm_sr_rwait(p_session, &request);
 	      TBX_GET_TICK(t2);
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
@@ -203,6 +206,7 @@ int main(int argc, char	**argv)
 		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
 #endif
 	  free(buf);
+	  nm_examples_barrier(sync_tag);
 	}
       printf("# sr_bench end\n");
     }

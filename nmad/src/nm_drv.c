@@ -158,7 +158,8 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 {
 #ifdef PM2_NUIOA
   int preferred_node = PM2_NUIOA_ANY_NODE;
-  int nuioa = (numa_available() >= 0);
+  const char*nuioa_disable = getenv("NMAD_NUIOA_DISABLE");
+  int nuioa = (numa_available() >= 0) && (nuioa_disable == NULL);
   char * nuioa_criteria = getenv("PM2_NUIOA_CRITERIA");
   int nuioa_with_latency = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "latency"));
   int nuioa_with_bandwidth = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "bandwidth"));
@@ -229,37 +230,33 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
 	    }
 	  }
-    }
-#endif /* PM2_NUIOA */
-
-  
-#ifdef PM2_NUIOA
-  if(!nuioa)
-    {
-      NM_DISPF("# nmad: nuioa- NUMA not available\n");
-    }
-  else if(preferred_node ==  PM2_NUIOA_ANY_NODE)
-    {
-      NM_DISPF("# nmad: nuioa- any node. Not binding.\n");
-    }
-  else if(preferred_node == PM2_NUIOA_CONFLICTING_NODES)
-    {
-      NM_DISPF("# nmad: nuioa- conflicting nodes.\n");
+      if(preferred_node ==  PM2_NUIOA_ANY_NODE)
+	{
+	  NM_DISPF("# nmad: nuioa- any node. Not binding.\n");
+	}
+      else if(preferred_node == PM2_NUIOA_CONFLICTING_NODES)
+	{
+	  NM_DISPF("# nmad: nuioa- conflicting nodes.\n");
+	}
+      else
+	{
+#if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
+	  struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
+	  numa_bitmask_setbit(mask, preferred_node);
+	  numa_bind(mask);
+	  numa_bitmask_free(mask);
+#else
+	  nodemask_t mask;
+	  nodemask_zero(&mask);
+	  nodemask_set(&mask, preferred_node);
+	  numa_bind(&mask);
+#endif
+	  NM_DISPF("# nmad: binding to nuioa node %d\n", preferred_node);
+	}
     }
   else
     {
-#if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
-      struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
-      numa_bitmask_setbit(mask, preferred_node);
-      numa_bind(mask);
-      numa_bitmask_free(mask);
-#else
-      nodemask_t mask;
-      nodemask_zero(&mask);
-      nodemask_set(&mask, preferred_node);
-      numa_bind(&mask);
-#endif
-      NM_DISPF("# nmad: binding to nuioa node %d\n", preferred_node);
+      NM_DISPF("# nmad: nuioa- NUMA not available\n");
     }
 #endif /* PM2_NUIOA */
 

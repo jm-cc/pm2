@@ -196,6 +196,13 @@ int nm_so_pw_free(struct nm_pkt_wrap *p_pw)
 
   nmad_lock_assert();
   
+  int i;
+  for(i = 0; i < p_pw->n_completions; i++)
+    {
+      struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
+      (*p_completion->notifier)(p_pw, p_completion);
+    }
+
   if(p_pw->flags & NM_PW_DYNAMIC_V0)
     {
       TBX_FREE(p_pw->v[0].iov_base);

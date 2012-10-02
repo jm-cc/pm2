@@ -152,6 +152,7 @@ int main(int argc, char	**argv)
 	      
 	      nm_sr_isend(p_session, p_gate, data_tag, buf, len, &request);
 	      nm_sr_swait(p_session, &request);
+	      nm_examples_barrier(sync_tag);
 	    }
 	  free(buf);
 	  nm_examples_barrier(sync_tag);
@@ -164,7 +165,7 @@ int main(int argc, char	**argv)
       tbx_tick_t t1, t2;
       double*lats = malloc(sizeof(double) * iterations);
       printf("# sr_bench begin\n");
-      printf("# size |  latency     |   10^6 B/s   |   MB/s    |\n");
+      printf("# size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
       nm_len_t	 len;
       for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
 	{
@@ -184,6 +185,7 @@ int main(int argc, char	**argv)
 	      const double delay = TBX_TIMING_DELAY(t1, t2);
 	      const double t = delay / 2;
 	      lats[k] = t;
+	      nm_examples_barrier(sync_tag);
 	    }
 	  qsort(lats, iterations, sizeof(double), &comp_double);
 	  const double min_lat = lats[0];
@@ -205,6 +207,7 @@ int main(int argc, char	**argv)
 	  printf("%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
 		 (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
 #endif
+	  fflush(stdout);
 	  free(buf);
 	  nm_examples_barrier(sync_tag);
 	}

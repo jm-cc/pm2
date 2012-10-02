@@ -65,7 +65,8 @@
       if(!__sync_bool_compare_and_swap(&queue->_head, head, next))	\
 	goto retry;							\
     /* slot is still NULL for concurrent readers, already reserved if concurrent writers */ \
-    assert(queue->_queue[head] = (LFQUEUE_NULL));			\
+    while(queue->_queue[head] != (LFQUEUE_NULL))			\
+      { __sync_synchronize(); }						\
     /* store value in reserved slot */					\
     queue->_queue[head] = e;						\
     return 0;								\

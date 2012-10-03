@@ -34,8 +34,8 @@ verbose=0
 # libraries and compilers, including ones for 32 and 64 bit systems.
 CC="@CC@"
 CLINKER="@CC@"
-CFLAGS="`pkg-config --cflags nmad`"
-LIBS="`pkg-config --libs nmad` -lmadmpi"
+CFLAGS="@NMAD_CFLAGS@"
+LIBS="@NMAD_LIBS@ -lmadmpi"
 
 #
 #

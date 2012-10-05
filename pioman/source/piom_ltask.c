@@ -262,7 +262,7 @@ static void*__piom_ltask_idle(void*_dummy)
 #endif
 		    usleep(10);
 		}
-	    usleep(1);
+	    usleep(piom_parameters.idle_granularity);
 	}
     return NULL;
 }
@@ -299,19 +299,11 @@ void piom_init_ltasks(void)
 #endif /* PIOMAN_MARCEL */
 
 #ifdef PIOMAN_PTHREAD 
-	    const char*env_piom_enable_progression = getenv("PIOM_ENABLE_PROGRESSION");
-	    const char*env_piom_enable_idle_thread = getenv("PIOM_ENABLE_IDLE_THREAD");
-	    const char*env_piom_enable_sighandler  = getenv("PIOM_ENABLE_SIGHANDLER");
-	    const char*env_piom_enable_lwp         = getenv("PIOM_ENABLE_LWP");
-	    int piom_enable_progression = env_piom_enable_progression ? atoi(env_piom_enable_progression) : 1;
-	    int piom_enable_idle_thread = env_piom_enable_idle_thread ? atoi(env_piom_enable_idle_thread) : piom_enable_progression;
-	    int piom_enable_sighandler  = env_piom_enable_sighandler  ? atoi(env_piom_enable_sighandler) : piom_enable_progression;
-	    int piom_enable_lwp = env_piom_enable_lwp ? atoi(env_piom_enable_lwp) : 0;
 	    /* ** timer-based polling */
-	    if(piom_enable_sighandler)
+	    if(piom_parameters.timer_period > 0)
 		{
 		    const int signal_number = SIGRTMIN + 1;
-		    const long timeslice_nsec = 4 * 1000 * 1000; /* 4 msec. */
+		    const long timeslice_nsec = piom_parameters.timer_period * 1000 * 1000;
 		    sigset_t set;
 		    sigemptyset(&set);
 		    const struct sigaction action =
@@ -338,16 +330,16 @@ void piom_init_ltasks(void)
 		    timer_settime(timer_id, 0, &spec, NULL);
 		}
 	    /* ** idle polling */
-	    if(piom_enable_idle_thread)
+	    if(piom_parameters.idle_granularity >= 0)
 		{
 		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle, NULL);
 		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER)); 
 		}
 	    /* ** spare LWPs for blocking calls */
-	    if(piom_enable_lwp)
+	    if(piom_parameters.spare_lwp)
 		{
-		    __piom_ltask_lwps_num = piom_enable_lwp;
-		    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_enable_lwp);
+		    __piom_ltask_lwps_num = piom_parameters.spare_lwp;
+		    fprintf(stderr, "# pioman: starting %d spare LWPs.\n", piom_parameters.spare_lwp);
 		    sem_init(&__piom_ltask_lwps_ready, 0, 0);
 		    piom_ltask_lfqueue_init(&__piom_ltask_lwps_queue);
 		    int i;

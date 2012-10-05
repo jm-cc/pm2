@@ -13,12 +13,58 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  */
-#include "pioman.h"
+
+#include "piom_private.h"
+
 #include <errno.h>
 
+TBX_INTERNAL struct piom_parameters_s piom_parameters =
+    {
+	.busy_wait_usec     = 5,
+	.enable_progression = 1,
+	.idle_granularity   = 5,
+	.timer_period       = 4,
+	.spare_lwp          = 0
+    };
 
 void pioman_init(int*argc, char**argv)
 {
+    const char*s_busy_wait_usec     = getenv("PIOM_BUSY_WAIT_USEC");
+    const char*s_enable_progression = getenv("PIOM_ENABLE_PROGRESSION");
+    const char*s_idle_granularity   = getenv("PIOM_IDLE_GRANULARITY");
+    const char*s_timer_period       = getenv("PIOM_TIMER_PERIOD");
+    const char*s_spare_lwp          = getenv("PIOM_SPARE_LWP");
+    if(s_busy_wait_usec)
+	{
+	    piom_parameters.busy_wait_usec = atoi(s_busy_wait_usec);
+	    fprintf(stderr, "# pioman: custom PIOM_BUSY_WAIT_USEC = %d\n", piom_parameters.busy_wait_usec);
+	}
+    if(s_enable_progression)
+	{
+	    piom_parameters.enable_progression = atoi(s_enable_progression);
+	    fprintf(stderr, "# pioman: custom PIOM_ENABLE_PROGRESSION = %d\n", piom_parameters.enable_progression);
+	}
+    if(s_idle_granularity)
+	{
+	    piom_parameters.idle_granularity = atoi(s_idle_granularity);
+	    fprintf(stderr, "# pioman: custom PIOM_IDLE_GRANULARITY = %d\n", piom_parameters.idle_granularity);
+	}
+    if(s_timer_period)
+	{
+	    piom_parameters.timer_period = atoi(s_timer_period);
+	    fprintf(stderr, "# pioman: custom PIOM_TIMER_PERIOD = %d\n", piom_parameters.timer_period);
+	}
+    if(piom_parameters.enable_progression == 0)
+	{
+	    piom_parameters.timer_period = -1;
+	    piom_parameters.idle_granularity = -1;
+	}
+    if(s_spare_lwp)
+	{
+	    piom_parameters.spare_lwp = atoi(s_spare_lwp);
+	    fprintf(stderr, "# pioman: custom PIOM_SPARE_LWP = %d\n", piom_parameters.spare_lwp);
+	}
+
 #ifdef PIOMAN_MARCEL
     marcel_init(argc, argv);
 #endif /* PIOMAN_MARCEL */

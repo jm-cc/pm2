@@ -56,14 +56,6 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 
 #if defined(PIOMAN_MULTITHREAD)
 
-/* todo: get a dynamic value here !
- * it could be based on:
- * - application hints
- * - the history of previous request
- * - compiler hints
- */
-/** time to do a busy wait before blocking, in usec. */
-#define PIOMAN_BUSY_WAIT_USEC 5
 /** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
 #define PIOMAN_BUSY_WAIT_LOOP 10000
 
@@ -97,7 +89,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 	{
 	  tbx_tick_t t2;
 	  TBX_GET_TICK(t2);
-	  if(TBX_TIMING_DELAY(t1, t2) > PIOMAN_BUSY_WAIT_USEC)
+	  if(TBX_TIMING_DELAY(t1, t2) > piom_parameters.busy_wait_usec)
 	    busy_wait = 0;
 	}
     }

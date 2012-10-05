@@ -36,5 +36,20 @@ TBX_INTERNAL void piom_init_ltasks(void);
 /** destroy internal structures, stop task execution, etc. */
 TBX_INTERNAL void piom_exit_ltasks(void);
 
+/* todo: get a dynamic value here !
+ * it could be based on:
+ * - application hints
+ * - the history of previous request
+ * - compiler hints
+ */
+
+TBX_INTERNAL struct piom_parameters_s
+{
+    int busy_wait_usec;     /**< time to do a busy wait before blocking, in usec; default: 5 */
+    int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
+    int idle_granularity;   /**< in usec. */
+    int timer_period;       /**< period for timer-based polling (in msec); default: 4*/
+    int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
+} piom_parameters;
 
 #endif /* PIOM_PRIVATE_H */

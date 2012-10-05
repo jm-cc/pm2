@@ -64,5 +64,5 @@ elif [ $# = 1 ]; then
     esac
 fi
 
-exec padico-launch ${args} "$@"
+exec @nmad_root@/bin/padico-launch -q ${args} "$@"
 

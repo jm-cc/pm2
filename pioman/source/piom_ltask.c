@@ -18,8 +18,7 @@
 #include <signal.h>
 #include <time.h>
 
-#include <pioman.h>
-#include "piom_lfqueue.h"
+#include "piom_private.h"
 
 #define PIOM_MAX_LTASK 256
 

@@ -17,8 +17,6 @@
 #ifndef PIOM_LTASK_H
 #define PIOM_LTASK_H
 
-#include "pioman.h"
-
 #ifdef PIOMAN_MARCEL
 #define piom_vpset_t marcel_vpset_t
 #define piom_vpset_full MARCEL_VPSET_FULL
@@ -75,12 +73,6 @@ struct piom_ltask
     return 1 if running, 0 otherwise  */
 extern int piom_ltask_test_activity(void);
 
-/** initialize ltask system */
-extern void piom_init_ltasks(void);
-
-/** destroy internal structures, stop task execution, etc. */
-extern void piom_exit_ltasks(void);
-
 /** submit a task
  * Beyond this point, the task may be scheduled at any time
  */
@@ -102,10 +94,6 @@ extern void piom_ltask_wait(struct piom_ltask *task);
  */
 extern void piom_ltask_cancel(struct piom_ltask*task);
 
-/** Try to schedule a task
- * Returns the task that have been scheduled (or NULL if no task)
- */
-extern void *piom_ltask_schedule(void);
 
 /** Notify task completion. */
 static inline void piom_ltask_completed(struct piom_ltask *task)

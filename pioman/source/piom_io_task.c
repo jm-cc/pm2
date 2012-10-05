@@ -17,7 +17,7 @@
 /* TODO: use poll instead of select */
 
 
-#include "pioman.h"
+#include "piom_private.h"
 
 #ifdef MARCEL
 #include "marcel.h"

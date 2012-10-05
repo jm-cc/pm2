@@ -402,7 +402,7 @@ int nm_core_driver_exit(struct nm_core *p_core)
   nm_unlock_interface(p_core);
 
 #if(defined(PIOMAN))
-  piom_exit_ltasks();
+  pioman_exit();
 #endif
 
   return err;

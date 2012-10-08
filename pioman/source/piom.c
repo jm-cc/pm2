@@ -27,8 +27,13 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.spare_lwp          = 0
     };
 
+static int piom_init_done = 0;
+
 void pioman_init(int*argc, char**argv)
 {
+    piom_init_done++;
+    if(piom_init_done > 1)
+	return;
     const char*s_busy_wait_usec     = getenv("PIOM_BUSY_WAIT_USEC");
     const char*s_enable_progression = getenv("PIOM_ENABLE_PROGRESSION");
     const char*s_idle_granularity   = getenv("PIOM_IDLE_GRANULARITY");
@@ -74,10 +79,15 @@ void pioman_init(int*argc, char**argv)
 
 void pioman_exit(void)
 {
-    /*
-      piom_io_task_stop();
-    */
-    piom_exit_ltasks();
+    assert(piom_init_done);
+    piom_init_done--;
+    if(piom_init_done == 0)
+	{
+	    /*
+	      piom_io_task_stop();
+	    */
+	    piom_exit_ltasks();
+	}
 }
 
 /** Polling point. May be called from the application to force polling,

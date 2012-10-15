@@ -113,24 +113,21 @@ typedef struct MPI_Status_s MPI_Status;
 #define MPI_STATUSES_IGNORE	(MPI_Status *)0
 /* @} */
 
+
 /** @name Communication request for a non blocking communication. */
 /* @{ */
-/** Size of a request handle for the Fortran interface */
-#define MPI_REQUEST_SIZE        4
 
 /** Request handle */
-struct MPI_Request_s{
-  char request[272];
-};
-
-/** Request handle */
-typedef struct MPI_Request_s MPI_Request;
+typedef int MPI_Request;
 
 /** The special value MPI_REQUEST_NULL is used to indicate an invalid
  *  request handle.
  */
-#define MPI_REQUEST_NULL   ((MPI_Request){{'\0'}})
+#define MPI_REQUEST_NULL   ((MPI_Request) -1)
+
+
 /* @} */
+
 
 /** Group handle */
 typedef int MPI_Group;
@@ -245,7 +242,7 @@ typedef int MPI_Errhandler;
 /* @}*/
 
 /* Programs that need to convert types used in MPICH should use these */
-typedef int MPI_Fint; 
+typedef int MPI_Fint;
 #define MPI_Comm_c2f(comm) (MPI_Fint)(comm)
 #define MPI_Comm_f2c(comm) (MPI_Comm)(comm)
 #define MPI_Type_c2f(datatype) (MPI_Fint)(datatype)
@@ -254,8 +251,8 @@ typedef int MPI_Fint;
 #define MPI_Group_f2c(group) (MPI_Group)(group)
 #define MPI_Info_c2f(info) (MPI_Fint)(info)
 #define MPI_Info_f2c(info) (MPI_Info)(info)
-#define MPI_Request_f2c(request) (MPI_Request)(request)
-#define MPI_Request_c2f(request) (MPI_Fint)(request)
+#define MPI_Request_c2f(req) (MPI_Fint)(req)
+#define MPI_Request_f2c(req) (MPI_Request)(req)
 #define MPI_Op_c2f(op) (MPI_Fint)(op)
 #define MPI_Op_f2c(op) (MPI_Op)(op)
 

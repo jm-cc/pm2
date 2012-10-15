@@ -32,6 +32,70 @@ static mpir_internal_data_t mpir_internal_data;
 
 #define MAX_ARG_LEN 64
 
+#define PREALLOCATED_MPI_REQUEST 1024
+
+/** allocator for MPI_Request */
+static p_tbx_memory_t mpir_request_mem;
+/** converts Fortran MPI_Fint into C MPI_Request  */
+static mpir_request_t** mpir_request_array;
+/** size of the f_to_c_array */
+static  uint32_t mpir_request_array_size;
+
+static void mpir_request_init()
+{
+  tbx_malloc_init(&mpir_request_mem, sizeof(mpir_request_t),
+		  PREALLOCATED_MPI_REQUEST, "MPI requests");
+  mpir_request_array = calloc(PREALLOCATED_MPI_REQUEST, sizeof(mpir_request_t *));
+  mpir_request_array_size = PREALLOCATED_MPI_REQUEST;
+}
+
+static void mpir_request_get_new_id(mpir_request_t *req)
+{
+  /* todo: make this function thread-safe */
+  int i;
+  for(i=0; i<mpir_request_array_size; i++) {
+    if(mpir_request_array[i] == NULL) {
+      goto found;
+    }
+  }
+
+  /* there's no free spot in the array. expand it. */
+
+  void* ptr = realloc(mpir_request_array, mpir_request_array_size*2);
+  if(!ptr) {
+    ERROR("<_mpir_request_get_new_id> realloc failed");
+  }
+  mpir_request_array = ptr;
+  mpir_request_array_size *= 2;
+
+  int j;
+  for(j=i; j<mpir_request_array_size; j++)
+    mpir_request_array[j] = NULL;
+
+ found:
+  mpir_request_array[i] = req;
+  req->request_id = i;
+  return;
+}
+
+static mpir_request_t * mpir_request_alloc()
+{
+  mpir_request_t * req = tbx_malloc(mpir_request_mem);
+  mpir_request_get_new_id(req);
+  return req;
+}
+
+static void mpir_request_free(mpir_request_t* req)
+{
+  mpir_request_array[req->request_id] = NULL;
+  tbx_free(mpir_request_mem, req);
+}
+
+static mpir_request_t * mpir_request_find(MPI_Fint req_id)
+{
+  return mpir_request_array[req_id];
+}
+
 #if defined NMAD_FORTRAN_TARGET_GFORTRAN
 /* GFortran iargc/getargc bindings
  */
@@ -77,57 +141,6 @@ int mpi_init_() {
 #ifndef NMAD_FORTRAN_TARGET_NONE
 /* Alias Fortran
  */
-
-/** a cell to map Fortran requests to C MPI_Request */
-struct mpir_freq_s
-{
-  MPI_Fint req_id;
-  MPI_Request request;
-  struct tbx_fast_list_head _link;
-};
-
-/** list of all pending Fortran requests */
-static TBX_FAST_LIST_HEAD(_mpir_req_list);
-
-static struct mpir_freq_s*mpir_freq_alloc(void)
-{
-  static MPI_Fint next_id = 0;
-  struct mpir_freq_s*req = TBX_MALLOC(sizeof(struct mpir_freq_s));
-  req->req_id = next_id++;
-  TBX_INIT_FAST_LIST_HEAD(&req->_link);
-  tbx_fast_list_add(&req->_link, &_mpir_req_list);
-  return req;
-}
-
-static void mpir_freq_free(struct mpir_freq_s*req)
-{
-  tbx_fast_list_del_init(&req->_link);
-  TBX_FREE(req);
-}
-
-static struct mpir_freq_s*mpir_freq_find(MPI_Fint req_id)
-{
-  struct mpir_freq_s *req = NULL;
-  tbx_fast_list_for_each_entry(req, &_mpir_req_list, _link)
-    {
-      if (req->req_id == req_id)
-	return req;
-    }
-  return NULL;
-}
-
-#if 0
-extern MPI_Fint MPI_Request_c2f(MPI_Request c_request)
-{
-  /* TODO */
-  return -1;
-}
-MPI_Request MPI_Request_f2c(MPI_Fint f_request)
-{
-  /* TODO */
-  return MPI_REQUEST_NULL;
-}
-#endif
 
 /**
  * Fortran version for MPI_INIT_THREAD
@@ -227,10 +240,9 @@ void mpi_isend_(void *buffer,
                 int *comm,
                 int *request,
                 int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_alloc();
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Isend(buffer, *count, *datatype, *dest, *tag, *comm, p_request);
-  *request = req->req_id;
+  MPI_Request c_request;
+  *ierr = MPI_Isend(buffer, *count, *datatype, *dest, *tag, *comm, &c_request);
+  *request = c_request;
 }
 
 /**
@@ -290,10 +302,9 @@ void mpi_irecv_(void *buffer,
                 int *comm,
                 int *request,
                 int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_alloc();
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Irecv(buffer, *count, *datatype, *source, *tag, *comm, p_request);
-  *request = req->req_id;
+  MPI_Request c_request;
+  *ierr = MPI_Irecv(buffer, *count, *datatype, *source, *tag, *comm, &c_request);
+  *request = c_request;
 }
 
 /**
@@ -389,9 +400,7 @@ void mpi_wait_(int *request,
                int *status,
                int *ierr) {
   MPI_Status _status;
-  struct mpir_freq_s*req = mpir_freq_find(*request);
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Wait(p_request, &_status);
+  *ierr = MPI_Wait(request, &_status);
   if (*status) {
     status[0] = _status.MPI_SOURCE;
     status[1] = _status.MPI_TAG;
@@ -411,20 +420,15 @@ void mpi_waitall_(int *count,
 
   if ((MPI_Status *)array_of_statuses == MPI_STATUSES_IGNORE) {
     for (i = 0; i < *count; i++) {
-      struct mpir_freq_s*req = mpir_freq_find(array_of_requests[i]);
-      MPI_Request *p_request = &req->request;
-        err =  MPI_Wait(p_request, MPI_STATUS_IGNORE);
-	mpir_freq_free(req);
-        if (err != NM_ESUCCESS)
-          goto out;
+      err =  MPI_Wait(&array_of_requests[i], MPI_STATUS_IGNORE);
+      if (err != NM_ESUCCESS)
+	goto out;
     }
   }
   else {
     for (i = 0; i < *count; i++) {
       MPI_Status _status;
-      struct mpir_freq_s*req = mpir_freq_find(array_of_requests[i]);
-      MPI_Request *p_request = &req->request;
-      err =  MPI_Wait(p_request, &_status);
+      err =  MPI_Wait(&array_of_requests[i], &_status);
       if (*(array_of_statuses[i])) {
 	array_of_statuses[i][0] = _status.MPI_SOURCE;
 	array_of_statuses[i][1] = _status.MPI_TAG;
@@ -454,14 +458,12 @@ void mpi_waitany_(int *count,
   while(1) {
     count_null = 0;
     for (i = 0; i < *count; i++) {
-      struct mpir_freq_s*req = mpir_freq_find(request[i]);
-      MPI_Request *p_request = &req->request;
-      mpir_request_t *mpir_request = (mpir_request_t *)(&request);
+      mpir_request_t *mpir_request = mpir_request_find(request[i]);
       if (mpir_request->request_type == MPI_REQUEST_ZERO) {
         count_null ++;
       }
       else {
-        MPI_Test(p_request, &flag, &_status);
+        MPI_Test(&request[i], &flag, &_status);
         if (flag) {
 
           mpir_request->request_type = MPI_REQUEST_ZERO;
@@ -494,9 +496,7 @@ void mpi_test_(int *request,
                int *status,
                int *ierr) {
   MPI_Status _status;
-  struct mpir_freq_s*req = mpir_freq_find(*request);
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Test(p_request, flag, &_status);
+  *ierr = MPI_Test(request, flag, &_status);
   if (*ierr != MPI_SUCCESS)
     return;
   if (*status) {
@@ -504,7 +504,6 @@ void mpi_test_(int *request,
     status[1] = _status.MPI_TAG;
     status[2] = _status.MPI_ERROR;
   }
-  mpir_freq_free(req);
 }
 
 /**
@@ -521,14 +520,12 @@ void mpi_testany_(int *count,
   MPI_Status _status;
 
   for (i = 0; i < *count; i++) {
-    struct mpir_freq_s*req = mpir_freq_find(array_of_requests[i]);
-    MPI_Request *p_request = &req->request;
-    mpir_request_t *mpir_request = (mpir_request_t *)p_request;
+    mpir_request_t *mpir_request = mpir_request_find(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_null ++;
     }
     else {
-      err = MPI_Test(p_request, &_flag, &_status);
+      err = MPI_Test(&array_of_requests[i], &_flag, &_status);
       if (_flag) {
         *rqindex = i;
         *flag = _flag;
@@ -593,9 +590,7 @@ void mpi_probe_(int *source,
  */
 void mpi_cancel_(int *request,
 		 int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_find(*request);
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Cancel(p_request);
+  *ierr = MPI_Cancel(request);
 }
 
 /**
@@ -603,10 +598,9 @@ void mpi_cancel_(int *request,
  */
 void mpi_request_free_(int *request,
 		       int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_find(*request);
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Request_free(p_request);
-  mpir_freq_free(req);
+  mpir_request_t* p_request = mpir_request_find(*request);
+  *ierr = MPI_Request_free(request);
+  mpir_request_free(p_request);
 }
 
 /**
@@ -634,10 +628,7 @@ void mpi_send_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_alloc();
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Send_init(buf, *count, *datatype, *dest, *tag, *comm, p_request);
-  *request = req->req_id;
+  *ierr = MPI_Send_init(buf, *count, *datatype, *dest, *tag, *comm, request);
 }
 
 /**
@@ -651,10 +642,7 @@ void mpi_recv_init_(void* buf,
 		    int *comm,
 		    int *request,
 		    int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_alloc();
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Recv_init(buf, *count, *datatype, *source, *tag, *comm, p_request);
-  *request = req->req_id;
+  *ierr = MPI_Recv_init(buf, *count, *datatype, *source, *tag, *comm, request);
 }
 
 /**
@@ -662,9 +650,7 @@ void mpi_recv_init_(void* buf,
  */
 void mpi_start_(int *request,
 		int *ierr) {
-  struct mpir_freq_s*req = mpir_freq_find(*request);
-  MPI_Request *p_request = &req->request;
-  *ierr = MPI_Start(p_request);
+  *ierr = MPI_Start(request);
 }
 
 /**
@@ -675,9 +661,7 @@ void mpi_startall_(int *count,
 		   int *ierr) {
   int i;
   for (i = 0; i < *count; i++) {
-    struct mpir_freq_s*req = mpir_freq_find(array_of_requests[i]);
-    MPI_Request *p_request = &req->request;
-    *ierr = MPI_Start(p_request);
+    *ierr = MPI_Start(&array_of_requests[i]);
     if (*ierr != MPI_SUCCESS) {
       return;
     }
@@ -1201,20 +1185,6 @@ int MPI_Init(int *argc,
 
   MPI_NMAD_LOG_IN();
 
-  /*
-   * Check size of opaque type MPI_Request is the same as the size of
-   * our internal request type
-   */
-  MPI_NMAD_TRACE("sizeof(mpir_request_t) = %ld\n", (long)sizeof(mpir_request_t));
-  MPI_NMAD_TRACE("sizeof(MPI_Request) = %ld\n", (long)sizeof(MPI_Request));
-  if(sizeof(mpir_request_t) > sizeof(MPI_Request))
-    {
-      fprintf(stderr, "mpi: sizeof(mpir_request_t) = %zd\n", sizeof(mpir_request_t));
-      fprintf(stderr, "mpi: sizeof(MPI_Request) = %zd\n", sizeof(MPI_Request));
-      fprintf(stderr, "mpi: assertion sizeof(mpir_request_t) <= sizeof(MPI_Request) failed.\n");
-      abort();
-    }
-
   nm_launcher_init(argc, *argv);
 
   /*
@@ -1222,6 +1192,7 @@ int MPI_Init(int *argc,
    */
   ret = mpir_internal_init(&mpir_internal_data);
 
+  mpir_request_init();
   MPI_NMAD_LOG_OUT();
   return ret;
 }
@@ -1503,9 +1474,8 @@ int MPI_Send(void *buffer,
              int dest,
              int tag,
              MPI_Comm comm) {
-  MPI_Request           request;
-  MPI_Request          *request_ptr = &request;
-  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_request_t       *mpir_request = mpir_request_alloc();
+  MPI_Request           request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
   int                   err = 0;
 
@@ -1544,7 +1514,8 @@ int MPI_Isend(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_alloc();
+  *request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
   int err;
 
@@ -1580,9 +1551,8 @@ int MPI_Rsend(void* buffer,
               int dest,
               int tag,
               MPI_Comm comm) {
-  MPI_Request           request;
-  MPI_Request          *request_ptr = &request;
-  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_request_t       *mpir_request = mpir_request_alloc();
+  MPI_Request           request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
   int                   err = 0;
 
@@ -1620,9 +1590,7 @@ int MPI_Ssend(void* buffer,
               int dest,
               int tag,
               MPI_Comm comm) {
-  MPI_Request           request;
-  MPI_Request          *request_ptr = &request;
-  mpir_request_t       *mpir_request = (mpir_request_t *)request_ptr;
+  mpir_request_t       *mpir_request = mpir_request_alloc();
   mpir_communicator_t  *mpir_communicator;
   int                   err = 0;
 
@@ -1683,10 +1651,10 @@ int MPI_Recv(void *buffer,
              int tag,
              MPI_Comm comm,
              MPI_Status *status) {
-  MPI_Request           request;
-  mpir_request_t       *mpir_request = (mpir_request_t *)&request;
+  mpir_request_t       *mpir_request = mpir_request_alloc();
+  MPI_Request           request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
-  int                  err = 0;
+  int                   err = 0;
 
   MPI_NMAD_LOG_IN();
   MPI_NMAD_TRACE("Receiving message from %d of datatype %d with tag %d, count %d\n", source, datatype, tag, count);
@@ -1724,7 +1692,8 @@ int MPI_Irecv(void *buffer,
               int tag,
               MPI_Comm comm,
               MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_alloc();
+  *request = mpir_request->request_id;
   mpir_communicator_t *mpir_communicator;
   int err;
 
@@ -1806,7 +1775,7 @@ int MPI_Unpack(void* inbuf,
 
 int MPI_Wait(MPI_Request *request,
 	     MPI_Status *status) {
-  mpir_request_t  *mpir_request = (mpir_request_t *)request;
+  mpir_request_t  *mpir_request = mpir_request_find(*request);
   int                       err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
@@ -1828,6 +1797,8 @@ int MPI_Wait(MPI_Request *request,
   if (mpir_request->request_datatype > MPI_PACKED) {
     err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
   }
+
+  mpir_request_free(mpir_request);
 
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
@@ -1874,7 +1845,7 @@ int MPI_Waitany(int count,
   while (1) {
     count_null = 0;
     for(i=0 ; i<count ; i++) {
-      mpir_request_t *mpir_request = (mpir_request_t *)(&(array_of_requests[i]));
+      mpir_request_t *mpir_request = mpir_request_find(array_of_requests[i]);
       if (mpir_request->request_type == MPI_REQUEST_ZERO) {
         count_null++;
         continue;
@@ -1898,7 +1869,7 @@ int MPI_Waitany(int count,
 int MPI_Test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_find(*request);
   int             err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
@@ -1943,7 +1914,7 @@ int MPI_Testany(int count,
   MPI_NMAD_LOG_IN();
 
   for(i=0 ; i<count ; i++) {
-    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    mpir_request = mpir_request_find(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
@@ -1981,7 +1952,7 @@ int MPI_Testall(int count,
    * modified.
    */
   for(i=0 ; i<count ; i++) {
-    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    mpir_request = mpir_request_find(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
@@ -1998,7 +1969,7 @@ int MPI_Testall(int count,
 
   /* all the requests are completed */
   for(i=0 ; i<count ; i++) {
-    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    mpir_request = mpir_request_find(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
@@ -2035,7 +2006,7 @@ int MPI_Testsome(int count,
   *outcount = 0;
 
   for(i=0 ; i<count ; i++) {
-    mpir_request = (mpir_request_t *)&(array_of_requests[i]);
+    mpir_request = mpir_request_find(array_of_requests[i]);
     if (mpir_request->request_type == MPI_REQUEST_ZERO) {
       count_inactive++;
       continue;
@@ -2124,7 +2095,7 @@ int MPI_Probe(int source,
 }
 
 int MPI_Cancel(MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_find(*request);
   int             err = NM_ESUCCESS;
 
   MPI_NMAD_LOG_IN();
@@ -2142,7 +2113,7 @@ int MPI_Cancel(MPI_Request *request) {
 }
 
 int MPI_Request_free(MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_find(*request);
 
   MPI_NMAD_LOG_IN();
   mpir_request->request_type = MPI_REQUEST_ZERO;
@@ -2150,6 +2121,7 @@ int MPI_Request_free(MPI_Request *request) {
   if (mpir_request->contig_buffer != NULL) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);
   }
+  mpir_request_free(mpir_request);
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
@@ -2166,8 +2138,8 @@ int MPI_Get_count(MPI_Status *status,
 
 int MPI_Request_is_equal(MPI_Request request1,
 			 MPI_Request request2) {
-  mpir_request_t *mpir_request1 = (mpir_request_t *)(&request1);
-  mpir_request_t *mpir_request2 = (mpir_request_t *)(&request2);
+  mpir_request_t *mpir_request1 = mpir_request_find(request1);
+  mpir_request_t *mpir_request2 = mpir_request_find(request2);
   if (mpir_request1->request_type == MPI_REQUEST_ZERO) {
     return (mpir_request1->request_type == mpir_request2->request_type);
   }
@@ -2186,7 +2158,8 @@ int MPI_Send_init(void* buf,
                   int tag,
                   MPI_Comm comm,
                   MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_alloc();
+  *request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
   int err;
 
@@ -2223,7 +2196,8 @@ int MPI_Recv_init(void* buf,
                   int tag,
                   MPI_Comm comm,
                   MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_alloc();
+  *request = mpir_request->request_id;
   mpir_communicator_t  *mpir_communicator;
   int err;
 
@@ -2253,7 +2227,7 @@ int MPI_Recv_init(void* buf,
 }
 
 int MPI_Start(MPI_Request *request) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
+  mpir_request_t *mpir_request = mpir_request_find(*request);
   int err;
 
   MPI_NMAD_LOG_IN();

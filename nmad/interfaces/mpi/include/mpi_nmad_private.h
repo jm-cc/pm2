@@ -104,6 +104,8 @@ typedef int MPI_Request_type;
 
 /** Internal communication request */
 typedef struct mpir_request_s {
+  /* identifier of the request */
+  uint32_t request_id;
   /** type of the request */
   MPI_Request_type request_type;
   /** persistent type of the request */

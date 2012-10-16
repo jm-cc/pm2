@@ -16,10 +16,10 @@ INSTALL_PREFIX := @nmad_root@
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
 CC       := @nmad_root@/bin/mpicc
-CFLAGS   := 
+CFLAGS   := $(shell pkg-config --cflags tbx)
 LD       := $(CC)
 LDFLAGS  :=
-LIBS     := -lm
+LIBS     := -lm $(shell pkg-config --libs tbx)
 CC_DEP   := $(CC) -MM
 
 include @puk_root@/etc/common_rules.mk

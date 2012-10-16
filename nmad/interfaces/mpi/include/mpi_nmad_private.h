@@ -294,7 +294,7 @@ int mpir_isend(mpir_internal_data_t *mpir_internal_data,
  * Sets the status based on a given request.
  */
 int mpir_set_status(mpir_internal_data_t *mpir_internal_data,
-		    MPI_Request *request,
+		    mpir_request_t *request,
 		    MPI_Status *status);
 
 /**

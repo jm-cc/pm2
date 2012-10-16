@@ -1783,7 +1783,7 @@ int MPI_Wait(MPI_Request *request,
   err = mpir_wait(&mpir_internal_data, mpir_request);
 
   if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(&mpir_internal_data, request, status);
+      err = mpir_set_status(&mpir_internal_data, mpir_request, status);
   }
 
   if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {
@@ -1879,7 +1879,7 @@ int MPI_Test(MPI_Request *request,
     *flag = 1;
 
     if (status != MPI_STATUS_IGNORE) {
-      err = mpir_set_status(&mpir_internal_data, request, status);
+      err = mpir_set_status(&mpir_internal_data, mpir_request, status);
     }
 
     if (mpir_request->request_persistent_type == MPI_REQUEST_ZERO) {

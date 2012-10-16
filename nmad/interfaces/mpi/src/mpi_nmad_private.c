@@ -750,9 +750,8 @@ int mpir_isend(mpir_internal_data_t *mpir_internal_data,
 }
 
 int mpir_set_status(mpir_internal_data_t *mpir_internal_data,
-		    MPI_Request *request,
+		    mpir_request_t *mpir_request,
 		    MPI_Status *status) {
-  mpir_request_t *mpir_request = (mpir_request_t *)request;
   int err = MPI_SUCCESS;
 
   status->MPI_TAG = mpir_request->user_tag;
@@ -1124,6 +1123,8 @@ mpir_datatype_t* mpir_get_datatype(mpir_internal_data_t *mpir_internal_data,
     }
   }
   else {
+    fprintf(stderr, "Datatype %d unknown", datatype);
+    *(int*)0=0;
     ERROR("Datatype %d unknown", datatype);
     return NULL;
   }

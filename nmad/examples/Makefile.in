@@ -25,20 +25,23 @@ include @puk_root@/etc/common_rules.mk
 #
 check: tests
 
-TESTS_RESULTS := @nmad_builddir@/.test-results
-CLEAN_MORE += $(TESTS_RESULTS)
+
 -include $(TESTS_RESULTS)
 
 tests:
-	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
-	$(Q)echo "# automatically generated tests results" > $(TESTS_RESULTS)
-	$(Q)echo "TESTS_SUCCESS = "                       >> $(TESTS_RESULTS)
-	$(Q)echo "TESTS_FAILED = "                        >> $(TESTS_RESULTS)
-	$(Q)( for d in $(EXAMPLE_DIRS); do \
-                echo "  [TESTS]  in $$d/"; \
-                $(MAKE) -C $$d tests TESTS_RESULTS=$(TESTS_RESULTS) ; \
-              done )
-	$(Q)$(MAKE) show-tests-results
+	@( \
+          TESTS_RESULTS=`tempfile -p nmad-` ; \
+	  echo "# automatically generated tests results" > $${TESTS_RESULTS} ; \
+	  echo "TESTS_SUCCESS = "                       >> $${TESTS_RESULTS} ; \
+	  echo "TESTS_FAILED = "                        >> $${TESTS_RESULTS} ; \
+	  for d in $(EXAMPLE_DIRS); do \
+              echo "  [TESTS]  in $$d/"; \
+              $(MAKE) -C $$d tests TESTS_RESULTS=$${TESTS_RESULTS} ; \
+          done ; \
+          $(MAKE) show-tests-results TESTS_RESULTS=$${TESTS_RESULTS} ; \
+	  /bin/rm $${TESTS_RESULTS} 2> /dev/null \
+	)
+
 
 show-tests-results:
 	@echo
@@ -59,7 +62,7 @@ BENCH_RESULTS := @nmad_builddir@/.bench-results
 CLEAN_MORE += $(BENCH_RESULTS)
 
 bench:
-	@-/bin/rm @nmad_builddir@/.test-results 2> /dev/null
+	@-/bin/rm $(BENCH_RESULTS) 2> /dev/null
 	$(Q)echo "# automatically generated tests results" > $(BENCH_RESULTS)
 	$(Q)( for d in $(EXAMPLE_DIRS); do \
                 echo "  [BENCH]  in $$d/"; \

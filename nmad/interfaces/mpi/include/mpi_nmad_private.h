@@ -612,6 +612,404 @@ nm_tag_t mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
 tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
 				 MPI_Comm comm);
 
+/* Internal symbols for MPI functions */
+int mpi_issend(void* buf,
+	       int count,
+	       MPI_Datatype datatype,
+	       int dest,
+               int tag,
+	       MPI_Comm comm,
+	       MPI_Request *request);
+
+int mpi_waitsome(int incount,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *array_of_indices,
+		 MPI_Status *array_of_statuses);
+
+int mpi_init(int *argc,
+             char ***argv);
+
+int mpi_init_thread(int *argc,
+                    char ***argv,
+                    int required TBX_UNUSED,
+                    int *provided);
+
+int mpi_initialized(int *flag);
+
+int mpi_finalize(void);
+
+int mpi_abort(MPI_Comm comm TBX_UNUSED,
+	      int errorcode);
+
+int mpi_comm_size(MPI_Comm comm,
+		  int *size);
+
+int mpi_comm_rank(MPI_Comm comm,
+                  int *rank);
+
+int mpi_attr_get(MPI_Comm comm,
+		 int keyval,
+		 void *attr_value,
+		 int *flag );
+int mpi_get_processor_name(char *name,
+			   int *resultlen);
+
+double mpi_wtime(void);
+
+double mpi_wtick(void);
+
+int mpi_error_string(int errorcode,
+		     char *string,
+		     int *resultlen);
+
+int mpi_errhandler_set(MPI_Comm comm,
+		       MPI_Errhandler errhandler);
+
+int mpi_get_version(int *version,
+		    int *subversion);
+
+int mpi_bsend(void *buffer,
+	      int count,
+	      MPI_Datatype datatype,
+	      int dest,
+	      int tag,
+	      MPI_Comm comm);
+
+int mpi_send(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int dest,
+             int tag,
+             MPI_Comm comm);
+
+int mpi_isend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request);
+
+int mpi_rsend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm);
+
+int mpi_ssend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm);
+
+int mpi_pack(void* inbuf,
+             int incount,
+             MPI_Datatype datatype,
+             void *outbuf,
+             int outsize,
+             int *position,
+             MPI_Comm comm);
+
+int mpi_recv(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int source,
+             int tag,
+             MPI_Comm comm,
+             MPI_Status *status);
+
+int mpi_irecv(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request);
+
+int mpi_sendrecv(void *sendbuf,
+                 int sendcount,
+                 MPI_Datatype sendtype,
+                 int dest,
+                 int sendtag,
+                 void *recvbuf,
+                 int recvcount,
+                 MPI_Datatype recvtype,
+                 int source,
+                 int recvtag,
+                 MPI_Comm comm,
+                 MPI_Status *status);
+
+int mpi_unpack(void* inbuf,
+               int insize,
+               int *position,
+               void *outbuf,
+               int outcount,
+               MPI_Datatype datatype,
+               MPI_Comm comm);
+
+int mpi_wait(MPI_Request *request,
+	     MPI_Status *status);
+
+int mpi_waitall(int count,
+		MPI_Request *array_of_requests,
+		MPI_Status *array_of_statuses);
+
+int mpi_waitany(int count,
+                MPI_Request *array_of_requests,
+                int *rqindex,
+                MPI_Status *status);
+
+int mpi_test(MPI_Request *request,
+             int *flag,
+             MPI_Status *status);
+
+int mpi_testany(int count,
+                MPI_Request *array_of_requests,
+                int *rqindex,
+                int *flag,
+                MPI_Status *status);
+
+int mpi_testall(int count,
+		MPI_Request *array_of_requests,
+		int *flag,
+		MPI_Status *statuses);
+
+int mpi_testsome(int count,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *indices,
+		 MPI_Status *statuses);
+
+int mpi_iprobe(int source,
+               int tag,
+               MPI_Comm comm,
+               int *flag,
+               MPI_Status *status);
+
+int mpi_probe(int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Status *status);
+
+int mpi_cancel(MPI_Request *request);
+
+int mpi_request_free(MPI_Request *request);
+
+int mpi_get_count(MPI_Status *status,
+                  MPI_Datatype datatype TBX_UNUSED,
+                  int *count);
+
+int mpi_request_is_equal(MPI_Request request1,
+			 MPI_Request request2);
+
+int mpi_send_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int dest,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request);
+
+int mpi_recv_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int source,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request);
+
+int mpi_start(MPI_Request *request);
+
+int mpi_startall(int count,
+                 MPI_Request *array_of_requests);
+
+int mpi_barrier(MPI_Comm comm);
+
+int mpi_bcast(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int root,
+              MPI_Comm comm);
+
+int mpi_gather(void *sendbuf,
+               int sendcount,
+               MPI_Datatype sendtype,
+               void *recvbuf,
+               int recvcount,
+               MPI_Datatype recvtype,
+               int root,
+               MPI_Comm comm);
+
+int mpi_gatherv(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int *recvcounts,
+                int *displs,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm);
+
+int mpi_allgather(void *sendbuf,
+                  int sendcount,
+                  MPI_Datatype sendtype,
+                  void *recvbuf,
+                  int recvcount,
+                  MPI_Datatype recvtype,
+                  MPI_Comm comm);
+
+int mpi_allgatherv(void *sendbuf,
+                   int sendcount,
+                   MPI_Datatype sendtype,
+                   void *recvbuf,
+                   int *recvcounts,
+                   int *displs,
+                   MPI_Datatype recvtype,
+                   MPI_Comm comm);
+
+int mpi_scatter(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int recvcount,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm);
+
+int mpi_alltoall(void* sendbuf,
+		 int sendcount,
+		 MPI_Datatype sendtype,
+		 void *recvbuf,
+		 int recvcount,
+		 MPI_Datatype recvtype,
+		 MPI_Comm comm);
+
+int mpi_alltoallv(void* sendbuf,
+		  int *sendcounts,
+		  int *sdispls,
+		  MPI_Datatype sendtype,
+		  void *recvbuf,
+		  int *recvcounts,
+		  int *rdispls,
+		  MPI_Datatype recvtype,
+		  MPI_Comm comm);
+
+int mpi_op_create(MPI_User_function *function,
+                  int commute,
+                  MPI_Op *op);
+
+int mpi_op_free(MPI_Op *op);
+
+int mpi_reduce(void* sendbuf,
+               void* recvbuf,
+               int count,
+               MPI_Datatype datatype,
+               MPI_Op op,
+               int root,
+               MPI_Comm comm);
+
+int mpi_allreduce(void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  MPI_Datatype datatype,
+                  MPI_Op op,
+                  MPI_Comm comm);
+
+int mpi_reduce_scatter(void *sendbuf,
+                       void *recvbuf,
+                       int *recvcounts,
+                       MPI_Datatype datatype,
+                       MPI_Op op,
+                       MPI_Comm comm);
+
+int mpi_get_address(void *location,
+		    MPI_Aint *address);
+
+int mpi_address(void *location,
+		MPI_Aint *address);
+
+int mpi_type_size(MPI_Datatype datatype,
+		  int *size);
+
+int mpi_type_get_extent(MPI_Datatype datatype,
+			MPI_Aint *lb,
+			MPI_Aint *extent);
+
+int mpi_type_extent(MPI_Datatype datatype,
+		    MPI_Aint *extent);
+
+int mpi_type_lb(MPI_Datatype datatype,
+		MPI_Aint *lb);
+
+int mpi_type_create_resized(MPI_Datatype oldtype,
+			    MPI_Aint lb,
+			    MPI_Aint extent,
+			    MPI_Datatype *newtype);
+
+int mpi_type_commit(MPI_Datatype *datatype);
+
+int mpi_type_free(MPI_Datatype *datatype);
+
+int mpi_type_optimized(MPI_Datatype *datatype,
+                       int optimized);
+
+int mpi_type_contiguous(int count,
+                        MPI_Datatype oldtype,
+                        MPI_Datatype *newtype);
+
+int mpi_type_vector(int count,
+                    int blocklength,
+                    int stride,
+                    MPI_Datatype oldtype,
+                    MPI_Datatype *newtype);
+
+int mpi_type_hvector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype);
+
+int mpi_type_indexed(int count,
+                     int *array_of_blocklengths,
+                     int *array_of_displacements,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype);
+
+int mpi_type_hindexed(int count,
+                      int *array_of_blocklengths,
+                      MPI_Aint *array_of_displacements,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype);
+
+int mpi_type_struct(int count,
+                    int *array_of_blocklengths,
+                    MPI_Aint *array_of_displacements,
+                    MPI_Datatype *array_of_types,
+                    MPI_Datatype *newtype);
+
+int mpi_comm_group(MPI_Comm comm,
+		   MPI_Group *group);
+
+
+int mpi_comm_split(MPI_Comm comm,
+		   int color,
+		   int key,
+		   MPI_Comm *newcomm);
+
+int mpi_comm_dup(MPI_Comm comm,
+		 MPI_Comm *newcomm);
+
+int mpi_comm_free(MPI_Comm *comm);
+
+int mpi_group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2);
+
 /* @} */
 
 #endif /* MPI_NMAD_PRIVATE_H */

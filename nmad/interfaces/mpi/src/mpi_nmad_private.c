@@ -1123,8 +1123,6 @@ mpir_datatype_t* mpir_get_datatype(mpir_internal_data_t *mpir_internal_data,
     }
   }
   else {
-    fprintf(stderr, "Datatype %d unknown", datatype);
-    *(int*)0=0;
     ERROR("Datatype %d unknown", datatype);
     return NULL;
   }
@@ -1582,8 +1580,8 @@ nm_tag_t mpir_comm_and_tag(mpir_internal_data_t *mpir_internal_data,
 tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
 				 MPI_Comm comm) {
   int process_rank, global_size;
-  MPI_Comm_rank(comm, &process_rank);
-  MPI_Comm_size(comm, &global_size);
+  mpi_comm_rank(comm, &process_rank);
+  mpi_comm_size(comm, &global_size);
   int tag = 31;
 
   if (process_rank == 0) {
@@ -1597,7 +1595,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
     MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
     for(i=1 ; i<global_size ; i++) {
-      MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
+      mpi_recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
       global_nb_incoming_msg += remote_counters[0];
       global_nb_outgoing_msg += remote_counters[1];
       MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
@@ -1610,7 +1608,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     }
 
     for(i=1 ; i<global_size ; i++) {
-      MPI_Send(&answer, 1, MPI_INT, i, tag, comm);
+      mpi_send(&answer, 1, MPI_INT, i, tag, comm);
     }
 
     if (answer == tbx_false) {
@@ -1623,7 +1621,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       global_nb_outgoing_msg = mpir_internal_data->nb_outgoing_msg;
       MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", global_nb_incoming_msg, global_nb_outgoing_msg);
       for(i=1 ; i<global_size ; i++) {
-        MPI_Recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
+        mpi_recv(remote_counters, 2, MPI_INT, i, tag, comm, MPI_STATUS_IGNORE);
         global_nb_incoming_msg += remote_counters[0];
         global_nb_outgoing_msg += remote_counters[1];
         MPI_NMAD_TRACE("Remote counters [incoming msg=%d, outgoing msg=%d]\n", remote_counters[0], remote_counters[1]);
@@ -1636,7 +1634,7 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       }
 
       for(i=1 ; i<global_size ; i++) {
-        MPI_Send(&answer, 1, MPI_INT, i, tag, comm);
+        mpi_send(&answer, 1, MPI_INT, i, tag, comm);
       }
 
       return answer;
@@ -1648,10 +1646,10 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
     MPI_NMAD_TRACE("Beginning of 1st phase.\n");
     local_counters[0] = mpir_internal_data->nb_incoming_msg;
     local_counters[1] = mpir_internal_data->nb_outgoing_msg;
-    MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
+    mpi_send(local_counters, 2, MPI_INT, 0, tag, comm);
     MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
 
-    MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
+    mpi_recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
     if (answer == tbx_false) {
       return tbx_false;
     }
@@ -1660,10 +1658,10 @@ tbx_bool_t mpir_test_termination(mpir_internal_data_t *mpir_internal_data,
       MPI_NMAD_TRACE("Beginning of 2nd phase.\n");
       local_counters[0] = mpir_internal_data->nb_incoming_msg;
       local_counters[1] = mpir_internal_data->nb_outgoing_msg;
-      MPI_Send(local_counters, 2, MPI_INT, 0, tag, comm);
+      mpi_send(local_counters, 2, MPI_INT, 0, tag, comm);
       MPI_NMAD_TRACE("Local counters [incoming msg=%d, outgoing msg=%d]\n", local_counters[0], local_counters[1]);
 
-      MPI_Recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
+      mpi_recv(&answer, 1, MPI_INT, 0, tag, comm, MPI_STATUS_IGNORE);
       return answer;
     }
   }

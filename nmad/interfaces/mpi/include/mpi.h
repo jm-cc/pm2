@@ -62,6 +62,8 @@ extern "C"
 
 #include "mpi_communicator.h"
 
+#include "mpi_not_implemented.h"
+
 #ifdef __cplusplus
 }
 #endif

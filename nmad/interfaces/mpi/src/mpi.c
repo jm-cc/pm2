@@ -1158,8 +1158,410 @@ mpir_internal_data_t *get_mpir_internal_data() {
   return &mpir_internal_data;
 }
 
-
+/* Aliases */
 int MPI_Issend(void* buf,
+	       int count,
+	       MPI_Datatype datatype,
+	       int dest,
+               int tag,
+	       MPI_Comm comm,
+	       MPI_Request *request) __attribute__ ((alias ("mpi_issend")));
+
+int MPI_Waitsome(int incount,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *array_of_indices,
+		 MPI_Status *array_of_statuses) __attribute__ ((alias ("mpi_waitsome")));
+
+int MPI_Init(int *argc,
+             char ***argv) __attribute__ ((alias ("mpi_init")));
+
+int MPI_Init_thread(int *argc,
+                    char ***argv,
+                    int required TBX_UNUSED,
+                    int *provided) __attribute__ ((alias ("mpi_init_thread")));
+
+int MPI_Initialized(int *flag) __attribute__ ((alias ("mpi_initialized")));
+
+int MPI_Finalize(void) __attribute__ ((alias ("mpi_finalize")));
+
+int MPI_Abort(MPI_Comm comm TBX_UNUSED,
+	      int errorcode) __attribute__ ((alias ("mpi_abort")));
+
+int MPI_Comm_size(MPI_Comm comm,
+		  int *size) __attribute__ ((alias ("mpi_comm_size")));
+
+int MPI_Comm_rank(MPI_Comm comm,
+                  int *rank) __attribute__ ((alias ("mpi_comm_rank")));
+
+int MPI_Attr_get(MPI_Comm comm,
+		 int keyval,
+		 void *attr_value,
+		 int *flag ) __attribute__ ((alias ("mpi_attr_get")));
+int MPI_Get_processor_name(char *name,
+			   int *resultlen) __attribute__ ((alias ("mpi_get_processor_name")));
+
+double MPI_Wtime(void) __attribute__ ((alias ("mpi_wtime")));
+
+double MPI_Wtick(void) __attribute__ ((alias ("mpi_wtick")));
+
+int MPI_Error_string(int errorcode,
+		     char *string,
+		     int *resultlen) __attribute__ ((alias ("mpi_error_string")));
+
+int MPI_Errhandler_set(MPI_Comm comm,
+		       MPI_Errhandler errhandler) __attribute__ ((alias ("mpi_errhandler_set")));
+
+int MPI_Get_version(int *version,
+		    int *subversion) __attribute__ ((alias ("mpi_get_version")));
+
+int MPI_Bsend(void *buffer,
+	      int count,
+	      MPI_Datatype datatype,
+	      int dest,
+	      int tag,
+	      MPI_Comm comm) __attribute__ ((alias ("mpi_bsend")));
+
+int MPI_Send(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int dest,
+             int tag,
+             MPI_Comm comm) __attribute__ ((alias ("mpi_send")));
+
+int MPI_Isend(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) __attribute__ ((alias ("mpi_isend")));
+
+int MPI_Rsend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm) __attribute__ ((alias ("mpi_rsend")));
+
+int MPI_Ssend(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int dest,
+              int tag,
+              MPI_Comm comm) __attribute__ ((alias ("mpi_ssend")));
+
+int MPI_Pack(void* inbuf,
+             int incount,
+             MPI_Datatype datatype,
+             void *outbuf,
+             int outsize,
+             int *position,
+             MPI_Comm comm) __attribute__ ((alias ("mpi_pack")));
+
+int MPI_Recv(void *buffer,
+             int count,
+             MPI_Datatype datatype,
+             int source,
+             int tag,
+             MPI_Comm comm,
+             MPI_Status *status) __attribute__ ((alias ("mpi_recv")));
+
+int MPI_Irecv(void *buffer,
+              int count,
+              MPI_Datatype datatype,
+              int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Request *request) __attribute__ ((alias ("mpi_irecv")));
+
+int MPI_Sendrecv(void *sendbuf,
+                 int sendcount,
+                 MPI_Datatype sendtype,
+                 int dest,
+                 int sendtag,
+                 void *recvbuf,
+                 int recvcount,
+                 MPI_Datatype recvtype,
+                 int source,
+                 int recvtag,
+                 MPI_Comm comm,
+                 MPI_Status *status) __attribute__ ((alias ("mpi_sendrecv")));
+
+int MPI_Unpack(void* inbuf,
+               int insize,
+               int *position,
+               void *outbuf,
+               int outcount,
+               MPI_Datatype datatype,
+               MPI_Comm comm) __attribute__ ((alias ("mpi_unpack")));
+
+int MPI_Wait(MPI_Request *request,
+	     MPI_Status *status) __attribute__ ((alias ("mpi_wait")));
+
+int MPI_Waitall(int count,
+		MPI_Request *array_of_requests,
+		MPI_Status *array_of_statuses) __attribute__ ((alias ("mpi_waitall")));
+
+int MPI_Waitany(int count,
+                MPI_Request *array_of_requests,
+                int *rqindex,
+                MPI_Status *status) __attribute__ ((alias ("mpi_waitany")));
+
+int MPI_Test(MPI_Request *request,
+             int *flag,
+             MPI_Status *status) __attribute__ ((alias ("mpi_test")));
+
+int MPI_Testany(int count,
+                MPI_Request *array_of_requests,
+                int *rqindex,
+                int *flag,
+                MPI_Status *status) __attribute__ ((alias ("mpi_testany")));
+
+int MPI_Testall(int count,
+		MPI_Request *array_of_requests,
+		int *flag,
+		MPI_Status *statuses) __attribute__ ((alias ("mpi_testall")));
+
+int MPI_Testsome(int count,
+		 MPI_Request *array_of_requests,
+		 int *outcount,
+		 int *indices,
+		 MPI_Status *statuses) __attribute__ ((alias ("mpi_testsome")));
+
+int MPI_Iprobe(int source,
+               int tag,
+               MPI_Comm comm,
+               int *flag,
+               MPI_Status *status) __attribute__ ((alias ("mpi_iprobe")));
+
+int MPI_Probe(int source,
+              int tag,
+              MPI_Comm comm,
+              MPI_Status *status) __attribute__ ((alias ("mpi_probe")));
+
+int MPI_Cancel(MPI_Request *request) __attribute__ ((alias ("mpi_cancel")));
+
+int MPI_Request_free(MPI_Request *request) __attribute__ ((alias ("mpi_request_free")));
+
+int MPI_Get_count(MPI_Status *status,
+                  MPI_Datatype datatype TBX_UNUSED,
+                  int *count) __attribute__ ((alias ("mpi_get_count")));
+
+int MPI_Request_is_equal(MPI_Request request1,
+			 MPI_Request request2) __attribute__ ((alias ("mpi_request_is_equal")));
+
+int MPI_Send_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int dest,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request) __attribute__ ((alias ("mpi_send_init")));
+
+int MPI_Recv_init(void* buf,
+                  int count,
+                  MPI_Datatype datatype,
+                  int source,
+                  int tag,
+                  MPI_Comm comm,
+                  MPI_Request *request) __attribute__ ((alias ("mpi_recv_init")));
+
+int MPI_Start(MPI_Request *request) __attribute__ ((alias ("mpi_start")));
+
+int MPI_Startall(int count,
+                 MPI_Request *array_of_requests) __attribute__ ((alias ("mpi_startall")));
+
+int MPI_Barrier(MPI_Comm comm) __attribute__ ((alias ("mpi_barrier")));
+
+int MPI_Bcast(void* buffer,
+              int count,
+              MPI_Datatype datatype,
+              int root,
+              MPI_Comm comm) __attribute__ ((alias ("mpi_bcast")));
+
+int MPI_Gather(void *sendbuf,
+               int sendcount,
+               MPI_Datatype sendtype,
+               void *recvbuf,
+               int recvcount,
+               MPI_Datatype recvtype,
+               int root,
+               MPI_Comm comm) __attribute__ ((alias ("mpi_gather")));
+
+int MPI_Gatherv(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int *recvcounts,
+                int *displs,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm) __attribute__ ((alias ("mpi_gatherv")));
+
+int MPI_Allgather(void *sendbuf,
+                  int sendcount,
+                  MPI_Datatype sendtype,
+                  void *recvbuf,
+                  int recvcount,
+                  MPI_Datatype recvtype,
+                  MPI_Comm comm) __attribute__ ((alias ("mpi_allgather")));
+
+int MPI_Allgatherv(void *sendbuf,
+                   int sendcount,
+                   MPI_Datatype sendtype,
+                   void *recvbuf,
+                   int *recvcounts,
+                   int *displs,
+                   MPI_Datatype recvtype,
+                   MPI_Comm comm) __attribute__ ((alias ("mpi_allgatherv")));
+
+int MPI_Scatter(void *sendbuf,
+                int sendcount,
+                MPI_Datatype sendtype,
+                void *recvbuf,
+                int recvcount,
+                MPI_Datatype recvtype,
+                int root,
+                MPI_Comm comm) __attribute__ ((alias ("mpi_scatter")));
+
+int MPI_Alltoall(void* sendbuf,
+		 int sendcount,
+		 MPI_Datatype sendtype,
+		 void *recvbuf,
+		 int recvcount,
+		 MPI_Datatype recvtype,
+		 MPI_Comm comm) __attribute__ ((alias ("mpi_alltoall")));
+
+int MPI_Alltoallv(void* sendbuf,
+		  int *sendcounts,
+		  int *sdispls,
+		  MPI_Datatype sendtype,
+		  void *recvbuf,
+		  int *recvcounts,
+		  int *rdispls,
+		  MPI_Datatype recvtype,
+		  MPI_Comm comm) __attribute__ ((alias ("mpi_alltoallv")));
+
+int MPI_Op_create(MPI_User_function *function,
+                  int commute,
+                  MPI_Op *op) __attribute__ ((alias ("mpi_op_create")));
+
+int MPI_Op_free(MPI_Op *op) __attribute__ ((alias ("mpi_op_free")));
+
+int MPI_Reduce(void* sendbuf,
+               void* recvbuf,
+               int count,
+               MPI_Datatype datatype,
+               MPI_Op op,
+               int root,
+               MPI_Comm comm) __attribute__ ((alias ("mpi_reduce")));
+
+int MPI_Allreduce(void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  MPI_Datatype datatype,
+                  MPI_Op op,
+                  MPI_Comm comm) __attribute__ ((alias ("mpi_allreduce")));
+
+int MPI_Reduce_scatter(void *sendbuf,
+                       void *recvbuf,
+                       int *recvcounts,
+                       MPI_Datatype datatype,
+                       MPI_Op op,
+                       MPI_Comm comm) __attribute__ ((alias ("mpi_reduce_scatter")));
+
+int MPI_Get_address(void *location,
+		    MPI_Aint *address) __attribute__ ((alias ("mpi_get_address")));
+
+int MPI_Address(void *location,
+		MPI_Aint *address) __attribute__ ((alias ("mpi_address")));
+
+int MPI_Type_size(MPI_Datatype datatype,
+		  int *size) __attribute__ ((alias ("mpi_type_size")));
+
+int MPI_Type_get_extent(MPI_Datatype datatype,
+			MPI_Aint *lb,
+			MPI_Aint *extent) __attribute__ ((alias ("mpi_type_get_extent")));
+
+int MPI_Type_extent(MPI_Datatype datatype,
+		    MPI_Aint *extent) __attribute__ ((alias ("mpi_type_extent")));
+
+int MPI_Type_lb(MPI_Datatype datatype,
+		MPI_Aint *lb) __attribute__ ((alias ("mpi_type_lb")));
+
+int MPI_Type_create_resized(MPI_Datatype oldtype,
+			    MPI_Aint lb,
+			    MPI_Aint extent,
+			    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_create_resized")));
+
+int MPI_Type_commit(MPI_Datatype *datatype) __attribute__ ((alias ("mpi_type_commit")));
+
+int MPI_Type_free(MPI_Datatype *datatype) __attribute__ ((alias ("mpi_type_free")));
+
+int MPI_Type_optimized(MPI_Datatype *datatype,
+                       int optimized) __attribute__ ((alias ("mpi_type_optimized")));
+
+int MPI_Type_contiguous(int count,
+                        MPI_Datatype oldtype,
+                        MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_contiguous")));
+
+int MPI_Type_vector(int count,
+                    int blocklength,
+                    int stride,
+                    MPI_Datatype oldtype,
+                    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_vector")));
+
+int MPI_Type_hvector(int count,
+                     int blocklength,
+                     int stride,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_hvector")));
+
+int MPI_Type_indexed(int count,
+                     int *array_of_blocklengths,
+                     int *array_of_displacements,
+                     MPI_Datatype oldtype,
+                     MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_indexed")));
+
+int MPI_Type_hindexed(int count,
+                      int *array_of_blocklengths,
+                      MPI_Aint *array_of_displacements,
+                      MPI_Datatype oldtype,
+                      MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_hindexed")));
+
+int MPI_Type_struct(int count,
+                    int *array_of_blocklengths,
+                    MPI_Aint *array_of_displacements,
+                    MPI_Datatype *array_of_types,
+                    MPI_Datatype *newtype) __attribute__ ((alias ("mpi_type_struct")));
+
+int MPI_Comm_group(MPI_Comm comm,
+		   MPI_Group *group) __attribute__ ((alias ("mpi_comm_group")));
+
+
+int MPI_Comm_split(MPI_Comm comm,
+		   int color,
+		   int key,
+		   MPI_Comm *newcomm) __attribute__ ((alias ("mpi_comm_split")));
+
+int MPI_Comm_dup(MPI_Comm comm,
+		 MPI_Comm *newcomm) __attribute__ ((alias ("mpi_comm_dup")));
+
+int MPI_Comm_free(MPI_Comm *comm) __attribute__ ((alias ("mpi_comm_free")));
+
+int MPI_Group_translate_ranks(MPI_Group group1,
+			      int n,
+			      int *ranks1,
+			      MPI_Group group2,
+			      int *ranks2) __attribute__ ((alias ("mpi_group_translate_ranks")));
+
+
+
+
+/* end of aliases */
+
+int mpi_issend(void* buf,
 	       int count,
 	       MPI_Datatype datatype,
 	       int dest,
@@ -1170,7 +1572,7 @@ int MPI_Issend(void* buf,
   return MPI_ERR_UNKNOWN;
 }
 
-int MPI_Waitsome(int incount,
+int mpi_waitsome(int incount,
 		 MPI_Request *array_of_requests,
 		 int *outcount,
 		 int *array_of_indices,
@@ -1179,10 +1581,9 @@ int MPI_Waitsome(int incount,
   return MPI_ERR_UNKNOWN;
 }
 
-int MPI_Init(int *argc,
+int mpi_init(int *argc,
              char ***argv) {
   int ret;
-
   MPI_NMAD_LOG_IN();
 
   nm_launcher_init(argc, *argv);
@@ -1197,7 +1598,7 @@ int MPI_Init(int *argc,
   return ret;
 }
 
-int MPI_Init_thread(int *argc,
+int mpi_init_thread(int *argc,
                     char ***argv,
                     int required TBX_UNUSED,
                     int *provided) {
@@ -1205,7 +1606,7 @@ int MPI_Init_thread(int *argc,
 
   MPI_NMAD_LOG_IN();
 
-  err = MPI_Init(argc, argv);
+  err = mpi_init(argc, argv);
 #ifndef PIOMAN
   *provided = MPI_THREAD_SINGLE;
 #else
@@ -1216,17 +1617,17 @@ int MPI_Init_thread(int *argc,
   return err;
 }
 
-int MPI_Initialized(int *flag) {
+int mpi_initialized(int *flag) {
   *flag = (launcher_instance != NULL);
   return MPI_SUCCESS;
 }
 
-int MPI_Finalize(void) {
+int mpi_finalize(void) {
   int err;
 
   MPI_NMAD_LOG_IN();
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  mpi_barrier(MPI_COMM_WORLD);
   err = mpir_internal_exit(&mpir_internal_data);
 
   puk_instance_destroy(launcher_instance);
@@ -1235,7 +1636,7 @@ int MPI_Finalize(void) {
   return err;
 }
 
-int MPI_Abort(MPI_Comm comm TBX_UNUSED,
+int mpi_abort(MPI_Comm comm TBX_UNUSED,
               int errorcode) {
   int err;
   MPI_NMAD_LOG_IN();
@@ -1247,7 +1648,7 @@ int MPI_Abort(MPI_Comm comm TBX_UNUSED,
   return errorcode;
 }
 
-int MPI_Comm_size(MPI_Comm comm,
+int mpi_comm_size(MPI_Comm comm,
                   int *size) {
   MPI_NMAD_LOG_IN();
 
@@ -1257,7 +1658,7 @@ int MPI_Comm_size(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
-int MPI_Comm_rank(MPI_Comm comm,
+int mpi_comm_rank(MPI_Comm comm,
                   int *rank) {
   MPI_NMAD_LOG_IN();
 
@@ -1269,7 +1670,7 @@ int MPI_Comm_rank(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
-int MPI_Attr_get(MPI_Comm comm,
+int mpi_attr_get(MPI_Comm comm,
 		 int keyval,
 		 void *attr_value,
 		 int *flag ) {
@@ -1297,7 +1698,7 @@ int MPI_Attr_get(MPI_Comm comm,
 }
 
 
-int MPI_Get_processor_name(char *name,
+int mpi_get_processor_name(char *name,
 			   int *resultlen) {
   int err;
 
@@ -1315,7 +1716,7 @@ int MPI_Get_processor_name(char *name,
   }
 }
 
-double MPI_Wtime(void)
+double mpi_wtime(void)
 {
   static tbx_tick_t orig_time;
   static int orig_done = 0;
@@ -1334,11 +1735,11 @@ double MPI_Wtime(void)
   return usec / 1000000.0;
 }
 
-double MPI_Wtick(void) {
+double mpi_wtick(void) {
   return 1e-7;
 }
 
-int MPI_Error_string(int errorcode,
+int mpi_error_string(int errorcode,
 		     char *string,
 		     int *resultlen) {
   *resultlen = 100;
@@ -1435,7 +1836,7 @@ int MPI_Error_string(int errorcode,
   return MPI_SUCCESS;
 }
 
-int MPI_Errhandler_set(MPI_Comm comm,
+int mpi_errhandler_set(MPI_Comm comm,
 		       MPI_Errhandler errhandler) {
   int err;
   switch(errhandler) {
@@ -1450,14 +1851,14 @@ int MPI_Errhandler_set(MPI_Comm comm,
   return err;
 }
 
-int MPI_Get_version(int *version,
+int mpi_get_version(int *version,
 		    int *subversion) {
   *version = MADMPI_VERSION;
   *subversion = MADMPI_SUBVERSION;
   return MPI_SUCCESS;
 }
 
-int MPI_Bsend(void *buffer,
+int mpi_bsend(void *buffer,
 	      int count,
 	      MPI_Datatype datatype,
 	      int dest,
@@ -1465,10 +1866,10 @@ int MPI_Bsend(void *buffer,
 	      MPI_Comm comm) {
 	/* todo: only valid for small messages ? */
 	fprintf(stderr, "Warning: bsend called. it may be invalid\n");
-	return MPI_Send(buffer, count, datatype, dest, tag, comm);
+	return mpi_send(buffer, count, datatype, dest, tag, comm);
 }
 
-int MPI_Send(void *buffer,
+int mpi_send(void *buffer,
              int count,
              MPI_Datatype datatype,
              int dest,
@@ -1501,13 +1902,13 @@ int MPI_Send(void *buffer,
 
   err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
-  MPI_Wait(&request, MPI_STATUS_IGNORE);
+  mpi_wait(&request, MPI_STATUS_IGNORE);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Isend(void *buffer,
+int mpi_isend(void *buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -1545,7 +1946,7 @@ int MPI_Isend(void *buffer,
   return err;
 }
 
-int MPI_Rsend(void* buffer,
+int mpi_rsend(void* buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -1578,13 +1979,13 @@ int MPI_Rsend(void* buffer,
 
   err = mpir_isend(&mpir_internal_data, mpir_request, dest, mpir_communicator);
 
-  MPI_Wait(&request, MPI_STATUS_IGNORE);
+  mpi_wait(&request, MPI_STATUS_IGNORE);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Ssend(void* buffer,
+int mpi_ssend(void* buffer,
               int count,
               MPI_Datatype datatype,
               int dest,
@@ -1620,7 +2021,7 @@ int MPI_Ssend(void* buffer,
   return err;
 }
 
-int MPI_Pack(void* inbuf,
+int mpi_pack(void* inbuf,
              int incount,
              MPI_Datatype datatype,
              void *outbuf,
@@ -1644,7 +2045,7 @@ int MPI_Pack(void* inbuf,
   return MPI_SUCCESS;
 }
 
-int MPI_Recv(void *buffer,
+int mpi_recv(void *buffer,
              int count,
              MPI_Datatype datatype,
              int source,
@@ -1678,14 +2079,14 @@ int MPI_Recv(void *buffer,
 
   err = mpir_irecv(&mpir_internal_data, mpir_request, source, mpir_communicator);
 
-  err = MPI_Wait(&request, status);
+  err = mpi_wait(&request, status);
 
   MPI_NMAD_TIMER_OUT();
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Irecv(void *buffer,
+int mpi_irecv(void *buffer,
               int count,
               MPI_Datatype datatype,
               int source,
@@ -1722,7 +2123,7 @@ int MPI_Irecv(void *buffer,
   return err;
 }
 
-int MPI_Sendrecv(void *sendbuf,
+int mpi_sendrecv(void *sendbuf,
                  int sendcount,
                  MPI_Datatype sendtype,
                  int dest,
@@ -1739,17 +2140,17 @@ int MPI_Sendrecv(void *sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  err = MPI_Isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
-  err = MPI_Irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
+  err = mpi_isend(sendbuf, sendcount, sendtype, dest, sendtag, comm, &srequest);
+  err = mpi_irecv(recvbuf, recvcount, recvtype, source, recvtag, comm, &rrequest);
 
-  err = MPI_Wait(&srequest, MPI_STATUS_IGNORE);
-  err = MPI_Wait(&rrequest, status);
+  err = mpi_wait(&srequest, MPI_STATUS_IGNORE);
+  err = mpi_wait(&rrequest, status);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Unpack(void* inbuf,
+int mpi_unpack(void* inbuf,
                int insize,
                int *position,
                void *outbuf,
@@ -1773,7 +2174,7 @@ int MPI_Unpack(void* inbuf,
   return MPI_SUCCESS;
 }
 
-int MPI_Wait(MPI_Request *request,
+int mpi_wait(MPI_Request *request,
 	     MPI_Status *status) {
   mpir_request_t  *mpir_request = mpir_request_find(*request);
   int                       err = NM_ESUCCESS;
@@ -1805,7 +2206,7 @@ int MPI_Wait(MPI_Request *request,
   return err;
 }
 
-int MPI_Waitall(int count,
+int mpi_waitall(int count,
 		MPI_Request *array_of_requests,
 		MPI_Status *array_of_statuses) {
   int err = NM_ESUCCESS;
@@ -1833,7 +2234,7 @@ int MPI_Waitall(int count,
   return err;
 }
 
-int MPI_Waitany(int count,
+int mpi_waitany(int count,
                 MPI_Request *array_of_requests,
                 int *rqindex,
                 MPI_Status *status) {
@@ -1866,7 +2267,7 @@ int MPI_Waitany(int count,
   }
 }
 
-int MPI_Test(MPI_Request *request,
+int mpi_test(MPI_Request *request,
              int *flag,
              MPI_Status *status) {
   mpir_request_t *mpir_request = mpir_request_find(*request);
@@ -1902,7 +2303,7 @@ int MPI_Test(MPI_Request *request,
   return err;
 }
 
-int MPI_Testany(int count,
+int mpi_testany(int count,
                 MPI_Request *array_of_requests,
                 int *rqindex,
                 int *flag,
@@ -1937,7 +2338,7 @@ int MPI_Testany(int count,
   return err;
 }
 
-int MPI_Testall(int count,
+int mpi_testall(int count,
 		MPI_Request *array_of_requests,
 		int *flag,
 		MPI_Status *statuses) {
@@ -1992,7 +2393,7 @@ int MPI_Testall(int count,
 }
 
 /* TODO : handle the case where statuses == MPI_STATUSES_IGNORE */
-int MPI_Testsome(int count,
+int mpi_testsome(int count,
 		 MPI_Request *array_of_requests,
 		 int *outcount,
 		 int *indices,
@@ -2012,7 +2413,7 @@ int MPI_Testsome(int count,
       continue;
     }
 
-    err = MPI_Test(&(array_of_requests[i]), &flag, &(statuses[*outcount]));
+    err = mpi_test(&(array_of_requests[i]), &flag, &(statuses[*outcount]));
     if (flag == 1) {
       indices[*outcount] = i;
       (*outcount)++;
@@ -2026,7 +2427,7 @@ int MPI_Testsome(int count,
   return err;
 }
 
-int MPI_Iprobe(int source,
+int mpi_iprobe(int source,
                int tag,
                MPI_Comm comm,
                int *flag,
@@ -2076,7 +2477,7 @@ int MPI_Iprobe(int source,
   return err;
 }
 
-int MPI_Probe(int source,
+int mpi_probe(int source,
               int tag,
               MPI_Comm comm,
               MPI_Status *status) {
@@ -2085,16 +2486,16 @@ int MPI_Probe(int source,
 
   MPI_NMAD_LOG_IN();
 
-  err = MPI_Iprobe(source, tag, comm, &flag, status);
+  err = mpi_iprobe(source, tag, comm, &flag, status);
   while (flag != 1) {
-    err = MPI_Iprobe(source, tag, comm, &flag, status);
+    err = mpi_iprobe(source, tag, comm, &flag, status);
   }
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Cancel(MPI_Request *request) {
+int mpi_cancel(MPI_Request *request) {
   mpir_request_t *mpir_request = mpir_request_find(*request);
   int             err = NM_ESUCCESS;
 
@@ -2112,7 +2513,7 @@ int MPI_Cancel(MPI_Request *request) {
   return err;
 }
 
-int MPI_Request_free(MPI_Request *request) {
+int mpi_request_free(MPI_Request *request) {
   mpir_request_t *mpir_request = mpir_request_find(*request);
 
   MPI_NMAD_LOG_IN();
@@ -2127,7 +2528,7 @@ int MPI_Request_free(MPI_Request *request) {
   return MPI_SUCCESS;
 }
 
-int MPI_Get_count(MPI_Status *status,
+int mpi_get_count(MPI_Status *status,
                   MPI_Datatype datatype TBX_UNUSED,
                   int *count) {
   MPI_NMAD_LOG_IN();
@@ -2136,7 +2537,7 @@ int MPI_Get_count(MPI_Status *status,
   return MPI_SUCCESS;
 }
 
-int MPI_Request_is_equal(MPI_Request request1,
+int mpi_request_is_equal(MPI_Request request1,
 			 MPI_Request request2) {
   mpir_request_t *mpir_request1 = mpir_request_find(request1);
   mpir_request_t *mpir_request2 = mpir_request_find(request2);
@@ -2151,7 +2552,7 @@ int MPI_Request_is_equal(MPI_Request request1,
   }
 }
 
-int MPI_Send_init(void* buf,
+int mpi_send_init(void* buf,
                   int count,
                   MPI_Datatype datatype,
                   int dest,
@@ -2189,7 +2590,7 @@ int MPI_Send_init(void* buf,
   return err;
 }
 
-int MPI_Recv_init(void* buf,
+int mpi_recv_init(void* buf,
                   int count,
                   MPI_Datatype datatype,
                   int source,
@@ -2226,7 +2627,7 @@ int MPI_Recv_init(void* buf,
   return err;
 }
 
-int MPI_Start(MPI_Request *request) {
+int mpi_start(MPI_Request *request) {
   mpir_request_t *mpir_request = mpir_request_find(*request);
   int err;
 
@@ -2241,7 +2642,7 @@ int MPI_Start(MPI_Request *request) {
   return err;
 }
 
-int MPI_Startall(int count,
+int mpi_startall(int count,
                  MPI_Request *array_of_requests) {
   int i;
   int err = MPI_SUCCESS;
@@ -2258,7 +2659,7 @@ int MPI_Startall(int count,
   return err;
 }
 
-int MPI_Barrier(MPI_Comm comm) {
+int mpi_barrier(MPI_Comm comm) {
   tbx_bool_t termination;
 
   MPI_NMAD_LOG_IN();
@@ -2274,7 +2675,7 @@ int MPI_Barrier(MPI_Comm comm) {
   return MPI_SUCCESS;
 }
 
-int MPI_Bcast(void* buffer,
+int mpi_bcast(void* buffer,
               int count,
               MPI_Datatype datatype,
               int root,
@@ -2313,7 +2714,7 @@ int MPI_Bcast(void* buffer,
   }
   else {
     MPI_Request request;
-    MPI_Irecv(buffer, count, datatype, root, tag, comm, &request);
+    mpi_irecv(buffer, count, datatype, root, tag, comm, &request);
     err = MPI_Wait(&request, MPI_STATUS_IGNORE);
   }
   MPI_NMAD_TRACE("End of bcast from root %d for buffer %p of type %d\n", root, buffer, datatype);
@@ -2321,7 +2722,7 @@ int MPI_Bcast(void* buffer,
   return err;
 }
 
-int MPI_Gather(void *sendbuf,
+int mpi_gather(void *sendbuf,
                int sendcount,
                MPI_Datatype sendtype,
                void *recvbuf,
@@ -2348,12 +2749,12 @@ int MPI_Gather(void *sendbuf,
     // receive data from other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
       if(i == root) continue;
-      MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
+      mpi_irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
                 recvcount, recvtype, i, tag, comm, &requests[i]);
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+      err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -2364,14 +2765,14 @@ int MPI_Gather(void *sendbuf,
     FREE_AND_SET_NULL(requests);
   }
   else {
-    MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
+    mpi_send(sendbuf, sendcount, sendtype, root, tag, comm);
   }
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int MPI_Gatherv(void *sendbuf,
+int mpi_gatherv(void *sendbuf,
                 int sendcount,
                 MPI_Datatype sendtype,
                 void *recvbuf,
@@ -2399,12 +2800,12 @@ int MPI_Gatherv(void *sendbuf,
     // receive data from other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
       if(i == root) continue;
-      MPI_Irecv(recvbuf + (displs[i] * mpir_recv_datatype->extent),
+      mpi_irecv(recvbuf + (displs[i] * mpir_recv_datatype->extent),
                 recvcounts[i], recvtype, i, tag, comm, &requests[i]);
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+      err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -2418,14 +2819,14 @@ int MPI_Gatherv(void *sendbuf,
     FREE_AND_SET_NULL(requests);
   }
   else {
-    MPI_Send(sendbuf, sendcount, sendtype, root, tag, comm);
+    mpi_send(sendbuf, sendcount, sendtype, root, tag, comm);
   }
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int MPI_Allgather(void *sendbuf,
+int mpi_allgather(void *sendbuf,
                   int sendcount,
                   MPI_Datatype sendtype,
                   void *recvbuf,
@@ -2439,15 +2840,15 @@ int MPI_Allgather(void *sendbuf,
 
   mpir_communicator = mpir_get_communicator(&mpir_internal_data, comm);
 
-  MPI_Gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
+  mpi_gather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, mpir_communicator->size*recvcount, recvtype, 0, comm);
+  err = mpi_bcast(recvbuf, mpir_communicator->size*recvcount, recvtype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Allgatherv(void *sendbuf,
+int mpi_allgatherv(void *sendbuf,
                    int sendcount,
                    MPI_Datatype sendtype,
                    void *recvbuf,
@@ -2470,19 +2871,19 @@ int MPI_Allgatherv(void *sendbuf,
     }
     MPI_NMAD_TRACE("recvcount = %d\n", recvcount);
   }
-  err = MPI_Bcast(&recvcount, 1, MPI_INT, 0, comm);
+  err = mpi_bcast(&recvcount, 1, MPI_INT, 0, comm);
 
   // Gather on process 0
-  MPI_Gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, 0, comm);
+  mpi_gatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, recvcount, recvtype, 0, comm);
+  err = mpi_bcast(recvbuf, recvcount, recvtype, 0, comm);
 
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Scatter(void *sendbuf,
+int mpi_scatter(void *sendbuf,
                 int sendcount,
                 MPI_Datatype sendtype,
                 void *recvbuf,
@@ -2509,12 +2910,12 @@ int MPI_Scatter(void *sendbuf,
     // send data to other processes
     for(i=0 ; i<mpir_communicator->size; i++) {
       if(i == root) continue;
-      MPI_Isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
+      mpi_isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
                 sendcount, sendtype, i, tag, comm, &requests[i]);
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i==root) continue;
-      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+      err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -2525,14 +2926,14 @@ int MPI_Scatter(void *sendbuf,
     FREE_AND_SET_NULL(requests);
   }
   else {
-    MPI_Recv(recvbuf, recvcount, recvtype, root, tag, comm, MPI_STATUS_IGNORE);
+    mpi_recv(recvbuf, recvcount, recvtype, root, tag, comm, MPI_STATUS_IGNORE);
   }
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }
 
-int MPI_Alltoall(void* sendbuf,
+int mpi_alltoall(void* sendbuf,
 		 int sendcount,
 		 MPI_Datatype sendtype,
 		 void *recvbuf,
@@ -2562,10 +2963,10 @@ int MPI_Alltoall(void* sendbuf,
 	     sendcount * mpir_send_datatype->extent);
     else
       {
-	MPI_Irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
+	mpi_irecv(recvbuf + (i * recvcount * mpir_recv_datatype->extent),
 		  recvcount, recvtype, i, tag, comm, &recv_requests[i]);
 
-	err = MPI_Isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
+	err = mpi_isend(sendbuf + (i * sendcount * mpir_send_datatype->extent),
 		       sendcount, sendtype, i, tag, comm, &send_requests[i]);
 
 	if (err != 0) {
@@ -2577,7 +2978,7 @@ int MPI_Alltoall(void* sendbuf,
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == mpir_communicator->rank) continue;
-    MPI_Wait(&recv_requests[i], MPI_STATUS_IGNORE);
+    mpi_wait(&recv_requests[i], MPI_STATUS_IGNORE);
     MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
@@ -2588,7 +2989,7 @@ int MPI_Alltoall(void* sendbuf,
   return MPI_SUCCESS;
 }
 
-int MPI_Alltoallv(void* sendbuf,
+int mpi_alltoallv(void* sendbuf,
 		  int *sendcounts,
 		  int *sdispls,
 		  MPI_Datatype sendtype,
@@ -2620,10 +3021,10 @@ int MPI_Alltoallv(void* sendbuf,
 	     sendcounts[i] * mpir_send_datatype->extent);
     else
       {
-	MPI_Irecv(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
+	mpi_irecv(recvbuf + (rdispls[i] * mpir_recv_datatype->extent),
 		  recvcounts[i], recvtype, i, tag, comm, &recv_requests[i]);
 
-	err = MPI_Isend(sendbuf + (sdispls[i] * mpir_send_datatype->extent),
+	err = mpi_isend(sendbuf + (sdispls[i] * mpir_send_datatype->extent),
 		       sendcounts[i], sendtype, i, tag, comm, &send_requests[i]);
 
 	if (err != 0) {
@@ -2635,8 +3036,8 @@ int MPI_Alltoallv(void* sendbuf,
 
   for(i=0 ; i<mpir_communicator->size ; i++) {
     if (i == mpir_communicator->rank) continue;
-    MPI_Wait(&recv_requests[i], MPI_STATUS_IGNORE);
-    MPI_Wait(&send_requests[i], MPI_STATUS_IGNORE);
+    mpi_wait(&recv_requests[i], MPI_STATUS_IGNORE);
+    mpi_wait(&send_requests[i], MPI_STATUS_IGNORE);
   }
 
   FREE_AND_SET_NULL(send_requests);
@@ -2646,7 +3047,7 @@ int MPI_Alltoallv(void* sendbuf,
   return MPI_SUCCESS;
 }
 
-int MPI_Op_create(MPI_User_function *function,
+int mpi_op_create(MPI_User_function *function,
                   int commute,
                   MPI_Op *op) {
   int err;
@@ -2657,7 +3058,7 @@ int MPI_Op_create(MPI_User_function *function,
   return err;
 }
 
-int MPI_Op_free(MPI_Op *op) {
+int mpi_op_free(MPI_Op *op) {
   int err;
 
   MPI_NMAD_LOG_IN();
@@ -2666,7 +3067,7 @@ int MPI_Op_free(MPI_Op *op) {
   return err;
 }
 
-int MPI_Reduce(void* sendbuf,
+int mpi_reduce(void* sendbuf,
                void* recvbuf,
                int count,
                MPI_Datatype datatype,
@@ -2697,11 +3098,11 @@ int MPI_Reduce(void* sendbuf,
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
       remote_sendbufs[i] = malloc(count * mpir_sizeof_datatype(&mpir_internal_data, datatype));
-      MPI_Irecv(remote_sendbufs[i], count, datatype, i, tag, comm, &requests[i]);
+      mpi_irecv(remote_sendbufs[i], count, datatype, i, tag, comm, &requests[i]);
     }
     for(i=0 ; i<mpir_communicator->size ; i++) {
       if (i == root) continue;
-      MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+      mpi_wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // Do the reduction operation
@@ -2725,13 +3126,13 @@ int MPI_Reduce(void* sendbuf,
   }
   else {
     int err;
-    err = MPI_Send(sendbuf, count, datatype, root, tag, comm);
+    err = mpi_send(sendbuf, count, datatype, root, tag, comm);
     MPI_NMAD_LOG_OUT();
     return err;
   }
 }
 
-int MPI_Allreduce(void* sendbuf,
+int mpi_allreduce(void* sendbuf,
                   void* recvbuf,
                   int count,
                   MPI_Datatype datatype,
@@ -2741,15 +3142,15 @@ int MPI_Allreduce(void* sendbuf,
 
   MPI_NMAD_LOG_IN();
 
-  MPI_Reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
+  mpi_reduce(sendbuf, recvbuf, count, datatype, op, 0, comm);
 
   // Broadcast the result to all processes
-  err = MPI_Bcast(recvbuf, count, datatype, 0, comm);
+  err = mpi_bcast(recvbuf, count, datatype, 0, comm);
   MPI_NMAD_LOG_OUT();
   return err;
 }
 
-int MPI_Reduce_scatter(void *sendbuf,
+int mpi_reduce_scatter(void *sendbuf,
                        void *recvbuf,
                        int *recvcounts,
                        MPI_Datatype datatype,
@@ -2772,7 +3173,7 @@ int MPI_Reduce_scatter(void *sendbuf,
   if (mpir_communicator->rank == 0) {
     reducebuf = malloc(count * mpir_datatype->size);
   }
-  MPI_Reduce(sendbuf, reducebuf, count, datatype, op, 0, comm);
+  mpi_reduce(sendbuf, reducebuf, count, datatype, op, 0, comm);
 
   // Scatter the result
   if (mpir_communicator->rank == 0) {
@@ -2782,11 +3183,11 @@ int MPI_Reduce_scatter(void *sendbuf,
 
     // send data to other processes
     for(i=1 ; i<mpir_communicator->size; i++) {
-      MPI_Isend(reducebuf + (i * recvcounts[i] * mpir_datatype->extent),
+      mpi_isend(reducebuf + (i * recvcounts[i] * mpir_datatype->extent),
                 recvcounts[i], datatype, i, tag, comm, &requests[i]);
     }
     for(i=1 ; i<mpir_communicator->size ; i++) {
-      err = MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
+      err = mpi_wait(&requests[i], MPI_STATUS_IGNORE);
     }
 
     // copy local data for itself
@@ -2796,7 +3197,7 @@ int MPI_Reduce_scatter(void *sendbuf,
     FREE_AND_SET_NULL(requests);
   }
   else {
-    err = MPI_Recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
+    err = mpi_recv(recvbuf, recvcounts[mpir_communicator->rank], datatype, 0, tag, comm, MPI_STATUS_IGNORE);
   }
 
   if (mpir_communicator->rank == 0) {
@@ -2807,7 +3208,7 @@ int MPI_Reduce_scatter(void *sendbuf,
   return err;
 }
 
-int MPI_Get_address(void *location,
+int mpi_get_address(void *location,
 		    MPI_Aint *address) {
   /* This is the "portable" way to generate an address.
      The difference of two pointers is the number of elements
@@ -2820,33 +3221,33 @@ int MPI_Get_address(void *location,
   return MPI_SUCCESS;
 }
 
-int MPI_Address(void *location,
+int mpi_address(void *location,
 		MPI_Aint *address) {
   return MPI_Get_address(location, address);
 }
 
-int MPI_Type_size(MPI_Datatype datatype,
+int mpi_type_size(MPI_Datatype datatype,
 		  int *size) {
   return mpir_type_size(&mpir_internal_data, datatype, size);
 }
 
-int MPI_Type_get_extent(MPI_Datatype datatype,
+int mpi_type_get_extent(MPI_Datatype datatype,
 			MPI_Aint *lb,
 			MPI_Aint *extent) {
   return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, lb, extent);
 }
 
-int MPI_Type_extent(MPI_Datatype datatype,
+int mpi_type_extent(MPI_Datatype datatype,
 		    MPI_Aint *extent) {
   return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, NULL, extent);
 }
 
-int MPI_Type_lb(MPI_Datatype datatype,
+int mpi_type_lb(MPI_Datatype datatype,
 		MPI_Aint *lb) {
   return mpir_type_get_lb_and_extent(&mpir_internal_data, datatype, lb, NULL);
 }
 
-int MPI_Type_create_resized(MPI_Datatype oldtype,
+int mpi_type_create_resized(MPI_Datatype oldtype,
 			    MPI_Aint lb,
 			    MPI_Aint extent,
 			    MPI_Datatype *newtype) {
@@ -2864,11 +3265,11 @@ int MPI_Type_create_resized(MPI_Datatype oldtype,
   return err;
 }
 
-int MPI_Type_commit(MPI_Datatype *datatype) {
+int mpi_type_commit(MPI_Datatype *datatype) {
   return mpir_type_commit(&mpir_internal_data, *datatype);
 }
 
-int MPI_Type_free(MPI_Datatype *datatype) {
+int mpi_type_free(MPI_Datatype *datatype) {
   int err = mpir_type_free(&mpir_internal_data, *datatype);
   if (err == MPI_SUCCESS) {
     *datatype = MPI_DATATYPE_NULL;
@@ -2879,18 +3280,18 @@ int MPI_Type_free(MPI_Datatype *datatype) {
   return err;
 }
 
-int MPI_Type_optimized(MPI_Datatype *datatype,
+int mpi_type_optimized(MPI_Datatype *datatype,
                        int optimized) {
   return mpir_type_optimized(&mpir_internal_data, *datatype, optimized);
 }
 
-int MPI_Type_contiguous(int count,
+int mpi_type_contiguous(int count,
                         MPI_Datatype oldtype,
                         MPI_Datatype *newtype) {
   return mpir_type_contiguous(&mpir_internal_data, count, oldtype, newtype);
 }
 
-int MPI_Type_vector(int count,
+int mpi_type_vector(int count,
                     int blocklength,
                     int stride,
                     MPI_Datatype oldtype,
@@ -2899,7 +3300,7 @@ int MPI_Type_vector(int count,
   return mpir_type_vector(&mpir_internal_data, count, blocklength, hstride, oldtype, newtype);
 }
 
-int MPI_Type_hvector(int count,
+int mpi_type_hvector(int count,
                      int blocklength,
                      int stride,
                      MPI_Datatype oldtype,
@@ -2907,7 +3308,7 @@ int MPI_Type_hvector(int count,
   return mpir_type_vector(&mpir_internal_data, count, blocklength, stride, oldtype, newtype);
 }
 
-int MPI_Type_indexed(int count,
+int mpi_type_indexed(int count,
                      int *array_of_blocklengths,
                      int *array_of_displacements,
                      MPI_Datatype oldtype,
@@ -2928,7 +3329,7 @@ int MPI_Type_indexed(int count,
   return err;
 }
 
-int MPI_Type_hindexed(int count,
+int mpi_type_hindexed(int count,
                       int *array_of_blocklengths,
                       MPI_Aint *array_of_displacements,
                       MPI_Datatype oldtype,
@@ -2951,7 +3352,7 @@ int MPI_Type_hindexed(int count,
   return err;
 }
 
-int MPI_Type_struct(int count,
+int mpi_type_struct(int count,
                     int *array_of_blocklengths,
                     MPI_Aint *array_of_displacements,
                     MPI_Datatype *array_of_types,
@@ -2959,7 +3360,7 @@ int MPI_Type_struct(int count,
   return mpir_type_struct(&mpir_internal_data, count, array_of_blocklengths, array_of_displacements, array_of_types, newtype);
 }
 
-int MPI_Comm_group(MPI_Comm comm,
+int mpi_comm_group(MPI_Comm comm,
 		   MPI_Group *group) {
   MPI_NMAD_LOG_IN();
 
@@ -2976,7 +3377,7 @@ static int nodecmp(const void *v1, const void *v2)
   return ((*node1)[1] - (*node2)[1]);
 }
 
-int MPI_Comm_split(MPI_Comm comm,
+int mpi_comm_split(MPI_Comm comm,
 		   int color,
 		   int key,
 		   MPI_Comm *newcomm) {
@@ -3006,7 +3407,7 @@ int MPI_Comm_split(MPI_Comm comm,
   MPI_NMAD_TRACE("\n");
 #endif /* DEBUG */
 
-  MPI_Alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
+  mpi_alltoall(sendbuf, 3, MPI_INT, recvbuf, 3, MPI_INT, comm);
 
 #ifdef DEBUG
   MPI_NMAD_TRACE("[%d] Received: ", mpir_communicator->rank);
@@ -3051,7 +3452,7 @@ int MPI_Comm_split(MPI_Comm comm,
     *newcomm = MPI_COMM_NULL;
   }
   else {
-    MPI_Comm_dup(comm, newcomm);
+    mpi_comm_dup(comm, newcomm);
     mpir_newcommunicator = mpir_get_communicator(&mpir_internal_data, *newcomm);
     mpir_newcommunicator->size = nb_conodes;
     FREE_AND_SET_NULL(mpir_newcommunicator->global_ranks);
@@ -3076,16 +3477,16 @@ int MPI_Comm_split(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
-int MPI_Comm_dup(MPI_Comm comm,
+int mpi_comm_dup(MPI_Comm comm,
 		 MPI_Comm *newcomm) {
   return mpir_comm_dup(&mpir_internal_data, comm, newcomm);
 }
 
-int MPI_Comm_free(MPI_Comm *comm) {
+int mpi_comm_free(MPI_Comm *comm) {
   return mpir_comm_free(&mpir_internal_data, comm);
 }
 
-int MPI_Group_translate_ranks(MPI_Group group1,
+int mpi_group_translate_ranks(MPI_Group group1,
 			      int n,
 			      int *ranks1,
 			      MPI_Group group2,
@@ -3116,4 +3517,95 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
+}
+
+
+/* Not implemented */
+
+int MPI_Get(void *origin_addr,
+	    int origin_count,
+	    MPI_Datatype origin_datatype,
+	    int target_rank,
+	    MPI_Aint target_disp,
+            int target_count,
+	    MPI_Datatype target_datatype,
+	    MPI_Win win)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+
+int MPI_Put(void *origin_addr,
+	    int origin_count,
+	    MPI_Datatype origin_datatype,
+	    int target_rank,
+	    MPI_Aint target_disp,
+            int target_count,
+	    MPI_Datatype target_datatype,
+	    MPI_Win win)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+
+int MPI_Comm_spawn(char *command,
+		   char *argv[],
+		   int maxprocs,
+		   MPI_Info info,
+		   int root,
+		   MPI_Comm comm,
+		   MPI_Comm *intercomm,
+		   int array_of_errcodes[])
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+
+int MPI_Comm_get_parent(MPI_Comm *parent)
+{
+  if(parent)
+    *parent = MPI_COMM_NULL;
+  return MPI_SUCCESS;
+}
+
+
+int MPI_Comm_remote_size(MPI_Comm comm, int *size)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+
+int MPI_Status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+int MPI_Status_c2f(MPI_Status *c_status, MPI_Fint *f_status)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+MPI_Win MPI_Win_f2c(MPI_Fint win)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+
+MPI_Fint MPI_Win_c2f(MPI_Win win)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
+}
+
+int MPI_Group_size(MPI_Group group, int *size)
+{
+  ERROR("<%s> not implemented\n", __FUNCTION__);
+  return MPI_ERR_UNKNOWN;
 }

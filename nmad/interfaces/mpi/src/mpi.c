@@ -284,11 +284,7 @@ void mpi_recv_(void *buffer,
                int *ierr) {
   MPI_Status _status;
   *ierr = MPI_Recv(buffer, *count, *datatype, *source, *tag, *comm, &_status);
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -327,11 +323,7 @@ void mpi_sendrecv_(void *sendbuf,
   *ierr = MPI_Sendrecv(sendbuf, *sendcount, *sendtype, *dest, *sendtag,
 		       recvbuf, *recvcount, *recvtype, *source, *recvtag, *comm,
 		       &_status);
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -401,11 +393,7 @@ void mpi_wait_(int *request,
                int *ierr) {
   MPI_Status _status;
   *ierr = MPI_Wait(request, &_status);
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -429,11 +417,7 @@ void mpi_waitall_(int *count,
     for (i = 0; i < *count; i++) {
       MPI_Status _status;
       err =  MPI_Wait(&array_of_requests[i], &_status);
-      if (*(array_of_statuses[i])) {
-	array_of_statuses[i][0] = _status.MPI_SOURCE;
-	array_of_statuses[i][1] = _status.MPI_TAG;
-	array_of_statuses[i][2] = _status.MPI_ERROR;
-      }
+      mpi_status_c2f(&_status, array_of_statuses[i]);
       if (err != NM_ESUCCESS)
         goto out;
     }
@@ -469,11 +453,7 @@ void mpi_waitany_(int *count,
           mpir_request->request_type = MPI_REQUEST_ZERO;
           *rqindex = i;
 
-          if (*status) {
-            status[0] = _status.MPI_SOURCE;
-            status[1] = _status.MPI_TAG;
-            status[2] = _status.MPI_ERROR;
-          }
+	  mpi_status_c2f(&_status, status);
 
           *ierr = err;
           return;
@@ -499,11 +479,7 @@ void mpi_test_(int *request,
   *ierr = MPI_Test(request, flag, &_status);
   if (*ierr != MPI_SUCCESS)
     return;
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -531,12 +507,7 @@ void mpi_testany_(int *count,
         *flag = _flag;
         *ierr = MPI_SUCCESS;
 
-        if (*status) {
-          status[0] = _status.MPI_SOURCE;
-          status[1] = _status.MPI_TAG;
-          status[2] = _status.MPI_ERROR;
-        }
-
+	mpi_status_c2f(&_status, status);
         return;
       }
     }
@@ -560,11 +531,7 @@ void mpi_iprobe_(int *source,
   MPI_Status _status;
   *ierr = MPI_Iprobe(*source, *tag, *comm, flag, &_status);
 
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -578,11 +545,7 @@ void mpi_probe_(int *source,
   MPI_Status _status;
   *ierr = MPI_Probe(*source, *tag, *comm, &_status);
 
-  if (*status) {
-    status[0] = _status.MPI_SOURCE;
-    status[1] = _status.MPI_TAG;
-    status[2] = _status.MPI_ERROR;
-  }
+  mpi_status_c2f(&_status, status);
 }
 
 /**
@@ -611,9 +574,7 @@ void mpi_get_count_(int *status,
                     int *count,
                     int *ierr) {
   MPI_Status _status;
-  _status.MPI_SOURCE = status[0];
-  _status.MPI_TAG = status[1];
-  _status.MPI_ERROR = status[2];
+  mpi_status_f2c(status, &_status);
   *ierr = MPI_Get_count(&_status, *datatype, count);
 }
 
@@ -1555,6 +1516,12 @@ int MPI_Group_translate_ranks(MPI_Group group1,
 			      int *ranks1,
 			      MPI_Group group2,
 			      int *ranks2) __attribute__ ((alias ("mpi_group_translate_ranks")));
+
+int MPI_Status_c2f(MPI_Status *c_status,
+		   MPI_Fint *f_status) __attribute__ ((alias ("mpi_status_c2f")));
+
+int MPI_Status_f2c(MPI_Fint *f_status,
+		   MPI_Status *c_status) __attribute__ ((alias ("mpi_status_f2c")));
 
 
 
@@ -3520,6 +3487,29 @@ int mpi_group_translate_ranks(MPI_Group group1,
 }
 
 
+int mpi_status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
+{
+  if (*f_status && c_status) {
+    f_status[0] = c_status->MPI_SOURCE;
+    f_status[1] = c_status->MPI_TAG;
+    f_status[2] = c_status->MPI_ERROR;
+    return MPI_SUCCESS;
+  }
+  return MPI_ERR_ARG;
+}
+
+int mpi_status_c2f(MPI_Status *c_status, MPI_Fint *f_status)
+{
+  if (*f_status && c_status) {
+    c_status->MPI_SOURCE = f_status[0];
+    c_status->MPI_TAG    = f_status[1];
+    c_status->MPI_ERROR  = f_status[2];
+    return MPI_SUCCESS;
+  }
+  return MPI_ERR_ARG;
+}
+
+
 /* Not implemented */
 
 int MPI_Get(void *origin_addr,
@@ -3573,19 +3563,6 @@ int MPI_Comm_get_parent(MPI_Comm *parent)
 
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
-
-int MPI_Status_f2c(MPI_Fint *f_status, MPI_Status *c_status)
-{
-  ERROR("<%s> not implemented\n", __FUNCTION__);
-  return MPI_ERR_UNKNOWN;
-}
-
-int MPI_Status_c2f(MPI_Status *c_status, MPI_Fint *f_status)
 {
   ERROR("<%s> not implemented\n", __FUNCTION__);
   return MPI_ERR_UNKNOWN;

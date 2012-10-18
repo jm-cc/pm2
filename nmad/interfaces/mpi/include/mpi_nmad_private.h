@@ -1010,6 +1010,12 @@ int mpi_group_translate_ranks(MPI_Group group1,
 			      MPI_Group group2,
 			      int *ranks2);
 
+int mpi_status_c2f(MPI_Status *c_status,
+		   MPI_Fint *f_status);
+
+int mpi_status_f2c(MPI_Fint *f_status,
+		   MPI_Status *c_status);
+
 /* @} */
 
 #endif /* MPI_NMAD_PRIVATE_H */

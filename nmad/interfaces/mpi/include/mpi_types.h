@@ -256,4 +256,17 @@ typedef int MPI_Fint;
 #define MPI_Op_c2f(op) (MPI_Fint)(op)
 #define MPI_Op_f2c(op) (MPI_Op)(op)
 
+/* Translates a Fortran status into a C status.
+ * @param f_status Fortan status
+ * @param c_status C status
+ * @return MPI status
+ */
+int MPI_Status_f2c(MPI_Fint *f_status, MPI_Status *c_status);
+
+/* Translates a C status into a Fortran status.
+ * @param f_status Fortan status
+ * @param c_status C status
+ */
+int MPI_Status_c2f(MPI_Status *c_status, MPI_Fint *f_status);
+
 #endif /* MPI_TYPES_H */

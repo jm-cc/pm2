@@ -64,10 +64,6 @@ int MPI_Comm_spawn(char *command,
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size);
 
-int MPI_Status_f2c(MPI_Fint *f_status, MPI_Status *c_status);
-
-int MPI_Status_c2f(MPI_Status *c_status, MPI_Fint *f_status);
-
 MPI_Win MPI_Win_f2c(MPI_Fint win);
 
 MPI_Fint MPI_Win_c2f(MPI_Win win);

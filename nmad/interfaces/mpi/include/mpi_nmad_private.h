@@ -39,6 +39,8 @@
 #include <tbx.h>
 #include <nm_launcher.h>
 
+#include "mpi.h"
+
 #define MADMPI_VERSION    1
 #define MADMPI_SUBVERSION 0
 
@@ -88,6 +90,15 @@ typedef struct mpir_communicator_s {
   int rank;
   /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
   int *global_ranks;
+  /** cartesian topology */
+  struct cart_topology_s
+  {
+    int ndims;    /**< number of dimensions */
+    int*dims;     /**< number of procs in each dim. */
+    int*periods;  /**< whether each dim. is periodic */
+    int size;     /**< pre-computed size of cartesian topology */
+    int rank;     /**< pre-computed rank of proc. */
+  } cart_topology;
 } mpir_communicator_t;
 /* @} */
 
@@ -102,10 +113,12 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
+#define PREALLOCATED_MPI_REQUEST 1024
+
 /** Internal communication request */
 typedef struct mpir_request_s {
   /* identifier of the request */
-  uint32_t request_id;
+  MPI_Request request_id;
   /** type of the request */
   MPI_Request_type request_type;
   /** persistent type of the request */
@@ -142,6 +155,9 @@ typedef struct mpir_request_s {
   /** pointer to the data to be exchanged */
   void *buffer;
 } __attribute__((__may_alias__)) mpir_request_t;
+
+PUK_VECT_TYPE(mpir_request, mpir_request_t*);
+
 /* @} */
 
 /** @name Reduce operators */
@@ -212,6 +228,11 @@ typedef struct mpir_datatype_s {
 /** Internal data */
 typedef struct mpir_internal_data_s
 {
+  /** allocator for MPI_Request */
+  p_tbx_memory_t request_mem;
+  /** maps MPI_Request to mpir_request_t* */
+  mpir_request_vect_t request_array;
+
   /** all the defined datatypes */
   mpir_datatype_t *datatypes[NUMBER_OF_DATATYPES];
   /** pool of ids of datatypes that can be created by end-users */
@@ -264,6 +285,14 @@ nm_gate_t mpir_get_gate(mpir_internal_data_t *mpir_internal_data, int node);
  * Gets the node associated to the given gate
  */
 int mpir_get_dest(mpir_internal_data_t *mpir_internal_data, nm_gate_t gate);
+
+/* Requests functions */
+
+mpir_request_t*mpir_request_alloc(void);
+
+void mpir_request_free(mpir_request_t* req);
+
+mpir_request_t*mpir_request_find(MPI_Fint req_id);
 
 
 /* Send/recv/status functions */

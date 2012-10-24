@@ -479,6 +479,20 @@ int MPI_Comm_dup(MPI_Comm comm,
 
 int MPI_Comm_free(MPI_Comm *comm) __attribute__ ((alias ("mpi_comm_free")));
 
+
+int MPI_Cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart)
+  __attribute__ ((alias ("mpi_cart_create")));
+
+int MPI_Cart_coords(MPI_Comm comm, int rank, int ndims, int*coords)
+  __attribute__ ((alias ("mpi_cart_coords")));
+
+int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank)
+  __attribute__ ((alias ("mpi_cart_rank")));
+
+int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest)
+  __attribute__ ((alias ("mpi_cart_shift")));
+
+
 int MPI_Group_translate_ranks(MPI_Group group1,
 			      int n,
 			      int *ranks1,
@@ -2412,13 +2426,124 @@ int mpi_comm_split(MPI_Comm comm,
   return MPI_SUCCESS;
 }
 
-int mpi_comm_dup(MPI_Comm comm,
-		 MPI_Comm *newcomm) {
+int mpi_comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
+{
   return mpir_comm_dup(&mpir_internal_data, comm, newcomm);
 }
 
 int mpi_comm_free(MPI_Comm *comm) {
   return mpir_comm_free(&mpir_internal_data, comm);
+}
+
+int mpi_cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart)
+{
+  MPI_Comm comm_cart = MPI_COMM_NULL;
+  int err = MPI_Comm_dup(comm_old, &comm_cart);
+  if(err != MPI_SUCCESS)
+    {
+      return err;
+    }
+  mpir_communicator_t*mpir_comm_cart = mpir_get_communicator(&mpir_internal_data, comm_cart);
+  struct mpir_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  if(ndims < 0)
+    {
+      return MPI_ERR_DIMS;
+    }
+  cart->ndims = ndims;
+  cart->dims = malloc(ndims * sizeof(int));
+  cart->periods = malloc(ndims * sizeof(int));
+  cart->size = 1;
+  int d;
+  for(d = 0; d < ndims; d++)
+    {
+      if(dims[d] <= 0)
+	{
+	  return MPI_ERR_DIMS;
+	}
+      cart->dims[d] = dims[d];
+      cart->periods[d] = periods[d];
+      cart->size *= dims[d];
+    }
+  if(cart->size > mpir_comm_cart->size)
+    return MPI_ERR_TOPOLOGY;
+  if(mpir_comm_cart->rank >= cart->size)
+    mpir_comm_cart->rank = MPI_PROC_NULL;
+  *_comm_cart = comm_cart;
+  return MPI_SUCCESS;
+}
+
+int mpi_cart_coords(MPI_Comm comm, int rank, int ndims, int*coords)
+{
+  mpir_communicator_t*mpir_comm_cart = mpir_get_communicator(&mpir_internal_data, comm);
+  struct mpir_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  if(ndims < cart->ndims)
+    return MPI_ERR_DIMS;
+  int d;
+  int nnodes = cart->size;
+  for(d = 0; d < cart->ndims; d++)
+    {
+      nnodes    = nnodes / cart->dims[d];
+      coords[d] = rank / nnodes;
+      rank      = rank % nnodes;
+    }
+  return MPI_SUCCESS;
+}
+
+int mpi_cart_rank(MPI_Comm comm, int*coords, int*rank)
+{
+  mpir_communicator_t*mpir_comm_cart = mpir_get_communicator(&mpir_internal_data, comm);
+  struct mpir_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  const int ndims = cart->ndims;
+  *rank = 0;
+  int multiplier = 1;
+  int i;
+  for(i = ndims - 1; i >= 0; i--)
+    {
+      int coord = coords[i];
+      if(cart->periods[i])
+	{
+	  if(coord >= cart->dims[i])
+	    {
+	      coord = coord % cart->dims[i];
+	    }
+	  else if(coord < 0)
+	    {
+	      coord = coord % cart->dims[i];
+	      if(coord)
+		coord = cart->dims[i] + coord;
+	    }
+	}
+      else
+	if(coord >= cart->dims[i] || coord < 0)
+	  {
+	    *rank = MPI_PROC_NULL;
+	    return MPI_ERR_RANK;
+	  }
+      *rank += multiplier * coord;
+      multiplier *= cart->dims[i];
+    }
+  return MPI_SUCCESS;
+}
+
+int mpi_cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest)
+{
+  mpir_communicator_t*mpir_comm_cart = mpir_get_communicator(&mpir_internal_data, comm);
+  struct mpir_cart_topology_s*cart = &mpir_comm_cart->cart_topology;
+  const int rank = mpir_comm_cart->rank;
+  if(direction < 0 || direction >= cart->ndims)
+    return MPI_ERR_ARG;
+  if(displ == 0)
+    return MPI_ERR_ARG;
+  int*coords = malloc(cart->ndims * sizeof(int));
+  int err = mpi_cart_coords(comm, rank, cart->ndims, coords);
+  if(err != MPI_SUCCESS)
+    return err;
+  coords[direction] += displ;
+  mpi_cart_rank(comm, coords, dest);
+  coords[direction] -= 2 * displ;
+  mpi_cart_rank(comm, coords, source);
+  free(coords);
+  return MPI_SUCCESS;
 }
 
 int mpi_group_translate_ranks(MPI_Group group1,

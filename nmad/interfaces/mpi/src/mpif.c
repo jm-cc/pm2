@@ -1041,6 +1041,32 @@ void mpi_comm_free_(int *comm,
   *comm = _newcomm;
 }
 
+void mpi_cart_create_(int*_comm_old, int*ndims, int*dims, int*periods, int*reorder, int*_comm_cart, int*ierr)
+{
+  MPI_Comm comm_old = *_comm_old;
+  MPI_Comm comm_cart = MPI_COMM_NULL;
+  *ierr = MPI_Cart_create(comm_old, *ndims, dims, periods, *reorder, &comm_cart);
+  *_comm_cart = comm_cart;
+}
+
+void mpi_cart_coords_(int*_comm, int*rank, int*ndims, int*coords, int*ierr)
+{
+  MPI_Comm comm = *_comm;
+  *ierr = MPI_Cart_coords(comm, *rank, *ndims, coords);
+}
+
+void mpi_cart_rank_(int*_comm, int*coords, int*rank, int*ierr)
+{
+  MPI_Comm comm = *_comm;
+  *ierr = MPI_Cart_rank(comm, coords, rank);
+}
+
+void mpi_cart_shift_(int*_comm, int*direction, int*displ, int*source, int*dest, int*ierr)
+{
+  MPI_Comm comm = *_comm;
+  MPI_Cart_shift(comm, *direction, *displ, source, dest);
+}
+
 /**
  * Fortran version for MPI_GROUP_TRANSLATE_RANKS
  */

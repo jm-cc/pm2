@@ -91,13 +91,12 @@ typedef struct mpir_communicator_s {
   /** ranks of all the communicator nodes in the \ref MPI_COMM_WORLD communicator */
   int *global_ranks;
   /** cartesian topology */
-  struct cart_topology_s
+  struct mpir_cart_topology_s
   {
     int ndims;    /**< number of dimensions */
     int*dims;     /**< number of procs in each dim. */
     int*periods;  /**< whether each dim. is periodic */
     int size;     /**< pre-computed size of cartesian topology */
-    int rank;     /**< pre-computed rank of proc. */
   } cart_topology;
 } mpir_communicator_t;
 /* @} */

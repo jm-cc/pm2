@@ -67,6 +67,14 @@ int MPI_Comm_dup(MPI_Comm comm,
  */
 int MPI_Comm_free(MPI_Comm *comm);
 
+int MPI_Cart_create(MPI_Comm comm_old, int ndims, int*dims, int*periods, int reorder, MPI_Comm*_comm_cart);
+
+int MPI_Cart_coords(MPI_Comm comm, int rank, int ndims, int*coords);
+
+int MPI_Cart_rank(MPI_Comm comm, int*coords, int*rank);
+
+int MPI_Cart_shift(MPI_Comm comm, int direction, int displ, int*source, int*dest);
+
 /**
  * Maps the rank of a set of processes in group1 to their rank in
  * group2.

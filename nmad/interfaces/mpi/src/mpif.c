@@ -502,9 +502,7 @@ void mpi_cancel_(int *request,
  */
 void mpi_request_free_(int *request,
 		       int *ierr) {
-  mpir_request_t* p_request = mpir_request_find(*request);
   *ierr = MPI_Request_free(request);
-  mpir_request_free(p_request);
 }
 
 /**

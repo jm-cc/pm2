@@ -30,23 +30,14 @@
 #include <Padico/Module.h>
 
 
-/** 'self' per-driver data.
- */
-struct nm_self_drv
-{
-  /** 2 pipes */
-  int fd[4];
-  /** url */
-  char*url;
-  int nb_trks;
-};
+PUK_LFQUEUE_TYPE(nm_pw, struct nm_pkt_wrap*, NULL, 1024);
+
 
 /** 'self' per-gate data (singleton, actually)
  */
 struct nm_self
 {
-  int fd[4];   /**< one fd pair per track. */
-  volatile int pending; /**< pending data on track #0 */
+  struct nm_pw_lfqueue_s queues[2]; /**< pw queues (2 trks) */
 };
 
 
@@ -128,8 +119,8 @@ static void*nm_self_instanciate(puk_instance_t instance, puk_context_t context)
       abort();
     }
   init_done = 1;
-  memset(status, 0, sizeof(struct nm_self));
-  status->pending = 0;
+  nm_pw_lfqueue_init(&status->queues[0]);
+  nm_pw_lfqueue_init(&status->queues[1]);
   return status;
 }
 
@@ -141,45 +132,29 @@ static void nm_self_destroy(void*_status)
 /** Url function */
 static const char*nm_self_get_driver_url(struct nm_drv *p_drv)
 {
-  struct nm_self_drv *p_self_drv = p_drv->priv;
-  return p_self_drv->url;
+  static const char*url = NULL;
+  if(url == NULL)
+    url = strdup("-");
+  return url;
 }
-
 
 static int nm_self_query(struct nm_drv *p_drv,
 			 struct nm_driver_query_param *params TBX_UNUSED,
 			 int nparam TBX_UNUSED)
 {
-  struct nm_self_drv* p_self_drv = TBX_MALLOC(sizeof(struct nm_self_drv));
-  memset(p_self_drv, 0, sizeof(struct nm_self_drv));
-  
+ 
 #ifdef PM2_NUIOA
   p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
 #endif
   p_drv->profile.latency = INT_MAX;
   p_drv->profile.bandwidth = 0;
 
-  p_drv->priv = p_self_drv;
+  p_drv->priv = NULL;
   return NM_ESUCCESS;
 }
 
 static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
-  struct nm_self_drv*p_self_drv = p_drv->priv;
-  int rc = NM_SYS(pipe)(&p_self_drv->fd[0]);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: self- pipe error: %s\n", strerror(errno));
-      abort();
-    }
-  rc = NM_SYS(pipe)(&p_self_drv->fd[2]);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: self- pipe error: %s\n", strerror(errno));
-      abort();
-    }
-  p_self_drv->url = strdup("-");
-
   /* open the requested number of tracks */
   int i;
   for(i = 0; i < nb_trks; i++)
@@ -197,84 +172,42 @@ static int nm_self_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb
       trk_caps[i].max_iovec_size	    = sysconf(_SC_IOV_MAX);
 #endif /* IOV_MAX */
     }
-
   return NM_ESUCCESS;
 }
 
 static int nm_self_exit(struct nm_drv*p_drv)
 {
-  struct nm_self_drv*p_self_drv = p_drv->priv;
-  TBX_FREE(p_self_drv->url);
-  TBX_FREE(p_self_drv);
   return NM_ESUCCESS;
 }
 
 static int nm_self_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
-  struct nm_self*status = (struct nm_self*)_status;
-  struct nm_self_drv*p_self_drv = p_drv->priv;
-  memcpy(&status->fd[0], &p_self_drv->fd[0], 4*sizeof(int));
   return NM_ESUCCESS;
 }
 
 static int nm_self_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
 {
-  struct nm_self*status = (struct nm_self*)_status;
-  const int rfd = status->fd[trk_id];
-  const int wfd = status->fd[1+trk_id];
-  NM_SYS(close)(rfd);
-  NM_SYS(close)(wfd);
-  status->fd[trk_id] = -1;
-  status->fd[1+trk_id] = -1;
   return NM_ESUCCESS;
 }
 
 static int nm_self_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_self*status = (struct nm_self*)_status;
-  if(p_pw->trk_id == 0)
+  p_pw->drv_priv = (void*)0x01;
+  int err = nm_pw_lfqueue_enqueue(&status->queues[p_pw->trk_id], p_pw);
+  if(err != 0)
     {
-      const int fd = status->fd[1];
-      struct iovec*iov = p_pw->v;
-      const int n = p_pw->v_nb;
-      struct iovec send_iov[1 + n];
-      int size = 0;
-      int i;
-      for(i = 0; i < n; i++)
-	{
-	  send_iov[i+1] = (struct iovec){ .iov_base = iov[i].iov_base, .iov_len = iov[i].iov_len };
-	  size += iov[i].iov_len;
-	}
-      send_iov[0] = (struct iovec){ .iov_base = &size, .iov_len = sizeof(size) };
-      int rc = NM_SYS(writev)(fd, send_iov, n+1);
-      if(rc < 0 || rc < size + sizeof(size))
-	{
-	  fprintf(stderr, "nmad: self- error %d while sending message.\n", errno);
-	  abort();
-	}
-      __sync_fetch_and_add(&status->pending, size);
+      fprintf(stderr, "nmad: self- queue full while sending data.\n");
     }
-  else
-    {
-      const int fd = status->fd[2];
-      assert(p_pw->v_nb == 1);
-      struct nm_pkt_wrap*p_pw_recv = NULL;
-      int rc = NM_SYS(read)(fd, &p_pw_recv, sizeof(p_pw_recv));
-      if(rc != sizeof(p_pw_recv))
-	{
-	  fprintf(stderr, "nmad: self- error while sending large data.\n");
-	  abort();
-	}
-      assert(p_pw_recv->v[0].iov_len == p_pw->v[0].iov_len);
-      memcpy(p_pw_recv->v[0].iov_base, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
-      p_pw_recv->drv_priv = (void*)0x01;
-    }
-  return NM_ESUCCESS;
+  return -NM_EAGAIN;
 }
 
 static int nm_self_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  return NM_ESUCCESS;
+  if(p_pw->drv_priv == NULL)
+    return NM_ESUCCESS;
+  else
+    return -NM_EAGAIN;
 }
 
 static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
@@ -285,76 +218,28 @@ static int nm_self_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
       fprintf(stderr, "nmad: self- iovec not supported on recv side yet.\n");
       abort();
     }
-  if(p_pw->trk_id == 0)
-    {
-      return nm_self_poll_recv(_status, p_pw);
-    }
-  else
-    {
-      p_pw->drv_priv = NULL;
-      const int fd = status->fd[3];
-      int rc = NM_SYS(write)(fd, &p_pw, sizeof(p_pw));
-      if(rc != sizeof(p_pw))
-	{
-	  fprintf(stderr, "nmad: self- received truncated data.\n");
-	  abort();
-	}
-      return -NM_EAGAIN;
-    }
+  return nm_self_poll_recv(_status, p_pw);
 }
-
 
 static int nm_self_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  if(p_pw->trk_id == 0)
+  struct nm_self*status = (struct nm_self*)_status;
+  struct nm_pkt_wrap*p_send_pw = nm_pw_lfqueue_dequeue(&status->queues[p_pw->trk_id]);
+  if(p_send_pw == NULL)
+    return -NM_EAGAIN;
+  int done = 0;
+  int i;
+  for(i = 0; i < p_send_pw->v_nb; i++)
     {
-      struct nm_self*status = (struct nm_self*)_status;
-      if(status->pending == 0)
-	return -NM_EAGAIN;
-      const int fd = status->fd[2*p_pw->trk_id];
-      struct iovec*iov = &p_pw->v[0];
-      int size = 0;
-      struct pollfd fds = { .fd = fd, .events = POLLIN };
-      int rc = NM_SYS(poll)(&fds, 1, 0);
-      if(rc == 0)
+      if(done + p_send_pw->v[i].iov_len > p_pw->v[0].iov_len)
 	{
-	  return -NM_EAGAIN;
-	}
-      else if(rc<0 && errno == EINTR)
-        {
-	  return -NM_EAGAIN;
-        }
-      else if((rc < 0) || ((rc > 0) && (fds.revents & (POLLERR|POLLHUP|POLLNVAL))))
-	{
-	  return -NM_ECLOSED;
-	}
-      rc = NM_SYS(read)(fd, &size, sizeof(size));
-      const int err = errno;
-      if(rc < sizeof(size))
-	{
-	  fprintf(stderr, "nmad: self- error %d while reading header (%s).\n", err, strerror(err));
+	  fprintf(stderr, "nmad: self- trying to send more data than receive posted.\n");
 	  abort();
 	}
-      else if(size > iov->iov_len)
-	{
-	  fprintf(stderr, "nmad: self- received more data than expected.\n");
-	  abort();
-	}
-      rc = NM_SYS(read)(fd, iov->iov_base, size);
-      if(rc < 0 || rc != size)
-	{
-	  fprintf(stderr, "nmad: self- error %d while reading data.\n", errno);
-	  abort();
-	}
-      __sync_fetch_and_sub(&status->pending, size);
-      return NM_ESUCCESS;
+      memcpy(p_pw->v[0].iov_base + done, p_send_pw->v[i].iov_base, p_send_pw->v[i].iov_len);
+      done += p_send_pw->v[i].iov_len;
     }
-  else
-    {
-      if(p_pw->drv_priv == NULL)
-	return NM_ESUCCESS;
-      else
-	return -NM_EAGAIN;
-    }
+  p_send_pw->drv_priv = NULL;
+  return NM_ESUCCESS;
 }
 

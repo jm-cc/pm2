@@ -1113,7 +1113,7 @@ size_t mpir_sizeof_datatype(mpir_internal_data_t *mpir_internal_data,
 
 mpir_datatype_t* mpir_get_datatype(mpir_internal_data_t *mpir_internal_data,
 				   MPI_Datatype datatype) {
-  if (tbx_unlikely(datatype < NUMBER_OF_DATATYPES)) {
+  if (datatype >= 0 && datatype < NUMBER_OF_DATATYPES) {
     if (tbx_unlikely(mpir_internal_data->datatypes[datatype] == NULL)) {
       ERROR("Datatype %d invalid", datatype);
       return NULL;

@@ -50,7 +50,7 @@ static int __piom_ltask_submit_in_lwp(struct piom_ltask*task);
 
 
 /** refcounter on piom_ltask */
-static volatile int piom_ltask_initialized = 0;
+static int piom_ltask_initialized = 0;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
 static struct piom_ltask_queue global_queue;
 #endif

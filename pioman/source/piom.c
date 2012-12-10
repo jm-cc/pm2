@@ -21,6 +21,7 @@
 TBX_INTERNAL struct piom_parameters_s piom_parameters =
     {
 	.busy_wait_usec     = 5,
+	.busy_wait_granularity = 100,
 	.enable_progression = 1,
 	.idle_granularity   = 5,
 	.timer_period       = 4,
@@ -34,15 +35,21 @@ void pioman_init(int*argc, char**argv)
     piom_init_done++;
     if(piom_init_done > 1)
 	return;
-    const char*s_busy_wait_usec     = getenv("PIOM_BUSY_WAIT_USEC");
-    const char*s_enable_progression = getenv("PIOM_ENABLE_PROGRESSION");
-    const char*s_idle_granularity   = getenv("PIOM_IDLE_GRANULARITY");
-    const char*s_timer_period       = getenv("PIOM_TIMER_PERIOD");
-    const char*s_spare_lwp          = getenv("PIOM_SPARE_LWP");
+    const char*s_busy_wait_usec        = getenv("PIOM_BUSY_WAIT_USEC");
+    const char*s_busy_wait_granularity = getenv("PIOM_BUSY_WAIT_GRANULARITY");
+    const char*s_enable_progression    = getenv("PIOM_ENABLE_PROGRESSION");
+    const char*s_idle_granularity      = getenv("PIOM_IDLE_GRANULARITY");
+    const char*s_timer_period          = getenv("PIOM_TIMER_PERIOD");
+    const char*s_spare_lwp             = getenv("PIOM_SPARE_LWP");
     if(s_busy_wait_usec)
 	{
 	    piom_parameters.busy_wait_usec = atoi(s_busy_wait_usec);
 	    fprintf(stderr, "# pioman: custom PIOM_BUSY_WAIT_USEC = %d\n", piom_parameters.busy_wait_usec);
+	}
+    if(s_busy_wait_granularity)
+	{
+	    piom_parameters.busy_wait_granularity = atoi(s_busy_wait_granularity);
+	    fprintf(stderr, "# pioman: custom PIOM_BUSY_WAIT_GRANULARITY = %d\n", piom_parameters.busy_wait_granularity);
 	}
     if(s_enable_progression)
 	{

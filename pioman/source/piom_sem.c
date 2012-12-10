@@ -56,9 +56,6 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 
 #if defined(PIOMAN_MULTITHREAD)
 
-/** number of loops between timestamps (to amortize cost of clock_gettime- ~100ns per call) */
-#define PIOMAN_BUSY_WAIT_LOOP 10000
-
 __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
 {
   PIOM_LOG_IN();
@@ -69,7 +66,7 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
   do
     {
       int i;
-      for(i = 0; i < PIOMAN_BUSY_WAIT_LOOP ; i++)
+      for(i = 0; i < piom_parameters.busy_wait_granularity ; i++)
 	{
 	  if(piom_cond_test(cond, mask))
 	    {

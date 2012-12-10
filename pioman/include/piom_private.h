@@ -46,6 +46,7 @@ TBX_INTERNAL void piom_exit_ltasks(void);
 TBX_INTERNAL struct piom_parameters_s
 {
     int busy_wait_usec;     /**< time to do a busy wait before blocking, in usec; default: 5 */
+    int busy_wait_granularity; /**< number of busy wait loops between timestamps to amortize clock_gettime() */
     int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
     int idle_granularity;   /**< in usec. */
     int timer_period;       /**< period for timer-based polling (in msec); default: 4*/

@@ -260,9 +260,10 @@ static void*__piom_ltask_idle(void*_dummy)
 		    if((num_skip > 20000) && (num_skip % 5000 == 0))
 			fprintf(stderr, "PIOMan: WARNING- idle thread cannot acquire lock (count = %d); suspecting deadlock.\n", num_skip);
 #endif
-		    usleep(10);
+		    sched_yield();
 		}
-	    usleep(piom_parameters.idle_granularity);
+	    if(piom_parameters.idle_granularity > 0)
+		usleep(piom_parameters.idle_granularity);
 	}
     return NULL;
 }
@@ -333,7 +334,7 @@ void piom_init_ltasks(void)
 	    if(piom_parameters.idle_granularity >= 0)
 		{
 		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle, NULL);
-		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER)); 
+		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
 		}
 	    /* ** spare LWPs for blocking calls */
 	    if(piom_parameters.spare_lwp)

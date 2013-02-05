@@ -23,7 +23,7 @@
 #include "mpi_nmad_private.h"
 #include "nm_so_parameters.h"
 
-extern mpir_internal_data_t *get_mpir_internal_data();
+extern mpir_internal_data_t *get_mpir_internal_data(void);
 
 void mpir_op_max(void *invec,
 		 void *inoutvec,

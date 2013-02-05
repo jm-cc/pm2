@@ -36,8 +36,10 @@ static void mpir_request_init(void)
   tbx_malloc_init(&mpir_internal_data.request_mem, sizeof(mpir_request_t),
 		  PREALLOCATED_MPI_REQUEST, "MPI requests");
   mpir_internal_data.request_array = mpir_request_vect_new();
+  /* placeholder so as to never allocate request #0 (easier to debug) */
+  mpir_request_vect_push_back(mpir_internal_data.request_array, (void*)0xDEADBEEF);
   int k;
-  for(k = 0; k < PREALLOCATED_MPI_REQUEST; k++)
+  for(k = 0; k < PREALLOCATED_MPI_REQUEST - 1; k++)
     {
       mpir_request_vect_push_back(mpir_internal_data.request_array, NULL);
     }
@@ -63,6 +65,7 @@ mpir_request_t*mpir_request_alloc(void)
     }
   *i = req;
   req->request_id = mpir_request_vect_rank(mpir_internal_data.request_array, i);
+  assert(req == mpir_request_find(req->request_id));
   return req;
 }
 
@@ -70,6 +73,7 @@ void mpir_request_free(mpir_request_t* req)
 {
   const int id = req->request_id;
   mpir_request_vect_itor_t i = mpir_request_vect_ptr(mpir_internal_data.request_array, id);
+  (*i)->request_id = -1;
   assert(*i == req);
   *i = NULL;
   tbx_free(mpir_internal_data.request_mem, req);
@@ -78,7 +82,11 @@ void mpir_request_free(mpir_request_t* req)
 mpir_request_t*mpir_request_find(MPI_Fint req_id)
 {
   const int id = (int)req_id;
-  return mpir_request_vect_at(mpir_internal_data.request_array, id);
+  assert(id >= 0);
+  mpir_request_t*mpir_request = mpir_request_vect_at(mpir_internal_data.request_array, id);
+  assert(mpir_request != NULL);
+  assert(mpir_request->request_id == id);
+  return mpir_request;
 }
 
 
@@ -1147,9 +1155,10 @@ int mpi_wait(MPI_Request *request,
   if (mpir_request->request_datatype > MPI_PACKED) {
     err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
   }
-
+  /*
   mpir_request_free(mpir_request);
-
+  *request = MPI_REQUEST_NULL;
+  */
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
   return err;
@@ -1472,7 +1481,7 @@ int mpi_request_free(MPI_Request *request) {
     FREE_AND_SET_NULL(mpir_request->contig_buffer);
   }
   mpir_request_free(mpir_request);
-
+  *request = MPI_REQUEST_NULL;
   MPI_NMAD_LOG_OUT();
   return MPI_SUCCESS;
 }

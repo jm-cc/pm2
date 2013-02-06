@@ -39,7 +39,7 @@ static void mpir_request_init(void)
   /* placeholder so as to never allocate request #0 (easier to debug) */
   mpir_request_vect_push_back(mpir_internal_data.request_array, (void*)0xDEADBEEF);
   int k;
-  for(k = 0; k < PREALLOCATED_MPI_REQUEST - 1; k++)
+  for(k = 1; k < PREALLOCATED_MPI_REQUEST; k++)
     {
       mpir_request_vect_push_back(mpir_internal_data.request_array, NULL);
     }
@@ -48,7 +48,6 @@ static void mpir_request_init(void)
 mpir_request_t*mpir_request_alloc(void)
 {
   mpir_request_t*req = tbx_malloc(mpir_internal_data.request_mem);
-
   /* todo: make this function thread-safe */
   mpir_request_vect_itor_t i = mpir_request_vect_find(mpir_internal_data.request_array, NULL);
   if(i == NULL)
@@ -1155,10 +1154,10 @@ int mpi_wait(MPI_Request *request,
   if (mpir_request->request_datatype > MPI_PACKED) {
     err = mpir_type_unlock(&mpir_internal_data, mpir_request->request_datatype);
   }
-  /*
+  
   mpir_request_free(mpir_request);
   *request = MPI_REQUEST_NULL;
-  */
+  
   MPI_NMAD_TRACE("Request completed\n");
   MPI_NMAD_LOG_OUT();
   return err;

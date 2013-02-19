@@ -112,7 +112,7 @@ typedef int MPI_Request_type;
 #define MPI_REQUEST_PACK_RECV ((MPI_Request_type)4)
 #define MPI_REQUEST_CANCELLED ((MPI_Request_type)5)
 
-#define PREALLOCATED_MPI_REQUEST 1024
+#define PREALLOCATED_MPI_REQUEST 128
 
 /** Internal communication request */
 typedef struct mpir_request_s {

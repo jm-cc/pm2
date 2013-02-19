@@ -72,7 +72,7 @@ void mpir_request_free(mpir_request_t* req)
 {
   const int id = req->request_id;
   mpir_request_vect_itor_t i = mpir_request_vect_ptr(mpir_internal_data.request_array, id);
-  (*i)->request_id = -1;
+  (*i)->request_id = MPI_REQUEST_NULL;
   assert(*i == req);
   *i = NULL;
   tbx_free(mpir_internal_data.request_mem, req);
@@ -81,6 +81,8 @@ void mpir_request_free(mpir_request_t* req)
 mpir_request_t*mpir_request_find(MPI_Fint req_id)
 {
   const int id = (int)req_id;
+  if(id == MPI_REQUEST_NULL)
+    return NULL;
   assert(id >= 0);
   mpir_request_t*mpir_request = mpir_request_vect_at(mpir_internal_data.request_array, id);
   assert(mpir_request != NULL);
@@ -1137,6 +1139,11 @@ int mpi_wait(MPI_Request *request,
 
   MPI_NMAD_LOG_IN();
 
+  if(mpir_request == NULL)
+    {
+      err = MPI_ERR_REQUEST;
+      goto out; 
+    }
   err = mpir_wait(&mpir_internal_data, mpir_request);
 
   if (status != MPI_STATUS_IGNORE) {
@@ -1156,6 +1163,7 @@ int mpi_wait(MPI_Request *request,
   }
   
   mpir_request_free(mpir_request);
+ out:
   *request = MPI_REQUEST_NULL;
   
   MPI_NMAD_TRACE("Request completed\n");

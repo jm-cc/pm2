@@ -432,54 +432,63 @@ void mpir_op_maxloc(void *invec,
   mpir_internal_data_t *mpir_internal_data = get_mpir_internal_data();
   mpir_datatype_t *dtype = mpir_get_datatype(mpir_internal_data, *type);
 
-  if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2)) {
-    MPI_Datatype oldtype = (dtype)->old_types[0];
-
-    /** Set the actual length */
-    _len = *len * (dtype)->elements;
-
-    /** Perform the operation */
-    switch (oldtype) {
-	  /* todo: this only works for 'simple' types
-	   * Implement this for other types (eg. complex)
-	   */
-
+  if ((dtype)->dte_type == MPIR_CONTIG && ((dtype)->elements == 2))
+    {
+      MPI_Datatype oldtype = (dtype)->old_types[0];
+      /** Set the actual length */
+      _len = *len * (dtype)->elements;
+      /** Perform the operation */
+      switch (oldtype) 
+	{
 #define DO_MAXLOC(__type__)						\
-	    __type__ *a = (__type__ *)inoutvec; __type__ *b = (__type__ *)invec; \
-	    for ( i=0; i<_len; i+=2 ) {					\
-		    if (a[i] == b[i])					\
-			    a[i+1] = tbx_min(a[i+1],b[i+1]);		\
-		    else if (a[i] < b[i]) {				\
-			    a[i]   = b[i];\
-			    a[i+1] = b[i+1];	\
-		    }				\
+	    __type__ *a = (__type__ *)inoutvec; const __type__ *b = (__type__ *)invec; \
+	    for(i = 0; i < _len; i+=2 ) {				\
+	      if(a[i] == b[i])						\
+		a[i+1] = tbx_min(a[i+1],b[i+1]);			\
+	      else if(a[i] < b[i]) {					\
+		a[i] = b[i];						\
+		a[i+1] = b[i+1];					\
+	      }								\
 	    }
 
-  case MPI_CHAR             : { DO_MAXLOC(char); break; }
-  case MPI_UNSIGNED_CHAR    : { DO_MAXLOC(unsigned char); break; }
-  case MPI_BYTE             : { DO_MAXLOC(uint8_t); break; }
-  case MPI_SHORT            : { DO_MAXLOC(short); break; }
-  case MPI_UNSIGNED_SHORT   : { DO_MAXLOC(unsigned short); break; }
-  case MPI_INTEGER: case MPI_INT: { DO_MAXLOC(int); break; }
-  case MPI_UNSIGNED         : { DO_MAXLOC(unsigned); break; }
-  case MPI_LONG             : { DO_MAXLOC(long); break; }
-  case MPI_UNSIGNED_LONG    : { DO_MAXLOC(unsigned long); break; }
-  case MPI_FLOAT            : { DO_MAXLOC(float); break; }
-  case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MAXLOC(double); break; }
-  case MPI_LONG_DOUBLE      : { DO_MAXLOC(long double); break; }
-  case MPI_LONG_LONG_INT    : { DO_MAXLOC(long long); break; }
-  case MPI_INTEGER4         : { DO_MAXLOC(uint32_t); break; }
-  case MPI_INTEGER8         : { DO_MAXLOC(uint64_t); break; }
-
-    default:
-      ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
-      break;
+	case MPI_CHAR             : { DO_MAXLOC(char); break; }
+	case MPI_UNSIGNED_CHAR    : { DO_MAXLOC(unsigned char); break; }
+	case MPI_BYTE             : { DO_MAXLOC(uint8_t); break; }
+	case MPI_SHORT            : { DO_MAXLOC(short); break; }
+	case MPI_UNSIGNED_SHORT   : { DO_MAXLOC(unsigned short); break; }
+	case MPI_INTEGER: case MPI_INT: { DO_MAXLOC(int); break; }
+	case MPI_UNSIGNED         : { DO_MAXLOC(unsigned); break; }
+	case MPI_LONG             : { DO_MAXLOC(long); break; }
+	case MPI_UNSIGNED_LONG    : { DO_MAXLOC(unsigned long); break; }
+	case MPI_FLOAT            : { DO_MAXLOC(float); break; }
+	case MPI_DOUBLE_PRECISION : case MPI_DOUBLE: { DO_MAXLOC(double); break; }
+	case MPI_LONG_DOUBLE      : { DO_MAXLOC(long double); break; }
+	case MPI_LONG_LONG_INT    : { DO_MAXLOC(long long); break; }
+	case MPI_INTEGER4         : { DO_MAXLOC(uint32_t); break; }
+	case MPI_INTEGER8         : { DO_MAXLOC(uint64_t); break; }
+	  
+	default:
+	  ERROR("Datatype Contiguous(%d) for MAXLOC Reduce operation", *type);
+	  break;
+	}
     }
-  }
-  else {
-    fprintf(stderr, "type %d, elements %d\n",   (dtype)->dte_type, ((dtype)->elements));
-    ERROR("Datatype %d for MAXLOC Reduce operation", *type);
-  }
+  else if((dtype)->dte_type == MPIR_BASIC && (dtype)->elements == 2)
+    {
+      _len = *len * (dtype)->elements;
+      switch(*type)
+	{
+	case MPI_2DOUBLE_PRECISION: { DO_MAXLOC(double); break; }
+	case MPI_2INT: { DO_MAXLOC(int); break; }
+	default:
+	  ERROR("Datatype Basic(%d) for MAXLOC Reduce operation", *type);
+	  break;
+	}
+    }
+  else
+    {
+      fprintf(stderr, "type %d, elements %d\n",   (dtype)->dte_type, ((dtype)->elements));
+      ERROR("Datatype %d for MAXLOC Reduce operation", *type);
+    }
 }
 
 void mpir_op_minloc(void *invec,

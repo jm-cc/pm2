@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include "piom_private.h"
+#include <tbx_topology.h>
 
 #define PIOM_MAX_LTASK 256
 
@@ -60,6 +61,9 @@ static pthread_t idle_thread;
 /** disable ltask dispatching while locking */
 volatile int __piom_ltask_handler_masked = 0;
 
+/** node topology */
+static hwloc_topology_t __piom_ltask_topology = NULL;
+
 /** number of spare LWPs running */
 static int                __piom_ltask_lwps_num = 0;
 /** number of available LWPs */
@@ -70,7 +74,7 @@ static sem_t              __piom_ltask_lwps_ready;
 static struct piom_ltask_lfqueue_s __piom_ltask_lwps_queue;
 
 static void*__piom_ltask_lwp_worker(void*_dummy);
-#endif
+#endif /* PIOMAN_PTHREAD */
 
 /* ********************************************************* */
 
@@ -290,6 +294,11 @@ void piom_init_ltasks(void)
 {
     if (!piom_ltask_initialized)
 	{
+#ifdef PM2_TOPOLOGY
+	    tbx_topology_init(0, NULL);
+	    __piom_ltask_topology = topology;
+#endif /* PM2_TOPOLOGY */
+
 #ifdef PIOMAN_MARCEL
 	    /* register a callback to Marcel */
 	    marcel_register_scheduling_hook(piom_check_polling, MARCEL_SCHEDULING_POINT_TIMER);

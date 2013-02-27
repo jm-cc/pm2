@@ -24,13 +24,20 @@
 #  include <sched.h>
 #  define PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_PTHREAD
-#  define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  ifndef PM2_TOPOLOGY
+#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  else
+//#    define PIOMAN_TOPOLOGY_HWLOC
+#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  endif
 #elif defined(PIOMAN_MARCEL)
 #  include <marcel.h>
 #  define PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_MARCEL
 #  ifndef MA__NUMA
 #    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  else
+#    define PIOMAN_TOPOLOGY_MARCEL
 #  endif
 #else
 #  undef  PIOMAN_MULTITHREAD

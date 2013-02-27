@@ -78,11 +78,10 @@ struct nm_drv
 
 #ifdef PIOMAN
   struct piom_ltask task;
-  piom_vpset_t vpset;
+  piom_topo_obj_t binding;
 #endif	/* PIOMAN */
   /* NM core object. */
   struct nm_core *p_core;
-  
 };
 
 #define NM_FOR_EACH_LOCAL_DRIVER(p_drv, p_core) \

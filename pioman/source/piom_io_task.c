@@ -185,7 +185,7 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_task_ev ev;
-	piom_vpset_t task_vpset = piom_vpset_full;
+	piom_topo_obj_t task_binding = piom_topo_full;
 
 	/* If the server is not running, just perform a classical read */
 	if(piom_ltask_test_activity())
@@ -199,7 +199,7 @@ piom_task_read(int fildes, void *buf, size_t nbytes)
 					  piom_io_task_poll, 
 					  &ev,
 					  PIOM_LTASK_OPTION_REPEAT, 
-					  task_vpset);
+					  task_binding);
 			piom_ltask_submit(&ev.task);
 			PIOM_LOGF("Reading in fd %i\n", fildes);
 			piom_sem_P(&ev.sem);
@@ -218,7 +218,7 @@ int
 piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_task_ev ev;
-	piom_vpset_t task_vpset = piom_vpset_full;
+	piom_topo_obj_t task_binding = piom_topo_full;
 	
         /* If the server is not running, just perform a classical read */
 	if(piom_ltask_test_activity())
@@ -232,7 +232,7 @@ piom_task_readv(int fildes, const struct iovec *iov, int iovcnt)
 				  piom_io_task_poll, 
 				  &ev,
 				  PIOM_LTASK_OPTION_REPEAT, 
-				  task_vpset);
+				  task_binding);
 		piom_ltask_submit(&ev.task);
 		piom_sem_P(&ev.sem);
 		piom_ltask_wait(&ev.task);
@@ -250,7 +250,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 {
 	int n;
 	struct piom_tcp_task_ev ev;
-	piom_vpset_t task_vpset = piom_vpset_full;
+	piom_topo_obj_t task_binding = piom_topo_full;
 	PIOM_LOG_IN();
 
 	if(piom_ltask_test_activity())
@@ -264,7 +264,7 @@ piom_task_write(int fildes, const void *buf, size_t nbytes)
 					  piom_io_task_poll, 
 					  &ev, 
 					  PIOM_LTASK_OPTION_REPEAT,
-					  task_vpset);
+					  task_binding);
 			piom_ltask_submit(&ev.task);
 			PIOM_LOGF("IO writing fd %i", fildes);
 			piom_sem_P(&ev.sem);
@@ -284,7 +284,7 @@ int
 piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 {
 	struct piom_tcp_task_ev ev;
-	piom_vpset_t task_vpset = piom_vpset_full;
+	piom_topo_obj_t task_binding = piom_topo_full;
 
 	if(piom_ltask_test_activity())
 	{
@@ -297,7 +297,7 @@ piom_task_writev(int fildes, const struct iovec *iov, int iovcnt)
 				  piom_io_task_poll, 
 				  &ev, 
 				  PIOM_LTASK_OPTION_REPEAT,
-				  task_vpset);
+				  task_binding);
 		piom_ltask_submit(&ev.task);
 		PIOM_LOGF("IO writing fd %i", fildes);
 		piom_sem_P(&ev.sem);
@@ -313,7 +313,7 @@ piom_task_select(int nfds, fd_set * __restrict rfds,
 		 fd_set * __restrict wfds)
 {
 	struct piom_tcp_task_ev ev;
-	piom_vpset_t task_vpset = piom_vpset_full;
+	piom_topo_obj_t task_binding = piom_topo_full;
 
 	if(piom_ltask_test_activity())
 	{	
@@ -328,7 +328,7 @@ piom_task_select(int nfds, fd_set * __restrict rfds,
 				  piom_io_task_poll, 
 				  &ev, 
 				  PIOM_LTASK_OPTION_REPEAT,
-				  task_vpset);
+				  task_binding);
 		piom_ltask_submit(&ev.task);
 		
 		return ev.ret_val >= 0 ? ev.ret_val :

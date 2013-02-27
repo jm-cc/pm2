@@ -43,7 +43,10 @@ typedef struct piom_ltask_queue
     struct piom_ltask_lfqueue_s       ltask_queue;
     volatile piom_ltask_queue_state_t state;
     volatile int                      processing;
-    piom_vpset_t                      vpset;
+    piom_topo_obj_t                   binding;
+#ifndef PIOMAN_LTASK_GLOBAL_QUEUE
+    struct piom_ltask_queue          *parent;
+#endif
 } piom_ltask_queue_t;
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
@@ -55,14 +58,17 @@ static int piom_ltask_initialized = 0;
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
 static struct piom_ltask_queue global_queue;
 #endif
+
+#ifdef PIOMAN_TOPOLOGY_HWLOC
+/** node topology */
+hwloc_topology_t __piom_ltask_topology = NULL;
+#endif /* PM2_TOPOLOGY */
+
 #ifdef PIOMAN_PTHREAD
 /** low-priority thread for idle polling */
 static pthread_t idle_thread;
 /** disable ltask dispatching while locking */
 volatile int __piom_ltask_handler_masked = 0;
-
-/** node topology */
-static hwloc_topology_t __piom_ltask_topology = NULL;
 
 /** number of spare LWPs running */
 static int                __piom_ltask_lwps_num = 0;
@@ -104,30 +110,20 @@ static inline void piom_tasklet_unmask(void)
 #endif /* PIOMAN_PTHREAD/MARCEL */
 
 
-/* Get the queue that matches a vpset:
- * - a local queue if only one vp is set in the vpset
- * - the global queue otherwise
+/* Get the queue that matches a topology object
  */
-static inline piom_ltask_queue_t*__piom_get_queue(piom_vpset_t vpset)
+static inline piom_ltask_queue_t*__piom_get_queue(piom_topo_obj_t obj)
 {
-#ifdef PIOMAN_LTASK_GLOBAL_QUEUE
+    assert(obj != NULL);
+#if defined(PIOMAN_TOPOLOGY_HWLOC)
+    return obj->userdata;
+#elif defined(PIOMAN_TOPOLOGY_MARCEL)
+    return obj->ltask_data;
+#elif defined(PIOMAN_LTASK_GLOBAL_QUEUE)
     return &global_queue;
 #else /* PIOMAN_LTASK_GLOBAL_QUEUE */
-    int vp1 = marcel_vpset_first(&vpset);
-    int vp2 = marcel_vpset_last(&vpset);
-
-    if(vp2 > marcel_nbvps())
-	/* deal with the MARCEL_VPSET_FULL case */
-	vp2 = marcel_nbvps()-1;
-    if(vp1 < 0)
-	vp1 = 0;
-    marcel_topo_level_t *l1 = &marcel_topo_levels[marcel_topo_nblevels-1][vp1];
-    marcel_topo_level_t *l2 = &marcel_topo_levels[marcel_topo_nblevels-1][vp2];
-    marcel_topo_level_t *common_ancestor = marcel_topo_common_ancestor(l1, l2);
-    assert(common_ancestor != NULL);
-    piom_ltask_queue_t*queue = (piom_ltask_queue_t *)common_ancestor->ltask_data;
-    assert(queue != NULL);
-    return queue;
+#error
+    return NULL;
 #endif	/* PIOMAN_LTASK_GLOBAL_QUEUE */
 }
 
@@ -250,7 +246,8 @@ static void __piom_ltask_sighandler(int num)
 static void*__piom_ltask_idle(void*_dummy)
 {
     int num_skip = 0;
-    while(global_queue.state != PIOM_LTASK_QUEUE_STATE_STOPPED)
+#warning TODO- check which queue to use here
+    while(__piom_get_queue(piom_ltask_current_obj())->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    if(!__piom_ltask_handler_masked)
 		{
@@ -294,10 +291,48 @@ void piom_init_ltasks(void)
 {
     if (!piom_ltask_initialized)
 	{
-#ifdef PM2_TOPOLOGY
-	    tbx_topology_init(0, NULL);
-	    __piom_ltask_topology = topology;
-#endif /* PM2_TOPOLOGY */
+
+#ifdef PIOMAN_LTASK_GLOBAL_QUEUE
+	    __piom_init_queue(&global_queue);
+	    global_queue.binding = piom_topo_full;
+#elif defined(PIOMAN_TOPOLOGY_MARCEL)
+ 	    int i, j;
+	    for(i = 0; i < marcel_topo_nblevels; i++)
+		{
+		    for(j = 0; j < marcel_topo_level_nbitems[i]; j++)
+			{
+			    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
+			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
+			    __piom_init_queue(queue);
+			    queue->binding = l;
+			    queue->parent = (l->father != NULL) ? l->father->ltask_data : NULL;
+			    l->ltask_data = queue;
+			}
+		}
+#elif defined(PIOMAN_TOPOLOGY_HWLOC)
+	    hwloc_topology_init(&__piom_ltask_topology);
+	    hwloc_topology_load(__piom_ltask_topology);
+	    const int depth = hwloc_topology_get_depth(__piom_ltask_topology);
+	    int d, i;
+	    for(d = 0; d < depth; d++)
+		{
+		    printf("# pioman: topo level %d\n", d);
+		    for (i = 0; i < hwloc_get_nbobjs_by_depth(__piom_ltask_topology, d); i++)
+			{
+			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
+			    char string[128];
+			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
+			    if(i == 0)
+				printf("# pioman:  index %u: %s\n", i, string);
+			    /* TODO- allocate memory on given obj */
+			    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof (piom_ltask_queue_t));
+			    __piom_init_queue(queue);
+			    queue->binding = o;
+			    queue->parent = (o->parent != NULL) ? o->parent->userdata : NULL;
+			    o->userdata = queue;
+			}
+		}
+#endif	/* PIOMAN_LTASK_GLOBAL_QUEUE */
 
 #ifdef PIOMAN_MARCEL
 	    /* register a callback to Marcel */
@@ -367,22 +402,6 @@ void piom_init_ltasks(void)
 		}
 #endif /* PIOMAN_PTHREAD */
 
-#ifdef PIOMAN_LTASK_GLOBAL_QUEUE
-	    __piom_init_queue(&global_queue);
-	    global_queue.vpset= ~0;
-#else /* PIOMAN_LTASK_GLOBAL_QUEUE */
- 	    int i, j;
-	    for(i = 0; i < marcel_topo_nblevels; i++)
-		{
-		    for(j = 0; j < marcel_topo_level_nbitems[i]; j++)
-			{
-			    struct marcel_topo_level *l = &marcel_topo_levels[i][j];
-			    l->ltask_data = TBX_MALLOC(sizeof (piom_ltask_queue_t));
-			    __piom_init_queue ((piom_ltask_queue_t*)l->ltask_data);
-			    ((piom_ltask_queue_t*)l->ltask_data)->vpset = l->vpset;
-			}
-		}
-#endif	/* PIOMAN_LTASK_GLOBAL_QUEUE */
 	}
     piom_ltask_initialized++;
 }
@@ -395,6 +414,7 @@ void piom_exit_ltasks(void)
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
 	    __piom_exit_queue((piom_ltask_queue_t*)&global_queue);
 #else
+#ifdef PIOMAN_TOPOLOGY_MARCEL
 	    int i, j;
 	    for(i = marcel_topo_nblevels -1 ; i >= 0; i--)
 		{
@@ -405,7 +425,22 @@ void piom_exit_ltasks(void)
 			    TBX_FREE(l->ltask_data);
 			}
 		}
+#elif defined PIOMAN_TOPOLOGY_HWLOC
+	    const int depth = hwloc_topology_get_depth(__piom_ltask_topology);
+	    int d, i;
+	    for(d = 0; d < depth; d++)
+		{
+		    for (i = 0; i < hwloc_get_nbobjs_by_depth(__piom_ltask_topology, d); i++)
+			{
+			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
+			    piom_ltask_queue_t*queue = o->userdata;
+			    __piom_exit_queue(queue);
+			    TBX_FREE(queue);
+			    o->userdata = NULL;
+			}
+		}
 #endif
+#endif /* PIOMAN_LTASK_GLOBAL_QUEUE */
 	}
 
 }
@@ -470,7 +505,7 @@ void piom_ltask_submit(struct piom_ltask *task)
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
     queue = &global_queue;
 #else /* PIOMAN_LTASK_GLOBAL_QUEUE */
-    queue = __piom_get_queue (task->vp_mask);
+    queue = __piom_get_queue(task->binding);
 #endif /* PIOMAN_LTASK_GLOBAL_QUEUE */
     assert(task != NULL);
     assert(queue != NULL);
@@ -485,16 +520,15 @@ void*piom_ltask_schedule(void)
 #ifdef PIOMAN_LTASK_GLOBAL_QUEUE
 	    ltask = __piom_ltask_queue_schedule(&global_queue);
 #else /* PIOMAN_LTASK_GLOBAL_QUEUE */
-	    const int vp = piom_ltask_current_vp();
-	    const struct marcel_topo_level *l;
-	    for(l = &marcel_topo_levels[marcel_topo_nblevels - 1][vp];
-		l;			/* do this as long as there's a topo level */
-		l=l->father)
+	    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
+	    while(queue != NULL)
 		{
-		    piom_ltask_queue_t*queue = (piom_ltask_queue_t*)(l->ltask_data);
 		    ltask = __piom_ltask_queue_schedule(queue);
 		    if(ltask)
-			break;
+			{
+			    break;
+			}
+		    queue = queue->parent;
 		}
 #endif /* PIOMAN_LTASK_GLOBAL_QUEUE */
 	}
@@ -590,55 +624,39 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 }
 
 
-#ifdef MA__NUMA
-piom_vpset_t piom_get_parent_machine(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_MACHINE)
-	l=l->father;
-    return l->vpset;
+#if defined(PIOMAN_TOPOLOGY_MARCEL)
+piom_topo_obj_t piom_get_obj(enum piom_topo_level_e _level)
+{
+    enum marcel_topo_level_e level = _level;
+    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels - 1][marcel_current_vp()];
+    while(l != NULL && l->type > level)
+	{
+	    l = l->father;
+	}
+    assert(l != NULL);
+    return l;
 }
-
-piom_vpset_t piom_get_parent_node(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_NODE)
-	l=l->father;
-    return l->vpset;
+#elif defined(PIOM_TOPOLOGY_HWLOC)
+piom_topo_obj_t piom_get_obj(enum piom_topo_level_e _level)
+{
+#warning TODO-
+    return piom_topo_full;
 }
-
-piom_vpset_t piom_get_parent_die(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_DIE)
-	l=l->father;
-    return l->vpset;
+#else
+piom_topo_obj_t piom_get_obj(enum piom_topo_level_e _level)
+{
+    return piom_topo_full;
 }
+#endif
 
-piom_vpset_t piom_get_parent_l3(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_L2)
-	l=l->father;
-    return l->vpset;
-}
+/* 
+hwloc_get_ancestor_obj_by_type(hwloc_topology_t topology, hwloc_obj_type_t type, hwloc_obj_t obj)
 
-piom_vpset_t piom_get_parent_l2(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_L2)
-	l=l->father;
-    return l->vpset;
-}
+HWLOC_OBJ_NODE
+HWLOC_OBJ_SOCKET
+HWLOC_OBJ_CACHE
+HWLOC_OBJ_CORE
+HWLOC_OBJ_PU
+*/
 
-piom_vpset_t piom_get_parent_core(unsigned vp) {
-    marcel_topo_level_t *l = &marcel_topo_levels[marcel_topo_nblevels-1][vp];
-    while(l->type > MARCEL_LEVEL_VP)
-	l=l->father;
-    return l->vpset;
-}
-#else  /* MA__NUMA */
-piom_vpset_t piom_get_parent_machine(unsigned vp) { return piom_vpset_full; }
-piom_vpset_t piom_get_parent_node(unsigned vp) { return piom_vpset_full; }
-piom_vpset_t piom_get_parent_die(unsigned vp) { return piom_vpset_full; }
-piom_vpset_t piom_get_parent_l3(unsigned vp) { return piom_vpset_full; }
-piom_vpset_t piom_get_parent_l2(unsigned vp) { return piom_vpset_full; }
-piom_vpset_t piom_get_parent_core(unsigned vp) { return piom_vpset_full; }
-
-#endif /* MA__NUMA */
 

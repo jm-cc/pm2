@@ -44,9 +44,6 @@
 #define piom_thread_t     marcel_t
 #define PIOM_THREAD_NULL NULL
 #define PIOM_SELF       marcel_self()
-#define PIOM_CURRENT_VP marcel_current_vp()
-#define piom_ltask_current_vp() marcel_current_vp()
-#define piom_ltask_nvp()        marcel_nbvps()
 
 #elif defined(PIOMAN_LOCK_PTHREAD)
 
@@ -96,9 +93,6 @@ static inline int piom_spin_trylock(piom_spinlock_t *lock)
 #define piom_thread_t pthread_t
 #define PIOM_THREAD_NULL ((pthread_t)(-1))
 #define PIOM_SELF pthread_self()
-#define PIOM_CURRENT_VP 0
-#define piom_ltask_current_vp() (0)
-#define piom_ltask_nvp()        (1)
 
 #elif defined(PIOMAN_LOCK_NONE)
 
@@ -121,9 +115,6 @@ static inline int piom_spin_trylock(piom_spinlock_t *lock)
 #define piom_thread_t     int
 #define PIOM_THREAD_NULL 0
 #define PIOM_SELF       1
-#define PIOM_CURRENT_VP 1
-#define piom_ltask_current_vp() (0)
-#define piom_ltask_nvp()        (1)
 
 #else
 #  error "PIOMan: no lock scheme defined."

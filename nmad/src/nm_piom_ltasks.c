@@ -40,7 +40,7 @@ enum nm_ltask_policy_e
   NM_BIND_ON_CORE, 
 };
 
-static enum nm_ltask_policy_e __policy = NM_BIND_ON_LOCAL_CORE;
+static enum nm_ltask_policy_e __policy = NM_BIND_ON_LOCAL_DIE;
 static int __policy_core = 0;
 
 /* retrieve the binding policy */
@@ -85,32 +85,38 @@ void nm_ltask_set_policy(void)
   return ;
 }
 
-static piom_vpset_t nm_get_binding_policy(void)
+static piom_topo_obj_t nm_get_binding_policy(void)
 {
-  switch(__policy) {
-  case  NM_BIND_ON_LOCAL_CORE:
-    return piom_get_parent_core(PIOM_CURRENT_VP);
-  case NM_BIND_ON_LOCAL_L2: 
-    return piom_get_parent_l2(PIOM_CURRENT_VP);
-  case NM_BIND_ON_LOCAL_L3: 
-    return piom_get_parent_l3(PIOM_CURRENT_VP);
-  case NM_BIND_ON_LOCAL_DIE: 
-    return piom_get_parent_die(PIOM_CURRENT_VP);
-  case NM_BIND_ON_LOCAL_NODE: 
-    return piom_get_parent_node(PIOM_CURRENT_VP);
-  case NM_BIND_ON_LOCAL_MACHINE: 
-    return piom_get_parent_machine(PIOM_CURRENT_VP);
-  case NM_BIND_ON_CORE:
-    return PIOM_VPSET_VP(__policy_core);
-  }
-  return PIOM_VPSET_VP(PIOM_CURRENT_VP);
+  piom_topo_obj_t binding = piom_topo_full;
+  switch(__policy) 
+    {
+    case  NM_BIND_ON_LOCAL_CORE:
+      binding = piom_get_obj(PIOM_TOPO_CORE);
+    case NM_BIND_ON_LOCAL_DIE: 
+      binding = piom_get_obj(PIOM_TOPO_SOCKET);
+#warning TODO-
+#if 0
+    case NM_BIND_ON_LOCAL_L2: 
+      return piom_get_parent_l2(PIOM_CURRENT_VP);
+    case NM_BIND_ON_LOCAL_L3: 
+      return piom_get_parent_l3(PIOM_CURRENT_VP);
+    case NM_BIND_ON_LOCAL_NODE: 
+      return piom_get_parent_node(PIOM_CURRENT_VP);
+    case NM_BIND_ON_LOCAL_MACHINE: 
+      return piom_get_parent_machine(PIOM_CURRENT_VP);
+    case NM_BIND_ON_CORE:
+      return PIOM_VPSET_VP(__policy_core);
+#endif
+    }
+  return binding;
 }
 
-static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
+static piom_topo_obj_t nm_get_binding_policy_drv(struct nm_drv*p_drv)
 {
   if(__policy != NM_BIND_ON_CORE)
     return nm_get_binding_policy();
-
+#warning TODO-
+#if 0
   struct nm_core *p_core = p_drv->p_core;
   struct tbx_fast_list_head *head = &p_core->driver_list;
   struct tbx_fast_list_head *pos = head->next;
@@ -172,7 +178,7 @@ static piom_vpset_t nm_get_binding_policy_drv(struct nm_drv *p_drv)
   NM_DISPF("# nmad: driver #%d (%s) is bound to core #%d\n",  drv_id, p_drv->driver->name, binding_core);
   p_drv->vpset = piom_get_parent_core(binding_core);
   return p_drv->vpset;
- 
+#endif /* 0 */
 }
 
 /* ********************************************************* */
@@ -286,10 +292,10 @@ static int nm_task_offload(void* args)
 
 void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
-  piom_vpset_t task_vpset = nm_get_binding_policy();
+  piom_topo_obj_t task_binding = nm_get_binding_policy();
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
-		    task_vpset);
+		    task_binding);
   const struct nm_drv_iface_s*driver = p_pw->p_drv->driver;
   if(driver->capabilities.is_exportable && (driver->wait_recv_iov != NULL))
     {
@@ -300,11 +306,11 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 
 void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
-  piom_vpset_t task_vpset = nm_get_binding_policy();
+  piom_topo_obj_t task_binding = nm_get_binding_policy();
 
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
-		    task_vpset);
+		    task_binding);
   assert(p_pw->p_gdrv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(r->driver->capabilities.is_exportable && (r->driver->wait_send_iov != NULL))
@@ -316,25 +322,25 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 
 void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
 {
-  piom_vpset_t task_vpset = nm_get_binding_policy_drv(p_drv);
+  piom_topo_obj_t task_binding = nm_get_binding_policy_drv(p_drv);
  
   piom_ltask_create(task, 
 		    &nm_task_post_on_drv,
 		    p_drv,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
-		    task_vpset);
+		    task_binding);
   piom_ltask_submit(task);  
 }
 
 void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 {
-  piom_vpset_t task_vpset = nm_get_binding_policy();
+  piom_topo_obj_t task_binding = nm_get_binding_policy();
 
   piom_ltask_create(task, 
 		    &nm_task_offload,
 		    p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT, 
-		    task_vpset);
+		    task_binding);
   piom_ltask_submit(task);	
 }
 

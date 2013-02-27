@@ -17,17 +17,56 @@
 #ifndef PIOM_LTASK_H
 #define PIOM_LTASK_H
 
-#ifdef PIOMAN_MARCEL
-#define piom_vpset_t marcel_vpset_t
-#define piom_vpset_full MARCEL_VPSET_FULL
-#define PIOM_VPSET_VP(vp) MARCEL_VPSET_VP(vp)
-#define piom_vpset_set(vpset, vp) marcel_vpset_set(vpset, vp)
-#else /* PIOMAN_MARCEL */
-#define piom_vpset_t unsigned 
-#define piom_vpset_full (unsigned) 1
-#define PIOM_VPSET_VP(vp) piom_vpset_full
-#define piom_vpset_set(vpset, vp) (vpset = vp)
-#endif /* PIOMAN_MARCEL */
+#ifdef PIOMAN_TOPOLOGY_MARCEL
+#define piom_topo_obj_t   struct marcel_topo_level*
+#define piom_topo_full    marcel_topo_levels[0]
+#define piom_ltask_current_obj()  &marcel_topo_levels[marcel_topo_nblevels - 1][marcel_current_vp()]
+enum piom_topo_level_e
+    {
+	/* 
+	   MARCEL_LEVEL_MACHINE,
+	   MARCEL_LEVEL_NODE,
+	   MARCEL_LEVEL_DIE,
+	   MARCEL_LEVEL_L3,
+	   MARCEL_LEVEL_L2,
+	   MARCEL_LEVEL_CORE
+	 */
+	PIOM_TOPO_CORE   = MARCEL_LEVEL_CORE,
+	PIOM_TOPO_SOCKET = MARCEL_LEVEL_DIE
+    };
+#elif defined(PIOMAN_TOPOLOGY_HWLOC)
+#include <hwloc.h>
+#define piom_topo_obj_t   hwloc_obj_t
+#define piom_topo_full    hwloc_get_root_obj(__piom_ltask_topology)
+enum piom_topo_level_e
+    {
+	PIOM_TOPO_CORE   = HWLOC_OBJ_CORE,
+	PIOM_TOPO_SOCKET = HWLOC_OBJ_SOCKET
+    };
+extern hwloc_topology_t __piom_ltask_topology;
+static inline piom_topo_obj_t piom_ltask_current_obj(void)
+{
+    hwloc_cpuset_t set = hwloc_bitmap_alloc();
+    int rc = hwloc_get_last_cpu_location(__piom_ltask_topology, set, HWLOC_CPUBIND_THREAD);
+    if(rc != 0)
+	abort();
+    hwloc_obj_t objs[1];
+    rc = hwloc_get_largest_objs_inside_cpuset(__piom_ltask_topology, set, objs, 1);
+    if(rc <= 0)
+	abort();
+    hwloc_bitmap_free(set);
+    return objs[0];
+}
+#else /* PIOMAN_TOPOLOGY_* */
+#define piom_topo_obj_t  unsigned 
+#define piom_topo_full   (unsigned)1
+#define piom_ltask_current_obj() (unsigned)1
+enum piom_topo_level_e
+    {
+	PIOM_TOPO_CORE,
+	PIOM_TOPO_SOCKET
+    };
+#endif /* PIOMAN_TOPOLOGY_* */
 
 
 typedef unsigned piom_ltask_option_t;
@@ -64,7 +103,7 @@ struct piom_ltask
     piom_ltask_func_t blocking_func;   /**< function used for blocking system call (passive wait) */
     struct timespec origin;            /**< time origin for blocking call timeout */
     int blocking_delay;                /**< time (in usec.) to poll before switching to blocking call */
-    piom_vpset_t vp_mask;
+    piom_topo_obj_t binding;
     struct piom_ltask_queue*queue;
 };
 
@@ -134,7 +173,7 @@ static inline void piom_ltask_init(struct piom_ltask*ltask)
 /** create a new ltask. */
 static inline void piom_ltask_create(struct piom_ltask *task,
 				     piom_ltask_func_t func_ptr, void *data_ptr,
-				     piom_ltask_option_t options, piom_vpset_t vp_mask)
+				     piom_ltask_option_t options, piom_topo_obj_t binding)
 {
     task->masked = 0;
     task->func_ptr = func_ptr;
@@ -142,7 +181,7 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     task->blocking_func = NULL;
     task->options = options;
     task->state = PIOM_LTASK_STATE_NONE;
-    task->vp_mask = vp_mask;
+    task->binding = binding;
     task->queue = NULL;
     piom_cond_init(&task->done, 0);
 }
@@ -157,11 +196,7 @@ extern void piom_ltask_mask(struct piom_ltask *ltask);
 /** re-enable a previously masked ltask */
 extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
-piom_vpset_t piom_get_parent_machine(unsigned vp);
-piom_vpset_t piom_get_parent_node(unsigned vp);
-piom_vpset_t piom_get_parent_die(unsigned vp);
-piom_vpset_t piom_get_parent_l3(unsigned vp);
-piom_vpset_t piom_get_parent_l2(unsigned vp);
-piom_vpset_t piom_get_parent_core(unsigned vp);
+extern piom_topo_obj_t piom_get_obj(enum piom_topo_level_e level);
+
 
 #endif /* PIOM_LTASK_H */

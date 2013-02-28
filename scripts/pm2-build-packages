@@ -360,7 +360,7 @@ while true; do
       pkg)
 	  package_verbatim=$( echo "${content}" | cut -f 1 -d ' ' )
 	  package=$( eval echo ${package_verbatim} )
-	  options=$( echo "${content}" | cut -s -f 2- -d ' ' )
+	  options=$( eval echo "${content}" | cut -s -f 2- -d ' ' )
 	  if [ "x${prefix}" = "x" ]; then
 	      echo "# ** 'prefix' not set." 1>&2
 	      exit 1

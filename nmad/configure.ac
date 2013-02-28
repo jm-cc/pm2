@@ -167,11 +167,11 @@ if test "x${with_pioman}" = "xyes"; then
   AC_MSG_CHECKING([whether PIOMan is linked against Marcel.])
   has_marcel="`pkg-config --cflags pioman | grep -i PIOMAN_MARCEL`"
   if test "x${has_marcel}" != "x" ; then
-     nmad_examples="${nmad_examples} piom"
      AC_MSG_RESULT([yes])
   else
      AC_MSG_RESULT([no])
   fi
+  nmad_examples="${nmad_examples} piom"
 else
   AC_MSG_RESULT([no])
   requires_pioman=
@@ -242,6 +242,36 @@ if test "x${with_mx}" != "xno" ; then
 	AC_SUBST([mx_LIBS])
     elif test "x${with_mx}" != "xcheck"; then
         AC_MSG_FAILURE([--with-mx was given, but myrinetexpress.h is not found])
+    fi
+fi
+
+dnl -- CCI
+HAVE_CCI=no
+AC_ARG_WITH([cci],
+	    [AS_HELP_STRING([--with-cci], [use Common Communication Interface (CCI) @<:@default=check@:>@] )],
+	    [], [ with_cci=check ])
+if test "x${with_cci}" != "xno" ; then
+    save_CPPFLAGS="${CPPFLAGS}"
+    if test "x${with_cci}" != "xyes"; then
+        CCI_DIR="${with_cci}"
+	CPPFLAGS="${CPPFLAGS} -I${CCI_DIR}/include"
+    fi
+    AC_CHECK_HEADER(cci.h, 
+                    [ HAVE_CCI=yes ],
+                    [ HAVE_CCI=no  ])
+    CPPFLAGS="${save_CPPFLAGS}"
+    AC_SUBST(HAVE_CCI)
+    if test ${HAVE_CCI} = yes; then
+        nmad_drivers="${nmad_drivers} cci"
+        if test "x${CCI_DIR}" != "x" -a "x${CCI_DIR}" != "x/usr"; then
+      	   cci_CFLAGS="-I${CCI_DIR}/include"
+      	   cci_LIBS="-Wl,-rpath,${CCI_DIR}/lib -L${CCI_DIR}/lib"
+        fi
+	cci_LIBS="${cci_LIBS} -lcci"
+	AC_SUBST([cci_CFLAGS])
+	AC_SUBST([cci_LIBS])
+    elif test "x${with_cci}" != "xcheck"; then
+        AC_MSG_FAILURE([--with-cci was given, but cci.h is not found])
     fi
 fi
 

@@ -1,0 +1,405 @@
+/*
+ * NewMadeleine
+ * Copyright (C) 2006 (see AUTHORS file)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+#include <cci.h>
+#undef PACKAGE_NAME
+#undef PACKAGE_VERSION
+#undef PACKAGE_STRING
+#undef PACKAGE_SUPPORT
+#undef PACKAGE_TARNAME
+#undef PACKAGE_BUGREPORT
+
+#include <stdint.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+#include <limits.h>
+
+#include <nm_private.h>
+
+#include <Padico/Module.h>
+
+#define NM_CCI_URL_SIZE_MAX 64
+/** identity of peer node */
+struct nm_cci_peer_s
+{
+  nm_trk_id_t trk_id;
+  char url[NM_CCI_URL_SIZE_MAX];
+};
+/** pending connection */
+struct nm_cci_connection_s
+{
+  cci_connection_t*connection;
+  /** pw posted for recv */
+  struct nm_pkt_wrap*p_pw;
+  struct nm_cci_peer_s peer;
+};
+PUK_VECT_TYPE(nm_cci_connection, struct nm_cci_connection_s*);
+
+/** 'cci' driver per-instance data.
+ */
+struct nm_cci_drv
+{
+  cci_endpoint_t*endpoint;
+  char*url;
+  int nb_trks;
+  nm_cci_connection_vect_t pending;
+};
+
+/** 'cci' per-gate data.
+ */
+struct nm_cci
+{
+  /** one connection per track.
+   */
+  struct nm_cci_connection_s*conns[2];
+};
+
+
+/** CCI NewMad Driver */
+static const char*nm_cci_get_driver_url(struct nm_drv *p_drv);
+static int nm_cci_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam);
+static int nm_cci_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks);
+static int nm_cci_exit(struct nm_drv* p_drv);
+static int nm_cci_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url);
+static int nm_cci_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id);
+static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw);
+static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap *p_pw);
+
+static const struct nm_drv_iface_s nm_cci_driver =
+  {
+    .name               = "cci",
+    
+    .query              = &nm_cci_query,
+    .init               = &nm_cci_init,
+    .close              = &nm_cci_exit,
+
+    .connect		= &nm_cci_connect,
+    .disconnect         = &nm_cci_disconnect,
+
+    .post_send_iov	= &nm_cci_send_iov,
+    .post_recv_iov      = &nm_cci_recv_iov,
+
+    .poll_send_iov	= &nm_cci_poll_send,
+    .poll_recv_iov	= &nm_cci_poll_recv,
+
+    .get_driver_url     = &nm_cci_get_driver_url,
+
+    .capabilities.is_exportable = 0,
+    .capabilities.min_period    = 0
+  };
+
+/** 'PadicoAdapter' facet for cci driver */
+static void*nm_cci_instanciate(puk_instance_t, puk_context_t);
+static void nm_cci_destroy(void*);
+
+static const struct puk_adapter_driver_s nm_cci_adapter_driver =
+  {
+    .instanciate = &nm_cci_instanciate,
+    .destroy     = &nm_cci_destroy
+  };
+
+
+/** Component declaration */
+PADICO_MODULE_COMPONENT(NewMad_Driver_cci,
+  puk_component_declare("NewMad_Driver_cci",
+			puk_component_provides("PadicoAdapter", "adapter", &nm_cci_adapter_driver),
+			puk_component_provides("NewMad_Driver", "driver", &nm_cci_driver)));
+
+
+/** Instanciate functions */
+static void*nm_cci_instanciate(puk_instance_t instance, puk_context_t context)
+{
+  struct nm_cci*status = TBX_MALLOC(sizeof(struct nm_cci));
+  memset(status, 0, sizeof(struct nm_cci));
+  return status;
+}
+
+static void nm_cci_destroy(void*_status)
+{
+  TBX_FREE(_status);
+}
+
+/** Url function */
+static const char*nm_cci_get_driver_url(struct nm_drv *p_drv)
+{
+  struct nm_cci_drv *p_cci_drv = p_drv->priv;
+  return p_cci_drv->url;
+}
+
+
+static int nm_cci_query(struct nm_drv *p_drv,
+			struct nm_driver_query_param *params TBX_UNUSED,
+			int nparam TBX_UNUSED)
+{
+  struct nm_cci_drv* p_cci_drv = TBX_MALLOC(sizeof(struct nm_cci_drv));
+  memset(p_cci_drv, 0, sizeof(struct nm_cci_drv));
+  
+#ifdef PM2_NUIOA
+  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
+#endif
+  p_drv->profile.latency = 10000;
+  p_drv->profile.bandwidth = 1000;
+  p_drv->priv = p_cci_drv;
+  return NM_ESUCCESS;
+}
+
+static int nm_cci_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
+{
+  struct nm_cci_drv*p_cci_drv = p_drv->priv;
+
+  uint32_t caps;
+  int rc = cci_init(CCI_ABI_VERSION , 0, &caps);
+  if(rc != 0)
+    {
+      fprintf(stderr, "nmad: cci- initialization error %d.\n", rc);
+      abort();
+    }
+
+  cci_os_handle_t ep_fd;
+  rc = cci_create_endpoint(NULL, 0, &p_cci_drv->endpoint, &ep_fd);
+  if(rc != 0)
+    {
+      fprintf(stderr, "nmad: cci- create endpoint error %d.\n", rc);
+      abort();
+    }
+
+  char*url = NULL;
+  rc = cci_get_opt(p_cci_drv->endpoint, CCI_OPT_ENDPT_URI, &url);
+  if(rc != 0)
+    {
+      fprintf(stderr, "nmad: cci- get opt error %d.\n", rc);
+      abort();
+    }
+  p_cci_drv->url = strdup(url);
+
+  p_cci_drv->pending = nm_cci_connection_vect_new();
+
+  /* open the requested number of tracks */
+  int i;
+  for(i = 0; i < nb_trks; i++)
+    {
+      /* track capabilities encoding */
+      trk_caps[i].rq_type	= nm_trk_rq_dgram;
+      trk_caps[i].iov_type	= nm_trk_iov_both_assym;
+      trk_caps[i].max_pending_send_request  = 1;
+      trk_caps[i].max_pending_recv_request  = 1;
+      trk_caps[i].max_single_request_length = SSIZE_MAX;
+      trk_caps[i].max_iovec_request_length  = 0;
+#ifdef IOV_MAX
+      trk_caps[i].max_iovec_size	    = IOV_MAX;
+#else /* IOV_MAX */
+      trk_caps[i].max_iovec_size	    = sysconf(_SC_IOV_MAX);
+#endif /* IOV_MAX */
+    }
+
+  return NM_ESUCCESS;
+}
+
+static int nm_cci_exit(struct nm_drv*p_drv)
+{
+  struct nm_cci_drv*p_cci_drv = p_drv->priv;
+  TBX_FREE(p_cci_drv->url);
+  TBX_FREE(p_cci_drv);
+  return NM_ESUCCESS;
+}
+
+static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
+{
+  cci_event_t*event;
+  int rc = cci_get_event(p_cci_drv->endpoint, &event);
+  if(rc == CCI_SUCCESS)
+    {
+      switch(event->type)
+	{
+	case CCI_EVENT_SEND:
+	  {
+	    struct nm_pkt_wrap*p_pw = event->send.context;
+	    p_pw->drv_priv = (void*)0x00;
+	  }
+	  break;
+
+	case CCI_EVENT_RECV:
+	  {
+	    struct nm_cci_connection_s*conn = event->recv.connection->context;
+	    struct nm_pkt_wrap*p_pw = conn->p_pw;
+	    if(p_pw == NULL)
+	      {
+		fprintf(stderr, "nmad: cci- no pw posted.\n");
+		abort();
+	      }
+	    const void*ptr = event->recv.ptr;
+	    const size_t size = event->recv.len;
+	    if(size > p_pw->v[0].iov_len)
+	      {
+		fprintf(stderr, "nmad: cci- received more data than posted.\n");
+		abort();
+	      }
+	    memcpy(p_pw->v[0].iov_base, ptr, size);
+	    p_pw->drv_priv = (void*)0x00;
+	  }
+	  break;
+
+	case CCI_EVENT_CONNECT:
+	  if(event->connect.status == CCI_SUCCESS)
+	    {
+	      struct nm_cci_connection_s*conn = event->connect.context;
+	      conn->connection = event->connect.connection;
+	    }
+	  break;
+
+	case CCI_EVENT_CONNECT_REQUEST:
+	  {
+	    struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+	    memcpy(&conn->peer, event->request.data_ptr, sizeof(struct nm_cci_peer_s));
+	    conn->connection = NULL;
+	    conn->p_pw = NULL;
+	    rc = cci_accept(event, conn);
+	    if(rc != CCI_SUCCESS)
+	      {
+		fprintf(stderr, "nmad: cci- error in accept.\n");
+		abort();
+	      }
+	  }
+	  break;
+
+	case CCI_EVENT_ACCEPT:
+	  {
+	    struct nm_cci_connection_s*conn = event->accept.context;
+	    cci_connection_t*connection = event->accept.connection;
+	    conn->connection = connection;
+	    nm_cci_connection_vect_push_back(p_cci_drv->pending, conn);
+	  }
+	  break;
+
+	default:
+	  fprintf(stderr, "nmad: cci- unexpected event %d.\n", event->type);
+	  break;
+	}
+      cci_return_event(event);
+    }
+}
+
+static int nm_cci_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
+{
+  struct nm_cci_drv*p_cci_drv = p_drv->priv;
+  struct nm_cci*status = (struct nm_cci*)_status;
+
+  if(strcmp(p_cci_drv->url, remote_url) > 0)
+    {
+      /* ** connect */
+      struct nm_cci_peer_s local;
+      strncpy(local.url, p_cci_drv->url, NM_CCI_URL_SIZE_MAX);
+      local.trk_id = trk_id;
+      struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+      strncpy(conn->peer.url, remote_url, NM_CCI_URL_SIZE_MAX);
+      conn->peer.trk_id = trk_id;
+      conn->connection = NULL;
+      conn->p_pw = NULL;
+      int rc = cci_connect(p_cci_drv->endpoint, remote_url, &local, sizeof(local), CCI_CONN_ATTR_RU, conn, 0, NULL);
+      if(rc != CCI_SUCCESS)
+	{
+	  fprintf(stderr, "nmad: cci- connect error.\n");
+	  abort();
+	}
+      while(conn->connection == NULL)
+	{
+	  nm_cci_poll(p_cci_drv);
+	}
+      status->conns[trk_id] = conn;
+    }
+  else
+    {
+      /* ** accept */
+      while(status->conns[trk_id] == NULL)
+	{
+	  nm_cci_poll(p_cci_drv);
+	  nm_cci_connection_vect_itor_t i;
+	  puk_vect_foreach(i, nm_cci_connection, p_cci_drv->pending)
+	    {
+	      if((strcmp((*i)->peer.url, remote_url) == 0) && ((*i)->peer.trk_id == trk_id))
+		{
+		  status->conns[trk_id] = (*i);
+		  nm_cci_connection_vect_erase(p_cci_drv->pending, i);
+		  break;
+		}
+	    }
+	}
+    }
+  return NM_ESUCCESS;
+}
+
+static int nm_cci_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id)
+{
+  struct nm_cci*status = (struct nm_cci*)_status;
+#warning TODO-
+  return NM_ESUCCESS;
+}
+
+static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  struct nm_cci*status = (struct nm_cci*)_status;
+  struct iovec*iov = p_pw->v;
+  const int n = p_pw->v_nb;
+  p_pw->drv_priv = (void*)0xFF;
+  int rc = cci_sendv(status->conns[p_pw->trk_id]->connection, iov, n, p_pw, CCI_FLAG_NO_COPY);
+  if(rc != CCI_SUCCESS)
+    {
+      fprintf(stderr, "nmad: cci- error while sending.\n");
+      abort();
+    }
+  return nm_cci_poll_send(_status, p_pw);
+}
+
+static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
+  nm_cci_poll(p_cci_drv);
+  return (p_pw->drv_priv == (void*)0x00) ? NM_ESUCCESS : -NM_EAGAIN;
+}
+
+static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  struct nm_cci*status = (struct nm_cci*)_status;
+  struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
+  assert(conn->p_pw == NULL);
+  if(p_pw->v_nb != 1)
+    {
+      fprintf(stderr, "nmad: cci- iovec not supported on recv side yet.\n");
+      abort();
+    }
+  p_pw->drv_priv = (void*)0x01;
+  conn->p_pw = p_pw;
+  return nm_cci_poll_recv(_status, p_pw);
+}
+
+
+static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
+{
+  struct nm_cci*status = (struct nm_cci*)_status;
+  struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
+  struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
+  nm_cci_poll(p_cci_drv);
+  if(p_pw->drv_priv == (void*)0x00)
+    {
+      conn->p_pw = NULL;
+      return NM_ESUCCESS;
+    }
+  return -NM_EAGAIN;
+}
+

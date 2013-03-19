@@ -39,13 +39,39 @@ struct nm_cci_peer_s
   nm_trk_id_t trk_id;
   char url[NM_CCI_URL_SIZE_MAX];
 };
-/** pending connection */
+/** header for control messages on trk #1 */
+struct nm_cci_header_s
+{
+  uint64_t op;
+  cci_rma_handle_t handle;
+  uint64_t offset;
+};
+#define NM_CCI_OP_NONE     0x00
+#define NM_CCI_OP_RTR      0x01
+#define NM_CCI_OP_COMPLETE 0x02
+
+/** connection (trk, gate) */
 struct nm_cci_connection_s
 {
   cci_connection_t*connection;
-  /** pw posted for recv */
-  struct nm_pkt_wrap*p_pw;
   struct nm_cci_peer_s peer;
+  union
+  {
+    struct
+    {
+      /** pw posted for short recv */
+      struct nm_pkt_wrap*p_pw;
+    } trk_small;
+    struct
+    {
+      /** pw posted for large recv */
+      struct nm_pkt_wrap*p_recv_pw;
+      /** rma handle for large send */
+      cci_rma_handle_t*local_handle;
+      /** received header for large send */
+      struct nm_cci_header_s hdr;
+    } trk_large;
+  } info;
 };
 PUK_VECT_TYPE(nm_cci_connection, struct nm_cci_connection_s*);
 
@@ -171,8 +197,7 @@ static int nm_cci_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
       abort();
     }
 
-  cci_os_handle_t ep_fd;
-  rc = cci_create_endpoint(NULL, 0, &p_cci_drv->endpoint, &ep_fd);
+  rc = cci_create_endpoint(NULL, 0, &p_cci_drv->endpoint, NULL);
   if(rc != 0)
     {
       fprintf(stderr, "nmad: cci- create endpoint error %d.\n", rc);
@@ -219,6 +244,14 @@ static int nm_cci_exit(struct nm_drv*p_drv)
   return NM_ESUCCESS;
 }
 
+static struct nm_cci_connection_s*nm_cci_connection_new(void)
+{
+  struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+  memset(conn, 0, sizeof(struct nm_cci_connection_s));
+  conn->connection = NULL;
+  return conn;
+}
+
 static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 {
   cci_event_t*event;
@@ -230,28 +263,73 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 	case CCI_EVENT_SEND:
 	  {
 	    struct nm_pkt_wrap*p_pw = event->send.context;
-	    p_pw->drv_priv = (void*)0x00;
+	    if(p_pw != NULL)
+	      {
+		if(p_pw->trk_id == NM_TRK_LARGE)
+		  {
+		    struct nm_cci_connection_s*conn = p_pw->drv_priv;
+		    int rc = cci_rma_deregister(p_cci_drv->endpoint, conn->info.trk_large.local_handle);
+		    if(rc != CCI_SUCCESS)
+		      {
+			fprintf(stderr, "nmad: cci- error in deregister.\n");
+			abort();
+		      }
+		    
+		  }
+		p_pw->drv_priv = NULL;
+	      }
 	  }
 	  break;
 
 	case CCI_EVENT_RECV:
 	  {
 	    struct nm_cci_connection_s*conn = event->recv.connection->context;
-	    struct nm_pkt_wrap*p_pw = conn->p_pw;
-	    if(p_pw == NULL)
-	      {
-		fprintf(stderr, "nmad: cci- no pw posted.\n");
-		abort();
-	      }
 	    const void*ptr = event->recv.ptr;
 	    const size_t size = event->recv.len;
-	    if(size > p_pw->v[0].iov_len)
+	    if(conn->peer.trk_id == NM_TRK_SMALL)
 	      {
-		fprintf(stderr, "nmad: cci- received more data than posted.\n");
-		abort();
+		struct nm_pkt_wrap*p_pw = conn->info.trk_small.p_pw;
+		if(p_pw == NULL)
+		  {
+		    fprintf(stderr, "nmad: cci- no pw posted.\n");
+		    abort();
+		  }
+		if(size > p_pw->v[0].iov_len)
+		  {
+		    fprintf(stderr, "nmad: cci- received more data than posted.\n");
+		    abort();
+		  }
+		memcpy(p_pw->v[0].iov_base, ptr, size);
+		p_pw->drv_priv = (void*)0x00;
 	      }
-	    memcpy(p_pw->v[0].iov_base, ptr, size);
-	    p_pw->drv_priv = (void*)0x00;
+	    else
+	      {
+		assert(size == sizeof(struct nm_cci_header_s));
+		const struct nm_cci_header_s*hdr = ptr;
+		switch(hdr->op)
+		  {
+		  case NM_CCI_OP_RTR:
+		    {
+		      memcpy(&conn->info.trk_large.hdr, ptr, size);
+		    }
+		    break;
+		  case NM_CCI_OP_COMPLETE:
+		    {
+		      const cci_rma_handle_t handle = hdr->handle;
+		      struct nm_pkt_wrap*p_pw = conn->info.trk_large.p_recv_pw;
+		      p_pw->drv_priv = (void*)0x00;
+		      int rc = cci_rma_deregister(p_cci_drv->endpoint, &handle);
+		      if(rc != CCI_SUCCESS)
+			{
+			  fprintf(stderr, "nmad: cci- error in deregister.\n");
+			  abort();
+			}
+		    }
+		    break;
+		  case NM_CCI_OP_NONE:
+		    break;
+		  }
+	      }
 	  }
 	  break;
 
@@ -265,10 +343,8 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 
 	case CCI_EVENT_CONNECT_REQUEST:
 	  {
-	    struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+	    struct nm_cci_connection_s*conn = nm_cci_connection_new();
 	    memcpy(&conn->peer, event->request.data_ptr, sizeof(struct nm_cci_peer_s));
-	    conn->connection = NULL;
-	    conn->p_pw = NULL;
 	    rc = cci_accept(event, conn);
 	    if(rc != CCI_SUCCESS)
 	      {
@@ -306,11 +382,9 @@ static int nm_cci_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_d
       struct nm_cci_peer_s local;
       strncpy(local.url, p_cci_drv->url, NM_CCI_URL_SIZE_MAX);
       local.trk_id = trk_id;
-      struct nm_cci_connection_s*conn = TBX_MALLOC(sizeof(struct nm_cci_connection_s));
+      struct nm_cci_connection_s*conn = nm_cci_connection_new();
       strncpy(conn->peer.url, remote_url, NM_CCI_URL_SIZE_MAX);
       conn->peer.trk_id = trk_id;
-      conn->connection = NULL;
-      conn->p_pw = NULL;
       int rc = cci_connect(p_cci_drv->endpoint, remote_url, &local, sizeof(local), CCI_CONN_ATTR_RU, conn, 0, NULL);
       if(rc != CCI_SUCCESS)
 	{
@@ -354,37 +428,93 @@ static int nm_cci_disconnect(void*_status, struct nm_gate*p_gate, struct nm_drv*
 static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
-  struct iovec*iov = p_pw->v;
-  const int n = p_pw->v_nb;
-  p_pw->drv_priv = (void*)0xFF;
-  int rc = cci_sendv(status->conns[p_pw->trk_id]->connection, iov, n, p_pw, CCI_FLAG_NO_COPY);
-  if(rc != CCI_SUCCESS)
+  struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
+  p_pw->drv_priv = conn;
+  if(p_pw->trk_id == NM_TRK_SMALL)
     {
-      fprintf(stderr, "nmad: cci- error while sending.\n");
-      abort();
+      struct iovec*iov = p_pw->v;
+      const int n = p_pw->v_nb;
+      int rc = cci_sendv(conn->connection, iov, n, p_pw, CCI_FLAG_NO_COPY);
+      if(rc != CCI_SUCCESS)
+	{
+	  fprintf(stderr, "nmad: cci- error while sending.\n");
+	  abort();
+	}
+    }
+  else
+    {
+      struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
+      int rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len + 16, CCI_FLAG_WRITE | CCI_FLAG_READ, &conn->info.trk_large.local_handle);
+      if(rc != CCI_SUCCESS)
+	{
+	  fprintf(stderr, "nmad: cci- error in register.\n");
+	  abort();
+	}
     }
   return nm_cci_poll_send(_status, p_pw);
 }
 
 static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
 {
+  struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
   nm_cci_poll(p_cci_drv);
-  return (p_pw->drv_priv == (void*)0x00) ? NM_ESUCCESS : -NM_EAGAIN;
+  if(p_pw->trk_id == NM_TRK_LARGE)
+    {
+      struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
+      if(conn->info.trk_large.hdr.op == NM_CCI_OP_RTR)
+	{
+	  conn->info.trk_large.hdr.op = NM_CCI_OP_NONE;
+	  static struct nm_cci_header_s hdr;
+	  hdr.op = NM_CCI_OP_COMPLETE;
+	  memcpy((void*)&hdr.handle, &conn->info.trk_large.hdr.handle, sizeof(cci_rma_handle_t));
+	  hdr.offset = conn->info.trk_large.hdr.offset;
+	  int rc = cci_rma(conn->connection, &hdr, sizeof(hdr), conn->info.trk_large.local_handle, 0, &conn->info.trk_large.hdr.handle, conn->info.trk_large.hdr.offset, p_pw->v[0].iov_len, p_pw, CCI_FLAG_WRITE);
+	  if(rc != CCI_SUCCESS)
+	    {
+	      fprintf(stderr, "nmad: cci- error in rma.\n");
+	      abort();
+	    }
+	}
+    }
+  return (p_pw->drv_priv == NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
 static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   struct nm_cci*status = (struct nm_cci*)_status;
   struct nm_cci_connection_s*conn = status->conns[p_pw->trk_id];
-  assert(conn->p_pw == NULL);
-  if(p_pw->v_nb != 1)
+  if(p_pw->trk_id == NM_TRK_SMALL)
     {
-      fprintf(stderr, "nmad: cci- iovec not supported on recv side yet.\n");
-      abort();
+      assert(conn->info.trk_small.p_pw == NULL);
+      if(p_pw->v_nb != 1)
+	{
+	  fprintf(stderr, "nmad: cci- iovec not supported on recv side yet.\n");
+	  abort();
+	}
+      p_pw->drv_priv = (void*)0x01;
+      conn->info.trk_small.p_pw = p_pw;
     }
-  p_pw->drv_priv = (void*)0x01;
-  conn->p_pw = p_pw;
+  else
+    {
+      struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
+      conn->info.trk_large.p_recv_pw = p_pw;
+      p_pw->drv_priv = (void*)0x01;
+      cci_rma_handle_t*handle;
+      int rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len + 16, CCI_FLAG_WRITE, &handle);
+      if(rc != CCI_SUCCESS)
+	{
+	  fprintf(stderr, "nmad: cci- error in register.\n");
+	  abort();
+	}
+      struct nm_cci_header_s hdr = { .op = NM_CCI_OP_RTR, .handle = *handle, .offset = 0 };
+      rc = cci_send(conn->connection, &hdr, sizeof(hdr), NULL, CCI_FLAG_SILENT);
+      if(rc != CCI_SUCCESS)
+	{
+	  fprintf(stderr, "nmad: cci- error while sending header.\n");
+	  abort();
+	}
+    }
   return nm_cci_poll_recv(_status, p_pw);
 }
 
@@ -397,7 +527,7 @@ static int nm_cci_poll_recv(void*_status, struct nm_pkt_wrap *p_pw)
   nm_cci_poll(p_cci_drv);
   if(p_pw->drv_priv == (void*)0x00)
     {
-      conn->p_pw = NULL;
+      conn->info.trk_small.p_pw = NULL;
       return NM_ESUCCESS;
     }
   return -NM_EAGAIN;

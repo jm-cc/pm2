@@ -51,13 +51,21 @@ struct nm_ibverbs_rcache
   {
     char*message;
     int size;
+#ifdef PUKABI
+    const struct puk_mem_reg_s*reg;
+#else
     struct ibv_mr*mr;
+#endif /* PUKABI */
   } recv;
   struct
   {
     const char*message;
     int size;
+#ifdef PUKABI
+    const struct puk_mem_reg_s*reg;
+#else
     struct ibv_mr*mr;
+#endif /* PUKABI */
   } send;
   struct
   {
@@ -206,7 +214,7 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
   rcache->send.message = message;
   rcache->send.size = size;
 #ifdef PUKABI
-  rcache->send.mr = puk_mem_reg(rcache->pd, message, size);
+  rcache->send.reg = puk_mem_reg(rcache->pd, message, size);
 #else /* PUKABI */
   rcache->send.mr = nm_ibverbs_mem_reg(rcache->pd, message, size);
 #endif /* PUKABI */
@@ -220,13 +228,19 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
     {
       const uint64_t raddr = h->raddr;
       const uint32_t rkey  = h->rkey;
+      struct ibv_mr*mr = NULL;
+#ifdef PUKABI
+      mr = rcache->send.reg->key;
+#else
+      mr = rcache->send.mr;      
+#endif
       h->raddr = 0;
       h->rkey  = 0;
       h->busy  = 0;
       nm_ibverbs_do_rdma(rcache->cnx, 
 			 rcache->send.message, rcache->send.size,
 			 raddr, IBV_WR_RDMA_WRITE, IBV_SEND_SIGNALED,
-			 rcache->send.mr->lkey, rkey, NM_IBVERBS_WRID_DATA);
+			 mr->lkey, rkey, NM_IBVERBS_WRID_DATA);
       rcache->headers.ssig.busy = 1;
       nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_sighdr),
 			   &rcache->headers.ssig,
@@ -238,13 +252,14 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);
 #ifdef PUKABI
-      puk_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
+      puk_mem_unreg(rcache->send.reg);
+      rcache->send.reg = NULL;
 #else /* PUKABI */
       nm_ibverbs_mem_unreg(rcache->pd, rcache->send.message, rcache->send.mr);
+      rcache->send.mr = NULL;
 #endif /* PUKABI */
       rcache->send.message = NULL;
       rcache->send.size    = -1;
-      rcache->send.mr = NULL;
       return NM_ESUCCESS;
     }
   else
@@ -264,15 +279,17 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   rcache->headers.rsig.busy = 0;
   rcache->recv.message = v->iov_base;
   rcache->recv.size = v->iov_len;
-#ifdef PUKABI
-  rcache->recv.mr = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-#else /* PUKABI */
-  rcache->recv.mr = nm_ibverbs_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
-#endif /* PUKABI */
   struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;
   h->raddr =  (uintptr_t)rcache->recv.message;
-  h->rkey  = rcache->recv.mr->rkey;
   h->busy  = 1;
+#ifdef PUKABI
+  rcache->recv.reg = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
+  struct ibv_mr*mr = rcache->recv.reg->key;
+  h->rkey  = mr->rkey;
+#else /* PUKABI */
+  rcache->recv.mr = nm_ibverbs_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
+  h->rkey  = rcache->recv.mr->rkey;
+#endif /* PUKABI */
 
   nm_ibverbs_rdma_send(rcache->cnx, sizeof(struct nm_ibverbs_rcache_rdvhdr),
 		       &rcache->headers.shdr, 
@@ -292,13 +309,14 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
     {
       rsig->busy = 0;
 #ifdef PUKABI
-      puk_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
+      puk_mem_unreg(rcache->recv.reg);
+      rcache->recv.reg = NULL;
 #else /* PUKABI */
       nm_ibverbs_mem_unreg(rcache->pd, rcache->recv.message, rcache->recv.mr);
+      rcache->recv.mr = NULL;
 #endif /* PUKABI */
       rcache->recv.message = NULL;
       rcache->recv.size = -1;
-      rcache->recv.mr = NULL;
       return NM_ESUCCESS;
     }
   else

@@ -30,7 +30,15 @@
 
 #include <nm_private.h>
 
+#ifdef PUKABI
+#include <Padico/Puk-ABI.h>
+#endif /* PUKABI */
+
 #include <Padico/Module.h>
+
+#ifdef PUKABI
+#define NM_CCI_RCACHE 1
+#endif
 
 #define NM_CCI_URL_SIZE_MAX 64
 /** identity of peer node */
@@ -66,8 +74,15 @@ struct nm_cci_connection_s
     {
       /** pw posted for large recv */
       struct nm_pkt_wrap*p_recv_pw;
+#ifdef NM_CCI_RCACHE
+      /** rcache entry for large send */
+      const struct puk_mem_reg_s*send_rcache;
+      /** rcache entry for large recv */
+      const struct puk_mem_reg_s*recv_rcache;
+#else
       /** rma handle for large send */
       cci_rma_handle_t*local_handle;
+#endif /* NM_CCI_RCACHE */
       /** received header for large send */
       struct nm_cci_header_s hdr;
     } trk_large;
@@ -93,6 +108,7 @@ struct nm_cci
    */
   struct nm_cci_connection_s*conns[2];
 };
+
 
 
 /** CCI NewMad Driver */
@@ -147,6 +163,31 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_cci,
 			puk_component_provides("PadicoAdapter", "adapter", &nm_cci_adapter_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_cci_driver)));
 
+
+static void*nm_cci_register(void*context, const void*ptr, size_t len)
+{
+  cci_endpoint_t*endpoint = context;
+  cci_rma_handle_t*handle = NULL;
+  int rc = cci_rma_register(endpoint,(void*)ptr, len, CCI_FLAG_WRITE | CCI_FLAG_READ, &handle);
+  if(rc != CCI_SUCCESS)
+    {
+      fprintf(stderr, "nmad: cci- error in register.\n");
+      abort();
+    }
+  return (void*)handle;
+}
+
+static void nm_cci_unregister(void*context, const void*ptr, void*key)
+{
+  cci_rma_handle_t*handle = key;
+  cci_endpoint_t*endpoint = context;
+  int rc = cci_rma_deregister(endpoint, handle);
+  if(rc != CCI_SUCCESS)
+    {
+      fprintf(stderr, "nmad: cci- error in deregister.\n");
+      abort();
+    }
+}
 
 /** Instanciate functions */
 static void*nm_cci_instanciate(puk_instance_t instance, puk_context_t context)
@@ -215,6 +256,10 @@ static int nm_cci_init(struct nm_drv* p_drv, struct nm_trk_cap*trk_caps, int nb_
 
   p_cci_drv->pending = nm_cci_connection_vect_new();
 
+#ifdef PUKABI
+  puk_mem_set_handlers(&nm_cci_register, &nm_cci_unregister);
+#endif /* PUKABI */
+
   /* open the requested number of tracks */
   int i;
   for(i = 0; i < nb_trks; i++)
@@ -252,6 +297,7 @@ static struct nm_cci_connection_s*nm_cci_connection_new(void)
   return conn;
 }
 
+
 static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 {
   cci_event_t*event;
@@ -268,13 +314,16 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 		if(p_pw->trk_id == NM_TRK_LARGE)
 		  {
 		    struct nm_cci_connection_s*conn = p_pw->drv_priv;
+#ifdef NM_CCI_RCACHE
+		    puk_mem_unreg(conn->info.trk_large.send_rcache);
+#else /* NM_CCI_RCACHE */
 		    int rc = cci_rma_deregister(p_cci_drv->endpoint, conn->info.trk_large.local_handle);
 		    if(rc != CCI_SUCCESS)
 		      {
 			fprintf(stderr, "nmad: cci- error in deregister.\n");
 			abort();
 		      }
-		    
+#endif /* NM_CCI_RCACHE */
 		  }
 		p_pw->drv_priv = NULL;
 	      }
@@ -315,15 +364,19 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 		    break;
 		  case NM_CCI_OP_COMPLETE:
 		    {
-		      const cci_rma_handle_t handle = hdr->handle;
 		      struct nm_pkt_wrap*p_pw = conn->info.trk_large.p_recv_pw;
 		      p_pw->drv_priv = (void*)0x00;
+#ifdef NM_CCI_RCACHE
+		      puk_mem_unreg(conn->info.trk_large.recv_rcache);
+#else /* NM_CCI_RCACHE */
+		      const cci_rma_handle_t handle = hdr->handle;
 		      int rc = cci_rma_deregister(p_cci_drv->endpoint, &handle);
 		      if(rc != CCI_SUCCESS)
 			{
 			  fprintf(stderr, "nmad: cci- error in deregister.\n");
 			  abort();
 			}
+#endif /* NM_CCI_RCACHE */
 		    }
 		    break;
 		  case NM_CCI_OP_NONE:
@@ -444,12 +497,16 @@ static int nm_cci_send_iov(void*_status, struct nm_pkt_wrap *p_pw)
   else
     {
       struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
-      int rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len + 16, CCI_FLAG_WRITE | CCI_FLAG_READ, &conn->info.trk_large.local_handle);
+#ifdef NM_CCI_RCACHE
+      conn->info.trk_large.send_rcache = puk_mem_reg((void*)p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+#else /* NM_CCI_RCACHE */
+      int rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len, CCI_FLAG_WRITE | CCI_FLAG_READ, &conn->info.trk_large.local_handle);
       if(rc != CCI_SUCCESS)
 	{
 	  fprintf(stderr, "nmad: cci- error in register.\n");
 	  abort();
 	}
+#endif
     }
   return nm_cci_poll_send(_status, p_pw);
 }
@@ -465,11 +522,17 @@ static int nm_cci_poll_send(void*_status, struct nm_pkt_wrap *p_pw)
       if(conn->info.trk_large.hdr.op == NM_CCI_OP_RTR)
 	{
 	  conn->info.trk_large.hdr.op = NM_CCI_OP_NONE;
-	  static struct nm_cci_header_s hdr;
+	  struct nm_cci_header_s hdr;
 	  hdr.op = NM_CCI_OP_COMPLETE;
 	  memcpy((void*)&hdr.handle, &conn->info.trk_large.hdr.handle, sizeof(cci_rma_handle_t));
 	  hdr.offset = conn->info.trk_large.hdr.offset;
-	  int rc = cci_rma(conn->connection, &hdr, sizeof(hdr), conn->info.trk_large.local_handle, 0, &conn->info.trk_large.hdr.handle, conn->info.trk_large.hdr.offset, p_pw->v[0].iov_len, p_pw, CCI_FLAG_WRITE);
+	  cci_rma_handle_t*handle = NULL;
+#ifdef NM_CCI_RCACHE
+	  handle = conn->info.trk_large.send_rcache->key;
+#else
+	  handle = conn->info.trk_large.local_handle;
+#endif
+	  int rc = cci_rma(conn->connection, &hdr, sizeof(hdr), handle, 0, &conn->info.trk_large.hdr.handle, conn->info.trk_large.hdr.offset, p_pw->v[0].iov_len, p_pw, CCI_FLAG_WRITE);
 	  if(rc != CCI_SUCCESS)
 	    {
 	      fprintf(stderr, "nmad: cci- error in rma.\n");
@@ -497,16 +560,22 @@ static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
     }
   else
     {
+      int rc;
       struct nm_cci_drv*p_cci_drv = p_pw->p_drv->priv;
       conn->info.trk_large.p_recv_pw = p_pw;
       p_pw->drv_priv = (void*)0x01;
-      cci_rma_handle_t*handle;
-      int rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len + 16, CCI_FLAG_WRITE, &handle);
+      cci_rma_handle_t*handle = NULL;
+#ifdef NM_CCI_RCACHE
+      conn->info.trk_large.recv_rcache = puk_mem_reg((void*)p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+      handle = conn->info.trk_large.recv_rcache->key;
+#else /* NM_CCI_RCACHE */
+      rc = cci_rma_register(p_cci_drv->endpoint, p_pw->v[0].iov_base, p_pw->v[0].iov_len, CCI_FLAG_WRITE, &handle);
       if(rc != CCI_SUCCESS)
 	{
 	  fprintf(stderr, "nmad: cci- error in register.\n");
 	  abort();
 	}
+#endif /* NM_CCI_RCACHE */
       struct nm_cci_header_s hdr = { .op = NM_CCI_OP_RTR, .handle = *handle, .offset = 0 };
       rc = cci_send(conn->connection, &hdr, sizeof(hdr), NULL, CCI_FLAG_SILENT);
       if(rc != CCI_SUCCESS)

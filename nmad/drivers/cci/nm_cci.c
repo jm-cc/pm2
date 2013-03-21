@@ -150,7 +150,8 @@ static const struct nm_drv_iface_s nm_cci_driver =
     .get_driver_url     = &nm_cci_get_driver_url,
 
     .capabilities.is_exportable = 0,
-    .capabilities.min_period    = 0
+    .capabilities.min_period    = 0,
+    .capabilities.max_unexpected = 1024
   };
 
 /** 'PadicoAdapter' facet for cci driver */

@@ -58,6 +58,11 @@ struct nm_cci_header_s
 #define NM_CCI_OP_RTR      0x01
 #define NM_CCI_OP_COMPLETE 0x02
 
+PUK_LIST_TYPE(nm_cci_unexpected,
+	      void*ptr;
+	      size_t size;
+	      );
+
 /** connection (trk, gate) */
 struct nm_cci_connection_s
 {
@@ -69,6 +74,8 @@ struct nm_cci_connection_s
     {
       /** pw posted for short recv */
       struct nm_pkt_wrap*p_pw;
+      /** unexpected chunks of data */
+      nm_cci_unexpected_list_t unexpected;
     } trk_small;
     struct
     {
@@ -340,16 +347,26 @@ static void nm_cci_poll(struct nm_cci_drv*p_cci_drv)
 		struct nm_pkt_wrap*p_pw = conn->info.trk_small.p_pw;
 		if(p_pw == NULL)
 		  {
-		    fprintf(stderr, "nmad: cci- no pw posted.\n");
-		    abort();
+		    if(conn->info.trk_small.unexpected == NULL)
+		      {
+			conn->info.trk_small.unexpected = nm_cci_unexpected_list_new();
+		      }
+		    nm_cci_unexpected_t u = nm_cci_unexpected_new();
+		    u->ptr = TBX_MALLOC(size);
+		    u->size = size;
+		    memcpy(u->ptr, ptr, size);
+		    nm_cci_unexpected_list_push_back(conn->info.trk_small.unexpected, u);
 		  }
-		if(size > p_pw->v[0].iov_len)
+		else
 		  {
-		    fprintf(stderr, "nmad: cci- received more data than posted.\n");
-		    abort();
+		    if(size > p_pw->v[0].iov_len)
+		      {
+			fprintf(stderr, "nmad: cci- received more data than posted.\n");
+			abort();
+		      }
+		    memcpy(p_pw->v[0].iov_base, ptr, size);
+		    p_pw->drv_priv = (void*)0x00;
 		  }
-		memcpy(p_pw->v[0].iov_base, ptr, size);
-		p_pw->drv_priv = (void*)0x00;
 	      }
 	    else
 	      {
@@ -555,8 +572,17 @@ static int nm_cci_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 	  fprintf(stderr, "nmad: cci- iovec not supported on recv side yet.\n");
 	  abort();
 	}
-      p_pw->drv_priv = (void*)0x01;
-      conn->info.trk_small.p_pw = p_pw;
+      if(conn->info.trk_small.unexpected != NULL && !nm_cci_unexpected_list_empty(conn->info.trk_small.unexpected))
+	{
+	  nm_cci_unexpected_t u = nm_cci_unexpected_list_pop_front(conn->info.trk_small.unexpected);
+	  memcpy(p_pw->v[0].iov_base, u->ptr, u->size);
+	  nm_cci_unexpected_delete(u);
+	}
+      else
+	{
+	  p_pw->drv_priv = (void*)0x01;
+	  conn->info.trk_small.p_pw = p_pw;
+	}
     }
   else
     {

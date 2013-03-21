@@ -58,13 +58,14 @@ static const struct puk_adapter_driver_s nm_so_strat_aggreg_adapter_driver =
 struct nm_so_strat_aggreg_gate {
   /** List of raw outgoing packets. */
   struct tbx_fast_list_head out_list;
-  int nm_so_max_small;
-  int nm_so_copy_on_send_threshold;
+  int nm_copy_on_send_threshold;
 };
 
 static int num_instances = 0;
 static int nb_data_aggregation = 0;
 static int nb_ctrl_aggregation = 0;
+
+static ssize_t nm_max_small = -1;
 
 /** Component declaration */
 static int nm_strat_aggreg_load(void)
@@ -72,8 +73,7 @@ static int nm_strat_aggreg_load(void)
   puk_component_declare("NewMad_Strategy_aggreg",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_so_strat_aggreg_adapter_driver),
 			puk_component_provides("NewMad_Strategy", "strat", &nm_so_strat_aggreg_driver),
-			puk_component_attr("nm_so_max_small", "16342"),
-			puk_component_attr("nm_so_copy_on_send_threshold", "4096"));
+			puk_component_attr("nm_copy_on_send_threshold", "4096"));
   return NM_ESUCCESS;
 }
 
@@ -89,13 +89,9 @@ static void*strat_aggreg_instanciate(puk_instance_t ai, puk_context_t context)
 
   NM_LOGF("[loading strategy: <aggreg>]");
 
-  const char*nm_so_max_small = puk_instance_getattr(ai, "nm_so_max_small");
-  status->nm_so_max_small = atoi(nm_so_max_small);
-  NM_LOGF("[nm_so_max_small=%i]", status->nm_so_max_small);
-
-  const char*nm_so_copy_on_send_threshold = puk_instance_getattr(ai, "nm_so_copy_on_send_threshold");
-  status->nm_so_copy_on_send_threshold = atoi(nm_so_copy_on_send_threshold);
-  NM_LOGF("[nm_so_copy_on_send_threshold=%i]", status->nm_so_copy_on_send_threshold);
+  const char*nm_copy_on_send_threshold = puk_instance_getattr(ai, "nm_copy_on_send_threshold");
+  status->nm_copy_on_send_threshold = atoi(nm_copy_on_send_threshold);
+  NM_LOGF("[nm_copy_on_send_threshold=%i]", status->nm_copy_on_send_threshold);
 
   return (void*)status;
 }
@@ -157,22 +153,40 @@ static int strat_aggreg_todo(void*_status, struct nm_gate *p_gate)
 static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 {
   struct nm_so_strat_aggreg_gate *status = _status;
+  /* lazy init */
+  if(nm_max_small <= 0)
+    {
+      
+      struct nm_drv*p_drv;
+      NM_FOR_EACH_DRIVER(p_drv, p_pack->p_gate->p_core)
+	{
+	  if(nm_max_small <= 0 || (p_drv->driver->capabilities.max_unexpected > 0 && p_drv->driver->capabilities.max_unexpected < nm_max_small))
+	    {
+	      nm_max_small = p_drv->driver->capabilities.max_unexpected;
+	    }
+	}
+      if(nm_max_small <= 0 || nm_max_small > (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE))
+	{
+	  nm_max_small = (NM_SO_MAX_UNEXPECTED - NM_SO_DATA_HEADER_SIZE);
+	}
+      NM_DISPF("# nmad: aggreg- max_small = %d\n", nm_max_small);
+    }
 
   if(p_pack->status & NM_PACK_TYPE_CONTIGUOUS)
     {
       const nm_len_t len = p_pack->len;
-      if(len <= status->nm_so_max_small) 
+      if(len <= nm_max_small) 
 	{
 	  /* Small packet */
 	  struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
 	  if(p_pw)
 	    {
 	      nb_data_aggregation++;
-	      nm_tactic_pack_small_into_pw(p_pack, p_pack->data, len, 0, status->nm_so_copy_on_send_threshold, p_pw);
+	      nm_tactic_pack_small_into_pw(p_pack, p_pack->data, len, 0, status->nm_copy_on_send_threshold, p_pw);
 	    }
 	  else
 	    {
-	      nm_tactic_pack_small_new_pw(p_pack, p_pack->data, len, 0, status->nm_so_copy_on_send_threshold, &status->out_list);
+	      nm_tactic_pack_small_new_pw(p_pack, p_pack->data, len, 0, status->nm_copy_on_send_threshold, &status->out_list);
 	    }
 	}
       else 
@@ -190,18 +204,18 @@ static int strat_aggreg_pack(void*_status, struct nm_pack_s*p_pack)
 	{
 	  const void*data = iov[i].iov_base;
 	  const int len = iov[i].iov_len;
-	  if(len <= status->nm_so_max_small) 
+	  if(len <= nm_max_small) 
 	    {
 	      /* Small packet */
 	      struct nm_pkt_wrap*p_pw = nm_tactic_try_to_aggregate(&status->out_list, NM_SO_DATA_HEADER_SIZE, len);
 	      if(p_pw)
 		{
 		  nb_data_aggregation++;
-		  nm_tactic_pack_small_into_pw(p_pack, data, len, offset, status->nm_so_copy_on_send_threshold, p_pw);
+		  nm_tactic_pack_small_into_pw(p_pack, data, len, offset, status->nm_copy_on_send_threshold, p_pw);
 		}
 	      else
 		{
-		  nm_tactic_pack_small_new_pw(p_pack, data, len, offset, status->nm_so_copy_on_send_threshold, &status->out_list);
+		  nm_tactic_pack_small_new_pw(p_pack, data, len, offset, status->nm_copy_on_send_threshold, &status->out_list);
 		}
 	    }
 	  else 

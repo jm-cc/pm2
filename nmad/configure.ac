@@ -8,6 +8,7 @@ AC_INIT(include/nm_public.h)
 AC_CONFIG_HEADER(include/nm_private_config.h include/nm_config.h)
 
 m4_include([./m4/pkg.m4])
+m4_include([../externals/PadicoTM/building-tools/tools.m4])
 
 dnl -- directories
 dnl --------------------------------------------------------
@@ -135,12 +136,7 @@ PKG_CHECK_MODULES([tbx],    [ tbx ])
 
 dnl -- Puk
 PKG_CHECK_MODULES([Puk],    [ Puk ])
-AC_MSG_CHECKING([for Puk root])
-puk_root="`pkg-config --variable=prefix Puk`"
-AC_SUBST([puk_root])
-AC_MSG_RESULT([${puk_root}])
-AC_CHECK_FILE([${puk_root}/etc/common_rules.mk],
-	      [], [ AC_MSG_ERROR([required ${puk_root}/etc/common_rules.mk not found]) ])
+AC_PADICO_PUK_ROOT
 
 dnl -- PukABI
 AC_ARG_WITH([pukabi],

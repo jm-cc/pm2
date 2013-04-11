@@ -25,7 +25,9 @@
 
 static const char*checksums[] =
   { 
+#ifdef __SSE2__
     "xor", 
+#endif /* __SSE2__ */
     "plain", 
     "block64",
     "adler",

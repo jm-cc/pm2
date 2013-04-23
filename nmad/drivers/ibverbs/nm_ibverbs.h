@@ -138,7 +138,6 @@ struct nm_ibverbs_method_iface_s
   /* receiving primitives */
   void (*recv_init)(void*_status, struct iovec*v, int n);
   int  (*poll_one)(void*_status);
-  int  (*poll_any)(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate);
   int  (*cancel_recv)(void*_status); 
 };
 PUK_IFACE_TYPE(NewMad_ibverbs_method, struct nm_ibverbs_method_iface_s);

@@ -651,24 +651,7 @@ static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
     }
   else
     {
-#warning TODO- poll_any
       TBX_FAILURE("poll_any not implemented yet.");
-#if 0
-      struct nm_ibverbs_drv*p_ibverbs_drv = p_pw->p_drv->drv_priv;
-      if(p_ibverbs_drv->trks_array[p_pw->trk_id].method_iface->poll_any)
-	{
-	  struct nm_gate*p_gate = NULL;
-	  p_ibverbs_drv->trks_array[p_pw->trk_id].method_iface->poll_any(p_pw, &p_gate);
-	  if(pp_gate)
-	    {
-	      struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-	      nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
-	      err = nm_ibverbs_poll_one(p_pw, p_ibverbs_cnx);
-	      goto out;
-	    }
-	}
-    out:
-#endif
     }
   return err;
 }

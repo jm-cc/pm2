@@ -106,7 +106,6 @@ static const struct nm_ibverbs_method_iface_s nm_ibverbs_lr2_method =
     .send_prefetch = &nm_ibverbs_lr2_send_prefetch,
     .recv_init   = &nm_ibverbs_lr2_recv_init,
     .poll_one    = &nm_ibverbs_lr2_poll_one,
-    .poll_any    = NULL,
     .cancel_recv = NULL
   };
 
@@ -347,7 +346,7 @@ static int nm_ibverbs_lr2_poll_one(void*_status)
 	  if(h->checksum != checksum)
 	    {
 	      fprintf(stderr, "nmad: FATAL- ibverbs: checksum failed; step = %d; done = %d / %d;  received = %llX; expected = %llX.\n",
-		      lr2->recv.step, lr2->recv.done, lr2->recv.size, 
+		      lr2->recv.step, (int)lr2->recv.done, (int)lr2->recv.size, 
 		      (long long unsigned)h->checksum, (long long unsigned)checksum);
 	      abort();
 	    }

@@ -103,7 +103,6 @@ static const struct nm_ibverbs_method_iface_s nm_ibverbs_regrdma_method =
     .send_poll   = &nm_ibverbs_regrdma_send_poll,
     .recv_init   = &nm_ibverbs_regrdma_recv_init,
     .poll_one    = &nm_ibverbs_regrdma_poll_one,
-    .poll_any    = NULL,
     .cancel_recv = NULL
   };
 

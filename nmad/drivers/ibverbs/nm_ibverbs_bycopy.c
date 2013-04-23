@@ -97,7 +97,6 @@ static void nm_ibverbs_bycopy_send_post(void*_status, const struct iovec*v, int 
 static int  nm_ibverbs_bycopy_send_poll(void*_status);
 static void nm_ibverbs_bycopy_recv_init(void*_status,  struct iovec*v, int n);
 static int  nm_ibverbs_bycopy_poll_one(void*_status);
-static int  nm_ibverbs_bycopy_poll_any(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate);
 static int  nm_ibverbs_bycopy_cancel_recv(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_bycopy_method =
@@ -109,7 +108,6 @@ static const struct nm_ibverbs_method_iface_s nm_ibverbs_bycopy_method =
     .send_poll   = &nm_ibverbs_bycopy_send_poll,
     .recv_init   = &nm_ibverbs_bycopy_recv_init,
     .poll_one    = &nm_ibverbs_bycopy_poll_one,
-    .poll_any    = &nm_ibverbs_bycopy_poll_any,
     .cancel_recv = &nm_ibverbs_bycopy_cancel_recv
   };
 
@@ -388,29 +386,6 @@ static int nm_ibverbs_bycopy_poll_one(void*_status)
       err = -NM_EAGAIN;
     }
   return err;
-}
-
-static int nm_ibverbs_bycopy_poll_any(struct nm_pkt_wrap*p_pw, struct nm_gate**pp_gate)
-{
-#warning TODO- poll_any
-#if 0
-  const struct nm_core*p_core = p_pw->p_drv->p_core;
-  struct nm_gate*p_gate = NULL;
-  NM_FOR_EACH_GATE(p_gate, p_core)
-    {
-      if(p_gate->status == NM_GATE_STATUS_CONNECTED)
-	{
-	  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-	  if(p_ibverbs_cnx->bycopy.buffer.rbuf[p_ibverbs_cnx->bycopy.window.next_in].header.status)
-	    {
-	      p_pw->p_gate = (struct nm_gate*)p_gate;
-	      *pp_gate = p_gate;
-	      return NM_ESUCCESS;
-	    }
-	}
-    }
-#endif
-  return -NM_EAGAIN;
 }
 
 static int nm_ibverbs_bycopy_cancel_recv(void*_status)

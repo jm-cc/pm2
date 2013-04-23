@@ -20,7 +20,9 @@
 
 #include "../sendrecv/helper.h"
 #include <tbx.h>
+#ifdef PIOMAN_MARCEL
 #include <marcel.h>
+#endif
 
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(8 * 1024 * 1024)
@@ -153,9 +155,10 @@ main(int	  argc,
       exit(0);
     }
   }
-
+#ifdef PIOMAN_MARCEL
   marcel_vpset_t vpset= MARCEL_VPSET_VP(1);
   marcel_apply_vpset(&vpset);
+#endif
   buf = malloc(end_len);
   clear_buffer(buf, end_len);
 

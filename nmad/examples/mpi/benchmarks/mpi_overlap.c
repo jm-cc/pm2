@@ -4,7 +4,7 @@
 #include <tbx.h>
 
 #define LEN (512 * 1024)
-#define COUNT 50
+#define COUNT 1000
 
 static char buffer[LEN];
 
@@ -51,7 +51,7 @@ int main(int argc, char**argv)
 	    }
 	  TBX_GET_TICK(t2);
 	  double t = TBX_TIMING_DELAY(t1, t2) / COUNT;
-	  printf("%d \t %f\n", c, t);
+	  printf("%d \t %8.2f\n", c, t);
 	}
       else
 	{

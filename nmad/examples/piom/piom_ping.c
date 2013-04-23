@@ -25,12 +25,12 @@
 #ifdef PIOMAN
 
 #define MIN_DEFAULT	0
-//#define MAX_DEFAULT	(64 * 1024)
-#define MAX_DEFAULT	(8)
+#define MAX_DEFAULT	(64 * 1024)
+//#define MAX_DEFAULT	(8)
 #define MULT_DEFAULT	2
 #define INCR_DEFAULT	0
 #define WARMUPS_DEFAULT	10
-#define LOOPS_DEFAULT	100
+#define LOOPS_DEFAULT	10000
 #define THREADS_DEFAULT 8
 #define DATA_CONTROL_ACTIVATED 0
 

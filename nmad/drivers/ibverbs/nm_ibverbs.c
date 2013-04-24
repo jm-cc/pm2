@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2006-2011 (see AUTHORS file)
+ * Copyright (C) 2006-2013 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,11 +67,22 @@
  */
 
 
+/** driver private state */
+struct nm_ibverbs_drv 
+{
+  struct nm_ibverbs_hca_s*p_hca;
+  struct { puk_context_t method; } trks_array[2]; /**< driver contexts for tracks */
+  char*url;                   /**< driver url for this node (used by connector) */
+};
 
 /** status for an instance. */
 struct nm_ibverbs
 {
-  struct nm_ibverbs_cnx cnx_array[2];
+  struct
+  {
+    struct puk_receptacle_NewMad_ibverbs_method_s method;
+    puk_instance_t method_instance;
+  } trks[2];
 };
 
 static tbx_checksum_t _nm_ibverbs_checksum = NULL;
@@ -149,7 +160,6 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_ibverbs,
 static void* nm_ibverbs_instanciate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_ibverbs*status = TBX_MALLOC(sizeof(struct nm_ibverbs));
-  memset(status->cnx_array, 0, sizeof(struct nm_ibverbs_cnx) * 2);
   const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
   if(_nm_ibverbs_checksum == NULL && checksum_env != NULL)
     {
@@ -186,15 +196,6 @@ const static char*nm_ibverbs_get_driver_url(struct nm_drv *p_drv)
   return p_ibverbs_drv->url;
 }
 
-
-/* ** helpers ********************************************** */
-
-static inline struct nm_ibverbs_cnx*nm_ibverbs_get_cnx(void*_status, nm_trk_id_t trk_id)
-{
-  struct nm_ibverbs*status = _status;
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = &status->cnx_array[trk_id];
-  return p_ibverbs_cnx;
-}
 
 /* ** checksum ********************************************* */
 
@@ -236,193 +237,28 @@ uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t le
 }
 
 
-#ifdef PM2_NUIOA
-/* ******************** numa node ***************************** */
-
-#define NM_IBVERBS_NUIOA_SYSFILE_LENGTH 16
-
-static int nm_ibverbs_get_numa_node(struct ibv_device* ib_dev)
-{
-#ifdef LINUX_SYS
-  FILE *sysfile = NULL;
-  char file[128] = "";
-  char line[NM_IBVERBS_NUIOA_SYSFILE_LENGTH]="";
-  
-  /* try to read /sys/class/infiniband/%s/device/numa_node (>= 2.6.22) */
-  
-  sprintf(file, "/sys/class/infiniband/%s/device/numa_node", ibv_get_device_name(ib_dev));
-  sysfile = fopen(file, "r");
-  if (sysfile) {
-    int node;
-    fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
-    fclose(sysfile);
-    node = strtoul(line, NULL, 0);
-    return node >= 0 ? node : PM2_NUIOA_ANY_NODE;
-  }
-  
-  /* or revert to libnuma-parsing /sys/class/infiniband/%s/device/local_cpus */
-  
-  if (numa_available() < 0) {
-    return PM2_NUIOA_ANY_NODE;
-  }
-
-#if 0 /* FIXME when libnuma will have an API to do bitmask -> integer or char* */
-  
-  sprintf(file, "/sys/class/infiniband/%s/device/local_cpus", ibv_get_device_name(ib_dev));
-  sysfile = fopen(file, "r");
-  if (sysfile == NULL) {
-    return PM2_NUIOA_ANY_NODE;
-  }
-  
-  fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
-  fclose(sysfile);
-  
-  int nb_nodes = numa_max_node();
-  int i;
-  for(i = 0; i <= nb_nodes; i++)
-    {
-      unsigned long mask;
-      numa_node_to_cpus(i, &mask, sizeof(unsigned long));
-      if (strtoul(line, NULL, 16) == mask)
-	return i;
-    }
-#endif /* 0 */
-#endif /* LINUX_SYS */
-  
-  return PM2_NUIOA_ANY_NODE;
-}
-#endif /* PM2_NUIOA */
 
 /* ** init & connection ************************************ */
 
-static int nm_ibverbs_query(struct nm_drv *p_drv,
-                            struct nm_driver_query_param *params,
-			    int nparam)
+static int nm_ibverbs_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam)
 {
-  int err;
-  int dev_amount;
-  int dev_number;
-  int i;
+  int err = NM_ESUCCESS;
   struct nm_ibverbs_drv*p_ibverbs_drv = TBX_MALLOC(sizeof(struct nm_ibverbs_drv));
   
-  if (!p_ibverbs_drv) {
-    err = -NM_ENOMEM;
-    goto out;
-  }
-  p_ibverbs_drv->connector = NULL;
+  if (!p_ibverbs_drv) 
+    {
+      err = -NM_ENOMEM;
+      goto out;
+    }
   p_ibverbs_drv->url = NULL;
-  
-  /* find IB device */
-  struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
-  if(!dev_list) 
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
-      abort();
-    }
-  
-  dev_number = 0;
-  for(i = 0; i < nparam; i++)
-    {
-      switch (params[i].key)
-	{
-	case NM_DRIVER_QUERY_BY_INDEX:
-	  dev_number = params[i].value.index;
-	  break;
-	case NM_DRIVER_QUERY_BY_NOTHING:
-	  break;
-	default:
-	  err = -NM_EINVAL;
-	  goto out;
-	}
-    }
-  if (dev_number >= dev_amount) {
-    err = -NM_EINVAL;
-    goto out;
-  }
-  p_ibverbs_drv->ib_dev = dev_list[dev_number];
-  
-  /* open IB context */
-  p_ibverbs_drv->context = ibv_open_device(p_ibverbs_drv->ib_dev);
-  if(p_ibverbs_drv->context == NULL)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot open IB context.\n");
-      abort();
-    }
-
-  ibv_free_device_list(dev_list);
-  
-  /* get IB context attributes */
-  struct ibv_device_attr device_attr;
-  int rc = ibv_query_device(p_ibverbs_drv->context, &device_attr);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get device capabilities.\n");
-      abort();
-    }
-
-  /* detect LID */
-  struct ibv_port_attr port_attr;
-  rc = ibv_query_port(p_ibverbs_drv->context, NM_IBVERBS_PORT, &port_attr);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local port attributes.\n");
-      abort();
-    }
-  p_ibverbs_drv->lid = port_attr.lid;
-  if(p_ibverbs_drv->lid == 0)
-    {
-      fprintf(stderr, "nmad- WARNING- ibverbs: LID is null- subnet manager has probably crashed.\n");
-    }
-
-  /* IB capabilities */
-  p_ibverbs_drv->ib_caps.max_qp        = device_attr.max_qp;
-  p_ibverbs_drv->ib_caps.max_qp_wr     = device_attr.max_qp_wr;
-  p_ibverbs_drv->ib_caps.max_cq        = device_attr.max_cq;
-  p_ibverbs_drv->ib_caps.max_cqe       = device_attr.max_cqe;
-  p_ibverbs_drv->ib_caps.max_mr        = device_attr.max_mr;
-  p_ibverbs_drv->ib_caps.max_mr_size   = device_attr.max_mr_size;
-  p_ibverbs_drv->ib_caps.page_size_cap = device_attr.page_size_cap;
-  p_ibverbs_drv->ib_caps.max_msg_size  = port_attr.max_msg_sz;
-  
-  int link_width = -1;
-  switch(port_attr.active_width)
-    {
-    case 1: link_width = 1;  break;
-    case 2: link_width = 4;  break;
-    case 4: link_width = 8;  break;
-    case 8: link_width = 12; break;
-    }
-  int link_rate = -1;
-  const char*s_link_rate = "unknown";
-  switch(port_attr.active_speed)
-    {
-    case 0x01: link_rate = 2;  s_link_rate = "SDR"; break;
-    case 0x02: link_rate = 4;  s_link_rate = "DDR"; break;
-    case 0x04: link_rate = 8;  s_link_rate = "QDR"; break;
-    case 0x08: link_rate = 14; s_link_rate = "FDR"; break;
-    case 0x10: link_rate = 25; s_link_rate = "EDR"; break;
-    }
-  const int data_rate = link_width * link_rate;
-
-  NM_DISPF("# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
-	   ibv_get_device_name(p_ibverbs_drv->ib_dev), link_width, s_link_rate, data_rate, p_ibverbs_drv->lid);
-#ifdef DEBUG
-  NM_DISPF("# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
-	   p_ibverbs_drv->ib_caps.max_qp, p_ibverbs_drv->ib_caps.max_qp_wr,
-	   p_ibverbs_drv->ib_caps.max_cq, p_ibverbs_drv->ib_caps.max_cqe);
-  NM_DISPF("# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
-	   p_ibverbs_drv->ib_caps.max_mr,
-	   (unsigned long long) p_ibverbs_drv->ib_caps.max_mr_size,
-	   (unsigned long long) p_ibverbs_drv->ib_caps.page_size_cap,
-	   (unsigned long long) p_ibverbs_drv->ib_caps.max_msg_size);
-#endif
+  p_ibverbs_drv->p_hca = nm_ibverbs_hca_resolve(p_drv->index);
 
   /* driver profile encoding */
 #ifdef PM2_NUIOA
-  p_drv->profile.numa_node = nm_ibverbs_get_numa_node(p_ibverbs_drv->ib_dev);
+  p_drv->profile.numa_node = nm_ibverbs_hca_get_numa_node(p_ibverbs_drv->p_hca);
 #endif
   p_drv->profile.latency = 1350; /* from sampling */
-  p_drv->profile.bandwidth = 1024 * (data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+  p_drv->profile.bandwidth = 1024 * (p_ibverbs_drv->p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
 
   p_drv->priv = p_ibverbs_drv;
   err = NM_ESUCCESS;
@@ -437,21 +273,14 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   
   srand48(getpid() * time(NULL));
   
-  /* allocate Protection Domain */
-  p_ibverbs_drv->pd = ibv_alloc_pd(p_ibverbs_drv->context);
-  if(p_ibverbs_drv->pd == NULL)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot allocate IB protection domain.\n");
-      abort();
-    }
-  
-  /* open helper socket */
-  nm_ibverbs_connect_create(p_ibverbs_drv);
-
+ 
   /* open tracks */
+  void*url_chunks = NULL;
+  int url_chunks_size = 0;
   nm_trk_id_t i;
   for(i = 0; i < nb_trks; i++)
     {
+      puk_component_t component = NULL;
       if(trk_caps[i].rq_type == nm_trk_rq_rdv)
 	{
 	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
@@ -469,7 +298,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 		  ib_method = puk_adapter_resolve(ib_lr2);
 		}
 	    }
-	  p_ibverbs_drv->trks_array[i].method = ib_method;
+	  component = ib_method;
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -480,7 +309,7 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	}
       else
 	{
-	  p_ibverbs_drv->trks_array[i].method = puk_adapter_resolve("NewMad_ibverbs_bycopy");
+	  component = puk_adapter_resolve("NewMad_ibverbs_bycopy");
 	  trk_caps[i].rq_type  = nm_trk_rq_dgram;
 	  trk_caps[i].iov_type = nm_trk_iov_send_only;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -489,10 +318,28 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
 	}
-      p_ibverbs_drv->trks_array[i].method_iface =
-	puk_component_get_driver_NewMad_ibverbs_method(p_ibverbs_drv->trks_array[i].method, NULL);
+      const struct nm_ibverbs_method_iface_s*method_iface =
+	puk_component_get_driver_NewMad_ibverbs_method(component, NULL);
+      /* create component context */
+      puk_context_t context = puk_context_new(component);
+      p_ibverbs_drv->trks_array[i].method = context;
+      char s_index[16];
+      sprintf(s_index, "%d", p_drv->index);
+      puk_context_putattr(context, "index", s_index);
+      const void*trk_url = NULL;
+      size_t trk_url_size = 0;
+      (*method_iface->init)(context, &trk_url, &trk_url_size);
+      /* encode url chunk */
+      const size_t chunk_size = trk_url_size + sizeof(int);
+      url_chunks = realloc(url_chunks, url_chunks_size + chunk_size);
+      int*p_chunk_size = url_chunks + url_chunks_size;
+      *p_chunk_size = chunk_size;
+      void*p_chunk_content = url_chunks + url_chunks_size + sizeof(int);
+      memcpy(p_chunk_content, trk_url, trk_url_size);
+      url_chunks_size += chunk_size;
     }
-  
+  p_ibverbs_drv->url = puk_hex_encode(url_chunks, &url_chunks_size, NULL);
+  free(url_chunks);
   return NM_ESUCCESS;
 }
 
@@ -507,77 +354,26 @@ static int nm_ibverbs_close(struct nm_drv *p_drv)
 
 static int nm_ibverbs_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
+  struct nm_ibverbs*status = _status;
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
-  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, trk_id);
-  p_ibverbs_cnx->method_instance = puk_adapter_instanciate(p_ibverbs_drv->trks_array[trk_id].method);
-  puk_instance_indirect_NewMad_ibverbs_method(p_ibverbs_cnx->method_instance, NULL, &p_ibverbs_cnx->method);
-  /* connection create */
-  nm_ibverbs_cnx_qp_create(p_ibverbs_cnx, p_ibverbs_drv);
-  (*p_ibverbs_cnx->method.driver->cnx_create)(p_ibverbs_cnx->method._status, p_ibverbs_cnx, p_ibverbs_drv);
-  p_ibverbs_cnx->local_addr.lid = p_ibverbs_drv->lid;
-  p_ibverbs_cnx->local_addr.qpn = p_ibverbs_cnx->qp->qp_num;
-  p_ibverbs_cnx->local_addr.psn = lrand48() & 0xffffff;
-  p_ibverbs_cnx->local_addr.n   = 0;
-  /* exchange addresses */
-  (*p_ibverbs_cnx->method.driver->addr_pack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->local_addr);
-  int rc = -1;
-  do
+  puk_context_t context = p_ibverbs_drv->trks_array[trk_id].method;
+  status->trks[trk_id].method_instance = puk_context_instanciate(context);
+  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[trk_id].method;
+  puk_instance_indirect_NewMad_ibverbs_method(status->trks[trk_id].method_instance, NULL, method);
+  int url_chunks_size = strlen(remote_url);
+  void*url_chunks = puk_hex_decode(remote_url, &url_chunks_size, NULL);
+  void*orig_url_chunks = url_chunks;
+  const int*p_chunk_size = url_chunks;
+  nm_trk_id_t i;
+  for(i = 0; i < trk_id; i++)
     {
-      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 0);
-      rc = nm_ibverbs_connect_recv(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->remote_addr);
+      url_chunks += *p_chunk_size;
+      p_chunk_size = url_chunks;
     }
-  while(rc != 0);
-  (*p_ibverbs_cnx->method.driver->addr_unpack)(p_ibverbs_cnx->method._status, &p_ibverbs_cnx->remote_addr);
-  /* connect */
-  volatile int*buffer = (void*)p_ibverbs_cnx->local_addr.segments[0].raddr;
-  buffer[0] = 0; /* recv buffer */
-  buffer[1] = 1; /* send buffer */
-  nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
-  nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
-  nm_ibverbs_cnx_qp_rts(p_ibverbs_cnx);
-  /* exchange ack */
-  do
-    {
-      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
-      rc = nm_ibverbs_connect_wait_ack(p_ibverbs_drv, remote_url, trk_id);
-    }
-  while(rc != 0);
+  const void*p_chunk_content = ((void*)p_chunk_size) + sizeof(int);
+  (*method->driver->connect)(method->_status, p_chunk_content, *p_chunk_size);
 
-  for(;;)
-    {
-      /* check connection */
-      nm_ibverbs_sync_send_post((void*)&buffer[1], sizeof(int), p_ibverbs_cnx);
-      rc = nm_ibverbs_sync_send_wait(p_ibverbs_cnx);
-      if(rc)
-	{
-	  fprintf(stderr, "nmad: WARNING- ibverbs: connection failed to come up before RNR timeout; reset QP and try again.\n");
-	  nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
-	  nm_ibverbs_cnx_qp_reset(p_ibverbs_cnx);
-	  nm_ibverbs_cnx_qp_init(p_ibverbs_cnx);
-	  nm_ibverbs_cnx_qp_rtr(p_ibverbs_cnx);
-	  nm_ibverbs_cnx_qp_rts(p_ibverbs_cnx);
-	}
-      else if(buffer[0] == 0)
-	{
-	  tbx_tick_t t1, t2;
-	  TBX_GET_TICK(t1);
-	  do
-	    {
-	      TBX_GET_TICK(t2);
-	    }
-	  while(buffer[0] == 0 && TBX_TIMING_DELAY(t1, t2) < NM_IBVERBS_TIMEOUT_CHECK);
-	  if(buffer[0] == 0)
-	    {
-	      nm_ibverbs_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1);
-	    }
-	}
-      else
-	{
-	  /* connection ok- escape from loop */
-	  break;
-	}
-    }
-
+  free(orig_url_chunks);
   return NM_ESUCCESS;
 }
 
@@ -598,56 +394,41 @@ static int nm_ibverbs_disconnect(void*_status, struct nm_gate*p_gate, struct nm_
 
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
-  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-  assert(p_pw->drv_priv == NULL);
-  p_pw->drv_priv = p_ibverbs_cnx;
-  (*p_ibverbs_cnx->method.driver->send_post)(p_ibverbs_cnx->method._status, &p_pw->v[0], p_pw->v_nb);
+  struct nm_ibverbs*status = _status;
+  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
+  (*method->driver->send_post)(method->_status, &p_pw->v[0], p_pw->v_nb);
   int err = nm_ibverbs_poll_send_iov(_status, p_pw);
   return err;
 }
 
 static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
-  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = p_pw->drv_priv;
-  int err = (*p_ibverbs_cnx->method.driver->send_poll)(p_ibverbs_cnx->method._status);
-  if(err == NM_ESUCCESS)
-    p_pw->drv_priv = NULL;
+  struct nm_ibverbs*status = _status;
+  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
+  int err = (*method->driver->send_poll)(method->_status);
   return err;
 }
 
-static int nm_ibverbs_send_prefetch(void*_status,  struct nm_pkt_wrap *p_pw)
+static int nm_ibverbs_send_prefetch(void*_status, struct nm_pkt_wrap *p_pw)
 {
-  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, NM_TRK_LARGE);
-  if(p_ibverbs_cnx->method.driver->send_prefetch)
+  const nm_trk_id_t trk_id = NM_TRK_LARGE;
+  struct nm_ibverbs*status = _status;
+  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[trk_id].method;
+  if(method->driver->send_prefetch)
     {
-      (*p_ibverbs_cnx->method.driver->send_prefetch)(p_ibverbs_cnx->method._status,
-						     p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+      (*method->driver->send_prefetch)(method->_status, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
     }
   return NM_ESUCCESS;
-}
-
-static inline void nm_ibverbs_recv_init(struct nm_pkt_wrap*__restrict__ p_pw,
-					struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
-{
-  (*p_ibverbs_cnx->method.driver->recv_init)(p_ibverbs_cnx->method._status, 
-					     &p_pw->v[0], p_pw->v_nb);
-}
-
-static inline int nm_ibverbs_poll_one(struct nm_pkt_wrap*__restrict__ p_pw,
-				      struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx)
-{
-  int err = (*p_ibverbs_cnx->method.driver->poll_one)(p_ibverbs_cnx->method._status);
-  if(err == NM_ESUCCESS)
-    p_pw->drv_priv = NULL;
-  return err;
 }
 
 static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   int err = -NM_EAGAIN;
-  if(p_pw->drv_priv)
+  if(_status)
     {
-      err = nm_ibverbs_poll_one(p_pw, p_pw->drv_priv);
+      struct nm_ibverbs*status = _status;
+      struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
+      err = (*method->driver->poll_one)(method->_status);
     }
   else
     {
@@ -659,11 +440,11 @@ static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
 static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   int err = NM_ESUCCESS;
-  struct nm_ibverbs_cnx*__restrict__ p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-  p_pw->drv_priv  = p_ibverbs_cnx;
-  if(p_pw->p_gate)
+  if(_status)
     {
-      nm_ibverbs_recv_init(p_pw, p_ibverbs_cnx);
+      struct nm_ibverbs*status = _status;
+      struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
+      (*method->driver->recv_init)(method->_status, &p_pw->v[0], p_pw->v_nb);
     }
   err = nm_ibverbs_poll_recv_iov(_status, p_pw);
   return err;
@@ -672,11 +453,11 @@ static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
 static int nm_ibverbs_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   int err = -NM_ENOTIMPL;
-  struct nm_ibverbs_cnx* p_ibverbs_cnx = nm_ibverbs_get_cnx(_status, p_pw->trk_id);
-  if(p_ibverbs_cnx->method.driver->cancel_recv)
+  struct nm_ibverbs*status = _status;
+  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
+  if(method->driver->cancel_recv)
     {
-      err = (*p_ibverbs_cnx->method.driver->cancel_recv)(p_ibverbs_cnx->method._status);
-      p_pw->drv_priv = NULL;
+      err = (*method->driver->cancel_recv)(method->_status);
     }
   return err;
 }

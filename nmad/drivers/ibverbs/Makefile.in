@@ -4,7 +4,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_MOD = NewMad_Driver_ibverbs NewMad_ibverbs_lr2 NewMad_ibverbs_bycopy NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma
+TARGET_MOD = NewMad_Driver_ibverbs NewMad_ibverbs_bycopy NewMad_ibverbs_lr2 NewMad_ibverbs_rcache NewMad_ibverbs_adaptrdma
 TARGET_BIN =
 TARGET_LIB =
 
@@ -20,7 +20,7 @@ MODLIBS += @ibverbs_LIBS@
 
 include @puk_root@/etc/common_rules.mk
 
-NewMad_Driver_ibverbs: nm_ibverbs.pic.o nm_ibverbs_connect.pic.o
+NewMad_Driver_ibverbs: nm_ibverbs.pic.o nm_ibverbs_connect.pic.o nm_ibverbs_common.pic.o
 
 NewMad_ibverbs_bycopy: nm_ibverbs_bycopy.pic.o
 

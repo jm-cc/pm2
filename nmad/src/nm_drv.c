@@ -174,6 +174,11 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       return err;
     }
   
+  if(param && (param->key == NM_DRIVER_QUERY_BY_INDEX))
+    p_drv->index = param->value.index;
+  else
+    p_drv->index = 0;
+
   if(!p_drv->driver->query)
     {
       TBX_FAILUREF("nmad: FATAL- driver %s has no 'query' method.\n", p_drv->driver->name);
@@ -183,10 +188,6 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
     {
       TBX_FAILUREF("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
     }
-  if(param && (param->key == NM_DRIVER_QUERY_BY_INDEX))
-    p_drv->index = param->value.index;
-  else
-    p_drv->index = 0;
 
 #ifdef PM2_NUIOA
   if (nuioa) 

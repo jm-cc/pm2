@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2011(see AUTHORS file)
+ * Copyright (C) 2011-2013 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,165 +64,30 @@ static uint32_t nm_ibverbs_addr_entry_hash(const void*_e)
 
 PUK_VECT_TYPE(nm_ibverbs_addr_entry, struct nm_ibverbs_addr_entry_s);
 
-/** IB connection manager, one for each nm_ibverbs_drv.
+/** connection manager, exchange per-connection url using per node url
  */
 struct nm_ibverbs_connect_s
 {
   int sock; /**< UDP socket used to exchange addresses */
   puk_hashtable_t addrs; /**< already received addresses, hashed by (trk_id, url) */
+  char url[16];
 };
 
-/* ********************************************************* */
-/* ** state transitions for QP finite-state automaton */
-
-/** create QP and both CQs */
-void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_drv*p_ibverbs_drv)
+static struct
 {
-  /* init inbound CQ */
-  p_ibverbs_cnx->if_cq = ibv_create_cq(p_ibverbs_drv->context, NM_IBVERBS_RX_DEPTH, NULL, NULL, 0);
-  if(p_ibverbs_cnx->if_cq == NULL) 
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create in CQ\n");
-      abort();
-    }
-  /* init outbound CQ */
-  p_ibverbs_cnx->of_cq = ibv_create_cq(p_ibverbs_drv->context, NM_IBVERBS_TX_DEPTH, NULL, NULL, 0);
-  if(p_ibverbs_cnx->of_cq == NULL)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create out CQ\n");
-      abort();
-    }
-  /* create QP */
-  struct ibv_qp_init_attr qp_init_attr = {
-    .send_cq = p_ibverbs_cnx->of_cq,
-    .recv_cq = p_ibverbs_cnx->if_cq,
-    .cap     = {
-      .max_send_wr     = NM_IBVERBS_TX_DEPTH,
-      .max_recv_wr     = NM_IBVERBS_RX_DEPTH,
-      .max_send_sge    = NM_IBVERBS_MAX_SG_SQ,
-      .max_recv_sge    = NM_IBVERBS_MAX_SG_RQ,
-      .max_inline_data = NM_IBVERBS_MAX_INLINE
-    },
-    .qp_type = IBV_QPT_RC
-  };
-  p_ibverbs_cnx->qp = ibv_create_qp(p_ibverbs_drv->pd, &qp_init_attr);
-  if(p_ibverbs_cnx->qp == NULL)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: couldn't create QP\n");
-      abort();
-    }
-  p_ibverbs_cnx->max_inline = qp_init_attr.cap.max_inline_data;
-}
+  puk_hashtable_t connectors; /** connectors, hashed by local url */
+} nm_connector = { .connectors = NULL };
 
-/** modify QP to state RESET */
-void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx)
-{
-  /* modify QP- step: RTS */
-  struct ibv_qp_attr attr =
-    {
-      .qp_state = IBV_QPS_RESET
-    };
-  int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr, IBV_QP_STATE);
-  if(rc != 0)
-    {
-      fprintf(stderr,"nmad: FATAL- ibverbs: failed to modify QP to RESET.\n");
-      abort();
-    }
-}
-
-/** modify QP to state INIT */
-void nm_ibverbs_cnx_qp_init(struct nm_ibverbs_cnx*p_ibverbs_cnx)
-{
-  struct ibv_qp_attr attr =
-    {
-      .qp_state        = IBV_QPS_INIT,
-      .pkey_index      = 0,
-      .port_num        = NM_IBVERBS_PORT,
-      .qp_access_flags = IBV_ACCESS_REMOTE_WRITE
-    };
-  int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr,
-			 IBV_QP_STATE              |
-			 IBV_QP_PKEY_INDEX         |
-			 IBV_QP_PORT               |
-			 IBV_QP_ACCESS_FLAGS);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to INIT.\n");
-      abort();
-    }
-}
-
-/** modify QP to state RTR */
-void nm_ibverbs_cnx_qp_rtr(struct nm_ibverbs_cnx*p_ibverbs_cnx)
-{
-  struct ibv_qp_attr attr =
-    {
-      .qp_state           = IBV_QPS_RTR,
-      .path_mtu           = NM_IBVERBS_MTU,
-      .dest_qp_num        = p_ibverbs_cnx->remote_addr.qpn,
-      .rq_psn             = p_ibverbs_cnx->remote_addr.psn,
-      .max_dest_rd_atomic = NM_IBVERBS_RDMA_DEPTH,
-      .min_rnr_timer      = 12, /* 12 */
-      .ah_attr            = {
-	.is_global        = 0,
-	.dlid             = p_ibverbs_cnx->remote_addr.lid,
-	.sl               = 0,
-	.src_path_bits    = 0,
-	.port_num         = NM_IBVERBS_PORT
-      }
-    };
-  int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr,
-			 IBV_QP_STATE              |
-			 IBV_QP_AV                 |
-			 IBV_QP_PATH_MTU           |
-			 IBV_QP_DEST_QPN           |
-			 IBV_QP_RQ_PSN             |
-			 IBV_QP_MAX_DEST_RD_ATOMIC |
-			 IBV_QP_MIN_RNR_TIMER);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to RTR\n");
-      abort();
-    }
-}
-
-/** modify QP to state RTS */
-void nm_ibverbs_cnx_qp_rts(struct nm_ibverbs_cnx*p_ibverbs_cnx)
-{
-  struct ibv_qp_attr attr =
-    {
-      .qp_state      = IBV_QPS_RTS,
-      .timeout       = 2, /* 14 */
-      .retry_cnt     = 7,  /* 7 */
-      .rnr_retry     = 7,  /* 7 = unlimited */
-      .sq_psn        = p_ibverbs_cnx->local_addr.psn,
-      .max_rd_atomic = NM_IBVERBS_RDMA_DEPTH /* 1 */
-    };
-  int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr,
-			 IBV_QP_STATE              |
-			 IBV_QP_TIMEOUT            |
-			 IBV_QP_RETRY_CNT          |
-			 IBV_QP_RNR_RETRY          |
-			 IBV_QP_SQ_PSN             |
-			 IBV_QP_MAX_QP_RD_ATOMIC);
-  if(rc != 0)
-    {
-      fprintf(stderr,"nmad: FATAL-  ibverbs: failed to modify QP to RTS\n");
-      abort();
-    }
-}
 
 /* ********************************************************* */
 /* ** connector */
 
-void nm_ibverbs_connect_create(struct nm_ibverbs_drv*p_ibverbs_drv)
+struct nm_ibverbs_connect_s*nm_ibverbs_connect_create(const char**url)
 {
-  assert(p_ibverbs_drv->connector == NULL);
   /* allocate connector */
   struct nm_ibverbs_connect_s*c = TBX_MALLOC(sizeof(struct nm_ibverbs_connect_s));
   c->sock = -1;
   c->addrs = puk_hashtable_new(&nm_ibverbs_addr_entry_hash, &nm_ibverbs_addr_entry_eq);
-  p_ibverbs_drv->connector = c;
 
   /* open socket */
   int fd = NM_SYS(socket)(AF_INET, SOCK_DGRAM, 0);
@@ -246,7 +111,7 @@ void nm_ibverbs_connect_create(struct nm_ibverbs_drv*p_ibverbs_drv)
     }
   int rcvbuf = 64 * 1024;
   rc = NM_SYS(setsockopt)(fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
-  p_ibverbs_drv->connector->sock = fd;
+  c->sock = fd;
 
   /* encode url */
   struct ifaddrs*ifa_list = NULL;
@@ -264,18 +129,21 @@ void nm_ibverbs_connect_create(struct nm_ibverbs_drv*p_ibverbs_drv)
 	  struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
 	  if(!(i->ifa_flags & IFF_LOOPBACK))
 	    {
-	      char s_url[16];
-	      snprintf(s_url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr.sin_port);
-	      p_ibverbs_drv->url = tbx_strdup(s_url);
+	      snprintf(c->url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr.sin_port);
 	      break;
 	    }
 	}
     }
+  *url = c->url;
+  if(nm_connector.connectors == NULL)
+    nm_connector.connectors = puk_hashtable_new_string();
+  puk_hashtable_insert(nm_connector.connectors, c->url, c);
+  return c;
 }
 
 
-void nm_ibverbs_connect_send(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id,
-			     const struct nm_ibverbs_cnx_addr*local_addr, int ack)
+static void nm_ibverbs_connect_send(struct nm_ibverbs_connect_s*p_connector, const char*remote_url, nm_trk_id_t trk_id,
+				    const struct nm_ibverbs_cnx_addr*local_addr, int ack)
 {
   /* parse peer address */
   in_addr_t peer_addr;
@@ -290,13 +158,13 @@ void nm_ibverbs_connect_send(struct nm_ibverbs_drv*p_ibverbs_drv, const char*rem
   /* send address */
   struct nm_ibverbs_addr_entry_s local_entry;
   local_entry.trk_id = trk_id;
-  assert(strlen(p_ibverbs_drv->url) == NM_IBVERBS_URL_SIZE);
-  memcpy(local_entry.url, p_ibverbs_drv->url, NM_IBVERBS_URL_SIZE);
+  assert(strlen(p_connector->url) == NM_IBVERBS_URL_SIZE);
+  memcpy(local_entry.url, p_connector->url, NM_IBVERBS_URL_SIZE);
   memcpy(&local_entry.addr, local_addr, sizeof(struct nm_ibverbs_cnx_addr));
   local_entry.ack = ack;
   int rc = -1;
  retry_send:
-  rc = NM_SYS(sendto)(p_ibverbs_drv->connector->sock, 
+  rc = NM_SYS(sendto)(p_connector->sock, 
 		      &local_entry, sizeof(struct nm_ibverbs_addr_entry_s), 0, &inaddr, sizeof(inaddr));
   if(rc == -1)
     {
@@ -314,9 +182,9 @@ void nm_ibverbs_connect_send(struct nm_ibverbs_drv*p_ibverbs_drv, const char*rem
 }
 
 /* poll network for peer address; return 0 for success; -1 for timeout */
-static int nm_ibverbs_connect_poll(struct nm_ibverbs_drv*p_ibverbs_drv)
+static int nm_ibverbs_connect_poll(struct nm_ibverbs_connect_s*p_connector)
 {
-  struct pollfd fds = { .fd = p_ibverbs_drv->connector->sock, .events = POLLIN };
+  struct pollfd fds = { .fd = p_connector->sock, .events = POLLIN };
   int rc = -1;
  retry_poll:
   rc = NM_SYS(poll)(&fds, 1, NM_IBVERBS_TIMEOUT_ACK);
@@ -327,7 +195,7 @@ static int nm_ibverbs_connect_poll(struct nm_ibverbs_drv*p_ibverbs_drv)
 	goto retry_poll;
       else
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: error while receiving address.\n");
+	  fprintf(stderr, "nmad: FATAL- ibverbs: timeout while receiving address.\n");
 	  abort();
 	}
     }
@@ -337,7 +205,7 @@ static int nm_ibverbs_connect_poll(struct nm_ibverbs_drv*p_ibverbs_drv)
     }
   struct nm_ibverbs_addr_entry_s*remote_entry = TBX_MALLOC(sizeof(struct nm_ibverbs_addr_entry_s));
  retry_recv:
-  rc = NM_SYS(recv)(p_ibverbs_drv->connector->sock, remote_entry, sizeof(struct nm_ibverbs_addr_entry_s), 0);
+  rc = NM_SYS(recv)(p_connector->sock, remote_entry, sizeof(struct nm_ibverbs_addr_entry_s), 0);
   if(rc == -1)
     {
       const int err = errno;
@@ -349,18 +217,18 @@ static int nm_ibverbs_connect_poll(struct nm_ibverbs_drv*p_ibverbs_drv)
 	  abort();
 	}
     }
-  struct nm_ibverbs_addr_entry_s*prev = puk_hashtable_lookup(p_ibverbs_drv->connector->addrs, remote_entry);
+  struct nm_ibverbs_addr_entry_s*prev = puk_hashtable_lookup(p_connector->addrs, remote_entry);
   if(prev)
     {
-      puk_hashtable_remove(p_ibverbs_drv->connector->addrs, prev);
+      puk_hashtable_remove(p_connector->addrs, prev);
       TBX_FREE(prev);
     }
-  puk_hashtable_insert(p_ibverbs_drv->connector->addrs, remote_entry, remote_entry);
+  puk_hashtable_insert(p_connector->addrs, remote_entry, remote_entry);
   return 0;
 }
 
-int nm_ibverbs_connect_recv(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id,
-			    struct nm_ibverbs_cnx_addr*remote_addr)
+static int nm_ibverbs_connect_recv(struct nm_ibverbs_connect_s*p_connector, const char*remote_url, nm_trk_id_t trk_id,
+				   struct nm_ibverbs_cnx_addr*remote_addr)
 {
   struct nm_ibverbs_addr_entry_s key;
   key.trk_id = trk_id;
@@ -368,13 +236,13 @@ int nm_ibverbs_connect_recv(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remo
   for(;;)
     {
       /* lookup in already received address */
-      struct nm_ibverbs_addr_entry_s*remote_entry = puk_hashtable_lookup(p_ibverbs_drv->connector->addrs, &key);
+      struct nm_ibverbs_addr_entry_s*remote_entry = puk_hashtable_lookup(p_connector->addrs, &key);
       if(remote_entry != NULL)
 	{
 	  memcpy(remote_addr, &remote_entry->addr, sizeof(struct nm_ibverbs_cnx_addr));
 	  return 0;
 	}
-      int rc = nm_ibverbs_connect_poll(p_ibverbs_drv);
+      int rc = nm_ibverbs_connect_poll(p_connector);
       if(rc != 0)
 	{
 	  fprintf(stderr, "nmad: WARNING- ibverbs: timeout while receiving peer address.\n");
@@ -388,19 +256,19 @@ int nm_ibverbs_connect_recv(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remo
   return 0;
 }
 
-int nm_ibverbs_connect_wait_ack(struct nm_ibverbs_drv*p_ibverbs_drv, const char*remote_url, nm_trk_id_t trk_id)
+static int nm_ibverbs_connect_wait_ack(struct nm_ibverbs_connect_s*p_connector, const char*remote_url, nm_trk_id_t trk_id)
 {
   struct nm_ibverbs_addr_entry_s key;
   key.trk_id = trk_id;
   memcpy(key.url, remote_url, NM_IBVERBS_URL_SIZE);
   for(;;)
     {
-      struct nm_ibverbs_addr_entry_s*remote_entry = puk_hashtable_lookup(p_ibverbs_drv->connector->addrs, &key);
+      struct nm_ibverbs_addr_entry_s*remote_entry = puk_hashtable_lookup(p_connector->addrs, &key);
       if(remote_entry != NULL && remote_entry->ack != 0)
 	{
 	  return 0;
 	}
-      int rc = nm_ibverbs_connect_poll(p_ibverbs_drv);
+      int rc = nm_ibverbs_connect_poll(p_connector);
       if(rc != 0)
 	{
 	  fprintf(stderr, "nmad: WARNING- ibverbs: timeout while waiting for ACK.\n");
@@ -408,4 +276,27 @@ int nm_ibverbs_connect_wait_ack(struct nm_ibverbs_drv*p_ibverbs_drv, const char*
 	}
     }
   return 0;
+}
+
+
+int nm_ibverbs_connect_exchange(const char*local_url, const char*remote_url,
+				const struct nm_ibverbs_cnx_addr*local_addr, struct nm_ibverbs_cnx_addr*remote_addr)
+{
+  const nm_trk_id_t trk_id = 0;
+  struct nm_ibverbs_connect_s*p_connector = puk_hashtable_lookup(nm_connector.connectors, local_url);
+  assert(p_connector != NULL);
+  int rc = -1;
+  do
+    {
+      nm_ibverbs_connect_send(p_connector, remote_url, trk_id, local_addr, 0);
+      rc = nm_ibverbs_connect_recv(p_connector, remote_url, trk_id, remote_addr);
+    }
+  while(rc != 0);
+  do
+    {
+      nm_ibverbs_connect_send(p_connector, remote_url, trk_id, local_addr, 1);
+      rc = nm_ibverbs_connect_wait_ack(p_connector, remote_url, trk_id);
+    }
+  while(rc != 0);
+  return rc;
 }

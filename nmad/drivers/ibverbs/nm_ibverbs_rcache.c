@@ -47,6 +47,7 @@ struct nm_ibverbs_rcache
   struct ibv_pd*pd;              /**< protection domain */
   struct nm_ibverbs_segment seg; /**< remote segment */
   struct nm_ibverbs_cnx*cnx;
+  puk_context_t context;
   struct
   {
     char*message;
@@ -74,9 +75,8 @@ struct nm_ibverbs_rcache
   } headers;
 };
 
-static void nm_ibverbs_rcache_cnx_create(void*_status, struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_drv*p_ibverbs_drv);
-static void nm_ibverbs_rcache_addr_pack(void*_status, struct nm_ibverbs_cnx_addr*addr);
-static void nm_ibverbs_rcache_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr);
+static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size);
+static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
 static int  nm_ibverbs_rcache_send_poll(void*_status);
 static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n);
@@ -84,9 +84,8 @@ static int  nm_ibverbs_rcache_poll_one(void*_status);
 
 static const struct nm_ibverbs_method_iface_s nm_ibverbs_rcache_method =
   {
-    .cnx_create  = &nm_ibverbs_rcache_cnx_create,
-    .addr_pack   = &nm_ibverbs_rcache_addr_pack,
-    .addr_unpack = &nm_ibverbs_rcache_addr_unpack,
+    .init        = &nm_ibverbs_rcache_init,
+    .connect     = &nm_ibverbs_rcache_connect,
     .send_post   = &nm_ibverbs_rcache_send_post,
     .send_poll   = &nm_ibverbs_rcache_send_poll,
     .recv_init   = &nm_ibverbs_rcache_recv_init,
@@ -144,6 +143,7 @@ static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_
   rcache->mr  = NULL;
   rcache->cnx = NULL;
   rcache->pd  = NULL;
+  rcache->context = context;
 #ifdef PUKABI
   puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
 #endif /* PUKABI */
@@ -155,45 +155,46 @@ static void nm_ibverbs_rcache_destroy(void*_status)
   /* TODO */
 }
 
+/* *** rcache connection *********************************** */
 
-static void nm_ibverbs_rcache_addr_pack(void*_status, struct nm_ibverbs_cnx_addr*addr)
-{
-  struct nm_ibverbs_rcache*rcache = _status;
-  struct nm_ibverbs_segment*seg = &addr->segments[addr->n];
-  seg->kind  = NM_IBVERBS_CNX_RCACHE;
-  seg->raddr = (uintptr_t)&rcache->headers;
-  seg->rkey  = rcache->mr->rkey;
-  addr->n++;
+static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size)
+{ 
+  const char*url = NULL;
+  nm_ibverbs_connect_create(&url);
+  puk_context_putattr(context, "local_url", url);
+  *drv_url = url;
+  *url_size = strlen(url);
 }
 
-static void nm_ibverbs_rcache_addr_unpack(void*_status, struct nm_ibverbs_cnx_addr*addr)
+static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size)
 {
-  struct nm_ibverbs_rcache*rcache = _status;
-  int i;
-  for(i = 0; addr->segments[i].raddr; i++)
-    {
-      struct nm_ibverbs_segment*seg = &addr->segments[i];
-      if(seg->kind == NM_IBVERBS_CNX_RCACHE)
-	{
-	  rcache->seg = *seg;
-	  break;
-	}
-    }
-}
-
-static void nm_ibverbs_rcache_cnx_create(void*_status, struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_drv*p_ibverbs_drv)
-{
-  struct nm_ibverbs_rcache*rcache = _status;
+  struct nm_ibverbs_rcache*rcache = _status; 
+  const char*s_index = puk_context_getattr(rcache->context, "index");
+  const int index= atoi(s_index);
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
+  struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
   rcache->cnx = p_ibverbs_cnx;
-  rcache->pd = p_ibverbs_drv->pd;
+  rcache->pd = p_hca->pd;
   /* register Memory Region */
-  rcache->mr = ibv_reg_mr(p_ibverbs_drv->pd, &rcache->headers,
-			  sizeof(rcache->headers),
+  rcache->mr = ibv_reg_mr(p_hca->pd, &rcache->headers, sizeof(rcache->headers),
 			  IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE);
   if(rcache->mr == NULL)
     {
       TBX_FAILURE("Infiniband: rcache cannot register MR.\n");
     }
+  struct nm_ibverbs_segment*seg = &p_ibverbs_cnx->local_addr.segment;
+  seg->raddr = (uintptr_t)&rcache->headers;
+  seg->rkey  = rcache->mr->rkey;
+  /* ** exchange addresses */
+  const char*local_url = puk_context_getattr(rcache->context, "local_url");
+  int rc = nm_ibverbs_connect_exchange(local_url, remote_url,
+				       &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
+  if(rc)
+    {
+      fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");
+    }
+  rcache->seg = p_ibverbs_cnx->remote_addr.segment;
+  nm_ibverbs_cnx_connect(p_ibverbs_cnx);
 }
 
 

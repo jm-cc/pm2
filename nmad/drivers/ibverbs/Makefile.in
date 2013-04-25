@@ -20,7 +20,7 @@ MODLIBS += @ibverbs_LIBS@
 
 include @puk_root@/etc/common_rules.mk
 
-NewMad_Driver_ibverbs: nm_ibverbs.pic.o nm_ibverbs_connect.pic.o nm_ibverbs_common.pic.o
+NewMad_Driver_ibverbs: nm_ibverbs.pic.o nm_ibverbs_common.pic.o
 
 NewMad_ibverbs_bycopy: nm_ibverbs_bycopy.pic.o
 

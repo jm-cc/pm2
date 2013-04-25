@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2010(see AUTHORS file)
+ * Copyright (C) 2010-2013 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,8 +32,6 @@
 #define NM_IBVERBS_MAX_INLINE   128
 #define NM_IBVERBS_MTU          IBV_MTU_1024
 
-/** timeout to receive connection ACK after sending connect address to peer (in msec.) */
-#define NM_IBVERBS_TIMEOUT_ACK   600
 /** timeout to receive connection check after sending ACK and check (in msec.) */
 #define NM_IBVERBS_TIMEOUT_CHECK 20
 
@@ -136,18 +134,11 @@ struct nm_ibverbs_cnx
 
 
 /* ********************************************************* */
-/* ** connection management */
 
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index);
 #ifdef PM2_NUIOA
 int nm_ibverbs_hca_get_numa_node(struct nm_ibverbs_hca_s*p_hca);
 #endif /* PM2_NUIOA */
-
-struct nm_ibverbs_connect_s*nm_ibverbs_connect_create(const char**url);
-
-int nm_ibverbs_connect_exchange(const char*local_url, const char*remote_url,
-				const struct nm_ibverbs_cnx_addr*local_addr, struct nm_ibverbs_cnx_addr*remote_addr);
-
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
 

@@ -16,6 +16,7 @@
 /* -*- Mode: C; tab-width: 2; c-basic-offset: 2 -*- */
 
 #include "nm_ibverbs.h"
+#include <nm_connector.h>
 #include <errno.h>
 
 #include <Padico/Module.h>
@@ -162,7 +163,7 @@ static void nm_ibverbs_bycopy_destroy(void*_status)
 static void nm_ibverbs_bycopy_init(puk_context_t context, const void**drv_url, size_t*url_size)
 {
   const char*url = NULL;
-  nm_ibverbs_connect_create(&url);
+  nm_connector_create(sizeof(struct nm_ibverbs_cnx_addr), &url);
   puk_context_putattr(context, "local_url", url);
   *drv_url = url;
   *url_size = strlen(url);
@@ -193,8 +194,8 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
   seg->rkey  = bycopy->mr->rkey;
   /* ** exchange addresses */
   const char*local_url = puk_context_getattr(bycopy->context, "local_url");
-  int rc = nm_ibverbs_connect_exchange(local_url, remote_url,
-				       &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
+  int rc = nm_connector_exchange(local_url, remote_url,
+				 &p_ibverbs_cnx->local_addr, &p_ibverbs_cnx->remote_addr);
   if(rc)
     {
       fprintf(stderr, "nmad: FATAL- ibverbs: timeout in address exchange.\n");

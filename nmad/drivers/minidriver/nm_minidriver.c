@@ -97,7 +97,9 @@ static const struct puk_adapter_driver_s nm_minidriver_adapter_driver =
 PADICO_MODULE_COMPONENT(NewMad_Driver_minidriver,
   puk_component_declare("NewMad_Driver_minidriver",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_minidriver_adapter_driver),
-			puk_component_provides("NewMad_Driver", "driver", &nm_minidriver_driver)) );
+			puk_component_provides("NewMad_Driver", "driver", &nm_minidriver_driver),
+			puk_component_attr("trk0", NULL),
+			puk_component_attr("trk1", NULL)) );
 
 
 
@@ -140,29 +142,21 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
   int i;
   for(i = 0; i < 2; i++)
     {
-      if(i == 0)
+      /* hack here- find self context in the composite */
+      const char*trk0 = NULL, *trk1 = NULL;
+      const struct puk_composite_driver_s*const composite_driver = 
+	puk_component_get_driver_PadicoComposite(p_drv->assembly, NULL);
+      if(composite_driver)
 	{
-	  component = puk_adapter_resolve("NewMad_ibverbs_bycopy");
-	}
-      else
-	{
-	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
-	  static const char const ib_lr2[] = "NewMad_ibverbs_lr2";
-	  static puk_component_t ib_minidriver = NULL;
-	  if(ib_minidriver == NULL)
+	  struct puk_composite_content_s*content = composite_driver->content;
+	  puk_component_conn_itor_t conn;
+	  puk_vect_foreach(conn, puk_component_conn, &content->entry_points)
 	    {
-	      if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
-		{
-		  ib_minidriver = puk_adapter_resolve(ib_rcache);
-		  NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
-		}
-	      else
-		{
-		  ib_minidriver = puk_adapter_resolve(ib_lr2);
-		}
+	      trk0 = puk_context_getattr(conn->context, "trk0");
+	      trk1 = puk_context_getattr(conn->context, "trk1");
 	    }
-	  component = ib_minidriver;
 	}
+      component = puk_adapter_resolve((i == 0) ? trk0 : trk1);
       const struct nm_minidriver_iface_s*minidriver_iface =
 	puk_component_get_driver_NewMad_minidriver(component, NULL);
       /* create component context */

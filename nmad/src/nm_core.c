@@ -130,12 +130,53 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
  */
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
-  char component_name[1024];
-  snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
-  puk_component_t component = puk_adapter_resolve(component_name);
-  if(component == NULL)
+  puk_component_t component = NULL;
+  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "ibverbs") == 0))
     {
-      padico_fatal("nmad: failed to load component '%s'\n", component_name);
+      static const char ib_lr2[] = 
+	"<puk:composite id=\"nm:ib-lr2\">"
+	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:attr label=\"trk0\">NewMad_ibverbs_bycopy</puk:attr>"
+	"    <puk:attr label=\"trk1\">NewMad_ibverbs_lr2</puk:attr>"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"</puk:composite>";
+      static const char ib_rcache[] = 
+	"<puk:composite id=\"nm:ib-rcache\">"
+	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:attr label=\"trk0\">NewMad_ibverbs_bycopy</puk:attr>"
+	"    <puk:attr label=\"trk1\">NewMad_ibverbs_rcache</puk:attr>"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"</puk:composite>";
+      static const char*ib_drv = NULL;
+      if(ib_drv == NULL)
+	{
+	  if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
+	    {
+	      ib_drv = ib_rcache;
+	      NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+	    }
+	  else
+	    {
+	      ib_drv = ib_lr2;
+	    }
+	}
+      component = puk_adapter_parse(ib_drv);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", ib_drv);
+	}
+    }
+  else
+    {
+      char component_name[1024];
+      snprintf(component_name, 1024, "NewMad_%s_%s", entity, name);
+      component = puk_adapter_resolve(component_name);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", component_name);
+	}
     }
   return component;
 }

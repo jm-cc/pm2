@@ -1,6 +1,6 @@
 /*
  * NewMadeleine
- * Copyright (C) 2011-2013 (see AUTHORS file)
+ * Copyright (C) 2006-2013 (see AUTHORS file)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,43 @@
 
 /* -*- Mode: C; tab-width: 2; c-basic-offset: 2 -*- */
 
+
+/* *********************************************************
+ * Rationale of the newmad/ibverbs driver
+ *
+ * This is a multi-method driver. Four methods are available:
+ *   -- bycopy: data is copied in a pre-allocated, pre-registered
+ *      memory region, then sent through RDMA into a pre-registered
+ *      memory region of the peer node.
+ *   -- adaptrdma: data is copied in a pre-allocated, pre-registered
+ *      memory region, with an adaptive super-pipeline. Memory blocks are 
+ *      copied as long as the previous RDMA send doesn't complete.
+ *      A guard check ensures that block size progression is at least
+ *      2-base exponential to prevent artifacts to kill performance.
+ *   -- regrdma: memory is registered on the fly on both sides, using 
+ *      a pipeline with variable block size. For each block, the
+ *      receiver sends an ACK with RDMA info (raddr, rkey), then 
+ *      zero-copy RDMA is performed.
+ *   -- rcache: memory is registered on the fly on both sides, 
+ *      sequencially, using puk_mem_* functions from Puk-ABI that
+ *      manage a cache.
+ *
+ * Method is chosen as follows:
+ *   -- tracks for small messages always uses 'bycopy'
+ *   -- tracks with rendez-vous use 'adaptrdma' for smaller messages 
+ *      and 'regrdma' for larger messages. Usually, the threshold 
+ *      is 224kB (from empirical results about registration/send overlap)
+ *      on MT23108, and 2MB on ConnectX.
+ *   -- tracks with rendez-vous use 'rcache' when ib_rcache is activated
+ *      in the flavor.
+ */
+
+
 #include "nm_ibverbs.h"
 
 #include <Padico/Module.h>
 
-PADICO_MODULE_HOOK(NewMad_ibverbs);
+PADICO_MODULE_DECLARE(NewMad_ibverbs_common);
 
 
 static struct
@@ -27,6 +59,14 @@ static struct
   puk_hashtable_t hca_table; /**< HCAs, hashed by index (as int) */
 } nm_ibverbs_common = { .hca_table = NULL };
 
+static tbx_checksum_t _nm_ibverbs_checksum = NULL;
+
+/** ptr alignment enforced in every packets (through padding) */
+int nm_ibverbs_alignment = 64;
+/** ptr alignment enforced for buffer allocation */
+int nm_ibverbs_memalign  = 4096;
+
+/* ********************************************************* */
 
 static void nm_ibverbs_cnx_qp_create(struct nm_ibverbs_cnx*p_ibverbs_cnx, struct nm_ibverbs_hca_s*p_hca);
 static void nm_ibverbs_cnx_qp_reset(struct nm_ibverbs_cnx*p_ibverbs_cnx);
@@ -38,11 +78,37 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
 
 /* ********************************************************* */
 
+static void nm_ibverbs_common_init(void)
+{
+  nm_ibverbs_common.hca_table = puk_hashtable_new_int();
+  const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
+  if(_nm_ibverbs_checksum == NULL && checksum_env != NULL)
+    {
+      tbx_checksum_t checksum = tbx_checksum_get(checksum_env);
+      if(checksum == NULL)
+	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
+      _nm_ibverbs_checksum = checksum;
+      NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
+    }
+  const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
+  if(align_env != NULL)
+    {
+      nm_ibverbs_alignment = atoi(align_env);
+      NM_DISPF("# nmad ibverbs: alignment forced to %d\n", nm_ibverbs_alignment);
+    }
+  const char*memalign_env = getenv("NMAD_IBVERBS_MEMALIGN");
+  if(memalign_env != NULL)
+    {
+      nm_ibverbs_memalign = atoi(memalign_env);
+      NM_DISPF("# nmad ibverbs: memalign forced to %d\n", nm_ibverbs_memalign);
+    }
+}
+
 struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
 {
   if(nm_ibverbs_common.hca_table == NULL)
-    nm_ibverbs_common.hca_table = puk_hashtable_new_int();
-  struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1));
+    nm_ibverbs_common_init();
+ struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1));
   if(p_hca)
     return p_hca;
 
@@ -474,3 +540,45 @@ static int nm_ibverbs_sync_send(const void*sbuf, const void*rbuf, int size, stru
     }
   return 0;
 }
+
+
+
+/* ** checksum ********************************************* */
+
+
+/** checksum algorithm. Set NMAD_IBVERBS_CHECKSUM to non-null to enable checksums.
+ */
+uint32_t nm_ibverbs_checksum(const char*data, nm_len_t len)
+{
+  if(_nm_ibverbs_checksum)
+    return (*_nm_ibverbs_checksum->func)(data, len);
+  else
+    return 0;
+}
+
+int nm_ibverbs_checksum_enabled(void)
+{
+  return _nm_ibverbs_checksum != NULL;
+}
+
+uint32_t nm_ibverbs_memcpy_and_checksum(void*_dest, const void*_src, nm_len_t len)
+{
+  if(_nm_ibverbs_checksum)
+    {
+      if(_nm_ibverbs_checksum->checksum_and_copy)
+	{
+	  return (*_nm_ibverbs_checksum->checksum_and_copy)(_dest, _src, len);
+	}
+      else
+	{
+	  memcpy(_dest, _src, len);
+	  return nm_ibverbs_checksum(_dest, len);
+	}
+    }
+  else
+    {
+      memcpy(_dest, _src, len);
+    }
+  return 0;
+}
+

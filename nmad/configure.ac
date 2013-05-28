@@ -318,7 +318,7 @@ AC_ARG_ENABLE(mpi,
 dnl -- nmad content
 dnl --
 
-nmad_drivers="${nmad_drivers} self local tcp"
+nmad_drivers="${nmad_drivers} self local tcp minidriver"
 nmad_strategies="${nmad_strategies} default aggreg aggreg_extended aggreg_autoextended split_balance"
 nmad_interfaces="${nmad_interfaces} launcher pack sendrecv session connector"
 nmad_examples="pack sendrecv lowlevel session ${nmad_examples}"

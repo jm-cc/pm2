@@ -22,13 +22,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/uio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <net/if.h>
-#include <netpacket/packet.h>
+
 
 #include "nm_ibverbs.h"
 

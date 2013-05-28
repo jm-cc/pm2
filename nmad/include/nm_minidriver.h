@@ -16,9 +16,19 @@
 #ifndef NM_MINIDRIVER_H
 #define NM_MINIDRIVER_H
 
+struct nm_minidriver_properties_s
+{
+  struct nm_drv_profile_s profile;
+  struct nm_drv_cap_s capabilities;
+};
 
+/** Interfacedriver for the 'NewMad_minidriver' component interface.
+ * A driver interface simpler than NewMad_Driver, that do not rely 
+ * on nmad core structures, making driver fully encapsulated.
+ */
 struct nm_minidriver_iface_s
 {
+  void (*getprops)(int index, struct nm_minidriver_properties_s*props);
   /* connection establishment */
   void (*init)(puk_context_t context, const void**drv_url, size_t*url_size);
   void (*connect)(void*_status, const void*remote_url, size_t url_size);

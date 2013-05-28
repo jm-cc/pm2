@@ -70,7 +70,6 @@
 /** driver private state */
 struct nm_ibverbs_drv 
 {
-  struct nm_ibverbs_hca_s*p_hca;
   struct { puk_context_t minidriver; } trks_array[2]; /**< driver contexts for tracks */
   char*url;                   /**< driver url for this node (used by connector) */
 };
@@ -251,14 +250,53 @@ static int nm_ibverbs_query(struct nm_drv *p_drv, struct nm_driver_query_param *
       goto out;
     }
   p_ibverbs_drv->url = NULL;
-  p_ibverbs_drv->p_hca = nm_ibverbs_hca_resolve(p_drv->index);
+
+  /* get driver properties */
+  puk_component_t component = NULL;
+  struct nm_minidriver_properties_s props[2];
+  int i;
+  for(i = 0; i < 2; i++)
+    {
+      if(i == 0)
+	{
+	  component = puk_adapter_resolve("NewMad_ibverbs_bycopy");
+	}
+      else
+	{
+	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
+	  static const char const ib_lr2[] = "NewMad_ibverbs_lr2";
+	  static puk_component_t ib_minidriver = NULL;
+	  if(ib_minidriver == NULL)
+	    {
+	      if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
+		{
+		  ib_minidriver = puk_adapter_resolve(ib_rcache);
+		  NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
+		}
+	      else
+		{
+		  ib_minidriver = puk_adapter_resolve(ib_lr2);
+		}
+	    }
+	  component = ib_minidriver;
+	}
+      const struct nm_minidriver_iface_s*minidriver_iface =
+	puk_component_get_driver_NewMad_minidriver(component, NULL);
+      /* create component context */
+      puk_context_t context = puk_context_new(component);
+      p_ibverbs_drv->trks_array[i].minidriver = context;
+      char s_index[16];
+      sprintf(s_index, "%d", p_drv->index);
+      puk_context_putattr(context, "index", s_index);
+      (*minidriver_iface->getprops)(p_drv->index, &props[i]);
+    }
 
   /* driver profile encoding */
 #ifdef PM2_NUIOA
-  p_drv->profile.numa_node = nm_ibverbs_hca_get_numa_node(p_ibverbs_drv->p_hca);
+  p_drv->profile.numa_node = props[0].profile.numa_node;
 #endif
-  p_drv->profile.latency = 1350; /* from sampling */
-  p_drv->profile.bandwidth = 1024 * (p_ibverbs_drv->p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+  p_drv->profile.latency = props[0].profile.latency;
+  p_drv->profile.bandwidth = props[1].profile.bandwidth;
 
   p_drv->priv = p_ibverbs_drv;
   err = NM_ESUCCESS;
@@ -280,25 +318,8 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
   nm_trk_id_t i;
   for(i = 0; i < nb_trks; i++)
     {
-      puk_component_t component = NULL;
       if(trk_caps[i].rq_type == nm_trk_rq_rdv)
 	{
-	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
-	  static const char const ib_lr2[] = "NewMad_ibverbs_lr2";
-	  static puk_component_t ib_minidriver = NULL;
-	  if(ib_minidriver == NULL)
-	    {
-	      if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
-		{
-		  ib_minidriver = puk_adapter_resolve(ib_rcache);
-		  NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
-		}
-	      else
-		{
-		  ib_minidriver = puk_adapter_resolve(ib_lr2);
-		}
-	    }
-	  component = ib_minidriver;
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -309,7 +330,6 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	}
       else
 	{
-	  component = puk_adapter_resolve("NewMad_ibverbs_bycopy");
 	  trk_caps[i].rq_type  = nm_trk_rq_dgram;
 	  trk_caps[i].iov_type = nm_trk_iov_send_only;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -318,14 +338,9 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
 	}
-      const struct nm_minidriver_iface_s*minidriver_iface =
-	puk_component_get_driver_NewMad_minidriver(component, NULL);
-      /* create component context */
-      puk_context_t context = puk_context_new(component);
-      p_ibverbs_drv->trks_array[i].minidriver = context;
-      char s_index[16];
-      sprintf(s_index, "%d", p_drv->index);
-      puk_context_putattr(context, "index", s_index);
+      puk_context_t context = p_ibverbs_drv->trks_array[i].minidriver;
+      const struct nm_minidriver_iface_s*minidriver_iface = 
+	puk_component_get_driver_NewMad_minidriver(context->component, "minidriver");
       const void*trk_url = NULL;
       size_t trk_url_size = 0;
       (*minidriver_iface->init)(context, &trk_url, &trk_url_size);

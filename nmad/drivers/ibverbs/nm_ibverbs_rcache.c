@@ -76,6 +76,7 @@ struct nm_ibverbs_rcache
   } headers;
 };
 
+static void nm_ibverbs_rcache_getprops(int index, struct nm_minidriver_properties_s*props);
 static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size);
 static void nm_ibverbs_rcache_connect(void*_status, const void*remote_url, size_t url_size);
 static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int n);
@@ -85,6 +86,7 @@ static int  nm_ibverbs_rcache_poll_one(void*_status);
 
 static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
   {
+    .getprops    = &nm_ibverbs_rcache_getprops,
     .init        = &nm_ibverbs_rcache_init,
     .connect     = &nm_ibverbs_rcache_connect,
     .send_post   = &nm_ibverbs_rcache_send_post,
@@ -157,6 +159,12 @@ static void nm_ibverbs_rcache_destroy(void*_status)
 }
 
 /* *** rcache connection *********************************** */
+
+static void nm_ibverbs_rcache_getprops(int index, struct nm_minidriver_properties_s*props)
+{
+  nm_ibverbs_hca_get_profile(index, &props->profile);
+}
+
 
 static void nm_ibverbs_rcache_init(puk_context_t context, const void**drv_url, size_t*url_size)
 { 

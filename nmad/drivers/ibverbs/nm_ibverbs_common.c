@@ -209,6 +209,16 @@ int nm_ibverbs_hca_get_numa_node(struct nm_ibverbs_hca_s*p_hca)
 }
 #endif /* PM2_NUIOA */
 
+void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
+{
+  struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
+  /* driver profile encoding */
+#ifdef PM2_NUIOA
+  p_profile->numa_node = nm_ibverbs_hca_get_numa_node(p_hca);
+#endif
+  p_profile->latency = 1350; /* from sampling */
+  p_profile->bandwidth = 1024 * (p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
+}
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca)
 {

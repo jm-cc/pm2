@@ -122,6 +122,7 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index);
 #ifdef PM2_NUIOA
 int nm_ibverbs_hca_get_numa_node(struct nm_ibverbs_hca_s*p_hca);
 #endif /* PM2_NUIOA */
+void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile);
 
 struct nm_ibverbs_cnx*nm_ibverbs_cnx_new(struct nm_ibverbs_hca_s*p_hca);
 

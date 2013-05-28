@@ -99,23 +99,6 @@ struct nm_ibverbs_hca_s
 };
 
 
-struct nm_ibverbs_method_iface_s
-{
-  /* connection establishment */
-  void (*init)(puk_context_t context, const void**drv_url, size_t*url_size);
-  void (*connect)(void*_status, const void*remote_url, size_t url_size);
-  /* sending primitives */
-  void (*send_post)(void*_status, const struct iovec*v, int n);
-  int  (*send_poll)(void*_status);
-  void (*send_prefetch)(void*_status, const void*ptr, uint64_t size);
-  /* receiving primitives */
-  void (*recv_init)(void*_status, struct iovec*v, int n);
-  int  (*poll_one)(void*_status);
-  int  (*cancel_recv)(void*_status); 
-};
-PUK_IFACE_TYPE(NewMad_ibverbs_method, struct nm_ibverbs_method_iface_s);
-
-
 /** an IB connection for a given trk/gate pair */
 struct nm_ibverbs_cnx
 {

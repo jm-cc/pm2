@@ -45,7 +45,7 @@ struct nm_ibverbs_bycopy_header
   volatile uint8_t status; /**< binary mask- describes the content of the message */
 }  __attribute__((packed));
 
-/** An "on the wire" packet for 'bycopy' method */
+/** An "on the wire" packet for 'bycopy' minidriver */
 struct nm_ibverbs_bycopy_packet 
 {
   char data[NM_IBVERBS_BYCOPY_BUFSIZE];
@@ -101,7 +101,7 @@ static void nm_ibverbs_bycopy_recv_init(void*_status,  struct iovec*v, int n);
 static int  nm_ibverbs_bycopy_poll_one(void*_status);
 static int  nm_ibverbs_bycopy_cancel_recv(void*_status);
 
-static const struct nm_ibverbs_method_iface_s nm_ibverbs_bycopy_method =
+static const struct nm_minidriver_iface_s nm_ibverbs_bycopy_minidriver =
   {
     .init        = &nm_ibverbs_bycopy_init,
     .connect     = &nm_ibverbs_bycopy_connect,
@@ -124,7 +124,7 @@ static const struct puk_adapter_driver_s nm_ibverbs_bycopy_adapter =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_bycopy,
   puk_component_declare("NewMad_ibverbs_bycopy",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_bycopy_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_bycopy_method)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_bycopy_minidriver)));
 
 
 static void* nm_ibverbs_bycopy_instanciate(puk_instance_t instance, puk_context_t context)

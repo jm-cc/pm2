@@ -32,7 +32,7 @@ static const int nm_ibverbs_adaptrdma_step_overrun      = 16  * 1024;
 #define NM_IBVERBS_ADAPTRDMA_FLAG_REGULAR      0x01
 #define NM_IBVERBS_ADAPTRDMA_FLAG_BLOCKSIZE    0x02
 
-/** on the wire header of method 'adaptrdma' */
+/** on the wire header of minidriver 'adaptrdma' */
 struct nm_ibverbs_adaptrdma_header 
 {
   uint32_t checksum;
@@ -80,7 +80,7 @@ static int  nm_ibverbs_adaptrdma_send_poll(void*_status);
 static void nm_ibverbs_adaptrdma_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_adaptrdma_poll_one(void*_status);
 
-static const struct nm_ibverbs_method_iface_s nm_ibverbs_adaptrdma_method =
+static const struct nm_minidriver_iface_s nm_ibverbs_adaptrdma_minidriver =
   {
     .init        = &nm_ibverbs_adaptrdma_init,
     .connect     = &nm_ibverbs_adaptrdma_connect,
@@ -106,7 +106,7 @@ static const struct puk_adapter_driver_s nm_ibverbs_adaptrdma_adapter =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_adaptrdma,
   puk_component_declare("NewMad_ibverbs_adaptrdma",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_adaptrdma_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_adaptrdma_method)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_adaptrdma_minidriver)));
 
 
 /* ********************************************************* */

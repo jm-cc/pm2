@@ -83,7 +83,7 @@ static int  nm_ibverbs_rcache_send_poll(void*_status);
 static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_rcache_poll_one(void*_status);
 
-static const struct nm_ibverbs_method_iface_s nm_ibverbs_rcache_method =
+static const struct nm_minidriver_iface_s nm_ibverbs_rcache_minidriver =
   {
     .init        = &nm_ibverbs_rcache_init,
     .connect     = &nm_ibverbs_rcache_connect,
@@ -131,7 +131,7 @@ static void nm_ibverbs_mem_unreg(void*context, const void*ptr, void*key)
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_rcache,
   puk_component_declare("NewMad_ibverbs_rcache",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_rcache_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_rcache_method)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_rcache_minidriver)));
 
 
 static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_t context)

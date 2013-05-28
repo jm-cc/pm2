@@ -35,7 +35,7 @@ static const nm_len_t lr2_steps[] =
   { 12*1024, 24*1024, 40*1024, 64*1024, 88*1024, 128*1024, /* 160*1024, 200*1024, 256*1024, */ 0};
 static const int lr2_nsteps = sizeof(lr2_steps) / sizeof(nm_len_t) - 1;
 
-/** on the wire header of method 'lr2' */
+/** on the wire header of minidriver 'lr2' */
 struct lr2_header_s
 {
   volatile uint32_t checksum; /* has to be the last field in the struct */
@@ -97,7 +97,7 @@ static void nm_ibverbs_lr2_send_prefetch(void*_status, const void*ptr, uint64_t 
 static void nm_ibverbs_lr2_recv_init(void*_status, struct iovec*v, int n);
 static int  nm_ibverbs_lr2_poll_one(void*_status);
 
-static const struct nm_ibverbs_method_iface_s nm_ibverbs_lr2_method =
+static const struct nm_minidriver_iface_s nm_ibverbs_lr2_minidriver =
   {
     .init        = &nm_ibverbs_lr2_init,
     .connect     = &nm_ibverbs_lr2_connect,
@@ -123,7 +123,7 @@ static const struct puk_adapter_driver_s nm_ibverbs_lr2_adapter =
 PADICO_MODULE_COMPONENT(NewMad_ibverbs_lr2,
   puk_component_declare("NewMad_ibverbs_lr2",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_ibverbs_lr2_adapter),
-			puk_component_provides("NewMad_ibverbs_method", "method", &nm_ibverbs_lr2_method)));
+			puk_component_provides("NewMad_minidriver", "minidriver", &nm_ibverbs_lr2_minidriver)));
 
 
 /* ********************************************************* */

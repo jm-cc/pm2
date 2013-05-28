@@ -94,6 +94,7 @@ typedef uint16_t nm_drv_id_t;
 #include "nm_tags.h"
 #include "nm_pkt_wrap.h"
 #include "nm_drv.h"
+#include "nm_minidriver.h"
 #include "nm_errno.h"
 #include "nm_log.h"
 #ifdef PIOMAN

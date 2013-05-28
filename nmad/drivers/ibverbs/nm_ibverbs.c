@@ -71,7 +71,7 @@
 struct nm_ibverbs_drv 
 {
   struct nm_ibverbs_hca_s*p_hca;
-  struct { puk_context_t method; } trks_array[2]; /**< driver contexts for tracks */
+  struct { puk_context_t minidriver; } trks_array[2]; /**< driver contexts for tracks */
   char*url;                   /**< driver url for this node (used by connector) */
 };
 
@@ -80,8 +80,8 @@ struct nm_ibverbs
 {
   struct
   {
-    struct puk_receptacle_NewMad_ibverbs_method_s method;
-    puk_instance_t method_instance;
+    struct puk_receptacle_NewMad_minidriver_s minidriver;
+    puk_instance_t minidriver_instance;
   } trks[2];
 };
 
@@ -285,20 +285,20 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	{
 	  static const char const ib_rcache[] = "NewMad_ibverbs_rcache";
 	  static const char const ib_lr2[] = "NewMad_ibverbs_lr2";
-	  static puk_component_t ib_method = NULL;
-	  if(ib_method == NULL)
+	  static puk_component_t ib_minidriver = NULL;
+	  if(ib_minidriver == NULL)
 	    {
 	      if(getenv("NMAD_IBVERBS_RCACHE") != NULL)
 		{
-		  ib_method = puk_adapter_resolve(ib_rcache);
+		  ib_minidriver = puk_adapter_resolve(ib_rcache);
 		  NM_DISPF("# nmad ibverbs: rcache forced by environment.\n");
 		}
 	      else
 		{
-		  ib_method = puk_adapter_resolve(ib_lr2);
+		  ib_minidriver = puk_adapter_resolve(ib_lr2);
 		}
 	    }
-	  component = ib_method;
+	  component = ib_minidriver;
 	  trk_caps[i].rq_type  = nm_trk_rq_rdv;
 	  trk_caps[i].iov_type = nm_trk_iov_none;
 	  trk_caps[i].max_pending_send_request	= 1;
@@ -318,17 +318,17 @@ static int nm_ibverbs_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
 	}
-      const struct nm_ibverbs_method_iface_s*method_iface =
-	puk_component_get_driver_NewMad_ibverbs_method(component, NULL);
+      const struct nm_minidriver_iface_s*minidriver_iface =
+	puk_component_get_driver_NewMad_minidriver(component, NULL);
       /* create component context */
       puk_context_t context = puk_context_new(component);
-      p_ibverbs_drv->trks_array[i].method = context;
+      p_ibverbs_drv->trks_array[i].minidriver = context;
       char s_index[16];
       sprintf(s_index, "%d", p_drv->index);
       puk_context_putattr(context, "index", s_index);
       const void*trk_url = NULL;
       size_t trk_url_size = 0;
-      (*method_iface->init)(context, &trk_url, &trk_url_size);
+      (*minidriver_iface->init)(context, &trk_url, &trk_url_size);
       /* encode url chunk */
       const size_t chunk_size = trk_url_size + sizeof(int);
       url_chunks = realloc(url_chunks, url_chunks_size + chunk_size);
@@ -356,10 +356,10 @@ static int nm_ibverbs_connect(void*_status, struct nm_gate*p_gate, struct nm_drv
 {
   struct nm_ibverbs*status = _status;
   struct nm_ibverbs_drv*p_ibverbs_drv = p_drv->priv;
-  puk_context_t context = p_ibverbs_drv->trks_array[trk_id].method;
-  status->trks[trk_id].method_instance = puk_context_instanciate(context);
-  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[trk_id].method;
-  puk_instance_indirect_NewMad_ibverbs_method(status->trks[trk_id].method_instance, NULL, method);
+  puk_context_t context = p_ibverbs_drv->trks_array[trk_id].minidriver;
+  status->trks[trk_id].minidriver_instance = puk_context_instanciate(context);
+  struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[trk_id].minidriver;
+  puk_instance_indirect_NewMad_minidriver(status->trks[trk_id].minidriver_instance, NULL, minidriver);
   int url_chunks_size = strlen(remote_url);
   void*url_chunks = puk_hex_decode(remote_url, &url_chunks_size, NULL);
   void*orig_url_chunks = url_chunks;
@@ -371,7 +371,7 @@ static int nm_ibverbs_connect(void*_status, struct nm_gate*p_gate, struct nm_drv
       p_chunk_size = url_chunks;
     }
   const void*p_chunk_content = ((void*)p_chunk_size) + sizeof(int);
-  (*method->driver->connect)(method->_status, p_chunk_content, *p_chunk_size);
+  (*minidriver->driver->connect)(minidriver->_status, p_chunk_content, *p_chunk_size);
 
   free(orig_url_chunks);
   return NM_ESUCCESS;
@@ -395,8 +395,8 @@ static int nm_ibverbs_disconnect(void*_status, struct nm_gate*p_gate, struct nm_
 static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   struct nm_ibverbs*status = _status;
-  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
-  (*method->driver->send_post)(method->_status, &p_pw->v[0], p_pw->v_nb);
+  struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
+  (*minidriver->driver->send_post)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
   int err = nm_ibverbs_poll_send_iov(_status, p_pw);
   return err;
 }
@@ -404,8 +404,8 @@ static int nm_ibverbs_post_send_iov(void*_status, struct nm_pkt_wrap*__restrict_
 static int nm_ibverbs_poll_send_iov(void*_status, struct nm_pkt_wrap*__restrict__ p_pw)
 {
   struct nm_ibverbs*status = _status;
-  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
-  int err = (*method->driver->send_poll)(method->_status);
+  struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
+  int err = (*minidriver->driver->send_poll)(minidriver->_status);
   return err;
 }
 
@@ -413,10 +413,10 @@ static int nm_ibverbs_send_prefetch(void*_status, struct nm_pkt_wrap *p_pw)
 {
   const nm_trk_id_t trk_id = NM_TRK_LARGE;
   struct nm_ibverbs*status = _status;
-  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[trk_id].method;
-  if(method->driver->send_prefetch)
+  struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[trk_id].minidriver;
+  if(minidriver->driver->send_prefetch)
     {
-      (*method->driver->send_prefetch)(method->_status, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
+      (*minidriver->driver->send_prefetch)(minidriver->_status, p_pw->v[0].iov_base, p_pw->v[0].iov_len);
     }
   return NM_ESUCCESS;
 }
@@ -427,8 +427,8 @@ static int nm_ibverbs_poll_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
   if(_status)
     {
       struct nm_ibverbs*status = _status;
-      struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
-      err = (*method->driver->poll_one)(method->_status);
+      struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
+      err = (*minidriver->driver->poll_one)(minidriver->_status);
     }
   else
     {
@@ -443,8 +443,8 @@ static int nm_ibverbs_post_recv_iov(void*_status, struct nm_pkt_wrap*__restrict_
   if(_status)
     {
       struct nm_ibverbs*status = _status;
-      struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
-      (*method->driver->recv_init)(method->_status, &p_pw->v[0], p_pw->v_nb);
+      struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
+      (*minidriver->driver->recv_init)(minidriver->_status, &p_pw->v[0], p_pw->v_nb);
     }
   err = nm_ibverbs_poll_recv_iov(_status, p_pw);
   return err;
@@ -454,10 +454,10 @@ static int nm_ibverbs_cancel_recv_iov(void*_status, struct nm_pkt_wrap *p_pw)
 {
   int err = -NM_ENOTIMPL;
   struct nm_ibverbs*status = _status;
-  struct puk_receptacle_NewMad_ibverbs_method_s*method = &status->trks[p_pw->trk_id].method;
-  if(method->driver->cancel_recv)
+  struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[p_pw->trk_id].minidriver;
+  if(minidriver->driver->cancel_recv)
     {
-      err = (*method->driver->cancel_recv)(method->_status);
+      err = (*minidriver->driver->cancel_recv)(minidriver->_status);
     }
   return err;
 }

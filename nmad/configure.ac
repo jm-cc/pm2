@@ -205,6 +205,36 @@ if test "x${with_ibverbs}" != "xno" ; then
     fi
 fi
 
+dnl -- dcfa
+HAVE_DCFA=no
+AC_ARG_WITH([dcfa],
+	    [AS_HELP_STRING([--with-dcfa], [use Direct Communication Facility for Accelerators @<:@default=check@:>@])],
+	    [], [ with_dcfa=check ])
+if test "x${with_dcfa}" != "xno" ; then
+    save_CPPFLAGS="${CPPFLAGS}"
+    if test "x${with_dcfa}" != "xyes"; then
+        DCFA_DIR="${with_dcfa}"
+	CPPFLAGS="${CPPFLAGS} -I${DCFA_DIR}/include"
+    fi
+    AC_CHECK_HEADER(dcfa.h, 
+                    [ HAVE_DCFA=yes ],
+                    [ HAVE_DCFA=no  ])
+    CPPFLAGS="${save_CPPFLAGS}"
+    AC_SUBST(HAVE_DCFA)
+    if test ${HAVE_DCFA} = yes; then
+        nmad_drivers="${nmad_drivers} dcfa"
+        if test "x${DCFA_DIR}" != "x" -a "x${DCFA_DIR}" != "x/usr"; then
+      	   dcfa_CFLAGS="-I${DCFA_DIR}/include"
+      	   dcfa_LIBS="-Wl,-rpath,${DCFA_DIR}/lib -L${DCFA_DIR}/lib"
+        fi
+	dcfa_LIBS="${dcfa_LIBS} -ldcfa"
+	AC_SUBST([dcfa_CFLAGS])
+	AC_SUBST([dcfa_LIBS])
+    elif test "x${with_dcfa}" != "xcheck"; then
+        AC_MSG_FAILURE([--with-dcfa was given, but dcfa.h is not found])
+    fi
+fi
+
 dnl -- MX
 if test "x$MX_DIR" = "x" ; then
     if test "x${MX_ROOT}" = "x"; then

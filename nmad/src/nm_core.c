@@ -131,7 +131,23 @@ void nm_core_monitor_remove(nm_core_t p_core, const struct nm_core_monitor_s*m)
 puk_component_t nm_core_component_load(const char*entity, const char*name)
 {
   puk_component_t component = NULL;
-  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "ibverbs") == 0))
+  if((strcmp(entity, "Driver") == 0) && (strcmp(name, "dcfa") == 0))
+    {
+      static const char dcfa[] = 
+	"<puk:composite id=\"nm:dcfa\">"
+	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:attr label=\"trk0\">NewMad_dcfa_bycopy</puk:attr>"
+	"    <puk:attr label=\"trk1\">NewMad_dcfa_bycopy</puk:attr>"
+	"  </puk:component>"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"</puk:composite>";
+      component = puk_adapter_parse(dcfa);
+      if(component == NULL)
+	{
+	  padico_fatal("nmad: failed to load component '%s'\n", dcfa);
+	}
+    }
+  else if((strcmp(entity, "Driver") == 0) && (strcmp(name, "ibverbs") == 0))
     {
       static const char ib_lr2[] = 
 	"<puk:composite id=\"nm:ib-lr2\">"

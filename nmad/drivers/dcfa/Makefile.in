@@ -20,6 +20,6 @@ MODLIBS += @dcfa_LIBS@
 
 include @puk_root@/etc/common_rules.mk
 
-NewMad_dcfa_bycopy: nm_dcfa_bycopy.pic.o
+NewMad_dcfa_bycopy: nm_dcfa_bycopy.pic.o nm_dcfa_common.pic.o
 
 

@@ -36,19 +36,31 @@
 /** converts a tick diff to microseconds */
 static double tbx_tick2usec_raw(tbx_tick_t t)
 {
-	double raw_delay;
-
+  double raw_delay;
+  
 #if defined(TBX_USE_MACH_ABSOLUTE_TIME)
-	mach_timebase_info_data_t info;
-	mach_timebase_info(&info);
-	raw_delay = ((double)t * info.numer / info.denom / 1000.0);
+  mach_timebase_info_data_t info;
+  mach_timebase_info(&info);
+  raw_delay = ((double)t * info.numer / info.denom / 1000.0);
 #elif defined(TBX_USE_CLOCK_GETTIME)
-	raw_delay = 1000000.0 * t.tv_sec + t.tv_nsec / 1000.0;
+  raw_delay = 1000000.0 * t.tv_sec + t.tv_nsec / 1000.0;
+#elif defined(TBX_USE_RDTSC)
+  static double scale = -1.0;
+  if(scale < 0)
+    {  
+      tbx_tick_t t1, t2;
+      struct timespec ts = { 0, 10000000 };
+      TBX_GET_TICK(t1);
+      nanosleep(&ts, NULL);
+      TBX_GET_TICK(t2);
+      scale = (ts.tv_sec * 1e6 + ts.tv_nsec / 1e3) / (double)(TBX_TICK_RAW_DIFF(t1, t2));
+    }
+  raw_delay = (t * scale);
 #else
-	raw_delay = 1000000.0 *t.tv_sec + t.tv_usec;
+  raw_delay = 1000000.0 *t.tv_sec + t.tv_usec;
 #endif
-
-	return raw_delay;
+  
+  return raw_delay;
 }
 
 /** converts a tick diff to microseconds, with offset compensation */

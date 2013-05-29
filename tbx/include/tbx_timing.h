@@ -30,6 +30,11 @@
 #ifndef TBX_TIMING_H
 #define TBX_TIMING_H
 
+#ifdef __MIC__
+#define TBX_USE_RDTSC
+#undef TBX_USE_CLOCK_GETTIME
+/* TODO- move this to tbx.m4 */
+#endif
 
 #include <time.h>
 #include <sys/types.h>
@@ -89,6 +94,24 @@ typedef long long tbx_tick_t, *p_tbx_tick_t;
 
 
 #else
+#ifdef TBX_USE_RDTSC
+
+typedef unsigned long long tbx_tick_t, *p_tbx_tick_t;
+#ifdef X86_ARCH
+#define TBX_GET_TICK(t) \
+  __asm__ volatile("rdtsc" : "=A" (t))
+#else
+#define TBX_GET_TICK(t) do { \
+     unsigned int __a,__d; \
+     asm volatile("rdtsc" : "=a" (__a), "=d" (__d)); \
+     (t) = ((unsigned long)__a) | (((unsigned long)__d)<<32); }	\
+  while(0)
+#endif
+#define TBX_TICK_RAW_DIFF(t1, t2) \
+   ((t2) - (t1))
+
+
+#else
 
 typedef struct timeval tbx_tick_t, *p_tbx_tick_t;
 
@@ -113,7 +136,7 @@ static inline tbx_tick_t tbx_tick_raw_diff(const tbx_tick_t*const t1, const tbx_
   return diff;
 }
 
-
+#endif /* TBX_USE_RDTSC */
 #endif /** TBX_USE_MACH_ABSOLUTE_TIME **/
 #endif /** TBX_USE_CLOCK_GETTIME **/
 

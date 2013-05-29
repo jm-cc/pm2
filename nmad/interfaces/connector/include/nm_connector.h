@@ -19,7 +19,7 @@
 #define NM_CONNECTOR_H
 
 /** timeout to receive connection ACK after sending connect address to peer (in msec.) */
-#define NM_IBVERBS_TIMEOUT_ACK   600
+#define NM_CONNECTOR_TIMEOUT_ACK   600
 
 /* ********************************************************* */
 /* ** connection management */

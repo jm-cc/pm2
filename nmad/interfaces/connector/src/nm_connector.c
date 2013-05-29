@@ -103,13 +103,13 @@ struct nm_connector_s*nm_connector_create(int addr_len, const char**url)
   int rc = NM_SYS(bind)(fd, (struct sockaddr*)&addr, inaddr_len);
   if(rc) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: socket bind error (%s)\n", strerror(errno));
+      fprintf(stderr, "nmad: FATAL- connector: socket bind error (%s)\n", strerror(errno));
       abort();
     }
   rc = NM_SYS(getsockname)(fd, (struct sockaddr*)&addr, &inaddr_len);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get socket name (%s)\n", strerror(errno));
+      fprintf(stderr, "nmad: FATAL- connector: cannot get socket name (%s)\n", strerror(errno));
       abort();
     }
   int rcvbuf = 64 * 1024;
@@ -117,26 +117,8 @@ struct nm_connector_s*nm_connector_create(int addr_len, const char**url)
   c->sock = fd;
 
   /* encode url */
-  struct ifaddrs*ifa_list = NULL;
-  rc = getifaddrs(&ifa_list);
-  if(rc != 0)
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local address\n");
-      abort();
-    }
-  struct ifaddrs*i;
-  for(i = ifa_list; i != NULL; i = i->ifa_next)
-    {
-      if (i->ifa_addr && i->ifa_addr->sa_family == AF_INET)
-	{
-	  struct sockaddr_in*inaddr = (struct sockaddr_in*)i->ifa_addr;
-	  if(!(i->ifa_flags & IFF_LOOPBACK))
-	    {
-	      snprintf(c->url, 16, "%08x%04x", htonl(inaddr->sin_addr.s_addr), addr.sin_port);
-	      break;
-	    }
-	}
-    }
+  struct in_addr inaddr = puk_inet_getaddr();
+  snprintf(c->url, 16, "%08x%04x", htonl(inaddr.s_addr), addr.sin_port);
   *url = c->url;
   if(nm_connector.connectors == NULL)
     nm_connector.connectors = puk_hashtable_new_string();
@@ -167,7 +149,8 @@ static void nm_connector_send(struct nm_connector_s*p_connector, const char*remo
   int rc = -1;
  retry_send:
   rc = NM_SYS(sendto)(p_connector->sock, 
-		      local_entry, sizeof(struct nm_connector_entry_s) + p_connector->addr_len, 0, &inaddr, sizeof(inaddr));
+		      local_entry, sizeof(struct nm_connector_entry_s) + p_connector->addr_len, 0,
+		      (struct sockaddr*)&inaddr, sizeof(inaddr));
   if(rc == -1)
     {
       if(errno == EINTR)
@@ -178,7 +161,7 @@ static void nm_connector_send(struct nm_connector_s*p_connector, const char*remo
 	  usleep(1000);
 	  goto retry_send;
 	}
-      fprintf(stderr, "nmad: FATAL- ibverbs: error while sending address to %s (%s)\n", remote_url, strerror(errno));
+      fprintf(stderr, "nmad: FATAL- connector: error while sending address to %s (%s)\n", remote_url, strerror(errno));
       abort();
     }
   free(local_entry);
@@ -190,7 +173,7 @@ static int nm_connector_poll(struct nm_connector_s*p_connector)
   struct pollfd fds = { .fd = p_connector->sock, .events = POLLIN };
   int rc = -1;
  retry_poll:
-  rc = NM_SYS(poll)(&fds, 1, NM_IBVERBS_TIMEOUT_ACK);
+  rc = NM_SYS(poll)(&fds, 1, NM_CONNECTOR_TIMEOUT_ACK);
   if(rc == -1)
     {
       const int err = errno;
@@ -198,7 +181,7 @@ static int nm_connector_poll(struct nm_connector_s*p_connector)
 	goto retry_poll;
       else
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: timeout while receiving address.\n");
+	  fprintf(stderr, "nmad: FATAL- connector: timeout while receiving address.\n");
 	  abort();
 	}
     }
@@ -216,7 +199,7 @@ static int nm_connector_poll(struct nm_connector_s*p_connector)
 	goto retry_recv;
       else
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: error while receiving address\n");
+	  fprintf(stderr, "nmad: FATAL- connector: error while receiving address\n");
 	  abort();
 	}
     }
@@ -246,7 +229,7 @@ static int nm_connector_recv(struct nm_connector_s*p_connector, const char*remot
       int rc = nm_connector_poll(p_connector);
       if(rc != 0)
 	{
-	  fprintf(stderr, "nmad: WARNING- ibverbs: timeout while receiving peer address.\n");
+	  fprintf(stderr, "nmad: WARNING- connector: timeout while receiving peer address.\n");
 	  /* Timeout- we didn't receive peer address in time. We don't know
 	   * whether our packet was lost too, and we cannot try to establish
 	   * the connection to check. In doubt, return error. Caller will send again.
@@ -271,7 +254,7 @@ static int nm_connector_wait_ack(struct nm_connector_s*p_connector, const char*r
       int rc = nm_connector_poll(p_connector);
       if(rc != 0)
 	{
-	  fprintf(stderr, "nmad: WARNING- ibverbs: timeout while waiting for ACK.\n");
+	  fprintf(stderr, "nmad: WARNING- connector: timeout while waiting for ACK.\n");
 	  return -1;
 	}
     }

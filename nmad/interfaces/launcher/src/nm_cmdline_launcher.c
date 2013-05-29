@@ -223,6 +223,17 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	    }
 	  break;
 	}
+      else if(strcmp(argv[i], "--") == 0)
+	{
+	  /* app args follow; update command line  */
+	  *argc = *argc - 1;
+	  int j;
+	  for(j = i; j < *argc; j++)
+	    {
+	      argv[j] = argv[j+1];
+	    }
+	  break;
+	}
     }
   status->is_server = (!remote_launcher_url);
 

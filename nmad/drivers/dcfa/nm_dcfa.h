@@ -209,11 +209,13 @@ static inline int nm_dcfa_rdma_send(struct nm_dcfa_cnx*p_ibverbs_cnx, int size,
 				       const struct ibv_mr*__restrict__ mr,
 				       int wrid)
 {
+  const uintptr_t remote_offset = (uintptr_t)_raddr - (uintptr_t)_lbase;
+  const uintptr_t local_offset  = (uintptr_t)ptr - (uintptr_t)_lbase;
   const uintptr_t _rbase = seg->raddr;
-  const uint64_t raddr   = (uint64_t)(((uintptr_t)_raddr - (uintptr_t)_lbase) + _rbase);
+  const uint64_t raddr   = (uint64_t)(_rbase + remote_offset);
   struct ibv_sge list = {
     .mic_addr = (uintptr_t)ptr,
-    .addr = (uintptr_t)mr->host_addr + ((void*)seg - _lbase),
+    .addr = (uintptr_t)mr->host_addr + local_offset,
     .length = size,
     .lkey   = mr->lkey
   };

@@ -182,7 +182,7 @@ static void nm_dcfa_bycopy_connect(void*_status, const void*remote_url, size_t u
 {
   struct nm_dcfa_bycopy*bycopy = _status;
   const char*s_index = puk_context_getattr(bycopy->context, "index");
-  const int index= atoi(s_index);
+  const int index = atoi(s_index);
   struct nm_dcfa_hca_s*p_hca = nm_dcfa_hca_resolve(index);
   struct nm_dcfa_cnx*p_dcfa_cnx = nm_dcfa_cnx_new(p_hca);
   bycopy->cnx = p_dcfa_cnx;
@@ -198,7 +198,7 @@ static void nm_dcfa_bycopy_connect(void*_status, const void*remote_url, size_t u
     }
 
   struct nm_dcfa_segment*seg = &p_dcfa_cnx->local_addr.segment;
-  seg->raddr = (uintptr_t)&bycopy->buffer;
+  seg->raddr = (uintptr_t)bycopy->mr->host_addr;
   seg->rkey  = bycopy->mr->rkey;
   /* ** exchange addresses */
   const char*local_url = puk_context_getattr(bycopy->context, "local_url");

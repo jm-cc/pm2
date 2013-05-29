@@ -88,19 +88,19 @@ static void nm_dcfa_common_init(void)
       if(checksum == NULL)
 	TBX_FAILUREF("# nmad: checksum algorithm *%s* not available.\n", checksum_env);
       _nm_dcfa_checksum = checksum;
-      NM_DISPF("# nmad ibverbs: checksum enabled (%s).\n", checksum->name);
+      NM_DISPF("# nmad dcfa: checksum enabled (%s).\n", checksum->name);
     }
   const char*align_env = getenv("NMAD_IBVERBS_ALIGN");
   if(align_env != NULL)
     {
       nm_dcfa_alignment = atoi(align_env);
-      NM_DISPF("# nmad ibverbs: alignment forced to %d\n", nm_dcfa_alignment);
+      NM_DISPF("# nmad dcfa: alignment forced to %d\n", nm_dcfa_alignment);
     }
   const char*memalign_env = getenv("NMAD_IBVERBS_MEMALIGN");
   if(memalign_env != NULL)
     {
       nm_dcfa_memalign = atoi(memalign_env);
-      NM_DISPF("# nmad ibverbs: memalign forced to %d\n", nm_dcfa_memalign);
+      NM_DISPF("# nmad dcfa: memalign forced to %d\n", nm_dcfa_memalign);
     }
 }
 
@@ -120,12 +120,12 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: no device found.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: no device found.\n");
       abort();
     }
   if (dev_number >= dev_amount)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: device #%d/%d not available.\n", dev_number, dev_amount);
+      fprintf(stderr, "nmad: FATAL- dcfa: device #%d/%d not available.\n", dev_number, dev_amount);
       abort();
     }
   p_hca->ib_dev = dev_list[dev_number];
@@ -134,7 +134,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   p_hca->context = ibv_open_device(p_hca->ib_dev);
   if(p_hca->context == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot open IB context.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot open IB context.\n");
       abort();
     }
 
@@ -145,7 +145,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   int rc = ibv_query_device(p_hca->context, NULL);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get device capabilities.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot get device capabilities.\n");
       abort();
     }
   */
@@ -154,14 +154,14 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   rc = ibv_query_port(p_hca->context, NM_DCFA_PORT, NULL);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot get local port attributes.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot get local port attributes.\n");
       abort();
     }
   */
   p_hca->lid = p_hca->context->lid; /* port_attr.lid; */
   if(p_hca->lid == 0)
     {
-      fprintf(stderr, "nmad- WARNING- ibverbs: LID is null- subnet manager has probably crashed.\n");
+      fprintf(stderr, "nmad- WARNING- dcfa: LID is null- subnet manager has probably crashed.\n");
     }
 
   /* IB capabilities */
@@ -199,13 +199,13 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   */
   p_hca->ib_caps.data_rate = link_width * link_rate;
 
-  NM_DISPF("# nmad ibverbs: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
+  NM_DISPF("# nmad dcfa: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
 	   "dcfa" /*ibv_get_device_name(p_hca->ib_dev)*/, link_width, s_link_rate, p_hca->ib_caps.data_rate, p_hca->lid);
 #ifdef DEBUG
-  NM_DISPF("# nmad ibverbs:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
+  NM_DISPF("# nmad dcfa:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 	   p_hca->ib_caps.max_qp, p_hca->ib_caps.max_qp_wr,
 	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe);
-  NM_DISPF("# nmad ibverbs:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
+  NM_DISPF("# nmad dcfa:   max_mr=%d; max_mr_size=%llu; page_size_cap=%llu; max_msg_size=%llu\n",
 	   p_hca->ib_caps.max_mr,
 	   (unsigned long long) p_hca->ib_caps.max_mr_size,
 	   (unsigned long long) p_hca->ib_caps.page_size_cap,
@@ -216,11 +216,12 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   p_hca->pd = ibv_alloc_pd(p_hca->context);
   if(p_hca->pd == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot allocate IB protection domain.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot allocate IB protection domain.\n");
       abort();
     }
-
-  puk_hashtable_insert(nm_dcfa_common.hca_table, (void*)(uintptr_t)(index + 1), p_hca);
+  if(index < 0)
+    index = 0;
+  puk_hashtable_insert(nm_dcfa_common.hca_table, (void*)((uintptr_t)(index + 1)), p_hca);
   return p_hca;
 }
 
@@ -324,7 +325,7 @@ void nm_dcfa_cnx_sync(struct nm_dcfa_cnx*p_ibverbs_cnx)
       int rc = nm_dcfa_sync_send((void*)&buffer[1], (void*)&buffer[0], sizeof(int), p_ibverbs_cnx);
       if(rc)
 	{
-	  fprintf(stderr, "nmad: WARNING- ibverbs: connection failed to come up before RNR timeout; reset QP and try again.\n");
+	  fprintf(stderr, "nmad: WARNING- dcfa: connection failed to come up before RNR timeout; reset QP and try again.\n");
 	  /* nm_dcfa_connect_send(p_ibverbs_drv, remote_url, trk_id, &p_ibverbs_cnx->local_addr, 1); */
 	  nm_dcfa_cnx_qp_reset(p_ibverbs_cnx);
 	  nm_dcfa_cnx_qp_init(p_ibverbs_cnx);
@@ -365,14 +366,14 @@ static void nm_dcfa_cnx_qp_create(struct nm_dcfa_cnx*p_ibverbs_cnx, struct nm_dc
   p_ibverbs_cnx->if_cq = ibv_create_cq(p_hca->context, NM_DCFA_RX_DEPTH);
   if(p_ibverbs_cnx->if_cq == NULL) 
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create in CQ\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot create in CQ\n");
       abort();
     }
   /* init outbound CQ */
   p_ibverbs_cnx->of_cq = ibv_create_cq(p_hca->context, NM_DCFA_TX_DEPTH);
   if(p_ibverbs_cnx->of_cq == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: cannot create out CQ\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: cannot create out CQ\n");
       abort();
     }
   /* create QP */
@@ -391,7 +392,7 @@ static void nm_dcfa_cnx_qp_create(struct nm_dcfa_cnx*p_ibverbs_cnx, struct nm_dc
   p_ibverbs_cnx->qp = ibv_create_qp(p_hca->pd, &qp_init_attr);
   if(p_ibverbs_cnx->qp == NULL)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: couldn't create QP\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: couldn't create QP\n");
       abort();
     }
   p_ibverbs_cnx->max_inline = qp_init_attr.cap.max_inline_data;
@@ -408,7 +409,7 @@ static void nm_dcfa_cnx_qp_reset(struct nm_dcfa_cnx*p_ibverbs_cnx)
   int rc = ibv_modify_qp(p_ibverbs_cnx->qp, &attr, IBV_QP_STATE);
   if(rc != 0)
     {
-      fprintf(stderr,"nmad: FATAL- ibverbs: failed to modify QP to RESET.\n");
+      fprintf(stderr,"nmad: FATAL- dcfa: failed to modify QP to RESET.\n");
       abort();
     }
 }
@@ -430,7 +431,7 @@ static void nm_dcfa_cnx_qp_init(struct nm_dcfa_cnx*p_ibverbs_cnx)
 			 IBV_QP_ACCESS_FLAGS);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to INIT.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: failed to modify QP to INIT.\n");
       abort();
     }
 }
@@ -464,7 +465,7 @@ static void nm_dcfa_cnx_qp_rtr(struct nm_dcfa_cnx*p_ibverbs_cnx)
 			 IBV_QP_MIN_RNR_TIMER);
   if(rc != 0)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: failed to modify QP to RTR\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: failed to modify QP to RTR\n");
       abort();
     }
 }
@@ -490,7 +491,7 @@ static void nm_dcfa_cnx_qp_rts(struct nm_dcfa_cnx*p_ibverbs_cnx)
 			 IBV_QP_MAX_QP_RD_ATOMIC);
   if(rc != 0)
     {
-      fprintf(stderr,"nmad: FATAL-  ibverbs: failed to modify QP to RTS\n");
+      fprintf(stderr,"nmad: FATAL-  dcfa: failed to modify QP to RTS\n");
       abort();
     }
 }
@@ -526,7 +527,7 @@ static int nm_dcfa_sync_send(const void*sbuf, const void*rbuf, int size, struct 
   int rc = ibv_post_send(cnx->qp, &wr, &bad_wr);
   if(rc)
     {
-      fprintf(stderr, "nmad: FATAL- ibverbs: post sync send failed.\n");
+      fprintf(stderr, "nmad: FATAL- dcfa: post sync send failed.\n");
       abort();
     }
   struct ibv_wc wc;
@@ -536,14 +537,14 @@ static int nm_dcfa_sync_send(const void*sbuf, const void*rbuf, int size, struct 
       ne = ibv_poll_cq(cnx->of_cq, 1, &wc);
       if(ne < 0)
 	{
-	  fprintf(stderr, "nmad: FATAL- ibverbs: poll out CQ failed.\n");
+	  fprintf(stderr, "nmad: FATAL- dcfa: poll out CQ failed.\n");
 	  abort();
 	}
     }
   while(ne == 0);
   if(ne != 1 || wc.status != IBV_WC_SUCCESS)
     {
-      fprintf(stderr, "nmad: WARNING- ibverbs: WC send failed (status=%d; %s)\n",
+      fprintf(stderr, "nmad: WARNING- dcfa: WC send failed (status=%d; %s)\n",
 	      wc.status, nm_dcfa_status_strings[wc.status]);
       return 1;
     }

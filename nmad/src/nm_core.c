@@ -137,7 +137,7 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
 	"<puk:composite id=\"nm:dcfa\">"
 	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
 	"    <puk:attr label=\"trk0\">NewMad_dcfa_bycopy</puk:attr>"
-	"    <puk:attr label=\"trk1\">NewMad_dcfa_rcache</puk:attr>"
+	"    <puk:attr label=\"trk1\">NewMad_dcfa_lr2</puk:attr>"
 	"  </puk:component>"
 	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
 	"</puk:composite>";

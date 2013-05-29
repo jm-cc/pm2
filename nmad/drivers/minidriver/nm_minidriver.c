@@ -185,9 +185,9 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
 static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
-  
+#ifndef __MIC
   srand48(getpid() * time(NULL));
-  
+#endif /* __MIC__ */
  
   /* open tracks */
   void*url_chunks = NULL;

@@ -161,53 +161,13 @@ static const char*const nm_dcfa_status_strings[] =
     [IBV_WC_GENERAL_ERR]        = "general error"
   };
 
-#if 0
-static inline int nm_dcfa_do_rdma(struct nm_dcfa_cnx*__restrict__ p_ibverbs_cnx,
-				     const void*__restrict__ buf, int size, uint64_t raddr,
-				     int opcode, int flags, uint32_t lkey, uint32_t rkey, uint64_t wrid)
-{
-  const int offset = buf - (void*)&ib_globals.buffer;
-  struct ibv_sge list = {
-    .mic_addr = (uintptr_t)buf,
-    .addr     =  (uintptr_t)ib_globals.mr->host_addr + offset,
-    .length   = size,
-    .lkey     = lkey
-  };
-  struct ibv_send_wr wr = {
-    .wr_id      = wrid,
-    .sg_list[0] = list,
-    .num_sge    = 1,
-    .opcode     = opcode,
-    .send_flags = flags,
-    .next       = NULL,
-    .imm_data   = 0,
-    .wr.rdma =
-    {
-      .remote_addr = raddr,
-      .rkey        = rkey
-    }
-  };
-  int rc = ibv_post_send(p_ibverbs_cnx->qp, &wr);
-  assert(wrid < _NM_DCFA_WRID_MAX);
-  p_ibverbs_cnx->pending.wrids[wrid]++;
-  p_ibverbs_cnx->pending.total++;
-  if(rc) 
-    {
-      fprintf(stderr, "nmad: FATAL- ibverbs: post RDMA write failed (rc=%d).\n", rc);
-      abort();
-    }
-  return NM_ESUCCESS;
-}
-
-#endif /* 0 */
-
 static inline int nm_dcfa_rdma_send(struct nm_dcfa_cnx*p_ibverbs_cnx, int size,
-				       const void*__restrict__ ptr,
-				       const void*__restrict__ _raddr,
-				       const void*__restrict__ _lbase,
-				       const struct nm_dcfa_segment*seg,
-				       const struct ibv_mr*__restrict__ mr,
-				       int wrid)
+				    const void*__restrict__ ptr,
+				    const void*__restrict__ _raddr,
+				    const void*__restrict__ _lbase,
+				    const struct nm_dcfa_segment*seg,
+				    const struct ibv_mr*__restrict__ mr,
+				    int wrid)
 {
   const uintptr_t remote_offset = (uintptr_t)_raddr - (uintptr_t)_lbase;
   const uintptr_t local_offset  = (uintptr_t)ptr - (uintptr_t)_lbase;

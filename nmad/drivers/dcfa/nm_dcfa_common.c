@@ -51,7 +51,7 @@
 
 #include <Padico/Module.h>
 
-PADICO_MODULE_HOOK(NewMad_dcfa_bycopy);
+PADICO_MODULE_DECLARE(NewMad_dcfa_common);
 
 #define NM_DCFA_HCA_MAX 16
 static struct

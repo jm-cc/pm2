@@ -4,7 +4,7 @@ VPATH  := $(srcdir)
 
 include @puk_root@/etc/common_vars.mk
 
-TARGET_MOD = NewMad_dcfa_bycopy
+TARGET_MOD = NewMad_dcfa_bycopy NewMad_dcfa_rcache NewMad_dcfa_common
 TARGET_BIN =
 TARGET_LIB =
 
@@ -20,6 +20,10 @@ MODLIBS += @dcfa_LIBS@
 
 include @puk_root@/etc/common_rules.mk
 
-NewMad_dcfa_bycopy: nm_dcfa_bycopy.pic.o nm_dcfa_common.pic.o
+NewMad_dcfa_common: nm_dcfa_common.pic.o
 
+NewMad_dcfa_bycopy: MODLIBS += --requires NewMad_dcfa_common
+NewMad_dcfa_bycopy: nm_dcfa_bycopy.pic.o
 
+NewMad_dcfa_rcache: MODLIBS += --requires NewMad_dcfa_common
+NewMad_dcfa_rcache: nm_dcfa_rcache.pic.o

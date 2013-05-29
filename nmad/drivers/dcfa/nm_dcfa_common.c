@@ -53,11 +53,12 @@
 
 PADICO_MODULE_HOOK(NewMad_dcfa_bycopy);
 
-
+#define NM_DCFA_HCA_MAX 16
 static struct
 {
-  puk_hashtable_t hca_table; /**< HCAs, hashed by index (as int) */
-} nm_dcfa_common = { .hca_table = NULL };
+  int init_done;
+  struct nm_dcfa_hca_s*hca_table[NM_DCFA_HCA_MAX]; /**< HCAs, hashed by index (as int) */
+} nm_dcfa_common = { .init_done = 0, .hca_table = { NULL } };
 
 static tbx_checksum_t _nm_dcfa_checksum = NULL;
 
@@ -80,7 +81,7 @@ static int nm_dcfa_sync_send(const void*sbuf, const void*rbuf, int size, struct 
 
 static void nm_dcfa_common_init(void)
 {
-  nm_dcfa_common.hca_table = puk_hashtable_new_int();
+  nm_dcfa_common.init_done = 1;
   const char*checksum_env = getenv("NMAD_IBVERBS_CHECKSUM");
   if(_nm_dcfa_checksum == NULL && checksum_env != NULL)
     {
@@ -106,17 +107,25 @@ static void nm_dcfa_common_init(void)
 
 struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
 {
-  if(nm_dcfa_common.hca_table == NULL)
-    nm_dcfa_common_init();
- struct nm_dcfa_hca_s*p_hca = puk_hashtable_lookup(nm_dcfa_common.hca_table, (void*)(uintptr_t)(index + 1));
+  if(index < 0)
+    index = 0;
+  if(index >= NM_DCFA_HCA_MAX)
+    {
+      fprintf(stderr, "# nmad: FATAL- dcfa: more than %d HCA in table.\n", NM_DCFA_HCA_MAX);
+      abort();
+    }
+  if(!nm_dcfa_common.init_done)
+    {
+      nm_dcfa_common_init();
+    }
+  struct nm_dcfa_hca_s*p_hca = nm_dcfa_common.hca_table[index];
   if(p_hca)
     return p_hca;
-
   p_hca = TBX_MALLOC(sizeof(struct nm_dcfa_hca_s));
 
   /* find IB device */
   int dev_number = index;
-  int dev_amount;
+  int dev_amount = 1;
   struct ibv_device**dev_list = ibv_get_device_list(&dev_amount);
   if(!dev_list) 
     {
@@ -202,6 +211,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
   NM_DISPF("# nmad dcfa: device '%s'- %dx %s (%d Gb/s); LID = 0x%02X\n",
 	   "dcfa" /*ibv_get_device_name(p_hca->ib_dev)*/, link_width, s_link_rate, p_hca->ib_caps.data_rate, p_hca->lid);
 #ifdef DEBUG
+  /*
   NM_DISPF("# nmad dcfa:   max_qp=%d; max_qp_wr=%d; max_cq=%d; max_cqe=%d;\n",
 	   p_hca->ib_caps.max_qp, p_hca->ib_caps.max_qp_wr,
 	   p_hca->ib_caps.max_cq, p_hca->ib_caps.max_cqe);
@@ -210,6 +220,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
 	   (unsigned long long) p_hca->ib_caps.max_mr_size,
 	   (unsigned long long) p_hca->ib_caps.page_size_cap,
 	   (unsigned long long) p_hca->ib_caps.max_msg_size);
+  */
 #endif
 
   /* allocate Protection Domain */
@@ -219,9 +230,7 @@ struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index)
       fprintf(stderr, "nmad: FATAL- dcfa: cannot allocate IB protection domain.\n");
       abort();
     }
-  if(index < 0)
-    index = 0;
-  puk_hashtable_insert(nm_dcfa_common.hca_table, (void*)((uintptr_t)(index + 1)), p_hca);
+  nm_dcfa_common.hca_table[index] = p_hca;
   return p_hca;
 }
 

@@ -30,17 +30,6 @@
 #define piom_spin_unlock(lock) 	       marcel_spin_unlock_tasklet_enable(lock)
 #define piom_spin_trylock(lock)	       marcel_spin_trylock_tasklet_disable(lock)
 
-#define piom_rwlock_t               marcel_rwlock_t
-#define PIOM_RW_LOCK_UNLOCKED       MARCEL_RWLOCK_INITIALIZER
-#define piom_rwlock_init(lock)      marcel_rwlock_init(lock)
-#define piom_rwlock_is_locked(lock) marcel_rwlock_is_locked(lock)
-
-
-#define piom_read_lock(lock)    marcel_rwlock_rdlock(lock)
-#define piom_read_unlock(lock)  marcel_rwlock_unlock(lock)
-#define piom_write_lock(lock)   marcel_rwlock_wrlock(lock)
-#define piom_write_unlock(lock) marcel_rwlock_unlock(lock)
-
 #define piom_thread_t     marcel_t
 #define PIOM_THREAD_NULL NULL
 #define PIOM_SELF       marcel_self()
@@ -79,17 +68,6 @@ static inline int piom_spin_trylock(piom_spinlock_t *lock)
     return rc;
 }
 
-#define piom_rwlock_t                  pthread_rwlock_t
-#define PIOM_RW_LOCK_UNLOCKED          PTHREAD_RW_LOCK_UNLOCKED
-#define piom_rwlock_init(lock)         pthread_rwlock_init(lock, NULL)
-#define piom_rwlock_is_locked(lock)    pthread_rwlock_trywrlocked(lock)
-
-
-#define piom_read_lock(lock)           pthread_rwlock_rdlock(lock)
-#define piom_read_unlock(lock)         pthread_rwlock_unlock(lock)
-#define piom_write_lock(lock)          pthread_rwlock_wrlock(lock)
-#define piom_write_unlock(lock)        pthread_rwlock_unlock(lock)
-
 #define piom_thread_t pthread_t
 #define PIOM_THREAD_NULL ((pthread_t)(-1))
 #define PIOM_SELF pthread_self()
@@ -103,14 +81,6 @@ static inline int piom_spin_trylock(piom_spinlock_t *lock)
 #define piom_spin_lock(lock) 	       (void) 0
 #define piom_spin_trylock(lock)        1
 #define piom_spin_unlock(lock) 	       (void) 0
-
-#define piom_rwlock_t   int
-#define PIOM_RW_LOCK_UNLOCKED 0
-
-#define piom_read_lock(lock)    (void) 0
-#define piom_read_unlock(lock)  (void) 0
-#define piom_write_lock(lock)   (void) 0
-#define piom_write_unlock(lock) (void) 0
 
 #define piom_thread_t     int
 #define PIOM_THREAD_NULL 0

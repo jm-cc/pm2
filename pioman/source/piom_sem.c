@@ -21,8 +21,18 @@ __tbx_inline__ void piom_sem_P(piom_sem_t *sem)
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_P(sem);
 #elif defined (PIOMAN_LOCK_PTHREAD)
+#ifdef __MIC__
+  pthread_mutex_lock(&sem->mutex);
+  sem->n--;
+  while(sem->n < 0)
+    {
+      pthread_cond_wait(&sem->cond, &sem->mutex);
+    }
+  pthread_mutex_unlock(&sem->mutex);
+#else
   while(sem_wait(sem) == -1)
     ;
+#endif
 #else /* PIOMAN_LOCK_NONE */
   (*sem)--;
   while((*sem) < 0)
@@ -37,7 +47,14 @@ __tbx_inline__ void piom_sem_V(piom_sem_t *sem)
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_V(sem);
 #elif defined (PIOMAN_LOCK_PTHREAD)
+#ifdef __MIC__
+  pthread_mutex_lock(&sem->mutex);
+  sem->n++;
+  pthread_cond_signal(&sem->cond);
+  pthread_mutex_unlock(&sem->mutex);
+#else
   sem_post(sem);
+#endif
 #else /* PIOMAN_LOCK_NONE */
   (*sem)++;
 #endif /* PIOMAN_LOCK_* */
@@ -48,7 +65,13 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_init(sem, initial);
 #elif defined (PIOMAN_LOCK_PTHREAD)
+#ifdef __MIC__
+  pthread_mutex_init(&sem->mutex, NULL);
+  pthread_cond_init(&sem->cond, NULL);
+  sem->n = initial;
+#else
   sem_init(sem, 0, initial);
+#endif
 #else /* PIOMAN_LOCK_NONE */
   (*sem) = initial;
 #endif /* PIOMAN_LOCK_* */

@@ -27,7 +27,16 @@ typedef uint8_t piom_cond_value_t;
 #ifdef PIOMAN_LOCK_MARCEL
 typedef marcel_sem_t piom_sem_t;
 #elif defined(PIOMAN_LOCK_PTHREAD)
+#ifdef __MIC__
+typedef struct
+{
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int n;
+} piom_sem_t;
+#else /* __MIC__ */
 typedef sem_t piom_sem_t;
+#endif /* __MIC__ */
 #else /* PIOMAN_LOCK_NONE */
 typedef int piom_sem_t;
 #endif 

@@ -18,9 +18,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../sendrecv/helper.h"
+#include "piom_helper.h"
 
-#ifdef PIOMAN
+#ifdef PIOMAN_MULTITHREAD
 
 //#define LEN_DEFAULT      16*1024*1024
 #define LEN_DEFAULT      (128*1024)
@@ -34,11 +34,9 @@ static int	 loops;
 static int       threads;
 static int       warmups;
 
-#ifdef MARCEL
-static pmarcel_sem_t ready_sem;
+static piom_sem_t ready_sem;
 static int go;
 static int done;
-#endif
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -97,8 +95,8 @@ static void control_buffer(char *msg, char *buffer, int len) {
 #endif
 
 
-void 
-server(any_t arg) {
+void server(void* arg) 
+{
   int    my_pos = *(int*)arg;
   char	*buf	= NULL;
   nm_tag_t tag   = (nm_tag_t)my_pos;
@@ -108,7 +106,7 @@ server(any_t arg) {
   clear_buffer(buf, len);
   for(i = my_pos; i <= threads; i++) {   
     while(go < i )
-      marcel_yield();
+      piom_thread_yield();
     for(k = 0; k < loops + warmups; k++) {
       nm_sr_request_t request, request2;
 
@@ -121,12 +119,12 @@ server(any_t arg) {
       control_buffer("réception", buf, len);
 #endif
     }
-    marcel_sem_V(&ready_sem); 	
+    piom_sem_V(&ready_sem); 	
   } 
 }
 
-void
-client(any_t arg) {
+void client(void*arg)
+{
   int        my_pos = *(int*)arg;
   nm_tag_t   tag    = (nm_tag_t)my_pos;
   char	    *buf    = NULL;
@@ -140,7 +138,7 @@ client(any_t arg) {
   fill_buffer(buf, len);
   for(i = my_pos; i <= threads; i++) {
     while(go < i )
-      marcel_yield();
+      piom_thread_yield();
     for(k = 0; k < warmups; k++) {
 	    nm_sr_request_t request, request2;
 #if DATA_CONTROL_ACTIVATED
@@ -173,7 +171,7 @@ client(any_t arg) {
     }
     done++;
     while(done <i)
-           marcel_yield();
+      piom_thread_yield();
 
     TBX_GET_TICK(t2);
   
@@ -184,18 +182,14 @@ client(any_t arg) {
     bw_mbyte        = bw_million_byte / 1.048576;
   
     printf("[%d]\t%d\t%lf\t%8.3f\t%8.3f\n", my_pos, len, lat, bw_million_byte, bw_mbyte);
-    marcel_sem_V(&ready_sem); 	
+    piom_sem_V(&ready_sem); 	
   }
 }
 
-int
-main(int	  argc,
-     char	**argv) {
+int main(int	  argc, char**argv)
+{
   int		 i, j;
-#ifdef MARCEL
-  marcel_t      *pid;
-  marcel_attr_t attr;
-#endif
+  piom_thread_t  *pid;
 
   len =        LEN_DEFAULT;
   loops = LOOPS_DEFAULT;
@@ -234,35 +228,28 @@ main(int	  argc,
   if(!is_server)
     printf("thread |  size     |   latency     |    10^6 B/s   |    MB/s    |\n");
 
-#ifdef MARCEL
-  marcel_attr_init(&attr);
-  marcel_attr_setdetachstate(&attr, tbx_true);
- 
-  pid = malloc(sizeof(marcel_t) * threads);
-  marcel_sem_init(&ready_sem,0);
+  pid = malloc(sizeof(piom_thread_t) * threads);
+  piom_sem_init(&ready_sem,0);
   go = 0;
   for (i=0 ; i<=threads ; i++) {
     printf("[%d communicating threads]\n", i+1);
-#endif
     if (is_server) {
-      marcel_create(&pid[i], &attr, (void*)server, &i);
+      piom_thread_create(&pid[i], NULL, (void*)server, &i);
     } else {
-      marcel_create(&pid[i], &attr, (void*)client, &i);	    
+      piom_thread_create(&pid[i], NULL, (void*)client, &i);	    
     }
-#ifdef MARCEL
     for( j = 0; j <= i; j++){
-      marcel_sem_P(&ready_sem); 	
+      piom_sem_P(&ready_sem); 	
       go=j;
     }
     go++;
     done = 0;
   }
-#endif
   printf("##### Benchmark Done!####\n");
   nm_examples_exit();
   exit(0);
 }
 
-#else
+#else /* PIOMAN_MULTITHREAD */
 int main(){ return -1;}
-#endif /* PIOMAN */
+#endif /* PIOMAN_MULTITHREAD */

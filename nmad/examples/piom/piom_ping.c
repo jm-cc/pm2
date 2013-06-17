@@ -18,11 +18,11 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../sendrecv/helper.h"
+#include "piom_helper.h"
 
 
 /* This program performs a latency test with 0..n computing threads per CPU */
-#ifdef PIOMAN
+#ifdef PIOMAN_MULTITHREAD
 
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(64 * 1024)
@@ -55,16 +55,17 @@ void usage_ping() {
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
 }
 
-#ifdef MARCEL
-static pmarcel_sem_t ready_sem;
+static piom_sem_t ready_sem;
 static volatile int bench_complete = 0;
 
-static any_t greedy_func(any_t arg) {
-        marcel_sem_V(&ready_sem);
-	while(!bench_complete) ;
-	return NULL;
+static void*greedy_func(void*arg) 
+{
+  piom_sem_V(&ready_sem);
+  while(!bench_complete)
+    { }
+  return NULL;
 }
-#endif
+
 static void fill_buffer(char *buffer, int len) {
   unsigned int i = 0;
 
@@ -118,10 +119,7 @@ main(int	  argc,
   int            threads        = THREADS_DEFAULT;
   int		 warmups	= WARMUPS_DEFAULT;
   int		 i;
-#ifdef MARCEL
-  marcel_t      *pid;
-  marcel_attr_t attr;
-#endif
+  piom_thread_t *pid;
 
   nm_examples_init(&argc, argv);
 
@@ -171,15 +169,13 @@ main(int	  argc,
   struct marcel_sched_param old_param;
   marcel_sched_getparam(MARCEL_SELF, &old_param);
   marcel_sched_setparam(MARCEL_SELF, &sched_param);
+#endif /* MARCEL */
   
 
-  marcel_attr_init(&attr);
- 
-  pid = malloc(sizeof(marcel_t) * threads);
-  marcel_sem_init(&ready_sem,0);
+  pid = malloc(sizeof(piom_thread_t) * threads);
+  piom_sem_init(&ready_sem,0);
   for (i=0 ; i<=threads ; i++) {
     printf("[%d Computing threads]\n", i);
-#endif
     if (is_server) {
       int k;
       /* server */
@@ -254,26 +250,23 @@ main(int	  argc,
 	printf("%d\t%lf\t%8.3f\t%8.3f\n", len, lat, bw_million_byte, bw_mbyte);
       }
     }
-#ifdef MARCEL
-    marcel_vpset_t mask;
-    marcel_vpset_vp(&mask,  i%marcel_nbvps());
-    marcel_attr_setvpset(&attr,  mask);
-    marcel_create(&pid[i], &attr, (void*)greedy_func, NULL);
+    piom_thread_create(&pid[i], NULL, (void*)greedy_func, NULL);
 /* wait for the thread to be actually launched before we continue */
-    marcel_sem_P(&ready_sem); 
+    piom_sem_P(&ready_sem); 
   }
 
   bench_complete = 1;
-  for (i=0 ; i<=threads ; i++) {
-	  marcel_join(pid[i], NULL);
-  }
-#endif
+  for (i=0 ; i<=threads ; i++)
+    {
+      piom_thread_join(pid[i], NULL);
+    }
   fprintf(stderr, "Benchmark done!\n");
 
   nm_examples_exit();
   exit(0);
 }
-#else
+
+#else /* PIOMAN_MULTITHREAD */
 int main(){ return -1; }
 
-#endif /* PIOMAN */
+#endif /* PIOMAN_MULTITHREAD */

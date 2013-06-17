@@ -15,8 +15,8 @@ INSTALL_PREFIX := @nmad_root@
 
 TARGETS = subdirs $(TARGET_BIN) $(TARGET_LIB)
 
-CFLAGS  := $(shell pkg-config --cflags nmad) $(shell pkg-config --cflags marcel)
-LIBS    := $(shell pkg-config --libs nmad) $(shell pkg-config --libs marcel)
+CFLAGS  := $(shell pkg-config --cflags nmad )
+LIBS    := $(shell pkg-config --libs nmad )
 
 include @puk_root@/etc/common_rules.mk
 

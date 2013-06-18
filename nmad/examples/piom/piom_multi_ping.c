@@ -24,27 +24,30 @@
 
 #ifdef PIOMAN_MULTITHREAD
 
-//#define DEBUG 1
+#define DEBUG 1
 
 /* This program performs several ping pong in parallel.
  * This evaluates the efficienty to access nmad from 1, 2, 3, ...n threads simultanously
 */
 
-#define LEN_DEFAULT      (128*1024)
-//#define LEN_DEFAULT      4
-#define WARMUPS_DEFAULT	100
-#define LOOPS_DEFAULT	2000
-#define THREADS_DEFAULT 4
+#define LEN_DEFAULT     8 /* (128*1024) */
+#define WARMUPS_DEFAULT	0 /* 100 */
+#define LOOPS_DEFAULT	2 /* 2000 */
+#define THREADS_DEFAULT 8
 #define DATA_CONTROL_ACTIVATED 0
+
+#define THREADS_MAX 16
 
 static uint32_t	 len;
 static int	 loops;
 static int       threads;
 static int       warmups;
-static int       status[16];
+static int       status[THREADS_MAX];
 
 static piom_sem_t ready_sem;
 static volatile int go;
+static piom_thread_mutex_t mutex;
+static piom_thread_cond_t cond;
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -105,9 +108,10 @@ static void control_buffer(char *msg, char *buffer, int len) {
 
 void affiche_status() {
   int i;
-  for(i=0;i<16;i++){
-	  fprintf(stderr, "[%d]  ", status[i]);
-  }
+  for(i = 0; i < THREADS_MAX; i++)
+    {
+      fprintf(stderr, "[%d]  ", status[i]);
+    }
   fprintf(stderr, "\n");
 
 }
@@ -123,8 +127,10 @@ server(void* arg) {
   clear_buffer(buf, len);
   for(i = my_pos; i <= threads; i++) {   
     /* Be sure all the communicating threads have been created before we start */
+    piom_thread_mutex_lock(&mutex);
     while(go < i )
-      piom_thread_yield();
+      piom_thread_cond_wait(&cond, &mutex);
+    piom_thread_mutex_unlock(&mutex);
     for(k = 0; k < loops + warmups; k++) {
       nm_sr_request_t request;
 #if DEBUG
@@ -163,8 +169,10 @@ client(void* arg) {
   for(i = my_pos; i <= threads; i++)
     {
       /* Be sure all the communicating threads have been created before we start */
+      piom_thread_mutex_lock(&mutex);
       while(go < i )
-	piom_thread_yield();
+	piom_thread_cond_wait(&cond, &mutex);
+      piom_thread_mutex_unlock(&mutex);
       for(k = 0; k < warmups; k++) 
 	{
 	  nm_sr_request_t request;
@@ -263,31 +271,36 @@ int main(int	  argc, char	**argv)
     }
   }
 
-  for(i = 0; i < 16; i++)
+  for(i = 0; i < THREADS_MAX; i++)
     {
       status[i] = 0;
     }
 
   pid = malloc(sizeof(piom_thread_t) * threads);
   piom_sem_init(&ready_sem, 0);
+  piom_thread_cond_init(&cond, NULL);
+  piom_thread_mutex_init(&mutex, NULL);
   go = 0;
-  for (i = 0 ; i< threads ; i++) {
-    printf("[%d communicating threads]\n", i+1);
-    if(is_server) 
-      {
-	piom_thread_create(&pid[i], NULL, (void*)server, &i);
-      }
-    else 
-      {
-	piom_thread_create(&pid[i], NULL, (void*)client, &i);	    
-      }
-    for( j = 0; j <= i; j++)
-      {
-	piom_sem_P(&ready_sem); 	
-	go = j;
-      }
-    go++;
-  }
+  for (i = 0 ; i < threads ; i++) 
+    {
+      printf("[%d communicating threads]\n", i+1);
+      if(is_server) 
+	{
+	  piom_thread_create(&pid[i], NULL, (void*)server, &i);
+	}
+      else 
+	{
+	  piom_thread_create(&pid[i], NULL, (void*)client, &i);	    
+	}
+      for(j = 0; j <= i; j++)
+	{
+	  piom_sem_P(&ready_sem); 	
+	}
+      piom_thread_mutex_lock(&mutex);
+      go++;
+      piom_thread_cond_broadcast(&cond);
+      piom_thread_mutex_unlock(&mutex);
+    }
   
   for(i=0;i<threads;i++)
     piom_thread_join(pid[i], NULL);

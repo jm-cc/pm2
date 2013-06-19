@@ -24,7 +24,7 @@
 
 #ifdef PIOMAN_MULTITHREAD
 
-#define DEBUG 1
+//#define DEBUG 1
 
 /* This program performs several ping pong in parallel.
  * This evaluates the efficienty to access nmad from 1, 2, 3, ...n threads simultanously
@@ -42,12 +42,13 @@ static uint32_t	 len;
 static int	 loops;
 static int       threads;
 static int       warmups;
-static int       status[THREADS_MAX];
 
-static piom_sem_t ready_sem;
-static volatile int go;
-static piom_thread_mutex_t mutex;
-static piom_thread_cond_t cond;
+static struct
+{
+  int go[THREADS_MAX];
+  piom_thread_mutex_t mutex;
+  piom_thread_cond_t cond;
+} synchro;
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -106,141 +107,118 @@ static void control_buffer(char *msg, char *buffer, int len) {
 #endif
 
 
-void affiche_status() {
-  int i;
-  for(i = 0; i < THREADS_MAX; i++)
-    {
-      fprintf(stderr, "[%d]  ", status[i]);
-    }
-  fprintf(stderr, "\n");
-
-}
-
-void 
-server(void* arg) {
-  int    my_pos = *(int*)arg;
-  char	*buf	= NULL;
-  nm_tag_t tag   = (nm_tag_t)my_pos;
-  int    i, k;
-
-  buf = malloc(len);
+static void*comm_thread(void* arg)
+{
+  const int my_pos = *(int*)arg;
+  nm_tag_t tag = (nm_tag_t)my_pos;
+  int k;
+  char*buf = malloc(len);
   clear_buffer(buf, len);
-  for(i = my_pos; i <= threads; i++) {   
-    /* Be sure all the communicating threads have been created before we start */
-    piom_thread_mutex_lock(&mutex);
-    while(go < i )
-      piom_thread_cond_wait(&cond, &mutex);
-    piom_thread_mutex_unlock(&mutex);
-    for(k = 0; k < loops + warmups; k++) {
-      nm_sr_request_t request;
-#if DEBUG
-      fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
-#endif
-      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
-      nm_sr_rwait(p_session, &request);
-#if DEBUG
-      fprintf(stderr, "[%d] Send %d\n", my_pos, k);
-#endif
-#if DATA_CONTROL_ACTIVATED
-      control_buffer("réception", buf, len);
-#endif
-      nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
-      nm_sr_swait(p_session, &request);
-    }
-    status[my_pos]++;
-    affiche_status();
-    piom_sem_V(&ready_sem); 	
-  } 
-}
-
-void
-client(void* arg) {
-  int        my_pos = *(int*)arg;
-  nm_tag_t    tag   = (nm_tag_t)my_pos;
-  char	    *buf    = NULL;
-  tbx_tick_t t1, t2;
-  double     sum, lat, bw_million_byte, bw_mbyte;
-  int        i, k;
-
-  buf = malloc(len);
-  clear_buffer(buf, len);
-
-  fill_buffer(buf, len);
-  for(i = my_pos; i <= threads; i++)
+  for(;;)
     {
-      /* Be sure all the communicating threads have been created before we start */
-      piom_thread_mutex_lock(&mutex);
-      while(go < i )
-	piom_thread_cond_wait(&cond, &mutex);
-      piom_thread_mutex_unlock(&mutex);
-      for(k = 0; k < warmups; k++) 
+      /* wait for the start signal */
+      piom_thread_mutex_lock(&synchro.mutex);
+      while(synchro.go[my_pos] != 1 && synchro.go[my_pos] != -1)
+	piom_thread_cond_wait(&synchro.cond, &synchro.mutex);
+      piom_thread_mutex_unlock(&synchro.mutex);
+      if(synchro.go[my_pos] == -1)
+	break;
+      if(is_server)
 	{
-	  nm_sr_request_t request;
-#if DATA_CONTROL_ACTIVATED
-	  control_buffer("envoi", buf, len);
-#endif
+	  for(k = 0; k < loops + warmups; k++)
+	    {
+	      nm_sr_request_t request;
 #if DEBUG
-	  fprintf(stderr, "[%d] Send %d\n", my_pos, k);
+	      fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
 #endif
-	  nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
-	  nm_sr_swait(p_session, &request);
+	      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 #if DEBUG
-	  fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
+	      fprintf(stderr, "[%d] Send %d\n", my_pos, k);
 #endif
-	  nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
-	  nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
-	  control_buffer("reception", buf, len);
+	      control_buffer("réception", buf, len);
 #endif
+	      nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
+	    }
 	}
-      
-      TBX_GET_TICK(t1);
-      
-      for(k = 0; k < loops; k++)
+      else
 	{
-	  nm_sr_request_t request;
+	  tbx_tick_t t1, t2;
+	  clear_buffer(buf, len);
+	  fill_buffer(buf, len);
+	  for(k = 0; k < warmups; k++) 
+	    {
+	      nm_sr_request_t request;
 #if DATA_CONTROL_ACTIVATED
-	  control_buffer("envoi", buf, len);
+	      control_buffer("envoi", buf, len);
+#endif
+#if DEBUG
+	      fprintf(stderr, "[%d] Send %d\n", my_pos, k);
+#endif
+	      nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
+#if DEBUG
+	      fprintf(stderr, "[%d] Recv %d\n", my_pos, k);
+#endif
+	      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
+#if DATA_CONTROL_ACTIVATED
+	      control_buffer("reception", buf, len);
+#endif
+	    }
+	  
+	  TBX_GET_TICK(t1);
+	  
+	  for(k = 0; k < loops; k++)
+	    {
+	      nm_sr_request_t request;
+#if DATA_CONTROL_ACTIVATED
+	      control_buffer("envoi", buf, len);
 #endif 
 #if DEBUG
-	  fprintf(stderr, "[%d] Send %d\n", my_pos, k+warmups);
+	      fprintf(stderr, "[%d] Send %d\n", my_pos, k+warmups);
 #endif
-	  nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
-	  nm_sr_swait(p_session, &request);
-	  
+	      nm_sr_isend(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_swait(p_session, &request);
+	      
 #if DEBUG
-	  fprintf(stderr, "[%d] Recv %d\n", my_pos, k+warmups);
+	      fprintf(stderr, "[%d] Recv %d\n", my_pos, k+warmups);
 #endif
-	  nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
-	  nm_sr_rwait(p_session, &request);
+	      nm_sr_irecv(p_session, p_gate, tag, buf, len, &request);
+	      nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
-	  control_buffer("reception", buf, len);
+	      control_buffer("reception", buf, len);
 #endif
+	    }
+	  
+	  TBX_GET_TICK(t2);
+	  
+	  double sum = TBX_TIMING_DELAY(t1, t2);
+	  double lat	      = sum / (2 * loops);
+	  double bw_million_byte = len * (loops / (sum / 2));
+	  double bw_mbyte        = bw_million_byte / 1.048576;
+	  printf("[%d]\t%d\t%lf\t%8.3f\t%8.3f\n", my_pos, len, lat, bw_million_byte, bw_mbyte);
 	}
-      
-      TBX_GET_TICK(t2);
-      
-      sum = TBX_TIMING_DELAY(t1, t2);
-      
-      lat	      = sum / (2 * loops);
-      bw_million_byte = len * (loops / (sum / 2));
-      bw_mbyte        = bw_million_byte / 1.048576;
-      status[my_pos]++;
-      printf("[%d]\t%d\t%lf\t%8.3f\t%8.3f\n", my_pos, len, lat, bw_million_byte, bw_mbyte);
-      affiche_status();
-      piom_sem_V(&ready_sem); 	
+      piom_thread_mutex_lock(&synchro.mutex);
+      synchro.go[my_pos] = 2;
+      piom_thread_cond_broadcast(&synchro.cond);
+      piom_thread_mutex_unlock(&synchro.mutex);
     }
+  return NULL;
 }
 
-int main(int	  argc, char	**argv) 
+
+int main(int argc, char**argv) 
 {
   int		 i, j;
-  piom_thread_t *pid;
+  piom_thread_t*pid = NULL;
 
-  len =        LEN_DEFAULT;
-  loops = LOOPS_DEFAULT;
-  threads =    THREADS_DEFAULT;
-  warmups =    WARMUPS_DEFAULT;
+  len     = LEN_DEFAULT;
+  loops   = LOOPS_DEFAULT;
+  threads = THREADS_DEFAULT;
+  warmups = WARMUPS_DEFAULT;
 
   nm_examples_init(&argc, argv);
 
@@ -250,7 +228,7 @@ int main(int	  argc, char	**argv)
     exit(0);
   }
 
-  for(i=1 ; i<argc ; i+=2) {
+  for(i = 1; i < argc; i += 2) {
     if (!strcmp(argv[i], "-N")) {
       loops = atoi(argv[i+1]);
     }
@@ -271,41 +249,45 @@ int main(int	  argc, char	**argv)
     }
   }
 
+  pid = malloc(sizeof(piom_thread_t) * threads);
+  piom_thread_cond_init(&synchro.cond, NULL);
+  piom_thread_mutex_init(&synchro.mutex, NULL);
   for(i = 0; i < THREADS_MAX; i++)
     {
-      status[i] = 0;
+      synchro.go[i] = 0;
     }
 
-  pid = malloc(sizeof(piom_thread_t) * threads);
-  piom_sem_init(&ready_sem, 0);
-  piom_thread_cond_init(&cond, NULL);
-  piom_thread_mutex_init(&mutex, NULL);
-  go = 0;
-  for (i = 0 ; i < threads ; i++) 
+  for(i = 0 ; i < threads; i++) 
     {
-      printf("[%d communicating threads]\n", i+1);
-      if(is_server) 
-	{
-	  piom_thread_create(&pid[i], NULL, (void*)server, &i);
-	}
-      else 
-	{
-	  piom_thread_create(&pid[i], NULL, (void*)client, &i);	    
-	}
+      printf("# %d x %d threads\n", i+1, i+1);
+      piom_thread_create(&pid[i], NULL, (void*)comm_thread, &i);
+      piom_thread_mutex_lock(&synchro.mutex);
       for(j = 0; j <= i; j++)
 	{
-	  piom_sem_P(&ready_sem); 	
+	  assert(synchro.go[j] == 0);
+	  synchro.go[j] = 1;
 	}
-      piom_thread_mutex_lock(&mutex);
-      go++;
-      piom_thread_cond_broadcast(&cond);
-      piom_thread_mutex_unlock(&mutex);
+      piom_thread_cond_broadcast(&synchro.cond);
+      for(j = 0; j <= i; j++)
+	{
+	  while(synchro.go[j] == 1)
+	    piom_thread_cond_wait(&synchro.cond, &synchro.mutex);
+	  synchro.go[j] = 0;
+	}
+      piom_thread_mutex_unlock(&synchro.mutex);
     }
-  
-  for(i=0;i<threads;i++)
+  fprintf(stderr, "# finalizing...\n");
+  piom_thread_mutex_lock(&synchro.mutex);
+  for(j = 0; j < threads; j++)
+    {
+      synchro.go[j] = -1;
+      piom_thread_cond_broadcast(&synchro.cond);
+    }
+  piom_thread_mutex_unlock(&synchro.mutex);
+  for(i = 0; i < threads; i++)
     piom_thread_join(pid[i], NULL);
 
-  printf("##### Benchmark Done!####\n");
+  printf("# done.\n");
   nm_examples_exit();
   exit(0);
 }

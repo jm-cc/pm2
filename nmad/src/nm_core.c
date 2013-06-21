@@ -151,19 +151,23 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
     {
       static const char ib_lr2[] = 
 	"<puk:composite id=\"nm:ib-lr2\">"
-	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:attr label=\"trk0\">NewMad_ibverbs_bycopy</puk:attr>"
-	"    <puk:attr label=\"trk1\">NewMad_ibverbs_lr2</puk:attr>"
+	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_lr2\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
 	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
 	"</puk:composite>";
       static const char ib_rcache[] = 
 	"<puk:composite id=\"nm:ib-rcache\">"
-	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:attr label=\"trk0\">NewMad_ibverbs_bycopy</puk:attr>"
-	"    <puk:attr label=\"trk1\">NewMad_ibverbs_rcache</puk:attr>"
+	"  <puk:component id=\"0\" name=\"NewMad_ibverbs_bycopy\"/>"
+	"  <puk:component id=\"1\" name=\"NewMad_ibverbs_rcache\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
 	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
 	"</puk:composite>";
       static const char*ib_drv = NULL;
       if(ib_drv == NULL)

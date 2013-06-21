@@ -20,7 +20,13 @@
 #include <nm_private.h>
 
 /** driver private state */
-struct nm_minidriver_drv 
+struct nm_minidriver_drv
+{
+  puk_context_t context;
+};
+
+/** status for a driver context */
+struct nm_minidriver_context_s
 {
   struct { puk_context_t minidriver; } trks_array[2]; /**< driver contexts for tracks */
   char*url;                   /**< driver url for this node (used by connector) */
@@ -32,7 +38,6 @@ struct nm_minidriver
   struct
   {
     struct puk_receptacle_NewMad_minidriver_s minidriver;
-    puk_instance_t minidriver_instance;
   } trks[2];
 };
 
@@ -98,8 +103,8 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_minidriver,
   puk_component_declare("NewMad_Driver_minidriver",
 			puk_component_provides("PadicoAdapter", "adapter", &nm_minidriver_adapter_driver),
 			puk_component_provides("NewMad_Driver", "driver", &nm_minidriver_driver),
-			puk_component_attr("trk0", NULL),
-			puk_component_attr("trk1", NULL)) );
+			puk_component_uses("NewMad_minidriver", "trk0"),
+			puk_component_uses("NewMad_minidriver", "trk1")) );
 
 
 
@@ -107,6 +112,8 @@ PADICO_MODULE_COMPONENT(NewMad_Driver_minidriver,
 static void* nm_minidriver_instanciate(puk_instance_t instance, puk_context_t context)
 {
   struct nm_minidriver*status = TBX_MALLOC(sizeof(struct nm_minidriver));
+  puk_context_indirect_NewMad_minidriver(instance, "trk0", &status->trks[0].minidriver);
+  puk_context_indirect_NewMad_minidriver(instance, "trk1", &status->trks[1].minidriver);
   return status;
 }
 
@@ -119,7 +126,9 @@ static void nm_minidriver_destroy(void*_status)
 const static char*nm_minidriver_get_driver_url(struct nm_drv *p_drv)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
-  return p_minidriver_drv->url;
+  puk_context_t context = p_minidriver_drv->context;
+  struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(context);
+  return p_minidriver_context->url;
 }
 
 /* ** init & connection ************************************ */
@@ -127,44 +136,45 @@ const static char*nm_minidriver_get_driver_url(struct nm_drv *p_drv)
 static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_param *params, int nparam)
 {
   int err = NM_ESUCCESS;
+  puk_context_t context = NULL;
   struct nm_minidriver_drv*p_minidriver_drv = TBX_MALLOC(sizeof(struct nm_minidriver_drv));
-  
-  if (!p_minidriver_drv) 
+  p_minidriver_drv->context = NULL;
+  /* hack here- find self context in the composite */
+  const struct puk_composite_driver_s*const composite_driver = 
+    puk_component_get_driver_PadicoComposite(p_drv->assembly, NULL);
+  if(composite_driver)
     {
-      err = -NM_ENOMEM;
-      goto out;
+      struct puk_composite_content_s*content = composite_driver->content;
+      puk_component_conn_itor_t conn;
+      puk_vect_foreach(conn, puk_component_conn, &content->entry_points)
+	{
+	  context = conn->context;
+	  if(context->component == padico_module_component_self())
+	    {
+	      p_minidriver_drv->context = context;
+	    }
+	}
     }
-  p_minidriver_drv->url = NULL;
-
-  /* get driver properties */
-  puk_component_t component = NULL;
+  if(p_minidriver_drv->context == NULL)
+    {
+      padico_fatal("NewMad_Driver_minidriver: bad assembly.\n");
+    }
+  struct nm_minidriver_context_s*p_minidriver_context = TBX_MALLOC(sizeof(struct nm_minidriver_context_s));
+  puk_context_set_status(context, p_minidriver_context);
+  p_minidriver_context->url = NULL;
+  /* resolve sub-drivers for trk#0 & trk#1 and get properties */
+  puk_component_conn_t trk0 = puk_context_conn_lookup(context, NULL, "trk0");
+  puk_component_conn_t trk1 = puk_context_conn_lookup(context, NULL, "trk1");
   struct nm_minidriver_properties_s props[2];
   int i;
   for(i = 0; i < 2; i++)
     {
-      /* hack here- find self context in the composite */
-      const char*trk0 = NULL, *trk1 = NULL;
-      const struct puk_composite_driver_s*const composite_driver = 
-	puk_component_get_driver_PadicoComposite(p_drv->assembly, NULL);
-      if(composite_driver)
-	{
-	  struct puk_composite_content_s*content = composite_driver->content;
-	  puk_component_conn_itor_t conn;
-	  puk_vect_foreach(conn, puk_component_conn, &content->entry_points)
-	    {
-	      trk0 = puk_context_getattr(conn->context, "trk0");
-	      trk1 = puk_context_getattr(conn->context, "trk1");
-	    }
-	}
-      component = puk_adapter_resolve((i == 0) ? trk0 : trk1);
-      const struct nm_minidriver_iface_s*minidriver_iface =
-	puk_component_get_driver_NewMad_minidriver(component, NULL);
-      /* create component context */
-      puk_context_t context = puk_context_new(component);
-      p_minidriver_drv->trks_array[i].minidriver = context;
+      puk_component_conn_t conn = (i == 0) ? trk0 : trk1;
+      const struct nm_minidriver_iface_s*minidriver_iface = conn->facet->driver;
+      p_minidriver_context->trks_array[i].minidriver = conn->context;
       char s_index[16];
       sprintf(s_index, "%d", p_drv->index);
-      puk_context_putattr(context, "index", s_index);
+      puk_context_putattr(conn->context, "index", s_index);
       (*minidriver_iface->getprops)(p_drv->index, &props[i]);
     }
 
@@ -177,14 +187,14 @@ static int nm_minidriver_query(struct nm_drv *p_drv, struct nm_driver_query_para
 
   p_drv->priv = p_minidriver_drv;
   err = NM_ESUCCESS;
-  
- out:
+
   return err;
 }
 
 static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, int nb_trks)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
+  struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
 #ifndef __MIC
   srand48(getpid() * time(NULL));
 #endif /* __MIC__ */
@@ -215,7 +225,7 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
 	  trk_caps[i].max_iovec_request_length	= 0;
 	  trk_caps[i].max_iovec_size		= 0;
 	}
-      puk_context_t context = p_minidriver_drv->trks_array[i].minidriver;
+      puk_context_t context = p_minidriver_context->trks_array[i].minidriver;
       const struct nm_minidriver_iface_s*minidriver_iface = 
 	puk_component_get_driver_NewMad_minidriver(context->component, "minidriver");
       const void*trk_url = NULL;
@@ -230,7 +240,7 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
       memcpy(p_chunk_content, trk_url, trk_url_size);
       url_chunks_size += chunk_size;
     }
-  p_minidriver_drv->url = puk_hex_encode(url_chunks, &url_chunks_size, NULL);
+  p_minidriver_context->url = puk_hex_encode(url_chunks, &url_chunks_size, NULL);
   free(url_chunks);
   return NM_ESUCCESS;
 }
@@ -238,7 +248,9 @@ static int nm_minidriver_init(struct nm_drv *p_drv, struct nm_trk_cap*trk_caps, 
 static int nm_minidriver_close(struct nm_drv *p_drv)
 {
   struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
-  TBX_FREE(p_minidriver_drv->url);
+  struct nm_minidriver_context_s*p_minidriver_context = puk_context_get_status(p_minidriver_drv->context);
+  TBX_FREE(p_minidriver_context->url);
+  TBX_FREE(p_minidriver_context);
   TBX_FREE(p_minidriver_drv);
   return NM_ESUCCESS;
 }
@@ -247,11 +259,7 @@ static int nm_minidriver_close(struct nm_drv *p_drv)
 static int nm_minidriver_connect(void*_status, struct nm_gate*p_gate, struct nm_drv*p_drv, nm_trk_id_t trk_id, const char*remote_url)
 {
   struct nm_minidriver*status = _status;
-  struct nm_minidriver_drv*p_minidriver_drv = p_drv->priv;
-  puk_context_t context = p_minidriver_drv->trks_array[trk_id].minidriver;
-  status->trks[trk_id].minidriver_instance = puk_context_instanciate(context);
   struct puk_receptacle_NewMad_minidriver_s*minidriver = &status->trks[trk_id].minidriver;
-  puk_instance_indirect_NewMad_minidriver(status->trks[trk_id].minidriver_instance, NULL, minidriver);
   int url_chunks_size = strlen(remote_url);
   void*url_chunks = puk_hex_decode(remote_url, &url_chunks_size, NULL);
   void*orig_url_chunks = url_chunks;

@@ -135,11 +135,13 @@ puk_component_t nm_core_component_load(const char*entity, const char*name)
     {
       static const char dcfa[] = 
 	"<puk:composite id=\"nm:dcfa\">"
-	"  <puk:component id=\"0\" name=\"NewMad_Driver_minidriver\">"
-	"    <puk:attr label=\"trk0\">NewMad_dcfa_bycopy</puk:attr>"
-	"    <puk:attr label=\"trk1\">NewMad_dcfa_lr2</puk:attr>"
+	"  <puk:component id=\"0\" name=\"NewMad_dcfa_bycopy\"/>"
+	"  <puk:component id=\"1\" name=\"NewMad_dcfa_lr2\"/>"
+	"  <puk:component id=\"2\" name=\"NewMad_Driver_minidriver\">"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk0\" provider-id=\"0\" />"
+	"    <puk:uses iface=\"NewMad_minidriver\" port=\"trk1\" provider-id=\"1\" />"
 	"  </puk:component>"
-	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"0\" />"
+	"  <puk:entry-point iface=\"NewMad_Driver\" provider-id=\"2\" />"
 	"</puk:composite>";
       component = puk_adapter_parse(dcfa);
       if(component == NULL)

@@ -108,6 +108,8 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
 {
   if(nm_ibverbs_common.hca_table == NULL)
     nm_ibverbs_common_init();
+  if(index == -1)
+    index = 0;
  struct nm_ibverbs_hca_s*p_hca = puk_hashtable_lookup(nm_ibverbs_common.hca_table, (void*)(uintptr_t)(index + 1));
   if(p_hca)
     return p_hca;

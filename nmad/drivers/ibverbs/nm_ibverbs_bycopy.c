@@ -181,7 +181,7 @@ static void nm_ibverbs_bycopy_connect(void*_status, const void*remote_url, size_
 {
   struct nm_ibverbs_bycopy*bycopy = _status;
   const char*s_index = puk_context_getattr(bycopy->context, "index");
-  const int index= atoi(s_index);
+  const int index = s_index ? atoi(s_index) : 0;
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
   bycopy->cnx = p_ibverbs_cnx;

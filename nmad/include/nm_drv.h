@@ -19,20 +19,6 @@
 struct nm_pkt_wrap;
 
 
-/** Performance information for driver. This information is determined
- *  at init time and may depend on hardware and board number.
- */
-struct nm_drv_profile_s
-{
-#ifdef PM2_NUIOA
-  int numa_node;  /**< NUMA node where the card is attached */
-#endif
-  /** Approximative performance of the board
-   */
-  int latency;   /**< in nanoseconds (10^-9 s) */
-  int bandwidth; /**< in MB/s */
-};
-
 /** Driver.
  */
 struct nm_drv
@@ -89,16 +75,6 @@ struct nm_drv
 #define NM_FOR_EACH_DRIVER(p_drv, p_core) \
   tbx_fast_list_for_each_entry(p_drv, &(p_core)->driver_list, _link)
 
-/** Static driver capabilities.
- */
-struct nm_drv_cap_s
-{
-  int has_recv_any;  /**< driver accepts receive from NM_GATE_ANY */
-  int rdv_threshold; /**< preferred length for switching to rendez-vous. */
-  int min_period;    /**< minimum delay between poll (in microseconds) */
-  int is_exportable; /**< blocking calls may be exported by PIOMan */
-  int max_unexpected; /**< maximum size of unexpected messages on trk #0 */
-};
 
 
 /** Driver for 'NewMad_Driver' component interface.

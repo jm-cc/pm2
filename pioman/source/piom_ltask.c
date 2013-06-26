@@ -562,8 +562,7 @@ void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int
 
 void piom_ltask_mask(struct piom_ltask *task)
 {
-    assert(!task->masked);
-    task->masked = 1;
+    __sync_fetch_and_add(&task->masked, 1);
     while(task->state & PIOM_LTASK_STATE_SCHEDULED)
 	{
 	    piom_ltask_schedule();
@@ -572,8 +571,9 @@ void piom_ltask_mask(struct piom_ltask *task)
 
 void piom_ltask_unmask(struct piom_ltask *task)
 {
-    assert(task->masked);
-    task->masked = 0;
+    assert(task->masked > 0);
+    __sync_fetch_and_sub(&task->masked, 1);
+    assert(task->masked >= 0);
 }
 
 void piom_ltask_cancel(struct piom_ltask*ltask)

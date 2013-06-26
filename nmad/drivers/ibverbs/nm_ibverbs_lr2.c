@@ -170,7 +170,7 @@ static void nm_ibverbs_lr2_connect(void*_status, const void*remote_url, size_t u
 {
   struct nm_ibverbs_lr2*lr2 = _status;
   const char*s_index = puk_context_getattr(lr2->context, "index");
-  const int index= atoi(s_index);
+  const int index= s_index ? atoi(s_index) : 0;
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
   struct nm_ibverbs_cnx*p_ibverbs_cnx = nm_ibverbs_cnx_new(p_hca);
   lr2->cnx = p_ibverbs_cnx;

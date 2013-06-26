@@ -36,7 +36,7 @@
 
 #include <Padico/Module.h>
 
-PADICO_MODULE_HOOK(NewMad_core);
+PADICO_MODULE_DECLARE(NewMad_Connector);
 
 /* ********************************************************* */
 

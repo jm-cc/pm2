@@ -31,8 +31,9 @@ enum piom_topo_level_e
 	   MARCEL_LEVEL_L2,
 	   MARCEL_LEVEL_CORE
 	 */
-	PIOM_TOPO_CORE   = MARCEL_LEVEL_CORE,
-	PIOM_TOPO_SOCKET = MARCEL_LEVEL_DIE
+	PIOM_TOPO_MACHINE = MARCEL_LEVEL_MACHINE,
+	PIOM_TOPO_SOCKET  = MARCEL_LEVEL_DIE,
+	PIOM_TOPO_CORE    = MARCEL_LEVEL_CORE
     };
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
 #include <hwloc.h>
@@ -40,31 +41,21 @@ enum piom_topo_level_e
 #define piom_topo_full    hwloc_get_root_obj(__piom_ltask_topology)
 enum piom_topo_level_e
     {
-	PIOM_TOPO_CORE   = HWLOC_OBJ_CORE,
-	PIOM_TOPO_SOCKET = HWLOC_OBJ_SOCKET
+	PIOM_TOPO_MACHINE = HWLOC_OBJ_MACHINE,
+	PIOM_TOPO_SOCKET  = HWLOC_OBJ_SOCKET,
+	PIOM_TOPO_CORE    = HWLOC_OBJ_CORE
     };
 extern hwloc_topology_t __piom_ltask_topology;
-static inline piom_topo_obj_t piom_ltask_current_obj(void)
-{
-    hwloc_cpuset_t set = hwloc_bitmap_alloc();
-    int rc = hwloc_get_last_cpu_location(__piom_ltask_topology, set, HWLOC_CPUBIND_THREAD);
-    if(rc != 0)
-	abort();
-    hwloc_obj_t objs[1];
-    rc = hwloc_get_largest_objs_inside_cpuset(__piom_ltask_topology, set, objs, 1);
-    if(rc <= 0)
-	abort();
-    hwloc_bitmap_free(set);
-    return objs[0];
-}
+extern piom_topo_obj_t piom_ltask_current_obj(void);
 #else /* PIOMAN_TOPOLOGY_* */
 #define piom_topo_obj_t  unsigned 
 #define piom_topo_full   (unsigned)1
 #define piom_ltask_current_obj() (unsigned)1
 enum piom_topo_level_e
     {
+	PIOM_TOPO_MACHINE,
+	PIOM_TOPO_SOCKET,
 	PIOM_TOPO_CORE,
-	PIOM_TOPO_SOCKET
     };
 #endif /* PIOMAN_TOPOLOGY_* */
 

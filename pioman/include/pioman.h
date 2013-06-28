@@ -27,8 +27,8 @@
 #  ifndef PM2_TOPOLOGY
 #    define PIOMAN_LTASK_GLOBAL_QUEUE 1
 #  else
-//#    define PIOMAN_TOPOLOGY_HWLOC
-#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#    include <hwloc.h>
+#    define PIOMAN_TOPOLOGY_HWLOC 1
 #  endif
 #elif defined(PIOMAN_MARCEL)
 #  include <marcel.h>

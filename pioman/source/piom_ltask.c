@@ -62,6 +62,16 @@ static struct piom_ltask_queue global_queue;
 #ifdef PIOMAN_TOPOLOGY_HWLOC
 /** node topology */
 hwloc_topology_t __piom_ltask_topology = NULL;
+/** locality information */
+struct piom_ltask_local_s
+{
+    pthread_t tid;              /**< thread this info is about */
+    hwloc_cpuset_t cpuset;      /**< last cpuset location for thread  */
+    hwloc_obj_t obj;            /**< last obj encompassing cpuset */
+    tbx_tick_t timestamp;
+    int count;
+};
+pthread_key_t __piom_ltask_local_key;
 #endif /* PM2_TOPOLOGY */
 
 #ifdef PIOMAN_PTHREAD
@@ -247,7 +257,8 @@ static void*__piom_ltask_idle(void*_dummy)
 {
     int num_skip = 0;
 #warning TODO- check which queue to use here
-    while(__piom_get_queue(piom_ltask_current_obj())->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
+    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
+    while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    if(!__piom_ltask_handler_masked)
 		{
@@ -332,6 +343,7 @@ void piom_init_ltasks(void)
 			    o->userdata = queue;
 			}
 		}
+	    pthread_key_create(&__piom_ltask_local_key, NULL); /* TODO- detructor */
 #endif	/* PIOMAN_LTASK_GLOBAL_QUEUE */
 
 #ifdef PIOMAN_MARCEL
@@ -636,7 +648,44 @@ piom_topo_obj_t piom_get_obj(enum piom_topo_level_e _level)
     assert(l != NULL);
     return l;
 }
-#elif defined(PIOM_TOPOLOGY_HWLOC)
+#elif defined(PIOMAN_TOPOLOGY_HWLOC)
+piom_topo_obj_t piom_ltask_current_obj(void)
+{
+    int update = 0;
+    struct piom_ltask_local_s*local = pthread_getspecific(__piom_ltask_local_key);
+    if(local == NULL)
+	{
+	    local = TBX_MALLOC(sizeof(struct piom_ltask_local_s));
+	    pthread_setspecific(__piom_ltask_local_key, local);
+	    local->tid = pthread_self();
+	    local->cpuset = hwloc_bitmap_alloc();
+	    local->count = 0;
+	    update = 1;
+	}
+    else
+	{
+	    local->count++;
+	    if(local->count % 100 == 0)
+		{
+		    tbx_tick_t now;
+		    TBX_GET_TICK(now);
+		    double delay = TBX_TIMING_DELAY(local->timestamp, now);
+		    if(delay > 1000)
+			update = 1;
+		}
+	}
+    if(update)
+	{
+	    int rc = hwloc_get_last_cpu_location(__piom_ltask_topology, local->cpuset, HWLOC_CPUBIND_THREAD);
+	    if(rc != 0)
+		abort();
+	    rc = hwloc_get_largest_objs_inside_cpuset(__piom_ltask_topology, local->cpuset, &local->obj, 1);
+	    if(rc <= 0)
+		abort();
+	    TBX_GET_TICK(local->timestamp);
+	}
+    return local->obj;
+}
 piom_topo_obj_t piom_get_obj(enum piom_topo_level_e _level)
 {
 #warning TODO-

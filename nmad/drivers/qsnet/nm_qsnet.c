@@ -201,9 +201,6 @@ static int nm_qsnet_query(struct nm_drv *p_drv, struct nm_driver_query_param *pa
   memset(p_qsnet_drv, 0, sizeof (struct nm_qsnet_drv));
   
   /* driver capabilities encoding					*/
-#ifdef PM2_NUIOA
-  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
   p_drv->profile.latency = 2250 ; /* from sr_ping */
   p_drv->profile.bandwidth = 837; /* from sr_ping, hardcode 900 instead? */
   

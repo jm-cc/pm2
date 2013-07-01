@@ -23,9 +23,6 @@
 /* no Fortran support */
 #undef NMAD_FORTRAN_TARGET_NONE
 
-/* enable NUIOA */
-#undef PM2_NUIOA
-
 /* enable sampling */
 #undef NMAD_SAMPLING
 

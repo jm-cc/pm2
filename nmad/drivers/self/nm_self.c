@@ -142,13 +142,8 @@ static int nm_self_query(struct nm_drv *p_drv,
 			 struct nm_driver_query_param *params TBX_UNUSED,
 			 int nparam TBX_UNUSED)
 {
- 
-#ifdef PM2_NUIOA
-  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
   p_drv->profile.latency = INT_MAX;
   p_drv->profile.bandwidth = 0;
-
   p_drv->priv = NULL;
   return NM_ESUCCESS;
 }

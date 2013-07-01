@@ -16,9 +16,6 @@
 #include <stdint.h>
 #include <sys/uio.h>
 #include <assert.h>
-#ifdef PM2_NUIOA
-#include <numa.h>
-#endif
 
 #include <nm_private.h>
 
@@ -226,6 +223,12 @@ int nm_core_init(int*argc, char *argv[], nm_core_t*pp_core)
     {
       tbx_init(argc, &argv);
     }
+#ifdef PM2_TOPOLOGY
+  if(topology == NULL)
+    {
+      tbx_topology_init(*argc, argv);
+    }
+#endif
 
   FUT_DO_PROBE0(FUT_NMAD_INIT_CORE);
 

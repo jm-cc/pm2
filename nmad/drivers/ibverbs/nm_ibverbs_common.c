@@ -48,8 +48,11 @@
 
 
 #include "nm_ibverbs.h"
-
 #include <Padico/Module.h>
+#ifdef PM2_TOPOLOGY
+#include <tbx_topology.h>
+#include <hwloc/openfabrics-verbs.h>
+#endif /* PM2_TOPOLOGY */
 
 PADICO_MODULE_DECLARE(NewMad_ibverbs_common);
 
@@ -220,71 +223,19 @@ struct nm_ibverbs_hca_s*nm_ibverbs_hca_resolve(int index)
   return p_hca;
 }
 
-#ifdef PM2_NUIOA
-
-#define NM_IBVERBS_NUIOA_SYSFILE_LENGTH 16
-
-int nm_ibverbs_hca_get_numa_node(struct nm_ibverbs_hca_s*p_hca)
-{
-  struct ibv_device*ib_dev = p_hca->ib_dev;
-#ifdef LINUX_SYS
-  FILE *sysfile = NULL;
-  char file[128] = "";
-  char line[NM_IBVERBS_NUIOA_SYSFILE_LENGTH]="";
-  
-  /* try to read /sys/class/infiniband/%s/device/numa_node (>= 2.6.22) */
-  
-  sprintf(file, "/sys/class/infiniband/%s/device/numa_node", ibv_get_device_name(ib_dev));
-  sysfile = fopen(file, "r");
-  if (sysfile) {
-    int node;
-    fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
-    fclose(sysfile);
-    node = strtoul(line, NULL, 0);
-    return node >= 0 ? node : PM2_NUIOA_ANY_NODE;
-  }
-  
-  /* or revert to libnuma-parsing /sys/class/infiniband/%s/device/local_cpus */
-  
-  if (numa_available() < 0) {
-    return PM2_NUIOA_ANY_NODE;
-  }
-
-#if 0 /* FIXME when libnuma will have an API to do bitmask -> integer or char* */
-  
-  sprintf(file, "/sys/class/infiniband/%s/device/local_cpus", ibv_get_device_name(ib_dev));
-  sysfile = fopen(file, "r");
-  if (sysfile == NULL) {
-    return PM2_NUIOA_ANY_NODE;
-  }
-  
-  fgets(line, NM_IBVERBS_NUIOA_SYSFILE_LENGTH, sysfile);
-  fclose(sysfile);
-  
-  int nb_nodes = numa_max_node();
-  int i;
-  for(i = 0; i <= nb_nodes; i++)
-    {
-      unsigned long mask;
-      numa_node_to_cpus(i, &mask, sizeof(unsigned long));
-      if (strtoul(line, NULL, 16) == mask)
-	return i;
-    }
-#endif /* 0 */
-#endif /* LINUX_SYS */
-  
-  return PM2_NUIOA_ANY_NODE;
-}
-#endif /* PM2_NUIOA */
-
 void nm_ibverbs_hca_get_profile(int index, struct nm_drv_profile_s*p_profile)
 {
   struct nm_ibverbs_hca_s*p_hca = nm_ibverbs_hca_resolve(index);
   /* driver profile encoding */
-#ifdef PM2_NUIOA
-  p_profile->numa_node = nm_ibverbs_hca_get_numa_node(p_hca);
+#ifdef PM2_TOPOLOGY
+  int rc = hwloc_ibv_get_device_cpuset(topology, p_hca->ib_dev, p_profile->cpuset);
+  if(rc)
+    {
+      fprintf(stderr, "# nmad: ibverbs- error while detecting ibv device location.\n");
+      hwloc_bitmap_copy(p_profile->cpuset, hwloc_topology_get_complete_cpuset(topology));
+    }
 #endif
-  p_profile->latency = 1350; /* from sampling */
+  p_profile->latency = 1200; /* from sampling */
   p_profile->bandwidth = 1024 * (p_hca->ib_caps.data_rate / 8) * 0.75; /* empirical estimation of software+protocol overhead */
 }
 

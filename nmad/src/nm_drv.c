@@ -43,9 +43,10 @@ int nm_core_driver_load(nm_core_t p_core,
   p_drv->driver   = puk_component_get_driver_NewMad_Driver(p_drv->assembly, NULL);
   p_drv->p_in_rq  = NULL;
   p_drv->index = -1;
-#ifdef PM2_NUIOA
-  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
+#ifdef PM2_TOPOLOGY
+  p_drv->profile.cpuset = hwloc_bitmap_alloc();
+  hwloc_bitmap_copy(p_drv->profile.cpuset, hwloc_topology_get_complete_cpuset(topology));
+#endif /* PM2_TOPOLOGY */
 
   nm_trk_id_t trk_id;;
   for(trk_id = 0; trk_id < NM_SO_MAX_TRACKS; trk_id++)
@@ -156,16 +157,6 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
 			     struct nm_driver_query_param*param,
 			     nm_drv_t *pp_drv, const char**p_url)
 {
-#ifdef PM2_NUIOA
-  int preferred_node = PM2_NUIOA_ANY_NODE;
-  const char*nuioa_disable = getenv("NMAD_NUIOA_DISABLE");
-  int nuioa = (numa_available() >= 0) && (nuioa_disable == NULL);
-  char * nuioa_criteria = getenv("PM2_NUIOA_CRITERIA");
-  int nuioa_with_latency = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "latency"));
-  int nuioa_with_bandwidth = ((nuioa_criteria != NULL) && !strcmp(nuioa_criteria, "bandwidth"));
-  int nuioa_current_best = 0;
-#endif /* PM2_NUIOA */
-
   nm_drv_t p_drv = NULL;
   int err = nm_core_driver_load(p_core, driver, &p_drv);
   if (err != NM_ESUCCESS) 
@@ -189,77 +180,41 @@ int nm_core_driver_load_init(nm_core_t p_core, puk_component_t driver,
       TBX_FAILUREF("nmad: FATAL- error %d while querying driver %s\n", err, p_drv->driver->name);
     }
 
-#ifdef PM2_NUIOA
-  if (nuioa) 
+#ifdef PM2_TOPOLOGY
+  if(!getenv("NMAD_NUIOA_DISABLE"))
     {
-      const int node = p_drv->profile.numa_node;
-      if (node != PM2_NUIOA_ANY_NODE) 
+      hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+      if(!hwloc_bitmap_isequal(cpuset, hwloc_topology_get_complete_cpuset(topology)))
 	{
 	  /* if this driver wants something */
-	  NM_DISPF("# nmad: marking nuioa node %d as preferred for driver %s\n", node, p_drv->driver->name);
-	  if (nuioa_with_latency) 
+	  hwloc_cpuset_t current = hwloc_bitmap_alloc();
+	  int rc = hwloc_get_cpubind(topology, current, HWLOC_CPUBIND_THREAD);
+	  if((rc == 0) && !hwloc_bitmap_isequal(current, hwloc_topology_get_complete_cpuset(topology)))
 	    {
-	      /* choosing by latency: take this network if it's the first one
-	       * or if its latency is lower than the previous one */
-	      if (preferred_node == PM2_NUIOA_ANY_NODE
-		  || p_drv->profile.latency < nuioa_current_best) {
-		preferred_node = node;
-		nuioa_current_best = p_drv->profile.latency;
-	      }
+	      NM_DISPF("#nmad: nuioa- thread already bound. Not binding.\n");
 	    }
-	  else if (nuioa_with_bandwidth) 
+	  else
 	    {
-	      /* choosing by bandwidth: take this network if it's the first one
-	       * or if its bandwidth is higher than the previous one */
-	      if (preferred_node == PM2_NUIOA_ANY_NODE
-		  || p_drv->profile.bandwidth > nuioa_current_best) {
-		preferred_node = node;
-		nuioa_current_best = p_drv->profile.bandwidth;
-	      }
+	      NM_DISPF("# nmad: nuioa- driver '%s' has a preferred location. Binding.\n", p_drv->assembly->name);
+	      rc = hwloc_set_cpubind(topology, p_drv->profile.cpuset, HWLOC_CPUBIND_THREAD);
+	      if(rc)
+		{
+		  fprintf(stderr, "nmad: WARNING- hwloc_set_cpubind failed.\n");
+		}
 	    }
-	  else if (preferred_node == PM2_NUIOA_ANY_NODE)
-	    {
-	      /* if it's the first driver, take its preference for now */
-	      preferred_node = node;
-	    }
-	  else if (preferred_node != node) 
-	    {
-	      /* if the first driver wants something else, it's a conflict,
-	       * display a message once */
-	      if (preferred_node != PM2_NUIOA_CONFLICTING_NODES)
-		NM_WARN("found conflicts between preferred nuioa nodes of drivers");
-	      preferred_node = PM2_NUIOA_CONFLICTING_NODES;
-	    }
-	  }
-      if(preferred_node ==  PM2_NUIOA_ANY_NODE)
-	{
-	  NM_DISPF("# nmad: nuioa- any node. Not binding.\n");
-	}
-      else if(preferred_node == PM2_NUIOA_CONFLICTING_NODES)
-	{
-	  NM_DISPF("# nmad: nuioa- conflicting nodes.\n");
 	}
       else
 	{
-#if (defined LIBNUMA_API_VERSION) && LIBNUMA_API_VERSION == 2
-	  struct bitmask * mask = numa_bitmask_alloc(numa_num_possible_nodes());
-	  numa_bitmask_setbit(mask, preferred_node);
-	  numa_bind(mask);
-	  numa_bitmask_free(mask);
-#else
-	  nodemask_t mask;
-	  nodemask_zero(&mask);
-	  nodemask_set(&mask, preferred_node);
-	  numa_bind(&mask);
-#endif
-	  NM_DISPF("# nmad: binding to nuioa node %d\n", preferred_node);
+	  NM_DISPF("# nmad: nuioa- driver '%s' has no preferred location. Not binding.\n", p_drv->assembly->name);
 	}
     }
   else
     {
-      NM_DISPF("# nmad: nuioa- NUMA not available\n");
+      NM_DISPF("# nmad: nuioa- disabled by user\n");
     }
-#endif /* PM2_NUIOA */
+#else /* PM2_TOPOLOGY */
+  NM_DISPF("# nmad: nuioa- hwloc not available\n");
+#endif /* PM2_TOPOLOGY */
 
   err = nm_core_driver_init(p_core, p_drv, p_url);
   if (err != NM_ESUCCESS) 

@@ -16,15 +16,22 @@
 #ifndef NM_MINIDRIVER_H
 #define NM_MINIDRIVER_H
 
+#include <nm_public.h>
+#include <Padico/Puk.h>
+#include <tbx.h>
+#ifdef PM2_TOPOLOGY
+#include <hwloc.h>
+#endif
+#include <sys/uio.h>
 
 /** Performance information for driver. This information is determined
  *  at init time and may depend on hardware and board number.
  */
 struct nm_drv_profile_s
 {
-#ifdef PM2_NUIOA
-  int numa_node;  /**< NUMA node where the card is attached */
-#endif
+#ifdef PM2_TOPOLOGY
+  hwloc_cpuset_t cpuset;  /**< cpu set close to the card (allocated by the caller, filled by driver) */
+#endif /* PM2_TOPOLOGY */
   /** Approximative performance of the board
    */
   int latency;   /**< in nanoseconds (10^-9 s) */

@@ -119,9 +119,7 @@ struct nm_dcfa_cnx
 /* ********************************************************* */
 
 struct nm_dcfa_hca_s*nm_dcfa_hca_resolve(int index);
-#ifdef PM2_NUIOA
-int nm_dcfa_hca_get_numa_node(struct nm_dcfa_hca_s*p_hca);
-#endif /* PM2_NUIOA */
+
 void nm_dcfa_hca_get_profile(int index, struct nm_drv_profile_s*p_profile);
 
 struct nm_dcfa_cnx*nm_dcfa_cnx_new(struct nm_dcfa_hca_s*p_hca);

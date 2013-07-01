@@ -344,9 +344,6 @@ nm_tcp_query		(struct nm_drv *p_drv,
 	p_tcp_drv->nb_gates = 0;
 
         /* driver capabilities encoding					*/
-#ifdef PM2_NUIOA
-	p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
 	p_drv->profile.latency = 50000;
 	p_drv->profile.bandwidth = 100;
 

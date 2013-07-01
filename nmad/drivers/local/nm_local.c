@@ -162,9 +162,6 @@ static int nm_local_query(struct nm_drv *p_drv,
   struct nm_local_drv* p_local_drv = TBX_MALLOC(sizeof(struct nm_local_drv));
   memset(p_local_drv, 0, sizeof(struct nm_local_drv));
   
-#ifdef PM2_NUIOA
-  p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
   p_drv->profile.latency = 10000;
   p_drv->profile.bandwidth = 1000;
   p_drv->priv = p_local_drv;

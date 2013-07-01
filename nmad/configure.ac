@@ -89,20 +89,6 @@ AC_ARG_ENABLE(sampling,
 	      [])
 
 
-dnl -- NUIOA
-dnl --
-dnl - TODO- enable NUIOA by default if numa.h is present
-AC_ARG_ENABLE(nuioa,
-	      [  --enable-nuioa     Enable NUMA control on I/O],
-	      [ if test $enableval = yes; then
-	      	    AC_CHECK_HEADER(numa.h, [], [ AC_MSG_ERROR([numa.h is required for NUIOA]) ])
-		    AC_SEARCH_LIBS(numa_available, numa, [], [ AC_MSG_ERROR([Cannot find working libnuma ]) ])
-	            AC_DEFINE([PM2_NUIOA], 1, [enable NUIOA])
-		    numa_LIBS="-lnuma"
-	        fi
-	      ],
-	      [])
-
 dnl -- DEBUG
 AC_ARG_ENABLE(debug,
 	      [  --enable-debug     Enable debugging symbols],

@@ -161,9 +161,6 @@ nm_dummy_query			(struct nm_drv *p_drv,
         memset(p_dummy_drv, 0, sizeof (struct nm_dummy_drv));
 
         /* driver capabilities encoding					*/
-#ifdef PM2_NUIOA
-	p_drv->profile.numa_node = PM2_NUIOA_ANY_NODE;
-#endif
 	p_drv->profile.latency = INT_MAX;
 	p_drv->profile.bandwidth = 0;
 

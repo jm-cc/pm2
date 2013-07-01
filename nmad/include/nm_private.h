@@ -41,8 +41,8 @@
 
 #include <Padico/Module.h>
 
-#ifdef PM2_NUIOA
-#include <numa.h>
+#ifdef PM2_TOPOLOGY
+#include <tbx_topology.h>
 #endif
 
 /* ** Tracks */

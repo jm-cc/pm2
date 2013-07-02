@@ -19,6 +19,10 @@
 
 #include <assert.h>
 
+extern void piom_tasklet_mask(void);
+
+extern void piom_tasklet_unmask(void);
+
 #ifdef PIOMAN_LOCK_MARCEL
 
 /* ** locks for Marcel ************************************* */
@@ -38,32 +42,28 @@
 
 /* ** locks for pthread ************************************ */
 
-extern volatile int __piom_ltask_handler_masked;
-
 #define piom_spinlock_t           pthread_spinlock_t
 #define piom_spin_init(lock)      pthread_spin_init(lock, 0)
 
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {
-    __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
-    assert(__piom_ltask_handler_masked > 0);
+    piom_tasklet_mask();
     return pthread_spin_lock(lock);
 }
 static inline int piom_spin_unlock(piom_spinlock_t*lock)
 {
-    assert(__piom_ltask_handler_masked > 0);
     int rc = pthread_spin_unlock(lock);
-    __sync_fetch_and_sub(&__piom_ltask_handler_masked, 1);
+    piom_tasklet_unmask();
     return rc;
 }
 static inline int piom_spin_trylock(piom_spinlock_t *lock)
 {
-    __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
+    piom_tasklet_mask();
     int rc = (pthread_spin_trylock(lock) == 0);
     if(!rc)
 	{
-	    __sync_fetch_and_sub(&__piom_ltask_handler_masked, 1);
+	    piom_tasklet_unmask();
 	}
     return rc;
 }

@@ -32,6 +32,7 @@ enum piom_topo_level_e
 	   MARCEL_LEVEL_CORE
 	 */
 	PIOM_TOPO_MACHINE = MARCEL_LEVEL_MACHINE,
+	PIOM_TOPO_NODE    = MARCEL_LEVEL_NODE,
 	PIOM_TOPO_SOCKET  = MARCEL_LEVEL_DIE,
 	PIOM_TOPO_CORE    = MARCEL_LEVEL_CORE
     };
@@ -42,18 +43,20 @@ enum piom_topo_level_e
 enum piom_topo_level_e
     {
 	PIOM_TOPO_MACHINE = HWLOC_OBJ_MACHINE,
+	PIOM_TOPO_NODE    = HWLOC_OBJ_NODE,
 	PIOM_TOPO_SOCKET  = HWLOC_OBJ_SOCKET,
 	PIOM_TOPO_CORE    = HWLOC_OBJ_CORE
     };
 extern hwloc_topology_t __piom_ltask_topology;
 extern piom_topo_obj_t piom_ltask_current_obj(void);
 #else /* PIOMAN_TOPOLOGY_* */
-#define piom_topo_obj_t  unsigned 
-#define piom_topo_full   (unsigned)1
-#define piom_ltask_current_obj() (unsigned)1
+#define piom_topo_obj_t          void* 
+#define piom_topo_full           NULL
+#define piom_ltask_current_obj() NULL
 enum piom_topo_level_e
     {
 	PIOM_TOPO_MACHINE,
+	PIOM_TOPO_NODE,
 	PIOM_TOPO_SOCKET,
 	PIOM_TOPO_CORE,
     };
@@ -187,7 +190,7 @@ extern void piom_ltask_mask(struct piom_ltask *ltask);
 /** re-enable a previously masked ltask */
 extern void piom_ltask_unmask(struct piom_ltask *ltask);
 
-extern piom_topo_obj_t piom_get_obj(enum piom_topo_level_e level);
+extern piom_topo_obj_t piom_get_parent_obj(piom_topo_obj_t obj, enum piom_topo_level_e level);
 
 
 #endif /* PIOM_LTASK_H */

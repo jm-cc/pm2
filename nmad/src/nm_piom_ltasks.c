@@ -16,170 +16,68 @@
 #include <nm_private.h>
 #if PIOMAN_POLL
 
-/* specify the binding policy of communication requests.
- * All these policies can be specified to NewMadeleine using 
- * the NM_BINDING_POLICY environment variable
- */
-enum nm_ltask_policy_e
+struct nm_ltask_policy_s
 {
-  /* bound to the core from which a request is submitted */
-  NM_BIND_ON_LOCAL_CORE,
-  /* can be executed by any core that share a L2 cache */
-  NM_BIND_ON_LOCAL_L2, 
-  /* can be executed by any core that share a L3 cache */
-  NM_BIND_ON_LOCAL_L3, 
-  /* can be executed by any core that is on the same die */
-  NM_BIND_ON_LOCAL_DIE, 
-  /* can be executed by any core that is on the NUMA node */
-  NM_BIND_ON_LOCAL_NODE, 
-  /* can be executed by any core that is on the machine */
-  NM_BIND_ON_LOCAL_MACHINE, 
-  /* all the communication requests are bound to a specific core 
-   * this core is specifyed by the PIOM_BINDING_CORE env variable
-   */
-  NM_BIND_ON_CORE, 
+  enum
+    {
+      NM_POLICY_APP,   /**< near the application (current location) */
+      NM_POLICY_DEV,   /**< near the network device */
+      NM_POLICY_ANY,   /**< anywhere, no policy */
+      NM_POLICY_CUSTOM /**< custom location, given by user */
+    } location;
+  enum piom_topo_level_e level;
+  int custom;
 };
 
-static enum nm_ltask_policy_e __policy = NM_BIND_ON_LOCAL_DIE;
-static int __policy_core = 0;
+static struct nm_ltask_policy_s ltask_policy =
+  {
+    .location = NM_POLICY_ANY,
+    .level    = PIOM_TOPO_MACHINE,
+    .custom   = -1
+  };
 
-/* retrieve the binding policy */
+/** retrieve the binding policy */
 void nm_ltask_set_policy(void)
 {
   const char* policy = getenv("PIOM_BINDING_POLICY");
-  if(!policy){
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_CORE\n");
-    goto out;
-  }
-  if(! strcmp(policy, "NM_BIND_ON_LOCAL_CORE")) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_CORE\n");
-    __policy = NM_BIND_ON_LOCAL_CORE;
-  } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_L2")) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_L2\n");
-    __policy = NM_BIND_ON_LOCAL_L2;
-  } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_L3")) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_L3\n");
-    __policy = NM_BIND_ON_LOCAL_L3;
-  } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_DIE" )) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_DIE\n");
-    __policy = NM_BIND_ON_LOCAL_DIE;
-  } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_NODE")) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_NODE\n");
-    __policy = NM_BIND_ON_LOCAL_NODE;
-  } else if(! strcmp(policy, "NM_BIND_ON_LOCAL_MACHINE")) {
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_LOCAL_MACHINE\n");
-    __policy = NM_BIND_ON_LOCAL_MACHINE;
-  } else if(! strcmp(policy, "NM_BIND_ON_CORE")) {
-    __policy = NM_BIND_ON_CORE;
-    const char* core = getenv("PIOM_BINDING_CORE");
-    if(core)
-      __policy_core = atoi(core);
-    else
-      __policy_core = 0;
-    NM_DISPF("# nmad: binding policy = NM_BIND_ON_CORE %d\n", __policy_core);
-  } else if(policy) {
-    NM_DISPF("# nmad: unknown binding policy %s\n", policy);
-  }
- out:
-  
+  if(!policy)
+    {
+      NM_DISPF("# nmad: default binding policy.\n");
+    }
+  else
+    {
+#warning TODO- set policy
+    }
   return ;
 }
 
-static piom_topo_obj_t nm_get_binding_policy(void)
+static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
 {
   piom_topo_obj_t binding = piom_topo_full;
-  switch(__policy) 
+
+  switch(ltask_policy.location)
     {
-    case  NM_BIND_ON_LOCAL_CORE:
-      binding = piom_get_obj(PIOM_TOPO_CORE);
-    case NM_BIND_ON_LOCAL_DIE: 
-      binding = piom_get_obj(PIOM_TOPO_SOCKET);
-#warning TODO-
-#if 0
-    case NM_BIND_ON_LOCAL_L2: 
-      return piom_get_parent_l2(PIOM_CURRENT_VP);
-    case NM_BIND_ON_LOCAL_L3: 
-      return piom_get_parent_l3(PIOM_CURRENT_VP);
-    case NM_BIND_ON_LOCAL_NODE: 
-      return piom_get_parent_node(PIOM_CURRENT_VP);
-    case NM_BIND_ON_LOCAL_MACHINE: 
-      return piom_get_parent_machine(PIOM_CURRENT_VP);
-    case NM_BIND_ON_CORE:
-      return PIOM_VPSET_VP(__policy_core);
-#endif
+    case NM_POLICY_APP:
+      binding = piom_get_parent_obj(piom_ltask_current_obj(), ltask_policy.level);
+      break;
+
+    case NM_POLICY_DEV:
+      binding = piom_get_parent_obj(p_drv->binding, ltask_policy.level);
+      break;
+
+    case NM_POLICY_ANY:
+      binding = piom_topo_full;
+      break;
+
+    case NM_POLICY_CUSTOM:
+      /* TODO */
+      break;
+    default:
+      break;
     }
   return binding;
 }
 
-static piom_topo_obj_t nm_get_binding_policy_drv(struct nm_drv*p_drv)
-{
-  if(__policy != NM_BIND_ON_CORE)
-    return nm_get_binding_policy();
-#warning TODO-
-#if 0
-  struct nm_core *p_core = p_drv->p_core;
-  struct tbx_fast_list_head *head = &p_core->driver_list;
-  struct tbx_fast_list_head *pos = head->next;
-  /* Get the driver number */
-  int drv_id = -1;
-  int i = 0;
-  for( i=0; pos != head; i++) 
-    {
-      if(&p_drv->_link == pos){
-	drv_id = i;
-	break;
-      }
-      pos = pos->next;
-    }
-  
-  assert(drv_id >= 0);
-
-  int binding_core = -1;
-  char* policy_backup = getenv("PIOM_BINDING_CORE");
-  if(!policy_backup)
-    {
-      NM_DISPF("# nmad: PIOM_BINDING_CORE is not set. Please set this environment variable in order to specify a binding core.\n");
-      /* falling back to core #0 */
-      binding_core = 0;
-      goto out;
-    }
-
-  char* policy = strdup(policy_backup);
-  char* saveptr = NULL;
-  char*token = strtok_r(policy, "+", &saveptr);
-  int first_core = -1;
-
-  i=0;
-  while(token) {
-    first_core = atoi(token);
-    if(i == drv_id)
-      binding_core=atoi(token);
-    i++;
-    token = strtok_r(NULL, "+", &saveptr);
-  }
-
-  if(binding_core < 0)
-    {
-      if(first_core >= 0) 
-	{
-	  /* This means that the user specified one binding core and that we have at least 2 drivers.
-	   * Bind all the drivers to a single binding_core.
-	   */
-	  binding_core = first_core; 
-	  goto out;
-	}
-      /* PIOM_BINDING_CORE is set to something that cannot be parsed */
-      NM_DISPF("Cannot parse PIOM_BINDING_CORE ('%s'). Falling back to default (%d) for driver #%d\n", policy_backup, 0, drv_id);
-      binding_core=0;
-      goto out;
-    }
-
- out:
-  NM_DISPF("# nmad: driver #%d (%s) is bound to core #%d\n",  drv_id, p_drv->driver->name, binding_core);
-  p_drv->vpset = piom_get_parent_core(binding_core);
-  return p_drv->vpset;
-#endif /* 0 */
-}
 
 /* ********************************************************* */
 /* ** tasks */
@@ -292,7 +190,7 @@ static int nm_task_offload(void* args)
 
 void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 {
-  piom_topo_obj_t task_binding = nm_get_binding_policy();
+  piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
@@ -306,8 +204,7 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
 
 void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
 {
-  piom_topo_obj_t task_binding = nm_get_binding_policy();
-
+  piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
@@ -320,10 +217,9 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
   piom_ltask_submit(&p_pw->ltask);
 }
 
-void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
+void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv*p_drv)
 {
-  piom_topo_obj_t task_binding = nm_get_binding_policy_drv(p_drv);
- 
+  piom_topo_obj_t task_binding = nm_get_binding_policy(p_drv);
   piom_ltask_create(task, 
 		    &nm_task_post_on_drv,
 		    p_drv,
@@ -334,8 +230,7 @@ void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv *p_drv)
 
 void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 {
-  piom_topo_obj_t task_binding = nm_get_binding_policy();
-
+  piom_topo_obj_t task_binding = nm_get_binding_policy(p_pw->p_drv);
   piom_ltask_create(task, 
 		    &nm_task_offload,
 		    p_pw,

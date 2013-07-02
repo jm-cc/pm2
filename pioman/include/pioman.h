@@ -25,7 +25,7 @@
 #  define PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_PTHREAD
 #  ifndef PM2_TOPOLOGY
-#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#    define PIOMAN_TOPOLOGY_NONE 1
 #  else
 #    include <hwloc.h>
 #    define PIOMAN_TOPOLOGY_HWLOC 1
@@ -35,14 +35,14 @@
 #  define PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_MARCEL
 #  ifndef MA__NUMA
-#    define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#    define PIOMAN_TOPOLOGY_NONE 1
 #  else
 #    define PIOMAN_TOPOLOGY_MARCEL
 #  endif
 #else
 #  undef  PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_NONE
-#  define PIOMAN_LTASK_GLOBAL_QUEUE 1
+#  define PIOMAN_TOPOLOGY_NONDE 1
 #endif
 
 extern void pioman_init(int*argc, char**argv);

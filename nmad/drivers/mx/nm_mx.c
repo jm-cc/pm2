@@ -355,7 +355,7 @@ static int nm_mx_query(struct nm_drv *p_drv,
   if(rc)
     {
       fprintf(stderr, "# nmad: mx- error while detecting myrinet device location.\n");
-      hwloc_bitmap_copy(p_profile->cpuset, hwloc_topology_get_complete_cpuset(topology));
+      hwloc_bitmap_copy(p_drv->profile.cpuset, hwloc_topology_get_complete_cpuset(topology));
     }
 #endif /* PM2_TOPOLOGY */
   p_drv->profile.latency = 2690 ; /* from sr_ping */ 

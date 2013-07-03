@@ -23,14 +23,6 @@
 #define piom_ltask_current_obj()  &marcel_topo_levels[marcel_topo_nblevels - 1][marcel_current_vp()]
 enum piom_topo_level_e
     {
-	/* 
-	   MARCEL_LEVEL_MACHINE,
-	   MARCEL_LEVEL_NODE,
-	   MARCEL_LEVEL_DIE,
-	   MARCEL_LEVEL_L3,
-	   MARCEL_LEVEL_L2,
-	   MARCEL_LEVEL_CORE
-	 */
 	PIOM_TOPO_MACHINE = MARCEL_LEVEL_MACHINE,
 	PIOM_TOPO_NODE    = MARCEL_LEVEL_NODE,
 	PIOM_TOPO_SOCKET  = MARCEL_LEVEL_DIE,

@@ -15,14 +15,8 @@ INSTALL_PREFIX         = @pioman_root@
 CPPFLAGS        = @CPPFLAGS@
 # common flags for C code - usually "-Wall"
 BASE_CFLAGS    := @BASE_CFLAGS@
-# flags for debug flavors - usually "-g"
-DEBUG_CFLAGS   := @DEBUG_CFLAGS@
-# flags for optimize - usually "-O2" or "-O4 -mcpu=athlon" and the likes
-OPT_CFLAGS     := @OPT_CFLAGS@
 # flags for producing Position Independent Code
 CPICFLAGS      := @CPICFLAGS@
-# optimize linker hash tables
-OPT_LDFLAGS    := @OPT_LDFLAGS@
 
 CFLAGS   = $(CPPFLAGS) $(BASE_CFLAGS) -I$(srcdir)/include -I@pioman_root@/include
 
@@ -56,17 +50,6 @@ else
 Q         := @
 SHOWMK    := @$(ECHO)
 MAKEFLAGS += --no-print-directory
-endif
-
-# set the appropriate flags for optimize/debug
-ifeq (@ENABLE_OPTIMIZE@,yes)
-CFLAGS    += $(OPT_CFLAGS)
-LDFLAGS   += $(OPT_LDFLAGS)
-endif
-ifeq (@ENABLE_DEBUG@,yes)
-CFLAGS    += -DDEBUG $(DEBUG_CFLAGS)
-else
-CFLAGS    += -DNDEBUG
 endif
 
 

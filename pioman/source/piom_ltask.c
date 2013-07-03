@@ -335,15 +335,10 @@ void piom_init_ltasks(void)
 		       o->type == HWLOC_OBJ_SOCKET ||
 		       o->type == HWLOC_OBJ_CORE)
 			{
-			    printf("# pioman: topo level %d\n", d);
 			    const int nb = hwloc_get_nbobjs_by_depth(__piom_ltask_topology, d);
 			    for (i = 0; i < nb; i++)
 				{
 				    o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
-				    char string[128];
-				    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
-				    if(i == 0)
-					printf("# pioman:  index %u/%d: %s\n", i, nb, string);
 				    /* TODO- allocate memory on given obj */
 				    piom_ltask_queue_t*queue = TBX_MALLOC(sizeof(piom_ltask_queue_t));
 				    __piom_init_queue(queue);
@@ -413,9 +408,11 @@ void piom_init_ltasks(void)
 			    o = hwloc_get_obj_by_type(__piom_ltask_topology, level, i);
 			    if(o == NULL)
 				break;
+#ifdef DEBUG
 			    char string[128];
 			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
 			    printf("# pioman: idle #%d on %s\n", i, string);
+#endif /* DEBUG */
 			    piom_ltask_queue_t*queue = __piom_get_queue(o);
 			    pthread_t idle_thread;
 			    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);

@@ -31,8 +31,8 @@ struct nm_ltask_policy_s
 
 static struct nm_ltask_policy_s ltask_policy =
   {
-    .location = NM_POLICY_ANY,
-    .level    = PIOM_TOPO_MACHINE,
+    .location = NM_POLICY_DEV,
+    .level    = PIOM_TOPO_SOCKET,
     .custom   = -1
   };
 
@@ -62,7 +62,16 @@ static piom_topo_obj_t nm_get_binding_policy(struct nm_drv*p_drv)
       break;
 
     case NM_POLICY_DEV:
-      binding = piom_get_parent_obj(p_drv->binding, ltask_policy.level);
+#if defined(PM2_TOPOLOGY) && defined(PIOMAN_TOPOLOGY_HWLOC)
+      {
+	hwloc_cpuset_t cpuset = p_drv->profile.cpuset;
+	hwloc_obj_t o = hwloc_get_obj_covering_cpuset(__piom_ltask_topology, cpuset);
+	assert(o != NULL);
+	binding = piom_get_parent_obj(o, ltask_policy.level);
+	if(binding == NULL)
+	  binding = o;
+      }
+#endif /* PM2_TOPOLOGY */
       break;
 
     case NM_POLICY_ANY:

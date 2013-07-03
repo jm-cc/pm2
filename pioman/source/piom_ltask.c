@@ -257,9 +257,9 @@ static void __piom_ltask_sighandler(int num)
 }
 static void*__piom_ltask_idle_worker(void*_dummy)
 {
+    piom_ltask_queue_t*queue = _dummy;
     int num_skip = 0;
 #warning TODO- check which queue to use here
-    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    if(!__piom_ltask_handler_masked)
@@ -403,9 +403,36 @@ void piom_init_ltasks(void)
 	    /* ** idle polling */
 	    if(piom_parameters.idle_granularity >= 0)
 		{
+#if defined(PIOMAN_TOPOLOGY_NONE)
 		    pthread_t idle_thread;
-		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, NULL);
+		    piom_ltask_queue_t*queue = __piom_get_queue(piom_topo_full);
+		    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
 		    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+#elif defined(PIOMAN_TOPOLOGY_HWLOC)
+		    const hwloc_obj_type_t level = PIOM_TOPO_SOCKET;
+		    hwloc_obj_t o = NULL;
+		    int i = 0;
+		    do
+			{
+			    o = hwloc_get_obj_by_type(__piom_ltask_topology, level, i);
+			    if(o == NULL)
+				break;
+			    char string[128];
+			    hwloc_obj_snprintf(string, sizeof(string), __piom_ltask_topology, o, "#", 0);
+			    printf("# pioman: idle #%d on %s\n", i, string);
+			    piom_ltask_queue_t*queue = __piom_get_queue(o);
+			    pthread_t idle_thread;
+			    pthread_create(&idle_thread, NULL, &__piom_ltask_idle_worker, queue);
+			    pthread_setschedprio(idle_thread, sched_get_priority_min(SCHED_OTHER));
+			    int rc = hwloc_set_thread_cpubind(__piom_ltask_topology, idle_thread, o->cpuset, HWLOC_CPUBIND_THREAD);
+			    if(rc != 0)
+				{
+				    fprintf(stderr, "# pioman: WARNING- hwloc_set_thread_cpubind failed.\n");
+				}
+			    i++;
+			}
+		    while(o != NULL);
+#endif /* PIOMAN_TOPOLOGY_* */
 		}
 	    /* ** spare LWPs for blocking calls */
 	    if(piom_parameters.spare_lwp)

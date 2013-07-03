@@ -352,10 +352,6 @@ void piom_init_ltasks(void)
 				    o->userdata = queue;
 				}
 			}
-		    else
-			{
-			    printf("# pioman: topo level %d ignored.\n", d);
-			}
 		}
 	    pthread_key_create(&__piom_ltask_local_key, NULL); /* TODO- detructor */
 #endif	/* PIOMAN_TOPOLOGY_* */
@@ -581,7 +577,7 @@ void*piom_ltask_schedule(void)
 
 void piom_ltask_wait_success(struct piom_ltask *task)
 {
-    assert(ltask->state != PIOM_LTASK_STATE_NONE);
+    assert(task->state != PIOM_LTASK_STATE_NONE);
     assert(!(task->options & PIOM_LTASK_OPTION_DESTROY));
     assert(!(task->options & PIOM_LTASK_OPTION_NOWAIT));
     piom_cond_wait(&task->done, PIOM_LTASK_STATE_SUCCESS);
@@ -711,8 +707,8 @@ piom_topo_obj_t piom_ltask_current_obj(void)
 	    int rc = hwloc_get_last_cpu_location(__piom_ltask_topology, local->cpuset, HWLOC_CPUBIND_THREAD);
 	    if(rc != 0)
 		abort();
-	    rc = hwloc_get_largest_objs_inside_cpuset(__piom_ltask_topology, local->cpuset, &local->obj, 1);
-	    if(rc <= 0)
+	    local->obj = hwloc_get_obj_covering_cpuset(__piom_ltask_topology, local->cpuset);
+	    if(local->obj == NULL)
 		abort();
 	    TBX_GET_TICK(local->timestamp);
 	}

@@ -64,7 +64,6 @@ struct nm_drv
 
 #ifdef PIOMAN
   struct piom_ltask task;
-  piom_topo_obj_t binding;
 #endif	/* PIOMAN */
   /* NM core object. */
   struct nm_core *p_core;

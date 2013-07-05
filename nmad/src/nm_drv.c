@@ -51,9 +51,6 @@ int nm_core_driver_load(nm_core_t p_core,
   nm_pw_post_lfqueue_init(&p_drv->post_recv);
   nm_pw_post_lfqueue_init(&p_drv->post_send);
 
-  nm_so_lock_out_init(p_core, p_drv);
-  nm_so_lock_in_init(p_core, p_drv);
-
   tbx_fast_list_add_tail(&p_drv->_link, &p_core->driver_list);
   p_core->nb_drivers++;
 

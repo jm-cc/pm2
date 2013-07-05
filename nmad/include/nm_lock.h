@@ -43,17 +43,5 @@ static inline int  nm_trylock_status(struct nm_core *p_core);
 static inline void nm_unlock_status(struct nm_core *p_core);
 static inline void nm_lock_status_init(struct nm_core *p_core);
 
-/* Lock used to access post_sched_out_list */
-static inline void nm_so_lock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline int  nm_so_trylock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_so_unlock_out(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_so_lock_out_init(struct nm_core* p_core, struct nm_drv*p_drv);
-
-
-/* Lock used to access post_recv_list */
-static inline void nm_so_lock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline int  nm_so_trylock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_so_unlock_in(struct nm_core* p_core, struct nm_drv*p_drv);
-static inline void nm_so_lock_in_init(struct nm_core* p_core, struct nm_drv*p_drv);
 
 #endif	/* NM_LOCK_H */

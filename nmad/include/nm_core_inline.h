@@ -276,9 +276,7 @@ static __inline__ int nm_so_pw_dec_header_ref_count(struct nm_pkt_wrap *p_pw)
 static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm_gate *p_gate, 
 					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
 {
-  struct nm_core*p_core = p_drv->p_core;
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
-  nm_so_lock_in(p_core, p_drv);
   nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   if(p_gdrv)
@@ -286,7 +284,6 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
       assert(p_gdrv->active_recv[trk_id] == 0);
       p_gdrv->active_recv[trk_id] = 1;
     }
-  nm_so_unlock_in(p_core, p_drv);
 }
 
 /* ** Sending functions ************************************ */
@@ -302,16 +299,13 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
 					     struct nm_pkt_wrap *p_pw,
 					     nm_trk_id_t trk_id, struct nm_drv*p_drv)
 {
-  struct nm_core*p_core = p_gate->p_core;
   FUT_DO_PROBE4(FUT_NMAD_NIC_OPS_GATE_TO_TRACK, p_gate, p_pw, p_drv, trk_id );
   /* Packet is assigned to given track, driver, and gate */
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   /* append pkt to scheduler post list */
-  nm_so_lock_out(p_core, p_drv);
   nm_pw_post_lfqueue_enqueue(&p_drv->post_send, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   p_gdrv->active_send[trk_id]++;
-  nm_so_unlock_out(p_core, p_drv);
 }
 
 

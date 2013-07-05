@@ -43,15 +43,6 @@ struct nm_drv
   /** recv requests submited by core, to be posted to the driver. */
   struct nm_pw_post_lfqueue_s post_recv;
 
-#if 0
-  /** Lock used to access post_sched_out_list */
-  piom_spinlock_t post_sched_out_lock;
-
-  /** Lock used to access post_recv_list */
-  piom_spinlock_t post_recv_lock;
-
-#endif /* PIOMAN */
-
   /** Private structure of the driver. */
   void *priv;
 

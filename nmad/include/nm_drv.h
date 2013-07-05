@@ -18,6 +18,8 @@
 
 struct nm_pkt_wrap;
 
+/** LF queue type for post send/recv lists */
+PUK_LFQUEUE_TYPE(nm_pw_post, struct nm_pkt_wrap*, NULL, 1024);
 
 /** Driver.
  */
@@ -35,13 +37,13 @@ struct nm_drv
   /** recv request for trk#0 if driver supports recv_any */
   struct nm_pkt_wrap*p_in_rq;
 
-  /** Post-scheduler outgoing lists, to be posted to thre driver. */
-  struct tbx_fast_list_head post_sched_out_list[NM_SO_MAX_TRACKS];
+  /** Post-scheduler outgoing lists, to be posted to the driver. */
+  struct nm_pw_post_lfqueue_s post_send;
 
-  /** recv requests submited to nmad, to be posted to the driver. */
-  struct tbx_fast_list_head post_recv_list[NM_SO_MAX_TRACKS];
+  /** recv requests submited by core, to be posted to the driver. */
+  struct nm_pw_post_lfqueue_s post_recv;
 
-#ifdef PIOMAN
+#if 0
   /** Lock used to access post_sched_out_list */
   piom_spinlock_t post_sched_out_lock;
 

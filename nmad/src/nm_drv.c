@@ -48,12 +48,9 @@ int nm_core_driver_load(nm_core_t p_core,
   hwloc_bitmap_copy(p_drv->profile.cpuset, hwloc_topology_get_complete_cpuset(topology));
 #endif /* PM2_TOPOLOGY */
 
-  nm_trk_id_t trk_id;;
-  for(trk_id = 0; trk_id < NM_SO_MAX_TRACKS; trk_id++)
-    {
-      TBX_INIT_FAST_LIST_HEAD(&p_drv->post_recv_list[trk_id]);
-      TBX_INIT_FAST_LIST_HEAD(&p_drv->post_sched_out_list[trk_id]);
-    }
+  nm_pw_post_lfqueue_init(&p_drv->post_recv);
+  nm_pw_post_lfqueue_init(&p_drv->post_send);
+
   nm_so_lock_out_init(p_core, p_drv);
   nm_so_lock_in_init(p_core, p_drv);
 

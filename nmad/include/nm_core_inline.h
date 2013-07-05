@@ -279,7 +279,7 @@ static __tbx_inline__ void nm_core_post_recv(struct nm_pkt_wrap *p_pw, struct nm
   struct nm_core*p_core = p_drv->p_core;
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   nm_so_lock_in(p_core, p_drv);
-  tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_recv_list[trk_id]);
+  nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   if(p_gdrv)
     {
@@ -308,7 +308,7 @@ static __tbx_inline__ void nm_core_post_send(struct nm_gate *p_gate,
   nm_so_pw_assign(p_pw, trk_id, p_drv, p_gate);
   /* append pkt to scheduler post list */
   nm_so_lock_out(p_core, p_drv);
-  tbx_fast_list_add_tail(&p_pw->link, &p_drv->post_sched_out_list[trk_id]);
+  nm_pw_post_lfqueue_enqueue(&p_drv->post_send, p_pw);
   struct nm_gate_drv*p_gdrv = p_pw->p_gdrv;
   p_gdrv->active_send[trk_id]++;
   nm_so_unlock_out(p_core, p_drv);

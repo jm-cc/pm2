@@ -195,36 +195,27 @@ void nm_drv_refill_recv(struct nm_drv*p_drv)
 
 void nm_drv_post_recv(struct nm_drv*p_drv)
 {
-  nm_trk_id_t trk;
   struct nm_core *p_core = p_drv->p_core;
-  for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
-  {
-    if(!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
+  struct nm_pkt_wrap*p_pw = NULL;
+  do
     {
-      nm_so_lock_in(p_core, p_drv);
-      if (!tbx_fast_list_empty(&p_drv->post_recv_list[trk]))
-      {
-        NM_TRACEF("posting inbound requests");
-	struct nm_pkt_wrap*p_pw, *p_pw2;
-	tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
+      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
+      if(p_pw)
 	{
-  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[trk]))
-	  {		    
-  	    tbx_fast_list_del(&p_pw->link);
-	    nm_so_unlock_in(p_core, p_drv);
-	    nm_pw_post_recv(p_pw);
-	    nm_so_lock_in(p_core, p_drv);
-	  }
+  	  if(!(p_pw->p_gate && p_pw->p_gdrv->p_in_rq_array[p_pw->trk_id]))
+	    {		    
+	      NM_TRACEF("posting inbound request");
+	      nm_pw_post_recv(p_pw);
+	    }
 	  else
-	  {
-  	    /* the driver is busy, so don't insist */
-  	    break;
-	  }
+	    {
+	      nm_pw_post_lfqueue_enqueue(&p_drv->post_recv, p_pw);
+	      /* the driver is busy, so don't insist */
+	      break;
+	    }
 	}
-      }
-      nm_so_unlock_in(p_core, p_drv);
     }
-  }
+  while(p_pw);
 }
 
 

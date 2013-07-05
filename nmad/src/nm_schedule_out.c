@@ -201,25 +201,18 @@ void nm_drv_post_send(struct nm_drv *p_drv)
 {
   struct nm_core *p_core = p_drv->p_core;
   /* post new requests	*/
-  nm_trk_id_t trk;
   nmad_lock_assert();
-  for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
-  {
-    if(!tbx_fast_list_empty(&p_drv->post_sched_out_list[trk]))
+  struct nm_pkt_wrap*p_pw = NULL;
+  do
     {
-      nm_so_lock_out(p_core, p_drv);
       NM_TRACEF("posting outbound requests");
-      struct nm_pkt_wrap*p_pw, *p_pw2;
-      tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_sched_out_list[trk], link)
-      {
-        tbx_fast_list_del(&p_pw->link);
-	nm_so_unlock_out(p_core, p_drv);
-	nm_pw_post_send(p_pw);
-	nm_so_lock_out(p_core, p_drv);
-      }
-      nm_so_unlock_out(p_core, p_drv);
+      p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_send);
+      if(p_pw)
+	{
+	  nm_pw_post_send(p_pw);
+	}
     }
-  }
+  while(p_pw);
 }
 
 void nm_try_and_commit(struct nm_core *p_core)

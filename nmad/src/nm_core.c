@@ -394,15 +394,12 @@ int nm_core_exit(nm_core_t p_core)
   struct nm_drv*p_drv = NULL;
   NM_FOR_EACH_DRIVER(p_drv, p_core)
     {
-      nm_trk_id_t trk;
-      for(trk = 0; trk < NM_SO_MAX_TRACKS; trk++)
+      struct nm_pkt_wrap*p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
+      while(p_pw != NULL)
 	{
-	  struct nm_pkt_wrap*p_pw, *p_pw2;
-	  tbx_fast_list_for_each_entry_safe(p_pw, p_pw2, &p_drv->post_recv_list[trk], link)
-	    {
-	      NM_TRACEF("extracting pw from post_recv_list\n");
-	      nm_so_pw_free(p_pw);
-	    }
+	  NM_TRACEF("extracting pw from post_recv_list\n");
+	  nm_so_pw_free(p_pw);
+	  p_pw = nm_pw_post_lfqueue_dequeue(&p_drv->post_recv);
 	}
     }
 

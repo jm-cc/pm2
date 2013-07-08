@@ -259,7 +259,6 @@ static void*__piom_ltask_idle_worker(void*_dummy)
 {
     piom_ltask_queue_t*queue = _dummy;
     int num_skip = 0;
-#warning TODO- check which queue to use here
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
 	    if(!__piom_ltask_handler_masked)

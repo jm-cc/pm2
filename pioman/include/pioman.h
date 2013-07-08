@@ -42,7 +42,7 @@
 #else
 #  undef  PIOMAN_MULTITHREAD
 #  define PIOMAN_LOCK_NONE
-#  define PIOMAN_TOPOLOGY_NONDE 1
+#  define PIOMAN_TOPOLOGY_NONE 1
 #endif
 
 extern void pioman_init(int*argc, char**argv);

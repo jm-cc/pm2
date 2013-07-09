@@ -384,11 +384,7 @@ int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
   if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_rreq))
     {
-#ifdef NMAD_POLL
       nm_schedule(p_session->p_core);
-#else
-      piom_check_polling(PIOM_POLL_WHEN_FORCED);
-#endif
     }
   nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_rreq);
   *out_req = p_request;

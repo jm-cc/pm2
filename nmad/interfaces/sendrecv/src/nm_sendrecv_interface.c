@@ -23,17 +23,21 @@
 
 PADICO_MODULE_HOOK(NewMad_Core);
 
+
+PUK_LFQUEUE_TYPE(nm_sr_request, struct nm_sr_request_s*, NULL, 1024);
+
 /** Structure that contains all sendrecv-related static variables.
  */
 static struct
 {
-  struct tbx_fast_list_head completed_rreq;
-  struct tbx_fast_list_head completed_sreq;
-
   /** vector of sendrecv event monitors */
   struct nm_sr_event_monitor_vect_s monitors;
   /** flags whether sendrecv init has already been done */
   int init_done;
+  /** queue of completed recv requests */
+  struct nm_sr_request_lfqueue_s completed_rreq;
+  /** queue of completed send requests */
+  struct nm_sr_request_lfqueue_s completed_sreq;
 } nm_sr_data = { .init_done = 0 };
 
 
@@ -101,8 +105,8 @@ int nm_sr_init(nm_session_t p_session)
       nm_core_monitor_add(p_core, &nm_sr_monitor_unpack_completed);
       nm_core_monitor_add(p_core, &nm_sr_monitor_pack_completed);
       
-      TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_rreq);
-      TBX_INIT_FAST_LIST_HEAD(&nm_sr_data.completed_sreq);
+      nm_sr_request_lfqueue_init(&nm_sr_data.completed_rreq);
+      nm_sr_request_lfqueue_init(&nm_sr_data.completed_sreq);
       
       nm_sr_event_monitor_vect_init(&nm_sr_data.monitors);
 
@@ -169,9 +173,8 @@ int nm_sr_stest(nm_session_t p_session, nm_sr_request_t *p_request)
 extern int nm_sr_flush(struct nm_core *p_core)
 {
   int ret = NM_EAGAIN;
-
   struct nm_gate*p_gate = NULL;
-  tbx_fast_list_for_each_entry(p_gate, &p_core->gate_list, _link)
+  NM_FOR_EACH_GATE(p_gate, p_core)
     {
       if(p_gate->status == NM_GATE_STATUS_CONNECTED)
 	{
@@ -349,14 +352,12 @@ static void nm_sr_completion_enqueue(nm_sr_event_t event, const nm_sr_event_info
   if(event & NM_SR_STATUS_RECV_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->recv_completed.p_request;
-#warning Paulette: lock
-      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_rreq);
+      nm_sr_request_lfqueue_enqueue(&nm_sr_data.completed_rreq, p_request);
     }
   else if(event & NM_SR_STATUS_SEND_COMPLETED)
     {
       nm_sr_request_t*p_request = event_info->send_completed.p_request;
-#warning Paulette: lock
-      tbx_fast_list_add_tail(&p_request->_link, &nm_sr_data.completed_sreq);
+      nm_sr_request_lfqueue_enqueue(&nm_sr_data.completed_sreq, p_request);
     }
 }
 
@@ -373,7 +374,6 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
   nm_lock_interface(p_session->p_core);
   nm_lock_status(p_session->p_core);
   nm_sr_request_monitor(p_session, p_request, 0, NULL);
-  tbx_fast_list_del(&p_request->_link);
   nm_unlock_status(p_session->p_core);
   nm_unlock_interface(p_session->p_core);
   return NM_ESUCCESS;
@@ -382,58 +382,28 @@ int nm_sr_request_unset_completion_queue(nm_session_t p_session, nm_sr_request_t
 
 int nm_sr_recv_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
-  nm_core_t p_core = p_session->p_core;
-  if(tbx_fast_list_empty(&nm_sr_data.completed_rreq))
+  if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_rreq))
     {
 #ifdef NMAD_POLL
-      nm_schedule(p_core);
+      nm_schedule(p_session->p_core);
 #else
       piom_check_polling(PIOM_POLL_WHEN_FORCED);
 #endif
     }
-
-  nm_lock_interface(p_core);
-  nm_lock_status(p_core);
-
-  if(!tbx_fast_list_empty(&nm_sr_data.completed_rreq))
-    {
-      nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_rreq.next, struct nm_sr_request_s, _link);
-      tbx_fast_list_del(nm_sr_data.completed_rreq.next);
-      *out_req = p_request;
-
-      nm_unlock_status(p_core);
-      nm_unlock_interface(p_core);
-      return NM_ESUCCESS;
-    } 
-  else 
-    {
-      *out_req = NULL;
-
-      nm_unlock_status(p_core);
-      nm_unlock_interface(p_core);
-      return -NM_EAGAIN;
-    }
+  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_rreq);
+  *out_req = p_request;
+  return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
 int nm_sr_send_success(nm_session_t p_session, nm_sr_request_t **out_req)
 {
-  nm_core_t p_core = p_session->p_core;
-  if(tbx_fast_list_empty(&nm_sr_data.completed_sreq))
+  if(nm_sr_request_lfqueue_empty(&nm_sr_data.completed_sreq))
     {
-      nm_schedule(p_core);
+      nm_schedule(p_session->p_core);
     }
-  if(!tbx_fast_list_empty(&nm_sr_data.completed_sreq))
-    {
-      nm_sr_request_t *p_request = tbx_container_of(nm_sr_data.completed_sreq.next, struct nm_sr_request_s, _link);
-      tbx_fast_list_del(nm_sr_data.completed_sreq.next);
-      *out_req = p_request;
-      return NM_ESUCCESS;
-    } 
-  else 
-    {
-      *out_req = NULL;
-      return -NM_EAGAIN;
-    }
+  nm_sr_request_t*p_request = nm_sr_request_lfqueue_dequeue(&nm_sr_data.completed_sreq);
+  *out_req = p_request;
+  return (p_request != NULL) ? NM_ESUCCESS : -NM_EAGAIN;
 }
 
 /** cancel a receive request.

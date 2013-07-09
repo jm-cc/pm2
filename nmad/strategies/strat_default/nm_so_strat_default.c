@@ -186,9 +186,14 @@ static int strat_default_pack(void*_status, struct nm_pack_s*p_pack)
  *  @param p_gate a pointer to the gate object.
  *  @return The NM status.
  */
-static int strat_default_try_and_commit(void*_status,
-					struct nm_gate *p_gate)
+static int strat_default_try_and_commit(void*_status, struct nm_gate *p_gate)
 {
+#ifdef PROFILE
+  static long double wait_time = 0.0;
+  static int count = 0, send_count = 0;
+  static long long int send_size = 0;
+  static tbx_tick_t t_orig;
+#endif /* PROFILE */
   struct nm_so_strat_default*status = _status;
   struct tbx_fast_list_head *out_list = &status->out_list;
   nm_drv_t p_drv = nm_drv_default(p_gate);
@@ -196,10 +201,36 @@ static int strat_default_try_and_commit(void*_status,
   if((p_gdrv->active_send[NM_TRK_SMALL] == 0) &&
      !(tbx_fast_list_empty(out_list)))
     {
+#ifdef PROFILE
+      if(count != 0)
+	{
+	  tbx_tick_t t2;
+	  TBX_GET_TICK(t2);
+	  const long double t = TBX_TIMING_DELAY(t_orig, t2);
+	  wait_time += t;
+	  if(random() < 100000)
+	    fprintf(stderr, "wait time = %fus (%fs) send = %d; size = %dMB; avg %d bytes/msg\n", 
+		    (double)t, (double)wait_time / 1000000.0, send_count, (int)(send_size / 1000000),
+		    (int)(send_size/send_count));
+	}
+      count = 0;
+      send_count++;
+      send_size += p_so_pw->length;
+#endif /* PROFILE */
       struct nm_pkt_wrap *p_so_pw = nm_l2so(out_list->next);
       tbx_fast_list_del(out_list->next);
       /* Post packet on track 0 */
       nm_core_post_send(p_gate, p_so_pw, NM_TRK_SMALL, p_drv);
+    }
+  else if((p_gdrv->active_send[NM_TRK_SMALL] != 0) && !(tbx_fast_list_empty(out_list)))
+    {
+#ifdef PROFILE
+      if(count == 0)
+	{
+	  TBX_GET_TICK(t_orig);
+	}
+      count++;
+#endif /* PROFILE */
     }
   return NM_ESUCCESS;
 }

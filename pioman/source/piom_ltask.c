@@ -72,9 +72,6 @@ pthread_key_t __piom_ltask_local_key;
 #endif /* PIOMAN_TOPOLOGY_* */
 
 #ifdef PIOMAN_PTHREAD
-/** disable ltask dispatching while locking */
-static volatile int __piom_ltask_handler_masked = 0;
-
 /** number of spare LWPs running */
 static int                __piom_ltask_lwps_num = 0;
 /** number of available LWPs */
@@ -90,29 +87,25 @@ static void*__piom_ltask_lwp_worker(void*_dummy);
 /* ********************************************************* */
 
 #if defined(PIOMAN_PTHREAD)
-void piom_tasklet_mask(void)
+static void piom_tasklet_mask(void)
 {
-    __sync_fetch_and_add(&__piom_ltask_handler_masked, 1);
-    assert(__piom_ltask_handler_masked > 0);
 }
-void piom_tasklet_unmask(void)
+static void piom_tasklet_unmask(void)
 {
-    assert(__piom_ltask_handler_masked > 0);
-    __sync_fetch_and_sub(&__piom_ltask_handler_masked, 1);
 }
 #elif defined(PIOMAN_MARCEL)
-void piom_tasklet_mask(void)
+static void piom_tasklet_mask(void)
 {
     marcel_tasklet_disable();
 }
-void piom_tasklet_unmask(void)
+static void piom_tasklet_unmask(void)
 {
     marcel_tasklet_enable();
 }
 #else /* PIOMAN_MARCEL */
-void piom_tasklet_mask(void)
+static void piom_tasklet_mask(void)
 { }
-void piom_tasklet_unmask(void)
+static void piom_tasklet_unmask(void)
 { }
 #endif /* PIOMAN_PTHREAD/MARCEL */
 
@@ -249,39 +242,48 @@ static inline void __piom_exit_queue(piom_ltask_queue_t *queue)
 	}
 }
 
-#ifdef PIOMAN_PTHREAD 
-static void __piom_ltask_sighandler(int num)
+#ifdef PIOMAN_PTHREAD
+static void __piom_pthread_setname(const char*name)
 {
-    if(!__piom_ltask_handler_masked)
-	piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
+    pthread_setname_np(pthread_self(), name);
+}
+static void*__piom_ltask_timer_worker(void*_dummy)
+{
+    const long timeslice_nsec = piom_parameters.timer_period * 1000 * 1000;
+    const int policy = SCHED_OTHER;
+    const int prio = sched_get_priority_max(policy);
+    int rc = pthread_setschedprio(pthread_self(), prio);
+    if(rc != 0)
+	{
+	    fprintf(stderr, "# pioman: WARNING- timer thread could not get priority %d.\n", prio);
+	}
+    __piom_pthread_setname("_pioman_timer");
+    piom_ltask_queue_t*global_queue = __piom_get_queue(piom_topo_full);
+    while(global_queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
+	{
+	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
+	    nanosleep(&t, NULL);
+	    piom_check_polling(PIOM_POLL_AT_IDLE);
+	}
+    return NULL;
 }
 static void*__piom_ltask_idle_worker(void*_dummy)
 {
     piom_ltask_queue_t*queue = _dummy;
-    int num_skip = 0;
+    __piom_pthread_setname("_pioman_idle");
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
-	    if(!__piom_ltask_handler_masked)
-		{
-		    piom_check_polling(PIOM_POLL_AT_IDLE);
-		    num_skip = 0;
-		}
-	    else
-		{
-		    num_skip++;
-#ifdef DEBUG
-		    if((num_skip > 20000) && (num_skip % 5000 == 0))
-			fprintf(stderr, "PIOMan: WARNING- idle thread cannot acquire lock (count = %d); suspecting deadlock.\n", num_skip);
-#endif
-		    sched_yield();
-		}
+	    piom_check_polling(PIOM_POLL_AT_IDLE);
 	    if(piom_parameters.idle_granularity > 0)
 		usleep(piom_parameters.idle_granularity);
+	    else
+		sched_yield();
 	}
     return NULL;
 }
 static void*__piom_ltask_lwp_worker(void*_dummy)
 {
+    __piom_pthread_setname("_pioman_lwp");
     for(;;)
 	{
 	    sem_wait(&__piom_ltask_lwps_ready);
@@ -363,32 +365,11 @@ void piom_init_ltasks(void)
 	    /* ** timer-based polling */
 	    if(piom_parameters.timer_period > 0)
 		{
-		    const int signal_number = SIGRTMIN + 1;
-		    const long timeslice_nsec = piom_parameters.timer_period * 1000 * 1000;
-		    sigset_t set;
-		    sigemptyset(&set);
-		    const struct sigaction action =
+		    if(piom_parameters.timer_period > 0)
 			{
-			    .sa_handler = &__piom_ltask_sighandler,
-			    .sa_mask    = set,
-			    .sa_flags   = SA_RESTART
-			};
-		    sigaction(signal_number, &action, NULL);
-		    struct sigevent sev = 
-			{
-			    .sigev_notify = SIGEV_SIGNAL,
-			    .sigev_signo  = signal_number
-			};
-		    timer_t timer_id;
-		    timer_create(CLOCK_MONOTONIC, &sev, &timer_id);
-		    const struct itimerspec spec =
-			{
-			    .it_interval.tv_sec  = 0,
-			    .it_interval.tv_nsec = timeslice_nsec,
-			    .it_value.tv_sec     = 0,
-			    .it_value.tv_nsec    = timeslice_nsec
-			};
-		    timer_settime(timer_id, 0, &spec, NULL);
+			    pthread_t timer_thread;
+			    pthread_create(&timer_thread, NULL, &__piom_ltask_timer_worker, NULL);
+			}
 		}
 	    /* ** idle polling */
 	    if(piom_parameters.idle_granularity >= 0)

@@ -12,7 +12,7 @@ INSTALL_PREFIX         = @pioman_root@
 
 # ## Various flags
 # preprocessor options - usually "-D_REENTRANT"
-CPPFLAGS        = @CPPFLAGS@
+CPPFLAGS        = -D_GNU_SOURCE @CPPFLAGS@
 # common flags for C code - usually "-Wall"
 BASE_CFLAGS    := @BASE_CFLAGS@
 # flags for producing Position Independent Code

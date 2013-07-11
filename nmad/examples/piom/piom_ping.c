@@ -106,6 +106,18 @@ static void control_buffer(char *msg, char *buffer, int len) {
 }
 #endif
 
+static int comp_double(const void*_a, const void*_b)
+{
+  const double*a = _a;
+  const double*b = _b;
+  if(*a < *b)
+    return -1;
+  else if(*a > *b)
+    return 1;
+  else
+    return 0;
+}
+
 int
 main(int	  argc,
      char	**argv) {
@@ -174,87 +186,88 @@ main(int	  argc,
 
   pid = malloc(sizeof(piom_thread_t) * threads);
   piom_sem_init(&ready_sem,0);
-  for (i=0 ; i<=threads ; i++) {
-    printf("[%d Computing threads]\n", i);
-    if (is_server) {
-      int k;
-      /* server */
-      for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
-        for(k = 0; k < iterations + warmups; k++) {
-          nm_sr_request_t request;
-
-	  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_rwait(p_session, &request);
-	  
+  for(i = 0; i <= threads; i++)
+    {
+      printf("# ## %d computing threads\n", i);
+      if (is_server)
+	{
+	  int k;
+	  /* server */
+	  for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
+	    {
+	      for(k = 0; k < iterations + warmups; k++)
+		{
+		  nm_sr_request_t request;
+		  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
-	  control_buffer("réception", buf, len);
+		  control_buffer("réception", buf, len);
 #endif
-	  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_swait(p_session, &request);
+		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_swait(p_session, &request);
+		}
+	    }
+	} 
+      else
+	{
+	  /* client */
+	  fill_buffer(buf, end_len);
+	  if(i == 0)
+	    printf("# threads | size  \t|  latency \t| 10^6 B/s \t| MB/s   \t| median  \t| avg    \t| max\n");
+	  for(len = start_len; len <= end_len; len = _next(len, multiplier, increment))
+	    {
+	      int k;
+	      tbx_tick_t t1, t2;
+	      double*lats = malloc(sizeof(double) * iterations);
+	      for(k = 0; k < warmups; k++)
+		{
+		  nm_sr_request_t request;
+		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_swait(p_session, &request);
+		  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_rwait(p_session, &request);
+#if DATA_CONTROL_ACTIVATED
+		  control_buffer("reception", buf, len);
+#endif
+		}
+	      for(k = 0; k < iterations; k++)
+		{
+		  nm_sr_request_t request;
+		  TBX_GET_TICK(t1);
+		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_swait(p_session, &request);
+		  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+		  nm_sr_rwait(p_session, &request);
+		  TBX_GET_TICK(t2);
+#if DATA_CONTROL_ACTIVATED
+		  control_buffer("reception", buf, len);
+#endif
+		  const double delay = TBX_TIMING_DELAY(t1, t2);
+		  const double t = delay / 2;
+		  lats[k] = t;
+		}
+	      qsort(lats, iterations, sizeof(double), &comp_double);
+	      const double min_lat = lats[0];
+	      const double max_lat = lats[iterations - 1];
+	      const double med_lat = lats[(iterations - 1) / 2];
+	      double avg_lat = 0.0;
+	      for(k = 0; k < iterations; k++)
+		{
+		  avg_lat += lats[k];
+		}
+	      avg_lat /= iterations;
+	      const double bw_million_byte = len / min_lat;
+	      const double bw_mbyte        = bw_million_byte / 1.048576;
+	      printf("%5d\t%9lld\t%9.3lf\t%9.3f\t%9.3f\t%9.3lf\t%9.3lf\t%9.3lf\n",
+		     i, (long long)len, min_lat, bw_million_byte, bw_mbyte, med_lat, avg_lat, max_lat);
+	      free(lats);
+	    }
 	}
-      }
-    } else {
-      tbx_tick_t t1, t2;
-      double sum, lat, bw_million_byte, bw_mbyte;
-      int k;
-      
-      /* client */
-      fill_buffer(buf, end_len);
-      
-      printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
-      
-      for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
-
-        for(k = 0; k < warmups; k++) {
-          nm_sr_request_t request;
-
-#if DATA_CONTROL_ACTIVATED
-	  control_buffer("envoi", buf, len);
-#endif
-	  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_swait(p_session, &request);
-	  
-	  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_rwait(p_session, &request);
-#if DATA_CONTROL_ACTIVATED
-	  control_buffer("reception", buf, len);
-#endif
-	}
-	
-	TBX_GET_TICK(t1);
-	
-	for(k = 0; k < iterations; k++) {
-          nm_sr_request_t request;
-
-#if DATA_CONTROL_ACTIVATED
-	  control_buffer("envoi", buf, len);
-#endif
-	  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_swait(p_session, &request);
-
-	  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
-	  nm_sr_rwait(p_session, &request);
-#if DATA_CONTROL_ACTIVATED
-	  control_buffer("reception", buf, len);
-#endif
-	}
-	
-	TBX_GET_TICK(t2);
-	
-	sum = TBX_TIMING_DELAY(t1, t2);
-	
-	lat	      = sum / (2 * iterations);
-	bw_million_byte = len * (iterations / (sum / 2));
-	bw_mbyte        = bw_million_byte / 1.048576;
-	
-	printf("%d\t%lf\t%8.3f\t%8.3f\n", len, lat, bw_million_byte, bw_mbyte);
-      }
+      piom_thread_create(&pid[i], NULL, (void*)greedy_func, NULL);
+      /* wait for the thread to be actually launched before we continue */
+      piom_sem_P(&ready_sem); 
     }
-    piom_thread_create(&pid[i], NULL, (void*)greedy_func, NULL);
-/* wait for the thread to be actually launched before we continue */
-    piom_sem_P(&ready_sem); 
-  }
-
+  
   bench_complete = 1;
   for (i=0 ; i<=threads ; i++)
     {

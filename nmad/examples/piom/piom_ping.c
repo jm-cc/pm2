@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "piom_helper.h"
 
@@ -31,8 +32,10 @@
 #define INCR_DEFAULT	0
 #define WARMUPS_DEFAULT	10
 #define LOOPS_DEFAULT	10000
-#define THREADS_DEFAULT 8
+#define THREADS_DEFAULT 16
 #define DATA_CONTROL_ACTIVATED 0
+
+#define THREAD_REALTIME
 
 static __inline__
 uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
@@ -41,6 +44,14 @@ uint32_t _next(uint32_t len, uint32_t multiplier, uint32_t increment)
     return 1+increment;
   else
     return len*multiplier+increment;
+}
+
+static inline double fround(double n)
+{
+  const int digits = 1;
+  const int base = 2;
+  const long p = digits - 1 - (long)(log(n) / log(base));
+  return floor(n * pow(base, p) + .5) / pow(base, p);
 }
 
 void usage_ping() {
@@ -60,6 +71,13 @@ static volatile int bench_complete = 0;
 
 static void*greedy_func(void*arg) 
 {
+#ifdef THREAD_REALTIME
+#ifdef PIOMAN_PTHREAD
+  const struct sched_param sched_param = { .sched_priority = 0 };
+  int policy = SCHED_OTHER;
+  pthread_setschedparam(pthread_self(), policy, &sched_param);
+#endif /* PIOMAN_PTHREAD */
+#endif /* THREAD_REALTIME */
   piom_sem_V(&ready_sem);
   while(!bench_complete)
     { }
@@ -174,6 +192,8 @@ main(int	  argc,
   buf = malloc(end_len);
   clear_buffer(buf, end_len);
 
+#ifdef THREAD_REALTIME
+  fprintf(stderr, "# piom_ping: switching application thread priority to realtime.\n");
 #ifdef MARCEL
   /* set highest priority so that the thread 
      is scheduled (almost) immediatly when done */
@@ -182,7 +202,16 @@ main(int	  argc,
   marcel_sched_getparam(MARCEL_SELF, &old_param);
   marcel_sched_setparam(MARCEL_SELF, &sched_param);
 #endif /* MARCEL */
-  
+#ifdef PIOMAN_PTHREAD
+  const struct sched_param sched_param = { .sched_priority = 20 };
+  int policy = SCHED_FIFO;
+  int rc = pthread_setschedparam(pthread_self(), policy, &sched_param);
+  if(rc != 0)
+    {
+      fprintf(stderr, "# piom_ping: WARNING- cannot acquire realtime priority: %s (%d)\n", strerror(errno), errno);
+    }
+#endif /* PIOMAN_PTHREAD */
+#endif /* THREAD_REALTIME */
 
   pid = malloc(sizeof(piom_thread_t) * threads);
   piom_sem_init(&ready_sem,0);
@@ -251,9 +280,28 @@ main(int	  argc,
 	      const double max_lat = lats[iterations - 1];
 	      const double med_lat = lats[(iterations - 1) / 2];
 	      double avg_lat = 0.0;
-	      for(k = 0; k < iterations; k++)
+	      double last_r = fround(lats[0]);
+	      int count_r = 1;
+	      int cumul_r = 1;
+	      for(k = 0; k < iterations + 1; k++)
 		{
-		  avg_lat += lats[k];
+		  double r = 0;
+		  if(k < iterations)
+		    {
+		      r = fround(lats[k]);
+		      avg_lat += lats[k];
+		    }
+		  if((r == last_r) && (k < iterations))
+		    {
+		      count_r++;
+		      cumul_r++;
+		    }
+		  else
+		    {
+		      printf("# #DIS# %5d\t%9lld\t%6g\t%12d\t%5.2f\t%5.2f\n", i, (long long)len, last_r, count_r, 100.0*(double)count_r/(double)iterations, 100.0*(double)cumul_r/(double)iterations);
+		      last_r = r;
+		      count_r = 1;
+		    }
 		}
 	      avg_lat /= iterations;
 	      const double bw_million_byte = len / min_lat;
@@ -273,7 +321,7 @@ main(int	  argc,
     {
       piom_thread_join(pid[i], NULL);
     }
-  fprintf(stderr, "Benchmark done!\n");
+  fprintf(stderr, "# benchmark done!\n");
 
   nm_examples_exit();
   exit(0);

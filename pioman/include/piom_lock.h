@@ -38,9 +38,10 @@
 
 /* ** locks for pthread ************************************ */
 
+#ifdef PIOMAN_PTHREAD_SPINLOCK
+
 #define piom_spinlock_t           pthread_spinlock_t
 #define piom_spin_init(lock)      pthread_spin_init(lock, 0)
-
 
 static inline int piom_spin_lock(piom_spinlock_t*lock)
 {
@@ -51,11 +52,40 @@ static inline int piom_spin_unlock(piom_spinlock_t*lock)
     int rc = pthread_spin_unlock(lock);
     return rc;
 }
-static inline int piom_spin_trylock(piom_spinlock_t *lock)
+static inline int piom_spin_trylock(piom_spinlock_t*lock)
 {
     int rc = (pthread_spin_trylock(lock) == 0);
     return rc;
 }
+#else /* PIOMAN_PTHREAD_SPINLOCK */
+
+typedef pthread_mutex_t piom_spinlock_t;
+
+static inline void piom_spin_init(piom_spinlock_t*lock)
+{
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_PRIVATE);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ADAPTIVE_NP);
+    pthread_mutex_init(lock, &attr);
+}
+static inline int piom_spin_lock(piom_spinlock_t*lock)
+{
+    int rc = pthread_mutex_lock(lock);
+    return rc;
+}
+static inline int piom_spin_unlock(piom_spinlock_t*lock)
+{
+    int rc = pthread_mutex_unlock(lock);
+    return rc;
+}
+static inline int piom_spin_trylock(piom_spinlock_t*lock)
+{
+    int rc = (pthread_mutex_trylock(lock) == 0);
+    return rc;
+}
+
+#endif /* PIOMAN_PTHREAD_SPINLOCK */
 
 #define piom_thread_t pthread_t
 #define PIOM_THREAD_NULL ((pthread_t)(-1))

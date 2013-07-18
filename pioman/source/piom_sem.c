@@ -16,12 +16,13 @@
 
 #include "piom_private.h"
 
+
 __tbx_inline__ void piom_sem_P(piom_sem_t *sem)
 {
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_P(sem);
 #elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef __MIC__
+#ifdef PIOMAN_SEM_COND
   pthread_mutex_lock(&sem->mutex);
   sem->n--;
   while(sem->n < 0)
@@ -47,7 +48,7 @@ __tbx_inline__ void piom_sem_V(piom_sem_t *sem)
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_V(sem);
 #elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef __MIC__
+#ifdef PIOMAN_SEM_COND
   pthread_mutex_lock(&sem->mutex);
   sem->n++;
   pthread_cond_signal(&sem->cond);
@@ -65,7 +66,7 @@ __tbx_inline__ void piom_sem_init(piom_sem_t *sem, int initial)
 #if defined (PIOMAN_LOCK_MARCEL)
   marcel_sem_init(sem, initial);
 #elif defined (PIOMAN_LOCK_PTHREAD)
-#ifdef __MIC__
+#ifdef PIOMAN_SEM_COND
   pthread_mutex_init(&sem->mutex, NULL);
   pthread_cond_init(&sem->cond, NULL);
   sem->n = initial;
@@ -130,7 +131,13 @@ __tbx_inline__ void piom_cond_wait(piom_cond_t *cond, piom_cond_value_t mask)
   struct sched_param old_param;
   int policy = -1;
   pthread_getschedparam(pthread_self(), &policy, &old_param);
-  pthread_setschedprio(pthread_self(), sched_get_priority_max(policy));
+  const int prio = sched_get_priority_max(policy);
+  int rc = pthread_setschedprio(pthread_self(), prio);
+  if(rc != 0)
+    {
+      fprintf(stderr, "# pioman: FATAL- cannot set sched prio %d.\n", prio);
+      abort();
+    }
 #endif /* PIOMAN_MARCEL */
 
   while(!(piom_cond_test(cond, mask)))

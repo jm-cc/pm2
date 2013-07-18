@@ -30,6 +30,11 @@
 #    include <hwloc.h>
 #    define PIOMAN_TOPOLOGY_HWLOC 1
 #  endif
+#  ifdef __MIC__
+#    define PIOMAN_SEM_COND 1
+#  endif
+// #define PIOMAN_SEM_COND 1
+#  define PIOMAN_PTHREAD_SPINLOCK
 #elif defined(PIOMAN_MARCEL)
 #  include <marcel.h>
 #  define PIOMAN_MULTITHREAD

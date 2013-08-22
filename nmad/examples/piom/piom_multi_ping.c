@@ -32,22 +32,21 @@
 
 #define LEN_DEFAULT     8 /* (128*1024) */
 #define WARMUPS_DEFAULT	0 /* 100 */
-#define LOOPS_DEFAULT	2 /* 2000 */
+#define LOOPS_DEFAULT	2000 /* 2000 */
 #define THREADS_DEFAULT 8
 #define DATA_CONTROL_ACTIVATED 0
 
-#define THREADS_MAX 16
-
 static uint32_t	 len;
 static int	 loops;
-static int       threads;
+static int       max_threads;
 static int       warmups;
 
 static struct
 {
-  int go[THREADS_MAX];
+  int*go;
   piom_thread_mutex_t mutex;
   piom_thread_cond_t cond;
+  int threads;
 } synchro;
 
 static __inline__
@@ -199,7 +198,7 @@ static void*comm_thread(void* arg)
 	  double lat	      = sum / (2 * loops);
 	  double bw_million_byte = len * (loops / (sum / 2));
 	  double bw_mbyte        = bw_million_byte / 1.048576;
-	  printf("[%d]\t%d\t%lf\t%8.3f\t%8.3f\n", my_pos, len, lat, bw_million_byte, bw_mbyte);
+	  printf("%d\t%d\t%d\t%lf\t%8.3f\t%8.3f\n", synchro.threads, my_pos, len, lat, bw_million_byte, bw_mbyte);
 	}
       piom_thread_mutex_lock(&synchro.mutex);
       synchro.go[my_pos] = 2;
@@ -217,7 +216,7 @@ int main(int argc, char**argv)
 
   len     = LEN_DEFAULT;
   loops   = LOOPS_DEFAULT;
-  threads = THREADS_DEFAULT;
+  max_threads = THREADS_DEFAULT;
   warmups = WARMUPS_DEFAULT;
 
   nm_examples_init(&argc, argv);
@@ -236,7 +235,7 @@ int main(int argc, char**argv)
       len = atoi(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-T")) {
-      threads = atoi(argv[i+1]);
+      max_threads = atoi(argv[i+1]);
     }
     else if (!strcmp(argv[i], "-W")) {
       warmups = atoi(argv[i+1]);
@@ -249,19 +248,21 @@ int main(int argc, char**argv)
     }
   }
 
-  pid = malloc(sizeof(piom_thread_t) * threads);
+  pid = malloc(sizeof(piom_thread_t) * max_threads);
+  synchro.go = malloc(sizeof(int) * max_threads);
   piom_thread_cond_init(&synchro.cond, NULL);
   piom_thread_mutex_init(&synchro.mutex, NULL);
-  for(i = 0; i < THREADS_MAX; i++)
+  for(i = 0; i < max_threads; i++)
     {
       synchro.go[i] = 0;
     }
 
-  for(i = 0 ; i < threads; i++) 
+  for(i = 0 ; i < max_threads; i++) 
     {
       printf("# %d x %d threads\n", i+1, i+1);
       piom_thread_create(&pid[i], NULL, (void*)comm_thread, &i);
       piom_thread_mutex_lock(&synchro.mutex);
+      synchro.threads = i + 1;
       for(j = 0; j <= i; j++)
 	{
 	  assert(synchro.go[j] == 0);
@@ -278,13 +279,13 @@ int main(int argc, char**argv)
     }
   fprintf(stderr, "# finalizing...\n");
   piom_thread_mutex_lock(&synchro.mutex);
-  for(j = 0; j < threads; j++)
+  for(j = 0; j < max_threads; j++)
     {
       synchro.go[j] = -1;
       piom_thread_cond_broadcast(&synchro.cond);
     }
   piom_thread_mutex_unlock(&synchro.mutex);
-  for(i = 0; i < threads; i++)
+  for(i = 0; i < max_threads; i++)
     piom_thread_join(pid[i], NULL);
 
   printf("# done.\n");

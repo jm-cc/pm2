@@ -346,24 +346,17 @@ void mpi_waitall_(int *count,
                   int *ierr) {
   int err = NM_ESUCCESS;
   int i;
-
-  if ((MPI_Status *)array_of_statuses == MPI_STATUSES_IGNORE) {
-    for (i = 0; i < *count; i++) {
-      err =  MPI_Wait(&array_of_requests[i], MPI_STATUS_IGNORE);
-      if (err != NM_ESUCCESS)
-	goto out;
-    }
-  }
-  else {
-    for (i = 0; i < *count; i++) {
+  for (i = 0; i < *count; i++) 
+    {
       MPI_Status _status;
-      err =  MPI_Wait(&array_of_requests[i], &_status);
-      mpi_status_c2f(&_status, array_of_statuses[i]);
+      err = MPI_Wait(&array_of_requests[i], &_status);
+      if ((MPI_Status *)array_of_statuses != MPI_STATUSES_IGNORE) 
+	{
+	  mpi_status_c2f(&_status, array_of_statuses[i]);
+	}
       if (err != NM_ESUCCESS)
         goto out;
     }
-  }
-
  out:
   *ierr = err;
 }

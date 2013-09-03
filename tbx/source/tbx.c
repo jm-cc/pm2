@@ -26,6 +26,7 @@
  */
 #define   TBX_C
 #include "tbx.h"
+#include <assert.h>
 
 // number of module using tbx
 static volatile int initialized = 0;
@@ -65,7 +66,13 @@ void tbx_init(int *argc, char ***argv)
 		tbx_string_manager_init();
 	}
 
-	tbx_pa_get_args(argc, argv);
+	int _argc = -1;
+	char**_argv = NULL;
+	tbx_pa_get_args(&_argc, &_argv);
+	assert(_argc <= *argc);
+	*argc = _argc;
+	memcpy(*argv, _argv, (1 + _argc) * sizeof(char**));
+	(*argv)[*argc] = NULL;
 	initialized++;
 }
 

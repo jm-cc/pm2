@@ -235,6 +235,7 @@ void nm_cmdline_launcher_init(void*_status, int *argc, char **argv, const char*_
 	  break;
 	}
     }
+  argv[*argc] = NULL;
   status->is_server = (!remote_launcher_url);
 
   int err = nm_session_create(&status->p_session, _label);

@@ -86,7 +86,7 @@ int nm_launcher_init(int *argc, char**argv)
    * Lazy Puk initialization (it may already have been initialized in PadicoTM)
    */
   if(!padico_puk_initialized()) {
-    padico_puk_init(*argc, &*argv);
+    padico_puk_init(*argc, argv);
   }
 
   const char*launcher_name =
@@ -98,7 +98,7 @@ int nm_launcher_init(int *argc, char**argv)
   puk_component_t launcher_component = puk_adapter_resolve(launcher_name);
   launcher.instance = puk_adapter_instanciate(launcher_component);
   puk_instance_indirect_NewMad_Launcher(launcher.instance, NULL, &launcher.r);
-  (*launcher.r.driver->init)(launcher.r._status, argc, &*argv, "NewMadeleine");
+  (*launcher.r.driver->init)(launcher.r._status, argc, argv, "NewMadeleine");
 
   nm_sr_init((*launcher.r.driver->get_session)(launcher.r._status));
 

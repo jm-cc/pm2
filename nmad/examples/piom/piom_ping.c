@@ -24,7 +24,8 @@
 
 
 /* This program performs a latency test with 0..n computing threads per CPU */
-#ifdef PIOMAN_MULTITHREAD
+
+#ifdef PIOMAN
 
 #define MIN_DEFAULT	0
 #define MAX_DEFAULT	(64 * 1024)
@@ -328,7 +329,7 @@ main(int	  argc,
   exit(0);
 }
 
-#else /* PIOMAN_MULTITHREAD */
+#else /* PIOMAN */
 int main(){ return -1; }
 
-#endif /* PIOMAN_MULTITHREAD */
+#endif /* PIOMAN */

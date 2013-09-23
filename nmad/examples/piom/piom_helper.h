@@ -51,5 +51,20 @@
 #else /* PIOMAN_PTHREAD */
 #error "Unknown multithreading lib"
 #endif /* PIOMAN_PTHREAD */
+#else /* PIOMAN_MULTITHREAD */
+#include <pthread.h> 
+#define piom_thread_yield          pthread_yield
+#define piom_thread_t              pthread_t
+#define piom_thread_create         pthread_create
+#define piom_thread_join           pthread_join
+#define piom_thread_mutex_t        pthread_mutex_t
+#define piom_thread_mutex_init     pthread_mutex_init
+#define piom_thread_mutex_lock     pthread_mutex_lock
+#define piom_thread_mutex_unlock   pthread_mutex_unlock
+#define piom_thread_cond_t         pthread_cond_t
+#define piom_thread_cond_init      pthread_cond_init
+#define piom_thread_cond_wait      pthread_cond_wait
+#define piom_thread_cond_signal    pthread_cond_signal
+#define piom_thread_cond_broadcast pthread_cond_broadcast
 #endif /* PIOMAN_MULTITHREAD */
 

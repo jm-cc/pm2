@@ -26,9 +26,11 @@
 #define piom_thread_t              marcel_t
 #define piom_thread_create         marcel_create
 #define piom_thread_join           marcel_join
+#define piom_thread_mutex_t        marcel_mutex_t
 #define piom_thread_mutex_init     marcel_mutex_init
 #define piom_thread_mutex_lock     marcel_mutex_lock
 #define piom_thread_mutex_unlock   marcel_mutex_unlock
+#define piom_thread_cond_t         marcel_cond_t
 #define piom_thread_cond_init      marcel_cond_init
 #define piom_thread_cond_wait      marcel_cond_wait
 #define piom_thread_cond_signal    marcel_cond_signal

@@ -175,7 +175,7 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("réception", buf, len);
 #endif
-        nm_sr_isend(p_session, p_gate, 0, buf, 4, &request);
+        nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
         nm_sr_swait(p_session, &request);
       }
     }
@@ -223,7 +223,7 @@ main(int	  argc,
 	TBX_GET_TICK(t2);
 	sum += TBX_TIMING_DELAY(t1, t2);
 
-        nm_sr_irecv(p_session, p_gate, 0, buf, 4, &request);
+        nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
         nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);

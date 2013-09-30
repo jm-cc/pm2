@@ -35,6 +35,7 @@
 #define WARMUPS_DEFAULT	10
 #define LOOPS_DEFAULT	10000
 #define THREADS_DEFAULT 16
+#define COMPUTE_DEFAULT 0
 #define DATA_CONTROL_ACTIVATED 0
 
 #define THREAD_REALTIME
@@ -66,6 +67,7 @@ void usage_ping() {
   fprintf(stderr, "-N iterations - iterations per length [%d]\n", LOOPS_DEFAULT);
   fprintf(stderr, "-T thread - number of computing thread [%d]\n", THREADS_DEFAULT);
   fprintf(stderr, "-W warmup - number of warmup iterations [%d]\n", WARMUPS_DEFAULT);
+  fprintf(stderr, "-C compute_time - computation time [%d]\n", COMPUTE_DEFAULT);
 }
 
 static piom_sem_t ready_sem;
@@ -85,6 +87,21 @@ static void*greedy_func(void*arg)
     { }
   return NULL;
 }
+
+static void compute(unsigned usec)
+{
+  if(usec > 0)
+    {
+      tbx_tick_t t1, t2;
+      TBX_GET_TICK(t1);
+      do
+	{
+	  TBX_GET_TICK(t2);
+	}
+      while(TBX_TIMING_DELAY(t1,t2) < usec);
+    }
+}
+
 
 static void fill_buffer(char *buffer, int len) {
   unsigned int i = 0;
@@ -150,6 +167,7 @@ main(int	  argc,
   int		 iterations	= LOOPS_DEFAULT;
   int            threads        = THREADS_DEFAULT;
   int		 warmups	= WARMUPS_DEFAULT;
+  int		 compute_time	= COMPUTE_DEFAULT;
   int		 i;
   piom_thread_t *pid;
 
@@ -182,6 +200,9 @@ main(int	  argc,
     }
     else if (!strcmp(argv[i], "-W")) {
       warmups = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-C")) {
+      compute_time = atoi(argv[i+1]);
     }
     else {
       fprintf(stderr, "Illegal argument %s\n", argv[i]);
@@ -235,6 +256,7 @@ main(int	  argc,
 		  control_buffer("réception", buf, len);
 #endif
 		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  compute(compute_time);
 		  nm_sr_swait(p_session, &request);
 		}
 	    }
@@ -254,6 +276,7 @@ main(int	  argc,
 		{
 		  nm_sr_request_t request;
 		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  compute(compute_time);
 		  nm_sr_swait(p_session, &request);
 		  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
 		  nm_sr_rwait(p_session, &request);
@@ -266,6 +289,7 @@ main(int	  argc,
 		  nm_sr_request_t request;
 		  TBX_GET_TICK(t1);
 		  nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+		  compute(compute_time);
 		  nm_sr_swait(p_session, &request);
 		  nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
 		  nm_sr_rwait(p_session, &request);

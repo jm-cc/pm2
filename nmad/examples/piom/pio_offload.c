@@ -175,19 +175,17 @@ main(int	  argc,
 #if DATA_CONTROL_ACTIVATED
         control_buffer("réception", buf, len);
 #endif
-        nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+        nm_sr_isend(p_session, p_gate, 0, buf, 0, &request);
         nm_sr_swait(p_session, &request);
       }
     }
   } else {
-    tbx_tick_t t1, t2;
-    double sum, lat, bw_million_byte, bw_mbyte;
     int k;
 
     /* client */
     fill_buffer(buf, end_len);
 
-    printf(" size     |  latency     |   10^6 B/s   |   MB/s    |\n");
+    printf("# size |  latency     |    10^6 B/s   |    MB/s      |     isend   |     swait   |\n");
 
     for(len = start_len; len <= end_len; len = _next(len, multiplier, increment)) {
 
@@ -200,41 +198,48 @@ main(int	  argc,
         nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
         nm_sr_swait(p_session, &request);
 
-        nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+        nm_sr_irecv(p_session, p_gate, 0, buf, 0, &request);
         nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);
 #endif
       }
 
-      sum = 0;
+      double sum = 0, isum = 0.0, wsum = 0;
 
       for(k = 0; k < iterations; k++) {
+	tbx_tick_t t1, t2, t3, t4;
         nm_sr_request_t request;
 
 #if DATA_CONTROL_ACTIVATED
         control_buffer("envoi", buf, len);
 #endif
-	TBX_GET_TICK(t1);
-      
+	TBX_GET_TICK(t1);      
         nm_sr_isend(p_session, p_gate, 0, buf, len, &request);
+	TBX_GET_TICK(t2);      
 	compute(compute_time);
+	TBX_GET_TICK(t3);      
         nm_sr_swait(p_session, &request);
-	TBX_GET_TICK(t2);
-	sum += TBX_TIMING_DELAY(t1, t2);
+	TBX_GET_TICK(t4);
 
-        nm_sr_irecv(p_session, p_gate, 0, buf, len, &request);
+	sum += TBX_TIMING_DELAY(t1, t4);
+	isum += TBX_TIMING_DELAY(t1, t2);
+	wsum += TBX_TIMING_DELAY(t3, t4);
+
+        nm_sr_irecv(p_session, p_gate, 0, buf, 0, &request);
         nm_sr_rwait(p_session, &request);
 #if DATA_CONTROL_ACTIVATED
         control_buffer("reception", buf, len);
 #endif
       }
 
-      lat	      = sum / (iterations);
-      bw_million_byte = len * (iterations / (sum ));
-      bw_mbyte        = bw_million_byte / 1.048576;
+      double lat	     = sum / (iterations);
+      double bw_million_byte = len * (iterations / (sum ));
+      double bw_mbyte        = bw_million_byte / 1.048576;
+      double ilat	     = isum / (iterations);
+      double wlat	     = wsum / (iterations);
 
-      printf("%d\t%lf\t%8.3f\t%8.3f\n", len, lat, bw_million_byte, bw_mbyte);
+      printf("%d\t%lf\t%8.3f\t%8.3f\t%8.3f\t%8.3f\n", len, lat, bw_million_byte, bw_mbyte, ilat, wlat);
     }
   }
 

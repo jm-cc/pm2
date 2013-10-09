@@ -157,6 +157,7 @@ static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t*q
  */
 static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 {
+    int success = 0;
     if( (queue->processing) || 
 	( (queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
 	  && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) )
@@ -188,6 +189,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 			{
 			    /* ltask was destroyed by handler */
 			    piom_tasklet_unmask();
+			    success = 1;
 			}
 		    else if((options & PIOM_LTASK_OPTION_REPEAT) && !(task->state & PIOM_LTASK_STATE_SUCCESS))
 			{
@@ -208,10 +210,12 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 			    task->state = PIOM_LTASK_STATE_TERMINATED;
 			    piom_ltask_completed (task);
 			    piom_tasklet_unmask();
+			    success = 1;
 			}
 		} 
 	    else if(task->state & PIOM_LTASK_STATE_SUCCESS) 
 		{
+		    success = 1;
 		    piom_ltask_state_set(task, PIOM_LTASK_STATE_TERMINATED);
 		}
 	    else if(task->state == PIOM_LTASK_STATE_NONE)
@@ -227,7 +231,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
 	}
     __sync_fetch_and_sub(&queue->processing, 1);
-    return task;
+    return success ? task : NULL;
 }
 
 
@@ -249,7 +253,7 @@ static void __piom_pthread_setname(const char*name)
 }
 static void*__piom_ltask_timer_worker(void*_dummy)
 {
-    const long timeslice_nsec = piom_parameters.timer_period * 1000 * 1000;
+    const long timeslice_nsec = piom_parameters.timer_period * 1000;
     const int policy = SCHED_OTHER;
     const int prio = sched_get_priority_max(policy);
     int rc = pthread_setschedprio(pthread_self(), prio);
@@ -263,7 +267,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 	{
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
 	    nanosleep(&t, NULL);
-	    piom_check_polling(PIOM_POLL_AT_IDLE);
+	    piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
 	}
     return NULL;
 }

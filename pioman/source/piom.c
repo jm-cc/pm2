@@ -24,7 +24,7 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 	.busy_wait_granularity = 100,
 	.enable_progression = 1,
 	.idle_granularity   = 5,
-	.timer_period       = 4,
+	.timer_period       = 4000,
 	.spare_lwp          = 0
     };
 

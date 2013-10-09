@@ -49,7 +49,7 @@ TBX_INTERNAL struct piom_parameters_s
     int busy_wait_granularity; /**< number of busy wait loops between timestamps to amortize clock_gettime() */
     int enable_progression; /**< whether to enable background progression (idle thread and sighandler); default 1 */
     int idle_granularity;   /**< in usec. */
-    int timer_period;       /**< period for timer-based polling (in msec); default: 4*/
+    int timer_period;       /**< period for timer-based polling (in usec); default: 4000 */
     int spare_lwp;          /**< number of spare LWPs for blocking calls; default: 0 */
 } piom_parameters;
 

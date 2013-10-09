@@ -599,7 +599,6 @@ void piom_ltask_unmask(struct piom_ltask *task)
 
 void piom_ltask_cancel(struct piom_ltask*ltask)
 {
-    PIOM_TRACEF("piom_ltask_cancel()- ltask = %p; state = 0x%X\n", ltask, ltask->state);
     int found = 0;
     assert(ltask->state != PIOM_LTASK_STATE_NONE);
     const int options = ltask->options;
@@ -611,12 +610,10 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
     piom_ltask_state_set(ltask, PIOM_LTASK_STATE_CANCELLED);
     while(!found)
 	{
-	    PIOM_TRACEF("piom_ltask_cancel()- ltask = %p; state = 0x%X; loop\n", ltask, ltask->state);
 	    while(ltask->state & PIOM_LTASK_STATE_BLOCKED)
 		{ }
 	    while(ltask->state & PIOM_LTASK_STATE_SCHEDULED)
 		{ }
-	    PIOM_TRACEF("piom_ltask_cancel()- ltask = %p; state = 0x%X; unlocked\n", ltask, ltask->state);
 	    struct piom_ltask_queue*queue = ltask->queue;
 	    if(queue)
 		{
@@ -636,7 +633,6 @@ void piom_ltask_cancel(struct piom_ltask*ltask)
 	    else
 		found = 1;
 	}
-    PIOM_TRACEF("piom_ltask_cancel()- ltask = %p; state = 0x%X; done\n", ltask, ltask->state);
     ltask->state = PIOM_LTASK_STATE_TERMINATED;
     if(!(options & PIOM_LTASK_OPTION_DESTROY))
 	{

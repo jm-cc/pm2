@@ -45,22 +45,4 @@
 #define PIOM_LOG_RETURN(val)    return (val)
 #endif	/* CONFIG_LOG */
 
-#ifdef CONFIG_TRACE
-#define PIOM_TRACEF(str, ...)		fprintf(stderr, "%s, " str "\n", __TBX_FUNCTION__ , ## __VA_ARGS__)
-#define PIOM_TRACE_IN()			fprintf(stderr, "%s, : -->\n", __TBX_FUNCTION__)
-#define PIOM_TRACE_OUT()		fprintf(stderr, "%s, : <--\n", __TBX_FUNCTION__)
-#define PIOM_TRACE_VAL(str, val)	fprintf(stderr, "%s, " str " = %d\n", __TBX_FUNCTION__ , (int)(val))
-#define PIOM_TRACE_CHAR(val)		fprintf(stderr, "%s, %c" , (char)(val))
-#define PIOM_TRACE_PTR(str, ptr)	fprintf(stderr, "%s, " str " = %p\n", __TBX_FUNCTION__ , (void *)(ptr))
-#define PIOM_TRACE_STR(str, str2)	fprintf(stderr, "%s, " str ": %s\n", __TBX_FUNCTION__ , (char *)(str2))
-#else
-#define PIOM_TRACEF(str, ...)     (void)(0)
-#define PIOM_TRACE_IN()           (void)(0)
-#define PIOM_TRACE_OUT()          (void)(0)
-#define PIOM_TRACE_CHAR(val)      (void)(0)
-#define PIOM_TRACE_VAL(str, val)  (void)(0)
-#define PIOM_TRACE_PTR(str, ptr)  (void)(0)
-#define PIOM_TRACE_STR(str, str2) (void)(0)
-#endif	/* CONFIG_TRACE */
-
 #endif

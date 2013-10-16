@@ -45,10 +45,43 @@ typedef struct piom_ltask_queue
     volatile int                      processing;
     piom_topo_obj_t                   binding;
     struct piom_ltask_queue          *parent;
+#ifdef PIOMAN_TRACE
+    const char                       *cont_name;  /**< name as a container */
+    const char                       *cont_type;  /**< type for queue container */
+    const char                       *state_type; /**< type for queue state */
+    const char                       *event_type;
+#endif /* PIOMAN_TRACE */
 } piom_ltask_queue_t;
 
 static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_queue_t *queue);
 static int __piom_ltask_submit_in_lwp(struct piom_ltask*task);
+
+#ifdef PIOMAN_TRACE
+static tbx_tick_t __piom_trace_orig;
+static inline void piom_trace_queue_state(piom_ltask_queue_t*q, const char*_state)
+{
+    char state[256];
+    tbx_tick_t t;
+    TBX_GET_TICK(t);
+    const double d = TBX_TIMING_DELAY(__piom_trace_orig, t) / 1000000.0;
+    sprintf(state, "%s_%s", q->state_type, _state);
+    setState(d, q->state_type, q->cont_name, state);
+}
+static inline void piom_trace_queue_event(piom_ltask_queue_t*q, const char*_event)
+{
+    char event[256];
+    tbx_tick_t t;
+    TBX_GET_TICK(t);
+    const double d = TBX_TIMING_DELAY(__piom_trace_orig, t) / 1000000.0;
+    sprintf(event, "%s_%s", q->event_type, _event);
+    addEvent(d, q->event_type, q->cont_name, event);
+}
+#else
+static inline void piom_trace_queue_state(piom_ltask_queue_t*q, const char*_state)
+{ /* empty */ }
+static inline void piom_trace_queue_event(piom_ltask_queue_t*q, const char*_event)
+{ /* empty */ }
+#endif /* PIOMAN_TRACE */
 
 
 /** refcounter on piom_ltask */
@@ -162,17 +195,20 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	( (queue->state != PIOM_LTASK_QUEUE_STATE_RUNNING)
 	  && (queue->state != PIOM_LTASK_QUEUE_STATE_STOPPING)) )
 	{
+	    /*	    piom_trace_queue_state(queue, "none"); */
 	    return NULL;
 	}
     if(__sync_fetch_and_add(&queue->processing, 1) != 0)
 	{
 	    __sync_fetch_and_sub(&queue->processing, 1);
+	    /*	    piom_trace_queue_state(queue, "none"); */
 	    return NULL;
 	}
     assert(queue->processing >= 1);
     struct piom_ltask *task = __piom_ltask_get_from_queue(queue);
     if(task)
 	{
+	    piom_trace_queue_state(queue, "init");
 	    if(task->masked)
 		{
 		    /* re-submit to poll later when task will be unmasked  */
@@ -182,6 +218,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		{
 		    /* wait is pending: poll */
 		    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
+		    piom_trace_queue_state(queue, "poll");
 		    piom_tasklet_mask();
 		    const int options = task->options;
 		    (*task->func_ptr)(task->data_ptr);
@@ -223,6 +260,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		    fprintf(stderr, "PIOMan: FATAL- wrong state for scheduled ltask.\n");
 		    abort();
 		}
+	    piom_trace_queue_state(queue, "none");
 	}
     /* no more task to run, set the queue as stopped */
     if( (task == NULL) && 
@@ -328,6 +366,9 @@ void piom_init_ltasks(void)
 			}
 		}
 #elif defined(PIOMAN_TOPOLOGY_HWLOC)
+#ifdef PIOMAN_TRACE
+	    TBX_GET_TICK(__piom_trace_orig);
+#endif /* PIOMAN_TRACE */
 	    hwloc_topology_init(&__piom_ltask_topology);
 	    hwloc_topology_load(__piom_ltask_topology);
 	    const int depth = hwloc_topology_get_depth(__piom_ltask_topology);
@@ -350,6 +391,42 @@ void piom_init_ltasks(void)
 				    queue->binding = o;
 				    queue->parent = (o->parent == NULL) ? NULL : __piom_get_queue(o->parent);
 				    o->userdata = queue;
+#ifdef PIOMAN_TRACE
+				    char cont_name[32];
+				    char cont_type[64];
+				    char state_type[64];
+				    char event_type[64];
+				    const char*level_label = NULL;
+				    switch(o->type)
+					{
+					case HWLOC_OBJ_MACHINE:
+					    level_label = "Machine";
+					    break;
+					case HWLOC_OBJ_NODE:
+					    level_label = "Node";
+					    break;
+					case HWLOC_OBJ_SOCKET:
+					    level_label = "Socket";
+					    break;
+					case HWLOC_OBJ_CORE:
+					    level_label = "Core";
+					    break;
+					default:
+					    break;
+					}
+				    sprintf(cont_name, "%s_%d", level_label, i);
+				    sprintf(cont_type, "Container_%s", level_label);
+				    sprintf(state_type, "State_%s", level_label);
+				    sprintf(event_type, "Event_%s", level_label);
+				    queue->cont_name = strdup(cont_name);
+				    queue->cont_type = strdup(cont_type);
+				    queue->state_type = strdup(state_type);
+				    queue->event_type = strdup(event_type);
+				    addContainer(0.00000, queue->cont_name, cont_type, 
+						 queue->parent ? queue->parent->cont_name:"0", cont_name, "0");
+				    piom_trace_queue_state(queue, "none");
+#endif /* PIOMAN_TRACE */
+
 				}
 			}
 		}
@@ -464,6 +541,7 @@ void piom_exit_ltasks(void)
 			{
 			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
 			    piom_ltask_queue_t*queue = o->userdata;
+			    piom_trace_queue_state(queue, "none");
 			    __piom_exit_queue(queue);
 			    TBX_FREE(queue);
 			    o->userdata = NULL;
@@ -497,6 +575,7 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 			return;
 		}
 	}
+    piom_trace_queue_event(queue, "submit");
     task->state = PIOM_LTASK_STATE_READY;
     task->queue = queue;
     /* wait until a task is removed from the list */

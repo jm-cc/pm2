@@ -20,6 +20,10 @@
 #ifndef PIOM_PRIVATE_H
 #define PIOM_PRIVATE_H
 
+#ifdef PIOMAN_TRACE
+#include <GTG.h>
+#endif /* PIOMAN_TRACE */
+
 #include <tbx.h>
 #include "piom_lfqueue.h"
 #include "piom_log.h"

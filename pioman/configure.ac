@@ -131,6 +131,15 @@ if test "x${with_pthread}" = "xyes"; then
    PIOMAN_LIBS="${PIOMAN_LIBS} -lpthread -lrt"
 fi
 
+AC_ARG_WITH([gtg],
+	[AS_HELP_STRING([--with-gtg], [build with GTG traces @<:@default=no@:>@] )])
+if test "x${with_gtg}" = "xyes"; then
+   PKG_CHECK_MODULES([gtg],    [ gtg ])
+   pioman_LIBS="${pioman_LIBS} ${gtg_LIBS}"
+   PIOMAN_CFLAGS="${PIOMAN_CFLAGS} -DPIOMAN_TRACE ${gtg_CFLAGS}"
+   PIOMAN_LIBS="${PIOMAN_LIBS} ${gtg_LIBS}"
+fi
+
 PIOMAN_EXT_CFLAGS="${tbx_CFLAGS} ${marcel_CFLAGS}"
 AC_SUBST(PIOMAN_EXT_CFLAGS)
 

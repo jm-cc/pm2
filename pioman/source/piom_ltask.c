@@ -149,7 +149,7 @@ static void piom_trace_flush(void)
     fprintf(stderr, "# pioman: flush traces (%d entries)\n", __piom_trace.last);
     flushed = 1;
     int i;
-    for(i = 0; i < __piom_trace.last; i++)
+    for(i = 0; i < ((__piom_trace.last > PIOMAN_TRACE_MAX) ? PIOMAN_TRACE_MAX : __piom_trace.last) ; i++)
 	{
 	    const struct piom_trace_entry_s*e = &__piom_trace.entries[i];
 	    const double d = TBX_TIMING_DELAY(__piom_trace.orig, e->tick) / 1000000.0;

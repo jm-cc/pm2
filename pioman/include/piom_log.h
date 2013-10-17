@@ -45,12 +45,5 @@
 #define PIOM_LOG_RETURN(val)    return (val)
 #endif	/* CONFIG_LOG */
 
-#ifdef PIOMAN_TRACE
-enum piom_trace_levels_e { PIOM_TRACE_MACHINE, PIOM_TRACE_NODE, PIOM_TRACE_SOCKET, PIOM_TRACE_CORE };
-
-enum piom_trace_label_e { PIOM_TRACE_CONTAINER_TYPE, PIOM_TRACE_STATE_TYPE };
-
-
-#endif /* PIOMAN_TRACE */
 
 #endif

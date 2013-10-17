@@ -30,57 +30,6 @@ TBX_INTERNAL struct piom_parameters_s piom_parameters =
 
 static int piom_init_done = 0;
 
-#ifdef PIOMAN_TRACE
-static void pioman_trace_init(void) __attribute__((constructor,used));
-static void pioman_trace_exit(void) __attribute__((destructor,used));
-static void pioman_trace_init(void)
-{
-    char trace_name[256]; 
-    char hostname[256];
-    gethostname(hostname, 256);
-    sprintf(trace_name, "piom_%s", hostname);
-    fprintf(stderr, "# pioman trace init: %s\n", trace_name);
-    setTraceType(PAJE);
-    initTrace(trace_name, 0, GTG_FLAG_NONE);
-
-    /* container types */
-    addContType("Container_Machine", "0",                "Machine");
-    addContType("Container_Node",   "Container_Machine", "Node");
-    addContType("Container_Socket", "Container_Node",    "Socket");
-    addContType("Container_Core",   "Container_Socket",  "Core");
-    
-    addStateType ("State_Machine", "Container_Machine", "Machine state");
-    addStateType ("State_Node",    "Container_Node",    "Node state");
-    addStateType ("State_Socket",  "Container_Socket",  "Socket state");
-    addStateType ("State_Core",    "Container_Core",    "Core state");
-
-    addEntityValue ("State_Core_none", "State_Core", "State_Core_none", GTG_BLACK);
-    addEntityValue ("State_Core_init", "State_Core", "State_Core_init", GTG_BLUE);
-    addEntityValue ("State_Core_poll", "State_Core", "State_Core_poll", GTG_PINK);
-
-    addEntityValue ("State_Socket_none", "State_Socket", "State_Socket_none", GTG_BLACK);
-    addEntityValue ("State_Socket_init", "State_Socket", "State_Socket_init", GTG_BLUE);
-    addEntityValue ("State_Socket_poll", "State_Socket", "State_Socket_poll", GTG_PINK);
-
-    addEntityValue ("State_Node_none", "State_Node", "State_Node_none", GTG_BLACK);
-    addEntityValue ("State_Node_init", "State_Node", "State_Node_init", GTG_BLUE);
-    addEntityValue ("State_Node_poll", "State_Node", "State_Node_poll", GTG_PINK);
-
-    addEntityValue ("State_Machine_none", "State_Machine", "State_Machine_none", GTG_BLACK);
-    addEntityValue ("State_Machine_init", "State_Machine", "State_Machine_init", GTG_BLUE);
-    addEntityValue ("State_Machine_poll", "State_Machine", "State_Machine_poll", GTG_PINK);
- 
-    addEventType ("Event_Machine", "Container_Machine", "Event_Machine_submit");
-    addEventType ("Event_Node",    "Container_Node",    "Event_Node_submit");
-    addEventType ("Event_Socket",  "Container_Socket",  "Event_Socket_submit");
-    addEventType ("Event_Core",    "Container_Core",    "Event_Core_submit");
-}
-static void pioman_trace_exit(void)
-{
-    fprintf(stderr, "# pioman trace exit.\n");
-    endTrace();
-}
-#endif /* PIOMAN_TRACE */
 
 void pioman_init(int*argc, char**argv)
 {

@@ -67,7 +67,7 @@ INSTALL_PKGCONFIG = pioman.pc
 
 
 CFLAGS  += @PIOMAN_CFLAGS@ @PIOMAN_EXT_CFLAGS@
-LIBS    += @PIOMAN_EXT_LIBS@ -lgtg
+LIBS    += @PIOMAN_EXT_LIBS@
 
 SRC_FILES := $(wildcard $(srcdir)/source/*.c )
 OBJ_FILES := $(patsubst $(srcdir)/source/%.c, ./%.pic.o, $(SRC_FILES))

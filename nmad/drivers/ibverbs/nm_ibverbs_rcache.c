@@ -20,6 +20,30 @@
 
 #ifdef PUKABI
 #include <Padico/Puk-ABI.h>
+#else
+//#define MINI_PUKABI
+#endif
+
+#ifdef MINI_PUKABI
+/** a registered memory entry */
+struct puk_mem_reg_s
+{
+  void*context;
+  const void*ptr;
+  size_t len;
+  void*key;
+  int refcount;
+};
+/** hook to register memory- returned value is used as key */
+typedef void*(*puk_mem_register_t)  (void*context, const void*ptr, size_t len);
+/** hook to unregister memory */
+typedef void (*puk_mem_unregister_t)(void*context, const void*ptr, void*key);
+/** sets handlers to register memory */
+void puk_mem_set_handlers(puk_mem_register_t reg, puk_mem_unregister_t unreg);
+/** asks for memory registration- does nothing if registration has been cached */
+const struct puk_mem_reg_s*puk_mem_reg(void*context, const void*ptr, size_t len);
+/** marks registration entry as 'unused' */
+void puk_mem_unreg(const struct puk_mem_reg_s*reg);
 #endif /* PUKABI */
 
 #include <Padico/Module.h>
@@ -53,7 +77,7 @@ struct nm_ibverbs_rcache
   {
     char*message;
     int size;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
     const struct puk_mem_reg_s*reg;
 #else
     struct ibv_mr*mr;
@@ -63,7 +87,7 @@ struct nm_ibverbs_rcache
   {
     const char*message;
     int size;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
     const struct puk_mem_reg_s*reg;
 #else
     struct ibv_mr*mr;
@@ -147,7 +171,7 @@ static void* nm_ibverbs_rcache_instanciate(puk_instance_t instance, puk_context_
   rcache->cnx = NULL;
   rcache->pd  = NULL;
   rcache->context = context;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
   puk_mem_set_handlers(&nm_ibverbs_mem_reg, &nm_ibverbs_mem_unreg);
 #endif /* PUKABI */
   return rcache;
@@ -222,7 +246,7 @@ static void nm_ibverbs_rcache_send_post(void*_status, const struct iovec*v, int 
     }
   rcache->send.message = message;
   rcache->send.size = size;
-#ifdef PUKABI
+#if defined(PUKABI) || (defined MINI_PUKABI)
   rcache->send.reg = puk_mem_reg(rcache->pd, message, size);
 #else /* PUKABI */
   rcache->send.mr = nm_ibverbs_mem_reg(rcache->pd, message, size);
@@ -238,7 +262,7 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
       const uint64_t raddr = h->raddr;
       const uint32_t rkey  = h->rkey;
       struct ibv_mr*mr = NULL;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
       mr = rcache->send.reg->key;
 #else
       mr = rcache->send.mr;      
@@ -260,7 +284,7 @@ static int nm_ibverbs_rcache_send_poll(void*_status)
 			   NM_IBVERBS_WRID_HEADER);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_DATA);
       nm_ibverbs_send_flush(rcache->cnx, NM_IBVERBS_WRID_HEADER);
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
       puk_mem_unreg(rcache->send.reg);
       rcache->send.reg = NULL;
 #else /* PUKABI */
@@ -291,7 +315,7 @@ static void nm_ibverbs_rcache_recv_init(void*_status, struct iovec*v, int n)
   struct nm_ibverbs_rcache_rdvhdr*const h = &rcache->headers.shdr;
   h->raddr =  (uintptr_t)rcache->recv.message;
   h->busy  = 1;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
   rcache->recv.reg = puk_mem_reg(rcache->pd, rcache->recv.message, rcache->recv.size);
   struct ibv_mr*mr = rcache->recv.reg->key;
   h->rkey  = mr->rkey;
@@ -317,7 +341,7 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
   if(rsig->busy)
     {
       rsig->busy = 0;
-#ifdef PUKABI
+#if defined(PUKABI) || defined(MINI_PUKABI)
       puk_mem_unreg(rcache->recv.reg);
       rcache->recv.reg = NULL;
 #else /* PUKABI */
@@ -333,3 +357,200 @@ static int nm_ibverbs_rcache_poll_one(void*_status)
       return -NM_EAGAIN;
     }
 }
+
+/* ** cache ************************************************ */
+
+#ifdef MINI_PUKABI
+
+
+static void(*puk_mem_invalidate_hook)(void*ptr, size_t size) = NULL;
+
+void puk_abi_mem_invalidate(void*ptr, int size)
+{
+  if(puk_mem_invalidate_hook)
+    (*puk_mem_invalidate_hook)(ptr, size);
+}
+
+
+#define PUK_MEM_CACHE_SIZE 64
+
+static struct
+{
+  struct puk_mem_reg_s cache[PUK_MEM_CACHE_SIZE];
+  puk_mem_register_t   reg;
+  puk_mem_unregister_t unreg;
+} puk_mem =
+  {
+    .reg   = NULL,
+    .unreg = NULL,
+    .cache = { { .refcount = 0, .ptr = NULL, .len = 0 } }
+  };
+
+
+static void puk_mem_cache_flush(struct puk_mem_reg_s*r)
+{
+  assert(r->refcount == 0);
+  (*puk_mem.unreg)(r->context, r->ptr, r->key);
+  r->context = NULL;
+  r->ptr = NULL;
+  r->len = 0;
+  r->key = 0;
+  r->refcount = 0;
+}
+
+static struct puk_mem_reg_s*puk_mem_slot_lookup(void)
+{
+  static unsigned int victim = 0;
+  int i;
+  for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
+    {
+      struct puk_mem_reg_s*r = &puk_mem.cache[i];
+      if(r->ptr == NULL && r->len == 0)
+	{
+	  return r;
+	}
+    }
+  const int victim_first = victim;
+  victim = (victim + 1) % PUK_MEM_CACHE_SIZE;
+  struct puk_mem_reg_s*r = &puk_mem.cache[victim];
+  while(r->refcount > 0 && victim != victim_first)
+    {
+      victim = (victim + 1) % PUK_MEM_CACHE_SIZE;
+      r = &puk_mem.cache[victim];
+    }
+  if(r->refcount > 0)
+    {
+      return NULL;
+    }
+  puk_mem_cache_flush(r);
+  return r;
+}
+
+extern void puk_mem_dump(void)
+{
+  int i;
+  for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
+    {
+      struct puk_mem_reg_s*r = &puk_mem.cache[i];
+      if(r->ptr != NULL)
+	{
+	  puk_mem_cache_flush(r);
+	}
+    }
+}
+
+/** Invalidate memory registration before it is freed.
+ */
+extern void puk_mem_invalidate(void*ptr, size_t size)
+{
+  if(ptr)
+    {
+      int i;
+      for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
+	{
+	  struct puk_mem_reg_s*r = &puk_mem.cache[i];
+	  const void*rbegin = r->ptr;
+	  const void*rend   = r->ptr + r->len;
+	  const void*ibegin = ptr;
+	  const void*iend   = ptr + size;
+	  if( (r->ptr != NULL) &&
+	      ( ((ibegin >= rbegin) && (ibegin < rend)) ||
+		((iend >= rbegin) && (iend < rend)) ||
+		((ibegin >= rbegin) && (iend < rend)) ||
+		((rbegin >= ibegin) && (rend < iend)) ) )
+	    {
+	      if(r->refcount > 0)
+		{
+		  fprintf(stderr, "PukABI: trying to invalidate registered memory still in use.\n");
+		  abort();
+		}
+	      puk_mem_cache_flush(r);
+	    }
+	}
+    }
+}
+
+/* ********************************************************* */
+
+static inline void puk_spinlock_acquire(void)
+{ }
+static inline void puk_spinlock_release(void)
+{ }
+
+void puk_mem_set_handlers(puk_mem_register_t reg, puk_mem_unregister_t unreg)
+{
+  puk_spinlock_acquire();
+  puk_mem.reg = reg;
+  puk_mem.unreg = unreg;
+  puk_mem_invalidate_hook = &puk_mem_invalidate;
+  puk_spinlock_release();
+}
+void puk_mem_unreg(const struct puk_mem_reg_s*_r)
+{
+  struct puk_mem_reg_s*r = (struct puk_mem_reg_s*)_r;
+  puk_spinlock_acquire();
+  r->refcount--;
+  if(r->refcount < 0)
+    {
+      fprintf(stderr, "PukABI: unbalanced registration detected.\n");
+      abort();
+    }
+  puk_spinlock_release();
+}
+const struct puk_mem_reg_s*puk_mem_reg(void*context, const void*ptr, size_t len)
+{
+  assert(ptr != NULL);
+  puk_spinlock_acquire();
+  int i;
+  for(i = 0; i < PUK_MEM_CACHE_SIZE; i++)
+    {
+      struct puk_mem_reg_s*r = &puk_mem.cache[i];
+      if(context == r->context && ptr >= r->ptr && (ptr + len <= r->ptr + r->len))
+	{
+	  r->refcount++;
+	  puk_spinlock_release();
+	  return r;
+	}
+    }
+  struct puk_mem_reg_s*r = puk_mem_slot_lookup();
+  if(r)
+    {
+      r->context  = context;
+      r->ptr      = ptr;
+      r->len      = len;
+      r->refcount = 1;
+      r->key      = (*puk_mem.reg)(context, ptr, len);
+    }
+  else
+    {
+      padico_fatal("PukABI: rcache buffer full.\n");
+    }
+  puk_spinlock_release();
+  return r;
+}
+
+/* ********************************************************* */
+
+#include <malloc.h>
+
+static void (*minipukabi_old_free_hook)(void*ptr, const void*caller) = NULL;
+static void minipukabi_free_hook(void*ptr, const void*caller);
+
+static void minipukabi_install_hooks(void)
+{
+  minipukabi_old_free_hook = __free_hook;
+  __free_hook = minipukabi_free_hook;
+}
+static void minipukabi_remove_hooks(void)
+{
+  __free_hook = minipukabi_free_hook;
+}
+static void minipukabi_free_hook(void*ptr, const void*caller)
+{
+  puk_abi_mem_invalidate(ptr, 1);
+  minipukabi_remove_hooks();
+  free(ptr);
+  minipukabi_install_hooks();
+}
+
+#endif /* PUKABI */

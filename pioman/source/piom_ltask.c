@@ -25,9 +25,9 @@
 
 PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 
-enum piom_trace_event_e { PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_INIT, PIOM_TRACE_EVENT_POLL, PIOM_TRACE_EVENT_NONE } event;
+enum piom_trace_event_e { PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS, PIOM_TRACE_EVENT_INIT, PIOM_TRACE_EVENT_POLL, PIOM_TRACE_EVENT_NONE } event;
 #ifdef PIOMAN_TRACE
-#define PIOMAN_TRACE_MAX (1024*1024)
+#define PIOMAN_TRACE_MAX (1024*1024*8)
 struct piom_trace_queue_s
 {
     enum piom_topo_level_e level;
@@ -123,6 +123,11 @@ static void pioman_trace_init(void)
     addEventType ("Event_Node",    "Container_Node",    "Event_Node_submit");
     addEventType ("Event_Socket",  "Container_Socket",  "Event_Socket_submit");
     addEventType ("Event_Core",    "Container_Core",    "Event_Core_submit");
+
+    addEventType ("Event_Machine", "Container_Machine", "Event_Machine_success");
+    addEventType ("Event_Node",    "Container_Node",    "Event_Node_success");
+    addEventType ("Event_Socket",  "Container_Socket",  "Event_Socket_success");
+    addEventType ("Event_Core",    "Container_Core",    "Event_Core_success");
 }
 static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
 {
@@ -185,6 +190,10 @@ static void piom_trace_flush(void)
 		    sprintf(value, "%s_submit", event_type);
 		    addEvent(d, event_type, cont_name, value);
 		    break;
+		case PIOM_TRACE_EVENT_SUCCESS:
+		    sprintf(value, "%s_success", event_type);
+		    addEvent(d, event_type, cont_name, value);
+		    break;
 		case PIOM_TRACE_EVENT_INIT:
 		    sprintf(value, "%s_init", state_type);
 		    setState(d, state_type, cont_name, value);
@@ -202,6 +211,7 @@ static void piom_trace_flush(void)
 		}
 	}
     endTrace();
+    fprintf(stderr, "# pioman: traces flushed.\n");
 }
 static void pioman_trace_exit(void)
 {
@@ -398,6 +408,10 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	    queue->state = PIOM_LTASK_QUEUE_STATE_STOPPED;
 	}
     __sync_fetch_and_sub(&queue->processing, 1);
+    if(success)
+	{
+	    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS);
+	}
     return success ? task : NULL;
 }
 
@@ -637,9 +651,6 @@ void piom_init_ltasks(void)
 
 void piom_exit_ltasks(void)
 {
-#ifdef PIOMAN_TRACE
-    piom_trace_flush();
-#endif /* PIOMAN_TRACE */
     piom_ltask_initialized--;
     if(piom_ltask_initialized == 0)
 	{
@@ -699,7 +710,6 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 			return;
 		}
 	}
-    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUBMIT);
     task->state = PIOM_LTASK_STATE_READY;
     task->queue = queue;
     /* wait until a task is removed from the list */
@@ -737,6 +747,7 @@ void piom_ltask_submit(struct piom_ltask *task)
     queue = __piom_get_queue(task->binding);
     assert(task != NULL);
     assert(queue != NULL);
+    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUBMIT);
     __piom_ltask_submit_in_queue(task, queue);
 }
 

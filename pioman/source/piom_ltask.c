@@ -119,15 +119,15 @@ static void pioman_trace_init(void)
     addEntityValue ("State_Machine_init", "State_Machine", "State_Machine_init", GTG_BLUE);
     addEntityValue ("State_Machine_poll", "State_Machine", "State_Machine_poll", GTG_PINK);
  
-    addEventType ("Event_Machine", "Container_Machine", "Event_Machine_submit");
-    addEventType ("Event_Node",    "Container_Node",    "Event_Node_submit");
-    addEventType ("Event_Socket",  "Container_Socket",  "Event_Socket_submit");
-    addEventType ("Event_Core",    "Container_Core",    "Event_Core_submit");
+    addEventType ("Event_Machine_submit", "Container_Machine", "Event_Machine_submit");
+    addEventType ("Event_Node_submit",    "Container_Node",    "Event_Node_submit");
+    addEventType ("Event_Socket_submit",  "Container_Socket",  "Event_Socket_submit");
+    addEventType ("Event_Core_submit",    "Container_Core",    "Event_Core_submit");
 
-    addEventType ("Event_Machine", "Container_Machine", "Event_Machine_success");
-    addEventType ("Event_Node",    "Container_Node",    "Event_Node_success");
-    addEventType ("Event_Socket",  "Container_Socket",  "Event_Socket_success");
-    addEventType ("Event_Core",    "Container_Core",    "Event_Core_success");
+    addEventType ("Event_Machine_success", "Container_Machine", "Event_Machine_success");
+    addEventType ("Event_Node_success",    "Container_Node",    "Event_Node_success");
+    addEventType ("Event_Socket_success",  "Container_Socket",  "Event_Socket_success");
+    addEventType ("Event_Core_success",    "Container_Core",    "Event_Core_success");
 }
 static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
 {
@@ -188,11 +188,11 @@ static void piom_trace_flush(void)
 		{
 		case PIOM_TRACE_EVENT_SUBMIT:
 		    sprintf(value, "%s_submit", event_type);
-		    addEvent(d, event_type, cont_name, value);
+		    addEvent(d, value, cont_name, value);
 		    break;
 		case PIOM_TRACE_EVENT_SUCCESS:
 		    sprintf(value, "%s_success", event_type);
-		    addEvent(d, event_type, cont_name, value);
+		    addEvent(d, value, cont_name, value);
 		    break;
 		case PIOM_TRACE_EVENT_INIT:
 		    sprintf(value, "%s_init", state_type);

@@ -25,7 +25,7 @@
 
 PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 
-enum piom_trace_event_e { PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS, PIOM_TRACE_EVENT_INIT, PIOM_TRACE_EVENT_POLL, PIOM_TRACE_EVENT_NONE } event;
+enum piom_trace_event_e { PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS, PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE, PIOM_TRACE_VAR_LTASKS } event;
 #ifdef PIOMAN_TRACE
 #define PIOMAN_TRACE_MAX (1024*1024*8)
 struct piom_trace_queue_s
@@ -129,6 +129,11 @@ static void pioman_trace_init(void)
     addEventType ("Event_Node_success",    "Container_Node",    "Event: Node ltask success");
     addEventType ("Event_Socket_success",  "Container_Socket",  "Event: Socket ltask success");
     addEventType ("Event_Core_success",    "Container_Core",    "Event: Core ltask success");
+
+    addVarType("Tasks_Machine", "ltasks in Machine queue", "Container_Machine");
+    addVarType("Tasks_Node",    "ltasks in Node queue",    "Container_Node");
+    addVarType("Tasks_Socket",  "ltasks in Socket queue",  "Container_Socket");
+    addVarType("Tasks_Core",    "ltasks in Core queue",    "Container_Core");
 }
 static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
 {
@@ -151,6 +156,11 @@ static inline void piom_trace_queue_event(piom_ltask_queue_t*queue, enum piom_tr
 static inline void piom_trace_queue_state(piom_ltask_queue_t*queue, enum piom_trace_event_e _event)
 {
     piom_trace_queue_event(queue, _event, NULL);
+}
+static inline void piom_trace_queue_var(piom_ltask_queue_t*queue, enum piom_trace_event_e _event, int _value)
+{
+    void*value = (void*)((uintptr_t)_value);
+    piom_trace_queue_event(queue, _event, value);
 }
 static void piom_trace_flush(void)
 {
@@ -183,9 +193,10 @@ static void piom_trace_flush(void)
 		    level_label = "(unkown)";
 		    break;
 		}
-	    char cont_name[32];
-	    char state_type[64];
-	    char event_type[64];
+	    char cont_name[64];
+	    char state_type[128];
+	    char event_type[128];
+	    char var_type[128];
 	    char value[256];
 	    sprintf(cont_name, "%s_%d", level_label, e->queue.rank);
 	    sprintf(state_type, "State_%s", level_label);
@@ -201,17 +212,24 @@ static void piom_trace_flush(void)
 		    sprintf(value, "ltask = %p", e->value);
 		    addEvent(d, event_type, cont_name, value);
 		    break;
-		case PIOM_TRACE_EVENT_INIT:
+		case PIOM_TRACE_STATE_INIT:
 		    sprintf(value, "%s_init", state_type);
 		    setState(d, state_type, cont_name, value);
 		    break;
-		case PIOM_TRACE_EVENT_POLL:
+		case PIOM_TRACE_STATE_POLL:
 		    sprintf(value, "%s_poll", state_type);
 		    setState(d, state_type, cont_name, value);
 		    break;
-		case PIOM_TRACE_EVENT_NONE:
+		case PIOM_TRACE_STATE_NONE:
 		    sprintf(value, "%s_none", state_type);
 		    setState(d, state_type, cont_name, value);
+		    break;
+		case PIOM_TRACE_VAR_LTASKS:
+		    {
+			int _var = (uintptr_t)e->value;
+			sprintf(var_type, "Tasks_%s", level_label);
+			setVar(d, var_type, cont_name, _var);
+		    }
 		    break;
 		default:
 		    break;
@@ -228,6 +246,8 @@ static void pioman_trace_exit(void)
 static inline void piom_trace_queue_event(piom_ltask_queue_t*q, enum piom_trace_event_e _event, void*_value)
 { /* empty */ }
 static inline void piom_trace_queue_state(piom_ltask_queue_t*queue, enum piom_trace_event_e _event)
+{ /* empty */ }
+static inline void piom_trace_queue_var(piom_ltask_queue_t*queue, enum piom_trace_event_e _event, int _value)
 { /* empty */ }
 #endif /* PIOMAN_TRACE */
 
@@ -328,6 +348,7 @@ static inline void __piom_init_queue(piom_ltask_queue_t*queue)
 static inline struct piom_ltask*__piom_ltask_get_from_queue(piom_ltask_queue_t*queue)
 {
     struct piom_ltask*task = piom_ltask_lfqueue_dequeue(&queue->ltask_queue);
+    piom_trace_queue_var(queue, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
     return task;
 }
 
@@ -356,7 +377,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
     struct piom_ltask *task = __piom_ltask_get_from_queue(queue);
     if(task)
 	{
-	    piom_trace_queue_state(queue, PIOM_TRACE_EVENT_INIT);
+	    piom_trace_queue_state(queue, PIOM_TRACE_STATE_INIT);
 	    if(task->masked)
 		{
 		    /* re-submit to poll later when task will be unmasked  */
@@ -366,7 +387,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		{
 		    /* wait is pending: poll */
 		    piom_ltask_state_set(task, PIOM_LTASK_STATE_SCHEDULED);
-		    piom_trace_queue_state(queue, PIOM_TRACE_EVENT_POLL);
+		    piom_trace_queue_state(queue, PIOM_TRACE_STATE_POLL);
 		    piom_tasklet_mask();
 		    const int options = task->options;
 		    (*task->func_ptr)(task->data_ptr);
@@ -408,7 +429,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 		    fprintf(stderr, "PIOMan: FATAL- wrong state for scheduled ltask.\n");
 		    abort();
 		}
-	    piom_trace_queue_state(queue, PIOM_TRACE_EVENT_NONE);
+	    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
 	}
     /* no more task to run, set the queue as stopped */
     if( (task == NULL) && 
@@ -568,7 +589,7 @@ void piom_init_ltasks(void)
 				    queue->trace_info.rank = i;
 				    addContainer(0.00000, queue->cont_name, cont_type, 
 						 queue->parent ? queue->parent->cont_name:"0", cont_name, "0");
-				    piom_trace_queue_state(queue, PIOM_TRACE_EVENT_NONE);
+				    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
 #endif /* PIOMAN_TRACE */
 
 				}
@@ -685,7 +706,7 @@ void piom_exit_ltasks(void)
 			{
 			    hwloc_obj_t o = hwloc_get_obj_by_depth(__piom_ltask_topology, d, i);
 			    piom_ltask_queue_t*queue = o->userdata;
-			    piom_trace_queue_state(queue, PIOM_TRACE_EVENT_NONE);
+			    piom_trace_queue_state(queue, PIOM_TRACE_STATE_NONE);
 			    __piom_exit_queue(queue);
 			    TBX_FREE(queue);
 			    o->userdata = NULL;
@@ -727,6 +748,7 @@ static void __piom_ltask_submit_in_queue(struct piom_ltask *task, piom_ltask_que
 	{
 	    rc = piom_ltask_lfqueue_enqueue(&queue->ltask_queue, task);
 	}
+    piom_trace_queue_var(queue, PIOM_TRACE_VAR_LTASKS, (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK);
 }
 
 static inline int __piom_ltask_submit_in_lwp(struct piom_ltask*task)

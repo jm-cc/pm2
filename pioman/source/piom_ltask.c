@@ -225,7 +225,9 @@ static void pioman_trace_exit(void)
     piom_trace_flush();
 }
 #else /* PIOMAN_TRACE */
-static inline void piom_trace_queue_event(piom_ltask_queue_t*q, enum piom_trace_event_e _event)
+static inline void piom_trace_queue_event(piom_ltask_queue_t*q, enum piom_trace_event_e _event, void*_value)
+{ /* empty */ }
+static inline void piom_trace_queue_state(piom_ltask_queue_t*queue, enum piom_trace_event_e _event)
 { /* empty */ }
 #endif /* PIOMAN_TRACE */
 

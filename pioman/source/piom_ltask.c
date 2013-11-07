@@ -25,7 +25,12 @@
 
 PIOM_LFQUEUE_TYPE(piom_ltask, struct piom_ltask*, NULL, PIOM_MAX_LTASK);
 
-enum piom_trace_event_e { PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS, PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE, PIOM_TRACE_VAR_LTASKS } event;
+enum piom_trace_event_e {
+    PIOM_TRACE_EVENT_TIMER_POLL, PIOM_TRACE_EVENT_IDLE_POLL,
+    PIOM_TRACE_EVENT_SUBMIT, PIOM_TRACE_EVENT_SUCCESS,
+    PIOM_TRACE_STATE_INIT, PIOM_TRACE_STATE_POLL, PIOM_TRACE_STATE_NONE,
+    PIOM_TRACE_VAR_LTASKS
+} event;
 #ifdef PIOMAN_TRACE
 #define PIOMAN_TRACE_MAX (1024*1024*8)
 struct piom_trace_queue_s
@@ -134,6 +139,13 @@ static void pioman_trace_init(void)
     addVarType("Tasks_Node",    "ltasks in Node queue",    "Container_Node");
     addVarType("Tasks_Socket",  "ltasks in Socket queue",  "Container_Socket");
     addVarType("Tasks_Core",    "ltasks in Core queue",    "Container_Core");
+
+    addContType("Container_Global", "0", "Global");
+    addContainer(0.00000, "Timer_Events", "Container_Global", "0", "Timer_Events", "0");
+    addContainer(0.00000, "Idle_Events", "Container_Global", "0", "Idle_Events", "0");
+    addEventType ("Event_Timer_Poll", "Container_Global", "Event: timer poll");
+    addEventType ("Event_Idle_Poll", "Container_Global", "Event: idle poll");
+
 }
 static inline struct piom_trace_entry_s*piom_trace_get_entry(void)
 {
@@ -149,7 +161,7 @@ static inline void piom_trace_queue_event(piom_ltask_queue_t*queue, enum piom_tr
 	{
 	    TBX_GET_TICK(entry->tick);
 	    entry->event = _event;
-	    entry->queue = queue->trace_info;
+	    entry->queue = queue ? queue->trace_info : (struct piom_trace_queue_s){ 0, 0};
 	    entry->value = _value;
 	}
 }
@@ -202,6 +214,12 @@ static void piom_trace_flush(void)
 	    sprintf(state_type, "State_%s", level_label);
 	    switch(e->event)
 		{
+		case PIOM_TRACE_EVENT_TIMER_POLL:
+		    addEvent(d, "Event_Timer_Poll", "Timer_Events", NULL);
+		    break;
+		case PIOM_TRACE_EVENT_IDLE_POLL:
+		    addEvent(d, "Event_Idle_Poll", "Idle_Events", NULL);
+		    break;
 		case PIOM_TRACE_EVENT_SUBMIT:
 		    sprintf(event_type, "Event_%s_submit", level_label);
 		    sprintf(value, "ltask = %p", e->value);
@@ -478,6 +496,7 @@ static void*__piom_ltask_timer_worker(void*_dummy)
 	{
 	    struct timespec t = { .tv_sec = 0, .tv_nsec = timeslice_nsec };
 	    nanosleep(&t, NULL);
+	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_TIMER_POLL, NULL);
 	    piom_check_polling(PIOM_POLL_AT_TIMER_SIG);
 	}
     return NULL;
@@ -488,6 +507,7 @@ static void*__piom_ltask_idle_worker(void*_dummy)
     __piom_pthread_setname("_pioman_idle");
     while(queue->state != PIOM_LTASK_QUEUE_STATE_STOPPED)
 	{
+	    piom_trace_queue_event(NULL, PIOM_TRACE_EVENT_IDLE_POLL, NULL);
 	    piom_check_polling(PIOM_POLL_AT_IDLE);
 	    if(piom_parameters.idle_granularity > 0)
 		usleep(piom_parameters.idle_granularity);

@@ -103,6 +103,13 @@ int nm_so_process_complete_send(struct nm_core *p_core, struct nm_pkt_wrap *p_pw
   
   p_pw->p_gdrv->active_send[p_pw->trk_id]--;
 
+  int i;
+  for(i = 0; i < p_pw->n_completions; i++)
+    {
+      struct nm_pw_completion_s*p_completion = &p_pw->completions[i];
+      (*p_completion->notifier)(p_pw, p_completion);
+    }
+
   nm_strat_try_and_commit(p_gate);
   
   return NM_ESUCCESS;

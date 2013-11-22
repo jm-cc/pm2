@@ -460,7 +460,7 @@ static inline void* __piom_ltask_queue_schedule(piom_ltask_queue_t *queue)
 	{
 	    piom_trace_queue_event(queue, PIOM_TRACE_EVENT_SUCCESS, task);
 	}
-    return success ? task : NULL;
+    return task; /* success ? task : NULL; */
 }
 
 
@@ -810,10 +810,16 @@ void*piom_ltask_schedule(void)
 	    piom_ltask_queue_t*queue = __piom_get_queue(piom_ltask_current_obj());
 	    while(queue != NULL)
 		{
-		    ltask = __piom_ltask_queue_schedule(queue);
-		    if(ltask)
+		    const int hint =  (PIOM_MAX_LTASK + queue->ltask_queue._head - queue->ltask_queue._tail) % PIOM_MAX_LTASK; 
+		    int i;
+		    for(i = 0; i < hint; i++)
 			{
-			    break;
+			    ltask = __piom_ltask_queue_schedule(queue);
+			    if(ltask)
+				{
+				    /* break; */
+				}
+			    
 			}
 		    queue = queue->parent;
 		}
@@ -940,7 +946,7 @@ piom_topo_obj_t piom_ltask_current_obj(void)
 		    tbx_tick_t now;
 		    TBX_GET_TICK(now);
 		    double delay = TBX_TIMING_DELAY(local->timestamp, now);
-		    if(delay > 1000)
+		    if(delay > 10000)
 			update = 1;
 		}
 	}

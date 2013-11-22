@@ -90,7 +90,8 @@ struct piom_ltask
     struct timespec origin;            /**< time origin for blocking call timeout */
     int blocking_delay;                /**< time (in usec.) to poll before switching to blocking call */
     piom_topo_obj_t binding;
-    struct piom_ltask_queue*queue;
+    struct piom_ltask_queue*queue;     /**< current queue where ltask has been submitted */
+    const char*name;                   /**< name given to the ltask, usefull for debug */
 };
 
 
@@ -169,10 +170,16 @@ static inline void piom_ltask_create(struct piom_ltask *task,
     task->state = PIOM_LTASK_STATE_NONE;
     task->binding = binding;
     task->queue = NULL;
+    task->name = NULL;
     piom_cond_init(&task->done, 0);
 }
 
 extern void piom_ltask_set_blocking(struct piom_ltask*task, piom_ltask_func_t func, int delay_usec);
+
+static inline void piom_ltask_set_name(struct piom_ltask*ltask, const char*name)
+{
+    ltask->name = name;
+}
 
 /** suspend the ltask scheduling
  * @note blocks if the ltask is currently scheduled

@@ -203,6 +203,7 @@ void nm_ltask_submit_poll_recv(struct nm_pkt_wrap *p_pw)
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_recv,  p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
+  piom_ltask_set_name(&p_pw->ltask, "nmad: poll_recv");
   const struct nm_drv_iface_s*driver = p_pw->p_drv->driver;
   if(driver->capabilities.is_exportable && (driver->wait_recv_iov != NULL))
     {
@@ -217,6 +218,7 @@ void nm_ltask_submit_poll_send(struct nm_pkt_wrap *p_pw)
   piom_ltask_create(&p_pw->ltask, &nm_task_poll_send, p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT | PIOM_LTASK_OPTION_DESTROY | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
+  piom_ltask_set_name(&p_pw->ltask, "nmad: poll_send");
   assert(p_pw->p_gdrv);
   struct puk_receptacle_NewMad_Driver_s*r = &p_pw->p_gdrv->receptacle;
   if(r->driver->capabilities.is_exportable && (r->driver->wait_send_iov != NULL))
@@ -234,6 +236,7 @@ void nm_ltask_submit_post_drv(struct piom_ltask *task, struct nm_drv*p_drv)
 		    p_drv,
 		    PIOM_LTASK_OPTION_REPEAT | PIOM_LTASK_OPTION_NOWAIT,
 		    task_binding);
+  piom_ltask_set_name(task, "nmad: post_on_drv");
   piom_ltask_submit(task);  
 }
 
@@ -245,6 +248,7 @@ void nm_ltask_submit_offload(struct piom_ltask *task, struct nm_pkt_wrap *p_pw)
 		    p_pw,
 		    PIOM_LTASK_OPTION_ONESHOT, 
 		    task_binding);
+  piom_ltask_set_name(task, "nmad: offload");
   piom_ltask_submit(task);	
 }
 

@@ -105,7 +105,8 @@ int nm_ns_parse_sampling(struct nm_sampling_set_s*p_set, struct nm_drv*p_drv)
       
       /* compute latency and bandwidth */
       p_set->bw = p_set->bandwidth_samples[nb_entries - 1];
-      p_set->lat = (1 << LAT_IDX) / p_set->bandwidth_samples[LAT_IDX];
+      const int lat_idx = (LAT_IDX > (nb_entries - 1)) ? 0 : LAT_IDX;
+      p_set->lat = (1 << lat_idx) / p_set->bandwidth_samples[lat_idx];
     }
   else
     {
